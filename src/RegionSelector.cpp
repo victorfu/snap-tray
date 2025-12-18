@@ -18,6 +18,7 @@
 #include <QDateTime>
 #include <QInputDialog>
 #include <QToolTip>
+#include <QPointer>
 
 RegionSelector::RegionSelector(QWidget* parent)
     : QWidget(parent)
@@ -1532,9 +1533,14 @@ void RegionSelector::performOCR()
     );
     selectedRegion.setDevicePixelRatio(m_devicePixelRatio);
 
+    QPointer<RegionSelector> safeThis = this;
     m_ocrManager->recognizeText(selectedRegion,
-        [this](bool success, const QString &text, const QString &error) {
-            onOCRComplete(success, text, error);
+        [safeThis](bool success, const QString &text, const QString &error) {
+            if (safeThis) {
+                safeThis->onOCRComplete(success, text, error);
+            } else {
+                qDebug() << "RegionSelector: OCR completed but widget was destroyed, ignoring result";
+            }
         });
 }
 
