@@ -21,6 +21,7 @@
 #include <QToolTip>
 #include <QLabel>
 #include <QTimer>
+#include <QPointer>
 #include <QTransform>
 #include <QDebug>
 
@@ -222,9 +223,14 @@ void PinWindow::performOCR()
     m_ocrInProgress = true;
     qDebug() << "PinWindow: Starting OCR recognition...";
 
+    QPointer<PinWindow> safeThis = this;
     m_ocrManager->recognizeText(m_originalPixmap,
-        [this](bool success, const QString &text, const QString &error) {
-            onOCRComplete(success, text, error);
+        [safeThis](bool success, const QString &text, const QString &error) {
+            if (safeThis) {
+                safeThis->onOCRComplete(success, text, error);
+            } else {
+                qDebug() << "PinWindow: OCR completed but window was destroyed, ignoring result";
+            }
         });
 }
 
