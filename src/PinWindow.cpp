@@ -429,17 +429,28 @@ void PinWindow::mouseMoveEvent(QMouseEvent *event)
 
         // Update zoom level based on new size
         QSize contentSize = newSize - QSize(kShadowMargin * 2, kShadowMargin * 2);
-        QSize originalLogicalSize = m_originalPixmap.size() / m_originalPixmap.devicePixelRatio();
-        qreal scaleX = static_cast<qreal>(contentSize.width()) / originalLogicalSize.width();
-        qreal scaleY = static_cast<qreal>(contentSize.height()) / originalLogicalSize.height();
+
+        // Apply rotation transform if needed (same as updateSize)
+        QPixmap rotatedPixmap = m_originalPixmap;
+        if (m_rotationAngle != 0) {
+            QTransform transform;
+            transform.rotate(m_rotationAngle);
+            rotatedPixmap = m_originalPixmap.transformed(transform, Qt::SmoothTransformation);
+            rotatedPixmap.setDevicePixelRatio(m_originalPixmap.devicePixelRatio());
+        }
+
+        // Use rotated dimensions for zoom calculation
+        QSize rotatedLogicalSize = rotatedPixmap.size() / rotatedPixmap.devicePixelRatio();
+        qreal scaleX = static_cast<qreal>(contentSize.width()) / rotatedLogicalSize.width();
+        qreal scaleY = static_cast<qreal>(contentSize.height()) / rotatedLogicalSize.height();
         m_zoomLevel = qMin(scaleX, scaleY);
 
-        // Scale display pixmap
-        QSize newDeviceSize = contentSize * m_originalPixmap.devicePixelRatio();
-        m_displayPixmap = m_originalPixmap.scaled(newDeviceSize,
-                                                   Qt::KeepAspectRatio,
-                                                   Qt::SmoothTransformation);
-        m_displayPixmap.setDevicePixelRatio(m_originalPixmap.devicePixelRatio());
+        // Scale rotated pixmap (not original)
+        QSize newDeviceSize = contentSize * rotatedPixmap.devicePixelRatio();
+        m_displayPixmap = rotatedPixmap.scaled(newDeviceSize,
+                                               Qt::KeepAspectRatio,
+                                               Qt::SmoothTransformation);
+        m_displayPixmap.setDevicePixelRatio(rotatedPixmap.devicePixelRatio());
 
         // Apply new size and position
         setFixedSize(newSize);
