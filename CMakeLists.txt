@@ -31,6 +31,8 @@ set(SOURCES
     src/PinWindow.cpp
     src/PinWindowManager.cpp
     src/AnnotationLayer.cpp
+    src/ScreenCanvas.cpp
+    src/ScreenCanvasManager.cpp
 )
 
 set(RESOURCES
@@ -45,6 +47,8 @@ set(HEADERS
     include/PinWindow.h
     include/PinWindowManager.h
     include/AnnotationLayer.h
+    include/ScreenCanvas.h
+    include/ScreenCanvasManager.h
 )
 
 # macOS-specific source files
