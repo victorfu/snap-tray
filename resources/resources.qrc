@@ -1,0 +1,20 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource prefix="/icons">
+        <file>icons/selection.svg</file>
+        <file>icons/arrow.svg</file>
+        <file>icons/pencil.svg</file>
+        <file>icons/marker.svg</file>
+        <file>icons/rectangle.svg</file>
+        <file>icons/text.svg</file>
+        <file>icons/mosaic.svg</file>
+        <file>icons/step-badge.svg</file>
+        <file>icons/undo.svg</file>
+        <file>icons/redo.svg</file>
+        <file>icons/cancel.svg</file>
+        <file>icons/ocr.svg</file>
+        <file>icons/pin.svg</file>
+        <file>icons/save.svg</file>
+        <file>icons/copy.svg</file>
+    </qresource>
+</RCC>

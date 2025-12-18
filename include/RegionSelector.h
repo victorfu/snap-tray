@@ -7,8 +7,11 @@
 #include <QRect>
 #include <QVector>
 #include <QColor>
+#include <QHash>
 #include <memory>
 #include <optional>
+
+class QSvgRenderer;
 
 #ifdef Q_OS_MACOS
 #include "WindowDetector.h"
@@ -186,6 +189,11 @@ private:
     void performOCR();
     void onOCRComplete(bool success, const QString &text, const QString &error);
 #endif
+
+    // SVG icon rendering
+    QHash<ToolbarButton, QSvgRenderer*> m_iconRenderers;
+    void initializeIcons();
+    void renderIcon(QPainter &painter, const QRect &rect, ToolbarButton button, const QColor &color);
 };
 
 #endif // REGIONSELECTOR_H

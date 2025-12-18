@@ -8,7 +8,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Widgets Gui)
+find_package(Qt6 REQUIRED COMPONENTS Widgets Gui Svg)
 
 # Fetch QHotkey for global hotkey support
 # Set policy version for QHotkey's older CMakeLists.txt
@@ -33,6 +33,10 @@ set(SOURCES
     src/AnnotationLayer.cpp
 )
 
+set(RESOURCES
+    resources/resources.qrc
+)
+
 set(HEADERS
     include/MainApplication.h
     include/SettingsDialog.h
@@ -55,7 +59,7 @@ if(APPLE)
     )
 endif()
 
-add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
+add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS} ${RESOURCES})
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/include)
 
@@ -68,6 +72,7 @@ if(APPLE)
     target_link_libraries(${PROJECT_NAME} PRIVATE
         Qt6::Widgets
         Qt6::Gui
+        Qt6::Svg
         QHotkey::QHotkey
         ${COREGRAPHICS_FRAMEWORK}
         ${APPLICATIONSERVICES_FRAMEWORK}
@@ -75,7 +80,7 @@ if(APPLE)
         ${VISION_FRAMEWORK}
     )
 else()
-    target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::Widgets Qt6::Gui QHotkey::QHotkey)
+    target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::Widgets Qt6::Gui Qt6::Svg QHotkey::QHotkey)
 endif()
 
 # macOS-specific settings

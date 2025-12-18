@@ -19,6 +19,7 @@
 #include <QInputDialog>
 #include <QToolTip>
 #include <QPointer>
+#include <QSvgRenderer>
 
 RegionSelector::RegionSelector(QWidget* parent)
     : QWidget(parent)
@@ -62,12 +63,98 @@ RegionSelector::RegionSelector(QWidget* parent)
     }
 #endif
 
+    // Initialize SVG icons
+    initializeIcons();
+
     // 注意: 不在此處初始化螢幕，由 CaptureManager 調用 initializeForScreen()
 }
 
 RegionSelector::~RegionSelector()
 {
+    // Clean up SVG renderers
+    qDeleteAll(m_iconRenderers);
+    m_iconRenderers.clear();
+
     qDebug() << "RegionSelector: Destroyed";
+}
+
+void RegionSelector::initializeIcons()
+{
+    // Map buttons to their SVG resource paths
+    static const QHash<ToolbarButton, QString> iconPaths = {
+        {ToolbarButton::Selection, ":/icons/icons/selection.svg"},
+        {ToolbarButton::Arrow, ":/icons/icons/arrow.svg"},
+        {ToolbarButton::Pencil, ":/icons/icons/pencil.svg"},
+        {ToolbarButton::Marker, ":/icons/icons/marker.svg"},
+        {ToolbarButton::Rectangle, ":/icons/icons/rectangle.svg"},
+        {ToolbarButton::Text, ":/icons/icons/text.svg"},
+        {ToolbarButton::Mosaic, ":/icons/icons/mosaic.svg"},
+        {ToolbarButton::StepBadge, ":/icons/icons/step-badge.svg"},
+        {ToolbarButton::Undo, ":/icons/icons/undo.svg"},
+        {ToolbarButton::Redo, ":/icons/icons/redo.svg"},
+        {ToolbarButton::Cancel, ":/icons/icons/cancel.svg"},
+#ifdef Q_OS_MACOS
+        {ToolbarButton::OCR, ":/icons/icons/ocr.svg"},
+#endif
+        {ToolbarButton::Pin, ":/icons/icons/pin.svg"},
+        {ToolbarButton::Save, ":/icons/icons/save.svg"},
+        {ToolbarButton::Copy, ":/icons/icons/copy.svg"},
+    };
+
+    for (auto it = iconPaths.begin(); it != iconPaths.end(); ++it) {
+        QSvgRenderer *renderer = new QSvgRenderer(it.value(), this);
+        if (renderer->isValid()) {
+            m_iconRenderers[it.key()] = renderer;
+        } else {
+            qWarning() << "Failed to load icon:" << it.value();
+            delete renderer;
+        }
+    }
+}
+
+void RegionSelector::renderIcon(QPainter &painter, const QRect &rect, ToolbarButton button, const QColor &color)
+{
+    QSvgRenderer *renderer = m_iconRenderers.value(button, nullptr);
+    if (!renderer) {
+        // Fallback: draw a placeholder
+        painter.setPen(color);
+        painter.drawText(rect, Qt::AlignCenter, "?");
+        return;
+    }
+
+    // Calculate icon size (slightly smaller than button for padding)
+    int iconSize = qMin(rect.width(), rect.height()) - 8;  // 4px padding on each side
+    // Use QRect's center-based positioning for accurate centering
+    QRect iconRect(0, 0, iconSize, iconSize);
+    iconRect.moveCenter(rect.center());
+
+    // Get device pixel ratio for crisp rendering on HiDPI
+    qreal dpr = painter.device()->devicePixelRatio();
+
+    // Create a temporary pixmap for color tinting
+    QPixmap iconPixmap(iconSize * dpr, iconSize * dpr);
+    iconPixmap.setDevicePixelRatio(dpr);
+    iconPixmap.fill(Qt::transparent);
+
+    QPainter iconPainter(&iconPixmap);
+    iconPainter.setRenderHint(QPainter::Antialiasing);
+
+    // Render the SVG
+    renderer->render(&iconPainter, QRectF(0, 0, iconSize, iconSize));
+    iconPainter.end();
+
+    // Apply color tint using composition mode
+    QPixmap tintedPixmap(iconPixmap.size());
+    tintedPixmap.setDevicePixelRatio(dpr);
+    tintedPixmap.fill(Qt::transparent);
+
+    QPainter tintPainter(&tintedPixmap);
+    tintPainter.drawPixmap(0, 0, iconPixmap);
+    tintPainter.setCompositionMode(QPainter::CompositionMode_SourceIn);
+    tintPainter.fillRect(tintedPixmap.rect(), color);
+    tintPainter.end();
+
+    painter.drawPixmap(iconRect, tintedPixmap);
 }
 
 void RegionSelector::initializeForScreen(QScreen* screen)
@@ -524,31 +611,7 @@ void RegionSelector::drawToolbar(QPainter& painter)
     painter.setPen(QPen(QColor(70, 70, 70), 1));
     painter.drawRoundedRect(m_toolbarRect, 8, 8);
 
-    // Button icons (emoji style)
-    QStringList icons = {
-        "\u2B1C",           // Selection (white square)
-        "\u27A1\uFE0F",     // Arrow (right arrow emoji)
-        "\u270F\uFE0F",     // Pencil (pencil emoji)
-        "\U0001F58C",       // Marker (paintbrush emoji)
-        "\u25A1",           // Rectangle (white square outline)
-        "T",                // Text
-        "\U0001F9E9",       // Mosaic (puzzle piece emoji)
-        "\u2460",           // StepBadge (circled 1)
-        "\u21A9\uFE0F",     // Undo (left arrow curving emoji)
-        "\u21AA\uFE0F",     // Redo (right arrow curving emoji)
-        "\u274C",           // Cancel (cross mark emoji)
-#ifdef Q_OS_MACOS
-        "Aa",               // OCR (text recognition)
-#endif
-        "\U0001F4CC",       // Pin (pushpin emoji)
-        "\U0001F4BE",       // Save (floppy disk emoji)
-        "\U0001F4CB",       // Copy (clipboard emoji)
-    };
-
-    QFont iconFont = painter.font();
-    iconFont.setPointSize(14);
-    painter.setFont(iconFont);
-
+    // Render SVG icons
     for (int i = 0; i < static_cast<int>(ToolbarButton::Count); ++i) {
         QRect btnRect = m_buttonRects[i];
         ToolbarButton btn = static_cast<ToolbarButton>(i);
@@ -590,32 +653,34 @@ void RegionSelector::drawToolbar(QPainter& painter)
                 btnRect.left() - 4, btnRect.bottom() - 6);
         }
 
-        // Special coloring for action buttons
+        // Determine icon color based on state
+        QColor iconColor;
         if (i == static_cast<int>(ToolbarButton::Cancel)) {
-            painter.setPen(QColor(255, 100, 100));
+            iconColor = QColor(255, 100, 100);  // Red for cancel
         }
 #ifdef Q_OS_MACOS
         else if (btn == ToolbarButton::OCR) {
             if (m_ocrInProgress) {
-                painter.setPen(QColor(255, 200, 100));  // Yellow when processing
+                iconColor = QColor(255, 200, 100);  // Yellow when processing
             } else if (!m_ocrManager) {
-                painter.setPen(QColor(128, 128, 128));  // Gray if unavailable
+                iconColor = QColor(128, 128, 128);  // Gray if unavailable
             } else {
-                painter.setPen(QColor(100, 200, 255));  // Blue accent
+                iconColor = QColor(100, 200, 255);  // Blue accent
             }
         }
 #endif
         else if (i >= static_cast<int>(ToolbarButton::Pin)) {
-            painter.setPen(QColor(100, 200, 255));
+            iconColor = QColor(100, 200, 255);  // Blue for action buttons
         }
         else if (isActive) {
-            painter.setPen(Qt::white);
+            iconColor = Qt::white;
         }
         else {
-            painter.setPen(Qt::white);
+            iconColor = QColor(220, 220, 220);  // Off-white for normal state
         }
 
-        painter.drawText(btnRect, Qt::AlignCenter, icons[i]);
+        // Render the SVG icon with the determined color
+        renderIcon(painter, btnRect, btn, iconColor);
     }
 }
 
