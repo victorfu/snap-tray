@@ -36,7 +36,9 @@ RegionSelector::RegionSelector(QWidget* parent)
     , m_activeHandle(ResizeHandle::None)
     , m_isResizing(false)
     , m_isMoving(false)
+#ifdef Q_OS_MACOS
     , m_windowDetector(nullptr)
+#endif
 #ifdef Q_OS_MACOS
     , m_ocrManager(nullptr)
     , m_ocrInProgress(false)
@@ -110,6 +112,7 @@ void RegionSelector::captureCurrentScreen()
     initializeForScreen(screen);
 }
 
+#ifdef Q_OS_MACOS
 void RegionSelector::setWindowDetector(WindowDetector *detector)
 {
     m_windowDetector = detector;
@@ -213,6 +216,7 @@ void RegionSelector::drawWindowHint(QPainter &painter, const QString &title)
     painter.setPen(Qt::white);
     painter.drawText(textRect, Qt::AlignCenter, displayTitle);
 }
+#endif
 
 void RegionSelector::paintEvent(QPaintEvent*)
 {
@@ -226,10 +230,12 @@ void RegionSelector::paintEvent(QPaintEvent*)
     // Draw dimmed overlay
     drawOverlay(painter);
 
+#ifdef Q_OS_MACOS
     // Draw detected window highlight (only during hover, before selection)
     if (!m_isSelecting && !m_selectionComplete) {
         drawDetectedWindow(painter);
     }
+#endif
 
     // Draw selection if active or complete
     if ((m_isSelecting || m_selectionComplete) && m_selectionRect.isValid()) {
@@ -1013,15 +1019,19 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
 {
     m_currentPoint = event->pos();
 
+#ifdef Q_OS_MACOS
     // Window detection during hover (before any selection or dragging)
     if (!m_isSelecting && !m_selectionComplete && m_windowDetector) {
         updateWindowDetection(event->pos());
     }
+#endif
 
     if (m_isSelecting) {
+#ifdef Q_OS_MACOS
         // Clear window detection when dragging
         m_highlightedWindowRect = QRect();
         m_detectedWindow.reset();
+#endif
         m_selectionRect = QRect(m_startPoint, m_currentPoint).normalized();
     }
     else if (m_isResizing) {
@@ -1087,6 +1097,7 @@ void RegionSelector::mouseReleaseEvent(QMouseEvent* event)
                 setCursor(Qt::ArrowCursor);
                 qDebug() << "RegionSelector: Selection complete via drag";
             }
+#ifdef Q_OS_MACOS
             else if (m_detectedWindow.has_value() && m_highlightedWindowRect.isValid()) {
                 // Click on detected window - use its bounds
                 m_selectionRect = m_highlightedWindowRect;
@@ -1098,6 +1109,7 @@ void RegionSelector::mouseReleaseEvent(QMouseEvent* event)
                 m_highlightedWindowRect = QRect();
                 m_detectedWindow.reset();
             }
+#endif
             else {
                 // 點擊無拖曳且無偵測到視窗 - 選取整個螢幕（排除 menu bar）
                 // 使用 availableGeometry() 取得不含系統 UI（menu bar、dock）的區域

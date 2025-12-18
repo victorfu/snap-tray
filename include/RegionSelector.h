@@ -10,7 +10,9 @@
 #include <memory>
 #include <optional>
 
+#ifdef Q_OS_MACOS
 #include "WindowDetector.h"
+#endif
 
 class QScreen;
 class AnnotationLayer;
@@ -67,8 +69,10 @@ public:
     // 初始化指定螢幕的截圖 (由 CaptureManager 調用)
     void initializeForScreen(QScreen *screen);
 
+#ifdef Q_OS_MACOS
     // Window detection support
     void setWindowDetector(WindowDetector *detector);
+#endif
 
 signals:
     void regionSelected(const QPixmap &screenshot, const QPoint &globalPosition);
@@ -167,10 +171,12 @@ private:
     QPoint m_resizeStartPoint;
     QRect m_originalRect;
 
+#ifdef Q_OS_MACOS
     // Window detection state
     WindowDetector *m_windowDetector;
     std::optional<DetectedElement> m_detectedWindow;
     QRect m_highlightedWindowRect;
+#endif
 
 #ifdef Q_OS_MACOS
     // OCR state (macOS only)
