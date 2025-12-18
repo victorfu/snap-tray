@@ -1,0 +1,46 @@
+# Build directories
+build/
+release/
+cmake-build-*/
+
+# CMake generated files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+*.cmake
+!CMakeLists.txt
+
+# Qt generated files
+*_autogen/
+moc_*.cpp
+ui_*.h
+qrc_*.cpp
+*.qm
+
+# Compiled files
+*.o
+*.obj
+*.a
+*.lib
+*.so
+*.dylib
+*.dll
+
+# Executables
+*.exe
+*.app
+*.dmg
+
+# IDE files
+.idea/
+.vscode/
+*.pro.user
+*.qbs.user
+*.creator.user
+.DS_Store
+
+# Dependencies fetched by CMake
+_deps/
+
+.claude/
