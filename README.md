@@ -82,10 +82,55 @@ cmake --build release
 # 產物：release/SnapTray.app（macOS）
 ```
 
-### macOS 打包（DMG）
+### 打包安裝檔
 
+打包腳本會自動執行 Release 建置、部署 Qt 依賴、並產生安裝檔。
+
+**macOS（DMG）：**
 ```bash
-$(brew --prefix qt)/bin/macdeployqt release/SnapTray.app -dmg
+# 前置需求：brew install qt（如尚未安裝）
+# 可選：brew install create-dmg（產生更美觀的 DMG）
+
+./packaging/macos/package.sh
+# 輸出：dist/SnapTray-1.0.0-macOS.dmg
+```
+
+**Windows（NSIS 安裝程式）：**
+```batch
+REM 前置需求：
+REM   - Qt 6: https://www.qt.io/download-qt-installer
+REM   - NSIS: winget install NSIS.NSIS
+REM   - Visual Studio Build Tools 或 Visual Studio
+
+REM 設定 Qt 路徑（如果不是預設位置）
+set QT_PATH=C:\Qt\6.6.1\msvc2019_64
+
+packaging\windows\package.bat
+REM 輸出：dist\SnapTray-1.0.0-Setup.exe
+```
+
+#### Code Signing（可選）
+
+未簽章的安裝檔在使用者安裝時會顯示警告：
+- macOS：「無法驗證開發者」（需右鍵 → 打開）
+- Windows：SmartScreen 警告
+
+**macOS 簽章與公證：**
+```bash
+# 需要 Apple Developer Program 會員資格（$99 USD/年）
+export CODESIGN_IDENTITY="Developer ID Application: Your Name (TEAMID)"
+export NOTARIZE_APPLE_ID="your@email.com"
+export NOTARIZE_TEAM_ID="YOURTEAMID"
+export NOTARIZE_PASSWORD="xxxx-xxxx-xxxx-xxxx"  # App-Specific Password
+./packaging/macos/package.sh
+```
+
+**Windows 簽章：**
+```batch
+REM 需要 Code Signing Certificate（向 DigiCert、Sectigo 等 CA 購買）
+set CODESIGN_CERT=path\to\certificate.pfx
+set CODESIGN_PASSWORD=your-password
+packaging\windows\package.bat
 ```
 
 ## 使用方式
@@ -137,19 +182,65 @@ snap/
 │   ├── PinWindow.h
 │   ├── PinWindowManager.h
 │   ├── AnnotationLayer.h
-│   ├── WindowDetector.h      # macOS only
-│   └── OCRManager.h          # macOS only
-└── src/
-    ├── main.cpp
-    ├── MainApplication.cpp
-    ├── SettingsDialog.cpp
-    ├── CaptureManager.cpp
-    ├── RegionSelector.cpp
-    ├── PinWindow.cpp
-    ├── PinWindowManager.cpp
-    ├── AnnotationLayer.cpp
-    ├── WindowDetector.mm     # macOS only
-    └── OCRManager.mm         # macOS only
+│   ├── WindowDetector.h
+│   └── OCRManager.h
+├── src/
+│   ├── main.cpp
+│   ├── MainApplication.cpp
+│   ├── SettingsDialog.cpp
+│   ├── CaptureManager.cpp
+│   ├── RegionSelector.cpp
+│   ├── PinWindow.cpp
+│   ├── PinWindowManager.cpp
+│   ├── AnnotationLayer.cpp
+│   ├── WindowDetector.mm        # macOS
+│   ├── WindowDetector_win.cpp   # Windows
+│   ├── OCRManager.mm            # macOS
+│   └── OCRManager_win.cpp       # Windows
+├── resources/
+│   ├── resources.qrc
+│   ├── snaptray.rc              # Windows 資源檔
+│   └── icons/
+│       ├── snaptray.svg         # 原始圖示
+│       ├── snaptray.png         # 1024x1024 PNG
+│       ├── snaptray.icns        # macOS 圖示
+│       └── snaptray.ico         # Windows 圖示
+└── packaging/
+    ├── macos/
+    │   ├── package.sh           # macOS 打包腳本
+    │   └── entitlements.plist   # Code signing 權限
+    └── windows/
+        ├── package.bat          # Windows 打包腳本
+        ├── installer.nsi        # NSIS 安裝程式
+        └── license.txt          # 授權文字
+```
+
+## 自訂應用程式圖示
+
+如需更換圖示，請準備 1024x1024 的 PNG 檔案，然後執行：
+
+**macOS (.icns)：**
+```bash
+cd resources/icons
+mkdir snaptray.iconset
+sips -z 16 16     snaptray.png --out snaptray.iconset/icon_16x16.png
+sips -z 32 32     snaptray.png --out snaptray.iconset/icon_16x16@2x.png
+sips -z 32 32     snaptray.png --out snaptray.iconset/icon_32x32.png
+sips -z 64 64     snaptray.png --out snaptray.iconset/icon_32x32@2x.png
+sips -z 128 128   snaptray.png --out snaptray.iconset/icon_128x128.png
+sips -z 256 256   snaptray.png --out snaptray.iconset/icon_128x128@2x.png
+sips -z 256 256   snaptray.png --out snaptray.iconset/icon_256x256.png
+sips -z 512 512   snaptray.png --out snaptray.iconset/icon_256x256@2x.png
+sips -z 512 512   snaptray.png --out snaptray.iconset/icon_512x512.png
+sips -z 1024 1024 snaptray.png --out snaptray.iconset/icon_512x512@2x.png
+iconutil -c icns snaptray.iconset
+rm -rf snaptray.iconset
+```
+
+**Windows (.ico)：**
+```bash
+# 需要 ImageMagick: brew install imagemagick
+magick snaptray.png -define icon:auto-resize=256,128,64,48,32,16 snaptray.ico
 ```
 
 ## 已知限制

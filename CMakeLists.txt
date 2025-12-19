@@ -51,7 +51,7 @@ set(HEADERS
     include/ScreenCanvasManager.h
 )
 
-# macOS-specific source files
+# Platform-specific source files
 if(APPLE)
     list(APPEND SOURCES
         src/WindowDetector.mm
@@ -61,9 +61,20 @@ if(APPLE)
         include/WindowDetector.h
         include/OCRManager.h
     )
+elseif(WIN32)
+    list(APPEND SOURCES
+        src/WindowDetector_win.cpp
+        src/OCRManager_win.cpp
+    )
+    list(APPEND HEADERS
+        include/WindowDetector.h
+        include/OCRManager.h
+    )
+    # Windows application icon resource
+    set(WIN32_RESOURCES ${CMAKE_SOURCE_DIR}/resources/snaptray.rc)
 endif()
 
-add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS} ${RESOURCES})
+add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS} ${RESOURCES} ${WIN32_RESOURCES})
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/include)
 
@@ -89,6 +100,14 @@ endif()
 
 # macOS-specific settings
 if(APPLE)
+    # Add icon to bundle
+    set(MACOSX_BUNDLE_ICON_FILE snaptray.icns)
+    set(APP_ICON_MACOSX ${CMAKE_SOURCE_DIR}/resources/icons/snaptray.icns)
+    set_source_files_properties(${APP_ICON_MACOSX} PROPERTIES
+        MACOSX_PACKAGE_LOCATION "Resources"
+    )
+    target_sources(${PROJECT_NAME} PRIVATE ${APP_ICON_MACOSX})
+
     set_target_properties(${PROJECT_NAME} PROPERTIES
         MACOSX_BUNDLE TRUE
         MACOSX_BUNDLE_INFO_PLIST ${CMAKE_SOURCE_DIR}/Info.plist
@@ -96,5 +115,6 @@ if(APPLE)
         MACOSX_BUNDLE_BUNDLE_VERSION "1.0.0"
         MACOSX_BUNDLE_SHORT_VERSION_STRING "1.0.0"
         MACOSX_BUNDLE_GUI_IDENTIFIER "com.mysoft.snaptray"
+        MACOSX_BUNDLE_ICON_FILE snaptray.icns
     )
 endif()

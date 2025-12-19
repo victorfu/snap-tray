@@ -1,6 +1,8 @@
 <!DOCTYPE RCC>
 <RCC version="1.0">
     <qresource prefix="/icons">
+        <file>icons/snaptray.svg</file>
+        <file>icons/snaptray.png</file>
         <file>icons/selection.svg</file>
         <file>icons/arrow.svg</file>
         <file>icons/pencil.svg</file>

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Hardened Runtime - Required for notarization -->
+
+    <!-- Allow screen capture (for screenshot functionality) -->
+    <key>com.apple.security.screen-capture</key>
+    <true/>
+
+    <!-- Allow unsigned executable memory (may be needed for Qt) -->
+    <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+    <true/>
+
+    <!-- Allow JIT (may be needed for Qt QML if used in future) -->
+    <key>com.apple.security.cs.allow-jit</key>
+    <true/>
+
+    <!-- Disable library validation (needed for Qt frameworks) -->
+    <key>com.apple.security.cs.disable-library-validation</key>
+    <true/>
+</dict>
+</plist>
