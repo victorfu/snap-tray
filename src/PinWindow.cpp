@@ -38,6 +38,8 @@ PinWindow::PinWindow(const QPixmap &screenshot, const QPoint &position, QWidget 
     , m_ocrInProgress(false)
 #endif
     , m_rotationAngle(0)
+    , m_flipHorizontal(false)
+    , m_flipVertical(false)
 {
     // Frameless, always on top
     // Note: Removed Qt::Tool flag as it causes the window to hide when app loses focus on macOS
@@ -122,37 +124,66 @@ void PinWindow::rotateLeft()
     qDebug() << "PinWindow: Rotated left, angle now" << m_rotationAngle;
 }
 
+void PinWindow::flipHorizontal()
+{
+    m_flipHorizontal = !m_flipHorizontal;
+    updateSize();
+    qDebug() << "PinWindow: Flipped horizontal, now" << m_flipHorizontal;
+}
+
+void PinWindow::flipVertical()
+{
+    m_flipVertical = !m_flipVertical;
+    updateSize();
+    qDebug() << "PinWindow: Flipped vertical, now" << m_flipVertical;
+}
+
 void PinWindow::updateSize()
 {
     // Calculate logical size accounting for devicePixelRatio
     QSize logicalOriginalSize = m_originalPixmap.size() / m_originalPixmap.devicePixelRatio();
 
-    // Apply rotation transform if needed
-    QPixmap rotatedPixmap = m_originalPixmap;
-    if (m_rotationAngle != 0) {
+    // Apply rotation and flip transforms if needed
+    QPixmap transformedPixmap = m_originalPixmap;
+    if (m_rotationAngle != 0 || m_flipHorizontal || m_flipVertical) {
         QTransform transform;
-        transform.rotate(m_rotationAngle);
-        rotatedPixmap = m_originalPixmap.transformed(transform, Qt::SmoothTransformation);
-        rotatedPixmap.setDevicePixelRatio(m_originalPixmap.devicePixelRatio());
+
+        // Apply rotation first
+        if (m_rotationAngle != 0) {
+            transform.rotate(m_rotationAngle);
+        }
+
+        // Apply flip transformations
+        // scale(-1, 1) for horizontal flip, scale(1, -1) for vertical flip
+        if (m_flipHorizontal || m_flipVertical) {
+            qreal scaleX = m_flipHorizontal ? -1.0 : 1.0;
+            qreal scaleY = m_flipVertical ? -1.0 : 1.0;
+            transform.scale(scaleX, scaleY);
+        }
+
+        transformedPixmap = m_originalPixmap.transformed(transform, Qt::SmoothTransformation);
+        transformedPixmap.setDevicePixelRatio(m_originalPixmap.devicePixelRatio());
     }
 
     // For 90/270 degree rotations, swap width and height
-    QSize rotatedLogicalSize = rotatedPixmap.size() / rotatedPixmap.devicePixelRatio();
-    QSize newLogicalSize = rotatedLogicalSize * m_zoomLevel;
+    QSize transformedLogicalSize = transformedPixmap.size() / transformedPixmap.devicePixelRatio();
+    QSize newLogicalSize = transformedLogicalSize * m_zoomLevel;
 
     // Scale to device pixels for the actual pixmap
-    QSize newDeviceSize = newLogicalSize * rotatedPixmap.devicePixelRatio();
-    m_displayPixmap = rotatedPixmap.scaled(newDeviceSize,
-                                           Qt::KeepAspectRatio,
-                                           Qt::SmoothTransformation);
-    m_displayPixmap.setDevicePixelRatio(rotatedPixmap.devicePixelRatio());
+    QSize newDeviceSize = newLogicalSize * transformedPixmap.devicePixelRatio();
+    m_displayPixmap = transformedPixmap.scaled(newDeviceSize,
+                                               Qt::KeepAspectRatio,
+                                               Qt::SmoothTransformation);
+    m_displayPixmap.setDevicePixelRatio(transformedPixmap.devicePixelRatio());
 
     // Add shadow margins to window size
     QSize windowSize = newLogicalSize + QSize(kShadowMargin * 2, kShadowMargin * 2);
     setFixedSize(windowSize);
     update();
 
-    qDebug() << "PinWindow: Zoom level" << m_zoomLevel << "rotation" << m_rotationAngle << "logical size" << newLogicalSize;
+    qDebug() << "PinWindow: Zoom level" << m_zoomLevel << "rotation" << m_rotationAngle
+             << "flipH" << m_flipHorizontal << "flipV" << m_flipVertical
+             << "logical size" << newLogicalSize;
 }
 
 void PinWindow::createContextMenu()
@@ -430,27 +461,34 @@ void PinWindow::mouseMoveEvent(QMouseEvent *event)
         // Update zoom level based on new size
         QSize contentSize = newSize - QSize(kShadowMargin * 2, kShadowMargin * 2);
 
-        // Apply rotation transform if needed (same as updateSize)
-        QPixmap rotatedPixmap = m_originalPixmap;
-        if (m_rotationAngle != 0) {
+        // Apply rotation and flip transforms if needed (same as updateSize)
+        QPixmap transformedPixmap = m_originalPixmap;
+        if (m_rotationAngle != 0 || m_flipHorizontal || m_flipVertical) {
             QTransform transform;
-            transform.rotate(m_rotationAngle);
-            rotatedPixmap = m_originalPixmap.transformed(transform, Qt::SmoothTransformation);
-            rotatedPixmap.setDevicePixelRatio(m_originalPixmap.devicePixelRatio());
+            if (m_rotationAngle != 0) {
+                transform.rotate(m_rotationAngle);
+            }
+            if (m_flipHorizontal || m_flipVertical) {
+                qreal flipScaleX = m_flipHorizontal ? -1.0 : 1.0;
+                qreal flipScaleY = m_flipVertical ? -1.0 : 1.0;
+                transform.scale(flipScaleX, flipScaleY);
+            }
+            transformedPixmap = m_originalPixmap.transformed(transform, Qt::SmoothTransformation);
+            transformedPixmap.setDevicePixelRatio(m_originalPixmap.devicePixelRatio());
         }
 
-        // Use rotated dimensions for zoom calculation
-        QSize rotatedLogicalSize = rotatedPixmap.size() / rotatedPixmap.devicePixelRatio();
-        qreal scaleX = static_cast<qreal>(contentSize.width()) / rotatedLogicalSize.width();
-        qreal scaleY = static_cast<qreal>(contentSize.height()) / rotatedLogicalSize.height();
+        // Use transformed dimensions for zoom calculation
+        QSize transformedLogicalSize = transformedPixmap.size() / transformedPixmap.devicePixelRatio();
+        qreal scaleX = static_cast<qreal>(contentSize.width()) / transformedLogicalSize.width();
+        qreal scaleY = static_cast<qreal>(contentSize.height()) / transformedLogicalSize.height();
         m_zoomLevel = qMin(scaleX, scaleY);
 
-        // Scale rotated pixmap (not original)
-        QSize newDeviceSize = contentSize * rotatedPixmap.devicePixelRatio();
-        m_displayPixmap = rotatedPixmap.scaled(newDeviceSize,
-                                               Qt::KeepAspectRatio,
-                                               Qt::SmoothTransformation);
-        m_displayPixmap.setDevicePixelRatio(rotatedPixmap.devicePixelRatio());
+        // Scale transformed pixmap (not original)
+        QSize newDeviceSize = contentSize * transformedPixmap.devicePixelRatio();
+        m_displayPixmap = transformedPixmap.scaled(newDeviceSize,
+                                                   Qt::KeepAspectRatio,
+                                                   Qt::SmoothTransformation);
+        m_displayPixmap.setDevicePixelRatio(transformedPixmap.devicePixelRatio());
 
         // Apply new size and position
         setFixedSize(newSize);
@@ -535,6 +573,10 @@ void PinWindow::keyPressEvent(QKeyEvent *event)
         rotateRight();
     } else if (event->key() == Qt::Key_2) {
         rotateLeft();
+    } else if (event->key() == Qt::Key_3) {
+        flipHorizontal();
+    } else if (event->key() == Qt::Key_4) {
+        flipVertical();
     } else if (event->matches(QKeySequence::Save)) {
         saveToFile();
     } else if (event->matches(QKeySequence::Copy)) {

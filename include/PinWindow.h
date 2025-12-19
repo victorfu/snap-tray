@@ -26,6 +26,8 @@ public:
 
     void rotateRight();  // Rotate clockwise by 90 degrees
     void rotateLeft();   // Rotate counter-clockwise by 90 degrees
+    void flipHorizontal();  // Flip horizontally (mirror left-right)
+    void flipVertical();    // Flip vertically (mirror top-bottom)
 
 signals:
     void closed(PinWindow *window);
@@ -94,6 +96,10 @@ private:
 
     // Rotation members
     int m_rotationAngle;  // 0, 90, 180, 270 degrees
+
+    // Flip members
+    bool m_flipHorizontal;
+    bool m_flipVertical;
 
 #ifdef Q_OS_MACOS
     // OCR members (macOS only)
