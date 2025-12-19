@@ -31,7 +31,6 @@ set(SOURCES
     src/PinWindowManager.cpp
     src/AnnotationLayer.cpp
     src/ScreenCanvas.cpp
-    src/ScreenCanvasManager.cpp
     src/IconRenderer.cpp
     src/ColorPaletteWidget.cpp
     src/ToolbarWidget.cpp
@@ -63,6 +62,7 @@ set(HEADERS
 if(APPLE)
     list(APPEND SOURCES
         src/CaptureManager.mm
+        src/ScreenCanvasManager.mm
         src/WindowDetector.mm
         src/OCRManager.mm
         src/AutoLaunchManager_mac.mm
@@ -74,6 +74,7 @@ if(APPLE)
 elseif(WIN32)
     list(APPEND SOURCES
         src/CaptureManager.cpp
+        src/ScreenCanvasManager.cpp
         src/WindowDetector_win.cpp
         src/OCRManager_win.cpp
         src/AutoLaunchManager_win.cpp
