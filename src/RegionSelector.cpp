@@ -688,7 +688,12 @@ void RegionSelector::updateToolbarPosition()
 {
     QRect sel = m_selectionRect.normalized();
 
-    int toolbarWidth = static_cast<int>(ToolbarButton::Count) * (BUTTON_WIDTH + BUTTON_SPACING) + 20;
+#ifdef Q_OS_MAC
+    int separatorCount = 3;  // Cancel, OCR, Pin 前各有分隔線
+#else
+    int separatorCount = 2;  // Cancel, Pin 前各有分隔線
+#endif
+    int toolbarWidth = static_cast<int>(ToolbarButton::Count) * (BUTTON_WIDTH + BUTTON_SPACING) + 20 + separatorCount * 6;
     int toolbarX = sel.right() - toolbarWidth;
     int toolbarY;
 

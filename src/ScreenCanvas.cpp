@@ -4,6 +4,7 @@
 #include <QPainter>
 #include <QMouseEvent>
 #include <QKeyEvent>
+#include <QCloseEvent>
 #include <QGuiApplication>
 #include <QScreen>
 #include <QDebug>
@@ -240,7 +241,8 @@ void ScreenCanvas::drawToolbar(QPainter &painter)
 
 void ScreenCanvas::updateToolbarPosition()
 {
-    int toolbarWidth = static_cast<int>(CanvasTool::Count) * (BUTTON_WIDTH + BUTTON_SPACING) + 20;
+    int separatorCount = 2;  // Undo, Exit 前各有分隔線
+    int toolbarWidth = static_cast<int>(CanvasTool::Count) * (BUTTON_WIDTH + BUTTON_SPACING) + 20 + separatorCount * 6;
 
     // Center horizontally, 30px from bottom
     int toolbarX = (width() - toolbarWidth) / 2;
@@ -371,7 +373,6 @@ void ScreenCanvas::handleToolbarClick(CanvasTool button)
         break;
 
     case CanvasTool::Exit:
-        emit closed();
         close();
         break;
 
@@ -564,7 +565,6 @@ void ScreenCanvas::keyPressEvent(QKeyEvent *event)
 {
     if (event->key() == Qt::Key_Escape) {
         qDebug() << "ScreenCanvas: Closed via Escape";
-        emit closed();
         close();
     } else if (event->matches(QKeySequence::Undo)) {
         if (m_annotationLayer->canUndo()) {
@@ -577,4 +577,10 @@ void ScreenCanvas::keyPressEvent(QKeyEvent *event)
             update();
         }
     }
+}
+
+void ScreenCanvas::closeEvent(QCloseEvent *event)
+{
+    emit closed();
+    QWidget::closeEvent(event);
 }
