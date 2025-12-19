@@ -186,6 +186,29 @@ void PinWindow::updateSize()
              << "logical size" << newLogicalSize;
 }
 
+QPixmap PinWindow::getTransformedPixmap() const
+{
+    if (m_rotationAngle == 0 && !m_flipHorizontal && !m_flipVertical) {
+        return m_originalPixmap;
+    }
+
+    QTransform transform;
+
+    if (m_rotationAngle != 0) {
+        transform.rotate(m_rotationAngle);
+    }
+
+    if (m_flipHorizontal || m_flipVertical) {
+        qreal scaleX = m_flipHorizontal ? -1.0 : 1.0;
+        qreal scaleY = m_flipVertical ? -1.0 : 1.0;
+        transform.scale(scaleX, scaleY);
+    }
+
+    QPixmap transformed = m_originalPixmap.transformed(transform, Qt::SmoothTransformation);
+    transformed.setDevicePixelRatio(m_originalPixmap.devicePixelRatio());
+    return transformed;
+}
+
 void PinWindow::createContextMenu()
 {
     m_contextMenu = new QMenu(this);
@@ -225,19 +248,20 @@ void PinWindow::saveToFile()
     );
 
     if (!filePath.isEmpty()) {
-        if (m_originalPixmap.save(filePath)) {
+        QPixmap pixmapToSave = getTransformedPixmap();
+        if (pixmapToSave.save(filePath)) {
             qDebug() << "PinWindow: Saved to" << filePath;
         } else {
             qDebug() << "PinWindow: Failed to save to" << filePath;
         }
     }
 
-    emit saveRequested(m_originalPixmap);
+    emit saveRequested(getTransformedPixmap());
 }
 
 void PinWindow::copyToClipboard()
 {
-    QGuiApplication::clipboard()->setPixmap(m_originalPixmap);
+    QGuiApplication::clipboard()->setPixmap(getTransformedPixmap());
     qDebug() << "PinWindow: Copied to clipboard";
 }
 

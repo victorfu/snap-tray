@@ -4,6 +4,7 @@
 #include "PinWindowManager.h"
 #include "ScreenCanvasManager.h"
 
+#include <QSettings>
 #include <QSystemTrayIcon>
 #include <QMenu>
 #include <QAction>
@@ -214,6 +215,11 @@ bool MainApplication::updateHotkey(const QString &newHotkey)
     if (m_regionHotkey->isRegistered()) {
         qDebug() << "Hotkey updated and registered:" << newHotkey;
         updateTrayMenuHotkeyText(newHotkey);
+
+        // Save only after successful registration
+        QSettings settings("MySoft", "SnapTray");
+        settings.setValue("hotkey", newHotkey);
+
         return true;
     } else {
         qDebug() << "Failed to register new hotkey:" << newHotkey << ", reverting...";
@@ -270,6 +276,11 @@ bool MainApplication::updateCanvasHotkey(const QString &newHotkey)
     if (m_canvasHotkey->isRegistered()) {
         qDebug() << "Canvas hotkey updated and registered:" << newHotkey;
         updateTrayMenuCanvasHotkeyText(newHotkey);
+
+        // Save only after successful registration
+        QSettings settings("MySoft", "SnapTray");
+        settings.setValue("canvasHotkey", newHotkey);
+
         return true;
     } else {
         qDebug() << "Failed to register new canvas hotkey:" << newHotkey << ", reverting...";

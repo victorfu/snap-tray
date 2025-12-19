@@ -61,6 +61,7 @@ private:
     void createContextMenu();
     void saveToFile();
     void copyToClipboard();
+    QPixmap getTransformedPixmap() const;
 
     // Resize methods
     ResizeEdge getResizeEdge(const QPoint &pos) const;

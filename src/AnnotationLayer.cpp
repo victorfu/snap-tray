@@ -608,6 +608,7 @@ void MosaicStroke::updateSource(const QPixmap &sourcePixmap)
 {
     m_sourcePixmap = sourcePixmap;
     m_devicePixelRatio = sourcePixmap.devicePixelRatio();
+    m_sourceImageCache = QImage();  // Clear cache so it regenerates on next draw
 }
 
 // ============================================================================

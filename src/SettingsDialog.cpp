@@ -213,9 +213,7 @@ void SettingsDialog::onSave()
         return;
     }
 
-    // Save hotkeys
-    saveHotkey(newHotkey);
-    saveCanvasHotkey(newCanvasHotkey);
+    // Request hotkey changes (saving happens only after successful registration)
     emit hotkeyChangeRequested(newHotkey);
     emit canvasHotkeyChangeRequested(newCanvasHotkey);
 
