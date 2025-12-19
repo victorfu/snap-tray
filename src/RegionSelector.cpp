@@ -688,7 +688,7 @@ void RegionSelector::updateToolbarPosition()
 {
     QRect sel = m_selectionRect.normalized();
 
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
     int separatorCount = 3;  // Cancel, OCR, Pin 前各有分隔線
 #else
     int separatorCount = 2;  // Cancel, Pin 前各有分隔線
