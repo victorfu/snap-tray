@@ -49,6 +49,7 @@ set(HEADERS
     include/AnnotationLayer.h
     include/ScreenCanvas.h
     include/ScreenCanvasManager.h
+    include/AutoLaunchManager.h
 )
 
 # Platform-specific source files
@@ -56,6 +57,7 @@ if(APPLE)
     list(APPEND SOURCES
         src/WindowDetector.mm
         src/OCRManager.mm
+        src/AutoLaunchManager_mac.mm
     )
     list(APPEND HEADERS
         include/WindowDetector.h
@@ -65,6 +67,7 @@ elseif(WIN32)
     list(APPEND SOURCES
         src/WindowDetector_win.cpp
         src/OCRManager_win.cpp
+        src/AutoLaunchManager_win.cpp
     )
     list(APPEND HEADERS
         include/WindowDetector.h
@@ -78,12 +81,13 @@ add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS} ${RESOURCES} ${WIN32_RESOUR
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/include)
 
-# macOS frameworks needed for window detection
+# macOS frameworks needed for window detection and auto-launch
 if(APPLE)
     find_library(COREGRAPHICS_FRAMEWORK CoreGraphics)
     find_library(APPLICATIONSERVICES_FRAMEWORK ApplicationServices)
     find_library(APPKIT_FRAMEWORK AppKit)
     find_library(VISION_FRAMEWORK Vision)
+    find_library(SERVICEMANAGEMENT_FRAMEWORK ServiceManagement)
     target_link_libraries(${PROJECT_NAME} PRIVATE
         Qt6::Widgets
         Qt6::Gui
@@ -93,6 +97,7 @@ if(APPLE)
         ${APPLICATIONSERVICES_FRAMEWORK}
         ${APPKIT_FRAMEWORK}
         ${VISION_FRAMEWORK}
+        ${SERVICEMANAGEMENT_FRAMEWORK}
     )
 else()
     target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::Widgets Qt6::Gui Qt6::Svg QHotkey::QHotkey)

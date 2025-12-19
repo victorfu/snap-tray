@@ -150,14 +150,20 @@ void MainApplication::onSettings()
     bool captureHotkeySuccess = true;
     bool canvasHotkeySuccess = true;
 
+    // Show current hotkey registration status
+    dialog.updateCaptureHotkeyStatus(m_regionHotkey->isRegistered());
+    dialog.updateCanvasHotkeyStatus(m_canvasHotkey->isRegistered());
+
     connect(&dialog, &SettingsDialog::hotkeyChangeRequested,
-            this, [this, &captureHotkeySuccess](const QString &newHotkey) {
+            this, [this, &dialog, &captureHotkeySuccess](const QString &newHotkey) {
         captureHotkeySuccess = updateHotkey(newHotkey);
+        dialog.updateCaptureHotkeyStatus(captureHotkeySuccess);
     });
 
     connect(&dialog, &SettingsDialog::canvasHotkeyChangeRequested,
             this, [this, &dialog, &captureHotkeySuccess, &canvasHotkeySuccess](const QString &newHotkey) {
         canvasHotkeySuccess = updateCanvasHotkey(newHotkey);
+        dialog.updateCanvasHotkeyStatus(canvasHotkeySuccess);
 
         // Check both hotkey results
         if (!captureHotkeySuccess) {
