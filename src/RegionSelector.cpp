@@ -71,11 +71,17 @@ RegionSelector::RegionSelector(QWidget* parent)
     // Initialize color palette
     initializeColorPalette();
 
+    // Install application-level event filter to capture ESC even when window loses focus
+    qApp->installEventFilter(this);
+
     // 注意: 不在此處初始化螢幕，由 CaptureManager 調用 initializeForScreen()
 }
 
 RegionSelector::~RegionSelector()
 {
+    // Remove event filter
+    qApp->removeEventFilter(this);
+
     // Clean up SVG renderers
     qDeleteAll(m_iconRenderers);
     m_iconRenderers.clear();
@@ -1228,14 +1234,11 @@ void RegionSelector::mousePressEvent(QMouseEvent* event)
                     return;
                 }
 
-                // Click outside selection - start new selection
-                m_selectionComplete = false;
-                m_isSelecting = true;
-                m_startPoint = event->pos();
-                m_currentPoint = m_startPoint;
-                m_selectionRect = QRect();
-                m_annotationLayer->clear();  // Clear annotations when reselecting
-                setCursor(Qt::CrossCursor);
+                // Click outside selection - cancel selection (same as ESC)
+                qDebug() << "RegionSelector: Cancelled via click outside selection";
+                emit selectionCancelled();
+                close();
+                return;
             }
         }
         else {
@@ -1493,6 +1496,22 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
             update();
         }
     }
+}
+
+bool RegionSelector::eventFilter(QObject* obj, QEvent* event)
+{
+    // Capture ESC key at application level to handle when window loses focus
+    // (e.g., user clicks on macOS menu bar)
+    if (event->type() == QEvent::KeyPress) {
+        QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
+        if (keyEvent->key() == Qt::Key_Escape) {
+            qDebug() << "RegionSelector: Cancelled via Escape (event filter)";
+            emit selectionCancelled();
+            close();
+            return true;  // Event handled
+        }
+    }
+    return QWidget::eventFilter(obj, event);
 }
 
 // ============================================================================
