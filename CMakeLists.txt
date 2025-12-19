@@ -33,6 +33,10 @@ set(SOURCES
     src/AnnotationLayer.cpp
     src/ScreenCanvas.cpp
     src/ScreenCanvasManager.cpp
+    src/IconRenderer.cpp
+    src/ColorPaletteWidget.cpp
+    src/ToolbarWidget.cpp
+    src/AnnotationController.cpp
 )
 
 set(RESOURCES
@@ -50,6 +54,10 @@ set(HEADERS
     include/ScreenCanvas.h
     include/ScreenCanvasManager.h
     include/AutoLaunchManager.h
+    include/IconRenderer.h
+    include/ColorPaletteWidget.h
+    include/ToolbarWidget.h
+    include/AnnotationController.h
 )
 
 # Platform-specific source files

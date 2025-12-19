@@ -1,0 +1,95 @@
+#include "IconRenderer.h"
+
+#include <QPainter>
+#include <QSvgRenderer>
+#include <QPixmap>
+#include <QDebug>
+
+IconRenderer& IconRenderer::instance()
+{
+    static IconRenderer instance;
+    return instance;
+}
+
+IconRenderer::IconRenderer()
+{
+}
+
+IconRenderer::~IconRenderer()
+{
+    clearCache();
+}
+
+bool IconRenderer::loadIcon(const QString& key, const QString& resourcePath)
+{
+    // Check if already loaded
+    if (m_renderers.contains(key)) {
+        return true;
+    }
+
+    QSvgRenderer* renderer = new QSvgRenderer(resourcePath);
+    if (renderer->isValid()) {
+        m_renderers[key] = renderer;
+        return true;
+    } else {
+        qWarning() << "IconRenderer: Failed to load icon:" << resourcePath;
+        delete renderer;
+        return false;
+    }
+}
+
+bool IconRenderer::hasIcon(const QString& key) const
+{
+    return m_renderers.contains(key);
+}
+
+void IconRenderer::renderIcon(QPainter& painter, const QRect& rect,
+                               const QString& key, const QColor& tintColor,
+                               int padding)
+{
+    QSvgRenderer* renderer = m_renderers.value(key, nullptr);
+    if (!renderer) {
+        // Fallback: draw a question mark
+        painter.setPen(tintColor);
+        painter.drawText(rect, Qt::AlignCenter, "?");
+        return;
+    }
+
+    // Calculate icon size with padding
+    int iconSize = qMin(rect.width(), rect.height()) - padding;
+    QRect iconRect(0, 0, iconSize, iconSize);
+    iconRect.moveCenter(rect.center());
+
+    // Get device pixel ratio for HiDPI support
+    qreal dpr = painter.device()->devicePixelRatio();
+
+    // Create pixmap for SVG rendering
+    QPixmap iconPixmap(iconSize * dpr, iconSize * dpr);
+    iconPixmap.setDevicePixelRatio(dpr);
+    iconPixmap.fill(Qt::transparent);
+
+    QPainter iconPainter(&iconPixmap);
+    iconPainter.setRenderHint(QPainter::Antialiasing);
+    renderer->render(&iconPainter, QRectF(0, 0, iconSize, iconSize));
+    iconPainter.end();
+
+    // Create tinted version using composition
+    QPixmap tintedPixmap(iconPixmap.size());
+    tintedPixmap.setDevicePixelRatio(dpr);
+    tintedPixmap.fill(Qt::transparent);
+
+    QPainter tintPainter(&tintedPixmap);
+    tintPainter.drawPixmap(0, 0, iconPixmap);
+    tintPainter.setCompositionMode(QPainter::CompositionMode_SourceIn);
+    tintPainter.fillRect(tintedPixmap.rect(), tintColor);
+    tintPainter.end();
+
+    // Draw the tinted icon
+    painter.drawPixmap(iconRect, tintedPixmap);
+}
+
+void IconRenderer::clearCache()
+{
+    qDeleteAll(m_renderers);
+    m_renderers.clear();
+}

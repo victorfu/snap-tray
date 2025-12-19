@@ -15,7 +15,7 @@ class PencilStroke;
 class MarkerStroke;
 class ArrowAnnotation;
 class RectangleAnnotation;
-class QSvgRenderer;
+class ColorPaletteWidget;
 
 // Canvas tool types (simplified subset for screen canvas)
 enum class CanvasTool {
@@ -60,6 +60,7 @@ private:
 
     // Toolbar helpers
     void initializeIcons();
+    QString getIconKeyForTool(CanvasTool tool) const;
     void renderIcon(QPainter &painter, const QRect &rect, CanvasTool tool, const QColor &color);
     void updateToolbarPosition();
     int getButtonAtPosition(const QPoint &pos);
@@ -68,13 +69,9 @@ private:
     bool isAnnotationTool(CanvasTool tool) const;
 
     // Color palette helpers
-    void initializeColorPalette();
-    void drawColorPalette(QPainter &painter);
-    void updateColorPalettePosition();
-    int getColorSwatchAtPosition(const QPoint &pos);
-    void handleColorSwatchClick(int swatchIndex);
     bool shouldShowColorPalette() const;
-    void openColorDialog();
+    void onColorSelected(const QColor &color);
+    void onMoreColorsRequested();
 
     // Annotation helpers
     void startAnnotation(const QPoint &pos);
@@ -108,23 +105,12 @@ private:
     int m_hoveredButton;
     QVector<QRect> m_buttonRects;
 
-    // SVG icon renderers
-    QHash<CanvasTool, QSvgRenderer*> m_iconRenderers;
-
     static const int TOOLBAR_HEIGHT = 40;
     static const int BUTTON_WIDTH = 36;
     static const int BUTTON_SPACING = 2;
 
     // Color palette
-    QRect m_colorPaletteRect;
-    QVector<QRect> m_colorSwatchRects;
-    QVector<QColor> m_colorPalette;
-    int m_hoveredColorSwatch;
-
-    static const int COLOR_SWATCH_SIZE = 24;
-    static const int COLOR_SWATCH_SPACING = 4;
-    static const int COLOR_PALETTE_HEIGHT = 32;
-    static const int COLOR_PALETTE_PADDING = 6;
+    ColorPaletteWidget *m_colorPalette;
 };
 
 #endif // SCREENCANVAS_H

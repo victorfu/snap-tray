@@ -1,5 +1,7 @@
 #include "RegionSelector.h"
 #include "AnnotationLayer.h"
+#include "IconRenderer.h"
+#include "ColorPaletteWidget.h"
 
 #ifdef Q_OS_MACOS
 #include "OCRManager.h"
@@ -19,7 +21,6 @@
 #include <QInputDialog>
 #include <QToolTip>
 #include <QPointer>
-#include <QSvgRenderer>
 #include <QColorDialog>
 
 RegionSelector::RegionSelector(QWidget* parent)
@@ -45,7 +46,7 @@ RegionSelector::RegionSelector(QWidget* parent)
     , m_ocrManager(nullptr)
     , m_ocrInProgress(false)
 #endif
-    , m_hoveredColorSwatch(-1)
+    , m_colorPalette(nullptr)
 {
     setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::Tool);
     setAttribute(Qt::WA_DeleteOnClose);
@@ -68,8 +69,13 @@ RegionSelector::RegionSelector(QWidget* parent)
     // Initialize SVG icons
     initializeIcons();
 
-    // Initialize color palette
-    initializeColorPalette();
+    // Initialize color palette widget
+    m_colorPalette = new ColorPaletteWidget(this);
+    m_colorPalette->setCurrentColor(m_annotationColor);
+    connect(m_colorPalette, &ColorPaletteWidget::colorSelected,
+            this, &RegionSelector::onColorSelected);
+    connect(m_colorPalette, &ColorPaletteWidget::moreColorsRequested,
+            this, &RegionSelector::onMoreColorsRequested);
 
     // Install application-level event filter to capture ESC even when window loses focus
     qApp->installEventFilter(this);
@@ -82,106 +88,63 @@ RegionSelector::~RegionSelector()
     // Remove event filter
     qApp->removeEventFilter(this);
 
-    // Clean up SVG renderers
-    qDeleteAll(m_iconRenderers);
-    m_iconRenderers.clear();
-
     qDebug() << "RegionSelector: Destroyed";
 }
 
 void RegionSelector::initializeIcons()
 {
-    // Map buttons to their SVG resource paths
-    static const QHash<ToolbarButton, QString> iconPaths = {
-        {ToolbarButton::Selection, ":/icons/icons/selection.svg"},
-        {ToolbarButton::Arrow, ":/icons/icons/arrow.svg"},
-        {ToolbarButton::Pencil, ":/icons/icons/pencil.svg"},
-        {ToolbarButton::Marker, ":/icons/icons/marker.svg"},
-        {ToolbarButton::Rectangle, ":/icons/icons/rectangle.svg"},
-        {ToolbarButton::Text, ":/icons/icons/text.svg"},
-        {ToolbarButton::Mosaic, ":/icons/icons/mosaic.svg"},
-        {ToolbarButton::StepBadge, ":/icons/icons/step-badge.svg"},
-        {ToolbarButton::Eraser, ":/icons/icons/eraser.svg"},
-        {ToolbarButton::Undo, ":/icons/icons/undo.svg"},
-        {ToolbarButton::Redo, ":/icons/icons/redo.svg"},
-        {ToolbarButton::Cancel, ":/icons/icons/cancel.svg"},
-#ifdef Q_OS_MACOS
-        {ToolbarButton::OCR, ":/icons/icons/ocr.svg"},
-#endif
-        {ToolbarButton::Pin, ":/icons/icons/pin.svg"},
-        {ToolbarButton::Save, ":/icons/icons/save.svg"},
-        {ToolbarButton::Copy, ":/icons/icons/copy.svg"},
-    };
+    // Use shared IconRenderer for all icons
+    IconRenderer& iconRenderer = IconRenderer::instance();
 
-    for (auto it = iconPaths.begin(); it != iconPaths.end(); ++it) {
-        QSvgRenderer *renderer = new QSvgRenderer(it.value(), this);
-        if (renderer->isValid()) {
-            m_iconRenderers[it.key()] = renderer;
-        } else {
-            qWarning() << "Failed to load icon:" << it.value();
-            delete renderer;
-        }
+    iconRenderer.loadIcon("selection", ":/icons/icons/selection.svg");
+    iconRenderer.loadIcon("arrow", ":/icons/icons/arrow.svg");
+    iconRenderer.loadIcon("pencil", ":/icons/icons/pencil.svg");
+    iconRenderer.loadIcon("marker", ":/icons/icons/marker.svg");
+    iconRenderer.loadIcon("rectangle", ":/icons/icons/rectangle.svg");
+    iconRenderer.loadIcon("text", ":/icons/icons/text.svg");
+    iconRenderer.loadIcon("mosaic", ":/icons/icons/mosaic.svg");
+    iconRenderer.loadIcon("step-badge", ":/icons/icons/step-badge.svg");
+    iconRenderer.loadIcon("eraser", ":/icons/icons/eraser.svg");
+    iconRenderer.loadIcon("undo", ":/icons/icons/undo.svg");
+    iconRenderer.loadIcon("redo", ":/icons/icons/redo.svg");
+    iconRenderer.loadIcon("cancel", ":/icons/icons/cancel.svg");
+#ifdef Q_OS_MACOS
+    iconRenderer.loadIcon("ocr", ":/icons/icons/ocr.svg");
+#endif
+    iconRenderer.loadIcon("pin", ":/icons/icons/pin.svg");
+    iconRenderer.loadIcon("save", ":/icons/icons/save.svg");
+    iconRenderer.loadIcon("copy", ":/icons/icons/copy.svg");
+}
+
+QString RegionSelector::getIconKeyForButton(ToolbarButton button) const
+{
+    switch (button) {
+    case ToolbarButton::Selection:  return "selection";
+    case ToolbarButton::Arrow:      return "arrow";
+    case ToolbarButton::Pencil:     return "pencil";
+    case ToolbarButton::Marker:     return "marker";
+    case ToolbarButton::Rectangle:  return "rectangle";
+    case ToolbarButton::Text:       return "text";
+    case ToolbarButton::Mosaic:     return "mosaic";
+    case ToolbarButton::StepBadge:  return "step-badge";
+    case ToolbarButton::Eraser:     return "eraser";
+    case ToolbarButton::Undo:       return "undo";
+    case ToolbarButton::Redo:       return "redo";
+    case ToolbarButton::Cancel:     return "cancel";
+#ifdef Q_OS_MACOS
+    case ToolbarButton::OCR:        return "ocr";
+#endif
+    case ToolbarButton::Pin:        return "pin";
+    case ToolbarButton::Save:       return "save";
+    case ToolbarButton::Copy:       return "copy";
+    default:                        return QString();
     }
 }
 
 void RegionSelector::renderIcon(QPainter &painter, const QRect &rect, ToolbarButton button, const QColor &color)
 {
-    QSvgRenderer *renderer = m_iconRenderers.value(button, nullptr);
-    if (!renderer) {
-        // Fallback: draw a placeholder
-        painter.setPen(color);
-        painter.drawText(rect, Qt::AlignCenter, "?");
-        return;
-    }
-
-    // Calculate icon size (slightly smaller than button for padding)
-    int iconSize = qMin(rect.width(), rect.height()) - 8;  // 4px padding on each side
-    // Use QRect's center-based positioning for accurate centering
-    QRect iconRect(0, 0, iconSize, iconSize);
-    iconRect.moveCenter(rect.center());
-
-    // Get device pixel ratio for crisp rendering on HiDPI
-    qreal dpr = painter.device()->devicePixelRatio();
-
-    // Create a temporary pixmap for color tinting
-    QPixmap iconPixmap(iconSize * dpr, iconSize * dpr);
-    iconPixmap.setDevicePixelRatio(dpr);
-    iconPixmap.fill(Qt::transparent);
-
-    QPainter iconPainter(&iconPixmap);
-    iconPainter.setRenderHint(QPainter::Antialiasing);
-
-    // Render the SVG
-    renderer->render(&iconPainter, QRectF(0, 0, iconSize, iconSize));
-    iconPainter.end();
-
-    // Apply color tint using composition mode
-    QPixmap tintedPixmap(iconPixmap.size());
-    tintedPixmap.setDevicePixelRatio(dpr);
-    tintedPixmap.fill(Qt::transparent);
-
-    QPainter tintPainter(&tintedPixmap);
-    tintPainter.drawPixmap(0, 0, iconPixmap);
-    tintPainter.setCompositionMode(QPainter::CompositionMode_SourceIn);
-    tintPainter.fillRect(tintedPixmap.rect(), color);
-    tintPainter.end();
-
-    painter.drawPixmap(iconRect, tintedPixmap);
-}
-
-void RegionSelector::initializeColorPalette()
-{
-    m_colorPalette = {
-        Qt::red,                    // Default - matches m_annotationColor
-        QColor(0, 122, 255),        // Blue (system blue)
-        QColor(52, 199, 89),        // Green (system green)
-        QColor(255, 204, 0),        // Yellow
-        QColor(255, 149, 0),        // Orange
-        QColor(175, 82, 222),       // Purple
-        Qt::black,
-        Qt::white
-    };
-    m_colorSwatchRects.resize(m_colorPalette.size() + 1); // +1 for "more" button
+    QString key = getIconKeyForButton(button);
+    IconRenderer::instance().renderIcon(painter, rect, key, color);
 }
 
 bool RegionSelector::shouldShowColorPalette() const
@@ -202,134 +165,20 @@ bool RegionSelector::shouldShowColorPalette() const
     }
 }
 
-void RegionSelector::updateColorPalettePosition()
+void RegionSelector::onColorSelected(const QColor &color)
 {
-    int swatchCount = m_colorPalette.size() + 1; // +1 for "more" button
-    int paletteWidth = swatchCount * COLOR_SWATCH_SIZE + (swatchCount - 1) * COLOR_SWATCH_SPACING + COLOR_PALETTE_PADDING * 2;
-
-    // Position below toolbar, left-aligned with toolbar
-    int paletteX = m_toolbarRect.left();
-    int paletteY = m_toolbarRect.bottom() + 4;
-
-    // Check if it fits below, otherwise put above
-    if (paletteY + COLOR_PALETTE_HEIGHT > height() - 5) {
-        paletteY = m_toolbarRect.top() - COLOR_PALETTE_HEIGHT - 4;
-    }
-
-    // Keep on screen
-    if (paletteX < 5) paletteX = 5;
-
-    m_colorPaletteRect = QRect(paletteX, paletteY, paletteWidth, COLOR_PALETTE_HEIGHT);
-
-    // Update swatch rects
-    int x = paletteX + COLOR_PALETTE_PADDING;
-    int y = paletteY + (COLOR_PALETTE_HEIGHT - COLOR_SWATCH_SIZE) / 2;
-
-    for (int i = 0; i <= m_colorPalette.size(); ++i) {
-        m_colorSwatchRects[i] = QRect(x, y, COLOR_SWATCH_SIZE, COLOR_SWATCH_SIZE);
-        x += COLOR_SWATCH_SIZE + COLOR_SWATCH_SPACING;
-    }
-}
-
-void RegionSelector::drawColorPalette(QPainter &painter)
-{
-    updateColorPalettePosition();
-
-    // Draw shadow
-    QRect shadowRect = m_colorPaletteRect.adjusted(2, 2, 2, 2);
-    painter.setPen(Qt::NoPen);
-    painter.setBrush(QColor(0, 0, 0, 50));
-    painter.drawRoundedRect(shadowRect, 6, 6);
-
-    // Draw background with gradient (matches toolbar style)
-    QLinearGradient gradient(m_colorPaletteRect.topLeft(), m_colorPaletteRect.bottomLeft());
-    gradient.setColorAt(0, QColor(55, 55, 55, 245));
-    gradient.setColorAt(1, QColor(40, 40, 40, 245));
-
-    painter.setBrush(gradient);
-    painter.setPen(QPen(QColor(70, 70, 70), 1));
-    painter.drawRoundedRect(m_colorPaletteRect, 6, 6);
-
-    // Draw color swatches
-    for (int i = 0; i < m_colorPalette.size(); ++i) {
-        QRect swatchRect = m_colorSwatchRects[i];
-
-        // Highlight if hovered
-        if (i == m_hoveredColorSwatch) {
-            painter.setPen(Qt::NoPen);
-            painter.setBrush(QColor(80, 80, 80));
-            painter.drawRoundedRect(swatchRect.adjusted(-2, -2, 2, 2), 4, 4);
-        }
-
-        // Draw color circle
-        int circleSize = swatchRect.width() - 6;
-        QRect circleRect(swatchRect.center().x() - circleSize / 2,
-                         swatchRect.center().y() - circleSize / 2,
-                         circleSize, circleSize);
-
-        // Draw border (white for dark colors, dark for light colors)
-        QColor borderColor = (m_colorPalette[i].lightness() > 200) ? QColor(80, 80, 80) : Qt::white;
-        painter.setPen(QPen(borderColor, 1));
-        painter.setBrush(m_colorPalette[i]);
-        painter.drawEllipse(circleRect);
-
-        // Draw selection indicator for current color
-        if (m_colorPalette[i] == m_annotationColor) {
-            painter.setPen(QPen(QColor(0, 174, 255), 2));
-            painter.setBrush(Qt::NoBrush);
-            painter.drawEllipse(circleRect.adjusted(-3, -3, 3, 3));
-        }
-    }
-
-    // Draw "more colors" button (last swatch position)
-    int moreIdx = m_colorPalette.size();
-    QRect moreRect = m_colorSwatchRects[moreIdx];
-
-    if (moreIdx == m_hoveredColorSwatch) {
-        painter.setPen(Qt::NoPen);
-        painter.setBrush(QColor(80, 80, 80));
-        painter.drawRoundedRect(moreRect.adjusted(-2, -2, 2, 2), 4, 4);
-    }
-
-    // Draw "..." text
-    painter.setPen(QColor(180, 180, 180));
-    QFont font = painter.font();
-    font.setPointSize(12);
-    font.setBold(true);
-    painter.setFont(font);
-    painter.drawText(moreRect, Qt::AlignCenter, "...");
-}
-
-int RegionSelector::getColorSwatchAtPosition(const QPoint &pos)
-{
-    if (!m_colorPaletteRect.contains(pos)) return -1;
-
-    for (int i = 0; i < m_colorSwatchRects.size(); ++i) {
-        if (m_colorSwatchRects[i].contains(pos)) {
-            return i;
-        }
-    }
-    return -1;
-}
-
-void RegionSelector::handleColorSwatchClick(int swatchIndex)
-{
-    if (swatchIndex < m_colorPalette.size()) {
-        m_annotationColor = m_colorPalette[swatchIndex];
-        qDebug() << "Color selected:" << m_annotationColor.name();
-    } else {
-        // "More colors" button clicked
-        openColorDialog();
-    }
+    m_annotationColor = color;
     update();
 }
 
-void RegionSelector::openColorDialog()
+void RegionSelector::onMoreColorsRequested()
 {
     QColor newColor = QColorDialog::getColor(m_annotationColor, this, tr("Select Color"));
     if (newColor.isValid()) {
         m_annotationColor = newColor;
+        m_colorPalette->setCurrentColor(newColor);
         qDebug() << "Custom color selected:" << m_annotationColor.name();
+        update();
     }
 }
 
@@ -511,7 +360,11 @@ void RegionSelector::paintEvent(QPaintEvent*)
             drawCurrentAnnotation(painter);
             drawToolbar(painter);
             if (shouldShowColorPalette()) {
-                drawColorPalette(painter);
+                m_colorPalette->setVisible(true);
+                m_colorPalette->updatePosition(m_toolbarRect, false);  // Below toolbar for RegionSelector
+                m_colorPalette->draw(painter);
+            } else {
+                m_colorPalette->setVisible(false);
             }
             drawTooltip(painter);
         }
@@ -1180,12 +1033,9 @@ void RegionSelector::mousePressEvent(QMouseEvent* event)
     if (event->button() == Qt::LeftButton) {
         if (m_selectionComplete) {
             // Check if clicked on color palette
-            if (shouldShowColorPalette()) {
-                int swatchIdx = getColorSwatchAtPosition(event->pos());
-                if (swatchIdx >= 0) {
-                    handleColorSwatchClick(swatchIdx);
-                    return;
-                }
+            if (shouldShowColorPalette() && m_colorPalette->handleClick(event->pos())) {
+                update();
+                return;
             }
 
             // Check if clicked on toolbar
@@ -1329,17 +1179,18 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
         updateAnnotation(event->pos());
     }
     else if (m_selectionComplete) {
+        bool colorPaletteHovered = false;
+
         // Update hovered color swatch
         if (shouldShowColorPalette()) {
-            int newHoveredSwatch = getColorSwatchAtPosition(event->pos());
-            if (newHoveredSwatch != m_hoveredColorSwatch) {
-                m_hoveredColorSwatch = newHoveredSwatch;
-                if (m_hoveredColorSwatch >= 0) {
+            if (m_colorPalette->updateHoveredSwatch(event->pos())) {
+                if (m_colorPalette->contains(event->pos())) {
                     setCursor(Qt::PointingHandCursor);
+                    colorPaletteHovered = true;
                 }
+            } else if (m_colorPalette->contains(event->pos())) {
+                colorPaletteHovered = true;
             }
-        } else {
-            m_hoveredColorSwatch = -1;
         }
 
         // Update hovered button
@@ -1349,7 +1200,7 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
             if (m_hoveredButton >= 0) {
                 setCursor(Qt::PointingHandCursor);
             }
-            else if (m_hoveredColorSwatch >= 0) {
+            else if (colorPaletteHovered) {
                 // Already set cursor for color swatch
             }
             else if (isAnnotationTool(m_currentTool) && m_currentTool != ToolbarButton::Selection) {
@@ -1361,7 +1212,7 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
                 updateCursorForHandle(handle);
             }
         }
-        else if (m_hoveredButton < 0 && m_hoveredColorSwatch < 0 && m_currentTool == ToolbarButton::Selection) {
+        else if (m_hoveredButton < 0 && !colorPaletteHovered && m_currentTool == ToolbarButton::Selection) {
             // Update cursor for resize handles when not hovering button or color swatch
             ResizeHandle handle = getHandleAtPosition(event->pos());
             updateCursorForHandle(handle);

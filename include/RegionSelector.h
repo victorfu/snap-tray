@@ -7,11 +7,8 @@
 #include <QRect>
 #include <QVector>
 #include <QColor>
-#include <QHash>
 #include <memory>
 #include <optional>
-
-class QSvgRenderer;
 
 #ifdef Q_OS_MACOS
 #include "WindowDetector.h"
@@ -19,6 +16,7 @@ class QSvgRenderer;
 
 class QScreen;
 class AnnotationLayer;
+class ColorPaletteWidget;
 
 #ifdef Q_OS_MACOS
 class OCRManager;
@@ -103,13 +101,9 @@ private:
     void drawToolbar(QPainter &painter);
 
     // Color palette helpers
-    void initializeColorPalette();
-    void drawColorPalette(QPainter &painter);
-    void updateColorPalettePosition();
-    int getColorSwatchAtPosition(const QPoint &pos);
-    void handleColorSwatchClick(int swatchIndex);
     bool shouldShowColorPalette() const;
-    void openColorDialog();
+    void onColorSelected(const QColor &color);
+    void onMoreColorsRequested();
 
     // Window detection drawing
     void drawDetectedWindow(QPainter &painter);
@@ -162,15 +156,7 @@ private:
     static const int BUTTON_SPACING = 2;
 
     // Color palette
-    QRect m_colorPaletteRect;
-    QVector<QRect> m_colorSwatchRects;
-    QVector<QColor> m_colorPalette;
-    int m_hoveredColorSwatch;
-
-    static const int COLOR_SWATCH_SIZE = 24;
-    static const int COLOR_SWATCH_SPACING = 4;
-    static const int COLOR_PALETTE_HEIGHT = 32;
-    static const int COLOR_PALETTE_PADDING = 6;
+    ColorPaletteWidget *m_colorPalette;
 
     // Annotation layer and state
     AnnotationLayer *m_annotationLayer;
@@ -218,9 +204,9 @@ private:
     void onOCRComplete(bool success, const QString &text, const QString &error);
 #endif
 
-    // SVG icon rendering
-    QHash<ToolbarButton, QSvgRenderer*> m_iconRenderers;
+    // Icon rendering helpers
     void initializeIcons();
+    QString getIconKeyForButton(ToolbarButton button) const;
     void renderIcon(QPainter &painter, const QRect &rect, ToolbarButton button, const QColor &color);
 };
 
