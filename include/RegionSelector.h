@@ -30,6 +30,7 @@ class RectangleAnnotation;
 class MosaicAnnotation;
 class MosaicStroke;
 class StepBadgeAnnotation;
+class AnnotationItem;
 
 // Toolbar button types
 enum class ToolbarButton {
@@ -41,6 +42,7 @@ enum class ToolbarButton {
     Text,
     Mosaic,
     StepBadge,
+    Eraser,
     Undo,
     Redo,
     Cancel,
@@ -186,6 +188,11 @@ private:
     std::unique_ptr<ArrowAnnotation> m_currentArrow;
     std::unique_ptr<RectangleAnnotation> m_currentRectangle;
     std::unique_ptr<MosaicStroke> m_currentMosaicStroke;
+
+    // Eraser state
+    QVector<QPoint> m_eraserPath;
+    std::vector<std::unique_ptr<AnnotationItem>> m_erasedItems;  // Items erased during current stroke
+    static const int ERASER_WIDTH = 20;
 
     // Selection resize/move state
     ResizeHandle m_activeHandle;

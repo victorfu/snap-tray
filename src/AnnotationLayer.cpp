@@ -422,6 +422,7 @@ void MosaicAnnotation::setRect(const QRect &rect)
 void MosaicAnnotation::updateSource(const QPixmap &sourcePixmap)
 {
     m_sourcePixmap = sourcePixmap;
+    m_devicePixelRatio = sourcePixmap.devicePixelRatio();
     generateMosaic();
 }
 
@@ -612,6 +613,40 @@ void MosaicStroke::updateSource(const QPixmap &sourcePixmap)
 }
 
 // ============================================================================
+// ErasedItemsGroup Implementation
+// ============================================================================
+
+ErasedItemsGroup::ErasedItemsGroup(std::vector<std::unique_ptr<AnnotationItem>> items)
+    : m_erasedItems(std::move(items))
+{
+}
+
+void ErasedItemsGroup::draw(QPainter &) const
+{
+    // ErasedItemsGroup is invisible - it's just a marker for undo support
+}
+
+QRect ErasedItemsGroup::boundingRect() const
+{
+    return QRect();  // Empty rect since this is just an undo marker
+}
+
+std::unique_ptr<AnnotationItem> ErasedItemsGroup::clone() const
+{
+    std::vector<std::unique_ptr<AnnotationItem>> clonedItems;
+    clonedItems.reserve(m_erasedItems.size());
+    for (const auto &item : m_erasedItems) {
+        clonedItems.push_back(item->clone());
+    }
+    return std::make_unique<ErasedItemsGroup>(std::move(clonedItems));
+}
+
+std::vector<std::unique_ptr<AnnotationItem>> ErasedItemsGroup::extractItems()
+{
+    return std::move(m_erasedItems);
+}
+
+// ============================================================================
 // AnnotationLayer Implementation
 // ============================================================================
 
@@ -646,8 +681,25 @@ void AnnotationLayer::undo()
 {
     if (m_items.empty()) return;
 
-    m_redoStack.push_back(std::move(m_items.back()));
-    m_items.pop_back();
+    // Check if the last item is an ErasedItemsGroup (from eraser action)
+    if (auto* erasedGroup = dynamic_cast<ErasedItemsGroup*>(m_items.back().get())) {
+        // Extract the erased items and restore them
+        auto restoredItems = erasedGroup->extractItems();
+
+        // Move the empty group to redo stack
+        m_redoStack.push_back(std::move(m_items.back()));
+        m_items.pop_back();
+
+        // Re-insert the restored items
+        for (auto &item : restoredItems) {
+            m_items.push_back(std::move(item));
+        }
+    } else {
+        // Normal undo: move last item to redo stack
+        m_redoStack.push_back(std::move(m_items.back()));
+        m_items.pop_back();
+    }
+
     renumberStepBadges();
     emit changed();
 }
@@ -656,8 +708,25 @@ void AnnotationLayer::redo()
 {
     if (m_redoStack.empty()) return;
 
-    m_items.push_back(std::move(m_redoStack.back()));
-    m_redoStack.pop_back();
+    // Check if the item in redo stack is an ErasedItemsGroup
+    if (auto* erasedGroup = dynamic_cast<ErasedItemsGroup*>(m_redoStack.back().get())) {
+        // This was an eraser action - we need to re-erase the items
+        // The ErasedItemsGroup in redo stack is empty (items were restored during undo)
+        // We need to find and remove the items that were restored
+
+        // For simplicity, we'll re-create the ErasedItemsGroup by moving items
+        // from the end of m_items back into it
+        // This assumes the restored items are at the end (which they are after undo)
+
+        // Move the empty group back to items
+        m_items.push_back(std::move(m_redoStack.back()));
+        m_redoStack.pop_back();
+    } else {
+        // Normal redo
+        m_items.push_back(std::move(m_redoStack.back()));
+        m_redoStack.pop_back();
+    }
+
     renumberStepBadges();
     emit changed();
 }
@@ -718,4 +787,38 @@ void AnnotationLayer::renumberStepBadges()
             badge->setNumber(badgeNumber++);
         }
     }
+}
+
+std::vector<std::unique_ptr<AnnotationItem>> AnnotationLayer::removeItemsIntersecting(const QPoint &point, int strokeWidth)
+{
+    std::vector<std::unique_ptr<AnnotationItem>> removedItems;
+    int margin = strokeWidth / 2;
+
+    // Iterate backwards to safely remove items
+    for (auto it = m_items.begin(); it != m_items.end(); ) {
+        // Skip ErasedItemsGroup items (they are invisible markers)
+        if (dynamic_cast<ErasedItemsGroup*>(it->get())) {
+            ++it;
+            continue;
+        }
+
+        QRect itemRect = (*it)->boundingRect();
+        QRect expandedRect = itemRect.adjusted(-margin, -margin, margin, margin);
+
+        if (expandedRect.contains(point)) {
+            // Item intersects with eraser - remove it
+            removedItems.push_back(std::move(*it));
+            it = m_items.erase(it);
+        } else {
+            ++it;
+        }
+    }
+
+    if (!removedItems.empty()) {
+        m_redoStack.clear();  // Clear redo stack when items are erased
+        renumberStepBadges();
+        emit changed();
+    }
+
+    return removedItems;
 }

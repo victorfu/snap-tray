@@ -175,6 +175,25 @@ private:
     qreal m_devicePixelRatio;
 };
 
+// Group of erased items (for undo support)
+class ErasedItemsGroup : public AnnotationItem
+{
+public:
+    explicit ErasedItemsGroup(std::vector<std::unique_ptr<AnnotationItem>> items);
+    void draw(QPainter &painter) const override;  // Does nothing (invisible marker)
+    QRect boundingRect() const override;  // Returns empty rect
+    std::unique_ptr<AnnotationItem> clone() const override;
+
+    // Check if this group contains any items
+    bool hasItems() const { return !m_erasedItems.empty(); }
+
+    // Extract items for restoration (moves ownership)
+    std::vector<std::unique_ptr<AnnotationItem>> extractItems();
+
+private:
+    std::vector<std::unique_ptr<AnnotationItem>> m_erasedItems;
+};
+
 // Annotation layer that manages all annotations with undo/redo
 class AnnotationLayer : public QObject
 {
@@ -199,6 +218,10 @@ public:
 
     // Step badge helpers
     int countStepBadges() const;
+
+    // Eraser support: remove items that intersect with the given path
+    // Returns the removed items (for undo support)
+    std::vector<std::unique_ptr<AnnotationItem>> removeItemsIntersecting(const QPoint &point, int strokeWidth);
 
 signals:
     void changed();

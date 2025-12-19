@@ -95,6 +95,7 @@ void RegionSelector::initializeIcons()
         {ToolbarButton::Text, ":/icons/icons/text.svg"},
         {ToolbarButton::Mosaic, ":/icons/icons/mosaic.svg"},
         {ToolbarButton::StepBadge, ":/icons/icons/step-badge.svg"},
+        {ToolbarButton::Eraser, ":/icons/icons/eraser.svg"},
         {ToolbarButton::Undo, ":/icons/icons/undo.svg"},
         {ToolbarButton::Redo, ":/icons/icons/redo.svg"},
         {ToolbarButton::Cancel, ":/icons/icons/cancel.svg"},
@@ -937,6 +938,7 @@ QString RegionSelector::getButtonTooltip(int buttonIndex)
         "Text",
         "Mosaic",
         "Step Badge",
+        "Eraser",
         "Undo",
         "Redo",
         "Cancel (Esc)",
@@ -1027,6 +1029,12 @@ void RegionSelector::handleToolbarClick(ToolbarButton button)
     case ToolbarButton::StepBadge:
         m_currentTool = button;
         qDebug() << "StepBadge tool selected - click in selection to place numbered badge";
+        update();
+        break;
+
+    case ToolbarButton::Eraser:
+        m_currentTool = button;
+        qDebug() << "Eraser tool selected - drag over annotations to erase them";
         update();
         break;
 
@@ -1513,6 +1521,21 @@ void RegionSelector::drawCurrentAnnotation(QPainter &painter)
     else if (m_currentMosaicStroke) {
         m_currentMosaicStroke->draw(painter);
     }
+    else if (m_currentTool == ToolbarButton::Eraser && !m_eraserPath.isEmpty()) {
+        // Draw eraser cursor at the last position
+        painter.save();
+        painter.setRenderHint(QPainter::Antialiasing, true);
+
+        QPoint lastPos = m_eraserPath.last();
+        int radius = ERASER_WIDTH / 2;
+
+        // Draw semi-transparent circle
+        painter.setPen(QPen(Qt::white, 2));
+        painter.setBrush(QColor(255, 255, 255, 50));
+        painter.drawEllipse(lastPos, radius, radius);
+
+        painter.restore();
+    }
 }
 
 void RegionSelector::startAnnotation(const QPoint &pos)
@@ -1541,6 +1564,19 @@ void RegionSelector::startAnnotation(const QPoint &pos)
 
     case ToolbarButton::Mosaic:
         m_currentMosaicStroke = std::make_unique<MosaicStroke>(m_currentPath, m_backgroundPixmap, 15, 5);
+        break;
+
+    case ToolbarButton::Eraser:
+        m_eraserPath.clear();
+        m_eraserPath.append(pos);
+        m_erasedItems.clear();
+        // Immediately check for items to erase at start position
+        {
+            auto removed = m_annotationLayer->removeItemsIntersecting(pos, ERASER_WIDTH);
+            for (auto &item : removed) {
+                m_erasedItems.push_back(std::move(item));
+            }
+        }
         break;
 
     default:
@@ -1586,6 +1622,17 @@ void RegionSelector::updateAnnotation(const QPoint &pos)
         if (m_currentMosaicStroke) {
             m_currentPath.append(pos);
             m_currentMosaicStroke->addPoint(pos);
+        }
+        break;
+
+    case ToolbarButton::Eraser:
+        m_eraserPath.append(pos);
+        // Check for items to erase at this position
+        {
+            auto removed = m_annotationLayer->removeItemsIntersecting(pos, ERASER_WIDTH);
+            for (auto &item : removed) {
+                m_erasedItems.push_back(std::move(item));
+            }
         }
         break;
 
@@ -1639,6 +1686,16 @@ void RegionSelector::finishAnnotation()
         m_currentMosaicStroke.reset();
         break;
 
+    case ToolbarButton::Eraser:
+        // If items were erased, add an ErasedItemsGroup for undo support
+        if (!m_erasedItems.empty()) {
+            auto erasedGroup = std::make_unique<ErasedItemsGroup>(std::move(m_erasedItems));
+            m_annotationLayer->addItem(std::move(erasedGroup));
+        }
+        m_eraserPath.clear();
+        m_erasedItems.clear();
+        break;
+
     default:
         break;
     }
@@ -1656,6 +1713,7 @@ bool RegionSelector::isAnnotationTool(ToolbarButton tool) const
     case ToolbarButton::Text:
     case ToolbarButton::Mosaic:
     case ToolbarButton::StepBadge:
+    case ToolbarButton::Eraser:
         return true;
     default:
         return false;
