@@ -3,6 +3,7 @@
 #include "PinWindowManager.h"
 #ifdef Q_OS_MACOS
 #include "WindowDetector.h"
+#import <Cocoa/Cocoa.h>
 #endif
 
 #include <QDebug>
@@ -72,6 +73,15 @@ void CaptureManager::startRegionCapture()
     // 5. 使用 setGeometry + show 取代 showFullScreen，確保在正確螢幕上顯示
     m_regionSelector->setGeometry(targetScreen->geometry());
     m_regionSelector->show();
+
+#ifdef Q_OS_MACOS
+    // 設定視窗層級高於 menu bar (menu bar 在 layer 25)
+    NSView* view = reinterpret_cast<NSView*>(m_regionSelector->winId());
+    if (view) {
+        NSWindow* window = [view window];
+        [window setLevel:kCGScreenSaverWindowLevel];  // level 1000
+    }
+#endif
 
     m_regionSelector->activateWindow();
     m_regionSelector->raise();

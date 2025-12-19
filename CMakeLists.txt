@@ -26,7 +26,6 @@ set(SOURCES
     src/main.cpp
     src/MainApplication.cpp
     src/SettingsDialog.cpp
-    src/CaptureManager.cpp
     src/RegionSelector.cpp
     src/PinWindow.cpp
     src/PinWindowManager.cpp
@@ -63,6 +62,7 @@ set(HEADERS
 # Platform-specific source files
 if(APPLE)
     list(APPEND SOURCES
+        src/CaptureManager.mm
         src/WindowDetector.mm
         src/OCRManager.mm
         src/AutoLaunchManager_mac.mm
@@ -73,6 +73,7 @@ if(APPLE)
     )
 elseif(WIN32)
     list(APPEND SOURCES
+        src/CaptureManager.cpp
         src/WindowDetector_win.cpp
         src/OCRManager_win.cpp
         src/AutoLaunchManager_win.cpp

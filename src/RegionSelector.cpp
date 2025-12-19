@@ -1249,20 +1249,12 @@ void RegionSelector::mouseReleaseEvent(QMouseEvent* event)
             }
 #endif
             else {
-                // 點擊無拖曳且無偵測到視窗 - 選取整個螢幕（排除 menu bar）
-                // 使用 availableGeometry() 取得不含系統 UI（menu bar、dock）的區域
+                // 點擊無拖曳且無偵測到視窗 - 選取整個螢幕（包含 menu bar）
                 QRect screenGeom = m_currentScreen->geometry();
-                QRect availableGeom = m_currentScreen->availableGeometry();
-
-                // 計算 menu bar 高度（availableGeometry 與 geometry 的 top 差異）
-                int menuBarHeight = availableGeom.top() - screenGeom.top();
-
-                // 選取區域從 menu bar 下方開始，到螢幕底部
-                // 注意：這裡使用相對於 widget 的座標（widget 覆蓋整個螢幕）
-                m_selectionRect = QRect(0, menuBarHeight, screenGeom.width(), screenGeom.height() - menuBarHeight);
+                m_selectionRect = QRect(0, 0, screenGeom.width(), screenGeom.height());
                 m_selectionComplete = true;
                 setCursor(Qt::ArrowCursor);
-                qDebug() << "RegionSelector: Click without drag - selecting full screen (excluding menu bar height:" << menuBarHeight << ")";
+                qDebug() << "RegionSelector: Click without drag - selecting full screen (including menu bar)";
             }
 
             update();
