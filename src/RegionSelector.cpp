@@ -1094,24 +1094,26 @@ QPixmap RegionSelector::getSelectedRegion()
         static_cast<int>(sel.height() * m_devicePixelRatio)
     );
 
+    // KEY FIX: Set DPR BEFORE painting so Qt handles scaling automatically
+    // This ensures annotation sizes (radius, pen width, font) stay in logical units
+    // while positions are automatically converted to device pixels by Qt
+    selectedRegion.setDevicePixelRatio(m_devicePixelRatio);
+
     // Draw annotations onto the selected region
     if (!m_annotationLayer->isEmpty()) {
         QPainter painter(&selectedRegion);
         painter.setRenderHint(QPainter::Antialiasing, true);
 
-        // Scale and translate to match selection coordinates
-        painter.scale(m_devicePixelRatio, m_devicePixelRatio);
-        painter.translate(-sel.topLeft());
+        // Only translate - no manual scale() needed
+        // Qt automatically handles DPR conversion because we set devicePixelRatio above
+        // Annotation at screen position P will appear at (P - sel.topLeft) in logical coords
+        painter.translate(-sel.x(), -sel.y());
 
+        qDebug() << "Drawing annotations: sel=" << sel << "DPR=" << m_devicePixelRatio
+                 << "pixmap=" << selectedRegion.size()
+                 << "transform=" << painter.transform();
         m_annotationLayer->draw(painter);
     }
-
-    // 設置 devicePixelRatio，這樣 PinWindow 可以正確計算 logical size
-    selectedRegion.setDevicePixelRatio(m_devicePixelRatio);
-
-    qDebug() << "RegionSelector: Selected logical rect" << sel
-        << "extracted device size" << selectedRegion.size()
-        << "devicePixelRatio" << m_devicePixelRatio;
 
     return selectedRegion;
 }

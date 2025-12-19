@@ -84,9 +84,13 @@ void MarkerStroke::draw(QPainter &painter) const
         return;
     }
 
-    // Create offscreen pixmap with transparent background
-    // This ensures uniform transparency even when stroke overlaps itself
-    QPixmap offscreen(bounds.size());
+    // Get DPR from painter's device for proper HiDPI scaling
+    qreal dpr = painter.device()->devicePixelRatio();
+
+    // Create offscreen pixmap at device pixel resolution
+    // This ensures sharp rendering on HiDPI displays
+    QPixmap offscreen(bounds.size() * dpr);
+    offscreen.setDevicePixelRatio(dpr);
     offscreen.fill(Qt::transparent);
 
     {
@@ -251,7 +255,12 @@ void RectangleAnnotation::draw(QPainter &painter) const
         painter.setBrush(Qt::NoBrush);
     }
 
-    painter.drawRect(m_rect.normalized());
+    QRect normalizedRect = m_rect.normalized();
+    qDebug() << "RectangleAnnotation::draw - rect:" << normalizedRect
+             << "transform:" << painter.transform()
+             << "mapped rect:" << painter.transform().mapRect(QRectF(normalizedRect));
+
+    painter.drawRect(normalizedRect);
 
     painter.restore();
 }
@@ -340,6 +349,12 @@ StepBadgeAnnotation::StepBadgeAnnotation(const QPoint &position, const QColor &c
 
 void StepBadgeAnnotation::draw(QPainter &painter) const
 {
+    QTransform t = painter.transform();
+    QPointF mappedPos = t.map(QPointF(m_position));
+    qDebug() << "StepBadge::draw #" << m_number << "pos=" << m_position
+             << "mapped=" << mappedPos
+             << "device=" << painter.device()->width() << "x" << painter.device()->height();
+
     painter.save();
     painter.setRenderHint(QPainter::Antialiasing, true);
 
