@@ -20,6 +20,7 @@
 #include <QToolTip>
 #include <QPointer>
 #include <QSvgRenderer>
+#include <QColorDialog>
 
 RegionSelector::RegionSelector(QWidget* parent)
     : QWidget(parent)
@@ -44,6 +45,7 @@ RegionSelector::RegionSelector(QWidget* parent)
     , m_ocrManager(nullptr)
     , m_ocrInProgress(false)
 #endif
+    , m_hoveredColorSwatch(-1)
 {
     setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::Tool);
     setAttribute(Qt::WA_DeleteOnClose);
@@ -65,6 +67,9 @@ RegionSelector::RegionSelector(QWidget* parent)
 
     // Initialize SVG icons
     initializeIcons();
+
+    // Initialize color palette
+    initializeColorPalette();
 
     // 注意: 不在此處初始化螢幕，由 CaptureManager 調用 initializeForScreen()
 }
@@ -155,6 +160,170 @@ void RegionSelector::renderIcon(QPainter &painter, const QRect &rect, ToolbarBut
     tintPainter.end();
 
     painter.drawPixmap(iconRect, tintedPixmap);
+}
+
+void RegionSelector::initializeColorPalette()
+{
+    m_colorPalette = {
+        Qt::red,                    // Default - matches m_annotationColor
+        QColor(0, 122, 255),        // Blue (system blue)
+        QColor(52, 199, 89),        // Green (system green)
+        QColor(255, 204, 0),        // Yellow
+        QColor(255, 149, 0),        // Orange
+        QColor(175, 82, 222),       // Purple
+        Qt::black,
+        Qt::white
+    };
+    m_colorSwatchRects.resize(m_colorPalette.size() + 1); // +1 for "more" button
+}
+
+bool RegionSelector::shouldShowColorPalette() const
+{
+    if (!m_selectionComplete) return false;
+
+    // Show palette for color-enabled tools (not Mosaic)
+    switch (m_currentTool) {
+    case ToolbarButton::Pencil:
+    case ToolbarButton::Marker:
+    case ToolbarButton::Arrow:
+    case ToolbarButton::Rectangle:
+    case ToolbarButton::Text:
+    case ToolbarButton::StepBadge:
+        return true;
+    default:
+        return false;
+    }
+}
+
+void RegionSelector::updateColorPalettePosition()
+{
+    int swatchCount = m_colorPalette.size() + 1; // +1 for "more" button
+    int paletteWidth = swatchCount * COLOR_SWATCH_SIZE + (swatchCount - 1) * COLOR_SWATCH_SPACING + COLOR_PALETTE_PADDING * 2;
+
+    // Position below toolbar, left-aligned with toolbar
+    int paletteX = m_toolbarRect.left();
+    int paletteY = m_toolbarRect.bottom() + 4;
+
+    // Check if it fits below, otherwise put above
+    if (paletteY + COLOR_PALETTE_HEIGHT > height() - 5) {
+        paletteY = m_toolbarRect.top() - COLOR_PALETTE_HEIGHT - 4;
+    }
+
+    // Keep on screen
+    if (paletteX < 5) paletteX = 5;
+
+    m_colorPaletteRect = QRect(paletteX, paletteY, paletteWidth, COLOR_PALETTE_HEIGHT);
+
+    // Update swatch rects
+    int x = paletteX + COLOR_PALETTE_PADDING;
+    int y = paletteY + (COLOR_PALETTE_HEIGHT - COLOR_SWATCH_SIZE) / 2;
+
+    for (int i = 0; i <= m_colorPalette.size(); ++i) {
+        m_colorSwatchRects[i] = QRect(x, y, COLOR_SWATCH_SIZE, COLOR_SWATCH_SIZE);
+        x += COLOR_SWATCH_SIZE + COLOR_SWATCH_SPACING;
+    }
+}
+
+void RegionSelector::drawColorPalette(QPainter &painter)
+{
+    updateColorPalettePosition();
+
+    // Draw shadow
+    QRect shadowRect = m_colorPaletteRect.adjusted(2, 2, 2, 2);
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(QColor(0, 0, 0, 50));
+    painter.drawRoundedRect(shadowRect, 6, 6);
+
+    // Draw background with gradient (matches toolbar style)
+    QLinearGradient gradient(m_colorPaletteRect.topLeft(), m_colorPaletteRect.bottomLeft());
+    gradient.setColorAt(0, QColor(55, 55, 55, 245));
+    gradient.setColorAt(1, QColor(40, 40, 40, 245));
+
+    painter.setBrush(gradient);
+    painter.setPen(QPen(QColor(70, 70, 70), 1));
+    painter.drawRoundedRect(m_colorPaletteRect, 6, 6);
+
+    // Draw color swatches
+    for (int i = 0; i < m_colorPalette.size(); ++i) {
+        QRect swatchRect = m_colorSwatchRects[i];
+
+        // Highlight if hovered
+        if (i == m_hoveredColorSwatch) {
+            painter.setPen(Qt::NoPen);
+            painter.setBrush(QColor(80, 80, 80));
+            painter.drawRoundedRect(swatchRect.adjusted(-2, -2, 2, 2), 4, 4);
+        }
+
+        // Draw color circle
+        int circleSize = swatchRect.width() - 6;
+        QRect circleRect(swatchRect.center().x() - circleSize / 2,
+                         swatchRect.center().y() - circleSize / 2,
+                         circleSize, circleSize);
+
+        // Draw border (white for dark colors, dark for light colors)
+        QColor borderColor = (m_colorPalette[i].lightness() > 200) ? QColor(80, 80, 80) : Qt::white;
+        painter.setPen(QPen(borderColor, 1));
+        painter.setBrush(m_colorPalette[i]);
+        painter.drawEllipse(circleRect);
+
+        // Draw selection indicator for current color
+        if (m_colorPalette[i] == m_annotationColor) {
+            painter.setPen(QPen(QColor(0, 174, 255), 2));
+            painter.setBrush(Qt::NoBrush);
+            painter.drawEllipse(circleRect.adjusted(-3, -3, 3, 3));
+        }
+    }
+
+    // Draw "more colors" button (last swatch position)
+    int moreIdx = m_colorPalette.size();
+    QRect moreRect = m_colorSwatchRects[moreIdx];
+
+    if (moreIdx == m_hoveredColorSwatch) {
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(QColor(80, 80, 80));
+        painter.drawRoundedRect(moreRect.adjusted(-2, -2, 2, 2), 4, 4);
+    }
+
+    // Draw "..." text
+    painter.setPen(QColor(180, 180, 180));
+    QFont font = painter.font();
+    font.setPointSize(12);
+    font.setBold(true);
+    painter.setFont(font);
+    painter.drawText(moreRect, Qt::AlignCenter, "...");
+}
+
+int RegionSelector::getColorSwatchAtPosition(const QPoint &pos)
+{
+    if (!m_colorPaletteRect.contains(pos)) return -1;
+
+    for (int i = 0; i < m_colorSwatchRects.size(); ++i) {
+        if (m_colorSwatchRects[i].contains(pos)) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+void RegionSelector::handleColorSwatchClick(int swatchIndex)
+{
+    if (swatchIndex < m_colorPalette.size()) {
+        m_annotationColor = m_colorPalette[swatchIndex];
+        qDebug() << "Color selected:" << m_annotationColor.name();
+    } else {
+        // "More colors" button clicked
+        openColorDialog();
+    }
+    update();
+}
+
+void RegionSelector::openColorDialog()
+{
+    QColor newColor = QColorDialog::getColor(m_annotationColor, this, tr("Select Color"));
+    if (newColor.isValid()) {
+        m_annotationColor = newColor;
+        qDebug() << "Custom color selected:" << m_annotationColor.name();
+    }
 }
 
 void RegionSelector::initializeForScreen(QScreen* screen)
@@ -334,6 +503,9 @@ void RegionSelector::paintEvent(QPaintEvent*)
             drawAnnotations(painter);
             drawCurrentAnnotation(painter);
             drawToolbar(painter);
+            if (shouldShowColorPalette()) {
+                drawColorPalette(painter);
+            }
             drawTooltip(painter);
         }
     }
@@ -991,6 +1163,15 @@ void RegionSelector::mousePressEvent(QMouseEvent* event)
 {
     if (event->button() == Qt::LeftButton) {
         if (m_selectionComplete) {
+            // Check if clicked on color palette
+            if (shouldShowColorPalette()) {
+                int swatchIdx = getColorSwatchAtPosition(event->pos());
+                if (swatchIdx >= 0) {
+                    handleColorSwatchClick(swatchIdx);
+                    return;
+                }
+            }
+
             // Check if clicked on toolbar
             int buttonIdx = getButtonAtPosition(event->pos());
             if (buttonIdx >= 0) {
@@ -1135,12 +1316,28 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
         updateAnnotation(event->pos());
     }
     else if (m_selectionComplete) {
+        // Update hovered color swatch
+        if (shouldShowColorPalette()) {
+            int newHoveredSwatch = getColorSwatchAtPosition(event->pos());
+            if (newHoveredSwatch != m_hoveredColorSwatch) {
+                m_hoveredColorSwatch = newHoveredSwatch;
+                if (m_hoveredColorSwatch >= 0) {
+                    setCursor(Qt::PointingHandCursor);
+                }
+            }
+        } else {
+            m_hoveredColorSwatch = -1;
+        }
+
         // Update hovered button
         int newHovered = getButtonAtPosition(event->pos());
         if (newHovered != m_hoveredButton) {
             m_hoveredButton = newHovered;
             if (m_hoveredButton >= 0) {
                 setCursor(Qt::PointingHandCursor);
+            }
+            else if (m_hoveredColorSwatch >= 0) {
+                // Already set cursor for color swatch
             }
             else if (isAnnotationTool(m_currentTool) && m_currentTool != ToolbarButton::Selection) {
                 setCursor(Qt::CrossCursor);
@@ -1151,8 +1348,8 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
                 updateCursorForHandle(handle);
             }
         }
-        else if (m_hoveredButton < 0 && m_currentTool == ToolbarButton::Selection) {
-            // Update cursor for resize handles when not hovering button
+        else if (m_hoveredButton < 0 && m_hoveredColorSwatch < 0 && m_currentTool == ToolbarButton::Selection) {
+            // Update cursor for resize handles when not hovering button or color swatch
             ResizeHandle handle = getHandleAtPosition(event->pos());
             updateCursorForHandle(handle);
         }
@@ -1331,7 +1528,7 @@ void RegionSelector::startAnnotation(const QPoint &pos)
         break;
 
     case ToolbarButton::Marker:
-        m_currentMarker = std::make_unique<MarkerStroke>(m_currentPath, QColor(255, 255, 0), 20);  // Yellow highlighter
+        m_currentMarker = std::make_unique<MarkerStroke>(m_currentPath, m_annotationColor, 20);
         break;
 
     case ToolbarButton::Arrow:

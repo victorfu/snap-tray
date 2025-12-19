@@ -67,6 +67,15 @@ private:
     QString getButtonTooltip(int buttonIndex);
     bool isAnnotationTool(CanvasTool tool) const;
 
+    // Color palette helpers
+    void initializeColorPalette();
+    void drawColorPalette(QPainter &painter);
+    void updateColorPalettePosition();
+    int getColorSwatchAtPosition(const QPoint &pos);
+    void handleColorSwatchClick(int swatchIndex);
+    bool shouldShowColorPalette() const;
+    void openColorDialog();
+
     // Annotation helpers
     void startAnnotation(const QPoint &pos);
     void updateAnnotation(const QPoint &pos);
@@ -105,6 +114,17 @@ private:
     static const int TOOLBAR_HEIGHT = 40;
     static const int BUTTON_WIDTH = 36;
     static const int BUTTON_SPACING = 2;
+
+    // Color palette
+    QRect m_colorPaletteRect;
+    QVector<QRect> m_colorSwatchRects;
+    QVector<QColor> m_colorPalette;
+    int m_hoveredColorSwatch;
+
+    static const int COLOR_SWATCH_SIZE = 24;
+    static const int COLOR_SWATCH_SPACING = 4;
+    static const int COLOR_PALETTE_HEIGHT = 32;
+    static const int COLOR_PALETTE_PADDING = 6;
 };
 
 #endif // SCREENCANVAS_H
