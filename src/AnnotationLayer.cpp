@@ -701,6 +701,9 @@ void AnnotationLayer::undo()
         // Extract the erased items and restore them
         auto restoredItems = erasedGroup->extractItems();
 
+        // Record the count for redo support
+        erasedGroup->setOriginalCount(restoredItems.size());
+
         // Move the empty group to redo stack
         m_redoStack.push_back(std::move(m_items.back()));
         m_items.pop_back();
@@ -728,14 +731,18 @@ void AnnotationLayer::redo()
         // This was an eraser action - we need to re-erase the items
         // The ErasedItemsGroup in redo stack is empty (items were restored during undo)
         // We need to find and remove the items that were restored
+        size_t count = erasedGroup->originalCount();
 
-        // For simplicity, we'll re-create the ErasedItemsGroup by moving items
-        // from the end of m_items back into it
-        // This assumes the restored items are at the end (which they are after undo)
+        // Remove the restored items from the end of m_items
+        std::vector<std::unique_ptr<AnnotationItem>> itemsToErase;
+        for (size_t i = 0; i < count && !m_items.empty(); ++i) {
+            itemsToErase.insert(itemsToErase.begin(), std::move(m_items.back()));
+            m_items.pop_back();
+        }
 
-        // Move the empty group back to items
-        m_items.push_back(std::move(m_redoStack.back()));
+        // Discard the empty group from redo stack and create a new one with the items
         m_redoStack.pop_back();
+        m_items.push_back(std::make_unique<ErasedItemsGroup>(std::move(itemsToErase)));
     } else {
         // Normal redo
         m_items.push_back(std::move(m_redoStack.back()));

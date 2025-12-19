@@ -190,8 +190,13 @@ public:
     // Extract items for restoration (moves ownership)
     std::vector<std::unique_ptr<AnnotationItem>> extractItems();
 
+    // Track original item count for redo support
+    size_t originalCount() const { return m_originalCount; }
+    void setOriginalCount(size_t count) { m_originalCount = count; }
+
 private:
     std::vector<std::unique_ptr<AnnotationItem>> m_erasedItems;
+    size_t m_originalCount = 0;
 };
 
 // Annotation layer that manages all annotations with undo/redo
