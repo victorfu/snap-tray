@@ -730,10 +730,17 @@ void RegionSelector::updateToolbarPosition()
         x += BUTTON_WIDTH + BUTTON_SPACING;
 
         // Add extra spacing for separators
-        if (i == static_cast<int>(ToolbarButton::Redo) ||
-            i == static_cast<int>(ToolbarButton::Cancel) - 1) {
-            x += 6;
+        if (i == static_cast<int>(ToolbarButton::Redo)) {
+            x += 6;  // Space before Cancel separator
         }
+        if (i == static_cast<int>(ToolbarButton::Cancel)) {
+            x += 6;  // Space before OCR (macOS) or Pin separator
+        }
+#ifdef Q_OS_MACOS
+        if (i == static_cast<int>(ToolbarButton::OCR)) {
+            x += 6;  // Space before Pin separator
+        }
+#endif
     }
 }
 
