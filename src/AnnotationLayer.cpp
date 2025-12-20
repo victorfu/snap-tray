@@ -308,19 +308,29 @@ void TextAnnotation::draw(QPainter &painter) const
     painter.setFont(m_font);
     painter.setRenderHint(QPainter::TextAntialiasing, true);
 
-    // Draw text with outline for better visibility
-    QPainterPath path;
-    path.addText(m_position, m_font, m_text);
+    // Split text into lines for multi-line support
+    QStringList lines = m_text.split('\n');
+    QFontMetrics fm(m_font);
+    int lineHeight = fm.lineSpacing();
+    QPoint currentPos = m_position;
 
-    // White outline
-    QPen outlinePen(Qt::white, 3, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
-    painter.setPen(outlinePen);
-    painter.drawPath(path);
+    for (const QString &line : lines) {
+        if (!line.isEmpty()) {
+            QPainterPath path;
+            path.addText(currentPos, m_font, line);
 
-    // Fill with color
-    painter.setPen(Qt::NoPen);
-    painter.setBrush(m_color);
-    painter.drawPath(path);
+            // White outline
+            QPen outlinePen(Qt::white, 3, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+            painter.setPen(outlinePen);
+            painter.drawPath(path);
+
+            // Fill with color
+            painter.setPen(Qt::NoPen);
+            painter.setBrush(m_color);
+            painter.drawPath(path);
+        }
+        currentPos.setY(currentPos.y() + lineHeight);
+    }
 
     painter.restore();
 }
@@ -328,9 +338,20 @@ void TextAnnotation::draw(QPainter &painter) const
 QRect TextAnnotation::boundingRect() const
 {
     QFontMetrics fm(m_font);
-    QRect textRect = fm.boundingRect(m_text);
-    textRect.translate(m_position);  // m_position is baseline position, preserve relative coords
-    return textRect.adjusted(-5, -5, 5, 5);  // Add margin
+    QStringList lines = m_text.split('\n');
+
+    int maxWidth = 0;
+    for (const QString &line : lines) {
+        maxWidth = qMax(maxWidth, fm.horizontalAdvance(line));
+    }
+    int totalHeight = lines.count() * fm.lineSpacing();
+
+    // m_position is baseline position of first line
+    QRect textRect(m_position.x(),
+                   m_position.y() - fm.ascent(),
+                   maxWidth,
+                   totalHeight);
+    return textRect.adjusted(-5, -5, 5, 5);  // Add margin for outline
 }
 
 std::unique_ptr<AnnotationItem> TextAnnotation::clone() const

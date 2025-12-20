@@ -23,6 +23,8 @@
 #include <QToolTip>
 #include <QPointer>
 #include <QColorDialog>
+#include <QTextEdit>
+#include <QTextDocument>
 
 RegionSelector::RegionSelector(QWidget* parent)
     : QWidget(parent)
@@ -49,6 +51,8 @@ RegionSelector::RegionSelector(QWidget* parent)
     , m_ocrInProgress(false)
 #endif
     , m_colorPalette(nullptr)
+    , m_inlineTextEdit(nullptr)
+    , m_isEditingText(false)
 {
     setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::Tool);
     setAttribute(Qt::WA_DeleteOnClose);
@@ -170,6 +174,23 @@ bool RegionSelector::shouldShowColorPalette() const
 void RegionSelector::onColorSelected(const QColor &color)
 {
     m_annotationColor = color;
+
+    // Update text edit style if currently editing
+    if (m_isEditingText && m_inlineTextEdit) {
+        QString styleSheet = QString(
+            "QTextEdit {"
+            "  background: rgba(255, 255, 255, 230);"
+            "  color: %1;"
+            "  font-size: 16pt;"
+            "  font-weight: bold;"
+            "  border: 2px solid %1;"
+            "  border-radius: 4px;"
+            "  padding: 4px;"
+            "}"
+        ).arg(color.name());
+        m_inlineTextEdit->setStyleSheet(styleSheet);
+    }
+
     update();
 }
 
@@ -179,6 +200,23 @@ void RegionSelector::onMoreColorsRequested()
     if (newColor.isValid()) {
         m_annotationColor = newColor;
         m_colorPalette->setCurrentColor(newColor);
+
+        // Update text edit style if currently editing
+        if (m_isEditingText && m_inlineTextEdit) {
+            QString styleSheet = QString(
+                "QTextEdit {"
+                "  background: rgba(255, 255, 255, 230);"
+                "  color: %1;"
+                "  font-size: 16pt;"
+                "  font-weight: bold;"
+                "  border: 2px solid %1;"
+                "  border-radius: 4px;"
+                "  padding: 4px;"
+                "}"
+            ).arg(newColor.name());
+            m_inlineTextEdit->setStyleSheet(styleSheet);
+        }
+
         qDebug() << "Custom color selected:" << m_annotationColor.name();
         update();
     }
@@ -373,7 +411,8 @@ void RegionSelector::paintEvent(QPaintEvent*)
     }
 
     // Draw crosshair at cursor - only show inside selection when selection is complete
-    bool shouldShowCrosshair = !m_isSelecting && !m_isDrawing;
+    // Hide magnifier when any annotation tool is selected
+    bool shouldShowCrosshair = !m_isSelecting && !m_isDrawing && !isAnnotationTool(m_currentTool);
     if (m_selectionComplete) {
         QRect sel = m_selectionRect.normalized();
         // Only show crosshair inside selection area, not on toolbar
@@ -1034,6 +1073,18 @@ void RegionSelector::mousePressEvent(QMouseEvent* event)
 {
     if (event->button() == Qt::LeftButton) {
         if (m_selectionComplete) {
+            // Handle inline text editing - click outside finishes
+            if (m_isEditingText && m_inlineTextEdit) {
+                QRect textEditRect = m_inlineTextEdit->geometry();
+                if (!textEditRect.contains(event->pos())) {
+                    finishInlineTextEdit();
+                    // Continue processing click for next action
+                } else {
+                    // Click inside text edit - let it handle
+                    return;
+                }
+            }
+
             // Check if clicked on color palette
             if (shouldShowColorPalette() && m_colorPalette->handleClick(event->pos())) {
                 update();
@@ -1050,9 +1101,9 @@ void RegionSelector::mousePressEvent(QMouseEvent* event)
             // Check if we're using an annotation tool and clicking inside selection
             QRect sel = m_selectionRect.normalized();
             if (isAnnotationTool(m_currentTool) && m_currentTool != ToolbarButton::Selection && sel.contains(event->pos())) {
-                // Handle Text tool specially - show input dialog
+                // Handle Text tool - use inline text editing
                 if (m_currentTool == ToolbarButton::Text) {
-                    showTextInputDialog(event->pos());
+                    startInlineTextEdit(event->pos());
                     return;
                 }
                 // Handle StepBadge tool - place badge on click
@@ -1279,6 +1330,22 @@ void RegionSelector::mouseReleaseEvent(QMouseEvent* event)
 
 void RegionSelector::keyPressEvent(QKeyEvent* event)
 {
+    // Handle inline text editing keys first
+    if (m_isEditingText) {
+        if (event->key() == Qt::Key_Escape) {
+            cancelInlineTextEdit();
+            return;
+        }
+        // Ctrl+Enter or Shift+Enter to finish editing
+        if ((event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) &&
+            (event->modifiers() & (Qt::ControlModifier | Qt::ShiftModifier))) {
+            finishInlineTextEdit();
+            return;
+        }
+        // Let QTextEdit handle other keys (including Enter for newlines)
+        return;
+    }
+
     if (event->key() == Qt::Key_Escape) {
         // ESC 直接離開 capture mode
         qDebug() << "RegionSelector: Cancelled via Escape";
@@ -1623,6 +1690,138 @@ void RegionSelector::placeStepBadge(const QPoint &pos)
     auto badge = std::make_unique<StepBadgeAnnotation>(pos, m_annotationColor, nextNumber);
     m_annotationLayer->addItem(std::move(badge));
     qDebug() << "Placed step badge" << nextNumber << "at" << pos;
+    update();
+}
+
+// ============================================================================
+// Inline Text Editing Functions
+// ============================================================================
+
+void RegionSelector::startInlineTextEdit(const QPoint &pos)
+{
+    // Create QTextEdit lazily
+    if (!m_inlineTextEdit) {
+        m_inlineTextEdit = new QTextEdit(this);
+        m_inlineTextEdit->setFrameStyle(QFrame::NoFrame);
+        m_inlineTextEdit->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        m_inlineTextEdit->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        m_inlineTextEdit->setAcceptRichText(false);
+
+        // Connect document size changes for auto-resize
+        connect(m_inlineTextEdit->document(), &QTextDocument::contentsChanged, this, [this]() {
+            if (m_isEditingText && m_inlineTextEdit) {
+                // Auto-resize based on content
+                QSizeF docSize = m_inlineTextEdit->document()->size();
+                int newWidth = qMax(150, static_cast<int>(docSize.width()) + 20);
+                int newHeight = qMax(36, static_cast<int>(docSize.height()) + 10);
+
+                // Clamp to selection bounds
+                QRect sel = m_selectionRect.normalized();
+                int x = m_textEditPosition.x();
+                int y = m_textEditPosition.y();
+
+                if (x + newWidth > sel.right()) {
+                    newWidth = sel.right() - x;
+                }
+                if (y + newHeight > sel.bottom()) {
+                    newHeight = sel.bottom() - y;
+                }
+                newWidth = qMax(100, newWidth);
+                newHeight = qMax(30, newHeight);
+
+                m_inlineTextEdit->setFixedSize(newWidth, newHeight);
+            }
+        });
+    }
+
+    // Update style with current annotation color
+    QString styleSheet = QString(
+        "QTextEdit {"
+        "  background: rgba(255, 255, 255, 230);"
+        "  color: %1;"
+        "  font-size: 16pt;"
+        "  font-weight: bold;"
+        "  border: 2px solid %1;"
+        "  border-radius: 4px;"
+        "  padding: 4px;"
+        "}"
+    ).arg(m_annotationColor.name());
+    m_inlineTextEdit->setStyleSheet(styleSheet);
+
+    // Set font
+    QFont font;
+    font.setPointSize(16);
+    font.setBold(true);
+    m_inlineTextEdit->setFont(font);
+
+    // Store position and calculate placement
+    m_textEditPosition = pos;
+
+    // Initial size
+    int width = 150;
+    int height = 36;
+
+    // Clamp to selection bounds
+    QRect sel = m_selectionRect.normalized();
+    int x = pos.x();
+    int y = pos.y();
+
+    if (x + width > sel.right()) {
+        x = sel.right() - width;
+    }
+    if (y + height > sel.bottom()) {
+        y = sel.bottom() - height;
+    }
+    x = qMax(sel.left(), x);
+    y = qMax(sel.top(), y);
+
+    m_inlineTextEdit->setGeometry(x, y, width, height);
+
+    // Clear previous text and show
+    m_inlineTextEdit->clear();
+    m_inlineTextEdit->show();
+    m_inlineTextEdit->setFocus();
+    m_inlineTextEdit->raise();
+
+    m_isEditingText = true;
+    update();
+}
+
+void RegionSelector::finishInlineTextEdit()
+{
+    if (!m_isEditingText || !m_inlineTextEdit) return;
+
+    QString text = m_inlineTextEdit->toPlainText().trimmed();
+
+    if (!text.isEmpty()) {
+        QFont font;
+        font.setPointSize(16);
+        font.setBold(true);
+
+        // Adjust position: QTextEdit top-left -> baseline position
+        // Add padding offset (4px) and font ascent
+        QFontMetrics fm(font);
+        QPoint baselinePos = m_textEditPosition;
+        baselinePos.setX(baselinePos.x() + 6);  // Padding
+        baselinePos.setY(baselinePos.y() + 6 + fm.ascent());  // Padding + ascent
+
+        auto textAnnotation = std::make_unique<TextAnnotation>(baselinePos, text, font, m_annotationColor);
+        m_annotationLayer->addItem(std::move(textAnnotation));
+    }
+
+    m_inlineTextEdit->hide();
+    m_inlineTextEdit->clear();
+    m_isEditingText = false;
+    update();
+}
+
+void RegionSelector::cancelInlineTextEdit()
+{
+    if (!m_isEditingText || !m_inlineTextEdit) return;
+
+    m_inlineTextEdit->hide();
+    m_inlineTextEdit->clear();
+    m_isEditingText = false;
     update();
 }
 

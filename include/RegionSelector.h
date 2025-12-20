@@ -18,6 +18,7 @@ class QScreen;
 class AnnotationLayer;
 class ColorPaletteWidget;
 class QCloseEvent;
+class QTextEdit;
 
 #ifdef Q_OS_MACOS
 class OCRManager;
@@ -132,6 +133,11 @@ private:
     void showTextInputDialog(const QPoint &pos);
     void placeStepBadge(const QPoint &pos);
 
+    // Inline text editing
+    void startInlineTextEdit(const QPoint &pos);
+    void finishInlineTextEdit();
+    void cancelInlineTextEdit();
+
     // Selection resize/move helpers
     ResizeHandle getHandleAtPosition(const QPoint &pos);
     void updateResize(const QPoint &pos);
@@ -211,6 +217,11 @@ private:
     void initializeIcons();
     QString getIconKeyForButton(ToolbarButton button) const;
     void renderIcon(QPainter &painter, const QRect &rect, ToolbarButton button, const QColor &color);
+
+    // Inline text editing state
+    QTextEdit *m_inlineTextEdit;
+    bool m_isEditingText;
+    QPoint m_textEditPosition;
 };
 
 #endif // REGIONSELECTOR_H
