@@ -197,7 +197,16 @@ void RegionSelector::onColorSelected(const QColor &color)
 
 void RegionSelector::onMoreColorsRequested()
 {
-    QColor newColor = QColorDialog::getColor(m_annotationColor, this, tr("Select Color"));
+    m_isDialogOpen = true;
+    hide();
+
+    QColor newColor = QColorDialog::getColor(m_annotationColor, nullptr, tr("Select Color"));
+
+    show();
+    activateWindow();
+    raise();
+    m_isDialogOpen = false;
+
     if (newColor.isValid()) {
         m_annotationColor = newColor;
         m_colorPalette->setCurrentColor(newColor);

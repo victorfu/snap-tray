@@ -129,7 +129,14 @@ void ScreenCanvas::onColorSelected(const QColor &color)
 
 void ScreenCanvas::onMoreColorsRequested()
 {
-    QColor newColor = QColorDialog::getColor(m_controller->color(), this, tr("Select Color"));
+    hide();
+
+    QColor newColor = QColorDialog::getColor(m_controller->color(), nullptr, tr("Select Color"));
+
+    show();
+    activateWindow();
+    raise();
+
     if (newColor.isValid()) {
         m_controller->setColor(newColor);
         m_colorPalette->setCurrentColor(newColor);
