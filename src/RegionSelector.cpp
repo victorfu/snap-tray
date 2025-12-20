@@ -10,6 +10,7 @@
 #include <QPainter>
 #include <QMouseEvent>
 #include <QKeyEvent>
+#include <QCloseEvent>
 #include <QGuiApplication>
 #include <QScreen>
 #include <QDebug>
@@ -39,6 +40,7 @@ RegionSelector::RegionSelector(QWidget* parent)
     , m_activeHandle(ResizeHandle::None)
     , m_isResizing(false)
     , m_isMoving(false)
+    , m_isClosing(false)
 #ifdef Q_OS_MACOS
     , m_windowDetector(nullptr)
 #endif
@@ -1341,8 +1343,18 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
     }
 }
 
+void RegionSelector::closeEvent(QCloseEvent *event)
+{
+    m_isClosing = true;
+    QWidget::closeEvent(event);
+}
+
 bool RegionSelector::eventFilter(QObject* obj, QEvent* event)
 {
+    if (m_isClosing) {
+        return QWidget::eventFilter(obj, event);
+    }
+
     // Capture ESC key at application level to handle when window loses focus
     // (e.g., user clicks on macOS menu bar)
     if (event->type() == QEvent::KeyPress) {
@@ -1353,6 +1365,11 @@ bool RegionSelector::eventFilter(QObject* obj, QEvent* event)
             close();
             return true;  // Event handled
         }
+    } else if (event->type() == QEvent::ApplicationDeactivate) {
+        qDebug() << "RegionSelector: Cancelled due to app deactivation";
+        emit selectionCancelled();
+        close();
+        return false;
     }
     return QWidget::eventFilter(obj, event);
 }

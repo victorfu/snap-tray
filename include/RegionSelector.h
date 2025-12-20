@@ -17,6 +17,7 @@
 class QScreen;
 class AnnotationLayer;
 class ColorPaletteWidget;
+class QCloseEvent;
 
 #ifdef Q_OS_MACOS
 class OCRManager;
@@ -89,6 +90,7 @@ protected:
     void mouseMoveEvent(QMouseEvent *event) override;
     void mouseReleaseEvent(QMouseEvent *event) override;
     void keyPressEvent(QKeyEvent *event) override;
+    void closeEvent(QCloseEvent *event) override;
     bool eventFilter(QObject *obj, QEvent *event) override;
 
 private:
@@ -185,6 +187,7 @@ private:
     ResizeHandle m_activeHandle;
     bool m_isResizing;
     bool m_isMoving;
+    bool m_isClosing;
     QPoint m_resizeStartPoint;
     QRect m_originalRect;
 
