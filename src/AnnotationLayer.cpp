@@ -689,6 +689,24 @@ std::vector<ErasedItemsGroup::IndexedItem> ErasedItemsGroup::extractItems()
     return std::move(m_erasedItems);
 }
 
+void ErasedItemsGroup::adjustIndicesForTrim(size_t trimCount)
+{
+    for (auto& indexed : m_erasedItems) {
+        if (indexed.originalIndex >= trimCount) {
+            indexed.originalIndex -= trimCount;
+        } else {
+            indexed.originalIndex = 0;
+        }
+    }
+    for (size_t i = 0; i < m_originalIndices.size(); ++i) {
+        if (m_originalIndices[i] >= trimCount) {
+            m_originalIndices[i] -= trimCount;
+        } else {
+            m_originalIndices[i] = 0;
+        }
+    }
+}
+
 // ============================================================================
 // AnnotationLayer Implementation
 // ============================================================================
@@ -710,12 +728,23 @@ void AnnotationLayer::addItem(std::unique_ptr<AnnotationItem> item)
 
 void AnnotationLayer::trimHistory()
 {
-    bool hadDeletions = false;
+    size_t trimCount = 0;
     while (m_items.size() > kMaxHistorySize) {
         m_items.erase(m_items.begin());
-        hadDeletions = true;
+        ++trimCount;
     }
-    if (hadDeletions) {
+    if (trimCount > 0) {
+        // Adjust stored indices in all ErasedItemsGroups
+        for (auto& item : m_items) {
+            if (auto* group = dynamic_cast<ErasedItemsGroup*>(item.get())) {
+                group->adjustIndicesForTrim(trimCount);
+            }
+        }
+        for (auto& item : m_redoStack) {
+            if (auto* group = dynamic_cast<ErasedItemsGroup*>(item.get())) {
+                group->adjustIndicesForTrim(trimCount);
+            }
+        }
         renumberStepBadges();
     }
 }

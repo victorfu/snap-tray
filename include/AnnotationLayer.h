@@ -171,8 +171,6 @@ public:
     void updateSource(const QPixmap &sourcePixmap);
 
 private:
-    void generateMosaic();
-
     QVector<QPoint> m_points;
     QPixmap m_sourcePixmap;
     mutable QImage m_sourceImageCache;
@@ -205,6 +203,9 @@ public:
     // Track original indices for redo support (stored when items are extracted)
     const std::vector<size_t>& originalIndices() const { return m_originalIndices; }
     void setOriginalIndices(std::vector<size_t> indices) { m_originalIndices = std::move(indices); }
+
+    // Adjust stored indices when trimHistory() removes items from front
+    void adjustIndicesForTrim(size_t trimCount);
 
 private:
     std::vector<IndexedItem> m_erasedItems;
