@@ -194,6 +194,7 @@ private:
     bool m_isResizing;
     bool m_isMoving;
     bool m_isClosing;
+    bool m_isDialogOpen;  // Prevents close during file dialog
     QPoint m_resizeStartPoint;
     QRect m_originalRect;
 

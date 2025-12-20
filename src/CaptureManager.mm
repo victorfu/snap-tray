@@ -25,6 +25,11 @@ CaptureManager::~CaptureManager()
 {
 }
 
+bool CaptureManager::isActive() const
+{
+    return m_regionSelector && m_regionSelector->isVisible();
+}
+
 void CaptureManager::startRegionCapture()
 {
     // 如果已經在 capture mode 中，不要重複進入

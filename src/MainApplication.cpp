@@ -139,6 +139,11 @@ void MainApplication::onRegionCapture()
 
 void MainApplication::onScreenCanvas()
 {
+    // Don't trigger if capture is active
+    if (m_captureManager->isActive()) {
+        qDebug() << "Screen canvas blocked: Capture is active";
+        return;
+    }
     qDebug() << "Screen canvas triggered";
     m_screenCanvasManager->toggle();
 }

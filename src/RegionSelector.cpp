@@ -43,6 +43,7 @@ RegionSelector::RegionSelector(QWidget* parent)
     , m_isResizing(false)
     , m_isMoving(false)
     , m_isClosing(false)
+    , m_isDialogOpen(false)
 #ifdef Q_OS_MACOS
     , m_windowDetector(nullptr)
 #endif
@@ -1036,22 +1037,33 @@ void RegionSelector::saveToFile()
     QString timestamp = QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss");
     QString defaultName = QString("%1/Screenshot_%2.png").arg(picturesPath).arg(timestamp);
 
+    // Hide fullscreen window so save dialog is visible
+    m_isDialogOpen = true;
+    hide();
+
     QString filePath = QFileDialog::getSaveFileName(
-        this,
+        nullptr,
         "Save Screenshot",
         defaultName,
         "PNG Image (*.png);;JPEG Image (*.jpg *.jpeg);;All Files (*)"
     );
 
     if (!filePath.isEmpty()) {
+        // User selected a file -> save and close
         if (selectedRegion.save(filePath)) {
             qDebug() << "RegionSelector: Saved to" << filePath;
-        }
-        else {
+        } else {
             qDebug() << "RegionSelector: Failed to save to" << filePath;
         }
         emit saveRequested(selectedRegion);
+        m_isDialogOpen = false;
         close();
+    } else {
+        // User cancelled -> restore display
+        m_isDialogOpen = false;
+        show();
+        activateWindow();
+        raise();
     }
 }
 
@@ -1433,6 +1445,10 @@ bool RegionSelector::eventFilter(QObject* obj, QEvent* event)
             return true;  // Event handled
         }
     } else if (event->type() == QEvent::ApplicationDeactivate) {
+        // Don't cancel if a dialog is open (e.g., save dialog)
+        if (m_isDialogOpen) {
+            return false;
+        }
         qDebug() << "RegionSelector: Cancelled due to app deactivation";
         emit selectionCancelled();
         close();

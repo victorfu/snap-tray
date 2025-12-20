@@ -251,12 +251,11 @@ void PinWindow::saveToFile()
         QPixmap pixmapToSave = getTransformedPixmap();
         if (pixmapToSave.save(filePath)) {
             qDebug() << "PinWindow: Saved to" << filePath;
+            emit saveRequested(pixmapToSave);
         } else {
             qDebug() << "PinWindow: Failed to save to" << filePath;
         }
     }
-
-    emit saveRequested(getTransformedPixmap());
 }
 
 void PinWindow::copyToClipboard()
