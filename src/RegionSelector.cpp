@@ -1439,6 +1439,10 @@ bool RegionSelector::eventFilter(QObject* obj, QEvent* event)
     if (event->type() == QEvent::KeyPress) {
         QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
         if (keyEvent->key() == Qt::Key_Escape) {
+            // If editing text, let keyPressEvent handle Esc
+            if (m_isEditingText) {
+                return false;
+            }
             qDebug() << "RegionSelector: Cancelled via Escape (event filter)";
             emit selectionCancelled();
             close();
@@ -1770,9 +1774,6 @@ void RegionSelector::startInlineTextEdit(const QPoint &pos)
     font.setBold(true);
     m_inlineTextEdit->setFont(font);
 
-    // Store position and calculate placement
-    m_textEditPosition = pos;
-
     // Initial size
     int width = 150;
     int height = 36;
@@ -1790,6 +1791,9 @@ void RegionSelector::startInlineTextEdit(const QPoint &pos)
     }
     x = qMax(sel.left(), x);
     y = qMax(sel.top(), y);
+
+    // Store clamped position for text rendering
+    m_textEditPosition = QPoint(x, y);
 
     m_inlineTextEdit->setGeometry(x, y, width, height);
 
