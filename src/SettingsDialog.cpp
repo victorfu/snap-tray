@@ -149,13 +149,13 @@ QString SettingsDialog::defaultHotkey()
 
 QString SettingsDialog::loadHotkey()
 {
-    QSettings settings("MySoft", "SnapTray");
+    QSettings settings("Victor Fu", "SnapTray");
     return settings.value(SETTINGS_KEY_HOTKEY, DEFAULT_HOTKEY).toString();
 }
 
 void SettingsDialog::saveHotkey(const QString &keySequence)
 {
-    QSettings settings("MySoft", "SnapTray");
+    QSettings settings("Victor Fu", "SnapTray");
     settings.setValue(SETTINGS_KEY_HOTKEY, keySequence);
     qDebug() << "Hotkey saved:" << keySequence;
 }

@@ -244,7 +244,7 @@ bool MainApplication::updateHotkey(const QString& newHotkey)
         updateTrayMenuHotkeyText(newHotkey);
 
         // Save only after successful registration
-        QSettings settings("MySoft", "SnapTray");
+        QSettings settings("Victor Fu", "SnapTray");
         settings.setValue("hotkey", newHotkey);
 
         return true;

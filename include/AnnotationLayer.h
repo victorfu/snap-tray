@@ -185,7 +185,13 @@ private:
 class ErasedItemsGroup : public AnnotationItem
 {
 public:
-    explicit ErasedItemsGroup(std::vector<std::unique_ptr<AnnotationItem>> items);
+    // Item paired with its original index for position-preserving undo
+    struct IndexedItem {
+        size_t originalIndex;
+        std::unique_ptr<AnnotationItem> item;
+    };
+
+    explicit ErasedItemsGroup(std::vector<IndexedItem> items);
     void draw(QPainter &painter) const override;  // Does nothing (invisible marker)
     QRect boundingRect() const override;  // Returns empty rect
     std::unique_ptr<AnnotationItem> clone() const override;
@@ -194,15 +200,15 @@ public:
     bool hasItems() const { return !m_erasedItems.empty(); }
 
     // Extract items for restoration (moves ownership)
-    std::vector<std::unique_ptr<AnnotationItem>> extractItems();
+    std::vector<IndexedItem> extractItems();
 
-    // Track original item count for redo support
-    size_t originalCount() const { return m_originalCount; }
-    void setOriginalCount(size_t count) { m_originalCount = count; }
+    // Track original indices for redo support (stored when items are extracted)
+    const std::vector<size_t>& originalIndices() const { return m_originalIndices; }
+    void setOriginalIndices(std::vector<size_t> indices) { m_originalIndices = std::move(indices); }
 
 private:
-    std::vector<std::unique_ptr<AnnotationItem>> m_erasedItems;
-    size_t m_originalCount = 0;
+    std::vector<IndexedItem> m_erasedItems;
+    std::vector<size_t> m_originalIndices;  // Stored after extractItems() for redo
 };
 
 // Annotation layer that manages all annotations with undo/redo
@@ -231,8 +237,8 @@ public:
     int countStepBadges() const;
 
     // Eraser support: remove items that intersect with the given path
-    // Returns the removed items (for undo support)
-    std::vector<std::unique_ptr<AnnotationItem>> removeItemsIntersecting(const QPoint &point, int strokeWidth);
+    // Returns the removed items with their original indices (for undo support)
+    std::vector<ErasedItemsGroup::IndexedItem> removeItemsIntersecting(const QPoint &point, int strokeWidth);
 
 signals:
     void changed();

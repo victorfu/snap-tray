@@ -659,7 +659,7 @@ void MosaicStroke::updateSource(const QPixmap &sourcePixmap)
 // ErasedItemsGroup Implementation
 // ============================================================================
 
-ErasedItemsGroup::ErasedItemsGroup(std::vector<std::unique_ptr<AnnotationItem>> items)
+ErasedItemsGroup::ErasedItemsGroup(std::vector<IndexedItem> items)
     : m_erasedItems(std::move(items))
 {
 }
@@ -676,15 +676,15 @@ QRect ErasedItemsGroup::boundingRect() const
 
 std::unique_ptr<AnnotationItem> ErasedItemsGroup::clone() const
 {
-    std::vector<std::unique_ptr<AnnotationItem>> clonedItems;
+    std::vector<IndexedItem> clonedItems;
     clonedItems.reserve(m_erasedItems.size());
-    for (const auto &item : m_erasedItems) {
-        clonedItems.push_back(item->clone());
+    for (const auto &indexed : m_erasedItems) {
+        clonedItems.push_back({indexed.originalIndex, indexed.item->clone()});
     }
     return std::make_unique<ErasedItemsGroup>(std::move(clonedItems));
 }
 
-std::vector<std::unique_ptr<AnnotationItem>> ErasedItemsGroup::extractItems()
+std::vector<ErasedItemsGroup::IndexedItem> ErasedItemsGroup::extractItems()
 {
     return std::move(m_erasedItems);
 }
@@ -726,19 +726,29 @@ void AnnotationLayer::undo()
 
     // Check if the last item is an ErasedItemsGroup (from eraser action)
     if (auto* erasedGroup = dynamic_cast<ErasedItemsGroup*>(m_items.back().get())) {
-        // Extract the erased items and restore them
+        // Extract the erased items with their original indices
         auto restoredItems = erasedGroup->extractItems();
 
-        // Record the count for redo support
-        erasedGroup->setOriginalCount(restoredItems.size());
+        // Store original indices for redo support
+        std::vector<size_t> indices;
+        indices.reserve(restoredItems.size());
+        for (const auto& item : restoredItems) {
+            indices.push_back(item.originalIndex);
+        }
+        erasedGroup->setOriginalIndices(std::move(indices));
 
         // Move the empty group to redo stack
         m_redoStack.push_back(std::move(m_items.back()));
         m_items.pop_back();
 
-        // Re-insert the restored items
-        for (auto &item : restoredItems) {
-            m_items.push_back(std::move(item));
+        // Sort by original index ascending to restore in correct order
+        std::sort(restoredItems.begin(), restoredItems.end(),
+            [](const auto& a, const auto& b) { return a.originalIndex < b.originalIndex; });
+
+        // Re-insert items at their original indices
+        for (auto &indexed : restoredItems) {
+            size_t insertPos = std::min(indexed.originalIndex, m_items.size());
+            m_items.insert(m_items.begin() + static_cast<ptrdiff_t>(insertPos), std::move(indexed.item));
         }
     } else {
         // Normal undo: move last item to redo stack
@@ -756,20 +766,27 @@ void AnnotationLayer::redo()
 
     // Check if the item in redo stack is an ErasedItemsGroup
     if (auto* erasedGroup = dynamic_cast<ErasedItemsGroup*>(m_redoStack.back().get())) {
-        // This was an eraser action - we need to re-erase the items
-        // The ErasedItemsGroup in redo stack is empty (items were restored during undo)
-        // We need to find and remove the items that were restored
-        size_t count = erasedGroup->originalCount();
+        // Get the stored original indices
+        auto indices = erasedGroup->originalIndices();
+        m_redoStack.pop_back();
 
-        // Remove the restored items from the end of m_items
-        std::vector<std::unique_ptr<AnnotationItem>> itemsToErase;
-        for (size_t i = 0; i < count && !m_items.empty(); ++i) {
-            itemsToErase.insert(itemsToErase.begin(), std::move(m_items.back()));
-            m_items.pop_back();
+        // Sort indices in descending order to remove from back to front
+        // (prevents index shifting issues during removal)
+        std::sort(indices.begin(), indices.end(), std::greater<size_t>());
+
+        // Remove items at the stored indices
+        std::vector<ErasedItemsGroup::IndexedItem> itemsToErase;
+        itemsToErase.reserve(indices.size());
+
+        for (size_t idx : indices) {
+            if (idx < m_items.size() && !dynamic_cast<ErasedItemsGroup*>(m_items[idx].get())) {
+                itemsToErase.push_back({idx, std::move(m_items[idx])});
+                m_items.erase(m_items.begin() + static_cast<ptrdiff_t>(idx));
+            }
         }
 
-        // Discard the empty group from redo stack and create a new one with the items
-        m_redoStack.pop_back();
+        // Reverse to restore original order (we collected in descending index order)
+        std::reverse(itemsToErase.begin(), itemsToErase.end());
         m_items.push_back(std::make_unique<ErasedItemsGroup>(std::move(itemsToErase)));
     } else {
         // Normal redo
@@ -839,16 +856,17 @@ void AnnotationLayer::renumberStepBadges()
     }
 }
 
-std::vector<std::unique_ptr<AnnotationItem>> AnnotationLayer::removeItemsIntersecting(const QPoint &point, int strokeWidth)
+std::vector<ErasedItemsGroup::IndexedItem> AnnotationLayer::removeItemsIntersecting(const QPoint &point, int strokeWidth)
 {
-    std::vector<std::unique_ptr<AnnotationItem>> removedItems;
+    std::vector<ErasedItemsGroup::IndexedItem> removedItems;
     int margin = strokeWidth / 2;
+    size_t currentIndex = 0;
 
-    // Iterate backwards to safely remove items
     for (auto it = m_items.begin(); it != m_items.end(); ) {
         // Skip ErasedItemsGroup items (they are invisible markers)
         if (dynamic_cast<ErasedItemsGroup*>(it->get())) {
             ++it;
+            ++currentIndex;
             continue;
         }
 
@@ -856,11 +874,13 @@ std::vector<std::unique_ptr<AnnotationItem>> AnnotationLayer::removeItemsInterse
         QRect expandedRect = itemRect.adjusted(-margin, -margin, margin, margin);
 
         if (expandedRect.contains(point)) {
-            // Item intersects with eraser - remove it
-            removedItems.push_back(std::move(*it));
+            // Item intersects with eraser - remove it and record original index
+            removedItems.push_back({currentIndex, std::move(*it)});
             it = m_items.erase(it);
+            // Don't increment currentIndex since we erased
         } else {
             ++it;
+            ++currentIndex;
         }
     }
 

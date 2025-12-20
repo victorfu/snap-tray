@@ -142,7 +142,7 @@ if(APPLE)
         MACOSX_BUNDLE_BUNDLE_NAME "SnapTray"
         MACOSX_BUNDLE_BUNDLE_VERSION "1.0.0"
         MACOSX_BUNDLE_SHORT_VERSION_STRING "1.0.0"
-        MACOSX_BUNDLE_GUI_IDENTIFIER "com.mysoft.snaptray"
+        MACOSX_BUNDLE_GUI_IDENTIFIER "com.victorfu.snaptray"
         MACOSX_BUNDLE_ICON_FILE snaptray.icns
     )
 endif()

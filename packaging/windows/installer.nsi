@@ -15,7 +15,7 @@ RequestExecutionLevel admin
 ; Version information
 VIProductVersion "${VERSION}.0"
 VIAddVersionKey "ProductName" "${APP_NAME}"
-VIAddVersionKey "CompanyName" "MySoft"
+VIAddVersionKey "CompanyName" "Victor Fu"
 VIAddVersionKey "FileDescription" "SnapTray Screenshot Utility Installer"
 VIAddVersionKey "FileVersion" "${VERSION}"
 VIAddVersionKey "ProductVersion" "${VERSION}"
@@ -67,7 +67,7 @@ Section "Install"
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}" \
         "DisplayVersion" "${VERSION}"
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}" \
-        "Publisher" "MySoft"
+        "Publisher" "Victor Fu"
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}" \
         "URLInfoAbout" "https://github.com/user/snaptray"
     WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}" \

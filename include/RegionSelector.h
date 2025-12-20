@@ -10,12 +10,13 @@
 #include <memory>
 #include <optional>
 
+#include "AnnotationLayer.h"
+
 #ifdef Q_OS_MACOS
 #include "WindowDetector.h"
 #endif
 
 class QScreen;
-class AnnotationLayer;
 class ColorPaletteWidget;
 class QCloseEvent;
 class QTextEdit;
@@ -186,7 +187,7 @@ private:
 
     // Eraser state
     QVector<QPoint> m_eraserPath;
-    std::vector<std::unique_ptr<AnnotationItem>> m_erasedItems;  // Items erased during current stroke
+    std::vector<ErasedItemsGroup::IndexedItem> m_erasedItems;  // Items erased during current stroke
     static const int ERASER_WIDTH = 20;
 
     // Selection resize/move state
