@@ -14,17 +14,13 @@
 
 static const char* SETTINGS_KEY_HOTKEY = "hotkey";
 static const char* DEFAULT_HOTKEY = "F2";
-static const char* SETTINGS_KEY_CANVAS_HOTKEY = "canvasHotkey";
-static const char* DEFAULT_CANVAS_HOTKEY = "Shift+F2";
 
 SettingsDialog::SettingsDialog(QWidget *parent)
     : QDialog(parent)
     , m_tabWidget(nullptr)
     , m_startOnLoginCheckbox(nullptr)
     , m_hotkeyEdit(nullptr)
-    , m_canvasHotkeyEdit(nullptr)
     , m_captureHotkeyStatus(nullptr)
-    , m_canvasHotkeyStatus(nullptr)
     , m_restoreDefaultsBtn(nullptr)
 {
     setWindowTitle("SnapTray Settings");
@@ -99,18 +95,15 @@ void SettingsDialog::setupHotkeysTab(QWidget *tab)
     captureLayout->addWidget(m_captureHotkeyStatus);
     layout->addLayout(captureLayout);
 
-    // Screen Canvas hotkey row
+    // Screen Canvas info row (fixed to double-press)
     QHBoxLayout *canvasLayout = new QHBoxLayout();
     QLabel *canvasLabel = new QLabel("Screen Canvas:", tab);
     canvasLabel->setFixedWidth(120);
-    m_canvasHotkeyEdit = new QKeySequenceEdit(tab);
-    m_canvasHotkeyEdit->setKeySequence(QKeySequence(loadCanvasHotkey()));
-    m_canvasHotkeyStatus = new QLabel(tab);
-    m_canvasHotkeyStatus->setFixedSize(24, 24);
-    m_canvasHotkeyStatus->setAlignment(Qt::AlignCenter);
+    QLabel *canvasInfo = new QLabel("Double-press the hotkey above", tab);
+    canvasInfo->setStyleSheet("color: gray;");
     canvasLayout->addWidget(canvasLabel);
-    canvasLayout->addWidget(m_canvasHotkeyEdit);
-    canvasLayout->addWidget(m_canvasHotkeyStatus);
+    canvasLayout->addWidget(canvasInfo);
+    canvasLayout->addStretch();
     layout->addLayout(canvasLayout);
 
     layout->addStretch();
@@ -141,15 +134,9 @@ void SettingsDialog::updateCaptureHotkeyStatus(bool isRegistered)
     updateHotkeyStatus(m_captureHotkeyStatus, isRegistered);
 }
 
-void SettingsDialog::updateCanvasHotkeyStatus(bool isRegistered)
-{
-    updateHotkeyStatus(m_canvasHotkeyStatus, isRegistered);
-}
-
 void SettingsDialog::onRestoreDefaults()
 {
     m_hotkeyEdit->setKeySequence(QKeySequence(DEFAULT_HOTKEY));
-    m_canvasHotkeyEdit->setKeySequence(QKeySequence(DEFAULT_CANVAS_HOTKEY));
 }
 
 QString SettingsDialog::defaultHotkey()
@@ -170,52 +157,19 @@ void SettingsDialog::saveHotkey(const QString &keySequence)
     qDebug() << "Hotkey saved:" << keySequence;
 }
 
-QString SettingsDialog::defaultCanvasHotkey()
-{
-    return QString(DEFAULT_CANVAS_HOTKEY);
-}
-
-QString SettingsDialog::loadCanvasHotkey()
-{
-    QSettings settings("MySoft", "SnapTray");
-    return settings.value(SETTINGS_KEY_CANVAS_HOTKEY, DEFAULT_CANVAS_HOTKEY).toString();
-}
-
-void SettingsDialog::saveCanvasHotkey(const QString &keySequence)
-{
-    QSettings settings("MySoft", "SnapTray");
-    settings.setValue(SETTINGS_KEY_CANVAS_HOTKEY, keySequence);
-    qDebug() << "Canvas hotkey saved:" << keySequence;
-}
-
 void SettingsDialog::onSave()
 {
     QString newHotkey = m_hotkeyEdit->keySequence().toString();
-    QString newCanvasHotkey = m_canvasHotkeyEdit->keySequence().toString();
 
-    // Validate hotkeys are not empty
+    // Validate hotkey is not empty
     if (newHotkey.isEmpty()) {
         QMessageBox::warning(this, "Invalid Hotkey",
             "Capture hotkey cannot be empty. Please set a valid key combination.");
         return;
     }
 
-    if (newCanvasHotkey.isEmpty()) {
-        QMessageBox::warning(this, "Invalid Hotkey",
-            "Canvas hotkey cannot be empty. Please set a valid key combination.");
-        return;
-    }
-
-    // Validate hotkeys are different
-    if (newHotkey == newCanvasHotkey) {
-        QMessageBox::warning(this, "Hotkey Conflict",
-            "Capture hotkey and Canvas hotkey cannot be the same.");
-        return;
-    }
-
-    // Request hotkey changes (saving happens only after successful registration)
+    // Request hotkey change (saving happens only after successful registration)
     emit hotkeyChangeRequested(newHotkey);
-    emit canvasHotkeyChangeRequested(newCanvasHotkey);
 
     // Handle start on login
     bool startOnLogin = m_startOnLoginCheckbox->isChecked();

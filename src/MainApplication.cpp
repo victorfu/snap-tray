@@ -16,6 +16,7 @@
 #include <QGuiApplication>
 #include <QScreen>
 #include <QHotkey>
+#include <QTimer>
 #include <QDebug>
 
 MainApplication::MainApplication(QObject *parent)
@@ -23,7 +24,8 @@ MainApplication::MainApplication(QObject *parent)
     , m_trayIcon(nullptr)
     , m_trayMenu(nullptr)
     , m_regionHotkey(nullptr)
-    , m_canvasHotkey(nullptr)
+    , m_doublePressTimer(nullptr)
+    , m_waitingForSecondPress(false)
     , m_captureManager(nullptr)
     , m_pinWindowManager(nullptr)
     , m_screenCanvasManager(nullptr)
@@ -90,7 +92,7 @@ void MainApplication::initialize()
     m_regionCaptureAction = m_trayMenu->addAction("Region Capture");
     connect(m_regionCaptureAction, &QAction::triggered, this, &MainApplication::onRegionCapture);
 
-    m_screenCanvasAction = m_trayMenu->addAction("Screen Canvas");
+    m_screenCanvasAction = m_trayMenu->addAction("Screen Canvas (F2 x2)");
     connect(m_screenCanvasAction, &QAction::triggered, this, &MainApplication::onScreenCanvas);
 
     m_trayMenu->addSeparator();
@@ -113,9 +115,13 @@ void MainApplication::initialize()
     m_trayIcon->setToolTip("SnapTray - Screenshot Utility");
     m_trayIcon->show();
 
-    // Setup global hotkeys
+    // Setup double-press timer for F2
+    m_doublePressTimer = new QTimer(this);
+    m_doublePressTimer->setSingleShot(true);
+    connect(m_doublePressTimer, &QTimer::timeout, this, &MainApplication::onDoublePressTimeout);
+
+    // Setup global hotkey
     setupHotkey();
-    setupCanvasHotkey();
 
     qDebug() << "SnapTray initialized and running in system tray";
 }
@@ -149,28 +155,17 @@ void MainApplication::onSettings()
 
     SettingsDialog dialog;
     bool captureHotkeySuccess = true;
-    bool canvasHotkeySuccess = true;
 
     // Show current hotkey registration status
     dialog.updateCaptureHotkeyStatus(m_regionHotkey->isRegistered());
-    dialog.updateCanvasHotkeyStatus(m_canvasHotkey->isRegistered());
 
     connect(&dialog, &SettingsDialog::hotkeyChangeRequested,
             this, [this, &dialog, &captureHotkeySuccess](const QString &newHotkey) {
         captureHotkeySuccess = updateHotkey(newHotkey);
         dialog.updateCaptureHotkeyStatus(captureHotkeySuccess);
-    });
 
-    connect(&dialog, &SettingsDialog::canvasHotkeyChangeRequested,
-            this, [this, &dialog, &captureHotkeySuccess, &canvasHotkeySuccess](const QString &newHotkey) {
-        canvasHotkeySuccess = updateCanvasHotkey(newHotkey);
-        dialog.updateCanvasHotkeyStatus(canvasHotkeySuccess);
-
-        // Check both hotkey results
         if (!captureHotkeySuccess) {
             dialog.showHotkeyError("Failed to register capture hotkey. It may be in use by another application.");
-        } else if (!canvasHotkeySuccess) {
-            dialog.showHotkeyError("Failed to register canvas hotkey. It may be in use by another application.");
         } else {
             dialog.accept();
         }
@@ -190,10 +185,34 @@ void MainApplication::setupHotkey()
         qDebug() << "Failed to register region hotkey:" << regionKeySequence;
     }
 
-    connect(m_regionHotkey, &QHotkey::activated, this, &MainApplication::onRegionCapture);
+    // Connect to double-press handler instead of direct region capture
+    connect(m_regionHotkey, &QHotkey::activated, this, &MainApplication::onF2Pressed);
 
     // Update tray menu text with current hotkey
     updateTrayMenuHotkeyText(regionKeySequence);
+}
+
+void MainApplication::onF2Pressed()
+{
+    if (m_waitingForSecondPress && m_lastF2PressTime.elapsed() < 300) {
+        // Double-press detected -> Screen Canvas
+        m_doublePressTimer->stop();
+        m_waitingForSecondPress = false;
+        qDebug() << "Double F2 press detected -> Screen Canvas";
+        onScreenCanvas();
+    } else {
+        // First press, wait for second
+        m_lastF2PressTime.restart();
+        m_waitingForSecondPress = true;
+        m_doublePressTimer->start(300);
+    }
+}
+
+void MainApplication::onDoublePressTimeout()
+{
+    m_waitingForSecondPress = false;
+    qDebug() << "Single F2 press -> Region Capture";
+    onRegionCapture();
 }
 
 bool MainApplication::updateHotkey(const QString &newHotkey)
@@ -242,65 +261,5 @@ void MainApplication::updateTrayMenuHotkeyText(const QString &hotkey)
 {
     if (m_regionCaptureAction) {
         m_regionCaptureAction->setText(QString("Region Capture (%1)").arg(hotkey));
-    }
-}
-
-void MainApplication::setupCanvasHotkey()
-{
-    // Load canvas hotkey from settings (default is F3)
-    QString canvasKeySequence = SettingsDialog::loadCanvasHotkey();
-    m_canvasHotkey = new QHotkey(QKeySequence(canvasKeySequence), true, this);
-
-    if (m_canvasHotkey->isRegistered()) {
-        qDebug() << "Canvas hotkey registered:" << canvasKeySequence;
-    } else {
-        qDebug() << "Failed to register canvas hotkey:" << canvasKeySequence;
-    }
-
-    connect(m_canvasHotkey, &QHotkey::activated, this, &MainApplication::onScreenCanvas);
-
-    // Update tray menu text with current hotkey
-    updateTrayMenuCanvasHotkeyText(canvasKeySequence);
-}
-
-bool MainApplication::updateCanvasHotkey(const QString &newHotkey)
-{
-    qDebug() << "Updating canvas hotkey to:" << newHotkey;
-
-    QKeySequence oldShortcut = m_canvasHotkey->shortcut();
-
-    m_canvasHotkey->setRegistered(false);
-    m_canvasHotkey->setShortcut(QKeySequence(newHotkey));
-    m_canvasHotkey->setRegistered(true);
-
-    if (m_canvasHotkey->isRegistered()) {
-        qDebug() << "Canvas hotkey updated and registered:" << newHotkey;
-        updateTrayMenuCanvasHotkeyText(newHotkey);
-
-        // Save only after successful registration
-        QSettings settings("MySoft", "SnapTray");
-        settings.setValue("canvasHotkey", newHotkey);
-
-        return true;
-    } else {
-        qDebug() << "Failed to register new canvas hotkey:" << newHotkey << ", reverting...";
-
-        m_canvasHotkey->setShortcut(oldShortcut);
-        m_canvasHotkey->setRegistered(true);
-
-        if (m_canvasHotkey->isRegistered()) {
-            qDebug() << "Reverted to old canvas hotkey:" << oldShortcut.toString();
-        } else {
-            qDebug() << "Critical: Failed to restore old canvas hotkey!";
-        }
-
-        return false;
-    }
-}
-
-void MainApplication::updateTrayMenuCanvasHotkeyText(const QString &hotkey)
-{
-    if (m_screenCanvasAction) {
-        m_screenCanvasAction->setText(QString("Screen Canvas (%1)").arg(hotkey));
     }
 }

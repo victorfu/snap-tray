@@ -4,8 +4,10 @@ SnapTray 是一個在系統托盤常駐的區域截圖小工具，預設以 F2 �
 
 ## 功能特色
 
-- **系統托盤選單**：`Region Capture` (顯示當前熱鍵)、`Close All Pins`、`Settings`、`Exit`
-- **全域快捷鍵**：可於設定中自定義，預設為 `F2`。支援即時更新熱鍵註冊。
+- **系統托盤選單**：`Region Capture` (顯示當前熱鍵)、`Screen Canvas`、`Close All Pins`、`Settings`、`Exit`
+- **全域快捷鍵**：可於設定中自定義，支援即時更新熱鍵註冊。
+  - 區域截圖：預設 `F2`
+  - 螢幕畫布：雙擊 `F2`（快速連按兩次）
 - **區域截圖覆蓋層**：
   - 十字線＋放大鏡（支援像素級檢視）
   - RGB/HEX 顏色預覽（按 Shift 切換，按 C 複製顏色代碼）
@@ -20,6 +22,13 @@ SnapTray 是一個在系統托盤常駐的區域截圖小工具，預設以 F2 �
   - `Cancel` 取消 (Esc)
   - 標註工具：`Arrow` / `Pencil` / `Marker` / `Rectangle` / `Text` / `Mosaic` / `StepBadge`（支援 Undo/Redo）
   - `OCR` 文字辨識（僅 macOS，支援繁體中文、簡體中文、英文）
+  - 顏色選擇器：可自選標註工具顏色
+- **螢幕畫布**：
+  - 全螢幕標註模式，直接在螢幕上繪圖
+  - 標註工具：`Pencil` / `Marker` / `Arrow` / `Rectangle`
+  - 顏色選擇器：可自選繪圖顏色
+  - 支援 Undo/Redo/Clear
+  - `Esc` 離開
 - **釘選視窗**：
   - 無邊框、永遠在最上層
   - 可拖曳移動
@@ -28,7 +37,10 @@ SnapTray 是一個在系統托盤常駐的區域截圖小工具，預設以 F2 �
   - 旋轉支援（右鍵選單）
   - 雙擊或 Esc 關閉
   - 右鍵選單：存檔/複製/OCR/縮放/旋轉/關閉
-- **設定對話框**：可自定義全域熱鍵並儲存於系統設定 (QSettings)。
+- **設定對話框**：
+  - General 分頁：開機自動啟動
+  - Hotkeys 分頁：自定義區域截圖熱鍵（雙擊同一熱鍵可啟動螢幕畫布）
+  - 設定儲存於系統設定 (QSettings)
 
 ## 技術棧
 
@@ -136,7 +148,7 @@ packaging\windows\package.bat
 ## 使用方式
 
 1. 啟動後托盤會出現綠色方塊圖示。
-2. 按下全域熱鍵（預設 `F2`）進入截圖模式。
+2. 按下區域截圖熱鍵（預設 `F2`）進入截圖模式；或雙擊熱鍵（快速連按兩次 `F2`）進入螢幕畫布模式。
 3. **截圖模式操作**：
    - 拖曳滑鼠選取區域
    - 單擊可快速選取偵測到的視窗（macOS）
@@ -154,7 +166,13 @@ packaging\windows\package.bat
      - `Mosaic`：拖曳筆刷進行馬賽克塗抹
    - `OCR`（macOS）：辨識選取區內的文字並複製到剪貼簿
    - `Undo/Redo`：`Ctrl+Z` / `Ctrl+Shift+Z`（macOS 通常為 `Cmd+Z` / `Cmd+Shift+Z`）
-5. **釘選視窗操作**：
+5. **螢幕畫布模式操作**：
+   - 工具列提供 `Pencil` / `Marker` / `Arrow` / `Rectangle` 繪圖工具
+   - 點擊顏色選擇器更換繪圖顏色
+   - `Undo` / `Redo`：復原/重做標註
+   - `Clear`：清除所有標註
+   - `Esc` 或 `Exit`：離開螢幕畫布模式
+6. **釘選視窗操作**：
    - 拖曳移動
    - 滑鼠滾輪縮放
    - 邊緣拖曳調整大小
@@ -177,22 +195,37 @@ snap/
 ├── include/
 │   ├── MainApplication.h
 │   ├── SettingsDialog.h
+│   ├── AutoLaunchManager.h
 │   ├── CaptureManager.h
 │   ├── RegionSelector.h
+│   ├── ScreenCanvas.h
+│   ├── ScreenCanvasManager.h
 │   ├── PinWindow.h
 │   ├── PinWindowManager.h
 │   ├── AnnotationLayer.h
+│   ├── AnnotationController.h
+│   ├── ToolbarWidget.h
+│   ├── ColorPaletteWidget.h
+│   ├── IconRenderer.h
 │   ├── WindowDetector.h
 │   └── OCRManager.h
 ├── src/
 │   ├── main.cpp
 │   ├── MainApplication.cpp
 │   ├── SettingsDialog.cpp
+│   ├── AutoLaunchManager_mac.mm # macOS
+│   ├── AutoLaunchManager_win.cpp # Windows
 │   ├── CaptureManager.cpp
 │   ├── RegionSelector.cpp
+│   ├── ScreenCanvas.cpp
+│   ├── ScreenCanvasManager.cpp
 │   ├── PinWindow.cpp
 │   ├── PinWindowManager.cpp
 │   ├── AnnotationLayer.cpp
+│   ├── AnnotationController.cpp
+│   ├── ToolbarWidget.cpp
+│   ├── ColorPaletteWidget.cpp
+│   ├── IconRenderer.cpp
 │   ├── WindowDetector.mm        # macOS
 │   ├── WindowDetector_win.cpp   # Windows
 │   ├── OCRManager.mm            # macOS
@@ -245,7 +278,7 @@ magick snaptray.png -define icon:auto-resize=256,128,64,48,32,16 snaptray.ico
 
 ## 已知限制
 
-- 標註功能目前未提供 UI 調整顏色/線寬（例如畫筆預設紅色、線寬固定）。
+- 標註功能支援顏色選擇，但尚未提供 UI 調整線寬（線寬固定）。
 - 多螢幕支援：截圖會在游標所在螢幕啟動，但不同螢幕 DPI/縮放仍需要更多實機測試。
 - 視窗偵測與 OCR 功能僅支援 macOS。
 

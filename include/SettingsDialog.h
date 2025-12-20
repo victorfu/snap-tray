@@ -23,18 +23,12 @@ public:
     static QString loadHotkey();
     static void saveHotkey(const QString &keySequence);
 
-    static QString defaultCanvasHotkey();
-    static QString loadCanvasHotkey();
-    static void saveCanvasHotkey(const QString &keySequence);
-
     // Status display
     void showHotkeyError(const QString &message);
     void updateCaptureHotkeyStatus(bool isRegistered);
-    void updateCanvasHotkeyStatus(bool isRegistered);
 
 signals:
     void hotkeyChangeRequested(const QString &newHotkey);
-    void canvasHotkeyChangeRequested(const QString &newHotkey);
     void startOnLoginChanged(bool enabled);
 
 private slots:
@@ -52,9 +46,7 @@ private:
     QTabWidget *m_tabWidget;
     QCheckBox *m_startOnLoginCheckbox;
     QKeySequenceEdit *m_hotkeyEdit;
-    QKeySequenceEdit *m_canvasHotkeyEdit;
     QLabel *m_captureHotkeyStatus;
-    QLabel *m_canvasHotkeyStatus;
     QPushButton *m_restoreDefaultsBtn;
 };
 
