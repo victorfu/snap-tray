@@ -22,10 +22,13 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     , m_hotkeyEdit(nullptr)
     , m_captureHotkeyStatus(nullptr)
     , m_restoreDefaultsBtn(nullptr)
+    , m_pendingStartOnLogin(false)
 {
     setWindowTitle("SnapTray Settings");
     setFixedSize(420, 240);
     setupUi();
+
+    connect(this, &QDialog::accepted, this, &SettingsDialog::onAccepted);
 }
 
 SettingsDialog::~SettingsDialog()
@@ -168,26 +171,29 @@ void SettingsDialog::onSave()
         return;
     }
 
-    // Request hotkey change (saving happens only after successful registration)
-    emit hotkeyChangeRequested(newHotkey);
+    // Store pending state - will be applied in onAccepted() if hotkey succeeds
+    m_pendingStartOnLogin = m_startOnLoginCheckbox->isChecked();
 
-    // Handle start on login
-    bool startOnLogin = m_startOnLoginCheckbox->isChecked();
-    bool currentState = AutoLaunchManager::isEnabled();
-    if (startOnLogin != currentState) {
-        bool success = AutoLaunchManager::setEnabled(startOnLogin);
-        if (!success) {
-            QMessageBox::warning(this, "Auto Launch Error",
-                "Failed to update auto-launch setting.");
-        }
-        emit startOnLoginChanged(startOnLogin);
-    }
-    // Note: dialog close is handled by MainApplication based on hotkey registration result
+    // Request hotkey change - MainApplication will call accept() if successful
+    emit hotkeyChangeRequested(newHotkey);
 }
 
 void SettingsDialog::showHotkeyError(const QString &message)
 {
     QMessageBox::warning(this, "Hotkey Registration Failed", message);
+}
+
+void SettingsDialog::onAccepted()
+{
+    // Called only after successful hotkey registration
+    bool currentState = AutoLaunchManager::isEnabled();
+    if (m_pendingStartOnLogin != currentState) {
+        bool success = AutoLaunchManager::setEnabled(m_pendingStartOnLogin);
+        if (!success) {
+            qDebug() << "Failed to update auto-launch setting";
+        }
+        emit startOnLoginChanged(m_pendingStartOnLogin);
+    }
 }
 
 void SettingsDialog::onCancel()

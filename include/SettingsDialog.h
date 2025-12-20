@@ -35,6 +35,7 @@ private slots:
     void onSave();
     void onCancel();
     void onRestoreDefaults();
+    void onAccepted();
 
 private:
     void setupUi();
@@ -48,6 +49,7 @@ private:
     QKeySequenceEdit *m_hotkeyEdit;
     QLabel *m_captureHotkeyStatus;
     QPushButton *m_restoreDefaultsBtn;
+    bool m_pendingStartOnLogin;
 };
 
 #endif // SETTINGSDIALOG_H

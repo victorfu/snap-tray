@@ -19,7 +19,7 @@
 #include <QTimer>
 #include <QDebug>
 
-MainApplication::MainApplication(QObject *parent)
+MainApplication::MainApplication(QObject* parent)
     : QObject(parent)
     , m_trayIcon(nullptr)
     , m_trayMenu(nullptr)
@@ -97,17 +97,17 @@ void MainApplication::initialize()
 
     m_trayMenu->addSeparator();
 
-    QAction *closeAllPinsAction = m_trayMenu->addAction("Close All Pins");
+    QAction* closeAllPinsAction = m_trayMenu->addAction("Close All Pins");
     connect(closeAllPinsAction, &QAction::triggered, this, &MainApplication::onCloseAllPins);
 
     m_trayMenu->addSeparator();
 
-    QAction *settingsAction = m_trayMenu->addAction("Settings");
+    QAction* settingsAction = m_trayMenu->addAction("Settings");
     connect(settingsAction, &QAction::triggered, this, &MainApplication::onSettings);
 
     m_trayMenu->addSeparator();
 
-    QAction *exitAction = m_trayMenu->addAction("Exit");
+    QAction* exitAction = m_trayMenu->addAction("Exit");
     connect(exitAction, &QAction::triggered, qApp, &QCoreApplication::quit);
 
     // Set menu and show tray icon
@@ -165,16 +165,17 @@ void MainApplication::onSettings()
     dialog.updateCaptureHotkeyStatus(m_regionHotkey->isRegistered());
 
     connect(&dialog, &SettingsDialog::hotkeyChangeRequested,
-            this, [this, &dialog, &captureHotkeySuccess](const QString &newHotkey) {
-        captureHotkeySuccess = updateHotkey(newHotkey);
-        dialog.updateCaptureHotkeyStatus(captureHotkeySuccess);
+        this, [this, &dialog, &captureHotkeySuccess](const QString& newHotkey) {
+            captureHotkeySuccess = updateHotkey(newHotkey);
+            dialog.updateCaptureHotkeyStatus(captureHotkeySuccess);
 
-        if (!captureHotkeySuccess) {
-            dialog.showHotkeyError("Failed to register capture hotkey. It may be in use by another application.");
-        } else {
-            dialog.accept();
-        }
-    });
+            if (!captureHotkeySuccess) {
+                dialog.showHotkeyError("Failed to register capture hotkey. It may be in use by another application.");
+            }
+            else {
+                dialog.accept();
+            }
+        });
     dialog.exec();
 }
 
@@ -186,7 +187,8 @@ void MainApplication::setupHotkey()
 
     if (m_regionHotkey->isRegistered()) {
         qDebug() << "Region hotkey registered:" << regionKeySequence;
-    } else {
+    }
+    else {
         qDebug() << "Failed to register region hotkey:" << regionKeySequence;
     }
 
@@ -205,11 +207,12 @@ void MainApplication::onF2Pressed()
         m_waitingForSecondPress = false;
         qDebug() << "Double F2 press detected -> Screen Canvas";
         onScreenCanvas();
-    } else {
+    }
+    else {
         // First press, wait for second
         m_lastF2PressTime.restart();
         m_waitingForSecondPress = true;
-        m_doublePressTimer->start(300);
+        m_doublePressTimer->start(200);
     }
 }
 
@@ -220,7 +223,7 @@ void MainApplication::onDoublePressTimeout()
     onRegionCapture();
 }
 
-bool MainApplication::updateHotkey(const QString &newHotkey)
+bool MainApplication::updateHotkey(const QString& newHotkey)
 {
     qDebug() << "Updating hotkey to:" << newHotkey;
 
@@ -245,7 +248,8 @@ bool MainApplication::updateHotkey(const QString &newHotkey)
         settings.setValue("hotkey", newHotkey);
 
         return true;
-    } else {
+    }
+    else {
         qDebug() << "Failed to register new hotkey:" << newHotkey << ", reverting...";
 
         // 回復舊熱鍵
@@ -254,7 +258,8 @@ bool MainApplication::updateHotkey(const QString &newHotkey)
 
         if (m_regionHotkey->isRegistered()) {
             qDebug() << "Reverted to old hotkey:" << oldShortcut.toString();
-        } else {
+        }
+        else {
             qDebug() << "Critical: Failed to restore old hotkey!";
         }
 
@@ -262,7 +267,7 @@ bool MainApplication::updateHotkey(const QString &newHotkey)
     }
 }
 
-void MainApplication::updateTrayMenuHotkeyText(const QString &hotkey)
+void MainApplication::updateTrayMenuHotkeyText(const QString& hotkey)
 {
     if (m_regionCaptureAction) {
         m_regionCaptureAction->setText(QString("Region Capture (%1)").arg(hotkey));
