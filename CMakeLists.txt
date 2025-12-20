@@ -109,6 +109,19 @@ if(APPLE)
         ${VISION_FRAMEWORK}
         ${SERVICEMANAGEMENT_FRAMEWORK}
     )
+elseif(WIN32)
+    # Windows-specific libraries for WindowDetector and OCR
+    target_link_libraries(${PROJECT_NAME} PRIVATE
+        Qt6::Widgets
+        Qt6::Gui
+        Qt6::Svg
+        QHotkey::QHotkey
+        dwmapi
+        psapi
+        windowsapp
+    )
+    # Enable C++/WinRT for Windows.Media.Ocr
+    target_compile_options(${PROJECT_NAME} PRIVATE /await)
 else()
     target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::Widgets Qt6::Gui Qt6::Svg QHotkey::QHotkey)
 endif()

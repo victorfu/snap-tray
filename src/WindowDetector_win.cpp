@@ -1,16 +1,126 @@
 #include "WindowDetector.h"
 #include <QScreen>
 #include <QDebug>
+#include <QFileInfo>
 
-// Windows stub implementation
-// TODO: Implement using Windows API (EnumWindows, GetWindowRect, etc.)
+#include <windows.h>
+#include <dwmapi.h>
+#include <psapi.h>
+
+#pragma comment(lib, "dwmapi.lib")
+#pragma comment(lib, "psapi.lib")
+
+namespace {
+
+struct EnumWindowsContext {
+    std::vector<DetectedElement> *windowCache;
+    DWORD currentProcessId;
+};
+
+QString getProcessName(DWORD processId)
+{
+    QString processName;
+    HANDLE hProcess = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION | PROCESS_VM_READ,
+                                   FALSE, processId);
+    if (hProcess) {
+        WCHAR path[MAX_PATH];
+        DWORD size = MAX_PATH;
+        if (QueryFullProcessImageNameW(hProcess, 0, path, &size)) {
+            QString fullPath = QString::fromWCharArray(path);
+            processName = QFileInfo(fullPath).baseName();
+        }
+        CloseHandle(hProcess);
+    }
+    return processName;
+}
+
+bool isWindowCloaked(HWND hwnd)
+{
+    BOOL cloaked = FALSE;
+    HRESULT hr = DwmGetWindowAttribute(hwnd, DWMWA_CLOAKED, &cloaked, sizeof(cloaked));
+    return SUCCEEDED(hr) && cloaked;
+}
+
+BOOL CALLBACK enumWindowsProc(HWND hwnd, LPARAM lParam)
+{
+    auto *context = reinterpret_cast<EnumWindowsContext *>(lParam);
+
+    // Skip invisible windows
+    if (!IsWindowVisible(hwnd)) {
+        return TRUE;
+    }
+
+    // Skip cloaked windows (hidden UWP apps, virtual desktops)
+    if (isWindowCloaked(hwnd)) {
+        return TRUE;
+    }
+
+    // Skip our own process windows
+    DWORD windowProcessId = 0;
+    GetWindowThreadProcessId(hwnd, &windowProcessId);
+    if (windowProcessId == context->currentProcessId) {
+        return TRUE;
+    }
+
+    // Skip tool windows (tooltips, floating toolbars, etc.)
+    LONG_PTR exStyle = GetWindowLongPtrW(hwnd, GWL_EXSTYLE);
+    if (exStyle & WS_EX_TOOLWINDOW) {
+        return TRUE;
+    }
+
+    // Skip windows without a parent that are not app windows
+    // (filters out some system UI elements)
+    if (!(exStyle & WS_EX_APPWINDOW) && GetWindow(hwnd, GW_OWNER) != nullptr) {
+        return TRUE;
+    }
+
+    // Get window bounds
+    RECT rect;
+    if (!GetWindowRect(hwnd, &rect)) {
+        return TRUE;
+    }
+
+    int width = rect.right - rect.left;
+    int height = rect.bottom - rect.top;
+
+    // Skip windows that are too small
+    if (width < 50 || height < 50) {
+        return TRUE;
+    }
+
+    // Skip windows positioned off-screen (minimized or hidden)
+    if (rect.left <= -32000 || rect.top <= -32000) {
+        return TRUE;
+    }
+
+    // Get window title
+    WCHAR titleBuffer[256];
+    int titleLen = GetWindowTextW(hwnd, titleBuffer, 256);
+    QString windowTitle = QString::fromWCharArray(titleBuffer, titleLen);
+
+    // Get owner application name
+    QString ownerApp = getProcessName(windowProcessId);
+
+    // Create DetectedElement
+    DetectedElement element;
+    element.bounds = QRect(rect.left, rect.top, width, height);
+    element.windowTitle = windowTitle;
+    element.ownerApp = ownerApp;
+    element.windowLayer = 0;  // Windows doesn't have explicit layers like macOS
+    element.windowId = reinterpret_cast<uintptr_t>(hwnd) & 0xFFFFFFFF;
+
+    context->windowCache->push_back(element);
+
+    return TRUE;
+}
+
+} // anonymous namespace
 
 WindowDetector::WindowDetector(QObject *parent)
     : QObject(parent)
     , m_currentScreen(nullptr)
     , m_enabled(false)
 {
-    qDebug() << "WindowDetector: Windows implementation not yet available";
 }
 
 WindowDetector::~WindowDetector()
@@ -19,7 +129,7 @@ WindowDetector::~WindowDetector()
 
 bool WindowDetector::hasAccessibilityPermission()
 {
-    // No special permissions needed on Windows
+    // No special permissions needed on Windows for window enumeration
     return true;
 }
 
@@ -46,17 +156,48 @@ bool WindowDetector::isEnabled() const
 void WindowDetector::refreshWindowList()
 {
     m_windowCache.clear();
-    // TODO: Implement Windows window enumeration using EnumWindows()
+    enumerateWindows();
 }
 
 void WindowDetector::enumerateWindows()
 {
-    // TODO: Use EnumWindows() and GetWindowRect() to enumerate windows
+    EnumWindowsContext context;
+    context.windowCache = &m_windowCache;
+    context.currentProcessId = GetCurrentProcessId();
+
+    // EnumWindows returns windows in z-order (topmost first)
+    EnumWindows(enumWindowsProc, reinterpret_cast<LPARAM>(&context));
+
+    qDebug() << "WindowDetector: Enumerated" << m_windowCache.size() << "windows";
 }
 
 std::optional<DetectedElement> WindowDetector::detectWindowAt(const QPoint &screenPos) const
 {
-    Q_UNUSED(screenPos);
-    // TODO: Implement window detection at point using WindowFromPoint()
+    if (!m_enabled) {
+        return std::nullopt;
+    }
+
+    // If a screen is set, check if the point is within that screen
+    if (m_currentScreen) {
+        QRect screenGeometry = m_currentScreen->geometry();
+        if (!screenGeometry.contains(screenPos)) {
+            return std::nullopt;
+        }
+    }
+
+    // Iterate through cached windows in z-order (topmost first)
+    for (const auto &element : m_windowCache) {
+        if (element.bounds.contains(screenPos)) {
+            // Optionally filter to current screen
+            if (m_currentScreen) {
+                QRect screenGeometry = m_currentScreen->geometry();
+                if (!element.bounds.intersects(screenGeometry)) {
+                    continue;
+                }
+            }
+            return element;
+        }
+    }
+
     return std::nullopt;
 }
