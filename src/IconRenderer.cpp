@@ -5,6 +5,12 @@
 #include <QPixmap>
 #include <QDebug>
 
+size_t qHash(const IconRenderer::PixmapCacheKey& key, size_t seed)
+{
+    return qHash(key.iconKey, seed) ^ qHash(key.size)
+         ^ qHash(key.color) ^ qHash(key.dpr100);
+}
+
 IconRenderer& IconRenderer::instance()
 {
     static IconRenderer instance;
@@ -63,7 +69,18 @@ void IconRenderer::renderIcon(QPainter& painter, const QRect& rect,
     // Get device pixel ratio for HiDPI support
     qreal dpr = painter.device()->devicePixelRatio();
 
-    // Create pixmap for SVG rendering
+    // Build cache key
+    PixmapCacheKey cacheKey{key, iconSize, tintColor.rgba(),
+                            static_cast<int>(dpr * 100)};
+
+    // Check cache
+    auto it = m_pixmapCache.find(cacheKey);
+    if (it != m_pixmapCache.end()) {
+        painter.drawPixmap(iconRect, it.value());
+        return;
+    }
+
+    // Cache miss: render SVG to pixmap
     QPixmap iconPixmap(iconSize * dpr, iconSize * dpr);
     iconPixmap.setDevicePixelRatio(dpr);
     iconPixmap.fill(Qt::transparent);
@@ -84,7 +101,8 @@ void IconRenderer::renderIcon(QPainter& painter, const QRect& rect,
     tintPainter.fillRect(tintedPixmap.rect(), tintColor);
     tintPainter.end();
 
-    // Draw the tinted icon
+    // Store in cache and draw
+    m_pixmapCache.insert(cacheKey, tintedPixmap);
     painter.drawPixmap(iconRect, tintedPixmap);
 }
 
@@ -92,4 +110,5 @@ void IconRenderer::clearCache()
 {
     qDeleteAll(m_renderers);
     m_renderers.clear();
+    m_pixmapCache.clear();
 }

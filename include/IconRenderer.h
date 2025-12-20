@@ -5,6 +5,7 @@
 #include <QString>
 #include <QRect>
 #include <QColor>
+#include <QPixmap>
 
 class QPainter;
 class QSvgRenderer;
@@ -63,7 +64,23 @@ private:
     IconRenderer();
     ~IconRenderer();
 
+    // Pixmap 快取鍵值
+    struct PixmapCacheKey {
+        QString iconKey;
+        int size;
+        QRgb color;
+        int dpr100;  // dpr * 100 轉為整數避免浮點比較問題
+
+        bool operator==(const PixmapCacheKey& other) const {
+            return iconKey == other.iconKey && size == other.size
+                && color == other.color && dpr100 == other.dpr100;
+        }
+    };
+
+    friend size_t qHash(const PixmapCacheKey& key, size_t seed);
+
     QHash<QString, QSvgRenderer*> m_renderers;
+    QHash<PixmapCacheKey, QPixmap> m_pixmapCache;
 };
 
 #endif // ICONRENDERER_H
