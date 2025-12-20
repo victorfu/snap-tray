@@ -77,43 +77,50 @@ void MarkerStroke::draw(QPainter &painter) const
 
     painter.save();
 
-    // Calculate bounding rect for offscreen buffer
     QRect bounds = boundingRect();
     if (bounds.isEmpty()) {
         painter.restore();
         return;
     }
 
-    // Get DPR from painter's device for proper HiDPI scaling
     qreal dpr = painter.device()->devicePixelRatio();
 
-    // Create offscreen pixmap at device pixel resolution
-    // This ensures sharp rendering on HiDPI displays
-    QPixmap offscreen(bounds.size() * dpr);
-    offscreen.setDevicePixelRatio(dpr);
-    offscreen.fill(Qt::transparent);
+    // Check if cache is valid
+    bool cacheValid = !m_cachedPixmap.isNull()
+        && m_cachedDpr == dpr
+        && m_cachedPointCount == m_points.size();
 
-    {
-        QPainter offPainter(&offscreen);
-        offPainter.setRenderHint(QPainter::Antialiasing, true);
+    if (!cacheValid) {
+        // Regenerate cache
+        QPixmap offscreen(bounds.size() * dpr);
+        offscreen.setDevicePixelRatio(dpr);
+        offscreen.fill(Qt::transparent);
 
-        // Draw with FULL opacity on the offscreen buffer
-        QPen pen(m_color, m_width, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
-        offPainter.setPen(pen);
-        offPainter.setBrush(Qt::NoBrush);
+        {
+            QPainter offPainter(&offscreen);
+            offPainter.setRenderHint(QPainter::Antialiasing, true);
+            QPen pen(m_color, m_width, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+            offPainter.setPen(pen);
+            offPainter.setBrush(Qt::NoBrush);
 
-        // Translate points relative to offscreen origin
-        QPainterPath path;
-        path.moveTo(m_points.first() - bounds.topLeft());
-        for (int i = 1; i < m_points.size(); ++i) {
-            path.lineTo(m_points[i] - bounds.topLeft());
+            QPainterPath path;
+            path.moveTo(m_points.first() - bounds.topLeft());
+            for (int i = 1; i < m_points.size(); ++i) {
+                path.lineTo(m_points[i] - bounds.topLeft());
+            }
+            offPainter.drawPath(path);
         }
-        offPainter.drawPath(path);
+
+        // Update cache
+        m_cachedPixmap = offscreen;
+        m_cachedOrigin = bounds.topLeft();
+        m_cachedDpr = dpr;
+        m_cachedPointCount = m_points.size();
     }
 
-    // Composite the offscreen pixmap with desired alpha (~40% opacity)
+    // Use cached pixmap
     painter.setOpacity(0.4);
-    painter.drawPixmap(bounds.topLeft(), offscreen);
+    painter.drawPixmap(m_cachedOrigin, m_cachedPixmap);
 
     painter.restore();
 }
