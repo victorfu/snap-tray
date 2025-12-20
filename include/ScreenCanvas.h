@@ -7,14 +7,10 @@
 #include <QRect>
 #include <QVector>
 #include <QColor>
-#include <memory>
 
 class QScreen;
 class AnnotationLayer;
-class PencilStroke;
-class MarkerStroke;
-class ArrowAnnotation;
-class RectangleAnnotation;
+class AnnotationController;
 class ColorPaletteWidget;
 
 // Canvas tool types (simplified subset for screen canvas)
@@ -73,32 +69,15 @@ private:
     void onColorSelected(const QColor &color);
     void onMoreColorsRequested();
 
-    // Annotation helpers
-    void startAnnotation(const QPoint &pos);
-    void updateAnnotation(const QPoint &pos);
-    void finishAnnotation();
-
     // Screen capture
     QPixmap m_backgroundPixmap;
     QScreen *m_currentScreen;
     qreal m_devicePixelRatio;
 
-    // Annotation layer and state
+    // Annotation layer and controller
     AnnotationLayer *m_annotationLayer;
+    AnnotationController *m_controller;
     CanvasTool m_currentTool;
-    QColor m_annotationColor;
-    int m_annotationWidth;
-
-    // In-progress annotation state
-    bool m_isDrawing;
-    QPoint m_drawStartPoint;
-    QVector<QPoint> m_currentPath;
-
-    // Temporary annotation objects for preview
-    std::unique_ptr<PencilStroke> m_currentPencil;
-    std::unique_ptr<MarkerStroke> m_currentMarker;
-    std::unique_ptr<ArrowAnnotation> m_currentArrow;
-    std::unique_ptr<RectangleAnnotation> m_currentRectangle;
 
     // Toolbar
     QRect m_toolbarRect;

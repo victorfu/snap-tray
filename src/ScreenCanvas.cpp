@@ -1,5 +1,6 @@
 #include "ScreenCanvas.h"
 #include "AnnotationLayer.h"
+#include "AnnotationController.h"
 #include "IconRenderer.h"
 #include "ColorPaletteWidget.h"
 
@@ -12,15 +13,25 @@
 #include <QDebug>
 #include <QColorDialog>
 
+// Helper function to map CanvasTool to AnnotationController::Tool
+static AnnotationController::Tool mapToControllerTool(CanvasTool tool)
+{
+    switch (tool) {
+    case CanvasTool::Pencil:    return AnnotationController::Tool::Pencil;
+    case CanvasTool::Marker:    return AnnotationController::Tool::Marker;
+    case CanvasTool::Arrow:     return AnnotationController::Tool::Arrow;
+    case CanvasTool::Rectangle: return AnnotationController::Tool::Rectangle;
+    default:                    return AnnotationController::Tool::None;
+    }
+}
+
 ScreenCanvas::ScreenCanvas(QWidget *parent)
     : QWidget(parent)
     , m_currentScreen(nullptr)
     , m_devicePixelRatio(1.0)
     , m_annotationLayer(nullptr)
+    , m_controller(nullptr)
     , m_currentTool(CanvasTool::Pencil)
-    , m_annotationColor(Qt::red)
-    , m_annotationWidth(3)
-    , m_isDrawing(false)
     , m_hoveredButton(-1)
     , m_colorPalette(nullptr)
 {
@@ -35,12 +46,19 @@ ScreenCanvas::ScreenCanvas(QWidget *parent)
     // Initialize annotation layer
     m_annotationLayer = new AnnotationLayer(this);
 
+    // Initialize annotation controller
+    m_controller = new AnnotationController(this);
+    m_controller->setAnnotationLayer(m_annotationLayer);
+    m_controller->setCurrentTool(mapToControllerTool(m_currentTool));
+    m_controller->setColor(Qt::red);
+    m_controller->setWidth(3);
+
     // Initialize SVG icons
     initializeIcons();
 
     // Initialize color palette widget
     m_colorPalette = new ColorPaletteWidget(this);
-    m_colorPalette->setCurrentColor(m_annotationColor);
+    m_colorPalette->setCurrentColor(m_controller->color());
     connect(m_colorPalette, &ColorPaletteWidget::colorSelected,
             this, &ScreenCanvas::onColorSelected);
     connect(m_colorPalette, &ColorPaletteWidget::moreColorsRequested,
@@ -105,17 +123,17 @@ bool ScreenCanvas::shouldShowColorPalette() const
 
 void ScreenCanvas::onColorSelected(const QColor &color)
 {
-    m_annotationColor = color;
+    m_controller->setColor(color);
     update();
 }
 
 void ScreenCanvas::onMoreColorsRequested()
 {
-    QColor newColor = QColorDialog::getColor(m_annotationColor, this, tr("Select Color"));
+    QColor newColor = QColorDialog::getColor(m_controller->color(), this, tr("Select Color"));
     if (newColor.isValid()) {
-        m_annotationColor = newColor;
+        m_controller->setColor(newColor);
         m_colorPalette->setCurrentColor(newColor);
-        qDebug() << "ScreenCanvas: Custom color selected:" << m_annotationColor.name();
+        qDebug() << "ScreenCanvas: Custom color selected:" << newColor.name();
         update();
     }
 }
@@ -182,17 +200,7 @@ void ScreenCanvas::drawAnnotations(QPainter &painter)
 
 void ScreenCanvas::drawCurrentAnnotation(QPainter &painter)
 {
-    if (!m_isDrawing) return;
-
-    if (m_currentPencil) {
-        m_currentPencil->draw(painter);
-    } else if (m_currentMarker) {
-        m_currentMarker->draw(painter);
-    } else if (m_currentArrow) {
-        m_currentArrow->draw(painter);
-    } else if (m_currentRectangle) {
-        m_currentRectangle->draw(painter);
-    }
+    m_controller->drawCurrentAnnotation(painter);
 }
 
 void ScreenCanvas::drawToolbar(QPainter &painter)
@@ -366,6 +374,7 @@ void ScreenCanvas::handleToolbarClick(CanvasTool button)
     case CanvasTool::Arrow:
     case CanvasTool::Rectangle:
         m_currentTool = button;
+        m_controller->setCurrentTool(mapToControllerTool(button));
         qDebug() << "ScreenCanvas: Tool selected:" << static_cast<int>(button);
         update();
         break;
@@ -414,118 +423,6 @@ bool ScreenCanvas::isAnnotationTool(CanvasTool tool) const
     }
 }
 
-void ScreenCanvas::startAnnotation(const QPoint &pos)
-{
-    m_isDrawing = true;
-    m_drawStartPoint = pos;
-    m_currentPath.clear();
-    m_currentPath.append(pos);
-
-    switch (m_currentTool) {
-    case CanvasTool::Pencil:
-        m_currentPencil = std::make_unique<PencilStroke>(m_currentPath, m_annotationColor, m_annotationWidth);
-        break;
-
-    case CanvasTool::Marker:
-        m_currentMarker = std::make_unique<MarkerStroke>(m_currentPath, m_annotationColor, 20);
-        break;
-
-    case CanvasTool::Arrow:
-        m_currentArrow = std::make_unique<ArrowAnnotation>(pos, pos, m_annotationColor, m_annotationWidth);
-        break;
-
-    case CanvasTool::Rectangle:
-        m_currentRectangle = std::make_unique<RectangleAnnotation>(QRect(pos, pos), m_annotationColor, m_annotationWidth);
-        break;
-
-    default:
-        m_isDrawing = false;
-        break;
-    }
-
-    update();
-}
-
-void ScreenCanvas::updateAnnotation(const QPoint &pos)
-{
-    if (!m_isDrawing) return;
-
-    switch (m_currentTool) {
-    case CanvasTool::Pencil:
-        if (m_currentPencil) {
-            m_currentPath.append(pos);
-            m_currentPencil->addPoint(pos);
-        }
-        break;
-
-    case CanvasTool::Marker:
-        if (m_currentMarker) {
-            m_currentPath.append(pos);
-            m_currentMarker->addPoint(pos);
-        }
-        break;
-
-    case CanvasTool::Arrow:
-        if (m_currentArrow) {
-            m_currentArrow->setEnd(pos);
-        }
-        break;
-
-    case CanvasTool::Rectangle:
-        if (m_currentRectangle) {
-            m_currentRectangle->setRect(QRect(m_drawStartPoint, pos));
-        }
-        break;
-
-    default:
-        break;
-    }
-
-    update();
-}
-
-void ScreenCanvas::finishAnnotation()
-{
-    if (!m_isDrawing) return;
-
-    m_isDrawing = false;
-
-    switch (m_currentTool) {
-    case CanvasTool::Pencil:
-        if (m_currentPencil && m_currentPath.size() > 1) {
-            m_annotationLayer->addItem(std::move(m_currentPencil));
-        }
-        m_currentPencil.reset();
-        break;
-
-    case CanvasTool::Marker:
-        if (m_currentMarker && m_currentPath.size() > 1) {
-            m_annotationLayer->addItem(std::move(m_currentMarker));
-        }
-        m_currentMarker.reset();
-        break;
-
-    case CanvasTool::Arrow:
-        if (m_currentArrow) {
-            m_annotationLayer->addItem(std::move(m_currentArrow));
-        }
-        m_currentArrow.reset();
-        break;
-
-    case CanvasTool::Rectangle:
-        if (m_currentRectangle) {
-            m_annotationLayer->addItem(std::move(m_currentRectangle));
-        }
-        m_currentRectangle.reset();
-        break;
-
-    default:
-        break;
-    }
-
-    m_currentPath.clear();
-}
-
 void ScreenCanvas::mousePressEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton) {
@@ -544,17 +441,13 @@ void ScreenCanvas::mousePressEvent(QMouseEvent *event)
 
         // Start annotation drawing
         if (isAnnotationTool(m_currentTool)) {
-            startAnnotation(event->pos());
+            m_controller->startDrawing(event->pos());
+            update();
         }
     } else if (event->button() == Qt::RightButton) {
         // Cancel current annotation
-        if (m_isDrawing) {
-            m_isDrawing = false;
-            m_currentPath.clear();
-            m_currentPencil.reset();
-            m_currentMarker.reset();
-            m_currentArrow.reset();
-            m_currentRectangle.reset();
+        if (m_controller->isDrawing()) {
+            m_controller->cancelDrawing();
             update();
         }
     }
@@ -562,8 +455,9 @@ void ScreenCanvas::mousePressEvent(QMouseEvent *event)
 
 void ScreenCanvas::mouseMoveEvent(QMouseEvent *event)
 {
-    if (m_isDrawing) {
-        updateAnnotation(event->pos());
+    if (m_controller->isDrawing()) {
+        m_controller->updateDrawing(event->pos());
+        update();
     } else {
         bool needsUpdate = false;
 
@@ -599,8 +493,8 @@ void ScreenCanvas::mouseMoveEvent(QMouseEvent *event)
 
 void ScreenCanvas::mouseReleaseEvent(QMouseEvent *event)
 {
-    if (event->button() == Qt::LeftButton && m_isDrawing) {
-        finishAnnotation();
+    if (event->button() == Qt::LeftButton && m_controller->isDrawing()) {
+        m_controller->finishDrawing();
         update();
     }
 }
