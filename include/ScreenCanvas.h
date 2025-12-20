@@ -12,6 +12,7 @@ class QScreen;
 class AnnotationLayer;
 class AnnotationController;
 class ColorPaletteWidget;
+class ColorPickerDialog;
 
 // Canvas tool types (simplified subset for screen canvas)
 enum class CanvasTool {
@@ -90,6 +91,9 @@ private:
 
     // Color palette
     ColorPaletteWidget *m_colorPalette;
+
+    // Color picker dialog
+    ColorPickerDialog *m_colorPickerDialog;
 };
 
 #endif // SCREENCANVAS_H

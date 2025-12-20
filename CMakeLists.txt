@@ -35,6 +35,7 @@ set(SOURCES
     src/ColorPaletteWidget.cpp
     src/ToolbarWidget.cpp
     src/AnnotationController.cpp
+    src/ColorPickerDialog.mm
 )
 
 set(RESOURCES
@@ -56,6 +57,7 @@ set(HEADERS
     include/ColorPaletteWidget.h
     include/ToolbarWidget.h
     include/AnnotationController.h
+    include/ColorPickerDialog.h
 )
 
 # Platform-specific source files

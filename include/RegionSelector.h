@@ -18,6 +18,7 @@
 
 class QScreen;
 class ColorPaletteWidget;
+class ColorPickerDialog;
 class QCloseEvent;
 class QTextEdit;
 
@@ -224,6 +225,9 @@ private:
     QTextEdit *m_inlineTextEdit;
     bool m_isEditingText;
     QPoint m_textEditPosition;
+
+    // Color picker dialog
+    ColorPickerDialog *m_colorPickerDialog;
 };
 
 #endif // REGIONSELECTOR_H

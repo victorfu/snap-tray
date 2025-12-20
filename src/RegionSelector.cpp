@@ -2,6 +2,7 @@
 #include "AnnotationLayer.h"
 #include "IconRenderer.h"
 #include "ColorPaletteWidget.h"
+#include "ColorPickerDialog.h"
 
 #ifdef Q_OS_MACOS
 #include "OCRManager.h"
@@ -54,6 +55,7 @@ RegionSelector::RegionSelector(QWidget* parent)
     , m_colorPalette(nullptr)
     , m_inlineTextEdit(nullptr)
     , m_isEditingText(false)
+    , m_colorPickerDialog(nullptr)
 {
     setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::Tool);
     setAttribute(Qt::WA_DeleteOnClose);
@@ -197,39 +199,42 @@ void RegionSelector::onColorSelected(const QColor &color)
 
 void RegionSelector::onMoreColorsRequested()
 {
-    m_isDialogOpen = true;
-    hide();
+    if (!m_colorPickerDialog) {
+        m_colorPickerDialog = new ColorPickerDialog();
+        connect(m_colorPickerDialog, &ColorPickerDialog::colorSelected,
+                this, [this](const QColor &color) {
+            m_annotationColor = color;
+            m_colorPalette->setCurrentColor(color);
 
-    QColor newColor = QColorDialog::getColor(m_annotationColor, nullptr, tr("Select Color"));
+            // Update text edit style if currently editing
+            if (m_isEditingText && m_inlineTextEdit) {
+                QString styleSheet = QString(
+                    "QTextEdit {"
+                    "  background: rgba(255, 255, 255, 230);"
+                    "  color: %1;"
+                    "  font-size: 16pt;"
+                    "  font-weight: bold;"
+                    "  border: 2px solid %1;"
+                    "  border-radius: 4px;"
+                    "  padding: 4px;"
+                    "}"
+                ).arg(color.name());
+                m_inlineTextEdit->setStyleSheet(styleSheet);
+            }
 
-    show();
-    activateWindow();
-    raise();
-    m_isDialogOpen = false;
-
-    if (newColor.isValid()) {
-        m_annotationColor = newColor;
-        m_colorPalette->setCurrentColor(newColor);
-
-        // Update text edit style if currently editing
-        if (m_isEditingText && m_inlineTextEdit) {
-            QString styleSheet = QString(
-                "QTextEdit {"
-                "  background: rgba(255, 255, 255, 230);"
-                "  color: %1;"
-                "  font-size: 16pt;"
-                "  font-weight: bold;"
-                "  border: 2px solid %1;"
-                "  border-radius: 4px;"
-                "  padding: 4px;"
-                "}"
-            ).arg(newColor.name());
-            m_inlineTextEdit->setStyleSheet(styleSheet);
-        }
-
-        qDebug() << "Custom color selected:" << m_annotationColor.name();
-        update();
+            qDebug() << "Custom color selected:" << color.name();
+            update();
+        });
     }
+
+    m_colorPickerDialog->setCurrentColor(m_annotationColor);
+
+    // Position at center of screen
+    QPoint center = geometry().center();
+    m_colorPickerDialog->move(center.x() - 170, center.y() - 210);
+    m_colorPickerDialog->show();
+    m_colorPickerDialog->raise();
+    m_colorPickerDialog->activateWindow();
 }
 
 void RegionSelector::initializeForScreen(QScreen* screen)

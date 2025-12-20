@@ -3,6 +3,7 @@
 #include "AnnotationController.h"
 #include "IconRenderer.h"
 #include "ColorPaletteWidget.h"
+#include "ColorPickerDialog.h"
 
 #include <QPainter>
 #include <QMouseEvent>
@@ -11,7 +12,6 @@
 #include <QGuiApplication>
 #include <QScreen>
 #include <QDebug>
-#include <QColorDialog>
 
 // Helper function to map CanvasTool to AnnotationController::Tool
 static AnnotationController::Tool mapToControllerTool(CanvasTool tool)
@@ -34,6 +34,7 @@ ScreenCanvas::ScreenCanvas(QWidget *parent)
     , m_currentTool(CanvasTool::Pencil)
     , m_hoveredButton(-1)
     , m_colorPalette(nullptr)
+    , m_colorPickerDialog(nullptr)
 {
     setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::Tool);
     setAttribute(Qt::WA_DeleteOnClose);
@@ -129,20 +130,25 @@ void ScreenCanvas::onColorSelected(const QColor &color)
 
 void ScreenCanvas::onMoreColorsRequested()
 {
-    hide();
-
-    QColor newColor = QColorDialog::getColor(m_controller->color(), nullptr, tr("Select Color"));
-
-    show();
-    activateWindow();
-    raise();
-
-    if (newColor.isValid()) {
-        m_controller->setColor(newColor);
-        m_colorPalette->setCurrentColor(newColor);
-        qDebug() << "ScreenCanvas: Custom color selected:" << newColor.name();
-        update();
+    if (!m_colorPickerDialog) {
+        m_colorPickerDialog = new ColorPickerDialog();
+        connect(m_colorPickerDialog, &ColorPickerDialog::colorSelected,
+                this, [this](const QColor &color) {
+            m_controller->setColor(color);
+            m_colorPalette->setCurrentColor(color);
+            qDebug() << "ScreenCanvas: Custom color selected:" << color.name();
+            update();
+        });
     }
+
+    m_colorPickerDialog->setCurrentColor(m_controller->color());
+
+    // Position at center of screen
+    QPoint center = geometry().center();
+    m_colorPickerDialog->move(center.x() - 170, center.y() - 210);
+    m_colorPickerDialog->show();
+    m_colorPickerDialog->raise();
+    m_colorPickerDialog->activateWindow();
 }
 
 void ScreenCanvas::initializeForScreen(QScreen *screen)
