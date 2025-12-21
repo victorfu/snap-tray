@@ -8,10 +8,7 @@
 class QMenu;
 class QLabel;
 class QTimer;
-
-#ifdef Q_OS_MACOS
 class OCRManager;
-#endif
 
 class PinWindow : public QWidget
 {
@@ -70,11 +67,9 @@ private:
     // Zoom indicator
     void showZoomIndicator();
 
-#ifdef Q_OS_MACOS
-    // OCR methods (macOS only)
+    // OCR methods
     void performOCR();
     void onOCRComplete(bool success, const QString &text, const QString &error);
-#endif
 
     // Original members
     QPixmap m_originalPixmap;
@@ -102,11 +97,9 @@ private:
     bool m_flipHorizontal;
     bool m_flipVertical;
 
-#ifdef Q_OS_MACOS
-    // OCR members (macOS only)
+    // OCR members
     OCRManager *m_ocrManager;
     bool m_ocrInProgress;
-#endif
 };
 
 #endif // PINWINDOW_H

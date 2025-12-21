@@ -2,9 +2,8 @@
 #include "RegionSelector.h"
 #include "PinWindowManager.h"
 #include "platform/WindowLevel.h"
-#ifdef Q_OS_MACOS
 #include "WindowDetector.h"
-#endif
+#include "PlatformFeatures.h"
 
 #include <QDebug>
 #include <QGuiApplication>
@@ -15,9 +14,7 @@ CaptureManager::CaptureManager(PinWindowManager *pinManager, QObject *parent)
     : QObject(parent)
     , m_regionSelector(nullptr)
     , m_pinManager(pinManager)
-#ifdef Q_OS_MACOS
-    , m_windowDetector(new WindowDetector(this))
-#endif
+    , m_windowDetector(PlatformFeatures::instance().createWindowDetector(this))
 {
 }
 
@@ -60,12 +57,12 @@ void CaptureManager::startRegionCapture()
     // 2. 創建 RegionSelector
     m_regionSelector = new RegionSelector();
 
-#ifdef Q_OS_MACOS
-    // 3. 設置視窗偵測器
-    m_windowDetector->setScreen(targetScreen);
-    m_windowDetector->refreshWindowList();
-    m_regionSelector->setWindowDetector(m_windowDetector);
-#endif
+    // 3. 設置視窗偵測器 (if available on this platform)
+    if (m_windowDetector) {
+        m_windowDetector->setScreen(targetScreen);
+        m_windowDetector->refreshWindowList();
+        m_regionSelector->setWindowDetector(m_windowDetector);
+    }
 
     // 4. 初始化指定螢幕 (包含截圖)
     m_regionSelector->initializeForScreen(targetScreen);

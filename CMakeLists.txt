@@ -64,6 +64,7 @@ set(HEADERS
     include/InlineTextEditor.h
     include/MagnifierOverlay.h
     include/SelectionController.h
+    include/PlatformFeatures.h
 )
 
 # Cross-platform source files (used by both platforms)
@@ -76,6 +77,7 @@ list(APPEND SOURCES
 if(APPLE)
     list(APPEND SOURCES
         src/platform/WindowLevel_mac.mm
+        src/platform/PlatformFeatures_mac.mm
         src/WindowDetector.mm
         src/OCRManager.mm
         src/AutoLaunchManager_mac.mm
@@ -91,6 +93,7 @@ if(APPLE)
 elseif(WIN32)
     list(APPEND SOURCES
         src/platform/WindowLevel_win.cpp
+        src/platform/PlatformFeatures_win.cpp
         src/WindowDetector_win.cpp
         src/OCRManager_win.cpp
         src/AutoLaunchManager_win.cpp

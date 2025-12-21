@@ -3,10 +3,8 @@
 #include "IconRenderer.h"
 #include "ColorPaletteWidget.h"
 #include "ColorPickerDialog.h"
-
-#ifdef Q_OS_MACOS
 #include "OCRManager.h"
-#endif
+#include "PlatformFeatures.h"
 
 #include <QPainter>
 #include <QMouseEvent>
@@ -43,13 +41,9 @@ RegionSelector::RegionSelector(QWidget* parent)
     , m_isMoving(false)
     , m_isClosing(false)
     , m_isDialogOpen(false)
-#ifdef Q_OS_MACOS
     , m_windowDetector(nullptr)
-#endif
-#ifdef Q_OS_MACOS
     , m_ocrManager(nullptr)
     , m_ocrInProgress(false)
-#endif
     , m_colorPalette(nullptr)
     , m_textEditor(nullptr)
     , m_colorPickerDialog(nullptr)
@@ -62,12 +56,8 @@ RegionSelector::RegionSelector(QWidget* parent)
     // Initialize annotation layer
     m_annotationLayer = new AnnotationLayer(this);
 
-#ifdef Q_OS_MACOS
-    // Initialize OCR manager if available (macOS only)
-    if (OCRManager::isAvailable()) {
-        m_ocrManager = new OCRManager(this);
-    }
-#endif
+    // Initialize OCR manager if available on this platform
+    m_ocrManager = PlatformFeatures::instance().createOCRManager(this);
 
     // Initialize toolbar widget
     m_toolbar = new ToolbarWidget(this);
@@ -127,9 +117,9 @@ void RegionSelector::setupToolbarButtons()
     iconRenderer.loadIcon("undo", ":/icons/icons/undo.svg");
     iconRenderer.loadIcon("redo", ":/icons/icons/redo.svg");
     iconRenderer.loadIcon("cancel", ":/icons/icons/cancel.svg");
-#ifdef Q_OS_MACOS
-    iconRenderer.loadIcon("ocr", ":/icons/icons/ocr.svg");
-#endif
+    if (PlatformFeatures::instance().isOCRAvailable()) {
+        iconRenderer.loadIcon("ocr", ":/icons/icons/ocr.svg");
+    }
     iconRenderer.loadIcon("pin", ":/icons/icons/pin.svg");
     iconRenderer.loadIcon("save", ":/icons/icons/save.svg");
     iconRenderer.loadIcon("copy", ":/icons/icons/copy.svg");
@@ -148,9 +138,9 @@ void RegionSelector::setupToolbarButtons()
     buttons.append({static_cast<int>(ToolbarButton::Undo), "undo", "Undo", false});
     buttons.append({static_cast<int>(ToolbarButton::Redo), "redo", "Redo", false});
     buttons.append({static_cast<int>(ToolbarButton::Cancel), "cancel", "Cancel (Esc)", true});  // separator before
-#ifdef Q_OS_MACOS
-    buttons.append({static_cast<int>(ToolbarButton::OCR), "ocr", "OCR Text Recognition", true});  // separator before
-#endif
+    if (PlatformFeatures::instance().isOCRAvailable()) {
+        buttons.append({static_cast<int>(ToolbarButton::OCR), "ocr", "OCR Text Recognition", true});  // separator before
+    }
     buttons.append({static_cast<int>(ToolbarButton::Pin), "pin", "Pin to Screen (Enter)", true});  // separator before
     buttons.append({static_cast<int>(ToolbarButton::Save), "save", "Save (Ctrl+S)", false});
     buttons.append({static_cast<int>(ToolbarButton::Copy), "copy", "Copy (Ctrl+C)", false});
@@ -186,7 +176,6 @@ QColor RegionSelector::getToolbarIconColor(int buttonId, bool isActive, bool isH
     if (buttonId == static_cast<int>(ToolbarButton::Cancel)) {
         return QColor(255, 100, 100);  // Red for cancel
     }
-#ifdef Q_OS_MACOS
     if (btn == ToolbarButton::OCR) {
         if (m_ocrInProgress) {
             return QColor(255, 200, 100);  // Yellow when processing
@@ -196,7 +185,6 @@ QColor RegionSelector::getToolbarIconColor(int buttonId, bool isActive, bool isH
             return QColor(100, 200, 255);  // Blue accent
         }
     }
-#endif
     if (buttonId >= static_cast<int>(ToolbarButton::Pin)) {
         return QColor(100, 200, 255);  // Blue for action buttons
     }
@@ -307,7 +295,6 @@ void RegionSelector::captureCurrentScreen()
     initializeForScreen(screen);
 }
 
-#ifdef Q_OS_MACOS
 void RegionSelector::setWindowDetector(WindowDetector *detector)
 {
     m_windowDetector = detector;
@@ -411,7 +398,6 @@ void RegionSelector::drawWindowHint(QPainter &painter, const QString &title)
     painter.setPen(Qt::white);
     painter.drawText(textRect, Qt::AlignCenter, displayTitle);
 }
-#endif
 
 void RegionSelector::paintEvent(QPaintEvent*)
 {
@@ -425,12 +411,10 @@ void RegionSelector::paintEvent(QPaintEvent*)
     // Draw dimmed overlay
     drawOverlay(painter);
 
-#ifdef Q_OS_MACOS
     // Draw detected window highlight (only during hover, before selection)
-    if (!m_isSelecting && !m_selectionComplete) {
+    if (!m_isSelecting && !m_selectionComplete && m_windowDetector) {
         drawDetectedWindow(painter);
     }
-#endif
 
     // Draw selection if active or complete
     if ((m_isSelecting || m_selectionComplete) && m_selectionRect.isValid()) {
@@ -767,11 +751,9 @@ void RegionSelector::handleToolbarClick(ToolbarButton button)
         close();
         break;
 
-#ifdef Q_OS_MACOS
     case ToolbarButton::OCR:
         performOCR();
         break;
-#endif
 
     case ToolbarButton::Pin:
         finishSelection();
@@ -1015,19 +997,15 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
 {
     m_currentPoint = event->pos();
 
-#ifdef Q_OS_MACOS
     // Window detection during hover (before any selection or dragging)
     if (!m_isSelecting && !m_selectionComplete && m_windowDetector) {
         updateWindowDetection(event->pos());
     }
-#endif
 
     if (m_isSelecting) {
-#ifdef Q_OS_MACOS
         // Clear window detection when dragging
         m_highlightedWindowRect = QRect();
         m_detectedWindow.reset();
-#endif
         m_selectionRect = QRect(m_startPoint, m_currentPoint).normalized();
     }
     else if (m_isResizing) {
@@ -1110,7 +1088,6 @@ void RegionSelector::mouseReleaseEvent(QMouseEvent* event)
                 setCursor(Qt::ArrowCursor);
                 qDebug() << "RegionSelector: Selection complete via drag";
             }
-#ifdef Q_OS_MACOS
             else if (m_detectedWindow.has_value() && m_highlightedWindowRect.isValid()) {
                 // Click on detected window - use its bounds
                 m_selectionRect = m_highlightedWindowRect;
@@ -1122,7 +1099,6 @@ void RegionSelector::mouseReleaseEvent(QMouseEvent* event)
                 m_highlightedWindowRect = QRect();
                 m_detectedWindow.reset();
             }
-#endif
             else {
                 // 點擊無拖曳且無偵測到視窗 - 選取整個螢幕（包含 menu bar）
                 QRect screenGeom = m_currentScreen->geometry();
@@ -1643,12 +1619,11 @@ void RegionSelector::updateCursorForHandle(ResizeHandle handle)
     }
 }
 
-#ifdef Q_OS_MACOS
 void RegionSelector::performOCR()
 {
     if (!m_ocrManager || m_ocrInProgress || !m_selectionComplete) {
         if (!m_ocrManager) {
-            qDebug() << "RegionSelector: OCR not available (requires macOS 10.15+)";
+            qDebug() << "RegionSelector: OCR not available on this platform";
         }
         return;
     }
@@ -1699,4 +1674,3 @@ void RegionSelector::onOCRComplete(bool success, const QString &text, const QStr
 
     update();
 }
-#endif

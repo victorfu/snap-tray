@@ -1,8 +1,6 @@
 #include "PinWindow.h"
-
-#ifdef Q_OS_MACOS
 #include "OCRManager.h"
-#endif
+#include "PlatformFeatures.h"
 
 #include <QPainter>
 #include <QMouseEvent>
@@ -33,13 +31,11 @@ PinWindow::PinWindow(const QPixmap &screenshot, const QPoint &position, QWidget 
     , m_contextMenu(nullptr)
     , m_resizeEdge(ResizeEdge::None)
     , m_isResizing(false)
-#ifdef Q_OS_MACOS
-    , m_ocrManager(nullptr)
-    , m_ocrInProgress(false)
-#endif
     , m_rotationAngle(0)
     , m_flipHorizontal(false)
     , m_flipVertical(false)
+    , m_ocrManager(nullptr)
+    , m_ocrInProgress(false)
 {
     // Frameless, always on top
     // Note: Removed Qt::Tool flag as it causes the window to hide when app loses focus on macOS
@@ -61,12 +57,8 @@ PinWindow::PinWindow(const QPixmap &screenshot, const QPoint &position, QWidget 
 
     createContextMenu();
 
-#ifdef Q_OS_MACOS
-    // Initialize OCR manager if available (macOS only)
-    if (OCRManager::isAvailable()) {
-        m_ocrManager = new OCRManager(this);
-    }
-#endif
+    // Initialize OCR manager if available on this platform
+    m_ocrManager = PlatformFeatures::instance().createOCRManager(this);
 
     // Enable mouse tracking for resize cursor
     setMouseTracking(true);
@@ -213,11 +205,11 @@ void PinWindow::createContextMenu()
 {
     m_contextMenu = new QMenu(this);
 
-#ifdef Q_OS_MACOS
-    QAction *ocrAction = m_contextMenu->addAction("OCR Text Recognition");
-    connect(ocrAction, &QAction::triggered, this, &PinWindow::performOCR);
-    m_contextMenu->addSeparator();
-#endif
+    if (PlatformFeatures::instance().isOCRAvailable()) {
+        QAction *ocrAction = m_contextMenu->addAction("OCR Text Recognition");
+        connect(ocrAction, &QAction::triggered, this, &PinWindow::performOCR);
+        m_contextMenu->addSeparator();
+    }
 
     QAction *saveAction = m_contextMenu->addAction("Save...");
     saveAction->setShortcut(QKeySequence::Save);
@@ -264,12 +256,11 @@ void PinWindow::copyToClipboard()
     qDebug() << "PinWindow: Copied to clipboard";
 }
 
-#ifdef Q_OS_MACOS
 void PinWindow::performOCR()
 {
     if (!m_ocrManager || m_ocrInProgress) {
         if (!m_ocrManager) {
-            qDebug() << "PinWindow: OCR not available (requires macOS 10.15+)";
+            qDebug() << "PinWindow: OCR not available on this platform";
         }
         return;
     }
@@ -306,7 +297,6 @@ void PinWindow::onOCRComplete(bool success, const QString &text, const QString &
             this, QRect(), 2000);
     }
 }
-#endif
 
 PinWindow::ResizeEdge PinWindow::getResizeEdge(const QPoint &pos) const
 {
