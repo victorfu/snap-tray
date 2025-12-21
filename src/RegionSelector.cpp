@@ -94,6 +94,12 @@ RegionSelector::RegionSelector(QWidget* parent)
 
 RegionSelector::~RegionSelector()
 {
+    // Clean up color picker dialog
+    if (m_colorPickerDialog) {
+        delete m_colorPickerDialog;
+        m_colorPickerDialog = nullptr;
+    }
+
     // Remove event filter
     qApp->removeEventFilter(this);
 
