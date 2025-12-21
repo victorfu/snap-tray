@@ -5,6 +5,7 @@
 #include "ColorPaletteWidget.h"
 #include "ColorPickerDialog.h"
 #include "LineWidthWidget.h"
+#include "ColorAndWidthWidget.h"
 
 #include <QPainter>
 #include <QMouseEvent>
@@ -75,6 +76,18 @@ ScreenCanvas::ScreenCanvas(QWidget *parent)
     connect(m_lineWidthWidget, &LineWidthWidget::widthChanged,
             this, &ScreenCanvas::onLineWidthChanged);
 
+    // Initialize unified color and width widget
+    m_colorAndWidthWidget = new ColorAndWidthWidget(this);
+    m_colorAndWidthWidget->setCurrentColor(m_controller->color());
+    m_colorAndWidthWidget->setCurrentWidth(m_controller->width());
+    m_colorAndWidthWidget->setWidthRange(1, 20);
+    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::colorSelected,
+            this, &ScreenCanvas::onColorSelected);
+    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::moreColorsRequested,
+            this, &ScreenCanvas::onMoreColorsRequested);
+    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::widthChanged,
+            this, &ScreenCanvas::onLineWidthChanged);
+
     qDebug() << "ScreenCanvas: Created";
 }
 
@@ -137,6 +150,7 @@ void ScreenCanvas::onColorSelected(const QColor &color)
 {
     m_controller->setColor(color);
     m_lineWidthWidget->setPreviewColor(color);
+    m_colorAndWidthWidget->setCurrentColor(color);
     update();
 }
 
@@ -159,6 +173,20 @@ void ScreenCanvas::onLineWidthChanged(int width)
     update();
 }
 
+bool ScreenCanvas::shouldShowColorAndWidthWidget() const
+{
+    // Show for tools that need either color or width (union of both)
+    switch (m_currentTool) {
+    case CanvasTool::Pencil:     // Needs both
+    case CanvasTool::Marker:     // Needs color only
+    case CanvasTool::Arrow:      // Needs both
+    case CanvasTool::Rectangle:  // Needs both
+        return true;
+    default:
+        return false;
+    }
+}
+
 void ScreenCanvas::onMoreColorsRequested()
 {
     if (!m_colorPickerDialog) {
@@ -168,12 +196,16 @@ void ScreenCanvas::onMoreColorsRequested()
             m_controller->setColor(color);
             m_colorPalette->setCurrentColor(color);
             m_lineWidthWidget->setPreviewColor(color);
+            m_colorAndWidthWidget->setCurrentColor(color);
             qDebug() << "ScreenCanvas: Custom color selected:" << color.name();
             update();
         });
     }
 
     m_colorPickerDialog->setCurrentColor(m_controller->color());
+
+    // Update unified widget as well
+    m_colorAndWidthWidget->setCurrentColor(m_controller->color());
 
     // Position at center of screen
     QPoint center = geometry().center();
@@ -225,24 +257,36 @@ void ScreenCanvas::paintEvent(QPaintEvent *)
     // Draw toolbar
     drawToolbar(painter);
 
-    // Draw color palette
-    if (shouldShowColorPalette()) {
-        m_colorPalette->setVisible(true);
-        m_colorPalette->updatePosition(m_toolbarRect, true);
-        m_colorPalette->draw(painter);
+    // Use unified color and width widget
+    if (shouldShowColorAndWidthWidget()) {
+        m_colorAndWidthWidget->setVisible(true);
+        m_colorAndWidthWidget->updatePosition(m_toolbarRect, true, width());
+        m_colorAndWidthWidget->draw(painter);
     } else {
-        m_colorPalette->setVisible(false);
+        m_colorAndWidthWidget->setVisible(false);
     }
 
-    // Draw line width widget (above color palette, aligned to toolbar left edge)
-    if (shouldShowLineWidthWidget()) {
-        m_lineWidthWidget->setVisible(true);
-        QRect anchorRect = m_colorPalette->boundingRect();
-        anchorRect.moveLeft(m_toolbarRect.left());  // Align with toolbar left edge
-        m_lineWidthWidget->updatePosition(anchorRect, true, width());
-        m_lineWidthWidget->draw(painter);
-    } else {
-        m_lineWidthWidget->setVisible(false);
+    // Legacy widgets (keep for compatibility, but hidden when unified widget is shown)
+    if (!shouldShowColorAndWidthWidget()) {
+        // Draw color palette
+        if (shouldShowColorPalette()) {
+            m_colorPalette->setVisible(true);
+            m_colorPalette->updatePosition(m_toolbarRect, true);
+            m_colorPalette->draw(painter);
+        } else {
+            m_colorPalette->setVisible(false);
+        }
+
+        // Draw line width widget (above color palette, aligned to toolbar left edge)
+        if (shouldShowLineWidthWidget()) {
+            m_lineWidthWidget->setVisible(true);
+            QRect anchorRect = m_colorPalette->boundingRect();
+            anchorRect.moveLeft(m_toolbarRect.left());  // Align with toolbar left edge
+            m_lineWidthWidget->updatePosition(anchorRect, true, width());
+            m_lineWidthWidget->draw(painter);
+        } else {
+            m_lineWidthWidget->setVisible(false);
+        }
     }
 
     // Draw tooltip
@@ -482,16 +526,25 @@ bool ScreenCanvas::isAnnotationTool(CanvasTool tool) const
 void ScreenCanvas::mousePressEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton) {
-        // Check if clicked on line width widget
-        if (shouldShowLineWidthWidget() && m_lineWidthWidget->handleMousePress(event->pos())) {
+        // Check if clicked on unified color and width widget
+        if (shouldShowColorAndWidthWidget() && m_colorAndWidthWidget->handleClick(event->pos())) {
             update();
             return;
         }
 
-        // Check if clicked on color palette
-        if (shouldShowColorPalette() && m_colorPalette->handleClick(event->pos())) {
-            update();
-            return;
+        // Legacy widgets (only handle if unified widget not shown)
+        if (!shouldShowColorAndWidthWidget()) {
+            // Check if clicked on line width widget
+            if (shouldShowLineWidthWidget() && m_lineWidthWidget->handleMousePress(event->pos())) {
+                update();
+                return;
+            }
+
+            // Check if clicked on color palette
+            if (shouldShowColorPalette() && m_colorPalette->handleClick(event->pos())) {
+                update();
+                return;
+            }
         }
 
         // Check if clicked on toolbar
@@ -522,26 +575,46 @@ void ScreenCanvas::mouseMoveEvent(QMouseEvent *event)
         update();
     } else {
         bool needsUpdate = false;
+        bool widgetHovered = false;
 
-        // Handle line width widget drag
-        if (shouldShowLineWidthWidget()) {
-            if (m_lineWidthWidget->handleMouseMove(event->pos(), event->buttons() & Qt::LeftButton)) {
+        // Handle unified color and width widget
+        if (shouldShowColorAndWidthWidget()) {
+            if (m_colorAndWidthWidget->handleMouseMove(event->pos(), event->buttons() & Qt::LeftButton)) {
                 update();
                 return;
             }
-            if (m_lineWidthWidget->contains(event->pos())) {
+            if (m_colorAndWidthWidget->updateHovered(event->pos())) {
+                needsUpdate = true;
+            }
+            if (m_colorAndWidthWidget->contains(event->pos())) {
                 setCursor(Qt::PointingHandCursor);
-                update();
-                return;
+                widgetHovered = true;
             }
         }
 
-        // Update hovered color swatch
-        if (shouldShowColorPalette()) {
-            if (m_colorPalette->updateHoveredSwatch(event->pos())) {
-                needsUpdate = true;
-                if (m_colorPalette->contains(event->pos())) {
+        // Legacy widgets (only handle if unified widget not shown)
+        if (!shouldShowColorAndWidthWidget()) {
+            // Handle line width widget drag
+            if (shouldShowLineWidthWidget()) {
+                if (m_lineWidthWidget->handleMouseMove(event->pos(), event->buttons() & Qt::LeftButton)) {
+                    update();
+                    return;
+                }
+                if (m_lineWidthWidget->contains(event->pos())) {
                     setCursor(Qt::PointingHandCursor);
+                    update();
+                    return;
+                }
+            }
+
+            // Update hovered color swatch
+            if (shouldShowColorPalette()) {
+                if (m_colorPalette->updateHoveredSwatch(event->pos())) {
+                    needsUpdate = true;
+                    if (m_colorPalette->contains(event->pos())) {
+                        setCursor(Qt::PointingHandCursor);
+                        widgetHovered = true;
+                    }
                 }
             }
         }
@@ -553,8 +626,8 @@ void ScreenCanvas::mouseMoveEvent(QMouseEvent *event)
             needsUpdate = true;
             if (m_hoveredButton >= 0) {
                 setCursor(Qt::PointingHandCursor);
-            } else if (shouldShowColorPalette() && m_colorPalette->contains(event->pos())) {
-                // Already set cursor for color swatch
+            } else if (widgetHovered) {
+                // Already set cursor for widget
             } else {
                 setCursor(Qt::CrossCursor);
             }
@@ -569,8 +642,14 @@ void ScreenCanvas::mouseMoveEvent(QMouseEvent *event)
 void ScreenCanvas::mouseReleaseEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton) {
-        // Handle line width widget release
-        if (shouldShowLineWidthWidget() && m_lineWidthWidget->handleMouseRelease(event->pos())) {
+        // Handle unified widget release
+        if (shouldShowColorAndWidthWidget() && m_colorAndWidthWidget->handleMouseRelease(event->pos())) {
+            update();
+            return;
+        }
+
+        // Handle line width widget release (legacy)
+        if (!shouldShowColorAndWidthWidget() && shouldShowLineWidthWidget() && m_lineWidthWidget->handleMouseRelease(event->pos())) {
             update();
             return;
         }

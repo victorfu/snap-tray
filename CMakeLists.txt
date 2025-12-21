@@ -65,6 +65,7 @@ set(SOURCES
     src/IconRenderer.cpp
     src/ColorPaletteWidget.cpp
     src/LineWidthWidget.cpp
+    src/ColorAndWidthWidget.cpp
     src/ToolbarWidget.cpp
     src/AnnotationController.cpp
     src/ColorPickerDialog.mm
@@ -91,6 +92,7 @@ set(HEADERS
     include/IconRenderer.h
     include/ColorPaletteWidget.h
     include/LineWidthWidget.h
+    include/ColorAndWidthWidget.h
     include/ToolbarWidget.h
     include/AnnotationController.h
     include/ColorPickerDialog.h

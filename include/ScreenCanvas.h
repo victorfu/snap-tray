@@ -14,6 +14,7 @@ class AnnotationController;
 class ColorPaletteWidget;
 class ColorPickerDialog;
 class LineWidthWidget;
+class ColorAndWidthWidget;
 
 // Canvas tool types (simplified subset for screen canvas)
 enum class CanvasTool {
@@ -66,14 +67,17 @@ private:
     QString getButtonTooltip(int buttonIndex);
     bool isAnnotationTool(CanvasTool tool) const;
 
-    // Color palette helpers
+    // Color palette helpers (legacy)
     bool shouldShowColorPalette() const;
     void onColorSelected(const QColor &color);
     void onMoreColorsRequested();
 
-    // Line width helpers
+    // Line width helpers (legacy)
     bool shouldShowLineWidthWidget() const;
     void onLineWidthChanged(int width);
+
+    // Unified color and width widget helpers
+    bool shouldShowColorAndWidthWidget() const;
 
     // Screen capture
     QPixmap m_backgroundPixmap;
@@ -99,6 +103,9 @@ private:
 
     // Line width widget
     LineWidthWidget *m_lineWidthWidget;
+
+    // Unified color and width widget
+    ColorAndWidthWidget *m_colorAndWidthWidget;
 
     // Color picker dialog
     ColorPickerDialog *m_colorPickerDialog;

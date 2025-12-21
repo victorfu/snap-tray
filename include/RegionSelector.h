@@ -18,6 +18,7 @@
 class QScreen;
 class ColorPaletteWidget;
 class LineWidthWidget;
+class ColorAndWidthWidget;
 class ColorPickerDialog;
 class QCloseEvent;
 class OCRManager;
@@ -100,14 +101,17 @@ private:
     void handleToolbarClick(ToolbarButton button);
     QColor getToolbarIconColor(int buttonId, bool isActive, bool isHovered) const;
 
-    // Color palette helpers
+    // Color palette helpers (legacy)
     bool shouldShowColorPalette() const;
     void onColorSelected(const QColor &color);
     void onMoreColorsRequested();
 
-    // Line width widget helpers
+    // Line width widget helpers (legacy)
     bool shouldShowLineWidthWidget() const;
     void onLineWidthChanged(int width);
+
+    // Unified color and width widget helpers
+    bool shouldShowColorAndWidthWidget() const;
 
     // Window detection drawing
     void drawDetectedWindow(QPainter &painter);
@@ -155,6 +159,9 @@ private:
 
     // Line width widget
     LineWidthWidget *m_lineWidthWidget;
+
+    // Unified color and width widget
+    ColorAndWidthWidget *m_colorAndWidthWidget;
 
     // Annotation layer and state
     AnnotationLayer *m_annotationLayer;
