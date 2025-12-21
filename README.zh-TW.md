@@ -75,26 +75,52 @@ SnapTray 是一個在系統托盤常駐的區域截圖小工具，預設以 F2 �
 
 ### 開發版本（Debug）
 
+**macOS：**
 ```bash
-# macOS
 cmake -S . -B build -DCMAKE_PREFIX_PATH="$(brew --prefix qt)"
-# Windows（請替換為你的 Qt 路徑）
-# cmake -S . -B build -DCMAKE_PREFIX_PATH=C:/Qt/6.x.x/msvc2019_64
+cmake --build build
+open build/SnapTray.app
+```
 
+**Windows：**
+```batch
+# 步驟 1：設定（請替換為你的 Qt 路徑）
+cmake -S . -B build -DCMAKE_PREFIX_PATH=C:/Qt/6.10.1/msvc2022_64
+
+# 步驟 2：建置
 cmake --build build
 
-# 執行（macOS 會產出 .app bundle）
-open build/SnapTray.app  # macOS
-# build/SnapTray.exe     # Windows
+# 步驟 3：部署 Qt 相依套件（執行程式所需）
+# 請替換為你的 Qt 安裝路徑
+C:\Qt\6.10.1\msvc2022_64\bin\windeployqt.exe build\SnapTray.exe
+
+# 步驟 4：執行
+build\SnapTray.exe
 ```
+
+**注意：** Windows 開發版本需要執行 `windeployqt` 來複製 Qt 執行時期 DLL 檔案（Qt6Core.dll、qwindows.dll 平台外掛等）到執行檔旁。此步驟在打包腳本中已針對正式版本自動化。
 
 ### 正式版本（Release）
 
+**macOS：**
 ```bash
 cmake -S . -B release -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$(brew --prefix qt)"
 cmake --build release
-# 產物：release/SnapTray.app（macOS）
+# 產物：release/SnapTray.app
 ```
+
+**Windows：**
+```batch
+cmake -S . -B release -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=C:/Qt/6.10.1/msvc2022_64
+cmake --build release --config Release
+
+# 部署 Qt 相依套件
+C:\Qt\6.10.1\msvc2022_64\bin\windeployqt.exe --release release\Release\SnapTray.exe
+
+# 產物：release\Release\SnapTray.exe
+```
+
+**注意：** 若要發佈，請使用打包腳本（見下方），其已自動化部署流程。
 
 ### 打包安裝檔
 
@@ -181,11 +207,26 @@ packaging\windows\package.bat
    - 右鍵選單（存檔/複製/OCR/放大/縮小/重設縮放/順時針旋轉/逆時針旋轉/關閉）
    - 雙擊或 `Esc` 關閉
 
+## 疑難排解
+
+### Windows：應用程式無法啟動或顯示缺少 DLL 錯誤
+
+如果你看到類似以下錯誤：
+- "The code execution cannot proceed because Qt6Core.dll was not found"
+- "This application failed to start because no Qt platform plugin could be initialized"
+
+**解決方法：** 執行 windeployqt 來部署 Qt 相依套件：
+```batch
+C:\Qt\6.10.1\msvc2022_64\bin\windeployqt.exe build\SnapTray.exe
+```
+
+請將 `C:\Qt\6.10.1\msvc2022_64` 替換為你實際的 Qt 安裝路徑（應與設定時使用的 CMAKE_PREFIX_PATH 相同）。
+
 ## macOS 權限
 
 首次截圖時系統會要求「螢幕錄製」權限：`系統偏好設定 → 隱私權與安全性 → 螢幕錄製` 勾選 SnapTray，必要時重啟 App。
 
-若要使用視窗偵測功能，需要「輔助使用」權限：`系統偏好設定 → 隱私權與安全性 → 輔助使用` 勾選 SnapTray。
+若要使用視窗偵測功能,需要「輔助使用」權限：`系統偏好設定 → 隱私權與安全性 → 輔助使用` 勾選 SnapTray。
 
 ## 專案結構
 
