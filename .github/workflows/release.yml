@@ -104,10 +104,10 @@ jobs:
       - name: Install Qt via aqtinstall
         uses: jurplel/install-qt-action@v4
         with:
-          version: '6.8.1'
+          version: '6.10.1'
           host: 'windows'
           target: 'desktop'
-          arch: 'win64_msvc2019_64'
+          arch: 'win64_msvc2022_64'
           cache: true
 
       - name: Setup MSVC Developer Command Prompt
