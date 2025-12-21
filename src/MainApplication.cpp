@@ -92,7 +92,7 @@ void MainApplication::initialize()
     m_regionCaptureAction = m_trayMenu->addAction("Region Capture");
     connect(m_regionCaptureAction, &QAction::triggered, this, &MainApplication::onRegionCapture);
 
-    m_screenCanvasAction = m_trayMenu->addAction("Screen Canvas (F2 x2)");
+    m_screenCanvasAction = m_trayMenu->addAction("Screen Canvas");
     connect(m_screenCanvasAction, &QAction::triggered, this, &MainApplication::onScreenCanvas);
 
     m_trayMenu->addSeparator();
@@ -212,7 +212,7 @@ void MainApplication::onF2Pressed()
         // First press, wait for second
         m_lastF2PressTime.restart();
         m_waitingForSecondPress = true;
-        m_doublePressTimer->start(200);
+        m_doublePressTimer->start(300);
     }
 }
 
@@ -271,5 +271,8 @@ void MainApplication::updateTrayMenuHotkeyText(const QString& hotkey)
 {
     if (m_regionCaptureAction) {
         m_regionCaptureAction->setText(QString("Region Capture (%1)").arg(hotkey));
+    }
+    if (m_screenCanvasAction) {
+        m_screenCanvasAction->setText(QString("Screen Canvas (%1 x2)").arg(hotkey));
     }
 }
