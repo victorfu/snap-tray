@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16...3.31)
-project(SnapTray VERSION 1.0.0 LANGUAGES CXX)
+project(SnapTray VERSION 1.0.1 LANGUAGES CXX)
 
 # ============================================================================
 # Version Configuration
