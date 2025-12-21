@@ -116,6 +116,18 @@ jobs:
       - name: Install NSIS
         run: choco install nsis -y
 
+      - name: Verify NSIS installation
+        shell: pwsh
+        run: |
+          $nsispath = "C:\Program Files (x86)\NSIS\makensis.exe"
+          if (Test-Path $nsispath) {
+            Write-Output "NSIS found at: $nsispath"
+            & $nsispath -version
+          } else {
+            Write-Error "NSIS not found at expected location: $nsispath"
+            exit 1
+          }
+
       - name: Configure CMake
         run: |
           cmake -S . -B release `
@@ -148,7 +160,9 @@ jobs:
           "@ | Out-File -FilePath "release\version.nsh" -Encoding ASCII
 
       - name: Build NSIS installer
-        run: makensis /V3 packaging\windows\installer.nsi
+        shell: pwsh
+        run: |
+          & "C:\Program Files (x86)\NSIS\makensis.exe" /V3 packaging\windows\installer.nsi
 
       - name: Upload Windows artifact
         uses: actions/upload-artifact@v4
