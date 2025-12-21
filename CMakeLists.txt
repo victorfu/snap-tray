@@ -139,7 +139,9 @@ elseif(WIN32)
     set(WIN32_RESOURCES "${CMAKE_BINARY_DIR}/snaptray.rc")
 endif()
 
-add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS} ${RESOURCES} ${WIN32_RESOURCES})
+# WIN32 flag sets /SUBSYSTEM:WINDOWS on Windows (prevents console window)
+# Automatically ignored on non-Windows platforms
+add_executable(${PROJECT_NAME} WIN32 ${SOURCES} ${HEADERS} ${RESOURCES} ${WIN32_RESOURCES})
 
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_SOURCE_DIR}/include
