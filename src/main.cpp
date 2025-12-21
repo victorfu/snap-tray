@@ -1,5 +1,6 @@
 #include <QApplication>
 #include "MainApplication.h"
+#include "version.h"
 
 int main(int argc, char *argv[])
 {
@@ -11,7 +12,7 @@ int main(int argc, char *argv[])
     // Set application metadata
     app.setApplicationName("SnapTray");
     app.setOrganizationName("Victor Fu");
-    app.setApplicationVersion("1.0.0");
+    app.setApplicationVersion(SNAPTRAY_VERSION);
 
     MainApplication mainApp;
     mainApp.initialize();

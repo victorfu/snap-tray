@@ -1,6 +1,39 @@
 cmake_minimum_required(VERSION 3.16...3.31)
 project(SnapTray VERSION 1.0.0 LANGUAGES CXX)
 
+# ============================================================================
+# Version Configuration
+# ============================================================================
+# Generate version header for C++ code
+configure_file(
+    "${CMAKE_SOURCE_DIR}/cmake/version.h.in"
+    "${CMAKE_BINARY_DIR}/generated/version.h"
+    @ONLY
+)
+
+# Platform-specific version file generation
+if(APPLE)
+    # Set variables for Info.plist.in template
+    set(MACOSX_BUNDLE_EXECUTABLE_NAME ${PROJECT_NAME})
+    set(MACOSX_BUNDLE_BUNDLE_NAME "SnapTray")
+    set(MACOSX_BUNDLE_GUI_IDENTIFIER "com.victorfu.snaptray")
+    set(MACOSX_BUNDLE_ICON_FILE "snaptray.icns")
+
+    # Generate Info.plist from template
+    configure_file(
+        "${CMAKE_SOURCE_DIR}/cmake/Info.plist.in"
+        "${CMAKE_BINARY_DIR}/Info.plist"
+        @ONLY
+    )
+elseif(WIN32)
+    # Generate Windows resource file from template
+    configure_file(
+        "${CMAKE_SOURCE_DIR}/cmake/snaptray.rc.in"
+        "${CMAKE_BINARY_DIR}/snaptray.rc"
+        @ONLY
+    )
+endif()
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -102,8 +135,8 @@ elseif(WIN32)
         include/WindowDetector.h
         include/OCRManager.h
     )
-    # Windows application icon resource
-    set(WIN32_RESOURCES ${CMAKE_SOURCE_DIR}/resources/snaptray.rc)
+    # Windows application icon resource (generated from template)
+    set(WIN32_RESOURCES "${CMAKE_BINARY_DIR}/snaptray.rc")
 endif()
 
 add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS} ${RESOURCES} ${WIN32_RESOURCES})
@@ -111,6 +144,7 @@ add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS} ${RESOURCES} ${WIN32_RESOUR
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_SOURCE_DIR}/include
     ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_BINARY_DIR}/generated
 )
 
 # macOS frameworks needed for window detection and auto-launch
@@ -160,10 +194,10 @@ if(APPLE)
 
     set_target_properties(${PROJECT_NAME} PROPERTIES
         MACOSX_BUNDLE TRUE
-        MACOSX_BUNDLE_INFO_PLIST ${CMAKE_SOURCE_DIR}/Info.plist
+        MACOSX_BUNDLE_INFO_PLIST "${CMAKE_BINARY_DIR}/Info.plist"
         MACOSX_BUNDLE_BUNDLE_NAME "SnapTray"
-        MACOSX_BUNDLE_BUNDLE_VERSION "1.0.0"
-        MACOSX_BUNDLE_SHORT_VERSION_STRING "1.0.0"
+        MACOSX_BUNDLE_BUNDLE_VERSION "${PROJECT_VERSION}"
+        MACOSX_BUNDLE_SHORT_VERSION_STRING "${PROJECT_VERSION}"
         MACOSX_BUNDLE_GUI_IDENTIFIER "com.victorfu.snaptray"
         MACOSX_BUNDLE_ICON_FILE snaptray.icns
     )
