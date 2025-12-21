@@ -77,39 +77,50 @@ void MarkerStroke::draw(QPainter &painter) const
 
     painter.save();
 
-    // Calculate bounding rect for offscreen buffer
     QRect bounds = boundingRect();
     if (bounds.isEmpty()) {
         painter.restore();
         return;
     }
 
-    // Create offscreen pixmap with transparent background
-    // This ensures uniform transparency even when stroke overlaps itself
-    QPixmap offscreen(bounds.size());
-    offscreen.fill(Qt::transparent);
+    qreal dpr = painter.device()->devicePixelRatio();
 
-    {
-        QPainter offPainter(&offscreen);
-        offPainter.setRenderHint(QPainter::Antialiasing, true);
+    // Check if cache is valid
+    bool cacheValid = !m_cachedPixmap.isNull()
+        && m_cachedDpr == dpr
+        && m_cachedPointCount == m_points.size();
 
-        // Draw with FULL opacity on the offscreen buffer
-        QPen pen(m_color, m_width, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
-        offPainter.setPen(pen);
-        offPainter.setBrush(Qt::NoBrush);
+    if (!cacheValid) {
+        // Regenerate cache
+        QPixmap offscreen(bounds.size() * dpr);
+        offscreen.setDevicePixelRatio(dpr);
+        offscreen.fill(Qt::transparent);
 
-        // Translate points relative to offscreen origin
-        QPainterPath path;
-        path.moveTo(m_points.first() - bounds.topLeft());
-        for (int i = 1; i < m_points.size(); ++i) {
-            path.lineTo(m_points[i] - bounds.topLeft());
+        {
+            QPainter offPainter(&offscreen);
+            offPainter.setRenderHint(QPainter::Antialiasing, true);
+            QPen pen(m_color, m_width, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+            offPainter.setPen(pen);
+            offPainter.setBrush(Qt::NoBrush);
+
+            QPainterPath path;
+            path.moveTo(m_points.first() - bounds.topLeft());
+            for (int i = 1; i < m_points.size(); ++i) {
+                path.lineTo(m_points[i] - bounds.topLeft());
+            }
+            offPainter.drawPath(path);
         }
-        offPainter.drawPath(path);
+
+        // Update cache
+        m_cachedPixmap = offscreen;
+        m_cachedOrigin = bounds.topLeft();
+        m_cachedDpr = dpr;
+        m_cachedPointCount = m_points.size();
     }
 
-    // Composite the offscreen pixmap with desired alpha (~40% opacity)
+    // Use cached pixmap
     painter.setOpacity(0.4);
-    painter.drawPixmap(bounds.topLeft(), offscreen);
+    painter.drawPixmap(m_cachedOrigin, m_cachedPixmap);
 
     painter.restore();
 }
@@ -251,7 +262,12 @@ void RectangleAnnotation::draw(QPainter &painter) const
         painter.setBrush(Qt::NoBrush);
     }
 
-    painter.drawRect(m_rect.normalized());
+    QRect normalizedRect = m_rect.normalized();
+    qDebug() << "RectangleAnnotation::draw - rect:" << normalizedRect
+             << "transform:" << painter.transform()
+             << "mapped rect:" << painter.transform().mapRect(QRectF(normalizedRect));
+
+    painter.drawRect(normalizedRect);
 
     painter.restore();
 }
@@ -292,19 +308,29 @@ void TextAnnotation::draw(QPainter &painter) const
     painter.setFont(m_font);
     painter.setRenderHint(QPainter::TextAntialiasing, true);
 
-    // Draw text with outline for better visibility
-    QPainterPath path;
-    path.addText(m_position, m_font, m_text);
+    // Split text into lines for multi-line support
+    QStringList lines = m_text.split('\n');
+    QFontMetrics fm(m_font);
+    int lineHeight = fm.lineSpacing();
+    QPoint currentPos = m_position;
 
-    // White outline
-    QPen outlinePen(Qt::white, 3, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
-    painter.setPen(outlinePen);
-    painter.drawPath(path);
+    for (const QString &line : lines) {
+        if (!line.isEmpty()) {
+            QPainterPath path;
+            path.addText(currentPos, m_font, line);
 
-    // Fill with color
-    painter.setPen(Qt::NoPen);
-    painter.setBrush(m_color);
-    painter.drawPath(path);
+            // White outline
+            QPen outlinePen(Qt::white, 3, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+            painter.setPen(outlinePen);
+            painter.drawPath(path);
+
+            // Fill with color
+            painter.setPen(Qt::NoPen);
+            painter.setBrush(m_color);
+            painter.drawPath(path);
+        }
+        currentPos.setY(currentPos.y() + lineHeight);
+    }
 
     painter.restore();
 }
@@ -312,9 +338,20 @@ void TextAnnotation::draw(QPainter &painter) const
 QRect TextAnnotation::boundingRect() const
 {
     QFontMetrics fm(m_font);
-    QRect textRect = fm.boundingRect(m_text);
-    textRect.translate(m_position);  // m_position is baseline position, preserve relative coords
-    return textRect.adjusted(-5, -5, 5, 5);  // Add margin
+    QStringList lines = m_text.split('\n');
+
+    int maxWidth = 0;
+    for (const QString &line : lines) {
+        maxWidth = qMax(maxWidth, fm.horizontalAdvance(line));
+    }
+    int totalHeight = lines.count() * fm.lineSpacing();
+
+    // m_position is baseline position of first line
+    QRect textRect(m_position.x(),
+                   m_position.y() - fm.ascent(),
+                   maxWidth,
+                   totalHeight);
+    return textRect.adjusted(-5, -5, 5, 5);  // Add margin for outline
 }
 
 std::unique_ptr<AnnotationItem> TextAnnotation::clone() const
@@ -340,6 +377,12 @@ StepBadgeAnnotation::StepBadgeAnnotation(const QPoint &position, const QColor &c
 
 void StepBadgeAnnotation::draw(QPainter &painter) const
 {
+    QTransform t = painter.transform();
+    QPointF mappedPos = t.map(QPointF(m_position));
+    qDebug() << "StepBadge::draw #" << m_number << "pos=" << m_position
+             << "mapped=" << mappedPos
+             << "device=" << painter.device()->width() << "x" << painter.device()->height();
+
     painter.save();
     painter.setRenderHint(QPainter::Antialiasing, true);
 
@@ -422,6 +465,7 @@ void MosaicAnnotation::setRect(const QRect &rect)
 void MosaicAnnotation::updateSource(const QPixmap &sourcePixmap)
 {
     m_sourcePixmap = sourcePixmap;
+    m_devicePixelRatio = sourcePixmap.devicePixelRatio();
     generateMosaic();
 }
 
@@ -608,6 +652,59 @@ void MosaicStroke::updateSource(const QPixmap &sourcePixmap)
 {
     m_sourcePixmap = sourcePixmap;
     m_devicePixelRatio = sourcePixmap.devicePixelRatio();
+    m_sourceImageCache = QImage();  // Clear cache so it regenerates on next draw
+}
+
+// ============================================================================
+// ErasedItemsGroup Implementation
+// ============================================================================
+
+ErasedItemsGroup::ErasedItemsGroup(std::vector<IndexedItem> items)
+    : m_erasedItems(std::move(items))
+{
+}
+
+void ErasedItemsGroup::draw(QPainter &) const
+{
+    // ErasedItemsGroup is invisible - it's just a marker for undo support
+}
+
+QRect ErasedItemsGroup::boundingRect() const
+{
+    return QRect();  // Empty rect since this is just an undo marker
+}
+
+std::unique_ptr<AnnotationItem> ErasedItemsGroup::clone() const
+{
+    std::vector<IndexedItem> clonedItems;
+    clonedItems.reserve(m_erasedItems.size());
+    for (const auto &indexed : m_erasedItems) {
+        clonedItems.push_back({indexed.originalIndex, indexed.item->clone()});
+    }
+    return std::make_unique<ErasedItemsGroup>(std::move(clonedItems));
+}
+
+std::vector<ErasedItemsGroup::IndexedItem> ErasedItemsGroup::extractItems()
+{
+    return std::move(m_erasedItems);
+}
+
+void ErasedItemsGroup::adjustIndicesForTrim(size_t trimCount)
+{
+    for (auto& indexed : m_erasedItems) {
+        if (indexed.originalIndex >= trimCount) {
+            indexed.originalIndex -= trimCount;
+        } else {
+            indexed.originalIndex = 0;
+        }
+    }
+    for (size_t i = 0; i < m_originalIndices.size(); ++i) {
+        if (m_originalIndices[i] >= trimCount) {
+            m_originalIndices[i] -= trimCount;
+        } else {
+            m_originalIndices[i] = 0;
+        }
+    }
 }
 
 // ============================================================================
@@ -631,12 +728,23 @@ void AnnotationLayer::addItem(std::unique_ptr<AnnotationItem> item)
 
 void AnnotationLayer::trimHistory()
 {
-    bool hadDeletions = false;
+    size_t trimCount = 0;
     while (m_items.size() > kMaxHistorySize) {
         m_items.erase(m_items.begin());
-        hadDeletions = true;
+        ++trimCount;
     }
-    if (hadDeletions) {
+    if (trimCount > 0) {
+        // Adjust stored indices in all ErasedItemsGroups
+        for (auto& item : m_items) {
+            if (auto* group = dynamic_cast<ErasedItemsGroup*>(item.get())) {
+                group->adjustIndicesForTrim(trimCount);
+            }
+        }
+        for (auto& item : m_redoStack) {
+            if (auto* group = dynamic_cast<ErasedItemsGroup*>(item.get())) {
+                group->adjustIndicesForTrim(trimCount);
+            }
+        }
         renumberStepBadges();
     }
 }
@@ -645,8 +753,38 @@ void AnnotationLayer::undo()
 {
     if (m_items.empty()) return;
 
-    m_redoStack.push_back(std::move(m_items.back()));
-    m_items.pop_back();
+    // Check if the last item is an ErasedItemsGroup (from eraser action)
+    if (auto* erasedGroup = dynamic_cast<ErasedItemsGroup*>(m_items.back().get())) {
+        // Extract the erased items with their original indices
+        auto restoredItems = erasedGroup->extractItems();
+
+        // Store original indices for redo support
+        std::vector<size_t> indices;
+        indices.reserve(restoredItems.size());
+        for (const auto& item : restoredItems) {
+            indices.push_back(item.originalIndex);
+        }
+        erasedGroup->setOriginalIndices(std::move(indices));
+
+        // Move the empty group to redo stack
+        m_redoStack.push_back(std::move(m_items.back()));
+        m_items.pop_back();
+
+        // Sort by original index ascending to restore in correct order
+        std::sort(restoredItems.begin(), restoredItems.end(),
+            [](const auto& a, const auto& b) { return a.originalIndex < b.originalIndex; });
+
+        // Re-insert items at their original indices
+        for (auto &indexed : restoredItems) {
+            size_t insertPos = std::min(indexed.originalIndex, m_items.size());
+            m_items.insert(m_items.begin() + static_cast<ptrdiff_t>(insertPos), std::move(indexed.item));
+        }
+    } else {
+        // Normal undo: move last item to redo stack
+        m_redoStack.push_back(std::move(m_items.back()));
+        m_items.pop_back();
+    }
+
     renumberStepBadges();
     emit changed();
 }
@@ -655,8 +793,36 @@ void AnnotationLayer::redo()
 {
     if (m_redoStack.empty()) return;
 
-    m_items.push_back(std::move(m_redoStack.back()));
-    m_redoStack.pop_back();
+    // Check if the item in redo stack is an ErasedItemsGroup
+    if (auto* erasedGroup = dynamic_cast<ErasedItemsGroup*>(m_redoStack.back().get())) {
+        // Get the stored original indices
+        auto indices = erasedGroup->originalIndices();
+        m_redoStack.pop_back();
+
+        // Sort indices in descending order to remove from back to front
+        // (prevents index shifting issues during removal)
+        std::sort(indices.begin(), indices.end(), std::greater<size_t>());
+
+        // Remove items at the stored indices
+        std::vector<ErasedItemsGroup::IndexedItem> itemsToErase;
+        itemsToErase.reserve(indices.size());
+
+        for (size_t idx : indices) {
+            if (idx < m_items.size() && !dynamic_cast<ErasedItemsGroup*>(m_items[idx].get())) {
+                itemsToErase.push_back({idx, std::move(m_items[idx])});
+                m_items.erase(m_items.begin() + static_cast<ptrdiff_t>(idx));
+            }
+        }
+
+        // Reverse to restore original order (we collected in descending index order)
+        std::reverse(itemsToErase.begin(), itemsToErase.end());
+        m_items.push_back(std::make_unique<ErasedItemsGroup>(std::move(itemsToErase)));
+    } else {
+        // Normal redo
+        m_items.push_back(std::move(m_redoStack.back()));
+        m_redoStack.pop_back();
+    }
+
     renumberStepBadges();
     emit changed();
 }
@@ -717,4 +883,41 @@ void AnnotationLayer::renumberStepBadges()
             badge->setNumber(badgeNumber++);
         }
     }
+}
+
+std::vector<ErasedItemsGroup::IndexedItem> AnnotationLayer::removeItemsIntersecting(const QPoint &point, int strokeWidth)
+{
+    std::vector<ErasedItemsGroup::IndexedItem> removedItems;
+    int margin = strokeWidth / 2;
+    size_t currentIndex = 0;
+
+    for (auto it = m_items.begin(); it != m_items.end(); ) {
+        // Skip ErasedItemsGroup items (they are invisible markers)
+        if (dynamic_cast<ErasedItemsGroup*>(it->get())) {
+            ++it;
+            ++currentIndex;
+            continue;
+        }
+
+        QRect itemRect = (*it)->boundingRect();
+        QRect expandedRect = itemRect.adjusted(-margin, -margin, margin, margin);
+
+        if (expandedRect.contains(point)) {
+            // Item intersects with eraser - remove it and record original index
+            removedItems.push_back({currentIndex, std::move(*it)});
+            it = m_items.erase(it);
+            // Don't increment currentIndex since we erased
+        } else {
+            ++it;
+            ++currentIndex;
+        }
+    }
+
+    if (!removedItems.empty()) {
+        m_redoStack.clear();  // Clear redo stack when items are erased
+        renumberStepBadges();
+        emit changed();
+    }
+
+    return removedItems;
 }

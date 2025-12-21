@@ -1,0 +1,115 @@
+#ifndef INLINETEXTEDITOR_H
+#define INLINETEXTEDITOR_H
+
+#include <QObject>
+#include <QPoint>
+#include <QRect>
+#include <QColor>
+#include <QFont>
+
+class QWidget;
+class QTextEdit;
+
+/**
+ * @brief Inline text editing overlay for annotation text input.
+ *
+ * Wraps QTextEdit with positioning, auto-resize, and styling.
+ */
+class InlineTextEditor : public QObject
+{
+    Q_OBJECT
+
+public:
+    explicit InlineTextEditor(QWidget* parent);
+    ~InlineTextEditor();
+
+    /**
+     * @brief Start editing at the given position.
+     * @param pos Position to start editing
+     * @param bounds Bounding rect to constrain the editor
+     */
+    void startEditing(const QPoint& pos, const QRect& bounds);
+
+    /**
+     * @brief Finish editing and return the text.
+     * @return The edited text, or empty if cancelled
+     */
+    QString finishEditing();
+
+    /**
+     * @brief Cancel editing without returning text.
+     */
+    void cancelEditing();
+
+    /**
+     * @brief Check if currently editing.
+     */
+    bool isEditing() const { return m_isEditing; }
+
+    /**
+     * @brief Get the position where text was placed.
+     */
+    QPoint textPosition() const { return m_textPosition; }
+
+    /**
+     * @brief Set the text color.
+     */
+    void setColor(const QColor& color);
+
+    /**
+     * @brief Get the current color.
+     */
+    QColor color() const { return m_color; }
+
+    /**
+     * @brief Set the font.
+     */
+    void setFont(const QFont& font);
+
+    /**
+     * @brief Get the current font.
+     */
+    QFont font() const { return m_font; }
+
+    /**
+     * @brief Get the underlying QTextEdit for event filtering.
+     */
+    QTextEdit* textEdit() const { return m_textEdit; }
+
+    /**
+     * @brief Check if the given position is inside the text editor.
+     */
+    bool contains(const QPoint& pos) const;
+
+signals:
+    /**
+     * @brief Emitted when editing is finished with text.
+     */
+    void editingFinished(const QString& text, const QPoint& position);
+
+    /**
+     * @brief Emitted when editing is cancelled.
+     */
+    void editingCancelled();
+
+private slots:
+    void onContentsChanged();
+
+private:
+    void updateStyle();
+    void adjustSize();
+
+    QWidget* m_parentWidget;
+    QTextEdit* m_textEdit;
+    bool m_isEditing;
+    QPoint m_textPosition;
+    QRect m_bounds;
+    QColor m_color;
+    QFont m_font;
+
+    static const int MIN_WIDTH = 150;
+    static const int MIN_HEIGHT = 36;
+    static const int PADDING = 6;
+};
+
+#endif // INLINETEXTEDITOR_H

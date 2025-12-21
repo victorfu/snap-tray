@@ -24,16 +24,13 @@ CGImageRef createCGImageFromPixmap(const QPixmap &pixmap)
         return nullptr;
     }
 
-    // Create a copy of the image data that will persist
-    QImage imageCopy = image.copy();
-
     CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
     if (!colorSpace) {
         return nullptr;
     }
 
     // Create data provider from image bytes
-    CFDataRef data = CFDataCreate(nullptr, imageCopy.bits(), imageCopy.sizeInBytes());
+    CFDataRef data = CFDataCreate(nullptr, image.bits(), image.sizeInBytes());
     if (!data) {
         CGColorSpaceRelease(colorSpace);
         return nullptr;
@@ -48,11 +45,11 @@ CGImageRef createCGImageFromPixmap(const QPixmap &pixmap)
     }
 
     CGImageRef cgImage = CGImageCreate(
-        imageCopy.width(),
-        imageCopy.height(),
+        image.width(),
+        image.height(),
         8,                                  // bits per component
         32,                                 // bits per pixel
-        imageCopy.bytesPerLine(),           // bytes per row
+        image.bytesPerLine(),           // bytes per row
         colorSpace,
         kCGBitmapByteOrderDefault | kCGImageAlphaLast,
         provider,

@@ -1,7 +1,9 @@
 #include "CaptureManager.h"
 #include "RegionSelector.h"
 #include "PinWindowManager.h"
+#include "platform/WindowLevel.h"
 #include "WindowDetector.h"
+#include "PlatformFeatures.h"
 
 #include <QDebug>
 #include <QGuiApplication>
@@ -12,12 +14,17 @@ CaptureManager::CaptureManager(PinWindowManager *pinManager, QObject *parent)
     : QObject(parent)
     , m_regionSelector(nullptr)
     , m_pinManager(pinManager)
-    , m_windowDetector(new WindowDetector(this))
+    , m_windowDetector(PlatformFeatures::instance().createWindowDetector(this))
 {
 }
 
 CaptureManager::~CaptureManager()
 {
+}
+
+bool CaptureManager::isActive() const
+{
+    return m_regionSelector && m_regionSelector->isVisible();
 }
 
 void CaptureManager::startRegionCapture()
@@ -50,10 +57,12 @@ void CaptureManager::startRegionCapture()
     // 2. 創建 RegionSelector
     m_regionSelector = new RegionSelector();
 
-    // 3. 設置視窗偵測器
-    m_windowDetector->setScreen(targetScreen);
-    m_windowDetector->refreshWindowList();
-    m_regionSelector->setWindowDetector(m_windowDetector);
+    // 3. 設置視窗偵測器 (if available on this platform)
+    if (m_windowDetector) {
+        m_windowDetector->setScreen(targetScreen);
+        m_windowDetector->refreshWindowList();
+        m_regionSelector->setWindowDetector(m_windowDetector);
+    }
 
     // 4. 初始化指定螢幕 (包含截圖)
     m_regionSelector->initializeForScreen(targetScreen);
@@ -66,6 +75,8 @@ void CaptureManager::startRegionCapture()
     // 5. 使用 setGeometry + show 取代 showFullScreen，確保在正確螢幕上顯示
     m_regionSelector->setGeometry(targetScreen->geometry());
     m_regionSelector->show();
+    raiseWindowAboveMenuBar(m_regionSelector);
+
     m_regionSelector->activateWindow();
     m_regionSelector->raise();
 }

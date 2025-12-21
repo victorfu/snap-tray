@@ -10,14 +10,16 @@
 #include <memory>
 #include <optional>
 
+#include "AnnotationLayer.h"
+#include "ToolbarWidget.h"
+#include "InlineTextEditor.h"
 #include "WindowDetector.h"
 
 class QScreen;
-class AnnotationLayer;
-
-#ifdef Q_OS_MACOS
+class ColorPaletteWidget;
+class ColorPickerDialog;
+class QCloseEvent;
 class OCRManager;
-#endif
 class PencilStroke;
 class MarkerStroke;
 class ArrowAnnotation;
@@ -25,6 +27,7 @@ class RectangleAnnotation;
 class MosaicAnnotation;
 class MosaicStroke;
 class StepBadgeAnnotation;
+class AnnotationItem;
 
 // Toolbar button types
 enum class ToolbarButton {
@@ -36,12 +39,11 @@ enum class ToolbarButton {
     Text,
     Mosaic,
     StepBadge,
+    Eraser,
     Undo,
     Redo,
     Cancel,
-#ifdef Q_OS_MACOS
     OCR,
-#endif
     Pin,
     Save,
     Copy,
@@ -67,7 +69,6 @@ public:
     // 初始化指定螢幕的截圖 (由 CaptureManager 調用)
     void initializeForScreen(QScreen *screen);
 
-    // Window detection support
     void setWindowDetector(WindowDetector *detector);
 
 signals:
@@ -82,6 +83,8 @@ protected:
     void mouseMoveEvent(QMouseEvent *event) override;
     void mouseReleaseEvent(QMouseEvent *event) override;
     void keyPressEvent(QKeyEvent *event) override;
+    void closeEvent(QCloseEvent *event) override;
+    bool eventFilter(QObject *obj, QEvent *event) override;
 
 private:
     void captureCurrentScreen();
@@ -90,18 +93,21 @@ private:
     void drawCrosshair(QPainter &painter);
     void drawMagnifier(QPainter &painter);
     void drawDimensionInfo(QPainter &painter);
-    void drawToolbar(QPainter &painter);
+
+    // Toolbar helpers
+    void setupToolbarButtons();
+    void handleToolbarClick(ToolbarButton button);
+    QColor getToolbarIconColor(int buttonId, bool isActive, bool isHovered) const;
+
+    // Color palette helpers
+    bool shouldShowColorPalette() const;
+    void onColorSelected(const QColor &color);
+    void onMoreColorsRequested();
 
     // Window detection drawing
     void drawDetectedWindow(QPainter &painter);
     void drawWindowHint(QPainter &painter, const QString &title);
     void updateWindowDetection(const QPoint &localPos);
-
-    void updateToolbarPosition();
-    int getButtonAtPosition(const QPoint &pos);
-    void handleToolbarClick(ToolbarButton button);
-    QString getButtonTooltip(int buttonIndex);
-    void drawTooltip(QPainter &painter);
     QPixmap getSelectedRegion();
     void copyToClipboard();
     void saveToFile();
@@ -116,6 +122,9 @@ private:
     bool isAnnotationTool(ToolbarButton tool) const;
     void showTextInputDialog(const QPoint &pos);
     void placeStepBadge(const QPoint &pos);
+
+    // Inline text editing handlers
+    void onTextEditingFinished(const QString &text, const QPoint &position);
 
     // Selection resize/move helpers
     ResizeHandle getHandleAtPosition(const QPoint &pos);
@@ -134,13 +143,10 @@ private:
     bool m_showHexColor;  // true=HEX, false=RGB
 
     // Toolbar
-    QRect m_toolbarRect;
-    int m_hoveredButton;
-    QVector<QRect> m_buttonRects;
+    ToolbarWidget *m_toolbar;
 
-    static const int TOOLBAR_HEIGHT = 40;
-    static const int BUTTON_WIDTH = 36;
-    static const int BUTTON_SPACING = 2;
+    // Color palette
+    ColorPaletteWidget *m_colorPalette;
 
     // Annotation layer and state
     AnnotationLayer *m_annotationLayer;
@@ -160,10 +166,17 @@ private:
     std::unique_ptr<RectangleAnnotation> m_currentRectangle;
     std::unique_ptr<MosaicStroke> m_currentMosaicStroke;
 
+    // Eraser state
+    QVector<QPoint> m_eraserPath;
+    std::vector<ErasedItemsGroup::IndexedItem> m_erasedItems;  // Items erased during current stroke
+    static const int ERASER_WIDTH = 20;
+
     // Selection resize/move state
     ResizeHandle m_activeHandle;
     bool m_isResizing;
     bool m_isMoving;
+    bool m_isClosing;
+    bool m_isDialogOpen;  // Prevents close during file dialog
     QPoint m_resizeStartPoint;
     QRect m_originalRect;
 
@@ -172,14 +185,18 @@ private:
     std::optional<DetectedElement> m_detectedWindow;
     QRect m_highlightedWindowRect;
 
-#ifdef Q_OS_MACOS
-    // OCR state (macOS only)
+    // OCR state
     OCRManager *m_ocrManager;
     bool m_ocrInProgress;
 
     void performOCR();
     void onOCRComplete(bool success, const QString &text, const QString &error);
-#endif
+
+    // Inline text editing
+    InlineTextEditor *m_textEditor;
+
+    // Color picker dialog
+    ColorPickerDialog *m_colorPickerDialog;
 };
 
 #endif // REGIONSELECTOR_H

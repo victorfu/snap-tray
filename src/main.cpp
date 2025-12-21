@@ -10,7 +10,7 @@ int main(int argc, char *argv[])
 
     // Set application metadata
     app.setApplicationName("SnapTray");
-    app.setOrganizationName("MySoft");
+    app.setOrganizationName("Victor Fu");
     app.setApplicationVersion("1.0.0");
 
     MainApplication mainApp;

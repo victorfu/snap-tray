@@ -7,9 +7,9 @@
     <key>CFBundleExecutable</key>
     <string>SnapTray</string>
     <key>CFBundleIconFile</key>
-    <string></string>
+    <string>snaptray.icns</string>
     <key>CFBundleIdentifier</key>
-    <string>com.mysoft.snaptray</string>
+    <string>com.victorfu.snaptray</string>
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
     <key>CFBundleName</key>

@@ -53,6 +53,12 @@ private:
     QVector<QPoint> m_points;
     QColor m_color;
     int m_width;
+
+    // Pixmap cache for draw() optimization
+    mutable QPixmap m_cachedPixmap;
+    mutable QPoint m_cachedOrigin;
+    mutable qreal m_cachedDpr = 0.0;
+    mutable int m_cachedPointCount = 0;
 };
 
 // Arrow annotation (line with arrowhead)
@@ -165,14 +171,45 @@ public:
     void updateSource(const QPixmap &sourcePixmap);
 
 private:
-    void generateMosaic();
-
     QVector<QPoint> m_points;
     QPixmap m_sourcePixmap;
     mutable QImage m_sourceImageCache;
     int m_width;      // Brush width
     int m_blockSize;  // Mosaic block size
     qreal m_devicePixelRatio;
+};
+
+// Group of erased items (for undo support)
+class ErasedItemsGroup : public AnnotationItem
+{
+public:
+    // Item paired with its original index for position-preserving undo
+    struct IndexedItem {
+        size_t originalIndex;
+        std::unique_ptr<AnnotationItem> item;
+    };
+
+    explicit ErasedItemsGroup(std::vector<IndexedItem> items);
+    void draw(QPainter &painter) const override;  // Does nothing (invisible marker)
+    QRect boundingRect() const override;  // Returns empty rect
+    std::unique_ptr<AnnotationItem> clone() const override;
+
+    // Check if this group contains any items
+    bool hasItems() const { return !m_erasedItems.empty(); }
+
+    // Extract items for restoration (moves ownership)
+    std::vector<IndexedItem> extractItems();
+
+    // Track original indices for redo support (stored when items are extracted)
+    const std::vector<size_t>& originalIndices() const { return m_originalIndices; }
+    void setOriginalIndices(std::vector<size_t> indices) { m_originalIndices = std::move(indices); }
+
+    // Adjust stored indices when trimHistory() removes items from front
+    void adjustIndicesForTrim(size_t trimCount);
+
+private:
+    std::vector<IndexedItem> m_erasedItems;
+    std::vector<size_t> m_originalIndices;  // Stored after extractItems() for redo
 };
 
 // Annotation layer that manages all annotations with undo/redo
@@ -199,6 +236,10 @@ public:
 
     // Step badge helpers
     int countStepBadges() const;
+
+    // Eraser support: remove items that intersect with the given path
+    // Returns the removed items with their original indices (for undo support)
+    std::vector<ErasedItemsGroup::IndexedItem> removeItemsIntersecting(const QPoint &point, int strokeWidth);
 
 signals:
     void changed();

@@ -8,10 +8,7 @@
 class QMenu;
 class QLabel;
 class QTimer;
-
-#ifdef Q_OS_MACOS
 class OCRManager;
-#endif
 
 class PinWindow : public QWidget
 {
@@ -26,6 +23,8 @@ public:
 
     void rotateRight();  // Rotate clockwise by 90 degrees
     void rotateLeft();   // Rotate counter-clockwise by 90 degrees
+    void flipHorizontal();  // Flip horizontally (mirror left-right)
+    void flipVertical();    // Flip vertically (mirror top-bottom)
 
 signals:
     void closed(PinWindow *window);
@@ -59,6 +58,7 @@ private:
     void createContextMenu();
     void saveToFile();
     void copyToClipboard();
+    QPixmap getTransformedPixmap() const;
 
     // Resize methods
     ResizeEdge getResizeEdge(const QPoint &pos) const;
@@ -67,11 +67,9 @@ private:
     // Zoom indicator
     void showZoomIndicator();
 
-#ifdef Q_OS_MACOS
-    // OCR methods (macOS only)
+    // OCR methods
     void performOCR();
     void onOCRComplete(bool success, const QString &text, const QString &error);
-#endif
 
     // Original members
     QPixmap m_originalPixmap;
@@ -95,11 +93,13 @@ private:
     // Rotation members
     int m_rotationAngle;  // 0, 90, 180, 270 degrees
 
-#ifdef Q_OS_MACOS
-    // OCR members (macOS only)
+    // Flip members
+    bool m_flipHorizontal;
+    bool m_flipVertical;
+
+    // OCR members
     OCRManager *m_ocrManager;
     bool m_ocrInProgress;
-#endif
 };
 
 #endif // PINWINDOW_H

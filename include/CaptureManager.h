@@ -18,6 +18,8 @@ public:
     explicit CaptureManager(PinWindowManager *pinManager, QObject *parent = nullptr);
     ~CaptureManager();
 
+    bool isActive() const;
+
 public slots:
     void startRegionCapture();
 

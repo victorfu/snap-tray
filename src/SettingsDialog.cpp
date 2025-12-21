@@ -1,4 +1,5 @@
 #include "SettingsDialog.h"
+#include "AutoLaunchManager.h"
 
 #include <QKeySequenceEdit>
 #include <QSettings>
@@ -8,17 +9,26 @@
 #include <QLabel>
 #include <QDebug>
 #include <QMessageBox>
+#include <QTabWidget>
+#include <QCheckBox>
 
 static const char* SETTINGS_KEY_HOTKEY = "hotkey";
 static const char* DEFAULT_HOTKEY = "F2";
 
 SettingsDialog::SettingsDialog(QWidget *parent)
     : QDialog(parent)
+    , m_tabWidget(nullptr)
+    , m_startOnLoginCheckbox(nullptr)
     , m_hotkeyEdit(nullptr)
+    , m_captureHotkeyStatus(nullptr)
+    , m_restoreDefaultsBtn(nullptr)
+    , m_pendingStartOnLogin(false)
 {
     setWindowTitle("SnapTray Settings");
-    setFixedSize(350, 120);
+    setFixedSize(420, 240);
     setupUi();
+
+    connect(this, &QDialog::accepted, this, &SettingsDialog::onAccepted);
 }
 
 SettingsDialog::~SettingsDialog()
@@ -29,18 +39,22 @@ void SettingsDialog::setupUi()
 {
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
 
-    // Hotkey row
-    QHBoxLayout *hotkeyLayout = new QHBoxLayout();
-    QLabel *hotkeyLabel = new QLabel("Capture Hotkey:", this);
-    m_hotkeyEdit = new QKeySequenceEdit(this);
-    m_hotkeyEdit->setKeySequence(QKeySequence(loadHotkey()));
-    hotkeyLayout->addWidget(hotkeyLabel);
-    hotkeyLayout->addWidget(m_hotkeyEdit);
-    mainLayout->addLayout(hotkeyLayout);
+    // Create tab widget
+    m_tabWidget = new QTabWidget(this);
 
-    mainLayout->addStretch();
+    // Tab 1: General
+    QWidget *generalTab = new QWidget();
+    setupGeneralTab(generalTab);
+    m_tabWidget->addTab(generalTab, "General");
 
-    // Buttons row
+    // Tab 2: Hotkeys
+    QWidget *hotkeysTab = new QWidget();
+    setupHotkeysTab(hotkeysTab);
+    m_tabWidget->addTab(hotkeysTab, "Hotkeys");
+
+    mainLayout->addWidget(m_tabWidget);
+
+    // Buttons row (outside tabs)
     QHBoxLayout *buttonLayout = new QHBoxLayout();
     buttonLayout->addStretch();
 
@@ -55,6 +69,79 @@ void SettingsDialog::setupUi()
     mainLayout->addLayout(buttonLayout);
 }
 
+void SettingsDialog::setupGeneralTab(QWidget *tab)
+{
+    QVBoxLayout *layout = new QVBoxLayout(tab);
+
+    m_startOnLoginCheckbox = new QCheckBox("Start on login", tab);
+    m_startOnLoginCheckbox->setChecked(AutoLaunchManager::isEnabled());
+    layout->addWidget(m_startOnLoginCheckbox);
+
+    layout->addStretch();
+}
+
+void SettingsDialog::setupHotkeysTab(QWidget *tab)
+{
+    QVBoxLayout *layout = new QVBoxLayout(tab);
+
+    // Region Capture hotkey row
+    QHBoxLayout *captureLayout = new QHBoxLayout();
+    QLabel *captureLabel = new QLabel("Region Capture:", tab);
+    captureLabel->setFixedWidth(120);
+    m_hotkeyEdit = new QKeySequenceEdit(tab);
+    m_hotkeyEdit->setKeySequence(QKeySequence(loadHotkey()));
+    m_captureHotkeyStatus = new QLabel(tab);
+    m_captureHotkeyStatus->setFixedSize(24, 24);
+    m_captureHotkeyStatus->setAlignment(Qt::AlignCenter);
+    captureLayout->addWidget(captureLabel);
+    captureLayout->addWidget(m_hotkeyEdit);
+    captureLayout->addWidget(m_captureHotkeyStatus);
+    layout->addLayout(captureLayout);
+
+    // Screen Canvas info row (fixed to double-press)
+    QHBoxLayout *canvasLayout = new QHBoxLayout();
+    QLabel *canvasLabel = new QLabel("Screen Canvas:", tab);
+    canvasLabel->setFixedWidth(120);
+    QLabel *canvasInfo = new QLabel("Double-press the hotkey above", tab);
+    canvasInfo->setStyleSheet("color: gray;");
+    canvasLayout->addWidget(canvasLabel);
+    canvasLayout->addWidget(canvasInfo);
+    canvasLayout->addStretch();
+    layout->addLayout(canvasLayout);
+
+    layout->addStretch();
+
+    // Restore Defaults button
+    QHBoxLayout *defaultsLayout = new QHBoxLayout();
+    defaultsLayout->addStretch();
+    m_restoreDefaultsBtn = new QPushButton("Restore Defaults", tab);
+    connect(m_restoreDefaultsBtn, &QPushButton::clicked,
+            this, &SettingsDialog::onRestoreDefaults);
+    defaultsLayout->addWidget(m_restoreDefaultsBtn);
+    layout->addLayout(defaultsLayout);
+}
+
+void SettingsDialog::updateHotkeyStatus(QLabel *statusLabel, bool isRegistered)
+{
+    if (isRegistered) {
+        statusLabel->setText("✓");
+        statusLabel->setStyleSheet("color: green; font-weight: bold; font-size: 16px;");
+    } else {
+        statusLabel->setText("✗");
+        statusLabel->setStyleSheet("color: red; font-weight: bold; font-size: 16px;");
+    }
+}
+
+void SettingsDialog::updateCaptureHotkeyStatus(bool isRegistered)
+{
+    updateHotkeyStatus(m_captureHotkeyStatus, isRegistered);
+}
+
+void SettingsDialog::onRestoreDefaults()
+{
+    m_hotkeyEdit->setKeySequence(QKeySequence(DEFAULT_HOTKEY));
+}
+
 QString SettingsDialog::defaultHotkey()
 {
     return QString(DEFAULT_HOTKEY);
@@ -62,13 +149,13 @@ QString SettingsDialog::defaultHotkey()
 
 QString SettingsDialog::loadHotkey()
 {
-    QSettings settings("MySoft", "SnapTray");
+    QSettings settings("Victor Fu", "SnapTray");
     return settings.value(SETTINGS_KEY_HOTKEY, DEFAULT_HOTKEY).toString();
 }
 
 void SettingsDialog::saveHotkey(const QString &keySequence)
 {
-    QSettings settings("MySoft", "SnapTray");
+    QSettings settings("Victor Fu", "SnapTray");
     settings.setValue(SETTINGS_KEY_HOTKEY, keySequence);
     qDebug() << "Hotkey saved:" << keySequence;
 }
@@ -77,21 +164,36 @@ void SettingsDialog::onSave()
 {
     QString newHotkey = m_hotkeyEdit->keySequence().toString();
 
-    // 驗證不為空
+    // Validate hotkey is not empty
     if (newHotkey.isEmpty()) {
         QMessageBox::warning(this, "Invalid Hotkey",
-            "Hotkey cannot be empty. Please set a valid key combination.");
+            "Capture hotkey cannot be empty. Please set a valid key combination.");
         return;
     }
 
-    saveHotkey(newHotkey);
+    // Store pending state - will be applied in onAccepted() if hotkey succeeds
+    m_pendingStartOnLogin = m_startOnLoginCheckbox->isChecked();
+
+    // Request hotkey change - MainApplication will call accept() if successful
     emit hotkeyChangeRequested(newHotkey);
-    // 注意：不直接呼叫 accept()，由 MainApplication 根據註冊結果決定是否關閉
 }
 
 void SettingsDialog::showHotkeyError(const QString &message)
 {
     QMessageBox::warning(this, "Hotkey Registration Failed", message);
+}
+
+void SettingsDialog::onAccepted()
+{
+    // Called only after successful hotkey registration
+    bool currentState = AutoLaunchManager::isEnabled();
+    if (m_pendingStartOnLogin != currentState) {
+        bool success = AutoLaunchManager::setEnabled(m_pendingStartOnLogin);
+        if (!success) {
+            qDebug() << "Failed to update auto-launch setting";
+        }
+        emit startOnLoginChanged(m_pendingStartOnLogin);
+    }
 }
 
 void SettingsDialog::onCancel()
