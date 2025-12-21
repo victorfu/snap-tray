@@ -145,11 +145,13 @@ jobs:
           & "$env:QT_ROOT_DIR\bin\windeployqt.exe" --release --no-translations "$STAGING_DIR\${{ env.APP_NAME }}.exe"
 
       - name: Generate NSIS version header
+        shell: pwsh
         run: |
           $VERSION = "${{ needs.prepare.outputs.version }}"
           $PROJECT_ROOT = (Get-Location).Path
           $STAGING_DIR = "$PROJECT_ROOT\release\staging"
           $OUTPUT_DIR = "$PROJECT_ROOT\dist"
+          $NSIS_DIR = "$PROJECT_ROOT\packaging\windows"
           New-Item -ItemType Directory -Force -Path $OUTPUT_DIR
           @"
           !define VERSION "$VERSION"
@@ -157,7 +159,13 @@ jobs:
           !define STAGING_DIR "$STAGING_DIR"
           !define OUTPUT_DIR "$OUTPUT_DIR"
           !define PROJECT_ROOT "$PROJECT_ROOT"
-          "@ | Out-File -FilePath "release\version.nsh" -Encoding ASCII
+          "@ | Out-File -FilePath "$NSIS_DIR\version.nsh" -Encoding ASCII
+
+          if (-not (Test-Path "$NSIS_DIR\version.nsh")) {
+            Write-Error "Failed to generate version.nsh at $NSIS_DIR\version.nsh"
+            exit 1
+          }
+          Write-Output "Generated version.nsh successfully at: $NSIS_DIR\version.nsh"
 
       - name: Build NSIS installer
         shell: pwsh

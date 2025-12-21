@@ -127,11 +127,18 @@ echo [5/5] Creating installer...
 if not exist "%OUTPUT_DIR%" mkdir "%OUTPUT_DIR%"
 
 REM Generate version-specific NSIS header
-echo !define VERSION "%VERSION%" > "%BUILD_DIR%\version.nsh"
-echo !define APP_NAME "%APP_NAME%" >> "%BUILD_DIR%\version.nsh"
-echo !define STAGING_DIR "%STAGING_DIR%" >> "%BUILD_DIR%\version.nsh"
-echo !define OUTPUT_DIR "%OUTPUT_DIR%" >> "%BUILD_DIR%\version.nsh"
-echo !define PROJECT_ROOT "%PROJECT_ROOT%" >> "%BUILD_DIR%\version.nsh"
+set NSIS_DIR=%SCRIPT_DIR%
+echo !define VERSION "%VERSION%" > "%NSIS_DIR%version.nsh"
+echo !define APP_NAME "%APP_NAME%" >> "%NSIS_DIR%version.nsh"
+echo !define STAGING_DIR "%STAGING_DIR%" >> "%NSIS_DIR%version.nsh"
+echo !define OUTPUT_DIR "%OUTPUT_DIR%" >> "%NSIS_DIR%version.nsh"
+echo !define PROJECT_ROOT "%PROJECT_ROOT%" >> "%NSIS_DIR%version.nsh"
+
+REM Verify generation
+if not exist "%NSIS_DIR%version.nsh" (
+    echo ERROR: Failed to generate version.nsh
+    exit /b 1
+)
 
 makensis /V3 "%SCRIPT_DIR%\installer.nsi"
 if errorlevel 1 (
