@@ -1,0 +1,64 @@
+changelog:
+  exclude:
+    labels:
+      - ignore-for-release
+    authors:
+      - dependabot
+  categories:
+    - title: Breaking Changes
+      labels:
+        - breaking-change
+
+    - title: New Features
+      labels:
+        - feature
+        - enhancement
+      rules:
+        - pattern: '^feat(\(.*\))?:'
+          flags: i
+
+    - title: Bug Fixes
+      labels:
+        - bug
+        - fix
+      rules:
+        - pattern: '^fix(\(.*\))?:'
+          flags: i
+
+    - title: Performance Improvements
+      labels:
+        - performance
+      rules:
+        - pattern: '^perf(\(.*\))?:'
+          flags: i
+
+    - title: Refactoring
+      labels:
+        - refactor
+      rules:
+        - pattern: '^refactor(\(.*\))?:'
+          flags: i
+
+    - title: Documentation
+      labels:
+        - documentation
+      rules:
+        - pattern: '^docs(\(.*\))?:'
+          flags: i
+
+    - title: Build and CI/CD
+      labels:
+        - build
+        - ci
+      rules:
+        - pattern: '^(ci|build)(\(.*\))?:'
+          flags: i
+
+    - title: Other Changes
+      labels:
+        - chore
+        - style
+        - test
+      rules:
+        - pattern: '^(chore|style|test)(\(.*\))?:'
+          flags: i
