@@ -120,7 +120,7 @@ jobs:
         run: |
           cmake -S . -B release `
             -DCMAKE_BUILD_TYPE=Release `
-            -DCMAKE_PREFIX_PATH="$env:Qt6_DIR"
+            -DCMAKE_PREFIX_PATH="$env:QT_ROOT_DIR"
 
       - name: Build
         run: cmake --build release --config Release --parallel
@@ -130,7 +130,7 @@ jobs:
           $STAGING_DIR = "release\staging"
           New-Item -ItemType Directory -Force -Path $STAGING_DIR
           Copy-Item "release\Release\${{ env.APP_NAME }}.exe" -Destination $STAGING_DIR
-          & "$env:Qt6_DIR\bin\windeployqt.exe" --release --no-translations "$STAGING_DIR\${{ env.APP_NAME }}.exe"
+          & "$env:QT_ROOT_DIR\bin\windeployqt.exe" --release --no-translations "$STAGING_DIR\${{ env.APP_NAME }}.exe"
 
       - name: Generate NSIS version header
         run: |
