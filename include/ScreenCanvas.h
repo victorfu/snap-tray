@@ -13,6 +13,7 @@ class AnnotationLayer;
 class AnnotationController;
 class ColorPaletteWidget;
 class ColorPickerDialog;
+class LineWidthWidget;
 
 // Canvas tool types (simplified subset for screen canvas)
 enum class CanvasTool {
@@ -70,6 +71,10 @@ private:
     void onColorSelected(const QColor &color);
     void onMoreColorsRequested();
 
+    // Line width helpers
+    bool shouldShowLineWidthWidget() const;
+    void onLineWidthChanged(int width);
+
     // Screen capture
     QPixmap m_backgroundPixmap;
     QScreen *m_currentScreen;
@@ -91,6 +96,9 @@ private:
 
     // Color palette
     ColorPaletteWidget *m_colorPalette;
+
+    // Line width widget
+    LineWidthWidget *m_lineWidthWidget;
 
     // Color picker dialog
     ColorPickerDialog *m_colorPickerDialog;
