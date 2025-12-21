@@ -60,11 +60,16 @@ set(HEADERS
     include/ColorPickerDialog.h
 )
 
+# Cross-platform source files (used by both platforms)
+list(APPEND SOURCES
+    src/CaptureManager.cpp
+    src/ScreenCanvasManager.cpp
+)
+
 # Platform-specific source files
 if(APPLE)
     list(APPEND SOURCES
-        src/CaptureManager.mm
-        src/ScreenCanvasManager.mm
+        src/platform/WindowLevel_mac.mm
         src/WindowDetector.mm
         src/OCRManager.mm
         src/AutoLaunchManager_mac.mm
@@ -75,8 +80,7 @@ if(APPLE)
     )
 elseif(WIN32)
     list(APPEND SOURCES
-        src/CaptureManager.cpp
-        src/ScreenCanvasManager.cpp
+        src/platform/WindowLevel_win.cpp
         src/WindowDetector_win.cpp
         src/OCRManager_win.cpp
         src/AutoLaunchManager_win.cpp
@@ -91,7 +95,10 @@ endif()
 
 add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS} ${RESOURCES} ${WIN32_RESOURCES})
 
-target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/include)
+target_include_directories(${PROJECT_NAME} PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/src
+)
 
 # macOS frameworks needed for window detection and auto-launch
 if(APPLE)

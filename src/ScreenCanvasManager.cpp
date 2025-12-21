@@ -1,5 +1,6 @@
 #include "ScreenCanvasManager.h"
 #include "ScreenCanvas.h"
+#include "platform/WindowLevel.h"
 
 #include <QGuiApplication>
 #include <QScreen>
@@ -49,6 +50,7 @@ void ScreenCanvasManager::toggle()
         m_canvas->initializeForScreen(targetScreen);
         m_canvas->setGeometry(targetScreen->geometry());
         m_canvas->show();
+        raiseWindowAboveMenuBar(m_canvas);
         m_canvas->activateWindow();
         m_canvas->raise();
 

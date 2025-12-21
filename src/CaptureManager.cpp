@@ -1,6 +1,7 @@
 #include "CaptureManager.h"
 #include "RegionSelector.h"
 #include "PinWindowManager.h"
+#include "platform/WindowLevel.h"
 #ifdef Q_OS_MACOS
 #include "WindowDetector.h"
 #endif
@@ -77,6 +78,7 @@ void CaptureManager::startRegionCapture()
     // 5. 使用 setGeometry + show 取代 showFullScreen，確保在正確螢幕上顯示
     m_regionSelector->setGeometry(targetScreen->geometry());
     m_regionSelector->show();
+    raiseWindowAboveMenuBar(m_regionSelector);
 
     m_regionSelector->activateWindow();
     m_regionSelector->raise();
