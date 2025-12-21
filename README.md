@@ -13,7 +13,7 @@ SnapTray 是一個在系統托盤常駐的區域截圖小工具，預設以 F2 �
   - RGB/HEX 顏色預覽（按 Shift 切換，按 C 複製顏色代碼）
   - 尺寸標示
   - 選取框控制點（類 Snipaste 風格）
-  - 視窗偵測（macOS）：自動偵測游標下的視窗，單擊快速選取
+  - 視窗偵測（macOS/Windows）：自動偵測游標下的視窗，單擊快速選取
 - **截圖工具列**：
   - `Selection` 選取工具（調整選取區域）
   - `Pin` 釘選到畫面 (Enter)
@@ -21,7 +21,7 @@ SnapTray 是一個在系統托盤常駐的區域截圖小工具，預設以 F2 �
   - `Copy` 複製 (Ctrl+C)
   - `Cancel` 取消 (Esc)
   - 標註工具：`Arrow` / `Pencil` / `Marker` / `Rectangle` / `Text` / `Mosaic` / `StepBadge`（支援 Undo/Redo）
-  - `OCR` 文字辨識（僅 macOS，支援繁體中文、簡體中文、英文）
+  - `OCR` 文字辨識（macOS/Windows，支援繁體中文、簡體中文、英文）
   - 顏色選擇器：可自選標註工具顏色
 - **螢幕畫布**：
   - 全螢幕標註模式，直接在螢幕上繪圖
@@ -151,7 +151,7 @@ packaging\windows\package.bat
 2. 按下區域截圖熱鍵（預設 `F2`）進入截圖模式；或雙擊熱鍵（快速連按兩次 `F2`）進入螢幕畫布模式。
 3. **截圖模式操作**：
    - 拖曳滑鼠選取區域
-   - 單擊可快速選取偵測到的視窗（macOS）
+   - 單擊可快速選取偵測到的視窗（macOS/Windows）
    - `Shift`：切換放大鏡中的顏色格式 (HEX/RGB)
    - `C`：複製當前游標下的顏色代碼（尚未放開滑鼠、未完成選取時）
    - 放開滑鼠後出現工具列
@@ -164,7 +164,7 @@ packaging\windows\package.bat
      - `Text`：點擊後輸入文字
      - `StepBadge`：點擊放置自動編號的步驟標記
      - `Mosaic`：拖曳筆刷進行馬賽克塗抹
-   - `OCR`（macOS）：辨識選取區內的文字並複製到剪貼簿
+   - `OCR`（macOS/Windows）：辨識選取區內的文字並複製到剪貼簿
    - `Undo/Redo`：`Ctrl+Z` / `Ctrl+Shift+Z`（macOS 通常為 `Cmd+Z` / `Cmd+Shift+Z`）
 5. **螢幕畫布模式操作**：
    - 工具列提供 `Pencil` / `Marker` / `Arrow` / `Rectangle` 繪圖工具
@@ -206,9 +206,16 @@ snap/
 │   ├── AnnotationController.h
 │   ├── ToolbarWidget.h
 │   ├── ColorPaletteWidget.h
+│   ├── ColorPickerDialog.h
 │   ├── IconRenderer.h
+│   ├── InlineTextEditor.h       # 行內文字編輯元件
+│   ├── MagnifierOverlay.h       # 放大鏡/十字線元件
+│   ├── SelectionController.h    # 選區控制元件
+│   ├── PlatformFeatures.h
 │   ├── WindowDetector.h
-│   └── OCRManager.h
+│   ├── WindowDetectionOverlay.h # macOS 視窗偵測覆蓋層
+│   ├── OCRManager.h
+│   └── OCRController.h          # macOS OCR 控制器
 ├── src/
 │   ├── main.cpp
 │   ├── MainApplication.cpp
@@ -225,11 +232,23 @@ snap/
 │   ├── AnnotationController.cpp
 │   ├── ToolbarWidget.cpp
 │   ├── ColorPaletteWidget.cpp
+│   ├── ColorPickerDialog.mm     # macOS 原生顏色選擇器
 │   ├── IconRenderer.cpp
+│   ├── InlineTextEditor.cpp
+│   ├── MagnifierOverlay.cpp
+│   ├── SelectionController.cpp
 │   ├── WindowDetector.mm        # macOS
 │   ├── WindowDetector_win.cpp   # Windows
+│   ├── WindowDetectionOverlay.cpp # macOS
 │   ├── OCRManager.mm            # macOS
-│   └── OCRManager_win.cpp       # Windows
+│   ├── OCRManager_win.cpp       # Windows
+│   ├── OCRController.cpp        # macOS
+│   └── platform/
+│       ├── WindowLevel.h
+│       ├── WindowLevel_mac.mm
+│       ├── WindowLevel_win.cpp
+│       ├── PlatformFeatures_mac.mm
+│       └── PlatformFeatures_win.cpp
 ├── resources/
 │   ├── resources.qrc
 │   ├── snaptray.rc              # Windows 資源檔
@@ -280,7 +299,7 @@ magick snaptray.png -define icon:auto-resize=256,128,64,48,32,16 snaptray.ico
 
 - 標註功能支援顏色選擇，但尚未提供 UI 調整線寬（線寬固定）。
 - 多螢幕支援：截圖會在游標所在螢幕啟動，但不同螢幕 DPI/縮放仍需要更多實機測試。
-- 視窗偵測與 OCR 功能僅支援 macOS。
+- 視窗偵測與 OCR 功能支援 macOS 與 Windows。
 
 ## 授權條款
 

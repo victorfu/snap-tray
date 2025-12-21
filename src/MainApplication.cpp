@@ -201,7 +201,7 @@ void MainApplication::setupHotkey()
 
 void MainApplication::onF2Pressed()
 {
-    if (m_waitingForSecondPress && m_lastF2PressTime.elapsed() < 300) {
+    if (m_waitingForSecondPress && m_lastF2PressTime.elapsed() < 200) {
         // Double-press detected -> Screen Canvas
         m_doublePressTimer->stop();
         m_waitingForSecondPress = false;
@@ -212,7 +212,7 @@ void MainApplication::onF2Pressed()
         // First press, wait for second
         m_lastF2PressTime.restart();
         m_waitingForSecondPress = true;
-        m_doublePressTimer->start(300);
+        m_doublePressTimer->start(200);
     }
 }
 
