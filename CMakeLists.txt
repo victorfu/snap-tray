@@ -31,6 +31,7 @@ set(SOURCES
     src/ScreenCanvas.cpp
     src/IconRenderer.cpp
     src/ColorPaletteWidget.cpp
+    src/LineWidthWidget.cpp
     src/ToolbarWidget.cpp
     src/AnnotationController.cpp
     src/ColorPickerDialog.mm
@@ -56,6 +57,7 @@ set(HEADERS
     include/AutoLaunchManager.h
     include/IconRenderer.h
     include/ColorPaletteWidget.h
+    include/LineWidthWidget.h
     include/ToolbarWidget.h
     include/AnnotationController.h
     include/ColorPickerDialog.h
