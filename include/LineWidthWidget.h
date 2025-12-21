@@ -55,8 +55,9 @@ public:
      * @brief Update the widget position.
      * @param anchorRect The rect to anchor the widget to
      * @param above If true, position above the anchor; otherwise below
+     * @param screenWidth Screen width for right boundary check (0 to disable)
      */
-    void updatePosition(const QRect& anchorRect, bool above = false);
+    void updatePosition(const QRect& anchorRect, bool above = false, int screenWidth = 0);
 
     /**
      * @brief Draw the line width widget.

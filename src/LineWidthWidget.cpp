@@ -28,7 +28,7 @@ void LineWidthWidget::setCurrentWidth(int width)
     m_currentWidth = qBound(m_minWidth, width, m_maxWidth);
 }
 
-void LineWidthWidget::updatePosition(const QRect& anchorRect, bool above)
+void LineWidthWidget::updatePosition(const QRect& anchorRect, bool above, int screenWidth)
 {
     int widgetX = anchorRect.left();
     int widgetY;
@@ -39,8 +39,16 @@ void LineWidthWidget::updatePosition(const QRect& anchorRect, bool above)
         widgetY = anchorRect.bottom() + 4;
     }
 
-    // Keep on screen (basic bounds check)
+    // Keep on screen - left boundary
     if (widgetX < 5) widgetX = 5;
+
+    // Keep on screen - right boundary
+    if (screenWidth > 0) {
+        int maxX = screenWidth - WIDGET_WIDTH - 5;
+        if (widgetX > maxX) widgetX = maxX;
+    }
+
+    // Keep on screen - top boundary (fallback to below)
     if (widgetY < 5 && above) {
         widgetY = anchorRect.bottom() + 4;
     }

@@ -270,8 +270,10 @@ bool RegionSelector::shouldShowLineWidthWidget() const
 {
     if (!m_selectionComplete) return false;
 
-    // Only show for Pencil tool
-    return m_currentTool == ToolbarButton::Pencil;
+    // Show for tools that use m_annotationWidth
+    return m_currentTool == ToolbarButton::Pencil ||
+           m_currentTool == ToolbarButton::Arrow ||
+           m_currentTool == ToolbarButton::Rectangle;
 }
 
 void RegionSelector::onLineWidthChanged(int width)
@@ -475,7 +477,7 @@ void RegionSelector::paintEvent(QPaintEvent*)
                 QRect anchorRect = shouldShowColorPalette()
                     ? m_colorPalette->boundingRect()
                     : m_toolbar->boundingRect();
-                m_lineWidthWidget->updatePosition(anchorRect, false);
+                m_lineWidthWidget->updatePosition(anchorRect, false, width());
                 m_lineWidthWidget->draw(painter);
             } else {
                 m_lineWidthWidget->setVisible(false);

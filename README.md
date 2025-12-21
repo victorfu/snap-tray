@@ -1,135 +1,137 @@
-# SnapTray - 系統托盤截圖工具
+# SnapTray - System Tray Screenshot Tool
 
-SnapTray 是一個在系統托盤常駐的區域截圖小工具，預設以 F2 觸發選取，並可將截圖釘選在螢幕上、複製或儲存。
+**English** | [繁體中文](README.zh-TW.md)
 
-## 功能特色
+SnapTray is a lightweight screenshot utility that lives in your system tray. Press F2 (default) to capture a region, then pin it to your screen, copy, or save.
 
-- **系統托盤選單**：`Region Capture` (顯示當前熱鍵)、`Screen Canvas`、`Close All Pins`、`Settings`、`Exit`
-- **全域快捷鍵**：可於設定中自定義，支援即時更新熱鍵註冊。
-  - 區域截圖：預設 `F2`
-  - 螢幕畫布：雙擊 `F2`（快速連按兩次）
-- **區域截圖覆蓋層**：
-  - 十字線＋放大鏡（支援像素級檢視）
-  - RGB/HEX 顏色預覽（按 Shift 切換，按 C 複製顏色代碼）
-  - 尺寸標示
-  - 選取框控制點（類 Snipaste 風格）
-  - 視窗偵測（macOS/Windows）：自動偵測游標下的視窗，單擊快速選取
-- **截圖工具列**：
-  - `Selection` 選取工具（調整選取區域）
-  - `Pin` 釘選到畫面 (Enter)
-  - `Save` 存檔 (Ctrl+S)
-  - `Copy` 複製 (Ctrl+C)
-  - `Cancel` 取消 (Esc)
-  - 標註工具：`Arrow` / `Pencil` / `Marker` / `Rectangle` / `Text` / `Mosaic` / `StepBadge`（支援 Undo/Redo）
-  - `OCR` 文字辨識（macOS/Windows，支援繁體中文、簡體中文、英文）
-  - 顏色選擇器：可自選標註工具顏色
-- **螢幕畫布**：
-  - 全螢幕標註模式，直接在螢幕上繪圖
-  - 標註工具：`Pencil` / `Marker` / `Arrow` / `Rectangle`
-  - 顏色選擇器：可自選繪圖顏色
-  - 支援 Undo/Redo/Clear
-  - `Esc` 離開
-- **釘選視窗**：
-  - 無邊框、永遠在最上層
-  - 可拖曳移動
-  - 滑鼠滾輪縮放（顯示縮放比例指示器）
-  - 邊緣拖曳調整大小
-  - 旋轉支援（右鍵選單）
-  - 雙擊或 Esc 關閉
-  - 右鍵選單：存檔/複製/OCR/縮放/旋轉/關閉
-- **設定對話框**：
-  - General 分頁：開機自動啟動
-  - Hotkeys 分頁：自定義區域截圖熱鍵（雙擊同一熱鍵可啟動螢幕畫布）
-  - 設定儲存於系統設定 (QSettings)
+## Features
 
-## 技術棧
+- **System Tray Menu**: `Region Capture` (shows current hotkey), `Screen Canvas`, `Close All Pins`, `Settings`, `Exit`
+- **Global Hotkeys**: Customizable in settings with live hotkey registration
+  - Region Capture: Default `F2`
+  - Screen Canvas: Double-tap `F2` (press twice quickly)
+- **Region Capture Overlay**:
+  - Crosshair + magnifier (pixel-level precision)
+  - RGB/HEX color preview (Shift to toggle, C to copy color code)
+  - Dimension display
+  - Selection handles (Snipaste-style)
+  - Window detection (macOS/Windows): Auto-detect window under cursor, single-click to select
+- **Capture Toolbar**:
+  - `Selection` tool (adjust selection area)
+  - `Pin` to screen (Enter)
+  - `Save` to file (Ctrl+S)
+  - `Copy` to clipboard (Ctrl+C)
+  - `Cancel` (Esc)
+  - Annotation tools: `Arrow` / `Pencil` / `Marker` / `Rectangle` / `Text` / `Mosaic` / `StepBadge` (with Undo/Redo)
+  - `OCR` text recognition (macOS/Windows, supports Traditional Chinese, Simplified Chinese, English)
+  - Color picker for annotation tools
+- **Screen Canvas**:
+  - Full-screen annotation mode, draw directly on screen
+  - Drawing tools: `Pencil` / `Marker` / `Arrow` / `Rectangle`
+  - Color picker for drawing
+  - Undo/Redo/Clear support
+  - `Esc` to exit
+- **Pin Windows**:
+  - Borderless, always on top
+  - Drag to move
+  - Mouse wheel to zoom (with scale indicator)
+  - Edge drag to resize
+  - Rotation support (via context menu)
+  - Double-click or Esc to close
+  - Context menu: Save/Copy/OCR/Zoom/Rotate/Close
+- **Settings Dialog**:
+  - General tab: Launch at startup
+  - Hotkeys tab: Custom region capture hotkey (double-tap same hotkey for Screen Canvas)
+  - Settings stored via QSettings
 
-- **語言**: C++17
-- **框架**: Qt 6（Widgets/Gui）
-- **建置系統**: CMake 3.16+
-- **相依套件**: [QHotkey](https://github.com/Skycoder42/QHotkey)（FetchContent 自動取得）
-- **macOS 原生框架**:
-  - CoreGraphics / ApplicationServices（視窗偵測）
-  - AppKit（系統整合）
-  - Vision（OCR 文字辨識）
+## Tech Stack
 
-## 系統需求
+- **Language**: C++17
+- **Framework**: Qt 6 (Widgets/Gui)
+- **Build System**: CMake 3.16+
+- **Dependencies**: [QHotkey](https://github.com/Skycoder42/QHotkey) (auto-fetched via FetchContent)
+- **macOS Native Frameworks**:
+  - CoreGraphics / ApplicationServices (window detection)
+  - AppKit (system integration)
+  - Vision (OCR text recognition)
+
+## System Requirements
 
 ### macOS
 - macOS 10.15+
-- Qt 6（建議以 Homebrew 安裝）
+- Qt 6 (recommend installing via Homebrew)
 - Xcode Command Line Tools
 - CMake 3.16+
-- Git（用於 FetchContent 取得 QHotkey）
+- Git (for FetchContent to fetch QHotkey)
 
 ### Windows
 - Windows 10+
 - Qt 6
-- Visual Studio 2019+ 或 MinGW
+- Visual Studio 2019+ or MinGW
 - CMake 3.16+
-- Git（用於 FetchContent 取得 QHotkey）
+- Git (for FetchContent to fetch QHotkey)
 
-## 建置與執行
+## Build & Run
 
-### 開發版本（Debug）
+### Development Build (Debug)
 
 ```bash
 # macOS
 cmake -S . -B build -DCMAKE_PREFIX_PATH="$(brew --prefix qt)"
-# Windows（請替換為你的 Qt 路徑）
+# Windows (replace with your Qt path)
 # cmake -S . -B build -DCMAKE_PREFIX_PATH=C:/Qt/6.x.x/msvc2019_64
 
 cmake --build build
 
-# 執行（macOS 會產出 .app bundle）
+# Run (macOS produces .app bundle)
 open build/SnapTray.app  # macOS
 # build/SnapTray.exe     # Windows
 ```
 
-### 正式版本（Release）
+### Release Build
 
 ```bash
 cmake -S . -B release -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$(brew --prefix qt)"
 cmake --build release
-# 產物：release/SnapTray.app（macOS）
+# Output: release/SnapTray.app (macOS)
 ```
 
-### 打包安裝檔
+### Packaging
 
-打包腳本會自動執行 Release 建置、部署 Qt 依賴、並產生安裝檔。
+The packaging scripts automatically perform Release builds, deploy Qt dependencies, and create installers.
 
-**macOS（DMG）：**
+**macOS (DMG):**
 ```bash
-# 前置需求：brew install qt（如尚未安裝）
-# 可選：brew install create-dmg（產生更美觀的 DMG）
+# Prerequisites: brew install qt (if not installed)
+# Optional: brew install create-dmg (for prettier DMG)
 
 ./packaging/macos/package.sh
-# 輸出：dist/SnapTray-1.0.0-macOS.dmg
+# Output: dist/SnapTray-1.0.0-macOS.dmg
 ```
 
-**Windows（NSIS 安裝程式）：**
+**Windows (NSIS Installer):**
 ```batch
-REM 前置需求：
+REM Prerequisites:
 REM   - Qt 6: https://www.qt.io/download-qt-installer
 REM   - NSIS: winget install NSIS.NSIS
-REM   - Visual Studio Build Tools 或 Visual Studio
+REM   - Visual Studio Build Tools or Visual Studio
 
-REM 設定 Qt 路徑（如果不是預設位置）
+REM Set Qt path (if not default location)
 set QT_PATH=C:\Qt\6.6.1\msvc2019_64
 
 packaging\windows\package.bat
-REM 輸出：dist\SnapTray-1.0.0-Setup.exe
+REM Output: dist\SnapTray-1.0.0-Setup.exe
 ```
 
-#### Code Signing（可選）
+#### Code Signing (Optional)
 
-未簽章的安裝檔在使用者安裝時會顯示警告：
-- macOS：「無法驗證開發者」（需右鍵 → 打開）
-- Windows：SmartScreen 警告
+Unsigned installers will show warnings during installation:
+- macOS: "Cannot verify developer" (requires right-click → Open)
+- Windows: SmartScreen warning
 
-**macOS 簽章與公證：**
+**macOS Signing & Notarization:**
 ```bash
-# 需要 Apple Developer Program 會員資格（$99 USD/年）
+# Requires Apple Developer Program membership ($99 USD/year)
 export CODESIGN_IDENTITY="Developer ID Application: Your Name (TEAMID)"
 export NOTARIZE_APPLE_ID="your@email.com"
 export NOTARIZE_TEAM_ID="YOURTEAMID"
@@ -137,55 +139,55 @@ export NOTARIZE_PASSWORD="xxxx-xxxx-xxxx-xxxx"  # App-Specific Password
 ./packaging/macos/package.sh
 ```
 
-**Windows 簽章：**
+**Windows Signing:**
 ```batch
-REM 需要 Code Signing Certificate（向 DigiCert、Sectigo 等 CA 購買）
+REM Requires Code Signing Certificate (purchase from DigiCert, Sectigo, etc.)
 set CODESIGN_CERT=path\to\certificate.pfx
 set CODESIGN_PASSWORD=your-password
 packaging\windows\package.bat
 ```
 
-## 使用方式
+## Usage
 
-1. 啟動後托盤會出現綠色方塊圖示。
-2. 按下區域截圖熱鍵（預設 `F2`）進入截圖模式；或雙擊熱鍵（快速連按兩次 `F2`）進入螢幕畫布模式。
-3. **截圖模式操作**：
-   - 拖曳滑鼠選取區域
-   - 單擊可快速選取偵測到的視窗（macOS/Windows）
-   - `Shift`：切換放大鏡中的顏色格式 (HEX/RGB)
-   - `C`：複製當前游標下的顏色代碼（尚未放開滑鼠、未完成選取時）
-   - 放開滑鼠後出現工具列
-4. **工具列操作**：
-   - `Enter` 或 `Pin`：將截圖釘選為浮動視窗
-   - `Ctrl+C` 或 `Copy`：複製到剪貼簿
-   - `Ctrl+S` 或 `Save`：儲存成檔案
-   - `Esc` 或 `Cancel`：取消選取
-   - 標註：選擇工具後在選取區內拖曳繪製
-     - `Text`：點擊後輸入文字
-     - `StepBadge`：點擊放置自動編號的步驟標記
-     - `Mosaic`：拖曳筆刷進行馬賽克塗抹
-   - `OCR`（macOS/Windows）：辨識選取區內的文字並複製到剪貼簿
-   - `Undo/Redo`：`Ctrl+Z` / `Ctrl+Shift+Z`（macOS 通常為 `Cmd+Z` / `Cmd+Shift+Z`）
-5. **螢幕畫布模式操作**：
-   - 工具列提供 `Pencil` / `Marker` / `Arrow` / `Rectangle` 繪圖工具
-   - 點擊顏色選擇器更換繪圖顏色
-   - `Undo` / `Redo`：復原/重做標註
-   - `Clear`：清除所有標註
-   - `Esc` 或 `Exit`：離開螢幕畫布模式
-6. **釘選視窗操作**：
-   - 拖曳移動
-   - 滑鼠滾輪縮放
-   - 邊緣拖曳調整大小
-   - 右鍵選單（存檔/複製/OCR/放大/縮小/重設縮放/順時針旋轉/逆時針旋轉/關閉）
-   - 雙擊或 `Esc` 關閉
+1. After launch, a green square icon appears in the system tray.
+2. Press the region capture hotkey (default `F2`) to enter capture mode; or double-tap (press `F2` twice quickly) for Screen Canvas mode.
+3. **Capture Mode**:
+   - Drag mouse to select a region
+   - Single-click to quickly select a detected window (macOS/Windows)
+   - `Shift`: Toggle color format in magnifier (HEX/RGB)
+   - `C`: Copy color code under cursor (before releasing mouse / completing selection)
+   - Toolbar appears after releasing mouse
+4. **Toolbar Actions**:
+   - `Enter` or `Pin`: Pin screenshot as floating window
+   - `Ctrl+C` or `Copy`: Copy to clipboard
+   - `Ctrl+S` or `Save`: Save to file
+   - `Esc` or `Cancel`: Cancel selection
+   - Annotations: Select a tool and drag within selection area
+     - `Text`: Click to enter text
+     - `StepBadge`: Click to place auto-numbered step markers
+     - `Mosaic`: Drag brush to apply mosaic effect
+   - `OCR` (macOS/Windows): Recognize text in selection and copy to clipboard
+   - `Undo/Redo`: `Ctrl+Z` / `Ctrl+Shift+Z` (macOS: `Cmd+Z` / `Cmd+Shift+Z`)
+5. **Screen Canvas Mode**:
+   - Toolbar provides `Pencil` / `Marker` / `Arrow` / `Rectangle` drawing tools
+   - Click color picker to change drawing color
+   - `Undo` / `Redo`: Undo/redo annotations
+   - `Clear`: Clear all annotations
+   - `Esc` or `Exit`: Leave Screen Canvas mode
+6. **Pin Window Actions**:
+   - Drag to move
+   - Mouse wheel to zoom
+   - Edge drag to resize
+   - Context menu (Save/Copy/OCR/Zoom In/Zoom Out/Reset Zoom/Rotate CW/Rotate CCW/Close)
+   - Double-click or `Esc` to close
 
-## macOS 權限
+## macOS Permissions
 
-首次截圖時系統會要求「螢幕錄製」權限：`系統偏好設定 → 隱私權與安全性 → 螢幕錄製` 勾選 SnapTray，必要時重啟 App。
+On first capture, the system will request "Screen Recording" permission: `System Preferences → Privacy & Security → Screen Recording` and enable SnapTray. Restart the app if necessary.
 
-若要使用視窗偵測功能，需要「輔助使用」權限：`系統偏好設定 → 隱私權與安全性 → 輔助使用` 勾選 SnapTray。
+For window detection, "Accessibility" permission is required: `System Preferences → Privacy & Security → Accessibility` and enable SnapTray.
 
-## 專案結構
+## Project Structure
 
 ```
 snap/
@@ -207,15 +209,16 @@ snap/
 │   ├── ToolbarWidget.h
 │   ├── ColorPaletteWidget.h
 │   ├── ColorPickerDialog.h
+│   ├── LineWidthWidget.h        # Line width adjustment widget
 │   ├── IconRenderer.h
-│   ├── InlineTextEditor.h       # 行內文字編輯元件
-│   ├── MagnifierOverlay.h       # 放大鏡/十字線元件
-│   ├── SelectionController.h    # 選區控制元件
+│   ├── InlineTextEditor.h       # Inline text editor widget
+│   ├── MagnifierOverlay.h       # Magnifier/crosshair widget
+│   ├── SelectionController.h    # Selection control widget
 │   ├── PlatformFeatures.h
 │   ├── WindowDetector.h
-│   ├── WindowDetectionOverlay.h # macOS 視窗偵測覆蓋層
+│   ├── WindowDetectionOverlay.h # macOS window detection overlay
 │   ├── OCRManager.h
-│   └── OCRController.h          # macOS OCR 控制器
+│   └── OCRController.h          # macOS OCR controller
 ├── src/
 │   ├── main.cpp
 │   ├── MainApplication.cpp
@@ -232,7 +235,8 @@ snap/
 │   ├── AnnotationController.cpp
 │   ├── ToolbarWidget.cpp
 │   ├── ColorPaletteWidget.cpp
-│   ├── ColorPickerDialog.mm     # macOS 原生顏色選擇器
+│   ├── LineWidthWidget.cpp
+│   ├── ColorPickerDialog.mm     # macOS native color picker
 │   ├── IconRenderer.cpp
 │   ├── InlineTextEditor.cpp
 │   ├── MagnifierOverlay.cpp
@@ -251,27 +255,27 @@ snap/
 │       └── PlatformFeatures_win.cpp
 ├── resources/
 │   ├── resources.qrc
-│   ├── snaptray.rc              # Windows 資源檔
+│   ├── snaptray.rc              # Windows resource file
 │   └── icons/
-│       ├── snaptray.svg         # 原始圖示
+│       ├── snaptray.svg         # Original icon
 │       ├── snaptray.png         # 1024x1024 PNG
-│       ├── snaptray.icns        # macOS 圖示
-│       └── snaptray.ico         # Windows 圖示
+│       ├── snaptray.icns        # macOS icon
+│       └── snaptray.ico         # Windows icon
 └── packaging/
     ├── macos/
-    │   ├── package.sh           # macOS 打包腳本
-    │   └── entitlements.plist   # Code signing 權限
+    │   ├── package.sh           # macOS packaging script
+    │   └── entitlements.plist   # Code signing entitlements
     └── windows/
-        ├── package.bat          # Windows 打包腳本
-        ├── installer.nsi        # NSIS 安裝程式
-        └── license.txt          # 授權文字
+        ├── package.bat          # Windows packaging script
+        ├── installer.nsi        # NSIS installer script
+        └── license.txt          # License text
 ```
 
-## 自訂應用程式圖示
+## Custom App Icon
 
-如需更換圖示，請準備 1024x1024 的 PNG 檔案，然後執行：
+To replace the icon, prepare a 1024x1024 PNG file, then run:
 
-**macOS (.icns)：**
+**macOS (.icns):**
 ```bash
 cd resources/icons
 mkdir snaptray.iconset
@@ -289,18 +293,17 @@ iconutil -c icns snaptray.iconset
 rm -rf snaptray.iconset
 ```
 
-**Windows (.ico)：**
+**Windows (.ico):**
 ```bash
-# 需要 ImageMagick: brew install imagemagick
+# Requires ImageMagick: brew install imagemagick
 magick snaptray.png -define icon:auto-resize=256,128,64,48,32,16 snaptray.ico
 ```
 
-## 已知限制
+## Known Limitations
 
-- 標註功能支援顏色選擇，但尚未提供 UI 調整線寬（線寬固定）。
-- 多螢幕支援：截圖會在游標所在螢幕啟動，但不同螢幕 DPI/縮放仍需要更多實機測試。
-- 視窗偵測與 OCR 功能支援 macOS 與 Windows。
+- Multi-monitor support: Capture starts on the monitor where cursor is located, but different monitor DPI/scaling needs more real-device testing.
+- Window detection and OCR are supported on macOS and Windows.
 
-## 授權條款
+## License
 
 MIT License
