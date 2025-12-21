@@ -4,6 +4,7 @@
 #include "IconRenderer.h"
 #include "ColorPaletteWidget.h"
 #include "ColorPickerDialog.h"
+#include "LineWidthWidget.h"
 
 #include <QPainter>
 #include <QMouseEvent>
@@ -34,6 +35,7 @@ ScreenCanvas::ScreenCanvas(QWidget *parent)
     , m_currentTool(CanvasTool::Pencil)
     , m_hoveredButton(-1)
     , m_colorPalette(nullptr)
+    , m_lineWidthWidget(nullptr)
     , m_colorPickerDialog(nullptr)
 {
     setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::Tool);
@@ -64,6 +66,14 @@ ScreenCanvas::ScreenCanvas(QWidget *parent)
             this, &ScreenCanvas::onColorSelected);
     connect(m_colorPalette, &ColorPaletteWidget::moreColorsRequested,
             this, &ScreenCanvas::onMoreColorsRequested);
+
+    // Initialize line width widget
+    m_lineWidthWidget = new LineWidthWidget(this);
+    m_lineWidthWidget->setWidthRange(1, 20);
+    m_lineWidthWidget->setCurrentWidth(m_controller->width());
+    m_lineWidthWidget->setPreviewColor(m_controller->color());
+    connect(m_lineWidthWidget, &LineWidthWidget::widthChanged,
+            this, &ScreenCanvas::onLineWidthChanged);
 
     qDebug() << "ScreenCanvas: Created";
 }
@@ -126,6 +136,26 @@ bool ScreenCanvas::shouldShowColorPalette() const
 void ScreenCanvas::onColorSelected(const QColor &color)
 {
     m_controller->setColor(color);
+    m_lineWidthWidget->setPreviewColor(color);
+    update();
+}
+
+bool ScreenCanvas::shouldShowLineWidthWidget() const
+{
+    // Show for tools that support line width adjustment
+    switch (m_currentTool) {
+    case CanvasTool::Pencil:
+    case CanvasTool::Arrow:
+    case CanvasTool::Rectangle:
+        return true;
+    default:
+        return false;
+    }
+}
+
+void ScreenCanvas::onLineWidthChanged(int width)
+{
+    m_controller->setWidth(width);
     update();
 }
 
@@ -137,6 +167,7 @@ void ScreenCanvas::onMoreColorsRequested()
                 this, [this](const QColor &color) {
             m_controller->setColor(color);
             m_colorPalette->setCurrentColor(color);
+            m_lineWidthWidget->setPreviewColor(color);
             qDebug() << "ScreenCanvas: Custom color selected:" << color.name();
             update();
         });
@@ -201,6 +232,17 @@ void ScreenCanvas::paintEvent(QPaintEvent *)
         m_colorPalette->draw(painter);
     } else {
         m_colorPalette->setVisible(false);
+    }
+
+    // Draw line width widget (above color palette, aligned to toolbar left edge)
+    if (shouldShowLineWidthWidget()) {
+        m_lineWidthWidget->setVisible(true);
+        QRect anchorRect = m_colorPalette->boundingRect();
+        anchorRect.moveLeft(m_toolbarRect.left());  // Align with toolbar left edge
+        m_lineWidthWidget->updatePosition(anchorRect, true, width());
+        m_lineWidthWidget->draw(painter);
+    } else {
+        m_lineWidthWidget->setVisible(false);
     }
 
     // Draw tooltip
@@ -440,6 +482,12 @@ bool ScreenCanvas::isAnnotationTool(CanvasTool tool) const
 void ScreenCanvas::mousePressEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton) {
+        // Check if clicked on line width widget
+        if (shouldShowLineWidthWidget() && m_lineWidthWidget->handleMousePress(event->pos())) {
+            update();
+            return;
+        }
+
         // Check if clicked on color palette
         if (shouldShowColorPalette() && m_colorPalette->handleClick(event->pos())) {
             update();
@@ -475,6 +523,19 @@ void ScreenCanvas::mouseMoveEvent(QMouseEvent *event)
     } else {
         bool needsUpdate = false;
 
+        // Handle line width widget drag
+        if (shouldShowLineWidthWidget()) {
+            if (m_lineWidthWidget->handleMouseMove(event->pos(), event->buttons() & Qt::LeftButton)) {
+                update();
+                return;
+            }
+            if (m_lineWidthWidget->contains(event->pos())) {
+                setCursor(Qt::PointingHandCursor);
+                update();
+                return;
+            }
+        }
+
         // Update hovered color swatch
         if (shouldShowColorPalette()) {
             if (m_colorPalette->updateHoveredSwatch(event->pos())) {
@@ -507,9 +568,18 @@ void ScreenCanvas::mouseMoveEvent(QMouseEvent *event)
 
 void ScreenCanvas::mouseReleaseEvent(QMouseEvent *event)
 {
-    if (event->button() == Qt::LeftButton && m_controller->isDrawing()) {
-        m_controller->finishDrawing();
-        update();
+    if (event->button() == Qt::LeftButton) {
+        // Handle line width widget release
+        if (shouldShowLineWidthWidget() && m_lineWidthWidget->handleMouseRelease(event->pos())) {
+            update();
+            return;
+        }
+
+        // Finish drawing annotation
+        if (m_controller->isDrawing()) {
+            m_controller->finishDrawing();
+            update();
+        }
     }
 }
 

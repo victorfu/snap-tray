@@ -4,8 +4,10 @@
 #include <QCoreApplication>
 #include <QThread>
 
+#include <unknwn.h>
 #include <winrt/Windows.Foundation.h>
 #include <winrt/Windows.Foundation.Collections.h>
+#include <winrt/Windows.Globalization.h>
 #include <winrt/Windows.Media.Ocr.h>
 #include <winrt/Windows.Graphics.Imaging.h>
 #include <winrt/Windows.Storage.Streams.h>
@@ -19,12 +21,13 @@ using namespace Windows::Graphics::Imaging;
 using namespace Windows::Storage::Streams;
 
 // IMemoryBufferByteAccess interface for accessing raw buffer data
-MIDL_INTERFACE("5b0d3235-4dba-4d44-865e-8f1d0e4fd04d")
-IMemoryBufferByteAccess : IUnknown
+// Use __declspec approach to avoid MIDL_INTERFACE macro and IUnknown ambiguity with C++/WinRT
+struct __declspec(uuid("5b0d3235-4dba-4d44-865e-8f1d0e4fd04d")) __declspec(novtable)
+IMemoryBufferByteAccess : ::IUnknown
 {
-    virtual HRESULT STDMETHODCALLTYPE GetBuffer(
-        BYTE **value,
-        UINT32 *capacity) = 0;
+    virtual HRESULT __stdcall GetBuffer(
+        uint8_t **value,
+        uint32_t *capacity) = 0;
 };
 
 namespace {

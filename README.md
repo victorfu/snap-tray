@@ -75,26 +75,52 @@ SnapTray is a lightweight screenshot utility that lives in your system tray. Pre
 
 ### Development Build (Debug)
 
+**macOS:**
 ```bash
-# macOS
 cmake -S . -B build -DCMAKE_PREFIX_PATH="$(brew --prefix qt)"
-# Windows (replace with your Qt path)
-# cmake -S . -B build -DCMAKE_PREFIX_PATH=C:/Qt/6.x.x/msvc2019_64
+cmake --build build
+open build/SnapTray.app
+```
 
+**Windows:**
+```batch
+# Step 1: Configure (replace with your Qt path)
+cmake -S . -B build -DCMAKE_PREFIX_PATH=C:/Qt/6.10.1/msvc2022_64
+
+# Step 2: Build
 cmake --build build
 
-# Run (macOS produces .app bundle)
-open build/SnapTray.app  # macOS
-# build/SnapTray.exe     # Windows
+# Step 3: Deploy Qt dependencies (required to run the executable)
+# Replace with your Qt installation path
+C:\Qt\6.10.1\msvc2022_64\bin\windeployqt.exe build\SnapTray.exe
+
+# Step 4: Run
+build\SnapTray.exe
 ```
+
+**Note:** Windows development builds require running `windeployqt` to copy Qt runtime DLLs (Qt6Core.dll, qwindows.dll platform plugin, etc.) alongside the executable. This step is automated in the packaging script for release builds.
 
 ### Release Build
 
+**macOS:**
 ```bash
 cmake -S . -B release -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$(brew --prefix qt)"
 cmake --build release
-# Output: release/SnapTray.app (macOS)
+# Output: release/SnapTray.app
 ```
+
+**Windows:**
+```batch
+cmake -S . -B release -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=C:/Qt/6.10.1/msvc2022_64
+cmake --build release --config Release
+
+# Deploy Qt dependencies
+C:\Qt\6.10.1\msvc2022_64\bin\windeployqt.exe --release release\Release\SnapTray.exe
+
+# Output: release\Release\SnapTray.exe
+```
+
+**Note:** For distribution, use the packaging scripts (see below) which automate the deployment process.
 
 ### Packaging
 
@@ -180,6 +206,21 @@ packaging\windows\package.bat
    - Edge drag to resize
    - Context menu (Save/Copy/OCR/Zoom In/Zoom Out/Reset Zoom/Rotate CW/Rotate CCW/Close)
    - Double-click or `Esc` to close
+
+## Troubleshooting
+
+### Windows: Application fails to start or shows missing DLL errors
+
+If you see errors like:
+- "The code execution cannot proceed because Qt6Core.dll was not found"
+- "This application failed to start because no Qt platform plugin could be initialized"
+
+**Solution:** Run windeployqt to deploy Qt dependencies:
+```batch
+C:\Qt\6.10.1\msvc2022_64\bin\windeployqt.exe build\SnapTray.exe
+```
+
+Replace `C:\Qt\6.10.1\msvc2022_64` with your actual Qt installation path (should match the CMAKE_PREFIX_PATH you used during configuration).
 
 ## macOS Permissions
 

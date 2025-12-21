@@ -3,7 +3,7 @@
 // Embedded application icon and version information
 
 // Application icon (displayed in explorer, taskbar, etc.)
-IDI_ICON1 ICON "icons/snaptray.ico"
+IDI_ICON1 ICON "@CMAKE_SOURCE_DIR@/resources/icons/snaptray.ico"
 
 // Version information
 #include <windows.h>
