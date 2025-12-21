@@ -2,6 +2,7 @@
 #include "AnnotationLayer.h"
 #include "IconRenderer.h"
 #include "ColorPaletteWidget.h"
+#include "LineWidthWidget.h"
 #include "ColorPickerDialog.h"
 #include "OCRManager.h"
 #include "PlatformFeatures.h"
@@ -80,6 +81,14 @@ RegionSelector::RegionSelector(QWidget* parent)
             this, &RegionSelector::onColorSelected);
     connect(m_colorPalette, &ColorPaletteWidget::moreColorsRequested,
             this, &RegionSelector::onMoreColorsRequested);
+
+    // Initialize line width widget
+    m_lineWidthWidget = new LineWidthWidget(this);
+    m_lineWidthWidget->setWidthRange(1, 20);
+    m_lineWidthWidget->setCurrentWidth(m_annotationWidth);
+    m_lineWidthWidget->setPreviewColor(m_annotationColor);
+    connect(m_lineWidthWidget, &LineWidthWidget::widthChanged,
+            this, &RegionSelector::onLineWidthChanged);
 
     // Install application-level event filter to capture ESC even when window loses focus
     qApp->installEventFilter(this);
@@ -216,6 +225,9 @@ void RegionSelector::onColorSelected(const QColor &color)
 {
     m_annotationColor = color;
 
+    // Update line width widget preview color
+    m_lineWidthWidget->setPreviewColor(color);
+
     // Update text editor color if currently editing
     if (m_textEditor->isEditing()) {
         m_textEditor->setColor(color);
@@ -232,6 +244,7 @@ void RegionSelector::onMoreColorsRequested()
                 this, [this](const QColor &color) {
             m_annotationColor = color;
             m_colorPalette->setCurrentColor(color);
+            m_lineWidthWidget->setPreviewColor(color);
 
             // Update text editor color if currently editing
             if (m_textEditor->isEditing()) {
@@ -251,6 +264,23 @@ void RegionSelector::onMoreColorsRequested()
     m_colorPickerDialog->show();
     m_colorPickerDialog->raise();
     m_colorPickerDialog->activateWindow();
+}
+
+bool RegionSelector::shouldShowLineWidthWidget() const
+{
+    if (!m_selectionComplete) return false;
+
+    // Show for tools that use m_annotationWidth
+    return m_currentTool == ToolbarButton::Pencil ||
+           m_currentTool == ToolbarButton::Arrow ||
+           m_currentTool == ToolbarButton::Rectangle;
+}
+
+void RegionSelector::onLineWidthChanged(int width)
+{
+    m_annotationWidth = width;
+    qDebug() << "Line width changed:" << width;
+    update();
 }
 
 void RegionSelector::initializeForScreen(QScreen* screen)
@@ -439,6 +469,20 @@ void RegionSelector::paintEvent(QPaintEvent*)
             } else {
                 m_colorPalette->setVisible(false);
             }
+
+            // Draw line width widget below color palette (for Pencil tool)
+            if (shouldShowLineWidthWidget()) {
+                m_lineWidthWidget->setVisible(true);
+                // Position below color palette if visible, otherwise below toolbar
+                QRect anchorRect = shouldShowColorPalette()
+                    ? m_colorPalette->boundingRect()
+                    : m_toolbar->boundingRect();
+                m_lineWidthWidget->updatePosition(anchorRect, false, width());
+                m_lineWidthWidget->draw(painter);
+            } else {
+                m_lineWidthWidget->setVisible(false);
+            }
+
             m_toolbar->drawTooltip(painter);
         }
     }
@@ -891,6 +935,12 @@ void RegionSelector::mousePressEvent(QMouseEvent* event)
                 return;
             }
 
+            // Check if clicked on line width widget
+            if (shouldShowLineWidthWidget() && m_lineWidthWidget->handleMousePress(event->pos())) {
+                update();
+                return;
+            }
+
             // Check if clicked on toolbar
             int buttonIdx = m_toolbar->buttonAtPosition(event->pos());
             if (buttonIdx >= 0) {
@@ -1033,6 +1083,7 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
     }
     else if (m_selectionComplete) {
         bool colorPaletteHovered = false;
+        bool lineWidthHovered = false;
 
         // Update hovered color swatch
         if (shouldShowColorPalette()) {
@@ -1046,6 +1097,17 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
             }
         }
 
+        // Update line width widget (handle dragging and hover)
+        if (shouldShowLineWidthWidget()) {
+            if (m_lineWidthWidget->handleMouseMove(event->pos(), event->buttons() & Qt::LeftButton)) {
+                update();
+            }
+            if (m_lineWidthWidget->contains(event->pos())) {
+                setCursor(Qt::PointingHandCursor);
+                lineWidthHovered = true;
+            }
+        }
+
         // Update hovered button using toolbar widget
         bool hoverChanged = m_toolbar->updateHoveredButton(event->pos());
         int hoveredButton = m_toolbar->hoveredButton();
@@ -1053,8 +1115,8 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
             if (hoveredButton >= 0) {
                 setCursor(Qt::PointingHandCursor);
             }
-            else if (colorPaletteHovered) {
-                // Already set cursor for color swatch
+            else if (colorPaletteHovered || lineWidthHovered) {
+                // Already set cursor for color swatch or line width widget
             }
             else if (isAnnotationTool(m_currentTool) && m_currentTool != ToolbarButton::Selection) {
                 setCursor(Qt::CrossCursor);
@@ -1065,7 +1127,7 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
                 updateCursorForHandle(handle);
             }
         }
-        else if (hoveredButton < 0 && !colorPaletteHovered && m_currentTool == ToolbarButton::Selection) {
+        else if (hoveredButton < 0 && !colorPaletteHovered && !lineWidthHovered && m_currentTool == ToolbarButton::Selection) {
             // Update cursor for resize handles when not hovering button or color swatch
             ResizeHandle handle = getHandleAtPosition(event->pos());
             updateCursorForHandle(handle);
@@ -1121,6 +1183,9 @@ void RegionSelector::mouseReleaseEvent(QMouseEvent* event)
         else if (m_isDrawing) {
             // Finish annotation
             finishAnnotation();
+            update();
+        }
+        else if (shouldShowLineWidthWidget() && m_lineWidthWidget->handleMouseRelease(event->pos())) {
             update();
         }
     }

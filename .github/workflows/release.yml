@@ -1,0 +1,184 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 1.0.0). Leave empty to use CMakeLists.txt version.'
+        required: false
+        type: string
+  push:
+    tags:
+      - 'v*'
+
+env:
+  APP_NAME: SnapTray
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag_name: ${{ steps.version.outputs.tag_name }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Determine version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            # Extract version from tag (remove 'v' prefix)
+            VERSION="${GITHUB_REF_NAME#v}"
+          elif [ -n "${{ github.event.inputs.version }}" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            # Extract from CMakeLists.txt
+            VERSION=$(grep "project(SnapTray VERSION" CMakeLists.txt | \
+                      sed -E 's/.*VERSION ([0-9]+\.[0-9]+\.[0-9]+).*/\1/')
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag_name=v$VERSION" >> $GITHUB_OUTPUT
+          echo "Releasing version: $VERSION"
+
+  build-macos:
+    needs: prepare
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Qt via Homebrew
+        run: brew install qt@6
+
+      - name: Install create-dmg
+        run: brew install create-dmg
+
+      - name: Configure CMake
+        run: |
+          cmake -S . -B release \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_PREFIX_PATH="$(brew --prefix qt@6)"
+
+      - name: Build
+        run: cmake --build release --config Release --parallel
+
+      - name: Run macdeployqt
+        run: |
+          QT_PREFIX=$(brew --prefix qt@6)
+          "$QT_PREFIX/bin/macdeployqt" release/${{ env.APP_NAME }}.app -verbose=1
+
+      - name: Create DMG
+        run: |
+          VERSION="${{ needs.prepare.outputs.version }}"
+          mkdir -p dist
+          create-dmg \
+            --volname "${{ env.APP_NAME }}" \
+            --window-pos 200 120 \
+            --window-size 600 400 \
+            --icon-size 100 \
+            --icon "${{ env.APP_NAME }}.app" 150 190 \
+            --hide-extension "${{ env.APP_NAME }}.app" \
+            --app-drop-link 450 185 \
+            "dist/${{ env.APP_NAME }}-${VERSION}-macOS.dmg" \
+            "release/${{ env.APP_NAME }}.app" || \
+          hdiutil create -volname "${{ env.APP_NAME }}" \
+            -srcfolder "release/${{ env.APP_NAME }}.app" \
+            -ov -format UDZO \
+            "dist/${{ env.APP_NAME }}-${VERSION}-macOS.dmg"
+
+      - name: Upload macOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-dmg
+          path: dist/*.dmg
+          retention-days: 5
+
+  build-windows:
+    needs: prepare
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Qt via aqtinstall
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.8.1'
+          host: 'windows'
+          target: 'desktop'
+          arch: 'win64_msvc2019_64'
+          cache: true
+
+      - name: Setup MSVC Developer Command Prompt
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Install NSIS
+        run: choco install nsis -y
+
+      - name: Configure CMake
+        run: |
+          cmake -S . -B release `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DCMAKE_PREFIX_PATH="$env:Qt6_DIR"
+
+      - name: Build
+        run: cmake --build release --config Release --parallel
+
+      - name: Create staging directory and deploy Qt
+        run: |
+          $STAGING_DIR = "release\staging"
+          New-Item -ItemType Directory -Force -Path $STAGING_DIR
+          Copy-Item "release\Release\${{ env.APP_NAME }}.exe" -Destination $STAGING_DIR
+          & "$env:Qt6_DIR\bin\windeployqt.exe" --release --no-translations "$STAGING_DIR\${{ env.APP_NAME }}.exe"
+
+      - name: Generate NSIS version header
+        run: |
+          $VERSION = "${{ needs.prepare.outputs.version }}"
+          $PROJECT_ROOT = (Get-Location).Path
+          $STAGING_DIR = "$PROJECT_ROOT\release\staging"
+          $OUTPUT_DIR = "$PROJECT_ROOT\dist"
+          New-Item -ItemType Directory -Force -Path $OUTPUT_DIR
+          @"
+          !define VERSION "$VERSION"
+          !define APP_NAME "${{ env.APP_NAME }}"
+          !define STAGING_DIR "$STAGING_DIR"
+          !define OUTPUT_DIR "$OUTPUT_DIR"
+          !define PROJECT_ROOT "$PROJECT_ROOT"
+          "@ | Out-File -FilePath "release\version.nsh" -Encoding ASCII
+
+      - name: Build NSIS installer
+        run: makensis /V3 packaging\windows\installer.nsi
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer
+          path: dist/*.exe
+          retention-days: 5
+
+  release:
+    needs: [prepare, build-macos, build-windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Display downloaded files
+        run: ls -R artifacts
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.prepare.outputs.tag_name }}
+          name: ${{ env.APP_NAME }} ${{ needs.prepare.outputs.version }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: |
+            artifacts/macos-dmg/*.dmg
+            artifacts/windows-installer/*.exe

@@ -1,0 +1,21 @@
+title: SnapTray
+description: Powerful screenshot tool that lives in your system tray
+url: "https://victorfu.github.io"
+baseurl: "/snap-tray"
+
+markdown: kramdown
+highlighter: rouge
+permalink: pretty
+
+plugins:
+  - jekyll-seo-tag
+
+github:
+  repo_owner: "victorfu"
+  repo_name: "snap-tray"
+
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
+  - vendor

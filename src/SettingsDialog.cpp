@@ -22,7 +22,6 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     , m_hotkeyEdit(nullptr)
     , m_captureHotkeyStatus(nullptr)
     , m_restoreDefaultsBtn(nullptr)
-    , m_pendingStartOnLogin(false)
 {
     setWindowTitle("SnapTray Settings");
     setFixedSize(420, 240);
@@ -171,8 +170,16 @@ void SettingsDialog::onSave()
         return;
     }
 
-    // Store pending state - will be applied in onAccepted() if hotkey succeeds
-    m_pendingStartOnLogin = m_startOnLoginCheckbox->isChecked();
+    // Apply start-on-login setting immediately (independent of hotkey registration)
+    bool desiredStartOnLogin = m_startOnLoginCheckbox->isChecked();
+    bool currentState = AutoLaunchManager::isEnabled();
+    if (desiredStartOnLogin != currentState) {
+        bool success = AutoLaunchManager::setEnabled(desiredStartOnLogin);
+        if (!success) {
+            qDebug() << "Failed to update auto-launch setting";
+        }
+        emit startOnLoginChanged(desiredStartOnLogin);
+    }
 
     // Request hotkey change - MainApplication will call accept() if successful
     emit hotkeyChangeRequested(newHotkey);
@@ -185,15 +192,8 @@ void SettingsDialog::showHotkeyError(const QString &message)
 
 void SettingsDialog::onAccepted()
 {
-    // Called only after successful hotkey registration
-    bool currentState = AutoLaunchManager::isEnabled();
-    if (m_pendingStartOnLogin != currentState) {
-        bool success = AutoLaunchManager::setEnabled(m_pendingStartOnLogin);
-        if (!success) {
-            qDebug() << "Failed to update auto-launch setting";
-        }
-        emit startOnLoginChanged(m_pendingStartOnLogin);
-    }
+    // Start-on-login is now applied immediately in onSave()
+    // This slot is kept for potential future use
 }
 
 void SettingsDialog::onCancel()

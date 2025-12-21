@@ -119,7 +119,7 @@ BOOL CALLBACK enumWindowsProc(HWND hwnd, LPARAM lParam)
 WindowDetector::WindowDetector(QObject *parent)
     : QObject(parent)
     , m_currentScreen(nullptr)
-    , m_enabled(false)
+    , m_enabled(true)
 {
 }
 

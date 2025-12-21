@@ -17,6 +17,7 @@
 
 class QScreen;
 class ColorPaletteWidget;
+class LineWidthWidget;
 class ColorPickerDialog;
 class QCloseEvent;
 class OCRManager;
@@ -104,6 +105,10 @@ private:
     void onColorSelected(const QColor &color);
     void onMoreColorsRequested();
 
+    // Line width widget helpers
+    bool shouldShowLineWidthWidget() const;
+    void onLineWidthChanged(int width);
+
     // Window detection drawing
     void drawDetectedWindow(QPainter &painter);
     void drawWindowHint(QPainter &painter, const QString &title);
@@ -147,6 +152,9 @@ private:
 
     // Color palette
     ColorPaletteWidget *m_colorPalette;
+
+    // Line width widget
+    LineWidthWidget *m_lineWidthWidget;
 
     // Annotation layer and state
     AnnotationLayer *m_annotationLayer;

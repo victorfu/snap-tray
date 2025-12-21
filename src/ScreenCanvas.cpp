@@ -70,6 +70,7 @@ ScreenCanvas::ScreenCanvas(QWidget *parent)
 
 ScreenCanvas::~ScreenCanvas()
 {
+    delete m_colorPickerDialog;
     qDebug() << "ScreenCanvas: Destroyed";
 }
 

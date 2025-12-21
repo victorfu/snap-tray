@@ -1,0 +1,447 @@
+@import "variables";
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: $font-family;
+  font-size: $font-size-base;
+  line-height: $line-height-base;
+  color: $text-color;
+  background-color: $bg-white;
+}
+
+a {
+  color: $primary-color;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 $spacing-md;
+}
+
+// Header
+.site-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid $border-color;
+  z-index: 100;
+
+  .container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 64px;
+  }
+}
+
+.site-logo {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  font-weight: 600;
+  font-size: 1.25rem;
+  color: $text-color;
+
+  img {
+    width: 32px;
+    height: 32px;
+  }
+
+  &:hover {
+    text-decoration: none;
+  }
+}
+
+.site-nav {
+  display: flex;
+  gap: $spacing-lg;
+
+  a {
+    color: $text-muted;
+    font-weight: 500;
+
+    &:hover {
+      color: $text-color;
+      text-decoration: none;
+    }
+  }
+}
+
+// Main content
+main {
+  padding-top: 64px;
+}
+
+// Hero section
+.hero {
+  padding: $spacing-xxl 0;
+  text-align: center;
+  background: linear-gradient(180deg, $bg-light 0%, $bg-white 100%);
+
+  .hero-logo {
+    width: 120px;
+    height: 120px;
+    margin-bottom: $spacing-md;
+  }
+
+  h1 {
+    font-size: 3rem;
+    font-weight: 700;
+    margin-bottom: $spacing-sm;
+
+    @media (max-width: $breakpoint-md) {
+      font-size: 2.25rem;
+    }
+  }
+
+  .tagline {
+    font-size: 1.25rem;
+    color: $text-muted;
+    margin-bottom: $spacing-lg;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .hero-buttons {
+    display: flex;
+    gap: $spacing-sm;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+}
+
+// Buttons
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-xs;
+  padding: $spacing-sm $spacing-md;
+  border-radius: $radius-md;
+  font-weight: 500;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+
+  &:hover {
+    text-decoration: none;
+  }
+}
+
+.btn-primary {
+  background: $primary-color;
+  color: white;
+
+  &:hover {
+    background: $primary-dark;
+  }
+}
+
+.btn-secondary {
+  background: $bg-white;
+  color: $text-color;
+  border: 1px solid $border-color;
+
+  &:hover {
+    background: $bg-light;
+  }
+}
+
+.btn-download {
+  background: $primary-color;
+  color: white;
+  padding: $spacing-md $spacing-lg;
+  font-size: 1.125rem;
+
+  &:hover {
+    background: $primary-dark;
+  }
+
+  .version {
+    opacity: 0.8;
+    font-size: 0.875rem;
+    margin-left: $spacing-xs;
+  }
+}
+
+// Features section
+.features {
+  padding: $spacing-xxl 0;
+
+  h2 {
+    text-align: center;
+    font-size: 2rem;
+    margin-bottom: $spacing-xl;
+  }
+
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: $spacing-lg;
+  }
+}
+
+.feature-card {
+  padding: $spacing-lg;
+  background: $bg-white;
+  border: 1px solid $border-color;
+  border-radius: $radius-lg;
+  transition: box-shadow 0.2s;
+
+  &:hover {
+    box-shadow: $shadow-md;
+  }
+
+  .feature-icon {
+    font-size: 2rem;
+    margin-bottom: $spacing-sm;
+  }
+
+  h3 {
+    font-size: 1.125rem;
+    margin-bottom: $spacing-xs;
+  }
+
+  p {
+    color: $text-muted;
+    font-size: 0.9375rem;
+  }
+}
+
+// Downloads section
+.downloads {
+  padding: $spacing-xxl 0;
+  background: $bg-light;
+
+  h2 {
+    text-align: center;
+    font-size: 2rem;
+    margin-bottom: $spacing-xl;
+  }
+
+  .download-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: $spacing-lg;
+    max-width: 700px;
+    margin: 0 auto;
+  }
+}
+
+.download-card {
+  padding: $spacing-xl;
+  background: $bg-white;
+  border-radius: $radius-lg;
+  text-align: center;
+  box-shadow: $shadow-sm;
+
+  .platform-icon {
+    font-size: 3rem;
+    margin-bottom: $spacing-sm;
+  }
+
+  h3 {
+    font-size: 1.5rem;
+    margin-bottom: $spacing-xs;
+  }
+
+  .requirements {
+    color: $text-muted;
+    font-size: 0.875rem;
+    margin-bottom: $spacing-md;
+  }
+}
+
+.unsigned-note {
+  text-align: center;
+  color: $text-muted;
+  font-size: 0.875rem;
+  margin-top: $spacing-lg;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+// Requirements section
+.requirements-section {
+  padding: $spacing-xxl 0;
+
+  h2 {
+    text-align: center;
+    font-size: 2rem;
+    margin-bottom: $spacing-xl;
+  }
+
+  .requirements-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: $spacing-lg;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .requirement-card {
+    padding: $spacing-lg;
+    border: 1px solid $border-color;
+    border-radius: $radius-lg;
+
+    h3 {
+      margin-bottom: $spacing-sm;
+    }
+
+    ul {
+      list-style: none;
+
+      li {
+        padding: $spacing-xs 0;
+        color: $text-muted;
+
+        &::before {
+          content: "•";
+          color: $primary-color;
+          margin-right: $spacing-xs;
+        }
+      }
+    }
+  }
+}
+
+// Footer
+.site-footer {
+  padding: $spacing-xl 0;
+  border-top: 1px solid $border-color;
+  text-align: center;
+  color: $text-muted;
+  font-size: 0.875rem;
+
+  a {
+    color: $text-muted;
+
+    &:hover {
+      color: $text-color;
+    }
+  }
+
+  .footer-links {
+    display: flex;
+    gap: $spacing-lg;
+    justify-content: center;
+    margin-bottom: $spacing-sm;
+  }
+}
+
+// Releases page
+.releases-page {
+  padding: $spacing-xxl 0;
+
+  h1 {
+    text-align: center;
+    font-size: 2.5rem;
+    margin-bottom: $spacing-xl;
+  }
+}
+
+.releases-list {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.release-item {
+  padding: $spacing-lg;
+  border: 1px solid $border-color;
+  border-radius: $radius-lg;
+  margin-bottom: $spacing-md;
+
+  header {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    margin-bottom: $spacing-sm;
+    flex-wrap: wrap;
+
+    h2 {
+      font-size: 1.5rem;
+      margin: 0;
+    }
+
+    .release-date {
+      color: $text-muted;
+      font-size: 0.875rem;
+    }
+
+    .badge {
+      padding: 0.25rem 0.5rem;
+      border-radius: $radius-sm;
+      font-size: 0.75rem;
+      font-weight: 500;
+
+      &.prerelease {
+        background: #FEF3C7;
+        color: #92400E;
+      }
+    }
+  }
+
+  .release-body {
+    color: $text-muted;
+    margin-bottom: $spacing-md;
+
+    ul {
+      margin-left: $spacing-md;
+      margin-top: $spacing-xs;
+    }
+  }
+
+  .release-downloads {
+    display: flex;
+    gap: $spacing-sm;
+    flex-wrap: wrap;
+
+    .btn {
+      font-size: 0.875rem;
+      padding: $spacing-xs $spacing-sm;
+    }
+  }
+}
+
+.loading {
+  text-align: center;
+  color: $text-muted;
+  padding: $spacing-xl;
+}
+
+// 404 page
+.page-404 {
+  text-align: center;
+  padding: $spacing-xxl 0;
+
+  h1 {
+    font-size: 6rem;
+    color: $primary-color;
+  }
+
+  p {
+    font-size: 1.25rem;
+    color: $text-muted;
+    margin-bottom: $spacing-lg;
+  }
+}
