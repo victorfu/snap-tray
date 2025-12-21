@@ -11,6 +11,8 @@
 #include <optional>
 
 #include "AnnotationLayer.h"
+#include "ToolbarWidget.h"
+#include "InlineTextEditor.h"
 
 #ifdef Q_OS_MACOS
 #include "WindowDetector.h"
@@ -20,7 +22,6 @@ class QScreen;
 class ColorPaletteWidget;
 class ColorPickerDialog;
 class QCloseEvent;
-class QTextEdit;
 
 #ifdef Q_OS_MACOS
 class OCRManager;
@@ -103,7 +104,11 @@ private:
     void drawCrosshair(QPainter &painter);
     void drawMagnifier(QPainter &painter);
     void drawDimensionInfo(QPainter &painter);
-    void drawToolbar(QPainter &painter);
+
+    // Toolbar helpers
+    void setupToolbarButtons();
+    void handleToolbarClick(ToolbarButton button);
+    QColor getToolbarIconColor(int buttonId, bool isActive, bool isHovered) const;
 
     // Color palette helpers
     bool shouldShowColorPalette() const;
@@ -114,12 +119,6 @@ private:
     void drawDetectedWindow(QPainter &painter);
     void drawWindowHint(QPainter &painter, const QString &title);
     void updateWindowDetection(const QPoint &localPos);
-
-    void updateToolbarPosition();
-    int getButtonAtPosition(const QPoint &pos);
-    void handleToolbarClick(ToolbarButton button);
-    QString getButtonTooltip(int buttonIndex);
-    void drawTooltip(QPainter &painter);
     QPixmap getSelectedRegion();
     void copyToClipboard();
     void saveToFile();
@@ -135,10 +134,8 @@ private:
     void showTextInputDialog(const QPoint &pos);
     void placeStepBadge(const QPoint &pos);
 
-    // Inline text editing
-    void startInlineTextEdit(const QPoint &pos);
-    void finishInlineTextEdit();
-    void cancelInlineTextEdit();
+    // Inline text editing handlers
+    void onTextEditingFinished(const QString &text, const QPoint &position);
 
     // Selection resize/move helpers
     ResizeHandle getHandleAtPosition(const QPoint &pos);
@@ -157,13 +154,7 @@ private:
     bool m_showHexColor;  // true=HEX, false=RGB
 
     // Toolbar
-    QRect m_toolbarRect;
-    int m_hoveredButton;
-    QVector<QRect> m_buttonRects;
-
-    static const int TOOLBAR_HEIGHT = 40;
-    static const int BUTTON_WIDTH = 36;
-    static const int BUTTON_SPACING = 2;
+    ToolbarWidget *m_toolbar;
 
     // Color palette
     ColorPaletteWidget *m_colorPalette;
@@ -216,15 +207,8 @@ private:
     void onOCRComplete(bool success, const QString &text, const QString &error);
 #endif
 
-    // Icon rendering helpers
-    void initializeIcons();
-    QString getIconKeyForButton(ToolbarButton button) const;
-    void renderIcon(QPainter &painter, const QRect &rect, ToolbarButton button, const QColor &color);
-
-    // Inline text editing state
-    QTextEdit *m_inlineTextEdit;
-    bool m_isEditingText;
-    QPoint m_textEditPosition;
+    // Inline text editing
+    InlineTextEditor *m_textEditor;
 
     // Color picker dialog
     ColorPickerDialog *m_colorPickerDialog;

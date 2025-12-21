@@ -24,8 +24,6 @@
 #include <QToolTip>
 #include <QPointer>
 #include <QColorDialog>
-#include <QTextEdit>
-#include <QTextDocument>
 
 RegionSelector::RegionSelector(QWidget* parent)
     : QWidget(parent)
@@ -34,7 +32,7 @@ RegionSelector::RegionSelector(QWidget* parent)
     , m_currentScreen(nullptr)
     , m_devicePixelRatio(1.0)
     , m_showHexColor(true)
-    , m_hoveredButton(-1)
+    , m_toolbar(nullptr)
     , m_annotationLayer(nullptr)
     , m_currentTool(ToolbarButton::Selection)
     , m_annotationColor(Qt::red)
@@ -53,17 +51,13 @@ RegionSelector::RegionSelector(QWidget* parent)
     , m_ocrInProgress(false)
 #endif
     , m_colorPalette(nullptr)
-    , m_inlineTextEdit(nullptr)
-    , m_isEditingText(false)
+    , m_textEditor(nullptr)
     , m_colorPickerDialog(nullptr)
 {
     setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::Tool);
     setAttribute(Qt::WA_DeleteOnClose);
     setMouseTracking(true);
     setCursor(Qt::ArrowCursor);  // 預設已選取完成，使用 ArrowCursor
-
-    // Initialize button rects
-    m_buttonRects.resize(static_cast<int>(ToolbarButton::Count));
 
     // Initialize annotation layer
     m_annotationLayer = new AnnotationLayer(this);
@@ -75,8 +69,19 @@ RegionSelector::RegionSelector(QWidget* parent)
     }
 #endif
 
-    // Initialize SVG icons
-    initializeIcons();
+    // Initialize toolbar widget
+    m_toolbar = new ToolbarWidget(this);
+    setupToolbarButtons();
+    connect(m_toolbar, &ToolbarWidget::buttonClicked, this, [this](int buttonId) {
+        handleToolbarClick(static_cast<ToolbarButton>(buttonId));
+    });
+
+    // Initialize inline text editor
+    m_textEditor = new InlineTextEditor(this);
+    connect(m_textEditor, &InlineTextEditor::editingFinished,
+            this, &RegionSelector::onTextEditingFinished);
+    connect(m_textEditor, &InlineTextEditor::editingCancelled,
+            this, [this]() { update(); });
 
     // Initialize color palette widget
     m_colorPalette = new ColorPaletteWidget(this);
@@ -106,11 +111,10 @@ RegionSelector::~RegionSelector()
     qDebug() << "RegionSelector: Destroyed";
 }
 
-void RegionSelector::initializeIcons()
+void RegionSelector::setupToolbarButtons()
 {
-    // Use shared IconRenderer for all icons
+    // Load icons
     IconRenderer& iconRenderer = IconRenderer::instance();
-
     iconRenderer.loadIcon("selection", ":/icons/icons/selection.svg");
     iconRenderer.loadIcon("arrow", ":/icons/icons/arrow.svg");
     iconRenderer.loadIcon("pencil", ":/icons/icons/pencil.svg");
@@ -129,37 +133,77 @@ void RegionSelector::initializeIcons()
     iconRenderer.loadIcon("pin", ":/icons/icons/pin.svg");
     iconRenderer.loadIcon("save", ":/icons/icons/save.svg");
     iconRenderer.loadIcon("copy", ":/icons/icons/copy.svg");
-}
 
-QString RegionSelector::getIconKeyForButton(ToolbarButton button) const
-{
-    switch (button) {
-    case ToolbarButton::Selection:  return "selection";
-    case ToolbarButton::Arrow:      return "arrow";
-    case ToolbarButton::Pencil:     return "pencil";
-    case ToolbarButton::Marker:     return "marker";
-    case ToolbarButton::Rectangle:  return "rectangle";
-    case ToolbarButton::Text:       return "text";
-    case ToolbarButton::Mosaic:     return "mosaic";
-    case ToolbarButton::StepBadge:  return "step-badge";
-    case ToolbarButton::Eraser:     return "eraser";
-    case ToolbarButton::Undo:       return "undo";
-    case ToolbarButton::Redo:       return "redo";
-    case ToolbarButton::Cancel:     return "cancel";
+    // Configure buttons
+    QVector<ToolbarWidget::ButtonConfig> buttons;
+    buttons.append({static_cast<int>(ToolbarButton::Selection), "selection", "Selection", false});
+    buttons.append({static_cast<int>(ToolbarButton::Arrow), "arrow", "Arrow", false});
+    buttons.append({static_cast<int>(ToolbarButton::Pencil), "pencil", "Pencil", false});
+    buttons.append({static_cast<int>(ToolbarButton::Marker), "marker", "Marker", false});
+    buttons.append({static_cast<int>(ToolbarButton::Rectangle), "rectangle", "Rectangle", false});
+    buttons.append({static_cast<int>(ToolbarButton::Text), "text", "Text", false});
+    buttons.append({static_cast<int>(ToolbarButton::Mosaic), "mosaic", "Mosaic", false});
+    buttons.append({static_cast<int>(ToolbarButton::StepBadge), "step-badge", "Step Badge", false});
+    buttons.append({static_cast<int>(ToolbarButton::Eraser), "eraser", "Eraser", false});
+    buttons.append({static_cast<int>(ToolbarButton::Undo), "undo", "Undo", false});
+    buttons.append({static_cast<int>(ToolbarButton::Redo), "redo", "Redo", false});
+    buttons.append({static_cast<int>(ToolbarButton::Cancel), "cancel", "Cancel (Esc)", true});  // separator before
 #ifdef Q_OS_MACOS
-    case ToolbarButton::OCR:        return "ocr";
+    buttons.append({static_cast<int>(ToolbarButton::OCR), "ocr", "OCR Text Recognition", true});  // separator before
 #endif
-    case ToolbarButton::Pin:        return "pin";
-    case ToolbarButton::Save:       return "save";
-    case ToolbarButton::Copy:       return "copy";
-    default:                        return QString();
-    }
+    buttons.append({static_cast<int>(ToolbarButton::Pin), "pin", "Pin to Screen (Enter)", true});  // separator before
+    buttons.append({static_cast<int>(ToolbarButton::Save), "save", "Save (Ctrl+S)", false});
+    buttons.append({static_cast<int>(ToolbarButton::Copy), "copy", "Copy (Ctrl+C)", false});
+
+    m_toolbar->setButtons(buttons);
+
+    // Set which buttons are "active" type (annotation tools that stay highlighted)
+    QVector<int> activeButtonIds = {
+        static_cast<int>(ToolbarButton::Selection),
+        static_cast<int>(ToolbarButton::Arrow),
+        static_cast<int>(ToolbarButton::Pencil),
+        static_cast<int>(ToolbarButton::Marker),
+        static_cast<int>(ToolbarButton::Rectangle),
+        static_cast<int>(ToolbarButton::Text),
+        static_cast<int>(ToolbarButton::Mosaic),
+        static_cast<int>(ToolbarButton::StepBadge),
+        static_cast<int>(ToolbarButton::Eraser)
+    };
+    m_toolbar->setActiveButtonIds(activeButtonIds);
+
+    // Set icon color provider
+    m_toolbar->setIconColorProvider([this](int buttonId, bool isActive, bool isHovered) {
+        return getToolbarIconColor(buttonId, isActive, isHovered);
+    });
 }
 
-void RegionSelector::renderIcon(QPainter &painter, const QRect &rect, ToolbarButton button, const QColor &color)
+QColor RegionSelector::getToolbarIconColor(int buttonId, bool isActive, bool isHovered) const
 {
-    QString key = getIconKeyForButton(button);
-    IconRenderer::instance().renderIcon(painter, rect, key, color);
+    Q_UNUSED(isHovered);
+
+    ToolbarButton btn = static_cast<ToolbarButton>(buttonId);
+
+    if (buttonId == static_cast<int>(ToolbarButton::Cancel)) {
+        return QColor(255, 100, 100);  // Red for cancel
+    }
+#ifdef Q_OS_MACOS
+    if (btn == ToolbarButton::OCR) {
+        if (m_ocrInProgress) {
+            return QColor(255, 200, 100);  // Yellow when processing
+        } else if (!m_ocrManager) {
+            return QColor(128, 128, 128);  // Gray if unavailable
+        } else {
+            return QColor(100, 200, 255);  // Blue accent
+        }
+    }
+#endif
+    if (buttonId >= static_cast<int>(ToolbarButton::Pin)) {
+        return QColor(100, 200, 255);  // Blue for action buttons
+    }
+    if (isActive) {
+        return Qt::white;
+    }
+    return QColor(220, 220, 220);  // Off-white for normal state
 }
 
 bool RegionSelector::shouldShowColorPalette() const
@@ -184,20 +228,9 @@ void RegionSelector::onColorSelected(const QColor &color)
 {
     m_annotationColor = color;
 
-    // Update text edit style if currently editing
-    if (m_isEditingText && m_inlineTextEdit) {
-        QString styleSheet = QString(
-            "QTextEdit {"
-            "  background: rgba(255, 255, 255, 230);"
-            "  color: %1;"
-            "  font-size: 16pt;"
-            "  font-weight: bold;"
-            "  border: 2px solid %1;"
-            "  border-radius: 4px;"
-            "  padding: 4px;"
-            "}"
-        ).arg(color.name());
-        m_inlineTextEdit->setStyleSheet(styleSheet);
+    // Update text editor color if currently editing
+    if (m_textEditor->isEditing()) {
+        m_textEditor->setColor(color);
     }
 
     update();
@@ -212,20 +245,9 @@ void RegionSelector::onMoreColorsRequested()
             m_annotationColor = color;
             m_colorPalette->setCurrentColor(color);
 
-            // Update text edit style if currently editing
-            if (m_isEditingText && m_inlineTextEdit) {
-                QString styleSheet = QString(
-                    "QTextEdit {"
-                    "  background: rgba(255, 255, 255, 230);"
-                    "  color: %1;"
-                    "  font-size: 16pt;"
-                    "  font-weight: bold;"
-                    "  border: 2px solid %1;"
-                    "  border-radius: 4px;"
-                    "  padding: 4px;"
-                    "}"
-                ).arg(color.name());
-                m_inlineTextEdit->setStyleSheet(styleSheet);
+            // Update text editor color if currently editing
+            if (m_textEditor->isEditing()) {
+                m_textEditor->setColor(color);
             }
 
             qDebug() << "Custom color selected:" << color.name();
@@ -419,15 +441,21 @@ void RegionSelector::paintEvent(QPaintEvent*)
         if (m_selectionComplete) {
             drawAnnotations(painter);
             drawCurrentAnnotation(painter);
-            drawToolbar(painter);
+
+            // Update toolbar position and draw
+            m_toolbar->setActiveButton(static_cast<int>(m_currentTool));
+            m_toolbar->setViewportWidth(width());
+            m_toolbar->setPositionForSelection(m_selectionRect.normalized(), height());
+            m_toolbar->draw(painter);
+
             if (shouldShowColorPalette()) {
                 m_colorPalette->setVisible(true);
-                m_colorPalette->updatePosition(m_toolbarRect, false);  // Below toolbar for RegionSelector
+                m_colorPalette->updatePosition(m_toolbar->boundingRect(), false);  // Below toolbar for RegionSelector
                 m_colorPalette->draw(painter);
             } else {
                 m_colorPalette->setVisible(false);
             }
-            drawTooltip(painter);
+            m_toolbar->drawTooltip(painter);
         }
     }
 
@@ -439,7 +467,7 @@ void RegionSelector::paintEvent(QPaintEvent*)
         // Only show crosshair inside selection area, not on toolbar
         shouldShowCrosshair = shouldShowCrosshair &&
                               sel.contains(m_currentPoint) &&
-                              !m_toolbarRect.contains(m_currentPoint);
+                              !m_toolbar->contains(m_currentPoint);
     }
 
     if (shouldShowCrosshair) {
@@ -686,247 +714,6 @@ void RegionSelector::drawDimensionInfo(QPainter& painter)
     painter.drawText(textRect, Qt::AlignCenter, dimensions);
 }
 
-void RegionSelector::drawToolbar(QPainter& painter)
-{
-    updateToolbarPosition();
-
-    // Draw shadow for depth effect
-    QRect shadowRect = m_toolbarRect.adjusted(2, 2, 2, 2);
-    painter.setPen(Qt::NoPen);
-    painter.setBrush(QColor(0, 0, 0, 50));
-    painter.drawRoundedRect(shadowRect, 8, 8);
-
-    // Draw toolbar background with gradient
-    QLinearGradient gradient(m_toolbarRect.topLeft(), m_toolbarRect.bottomLeft());
-    gradient.setColorAt(0, QColor(55, 55, 55, 245));
-    gradient.setColorAt(1, QColor(40, 40, 40, 245));
-
-    painter.setBrush(gradient);
-    painter.setPen(QPen(QColor(70, 70, 70), 1));
-    painter.drawRoundedRect(m_toolbarRect, 8, 8);
-
-    // Render SVG icons
-    for (int i = 0; i < static_cast<int>(ToolbarButton::Count); ++i) {
-        QRect btnRect = m_buttonRects[i];
-        ToolbarButton btn = static_cast<ToolbarButton>(i);
-
-        // Highlight active tool (annotation tools only)
-        bool isActive = (btn == m_currentTool) && isAnnotationTool(btn);
-        if (isActive) {
-            painter.setPen(Qt::NoPen);
-            painter.setBrush(QColor(0, 120, 200));
-            painter.drawRoundedRect(btnRect.adjusted(2, 2, -2, -2), 4, 4);
-        }
-        // Highlight hovered button
-        else if (i == m_hoveredButton) {
-            painter.setPen(Qt::NoPen);
-            painter.setBrush(QColor(80, 80, 80));
-            painter.drawRoundedRect(btnRect.adjusted(2, 2, -2, -2), 4, 4);
-        }
-
-        // Draw separator before Cancel button
-        if (i == static_cast<int>(ToolbarButton::Cancel)) {
-            painter.setPen(QColor(80, 80, 80));
-            painter.drawLine(btnRect.left() - 4, btnRect.top() + 6,
-                btnRect.left() - 4, btnRect.bottom() - 6);
-        }
-
-#ifdef Q_OS_MACOS
-        // Draw separator before OCR button
-        if (i == static_cast<int>(ToolbarButton::OCR)) {
-            painter.setPen(QColor(80, 80, 80));
-            painter.drawLine(btnRect.left() - 4, btnRect.top() + 6,
-                btnRect.left() - 4, btnRect.bottom() - 6);
-        }
-#endif
-
-        // Draw separator before Pin button
-        if (i == static_cast<int>(ToolbarButton::Pin)) {
-            painter.setPen(QColor(80, 80, 80));
-            painter.drawLine(btnRect.left() - 4, btnRect.top() + 6,
-                btnRect.left() - 4, btnRect.bottom() - 6);
-        }
-
-        // Determine icon color based on state
-        QColor iconColor;
-        if (i == static_cast<int>(ToolbarButton::Cancel)) {
-            iconColor = QColor(255, 100, 100);  // Red for cancel
-        }
-#ifdef Q_OS_MACOS
-        else if (btn == ToolbarButton::OCR) {
-            if (m_ocrInProgress) {
-                iconColor = QColor(255, 200, 100);  // Yellow when processing
-            } else if (!m_ocrManager) {
-                iconColor = QColor(128, 128, 128);  // Gray if unavailable
-            } else {
-                iconColor = QColor(100, 200, 255);  // Blue accent
-            }
-        }
-#endif
-        else if (i >= static_cast<int>(ToolbarButton::Pin)) {
-            iconColor = QColor(100, 200, 255);  // Blue for action buttons
-        }
-        else if (isActive) {
-            iconColor = Qt::white;
-        }
-        else {
-            iconColor = QColor(220, 220, 220);  // Off-white for normal state
-        }
-
-        // Render the SVG icon with the determined color
-        renderIcon(painter, btnRect, btn, iconColor);
-    }
-}
-
-void RegionSelector::updateToolbarPosition()
-{
-    QRect sel = m_selectionRect.normalized();
-
-#ifdef Q_OS_MACOS
-    int separatorCount = 3;  // Cancel, OCR, Pin 前各有分隔線
-#else
-    int separatorCount = 2;  // Cancel, Pin 前各有分隔線
-#endif
-    int toolbarWidth = static_cast<int>(ToolbarButton::Count) * (BUTTON_WIDTH + BUTTON_SPACING) + 20 + separatorCount * 6;
-    int toolbarX = sel.right() - toolbarWidth;
-    int toolbarY;
-
-    // 計算可用空間
-    int spaceBelow = height() - sel.bottom() - 1;
-    int spaceAbove = sel.top();
-    int requiredSpace = TOOLBAR_HEIGHT + 16;  // toolbar 高度 + 間距
-
-    if (spaceBelow >= requiredSpace) {
-        // 下方有足夠空間 - 放在選取框下方
-        toolbarY = sel.bottom() + 8;
-    } else if (spaceAbove >= requiredSpace) {
-        // 上方有足夠空間 - 放在選取框上方
-        toolbarY = sel.top() - TOOLBAR_HEIGHT - 8;
-    } else {
-        // 全螢幕或接近全螢幕 - 放在選取區域內的右上角
-        toolbarY = sel.top() + 8;
-    }
-
-    // Keep toolbar on screen horizontally
-    if (toolbarX < 5) toolbarX = 5;
-    if (toolbarX + toolbarWidth > width() - 5) {
-        toolbarX = width() - toolbarWidth - 5;
-    }
-
-    m_toolbarRect = QRect(toolbarX, toolbarY, toolbarWidth, TOOLBAR_HEIGHT);
-
-    // Update button rects
-    int x = toolbarX + 10;
-    int y = toolbarY + (TOOLBAR_HEIGHT - BUTTON_WIDTH + 4) / 2;
-
-    for (int i = 0; i < static_cast<int>(ToolbarButton::Count); ++i) {
-        m_buttonRects[i] = QRect(x, y, BUTTON_WIDTH, BUTTON_WIDTH - 4);
-        x += BUTTON_WIDTH + BUTTON_SPACING;
-
-        // Add extra spacing for separators
-        if (i == static_cast<int>(ToolbarButton::Redo)) {
-            x += 6;  // Space before Cancel separator
-        }
-        if (i == static_cast<int>(ToolbarButton::Cancel)) {
-            x += 6;  // Space before OCR (macOS) or Pin separator
-        }
-#ifdef Q_OS_MACOS
-        if (i == static_cast<int>(ToolbarButton::OCR)) {
-            x += 6;  // Space before Pin separator
-        }
-#endif
-    }
-}
-
-int RegionSelector::getButtonAtPosition(const QPoint& pos)
-{
-    for (int i = 0; i < m_buttonRects.size(); ++i) {
-        if (m_buttonRects[i].contains(pos)) {
-            return i;
-        }
-    }
-    return -1;
-}
-
-QString RegionSelector::getButtonTooltip(int buttonIndex)
-{
-    static const QStringList tooltips = {
-        "Selection",
-        "Arrow",
-        "Pencil",
-        "Marker",
-        "Rectangle",
-        "Text",
-        "Mosaic",
-        "Step Badge",
-        "Eraser",
-        "Undo",
-        "Redo",
-        "Cancel (Esc)",
-#ifdef Q_OS_MACOS
-        "OCR Text Recognition",
-#endif
-        "Pin to Screen (Enter)",
-        "Save (Ctrl+S)",
-        "Copy (Ctrl+C)"
-    };
-
-    if (buttonIndex >= 0 && buttonIndex < tooltips.size()) {
-        return tooltips[buttonIndex];
-    }
-    return QString();
-}
-
-void RegionSelector::drawTooltip(QPainter& painter)
-{
-    if (m_hoveredButton < 0 || !m_selectionComplete) {
-        return;
-    }
-
-    QString tooltip = getButtonTooltip(m_hoveredButton);
-    if (tooltip.isEmpty()) {
-        return;
-    }
-
-    QFont font = painter.font();
-    font.setPointSize(11);
-    painter.setFont(font);
-
-    QFontMetrics fm(font);
-    QRect textRect = fm.boundingRect(tooltip);
-    textRect.adjust(-8, -4, 8, 4);
-
-    // Position tooltip above the toolbar
-    QRect btnRect = m_buttonRects[m_hoveredButton];
-    int tooltipX = btnRect.center().x() - textRect.width() / 2;
-    int tooltipY = m_toolbarRect.top() - textRect.height() - 6;
-
-    // Keep on screen
-    if (tooltipX < 5) tooltipX = 5;
-    if (tooltipX + textRect.width() > width() - 5) {
-        tooltipX = width() - textRect.width() - 5;
-    }
-    if (tooltipY < 5) {
-        tooltipY = m_toolbarRect.bottom() + 6;
-    }
-
-    textRect.moveTo(tooltipX, tooltipY);
-
-    // Draw tooltip background
-    painter.setPen(Qt::NoPen);
-    painter.setBrush(QColor(30, 30, 30, 230));
-    painter.drawRoundedRect(textRect, 4, 4);
-
-    // Draw tooltip border
-    painter.setPen(QColor(80, 80, 80));
-    painter.setBrush(Qt::NoBrush);
-    painter.drawRoundedRect(textRect, 4, 4);
-
-    // Draw tooltip text
-    painter.setPen(Qt::white);
-    painter.drawText(textRect, Qt::AlignCenter, tooltip);
-}
-
 void RegionSelector::handleToolbarClick(ToolbarButton button)
 {
     switch (button) {
@@ -1106,10 +893,9 @@ void RegionSelector::mousePressEvent(QMouseEvent* event)
     if (event->button() == Qt::LeftButton) {
         if (m_selectionComplete) {
             // Handle inline text editing - click outside finishes
-            if (m_isEditingText && m_inlineTextEdit) {
-                QRect textEditRect = m_inlineTextEdit->geometry();
-                if (!textEditRect.contains(event->pos())) {
-                    finishInlineTextEdit();
+            if (m_textEditor->isEditing()) {
+                if (!m_textEditor->contains(event->pos())) {
+                    m_textEditor->finishEditing();
                     // Continue processing click for next action
                 } else {
                     // Click inside text edit - let it handle
@@ -1124,9 +910,12 @@ void RegionSelector::mousePressEvent(QMouseEvent* event)
             }
 
             // Check if clicked on toolbar
-            int buttonIdx = getButtonAtPosition(event->pos());
+            int buttonIdx = m_toolbar->buttonAtPosition(event->pos());
             if (buttonIdx >= 0) {
-                handleToolbarClick(static_cast<ToolbarButton>(buttonIdx));
+                int buttonId = m_toolbar->buttonIdAt(buttonIdx);
+                if (buttonId >= 0) {
+                    handleToolbarClick(static_cast<ToolbarButton>(buttonId));
+                }
                 return;
             }
 
@@ -1135,7 +924,8 @@ void RegionSelector::mousePressEvent(QMouseEvent* event)
             if (isAnnotationTool(m_currentTool) && m_currentTool != ToolbarButton::Selection && sel.contains(event->pos())) {
                 // Handle Text tool - use inline text editing
                 if (m_currentTool == ToolbarButton::Text) {
-                    startInlineTextEdit(event->pos());
+                    m_textEditor->setColor(m_annotationColor);
+                    m_textEditor->startEditing(event->pos(), sel);
                     return;
                 }
                 // Handle StepBadge tool - place badge on click
@@ -1278,11 +1068,11 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
             }
         }
 
-        // Update hovered button
-        int newHovered = getButtonAtPosition(event->pos());
-        if (newHovered != m_hoveredButton) {
-            m_hoveredButton = newHovered;
-            if (m_hoveredButton >= 0) {
+        // Update hovered button using toolbar widget
+        bool hoverChanged = m_toolbar->updateHoveredButton(event->pos());
+        int hoveredButton = m_toolbar->hoveredButton();
+        if (hoverChanged) {
+            if (hoveredButton >= 0) {
                 setCursor(Qt::PointingHandCursor);
             }
             else if (colorPaletteHovered) {
@@ -1297,7 +1087,7 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
                 updateCursorForHandle(handle);
             }
         }
-        else if (m_hoveredButton < 0 && !colorPaletteHovered && m_currentTool == ToolbarButton::Selection) {
+        else if (hoveredButton < 0 && !colorPaletteHovered && m_currentTool == ToolbarButton::Selection) {
             // Update cursor for resize handles when not hovering button or color swatch
             ResizeHandle handle = getHandleAtPosition(event->pos());
             updateCursorForHandle(handle);
@@ -1363,15 +1153,15 @@ void RegionSelector::mouseReleaseEvent(QMouseEvent* event)
 void RegionSelector::keyPressEvent(QKeyEvent* event)
 {
     // Handle inline text editing keys first
-    if (m_isEditingText) {
+    if (m_textEditor->isEditing()) {
         if (event->key() == Qt::Key_Escape) {
-            cancelInlineTextEdit();
+            m_textEditor->cancelEditing();
             return;
         }
         // Ctrl+Enter or Shift+Enter to finish editing
         if ((event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) &&
             (event->modifiers() & (Qt::ControlModifier | Qt::ShiftModifier))) {
-            finishInlineTextEdit();
+            m_textEditor->finishEditing();
             return;
         }
         // Let QTextEdit handle other keys (including Enter for newlines)
@@ -1460,7 +1250,7 @@ bool RegionSelector::eventFilter(QObject* obj, QEvent* event)
         QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
         if (keyEvent->key() == Qt::Key_Escape) {
             // If editing text, let keyPressEvent handle Esc
-            if (m_isEditingText) {
+            if (m_textEditor->isEditing()) {
                 return false;
             }
             qDebug() << "RegionSelector: Cancelled via Escape (event filter)";
@@ -1733,135 +1523,16 @@ void RegionSelector::placeStepBadge(const QPoint &pos)
     update();
 }
 
-// ============================================================================
-// Inline Text Editing Functions
-// ============================================================================
-
-void RegionSelector::startInlineTextEdit(const QPoint &pos)
+void RegionSelector::onTextEditingFinished(const QString &text, const QPoint &position)
 {
-    // Create QTextEdit lazily
-    if (!m_inlineTextEdit) {
-        m_inlineTextEdit = new QTextEdit(this);
-        m_inlineTextEdit->setFrameStyle(QFrame::NoFrame);
-        m_inlineTextEdit->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-        m_inlineTextEdit->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-        m_inlineTextEdit->setAcceptRichText(false);
+    if (text.isEmpty()) return;
 
-        // Connect document size changes for auto-resize
-        connect(m_inlineTextEdit->document(), &QTextDocument::contentsChanged, this, [this]() {
-            if (m_isEditingText && m_inlineTextEdit) {
-                // Auto-resize based on content
-                QSizeF docSize = m_inlineTextEdit->document()->size();
-                int newWidth = qMax(150, static_cast<int>(docSize.width()) + 20);
-                int newHeight = qMax(36, static_cast<int>(docSize.height()) + 10);
-
-                // Clamp to selection bounds
-                QRect sel = m_selectionRect.normalized();
-                int x = m_textEditPosition.x();
-                int y = m_textEditPosition.y();
-
-                if (x + newWidth > sel.right()) {
-                    newWidth = sel.right() - x;
-                }
-                if (y + newHeight > sel.bottom()) {
-                    newHeight = sel.bottom() - y;
-                }
-                newWidth = qMax(100, newWidth);
-                newHeight = qMax(30, newHeight);
-
-                m_inlineTextEdit->setFixedSize(newWidth, newHeight);
-            }
-        });
-    }
-
-    // Update style with current annotation color
-    QString styleSheet = QString(
-        "QTextEdit {"
-        "  background: rgba(255, 255, 255, 230);"
-        "  color: %1;"
-        "  font-size: 16pt;"
-        "  font-weight: bold;"
-        "  border: 2px solid %1;"
-        "  border-radius: 4px;"
-        "  padding: 4px;"
-        "}"
-    ).arg(m_annotationColor.name());
-    m_inlineTextEdit->setStyleSheet(styleSheet);
-
-    // Set font
     QFont font;
     font.setPointSize(16);
     font.setBold(true);
-    m_inlineTextEdit->setFont(font);
 
-    // Initial size
-    int width = 150;
-    int height = 36;
-
-    // Clamp to selection bounds
-    QRect sel = m_selectionRect.normalized();
-    int x = pos.x();
-    int y = pos.y();
-
-    if (x + width > sel.right()) {
-        x = sel.right() - width;
-    }
-    if (y + height > sel.bottom()) {
-        y = sel.bottom() - height;
-    }
-    x = qMax(sel.left(), x);
-    y = qMax(sel.top(), y);
-
-    // Store clamped position for text rendering
-    m_textEditPosition = QPoint(x, y);
-
-    m_inlineTextEdit->setGeometry(x, y, width, height);
-
-    // Clear previous text and show
-    m_inlineTextEdit->clear();
-    m_inlineTextEdit->show();
-    m_inlineTextEdit->setFocus();
-    m_inlineTextEdit->raise();
-
-    m_isEditingText = true;
-    update();
-}
-
-void RegionSelector::finishInlineTextEdit()
-{
-    if (!m_isEditingText || !m_inlineTextEdit) return;
-
-    QString text = m_inlineTextEdit->toPlainText().trimmed();
-
-    if (!text.isEmpty()) {
-        QFont font;
-        font.setPointSize(16);
-        font.setBold(true);
-
-        // Adjust position: QTextEdit top-left -> baseline position
-        // Add padding offset (4px) and font ascent
-        QFontMetrics fm(font);
-        QPoint baselinePos = m_textEditPosition;
-        baselinePos.setX(baselinePos.x() + 6);  // Padding
-        baselinePos.setY(baselinePos.y() + 6 + fm.ascent());  // Padding + ascent
-
-        auto textAnnotation = std::make_unique<TextAnnotation>(baselinePos, text, font, m_annotationColor);
-        m_annotationLayer->addItem(std::move(textAnnotation));
-    }
-
-    m_inlineTextEdit->hide();
-    m_inlineTextEdit->clear();
-    m_isEditingText = false;
-    update();
-}
-
-void RegionSelector::cancelInlineTextEdit()
-{
-    if (!m_isEditingText || !m_inlineTextEdit) return;
-
-    m_inlineTextEdit->hide();
-    m_inlineTextEdit->clear();
-    m_isEditingText = false;
+    auto textAnnotation = std::make_unique<TextAnnotation>(position, text, font, m_annotationColor);
+    m_annotationLayer->addItem(std::move(textAnnotation));
     update();
 }
 

@@ -9,6 +9,7 @@ ToolbarWidget::ToolbarWidget(QObject* parent)
     : QObject(parent)
     , m_activeButton(-1)
     , m_hoveredButton(-1)
+    , m_viewportWidth(0)
 {
     // Default icon color provider
     m_iconColorProvider = [](int buttonId, bool isActive, bool isHovered) -> QColor {
@@ -176,7 +177,9 @@ void ToolbarWidget::drawTooltip(QPainter& painter)
 
     // Keep on screen
     if (tooltipX < 5) tooltipX = 5;
-    // Note: Right boundary check would need viewport width
+    if (m_viewportWidth > 0 && tooltipX + textRect.width() > m_viewportWidth - 5) {
+        tooltipX = m_viewportWidth - textRect.width() - 5;
+    }
 
     textRect.moveTo(tooltipX, tooltipY);
 
@@ -226,4 +229,12 @@ QColor ToolbarWidget::getIconColor(int buttonId, bool isActive, bool isHovered) 
         return m_iconColorProvider(buttonId, isActive, isHovered);
     }
     return isActive ? Qt::white : QColor(220, 220, 220);
+}
+
+int ToolbarWidget::buttonIdAt(int index) const
+{
+    if (index >= 0 && index < m_buttons.size()) {
+        return m_buttons[index].id;
+    }
+    return -1;
 }

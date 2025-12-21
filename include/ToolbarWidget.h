@@ -122,6 +122,16 @@ public:
      */
     void setActiveButtonIds(const QVector<int>& ids) { m_activeButtonIds = ids; }
 
+    /**
+     * @brief Set the viewport width for boundary checking.
+     */
+    void setViewportWidth(int width) { m_viewportWidth = width; }
+
+    /**
+     * @brief Get the button ID at the given index.
+     */
+    int buttonIdAt(int index) const;
+
 signals:
     /**
      * @brief Emitted when a button is clicked.
@@ -139,6 +149,7 @@ private:
     QRect m_toolbarRect;
     QVector<QRect> m_buttonRects;
     QVector<int> m_activeButtonIds;  // Button IDs that can be "active" (tools vs actions)
+    int m_viewportWidth;              // Viewport width for boundary checking
 
     IconColorProvider m_iconColorProvider;
 

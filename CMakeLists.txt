@@ -36,6 +36,9 @@ set(SOURCES
     src/ToolbarWidget.cpp
     src/AnnotationController.cpp
     src/ColorPickerDialog.mm
+    src/InlineTextEditor.cpp
+    src/MagnifierOverlay.cpp
+    src/SelectionController.cpp
 )
 
 set(RESOURCES
@@ -58,6 +61,9 @@ set(HEADERS
     include/ToolbarWidget.h
     include/AnnotationController.h
     include/ColorPickerDialog.h
+    include/InlineTextEditor.h
+    include/MagnifierOverlay.h
+    include/SelectionController.h
 )
 
 # Cross-platform source files (used by both platforms)
@@ -73,10 +79,14 @@ if(APPLE)
         src/WindowDetector.mm
         src/OCRManager.mm
         src/AutoLaunchManager_mac.mm
+        src/WindowDetectionOverlay.cpp
+        src/OCRController.cpp
     )
     list(APPEND HEADERS
         include/WindowDetector.h
         include/OCRManager.h
+        include/WindowDetectionOverlay.h
+        include/OCRController.h
     )
 elseif(WIN32)
     list(APPEND SOURCES
