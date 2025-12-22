@@ -73,6 +73,7 @@ set(SOURCES
     src/MagnifierOverlay.cpp
     src/LaserPointerRenderer.cpp
     src/ClickRippleRenderer.cpp
+    src/WatermarkRenderer.cpp
 )
 
 set(RESOURCES
@@ -102,6 +103,7 @@ set(HEADERS
     include/PlatformFeatures.h
     include/LaserPointerRenderer.h
     include/ClickRippleRenderer.h
+    include/WatermarkRenderer.h
 )
 
 # Cross-platform source files (used by both platforms)

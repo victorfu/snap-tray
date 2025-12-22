@@ -4,6 +4,7 @@
 #include <QWidget>
 #include <QPixmap>
 #include <QPoint>
+#include "WatermarkRenderer.h"
 
 class QMenu;
 class QLabel;
@@ -28,6 +29,10 @@ public:
     void rotateLeft();   // Rotate counter-clockwise by 90 degrees
     void flipHorizontal();  // Flip horizontally (mirror left-right)
     void flipVertical();    // Flip vertically (mirror top-bottom)
+
+    // Watermark settings
+    void setWatermarkSettings(const WatermarkRenderer::Settings &settings);
+    WatermarkRenderer::Settings watermarkSettings() const { return m_watermarkSettings; }
 
 signals:
     void closed(PinWindow *window);
@@ -111,6 +116,9 @@ private:
     // OCR members
     OCRManager *m_ocrManager;
     bool m_ocrInProgress;
+
+    // Watermark members
+    WatermarkRenderer::Settings m_watermarkSettings;
 };
 
 #endif // PINWINDOW_H
