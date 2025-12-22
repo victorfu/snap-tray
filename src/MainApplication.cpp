@@ -11,6 +11,7 @@
 #include <QAction>
 #include <QCoreApplication>
 #include <QGuiApplication>
+#include <QApplication>
 #include <QScreen>
 #include <QHotkey>
 #include <QDebug>
@@ -91,6 +92,13 @@ void MainApplication::onRegionCapture()
         qDebug() << "Region capture blocked: Screen canvas is active";
         return;
     }
+
+    // Close any open popup menus to prevent focus conflicts
+    // (e.g., PinWindow context menu open when F2 is pressed)
+    if (QWidget *popup = QApplication::activePopupWidget()) {
+        popup->close();
+    }
+
     qDebug() << "Region capture triggered";
     m_captureManager->startRegionCapture();
 }
@@ -102,6 +110,12 @@ void MainApplication::onScreenCanvas()
         qDebug() << "Screen canvas blocked: Capture is active";
         return;
     }
+
+    // Close any open popup menus to prevent focus conflicts
+    if (QWidget *popup = QApplication::activePopupWidget()) {
+        popup->close();
+    }
+
     qDebug() << "Screen canvas triggered";
     m_screenCanvasManager->toggle();
 }
