@@ -9,6 +9,9 @@ class QTabWidget;
 class QCheckBox;
 class QLabel;
 class QPushButton;
+class QLineEdit;
+class QSlider;
+class QComboBox;
 
 class SettingsDialog : public QDialog
 {
@@ -41,6 +44,7 @@ private:
     void setupUi();
     void setupGeneralTab(QWidget *tab);
     void setupHotkeysTab(QWidget *tab);
+    void setupWatermarkTab(QWidget *tab);
     void updateHotkeyStatus(QLabel *statusLabel, bool isRegistered);
 
     // UI elements
@@ -49,6 +53,21 @@ private:
     QKeySequenceEdit *m_hotkeyEdit;
     QLabel *m_captureHotkeyStatus;
     QPushButton *m_restoreDefaultsBtn;
+
+    // Watermark UI elements
+    QCheckBox *m_watermarkEnabledCheckbox;
+    QComboBox *m_watermarkTypeCombo;
+    QLineEdit *m_watermarkTextEdit;
+    QLineEdit *m_watermarkImagePathEdit;
+    QPushButton *m_watermarkBrowseBtn;
+    QSlider *m_watermarkImageScaleSlider;
+    QLabel *m_watermarkImageScaleLabel;
+    QSlider *m_watermarkOpacitySlider;
+    QLabel *m_watermarkOpacityLabel;
+    QComboBox *m_watermarkPositionCombo;
+
+    // Watermark UI helper method
+    void updateWatermarkTypeVisibility(int type);
 };
 
 #endif // SETTINGSDIALOG_H

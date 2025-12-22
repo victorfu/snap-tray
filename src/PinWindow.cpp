@@ -1,6 +1,7 @@
 #include "PinWindow.h"
 #include "OCRManager.h"
 #include "PlatformFeatures.h"
+#include "WatermarkRenderer.h"
 
 #include <QPainter>
 #include <QMouseEvent>
@@ -22,6 +23,7 @@
 #include <QPointer>
 #include <QTransform>
 #include <QDebug>
+#include <QActionGroup>
 
 PinWindow::PinWindow(const QPixmap &screenshot, const QPoint &position, QWidget *parent)
     : QWidget(parent)
@@ -107,6 +109,9 @@ PinWindow::PinWindow(const QPixmap &screenshot, const QPoint &position, QWidget 
     // Apply default opacity (90%)
     setWindowOpacity(m_opacity);
 
+    // Load watermark settings
+    m_watermarkSettings = WatermarkRenderer::loadSettings();
+
     qDebug() << "PinWindow: Created with size" << m_displayPixmap.size()
              << "requested position" << position
              << "actual position" << pos();
@@ -155,6 +160,12 @@ void PinWindow::flipVertical()
     m_flipVertical = !m_flipVertical;
     updateSize();
     qDebug() << "PinWindow: Flipped vertical, now" << m_flipVertical;
+}
+
+void PinWindow::setWatermarkSettings(const WatermarkRenderer::Settings &settings)
+{
+    m_watermarkSettings = settings;
+    update();
 }
 
 void PinWindow::updateSize()
@@ -248,6 +259,59 @@ void PinWindow::createContextMenu()
 
     m_contextMenu->addSeparator();
 
+    // Watermark submenu
+    QMenu *watermarkMenu = m_contextMenu->addMenu("Watermark");
+
+    // Enable watermark action
+    QAction *enableWatermarkAction = watermarkMenu->addAction("Enable");
+    enableWatermarkAction->setCheckable(true);
+    enableWatermarkAction->setChecked(m_watermarkSettings.enabled);
+    connect(enableWatermarkAction, &QAction::toggled, this, [this](bool checked) {
+        m_watermarkSettings.enabled = checked;
+        update();
+    });
+
+    watermarkMenu->addSeparator();
+
+    // Position submenu
+    QMenu *positionMenu = watermarkMenu->addMenu("Position");
+    QActionGroup *positionGroup = new QActionGroup(this);
+
+    QAction *topLeftAction = positionMenu->addAction("Top-Left");
+    topLeftAction->setCheckable(true);
+    topLeftAction->setData(static_cast<int>(WatermarkRenderer::TopLeft));
+    positionGroup->addAction(topLeftAction);
+
+    QAction *topRightAction = positionMenu->addAction("Top-Right");
+    topRightAction->setCheckable(true);
+    topRightAction->setData(static_cast<int>(WatermarkRenderer::TopRight));
+    positionGroup->addAction(topRightAction);
+
+    QAction *bottomLeftAction = positionMenu->addAction("Bottom-Left");
+    bottomLeftAction->setCheckable(true);
+    bottomLeftAction->setData(static_cast<int>(WatermarkRenderer::BottomLeft));
+    positionGroup->addAction(bottomLeftAction);
+
+    QAction *bottomRightAction = positionMenu->addAction("Bottom-Right");
+    bottomRightAction->setCheckable(true);
+    bottomRightAction->setData(static_cast<int>(WatermarkRenderer::BottomRight));
+    positionGroup->addAction(bottomRightAction);
+
+    // Set current position
+    for (QAction *action : positionGroup->actions()) {
+        if (action->data().toInt() == static_cast<int>(m_watermarkSettings.position)) {
+            action->setChecked(true);
+            break;
+        }
+    }
+
+    connect(positionGroup, &QActionGroup::triggered, this, [this](QAction *action) {
+        m_watermarkSettings.position = static_cast<WatermarkRenderer::Position>(action->data().toInt());
+        update();
+    });
+
+    m_contextMenu->addSeparator();
+
     QAction *closeAction = m_contextMenu->addAction("Close");
     closeAction->setShortcut(QKeySequence(Qt::Key_Escape));
     connect(closeAction, &QAction::triggered, this, &PinWindow::close);
@@ -268,6 +332,8 @@ void PinWindow::saveToFile()
 
     if (!filePath.isEmpty()) {
         QPixmap pixmapToSave = getTransformedPixmap();
+        // Apply watermark if enabled
+        pixmapToSave = WatermarkRenderer::applyToPixmap(pixmapToSave, m_watermarkSettings);
         if (pixmapToSave.save(filePath)) {
             qDebug() << "PinWindow: Saved to" << filePath;
             emit saveRequested(pixmapToSave);
@@ -279,7 +345,10 @@ void PinWindow::saveToFile()
 
 void PinWindow::copyToClipboard()
 {
-    QGuiApplication::clipboard()->setPixmap(getTransformedPixmap());
+    QPixmap pixmapToCopy = getTransformedPixmap();
+    // Apply watermark if enabled
+    pixmapToCopy = WatermarkRenderer::applyToPixmap(pixmapToCopy, m_watermarkSettings);
+    QGuiApplication::clipboard()->setPixmap(pixmapToCopy);
     qDebug() << "PinWindow: Copied to clipboard";
 }
 
@@ -375,9 +444,8 @@ void PinWindow::showZoomIndicator()
 {
     m_zoomLabel->setText(QString("%1%").arg(qRound(m_zoomLevel * 100)));
     m_zoomLabel->adjustSize();
-    // Position at bottom-right corner
-    m_zoomLabel->move(width() - kShadowMargin - m_zoomLabel->width() - 8,
-                      height() - kShadowMargin - m_zoomLabel->height() - 8);
+    // Position at top-left corner
+    m_zoomLabel->move(kShadowMargin + 8, kShadowMargin + 8);
     m_zoomLabel->show();
     m_zoomLabel->raise();
     m_zoomLabelTimer->start(1500);
@@ -421,6 +489,9 @@ void PinWindow::paintEvent(QPaintEvent *)
     painter.setPen(QPen(QColor(0, 120, 215, 200), 1.5));
     painter.setBrush(Qt::NoBrush);
     painter.drawRect(pixmapRect);
+
+    // Draw watermark
+    WatermarkRenderer::render(painter, pixmapRect, m_watermarkSettings);
 }
 
 void PinWindow::mousePressEvent(QMouseEvent *event)
@@ -601,8 +672,8 @@ void PinWindow::wheelEvent(QWheelEvent *event)
         return;
     }
 
-    // Plain wheel = Zoom
-    const qreal zoomStep = 0.1;
+    // Plain wheel = Zoom (anchored at top-left corner)
+    const qreal zoomStep = 0.05;
     qreal oldZoom = m_zoomLevel;
     qreal newZoom = (event->angleDelta().y() > 0)
                     ? m_zoomLevel + zoomStep
@@ -614,20 +685,8 @@ void PinWindow::wheelEvent(QWheelEvent *event)
         return;
     }
 
-    // Mouse position relative to content area
-    QPointF mousePos = event->position() - QPointF(kShadowMargin, kShadowMargin);
-
-    // Image coordinate under cursor
-    QPointF imagePoint = mousePos / oldZoom;
-
-    // Where this point will be after zoom
-    QPointF newMousePos = imagePoint * newZoom;
-
-    // Offset needed to keep cursor over same image point
-    QPointF delta = newMousePos - mousePos;
-
+    // Keep top-left corner fixed - no position adjustment needed
     setZoomLevel(newZoom);
-    move(pos() - delta.toPoint());
 
     showZoomIndicator();
     event->accept();
