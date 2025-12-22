@@ -1357,6 +1357,36 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
             update();
         }
     }
+    // Arrow keys for precise selection adjustment
+    else if (m_selectionComplete && !m_selectionRect.isEmpty()) {
+        bool handled = true;
+
+        if (event->modifiers() & Qt::ShiftModifier) {
+            // Shift + Arrow: Resize selection (adjust corresponding edge)
+            QRect newRect = m_selectionRect;
+            switch (event->key()) {
+            case Qt::Key_Left:  newRect.setRight(newRect.right() - 1); break;
+            case Qt::Key_Right: newRect.setRight(newRect.right() + 1); break;
+            case Qt::Key_Up:    newRect.setBottom(newRect.bottom() - 1); break;
+            case Qt::Key_Down:  newRect.setBottom(newRect.bottom() + 1); break;
+            default: handled = false; break;
+            }
+            if (handled && newRect.width() >= 10 && newRect.height() >= 10) {
+                m_selectionRect = newRect;
+                update();
+            }
+        } else {
+            // Arrow only: Move selection
+            switch (event->key()) {
+            case Qt::Key_Left:  m_selectionRect.translate(-1, 0); break;
+            case Qt::Key_Right: m_selectionRect.translate(1, 0);  break;
+            case Qt::Key_Up:    m_selectionRect.translate(0, -1); break;
+            case Qt::Key_Down:  m_selectionRect.translate(0, 1);  break;
+            default: handled = false; break;
+            }
+            if (handled) update();
+        }
+    }
 }
 
 void RegionSelector::closeEvent(QCloseEvent *event)
