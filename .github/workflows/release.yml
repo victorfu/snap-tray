@@ -68,6 +68,62 @@ jobs:
           QT_PREFIX=$(brew --prefix qt@6)
           "$QT_PREFIX/bin/macdeployqt" release/${{ env.APP_NAME }}.app -verbose=1
 
+      # Code signing step
+      # For full Developer ID signing and notarization, set these secrets:
+      #   APPLE_CERTIFICATE: Base64-encoded .p12 certificate
+      #   APPLE_CERTIFICATE_PASSWORD: Certificate password
+      #   APPLE_ID: Apple ID email
+      #   APPLE_TEAM_ID: Developer Team ID
+      #   APPLE_APP_PASSWORD: App-specific password
+      - name: Import Apple Certificate
+        if: ${{ env.APPLE_CERTIFICATE != '' }}
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+        run: |
+          # Create temporary keychain
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+          KEYCHAIN_PASSWORD=$(openssl rand -base64 32)
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          # Import certificate
+          echo "$APPLE_CERTIFICATE" | base64 --decode > $RUNNER_TEMP/certificate.p12
+          security import $RUNNER_TEMP/certificate.p12 -P "$APPLE_CERTIFICATE_PASSWORD" \
+            -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security list-keychain -d user -s "$KEYCHAIN_PATH"
+
+          # Allow codesign to access the keychain
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+      - name: Code Sign Application
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+        run: |
+          if [ -n "$APPLE_CERTIFICATE" ]; then
+            echo "Signing with Developer ID..."
+            # Find the Developer ID identity
+            IDENTITY=$(security find-identity -v -p codesigning | grep "Developer ID Application" | head -1 | awk -F'"' '{print $2}')
+            codesign --force --deep --sign "$IDENTITY" \
+              --options runtime \
+              --entitlements packaging/macos/entitlements.plist \
+              "release/${{ env.APP_NAME }}.app"
+          else
+            echo "Using ad-hoc signing (no Apple Developer certificate configured)..."
+            codesign --force --deep --sign - \
+              --options runtime \
+              --entitlements packaging/macos/entitlements.plist \
+              "release/${{ env.APP_NAME }}.app"
+          fi
+
+          # Verify signature
+          codesign --verify --verbose "release/${{ env.APP_NAME }}.app"
+
+          # Remove quarantine attributes
+          xattr -cr "release/${{ env.APP_NAME }}.app"
+
       - name: Create DMG
         run: |
           VERSION="${{ needs.prepare.outputs.version }}"
@@ -86,6 +142,26 @@ jobs:
             -srcfolder "release/${{ env.APP_NAME }}.app" \
             -ov -format UDZO \
             "dist/${{ env.APP_NAME }}-${VERSION}-macOS.dmg"
+
+      - name: Notarize DMG
+        if: ${{ env.APPLE_ID != '' && env.APPLE_TEAM_ID != '' && env.APPLE_APP_PASSWORD != '' }}
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+        run: |
+          VERSION="${{ needs.prepare.outputs.version }}"
+          DMG_PATH="dist/${{ env.APP_NAME }}-${VERSION}-macOS.dmg"
+
+          echo "Submitting for notarization..."
+          xcrun notarytool submit "$DMG_PATH" \
+            --apple-id "$APPLE_ID" \
+            --team-id "$APPLE_TEAM_ID" \
+            --password "$APPLE_APP_PASSWORD" \
+            --wait
+
+          echo "Stapling notarization ticket..."
+          xcrun stapler staple "$DMG_PATH"
 
       - name: Upload macOS artifact
         uses: actions/upload-artifact@v4

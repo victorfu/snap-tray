@@ -64,21 +64,30 @@ echo ""
 echo -e "${YELLOW}[2/5] Running macdeployqt...${NC}"
 "$QT_PREFIX/bin/macdeployqt" "$BUILD_DIR/${APP_NAME}.app" -verbose=1
 
-# Step 3: Code signing (if identity provided)
+# Step 3: Code signing
 echo ""
+echo -e "${YELLOW}[3/5] Signing application...${NC}"
 if [ -n "$CODESIGN_IDENTITY" ]; then
-    echo -e "${YELLOW}[3/5] Signing application...${NC}"
+    echo "Using Developer ID: $CODESIGN_IDENTITY"
     codesign --force --deep --sign "$CODESIGN_IDENTITY" \
         --options runtime \
         --entitlements "$SCRIPT_DIR/entitlements.plist" \
         "$BUILD_DIR/${APP_NAME}.app"
-
-    echo "Verifying signature..."
-    codesign --verify --verbose "$BUILD_DIR/${APP_NAME}.app"
-    echo -e "${GREEN}Signature verified${NC}"
 else
-    echo -e "${YELLOW}[3/5] Skipping code signing (CODESIGN_IDENTITY not set)${NC}"
+    echo "Using ad-hoc signing (no Developer ID configured)"
+    codesign --force --deep --sign - \
+        --options runtime \
+        --entitlements "$SCRIPT_DIR/entitlements.plist" \
+        "$BUILD_DIR/${APP_NAME}.app"
 fi
+
+echo "Verifying signature..."
+codesign --verify --verbose "$BUILD_DIR/${APP_NAME}.app"
+echo -e "${GREEN}Signature verified${NC}"
+
+# Remove quarantine attribute to prevent Gatekeeper issues
+echo "Removing quarantine attributes..."
+xattr -cr "$BUILD_DIR/${APP_NAME}.app"
 
 # Step 4: Create DMG
 echo ""
@@ -142,4 +151,11 @@ echo ""
 echo "To install:"
 echo "  1. Open the DMG"
 echo "  2. Drag SnapTray to Applications"
-echo "  3. On first launch, right-click and select 'Open' to bypass Gatekeeper"
+echo ""
+if [ -z "$CODESIGN_IDENTITY" ]; then
+    echo -e "${YELLOW}Note: This build uses ad-hoc signing (no Apple Developer ID).${NC}"
+    echo "If macOS blocks the app, users can run:"
+    echo -e "  ${GREEN}xattr -cr /Applications/SnapTray.app${NC}"
+    echo ""
+    echo "Or: Right-click the app → Open → Click 'Open' in the dialog"
+fi
