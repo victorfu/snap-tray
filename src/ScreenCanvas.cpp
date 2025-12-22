@@ -204,7 +204,7 @@ void ScreenCanvas::onMoreColorsRequested()
 
     m_colorPickerDialog->setCurrentColor(m_controller->color());
 
-    // Update unified widget as well
+    // Ensure unified color/width widget is in sync with the controller color before showing the dialog
     m_colorAndWidthWidget->setCurrentColor(m_controller->color());
 
     // Position at center of screen
