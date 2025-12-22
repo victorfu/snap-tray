@@ -19,8 +19,8 @@ SnapTray 是一個在系統托盤常駐的區域截圖小工具，預設以 F2 �
 - **截圖工具列**：
   - `Selection` 選取工具（調整選取區域）
   - `Pin` 釘選到畫面 (Enter)
-  - `Save` 存檔 (Ctrl+S)
-  - `Copy` 複製 (Ctrl+C)
+  - `Save` 存檔 (Ctrl+S / macOS 為 Cmd+S)
+  - `Copy` 複製 (Ctrl+C / macOS 為 Cmd+C)
   - `Cancel` 取消 (Esc)
   - 標註工具：`Arrow` / `Pencil` / `Marker` / `Rectangle` / `Text` / `Mosaic` / `StepBadge`（支援 Undo/Redo）
   - `OCR` 文字辨識（macOS/Windows，支援繁體中文、簡體中文、英文）
@@ -185,8 +185,8 @@ packaging\windows\package.bat
    - 放開滑鼠後出現工具列
 4. **工具列操作**：
    - `Enter` 或 `Pin`：將截圖釘選為浮動視窗
-   - `Ctrl+C` 或 `Copy`：複製到剪貼簿
-   - `Ctrl+S` 或 `Save`：儲存成檔案
+   - `Ctrl+C` (Windows) / `Cmd+C` (macOS) 或 `Copy`：複製到剪貼簿
+   - `Ctrl+S` (Windows) / `Cmd+S` (macOS) 或 `Save`：儲存成檔案
    - `Esc` 或 `Cancel`：取消選取
    - 標註：選擇工具後在選取區內拖曳繪製
      - `Text`：點擊後輸入文字

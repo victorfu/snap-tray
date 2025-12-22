@@ -19,8 +19,8 @@ SnapTray is a lightweight screenshot utility that lives in your system tray. Pre
 - **Capture Toolbar**:
   - `Selection` tool (adjust selection area)
   - `Pin` to screen (Enter)
-  - `Save` to file (Ctrl+S)
-  - `Copy` to clipboard (Ctrl+C)
+  - `Save` to file (Ctrl+S / Cmd+S on macOS)
+  - `Copy` to clipboard (Ctrl+C / Cmd+C on macOS)
   - `Cancel` (Esc)
   - Annotation tools: `Arrow` / `Pencil` / `Marker` / `Rectangle` / `Text` / `Mosaic` / `StepBadge` (with Undo/Redo)
   - `OCR` text recognition (macOS/Windows, supports Traditional Chinese, Simplified Chinese, English)
@@ -185,8 +185,8 @@ packaging\windows\package.bat
    - Toolbar appears after releasing mouse
 4. **Toolbar Actions**:
    - `Enter` or `Pin`: Pin screenshot as floating window
-   - `Ctrl+C` or `Copy`: Copy to clipboard
-   - `Ctrl+S` or `Save`: Save to file
+   - `Ctrl+C` (Windows) / `Cmd+C` (macOS) or `Copy`: Copy to clipboard
+   - `Ctrl+S` (Windows) / `Cmd+S` (macOS) or `Save`: Save to file
    - `Esc` or `Cancel`: Cancel selection
    - Annotations: Select a tool and drag within selection area
      - `Text`: Click to enter text
