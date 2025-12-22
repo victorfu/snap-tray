@@ -143,9 +143,16 @@ elseif(WIN32)
     set(WIN32_RESOURCES "${CMAKE_BINARY_DIR}/snaptray.rc")
 endif()
 
-# WIN32 flag sets /SUBSYSTEM:WINDOWS on Windows (prevents console window)
-# Automatically ignored on non-Windows platforms
-add_executable(${PROJECT_NAME} WIN32 ${SOURCES} ${HEADERS} ${RESOURCES} ${WIN32_RESOURCES})
+# Create executable without WIN32 flag (we'll set it conditionally below)
+add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS} ${RESOURCES} ${WIN32_RESOURCES})
+
+# Only use Windows subsystem (no console) for non-Debug builds
+# Debug builds will show a console window for easier debugging
+if(WIN32)
+    set_target_properties(${PROJECT_NAME} PROPERTIES
+        WIN32_EXECUTABLE $<NOT:$<CONFIG:Debug>>
+    )
+endif()
 
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_SOURCE_DIR}/include
