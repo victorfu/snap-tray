@@ -275,7 +275,7 @@ void RegionSelector::onMoreColorsRequested()
 
     m_colorPickerDialog->setCurrentColor(m_annotationColor);
 
-    // Update unified widget as well
+    // Keep unified color/width widget in sync with current annotation color
     m_colorAndWidthWidget->setCurrentColor(m_annotationColor);
 
     // Position at center of screen
