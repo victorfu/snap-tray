@@ -7,6 +7,7 @@
 #include <QRect>
 #include <QVector>
 #include <QColor>
+#include <QElapsedTimer>
 #include <memory>
 #include <optional>
 
@@ -215,6 +216,20 @@ private:
 
     // Color picker dialog
     ColorPickerDialog *m_colorPickerDialog;
+
+    // Magnifier performance optimization
+    QElapsedTimer m_magnifierUpdateTimer;
+    QPoint m_lastMagnifierPosition;
+    QPixmap m_gridOverlayCache;
+    QPixmap m_magnifierPixmapCache;
+    QPoint m_cachedDevicePosition;
+    bool m_magnifierCacheValid = false;
+    static constexpr int MAGNIFIER_MIN_UPDATE_MS = 16;  // ~60fps cap
+    static constexpr int MAGNIFIER_SIZE = 120;
+    static constexpr int MAGNIFIER_GRID_COUNT = 15;
+
+    void initializeMagnifierGridCache();
+    void invalidateMagnifierCache();
 };
 
 #endif // REGIONSELECTOR_H
