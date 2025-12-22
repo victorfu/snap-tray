@@ -38,7 +38,7 @@ PinWindow::PinWindow(const QPixmap &screenshot, const QPoint &position, QWidget 
     , m_flipVertical(false)
     , m_ocrManager(nullptr)
     , m_ocrInProgress(false)
-    , m_opacity(0.9)
+    , m_opacity(1.0)
 {
     // Frameless, always on top
     // Note: Removed Qt::Tool flag as it causes the window to hide when app loses focus on macOS
