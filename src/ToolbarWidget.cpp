@@ -74,9 +74,9 @@ void ToolbarWidget::setPositionForSelection(const QRect& referenceRect, int view
     int toolbarX = sel.right() - toolbarWidth + 1;
     int toolbarY = sel.bottom() + 8;
 
-    // If toolbar would go off screen, position above selection instead
+    // If toolbar would go off screen, position inside selection (top-right corner)
     if (toolbarY + TOOLBAR_HEIGHT > viewportHeight - 5) {
-        toolbarY = sel.top() - TOOLBAR_HEIGHT - 8;
+        toolbarY = sel.top() + 8;
     }
 
     // Keep on screen horizontally
