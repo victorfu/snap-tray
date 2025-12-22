@@ -57,6 +57,8 @@ SnapTray is a lightweight screenshot utility that lives in your system tray. Pre
 
 ## System Requirements
 
+SnapTray currently supports macOS and Windows only.
+
 ### macOS
 - macOS 10.15+
 - Qt 6 (recommend installing via Homebrew)

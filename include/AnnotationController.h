@@ -13,6 +13,7 @@ class PencilStroke;
 class MarkerStroke;
 class ArrowAnnotation;
 class RectangleAnnotation;
+class EllipseAnnotation;
 
 /**
  * @brief Base annotation controller for managing drawing state.
@@ -33,7 +34,8 @@ public:
         Pencil,
         Marker,
         Arrow,
-        Rectangle
+        Rectangle,
+        Ellipse
     };
 
     explicit AnnotationController(QObject* parent = nullptr);
@@ -140,6 +142,7 @@ protected:
     std::unique_ptr<MarkerStroke> m_currentMarker;
     std::unique_ptr<ArrowAnnotation> m_currentArrow;
     std::unique_ptr<RectangleAnnotation> m_currentRectangle;
+    std::unique_ptr<EllipseAnnotation> m_currentEllipse;
 };
 
 #endif // ANNOTATIONCONTROLLER_H

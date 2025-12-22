@@ -132,6 +132,7 @@ void RegionSelector::setupToolbarButtons()
     iconRenderer.loadIcon("pencil", ":/icons/icons/pencil.svg");
     iconRenderer.loadIcon("marker", ":/icons/icons/marker.svg");
     iconRenderer.loadIcon("rectangle", ":/icons/icons/rectangle.svg");
+    iconRenderer.loadIcon("ellipse", ":/icons/icons/ellipse.svg");
     iconRenderer.loadIcon("text", ":/icons/icons/text.svg");
     iconRenderer.loadIcon("mosaic", ":/icons/icons/mosaic.svg");
     iconRenderer.loadIcon("step-badge", ":/icons/icons/step-badge.svg");
@@ -153,6 +154,7 @@ void RegionSelector::setupToolbarButtons()
     buttons.append({static_cast<int>(ToolbarButton::Pencil), "pencil", "Pencil", false});
     buttons.append({static_cast<int>(ToolbarButton::Marker), "marker", "Marker", false});
     buttons.append({static_cast<int>(ToolbarButton::Rectangle), "rectangle", "Rectangle", false});
+    buttons.append({static_cast<int>(ToolbarButton::Ellipse), "ellipse", "Ellipse", false});
     buttons.append({static_cast<int>(ToolbarButton::Text), "text", "Text", false});
     buttons.append({static_cast<int>(ToolbarButton::Mosaic), "mosaic", "Mosaic", false});
     buttons.append({static_cast<int>(ToolbarButton::StepBadge), "step-badge", "Step Badge", false});
@@ -176,6 +178,7 @@ void RegionSelector::setupToolbarButtons()
         static_cast<int>(ToolbarButton::Pencil),
         static_cast<int>(ToolbarButton::Marker),
         static_cast<int>(ToolbarButton::Rectangle),
+        static_cast<int>(ToolbarButton::Ellipse),
         static_cast<int>(ToolbarButton::Text),
         static_cast<int>(ToolbarButton::Mosaic),
         static_cast<int>(ToolbarButton::StepBadge),
@@ -226,6 +229,7 @@ bool RegionSelector::shouldShowColorPalette() const
     case ToolbarButton::Marker:
     case ToolbarButton::Arrow:
     case ToolbarButton::Rectangle:
+    case ToolbarButton::Ellipse:
     case ToolbarButton::Text:
     case ToolbarButton::StepBadge:
         return true;
@@ -293,7 +297,8 @@ bool RegionSelector::shouldShowLineWidthWidget() const
     // Show for tools that use m_annotationWidth
     return m_currentTool == ToolbarButton::Pencil ||
            m_currentTool == ToolbarButton::Arrow ||
-           m_currentTool == ToolbarButton::Rectangle;
+           m_currentTool == ToolbarButton::Rectangle ||
+           m_currentTool == ToolbarButton::Ellipse;
 }
 
 void RegionSelector::onLineWidthChanged(int width)
@@ -313,6 +318,7 @@ bool RegionSelector::shouldShowColorAndWidthWidget() const
     case ToolbarButton::Marker:      // Needs color only
     case ToolbarButton::Arrow:       // Needs both
     case ToolbarButton::Rectangle:   // Needs both
+    case ToolbarButton::Ellipse:     // Needs both
     case ToolbarButton::Text:        // Needs color only
     case ToolbarButton::StepBadge:   // Needs color only
         return true;
@@ -1417,6 +1423,9 @@ void RegionSelector::drawCurrentAnnotation(QPainter &painter)
     else if (m_currentRectangle) {
         m_currentRectangle->draw(painter);
     }
+    else if (m_currentEllipse) {
+        m_currentEllipse->draw(painter);
+    }
     else if (m_currentMosaicStroke) {
         m_currentMosaicStroke->draw(painter);
     }
@@ -1459,6 +1468,10 @@ void RegionSelector::startAnnotation(const QPoint &pos)
 
     case ToolbarButton::Rectangle:
         m_currentRectangle = std::make_unique<RectangleAnnotation>(QRect(pos, pos), m_annotationColor, m_annotationWidth);
+        break;
+
+    case ToolbarButton::Ellipse:
+        m_currentEllipse = std::make_unique<EllipseAnnotation>(QRect(pos, pos), m_annotationColor, m_annotationWidth);
         break;
 
     case ToolbarButton::Mosaic:
@@ -1514,6 +1527,12 @@ void RegionSelector::updateAnnotation(const QPoint &pos)
     case ToolbarButton::Rectangle:
         if (m_currentRectangle) {
             m_currentRectangle->setRect(QRect(m_drawStartPoint, pos));
+        }
+        break;
+
+    case ToolbarButton::Ellipse:
+        if (m_currentEllipse) {
+            m_currentEllipse->setRect(QRect(m_drawStartPoint, pos));
         }
         break;
 
@@ -1578,6 +1597,13 @@ void RegionSelector::finishAnnotation()
         m_currentRectangle.reset();
         break;
 
+    case ToolbarButton::Ellipse:
+        if (m_currentEllipse) {
+            m_annotationLayer->addItem(std::move(m_currentEllipse));
+        }
+        m_currentEllipse.reset();
+        break;
+
     case ToolbarButton::Mosaic:
         if (m_currentMosaicStroke && m_currentPath.size() > 1) {
             m_annotationLayer->addItem(std::move(m_currentMosaicStroke));
@@ -1609,6 +1635,7 @@ bool RegionSelector::isAnnotationTool(ToolbarButton tool) const
     case ToolbarButton::Marker:
     case ToolbarButton::Arrow:
     case ToolbarButton::Rectangle:
+    case ToolbarButton::Ellipse:
     case ToolbarButton::Text:
     case ToolbarButton::Mosaic:
     case ToolbarButton::StepBadge:

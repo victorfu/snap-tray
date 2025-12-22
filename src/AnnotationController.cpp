@@ -64,6 +64,10 @@ void AnnotationController::startDrawing(const QPoint& pos)
         m_currentRectangle = std::make_unique<RectangleAnnotation>(QRect(pos, pos), m_color, m_width);
         break;
 
+    case Tool::Ellipse:
+        m_currentEllipse = std::make_unique<EllipseAnnotation>(QRect(pos, pos), m_color, m_width);
+        break;
+
     default:
         m_isDrawing = false;
         break;
@@ -100,6 +104,12 @@ void AnnotationController::updateDrawing(const QPoint& pos)
     case Tool::Rectangle:
         if (m_currentRectangle) {
             m_currentRectangle->setRect(QRect(m_startPoint, pos));
+        }
+        break;
+
+    case Tool::Ellipse:
+        if (m_currentEllipse) {
+            m_currentEllipse->setRect(QRect(m_startPoint, pos));
         }
         break;
 
@@ -148,6 +158,13 @@ void AnnotationController::finishDrawing()
         m_currentRectangle.reset();
         break;
 
+    case Tool::Ellipse:
+        if (m_currentEllipse) {
+            m_annotationLayer->addItem(std::move(m_currentEllipse));
+        }
+        m_currentEllipse.reset();
+        break;
+
     default:
         break;
     }
@@ -165,6 +182,7 @@ void AnnotationController::cancelDrawing()
     m_currentMarker.reset();
     m_currentArrow.reset();
     m_currentRectangle.reset();
+    m_currentEllipse.reset();
     emit drawingStateChanged(false);
 }
 
@@ -180,6 +198,8 @@ void AnnotationController::drawCurrentAnnotation(QPainter& painter) const
         m_currentArrow->draw(painter);
     } else if (m_currentRectangle) {
         m_currentRectangle->draw(painter);
+    } else if (m_currentEllipse) {
+        m_currentEllipse->draw(painter);
     }
 }
 
@@ -190,6 +210,7 @@ bool AnnotationController::supportsTool(Tool tool) const
     case Tool::Marker:
     case Tool::Arrow:
     case Tool::Rectangle:
+    case Tool::Ellipse:
         return true;
     default:
         return false;

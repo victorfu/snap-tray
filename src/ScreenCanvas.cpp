@@ -23,6 +23,7 @@ static AnnotationController::Tool mapToControllerTool(CanvasTool tool)
     case CanvasTool::Marker:    return AnnotationController::Tool::Marker;
     case CanvasTool::Arrow:     return AnnotationController::Tool::Arrow;
     case CanvasTool::Rectangle: return AnnotationController::Tool::Rectangle;
+    case CanvasTool::Ellipse:   return AnnotationController::Tool::Ellipse;
     default:                    return AnnotationController::Tool::None;
     }
 }
@@ -106,6 +107,7 @@ void ScreenCanvas::initializeIcons()
     iconRenderer.loadIcon("marker", ":/icons/icons/marker.svg");
     iconRenderer.loadIcon("arrow", ":/icons/icons/arrow.svg");
     iconRenderer.loadIcon("rectangle", ":/icons/icons/rectangle.svg");
+    iconRenderer.loadIcon("ellipse", ":/icons/icons/ellipse.svg");
     iconRenderer.loadIcon("undo", ":/icons/icons/undo.svg");
     iconRenderer.loadIcon("redo", ":/icons/icons/redo.svg");
     iconRenderer.loadIcon("cancel", ":/icons/icons/cancel.svg");
@@ -118,6 +120,7 @@ QString ScreenCanvas::getIconKeyForTool(CanvasTool tool) const
     case CanvasTool::Marker:    return "marker";
     case CanvasTool::Arrow:     return "arrow";
     case CanvasTool::Rectangle: return "rectangle";
+    case CanvasTool::Ellipse:   return "ellipse";
     case CanvasTool::Undo:      return "undo";
     case CanvasTool::Redo:      return "redo";
     case CanvasTool::Clear:     return "cancel";
@@ -140,6 +143,7 @@ bool ScreenCanvas::shouldShowColorPalette() const
     case CanvasTool::Marker:
     case CanvasTool::Arrow:
     case CanvasTool::Rectangle:
+    case CanvasTool::Ellipse:
         return true;
     default:
         return false;
@@ -161,6 +165,7 @@ bool ScreenCanvas::shouldShowLineWidthWidget() const
     case CanvasTool::Pencil:
     case CanvasTool::Arrow:
     case CanvasTool::Rectangle:
+    case CanvasTool::Ellipse:
         return true;
     default:
         return false;
@@ -181,6 +186,7 @@ bool ScreenCanvas::shouldShowColorAndWidthWidget() const
     case CanvasTool::Marker:     // Needs color only
     case CanvasTool::Arrow:      // Needs both
     case CanvasTool::Rectangle:  // Needs both
+    case CanvasTool::Ellipse:    // Needs both
         return true;
     default:
         return false;
@@ -387,7 +393,7 @@ void ScreenCanvas::updateToolbarPosition()
         x += BUTTON_WIDTH + BUTTON_SPACING;
 
         // Add extra spacing for separators
-        if (i == static_cast<int>(CanvasTool::Rectangle) ||
+        if (i == static_cast<int>(CanvasTool::Ellipse) ||
             i == static_cast<int>(CanvasTool::Clear)) {
             x += 6;
         }
@@ -411,6 +417,7 @@ QString ScreenCanvas::getButtonTooltip(int buttonIndex)
         "Marker",
         "Arrow",
         "Rectangle",
+        "Ellipse",
         "Undo (Ctrl+Z)",
         "Redo (Ctrl+Y)",
         "Clear All",
@@ -473,6 +480,7 @@ void ScreenCanvas::handleToolbarClick(CanvasTool button)
     case CanvasTool::Marker:
     case CanvasTool::Arrow:
     case CanvasTool::Rectangle:
+    case CanvasTool::Ellipse:
         m_currentTool = button;
         m_controller->setCurrentTool(mapToControllerTool(button));
         qDebug() << "ScreenCanvas: Tool selected:" << static_cast<int>(button);
@@ -517,6 +525,7 @@ bool ScreenCanvas::isAnnotationTool(CanvasTool tool) const
     case CanvasTool::Marker:
     case CanvasTool::Arrow:
     case CanvasTool::Rectangle:
+    case CanvasTool::Ellipse:
         return true;
     default:
         return false;

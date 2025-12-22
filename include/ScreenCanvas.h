@@ -22,6 +22,7 @@ enum class CanvasTool {
     Marker,
     Arrow,
     Rectangle,
+    Ellipse,
     Undo,
     Redo,
     Clear,
@@ -94,8 +95,8 @@ private:
     int m_hoveredButton;
     QVector<QRect> m_buttonRects;
 
-    static const int TOOLBAR_HEIGHT = 40;
-    static const int BUTTON_WIDTH = 36;
+    static const int TOOLBAR_HEIGHT = 32;
+    static const int BUTTON_WIDTH = 28;
     static const int BUTTON_SPACING = 2;
 
     // Color palette
