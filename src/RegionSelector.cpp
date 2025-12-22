@@ -8,6 +8,7 @@
 #include "OCRManager.h"
 #include "PlatformFeatures.h"
 
+#include <cstring>
 #include <QPainter>
 #include <QMouseEvent>
 #include <QKeyEvent>
@@ -106,6 +107,9 @@ RegionSelector::RegionSelector(QWidget* parent)
     // Install application-level event filter to capture ESC even when window loses focus
     qApp->installEventFilter(this);
 
+    // Initialize magnifier update timer for throttling
+    m_magnifierUpdateTimer.start();
+
     // 注意: 不在此處初始化螢幕，由 CaptureManager 調用 initializeForScreen()
 }
 
@@ -121,6 +125,36 @@ RegionSelector::~RegionSelector()
     qApp->removeEventFilter(this);
 
     qDebug() << "RegionSelector: Destroyed";
+}
+
+void RegionSelector::initializeMagnifierGridCache()
+{
+    const int pixelSize = MAGNIFIER_SIZE / MAGNIFIER_GRID_COUNT;
+
+    m_gridOverlayCache = QPixmap(MAGNIFIER_SIZE, MAGNIFIER_SIZE);
+    m_gridOverlayCache.fill(Qt::transparent);
+
+    QPainter gridPainter(&m_gridOverlayCache);
+
+    // Draw grid lines
+    gridPainter.setPen(QPen(QColor(100, 100, 100, 100), 1));
+    for (int i = 1; i < MAGNIFIER_GRID_COUNT; ++i) {
+        int pos = i * pixelSize;
+        gridPainter.drawLine(pos, 0, pos, MAGNIFIER_SIZE);
+        gridPainter.drawLine(0, pos, MAGNIFIER_SIZE, pos);
+    }
+
+    // Draw center crosshair
+    gridPainter.setPen(QPen(QColor(65, 105, 225), 1));
+    int cx = MAGNIFIER_SIZE / 2;
+    int cy = MAGNIFIER_SIZE / 2;
+    gridPainter.drawLine(cx - pixelSize / 2, cy, cx + pixelSize / 2, cy);
+    gridPainter.drawLine(cx, cy - pixelSize / 2, cx, cy + pixelSize / 2);
+}
+
+void RegionSelector::invalidateMagnifierCache()
+{
+    m_magnifierCacheValid = false;
 }
 
 void RegionSelector::setupToolbarButtons()
@@ -358,6 +392,10 @@ void RegionSelector::initializeForScreen(QScreen* screen)
 
     // 鎖定視窗大小，防止 macOS 原生 resize 行為
     setFixedSize(screenGeom.size());
+
+    // Initialize magnifier caches
+    initializeMagnifierGridCache();
+    invalidateMagnifierCache();
 
     setCursor(Qt::CrossCursor);
 }
@@ -642,8 +680,8 @@ void RegionSelector::drawCrosshair(QPainter& painter)
 
 void RegionSelector::drawMagnifier(QPainter& painter)
 {
-    const int magnifierSize = 120;  // 放大區域顯示大小
-    const int gridCount = 15;       // 顯示 15x15 個像素格子
+    const int magnifierSize = MAGNIFIER_SIZE;  // 放大區域顯示大小
+    const int gridCount = MAGNIFIER_GRID_COUNT;       // 顯示 15x15 個像素格子
     const int panelWidth = 180;     // 面板寬度
     const int panelPadding = 10;
 
@@ -679,51 +717,54 @@ void RegionSelector::drawMagnifier(QPainter& painter)
     int magX = panelX + (panelWidth - magnifierSize) / 2;
     int magY = panelY + panelPadding;
 
-    // 從設備像素 pixmap 中取樣
-    // 取 gridCount 個「邏輯像素」，每個邏輯像素 = devicePixelRatio 個設備像素
-    int deviceGridCount = static_cast<int>(gridCount * m_devicePixelRatio);
-    int sampleX = deviceX - deviceGridCount / 2;
-    int sampleY = deviceY - deviceGridCount / 2;
+    // Check if magnifier cache is still valid (same device pixel position)
+    QPoint currentDevicePos(deviceX, deviceY);
+    if (!m_magnifierCacheValid || m_cachedDevicePosition != currentDevicePos) {
+        // 從設備像素 pixmap 中取樣
+        // 取 gridCount 個「邏輯像素」，每個邏輯像素 = devicePixelRatio 個設備像素
+        int deviceGridCount = static_cast<int>(gridCount * m_devicePixelRatio);
+        int sampleX = deviceX - deviceGridCount / 2;
+        int sampleY = deviceY - deviceGridCount / 2;
 
-    // 建立一個以游標為中心的取樣圖像，超出邊界的部分填充黑色
-    QImage sampleImage(deviceGridCount, deviceGridCount, QImage::Format_ARGB32);
-    sampleImage.fill(Qt::black);
+        // 建立一個以游標為中心的取樣圖像，超出邊界的部分填充黑色
+        QImage sampleImage(deviceGridCount, deviceGridCount, QImage::Format_ARGB32);
+        sampleImage.fill(Qt::black);
 
-    // 複製有效區域 - 直接從源圖像複製到 sampleImage (reuse img from above)
-    for (int y = 0; y < deviceGridCount; ++y) {
-        for (int x = 0; x < deviceGridCount; ++x) {
-            int srcPixelX = sampleX + x;
-            int srcPixelY = sampleY + y;
-            if (srcPixelX >= 0 && srcPixelX < img.width() &&
-                srcPixelY >= 0 && srcPixelY < img.height()) {
-                sampleImage.setPixel(x, y, img.pixel(srcPixelX, srcPixelY));
+        // Optimized pixel sampling using scanLine() for direct memory access
+        // Pre-calculate valid source region bounds
+        int srcLeft = qMax(0, sampleX);
+        int srcTop = qMax(0, sampleY);
+        int srcRight = qMin(img.width(), sampleX + deviceGridCount);
+        int srcBottom = qMin(img.height(), sampleY + deviceGridCount);
+
+        // Calculate destination offsets for out-of-bounds handling
+        int dstOffsetX = srcLeft - sampleX;
+        int dstOffsetY = srcTop - sampleY;
+
+        // Copy valid region using scanLine for direct memory access (much faster than pixel-by-pixel)
+        if (srcRight > srcLeft && srcBottom > srcTop) {
+            int copyWidth = srcRight - srcLeft;
+            for (int srcY = srcTop; srcY < srcBottom; ++srcY) {
+                const QRgb *srcLine = reinterpret_cast<const QRgb*>(img.constScanLine(srcY));
+                QRgb *dstLine = reinterpret_cast<QRgb*>(sampleImage.scanLine(srcY - srcTop + dstOffsetY));
+                memcpy(dstLine + dstOffsetX, srcLine + srcLeft, copyWidth * sizeof(QRgb));
             }
         }
+
+        // 使用 IgnoreAspectRatio 確保填滿整個區域
+        m_magnifierPixmapCache = QPixmap::fromImage(sampleImage).scaled(magnifierSize, magnifierSize,
+            Qt::IgnoreAspectRatio,
+            Qt::FastTransformation);
+
+        m_cachedDevicePosition = currentDevicePos;
+        m_magnifierCacheValid = true;
     }
 
-    // 使用 IgnoreAspectRatio 確保填滿整個區域
-    QPixmap magnified = QPixmap::fromImage(sampleImage).scaled(magnifierSize, magnifierSize,
-        Qt::IgnoreAspectRatio,
-        Qt::FastTransformation);
+    // Draw cached magnified pixmap
+    painter.drawPixmap(magX, magY, m_magnifierPixmapCache);
 
-    painter.drawPixmap(magX, magY, magnified);
-
-    // 繪製網格線
-    painter.setPen(QPen(QColor(100, 100, 100, 100), 1));
-    int pixelSize = magnifierSize / gridCount;
-    for (int i = 1; i < gridCount; ++i) {
-        int xPos = magX + i * pixelSize;
-        int yPos = magY + i * pixelSize;
-        painter.drawLine(xPos, magY, xPos, magY + magnifierSize);
-        painter.drawLine(magX, yPos, magX + magnifierSize, yPos);
-    }
-
-    // 繪製中心十字標記
-    painter.setPen(QPen(QColor(65, 105, 225), 1));
-    int cx = magX + magnifierSize / 2;
-    int cy = magY + magnifierSize / 2;
-    painter.drawLine(cx - pixelSize / 2, cy, cx + pixelSize / 2, cy);
-    painter.drawLine(cx, cy - pixelSize / 2, cx, cy + pixelSize / 2);
+    // Draw cached grid overlay (pre-rendered in initializeMagnifierGridCache)
+    painter.drawPixmap(magX, magY, m_gridOverlayCache);
 
     // 2. 座標資訊
     int infoY = magY + magnifierSize + 8;
@@ -1225,7 +1266,19 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
         }
     }
 
-    update();
+    // Throttle magnifier updates when in pre-selection mode (only crosshair/magnifier visible)
+    // For selection, resize, move, and drawing operations, always update immediately
+    bool needsImmediateUpdate = m_isSelecting || m_isResizing || m_isMoving || m_isDrawing || m_selectionComplete;
+
+    if (needsImmediateUpdate) {
+        update();
+    } else {
+        // Magnifier-only mode: throttle to ~60fps
+        if (m_magnifierUpdateTimer.elapsed() >= MAGNIFIER_MIN_UPDATE_MS) {
+            m_magnifierUpdateTimer.restart();
+            update();
+        }
+    }
 }
 
 void RegionSelector::mouseReleaseEvent(QMouseEvent* event)
