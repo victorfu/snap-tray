@@ -71,6 +71,8 @@ set(SOURCES
     src/ColorPickerDialog.mm
     src/InlineTextEditor.cpp
     src/MagnifierOverlay.cpp
+    src/LaserPointerRenderer.cpp
+    src/ClickRippleRenderer.cpp
 )
 
 set(RESOURCES
@@ -98,6 +100,8 @@ set(HEADERS
     include/InlineTextEditor.h
     include/MagnifierOverlay.h
     include/PlatformFeatures.h
+    include/LaserPointerRenderer.h
+    include/ClickRippleRenderer.h
 )
 
 # Cross-platform source files (used by both platforms)

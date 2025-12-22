@@ -15,6 +15,8 @@ class ColorPaletteWidget;
 class ColorPickerDialog;
 class LineWidthWidget;
 class ColorAndWidthWidget;
+class LaserPointerRenderer;
+class ClickRippleRenderer;
 
 // Canvas tool types (simplified subset for screen canvas)
 enum class CanvasTool {
@@ -23,6 +25,8 @@ enum class CanvasTool {
     Arrow,
     Rectangle,
     Ellipse,
+    LaserPointer,
+    CursorHighlight,
     Undo,
     Redo,
     Clear,
@@ -110,6 +114,12 @@ private:
 
     // Color picker dialog
     ColorPickerDialog *m_colorPickerDialog;
+
+    // Laser pointer renderer
+    LaserPointerRenderer *m_laserRenderer;
+
+    // Click ripple renderer
+    ClickRippleRenderer *m_rippleRenderer;
 };
 
 #endif // SCREENCANVAS_H
