@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include <QString>
+#include <QIcon>
 
 class OCRManager;
 class WindowDetector;
@@ -19,6 +20,7 @@ public:
     WindowDetector* createWindowDetector(QObject* parent = nullptr) const;
 
     QString platformName() const;
+    QIcon createTrayIcon() const;
 
 private:
     PlatformFeatures();

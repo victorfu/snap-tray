@@ -1,6 +1,9 @@
 #include "PlatformFeatures.h"
 #include "OCRManager.h"
 #include "WindowDetector.h"
+#include <QPainter>
+#include <QPainterPath>
+#include <QPixmap>
 
 PlatformFeatures& PlatformFeatures::instance()
 {
@@ -45,4 +48,37 @@ WindowDetector* PlatformFeatures::createWindowDetector(QObject* parent) const
 QString PlatformFeatures::platformName() const
 {
     return QStringLiteral("Windows");
+}
+
+QIcon PlatformFeatures::createTrayIcon() const
+{
+    const int size = 32;
+    QPixmap pixmap(size, size);
+    pixmap.fill(Qt::transparent);
+
+    QPainter painter(&pixmap);
+    painter.setRenderHint(QPainter::Antialiasing);
+
+    // Capsule background - Indigo
+    QPainterPath bgPath;
+    bgPath.addRoundedRect(0, 0, size, size, size / 2, size / 2);
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(QColor("#6366F1"));
+    painter.drawPath(bgPath);
+
+    // Lightning bolt - Amber with light yellow stroke
+    QPainterPath lightningPath;
+    lightningPath.moveTo(19, 3);
+    lightningPath.lineTo(8, 17);
+    lightningPath.lineTo(15, 17);
+    lightningPath.lineTo(13, 29);
+    lightningPath.lineTo(24, 14);
+    lightningPath.lineTo(17, 14);
+    lightningPath.closeSubpath();
+
+    painter.setPen(QPen(QColor("#FEF3C7"), 1));
+    painter.setBrush(QColor("#FBBF24"));
+    painter.drawPath(lightningPath);
+
+    return QIcon(pixmap);
 }
