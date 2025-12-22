@@ -15,6 +15,7 @@ namespace {
 struct EnumWindowsContext {
     std::vector<DetectedElement> *windowCache;
     DWORD currentProcessId;
+    qreal devicePixelRatio;
 };
 
 QString getProcessName(DWORD processId)
@@ -74,16 +75,21 @@ BOOL CALLBACK enumWindowsProc(HWND hwnd, LPARAM lParam)
         return TRUE;
     }
 
-    // Get window bounds
+    // Get window bounds - prefer extended frame bounds for accurate visible area
+    // This excludes hidden borders on maximized windows, drop shadows, etc.
     RECT rect;
-    if (!GetWindowRect(hwnd, &rect)) {
-        return TRUE;
+    HRESULT hr = DwmGetWindowAttribute(hwnd, DWMWA_EXTENDED_FRAME_BOUNDS, &rect, sizeof(rect));
+    if (FAILED(hr)) {
+        // Fallback to GetWindowRect if DWM fails
+        if (!GetWindowRect(hwnd, &rect)) {
+            return TRUE;
+        }
     }
 
     int width = rect.right - rect.left;
     int height = rect.bottom - rect.top;
 
-    // Skip windows that are too small
+    // Skip windows that are too small (in physical pixels)
     if (width < 50 || height < 50) {
         return TRUE;
     }
@@ -101,9 +107,16 @@ BOOL CALLBACK enumWindowsProc(HWND hwnd, LPARAM lParam)
     // Get owner application name
     QString ownerApp = getProcessName(windowProcessId);
 
+    // Convert physical pixels to logical pixels for Qt coordinate system
+    qreal dpr = context->devicePixelRatio;
+    int logicalLeft = static_cast<int>(rect.left / dpr);
+    int logicalTop = static_cast<int>(rect.top / dpr);
+    int logicalWidth = static_cast<int>(width / dpr);
+    int logicalHeight = static_cast<int>(height / dpr);
+
     // Create DetectedElement
     DetectedElement element;
-    element.bounds = QRect(rect.left, rect.top, width, height);
+    element.bounds = QRect(logicalLeft, logicalTop, logicalWidth, logicalHeight);
     element.windowTitle = windowTitle;
     element.ownerApp = ownerApp;
     element.windowLayer = 0;  // Windows doesn't have explicit layers like macOS
@@ -164,6 +177,7 @@ void WindowDetector::enumerateWindows()
     EnumWindowsContext context;
     context.windowCache = &m_windowCache;
     context.currentProcessId = GetCurrentProcessId();
+    context.devicePixelRatio = m_currentScreen ? m_currentScreen->devicePixelRatio() : 1.0;
 
     // EnumWindows returns windows in z-order (topmost first)
     EnumWindows(enumWindowsProc, reinterpret_cast<LPARAM>(&context));
