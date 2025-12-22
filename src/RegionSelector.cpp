@@ -415,9 +415,6 @@ void RegionSelector::drawDetectedWindow(QPainter &painter)
         return;
     }
 
-    // Semi-transparent fill for detected window
-    painter.fillRect(m_highlightedWindowRect, QColor(0, 174, 255, 30));
-
     // Dashed border to distinguish from final selection
     QPen dashedPen(QColor(0, 174, 255), 2, Qt::DashLine);
     painter.setPen(dashedPen);
@@ -563,9 +560,9 @@ void RegionSelector::paintEvent(QPaintEvent*)
 void RegionSelector::drawOverlay(QPainter& painter)
 {
     QColor dimColor(0, 0, 0, 100);
-    QColor lightDimColor(0, 0, 0, 30);  // 輕微遮罩用於選取區域
 
     if ((m_isSelecting || m_selectionComplete) && m_selectionRect.isValid()) {
+        // 選取模式：選取區域外繪製 overlay
         QRect sel = m_selectionRect.normalized();
 
         // Top region
@@ -576,11 +573,22 @@ void RegionSelector::drawOverlay(QPainter& painter)
         painter.fillRect(QRect(0, sel.top(), sel.left(), sel.height()), dimColor);
         // Right region
         painter.fillRect(QRect(sel.right() + 1, sel.top(), width() - sel.right() - 1, sel.height()), dimColor);
+    }
+    else if (!m_highlightedWindowRect.isNull()) {
+        // 窗口偵測模式：偵測到的窗口區域外繪製 overlay
+        QRect win = m_highlightedWindowRect;
 
-        // 選取區域內也加上輕微遮罩，表示進入截圖模式
-        painter.fillRect(sel, lightDimColor);
+        // Top region
+        painter.fillRect(QRect(0, 0, width(), win.top()), dimColor);
+        // Bottom region
+        painter.fillRect(QRect(0, win.bottom() + 1, width(), height() - win.bottom() - 1), dimColor);
+        // Left region
+        painter.fillRect(QRect(0, win.top(), win.left(), win.height()), dimColor);
+        // Right region
+        painter.fillRect(QRect(win.right() + 1, win.top(), width() - win.right() - 1, win.height()), dimColor);
     }
     else {
+        // 無選取、無偵測窗口：整個畫面繪製 overlay
         painter.fillRect(rect(), dimColor);
     }
 }
