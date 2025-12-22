@@ -57,9 +57,12 @@ private:
     // Watermark UI elements
     QCheckBox *m_watermarkEnabledCheckbox;
     QComboBox *m_watermarkTypeCombo;
+    QLabel *m_watermarkTextLabel;
     QLineEdit *m_watermarkTextEdit;
+    QLabel *m_watermarkImageLabel;
     QLineEdit *m_watermarkImagePathEdit;
     QPushButton *m_watermarkBrowseBtn;
+    QLabel *m_watermarkScaleRowLabel;
     QSlider *m_watermarkImageScaleSlider;
     QLabel *m_watermarkImageScaleLabel;
     QSlider *m_watermarkOpacitySlider;

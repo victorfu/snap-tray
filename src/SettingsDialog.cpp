@@ -29,9 +29,12 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     , m_restoreDefaultsBtn(nullptr)
     , m_watermarkEnabledCheckbox(nullptr)
     , m_watermarkTypeCombo(nullptr)
+    , m_watermarkTextLabel(nullptr)
     , m_watermarkTextEdit(nullptr)
+    , m_watermarkImageLabel(nullptr)
     , m_watermarkImagePathEdit(nullptr)
     , m_watermarkBrowseBtn(nullptr)
+    , m_watermarkScaleRowLabel(nullptr)
     , m_watermarkImageScaleSlider(nullptr)
     , m_watermarkImageScaleLabel(nullptr)
     , m_watermarkOpacitySlider(nullptr)
@@ -164,18 +167,18 @@ void SettingsDialog::setupWatermarkTab(QWidget *tab)
 
     // Text input row
     QHBoxLayout *textLayout = new QHBoxLayout();
-    QLabel *textLabel = new QLabel("Text:", tab);
-    textLabel->setFixedWidth(60);
+    m_watermarkTextLabel = new QLabel("Text:", tab);
+    m_watermarkTextLabel->setFixedWidth(60);
     m_watermarkTextEdit = new QLineEdit(tab);
     m_watermarkTextEdit->setPlaceholderText("Enter watermark text...");
-    textLayout->addWidget(textLabel);
+    textLayout->addWidget(m_watermarkTextLabel);
     textLayout->addWidget(m_watermarkTextEdit);
     layout->addLayout(textLayout);
 
     // Image path row
     QHBoxLayout *imageLayout = new QHBoxLayout();
-    QLabel *imageLabel = new QLabel("Image:", tab);
-    imageLabel->setFixedWidth(60);
+    m_watermarkImageLabel = new QLabel("Image:", tab);
+    m_watermarkImageLabel->setFixedWidth(60);
     m_watermarkImagePathEdit = new QLineEdit(tab);
     m_watermarkImagePathEdit->setPlaceholderText("Select an image file...");
     m_watermarkImagePathEdit->setReadOnly(true);
@@ -188,15 +191,15 @@ void SettingsDialog::setupWatermarkTab(QWidget *tab)
             m_watermarkImagePathEdit->setText(filePath);
         }
     });
-    imageLayout->addWidget(imageLabel);
+    imageLayout->addWidget(m_watermarkImageLabel);
     imageLayout->addWidget(m_watermarkImagePathEdit);
     imageLayout->addWidget(m_watermarkBrowseBtn);
     layout->addLayout(imageLayout);
 
     // Image scale row
     QHBoxLayout *scaleLayout = new QHBoxLayout();
-    QLabel *scaleLabel = new QLabel("Scale:", tab);
-    scaleLabel->setFixedWidth(60);
+    m_watermarkScaleRowLabel = new QLabel("Scale:", tab);
+    m_watermarkScaleRowLabel->setFixedWidth(60);
     m_watermarkImageScaleSlider = new QSlider(Qt::Horizontal, tab);
     m_watermarkImageScaleSlider->setRange(10, 200);
     m_watermarkImageScaleSlider->setValue(100);
@@ -205,7 +208,7 @@ void SettingsDialog::setupWatermarkTab(QWidget *tab)
     connect(m_watermarkImageScaleSlider, &QSlider::valueChanged, this, [this](int value) {
         m_watermarkImageScaleLabel->setText(QString("%1%").arg(value));
     });
-    scaleLayout->addWidget(scaleLabel);
+    scaleLayout->addWidget(m_watermarkScaleRowLabel);
     scaleLayout->addWidget(m_watermarkImageScaleSlider);
     scaleLayout->addWidget(m_watermarkImageScaleLabel);
     layout->addLayout(scaleLayout);
@@ -268,17 +271,18 @@ void SettingsDialog::setupWatermarkTab(QWidget *tab)
 
 void SettingsDialog::updateWatermarkTypeVisibility(int index)
 {
+    Q_UNUSED(index);
     bool isText = (m_watermarkTypeCombo->currentData().toInt() == static_cast<int>(WatermarkRenderer::Text));
 
-    // Show/hide text-specific controls
+    // Show/hide text-specific controls (label + input)
+    m_watermarkTextLabel->setVisible(isText);
     m_watermarkTextEdit->setVisible(isText);
-    m_watermarkTextEdit->parentWidget()->layout()->itemAt(
-        m_watermarkTextEdit->parentWidget()->layout()->indexOf(m_watermarkTextEdit) - 1
-    );  // Label visibility handled by parent
 
-    // Show/hide image-specific controls
+    // Show/hide image-specific controls (label + path + browse + scale row)
+    m_watermarkImageLabel->setVisible(!isText);
     m_watermarkImagePathEdit->setVisible(!isText);
     m_watermarkBrowseBtn->setVisible(!isText);
+    m_watermarkScaleRowLabel->setVisible(!isText);
     m_watermarkImageScaleSlider->setVisible(!isText);
     m_watermarkImageScaleLabel->setVisible(!isText);
 }
