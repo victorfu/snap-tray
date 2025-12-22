@@ -3,6 +3,7 @@
 #include "IconRenderer.h"
 #include "ColorPaletteWidget.h"
 #include "LineWidthWidget.h"
+#include "ColorAndWidthWidget.h"
 #include "ColorPickerDialog.h"
 #include "OCRManager.h"
 #include "PlatformFeatures.h"
@@ -88,6 +89,18 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_lineWidthWidget->setCurrentWidth(m_annotationWidth);
     m_lineWidthWidget->setPreviewColor(m_annotationColor);
     connect(m_lineWidthWidget, &LineWidthWidget::widthChanged,
+            this, &RegionSelector::onLineWidthChanged);
+
+    // Initialize unified color and width widget
+    m_colorAndWidthWidget = new ColorAndWidthWidget(this);
+    m_colorAndWidthWidget->setCurrentColor(m_annotationColor);
+    m_colorAndWidthWidget->setCurrentWidth(m_annotationWidth);
+    m_colorAndWidthWidget->setWidthRange(1, 20);
+    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::colorSelected,
+            this, &RegionSelector::onColorSelected);
+    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::moreColorsRequested,
+            this, &RegionSelector::onMoreColorsRequested);
+    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::widthChanged,
             this, &RegionSelector::onLineWidthChanged);
 
     // Install application-level event filter to capture ESC even when window loses focus
@@ -228,6 +241,9 @@ void RegionSelector::onColorSelected(const QColor &color)
     // Update line width widget preview color
     m_lineWidthWidget->setPreviewColor(color);
 
+    // Update unified widget color
+    m_colorAndWidthWidget->setCurrentColor(color);
+
     // Update text editor color if currently editing
     if (m_textEditor->isEditing()) {
         m_textEditor->setColor(color);
@@ -245,6 +261,7 @@ void RegionSelector::onMoreColorsRequested()
             m_annotationColor = color;
             m_colorPalette->setCurrentColor(color);
             m_lineWidthWidget->setPreviewColor(color);
+            m_colorAndWidthWidget->setCurrentColor(color);
 
             // Update text editor color if currently editing
             if (m_textEditor->isEditing()) {
@@ -257,6 +274,9 @@ void RegionSelector::onMoreColorsRequested()
     }
 
     m_colorPickerDialog->setCurrentColor(m_annotationColor);
+
+    // Keep unified color/width widget in sync with current annotation color
+    m_colorAndWidthWidget->setCurrentColor(m_annotationColor);
 
     // Position at center of screen
     QPoint center = geometry().center();
@@ -281,6 +301,24 @@ void RegionSelector::onLineWidthChanged(int width)
     m_annotationWidth = width;
     qDebug() << "Line width changed:" << width;
     update();
+}
+
+bool RegionSelector::shouldShowColorAndWidthWidget() const
+{
+    if (!m_selectionComplete) return false;
+
+    // Show for tools that need either color or width (union of both)
+    switch (m_currentTool) {
+    case ToolbarButton::Pencil:      // Needs both
+    case ToolbarButton::Marker:      // Needs color only
+    case ToolbarButton::Arrow:       // Needs both
+    case ToolbarButton::Rectangle:   // Needs both
+    case ToolbarButton::Text:        // Needs color only
+    case ToolbarButton::StepBadge:   // Needs color only
+        return true;
+    default:
+        return false;
+    }
 }
 
 void RegionSelector::initializeForScreen(QScreen* screen)
@@ -462,25 +500,37 @@ void RegionSelector::paintEvent(QPaintEvent*)
             m_toolbar->setPositionForSelection(m_selectionRect.normalized(), height());
             m_toolbar->draw(painter);
 
-            if (shouldShowColorPalette()) {
-                m_colorPalette->setVisible(true);
-                m_colorPalette->updatePosition(m_toolbar->boundingRect(), false);  // Below toolbar for RegionSelector
-                m_colorPalette->draw(painter);
+            // Use unified color and width widget
+            if (shouldShowColorAndWidthWidget()) {
+                m_colorAndWidthWidget->setVisible(true);
+                m_colorAndWidthWidget->updatePosition(m_toolbar->boundingRect(), false);
+                m_colorAndWidthWidget->draw(painter);
             } else {
-                m_colorPalette->setVisible(false);
+                m_colorAndWidthWidget->setVisible(false);
             }
 
-            // Draw line width widget below color palette (for Pencil tool)
-            if (shouldShowLineWidthWidget()) {
-                m_lineWidthWidget->setVisible(true);
-                // Position below color palette if visible, otherwise below toolbar
-                QRect anchorRect = shouldShowColorPalette()
-                    ? m_colorPalette->boundingRect()
-                    : m_toolbar->boundingRect();
-                m_lineWidthWidget->updatePosition(anchorRect, false, width());
-                m_lineWidthWidget->draw(painter);
-            } else {
-                m_lineWidthWidget->setVisible(false);
+            // Legacy widgets (keep for compatibility, but hidden when unified widget is shown)
+            if (!shouldShowColorAndWidthWidget()) {
+                if (shouldShowColorPalette()) {
+                    m_colorPalette->setVisible(true);
+                    m_colorPalette->updatePosition(m_toolbar->boundingRect(), false);
+                    m_colorPalette->draw(painter);
+                } else {
+                    m_colorPalette->setVisible(false);
+                }
+
+                // Draw line width widget below color palette (for Pencil tool)
+                if (shouldShowLineWidthWidget()) {
+                    m_lineWidthWidget->setVisible(true);
+                    // Position below color palette if visible, otherwise below toolbar
+                    QRect anchorRect = shouldShowColorPalette()
+                        ? m_colorPalette->boundingRect()
+                        : m_toolbar->boundingRect();
+                    m_lineWidthWidget->updatePosition(anchorRect, false, width());
+                    m_lineWidthWidget->draw(painter);
+                } else {
+                    m_lineWidthWidget->setVisible(false);
+                }
             }
 
             m_toolbar->drawTooltip(painter);
@@ -929,16 +979,25 @@ void RegionSelector::mousePressEvent(QMouseEvent* event)
                 }
             }
 
-            // Check if clicked on color palette
-            if (shouldShowColorPalette() && m_colorPalette->handleClick(event->pos())) {
+            // Check if clicked on unified color and width widget
+            if (shouldShowColorAndWidthWidget() && m_colorAndWidthWidget->handleClick(event->pos())) {
                 update();
                 return;
             }
 
-            // Check if clicked on line width widget
-            if (shouldShowLineWidthWidget() && m_lineWidthWidget->handleMousePress(event->pos())) {
-                update();
-                return;
+            // Legacy widgets (only handle if unified widget not shown)
+            if (!shouldShowColorAndWidthWidget()) {
+                // Check if clicked on color palette
+                if (shouldShowColorPalette() && m_colorPalette->handleClick(event->pos())) {
+                    update();
+                    return;
+                }
+
+                // Check if clicked on line width widget
+                if (shouldShowLineWidthWidget() && m_lineWidthWidget->handleMousePress(event->pos())) {
+                    update();
+                    return;
+                }
             }
 
             // Check if clicked on toolbar
@@ -1084,27 +1143,45 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
     else if (m_selectionComplete) {
         bool colorPaletteHovered = false;
         bool lineWidthHovered = false;
+        bool unifiedWidgetHovered = false;
 
-        // Update hovered color swatch
-        if (shouldShowColorPalette()) {
-            if (m_colorPalette->updateHoveredSwatch(event->pos())) {
-                if (m_colorPalette->contains(event->pos())) {
-                    setCursor(Qt::PointingHandCursor);
-                    colorPaletteHovered = true;
-                }
-            } else if (m_colorPalette->contains(event->pos())) {
-                colorPaletteHovered = true;
+        // Update unified color and width widget
+        if (shouldShowColorAndWidthWidget()) {
+            if (m_colorAndWidthWidget->handleMouseMove(event->pos(), event->buttons() & Qt::LeftButton)) {
+                update();
+            }
+            if (m_colorAndWidthWidget->updateHovered(event->pos())) {
+                update();
+            }
+            if (m_colorAndWidthWidget->contains(event->pos())) {
+                setCursor(Qt::PointingHandCursor);
+                unifiedWidgetHovered = true;
             }
         }
 
-        // Update line width widget (handle dragging and hover)
-        if (shouldShowLineWidthWidget()) {
-            if (m_lineWidthWidget->handleMouseMove(event->pos(), event->buttons() & Qt::LeftButton)) {
-                update();
+        // Legacy widgets (only handle if unified widget not shown)
+        if (!shouldShowColorAndWidthWidget()) {
+            // Update hovered color swatch
+            if (shouldShowColorPalette()) {
+                if (m_colorPalette->updateHoveredSwatch(event->pos())) {
+                    if (m_colorPalette->contains(event->pos())) {
+                        setCursor(Qt::PointingHandCursor);
+                        colorPaletteHovered = true;
+                    }
+                } else if (m_colorPalette->contains(event->pos())) {
+                    colorPaletteHovered = true;
+                }
             }
-            if (m_lineWidthWidget->contains(event->pos())) {
-                setCursor(Qt::PointingHandCursor);
-                lineWidthHovered = true;
+
+            // Update line width widget (handle dragging and hover)
+            if (shouldShowLineWidthWidget()) {
+                if (m_lineWidthWidget->handleMouseMove(event->pos(), event->buttons() & Qt::LeftButton)) {
+                    update();
+                }
+                if (m_lineWidthWidget->contains(event->pos())) {
+                    setCursor(Qt::PointingHandCursor);
+                    lineWidthHovered = true;
+                }
             }
         }
 
@@ -1115,8 +1192,8 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
             if (hoveredButton >= 0) {
                 setCursor(Qt::PointingHandCursor);
             }
-            else if (colorPaletteHovered || lineWidthHovered) {
-                // Already set cursor for color swatch or line width widget
+            else if (colorPaletteHovered || lineWidthHovered || unifiedWidgetHovered) {
+                // Already set cursor for color swatch, line width widget, or unified widget
             }
             else if (isAnnotationTool(m_currentTool) && m_currentTool != ToolbarButton::Selection) {
                 setCursor(Qt::CrossCursor);
@@ -1127,7 +1204,7 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
                 updateCursorForHandle(handle);
             }
         }
-        else if (hoveredButton < 0 && !colorPaletteHovered && !lineWidthHovered && m_currentTool == ToolbarButton::Selection) {
+        else if (hoveredButton < 0 && !colorPaletteHovered && !lineWidthHovered && !unifiedWidgetHovered && m_currentTool == ToolbarButton::Selection) {
             // Update cursor for resize handles when not hovering button or color swatch
             ResizeHandle handle = getHandleAtPosition(event->pos());
             updateCursorForHandle(handle);
@@ -1185,7 +1262,10 @@ void RegionSelector::mouseReleaseEvent(QMouseEvent* event)
             finishAnnotation();
             update();
         }
-        else if (shouldShowLineWidthWidget() && m_lineWidthWidget->handleMouseRelease(event->pos())) {
+        else if (shouldShowColorAndWidthWidget() && m_colorAndWidthWidget->handleMouseRelease(event->pos())) {
+            update();
+        }
+        else if (!shouldShowColorAndWidthWidget() && shouldShowLineWidthWidget() && m_lineWidthWidget->handleMouseRelease(event->pos())) {
             update();
         }
     }
