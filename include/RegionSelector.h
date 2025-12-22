@@ -26,6 +26,7 @@ class PencilStroke;
 class MarkerStroke;
 class ArrowAnnotation;
 class RectangleAnnotation;
+class EllipseAnnotation;
 class MosaicAnnotation;
 class MosaicStroke;
 class StepBadgeAnnotation;
@@ -38,6 +39,7 @@ enum class ToolbarButton {
     Pencil,
     Marker,
     Rectangle,
+    Ellipse,
     Text,
     Mosaic,
     StepBadge,
@@ -179,6 +181,7 @@ private:
     std::unique_ptr<MarkerStroke> m_currentMarker;
     std::unique_ptr<ArrowAnnotation> m_currentArrow;
     std::unique_ptr<RectangleAnnotation> m_currentRectangle;
+    std::unique_ptr<EllipseAnnotation> m_currentEllipse;
     std::unique_ptr<MosaicStroke> m_currentMosaicStroke;
 
     // Eraser state

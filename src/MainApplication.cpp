@@ -3,15 +3,12 @@
 #include "CaptureManager.h"
 #include "PinWindowManager.h"
 #include "ScreenCanvasManager.h"
+#include "PlatformFeatures.h"
 
 #include <QSettings>
 #include <QSystemTrayIcon>
 #include <QMenu>
 #include <QAction>
-#include <QPixmap>
-#include <QIcon>
-#include <QPainter>
-#include <QPainterPath>
 #include <QCoreApplication>
 #include <QGuiApplication>
 #include <QScreen>
@@ -50,40 +47,8 @@ void MainApplication::initialize()
     // Create screen canvas manager
     m_screenCanvasManager = new ScreenCanvasManager(this);
 
-    // Create tray icon with cutout lightning bolt (32x32)
-    const int size = 32;
-    QPixmap pixmap(size, size);
-    pixmap.fill(Qt::transparent);
-
-    QPainter painter(&pixmap);
-    painter.setRenderHint(QPainter::Antialiasing);
-
-    // Create capsule/pill shape (fully rounded corners like iOS icon)
-    QPainterPath bgPath;
-    bgPath.addRoundedRect(0, 0, size, size, size / 2, size / 2);
-
-    // Create bold lightning bolt path (larger and more prominent)
-    QPainterPath lightningPath;
-    lightningPath.moveTo(19, 3);    // top
-    lightningPath.lineTo(8, 17);    // middle-left
-    lightningPath.lineTo(15, 17);   // middle
-    lightningPath.lineTo(13, 29);   // bottom
-    lightningPath.lineTo(24, 14);   // middle-right
-    lightningPath.lineTo(17, 14);   // back
-    lightningPath.closeSubpath();
-
-    // Subtract lightning from background (cutout effect)
-    QPainterPath finalPath = bgPath.subtracted(lightningPath);
-
-    // Draw the white shape with lightning cutout
-    painter.setPen(Qt::NoPen);
-    painter.setBrush(Qt::white);
-    painter.drawPath(finalPath);
-
-    painter.end();
-    QIcon icon(pixmap);
-
     // Create system tray icon
+    QIcon icon = PlatformFeatures::instance().createTrayIcon();
     m_trayIcon = new QSystemTrayIcon(icon, this);
 
     // Create context menu

@@ -57,6 +57,8 @@ SnapTray 是一個在系統托盤常駐的區域截圖小工具，預設以 F2 �
 
 ## 系統需求
 
+目前僅支援 macOS 與 Windows。
+
 ### macOS
 - macOS 10.15+
 - Qt 6（建議以 Homebrew 安裝）

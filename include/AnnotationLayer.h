@@ -99,6 +99,24 @@ private:
     bool m_filled;
 };
 
+// Ellipse/Circle annotation
+class EllipseAnnotation : public AnnotationItem
+{
+public:
+    EllipseAnnotation(const QRect &rect, const QColor &color, int width, bool filled = false);
+    void draw(QPainter &painter) const override;
+    QRect boundingRect() const override;
+    std::unique_ptr<AnnotationItem> clone() const override;
+
+    void setRect(const QRect &rect);
+
+private:
+    QRect m_rect;
+    QColor m_color;
+    int m_width;
+    bool m_filled;
+};
+
 // Text annotation
 class TextAnnotation : public AnnotationItem
 {

@@ -71,7 +71,6 @@ set(SOURCES
     src/ColorPickerDialog.mm
     src/InlineTextEditor.cpp
     src/MagnifierOverlay.cpp
-    src/SelectionController.cpp
 )
 
 set(RESOURCES
@@ -98,7 +97,6 @@ set(HEADERS
     include/ColorPickerDialog.h
     include/InlineTextEditor.h
     include/MagnifierOverlay.h
-    include/SelectionController.h
     include/PlatformFeatures.h
 )
 

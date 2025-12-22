@@ -154,10 +154,10 @@ private:
     IconColorProvider m_iconColorProvider;
 
     // Layout constants
-    static const int TOOLBAR_HEIGHT = 40;
-    static const int BUTTON_WIDTH = 36;
+    static const int TOOLBAR_HEIGHT = 32;
+    static const int BUTTON_WIDTH = 28;
     static const int BUTTON_SPACING = 2;
-    static const int SEPARATOR_WIDTH = 6;
+    static const int SEPARATOR_WIDTH = 4;
 };
 
 #endif // TOOLBARWIDGET_H

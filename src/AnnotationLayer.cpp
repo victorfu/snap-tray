@@ -289,6 +289,55 @@ void RectangleAnnotation::setRect(const QRect &rect)
 }
 
 // ============================================================================
+// EllipseAnnotation Implementation
+// ============================================================================
+
+EllipseAnnotation::EllipseAnnotation(const QRect &rect, const QColor &color, int width, bool filled)
+    : m_rect(rect)
+    , m_color(color)
+    , m_width(width)
+    , m_filled(filled)
+{
+}
+
+void EllipseAnnotation::draw(QPainter &painter) const
+{
+    painter.save();
+    QPen pen(m_color, m_width, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+    painter.setPen(pen);
+    painter.setRenderHint(QPainter::Antialiasing, true);
+
+    if (m_filled) {
+        QColor fillColor = m_color;
+        fillColor.setAlpha(50);
+        painter.setBrush(fillColor);
+    } else {
+        painter.setBrush(Qt::NoBrush);
+    }
+
+    QRect normalizedRect = m_rect.normalized();
+    painter.drawEllipse(normalizedRect);
+
+    painter.restore();
+}
+
+QRect EllipseAnnotation::boundingRect() const
+{
+    int margin = m_width / 2 + 1;
+    return m_rect.normalized().adjusted(-margin, -margin, margin, margin);
+}
+
+std::unique_ptr<AnnotationItem> EllipseAnnotation::clone() const
+{
+    return std::make_unique<EllipseAnnotation>(m_rect, m_color, m_width, m_filled);
+}
+
+void EllipseAnnotation::setRect(const QRect &rect)
+{
+    m_rect = rect;
+}
+
+// ============================================================================
 // TextAnnotation Implementation
 // ============================================================================
 

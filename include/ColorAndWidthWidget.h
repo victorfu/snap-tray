@@ -181,9 +181,9 @@ private:
     QRect m_labelRect;
 
     // Layout constants
-    static const int WIDGET_HEIGHT = 32;
-    static const int SWATCH_SIZE = 24;
-    static const int SWATCH_SPACING = 4;
+    static const int WIDGET_HEIGHT = 28;
+    static const int SWATCH_SIZE = 20;
+    static const int SWATCH_SPACING = 3;
     static const int SECTION_PADDING = 6;
     static const int SECTION_SPACING = 8;
     static const int SLIDER_WIDTH = 160;
