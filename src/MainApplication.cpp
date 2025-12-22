@@ -13,7 +13,6 @@
 #include <QGuiApplication>
 #include <QScreen>
 #include <QHotkey>
-#include <QTimer>
 #include <QDebug>
 
 MainApplication::MainApplication(QObject* parent)
@@ -21,8 +20,7 @@ MainApplication::MainApplication(QObject* parent)
     , m_trayIcon(nullptr)
     , m_trayMenu(nullptr)
     , m_regionHotkey(nullptr)
-    , m_doublePressTimer(nullptr)
-    , m_waitingForSecondPress(false)
+    , m_screenCanvasHotkey(nullptr)
     , m_captureManager(nullptr)
     , m_pinWindowManager(nullptr)
     , m_screenCanvasManager(nullptr)
@@ -80,12 +78,7 @@ void MainApplication::initialize()
     m_trayIcon->setToolTip("SnapTray - Screenshot Utility");
     m_trayIcon->show();
 
-    // Setup double-press timer for F2
-    m_doublePressTimer = new QTimer(this);
-    m_doublePressTimer->setSingleShot(true);
-    connect(m_doublePressTimer, &QTimer::timeout, this, &MainApplication::onDoublePressTimeout);
-
-    // Setup global hotkey
+    // Setup global hotkeys
     setupHotkey();
 
     qDebug() << "SnapTray initialized and running in system tray";
@@ -146,7 +139,7 @@ void MainApplication::onSettings()
 
 void MainApplication::setupHotkey()
 {
-    // Load hotkey from settings (default is F2)
+    // Load region capture hotkey from settings (default is F2)
     QString regionKeySequence = SettingsDialog::loadHotkey();
     m_regionHotkey = new QHotkey(QKeySequence(regionKeySequence), true, this);
 
@@ -157,35 +150,23 @@ void MainApplication::setupHotkey()
         qDebug() << "Failed to register region hotkey:" << regionKeySequence;
     }
 
-    // Connect to double-press handler instead of direct region capture
-    connect(m_regionHotkey, &QHotkey::activated, this, &MainApplication::onF2Pressed);
+    // Connect region hotkey directly to region capture
+    connect(m_regionHotkey, &QHotkey::activated, this, &MainApplication::onRegionCapture);
+
+    // Setup Screen Canvas hotkey (Ctrl+F2)
+    m_screenCanvasHotkey = new QHotkey(QKeySequence("Ctrl+F2"), true, this);
+
+    if (m_screenCanvasHotkey->isRegistered()) {
+        qDebug() << "Screen canvas hotkey registered: Ctrl+F2";
+    }
+    else {
+        qDebug() << "Failed to register screen canvas hotkey: Ctrl+F2";
+    }
+
+    connect(m_screenCanvasHotkey, &QHotkey::activated, this, &MainApplication::onScreenCanvas);
 
     // Update tray menu text with current hotkey
     updateTrayMenuHotkeyText(regionKeySequence);
-}
-
-void MainApplication::onF2Pressed()
-{
-    if (m_waitingForSecondPress && m_lastF2PressTime.elapsed() < 200) {
-        // Double-press detected -> Screen Canvas
-        m_doublePressTimer->stop();
-        m_waitingForSecondPress = false;
-        qDebug() << "Double F2 press detected -> Screen Canvas";
-        onScreenCanvas();
-    }
-    else {
-        // First press, wait for second
-        m_lastF2PressTime.restart();
-        m_waitingForSecondPress = true;
-        m_doublePressTimer->start(200);
-    }
-}
-
-void MainApplication::onDoublePressTimeout()
-{
-    m_waitingForSecondPress = false;
-    qDebug() << "Single F2 press -> Region Capture";
-    onRegionCapture();
 }
 
 bool MainApplication::updateHotkey(const QString& newHotkey)
@@ -238,6 +219,6 @@ void MainApplication::updateTrayMenuHotkeyText(const QString& hotkey)
         m_regionCaptureAction->setText(QString("Region Capture (%1)").arg(hotkey));
     }
     if (m_screenCanvasAction) {
-        m_screenCanvasAction->setText(QString("Screen Canvas (%1 x2)").arg(hotkey));
+        m_screenCanvasAction->setText("Screen Canvas (Ctrl+F2)");
     }
 }

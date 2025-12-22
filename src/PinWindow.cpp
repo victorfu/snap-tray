@@ -694,7 +694,10 @@ void PinWindow::wheelEvent(QWheelEvent *event)
 
 void PinWindow::contextMenuEvent(QContextMenuEvent *event)
 {
-    m_contextMenu->exec(event->globalPos());
+    // Use popup() instead of exec() to avoid blocking the event loop.
+    // This prevents UI freeze when global hotkeys (like F2) are pressed
+    // while the context menu is open.
+    m_contextMenu->popup(event->globalPos());
 }
 
 void PinWindow::keyPressEvent(QKeyEvent *event)

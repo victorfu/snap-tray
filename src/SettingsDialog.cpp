@@ -120,11 +120,11 @@ void SettingsDialog::setupHotkeysTab(QWidget *tab)
     captureLayout->addWidget(m_captureHotkeyStatus);
     layout->addLayout(captureLayout);
 
-    // Screen Canvas info row (fixed to double-press)
+    // Screen Canvas info row (fixed to Ctrl+F2)
     QHBoxLayout *canvasLayout = new QHBoxLayout();
     QLabel *canvasLabel = new QLabel("Screen Canvas:", tab);
     canvasLabel->setFixedWidth(120);
-    QLabel *canvasInfo = new QLabel("Double-press the hotkey above", tab);
+    QLabel *canvasInfo = new QLabel("Ctrl+F2", tab);
     canvasInfo->setStyleSheet("color: gray;");
     canvasLayout->addWidget(canvasLabel);
     canvasLayout->addWidget(canvasInfo);
