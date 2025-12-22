@@ -21,6 +21,9 @@ public:
     void setZoomLevel(qreal zoom);
     qreal zoomLevel() const { return m_zoomLevel; }
 
+    void setOpacity(qreal opacity);
+    qreal opacity() const { return m_opacity; }
+
     void rotateRight();  // Rotate clockwise by 90 degrees
     void rotateLeft();   // Rotate counter-clockwise by 90 degrees
     void flipHorizontal();  // Flip horizontally (mirror left-right)
@@ -67,6 +70,9 @@ private:
     // Zoom indicator
     void showZoomIndicator();
 
+    // Opacity indicator
+    void showOpacityIndicator();
+
     // OCR methods
     void performOCR();
     void onOCRComplete(bool success, const QString &text, const QString &error);
@@ -89,6 +95,11 @@ private:
     // Zoom indicator members
     QLabel *m_zoomLabel;
     QTimer *m_zoomLabelTimer;
+
+    // Opacity members
+    qreal m_opacity;
+    QLabel *m_opacityLabel;
+    QTimer *m_opacityLabelTimer;
 
     // Rotation members
     int m_rotationAngle;  // 0, 90, 180, 270 degrees

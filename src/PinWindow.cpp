@@ -36,6 +36,7 @@ PinWindow::PinWindow(const QPixmap &screenshot, const QPoint &position, QWidget 
     , m_flipVertical(false)
     , m_ocrManager(nullptr)
     , m_ocrInProgress(false)
+    , m_opacity(0.9)
 {
     // Frameless, always on top
     // Note: Removed Qt::Tool flag as it causes the window to hide when app loses focus on macOS
@@ -80,11 +81,31 @@ PinWindow::PinWindow(const QPixmap &screenshot, const QPoint &position, QWidget 
     m_zoomLabelTimer->setSingleShot(true);
     connect(m_zoomLabelTimer, &QTimer::timeout, m_zoomLabel, &QLabel::hide);
 
+    // Opacity indicator label
+    m_opacityLabel = new QLabel(this);
+    m_opacityLabel->setStyleSheet(
+        "QLabel {"
+        "  background-color: rgba(0, 0, 0, 180);"
+        "  color: white;"
+        "  padding: 4px 8px;"
+        "  border-radius: 4px;"
+        "  font-size: 12px;"
+        "}"
+    );
+    m_opacityLabel->hide();
+
+    m_opacityLabelTimer = new QTimer(this);
+    m_opacityLabelTimer->setSingleShot(true);
+    connect(m_opacityLabelTimer, &QTimer::timeout, m_opacityLabel, &QLabel::hide);
+
     // Must show() first, then move() to get correct positioning on macOS
     // Moving before show() can result in incorrect window placement
     // Offset position by shadow margin so the pixmap content appears at the expected location
     show();
     move(position - QPoint(kShadowMargin, kShadowMargin));
+
+    // Apply default opacity (90%)
+    setWindowOpacity(m_opacity);
 
     qDebug() << "PinWindow: Created with size" << m_displayPixmap.size()
              << "requested position" << position
@@ -100,6 +121,12 @@ void PinWindow::setZoomLevel(qreal zoom)
 {
     m_zoomLevel = qBound(0.1, zoom, 5.0);
     updateSize();
+}
+
+void PinWindow::setOpacity(qreal opacity)
+{
+    m_opacity = qBound(0.1, opacity, 1.0);
+    setWindowOpacity(m_opacity);
 }
 
 void PinWindow::rotateRight()
@@ -356,6 +383,18 @@ void PinWindow::showZoomIndicator()
     m_zoomLabelTimer->start(1500);
 }
 
+void PinWindow::showOpacityIndicator()
+{
+    m_opacityLabel->setText(QString("%1%").arg(qRound(m_opacity * 100)));
+    m_opacityLabel->adjustSize();
+    // Position at bottom-left corner (zoom indicator is at bottom-right)
+    m_opacityLabel->move(kShadowMargin + 8,
+                         height() - kShadowMargin - m_opacityLabel->height() - 8);
+    m_opacityLabel->show();
+    m_opacityLabel->raise();
+    m_opacityLabelTimer->start(1500);
+}
+
 void PinWindow::paintEvent(QPaintEvent *)
 {
     QPainter painter(this);
@@ -542,6 +581,27 @@ void PinWindow::mouseDoubleClickEvent(QMouseEvent *event)
 
 void PinWindow::wheelEvent(QWheelEvent *event)
 {
+    // Ctrl+Wheel = Opacity adjustment
+    if (event->modifiers() & Qt::ControlModifier) {
+        const qreal opacityStep = 0.05;
+        qreal oldOpacity = m_opacity;
+        qreal newOpacity = (event->angleDelta().y() > 0)
+                           ? m_opacity + opacityStep
+                           : m_opacity - opacityStep;
+        newOpacity = qBound(0.1, newOpacity, 1.0);
+
+        if (qFuzzyCompare(oldOpacity, newOpacity)) {
+            event->accept();
+            return;
+        }
+
+        setOpacity(newOpacity);
+        showOpacityIndicator();
+        event->accept();
+        return;
+    }
+
+    // Plain wheel = Zoom
     const qreal zoomStep = 0.1;
     qreal oldZoom = m_zoomLevel;
     qreal newZoom = (event->angleDelta().y() > 0)
