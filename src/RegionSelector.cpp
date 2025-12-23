@@ -1241,8 +1241,8 @@ void RegionSelector::mousePressEvent(QMouseEvent* event)
             update();
         }
         else {
-            emit selectionCancelled();
-            close();
+            // Before selection is made, right-click is a no-op (stay in Region Capture mode)
+            return;
         }
     }
 }
@@ -1575,6 +1575,13 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
     else if (event->matches(QKeySequence::Redo)) {
         if (m_selectionComplete && m_annotationLayer->canRedo()) {
             m_annotationLayer->redo();
+            update();
+        }
+    }
+    else if (event->key() == Qt::Key_Delete || event->key() == Qt::Key_Backspace) {
+        // Delete selected text annotation
+        if (m_selectionComplete && m_annotationLayer->selectedIndex() >= 0) {
+            m_annotationLayer->removeSelectedItem();
             update();
         }
     }

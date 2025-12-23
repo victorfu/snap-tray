@@ -266,6 +266,7 @@ public:
     int selectedIndex() const { return m_selectedIndex; }
     AnnotationItem* selectedItem();
     void clearSelection() { m_selectedIndex = -1; }
+    bool removeSelectedItem();
 
 signals:
     void changed();

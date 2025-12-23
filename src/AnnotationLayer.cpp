@@ -992,3 +992,20 @@ AnnotationItem* AnnotationLayer::selectedItem()
     }
     return nullptr;
 }
+
+bool AnnotationLayer::removeSelectedItem()
+{
+    if (m_selectedIndex < 0 || m_selectedIndex >= static_cast<int>(m_items.size())) {
+        return false;
+    }
+
+    // Move the item to redo stack for undo support
+    m_redoStack.clear();
+    m_redoStack.push_back(std::move(m_items[m_selectedIndex]));
+    m_items.erase(m_items.begin() + m_selectedIndex);
+
+    m_selectedIndex = -1;
+    renumberStepBadges();
+    emit changed();
+    return true;
+}
