@@ -116,6 +116,10 @@ BOOL CALLBACK enumWindowsProc(HWND hwnd, LPARAM lParam)
     if (wcscmp(className, L"#32768") == 0) {
         elementType = ElementType::ContextMenu;
     }
+    // System dialog windows have class "#32770"
+    else if (wcscmp(className, L"#32770") == 0) {
+        elementType = ElementType::Dialog;
+    }
     // Check for tool windows (tooltips, floating toolbars, menus)
     else if (exStyle & WS_EX_TOOLWINDOW) {
         // Tool windows with topmost flag near taskbar might be tray popups

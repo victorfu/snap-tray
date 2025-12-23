@@ -36,9 +36,26 @@ ElementType classifyElementType(int windowLayer, CFDictionaryRef windowInfo, CGR
         return ElementType::PopupMenu;
     }
 
-    // Layer > 25: Status bar items, control center, etc.
+    // Layer 26-99: Status bar items, control center, etc.
     if (windowLayer > 25 && windowLayer < 100) {
         return ElementType::StatusBarItem;
+    }
+
+    // Layer 100-105: Context Menus, Popups (NSPopUpMenuWindowLevel = 101)
+    if (windowLayer >= 100 && windowLayer <= 105) {
+        CFStringRef nameRef = (CFStringRef)CFDictionaryGetValue(windowInfo, kCGWindowName);
+        bool hasTitle = nameRef && CFStringGetLength(nameRef) > 0;
+
+        // Context menus typically have no title
+        if (!hasTitle) {
+            return ElementType::ContextMenu;
+        }
+        return ElementType::PopupMenu;
+    }
+
+    // Layer > 105: System dialogs, alerts, and other high-priority windows
+    if (windowLayer > 105) {
+        return ElementType::Dialog;
     }
 
     return ElementType::Unknown;
