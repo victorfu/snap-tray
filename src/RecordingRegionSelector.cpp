@@ -22,6 +22,7 @@ RecordingRegionSelector::RecordingRegionSelector(QWidget *parent)
     setMouseTracking(true);
     setCursor(Qt::CrossCursor);
     setAttribute(Qt::WA_DeleteOnClose);
+    setAttribute(Qt::WA_TranslucentBackground);
     setupButtons();
 }
 
@@ -38,27 +39,6 @@ void RecordingRegionSelector::initializeForScreen(QScreen *screen)
     qDebug() << "Screen name:" << screen->name();
     qDebug() << "Screen geometry:" << screen->geometry();
     qDebug() << "Screen devicePixelRatio:" << m_devicePixelRatio;
-
-    captureCurrentScreen();
-}
-
-void RecordingRegionSelector::captureCurrentScreen()
-{
-    if (!m_currentScreen) {
-        return;
-    }
-
-    // Capture the entire screen
-    // The pixmap will have DPR set by Qt (e.g., DPR=2 for Retina)
-    // We keep the DPR so Qt handles scaling correctly in drawPixmap(0, 0, pixmap)
-    m_backgroundPixmap = m_currentScreen->grabWindow(0);
-
-    qDebug() << "=== RecordingRegionSelector::captureCurrentScreen ===";
-    qDebug() << "Captured pixmap size (physical):" << m_backgroundPixmap.size();
-    qDebug() << "Captured pixmap devicePixelRatio:" << m_backgroundPixmap.devicePixelRatio();
-    qDebug() << "Screen DPR:" << m_devicePixelRatio;
-    qDebug() << "Widget size:" << size();
-    qDebug() << "Widget geometry:" << geometry();
 }
 
 void RecordingRegionSelector::paintEvent(QPaintEvent *event)
@@ -66,25 +46,7 @@ void RecordingRegionSelector::paintEvent(QPaintEvent *event)
     Q_UNUSED(event);
     QPainter painter(this);
 
-    static bool loggedOnce = false;
-    if (!loggedOnce) {
-        qDebug() << "=== RecordingRegionSelector::paintEvent (first time) ===";
-        qDebug() << "Widget size():" << size();
-        qDebug() << "Widget geometry():" << geometry();
-        qDebug() << "Pixmap size():" << m_backgroundPixmap.size();
-        qDebug() << "Pixmap devicePixelRatio():" << m_backgroundPixmap.devicePixelRatio();
-        qDebug() << "Drawing pixmap at (0,0) with size" << width() << "x" << height();
-        loggedOnce = true;
-    }
-
-    // Draw screenshot background
-    // The pixmap has DPR set (e.g., DPR=2), so Qt will handle scaling automatically
-    // A 3840x2160 pixmap with DPR=2 will be drawn as 1920x1080 logical pixels
-    if (!m_backgroundPixmap.isNull()) {
-        painter.drawPixmap(0, 0, m_backgroundPixmap);
-    }
-
-    // Draw semi-transparent overlay
+    // Draw semi-transparent overlay (only outside selection area)
     drawOverlay(painter);
 
     // Draw selection rectangle
@@ -102,16 +64,23 @@ void RecordingRegionSelector::paintEvent(QPaintEvent *event)
 
 void RecordingRegionSelector::drawOverlay(QPainter &painter)
 {
-    // Draw semi-transparent dark overlay over entire widget
-    painter.fillRect(rect(), QColor(0, 0, 0, 100));
+    QColor dimColor(0, 0, 0, 100);
 
-    // If we have a selection, redraw the background in that area (on top of overlay)
-    // This effectively "cuts out" the selection by drawing the original content over the darkened area
     if ((m_isSelecting || m_selectionComplete) && !m_selectionRect.isEmpty()) {
-        painter.save();
-        painter.setClipRect(m_selectionRect);
-        painter.drawPixmap(0, 0, m_backgroundPixmap);
-        painter.restore();
+        // Draw overlay only OUTSIDE the selection - selection area stays transparent
+        QRect sel = m_selectionRect.normalized();
+
+        // Top region
+        painter.fillRect(QRect(0, 0, width(), sel.top()), dimColor);
+        // Bottom region
+        painter.fillRect(QRect(0, sel.bottom() + 1, width(), height() - sel.bottom() - 1), dimColor);
+        // Left region
+        painter.fillRect(QRect(0, sel.top(), sel.left(), sel.height()), dimColor);
+        // Right region
+        painter.fillRect(QRect(sel.right() + 1, sel.top(), width() - sel.right() - 1, sel.height()), dimColor);
+    } else {
+        // No selection yet - entire screen is dimmed
+        painter.fillRect(rect(), dimColor);
     }
 }
 

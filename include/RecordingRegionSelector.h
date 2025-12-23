@@ -2,7 +2,6 @@
 #define RECORDINGREGIONSELECTOR_H
 
 #include <QWidget>
-#include <QPixmap>
 #include <QRect>
 #include <QPoint>
 
@@ -31,7 +30,6 @@ protected:
     void keyPressEvent(QKeyEvent *event) override;
 
 private:
-    void captureCurrentScreen();
     void drawOverlay(QPainter &painter);
     void drawSelection(QPainter &painter);
     void drawCrosshair(QPainter &painter);
@@ -41,7 +39,6 @@ private:
     void setupButtons();
     void positionButtons();
 
-    QPixmap m_backgroundPixmap;
     QScreen *m_currentScreen;
     qreal m_devicePixelRatio;
 
