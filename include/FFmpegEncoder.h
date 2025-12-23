@@ -38,6 +38,7 @@ public:
     bool isRunning() const;
     QString lastError() const;
     qint64 framesWritten() const;
+    QString outputPath() const { return m_outputPath; }
 
     static bool isFFmpegAvailable();
     static QString ffmpegPath();

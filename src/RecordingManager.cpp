@@ -63,6 +63,7 @@ RecordingManager::RecordingManager(QObject *parent)
     , m_pausedDuration(0)
     , m_pauseStartTime(0)
 {
+    cleanupStaleTempFiles();
 }
 
 RecordingManager::~RecordingManager()
@@ -488,11 +489,11 @@ void RecordingManager::stopRecording()
 
 void RecordingManager::cancelRecording()
 {
-    if (m_state != State::Recording && m_state != State::Paused) {
+    if (m_state != State::Recording && m_state != State::Paused && m_state != State::Encoding) {
         return;
     }
 
-    qDebug() << "RecordingManager: Cancelling recording";
+    qDebug() << "RecordingManager: Cancelling recording (state:" << static_cast<int>(m_state) << ")";
 
     stopFrameCapture();
 
@@ -705,10 +706,21 @@ void RecordingManager::onEncodingError(const QString &error)
 {
     qDebug() << "RecordingManager: Encoding error:" << error;
 
-    // Clean up encoder on error
+    // Get output path for cleanup before deleting encoder
+    QString outputPath;
     if (m_encoder) {
+        outputPath = m_encoder->outputPath();
         m_encoder->deleteLater();
         m_encoder = nullptr;
+    }
+
+    // Clean up temp file on error
+    if (!outputPath.isEmpty() && QFile::exists(outputPath)) {
+        if (QFile::remove(outputPath)) {
+            qDebug() << "RecordingManager: Removed temp file after error:" << outputPath;
+        } else {
+            qWarning() << "RecordingManager: Failed to remove temp file:" << outputPath;
+        }
     }
 
     setState(State::Idle);
@@ -731,4 +743,33 @@ QString RecordingManager::generateOutputPath() const
     QString filename = QString("SnapTray_Recording_%1.%2").arg(timestamp).arg(extension);
 
     return QDir(tempDir).filePath(filename);
+}
+
+void RecordingManager::cleanupStaleTempFiles()
+{
+    QString tempDir = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
+    QDir dir(tempDir);
+
+    // Clean up SnapTray recording temp files older than 24 hours
+    QStringList filters;
+    filters << "SnapTray_Recording_*.mp4" << "SnapTray_Recording_*.gif";
+
+    QFileInfoList files = dir.entryInfoList(filters, QDir::Files);
+    QDateTime threshold = QDateTime::currentDateTime().addDays(-1);
+
+    int cleanedCount = 0;
+    for (const QFileInfo &file : files) {
+        if (file.lastModified() < threshold) {
+            if (QFile::remove(file.absoluteFilePath())) {
+                qDebug() << "RecordingManager: Cleaned up stale temp file:" << file.fileName();
+                cleanedCount++;
+            } else {
+                qWarning() << "RecordingManager: Failed to clean up temp file:" << file.fileName();
+            }
+        }
+    }
+
+    if (cleanedCount > 0) {
+        qDebug() << "RecordingManager: Cleaned up" << cleanedCount << "stale temp file(s)";
+    }
 }

@@ -86,6 +86,7 @@ private:
     void finalizeRecordingSetup();     // Called after async encoder start
     void stopFrameCapture();
     void cleanupRecording();
+    void cleanupStaleTempFiles();      // Clean up old temp files on startup
     QString generateOutputPath() const;
     void setState(State newState);
     void showSaveDialog(const QString &tempOutputPath);
