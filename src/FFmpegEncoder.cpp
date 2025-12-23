@@ -3,6 +3,7 @@
 #include <QFile>
 #include <QImage>
 #include <QDebug>
+#include <QTimer>
 
 FFmpegEncoder::FFmpegEncoder(QObject *parent)
     : QObject(parent)
@@ -183,6 +184,13 @@ void FFmpegEncoder::writeFrame(const QPixmap &frame)
         return;
     }
 
+    // Backpressure handling: skip frame if buffer is too full
+    const qint64 maxBufferSize = 50 * 1024 * 1024; // 50MB
+    if (m_process->bytesToWrite() > maxBufferSize) {
+        qWarning() << "FFmpegEncoder: Buffer full, dropping frame";
+        return;
+    }
+
     // Scale to target size if needed
     QPixmap scaled = frame;
     if (frame.size() != m_frameSize) {
@@ -192,15 +200,22 @@ void FFmpegEncoder::writeFrame(const QPixmap &frame)
     // Convert to raw RGBA format
     QImage image = scaled.toImage().convertToFormat(QImage::Format_RGBA8888);
 
-    // Write raw pixel data to stdin
-    qint64 bytesWritten = m_process->write(
-        reinterpret_cast<const char*>(image.constBits()),
-        image.sizeInBytes());
+    // Write raw pixel data to stdin with partial write handling
+    const char* data = reinterpret_cast<const char*>(image.constBits());
+    qint64 totalBytes = image.sizeInBytes();
+    qint64 bytesWritten = 0;
 
-    if (bytesWritten > 0) {
-        m_framesWritten++;
-        emit progress(m_framesWritten);
+    while (bytesWritten < totalBytes) {
+        qint64 written = m_process->write(data + bytesWritten, totalBytes - bytesWritten);
+        if (written <= 0) {
+            qWarning() << "FFmpegEncoder: Write failed at byte" << bytesWritten << "of" << totalBytes;
+            return;
+        }
+        bytesWritten += written;
     }
+
+    m_framesWritten++;
+    emit progress(m_framesWritten);
 }
 
 void FFmpegEncoder::finish()
@@ -215,14 +230,21 @@ void FFmpegEncoder::finish()
     // Close stdin to signal end of input
     m_process->closeWriteChannel();
 
-    // Wait for FFmpeg to finish encoding (with timeout)
-    if (!m_process->waitForFinished(30000)) {
-        qDebug() << "FFmpegEncoder: Timeout waiting for FFmpeg, terminating";
-        m_process->terminate();
-        if (!m_process->waitForFinished(5000)) {
-            m_process->kill();
+    // Set up timeout timer instead of blocking waitForFinished
+    // The process will emit finished() signal when done, which is connected to onProcessFinished
+    QTimer::singleShot(30000, this, [this]() {
+        if (m_process && m_process->state() != QProcess::NotRunning) {
+            qDebug() << "FFmpegEncoder: Timeout waiting for FFmpeg, terminating";
+            m_process->terminate();
+            // Give it a few seconds to terminate gracefully, then force kill
+            QTimer::singleShot(5000, this, [this]() {
+                if (m_process && m_process->state() != QProcess::NotRunning) {
+                    qDebug() << "FFmpegEncoder: Force killing FFmpeg process";
+                    m_process->kill();
+                }
+            });
         }
-    }
+    });
 }
 
 void FFmpegEncoder::abort()
@@ -300,7 +322,8 @@ void FFmpegEncoder::onProcessFinished(int exitCode, QProcess::ExitStatus exitSta
         m_lastError = QString("FFmpeg exited with code %1").arg(exitCode);
         qDebug() << "FFmpegEncoder: Failed -" << m_lastError;
         emit finished(false, QString());
-        emit error(m_lastError);
+        // Note: Not emitting error() here to avoid duplicate signals.
+        // RecordingManager will call lastError() to get the error message.
     }
 
     // Clean up process

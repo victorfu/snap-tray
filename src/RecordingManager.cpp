@@ -59,7 +59,7 @@ void RecordingManager::setState(State newState)
 
 bool RecordingManager::isActive() const
 {
-    return isSelectingRegion() || isRecording() || isPaused();
+    return isSelectingRegion() || isRecording() || isPaused() || (m_state == State::Encoding);
 }
 
 bool RecordingManager::isRecording() const
@@ -84,8 +84,8 @@ void RecordingManager::startRegionSelection()
         return;
     }
 
-    if (m_state == State::Recording || m_state == State::Paused) {
-        qDebug() << "RecordingManager: Already recording";
+    if (m_state == State::Recording || m_state == State::Paused || m_state == State::Encoding) {
+        qDebug() << "RecordingManager: Already recording or encoding";
         return;
     }
 
@@ -131,9 +131,13 @@ void RecordingManager::onRegionSelected(const QRect &region, QScreen *screen)
     m_recordingRegion = region;
     m_targetScreen = screen;
 
-    // Load frame rate from settings
+    // Load frame rate from settings with validation
     QSettings settings("Victor Fu", "SnapTray");
     m_frameRate = settings.value("recording/framerate", 30).toInt();
+    if (m_frameRate <= 0 || m_frameRate > 120) {
+        qWarning() << "RecordingManager: Invalid frame rate" << m_frameRate << ", using default 30";
+        m_frameRate = 30;
+    }
 
     // Reset pause tracking
     m_pausedDuration = 0;
@@ -168,6 +172,18 @@ void RecordingManager::startFrameCapture()
     m_captureEngine = ICaptureEngine::createBestEngine(this);
     qDebug() << "RecordingManager::startFrameCapture() - Capture engine created:" << (m_captureEngine ? "valid" : "NULL");
 
+    // Forward capture engine warnings to UI
+    connect(m_captureEngine, &ICaptureEngine::warning,
+            this, &RecordingManager::recordingWarning);
+
+    // Connect capture engine error signal
+    connect(m_captureEngine, &ICaptureEngine::error,
+            this, [this](const QString &msg) {
+        qDebug() << "RecordingManager: Capture engine error:" << msg;
+        stopRecording();
+        emit recordingError(msg);
+    });
+
     qDebug() << "RecordingManager::startFrameCapture() - Setting region:" << m_recordingRegion
              << "screen:" << (m_targetScreen ? m_targetScreen->name() : "NULL");
     if (!m_captureEngine->setRegion(m_recordingRegion, m_targetScreen)) {
@@ -196,6 +212,15 @@ void RecordingManager::startFrameCapture()
 
     // Initialize FFmpeg encoder
     qDebug() << "RecordingManager::startFrameCapture() - Creating FFmpeg encoder...";
+
+    // Safety check: clean up any existing encoder (should not happen normally)
+    if (m_encoder) {
+        qWarning() << "RecordingManager: Previous encoder still exists, cleaning up";
+        disconnect(m_encoder, nullptr, this, nullptr);
+        m_encoder->deleteLater();
+        m_encoder = nullptr;
+    }
+
     m_encoder = new FFmpegEncoder(this);
     QString outputPath = generateOutputPath();
     qDebug() << "RecordingManager::startFrameCapture() - Output path:" << outputPath;
@@ -211,8 +236,15 @@ void RecordingManager::startFrameCapture()
     connect(m_encoder, &FFmpegEncoder::error,
             this, &RecordingManager::onEncodingError);
 
-    qDebug() << "RecordingManager::startFrameCapture() - Starting encoder with size:" << m_recordingRegion.size();
-    if (!m_encoder->start(outputPath, m_recordingRegion.size(), m_frameRate)) {
+    // Use physical pixel size for Retina/HiDPI displays
+    qreal scale = m_targetScreen ? m_targetScreen->devicePixelRatio() : 1.0;
+    QSize physicalSize(
+        static_cast<int>(m_recordingRegion.width() * scale),
+        static_cast<int>(m_recordingRegion.height() * scale)
+    );
+    qDebug() << "RecordingManager::startFrameCapture() - Starting encoder with physical size:" << physicalSize
+             << "(scale:" << scale << ", logical:" << m_recordingRegion.size() << ")";
+    if (!m_encoder->start(outputPath, physicalSize, m_frameRate)) {
         emit recordingError(m_encoder->lastError());
         delete m_encoder;
         m_encoder = nullptr;
@@ -457,6 +489,15 @@ void RecordingManager::onEncodingFinished(bool success, const QString &outputPat
 {
     qDebug() << "RecordingManager: Encoding finished, success:" << success << "path:" << outputPath;
 
+    // Get error message before deleting encoder
+    QString errorMsg;
+    if (!success && m_encoder) {
+        errorMsg = m_encoder->lastError();
+        if (errorMsg.isEmpty()) {
+            errorMsg = "Failed to encode video";
+        }
+    }
+
     // Use deleteLater to avoid deleting during signal emission
     if (m_encoder) {
         m_encoder->deleteLater();
@@ -473,24 +514,63 @@ void RecordingManager::onEncodingFinished(bool success, const QString &outputPat
             showSaveDialog(tempPath);
         }, Qt::QueuedConnection);
     } else {
-        emit recordingError("Failed to encode video");
+        emit recordingError(errorMsg);
     }
 }
 
 void RecordingManager::showSaveDialog(const QString &tempOutputPath)
 {
-    // Show save dialog
     QSettings settings("Victor Fu", "SnapTray");
-    QString defaultDir = settings.value("recording/outputPath").toString();
-    if (defaultDir.isEmpty()) {
-        defaultDir = QStandardPaths::writableLocation(QStandardPaths::MoviesLocation);
+
+    // Check auto-save setting
+    bool autoSave = settings.value("recording/autoSave", false).toBool();
+    QString outputDir = settings.value("recording/outputPath").toString();
+    if (outputDir.isEmpty()) {
+        outputDir = QStandardPaths::writableLocation(QStandardPaths::MoviesLocation);
     }
 
     // Get extension from current file
     QFileInfo fileInfo(tempOutputPath);
     QString extension = fileInfo.suffix();
+
+    if (autoSave) {
+        // Auto-save: generate filename and save directly without dialog
+        QString timestamp = QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss");
+        QString fileName = QString("SnapTray_Recording_%1.%2").arg(timestamp).arg(extension);
+        QString savePath = QDir(outputDir).filePath(fileName);
+
+        // Handle existing file by adding a counter
+        if (QFile::exists(savePath)) {
+            int counter = 1;
+            QString baseName = QString("SnapTray_Recording_%1").arg(timestamp);
+            while (QFile::exists(savePath)) {
+                fileName = QString("%1_%2.%3").arg(baseName).arg(counter++).arg(extension);
+                savePath = QDir(outputDir).filePath(fileName);
+            }
+        }
+
+        if (QFile::rename(tempOutputPath, savePath)) {
+            syncFile(savePath);
+            qDebug() << "RecordingManager: Auto-saved recording to:" << savePath;
+            emit recordingStopped(savePath);
+            return;
+        } else {
+            // Try copy + delete if rename fails (cross-filesystem)
+            if (QFile::copy(tempOutputPath, savePath)) {
+                QFile::remove(tempOutputPath);
+                syncFile(savePath);
+                qDebug() << "RecordingManager: Auto-saved (copied) recording to:" << savePath;
+                emit recordingStopped(savePath);
+                return;
+            }
+            // If auto-save fails, fall through to show dialog
+            qWarning() << "RecordingManager: Auto-save failed, showing save dialog";
+        }
+    }
+
+    // Show save dialog
     QString filter = (extension == "gif") ? "GIF Files (*.gif)" : "MP4 Files (*.mp4)";
-    QString defaultFileName = QDir(defaultDir).filePath(fileInfo.fileName());
+    QString defaultFileName = QDir(outputDir).filePath(fileInfo.fileName());
 
     QString savePath = QFileDialog::getSaveFileName(
         nullptr,
@@ -541,6 +621,13 @@ void RecordingManager::showSaveDialog(const QString &tempOutputPath)
 void RecordingManager::onEncodingError(const QString &error)
 {
     qDebug() << "RecordingManager: Encoding error:" << error;
+
+    // Clean up encoder on error
+    if (m_encoder) {
+        m_encoder->deleteLater();
+        m_encoder = nullptr;
+    }
+
     setState(State::Idle);
     emit recordingError(error);
 }

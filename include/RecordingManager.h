@@ -55,6 +55,7 @@ signals:
     void recordingStopped(const QString &outputPath);
     void recordingCancelled();
     void recordingError(const QString &error);
+    void recordingWarning(const QString &warning);
     void durationChanged(qint64 elapsedMs);
     void recordingPaused();
     void recordingResumed();

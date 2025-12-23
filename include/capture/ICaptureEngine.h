@@ -91,6 +91,12 @@ signals:
      */
     void error(const QString &message);
 
+    /**
+     * @brief Emitted when a non-fatal warning occurs
+     * @param message Warning description
+     */
+    void warning(const QString &message);
+
 protected:
     QRect m_captureRegion;
     QScreen *m_targetScreen = nullptr;

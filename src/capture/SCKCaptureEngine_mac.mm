@@ -295,29 +295,43 @@ bool SCKCaptureEngine::start()
             qDebug() << "SCKCaptureEngine::start() - Target screen name:" << d->targetScreen->name();
             qDebug() << "SCKCaptureEngine::start() - Target screen geometry:" << d->targetScreen->geometry();
 
-            // Get display ID from screen name or use main display
-            for (QScreen *screen : QGuiApplication::screens()) {
-                qDebug() << "SCKCaptureEngine::start() - Checking QScreen:" << screen->name();
-                if (screen == d->targetScreen) {
-                    qDebug() << "SCKCaptureEngine::start() - Found matching QScreen";
-                    // Try to find matching display
-                    for (NSScreen *s in [NSScreen screens]) {
-                        QString nsScreenName = QString::fromNSString(s.localizedName);
-                        qDebug() << "SCKCaptureEngine::start() - Checking NSScreen:" << nsScreenName;
-                        if (nsScreenName == screen->name()) {
-                            NSDictionary *desc = s.deviceDescription;
-                            targetDisplayID = [[desc objectForKey:@"NSScreenNumber"] unsignedIntValue];
-                            qDebug() << "SCKCaptureEngine::start() - Found matching NSScreen, displayID:" << targetDisplayID;
-                            break;
-                        }
-                    }
+            // Match display by geometry position instead of name (more reliable)
+            // NSScreen.localizedName uses localized strings which may not match QScreen::name()
+            QRect targetGeom = d->targetScreen->geometry();
+            qDebug() << "SCKCaptureEngine::start() - Matching by geometry:" << targetGeom;
+
+            // Get all active displays and match by position
+            uint32_t displayCount = 0;
+            CGDirectDisplayID displays[16];
+            CGGetActiveDisplayList(16, displays, &displayCount);
+
+            qDebug() << "SCKCaptureEngine::start() - Active displays:" << displayCount;
+
+            for (uint32_t i = 0; i < displayCount; i++) {
+                CGRect displayBounds = CGDisplayBounds(displays[i]);
+                qDebug() << "SCKCaptureEngine::start() - Display" << i << "ID:" << displays[i]
+                         << "bounds: x=" << displayBounds.origin.x
+                         << "y=" << displayBounds.origin.y
+                         << "w=" << displayBounds.size.width
+                         << "h=" << displayBounds.size.height;
+
+                // CGDisplayBounds returns logical coordinates, same as QScreen::geometry()
+                if (static_cast<int>(displayBounds.origin.x) == targetGeom.x() &&
+                    static_cast<int>(displayBounds.origin.y) == targetGeom.y() &&
+                    static_cast<int>(displayBounds.size.width) == targetGeom.width() &&
+                    static_cast<int>(displayBounds.size.height) == targetGeom.height()) {
+                    targetDisplayID = displays[i];
+                    qDebug() << "SCKCaptureEngine::start() - Matched display by geometry, ID:" << targetDisplayID;
                     break;
                 }
             }
 
             if (targetDisplayID == 0) {
+                qWarning() << "SCKCaptureEngine: Could not match screen by geometry, using main display";
                 targetDisplayID = CGMainDisplayID();
                 qDebug() << "SCKCaptureEngine::start() - Using main display ID:" << targetDisplayID;
+                // Emit warning to user about fallback
+                emit warning(tr("Could not match the selected screen. Recording from main display instead."));
             }
 
             // Find SCDisplay matching the target

@@ -90,7 +90,16 @@ bool DXGICaptureEngine::Private::initializeDXGI()
     UINT outputIndex = 0;
 
     // Try to find matching output by position
+    // Note: QScreen::geometry() returns logical coordinates, but DXGI uses physical coordinates
+    // We need to convert using devicePixelRatio for HiDPI displays
     QRect screenGeom = targetScreen->geometry();
+    qreal dpr = targetScreen->devicePixelRatio();
+    QRect physicalGeom(
+        static_cast<int>(screenGeom.x() * dpr),
+        static_cast<int>(screenGeom.y() * dpr),
+        static_cast<int>(screenGeom.width() * dpr),
+        static_cast<int>(screenGeom.height() * dpr)
+    );
     bool foundMatch = false;
 
     while (adapter->EnumOutputs(outputIndex, &output) != DXGI_ERROR_NOT_FOUND) {
@@ -104,7 +113,8 @@ bool DXGICaptureEngine::Private::initializeDXGI()
             desc.DesktopCoordinates.bottom - desc.DesktopCoordinates.top
         );
 
-        if (outputRect == screenGeom) {
+        // Compare using physical coordinates for HiDPI compatibility
+        if (outputRect == physicalGeom) {
             outputDesc = desc;
             foundMatch = true;
             break;
@@ -181,31 +191,35 @@ QImage DXGICaptureEngine::Private::captureWithBitBlt()
     HDC hdcScreen = GetDC(NULL);
     HDC hdcMem = CreateCompatibleDC(hdcScreen);
 
-    int width = captureRegion.width();
-    int height = captureRegion.height();
+    // Convert logical coordinates to physical coordinates for HiDPI
+    qreal dpr = targetScreen ? targetScreen->devicePixelRatio() : 1.0;
+    int physX = static_cast<int>(captureRegion.x() * dpr);
+    int physY = static_cast<int>(captureRegion.y() * dpr);
+    int physWidth = static_cast<int>(captureRegion.width() * dpr);
+    int physHeight = static_cast<int>(captureRegion.height() * dpr);
 
-    HBITMAP hBitmap = CreateCompatibleBitmap(hdcScreen, width, height);
+    HBITMAP hBitmap = CreateCompatibleBitmap(hdcScreen, physWidth, physHeight);
     HGDIOBJ hOld = SelectObject(hdcMem, hBitmap);
 
-    // Capture screen region
-    BitBlt(hdcMem, 0, 0, width, height,
-           hdcScreen, captureRegion.x(), captureRegion.y(),
+    // Capture screen region using physical coordinates
+    BitBlt(hdcMem, 0, 0, physWidth, physHeight,
+           hdcScreen, physX, physY,
            SRCCOPY | CAPTUREBLT);
 
     SelectObject(hdcMem, hOld);
 
-    // Convert to QImage
+    // Convert to QImage using physical dimensions
     BITMAPINFO bmi;
     ZeroMemory(&bmi, sizeof(bmi));
     bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-    bmi.bmiHeader.biWidth = width;
-    bmi.bmiHeader.biHeight = -height;  // Top-down
+    bmi.bmiHeader.biWidth = physWidth;
+    bmi.bmiHeader.biHeight = -physHeight;  // Top-down
     bmi.bmiHeader.biPlanes = 1;
     bmi.bmiHeader.biBitCount = 32;
     bmi.bmiHeader.biCompression = BI_RGB;
 
-    QImage image(width, height, QImage::Format_ARGB32);
-    GetDIBits(hdcMem, hBitmap, 0, height, image.bits(), &bmi, DIB_RGB_COLORS);
+    QImage image(physWidth, physHeight, QImage::Format_ARGB32);
+    GetDIBits(hdcMem, hBitmap, 0, physHeight, image.bits(), &bmi, DIB_RGB_COLORS);
 
     DeleteObject(hBitmap);
     DeleteDC(hdcMem);
@@ -278,12 +292,19 @@ QImage DXGICaptureEngine::Private::captureWithDXGI()
         QImage::Format_ARGB32
     );
 
-    // Calculate region relative to output
-    int relX = captureRegion.x() - outputDesc.DesktopCoordinates.left;
-    int relY = captureRegion.y() - outputDesc.DesktopCoordinates.top;
+    // Calculate region relative to output in physical coordinates
+    // captureRegion is in logical coordinates, DXGI texture is in physical coordinates
+    qreal dpr = targetScreen ? targetScreen->devicePixelRatio() : 1.0;
+    int physX = static_cast<int>(captureRegion.x() * dpr);
+    int physY = static_cast<int>(captureRegion.y() * dpr);
+    int physWidth = static_cast<int>(captureRegion.width() * dpr);
+    int physHeight = static_cast<int>(captureRegion.height() * dpr);
+
+    int relX = physX - outputDesc.DesktopCoordinates.left;
+    int relY = physY - outputDesc.DesktopCoordinates.top;
 
     // Crop to capture region and deep copy
-    lastFrame = fullImage.copy(relX, relY, captureRegion.width(), captureRegion.height());
+    lastFrame = fullImage.copy(relX, relY, physWidth, physHeight);
 
     context->Unmap(stagingTexture.Get(), 0);
     duplication->ReleaseFrame();
