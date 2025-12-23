@@ -19,6 +19,8 @@
 
 static const char* SETTINGS_KEY_HOTKEY = "hotkey";
 static const char* DEFAULT_HOTKEY = "F2";
+static const char* SETTINGS_KEY_SCREEN_CANVAS_HOTKEY = "screenCanvasHotkey";
+static const char* DEFAULT_SCREEN_CANVAS_HOTKEY = "Ctrl+F2";
 
 SettingsDialog::SettingsDialog(QWidget *parent)
     : QDialog(parent)
@@ -26,6 +28,8 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     , m_startOnLoginCheckbox(nullptr)
     , m_hotkeyEdit(nullptr)
     , m_captureHotkeyStatus(nullptr)
+    , m_screenCanvasHotkeyEdit(nullptr)
+    , m_screenCanvasHotkeyStatus(nullptr)
     , m_restoreDefaultsBtn(nullptr)
     , m_watermarkEnabledCheckbox(nullptr)
     , m_watermarkTypeCombo(nullptr)
@@ -42,7 +46,7 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     , m_watermarkPositionCombo(nullptr)
 {
     setWindowTitle("SnapTray Settings");
-    setFixedSize(520, 360);
+    setMinimumSize(520, 360);
     setupUi();
 
     connect(this, &QDialog::accepted, this, &SettingsDialog::onAccepted);
@@ -120,15 +124,18 @@ void SettingsDialog::setupHotkeysTab(QWidget *tab)
     captureLayout->addWidget(m_captureHotkeyStatus);
     layout->addLayout(captureLayout);
 
-    // Screen Canvas info row (fixed to Ctrl+F2)
+    // Screen Canvas hotkey row
     QHBoxLayout *canvasLayout = new QHBoxLayout();
     QLabel *canvasLabel = new QLabel("Screen Canvas:", tab);
     canvasLabel->setFixedWidth(120);
-    QLabel *canvasInfo = new QLabel("Ctrl+F2", tab);
-    canvasInfo->setStyleSheet("color: gray;");
+    m_screenCanvasHotkeyEdit = new QKeySequenceEdit(tab);
+    m_screenCanvasHotkeyEdit->setKeySequence(QKeySequence(loadScreenCanvasHotkey()));
+    m_screenCanvasHotkeyStatus = new QLabel(tab);
+    m_screenCanvasHotkeyStatus->setFixedSize(24, 24);
+    m_screenCanvasHotkeyStatus->setAlignment(Qt::AlignCenter);
     canvasLayout->addWidget(canvasLabel);
-    canvasLayout->addWidget(canvasInfo);
-    canvasLayout->addStretch();
+    canvasLayout->addWidget(m_screenCanvasHotkeyEdit);
+    canvasLayout->addWidget(m_screenCanvasHotkeyStatus);
     layout->addLayout(canvasLayout);
 
     layout->addStretch();
@@ -347,6 +354,7 @@ void SettingsDialog::updateCaptureHotkeyStatus(bool isRegistered)
 void SettingsDialog::onRestoreDefaults()
 {
     m_hotkeyEdit->setKeySequence(QKeySequence(DEFAULT_HOTKEY));
+    m_screenCanvasHotkeyEdit->setKeySequence(QKeySequence(DEFAULT_SCREEN_CANVAS_HOTKEY));
 }
 
 QString SettingsDialog::defaultHotkey()
@@ -367,14 +375,37 @@ void SettingsDialog::saveHotkey(const QString &keySequence)
     qDebug() << "Hotkey saved:" << keySequence;
 }
 
+QString SettingsDialog::defaultScreenCanvasHotkey()
+{
+    return QString(DEFAULT_SCREEN_CANVAS_HOTKEY);
+}
+
+QString SettingsDialog::loadScreenCanvasHotkey()
+{
+    QSettings settings("Victor Fu", "SnapTray");
+    return settings.value(SETTINGS_KEY_SCREEN_CANVAS_HOTKEY, DEFAULT_SCREEN_CANVAS_HOTKEY).toString();
+}
+
+void SettingsDialog::updateScreenCanvasHotkeyStatus(bool isRegistered)
+{
+    updateHotkeyStatus(m_screenCanvasHotkeyStatus, isRegistered);
+}
+
 void SettingsDialog::onSave()
 {
     QString newHotkey = m_hotkeyEdit->keySequence().toString();
+    QString newScreenCanvasHotkey = m_screenCanvasHotkeyEdit->keySequence().toString();
 
-    // Validate hotkey is not empty
+    // Validate hotkeys are not empty
     if (newHotkey.isEmpty()) {
         QMessageBox::warning(this, "Invalid Hotkey",
             "Capture hotkey cannot be empty. Please set a valid key combination.");
+        return;
+    }
+
+    if (newScreenCanvasHotkey.isEmpty()) {
+        QMessageBox::warning(this, "Invalid Hotkey",
+            "Screen Canvas hotkey cannot be empty. Please set a valid key combination.");
         return;
     }
 
@@ -402,8 +433,9 @@ void SettingsDialog::onSave()
     watermarkSettings.imageScale = m_watermarkImageScaleSlider->value();
     WatermarkRenderer::saveSettings(watermarkSettings);
 
-    // Request hotkey change (MainApplication handles registration)
+    // Request hotkey changes (MainApplication handles registration)
     emit hotkeyChangeRequested(newHotkey);
+    emit screenCanvasHotkeyChangeRequested(newScreenCanvasHotkey);
 
     // Close dialog (non-modal mode)
     accept();

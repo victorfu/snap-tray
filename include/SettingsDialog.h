@@ -26,12 +26,18 @@ public:
     static QString loadHotkey();
     static void saveHotkey(const QString &keySequence);
 
+    // Screen Canvas hotkey settings
+    static QString defaultScreenCanvasHotkey();
+    static QString loadScreenCanvasHotkey();
+
     // Status display
     void showHotkeyError(const QString &message);
     void updateCaptureHotkeyStatus(bool isRegistered);
+    void updateScreenCanvasHotkeyStatus(bool isRegistered);
 
 signals:
     void hotkeyChangeRequested(const QString &newHotkey);
+    void screenCanvasHotkeyChangeRequested(const QString &newHotkey);
     void startOnLoginChanged(bool enabled);
 
 private slots:
@@ -52,6 +58,8 @@ private:
     QCheckBox *m_startOnLoginCheckbox;
     QKeySequenceEdit *m_hotkeyEdit;
     QLabel *m_captureHotkeyStatus;
+    QKeySequenceEdit *m_screenCanvasHotkeyEdit;
+    QLabel *m_screenCanvasHotkeyStatus;
     QPushButton *m_restoreDefaultsBtn;
 
     // Watermark UI elements

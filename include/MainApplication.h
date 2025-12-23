@@ -30,6 +30,7 @@ private slots:
 
 public:
     bool updateHotkey(const QString &newHotkey);
+    bool updateScreenCanvasHotkey(const QString &newHotkey);
 
 private:
     void setupHotkey();
