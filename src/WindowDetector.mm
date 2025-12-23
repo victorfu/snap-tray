@@ -7,10 +7,88 @@
 #import <CoreGraphics/CoreGraphics.h>
 #import <AppKit/AppKit.h>
 
+namespace {
+
+// Classify element type based on window layer and characteristics
+ElementType classifyElementType(int windowLayer, CFDictionaryRef windowInfo, CGRect bounds)
+{
+    // Layer 0-8: Normal windows and floating panels
+    if (windowLayer <= 8) {
+        return ElementType::Window;
+    }
+
+    // Layer 20-25: Menus, context menus, and popups
+    if (windowLayer >= 20 && windowLayer <= 25) {
+        // Context menus typically have no title
+        CFStringRef nameRef = (CFStringRef)CFDictionaryGetValue(windowInfo, kCGWindowName);
+        bool hasTitle = nameRef && CFStringGetLength(nameRef) > 0;
+
+        // Check position - status bar popups appear near the top of screen (menu bar area)
+        if (bounds.origin.y < 30) {
+            return ElementType::StatusBarItem;
+        }
+
+        // Menus without titles are likely context menus
+        if (!hasTitle) {
+            return ElementType::ContextMenu;
+        }
+
+        return ElementType::PopupMenu;
+    }
+
+    // Layer > 25: Status bar items, control center, etc.
+    if (windowLayer > 25 && windowLayer < 100) {
+        return ElementType::StatusBarItem;
+    }
+
+    return ElementType::Unknown;
+}
+
+// Check if element type should be included based on detection flags
+bool shouldIncludeElementType(ElementType type, DetectionFlags flags)
+{
+    switch (type) {
+    case ElementType::Window:
+        return flags.testFlag(DetectionFlag::Windows);
+    case ElementType::ContextMenu:
+        return flags.testFlag(DetectionFlag::ContextMenus);
+    case ElementType::PopupMenu:
+        return flags.testFlag(DetectionFlag::PopupMenus);
+    case ElementType::Dialog:
+        return flags.testFlag(DetectionFlag::Dialogs);
+    case ElementType::StatusBarItem:
+        return flags.testFlag(DetectionFlag::StatusBarItems);
+    case ElementType::Unknown:
+        return false;
+    }
+    return false;
+}
+
+// Get minimum size for element type
+int getMinimumSize(ElementType type)
+{
+    switch (type) {
+    case ElementType::Window:
+        return 50;
+    case ElementType::ContextMenu:
+    case ElementType::PopupMenu:
+    case ElementType::StatusBarItem:
+        return 20;
+    case ElementType::Dialog:
+        return 30;
+    case ElementType::Unknown:
+        return 50;
+    }
+    return 50;
+}
+
+} // anonymous namespace
+
 WindowDetector::WindowDetector(QObject *parent)
     : QObject(parent)
     , m_currentScreen(nullptr)
     , m_enabled(true)
+    , m_detectionFlags(DetectionFlag::All)
 {
 }
 
@@ -49,6 +127,16 @@ bool WindowDetector::isEnabled() const
     return m_enabled;
 }
 
+void WindowDetector::setDetectionFlags(DetectionFlags flags)
+{
+    m_detectionFlags = flags;
+}
+
+DetectionFlags WindowDetector::detectionFlags() const
+{
+    return m_detectionFlags;
+}
+
 void WindowDetector::refreshWindowList()
 {
     m_windowCache.clear();
@@ -64,11 +152,15 @@ void WindowDetector::refreshWindowList()
 
 void WindowDetector::enumerateWindows()
 {
-    // Get list of all on-screen windows
-    CFArrayRef windowList = CGWindowListCopyWindowInfo(
-        kCGWindowListOptionOnScreenOnly | kCGWindowListExcludeDesktopElements,
-        kCGNullWindowID
-    );
+    // Determine CGWindowList options based on detection flags
+    // When detecting system UI, we need to include all windows (not exclude desktop elements)
+    CGWindowListOption options = kCGWindowListOptionOnScreenOnly;
+    bool detectingSystemUI = m_detectionFlags & DetectionFlag::AllSystemUI;
+    if (!detectingSystemUI) {
+        options |= kCGWindowListExcludeDesktopElements;
+    }
+
+    CFArrayRef windowList = CGWindowListCopyWindowInfo(options, kCGNullWindowID);
 
     if (!windowList) {
         qWarning() << "WindowDetector: Failed to get window list";
@@ -95,20 +187,14 @@ void WindowDetector::enumerateWindows()
             continue;
         }
 
-        // Get window layer - skip windows that are not normal windows (e.g., menu bar, dock)
+        // Get window layer
         CFNumberRef layerRef = (CFNumberRef)CFDictionaryGetValue(windowInfo, kCGWindowLayer);
         int windowLayer = 0;
         if (layerRef) {
             CFNumberGetValue(layerRef, kCFNumberIntType, &windowLayer);
         }
 
-        // Layer 0 is normal windows, skip system UI elements (menu bar is layer 25, etc.)
-        // We allow layers 0-8 which covers normal windows and some floating panels
-        if (windowLayer > 8) {
-            continue;
-        }
-
-        // Get window bounds
+        // Get window bounds early for element type classification
         CFDictionaryRef boundsDict = (CFDictionaryRef)CFDictionaryGetValue(windowInfo, kCGWindowBounds);
         if (!boundsDict) {
             continue;
@@ -119,8 +205,17 @@ void WindowDetector::enumerateWindows()
             continue;
         }
 
-        // Skip windows that are too small (likely invisible or utility windows)
-        if (cgBounds.size.width < 50 || cgBounds.size.height < 50) {
+        // Classify element type based on layer and characteristics
+        ElementType elementType = classifyElementType(windowLayer, windowInfo, cgBounds);
+
+        // Check if this element type should be included based on detection flags
+        if (!shouldIncludeElementType(elementType, m_detectionFlags)) {
+            continue;
+        }
+
+        // Get minimum size based on element type
+        int minSize = getMinimumSize(elementType);
+        if (cgBounds.size.width < minSize || cgBounds.size.height < minSize) {
             continue;
         }
 
@@ -161,6 +256,7 @@ void WindowDetector::enumerateWindows()
         element.ownerApp = ownerApp;
         element.windowLayer = windowLayer;
         element.windowId = windowId;
+        element.elementType = elementType;
 
         m_windowCache.push_back(element);
     }

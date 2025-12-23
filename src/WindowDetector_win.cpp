@@ -16,7 +16,46 @@ struct EnumWindowsContext {
     std::vector<DetectedElement> *windowCache;
     DWORD currentProcessId;
     qreal devicePixelRatio;
+    DetectionFlags detectionFlags;
 };
+
+// Check if element type should be included based on detection flags
+bool shouldIncludeElementType(ElementType type, DetectionFlags flags)
+{
+    switch (type) {
+    case ElementType::Window:
+        return flags.testFlag(DetectionFlag::Windows);
+    case ElementType::ContextMenu:
+        return flags.testFlag(DetectionFlag::ContextMenus);
+    case ElementType::PopupMenu:
+        return flags.testFlag(DetectionFlag::PopupMenus);
+    case ElementType::Dialog:
+        return flags.testFlag(DetectionFlag::Dialogs);
+    case ElementType::StatusBarItem:
+        return flags.testFlag(DetectionFlag::StatusBarItems);
+    case ElementType::Unknown:
+        return false;
+    }
+    return false;
+}
+
+// Get minimum size for element type
+int getMinimumSize(ElementType type)
+{
+    switch (type) {
+    case ElementType::Window:
+        return 50;
+    case ElementType::ContextMenu:
+    case ElementType::PopupMenu:
+    case ElementType::StatusBarItem:
+        return 20;
+    case ElementType::Dialog:
+        return 30;
+    case ElementType::Unknown:
+        return 50;
+    }
+    return 50;
+}
 
 QString getProcessName(DWORD processId)
 {
@@ -63,15 +102,61 @@ BOOL CALLBACK enumWindowsProc(HWND hwnd, LPARAM lParam)
         return TRUE;
     }
 
-    // Skip tool windows (tooltips, floating toolbars, etc.)
     LONG_PTR exStyle = GetWindowLongPtrW(hwnd, GWL_EXSTYLE);
-    if (exStyle & WS_EX_TOOLWINDOW) {
-        return TRUE;
+    LONG_PTR style = GetWindowLongPtrW(hwnd, GWL_STYLE);
+
+    // Determine element type based on window characteristics
+    ElementType elementType = ElementType::Window;
+
+    // Check window class name for special window types
+    WCHAR className[64] = {0};
+    GetClassNameW(hwnd, className, 64);
+
+    // Menu windows have class "#32768"
+    if (wcscmp(className, L"#32768") == 0) {
+        elementType = ElementType::ContextMenu;
+    }
+    // Check for tool windows (tooltips, floating toolbars, menus)
+    else if (exStyle & WS_EX_TOOLWINDOW) {
+        // Tool windows with topmost flag near taskbar might be tray popups
+        if (exStyle & WS_EX_TOPMOST) {
+            RECT rect;
+            if (GetWindowRect(hwnd, &rect)) {
+                int screenHeight = GetSystemMetrics(SM_CYSCREEN);
+                // If near bottom of screen, likely a system tray popup
+                if (rect.bottom >= screenHeight - 100) {
+                    elementType = ElementType::StatusBarItem;
+                } else {
+                    elementType = ElementType::PopupMenu;
+                }
+            } else {
+                elementType = ElementType::PopupMenu;
+            }
+        } else {
+            // Skip non-topmost tool windows unless detecting system UI
+            if (!(context->detectionFlags & DetectionFlag::AllSystemUI)) {
+                return TRUE;
+            }
+            elementType = ElementType::PopupMenu;
+        }
+    }
+    // Check for dialog windows
+    else if ((style & DS_MODALFRAME) || (exStyle & WS_EX_DLGMODALFRAME)) {
+        elementType = ElementType::Dialog;
+    }
+    // Check for owned popup windows (child dialogs, dropdowns)
+    else if (!(exStyle & WS_EX_APPWINDOW) && GetWindow(hwnd, GW_OWNER) != nullptr) {
+        // Check if it's a combo box dropdown or similar
+        if (wcscmp(className, L"ComboLBox") == 0 ||
+            wcsstr(className, L"DropDown") != nullptr) {
+            elementType = ElementType::PopupMenu;
+        } else {
+            elementType = ElementType::Dialog;
+        }
     }
 
-    // Skip windows without a parent that are not app windows
-    // (filters out some system UI elements)
-    if (!(exStyle & WS_EX_APPWINDOW) && GetWindow(hwnd, GW_OWNER) != nullptr) {
+    // Check if this element type should be included
+    if (!shouldIncludeElementType(elementType, context->detectionFlags)) {
         return TRUE;
     }
 
@@ -89,8 +174,9 @@ BOOL CALLBACK enumWindowsProc(HWND hwnd, LPARAM lParam)
     int width = rect.right - rect.left;
     int height = rect.bottom - rect.top;
 
-    // Skip windows that are too small (in physical pixels)
-    if (width < 50 || height < 50) {
+    // Get minimum size based on element type
+    int minSize = getMinimumSize(elementType);
+    if (width < minSize || height < minSize) {
         return TRUE;
     }
 
@@ -121,6 +207,7 @@ BOOL CALLBACK enumWindowsProc(HWND hwnd, LPARAM lParam)
     element.ownerApp = ownerApp;
     element.windowLayer = 0;  // Windows doesn't have explicit layers like macOS
     element.windowId = reinterpret_cast<uintptr_t>(hwnd) & 0xFFFFFFFF;
+    element.elementType = elementType;
 
     context->windowCache->push_back(element);
 
@@ -133,6 +220,7 @@ WindowDetector::WindowDetector(QObject *parent)
     : QObject(parent)
     , m_currentScreen(nullptr)
     , m_enabled(true)
+    , m_detectionFlags(DetectionFlag::All)
 {
 }
 
@@ -166,6 +254,16 @@ bool WindowDetector::isEnabled() const
     return m_enabled;
 }
 
+void WindowDetector::setDetectionFlags(DetectionFlags flags)
+{
+    m_detectionFlags = flags;
+}
+
+DetectionFlags WindowDetector::detectionFlags() const
+{
+    return m_detectionFlags;
+}
+
 void WindowDetector::refreshWindowList()
 {
     m_windowCache.clear();
@@ -178,9 +276,58 @@ void WindowDetector::enumerateWindows()
     context.windowCache = &m_windowCache;
     context.currentProcessId = GetCurrentProcessId();
     context.devicePixelRatio = m_currentScreen ? m_currentScreen->devicePixelRatio() : 1.0;
+    context.detectionFlags = m_detectionFlags;
 
     // EnumWindows returns windows in z-order (topmost first)
     EnumWindows(enumWindowsProc, reinterpret_cast<LPARAM>(&context));
+
+    // Additionally enumerate menu windows directly if detecting context menus
+    // Menu windows sometimes don't appear in EnumWindows
+    if (m_detectionFlags.testFlag(DetectionFlag::ContextMenus)) {
+        HWND menuWnd = FindWindowExW(nullptr, nullptr, L"#32768", nullptr);
+        while (menuWnd) {
+            if (IsWindowVisible(menuWnd)) {
+                RECT rect;
+                if (GetWindowRect(menuWnd, &rect)) {
+                    int width = rect.right - rect.left;
+                    int height = rect.bottom - rect.top;
+                    int minSize = getMinimumSize(ElementType::ContextMenu);
+
+                    if (width >= minSize && height >= minSize) {
+                        // Check if not already in cache
+                        uint32_t windowId = reinterpret_cast<uintptr_t>(menuWnd) & 0xFFFFFFFF;
+                        bool alreadyExists = false;
+                        for (const auto &elem : m_windowCache) {
+                            if (elem.windowId == windowId) {
+                                alreadyExists = true;
+                                break;
+                            }
+                        }
+
+                        if (!alreadyExists) {
+                            qreal dpr = context.devicePixelRatio;
+                            DetectedElement element;
+                            element.bounds = QRect(
+                                static_cast<int>(rect.left / dpr),
+                                static_cast<int>(rect.top / dpr),
+                                static_cast<int>(width / dpr),
+                                static_cast<int>(height / dpr)
+                            );
+                            element.windowTitle = QString();
+                            element.ownerApp = QString();
+                            element.windowLayer = 0;
+                            element.windowId = windowId;
+                            element.elementType = ElementType::ContextMenu;
+
+                            // Insert at beginning since menus are typically topmost
+                            m_windowCache.insert(m_windowCache.begin(), element);
+                        }
+                    }
+                }
+            }
+            menuWnd = FindWindowExW(nullptr, menuWnd, L"#32768", nullptr);
+        }
+    }
 
     qDebug() << "WindowDetector: Enumerated" << m_windowCache.size() << "windows";
 }

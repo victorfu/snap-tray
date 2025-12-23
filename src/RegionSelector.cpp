@@ -474,15 +474,12 @@ void RegionSelector::drawDetectedWindow(QPainter &painter)
     painter.setBrush(Qt::NoBrush);
     painter.drawRect(m_highlightedWindowRect);
 
-    // Show window title hint
+    // Show window dimensions hint
     if (m_detectedWindow.has_value()) {
-        QString displayTitle = m_detectedWindow->windowTitle;
-        if (displayTitle.isEmpty()) {
-            displayTitle = m_detectedWindow->ownerApp;
-        }
-        if (!displayTitle.isEmpty()) {
-            drawWindowHint(painter, displayTitle);
-        }
+        QString displayText = QString("%1x%2")
+            .arg(m_detectedWindow->bounds.width())
+            .arg(m_detectedWindow->bounds.height());
+        drawWindowHint(painter, displayText);
     }
 }
 
@@ -497,20 +494,51 @@ void RegionSelector::drawWindowHint(QPainter &painter, const QString &title)
     QRect textRect = fm.boundingRect(displayTitle);
     textRect.adjust(-8, -4, 8, 4);
 
-    // Position above the detected window
-    int hintX = m_highlightedWindowRect.left();
-    int hintY = m_highlightedWindowRect.top() - textRect.height() - 4;
-    if (hintY < 5) {
-        hintY = m_highlightedWindowRect.top() + 5;
+    // For small elements (like menu bar icons), position to the right
+    // For larger windows, position below
+    bool isSmallElement = m_highlightedWindowRect.width() < 60 || m_highlightedWindowRect.height() < 60;
+
+    int hintX, hintY;
+
+    if (isSmallElement) {
+        // Position to the right of the element
+        hintX = m_highlightedWindowRect.right() + 4;
+        hintY = m_highlightedWindowRect.top();
+
+        // If no space on right, try left
+        if (hintX + textRect.width() > width() - 5) {
+            hintX = m_highlightedWindowRect.left() - textRect.width() - 4;
+        }
+        // If no space on left either, position below
+        if (hintX < 5) {
+            hintX = m_highlightedWindowRect.left();
+            hintY = m_highlightedWindowRect.bottom() + 4;
+        }
+    } else {
+        // Position below the detected window
+        hintX = m_highlightedWindowRect.left();
+        hintY = m_highlightedWindowRect.bottom() + 4;
+
+        // If no space below, position above
+        if (hintY + textRect.height() > height() - 5) {
+            hintY = m_highlightedWindowRect.top() - textRect.height() - 4;
+        }
     }
+
     textRect.moveTo(hintX, hintY);
 
-    // Keep on screen horizontally
+    // Keep on screen
     if (textRect.right() > width() - 5) {
         textRect.moveRight(width() - 5);
     }
     if (textRect.left() < 5) {
         textRect.moveLeft(5);
+    }
+    if (textRect.bottom() > height() - 5) {
+        textRect.moveBottom(height() - 5);
+    }
+    if (textRect.top() < 5) {
+        textRect.moveTop(5);
     }
 
     // Draw background pill
