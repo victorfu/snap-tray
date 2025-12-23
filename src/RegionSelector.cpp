@@ -870,6 +870,7 @@ void RegionSelector::handleToolbarClick(ToolbarButton button)
     case ToolbarButton::Pencil:
     case ToolbarButton::Marker:
     case ToolbarButton::Rectangle:
+    case ToolbarButton::Ellipse:
     case ToolbarButton::Mosaic:
         m_currentTool = button;
         qDebug() << "Tool selected:" << static_cast<int>(button);
