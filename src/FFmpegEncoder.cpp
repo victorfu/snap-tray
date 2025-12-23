@@ -4,8 +4,6 @@
 #include <QImage>
 #include <QDebug>
 #include <QTimer>
-#include <QCoreApplication>
-#include <QtConcurrent>
 
 FFmpegEncoder::FFmpegEncoder(QObject *parent)
     : QObject(parent)
@@ -35,28 +33,6 @@ bool FFmpegEncoder::isFFmpegAvailable()
         return false;
     }
     return test.exitCode() == 0;
-}
-
-void FFmpegEncoder::checkAvailabilityAsync(std::function<void(bool)> callback)
-{
-    // Use Q_UNUSED to suppress nodiscard warning - we don't need the QFuture
-    [[maybe_unused]] auto future = QtConcurrent::run([callback]() {
-        QString path = ffmpegPath();
-        if (path.isEmpty()) {
-            QMetaObject::invokeMethod(qApp, [callback]() {
-                callback(false);
-            }, Qt::QueuedConnection);
-            return;
-        }
-
-        QProcess test;
-        test.start(path, QStringList() << "-version");
-        bool available = test.waitForFinished(3000) && test.exitCode() == 0;
-
-        QMetaObject::invokeMethod(qApp, [callback, available]() {
-            callback(available);
-        }, Qt::QueuedConnection);
-    });
 }
 
 QString FFmpegEncoder::ffmpegPath()
@@ -133,63 +109,6 @@ bool FFmpegEncoder::start(const QString &outputPath, const QSize &frameSize, int
 
     qDebug() << "FFmpegEncoder: Process started successfully";
     return true;
-}
-
-void FFmpegEncoder::startAsync(const QString &outputPath, const QSize &frameSize, int frameRate)
-{
-    if (m_process && m_process->state() != QProcess::NotRunning) {
-        m_lastError = "Encoder already running";
-        emit startCompleted(false);
-        return;
-    }
-
-    m_startPending = true;
-    m_outputPath = outputPath;
-    // Round dimensions to even numbers (libx264 requirement)
-    int width = (frameSize.width() + 1) & ~1;
-    int height = (frameSize.height() + 1) & ~1;
-    m_frameSize = QSize(width, height);
-    m_frameRate = frameRate;
-    m_framesWritten = 0;
-    m_finishing = false;
-    m_lastError.clear();
-
-    m_process = new QProcess(this);
-
-    connect(m_process, &QProcess::errorOccurred,
-            this, &FFmpegEncoder::onProcessError);
-    connect(m_process, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
-            this, &FFmpegEncoder::onProcessFinished);
-    connect(m_process, &QProcess::readyReadStandardError,
-            this, &FFmpegEncoder::onReadyReadStandardError);
-
-    // Connect started signal for async notification
-    connect(m_process, &QProcess::started, this, [this]() {
-        if (m_startPending) {
-            m_startPending = false;
-            qDebug() << "FFmpegEncoder: Process started successfully (async)";
-            emit startCompleted(true);
-        }
-    });
-
-    QStringList args = buildArguments(outputPath, m_frameSize, frameRate);
-    qDebug() << "FFmpegEncoder: Starting with command (async):" << ffmpegPath() << args;
-    m_process->start(ffmpegPath(), args);
-
-    // Add timeout for startup - if process doesn't start within 5 seconds, fail
-    QTimer::singleShot(5000, this, [this]() {
-        if (m_startPending) {
-            m_startPending = false;
-            m_lastError = "FFmpeg startup timeout";
-            qDebug() << "FFmpegEncoder: Startup timeout";
-            if (m_process) {
-                m_process->kill();
-                m_process->deleteLater();
-                m_process = nullptr;
-            }
-            emit startCompleted(false);
-        }
-    });
 }
 
 QStringList FFmpegEncoder::buildArguments(const QString &outputPath,
@@ -388,14 +307,6 @@ void FFmpegEncoder::onProcessError(QProcess::ProcessError error)
 
     m_lastError = errorStr;
     qDebug() << "FFmpegEncoder: Process error:" << errorStr;
-
-    // Handle async startup failure
-    if (m_startPending && error == QProcess::FailedToStart) {
-        m_startPending = false;
-        emit startCompleted(false);
-        return;
-    }
-
     emit this->error(errorStr);
 }
 

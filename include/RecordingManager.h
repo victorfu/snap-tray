@@ -7,14 +7,12 @@
 #include <QPixmap>
 #include <QTimer>
 #include <QElapsedTimer>
-#include <memory>
 
 class RecordingRegionSelector;
 class RecordingControlBar;
 class RecordingBoundaryOverlay;
 class FFmpegEncoder;
 class ICaptureEngine;
-class FrameProcessorThread;
 class QScreen;
 
 class RecordingManager : public QObject
@@ -66,24 +64,13 @@ signals:
 private slots:
     void onRegionSelected(const QRect &region, QScreen *screen);
     void onRegionCancelled();
-    void scheduleNextCapture();
+    void captureFrame();
     void onEncodingFinished(bool success, const QString &outputPath);
     void onEncodingError(const QString &error);
     void updateDuration();
 
-    // Async startup slots
-    void onFFmpegAvailabilityChecked(bool available);
-    void onEncoderStartCompleted(bool success);
-
-    // Worker thread slots
-    void onFrameProcessed(qint64 frameNumber);
-    void onFrameSkipped();
-    void onProcessorError(const QString &message);
-
 private:
     void startFrameCapture();
-    void continueFrameCaptureSetup();  // Called after async FFmpeg check
-    void finalizeRecordingSetup();     // Called after async encoder start
     void stopFrameCapture();
     void cleanupRecording();
     void cleanupStaleTempFiles();      // Clean up old temp files on startup
@@ -113,10 +100,6 @@ private:
     // Pause tracking
     qint64 m_pausedDuration;     // Total time spent paused
     qint64 m_pauseStartTime;     // When current pause began
-
-    // Worker thread for non-blocking capture/encoding
-    std::unique_ptr<FrameProcessorThread> m_processorThread;
-    qint64 m_droppedFrames = 0;  // Frames skipped due to backpressure
 };
 
 #endif // RECORDINGMANAGER_H
