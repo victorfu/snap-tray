@@ -4,7 +4,7 @@
 #include <QObject>
 #include <QProcess>
 #include <QSize>
-#include <QPixmap>
+#include <QImage>
 
 class FFmpegEncoder : public QObject
 {
@@ -30,7 +30,7 @@ public:
     OutputFormat outputFormat() const { return m_outputFormat; }
 
     bool start(const QString &outputPath, const QSize &frameSize, int frameRate);
-    void writeFrame(const QPixmap &frame);
+    void writeFrame(const QImage &frame);
     void finish();
     void abort();
 

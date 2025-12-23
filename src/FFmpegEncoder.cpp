@@ -178,7 +178,7 @@ QStringList FFmpegEncoder::buildGifArguments(const QString &outputPath,
     return args;
 }
 
-void FFmpegEncoder::writeFrame(const QPixmap &frame)
+void FFmpegEncoder::writeFrame(const QImage &frame)
 {
     if (!m_process || m_process->state() != QProcess::Running || m_finishing) {
         return;
@@ -191,18 +191,34 @@ void FFmpegEncoder::writeFrame(const QPixmap &frame)
         return;
     }
 
-    // Scale to target size if needed
-    QPixmap scaled = frame;
-    if (frame.size() != m_frameSize) {
-        scaled = frame.scaled(m_frameSize, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+    if (frame.isNull()) {
+        return;
     }
 
-    // Convert to raw RGBA format
-    QImage image = scaled.toImage().convertToFormat(QImage::Format_RGBA8888);
+    // Process entirely in CPU memory - no GPU involvement
+    QImage processed = frame;
+
+    // Step 1: Scale if needed (do this FIRST to reduce pixel count for format conversion)
+    if (processed.size() != m_frameSize) {
+        processed = processed.scaled(m_frameSize, Qt::IgnoreAspectRatio, Qt::FastTransformation);
+        if (processed.isNull()) {
+            qWarning() << "FFmpegEncoder: Scale failed, dropping frame";
+            return;
+        }
+    }
+
+    // Step 2: Convert to RGBA8888 format expected by FFmpeg (only if needed)
+    if (processed.format() != QImage::Format_RGBA8888) {
+        processed = processed.convertToFormat(QImage::Format_RGBA8888);
+        if (processed.isNull()) {
+            qWarning() << "FFmpegEncoder: Format conversion failed, dropping frame";
+            return;
+        }
+    }
 
     // Write raw pixel data to stdin with partial write handling
-    const char* data = reinterpret_cast<const char*>(image.constBits());
-    qint64 totalBytes = image.sizeInBytes();
+    const char* data = reinterpret_cast<const char*>(processed.constBits());
+    qint64 totalBytes = processed.sizeInBytes();
     qint64 bytesWritten = 0;
 
     while (bytesWritten < totalBytes) {

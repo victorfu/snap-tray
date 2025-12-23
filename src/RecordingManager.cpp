@@ -336,8 +336,8 @@ void RecordingManager::captureFrame()
     QImage frame = m_captureEngine->captureFrame();
 
     if (!frame.isNull()) {
-        QPixmap pixmap = QPixmap::fromImage(frame);
-        m_encoder->writeFrame(pixmap);
+        // Pass QImage directly to encoder - no QPixmap conversion needed
+        m_encoder->writeFrame(frame);
         m_frameCount++;
     }
 }
