@@ -361,6 +361,20 @@ bool RegionSelector::shouldShowColorAndWidthWidget() const
     }
 }
 
+bool RegionSelector::shouldShowWidthControl() const
+{
+    // Marker, Text, and StepBadge have fixed width, so don't show width control
+    switch (m_currentTool) {
+    case ToolbarButton::Pencil:
+    case ToolbarButton::Arrow:
+    case ToolbarButton::Rectangle:
+    case ToolbarButton::Ellipse:
+        return true;
+    default:
+        return false;  // Marker, Text, StepBadge don't need width control
+    }
+}
+
 void RegionSelector::initializeForScreen(QScreen* screen)
 {
     // 使用傳入的螢幕，若為空則使用主螢幕
@@ -544,6 +558,7 @@ void RegionSelector::paintEvent(QPaintEvent*)
             // Use unified color and width widget
             if (shouldShowColorAndWidthWidget()) {
                 m_colorAndWidthWidget->setVisible(true);
+                m_colorAndWidthWidget->setShowWidthSection(shouldShowWidthControl());
                 m_colorAndWidthWidget->updatePosition(m_toolbar->boundingRect(), false);
                 m_colorAndWidthWidget->draw(painter);
             } else {
@@ -1034,6 +1049,16 @@ void RegionSelector::mousePressEvent(QMouseEvent* event)
                 }
             }
 
+            // Check if clicked on toolbar FIRST (before widgets that may overlap)
+            int buttonIdx = m_toolbar->buttonAtPosition(event->pos());
+            if (buttonIdx >= 0) {
+                int buttonId = m_toolbar->buttonIdAt(buttonIdx);
+                if (buttonId >= 0) {
+                    handleToolbarClick(static_cast<ToolbarButton>(buttonId));
+                }
+                return;
+            }
+
             // Check if clicked on unified color and width widget
             if (shouldShowColorAndWidthWidget() && m_colorAndWidthWidget->handleClick(event->pos())) {
                 update();
@@ -1053,16 +1078,6 @@ void RegionSelector::mousePressEvent(QMouseEvent* event)
                     update();
                     return;
                 }
-            }
-
-            // Check if clicked on toolbar
-            int buttonIdx = m_toolbar->buttonAtPosition(event->pos());
-            if (buttonIdx >= 0) {
-                int buttonId = m_toolbar->buttonIdAt(buttonIdx);
-                if (buttonId >= 0) {
-                    handleToolbarClick(static_cast<ToolbarButton>(buttonId));
-                }
-                return;
             }
 
             // Check if we're using an annotation tool and clicking inside selection

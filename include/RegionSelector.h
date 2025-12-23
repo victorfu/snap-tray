@@ -116,6 +116,7 @@ private:
 
     // Unified color and width widget helpers
     bool shouldShowColorAndWidthWidget() const;
+    bool shouldShowWidthControl() const;
 
     // Window detection drawing
     void drawDetectedWindow(QPainter &painter);
