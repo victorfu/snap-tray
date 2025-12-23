@@ -44,6 +44,16 @@ public:
      */
     void setShowMoreButton(bool show) { m_showMoreButton = show; }
 
+    /**
+     * @brief Set whether to show the width section.
+     */
+    void setShowWidthSection(bool show);
+
+    /**
+     * @brief Check if the width section is shown.
+     */
+    bool showWidthSection() const { return m_showWidthSection; }
+
     // Line width methods
     /**
      * @brief Set the width range.
@@ -127,6 +137,13 @@ public:
      */
     bool updateHovered(const QPoint& pos);
 
+    /**
+     * @brief Handle mouse wheel event for width adjustment.
+     * @param delta Wheel delta (positive = scroll up, negative = scroll down)
+     * @return true if the event was handled
+     */
+    bool handleWheel(int delta);
+
 signals:
     /**
      * @brief Emitted when a color is selected from the palette.
@@ -153,8 +170,6 @@ private:
 
     // Width section helpers
     void drawWidthSection(QPainter& painter);
-    int positionToWidth(int x) const;
-    int widthToPosition(int width) const;
     bool isInWidthSection(const QPoint& pos) const;
 
     // Color state
@@ -168,17 +183,14 @@ private:
     int m_minWidth;
     int m_maxWidth;
     int m_currentWidth;
-    bool m_isDragging;
     bool m_widthSectionHovered;
+    bool m_showWidthSection;
 
     // Layout state
     bool m_visible;
     QRect m_widgetRect;
     QRect m_colorSectionRect;
     QRect m_widthSectionRect;
-    QRect m_sliderTrackRect;
-    QRect m_previewRect;
-    QRect m_labelRect;
 
     // Layout constants
     static const int WIDGET_HEIGHT = 36;
@@ -187,10 +199,8 @@ private:
     static const int COLORS_PER_ROW = 8;
     static const int SECTION_PADDING = 6;
     static const int SECTION_SPACING = 8;
-    static const int SLIDER_WIDTH = 160;
-    static const int SLIDER_HEIGHT = 6;
-    static const int HANDLE_SIZE = 14;
-    static const int PREVIEW_SIZE = 18;
+    static const int WIDTH_SECTION_SIZE = 36;  // Size for the dot preview area
+    static const int MAX_DOT_SIZE = 24;        // Max visual dot size
 };
 
 #endif // COLORANDWIDTHWIDGET_H

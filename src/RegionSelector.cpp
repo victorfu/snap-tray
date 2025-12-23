@@ -1338,6 +1338,19 @@ void RegionSelector::mouseReleaseEvent(QMouseEvent* event)
     }
 }
 
+void RegionSelector::wheelEvent(QWheelEvent *event)
+{
+    // Forward wheel events when tools that support width adjustment are active
+    if (shouldShowColorAndWidthWidget()) {
+        if (m_colorAndWidthWidget->handleWheel(event->angleDelta().y())) {
+            update();
+            event->accept();
+            return;
+        }
+    }
+    event->ignore();
+}
+
 void RegionSelector::keyPressEvent(QKeyEvent* event)
 {
     // Handle inline text editing keys first

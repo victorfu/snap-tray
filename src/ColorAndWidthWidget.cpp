@@ -11,8 +11,8 @@ ColorAndWidthWidget::ColorAndWidthWidget(QObject* parent)
     , m_minWidth(1)
     , m_maxWidth(20)
     , m_currentWidth(3)
-    , m_isDragging(false)
     , m_widthSectionHovered(false)
+    , m_showWidthSection(true)
     , m_visible(false)
 {
     // Default color palette - 15 colors in 2 rows (8 + 7, with "..." as 8th in row 2)
@@ -61,11 +61,19 @@ void ColorAndWidthWidget::setCurrentWidth(int width)
     m_currentWidth = qBound(m_minWidth, width, m_maxWidth);
 }
 
+void ColorAndWidthWidget::setShowWidthSection(bool show)
+{
+    m_showWidthSection = show;
+}
+
 void ColorAndWidthWidget::updatePosition(const QRect& anchorRect, bool above, int screenWidth)
 {
     // Calculate total width (using 2 rows, 8 columns - "..." is part of row 2)
     int colorSectionWidth = COLORS_PER_ROW * SWATCH_SIZE + (COLORS_PER_ROW - 1) * SWATCH_SPACING + SECTION_PADDING * 2;
-    int totalWidth = colorSectionWidth + SECTION_SPACING + SLIDER_WIDTH;
+    int totalWidth = colorSectionWidth;
+    if (m_showWidthSection) {
+        totalWidth += SECTION_SPACING + WIDTH_SECTION_SIZE;
+    }
 
     int widgetX = anchorRect.left();
     int widgetY;
@@ -121,29 +129,13 @@ void ColorAndWidthWidget::updateLayout()
         m_swatchRects[i] = QRect(x, y, SWATCH_SIZE, SWATCH_SIZE);
     }
 
-    // === WIDTH SECTION ===
+    // === WIDTH SECTION (simple dot preview, scroll to adjust) ===
     m_widthSectionRect = QRect(
         m_colorSectionRect.right() + SECTION_SPACING,
         m_widgetRect.top(),
-        SLIDER_WIDTH,
+        WIDTH_SECTION_SIZE,
         WIDGET_HEIGHT
     );
-
-    // Preview circle (left side of width section)
-    int previewX = m_widthSectionRect.left() + SECTION_PADDING;
-    int previewY = m_widthSectionRect.top() + (WIDGET_HEIGHT - PREVIEW_SIZE) / 2;
-    m_previewRect = QRect(previewX, previewY, PREVIEW_SIZE, PREVIEW_SIZE);
-
-    // Label (right side of width section)
-    int labelWidth = 36;
-    int labelX = m_widthSectionRect.right() - SECTION_PADDING - labelWidth;
-    m_labelRect = QRect(labelX, m_widthSectionRect.top(), labelWidth, WIDGET_HEIGHT);
-
-    // Slider track (middle of width section)
-    int trackLeft = m_previewRect.right() + SECTION_PADDING;
-    int trackRight = m_labelRect.left() - SECTION_PADDING;
-    int trackY = m_widthSectionRect.top() + (WIDGET_HEIGHT - SLIDER_HEIGHT) / 2;
-    m_sliderTrackRect = QRect(trackLeft, trackY, trackRight - trackLeft, SLIDER_HEIGHT);
 }
 
 void ColorAndWidthWidget::draw(QPainter& painter)
@@ -169,8 +161,10 @@ void ColorAndWidthWidget::draw(QPainter& painter)
     // Draw color section
     drawColorSection(painter);
 
-    // Draw width section
-    drawWidthSection(painter);
+    // Draw width section (if enabled)
+    if (m_showWidthSection) {
+        drawWidthSection(painter);
+    }
 }
 
 void ColorAndWidthWidget::drawColorSection(QPainter& painter)
@@ -229,51 +223,29 @@ void ColorAndWidthWidget::drawColorSection(QPainter& painter)
 
 void ColorAndWidthWidget::drawWidthSection(QPainter& painter)
 {
-    // Draw slider track background (adapted from LineWidthWidget)
-    painter.setPen(Qt::NoPen);
-    painter.setBrush(QColor(30, 30, 30));
-    painter.drawRoundedRect(m_sliderTrackRect, SLIDER_HEIGHT / 2, SLIDER_HEIGHT / 2);
+    // Draw container circle (background)
+    int containerSize = WIDTH_SECTION_SIZE - 8;
+    int centerX = m_widthSectionRect.center().x();
+    int centerY = m_widthSectionRect.center().y();
+    QRect containerRect(centerX - containerSize / 2, centerY - containerSize / 2,
+                        containerSize, containerSize);
 
-    // Draw slider track fill (from left to handle position)
-    int handleX = widthToPosition(m_currentWidth);
-    QRect fillRect(m_sliderTrackRect.left(), m_sliderTrackRect.top(),
-                   handleX - m_sliderTrackRect.left(), SLIDER_HEIGHT);
-    painter.setBrush(QColor(0, 174, 255));
-    painter.drawRoundedRect(fillRect, SLIDER_HEIGHT / 2, SLIDER_HEIGHT / 2);
+    painter.setPen(QPen(QColor(60, 60, 60), 1));
+    painter.setBrush(QColor(35, 35, 35));
+    painter.drawEllipse(containerRect);
 
-    // Draw handle
-    int handleY = m_sliderTrackRect.center().y();
-    QRect handleRect(handleX - HANDLE_SIZE / 2, handleY - HANDLE_SIZE / 2,
-                     HANDLE_SIZE, HANDLE_SIZE);
+    // Draw preview dot (shows actual stroke width with current color)
+    // Scale the visual size: map m_currentWidth to visual dot size
+    double ratio = static_cast<double>(m_currentWidth - m_minWidth) / (m_maxWidth - m_minWidth);
+    int minDotSize = 4;
+    int maxDotSize = MAX_DOT_SIZE;
+    int dotSize = minDotSize + static_cast<int>(ratio * (maxDotSize - minDotSize));
 
-    // Handle shadow
-    painter.setBrush(QColor(0, 0, 0, 30));
-    painter.drawEllipse(handleRect.adjusted(1, 1, 1, 1));
-
-    // Handle fill
-    painter.setBrush(Qt::white);
-    painter.setPen(QPen(QColor(0, 174, 255), 2));
-    painter.drawEllipse(handleRect);
-
-    // Draw preview circle (shows actual stroke width with current color)
-    int previewDiameter = qMin(m_currentWidth, PREVIEW_SIZE - 4);
-    int previewCenterX = m_previewRect.center().x();
-    int previewCenterY = m_previewRect.center().y();
-    QRect previewCircle(previewCenterX - previewDiameter / 2,
-                        previewCenterY - previewDiameter / 2,
-                        previewDiameter, previewDiameter);
+    QRect dotRect(centerX - dotSize / 2, centerY - dotSize / 2, dotSize, dotSize);
 
     painter.setPen(Qt::NoPen);
-    painter.setBrush(m_currentColor);  // Use current color for preview
-    painter.drawEllipse(previewCircle);
-
-    // Draw width label
-    painter.setPen(QColor(180, 180, 180));
-    QFont font = painter.font();
-    font.setPointSize(11);
-    painter.setFont(font);
-    QString label = QString("%1 px").arg(m_currentWidth);
-    painter.drawText(m_labelRect, Qt::AlignCenter, label);
+    painter.setBrush(m_currentColor);
+    painter.drawEllipse(dotRect);
 }
 
 bool ColorAndWidthWidget::contains(const QPoint& pos) const
@@ -302,25 +274,12 @@ bool ColorAndWidthWidget::handleClick(const QPoint& pos)
 {
     if (!m_widgetRect.contains(pos)) return false;
 
-    // Priority 1: Check width section (slider has precedence for UX)
+    // Width section: clicks are consumed but no action (use scroll wheel)
     if (isInWidthSection(pos)) {
-        // Handle slider click (same logic as LineWidthWidget)
-        QRect sliderArea = m_sliderTrackRect.adjusted(-HANDLE_SIZE / 2, -HANDLE_SIZE,
-                                                       HANDLE_SIZE / 2, HANDLE_SIZE);
-        if (sliderArea.contains(pos)) {
-            m_isDragging = true;
-            int newWidth = positionToWidth(pos.x());
-            if (newWidth != m_currentWidth) {
-                m_currentWidth = newWidth;
-                emit widthChanged(m_currentWidth);
-                qDebug() << "ColorAndWidthWidget: Width changed to" << m_currentWidth;
-            }
-            return true;
-        }
-        return true; // Consume click even if not on slider
+        return true;
     }
 
-    // Priority 2: Check color section
+    // Color section
     int swatchIdx = swatchAtPosition(pos);
     if (swatchIdx >= 0) {
         if (swatchIdx < m_colors.size()) {
@@ -344,37 +303,16 @@ bool ColorAndWidthWidget::handleMousePress(const QPoint& pos)
 
 bool ColorAndWidthWidget::handleMouseMove(const QPoint& pos, bool pressed)
 {
+    Q_UNUSED(pressed);
     if (!m_visible) return false;
 
-    bool needsUpdate = false;
-
-    // Handle slider dragging
-    if (m_isDragging && pressed) {
-        int newWidth = positionToWidth(pos.x());
-        if (newWidth != m_currentWidth) {
-            m_currentWidth = newWidth;
-            emit widthChanged(m_currentWidth);
-            needsUpdate = true;
-        }
-        return needsUpdate; // Don't update hover during drag
-    }
-
-    // Update hover states when not dragging
-    if (updateHovered(pos)) {
-        needsUpdate = true;
-    }
-
-    return needsUpdate;
+    // Update hover states
+    return updateHovered(pos);
 }
 
 bool ColorAndWidthWidget::handleMouseRelease(const QPoint& pos)
 {
     Q_UNUSED(pos);
-
-    if (m_isDragging) {
-        m_isDragging = false;
-        return true;
-    }
     return false;
 }
 
@@ -399,24 +337,23 @@ bool ColorAndWidthWidget::updateHovered(const QPoint& pos)
     return changed;
 }
 
-int ColorAndWidthWidget::positionToWidth(int x) const
+bool ColorAndWidthWidget::handleWheel(int delta)
 {
-    int trackLeft = m_sliderTrackRect.left();
-    int trackRight = m_sliderTrackRect.right();
+    // Don't handle wheel events if width section is hidden
+    if (!m_showWidthSection) {
+        return false;
+    }
 
-    if (x <= trackLeft) return m_minWidth;
-    if (x >= trackRight) return m_maxWidth;
+    // delta > 0 = scroll up = increase width
+    // delta < 0 = scroll down = decrease width
+    int step = (delta > 0) ? 1 : -1;
+    int newWidth = qBound(m_minWidth, m_currentWidth + step, m_maxWidth);
 
-    double ratio = static_cast<double>(x - trackLeft) / (trackRight - trackLeft);
-    int width = m_minWidth + static_cast<int>(ratio * (m_maxWidth - m_minWidth) + 0.5);
-    return qBound(m_minWidth, width, m_maxWidth);
-}
-
-int ColorAndWidthWidget::widthToPosition(int width) const
-{
-    int trackLeft = m_sliderTrackRect.left();
-    int trackRight = m_sliderTrackRect.right();
-
-    double ratio = static_cast<double>(width - m_minWidth) / (m_maxWidth - m_minWidth);
-    return trackLeft + static_cast<int>(ratio * (trackRight - trackLeft));
+    if (newWidth != m_currentWidth) {
+        m_currentWidth = newWidth;
+        emit widthChanged(m_currentWidth);
+        qDebug() << "ColorAndWidthWidget: Width changed to" << m_currentWidth << "(scroll)";
+        return true;
+    }
+    return false;
 }

@@ -12,6 +12,7 @@
 #include <QPainter>
 #include <QMouseEvent>
 #include <QKeyEvent>
+#include <QWheelEvent>
 #include <QCloseEvent>
 #include <QGuiApplication>
 #include <QScreen>
@@ -216,6 +217,21 @@ bool ScreenCanvas::shouldShowColorAndWidthWidget() const
     }
 }
 
+bool ScreenCanvas::shouldShowWidthControl() const
+{
+    // Marker has fixed width, so don't show width control for it
+    switch (m_currentTool) {
+    case CanvasTool::Pencil:
+    case CanvasTool::Arrow:
+    case CanvasTool::Rectangle:
+    case CanvasTool::Ellipse:
+    case CanvasTool::LaserPointer:
+        return true;
+    default:
+        return false;  // Marker and others don't need width control
+    }
+}
+
 void ScreenCanvas::onMoreColorsRequested()
 {
     if (!m_colorPickerDialog) {
@@ -295,6 +311,7 @@ void ScreenCanvas::paintEvent(QPaintEvent *)
     // Use unified color and width widget
     if (shouldShowColorAndWidthWidget()) {
         m_colorAndWidthWidget->setVisible(true);
+        m_colorAndWidthWidget->setShowWidthSection(shouldShowWidthControl());
         m_colorAndWidthWidget->updatePosition(m_toolbarRect, true, width());
         m_colorAndWidthWidget->draw(painter);
     } else {
@@ -596,6 +613,13 @@ bool ScreenCanvas::isAnnotationTool(CanvasTool tool) const
 void ScreenCanvas::mousePressEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton) {
+        // Check if clicked on toolbar FIRST (before widgets that may overlap)
+        int buttonIdx = getButtonAtPosition(event->pos());
+        if (buttonIdx >= 0) {
+            handleToolbarClick(static_cast<CanvasTool>(buttonIdx));
+            return;
+        }
+
         // Check if clicked on unified color and width widget
         if (shouldShowColorAndWidthWidget() && m_colorAndWidthWidget->handleClick(event->pos())) {
             update();
@@ -615,13 +639,6 @@ void ScreenCanvas::mousePressEvent(QMouseEvent *event)
                 update();
                 return;
             }
-        }
-
-        // Check if clicked on toolbar
-        int buttonIdx = getButtonAtPosition(event->pos());
-        if (buttonIdx >= 0) {
-            handleToolbarClick(static_cast<CanvasTool>(buttonIdx));
-            return;
         }
 
         // Trigger click ripple if enabled
@@ -764,6 +781,20 @@ void ScreenCanvas::mouseReleaseEvent(QMouseEvent *event)
             update();
         }
     }
+}
+
+void ScreenCanvas::wheelEvent(QWheelEvent *event)
+{
+    // Forward wheel events when tools that support width adjustment are active
+    if (shouldShowColorAndWidthWidget()) {
+        if (m_colorAndWidthWidget->handleWheel(event->angleDelta().y())) {
+            update();
+            event->accept();
+            return;
+        }
+    }
+
+    event->ignore();
 }
 
 void ScreenCanvas::keyPressEvent(QKeyEvent *event)
