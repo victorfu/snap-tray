@@ -68,9 +68,13 @@ private:
     QSlider *m_watermarkOpacitySlider;
     QLabel *m_watermarkOpacityLabel;
     QComboBox *m_watermarkPositionCombo;
+    QLabel *m_watermarkImagePreview;
+    QLabel *m_watermarkImageSizeLabel;
+    QSize m_watermarkOriginalSize;
 
-    // Watermark UI helper method
+    // Watermark UI helper methods
     void updateWatermarkTypeVisibility(int type);
+    void updateWatermarkImagePreview();
 };
 
 #endif // SETTINGSDIALOG_H

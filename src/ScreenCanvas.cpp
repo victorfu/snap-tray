@@ -45,7 +45,7 @@ ScreenCanvas::ScreenCanvas(QWidget *parent)
     setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::Tool);
     setAttribute(Qt::WA_DeleteOnClose);
     setMouseTracking(true);
-    setCursor(Qt::CrossCursor);
+    setCursor(Qt::ArrowCursor);
 
     // Initialize button rects
     m_buttonRects.resize(static_cast<int>(CanvasTool::Count));
@@ -326,6 +326,9 @@ void ScreenCanvas::paintEvent(QPaintEvent *)
 
     // Draw tooltip
     drawTooltip(painter);
+
+    // Draw cursor dot
+    drawCursorDot(painter);
 }
 
 void ScreenCanvas::drawAnnotations(QPainter &painter)
@@ -649,6 +652,9 @@ void ScreenCanvas::mousePressEvent(QMouseEvent *event)
 
 void ScreenCanvas::mouseMoveEvent(QMouseEvent *event)
 {
+    // Track cursor position for cursor dot
+    m_cursorPos = event->pos();
+
     // Handle laser pointer drawing
     if (m_currentTool == CanvasTool::LaserPointer && m_laserRenderer->isDrawing()) {
         m_laserRenderer->updateDrawing(event->pos());
@@ -710,19 +716,24 @@ void ScreenCanvas::mouseMoveEvent(QMouseEvent *event)
         if (newHovered != m_hoveredButton) {
             m_hoveredButton = newHovered;
             needsUpdate = true;
-            if (m_hoveredButton >= 0) {
-                setCursor(Qt::PointingHandCursor);
-            } else if (widgetHovered) {
-                // Already set cursor for widget
-            } else {
-                setCursor(Qt::CrossCursor);
-            }
+        }
+
+        // Always update cursor based on current state
+        if (m_hoveredButton >= 0) {
+            setCursor(Qt::PointingHandCursor);
+        } else if (widgetHovered) {
+            setCursor(Qt::PointingHandCursor);
+        } else {
+            setCursor(Qt::ArrowCursor);
         }
 
         if (needsUpdate) {
             update();
         }
     }
+
+    // Always update to keep cursor dot following
+    update();
 }
 
 void ScreenCanvas::mouseReleaseEvent(QMouseEvent *event)
@@ -771,6 +782,21 @@ void ScreenCanvas::keyPressEvent(QKeyEvent *event)
             update();
         }
     }
+}
+
+void ScreenCanvas::drawCursorDot(QPainter &painter)
+{
+    // Don't show when drawing, on toolbar, or on widgets
+    if (m_controller->isDrawing()) return;
+    if (m_laserRenderer->isDrawing()) return;
+    if (m_toolbarRect.contains(m_cursorPos)) return;
+    if (m_hoveredButton >= 0) return;
+    if (shouldShowColorAndWidthWidget() && m_colorAndWidthWidget->contains(m_cursorPos)) return;
+
+    // Draw a dot following the current tool color
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(m_controller->color());
+    painter.drawEllipse(m_cursorPos, 3, 3);  // 6px diameter
 }
 
 void ScreenCanvas::closeEvent(QCloseEvent *event)

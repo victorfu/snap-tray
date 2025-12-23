@@ -20,7 +20,7 @@ void PencilStroke::draw(QPainter &painter) const
     if (m_points.size() < 2) return;
 
     painter.save();
-    QPen pen(m_color, m_width, Qt::SolidLine, Qt::FlatCap, Qt::BevelJoin);
+    QPen pen(m_color, m_width, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
     painter.setPen(pen);
     painter.setRenderHint(QPainter::Antialiasing, true);
 

@@ -61,6 +61,7 @@ private:
     void drawAnnotations(QPainter &painter);
     void drawCurrentAnnotation(QPainter &painter);
     void drawTooltip(QPainter &painter);
+    void drawCursorDot(QPainter &painter);
 
     // Toolbar helpers
     void initializeIcons();
@@ -120,6 +121,9 @@ private:
 
     // Click ripple renderer
     ClickRippleRenderer *m_rippleRenderer;
+
+    // Cursor position for drawing cursor dot
+    QPoint m_cursorPos;
 };
 
 #endif // SCREENCANVAS_H

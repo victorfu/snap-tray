@@ -42,7 +42,7 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     , m_watermarkPositionCombo(nullptr)
 {
     setWindowTitle("SnapTray Settings");
-    setFixedSize(420, 360);
+    setFixedSize(520, 360);
     setupUi();
 
     connect(this, &QDialog::accepted, this, &SettingsDialog::onAccepted);
@@ -145,11 +145,20 @@ void SettingsDialog::setupHotkeysTab(QWidget *tab)
 
 void SettingsDialog::setupWatermarkTab(QWidget *tab)
 {
-    QVBoxLayout *layout = new QVBoxLayout(tab);
+    QVBoxLayout *mainLayout = new QVBoxLayout(tab);
 
     // Enable watermark checkbox
     m_watermarkEnabledCheckbox = new QCheckBox("Enable watermark", tab);
-    layout->addWidget(m_watermarkEnabledCheckbox);
+    mainLayout->addWidget(m_watermarkEnabledCheckbox);
+
+    mainLayout->addSpacing(8);
+
+    // Horizontal layout: left controls, right preview
+    QHBoxLayout *contentLayout = new QHBoxLayout();
+
+    // === LEFT SIDE: Controls ===
+    QVBoxLayout *controlsLayout = new QVBoxLayout();
+    controlsLayout->setSpacing(8);
 
     // Type row
     QHBoxLayout *typeLayout = new QHBoxLayout();
@@ -163,7 +172,7 @@ void SettingsDialog::setupWatermarkTab(QWidget *tab)
     typeLayout->addWidget(typeLabel);
     typeLayout->addWidget(m_watermarkTypeCombo);
     typeLayout->addStretch();
-    layout->addLayout(typeLayout);
+    controlsLayout->addLayout(typeLayout);
 
     // Text input row
     QHBoxLayout *textLayout = new QHBoxLayout();
@@ -173,7 +182,7 @@ void SettingsDialog::setupWatermarkTab(QWidget *tab)
     m_watermarkTextEdit->setPlaceholderText("Enter watermark text...");
     textLayout->addWidget(m_watermarkTextLabel);
     textLayout->addWidget(m_watermarkTextEdit);
-    layout->addLayout(textLayout);
+    controlsLayout->addLayout(textLayout);
 
     // Image path row
     QHBoxLayout *imageLayout = new QHBoxLayout();
@@ -189,12 +198,13 @@ void SettingsDialog::setupWatermarkTab(QWidget *tab)
             QString(), "Images (*.png *.jpg *.jpeg *.bmp *.gif *.svg);;All Files (*)");
         if (!filePath.isEmpty()) {
             m_watermarkImagePathEdit->setText(filePath);
+            updateWatermarkImagePreview();
         }
     });
     imageLayout->addWidget(m_watermarkImageLabel);
     imageLayout->addWidget(m_watermarkImagePathEdit);
     imageLayout->addWidget(m_watermarkBrowseBtn);
-    layout->addLayout(imageLayout);
+    controlsLayout->addLayout(imageLayout);
 
     // Image scale row
     QHBoxLayout *scaleLayout = new QHBoxLayout();
@@ -207,11 +217,12 @@ void SettingsDialog::setupWatermarkTab(QWidget *tab)
     m_watermarkImageScaleLabel->setFixedWidth(40);
     connect(m_watermarkImageScaleSlider, &QSlider::valueChanged, this, [this](int value) {
         m_watermarkImageScaleLabel->setText(QString("%1%").arg(value));
+        updateWatermarkImagePreview();
     });
     scaleLayout->addWidget(m_watermarkScaleRowLabel);
     scaleLayout->addWidget(m_watermarkImageScaleSlider);
     scaleLayout->addWidget(m_watermarkImageScaleLabel);
-    layout->addLayout(scaleLayout);
+    controlsLayout->addLayout(scaleLayout);
 
     // Opacity row
     QHBoxLayout *opacityLayout = new QHBoxLayout();
@@ -228,7 +239,7 @@ void SettingsDialog::setupWatermarkTab(QWidget *tab)
     opacityLayout->addWidget(opacityLabel);
     opacityLayout->addWidget(m_watermarkOpacitySlider);
     opacityLayout->addWidget(m_watermarkOpacityLabel);
-    layout->addLayout(opacityLayout);
+    controlsLayout->addLayout(opacityLayout);
 
     // Position row
     QHBoxLayout *positionLayout = new QHBoxLayout();
@@ -243,9 +254,34 @@ void SettingsDialog::setupWatermarkTab(QWidget *tab)
     positionLayout->addWidget(positionLabel);
     positionLayout->addWidget(m_watermarkPositionCombo);
     positionLayout->addStretch();
-    layout->addLayout(positionLayout);
+    controlsLayout->addLayout(positionLayout);
 
-    layout->addStretch();
+    controlsLayout->addStretch();
+    contentLayout->addLayout(controlsLayout, 1);
+
+    // === RIGHT SIDE: Preview (only for Image type) ===
+    QVBoxLayout *previewLayout = new QVBoxLayout();
+    previewLayout->setAlignment(Qt::AlignTop);
+
+    m_watermarkImagePreview = new QLabel(tab);
+    m_watermarkImagePreview->setFixedSize(120, 120);
+    m_watermarkImagePreview->setAlignment(Qt::AlignCenter);
+    m_watermarkImagePreview->setStyleSheet(
+        "QLabel { border: 1px solid #ccc; background-color: #f5f5f5; border-radius: 4px; }");
+    m_watermarkImagePreview->setText("No image");
+
+    m_watermarkImageSizeLabel = new QLabel(tab);
+    m_watermarkImageSizeLabel->setAlignment(Qt::AlignCenter);
+    m_watermarkImageSizeLabel->setFixedWidth(120);
+
+    previewLayout->addWidget(m_watermarkImagePreview);
+    previewLayout->addWidget(m_watermarkImageSizeLabel);
+    previewLayout->addStretch();
+
+    contentLayout->addLayout(previewLayout);
+
+    mainLayout->addLayout(contentLayout);
+    mainLayout->addStretch();
 
     // Load current settings
     WatermarkRenderer::Settings settings = WatermarkRenderer::loadSettings();
@@ -267,6 +303,9 @@ void SettingsDialog::setupWatermarkTab(QWidget *tab)
 
     // Update visibility based on current type
     updateWatermarkTypeVisibility(m_watermarkTypeCombo->currentIndex());
+
+    // Update image preview if image path exists
+    updateWatermarkImagePreview();
 }
 
 void SettingsDialog::updateWatermarkTypeVisibility(int index)
@@ -278,10 +317,12 @@ void SettingsDialog::updateWatermarkTypeVisibility(int index)
     m_watermarkTextLabel->setVisible(isText);
     m_watermarkTextEdit->setVisible(isText);
 
-    // Show/hide image-specific controls (label + path + browse + scale row)
+    // Show/hide image-specific controls (label + path + browse + preview + scale row)
     m_watermarkImageLabel->setVisible(!isText);
     m_watermarkImagePathEdit->setVisible(!isText);
     m_watermarkBrowseBtn->setVisible(!isText);
+    m_watermarkImagePreview->setVisible(!isText);
+    m_watermarkImageSizeLabel->setVisible(!isText);
     m_watermarkScaleRowLabel->setVisible(!isText);
     m_watermarkImageScaleSlider->setVisible(!isText);
     m_watermarkImageScaleLabel->setVisible(!isText);
@@ -379,4 +420,43 @@ void SettingsDialog::onAccepted()
 void SettingsDialog::onCancel()
 {
     reject();
+}
+
+void SettingsDialog::updateWatermarkImagePreview()
+{
+    QString imagePath = m_watermarkImagePathEdit->text();
+
+    if (imagePath.isEmpty()) {
+        m_watermarkImagePreview->clear();
+        m_watermarkImagePreview->setText("No image");
+        m_watermarkImageSizeLabel->clear();
+        m_watermarkOriginalSize = QSize();
+        return;
+    }
+
+    QPixmap pixmap(imagePath);
+    if (pixmap.isNull()) {
+        m_watermarkImagePreview->clear();
+        m_watermarkImagePreview->setText("Invalid image");
+        m_watermarkImageSizeLabel->clear();
+        m_watermarkOriginalSize = QSize();
+        return;
+    }
+
+    // Store original size
+    m_watermarkOriginalSize = pixmap.size();
+
+    // Scale for preview display
+    QPixmap scaled = pixmap.scaled(
+        m_watermarkImagePreview->size(),
+        Qt::KeepAspectRatio,
+        Qt::SmoothTransformation);
+    m_watermarkImagePreview->setPixmap(scaled);
+
+    // Calculate and display scaled dimensions
+    int scale = m_watermarkImageScaleSlider->value();
+    int scaledWidth = m_watermarkOriginalSize.width() * scale / 100;
+    int scaledHeight = m_watermarkOriginalSize.height() * scale / 100;
+    m_watermarkImageSizeLabel->setText(
+        QString("Size: %1 × %2 px").arg(scaledWidth).arg(scaledHeight));
 }

@@ -11,16 +11,26 @@ ColorPaletteWidget::ColorPaletteWidget(QObject* parent)
     , m_showMoreButton(true)
     , m_hoveredSwatch(-1)
 {
-    // Default color palette
+    // Default color palette - 15 colors in 2 rows (8 + 7, with "..." as 8th in row 2)
     m_colors = {
-        Qt::red,
-        QColor(0, 122, 255),      // Blue (system blue)
-        QColor(52, 199, 89),      // Green (system green)
-        QColor(255, 204, 0),      // Yellow
-        QColor(255, 149, 0),      // Orange
-        QColor(175, 82, 222),     // Purple
-        Qt::black,
-        Qt::white
+        // Row 1: 8 Primary/Bright colors
+        Qt::red,                          // Red
+        QColor(255, 149, 0),              // Orange
+        QColor(255, 204, 0),              // Yellow
+        QColor(52, 199, 89),              // Green
+        QColor(0, 199, 190),              // Cyan/Teal
+        QColor(0, 122, 255),              // Blue
+        QColor(175, 82, 222),             // Purple
+        QColor(255, 45, 85),              // Pink
+
+        // Row 2: 7 Pastel colors + neutrals (then "..." button)
+        QColor(255, 182, 193),            // Pastel Pink
+        QColor(255, 218, 185),            // Pastel Peach
+        QColor(255, 250, 205),            // Pastel Yellow
+        QColor(152, 251, 152),            // Pastel Green
+        QColor(173, 216, 230),            // Pastel Blue
+        QColor(128, 128, 128),            // Gray
+        Qt::black                         // Black
     };
 }
 
@@ -37,8 +47,8 @@ void ColorPaletteWidget::setCurrentColor(const QColor& color)
 
 void ColorPaletteWidget::updatePosition(const QRect& anchorRect, bool above)
 {
-    int swatchCount = m_colors.size() + (m_showMoreButton ? 1 : 0);
-    int paletteWidth = swatchCount * SWATCH_SIZE + (swatchCount - 1) * SWATCH_SPACING + PALETTE_PADDING * 2;
+    // Calculate width based on 2-row layout (8 columns, "..." is part of row 2)
+    int paletteWidth = COLORS_PER_ROW * SWATCH_SIZE + (COLORS_PER_ROW - 1) * SWATCH_SPACING + PALETTE_PADDING * 2;
 
     int paletteX = anchorRect.left();
     int paletteY;
@@ -65,12 +75,17 @@ void ColorPaletteWidget::updateSwatchRects()
     int swatchCount = m_colors.size() + (m_showMoreButton ? 1 : 0);
     m_swatchRects.resize(swatchCount);
 
-    int x = m_paletteRect.left() + PALETTE_PADDING;
-    int y = m_paletteRect.top() + (PALETTE_HEIGHT - SWATCH_SIZE) / 2;
+    int baseX = m_paletteRect.left() + PALETTE_PADDING;
+    int rowSpacing = 2;  // Space between rows
+    int topY = m_paletteRect.top() + 2;
 
+    // Calculate swatch positions in 2 rows (8 per row, "..." naturally at position 15)
     for (int i = 0; i < swatchCount; ++i) {
+        int row = i / COLORS_PER_ROW;
+        int col = i % COLORS_PER_ROW;
+        int x = baseX + col * (SWATCH_SIZE + SWATCH_SPACING);
+        int y = topY + row * (SWATCH_SIZE + rowSpacing);
         m_swatchRects[i] = QRect(x, y, SWATCH_SIZE, SWATCH_SIZE);
-        x += SWATCH_SIZE + SWATCH_SPACING;
     }
 }
 
@@ -104,23 +119,23 @@ void ColorPaletteWidget::draw(QPainter& painter)
             painter.drawRoundedRect(swatchRect.adjusted(-2, -2, 2, 2), 4, 4);
         }
 
-        // Draw color circle
-        int circleSize = swatchRect.width() - 6;
-        QRect circleRect(swatchRect.center().x() - circleSize / 2,
-                         swatchRect.center().y() - circleSize / 2,
-                         circleSize, circleSize);
+        // Draw color rounded square
+        int colorSize = swatchRect.width() - 6;
+        QRect colorRect(swatchRect.center().x() - colorSize / 2,
+                        swatchRect.center().y() - colorSize / 2,
+                        colorSize, colorSize);
 
         // Draw border (white for dark colors, dark for light colors)
         QColor borderColor = (m_colors[i].lightness() > 200) ? QColor(80, 80, 80) : Qt::white;
         painter.setPen(QPen(borderColor, 1));
         painter.setBrush(m_colors[i]);
-        painter.drawEllipse(circleRect);
+        painter.drawRoundedRect(colorRect, 3, 3);
 
         // Draw selection indicator for current color
         if (m_colors[i] == m_currentColor) {
             painter.setPen(QPen(QColor(0, 174, 255), 2));
             painter.setBrush(Qt::NoBrush);
-            painter.drawEllipse(circleRect.adjusted(-3, -3, 3, 3));
+            painter.drawRoundedRect(colorRect.adjusted(-3, -3, 3, 3), 4, 4);
         }
     }
 

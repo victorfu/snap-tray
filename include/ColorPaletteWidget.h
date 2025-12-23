@@ -117,10 +117,11 @@ private:
     int m_hoveredSwatch;
 
     // Layout constants
-    static const int SWATCH_SIZE = 20;
-    static const int SWATCH_SPACING = 3;
-    static const int PALETTE_HEIGHT = 28;
+    static const int SWATCH_SIZE = 16;
+    static const int SWATCH_SPACING = 2;
+    static const int PALETTE_HEIGHT = 36;
     static const int PALETTE_PADDING = 5;
+    static const int COLORS_PER_ROW = 8;
 };
 
 #endif // COLORPALETTEWIDGET_H
