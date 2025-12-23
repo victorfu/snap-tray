@@ -17,16 +17,36 @@
 #include <QFileInfo>
 #include <QFile>
 
+#ifdef Q_OS_WIN
+#include <windows.h>
+#else
 #include <unistd.h>
 #include <fcntl.h>
+#endif
 
 static void syncFile(const QString &path)
 {
+#ifdef Q_OS_WIN
+    HANDLE hFile = CreateFileW(
+        reinterpret_cast<LPCWSTR>(path.utf16()),
+        GENERIC_READ,
+        FILE_SHARE_READ | FILE_SHARE_WRITE,
+        NULL,
+        OPEN_EXISTING,
+        FILE_ATTRIBUTE_NORMAL,
+        NULL
+    );
+    if (hFile != INVALID_HANDLE_VALUE) {
+        FlushFileBuffers(hFile);
+        CloseHandle(hFile);
+    }
+#else
     int fd = open(path.toLocal8Bit().constData(), O_RDONLY);
     if (fd >= 0) {
         fsync(fd);
         close(fd);
     }
+#endif
 }
 
 RecordingManager::RecordingManager(QObject *parent)
