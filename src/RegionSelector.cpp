@@ -51,7 +51,7 @@ RegionSelector::RegionSelector(QWidget* parent)
     , m_textEditor(nullptr)
     , m_colorPickerDialog(nullptr)
 {
-    setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
+    setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::Tool);
     setAttribute(Qt::WA_DeleteOnClose);
     setMouseTracking(true);
     setCursor(Qt::ArrowCursor);  // 預設已選取完成，使用 ArrowCursor
