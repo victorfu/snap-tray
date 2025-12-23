@@ -216,6 +216,10 @@ private:
     // Inline text editing
     InlineTextEditor *m_textEditor;
 
+    // Text annotation dragging state
+    bool m_isDraggingAnnotation = false;
+    QPoint m_annotationDragStart;
+
     // Color picker dialog
     ColorPickerDialog *m_colorPickerDialog;
 

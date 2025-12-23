@@ -53,6 +53,11 @@ public:
     bool isConfirmMode() const { return m_isConfirmMode; }
 
     /**
+     * @brief Check if currently dragging.
+     */
+    bool isDragging() const { return m_isDragging; }
+
+    /**
      * @brief Enter confirm mode (allows dragging, click outside to finish).
      */
     void enterConfirmMode();

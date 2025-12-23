@@ -970,3 +970,25 @@ std::vector<ErasedItemsGroup::IndexedItem> AnnotationLayer::removeItemsIntersect
 
     return removedItems;
 }
+
+int AnnotationLayer::hitTestText(const QPoint &pos) const
+{
+    // Iterate in reverse order (top-most items first)
+    for (int i = static_cast<int>(m_items.size()) - 1; i >= 0; --i) {
+        // Only hit-test TextAnnotation items
+        if (dynamic_cast<TextAnnotation*>(m_items[i].get())) {
+            if (m_items[i]->boundingRect().contains(pos)) {
+                return i;
+            }
+        }
+    }
+    return -1;
+}
+
+AnnotationItem* AnnotationLayer::selectedItem()
+{
+    if (m_selectedIndex >= 0 && m_selectedIndex < static_cast<int>(m_items.size())) {
+        return m_items[m_selectedIndex].get();
+    }
+    return nullptr;
+}

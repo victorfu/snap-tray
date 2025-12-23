@@ -127,6 +127,7 @@ public:
     std::unique_ptr<AnnotationItem> clone() const override;
 
     void setText(const QString &text);
+    void moveBy(const QPoint &delta) { m_position += delta; }
 
 private:
     QPoint m_position;
@@ -259,6 +260,13 @@ public:
     // Returns the removed items with their original indices (for undo support)
     std::vector<ErasedItemsGroup::IndexedItem> removeItemsIntersecting(const QPoint &point, int strokeWidth);
 
+    // Selection support for text annotations
+    int hitTestText(const QPoint &pos) const;
+    void setSelectedIndex(int index) { m_selectedIndex = index; }
+    int selectedIndex() const { return m_selectedIndex; }
+    AnnotationItem* selectedItem();
+    void clearSelection() { m_selectedIndex = -1; }
+
 signals:
     void changed();
 
@@ -270,6 +278,7 @@ private:
 
     std::vector<std::unique_ptr<AnnotationItem>> m_items;
     std::vector<std::unique_ptr<AnnotationItem>> m_redoStack;
+    int m_selectedIndex = -1;
 };
 
 #endif // ANNOTATIONLAYER_H

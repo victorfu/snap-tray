@@ -1099,6 +1099,21 @@ void RegionSelector::mousePressEvent(QMouseEvent* event)
                 }
             }
 
+            // Check if clicked on existing text annotation (for selection/dragging)
+            int hitIndex = m_annotationLayer->hitTestText(event->pos());
+            if (hitIndex >= 0) {
+                m_annotationLayer->setSelectedIndex(hitIndex);
+                m_isDraggingAnnotation = true;
+                m_annotationDragStart = event->pos();
+                update();
+                return;
+            }
+            // Click elsewhere clears selection
+            if (m_annotationLayer->selectedIndex() >= 0) {
+                m_annotationLayer->clearSelection();
+                update();
+            }
+
             // Handle Text tool - can be placed anywhere on screen
             QRect sel = m_selectionRect.normalized();
             if (m_currentTool == ToolbarButton::Text) {
@@ -1196,9 +1211,27 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
 {
     m_currentPoint = event->pos();
 
-    // Handle text editor dragging
+    // Handle text editor in confirm mode
     if (m_textEditor->isEditing() && m_textEditor->isConfirmMode()) {
         m_textEditor->handleMouseMove(event->pos());
+        // Show appropriate cursor when in confirm mode
+        if (m_textEditor->contains(event->pos())) {
+            setCursor(Qt::SizeAllCursor);
+        } else {
+            setCursor(Qt::ArrowCursor);
+        }
+        update();
+        return;
+    }
+
+    // Handle dragging selected text annotation
+    if (m_isDraggingAnnotation && m_annotationLayer->selectedIndex() >= 0) {
+        QPoint delta = event->pos() - m_annotationDragStart;
+        auto* textItem = dynamic_cast<TextAnnotation*>(m_annotationLayer->selectedItem());
+        if (textItem) {
+            textItem->moveBy(delta);
+        }
+        m_annotationDragStart = event->pos();
         update();
         return;
     }
@@ -1241,6 +1274,13 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
         bool colorPaletteHovered = false;
         bool lineWidthHovered = false;
         bool unifiedWidgetHovered = false;
+        bool textAnnotationHovered = false;
+
+        // Check if hovering over text annotation
+        if (m_annotationLayer->hitTestText(event->pos()) >= 0) {
+            setCursor(Qt::SizeAllCursor);
+            textAnnotationHovered = true;
+        }
 
         // Update unified color and width widget
         if (shouldShowColorAndWidthWidget()) {
@@ -1289,8 +1329,8 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
             if (hoveredButton >= 0) {
                 setCursor(Qt::PointingHandCursor);
             }
-            else if (colorPaletteHovered || lineWidthHovered || unifiedWidgetHovered) {
-                // Already set cursor for color swatch, line width widget, or unified widget
+            else if (colorPaletteHovered || lineWidthHovered || unifiedWidgetHovered || textAnnotationHovered) {
+                // Already set cursor for color swatch, line width widget, unified widget, or text annotation
             }
             else if (m_currentTool == ToolbarButton::Text && !m_textEditor->isEditing()) {
                 setCursor(Qt::IBeamCursor);
@@ -1304,7 +1344,7 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
                 updateCursorForHandle(handle);
             }
         }
-        else if (hoveredButton < 0 && !colorPaletteHovered && !lineWidthHovered && !unifiedWidgetHovered && m_currentTool == ToolbarButton::Selection) {
+        else if (hoveredButton < 0 && !colorPaletteHovered && !lineWidthHovered && !unifiedWidgetHovered && !textAnnotationHovered && m_currentTool == ToolbarButton::Selection) {
             // Update cursor for resize handles when not hovering button or color swatch
             ResizeHandle handle = getHandleAtPosition(event->pos());
             updateCursorForHandle(handle);
@@ -1332,6 +1372,12 @@ void RegionSelector::mouseReleaseEvent(QMouseEvent* event)
         // Handle text editor drag release
         if (m_textEditor->isEditing() && m_textEditor->isConfirmMode()) {
             m_textEditor->handleMouseRelease(event->pos());
+            return;
+        }
+
+        // Handle text annotation drag release
+        if (m_isDraggingAnnotation) {
+            m_isDraggingAnnotation = false;
             return;
         }
 
@@ -1570,6 +1616,20 @@ bool RegionSelector::eventFilter(QObject* obj, QEvent* event)
 void RegionSelector::drawAnnotations(QPainter &painter)
 {
     m_annotationLayer->draw(painter);
+
+    // Draw selection highlight for selected text annotation
+    int selIdx = m_annotationLayer->selectedIndex();
+    if (selIdx >= 0) {
+        AnnotationItem* item = m_annotationLayer->selectedItem();
+        if (item) {
+            QRect bounds = item->boundingRect();
+            painter.save();
+            painter.setPen(QPen(Qt::white, 1, Qt::DashLine));
+            painter.setBrush(Qt::NoBrush);
+            painter.drawRect(bounds);
+            painter.restore();
+        }
+    }
 }
 
 void RegionSelector::drawCurrentAnnotation(QPainter &painter)
