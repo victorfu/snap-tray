@@ -10,6 +10,7 @@ class QHotkey;
 class CaptureManager;
 class PinWindowManager;
 class ScreenCanvasManager;
+class SettingsDialog;
 
 class MainApplication : public QObject
 {
@@ -43,6 +44,7 @@ private:
     ScreenCanvasManager *m_screenCanvasManager;
     QAction *m_regionCaptureAction;
     QAction *m_screenCanvasAction;
+    SettingsDialog *m_settingsDialog;
 };
 
 #endif // MAINAPPLICATION_H

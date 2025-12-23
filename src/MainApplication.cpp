@@ -27,6 +27,7 @@ MainApplication::MainApplication(QObject* parent)
     , m_screenCanvasManager(nullptr)
     , m_regionCaptureAction(nullptr)
     , m_screenCanvasAction(nullptr)
+    , m_settingsDialog(nullptr)
 {
 }
 
@@ -130,25 +131,43 @@ void MainApplication::onSettings()
 {
     qDebug() << "Settings triggered";
 
-    SettingsDialog dialog;
-    bool captureHotkeySuccess = true;
+    // If dialog already open, bring it to front
+    if (m_settingsDialog) {
+        m_settingsDialog->raise();
+        m_settingsDialog->activateWindow();
+        return;
+    }
+
+    // Create non-modal dialog
+    m_settingsDialog = new SettingsDialog();
+    m_settingsDialog->setAttribute(Qt::WA_DeleteOnClose);
 
     // Show current hotkey registration status
-    dialog.updateCaptureHotkeyStatus(m_regionHotkey->isRegistered());
+    m_settingsDialog->updateCaptureHotkeyStatus(m_regionHotkey->isRegistered());
 
-    connect(&dialog, &SettingsDialog::hotkeyChangeRequested,
-        this, [this, &dialog, &captureHotkeySuccess](const QString& newHotkey) {
-            captureHotkeySuccess = updateHotkey(newHotkey);
-            dialog.updateCaptureHotkeyStatus(captureHotkeySuccess);
-
-            if (!captureHotkeySuccess) {
-                dialog.showHotkeyError("Failed to register capture hotkey. It may be in use by another application.");
-            }
-            else {
-                dialog.accept();
+    // Connect hotkey change signal
+    connect(m_settingsDialog, &SettingsDialog::hotkeyChangeRequested,
+        this, [this](const QString& newHotkey) {
+            bool success = updateHotkey(newHotkey);
+            if (m_settingsDialog) {
+                m_settingsDialog->updateCaptureHotkeyStatus(success);
+                if (!success) {
+                    m_settingsDialog->showHotkeyError(
+                        "Failed to register capture hotkey. It may be in use by another application.");
+                }
             }
         });
-    dialog.exec();
+
+    // Clean up pointer when dialog is destroyed (WA_DeleteOnClose triggers this)
+    connect(m_settingsDialog, &QDialog::destroyed,
+        this, [this]() {
+            m_settingsDialog = nullptr;
+        });
+
+    // Show non-modal
+    m_settingsDialog->show();
+    m_settingsDialog->raise();
+    m_settingsDialog->activateWindow();
 }
 
 void MainApplication::setupHotkey()

@@ -402,8 +402,11 @@ void SettingsDialog::onSave()
     watermarkSettings.imageScale = m_watermarkImageScaleSlider->value();
     WatermarkRenderer::saveSettings(watermarkSettings);
 
-    // Request hotkey change - MainApplication will call accept() if successful
+    // Request hotkey change (MainApplication handles registration)
     emit hotkeyChangeRequested(newHotkey);
+
+    // Close dialog (non-modal mode)
+    accept();
 }
 
 void SettingsDialog::showHotkeyError(const QString &message)
