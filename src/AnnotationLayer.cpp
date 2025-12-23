@@ -999,11 +999,15 @@ bool AnnotationLayer::removeSelectedItem()
         return false;
     }
 
-    // Move the item to redo stack for undo support
-    m_redoStack.clear();
-    m_redoStack.push_back(std::move(m_items[m_selectedIndex]));
+    // Use ErasedItemsGroup for proper undo/redo support (same pattern as eraser)
+    std::vector<ErasedItemsGroup::IndexedItem> removedItems;
+    removedItems.push_back({static_cast<size_t>(m_selectedIndex), std::move(m_items[m_selectedIndex])});
     m_items.erase(m_items.begin() + m_selectedIndex);
 
+    // Add ErasedItemsGroup to track the deletion for undo
+    m_items.push_back(std::make_unique<ErasedItemsGroup>(std::move(removedItems)));
+
+    m_redoStack.clear();
     m_selectedIndex = -1;
     renumberStepBadges();
     emit changed();

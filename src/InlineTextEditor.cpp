@@ -100,6 +100,11 @@ QString InlineTextEditor::finishEditing()
     m_isConfirmMode = false;
     m_isDragging = false;
 
+    // Return focus to parent widget so it can receive keyboard events
+    if (m_parentWidget) {
+        m_parentWidget->setFocus();
+    }
+
     if (!text.isEmpty()) {
         // m_textPosition is already the baseline position
         emit editingFinished(text, m_textPosition);
@@ -135,6 +140,11 @@ void InlineTextEditor::cancelEditing()
     m_isEditing = false;
     m_isConfirmMode = false;
     m_isDragging = false;
+
+    // Return focus to parent widget so it can receive keyboard events
+    if (m_parentWidget) {
+        m_parentWidget->setFocus();
+    }
 
     emit editingCancelled();
 }

@@ -1145,6 +1145,7 @@ void RegionSelector::mousePressEvent(QMouseEvent* event)
                 m_annotationLayer->setSelectedIndex(hitIndex);
                 m_isDraggingAnnotation = true;
                 m_annotationDragStart = event->pos();
+                setFocus();  // Ensure we have keyboard focus for Delete key
                 update();
                 return;
             }
