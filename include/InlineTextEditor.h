@@ -9,6 +9,7 @@
 
 class QWidget;
 class QTextEdit;
+class QMouseEvent;
 
 /**
  * @brief Inline text editing overlay for annotation text input.
@@ -42,9 +43,19 @@ public:
     void cancelEditing();
 
     /**
-     * @brief Check if currently editing.
+     * @brief Check if currently editing (typing or confirming).
      */
     bool isEditing() const { return m_isEditing; }
+
+    /**
+     * @brief Check if in confirm/drag mode.
+     */
+    bool isConfirmMode() const { return m_isConfirmMode; }
+
+    /**
+     * @brief Enter confirm mode (allows dragging, click outside to finish).
+     */
+    void enterConfirmMode();
 
     /**
      * @brief Get the position where text was placed.
@@ -81,6 +92,13 @@ public:
      */
     bool contains(const QPoint& pos) const;
 
+    /**
+     * @brief Handle mouse events for dragging.
+     */
+    void handleMousePress(const QPoint& pos);
+    void handleMouseMove(const QPoint& pos);
+    void handleMouseRelease(const QPoint& pos);
+
 signals:
     /**
      * @brief Emitted when editing is finished with text.
@@ -102,7 +120,11 @@ private:
     QWidget* m_parentWidget;
     QTextEdit* m_textEdit;
     bool m_isEditing;
+    bool m_isConfirmMode;
+    bool m_isDragging;
     QPoint m_textPosition;
+    QPoint m_dragStartPos;
+    QPoint m_dragStartTextPos;
     QRect m_bounds;
     QColor m_color;
     QFont m_font;

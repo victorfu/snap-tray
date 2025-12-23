@@ -14,6 +14,8 @@ InlineTextEditor::InlineTextEditor(QWidget* parent)
     , m_parentWidget(parent)
     , m_textEdit(nullptr)
     , m_isEditing(false)
+    , m_isConfirmMode(false)
+    , m_isDragging(false)
     , m_color(Qt::red)
 {
     m_font.setPointSize(16);
@@ -42,29 +44,40 @@ void InlineTextEditor::startEditing(const QPoint& pos, const QRect& bounds)
 
     m_bounds = bounds;
 
-    // Calculate initial position (clamped to bounds)
-    int x = pos.x();
-    int y = pos.y();
+    // pos is treated as the text baseline position (where text starts)
+    // Calculate input box top-left from baseline position
+    QFontMetrics fm(m_font);
+    int boxX = pos.x() - PADDING;
+    int boxY = pos.y() - fm.ascent() - PADDING;
     int width = MIN_WIDTH;
     int height = MIN_HEIGHT;
 
-    if (x + width > bounds.right()) {
-        x = bounds.right() - width;
+    // Clamp to bounds
+    if (boxX + width > bounds.right()) {
+        boxX = bounds.right() - width;
     }
-    if (y + height > bounds.bottom()) {
-        y = bounds.bottom() - height;
+    if (boxY + height > bounds.bottom()) {
+        boxY = bounds.bottom() - height;
     }
-    x = qMax(bounds.left(), x);
-    y = qMax(bounds.top(), y);
+    boxX = qMax(bounds.left(), boxX);
+    boxY = qMax(bounds.top(), boxY);
 
-    m_textPosition = QPoint(x, y);
+    // Store the baseline position (text position)
+    m_textPosition = pos;
+
+    // Reset states from previous editing session
+    m_isConfirmMode = false;
+    m_isDragging = false;
+    m_textEdit->setReadOnly(false);
+    m_textEdit->setCursor(Qt::IBeamCursor);
+    m_textEdit->setAttribute(Qt::WA_TransparentForMouseEvents, false);
 
     // Update style and font
     updateStyle();
     m_textEdit->setFont(m_font);
 
     // Set geometry and show
-    m_textEdit->setGeometry(x, y, width, height);
+    m_textEdit->setGeometry(boxX, boxY, width, height);
     m_textEdit->clear();
     m_textEdit->show();
     m_textEdit->setFocus();
@@ -84,18 +97,31 @@ QString InlineTextEditor::finishEditing()
     m_textEdit->hide();
     m_textEdit->clear();
     m_isEditing = false;
+    m_isConfirmMode = false;
+    m_isDragging = false;
 
     if (!text.isEmpty()) {
-        // Calculate baseline position: add padding offset and font ascent
-        QFontMetrics fm(m_font);
-        QPoint baselinePos = m_textPosition;
-        baselinePos.setX(baselinePos.x() + PADDING);
-        baselinePos.setY(baselinePos.y() + PADDING + fm.ascent());
-
-        emit editingFinished(text, baselinePos);
+        // m_textPosition is already the baseline position
+        emit editingFinished(text, m_textPosition);
     }
 
     return text;
+}
+
+void InlineTextEditor::enterConfirmMode()
+{
+    if (!m_isEditing || !m_textEdit) return;
+
+    // Switch from editing mode to confirm mode
+    m_isConfirmMode = true;
+    m_textEdit->setReadOnly(true);
+    m_textEdit->clearFocus();
+
+    // Disable mouse events on QTextEdit so parent can handle dragging
+    m_textEdit->setAttribute(Qt::WA_TransparentForMouseEvents, true);
+
+    // Change cursor to indicate draggable
+    m_textEdit->setCursor(Qt::SizeAllCursor);
 }
 
 void InlineTextEditor::cancelEditing()
@@ -107,6 +133,8 @@ void InlineTextEditor::cancelEditing()
     m_textEdit->hide();
     m_textEdit->clear();
     m_isEditing = false;
+    m_isConfirmMode = false;
+    m_isDragging = false;
 
     emit editingCancelled();
 }
@@ -136,6 +164,50 @@ bool InlineTextEditor::contains(const QPoint& pos) const
     return m_textEdit->geometry().contains(pos);
 }
 
+void InlineTextEditor::handleMousePress(const QPoint& pos)
+{
+    if (!m_isConfirmMode || !m_textEdit) return;
+
+    if (m_textEdit->geometry().contains(pos)) {
+        // Start dragging
+        m_isDragging = true;
+        m_dragStartPos = pos;
+        m_dragStartTextPos = m_textPosition;
+    }
+}
+
+void InlineTextEditor::handleMouseMove(const QPoint& pos)
+{
+    if (!m_isDragging || !m_textEdit) return;
+
+    // Calculate delta and update position
+    QPoint delta = pos - m_dragStartPos;
+    m_textPosition = m_dragStartTextPos + delta;
+
+    // Update input box position
+    QFontMetrics fm(m_font);
+    int boxX = m_textPosition.x() - PADDING;
+    int boxY = m_textPosition.y() - fm.ascent() - PADDING;
+
+    // Clamp to bounds
+    boxX = qMax(m_bounds.left(), boxX);
+    boxY = qMax(m_bounds.top(), boxY);
+    if (boxX + m_textEdit->width() > m_bounds.right()) {
+        boxX = m_bounds.right() - m_textEdit->width();
+    }
+    if (boxY + m_textEdit->height() > m_bounds.bottom()) {
+        boxY = m_bounds.bottom() - m_textEdit->height();
+    }
+
+    m_textEdit->move(boxX, boxY);
+}
+
+void InlineTextEditor::handleMouseRelease(const QPoint& pos)
+{
+    Q_UNUSED(pos);
+    m_isDragging = false;
+}
+
 void InlineTextEditor::onContentsChanged()
 {
     if (m_isEditing && m_textEdit) {
@@ -147,15 +219,16 @@ void InlineTextEditor::updateStyle()
 {
     if (!m_textEdit) return;
 
+    // Transparent background + white border + colored text
     QString styleSheet = QString(
         "QTextEdit {"
-        "  background: rgba(255, 255, 255, 230);"
+        "  background: transparent;"
         "  color: %1;"
-        "  font-size: %2pt;"
-        "  font-weight: bold;"
-        "  border: 2px solid %1;"
+        "  border: 1px solid white;"
         "  border-radius: 4px;"
         "  padding: 4px;"
+        "  font-size: %2pt;"
+        "  font-weight: bold;"
         "}"
     ).arg(m_color.name()).arg(m_font.pointSize());
     m_textEdit->setStyleSheet(styleSheet);
@@ -165,20 +238,32 @@ void InlineTextEditor::adjustSize()
 {
     if (!m_textEdit) return;
 
-    // Auto-resize based on content
-    QSizeF docSize = m_textEdit->document()->size();
-    int newWidth = qMax(MIN_WIDTH, static_cast<int>(docSize.width()) + 20);
-    int newHeight = qMax(MIN_HEIGHT, static_cast<int>(docSize.height()) + 10);
+    // Calculate actual text width using QFontMetrics
+    QString text = m_textEdit->toPlainText();
+    QFontMetrics fm(m_font);
+
+    // Find the widest line
+    int maxLineWidth = 0;
+    QStringList lines = text.split('\n');
+    for (const QString& line : lines) {
+        int lineWidth = fm.horizontalAdvance(line);
+        maxLineWidth = qMax(maxLineWidth, lineWidth);
+    }
+
+    // Add padding for border and internal padding
+    int newWidth = qMax(MIN_WIDTH, maxLineWidth + 30);
+    int newHeight = qMax(MIN_HEIGHT, lines.count() * fm.lineSpacing() + 20);
+
+    // Calculate box position from baseline position (m_textPosition)
+    int boxX = m_textPosition.x() - PADDING;
+    int boxY = m_textPosition.y() - fm.ascent() - PADDING;
 
     // Clamp to bounds
-    int x = m_textPosition.x();
-    int y = m_textPosition.y();
-
-    if (x + newWidth > m_bounds.right()) {
-        newWidth = m_bounds.right() - x;
+    if (boxX + newWidth > m_bounds.right()) {
+        newWidth = m_bounds.right() - boxX;
     }
-    if (y + newHeight > m_bounds.bottom()) {
-        newHeight = m_bounds.bottom() - y;
+    if (boxY + newHeight > m_bounds.bottom()) {
+        newHeight = m_bounds.bottom() - boxY;
     }
     newWidth = qMax(100, newWidth);
     newHeight = qMax(30, newHeight);

@@ -7,6 +7,7 @@
 #include "ColorPickerDialog.h"
 #include "OCRManager.h"
 #include "PlatformFeatures.h"
+#include <QTextEdit>
 
 #include <cstring>
 #include <QPainter>
@@ -1039,14 +1040,31 @@ void RegionSelector::mousePressEvent(QMouseEvent* event)
 {
     if (event->button() == Qt::LeftButton) {
         if (m_selectionComplete) {
-            // Handle inline text editing - click outside finishes
+            // Handle inline text editing
             if (m_textEditor->isEditing()) {
-                if (!m_textEditor->contains(event->pos())) {
-                    m_textEditor->finishEditing();
-                    // Continue processing click for next action
+                if (m_textEditor->isConfirmMode()) {
+                    // In confirm mode: click outside finishes, click inside starts drag
+                    if (!m_textEditor->contains(event->pos())) {
+                        m_textEditor->finishEditing();
+                        // Continue processing click for next action
+                    } else {
+                        // Start dragging
+                        m_textEditor->handleMousePress(event->pos());
+                        return;
+                    }
                 } else {
-                    // Click inside text edit - let it handle
-                    return;
+                    // In typing mode: click outside enters confirm mode
+                    if (!m_textEditor->contains(event->pos())) {
+                        if (!m_textEditor->textEdit()->toPlainText().trimmed().isEmpty()) {
+                            m_textEditor->enterConfirmMode();
+                        } else {
+                            m_textEditor->cancelEditing();
+                        }
+                        return;
+                    } else {
+                        // Click inside text edit - let it handle
+                        return;
+                    }
                 }
             }
 
@@ -1081,15 +1099,16 @@ void RegionSelector::mousePressEvent(QMouseEvent* event)
                 }
             }
 
-            // Check if we're using an annotation tool and clicking inside selection
+            // Handle Text tool - can be placed anywhere on screen
             QRect sel = m_selectionRect.normalized();
+            if (m_currentTool == ToolbarButton::Text) {
+                m_textEditor->setColor(m_annotationColor);
+                m_textEditor->startEditing(event->pos(), rect());  // Use full screen as bounds
+                return;
+            }
+
+            // Check if we're using an annotation tool and clicking inside selection
             if (isAnnotationTool(m_currentTool) && m_currentTool != ToolbarButton::Selection && sel.contains(event->pos())) {
-                // Handle Text tool - use inline text editing
-                if (m_currentTool == ToolbarButton::Text) {
-                    m_textEditor->setColor(m_annotationColor);
-                    m_textEditor->startEditing(event->pos(), sel);
-                    return;
-                }
                 // Handle StepBadge tool - place badge on click
                 if (m_currentTool == ToolbarButton::StepBadge) {
                     placeStepBadge(event->pos());
@@ -1176,6 +1195,13 @@ void RegionSelector::mousePressEvent(QMouseEvent* event)
 void RegionSelector::mouseMoveEvent(QMouseEvent* event)
 {
     m_currentPoint = event->pos();
+
+    // Handle text editor dragging
+    if (m_textEditor->isEditing() && m_textEditor->isConfirmMode()) {
+        m_textEditor->handleMouseMove(event->pos());
+        update();
+        return;
+    }
 
     // Window detection during hover (before any selection or dragging)
     if (!m_isSelecting && !m_selectionComplete && m_windowDetector) {
@@ -1266,6 +1292,9 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
             else if (colorPaletteHovered || lineWidthHovered || unifiedWidgetHovered) {
                 // Already set cursor for color swatch, line width widget, or unified widget
             }
+            else if (m_currentTool == ToolbarButton::Text && !m_textEditor->isEditing()) {
+                setCursor(Qt::IBeamCursor);
+            }
             else if (isAnnotationTool(m_currentTool) && m_currentTool != ToolbarButton::Selection) {
                 setCursor(Qt::CrossCursor);
             }
@@ -1300,6 +1329,12 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
 void RegionSelector::mouseReleaseEvent(QMouseEvent* event)
 {
     if (event->button() == Qt::LeftButton) {
+        // Handle text editor drag release
+        if (m_textEditor->isEditing() && m_textEditor->isConfirmMode()) {
+            m_textEditor->handleMouseRelease(event->pos());
+            return;
+        }
+
         if (m_isSelecting) {
             m_isSelecting = false;
 
@@ -1375,13 +1410,23 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
             m_textEditor->cancelEditing();
             return;
         }
-        // Ctrl+Enter or Shift+Enter to finish editing
-        if ((event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) &&
-            (event->modifiers() & (Qt::ControlModifier | Qt::ShiftModifier))) {
-            m_textEditor->finishEditing();
-            return;
+        if (m_textEditor->isConfirmMode()) {
+            // In confirm mode: Enter finishes editing
+            if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) {
+                m_textEditor->finishEditing();
+                return;
+            }
+        } else {
+            // In typing mode: Ctrl+Enter or Shift+Enter enters confirm mode
+            if ((event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) &&
+                (event->modifiers() & (Qt::ControlModifier | Qt::ShiftModifier))) {
+                if (!m_textEditor->textEdit()->toPlainText().trimmed().isEmpty()) {
+                    m_textEditor->enterConfirmMode();
+                }
+                return;
+            }
+            // Let QTextEdit handle other keys (including Enter for newlines)
         }
-        // Let QTextEdit handle other keys (including Enter for newlines)
         return;
     }
 
