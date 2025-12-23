@@ -5,6 +5,7 @@
 #include <QProcess>
 #include <QSize>
 #include <QPixmap>
+#include <functional>
 
 class FFmpegEncoder : public QObject
 {
@@ -41,7 +42,23 @@ public:
     static bool isFFmpegAvailable();
     static QString ffmpegPath();
 
+    /**
+     * @brief Check FFmpeg availability asynchronously (non-blocking)
+     * @param callback Called on main thread with result
+     */
+    static void checkAvailabilityAsync(std::function<void(bool available)> callback);
+
+    /**
+     * @brief Start encoder asynchronously (non-blocking)
+     * Emits startCompleted(success) when done instead of blocking.
+     */
+    void startAsync(const QString &outputPath, const QSize &frameSize, int frameRate);
+
 signals:
+    /**
+     * @brief Emitted when async startup completes
+     */
+    void startCompleted(bool success);
     void finished(bool success, const QString &outputPath);
     void error(const QString &message);
     void progress(qint64 framesWritten);
@@ -66,6 +83,7 @@ private:
     qint64 m_framesWritten;
     QString m_lastError;
     bool m_finishing;
+    bool m_startPending = false;  // For async startup tracking
     OutputFormat m_outputFormat;
 };
 

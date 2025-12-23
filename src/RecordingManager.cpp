@@ -3,6 +3,7 @@
 #include "RecordingControlBar.h"
 #include "RecordingBoundaryOverlay.h"
 #include "FFmpegEncoder.h"
+#include "FrameProcessorThread.h"
 #include "capture/ICaptureEngine.h"
 #include "platform/WindowLevel.h"
 
@@ -176,21 +177,32 @@ void RecordingManager::onRegionCancelled()
 
 void RecordingManager::startFrameCapture()
 {
-    qDebug() << "RecordingManager::startFrameCapture() - BEGIN";
+    qDebug() << "RecordingManager::startFrameCapture() - BEGIN (async)";
 
-    // Check FFmpeg availability
-    qDebug() << "RecordingManager::startFrameCapture() - Checking FFmpeg availability...";
-    if (!FFmpegEncoder::isFFmpegAvailable()) {
+    // Check FFmpeg availability asynchronously to avoid blocking UI
+    qDebug() << "RecordingManager::startFrameCapture() - Checking FFmpeg availability (async)...";
+    FFmpegEncoder::checkAvailabilityAsync([this](bool available) {
+        onFFmpegAvailabilityChecked(available);
+    });
+}
+
+void RecordingManager::onFFmpegAvailabilityChecked(bool available)
+{
+    if (!available) {
         emit recordingError("FFmpeg not found. Please install FFmpeg to use screen recording.");
         setState(State::Idle);
         return;
     }
-    qDebug() << "RecordingManager::startFrameCapture() - FFmpeg is available";
+    qDebug() << "RecordingManager: FFmpeg is available (async check complete)";
+    continueFrameCaptureSetup();
+}
 
+void RecordingManager::continueFrameCaptureSetup()
+{
     // Initialize capture engine (auto-selects best available)
-    qDebug() << "RecordingManager::startFrameCapture() - Creating capture engine...";
+    qDebug() << "RecordingManager: Creating capture engine...";
     m_captureEngine = ICaptureEngine::createBestEngine(this);
-    qDebug() << "RecordingManager::startFrameCapture() - Capture engine created:" << (m_captureEngine ? "valid" : "NULL");
+    qDebug() << "RecordingManager: Capture engine created:" << (m_captureEngine ? "valid" : "NULL");
 
     // Forward capture engine warnings to UI
     connect(m_captureEngine, &ICaptureEngine::warning,
@@ -204,7 +216,7 @@ void RecordingManager::startFrameCapture()
         emit recordingError(msg);
     });
 
-    qDebug() << "RecordingManager::startFrameCapture() - Setting region:" << m_recordingRegion
+    qDebug() << "RecordingManager: Setting region:" << m_recordingRegion
              << "screen:" << (m_targetScreen ? m_targetScreen->name() : "NULL");
     if (!m_captureEngine->setRegion(m_recordingRegion, m_targetScreen)) {
         emit recordingError("Failed to configure capture region");
@@ -213,12 +225,12 @@ void RecordingManager::startFrameCapture()
         setState(State::Idle);
         return;
     }
-    qDebug() << "RecordingManager::startFrameCapture() - Region set successfully";
+    qDebug() << "RecordingManager: Region set successfully";
 
-    qDebug() << "RecordingManager::startFrameCapture() - Setting frame rate:" << m_frameRate;
+    qDebug() << "RecordingManager: Setting frame rate:" << m_frameRate;
     m_captureEngine->setFrameRate(m_frameRate);
 
-    qDebug() << "RecordingManager::startFrameCapture() - Starting capture engine...";
+    qDebug() << "RecordingManager: Starting capture engine...";
     if (!m_captureEngine->start()) {
         emit recordingError("Failed to start capture engine");
         delete m_captureEngine;
@@ -226,14 +238,12 @@ void RecordingManager::startFrameCapture()
         setState(State::Idle);
         return;
     }
-    qDebug() << "RecordingManager::startFrameCapture() - Capture engine started successfully";
-
-    qDebug() << "RecordingManager: Using capture engine:" << m_captureEngine->engineName();
+    qDebug() << "RecordingManager: Capture engine started -" << m_captureEngine->engineName();
 
     // Initialize FFmpeg encoder
-    qDebug() << "RecordingManager::startFrameCapture() - Creating FFmpeg encoder...";
+    qDebug() << "RecordingManager: Creating FFmpeg encoder...";
 
-    // Safety check: clean up any existing encoder (should not happen normally)
+    // Safety check: clean up any existing encoder
     if (m_encoder) {
         qWarning() << "RecordingManager: Previous encoder still exists, cleaning up";
         disconnect(m_encoder, nullptr, this, nullptr);
@@ -243,18 +253,20 @@ void RecordingManager::startFrameCapture()
 
     m_encoder = new FFmpegEncoder(this);
     QString outputPath = generateOutputPath();
-    qDebug() << "RecordingManager::startFrameCapture() - Output path:" << outputPath;
+    qDebug() << "RecordingManager: Output path:" << outputPath;
 
     // Set output format from settings
     QSettings settings("Victor Fu", "SnapTray");
     int formatInt = settings.value("recording/outputFormat", 0).toInt();
     m_encoder->setOutputFormat(static_cast<FFmpegEncoder::OutputFormat>(formatInt));
-    qDebug() << "RecordingManager::startFrameCapture() - Output format:" << formatInt;
+    qDebug() << "RecordingManager: Output format:" << formatInt;
 
     connect(m_encoder, &FFmpegEncoder::finished,
             this, &RecordingManager::onEncodingFinished);
     connect(m_encoder, &FFmpegEncoder::error,
             this, &RecordingManager::onEncodingError);
+    connect(m_encoder, &FFmpegEncoder::startCompleted,
+            this, &RecordingManager::onEncoderStartCompleted);
 
     // Use physical pixel size for Retina/HiDPI displays
     qreal scale = m_targetScreen ? m_targetScreen->devicePixelRatio() : 1.0;
@@ -262,31 +274,58 @@ void RecordingManager::startFrameCapture()
         static_cast<int>(m_recordingRegion.width() * scale),
         static_cast<int>(m_recordingRegion.height() * scale)
     );
-    qDebug() << "RecordingManager::startFrameCapture() - Starting encoder with physical size:" << physicalSize
+    qDebug() << "RecordingManager: Starting encoder (async) with physical size:" << physicalSize
              << "(scale:" << scale << ", logical:" << m_recordingRegion.size() << ")";
-    if (!m_encoder->start(outputPath, physicalSize, m_frameRate)) {
+
+    // Start encoder asynchronously to avoid blocking UI
+    m_encoder->startAsync(outputPath, physicalSize, m_frameRate);
+}
+
+void RecordingManager::onEncoderStartCompleted(bool success)
+{
+    if (!success) {
         emit recordingError(m_encoder->lastError());
         delete m_encoder;
         m_encoder = nullptr;
-        m_captureEngine->stop();
-        delete m_captureEngine;
-        m_captureEngine = nullptr;
+        if (m_captureEngine) {
+            m_captureEngine->stop();
+            delete m_captureEngine;
+            m_captureEngine = nullptr;
+        }
         setState(State::Idle);
         return;
     }
-    qDebug() << "RecordingManager::startFrameCapture() - Encoder started successfully";
+    qDebug() << "RecordingManager: Encoder started successfully (async)";
+    finalizeRecordingSetup();
+}
+
+void RecordingManager::finalizeRecordingSetup()
+{
+    // Create and start processor thread for non-blocking capture/encoding
+    qDebug() << "RecordingManager: Creating processor thread...";
+    m_processorThread = std::make_unique<FrameProcessorThread>();
+    m_processorThread->initialize(m_captureEngine, m_encoder);
+
+    connect(m_processorThread.get(), &FrameProcessorThread::frameProcessed,
+            this, &RecordingManager::onFrameProcessed);
+    connect(m_processorThread.get(), &FrameProcessorThread::frameSkipped,
+            this, &RecordingManager::onFrameSkipped);
+    connect(m_processorThread.get(), &FrameProcessorThread::processingError,
+            this, &RecordingManager::onProcessorError);
+
+    m_processorThread->start();
+    qDebug() << "RecordingManager: Processor thread started";
 
     // Show boundary overlay (red border)
-    qDebug() << "RecordingManager::startFrameCapture() - Creating boundary overlay...";
+    qDebug() << "RecordingManager: Creating boundary overlay...";
     m_boundaryOverlay = new RecordingBoundaryOverlay();
     m_boundaryOverlay->setAttribute(Qt::WA_DeleteOnClose);
     m_boundaryOverlay->setRegion(m_recordingRegion);
     m_boundaryOverlay->show();
     raiseWindowAboveMenuBar(m_boundaryOverlay);
-    qDebug() << "RecordingManager::startFrameCapture() - Boundary overlay shown";
 
     // Show control bar
-    qDebug() << "RecordingManager::startFrameCapture() - Creating control bar...";
+    qDebug() << "RecordingManager: Creating control bar...";
     m_controlBar = new RecordingControlBar();
     m_controlBar->setAttribute(Qt::WA_DeleteOnClose);
     connect(m_controlBar, &RecordingControlBar::stopRequested,
@@ -300,45 +339,55 @@ void RecordingManager::startFrameCapture()
     m_controlBar->positionNear(m_recordingRegion);
     m_controlBar->show();
     raiseWindowAboveMenuBar(m_controlBar);
-    qDebug() << "RecordingManager::startFrameCapture() - Control bar shown";
 
-    // Start frame capture timer
-    qDebug() << "RecordingManager::startFrameCapture() - Starting capture timer...";
+    // Start frame capture timer (now just signals to worker thread - non-blocking!)
+    qDebug() << "RecordingManager: Starting capture timer...";
     m_captureTimer = new QTimer(this);
-    connect(m_captureTimer, &QTimer::timeout, this, &RecordingManager::captureFrame);
+    connect(m_captureTimer, &QTimer::timeout, this, &RecordingManager::scheduleNextCapture);
     m_captureTimer->start(1000 / m_frameRate);
-    qDebug() << "RecordingManager::startFrameCapture() - Capture timer started";
 
     // Start duration timer (update UI every 100ms)
-    qDebug() << "RecordingManager::startFrameCapture() - Starting duration timer...";
     m_durationTimer = new QTimer(this);
     connect(m_durationTimer, &QTimer::timeout, this, &RecordingManager::updateDuration);
     m_durationTimer->start(100);
-    qDebug() << "RecordingManager::startFrameCapture() - Duration timer started";
 
     m_elapsedTimer.start();
     setState(State::Recording);
     m_frameCount = 0;
+    m_droppedFrames = 0;
 
-    qDebug() << "RecordingManager: Recording started at" << m_frameRate << "FPS";
-    qDebug() << "RecordingManager::startFrameCapture() - END (success)";
+    qDebug() << "RecordingManager: Recording started at" << m_frameRate << "FPS (threaded mode)";
     emit recordingStarted();
 }
 
-void RecordingManager::captureFrame()
+void RecordingManager::scheduleNextCapture()
 {
-    if (m_state != State::Recording || !m_captureEngine || !m_encoder) {
+    if (m_state != State::Recording || !m_processorThread) {
         return;
     }
 
-    // Capture frame using the capture engine
-    QImage frame = m_captureEngine->captureFrame();
+    // Non-blocking: just signal the worker thread to capture a frame
+    // The actual capture and encoding happens on the worker thread
+    m_processorThread->requestCapture();
+}
 
-    if (!frame.isNull()) {
-        QPixmap pixmap = QPixmap::fromImage(frame);
-        m_encoder->writeFrame(pixmap);
-        m_frameCount++;
+void RecordingManager::onFrameProcessed(qint64 frameNumber)
+{
+    m_frameCount = frameNumber;
+}
+
+void RecordingManager::onFrameSkipped()
+{
+    m_droppedFrames++;
+    if (m_droppedFrames % 30 == 1) {  // Log occasionally, not every frame
+        qWarning() << "RecordingManager: Frame dropped (total:" << m_droppedFrames << ")";
     }
+}
+
+void RecordingManager::onProcessorError(const QString &message)
+{
+    qWarning() << "RecordingManager: Processor error:" << message;
+    // Don't stop recording for transient errors - just log them
 }
 
 void RecordingManager::updateDuration()
@@ -460,11 +509,22 @@ void RecordingManager::cancelRecording()
 
 void RecordingManager::stopFrameCapture()
 {
-    // Stop timers
+    // Stop timer first to prevent new capture requests
     if (m_captureTimer) {
         m_captureTimer->stop();
         delete m_captureTimer;
         m_captureTimer = nullptr;
+    }
+
+    // Stop processor thread gracefully (must be before stopping capture engine)
+    if (m_processorThread) {
+        qDebug() << "RecordingManager: Stopping processor thread...";
+        m_processorThread->requestStop();
+        if (!m_processorThread->wait(3000)) {
+            qWarning() << "RecordingManager: Processor thread didn't stop gracefully";
+        }
+        m_processorThread.reset();
+        qDebug() << "RecordingManager: Processor thread stopped";
     }
 
     if (m_durationTimer) {
@@ -488,6 +548,9 @@ void RecordingManager::stopFrameCapture()
     if (m_controlBar) {
         m_controlBar->close();
     }
+
+    qDebug() << "RecordingManager: Stopped, frames:" << m_frameCount
+             << "dropped:" << m_droppedFrames;
 }
 
 void RecordingManager::cleanupRecording()
