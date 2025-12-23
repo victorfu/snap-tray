@@ -1,6 +1,7 @@
 #include "SettingsDialog.h"
 #include "AutoLaunchManager.h"
 #include "WatermarkRenderer.h"
+#include "FFmpegEncoder.h"
 
 #include <QKeySequenceEdit>
 #include <QSettings>
@@ -16,6 +17,7 @@
 #include <QSlider>
 #include <QComboBox>
 #include <QFileDialog>
+#include <QStandardPaths>
 
 static const char* SETTINGS_KEY_HOTKEY = "hotkey";
 static const char* DEFAULT_HOTKEY = "F2";
@@ -44,6 +46,12 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     , m_watermarkOpacitySlider(nullptr)
     , m_watermarkOpacityLabel(nullptr)
     , m_watermarkPositionCombo(nullptr)
+    , m_recordingFrameRateCombo(nullptr)
+    , m_recordingOutputFormatCombo(nullptr)
+    , m_recordingOutputPathEdit(nullptr)
+    , m_recordingBrowseBtn(nullptr)
+    , m_recordingAutoSaveCheckbox(nullptr)
+    , m_ffmpegStatusLabel(nullptr)
 {
     setWindowTitle("SnapTray Settings");
     setMinimumSize(520, 360);
@@ -77,6 +85,11 @@ void SettingsDialog::setupUi()
     QWidget *watermarkTab = new QWidget();
     setupWatermarkTab(watermarkTab);
     m_tabWidget->addTab(watermarkTab, "Watermark");
+
+    // Tab 4: Recording
+    QWidget *recordingTab = new QWidget();
+    setupRecordingTab(recordingTab);
+    m_tabWidget->addTab(recordingTab, "Recording");
 
     mainLayout->addWidget(m_tabWidget);
 
@@ -315,6 +328,89 @@ void SettingsDialog::setupWatermarkTab(QWidget *tab)
     updateWatermarkImagePreview();
 }
 
+void SettingsDialog::setupRecordingTab(QWidget *tab)
+{
+    QVBoxLayout *layout = new QVBoxLayout(tab);
+
+    // Frame Rate row
+    QHBoxLayout *fpsLayout = new QHBoxLayout();
+    QLabel *fpsLabel = new QLabel("Frame Rate:", tab);
+    fpsLabel->setFixedWidth(120);
+    m_recordingFrameRateCombo = new QComboBox(tab);
+    m_recordingFrameRateCombo->addItem("10 FPS", 10);
+    m_recordingFrameRateCombo->addItem("15 FPS", 15);
+    m_recordingFrameRateCombo->addItem("24 FPS", 24);
+    m_recordingFrameRateCombo->addItem("30 FPS", 30);
+    m_recordingFrameRateCombo->setCurrentIndex(3);  // Default 30 FPS
+    fpsLayout->addWidget(fpsLabel);
+    fpsLayout->addWidget(m_recordingFrameRateCombo);
+    fpsLayout->addStretch();
+    layout->addLayout(fpsLayout);
+
+    // Output Format row
+    QHBoxLayout *formatLayout = new QHBoxLayout();
+    QLabel *formatLabel = new QLabel("Output Format:", tab);
+    formatLabel->setFixedWidth(120);
+    m_recordingOutputFormatCombo = new QComboBox(tab);
+    m_recordingOutputFormatCombo->addItem("MP4 (H.264 Video)", 0);
+    m_recordingOutputFormatCombo->addItem("GIF (Animated Image)", 1);
+    formatLayout->addWidget(formatLabel);
+    formatLayout->addWidget(m_recordingOutputFormatCombo);
+    formatLayout->addStretch();
+    layout->addLayout(formatLayout);
+
+    // Output directory row
+    QHBoxLayout *outputLayout = new QHBoxLayout();
+    QLabel *outputLabel = new QLabel("Save Location:", tab);
+    outputLabel->setFixedWidth(120);
+    m_recordingOutputPathEdit = new QLineEdit(tab);
+    m_recordingOutputPathEdit->setReadOnly(true);
+    m_recordingOutputPathEdit->setPlaceholderText("Default: ~/Movies");
+    m_recordingBrowseBtn = new QPushButton("Browse...", tab);
+    m_recordingBrowseBtn->setFixedWidth(80);
+    connect(m_recordingBrowseBtn, &QPushButton::clicked, this, [this]() {
+        QString dir = QFileDialog::getExistingDirectory(this, "Select Recording Output Directory");
+        if (!dir.isEmpty()) {
+            m_recordingOutputPathEdit->setText(dir);
+        }
+    });
+    outputLayout->addWidget(outputLabel);
+    outputLayout->addWidget(m_recordingOutputPathEdit);
+    outputLayout->addWidget(m_recordingBrowseBtn);
+    layout->addLayout(outputLayout);
+
+    // Auto-save option
+    m_recordingAutoSaveCheckbox = new QCheckBox("Auto-save recordings (no save dialog)", tab);
+    layout->addWidget(m_recordingAutoSaveCheckbox);
+
+    layout->addSpacing(16);
+
+    // FFmpeg status
+    m_ffmpegStatusLabel = new QLabel(tab);
+    if (FFmpegEncoder::isFFmpegAvailable()) {
+        m_ffmpegStatusLabel->setText("FFmpeg: Available (" + FFmpegEncoder::ffmpegPath() + ")");
+        m_ffmpegStatusLabel->setStyleSheet("color: green;");
+    } else {
+        m_ffmpegStatusLabel->setText("FFmpeg: Not found. Please install FFmpeg to use screen recording.");
+        m_ffmpegStatusLabel->setStyleSheet("color: red;");
+    }
+    layout->addWidget(m_ffmpegStatusLabel);
+
+    layout->addStretch();
+
+    // Load settings
+    QSettings settings("Victor Fu", "SnapTray");
+    int fps = settings.value("recording/framerate", 30).toInt();
+    int fpsIndex = m_recordingFrameRateCombo->findData(fps);
+    if (fpsIndex >= 0) {
+        m_recordingFrameRateCombo->setCurrentIndex(fpsIndex);
+    }
+    int outputFormat = settings.value("recording/outputFormat", 0).toInt();
+    m_recordingOutputFormatCombo->setCurrentIndex(outputFormat);
+    m_recordingOutputPathEdit->setText(settings.value("recording/outputPath").toString());
+    m_recordingAutoSaveCheckbox->setChecked(settings.value("recording/autoSave", false).toBool());
+}
+
 void SettingsDialog::updateWatermarkTypeVisibility(int index)
 {
     Q_UNUSED(index);
@@ -433,7 +529,18 @@ void SettingsDialog::onSave()
     watermarkSettings.imageScale = m_watermarkImageScaleSlider->value();
     WatermarkRenderer::saveSettings(watermarkSettings);
 
-    // Request hotkey changes (MainApplication handles registration)
+    // Save recording settings
+    QSettings recordingSettings("Victor Fu", "SnapTray");
+    recordingSettings.setValue("recording/framerate",
+        m_recordingFrameRateCombo->currentData().toInt());
+    recordingSettings.setValue("recording/outputFormat",
+        m_recordingOutputFormatCombo->currentIndex());
+    recordingSettings.setValue("recording/outputPath",
+        m_recordingOutputPathEdit->text());
+    recordingSettings.setValue("recording/autoSave",
+        m_recordingAutoSaveCheckbox->isChecked());
+
+    // Request hotkey change (MainApplication handles registration)
     emit hotkeyChangeRequested(newHotkey);
     emit screenCanvasHotkeyChangeRequested(newScreenCanvasHotkey);
 

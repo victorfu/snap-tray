@@ -3,6 +3,7 @@
 #include "CaptureManager.h"
 #include "PinWindowManager.h"
 #include "ScreenCanvasManager.h"
+#include "RecordingManager.h"
 #include "PlatformFeatures.h"
 
 #include <QSettings>
@@ -22,11 +23,14 @@ MainApplication::MainApplication(QObject* parent)
     , m_trayMenu(nullptr)
     , m_regionHotkey(nullptr)
     , m_screenCanvasHotkey(nullptr)
+    , m_recordingHotkey(nullptr)
     , m_captureManager(nullptr)
     , m_pinWindowManager(nullptr)
     , m_screenCanvasManager(nullptr)
+    , m_recordingManager(nullptr)
     , m_regionCaptureAction(nullptr)
     , m_screenCanvasAction(nullptr)
+    , m_screenRecordingAction(nullptr)
     , m_settingsDialog(nullptr)
 {
 }
@@ -47,6 +51,24 @@ void MainApplication::initialize()
     // Create screen canvas manager
     m_screenCanvasManager = new ScreenCanvasManager(this);
 
+    // Create recording manager
+    m_recordingManager = new RecordingManager(this);
+
+    // Connect recording signals
+    connect(m_recordingManager, &RecordingManager::recordingStopped,
+            this, [this](const QString &path) {
+                m_trayIcon->showMessage("Recording Saved",
+                    QString("Saved to: %1").arg(path),
+                    QSystemTrayIcon::Information, 3000);
+            });
+
+    connect(m_recordingManager, &RecordingManager::recordingError,
+            this, [this](const QString &error) {
+                m_trayIcon->showMessage("Recording Error",
+                    error,
+                    QSystemTrayIcon::Warning, 5000);
+            });
+
     // Create system tray icon
     QIcon icon = PlatformFeatures::instance().createTrayIcon();
     m_trayIcon = new QSystemTrayIcon(icon, this);
@@ -59,6 +81,9 @@ void MainApplication::initialize()
 
     m_screenCanvasAction = m_trayMenu->addAction("Screen Canvas");
     connect(m_screenCanvasAction, &QAction::triggered, this, &MainApplication::onScreenCanvas);
+
+    m_screenRecordingAction = m_trayMenu->addAction("Screen Recording (F3)");
+    connect(m_screenRecordingAction, &QAction::triggered, this, &MainApplication::onScreenRecording);
 
     m_trayMenu->addSeparator();
 
@@ -94,6 +119,12 @@ void MainApplication::onRegionCapture()
         return;
     }
 
+    // Don't trigger if recording is active
+    if (m_recordingManager->isActive()) {
+        qDebug() << "Region capture blocked: Recording is active";
+        return;
+    }
+
     // Close any open popup menus to prevent focus conflicts
     // (e.g., PinWindow context menu open when F2 is pressed)
     if (QWidget *popup = QApplication::activePopupWidget()) {
@@ -112,6 +143,12 @@ void MainApplication::onScreenCanvas()
         return;
     }
 
+    // Don't trigger if recording is active
+    if (m_recordingManager->isActive()) {
+        qDebug() << "Screen canvas blocked: Recording is active";
+        return;
+    }
+
     // Close any open popup menus to prevent focus conflicts
     if (QWidget *popup = QApplication::activePopupWidget()) {
         popup->close();
@@ -119,6 +156,35 @@ void MainApplication::onScreenCanvas()
 
     qDebug() << "Screen canvas triggered";
     m_screenCanvasManager->toggle();
+}
+
+void MainApplication::onScreenRecording()
+{
+    // Don't trigger if capture is active
+    if (m_captureManager->isActive()) {
+        qDebug() << "Screen recording blocked: Capture is active";
+        return;
+    }
+
+    // Don't trigger if screen canvas is active
+    if (m_screenCanvasManager->isActive()) {
+        qDebug() << "Screen recording blocked: Screen canvas is active";
+        return;
+    }
+
+    // Close any open popup menus to prevent focus conflicts
+    if (QWidget *popup = QApplication::activePopupWidget()) {
+        popup->close();
+    }
+
+    // Toggle recording
+    if (m_recordingManager->isRecording()) {
+        qDebug() << "Stopping screen recording";
+        m_recordingManager->stopRecording();
+    } else {
+        qDebug() << "Starting screen recording";
+        m_recordingManager->startRegionSelection();
+    }
 }
 
 void MainApplication::onCloseAllPins()
@@ -217,7 +283,19 @@ void MainApplication::setupHotkey()
 
     connect(m_screenCanvasHotkey, &QHotkey::activated, this, &MainApplication::onScreenCanvas);
 
-    // Update tray menu text with current hotkeys
+    // Setup Screen Recording hotkey (F3)
+    m_recordingHotkey = new QHotkey(QKeySequence("F3"), true, this);
+
+    if (m_recordingHotkey->isRegistered()) {
+        qDebug() << "Screen recording hotkey registered: F3";
+    }
+    else {
+        qDebug() << "Failed to register screen recording hotkey: F3";
+    }
+
+    connect(m_recordingHotkey, &QHotkey::activated, this, &MainApplication::onScreenRecording);
+
+    // Update tray menu text with current hotkey
     updateTrayMenuHotkeyText(regionKeySequence);
 
     // Show notification if any hotkeys failed to register

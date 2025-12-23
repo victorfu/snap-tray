@@ -1,0 +1,564 @@
+#include "RecordingManager.h"
+#include "RecordingRegionSelector.h"
+#include "RecordingControlBar.h"
+#include "RecordingBoundaryOverlay.h"
+#include "FFmpegEncoder.h"
+#include "capture/ICaptureEngine.h"
+#include "platform/WindowLevel.h"
+
+#include <QGuiApplication>
+#include <QScreen>
+#include <QSettings>
+#include <QStandardPaths>
+#include <QDir>
+#include <QDateTime>
+#include <QDebug>
+#include <QFileDialog>
+#include <QFileInfo>
+#include <QFile>
+
+#include <unistd.h>
+#include <fcntl.h>
+
+static void syncFile(const QString &path)
+{
+    int fd = open(path.toLocal8Bit().constData(), O_RDONLY);
+    if (fd >= 0) {
+        fsync(fd);
+        close(fd);
+    }
+}
+
+RecordingManager::RecordingManager(QObject *parent)
+    : QObject(parent)
+    , m_encoder(nullptr)
+    , m_captureEngine(nullptr)
+    , m_captureTimer(nullptr)
+    , m_durationTimer(nullptr)
+    , m_targetScreen(nullptr)
+    , m_state(State::Idle)
+    , m_frameRate(30)
+    , m_frameCount(0)
+    , m_pausedDuration(0)
+    , m_pauseStartTime(0)
+{
+}
+
+RecordingManager::~RecordingManager()
+{
+    cleanupRecording();
+}
+
+void RecordingManager::setState(State newState)
+{
+    if (m_state != newState) {
+        m_state = newState;
+        emit stateChanged(m_state);
+    }
+}
+
+bool RecordingManager::isActive() const
+{
+    return isSelectingRegion() || isRecording() || isPaused();
+}
+
+bool RecordingManager::isRecording() const
+{
+    return m_state == State::Recording;
+}
+
+bool RecordingManager::isSelectingRegion() const
+{
+    return m_regionSelector && m_regionSelector->isVisible();
+}
+
+bool RecordingManager::isPaused() const
+{
+    return m_state == State::Paused;
+}
+
+void RecordingManager::startRegionSelection()
+{
+    if (m_regionSelector && m_regionSelector->isVisible()) {
+        qDebug() << "RecordingManager: Already selecting region";
+        return;
+    }
+
+    if (m_state == State::Recording || m_state == State::Paused) {
+        qDebug() << "RecordingManager: Already recording";
+        return;
+    }
+
+    // Clean up any existing selector
+    if (m_regionSelector) {
+        m_regionSelector->close();
+    }
+
+    // Determine target screen (cursor location)
+    QScreen *targetScreen = QGuiApplication::screenAt(QCursor::pos());
+    if (!targetScreen) {
+        targetScreen = QGuiApplication::primaryScreen();
+    }
+
+    qDebug() << "RecordingManager: Starting region selection on screen:" << targetScreen->name();
+
+    setState(State::Selecting);
+
+    m_regionSelector = new RecordingRegionSelector();
+    m_regionSelector->setAttribute(Qt::WA_DeleteOnClose);
+
+    connect(m_regionSelector, &RecordingRegionSelector::regionSelected,
+            this, &RecordingManager::onRegionSelected);
+    connect(m_regionSelector, &RecordingRegionSelector::cancelled,
+            this, &RecordingManager::onRegionCancelled);
+
+    qDebug() << "=== RecordingManager: Setting up region selector ===";
+    qDebug() << "Target screen geometry:" << targetScreen->geometry();
+    m_regionSelector->setGeometry(targetScreen->geometry());
+    qDebug() << "Widget geometry after setGeometry:" << m_regionSelector->geometry();
+    m_regionSelector->initializeForScreen(targetScreen);
+    m_regionSelector->show();
+    qDebug() << "Widget geometry after show:" << m_regionSelector->geometry();
+    raiseWindowAboveMenuBar(m_regionSelector);
+    m_regionSelector->activateWindow();
+    m_regionSelector->raise();
+}
+
+void RecordingManager::onRegionSelected(const QRect &region, QScreen *screen)
+{
+    qDebug() << "RecordingManager: Region selected:" << region << "on screen:" << screen->name();
+
+    m_recordingRegion = region;
+    m_targetScreen = screen;
+
+    // Load frame rate from settings
+    QSettings settings("Victor Fu", "SnapTray");
+    m_frameRate = settings.value("recording/framerate", 30).toInt();
+
+    // Reset pause tracking
+    m_pausedDuration = 0;
+    m_pauseStartTime = 0;
+
+    // Start recording immediately after selection
+    startFrameCapture();
+}
+
+void RecordingManager::onRegionCancelled()
+{
+    qDebug() << "RecordingManager: Region selection cancelled";
+    setState(State::Idle);
+    emit recordingCancelled();
+}
+
+void RecordingManager::startFrameCapture()
+{
+    qDebug() << "RecordingManager::startFrameCapture() - BEGIN";
+
+    // Check FFmpeg availability
+    qDebug() << "RecordingManager::startFrameCapture() - Checking FFmpeg availability...";
+    if (!FFmpegEncoder::isFFmpegAvailable()) {
+        emit recordingError("FFmpeg not found. Please install FFmpeg to use screen recording.");
+        setState(State::Idle);
+        return;
+    }
+    qDebug() << "RecordingManager::startFrameCapture() - FFmpeg is available";
+
+    // Initialize capture engine (auto-selects best available)
+    qDebug() << "RecordingManager::startFrameCapture() - Creating capture engine...";
+    m_captureEngine = ICaptureEngine::createBestEngine(this);
+    qDebug() << "RecordingManager::startFrameCapture() - Capture engine created:" << (m_captureEngine ? "valid" : "NULL");
+
+    qDebug() << "RecordingManager::startFrameCapture() - Setting region:" << m_recordingRegion
+             << "screen:" << (m_targetScreen ? m_targetScreen->name() : "NULL");
+    if (!m_captureEngine->setRegion(m_recordingRegion, m_targetScreen)) {
+        emit recordingError("Failed to configure capture region");
+        delete m_captureEngine;
+        m_captureEngine = nullptr;
+        setState(State::Idle);
+        return;
+    }
+    qDebug() << "RecordingManager::startFrameCapture() - Region set successfully";
+
+    qDebug() << "RecordingManager::startFrameCapture() - Setting frame rate:" << m_frameRate;
+    m_captureEngine->setFrameRate(m_frameRate);
+
+    qDebug() << "RecordingManager::startFrameCapture() - Starting capture engine...";
+    if (!m_captureEngine->start()) {
+        emit recordingError("Failed to start capture engine");
+        delete m_captureEngine;
+        m_captureEngine = nullptr;
+        setState(State::Idle);
+        return;
+    }
+    qDebug() << "RecordingManager::startFrameCapture() - Capture engine started successfully";
+
+    qDebug() << "RecordingManager: Using capture engine:" << m_captureEngine->engineName();
+
+    // Initialize FFmpeg encoder
+    qDebug() << "RecordingManager::startFrameCapture() - Creating FFmpeg encoder...";
+    m_encoder = new FFmpegEncoder(this);
+    QString outputPath = generateOutputPath();
+    qDebug() << "RecordingManager::startFrameCapture() - Output path:" << outputPath;
+
+    // Set output format from settings
+    QSettings settings("Victor Fu", "SnapTray");
+    int formatInt = settings.value("recording/outputFormat", 0).toInt();
+    m_encoder->setOutputFormat(static_cast<FFmpegEncoder::OutputFormat>(formatInt));
+    qDebug() << "RecordingManager::startFrameCapture() - Output format:" << formatInt;
+
+    connect(m_encoder, &FFmpegEncoder::finished,
+            this, &RecordingManager::onEncodingFinished);
+    connect(m_encoder, &FFmpegEncoder::error,
+            this, &RecordingManager::onEncodingError);
+
+    qDebug() << "RecordingManager::startFrameCapture() - Starting encoder with size:" << m_recordingRegion.size();
+    if (!m_encoder->start(outputPath, m_recordingRegion.size(), m_frameRate)) {
+        emit recordingError(m_encoder->lastError());
+        delete m_encoder;
+        m_encoder = nullptr;
+        m_captureEngine->stop();
+        delete m_captureEngine;
+        m_captureEngine = nullptr;
+        setState(State::Idle);
+        return;
+    }
+    qDebug() << "RecordingManager::startFrameCapture() - Encoder started successfully";
+
+    // Show boundary overlay (red border)
+    qDebug() << "RecordingManager::startFrameCapture() - Creating boundary overlay...";
+    m_boundaryOverlay = new RecordingBoundaryOverlay();
+    m_boundaryOverlay->setAttribute(Qt::WA_DeleteOnClose);
+    m_boundaryOverlay->setRegion(m_recordingRegion);
+    m_boundaryOverlay->show();
+    raiseWindowAboveMenuBar(m_boundaryOverlay);
+    qDebug() << "RecordingManager::startFrameCapture() - Boundary overlay shown";
+
+    // Show control bar
+    qDebug() << "RecordingManager::startFrameCapture() - Creating control bar...";
+    m_controlBar = new RecordingControlBar();
+    m_controlBar->setAttribute(Qt::WA_DeleteOnClose);
+    connect(m_controlBar, &RecordingControlBar::stopRequested,
+            this, &RecordingManager::stopRecording);
+    connect(m_controlBar, &RecordingControlBar::cancelRequested,
+            this, &RecordingManager::cancelRecording);
+    connect(m_controlBar, &RecordingControlBar::pauseRequested,
+            this, &RecordingManager::pauseRecording);
+    connect(m_controlBar, &RecordingControlBar::resumeRequested,
+            this, &RecordingManager::resumeRecording);
+    m_controlBar->positionNear(m_recordingRegion);
+    m_controlBar->show();
+    raiseWindowAboveMenuBar(m_controlBar);
+    qDebug() << "RecordingManager::startFrameCapture() - Control bar shown";
+
+    // Start frame capture timer
+    qDebug() << "RecordingManager::startFrameCapture() - Starting capture timer...";
+    m_captureTimer = new QTimer(this);
+    connect(m_captureTimer, &QTimer::timeout, this, &RecordingManager::captureFrame);
+    m_captureTimer->start(1000 / m_frameRate);
+    qDebug() << "RecordingManager::startFrameCapture() - Capture timer started";
+
+    // Start duration timer (update UI every 100ms)
+    qDebug() << "RecordingManager::startFrameCapture() - Starting duration timer...";
+    m_durationTimer = new QTimer(this);
+    connect(m_durationTimer, &QTimer::timeout, this, &RecordingManager::updateDuration);
+    m_durationTimer->start(100);
+    qDebug() << "RecordingManager::startFrameCapture() - Duration timer started";
+
+    m_elapsedTimer.start();
+    setState(State::Recording);
+    m_frameCount = 0;
+
+    qDebug() << "RecordingManager: Recording started at" << m_frameRate << "FPS";
+    qDebug() << "RecordingManager::startFrameCapture() - END (success)";
+    emit recordingStarted();
+}
+
+void RecordingManager::captureFrame()
+{
+    if (m_state != State::Recording || !m_captureEngine || !m_encoder) {
+        return;
+    }
+
+    // Capture frame using the capture engine
+    QImage frame = m_captureEngine->captureFrame();
+
+    if (!frame.isNull()) {
+        QPixmap pixmap = QPixmap::fromImage(frame);
+        m_encoder->writeFrame(pixmap);
+        m_frameCount++;
+    }
+}
+
+void RecordingManager::updateDuration()
+{
+    if (m_state == State::Recording || m_state == State::Paused) {
+        qint64 rawElapsed = m_elapsedTimer.elapsed();
+
+        // Calculate current pause duration if paused
+        qint64 currentPause = (m_state == State::Paused)
+            ? (rawElapsed - m_pauseStartTime) : 0;
+
+        // Effective elapsed = raw - total paused - current pause
+        qint64 effectiveElapsed = rawElapsed - m_pausedDuration - currentPause;
+
+        emit durationChanged(effectiveElapsed);
+
+        if (m_controlBar) {
+            m_controlBar->updateDuration(effectiveElapsed);
+        }
+    }
+}
+
+void RecordingManager::pauseRecording()
+{
+    if (m_state != State::Recording) {
+        return;
+    }
+
+    qDebug() << "RecordingManager: Pausing recording";
+
+    // Stop frame capture timer
+    if (m_captureTimer) {
+        m_captureTimer->stop();
+    }
+
+    // Record when pause started
+    m_pauseStartTime = m_elapsedTimer.elapsed();
+
+    setState(State::Paused);
+
+    if (m_controlBar) {
+        m_controlBar->setPaused(true);
+    }
+
+    emit recordingPaused();
+}
+
+void RecordingManager::resumeRecording()
+{
+    if (m_state != State::Paused) {
+        return;
+    }
+
+    qDebug() << "RecordingManager: Resuming recording";
+
+    // Add pause duration to total
+    m_pausedDuration += m_elapsedTimer.elapsed() - m_pauseStartTime;
+
+    // Resume frame capture timer
+    if (m_captureTimer) {
+        m_captureTimer->start(1000 / m_frameRate);
+    }
+
+    setState(State::Recording);
+
+    if (m_controlBar) {
+        m_controlBar->setPaused(false);
+    }
+
+    emit recordingResumed();
+}
+
+void RecordingManager::togglePause()
+{
+    if (m_state == State::Recording) {
+        pauseRecording();
+    } else if (m_state == State::Paused) {
+        resumeRecording();
+    }
+}
+
+void RecordingManager::stopRecording()
+{
+    if (m_state != State::Recording && m_state != State::Paused) {
+        return;
+    }
+
+    qDebug() << "RecordingManager: Stopping recording, frames captured:" << m_frameCount;
+
+    stopFrameCapture();
+    setState(State::Encoding);
+
+    // Finish encoding (waits for FFmpeg to complete)
+    if (m_encoder) {
+        m_encoder->finish();
+    }
+}
+
+void RecordingManager::cancelRecording()
+{
+    if (m_state != State::Recording && m_state != State::Paused) {
+        return;
+    }
+
+    qDebug() << "RecordingManager: Cancelling recording";
+
+    stopFrameCapture();
+
+    // Abort encoding (kills process and removes output file)
+    if (m_encoder) {
+        m_encoder->abort();
+        delete m_encoder;
+        m_encoder = nullptr;
+    }
+
+    setState(State::Idle);
+    emit recordingCancelled();
+}
+
+void RecordingManager::stopFrameCapture()
+{
+    // Stop timers
+    if (m_captureTimer) {
+        m_captureTimer->stop();
+        delete m_captureTimer;
+        m_captureTimer = nullptr;
+    }
+
+    if (m_durationTimer) {
+        m_durationTimer->stop();
+        delete m_durationTimer;
+        m_durationTimer = nullptr;
+    }
+
+    // Stop capture engine
+    if (m_captureEngine) {
+        m_captureEngine->stop();
+        delete m_captureEngine;
+        m_captureEngine = nullptr;
+    }
+
+    // Close UI overlays
+    if (m_boundaryOverlay) {
+        m_boundaryOverlay->close();
+    }
+
+    if (m_controlBar) {
+        m_controlBar->close();
+    }
+}
+
+void RecordingManager::cleanupRecording()
+{
+    stopFrameCapture();
+
+    if (m_encoder) {
+        m_encoder->abort();
+        delete m_encoder;
+        m_encoder = nullptr;
+    }
+
+    if (m_regionSelector) {
+        m_regionSelector->close();
+    }
+}
+
+void RecordingManager::onEncodingFinished(bool success, const QString &outputPath)
+{
+    qDebug() << "RecordingManager: Encoding finished, success:" << success << "path:" << outputPath;
+
+    // Use deleteLater to avoid deleting during signal emission
+    if (m_encoder) {
+        m_encoder->deleteLater();
+        m_encoder = nullptr;
+    }
+
+    setState(State::Idle);
+
+    if (success) {
+        // Defer the save dialog to avoid issues during signal emission
+        // Store the path and process it after the current event
+        QString tempPath = outputPath;
+        QMetaObject::invokeMethod(this, [this, tempPath]() {
+            showSaveDialog(tempPath);
+        }, Qt::QueuedConnection);
+    } else {
+        emit recordingError("Failed to encode video");
+    }
+}
+
+void RecordingManager::showSaveDialog(const QString &tempOutputPath)
+{
+    // Show save dialog
+    QSettings settings("Victor Fu", "SnapTray");
+    QString defaultDir = settings.value("recording/outputPath").toString();
+    if (defaultDir.isEmpty()) {
+        defaultDir = QStandardPaths::writableLocation(QStandardPaths::MoviesLocation);
+    }
+
+    // Get extension from current file
+    QFileInfo fileInfo(tempOutputPath);
+    QString extension = fileInfo.suffix();
+    QString filter = (extension == "gif") ? "GIF Files (*.gif)" : "MP4 Files (*.mp4)";
+    QString defaultFileName = QDir(defaultDir).filePath(fileInfo.fileName());
+
+    QString savePath = QFileDialog::getSaveFileName(
+        nullptr,
+        "Save Recording",
+        defaultFileName,
+        filter
+    );
+
+    if (savePath.isEmpty()) {
+        // User cancelled - delete the temp file
+        QFile::remove(tempOutputPath);
+        emit recordingCancelled();
+    } else {
+        // Ensure correct extension
+        if (!savePath.endsWith("." + extension, Qt::CaseInsensitive)) {
+            savePath += "." + extension;
+        }
+
+        // Move/rename the file to chosen location
+        if (savePath != tempOutputPath) {
+            // Remove existing file if it exists
+            if (QFile::exists(savePath)) {
+                QFile::remove(savePath);
+            }
+            if (QFile::rename(tempOutputPath, savePath)) {
+                syncFile(savePath);
+                qDebug() << "RecordingManager: Saved recording to:" << savePath;
+                emit recordingStopped(savePath);
+            } else {
+                // Try copy + delete if rename fails (cross-filesystem)
+                if (QFile::copy(tempOutputPath, savePath)) {
+                    QFile::remove(tempOutputPath);
+                    syncFile(savePath);
+                    qDebug() << "RecordingManager: Copied recording to:" << savePath;
+                    emit recordingStopped(savePath);
+                } else {
+                    qWarning() << "RecordingManager: Failed to save recording to:" << savePath;
+                    emit recordingError("Failed to save recording to selected location");
+                }
+            }
+        } else {
+            syncFile(tempOutputPath);
+            emit recordingStopped(tempOutputPath);
+        }
+    }
+}
+
+void RecordingManager::onEncodingError(const QString &error)
+{
+    qDebug() << "RecordingManager: Encoding error:" << error;
+    setState(State::Idle);
+    emit recordingError(error);
+}
+
+QString RecordingManager::generateOutputPath() const
+{
+    // Use system temp directory for recording (file is moved to user-selected location after save dialog)
+    QString tempDir = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
+
+    // Get output format from settings
+    QSettings settings("Victor Fu", "SnapTray");
+    int formatInt = settings.value("recording/outputFormat", 0).toInt();
+    FFmpegEncoder::OutputFormat format = static_cast<FFmpegEncoder::OutputFormat>(formatInt);
+    QString extension = (format == FFmpegEncoder::OutputFormat::GIF) ? "gif" : "mp4";
+
+    // Generate filename with timestamp
+    QString timestamp = QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss");
+    QString filename = QString("SnapTray_Recording_%1.%2").arg(timestamp).arg(extension);
+
+    return QDir(tempDir).filePath(filename);
+}

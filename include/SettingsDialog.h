@@ -51,6 +51,7 @@ private:
     void setupGeneralTab(QWidget *tab);
     void setupHotkeysTab(QWidget *tab);
     void setupWatermarkTab(QWidget *tab);
+    void setupRecordingTab(QWidget *tab);
     void updateHotkeyStatus(QLabel *statusLabel, bool isRegistered);
 
     // UI elements
@@ -79,6 +80,14 @@ private:
     QLabel *m_watermarkImagePreview;
     QLabel *m_watermarkImageSizeLabel;
     QSize m_watermarkOriginalSize;
+
+    // Recording UI elements
+    QComboBox *m_recordingFrameRateCombo;
+    QComboBox *m_recordingOutputFormatCombo;
+    QLineEdit *m_recordingOutputPathEdit;
+    QPushButton *m_recordingBrowseBtn;
+    QCheckBox *m_recordingAutoSaveCheckbox;
+    QLabel *m_ffmpegStatusLabel;
 
     // Watermark UI helper methods
     void updateWatermarkTypeVisibility(int type);
