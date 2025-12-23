@@ -74,6 +74,7 @@ set(SOURCES
     src/LaserPointerRenderer.cpp
     src/ClickRippleRenderer.cpp
     src/WatermarkRenderer.cpp
+    src/LoadingSpinnerRenderer.cpp
 )
 
 set(RESOURCES
@@ -104,6 +105,7 @@ set(HEADERS
     include/LaserPointerRenderer.h
     include/ClickRippleRenderer.h
     include/WatermarkRenderer.h
+    include/LoadingSpinnerRenderer.h
 )
 
 # Cross-platform source files (used by both platforms)

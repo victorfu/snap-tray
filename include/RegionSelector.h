@@ -15,6 +15,7 @@
 #include "ToolbarWidget.h"
 #include "InlineTextEditor.h"
 #include "WindowDetector.h"
+#include "LoadingSpinnerRenderer.h"
 
 class QScreen;
 class ColorPaletteWidget;
@@ -209,6 +210,7 @@ private:
     // OCR state
     OCRManager *m_ocrManager;
     bool m_ocrInProgress;
+    LoadingSpinnerRenderer *m_loadingSpinner;
 
     void performOCR();
     void onOCRComplete(bool success, const QString &text, const QString &error);

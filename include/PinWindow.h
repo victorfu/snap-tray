@@ -5,6 +5,7 @@
 #include <QPixmap>
 #include <QPoint>
 #include "WatermarkRenderer.h"
+#include "LoadingSpinnerRenderer.h"
 
 class QMenu;
 class QLabel;
@@ -116,6 +117,7 @@ private:
     // OCR members
     OCRManager *m_ocrManager;
     bool m_ocrInProgress;
+    LoadingSpinnerRenderer *m_loadingSpinner;
 
     // Watermark members
     WatermarkRenderer::Settings m_watermarkSettings;

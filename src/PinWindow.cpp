@@ -112,6 +112,11 @@ PinWindow::PinWindow(const QPixmap &screenshot, const QPoint &position, QWidget 
     // Load watermark settings
     m_watermarkSettings = WatermarkRenderer::loadSettings();
 
+    // Initialize loading spinner for OCR
+    m_loadingSpinner = new LoadingSpinnerRenderer(this);
+    connect(m_loadingSpinner, &LoadingSpinnerRenderer::needsRepaint,
+            this, QOverload<>::of(&QWidget::update));
+
     qDebug() << "PinWindow: Created with size" << m_displayPixmap.size()
              << "requested position" << position
              << "actual position" << pos();
@@ -361,6 +366,8 @@ void PinWindow::performOCR()
     }
 
     m_ocrInProgress = true;
+    m_loadingSpinner->start();
+    update();
     qDebug() << "PinWindow: Starting OCR recognition...";
 
     QPointer<PinWindow> safeThis = this;
@@ -377,6 +384,7 @@ void PinWindow::performOCR()
 void PinWindow::onOCRComplete(bool success, const QString &text, const QString &error)
 {
     m_ocrInProgress = false;
+    m_loadingSpinner->stop();
 
     if (success && !text.isEmpty()) {
         QGuiApplication::clipboard()->setText(text);
@@ -491,6 +499,12 @@ void PinWindow::paintEvent(QPaintEvent *)
 
     // Draw watermark
     WatermarkRenderer::render(painter, pixmapRect, m_watermarkSettings);
+
+    // Draw loading spinner when OCR is in progress
+    if (m_ocrInProgress) {
+        QPoint center = pixmapRect.center();
+        m_loadingSpinner->draw(painter, center);
+    }
 }
 
 void PinWindow::mousePressEvent(QMouseEvent *event)

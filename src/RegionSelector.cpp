@@ -105,6 +105,11 @@ RegionSelector::RegionSelector(QWidget* parent)
     connect(m_colorAndWidthWidget, &ColorAndWidthWidget::widthChanged,
             this, &RegionSelector::onLineWidthChanged);
 
+    // Initialize loading spinner for OCR
+    m_loadingSpinner = new LoadingSpinnerRenderer(this);
+    connect(m_loadingSpinner, &LoadingSpinnerRenderer::needsRepaint,
+            this, QOverload<>::of(&QWidget::update));
+
     // Install application-level event filter to capture ESC even when window loses focus
     qApp->installEventFilter(this);
 
@@ -619,6 +624,13 @@ void RegionSelector::paintEvent(QPaintEvent*)
             }
 
             m_toolbar->drawTooltip(painter);
+
+            // Draw loading spinner when OCR is in progress
+            if (m_ocrInProgress) {
+                QRect sel = m_selectionRect.normalized();
+                QPoint center = sel.center();
+                m_loadingSpinner->draw(painter, center);
+            }
         }
     }
 
@@ -2054,6 +2066,7 @@ void RegionSelector::performOCR()
     }
 
     m_ocrInProgress = true;
+    m_loadingSpinner->start();
     update();
 
     qDebug() << "RegionSelector: Starting OCR recognition...";
@@ -2082,6 +2095,7 @@ void RegionSelector::performOCR()
 void RegionSelector::onOCRComplete(bool success, const QString &text, const QString &error)
 {
     m_ocrInProgress = false;
+    m_loadingSpinner->stop();
 
     if (success && !text.isEmpty()) {
         QGuiApplication::clipboard()->setText(text);
