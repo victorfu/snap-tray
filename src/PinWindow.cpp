@@ -243,19 +243,18 @@ void PinWindow::createContextMenu()
 {
     m_contextMenu = new QMenu(this);
 
-    if (PlatformFeatures::instance().isOCRAvailable()) {
-        QAction *ocrAction = m_contextMenu->addAction("OCR Text Recognition");
-        connect(ocrAction, &QAction::triggered, this, &PinWindow::performOCR);
-        m_contextMenu->addSeparator();
-    }
+    QAction *copyAction = m_contextMenu->addAction("Copy to Clipboard");
+    copyAction->setShortcut(QKeySequence::Copy);
+    connect(copyAction, &QAction::triggered, this, &PinWindow::copyToClipboard);
 
     QAction *saveAction = m_contextMenu->addAction("Save...");
     saveAction->setShortcut(QKeySequence::Save);
     connect(saveAction, &QAction::triggered, this, &PinWindow::saveToFile);
 
-    QAction *copyAction = m_contextMenu->addAction("Copy to Clipboard");
-    copyAction->setShortcut(QKeySequence::Copy);
-    connect(copyAction, &QAction::triggered, this, &PinWindow::copyToClipboard);
+    if (PlatformFeatures::instance().isOCRAvailable()) {
+        QAction *ocrAction = m_contextMenu->addAction("OCR Text Recognition");
+        connect(ocrAction, &QAction::triggered, this, &PinWindow::performOCR);
+    }
 
     m_contextMenu->addSeparator();
 
