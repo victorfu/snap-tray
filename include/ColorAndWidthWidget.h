@@ -6,6 +6,7 @@
 #include <QColor>
 #include <QRect>
 #include <QPoint>
+#include <QString>
 
 class QPainter;
 
@@ -15,6 +16,9 @@ class QPainter;
  * Combines ColorPaletteWidget and LineWidthWidget into a single horizontal
  * component with color swatches on the left and line width slider on the right.
  * Reduces vertical toolbar space from 60px to 32px.
+ *
+ * When text tool is active, shows additional text formatting controls:
+ * Bold, Italic, Underline toggles, font size dropdown, font family dropdown.
  */
 class ColorAndWidthWidget : public QObject
 {
@@ -53,6 +57,67 @@ public:
      * @brief Check if the width section is shown.
      */
     bool showWidthSection() const { return m_showWidthSection; }
+
+    // Text formatting methods
+    /**
+     * @brief Set whether to show the text formatting section.
+     */
+    void setShowTextSection(bool show);
+
+    /**
+     * @brief Check if the text formatting section is shown.
+     */
+    bool showTextSection() const { return m_showTextSection; }
+
+    /**
+     * @brief Set bold state.
+     */
+    void setBold(bool enabled);
+
+    /**
+     * @brief Get bold state.
+     */
+    bool isBold() const { return m_boldEnabled; }
+
+    /**
+     * @brief Set italic state.
+     */
+    void setItalic(bool enabled);
+
+    /**
+     * @brief Get italic state.
+     */
+    bool isItalic() const { return m_italicEnabled; }
+
+    /**
+     * @brief Set underline state.
+     */
+    void setUnderline(bool enabled);
+
+    /**
+     * @brief Get underline state.
+     */
+    bool isUnderline() const { return m_underlineEnabled; }
+
+    /**
+     * @brief Set font size.
+     */
+    void setFontSize(int size);
+
+    /**
+     * @brief Get font size.
+     */
+    int fontSize() const { return m_fontSize; }
+
+    /**
+     * @brief Set font family.
+     */
+    void setFontFamily(const QString& family);
+
+    /**
+     * @brief Get font family.
+     */
+    QString fontFamily() const { return m_fontFamily; }
 
     // Line width methods
     /**
@@ -160,6 +225,42 @@ signals:
      */
     void widthChanged(int width);
 
+    // Text formatting signals
+    /**
+     * @brief Emitted when bold state is toggled.
+     */
+    void boldToggled(bool enabled);
+
+    /**
+     * @brief Emitted when italic state is toggled.
+     */
+    void italicToggled(bool enabled);
+
+    /**
+     * @brief Emitted when underline state is toggled.
+     */
+    void underlineToggled(bool enabled);
+
+    /**
+     * @brief Emitted when font size is changed.
+     */
+    void fontSizeChanged(int size);
+
+    /**
+     * @brief Emitted when font family is changed.
+     */
+    void fontFamilyChanged(const QString& family);
+
+    /**
+     * @brief Emitted when font size dropdown is requested.
+     */
+    void fontSizeDropdownRequested(const QPoint& globalPos);
+
+    /**
+     * @brief Emitted when font family dropdown is requested.
+     */
+    void fontFamilyDropdownRequested(const QPoint& globalPos);
+
 private:
     // Layout calculation
     void updateLayout();
@@ -171,6 +272,10 @@ private:
     // Width section helpers
     void drawWidthSection(QPainter& painter);
     bool isInWidthSection(const QPoint& pos) const;
+
+    // Text section helpers
+    void drawTextSection(QPainter& painter);
+    int textControlAtPosition(const QPoint& pos) const;
 
     // Color state
     QVector<QColor> m_colors;
@@ -185,6 +290,21 @@ private:
     int m_currentWidth;
     bool m_widthSectionHovered;
     bool m_showWidthSection;
+
+    // Text formatting state
+    bool m_showTextSection = false;
+    bool m_boldEnabled = true;
+    bool m_italicEnabled = false;
+    bool m_underlineEnabled = false;
+    int m_fontSize = 16;
+    QString m_fontFamily;
+    QRect m_textSectionRect;
+    QRect m_boldButtonRect;
+    QRect m_italicButtonRect;
+    QRect m_underlineButtonRect;
+    QRect m_fontSizeRect;
+    QRect m_fontFamilyRect;
+    int m_hoveredTextControl = -1;  // 0=B, 1=I, 2=U, 3=size, 4=family
 
     // Layout state
     bool m_visible;
@@ -201,6 +321,12 @@ private:
     static const int SECTION_SPACING = 8;
     static const int WIDTH_SECTION_SIZE = 36;  // Size for the dot preview area
     static const int MAX_DOT_SIZE = 24;        // Max visual dot size
+
+    // Text section layout constants
+    static const int TEXT_BUTTON_SIZE = 20;
+    static const int TEXT_BUTTON_SPACING = 2;
+    static const int FONT_SIZE_WIDTH = 40;
+    static const int FONT_FAMILY_WIDTH = 90;
 };
 
 #endif // COLORANDWIDTHWIDGET_H

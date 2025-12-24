@@ -140,6 +140,17 @@ public:
     void setText(const QString &text);
     void moveBy(const QPoint &delta) { m_position += delta; }
 
+    // Getters for re-editing
+    QString text() const { return m_text; }
+    QPoint position() const { return m_position; }
+    QFont font() const { return m_font; }
+    QColor color() const { return m_color; }
+
+    // Setters for re-editing
+    void setFont(const QFont &font) { m_font = font; }
+    void setColor(const QColor &color) { m_color = color; }
+    void setPosition(const QPoint &position) { m_position = position; }
+
     // Transformation methods
     void setRotation(qreal degrees) { m_rotation = degrees; }
     qreal rotation() const { return m_rotation; }
@@ -280,6 +291,9 @@ public:
     bool canRedo() const;
     bool isEmpty() const;
     size_t itemCount() const { return m_items.size(); }
+
+    // Access item by index (for re-editing)
+    AnnotationItem* itemAt(int index);
 
     // For rendering annotations onto the final image
     void drawOntoPixmap(QPixmap &pixmap) const;

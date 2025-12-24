@@ -5,7 +5,9 @@
 #include <QSet>
 
 // ============================================================================
-// Helper: Build smooth path using Catmull-Rom spline interpolation
+// Helper: Build smooth path using quadratic Bezier with midpoints
+// This approach uses midpoints as curve endpoints and original points as
+// control points, creating smooth curves without overshoot.
 // ============================================================================
 
 static QPainterPath buildSmoothPath(const QVector<QPointF> &points)
@@ -16,35 +18,27 @@ static QPainterPath buildSmoothPath(const QVector<QPointF> &points)
         return path;
     }
 
-    path.moveTo(points[0]);
-
     if (points.size() == 2) {
+        path.moveTo(points[0]);
         path.lineTo(points[1]);
         return path;
     }
 
-    // Use Catmull-Rom spline converted to cubic Bezier curves
-    // Catmull-Rom uses 4 control points: P0, P1, P2, P3
-    // The curve is drawn between P1 and P2
-    for (int i = 0; i < points.size() - 1; ++i) {
-        QPointF p0 = (i == 0) ? points[0] : points[i - 1];
-        QPointF p1 = points[i];
-        QPointF p2 = points[i + 1];
-        QPointF p3 = (i + 2 < points.size()) ? points[i + 2] : points[i + 1];
+    // Start at first point
+    path.moveTo(points[0]);
 
-        // Catmull-Rom tension (0.5 is standard)
-        const qreal tension = 0.5;
+    // First segment: line to first midpoint (smooth start)
+    QPointF mid0 = (points[0] + points[1]) / 2.0;
+    path.lineTo(mid0);
 
-        // Calculate tangents
-        QPointF tangent1 = (p2 - p0) * tension;
-        QPointF tangent2 = (p3 - p1) * tension;
-
-        // Convert to cubic Bezier control points
-        QPointF cp1 = p1 + tangent1 / 3.0;
-        QPointF cp2 = p2 - tangent2 / 3.0;
-
-        path.cubicTo(cp1, cp2, p2);
+    // Middle segments: midpoint to midpoint with original points as control
+    for (int i = 1; i < points.size() - 1; ++i) {
+        QPointF mid = (points[i] + points[i + 1]) / 2.0;
+        path.quadTo(points[i], mid);
     }
+
+    // Last segment: curve to end point using last point as control
+    path.quadTo(points[points.size() - 1], points.last());
 
     return path;
 }
@@ -1166,6 +1160,14 @@ AnnotationItem* AnnotationLayer::selectedItem()
 {
     if (m_selectedIndex >= 0 && m_selectedIndex < static_cast<int>(m_items.size())) {
         return m_items[m_selectedIndex].get();
+    }
+    return nullptr;
+}
+
+AnnotationItem* AnnotationLayer::itemAt(int index)
+{
+    if (index >= 0 && index < static_cast<int>(m_items.size())) {
+        return m_items[index].get();
     }
     return nullptr;
 }

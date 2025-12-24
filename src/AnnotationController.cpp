@@ -45,7 +45,7 @@ void AnnotationController::startDrawing(const QPoint& pos)
     m_isDrawing = true;
     m_startPoint = pos;
     m_currentPath.clear();
-    m_currentPath.append(pos);
+    m_currentPath.append(QPointF(pos));
 
     switch (m_currentTool) {
     case Tool::Pencil:
@@ -83,15 +83,15 @@ void AnnotationController::updateDrawing(const QPoint& pos)
     switch (m_currentTool) {
     case Tool::Pencil:
         if (m_currentPencil) {
-            m_currentPath.append(pos);
-            m_currentPencil->addPoint(pos);
+            m_currentPath.append(QPointF(pos));
+            m_currentPencil->addPoint(QPointF(pos));
         }
         break;
 
     case Tool::Marker:
         if (m_currentMarker) {
-            m_currentPath.append(pos);
-            m_currentMarker->addPoint(pos);
+            m_currentPath.append(QPointF(pos));
+            m_currentMarker->addPoint(QPointF(pos));
         }
         break;
 

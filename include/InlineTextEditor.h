@@ -32,6 +32,14 @@ public:
     void startEditing(const QPoint& pos, const QRect& bounds);
 
     /**
+     * @brief Start editing existing text (for re-editing).
+     * @param pos Position for the text
+     * @param bounds Bounding rect to constrain the editor
+     * @param existingText The existing text to edit
+     */
+    void startEditingExisting(const QPoint& pos, const QRect& bounds, const QString& existingText);
+
+    /**
      * @brief Finish editing and return the text.
      * @return The edited text, or empty if cancelled
      */
@@ -87,6 +95,32 @@ public:
      */
     QFont font() const { return m_font; }
 
+    // Text formatting methods
+    /**
+     * @brief Set bold style.
+     */
+    void setBold(bool enabled);
+
+    /**
+     * @brief Set italic style.
+     */
+    void setItalic(bool enabled);
+
+    /**
+     * @brief Set underline style.
+     */
+    void setUnderline(bool enabled);
+
+    /**
+     * @brief Set font size.
+     */
+    void setFontSize(int size);
+
+    /**
+     * @brief Set font family.
+     */
+    void setFontFamily(const QString& family);
+
     /**
      * @brief Get the underlying QTextEdit for event filtering.
      */
@@ -119,6 +153,7 @@ private slots:
     void onContentsChanged();
 
 private:
+    void startEditingInternal(const QPoint& pos, const QRect& bounds, const QString& existingText);
     void updateStyle();
     void adjustSize();
 

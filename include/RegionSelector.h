@@ -18,6 +18,7 @@
 #include "WindowDetector.h"
 #include "LoadingSpinnerRenderer.h"
 #include "TransformationGizmo.h"
+#include "TextFormattingState.h"
 
 class QScreen;
 class ColorPaletteWidget;
@@ -153,6 +154,18 @@ private:
 
     // Inline text editing handlers
     void onTextEditingFinished(const QString &text, const QPoint &position);
+    void startTextReEditing(int annotationIndex);
+
+    // Text formatting persistence
+    TextFormattingState loadTextFormatting() const;
+    void saveTextFormatting();
+
+    // Text formatting signal handlers
+    void onBoldToggled(bool enabled);
+    void onItalicToggled(bool enabled);
+    void onUnderlineToggled(bool enabled);
+    void onFontSizeDropdownRequested(const QPoint& pos);
+    void onFontFamilyDropdownRequested(const QPoint& pos);
 
     // Text annotation transformation helpers
     void startTextTransformation(const QPoint &pos, GizmoHandle handle);
@@ -250,6 +263,14 @@ private:
     qreal m_transformStartScale = 1.0;
     qreal m_transformStartAngle = 0.0;
     qreal m_transformStartDistance = 0.0;
+
+    // Text formatting state
+    TextFormattingState m_textFormatting;
+    int m_editingTextIndex = -1;  // -1 = creating new, >=0 = editing existing
+
+    // Double-click detection for text re-editing
+    QPoint m_lastTextClickPos;
+    qint64 m_lastTextClickTime = 0;
 
     // Color picker dialog
     ColorPickerDialog *m_colorPickerDialog;

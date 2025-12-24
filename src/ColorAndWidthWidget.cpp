@@ -1,6 +1,8 @@
 #include "ColorAndWidthWidget.h"
 
 #include <QPainter>
+#include <QPainterPath>
+#include <QFontMetrics>
 #include <QDebug>
 
 ColorAndWidthWidget::ColorAndWidthWidget(QObject* parent)
@@ -66,6 +68,51 @@ void ColorAndWidthWidget::setShowWidthSection(bool show)
     m_showWidthSection = show;
 }
 
+void ColorAndWidthWidget::setShowTextSection(bool show)
+{
+    m_showTextSection = show;
+}
+
+void ColorAndWidthWidget::setBold(bool enabled)
+{
+    if (m_boldEnabled != enabled) {
+        m_boldEnabled = enabled;
+        emit boldToggled(m_boldEnabled);
+    }
+}
+
+void ColorAndWidthWidget::setItalic(bool enabled)
+{
+    if (m_italicEnabled != enabled) {
+        m_italicEnabled = enabled;
+        emit italicToggled(m_italicEnabled);
+    }
+}
+
+void ColorAndWidthWidget::setUnderline(bool enabled)
+{
+    if (m_underlineEnabled != enabled) {
+        m_underlineEnabled = enabled;
+        emit underlineToggled(m_underlineEnabled);
+    }
+}
+
+void ColorAndWidthWidget::setFontSize(int size)
+{
+    if (m_fontSize != size) {
+        m_fontSize = size;
+        emit fontSizeChanged(m_fontSize);
+    }
+}
+
+void ColorAndWidthWidget::setFontFamily(const QString& family)
+{
+    if (m_fontFamily != family) {
+        m_fontFamily = family;
+        emit fontFamilyChanged(m_fontFamily);
+    }
+}
+
 void ColorAndWidthWidget::updatePosition(const QRect& anchorRect, bool above, int screenWidth)
 {
     // Calculate total width (using 2 rows, 8 columns - "..." is part of row 2)
@@ -73,6 +120,13 @@ void ColorAndWidthWidget::updatePosition(const QRect& anchorRect, bool above, in
     int totalWidth = colorSectionWidth;
     if (m_showWidthSection) {
         totalWidth += SECTION_SPACING + WIDTH_SECTION_SIZE;
+    }
+    if (m_showTextSection) {
+        // B/I/U buttons + font size + font family dropdowns
+        int textSectionWidth = (TEXT_BUTTON_SIZE * 3 + TEXT_BUTTON_SPACING * 2) +
+                               SECTION_SPACING + FONT_SIZE_WIDTH +
+                               SECTION_SPACING + FONT_FAMILY_WIDTH + SECTION_PADDING;
+        totalWidth += SECTION_SPACING + textSectionWidth;
     }
 
     int widgetX = anchorRect.left();
@@ -130,12 +184,63 @@ void ColorAndWidthWidget::updateLayout()
     }
 
     // === WIDTH SECTION (simple dot preview, scroll to adjust) ===
-    m_widthSectionRect = QRect(
-        m_colorSectionRect.right() + SECTION_SPACING,
-        m_widgetRect.top(),
-        WIDTH_SECTION_SIZE,
-        WIDGET_HEIGHT
-    );
+    int widthSectionLeft = m_colorSectionRect.right() + SECTION_SPACING;
+    if (m_showWidthSection) {
+        m_widthSectionRect = QRect(
+            widthSectionLeft,
+            m_widgetRect.top(),
+            WIDTH_SECTION_SIZE,
+            WIDGET_HEIGHT
+        );
+    } else {
+        m_widthSectionRect = QRect();
+    }
+
+    // === TEXT SECTION (B/I/U toggles + font size + font family) ===
+    if (m_showTextSection) {
+        int textSectionLeft = m_showWidthSection ?
+            m_widthSectionRect.right() + SECTION_SPACING :
+            m_colorSectionRect.right() + SECTION_SPACING;
+
+        int textSectionWidth = (TEXT_BUTTON_SIZE * 3 + TEXT_BUTTON_SPACING * 2) +
+                               SECTION_SPACING + FONT_SIZE_WIDTH +
+                               SECTION_SPACING + FONT_FAMILY_WIDTH + SECTION_PADDING;
+
+        m_textSectionRect = QRect(
+            textSectionLeft,
+            m_widgetRect.top(),
+            textSectionWidth,
+            WIDGET_HEIGHT
+        );
+
+        // Center buttons vertically
+        int buttonY = m_widgetRect.top() + (WIDGET_HEIGHT - TEXT_BUTTON_SIZE) / 2;
+        int currentX = textSectionLeft + SECTION_PADDING;
+
+        // B/I/U buttons
+        m_boldButtonRect = QRect(currentX, buttonY, TEXT_BUTTON_SIZE, TEXT_BUTTON_SIZE);
+        currentX += TEXT_BUTTON_SIZE + TEXT_BUTTON_SPACING;
+
+        m_italicButtonRect = QRect(currentX, buttonY, TEXT_BUTTON_SIZE, TEXT_BUTTON_SIZE);
+        currentX += TEXT_BUTTON_SIZE + TEXT_BUTTON_SPACING;
+
+        m_underlineButtonRect = QRect(currentX, buttonY, TEXT_BUTTON_SIZE, TEXT_BUTTON_SIZE);
+        currentX += TEXT_BUTTON_SIZE + SECTION_SPACING;
+
+        // Font size dropdown
+        m_fontSizeRect = QRect(currentX, buttonY, FONT_SIZE_WIDTH, TEXT_BUTTON_SIZE);
+        currentX += FONT_SIZE_WIDTH + SECTION_SPACING;
+
+        // Font family dropdown
+        m_fontFamilyRect = QRect(currentX, buttonY, FONT_FAMILY_WIDTH, TEXT_BUTTON_SIZE);
+    } else {
+        m_textSectionRect = QRect();
+        m_boldButtonRect = QRect();
+        m_italicButtonRect = QRect();
+        m_underlineButtonRect = QRect();
+        m_fontSizeRect = QRect();
+        m_fontFamilyRect = QRect();
+    }
 }
 
 void ColorAndWidthWidget::draw(QPainter& painter)
@@ -164,6 +269,11 @@ void ColorAndWidthWidget::draw(QPainter& painter)
     // Draw width section (if enabled)
     if (m_showWidthSection) {
         drawWidthSection(painter);
+    }
+
+    // Draw text section (if enabled)
+    if (m_showTextSection) {
+        drawTextSection(painter);
     }
 }
 
@@ -248,6 +358,96 @@ void ColorAndWidthWidget::drawWidthSection(QPainter& painter)
     painter.drawEllipse(dotRect);
 }
 
+void ColorAndWidthWidget::drawTextSection(QPainter& painter)
+{
+    // Helper lambda to draw a toggle button
+    auto drawToggleButton = [&](const QRect& rect, const QString& text, bool enabled, bool hovered, bool isItalicStyle = false, bool isUnderlineStyle = false) {
+        // Background
+        QColor bgColor;
+        if (enabled) {
+            bgColor = QColor(0, 122, 255);  // Blue when active
+        } else if (hovered) {
+            bgColor = QColor(80, 80, 80);
+        } else {
+            bgColor = QColor(50, 50, 50);
+        }
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(bgColor);
+        painter.drawRoundedRect(rect, 4, 4);
+
+        // Text
+        QFont font = painter.font();
+        font.setPointSize(11);
+        font.setBold(text == "B");
+        font.setItalic(isItalicStyle);
+        font.setUnderline(isUnderlineStyle);
+        painter.setFont(font);
+        painter.setPen(enabled ? Qt::white : QColor(200, 200, 200));
+        painter.drawText(rect, Qt::AlignCenter, text);
+    };
+
+    // Helper lambda to draw a dropdown button
+    auto drawDropdown = [&](const QRect& rect, const QString& text, bool hovered) {
+        // Background
+        QColor bgColor = hovered ? QColor(80, 80, 80) : QColor(50, 50, 50);
+        painter.setPen(QPen(QColor(70, 70, 70), 1));
+        painter.setBrush(bgColor);
+        painter.drawRoundedRect(rect, 4, 4);
+
+        // Text (with dropdown arrow)
+        QFont font = painter.font();
+        font.setPointSize(10);
+        font.setBold(false);
+        font.setItalic(false);
+        font.setUnderline(false);
+        painter.setFont(font);
+        painter.setPen(QColor(200, 200, 200));
+
+        // Draw text left-aligned with some padding
+        QRect textRect = rect.adjusted(4, 0, -12, 0);
+        painter.drawText(textRect, Qt::AlignLeft | Qt::AlignVCenter, text);
+
+        // Draw dropdown arrow
+        int arrowX = rect.right() - 10;
+        int arrowY = rect.center().y();
+        QPainterPath arrow;
+        arrow.moveTo(arrowX - 3, arrowY - 2);
+        arrow.lineTo(arrowX + 3, arrowY - 2);
+        arrow.lineTo(arrowX, arrowY + 2);
+        arrow.closeSubpath();
+        painter.fillPath(arrow, QColor(180, 180, 180));
+    };
+
+    // Draw B/I/U toggle buttons
+    drawToggleButton(m_boldButtonRect, "B", m_boldEnabled, m_hoveredTextControl == 0);
+    drawToggleButton(m_italicButtonRect, "I", m_italicEnabled, m_hoveredTextControl == 1, true);
+    drawToggleButton(m_underlineButtonRect, "U", m_underlineEnabled, m_hoveredTextControl == 2, false, true);
+
+    // Draw font size dropdown
+    QString sizeText = QString::number(m_fontSize);
+    drawDropdown(m_fontSizeRect, sizeText, m_hoveredTextControl == 3);
+
+    // Draw font family dropdown
+    QString familyText = m_fontFamily.isEmpty() ? tr("Default") : m_fontFamily;
+    // Truncate if too long
+    QFontMetrics fm(painter.font());
+    familyText = fm.elidedText(familyText, Qt::ElideRight, FONT_FAMILY_WIDTH - 16);
+    drawDropdown(m_fontFamilyRect, familyText, m_hoveredTextControl == 4);
+}
+
+int ColorAndWidthWidget::textControlAtPosition(const QPoint& pos) const
+{
+    if (!m_showTextSection) return -1;
+
+    if (m_boldButtonRect.contains(pos)) return 0;
+    if (m_italicButtonRect.contains(pos)) return 1;
+    if (m_underlineButtonRect.contains(pos)) return 2;
+    if (m_fontSizeRect.contains(pos)) return 3;
+    if (m_fontFamilyRect.contains(pos)) return 4;
+
+    return -1;
+}
+
 bool ColorAndWidthWidget::contains(const QPoint& pos) const
 {
     return m_widgetRect.contains(pos);
@@ -273,6 +473,37 @@ bool ColorAndWidthWidget::isInWidthSection(const QPoint& pos) const
 bool ColorAndWidthWidget::handleClick(const QPoint& pos)
 {
     if (!m_widgetRect.contains(pos)) return false;
+
+    // Text section
+    if (m_showTextSection) {
+        int textControl = textControlAtPosition(pos);
+        if (textControl >= 0) {
+            switch (textControl) {
+                case 0:  // Bold
+                    m_boldEnabled = !m_boldEnabled;
+                    emit boldToggled(m_boldEnabled);
+                    qDebug() << "ColorAndWidthWidget: Bold toggled:" << m_boldEnabled;
+                    break;
+                case 1:  // Italic
+                    m_italicEnabled = !m_italicEnabled;
+                    emit italicToggled(m_italicEnabled);
+                    qDebug() << "ColorAndWidthWidget: Italic toggled:" << m_italicEnabled;
+                    break;
+                case 2:  // Underline
+                    m_underlineEnabled = !m_underlineEnabled;
+                    emit underlineToggled(m_underlineEnabled);
+                    qDebug() << "ColorAndWidthWidget: Underline toggled:" << m_underlineEnabled;
+                    break;
+                case 3:  // Font size dropdown
+                    emit fontSizeDropdownRequested(m_fontSizeRect.bottomLeft());
+                    break;
+                case 4:  // Font family dropdown
+                    emit fontFamilyDropdownRequested(m_fontFamilyRect.bottomLeft());
+                    break;
+            }
+            return true;
+        }
+    }
 
     // Width section: clicks are consumed but no action (use scroll wheel)
     if (isInWidthSection(pos)) {
@@ -331,6 +562,18 @@ bool ColorAndWidthWidget::updateHovered(const QPoint& pos)
     bool inWidthSection = isInWidthSection(pos);
     if (inWidthSection != m_widthSectionHovered) {
         m_widthSectionHovered = inWidthSection;
+        changed = true;
+    }
+
+    // Update text control hover
+    if (m_showTextSection) {
+        int newHoveredTextControl = textControlAtPosition(pos);
+        if (newHoveredTextControl != m_hoveredTextControl) {
+            m_hoveredTextControl = newHoveredTextControl;
+            changed = true;
+        }
+    } else if (m_hoveredTextControl != -1) {
+        m_hoveredTextControl = -1;
         changed = true;
     }
 

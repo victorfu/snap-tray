@@ -2,6 +2,7 @@
 
 #include <QTextEdit>
 #include <QTextDocument>
+#include <QTextCursor>
 #include <QFontMetrics>
 #include <QWidget>
 
@@ -28,6 +29,16 @@ InlineTextEditor::~InlineTextEditor()
 }
 
 void InlineTextEditor::startEditing(const QPoint& pos, const QRect& bounds)
+{
+    startEditingInternal(pos, bounds, QString());
+}
+
+void InlineTextEditor::startEditingExisting(const QPoint& pos, const QRect& bounds, const QString& existingText)
+{
+    startEditingInternal(pos, bounds, existingText);
+}
+
+void InlineTextEditor::startEditingInternal(const QPoint& pos, const QRect& bounds, const QString& existingText)
 {
     // Create QTextEdit lazily
     if (!m_textEdit) {
@@ -78,7 +89,20 @@ void InlineTextEditor::startEditing(const QPoint& pos, const QRect& bounds)
 
     // Set geometry and show
     m_textEdit->setGeometry(boxX, boxY, width, height);
-    m_textEdit->clear();
+
+    // Set existing text if re-editing
+    if (!existingText.isEmpty()) {
+        m_textEdit->setPlainText(existingText);
+        // Move cursor to end
+        QTextCursor cursor = m_textEdit->textCursor();
+        cursor.movePosition(QTextCursor::End);
+        m_textEdit->setTextCursor(cursor);
+        // Adjust size for existing text
+        adjustSize();
+    } else {
+        m_textEdit->clear();
+    }
+
     m_textEdit->show();
     m_textEdit->setFocus();
     m_textEdit->raise();
@@ -162,6 +186,63 @@ void InlineTextEditor::setFont(const QFont& font)
     m_font = font;
     if (m_isEditing && m_textEdit) {
         m_textEdit->setFont(font);
+        updateStyle();
+        adjustSize();
+    }
+}
+
+void InlineTextEditor::setBold(bool enabled)
+{
+    m_font.setBold(enabled);
+    if (m_isEditing && m_textEdit) {
+        m_textEdit->setFont(m_font);
+        updateStyle();
+        adjustSize();
+    }
+}
+
+void InlineTextEditor::setItalic(bool enabled)
+{
+    m_font.setItalic(enabled);
+    if (m_isEditing && m_textEdit) {
+        m_textEdit->setFont(m_font);
+        updateStyle();
+        adjustSize();
+    }
+}
+
+void InlineTextEditor::setUnderline(bool enabled)
+{
+    m_font.setUnderline(enabled);
+    if (m_isEditing && m_textEdit) {
+        m_textEdit->setFont(m_font);
+        updateStyle();
+        adjustSize();
+    }
+}
+
+void InlineTextEditor::setFontSize(int size)
+{
+    m_font.setPointSize(size);
+    if (m_isEditing && m_textEdit) {
+        m_textEdit->setFont(m_font);
+        updateStyle();
+        adjustSize();
+    }
+}
+
+void InlineTextEditor::setFontFamily(const QString& family)
+{
+    if (family.isEmpty()) {
+        // Reset to default system font
+        QFont defaultFont;
+        m_font.setFamily(defaultFont.family());
+    } else {
+        m_font.setFamily(family);
+    }
+    if (m_isEditing && m_textEdit) {
+        m_textEdit->setFont(m_font);
+        updateStyle();
         adjustSize();
     }
 }
@@ -229,6 +310,12 @@ void InlineTextEditor::updateStyle()
 {
     if (!m_textEdit) return;
 
+    // Build font style properties
+    QString fontWeight = m_font.bold() ? "bold" : "normal";
+    QString fontStyle = m_font.italic() ? "italic" : "normal";
+    QString textDecoration = m_font.underline() ? "underline" : "none";
+    QString fontFamily = m_font.family().isEmpty() ? "" : QString("font-family: \"%1\";").arg(m_font.family());
+
     // Transparent background + white border + colored text
     QString styleSheet = QString(
         "QTextEdit {"
@@ -238,9 +325,17 @@ void InlineTextEditor::updateStyle()
         "  border-radius: 4px;"
         "  padding: 4px;"
         "  font-size: %2pt;"
-        "  font-weight: bold;"
+        "  font-weight: %3;"
+        "  font-style: %4;"
+        "  text-decoration: %5;"
+        "  %6"
         "}"
-    ).arg(m_color.name()).arg(m_font.pointSize());
+    ).arg(m_color.name())
+     .arg(m_font.pointSize())
+     .arg(fontWeight)
+     .arg(fontStyle)
+     .arg(textDecoration)
+     .arg(fontFamily);
     m_textEdit->setStyleSheet(styleSheet);
 }
 

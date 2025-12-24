@@ -30,9 +30,17 @@
 #include <QTimer>
 #include <QSettings>
 #include <QtMath>
+#include <QMenu>
+#include <QFontDatabase>
+#include <QDateTime>
 
 static const char* SETTINGS_KEY_ANNOTATION_COLOR = "annotationColor";
 static const char* SETTINGS_KEY_ANNOTATION_WIDTH = "annotationWidth";
+static const char* SETTINGS_KEY_TEXT_BOLD = "textBold";
+static const char* SETTINGS_KEY_TEXT_ITALIC = "textItalic";
+static const char* SETTINGS_KEY_TEXT_UNDERLINE = "textUnderline";
+static const char* SETTINGS_KEY_TEXT_SIZE = "textFontSize";
+static const char* SETTINGS_KEY_TEXT_FAMILY = "textFontFamily";
 
 // Create a rounded square cursor for mosaic tool
 static QCursor createMosaicCursor(int size) {
@@ -138,6 +146,26 @@ RegionSelector::RegionSelector(QWidget* parent)
             this, &RegionSelector::onMoreColorsRequested);
     connect(m_colorAndWidthWidget, &ColorAndWidthWidget::widthChanged,
             this, &RegionSelector::onLineWidthChanged);
+
+    // Load text formatting settings
+    m_textFormatting = loadTextFormatting();
+    m_colorAndWidthWidget->setBold(m_textFormatting.bold);
+    m_colorAndWidthWidget->setItalic(m_textFormatting.italic);
+    m_colorAndWidthWidget->setUnderline(m_textFormatting.underline);
+    m_colorAndWidthWidget->setFontSize(m_textFormatting.fontSize);
+    m_colorAndWidthWidget->setFontFamily(m_textFormatting.fontFamily);
+
+    // Connect text formatting signals
+    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::boldToggled,
+            this, &RegionSelector::onBoldToggled);
+    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::italicToggled,
+            this, &RegionSelector::onItalicToggled);
+    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::underlineToggled,
+            this, &RegionSelector::onUnderlineToggled);
+    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::fontSizeDropdownRequested,
+            this, &RegionSelector::onFontSizeDropdownRequested);
+    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::fontFamilyDropdownRequested,
+            this, &RegionSelector::onFontFamilyDropdownRequested);
 
     // Initialize loading spinner for OCR
     m_loadingSpinner = new LoadingSpinnerRenderer(this);
@@ -686,7 +714,9 @@ void RegionSelector::paintEvent(QPaintEvent*)
             if (shouldShowColorAndWidthWidget()) {
                 m_colorAndWidthWidget->setVisible(true);
                 m_colorAndWidthWidget->setShowWidthSection(shouldShowWidthControl());
-                m_colorAndWidthWidget->updatePosition(m_toolbar->boundingRect(), false);
+                // Show text section only for Text tool
+                m_colorAndWidthWidget->setShowTextSection(m_currentTool == ToolbarButton::Text);
+                m_colorAndWidthWidget->updatePosition(m_toolbar->boundingRect(), false, width());
                 m_colorAndWidthWidget->draw(painter);
             } else {
                 m_colorAndWidthWidget->setVisible(false);
@@ -1262,9 +1292,22 @@ void RegionSelector::mousePressEvent(QMouseEvent* event)
                 }
             }
 
-            // Check if clicked on existing text annotation (for selection)
+            // Check if clicked on existing text annotation (for selection or re-editing)
             int hitIndex = m_annotationLayer->hitTestText(event->pos());
             if (hitIndex >= 0) {
+                // Check for double-click to start re-editing
+                qint64 now = QDateTime::currentMSecsSinceEpoch();
+                if (now - m_lastTextClickTime < 400 &&
+                    (event->pos() - m_lastTextClickPos).manhattanLength() < 5 &&
+                    hitIndex == m_annotationLayer->selectedIndex()) {
+                    // Double-click detected - start re-editing
+                    startTextReEditing(hitIndex);
+                    m_lastTextClickTime = 0;  // Reset to prevent triple-click triggering
+                    return;
+                }
+                m_lastTextClickPos = event->pos();
+                m_lastTextClickTime = now;
+
                 m_annotationLayer->setSelectedIndex(hitIndex);
                 // If clicking on a different text, check its gizmo handles
                 if (auto* textItem = dynamic_cast<TextAnnotation*>(m_annotationLayer->selectedItem())) {
@@ -1292,7 +1335,9 @@ void RegionSelector::mousePressEvent(QMouseEvent* event)
             // Handle Text tool - can be placed anywhere on screen
             QRect sel = m_selectionRect.normalized();
             if (m_currentTool == ToolbarButton::Text) {
+                m_editingTextIndex = -1;  // Creating new text
                 m_textEditor->setColor(m_annotationColor);
+                m_textEditor->setFont(m_textFormatting.toQFont());
                 m_textEditor->startEditing(event->pos(), rect());  // Use full screen as bounds
                 return;
             }
@@ -1904,7 +1949,7 @@ void RegionSelector::startAnnotation(const QPoint &pos)
     m_isDrawing = true;
     m_drawStartPoint = pos;
     m_currentPath.clear();
-    m_currentPath.append(pos);
+    m_currentPath.append(QPointF(pos));
 
     switch (m_currentTool) {
     case ToolbarButton::Pencil:
@@ -2131,19 +2176,64 @@ void RegionSelector::placeStepBadge(const QPoint &pos)
 
 void RegionSelector::onTextEditingFinished(const QString &text, const QPoint &position)
 {
-    if (text.isEmpty()) return;
+    if (text.isEmpty()) {
+        m_editingTextIndex = -1;
+        return;
+    }
 
-    QFont font;
-    font.setPointSize(16);
-    font.setBold(true);
+    QFont font = m_textFormatting.toQFont();
 
-    auto textAnnotation = std::make_unique<TextAnnotation>(position, text, font, m_annotationColor);
-    m_annotationLayer->addItem(std::move(textAnnotation));
+    if (m_editingTextIndex >= 0) {
+        // Update existing annotation (re-editing)
+        auto* textItem = dynamic_cast<TextAnnotation*>(m_annotationLayer->itemAt(m_editingTextIndex));
+        if (textItem) {
+            textItem->setText(text);
+            textItem->setFont(font);
+            textItem->setColor(m_annotationColor);
+            // Position may have changed during confirm mode drag
+            textItem->setPosition(position);
+        }
+        m_annotationLayer->setSelectedIndex(m_editingTextIndex);
+        m_editingTextIndex = -1;
+    } else {
+        // Create new annotation
+        auto textAnnotation = std::make_unique<TextAnnotation>(position, text, font, m_annotationColor);
+        m_annotationLayer->addItem(std::move(textAnnotation));
 
-    // Auto-select the newly created text annotation to show the gizmo
-    int newIndex = static_cast<int>(m_annotationLayer->itemCount()) - 1;
-    m_annotationLayer->setSelectedIndex(newIndex);
+        // Auto-select the newly created text annotation to show the gizmo
+        int newIndex = static_cast<int>(m_annotationLayer->itemCount()) - 1;
+        m_annotationLayer->setSelectedIndex(newIndex);
+    }
 
+    update();
+}
+
+void RegionSelector::startTextReEditing(int annotationIndex)
+{
+    auto* textItem = dynamic_cast<TextAnnotation*>(m_annotationLayer->itemAt(annotationIndex));
+    if (!textItem) return;
+
+    m_editingTextIndex = annotationIndex;
+
+    // Extract formatting from existing annotation
+    m_textFormatting = TextFormattingState::fromQFont(textItem->font());
+    m_annotationColor = textItem->color();
+
+    // Update UI to reflect current formatting
+    m_colorAndWidthWidget->setCurrentColor(m_annotationColor);
+    m_colorAndWidthWidget->setBold(m_textFormatting.bold);
+    m_colorAndWidthWidget->setItalic(m_textFormatting.italic);
+    m_colorAndWidthWidget->setUnderline(m_textFormatting.underline);
+    m_colorAndWidthWidget->setFontSize(m_textFormatting.fontSize);
+    m_colorAndWidthWidget->setFontFamily(m_textFormatting.fontFamily);
+
+    // Start editor with existing text
+    m_textEditor->setColor(m_annotationColor);
+    m_textEditor->setFont(m_textFormatting.toQFont());
+    m_textEditor->startEditingExisting(textItem->position(), m_selectionRect.normalized(), textItem->text());
+
+    // Clear selection to hide gizmo while editing
+    m_annotationLayer->clearSelection();
     update();
 }
 
@@ -2441,4 +2531,133 @@ void RegionSelector::saveAnnotationWidth(int width)
 {
     QSettings settings("Victor Fu", "SnapTray");
     settings.setValue(SETTINGS_KEY_ANNOTATION_WIDTH, width);
+}
+
+TextFormattingState RegionSelector::loadTextFormatting() const
+{
+    QSettings settings("Victor Fu", "SnapTray");
+    TextFormattingState state;
+    state.bold = settings.value(SETTINGS_KEY_TEXT_BOLD, true).toBool();
+    state.italic = settings.value(SETTINGS_KEY_TEXT_ITALIC, false).toBool();
+    state.underline = settings.value(SETTINGS_KEY_TEXT_UNDERLINE, false).toBool();
+    state.fontSize = settings.value(SETTINGS_KEY_TEXT_SIZE, 16).toInt();
+    state.fontFamily = settings.value(SETTINGS_KEY_TEXT_FAMILY, QString()).toString();
+    return state;
+}
+
+void RegionSelector::saveTextFormatting()
+{
+    QSettings settings("Victor Fu", "SnapTray");
+    settings.setValue(SETTINGS_KEY_TEXT_BOLD, m_textFormatting.bold);
+    settings.setValue(SETTINGS_KEY_TEXT_ITALIC, m_textFormatting.italic);
+    settings.setValue(SETTINGS_KEY_TEXT_UNDERLINE, m_textFormatting.underline);
+    settings.setValue(SETTINGS_KEY_TEXT_SIZE, m_textFormatting.fontSize);
+    settings.setValue(SETTINGS_KEY_TEXT_FAMILY, m_textFormatting.fontFamily);
+}
+
+void RegionSelector::onBoldToggled(bool enabled)
+{
+    m_textFormatting.bold = enabled;
+    saveTextFormatting();
+    if (m_textEditor->isEditing()) {
+        m_textEditor->setBold(enabled);
+    }
+    update();
+}
+
+void RegionSelector::onItalicToggled(bool enabled)
+{
+    m_textFormatting.italic = enabled;
+    saveTextFormatting();
+    if (m_textEditor->isEditing()) {
+        m_textEditor->setItalic(enabled);
+    }
+    update();
+}
+
+void RegionSelector::onUnderlineToggled(bool enabled)
+{
+    m_textFormatting.underline = enabled;
+    saveTextFormatting();
+    if (m_textEditor->isEditing()) {
+        m_textEditor->setUnderline(enabled);
+    }
+    update();
+}
+
+void RegionSelector::onFontSizeDropdownRequested(const QPoint& pos)
+{
+    QMenu menu(this);
+    menu.setStyleSheet(
+        "QMenu { background: #2d2d2d; color: white; border: 1px solid #3d3d3d; } "
+        "QMenu::item { padding: 4px 20px; } "
+        "QMenu::item:selected { background: #0078d4; }"
+    );
+
+    static const int sizes[] = {8, 10, 12, 14, 16, 18, 20, 24, 28, 32, 36, 48, 72};
+    for (int size : sizes) {
+        QAction* action = menu.addAction(QString::number(size));
+        action->setCheckable(true);
+        action->setChecked(size == m_textFormatting.fontSize);
+        connect(action, &QAction::triggered, this, [this, size]() {
+            m_textFormatting.fontSize = size;
+            m_colorAndWidthWidget->setFontSize(size);
+            saveTextFormatting();
+            if (m_textEditor->isEditing()) {
+                m_textEditor->setFontSize(size);
+            }
+            update();
+        });
+    }
+    menu.exec(mapToGlobal(pos));
+}
+
+void RegionSelector::onFontFamilyDropdownRequested(const QPoint& pos)
+{
+    QMenu menu(this);
+    menu.setStyleSheet(
+        "QMenu { background: #2d2d2d; color: white; border: 1px solid #3d3d3d; } "
+        "QMenu::item { padding: 4px 20px; } "
+        "QMenu::item:selected { background: #0078d4; }"
+    );
+
+    // Add "Default" option
+    QAction* defaultAction = menu.addAction(tr("Default"));
+    defaultAction->setCheckable(true);
+    defaultAction->setChecked(m_textFormatting.fontFamily.isEmpty());
+    connect(defaultAction, &QAction::triggered, this, [this]() {
+        m_textFormatting.fontFamily = QString();
+        m_colorAndWidthWidget->setFontFamily(QString());
+        saveTextFormatting();
+        if (m_textEditor->isEditing()) {
+            m_textEditor->setFontFamily(QString());
+        }
+        update();
+    });
+
+    menu.addSeparator();
+
+    // Add common font families
+    QStringList families = QFontDatabase::families();
+    // Limit to common fonts to avoid overwhelming menu
+    QStringList commonFonts = {"Arial", "Helvetica", "Times New Roman", "Courier New",
+                               "Verdana", "Georgia", "Trebuchet MS", "Impact"};
+    for (const QString& family : commonFonts) {
+        if (families.contains(family)) {
+            QAction* action = menu.addAction(family);
+            action->setCheckable(true);
+            action->setChecked(family == m_textFormatting.fontFamily);
+            connect(action, &QAction::triggered, this, [this, family]() {
+                m_textFormatting.fontFamily = family;
+                m_colorAndWidthWidget->setFontFamily(family);
+                saveTextFormatting();
+                if (m_textEditor->isEditing()) {
+                    m_textEditor->setFontFamily(family);
+                }
+                update();
+            });
+        }
+    }
+
+    menu.exec(mapToGlobal(pos));
 }
