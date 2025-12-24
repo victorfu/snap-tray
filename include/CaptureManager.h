@@ -4,9 +4,11 @@
 #include <QObject>
 #include <QPixmap>
 #include <QPoint>
+#include <QRect>
 #include <QPointer>
 
 class RegionSelector;
+class QScreen;
 class PinWindowManager;
 class WindowDetector;
 
@@ -27,6 +29,7 @@ signals:
     void captureStarted();
     void captureCompleted(const QPixmap &screenshot);
     void captureCancelled();
+    void recordingRequested(const QRect &region, QScreen *screen);
 
 private slots:
     void onRegionSelected(const QPixmap &screenshot, const QPoint &globalPosition);

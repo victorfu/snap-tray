@@ -145,6 +145,44 @@ void RecordingManager::startRegionSelection()
     m_regionSelector->raise();
 }
 
+void RecordingManager::startRegionSelectionWithPreset(const QRect &region, QScreen *screen)
+{
+    if (m_regionSelector && m_regionSelector->isVisible()) {
+        qDebug() << "RecordingManager: Already selecting region";
+        return;
+    }
+
+    if (m_state == State::Recording || m_state == State::Paused || m_state == State::Encoding) {
+        qDebug() << "RecordingManager: Already recording or encoding";
+        return;
+    }
+
+    // Clean up any existing selector
+    if (m_regionSelector) {
+        m_regionSelector->close();
+    }
+
+    qDebug() << "RecordingManager: Starting region selection with preset region:" << region
+             << "on screen:" << screen->name();
+
+    setState(State::Selecting);
+
+    m_regionSelector = new RecordingRegionSelector();
+    m_regionSelector->setAttribute(Qt::WA_DeleteOnClose);
+
+    connect(m_regionSelector, &RecordingRegionSelector::regionSelected,
+            this, &RecordingManager::onRegionSelected);
+    connect(m_regionSelector, &RecordingRegionSelector::cancelled,
+            this, &RecordingManager::onRegionCancelled);
+
+    m_regionSelector->setGeometry(screen->geometry());
+    m_regionSelector->initializeWithRegion(screen, region);
+    m_regionSelector->show();
+    raiseWindowAboveMenuBar(m_regionSelector);
+    m_regionSelector->activateWindow();
+    m_regionSelector->raise();
+}
+
 void RecordingManager::onRegionSelected(const QRect &region, QScreen *screen)
 {
     qDebug() << "RecordingManager: Region selected:" << region << "on screen:" << screen->name();

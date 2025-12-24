@@ -17,6 +17,7 @@ public:
     ~RecordingRegionSelector();
 
     void initializeForScreen(QScreen *screen);
+    void initializeWithRegion(QScreen *screen, const QRect &region);
 
 signals:
     void regionSelected(const QRect &region, QScreen *screen);
@@ -28,6 +29,7 @@ protected:
     void mouseMoveEvent(QMouseEvent *event) override;
     void mouseReleaseEvent(QMouseEvent *event) override;
     void keyPressEvent(QKeyEvent *event) override;
+    void focusOutEvent(QFocusEvent *event) override;
 
 private:
     void drawOverlay(QPainter &painter);

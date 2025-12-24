@@ -71,6 +71,8 @@ void CaptureManager::startRegionCapture()
             this, &CaptureManager::onRegionSelected);
     connect(m_regionSelector, &RegionSelector::selectionCancelled,
             this, &CaptureManager::onSelectionCancelled);
+    connect(m_regionSelector, &RegionSelector::recordingRequested,
+            this, &CaptureManager::recordingRequested);
 
     // 5. 使用 setGeometry + show 取代 showFullScreen，確保在正確螢幕上顯示
     m_regionSelector->setGeometry(targetScreen->geometry());

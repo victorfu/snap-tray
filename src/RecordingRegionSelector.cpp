@@ -1,16 +1,19 @@
 #include "RecordingRegionSelector.h"
+#include "platform/WindowLevel.h"
 
 #include <QScreen>
 #include <QPainter>
 #include <QMouseEvent>
 #include <QKeyEvent>
+#include <QFocusEvent>
 #include <QGuiApplication>
 #include <QPushButton>
 #include <QHBoxLayout>
+#include <QTimer>
 #include <QDebug>
 
 RecordingRegionSelector::RecordingRegionSelector(QWidget *parent)
-    : QWidget(parent, Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::Tool)
+    : QWidget(parent, Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::Window)
     , m_currentScreen(nullptr)
     , m_devicePixelRatio(1.0)
     , m_isSelecting(false)
@@ -39,6 +42,38 @@ void RecordingRegionSelector::initializeForScreen(QScreen *screen)
     qDebug() << "Screen name:" << screen->name();
     qDebug() << "Screen geometry:" << screen->geometry();
     qDebug() << "Screen devicePixelRatio:" << m_devicePixelRatio;
+}
+
+void RecordingRegionSelector::initializeWithRegion(QScreen *screen, const QRect &region)
+{
+    m_currentScreen = screen;
+    m_devicePixelRatio = screen->devicePixelRatio();
+
+    // Convert global region to local coordinates
+    QRect screenGeom = screen->geometry();
+    m_selectionRect = region.translated(-screenGeom.topLeft());
+
+    // Set selection as complete (skip the selection step)
+    m_selectionComplete = true;
+    m_isSelecting = false;
+    setCursor(Qt::ArrowCursor);
+
+    qDebug() << "=== RecordingRegionSelector::initializeWithRegion ===";
+    qDebug() << "Screen name:" << screen->name();
+    qDebug() << "Screen geometry:" << screenGeom;
+    qDebug() << "Global region:" << region;
+    qDebug() << "Local selection rect:" << m_selectionRect;
+
+    // Position and show buttons after the widget is shown
+    // We need to defer this because the widget might not be sized yet
+    QTimer::singleShot(0, this, [this]() {
+        if (m_buttonContainer) {
+            positionButtons();
+            m_buttonContainer->show();
+            m_buttonContainer->raise();
+        }
+        update();
+    });
 }
 
 void RecordingRegionSelector::paintEvent(QPaintEvent *event)
@@ -308,6 +343,14 @@ void RecordingRegionSelector::keyPressEvent(QKeyEvent *event)
             QWidget::keyPressEvent(event);
             break;
     }
+}
+
+void RecordingRegionSelector::focusOutEvent(QFocusEvent *event)
+{
+    Q_UNUSED(event);
+    // Reclaim window level to stay above other windows on macOS
+    raiseWindowAboveMenuBar(this);
+    activateWindow();
 }
 
 void RecordingRegionSelector::finishSelection()

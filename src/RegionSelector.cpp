@@ -184,6 +184,7 @@ void RegionSelector::setupToolbarButtons()
         iconRenderer.loadIcon("ocr", ":/icons/icons/ocr.svg");
     }
     iconRenderer.loadIcon("pin", ":/icons/icons/pin.svg");
+    iconRenderer.loadIcon("record", ":/icons/icons/record.svg");
     iconRenderer.loadIcon("save", ":/icons/icons/save.svg");
     iconRenderer.loadIcon("copy", ":/icons/icons/copy.svg");
 
@@ -206,7 +207,8 @@ void RegionSelector::setupToolbarButtons()
         buttons.append({static_cast<int>(ToolbarButton::OCR), "ocr", "OCR Text Recognition", true});  // separator before
     }
     buttons.append({static_cast<int>(ToolbarButton::Pin), "pin", "Pin to Screen (Enter)", true});  // separator before
-    buttons.append({static_cast<int>(ToolbarButton::Save), "save", "Save (Ctrl+S)", false});
+    buttons.append({static_cast<int>(ToolbarButton::Record), "record", "Screen Recording (R)", false});
+    buttons.append({static_cast<int>(ToolbarButton::Save), "save", "Save (Ctrl+S)", true});  // separator before
     buttons.append({static_cast<int>(ToolbarButton::Copy), "copy", "Copy (Ctrl+C)", false});
 
     m_toolbar->setButtons(buttons);
@@ -240,6 +242,9 @@ QColor RegionSelector::getToolbarIconColor(int buttonId, bool isActive, bool isH
 
     if (buttonId == static_cast<int>(ToolbarButton::Cancel)) {
         return QColor(255, 100, 100);  // Red for cancel
+    }
+    if (btn == ToolbarButton::Record) {
+        return QColor(255, 80, 80);  // Red for recording
     }
     if (btn == ToolbarButton::OCR) {
         if (m_ocrInProgress) {
@@ -965,6 +970,16 @@ void RegionSelector::handleToolbarClick(ToolbarButton button)
         finishSelection();
         break;
 
+    case ToolbarButton::Record:
+        {
+            // Emit recording request with the selected region in global coordinates
+            QRect globalRect = m_selectionRect.normalized()
+                               .translated(m_currentScreen->geometry().topLeft());
+            emit recordingRequested(globalRect, m_currentScreen);
+            close();
+        }
+        break;
+
     case ToolbarButton::Save:
         saveToFile();
         break;
@@ -1536,6 +1551,11 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
     else if (event->matches(QKeySequence::Save)) {
         if (m_selectionComplete) {
             saveToFile();
+        }
+    }
+    else if (event->key() == Qt::Key_R && !event->modifiers()) {
+        if (m_selectionComplete) {
+            handleToolbarClick(ToolbarButton::Record);
         }
     }
     else if (event->key() == Qt::Key_Shift) {

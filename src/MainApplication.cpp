@@ -69,6 +69,10 @@ void MainApplication::initialize()
                     QSystemTrayIcon::Warning, 5000);
             });
 
+    // Connect capture manager's recording request to recording manager
+    connect(m_captureManager, &CaptureManager::recordingRequested,
+            m_recordingManager, &RecordingManager::startRegionSelectionWithPreset);
+
     // Create system tray icon
     QIcon icon = PlatformFeatures::instance().createTrayIcon();
     m_trayIcon = new QSystemTrayIcon(icon, this);
