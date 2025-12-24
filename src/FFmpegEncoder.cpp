@@ -352,9 +352,9 @@ void FFmpegEncoder::onProcessFinished(int exitCode, QProcess::ExitStatus exitSta
 void FFmpegEncoder::onReadyReadStandardError()
 {
     if (m_process) {
-        QString stderr = QString::fromUtf8(m_process->readAllStandardError());
-        if (!stderr.trimmed().isEmpty()) {
-            qDebug() << "FFmpeg:" << stderr.trimmed();
+        QString stderrOutput = QString::fromUtf8(m_process->readAllStandardError());
+        if (!stderrOutput.trimmed().isEmpty()) {
+            qDebug() << "FFmpeg:" << stderrOutput.trimmed();
         }
     }
 }
