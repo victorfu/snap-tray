@@ -18,6 +18,7 @@
 #include <QComboBox>
 #include <QFileDialog>
 #include <QStandardPaths>
+#include <QFile>
 
 static const char* SETTINGS_KEY_HOTKEY = "hotkey";
 static const char* DEFAULT_HOTKEY = "F2";
@@ -48,9 +49,9 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     , m_watermarkPositionCombo(nullptr)
     , m_recordingFrameRateCombo(nullptr)
     , m_recordingOutputFormatCombo(nullptr)
-    , m_recordingOutputPathEdit(nullptr)
-    , m_recordingBrowseBtn(nullptr)
     , m_recordingAutoSaveCheckbox(nullptr)
+    , m_ffmpegPathEdit(nullptr)
+    , m_ffmpegBrowseBtn(nullptr)
     , m_ffmpegStatusLabel(nullptr)
 {
     setWindowTitle("SnapTray Settings");
@@ -359,41 +360,39 @@ void SettingsDialog::setupRecordingTab(QWidget *tab)
     formatLayout->addStretch();
     layout->addLayout(formatLayout);
 
-    // Output directory row
-    QHBoxLayout *outputLayout = new QHBoxLayout();
-    QLabel *outputLabel = new QLabel("Save Location:", tab);
-    outputLabel->setFixedWidth(120);
-    m_recordingOutputPathEdit = new QLineEdit(tab);
-    m_recordingOutputPathEdit->setReadOnly(true);
-    m_recordingOutputPathEdit->setPlaceholderText("Default: ~/Movies");
-    m_recordingBrowseBtn = new QPushButton("Browse...", tab);
-    m_recordingBrowseBtn->setFixedWidth(80);
-    connect(m_recordingBrowseBtn, &QPushButton::clicked, this, [this]() {
-        QString dir = QFileDialog::getExistingDirectory(this, "Select Recording Output Directory");
-        if (!dir.isEmpty()) {
-            m_recordingOutputPathEdit->setText(dir);
-        }
-    });
-    outputLayout->addWidget(outputLabel);
-    outputLayout->addWidget(m_recordingOutputPathEdit);
-    outputLayout->addWidget(m_recordingBrowseBtn);
-    layout->addLayout(outputLayout);
-
     // Auto-save option
     m_recordingAutoSaveCheckbox = new QCheckBox("Auto-save recordings (no save dialog)", tab);
     layout->addWidget(m_recordingAutoSaveCheckbox);
 
     layout->addSpacing(16);
 
+    // FFmpeg path row
+    QHBoxLayout *ffmpegPathLayout = new QHBoxLayout();
+    QLabel *ffmpegPathLabel = new QLabel("FFmpeg Path:", tab);
+    ffmpegPathLabel->setFixedWidth(120);
+    m_ffmpegPathEdit = new QLineEdit(tab);
+    m_ffmpegPathEdit->setPlaceholderText("Leave empty for auto-detection");
+    m_ffmpegBrowseBtn = new QPushButton("Browse...", tab);
+    m_ffmpegBrowseBtn->setFixedWidth(80);
+    connect(m_ffmpegBrowseBtn, &QPushButton::clicked, this, [this]() {
+        QString filter = "FFmpeg Executable (ffmpeg.exe ffmpeg);;All Files (*)";
+#ifdef Q_OS_WIN
+        filter = "FFmpeg Executable (ffmpeg.exe);;All Files (*)";
+#endif
+        QString path = QFileDialog::getOpenFileName(this, "Select FFmpeg Executable", QString(), filter);
+        if (!path.isEmpty()) {
+            m_ffmpegPathEdit->setText(path);
+            updateFFmpegStatus();
+        }
+    });
+    connect(m_ffmpegPathEdit, &QLineEdit::textChanged, this, &SettingsDialog::updateFFmpegStatus);
+    ffmpegPathLayout->addWidget(ffmpegPathLabel);
+    ffmpegPathLayout->addWidget(m_ffmpegPathEdit);
+    ffmpegPathLayout->addWidget(m_ffmpegBrowseBtn);
+    layout->addLayout(ffmpegPathLayout);
+
     // FFmpeg status
     m_ffmpegStatusLabel = new QLabel(tab);
-    if (FFmpegEncoder::isFFmpegAvailable()) {
-        m_ffmpegStatusLabel->setText("FFmpeg: Available (" + FFmpegEncoder::ffmpegPath() + ")");
-        m_ffmpegStatusLabel->setStyleSheet("color: green;");
-    } else {
-        m_ffmpegStatusLabel->setText("FFmpeg: Not found. Please install FFmpeg to use screen recording.");
-        m_ffmpegStatusLabel->setStyleSheet("color: red;");
-    }
     layout->addWidget(m_ffmpegStatusLabel);
 
     layout->addStretch();
@@ -407,8 +406,20 @@ void SettingsDialog::setupRecordingTab(QWidget *tab)
     }
     int outputFormat = settings.value("recording/outputFormat", 0).toInt();
     m_recordingOutputFormatCombo->setCurrentIndex(outputFormat);
-    m_recordingOutputPathEdit->setText(settings.value("recording/outputPath").toString());
     m_recordingAutoSaveCheckbox->setChecked(settings.value("recording/autoSave", false).toBool());
+
+    // Load FFmpeg path: use saved path, or auto-detect if not saved
+    QString savedFfmpegPath = settings.value("recording/ffmpegPath").toString();
+    if (savedFfmpegPath.isEmpty()) {
+        // Auto-detect and display (but don't save yet)
+        QString autoDetected = FFmpegEncoder::ffmpegPath();
+        if (autoDetected != "ffmpeg" && QFile::exists(autoDetected)) {
+            m_ffmpegPathEdit->setText(autoDetected);
+        }
+    } else {
+        m_ffmpegPathEdit->setText(savedFfmpegPath);
+    }
+    updateFFmpegStatus();
 }
 
 void SettingsDialog::updateWatermarkTypeVisibility(int index)
@@ -535,10 +546,10 @@ void SettingsDialog::onSave()
         m_recordingFrameRateCombo->currentData().toInt());
     recordingSettings.setValue("recording/outputFormat",
         m_recordingOutputFormatCombo->currentIndex());
-    recordingSettings.setValue("recording/outputPath",
-        m_recordingOutputPathEdit->text());
     recordingSettings.setValue("recording/autoSave",
         m_recordingAutoSaveCheckbox->isChecked());
+    recordingSettings.setValue("recording/ffmpegPath",
+        m_ffmpegPathEdit->text());
 
     // Request hotkey change (MainApplication handles registration)
     emit hotkeyChangeRequested(newHotkey);
@@ -601,4 +612,21 @@ void SettingsDialog::updateWatermarkImagePreview()
     int scaledHeight = m_watermarkOriginalSize.height() * scale / 100;
     m_watermarkImageSizeLabel->setText(
         QString("Size: %1 × %2 px").arg(scaledWidth).arg(scaledHeight));
+}
+
+void SettingsDialog::updateFFmpegStatus()
+{
+    QString customPath = m_ffmpegPathEdit->text().trimmed();
+
+    // Temporarily save the custom path so FFmpegEncoder can use it
+    QSettings settings("Victor Fu", "SnapTray");
+    settings.setValue("recording/ffmpegPath", customPath);
+
+    if (FFmpegEncoder::isFFmpegAvailable()) {
+        m_ffmpegStatusLabel->setText("FFmpeg: Detected");
+        m_ffmpegStatusLabel->setStyleSheet("color: green;");
+    } else {
+        m_ffmpegStatusLabel->setText("FFmpeg: Not found");
+        m_ffmpegStatusLabel->setStyleSheet("color: red;");
+    }
 }

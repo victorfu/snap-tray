@@ -4,6 +4,7 @@
 #include <QImage>
 #include <QDebug>
 #include <QTimer>
+#include <QSettings>
 
 FFmpegEncoder::FFmpegEncoder(QObject *parent)
     : QObject(parent)
@@ -37,6 +38,13 @@ bool FFmpegEncoder::isFFmpegAvailable()
 
 QString FFmpegEncoder::ffmpegPath()
 {
+    // Check user-configured custom path first
+    QSettings settings("Victor Fu", "SnapTray");
+    QString customPath = settings.value("recording/ffmpegPath").toString().trimmed();
+    if (!customPath.isEmpty() && QFile::exists(customPath)) {
+        return customPath;
+    }
+
 #ifdef Q_OS_MAC
     // Check Homebrew locations first
     if (QFile::exists("/opt/homebrew/bin/ffmpeg")) {

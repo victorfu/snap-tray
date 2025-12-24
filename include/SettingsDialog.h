@@ -84,14 +84,17 @@ private:
     // Recording UI elements
     QComboBox *m_recordingFrameRateCombo;
     QComboBox *m_recordingOutputFormatCombo;
-    QLineEdit *m_recordingOutputPathEdit;
-    QPushButton *m_recordingBrowseBtn;
     QCheckBox *m_recordingAutoSaveCheckbox;
+    QLineEdit *m_ffmpegPathEdit;
+    QPushButton *m_ffmpegBrowseBtn;
     QLabel *m_ffmpegStatusLabel;
 
     // Watermark UI helper methods
     void updateWatermarkTypeVisibility(int type);
     void updateWatermarkImagePreview();
+
+    // Recording UI helper methods
+    void updateFFmpegStatus();
 };
 
 #endif // SETTINGSDIALOG_H
