@@ -66,6 +66,7 @@ signals:
 private slots:
     void onRegionSelected(const QRect &region, QScreen *screen);
     void onRegionCancelledWithRegion(const QRect &region, QScreen *screen);
+    void onRegionCancelled();  // Handle cancel without valid region
     void captureFrame();
     void onEncodingFinished(bool success, const QString &outputPath);
     void onEncodingError(const QString &error);

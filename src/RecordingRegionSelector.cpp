@@ -338,10 +338,15 @@ void RecordingRegionSelector::keyPressEvent(QKeyEvent *event)
 {
     switch (event->key()) {
         case Qt::Key_Escape: {
-            // Convert local rect to global coordinates and emit with region
-            QRect globalRect = m_selectionRect.normalized();
-            globalRect.translate(m_currentScreen->geometry().topLeft());
-            emit cancelledWithRegion(globalRect, m_currentScreen);
+            // Check if we have a valid selection to return to capture mode
+            if (m_selectionComplete && !m_selectionRect.isEmpty()) {
+                QRect globalRect = m_selectionRect.normalized();
+                globalRect.translate(m_currentScreen->geometry().topLeft());
+                emit cancelledWithRegion(globalRect, m_currentScreen);
+            } else {
+                // No valid selection, just cancel without returning to capture
+                emit cancelled();
+            }
             close();
             break;
         }
@@ -436,10 +441,15 @@ void RecordingRegionSelector::setupButtons()
         "  background-color: rgba(255, 255, 255, 0.1);"
         "}");
     connect(m_cancelButton, &QPushButton::clicked, this, [this]() {
-        // Convert local rect to global coordinates and emit with region
-        QRect globalRect = m_selectionRect.normalized();
-        globalRect.translate(m_currentScreen->geometry().topLeft());
-        emit cancelledWithRegion(globalRect, m_currentScreen);
+        // Check if we have a valid selection to return to capture mode
+        if (m_selectionComplete && !m_selectionRect.isEmpty()) {
+            QRect globalRect = m_selectionRect.normalized();
+            globalRect.translate(m_currentScreen->geometry().topLeft());
+            emit cancelledWithRegion(globalRect, m_currentScreen);
+        } else {
+            // No valid selection, just cancel without returning to capture
+            emit cancelled();
+        }
         close();
     });
     layout->addWidget(m_cancelButton);

@@ -37,6 +37,11 @@ RecordingControlBar::RecordingControlBar(QWidget *parent)
         updateIndicatorGradient();
     });
     m_blinkTimer->start(16);  // ~60 FPS
+
+    // Global ESC shortcut - works even without focus
+    m_escShortcut = new QShortcut(QKeySequence(Qt::Key_Escape), this);
+    m_escShortcut->setContext(Qt::ApplicationShortcut);
+    connect(m_escShortcut, &QShortcut::activated, this, &RecordingControlBar::stopRequested);
 }
 
 RecordingControlBar::~RecordingControlBar()

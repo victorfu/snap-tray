@@ -133,6 +133,8 @@ void RecordingManager::startRegionSelection()
             this, &RecordingManager::onRegionSelected);
     connect(m_regionSelector, &RecordingRegionSelector::cancelledWithRegion,
             this, &RecordingManager::onRegionCancelledWithRegion);
+    connect(m_regionSelector, &RecordingRegionSelector::cancelled,
+            this, &RecordingManager::onRegionCancelled);
 
     qDebug() << "=== RecordingManager: Setting up region selector ===";
     qDebug() << "Target screen geometry:" << targetScreen->geometry();
@@ -175,6 +177,8 @@ void RecordingManager::startRegionSelectionWithPreset(const QRect &region, QScre
             this, &RecordingManager::onRegionSelected);
     connect(m_regionSelector, &RecordingRegionSelector::cancelledWithRegion,
             this, &RecordingManager::onRegionCancelledWithRegion);
+    connect(m_regionSelector, &RecordingRegionSelector::cancelled,
+            this, &RecordingManager::onRegionCancelled);
 
     m_regionSelector->setGeometry(screen->geometry());
     m_regionSelector->initializeWithRegion(screen, region);
@@ -212,6 +216,13 @@ void RecordingManager::onRegionCancelledWithRegion(const QRect &region, QScreen 
     qDebug() << "RecordingManager: Region selection cancelled, returning to capture";
     setState(State::Idle);
     emit selectionCancelledWithRegion(region, screen);
+}
+
+void RecordingManager::onRegionCancelled()
+{
+    qDebug() << "RecordingManager: Region selection cancelled without valid region";
+    setState(State::Idle);
+    // No signal emitted - just return to idle state
 }
 
 void RecordingManager::startFrameCapture()

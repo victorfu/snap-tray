@@ -5,6 +5,7 @@
 #include <QPoint>
 #include <QRect>
 #include <QTimer>
+#include <QShortcut>
 
 class QLabel;
 class QPushButton;
@@ -60,6 +61,9 @@ private:
     qreal m_gradientOffset;
     bool m_indicatorVisible;
     bool m_isPaused;
+
+    // Global shortcut for ESC key
+    QShortcut *m_escShortcut;
 };
 
 #endif // RECORDINGCONTROLBAR_H
