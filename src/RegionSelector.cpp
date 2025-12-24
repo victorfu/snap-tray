@@ -423,6 +423,11 @@ void RegionSelector::initializeForScreen(QScreen* screen)
     invalidateMagnifierCache();
 
     setCursor(Qt::CrossCursor);
+
+    // Initial window detection at cursor position
+    if (m_windowDetector && m_windowDetector->isEnabled()) {
+        updateWindowDetection(m_currentPoint);
+    }
 }
 
 // 保留舊方法以保持向後兼容 (但不再使用)
