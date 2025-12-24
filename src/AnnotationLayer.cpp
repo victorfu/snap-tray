@@ -621,96 +621,118 @@ void MosaicStroke::draw(QPainter &painter) const
     QRect bounds = boundingRect();
     if (bounds.isEmpty()) return;
 
+    qreal dpr = painter.device()->devicePixelRatio();
+
     // Check if cache is valid
     bool cacheValid = !m_renderedCache.isNull()
         && m_cachedPointCount == m_points.size()
-        && m_cachedBounds == bounds;
+        && m_cachedBounds == bounds
+        && m_cachedDpr == dpr;
 
     if (!cacheValid) {
-        // OPTIMIZATION: Cache QImage conversion (only convert once per MosaicStroke lifetime)
-        if (m_sourceImageCache.isNull()) {
-            m_sourceImageCache = m_sourcePixmap.toImage();
-        }
-        const QImage &sourceImage = m_sourceImageCache;
-
         int halfWidth = m_width / 2;
-        int deviceBlockSize = qMax(1, static_cast<int>(m_blockSize * m_devicePixelRatio));
-        int devRadius = static_cast<int>(halfWidth * m_devicePixelRatio);
-        int radiusSq = devRadius * devRadius;
 
-        // Use QHash for O(1) block lookup (faster than QSet for large block counts)
-        QHash<QPair<int, int>, QColor> blockColors;
+        // === Step 1: Create pixelated version of the bounded region ===
+        // Convert bounds to device pixels
+        QRect deviceBounds(
+            static_cast<int>(bounds.x() * m_devicePixelRatio),
+            static_cast<int>(bounds.y() * m_devicePixelRatio),
+            static_cast<int>(bounds.width() * m_devicePixelRatio),
+            static_cast<int>(bounds.height() * m_devicePixelRatio)
+        );
 
-        // First pass: collect all unique blocks and their colors
-        for (const QPoint &pt : m_points) {
-            int devPtX = static_cast<int>(pt.x() * m_devicePixelRatio);
-            int devPtY = static_cast<int>(pt.y() * m_devicePixelRatio);
+        // Clamp to source pixmap bounds
+        deviceBounds = deviceBounds.intersected(m_sourcePixmap.rect());
+        if (deviceBounds.isEmpty()) {
+            m_renderedCache = QPixmap();
+            return;
+        }
 
-            // Calculate block range for this point (block-aligned iteration)
-            int blockLeft = qMax(0, (devPtX - devRadius) / deviceBlockSize);
-            int blockTop = qMax(0, (devPtY - devRadius) / deviceBlockSize);
-            int blockRight = (devPtX + devRadius) / deviceBlockSize;
-            int blockBottom = (devPtY + devRadius) / deviceBlockSize;
+        // Extract region from source
+        QPixmap regionPixmap = m_sourcePixmap.copy(deviceBounds);
 
-            for (int by = blockTop; by <= blockBottom; ++by) {
-                for (int bx = blockLeft; bx <= blockRight; ++bx) {
-                    auto blockKey = qMakePair(bx, by);
-                    if (blockColors.contains(blockKey)) continue;
+        // Pixelate: downscale then upscale
+        int pixelateBlockSize = qMax(4, m_blockSize * 2);  // Larger blocks for stronger effect
+        QSize smallSize(
+            qMax(1, deviceBounds.width() / pixelateBlockSize),
+            qMax(1, deviceBounds.height() / pixelateBlockSize)
+        );
 
-                    int dx = bx * deviceBlockSize;
-                    int dy = by * deviceBlockSize;
+        // Downscale (average colors)
+        QPixmap downscaled = regionPixmap.scaled(smallSize, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+        // Upscale back (creates blocky pixelated look)
+        QPixmap pixelated = downscaled.scaled(deviceBounds.size(), Qt::IgnoreAspectRatio, Qt::FastTransformation);
 
-                    // Bounds check
-                    if (dx >= m_sourcePixmap.width() || dy >= m_sourcePixmap.height()) continue;
+        // === Step 2: Create mask from stroke path (square brush) ===
+        QImage maskImage(bounds.size() * dpr, QImage::Format_Grayscale8);
+        maskImage.fill(0);  // Start fully transparent
 
-                    // Circular brush check
-                    int blockCenterX = dx + deviceBlockSize / 2;
-                    int blockCenterY = dy + deviceBlockSize / 2;
-                    int distSq = (blockCenterX - devPtX) * (blockCenterX - devPtX) +
-                                 (blockCenterY - devPtY) * (blockCenterY - devPtY);
-                    if (distSq > radiusSq) continue;
+        QPainter maskPainter(&maskImage);
+        maskPainter.setRenderHint(QPainter::Antialiasing, false);
+        maskPainter.setPen(Qt::NoPen);
+        maskPainter.setBrush(Qt::white);
 
-                    // Sample center of block
-                    int sampleX = qMin(dx + deviceBlockSize / 2, m_sourcePixmap.width() - 1);
-                    int sampleY = qMin(dy + deviceBlockSize / 2, m_sourcePixmap.height() - 1);
-                    QColor blockColor = sourceImage.pixelColor(sampleX, sampleY);
+        // Interpolation step for gap-free coverage
+        int interpolationStep = qMax(1, halfWidth / 2);
 
-                    // Blend with gray for desaturated/muted look
-                    int gray = (blockColor.red() + blockColor.green() + blockColor.blue()) / 3;
-                    blockColor.setRed((blockColor.red() + gray) / 2);
-                    blockColor.setGreen((blockColor.green() + gray) / 2);
-                    blockColor.setBlue((blockColor.blue() + gray) / 2);
+        // Draw squares along the stroke path with interpolation
+        for (int i = 0; i < m_points.size(); ++i) {
+            QPoint pt = m_points[i];
+            // Convert to mask coordinates (relative to bounds)
+            int mx = static_cast<int>((pt.x() - bounds.left()) * dpr);
+            int my = static_cast<int>((pt.y() - bounds.top()) * dpr);
+            int size = static_cast<int>(m_width * dpr);
 
-                    blockColors.insert(blockKey, blockColor);
+            maskPainter.fillRect(mx - size / 2, my - size / 2, size, size, Qt::white);
+
+            // Interpolate to next point
+            if (i < m_points.size() - 1) {
+                QPoint nextPt = m_points[i + 1];
+                int dx = nextPt.x() - pt.x();
+                int dy = nextPt.y() - pt.y();
+                int distSq = dx * dx + dy * dy;
+
+                if (distSq > interpolationStep * interpolationStep) {
+                    double dist = qSqrt(static_cast<double>(distSq));
+                    int steps = static_cast<int>(dist / interpolationStep);
+
+                    for (int s = 1; s < steps; ++s) {
+                        double t = static_cast<double>(s) / steps;
+                        int interpX = static_cast<int>((pt.x() + dx * t - bounds.left()) * dpr);
+                        int interpY = static_cast<int>((pt.y() + dy * t - bounds.top()) * dpr);
+                        maskPainter.fillRect(interpX - size / 2, interpY - size / 2, size, size, Qt::white);
+                    }
+                }
+            }
+        }
+        maskPainter.end();
+
+        // === Step 3: Composite pixelated image using mask ===
+        QImage pixelatedImage = pixelated.toImage().convertToFormat(QImage::Format_ARGB32);
+
+        // Apply mask to pixelated image
+        for (int y = 0; y < qMin(pixelatedImage.height(), maskImage.height()); ++y) {
+            QRgb *pixelRow = reinterpret_cast<QRgb*>(pixelatedImage.scanLine(y));
+            const uchar *maskRow = maskImage.constScanLine(y);
+
+            for (int x = 0; x < qMin(pixelatedImage.width(), maskImage.width()); ++x) {
+                int alpha = maskRow[x];  // 0-255 from grayscale mask
+                if (alpha == 0) {
+                    pixelRow[x] = qRgba(0, 0, 0, 0);  // Fully transparent
+                } else {
+                    // Keep original color, set alpha from mask
+                    QRgb orig = pixelRow[x];
+                    pixelRow[x] = qRgba(qRed(orig), qGreen(orig), qBlue(orig), alpha);
                 }
             }
         }
 
-        // Second pass: render all blocks to cache pixmap
-        m_renderedCache = QPixmap(bounds.size());
-        m_renderedCache.fill(Qt::transparent);
-
-        QPainter cachePainter(&m_renderedCache);
-        cachePainter.setRenderHint(QPainter::Antialiasing, false);
-
-        for (auto it = blockColors.constBegin(); it != blockColors.constEnd(); ++it) {
-            int bx = it.key().first;
-            int by = it.key().second;
-            int dx = bx * deviceBlockSize;
-            int dy = by * deviceBlockSize;
-
-            QRect logicalRect(
-                static_cast<int>(dx / m_devicePixelRatio) - bounds.left(),
-                static_cast<int>(dy / m_devicePixelRatio) - bounds.top(),
-                qMax(1, static_cast<int>(deviceBlockSize / m_devicePixelRatio)),
-                qMax(1, static_cast<int>(deviceBlockSize / m_devicePixelRatio))
-            );
-
-            cachePainter.fillRect(logicalRect, it.value());
-        }
+        m_renderedCache = QPixmap::fromImage(pixelatedImage);
+        m_renderedCache.setDevicePixelRatio(dpr);
 
         m_cachedPointCount = m_points.size();
         m_cachedBounds = bounds;
+        m_cachedDpr = dpr;
     }
 
     // Draw cached result

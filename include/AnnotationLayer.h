@@ -209,6 +209,7 @@ private:
     mutable QPixmap m_renderedCache;
     mutable int m_cachedPointCount = 0;
     mutable QRect m_cachedBounds;
+    mutable qreal m_cachedDpr = 0.0;
 };
 
 // Group of erased items (for undo support)

@@ -533,9 +533,10 @@ void RecordingManager::cancelRecording()
     stopFrameCapture();
 
     // Abort encoding (kills process and removes output file)
+    // Use deleteLater to avoid use-after-free when called from signal handler
     if (m_encoder) {
         m_encoder->abort();
-        delete m_encoder;
+        m_encoder->deleteLater();
         m_encoder = nullptr;
     }
 
