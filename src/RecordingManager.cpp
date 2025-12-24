@@ -16,6 +16,7 @@
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QFile>
+#include <QRandomGenerator>
 
 #ifdef Q_OS_WIN
 #include <windows.h>
@@ -681,6 +682,10 @@ void RecordingManager::onEncodingError(const QString &error)
 {
     qDebug() << "RecordingManager: Encoding error:" << error;
 
+    // Stop all capture-related resources (timers, capture engine, UI overlays)
+    // This is needed when error occurs during recording (not just during finish/encoding)
+    stopFrameCapture();
+
     // Get output path for cleanup before deleting encoder
     QString outputPath;
     if (m_encoder) {
@@ -713,9 +718,14 @@ QString RecordingManager::generateOutputPath() const
     FFmpegEncoder::OutputFormat format = static_cast<FFmpegEncoder::OutputFormat>(formatInt);
     QString extension = (format == FFmpegEncoder::OutputFormat::GIF) ? "gif" : "mp4";
 
-    // Generate filename with timestamp
-    QString timestamp = QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss");
-    QString filename = QString("SnapTray_Recording_%1.%2").arg(timestamp).arg(extension);
+    // Generate filename with timestamp (milliseconds) + random number to ensure uniqueness
+    // This prevents file collisions when a new recording starts while save dialog is open
+    QString timestamp = QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss-zzz");
+    quint32 random = QRandomGenerator::global()->generate() % 10000;
+    QString filename = QString("SnapTray_Recording_%1_%2.%3")
+                           .arg(timestamp)
+                           .arg(random, 4, 10, QChar('0'))
+                           .arg(extension);
 
     return QDir(tempDir).filePath(filename);
 }
