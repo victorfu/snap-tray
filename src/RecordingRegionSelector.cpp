@@ -19,8 +19,6 @@ RecordingRegionSelector::RecordingRegionSelector(QWidget *parent)
     , m_devicePixelRatio(1.0)
     , m_isSelecting(false)
     , m_selectionComplete(false)
-    , m_isDraggingHandle(false)
-    , m_activeHandle(HandlePosition::None)
     , m_buttonContainer(nullptr)
     , m_startButton(nullptr)
     , m_cancelButton(nullptr)
@@ -156,19 +154,6 @@ void RecordingRegionSelector::drawSelection(QPainter &painter)
         painter.setPen(pen);
         painter.setBrush(Qt::NoBrush);
         painter.drawRoundedRect(selRect, cornerRadius, cornerRadius);
-
-        // Draw corner handles
-        int handleSize = 10;
-        QColor handleColor(175, 82, 222);  // Purple
-        painter.setBrush(handleColor);
-        painter.setPen(Qt::NoPen);
-
-        QRect r = m_selectionRect;
-        // Corners - rounded rectangles
-        painter.drawRoundedRect(r.left() - handleSize/2, r.top() - handleSize/2, handleSize, handleSize, 3, 3);
-        painter.drawRoundedRect(r.right() - handleSize/2, r.top() - handleSize/2, handleSize, handleSize, 3, 3);
-        painter.drawRoundedRect(r.left() - handleSize/2, r.bottom() - handleSize/2, handleSize, handleSize, 3, 3);
-        painter.drawRoundedRect(r.right() - handleSize/2, r.bottom() - handleSize/2, handleSize, handleSize, 3, 3);
     } else {
         // Blue dashed line while selecting
         QPen pen(QColor(0, 122, 255), 1);
@@ -273,17 +258,6 @@ void RecordingRegionSelector::mousePressEvent(QMouseEvent *event)
         qDebug() << "Widget geometry:" << geometry();
 
         if (m_selectionComplete) {
-            // Check if clicking on a handle first
-            HandlePosition handle = hitTestHandle(event->pos());
-            if (handle != HandlePosition::None) {
-                // Start handle drag
-                m_isDraggingHandle = true;
-                m_activeHandle = handle;
-                m_dragStartPos = event->pos();
-                m_dragStartRect = m_selectionRect;
-                return;
-            }
-
             // Allow re-selection by clicking outside current selection
             if (!m_selectionRect.contains(event->pos())) {
                 m_selectionComplete = false;
@@ -308,43 +282,7 @@ void RecordingRegionSelector::mousePressEvent(QMouseEvent *event)
 
 void RecordingRegionSelector::mouseMoveEvent(QMouseEvent *event)
 {
-    if (m_isDraggingHandle && m_activeHandle != HandlePosition::None) {
-        // Handle dragging - resize selection
-        QPoint delta = event->pos() - m_dragStartPos;
-        QRect newRect = m_dragStartRect;
-
-        switch (m_activeHandle) {
-            case HandlePosition::TopLeft:
-                newRect.setTopLeft(m_dragStartRect.topLeft() + delta);
-                break;
-            case HandlePosition::TopRight:
-                newRect.setTopRight(m_dragStartRect.topRight() + delta);
-                break;
-            case HandlePosition::BottomLeft:
-                newRect.setBottomLeft(m_dragStartRect.bottomLeft() + delta);
-                break;
-            case HandlePosition::BottomRight:
-                newRect.setBottomRight(m_dragStartRect.bottomRight() + delta);
-                break;
-            default:
-                break;
-        }
-
-        // Normalize and ensure minimum size
-        newRect = newRect.normalized();
-        if (newRect.width() >= 50 && newRect.height() >= 50) {
-            // Constrain to widget bounds
-            newRect = newRect.intersected(rect());
-            m_selectionRect = newRect;
-
-            // Reposition buttons
-            if (m_buttonContainer) {
-                positionButtons();
-            }
-        }
-
-        update();
-    } else if (m_isSelecting) {
+    if (m_isSelecting) {
         m_currentPoint = event->pos();
 
         // Calculate selection rectangle
@@ -354,11 +292,7 @@ void RecordingRegionSelector::mouseMoveEvent(QMouseEvent *event)
         m_selectionRect = m_selectionRect.intersected(rect());
 
         update();
-    } else if (m_selectionComplete) {
-        // Update cursor based on handle hover
-        HandlePosition handle = hitTestHandle(event->pos());
-        updateCursor(handle);
-    } else {
+    } else if (!m_selectionComplete) {
         // Update crosshair position
         update();
     }
@@ -367,14 +301,6 @@ void RecordingRegionSelector::mouseMoveEvent(QMouseEvent *event)
 void RecordingRegionSelector::mouseReleaseEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton) {
-        if (m_isDraggingHandle) {
-            // End handle drag
-            m_isDraggingHandle = false;
-            m_activeHandle = HandlePosition::None;
-            update();
-            return;
-        }
-
         if (m_isSelecting) {
             m_isSelecting = false;
 
@@ -550,59 +476,4 @@ void RecordingRegionSelector::positionButtons()
     }
 
     m_buttonContainer->move(x, y);
-}
-
-RecordingRegionSelector::HandlePosition RecordingRegionSelector::hitTestHandle(const QPoint &pos) const
-{
-    if (!m_selectionComplete || m_selectionRect.isEmpty()) {
-        return HandlePosition::None;
-    }
-
-    for (HandlePosition handle : {HandlePosition::TopLeft, HandlePosition::TopRight,
-                                   HandlePosition::BottomLeft, HandlePosition::BottomRight}) {
-        if (handleRect(handle).contains(pos)) {
-            return handle;
-        }
-    }
-    return HandlePosition::None;
-}
-
-QRect RecordingRegionSelector::handleRect(HandlePosition handle) const
-{
-    if (m_selectionRect.isEmpty()) {
-        return QRect();
-    }
-
-    int halfHandle = HANDLE_SIZE / 2;
-    QRect r = m_selectionRect;
-
-    switch (handle) {
-        case HandlePosition::TopLeft:
-            return QRect(r.left() - halfHandle, r.top() - halfHandle, HANDLE_SIZE, HANDLE_SIZE);
-        case HandlePosition::TopRight:
-            return QRect(r.right() - halfHandle, r.top() - halfHandle, HANDLE_SIZE, HANDLE_SIZE);
-        case HandlePosition::BottomLeft:
-            return QRect(r.left() - halfHandle, r.bottom() - halfHandle, HANDLE_SIZE, HANDLE_SIZE);
-        case HandlePosition::BottomRight:
-            return QRect(r.right() - halfHandle, r.bottom() - halfHandle, HANDLE_SIZE, HANDLE_SIZE);
-        default:
-            return QRect();
-    }
-}
-
-void RecordingRegionSelector::updateCursor(HandlePosition handle)
-{
-    switch (handle) {
-        case HandlePosition::TopLeft:
-        case HandlePosition::BottomRight:
-            setCursor(Qt::SizeFDiagCursor);
-            break;
-        case HandlePosition::TopRight:
-        case HandlePosition::BottomLeft:
-            setCursor(Qt::SizeBDiagCursor);
-            break;
-        default:
-            setCursor(Qt::ArrowCursor);
-            break;
-    }
 }
