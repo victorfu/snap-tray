@@ -8,23 +8,35 @@
 #include <QKeyEvent>
 #include <QScreen>
 #include <QGuiApplication>
+#include <QConicalGradient>
+#include <QLinearGradient>
 
 RecordingControlBar::RecordingControlBar(QWidget *parent)
     : QWidget(parent, Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint)
     , m_pauseButton(nullptr)
+    , m_sizeLabel(nullptr)
+    , m_fpsLabel(nullptr)
     , m_isDragging(false)
+    , m_gradientOffset(0.0)
     , m_indicatorVisible(true)
     , m_isPaused(false)
 {
     setAttribute(Qt::WA_TranslucentBackground);
     setAttribute(Qt::WA_DeleteOnClose);
     setAttribute(Qt::WA_ShowWithoutActivating);  // Don't steal focus
-    setFixedHeight(44);
+    setFixedHeight(48);
 
     setupUi();
 
-    // Recording indicator stays solid (no blinking)
-    m_blinkTimer = nullptr;
+    // Animation timer for indicator gradient
+    m_blinkTimer = new QTimer(this);
+    connect(m_blinkTimer, &QTimer::timeout, this, [this]() {
+        m_gradientOffset += 0.02;
+        if (m_gradientOffset > 1.0)
+            m_gradientOffset -= 1.0;
+        updateIndicatorGradient();
+    });
+    m_blinkTimer->start(16);  // ~60 FPS
 }
 
 RecordingControlBar::~RecordingControlBar()
@@ -34,22 +46,45 @@ RecordingControlBar::~RecordingControlBar()
 void RecordingControlBar::setupUi()
 {
     QHBoxLayout *layout = new QHBoxLayout(this);
-    layout->setContentsMargins(14, 8, 14, 8);
-    layout->setSpacing(12);
+    layout->setContentsMargins(16, 10, 16, 10);
+    layout->setSpacing(10);
 
-    // Recording indicator (red circle)
+    // Recording indicator (animated gradient circle)
     m_recordingIndicator = new QLabel(this);
-    m_recordingIndicator->setFixedSize(14, 14);
-    m_recordingIndicator->setStyleSheet(
-        "background-color: #FF3B30; border-radius: 7px;");
+    m_recordingIndicator->setFixedSize(16, 16);
+    updateIndicatorGradient();
     layout->addWidget(m_recordingIndicator);
 
     // Duration label
     m_durationLabel = new QLabel("00:00:00", this);
     m_durationLabel->setStyleSheet(
-        "color: white; font-size: 15px; font-weight: bold; font-family: 'SF Mono', Menlo, Monaco, monospace;");
-    m_durationLabel->setMinimumWidth(80);
+        "color: white; font-size: 14px; font-weight: 600; font-family: 'SF Mono', Menlo, Monaco, monospace;");
+    m_durationLabel->setMinimumWidth(75);
     layout->addWidget(m_durationLabel);
+
+    // Separator
+    QLabel *sep1 = new QLabel("|", this);
+    sep1->setStyleSheet("color: rgba(255, 255, 255, 0.3); font-size: 14px;");
+    layout->addWidget(sep1);
+
+    // Size label
+    m_sizeLabel = new QLabel("--", this);
+    m_sizeLabel->setStyleSheet(
+        "color: rgba(255, 255, 255, 0.8); font-size: 12px; font-family: 'SF Mono', Menlo, Monaco, monospace;");
+    m_sizeLabel->setMinimumWidth(85);
+    layout->addWidget(m_sizeLabel);
+
+    // Separator
+    QLabel *sep2 = new QLabel("|", this);
+    sep2->setStyleSheet("color: rgba(255, 255, 255, 0.3); font-size: 14px;");
+    layout->addWidget(sep2);
+
+    // FPS label
+    m_fpsLabel = new QLabel("-- fps", this);
+    m_fpsLabel->setStyleSheet(
+        "color: rgba(255, 255, 255, 0.8); font-size: 12px; font-family: 'SF Mono', Menlo, Monaco, monospace;");
+    m_fpsLabel->setMinimumWidth(55);
+    layout->addWidget(m_fpsLabel);
 
     layout->addSpacing(8);
 
@@ -72,9 +107,9 @@ void RecordingControlBar::setupUi()
         "  background-color: #FF3B30;"
         "  color: white;"
         "  border: none;"
-        "  border-radius: 5px;"
-        "  padding: 6px 18px;"
-        "  font-weight: bold;"
+        "  border-radius: 6px;"
+        "  padding: 7px 18px;"
+        "  font-weight: 600;"
         "  font-size: 13px;"
         "}"
         "QPushButton:hover {"
@@ -90,18 +125,18 @@ void RecordingControlBar::setupUi()
     m_cancelButton = new QPushButton("Cancel", this);
     m_cancelButton->setStyleSheet(
         "QPushButton {"
-        "  background-color: #555;"
+        "  background-color: rgba(255, 255, 255, 0.15);"
         "  color: white;"
-        "  border: none;"
-        "  border-radius: 5px;"
-        "  padding: 6px 14px;"
+        "  border: 1px solid rgba(255, 255, 255, 0.2);"
+        "  border-radius: 6px;"
+        "  padding: 7px 14px;"
         "  font-size: 13px;"
         "}"
         "QPushButton:hover {"
-        "  background-color: #777;"
+        "  background-color: rgba(255, 255, 255, 0.25);"
         "}"
         "QPushButton:pressed {"
-        "  background-color: #444;"
+        "  background-color: rgba(255, 255, 255, 0.1);"
         "}");
     connect(m_cancelButton, &QPushButton::clicked, this, &RecordingControlBar::cancelRequested);
     layout->addWidget(m_cancelButton);
@@ -109,19 +144,40 @@ void RecordingControlBar::setupUi()
     adjustSize();
 }
 
+void RecordingControlBar::updateIndicatorGradient()
+{
+    // Create a pixmap with gradient
+    QPixmap pixmap(16, 16);
+    pixmap.fill(Qt::transparent);
+
+    QPainter painter(&pixmap);
+    painter.setRenderHint(QPainter::Antialiasing);
+
+    if (m_isPaused) {
+        // Yellow when paused
+        painter.setBrush(QColor(255, 184, 0));
+    } else {
+        // Animated gradient when recording
+        QConicalGradient gradient(8, 8, 360 * m_gradientOffset);
+        gradient.setColorAt(0.0, QColor(0, 122, 255));      // Blue
+        gradient.setColorAt(0.33, QColor(88, 86, 214));     // Indigo
+        gradient.setColorAt(0.66, QColor(175, 82, 222));    // Purple
+        gradient.setColorAt(1.0, QColor(0, 122, 255));      // Blue
+        painter.setBrush(gradient);
+    }
+
+    painter.setPen(Qt::NoPen);
+    painter.drawEllipse(0, 0, 16, 16);
+    painter.end();
+
+    m_recordingIndicator->setPixmap(pixmap);
+}
+
 void RecordingControlBar::setPaused(bool paused)
 {
     m_isPaused = paused;
     updatePauseButton();
-
-    // Update indicator appearance (yellow when paused, red when recording)
-    if (paused) {
-        m_recordingIndicator->setStyleSheet(
-            "background-color: #FFB800; border-radius: 7px;");  // Yellow when paused
-    } else {
-        m_recordingIndicator->setStyleSheet(
-            "background-color: #FF3B30; border-radius: 7px;");  // Red when recording
-    }
+    updateIndicatorGradient();
 }
 
 void RecordingControlBar::updatePauseButton()
@@ -134,9 +190,9 @@ void RecordingControlBar::updatePauseButton()
             "  background-color: #34C759;"
             "  color: white;"
             "  border: none;"
-            "  border-radius: 5px;"
-            "  padding: 6px 14px;"
-            "  font-weight: bold;"
+            "  border-radius: 6px;"
+            "  padding: 7px 14px;"
+            "  font-weight: 600;"
             "  font-size: 13px;"
             "}"
             "QPushButton:hover {"
@@ -146,24 +202,38 @@ void RecordingControlBar::updatePauseButton()
             "  background-color: #2A9D48;"
             "}");
     } else {
-        // Show "Pause" button (orange)
+        // Show "Pause" button (blue-purple gradient style)
         m_pauseButton->setText("Pause");
         m_pauseButton->setStyleSheet(
             "QPushButton {"
-            "  background-color: #FF9500;"
+            "  background-color: #5856D6;"
             "  color: white;"
             "  border: none;"
-            "  border-radius: 5px;"
-            "  padding: 6px 14px;"
-            "  font-weight: bold;"
+            "  border-radius: 6px;"
+            "  padding: 7px 14px;"
+            "  font-weight: 600;"
             "  font-size: 13px;"
             "}"
             "QPushButton:hover {"
-            "  background-color: #E68600;"
+            "  background-color: #6D6BE0;"
             "}"
             "QPushButton:pressed {"
-            "  background-color: #CC7700;"
+            "  background-color: #4A48C0;"
             "}");
+    }
+}
+
+void RecordingControlBar::updateRegionSize(int width, int height)
+{
+    if (m_sizeLabel) {
+        m_sizeLabel->setText(QString("%1×%2").arg(width).arg(height));
+    }
+}
+
+void RecordingControlBar::updateFps(double fps)
+{
+    if (m_fpsLabel) {
+        m_fpsLabel->setText(QString("%1 fps").arg(qRound(fps)));
     }
 }
 
@@ -173,11 +243,17 @@ void RecordingControlBar::paintEvent(QPaintEvent *event)
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
 
-    // Dark rounded rectangle background
-    QColor bgColor(30, 30, 30, 240);
-    painter.setBrush(bgColor);
-    painter.setPen(QPen(QColor(70, 70, 70), 1));
-    painter.drawRoundedRect(rect().adjusted(1, 1, -1, -1), 10, 10);
+    // Dark rounded rectangle background with subtle gradient border
+    QRectF bgRect = QRectF(rect()).adjusted(1, 1, -1, -1);
+
+    // Draw subtle glow/border
+    QLinearGradient borderGradient(bgRect.topLeft(), bgRect.topRight());
+    borderGradient.setColorAt(0.0, QColor(0, 122, 255, 80));
+    borderGradient.setColorAt(0.5, QColor(175, 82, 222, 80));
+    borderGradient.setColorAt(1.0, QColor(0, 122, 255, 80));
+    painter.setPen(QPen(QBrush(borderGradient), 1.5));
+    painter.setBrush(QColor(25, 25, 28, 245));
+    painter.drawRoundedRect(bgRect, 12, 12);
 }
 
 void RecordingControlBar::positionNear(const QRect &recordingRegion)

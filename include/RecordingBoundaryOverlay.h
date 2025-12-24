@@ -3,6 +3,7 @@
 
 #include <QWidget>
 #include <QRect>
+#include <QTimer>
 
 class RecordingBoundaryOverlay : public QWidget
 {
@@ -19,7 +20,11 @@ protected:
 
 private:
     QRect m_region;
-    static const int BORDER_WIDTH = 3;
+    QTimer *m_animationTimer;
+    qreal m_gradientOffset;
+
+    static const int BORDER_WIDTH = 4;
+    static const int CORNER_RADIUS = 10;
 };
 
 #endif // RECORDINGBOUNDARYOVERLAY_H

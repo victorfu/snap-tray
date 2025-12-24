@@ -316,7 +316,7 @@ void RecordingManager::startFrameCapture()
     }
     qDebug() << "RecordingManager::startFrameCapture() - Encoder started successfully";
 
-    // Show boundary overlay (red border)
+    // Show boundary overlay
     qDebug() << "RecordingManager::startFrameCapture() - Creating boundary overlay...";
     m_boundaryOverlay = new RecordingBoundaryOverlay();
     m_boundaryOverlay->setAttribute(Qt::WA_DeleteOnClose);
@@ -337,6 +337,11 @@ void RecordingManager::startFrameCapture()
             this, &RecordingManager::pauseRecording);
     connect(m_controlBar, &RecordingControlBar::resumeRequested,
             this, &RecordingManager::resumeRecording);
+
+    // Set initial region size
+    m_controlBar->updateRegionSize(m_recordingRegion.width(), m_recordingRegion.height());
+    m_controlBar->updateFps(m_frameRate);
+
     m_controlBar->positionNear(m_recordingRegion);
     m_controlBar->show();
     raiseWindowAboveMenuBar(m_controlBar);
@@ -514,9 +519,10 @@ void RecordingManager::stopFrameCapture()
     }
 
     // Stop capture engine
+    // Use deleteLater to avoid use-after-free when called from signal handler
     if (m_captureEngine) {
         m_captureEngine->stop();
-        delete m_captureEngine;
+        m_captureEngine->deleteLater();
         m_captureEngine = nullptr;
     }
 

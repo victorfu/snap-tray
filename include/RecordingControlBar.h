@@ -20,6 +20,8 @@ public:
     void positionNear(const QRect &recordingRegion);
     void updateDuration(qint64 elapsedMs);
     void setPaused(bool paused);
+    void updateRegionSize(int width, int height);
+    void updateFps(double fps);
 
 signals:
     void stopRequested();
@@ -38,9 +40,12 @@ private:
     void setupUi();
     QString formatDuration(qint64 ms) const;
     void updatePauseButton();
+    void updateIndicatorGradient();
 
     QLabel *m_recordingIndicator;
     QLabel *m_durationLabel;
+    QLabel *m_sizeLabel;
+    QLabel *m_fpsLabel;
     QPushButton *m_pauseButton;
     QPushButton *m_stopButton;
     QPushButton *m_cancelButton;
@@ -50,8 +55,9 @@ private:
     QPoint m_dragStartWidgetPos;
     bool m_isDragging;
 
-    // Blink timer for recording indicator
+    // Animation timer for indicator gradient
     QTimer *m_blinkTimer;
+    qreal m_gradientOffset;
     bool m_indicatorVisible;
     bool m_isPaused;
 };

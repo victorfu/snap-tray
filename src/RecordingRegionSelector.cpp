@@ -11,6 +11,7 @@
 #include <QHBoxLayout>
 #include <QTimer>
 #include <QDebug>
+#include <QLinearGradient>
 
 RecordingRegionSelector::RecordingRegionSelector(QWidget *parent)
     : QWidget(parent, Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::Window)
@@ -125,34 +126,54 @@ void RecordingRegionSelector::drawSelection(QPainter &painter)
         return;
     }
 
-    // Draw selection border
-    QPen pen;
-    if (m_selectionComplete) {
-        pen.setColor(QColor(255, 59, 48));  // Red for recording
-        pen.setWidth(2);
-    } else {
-        pen.setColor(QColor(0, 122, 255));  // Blue while selecting
-        pen.setWidth(1);
-        pen.setStyle(Qt::DashLine);
-    }
+    painter.setRenderHint(QPainter::Antialiasing);
 
-    painter.setPen(pen);
-    painter.setBrush(Qt::NoBrush);
-    painter.drawRect(m_selectionRect);
+    const int cornerRadius = 10;
+    const int borderWidth = 3;
+    QRectF selRect = QRectF(m_selectionRect).adjusted(0.5, 0.5, -0.5, -0.5);
 
-    // Draw corner handles when selection is complete
     if (m_selectionComplete) {
-        int handleSize = 8;
-        QColor handleColor(255, 59, 48);
+        // Draw outer glow effect
+        for (int i = 3; i >= 1; --i) {
+            QColor glowColor(88, 86, 214, 25 / i);  // Indigo with fading alpha
+            QPen glowPen(glowColor, borderWidth + i * 2);
+            glowPen.setJoinStyle(Qt::RoundJoin);
+            painter.setPen(glowPen);
+            painter.setBrush(Qt::NoBrush);
+            painter.drawRoundedRect(selRect, cornerRadius, cornerRadius);
+        }
+
+        // Create gradient for the border (blue to purple)
+        QLinearGradient gradient(selRect.topLeft(), selRect.bottomRight());
+        gradient.setColorAt(0.0, QColor(0, 122, 255));      // Apple Blue
+        gradient.setColorAt(0.5, QColor(88, 86, 214));      // Indigo
+        gradient.setColorAt(1.0, QColor(175, 82, 222));     // Purple
+
+        QPen pen(QBrush(gradient), borderWidth);
+        pen.setJoinStyle(Qt::RoundJoin);
+        painter.setPen(pen);
+        painter.setBrush(Qt::NoBrush);
+        painter.drawRoundedRect(selRect, cornerRadius, cornerRadius);
+
+        // Draw corner handles
+        int handleSize = 10;
+        QColor handleColor(175, 82, 222);  // Purple
         painter.setBrush(handleColor);
         painter.setPen(Qt::NoPen);
 
         QRect r = m_selectionRect;
-        // Corners
-        painter.drawRect(r.left() - handleSize/2, r.top() - handleSize/2, handleSize, handleSize);
-        painter.drawRect(r.right() - handleSize/2, r.top() - handleSize/2, handleSize, handleSize);
-        painter.drawRect(r.left() - handleSize/2, r.bottom() - handleSize/2, handleSize, handleSize);
-        painter.drawRect(r.right() - handleSize/2, r.bottom() - handleSize/2, handleSize, handleSize);
+        // Corners - rounded rectangles
+        painter.drawRoundedRect(r.left() - handleSize/2, r.top() - handleSize/2, handleSize, handleSize, 3, 3);
+        painter.drawRoundedRect(r.right() - handleSize/2, r.top() - handleSize/2, handleSize, handleSize, 3, 3);
+        painter.drawRoundedRect(r.left() - handleSize/2, r.bottom() - handleSize/2, handleSize, handleSize, 3, 3);
+        painter.drawRoundedRect(r.right() - handleSize/2, r.bottom() - handleSize/2, handleSize, handleSize, 3, 3);
+    } else {
+        // Blue dashed line while selecting
+        QPen pen(QColor(0, 122, 255), 1);
+        pen.setStyle(Qt::DashLine);
+        painter.setPen(pen);
+        painter.setBrush(Qt::NoBrush);
+        painter.drawRoundedRect(selRect, cornerRadius, cornerRadius);
     }
 }
 
@@ -375,52 +396,55 @@ void RecordingRegionSelector::finishSelection()
 
 void RecordingRegionSelector::setupButtons()
 {
-    // Create button container
+    // Create button container with gradient border style
     m_buttonContainer = new QWidget(this);
-    m_buttonContainer->setStyleSheet("background-color: rgba(30, 30, 30, 240); border-radius: 8px;");
+    m_buttonContainer->setStyleSheet(
+        "background-color: rgba(25, 25, 28, 245);"
+        "border: 1px solid rgba(88, 86, 214, 0.5);"
+        "border-radius: 10px;");
     m_buttonContainer->hide();
 
     QHBoxLayout *layout = new QHBoxLayout(m_buttonContainer);
-    layout->setContentsMargins(12, 8, 12, 8);
+    layout->setContentsMargins(14, 10, 14, 10);
     layout->setSpacing(12);
 
-    // Start Recording button (green)
+    // Start Recording button (blue-purple gradient style)
     m_startButton = new QPushButton("Start Recording", m_buttonContainer);
     m_startButton->setStyleSheet(
         "QPushButton {"
-        "  background-color: #34C759;"
+        "  background-color: #5856D6;"
         "  color: white;"
         "  border: none;"
-        "  border-radius: 5px;"
-        "  padding: 8px 20px;"
-        "  font-weight: bold;"
+        "  border-radius: 6px;"
+        "  padding: 9px 22px;"
+        "  font-weight: 600;"
         "  font-size: 14px;"
         "}"
         "QPushButton:hover {"
-        "  background-color: #30B350;"
+        "  background-color: #6D6BE0;"
         "}"
         "QPushButton:pressed {"
-        "  background-color: #2A9D48;"
+        "  background-color: #4A48C0;"
         "}");
     connect(m_startButton, &QPushButton::clicked, this, &RecordingRegionSelector::finishSelection);
     layout->addWidget(m_startButton);
 
-    // Cancel button (gray)
+    // Cancel button (transparent style)
     m_cancelButton = new QPushButton("Cancel", m_buttonContainer);
     m_cancelButton->setStyleSheet(
         "QPushButton {"
-        "  background-color: #555;"
+        "  background-color: rgba(255, 255, 255, 0.15);"
         "  color: white;"
-        "  border: none;"
-        "  border-radius: 5px;"
-        "  padding: 8px 16px;"
+        "  border: 1px solid rgba(255, 255, 255, 0.2);"
+        "  border-radius: 6px;"
+        "  padding: 9px 18px;"
         "  font-size: 14px;"
         "}"
         "QPushButton:hover {"
-        "  background-color: #777;"
+        "  background-color: rgba(255, 255, 255, 0.25);"
         "}"
         "QPushButton:pressed {"
-        "  background-color: #444;"
+        "  background-color: rgba(255, 255, 255, 0.1);"
         "}");
     connect(m_cancelButton, &QPushButton::clicked, this, [this]() {
         // Convert local rect to global coordinates and emit with region
