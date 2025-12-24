@@ -36,9 +36,10 @@ namespace {
 OcrEngine tryCreateOcrEngine()
 {
     // Preferred language order: Traditional Chinese, Simplified Chinese, English
+    // Note: Windows 10 OCR uses short language tags (zh-TW, zh-CN) not BCP-47 (zh-Hant-TW)
     static const wchar_t* languageTags[] = {
-        L"zh-Hant-TW",
-        L"zh-Hans-CN",
+        L"zh-TW",
+        L"zh-CN",
         L"en-US"
     };
 
@@ -163,11 +164,20 @@ OCRManager::~OCRManager()
 bool OCRManager::isAvailable()
 {
     try {
-        winrt::init_apartment(winrt::apartment_type::multi_threaded);
-        OcrEngine engine = OcrEngine::TryCreateFromUserProfileLanguages();
-        bool available = (engine != nullptr);
-        winrt::uninit_apartment();
-        return available;
+        // Try to initialize WinRT apartment, but ignore error if already initialized
+        // Qt applications may already have COM/WinRT initialized in a different mode
+        try {
+            winrt::init_apartment(winrt::apartment_type::multi_threaded);
+        } catch (const winrt::hresult_error& ex) {
+            // RPC_E_CHANGED_MODE (0x80010106) means apartment already initialized in different mode
+            // This is OK - we can still use WinRT APIs
+            if (ex.code() != HRESULT(0x80010106)) {
+                throw; // Re-throw other errors
+            }
+        }
+
+        OcrEngine engine = tryCreateOcrEngine();
+        return engine != nullptr;
     } catch (...) {
         return false;
     }
