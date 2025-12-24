@@ -620,11 +620,20 @@ void SettingsDialog::updateFFmpegStatus()
 {
     QString customPath = m_ffmpegPathEdit->text().trimmed();
 
-    // Temporarily save the custom path so FFmpegEncoder can use it
-    QSettings settings("Victor Fu", "SnapTray");
-    settings.setValue("recording/ffmpegPath", customPath);
+    // Validate FFmpeg without saving to settings (only save on Save button click)
+    bool available = false;
 
-    if (FFmpegEncoder::isFFmpegAvailable()) {
+    if (!customPath.isEmpty() && QFile::exists(customPath)) {
+        // Validate if it's a working FFmpeg executable
+        QProcess probe;
+        probe.start(customPath, {"-version"});
+        available = probe.waitForFinished(3000) && probe.exitCode() == 0;
+    } else if (customPath.isEmpty()) {
+        // When path is empty, check if system has FFmpeg available
+        available = FFmpegEncoder::isFFmpegAvailable();
+    }
+
+    if (available) {
         m_ffmpegStatusLabel->setText("FFmpeg: Detected");
         m_ffmpegStatusLabel->setStyleSheet("color: green;");
     } else {
