@@ -33,6 +33,29 @@
 static const char* SETTINGS_KEY_ANNOTATION_COLOR = "annotationColor";
 static const char* SETTINGS_KEY_ANNOTATION_WIDTH = "annotationWidth";
 
+// Create a rounded square cursor for mosaic tool
+static QCursor createMosaicCursor(int size) {
+    qreal dpr = qApp->devicePixelRatio();
+    int pixelSize = static_cast<int>(size * dpr);
+
+    QPixmap pixmap(pixelSize, pixelSize);
+    pixmap.setDevicePixelRatio(dpr);
+    pixmap.fill(Qt::transparent);
+
+    QPainter painter(&pixmap);
+    painter.setRenderHint(QPainter::Antialiasing, true);
+
+    // Gray border with semi-transparent fill
+    painter.setPen(QPen(QColor(128, 128, 128), 1.5));
+    painter.setBrush(QColor(255, 255, 255, 30));
+    painter.drawRoundedRect(1, 1, size - 2, size - 2, 2, 2);
+
+    painter.end();
+
+    // Hotspot at center
+    return QCursor(pixmap, pixelSize / 2, pixelSize / 2);
+}
+
 RegionSelector::RegionSelector(QWidget* parent)
     : QWidget(parent)
     , m_isSelecting(false)
@@ -1454,6 +1477,10 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
             }
             else if (m_currentTool == ToolbarButton::Text && !m_textEditor->isEditing()) {
                 setCursor(Qt::IBeamCursor);
+            }
+            else if (m_currentTool == ToolbarButton::Mosaic) {
+                static QCursor mosaicCursor = createMosaicCursor(15);
+                setCursor(mosaicCursor);
             }
             else if (isAnnotationTool(m_currentTool) && m_currentTool != ToolbarButton::Selection) {
                 setCursor(Qt::CrossCursor);

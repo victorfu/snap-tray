@@ -3,6 +3,7 @@
 #include <QFile>
 #include <QImage>
 #include <QDebug>
+#include <QPointer>
 #include <QTimer>
 #include <QSettings>
 #include <QThread>
@@ -273,17 +274,25 @@ void FFmpegEncoder::finish()
     // Close stdin to signal end of input
     m_process->closeWriteChannel();
 
+    // Use QPointer to track object lifetime for safety
+    // This ensures the lambda won't access invalid memory if the encoder is destroyed
+    QPointer<FFmpegEncoder> weakThis = this;
+    QPointer<QProcess> weakProcess = m_process;
+
     // Set up timeout timer instead of blocking waitForFinished
     // The process will emit finished() signal when done, which is connected to onProcessFinished
-    QTimer::singleShot(30000, this, [this]() {
-        if (m_process && m_process->state() != QProcess::NotRunning) {
+    QTimer::singleShot(30000, this, [weakThis, weakProcess]() {
+        if (!weakThis || !weakProcess) {
+            return;
+        }
+        if (weakProcess->state() != QProcess::NotRunning) {
             qDebug() << "FFmpegEncoder: Timeout waiting for FFmpeg, terminating";
-            m_process->terminate();
+            weakProcess->terminate();
             // Give it a few seconds to terminate gracefully, then force kill
-            QTimer::singleShot(5000, this, [this]() {
-                if (m_process && m_process->state() != QProcess::NotRunning) {
+            QTimer::singleShot(5000, weakProcess.data(), [weakProcess]() {
+                if (weakProcess && weakProcess->state() != QProcess::NotRunning) {
                     qDebug() << "FFmpegEncoder: Force killing FFmpeg process";
-                    m_process->kill();
+                    weakProcess->kill();
                 }
             });
         }

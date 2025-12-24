@@ -8,6 +8,7 @@
 #include <d3d11.h>
 #include <dxgi1_2.h>
 #include <wrl/client.h>
+#include <chrono>
 
 using Microsoft::WRL::ComPtr;
 
@@ -36,6 +37,7 @@ public:
     bool running = false;
     bool useDXGI = false;
     QImage lastFrame;  // Cache for when no new frame available
+    std::chrono::steady_clock::time_point lastFrameTime;
 };
 
 bool DXGICaptureEngine::Private::initializeDXGI()
@@ -242,8 +244,12 @@ QImage DXGICaptureEngine::Private::captureWithDXGI()
     hr = duplication->AcquireNextFrame(16, &frameInfo, &resource);  // 16ms timeout
 
     if (hr == DXGI_ERROR_WAIT_TIMEOUT) {
-        // No new frame, return cached frame
-        if (!lastFrame.isNull()) {
+        // No new frame, return cached frame if still fresh
+        auto now = std::chrono::steady_clock::now();
+        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+            now - lastFrameTime).count();
+
+        if (!lastFrame.isNull() && elapsed < 500) {
             return lastFrame;
         }
         return captureWithBitBlt();
@@ -309,6 +315,7 @@ QImage DXGICaptureEngine::Private::captureWithDXGI()
 
     // Crop to capture region and deep copy
     lastFrame = fullImage.copy(relX, relY, physWidth, physHeight);
+    lastFrameTime = std::chrono::steady_clock::now();
 
     context->Unmap(stagingTexture.Get(), 0);
     duplication->ReleaseFrame();
