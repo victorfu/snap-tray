@@ -33,6 +33,15 @@ protected:
     void focusOutEvent(QFocusEvent *event) override;
 
 private:
+    // Handle positions for resizing
+    enum class HandlePosition {
+        None,
+        TopLeft,
+        TopRight,
+        BottomLeft,
+        BottomRight
+    };
+
     void drawOverlay(QPainter &painter);
     void drawSelection(QPainter &painter);
     void drawCrosshair(QPainter &painter);
@@ -41,6 +50,11 @@ private:
     void finishSelection();
     void setupButtons();
     void positionButtons();
+
+    // Handle hit testing and cursor
+    HandlePosition hitTestHandle(const QPoint &pos) const;
+    QRect handleRect(HandlePosition handle) const;
+    void updateCursor(HandlePosition handle);
 
     QScreen *m_currentScreen;
     qreal m_devicePixelRatio;
@@ -51,10 +65,18 @@ private:
     bool m_isSelecting;
     bool m_selectionComplete;
 
+    // Handle dragging state
+    bool m_isDraggingHandle;
+    HandlePosition m_activeHandle;
+    QPoint m_dragStartPos;
+    QRect m_dragStartRect;
+
     // Buttons for selection confirmation
     QWidget *m_buttonContainer;
     QPushButton *m_startButton;
     QPushButton *m_cancelButton;
+
+    static const int HANDLE_SIZE = 10;
 };
 
 #endif // RECORDINGREGIONSELECTOR_H
