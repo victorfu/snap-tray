@@ -240,6 +240,12 @@ bool SCKCaptureEngine::setRegion(const QRect &region, QScreen *screen)
     return true;
 }
 
+void SCKCaptureEngine::setFrameRate(int fps)
+{
+    m_frameRate = fps;
+    d->frameRate = fps;
+}
+
 bool SCKCaptureEngine::start()
 {
     qDebug() << "SCKCaptureEngine::start() - BEGIN";
