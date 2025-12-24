@@ -15,6 +15,7 @@
 #include <QApplication>
 #include <QScreen>
 #include <QHotkey>
+#include <QTimer>
 #include <QDebug>
 
 MainApplication::MainApplication(QObject* parent)
@@ -72,8 +73,13 @@ void MainApplication::initialize()
             m_recordingManager, &RecordingManager::startRegionSelectionWithPreset);
 
     // Connect recording cancellation to return to capture mode
+    // Use delay to ensure RecordingRegionSelector is fully closed before capturing new screenshot
     connect(m_recordingManager, &RecordingManager::selectionCancelledWithRegion,
-            m_captureManager, &CaptureManager::startRegionCaptureWithPreset);
+            this, [this](const QRect &region, QScreen *screen) {
+                QTimer::singleShot(50, this, [this, region, screen]() {
+                    m_captureManager->startRegionCaptureWithPreset(region, screen);
+                });
+            });
 
     // Create system tray icon
     QIcon icon = PlatformFeatures::instance().createTrayIcon();

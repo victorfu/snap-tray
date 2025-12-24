@@ -204,11 +204,11 @@ void RegionSelector::setupToolbarButtons()
     buttons.append({static_cast<int>(ToolbarButton::Redo), "redo", "Redo", false});
     buttons.append({static_cast<int>(ToolbarButton::Cancel), "cancel", "Cancel (Esc)", true});  // separator before
     if (PlatformFeatures::instance().isOCRAvailable()) {
-        buttons.append({static_cast<int>(ToolbarButton::OCR), "ocr", "OCR Text Recognition", true});  // separator before
+        buttons.append({static_cast<int>(ToolbarButton::OCR), "ocr", "OCR Text Recognition", false});
     }
-    buttons.append({static_cast<int>(ToolbarButton::Pin), "pin", "Pin to Screen (Enter)", true});  // separator before
     buttons.append({static_cast<int>(ToolbarButton::Record), "record", "Screen Recording (R)", false});
-    buttons.append({static_cast<int>(ToolbarButton::Save), "save", "Save (Ctrl+S)", true});  // separator before
+    buttons.append({static_cast<int>(ToolbarButton::Pin), "pin", "Pin to Screen (Enter)", false});
+    buttons.append({static_cast<int>(ToolbarButton::Save), "save", "Save (Ctrl+S)", false});
     buttons.append({static_cast<int>(ToolbarButton::Copy), "copy", "Copy (Ctrl+C)", false});
 
     m_toolbar->setButtons(buttons);
