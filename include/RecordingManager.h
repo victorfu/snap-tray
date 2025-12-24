@@ -7,6 +7,7 @@
 #include <QPixmap>
 #include <QTimer>
 #include <QElapsedTimer>
+#include <QMutex>
 
 class RecordingRegionSelector;
 class RecordingControlBar;
@@ -103,6 +104,7 @@ private:
     // Pause tracking
     qint64 m_pausedDuration;     // Total time spent paused
     qint64 m_pauseStartTime;     // When current pause began
+    mutable QMutex m_durationMutex;  // Protects pause duration variables
 };
 
 #endif // RECORDINGMANAGER_H

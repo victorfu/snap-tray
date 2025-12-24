@@ -29,6 +29,20 @@ public:
     void setOutputFormat(OutputFormat format) { m_outputFormat = format; }
     OutputFormat outputFormat() const { return m_outputFormat; }
 
+    /**
+     * @brief Set CRF (Constant Rate Factor) for quality control
+     * @param crf Value 0-51, lower = better quality (18-28 recommended)
+     */
+    void setCrf(int crf) { m_crf = qBound(0, crf, 51); }
+    int crf() const { return m_crf; }
+
+    /**
+     * @brief Set encoding preset for speed/quality balance
+     * @param preset e.g. "ultrafast", "fast", "medium", "slow"
+     */
+    void setPreset(const QString &preset) { m_preset = preset; }
+    QString preset() const { return m_preset; }
+
     bool start(const QString &outputPath, const QSize &frameSize, int frameRate);
     void writeFrame(const QImage &frame);
     void finish();
@@ -68,6 +82,8 @@ private:
     QString m_lastError;
     bool m_finishing;
     OutputFormat m_outputFormat;
+    int m_crf;
+    QString m_preset;
 };
 
 #endif // FFMPEGENCODER_H

@@ -33,8 +33,8 @@ bool QtCaptureEngine::start()
         return false;
     }
 
-    if (m_captureRegion.isEmpty()) {
-        emit error("No capture region configured");
+    if (m_captureRegion.isEmpty() || m_captureRegion.width() < 10 || m_captureRegion.height() < 10) {
+        emit error("Capture region too small (minimum 10x10 pixels)");
         return false;
     }
 

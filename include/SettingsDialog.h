@@ -88,6 +88,9 @@ private:
     QLineEdit *m_ffmpegPathEdit;
     QPushButton *m_ffmpegBrowseBtn;
     QLabel *m_ffmpegStatusLabel;
+    QSlider *m_recordingCrfSlider;
+    QLabel *m_recordingCrfLabel;
+    QComboBox *m_recordingPresetCombo;
 
     // Watermark UI helper methods
     void updateWatermarkTypeVisibility(int type);

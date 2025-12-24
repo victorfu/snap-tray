@@ -254,6 +254,10 @@ QImage DXGICaptureEngine::Private::captureWithDXGI()
         qWarning() << "DXGICaptureEngine: Access lost, reinitializing";
         cleanup();
         useDXGI = initializeDXGI();
+        if (useDXGI) {
+            // Successfully reinitialized, retry DXGI capture
+            return captureWithDXGI();
+        }
         return captureWithBitBlt();
     }
 
@@ -328,8 +332,16 @@ DXGICaptureEngine::~DXGICaptureEngine()
 
 bool DXGICaptureEngine::isAvailable()
 {
+    // Cache the result to avoid expensive device creation on every call
+    static int cachedResult = -1;  // -1 = not checked, 0 = false, 1 = true
+
+    if (cachedResult >= 0) {
+        return cachedResult == 1;
+    }
+
     // Check if we're in a remote session (DXGI duplication doesn't work)
     if (GetSystemMetrics(SM_REMOTESESSION)) {
+        cachedResult = 0;
         return false;
     }
 
@@ -347,6 +359,7 @@ bool DXGICaptureEngine::isAvailable()
     VER_SET_CONDITION(conditionMask, VER_MINORVERSION, VER_GREATER_EQUAL);
 
     if (!VerifyVersionInfoW(&osvi, VER_MAJORVERSION | VER_MINORVERSION, conditionMask)) {
+        cachedResult = 0;
         return false;
     }
 
@@ -366,7 +379,8 @@ bool DXGICaptureEngine::isAvailable()
         nullptr
     );
 
-    return SUCCEEDED(hr) && featureLevel >= D3D_FEATURE_LEVEL_11_0;
+    cachedResult = (SUCCEEDED(hr) && featureLevel >= D3D_FEATURE_LEVEL_11_0) ? 1 : 0;
+    return cachedResult == 1;
 }
 
 bool DXGICaptureEngine::setRegion(const QRect &region, QScreen *screen)

@@ -53,6 +53,9 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     , m_ffmpegPathEdit(nullptr)
     , m_ffmpegBrowseBtn(nullptr)
     , m_ffmpegStatusLabel(nullptr)
+    , m_recordingCrfSlider(nullptr)
+    , m_recordingCrfLabel(nullptr)
+    , m_recordingPresetCombo(nullptr)
 {
     setWindowTitle("SnapTray Settings");
     setMinimumSize(520, 360);
@@ -360,6 +363,48 @@ void SettingsDialog::setupRecordingTab(QWidget *tab)
     formatLayout->addStretch();
     layout->addLayout(formatLayout);
 
+    // Encoding Preset row
+    QHBoxLayout *presetLayout = new QHBoxLayout();
+    QLabel *presetLabel = new QLabel("Encoding Preset:", tab);
+    presetLabel->setFixedWidth(120);
+    m_recordingPresetCombo = new QComboBox(tab);
+    m_recordingPresetCombo->addItem("ultrafast (Fastest)", "ultrafast");
+    m_recordingPresetCombo->addItem("superfast", "superfast");
+    m_recordingPresetCombo->addItem("veryfast", "veryfast");
+    m_recordingPresetCombo->addItem("faster", "faster");
+    m_recordingPresetCombo->addItem("fast", "fast");
+    m_recordingPresetCombo->addItem("medium (Balanced)", "medium");
+    m_recordingPresetCombo->addItem("slow", "slow");
+    m_recordingPresetCombo->addItem("slower", "slower");
+    m_recordingPresetCombo->addItem("veryslow (Best Quality)", "veryslow");
+    presetLayout->addWidget(presetLabel);
+    presetLayout->addWidget(m_recordingPresetCombo);
+    presetLayout->addStretch();
+    layout->addLayout(presetLayout);
+
+    // CRF (Quality) row
+    QHBoxLayout *crfLayout = new QHBoxLayout();
+    QLabel *crfLabel = new QLabel("Quality (CRF):", tab);
+    crfLabel->setFixedWidth(120);
+    m_recordingCrfSlider = new QSlider(Qt::Horizontal, tab);
+    m_recordingCrfSlider->setRange(0, 51);
+    m_recordingCrfSlider->setValue(23);
+    m_recordingCrfLabel = new QLabel("23", tab);
+    m_recordingCrfLabel->setFixedWidth(40);
+    connect(m_recordingCrfSlider, &QSlider::valueChanged, this, [this](int value) {
+        m_recordingCrfLabel->setText(QString::number(value));
+    });
+    crfLayout->addWidget(crfLabel);
+    crfLayout->addWidget(m_recordingCrfSlider);
+    crfLayout->addWidget(m_recordingCrfLabel);
+    layout->addLayout(crfLayout);
+
+    // CRF hint label
+    QLabel *crfHintLabel = new QLabel("0-51, lower = better quality (18-28 recommended)", tab);
+    crfHintLabel->setStyleSheet("color: gray; font-size: 11px;");
+    crfHintLabel->setContentsMargins(120, 0, 0, 0);
+    layout->addWidget(crfHintLabel);
+
     // Auto-save option
     m_recordingAutoSaveCheckbox = new QCheckBox("Auto-save recordings (no save dialog)", tab);
     layout->addWidget(m_recordingAutoSaveCheckbox);
@@ -406,6 +451,19 @@ void SettingsDialog::setupRecordingTab(QWidget *tab)
     }
     int outputFormat = settings.value("recording/outputFormat", 0).toInt();
     m_recordingOutputFormatCombo->setCurrentIndex(outputFormat);
+
+    // Load encoding preset
+    QString preset = settings.value("recording/preset", "ultrafast").toString();
+    int presetIndex = m_recordingPresetCombo->findData(preset);
+    if (presetIndex >= 0) {
+        m_recordingPresetCombo->setCurrentIndex(presetIndex);
+    }
+
+    // Load CRF
+    int crf = settings.value("recording/crf", 23).toInt();
+    m_recordingCrfSlider->setValue(crf);
+    m_recordingCrfLabel->setText(QString::number(crf));
+
     m_recordingAutoSaveCheckbox->setChecked(settings.value("recording/autoSave", false).toBool());
 
     // Load FFmpeg path: use saved path, or auto-detect if not saved
@@ -546,6 +604,10 @@ void SettingsDialog::onSave()
         m_recordingFrameRateCombo->currentData().toInt());
     recordingSettings.setValue("recording/outputFormat",
         m_recordingOutputFormatCombo->currentIndex());
+    recordingSettings.setValue("recording/preset",
+        m_recordingPresetCombo->currentData().toString());
+    recordingSettings.setValue("recording/crf",
+        m_recordingCrfSlider->value());
     recordingSettings.setValue("recording/autoSave",
         m_recordingAutoSaveCheckbox->isChecked());
     recordingSettings.setValue("recording/ffmpegPath",

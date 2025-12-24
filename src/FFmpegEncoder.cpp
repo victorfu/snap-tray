@@ -5,6 +5,7 @@
 #include <QDebug>
 #include <QTimer>
 #include <QSettings>
+#include <QThread>
 
 FFmpegEncoder::FFmpegEncoder(QObject *parent)
     : QObject(parent)
@@ -13,6 +14,8 @@ FFmpegEncoder::FFmpegEncoder(QObject *parent)
     , m_framesWritten(0)
     , m_finishing(false)
     , m_outputFormat(OutputFormat::MP4)
+    , m_crf(23)
+    , m_preset("ultrafast")
 {
 }
 
@@ -30,7 +33,15 @@ bool FFmpegEncoder::isFFmpegAvailable()
 
     QProcess test;
     test.start(path, QStringList() << "-version");
+    if (!test.waitForStarted(3000)) {
+        return false;  // Process failed to start
+    }
     if (!test.waitForFinished(3000)) {
+        test.kill();
+        return false;  // Process timed out
+    }
+    // Check for process errors (crash, failed to start, etc.)
+    if (test.error() != QProcess::UnknownError) {
         return false;
     }
     return test.exitCode() == 0;
@@ -142,8 +153,8 @@ QStringList FFmpegEncoder::buildMp4Arguments(const QString &outputPath,
 
     // Output settings for H.264 MP4
     args << "-c:v" << "libx264";
-    args << "-preset" << "ultrafast";  // Fast encoding for screen recording
-    args << "-crf" << "23";            // Good quality (lower = better, 18-28 typical)
+    args << "-preset" << m_preset;
+    args << "-crf" << QString::number(m_crf);
     args << "-pix_fmt" << "yuv420p";   // Compatibility with most players
     args << "-movflags" << "+faststart";  // Web-friendly MP4 (metadata at start)
 
@@ -224,17 +235,25 @@ void FFmpegEncoder::writeFrame(const QImage &frame)
         }
     }
 
-    // Write raw pixel data to stdin with partial write handling
+    // Write raw pixel data to stdin with partial write handling and retry limit
     const char* data = reinterpret_cast<const char*>(processed.constBits());
     qint64 totalBytes = processed.sizeInBytes();
     qint64 bytesWritten = 0;
+    int retryCount = 0;
+    const int maxRetries = 100;
 
     while (bytesWritten < totalBytes) {
         qint64 written = m_process->write(data + bytesWritten, totalBytes - bytesWritten);
         if (written <= 0) {
-            qWarning() << "FFmpegEncoder: Write failed at byte" << bytesWritten << "of" << totalBytes;
-            return;
+            if (++retryCount > maxRetries) {
+                qWarning() << "FFmpegEncoder: Write failed after" << maxRetries << "retries at byte"
+                           << bytesWritten << "of" << totalBytes;
+                return;
+            }
+            QThread::msleep(1);  // Brief sleep before retry
+            continue;
         }
+        retryCount = 0;  // Reset retry count on successful write
         bytesWritten += written;
     }
 

@@ -17,6 +17,8 @@
 #include <QFileInfo>
 #include <QFile>
 #include <QRandomGenerator>
+#include <QMutexLocker>
+#include <QUuid>
 
 #ifdef Q_OS_WIN
 #include <windows.h>
@@ -239,8 +241,9 @@ void RecordingManager::startFrameCapture()
     qDebug() << "RecordingManager::startFrameCapture() - FFmpeg is available";
 
     // Initialize capture engine (auto-selects best available)
+    // Note: Pass nullptr to avoid Qt parent ownership - we manage lifecycle manually
     qDebug() << "RecordingManager::startFrameCapture() - Creating capture engine...";
-    m_captureEngine = ICaptureEngine::createBestEngine(this);
+    m_captureEngine = ICaptureEngine::createBestEngine(nullptr);
     qDebug() << "RecordingManager::startFrameCapture() - Capture engine created:" << (m_captureEngine ? "valid" : "NULL");
 
     // Forward capture engine warnings to UI
@@ -259,7 +262,7 @@ void RecordingManager::startFrameCapture()
              << "screen:" << (m_targetScreen ? m_targetScreen->name() : "NULL");
     if (!m_captureEngine->setRegion(m_recordingRegion, m_targetScreen)) {
         emit recordingError("Failed to configure capture region");
-        delete m_captureEngine;
+        m_captureEngine->deleteLater();
         m_captureEngine = nullptr;
         setState(State::Idle);
         return;
@@ -272,7 +275,7 @@ void RecordingManager::startFrameCapture()
     qDebug() << "RecordingManager::startFrameCapture() - Starting capture engine...";
     if (!m_captureEngine->start()) {
         emit recordingError("Failed to start capture engine");
-        delete m_captureEngine;
+        m_captureEngine->deleteLater();
         m_captureEngine = nullptr;
         setState(State::Idle);
         return;
@@ -302,6 +305,13 @@ void RecordingManager::startFrameCapture()
     m_encoder->setOutputFormat(static_cast<FFmpegEncoder::OutputFormat>(formatInt));
     qDebug() << "RecordingManager::startFrameCapture() - Output format:" << formatInt;
 
+    // Set encoding preset and CRF from settings
+    QString preset = settings.value("recording/preset", "ultrafast").toString();
+    int crf = settings.value("recording/crf", 23).toInt();
+    m_encoder->setPreset(preset);
+    m_encoder->setCrf(crf);
+    qDebug() << "RecordingManager::startFrameCapture() - Preset:" << preset << "CRF:" << crf;
+
     connect(m_encoder, &FFmpegEncoder::finished,
             this, &RecordingManager::onEncodingFinished);
     connect(m_encoder, &FFmpegEncoder::error,
@@ -317,10 +327,10 @@ void RecordingManager::startFrameCapture()
              << "(scale:" << scale << ", logical:" << m_recordingRegion.size() << ")";
     if (!m_encoder->start(outputPath, physicalSize, m_frameRate)) {
         emit recordingError(m_encoder->lastError());
-        delete m_encoder;
+        m_encoder->deleteLater();
         m_encoder = nullptr;
         m_captureEngine->stop();
-        delete m_captureEngine;
+        m_captureEngine->deleteLater();
         m_captureEngine = nullptr;
         setState(State::Idle);
         return;
@@ -383,16 +393,25 @@ void RecordingManager::startFrameCapture()
 
 void RecordingManager::captureFrame()
 {
-    if (m_state != State::Recording || !m_captureEngine || !m_encoder) {
+    if (m_state != State::Recording) {
+        return;
+    }
+
+    // Store local copies to avoid race condition where pointers become null
+    // between the check and actual use
+    ICaptureEngine *captureEngine = m_captureEngine;
+    FFmpegEncoder *encoder = m_encoder;
+
+    if (!captureEngine || !encoder) {
         return;
     }
 
     // Capture frame using the capture engine
-    QImage frame = m_captureEngine->captureFrame();
+    QImage frame = captureEngine->captureFrame();
 
     if (!frame.isNull()) {
         // Pass QImage directly to encoder - no QPixmap conversion needed
-        m_encoder->writeFrame(frame);
+        encoder->writeFrame(frame);
         m_frameCount++;
     }
 }
@@ -400,14 +419,18 @@ void RecordingManager::captureFrame()
 void RecordingManager::updateDuration()
 {
     if (m_state == State::Recording || m_state == State::Paused) {
-        qint64 rawElapsed = m_elapsedTimer.elapsed();
+        qint64 effectiveElapsed;
+        {
+            QMutexLocker locker(&m_durationMutex);
+            qint64 rawElapsed = m_elapsedTimer.elapsed();
 
-        // Calculate current pause duration if paused
-        qint64 currentPause = (m_state == State::Paused)
-            ? (rawElapsed - m_pauseStartTime) : 0;
+            // Calculate current pause duration if paused
+            qint64 currentPause = (m_state == State::Paused)
+                ? (rawElapsed - m_pauseStartTime) : 0;
 
-        // Effective elapsed = raw - total paused - current pause
-        qint64 effectiveElapsed = rawElapsed - m_pausedDuration - currentPause;
+            // Effective elapsed = raw - total paused - current pause
+            effectiveElapsed = rawElapsed - m_pausedDuration - currentPause;
+        }
 
         emit durationChanged(effectiveElapsed);
 
@@ -430,8 +453,11 @@ void RecordingManager::pauseRecording()
         m_captureTimer->stop();
     }
 
-    // Record when pause started
-    m_pauseStartTime = m_elapsedTimer.elapsed();
+    // Record when pause started (protected by mutex)
+    {
+        QMutexLocker locker(&m_durationMutex);
+        m_pauseStartTime = m_elapsedTimer.elapsed();
+    }
 
     setState(State::Paused);
 
@@ -450,8 +476,11 @@ void RecordingManager::resumeRecording()
 
     qDebug() << "RecordingManager: Resuming recording";
 
-    // Add pause duration to total
-    m_pausedDuration += m_elapsedTimer.elapsed() - m_pauseStartTime;
+    // Add pause duration to total (protected by mutex)
+    {
+        QMutexLocker locker(&m_durationMutex);
+        m_pausedDuration += m_elapsedTimer.elapsed() - m_pauseStartTime;
+    }
 
     // Resume frame capture timer
     if (m_captureTimer) {
@@ -612,21 +641,32 @@ void RecordingManager::showSaveDialog(const QString &tempOutputPath)
 
     if (autoSave) {
         // Auto-save: generate filename and save directly without dialog
+        // Use atomic rename approach to avoid TOCTOU race condition
         QString timestamp = QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss");
-        QString fileName = QString("SnapTray_Recording_%1.%2").arg(timestamp).arg(extension);
+        QString baseName = QString("SnapTray_Recording_%1").arg(timestamp);
+        QString fileName = QString("%1.%2").arg(baseName).arg(extension);
         QString savePath = QDir(outputDir).filePath(fileName);
 
-        // Handle existing file by adding a counter
-        if (QFile::exists(savePath)) {
-            int counter = 1;
-            QString baseName = QString("SnapTray_Recording_%1").arg(timestamp);
-            while (QFile::exists(savePath)) {
-                fileName = QString("%1_%2.%3").arg(baseName).arg(counter++).arg(extension);
+        // Try rename directly - if it fails due to existing file, add counter
+        int counter = 0;
+        const int maxAttempts = 100;
+        bool renamed = false;
+
+        while (!renamed && counter < maxAttempts) {
+            if (QFile::rename(tempOutputPath, savePath)) {
+                renamed = true;
+            } else if (QFile::exists(savePath)) {
+                // File exists, try with counter
+                counter++;
+                fileName = QString("%1_%2.%3").arg(baseName).arg(counter).arg(extension);
                 savePath = QDir(outputDir).filePath(fileName);
+            } else {
+                // Rename failed for other reason, break and try copy
+                break;
             }
         }
 
-        if (QFile::rename(tempOutputPath, savePath)) {
+        if (renamed) {
             syncFile(savePath);
             qDebug() << "RecordingManager: Auto-saved recording to:" << savePath;
             emit recordingStopped(savePath);
@@ -735,13 +775,13 @@ QString RecordingManager::generateOutputPath() const
     FFmpegEncoder::OutputFormat format = static_cast<FFmpegEncoder::OutputFormat>(formatInt);
     QString extension = (format == FFmpegEncoder::OutputFormat::GIF) ? "gif" : "mp4";
 
-    // Generate filename with timestamp (milliseconds) + random number to ensure uniqueness
+    // Generate filename with timestamp + UUID for guaranteed uniqueness
     // This prevents file collisions when a new recording starts while save dialog is open
     QString timestamp = QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss-zzz");
-    quint32 random = QRandomGenerator::global()->generate() % 10000;
+    QString uuid = QUuid::createUuid().toString(QUuid::Id128).left(8);
     QString filename = QString("SnapTray_Recording_%1_%2.%3")
                            .arg(timestamp)
-                           .arg(random, 4, 10, QChar('0'))
+                           .arg(uuid)
                            .arg(extension);
 
     return QDir(tempDir).filePath(filename);

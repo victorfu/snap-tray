@@ -111,7 +111,17 @@ protected:
     void run() override
     {
         // Initialize WinRT for this thread
-        winrt::init_apartment(winrt::apartment_type::multi_threaded);
+        // Handle case where apartment is already initialized in a different mode
+        try {
+            winrt::init_apartment(winrt::apartment_type::multi_threaded);
+        } catch (const winrt::hresult_error& ex) {
+            // RPC_E_CHANGED_MODE (0x80010106) means apartment already initialized
+            // in different mode - this is OK, we can still use WinRT APIs
+            if (ex.code() != HRESULT(0x80010106)) {
+                m_error = QString::fromStdWString(std::wstring(ex.message()));
+                return;
+            }
+        }
 
         try {
             OcrEngine engine = tryCreateOcrEngine();

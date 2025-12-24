@@ -109,8 +109,8 @@ BOOL CALLBACK enumWindowsProc(HWND hwnd, LPARAM lParam)
     ElementType elementType = ElementType::Window;
 
     // Check window class name for special window types
-    WCHAR className[64] = {0};
-    GetClassNameW(hwnd, className, 64);
+    WCHAR className[256] = {0};
+    GetClassNameW(hwnd, className, 256);
 
     // Menu windows have class "#32768"
     if (wcscmp(className, L"#32768") == 0) {
@@ -190,8 +190,8 @@ BOOL CALLBACK enumWindowsProc(HWND hwnd, LPARAM lParam)
     }
 
     // Get window title
-    WCHAR titleBuffer[256];
-    int titleLen = GetWindowTextW(hwnd, titleBuffer, 256);
+    WCHAR titleBuffer[512];
+    int titleLen = GetWindowTextW(hwnd, titleBuffer, 512);
     QString windowTitle = QString::fromWCharArray(titleBuffer, titleLen);
 
     // Get owner application name
