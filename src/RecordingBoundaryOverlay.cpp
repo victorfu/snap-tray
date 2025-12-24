@@ -54,11 +54,15 @@ void RecordingBoundaryOverlay::paintEvent(QPaintEvent *event)
     // Draw subtle outer glow
     for (int i = 3; i >= 1; --i) {
         QColor glowColor(88, 86, 214, 30 / i);  // Indigo with fading alpha
-        QPen glowPen(glowColor, BORDER_WIDTH + i * 2);
+        int glowWidth = BORDER_WIDTH + i * 2;
+        QPen glowPen(glowColor, glowWidth);
         glowPen.setJoinStyle(Qt::RoundJoin);
         painter.setPen(glowPen);
         painter.setBrush(Qt::NoBrush);
-        painter.drawRoundedRect(borderRect, CORNER_RADIUS, CORNER_RADIUS);
+        // Offset glow outward so its inner edge aligns with the recording region
+        // This prevents glow from being captured in the recording
+        QRectF glowRect = borderRect.adjusted(-i, -i, i, i);
+        painter.drawRoundedRect(glowRect, CORNER_RADIUS, CORNER_RADIUS);
     }
 
     // Create animated conical gradient for the border

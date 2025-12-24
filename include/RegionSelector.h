@@ -4,6 +4,7 @@
 #include <QWidget>
 #include <QPixmap>
 #include <QPoint>
+#include <QPointF>
 #include <QRect>
 #include <QVector>
 #include <QColor>
@@ -16,6 +17,7 @@
 #include "InlineTextEditor.h"
 #include "WindowDetector.h"
 #include "LoadingSpinnerRenderer.h"
+#include "TransformationGizmo.h"
 
 class QScreen;
 class ColorPaletteWidget;
@@ -152,6 +154,11 @@ private:
     // Inline text editing handlers
     void onTextEditingFinished(const QString &text, const QPoint &position);
 
+    // Text annotation transformation helpers
+    void startTextTransformation(const QPoint &pos, GizmoHandle handle);
+    void updateTextTransformation(const QPoint &pos);
+    void finishTextTransformation();
+
     // Selection resize/move helpers
     ResizeHandle getHandleAtPosition(const QPoint &pos);
     void updateResize(const QPoint &pos);
@@ -189,7 +196,7 @@ private:
     // In-progress annotation state
     bool m_isDrawing;
     QPoint m_drawStartPoint;
-    QVector<QPoint> m_currentPath;
+    QVector<QPointF> m_currentPath;
 
     // Temporary annotation objects for preview
     std::unique_ptr<PencilStroke> m_currentPencil;
@@ -234,6 +241,15 @@ private:
     // Text annotation dragging state
     bool m_isDraggingAnnotation = false;
     QPoint m_annotationDragStart;
+
+    // Text annotation transformation state
+    GizmoHandle m_activeGizmoHandle = GizmoHandle::None;
+    bool m_isTransformingAnnotation = false;
+    QPointF m_transformStartCenter;
+    qreal m_transformStartRotation = 0.0;
+    qreal m_transformStartScale = 1.0;
+    qreal m_transformStartAngle = 0.0;
+    qreal m_transformStartDistance = 0.0;
 
     // Color picker dialog
     ColorPickerDialog *m_colorPickerDialog;

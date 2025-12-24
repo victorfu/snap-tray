@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include <QPoint>
+#include <QPointF>
 #include <QColor>
 #include <QVector>
 #include <memory>
@@ -135,7 +136,7 @@ protected:
 
     bool m_isDrawing;
     QPoint m_startPoint;
-    QVector<QPoint> m_currentPath;
+    QVector<QPointF> m_currentPath;
 
     // In-progress annotation objects
     std::unique_ptr<PencilStroke> m_currentPencil;

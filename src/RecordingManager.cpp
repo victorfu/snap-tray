@@ -262,6 +262,7 @@ void RecordingManager::startFrameCapture()
              << "screen:" << (m_targetScreen ? m_targetScreen->name() : "NULL");
     if (!m_captureEngine->setRegion(m_recordingRegion, m_targetScreen)) {
         emit recordingError("Failed to configure capture region");
+        disconnect(m_captureEngine, nullptr, this, nullptr);
         m_captureEngine->deleteLater();
         m_captureEngine = nullptr;
         setState(State::Idle);
@@ -275,6 +276,7 @@ void RecordingManager::startFrameCapture()
     qDebug() << "RecordingManager::startFrameCapture() - Starting capture engine...";
     if (!m_captureEngine->start()) {
         emit recordingError("Failed to start capture engine");
+        disconnect(m_captureEngine, nullptr, this, nullptr);
         m_captureEngine->deleteLater();
         m_captureEngine = nullptr;
         setState(State::Idle);
@@ -330,6 +332,7 @@ void RecordingManager::startFrameCapture()
         m_encoder->deleteLater();
         m_encoder = nullptr;
         m_captureEngine->stop();
+        disconnect(m_captureEngine, nullptr, this, nullptr);
         m_captureEngine->deleteLater();
         m_captureEngine = nullptr;
         setState(State::Idle);
@@ -563,6 +566,7 @@ void RecordingManager::stopFrameCapture()
     // Use deleteLater to avoid use-after-free when called from signal handler
     if (m_captureEngine) {
         m_captureEngine->stop();
+        disconnect(m_captureEngine, nullptr, this, nullptr);
         m_captureEngine->deleteLater();
         m_captureEngine = nullptr;
     }

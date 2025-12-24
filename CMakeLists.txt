@@ -80,6 +80,7 @@ set(SOURCES
     src/RecordingControlBar.cpp
     src/RecordingBoundaryOverlay.cpp
     src/FFmpegEncoder.cpp
+    src/TransformationGizmo.cpp
 )
 
 set(RESOURCES
@@ -116,6 +117,7 @@ set(HEADERS
     include/RecordingControlBar.h
     include/RecordingBoundaryOverlay.h
     include/FFmpegEncoder.h
+    include/TransformationGizmo.h
     include/capture/ICaptureEngine.h
     include/capture/QtCaptureEngine.h
 )

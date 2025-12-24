@@ -5,10 +5,55 @@
 #include <QSet>
 
 // ============================================================================
+// Helper: Build smooth path using Catmull-Rom spline interpolation
+// ============================================================================
+
+static QPainterPath buildSmoothPath(const QVector<QPointF> &points)
+{
+    QPainterPath path;
+
+    if (points.size() < 2) {
+        return path;
+    }
+
+    path.moveTo(points[0]);
+
+    if (points.size() == 2) {
+        path.lineTo(points[1]);
+        return path;
+    }
+
+    // Use Catmull-Rom spline converted to cubic Bezier curves
+    // Catmull-Rom uses 4 control points: P0, P1, P2, P3
+    // The curve is drawn between P1 and P2
+    for (int i = 0; i < points.size() - 1; ++i) {
+        QPointF p0 = (i == 0) ? points[0] : points[i - 1];
+        QPointF p1 = points[i];
+        QPointF p2 = points[i + 1];
+        QPointF p3 = (i + 2 < points.size()) ? points[i + 2] : points[i + 1];
+
+        // Catmull-Rom tension (0.5 is standard)
+        const qreal tension = 0.5;
+
+        // Calculate tangents
+        QPointF tangent1 = (p2 - p0) * tension;
+        QPointF tangent2 = (p3 - p1) * tension;
+
+        // Convert to cubic Bezier control points
+        QPointF cp1 = p1 + tangent1 / 3.0;
+        QPointF cp2 = p2 - tangent2 / 3.0;
+
+        path.cubicTo(cp1, cp2, p2);
+    }
+
+    return path;
+}
+
+// ============================================================================
 // PencilStroke Implementation
 // ============================================================================
 
-PencilStroke::PencilStroke(const QVector<QPoint> &points, const QColor &color, int width)
+PencilStroke::PencilStroke(const QVector<QPointF> &points, const QColor &color, int width)
     : m_points(points)
     , m_color(color)
     , m_width(width)
@@ -22,9 +67,11 @@ void PencilStroke::draw(QPainter &painter) const
     painter.save();
     QPen pen(m_color, m_width, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
     painter.setPen(pen);
+    painter.setBrush(Qt::NoBrush);
     painter.setRenderHint(QPainter::Antialiasing, true);
 
-    painter.drawPolyline(m_points.data(), m_points.size());
+    QPainterPath path = buildSmoothPath(m_points);
+    painter.drawPath(path);
 
     painter.restore();
 }
@@ -34,12 +81,12 @@ QRect PencilStroke::boundingRect() const
     if (m_points.isEmpty()) return QRect();
 
     if (m_boundingRectDirty) {
-        int minX = m_points[0].x();
-        int maxX = m_points[0].x();
-        int minY = m_points[0].y();
-        int maxY = m_points[0].y();
+        qreal minX = m_points[0].x();
+        qreal maxX = m_points[0].x();
+        qreal minY = m_points[0].y();
+        qreal maxY = m_points[0].y();
 
-        for (const QPoint &p : m_points) {
+        for (const QPointF &p : m_points) {
             minX = qMin(minX, p.x());
             maxX = qMax(maxX, p.x());
             minY = qMin(minY, p.y());
@@ -47,8 +94,8 @@ QRect PencilStroke::boundingRect() const
         }
 
         int margin = m_width / 2 + 1;
-        m_boundingRectCache = QRect(minX - margin, minY - margin,
-                                    maxX - minX + 2 * margin, maxY - minY + 2 * margin);
+        m_boundingRectCache = QRect(static_cast<int>(minX) - margin, static_cast<int>(minY) - margin,
+                                    static_cast<int>(maxX - minX) + 2 * margin, static_cast<int>(maxY - minY) + 2 * margin);
         m_boundingRectDirty = false;
     }
     return m_boundingRectCache;
@@ -59,13 +106,13 @@ std::unique_ptr<AnnotationItem> PencilStroke::clone() const
     return std::make_unique<PencilStroke>(m_points, m_color, m_width);
 }
 
-void PencilStroke::addPoint(const QPoint &point)
+void PencilStroke::addPoint(const QPointF &point)
 {
     m_points.append(point);
 
     // Incrementally update bounding rect cache
     int margin = m_width / 2 + 1;
-    QRect pointRect(point.x() - margin, point.y() - margin,
+    QRect pointRect(static_cast<int>(point.x()) - margin, static_cast<int>(point.y()) - margin,
                     margin * 2, margin * 2);
 
     if (m_boundingRectDirty || m_boundingRectCache.isEmpty()) {
@@ -80,7 +127,7 @@ void PencilStroke::addPoint(const QPoint &point)
 // MarkerStroke Implementation
 // ============================================================================
 
-MarkerStroke::MarkerStroke(const QVector<QPoint> &points, const QColor &color, int width)
+MarkerStroke::MarkerStroke(const QVector<QPointF> &points, const QColor &color, int width)
     : m_points(points)
     , m_color(color)
     , m_width(width)
@@ -119,11 +166,9 @@ void MarkerStroke::draw(QPainter &painter) const
             offPainter.setPen(pen);
             offPainter.setBrush(Qt::NoBrush);
 
-            QPainterPath path;
-            path.moveTo(m_points.first() - bounds.topLeft());
-            for (int i = 1; i < m_points.size(); ++i) {
-                path.lineTo(m_points[i] - bounds.topLeft());
-            }
+            // Build smooth path and translate to local coordinates
+            QPainterPath path = buildSmoothPath(m_points);
+            path.translate(-bounds.topLeft());
             offPainter.drawPath(path);
         }
 
@@ -146,12 +191,12 @@ QRect MarkerStroke::boundingRect() const
     if (m_points.isEmpty()) return QRect();
 
     if (m_boundingRectDirty) {
-        int minX = m_points[0].x();
-        int maxX = m_points[0].x();
-        int minY = m_points[0].y();
-        int maxY = m_points[0].y();
+        qreal minX = m_points[0].x();
+        qreal maxX = m_points[0].x();
+        qreal minY = m_points[0].y();
+        qreal maxY = m_points[0].y();
 
-        for (const QPoint &p : m_points) {
+        for (const QPointF &p : m_points) {
             minX = qMin(minX, p.x());
             maxX = qMax(maxX, p.x());
             minY = qMin(minY, p.y());
@@ -159,8 +204,8 @@ QRect MarkerStroke::boundingRect() const
         }
 
         int margin = m_width / 2 + 1;
-        m_boundingRectCache = QRect(minX - margin, minY - margin,
-                                    maxX - minX + 2 * margin, maxY - minY + 2 * margin);
+        m_boundingRectCache = QRect(static_cast<int>(minX) - margin, static_cast<int>(minY) - margin,
+                                    static_cast<int>(maxX - minX) + 2 * margin, static_cast<int>(maxY - minY) + 2 * margin);
         m_boundingRectDirty = false;
     }
     return m_boundingRectCache;
@@ -171,13 +216,13 @@ std::unique_ptr<AnnotationItem> MarkerStroke::clone() const
     return std::make_unique<MarkerStroke>(m_points, m_color, m_width);
 }
 
-void MarkerStroke::addPoint(const QPoint &point)
+void MarkerStroke::addPoint(const QPointF &point)
 {
     m_points.append(point);
 
     // Incrementally update bounding rect cache
     int margin = m_width / 2 + 1;
-    QRect pointRect(point.x() - margin, point.y() - margin,
+    QRect pointRect(static_cast<int>(point.x()) - margin, static_cast<int>(point.y()) - margin,
                     margin * 2, margin * 2);
 
     if (m_boundingRectDirty || m_boundingRectCache.isEmpty()) {
@@ -381,11 +426,79 @@ TextAnnotation::TextAnnotation(const QPoint &position, const QString &text, cons
 {
 }
 
+QPointF TextAnnotation::center() const
+{
+    QFontMetrics fm(m_font);
+    QStringList lines = m_text.split('\n');
+
+    int maxWidth = 0;
+    for (const QString &line : lines) {
+        maxWidth = qMax(maxWidth, fm.horizontalAdvance(line));
+    }
+    int totalHeight = lines.count() * fm.lineSpacing();
+
+    // m_position is baseline position of first line
+    // Center is at middle of the text bounding box
+    qreal cx = m_position.x() + maxWidth / 2.0;
+    qreal cy = m_position.y() - fm.ascent() + totalHeight / 2.0;
+
+    return QPointF(cx, cy);
+}
+
+QPolygonF TextAnnotation::transformedBoundingPolygon() const
+{
+    QFontMetrics fm(m_font);
+    QStringList lines = m_text.split('\n');
+
+    int maxWidth = 0;
+    for (const QString &line : lines) {
+        maxWidth = qMax(maxWidth, fm.horizontalAdvance(line));
+    }
+    int totalHeight = lines.count() * fm.lineSpacing();
+
+    // Build untransformed bounding rect with margin for outline
+    QRectF textRect(m_position.x(),
+                    m_position.y() - fm.ascent(),
+                    maxWidth,
+                    totalHeight);
+    textRect.adjust(-5, -5, 5, 5);
+
+    // Build transformation matrix around center
+    QPointF c = center();
+    QTransform t;
+    t.translate(c.x(), c.y());
+    t.rotate(m_rotation);
+    t.scale(m_scale, m_scale);
+    t.translate(-c.x(), -c.y());
+
+    // Transform corners
+    QPolygonF poly;
+    poly << t.map(textRect.topLeft())
+         << t.map(textRect.topRight())
+         << t.map(textRect.bottomRight())
+         << t.map(textRect.bottomLeft());
+
+    return poly;
+}
+
+bool TextAnnotation::containsPoint(const QPoint &point) const
+{
+    return transformedBoundingPolygon().containsPoint(QPointF(point), Qt::OddEvenFill);
+}
+
 void TextAnnotation::draw(QPainter &painter) const
 {
     if (m_text.isEmpty()) return;
 
     painter.save();
+
+    // Apply transformations around center
+    QPointF c = center();
+    painter.translate(c);
+    painter.rotate(m_rotation);
+    painter.scale(m_scale, m_scale);
+    painter.translate(-c);
+
     painter.setFont(m_font);
     painter.setRenderHint(QPainter::TextAntialiasing, true);
 
@@ -418,26 +531,16 @@ void TextAnnotation::draw(QPainter &painter) const
 
 QRect TextAnnotation::boundingRect() const
 {
-    QFontMetrics fm(m_font);
-    QStringList lines = m_text.split('\n');
-
-    int maxWidth = 0;
-    for (const QString &line : lines) {
-        maxWidth = qMax(maxWidth, fm.horizontalAdvance(line));
-    }
-    int totalHeight = lines.count() * fm.lineSpacing();
-
-    // m_position is baseline position of first line
-    QRect textRect(m_position.x(),
-                   m_position.y() - fm.ascent(),
-                   maxWidth,
-                   totalHeight);
-    return textRect.adjusted(-5, -5, 5, 5);  // Add margin for outline
+    // Return axis-aligned bounding rect of transformed polygon
+    return transformedBoundingPolygon().boundingRect().toAlignedRect();
 }
 
 std::unique_ptr<AnnotationItem> TextAnnotation::clone() const
 {
-    return std::make_unique<TextAnnotation>(m_position, m_text, m_font, m_color);
+    auto cloned = std::make_unique<TextAnnotation>(m_position, m_text, m_font, m_color);
+    cloned->m_rotation = m_rotation;
+    cloned->m_scale = m_scale;
+    return cloned;
 }
 
 void TextAnnotation::setText(const QString &text)
@@ -1049,8 +1152,9 @@ int AnnotationLayer::hitTestText(const QPoint &pos) const
     // Iterate in reverse order (top-most items first)
     for (int i = static_cast<int>(m_items.size()) - 1; i >= 0; --i) {
         // Only hit-test TextAnnotation items
-        if (dynamic_cast<TextAnnotation*>(m_items[i].get())) {
-            if (m_items[i]->boundingRect().contains(pos)) {
+        if (auto* textItem = dynamic_cast<TextAnnotation*>(m_items[i].get())) {
+            // Use containsPoint() for accurate hit-testing of rotated/scaled text
+            if (textItem->containsPoint(pos)) {
                 return i;
             }
         }

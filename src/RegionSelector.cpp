@@ -29,6 +29,7 @@
 #include <QLabel>
 #include <QTimer>
 #include <QSettings>
+#include <QtMath>
 
 static const char* SETTINGS_KEY_ANNOTATION_COLOR = "annotationColor";
 static const char* SETTINGS_KEY_ANNOTATION_WIDTH = "annotationWidth";
@@ -1241,17 +1242,48 @@ void RegionSelector::mousePressEvent(QMouseEvent* event)
                 }
             }
 
-            // Check if clicked on existing text annotation (for selection/dragging)
+            // Check if clicking on gizmo handle of currently selected text annotation
+            if (m_annotationLayer->selectedIndex() >= 0) {
+                if (auto* textItem = dynamic_cast<TextAnnotation*>(m_annotationLayer->selectedItem())) {
+                    GizmoHandle handle = TransformationGizmo::hitTest(textItem, event->pos());
+                    if (handle != GizmoHandle::None) {
+                        if (handle == GizmoHandle::Body) {
+                            // Start dragging (move)
+                            m_isDraggingAnnotation = true;
+                            m_annotationDragStart = event->pos();
+                        } else {
+                            // Start rotation or scaling
+                            startTextTransformation(event->pos(), handle);
+                        }
+                        setFocus();
+                        update();
+                        return;
+                    }
+                }
+            }
+
+            // Check if clicked on existing text annotation (for selection)
             int hitIndex = m_annotationLayer->hitTestText(event->pos());
             if (hitIndex >= 0) {
                 m_annotationLayer->setSelectedIndex(hitIndex);
-                m_isDraggingAnnotation = true;
-                m_annotationDragStart = event->pos();
+                // If clicking on a different text, check its gizmo handles
+                if (auto* textItem = dynamic_cast<TextAnnotation*>(m_annotationLayer->selectedItem())) {
+                    GizmoHandle handle = TransformationGizmo::hitTest(textItem, event->pos());
+                    if (handle == GizmoHandle::Body || handle == GizmoHandle::None) {
+                        // Start dragging if on body, otherwise just select
+                        m_isDraggingAnnotation = true;
+                        m_annotationDragStart = event->pos();
+                    } else {
+                        // Start transformation if on a handle
+                        startTextTransformation(event->pos(), handle);
+                    }
+                }
                 setFocus();  // Ensure we have keyboard focus for Delete key
                 update();
                 return;
             }
-            // Click elsewhere clears selection
+
+            // Click elsewhere clears selection (auto-deselect)
             if (m_annotationLayer->selectedIndex() >= 0) {
                 m_annotationLayer->clearSelection();
                 update();
@@ -1367,6 +1399,13 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
         return;
     }
 
+    // Handle text annotation transformation (rotation/scale)
+    if (m_isTransformingAnnotation && m_annotationLayer->selectedIndex() >= 0) {
+        updateTextTransformation(event->pos());
+        update();
+        return;
+    }
+
     // Handle dragging selected text annotation
     if (m_isDraggingAnnotation && m_annotationLayer->selectedIndex() >= 0) {
         QPoint delta = event->pos() - m_annotationDragStart;
@@ -1418,9 +1457,39 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
         bool lineWidthHovered = false;
         bool unifiedWidgetHovered = false;
         bool textAnnotationHovered = false;
+        bool gizmoHandleHovered = false;
 
-        // Check if hovering over text annotation
-        if (m_annotationLayer->hitTestText(event->pos()) >= 0) {
+        // Check if hovering over gizmo handles of selected text annotation
+        if (m_annotationLayer->selectedIndex() >= 0) {
+            if (auto* textItem = dynamic_cast<TextAnnotation*>(m_annotationLayer->selectedItem())) {
+                GizmoHandle handle = TransformationGizmo::hitTest(textItem, event->pos());
+                switch (handle) {
+                case GizmoHandle::Rotation:
+                    setCursor(Qt::CrossCursor);
+                    gizmoHandleHovered = true;
+                    break;
+                case GizmoHandle::TopLeft:
+                case GizmoHandle::BottomRight:
+                    setCursor(Qt::SizeFDiagCursor);
+                    gizmoHandleHovered = true;
+                    break;
+                case GizmoHandle::TopRight:
+                case GizmoHandle::BottomLeft:
+                    setCursor(Qt::SizeBDiagCursor);
+                    gizmoHandleHovered = true;
+                    break;
+                case GizmoHandle::Body:
+                    setCursor(Qt::SizeAllCursor);
+                    gizmoHandleHovered = true;
+                    break;
+                default:
+                    break;
+                }
+            }
+        }
+
+        // Check if hovering over any text annotation (including unselected ones)
+        if (!gizmoHandleHovered && m_annotationLayer->hitTestText(event->pos()) >= 0) {
             setCursor(Qt::SizeAllCursor);
             textAnnotationHovered = true;
         }
@@ -1472,8 +1541,8 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
             if (hoveredButton >= 0) {
                 setCursor(Qt::PointingHandCursor);
             }
-            else if (colorPaletteHovered || lineWidthHovered || unifiedWidgetHovered || textAnnotationHovered) {
-                // Already set cursor for color swatch, line width widget, unified widget, or text annotation
+            else if (colorPaletteHovered || lineWidthHovered || unifiedWidgetHovered || textAnnotationHovered || gizmoHandleHovered) {
+                // Already set cursor for color swatch, line width widget, unified widget, text annotation, or gizmo handle
             }
             else if (m_currentTool == ToolbarButton::Text && !m_textEditor->isEditing()) {
                 setCursor(Qt::IBeamCursor);
@@ -1491,7 +1560,7 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
                 updateCursorForHandle(handle);
             }
         }
-        else if (hoveredButton < 0 && !colorPaletteHovered && !lineWidthHovered && !unifiedWidgetHovered && !textAnnotationHovered && m_currentTool == ToolbarButton::Selection) {
+        else if (hoveredButton < 0 && !colorPaletteHovered && !lineWidthHovered && !unifiedWidgetHovered && !textAnnotationHovered && !gizmoHandleHovered && m_currentTool == ToolbarButton::Selection) {
             // Update cursor for resize handles when not hovering button or color swatch
             ResizeHandle handle = getHandleAtPosition(event->pos());
             updateCursorForHandle(handle);
@@ -1519,6 +1588,12 @@ void RegionSelector::mouseReleaseEvent(QMouseEvent* event)
         // Handle text editor drag release
         if (m_textEditor->isEditing() && m_textEditor->isConfirmMode()) {
             m_textEditor->handleMouseRelease(event->pos());
+            return;
+        }
+
+        // Handle text annotation transformation release
+        if (m_isTransformingAnnotation) {
+            finishTextTransformation();
             return;
         }
 
@@ -1776,17 +1851,11 @@ void RegionSelector::drawAnnotations(QPainter &painter)
 {
     m_annotationLayer->draw(painter);
 
-    // Draw selection highlight for selected text annotation
+    // Draw transformation gizmo for selected text annotation
     int selIdx = m_annotationLayer->selectedIndex();
     if (selIdx >= 0) {
-        AnnotationItem* item = m_annotationLayer->selectedItem();
-        if (item) {
-            QRect bounds = item->boundingRect();
-            painter.save();
-            painter.setPen(QPen(Qt::white, 1, Qt::DashLine));
-            painter.setBrush(Qt::NoBrush);
-            painter.drawRect(bounds);
-            painter.restore();
+        if (auto* textItem = dynamic_cast<TextAnnotation*>(m_annotationLayer->selectedItem())) {
+            TransformationGizmo::draw(painter, textItem);
         }
     }
 }
@@ -1858,9 +1927,14 @@ void RegionSelector::startAnnotation(const QPoint &pos)
         m_currentEllipse = std::make_unique<EllipseAnnotation>(QRect(pos, pos), m_annotationColor, m_annotationWidth);
         break;
 
-    case ToolbarButton::Mosaic:
-        m_currentMosaicStroke = std::make_unique<MosaicStroke>(m_currentPath, m_backgroundPixmap, 15, 5);
+    case ToolbarButton::Mosaic: {
+        QVector<QPoint> intPath;
+        for (const QPointF &p : m_currentPath) {
+            intPath.append(p.toPoint());
+        }
+        m_currentMosaicStroke = std::make_unique<MosaicStroke>(intPath, m_backgroundPixmap, 15, 5);
         break;
+    }
 
     case ToolbarButton::Eraser:
         m_eraserPath.clear();
@@ -1890,15 +1964,15 @@ void RegionSelector::updateAnnotation(const QPoint &pos)
     switch (m_currentTool) {
     case ToolbarButton::Pencil:
         if (m_currentPencil) {
-            m_currentPath.append(pos);
-            m_currentPencil->addPoint(pos);
+            m_currentPath.append(QPointF(pos));
+            m_currentPencil->addPoint(QPointF(pos));
         }
         break;
 
     case ToolbarButton::Marker:
         if (m_currentMarker) {
-            m_currentPath.append(pos);
-            m_currentMarker->addPoint(pos);
+            m_currentPath.append(QPointF(pos));
+            m_currentMarker->addPoint(QPointF(pos));
         }
         break;
 
@@ -1922,8 +1996,8 @@ void RegionSelector::updateAnnotation(const QPoint &pos)
 
     case ToolbarButton::Mosaic:
         if (m_currentMosaicStroke) {
-            m_currentPath.append(pos);
-            m_currentMosaicStroke->addPoint(pos);
+            m_currentPath.append(QPointF(pos));
+            m_currentMosaicStroke->addPoint(pos);  // MosaicStroke still uses QPoint
         }
         break;
 
@@ -2065,7 +2139,89 @@ void RegionSelector::onTextEditingFinished(const QString &text, const QPoint &po
 
     auto textAnnotation = std::make_unique<TextAnnotation>(position, text, font, m_annotationColor);
     m_annotationLayer->addItem(std::move(textAnnotation));
+
+    // Auto-select the newly created text annotation to show the gizmo
+    int newIndex = static_cast<int>(m_annotationLayer->itemCount()) - 1;
+    m_annotationLayer->setSelectedIndex(newIndex);
+
     update();
+}
+
+// ============================================================================
+// Text Annotation Transformation Helper Functions
+// ============================================================================
+
+void RegionSelector::startTextTransformation(const QPoint &pos, GizmoHandle handle)
+{
+    auto* textItem = dynamic_cast<TextAnnotation*>(m_annotationLayer->selectedItem());
+    if (!textItem) return;
+
+    m_isTransformingAnnotation = true;
+    m_activeGizmoHandle = handle;
+    m_transformStartCenter = textItem->center();
+    m_transformStartRotation = textItem->rotation();
+    m_transformStartScale = textItem->scale();
+
+    // Calculate initial angle and distance from center to mouse
+    QPointF delta = QPointF(pos) - m_transformStartCenter;
+    m_transformStartAngle = qRadiansToDegrees(qAtan2(delta.y(), delta.x()));
+    m_transformStartDistance = qSqrt(delta.x() * delta.x() + delta.y() * delta.y());
+
+    m_annotationDragStart = pos;
+}
+
+void RegionSelector::updateTextTransformation(const QPoint &pos)
+{
+    auto* textItem = dynamic_cast<TextAnnotation*>(m_annotationLayer->selectedItem());
+    if (!textItem) return;
+
+    QPointF center = m_transformStartCenter;
+    QPointF delta = QPointF(pos) - center;
+
+    switch (m_activeGizmoHandle) {
+    case GizmoHandle::Rotation: {
+        // Calculate new angle from center to mouse
+        qreal currentAngle = qRadiansToDegrees(qAtan2(delta.y(), delta.x()));
+        qreal angleDelta = currentAngle - m_transformStartAngle;
+
+        // Apply rotation
+        textItem->setRotation(m_transformStartRotation + angleDelta);
+        break;
+    }
+
+    case GizmoHandle::TopLeft:
+    case GizmoHandle::TopRight:
+    case GizmoHandle::BottomLeft:
+    case GizmoHandle::BottomRight: {
+        // Calculate scale based on distance from center
+        qreal currentDistance = qSqrt(delta.x() * delta.x() + delta.y() * delta.y());
+
+        if (m_transformStartDistance > 0) {
+            qreal scaleFactor = currentDistance / m_transformStartDistance;
+            // Clamp scale to reasonable range (10% to 1000%)
+            scaleFactor = qBound(0.1, m_transformStartScale * scaleFactor, 10.0);
+            textItem->setScale(scaleFactor);
+        }
+        break;
+    }
+
+    case GizmoHandle::Body: {
+        // Move the annotation (this case is normally handled by m_isDraggingAnnotation)
+        QPoint moveD = pos - m_annotationDragStart;
+        textItem->moveBy(moveD);
+        m_annotationDragStart = pos;
+        break;
+    }
+
+    default:
+        break;
+    }
+}
+
+void RegionSelector::finishTextTransformation()
+{
+    m_isTransformingAnnotation = false;
+    m_activeGizmoHandle = GizmoHandle::None;
 }
 
 // ============================================================================

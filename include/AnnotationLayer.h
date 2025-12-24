@@ -4,10 +4,13 @@
 #include <QObject>
 #include <QPainter>
 #include <QPoint>
+#include <QPointF>
 #include <QRect>
 #include <QColor>
 #include <QFont>
 #include <QPixmap>
+#include <QPolygonF>
+#include <QTransform>
 #include <memory>
 #include <vector>
 
@@ -25,15 +28,15 @@ public:
 class PencilStroke : public AnnotationItem
 {
 public:
-    PencilStroke(const QVector<QPoint> &points, const QColor &color, int width);
+    PencilStroke(const QVector<QPointF> &points, const QColor &color, int width);
     void draw(QPainter &painter) const override;
     QRect boundingRect() const override;
     std::unique_ptr<AnnotationItem> clone() const override;
 
-    void addPoint(const QPoint &point);
+    void addPoint(const QPointF &point);
 
 private:
-    QVector<QPoint> m_points;
+    QVector<QPointF> m_points;
     QColor m_color;
     int m_width;
 
@@ -46,15 +49,15 @@ private:
 class MarkerStroke : public AnnotationItem
 {
 public:
-    MarkerStroke(const QVector<QPoint> &points, const QColor &color, int width);
+    MarkerStroke(const QVector<QPointF> &points, const QColor &color, int width);
     void draw(QPainter &painter) const override;
     QRect boundingRect() const override;
     std::unique_ptr<AnnotationItem> clone() const override;
 
-    void addPoint(const QPoint &point);
+    void addPoint(const QPointF &point);
 
 private:
-    QVector<QPoint> m_points;
+    QVector<QPointF> m_points;
     QColor m_color;
     int m_width;
 
@@ -125,7 +128,7 @@ private:
     bool m_filled;
 };
 
-// Text annotation
+// Text annotation with rotation and scaling support
 class TextAnnotation : public AnnotationItem
 {
 public:
@@ -137,11 +140,24 @@ public:
     void setText(const QString &text);
     void moveBy(const QPoint &delta) { m_position += delta; }
 
+    // Transformation methods
+    void setRotation(qreal degrees) { m_rotation = degrees; }
+    qreal rotation() const { return m_rotation; }
+    void setScale(qreal scale) { m_scale = scale; }
+    qreal scale() const { return m_scale; }
+
+    // Geometry helpers for hit-testing and gizmo
+    QPointF center() const;
+    QPolygonF transformedBoundingPolygon() const;
+    bool containsPoint(const QPoint &point) const;
+
 private:
     QPoint m_position;
     QString m_text;
     QFont m_font;
     QColor m_color;
+    qreal m_rotation = 0.0;  // Rotation angle in degrees (clockwise)
+    qreal m_scale = 1.0;     // Uniform scale factor
 };
 
 // Step badge annotation (auto-incrementing numbered circle)
@@ -263,6 +279,7 @@ public:
     bool canUndo() const;
     bool canRedo() const;
     bool isEmpty() const;
+    size_t itemCount() const { return m_items.size(); }
 
     // For rendering annotations onto the final image
     void drawOntoPixmap(QPixmap &pixmap) const;
