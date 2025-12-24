@@ -124,6 +124,12 @@ private:
     bool shouldShowColorAndWidthWidget() const;
     bool shouldShowWidthControl() const;
 
+    // Annotation settings persistence
+    QColor loadAnnotationColor() const;
+    void saveAnnotationColor(const QColor &color);
+    int loadAnnotationWidth() const;
+    void saveAnnotationWidth(int width);
+
     // Window detection drawing
     void drawDetectedWindow(QPainter &painter);
     void drawWindowHint(QPainter &painter, const QString &title);

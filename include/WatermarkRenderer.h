@@ -16,15 +16,8 @@ public:
         BottomRight = 3
     };
 
-    enum Type {
-        Text = 0,
-        Image = 1
-    };
-
     struct Settings {
         bool enabled = false;
-        Type type = Text;
-        QString text;
         QString imagePath;
         qreal opacity = 0.5;
         Position position = BottomRight;
@@ -45,7 +38,6 @@ public:
 
 private:
     static QRect calculateWatermarkRect(const QRect &targetRect, const QSize &size, Position position, int margin);
-    static void renderText(QPainter &painter, const QRect &targetRect, const Settings &settings);
     static void renderImage(QPainter &painter, const QRect &targetRect, const Settings &settings);
 };
 

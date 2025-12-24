@@ -35,13 +35,8 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     , m_screenCanvasHotkeyStatus(nullptr)
     , m_restoreDefaultsBtn(nullptr)
     , m_watermarkEnabledCheckbox(nullptr)
-    , m_watermarkTypeCombo(nullptr)
-    , m_watermarkTextLabel(nullptr)
-    , m_watermarkTextEdit(nullptr)
-    , m_watermarkImageLabel(nullptr)
     , m_watermarkImagePathEdit(nullptr)
     , m_watermarkBrowseBtn(nullptr)
-    , m_watermarkScaleRowLabel(nullptr)
     , m_watermarkImageScaleSlider(nullptr)
     , m_watermarkImageScaleLabel(nullptr)
     , m_watermarkOpacitySlider(nullptr)
@@ -184,34 +179,10 @@ void SettingsDialog::setupWatermarkTab(QWidget *tab)
     QVBoxLayout *controlsLayout = new QVBoxLayout();
     controlsLayout->setSpacing(8);
 
-    // Type row
-    QHBoxLayout *typeLayout = new QHBoxLayout();
-    QLabel *typeLabel = new QLabel("Type:", tab);
-    typeLabel->setFixedWidth(60);
-    m_watermarkTypeCombo = new QComboBox(tab);
-    m_watermarkTypeCombo->addItem("Text", static_cast<int>(WatermarkRenderer::Text));
-    m_watermarkTypeCombo->addItem("Image", static_cast<int>(WatermarkRenderer::Image));
-    connect(m_watermarkTypeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
-            this, &SettingsDialog::updateWatermarkTypeVisibility);
-    typeLayout->addWidget(typeLabel);
-    typeLayout->addWidget(m_watermarkTypeCombo);
-    typeLayout->addStretch();
-    controlsLayout->addLayout(typeLayout);
-
-    // Text input row
-    QHBoxLayout *textLayout = new QHBoxLayout();
-    m_watermarkTextLabel = new QLabel("Text:", tab);
-    m_watermarkTextLabel->setFixedWidth(60);
-    m_watermarkTextEdit = new QLineEdit(tab);
-    m_watermarkTextEdit->setPlaceholderText("Enter watermark text...");
-    textLayout->addWidget(m_watermarkTextLabel);
-    textLayout->addWidget(m_watermarkTextEdit);
-    controlsLayout->addLayout(textLayout);
-
     // Image path row
     QHBoxLayout *imageLayout = new QHBoxLayout();
-    m_watermarkImageLabel = new QLabel("Image:", tab);
-    m_watermarkImageLabel->setFixedWidth(60);
+    QLabel *imageLabel = new QLabel("Image:", tab);
+    imageLabel->setFixedWidth(60);
     m_watermarkImagePathEdit = new QLineEdit(tab);
     m_watermarkImagePathEdit->setPlaceholderText("Select an image file...");
     m_watermarkImagePathEdit->setReadOnly(true);
@@ -225,15 +196,15 @@ void SettingsDialog::setupWatermarkTab(QWidget *tab)
             updateWatermarkImagePreview();
         }
     });
-    imageLayout->addWidget(m_watermarkImageLabel);
+    imageLayout->addWidget(imageLabel);
     imageLayout->addWidget(m_watermarkImagePathEdit);
     imageLayout->addWidget(m_watermarkBrowseBtn);
     controlsLayout->addLayout(imageLayout);
 
     // Image scale row
     QHBoxLayout *scaleLayout = new QHBoxLayout();
-    m_watermarkScaleRowLabel = new QLabel("Scale:", tab);
-    m_watermarkScaleRowLabel->setFixedWidth(60);
+    QLabel *scaleLabel = new QLabel("Scale:", tab);
+    scaleLabel->setFixedWidth(60);
     m_watermarkImageScaleSlider = new QSlider(Qt::Horizontal, tab);
     m_watermarkImageScaleSlider->setRange(10, 200);
     m_watermarkImageScaleSlider->setValue(100);
@@ -243,7 +214,7 @@ void SettingsDialog::setupWatermarkTab(QWidget *tab)
         m_watermarkImageScaleLabel->setText(QString("%1%").arg(value));
         updateWatermarkImagePreview();
     });
-    scaleLayout->addWidget(m_watermarkScaleRowLabel);
+    scaleLayout->addWidget(scaleLabel);
     scaleLayout->addWidget(m_watermarkImageScaleSlider);
     scaleLayout->addWidget(m_watermarkImageScaleLabel);
     controlsLayout->addLayout(scaleLayout);
@@ -283,7 +254,7 @@ void SettingsDialog::setupWatermarkTab(QWidget *tab)
     controlsLayout->addStretch();
     contentLayout->addLayout(controlsLayout, 1);
 
-    // === RIGHT SIDE: Preview (only for Image type) ===
+    // === RIGHT SIDE: Preview ===
     QVBoxLayout *previewLayout = new QVBoxLayout();
     previewLayout->setAlignment(Qt::AlignTop);
 
@@ -310,11 +281,6 @@ void SettingsDialog::setupWatermarkTab(QWidget *tab)
     // Load current settings
     WatermarkRenderer::Settings settings = WatermarkRenderer::loadSettings();
     m_watermarkEnabledCheckbox->setChecked(settings.enabled);
-    int typeIndex = m_watermarkTypeCombo->findData(static_cast<int>(settings.type));
-    if (typeIndex >= 0) {
-        m_watermarkTypeCombo->setCurrentIndex(typeIndex);
-    }
-    m_watermarkTextEdit->setText(settings.text);
     m_watermarkImagePathEdit->setText(settings.imagePath);
     m_watermarkImageScaleSlider->setValue(settings.imageScale);
     m_watermarkImageScaleLabel->setText(QString("%1%").arg(settings.imageScale));
@@ -324,9 +290,6 @@ void SettingsDialog::setupWatermarkTab(QWidget *tab)
     if (posIndex >= 0) {
         m_watermarkPositionCombo->setCurrentIndex(posIndex);
     }
-
-    // Update visibility based on current type
-    updateWatermarkTypeVisibility(m_watermarkTypeCombo->currentIndex());
 
     // Update image preview if image path exists
     updateWatermarkImagePreview();
@@ -480,26 +443,6 @@ void SettingsDialog::setupRecordingTab(QWidget *tab)
     updateFFmpegStatus();
 }
 
-void SettingsDialog::updateWatermarkTypeVisibility(int index)
-{
-    Q_UNUSED(index);
-    bool isText = (m_watermarkTypeCombo->currentData().toInt() == static_cast<int>(WatermarkRenderer::Text));
-
-    // Show/hide text-specific controls (label + input)
-    m_watermarkTextLabel->setVisible(isText);
-    m_watermarkTextEdit->setVisible(isText);
-
-    // Show/hide image-specific controls (label + path + browse + preview + scale row)
-    m_watermarkImageLabel->setVisible(!isText);
-    m_watermarkImagePathEdit->setVisible(!isText);
-    m_watermarkBrowseBtn->setVisible(!isText);
-    m_watermarkImagePreview->setVisible(!isText);
-    m_watermarkImageSizeLabel->setVisible(!isText);
-    m_watermarkScaleRowLabel->setVisible(!isText);
-    m_watermarkImageScaleSlider->setVisible(!isText);
-    m_watermarkImageScaleLabel->setVisible(!isText);
-}
-
 void SettingsDialog::updateHotkeyStatus(QLabel *statusLabel, bool isRegistered)
 {
     if (isRegistered) {
@@ -588,9 +531,6 @@ void SettingsDialog::onSave()
     // Save watermark settings
     WatermarkRenderer::Settings watermarkSettings;
     watermarkSettings.enabled = m_watermarkEnabledCheckbox->isChecked();
-    watermarkSettings.type = static_cast<WatermarkRenderer::Type>(
-        m_watermarkTypeCombo->currentData().toInt());
-    watermarkSettings.text = m_watermarkTextEdit->text();
     watermarkSettings.imagePath = m_watermarkImagePathEdit->text();
     watermarkSettings.opacity = m_watermarkOpacitySlider->value() / 100.0;
     watermarkSettings.position = static_cast<WatermarkRenderer::Position>(

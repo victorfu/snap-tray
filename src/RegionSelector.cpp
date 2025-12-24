@@ -28,6 +28,10 @@
 #include <QColorDialog>
 #include <QLabel>
 #include <QTimer>
+#include <QSettings>
+
+static const char* SETTINGS_KEY_ANNOTATION_COLOR = "annotationColor";
+static const char* SETTINGS_KEY_ANNOTATION_WIDTH = "annotationWidth";
 
 RegionSelector::RegionSelector(QWidget* parent)
     : QWidget(parent)
@@ -39,8 +43,8 @@ RegionSelector::RegionSelector(QWidget* parent)
     , m_toolbar(nullptr)
     , m_annotationLayer(nullptr)
     , m_currentTool(ToolbarButton::Selection)
-    , m_annotationColor(Qt::red)
-    , m_annotationWidth(3)
+    , m_annotationColor(Qt::red)  // Will be overwritten by loadAnnotationColor()
+    , m_annotationWidth(3)        // Will be overwritten by loadAnnotationWidth()
     , m_isDrawing(false)
     , m_activeHandle(ResizeHandle::None)
     , m_isResizing(false)
@@ -61,6 +65,10 @@ RegionSelector::RegionSelector(QWidget* parent)
 
     // Initialize annotation layer
     m_annotationLayer = new AnnotationLayer(this);
+
+    // Load saved annotation settings (or defaults)
+    m_annotationColor = loadAnnotationColor();
+    m_annotationWidth = loadAnnotationWidth();
 
     // Initialize OCR manager if available on this platform
     m_ocrManager = PlatformFeatures::instance().createOCRManager(this);
@@ -308,6 +316,9 @@ void RegionSelector::onColorSelected(const QColor &color)
         m_textEditor->setColor(color);
     }
 
+    // Save for next session
+    saveAnnotationColor(color);
+
     update();
 }
 
@@ -359,7 +370,7 @@ bool RegionSelector::shouldShowLineWidthWidget() const
 void RegionSelector::onLineWidthChanged(int width)
 {
     m_annotationWidth = width;
-    qDebug() << "Line width changed:" << width;
+    saveAnnotationWidth(width);
     update();
 }
 
@@ -2223,4 +2234,28 @@ void RegionSelector::onOCRComplete(bool success, const QString &text, const QStr
     m_ocrToastTimer->start(2500);
 
     update();
+}
+
+QColor RegionSelector::loadAnnotationColor() const
+{
+    QSettings settings("Victor Fu", "SnapTray");
+    return settings.value(SETTINGS_KEY_ANNOTATION_COLOR, QColor(Qt::red)).value<QColor>();
+}
+
+void RegionSelector::saveAnnotationColor(const QColor &color)
+{
+    QSettings settings("Victor Fu", "SnapTray");
+    settings.setValue(SETTINGS_KEY_ANNOTATION_COLOR, color);
+}
+
+int RegionSelector::loadAnnotationWidth() const
+{
+    QSettings settings("Victor Fu", "SnapTray");
+    return settings.value(SETTINGS_KEY_ANNOTATION_WIDTH, 3).toInt();
+}
+
+void RegionSelector::saveAnnotationWidth(int width)
+{
+    QSettings settings("Victor Fu", "SnapTray");
+    settings.setValue(SETTINGS_KEY_ANNOTATION_WIDTH, width);
 }

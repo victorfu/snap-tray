@@ -87,6 +87,12 @@ private:
     bool shouldShowColorAndWidthWidget() const;
     bool shouldShowWidthControl() const;
 
+    // Annotation settings persistence
+    QColor loadAnnotationColor() const;
+    void saveAnnotationColor(const QColor &color);
+    int loadAnnotationWidth() const;
+    void saveAnnotationWidth(int width);
+
     // Screen capture
     QPixmap m_backgroundPixmap;
     QScreen *m_currentScreen;

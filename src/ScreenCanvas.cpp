@@ -17,6 +17,10 @@
 #include <QGuiApplication>
 #include <QScreen>
 #include <QDebug>
+#include <QSettings>
+
+static const char* SETTINGS_KEY_ANNOTATION_COLOR = "annotationColor";
+static const char* SETTINGS_KEY_ANNOTATION_WIDTH = "annotationWidth";
 
 // Helper function to map CanvasTool to AnnotationController::Tool
 static AnnotationController::Tool mapToControllerTool(CanvasTool tool)
@@ -54,19 +58,23 @@ ScreenCanvas::ScreenCanvas(QWidget *parent)
     // Initialize annotation layer
     m_annotationLayer = new AnnotationLayer(this);
 
-    // Initialize annotation controller
+    // Initialize annotation controller with saved settings
     m_controller = new AnnotationController(this);
     m_controller->setAnnotationLayer(m_annotationLayer);
     m_controller->setCurrentTool(mapToControllerTool(m_currentTool));
-    m_controller->setColor(Qt::red);
-    m_controller->setWidth(3);
+
+    // Load saved annotation settings (or defaults)
+    QColor savedColor = loadAnnotationColor();
+    int savedWidth = loadAnnotationWidth();
+    m_controller->setColor(savedColor);
+    m_controller->setWidth(savedWidth);
 
     // Initialize SVG icons
     initializeIcons();
 
     // Initialize color palette widget
     m_colorPalette = new ColorPaletteWidget(this);
-    m_colorPalette->setCurrentColor(m_controller->color());
+    m_colorPalette->setCurrentColor(savedColor);
     connect(m_colorPalette, &ColorPaletteWidget::colorSelected,
             this, &ScreenCanvas::onColorSelected);
     connect(m_colorPalette, &ColorPaletteWidget::moreColorsRequested,
@@ -75,15 +83,15 @@ ScreenCanvas::ScreenCanvas(QWidget *parent)
     // Initialize line width widget
     m_lineWidthWidget = new LineWidthWidget(this);
     m_lineWidthWidget->setWidthRange(1, 20);
-    m_lineWidthWidget->setCurrentWidth(m_controller->width());
-    m_lineWidthWidget->setPreviewColor(m_controller->color());
+    m_lineWidthWidget->setCurrentWidth(savedWidth);
+    m_lineWidthWidget->setPreviewColor(savedColor);
     connect(m_lineWidthWidget, &LineWidthWidget::widthChanged,
             this, &ScreenCanvas::onLineWidthChanged);
 
     // Initialize unified color and width widget
     m_colorAndWidthWidget = new ColorAndWidthWidget(this);
-    m_colorAndWidthWidget->setCurrentColor(m_controller->color());
-    m_colorAndWidthWidget->setCurrentWidth(m_controller->width());
+    m_colorAndWidthWidget->setCurrentColor(savedColor);
+    m_colorAndWidthWidget->setCurrentWidth(savedWidth);
     m_colorAndWidthWidget->setWidthRange(1, 20);
     connect(m_colorAndWidthWidget, &ColorAndWidthWidget::colorSelected,
             this, &ScreenCanvas::onColorSelected);
@@ -94,8 +102,8 @@ ScreenCanvas::ScreenCanvas(QWidget *parent)
 
     // Initialize laser pointer renderer
     m_laserRenderer = new LaserPointerRenderer(this);
-    m_laserRenderer->setColor(Qt::red);
-    m_laserRenderer->setWidth(3);
+    m_laserRenderer->setColor(savedColor);
+    m_laserRenderer->setWidth(savedWidth);
     connect(m_laserRenderer, &LaserPointerRenderer::needsRepaint,
             this, QOverload<>::of(&QWidget::update));
 
@@ -176,6 +184,7 @@ void ScreenCanvas::onColorSelected(const QColor &color)
     m_laserRenderer->setColor(color);
     m_lineWidthWidget->setPreviewColor(color);
     m_colorAndWidthWidget->setCurrentColor(color);
+    saveAnnotationColor(color);
     update();
 }
 
@@ -198,6 +207,7 @@ void ScreenCanvas::onLineWidthChanged(int width)
 {
     m_controller->setWidth(width);
     m_laserRenderer->setWidth(width);
+    saveAnnotationWidth(width);
     update();
 }
 
@@ -834,4 +844,28 @@ void ScreenCanvas::closeEvent(QCloseEvent *event)
 {
     emit closed();
     QWidget::closeEvent(event);
+}
+
+QColor ScreenCanvas::loadAnnotationColor() const
+{
+    QSettings settings("Victor Fu", "SnapTray");
+    return settings.value(SETTINGS_KEY_ANNOTATION_COLOR, QColor(Qt::red)).value<QColor>();
+}
+
+void ScreenCanvas::saveAnnotationColor(const QColor &color)
+{
+    QSettings settings("Victor Fu", "SnapTray");
+    settings.setValue(SETTINGS_KEY_ANNOTATION_COLOR, color);
+}
+
+int ScreenCanvas::loadAnnotationWidth() const
+{
+    QSettings settings("Victor Fu", "SnapTray");
+    return settings.value(SETTINGS_KEY_ANNOTATION_WIDTH, 3).toInt();
+}
+
+void ScreenCanvas::saveAnnotationWidth(int width)
+{
+    QSettings settings("Victor Fu", "SnapTray");
+    settings.setValue(SETTINGS_KEY_ANNOTATION_WIDTH, width);
 }
