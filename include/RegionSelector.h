@@ -76,6 +76,9 @@ public:
     // 初始化指定螢幕的截圖 (由 CaptureManager 調用)
     void initializeForScreen(QScreen *screen);
 
+    // 初始化指定螢幕並使用預設區域 (用於錄影取消後返回)
+    void initializeWithRegion(QScreen *screen, const QRect &region);
+
     void setWindowDetector(WindowDetector *detector);
 
 signals:

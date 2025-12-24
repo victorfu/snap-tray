@@ -130,8 +130,8 @@ void RecordingManager::startRegionSelection()
 
     connect(m_regionSelector, &RecordingRegionSelector::regionSelected,
             this, &RecordingManager::onRegionSelected);
-    connect(m_regionSelector, &RecordingRegionSelector::cancelled,
-            this, &RecordingManager::onRegionCancelled);
+    connect(m_regionSelector, &RecordingRegionSelector::cancelledWithRegion,
+            this, &RecordingManager::onRegionCancelledWithRegion);
 
     qDebug() << "=== RecordingManager: Setting up region selector ===";
     qDebug() << "Target screen geometry:" << targetScreen->geometry();
@@ -172,8 +172,8 @@ void RecordingManager::startRegionSelectionWithPreset(const QRect &region, QScre
 
     connect(m_regionSelector, &RecordingRegionSelector::regionSelected,
             this, &RecordingManager::onRegionSelected);
-    connect(m_regionSelector, &RecordingRegionSelector::cancelled,
-            this, &RecordingManager::onRegionCancelled);
+    connect(m_regionSelector, &RecordingRegionSelector::cancelledWithRegion,
+            this, &RecordingManager::onRegionCancelledWithRegion);
 
     m_regionSelector->setGeometry(screen->geometry());
     m_regionSelector->initializeWithRegion(screen, region);
@@ -206,11 +206,11 @@ void RecordingManager::onRegionSelected(const QRect &region, QScreen *screen)
     startFrameCapture();
 }
 
-void RecordingManager::onRegionCancelled()
+void RecordingManager::onRegionCancelledWithRegion(const QRect &region, QScreen *screen)
 {
-    qDebug() << "RecordingManager: Region selection cancelled";
+    qDebug() << "RecordingManager: Region selection cancelled, returning to capture";
     setState(State::Idle);
-    emit recordingCancelled();
+    emit selectionCancelledWithRegion(region, screen);
 }
 
 void RecordingManager::startFrameCapture()

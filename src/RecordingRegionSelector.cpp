@@ -327,10 +327,14 @@ void RecordingRegionSelector::mouseReleaseEvent(QMouseEvent *event)
 void RecordingRegionSelector::keyPressEvent(QKeyEvent *event)
 {
     switch (event->key()) {
-        case Qt::Key_Escape:
-            emit cancelled();
+        case Qt::Key_Escape: {
+            // Convert local rect to global coordinates and emit with region
+            QRect globalRect = m_selectionRect.normalized();
+            globalRect.translate(m_currentScreen->geometry().topLeft());
+            emit cancelledWithRegion(globalRect, m_currentScreen);
             close();
             break;
+        }
 
         case Qt::Key_Return:
         case Qt::Key_Enter:
@@ -419,7 +423,10 @@ void RecordingRegionSelector::setupButtons()
         "  background-color: #444;"
         "}");
     connect(m_cancelButton, &QPushButton::clicked, this, [this]() {
-        emit cancelled();
+        // Convert local rect to global coordinates and emit with region
+        QRect globalRect = m_selectionRect.normalized();
+        globalRect.translate(m_currentScreen->geometry().topLeft());
+        emit cancelledWithRegion(globalRect, m_currentScreen);
         close();
     });
     layout->addWidget(m_cancelButton);

@@ -103,3 +103,48 @@ void CaptureManager::onSelectionCancelled()
 
     emit captureCancelled();
 }
+
+void CaptureManager::startRegionCaptureWithPreset(const QRect &region, QScreen *screen)
+{
+    // If already in capture mode, ignore
+    if (m_regionSelector && m_regionSelector->isVisible()) {
+        qDebug() << "CaptureManager: Already in capture mode, ignoring";
+        return;
+    }
+
+    qDebug() << "CaptureManager: Starting region capture with preset region:" << region;
+
+    // Clean up any existing selector
+    if (m_regionSelector) {
+        m_regionSelector->close();
+    }
+
+    emit captureStarted();
+
+    // Create RegionSelector
+    m_regionSelector = new RegionSelector();
+
+    // Setup window detector if available
+    if (m_windowDetector) {
+        m_windowDetector->setScreen(screen);
+        m_windowDetector->refreshWindowList();
+        m_regionSelector->setWindowDetector(m_windowDetector);
+    }
+
+    // Initialize with preset region
+    m_regionSelector->initializeWithRegion(screen, region);
+
+    connect(m_regionSelector, &RegionSelector::regionSelected,
+            this, &CaptureManager::onRegionSelected);
+    connect(m_regionSelector, &RegionSelector::selectionCancelled,
+            this, &CaptureManager::onSelectionCancelled);
+    connect(m_regionSelector, &RegionSelector::recordingRequested,
+            this, &CaptureManager::recordingRequested);
+
+    m_regionSelector->setGeometry(screen->geometry());
+    m_regionSelector->show();
+    raiseWindowAboveMenuBar(m_regionSelector);
+
+    m_regionSelector->activateWindow();
+    m_regionSelector->raise();
+}

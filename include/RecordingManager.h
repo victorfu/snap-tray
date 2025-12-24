@@ -61,10 +61,11 @@ signals:
     void recordingPaused();
     void recordingResumed();
     void stateChanged(State state);
+    void selectionCancelledWithRegion(const QRect &region, QScreen *screen);
 
 private slots:
     void onRegionSelected(const QRect &region, QScreen *screen);
-    void onRegionCancelled();
+    void onRegionCancelledWithRegion(const QRect &region, QScreen *screen);
     void captureFrame();
     void onEncodingFinished(bool success, const QString &outputPath);
     void onEncodingError(const QString &error);

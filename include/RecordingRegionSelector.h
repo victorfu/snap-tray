@@ -22,6 +22,7 @@ public:
 signals:
     void regionSelected(const QRect &region, QScreen *screen);
     void cancelled();
+    void cancelledWithRegion(const QRect &region, QScreen *screen);
 
 protected:
     void paintEvent(QPaintEvent *event) override;

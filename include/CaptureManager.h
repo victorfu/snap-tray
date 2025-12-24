@@ -24,6 +24,7 @@ public:
 
 public slots:
     void startRegionCapture();
+    void startRegionCaptureWithPreset(const QRect &region, QScreen *screen);
 
 signals:
     void captureStarted();

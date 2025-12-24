@@ -71,6 +71,10 @@ void MainApplication::initialize()
     connect(m_captureManager, &CaptureManager::recordingRequested,
             m_recordingManager, &RecordingManager::startRegionSelectionWithPreset);
 
+    // Connect recording cancellation to return to capture mode
+    connect(m_recordingManager, &RecordingManager::selectionCancelledWithRegion,
+            m_captureManager, &CaptureManager::startRegionCaptureWithPreset);
+
     // Create system tray icon
     QIcon icon = PlatformFeatures::instance().createTrayIcon();
     m_trayIcon = new QSystemTrayIcon(icon, this);

@@ -432,6 +432,44 @@ void RegionSelector::captureCurrentScreen()
     initializeForScreen(screen);
 }
 
+void RegionSelector::initializeWithRegion(QScreen *screen, const QRect &region)
+{
+    // Use provided screen or fallback to primary
+    m_currentScreen = screen;
+    if (!m_currentScreen) {
+        m_currentScreen = QGuiApplication::primaryScreen();
+    }
+
+    m_devicePixelRatio = m_currentScreen->devicePixelRatio();
+
+    // Capture the screen first
+    m_backgroundPixmap = m_currentScreen->grabWindow(0);
+    m_backgroundImageCache = m_backgroundPixmap.toImage();
+
+    qDebug() << "RegionSelector: Initialized with region" << region
+             << "on screen" << m_currentScreen->name();
+
+    // Convert global region to local coordinates
+    QRect screenGeom = m_currentScreen->geometry();
+    m_selectionRect = region.translated(-screenGeom.topLeft());
+
+    // Mark selection as complete
+    m_selectionComplete = true;
+    m_isSelecting = false;
+
+    // Set cursor position
+    QPoint globalCursor = QCursor::pos();
+    m_currentPoint = globalCursor - screenGeom.topLeft();
+
+    // Lock window size
+    setFixedSize(screenGeom.size());
+
+    // Trigger repaint to show toolbar (toolbar is drawn in paintEvent when m_selectionComplete is true)
+    QTimer::singleShot(0, this, [this]() {
+        update();
+    });
+}
+
 void RegionSelector::setWindowDetector(WindowDetector *detector)
 {
     m_windowDetector = detector;
