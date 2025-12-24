@@ -51,6 +51,7 @@ enum class ToolbarButton {
     Cancel,
     OCR,
     Pin,
+    Record,
     Save,
     Copy,
     Count  // Total number of buttons
@@ -75,6 +76,9 @@ public:
     // 初始化指定螢幕的截圖 (由 CaptureManager 調用)
     void initializeForScreen(QScreen *screen);
 
+    // 初始化指定螢幕並使用預設區域 (用於錄影取消後返回)
+    void initializeWithRegion(QScreen *screen, const QRect &region);
+
     void setWindowDetector(WindowDetector *detector);
 
 signals:
@@ -82,6 +86,7 @@ signals:
     void selectionCancelled();
     void saveRequested(const QPixmap &screenshot);
     void copyRequested(const QPixmap &screenshot);
+    void recordingRequested(const QRect &region, QScreen *screen);
 
 protected:
     void paintEvent(QPaintEvent *event) override;

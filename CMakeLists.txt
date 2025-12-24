@@ -75,6 +75,11 @@ set(SOURCES
     src/ClickRippleRenderer.cpp
     src/WatermarkRenderer.cpp
     src/LoadingSpinnerRenderer.cpp
+    src/RecordingManager.cpp
+    src/RecordingRegionSelector.cpp
+    src/RecordingControlBar.cpp
+    src/RecordingBoundaryOverlay.cpp
+    src/FFmpegEncoder.cpp
 )
 
 set(RESOURCES
@@ -106,12 +111,21 @@ set(HEADERS
     include/ClickRippleRenderer.h
     include/WatermarkRenderer.h
     include/LoadingSpinnerRenderer.h
+    include/RecordingManager.h
+    include/RecordingRegionSelector.h
+    include/RecordingControlBar.h
+    include/RecordingBoundaryOverlay.h
+    include/FFmpegEncoder.h
+    include/capture/ICaptureEngine.h
+    include/capture/QtCaptureEngine.h
 )
 
 # Cross-platform source files (used by both platforms)
 list(APPEND SOURCES
     src/CaptureManager.cpp
     src/ScreenCanvasManager.cpp
+    src/capture/ICaptureEngine.cpp
+    src/capture/QtCaptureEngine.cpp
 )
 
 # Platform-specific source files
@@ -124,12 +138,14 @@ if(APPLE)
         src/AutoLaunchManager_mac.mm
         src/WindowDetectionOverlay.cpp
         src/OCRController.cpp
+        src/capture/SCKCaptureEngine_mac.mm
     )
     list(APPEND HEADERS
         include/WindowDetector.h
         include/OCRManager.h
         include/WindowDetectionOverlay.h
         include/OCRController.h
+        include/capture/SCKCaptureEngine.h
     )
 elseif(WIN32)
     list(APPEND SOURCES
@@ -138,10 +154,12 @@ elseif(WIN32)
         src/WindowDetector_win.cpp
         src/OCRManager_win.cpp
         src/AutoLaunchManager_win.cpp
+        src/capture/DXGICaptureEngine_win.cpp
     )
     list(APPEND HEADERS
         include/WindowDetector.h
         include/OCRManager.h
+        include/capture/DXGICaptureEngine.h
     )
     # Windows application icon resource (generated from template)
     set(WIN32_RESOURCES "${CMAKE_BINARY_DIR}/snaptray.rc")
@@ -171,6 +189,10 @@ if(APPLE)
     find_library(APPKIT_FRAMEWORK AppKit)
     find_library(VISION_FRAMEWORK Vision)
     find_library(SERVICEMANAGEMENT_FRAMEWORK ServiceManagement)
+    find_library(COREMEDIA_FRAMEWORK CoreMedia)
+    find_library(COREVIDEO_FRAMEWORK CoreVideo)
+    # ScreenCaptureKit is optional (macOS 12.3+), weak link to allow running on older systems
+    find_library(SCREENCAPTUREKIT_FRAMEWORK ScreenCaptureKit)
     target_link_libraries(${PROJECT_NAME} PRIVATE
         Qt6::Widgets
         Qt6::Gui
@@ -181,9 +203,17 @@ if(APPLE)
         ${APPKIT_FRAMEWORK}
         ${VISION_FRAMEWORK}
         ${SERVICEMANAGEMENT_FRAMEWORK}
+        ${COREMEDIA_FRAMEWORK}
+        ${COREVIDEO_FRAMEWORK}
     )
+    # Weak link ScreenCaptureKit if available (for macOS 12.3+ compatibility)
+    if(SCREENCAPTUREKIT_FRAMEWORK)
+        target_link_libraries(${PROJECT_NAME} PRIVATE
+            "-weak_framework ScreenCaptureKit"
+        )
+    endif()
 elseif(WIN32)
-    # Windows-specific libraries for WindowDetector and OCR
+    # Windows-specific libraries for WindowDetector, OCR, and DXGI capture
     target_link_libraries(${PROJECT_NAME} PRIVATE
         Qt6::Widgets
         Qt6::Gui
@@ -192,6 +222,8 @@ elseif(WIN32)
         dwmapi
         psapi
         windowsapp
+        d3d11
+        dxgi
     )
     # Enable C++/WinRT for Windows.Media.Ocr
     target_compile_options(${PROJECT_NAME} PRIVATE /await)

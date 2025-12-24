@@ -20,6 +20,7 @@
         <file>icons/cancel.svg</file>
         <file>icons/ocr.svg</file>
         <file>icons/pin.svg</file>
+        <file>icons/record.svg</file>
         <file>icons/save.svg</file>
         <file>icons/copy.svg</file>
     </qresource>

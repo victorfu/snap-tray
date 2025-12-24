@@ -1,15 +1,15 @@
-# SnapTray - System Tray Screenshot Tool
+# SnapTray - System Tray Screenshot & Recording Tool
 
 **English** | [繁體中文](README.zh-TW.md)
 
-SnapTray is a lightweight screenshot utility that lives in your system tray. Press F2 (default) to capture a region, then pin it to your screen, copy, or save.
+SnapTray is a lightweight tray utility for region screenshots, on-screen annotations, and quick screen recordings. Press F2 (default) to capture a region, or Ctrl+F2 for Screen Canvas.
 
 ## Features
 
-- **System Tray Menu**: `Region Capture` (shows current hotkey), `Screen Canvas`, `Close All Pins`, `Settings`, `Exit`
+- **System Tray Menu**: `Region Capture` (shows current hotkey), `Screen Canvas` (shows current hotkey), `Close All Pins`, `Settings`, `Exit`
 - **Global Hotkeys**: Customizable in settings with live hotkey registration
   - Region Capture: Default `F2`
-  - Screen Canvas: Double-tap `F2` (press twice quickly)
+  - Screen Canvas: Default `Ctrl+F2`
 - **Region Capture Overlay**:
   - Crosshair + magnifier (pixel-level precision)
   - RGB/HEX color preview (Shift to toggle, C to copy color code)
@@ -18,53 +18,71 @@ SnapTray is a lightweight screenshot utility that lives in your system tray. Pre
   - Window detection (macOS/Windows): Auto-detect window under cursor, single-click to select
 - **Capture Toolbar**:
   - `Selection` tool (adjust selection area)
+  - Annotation tools: `Arrow` / `Pencil` / `Marker` / `Rectangle` / `Ellipse` / `Text` / `Mosaic` / `StepBadge` / `Eraser`
+  - `Undo` / `Redo`
   - `Pin` to screen (Enter)
   - `Save` to file (Ctrl+S / Cmd+S on macOS)
   - `Copy` to clipboard (Ctrl+C / Cmd+C on macOS)
   - `Cancel` (Esc)
-  - Annotation tools: `Arrow` / `Pencil` / `Marker` / `Rectangle` / `Text` / `Mosaic` / `StepBadge` (with Undo/Redo)
   - `OCR` text recognition (macOS/Windows, supports Traditional Chinese, Simplified Chinese, English)
-  - Color picker for annotation tools
+  - `Record` screen recording (R) for the selected region
+  - Color + line width controls for supported tools
 - **Screen Canvas**:
   - Full-screen annotation mode, draw directly on screen
-  - Drawing tools: `Pencil` / `Marker` / `Arrow` / `Rectangle`
-  - Color picker for drawing
+  - Drawing tools: `Pencil` / `Marker` / `Arrow` / `Rectangle` / `Ellipse`
+  - Presentation tools: `Laser Pointer` / `Cursor Highlight` (click ripple)
+  - Color + line width controls
   - Undo/Redo/Clear support
   - `Esc` to exit
+- **Screen Recording**:
+  - Start from capture toolbar (`Record` or `R`)
+  - Adjustable region with Start/Cancel
+  - Floating control bar with Pause/Resume/Stop/Cancel
+  - MP4 (H.264) or GIF output via FFmpeg
 - **Pin Windows**:
   - Borderless, always on top
   - Drag to move
   - Mouse wheel to zoom (with scale indicator)
+  - Ctrl + mouse wheel to adjust opacity (with indicator)
   - Edge drag to resize
-  - Rotation support (via context menu)
+  - Rotation/flip via keyboard: `1` rotate CW, `2` rotate CCW, `3` flip horizontal, `4` flip vertical
   - Double-click or Esc to close
-  - Context menu: Save/Copy/OCR/Zoom/Rotate/Close
+  - Context menu: Copy/Save/OCR/Watermark/Close
 - **Settings Dialog**:
   - General tab: Launch at startup
-  - Hotkeys tab: Custom region capture hotkey (double-tap same hotkey for Screen Canvas)
+  - Hotkeys tab: Separate hotkeys for Region Capture and Screen Canvas
+  - Watermark tab: Text/Image watermark, opacity, position, and scale
+  - Recording tab: Frame rate, output format, save location, auto-save, FFmpeg status
   - Settings stored via QSettings
 
 ## Tech Stack
 
 - **Language**: C++17
-- **Framework**: Qt 6 (Widgets/Gui)
+- **Framework**: Qt 6 (Widgets/Gui/Svg)
 - **Build System**: CMake 3.16+
-- **Dependencies**: [QHotkey](https://github.com/Skycoder42/QHotkey) (auto-fetched via FetchContent)
-- **macOS Native Frameworks**:
+- **Dependencies**: [QHotkey](https://github.com/Skycoder42/QHotkey) (auto-fetched via FetchContent), FFmpeg (external, for recording)
+- **macOS Frameworks**:
   - CoreGraphics / ApplicationServices (window detection)
   - AppKit (system integration)
-  - Vision (OCR text recognition)
+  - Vision (OCR)
+  - ScreenCaptureKit (recording, macOS 12.3+)
+  - CoreMedia / CoreVideo (recording pipeline)
+  - ServiceManagement (auto-launch)
+- **Windows APIs**:
+  - Desktop Duplication (DXGI/D3D11) for recording
+  - Windows.Media.Ocr (WinRT OCR)
 
 ## System Requirements
 
 SnapTray currently supports macOS and Windows only.
 
 ### macOS
-- macOS 10.15+
+- macOS 10.15+ (ScreenCaptureKit recording uses 12.3+ when available)
 - Qt 6 (recommend installing via Homebrew)
 - Xcode Command Line Tools
 - CMake 3.16+
 - Git (for FetchContent to fetch QHotkey)
+- FFmpeg (required for screen recording)
 
 ### Windows
 - Windows 10+
@@ -72,6 +90,7 @@ SnapTray currently supports macOS and Windows only.
 - Visual Studio 2019+ or MinGW
 - CMake 3.16+
 - Git (for FetchContent to fetch QHotkey)
+- FFmpeg (required for screen recording; ensure `ffmpeg.exe` is in PATH or `C:\ffmpeg\bin`)
 
 ## Build & Run
 
@@ -87,14 +106,14 @@ open build/SnapTray.app
 **Windows:**
 ```batch
 # Step 1: Configure (replace with your Qt path)
-cmake -S . -B build -DCMAKE_PREFIX_PATH=C:/Qt/6.10.1/msvc2022_64
+cmake -S . -B build -DCMAKE_PREFIX_PATH=C:/Qt/6.x/msvc2022_64
 
 # Step 2: Build
 cmake --build build
 
 # Step 3: Deploy Qt dependencies (required to run the executable)
 # Replace with your Qt installation path
-C:\Qt\6.10.1\msvc2022_64\bin\windeployqt.exe build\SnapTray.exe
+C:\Qt\6.x\msvc2022_64\bin\windeployqt.exe build\SnapTray.exe
 
 # Step 4: Run
 build\SnapTray.exe
@@ -113,11 +132,11 @@ cmake --build release
 
 **Windows:**
 ```batch
-cmake -S . -B release -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=C:/Qt/6.10.1/msvc2022_64
+cmake -S . -B release -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=C:/Qt/6.x/msvc2022_64
 cmake --build release --config Release
 
 # Deploy Qt dependencies
-C:\Qt\6.10.1\msvc2022_64\bin\windeployqt.exe --release release\Release\SnapTray.exe
+C:\Qt\6.x\msvc2022_64\bin\windeployqt.exe --release release\Release\SnapTray.exe
 
 # Output: release\Release\SnapTray.exe
 ```
@@ -134,7 +153,7 @@ The packaging scripts automatically perform Release builds, deploy Qt dependenci
 # Optional: brew install create-dmg (for prettier DMG)
 
 ./packaging/macos/package.sh
-# Output: dist/SnapTray-1.0.0-macOS.dmg
+# Output: dist/SnapTray-<version>-macOS.dmg
 ```
 
 **Windows (NSIS Installer):**
@@ -145,16 +164,16 @@ REM   - NSIS: winget install NSIS.NSIS
 REM   - Visual Studio Build Tools or Visual Studio
 
 REM Set Qt path (if not default location)
-set QT_PATH=C:\Qt\6.6.1\msvc2019_64
+set QT_PATH=C:\Qt\6.x\msvc2022_64
 
 packaging\windows\package.bat
-REM Output: dist\SnapTray-1.0.0-Setup.exe
+REM Output: dist\SnapTray-<version>-Setup.exe
 ```
 
 #### Code Signing (Optional)
 
 Unsigned installers will show warnings during installation:
-- macOS: "Cannot verify developer" (requires right-click → Open)
+- macOS: "Cannot verify developer" (requires right-click -> Open)
 - Windows: SmartScreen warning
 
 **macOS Signing & Notarization:**
@@ -178,7 +197,7 @@ packaging\windows\package.bat
 ## Usage
 
 1. After launch, a green square icon appears in the system tray.
-2. Press the region capture hotkey (default `F2`) to enter capture mode; or double-tap (press `F2` twice quickly) for Screen Canvas mode.
+2. Press the region capture hotkey (default `F2`) to enter capture mode; or press the screen canvas hotkey (default `Ctrl+F2`) for Screen Canvas mode.
 3. **Capture Mode**:
    - Drag mouse to select a region
    - Single-click to quickly select a detected window (macOS/Windows)
@@ -189,27 +208,39 @@ packaging\windows\package.bat
    - `Enter` or `Pin`: Pin screenshot as floating window
    - `Ctrl+C` (Windows) / `Cmd+C` (macOS) or `Copy`: Copy to clipboard
    - `Ctrl+S` (Windows) / `Cmd+S` (macOS) or `Save`: Save to file
-   - `Esc` or `Cancel`: Cancel selection
+   - `R` or `Record`: Start screen recording (adjust region, then press Start Recording / Enter)
+   - `OCR` (macOS/Windows): Recognize text in selection and copy to clipboard
+   - `Undo/Redo`: `Ctrl+Z` / `Ctrl+Shift+Z` (macOS: `Cmd+Z` / `Cmd+Shift+Z`)
    - Annotations: Select a tool and drag within selection area
      - `Text`: Click to enter text
      - `StepBadge`: Click to place auto-numbered step markers
      - `Mosaic`: Drag brush to apply mosaic effect
-   - `OCR` (macOS/Windows): Recognize text in selection and copy to clipboard
-   - `Undo/Redo`: `Ctrl+Z` / `Ctrl+Shift+Z` (macOS: `Cmd+Z` / `Cmd+Shift+Z`)
-5. **Screen Canvas Mode**:
-   - Toolbar provides `Pencil` / `Marker` / `Arrow` / `Rectangle` drawing tools
-   - Click color picker to change drawing color
+     - `Eraser`: Drag to erase annotations
+5. **Screen Recording**:
+   - Use the control bar to Pause/Resume/Stop/Cancel
+6. **Screen Canvas Mode**:
+   - Toolbar provides drawing and presentation tools
+   - Click color/width controls to adjust
    - `Undo` / `Redo`: Undo/redo annotations
    - `Clear`: Clear all annotations
    - `Esc` or `Exit`: Leave Screen Canvas mode
-6. **Pin Window Actions**:
+7. **Pin Window Actions**:
    - Drag to move
    - Mouse wheel to zoom
+   - Ctrl + mouse wheel to adjust opacity
    - Edge drag to resize
-   - Context menu (Save/Copy/OCR/Zoom In/Zoom Out/Reset Zoom/Rotate CW/Rotate CCW/Close)
+   - `1` rotate CW, `2` rotate CCW, `3` flip horizontal, `4` flip vertical
+   - Context menu (Copy/Save/OCR/Watermark/Close)
    - Double-click or `Esc` to close
 
 ## Troubleshooting
+
+### Recording: FFmpeg not found
+
+If you see errors like:
+- "FFmpeg not found. Please install FFmpeg to use screen recording."
+
+**Solution:** Install FFmpeg and make sure it is on your PATH (or in a common location like `/opt/homebrew/bin/ffmpeg` on macOS, or `C:\ffmpeg\bin\ffmpeg.exe` on Windows).
 
 ### Windows: Application fails to start or shows missing DLL errors
 
@@ -219,99 +250,81 @@ If you see errors like:
 
 **Solution:** Run windeployqt to deploy Qt dependencies:
 ```batch
-C:\Qt\6.10.1\msvc2022_64\bin\windeployqt.exe build\SnapTray.exe
+C:\Qt\6.x\msvc2022_64\bin\windeployqt.exe build\SnapTray.exe
 ```
 
-Replace `C:\Qt\6.10.1\msvc2022_64` with your actual Qt installation path (should match the CMAKE_PREFIX_PATH you used during configuration).
+Replace `C:\Qt\6.x\msvc2022_64` with your actual Qt installation path (should match the CMAKE_PREFIX_PATH you used during configuration).
 
 ## macOS Permissions
 
-On first capture, the system will request "Screen Recording" permission: `System Preferences → Privacy & Security → Screen Recording` and enable SnapTray. Restart the app if necessary.
+On first capture or recording, the system will request "Screen Recording" permission: `System Preferences -> Privacy & Security -> Screen Recording` and enable SnapTray. Restart the app if necessary.
 
-For window detection, "Accessibility" permission is required: `System Preferences → Privacy & Security → Accessibility` and enable SnapTray.
+For window detection, "Accessibility" permission is required: `System Preferences -> Privacy & Security -> Accessibility` and enable SnapTray.
 
 ## Project Structure
 
 ```
-snap/
-├── CMakeLists.txt
-├── Info.plist
-├── README.md
-├── include/
-│   ├── MainApplication.h
-│   ├── SettingsDialog.h
-│   ├── AutoLaunchManager.h
-│   ├── CaptureManager.h
-│   ├── RegionSelector.h
-│   ├── ScreenCanvas.h
-│   ├── ScreenCanvasManager.h
-│   ├── PinWindow.h
-│   ├── PinWindowManager.h
-│   ├── AnnotationLayer.h
-│   ├── AnnotationController.h
-│   ├── ToolbarWidget.h
-│   ├── ColorPaletteWidget.h
-│   ├── ColorPickerDialog.h
-│   ├── LineWidthWidget.h        # Line width adjustment widget
-│   ├── IconRenderer.h
-│   ├── InlineTextEditor.h       # Inline text editor widget
-│   ├── MagnifierOverlay.h       # Magnifier/crosshair widget
-│   ├── SelectionController.h    # Selection control widget
-│   ├── PlatformFeatures.h
-│   ├── WindowDetector.h
-│   ├── WindowDetectionOverlay.h # macOS window detection overlay
-│   ├── OCRManager.h
-│   └── OCRController.h          # macOS OCR controller
-├── src/
-│   ├── main.cpp
-│   ├── MainApplication.cpp
-│   ├── SettingsDialog.cpp
-│   ├── AutoLaunchManager_mac.mm # macOS
-│   ├── AutoLaunchManager_win.cpp # Windows
-│   ├── CaptureManager.cpp
-│   ├── RegionSelector.cpp
-│   ├── ScreenCanvas.cpp
-│   ├── ScreenCanvasManager.cpp
-│   ├── PinWindow.cpp
-│   ├── PinWindowManager.cpp
-│   ├── AnnotationLayer.cpp
-│   ├── AnnotationController.cpp
-│   ├── ToolbarWidget.cpp
-│   ├── ColorPaletteWidget.cpp
-│   ├── LineWidthWidget.cpp
-│   ├── ColorPickerDialog.mm     # macOS native color picker
-│   ├── IconRenderer.cpp
-│   ├── InlineTextEditor.cpp
-│   ├── MagnifierOverlay.cpp
-│   ├── SelectionController.cpp
-│   ├── WindowDetector.mm        # macOS
-│   ├── WindowDetector_win.cpp   # Windows
-│   ├── WindowDetectionOverlay.cpp # macOS
-│   ├── OCRManager.mm            # macOS
-│   ├── OCRManager_win.cpp       # Windows
-│   ├── OCRController.cpp        # macOS
-│   └── platform/
-│       ├── WindowLevel.h
-│       ├── WindowLevel_mac.mm
-│       ├── WindowLevel_win.cpp
-│       ├── PlatformFeatures_mac.mm
-│       └── PlatformFeatures_win.cpp
-├── resources/
-│   ├── resources.qrc
-│   ├── snaptray.rc              # Windows resource file
-│   └── icons/
-│       ├── snaptray.svg         # Original icon
-│       ├── snaptray.png         # 1024x1024 PNG
-│       ├── snaptray.icns        # macOS icon
-│       └── snaptray.ico         # Windows icon
-└── packaging/
-    ├── macos/
-    │   ├── package.sh           # macOS packaging script
-    │   └── entitlements.plist   # Code signing entitlements
-    └── windows/
-        ├── package.bat          # Windows packaging script
-        ├── installer.nsi        # NSIS installer script
-        └── license.txt          # License text
+snap-tray/
+|-- CMakeLists.txt
+|-- README.md
+|-- README.zh-TW.md
+|-- cmake/
+|   |-- Info.plist.in
+|   |-- snaptray.rc.in
+|   `-- version.h.in
+|-- include/
+|   |-- MainApplication.h
+|   |-- SettingsDialog.h
+|   |-- CaptureManager.h
+|   |-- RegionSelector.h
+|   |-- ScreenCanvas.h
+|   |-- PinWindow.h
+|   |-- RecordingManager.h
+|   |-- WatermarkRenderer.h
+|   |-- FFmpegEncoder.h
+|   |-- ...
+|   `-- capture/
+|       |-- ICaptureEngine.h
+|       |-- QtCaptureEngine.h
+|       |-- SCKCaptureEngine.h
+|       `-- DXGICaptureEngine.h
+|-- src/
+|   |-- main.cpp
+|   |-- MainApplication.cpp
+|   |-- SettingsDialog.cpp
+|   |-- CaptureManager.cpp
+|   |-- RegionSelector.cpp
+|   |-- ScreenCanvas.cpp
+|   |-- PinWindow.cpp
+|   |-- RecordingManager.cpp
+|   |-- WatermarkRenderer.cpp
+|   |-- FFmpegEncoder.cpp
+|   |-- ...
+|   |-- capture/
+|   |   |-- ICaptureEngine.cpp
+|   |   |-- QtCaptureEngine.cpp
+|   |   |-- SCKCaptureEngine_mac.mm
+|   |   `-- DXGICaptureEngine_win.cpp
+|   `-- platform/
+|       |-- WindowLevel_mac.mm
+|       |-- WindowLevel_win.cpp
+|       |-- PlatformFeatures_mac.mm
+|       `-- PlatformFeatures_win.cpp
+|-- resources/
+|   |-- resources.qrc
+|   `-- icons/
+|       |-- snaptray.svg
+|       |-- snaptray.png
+|       |-- snaptray.icns
+|       `-- snaptray.ico
+`-- packaging/
+    |-- macos/
+    |   |-- package.sh
+    |   `-- entitlements.plist
+    `-- windows/
+        |-- package.bat
+        |-- installer.nsi
+        `-- license.txt
 ```
 
 ## Custom App Icon
@@ -345,6 +358,7 @@ magick snaptray.png -define icon:auto-resize=256,128,64,48,32,16 snaptray.ico
 ## Known Limitations
 
 - Multi-monitor support: Capture starts on the monitor where cursor is located, but different monitor DPI/scaling needs more real-device testing.
+- Screen recording falls back to the Qt capture engine when native APIs (ScreenCaptureKit/DXGI) are unavailable, which may be slower.
 - Window detection and OCR are supported on macOS and Windows.
 
 ## License

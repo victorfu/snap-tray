@@ -184,6 +184,7 @@ void RegionSelector::setupToolbarButtons()
         iconRenderer.loadIcon("ocr", ":/icons/icons/ocr.svg");
     }
     iconRenderer.loadIcon("pin", ":/icons/icons/pin.svg");
+    iconRenderer.loadIcon("record", ":/icons/icons/record.svg");
     iconRenderer.loadIcon("save", ":/icons/icons/save.svg");
     iconRenderer.loadIcon("copy", ":/icons/icons/copy.svg");
 
@@ -203,9 +204,10 @@ void RegionSelector::setupToolbarButtons()
     buttons.append({static_cast<int>(ToolbarButton::Redo), "redo", "Redo", false});
     buttons.append({static_cast<int>(ToolbarButton::Cancel), "cancel", "Cancel (Esc)", true});  // separator before
     if (PlatformFeatures::instance().isOCRAvailable()) {
-        buttons.append({static_cast<int>(ToolbarButton::OCR), "ocr", "OCR Text Recognition", true});  // separator before
+        buttons.append({static_cast<int>(ToolbarButton::OCR), "ocr", "OCR Text Recognition", false});
     }
-    buttons.append({static_cast<int>(ToolbarButton::Pin), "pin", "Pin to Screen (Enter)", true});  // separator before
+    buttons.append({static_cast<int>(ToolbarButton::Record), "record", "Screen Recording (R)", false});
+    buttons.append({static_cast<int>(ToolbarButton::Pin), "pin", "Pin to Screen (Enter)", false});
     buttons.append({static_cast<int>(ToolbarButton::Save), "save", "Save (Ctrl+S)", false});
     buttons.append({static_cast<int>(ToolbarButton::Copy), "copy", "Copy (Ctrl+C)", false});
 
@@ -240,6 +242,9 @@ QColor RegionSelector::getToolbarIconColor(int buttonId, bool isActive, bool isH
 
     if (buttonId == static_cast<int>(ToolbarButton::Cancel)) {
         return QColor(255, 100, 100);  // Red for cancel
+    }
+    if (btn == ToolbarButton::Record) {
+        return QColor(255, 80, 80);  // Red for recording
     }
     if (btn == ToolbarButton::OCR) {
         if (m_ocrInProgress) {
@@ -418,6 +423,11 @@ void RegionSelector::initializeForScreen(QScreen* screen)
     invalidateMagnifierCache();
 
     setCursor(Qt::CrossCursor);
+
+    // Initial window detection at cursor position
+    if (m_windowDetector && m_windowDetector->isEnabled()) {
+        updateWindowDetection(m_currentPoint);
+    }
 }
 
 // 保留舊方法以保持向後兼容 (但不再使用)
@@ -425,6 +435,44 @@ void RegionSelector::captureCurrentScreen()
 {
     QScreen* screen = QGuiApplication::screenAt(QCursor::pos());
     initializeForScreen(screen);
+}
+
+void RegionSelector::initializeWithRegion(QScreen *screen, const QRect &region)
+{
+    // Use provided screen or fallback to primary
+    m_currentScreen = screen;
+    if (!m_currentScreen) {
+        m_currentScreen = QGuiApplication::primaryScreen();
+    }
+
+    m_devicePixelRatio = m_currentScreen->devicePixelRatio();
+
+    // Capture the screen first
+    m_backgroundPixmap = m_currentScreen->grabWindow(0);
+    m_backgroundImageCache = m_backgroundPixmap.toImage();
+
+    qDebug() << "RegionSelector: Initialized with region" << region
+             << "on screen" << m_currentScreen->name();
+
+    // Convert global region to local coordinates
+    QRect screenGeom = m_currentScreen->geometry();
+    m_selectionRect = region.translated(-screenGeom.topLeft());
+
+    // Mark selection as complete
+    m_selectionComplete = true;
+    m_isSelecting = false;
+
+    // Set cursor position
+    QPoint globalCursor = QCursor::pos();
+    m_currentPoint = globalCursor - screenGeom.topLeft();
+
+    // Lock window size
+    setFixedSize(screenGeom.size());
+
+    // Trigger repaint to show toolbar (toolbar is drawn in paintEvent when m_selectionComplete is true)
+    QTimer::singleShot(0, this, [this]() {
+        update();
+    });
 }
 
 void RegionSelector::setWindowDetector(WindowDetector *detector)
@@ -963,6 +1011,16 @@ void RegionSelector::handleToolbarClick(ToolbarButton button)
 
     case ToolbarButton::Pin:
         finishSelection();
+        break;
+
+    case ToolbarButton::Record:
+        {
+            // Emit recording request with the selected region in global coordinates
+            QRect globalRect = m_selectionRect.normalized()
+                               .translated(m_currentScreen->geometry().topLeft());
+            emit recordingRequested(globalRect, m_currentScreen);
+            close();
+        }
         break;
 
     case ToolbarButton::Save:
@@ -1536,6 +1594,11 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
     else if (event->matches(QKeySequence::Save)) {
         if (m_selectionComplete) {
             saveToFile();
+        }
+    }
+    else if (event->key() == Qt::Key_R && !event->modifiers()) {
+        if (m_selectionComplete) {
+            handleToolbarClick(ToolbarButton::Record);
         }
     }
     else if (event->key() == Qt::Key_Shift) {
