@@ -26,7 +26,6 @@ public:
 private slots:
     void onRegionCapture();
     void onScreenCanvas();
-    void onScreenRecording();
     void onCloseAllPins();
     void onSettings();
 
@@ -42,14 +41,12 @@ private:
     QMenu *m_trayMenu;
     QHotkey *m_regionHotkey;
     QHotkey *m_screenCanvasHotkey;
-    QHotkey *m_recordingHotkey;
     CaptureManager *m_captureManager;
     PinWindowManager *m_pinWindowManager;
     ScreenCanvasManager *m_screenCanvasManager;
     RecordingManager *m_recordingManager;
     QAction *m_regionCaptureAction;
     QAction *m_screenCanvasAction;
-    QAction *m_screenRecordingAction;
     SettingsDialog *m_settingsDialog;
 };
 
