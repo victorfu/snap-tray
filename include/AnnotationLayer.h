@@ -36,6 +36,10 @@ private:
     QVector<QPoint> m_points;
     QColor m_color;
     int m_width;
+
+    // Performance optimization: cached bounding rect
+    mutable QRect m_boundingRectCache;
+    mutable bool m_boundingRectDirty = true;
 };
 
 // Semi-transparent marker/highlighter stroke
@@ -59,6 +63,10 @@ private:
     mutable QPoint m_cachedOrigin;
     mutable qreal m_cachedDpr = 0.0;
     mutable int m_cachedPointCount = 0;
+
+    // Performance optimization: cached bounding rect
+    mutable QRect m_boundingRectCache;
+    mutable bool m_boundingRectDirty = true;
 };
 
 // Arrow annotation (line with arrowhead)
@@ -196,6 +204,11 @@ private:
     int m_width;      // Brush width
     int m_blockSize;  // Mosaic block size
     qreal m_devicePixelRatio;
+
+    // Performance optimization: rendered result cache
+    mutable QPixmap m_renderedCache;
+    mutable int m_cachedPointCount = 0;
+    mutable QRect m_cachedBounds;
 };
 
 // Group of erased items (for undo support)

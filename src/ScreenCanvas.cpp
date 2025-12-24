@@ -680,6 +680,7 @@ void ScreenCanvas::mousePressEvent(QMouseEvent *event)
 void ScreenCanvas::mouseMoveEvent(QMouseEvent *event)
 {
     // Track cursor position for cursor dot
+    QPoint oldCursorPos = m_cursorPos;
     m_cursorPos = event->pos();
 
     // Handle laser pointer drawing
@@ -759,8 +760,15 @@ void ScreenCanvas::mouseMoveEvent(QMouseEvent *event)
         }
     }
 
-    // Always update to keep cursor dot following
-    update();
+    // Only update cursor dot region if position changed (performance optimization)
+    // Cursor dot is 6px diameter, use 10px margin for safety
+    if (m_cursorPos != oldCursorPos) {
+        static constexpr int kCursorMargin = 10;
+        update(QRect(oldCursorPos.x() - kCursorMargin, oldCursorPos.y() - kCursorMargin,
+                     kCursorMargin * 2, kCursorMargin * 2));
+        update(QRect(m_cursorPos.x() - kCursorMargin, m_cursorPos.y() - kCursorMargin,
+                     kCursorMargin * 2, kCursorMargin * 2));
+    }
 }
 
 void ScreenCanvas::mouseReleaseEvent(QMouseEvent *event)

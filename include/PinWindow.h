@@ -4,6 +4,7 @@
 #include <QWidget>
 #include <QPixmap>
 #include <QPoint>
+#include <QElapsedTimer>
 #include "WatermarkRenderer.h"
 #include "LoadingSpinnerRenderer.h"
 
@@ -70,6 +71,10 @@ private:
     void copyToClipboard();
     QPixmap getTransformedPixmap() const;
 
+    // Performance optimization: ensure transform cache is valid
+    void ensureTransformCacheValid();
+    void onResizeFinished();
+
     // Resize methods
     ResizeEdge getResizeEdge(const QPoint &pos) const;
     void updateCursorForEdge(ResizeEdge edge);
@@ -124,6 +129,23 @@ private:
 
     // Watermark members
     WatermarkRenderer::Settings m_watermarkSettings;
+
+    // Performance optimization: transform cache
+    mutable QPixmap m_transformedCache;
+    mutable int m_cachedRotation = -1;
+    mutable bool m_cachedFlipH = false;
+    mutable bool m_cachedFlipV = false;
+
+    // Resize optimization
+    QElapsedTimer m_resizeThrottleTimer;
+    QTimer *m_resizeFinishTimer = nullptr;
+    bool m_pendingHighQualityUpdate = false;
+    static constexpr int kResizeThrottleMs = 16;  // ~60fps during resize
+
+    // Shadow cache
+    mutable QPixmap m_shadowCache;
+    mutable QSize m_shadowCacheSize;
+    void ensureShadowCache(const QSize &contentSize);
 };
 
 #endif // PINWINDOW_H

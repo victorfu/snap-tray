@@ -33,21 +33,25 @@ QRect PencilStroke::boundingRect() const
 {
     if (m_points.isEmpty()) return QRect();
 
-    int minX = m_points[0].x();
-    int maxX = m_points[0].x();
-    int minY = m_points[0].y();
-    int maxY = m_points[0].y();
+    if (m_boundingRectDirty) {
+        int minX = m_points[0].x();
+        int maxX = m_points[0].x();
+        int minY = m_points[0].y();
+        int maxY = m_points[0].y();
 
-    for (const QPoint &p : m_points) {
-        minX = qMin(minX, p.x());
-        maxX = qMax(maxX, p.x());
-        minY = qMin(minY, p.y());
-        maxY = qMax(maxY, p.y());
+        for (const QPoint &p : m_points) {
+            minX = qMin(minX, p.x());
+            maxX = qMax(maxX, p.x());
+            minY = qMin(minY, p.y());
+            maxY = qMax(maxY, p.y());
+        }
+
+        int margin = m_width / 2 + 1;
+        m_boundingRectCache = QRect(minX - margin, minY - margin,
+                                    maxX - minX + 2 * margin, maxY - minY + 2 * margin);
+        m_boundingRectDirty = false;
     }
-
-    int margin = m_width / 2 + 1;
-    return QRect(minX - margin, minY - margin,
-                 maxX - minX + 2 * margin, maxY - minY + 2 * margin);
+    return m_boundingRectCache;
 }
 
 std::unique_ptr<AnnotationItem> PencilStroke::clone() const
@@ -58,6 +62,18 @@ std::unique_ptr<AnnotationItem> PencilStroke::clone() const
 void PencilStroke::addPoint(const QPoint &point)
 {
     m_points.append(point);
+
+    // Incrementally update bounding rect cache
+    int margin = m_width / 2 + 1;
+    QRect pointRect(point.x() - margin, point.y() - margin,
+                    margin * 2, margin * 2);
+
+    if (m_boundingRectDirty || m_boundingRectCache.isEmpty()) {
+        m_boundingRectCache = pointRect;
+        m_boundingRectDirty = false;
+    } else {
+        m_boundingRectCache = m_boundingRectCache.united(pointRect);
+    }
 }
 
 // ============================================================================
@@ -129,21 +145,25 @@ QRect MarkerStroke::boundingRect() const
 {
     if (m_points.isEmpty()) return QRect();
 
-    int minX = m_points[0].x();
-    int maxX = m_points[0].x();
-    int minY = m_points[0].y();
-    int maxY = m_points[0].y();
+    if (m_boundingRectDirty) {
+        int minX = m_points[0].x();
+        int maxX = m_points[0].x();
+        int minY = m_points[0].y();
+        int maxY = m_points[0].y();
 
-    for (const QPoint &p : m_points) {
-        minX = qMin(minX, p.x());
-        maxX = qMax(maxX, p.x());
-        minY = qMin(minY, p.y());
-        maxY = qMax(maxY, p.y());
+        for (const QPoint &p : m_points) {
+            minX = qMin(minX, p.x());
+            maxX = qMax(maxX, p.x());
+            minY = qMin(minY, p.y());
+            maxY = qMax(maxY, p.y());
+        }
+
+        int margin = m_width / 2 + 1;
+        m_boundingRectCache = QRect(minX - margin, minY - margin,
+                                    maxX - minX + 2 * margin, maxY - minY + 2 * margin);
+        m_boundingRectDirty = false;
     }
-
-    int margin = m_width / 2 + 1;
-    return QRect(minX - margin, minY - margin,
-                 maxX - minX + 2 * margin, maxY - minY + 2 * margin);
+    return m_boundingRectCache;
 }
 
 std::unique_ptr<AnnotationItem> MarkerStroke::clone() const
@@ -154,6 +174,18 @@ std::unique_ptr<AnnotationItem> MarkerStroke::clone() const
 void MarkerStroke::addPoint(const QPoint &point)
 {
     m_points.append(point);
+
+    // Incrementally update bounding rect cache
+    int margin = m_width / 2 + 1;
+    QRect pointRect(point.x() - margin, point.y() - margin,
+                    margin * 2, margin * 2);
+
+    if (m_boundingRectDirty || m_boundingRectCache.isEmpty()) {
+        m_boundingRectCache = pointRect;
+        m_boundingRectDirty = false;
+    } else {
+        m_boundingRectCache = m_boundingRectCache.united(pointRect);
+    }
 }
 
 // ============================================================================
@@ -589,81 +621,100 @@ void MosaicStroke::draw(QPainter &painter) const
     QRect bounds = boundingRect();
     if (bounds.isEmpty()) return;
 
-    painter.save();
-    painter.setRenderHint(QPainter::Antialiasing, false);
+    // Check if cache is valid
+    bool cacheValid = !m_renderedCache.isNull()
+        && m_cachedPointCount == m_points.size()
+        && m_cachedBounds == bounds;
 
-    int halfWidth = m_width / 2;
-    int deviceBlockSize = qMax(1, static_cast<int>(m_blockSize * m_devicePixelRatio));
+    if (!cacheValid) {
+        // OPTIMIZATION: Cache QImage conversion (only convert once per MosaicStroke lifetime)
+        if (m_sourceImageCache.isNull()) {
+            m_sourceImageCache = m_sourcePixmap.toImage();
+        }
+        const QImage &sourceImage = m_sourceImageCache;
 
-    // OPTIMIZATION: Cache QImage conversion (only convert once per MosaicStroke lifetime)
-    if (m_sourceImageCache.isNull()) {
-        m_sourceImageCache = m_sourcePixmap.toImage();
-    }
-    const QImage &sourceImage = m_sourceImageCache;
+        int halfWidth = m_width / 2;
+        int deviceBlockSize = qMax(1, static_cast<int>(m_blockSize * m_devicePixelRatio));
+        int devRadius = static_cast<int>(halfWidth * m_devicePixelRatio);
+        int radiusSq = devRadius * devRadius;
 
-    // OPTIMIZATION: Track processed blocks to avoid overdraw
-    QSet<QPair<int, int>> processedBlocks;
+        // Use QHash for O(1) block lookup (faster than QSet for large block counts)
+        QHash<QPair<int, int>, QColor> blockColors;
 
-    int devRadius = static_cast<int>(halfWidth * m_devicePixelRatio);
-    int radiusSq = devRadius * devRadius;
+        // First pass: collect all unique blocks and their colors
+        for (const QPoint &pt : m_points) {
+            int devPtX = static_cast<int>(pt.x() * m_devicePixelRatio);
+            int devPtY = static_cast<int>(pt.y() * m_devicePixelRatio);
 
-    for (const QPoint &pt : m_points) {
-        int devPtX = static_cast<int>(pt.x() * m_devicePixelRatio);
-        int devPtY = static_cast<int>(pt.y() * m_devicePixelRatio);
+            // Calculate block range for this point (block-aligned iteration)
+            int blockLeft = qMax(0, (devPtX - devRadius) / deviceBlockSize);
+            int blockTop = qMax(0, (devPtY - devRadius) / deviceBlockSize);
+            int blockRight = (devPtX + devRadius) / deviceBlockSize;
+            int blockBottom = (devPtY + devRadius) / deviceBlockSize;
 
-        // Calculate block range for this point (block-aligned iteration)
-        int blockLeft = qMax(0, (devPtX - devRadius) / deviceBlockSize);
-        int blockTop = qMax(0, (devPtY - devRadius) / deviceBlockSize);
-        int blockRight = (devPtX + devRadius) / deviceBlockSize;
-        int blockBottom = (devPtY + devRadius) / deviceBlockSize;
+            for (int by = blockTop; by <= blockBottom; ++by) {
+                for (int bx = blockLeft; bx <= blockRight; ++bx) {
+                    auto blockKey = qMakePair(bx, by);
+                    if (blockColors.contains(blockKey)) continue;
 
-        for (int by = blockTop; by <= blockBottom; ++by) {
-            for (int bx = blockLeft; bx <= blockRight; ++bx) {
-                // Skip if already processed
-                auto blockKey = qMakePair(bx, by);
-                if (processedBlocks.contains(blockKey)) continue;
+                    int dx = bx * deviceBlockSize;
+                    int dy = by * deviceBlockSize;
 
-                int dx = bx * deviceBlockSize;
-                int dy = by * deviceBlockSize;
+                    // Bounds check
+                    if (dx >= m_sourcePixmap.width() || dy >= m_sourcePixmap.height()) continue;
 
-                // Bounds check
-                if (dx >= m_sourcePixmap.width() || dy >= m_sourcePixmap.height()) continue;
+                    // Circular brush check
+                    int blockCenterX = dx + deviceBlockSize / 2;
+                    int blockCenterY = dy + deviceBlockSize / 2;
+                    int distSq = (blockCenterX - devPtX) * (blockCenterX - devPtX) +
+                                 (blockCenterY - devPtY) * (blockCenterY - devPtY);
+                    if (distSq > radiusSq) continue;
 
-                // Circular brush check
-                int blockCenterX = dx + deviceBlockSize / 2;
-                int blockCenterY = dy + deviceBlockSize / 2;
-                int distSq = (blockCenterX - devPtX) * (blockCenterX - devPtX) +
-                             (blockCenterY - devPtY) * (blockCenterY - devPtY);
-                if (distSq > radiusSq) continue;
+                    // Sample center of block
+                    int sampleX = qMin(dx + deviceBlockSize / 2, m_sourcePixmap.width() - 1);
+                    int sampleY = qMin(dy + deviceBlockSize / 2, m_sourcePixmap.height() - 1);
+                    QColor blockColor = sourceImage.pixelColor(sampleX, sampleY);
 
-                // Mark as processed
-                processedBlocks.insert(blockKey);
+                    // Blend with gray for desaturated/muted look
+                    int gray = (blockColor.red() + blockColor.green() + blockColor.blue()) / 3;
+                    blockColor.setRed((blockColor.red() + gray) / 2);
+                    blockColor.setGreen((blockColor.green() + gray) / 2);
+                    blockColor.setBlue((blockColor.blue() + gray) / 2);
 
-                // Sample center of block
-                int sampleX = qMin(dx + deviceBlockSize / 2, m_sourcePixmap.width() - 1);
-                int sampleY = qMin(dy + deviceBlockSize / 2, m_sourcePixmap.height() - 1);
-                QColor blockColor = sourceImage.pixelColor(sampleX, sampleY);
-
-                // Blend with gray for desaturated/muted look
-                int gray = (blockColor.red() + blockColor.green() + blockColor.blue()) / 3;
-                blockColor.setRed((blockColor.red() + gray) / 2);
-                blockColor.setGreen((blockColor.green() + gray) / 2);
-                blockColor.setBlue((blockColor.blue() + gray) / 2);
-
-                // Calculate logical rect for this block
-                QRect logicalRect(
-                    static_cast<int>(dx / m_devicePixelRatio),
-                    static_cast<int>(dy / m_devicePixelRatio),
-                    qMax(1, static_cast<int>(deviceBlockSize / m_devicePixelRatio)),
-                    qMax(1, static_cast<int>(deviceBlockSize / m_devicePixelRatio))
-                );
-
-                painter.fillRect(logicalRect, blockColor);
+                    blockColors.insert(blockKey, blockColor);
+                }
             }
         }
+
+        // Second pass: render all blocks to cache pixmap
+        m_renderedCache = QPixmap(bounds.size());
+        m_renderedCache.fill(Qt::transparent);
+
+        QPainter cachePainter(&m_renderedCache);
+        cachePainter.setRenderHint(QPainter::Antialiasing, false);
+
+        for (auto it = blockColors.constBegin(); it != blockColors.constEnd(); ++it) {
+            int bx = it.key().first;
+            int by = it.key().second;
+            int dx = bx * deviceBlockSize;
+            int dy = by * deviceBlockSize;
+
+            QRect logicalRect(
+                static_cast<int>(dx / m_devicePixelRatio) - bounds.left(),
+                static_cast<int>(dy / m_devicePixelRatio) - bounds.top(),
+                qMax(1, static_cast<int>(deviceBlockSize / m_devicePixelRatio)),
+                qMax(1, static_cast<int>(deviceBlockSize / m_devicePixelRatio))
+            );
+
+            cachePainter.fillRect(logicalRect, it.value());
+        }
+
+        m_cachedPointCount = m_points.size();
+        m_cachedBounds = bounds;
     }
 
-    painter.restore();
+    // Draw cached result
+    painter.drawPixmap(bounds.topLeft(), m_renderedCache);
 }
 
 QRect MosaicStroke::boundingRect() const

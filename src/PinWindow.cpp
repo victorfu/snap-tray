@@ -125,6 +125,14 @@ PinWindow::PinWindow(const QPixmap &screenshot, const QPoint &position, QWidget 
     connect(m_loadingSpinner, &LoadingSpinnerRenderer::needsRepaint,
             this, QOverload<>::of(&QWidget::update));
 
+    // Initialize resize finish timer for high-quality update
+    m_resizeFinishTimer = new QTimer(this);
+    m_resizeFinishTimer->setSingleShot(true);
+    connect(m_resizeFinishTimer, &QTimer::timeout, this, &PinWindow::onResizeFinished);
+
+    // Initialize resize throttle timer
+    m_resizeThrottleTimer.start();
+
     qDebug() << "PinWindow: Created with size" << m_displayPixmap.size()
              << "requested position" << position
              << "actual position" << pos();
@@ -181,43 +189,104 @@ void PinWindow::setWatermarkSettings(const WatermarkRenderer::Settings &settings
     update();
 }
 
-void PinWindow::updateSize()
+void PinWindow::ensureTransformCacheValid()
 {
-    // Calculate logical size accounting for devicePixelRatio
-    QSize logicalOriginalSize = m_originalPixmap.size() / m_originalPixmap.devicePixelRatio();
+    // Check if cache needs to be rebuilt
+    if (m_cachedRotation == m_rotationAngle &&
+        m_cachedFlipH == m_flipHorizontal &&
+        m_cachedFlipV == m_flipVertical &&
+        !m_transformedCache.isNull()) {
+        return;  // Cache is valid
+    }
 
-    // Apply rotation and flip transforms if needed
-    QPixmap transformedPixmap = m_originalPixmap;
+    // Rebuild cache
     if (m_rotationAngle != 0 || m_flipHorizontal || m_flipVertical) {
         QTransform transform;
 
-        // Apply rotation first
         if (m_rotationAngle != 0) {
             transform.rotate(m_rotationAngle);
         }
 
-        // Apply flip transformations
-        // scale(-1, 1) for horizontal flip, scale(1, -1) for vertical flip
         if (m_flipHorizontal || m_flipVertical) {
             qreal scaleX = m_flipHorizontal ? -1.0 : 1.0;
             qreal scaleY = m_flipVertical ? -1.0 : 1.0;
             transform.scale(scaleX, scaleY);
         }
 
-        transformedPixmap = m_originalPixmap.transformed(transform, Qt::SmoothTransformation);
-        transformedPixmap.setDevicePixelRatio(m_originalPixmap.devicePixelRatio());
+        m_transformedCache = m_originalPixmap.transformed(transform, Qt::SmoothTransformation);
+        m_transformedCache.setDevicePixelRatio(m_originalPixmap.devicePixelRatio());
+    } else {
+        m_transformedCache = m_originalPixmap;
     }
 
+    m_cachedRotation = m_rotationAngle;
+    m_cachedFlipH = m_flipHorizontal;
+    m_cachedFlipV = m_flipVertical;
+}
+
+void PinWindow::onResizeFinished()
+{
+    if (m_pendingHighQualityUpdate && !m_isResizing) {
+        // Perform high-quality scaling after resize is complete
+        ensureTransformCacheValid();
+
+        QSize contentSize = size() - QSize(kShadowMargin * 2, kShadowMargin * 2);
+        QSize newDeviceSize = contentSize * m_transformedCache.devicePixelRatio();
+
+        m_displayPixmap = m_transformedCache.scaled(newDeviceSize,
+                                                    Qt::KeepAspectRatio,
+                                                    Qt::SmoothTransformation);
+        m_displayPixmap.setDevicePixelRatio(m_transformedCache.devicePixelRatio());
+
+        m_pendingHighQualityUpdate = false;
+        update();
+    }
+}
+
+void PinWindow::ensureShadowCache(const QSize &contentSize)
+{
+    QSize fullSize = contentSize + QSize(kShadowMargin * 2, kShadowMargin * 2);
+
+    if (m_shadowCacheSize == fullSize && !m_shadowCache.isNull()) {
+        return;  // Cache is valid
+    }
+
+    // Pre-render shadow to cache
+    m_shadowCache = QPixmap(fullSize * devicePixelRatio());
+    m_shadowCache.setDevicePixelRatio(devicePixelRatio());
+    m_shadowCache.fill(Qt::transparent);
+
+    QPainter cachePainter(&m_shadowCache);
+    cachePainter.setRenderHint(QPainter::Antialiasing);
+
+    QRect pixmapRect(kShadowMargin, kShadowMargin,
+                     contentSize.width(), contentSize.height());
+
+    cachePainter.setPen(Qt::NoPen);
+    for (int i = kShadowMargin; i >= 1; --i) {
+        int alpha = 30 * (kShadowMargin - i + 1) / kShadowMargin;
+        cachePainter.setBrush(QColor(0, 0, 0, alpha));
+        cachePainter.drawRoundedRect(pixmapRect.adjusted(-i, -i, i, i), 2, 2);
+    }
+
+    m_shadowCacheSize = fullSize;
+}
+
+void PinWindow::updateSize()
+{
+    // Use cached transform (only rebuild if rotation/flip changed)
+    ensureTransformCacheValid();
+
     // For 90/270 degree rotations, swap width and height
-    QSize transformedLogicalSize = transformedPixmap.size() / transformedPixmap.devicePixelRatio();
+    QSize transformedLogicalSize = m_transformedCache.size() / m_transformedCache.devicePixelRatio();
     QSize newLogicalSize = transformedLogicalSize * m_zoomLevel;
 
     // Scale to device pixels for the actual pixmap
-    QSize newDeviceSize = newLogicalSize * transformedPixmap.devicePixelRatio();
-    m_displayPixmap = transformedPixmap.scaled(newDeviceSize,
-                                               Qt::KeepAspectRatio,
-                                               Qt::SmoothTransformation);
-    m_displayPixmap.setDevicePixelRatio(transformedPixmap.devicePixelRatio());
+    QSize newDeviceSize = newLogicalSize * m_transformedCache.devicePixelRatio();
+    m_displayPixmap = m_transformedCache.scaled(newDeviceSize,
+                                                Qt::KeepAspectRatio,
+                                                Qt::SmoothTransformation);
+    m_displayPixmap.setDevicePixelRatio(m_transformedCache.devicePixelRatio());
 
     // Add shadow margins to window size
     QSize windowSize = newLogicalSize + QSize(kShadowMargin * 2, kShadowMargin * 2);
@@ -521,13 +590,10 @@ void PinWindow::paintEvent(QPaintEvent *)
                      width() - kShadowMargin * 2,
                      height() - kShadowMargin * 2);
 
-    // Draw soft gradient shadow effect
-    painter.setPen(Qt::NoPen);
-    for (int i = kShadowMargin; i >= 1; --i) {
-        int alpha = 30 * (kShadowMargin - i + 1) / kShadowMargin;
-        painter.setBrush(QColor(0, 0, 0, alpha));
-        painter.drawRoundedRect(pixmapRect.adjusted(-i, -i, i, i), 2, 2);
-    }
+    // Draw cached shadow (performance optimization)
+    QSize contentSize(pixmapRect.width(), pixmapRect.height());
+    ensureShadowCache(contentSize);
+    painter.drawPixmap(0, 0, m_shadowCache);
 
     // Draw the screenshot at the margin offset
     painter.drawPixmap(pixmapRect, m_displayPixmap);
@@ -637,34 +703,26 @@ void PinWindow::mouseMoveEvent(QMouseEvent *event)
         // Update zoom level based on new size
         QSize contentSize = newSize - QSize(kShadowMargin * 2, kShadowMargin * 2);
 
-        // Apply rotation and flip transforms if needed (same as updateSize)
-        QPixmap transformedPixmap = m_originalPixmap;
-        if (m_rotationAngle != 0 || m_flipHorizontal || m_flipVertical) {
-            QTransform transform;
-            if (m_rotationAngle != 0) {
-                transform.rotate(m_rotationAngle);
-            }
-            if (m_flipHorizontal || m_flipVertical) {
-                qreal flipScaleX = m_flipHorizontal ? -1.0 : 1.0;
-                qreal flipScaleY = m_flipVertical ? -1.0 : 1.0;
-                transform.scale(flipScaleX, flipScaleY);
-            }
-            transformedPixmap = m_originalPixmap.transformed(transform, Qt::SmoothTransformation);
-            transformedPixmap.setDevicePixelRatio(m_originalPixmap.devicePixelRatio());
-        }
+        // Use cached transform (performance optimization)
+        ensureTransformCacheValid();
 
         // Use transformed dimensions for zoom calculation
-        QSize transformedLogicalSize = transformedPixmap.size() / transformedPixmap.devicePixelRatio();
+        QSize transformedLogicalSize = m_transformedCache.size() / m_transformedCache.devicePixelRatio();
         qreal scaleX = static_cast<qreal>(contentSize.width()) / transformedLogicalSize.width();
         qreal scaleY = static_cast<qreal>(contentSize.height()) / transformedLogicalSize.height();
         m_zoomLevel = qMin(scaleX, scaleY);
 
-        // Scale transformed pixmap (not original)
-        QSize newDeviceSize = contentSize * transformedPixmap.devicePixelRatio();
-        m_displayPixmap = transformedPixmap.scaled(newDeviceSize,
-                                                   Qt::KeepAspectRatio,
-                                                   Qt::SmoothTransformation);
-        m_displayPixmap.setDevicePixelRatio(transformedPixmap.devicePixelRatio());
+        // Use FastTransformation during resize for responsiveness
+        // High-quality scaling will be done after resize is complete
+        QSize newDeviceSize = contentSize * m_transformedCache.devicePixelRatio();
+        m_displayPixmap = m_transformedCache.scaled(newDeviceSize,
+                                                    Qt::KeepAspectRatio,
+                                                    Qt::FastTransformation);
+        m_displayPixmap.setDevicePixelRatio(m_transformedCache.devicePixelRatio());
+
+        // Schedule high-quality update after resize ends
+        m_pendingHighQualityUpdate = true;
+        m_resizeFinishTimer->start(150);  // Debounce: wait 150ms after last resize
 
         // Apply new size and position
         setFixedSize(newSize);
