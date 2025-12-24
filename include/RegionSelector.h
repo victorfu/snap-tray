@@ -216,6 +216,8 @@ private:
     OCRManager *m_ocrManager;
     bool m_ocrInProgress;
     LoadingSpinnerRenderer *m_loadingSpinner;
+    class QLabel *m_ocrToastLabel;
+    class QTimer *m_ocrToastTimer;
 
     void performOCR();
     void onOCRComplete(bool success, const QString &text, const QString &error);

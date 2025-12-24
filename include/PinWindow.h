@@ -38,6 +38,7 @@ public:
 signals:
     void closed(PinWindow *window);
     void saveRequested(const QPixmap &pixmap);
+    void ocrCompleted(bool success, const QString &message);
 
 protected:
     void paintEvent(QPaintEvent *event) override;
@@ -118,6 +119,8 @@ private:
     OCRManager *m_ocrManager;
     bool m_ocrInProgress;
     LoadingSpinnerRenderer *m_loadingSpinner;
+    QLabel *m_ocrToastLabel;
+    QTimer *m_ocrToastTimer;
 
     // Watermark members
     WatermarkRenderer::Settings m_watermarkSettings;

@@ -18,6 +18,7 @@ PinWindow* PinWindowManager::createPinWindow(const QPixmap &screenshot, const QP
     PinWindow *window = new PinWindow(screenshot, position);
 
     connect(window, &PinWindow::closed, this, &PinWindowManager::onWindowClosed);
+    connect(window, &PinWindow::ocrCompleted, this, &PinWindowManager::ocrCompleted);
 
     m_windows.append(window);
     // Note: show() is called in PinWindow constructor

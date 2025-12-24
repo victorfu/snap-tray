@@ -114,6 +114,17 @@ void MainApplication::initialize()
     m_trayIcon->setToolTip("SnapTray - Screenshot Utility");
     m_trayIcon->show();
 
+    // Connect OCR completion signal (must be after m_trayIcon is created)
+    connect(m_pinWindowManager, &PinWindowManager::ocrCompleted,
+            this, [this](bool success, const QString &message) {
+                qDebug() << "MainApplication: OCR completed, success=" << success << ", message=" << message;
+                m_trayIcon->showMessage(
+                    success ? tr("OCR Success") : tr("OCR Failed"),
+                    message,
+                    success ? QSystemTrayIcon::Information : QSystemTrayIcon::Warning,
+                    3000);
+            });
+
     // Setup global hotkeys
     setupHotkey();
 

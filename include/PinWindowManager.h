@@ -24,6 +24,7 @@ signals:
     void windowCreated(PinWindow *window);
     void windowClosed(PinWindow *window);
     void allWindowsClosed();
+    void ocrCompleted(bool success, const QString &message);
 
 private slots:
     void onWindowClosed(PinWindow *window);

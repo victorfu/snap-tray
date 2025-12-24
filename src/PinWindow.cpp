@@ -100,6 +100,14 @@ PinWindow::PinWindow(const QPixmap &screenshot, const QPoint &position, QWidget 
     m_opacityLabelTimer->setSingleShot(true);
     connect(m_opacityLabelTimer, &QTimer::timeout, m_opacityLabel, &QLabel::hide);
 
+    // OCR toast label (shows success/failure message)
+    m_ocrToastLabel = new QLabel(this);
+    m_ocrToastLabel->hide();
+
+    m_ocrToastTimer = new QTimer(this);
+    m_ocrToastTimer->setSingleShot(true);
+    connect(m_ocrToastTimer, &QTimer::timeout, m_ocrToastLabel, &QLabel::hide);
+
     // Must show() first, then move() to get correct positioning on macOS
     // Moving before show() can result in incorrect window placement
     // Offset position by shadow margin so the pixmap content appears at the expected location
@@ -386,19 +394,51 @@ void PinWindow::onOCRComplete(bool success, const QString &text, const QString &
     m_ocrInProgress = false;
     m_loadingSpinner->stop();
 
+    QString msg;
     if (success && !text.isEmpty()) {
         QGuiApplication::clipboard()->setText(text);
         qDebug() << "PinWindow: OCR complete, copied" << text.length() << "characters to clipboard";
-        QToolTip::showText(QCursor::pos(),
-            tr("OCR: Copied %1 characters to clipboard").arg(text.length()),
-            this, QRect(), 2000);
+        msg = tr("Copied %1 characters").arg(text.length());
+
+        // Show success toast with green background
+        m_ocrToastLabel->setStyleSheet(
+            "QLabel {"
+            "  background-color: rgba(34, 139, 34, 220);"
+            "  color: white;"
+            "  padding: 8px 16px;"
+            "  border-radius: 6px;"
+            "  font-size: 13px;"
+            "  font-weight: bold;"
+            "}"
+        );
     } else {
-        QString msg = error.isEmpty() ? tr("No text found") : error;
+        msg = error.isEmpty() ? tr("No text found") : error;
         qDebug() << "PinWindow: OCR failed:" << msg;
-        QToolTip::showText(QCursor::pos(),
-            tr("OCR: %1").arg(msg),
-            this, QRect(), 2000);
+
+        // Show failure toast with red background
+        m_ocrToastLabel->setStyleSheet(
+            "QLabel {"
+            "  background-color: rgba(200, 60, 60, 220);"
+            "  color: white;"
+            "  padding: 8px 16px;"
+            "  border-radius: 6px;"
+            "  font-size: 13px;"
+            "  font-weight: bold;"
+            "}"
+        );
     }
+
+    // Display the toast centered at top of window
+    m_ocrToastLabel->setText(msg);
+    m_ocrToastLabel->adjustSize();
+    int x = (width() - m_ocrToastLabel->width()) / 2;
+    int y = kShadowMargin + 12;
+    m_ocrToastLabel->move(x, y);
+    m_ocrToastLabel->show();
+    m_ocrToastLabel->raise();
+    m_ocrToastTimer->start(2500);
+
+    emit ocrCompleted(success && !text.isEmpty(), msg);
 }
 
 PinWindow::ResizeEdge PinWindow::getResizeEdge(const QPoint &pos) const

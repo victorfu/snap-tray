@@ -26,6 +26,8 @@
 #include <QToolTip>
 #include <QPointer>
 #include <QColorDialog>
+#include <QLabel>
+#include <QTimer>
 
 RegionSelector::RegionSelector(QWidget* parent)
     : QWidget(parent)
@@ -109,6 +111,14 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_loadingSpinner = new LoadingSpinnerRenderer(this);
     connect(m_loadingSpinner, &LoadingSpinnerRenderer::needsRepaint,
             this, QOverload<>::of(&QWidget::update));
+
+    // OCR toast label (shows success/failure message)
+    m_ocrToastLabel = new QLabel(this);
+    m_ocrToastLabel->hide();
+
+    m_ocrToastTimer = new QTimer(this);
+    m_ocrToastTimer->setSingleShot(true);
+    connect(m_ocrToastTimer, &QTimer::timeout, m_ocrToastLabel, &QLabel::hide);
 
     // Install application-level event filter to capture ESC even when window loses focus
     qApp->installEventFilter(this);
@@ -2168,19 +2178,49 @@ void RegionSelector::onOCRComplete(bool success, const QString &text, const QStr
     m_ocrInProgress = false;
     m_loadingSpinner->stop();
 
+    QString msg;
     if (success && !text.isEmpty()) {
         QGuiApplication::clipboard()->setText(text);
         qDebug() << "RegionSelector: OCR complete, copied" << text.length() << "characters to clipboard";
-        QToolTip::showText(QCursor::pos(),
-            tr("OCR: Copied %1 characters to clipboard").arg(text.length()),
-            this, QRect(), 2000);
+        msg = tr("Copied %1 characters").arg(text.length());
+
+        // Show success toast with green background
+        m_ocrToastLabel->setStyleSheet(
+            "QLabel {"
+            "  background-color: rgba(34, 139, 34, 220);"
+            "  color: white;"
+            "  padding: 8px 16px;"
+            "  border-radius: 6px;"
+            "  font-size: 13px;"
+            "  font-weight: bold;"
+            "}"
+        );
     } else {
-        QString msg = error.isEmpty() ? tr("No text found") : error;
+        msg = error.isEmpty() ? tr("No text found") : error;
         qDebug() << "RegionSelector: OCR failed:" << msg;
-        QToolTip::showText(QCursor::pos(),
-            tr("OCR: %1").arg(msg),
-            this, QRect(), 2000);
+
+        // Show failure toast with red background
+        m_ocrToastLabel->setStyleSheet(
+            "QLabel {"
+            "  background-color: rgba(200, 60, 60, 220);"
+            "  color: white;"
+            "  padding: 8px 16px;"
+            "  border-radius: 6px;"
+            "  font-size: 13px;"
+            "  font-weight: bold;"
+            "}"
+        );
     }
+
+    // Display the toast centered at top of selection area
+    m_ocrToastLabel->setText(msg);
+    m_ocrToastLabel->adjustSize();
+    int x = m_selectionRect.center().x() - m_ocrToastLabel->width() / 2;
+    int y = m_selectionRect.top() + 12;
+    m_ocrToastLabel->move(x, y);
+    m_ocrToastLabel->show();
+    m_ocrToastLabel->raise();
+    m_ocrToastTimer->start(2500);
 
     update();
 }
