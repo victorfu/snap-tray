@@ -289,7 +289,7 @@ void ColorAndWidthWidget::updateLayout()
 
         // Dropdown rect - expand upward when widget is above anchor (ScreenCanvas)
         int dropdownWidth = ARROW_STYLE_BUTTON_WIDTH + 20;  // Slightly wider
-        int dropdownHeight = 3 * ARROW_STYLE_DROPDOWN_OPTION_HEIGHT;  // 3 options
+        int dropdownHeight = 2 * ARROW_STYLE_DROPDOWN_OPTION_HEIGHT;  // 2 options
         if (m_dropdownExpandsUpward) {
             // Expand upward (widget is above toolbar)
             m_arrowStyleDropdownRect = QRect(
@@ -678,9 +678,9 @@ void ColorAndWidthWidget::drawArrowStyleSection(QPainter& painter)
         painter.setBrush(QColor(50, 50, 50, 250));
         painter.drawRoundedRect(m_arrowStyleDropdownRect, 4, 4);
 
-        // Draw each option (3 options: None, EndArrow, DotToArrow)
-        LineEndStyle styles[] = { LineEndStyle::None, LineEndStyle::EndArrow, LineEndStyle::DotToArrow };
-        for (int i = 0; i < 3; ++i) {
+        // Draw each option (2 options: None, EndArrow)
+        LineEndStyle styles[] = { LineEndStyle::None, LineEndStyle::EndArrow };
+        for (int i = 0; i < 2; ++i) {
             QRect optionRect(
                 m_arrowStyleDropdownRect.left(),
                 m_arrowStyleDropdownRect.top() + i * ARROW_STYLE_DROPDOWN_OPTION_HEIGHT,
@@ -757,11 +757,6 @@ void ColorAndWidthWidget::drawArrowStyleIcon(QPainter& painter, LineEndStyle sty
     case LineEndStyle::EndArrow:
         drawArrowhead(lineRight, true);
         break;
-    case LineEndStyle::DotToArrow:
-        // Dot at start, arrow at end (●─────▶)
-        drawDot(lineLeft);
-        drawArrowhead(lineRight, true);
-        break;
     }
 
     painter.restore();
@@ -775,7 +770,7 @@ int ColorAndWidthWidget::arrowStyleOptionAtPosition(const QPoint& pos) const
     if (m_arrowStyleDropdownOpen && m_arrowStyleDropdownRect.contains(pos)) {
         int relativeY = pos.y() - m_arrowStyleDropdownRect.top();
         int option = relativeY / ARROW_STYLE_DROPDOWN_OPTION_HEIGHT;
-        if (option >= 0 && option < 3) {  // 3 options
+        if (option >= 0 && option < 2) {  // 2 options
             return option;
         }
     }
@@ -996,8 +991,8 @@ bool ColorAndWidthWidget::handleClick(const QPoint& pos)
     if (m_showArrowStyleSection) {
         int arrowOption = arrowStyleOptionAtPosition(pos);
         if (arrowOption >= 0) {
-            // Clicked on a dropdown option (3 options: None, EndArrow, DotToArrow)
-            LineEndStyle styles[] = { LineEndStyle::None, LineEndStyle::EndArrow, LineEndStyle::DotToArrow };
+            // Clicked on a dropdown option (2 options: None, EndArrow)
+            LineEndStyle styles[] = { LineEndStyle::None, LineEndStyle::EndArrow };
             m_arrowStyle = styles[arrowOption];
             m_arrowStyleDropdownOpen = false;
             m_hoveredArrowStyleOption = -1;

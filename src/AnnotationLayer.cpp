@@ -322,8 +322,20 @@ void ArrowAnnotation::draw(QPainter &painter) const
     painter.setPen(pen);
     painter.setRenderHint(QPainter::Antialiasing, true);
 
-    // Draw the line
-    painter.drawLine(m_start, m_end);
+    // Calculate line endpoint (adjust if arrowhead is present)
+    QPointF lineEnd = m_end;
+    if (m_lineEndStyle != LineEndStyle::None) {
+        // Move line end back to arrowhead base so line doesn't protrude through arrow
+        double angle = qAtan2(m_end.y() - m_start.y(), m_end.x() - m_start.x());
+        double arrowLength = qMax(15.0, m_width * 5.0);
+        lineEnd = QPointF(
+            m_end.x() - arrowLength * qCos(angle),
+            m_end.y() - arrowLength * qSin(angle)
+        );
+    }
+
+    // Draw the line (to correct endpoint)
+    painter.drawLine(m_start, lineEnd.toPoint());
 
     // Draw arrowhead(s) based on line end style
     switch (m_lineEndStyle) {
@@ -331,16 +343,6 @@ void ArrowAnnotation::draw(QPainter &painter) const
         // Plain line, no arrowheads
         break;
     case LineEndStyle::EndArrow:
-        drawArrowhead(painter, m_start, m_end);
-        break;
-    case LineEndStyle::DotToArrow:
-        // Draw dot at start, arrow at end (●─────▶)
-        {
-            int dotRadius = qMax(6, m_width * 2);
-            painter.setBrush(m_color);
-            painter.setPen(Qt::NoPen);
-            painter.drawEllipse(m_start, dotRadius, dotRadius);
-        }
         drawArrowhead(painter, m_start, m_end);
         break;
     }
