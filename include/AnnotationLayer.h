@@ -79,16 +79,27 @@ private:
     mutable bool m_boundingRectDirty = true;
 };
 
+// Line end style for arrow annotations
+enum class LineEndStyle {
+    None = 0,    // ───── Plain line (no arrows)
+    EndArrow,    // ─────▶ Arrow at end (default)
+    StartArrow,  // ◀───── Arrow at start
+    BothArrows   // ◀────▶ Double arrow
+};
+
 // Arrow annotation (line with arrowhead)
 class ArrowAnnotation : public AnnotationItem
 {
 public:
-    ArrowAnnotation(const QPoint &start, const QPoint &end, const QColor &color, int width);
+    ArrowAnnotation(const QPoint &start, const QPoint &end, const QColor &color, int width,
+                    LineEndStyle style = LineEndStyle::EndArrow);
     void draw(QPainter &painter) const override;
     QRect boundingRect() const override;
     std::unique_ptr<AnnotationItem> clone() const override;
 
     void setEnd(const QPoint &end);
+    void setLineEndStyle(LineEndStyle style) { m_lineEndStyle = style; }
+    LineEndStyle lineEndStyle() const { return m_lineEndStyle; }
 
 private:
     void drawArrowhead(QPainter &painter, const QPoint &start, const QPoint &end) const;
@@ -97,6 +108,7 @@ private:
     QPoint m_end;
     QColor m_color;
     int m_width;
+    LineEndStyle m_lineEndStyle;
 };
 
 // Rectangle annotation

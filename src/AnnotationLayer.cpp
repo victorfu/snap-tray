@@ -232,11 +232,13 @@ void MarkerStroke::addPoint(const QPointF &point)
 // ArrowAnnotation Implementation
 // ============================================================================
 
-ArrowAnnotation::ArrowAnnotation(const QPoint &start, const QPoint &end, const QColor &color, int width)
+ArrowAnnotation::ArrowAnnotation(const QPoint &start, const QPoint &end, const QColor &color, int width,
+                                 LineEndStyle style)
     : m_start(start)
     , m_end(end)
     , m_color(color)
     , m_width(width)
+    , m_lineEndStyle(style)
 {
 }
 
@@ -250,8 +252,22 @@ void ArrowAnnotation::draw(QPainter &painter) const
     // Draw the line
     painter.drawLine(m_start, m_end);
 
-    // Draw the arrowhead
-    drawArrowhead(painter, m_start, m_end);
+    // Draw arrowhead(s) based on line end style
+    switch (m_lineEndStyle) {
+    case LineEndStyle::None:
+        // Plain line, no arrowheads
+        break;
+    case LineEndStyle::EndArrow:
+        drawArrowhead(painter, m_start, m_end);
+        break;
+    case LineEndStyle::StartArrow:
+        drawArrowhead(painter, m_end, m_start);
+        break;
+    case LineEndStyle::BothArrows:
+        drawArrowhead(painter, m_start, m_end);
+        drawArrowhead(painter, m_end, m_start);
+        break;
+    }
 
     painter.restore();
 }
@@ -299,7 +315,7 @@ QRect ArrowAnnotation::boundingRect() const
 
 std::unique_ptr<AnnotationItem> ArrowAnnotation::clone() const
 {
-    return std::make_unique<ArrowAnnotation>(m_start, m_end, m_color, m_width);
+    return std::make_unique<ArrowAnnotation>(m_start, m_end, m_color, m_width, m_lineEndStyle);
 }
 
 void ArrowAnnotation::setEnd(const QPoint &end)

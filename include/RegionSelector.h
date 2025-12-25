@@ -77,7 +77,7 @@ public:
     ~RegionSelector();
 
     // 初始化指定螢幕的截圖 (由 CaptureManager 調用)
-    void initializeForScreen(QScreen *screen);
+    void initializeForScreen(QScreen *screen, const QPixmap &preCapture = QPixmap());
 
     // 初始化指定螢幕並使用預設區域 (用於錄影取消後返回)
     void initializeWithRegion(QScreen *screen, const QRect &region);
@@ -132,6 +132,9 @@ private:
     void saveAnnotationColor(const QColor &color);
     int loadAnnotationWidth() const;
     void saveAnnotationWidth(int width);
+    LineEndStyle loadArrowStyle() const;
+    void saveArrowStyle(LineEndStyle style);
+    void onArrowStyleChanged(LineEndStyle style);
 
     // Window detection drawing
     void drawDetectedWindow(QPainter &painter);
@@ -210,6 +213,7 @@ private:
     ToolbarButton m_currentTool;
     QColor m_annotationColor;
     int m_annotationWidth;
+    LineEndStyle m_arrowStyle;
 
     // In-progress annotation state
     bool m_isDrawing;

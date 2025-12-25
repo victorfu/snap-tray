@@ -7,6 +7,7 @@
 #include <QRect>
 #include <QPoint>
 #include <QString>
+#include "AnnotationLayer.h"
 
 class QPainter;
 
@@ -118,6 +119,27 @@ public:
      * @brief Get font family.
      */
     QString fontFamily() const { return m_fontFamily; }
+
+    // Arrow style methods
+    /**
+     * @brief Set whether to show the arrow style section.
+     */
+    void setShowArrowStyleSection(bool show);
+
+    /**
+     * @brief Check if the arrow style section is shown.
+     */
+    bool showArrowStyleSection() const { return m_showArrowStyleSection; }
+
+    /**
+     * @brief Set the arrow line end style.
+     */
+    void setArrowStyle(LineEndStyle style);
+
+    /**
+     * @brief Get the current arrow style.
+     */
+    LineEndStyle arrowStyle() const { return m_arrowStyle; }
 
     // Line width methods
     /**
@@ -261,6 +283,11 @@ signals:
      */
     void fontFamilyDropdownRequested(const QPoint& globalPos);
 
+    /**
+     * @brief Emitted when arrow style is changed.
+     */
+    void arrowStyleChanged(LineEndStyle style);
+
 private:
     // Layout calculation
     void updateLayout();
@@ -276,6 +303,11 @@ private:
     // Text section helpers
     void drawTextSection(QPainter& painter);
     int textControlAtPosition(const QPoint& pos) const;
+
+    // Arrow style section helpers
+    void drawArrowStyleSection(QPainter& painter);
+    void drawArrowStyleIcon(QPainter& painter, LineEndStyle style, const QRect& rect, bool isHovered = false) const;
+    int arrowStyleOptionAtPosition(const QPoint& pos) const;
 
     // Color state
     QVector<QColor> m_colors;
@@ -306,6 +338,14 @@ private:
     QRect m_fontFamilyRect;
     int m_hoveredTextControl = -1;  // 0=B, 1=I, 2=U, 3=size, 4=family
 
+    // Arrow style state
+    bool m_showArrowStyleSection = false;
+    LineEndStyle m_arrowStyle = LineEndStyle::EndArrow;
+    QRect m_arrowStyleButtonRect;
+    QRect m_arrowStyleDropdownRect;
+    bool m_arrowStyleDropdownOpen = false;
+    int m_hoveredArrowStyleOption = -1;  // -1=none, 0-3=style options
+
     // Layout state
     bool m_visible;
     QRect m_widgetRect;
@@ -327,6 +367,11 @@ private:
     static const int TEXT_BUTTON_SPACING = 2;
     static const int FONT_SIZE_WIDTH = 40;
     static const int FONT_FAMILY_WIDTH = 90;
+
+    // Arrow style section layout constants
+    static const int ARROW_STYLE_BUTTON_WIDTH = 50;
+    static const int ARROW_STYLE_BUTTON_HEIGHT = 24;
+    static const int ARROW_STYLE_DROPDOWN_OPTION_HEIGHT = 28;
 };
 
 #endif // COLORANDWIDTHWIDGET_H

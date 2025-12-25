@@ -4,6 +4,7 @@
 #include <QPainterPath>
 #include <QFontMetrics>
 #include <QDebug>
+#include <QtMath>
 
 ColorAndWidthWidget::ColorAndWidthWidget(QObject* parent)
     : QObject(parent)
@@ -113,6 +114,25 @@ void ColorAndWidthWidget::setFontFamily(const QString& family)
     }
 }
 
+void ColorAndWidthWidget::setShowArrowStyleSection(bool show)
+{
+    if (m_showArrowStyleSection != show) {
+        m_showArrowStyleSection = show;
+        if (!show) {
+            m_arrowStyleDropdownOpen = false;
+            m_hoveredArrowStyleOption = -1;
+        }
+    }
+}
+
+void ColorAndWidthWidget::setArrowStyle(LineEndStyle style)
+{
+    if (m_arrowStyle != style) {
+        m_arrowStyle = style;
+        emit arrowStyleChanged(m_arrowStyle);
+    }
+}
+
 void ColorAndWidthWidget::updatePosition(const QRect& anchorRect, bool above, int screenWidth)
 {
     // Calculate total width (using 2 rows, 8 columns - "..." is part of row 2)
@@ -120,6 +140,9 @@ void ColorAndWidthWidget::updatePosition(const QRect& anchorRect, bool above, in
     int totalWidth = colorSectionWidth;
     if (m_showWidthSection) {
         totalWidth += SECTION_SPACING + WIDTH_SECTION_SIZE;
+    }
+    if (m_showArrowStyleSection) {
+        totalWidth += SECTION_SPACING + ARROW_STYLE_BUTTON_WIDTH;
     }
     if (m_showTextSection) {
         // B/I/U buttons + font size + font family dropdowns
@@ -196,11 +219,40 @@ void ColorAndWidthWidget::updateLayout()
         m_widthSectionRect = QRect();
     }
 
-    // === TEXT SECTION (B/I/U toggles + font size + font family) ===
-    if (m_showTextSection) {
-        int textSectionLeft = m_showWidthSection ?
+    // === ARROW STYLE SECTION ===
+    if (m_showArrowStyleSection) {
+        int arrowStyleLeft = m_showWidthSection ?
             m_widthSectionRect.right() + SECTION_SPACING :
             m_colorSectionRect.right() + SECTION_SPACING;
+
+        // Center the button vertically
+        int buttonY = m_widgetRect.top() + (WIDGET_HEIGHT - ARROW_STYLE_BUTTON_HEIGHT) / 2;
+        m_arrowStyleButtonRect = QRect(arrowStyleLeft, buttonY, ARROW_STYLE_BUTTON_WIDTH, ARROW_STYLE_BUTTON_HEIGHT);
+
+        // Dropdown rect is calculated when drawn (positioned below button)
+        int dropdownWidth = ARROW_STYLE_BUTTON_WIDTH + 20;  // Slightly wider
+        int dropdownHeight = 4 * ARROW_STYLE_DROPDOWN_OPTION_HEIGHT;
+        m_arrowStyleDropdownRect = QRect(
+            m_arrowStyleButtonRect.left(),
+            m_arrowStyleButtonRect.bottom() + 2,
+            dropdownWidth,
+            dropdownHeight
+        );
+    } else {
+        m_arrowStyleButtonRect = QRect();
+        m_arrowStyleDropdownRect = QRect();
+    }
+
+    // === TEXT SECTION (B/I/U toggles + font size + font family) ===
+    if (m_showTextSection) {
+        int textSectionLeft;
+        if (m_showArrowStyleSection) {
+            textSectionLeft = m_arrowStyleButtonRect.right() + SECTION_SPACING;
+        } else if (m_showWidthSection) {
+            textSectionLeft = m_widthSectionRect.right() + SECTION_SPACING;
+        } else {
+            textSectionLeft = m_colorSectionRect.right() + SECTION_SPACING;
+        }
 
         int textSectionWidth = (TEXT_BUTTON_SIZE * 3 + TEXT_BUTTON_SPACING * 2) +
                                SECTION_SPACING + FONT_SIZE_WIDTH +
@@ -269,6 +321,11 @@ void ColorAndWidthWidget::draw(QPainter& painter)
     // Draw width section (if enabled)
     if (m_showWidthSection) {
         drawWidthSection(painter);
+    }
+
+    // Draw arrow style section (if enabled)
+    if (m_showArrowStyleSection) {
+        drawArrowStyleSection(painter);
     }
 
     // Draw text section (if enabled)
@@ -435,6 +492,141 @@ void ColorAndWidthWidget::drawTextSection(QPainter& painter)
     drawDropdown(m_fontFamilyRect, familyText, m_hoveredTextControl == 4);
 }
 
+void ColorAndWidthWidget::drawArrowStyleSection(QPainter& painter)
+{
+    // Draw the button showing current style
+    bool buttonHovered = m_hoveredArrowStyleOption == -2;  // Special value for button hover
+    QColor bgColor = buttonHovered ? QColor(80, 80, 80) : QColor(50, 50, 50);
+    painter.setPen(QPen(QColor(70, 70, 70), 1));
+    painter.setBrush(bgColor);
+    painter.drawRoundedRect(m_arrowStyleButtonRect, 4, 4);
+
+    // Draw current style icon in the button
+    QRect iconRect = m_arrowStyleButtonRect.adjusted(4, 4, -12, -4);
+    drawArrowStyleIcon(painter, m_arrowStyle, iconRect);
+
+    // Draw dropdown arrow
+    int arrowX = m_arrowStyleButtonRect.right() - 8;
+    int arrowY = m_arrowStyleButtonRect.center().y();
+    QPainterPath arrow;
+    arrow.moveTo(arrowX - 3, arrowY - 2);
+    arrow.lineTo(arrowX + 3, arrowY - 2);
+    arrow.lineTo(arrowX, arrowY + 2);
+    arrow.closeSubpath();
+    painter.fillPath(arrow, QColor(180, 180, 180));
+
+    // Draw dropdown menu if open
+    if (m_arrowStyleDropdownOpen) {
+        // Draw dropdown background
+        painter.setPen(QPen(QColor(70, 70, 70), 1));
+        painter.setBrush(QColor(50, 50, 50, 250));
+        painter.drawRoundedRect(m_arrowStyleDropdownRect, 4, 4);
+
+        // Draw each option
+        LineEndStyle styles[] = { LineEndStyle::None, LineEndStyle::EndArrow, LineEndStyle::StartArrow, LineEndStyle::BothArrows };
+        for (int i = 0; i < 4; ++i) {
+            QRect optionRect(
+                m_arrowStyleDropdownRect.left(),
+                m_arrowStyleDropdownRect.top() + i * ARROW_STYLE_DROPDOWN_OPTION_HEIGHT,
+                m_arrowStyleDropdownRect.width(),
+                ARROW_STYLE_DROPDOWN_OPTION_HEIGHT
+            );
+
+            bool isHovered = (m_hoveredArrowStyleOption == i);
+            bool isSelected = (m_arrowStyle == styles[i]);
+
+            // Highlight hovered or selected option
+            if (isHovered || isSelected) {
+                QColor highlightColor = isSelected ? QColor(0, 122, 255, 100) : QColor(80, 80, 80);
+                painter.setPen(Qt::NoPen);
+                painter.setBrush(highlightColor);
+                painter.drawRoundedRect(optionRect.adjusted(2, 2, -2, -2), 3, 3);
+            }
+
+            // Draw the style icon
+            QRect iconRect = optionRect.adjusted(8, 4, -8, -4);
+            drawArrowStyleIcon(painter, styles[i], iconRect, isHovered);
+        }
+    }
+}
+
+void ColorAndWidthWidget::drawArrowStyleIcon(QPainter& painter, LineEndStyle style, const QRect& rect, bool isHovered) const
+{
+    Q_UNUSED(isHovered);
+
+    painter.save();
+    painter.setRenderHint(QPainter::Antialiasing, true);
+
+    // Line parameters
+    int lineY = rect.center().y();
+    int lineLeft = rect.left() + 4;
+    int lineRight = rect.right() - 4;
+    int lineWidth = 2;
+
+    QPen linePen(QColor(200, 200, 200), lineWidth, Qt::SolidLine, Qt::RoundCap);
+    painter.setPen(linePen);
+    painter.setBrush(QColor(200, 200, 200));
+
+    // Draw the line
+    painter.drawLine(lineLeft, lineY, lineRight, lineY);
+
+    // Arrowhead parameters
+    int arrowSize = 6;
+
+    auto drawArrowhead = [&](int tipX, bool pointRight) {
+        int direction = pointRight ? -1 : 1;  // Arrow body extends opposite to tip direction
+        QPointF tip(tipX, lineY);
+        QPointF p1(tipX + direction * arrowSize, lineY - arrowSize * 0.5);
+        QPointF p2(tipX + direction * arrowSize, lineY + arrowSize * 0.5);
+
+        QPainterPath arrowPath;
+        arrowPath.moveTo(tip);
+        arrowPath.lineTo(p1);
+        arrowPath.lineTo(p2);
+        arrowPath.closeSubpath();
+        painter.drawPath(arrowPath);
+    };
+
+    switch (style) {
+    case LineEndStyle::None:
+        // Just the line, no arrowheads
+        break;
+    case LineEndStyle::EndArrow:
+        drawArrowhead(lineRight, true);
+        break;
+    case LineEndStyle::StartArrow:
+        drawArrowhead(lineLeft, false);
+        break;
+    case LineEndStyle::BothArrows:
+        drawArrowhead(lineRight, true);
+        drawArrowhead(lineLeft, false);
+        break;
+    }
+
+    painter.restore();
+}
+
+int ColorAndWidthWidget::arrowStyleOptionAtPosition(const QPoint& pos) const
+{
+    if (!m_showArrowStyleSection) return -1;
+
+    // Check if in dropdown
+    if (m_arrowStyleDropdownOpen && m_arrowStyleDropdownRect.contains(pos)) {
+        int relativeY = pos.y() - m_arrowStyleDropdownRect.top();
+        int option = relativeY / ARROW_STYLE_DROPDOWN_OPTION_HEIGHT;
+        if (option >= 0 && option < 4) {
+            return option;
+        }
+    }
+
+    // Check if on button
+    if (m_arrowStyleButtonRect.contains(pos)) {
+        return -2;  // Special value for button
+    }
+
+    return -1;
+}
+
 int ColorAndWidthWidget::textControlAtPosition(const QPoint& pos) const
 {
     if (!m_showTextSection) return -1;
@@ -450,7 +642,10 @@ int ColorAndWidthWidget::textControlAtPosition(const QPoint& pos) const
 
 bool ColorAndWidthWidget::contains(const QPoint& pos) const
 {
-    return m_widgetRect.contains(pos);
+    if (m_widgetRect.contains(pos)) return true;
+    // Also include dropdown area when open
+    if (m_arrowStyleDropdownOpen && m_arrowStyleDropdownRect.contains(pos)) return true;
+    return false;
 }
 
 int ColorAndWidthWidget::swatchAtPosition(const QPoint& pos) const
@@ -472,6 +667,29 @@ bool ColorAndWidthWidget::isInWidthSection(const QPoint& pos) const
 
 bool ColorAndWidthWidget::handleClick(const QPoint& pos)
 {
+    // Handle arrow style dropdown clicks (even outside main widget)
+    if (m_showArrowStyleSection) {
+        int arrowOption = arrowStyleOptionAtPosition(pos);
+        if (arrowOption >= 0) {
+            // Clicked on a dropdown option
+            LineEndStyle styles[] = { LineEndStyle::None, LineEndStyle::EndArrow, LineEndStyle::StartArrow, LineEndStyle::BothArrows };
+            m_arrowStyle = styles[arrowOption];
+            m_arrowStyleDropdownOpen = false;
+            m_hoveredArrowStyleOption = -1;
+            emit arrowStyleChanged(m_arrowStyle);
+            return true;
+        } else if (arrowOption == -2) {
+            // Clicked on the button - toggle dropdown
+            m_arrowStyleDropdownOpen = !m_arrowStyleDropdownOpen;
+            return true;
+        } else if (m_arrowStyleDropdownOpen) {
+            // Clicked outside dropdown while open - close it
+            m_arrowStyleDropdownOpen = false;
+            m_hoveredArrowStyleOption = -1;
+            // Don't return true - let other handlers process the click
+        }
+    }
+
     if (!m_widgetRect.contains(pos)) return false;
 
     // Text section
@@ -562,6 +780,18 @@ bool ColorAndWidthWidget::updateHovered(const QPoint& pos)
     bool inWidthSection = isInWidthSection(pos);
     if (inWidthSection != m_widthSectionHovered) {
         m_widthSectionHovered = inWidthSection;
+        changed = true;
+    }
+
+    // Update arrow style option hover
+    if (m_showArrowStyleSection) {
+        int newHoveredArrowOption = arrowStyleOptionAtPosition(pos);
+        if (newHoveredArrowOption != m_hoveredArrowStyleOption) {
+            m_hoveredArrowStyleOption = newHoveredArrowOption;
+            changed = true;
+        }
+    } else if (m_hoveredArrowStyleOption != -1) {
+        m_hoveredArrowStyleOption = -1;
         changed = true;
     }
 

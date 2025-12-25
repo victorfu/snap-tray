@@ -66,8 +66,10 @@ ScreenCanvas::ScreenCanvas(QWidget *parent)
     // Load saved annotation settings (or defaults)
     QColor savedColor = loadAnnotationColor();
     int savedWidth = loadAnnotationWidth();
+    LineEndStyle savedArrowStyle = loadArrowStyle();
     m_controller->setColor(savedColor);
     m_controller->setWidth(savedWidth);
+    m_controller->setArrowStyle(savedArrowStyle);
 
     // Initialize SVG icons
     initializeIcons();
@@ -93,12 +95,15 @@ ScreenCanvas::ScreenCanvas(QWidget *parent)
     m_colorAndWidthWidget->setCurrentColor(savedColor);
     m_colorAndWidthWidget->setCurrentWidth(savedWidth);
     m_colorAndWidthWidget->setWidthRange(1, 20);
+    m_colorAndWidthWidget->setArrowStyle(savedArrowStyle);
     connect(m_colorAndWidthWidget, &ColorAndWidthWidget::colorSelected,
             this, &ScreenCanvas::onColorSelected);
     connect(m_colorAndWidthWidget, &ColorAndWidthWidget::moreColorsRequested,
             this, &ScreenCanvas::onMoreColorsRequested);
     connect(m_colorAndWidthWidget, &ColorAndWidthWidget::widthChanged,
             this, &ScreenCanvas::onLineWidthChanged);
+    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::arrowStyleChanged,
+            this, &ScreenCanvas::onArrowStyleChanged);
 
     // Initialize laser pointer renderer
     m_laserRenderer = new LaserPointerRenderer(this);
@@ -322,6 +327,8 @@ void ScreenCanvas::paintEvent(QPaintEvent *)
     if (shouldShowColorAndWidthWidget()) {
         m_colorAndWidthWidget->setVisible(true);
         m_colorAndWidthWidget->setShowWidthSection(shouldShowWidthControl());
+        // Show arrow style section only for Arrow tool
+        m_colorAndWidthWidget->setShowArrowStyleSection(m_currentTool == CanvasTool::Arrow);
         m_colorAndWidthWidget->updatePosition(m_toolbarRect, true, width());
         m_colorAndWidthWidget->draw(painter);
     } else {
@@ -876,4 +883,24 @@ void ScreenCanvas::saveAnnotationWidth(int width)
 {
     QSettings settings("Victor Fu", "SnapTray");
     settings.setValue(SETTINGS_KEY_ANNOTATION_WIDTH, width);
+}
+
+LineEndStyle ScreenCanvas::loadArrowStyle() const
+{
+    QSettings settings("Victor Fu", "SnapTray");
+    int style = settings.value("annotation/arrowStyle", static_cast<int>(LineEndStyle::EndArrow)).toInt();
+    return static_cast<LineEndStyle>(style);
+}
+
+void ScreenCanvas::saveArrowStyle(LineEndStyle style)
+{
+    QSettings settings("Victor Fu", "SnapTray");
+    settings.setValue("annotation/arrowStyle", static_cast<int>(style));
+}
+
+void ScreenCanvas::onArrowStyleChanged(LineEndStyle style)
+{
+    m_controller->setArrowStyle(style);
+    saveArrowStyle(style);
+    update();
 }

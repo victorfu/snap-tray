@@ -101,6 +101,7 @@ RegionSelector::RegionSelector(QWidget* parent)
     // Load saved annotation settings (or defaults)
     m_annotationColor = loadAnnotationColor();
     m_annotationWidth = loadAnnotationWidth();
+    m_arrowStyle = loadArrowStyle();
 
     // Initialize OCR manager if available on this platform
     m_ocrManager = PlatformFeatures::instance().createOCRManager(this);
@@ -177,6 +178,11 @@ RegionSelector::RegionSelector(QWidget* parent)
             this, &RegionSelector::onFontSizeDropdownRequested);
     connect(m_colorAndWidthWidget, &ColorAndWidthWidget::fontFamilyDropdownRequested,
             this, &RegionSelector::onFontFamilyDropdownRequested);
+
+    // Connect arrow style signal
+    m_colorAndWidthWidget->setArrowStyle(m_arrowStyle);
+    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::arrowStyleChanged,
+            this, &RegionSelector::onArrowStyleChanged);
 
     // Initialize loading spinner for OCR
     m_loadingSpinner = new LoadingSpinnerRenderer(this);
@@ -489,7 +495,7 @@ const QImage& RegionSelector::getBackgroundImage() const
     return m_backgroundImageCache;
 }
 
-void RegionSelector::initializeForScreen(QScreen* screen)
+void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap &preCapture)
 {
     // 使用傳入的螢幕，若為空則使用主螢幕
     m_currentScreen = screen;
@@ -499,8 +505,15 @@ void RegionSelector::initializeForScreen(QScreen* screen)
 
     m_devicePixelRatio = m_currentScreen->devicePixelRatio();
 
-    // Capture the screen FIRST (returns device pixel resolution on HiDPI)
-    m_backgroundPixmap = m_currentScreen->grabWindow(0);
+    // Use pre-captured pixmap if provided, otherwise capture now
+    // Pre-capture allows including popup menus in the screenshot (like Snipaste)
+    if (!preCapture.isNull()) {
+        m_backgroundPixmap = preCapture;
+        qDebug() << "RegionSelector: Using pre-captured screenshot, size:" << preCapture.size();
+    } else {
+        m_backgroundPixmap = m_currentScreen->grabWindow(0);
+        qDebug() << "RegionSelector: Captured screenshot now, size:" << m_backgroundPixmap.size();
+    }
     // Lazy-load image cache: don't convert now, create on first magnifier access
     m_backgroundImageCacheValid = false;
 
@@ -745,6 +758,8 @@ void RegionSelector::paintEvent(QPaintEvent*)
             if (shouldShowColorAndWidthWidget()) {
                 m_colorAndWidthWidget->setVisible(true);
                 m_colorAndWidthWidget->setShowWidthSection(shouldShowWidthControl());
+                // Show arrow style section only for Arrow tool
+                m_colorAndWidthWidget->setShowArrowStyleSection(m_currentTool == ToolbarButton::Arrow);
                 // Show text section only for Text tool
                 m_colorAndWidthWidget->setShowTextSection(m_currentTool == ToolbarButton::Text);
                 m_colorAndWidthWidget->updatePosition(m_toolbar->boundingRect(), false, width());
@@ -2047,7 +2062,7 @@ void RegionSelector::startAnnotation(const QPoint &pos)
         break;
 
     case ToolbarButton::Arrow:
-        m_currentArrow = std::make_unique<ArrowAnnotation>(pos, pos, m_annotationColor, m_annotationWidth);
+        m_currentArrow = std::make_unique<ArrowAnnotation>(pos, pos, m_annotationColor, m_annotationWidth, m_arrowStyle);
         break;
 
     case ToolbarButton::Rectangle:
@@ -2618,6 +2633,26 @@ void RegionSelector::saveAnnotationWidth(int width)
 {
     QSettings settings("Victor Fu", "SnapTray");
     settings.setValue(SETTINGS_KEY_ANNOTATION_WIDTH, width);
+}
+
+LineEndStyle RegionSelector::loadArrowStyle() const
+{
+    QSettings settings("Victor Fu", "SnapTray");
+    int style = settings.value("annotation/arrowStyle", static_cast<int>(LineEndStyle::EndArrow)).toInt();
+    return static_cast<LineEndStyle>(style);
+}
+
+void RegionSelector::saveArrowStyle(LineEndStyle style)
+{
+    QSettings settings("Victor Fu", "SnapTray");
+    settings.setValue("annotation/arrowStyle", static_cast<int>(style));
+}
+
+void RegionSelector::onArrowStyleChanged(LineEndStyle style)
+{
+    m_arrowStyle = style;
+    saveArrowStyle(style);
+    update();
 }
 
 TextFormattingState RegionSelector::loadTextFormatting() const

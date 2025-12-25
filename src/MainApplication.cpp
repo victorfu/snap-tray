@@ -151,21 +151,7 @@ void MainApplication::onRegionCapture()
         return;
     }
 
-    // Close any open popup menus to prevent focus conflicts
-    // (e.g., PinWindow context menu open when F2 is pressed)
-    QWidget *popup = QApplication::activePopupWidget();
-    if (popup) {
-        popup->close();
-        // Delay to let popup close and focus stabilize
-        QTimer::singleShot(50, this, [this]() {
-            if (!m_captureManager->isActive()) {
-                qDebug() << "Region capture triggered (delayed after popup close)";
-                m_captureManager->startRegionCapture();
-            }
-        });
-        return;
-    }
-
+    // Note: Don't close popup menus - allow capturing them (like Snipaste)
     qDebug() << "Region capture triggered";
     m_captureManager->startRegionCapture();
 }

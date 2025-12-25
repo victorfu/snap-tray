@@ -57,7 +57,7 @@ void AnnotationController::startDrawing(const QPoint& pos)
         break;
 
     case Tool::Arrow:
-        m_currentArrow = std::make_unique<ArrowAnnotation>(pos, pos, m_color, m_width);
+        m_currentArrow = std::make_unique<ArrowAnnotation>(pos, pos, m_color, m_width, m_arrowStyle);
         break;
 
     case Tool::Rectangle:

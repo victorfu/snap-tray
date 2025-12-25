@@ -7,6 +7,7 @@
 #include <QRect>
 #include <QVector>
 #include <QColor>
+#include "AnnotationLayer.h"
 
 class QScreen;
 class AnnotationLayer;
@@ -92,6 +93,9 @@ private:
     void saveAnnotationColor(const QColor &color);
     int loadAnnotationWidth() const;
     void saveAnnotationWidth(int width);
+    LineEndStyle loadArrowStyle() const;
+    void saveArrowStyle(LineEndStyle style);
+    void onArrowStyleChanged(LineEndStyle style);
 
     // Screen capture
     QPixmap m_backgroundPixmap;
