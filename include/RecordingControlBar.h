@@ -23,6 +23,7 @@ public:
     void setPaused(bool paused);
     void updateRegionSize(int width, int height);
     void updateFps(double fps);
+    void setAudioEnabled(bool enabled);
 
 signals:
     void stopRequested();
@@ -44,12 +45,14 @@ private:
     void updateIndicatorGradient();
 
     QLabel *m_recordingIndicator;
+    QLabel *m_audioIndicator;
     QLabel *m_durationLabel;
     QLabel *m_sizeLabel;
     QLabel *m_fpsLabel;
     QPushButton *m_pauseButton;
     QPushButton *m_stopButton;
     QPushButton *m_cancelButton;
+    bool m_audioEnabled;
 
     // Drag support
     QPoint m_dragStartPos;

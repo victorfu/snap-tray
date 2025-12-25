@@ -7,6 +7,7 @@
 #include "ColorPickerDialog.h"
 #include "OCRManager.h"
 #include "PlatformFeatures.h"
+#include "tools/handlers/EraserToolHandler.h"
 #include <QTextEdit>
 
 #include <cstring>
@@ -483,9 +484,14 @@ bool RegionSelector::shouldShowLineWidthWidget() const
 
 void RegionSelector::onLineWidthChanged(int width)
 {
-    m_annotationWidth = width;
+    if (m_currentTool == ToolbarButton::Eraser) {
+        m_eraserWidth = width;
+        // Don't save eraser width to settings
+    } else {
+        m_annotationWidth = width;
+        saveAnnotationWidth(width);
+    }
     m_toolManager->setWidth(width);
-    saveAnnotationWidth(width);
     update();
 }
 
@@ -502,6 +508,7 @@ bool RegionSelector::shouldShowColorAndWidthWidget() const
     case ToolbarButton::Text:        // Needs color only
     case ToolbarButton::StepBadge:   // Needs color only
     case ToolbarButton::Mosaic:      // Needs mosaic strength only
+    case ToolbarButton::Eraser:      // Needs width only
         return true;
     default:
         return false;
@@ -515,6 +522,7 @@ bool RegionSelector::shouldShowWidthControl() const
     case ToolbarButton::Pencil:
     case ToolbarButton::Arrow:
     case ToolbarButton::Shape:
+    case ToolbarButton::Eraser:
         return true;
     default:
         return false;  // Marker, Text, StepBadge don't need width control
@@ -1123,6 +1131,15 @@ void RegionSelector::drawDimensionInfo(QPainter& painter)
 
 void RegionSelector::handleToolbarClick(ToolbarButton button)
 {
+    // Save eraser width and clear hover when switching FROM Eraser to another tool
+    if (m_currentTool == ToolbarButton::Eraser && button != ToolbarButton::Eraser) {
+        m_eraserWidth = m_colorAndWidthWidget->currentWidth();
+        // Clear hover point when switching away from eraser
+        if (auto* eraser = dynamic_cast<EraserToolHandler*>(m_toolManager->currentHandler())) {
+            eraser->clearHoverPoint();
+        }
+    }
+
     switch (button) {
     case ToolbarButton::Selection:
     case ToolbarButton::Arrow:
@@ -1130,18 +1147,34 @@ void RegionSelector::handleToolbarClick(ToolbarButton button)
     case ToolbarButton::Marker:
     case ToolbarButton::Shape:
     case ToolbarButton::Mosaic:
+        // Restore standard width range when switching from Eraser
+        if (m_currentTool == ToolbarButton::Eraser) {
+            m_colorAndWidthWidget->setWidthRange(1, 20);
+            m_colorAndWidthWidget->setCurrentWidth(m_annotationWidth);
+            m_toolManager->setWidth(m_annotationWidth);
+        }
         m_currentTool = button;
         qDebug() << "Tool selected:" << static_cast<int>(button);
         update();
         break;
 
     case ToolbarButton::Text:
+        // Restore standard width range when switching from Eraser
+        if (m_currentTool == ToolbarButton::Eraser) {
+            m_colorAndWidthWidget->setWidthRange(1, 20);
+            m_colorAndWidthWidget->setCurrentWidth(m_annotationWidth);
+        }
         m_currentTool = button;
         qDebug() << "Text tool selected - click in selection to add text";
         update();
         break;
 
     case ToolbarButton::StepBadge:
+        // Restore standard width range when switching from Eraser
+        if (m_currentTool == ToolbarButton::Eraser) {
+            m_colorAndWidthWidget->setWidthRange(1, 20);
+            m_colorAndWidthWidget->setCurrentWidth(m_annotationWidth);
+        }
         m_currentTool = button;
         qDebug() << "StepBadge tool selected - click in selection to place numbered badge";
         update();
@@ -1149,6 +1182,10 @@ void RegionSelector::handleToolbarClick(ToolbarButton button)
 
     case ToolbarButton::Eraser:
         m_currentTool = button;
+        // Configure eraser-specific width range (5-100)
+        m_colorAndWidthWidget->setWidthRange(5, 100);
+        m_colorAndWidthWidget->setCurrentWidth(m_eraserWidth);
+        m_toolManager->setWidth(m_eraserWidth);
         qDebug() << "Eraser tool selected - drag over annotations to erase them";
         update();
         break;
@@ -1606,6 +1643,13 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
         bool textAnnotationHovered = false;
         bool gizmoHandleHovered = false;
 
+        // Update eraser hover point when eraser tool is active
+        if (m_currentTool == ToolbarButton::Eraser && !m_isDrawing) {
+            if (auto* eraser = dynamic_cast<EraserToolHandler*>(m_toolManager->currentHandler())) {
+                eraser->setHoverPoint(event->pos());
+            }
+        }
+
         // Check if hovering over gizmo handles of selected text annotation
         if (m_annotationLayer->selectedIndex() >= 0) {
             if (auto* textItem = dynamic_cast<TextAnnotation*>(m_annotationLayer->selectedItem())) {
@@ -1698,6 +1742,12 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
                 static QCursor mosaicCursor = createMosaicCursor(12);
                 setCursor(mosaicCursor);
             }
+            else if (m_currentTool == ToolbarButton::Eraser) {
+                // Use eraser's dynamic cursor that shows its size
+                if (auto* eraser = dynamic_cast<EraserToolHandler*>(m_toolManager->currentHandler())) {
+                    setCursor(eraser->cursor());
+                }
+            }
             else if (isAnnotationTool(m_currentTool) && m_currentTool != ToolbarButton::Selection) {
                 setCursor(Qt::CrossCursor);
             }
@@ -1715,6 +1765,11 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
             } else if (m_currentTool == ToolbarButton::Mosaic) {
                 static QCursor mosaicCursor = createMosaicCursor(12);
                 setCursor(mosaicCursor);
+            } else if (m_currentTool == ToolbarButton::Eraser) {
+                // Use eraser's dynamic cursor that shows its size
+                if (auto* eraser = dynamic_cast<EraserToolHandler*>(m_toolManager->currentHandler())) {
+                    setCursor(eraser->cursor());
+                }
             } else if (m_currentTool == ToolbarButton::Text && !m_textEditor->isEditing()) {
                 setCursor(Qt::IBeamCursor);
             } else if (isAnnotationTool(m_currentTool)) {

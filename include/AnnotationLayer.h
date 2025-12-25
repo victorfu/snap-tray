@@ -42,6 +42,10 @@ public:
 
     void addPoint(const QPointF &point);
 
+    // Collision detection for eraser (path-based intersection)
+    bool intersectsCircle(const QPoint &center, int radius) const;
+    QPainterPath strokePath() const;
+
 private:
     QVector<QPointF> m_points;
     QColor m_color;
@@ -62,6 +66,10 @@ public:
     std::unique_ptr<AnnotationItem> clone() const override;
 
     void addPoint(const QPointF &point);
+
+    // Collision detection for eraser (path-based intersection)
+    bool intersectsCircle(const QPoint &center, int radius) const;
+    QPainterPath strokePath() const;
 
 private:
     QVector<QPointF> m_points;

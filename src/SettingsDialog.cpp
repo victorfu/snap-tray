@@ -421,6 +421,62 @@ void SettingsDialog::setupRecordingTab(QWidget *tab)
 
     layout->addWidget(m_gifSettingsWidget);
 
+    // ========== Audio Settings Section ==========
+    layout->addSpacing(16);
+    QLabel *audioSectionLabel = new QLabel("Audio", tab);
+    audioSectionLabel->setStyleSheet("font-weight: bold; font-size: 12px;");
+    layout->addWidget(audioSectionLabel);
+
+    // Enable audio checkbox
+    m_audioEnabledCheckbox = new QCheckBox("Record audio", tab);
+    layout->addWidget(m_audioEnabledCheckbox);
+
+    // Audio source dropdown
+    QHBoxLayout *audioSourceLayout = new QHBoxLayout();
+    QLabel *audioSourceLabel = new QLabel("Source:", tab);
+    audioSourceLabel->setFixedWidth(120);
+    m_audioSourceCombo = new QComboBox(tab);
+    m_audioSourceCombo->addItem("Microphone", 0);
+    m_audioSourceCombo->addItem("System Audio", 1);
+    m_audioSourceCombo->addItem("Both (Mixed)", 2);
+    audioSourceLayout->addWidget(audioSourceLabel);
+    audioSourceLayout->addWidget(m_audioSourceCombo);
+    audioSourceLayout->addStretch();
+    layout->addLayout(audioSourceLayout);
+
+    // Audio device dropdown
+    QHBoxLayout *audioDeviceLayout = new QHBoxLayout();
+    QLabel *audioDeviceLabel = new QLabel("Device:", tab);
+    audioDeviceLabel->setFixedWidth(120);
+    m_audioDeviceCombo = new QComboBox(tab);
+    m_audioDeviceCombo->addItem("Default", QString());
+    audioDeviceLayout->addWidget(audioDeviceLabel);
+    audioDeviceLayout->addWidget(m_audioDeviceCombo);
+    audioDeviceLayout->addStretch();
+    layout->addLayout(audioDeviceLayout);
+
+    // System audio warning label
+    m_systemAudioWarningLabel = new QLabel(tab);
+    m_systemAudioWarningLabel->setWordWrap(true);
+    m_systemAudioWarningLabel->setStyleSheet(
+        "QLabel { background-color: #fff3cd; color: #856404; "
+        "padding: 8px; border-radius: 4px; font-size: 11px; }");
+    m_systemAudioWarningLabel->hide();
+    layout->addWidget(m_systemAudioWarningLabel);
+
+    // Connect audio UI signals
+    connect(m_audioEnabledCheckbox, &QCheckBox::toggled, this, [this](bool checked) {
+        m_audioSourceCombo->setEnabled(checked);
+        m_audioDeviceCombo->setEnabled(checked);
+        if (checked) {
+            onAudioSourceChanged(m_audioSourceCombo->currentIndex());
+        } else {
+            m_systemAudioWarningLabel->hide();
+        }
+    });
+    connect(m_audioSourceCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, &SettingsDialog::onAudioSourceChanged);
+
     // ========== Auto-save option ==========
     layout->addSpacing(16);
     m_recordingAutoSaveCheckbox = new QCheckBox("Auto-save recordings (no save dialog)", tab);
@@ -455,6 +511,26 @@ void SettingsDialog::setupRecordingTab(QWidget *tab)
     m_recordingQualityLabel->setText(QString::number(quality));
 
     m_recordingAutoSaveCheckbox->setChecked(settings.value("recording/autoSave", false).toBool());
+
+    // Load audio settings
+    bool audioEnabled = settings.value("recording/audioEnabled", false).toBool();
+    m_audioEnabledCheckbox->setChecked(audioEnabled);
+    int audioSource = settings.value("recording/audioSource", 0).toInt();
+    m_audioSourceCombo->setCurrentIndex(audioSource);
+    QString audioDevice = settings.value("recording/audioDevice").toString();
+    int deviceIndex = m_audioDeviceCombo->findData(audioDevice);
+    if (deviceIndex >= 0) {
+        m_audioDeviceCombo->setCurrentIndex(deviceIndex);
+    }
+    // Set initial enabled state for audio controls
+    m_audioSourceCombo->setEnabled(audioEnabled);
+    m_audioDeviceCombo->setEnabled(audioEnabled);
+    if (audioEnabled) {
+        onAudioSourceChanged(audioSource);
+    }
+
+    // Populate audio devices (will be updated when audio engine is available)
+    populateAudioDevices();
 
     // Load FFmpeg path: use saved path, or auto-detect if not saved
     QString savedFfmpegPath = settings.value("recording/ffmpegPath").toString();
@@ -597,6 +673,14 @@ void SettingsDialog::onSave()
     recordingSettings.setValue("recording/ffmpegPath",
         m_ffmpegPathEdit->text());
 
+    // Save audio settings
+    recordingSettings.setValue("recording/audioEnabled",
+        m_audioEnabledCheckbox->isChecked());
+    recordingSettings.setValue("recording/audioSource",
+        m_audioSourceCombo->currentData().toInt());
+    recordingSettings.setValue("recording/audioDevice",
+        m_audioDeviceCombo->currentData().toString());
+
     // Request hotkey change (MainApplication handles registration)
     emit hotkeyChangeRequested(newHotkey);
     emit screenCanvasHotkeyChangeRequested(newScreenCanvasHotkey);
@@ -694,4 +778,54 @@ void SettingsDialog::updateFFmpegStatus()
             "QLabel { background-color: #fff3cd; color: #856404; "
             "padding: 8px; border-radius: 4px; }");
     }
+}
+
+void SettingsDialog::populateAudioDevices()
+{
+    // Save current selection
+    QString currentDevice = m_audioDeviceCombo->currentData().toString();
+
+    m_audioDeviceCombo->clear();
+    m_audioDeviceCombo->addItem("Default", QString());
+
+    // Audio devices will be populated when IAudioCaptureEngine is available
+    // For now, just show the default option
+    // TODO: Once IAudioCaptureEngine is implemented, enumerate devices here
+
+    // Restore selection if possible
+    int index = m_audioDeviceCombo->findData(currentDevice);
+    if (index >= 0) {
+        m_audioDeviceCombo->setCurrentIndex(index);
+    }
+}
+
+void SettingsDialog::onAudioSourceChanged(int index)
+{
+    if (!m_audioEnabledCheckbox->isChecked()) {
+        m_systemAudioWarningLabel->hide();
+        return;
+    }
+
+    // Show/hide warning based on audio source selection
+    bool needsSystemAudio = (index == 1 || index == 2);  // System Audio or Both
+
+    if (needsSystemAudio) {
+#ifdef Q_OS_MAC
+        // macOS system audio requires ScreenCaptureKit (macOS 13+) or virtual audio device
+        // We'll check availability at runtime when audio engine is created
+        m_systemAudioWarningLabel->setText(
+            "System audio capture requires macOS 13 (Ventura) or later, "
+            "or a virtual audio device like BlackHole.");
+        m_systemAudioWarningLabel->show();
+#else
+        // Windows supports system audio via WASAPI loopback
+        m_systemAudioWarningLabel->hide();
+#endif
+    } else {
+        m_systemAudioWarningLabel->hide();
+    }
+
+    // Device combo is only relevant for microphone
+    bool showDeviceCombo = (index == 0 || index == 2);  // Microphone or Both
+    m_audioDeviceCombo->setVisible(showDeviceCombo);
 }

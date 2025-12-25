@@ -252,6 +252,7 @@ private:
     ToolbarButton m_currentTool;
     QColor m_annotationColor;
     int m_annotationWidth;
+    int m_eraserWidth = 20;  // Separate width for eraser tool (range: 5-100)
     LineEndStyle m_arrowStyle;
 
     // Shape tool state

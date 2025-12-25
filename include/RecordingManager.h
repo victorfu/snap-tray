@@ -15,6 +15,8 @@ class RecordingBoundaryOverlay;
 class FFmpegEncoder;
 class IVideoEncoder;
 class ICaptureEngine;
+class IAudioCaptureEngine;
+class AudioFileWriter;
 class QScreen;
 
 class RecordingManager : public QObject
@@ -79,6 +81,7 @@ private:
     void startFrameCapture();
     void stopFrameCapture();
     void cleanupRecording();
+    void cleanupAudio();               // Clean up audio capture resources
     void cleanupStaleTempFiles();      // Clean up old temp files on startup
     QString generateOutputPath() const;
     void setState(State newState);
@@ -109,6 +112,14 @@ private:
     qint64 m_pausedDuration;     // Total time spent paused
     qint64 m_pauseStartTime;     // When current pause began
     mutable QMutex m_durationMutex;  // Protects pause duration variables
+
+    // Audio capture
+    IAudioCaptureEngine *m_audioEngine;
+    AudioFileWriter *m_audioWriter;
+    bool m_audioEnabled;
+    int m_audioSource;  // 0=Microphone, 1=SystemAudio, 2=Both
+    QString m_audioDevice;
+    QString m_tempAudioPath;
 };
 
 #endif // RECORDINGMANAGER_H

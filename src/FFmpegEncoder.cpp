@@ -137,8 +137,15 @@ QStringList FFmpegEncoder::buildArguments(const QString &outputPath,
                                           const QSize &frameSize, int frameRate) const
 {
     if (m_outputFormat == OutputFormat::GIF) {
+        // GIF doesn't support audio, ignore audio file
         return buildGifArguments(outputPath, frameSize, frameRate);
     }
+
+    // For MP4, use audio version if audio file is available
+    if (!m_audioFilePath.isEmpty() && QFile::exists(m_audioFilePath)) {
+        return buildMp4WithAudioArguments(outputPath, frameSize, frameRate);
+    }
+
     return buildMp4Arguments(outputPath, frameSize, frameRate);
 }
 
@@ -164,6 +171,50 @@ QStringList FFmpegEncoder::buildMp4Arguments(const QString &outputPath,
     // Overwrite output file if exists
     args << "-y";
     args << outputPath;
+
+    return args;
+}
+
+QStringList FFmpegEncoder::buildMp4WithAudioArguments(const QString &outputPath,
+                                                       const QSize &frameSize, int frameRate) const
+{
+    QStringList args;
+
+    // Input 0: raw video from stdin
+    args << "-f" << "rawvideo";
+    args << "-pix_fmt" << "rgba";
+    args << "-s" << QString("%1x%2").arg(frameSize.width()).arg(frameSize.height());
+    args << "-r" << QString::number(frameRate);
+    args << "-i" << "-";  // Read from stdin (pipe:0)
+
+    // Input 1: audio from WAV file
+    args << "-i" << m_audioFilePath;
+
+    // Video encoding settings
+    args << "-c:v" << "libx264";
+    args << "-preset" << m_preset;
+    args << "-crf" << QString::number(m_crf);
+    args << "-pix_fmt" << "yuv420p";
+
+    // Audio encoding settings (AAC at 128kbps)
+    args << "-c:a" << "aac";
+    args << "-b:a" << "128k";
+
+    // Map streams: video from input 0, audio from input 1
+    args << "-map" << "0:v:0";
+    args << "-map" << "1:a:0";
+
+    // Sync options
+    args << "-shortest";  // End when the shorter stream ends
+
+    // Web-friendly MP4
+    args << "-movflags" << "+faststart";
+
+    // Overwrite output file if exists
+    args << "-y";
+    args << outputPath;
+
+    qDebug() << "FFmpegEncoder: Building MP4 with audio from" << m_audioFilePath;
 
     return args;
 }

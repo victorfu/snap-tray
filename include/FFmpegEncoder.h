@@ -43,6 +43,21 @@ public:
     void setPreset(const QString &preset) { m_preset = preset; }
     QString preset() const { return m_preset; }
 
+    /**
+     * @brief Set audio file path for muxing with video
+     * @param path Path to WAV file containing audio data
+     *
+     * Must be called before start(). If set, audio will be
+     * encoded to AAC and muxed with the video.
+     */
+    void setAudioFilePath(const QString &path) { m_audioFilePath = path; }
+    QString audioFilePath() const { return m_audioFilePath; }
+
+    /**
+     * @brief Check if audio is enabled for encoding
+     */
+    bool hasAudio() const { return !m_audioFilePath.isEmpty(); }
+
     bool start(const QString &outputPath, const QSize &frameSize, int frameRate);
     void writeFrame(const QImage &frame);
     void finish();
@@ -71,6 +86,8 @@ private:
                                const QSize &frameSize, int frameRate) const;
     QStringList buildMp4Arguments(const QString &outputPath,
                                   const QSize &frameSize, int frameRate) const;
+    QStringList buildMp4WithAudioArguments(const QString &outputPath,
+                                           const QSize &frameSize, int frameRate) const;
     QStringList buildGifArguments(const QString &outputPath,
                                   const QSize &frameSize, int frameRate) const;
 
@@ -85,6 +102,7 @@ private:
     OutputFormat m_outputFormat;
     int m_crf;
     QString m_preset;
+    QString m_audioFilePath;  // Path to WAV audio file for muxing
 };
 
 #endif // FFMPEGENCODER_H

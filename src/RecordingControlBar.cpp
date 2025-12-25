@@ -14,8 +14,10 @@
 RecordingControlBar::RecordingControlBar(QWidget *parent)
     : QWidget(parent, Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint)
     , m_pauseButton(nullptr)
+    , m_audioIndicator(nullptr)
     , m_sizeLabel(nullptr)
     , m_fpsLabel(nullptr)
+    , m_audioEnabled(false)
     , m_isDragging(false)
     , m_gradientOffset(0.0)
     , m_indicatorVisible(true)
@@ -59,6 +61,13 @@ void RecordingControlBar::setupUi()
     m_recordingIndicator->setFixedSize(16, 16);
     updateIndicatorGradient();
     layout->addWidget(m_recordingIndicator);
+
+    // Audio indicator (microphone icon, hidden by default)
+    m_audioIndicator = new QLabel(this);
+    m_audioIndicator->setFixedSize(16, 16);
+    m_audioIndicator->setToolTip("Audio recording enabled");
+    m_audioIndicator->hide();  // Hidden until audio is enabled
+    layout->addWidget(m_audioIndicator);
 
     // Duration label
     m_durationLabel = new QLabel("00:00:00", this);
@@ -366,5 +375,37 @@ void RecordingControlBar::keyPressEvent(QKeyEvent *event)
         emit stopRequested();
     } else {
         QWidget::keyPressEvent(event);
+    }
+}
+
+void RecordingControlBar::setAudioEnabled(bool enabled)
+{
+    m_audioEnabled = enabled;
+
+    if (enabled) {
+        // Draw a simple microphone icon using QPainter
+        QPixmap micIcon(16, 16);
+        micIcon.fill(Qt::transparent);
+
+        QPainter painter(&micIcon);
+        painter.setRenderHint(QPainter::Antialiasing);
+
+        // Microphone color (green to indicate active)
+        QPen pen(QColor(52, 199, 89));  // Green (#34C759)
+        pen.setWidth(2);
+        painter.setPen(pen);
+        painter.setBrush(Qt::NoBrush);
+
+        // Draw microphone body (oval)
+        painter.drawEllipse(4, 1, 8, 10);
+
+        // Draw microphone stand (lines)
+        painter.drawLine(8, 11, 8, 13);
+        painter.drawArc(3, 9, 10, 6, 0, -180 * 16);
+
+        m_audioIndicator->setPixmap(micIcon);
+        m_audioIndicator->show();
+    } else {
+        m_audioIndicator->hide();
     }
 }
