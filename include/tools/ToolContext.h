@@ -34,6 +34,9 @@ public:
     int shapeType = 0;      // 0 = Rectangle, 1 = Ellipse
     int shapeFillMode = 0;  // 0 = Outline, 1 = Filled
 
+    // Mosaic tool settings
+    int mosaicStrength = 3;  // 0=Light, 1=Normal, 2=Strong, 3=Pixelate (default: Pixelate)
+
     // Source pixmap (for mosaic tool)
     const QPixmap* sourcePixmap = nullptr;
 

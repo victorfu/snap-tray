@@ -149,6 +149,10 @@ void ToolManager::setShapeFillMode(int mode) {
     m_context->shapeFillMode = mode;
 }
 
+void ToolManager::setMosaicStrength(int strength) {
+    m_context->mosaicStrength = strength;
+}
+
 void ToolManager::setRepaintCallback(std::function<void()> callback) {
     m_context->requestRepaint = callback;
 }

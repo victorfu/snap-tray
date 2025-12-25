@@ -19,6 +19,8 @@
 #include "LoadingSpinnerRenderer.h"
 #include "TransformationGizmo.h"
 #include "TextFormattingState.h"
+#include "tools/ToolId.h"
+#include "tools/ToolManager.h"
 
 class QScreen;
 class ColorPaletteWidget;
@@ -27,15 +29,6 @@ class ColorAndWidthWidget;
 class ColorPickerDialog;
 class QCloseEvent;
 class OCRManager;
-class PencilStroke;
-class MarkerStroke;
-class ArrowAnnotation;
-class RectangleAnnotation;
-class EllipseAnnotation;
-class MosaicAnnotation;
-class MosaicStroke;
-class StepBadgeAnnotation;
-class AnnotationItem;
 
 // Shape type for Shape tool
 enum class ShapeType { Rectangle, Ellipse };
@@ -64,6 +57,47 @@ enum class ToolbarButton {
     Copy,
     Count  // Total number of buttons
 };
+
+// Helper to map ToolbarButton to ToolId
+inline ToolId toolbarButtonToToolId(ToolbarButton btn) {
+    switch (btn) {
+    case ToolbarButton::Selection:  return ToolId::Selection;
+    case ToolbarButton::Arrow:      return ToolId::Arrow;
+    case ToolbarButton::Pencil:     return ToolId::Pencil;
+    case ToolbarButton::Marker:     return ToolId::Marker;
+    case ToolbarButton::Shape:      return ToolId::Shape;
+    case ToolbarButton::Text:       return ToolId::Text;
+    case ToolbarButton::Mosaic:     return ToolId::Mosaic;
+    case ToolbarButton::StepBadge:  return ToolId::StepBadge;
+    case ToolbarButton::Eraser:     return ToolId::Eraser;
+    case ToolbarButton::Undo:       return ToolId::Undo;
+    case ToolbarButton::Redo:       return ToolId::Redo;
+    case ToolbarButton::Cancel:     return ToolId::Cancel;
+    case ToolbarButton::OCR:        return ToolId::OCR;
+    case ToolbarButton::Pin:        return ToolId::Pin;
+    case ToolbarButton::Record:     return ToolId::Record;
+    case ToolbarButton::Save:       return ToolId::Save;
+    case ToolbarButton::Copy:       return ToolId::Copy;
+    default:                        return ToolId::Selection;
+    }
+}
+
+// Helper to check if a tool is handled by ToolManager
+// (vs. custom handling like Text which has special UI needs)
+inline bool isToolManagerHandledTool(ToolbarButton btn) {
+    switch (btn) {
+    case ToolbarButton::Pencil:
+    case ToolbarButton::Marker:
+    case ToolbarButton::Arrow:
+    case ToolbarButton::Shape:
+    case ToolbarButton::Mosaic:
+    case ToolbarButton::StepBadge:
+    case ToolbarButton::Eraser:
+        return true;
+    default:
+        return false;
+    }
+}
 
 // Resize handle positions
 enum class ResizeHandle {
@@ -158,7 +192,6 @@ private:
     void finishAnnotation();
     bool isAnnotationTool(ToolbarButton tool) const;
     void showTextInputDialog(const QPoint &pos);
-    void placeStepBadge(const QPoint &pos);
 
     // Inline text editing handlers
     void onTextEditingFinished(const QString &text, const QPoint &position);
@@ -213,8 +246,9 @@ private:
     // Unified color and width widget
     ColorAndWidthWidget *m_colorAndWidthWidget;
 
-    // Annotation layer and state
+    // Annotation layer and tool manager
     AnnotationLayer *m_annotationLayer;
+    ToolManager *m_toolManager;
     ToolbarButton m_currentTool;
     QColor m_annotationColor;
     int m_annotationWidth;
@@ -224,23 +258,8 @@ private:
     ShapeType m_shapeType = ShapeType::Rectangle;
     ShapeFillMode m_shapeFillMode = ShapeFillMode::Outline;
 
-    // In-progress annotation state
+    // In-progress annotation state (managed by ToolManager, m_isDrawing tracks overall state)
     bool m_isDrawing;
-    QPoint m_drawStartPoint;
-    QVector<QPointF> m_currentPath;
-
-    // Temporary annotation objects for preview
-    std::unique_ptr<PencilStroke> m_currentPencil;
-    std::unique_ptr<MarkerStroke> m_currentMarker;
-    std::unique_ptr<ArrowAnnotation> m_currentArrow;
-    std::unique_ptr<RectangleAnnotation> m_currentRectangle;
-    std::unique_ptr<EllipseAnnotation> m_currentEllipse;
-    std::unique_ptr<MosaicStroke> m_currentMosaicStroke;
-
-    // Eraser state
-    QVector<QPoint> m_eraserPath;
-    std::vector<ErasedItemsGroup::IndexedItem> m_erasedItems;  // Items erased during current stroke
-    static const int ERASER_WIDTH = 20;
 
     // Selection resize/move state
     ResizeHandle m_activeHandle;
