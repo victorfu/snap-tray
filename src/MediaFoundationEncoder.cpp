@@ -22,6 +22,14 @@ public:
     IMFSinkWriter *sinkWriter = nullptr;
     DWORD videoStreamIndex = 0;
 
+    // Audio members
+    DWORD audioStreamIndex = 0;
+    bool audioEnabled = false;
+    int audioSampleRate = 48000;
+    int audioChannels = 2;
+    int audioBitsPerSample = 16;
+    qint64 audioSamplesWritten = 0;
+
     QString outputPath;
     QString lastError;
     QSize frameSize;
@@ -127,6 +135,74 @@ public:
         return hr;
     }
 
+    HRESULT configureAudioStream() {
+        if (!audioEnabled) return S_OK;
+
+        IMFMediaType *outputType = nullptr;
+        IMFMediaType *inputType = nullptr;
+        HRESULT hr = S_OK;
+
+        // ========== Output type (AAC) ==========
+        hr = MFCreateMediaType(&outputType);
+        if (FAILED(hr)) goto done;
+
+        hr = outputType->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Audio);
+        if (FAILED(hr)) goto done;
+
+        hr = outputType->SetGUID(MF_MT_SUBTYPE, MFAudioFormat_AAC);
+        if (FAILED(hr)) goto done;
+
+        hr = outputType->SetUINT32(MF_MT_AUDIO_SAMPLES_PER_SECOND, audioSampleRate);
+        if (FAILED(hr)) goto done;
+
+        hr = outputType->SetUINT32(MF_MT_AUDIO_NUM_CHANNELS, audioChannels);
+        if (FAILED(hr)) goto done;
+
+        hr = outputType->SetUINT32(MF_MT_AUDIO_BITS_PER_SAMPLE, 16);
+        if (FAILED(hr)) goto done;
+
+        // AAC bitrate: ~128kbps = 16000 bytes/sec
+        hr = outputType->SetUINT32(MF_MT_AUDIO_AVG_BYTES_PER_SECOND, 16000);
+        if (FAILED(hr)) goto done;
+
+        hr = sinkWriter->AddStream(outputType, &audioStreamIndex);
+        if (FAILED(hr)) goto done;
+
+        // ========== Input type (PCM) ==========
+        hr = MFCreateMediaType(&inputType);
+        if (FAILED(hr)) goto done;
+
+        hr = inputType->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Audio);
+        if (FAILED(hr)) goto done;
+
+        hr = inputType->SetGUID(MF_MT_SUBTYPE, MFAudioFormat_PCM);
+        if (FAILED(hr)) goto done;
+
+        hr = inputType->SetUINT32(MF_MT_AUDIO_SAMPLES_PER_SECOND, audioSampleRate);
+        if (FAILED(hr)) goto done;
+
+        hr = inputType->SetUINT32(MF_MT_AUDIO_NUM_CHANNELS, audioChannels);
+        if (FAILED(hr)) goto done;
+
+        hr = inputType->SetUINT32(MF_MT_AUDIO_BITS_PER_SAMPLE, audioBitsPerSample);
+        if (FAILED(hr)) goto done;
+
+        hr = inputType->SetUINT32(MF_MT_AUDIO_BLOCK_ALIGNMENT,
+            audioChannels * audioBitsPerSample / 8);
+        if (FAILED(hr)) goto done;
+
+        hr = inputType->SetUINT32(MF_MT_AUDIO_AVG_BYTES_PER_SECOND,
+            audioSampleRate * audioChannels * audioBitsPerSample / 8);
+        if (FAILED(hr)) goto done;
+
+        hr = sinkWriter->SetInputMediaType(audioStreamIndex, inputType, nullptr);
+
+    done:
+        if (outputType) outputType->Release();
+        if (inputType) inputType->Release();
+        return hr;
+    }
+
     void cleanup() {
         if (sinkWriter) {
             sinkWriter->Release();
@@ -202,6 +278,20 @@ bool MediaFoundationEncoder::start(const QString &outputPath, const QSize &frame
         d->lastError = QString("Failed to configure video stream: 0x%1").arg(hr, 8, 16, QChar('0'));
         d->cleanup();
         return false;
+    }
+
+    // Configure audio stream if enabled
+    if (d->audioEnabled) {
+        hr = d->configureAudioStream();
+        if (FAILED(hr)) {
+            qWarning() << "MediaFoundationEncoder: Failed to configure audio stream: 0x" << Qt::hex << hr
+                       << "- continuing without audio";
+            d->audioEnabled = false;
+        } else {
+            qDebug() << "MediaFoundationEncoder: Audio stream configured -"
+                     << d->audioSampleRate << "Hz," << d->audioChannels << "ch,"
+                     << d->audioBitsPerSample << "bit";
+        }
     }
 
     hr = d->sinkWriter->BeginWriting();
@@ -357,6 +447,82 @@ QString MediaFoundationEncoder::outputPath() const
 void MediaFoundationEncoder::setQuality(int quality)
 {
     d->quality = qBound(0, quality, 100);
+}
+
+void MediaFoundationEncoder::setAudioFormat(int sampleRate, int channels, int bitsPerSample)
+{
+    if (d->running) {
+        qWarning() << "MediaFoundationEncoder: Cannot set audio format while running";
+        return;
+    }
+    d->audioEnabled = true;
+    d->audioSampleRate = sampleRate;
+    d->audioChannels = channels;
+    d->audioBitsPerSample = bitsPerSample;
+    qDebug() << "MediaFoundationEncoder: Audio format set -" << sampleRate << "Hz,"
+             << channels << "ch," << bitsPerSample << "bit";
+}
+
+bool MediaFoundationEncoder::isAudioSupported() const
+{
+    return true;  // Media Foundation supports audio encoding
+}
+
+void MediaFoundationEncoder::writeAudioSamples(const QByteArray &pcmData, qint64 timestampMs)
+{
+    if (!d->running || !d->sinkWriter || !d->audioEnabled) {
+        return;
+    }
+
+    IMFSample *sample = nullptr;
+    IMFMediaBuffer *buffer = nullptr;
+    HRESULT hr = S_OK;
+
+    DWORD bufferSize = static_cast<DWORD>(pcmData.size());
+    hr = MFCreateMemoryBuffer(bufferSize, &buffer);
+    if (FAILED(hr)) goto done;
+
+    {
+        BYTE *bufferData = nullptr;
+        hr = buffer->Lock(&bufferData, nullptr, nullptr);
+        if (FAILED(hr)) goto done;
+        memcpy(bufferData, pcmData.constData(), bufferSize);
+        buffer->Unlock();
+    }
+
+    hr = buffer->SetCurrentLength(bufferSize);
+    if (FAILED(hr)) goto done;
+
+    hr = MFCreateSample(&sample);
+    if (FAILED(hr)) goto done;
+
+    hr = sample->AddBuffer(buffer);
+    if (FAILED(hr)) goto done;
+
+    {
+        // Convert ms to 100-nanosecond units
+        LONGLONG timestamp = timestampMs * 10000LL;
+        hr = sample->SetSampleTime(timestamp);
+        if (FAILED(hr)) goto done;
+
+        // Calculate duration based on number of samples
+        int bytesPerFrame = d->audioChannels * d->audioBitsPerSample / 8;
+        int numFrames = bufferSize / bytesPerFrame;
+        LONGLONG duration = (static_cast<LONGLONG>(numFrames) * 10000000LL) / d->audioSampleRate;
+        hr = sample->SetSampleDuration(duration);
+        if (FAILED(hr)) goto done;
+    }
+
+    hr = d->sinkWriter->WriteSample(d->audioStreamIndex, sample);
+    if (SUCCEEDED(hr)) {
+        d->audioSamplesWritten++;
+    } else {
+        qWarning() << "MediaFoundationEncoder: WriteAudioSample failed: 0x" << Qt::hex << hr;
+    }
+
+done:
+    if (sample) sample->Release();
+    if (buffer) buffer->Release();
 }
 
 #endif // Q_OS_WIN

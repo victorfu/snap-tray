@@ -275,20 +275,17 @@ void RegionSelector::initializeMagnifierGridCache()
 
     QPainter gridPainter(&m_gridOverlayCache);
 
-    // Draw grid lines
-    gridPainter.setPen(QPen(QColor(100, 100, 100, 100), 1));
-    for (int i = 1; i < MAGNIFIER_GRID_COUNT; ++i) {
-        int pos = i * pixelSize;
-        gridPainter.drawLine(pos, 0, pos, MAGNIFIER_SIZE);
-        gridPainter.drawLine(0, pos, MAGNIFIER_SIZE, pos);
-    }
-
-    // Draw center crosshair
-    gridPainter.setPen(QPen(QColor(65, 105, 225), 1));
+    // 十字線 - 藍色粗線穿過整個區域
     int cx = MAGNIFIER_SIZE / 2;
     int cy = MAGNIFIER_SIZE / 2;
-    gridPainter.drawLine(cx - pixelSize / 2, cy, cx + pixelSize / 2, cy);
-    gridPainter.drawLine(cx, cy - pixelSize / 2, cx, cy + pixelSize / 2);
+    gridPainter.setPen(QPen(QColor(65, 105, 225), 2));
+    gridPainter.drawLine(0, cy, MAGNIFIER_SIZE, cy);  // 水平線
+    gridPainter.drawLine(cx, 0, cx, MAGNIFIER_SIZE);  // 垂直線
+
+    // 中心方框 - 白色填充 + 藍色邊框
+    int halfCell = pixelSize / 2;
+    gridPainter.setBrush(Qt::white);
+    gridPainter.drawRect(cx - halfCell, cy - halfCell, pixelSize, pixelSize);
 }
 
 void RegionSelector::invalidateMagnifierCache()
@@ -981,7 +978,7 @@ void RegionSelector::drawMagnifier(QPainter& painter)
     int panelY = m_currentPoint.y() + 25;
 
     // 計算面板總高度
-    int totalHeight = magnifierSize + 75;  // 放大鏡 + 座標 + 顏色
+    int totalHeight = magnifierSize + 55;  // 放大鏡 + 座標 + 顏色
 
     // 邊界檢查
     panelX = qMax(10, qMin(panelX, width() - panelWidth - 10));
@@ -989,15 +986,16 @@ void RegionSelector::drawMagnifier(QPainter& painter)
         panelY = m_currentPoint.y() - totalHeight - 25;  // 改放上方
     }
 
-    // 繪製面板背景
-    QRect panelRect(panelX, panelY, panelWidth, totalHeight);
+    // 計算放大鏡顯示區域
+    int magX = panelX;
+    int magY = panelY;
+
+    // 繪製下半部資訊區域背景 - 黑色，無外框
+    int infoAreaY = magY + magnifierSize;
+    int infoAreaHeight = totalHeight - magnifierSize;
     painter.setPen(Qt::NoPen);
     painter.setBrush(QColor(30, 35, 45, 240));
-    painter.drawRoundedRect(panelRect, 4, 4);
-
-    // 計算放大鏡顯示區域
-    int magX = panelX + (panelWidth - magnifierSize) / 2;
-    int magY = panelY + panelPadding;
+    painter.drawRect(panelX, infoAreaY, panelWidth, infoAreaHeight);
 
     // Check if magnifier cache is still valid (same device pixel position)
     QPoint currentDevicePos(deviceX, deviceY);
@@ -1005,6 +1003,7 @@ void RegionSelector::drawMagnifier(QPainter& painter)
         // 從設備像素 pixmap 中取樣
         // 取 gridCount 個「邏輯像素」，每個邏輯像素 = devicePixelRatio 個設備像素
         int deviceGridCount = static_cast<int>(gridCount * m_devicePixelRatio);
+        // 游標位置在中心
         int sampleX = deviceX - deviceGridCount / 2;
         int sampleY = deviceY - deviceGridCount / 2;
 
@@ -1048,15 +1047,20 @@ void RegionSelector::drawMagnifier(QPainter& painter)
     // Draw cached grid overlay (pre-rendered in initializeMagnifierGridCache)
     painter.drawPixmap(magX, magY, m_gridOverlayCache);
 
+    // 繪製放大鏡區域白色外框
+    painter.setPen(QPen(Qt::white, 1));
+    painter.setBrush(Qt::NoBrush);
+    painter.drawRect(magX, magY, magnifierSize, magnifierSize);
+
     // 2. 座標資訊
-    int infoY = magY + magnifierSize + 8;
+    int infoY = magY + magnifierSize + 6;
     painter.setPen(Qt::white);
     QFont font = painter.font();
     font.setPointSize(11);
     painter.setFont(font);
 
-    QString coordText = QString("(%1, %2)").arg(m_currentPoint.x()).arg(m_currentPoint.y());
-    painter.drawText(panelX + panelPadding, infoY, panelWidth - 2 * panelPadding, 20, Qt::AlignCenter, coordText);
+    QString coordText = QString("(%1 , %2)").arg(m_currentPoint.x()).arg(m_currentPoint.y());
+    painter.drawText(panelX, infoY, panelWidth, 20, Qt::AlignCenter, coordText);
 
     // 3. 顏色預覽 + HEX/RGB (置中對齊)
     infoY += 20;
@@ -1805,7 +1809,7 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
             m_magnifierUpdateTimer.restart();
             // Calculate magnifier panel rect and update only that region
             const int panelWidth = 180;
-            const int totalHeight = MAGNIFIER_SIZE + 75;
+            const int totalHeight = MAGNIFIER_SIZE + 55;
             int panelX = m_currentPoint.x() - panelWidth / 2;
             int panelY = m_currentPoint.y() + 25;
             panelX = qMax(10, qMin(panelX, width() - panelWidth - 10));

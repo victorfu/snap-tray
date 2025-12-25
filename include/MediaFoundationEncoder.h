@@ -36,6 +36,11 @@ public:
 
     void setQuality(int quality) override;
 
+    // Audio support
+    void setAudioFormat(int sampleRate, int channels, int bitsPerSample) override;
+    bool isAudioSupported() const override;
+    void writeAudioSamples(const QByteArray &pcmData, qint64 timestampMs) override;
+
 private:
     MediaFoundationEncoderPrivate *d;
 };

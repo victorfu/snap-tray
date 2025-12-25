@@ -80,9 +80,9 @@ void MagnifierOverlay::drawCrosshair(QPainter& painter) const
     // Save painter state
     painter.save();
 
-    // Deep blue color for crosshair
-    QColor crosshairColor(65, 105, 225);
-    QPen pen(crosshairColor, 1, Qt::SolidLine);
+    // Light blue semi-transparent color for crosshair
+    QColor crosshairColor(100, 149, 237, 180);
+    QPen pen(crosshairColor, 3, Qt::SolidLine);
     painter.setPen(pen);
 
     int x = m_cursorPosition.x();
@@ -93,7 +93,9 @@ void MagnifierOverlay::drawCrosshair(QPainter& painter) const
     // Vertical line
     painter.drawLine(x, 0, x, m_viewportRect.height());
 
-    // Small center box
+    // Small center box with white fill and light blue border
+    painter.setBrush(Qt::white);
+    painter.setPen(QPen(crosshairColor, 2));
     painter.drawRect(x - 4, y - 4, 8, 8);
 
     painter.restore();
@@ -120,10 +122,10 @@ void MagnifierOverlay::drawMagnifier(QPainter& painter) const
     if (panelX < PANEL_PADDING) panelX = PANEL_PADDING;
     if (panelY < PANEL_PADDING) panelY = PANEL_PADDING;
 
-    // Draw panel background
+    // Draw panel background - light theme
     painter.save();
-    painter.setPen(QPen(QColor(80, 80, 80), 1));
-    painter.setBrush(QColor(30, 30, 30, 230));
+    painter.setPen(QPen(QColor(200, 200, 200), 1));
+    painter.setBrush(QColor(255, 255, 255, 240));
     painter.drawRoundedRect(panelX, panelY, panelWidth, panelHeight, 8, 8);
 
     // Calculate magnifier grid area
@@ -156,19 +158,19 @@ void MagnifierOverlay::drawMagnifier(QPainter& painter) const
         }
     }
 
-    // Draw grid lines
-    painter.setPen(QPen(QColor(60, 60, 60), 1));
+    // Draw grid lines - light gray
+    painter.setPen(QPen(QColor(220, 220, 220), 1));
     for (int i = 0; i <= GRID_COUNT; ++i) {
         int offset = i * cellSize;
         painter.drawLine(gridX + offset, gridY, gridX + offset, gridY + gridSize);
         painter.drawLine(gridX, gridY + offset, gridX + gridSize, gridY + offset);
     }
 
-    // Highlight center cell (current pixel)
+    // Highlight center cell (current pixel) - light blue border with white fill
     int centerCellX = gridX + halfGrid * cellSize;
     int centerCellY = gridY + halfGrid * cellSize;
-    painter.setPen(QPen(QColor(255, 255, 255), 2));
-    painter.setBrush(Qt::NoBrush);
+    painter.setPen(QPen(QColor(100, 149, 237), 2));
+    painter.setBrush(QColor(255, 255, 255, 100));
     painter.drawRect(centerCellX, centerCellY, cellSize, cellSize);
 
     // Draw coordinates text below grid (smaller area)
@@ -178,11 +180,11 @@ void MagnifierOverlay::drawMagnifier(QPainter& painter) const
 
     int infoY = gridY + gridSize + 6;
 
-    // Coordinates
+    // Coordinates - dark gray text for light theme
     QString coordText = QString("X:%1 Y:%2")
         .arg(m_cursorPosition.x())
         .arg(m_cursorPosition.y());
-    painter.setPen(QColor(180, 180, 180));
+    painter.setPen(QColor(80, 80, 80));
     painter.drawText(gridX, infoY, gridSize, 14, Qt::AlignLeft, coordText);
 
     // Color info
@@ -193,13 +195,13 @@ void MagnifierOverlay::drawMagnifier(QPainter& painter) const
     int swatchSize = 12;
     int swatchX = panelX + panelWidth - swatchSize - 10;
     painter.fillRect(swatchX, infoY, swatchSize, swatchSize, pixelColor);
-    painter.setPen(QPen(QColor(80, 80, 80), 1));
+    painter.setPen(QPen(QColor(180, 180, 180), 1));
     painter.drawRect(swatchX, infoY, swatchSize, swatchSize);
 
-    // Color text (left of swatch)
+    // Color text (left of swatch) - dark gray for light theme
     QFontMetrics fm(font);
     int textWidth = fm.horizontalAdvance(colorText);
-    painter.setPen(Qt::white);
+    painter.setPen(QColor(60, 60, 60));
     painter.drawText(swatchX - textWidth - 4, infoY, textWidth, swatchSize, Qt::AlignRight | Qt::AlignVCenter, colorText);
 
     painter.restore();
