@@ -237,6 +237,23 @@ void SettingsDialog::setupWatermarkTab(QWidget *tab)
     opacityLayout->addWidget(m_watermarkOpacityLabel);
     controlsLayout->addLayout(opacityLayout);
 
+    // Margin row
+    QHBoxLayout *marginLayout = new QHBoxLayout();
+    QLabel *marginLabel = new QLabel("Margin:", tab);
+    marginLabel->setFixedWidth(60);
+    m_watermarkMarginSlider = new QSlider(Qt::Horizontal, tab);
+    m_watermarkMarginSlider->setRange(0, 100);
+    m_watermarkMarginSlider->setValue(12);
+    m_watermarkMarginLabel = new QLabel("12 px", tab);
+    m_watermarkMarginLabel->setFixedWidth(40);
+    connect(m_watermarkMarginSlider, &QSlider::valueChanged, this, [this](int value) {
+        m_watermarkMarginLabel->setText(QString("%1 px").arg(value));
+    });
+    marginLayout->addWidget(marginLabel);
+    marginLayout->addWidget(m_watermarkMarginSlider);
+    marginLayout->addWidget(m_watermarkMarginLabel);
+    controlsLayout->addLayout(marginLayout);
+
     // Position row
     QHBoxLayout *positionLayout = new QHBoxLayout();
     QLabel *positionLabel = new QLabel("Position:", tab);
@@ -287,6 +304,8 @@ void SettingsDialog::setupWatermarkTab(QWidget *tab)
     m_watermarkImageScaleLabel->setText(QString("%1%").arg(settings.imageScale));
     m_watermarkOpacitySlider->setValue(static_cast<int>(settings.opacity * 100));
     m_watermarkOpacityLabel->setText(QString("%1%").arg(static_cast<int>(settings.opacity * 100)));
+    m_watermarkMarginSlider->setValue(settings.margin);
+    m_watermarkMarginLabel->setText(QString("%1 px").arg(settings.margin));
     int posIndex = m_watermarkPositionCombo->findData(static_cast<int>(settings.position));
     if (posIndex >= 0) {
         m_watermarkPositionCombo->setCurrentIndex(posIndex);
@@ -537,6 +556,7 @@ void SettingsDialog::onSave()
     watermarkSettings.position = static_cast<WatermarkRenderer::Position>(
         m_watermarkPositionCombo->currentData().toInt());
     watermarkSettings.imageScale = m_watermarkImageScaleSlider->value();
+    watermarkSettings.margin = m_watermarkMarginSlider->value();
     WatermarkRenderer::saveSettings(watermarkSettings);
 
     // Save recording settings

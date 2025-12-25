@@ -6,8 +6,7 @@ static const char* SETTINGS_KEY_WATERMARK_IMAGE_PATH = "watermarkImagePath";
 static const char* SETTINGS_KEY_WATERMARK_OPACITY = "watermarkOpacity";
 static const char* SETTINGS_KEY_WATERMARK_POSITION = "watermarkPosition";
 static const char* SETTINGS_KEY_WATERMARK_IMAGE_SCALE = "watermarkImageScale";
-
-static const int kWatermarkMargin = 12;
+static const char* SETTINGS_KEY_WATERMARK_MARGIN = "watermarkMargin";
 
 void WatermarkRenderer::render(QPainter &painter, const QRect &targetRect, const Settings &settings)
 {
@@ -37,7 +36,7 @@ void WatermarkRenderer::renderImage(QPainter &painter, const QRect &targetRect, 
     QPixmap scaledImage = watermarkImage.scaled(scaledSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
 
     // Calculate position
-    QRect imageRect = calculateWatermarkRect(targetRect, scaledSize, settings.position, kWatermarkMargin);
+    QRect imageRect = calculateWatermarkRect(targetRect, scaledSize, settings.position, settings.margin);
 
     // Apply opacity
     painter.setOpacity(settings.opacity);
@@ -75,6 +74,7 @@ WatermarkRenderer::Settings WatermarkRenderer::loadSettings()
     settings.opacity = qsettings.value(SETTINGS_KEY_WATERMARK_OPACITY, 0.5).toDouble();
     settings.position = static_cast<Position>(qsettings.value(SETTINGS_KEY_WATERMARK_POSITION, static_cast<int>(BottomRight)).toInt());
     settings.imageScale = qsettings.value(SETTINGS_KEY_WATERMARK_IMAGE_SCALE, 100).toInt();
+    settings.margin = qsettings.value(SETTINGS_KEY_WATERMARK_MARGIN, 12).toInt();
 
     return settings;
 }
@@ -88,6 +88,7 @@ void WatermarkRenderer::saveSettings(const Settings &settings)
     qsettings.setValue(SETTINGS_KEY_WATERMARK_OPACITY, settings.opacity);
     qsettings.setValue(SETTINGS_KEY_WATERMARK_POSITION, static_cast<int>(settings.position));
     qsettings.setValue(SETTINGS_KEY_WATERMARK_IMAGE_SCALE, settings.imageScale);
+    qsettings.setValue(SETTINGS_KEY_WATERMARK_MARGIN, settings.margin);
 }
 
 QRect WatermarkRenderer::calculateWatermarkRect(const QRect &targetRect, const QSize &size, Position position, int margin)

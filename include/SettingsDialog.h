@@ -71,6 +71,8 @@ private:
     QLabel *m_watermarkImageScaleLabel;
     QSlider *m_watermarkOpacitySlider;
     QLabel *m_watermarkOpacityLabel;
+    QSlider *m_watermarkMarginSlider;
+    QLabel *m_watermarkMarginLabel;
     QComboBox *m_watermarkPositionCombo;
     QLabel *m_watermarkImagePreview;
     QLabel *m_watermarkImageSizeLabel;
