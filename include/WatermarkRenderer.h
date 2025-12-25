@@ -22,6 +22,7 @@ public:
         qreal opacity = 0.5;
         Position position = BottomRight;
         int imageScale = 100;  // 10-200%
+        int margin = 12;       // 0-100 pixels
     };
 
     // Render watermark directly onto a painter (for display)

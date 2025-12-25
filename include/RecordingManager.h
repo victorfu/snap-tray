@@ -13,6 +13,7 @@ class RecordingRegionSelector;
 class RecordingControlBar;
 class RecordingBoundaryOverlay;
 class FFmpegEncoder;
+class IVideoEncoder;
 class ICaptureEngine;
 class QScreen;
 
@@ -89,7 +90,9 @@ private:
     // Recording state
     QPointer<RecordingControlBar> m_controlBar;
     QPointer<RecordingBoundaryOverlay> m_boundaryOverlay;
-    FFmpegEncoder *m_encoder;
+    FFmpegEncoder *m_encoder;           // Used for GIF and as fallback for MP4
+    IVideoEncoder *m_nativeEncoder;     // Native platform encoder for MP4
+    bool m_usingNativeEncoder;          // True if using native encoder
     ICaptureEngine *m_captureEngine;
 
     // Capture state

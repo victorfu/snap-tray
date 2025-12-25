@@ -7,6 +7,8 @@
 #include <QRect>
 #include <QPoint>
 #include <QString>
+#include "AnnotationLayer.h"
+#include "RegionSelector.h"  // For ShapeType and ShapeFillMode enums
 
 class QPainter;
 
@@ -118,6 +120,79 @@ public:
      * @brief Get font family.
      */
     QString fontFamily() const { return m_fontFamily; }
+
+    // Arrow style methods
+    /**
+     * @brief Set whether to show the arrow style section.
+     */
+    void setShowArrowStyleSection(bool show);
+
+    /**
+     * @brief Check if the arrow style section is shown.
+     */
+    bool showArrowStyleSection() const { return m_showArrowStyleSection; }
+
+    /**
+     * @brief Set the arrow line end style.
+     */
+    void setArrowStyle(LineEndStyle style);
+
+    /**
+     * @brief Get the current arrow style.
+     */
+    LineEndStyle arrowStyle() const { return m_arrowStyle; }
+
+    // Mosaic strength methods
+    /**
+     * @brief Set whether to show the mosaic strength section.
+     */
+    void setShowMosaicStrengthSection(bool show);
+
+    /**
+     * @brief Check if the mosaic strength section is shown.
+     */
+    bool showMosaicStrengthSection() const { return m_showMosaicStrengthSection; }
+
+    /**
+     * @brief Set the mosaic strength.
+     */
+    void setMosaicStrength(MosaicStrength strength);
+
+    /**
+     * @brief Get the current mosaic strength.
+     */
+    MosaicStrength mosaicStrength() const { return m_mosaicStrength; }
+
+    // Shape section methods
+    /**
+     * @brief Set whether to show the shape section.
+     */
+    void setShowShapeSection(bool show);
+
+    /**
+     * @brief Check if the shape section is shown.
+     */
+    bool showShapeSection() const { return m_showShapeSection; }
+
+    /**
+     * @brief Set the shape type.
+     */
+    void setShapeType(ShapeType type);
+
+    /**
+     * @brief Get the current shape type.
+     */
+    ShapeType shapeType() const { return m_shapeType; }
+
+    /**
+     * @brief Set the shape fill mode.
+     */
+    void setShapeFillMode(ShapeFillMode mode);
+
+    /**
+     * @brief Get the current shape fill mode.
+     */
+    ShapeFillMode shapeFillMode() const { return m_shapeFillMode; }
 
     // Line width methods
     /**
@@ -261,6 +336,26 @@ signals:
      */
     void fontFamilyDropdownRequested(const QPoint& globalPos);
 
+    /**
+     * @brief Emitted when arrow style is changed.
+     */
+    void arrowStyleChanged(LineEndStyle style);
+
+    /**
+     * @brief Emitted when mosaic strength is changed.
+     */
+    void mosaicStrengthChanged(MosaicStrength strength);
+
+    /**
+     * @brief Emitted when shape type is changed.
+     */
+    void shapeTypeChanged(ShapeType type);
+
+    /**
+     * @brief Emitted when shape fill mode is changed.
+     */
+    void shapeFillModeChanged(ShapeFillMode mode);
+
 private:
     // Layout calculation
     void updateLayout();
@@ -276,6 +371,20 @@ private:
     // Text section helpers
     void drawTextSection(QPainter& painter);
     int textControlAtPosition(const QPoint& pos) const;
+
+    // Arrow style section helpers
+    void drawArrowStyleSection(QPainter& painter);
+    void drawArrowStyleIcon(QPainter& painter, LineEndStyle style, const QRect& rect, bool isHovered = false) const;
+    int arrowStyleOptionAtPosition(const QPoint& pos) const;
+
+    // Mosaic strength section helpers
+    void drawMosaicStrengthSection(QPainter& painter);
+    void drawMosaicStrengthTooltip(QPainter& painter);
+    int mosaicStrengthButtonAtPosition(const QPoint& pos) const;
+
+    // Shape section helpers
+    void drawShapeSection(QPainter& painter);
+    int shapeButtonAtPosition(const QPoint& pos) const;
 
     // Color state
     QVector<QColor> m_colors;
@@ -306,8 +415,33 @@ private:
     QRect m_fontFamilyRect;
     int m_hoveredTextControl = -1;  // 0=B, 1=I, 2=U, 3=size, 4=family
 
+    // Arrow style state
+    bool m_showArrowStyleSection = false;
+    LineEndStyle m_arrowStyle = LineEndStyle::EndArrow;
+    QRect m_arrowStyleButtonRect;
+    QRect m_arrowStyleDropdownRect;
+    bool m_arrowStyleDropdownOpen = false;
+    int m_hoveredArrowStyleOption = -1;  // -1=none, 0-3=style options
+
+    // Mosaic strength state
+    bool m_showMosaicStrengthSection = false;
+    MosaicStrength m_mosaicStrength = MosaicStrength::Strong;
+    QRect m_mosaicStrengthSectionRect;
+    QVector<QRect> m_mosaicStrengthButtonRects;  // 4 buttons for L/N/S/P
+    int m_hoveredMosaicStrengthButton = -1;
+    QString m_mosaicStrengthTooltip;  // Current tooltip text to display
+
+    // Shape section state
+    bool m_showShapeSection = false;
+    ShapeType m_shapeType = ShapeType::Rectangle;
+    ShapeFillMode m_shapeFillMode = ShapeFillMode::Outline;
+    QRect m_shapeSectionRect;
+    QVector<QRect> m_shapeButtonRects;  // 4 buttons: [Rect, Ellipse, Outline, Filled]
+    int m_hoveredShapeButton = -1;
+
     // Layout state
     bool m_visible;
+    bool m_dropdownExpandsUpward = false;  // True when widget is above toolbar (ScreenCanvas)
     QRect m_widgetRect;
     QRect m_colorSectionRect;
     QRect m_widthSectionRect;
@@ -327,6 +461,20 @@ private:
     static const int TEXT_BUTTON_SPACING = 2;
     static const int FONT_SIZE_WIDTH = 40;
     static const int FONT_FAMILY_WIDTH = 90;
+
+    // Arrow style section layout constants
+    static const int ARROW_STYLE_BUTTON_WIDTH = 50;
+    static const int ARROW_STYLE_BUTTON_HEIGHT = 24;
+    static const int ARROW_STYLE_DROPDOWN_OPTION_HEIGHT = 28;
+
+    // Mosaic strength section layout constants
+    static const int MOSAIC_BUTTON_WIDTH = 24;
+    static const int MOSAIC_BUTTON_HEIGHT = 20;
+    static const int MOSAIC_BUTTON_SPACING = 2;
+
+    // Shape section layout constants
+    static const int SHAPE_BUTTON_SIZE = 24;
+    static const int SHAPE_BUTTON_SPACING = 2;
 };
 
 #endif // COLORANDWIDTHWIDGET_H

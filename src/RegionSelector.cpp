@@ -41,6 +41,7 @@ static const char* SETTINGS_KEY_TEXT_ITALIC = "textItalic";
 static const char* SETTINGS_KEY_TEXT_UNDERLINE = "textUnderline";
 static const char* SETTINGS_KEY_TEXT_SIZE = "textFontSize";
 static const char* SETTINGS_KEY_TEXT_FAMILY = "textFontFamily";
+static const char* SETTINGS_KEY_MOSAIC_STRENGTH = "mosaicStrength";
 
 // Create a rounded square cursor for mosaic tool
 static QCursor createMosaicCursor(int size) {
@@ -54,9 +55,9 @@ static QCursor createMosaicCursor(int size) {
     QPainter painter(&pixmap);
     painter.setRenderHint(QPainter::Antialiasing, true);
 
-    // Gray border with semi-transparent fill
-    painter.setPen(QPen(QColor(128, 128, 128), 1.5));
-    painter.setBrush(QColor(255, 255, 255, 30));
+    // Darker gray border with semi-transparent fill
+    painter.setPen(QPen(QColor(90, 90, 90), 1.0));
+    painter.setBrush(QColor(200, 200, 200, 20));
     painter.drawRoundedRect(1, 1, size - 2, size - 2, 2, 2);
 
     painter.end();
@@ -101,6 +102,16 @@ RegionSelector::RegionSelector(QWidget* parent)
     // Load saved annotation settings (or defaults)
     m_annotationColor = loadAnnotationColor();
     m_annotationWidth = loadAnnotationWidth();
+    m_arrowStyle = loadArrowStyle();
+
+    // Initialize tool manager
+    m_toolManager = new ToolManager(this);
+    m_toolManager->registerDefaultHandlers();
+    m_toolManager->setAnnotationLayer(m_annotationLayer);
+    m_toolManager->setColor(m_annotationColor);
+    m_toolManager->setWidth(m_annotationWidth);
+    m_toolManager->setArrowStyle(m_arrowStyle);
+    connect(m_toolManager, &ToolManager::needsRepaint, this, QOverload<>::of(&QWidget::update));
 
     // Initialize OCR manager if available on this platform
     m_ocrManager = PlatformFeatures::instance().createOCRManager(this);
@@ -178,6 +189,38 @@ RegionSelector::RegionSelector(QWidget* parent)
     connect(m_colorAndWidthWidget, &ColorAndWidthWidget::fontFamilyDropdownRequested,
             this, &RegionSelector::onFontFamilyDropdownRequested);
 
+    // Connect arrow style signal
+    m_colorAndWidthWidget->setArrowStyle(m_arrowStyle);
+    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::arrowStyleChanged,
+            this, &RegionSelector::onArrowStyleChanged);
+
+    // Connect mosaic strength signal and load saved setting
+    {
+        QSettings settings;
+        int savedStrength = settings.value(SETTINGS_KEY_MOSAIC_STRENGTH,
+            static_cast<int>(MosaicStrength::Strong)).toInt();
+        m_colorAndWidthWidget->setMosaicStrength(static_cast<MosaicStrength>(savedStrength));
+        m_toolManager->setMosaicStrength(savedStrength);
+    }
+    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::mosaicStrengthChanged,
+            this, [this](MosaicStrength strength) {
+                m_toolManager->setMosaicStrength(static_cast<int>(strength));
+                QSettings settings;
+                settings.setValue(SETTINGS_KEY_MOSAIC_STRENGTH, static_cast<int>(strength));
+            });
+
+    // Connect shape section signals
+    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::shapeTypeChanged,
+            this, [this](ShapeType type) {
+                m_shapeType = type;
+                m_toolManager->setShapeType(static_cast<int>(type));
+            });
+    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::shapeFillModeChanged,
+            this, [this](ShapeFillMode mode) {
+                m_shapeFillMode = mode;
+                m_toolManager->setShapeFillMode(static_cast<int>(mode));
+            });
+
     // Initialize loading spinner for OCR
     m_loadingSpinner = new LoadingSpinnerRenderer(this);
     connect(m_loadingSpinner, &LoadingSpinnerRenderer::needsRepaint,
@@ -193,6 +236,9 @@ RegionSelector::RegionSelector(QWidget* parent)
 
     // Install application-level event filter to capture ESC even when window loses focus
     qApp->installEventFilter(this);
+
+    // Start creation timer for startup protection
+    m_createdAt.start();
 
     // Initialize magnifier update timer for throttling
     m_magnifierUpdateTimer.start();
@@ -280,8 +326,7 @@ void RegionSelector::setupToolbarButtons()
     buttons.append({static_cast<int>(ToolbarButton::Arrow), "arrow", "Arrow", false});
     buttons.append({static_cast<int>(ToolbarButton::Pencil), "pencil", "Pencil", false});
     buttons.append({static_cast<int>(ToolbarButton::Marker), "marker", "Marker", false});
-    buttons.append({static_cast<int>(ToolbarButton::Rectangle), "rectangle", "Rectangle", false});
-    buttons.append({static_cast<int>(ToolbarButton::Ellipse), "ellipse", "Ellipse", false});
+    buttons.append({static_cast<int>(ToolbarButton::Shape), "rectangle", "Shape", false});
     buttons.append({static_cast<int>(ToolbarButton::Text), "text", "Text", false});
     buttons.append({static_cast<int>(ToolbarButton::Mosaic), "mosaic", "Mosaic", false});
     buttons.append({static_cast<int>(ToolbarButton::StepBadge), "step-badge", "Step Badge", false});
@@ -305,8 +350,7 @@ void RegionSelector::setupToolbarButtons()
         static_cast<int>(ToolbarButton::Arrow),
         static_cast<int>(ToolbarButton::Pencil),
         static_cast<int>(ToolbarButton::Marker),
-        static_cast<int>(ToolbarButton::Rectangle),
-        static_cast<int>(ToolbarButton::Ellipse),
+        static_cast<int>(ToolbarButton::Shape),
         static_cast<int>(ToolbarButton::Text),
         static_cast<int>(ToolbarButton::Mosaic),
         static_cast<int>(ToolbarButton::StepBadge),
@@ -359,8 +403,7 @@ bool RegionSelector::shouldShowColorPalette() const
     case ToolbarButton::Pencil:
     case ToolbarButton::Marker:
     case ToolbarButton::Arrow:
-    case ToolbarButton::Rectangle:
-    case ToolbarButton::Ellipse:
+    case ToolbarButton::Shape:
     case ToolbarButton::Text:
     case ToolbarButton::StepBadge:
         return true;
@@ -372,6 +415,9 @@ bool RegionSelector::shouldShowColorPalette() const
 void RegionSelector::onColorSelected(const QColor &color)
 {
     m_annotationColor = color;
+
+    // Update tool manager
+    m_toolManager->setColor(color);
 
     // Update line width widget preview color
     m_lineWidthWidget->setPreviewColor(color);
@@ -397,6 +443,7 @@ void RegionSelector::onMoreColorsRequested()
         connect(m_colorPickerDialog, &ColorPickerDialog::colorSelected,
                 this, [this](const QColor &color) {
             m_annotationColor = color;
+            m_toolManager->setColor(color);
             m_colorPalette->setCurrentColor(color);
             m_lineWidthWidget->setPreviewColor(color);
             m_colorAndWidthWidget->setCurrentColor(color);
@@ -431,13 +478,13 @@ bool RegionSelector::shouldShowLineWidthWidget() const
     // Show for tools that use m_annotationWidth
     return m_currentTool == ToolbarButton::Pencil ||
            m_currentTool == ToolbarButton::Arrow ||
-           m_currentTool == ToolbarButton::Rectangle ||
-           m_currentTool == ToolbarButton::Ellipse;
+           m_currentTool == ToolbarButton::Shape;
 }
 
 void RegionSelector::onLineWidthChanged(int width)
 {
     m_annotationWidth = width;
+    m_toolManager->setWidth(width);
     saveAnnotationWidth(width);
     update();
 }
@@ -451,10 +498,10 @@ bool RegionSelector::shouldShowColorAndWidthWidget() const
     case ToolbarButton::Pencil:      // Needs both
     case ToolbarButton::Marker:      // Needs color only
     case ToolbarButton::Arrow:       // Needs both
-    case ToolbarButton::Rectangle:   // Needs both
-    case ToolbarButton::Ellipse:     // Needs both
+    case ToolbarButton::Shape:       // Needs both + shape options
     case ToolbarButton::Text:        // Needs color only
     case ToolbarButton::StepBadge:   // Needs color only
+    case ToolbarButton::Mosaic:      // Needs mosaic strength only
         return true;
     default:
         return false;
@@ -467,8 +514,7 @@ bool RegionSelector::shouldShowWidthControl() const
     switch (m_currentTool) {
     case ToolbarButton::Pencil:
     case ToolbarButton::Arrow:
-    case ToolbarButton::Rectangle:
-    case ToolbarButton::Ellipse:
+    case ToolbarButton::Shape:
         return true;
     default:
         return false;  // Marker, Text, StepBadge don't need width control
@@ -486,7 +532,7 @@ const QImage& RegionSelector::getBackgroundImage() const
     return m_backgroundImageCache;
 }
 
-void RegionSelector::initializeForScreen(QScreen* screen)
+void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap &preCapture)
 {
     // 使用傳入的螢幕，若為空則使用主螢幕
     m_currentScreen = screen;
@@ -496,10 +542,21 @@ void RegionSelector::initializeForScreen(QScreen* screen)
 
     m_devicePixelRatio = m_currentScreen->devicePixelRatio();
 
-    // Capture the screen FIRST (returns device pixel resolution on HiDPI)
-    m_backgroundPixmap = m_currentScreen->grabWindow(0);
+    // Use pre-captured pixmap if provided, otherwise capture now
+    // Pre-capture allows including popup menus in the screenshot (like Snipaste)
+    if (!preCapture.isNull()) {
+        m_backgroundPixmap = preCapture;
+        qDebug() << "RegionSelector: Using pre-captured screenshot, size:" << preCapture.size();
+    } else {
+        m_backgroundPixmap = m_currentScreen->grabWindow(0);
+        qDebug() << "RegionSelector: Captured screenshot now, size:" << m_backgroundPixmap.size();
+    }
     // Lazy-load image cache: don't convert now, create on first magnifier access
     m_backgroundImageCacheValid = false;
+
+    // Update tool manager with background pixmap for mosaic tool
+    m_toolManager->setSourcePixmap(&m_backgroundPixmap);
+    m_toolManager->setDevicePixelRatio(m_devicePixelRatio);
 
     qDebug() << "RegionSelector: Initialized for screen" << m_currentScreen->name()
         << "logical size:" << m_currentScreen->geometry().size()
@@ -551,6 +608,10 @@ void RegionSelector::initializeWithRegion(QScreen *screen, const QRect &region)
     // Capture the screen first
     m_backgroundPixmap = m_currentScreen->grabWindow(0);
     m_backgroundImageCache = m_backgroundPixmap.toImage();
+
+    // Update tool manager with background pixmap for mosaic tool
+    m_toolManager->setSourcePixmap(&m_backgroundPixmap);
+    m_toolManager->setDevicePixelRatio(m_devicePixelRatio);
 
     qDebug() << "RegionSelector: Initialized with region" << region
              << "on screen" << m_currentScreen->name();
@@ -742,8 +803,14 @@ void RegionSelector::paintEvent(QPaintEvent*)
             if (shouldShowColorAndWidthWidget()) {
                 m_colorAndWidthWidget->setVisible(true);
                 m_colorAndWidthWidget->setShowWidthSection(shouldShowWidthControl());
+                // Show arrow style section only for Arrow tool
+                m_colorAndWidthWidget->setShowArrowStyleSection(m_currentTool == ToolbarButton::Arrow);
                 // Show text section only for Text tool
                 m_colorAndWidthWidget->setShowTextSection(m_currentTool == ToolbarButton::Text);
+                // Show mosaic strength section only for Mosaic tool
+                m_colorAndWidthWidget->setShowMosaicStrengthSection(m_currentTool == ToolbarButton::Mosaic);
+                // Show shape section only for Shape tool
+                m_colorAndWidthWidget->setShowShapeSection(m_currentTool == ToolbarButton::Shape);
                 m_colorAndWidthWidget->updatePosition(m_toolbar->boundingRect(), false, width());
                 m_colorAndWidthWidget->draw(painter);
             } else {
@@ -1061,8 +1128,7 @@ void RegionSelector::handleToolbarClick(ToolbarButton button)
     case ToolbarButton::Arrow:
     case ToolbarButton::Pencil:
     case ToolbarButton::Marker:
-    case ToolbarButton::Rectangle:
-    case ToolbarButton::Ellipse:
+    case ToolbarButton::Shape:
     case ToolbarButton::Mosaic:
         m_currentTool = button;
         qDebug() << "Tool selected:" << static_cast<int>(button);
@@ -1383,11 +1449,6 @@ void RegionSelector::mousePressEvent(QMouseEvent* event)
 
             // Check if we're using an annotation tool and clicking inside selection
             if (isAnnotationTool(m_currentTool) && m_currentTool != ToolbarButton::Selection && sel.contains(event->pos())) {
-                // Handle StepBadge tool - place badge on click
-                if (m_currentTool == ToolbarButton::StepBadge) {
-                    placeStepBadge(event->pos());
-                    return;
-                }
                 // Start annotation drawing
                 qDebug() << "Starting annotation with tool:" << static_cast<int>(m_currentTool) << "at pos:" << event->pos();
                 startAnnotation(event->pos());
@@ -1435,12 +1496,7 @@ void RegionSelector::mousePressEvent(QMouseEvent* event)
             // If drawing, cancel current annotation
             if (m_isDrawing) {
                 m_isDrawing = false;
-                m_currentPath.clear();
-                m_currentPencil.reset();
-                m_currentMarker.reset();
-                m_currentArrow.reset();
-                m_currentRectangle.reset();
-                m_currentMosaicStroke.reset();
+                m_toolManager->cancelDrawing();
                 update();
                 return;
             }
@@ -1639,7 +1695,7 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
                 setCursor(Qt::IBeamCursor);
             }
             else if (m_currentTool == ToolbarButton::Mosaic) {
-                static QCursor mosaicCursor = createMosaicCursor(15);
+                static QCursor mosaicCursor = createMosaicCursor(12);
                 setCursor(mosaicCursor);
             }
             else if (isAnnotationTool(m_currentTool) && m_currentTool != ToolbarButton::Selection) {
@@ -1651,10 +1707,19 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
                 updateCursorForHandle(handle);
             }
         }
-        else if (hoveredButton < 0 && !colorPaletteHovered && !lineWidthHovered && !unifiedWidgetHovered && !textAnnotationHovered && !gizmoHandleHovered && m_currentTool == ToolbarButton::Selection) {
-            // Update cursor for resize handles when not hovering button or color swatch
-            ResizeHandle handle = getHandleAtPosition(event->pos());
-            updateCursorForHandle(handle);
+        else if (hoveredButton < 0 && !colorPaletteHovered && !lineWidthHovered && !unifiedWidgetHovered && !textAnnotationHovered && !gizmoHandleHovered) {
+            // Update cursor based on current tool
+            if (m_currentTool == ToolbarButton::Selection) {
+                ResizeHandle handle = getHandleAtPosition(event->pos());
+                updateCursorForHandle(handle);
+            } else if (m_currentTool == ToolbarButton::Mosaic) {
+                static QCursor mosaicCursor = createMosaicCursor(12);
+                setCursor(mosaicCursor);
+            } else if (m_currentTool == ToolbarButton::Text && !m_textEditor->isEditing()) {
+                setCursor(Qt::IBeamCursor);
+            } else if (isAnnotationTool(m_currentTool)) {
+                setCursor(Qt::CrossCursor);
+            }
         }
     }
 
@@ -1956,6 +2021,13 @@ bool RegionSelector::eventFilter(QObject* obj, QEvent* event)
         if (m_isDialogOpen) {
             return false;
         }
+        // Startup protection: ignore early deactivation (within 300ms of creation)
+        // This prevents false cancellation when popup menus close during startup
+        if (m_createdAt.elapsed() < 300) {
+            qDebug() << "RegionSelector: Ignoring early ApplicationDeactivate (elapsed:"
+                     << m_createdAt.elapsed() << "ms)";
+            return false;
+        }
         qDebug() << "RegionSelector: Cancelled due to app deactivation";
         emit selectionCancelled();
         close();
@@ -1983,228 +2055,63 @@ void RegionSelector::drawAnnotations(QPainter &painter)
 
 void RegionSelector::drawCurrentAnnotation(QPainter &painter)
 {
-    if (!m_isDrawing) return;
+    // Use ToolManager for tools it handles
+    if (isToolManagerHandledTool(m_currentTool)) {
+        m_toolManager->drawCurrentPreview(painter);
+        return;
+    }
 
-    if (m_currentPencil) {
-        m_currentPencil->draw(painter);
-    }
-    else if (m_currentMarker) {
-        m_currentMarker->draw(painter);
-    }
-    else if (m_currentArrow) {
-        m_currentArrow->draw(painter);
-    }
-    else if (m_currentRectangle) {
-        m_currentRectangle->draw(painter);
-    }
-    else if (m_currentEllipse) {
-        m_currentEllipse->draw(painter);
-    }
-    else if (m_currentMosaicStroke) {
-        m_currentMosaicStroke->draw(painter);
-    }
-    else if (m_currentTool == ToolbarButton::Eraser && !m_eraserPath.isEmpty()) {
-        // Draw eraser cursor at the last position
-        painter.save();
-        painter.setRenderHint(QPainter::Antialiasing, true);
-
-        QPoint lastPos = m_eraserPath.last();
-        int radius = ERASER_WIDTH / 2;
-
-        // Draw semi-transparent circle
-        painter.setPen(QPen(Qt::white, 2));
-        painter.setBrush(QColor(255, 255, 255, 50));
-        painter.drawEllipse(lastPos, radius, radius);
-
-        painter.restore();
-    }
+    // Text tool is handled by InlineTextEditor, no preview needed here
 }
 
 void RegionSelector::startAnnotation(const QPoint &pos)
 {
-    m_isDrawing = true;
-    m_drawStartPoint = pos;
-    m_currentPath.clear();
-    m_currentPath.append(QPointF(pos));
+    // Use ToolManager for tools it handles
+    if (isToolManagerHandledTool(m_currentTool)) {
+        // Sync tool manager settings before starting
+        m_toolManager->setColor(m_annotationColor);
+        m_toolManager->setWidth(m_annotationWidth);
+        m_toolManager->setArrowStyle(m_arrowStyle);
+        m_toolManager->setShapeType(static_cast<int>(m_shapeType));
+        m_toolManager->setShapeFillMode(static_cast<int>(m_shapeFillMode));
 
-    switch (m_currentTool) {
-    case ToolbarButton::Pencil:
-        m_currentPencil = std::make_unique<PencilStroke>(m_currentPath, m_annotationColor, m_annotationWidth);
-        break;
+        ToolId toolId = toolbarButtonToToolId(m_currentTool);
+        m_toolManager->setCurrentTool(toolId);
+        m_toolManager->handleMousePress(pos);
+        m_isDrawing = m_toolManager->isDrawing();
 
-    case ToolbarButton::Marker:
-        m_currentMarker = std::make_unique<MarkerStroke>(m_currentPath, m_annotationColor, 20);
-        break;
-
-    case ToolbarButton::Arrow:
-        m_currentArrow = std::make_unique<ArrowAnnotation>(pos, pos, m_annotationColor, m_annotationWidth);
-        break;
-
-    case ToolbarButton::Rectangle:
-        m_currentRectangle = std::make_unique<RectangleAnnotation>(QRect(pos, pos), m_annotationColor, m_annotationWidth);
-        break;
-
-    case ToolbarButton::Ellipse:
-        m_currentEllipse = std::make_unique<EllipseAnnotation>(QRect(pos, pos), m_annotationColor, m_annotationWidth);
-        break;
-
-    case ToolbarButton::Mosaic: {
-        QVector<QPoint> intPath;
-        for (const QPointF &p : m_currentPath) {
-            intPath.append(p.toPoint());
+        // For click-to-place tools (like StepBadge), set flag so mouseRelease still calls finishAnnotation
+        if (!m_isDrawing && m_currentTool == ToolbarButton::StepBadge) {
+            m_isDrawing = true;  // Force mouseRelease to call finishAnnotation
         }
-        m_currentMosaicStroke = std::make_unique<MosaicStroke>(intPath, m_backgroundPixmap, 15, 5);
-        break;
+        return;
     }
 
-    case ToolbarButton::Eraser:
-        m_eraserPath.clear();
-        m_eraserPath.append(pos);
-        m_erasedItems.clear();
-        // Immediately check for items to erase at start position
-        {
-            auto removed = m_annotationLayer->removeItemsIntersecting(pos, ERASER_WIDTH);
-            for (auto &item : removed) {
-                m_erasedItems.push_back(std::move(item));
-            }
-        }
-        break;
-
-    default:
-        m_isDrawing = false;
-        break;
-    }
-
-    update();
+    // Text tool is handled by InlineTextEditor, not here
 }
 
 void RegionSelector::updateAnnotation(const QPoint &pos)
 {
-    if (!m_isDrawing) return;
-
-    switch (m_currentTool) {
-    case ToolbarButton::Pencil:
-        if (m_currentPencil) {
-            m_currentPath.append(QPointF(pos));
-            m_currentPencil->addPoint(QPointF(pos));
-        }
-        break;
-
-    case ToolbarButton::Marker:
-        if (m_currentMarker) {
-            m_currentPath.append(QPointF(pos));
-            m_currentMarker->addPoint(QPointF(pos));
-        }
-        break;
-
-    case ToolbarButton::Arrow:
-        if (m_currentArrow) {
-            m_currentArrow->setEnd(pos);
-        }
-        break;
-
-    case ToolbarButton::Rectangle:
-        if (m_currentRectangle) {
-            m_currentRectangle->setRect(QRect(m_drawStartPoint, pos));
-        }
-        break;
-
-    case ToolbarButton::Ellipse:
-        if (m_currentEllipse) {
-            m_currentEllipse->setRect(QRect(m_drawStartPoint, pos));
-        }
-        break;
-
-    case ToolbarButton::Mosaic:
-        if (m_currentMosaicStroke) {
-            m_currentPath.append(QPointF(pos));
-            m_currentMosaicStroke->addPoint(pos);  // MosaicStroke still uses QPoint
-        }
-        break;
-
-    case ToolbarButton::Eraser:
-        m_eraserPath.append(pos);
-        // Check for items to erase at this position
-        {
-            auto removed = m_annotationLayer->removeItemsIntersecting(pos, ERASER_WIDTH);
-            for (auto &item : removed) {
-                m_erasedItems.push_back(std::move(item));
-            }
-        }
-        break;
-
-    default:
-        break;
+    // Use ToolManager for tools it handles
+    if (isToolManagerHandledTool(m_currentTool)) {
+        m_toolManager->handleMouseMove(pos);
+        return;
     }
 
-    update();
+    // Text tool is handled by InlineTextEditor, no mouse move handling needed
 }
 
 void RegionSelector::finishAnnotation()
 {
-    if (!m_isDrawing) return;
-
-    m_isDrawing = false;
-
-    // Add the annotation to the layer
-    switch (m_currentTool) {
-    case ToolbarButton::Pencil:
-        if (m_currentPencil && m_currentPath.size() > 1) {
-            m_annotationLayer->addItem(std::move(m_currentPencil));
-        }
-        m_currentPencil.reset();
-        break;
-
-    case ToolbarButton::Marker:
-        if (m_currentMarker && m_currentPath.size() > 1) {
-            m_annotationLayer->addItem(std::move(m_currentMarker));
-        }
-        m_currentMarker.reset();
-        break;
-
-    case ToolbarButton::Arrow:
-        if (m_currentArrow) {
-            m_annotationLayer->addItem(std::move(m_currentArrow));
-        }
-        m_currentArrow.reset();
-        break;
-
-    case ToolbarButton::Rectangle:
-        if (m_currentRectangle) {
-            m_annotationLayer->addItem(std::move(m_currentRectangle));
-        }
-        m_currentRectangle.reset();
-        break;
-
-    case ToolbarButton::Ellipse:
-        if (m_currentEllipse) {
-            m_annotationLayer->addItem(std::move(m_currentEllipse));
-        }
-        m_currentEllipse.reset();
-        break;
-
-    case ToolbarButton::Mosaic:
-        if (m_currentMosaicStroke && m_currentPath.size() > 1) {
-            m_annotationLayer->addItem(std::move(m_currentMosaicStroke));
-        }
-        m_currentMosaicStroke.reset();
-        break;
-
-    case ToolbarButton::Eraser:
-        // If items were erased, add an ErasedItemsGroup for undo support
-        if (!m_erasedItems.empty()) {
-            auto erasedGroup = std::make_unique<ErasedItemsGroup>(std::move(m_erasedItems));
-            m_annotationLayer->addItem(std::move(erasedGroup));
-        }
-        m_eraserPath.clear();
-        m_erasedItems.clear();
-        break;
-
-    default:
-        break;
+    // Use ToolManager for tools it handles
+    if (isToolManagerHandledTool(m_currentTool)) {
+        m_toolManager->handleMouseRelease(m_currentPoint);
+        m_isDrawing = m_toolManager->isDrawing();
+        return;
     }
 
-    m_currentPath.clear();
+    // Text tool is handled by InlineTextEditor
+    m_isDrawing = false;
 }
 
 bool RegionSelector::isAnnotationTool(ToolbarButton tool) const
@@ -2213,8 +2120,7 @@ bool RegionSelector::isAnnotationTool(ToolbarButton tool) const
     case ToolbarButton::Pencil:
     case ToolbarButton::Marker:
     case ToolbarButton::Arrow:
-    case ToolbarButton::Rectangle:
-    case ToolbarButton::Ellipse:
+    case ToolbarButton::Shape:
     case ToolbarButton::Text:
     case ToolbarButton::Mosaic:
     case ToolbarButton::StepBadge:
@@ -2239,15 +2145,6 @@ void RegionSelector::showTextInputDialog(const QPoint &pos)
         m_annotationLayer->addItem(std::move(textAnnotation));
         update();
     }
-}
-
-void RegionSelector::placeStepBadge(const QPoint &pos)
-{
-    int nextNumber = m_annotationLayer->countStepBadges() + 1;
-    auto badge = std::make_unique<StepBadgeAnnotation>(pos, m_annotationColor, nextNumber);
-    m_annotationLayer->addItem(std::move(badge));
-    qDebug() << "Placed step badge" << nextNumber << "at" << pos;
-    update();
 }
 
 void RegionSelector::onTextEditingFinished(const QString &text, const QPoint &position)
@@ -2608,6 +2505,27 @@ void RegionSelector::saveAnnotationWidth(int width)
 {
     QSettings settings("Victor Fu", "SnapTray");
     settings.setValue(SETTINGS_KEY_ANNOTATION_WIDTH, width);
+}
+
+LineEndStyle RegionSelector::loadArrowStyle() const
+{
+    QSettings settings("Victor Fu", "SnapTray");
+    int style = settings.value("annotation/arrowStyle", static_cast<int>(LineEndStyle::EndArrow)).toInt();
+    return static_cast<LineEndStyle>(style);
+}
+
+void RegionSelector::saveArrowStyle(LineEndStyle style)
+{
+    QSettings settings("Victor Fu", "SnapTray");
+    settings.setValue("annotation/arrowStyle", static_cast<int>(style));
+}
+
+void RegionSelector::onArrowStyleChanged(LineEndStyle style)
+{
+    m_arrowStyle = style;
+    m_toolManager->setArrowStyle(style);
+    saveArrowStyle(style);
+    update();
 }
 
 TextFormattingState RegionSelector::loadTextFormatting() const

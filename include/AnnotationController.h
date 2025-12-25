@@ -7,6 +7,7 @@
 #include <QColor>
 #include <QVector>
 #include <memory>
+#include "AnnotationLayer.h"
 
 class QPainter;
 class AnnotationLayer;
@@ -78,6 +79,16 @@ public:
     int width() const { return m_width; }
 
     /**
+     * @brief Set the arrow line end style.
+     */
+    void setArrowStyle(LineEndStyle style) { m_arrowStyle = style; }
+
+    /**
+     * @brief Get the current arrow style.
+     */
+    LineEndStyle arrowStyle() const { return m_arrowStyle; }
+
+    /**
      * @brief Start drawing at the given position.
      */
     virtual void startDrawing(const QPoint& pos);
@@ -133,6 +144,7 @@ protected:
     Tool m_currentTool;
     QColor m_color;
     int m_width;
+    LineEndStyle m_arrowStyle = LineEndStyle::EndArrow;
 
     bool m_isDrawing;
     QPoint m_startPoint;

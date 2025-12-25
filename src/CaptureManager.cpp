@@ -7,6 +7,7 @@
 
 #include <QDebug>
 #include <QGuiApplication>
+#include <QApplication>
 #include <QScreen>
 #include <QCursor>
 
@@ -54,18 +55,32 @@ void CaptureManager::startRegionCapture()
              << "geometry:" << targetScreen->geometry()
              << "cursor pos:" << QCursor::pos();
 
-    // 2. 創建 RegionSelector
+    // 2. Capture screenshot FIRST while popup is still visible
+    // This allows capturing context menus (like Snipaste)
+    QWidget *popup = QApplication::activePopupWidget();
+    qDebug() << "CaptureManager: Pre-capture screenshot, popup active:" << (popup != nullptr);
+
+    QPixmap preCapture = targetScreen->grabWindow(0);
+    qDebug() << "CaptureManager: Screenshot captured, size:" << preCapture.size();
+
+    // 3. Close popup AFTER screenshot to avoid event loop conflict with RegionSelector
+    if (popup) {
+        qDebug() << "CaptureManager: Closing popup to avoid event loop conflict";
+        popup->close();
+    }
+
+    // 4. 創建 RegionSelector
     m_regionSelector = new RegionSelector();
 
-    // 3. 設置視窗偵測器 (if available on this platform)
+    // 5. 設置視窗偵測器 (if available on this platform)
     if (m_windowDetector) {
         m_windowDetector->setScreen(targetScreen);
         m_windowDetector->refreshWindowList();
         m_regionSelector->setWindowDetector(m_windowDetector);
     }
 
-    // 4. 初始化指定螢幕 (包含截圖)
-    m_regionSelector->initializeForScreen(targetScreen);
+    // 6. 初始化指定螢幕 (使用預截圖)
+    m_regionSelector->initializeForScreen(targetScreen, preCapture);
 
     connect(m_regionSelector, &RegionSelector::regionSelected,
             this, &CaptureManager::onRegionSelected);

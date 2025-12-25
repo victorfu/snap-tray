@@ -1,6 +1,6 @@
 #include "ScreenCanvas.h"
 #include "AnnotationLayer.h"
-#include "AnnotationController.h"
+#include "tools/ToolManager.h"
 #include "IconRenderer.h"
 #include "ColorPaletteWidget.h"
 #include "ColorPickerDialog.h"
@@ -22,26 +22,13 @@
 static const char* SETTINGS_KEY_ANNOTATION_COLOR = "annotationColor";
 static const char* SETTINGS_KEY_ANNOTATION_WIDTH = "annotationWidth";
 
-// Helper function to map CanvasTool to AnnotationController::Tool
-static AnnotationController::Tool mapToControllerTool(CanvasTool tool)
-{
-    switch (tool) {
-    case CanvasTool::Pencil:    return AnnotationController::Tool::Pencil;
-    case CanvasTool::Marker:    return AnnotationController::Tool::Marker;
-    case CanvasTool::Arrow:     return AnnotationController::Tool::Arrow;
-    case CanvasTool::Rectangle: return AnnotationController::Tool::Rectangle;
-    case CanvasTool::Ellipse:   return AnnotationController::Tool::Ellipse;
-    default:                    return AnnotationController::Tool::None;
-    }
-}
-
 ScreenCanvas::ScreenCanvas(QWidget *parent)
     : QWidget(parent)
     , m_currentScreen(nullptr)
     , m_devicePixelRatio(1.0)
     , m_annotationLayer(nullptr)
-    , m_controller(nullptr)
-    , m_currentTool(CanvasTool::Pencil)
+    , m_toolManager(nullptr)
+    , m_currentToolId(ToolId::Pencil)
     , m_hoveredButton(-1)
     , m_colorPalette(nullptr)
     , m_lineWidthWidget(nullptr)
@@ -53,21 +40,27 @@ ScreenCanvas::ScreenCanvas(QWidget *parent)
     setCursor(Qt::ArrowCursor);
 
     // Initialize button rects
-    m_buttonRects.resize(static_cast<int>(CanvasTool::Count));
+    m_buttonRects.resize(static_cast<int>(CanvasButton::Count));
 
     // Initialize annotation layer
     m_annotationLayer = new AnnotationLayer(this);
 
-    // Initialize annotation controller with saved settings
-    m_controller = new AnnotationController(this);
-    m_controller->setAnnotationLayer(m_annotationLayer);
-    m_controller->setCurrentTool(mapToControllerTool(m_currentTool));
+    // Initialize tool manager with saved settings
+    m_toolManager = new ToolManager(this);
+    m_toolManager->registerDefaultHandlers();
+    m_toolManager->setAnnotationLayer(m_annotationLayer);
+    m_toolManager->setCurrentTool(m_currentToolId);
 
     // Load saved annotation settings (or defaults)
     QColor savedColor = loadAnnotationColor();
     int savedWidth = loadAnnotationWidth();
-    m_controller->setColor(savedColor);
-    m_controller->setWidth(savedWidth);
+    LineEndStyle savedArrowStyle = loadArrowStyle();
+    m_toolManager->setColor(savedColor);
+    m_toolManager->setWidth(savedWidth);
+    m_toolManager->setArrowStyle(savedArrowStyle);
+
+    // Connect tool manager signals
+    connect(m_toolManager, &ToolManager::needsRepaint, this, QOverload<>::of(&QWidget::update));
 
     // Initialize SVG icons
     initializeIcons();
@@ -93,12 +86,15 @@ ScreenCanvas::ScreenCanvas(QWidget *parent)
     m_colorAndWidthWidget->setCurrentColor(savedColor);
     m_colorAndWidthWidget->setCurrentWidth(savedWidth);
     m_colorAndWidthWidget->setWidthRange(1, 20);
+    m_colorAndWidthWidget->setArrowStyle(savedArrowStyle);
     connect(m_colorAndWidthWidget, &ColorAndWidthWidget::colorSelected,
             this, &ScreenCanvas::onColorSelected);
     connect(m_colorAndWidthWidget, &ColorAndWidthWidget::moreColorsRequested,
             this, &ScreenCanvas::onMoreColorsRequested);
     connect(m_colorAndWidthWidget, &ColorAndWidthWidget::widthChanged,
             this, &ScreenCanvas::onLineWidthChanged);
+    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::arrowStyleChanged,
+            this, &ScreenCanvas::onArrowStyleChanged);
 
     // Initialize laser pointer renderer
     m_laserRenderer = new LaserPointerRenderer(this);
@@ -138,40 +134,38 @@ void ScreenCanvas::initializeIcons()
     iconRenderer.loadIcon("cancel", ":/icons/icons/cancel.svg");
 }
 
-QString ScreenCanvas::getIconKeyForTool(CanvasTool tool) const
+QString ScreenCanvas::getIconKeyForButton(CanvasButton button) const
 {
-    switch (tool) {
-    case CanvasTool::Pencil:          return "pencil";
-    case CanvasTool::Marker:          return "marker";
-    case CanvasTool::Arrow:           return "arrow";
-    case CanvasTool::Rectangle:       return "rectangle";
-    case CanvasTool::Ellipse:         return "ellipse";
-    case CanvasTool::LaserPointer:    return "laser-pointer";
-    case CanvasTool::CursorHighlight: return "cursor-highlight";
-    case CanvasTool::Undo:            return "undo";
-    case CanvasTool::Redo:            return "redo";
-    case CanvasTool::Clear:           return "cancel";
-    case CanvasTool::Exit:            return "cancel";
-    default:                          return QString();
+    switch (button) {
+    case CanvasButton::Pencil:          return "pencil";
+    case CanvasButton::Marker:          return "marker";
+    case CanvasButton::Arrow:           return "arrow";
+    case CanvasButton::Shape:           return "rectangle";  // Use rectangle icon for unified shape
+    case CanvasButton::LaserPointer:    return "laser-pointer";
+    case CanvasButton::CursorHighlight: return "cursor-highlight";
+    case CanvasButton::Undo:            return "undo";
+    case CanvasButton::Redo:            return "redo";
+    case CanvasButton::Clear:           return "cancel";
+    case CanvasButton::Exit:            return "cancel";
+    default:                            return QString();
     }
 }
 
-void ScreenCanvas::renderIcon(QPainter &painter, const QRect &rect, CanvasTool tool, const QColor &color)
+void ScreenCanvas::renderIcon(QPainter &painter, const QRect &rect, CanvasButton button, const QColor &color)
 {
-    QString key = getIconKeyForTool(tool);
+    QString key = getIconKeyForButton(button);
     IconRenderer::instance().renderIcon(painter, rect, key, color);
 }
 
 bool ScreenCanvas::shouldShowColorPalette() const
 {
     // Show palette for color-enabled tools
-    switch (m_currentTool) {
-    case CanvasTool::Pencil:
-    case CanvasTool::Marker:
-    case CanvasTool::Arrow:
-    case CanvasTool::Rectangle:
-    case CanvasTool::Ellipse:
-    case CanvasTool::LaserPointer:
+    switch (m_currentToolId) {
+    case ToolId::Pencil:
+    case ToolId::Marker:
+    case ToolId::Arrow:
+    case ToolId::Shape:
+    case ToolId::LaserPointer:
         return true;
     default:
         return false;
@@ -180,7 +174,7 @@ bool ScreenCanvas::shouldShowColorPalette() const
 
 void ScreenCanvas::onColorSelected(const QColor &color)
 {
-    m_controller->setColor(color);
+    m_toolManager->setColor(color);
     m_laserRenderer->setColor(color);
     m_lineWidthWidget->setPreviewColor(color);
     m_colorAndWidthWidget->setCurrentColor(color);
@@ -191,12 +185,11 @@ void ScreenCanvas::onColorSelected(const QColor &color)
 bool ScreenCanvas::shouldShowLineWidthWidget() const
 {
     // Show for tools that support line width adjustment
-    switch (m_currentTool) {
-    case CanvasTool::Pencil:
-    case CanvasTool::Arrow:
-    case CanvasTool::Rectangle:
-    case CanvasTool::Ellipse:
-    case CanvasTool::LaserPointer:
+    switch (m_currentToolId) {
+    case ToolId::Pencil:
+    case ToolId::Arrow:
+    case ToolId::Shape:
+    case ToolId::LaserPointer:
         return true;
     default:
         return false;
@@ -205,7 +198,7 @@ bool ScreenCanvas::shouldShowLineWidthWidget() const
 
 void ScreenCanvas::onLineWidthChanged(int width)
 {
-    m_controller->setWidth(width);
+    m_toolManager->setWidth(width);
     m_laserRenderer->setWidth(width);
     saveAnnotationWidth(width);
     update();
@@ -214,13 +207,12 @@ void ScreenCanvas::onLineWidthChanged(int width)
 bool ScreenCanvas::shouldShowColorAndWidthWidget() const
 {
     // Show for tools that need either color or width (union of both)
-    switch (m_currentTool) {
-    case CanvasTool::Pencil:       // Needs both
-    case CanvasTool::Marker:       // Needs color only
-    case CanvasTool::Arrow:        // Needs both
-    case CanvasTool::Rectangle:    // Needs both
-    case CanvasTool::Ellipse:      // Needs both
-    case CanvasTool::LaserPointer: // Needs both
+    switch (m_currentToolId) {
+    case ToolId::Pencil:       // Needs both
+    case ToolId::Marker:       // Needs color only
+    case ToolId::Arrow:        // Needs both
+    case ToolId::Shape:        // Needs both
+    case ToolId::LaserPointer: // Needs both
         return true;
     default:
         return false;
@@ -230,12 +222,11 @@ bool ScreenCanvas::shouldShowColorAndWidthWidget() const
 bool ScreenCanvas::shouldShowWidthControl() const
 {
     // Marker has fixed width, so don't show width control for it
-    switch (m_currentTool) {
-    case CanvasTool::Pencil:
-    case CanvasTool::Arrow:
-    case CanvasTool::Rectangle:
-    case CanvasTool::Ellipse:
-    case CanvasTool::LaserPointer:
+    switch (m_currentToolId) {
+    case ToolId::Pencil:
+    case ToolId::Arrow:
+    case ToolId::Shape:
+    case ToolId::LaserPointer:
         return true;
     default:
         return false;  // Marker and others don't need width control
@@ -248,7 +239,7 @@ void ScreenCanvas::onMoreColorsRequested()
         m_colorPickerDialog = new ColorPickerDialog();
         connect(m_colorPickerDialog, &ColorPickerDialog::colorSelected,
                 this, [this](const QColor &color) {
-            m_controller->setColor(color);
+            m_toolManager->setColor(color);
             m_colorPalette->setCurrentColor(color);
             m_lineWidthWidget->setPreviewColor(color);
             m_colorAndWidthWidget->setCurrentColor(color);
@@ -257,10 +248,10 @@ void ScreenCanvas::onMoreColorsRequested()
         });
     }
 
-    m_colorPickerDialog->setCurrentColor(m_controller->color());
+    m_colorPickerDialog->setCurrentColor(m_toolManager->color());
 
-    // Ensure unified color/width widget is in sync with the controller color before showing the dialog
-    m_colorAndWidthWidget->setCurrentColor(m_controller->color());
+    // Ensure unified color/width widget is in sync with the tool manager color before showing the dialog
+    m_colorAndWidthWidget->setCurrentColor(m_toolManager->color());
 
     // Position at center of screen
     QPoint center = geometry().center();
@@ -322,6 +313,8 @@ void ScreenCanvas::paintEvent(QPaintEvent *)
     if (shouldShowColorAndWidthWidget()) {
         m_colorAndWidthWidget->setVisible(true);
         m_colorAndWidthWidget->setShowWidthSection(shouldShowWidthControl());
+        // Show arrow style section only for Arrow tool
+        m_colorAndWidthWidget->setShowArrowStyleSection(m_currentToolId == ToolId::Arrow);
         m_colorAndWidthWidget->updatePosition(m_toolbarRect, true, width());
         m_colorAndWidthWidget->draw(painter);
     } else {
@@ -365,7 +358,7 @@ void ScreenCanvas::drawAnnotations(QPainter &painter)
 
 void ScreenCanvas::drawCurrentAnnotation(QPainter &painter)
 {
-    m_controller->drawCurrentAnnotation(painter);
+    m_toolManager->drawCurrentPreview(painter);
 }
 
 void ScreenCanvas::drawToolbar(QPainter &painter)
@@ -386,13 +379,14 @@ void ScreenCanvas::drawToolbar(QPainter &painter)
     painter.drawRoundedRect(m_toolbarRect, 8, 8);
 
     // Render icons
-    for (int i = 0; i < static_cast<int>(CanvasTool::Count); ++i) {
+    for (int i = 0; i < static_cast<int>(CanvasButton::Count); ++i) {
         QRect btnRect = m_buttonRects[i];
-        CanvasTool tool = static_cast<CanvasTool>(i);
+        CanvasButton button = static_cast<CanvasButton>(i);
+        ToolId buttonToolId = canvasButtonToToolId(button);
 
-        // Highlight active tool (annotation tools only) or toggle state for CursorHighlight
-        bool isActive = (tool == m_currentTool) && isAnnotationTool(tool);
-        bool isToggleActive = (tool == CanvasTool::CursorHighlight) && m_rippleRenderer->isEnabled();
+        // Highlight active tool (drawing tools only) or toggle state for CursorHighlight
+        bool isActive = (buttonToolId == m_currentToolId) && isDrawingTool(buttonToolId);
+        bool isToggleActive = (button == CanvasButton::CursorHighlight) && m_rippleRenderer->isEnabled();
         if (isActive || isToggleActive) {
             painter.setPen(Qt::NoPen);
             painter.setBrush(QColor(0, 120, 200));
@@ -404,21 +398,21 @@ void ScreenCanvas::drawToolbar(QPainter &painter)
         }
 
         // Draw separator before CursorHighlight button
-        if (i == static_cast<int>(CanvasTool::CursorHighlight)) {
+        if (i == static_cast<int>(CanvasButton::CursorHighlight)) {
             painter.setPen(QColor(80, 80, 80));
             painter.drawLine(btnRect.left() - 4, btnRect.top() + 6,
                              btnRect.left() - 4, btnRect.bottom() - 6);
         }
 
         // Draw separator before Undo button
-        if (i == static_cast<int>(CanvasTool::Undo)) {
+        if (i == static_cast<int>(CanvasButton::Undo)) {
             painter.setPen(QColor(80, 80, 80));
             painter.drawLine(btnRect.left() - 4, btnRect.top() + 6,
                              btnRect.left() - 4, btnRect.bottom() - 6);
         }
 
         // Draw separator before Exit button
-        if (i == static_cast<int>(CanvasTool::Exit)) {
+        if (i == static_cast<int>(CanvasButton::Exit)) {
             painter.setPen(QColor(80, 80, 80));
             painter.drawLine(btnRect.left() - 4, btnRect.top() + 6,
                              btnRect.left() - 4, btnRect.bottom() - 6);
@@ -426,9 +420,9 @@ void ScreenCanvas::drawToolbar(QPainter &painter)
 
         // Determine icon color
         QColor iconColor;
-        if (tool == CanvasTool::Exit) {
+        if (button == CanvasButton::Exit) {
             iconColor = QColor(255, 100, 100);  // Red for exit
-        } else if (tool == CanvasTool::Clear) {
+        } else if (button == CanvasButton::Clear) {
             iconColor = QColor(255, 180, 100);  // Orange for clear
         } else if (isActive || isToggleActive) {
             iconColor = Qt::white;
@@ -436,14 +430,14 @@ void ScreenCanvas::drawToolbar(QPainter &painter)
             iconColor = QColor(220, 220, 220);
         }
 
-        renderIcon(painter, btnRect, tool, iconColor);
+        renderIcon(painter, btnRect, button, iconColor);
     }
 }
 
 void ScreenCanvas::updateToolbarPosition()
 {
     int separatorCount = 3;  // CursorHighlight, Undo, Exit 前各有分隔線
-    int toolbarWidth = static_cast<int>(CanvasTool::Count) * (BUTTON_WIDTH + BUTTON_SPACING) + 20 + separatorCount * 6;
+    int toolbarWidth = static_cast<int>(CanvasButton::Count) * (BUTTON_WIDTH + BUTTON_SPACING) + 20 + separatorCount * 6;
 
     // Center horizontally, 30px from bottom
     int toolbarX = (width() - toolbarWidth) / 2;
@@ -455,14 +449,14 @@ void ScreenCanvas::updateToolbarPosition()
     int x = toolbarX + 10;
     int y = toolbarY + (TOOLBAR_HEIGHT - BUTTON_WIDTH + 4) / 2;
 
-    for (int i = 0; i < static_cast<int>(CanvasTool::Count); ++i) {
+    for (int i = 0; i < static_cast<int>(CanvasButton::Count); ++i) {
         m_buttonRects[i] = QRect(x, y, BUTTON_WIDTH, BUTTON_WIDTH - 4);
         x += BUTTON_WIDTH + BUTTON_SPACING;
 
         // Add extra spacing for separators
-        if (i == static_cast<int>(CanvasTool::LaserPointer) ||
-            i == static_cast<int>(CanvasTool::CursorHighlight) ||
-            i == static_cast<int>(CanvasTool::Clear)) {
+        if (i == static_cast<int>(CanvasButton::LaserPointer) ||
+            i == static_cast<int>(CanvasButton::CursorHighlight) ||
+            i == static_cast<int>(CanvasButton::Clear)) {
             x += 6;
         }
     }
@@ -484,8 +478,7 @@ QString ScreenCanvas::getButtonTooltip(int buttonIndex)
         "Pencil",
         "Marker",
         "Arrow",
-        "Rectangle",
-        "Ellipse",
+        "Shape",  // Unified Rectangle/Ellipse
         "Laser Pointer",
         "Cursor Highlight (Toggle)",
         "Undo (Ctrl+Z)",
@@ -543,38 +536,39 @@ void ScreenCanvas::drawTooltip(QPainter &painter)
     painter.drawText(textRect, Qt::AlignCenter, tooltip);
 }
 
-void ScreenCanvas::handleToolbarClick(CanvasTool button)
+void ScreenCanvas::handleToolbarClick(CanvasButton button)
 {
+    ToolId toolId = canvasButtonToToolId(button);
+
     switch (button) {
-    case CanvasTool::Pencil:
-    case CanvasTool::Marker:
-    case CanvasTool::Arrow:
-    case CanvasTool::Rectangle:
-    case CanvasTool::Ellipse:
-        m_currentTool = button;
-        m_controller->setCurrentTool(mapToControllerTool(button));
-        qDebug() << "ScreenCanvas: Tool selected:" << static_cast<int>(button);
+    case CanvasButton::Pencil:
+    case CanvasButton::Marker:
+    case CanvasButton::Arrow:
+    case CanvasButton::Shape:
+        m_currentToolId = toolId;
+        m_toolManager->setCurrentTool(toolId);
+        qDebug() << "ScreenCanvas: Tool selected:" << static_cast<int>(toolId);
         update();
         break;
 
-    case CanvasTool::LaserPointer:
-        m_currentTool = button;
-        m_controller->setCurrentTool(AnnotationController::Tool::None);
+    case CanvasButton::LaserPointer:
+        m_currentToolId = toolId;
+        m_toolManager->setCurrentTool(toolId);
         // Sync laser pointer with current color and width settings
-        m_laserRenderer->setColor(m_controller->color());
-        m_laserRenderer->setWidth(m_controller->width());
+        m_laserRenderer->setColor(m_toolManager->color());
+        m_laserRenderer->setWidth(m_toolManager->width());
         qDebug() << "ScreenCanvas: Laser Pointer selected";
         update();
         break;
 
-    case CanvasTool::CursorHighlight:
+    case CanvasButton::CursorHighlight:
         // Toggle cursor highlight (not a drawing tool)
         m_rippleRenderer->setEnabled(!m_rippleRenderer->isEnabled());
         qDebug() << "ScreenCanvas: Cursor Highlight" << (m_rippleRenderer->isEnabled() ? "enabled" : "disabled");
         update();
         break;
 
-    case CanvasTool::Undo:
+    case CanvasButton::Undo:
         if (m_annotationLayer->canUndo()) {
             m_annotationLayer->undo();
             qDebug() << "ScreenCanvas: Undo";
@@ -582,7 +576,7 @@ void ScreenCanvas::handleToolbarClick(CanvasTool button)
         }
         break;
 
-    case CanvasTool::Redo:
+    case CanvasButton::Redo:
         if (m_annotationLayer->canRedo()) {
             m_annotationLayer->redo();
             qDebug() << "ScreenCanvas: Redo";
@@ -590,13 +584,13 @@ void ScreenCanvas::handleToolbarClick(CanvasTool button)
         }
         break;
 
-    case CanvasTool::Clear:
+    case CanvasButton::Clear:
         m_annotationLayer->clear();
         qDebug() << "ScreenCanvas: Clear all annotations";
         update();
         break;
 
-    case CanvasTool::Exit:
+    case CanvasButton::Exit:
         close();
         break;
 
@@ -605,15 +599,14 @@ void ScreenCanvas::handleToolbarClick(CanvasTool button)
     }
 }
 
-bool ScreenCanvas::isAnnotationTool(CanvasTool tool) const
+bool ScreenCanvas::isDrawingTool(ToolId toolId) const
 {
-    switch (tool) {
-    case CanvasTool::Pencil:
-    case CanvasTool::Marker:
-    case CanvasTool::Arrow:
-    case CanvasTool::Rectangle:
-    case CanvasTool::Ellipse:
-    case CanvasTool::LaserPointer:
+    switch (toolId) {
+    case ToolId::Pencil:
+    case ToolId::Marker:
+    case ToolId::Arrow:
+    case ToolId::Shape:
+    case ToolId::LaserPointer:
         return true;
     default:
         return false;
@@ -626,7 +619,7 @@ void ScreenCanvas::mousePressEvent(QMouseEvent *event)
         // Check if clicked on toolbar FIRST (before widgets that may overlap)
         int buttonIdx = getButtonAtPosition(event->pos());
         if (buttonIdx >= 0) {
-            handleToolbarClick(static_cast<CanvasTool>(buttonIdx));
+            handleToolbarClick(static_cast<CanvasButton>(buttonIdx));
             return;
         }
 
@@ -657,21 +650,21 @@ void ScreenCanvas::mousePressEvent(QMouseEvent *event)
         }
 
         // Handle laser pointer drawing
-        if (m_currentTool == CanvasTool::LaserPointer) {
+        if (m_currentToolId == ToolId::LaserPointer) {
             m_laserRenderer->startDrawing(event->pos());
             update();
             return;
         }
 
         // Start annotation drawing
-        if (isAnnotationTool(m_currentTool)) {
-            m_controller->startDrawing(event->pos());
+        if (isDrawingTool(m_currentToolId)) {
+            m_toolManager->handleMousePress(event->pos());
             update();
         }
     } else if (event->button() == Qt::RightButton) {
         // Cancel current annotation
-        if (m_controller->isDrawing()) {
-            m_controller->cancelDrawing();
+        if (m_toolManager->isDrawing()) {
+            m_toolManager->cancelDrawing();
             update();
         }
     }
@@ -684,14 +677,14 @@ void ScreenCanvas::mouseMoveEvent(QMouseEvent *event)
     m_cursorPos = event->pos();
 
     // Handle laser pointer drawing
-    if (m_currentTool == CanvasTool::LaserPointer && m_laserRenderer->isDrawing()) {
+    if (m_currentToolId == ToolId::LaserPointer && m_laserRenderer->isDrawing()) {
         m_laserRenderer->updateDrawing(event->pos());
         update();
         return;
     }
 
-    if (m_controller->isDrawing()) {
-        m_controller->updateDrawing(event->pos());
+    if (m_toolManager->isDrawing()) {
+        m_toolManager->handleMouseMove(event->pos());
         update();
     } else {
         bool needsUpdate = false;
@@ -787,15 +780,15 @@ void ScreenCanvas::mouseReleaseEvent(QMouseEvent *event)
         }
 
         // Handle laser pointer release
-        if (m_currentTool == CanvasTool::LaserPointer && m_laserRenderer->isDrawing()) {
+        if (m_currentToolId == ToolId::LaserPointer && m_laserRenderer->isDrawing()) {
             m_laserRenderer->stopDrawing();
             update();
             return;
         }
 
         // Finish drawing annotation
-        if (m_controller->isDrawing()) {
-            m_controller->finishDrawing();
+        if (m_toolManager->isDrawing()) {
+            m_toolManager->handleMouseRelease(event->pos());
             update();
         }
     }
@@ -836,7 +829,7 @@ void ScreenCanvas::keyPressEvent(QKeyEvent *event)
 void ScreenCanvas::drawCursorDot(QPainter &painter)
 {
     // Don't show when drawing, on toolbar, or on widgets
-    if (m_controller->isDrawing()) return;
+    if (m_toolManager->isDrawing()) return;
     if (m_laserRenderer->isDrawing()) return;
     if (m_toolbarRect.contains(m_cursorPos)) return;
     if (m_hoveredButton >= 0) return;
@@ -844,7 +837,7 @@ void ScreenCanvas::drawCursorDot(QPainter &painter)
 
     // Draw a dot following the current tool color
     painter.setPen(Qt::NoPen);
-    painter.setBrush(m_controller->color());
+    painter.setBrush(m_toolManager->color());
     painter.drawEllipse(m_cursorPos, 3, 3);  // 6px diameter
 }
 
@@ -876,4 +869,24 @@ void ScreenCanvas::saveAnnotationWidth(int width)
 {
     QSettings settings("Victor Fu", "SnapTray");
     settings.setValue(SETTINGS_KEY_ANNOTATION_WIDTH, width);
+}
+
+LineEndStyle ScreenCanvas::loadArrowStyle() const
+{
+    QSettings settings("Victor Fu", "SnapTray");
+    int style = settings.value("annotation/arrowStyle", static_cast<int>(LineEndStyle::EndArrow)).toInt();
+    return static_cast<LineEndStyle>(style);
+}
+
+void ScreenCanvas::saveArrowStyle(LineEndStyle style)
+{
+    QSettings settings("Victor Fu", "SnapTray");
+    settings.setValue("annotation/arrowStyle", static_cast<int>(style));
+}
+
+void ScreenCanvas::onArrowStyleChanged(LineEndStyle style)
+{
+    m_toolManager->setArrowStyle(style);
+    saveArrowStyle(style);
+    update();
 }

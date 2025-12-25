@@ -80,7 +80,20 @@ set(SOURCES
     src/RecordingControlBar.cpp
     src/RecordingBoundaryOverlay.cpp
     src/FFmpegEncoder.cpp
+    src/VideoEncoderFactory.cpp
     src/TransformationGizmo.cpp
+    # Tool system
+    src/tools/ToolRegistry.cpp
+    src/tools/ToolManager.cpp
+    src/tools/handlers/PencilToolHandler.cpp
+    src/tools/handlers/MarkerToolHandler.cpp
+    src/tools/handlers/ArrowToolHandler.cpp
+    src/tools/handlers/ShapeToolHandler.cpp
+    src/tools/handlers/MosaicToolHandler.cpp
+    src/tools/handlers/StepBadgeToolHandler.cpp
+    src/tools/handlers/EraserToolHandler.cpp
+    src/tools/handlers/SelectionToolHandler.cpp
+    src/tools/handlers/LaserPointerToolHandler.cpp
 )
 
 set(RESOURCES
@@ -117,9 +130,29 @@ set(HEADERS
     include/RecordingControlBar.h
     include/RecordingBoundaryOverlay.h
     include/FFmpegEncoder.h
+    include/IVideoEncoder.h
+    include/AVFoundationEncoder.h
+    include/MediaFoundationEncoder.h
     include/TransformationGizmo.h
     include/capture/ICaptureEngine.h
     include/capture/QtCaptureEngine.h
+    # Tool system
+    include/tools/ToolId.h
+    include/tools/ToolDefinition.h
+    include/tools/ToolContext.h
+    include/tools/IToolHandler.h
+    include/tools/ToolRegistry.h
+    include/tools/ToolManager.h
+    include/tools/handlers/AllHandlers.h
+    include/tools/handlers/PencilToolHandler.h
+    include/tools/handlers/MarkerToolHandler.h
+    include/tools/handlers/ArrowToolHandler.h
+    include/tools/handlers/ShapeToolHandler.h
+    include/tools/handlers/MosaicToolHandler.h
+    include/tools/handlers/StepBadgeToolHandler.h
+    include/tools/handlers/EraserToolHandler.h
+    include/tools/handlers/SelectionToolHandler.h
+    include/tools/handlers/LaserPointerToolHandler.h
 )
 
 # Cross-platform source files (used by both platforms)
@@ -141,6 +174,7 @@ if(APPLE)
         src/WindowDetectionOverlay.cpp
         src/OCRController.cpp
         src/capture/SCKCaptureEngine_mac.mm
+        src/AVFoundationEncoder.mm
     )
     list(APPEND HEADERS
         include/WindowDetector.h
@@ -157,6 +191,7 @@ elseif(WIN32)
         src/OCRManager_win.cpp
         src/AutoLaunchManager_win.cpp
         src/capture/DXGICaptureEngine_win.cpp
+        src/MediaFoundationEncoder.cpp
     )
     list(APPEND HEADERS
         include/WindowDetector.h
@@ -184,7 +219,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_BINARY_DIR}/generated
 )
 
-# macOS frameworks needed for window detection and auto-launch
+# macOS frameworks needed for window detection, auto-launch, and native encoding
 if(APPLE)
     find_library(COREGRAPHICS_FRAMEWORK CoreGraphics)
     find_library(APPLICATIONSERVICES_FRAMEWORK ApplicationServices)
@@ -193,6 +228,7 @@ if(APPLE)
     find_library(SERVICEMANAGEMENT_FRAMEWORK ServiceManagement)
     find_library(COREMEDIA_FRAMEWORK CoreMedia)
     find_library(COREVIDEO_FRAMEWORK CoreVideo)
+    find_library(AVFOUNDATION_FRAMEWORK AVFoundation)
     # ScreenCaptureKit is optional (macOS 12.3+), weak link to allow running on older systems
     find_library(SCREENCAPTUREKIT_FRAMEWORK ScreenCaptureKit)
     target_link_libraries(${PROJECT_NAME} PRIVATE
@@ -207,6 +243,7 @@ if(APPLE)
         ${SERVICEMANAGEMENT_FRAMEWORK}
         ${COREMEDIA_FRAMEWORK}
         ${COREVIDEO_FRAMEWORK}
+        ${AVFOUNDATION_FRAMEWORK}
     )
     # Weak link ScreenCaptureKit if available (for macOS 12.3+ compatibility)
     if(SCREENCAPTUREKIT_FRAMEWORK)
@@ -215,7 +252,7 @@ if(APPLE)
         )
     endif()
 elseif(WIN32)
-    # Windows-specific libraries for WindowDetector, OCR, and DXGI capture
+    # Windows-specific libraries for WindowDetector, OCR, DXGI capture, and Media Foundation
     target_link_libraries(${PROJECT_NAME} PRIVATE
         Qt6::Widgets
         Qt6::Gui
@@ -226,6 +263,9 @@ elseif(WIN32)
         windowsapp
         d3d11
         dxgi
+        mfreadwrite
+        mfplat
+        mfuuid
     )
     # Enable C++/WinRT for Windows.Media.Ocr
     target_compile_options(${PROJECT_NAME} PRIVATE /await)

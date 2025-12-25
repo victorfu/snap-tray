@@ -79,16 +79,28 @@ private:
     mutable bool m_boundingRectDirty = true;
 };
 
+// Line end style for arrow annotations
+enum class LineEndStyle {
+    None = 0,    // ───── Plain line (no arrows)
+    EndArrow,    // ─────▶ Arrow at end (default)
+    DotToArrow   // ●─────▶ Dot at start, arrow at end
+};
+
 // Arrow annotation (line with arrowhead)
 class ArrowAnnotation : public AnnotationItem
 {
 public:
-    ArrowAnnotation(const QPoint &start, const QPoint &end, const QColor &color, int width);
+    ArrowAnnotation(const QPoint &start, const QPoint &end, const QColor &color, int width,
+                    LineEndStyle style = LineEndStyle::EndArrow);
     void draw(QPainter &painter) const override;
     QRect boundingRect() const override;
     std::unique_ptr<AnnotationItem> clone() const override;
 
     void setEnd(const QPoint &end);
+    QPoint start() const { return m_start; }
+    QPoint end() const { return m_end; }
+    void setLineEndStyle(LineEndStyle style) { m_lineEndStyle = style; }
+    LineEndStyle lineEndStyle() const { return m_lineEndStyle; }
 
 private:
     void drawArrowhead(QPainter &painter, const QPoint &start, const QPoint &end) const;
@@ -97,6 +109,7 @@ private:
     QPoint m_end;
     QColor m_color;
     int m_width;
+    LineEndStyle m_lineEndStyle;
 };
 
 // Rectangle annotation
@@ -209,33 +222,21 @@ private:
     int m_number;
 };
 
-// Mosaic (pixelation) annotation - rectangle-based (legacy)
-class MosaicAnnotation : public AnnotationItem
-{
-public:
-    MosaicAnnotation(const QRect &rect, const QPixmap &sourcePixmap, int blockSize = 10);
-    void draw(QPainter &painter) const override;
-    QRect boundingRect() const override;
-    std::unique_ptr<AnnotationItem> clone() const override;
-
-    void setRect(const QRect &rect);
-    void updateSource(const QPixmap &sourcePixmap);
-
-private:
-    void generateMosaic();
-
-    QRect m_rect;
-    QPixmap m_sourcePixmap;
-    QPixmap m_mosaicPixmap;
-    int m_blockSize;
-    qreal m_devicePixelRatio;
+// Mosaic strength levels for privacy protection
+enum class MosaicStrength {
+    Light,    // Preserve more detail, faster
+    Normal,   // Balanced
+    Strong,   // Default - aggressive obfuscation
+    Paranoid  // Multi-pass, maximum privacy
 };
 
-// Freehand mosaic stroke (eraser-like UX)
+// Freehand mosaic stroke with enhanced privacy algorithm
 class MosaicStroke : public AnnotationItem
 {
 public:
-    MosaicStroke(const QVector<QPoint> &points, const QPixmap &sourcePixmap, int width = 30, int blockSize = 8);
+    MosaicStroke(const QVector<QPoint> &points, const QPixmap &sourcePixmap,
+                 int width = 30, int blockSize = 8,
+                 MosaicStrength strength = MosaicStrength::Strong);
     void draw(QPainter &painter) const override;
     QRect boundingRect() const override;
     std::unique_ptr<AnnotationItem> clone() const override;
@@ -243,12 +244,16 @@ public:
     void addPoint(const QPoint &point);
     void updateSource(const QPixmap &sourcePixmap);
 
+    void setStrength(MosaicStrength strength);
+    MosaicStrength strength() const { return m_strength; }
+
 private:
     QVector<QPoint> m_points;
     QPixmap m_sourcePixmap;
     mutable QImage m_sourceImageCache;
     int m_width;      // Brush width
     int m_blockSize;  // Mosaic block size
+    MosaicStrength m_strength;
     qreal m_devicePixelRatio;
 
     // Performance optimization: rendered result cache
@@ -256,6 +261,12 @@ private:
     mutable int m_cachedPointCount = 0;
     mutable QRect m_cachedBounds;
     mutable qreal m_cachedDpr = 0.0;
+    mutable MosaicStrength m_cachedStrength = MosaicStrength::Strong;
+
+    // Enhanced mosaic algorithm helpers
+    QImage applyEnhancedMosaic(const QPixmap &regionPixmap) const;
+    QRgb calculateBlockAverageColor(const QImage &image, int x, int y,
+                                     int blockW, int blockH, double jitter) const;
 };
 
 // Group of erased items (for undo support)
