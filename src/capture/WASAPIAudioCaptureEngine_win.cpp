@@ -14,6 +14,8 @@
 #include <audioclient.h>
 #include <functiondiscoverykeys_devpkey.h>
 #include <propvarutil.h>
+#include <ks.h>
+#include <ksmedia.h>
 
 // WASAPI buffer size in 100-nanosecond units (10ms)
 static const REFERENCE_TIME BUFFER_DURATION = 100000;  // 10ms
@@ -362,14 +364,39 @@ void WASAPIAudioCaptureEngine::updateFormatFromWaveFormat(const void *wfxPtr)
 
     const WAVEFORMATEX *wfx = static_cast<const WAVEFORMATEX*>(wfxPtr);
 
+    // Store native format info for conversion
+    m_nativeBitsPerSample = wfx->wBitsPerSample;
+    m_nativeChannels = wfx->nChannels;
+    m_isFloatFormat = false;
+
+    // Check for WAVEFORMATEXTENSIBLE which contains subformat info
+    if (wfx->wFormatTag == WAVE_FORMAT_EXTENSIBLE && wfx->cbSize >= 22) {
+        const WAVEFORMATEXTENSIBLE *wfxExt = reinterpret_cast<const WAVEFORMATEXTENSIBLE*>(wfx);
+        if (IsEqualGUID(wfxExt->SubFormat, KSDATAFORMAT_SUBTYPE_IEEE_FLOAT)) {
+            m_isFloatFormat = true;
+            qDebug() << "WASAPIAudioCaptureEngine: Native format is IEEE float";
+        } else if (IsEqualGUID(wfxExt->SubFormat, KSDATAFORMAT_SUBTYPE_PCM)) {
+            qDebug() << "WASAPIAudioCaptureEngine: Native format is PCM";
+        }
+    } else if (wfx->wFormatTag == WAVE_FORMAT_IEEE_FLOAT) {
+        m_isFloatFormat = true;
+        qDebug() << "WASAPIAudioCaptureEngine: Native format is IEEE float (legacy tag)";
+    }
+
+    // Store native sample rate, but we will output 16-bit PCM
     m_format.sampleRate = wfx->nSamplesPerSec;
     m_format.channels = wfx->nChannels;
-    m_format.bitsPerSample = wfx->wBitsPerSample;
+    m_format.bitsPerSample = 16;  // Always output 16-bit PCM
 
-    qDebug() << "WASAPIAudioCaptureEngine: Audio format -"
+    qDebug() << "WASAPIAudioCaptureEngine: Native format -"
+             << wfx->nSamplesPerSec << "Hz,"
+             << wfx->nChannels << "ch,"
+             << m_nativeBitsPerSample << "bit"
+             << (m_isFloatFormat ? "(float)" : "(int)");
+    qDebug() << "WASAPIAudioCaptureEngine: Output format -"
              << m_format.sampleRate << "Hz,"
              << m_format.channels << "ch,"
-             << m_format.bitsPerSample << "bit";
+             << m_format.bitsPerSample << "bit (PCM)";
 }
 
 // Called from capture thread to initialize COM objects
@@ -581,6 +608,58 @@ void WASAPIAudioCaptureEngine::resume()
     qDebug() << "WASAPIAudioCaptureEngine: Resumed";
 }
 
+QByteArray WASAPIAudioCaptureEngine::convertToInt16PCM(const unsigned char *data, int numFrames) const
+{
+    // Output: 16-bit PCM, same channels as input
+    int outputSize = numFrames * m_nativeChannels * sizeof(int16_t);
+    QByteArray output(outputSize, 0);
+    int16_t *outPtr = reinterpret_cast<int16_t*>(output.data());
+
+    if (m_isFloatFormat && m_nativeBitsPerSample == 32) {
+        // Convert 32-bit float [-1.0, 1.0] to 16-bit signed int [-32768, 32767]
+        const float *inPtr = reinterpret_cast<const float*>(data);
+        int totalSamples = numFrames * m_nativeChannels;
+        for (int i = 0; i < totalSamples; i++) {
+            float sample = inPtr[i];
+            // Clamp to [-1.0, 1.0]
+            if (sample > 1.0f) sample = 1.0f;
+            else if (sample < -1.0f) sample = -1.0f;
+            outPtr[i] = static_cast<int16_t>(sample * 32767.0f);
+        }
+    } else if (!m_isFloatFormat && m_nativeBitsPerSample == 32) {
+        // Convert 32-bit int to 16-bit int (shift right by 16)
+        const int32_t *inPtr = reinterpret_cast<const int32_t*>(data);
+        int totalSamples = numFrames * m_nativeChannels;
+        for (int i = 0; i < totalSamples; i++) {
+            outPtr[i] = static_cast<int16_t>(inPtr[i] >> 16);
+        }
+    } else if (!m_isFloatFormat && m_nativeBitsPerSample == 24) {
+        // Convert 24-bit int (packed) to 16-bit int
+        const unsigned char *inPtr = data;
+        int totalSamples = numFrames * m_nativeChannels;
+        for (int i = 0; i < totalSamples; i++) {
+            // 24-bit samples are stored as 3 bytes, little-endian
+            int32_t sample = (static_cast<int32_t>(inPtr[2]) << 24) |
+                            (static_cast<int32_t>(inPtr[1]) << 16) |
+                            (static_cast<int32_t>(inPtr[0]) << 8);
+            // sample is now sign-extended 24-bit in upper 24 bits
+            outPtr[i] = static_cast<int16_t>(sample >> 16);
+            inPtr += 3;
+        }
+    } else if (!m_isFloatFormat && m_nativeBitsPerSample == 16) {
+        // Already 16-bit PCM, just copy
+        memcpy(output.data(), data, outputSize);
+    } else {
+        // Unsupported format - fill with silence and log warning
+        qWarning() << "WASAPIAudioCaptureEngine: Unsupported audio format -"
+                   << m_nativeBitsPerSample << "bit"
+                   << (m_isFloatFormat ? "float" : "int");
+        output.fill(0);
+    }
+
+    return output;
+}
+
 void WASAPIAudioCaptureEngine::captureLoop()
 {
     qDebug() << "WASAPIAudioCaptureEngine::captureLoop() START";
@@ -611,14 +690,16 @@ void WASAPIAudioCaptureEngine::captureLoop()
 
                 hr = m_micCaptureClient->GetBuffer(&data, &numFrames, &flags, nullptr, nullptr);
                 if (SUCCEEDED(hr) && numFrames > 0) {
-                    int dataSize = numFrames * m_format.bytesPerFrame();
                     QByteArray audioData;
 
                     if (flags & AUDCLNT_BUFFERFLAGS_SILENT) {
-                        audioData.resize(dataSize);
+                        // Output silence in 16-bit PCM format
+                        int outputSize = numFrames * m_nativeChannels * sizeof(int16_t);
+                        audioData.resize(outputSize);
                         audioData.fill(0);
                     } else {
-                        audioData = QByteArray(reinterpret_cast<const char*>(data), dataSize);
+                        // Convert from native format to 16-bit PCM
+                        audioData = convertToInt16PCM(data, numFrames);
                     }
 
                     qint64 now = std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -650,14 +731,16 @@ void WASAPIAudioCaptureEngine::captureLoop()
 
                 hr = m_loopbackCaptureClient->GetBuffer(&data, &numFrames, &flags, nullptr, nullptr);
                 if (SUCCEEDED(hr) && numFrames > 0) {
-                    int dataSize = numFrames * m_format.bytesPerFrame();
                     QByteArray audioData;
 
                     if (flags & AUDCLNT_BUFFERFLAGS_SILENT) {
-                        audioData.resize(dataSize);
+                        // Output silence in 16-bit PCM format
+                        int outputSize = numFrames * m_nativeChannels * sizeof(int16_t);
+                        audioData.resize(outputSize);
                         audioData.fill(0);
                     } else {
-                        audioData = QByteArray(reinterpret_cast<const char*>(data), dataSize);
+                        // Convert from native format to 16-bit PCM
+                        audioData = convertToInt16PCM(data, numFrames);
                     }
 
                     qint64 now = std::chrono::duration_cast<std::chrono::milliseconds>(

@@ -73,6 +73,10 @@ private:
     // Convert WASAPI format to our format (takes void* to avoid WAVEFORMATEX in header)
     void updateFormatFromWaveFormat(const void *wfx);
 
+    // Convert audio data from native format to 16-bit PCM
+    // Uses unsigned char* to avoid Windows header dependency
+    QByteArray convertToInt16PCM(const unsigned char *data, int numFrames) const;
+
     // Capture loop (runs in separate thread)
     void captureLoop();
 
@@ -104,6 +108,11 @@ private:
     qint64 m_pausedDuration = 0;
     qint64 m_pauseStartTime = 0;
     mutable QMutex m_timingMutex;
+
+    // Native audio format info (for conversion)
+    bool m_isFloatFormat = false;
+    int m_nativeBitsPerSample = 16;
+    int m_nativeChannels = 2;
 };
 
 #endif // Q_OS_WIN

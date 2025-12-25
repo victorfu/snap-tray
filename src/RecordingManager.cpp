@@ -670,15 +670,12 @@ void RecordingManager::captureFrame()
     QImage frame = captureEngine->captureFrame();
 
     if (!frame.isNull()) {
-        // Calculate real elapsed time (accounting for pause duration)
-        // This ensures video timestamps match audio timestamps for proper A/V sync
-        qint64 elapsedMs;
-        {
-            QMutexLocker locker(&m_durationMutex);
-            elapsedMs = m_elapsedTimer.elapsed() - m_pausedDuration;
-        }
+        // Use frame-count-based timestamps for consistent video timing
+        // This prevents slow-motion/fast-motion issues caused by capture timing jitter
+        // Frame count * 1000 / frameRate gives the expected timestamp in milliseconds
+        qint64 elapsedMs = static_cast<qint64>(m_frameCount) * 1000 / m_frameRate;
 
-        // Pass QImage to the appropriate encoder with real timestamp
+        // Pass QImage to the appropriate encoder with frame-based timestamp
         if (m_usingNativeEncoder && m_nativeEncoder) {
             m_nativeEncoder->writeFrame(frame, elapsedMs);
         } else if (m_encoder) {
