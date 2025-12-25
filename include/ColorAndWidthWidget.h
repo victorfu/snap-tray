@@ -337,6 +337,7 @@ private:
 
     // Mosaic strength section helpers
     void drawMosaicStrengthSection(QPainter& painter);
+    void drawMosaicStrengthTooltip(QPainter& painter);
     int mosaicStrengthButtonAtPosition(const QPoint& pos) const;
 
     // Color state
@@ -382,6 +383,7 @@ private:
     QRect m_mosaicStrengthSectionRect;
     QVector<QRect> m_mosaicStrengthButtonRects;  // 4 buttons for L/N/S/P
     int m_hoveredMosaicStrengthButton = -1;
+    QString m_mosaicStrengthTooltip;  // Current tooltip text to display
 
     // Layout state
     bool m_visible;

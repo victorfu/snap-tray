@@ -396,6 +396,7 @@ void ColorAndWidthWidget::draw(QPainter& painter)
     // Draw mosaic strength section (if enabled)
     if (m_showMosaicStrengthSection) {
         drawMosaicStrengthSection(painter);
+        drawMosaicStrengthTooltip(painter);
     }
 }
 
@@ -758,6 +759,41 @@ int ColorAndWidthWidget::mosaicStrengthButtonAtPosition(const QPoint& pos) const
     return -1;
 }
 
+void ColorAndWidthWidget::drawMosaicStrengthTooltip(QPainter& painter)
+{
+    if (m_hoveredMosaicStrengthButton < 0 || m_mosaicStrengthTooltip.isEmpty()) return;
+    if (m_hoveredMosaicStrengthButton >= m_mosaicStrengthButtonRects.size()) return;
+
+    QFont font = painter.font();
+    font.setPointSize(11);
+    painter.setFont(font);
+
+    QFontMetrics fm(font);
+    QRect textRect = fm.boundingRect(m_mosaicStrengthTooltip);
+    textRect.adjust(-8, -4, 8, 4);
+
+    // Position tooltip above the button
+    QRect btnRect = m_mosaicStrengthButtonRects[m_hoveredMosaicStrengthButton];
+    int tooltipX = btnRect.center().x() - textRect.width() / 2;
+    int tooltipY = m_widgetRect.top() - textRect.height() - 6;
+
+    textRect.moveTo(tooltipX, tooltipY);
+
+    // Draw tooltip background
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(QColor(30, 30, 30, 230));
+    painter.drawRoundedRect(textRect, 4, 4);
+
+    // Draw tooltip border
+    painter.setPen(QColor(80, 80, 80));
+    painter.setBrush(Qt::NoBrush);
+    painter.drawRoundedRect(textRect, 4, 4);
+
+    // Draw tooltip text
+    painter.setPen(Qt::white);
+    painter.drawText(textRect, Qt::AlignCenter, m_mosaicStrengthTooltip);
+}
+
 bool ColorAndWidthWidget::contains(const QPoint& pos) const
 {
     if (m_widgetRect.contains(pos)) return true;
@@ -945,10 +981,18 @@ bool ColorAndWidthWidget::updateHovered(const QPoint& pos)
         int newHoveredMosaicButton = mosaicStrengthButtonAtPosition(pos);
         if (newHoveredMosaicButton != m_hoveredMosaicStrengthButton) {
             m_hoveredMosaicStrengthButton = newHoveredMosaicButton;
+            // Update tooltip text
+            static const QString tooltips[] = { "Light", "Normal", "Strong", "Paranoid" };
+            if (m_hoveredMosaicStrengthButton >= 0 && m_hoveredMosaicStrengthButton < 4) {
+                m_mosaicStrengthTooltip = tooltips[m_hoveredMosaicStrengthButton];
+            } else {
+                m_mosaicStrengthTooltip.clear();
+            }
             changed = true;
         }
     } else if (m_hoveredMosaicStrengthButton != -1) {
         m_hoveredMosaicStrengthButton = -1;
+        m_mosaicStrengthTooltip.clear();
         changed = true;
     }
 

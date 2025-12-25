@@ -55,9 +55,9 @@ static QCursor createMosaicCursor(int size) {
     QPainter painter(&pixmap);
     painter.setRenderHint(QPainter::Antialiasing, true);
 
-    // Gray border with semi-transparent fill
-    painter.setPen(QPen(QColor(128, 128, 128), 1.5));
-    painter.setBrush(QColor(255, 255, 255, 30));
+    // Darker gray border with semi-transparent fill
+    painter.setPen(QPen(QColor(90, 90, 90), 1.0));
+    painter.setBrush(QColor(200, 200, 200, 20));
     painter.drawRoundedRect(1, 1, size - 2, size - 2, 2, 2);
 
     painter.end();
@@ -1674,7 +1674,7 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
                 setCursor(Qt::IBeamCursor);
             }
             else if (m_currentTool == ToolbarButton::Mosaic) {
-                static QCursor mosaicCursor = createMosaicCursor(15);
+                static QCursor mosaicCursor = createMosaicCursor(12);
                 setCursor(mosaicCursor);
             }
             else if (isAnnotationTool(m_currentTool) && m_currentTool != ToolbarButton::Selection) {
@@ -1686,10 +1686,19 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
                 updateCursorForHandle(handle);
             }
         }
-        else if (hoveredButton < 0 && !colorPaletteHovered && !lineWidthHovered && !unifiedWidgetHovered && !textAnnotationHovered && !gizmoHandleHovered && m_currentTool == ToolbarButton::Selection) {
-            // Update cursor for resize handles when not hovering button or color swatch
-            ResizeHandle handle = getHandleAtPosition(event->pos());
-            updateCursorForHandle(handle);
+        else if (hoveredButton < 0 && !colorPaletteHovered && !lineWidthHovered && !unifiedWidgetHovered && !textAnnotationHovered && !gizmoHandleHovered) {
+            // Update cursor based on current tool
+            if (m_currentTool == ToolbarButton::Selection) {
+                ResizeHandle handle = getHandleAtPosition(event->pos());
+                updateCursorForHandle(handle);
+            } else if (m_currentTool == ToolbarButton::Mosaic) {
+                static QCursor mosaicCursor = createMosaicCursor(12);
+                setCursor(mosaicCursor);
+            } else if (m_currentTool == ToolbarButton::Text && !m_textEditor->isEditing()) {
+                setCursor(Qt::IBeamCursor);
+            } else if (isAnnotationTool(m_currentTool)) {
+                setCursor(Qt::CrossCursor);
+            }
         }
     }
 
