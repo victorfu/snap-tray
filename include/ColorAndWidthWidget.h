@@ -8,6 +8,7 @@
 #include <QPoint>
 #include <QString>
 #include "AnnotationLayer.h"
+#include "RegionSelector.h"  // For ShapeType and ShapeFillMode enums
 
 class QPainter;
 
@@ -162,6 +163,37 @@ public:
      */
     MosaicStrength mosaicStrength() const { return m_mosaicStrength; }
 
+    // Shape section methods
+    /**
+     * @brief Set whether to show the shape section.
+     */
+    void setShowShapeSection(bool show);
+
+    /**
+     * @brief Check if the shape section is shown.
+     */
+    bool showShapeSection() const { return m_showShapeSection; }
+
+    /**
+     * @brief Set the shape type.
+     */
+    void setShapeType(ShapeType type);
+
+    /**
+     * @brief Get the current shape type.
+     */
+    ShapeType shapeType() const { return m_shapeType; }
+
+    /**
+     * @brief Set the shape fill mode.
+     */
+    void setShapeFillMode(ShapeFillMode mode);
+
+    /**
+     * @brief Get the current shape fill mode.
+     */
+    ShapeFillMode shapeFillMode() const { return m_shapeFillMode; }
+
     // Line width methods
     /**
      * @brief Set the width range.
@@ -314,6 +346,16 @@ signals:
      */
     void mosaicStrengthChanged(MosaicStrength strength);
 
+    /**
+     * @brief Emitted when shape type is changed.
+     */
+    void shapeTypeChanged(ShapeType type);
+
+    /**
+     * @brief Emitted when shape fill mode is changed.
+     */
+    void shapeFillModeChanged(ShapeFillMode mode);
+
 private:
     // Layout calculation
     void updateLayout();
@@ -339,6 +381,10 @@ private:
     void drawMosaicStrengthSection(QPainter& painter);
     void drawMosaicStrengthTooltip(QPainter& painter);
     int mosaicStrengthButtonAtPosition(const QPoint& pos) const;
+
+    // Shape section helpers
+    void drawShapeSection(QPainter& painter);
+    int shapeButtonAtPosition(const QPoint& pos) const;
 
     // Color state
     QVector<QColor> m_colors;
@@ -385,6 +431,14 @@ private:
     int m_hoveredMosaicStrengthButton = -1;
     QString m_mosaicStrengthTooltip;  // Current tooltip text to display
 
+    // Shape section state
+    bool m_showShapeSection = false;
+    ShapeType m_shapeType = ShapeType::Rectangle;
+    ShapeFillMode m_shapeFillMode = ShapeFillMode::Outline;
+    QRect m_shapeSectionRect;
+    QVector<QRect> m_shapeButtonRects;  // 4 buttons: [Rect, Ellipse, Outline, Filled]
+    int m_hoveredShapeButton = -1;
+
     // Layout state
     bool m_visible;
     QRect m_widgetRect;
@@ -416,6 +470,10 @@ private:
     static const int MOSAIC_BUTTON_WIDTH = 24;
     static const int MOSAIC_BUTTON_HEIGHT = 20;
     static const int MOSAIC_BUTTON_SPACING = 2;
+
+    // Shape section layout constants
+    static const int SHAPE_BUTTON_SIZE = 24;
+    static const int SHAPE_BUTTON_SPACING = 2;
 };
 
 #endif // COLORANDWIDTHWIDGET_H

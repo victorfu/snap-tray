@@ -37,14 +37,19 @@ class MosaicStroke;
 class StepBadgeAnnotation;
 class AnnotationItem;
 
+// Shape type for Shape tool
+enum class ShapeType { Rectangle, Ellipse };
+
+// Fill mode for Shape tool
+enum class ShapeFillMode { Outline, Filled };
+
 // Toolbar button types
 enum class ToolbarButton {
     Selection = 0,
     Arrow,
     Pencil,
     Marker,
-    Rectangle,
-    Ellipse,
+    Shape,  // Unified shape tool (Rectangle + Ellipse)
     Text,
     Mosaic,
     StepBadge,
@@ -214,6 +219,10 @@ private:
     QColor m_annotationColor;
     int m_annotationWidth;
     LineEndStyle m_arrowStyle;
+
+    // Shape tool state
+    ShapeType m_shapeType = ShapeType::Rectangle;
+    ShapeFillMode m_shapeFillMode = ShapeFillMode::Outline;
 
     // In-progress annotation state
     bool m_isDrawing;

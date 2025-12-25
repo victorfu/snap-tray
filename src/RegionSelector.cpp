@@ -198,6 +198,18 @@ RegionSelector::RegionSelector(QWidget* parent)
                 settings.setValue(SETTINGS_KEY_MOSAIC_STRENGTH, static_cast<int>(strength));
             });
 
+    // Connect shape section signals
+    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::shapeTypeChanged,
+            this, [this](ShapeType type) {
+                m_shapeType = type;
+                qDebug() << "Shape type changed to:" << static_cast<int>(type);
+            });
+    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::shapeFillModeChanged,
+            this, [this](ShapeFillMode mode) {
+                m_shapeFillMode = mode;
+                qDebug() << "Shape fill mode changed to:" << static_cast<int>(mode);
+            });
+
     // Initialize loading spinner for OCR
     m_loadingSpinner = new LoadingSpinnerRenderer(this);
     connect(m_loadingSpinner, &LoadingSpinnerRenderer::needsRepaint,
@@ -303,8 +315,7 @@ void RegionSelector::setupToolbarButtons()
     buttons.append({static_cast<int>(ToolbarButton::Arrow), "arrow", "Arrow", false});
     buttons.append({static_cast<int>(ToolbarButton::Pencil), "pencil", "Pencil", false});
     buttons.append({static_cast<int>(ToolbarButton::Marker), "marker", "Marker", false});
-    buttons.append({static_cast<int>(ToolbarButton::Rectangle), "rectangle", "Rectangle", false});
-    buttons.append({static_cast<int>(ToolbarButton::Ellipse), "ellipse", "Ellipse", false});
+    buttons.append({static_cast<int>(ToolbarButton::Shape), "rectangle", "Shape", false});
     buttons.append({static_cast<int>(ToolbarButton::Text), "text", "Text", false});
     buttons.append({static_cast<int>(ToolbarButton::Mosaic), "mosaic", "Mosaic", false});
     buttons.append({static_cast<int>(ToolbarButton::StepBadge), "step-badge", "Step Badge", false});
@@ -328,8 +339,7 @@ void RegionSelector::setupToolbarButtons()
         static_cast<int>(ToolbarButton::Arrow),
         static_cast<int>(ToolbarButton::Pencil),
         static_cast<int>(ToolbarButton::Marker),
-        static_cast<int>(ToolbarButton::Rectangle),
-        static_cast<int>(ToolbarButton::Ellipse),
+        static_cast<int>(ToolbarButton::Shape),
         static_cast<int>(ToolbarButton::Text),
         static_cast<int>(ToolbarButton::Mosaic),
         static_cast<int>(ToolbarButton::StepBadge),
@@ -382,8 +392,7 @@ bool RegionSelector::shouldShowColorPalette() const
     case ToolbarButton::Pencil:
     case ToolbarButton::Marker:
     case ToolbarButton::Arrow:
-    case ToolbarButton::Rectangle:
-    case ToolbarButton::Ellipse:
+    case ToolbarButton::Shape:
     case ToolbarButton::Text:
     case ToolbarButton::StepBadge:
         return true;
@@ -454,8 +463,7 @@ bool RegionSelector::shouldShowLineWidthWidget() const
     // Show for tools that use m_annotationWidth
     return m_currentTool == ToolbarButton::Pencil ||
            m_currentTool == ToolbarButton::Arrow ||
-           m_currentTool == ToolbarButton::Rectangle ||
-           m_currentTool == ToolbarButton::Ellipse;
+           m_currentTool == ToolbarButton::Shape;
 }
 
 void RegionSelector::onLineWidthChanged(int width)
@@ -474,8 +482,7 @@ bool RegionSelector::shouldShowColorAndWidthWidget() const
     case ToolbarButton::Pencil:      // Needs both
     case ToolbarButton::Marker:      // Needs color only
     case ToolbarButton::Arrow:       // Needs both
-    case ToolbarButton::Rectangle:   // Needs both
-    case ToolbarButton::Ellipse:     // Needs both
+    case ToolbarButton::Shape:       // Needs both + shape options
     case ToolbarButton::Text:        // Needs color only
     case ToolbarButton::StepBadge:   // Needs color only
     case ToolbarButton::Mosaic:      // Needs mosaic strength only
@@ -491,8 +498,7 @@ bool RegionSelector::shouldShowWidthControl() const
     switch (m_currentTool) {
     case ToolbarButton::Pencil:
     case ToolbarButton::Arrow:
-    case ToolbarButton::Rectangle:
-    case ToolbarButton::Ellipse:
+    case ToolbarButton::Shape:
         return true;
     default:
         return false;  // Marker, Text, StepBadge don't need width control
@@ -779,6 +785,8 @@ void RegionSelector::paintEvent(QPaintEvent*)
                 m_colorAndWidthWidget->setShowTextSection(m_currentTool == ToolbarButton::Text);
                 // Show mosaic strength section only for Mosaic tool
                 m_colorAndWidthWidget->setShowMosaicStrengthSection(m_currentTool == ToolbarButton::Mosaic);
+                // Show shape section only for Shape tool
+                m_colorAndWidthWidget->setShowShapeSection(m_currentTool == ToolbarButton::Shape);
                 m_colorAndWidthWidget->updatePosition(m_toolbar->boundingRect(), false, width());
                 m_colorAndWidthWidget->draw(painter);
             } else {
@@ -1096,8 +1104,7 @@ void RegionSelector::handleToolbarClick(ToolbarButton button)
     case ToolbarButton::Arrow:
     case ToolbarButton::Pencil:
     case ToolbarButton::Marker:
-    case ToolbarButton::Rectangle:
-    case ToolbarButton::Ellipse:
+    case ToolbarButton::Shape:
     case ToolbarButton::Mosaic:
         m_currentTool = button;
         qDebug() << "Tool selected:" << static_cast<int>(button);
@@ -2095,12 +2102,16 @@ void RegionSelector::startAnnotation(const QPoint &pos)
         m_currentArrow = std::make_unique<ArrowAnnotation>(pos, pos, m_annotationColor, m_annotationWidth, m_arrowStyle);
         break;
 
-    case ToolbarButton::Rectangle:
-        m_currentRectangle = std::make_unique<RectangleAnnotation>(QRect(pos, pos), m_annotationColor, m_annotationWidth);
-        break;
-
-    case ToolbarButton::Ellipse:
-        m_currentEllipse = std::make_unique<EllipseAnnotation>(QRect(pos, pos), m_annotationColor, m_annotationWidth);
+    case ToolbarButton::Shape:
+        if (m_shapeType == ShapeType::Rectangle) {
+            m_currentRectangle = std::make_unique<RectangleAnnotation>(
+                QRect(pos, pos), m_annotationColor, m_annotationWidth,
+                m_shapeFillMode == ShapeFillMode::Filled);
+        } else {
+            m_currentEllipse = std::make_unique<EllipseAnnotation>(
+                QRect(pos, pos), m_annotationColor, m_annotationWidth,
+                m_shapeFillMode == ShapeFillMode::Filled);
+        }
         break;
 
     case ToolbarButton::Mosaic: {
@@ -2159,14 +2170,10 @@ void RegionSelector::updateAnnotation(const QPoint &pos)
         }
         break;
 
-    case ToolbarButton::Rectangle:
-        if (m_currentRectangle) {
+    case ToolbarButton::Shape:
+        if (m_shapeType == ShapeType::Rectangle && m_currentRectangle) {
             m_currentRectangle->setRect(QRect(m_drawStartPoint, pos));
-        }
-        break;
-
-    case ToolbarButton::Ellipse:
-        if (m_currentEllipse) {
+        } else if (m_shapeType == ShapeType::Ellipse && m_currentEllipse) {
             m_currentEllipse->setRect(QRect(m_drawStartPoint, pos));
         }
         break;
@@ -2229,18 +2236,14 @@ void RegionSelector::finishAnnotation()
         m_currentArrow.reset();
         break;
 
-    case ToolbarButton::Rectangle:
+    case ToolbarButton::Shape:
         if (m_currentRectangle) {
             m_annotationLayer->addItem(std::move(m_currentRectangle));
-        }
-        m_currentRectangle.reset();
-        break;
-
-    case ToolbarButton::Ellipse:
-        if (m_currentEllipse) {
+            m_currentRectangle.reset();
+        } else if (m_currentEllipse) {
             m_annotationLayer->addItem(std::move(m_currentEllipse));
+            m_currentEllipse.reset();
         }
-        m_currentEllipse.reset();
         break;
 
     case ToolbarButton::Mosaic:
@@ -2273,8 +2276,7 @@ bool RegionSelector::isAnnotationTool(ToolbarButton tool) const
     case ToolbarButton::Pencil:
     case ToolbarButton::Marker:
     case ToolbarButton::Arrow:
-    case ToolbarButton::Rectangle:
-    case ToolbarButton::Ellipse:
+    case ToolbarButton::Shape:
     case ToolbarButton::Text:
     case ToolbarButton::Mosaic:
     case ToolbarButton::StepBadge:

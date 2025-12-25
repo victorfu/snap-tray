@@ -151,6 +151,32 @@ void ColorAndWidthWidget::setMosaicStrength(MosaicStrength strength)
     }
 }
 
+void ColorAndWidthWidget::setShowShapeSection(bool show)
+{
+    if (m_showShapeSection != show) {
+        m_showShapeSection = show;
+        if (!show) {
+            m_hoveredShapeButton = -1;
+        }
+    }
+}
+
+void ColorAndWidthWidget::setShapeType(ShapeType type)
+{
+    if (m_shapeType != type) {
+        m_shapeType = type;
+        emit shapeTypeChanged(m_shapeType);
+    }
+}
+
+void ColorAndWidthWidget::setShapeFillMode(ShapeFillMode mode)
+{
+    if (m_shapeFillMode != mode) {
+        m_shapeFillMode = mode;
+        emit shapeFillModeChanged(m_shapeFillMode);
+    }
+}
+
 void ColorAndWidthWidget::updatePosition(const QRect& anchorRect, bool above, int screenWidth)
 {
     // Calculate total width (using 2 rows, 8 columns - "..." is part of row 2)
@@ -173,6 +199,11 @@ void ColorAndWidthWidget::updatePosition(const QRect& anchorRect, bool above, in
         // 4 buttons for L/N/S/P
         int mosaicSectionWidth = MOSAIC_BUTTON_WIDTH * 4 + MOSAIC_BUTTON_SPACING * 3 + SECTION_PADDING;
         totalWidth += SECTION_SPACING + mosaicSectionWidth;
+    }
+    if (m_showShapeSection) {
+        // 4 buttons: Rect, Ellipse, Outline, Filled
+        int shapeSectionWidth = SHAPE_BUTTON_SIZE * 4 + SHAPE_BUTTON_SPACING * 3 + SECTION_PADDING;
+        totalWidth += SECTION_SPACING + shapeSectionWidth;
     }
 
     int widgetX = anchorRect.left();
@@ -353,6 +384,45 @@ void ColorAndWidthWidget::updateLayout()
         m_mosaicStrengthSectionRect = QRect();
         m_mosaicStrengthButtonRects.clear();
     }
+
+    // === SHAPE SECTION (4 buttons: Rect, Ellipse, Outline, Filled) ===
+    if (m_showShapeSection) {
+        int shapeSectionLeft;
+        if (m_showMosaicStrengthSection) {
+            shapeSectionLeft = m_mosaicStrengthSectionRect.right() + SECTION_SPACING;
+        } else if (m_showTextSection) {
+            shapeSectionLeft = m_textSectionRect.right() + SECTION_SPACING;
+        } else if (m_showArrowStyleSection) {
+            shapeSectionLeft = m_arrowStyleButtonRect.right() + SECTION_SPACING;
+        } else if (m_showWidthSection) {
+            shapeSectionLeft = m_widthSectionRect.right() + SECTION_SPACING;
+        } else {
+            shapeSectionLeft = m_colorSectionRect.right() + SECTION_SPACING;
+        }
+
+        int shapeSectionWidth = SHAPE_BUTTON_SIZE * 4 + SHAPE_BUTTON_SPACING * 3 + SECTION_PADDING;
+        m_shapeSectionRect = QRect(
+            shapeSectionLeft,
+            m_widgetRect.top(),
+            shapeSectionWidth,
+            WIDGET_HEIGHT
+        );
+
+        // Center buttons vertically
+        int buttonY = m_widgetRect.top() + (WIDGET_HEIGHT - SHAPE_BUTTON_SIZE) / 2;
+        m_shapeButtonRects.resize(4);
+        for (int i = 0; i < 4; ++i) {
+            m_shapeButtonRects[i] = QRect(
+                shapeSectionLeft + SECTION_PADDING / 2 + i * (SHAPE_BUTTON_SIZE + SHAPE_BUTTON_SPACING),
+                buttonY,
+                SHAPE_BUTTON_SIZE,
+                SHAPE_BUTTON_SIZE
+            );
+        }
+    } else {
+        m_shapeSectionRect = QRect();
+        m_shapeButtonRects.clear();
+    }
 }
 
 void ColorAndWidthWidget::draw(QPainter& painter)
@@ -397,6 +467,11 @@ void ColorAndWidthWidget::draw(QPainter& painter)
     if (m_showMosaicStrengthSection) {
         drawMosaicStrengthSection(painter);
         drawMosaicStrengthTooltip(painter);
+    }
+
+    // Draw shape section (if enabled)
+    if (m_showShapeSection) {
+        drawShapeSection(painter);
     }
 }
 
@@ -759,6 +834,80 @@ int ColorAndWidthWidget::mosaicStrengthButtonAtPosition(const QPoint& pos) const
     return -1;
 }
 
+void ColorAndWidthWidget::drawShapeSection(QPainter& painter)
+{
+    for (int i = 0; i < 4; ++i) {
+        if (i >= m_shapeButtonRects.size()) break;
+
+        QRect rect = m_shapeButtonRects[i];
+        // Buttons 0-1 are shape type, buttons 2-3 are fill mode
+        bool isSelected = (i < 2) ?
+            (m_shapeType == (i == 0 ? ShapeType::Rectangle : ShapeType::Ellipse)) :
+            (m_shapeFillMode == (i == 2 ? ShapeFillMode::Outline : ShapeFillMode::Filled));
+        bool isHovered = (m_hoveredShapeButton == i);
+
+        // Background
+        QColor bgColor;
+        if (isSelected) {
+            bgColor = QColor(0, 122, 255);  // Blue when active
+        } else if (isHovered) {
+            bgColor = QColor(80, 80, 80);
+        } else {
+            bgColor = QColor(50, 50, 50);
+        }
+
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(bgColor);
+        painter.drawRoundedRect(rect, 4, 4);
+
+        // Draw icon based on button index
+        QColor iconColor = isSelected ? Qt::white : QColor(200, 200, 200);
+        QRect iconRect = rect.adjusted(5, 5, -5, -5);
+
+        switch (i) {
+        case 0:  // Rectangle shape - solid outline square
+            painter.setPen(QPen(iconColor, 2));
+            painter.setBrush(Qt::NoBrush);
+            painter.drawRect(iconRect);
+            break;
+        case 1:  // Ellipse shape - solid outline circle
+            painter.setPen(QPen(iconColor, 2));
+            painter.setBrush(Qt::NoBrush);
+            painter.drawEllipse(iconRect);
+            break;
+        case 2:  // Outline mode - dashed border square (empty inside)
+            {
+                QPen dashedPen(iconColor, 1.5, Qt::DashLine);
+                dashedPen.setDashPattern({2, 2});
+                painter.setPen(dashedPen);
+                painter.setBrush(Qt::NoBrush);
+                painter.drawRect(iconRect);
+            }
+            break;
+        case 3:  // Filled mode - solid filled square
+            {
+                painter.setPen(QPen(iconColor, 1.5));
+                painter.setBrush(iconColor);
+                painter.drawRect(iconRect);
+            }
+            break;
+        }
+    }
+}
+
+int ColorAndWidthWidget::shapeButtonAtPosition(const QPoint& pos) const
+{
+    if (!m_showShapeSection) return -1;
+
+    for (int i = 0; i < m_shapeButtonRects.size(); ++i) {
+        if (m_shapeButtonRects[i].contains(pos)) {
+            return i;
+        }
+    }
+
+    return -1;
+}
+
 void ColorAndWidthWidget::drawMosaicStrengthTooltip(QPainter& painter)
 {
     if (m_hoveredMosaicStrengthButton < 0 || m_mosaicStrengthTooltip.isEmpty()) return;
@@ -892,6 +1041,25 @@ bool ColorAndWidthWidget::handleClick(const QPoint& pos)
         }
     }
 
+    // Shape section
+    if (m_showShapeSection) {
+        int btn = shapeButtonAtPosition(pos);
+        if (btn >= 0) {
+            if (btn < 2) {
+                // Shape type buttons (0 = Rectangle, 1 = Ellipse)
+                m_shapeType = (btn == 0) ? ShapeType::Rectangle : ShapeType::Ellipse;
+                emit shapeTypeChanged(m_shapeType);
+                qDebug() << "ColorAndWidthWidget: Shape type changed to" << btn;
+            } else {
+                // Fill mode buttons (2 = Outline, 3 = Filled)
+                m_shapeFillMode = (btn == 2) ? ShapeFillMode::Outline : ShapeFillMode::Filled;
+                emit shapeFillModeChanged(m_shapeFillMode);
+                qDebug() << "ColorAndWidthWidget: Shape fill mode changed to" << (btn - 2);
+            }
+            return true;
+        }
+    }
+
     // Width section: clicks are consumed but no action (use scroll wheel)
     if (isInWidthSection(pos)) {
         return true;
@@ -993,6 +1161,18 @@ bool ColorAndWidthWidget::updateHovered(const QPoint& pos)
     } else if (m_hoveredMosaicStrengthButton != -1) {
         m_hoveredMosaicStrengthButton = -1;
         m_mosaicStrengthTooltip.clear();
+        changed = true;
+    }
+
+    // Update shape button hover
+    if (m_showShapeSection) {
+        int newHoveredShapeButton = shapeButtonAtPosition(pos);
+        if (newHoveredShapeButton != m_hoveredShapeButton) {
+            m_hoveredShapeButton = newHoveredShapeButton;
+            changed = true;
+        }
+    } else if (m_hoveredShapeButton != -1) {
+        m_hoveredShapeButton = -1;
         changed = true;
     }
 
