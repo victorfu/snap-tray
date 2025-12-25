@@ -37,6 +37,9 @@ public:
     // Mosaic tool settings
     int mosaicStrength = 3;  // 0=Light, 1=Normal, 2=Strong, 3=Pixelate (default: Pixelate)
 
+    // Eraser tool settings
+    int eraserWidth = 20;
+
     // Source pixmap (for mosaic tool)
     const QPixmap* sourcePixmap = nullptr;
 

@@ -5,6 +5,8 @@
 #include "FFmpegEncoder.h"
 #include "IVideoEncoder.h"
 #include "capture/ICaptureEngine.h"
+#include "capture/IAudioCaptureEngine.h"
+#include "AudioFileWriter.h"
 #include "platform/WindowLevel.h"
 
 #include <QGuiApplication>
@@ -67,6 +69,10 @@ RecordingManager::RecordingManager(QObject *parent)
     , m_frameCount(0)
     , m_pausedDuration(0)
     , m_pauseStartTime(0)
+    , m_audioEngine(nullptr)
+    , m_audioWriter(nullptr)
+    , m_audioEnabled(false)
+    , m_audioSource(0)
 {
     cleanupStaleTempFiles();
 }
@@ -344,6 +350,39 @@ void RecordingManager::startFrameCapture()
     bool useGif = (formatInt == 1);
     qDebug() << "RecordingManager::startFrameCapture() - Output format:" << (useGif ? "GIF" : "MP4");
 
+    // ========== Initialize audio capture EARLY (before encoder) ==========
+    // This must happen BEFORE starting the encoder so we can configure audio format
+    m_audioEnabled = settings.value("recording/audioEnabled", false).toBool();
+    m_audioSource = settings.value("recording/audioSource", 0).toInt();
+    m_audioDevice = settings.value("recording/audioDevice").toString();
+
+    // Only enable audio for MP4 format (GIF doesn't support audio)
+    if (m_audioEnabled && !useGif) {
+        qDebug() << "RecordingManager: Audio enabled, source:" << m_audioSource << "- initializing early";
+
+        // Create audio capture engine
+        m_audioEngine = IAudioCaptureEngine::createBestEngine(nullptr);
+        if (m_audioEngine) {
+            // Set audio source (0=Microphone, 1=SystemAudio, 2=Both)
+            IAudioCaptureEngine::AudioSource source;
+            switch (m_audioSource) {
+                case 1: source = IAudioCaptureEngine::AudioSource::SystemAudio; break;
+                case 2: source = IAudioCaptureEngine::AudioSource::Both; break;
+                default: source = IAudioCaptureEngine::AudioSource::Microphone; break;
+            }
+            m_audioEngine->setAudioSource(source);
+
+            if (!m_audioDevice.isEmpty()) {
+                m_audioEngine->setDevice(m_audioDevice);
+            }
+
+            qDebug() << "RecordingManager: Audio engine created:" << m_audioEngine->engineName();
+        } else {
+            qWarning() << "RecordingManager: No audio capture engine available";
+            m_audioEnabled = false;
+        }
+    }
+
     // Use physical pixel size for Retina/HiDPI displays
     qreal scale = m_targetScreen ? m_targetScreen->devicePixelRatio() : 1.0;
     QSize physicalSize(
@@ -396,6 +435,14 @@ void RecordingManager::startFrameCapture()
             int quality = settings.value("recording/quality", 55).toInt();
             m_nativeEncoder->setQuality(quality);
             qDebug() << "RecordingManager::startFrameCapture() - Native encoder quality:" << quality;
+
+            // Configure audio format BEFORE start() - this is critical!
+            if (m_audioEngine && m_nativeEncoder->isAudioSupported()) {
+                auto format = m_audioEngine->audioFormat();
+                m_nativeEncoder->setAudioFormat(format.sampleRate, format.channels, format.bitsPerSample);
+                qDebug() << "RecordingManager: Configured native encoder audio BEFORE start -"
+                         << format.sampleRate << "Hz," << format.channels << "ch";
+            }
 
             connect(m_nativeEncoder, &IVideoEncoder::finished,
                     this, &RecordingManager::onEncodingFinished);
@@ -456,6 +503,11 @@ void RecordingManager::startFrameCapture()
     }
 
     if (!encoderStarted) {
+        // Clean up audio engine if it was created
+        if (m_audioEngine) {
+            m_audioEngine->deleteLater();
+            m_audioEngine = nullptr;
+        }
         m_captureEngine->stop();
         disconnect(m_captureEngine, nullptr, this, nullptr);
         m_captureEngine->deleteLater();
@@ -464,6 +516,76 @@ void RecordingManager::startFrameCapture()
         return;
     }
     qDebug() << "RecordingManager::startFrameCapture() - Encoder started successfully";
+
+    // ========== Connect and start audio capture ==========
+    // Audio engine was already created earlier (before encoder start) to configure audio format
+    if (m_audioEngine) {
+        // Check if native encoder supports audio (preferred path)
+        bool useNativeAudio = m_usingNativeEncoder && m_nativeEncoder && m_nativeEncoder->isAudioSupported();
+
+        if (useNativeAudio) {
+            // Connect audio data directly to native encoder
+            connect(m_audioEngine, &IAudioCaptureEngine::audioDataReady,
+                    this, [this](const QByteArray &data, qint64 timestamp) {
+                if (m_nativeEncoder) {
+                    m_nativeEncoder->writeAudioSamples(data, timestamp);
+                }
+            }, Qt::QueuedConnection);
+            qDebug() << "RecordingManager: Audio connected to native encoder";
+        } else {
+            // Fallback: Use WAV file + FFmpeg muxing
+            QString tempDir = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
+            QString timestamp = QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss");
+            QString uuid = QUuid::createUuid().toString(QUuid::Id128).left(8);
+            m_tempAudioPath = QString("%1/SnapTray_Audio_%2_%3.wav")
+                .arg(tempDir).arg(timestamp).arg(uuid);
+
+            // Create audio file writer
+            m_audioWriter = new AudioFileWriter(nullptr);
+            AudioFileWriter::AudioFormat audioFormat;
+            audioFormat.sampleRate = m_audioEngine->audioFormat().sampleRate;
+            audioFormat.channels = m_audioEngine->audioFormat().channels;
+            audioFormat.bitsPerSample = m_audioEngine->audioFormat().bitsPerSample;
+
+            if (m_audioWriter->start(m_tempAudioPath, audioFormat)) {
+                // Connect audio data signal to writer
+                connect(m_audioEngine, &IAudioCaptureEngine::audioDataReady,
+                        this, [this](const QByteArray &data, qint64 /*timestamp*/) {
+                    if (m_audioWriter) {
+                        m_audioWriter->writeAudioData(data);
+                    }
+                }, Qt::QueuedConnection);
+
+                // Set audio file path on FFmpeg encoder for muxing
+                if (m_encoder) {
+                    m_encoder->setAudioFilePath(m_tempAudioPath);
+                }
+                qDebug() << "RecordingManager: Using WAV file for audio (FFmpeg muxing)";
+            } else {
+                qWarning() << "RecordingManager: Failed to create audio file";
+                emit recordingWarning("Failed to create audio file. Recording without audio.");
+                cleanupAudio();
+            }
+        }
+
+        // Connect audio error/warning signals
+        connect(m_audioEngine, &IAudioCaptureEngine::error,
+                this, [this](const QString &msg) {
+            qWarning() << "RecordingManager: Audio error:" << msg;
+            emit recordingWarning("Audio error: " + msg);
+        });
+        connect(m_audioEngine, &IAudioCaptureEngine::warning,
+                this, &RecordingManager::recordingWarning);
+
+        // Start audio capture
+        if (m_audioEngine->start()) {
+            qDebug() << "RecordingManager: Audio capture started using" << m_audioEngine->engineName();
+        } else {
+            qWarning() << "RecordingManager: Failed to start audio capture";
+            emit recordingWarning("Failed to start audio capture. Recording without audio.");
+            cleanupAudio();
+        }
+    }
 
     // Show boundary overlay
     qDebug() << "RecordingManager::startFrameCapture() - Creating boundary overlay...";
@@ -490,6 +612,9 @@ void RecordingManager::startFrameCapture()
     // Set initial region size
     m_controlBar->updateRegionSize(m_recordingRegion.width(), m_recordingRegion.height());
     m_controlBar->updateFps(m_frameRate);
+
+    // Show audio indicator if audio is enabled
+    m_controlBar->setAudioEnabled(m_audioEngine != nullptr);
 
     m_controlBar->positionNear(m_recordingRegion);
     m_controlBar->show();
@@ -545,11 +670,22 @@ void RecordingManager::captureFrame()
     QImage frame = captureEngine->captureFrame();
 
     if (!frame.isNull()) {
-        // Pass QImage to the appropriate encoder
+        // Use real elapsed time for timestamps to keep playback speed aligned with recording time
+        qint64 elapsedMs = 0;
+        {
+            QMutexLocker locker(&m_durationMutex);
+            qint64 rawElapsed = m_elapsedTimer.elapsed();
+            elapsedMs = rawElapsed - m_pausedDuration;
+        }
+        if (elapsedMs < 0) {
+            elapsedMs = 0;
+        }
+
+        // Pass QImage to the appropriate encoder with elapsed timestamp
         if (m_usingNativeEncoder && m_nativeEncoder) {
-            m_nativeEncoder->writeFrame(frame);
+            m_nativeEncoder->writeFrame(frame, elapsedMs);
         } else if (m_encoder) {
-            m_encoder->writeFrame(frame);
+            m_encoder->writeFrame(frame);  // FFmpeg encoder uses frame count internally
         }
         m_frameCount++;
     }
@@ -592,6 +728,11 @@ void RecordingManager::pauseRecording()
         m_captureTimer->stop();
     }
 
+    // Pause audio capture
+    if (m_audioEngine) {
+        m_audioEngine->pause();
+    }
+
     // Record when pause started (protected by mutex)
     {
         QMutexLocker locker(&m_durationMutex);
@@ -619,6 +760,11 @@ void RecordingManager::resumeRecording()
     {
         QMutexLocker locker(&m_durationMutex);
         m_pausedDuration += m_elapsedTimer.elapsed() - m_pauseStartTime;
+    }
+
+    // Resume audio capture
+    if (m_audioEngine) {
+        m_audioEngine->resume();
     }
 
     // Resume frame capture timer
@@ -693,7 +839,10 @@ void RecordingManager::cancelRecording()
 
 void RecordingManager::stopFrameCapture()
 {
+    qDebug() << "RecordingManager::stopFrameCapture() START";
+
     // Stop timers
+    qDebug() << "RecordingManager: Stopping timers...";
     if (m_captureTimer) {
         m_captureTimer->stop();
         delete m_captureTimer;
@@ -705,17 +854,45 @@ void RecordingManager::stopFrameCapture()
         delete m_durationTimer;
         m_durationTimer = nullptr;
     }
+    qDebug() << "RecordingManager: Timers stopped";
+
+    // Stop audio capture and finalize audio file
+    // Disconnect BEFORE stopping to prevent new signals from being queued during shutdown
+    qDebug() << "RecordingManager: Stopping audio engine, m_audioEngine=" << (m_audioEngine ? "exists" : "null");
+    if (m_audioEngine) {
+        qDebug() << "RecordingManager: Disconnecting audio engine signals...";
+        disconnect(m_audioEngine, nullptr, this, nullptr);
+        qDebug() << "RecordingManager: Calling m_audioEngine->stop()...";
+        m_audioEngine->stop();
+        qDebug() << "RecordingManager: m_audioEngine->stop() returned";
+        m_audioEngine->deleteLater();
+        m_audioEngine = nullptr;
+        qDebug() << "RecordingManager: Audio engine stopped and scheduled for deletion";
+    }
+
+    qDebug() << "RecordingManager: Finishing audio writer...";
+    if (m_audioWriter) {
+        m_audioWriter->finish();
+        qDebug() << "RecordingManager: Audio file written:" << m_tempAudioPath
+                 << "Duration:" << m_audioWriter->durationMs() << "ms";
+        delete m_audioWriter;
+        m_audioWriter = nullptr;
+    }
+    qDebug() << "RecordingManager: Audio writer finished";
 
     // Stop capture engine
     // Use deleteLater to avoid use-after-free when called from signal handler
+    qDebug() << "RecordingManager: Stopping capture engine...";
     if (m_captureEngine) {
         m_captureEngine->stop();
         disconnect(m_captureEngine, nullptr, this, nullptr);
         m_captureEngine->deleteLater();
         m_captureEngine = nullptr;
     }
+    qDebug() << "RecordingManager: Capture engine stopped";
 
     // Close UI overlays
+    qDebug() << "RecordingManager: Closing UI overlays...";
     if (m_boundaryOverlay) {
         m_boundaryOverlay->close();
     }
@@ -723,6 +900,7 @@ void RecordingManager::stopFrameCapture()
     if (m_controlBar) {
         m_controlBar->close();
     }
+    qDebug() << "RecordingManager::stopFrameCapture() END";
 }
 
 void RecordingManager::cleanupRecording()
@@ -741,8 +919,35 @@ void RecordingManager::cleanupRecording()
     }
     m_usingNativeEncoder = false;
 
+    // Clean up temp audio file
+    if (!m_tempAudioPath.isEmpty() && QFile::exists(m_tempAudioPath)) {
+        QFile::remove(m_tempAudioPath);
+        m_tempAudioPath.clear();
+    }
+
     if (m_regionSelector) {
         m_regionSelector->close();
+    }
+}
+
+void RecordingManager::cleanupAudio()
+{
+    // Disconnect BEFORE stopping to prevent new signals from being queued during shutdown
+    if (m_audioEngine) {
+        disconnect(m_audioEngine, nullptr, this, nullptr);
+        m_audioEngine->stop();
+        m_audioEngine->deleteLater();
+        m_audioEngine = nullptr;
+    }
+
+    if (m_audioWriter) {
+        delete m_audioWriter;
+        m_audioWriter = nullptr;
+    }
+
+    if (!m_tempAudioPath.isEmpty() && QFile::exists(m_tempAudioPath)) {
+        QFile::remove(m_tempAudioPath);
+        m_tempAudioPath.clear();
     }
 }
 

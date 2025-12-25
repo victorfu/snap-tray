@@ -201,8 +201,8 @@ void ColorAndWidthWidget::updatePosition(const QRect& anchorRect, bool above, in
         totalWidth += SECTION_SPACING + mosaicSectionWidth;
     }
     if (m_showShapeSection) {
-        // 4 buttons: Rect, Ellipse, Outline, Filled
-        int shapeSectionWidth = SHAPE_BUTTON_SIZE * 4 + SHAPE_BUTTON_SPACING * 3 + SECTION_PADDING;
+        // 3 buttons: Rect, Ellipse, Fill toggle
+        int shapeSectionWidth = SHAPE_BUTTON_SIZE * 3 + SHAPE_BUTTON_SPACING * 2 + SECTION_PADDING;
         totalWidth += SECTION_SPACING + shapeSectionWidth;
     }
 
@@ -289,7 +289,7 @@ void ColorAndWidthWidget::updateLayout()
 
         // Dropdown rect - expand upward when widget is above anchor (ScreenCanvas)
         int dropdownWidth = ARROW_STYLE_BUTTON_WIDTH + 20;  // Slightly wider
-        int dropdownHeight = 3 * ARROW_STYLE_DROPDOWN_OPTION_HEIGHT;  // 3 options now
+        int dropdownHeight = 2 * ARROW_STYLE_DROPDOWN_OPTION_HEIGHT;  // 2 options
         if (m_dropdownExpandsUpward) {
             // Expand upward (widget is above toolbar)
             m_arrowStyleDropdownRect = QRect(
@@ -400,7 +400,7 @@ void ColorAndWidthWidget::updateLayout()
         m_mosaicStrengthButtonRects.clear();
     }
 
-    // === SHAPE SECTION (4 buttons: Rect, Ellipse, Outline, Filled) ===
+    // === SHAPE SECTION (3 buttons: Rect, Ellipse, Fill toggle) ===
     if (m_showShapeSection) {
         int shapeSectionLeft;
         if (m_showMosaicStrengthSection) {
@@ -415,7 +415,7 @@ void ColorAndWidthWidget::updateLayout()
             shapeSectionLeft = m_colorSectionRect.right() + SECTION_SPACING;
         }
 
-        int shapeSectionWidth = SHAPE_BUTTON_SIZE * 4 + SHAPE_BUTTON_SPACING * 3 + SECTION_PADDING;
+        int shapeSectionWidth = SHAPE_BUTTON_SIZE * 3 + SHAPE_BUTTON_SPACING * 2 + SECTION_PADDING;
         m_shapeSectionRect = QRect(
             shapeSectionLeft,
             m_widgetRect.top(),
@@ -425,8 +425,8 @@ void ColorAndWidthWidget::updateLayout()
 
         // Center buttons vertically
         int buttonY = m_widgetRect.top() + (WIDGET_HEIGHT - SHAPE_BUTTON_SIZE) / 2;
-        m_shapeButtonRects.resize(4);
-        for (int i = 0; i < 4; ++i) {
+        m_shapeButtonRects.resize(3);
+        for (int i = 0; i < 3; ++i) {
             m_shapeButtonRects[i] = QRect(
                 shapeSectionLeft + SECTION_PADDING / 2 + i * (SHAPE_BUTTON_SIZE + SHAPE_BUTTON_SPACING),
                 buttonY,
@@ -678,9 +678,9 @@ void ColorAndWidthWidget::drawArrowStyleSection(QPainter& painter)
         painter.setBrush(QColor(50, 50, 50, 250));
         painter.drawRoundedRect(m_arrowStyleDropdownRect, 4, 4);
 
-        // Draw each option (3 options: None, EndArrow, DotToArrow)
-        LineEndStyle styles[] = { LineEndStyle::None, LineEndStyle::EndArrow, LineEndStyle::DotToArrow };
-        for (int i = 0; i < 3; ++i) {
+        // Draw each option (2 options: None, EndArrow)
+        LineEndStyle styles[] = { LineEndStyle::None, LineEndStyle::EndArrow };
+        for (int i = 0; i < 2; ++i) {
             QRect optionRect(
                 m_arrowStyleDropdownRect.left(),
                 m_arrowStyleDropdownRect.top() + i * ARROW_STYLE_DROPDOWN_OPTION_HEIGHT,
@@ -757,11 +757,6 @@ void ColorAndWidthWidget::drawArrowStyleIcon(QPainter& painter, LineEndStyle sty
     case LineEndStyle::EndArrow:
         drawArrowhead(lineRight, true);
         break;
-    case LineEndStyle::DotToArrow:
-        // Dot at start, arrow at end (●─────▶)
-        drawDot(lineLeft);
-        drawArrowhead(lineRight, true);
-        break;
     }
 
     painter.restore();
@@ -775,7 +770,7 @@ int ColorAndWidthWidget::arrowStyleOptionAtPosition(const QPoint& pos) const
     if (m_arrowStyleDropdownOpen && m_arrowStyleDropdownRect.contains(pos)) {
         int relativeY = pos.y() - m_arrowStyleDropdownRect.top();
         int option = relativeY / ARROW_STYLE_DROPDOWN_OPTION_HEIGHT;
-        if (option >= 0 && option < 3) {  // 3 options now
+        if (option >= 0 && option < 2) {  // 2 options
             return option;
         }
     }
@@ -856,14 +851,17 @@ int ColorAndWidthWidget::mosaicStrengthButtonAtPosition(const QPoint& pos) const
 
 void ColorAndWidthWidget::drawShapeSection(QPainter& painter)
 {
-    for (int i = 0; i < 4; ++i) {
+    for (int i = 0; i < 3; ++i) {
         if (i >= m_shapeButtonRects.size()) break;
 
         QRect rect = m_shapeButtonRects[i];
-        // Buttons 0-1 are shape type, buttons 2-3 are fill mode
-        bool isSelected = (i < 2) ?
-            (m_shapeType == (i == 0 ? ShapeType::Rectangle : ShapeType::Ellipse)) :
-            (m_shapeFillMode == (i == 2 ? ShapeFillMode::Outline : ShapeFillMode::Filled));
+        // Buttons 0-1 are shape type, button 2 is fill mode toggle
+        bool isSelected;
+        if (i < 2) {
+            isSelected = (m_shapeType == (i == 0 ? ShapeType::Rectangle : ShapeType::Ellipse));
+        } else {
+            isSelected = (m_shapeFillMode == ShapeFillMode::Filled);
+        }
         bool isHovered = (m_hoveredShapeButton == i);
 
         // Background
@@ -885,29 +883,28 @@ void ColorAndWidthWidget::drawShapeSection(QPainter& painter)
         QRect iconRect = rect.adjusted(5, 5, -5, -5);
 
         switch (i) {
-        case 0:  // Rectangle shape - solid outline square
+        case 0:  // Rectangle shape - outline square
             painter.setPen(QPen(iconColor, 2));
             painter.setBrush(Qt::NoBrush);
             painter.drawRect(iconRect);
             break;
-        case 1:  // Ellipse shape - solid outline circle
+        case 1:  // Ellipse shape - outline circle
             painter.setPen(QPen(iconColor, 2));
             painter.setBrush(Qt::NoBrush);
             painter.drawEllipse(iconRect);
             break;
-        case 2:  // Outline mode - dashed border square (empty inside)
-            {
+        case 2:  // Fill toggle - shows filled or outline based on current mode
+            if (m_shapeFillMode == ShapeFillMode::Filled) {
+                // Show filled square
+                painter.setPen(QPen(iconColor, 1.5));
+                painter.setBrush(iconColor);
+                painter.drawRect(iconRect);
+            } else {
+                // Show outline square (dashed to indicate "outline mode")
                 QPen dashedPen(iconColor, 1.5, Qt::DashLine);
                 dashedPen.setDashPattern({2, 2});
                 painter.setPen(dashedPen);
                 painter.setBrush(Qt::NoBrush);
-                painter.drawRect(iconRect);
-            }
-            break;
-        case 3:  // Filled mode - solid filled square
-            {
-                painter.setPen(QPen(iconColor, 1.5));
-                painter.setBrush(iconColor);
                 painter.drawRect(iconRect);
             }
             break;
@@ -994,8 +991,8 @@ bool ColorAndWidthWidget::handleClick(const QPoint& pos)
     if (m_showArrowStyleSection) {
         int arrowOption = arrowStyleOptionAtPosition(pos);
         if (arrowOption >= 0) {
-            // Clicked on a dropdown option (3 options: None, EndArrow, DotToArrow)
-            LineEndStyle styles[] = { LineEndStyle::None, LineEndStyle::EndArrow, LineEndStyle::DotToArrow };
+            // Clicked on a dropdown option (2 options: None, EndArrow)
+            LineEndStyle styles[] = { LineEndStyle::None, LineEndStyle::EndArrow };
             m_arrowStyle = styles[arrowOption];
             m_arrowStyleDropdownOpen = false;
             m_hoveredArrowStyleOption = -1;
@@ -1071,10 +1068,11 @@ bool ColorAndWidthWidget::handleClick(const QPoint& pos)
                 emit shapeTypeChanged(m_shapeType);
                 qDebug() << "ColorAndWidthWidget: Shape type changed to" << btn;
             } else {
-                // Fill mode buttons (2 = Outline, 3 = Filled)
-                m_shapeFillMode = (btn == 2) ? ShapeFillMode::Outline : ShapeFillMode::Filled;
+                // Button 2: Toggle fill mode
+                m_shapeFillMode = (m_shapeFillMode == ShapeFillMode::Outline)
+                    ? ShapeFillMode::Filled : ShapeFillMode::Outline;
                 emit shapeFillModeChanged(m_shapeFillMode);
-                qDebug() << "ColorAndWidthWidget: Shape fill mode changed to" << (btn - 2);
+                qDebug() << "ColorAndWidthWidget: Shape fill mode toggled to" << static_cast<int>(m_shapeFillMode);
             }
             return true;
         }

@@ -95,12 +95,20 @@ private:
     QPushButton *m_ffmpegBrowseBtn;
     QLabel *m_ffmpegStatusLabel;
 
+    // Audio settings
+    QCheckBox *m_audioEnabledCheckbox;
+    QComboBox *m_audioSourceCombo;
+    QComboBox *m_audioDeviceCombo;
+    QLabel *m_systemAudioWarningLabel;
+
     // Watermark UI helper methods
     void updateWatermarkImagePreview();
 
     // Recording UI helper methods
     void updateFFmpegStatus();
     void onOutputFormatChanged(int index);
+    void populateAudioDevices();
+    void onAudioSourceChanged(int index);
 };
 
 #endif // SETTINGSDIALOG_H

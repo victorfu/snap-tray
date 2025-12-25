@@ -46,6 +46,33 @@ public:
      */
     virtual void setQuality(int quality) { Q_UNUSED(quality); }
 
+    // ========== Audio Support ==========
+
+    /**
+     * @brief Configure audio format (call before start())
+     * @param sampleRate Sample rate in Hz (e.g., 48000)
+     * @param channels Number of audio channels (1=mono, 2=stereo)
+     * @param bitsPerSample Bits per sample (typically 16)
+     */
+    virtual void setAudioFormat(int sampleRate, int channels, int bitsPerSample) {
+        Q_UNUSED(sampleRate); Q_UNUSED(channels); Q_UNUSED(bitsPerSample);
+    }
+
+    /**
+     * @brief Check if this encoder supports audio
+     * @return true if audio encoding is supported
+     */
+    virtual bool isAudioSupported() const { return false; }
+
+    /**
+     * @brief Write audio samples to the encoder
+     * @param pcmData Raw PCM audio data
+     * @param timestampMs Timestamp in milliseconds since recording start
+     */
+    virtual void writeAudioSamples(const QByteArray &pcmData, qint64 timestampMs) {
+        Q_UNUSED(pcmData); Q_UNUSED(timestampMs);
+    }
+
     /**
      * @brief Factory: create best available native encoder for MP4
      * @return Native encoder or nullptr if none available

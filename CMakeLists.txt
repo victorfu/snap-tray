@@ -70,7 +70,6 @@ set(SOURCES
     src/AnnotationController.cpp
     src/ColorPickerDialog.mm
     src/InlineTextEditor.cpp
-    src/MagnifierOverlay.cpp
     src/LaserPointerRenderer.cpp
     src/ClickRippleRenderer.cpp
     src/WatermarkRenderer.cpp
@@ -119,7 +118,6 @@ set(HEADERS
     include/AnnotationController.h
     include/ColorPickerDialog.h
     include/InlineTextEditor.h
-    include/MagnifierOverlay.h
     include/PlatformFeatures.h
     include/LaserPointerRenderer.h
     include/ClickRippleRenderer.h
@@ -161,6 +159,13 @@ list(APPEND SOURCES
     src/ScreenCanvasManager.cpp
     src/capture/ICaptureEngine.cpp
     src/capture/QtCaptureEngine.cpp
+    src/capture/IAudioCaptureEngine.cpp
+    src/AudioFileWriter.cpp
+)
+
+list(APPEND HEADERS
+    include/capture/IAudioCaptureEngine.h
+    include/AudioFileWriter.h
 )
 
 # Platform-specific source files
@@ -174,6 +179,7 @@ if(APPLE)
         src/WindowDetectionOverlay.cpp
         src/OCRController.cpp
         src/capture/SCKCaptureEngine_mac.mm
+        src/capture/CoreAudioCaptureEngine_mac.mm
         src/AVFoundationEncoder.mm
     )
     list(APPEND HEADERS
@@ -182,6 +188,7 @@ if(APPLE)
         include/WindowDetectionOverlay.h
         include/OCRController.h
         include/capture/SCKCaptureEngine.h
+        include/capture/CoreAudioCaptureEngine.h
     )
 elseif(WIN32)
     list(APPEND SOURCES
@@ -191,12 +198,14 @@ elseif(WIN32)
         src/OCRManager_win.cpp
         src/AutoLaunchManager_win.cpp
         src/capture/DXGICaptureEngine_win.cpp
+        src/capture/WASAPIAudioCaptureEngine_win.cpp
         src/MediaFoundationEncoder.cpp
     )
     list(APPEND HEADERS
         include/WindowDetector.h
         include/OCRManager.h
         include/capture/DXGICaptureEngine.h
+        include/capture/WASAPIAudioCaptureEngine.h
     )
     # Windows application icon resource (generated from template)
     set(WIN32_RESOURCES "${CMAKE_BINARY_DIR}/snaptray.rc")
@@ -252,7 +261,7 @@ if(APPLE)
         )
     endif()
 elseif(WIN32)
-    # Windows-specific libraries for WindowDetector, OCR, DXGI capture, and Media Foundation
+    # Windows-specific libraries for WindowDetector, OCR, DXGI capture, Media Foundation, and WASAPI
     target_link_libraries(${PROJECT_NAME} PRIVATE
         Qt6::Widgets
         Qt6::Gui
@@ -266,6 +275,8 @@ elseif(WIN32)
         mfreadwrite
         mfplat
         mfuuid
+        ole32       # COM for WASAPI audio capture
+        propsys     # Property system for audio device enumeration
     )
     # Enable C++/WinRT for Windows.Media.Ocr
     target_compile_options(${PROJECT_NAME} PRIVATE /await)

@@ -42,6 +42,10 @@ public:
 
     void addPoint(const QPointF &point);
 
+    // Collision detection for eraser (path-based intersection)
+    bool intersectsCircle(const QPoint &center, int radius) const;
+    QPainterPath strokePath() const;
+
 private:
     QVector<QPointF> m_points;
     QColor m_color;
@@ -63,6 +67,10 @@ public:
 
     void addPoint(const QPointF &point);
 
+    // Collision detection for eraser (path-based intersection)
+    bool intersectsCircle(const QPoint &center, int radius) const;
+    QPainterPath strokePath() const;
+
 private:
     QVector<QPointF> m_points;
     QColor m_color;
@@ -82,8 +90,7 @@ private:
 // Line end style for arrow annotations
 enum class LineEndStyle {
     None = 0,    // ───── Plain line (no arrows)
-    EndArrow,    // ─────▶ Arrow at end (default)
-    DotToArrow   // ●─────▶ Dot at start, arrow at end
+    EndArrow     // ─────▶ Arrow at end (default)
 };
 
 // Arrow annotation (line with arrowhead)

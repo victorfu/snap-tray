@@ -119,6 +119,42 @@ void PencilStroke::addPoint(const QPointF &point)
     }
 }
 
+QPainterPath PencilStroke::strokePath() const
+{
+    if (m_points.size() < 2) {
+        return QPainterPath();
+    }
+
+    // Build the stroke path with width
+    QPainterPath linePath;
+    linePath.moveTo(m_points[0]);
+    for (int i = 1; i < m_points.size(); ++i) {
+        linePath.lineTo(m_points[i]);
+    }
+
+    QPainterPathStroker stroker;
+    stroker.setWidth(m_width);
+    stroker.setCapStyle(Qt::RoundCap);
+    stroker.setJoinStyle(Qt::RoundJoin);
+
+    return stroker.createStroke(linePath);
+}
+
+bool PencilStroke::intersectsCircle(const QPoint &center, int radius) const
+{
+    // Quick bounding box check first
+    QRect bbox = boundingRect();
+    QRect eraserRect(center.x() - radius, center.y() - radius, radius * 2, radius * 2);
+    if (!bbox.intersects(eraserRect)) {
+        return false;
+    }
+
+    // Path-based intersection
+    QPainterPath eraserPath;
+    eraserPath.addEllipse(center, radius, radius);
+    return strokePath().intersects(eraserPath);
+}
+
 // ============================================================================
 // MarkerStroke Implementation
 // ============================================================================
@@ -229,6 +265,42 @@ void MarkerStroke::addPoint(const QPointF &point)
     }
 }
 
+QPainterPath MarkerStroke::strokePath() const
+{
+    if (m_points.size() < 2) {
+        return QPainterPath();
+    }
+
+    // Build the stroke path with width
+    QPainterPath linePath;
+    linePath.moveTo(m_points[0]);
+    for (int i = 1; i < m_points.size(); ++i) {
+        linePath.lineTo(m_points[i]);
+    }
+
+    QPainterPathStroker stroker;
+    stroker.setWidth(m_width);
+    stroker.setCapStyle(Qt::RoundCap);
+    stroker.setJoinStyle(Qt::RoundJoin);
+
+    return stroker.createStroke(linePath);
+}
+
+bool MarkerStroke::intersectsCircle(const QPoint &center, int radius) const
+{
+    // Quick bounding box check first
+    QRect bbox = boundingRect();
+    QRect eraserRect(center.x() - radius, center.y() - radius, radius * 2, radius * 2);
+    if (!bbox.intersects(eraserRect)) {
+        return false;
+    }
+
+    // Path-based intersection
+    QPainterPath eraserPath;
+    eraserPath.addEllipse(center, radius, radius);
+    return strokePath().intersects(eraserPath);
+}
+
 // ============================================================================
 // ArrowAnnotation Implementation
 // ============================================================================
@@ -250,8 +322,20 @@ void ArrowAnnotation::draw(QPainter &painter) const
     painter.setPen(pen);
     painter.setRenderHint(QPainter::Antialiasing, true);
 
-    // Draw the line
-    painter.drawLine(m_start, m_end);
+    // Calculate line endpoint (adjust if arrowhead is present)
+    QPointF lineEnd = m_end;
+    if (m_lineEndStyle != LineEndStyle::None) {
+        // Move line end back to arrowhead base so line doesn't protrude through arrow
+        double angle = qAtan2(m_end.y() - m_start.y(), m_end.x() - m_start.x());
+        double arrowLength = qMax(15.0, m_width * 5.0);
+        lineEnd = QPointF(
+            m_end.x() - arrowLength * qCos(angle),
+            m_end.y() - arrowLength * qSin(angle)
+        );
+    }
+
+    // Draw the line (to correct endpoint)
+    painter.drawLine(m_start, lineEnd.toPoint());
 
     // Draw arrowhead(s) based on line end style
     switch (m_lineEndStyle) {
@@ -259,16 +343,6 @@ void ArrowAnnotation::draw(QPainter &painter) const
         // Plain line, no arrowheads
         break;
     case LineEndStyle::EndArrow:
-        drawArrowhead(painter, m_start, m_end);
-        break;
-    case LineEndStyle::DotToArrow:
-        // Draw dot at start, arrow at end (●─────▶)
-        {
-            int dotRadius = qMax(6, m_width * 2);
-            painter.setBrush(m_color);
-            painter.setPen(Qt::NoPen);
-            painter.drawEllipse(m_start, dotRadius, dotRadius);
-        }
         drawArrowhead(painter, m_start, m_end);
         break;
     }
@@ -347,9 +421,7 @@ void RectangleAnnotation::draw(QPainter &painter) const
     painter.setRenderHint(QPainter::Antialiasing, true);
 
     if (m_filled) {
-        QColor fillColor = m_color;
-        fillColor.setAlpha(50);
-        painter.setBrush(fillColor);
+        painter.setBrush(m_color);
     } else {
         painter.setBrush(Qt::NoBrush);
     }
@@ -400,9 +472,7 @@ void EllipseAnnotation::draw(QPainter &painter) const
     painter.setRenderHint(QPainter::Antialiasing, true);
 
     if (m_filled) {
-        QColor fillColor = m_color;
-        fillColor.setAlpha(50);
-        painter.setBrush(fillColor);
+        painter.setBrush(m_color);
     } else {
         painter.setBrush(Qt::NoBrush);
     }
@@ -1195,7 +1265,7 @@ void AnnotationLayer::renumberStepBadges()
 std::vector<ErasedItemsGroup::IndexedItem> AnnotationLayer::removeItemsIntersecting(const QPoint &point, int strokeWidth)
 {
     std::vector<ErasedItemsGroup::IndexedItem> removedItems;
-    int margin = strokeWidth / 2;
+    int radius = strokeWidth / 2;
     size_t currentIndex = 0;
 
     for (auto it = m_items.begin(); it != m_items.end(); ) {
@@ -1206,10 +1276,21 @@ std::vector<ErasedItemsGroup::IndexedItem> AnnotationLayer::removeItemsIntersect
             continue;
         }
 
-        QRect itemRect = (*it)->boundingRect();
-        QRect expandedRect = itemRect.adjusted(-margin, -margin, margin, margin);
+        bool shouldRemove = false;
 
-        if (expandedRect.contains(point)) {
+        // Use path-based intersection for strokes (more accurate)
+        if (auto* pencil = dynamic_cast<PencilStroke*>(it->get())) {
+            shouldRemove = pencil->intersectsCircle(point, radius);
+        } else if (auto* marker = dynamic_cast<MarkerStroke*>(it->get())) {
+            shouldRemove = marker->intersectsCircle(point, radius);
+        } else {
+            // Fallback: expanded bounding rect for shapes/text/badges/etc.
+            QRect itemRect = (*it)->boundingRect();
+            QRect expandedRect = itemRect.adjusted(-radius, -radius, radius, radius);
+            shouldRemove = expandedRect.contains(point);
+        }
+
+        if (shouldRemove) {
             // Item intersects with eraser - remove it and record original index
             removedItems.push_back({currentIndex, std::move(*it)});
             it = m_items.erase(it);

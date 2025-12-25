@@ -7,6 +7,7 @@
 #include "ColorPickerDialog.h"
 #include "OCRManager.h"
 #include "PlatformFeatures.h"
+#include "tools/handlers/EraserToolHandler.h"
 #include <QTextEdit>
 
 #include <cstring>
@@ -274,20 +275,17 @@ void RegionSelector::initializeMagnifierGridCache()
 
     QPainter gridPainter(&m_gridOverlayCache);
 
-    // Draw grid lines
-    gridPainter.setPen(QPen(QColor(100, 100, 100, 100), 1));
-    for (int i = 1; i < MAGNIFIER_GRID_COUNT; ++i) {
-        int pos = i * pixelSize;
-        gridPainter.drawLine(pos, 0, pos, MAGNIFIER_SIZE);
-        gridPainter.drawLine(0, pos, MAGNIFIER_SIZE, pos);
-    }
-
-    // Draw center crosshair
-    gridPainter.setPen(QPen(QColor(65, 105, 225), 1));
+    // 十字線 - 藍色粗線穿過整個區域
     int cx = MAGNIFIER_SIZE / 2;
     int cy = MAGNIFIER_SIZE / 2;
-    gridPainter.drawLine(cx - pixelSize / 2, cy, cx + pixelSize / 2, cy);
-    gridPainter.drawLine(cx, cy - pixelSize / 2, cx, cy + pixelSize / 2);
+    gridPainter.setPen(QPen(QColor(65, 105, 225), 2));
+    gridPainter.drawLine(0, cy, MAGNIFIER_SIZE, cy);  // 水平線
+    gridPainter.drawLine(cx, 0, cx, MAGNIFIER_SIZE);  // 垂直線
+
+    // 中心方框 - 白色填充 + 藍色邊框
+    int halfCell = pixelSize / 2;
+    gridPainter.setBrush(Qt::white);
+    gridPainter.drawRect(cx - halfCell, cy - halfCell, pixelSize, pixelSize);
 }
 
 void RegionSelector::invalidateMagnifierCache()
@@ -483,9 +481,14 @@ bool RegionSelector::shouldShowLineWidthWidget() const
 
 void RegionSelector::onLineWidthChanged(int width)
 {
-    m_annotationWidth = width;
+    if (m_currentTool == ToolbarButton::Eraser) {
+        m_eraserWidth = width;
+        // Don't save eraser width to settings
+    } else {
+        m_annotationWidth = width;
+        saveAnnotationWidth(width);
+    }
     m_toolManager->setWidth(width);
-    saveAnnotationWidth(width);
     update();
 }
 
@@ -502,6 +505,7 @@ bool RegionSelector::shouldShowColorAndWidthWidget() const
     case ToolbarButton::Text:        // Needs color only
     case ToolbarButton::StepBadge:   // Needs color only
     case ToolbarButton::Mosaic:      // Needs mosaic strength only
+    case ToolbarButton::Eraser:      // Needs width only
         return true;
     default:
         return false;
@@ -515,6 +519,7 @@ bool RegionSelector::shouldShowWidthControl() const
     case ToolbarButton::Pencil:
     case ToolbarButton::Arrow:
     case ToolbarButton::Shape:
+    case ToolbarButton::Eraser:
         return true;
     default:
         return false;  // Marker, Text, StepBadge don't need width control
@@ -973,7 +978,7 @@ void RegionSelector::drawMagnifier(QPainter& painter)
     int panelY = m_currentPoint.y() + 25;
 
     // 計算面板總高度
-    int totalHeight = magnifierSize + 75;  // 放大鏡 + 座標 + 顏色
+    int totalHeight = magnifierSize + 55;  // 放大鏡 + 座標 + 顏色
 
     // 邊界檢查
     panelX = qMax(10, qMin(panelX, width() - panelWidth - 10));
@@ -981,15 +986,16 @@ void RegionSelector::drawMagnifier(QPainter& painter)
         panelY = m_currentPoint.y() - totalHeight - 25;  // 改放上方
     }
 
-    // 繪製面板背景
-    QRect panelRect(panelX, panelY, panelWidth, totalHeight);
+    // 計算放大鏡顯示區域
+    int magX = panelX;
+    int magY = panelY;
+
+    // 繪製下半部資訊區域背景 - 黑色，無外框
+    int infoAreaY = magY + magnifierSize;
+    int infoAreaHeight = totalHeight - magnifierSize;
     painter.setPen(Qt::NoPen);
     painter.setBrush(QColor(30, 35, 45, 240));
-    painter.drawRoundedRect(panelRect, 4, 4);
-
-    // 計算放大鏡顯示區域
-    int magX = panelX + (panelWidth - magnifierSize) / 2;
-    int magY = panelY + panelPadding;
+    painter.drawRect(panelX, infoAreaY, panelWidth, infoAreaHeight);
 
     // Check if magnifier cache is still valid (same device pixel position)
     QPoint currentDevicePos(deviceX, deviceY);
@@ -997,6 +1003,7 @@ void RegionSelector::drawMagnifier(QPainter& painter)
         // 從設備像素 pixmap 中取樣
         // 取 gridCount 個「邏輯像素」，每個邏輯像素 = devicePixelRatio 個設備像素
         int deviceGridCount = static_cast<int>(gridCount * m_devicePixelRatio);
+        // 游標位置在中心
         int sampleX = deviceX - deviceGridCount / 2;
         int sampleY = deviceY - deviceGridCount / 2;
 
@@ -1040,15 +1047,20 @@ void RegionSelector::drawMagnifier(QPainter& painter)
     // Draw cached grid overlay (pre-rendered in initializeMagnifierGridCache)
     painter.drawPixmap(magX, magY, m_gridOverlayCache);
 
+    // 繪製放大鏡區域白色外框
+    painter.setPen(QPen(Qt::white, 1));
+    painter.setBrush(Qt::NoBrush);
+    painter.drawRect(magX, magY, magnifierSize, magnifierSize);
+
     // 2. 座標資訊
-    int infoY = magY + magnifierSize + 8;
+    int infoY = magY + magnifierSize + 6;
     painter.setPen(Qt::white);
     QFont font = painter.font();
     font.setPointSize(11);
     painter.setFont(font);
 
-    QString coordText = QString("(%1, %2)").arg(m_currentPoint.x()).arg(m_currentPoint.y());
-    painter.drawText(panelX + panelPadding, infoY, panelWidth - 2 * panelPadding, 20, Qt::AlignCenter, coordText);
+    QString coordText = QString("(%1 , %2)").arg(m_currentPoint.x()).arg(m_currentPoint.y());
+    painter.drawText(panelX, infoY, panelWidth, 20, Qt::AlignCenter, coordText);
 
     // 3. 顏色預覽 + HEX/RGB (置中對齊)
     infoY += 20;
@@ -1123,6 +1135,15 @@ void RegionSelector::drawDimensionInfo(QPainter& painter)
 
 void RegionSelector::handleToolbarClick(ToolbarButton button)
 {
+    // Save eraser width and clear hover when switching FROM Eraser to another tool
+    if (m_currentTool == ToolbarButton::Eraser && button != ToolbarButton::Eraser) {
+        m_eraserWidth = m_colorAndWidthWidget->currentWidth();
+        // Clear hover point when switching away from eraser
+        if (auto* eraser = dynamic_cast<EraserToolHandler*>(m_toolManager->currentHandler())) {
+            eraser->clearHoverPoint();
+        }
+    }
+
     switch (button) {
     case ToolbarButton::Selection:
     case ToolbarButton::Arrow:
@@ -1130,18 +1151,34 @@ void RegionSelector::handleToolbarClick(ToolbarButton button)
     case ToolbarButton::Marker:
     case ToolbarButton::Shape:
     case ToolbarButton::Mosaic:
+        // Restore standard width range when switching from Eraser
+        if (m_currentTool == ToolbarButton::Eraser) {
+            m_colorAndWidthWidget->setWidthRange(1, 20);
+            m_colorAndWidthWidget->setCurrentWidth(m_annotationWidth);
+            m_toolManager->setWidth(m_annotationWidth);
+        }
         m_currentTool = button;
         qDebug() << "Tool selected:" << static_cast<int>(button);
         update();
         break;
 
     case ToolbarButton::Text:
+        // Restore standard width range when switching from Eraser
+        if (m_currentTool == ToolbarButton::Eraser) {
+            m_colorAndWidthWidget->setWidthRange(1, 20);
+            m_colorAndWidthWidget->setCurrentWidth(m_annotationWidth);
+        }
         m_currentTool = button;
         qDebug() << "Text tool selected - click in selection to add text";
         update();
         break;
 
     case ToolbarButton::StepBadge:
+        // Restore standard width range when switching from Eraser
+        if (m_currentTool == ToolbarButton::Eraser) {
+            m_colorAndWidthWidget->setWidthRange(1, 20);
+            m_colorAndWidthWidget->setCurrentWidth(m_annotationWidth);
+        }
         m_currentTool = button;
         qDebug() << "StepBadge tool selected - click in selection to place numbered badge";
         update();
@@ -1149,6 +1186,10 @@ void RegionSelector::handleToolbarClick(ToolbarButton button)
 
     case ToolbarButton::Eraser:
         m_currentTool = button;
+        // Configure eraser-specific width range (5-100)
+        m_colorAndWidthWidget->setWidthRange(5, 100);
+        m_colorAndWidthWidget->setCurrentWidth(m_eraserWidth);
+        m_toolManager->setWidth(m_eraserWidth);
         qDebug() << "Eraser tool selected - drag over annotations to erase them";
         update();
         break;
@@ -1606,6 +1647,13 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
         bool textAnnotationHovered = false;
         bool gizmoHandleHovered = false;
 
+        // Update eraser hover point when eraser tool is active
+        if (m_currentTool == ToolbarButton::Eraser && !m_isDrawing) {
+            if (auto* eraser = dynamic_cast<EraserToolHandler*>(m_toolManager->currentHandler())) {
+                eraser->setHoverPoint(event->pos());
+            }
+        }
+
         // Check if hovering over gizmo handles of selected text annotation
         if (m_annotationLayer->selectedIndex() >= 0) {
             if (auto* textItem = dynamic_cast<TextAnnotation*>(m_annotationLayer->selectedItem())) {
@@ -1698,6 +1746,12 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
                 static QCursor mosaicCursor = createMosaicCursor(12);
                 setCursor(mosaicCursor);
             }
+            else if (m_currentTool == ToolbarButton::Eraser) {
+                // Use eraser's dynamic cursor that shows its size
+                if (auto* eraser = dynamic_cast<EraserToolHandler*>(m_toolManager->currentHandler())) {
+                    setCursor(eraser->cursor());
+                }
+            }
             else if (isAnnotationTool(m_currentTool) && m_currentTool != ToolbarButton::Selection) {
                 setCursor(Qt::CrossCursor);
             }
@@ -1715,6 +1769,11 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
             } else if (m_currentTool == ToolbarButton::Mosaic) {
                 static QCursor mosaicCursor = createMosaicCursor(12);
                 setCursor(mosaicCursor);
+            } else if (m_currentTool == ToolbarButton::Eraser) {
+                // Use eraser's dynamic cursor that shows its size
+                if (auto* eraser = dynamic_cast<EraserToolHandler*>(m_toolManager->currentHandler())) {
+                    setCursor(eraser->cursor());
+                }
             } else if (m_currentTool == ToolbarButton::Text && !m_textEditor->isEditing()) {
                 setCursor(Qt::IBeamCursor);
             } else if (isAnnotationTool(m_currentTool)) {
@@ -1750,19 +1809,27 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
             m_magnifierUpdateTimer.restart();
             // Calculate magnifier panel rect and update only that region
             const int panelWidth = 180;
-            const int totalHeight = MAGNIFIER_SIZE + 75;
+            const int totalHeight = MAGNIFIER_SIZE + 55;
             int panelX = m_currentPoint.x() - panelWidth / 2;
-            int panelY = m_currentPoint.y() + 25;
             panelX = qMax(10, qMin(panelX, width() - panelWidth - 10));
-            if (panelY + totalHeight > height()) {
-                panelY = m_currentPoint.y() - totalHeight - 25;
-            }
-            QRect currentMagRect(panelX - 5, panelY - 5, panelWidth + 10, totalHeight + 10);
+
+            // 計算兩個可能的面板位置（下方和上方），確保髒區域覆蓋翻轉情況
+            int panelYBelow = m_currentPoint.y() + 25;
+            int panelYAbove = m_currentPoint.y() - totalHeight - 25;
+            QRect belowRect(panelX - 5, panelYBelow - 5, panelWidth + 10, totalHeight + 10);
+            QRect aboveRect(panelX - 5, panelYAbove - 5, panelWidth + 10, totalHeight + 10);
+            QRect currentMagRect = belowRect.united(aboveRect);
+
             QRect dirtyRect = m_lastMagnifierRect.united(currentMagRect);
-            // Also include crosshair area
-            dirtyRect = dirtyRect.united(QRect(0, m_currentPoint.y() - 1, width(), 3));
-            dirtyRect = dirtyRect.united(QRect(m_currentPoint.x() - 1, 0, 3, height()));
+
+            // 十字線區域 - 加寬清除範圍並包含上一次位置
+            dirtyRect = dirtyRect.united(QRect(0, m_currentPoint.y() - 3, width(), 6));
+            dirtyRect = dirtyRect.united(QRect(m_currentPoint.x() - 3, 0, 6, height()));
+            dirtyRect = dirtyRect.united(QRect(0, m_lastMagnifierPosition.y() - 3, width(), 6));
+            dirtyRect = dirtyRect.united(QRect(m_lastMagnifierPosition.x() - 3, 0, 6, height()));
+
             m_lastMagnifierRect = currentMagRect;
+            m_lastMagnifierPosition = m_currentPoint;
             update(dirtyRect);
         }
     }
