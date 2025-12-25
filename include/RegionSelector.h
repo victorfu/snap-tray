@@ -178,7 +178,12 @@ private:
     void updateCursorForHandle(ResizeHandle handle);
 
     QPixmap m_backgroundPixmap;
-    QImage m_backgroundImageCache;  // 快取的 QImage，避免重複轉換
+    mutable QImage m_backgroundImageCache;  // Lazy-loaded cache for magnifier
+    mutable bool m_backgroundImageCacheValid = false;  // Cache validity flag
+
+    // Lazy accessor for background image (creates on first access)
+    const QImage& getBackgroundImage() const;
+
     QPoint m_startPoint;
     QPoint m_currentPoint;
     QRect m_selectionRect;
@@ -237,6 +242,8 @@ private:
     WindowDetector *m_windowDetector;
     std::optional<DetectedElement> m_detectedWindow;
     QRect m_highlightedWindowRect;
+    QPoint m_lastWindowDetectionPos;  // For throttling window detection
+    static constexpr int WINDOW_DETECTION_MIN_DISTANCE_SQ = 25;  // 5px threshold squared
 
     // OCR state
     OCRManager *m_ocrManager;
@@ -285,6 +292,18 @@ private:
     static constexpr int MAGNIFIER_MIN_UPDATE_MS = 16;  // ~60fps cap
     static constexpr int MAGNIFIER_SIZE = 120;
     static constexpr int MAGNIFIER_GRID_COUNT = 15;
+
+    // Update frequency control - per-operation throttling
+    QElapsedTimer m_selectionUpdateTimer;
+    QElapsedTimer m_annotationUpdateTimer;
+    QElapsedTimer m_hoverUpdateTimer;
+    static constexpr int SELECTION_UPDATE_MS = 8;    // 120fps for selection
+    static constexpr int ANNOTATION_UPDATE_MS = 12;  // 80fps for drawing
+    static constexpr int HOVER_UPDATE_MS = 32;       // 30fps for hover effects
+
+    // Dirty region tracking for partial updates
+    QRect m_lastSelectionRect;  // Previous selection rect for dirty region calculation
+    QRect m_lastMagnifierRect;  // Previous magnifier rect
 
     void initializeMagnifierGridCache();
     void invalidateMagnifierCache();

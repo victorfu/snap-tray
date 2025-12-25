@@ -3,6 +3,7 @@
 #include <QtMath>
 #include <QDebug>
 #include <QSet>
+#include <algorithm>  // For std::fill in mosaic optimization
 
 // ============================================================================
 // Helper: Build smooth path using quadratic Bezier with midpoints
@@ -480,9 +481,80 @@ bool TextAnnotation::containsPoint(const QPoint &point) const
     return transformedBoundingPolygon().containsPoint(QPointF(point), Qt::OddEvenFill);
 }
 
+bool TextAnnotation::isCacheValid(qreal dpr) const
+{
+    return !m_cachedPixmap.isNull() &&
+           m_cachedDpr == dpr &&
+           m_cachedText == m_text &&
+           m_cachedFont == m_font &&
+           m_cachedColor == m_color;
+}
+
+void TextAnnotation::regenerateCache(qreal dpr) const
+{
+    QFontMetrics fm(m_font);
+    QStringList lines = m_text.split('\n');
+
+    // Calculate bounds
+    int maxWidth = 0;
+    for (const QString &line : lines) {
+        maxWidth = qMax(maxWidth, fm.horizontalAdvance(line));
+    }
+    int totalHeight = lines.count() * fm.lineSpacing();
+
+    // Create pixmap with padding for outline (3px on each side)
+    int padding = 4;
+    QSize pixmapSize(maxWidth + 2 * padding, totalHeight + 2 * padding);
+
+    m_cachedPixmap = QPixmap(pixmapSize * dpr);
+    m_cachedPixmap.setDevicePixelRatio(dpr);
+    m_cachedPixmap.fill(Qt::transparent);
+
+    {
+        QPainter offPainter(&m_cachedPixmap);
+        offPainter.setRenderHint(QPainter::TextAntialiasing, true);
+        offPainter.setFont(m_font);
+
+        QPoint pos(padding, padding + fm.ascent());
+
+        for (const QString &line : lines) {
+            if (!line.isEmpty()) {
+                QPainterPath path;
+                path.addText(pos, m_font, line);
+
+                // White outline
+                offPainter.setPen(QPen(Qt::white, 3, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+                offPainter.drawPath(path);
+
+                // Fill with color
+                offPainter.setPen(Qt::NoPen);
+                offPainter.setBrush(m_color);
+                offPainter.drawPath(path);
+            }
+            pos.setY(pos.y() + fm.lineSpacing());
+        }
+    }
+
+    // Calculate origin: position is baseline, so offset by ascent and padding
+    m_cachedOrigin = QPoint(m_position.x() - padding, m_position.y() - fm.ascent() - padding);
+
+    // Update cache state
+    m_cachedDpr = dpr;
+    m_cachedText = m_text;
+    m_cachedFont = m_font;
+    m_cachedColor = m_color;
+}
+
 void TextAnnotation::draw(QPainter &painter) const
 {
     if (m_text.isEmpty()) return;
+
+    qreal dpr = painter.device()->devicePixelRatio();
+
+    // Check if cache is valid, regenerate if needed
+    if (!isCacheValid(dpr)) {
+        regenerateCache(dpr);
+    }
 
     painter.save();
 
@@ -493,32 +565,8 @@ void TextAnnotation::draw(QPainter &painter) const
     painter.scale(m_scale, m_scale);
     painter.translate(-c);
 
-    painter.setFont(m_font);
-    painter.setRenderHint(QPainter::TextAntialiasing, true);
-
-    // Split text into lines for multi-line support
-    QStringList lines = m_text.split('\n');
-    QFontMetrics fm(m_font);
-    int lineHeight = fm.lineSpacing();
-    QPoint currentPos = m_position;
-
-    for (const QString &line : lines) {
-        if (!line.isEmpty()) {
-            QPainterPath path;
-            path.addText(currentPos, m_font, line);
-
-            // White outline
-            QPen outlinePen(Qt::white, 3, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
-            painter.setPen(outlinePen);
-            painter.drawPath(path);
-
-            // Fill with color
-            painter.setPen(Qt::NoPen);
-            painter.setBrush(m_color);
-            painter.drawPath(path);
-        }
-        currentPos.setY(currentPos.y() + lineHeight);
-    }
+    // Draw cached pixmap
+    painter.drawPixmap(m_cachedOrigin, m_cachedPixmap);
 
     painter.restore();
 }
@@ -540,6 +588,7 @@ std::unique_ptr<AnnotationItem> TextAnnotation::clone() const
 void TextAnnotation::setText(const QString &text)
 {
     m_text = text;
+    invalidateCache();
 }
 
 // ============================================================================
@@ -670,26 +719,34 @@ void MosaicAnnotation::generateMosaic()
         return;
     }
 
-    QImage sourceImage = m_sourcePixmap.copy(sourceRect).toImage();
+    // Convert to ARGB32 for consistent scanLine access
+    QImage sourceImage = m_sourcePixmap.copy(sourceRect).toImage().convertToFormat(QImage::Format_ARGB32);
     QImage mosaicImage(sourceImage.size(), QImage::Format_ARGB32);
 
     // Scale block size for device pixels
     int deviceBlockSize = static_cast<int>(m_blockSize * m_devicePixelRatio);
     if (deviceBlockSize < 1) deviceBlockSize = 1;
 
-    // Generate mosaic by sampling blocks
-    for (int y = 0; y < sourceImage.height(); y += deviceBlockSize) {
-        for (int x = 0; x < sourceImage.width(); x += deviceBlockSize) {
-            // Get average color of block (sample center)
-            int sampleX = qMin(x + deviceBlockSize / 2, sourceImage.width() - 1);
-            int sampleY = qMin(y + deviceBlockSize / 2, sourceImage.height() - 1);
-            QColor blockColor = sourceImage.pixelColor(sampleX, sampleY);
+    const int imgWidth = sourceImage.width();
+    const int imgHeight = sourceImage.height();
 
-            // Fill the block with sampled color
-            for (int by = y; by < qMin(y + deviceBlockSize, sourceImage.height()); ++by) {
-                for (int bx = x; bx < qMin(x + deviceBlockSize, sourceImage.width()); ++bx) {
-                    mosaicImage.setPixelColor(bx, by, blockColor);
-                }
+    // Generate mosaic by sampling blocks - OPTIMIZED with bulk memory operations
+    for (int blockY = 0; blockY < imgHeight; blockY += deviceBlockSize) {
+        int blockHeight = qMin(deviceBlockSize, imgHeight - blockY);
+
+        for (int blockX = 0; blockX < imgWidth; blockX += deviceBlockSize) {
+            int blockWidth = qMin(deviceBlockSize, imgWidth - blockX);
+
+            // Sample center pixel using direct memory access (faster than pixelColor)
+            int sampleX = qMin(blockX + deviceBlockSize / 2, imgWidth - 1);
+            int sampleY = qMin(blockY + deviceBlockSize / 2, imgHeight - 1);
+            const QRgb* sampleLine = reinterpret_cast<const QRgb*>(sourceImage.constScanLine(sampleY));
+            QRgb blockColor = sampleLine[sampleX];
+
+            // Fill block using scanLine + std::fill (5-10x faster than setPixelColor)
+            for (int by = blockY; by < blockY + blockHeight; ++by) {
+                QRgb* destLine = reinterpret_cast<QRgb*>(mosaicImage.scanLine(by));
+                std::fill(destLine + blockX, destLine + blockX + blockWidth, blockColor);
             }
         }
     }
