@@ -113,6 +113,7 @@ bool WASAPIAudioCaptureEngine::setAudioSource(AudioSource source)
         return false;
     }
     m_source = source;
+    refreshProbedFormat();
     return true;
 }
 
@@ -123,6 +124,7 @@ bool WASAPIAudioCaptureEngine::setDevice(const QString &deviceId)
         return false;
     }
     m_deviceId = deviceId;
+    refreshProbedFormat();
     return true;
 }
 
@@ -341,7 +343,11 @@ bool WASAPIAudioCaptureEngine::setupAudioClient(IMMDevice *device, bool forLoopb
         m_micCaptureClient = captureClient;
     }
 
-    updateFormatFromWaveFormat(mixFormat);
+    if (forLoopback) {
+        updateFormatFromWaveFormat(mixFormat, m_loopbackNativeFormat, m_loopbackFormat);
+    } else {
+        updateFormatFromWaveFormat(mixFormat, m_micNativeFormat, m_micFormat);
+    }
     CoTaskMemFree(mixFormat);
 
     return true;
@@ -358,45 +364,151 @@ void WASAPIAudioCaptureEngine::cleanupAudioClient()
     safeRelease(m_loopbackDevice);
 }
 
-void WASAPIAudioCaptureEngine::updateFormatFromWaveFormat(const void *wfxPtr)
+bool WASAPIAudioCaptureEngine::updateFormatFromWaveFormat(const void *wfxPtr,
+                                                          NativeFormatInfo &nativeFormat,
+                                                          AudioFormat &outputFormat) const
 {
-    if (!wfxPtr) return;
+    if (!wfxPtr) return false;
 
     const WAVEFORMATEX *wfx = static_cast<const WAVEFORMATEX*>(wfxPtr);
 
     // Store native format info for conversion
-    m_nativeBitsPerSample = wfx->wBitsPerSample;
-    m_nativeChannels = wfx->nChannels;
-    m_isFloatFormat = false;
+    nativeFormat.bitsPerSample = wfx->wBitsPerSample;
+    nativeFormat.channels = wfx->nChannels;
+    nativeFormat.sampleRate = wfx->nSamplesPerSec;
+    nativeFormat.isFloat = false;
 
     // Check for WAVEFORMATEXTENSIBLE which contains subformat info
     if (wfx->wFormatTag == WAVE_FORMAT_EXTENSIBLE && wfx->cbSize >= 22) {
         const WAVEFORMATEXTENSIBLE *wfxExt = reinterpret_cast<const WAVEFORMATEXTENSIBLE*>(wfx);
         if (IsEqualGUID(wfxExt->SubFormat, KSDATAFORMAT_SUBTYPE_IEEE_FLOAT)) {
-            m_isFloatFormat = true;
+            nativeFormat.isFloat = true;
             qDebug() << "WASAPIAudioCaptureEngine: Native format is IEEE float";
         } else if (IsEqualGUID(wfxExt->SubFormat, KSDATAFORMAT_SUBTYPE_PCM)) {
             qDebug() << "WASAPIAudioCaptureEngine: Native format is PCM";
         }
     } else if (wfx->wFormatTag == WAVE_FORMAT_IEEE_FLOAT) {
-        m_isFloatFormat = true;
+        nativeFormat.isFloat = true;
         qDebug() << "WASAPIAudioCaptureEngine: Native format is IEEE float (legacy tag)";
     }
 
     // Store native sample rate, but we will output 16-bit PCM
-    m_format.sampleRate = wfx->nSamplesPerSec;
-    m_format.channels = wfx->nChannels;
-    m_format.bitsPerSample = 16;  // Always output 16-bit PCM
+    outputFormat.sampleRate = wfx->nSamplesPerSec;
+    outputFormat.channels = wfx->nChannels;
+    outputFormat.bitsPerSample = 16;  // Always output 16-bit PCM
 
     qDebug() << "WASAPIAudioCaptureEngine: Native format -"
              << wfx->nSamplesPerSec << "Hz,"
              << wfx->nChannels << "ch,"
-             << m_nativeBitsPerSample << "bit"
-             << (m_isFloatFormat ? "(float)" : "(int)");
+             << nativeFormat.bitsPerSample << "bit"
+             << (nativeFormat.isFloat ? "(float)" : "(int)");
     qDebug() << "WASAPIAudioCaptureEngine: Output format -"
-             << m_format.sampleRate << "Hz,"
-             << m_format.channels << "ch,"
-             << m_format.bitsPerSample << "bit (PCM)";
+             << outputFormat.sampleRate << "Hz,"
+             << outputFormat.channels << "ch,"
+             << outputFormat.bitsPerSample << "bit (PCM)";
+    return true;
+}
+
+bool WASAPIAudioCaptureEngine::probeFormat(bool forLoopback, const QString &deviceId,
+                                           NativeFormatInfo &nativeFormat,
+                                           AudioFormat &outputFormat) const
+{
+    HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+    bool needsUninit = SUCCEEDED(hr);
+
+    IMMDeviceEnumerator *enumerator = nullptr;
+    hr = CoCreateInstance(
+        __uuidof(MMDeviceEnumerator),
+        nullptr,
+        CLSCTX_ALL,
+        __uuidof(IMMDeviceEnumerator),
+        (void**)&enumerator
+    );
+
+    if (FAILED(hr) || !enumerator) {
+        if (needsUninit) CoUninitialize();
+        return false;
+    }
+
+    IMMDevice *device = nullptr;
+    if (forLoopback) {
+        hr = enumerator->GetDefaultAudioEndpoint(eRender, eConsole, &device);
+    } else if (!deviceId.isEmpty()) {
+        hr = enumerator->GetDevice(reinterpret_cast<LPCWSTR>(deviceId.utf16()), &device);
+    } else {
+        hr = enumerator->GetDefaultAudioEndpoint(eCapture, eConsole, &device);
+    }
+
+    if (FAILED(hr) || !device) {
+        enumerator->Release();
+        if (needsUninit) CoUninitialize();
+        return false;
+    }
+
+    IAudioClient *audioClient = nullptr;
+    hr = device->Activate(
+        __uuidof(IAudioClient),
+        CLSCTX_ALL,
+        nullptr,
+        (void**)&audioClient
+    );
+
+    if (FAILED(hr) || !audioClient) {
+        device->Release();
+        enumerator->Release();
+        if (needsUninit) CoUninitialize();
+        return false;
+    }
+
+    WAVEFORMATEX *mixFormat = nullptr;
+    hr = audioClient->GetMixFormat(&mixFormat);
+    bool ok = SUCCEEDED(hr) && mixFormat;
+    if (ok) {
+        ok = updateFormatFromWaveFormat(mixFormat, nativeFormat, outputFormat);
+        CoTaskMemFree(mixFormat);
+    }
+
+    audioClient->Release();
+    device->Release();
+    enumerator->Release();
+    if (needsUninit) CoUninitialize();
+    return ok;
+}
+
+void WASAPIAudioCaptureEngine::refreshProbedFormat()
+{
+    if (m_source == AudioSource::None) {
+        return;
+    }
+
+    bool micOk = false;
+    bool loopOk = false;
+
+    if (m_source == AudioSource::Microphone || m_source == AudioSource::Both) {
+        micOk = probeFormat(false, m_deviceId, m_micNativeFormat, m_micFormat);
+    }
+    if (m_source == AudioSource::SystemAudio || m_source == AudioSource::Both) {
+        loopOk = probeFormat(true, QString(), m_loopbackNativeFormat, m_loopbackFormat);
+    }
+
+    if (m_source == AudioSource::Both && micOk && loopOk) {
+        if (m_micFormat.sampleRate == m_loopbackFormat.sampleRate &&
+            m_micFormat.channels == m_loopbackFormat.channels) {
+            m_format = m_micFormat;
+        } else {
+            qWarning() << "WASAPIAudioCaptureEngine: Mismatched mic/loopback formats during probe -"
+                       << "mic:" << m_micFormat.sampleRate << "Hz," << m_micFormat.channels << "ch"
+                       << "loopback:" << m_loopbackFormat.sampleRate << "Hz," << m_loopbackFormat.channels << "ch";
+            m_format = m_micFormat;
+        }
+        return;
+    }
+
+    if (micOk) {
+        m_format = m_micFormat;
+    } else if (loopOk) {
+        m_format = m_loopbackFormat;
+    }
 }
 
 // Called from capture thread to initialize COM objects
@@ -434,6 +546,26 @@ bool WASAPIAudioCaptureEngine::initializeInThread()
             qWarning() << "WASAPIAudioCaptureEngine: Failed to initialize system audio capture";
             return false;
         }
+    }
+
+    if (m_micCaptureClient && m_loopbackCaptureClient) {
+        if (m_micFormat.sampleRate != m_loopbackFormat.sampleRate ||
+            m_micFormat.channels != m_loopbackFormat.channels) {
+            qWarning() << "WASAPIAudioCaptureEngine: Mic/loopback formats differ, disabling loopback."
+                       << "mic:" << m_micFormat.sampleRate << "Hz," << m_micFormat.channels << "ch"
+                       << "loopback:" << m_loopbackFormat.sampleRate << "Hz," << m_loopbackFormat.channels << "ch";
+            emit warning("Mic and system audio formats differ; system audio disabled.");
+            safeRelease(m_loopbackCaptureClient);
+            safeRelease(m_loopbackAudioClient);
+            safeRelease(m_loopbackDevice);
+            m_format = m_micFormat;
+        } else {
+            m_format = m_micFormat;
+        }
+    } else if (m_micCaptureClient) {
+        m_format = m_micFormat;
+    } else if (m_loopbackCaptureClient) {
+        m_format = m_loopbackFormat;
     }
 
     // Start the audio clients
@@ -501,6 +633,8 @@ bool WASAPIAudioCaptureEngine::start()
     m_stopRequested = false;
     m_running = true;
     m_paused = false;
+    m_micPending.clear();
+    m_loopbackPending.clear();
 
     // Start capture thread - it will do ALL COM initialization
     m_captureThread = new CaptureThread(this);
@@ -591,17 +725,18 @@ void WASAPIAudioCaptureEngine::resume()
     qDebug() << "WASAPIAudioCaptureEngine: Resumed";
 }
 
-QByteArray WASAPIAudioCaptureEngine::convertToInt16PCM(const unsigned char *data, int numFrames) const
+QByteArray WASAPIAudioCaptureEngine::convertToInt16PCM(const unsigned char *data, int numFrames,
+                                                       const NativeFormatInfo &nativeFormat) const
 {
     // Output: 16-bit PCM, same channels as input
-    int outputSize = numFrames * m_nativeChannels * sizeof(int16_t);
+    int outputSize = numFrames * nativeFormat.channels * sizeof(int16_t);
     QByteArray output(outputSize, 0);
     int16_t *outPtr = reinterpret_cast<int16_t*>(output.data());
 
-    if (m_isFloatFormat && m_nativeBitsPerSample == 32) {
+    if (nativeFormat.isFloat && nativeFormat.bitsPerSample == 32) {
         // Convert 32-bit float [-1.0, 1.0] to 16-bit signed int [-32768, 32767]
         const float *inPtr = reinterpret_cast<const float*>(data);
-        int totalSamples = numFrames * m_nativeChannels;
+        int totalSamples = numFrames * nativeFormat.channels;
         for (int i = 0; i < totalSamples; i++) {
             float sample = inPtr[i];
             // Clamp to [-1.0, 1.0]
@@ -609,17 +744,17 @@ QByteArray WASAPIAudioCaptureEngine::convertToInt16PCM(const unsigned char *data
             else if (sample < -1.0f) sample = -1.0f;
             outPtr[i] = static_cast<int16_t>(sample * 32767.0f);
         }
-    } else if (!m_isFloatFormat && m_nativeBitsPerSample == 32) {
+    } else if (!nativeFormat.isFloat && nativeFormat.bitsPerSample == 32) {
         // Convert 32-bit int to 16-bit int (shift right by 16)
         const int32_t *inPtr = reinterpret_cast<const int32_t*>(data);
-        int totalSamples = numFrames * m_nativeChannels;
+        int totalSamples = numFrames * nativeFormat.channels;
         for (int i = 0; i < totalSamples; i++) {
             outPtr[i] = static_cast<int16_t>(inPtr[i] >> 16);
         }
-    } else if (!m_isFloatFormat && m_nativeBitsPerSample == 24) {
+    } else if (!nativeFormat.isFloat && nativeFormat.bitsPerSample == 24) {
         // Convert 24-bit int (packed) to 16-bit int
         const unsigned char *inPtr = data;
-        int totalSamples = numFrames * m_nativeChannels;
+        int totalSamples = numFrames * nativeFormat.channels;
         for (int i = 0; i < totalSamples; i++) {
             // 24-bit samples are stored as 3 bytes, little-endian
             int32_t sample = (static_cast<int32_t>(inPtr[2]) << 24) |
@@ -629,14 +764,14 @@ QByteArray WASAPIAudioCaptureEngine::convertToInt16PCM(const unsigned char *data
             outPtr[i] = static_cast<int16_t>(sample >> 16);
             inPtr += 3;
         }
-    } else if (!m_isFloatFormat && m_nativeBitsPerSample == 16) {
+    } else if (!nativeFormat.isFloat && nativeFormat.bitsPerSample == 16) {
         // Already 16-bit PCM, just copy
         memcpy(output.data(), data, outputSize);
     } else {
         // Unsupported format - fill with silence and log warning
         qWarning() << "WASAPIAudioCaptureEngine: Unsupported audio format -"
-                   << m_nativeBitsPerSample << "bit"
-                   << (m_isFloatFormat ? "float" : "int");
+                   << nativeFormat.bitsPerSample << "bit"
+                   << (nativeFormat.isFloat ? "float" : "int");
         output.fill(0);
     }
 
@@ -661,6 +796,8 @@ void WASAPIAudioCaptureEngine::captureLoop()
 
         bool gotData = false;
 
+        bool useMixing = (m_micCaptureClient && m_loopbackCaptureClient);
+
         // Capture from microphone
         if (m_micCaptureClient) {
             UINT32 packetLength = 0;
@@ -677,22 +814,26 @@ void WASAPIAudioCaptureEngine::captureLoop()
 
                     if (flags & AUDCLNT_BUFFERFLAGS_SILENT) {
                         // Output silence in 16-bit PCM format
-                        int outputSize = numFrames * m_nativeChannels * sizeof(int16_t);
+                        int outputSize = numFrames * m_micNativeFormat.channels * sizeof(int16_t);
                         audioData.resize(outputSize);
                         audioData.fill(0);
                     } else {
                         // Convert from native format to 16-bit PCM
-                        audioData = convertToInt16PCM(data, numFrames);
+                        audioData = convertToInt16PCM(data, numFrames, m_micNativeFormat);
                     }
 
-                    qint64 now = std::chrono::duration_cast<std::chrono::milliseconds>(
-                        std::chrono::steady_clock::now().time_since_epoch()).count();
+                    if (useMixing) {
+                        m_micPending.append(audioData);
+                    } else {
+                        qint64 now = std::chrono::duration_cast<std::chrono::milliseconds>(
+                            std::chrono::steady_clock::now().time_since_epoch()).count();
 
-                    QMutexLocker locker(&m_timingMutex);
-                    qint64 timestamp = now - m_startTime - m_pausedDuration;
-                    locker.unlock();
+                        QMutexLocker locker(&m_timingMutex);
+                        qint64 timestamp = now - m_startTime - m_pausedDuration;
+                        locker.unlock();
 
-                    emit audioDataReady(audioData, timestamp);
+                        emit audioDataReady(audioData, timestamp);
+                    }
                     gotData = true;
 
                     m_micCaptureClient->ReleaseBuffer(numFrames);
@@ -718,28 +859,65 @@ void WASAPIAudioCaptureEngine::captureLoop()
 
                     if (flags & AUDCLNT_BUFFERFLAGS_SILENT) {
                         // Output silence in 16-bit PCM format
-                        int outputSize = numFrames * m_nativeChannels * sizeof(int16_t);
+                        int outputSize = numFrames * m_loopbackNativeFormat.channels * sizeof(int16_t);
                         audioData.resize(outputSize);
                         audioData.fill(0);
                     } else {
                         // Convert from native format to 16-bit PCM
-                        audioData = convertToInt16PCM(data, numFrames);
+                        audioData = convertToInt16PCM(data, numFrames, m_loopbackNativeFormat);
                     }
 
-                    qint64 now = std::chrono::duration_cast<std::chrono::milliseconds>(
-                        std::chrono::steady_clock::now().time_since_epoch()).count();
+                    if (useMixing) {
+                        m_loopbackPending.append(audioData);
+                    } else {
+                        qint64 now = std::chrono::duration_cast<std::chrono::milliseconds>(
+                            std::chrono::steady_clock::now().time_since_epoch()).count();
 
-                    QMutexLocker locker(&m_timingMutex);
-                    qint64 timestamp = now - m_startTime - m_pausedDuration;
-                    locker.unlock();
+                        QMutexLocker locker(&m_timingMutex);
+                        qint64 timestamp = now - m_startTime - m_pausedDuration;
+                        locker.unlock();
 
-                    emit audioDataReady(audioData, timestamp);
+                        emit audioDataReady(audioData, timestamp);
+                    }
                     gotData = true;
 
                     m_loopbackCaptureClient->ReleaseBuffer(numFrames);
                 }
 
                 hr = m_loopbackCaptureClient->GetNextPacketSize(&packetLength);
+            }
+        }
+
+        if (useMixing && !m_micPending.isEmpty() && !m_loopbackPending.isEmpty()) {
+            int bytesPerFrame = m_format.channels * sizeof(int16_t);
+            int mixBytes = qMin(m_micPending.size(), m_loopbackPending.size());
+            mixBytes = (mixBytes / bytesPerFrame) * bytesPerFrame;
+
+            if (mixBytes > 0) {
+                QByteArray mixed(mixBytes, 0);
+                const int16_t *micPtr = reinterpret_cast<const int16_t*>(m_micPending.constData());
+                const int16_t *loopPtr = reinterpret_cast<const int16_t*>(m_loopbackPending.constData());
+                int16_t *outPtr = reinterpret_cast<int16_t*>(mixed.data());
+                int totalSamples = mixBytes / sizeof(int16_t);
+
+                for (int i = 0; i < totalSamples; i++) {
+                    int sample = static_cast<int>(micPtr[i]) + static_cast<int>(loopPtr[i]);
+                    if (sample > 32767) sample = 32767;
+                    else if (sample < -32768) sample = -32768;
+                    outPtr[i] = static_cast<int16_t>(sample);
+                }
+
+                m_micPending.remove(0, mixBytes);
+                m_loopbackPending.remove(0, mixBytes);
+
+                qint64 now = std::chrono::duration_cast<std::chrono::milliseconds>(
+                    std::chrono::steady_clock::now().time_since_epoch()).count();
+                QMutexLocker locker(&m_timingMutex);
+                qint64 timestamp = now - m_startTime - m_pausedDuration;
+                locker.unlock();
+
+                emit audioDataReady(mixed, timestamp);
+                gotData = true;
             }
         }
 

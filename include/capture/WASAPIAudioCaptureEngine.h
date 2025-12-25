@@ -71,11 +71,21 @@ private:
     void cleanupAudioClient();
 
     // Convert WASAPI format to our format (takes void* to avoid WAVEFORMATEX in header)
-    void updateFormatFromWaveFormat(const void *wfx);
+    struct NativeFormatInfo {
+        bool isFloat = false;
+        int bitsPerSample = 16;
+        int channels = 2;
+        int sampleRate = 48000;
+    };
+    bool updateFormatFromWaveFormat(const void *wfx, NativeFormatInfo &nativeFormat, AudioFormat &outputFormat) const;
+    bool probeFormat(bool forLoopback, const QString &deviceId,
+                     NativeFormatInfo &nativeFormat, AudioFormat &outputFormat) const;
+    void refreshProbedFormat();
 
     // Convert audio data from native format to 16-bit PCM
     // Uses unsigned char* to avoid Windows header dependency
-    QByteArray convertToInt16PCM(const unsigned char *data, int numFrames) const;
+    QByteArray convertToInt16PCM(const unsigned char *data, int numFrames,
+                                 const NativeFormatInfo &nativeFormat) const;
 
     // Capture loop (runs in separate thread)
     void captureLoop();
@@ -109,10 +119,15 @@ private:
     qint64 m_pauseStartTime = 0;
     mutable QMutex m_timingMutex;
 
-    // Native audio format info (for conversion)
-    bool m_isFloatFormat = false;
-    int m_nativeBitsPerSample = 16;
-    int m_nativeChannels = 2;
+    // Native audio format info (for conversion and mixing)
+    NativeFormatInfo m_micNativeFormat;
+    NativeFormatInfo m_loopbackNativeFormat;
+    AudioFormat m_micFormat;
+    AudioFormat m_loopbackFormat;
+
+    // Pending buffers for mixing mic + loopback
+    QByteArray m_micPending;
+    QByteArray m_loopbackPending;
 };
 
 #endif // Q_OS_WIN
