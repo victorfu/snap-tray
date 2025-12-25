@@ -141,6 +141,27 @@ public:
      */
     LineEndStyle arrowStyle() const { return m_arrowStyle; }
 
+    // Mosaic strength methods
+    /**
+     * @brief Set whether to show the mosaic strength section.
+     */
+    void setShowMosaicStrengthSection(bool show);
+
+    /**
+     * @brief Check if the mosaic strength section is shown.
+     */
+    bool showMosaicStrengthSection() const { return m_showMosaicStrengthSection; }
+
+    /**
+     * @brief Set the mosaic strength.
+     */
+    void setMosaicStrength(MosaicStrength strength);
+
+    /**
+     * @brief Get the current mosaic strength.
+     */
+    MosaicStrength mosaicStrength() const { return m_mosaicStrength; }
+
     // Line width methods
     /**
      * @brief Set the width range.
@@ -288,6 +309,11 @@ signals:
      */
     void arrowStyleChanged(LineEndStyle style);
 
+    /**
+     * @brief Emitted when mosaic strength is changed.
+     */
+    void mosaicStrengthChanged(MosaicStrength strength);
+
 private:
     // Layout calculation
     void updateLayout();
@@ -308,6 +334,10 @@ private:
     void drawArrowStyleSection(QPainter& painter);
     void drawArrowStyleIcon(QPainter& painter, LineEndStyle style, const QRect& rect, bool isHovered = false) const;
     int arrowStyleOptionAtPosition(const QPoint& pos) const;
+
+    // Mosaic strength section helpers
+    void drawMosaicStrengthSection(QPainter& painter);
+    int mosaicStrengthButtonAtPosition(const QPoint& pos) const;
 
     // Color state
     QVector<QColor> m_colors;
@@ -346,6 +376,13 @@ private:
     bool m_arrowStyleDropdownOpen = false;
     int m_hoveredArrowStyleOption = -1;  // -1=none, 0-3=style options
 
+    // Mosaic strength state
+    bool m_showMosaicStrengthSection = false;
+    MosaicStrength m_mosaicStrength = MosaicStrength::Strong;
+    QRect m_mosaicStrengthSectionRect;
+    QVector<QRect> m_mosaicStrengthButtonRects;  // 4 buttons for L/N/S/P
+    int m_hoveredMosaicStrengthButton = -1;
+
     // Layout state
     bool m_visible;
     QRect m_widgetRect;
@@ -372,6 +409,11 @@ private:
     static const int ARROW_STYLE_BUTTON_WIDTH = 50;
     static const int ARROW_STYLE_BUTTON_HEIGHT = 24;
     static const int ARROW_STYLE_DROPDOWN_OPTION_HEIGHT = 28;
+
+    // Mosaic strength section layout constants
+    static const int MOSAIC_BUTTON_WIDTH = 24;
+    static const int MOSAIC_BUTTON_HEIGHT = 20;
+    static const int MOSAIC_BUTTON_SPACING = 2;
 };
 
 #endif // COLORANDWIDTHWIDGET_H

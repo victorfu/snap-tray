@@ -3,6 +3,7 @@
 #include <QtMath>
 #include <QDebug>
 #include <QSet>
+#include <QRandomGenerator>
 #include <algorithm>  // For std::fill in mosaic optimization
 
 // ============================================================================
@@ -666,122 +667,142 @@ void StepBadgeAnnotation::setNumber(int number)
 }
 
 // ============================================================================
-// MosaicAnnotation Implementation
+// MosaicStroke Implementation (freehand mosaic with enhanced privacy)
 // ============================================================================
 
-MosaicAnnotation::MosaicAnnotation(const QRect &rect, const QPixmap &sourcePixmap, int blockSize)
-    : m_rect(rect)
-    , m_sourcePixmap(sourcePixmap)
-    , m_blockSize(blockSize)
-    , m_devicePixelRatio(sourcePixmap.devicePixelRatio())
-{
-    generateMosaic();
-}
-
-void MosaicAnnotation::draw(QPainter &painter) const
-{
-    if (m_mosaicPixmap.isNull()) return;
-
-    painter.save();
-    QRect normalizedRect = m_rect.normalized();
-    painter.drawPixmap(normalizedRect, m_mosaicPixmap);
-    painter.restore();
-}
-
-QRect MosaicAnnotation::boundingRect() const
-{
-    return m_rect.normalized();
-}
-
-std::unique_ptr<AnnotationItem> MosaicAnnotation::clone() const
-{
-    auto cloned = std::make_unique<MosaicAnnotation>(m_rect, m_sourcePixmap, m_blockSize);
-    return cloned;
-}
-
-void MosaicAnnotation::setRect(const QRect &rect)
-{
-    m_rect = rect;
-    generateMosaic();
-}
-
-void MosaicAnnotation::updateSource(const QPixmap &sourcePixmap)
-{
-    m_sourcePixmap = sourcePixmap;
-    m_devicePixelRatio = sourcePixmap.devicePixelRatio();
-    generateMosaic();
-}
-
-void MosaicAnnotation::generateMosaic()
-{
-    QRect normalizedRect = m_rect.normalized();
-    if (normalizedRect.isEmpty() || m_sourcePixmap.isNull()) {
-        m_mosaicPixmap = QPixmap();
-        return;
-    }
-
-    // Convert logical coordinates to device pixel coordinates for HiDPI displays
-    QRect deviceRect(
-        static_cast<int>(normalizedRect.x() * m_devicePixelRatio),
-        static_cast<int>(normalizedRect.y() * m_devicePixelRatio),
-        static_cast<int>(normalizedRect.width() * m_devicePixelRatio),
-        static_cast<int>(normalizedRect.height() * m_devicePixelRatio)
-    );
-
-    // Extract the region from source using device pixel coordinates
-    QRect sourceRect = deviceRect.intersected(m_sourcePixmap.rect());
-    if (sourceRect.isEmpty()) {
-        m_mosaicPixmap = QPixmap();
-        return;
-    }
-
-    // Convert to ARGB32 for consistent scanLine access
-    QImage sourceImage = m_sourcePixmap.copy(sourceRect).toImage().convertToFormat(QImage::Format_ARGB32);
-    QImage mosaicImage(sourceImage.size(), QImage::Format_ARGB32);
-
-    // Scale block size for device pixels
-    int deviceBlockSize = static_cast<int>(m_blockSize * m_devicePixelRatio);
-    if (deviceBlockSize < 1) deviceBlockSize = 1;
-
-    const int imgWidth = sourceImage.width();
-    const int imgHeight = sourceImage.height();
-
-    // Generate mosaic by sampling blocks - OPTIMIZED with bulk memory operations
-    for (int blockY = 0; blockY < imgHeight; blockY += deviceBlockSize) {
-        int blockHeight = qMin(deviceBlockSize, imgHeight - blockY);
-
-        for (int blockX = 0; blockX < imgWidth; blockX += deviceBlockSize) {
-            int blockWidth = qMin(deviceBlockSize, imgWidth - blockX);
-
-            // Sample center pixel using direct memory access (faster than pixelColor)
-            int sampleX = qMin(blockX + deviceBlockSize / 2, imgWidth - 1);
-            int sampleY = qMin(blockY + deviceBlockSize / 2, imgHeight - 1);
-            const QRgb* sampleLine = reinterpret_cast<const QRgb*>(sourceImage.constScanLine(sampleY));
-            QRgb blockColor = sampleLine[sampleX];
-
-            // Fill block using scanLine + std::fill (5-10x faster than setPixelColor)
-            for (int by = blockY; by < blockY + blockHeight; ++by) {
-                QRgb* destLine = reinterpret_cast<QRgb*>(mosaicImage.scanLine(by));
-                std::fill(destLine + blockX, destLine + blockX + blockWidth, blockColor);
-            }
-        }
-    }
-
-    m_mosaicPixmap = QPixmap::fromImage(mosaicImage);
-    m_mosaicPixmap.setDevicePixelRatio(m_devicePixelRatio);
-}
-
-// ============================================================================
-// MosaicStroke Implementation (freehand mosaic)
-// ============================================================================
-
-MosaicStroke::MosaicStroke(const QVector<QPoint> &points, const QPixmap &sourcePixmap, int width, int blockSize)
+MosaicStroke::MosaicStroke(const QVector<QPoint> &points, const QPixmap &sourcePixmap,
+                           int width, int blockSize, MosaicStrength strength)
     : m_points(points)
     , m_sourcePixmap(sourcePixmap)
     , m_width(width)
     , m_blockSize(blockSize)
+    , m_strength(strength)
     , m_devicePixelRatio(sourcePixmap.devicePixelRatio())
 {
+}
+
+void MosaicStroke::setStrength(MosaicStrength strength)
+{
+    if (m_strength != strength) {
+        m_strength = strength;
+        m_renderedCache = QPixmap();  // Invalidate cache
+    }
+}
+
+QRgb MosaicStroke::calculateBlockAverageColor(const QImage &image, int x, int y,
+                                               int blockW, int blockH, double jitter) const
+{
+    // Apply random jitter to sample region
+    int offsetX = 0, offsetY = 0;
+    if (jitter > 0) {
+        int maxOffset = static_cast<int>(qMax(blockW, blockH) * jitter);
+        if (maxOffset > 0) {
+            offsetX = QRandomGenerator::global()->bounded(-maxOffset, maxOffset + 1);
+            offsetY = QRandomGenerator::global()->bounded(-maxOffset, maxOffset + 1);
+        }
+    }
+
+    // Calculate sampling bounds with jitter applied
+    int startX = qBound(0, x + offsetX, image.width() - 1);
+    int startY = qBound(0, y + offsetY, image.height() - 1);
+    int endX = qBound(0, x + blockW + offsetX, image.width());
+    int endY = qBound(0, y + blockH + offsetY, image.height());
+
+    if (startX >= endX || startY >= endY) {
+        // Fallback to original region if jitter pushed us out of bounds
+        startX = x;
+        startY = y;
+        endX = qMin(x + blockW, image.width());
+        endY = qMin(y + blockH, image.height());
+    }
+
+    // Calculate average color using scanLine for performance
+    qint64 totalR = 0, totalG = 0, totalB = 0, totalA = 0;
+    int pixelCount = 0;
+
+    for (int py = startY; py < endY; ++py) {
+        const QRgb *scanLine = reinterpret_cast<const QRgb*>(image.constScanLine(py));
+        for (int px = startX; px < endX; ++px) {
+            QRgb pixel = scanLine[px];
+            totalR += qRed(pixel);
+            totalG += qGreen(pixel);
+            totalB += qBlue(pixel);
+            totalA += qAlpha(pixel);
+            ++pixelCount;
+        }
+    }
+
+    if (pixelCount == 0) {
+        return qRgba(0, 0, 0, 255);
+    }
+
+    return qRgba(
+        static_cast<int>(totalR / pixelCount),
+        static_cast<int>(totalG / pixelCount),
+        static_cast<int>(totalB / pixelCount),
+        static_cast<int>(totalA / pixelCount)
+    );
+}
+
+QImage MosaicStroke::applyEnhancedMosaic(const QPixmap &regionPixmap) const
+{
+    QImage sourceImage = regionPixmap.toImage().convertToFormat(QImage::Format_ARGB32);
+
+    // Strength-based parameters
+    double blockMultiplier;
+    double jitter;
+    int passes;
+
+    switch (m_strength) {
+        case MosaicStrength::Light:
+            blockMultiplier = 0.5;
+            jitter = 0.0;
+            passes = 1;
+            break;
+        case MosaicStrength::Normal:
+            blockMultiplier = 1.0;
+            jitter = 0.1;
+            passes = 1;
+            break;
+        case MosaicStrength::Strong:
+            blockMultiplier = 1.5;
+            jitter = 0.2;
+            passes = 1;
+            break;
+        case MosaicStrength::Paranoid:
+            blockMultiplier = 2.0;
+            jitter = 0.3;
+            passes = 2;
+            break;
+    }
+
+    int effectiveBlockSize = qMax(4, static_cast<int>(m_blockSize * blockMultiplier * m_devicePixelRatio));
+
+    for (int pass = 0; pass < passes; ++pass) {
+        QImage resultImage(sourceImage.size(), QImage::Format_ARGB32);
+
+        const int imgWidth = sourceImage.width();
+        const int imgHeight = sourceImage.height();
+
+        for (int blockY = 0; blockY < imgHeight; blockY += effectiveBlockSize) {
+            for (int blockX = 0; blockX < imgWidth; blockX += effectiveBlockSize) {
+                int blockW = qMin(effectiveBlockSize, imgWidth - blockX);
+                int blockH = qMin(effectiveBlockSize, imgHeight - blockY);
+
+                QRgb avgColor = calculateBlockAverageColor(sourceImage, blockX, blockY, blockW, blockH, jitter);
+
+                // Fill block using scanLine for performance
+                for (int py = blockY; py < blockY + blockH; ++py) {
+                    QRgb *destLine = reinterpret_cast<QRgb*>(resultImage.scanLine(py));
+                    std::fill(destLine + blockX, destLine + blockX + blockW, avgColor);
+                }
+            }
+        }
+
+        sourceImage = resultImage;  // Use result as source for next pass
+    }
+
+    return sourceImage;
 }
 
 void MosaicStroke::draw(QPainter &painter) const
@@ -793,16 +814,17 @@ void MosaicStroke::draw(QPainter &painter) const
 
     qreal dpr = painter.device()->devicePixelRatio();
 
-    // Check if cache is valid
+    // Check if cache is valid (including strength)
     bool cacheValid = !m_renderedCache.isNull()
         && m_cachedPointCount == m_points.size()
         && m_cachedBounds == bounds
-        && m_cachedDpr == dpr;
+        && m_cachedDpr == dpr
+        && m_cachedStrength == m_strength;
 
     if (!cacheValid) {
         int halfWidth = m_width / 2;
 
-        // === Step 1: Create pixelated version of the bounded region ===
+        // === Step 1: Create pixelated version using enhanced algorithm ===
         // Convert bounds to device pixels
         QRect deviceBounds(
             static_cast<int>(bounds.x() * m_devicePixelRatio),
@@ -818,20 +840,9 @@ void MosaicStroke::draw(QPainter &painter) const
             return;
         }
 
-        // Extract region from source
+        // Extract region from source and apply enhanced mosaic
         QPixmap regionPixmap = m_sourcePixmap.copy(deviceBounds);
-
-        // Pixelate: downscale then upscale
-        int pixelateBlockSize = qMax(4, m_blockSize * 2);  // Larger blocks for stronger effect
-        QSize smallSize(
-            qMax(1, deviceBounds.width() / pixelateBlockSize),
-            qMax(1, deviceBounds.height() / pixelateBlockSize)
-        );
-
-        // Downscale (average colors)
-        QPixmap downscaled = regionPixmap.scaled(smallSize, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
-        // Upscale back (creates blocky pixelated look)
-        QPixmap pixelated = downscaled.scaled(deviceBounds.size(), Qt::IgnoreAspectRatio, Qt::FastTransformation);
+        QImage mosaicImage = applyEnhancedMosaic(regionPixmap);
 
         // === Step 2: Create mask from stroke path (square brush) ===
         QImage maskImage(bounds.size() * dpr, QImage::Format_Grayscale8);
@@ -877,15 +888,13 @@ void MosaicStroke::draw(QPainter &painter) const
         }
         maskPainter.end();
 
-        // === Step 3: Composite pixelated image using mask ===
-        QImage pixelatedImage = pixelated.toImage().convertToFormat(QImage::Format_ARGB32);
-
-        // Apply mask to pixelated image
-        for (int y = 0; y < qMin(pixelatedImage.height(), maskImage.height()); ++y) {
-            QRgb *pixelRow = reinterpret_cast<QRgb*>(pixelatedImage.scanLine(y));
+        // === Step 3: Composite mosaic image using mask ===
+        // Apply mask to mosaic image
+        for (int y = 0; y < qMin(mosaicImage.height(), maskImage.height()); ++y) {
+            QRgb *pixelRow = reinterpret_cast<QRgb*>(mosaicImage.scanLine(y));
             const uchar *maskRow = maskImage.constScanLine(y);
 
-            for (int x = 0; x < qMin(pixelatedImage.width(), maskImage.width()); ++x) {
+            for (int x = 0; x < qMin(mosaicImage.width(), maskImage.width()); ++x) {
                 int alpha = maskRow[x];  // 0-255 from grayscale mask
                 if (alpha == 0) {
                     pixelRow[x] = qRgba(0, 0, 0, 0);  // Fully transparent
@@ -897,12 +906,13 @@ void MosaicStroke::draw(QPainter &painter) const
             }
         }
 
-        m_renderedCache = QPixmap::fromImage(pixelatedImage);
+        m_renderedCache = QPixmap::fromImage(mosaicImage);
         m_renderedCache.setDevicePixelRatio(dpr);
 
         m_cachedPointCount = m_points.size();
         m_cachedBounds = bounds;
         m_cachedDpr = dpr;
+        m_cachedStrength = m_strength;
     }
 
     // Draw cached result
@@ -932,7 +942,7 @@ QRect MosaicStroke::boundingRect() const
 
 std::unique_ptr<AnnotationItem> MosaicStroke::clone() const
 {
-    return std::make_unique<MosaicStroke>(m_points, m_sourcePixmap, m_width, m_blockSize);
+    return std::make_unique<MosaicStroke>(m_points, m_sourcePixmap, m_width, m_blockSize, m_strength);
 }
 
 void MosaicStroke::addPoint(const QPoint &point)

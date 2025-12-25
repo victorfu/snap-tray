@@ -41,6 +41,7 @@ static const char* SETTINGS_KEY_TEXT_ITALIC = "textItalic";
 static const char* SETTINGS_KEY_TEXT_UNDERLINE = "textUnderline";
 static const char* SETTINGS_KEY_TEXT_SIZE = "textFontSize";
 static const char* SETTINGS_KEY_TEXT_FAMILY = "textFontFamily";
+static const char* SETTINGS_KEY_MOSAIC_STRENGTH = "mosaicStrength";
 
 // Create a rounded square cursor for mosaic tool
 static QCursor createMosaicCursor(int size) {
@@ -183,6 +184,19 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_colorAndWidthWidget->setArrowStyle(m_arrowStyle);
     connect(m_colorAndWidthWidget, &ColorAndWidthWidget::arrowStyleChanged,
             this, &RegionSelector::onArrowStyleChanged);
+
+    // Connect mosaic strength signal and load saved setting
+    {
+        QSettings settings;
+        int savedStrength = settings.value(SETTINGS_KEY_MOSAIC_STRENGTH,
+            static_cast<int>(MosaicStrength::Strong)).toInt();
+        m_colorAndWidthWidget->setMosaicStrength(static_cast<MosaicStrength>(savedStrength));
+    }
+    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::mosaicStrengthChanged,
+            this, [](MosaicStrength strength) {
+                QSettings settings;
+                settings.setValue(SETTINGS_KEY_MOSAIC_STRENGTH, static_cast<int>(strength));
+            });
 
     // Initialize loading spinner for OCR
     m_loadingSpinner = new LoadingSpinnerRenderer(this);
@@ -464,6 +478,7 @@ bool RegionSelector::shouldShowColorAndWidthWidget() const
     case ToolbarButton::Ellipse:     // Needs both
     case ToolbarButton::Text:        // Needs color only
     case ToolbarButton::StepBadge:   // Needs color only
+    case ToolbarButton::Mosaic:      // Needs mosaic strength only
         return true;
     default:
         return false;
@@ -762,6 +777,8 @@ void RegionSelector::paintEvent(QPaintEvent*)
                 m_colorAndWidthWidget->setShowArrowStyleSection(m_currentTool == ToolbarButton::Arrow);
                 // Show text section only for Text tool
                 m_colorAndWidthWidget->setShowTextSection(m_currentTool == ToolbarButton::Text);
+                // Show mosaic strength section only for Mosaic tool
+                m_colorAndWidthWidget->setShowMosaicStrengthSection(m_currentTool == ToolbarButton::Mosaic);
                 m_colorAndWidthWidget->updatePosition(m_toolbar->boundingRect(), false, width());
                 m_colorAndWidthWidget->draw(painter);
             } else {
@@ -2017,7 +2034,11 @@ void RegionSelector::drawCurrentAnnotation(QPainter &painter)
         m_currentMarker->draw(painter);
     }
     else if (m_currentArrow) {
-        m_currentArrow->draw(painter);
+        // Only draw arrow if mouse has moved sufficiently from start point
+        QPoint delta = m_currentArrow->end() - m_currentArrow->start();
+        if (delta.manhattanLength() >= 3) {
+            m_currentArrow->draw(painter);
+        }
     }
     else if (m_currentRectangle) {
         m_currentRectangle->draw(painter);
@@ -2078,7 +2099,8 @@ void RegionSelector::startAnnotation(const QPoint &pos)
         for (const QPointF &p : m_currentPath) {
             intPath.append(p.toPoint());
         }
-        m_currentMosaicStroke = std::make_unique<MosaicStroke>(intPath, m_backgroundPixmap, 15, 5);
+        MosaicStrength strength = m_colorAndWidthWidget->mosaicStrength();
+        m_currentMosaicStroke = std::make_unique<MosaicStroke>(intPath, m_backgroundPixmap, 15, 5, strength);
         break;
     }
 
@@ -2188,8 +2210,12 @@ void RegionSelector::finishAnnotation()
         break;
 
     case ToolbarButton::Arrow:
+        // Only save arrow if mouse has moved sufficiently from start point
         if (m_currentArrow) {
-            m_annotationLayer->addItem(std::move(m_currentArrow));
+            QPoint delta = m_currentArrow->end() - m_currentArrow->start();
+            if (delta.manhattanLength() >= 3) {
+                m_annotationLayer->addItem(std::move(m_currentArrow));
+            }
         }
         m_currentArrow.reset();
         break;

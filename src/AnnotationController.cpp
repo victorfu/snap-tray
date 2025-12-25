@@ -145,8 +145,12 @@ void AnnotationController::finishDrawing()
         break;
 
     case Tool::Arrow:
+        // Only save arrow if mouse has moved sufficiently from start point
         if (m_currentArrow) {
-            m_annotationLayer->addItem(std::move(m_currentArrow));
+            QPoint delta = m_currentArrow->end() - m_currentArrow->start();
+            if (delta.manhattanLength() >= 3) {
+                m_annotationLayer->addItem(std::move(m_currentArrow));
+            }
         }
         m_currentArrow.reset();
         break;
@@ -195,7 +199,11 @@ void AnnotationController::drawCurrentAnnotation(QPainter& painter) const
     } else if (m_currentMarker) {
         m_currentMarker->draw(painter);
     } else if (m_currentArrow) {
-        m_currentArrow->draw(painter);
+        // Only draw arrow if mouse has moved sufficiently from start point
+        QPoint delta = m_currentArrow->end() - m_currentArrow->start();
+        if (delta.manhattanLength() >= 3) {
+            m_currentArrow->draw(painter);
+        }
     } else if (m_currentRectangle) {
         m_currentRectangle->draw(painter);
     } else if (m_currentEllipse) {
