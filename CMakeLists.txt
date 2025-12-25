@@ -70,7 +70,6 @@ set(SOURCES
     src/AnnotationController.cpp
     src/ColorPickerDialog.mm
     src/InlineTextEditor.cpp
-    src/MagnifierOverlay.cpp
     src/LaserPointerRenderer.cpp
     src/ClickRippleRenderer.cpp
     src/WatermarkRenderer.cpp
@@ -119,7 +118,6 @@ set(HEADERS
     include/AnnotationController.h
     include/ColorPickerDialog.h
     include/InlineTextEditor.h
-    include/MagnifierOverlay.h
     include/PlatformFeatures.h
     include/LaserPointerRenderer.h
     include/ClickRippleRenderer.h

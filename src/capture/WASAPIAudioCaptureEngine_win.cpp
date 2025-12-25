@@ -547,29 +547,12 @@ void WASAPIAudioCaptureEngine::stop()
     if (m_captureThread) {
         qDebug() << "WASAPIAudioCaptureEngine: Thread exists, isRunning=" << m_captureThread->isRunning();
 
-        QElapsedTimer timer;
-        timer.start();
-        int loopCount = 0;
-
-        while (m_captureThread->isRunning() && timer.elapsed() < 1000) {
-            loopCount++;
-            if (loopCount % 10 == 0) {
-                qDebug() << "WASAPIAudioCaptureEngine: Waiting for thread, elapsed=" << timer.elapsed() << "ms, loop=" << loopCount;
-            }
-            QCoreApplication::processEvents(QEventLoop::AllEvents, 50);
-            if (!m_captureThread->isRunning()) {
-                qDebug() << "WASAPIAudioCaptureEngine: Thread stopped after processEvents";
-                break;
-            }
-            QThread::msleep(10);
-        }
-
-        qDebug() << "WASAPIAudioCaptureEngine: Wait loop finished, elapsed=" << timer.elapsed() << "ms, isRunning=" << m_captureThread->isRunning();
-
-        if (m_captureThread->isRunning()) {
-            qWarning() << "WASAPIAudioCaptureEngine: Thread did not stop in time, terminating";
+        // Use QThread::wait() with timeout - this is the proper way to wait for a thread
+        // Don't use processEvents() as it can cause re-entrancy issues with queued signals
+        if (!m_captureThread->wait(2000)) {
+            qWarning() << "WASAPIAudioCaptureEngine: Thread did not stop in 2 seconds, terminating";
             m_captureThread->terminate();
-            m_captureThread->wait(100);
+            m_captureThread->wait(500);
         }
 
         qDebug() << "WASAPIAudioCaptureEngine: Deleting thread...";
