@@ -22,6 +22,13 @@ public:
     virtual void draw(QPainter &painter) const = 0;
     virtual QRect boundingRect() const = 0;
     virtual std::unique_ptr<AnnotationItem> clone() const = 0;
+
+    // Visibility control (for hiding items during re-editing)
+    void setVisible(bool visible) { m_visible = visible; }
+    bool isVisible() const { return m_visible; }
+
+protected:
+    bool m_visible = true;
 };
 
 // Freehand pencil stroke

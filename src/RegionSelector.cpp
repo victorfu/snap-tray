@@ -117,7 +117,18 @@ RegionSelector::RegionSelector(QWidget* parent)
     connect(m_textEditor, &InlineTextEditor::editingFinished,
             this, &RegionSelector::onTextEditingFinished);
     connect(m_textEditor, &InlineTextEditor::editingCancelled,
-            this, [this]() { update(); });
+            this, [this]() {
+                // Restore visibility if we were re-editing
+                if (m_editingTextIndex >= 0) {
+                    auto* textItem = dynamic_cast<TextAnnotation*>(m_annotationLayer->itemAt(m_editingTextIndex));
+                    if (textItem) {
+                        textItem->setVisible(true);
+                    }
+                    m_annotationLayer->setSelectedIndex(m_editingTextIndex);
+                    m_editingTextIndex = -1;
+                }
+                update();
+            });
 
     // Initialize color palette widget
     m_colorPalette = new ColorPaletteWidget(this);
@@ -1278,6 +1289,17 @@ void RegionSelector::mousePressEvent(QMouseEvent* event)
                     GizmoHandle handle = TransformationGizmo::hitTest(textItem, event->pos());
                     if (handle != GizmoHandle::None) {
                         if (handle == GizmoHandle::Body) {
+                            // Check for double-click to start re-editing
+                            qint64 now = QDateTime::currentMSecsSinceEpoch();
+                            if (now - m_lastTextClickTime < 400 &&
+                                (event->pos() - m_lastTextClickPos).manhattanLength() < 5) {
+                                startTextReEditing(m_annotationLayer->selectedIndex());
+                                m_lastTextClickTime = 0;
+                                return;
+                            }
+                            m_lastTextClickPos = event->pos();
+                            m_lastTextClickTime = now;
+
                             // Start dragging (move)
                             m_isDraggingAnnotation = true;
                             m_annotationDragStart = event->pos();
@@ -2176,26 +2198,24 @@ void RegionSelector::placeStepBadge(const QPoint &pos)
 
 void RegionSelector::onTextEditingFinished(const QString &text, const QPoint &position)
 {
-    if (text.isEmpty()) {
-        m_editingTextIndex = -1;
-        return;
-    }
-
     QFont font = m_textFormatting.toQFont();
 
     if (m_editingTextIndex >= 0) {
-        // Update existing annotation (re-editing)
+        // Re-editing: restore visibility first
         auto* textItem = dynamic_cast<TextAnnotation*>(m_annotationLayer->itemAt(m_editingTextIndex));
         if (textItem) {
-            textItem->setText(text);
-            textItem->setFont(font);
-            textItem->setColor(m_annotationColor);
-            // Position may have changed during confirm mode drag
-            textItem->setPosition(position);
+            textItem->setVisible(true);  // Restore visibility
+            if (!text.isEmpty()) {
+                textItem->setText(text);
+                textItem->setFont(font);
+                textItem->setColor(m_annotationColor);
+                // Position may have changed during confirm mode drag
+                textItem->setPosition(position);
+            }
         }
         m_annotationLayer->setSelectedIndex(m_editingTextIndex);
         m_editingTextIndex = -1;
-    } else {
+    } else if (!text.isEmpty()) {
         // Create new annotation
         auto textAnnotation = std::make_unique<TextAnnotation>(position, text, font, m_annotationColor);
         m_annotationLayer->addItem(std::move(textAnnotation));
@@ -2231,6 +2251,9 @@ void RegionSelector::startTextReEditing(int annotationIndex)
     m_textEditor->setColor(m_annotationColor);
     m_textEditor->setFont(m_textFormatting.toQFont());
     m_textEditor->startEditingExisting(textItem->position(), m_selectionRect.normalized(), textItem->text());
+
+    // Hide the original annotation while editing (prevent duplicate display)
+    textItem->setVisible(false);
 
     // Clear selection to hide gizmo while editing
     m_annotationLayer->clearSelection();

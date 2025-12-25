@@ -1056,7 +1056,9 @@ void AnnotationLayer::clear()
 void AnnotationLayer::draw(QPainter &painter) const
 {
     for (const auto &item : m_items) {
-        item->draw(painter);
+        if (item->isVisible()) {
+            item->draw(painter);
+        }
     }
 }
 
