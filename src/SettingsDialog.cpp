@@ -45,12 +45,14 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     , m_recordingFrameRateCombo(nullptr)
     , m_recordingOutputFormatCombo(nullptr)
     , m_recordingAutoSaveCheckbox(nullptr)
+    , m_mp4SettingsWidget(nullptr)
+    , m_recordingQualitySlider(nullptr)
+    , m_recordingQualityLabel(nullptr)
+    , m_gifSettingsWidget(nullptr)
+    , m_gifWarningLabel(nullptr)
     , m_ffmpegPathEdit(nullptr)
     , m_ffmpegBrowseBtn(nullptr)
     , m_ffmpegStatusLabel(nullptr)
-    , m_recordingCrfSlider(nullptr)
-    , m_recordingCrfLabel(nullptr)
-    , m_recordingPresetCombo(nullptr)
 {
     setWindowTitle("SnapTray Settings");
     setMinimumSize(520, 360);
@@ -339,69 +341,71 @@ void SettingsDialog::setupRecordingTab(QWidget *tab)
     QLabel *formatLabel = new QLabel("Output Format:", tab);
     formatLabel->setFixedWidth(120);
     m_recordingOutputFormatCombo = new QComboBox(tab);
-    m_recordingOutputFormatCombo->addItem("MP4 (H.264 Video)", 0);
-    m_recordingOutputFormatCombo->addItem("GIF (Animated Image)", 1);
+    m_recordingOutputFormatCombo->addItem("MP4 (H.264) - No dependencies", 0);
+    m_recordingOutputFormatCombo->addItem("GIF (Requires FFmpeg)", 1);
     formatLayout->addWidget(formatLabel);
     formatLayout->addWidget(m_recordingOutputFormatCombo);
     formatLayout->addStretch();
     layout->addLayout(formatLayout);
 
-    // Encoding Preset row
-    QHBoxLayout *presetLayout = new QHBoxLayout();
-    QLabel *presetLabel = new QLabel("Encoding Preset:", tab);
-    presetLabel->setFixedWidth(120);
-    m_recordingPresetCombo = new QComboBox(tab);
-    m_recordingPresetCombo->addItem("ultrafast (Fastest)", "ultrafast");
-    m_recordingPresetCombo->addItem("superfast", "superfast");
-    m_recordingPresetCombo->addItem("veryfast", "veryfast");
-    m_recordingPresetCombo->addItem("faster", "faster");
-    m_recordingPresetCombo->addItem("fast", "fast");
-    m_recordingPresetCombo->addItem("medium (Balanced)", "medium");
-    m_recordingPresetCombo->addItem("slow", "slow");
-    m_recordingPresetCombo->addItem("slower", "slower");
-    m_recordingPresetCombo->addItem("veryslow (Best Quality)", "veryslow");
-    presetLayout->addWidget(presetLabel);
-    presetLayout->addWidget(m_recordingPresetCombo);
-    presetLayout->addStretch();
-    layout->addLayout(presetLayout);
+    // ========== MP4 Settings (visible when MP4 selected) ==========
+    m_mp4SettingsWidget = new QWidget(tab);
+    QVBoxLayout *mp4Layout = new QVBoxLayout(m_mp4SettingsWidget);
+    mp4Layout->setContentsMargins(0, 8, 0, 0);
 
-    // CRF (Quality) row
-    QHBoxLayout *crfLayout = new QHBoxLayout();
-    QLabel *crfLabel = new QLabel("Quality (CRF):", tab);
-    crfLabel->setFixedWidth(120);
-    m_recordingCrfSlider = new QSlider(Qt::Horizontal, tab);
-    m_recordingCrfSlider->setRange(0, 51);
-    m_recordingCrfSlider->setValue(23);
-    m_recordingCrfLabel = new QLabel("23", tab);
-    m_recordingCrfLabel->setFixedWidth(40);
-    connect(m_recordingCrfSlider, &QSlider::valueChanged, this, [this](int value) {
-        m_recordingCrfLabel->setText(QString::number(value));
+    // Quality slider
+    QHBoxLayout *qualityLayout = new QHBoxLayout();
+    QLabel *qualityLabel = new QLabel("Quality:", m_mp4SettingsWidget);
+    qualityLabel->setFixedWidth(120);
+    m_recordingQualitySlider = new QSlider(Qt::Horizontal, m_mp4SettingsWidget);
+    m_recordingQualitySlider->setRange(0, 100);
+    m_recordingQualitySlider->setValue(55);  // Default quality
+    m_recordingQualityLabel = new QLabel("55", m_mp4SettingsWidget);
+    m_recordingQualityLabel->setFixedWidth(40);
+    connect(m_recordingQualitySlider, &QSlider::valueChanged, this, [this](int value) {
+        m_recordingQualityLabel->setText(QString::number(value));
     });
-    crfLayout->addWidget(crfLabel);
-    crfLayout->addWidget(m_recordingCrfSlider);
-    crfLayout->addWidget(m_recordingCrfLabel);
-    layout->addLayout(crfLayout);
+    qualityLayout->addWidget(qualityLabel);
+    qualityLayout->addWidget(m_recordingQualitySlider);
+    qualityLayout->addWidget(m_recordingQualityLabel);
+    mp4Layout->addLayout(qualityLayout);
 
-    // CRF hint label
-    QLabel *crfHintLabel = new QLabel("0-51, lower = better quality (18-28 recommended)", tab);
-    crfHintLabel->setStyleSheet("color: gray; font-size: 11px;");
-    crfHintLabel->setContentsMargins(120, 0, 0, 0);
-    layout->addWidget(crfHintLabel);
+    // Quality hint
+    QLabel *qualityHint = new QLabel("Higher = better quality, larger file", m_mp4SettingsWidget);
+    qualityHint->setStyleSheet("color: gray; font-size: 11px;");
+    qualityHint->setContentsMargins(120, 0, 0, 0);
+    mp4Layout->addWidget(qualityHint);
 
-    // Auto-save option
-    m_recordingAutoSaveCheckbox = new QCheckBox("Auto-save recordings (no save dialog)", tab);
-    layout->addWidget(m_recordingAutoSaveCheckbox);
+    layout->addWidget(m_mp4SettingsWidget);
 
-    layout->addSpacing(16);
+    // ========== GIF Settings (visible when GIF selected) ==========
+    m_gifSettingsWidget = new QWidget(tab);
+    QVBoxLayout *gifLayout = new QVBoxLayout(m_gifSettingsWidget);
+    gifLayout->setContentsMargins(0, 8, 0, 0);
+
+    // Warning label
+    m_gifWarningLabel = new QLabel(m_gifSettingsWidget);
+    m_gifWarningLabel->setWordWrap(true);
+    gifLayout->addWidget(m_gifWarningLabel);
 
     // FFmpeg path row
     QHBoxLayout *ffmpegPathLayout = new QHBoxLayout();
-    QLabel *ffmpegPathLabel = new QLabel("FFmpeg Path:", tab);
+    QLabel *ffmpegPathLabel = new QLabel("FFmpeg Path:", m_gifSettingsWidget);
     ffmpegPathLabel->setFixedWidth(120);
-    m_ffmpegPathEdit = new QLineEdit(tab);
+    m_ffmpegPathEdit = new QLineEdit(m_gifSettingsWidget);
     m_ffmpegPathEdit->setPlaceholderText("Leave empty for auto-detection");
-    m_ffmpegBrowseBtn = new QPushButton("Browse...", tab);
+    m_ffmpegBrowseBtn = new QPushButton("Browse...", m_gifSettingsWidget);
     m_ffmpegBrowseBtn->setFixedWidth(80);
+    ffmpegPathLayout->addWidget(ffmpegPathLabel);
+    ffmpegPathLayout->addWidget(m_ffmpegPathEdit);
+    ffmpegPathLayout->addWidget(m_ffmpegBrowseBtn);
+    gifLayout->addLayout(ffmpegPathLayout);
+
+    // FFmpeg status
+    m_ffmpegStatusLabel = new QLabel(m_gifSettingsWidget);
+    gifLayout->addWidget(m_ffmpegStatusLabel);
+
+    // Connect signals AFTER all UI elements are created
     connect(m_ffmpegBrowseBtn, &QPushButton::clicked, this, [this]() {
         QString filter = "FFmpeg Executable (ffmpeg.exe ffmpeg);;All Files (*)";
 #ifdef Q_OS_WIN
@@ -414,38 +418,41 @@ void SettingsDialog::setupRecordingTab(QWidget *tab)
         }
     });
     connect(m_ffmpegPathEdit, &QLineEdit::textChanged, this, &SettingsDialog::updateFFmpegStatus);
-    ffmpegPathLayout->addWidget(ffmpegPathLabel);
-    ffmpegPathLayout->addWidget(m_ffmpegPathEdit);
-    ffmpegPathLayout->addWidget(m_ffmpegBrowseBtn);
-    layout->addLayout(ffmpegPathLayout);
 
-    // FFmpeg status
-    m_ffmpegStatusLabel = new QLabel(tab);
-    layout->addWidget(m_ffmpegStatusLabel);
+    layout->addWidget(m_gifSettingsWidget);
+
+    // ========== Auto-save option ==========
+    layout->addSpacing(16);
+    m_recordingAutoSaveCheckbox = new QCheckBox("Auto-save recordings (no save dialog)", tab);
+    layout->addWidget(m_recordingAutoSaveCheckbox);
 
     layout->addStretch();
 
-    // Load settings
+    // ========== Connect format change to show/hide widgets ==========
+    connect(m_recordingOutputFormatCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, &SettingsDialog::onOutputFormatChanged);
+
+    // ========== Load settings ==========
     QSettings settings("Victor Fu", "SnapTray");
+
     int fps = settings.value("recording/framerate", 30).toInt();
     int fpsIndex = m_recordingFrameRateCombo->findData(fps);
     if (fpsIndex >= 0) {
         m_recordingFrameRateCombo->setCurrentIndex(fpsIndex);
     }
+
     int outputFormat = settings.value("recording/outputFormat", 0).toInt();
     m_recordingOutputFormatCombo->setCurrentIndex(outputFormat);
 
-    // Load encoding preset
-    QString preset = settings.value("recording/preset", "ultrafast").toString();
-    int presetIndex = m_recordingPresetCombo->findData(preset);
-    if (presetIndex >= 0) {
-        m_recordingPresetCombo->setCurrentIndex(presetIndex);
+    // Load quality (use saved quality or convert from CRF for backward compatibility)
+    int quality = settings.value("recording/quality", -1).toInt();
+    if (quality < 0) {
+        // No quality setting yet, convert from CRF
+        int crf = settings.value("recording/crf", 23).toInt();
+        quality = 100 - (crf * 100 / 51);
     }
-
-    // Load CRF
-    int crf = settings.value("recording/crf", 23).toInt();
-    m_recordingCrfSlider->setValue(crf);
-    m_recordingCrfLabel->setText(QString::number(crf));
+    m_recordingQualitySlider->setValue(quality);
+    m_recordingQualityLabel->setText(QString::number(quality));
 
     m_recordingAutoSaveCheckbox->setChecked(settings.value("recording/autoSave", false).toBool());
 
@@ -460,7 +467,21 @@ void SettingsDialog::setupRecordingTab(QWidget *tab)
     } else {
         m_ffmpegPathEdit->setText(savedFfmpegPath);
     }
+
     updateFFmpegStatus();
+    onOutputFormatChanged(outputFormat);  // Initial visibility
+}
+
+void SettingsDialog::onOutputFormatChanged(int index)
+{
+    bool isGif = (index == 1);
+
+    m_mp4SettingsWidget->setVisible(!isGif);
+    m_gifSettingsWidget->setVisible(isGif);
+
+    if (isGif) {
+        updateFFmpegStatus();
+    }
 }
 
 void SettingsDialog::updateHotkeyStatus(QLabel *statusLabel, bool isRegistered)
@@ -565,10 +586,12 @@ void SettingsDialog::onSave()
         m_recordingFrameRateCombo->currentData().toInt());
     recordingSettings.setValue("recording/outputFormat",
         m_recordingOutputFormatCombo->currentIndex());
-    recordingSettings.setValue("recording/preset",
-        m_recordingPresetCombo->currentData().toString());
-    recordingSettings.setValue("recording/crf",
-        m_recordingCrfSlider->value());
+    recordingSettings.setValue("recording/quality",
+        m_recordingQualitySlider->value());
+    // Also save CRF for backward compatibility with FFmpeg fallback
+    int quality = m_recordingQualitySlider->value();
+    int crf = 51 - (quality * 51 / 100);
+    recordingSettings.setValue("recording/crf", crf);
     recordingSettings.setValue("recording/autoSave",
         m_recordingAutoSaveCheckbox->isChecked());
     recordingSettings.setValue("recording/ffmpegPath",
@@ -657,8 +680,18 @@ void SettingsDialog::updateFFmpegStatus()
     if (available) {
         m_ffmpegStatusLabel->setText("FFmpeg: Detected");
         m_ffmpegStatusLabel->setStyleSheet("color: green;");
+        m_gifWarningLabel->setText("GIF format is enabled. Files will be larger than MP4 with lower quality.");
+        m_gifWarningLabel->setStyleSheet(
+            "QLabel { background-color: #d4edda; color: #155724; "
+            "padding: 8px; border-radius: 4px; }");
     } else {
         m_ffmpegStatusLabel->setText("FFmpeg: Not found");
         m_ffmpegStatusLabel->setStyleSheet("color: red;");
+        m_gifWarningLabel->setText(
+            "FFmpeg is required for GIF recording.\n"
+            "Please install FFmpeg and ensure it's in your PATH, or specify the path below.");
+        m_gifWarningLabel->setStyleSheet(
+            "QLabel { background-color: #fff3cd; color: #856404; "
+            "padding: 8px; border-radius: 4px; }");
     }
 }

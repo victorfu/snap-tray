@@ -3,6 +3,7 @@
 #include "RecordingControlBar.h"
 #include "RecordingBoundaryOverlay.h"
 #include "FFmpegEncoder.h"
+#include "IVideoEncoder.h"
 #include "capture/ICaptureEngine.h"
 #include "platform/WindowLevel.h"
 
@@ -55,6 +56,8 @@ static void syncFile(const QString &path)
 RecordingManager::RecordingManager(QObject *parent)
     : QObject(parent)
     , m_encoder(nullptr)
+    , m_nativeEncoder(nullptr)
+    , m_usingNativeEncoder(false)
     , m_captureEngine(nullptr)
     , m_captureTimer(nullptr)
     , m_durationTimer(nullptr)
@@ -272,17 +275,7 @@ void RecordingManager::startFrameCapture()
 {
     qDebug() << "RecordingManager::startFrameCapture() - BEGIN";
 
-    // Check FFmpeg availability
-    qDebug() << "RecordingManager::startFrameCapture() - Checking FFmpeg availability...";
-    if (!FFmpegEncoder::isFFmpegAvailable()) {
-        emit recordingError("FFmpeg not found. Please install FFmpeg to use screen recording.");
-        setState(State::Idle);
-        return;
-    }
-    qDebug() << "RecordingManager::startFrameCapture() - FFmpeg is available";
-
     // Initialize capture engine (auto-selects best available)
-    // Note: Pass nullptr to avoid Qt parent ownership - we manage lifecycle manually
     qDebug() << "RecordingManager::startFrameCapture() - Creating capture engine...";
     m_captureEngine = ICaptureEngine::createBestEngine(nullptr);
     qDebug() << "RecordingManager::startFrameCapture() - Capture engine created:" << (m_captureEngine ? "valid" : "NULL");
@@ -327,38 +320,29 @@ void RecordingManager::startFrameCapture()
 
     qDebug() << "RecordingManager: Using capture engine:" << m_captureEngine->engineName();
 
-    // Initialize FFmpeg encoder
-    qDebug() << "RecordingManager::startFrameCapture() - Creating FFmpeg encoder...";
-
-    // Safety check: clean up any existing encoder (should not happen normally)
+    // Safety check: clean up any existing encoders
     if (m_encoder) {
-        qWarning() << "RecordingManager: Previous encoder still exists, cleaning up";
+        qWarning() << "RecordingManager: Previous FFmpeg encoder still exists, cleaning up";
         disconnect(m_encoder, nullptr, this, nullptr);
         m_encoder->deleteLater();
         m_encoder = nullptr;
     }
+    if (m_nativeEncoder) {
+        qWarning() << "RecordingManager: Previous native encoder still exists, cleaning up";
+        disconnect(m_nativeEncoder, nullptr, this, nullptr);
+        m_nativeEncoder->deleteLater();
+        m_nativeEncoder = nullptr;
+    }
+    m_usingNativeEncoder = false;
 
-    m_encoder = new FFmpegEncoder(this);
     QString outputPath = generateOutputPath();
     qDebug() << "RecordingManager::startFrameCapture() - Output path:" << outputPath;
 
-    // Set output format from settings
+    // Get output format from settings (0 = MP4, 1 = GIF)
     QSettings settings("Victor Fu", "SnapTray");
     int formatInt = settings.value("recording/outputFormat", 0).toInt();
-    m_encoder->setOutputFormat(static_cast<FFmpegEncoder::OutputFormat>(formatInt));
-    qDebug() << "RecordingManager::startFrameCapture() - Output format:" << formatInt;
-
-    // Set encoding preset and CRF from settings
-    QString preset = settings.value("recording/preset", "ultrafast").toString();
-    int crf = settings.value("recording/crf", 23).toInt();
-    m_encoder->setPreset(preset);
-    m_encoder->setCrf(crf);
-    qDebug() << "RecordingManager::startFrameCapture() - Preset:" << preset << "CRF:" << crf;
-
-    connect(m_encoder, &FFmpegEncoder::finished,
-            this, &RecordingManager::onEncodingFinished);
-    connect(m_encoder, &FFmpegEncoder::error,
-            this, &RecordingManager::onEncodingError);
+    bool useGif = (formatInt == 1);
+    qDebug() << "RecordingManager::startFrameCapture() - Output format:" << (useGif ? "GIF" : "MP4");
 
     // Use physical pixel size for Retina/HiDPI displays
     qreal scale = m_targetScreen ? m_targetScreen->devicePixelRatio() : 1.0;
@@ -366,12 +350,112 @@ void RecordingManager::startFrameCapture()
         static_cast<int>(m_recordingRegion.width() * scale),
         static_cast<int>(m_recordingRegion.height() * scale)
     );
-    qDebug() << "RecordingManager::startFrameCapture() - Starting encoder with physical size:" << physicalSize
+    qDebug() << "RecordingManager::startFrameCapture() - Physical size:" << physicalSize
              << "(scale:" << scale << ", logical:" << m_recordingRegion.size() << ")";
-    if (!m_encoder->start(outputPath, physicalSize, m_frameRate)) {
-        emit recordingError(m_encoder->lastError());
-        m_encoder->deleteLater();
-        m_encoder = nullptr;
+
+    bool encoderStarted = false;
+
+    if (useGif) {
+        // GIF: FFmpeg required
+        qDebug() << "RecordingManager::startFrameCapture() - GIF format selected, checking FFmpeg...";
+        if (!FFmpegEncoder::isFFmpegAvailable()) {
+            emit recordingError("GIF recording requires FFmpeg. Please install FFmpeg or switch to MP4 format.");
+            m_captureEngine->stop();
+            disconnect(m_captureEngine, nullptr, this, nullptr);
+            m_captureEngine->deleteLater();
+            m_captureEngine = nullptr;
+            setState(State::Idle);
+            return;
+        }
+
+        m_encoder = new FFmpegEncoder(this);
+        m_encoder->setOutputFormat(FFmpegEncoder::OutputFormat::GIF);
+        m_usingNativeEncoder = false;
+
+        connect(m_encoder, &FFmpegEncoder::finished,
+                this, &RecordingManager::onEncodingFinished);
+        connect(m_encoder, &FFmpegEncoder::error,
+                this, &RecordingManager::onEncodingError);
+
+        encoderStarted = m_encoder->start(outputPath, physicalSize, m_frameRate);
+        if (!encoderStarted) {
+            emit recordingError(m_encoder->lastError());
+            m_encoder->deleteLater();
+            m_encoder = nullptr;
+        } else {
+            qDebug() << "RecordingManager: Using FFmpeg encoder for GIF";
+        }
+    } else {
+        // MP4: Try native encoder first, fall back to FFmpeg
+        qDebug() << "RecordingManager::startFrameCapture() - MP4 format selected, trying native encoder...";
+
+        m_nativeEncoder = IVideoEncoder::createNativeEncoder(this);
+
+        if (m_nativeEncoder) {
+            // Set quality from settings (0-100 scale)
+            int quality = settings.value("recording/quality", 55).toInt();
+            m_nativeEncoder->setQuality(quality);
+            qDebug() << "RecordingManager::startFrameCapture() - Native encoder quality:" << quality;
+
+            connect(m_nativeEncoder, &IVideoEncoder::finished,
+                    this, &RecordingManager::onEncodingFinished);
+            connect(m_nativeEncoder, &IVideoEncoder::error,
+                    this, &RecordingManager::onEncodingError);
+
+            encoderStarted = m_nativeEncoder->start(outputPath, physicalSize, m_frameRate);
+            if (encoderStarted) {
+                m_usingNativeEncoder = true;
+                qDebug() << "RecordingManager: Using native encoder:" << m_nativeEncoder->encoderName();
+            } else {
+                qWarning() << "RecordingManager: Native encoder failed to start:" << m_nativeEncoder->lastError();
+                disconnect(m_nativeEncoder, nullptr, this, nullptr);
+                delete m_nativeEncoder;
+                m_nativeEncoder = nullptr;
+            }
+        }
+
+        // Fall back to FFmpeg if native encoder unavailable or failed
+        if (!encoderStarted) {
+            qDebug() << "RecordingManager::startFrameCapture() - Falling back to FFmpeg for MP4...";
+
+            if (!FFmpegEncoder::isFFmpegAvailable()) {
+                emit recordingError("No video encoder available. Native encoder failed and FFmpeg is not installed.");
+                m_captureEngine->stop();
+                disconnect(m_captureEngine, nullptr, this, nullptr);
+                m_captureEngine->deleteLater();
+                m_captureEngine = nullptr;
+                setState(State::Idle);
+                return;
+            }
+
+            m_encoder = new FFmpegEncoder(this);
+            m_encoder->setOutputFormat(FFmpegEncoder::OutputFormat::MP4);
+            m_usingNativeEncoder = false;
+
+            // Set encoding preset and CRF from settings
+            QString preset = settings.value("recording/preset", "ultrafast").toString();
+            int crf = settings.value("recording/crf", 23).toInt();
+            m_encoder->setPreset(preset);
+            m_encoder->setCrf(crf);
+            qDebug() << "RecordingManager::startFrameCapture() - FFmpeg preset:" << preset << "CRF:" << crf;
+
+            connect(m_encoder, &FFmpegEncoder::finished,
+                    this, &RecordingManager::onEncodingFinished);
+            connect(m_encoder, &FFmpegEncoder::error,
+                    this, &RecordingManager::onEncodingError);
+
+            encoderStarted = m_encoder->start(outputPath, physicalSize, m_frameRate);
+            if (!encoderStarted) {
+                emit recordingError(m_encoder->lastError());
+                m_encoder->deleteLater();
+                m_encoder = nullptr;
+            } else {
+                qDebug() << "RecordingManager: Using FFmpeg encoder for MP4 (fallback)";
+            }
+        }
+    }
+
+    if (!encoderStarted) {
         m_captureEngine->stop();
         disconnect(m_captureEngine, nullptr, this, nullptr);
         m_captureEngine->deleteLater();
@@ -441,12 +525,19 @@ void RecordingManager::captureFrame()
         return;
     }
 
-    // Store local copies to avoid race condition where pointers become null
+    // Store local copy to avoid race condition where pointer becomes null
     // between the check and actual use
     ICaptureEngine *captureEngine = m_captureEngine;
-    FFmpegEncoder *encoder = m_encoder;
 
-    if (!captureEngine || !encoder) {
+    if (!captureEngine) {
+        return;
+    }
+
+    // Check that we have an encoder available
+    if (!m_usingNativeEncoder && !m_encoder) {
+        return;
+    }
+    if (m_usingNativeEncoder && !m_nativeEncoder) {
         return;
     }
 
@@ -454,8 +545,12 @@ void RecordingManager::captureFrame()
     QImage frame = captureEngine->captureFrame();
 
     if (!frame.isNull()) {
-        // Pass QImage directly to encoder - no QPixmap conversion needed
-        encoder->writeFrame(frame);
+        // Pass QImage to the appropriate encoder
+        if (m_usingNativeEncoder && m_nativeEncoder) {
+            m_nativeEncoder->writeFrame(frame);
+        } else if (m_encoder) {
+            m_encoder->writeFrame(frame);
+        }
         m_frameCount++;
     }
 }
@@ -560,8 +655,10 @@ void RecordingManager::stopRecording()
     stopFrameCapture();
     setState(State::Encoding);
 
-    // Finish encoding (waits for FFmpeg to complete)
-    if (m_encoder) {
+    // Finish encoding
+    if (m_usingNativeEncoder && m_nativeEncoder) {
+        m_nativeEncoder->finish();
+    } else if (m_encoder) {
         m_encoder->finish();
     }
 }
@@ -576,13 +673,19 @@ void RecordingManager::cancelRecording()
 
     stopFrameCapture();
 
-    // Abort encoding (kills process and removes output file)
+    // Abort encoding and remove output file
     // Use deleteLater to avoid use-after-free when called from signal handler
+    if (m_nativeEncoder) {
+        m_nativeEncoder->abort();
+        m_nativeEncoder->deleteLater();
+        m_nativeEncoder = nullptr;
+    }
     if (m_encoder) {
         m_encoder->abort();
         m_encoder->deleteLater();
         m_encoder = nullptr;
     }
+    m_usingNativeEncoder = false;
 
     setState(State::Idle);
     emit recordingCancelled();
@@ -626,11 +729,17 @@ void RecordingManager::cleanupRecording()
 {
     stopFrameCapture();
 
+    if (m_nativeEncoder) {
+        m_nativeEncoder->abort();
+        delete m_nativeEncoder;
+        m_nativeEncoder = nullptr;
+    }
     if (m_encoder) {
         m_encoder->abort();
         delete m_encoder;
         m_encoder = nullptr;
     }
+    m_usingNativeEncoder = false;
 
     if (m_regionSelector) {
         m_regionSelector->close();
@@ -643,18 +752,27 @@ void RecordingManager::onEncodingFinished(bool success, const QString &outputPat
 
     // Get error message before deleting encoder
     QString errorMsg;
-    if (!success && m_encoder) {
-        errorMsg = m_encoder->lastError();
+    if (!success) {
+        if (m_usingNativeEncoder && m_nativeEncoder) {
+            errorMsg = m_nativeEncoder->lastError();
+        } else if (m_encoder) {
+            errorMsg = m_encoder->lastError();
+        }
         if (errorMsg.isEmpty()) {
             errorMsg = "Failed to encode video";
         }
     }
 
     // Use deleteLater to avoid deleting during signal emission
+    if (m_nativeEncoder) {
+        m_nativeEncoder->deleteLater();
+        m_nativeEncoder = nullptr;
+    }
     if (m_encoder) {
         m_encoder->deleteLater();
         m_encoder = nullptr;
     }
+    m_usingNativeEncoder = false;
 
     setState(State::Idle);
 
@@ -788,11 +906,19 @@ void RecordingManager::onEncodingError(const QString &error)
 
     // Get output path for cleanup before deleting encoder
     QString outputPath;
+    if (m_usingNativeEncoder && m_nativeEncoder) {
+        outputPath = m_nativeEncoder->outputPath();
+        m_nativeEncoder->deleteLater();
+        m_nativeEncoder = nullptr;
+    }
     if (m_encoder) {
-        outputPath = m_encoder->outputPath();
+        if (outputPath.isEmpty()) {
+            outputPath = m_encoder->outputPath();
+        }
         m_encoder->deleteLater();
         m_encoder = nullptr;
     }
+    m_usingNativeEncoder = false;
 
     // Clean up temp file on error
     if (!outputPath.isEmpty() && QFile::exists(outputPath)) {

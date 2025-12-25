@@ -82,18 +82,25 @@ private:
     QComboBox *m_recordingFrameRateCombo;
     QComboBox *m_recordingOutputFormatCombo;
     QCheckBox *m_recordingAutoSaveCheckbox;
+
+    // MP4 settings (native encoder)
+    QWidget *m_mp4SettingsWidget;
+    QSlider *m_recordingQualitySlider;
+    QLabel *m_recordingQualityLabel;
+
+    // GIF settings (FFmpeg)
+    QWidget *m_gifSettingsWidget;
+    QLabel *m_gifWarningLabel;
     QLineEdit *m_ffmpegPathEdit;
     QPushButton *m_ffmpegBrowseBtn;
     QLabel *m_ffmpegStatusLabel;
-    QSlider *m_recordingCrfSlider;
-    QLabel *m_recordingCrfLabel;
-    QComboBox *m_recordingPresetCombo;
 
     // Watermark UI helper methods
     void updateWatermarkImagePreview();
 
     // Recording UI helper methods
     void updateFFmpegStatus();
+    void onOutputFormatChanged(int index);
 };
 
 #endif // SETTINGSDIALOG_H
