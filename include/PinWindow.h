@@ -89,6 +89,9 @@ private:
     void performOCR();
     void onOCRComplete(bool success, const QString &text, const QString &error);
 
+    // Info methods
+    void copyAllInfo();
+
     // Original members
     QPixmap m_originalPixmap;
     QPixmap m_displayPixmap;
@@ -96,6 +99,10 @@ private:
     QPoint m_dragStartPos;
     bool m_isDragging;
     QMenu *m_contextMenu;
+
+    // Zoom menu members
+    QAction *m_currentZoomAction;
+    bool m_smoothing;
 
     // Resize members
     ResizeEdge m_resizeEdge;
