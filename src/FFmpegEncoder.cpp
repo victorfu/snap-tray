@@ -373,6 +373,12 @@ void FFmpegEncoder::onProcessError(QProcess::ProcessError error)
 
 void FFmpegEncoder::onProcessFinished(int exitCode, QProcess::ExitStatus exitStatus)
 {
+    // If aborting, suppress all signals (intentional termination)
+    if (m_aborting) {
+        qDebug() << "FFmpegEncoder: Process finished during abort (suppressed)";
+        return;
+    }
+
     bool success = (exitStatus == QProcess::NormalExit && exitCode == 0);
 
     if (success) {

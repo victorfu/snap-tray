@@ -484,7 +484,11 @@ void PinWindow::createContextMenu()
     connect(closeAction, &QAction::triggered, this, &PinWindow::close);
 
     QAction *closeAllPinsAction = m_contextMenu->addAction("Close All Pins");
-    connect(closeAllPinsAction, &QAction::triggered, m_pinWindowManager, &PinWindowManager::closeAllWindows);
+    connect(closeAllPinsAction, &QAction::triggered, this, [this]() {
+        if (m_pinWindowManager) {
+            m_pinWindowManager->closeAllWindows();
+        }
+    });
 }
 
 void PinWindow::saveToFile()
