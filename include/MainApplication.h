@@ -26,6 +26,7 @@ public:
 private slots:
     void onRegionCapture();
     void onScreenCanvas();
+    void onFullScreenRecording();
     void onCloseAllPins();
     void onSettings();
 
@@ -47,6 +48,7 @@ private:
     RecordingManager *m_recordingManager;
     QAction *m_regionCaptureAction;
     QAction *m_screenCanvasAction;
+    QAction *m_fullScreenRecordingAction;
     SettingsDialog *m_settingsDialog;
 };
 

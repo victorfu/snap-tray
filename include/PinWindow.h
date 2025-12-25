@@ -12,6 +12,7 @@ class QMenu;
 class QLabel;
 class QTimer;
 class OCRManager;
+class PinWindowManager;
 
 class PinWindow : public QWidget
 {
@@ -35,6 +36,9 @@ public:
     // Watermark settings
     void setWatermarkSettings(const WatermarkRenderer::Settings &settings);
     WatermarkRenderer::Settings watermarkSettings() const { return m_watermarkSettings; }
+
+    // Pin window manager
+    void setPinWindowManager(PinWindowManager *manager);
 
 signals:
     void closed(PinWindow *window);
@@ -89,6 +93,9 @@ private:
     void performOCR();
     void onOCRComplete(bool success, const QString &text, const QString &error);
 
+    // Info methods
+    void copyAllInfo();
+
     // Original members
     QPixmap m_originalPixmap;
     QPixmap m_displayPixmap;
@@ -96,6 +103,10 @@ private:
     QPoint m_dragStartPos;
     bool m_isDragging;
     QMenu *m_contextMenu;
+
+    // Zoom menu members
+    QAction *m_currentZoomAction;
+    bool m_smoothing;
 
     // Resize members
     ResizeEdge m_resizeEdge;
@@ -129,6 +140,9 @@ private:
 
     // Watermark members
     WatermarkRenderer::Settings m_watermarkSettings;
+
+    // Pin window manager
+    PinWindowManager *m_pinWindowManager = nullptr;
 
     // Performance optimization: transform cache
     mutable QPixmap m_transformedCache;

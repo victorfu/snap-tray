@@ -153,9 +153,9 @@ public:
     QFont font() const { return m_font; }
     QColor color() const { return m_color; }
 
-    // Setters for re-editing
-    void setFont(const QFont &font) { m_font = font; }
-    void setColor(const QColor &color) { m_color = color; }
+    // Setters for re-editing (invalidate cache on change)
+    void setFont(const QFont &font) { m_font = font; invalidateCache(); }
+    void setColor(const QColor &color) { m_color = color; invalidateCache(); }
     void setPosition(const QPoint &position) { m_position = position; }
 
     // Transformation methods
@@ -176,6 +176,18 @@ private:
     QColor m_color;
     qreal m_rotation = 0.0;  // Rotation angle in degrees (clockwise)
     qreal m_scale = 1.0;     // Uniform scale factor
+
+    // Pixmap cache for rendering optimization (similar to MarkerStroke)
+    mutable QPixmap m_cachedPixmap;
+    mutable QPoint m_cachedOrigin;
+    mutable qreal m_cachedDpr = 0.0;
+    mutable QString m_cachedText;
+    mutable QFont m_cachedFont;
+    mutable QColor m_cachedColor;
+
+    void regenerateCache(qreal dpr) const;
+    bool isCacheValid(qreal dpr) const;
+    void invalidateCache() const { m_cachedPixmap = QPixmap(); }
 };
 
 // Step badge annotation (auto-incrementing numbered circle)

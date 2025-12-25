@@ -30,6 +30,7 @@ MainApplication::MainApplication(QObject* parent)
     , m_recordingManager(nullptr)
     , m_regionCaptureAction(nullptr)
     , m_screenCanvasAction(nullptr)
+    , m_fullScreenRecordingAction(nullptr)
     , m_settingsDialog(nullptr)
 {
 }
@@ -93,6 +94,11 @@ void MainApplication::initialize()
 
     m_screenCanvasAction = m_trayMenu->addAction("Screen Canvas");
     connect(m_screenCanvasAction, &QAction::triggered, this, &MainApplication::onScreenCanvas);
+
+    m_trayMenu->addSeparator();
+
+    m_fullScreenRecordingAction = m_trayMenu->addAction("Record Full Screen");
+    connect(m_fullScreenRecordingAction, &QAction::triggered, this, &MainApplication::onFullScreenRecording);
 
     m_trayMenu->addSeparator();
 
@@ -176,6 +182,35 @@ void MainApplication::onScreenCanvas()
 
     qDebug() << "Screen canvas triggered";
     m_screenCanvasManager->toggle();
+}
+
+void MainApplication::onFullScreenRecording()
+{
+    // Don't trigger if screen canvas is active
+    if (m_screenCanvasManager->isActive()) {
+        qDebug() << "Full-screen recording blocked: Screen canvas is active";
+        return;
+    }
+
+    // Don't trigger if already recording
+    if (m_recordingManager->isActive()) {
+        qDebug() << "Full-screen recording blocked: Recording is already active";
+        return;
+    }
+
+    // Don't trigger if capture is active
+    if (m_captureManager->isActive()) {
+        qDebug() << "Full-screen recording blocked: Capture is active";
+        return;
+    }
+
+    // Close any open popup menus to prevent focus conflicts
+    if (QWidget *popup = QApplication::activePopupWidget()) {
+        popup->close();
+    }
+
+    qDebug() << "Full-screen recording triggered";
+    m_recordingManager->startFullScreenRecording();
 }
 
 void MainApplication::onCloseAllPins()

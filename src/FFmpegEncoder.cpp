@@ -14,6 +14,7 @@ FFmpegEncoder::FFmpegEncoder(QObject *parent)
     , m_frameRate(30)
     , m_framesWritten(0)
     , m_finishing(false)
+    , m_aborting(false)
     , m_outputFormat(OutputFormat::MP4)
     , m_crf(23)
     , m_preset("ultrafast")
@@ -102,6 +103,7 @@ bool FFmpegEncoder::start(const QString &outputPath, const QSize &frameSize, int
     m_frameRate = frameRate;
     m_framesWritten = 0;
     m_finishing = false;
+    m_aborting = false;
     m_lastError.clear();
 
     m_process = new QProcess(this);
@@ -303,6 +305,7 @@ void FFmpegEncoder::abort()
 {
     if (m_process) {
         qDebug() << "FFmpegEncoder: Aborting";
+        m_aborting = true;  // Set flag to suppress error signals
         QProcess *proc = m_process;
         m_process = nullptr;  // Clear first to prevent re-entry
 
@@ -335,6 +338,12 @@ qint64 FFmpegEncoder::framesWritten() const
 
 void FFmpegEncoder::onProcessError(QProcess::ProcessError error)
 {
+    // If aborting, suppress error signals (intentional termination)
+    if (m_aborting) {
+        qDebug() << "FFmpegEncoder: Process error during abort (suppressed)";
+        return;
+    }
+
     QString errorStr;
     switch (error) {
         case QProcess::FailedToStart:
@@ -364,6 +373,12 @@ void FFmpegEncoder::onProcessError(QProcess::ProcessError error)
 
 void FFmpegEncoder::onProcessFinished(int exitCode, QProcess::ExitStatus exitStatus)
 {
+    // If aborting, suppress all signals (intentional termination)
+    if (m_aborting) {
+        qDebug() << "FFmpegEncoder: Process finished during abort (suppressed)";
+        return;
+    }
+
     bool success = (exitStatus == QProcess::NormalExit && exitCode == 0);
 
     if (success) {

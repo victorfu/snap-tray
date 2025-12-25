@@ -1,4 +1,5 @@
 #include "PinWindow.h"
+#include "PinWindowManager.h"
 #include "OCRManager.h"
 #include "PlatformFeatures.h"
 #include "WatermarkRenderer.h"
@@ -39,6 +40,8 @@ PinWindow::PinWindow(const QPixmap &screenshot, const QPoint &position, QWidget 
     , m_ocrManager(nullptr)
     , m_ocrInProgress(false)
     , m_opacity(1.0)
+    , m_currentZoomAction(nullptr)
+    , m_smoothing(true)
 {
     // Frameless, always on top
     // Note: Removed Qt::Tool flag as it causes the window to hide when app loses focus on macOS
@@ -143,9 +146,17 @@ PinWindow::~PinWindow()
     qDebug() << "PinWindow: Destroyed";
 }
 
+void PinWindow::setPinWindowManager(PinWindowManager *manager)
+{
+    m_pinWindowManager = manager;
+}
+
 void PinWindow::setZoomLevel(qreal zoom)
 {
     m_zoomLevel = qBound(0.1, zoom, 5.0);
+    if (m_currentZoomAction) {
+        m_currentZoomAction->setText(QString("%1%").arg(qRound(m_zoomLevel * 100)));
+    }
     updateSize();
 }
 
@@ -283,9 +294,10 @@ void PinWindow::updateSize()
 
     // Scale to device pixels for the actual pixmap
     QSize newDeviceSize = newLogicalSize * m_transformedCache.devicePixelRatio();
+    Qt::TransformationMode mode = m_smoothing ? Qt::SmoothTransformation : Qt::FastTransformation;
     m_displayPixmap = m_transformedCache.scaled(newDeviceSize,
                                                 Qt::KeepAspectRatio,
-                                                Qt::SmoothTransformation);
+                                                mode);
     m_displayPixmap.setDevicePixelRatio(m_transformedCache.devicePixelRatio());
 
     // Add shadow margins to window size
@@ -329,7 +341,7 @@ void PinWindow::createContextMenu()
     copyAction->setShortcut(QKeySequence::Copy);
     connect(copyAction, &QAction::triggered, this, &PinWindow::copyToClipboard);
 
-    QAction *saveAction = m_contextMenu->addAction("Save...");
+    QAction *saveAction = m_contextMenu->addAction("Save to file");
     saveAction->setShortcut(QKeySequence::Save);
     connect(saveAction, &QAction::triggered, this, &PinWindow::saveToFile);
 
@@ -391,11 +403,92 @@ void PinWindow::createContextMenu()
         update();
     });
 
+    // Zoom submenu
+    QMenu *zoomMenu = m_contextMenu->addMenu("Zoom");
+
+    // Preset zoom levels
+    QAction *zoom33Action = zoomMenu->addAction("33.3%");
+    connect(zoom33Action, &QAction::triggered, this, [this]() { setZoomLevel(1.0 / 3.0); });
+
+    QAction *zoom50Action = zoomMenu->addAction("50%");
+    connect(zoom50Action, &QAction::triggered, this, [this]() { setZoomLevel(0.5); });
+
+    QAction *zoom67Action = zoomMenu->addAction("66.7%");
+    connect(zoom67Action, &QAction::triggered, this, [this]() { setZoomLevel(2.0 / 3.0); });
+
+    QAction *zoom100Action = zoomMenu->addAction("100%");
+    connect(zoom100Action, &QAction::triggered, this, [this]() { setZoomLevel(1.0); });
+
+    QAction *zoom200Action = zoomMenu->addAction("200%");
+    connect(zoom200Action, &QAction::triggered, this, [this]() { setZoomLevel(2.0); });
+
+    zoomMenu->addSeparator();
+
+    // Current zoom level display (disabled, for display only)
+    m_currentZoomAction = zoomMenu->addAction(QString("%1%").arg(qRound(m_zoomLevel * 100)));
+    m_currentZoomAction->setEnabled(false);
+
+    // Smoothing option
+    QAction *smoothingAction = zoomMenu->addAction("Smoothing");
+    smoothingAction->setCheckable(true);
+    smoothingAction->setChecked(m_smoothing);
+    connect(smoothingAction, &QAction::toggled, this, [this](bool checked) {
+        m_smoothing = checked;
+        updateSize();
+    });
+
+    // Image processing submenu
+    QMenu *imageProcessingMenu = m_contextMenu->addMenu("Image processing");
+
+    QAction *rotateLeftAction = imageProcessingMenu->addAction("Rotate left");
+    connect(rotateLeftAction, &QAction::triggered, this, &PinWindow::rotateLeft);
+
+    QAction *rotateRightAction = imageProcessingMenu->addAction("Rotate right");
+    connect(rotateRightAction, &QAction::triggered, this, &PinWindow::rotateRight);
+
+    QAction *horizontalFlipAction = imageProcessingMenu->addAction("Horizontal flip");
+    connect(horizontalFlipAction, &QAction::triggered, this, &PinWindow::flipHorizontal);
+
+    QAction *verticalFlipAction = imageProcessingMenu->addAction("Vertical flip");
+    connect(verticalFlipAction, &QAction::triggered, this, &PinWindow::flipVertical);
+
+    // Info submenu - displays image properties
+    QMenu *infoMenu = m_contextMenu->addMenu(
+        QString("%1 × %2").arg(m_originalPixmap.width()).arg(m_originalPixmap.height()));
+
+    // Copy all info action
+    QAction *copyAllInfoAction = infoMenu->addAction("Copy All");
+    connect(copyAllInfoAction, &QAction::triggered, this, &PinWindow::copyAllInfo);
+
+    infoMenu->addSeparator();
+
+    // Info items - clicking copies that value
+    auto addInfoItem = [infoMenu](const QString &label, const QString &value) {
+        QAction *action = infoMenu->addAction(QString("%1: %2").arg(label, value));
+        QObject::connect(action, &QAction::triggered, [value]() {
+            QGuiApplication::clipboard()->setText(value);
+        });
+    };
+
+    addInfoItem("Size", QString("%1 × %2").arg(m_originalPixmap.width()).arg(m_originalPixmap.height()));
+    addInfoItem("Zoom", QString("%1%").arg(qRound(m_zoomLevel * 100)));
+    addInfoItem("Rotation", QString::fromUtf8("%1°").arg(m_rotationAngle));
+    addInfoItem("Opacity", QString("%1%").arg(qRound(m_opacity * 100)));
+    addInfoItem("X-mirror", m_flipHorizontal ? "Yes" : "No");
+    addInfoItem("Y-mirror", m_flipVertical ? "Yes" : "No");
+
     m_contextMenu->addSeparator();
 
     QAction *closeAction = m_contextMenu->addAction("Close");
     closeAction->setShortcut(QKeySequence(Qt::Key_Escape));
     connect(closeAction, &QAction::triggered, this, &PinWindow::close);
+
+    QAction *closeAllPinsAction = m_contextMenu->addAction("Close All Pins");
+    connect(closeAllPinsAction, &QAction::triggered, this, [this]() {
+        if (m_pinWindowManager) {
+            m_pinWindowManager->closeAllWindows();
+        }
+    });
 }
 
 void PinWindow::saveToFile()
@@ -508,6 +601,19 @@ void PinWindow::onOCRComplete(bool success, const QString &text, const QString &
     m_ocrToastTimer->start(2500);
 
     emit ocrCompleted(success && !text.isEmpty(), msg);
+}
+
+void PinWindow::copyAllInfo()
+{
+    QStringList info;
+    info << QString("Size: %1 × %2").arg(m_originalPixmap.width()).arg(m_originalPixmap.height());
+    info << QString("Zoom: %1%").arg(qRound(m_zoomLevel * 100));
+    info << QString::fromUtf8("Rotation: %1°").arg(m_rotationAngle);
+    info << QString("Opacity: %1%").arg(qRound(m_opacity * 100));
+    info << QString("X-mirror: %1").arg(m_flipHorizontal ? "Yes" : "No");
+    info << QString("Y-mirror: %1").arg(m_flipVertical ? "Yes" : "No");
+
+    QGuiApplication::clipboard()->setText(info.join("\n"));
 }
 
 PinWindow::ResizeEdge PinWindow::getResizeEdge(const QPoint &pos) const

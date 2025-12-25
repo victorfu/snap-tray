@@ -46,6 +46,7 @@ public:
 public slots:
     void startRegionSelection();    // Begin region selection flow
     void startRegionSelectionWithPreset(const QRect &region, QScreen *screen);  // Use preset region
+    void startFullScreenRecording();  // Record entire screen at cursor position
     void stopRecording();           // Stop and save recording
     void cancelRecording();         // Cancel without saving
     void pauseRecording();          // Pause recording

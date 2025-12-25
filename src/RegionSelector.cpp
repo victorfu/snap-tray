@@ -197,6 +197,11 @@ RegionSelector::RegionSelector(QWidget* parent)
     // Initialize magnifier update timer for throttling
     m_magnifierUpdateTimer.start();
 
+    // Initialize update throttle timers
+    m_selectionUpdateTimer.start();
+    m_annotationUpdateTimer.start();
+    m_hoverUpdateTimer.start();
+
     // 注意: 不在此處初始化螢幕，由 CaptureManager 調用 initializeForScreen()
 }
 
@@ -470,6 +475,17 @@ bool RegionSelector::shouldShowWidthControl() const
     }
 }
 
+const QImage& RegionSelector::getBackgroundImage() const
+{
+    // Lazy initialization: convert pixmap to image only when first needed (for magnifier)
+    // This saves ~126MB on 4K displays until magnifier is actually used
+    if (!m_backgroundImageCacheValid) {
+        m_backgroundImageCache = m_backgroundPixmap.toImage();
+        m_backgroundImageCacheValid = true;
+    }
+    return m_backgroundImageCache;
+}
+
 void RegionSelector::initializeForScreen(QScreen* screen)
 {
     // 使用傳入的螢幕，若為空則使用主螢幕
@@ -482,7 +498,8 @@ void RegionSelector::initializeForScreen(QScreen* screen)
 
     // Capture the screen FIRST (returns device pixel resolution on HiDPI)
     m_backgroundPixmap = m_currentScreen->grabWindow(0);
-    m_backgroundImageCache = m_backgroundPixmap.toImage();  // 預先轉換並快取
+    // Lazy-load image cache: don't convert now, create on first magnifier access
+    m_backgroundImageCacheValid = false;
 
     qDebug() << "RegionSelector: Initialized for screen" << m_currentScreen->name()
         << "logical size:" << m_currentScreen->geometry().size()
@@ -878,7 +895,7 @@ void RegionSelector::drawMagnifier(QPainter& painter)
     // 取得當前像素顏色 (設備座標)
     int deviceX = static_cast<int>(m_currentPoint.x() * m_devicePixelRatio);
     int deviceY = static_cast<int>(m_currentPoint.y() * m_devicePixelRatio);
-    const QImage &img = m_backgroundImageCache;
+    const QImage &img = getBackgroundImage();  // Lazy-loaded for memory efficiency
     QColor pixelColor;
     if (deviceX >= 0 && deviceX < img.width() && deviceY >= 0 && deviceY < img.height()) {
         pixelColor = QColor(img.pixel(deviceX, deviceY));
@@ -1409,6 +1426,7 @@ void RegionSelector::mousePressEvent(QMouseEvent* event)
             m_startPoint = event->pos();
             m_currentPoint = m_startPoint;
             m_selectionRect = QRect();
+            m_lastSelectionRect = QRect();  // Reset dirty region tracking
         }
         update();
     }
@@ -1486,8 +1504,14 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
     }
 
     // Window detection during hover (before any selection or dragging)
+    // Throttle by distance to avoid expensive window enumeration on every mouse move
     if (!m_isSelecting && !m_selectionComplete && m_windowDetector) {
-        updateWindowDetection(event->pos());
+        int dx = event->pos().x() - m_lastWindowDetectionPos.x();
+        int dy = event->pos().y() - m_lastWindowDetectionPos.y();
+        if (dx * dx + dy * dy >= WINDOW_DETECTION_MIN_DISTANCE_SQ) {
+            updateWindowDetection(event->pos());
+            m_lastWindowDetectionPos = event->pos();
+        }
     }
 
     if (m_isSelecting) {
@@ -1634,17 +1658,47 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
         }
     }
 
-    // Throttle magnifier updates when in pre-selection mode (only crosshair/magnifier visible)
-    // For selection, resize, move, and drawing operations, always update immediately
-    bool needsImmediateUpdate = m_isSelecting || m_isResizing || m_isMoving || m_isDrawing || m_selectionComplete;
-
-    if (needsImmediateUpdate) {
-        update();
+    // Per-operation throttling for smooth 60fps experience on high-resolution displays
+    // Different operations have different update frequency requirements
+    if (m_isSelecting || m_isResizing || m_isMoving) {
+        // Selection/resize/move: high frequency (120fps) for responsiveness
+        // Note: Full update required because overlay affects entire screen outside selection
+        if (m_selectionUpdateTimer.elapsed() >= SELECTION_UPDATE_MS) {
+            m_selectionUpdateTimer.restart();
+            update();
+        }
+    } else if (m_isDrawing) {
+        // Annotation drawing: medium frequency (80fps) to balance smoothness and performance
+        if (m_annotationUpdateTimer.elapsed() >= ANNOTATION_UPDATE_MS) {
+            m_annotationUpdateTimer.restart();
+            update();
+        }
+    } else if (m_selectionComplete) {
+        // Hover effects in selection complete mode: lower frequency (30fps)
+        if (m_hoverUpdateTimer.elapsed() >= HOVER_UPDATE_MS) {
+            m_hoverUpdateTimer.restart();
+            update();
+        }
     } else {
-        // Magnifier-only mode: throttle to ~60fps
+        // Magnifier-only mode (pre-selection): use dirty region for magnifier
         if (m_magnifierUpdateTimer.elapsed() >= MAGNIFIER_MIN_UPDATE_MS) {
             m_magnifierUpdateTimer.restart();
-            update();
+            // Calculate magnifier panel rect and update only that region
+            const int panelWidth = 180;
+            const int totalHeight = MAGNIFIER_SIZE + 75;
+            int panelX = m_currentPoint.x() - panelWidth / 2;
+            int panelY = m_currentPoint.y() + 25;
+            panelX = qMax(10, qMin(panelX, width() - panelWidth - 10));
+            if (panelY + totalHeight > height()) {
+                panelY = m_currentPoint.y() - totalHeight - 25;
+            }
+            QRect currentMagRect(panelX - 5, panelY - 5, panelWidth + 10, totalHeight + 10);
+            QRect dirtyRect = m_lastMagnifierRect.united(currentMagRect);
+            // Also include crosshair area
+            dirtyRect = dirtyRect.united(QRect(0, m_currentPoint.y() - 1, width(), 3));
+            dirtyRect = dirtyRect.united(QRect(m_currentPoint.x() - 1, 0, 3, height()));
+            m_lastMagnifierRect = currentMagRect;
+            update(dirtyRect);
         }
     }
 }
