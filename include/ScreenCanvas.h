@@ -8,10 +8,11 @@
 #include <QVector>
 #include <QColor>
 #include "AnnotationLayer.h"
+#include "tools/ToolId.h"
 
 class QScreen;
 class AnnotationLayer;
-class AnnotationController;
+class ToolManager;
 class ColorPaletteWidget;
 class ColorPickerDialog;
 class LineWidthWidget;
@@ -19,13 +20,13 @@ class ColorAndWidthWidget;
 class LaserPointerRenderer;
 class ClickRippleRenderer;
 
-// Canvas tool types (simplified subset for screen canvas)
-enum class CanvasTool {
+// Canvas toolbar button IDs (for UI display only)
+// These represent button positions in the toolbar
+enum class CanvasButton {
     Pencil = 0,
     Marker,
     Arrow,
-    Rectangle,
-    Ellipse,
+    Shape,          // Unified Rectangle/Ellipse
     LaserPointer,
     CursorHighlight,
     Undo,
@@ -34,6 +35,23 @@ enum class CanvasTool {
     Exit,
     Count  // Total number of buttons
 };
+
+// Helper to map CanvasButton to ToolId
+inline ToolId canvasButtonToToolId(CanvasButton btn) {
+    switch (btn) {
+    case CanvasButton::Pencil:       return ToolId::Pencil;
+    case CanvasButton::Marker:       return ToolId::Marker;
+    case CanvasButton::Arrow:        return ToolId::Arrow;
+    case CanvasButton::Shape:        return ToolId::Shape;
+    case CanvasButton::LaserPointer: return ToolId::LaserPointer;
+    case CanvasButton::CursorHighlight: return ToolId::CursorHighlight;
+    case CanvasButton::Undo:         return ToolId::Undo;
+    case CanvasButton::Redo:         return ToolId::Redo;
+    case CanvasButton::Clear:        return ToolId::Clear;
+    case CanvasButton::Exit:         return ToolId::Exit;
+    default:                         return ToolId::Selection;
+    }
+}
 
 class ScreenCanvas : public QWidget
 {
@@ -67,13 +85,13 @@ private:
 
     // Toolbar helpers
     void initializeIcons();
-    QString getIconKeyForTool(CanvasTool tool) const;
-    void renderIcon(QPainter &painter, const QRect &rect, CanvasTool tool, const QColor &color);
+    QString getIconKeyForButton(CanvasButton button) const;
+    void renderIcon(QPainter &painter, const QRect &rect, CanvasButton button, const QColor &color);
     void updateToolbarPosition();
     int getButtonAtPosition(const QPoint &pos);
-    void handleToolbarClick(CanvasTool button);
+    void handleToolbarClick(CanvasButton button);
     QString getButtonTooltip(int buttonIndex);
-    bool isAnnotationTool(CanvasTool tool) const;
+    bool isDrawingTool(ToolId toolId) const;
 
     // Color palette helpers (legacy)
     bool shouldShowColorPalette() const;
@@ -102,10 +120,10 @@ private:
     QScreen *m_currentScreen;
     qreal m_devicePixelRatio;
 
-    // Annotation layer and controller
+    // Annotation layer and tool manager
     AnnotationLayer *m_annotationLayer;
-    AnnotationController *m_controller;
-    CanvasTool m_currentTool;
+    ToolManager *m_toolManager;
+    ToolId m_currentToolId;
 
     // Toolbar
     QRect m_toolbarRect;

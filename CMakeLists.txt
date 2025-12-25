@@ -81,6 +81,18 @@ set(SOURCES
     src/RecordingBoundaryOverlay.cpp
     src/FFmpegEncoder.cpp
     src/TransformationGizmo.cpp
+    # Tool system
+    src/tools/ToolRegistry.cpp
+    src/tools/ToolManager.cpp
+    src/tools/handlers/PencilToolHandler.cpp
+    src/tools/handlers/MarkerToolHandler.cpp
+    src/tools/handlers/ArrowToolHandler.cpp
+    src/tools/handlers/ShapeToolHandler.cpp
+    src/tools/handlers/MosaicToolHandler.cpp
+    src/tools/handlers/StepBadgeToolHandler.cpp
+    src/tools/handlers/EraserToolHandler.cpp
+    src/tools/handlers/SelectionToolHandler.cpp
+    src/tools/handlers/LaserPointerToolHandler.cpp
 )
 
 set(RESOURCES
@@ -120,6 +132,23 @@ set(HEADERS
     include/TransformationGizmo.h
     include/capture/ICaptureEngine.h
     include/capture/QtCaptureEngine.h
+    # Tool system
+    include/tools/ToolId.h
+    include/tools/ToolDefinition.h
+    include/tools/ToolContext.h
+    include/tools/IToolHandler.h
+    include/tools/ToolRegistry.h
+    include/tools/ToolManager.h
+    include/tools/handlers/AllHandlers.h
+    include/tools/handlers/PencilToolHandler.h
+    include/tools/handlers/MarkerToolHandler.h
+    include/tools/handlers/ArrowToolHandler.h
+    include/tools/handlers/ShapeToolHandler.h
+    include/tools/handlers/MosaicToolHandler.h
+    include/tools/handlers/StepBadgeToolHandler.h
+    include/tools/handlers/EraserToolHandler.h
+    include/tools/handlers/SelectionToolHandler.h
+    include/tools/handlers/LaserPointerToolHandler.h
 )
 
 # Cross-platform source files (used by both platforms)
