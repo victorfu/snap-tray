@@ -194,6 +194,9 @@ RegionSelector::RegionSelector(QWidget* parent)
     // Install application-level event filter to capture ESC even when window loses focus
     qApp->installEventFilter(this);
 
+    // Start creation timer for startup protection
+    m_createdAt.start();
+
     // Initialize magnifier update timer for throttling
     m_magnifierUpdateTimer.start();
 
@@ -1954,6 +1957,13 @@ bool RegionSelector::eventFilter(QObject* obj, QEvent* event)
     } else if (event->type() == QEvent::ApplicationDeactivate) {
         // Don't cancel if a dialog is open (e.g., save dialog)
         if (m_isDialogOpen) {
+            return false;
+        }
+        // Startup protection: ignore early deactivation (within 300ms of creation)
+        // This prevents false cancellation when popup menus close during startup
+        if (m_createdAt.elapsed() < 300) {
+            qDebug() << "RegionSelector: Ignoring early ApplicationDeactivate (elapsed:"
+                     << m_createdAt.elapsed() << "ms)";
             return false;
         }
         qDebug() << "RegionSelector: Cancelled due to app deactivation";

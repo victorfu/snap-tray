@@ -165,6 +165,7 @@ void SettingsDialog::setupHotkeysTab(QWidget *tab)
 void SettingsDialog::setupWatermarkTab(QWidget *tab)
 {
     QVBoxLayout *mainLayout = new QVBoxLayout(tab);
+    mainLayout->setContentsMargins(9, 12, 9, 9);  // Increase top margin for checkbox
 
     // Enable watermark checkbox
     m_watermarkEnabledCheckbox = new QCheckBox("Enable watermark", tab);

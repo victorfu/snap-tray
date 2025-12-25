@@ -678,7 +678,7 @@ void RecordingManager::showSaveDialog(const QString &tempOutputPath)
     bool autoSave = settings.value("recording/autoSave", false).toBool();
     QString outputDir = settings.value("recording/outputPath").toString();
     if (outputDir.isEmpty()) {
-        outputDir = QStandardPaths::writableLocation(QStandardPaths::MoviesLocation);
+        outputDir = QStandardPaths::writableLocation(QStandardPaths::DownloadLocation);
     }
 
     // Get extension from current file

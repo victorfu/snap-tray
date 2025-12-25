@@ -282,6 +282,9 @@ private:
     // Color picker dialog
     ColorPickerDialog *m_colorPickerDialog;
 
+    // Startup protection - ignore early ApplicationDeactivate events
+    QElapsedTimer m_createdAt;
+
     // Magnifier performance optimization
     QElapsedTimer m_magnifierUpdateTimer;
     QPoint m_lastMagnifierPosition;
