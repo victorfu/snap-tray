@@ -83,8 +83,7 @@ private:
 enum class LineEndStyle {
     None = 0,    // ───── Plain line (no arrows)
     EndArrow,    // ─────▶ Arrow at end (default)
-    StartArrow,  // ◀───── Arrow at start
-    BothArrows   // ◀────▶ Double arrow
+    DotToArrow   // ●─────▶ Dot at start, arrow at end
 };
 
 // Arrow annotation (line with arrowhead)

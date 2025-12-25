@@ -441,6 +441,7 @@ private:
 
     // Layout state
     bool m_visible;
+    bool m_dropdownExpandsUpward = false;  // True when widget is above toolbar (ScreenCanvas)
     QRect m_widgetRect;
     QRect m_colorSectionRect;
     QRect m_widthSectionRect;

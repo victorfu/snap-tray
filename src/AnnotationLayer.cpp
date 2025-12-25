@@ -261,12 +261,15 @@ void ArrowAnnotation::draw(QPainter &painter) const
     case LineEndStyle::EndArrow:
         drawArrowhead(painter, m_start, m_end);
         break;
-    case LineEndStyle::StartArrow:
-        drawArrowhead(painter, m_end, m_start);
-        break;
-    case LineEndStyle::BothArrows:
+    case LineEndStyle::DotToArrow:
+        // Draw dot at start, arrow at end (●─────▶)
+        {
+            int dotRadius = qMax(6, m_width * 2);
+            painter.setBrush(m_color);
+            painter.setPen(Qt::NoPen);
+            painter.drawEllipse(m_start, dotRadius, dotRadius);
+        }
         drawArrowhead(painter, m_start, m_end);
-        drawArrowhead(painter, m_end, m_start);
         break;
     }
 

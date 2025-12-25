@@ -3,13 +3,16 @@
 
 #include <QPainter>
 
+// Marker uses fixed width (same as original AnnotationController)
+static constexpr int kMarkerWidth = 20;
+
 void MarkerToolHandler::onMousePress(ToolContext* ctx, const QPoint& pos) {
     m_isDrawing = true;
     m_currentPath.clear();
     m_currentPath.append(QPointF(pos));
 
     m_currentStroke = std::make_unique<MarkerStroke>(
-        m_currentPath, ctx->color, ctx->width
+        m_currentPath, ctx->color, kMarkerWidth
     );
 
     ctx->repaint();

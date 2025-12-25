@@ -4,23 +4,31 @@
 #include <QPainter>
 
 void ArrowToolHandler::onMousePress(ToolContext* ctx, const QPoint& pos) {
+    Q_UNUSED(ctx);
     m_isDrawing = true;
     m_startPoint = pos;
-
-    m_currentArrow = std::make_unique<ArrowAnnotation>(
-        pos, pos, ctx->color, ctx->width, ctx->arrowStyle
-    );
-
-    ctx->repaint();
+    // Don't create arrow yet - wait until mouse moves
+    m_currentArrow.reset();
 }
 
 void ArrowToolHandler::onMouseMove(ToolContext* ctx, const QPoint& pos) {
-    if (!m_isDrawing || !m_currentArrow) {
+    if (!m_isDrawing) {
         return;
     }
 
-    m_currentArrow->setEnd(pos);
-    ctx->repaint();
+    // Create arrow only when mouse has moved enough
+    if (!m_currentArrow) {
+        QPoint diff = pos - m_startPoint;
+        if (diff.manhattanLength() > 3) {
+            m_currentArrow = std::make_unique<ArrowAnnotation>(
+                m_startPoint, pos, ctx->color, ctx->width, ctx->arrowStyle
+            );
+            ctx->repaint();
+        }
+    } else {
+        m_currentArrow->setEnd(pos);
+        ctx->repaint();
+    }
 }
 
 void ArrowToolHandler::onMouseRelease(ToolContext* ctx, const QPoint& pos) {
