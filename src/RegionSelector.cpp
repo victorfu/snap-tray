@@ -1811,17 +1811,25 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
             const int panelWidth = 180;
             const int totalHeight = MAGNIFIER_SIZE + 55;
             int panelX = m_currentPoint.x() - panelWidth / 2;
-            int panelY = m_currentPoint.y() + 25;
             panelX = qMax(10, qMin(panelX, width() - panelWidth - 10));
-            if (panelY + totalHeight > height()) {
-                panelY = m_currentPoint.y() - totalHeight - 25;
-            }
-            QRect currentMagRect(panelX - 5, panelY - 5, panelWidth + 10, totalHeight + 10);
+
+            // 計算兩個可能的面板位置（下方和上方），確保髒區域覆蓋翻轉情況
+            int panelYBelow = m_currentPoint.y() + 25;
+            int panelYAbove = m_currentPoint.y() - totalHeight - 25;
+            QRect belowRect(panelX - 5, panelYBelow - 5, panelWidth + 10, totalHeight + 10);
+            QRect aboveRect(panelX - 5, panelYAbove - 5, panelWidth + 10, totalHeight + 10);
+            QRect currentMagRect = belowRect.united(aboveRect);
+
             QRect dirtyRect = m_lastMagnifierRect.united(currentMagRect);
-            // Also include crosshair area
-            dirtyRect = dirtyRect.united(QRect(0, m_currentPoint.y() - 1, width(), 3));
-            dirtyRect = dirtyRect.united(QRect(m_currentPoint.x() - 1, 0, 3, height()));
+
+            // 十字線區域 - 加寬清除範圍並包含上一次位置
+            dirtyRect = dirtyRect.united(QRect(0, m_currentPoint.y() - 3, width(), 6));
+            dirtyRect = dirtyRect.united(QRect(m_currentPoint.x() - 3, 0, 6, height()));
+            dirtyRect = dirtyRect.united(QRect(0, m_lastMagnifierPosition.y() - 3, width(), 6));
+            dirtyRect = dirtyRect.united(QRect(m_lastMagnifierPosition.x() - 3, 0, 6, height()));
+
             m_lastMagnifierRect = currentMagRect;
+            m_lastMagnifierPosition = m_currentPoint;
             update(dirtyRect);
         }
     }
