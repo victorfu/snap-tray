@@ -81,6 +81,7 @@ private:
     qint64 m_framesWritten;
     QString m_lastError;
     bool m_finishing;
+    bool m_aborting;  // True when abort() is called to suppress error signals
     OutputFormat m_outputFormat;
     int m_crf;
     QString m_preset;

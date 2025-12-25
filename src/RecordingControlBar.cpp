@@ -263,17 +263,25 @@ void RecordingControlBar::paintEvent(QPaintEvent *event)
 
 void RecordingControlBar::positionNear(const QRect &recordingRegion)
 {
-    // Position below the recording region, centered
-    int x = recordingRegion.center().x() - width() / 2;
-    int y = recordingRegion.bottom() + 20;
-
-    // Ensure within screen bounds
     QScreen *screen = QGuiApplication::screenAt(recordingRegion.center());
-    if (screen) {
-        QRect screenGeom = screen->geometry();
+    if (!screen) {
+        screen = QGuiApplication::primaryScreen();
+    }
 
-        // Horizontal bounds
-        x = qBound(screenGeom.left() + 10, x, screenGeom.right() - width() - 10);
+    QRect screenGeom = screen->geometry();
+    int x, y;
+
+    // Check if this is a full-screen recording (region matches screen geometry)
+    bool isFullScreen = (recordingRegion == screenGeom);
+
+    if (isFullScreen) {
+        // For full-screen recording: position at bottom-center, above taskbar
+        x = screenGeom.center().x() - width() / 2;
+        y = screenGeom.bottom() - height() - 60;  // 60px above bottom edge for taskbar
+    } else {
+        // For region recording: position below the recording region, centered
+        x = recordingRegion.center().x() - width() / 2;
+        y = recordingRegion.bottom() + 20;
 
         // Vertical bounds - if below would be off screen, position above
         if (y + height() > screenGeom.bottom() - 10) {
@@ -285,6 +293,9 @@ void RecordingControlBar::positionNear(const QRect &recordingRegion)
             y = recordingRegion.top() + 10;
         }
     }
+
+    // Horizontal bounds (common to both modes)
+    x = qBound(screenGeom.left() + 10, x, screenGeom.right() - width() - 10);
 
     move(x, y);
 }

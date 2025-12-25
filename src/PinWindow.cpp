@@ -1,4 +1,5 @@
 #include "PinWindow.h"
+#include "PinWindowManager.h"
 #include "OCRManager.h"
 #include "PlatformFeatures.h"
 #include "WatermarkRenderer.h"
@@ -143,6 +144,11 @@ PinWindow::PinWindow(const QPixmap &screenshot, const QPoint &position, QWidget 
 PinWindow::~PinWindow()
 {
     qDebug() << "PinWindow: Destroyed";
+}
+
+void PinWindow::setPinWindowManager(PinWindowManager *manager)
+{
+    m_pinWindowManager = manager;
 }
 
 void PinWindow::setZoomLevel(qreal zoom)
@@ -476,6 +482,9 @@ void PinWindow::createContextMenu()
     QAction *closeAction = m_contextMenu->addAction("Close");
     closeAction->setShortcut(QKeySequence(Qt::Key_Escape));
     connect(closeAction, &QAction::triggered, this, &PinWindow::close);
+
+    QAction *closeAllPinsAction = m_contextMenu->addAction("Close All Pins");
+    connect(closeAllPinsAction, &QAction::triggered, m_pinWindowManager, &PinWindowManager::closeAllWindows);
 }
 
 void PinWindow::saveToFile()

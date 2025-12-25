@@ -190,6 +190,47 @@ void RecordingManager::startRegionSelectionWithPreset(const QRect &region, QScre
     m_regionSelector->raise();
 }
 
+void RecordingManager::startFullScreenRecording()
+{
+    // Check if already active
+    if (m_state == State::Recording || m_state == State::Paused || m_state == State::Encoding) {
+        qDebug() << "RecordingManager: Already recording or encoding";
+        return;
+    }
+
+    if (m_regionSelector && m_regionSelector->isVisible()) {
+        qDebug() << "RecordingManager: Already selecting region";
+        return;
+    }
+
+    // Determine target screen based on cursor position
+    QScreen *targetScreen = QGuiApplication::screenAt(QCursor::pos());
+    if (!targetScreen) {
+        targetScreen = QGuiApplication::primaryScreen();
+    }
+
+    qDebug() << "RecordingManager: Starting full-screen recording on screen:" << targetScreen->name();
+
+    // Use the entire screen as the recording region
+    m_recordingRegion = targetScreen->geometry();
+    m_targetScreen = targetScreen;
+
+    // Load frame rate from settings with validation
+    QSettings settings("Victor Fu", "SnapTray");
+    m_frameRate = settings.value("recording/framerate", 30).toInt();
+    if (m_frameRate <= 0 || m_frameRate > 120) {
+        qWarning() << "RecordingManager: Invalid frame rate" << m_frameRate << ", using default 30";
+        m_frameRate = 30;
+    }
+
+    // Reset pause tracking
+    m_pausedDuration = 0;
+    m_pauseStartTime = 0;
+
+    // Skip region selection and start recording directly
+    startFrameCapture();
+}
+
 void RecordingManager::onRegionSelected(const QRect &region, QScreen *screen)
 {
     qDebug() << "RecordingManager: Region selected:" << region << "on screen:" << screen->name();

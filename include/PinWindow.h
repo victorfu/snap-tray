@@ -12,6 +12,7 @@ class QMenu;
 class QLabel;
 class QTimer;
 class OCRManager;
+class PinWindowManager;
 
 class PinWindow : public QWidget
 {
@@ -35,6 +36,9 @@ public:
     // Watermark settings
     void setWatermarkSettings(const WatermarkRenderer::Settings &settings);
     WatermarkRenderer::Settings watermarkSettings() const { return m_watermarkSettings; }
+
+    // Pin window manager
+    void setPinWindowManager(PinWindowManager *manager);
 
 signals:
     void closed(PinWindow *window);
@@ -136,6 +140,9 @@ private:
 
     // Watermark members
     WatermarkRenderer::Settings m_watermarkSettings;
+
+    // Pin window manager
+    PinWindowManager *m_pinWindowManager = nullptr;
 
     // Performance optimization: transform cache
     mutable QPixmap m_transformedCache;
