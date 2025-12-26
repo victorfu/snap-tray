@@ -24,8 +24,10 @@
 #if HAS_SCREENCAPTUREKIT
 API_AVAILABLE(macos(12.3))
 @interface SCKStreamDelegate : NSObject <SCStreamDelegate, SCStreamOutput>
-@property (nonatomic, assign) SCKCaptureEngine::Private *engine;
+@property (atomic, assign) SCKCaptureEngine::Private *engine;  // atomic for thread safety
 @property (atomic, assign) BOOL invalidated;
+@property (nonatomic, strong) dispatch_group_t processingGroup;  // Track active callbacks
+- (instancetype)init;
 @end
 #endif
 
@@ -73,74 +75,98 @@ public:
 API_AVAILABLE(macos(12.3))
 @implementation SCKStreamDelegate
 
+- (instancetype)init {
+    self = [super init];
+    if (self) {
+        _processingGroup = dispatch_group_create();
+        _invalidated = NO;
+        _engine = nil;
+    }
+    return self;
+}
+
 - (void)stream:(SCStream *)stream didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
         ofType:(SCStreamOutputType)type
 {
-    static int frameCount = 0;
-    frameCount++;
+    // Enter group to mark callback is active (for cleanup synchronization)
+    dispatch_group_enter(_processingGroup);
 
-    // Log every 30 frames (once per second at 30fps)
-    if (frameCount % 30 == 1) {
-        qDebug() << "SCKStreamDelegate::didOutputSampleBuffer - frame:" << frameCount
-                 << "invalidated:" << (_invalidated ? "YES" : "NO")
-                 << "engine:" << (_engine ? "valid" : "nil");
-    }
+    // Use @try/@finally to ensure dispatch_group_leave is always called
+    @try {
+        static int frameCount = 0;
+        frameCount++;
 
-    // Check invalidated FIRST (atomic read) to prevent use-after-free
-    if (_invalidated || type != SCStreamOutputTypeScreen || !_engine) {
-        if (frameCount <= 5) {
-            qDebug() << "SCKStreamDelegate::didOutputSampleBuffer - SKIPPED (invalidated or wrong type)";
+        // Atomically read engine pointer to local variable
+        SCKCaptureEngine::Private *localEngine = self.engine;
+
+        // Log every 30 frames (once per second at 30fps)
+        if (frameCount % 30 == 1) {
+            qDebug() << "SCKStreamDelegate::didOutputSampleBuffer - frame:" << frameCount
+                     << "invalidated:" << (_invalidated ? "YES" : "NO")
+                     << "engine:" << (localEngine ? "valid" : "nil");
         }
-        return;
-    }
 
-    CVImageBufferRef imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer);
-    if (!imageBuffer) {
-        qDebug() << "SCKStreamDelegate::didOutputSampleBuffer - imageBuffer is NULL";
-        return;
-    }
+        // Check invalidated FIRST - use local engine copy for consistency
+        if (_invalidated || type != SCStreamOutputTypeScreen || !localEngine) {
+            if (frameCount <= 5) {
+                qDebug() << "SCKStreamDelegate::didOutputSampleBuffer - SKIPPED (invalidated or wrong type)";
+            }
+            return;  // @finally will execute dispatch_group_leave
+        }
 
-    CVReturn lockResult = CVPixelBufferLockBaseAddress(imageBuffer, kCVPixelBufferLock_ReadOnly);
-    if (lockResult != kCVReturnSuccess) {
-        qDebug() << "SCKStreamDelegate::didOutputSampleBuffer - Failed to lock pixel buffer:" << lockResult;
-        return;
-    }
+        CVImageBufferRef imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer);
+        if (!imageBuffer) {
+            qDebug() << "SCKStreamDelegate::didOutputSampleBuffer - imageBuffer is NULL";
+            return;
+        }
 
-    void *baseAddress = CVPixelBufferGetBaseAddress(imageBuffer);
-    size_t width = CVPixelBufferGetWidth(imageBuffer);
-    size_t height = CVPixelBufferGetHeight(imageBuffer);
-    size_t bytesPerRow = CVPixelBufferGetBytesPerRow(imageBuffer);
+        CVReturn lockResult = CVPixelBufferLockBaseAddress(imageBuffer, kCVPixelBufferLock_ReadOnly);
+        if (lockResult != kCVReturnSuccess) {
+            qDebug() << "SCKStreamDelegate::didOutputSampleBuffer - Failed to lock pixel buffer:" << lockResult;
+            return;
+        }
 
-    if (frameCount <= 5) {
-        qDebug() << "SCKStreamDelegate::didOutputSampleBuffer - buffer info:"
-                 << "baseAddress:" << baseAddress
-                 << "width:" << width
-                 << "height:" << height
-                 << "bytesPerRow:" << bytesPerRow;
-    }
+        void *baseAddress = CVPixelBufferGetBaseAddress(imageBuffer);
+        size_t width = CVPixelBufferGetWidth(imageBuffer);
+        size_t height = CVPixelBufferGetHeight(imageBuffer);
+        size_t bytesPerRow = CVPixelBufferGetBytesPerRow(imageBuffer);
 
-    if (!baseAddress || width == 0 || height == 0) {
-        qDebug() << "SCKStreamDelegate::didOutputSampleBuffer - Invalid buffer data";
+        if (frameCount <= 5) {
+            qDebug() << "SCKStreamDelegate::didOutputSampleBuffer - buffer info:"
+                     << "baseAddress:" << baseAddress
+                     << "width:" << width
+                     << "height:" << height
+                     << "bytesPerRow:" << bytesPerRow;
+        }
+
+        if (!baseAddress || width == 0 || height == 0) {
+            qDebug() << "SCKStreamDelegate::didOutputSampleBuffer - Invalid buffer data";
+            CVPixelBufferUnlockBaseAddress(imageBuffer, kCVPixelBufferLock_ReadOnly);
+            return;
+        }
+
+        // Create QImage from pixel buffer (BGRA format)
+        QImage fullImage(
+            static_cast<uchar *>(baseAddress),
+            static_cast<int>(width),
+            static_cast<int>(height),
+            static_cast<int>(bytesPerRow),
+            QImage::Format_ARGB32
+        );
+
+        // Double-check engine is still valid before calling (defense in depth)
+        if (!_invalidated && localEngine) {
+            localEngine->setLatestFrame(fullImage.copy());
+        }
+
         CVPixelBufferUnlockBaseAddress(imageBuffer, kCVPixelBufferLock_ReadOnly);
-        return;
-    }
 
-    // Create QImage from pixel buffer (BGRA format)
-    QImage fullImage(
-        static_cast<uchar *>(baseAddress),
-        static_cast<int>(width),
-        static_cast<int>(height),
-        static_cast<int>(bytesPerRow),
-        QImage::Format_ARGB32
-    );
-
-    // Deep copy since buffer will be released
-    _engine->setLatestFrame(fullImage.copy());
-
-    CVPixelBufferUnlockBaseAddress(imageBuffer, kCVPixelBufferLock_ReadOnly);
-
-    if (frameCount <= 5) {
-        qDebug() << "SCKStreamDelegate::didOutputSampleBuffer - Frame processed successfully";
+        if (frameCount <= 5) {
+            qDebug() << "SCKStreamDelegate::didOutputSampleBuffer - Frame processed successfully";
+        }
+    } @finally {
+        // Always executed - mark callback as complete
+        dispatch_group_leave(_processingGroup);
     }
 }
 
@@ -158,21 +184,35 @@ void SCKCaptureEngine::Private::cleanup()
 {
 #if HAS_SCREENCAPTUREKIT
     if (@available(macOS 12.3, *)) {
-        // Invalidate delegate FIRST to stop callbacks from accessing 'this'
+        // Step 1: Mark as invalidated to prevent new frame processing
         if (delegate) {
             delegate.invalidated = YES;
             delegate.engine = nil;
         }
 
+        // Step 2: Wait for all in-progress callbacks to complete (max 3 seconds)
+        if (delegate && delegate.processingGroup) {
+            dispatch_time_t timeout = dispatch_time(DISPATCH_TIME_NOW, 3 * NSEC_PER_SEC);
+            long result = dispatch_group_wait(delegate.processingGroup, timeout);
+            if (result != 0) {
+                qWarning() << "SCKCaptureEngine::cleanup - Timeout waiting for callbacks to complete";
+            }
+        }
+
+        // Step 3: Stop the stream
         if (stream) {
-            // Stop synchronously using semaphore
             dispatch_semaphore_t stopSem = dispatch_semaphore_create(0);
             [stream stopCaptureWithCompletionHandler:^(NSError *error) {
+                if (error) {
+                    NSLog(@"SCKCaptureEngine: stopCapture error: %@", error.localizedDescription);
+                }
                 dispatch_semaphore_signal(stopSem);
             }];
             dispatch_semaphore_wait(stopSem, dispatch_time(DISPATCH_TIME_NOW, 2 * NSEC_PER_SEC));
             stream = nil;
         }
+
+        // Step 4: Clean up delegate (all callbacks are now complete)
         delegate = nil;
         targetDisplay = nil;
     }
