@@ -6,7 +6,7 @@ SnapTray 是一個在系統托盤常駐的截圖與錄影小工具，提供區�
 
 ## 功能特色
 
-- **系統托盤選單**：`Region Capture` (顯示當前熱鍵)、`Screen Canvas` (顯示當前熱鍵)、`Close All Pins`、`Settings`、`Exit`
+- **系統托盤選單**：`Region Capture` (顯示當前熱鍵)、`Screen Canvas` (顯示當前熱鍵)、`Record Full Screen`、`Close All Pins`、`Exit Click-through`、`Settings`、`Exit`
 - **全域快捷鍵**：可於設定中自定義，支援即時更新熱鍵註冊。
   - 區域截圖：預設 `F2`
   - 螢幕畫布：預設 `Ctrl+F2`
@@ -18,7 +18,7 @@ SnapTray 是一個在系統托盤常駐的截圖與錄影小工具，提供區�
   - 視窗偵測（macOS/Windows）：自動偵測游標下的視窗，單擊快速選取
 - **截圖工具列**：
   - `Selection` 選取工具（調整選取區域）
-  - 標註工具：`Arrow` / `Pencil` / `Marker` / `Rectangle` / `Ellipse` / `Text` / `Mosaic` / `StepBadge` / `Eraser`
+  - 標註工具：`Arrow` / `Pencil` / `Marker` / `Shape`（Rectangle/Ellipse，外框/填滿）/ `Text` / `Mosaic` / `StepBadge` / `Eraser`
   - `Undo` / `Redo`
   - `Pin` 釘選到畫面 (Enter)
   - `Save` 存檔 (Ctrl+S / macOS 為 Cmd+S)
@@ -27,9 +27,10 @@ SnapTray 是一個在系統托盤常駐的截圖與錄影小工具，提供區�
   - `OCR` 文字辨識（macOS/Windows，支援繁體中文、簡體中文、英文）
   - `Record` 螢幕錄影（`R`）使用選取區域
   - 顏色/線寬控制（支援的工具）
+  - 文字工具格式控制（字型/大小、粗體/斜體/底線）
 - **螢幕畫布**：
   - 全螢幕標註模式，直接在螢幕上繪圖
-  - 繪圖工具：`Pencil` / `Marker` / `Arrow` / `Rectangle` / `Ellipse`
+  - 繪圖工具：`Pencil` / `Marker` / `Arrow` / `Shape`（Rectangle）
   - 簡報工具：`Laser Pointer` / `Cursor Highlight`（點擊波紋）
   - 顏色/線寬控制
   - 支援 Undo/Redo/Clear
@@ -38,7 +39,8 @@ SnapTray 是一個在系統托盤常駐的截圖與錄影小工具，提供區�
   - 從截圖工具列啟動（`Record` 或 `R`）
   - 可調整錄影區域，Start/Cancel 開始或取消
   - 浮動控制列：Pause/Resume/Stop/Cancel
-  - FFmpeg 輸出 MP4 (H.264) 或 GIF
+  - MP4 (H.264) 由原生編碼器（Media Foundation/AVFoundation）產生，FFmpeg 作為 fallback；GIF 需 FFmpeg
+  - 可選音訊錄製（麥克風/系統音/混合，視平台支援）
 - **釘選視窗**：
   - 無邊框、永遠在最上層
   - 可拖曳移動
@@ -47,12 +49,12 @@ SnapTray 是一個在系統托盤常駐的截圖與錄影小工具，提供區�
   - 邊緣拖曳調整大小
   - 鍵盤旋轉/翻轉：`1` 順時針旋轉、`2` 逆時針旋轉、`3` 水平翻轉、`4` 垂直翻轉
   - 雙擊或 Esc 關閉
-  - 右鍵選單：複製/存檔/OCR/浮水印/關閉
+  - 右鍵選單：複製/存檔/OCR/浮水印/Click-through/關閉
 - **設定對話框**：
   - General 分頁：開機自動啟動
   - Hotkeys 分頁：區域截圖與螢幕畫布分別設定熱鍵
   - Watermark 分頁：文字/圖片浮水印、透明度、位置、縮放
-  - Recording 分頁：幀率、輸出格式、儲存位置、自動儲存、FFmpeg 狀態
+  - Recording 分頁：幀率、輸出格式、儲存位置、自動儲存、FFmpeg 狀態、音訊（啟用/來源/裝置）
   - 設定儲存於系統設定 (QSettings)
 
 ## 技術棧
@@ -65,11 +67,14 @@ SnapTray 是一個在系統托盤常駐的截圖與錄影小工具，提供區�
   - CoreGraphics / ApplicationServices（視窗偵測）
   - AppKit（系統整合）
   - Vision（OCR）
+  - AVFoundation（MP4 編碼）
   - ScreenCaptureKit（錄影，macOS 12.3+）
   - CoreMedia / CoreVideo（錄影管線）
   - ServiceManagement（自動啟動）
 - **Windows API**:
   - Desktop Duplication（DXGI/D3D11，用於錄影）
+  - Media Foundation（MP4 編碼）
+  - WASAPI（音訊擷取）
   - Windows.Media.Ocr（WinRT OCR）
 
 ## 系統需求
@@ -82,7 +87,7 @@ SnapTray 是一個在系統托盤常駐的截圖與錄影小工具，提供區�
 - Xcode Command Line Tools
 - CMake 3.16+
 - Git（用於 FetchContent 取得 QHotkey）
-- FFmpeg（螢幕錄影必需）
+- FFmpeg（GIF 錄影必需；原生 MP4 不可用時作為 fallback）
 
 ### Windows
 - Windows 10+
@@ -90,7 +95,7 @@ SnapTray 是一個在系統托盤常駐的截圖與錄影小工具，提供區�
 - Visual Studio 2019+ 或 MinGW
 - CMake 3.16+
 - Git（用於 FetchContent 取得 QHotkey）
-- FFmpeg（螢幕錄影必需，請確保 `ffmpeg.exe` 在 PATH 或 `C:\ffmpeg\bin`）
+- FFmpeg（GIF 錄影必需；原生 MP4 不可用時作為 fallback，請確保 `ffmpeg.exe` 在 PATH 或 `C:\ffmpeg\bin`）
 
 ## 建置與執行
 
@@ -240,7 +245,7 @@ packaging\windows\package.bat
 如果你看到類似以下錯誤：
 - "FFmpeg not found. Please install FFmpeg to use screen recording."
 
-**解決方法：** 安裝 FFmpeg 並確保在 PATH 中（或放在 macOS 的 `/opt/homebrew/bin/ffmpeg`、Windows 的 `C:\ffmpeg\bin\ffmpeg.exe`）。
+**解決方法：** 安裝 FFmpeg 並確保在 PATH 中（或放在 macOS 的 `/opt/homebrew/bin/ffmpeg`、Windows 的 `C:\ffmpeg\bin\ffmpeg.exe`）。GIF 錄影一定需要 FFmpeg；MP4 在可用時會使用原生編碼器。
 
 ### Windows：應用程式無法啟動或顯示缺少 DLL 錯誤
 
@@ -359,6 +364,7 @@ magick snaptray.png -define icon:auto-resize=256,128,64,48,32,16 snaptray.ico
 
 - 多螢幕支援：截圖會在游標所在螢幕啟動，但不同螢幕 DPI/縮放仍需要更多實機測試。
 - 螢幕錄影在無法使用原生 API（ScreenCaptureKit/DXGI）時會改用 Qt 擷取，效能可能較慢。
+- macOS 系統音錄製需 macOS 13+（Ventura）或虛擬音訊裝置（如 BlackHole）。
 - 視窗偵測與 OCR 功能支援 macOS 與 Windows。
 
 ## 授權條款

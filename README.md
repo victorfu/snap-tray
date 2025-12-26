@@ -6,7 +6,7 @@ SnapTray is a lightweight tray utility for region screenshots, on-screen annotat
 
 ## Features
 
-- **System Tray Menu**: `Region Capture` (shows current hotkey), `Screen Canvas` (shows current hotkey), `Close All Pins`, `Settings`, `Exit`
+- **System Tray Menu**: `Region Capture` (shows current hotkey), `Screen Canvas` (shows current hotkey), `Record Full Screen`, `Close All Pins`, `Exit Click-through`, `Settings`, `Exit`
 - **Global Hotkeys**: Customizable in settings with live hotkey registration
   - Region Capture: Default `F2`
   - Screen Canvas: Default `Ctrl+F2`
@@ -18,7 +18,7 @@ SnapTray is a lightweight tray utility for region screenshots, on-screen annotat
   - Window detection (macOS/Windows): Auto-detect window under cursor, single-click to select
 - **Capture Toolbar**:
   - `Selection` tool (adjust selection area)
-  - Annotation tools: `Arrow` / `Pencil` / `Marker` / `Rectangle` / `Ellipse` / `Text` / `Mosaic` / `StepBadge` / `Eraser`
+  - Annotation tools: `Arrow` / `Pencil` / `Marker` / `Shape` (Rectangle/Ellipse, outline/filled) / `Text` / `Mosaic` / `StepBadge` / `Eraser`
   - `Undo` / `Redo`
   - `Pin` to screen (Enter)
   - `Save` to file (Ctrl+S / Cmd+S on macOS)
@@ -27,9 +27,10 @@ SnapTray is a lightweight tray utility for region screenshots, on-screen annotat
   - `OCR` text recognition (macOS/Windows, supports Traditional Chinese, Simplified Chinese, English)
   - `Record` screen recording (R) for the selected region
   - Color + line width controls for supported tools
+  - Text formatting controls for Text tool (font family/size, bold/italic/underline)
 - **Screen Canvas**:
   - Full-screen annotation mode, draw directly on screen
-  - Drawing tools: `Pencil` / `Marker` / `Arrow` / `Rectangle` / `Ellipse`
+  - Drawing tools: `Pencil` / `Marker` / `Arrow` / `Shape` (Rectangle)
   - Presentation tools: `Laser Pointer` / `Cursor Highlight` (click ripple)
   - Color + line width controls
   - Undo/Redo/Clear support
@@ -38,7 +39,8 @@ SnapTray is a lightweight tray utility for region screenshots, on-screen annotat
   - Start from capture toolbar (`Record` or `R`)
   - Adjustable region with Start/Cancel
   - Floating control bar with Pause/Resume/Stop/Cancel
-  - MP4 (H.264) or GIF output via FFmpeg
+  - MP4 (H.264) via native encoder (Media Foundation/AVFoundation) with FFmpeg fallback; GIF via FFmpeg
+  - Optional audio capture (microphone/system audio/both; platform dependent)
 - **Pin Windows**:
   - Borderless, always on top
   - Drag to move
@@ -47,12 +49,12 @@ SnapTray is a lightweight tray utility for region screenshots, on-screen annotat
   - Edge drag to resize
   - Rotation/flip via keyboard: `1` rotate CW, `2` rotate CCW, `3` flip horizontal, `4` flip vertical
   - Double-click or Esc to close
-  - Context menu: Copy/Save/OCR/Watermark/Close
+  - Context menu: Copy/Save/OCR/Watermark/Click-through/Close
 - **Settings Dialog**:
   - General tab: Launch at startup
   - Hotkeys tab: Separate hotkeys for Region Capture and Screen Canvas
   - Watermark tab: Text/Image watermark, opacity, position, and scale
-  - Recording tab: Frame rate, output format, save location, auto-save, FFmpeg status
+  - Recording tab: Frame rate, output format, save location, auto-save, FFmpeg status, audio (enable/source/device)
   - Settings stored via QSettings
 
 ## Tech Stack
@@ -65,11 +67,14 @@ SnapTray is a lightweight tray utility for region screenshots, on-screen annotat
   - CoreGraphics / ApplicationServices (window detection)
   - AppKit (system integration)
   - Vision (OCR)
+  - AVFoundation (MP4 encoding)
   - ScreenCaptureKit (recording, macOS 12.3+)
   - CoreMedia / CoreVideo (recording pipeline)
   - ServiceManagement (auto-launch)
 - **Windows APIs**:
   - Desktop Duplication (DXGI/D3D11) for recording
+  - Media Foundation (MP4 encoding)
+  - WASAPI (audio capture)
   - Windows.Media.Ocr (WinRT OCR)
 
 ## System Requirements
@@ -82,7 +87,7 @@ SnapTray currently supports macOS and Windows only.
 - Xcode Command Line Tools
 - CMake 3.16+
 - Git (for FetchContent to fetch QHotkey)
-- FFmpeg (required for screen recording)
+- FFmpeg (required for GIF recording; used as MP4 fallback if native encoder is unavailable)
 
 ### Windows
 - Windows 10+
@@ -90,7 +95,7 @@ SnapTray currently supports macOS and Windows only.
 - Visual Studio 2019+ or MinGW
 - CMake 3.16+
 - Git (for FetchContent to fetch QHotkey)
-- FFmpeg (required for screen recording; ensure `ffmpeg.exe` is in PATH or `C:\ffmpeg\bin`)
+- FFmpeg (required for GIF recording; used as MP4 fallback if native encoder is unavailable; ensure `ffmpeg.exe` is in PATH or `C:\ffmpeg\bin`)
 
 ## Build & Run
 
@@ -240,7 +245,7 @@ packaging\windows\package.bat
 If you see errors like:
 - "FFmpeg not found. Please install FFmpeg to use screen recording."
 
-**Solution:** Install FFmpeg and make sure it is on your PATH (or in a common location like `/opt/homebrew/bin/ffmpeg` on macOS, or `C:\ffmpeg\bin\ffmpeg.exe` on Windows).
+**Solution:** Install FFmpeg and make sure it is on your PATH (or in a common location like `/opt/homebrew/bin/ffmpeg` on macOS, or `C:\ffmpeg\bin\ffmpeg.exe` on Windows). GIF recording always requires FFmpeg; MP4 uses native encoders when available.
 
 ### Windows: Application fails to start or shows missing DLL errors
 
@@ -359,6 +364,7 @@ magick snaptray.png -define icon:auto-resize=256,128,64,48,32,16 snaptray.ico
 
 - Multi-monitor support: Capture starts on the monitor where cursor is located, but different monitor DPI/scaling needs more real-device testing.
 - Screen recording falls back to the Qt capture engine when native APIs (ScreenCaptureKit/DXGI) are unavailable, which may be slower.
+- System audio capture on macOS requires macOS 13+ (Ventura) or a virtual audio device (e.g., BlackHole).
 - Window detection and OCR are supported on macOS and Windows.
 
 ## License
