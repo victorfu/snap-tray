@@ -6,10 +6,11 @@ SnapTray is a lightweight tray utility for region screenshots, on-screen annotat
 
 ## Features
 
-- **System Tray Menu**: `Region Capture` (shows current hotkey), `Screen Canvas` (shows current hotkey), `Close All Pins`, `Settings`, `Exit`
+- **System Tray Menu**: `Region Capture` (shows current hotkey), `Screen Canvas` (shows current hotkey), `Close All Pins`, `Exit Click-through`, `Settings`, `Exit`
 - **Global Hotkeys**: Customizable in settings with live hotkey registration
   - Region Capture: Default `F2`
   - Screen Canvas: Default `Ctrl+F2`
+  - Toggle Click-through (Pin Windows): `Shift+T` (toggles click-through mode for the pin window under cursor)
 - **Region Capture Overlay**:
   - Crosshair + magnifier (pixel-level precision)
   - RGB/HEX color preview (Shift to toggle, C to copy color code)
@@ -46,6 +47,7 @@ SnapTray is a lightweight tray utility for region screenshots, on-screen annotat
   - Ctrl + mouse wheel to adjust opacity (with indicator)
   - Edge drag to resize
   - Rotation/flip via keyboard: `1` rotate CW, `2` rotate CCW, `3` flip horizontal, `4` flip vertical
+  - Click-through mode: `T` to toggle (when window has focus), or `Shift+T` global hotkey to toggle for window under cursor
   - Double-click or Esc to close
   - Context menu: Copy/Save/OCR/Watermark/Close
 - **Settings Dialog**:
