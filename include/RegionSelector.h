@@ -165,6 +165,7 @@ private:
     // Unified color and width widget helpers
     bool shouldShowColorAndWidthWidget() const;
     bool shouldShowWidthControl() const;
+    int toolWidthForCurrentTool() const;
 
     // Annotation settings persistence
     QColor loadAnnotationColor() const;

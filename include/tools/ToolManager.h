@@ -104,9 +104,6 @@ public:
     void setShapeFillMode(int mode);
     int shapeFillMode() const { return m_context->shapeFillMode; }
 
-    void setMosaicStrength(int strength);
-    int mosaicStrength() const { return m_context->mosaicStrength; }
-
     // Callback setup
     void setRepaintCallback(std::function<void()> callback);
 

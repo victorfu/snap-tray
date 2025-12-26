@@ -229,21 +229,12 @@ private:
     int m_number;
 };
 
-// Mosaic strength levels for privacy protection
-enum class MosaicStrength {
-    Light,    // Preserve more detail, faster
-    Normal,   // Balanced
-    Strong,   // Default - aggressive obfuscation
-    Paranoid  // Multi-pass, maximum privacy
-};
-
-// Freehand mosaic stroke with enhanced privacy algorithm
+// Freehand mosaic stroke with classic pixelation (block averaging)
 class MosaicStroke : public AnnotationItem
 {
 public:
     MosaicStroke(const QVector<QPoint> &points, const QPixmap &sourcePixmap,
-                 int width = 30, int blockSize = 8,
-                 MosaicStrength strength = MosaicStrength::Strong);
+                 int width = 24, int blockSize = 12);
     void draw(QPainter &painter) const override;
     QRect boundingRect() const override;
     std::unique_ptr<AnnotationItem> clone() const override;
@@ -251,16 +242,12 @@ public:
     void addPoint(const QPoint &point);
     void updateSource(const QPixmap &sourcePixmap);
 
-    void setStrength(MosaicStrength strength);
-    MosaicStrength strength() const { return m_strength; }
-
 private:
     QVector<QPoint> m_points;
     QPixmap m_sourcePixmap;
     mutable QImage m_sourceImageCache;
     int m_width;      // Brush width
     int m_blockSize;  // Mosaic block size
-    MosaicStrength m_strength;
     qreal m_devicePixelRatio;
 
     // Performance optimization: rendered result cache
@@ -268,12 +255,11 @@ private:
     mutable int m_cachedPointCount = 0;
     mutable QRect m_cachedBounds;
     mutable qreal m_cachedDpr = 0.0;
-    mutable MosaicStrength m_cachedStrength = MosaicStrength::Strong;
 
-    // Enhanced mosaic algorithm helpers
-    QImage applyEnhancedMosaic(const QPixmap &regionPixmap) const;
+    // Pixelated mosaic algorithm aligned to the source image grid
+    QImage applyPixelatedMosaic(const QRect &strokeBounds) const;
     QRgb calculateBlockAverageColor(const QImage &image, int x, int y,
-                                     int blockW, int blockH, double jitter) const;
+                                     int blockW, int blockH) const;
 };
 
 // Group of erased items (for undo support)

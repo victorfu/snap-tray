@@ -142,27 +142,6 @@ public:
      */
     LineEndStyle arrowStyle() const { return m_arrowStyle; }
 
-    // Mosaic strength methods
-    /**
-     * @brief Set whether to show the mosaic strength section.
-     */
-    void setShowMosaicStrengthSection(bool show);
-
-    /**
-     * @brief Check if the mosaic strength section is shown.
-     */
-    bool showMosaicStrengthSection() const { return m_showMosaicStrengthSection; }
-
-    /**
-     * @brief Set the mosaic strength.
-     */
-    void setMosaicStrength(MosaicStrength strength);
-
-    /**
-     * @brief Get the current mosaic strength.
-     */
-    MosaicStrength mosaicStrength() const { return m_mosaicStrength; }
-
     // Shape section methods
     /**
      * @brief Set whether to show the shape section.
@@ -342,11 +321,6 @@ signals:
     void arrowStyleChanged(LineEndStyle style);
 
     /**
-     * @brief Emitted when mosaic strength is changed.
-     */
-    void mosaicStrengthChanged(MosaicStrength strength);
-
-    /**
      * @brief Emitted when shape type is changed.
      */
     void shapeTypeChanged(ShapeType type);
@@ -376,11 +350,6 @@ private:
     void drawArrowStyleSection(QPainter& painter);
     void drawArrowStyleIcon(QPainter& painter, LineEndStyle style, const QRect& rect, bool isHovered = false) const;
     int arrowStyleOptionAtPosition(const QPoint& pos) const;
-
-    // Mosaic strength section helpers
-    void drawMosaicStrengthSection(QPainter& painter);
-    void drawMosaicStrengthTooltip(QPainter& painter);
-    int mosaicStrengthButtonAtPosition(const QPoint& pos) const;
 
     // Shape section helpers
     void drawShapeSection(QPainter& painter);
@@ -423,14 +392,6 @@ private:
     bool m_arrowStyleDropdownOpen = false;
     int m_hoveredArrowStyleOption = -1;  // -1=none, 0-3=style options
 
-    // Mosaic strength state
-    bool m_showMosaicStrengthSection = false;
-    MosaicStrength m_mosaicStrength = MosaicStrength::Strong;
-    QRect m_mosaicStrengthSectionRect;
-    QVector<QRect> m_mosaicStrengthButtonRects;  // 4 buttons for L/N/S/P
-    int m_hoveredMosaicStrengthButton = -1;
-    QString m_mosaicStrengthTooltip;  // Current tooltip text to display
-
     // Shape section state
     bool m_showShapeSection = false;
     ShapeType m_shapeType = ShapeType::Rectangle;
@@ -466,11 +427,6 @@ private:
     static const int ARROW_STYLE_BUTTON_WIDTH = 50;
     static const int ARROW_STYLE_BUTTON_HEIGHT = 24;
     static const int ARROW_STYLE_DROPDOWN_OPTION_HEIGHT = 28;
-
-    // Mosaic strength section layout constants
-    static const int MOSAIC_BUTTON_WIDTH = 24;
-    static const int MOSAIC_BUTTON_HEIGHT = 20;
-    static const int MOSAIC_BUTTON_SPACING = 2;
 
     // Shape section layout constants
     static const int SHAPE_BUTTON_SIZE = 24;

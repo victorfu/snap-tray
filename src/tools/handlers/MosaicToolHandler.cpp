@@ -12,15 +12,12 @@ void MosaicToolHandler::onMousePress(ToolContext* ctx, const QPoint& pos) {
     m_currentPath.clear();
     m_currentPath.append(pos);
 
-    // Convert int to MosaicStrength enum
-    MosaicStrength strength = static_cast<MosaicStrength>(ctx->mosaicStrength);
-
+    int brushWidth = ctx->width > 0 ? ctx->width : kDefaultBrushWidth;
     m_currentStroke = std::make_unique<MosaicStroke>(
         m_currentPath,
         *ctx->sourcePixmap,
-        ctx->width,
-        8,  // block size
-        strength
+        brushWidth,
+        kDefaultBlockSize
     );
 
     ctx->repaint();

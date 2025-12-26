@@ -9,10 +9,13 @@
 #include <memory>
 
 /**
- * @brief Tool handler for mosaic/blur drawing.
+ * @brief Tool handler for mosaic (pixelation) drawing.
  */
 class MosaicToolHandler : public IToolHandler {
 public:
+    static constexpr int kDefaultBrushWidth = 18;
+    static constexpr int kDefaultBlockSize = 6;
+
     MosaicToolHandler() = default;
     ~MosaicToolHandler() override = default;
 

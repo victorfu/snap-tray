@@ -133,24 +133,6 @@ void ColorAndWidthWidget::setArrowStyle(LineEndStyle style)
     }
 }
 
-void ColorAndWidthWidget::setShowMosaicStrengthSection(bool show)
-{
-    if (m_showMosaicStrengthSection != show) {
-        m_showMosaicStrengthSection = show;
-        if (!show) {
-            m_hoveredMosaicStrengthButton = -1;
-        }
-    }
-}
-
-void ColorAndWidthWidget::setMosaicStrength(MosaicStrength strength)
-{
-    if (m_mosaicStrength != strength) {
-        m_mosaicStrength = strength;
-        emit mosaicStrengthChanged(m_mosaicStrength);
-    }
-}
-
 void ColorAndWidthWidget::setShowShapeSection(bool show)
 {
     if (m_showShapeSection != show) {
@@ -194,11 +176,6 @@ void ColorAndWidthWidget::updatePosition(const QRect& anchorRect, bool above, in
                                SECTION_SPACING + FONT_SIZE_WIDTH +
                                SECTION_SPACING + FONT_FAMILY_WIDTH + SECTION_PADDING;
         totalWidth += SECTION_SPACING + textSectionWidth;
-    }
-    if (m_showMosaicStrengthSection) {
-        // 4 buttons for L/N/S/P
-        int mosaicSectionWidth = MOSAIC_BUTTON_WIDTH * 4 + MOSAIC_BUTTON_SPACING * 3 + SECTION_PADDING;
-        totalWidth += SECTION_SPACING + mosaicSectionWidth;
     }
     if (m_showShapeSection) {
         // 3 buttons: Rect, Ellipse, Fill toggle
@@ -363,49 +340,10 @@ void ColorAndWidthWidget::updateLayout()
         m_fontFamilyRect = QRect();
     }
 
-    // === MOSAIC STRENGTH SECTION (4 buttons: L/N/S/P) ===
-    if (m_showMosaicStrengthSection) {
-        int mosaicSectionLeft;
-        if (m_showTextSection) {
-            mosaicSectionLeft = m_textSectionRect.right() + SECTION_SPACING;
-        } else if (m_showArrowStyleSection) {
-            mosaicSectionLeft = m_arrowStyleButtonRect.right() + SECTION_SPACING;
-        } else if (m_showWidthSection) {
-            mosaicSectionLeft = m_widthSectionRect.right() + SECTION_SPACING;
-        } else {
-            mosaicSectionLeft = m_colorSectionRect.right() + SECTION_SPACING;
-        }
-
-        int mosaicSectionWidth = MOSAIC_BUTTON_WIDTH * 4 + MOSAIC_BUTTON_SPACING * 3 + SECTION_PADDING;
-        m_mosaicStrengthSectionRect = QRect(
-            mosaicSectionLeft,
-            m_widgetRect.top(),
-            mosaicSectionWidth,
-            WIDGET_HEIGHT
-        );
-
-        // Center buttons vertically
-        int buttonY = m_widgetRect.top() + (WIDGET_HEIGHT - MOSAIC_BUTTON_HEIGHT) / 2;
-        m_mosaicStrengthButtonRects.resize(4);
-        for (int i = 0; i < 4; ++i) {
-            m_mosaicStrengthButtonRects[i] = QRect(
-                mosaicSectionLeft + SECTION_PADDING / 2 + i * (MOSAIC_BUTTON_WIDTH + MOSAIC_BUTTON_SPACING),
-                buttonY,
-                MOSAIC_BUTTON_WIDTH,
-                MOSAIC_BUTTON_HEIGHT
-            );
-        }
-    } else {
-        m_mosaicStrengthSectionRect = QRect();
-        m_mosaicStrengthButtonRects.clear();
-    }
-
     // === SHAPE SECTION (3 buttons: Rect, Ellipse, Fill toggle) ===
     if (m_showShapeSection) {
         int shapeSectionLeft;
-        if (m_showMosaicStrengthSection) {
-            shapeSectionLeft = m_mosaicStrengthSectionRect.right() + SECTION_SPACING;
-        } else if (m_showTextSection) {
+        if (m_showTextSection) {
             shapeSectionLeft = m_textSectionRect.right() + SECTION_SPACING;
         } else if (m_showArrowStyleSection) {
             shapeSectionLeft = m_arrowStyleButtonRect.right() + SECTION_SPACING;
@@ -476,12 +414,6 @@ void ColorAndWidthWidget::draw(QPainter& painter)
     // Draw text section (if enabled)
     if (m_showTextSection) {
         drawTextSection(painter);
-    }
-
-    // Draw mosaic strength section (if enabled)
-    if (m_showMosaicStrengthSection) {
-        drawMosaicStrengthSection(painter);
-        drawMosaicStrengthTooltip(painter);
     }
 
     // Draw shape section (if enabled)
@@ -796,59 +728,6 @@ int ColorAndWidthWidget::textControlAtPosition(const QPoint& pos) const
     return -1;
 }
 
-void ColorAndWidthWidget::drawMosaicStrengthSection(QPainter& painter)
-{
-    // Labels for strength levels: Light, Normal, Strong, Paranoid
-    static const char* labels[] = { "L", "N", "S", "P" };
-    static const MosaicStrength strengths[] = {
-        MosaicStrength::Light, MosaicStrength::Normal,
-        MosaicStrength::Strong, MosaicStrength::Paranoid
-    };
-
-    for (int i = 0; i < 4; ++i) {
-        if (i >= m_mosaicStrengthButtonRects.size()) break;
-
-        QRect rect = m_mosaicStrengthButtonRects[i];
-        bool isSelected = (m_mosaicStrength == strengths[i]);
-        bool isHovered = (m_hoveredMosaicStrengthButton == i);
-
-        // Background
-        QColor bgColor;
-        if (isSelected) {
-            bgColor = QColor(0, 122, 255);  // Blue when active
-        } else if (isHovered) {
-            bgColor = QColor(80, 80, 80);
-        } else {
-            bgColor = QColor(50, 50, 50);
-        }
-
-        painter.setPen(Qt::NoPen);
-        painter.setBrush(bgColor);
-        painter.drawRoundedRect(rect, 4, 4);
-
-        // Text
-        QFont font = painter.font();
-        font.setPointSize(10);
-        font.setBold(isSelected);
-        painter.setFont(font);
-        painter.setPen(isSelected ? Qt::white : QColor(200, 200, 200));
-        painter.drawText(rect, Qt::AlignCenter, labels[i]);
-    }
-}
-
-int ColorAndWidthWidget::mosaicStrengthButtonAtPosition(const QPoint& pos) const
-{
-    if (!m_showMosaicStrengthSection) return -1;
-
-    for (int i = 0; i < m_mosaicStrengthButtonRects.size(); ++i) {
-        if (m_mosaicStrengthButtonRects[i].contains(pos)) {
-            return i;
-        }
-    }
-
-    return -1;
-}
-
 void ColorAndWidthWidget::drawShapeSection(QPainter& painter)
 {
     for (int i = 0; i < 3; ++i) {
@@ -923,41 +802,6 @@ int ColorAndWidthWidget::shapeButtonAtPosition(const QPoint& pos) const
     }
 
     return -1;
-}
-
-void ColorAndWidthWidget::drawMosaicStrengthTooltip(QPainter& painter)
-{
-    if (m_hoveredMosaicStrengthButton < 0 || m_mosaicStrengthTooltip.isEmpty()) return;
-    if (m_hoveredMosaicStrengthButton >= m_mosaicStrengthButtonRects.size()) return;
-
-    QFont font = painter.font();
-    font.setPointSize(11);
-    painter.setFont(font);
-
-    QFontMetrics fm(font);
-    QRect textRect = fm.boundingRect(m_mosaicStrengthTooltip);
-    textRect.adjust(-8, -4, 8, 4);
-
-    // Position tooltip above the button
-    QRect btnRect = m_mosaicStrengthButtonRects[m_hoveredMosaicStrengthButton];
-    int tooltipX = btnRect.center().x() - textRect.width() / 2;
-    int tooltipY = m_widgetRect.top() - textRect.height() - 6;
-
-    textRect.moveTo(tooltipX, tooltipY);
-
-    // Draw tooltip background
-    painter.setPen(Qt::NoPen);
-    painter.setBrush(QColor(30, 30, 30, 230));
-    painter.drawRoundedRect(textRect, 4, 4);
-
-    // Draw tooltip border
-    painter.setPen(QColor(80, 80, 80));
-    painter.setBrush(Qt::NoBrush);
-    painter.drawRoundedRect(textRect, 4, 4);
-
-    // Draw tooltip text
-    painter.setPen(Qt::white);
-    painter.drawText(textRect, Qt::AlignCenter, m_mosaicStrengthTooltip);
 }
 
 bool ColorAndWidthWidget::contains(const QPoint& pos) const
@@ -1039,21 +883,6 @@ bool ColorAndWidthWidget::handleClick(const QPoint& pos)
                     emit fontFamilyDropdownRequested(m_fontFamilyRect.bottomLeft());
                     break;
             }
-            return true;
-        }
-    }
-
-    // Mosaic strength section
-    if (m_showMosaicStrengthSection) {
-        int btn = mosaicStrengthButtonAtPosition(pos);
-        if (btn >= 0) {
-            MosaicStrength strengths[] = {
-                MosaicStrength::Light, MosaicStrength::Normal,
-                MosaicStrength::Strong, MosaicStrength::Paranoid
-            };
-            m_mosaicStrength = strengths[btn];
-            emit mosaicStrengthChanged(m_mosaicStrength);
-            qDebug() << "ColorAndWidthWidget: Mosaic strength changed to" << btn;
             return true;
         }
     }
@@ -1159,26 +988,6 @@ bool ColorAndWidthWidget::updateHovered(const QPoint& pos)
         }
     } else if (m_hoveredTextControl != -1) {
         m_hoveredTextControl = -1;
-        changed = true;
-    }
-
-    // Update mosaic strength button hover
-    if (m_showMosaicStrengthSection) {
-        int newHoveredMosaicButton = mosaicStrengthButtonAtPosition(pos);
-        if (newHoveredMosaicButton != m_hoveredMosaicStrengthButton) {
-            m_hoveredMosaicStrengthButton = newHoveredMosaicButton;
-            // Update tooltip text
-            static const QString tooltips[] = { "Light", "Normal", "Strong", "Paranoid" };
-            if (m_hoveredMosaicStrengthButton >= 0 && m_hoveredMosaicStrengthButton < 4) {
-                m_mosaicStrengthTooltip = tooltips[m_hoveredMosaicStrengthButton];
-            } else {
-                m_mosaicStrengthTooltip.clear();
-            }
-            changed = true;
-        }
-    } else if (m_hoveredMosaicStrengthButton != -1) {
-        m_hoveredMosaicStrengthButton = -1;
-        m_mosaicStrengthTooltip.clear();
         changed = true;
     }
 

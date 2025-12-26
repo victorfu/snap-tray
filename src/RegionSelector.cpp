@@ -8,6 +8,7 @@
 #include "OCRManager.h"
 #include "PlatformFeatures.h"
 #include "tools/handlers/EraserToolHandler.h"
+#include "tools/handlers/MosaicToolHandler.h"
 #include <QTextEdit>
 
 #include <cstring>
@@ -42,7 +43,6 @@ static const char* SETTINGS_KEY_TEXT_ITALIC = "textItalic";
 static const char* SETTINGS_KEY_TEXT_UNDERLINE = "textUnderline";
 static const char* SETTINGS_KEY_TEXT_SIZE = "textFontSize";
 static const char* SETTINGS_KEY_TEXT_FAMILY = "textFontFamily";
-static const char* SETTINGS_KEY_MOSAIC_STRENGTH = "mosaicStrength";
 
 // Create a rounded square cursor for mosaic tool
 static QCursor createMosaicCursor(int size) {
@@ -194,21 +194,6 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_colorAndWidthWidget->setArrowStyle(m_arrowStyle);
     connect(m_colorAndWidthWidget, &ColorAndWidthWidget::arrowStyleChanged,
             this, &RegionSelector::onArrowStyleChanged);
-
-    // Connect mosaic strength signal and load saved setting
-    {
-        QSettings settings;
-        int savedStrength = settings.value(SETTINGS_KEY_MOSAIC_STRENGTH,
-            static_cast<int>(MosaicStrength::Strong)).toInt();
-        m_colorAndWidthWidget->setMosaicStrength(static_cast<MosaicStrength>(savedStrength));
-        m_toolManager->setMosaicStrength(savedStrength);
-    }
-    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::mosaicStrengthChanged,
-            this, [this](MosaicStrength strength) {
-                m_toolManager->setMosaicStrength(static_cast<int>(strength));
-                QSettings settings;
-                settings.setValue(SETTINGS_KEY_MOSAIC_STRENGTH, static_cast<int>(strength));
-            });
 
     // Connect shape section signals
     connect(m_colorAndWidthWidget, &ColorAndWidthWidget::shapeTypeChanged,
@@ -519,7 +504,6 @@ bool RegionSelector::shouldShowColorAndWidthWidget() const
     case ToolbarButton::Shape:       // Needs both + shape options
     case ToolbarButton::Text:        // Needs color only
     case ToolbarButton::StepBadge:   // Needs color only
-    case ToolbarButton::Mosaic:      // Needs mosaic strength only
     case ToolbarButton::Eraser:      // Needs width only
         return true;
     default:
@@ -539,6 +523,17 @@ bool RegionSelector::shouldShowWidthControl() const
     default:
         return false;  // Marker, Text, StepBadge don't need width control
     }
+}
+
+int RegionSelector::toolWidthForCurrentTool() const
+{
+    if (m_currentTool == ToolbarButton::Mosaic) {
+        return MosaicToolHandler::kDefaultBrushWidth;
+    }
+    if (m_currentTool == ToolbarButton::Eraser) {
+        return m_eraserWidth;
+    }
+    return m_annotationWidth;
 }
 
 const QImage& RegionSelector::getBackgroundImage() const
@@ -827,8 +822,6 @@ void RegionSelector::paintEvent(QPaintEvent*)
                 m_colorAndWidthWidget->setShowArrowStyleSection(m_currentTool == ToolbarButton::Arrow);
                 // Show text section only for Text tool
                 m_colorAndWidthWidget->setShowTextSection(m_currentTool == ToolbarButton::Text);
-                // Show mosaic strength section only for Mosaic tool
-                m_colorAndWidthWidget->setShowMosaicStrengthSection(m_currentTool == ToolbarButton::Mosaic);
                 // Show shape section only for Shape tool
                 m_colorAndWidthWidget->setShowShapeSection(m_currentTool == ToolbarButton::Shape);
                 m_colorAndWidthWidget->updatePosition(m_toolbar->boundingRect(), false, width());
@@ -1760,7 +1753,7 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
                 setCursor(Qt::IBeamCursor);
             }
             else if (m_currentTool == ToolbarButton::Mosaic) {
-                static QCursor mosaicCursor = createMosaicCursor(12);
+                static QCursor mosaicCursor = createMosaicCursor(MosaicToolHandler::kDefaultBrushWidth);
                 setCursor(mosaicCursor);
             }
             else if (m_currentTool == ToolbarButton::Eraser) {
@@ -1784,7 +1777,7 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
                 ResizeHandle handle = getHandleAtPosition(event->pos());
                 updateCursorForHandle(handle);
             } else if (m_currentTool == ToolbarButton::Mosaic) {
-                static QCursor mosaicCursor = createMosaicCursor(12);
+                static QCursor mosaicCursor = createMosaicCursor(MosaicToolHandler::kDefaultBrushWidth);
                 setCursor(mosaicCursor);
             } else if (m_currentTool == ToolbarButton::Eraser) {
                 // Use eraser's dynamic cursor that shows its size
@@ -2154,7 +2147,7 @@ void RegionSelector::startAnnotation(const QPoint &pos)
     if (isToolManagerHandledTool(m_currentTool)) {
         // Sync tool manager settings before starting
         m_toolManager->setColor(m_annotationColor);
-        m_toolManager->setWidth(m_annotationWidth);
+        m_toolManager->setWidth(toolWidthForCurrentTool());
         m_toolManager->setArrowStyle(m_arrowStyle);
         m_toolManager->setShapeType(static_cast<int>(m_shapeType));
         m_toolManager->setShapeFillMode(static_cast<int>(m_shapeFillMode));

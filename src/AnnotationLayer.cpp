@@ -740,53 +740,30 @@ void StepBadgeAnnotation::setNumber(int number)
 }
 
 // ============================================================================
-// MosaicStroke Implementation (freehand mosaic with enhanced privacy)
+// MosaicStroke Implementation (classic pixelation)
 // ============================================================================
 
 MosaicStroke::MosaicStroke(const QVector<QPoint> &points, const QPixmap &sourcePixmap,
-                           int width, int blockSize, MosaicStrength strength)
+                           int width, int blockSize)
     : m_points(points)
     , m_sourcePixmap(sourcePixmap)
     , m_width(width)
     , m_blockSize(blockSize)
-    , m_strength(strength)
     , m_devicePixelRatio(sourcePixmap.devicePixelRatio())
 {
 }
 
-void MosaicStroke::setStrength(MosaicStrength strength)
-{
-    if (m_strength != strength) {
-        m_strength = strength;
-        m_renderedCache = QPixmap();  // Invalidate cache
-    }
-}
-
 QRgb MosaicStroke::calculateBlockAverageColor(const QImage &image, int x, int y,
-                                               int blockW, int blockH, double jitter) const
+                                               int blockW, int blockH) const
 {
-    // Apply random jitter to sample region
-    int offsetX = 0, offsetY = 0;
-    if (jitter > 0) {
-        int maxOffset = static_cast<int>(qMax(blockW, blockH) * jitter);
-        if (maxOffset > 0) {
-            offsetX = QRandomGenerator::global()->bounded(-maxOffset, maxOffset + 1);
-            offsetY = QRandomGenerator::global()->bounded(-maxOffset, maxOffset + 1);
-        }
-    }
-
-    // Calculate sampling bounds with jitter applied
-    int startX = qBound(0, x + offsetX, image.width() - 1);
-    int startY = qBound(0, y + offsetY, image.height() - 1);
-    int endX = qBound(0, x + blockW + offsetX, image.width());
-    int endY = qBound(0, y + blockH + offsetY, image.height());
+    // Calculate sampling bounds
+    int startX = qBound(0, x, image.width() - 1);
+    int startY = qBound(0, y, image.height() - 1);
+    int endX = qBound(0, x + blockW, image.width());
+    int endY = qBound(0, y + blockH, image.height());
 
     if (startX >= endX || startY >= endY) {
-        // Fallback to original region if jitter pushed us out of bounds
-        startX = x;
-        startY = y;
-        endX = qMin(x + blockW, image.width());
-        endY = qMin(y + blockH, image.height());
+        return qRgba(128, 128, 128, 255);  // Fallback gray
     }
 
     // Calculate average color using scanLine for performance
@@ -806,7 +783,7 @@ QRgb MosaicStroke::calculateBlockAverageColor(const QImage &image, int x, int y,
     }
 
     if (pixelCount == 0) {
-        return qRgba(0, 0, 0, 255);
+        return qRgba(128, 128, 128, 255);
     }
 
     return qRgba(
@@ -817,65 +794,80 @@ QRgb MosaicStroke::calculateBlockAverageColor(const QImage &image, int x, int y,
     );
 }
 
-QImage MosaicStroke::applyEnhancedMosaic(const QPixmap &regionPixmap) const
+QImage MosaicStroke::applyPixelatedMosaic(const QRect &strokeBounds) const
 {
-    QImage sourceImage = regionPixmap.toImage().convertToFormat(QImage::Format_ARGB32);
-
-    // Strength-based parameters
-    double blockMultiplier;
-    double jitter;
-    int passes;
-
-    switch (m_strength) {
-        case MosaicStrength::Light:
-            blockMultiplier = 0.5;
-            jitter = 0.0;
-            passes = 1;
-            break;
-        case MosaicStrength::Normal:
-            blockMultiplier = 1.0;
-            jitter = 0.1;
-            passes = 1;
-            break;
-        case MosaicStrength::Strong:
-            blockMultiplier = 1.5;
-            jitter = 0.2;
-            passes = 1;
-            break;
-        case MosaicStrength::Paranoid:
-            blockMultiplier = 2.0;
-            jitter = 0.3;
-            passes = 2;
-            break;
+    // Get the full source image for sampling
+    if (m_sourceImageCache.isNull()) {
+        m_sourceImageCache = m_sourcePixmap.toImage().convertToFormat(QImage::Format_ARGB32);
     }
 
-    int effectiveBlockSize = qMax(4, static_cast<int>(m_blockSize * blockMultiplier * m_devicePixelRatio));
+    // Calculate effective block size with DPI scaling
+    int effectiveBlockSize = qMax(8, static_cast<int>(m_blockSize * m_devicePixelRatio));
 
-    for (int pass = 0; pass < passes; ++pass) {
-        QImage resultImage(sourceImage.size(), QImage::Format_ARGB32);
+    // Convert stroke bounds to device pixels for sampling
+    QRect deviceStrokeBounds(
+        static_cast<int>(strokeBounds.x() * m_devicePixelRatio),
+        static_cast<int>(strokeBounds.y() * m_devicePixelRatio),
+        static_cast<int>(strokeBounds.width() * m_devicePixelRatio),
+        static_cast<int>(strokeBounds.height() * m_devicePixelRatio)
+    );
 
-        const int imgWidth = sourceImage.width();
-        const int imgHeight = sourceImage.height();
+    if (deviceStrokeBounds.isEmpty()) {
+        return QImage();
+    }
 
-        for (int blockY = 0; blockY < imgHeight; blockY += effectiveBlockSize) {
-            for (int blockX = 0; blockX < imgWidth; blockX += effectiveBlockSize) {
-                int blockW = qMin(effectiveBlockSize, imgWidth - blockX);
-                int blockH = qMin(effectiveBlockSize, imgHeight - blockY);
+    // Create result image for the stroke bounds region
+    QImage resultImage(deviceStrokeBounds.size(), QImage::Format_ARGB32);
+    resultImage.fill(Qt::transparent);
 
-                QRgb avgColor = calculateBlockAverageColor(sourceImage, blockX, blockY, blockW, blockH, jitter);
+    const QRect imageBounds(0, 0, m_sourceImageCache.width(), m_sourceImageCache.height());
 
-                // Fill block using scanLine for performance
-                for (int py = blockY; py < blockY + blockH; ++py) {
-                    QRgb *destLine = reinterpret_cast<QRgb*>(resultImage.scanLine(py));
-                    std::fill(destLine + blockX, destLine + blockX + blockW, avgColor);
-                }
+    auto floorToBlock = [](int value, int block) {
+        int rem = value % block;
+        if (rem < 0) {
+            rem += block;
+        }
+        return value - rem;
+    };
+
+    int startBlockX = floorToBlock(deviceStrokeBounds.left(), effectiveBlockSize);
+    int startBlockY = floorToBlock(deviceStrokeBounds.top(), effectiveBlockSize);
+    int endBlockX = deviceStrokeBounds.right();
+    int endBlockY = deviceStrokeBounds.bottom();
+
+    // Process blocks aligned to the full image grid for stable pixelation
+    for (int blockY = startBlockY; blockY <= endBlockY; blockY += effectiveBlockSize) {
+        for (int blockX = startBlockX; blockX <= endBlockX; blockX += effectiveBlockSize) {
+            QRect blockRect(blockX, blockY, effectiveBlockSize, effectiveBlockSize);
+            QRect sampleRect = blockRect.intersected(imageBounds);
+            if (sampleRect.isEmpty()) {
+                continue;
+            }
+
+            QRgb blockColor = calculateBlockAverageColor(
+                m_sourceImageCache,
+                sampleRect.x(),
+                sampleRect.y(),
+                sampleRect.width(),
+                sampleRect.height()
+            );
+
+            QRect targetRect = blockRect.intersected(deviceStrokeBounds);
+            if (targetRect.isEmpty()) {
+                continue;
+            }
+
+            int destX = targetRect.x() - deviceStrokeBounds.x();
+            int destY = targetRect.y() - deviceStrokeBounds.y();
+
+            for (int py = 0; py < targetRect.height(); ++py) {
+                QRgb *destLine = reinterpret_cast<QRgb*>(resultImage.scanLine(destY + py));
+                std::fill(destLine + destX, destLine + destX + targetRect.width(), blockColor);
             }
         }
-
-        sourceImage = resultImage;  // Use result as source for next pass
     }
 
-    return sourceImage;
+    return resultImage;
 }
 
 void MosaicStroke::draw(QPainter &painter) const
@@ -887,35 +879,21 @@ void MosaicStroke::draw(QPainter &painter) const
 
     qreal dpr = painter.device()->devicePixelRatio();
 
-    // Check if cache is valid (including strength)
+    // Check if cache is valid
     bool cacheValid = !m_renderedCache.isNull()
         && m_cachedPointCount == m_points.size()
         && m_cachedBounds == bounds
-        && m_cachedDpr == dpr
-        && m_cachedStrength == m_strength;
+        && m_cachedDpr == dpr;
 
     if (!cacheValid) {
         int halfWidth = m_width / 2;
 
-        // === Step 1: Create pixelated version using enhanced algorithm ===
-        // Convert bounds to device pixels
-        QRect deviceBounds(
-            static_cast<int>(bounds.x() * m_devicePixelRatio),
-            static_cast<int>(bounds.y() * m_devicePixelRatio),
-            static_cast<int>(bounds.width() * m_devicePixelRatio),
-            static_cast<int>(bounds.height() * m_devicePixelRatio)
-        );
-
-        // Clamp to source pixmap bounds
-        deviceBounds = deviceBounds.intersected(m_sourcePixmap.rect());
-        if (deviceBounds.isEmpty()) {
+        // === Step 1: Create pixelated mosaic ===
+        QImage mosaicImage = applyPixelatedMosaic(bounds);
+        if (mosaicImage.isNull()) {
             m_renderedCache = QPixmap();
             return;
         }
-
-        // Extract region from source and apply enhanced mosaic
-        QPixmap regionPixmap = m_sourcePixmap.copy(deviceBounds);
-        QImage mosaicImage = applyEnhancedMosaic(regionPixmap);
 
         // === Step 2: Create mask from stroke path (square brush) ===
         QImage maskImage(bounds.size() * dpr, QImage::Format_Grayscale8);
@@ -985,7 +963,6 @@ void MosaicStroke::draw(QPainter &painter) const
         m_cachedPointCount = m_points.size();
         m_cachedBounds = bounds;
         m_cachedDpr = dpr;
-        m_cachedStrength = m_strength;
     }
 
     // Draw cached result
@@ -1015,7 +992,7 @@ QRect MosaicStroke::boundingRect() const
 
 std::unique_ptr<AnnotationItem> MosaicStroke::clone() const
 {
-    return std::make_unique<MosaicStroke>(m_points, m_sourcePixmap, m_width, m_blockSize, m_strength);
+    return std::make_unique<MosaicStroke>(m_points, m_sourcePixmap, m_width, m_blockSize);
 }
 
 void MosaicStroke::addPoint(const QPoint &point)
