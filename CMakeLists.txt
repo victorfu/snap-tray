@@ -61,6 +61,15 @@ set(SOURCES
     src/PinWindow.cpp
     src/PinWindowManager.cpp
     src/AnnotationLayer.cpp
+    src/annotations/AnnotationItem.cpp
+    src/annotations/PencilStroke.cpp
+    src/annotations/MarkerStroke.cpp
+    src/annotations/ArrowAnnotation.cpp
+    src/annotations/ShapeAnnotation.cpp
+    src/annotations/MosaicStroke.cpp
+    src/annotations/StepBadgeAnnotation.cpp
+    src/annotations/ErasedItemsGroup.cpp
+    src/annotations/TextAnnotation.cpp
     src/ScreenCanvas.cpp
     src/IconRenderer.cpp
     src/ColorPaletteWidget.cpp
@@ -80,6 +89,7 @@ set(SOURCES
     src/RecordingBoundaryOverlay.cpp
     src/FFmpegEncoder.cpp
     src/VideoEncoderFactory.cpp
+    src/encoding/EncoderFactory.cpp
     src/TransformationGizmo.cpp
     # Tool system
     src/tools/ToolRegistry.cpp
@@ -93,6 +103,10 @@ set(SOURCES
     src/tools/handlers/EraserToolHandler.cpp
     src/tools/handlers/SelectionToolHandler.cpp
     src/tools/handlers/LaserPointerToolHandler.cpp
+    # Utility classes
+    src/utils/CoordinateHelper.cpp
+    # Region selection
+    src/region/SelectionStateManager.cpp
 )
 
 set(RESOURCES
@@ -106,7 +120,17 @@ set(HEADERS
     include/RegionSelector.h
     include/PinWindow.h
     include/PinWindowManager.h
-    include/AnnotationLayer.h
+    include/annotations/AllAnnotations.h
+    include/annotations/AnnotationLayer.h
+    include/annotations/AnnotationItem.h
+    include/annotations/TextAnnotation.h
+    include/annotations/PencilStroke.h
+    include/annotations/MarkerStroke.h
+    include/annotations/ArrowAnnotation.h
+    include/annotations/ShapeAnnotation.h
+    include/annotations/MosaicStroke.h
+    include/annotations/StepBadgeAnnotation.h
+    include/annotations/ErasedItemsGroup.h
     include/ScreenCanvas.h
     include/ScreenCanvasManager.h
     include/AutoLaunchManager.h
@@ -131,6 +155,7 @@ set(HEADERS
     include/IVideoEncoder.h
     include/AVFoundationEncoder.h
     include/MediaFoundationEncoder.h
+    include/encoding/EncoderFactory.h
     include/TransformationGizmo.h
     include/capture/ICaptureEngine.h
     include/capture/QtCaptureEngine.h
@@ -151,6 +176,11 @@ set(HEADERS
     include/tools/handlers/EraserToolHandler.h
     include/tools/handlers/SelectionToolHandler.h
     include/tools/handlers/LaserPointerToolHandler.h
+    # Utility classes
+    include/utils/ResourceCleanupHelper.h
+    include/utils/CoordinateHelper.h
+    # Region selection
+    include/region/SelectionStateManager.h
 )
 
 # Cross-platform source files (used by both platforms)

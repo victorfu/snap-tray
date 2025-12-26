@@ -2,7 +2,8 @@
 #define MARKERTOOLHANDLER_H
 
 #include "../IToolHandler.h"
-#include "../../AnnotationLayer.h"
+#include "annotations/AnnotationLayer.h"
+#include "annotations/MarkerStroke.h"
 
 #include <QVector>
 #include <QPointF>

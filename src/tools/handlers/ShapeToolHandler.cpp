@@ -13,23 +13,15 @@ static constexpr int kFillFilled = 1;
 void ShapeToolHandler::onMousePress(ToolContext* ctx, const QPoint& pos) {
     m_isDrawing = true;
     m_startPoint = pos;
-    m_shapeType = ctx->shapeType;
+    m_shapeType = (ctx->shapeType == kShapeRectangle) ? ShapeType::Rectangle : ShapeType::Ellipse;
     m_fillMode = ctx->shapeFillMode;
 
     bool filled = (m_fillMode == kFillFilled);
     QRect rect(pos, pos);
 
-    if (m_shapeType == kShapeRectangle) {
-        m_currentRectangle = std::make_unique<RectangleAnnotation>(
-            rect, ctx->color, ctx->width, filled
-        );
-        m_currentEllipse.reset();
-    } else {
-        m_currentEllipse = std::make_unique<EllipseAnnotation>(
-            rect, ctx->color, ctx->width, filled
-        );
-        m_currentRectangle.reset();
-    }
+    m_currentShape = std::make_unique<ShapeAnnotation>(
+        rect, m_shapeType, ctx->color, ctx->width, filled
+    );
 
     ctx->repaint();
 }
@@ -39,7 +31,7 @@ void ShapeToolHandler::onMouseMove(ToolContext* ctx, const QPoint& pos) {
         return;
     }
 
-    updateCurrentShape(ctx, pos);
+    updateCurrentShape(pos);
     ctx->repaint();
 }
 
@@ -48,43 +40,35 @@ void ShapeToolHandler::onMouseRelease(ToolContext* ctx, const QPoint& pos) {
         return;
     }
 
-    updateCurrentShape(ctx, pos);
+    updateCurrentShape(pos);
 
     QRect rect = makeRect(m_startPoint, pos);
 
     // Only add if the shape has some size
     if (rect.width() > 5 || rect.height() > 5) {
-        if (m_shapeType == kShapeRectangle && m_currentRectangle) {
-            ctx->addItem(std::move(m_currentRectangle));
-        } else if (m_shapeType == kShapeEllipse && m_currentEllipse) {
-            ctx->addItem(std::move(m_currentEllipse));
+        if (m_currentShape) {
+            ctx->addItem(std::move(m_currentShape));
         }
     }
 
     // Reset state
     m_isDrawing = false;
-    m_currentRectangle.reset();
-    m_currentEllipse.reset();
+    m_currentShape.reset();
 
     ctx->repaint();
 }
 
 void ShapeToolHandler::drawPreview(QPainter& painter) const {
-    if (!m_isDrawing) {
+    if (!m_isDrawing || !m_currentShape) {
         return;
     }
 
-    if (m_shapeType == kShapeRectangle && m_currentRectangle) {
-        m_currentRectangle->draw(painter);
-    } else if (m_shapeType == kShapeEllipse && m_currentEllipse) {
-        m_currentEllipse->draw(painter);
-    }
+    m_currentShape->draw(painter);
 }
 
 void ShapeToolHandler::cancelDrawing() {
     m_isDrawing = false;
-    m_currentRectangle.reset();
-    m_currentEllipse.reset();
+    m_currentShape.reset();
 }
 
 QRect ShapeToolHandler::makeRect(const QPoint& start, const QPoint& end) const {
@@ -96,13 +80,9 @@ QRect ShapeToolHandler::makeRect(const QPoint& start, const QPoint& end) const {
     );
 }
 
-void ShapeToolHandler::updateCurrentShape(ToolContext* ctx, const QPoint& endPos) {
-    Q_UNUSED(ctx);
-    QRect rect = makeRect(m_startPoint, endPos);
-
-    if (m_shapeType == kShapeRectangle && m_currentRectangle) {
-        m_currentRectangle->setRect(rect);
-    } else if (m_shapeType == kShapeEllipse && m_currentEllipse) {
-        m_currentEllipse->setRect(rect);
+void ShapeToolHandler::updateCurrentShape(const QPoint& endPos) {
+    if (m_currentShape) {
+        QRect rect = makeRect(m_startPoint, endPos);
+        m_currentShape->setRect(rect);
     }
 }

@@ -1,5 +1,5 @@
 #include "RegionSelector.h"
-#include "AnnotationLayer.h"
+#include "annotations/AllAnnotations.h"
 #include "IconRenderer.h"
 #include "ColorPaletteWidget.h"
 #include "LineWidthWidget.h"
@@ -81,20 +81,16 @@ static QCursor createMosaicCursor(int size) {
 
 RegionSelector::RegionSelector(QWidget* parent)
     : QWidget(parent)
-    , m_isSelecting(false)
-    , m_selectionComplete(false)
     , m_currentScreen(nullptr)
+    , m_selectionManager(nullptr)
     , m_devicePixelRatio(1.0)
-    , m_showHexColor(true)
+    , m_showHexColor(false)  // Default to RGB format
     , m_toolbar(nullptr)
     , m_annotationLayer(nullptr)
     , m_currentTool(ToolbarButton::Selection)
     , m_annotationColor(Qt::red)  // Will be overwritten by loadAnnotationColor()
     , m_annotationWidth(3)        // Will be overwritten by loadAnnotationWidth()
     , m_isDrawing(false)
-    , m_activeHandle(ResizeHandle::None)
-    , m_isResizing(false)
-    , m_isMoving(false)
     , m_isClosing(false)
     , m_isDialogOpen(false)
     , m_windowDetector(nullptr)
@@ -108,6 +104,21 @@ RegionSelector::RegionSelector(QWidget* parent)
     setAttribute(Qt::WA_DeleteOnClose);
     setMouseTracking(true);
     setCursor(Qt::ArrowCursor);  // 預設已選取完成，使用 ArrowCursor
+
+    // Initialize selection state manager
+    m_selectionManager = new SelectionStateManager(this);
+    connect(m_selectionManager, &SelectionStateManager::selectionChanged,
+            this, [this](const QRect&) { update(); });
+    connect(m_selectionManager, &SelectionStateManager::stateChanged,
+            this, [this](SelectionStateManager::State newState) {
+                // Update cursor based on state
+                if (newState == SelectionStateManager::State::None ||
+                    newState == SelectionStateManager::State::Selecting) {
+                    setCursor(Qt::CrossCursor);
+                } else {
+                    setCursor(Qt::ArrowCursor);
+                }
+            });
 
     // Initialize annotation layer
     m_annotationLayer = new AnnotationLayer(this);
@@ -272,6 +283,7 @@ void RegionSelector::initializeMagnifierGridCache()
     m_gridOverlayCache.fill(Qt::transparent);
 
     QPainter gridPainter(&m_gridOverlayCache);
+    gridPainter.setRenderHint(QPainter::Antialiasing, false);  // Crisp grid lines
 
     const int cx = MAGNIFIER_WIDTH / 2;
     const int cy = MAGNIFIER_HEIGHT / 2;
@@ -284,19 +296,29 @@ void RegionSelector::initializeMagnifierGridCache()
     const int centerTop = cy - halfCellY;
     const int centerBottom = cy + halfCellY;
 
-    // 十字準星 - 寬線條，中心留空間隔
-    const int gap = 4;  // 中心框與十字線的間距
-    gridPainter.setPen(QPen(QColor(255, 255, 255, 140), 5));
-    // 水平線（避開中心區域）
-    gridPainter.drawLine(0, cy, centerLeft - gap, cy);
-    gridPainter.drawLine(centerRight + gap, cy, MAGNIFIER_WIDTH, cy);
-    // 垂直線（避開中心區域）
-    gridPainter.drawLine(cx, 0, cx, centerTop - gap);
-    gridPainter.drawLine(cx, centerBottom + gap, cx, MAGNIFIER_HEIGHT);
+    // Draw grid lines (light gray, subtle)
+    gridPainter.setPen(QPen(QColor(200, 200, 200, 80), 1));
+    // Vertical grid lines
+    for (int i = 1; i < MAGNIFIER_GRID_COUNT_X; ++i) {
+        int x = i * pixelSizeX;
+        gridPainter.drawLine(x, 0, x, MAGNIFIER_HEIGHT);
+    }
+    // Horizontal grid lines
+    for (int i = 1; i < MAGNIFIER_GRID_COUNT_Y; ++i) {
+        int y = i * pixelSizeY;
+        gridPainter.drawLine(0, y, MAGNIFIER_WIDTH, y);
+    }
 
-    // 中心像素框
+    // Crosshair - thin blue lines, centered, no gap
+    gridPainter.setPen(QPen(QColor(100, 150, 255), 2));  // Light blue crosshair
+    // Horizontal line (full width)
+    gridPainter.drawLine(0, cy, MAGNIFIER_WIDTH, cy);
+    // Vertical line (full height)
+    gridPainter.drawLine(cx, 0, cx, MAGNIFIER_HEIGHT);
+
+    // Center pixel box - white outline
     gridPainter.setBrush(Qt::NoBrush);
-    gridPainter.setPen(QPen(QColor(255, 255, 255, 200), 1));
+    gridPainter.setPen(QPen(Qt::white, 2));  // Thicker white border for emphasis
     gridPainter.drawRect(centerLeft, centerTop, pixelSizeX, pixelSizeY);
 }
 
@@ -408,7 +430,7 @@ QColor RegionSelector::getToolbarIconColor(int buttonId, bool isActive, bool isH
 
 bool RegionSelector::shouldShowColorPalette() const
 {
-    if (!m_selectionComplete) return false;
+    if (!m_selectionManager->isComplete()) return false;
 
     // Show palette for color-enabled tools (not Mosaic)
     switch (m_currentTool) {
@@ -485,7 +507,7 @@ void RegionSelector::onMoreColorsRequested()
 
 bool RegionSelector::shouldShowLineWidthWidget() const
 {
-    if (!m_selectionComplete) return false;
+    if (!m_selectionManager->isComplete()) return false;
 
     // Show for tools that use m_annotationWidth
     return m_currentTool == ToolbarButton::Pencil ||
@@ -509,7 +531,7 @@ void RegionSelector::onLineWidthChanged(int width)
 
 bool RegionSelector::shouldShowColorAndWidthWidget() const
 {
-    if (!m_selectionComplete) return false;
+    if (!m_selectionManager->isComplete()) return false;
 
     // Show for tools that need either color or width (union of both)
     switch (m_currentTool) {
@@ -595,9 +617,7 @@ void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapt
         << "devicePixelRatio:" << m_devicePixelRatio;
 
     // 不預設選取整個螢幕，等待用戶操作
-    m_selectionRect = QRect();
-    m_selectionComplete = false;
-    m_isSelecting = false;
+    m_selectionManager->clearSelection();
 
     // 將 cursor 全域座標轉換為 widget 本地座標，用於 crosshair/magnifier 初始位置
     QRect screenGeom = m_currentScreen->geometry();
@@ -606,6 +626,9 @@ void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapt
 
     // 鎖定視窗大小，防止 macOS 原生 resize 行為
     setFixedSize(screenGeom.size());
+
+    // Set bounds for selection manager
+    m_selectionManager->setBounds(QRect(0, 0, screenGeom.width(), screenGeom.height()));
 
     // Initialize magnifier caches
     initializeMagnifierGridCache();
@@ -649,18 +672,19 @@ void RegionSelector::initializeWithRegion(QScreen* screen, const QRect& region)
 
     // Convert global region to local coordinates
     QRect screenGeom = m_currentScreen->geometry();
-    m_selectionRect = region.translated(-screenGeom.topLeft());
+    QRect localRegion = region.translated(-screenGeom.topLeft());
 
-    // Mark selection as complete
-    m_selectionComplete = true;
-    m_isSelecting = false;
+    // Lock window size and set bounds
+    setFixedSize(screenGeom.size());
+    m_selectionManager->setBounds(QRect(0, 0, screenGeom.width(), screenGeom.height()));
+
+    // Set selection from the region (this marks selection as complete)
+    m_selectionManager->setSelectionRect(localRegion);
+    m_selectionManager->setFromDetectedWindow(localRegion);
 
     // Set cursor position
     QPoint globalCursor = QCursor::pos();
     m_currentPoint = globalCursor - screenGeom.topLeft();
-
-    // Lock window size
-    setFixedSize(screenGeom.size());
 
     // Trigger repaint to show toolbar (toolbar is drawn in paintEvent when m_selectionComplete is true)
     QTimer::singleShot(0, this, [this]() {
@@ -711,7 +735,7 @@ void RegionSelector::updateWindowDetection(const QPoint& localPos)
 
 void RegionSelector::drawDetectedWindow(QPainter& painter)
 {
-    if (m_highlightedWindowRect.isNull() || m_selectionComplete || m_isSelecting) {
+    if (m_highlightedWindowRect.isNull() || m_selectionManager->isComplete() || m_selectionManager->isSelecting()) {
         return;
     }
 
@@ -812,24 +836,26 @@ void RegionSelector::paintEvent(QPaintEvent*)
     drawOverlay(painter);
 
     // Draw detected window highlight (only during hover, before selection)
-    if (!m_isSelecting && !m_selectionComplete && m_windowDetector) {
+    if (!m_selectionManager->isSelecting() && !m_selectionManager->isComplete() && m_windowDetector) {
         drawDetectedWindow(painter);
     }
 
     // Draw selection if active or complete
-    if ((m_isSelecting || m_selectionComplete) && m_selectionRect.isValid()) {
+    QRect selectionRect = m_selectionManager->selectionRect();
+    bool hasSelection = m_selectionManager->isSelecting() || m_selectionManager->isComplete();
+    if (hasSelection && selectionRect.isValid()) {
         drawSelection(painter);
         drawDimensionInfo(painter);
 
         // Draw annotations on top of selection
-        if (m_selectionComplete) {
+        if (m_selectionManager->isComplete()) {
             drawAnnotations(painter);
             drawCurrentAnnotation(painter);
 
             // Update toolbar position and draw
             m_toolbar->setActiveButton(static_cast<int>(m_currentTool));
             m_toolbar->setViewportWidth(width());
-            m_toolbar->setPositionForSelection(m_selectionRect.normalized(), height());
+            m_toolbar->setPositionForSelection(selectionRect, height());
             m_toolbar->draw(painter);
 
             // Use unified color and width widget
@@ -879,8 +905,7 @@ void RegionSelector::paintEvent(QPaintEvent*)
 
             // Draw loading spinner when OCR is in progress
             if (m_ocrInProgress) {
-                QRect sel = m_selectionRect.normalized();
-                QPoint center = sel.center();
+                QPoint center = selectionRect.center();
                 m_loadingSpinner->draw(painter, center);
             }
         }
@@ -888,12 +913,11 @@ void RegionSelector::paintEvent(QPaintEvent*)
 
     // Draw crosshair at cursor - only show inside selection when selection is complete
     // Hide magnifier when any annotation tool is selected
-    bool shouldShowCrosshair = !m_isSelecting && !m_isDrawing && !isAnnotationTool(m_currentTool);
-    if (m_selectionComplete) {
-        QRect sel = m_selectionRect.normalized();
+    bool shouldShowCrosshair = !m_selectionManager->isSelecting() && !m_isDrawing && !isAnnotationTool(m_currentTool);
+    if (m_selectionManager->isComplete()) {
         // Only show crosshair inside selection area, not on toolbar
         shouldShowCrosshair = shouldShowCrosshair &&
-            sel.contains(m_currentPoint) &&
+            selectionRect.contains(m_currentPoint) &&
             !m_toolbar->contains(m_currentPoint);
     }
 
@@ -907,9 +931,11 @@ void RegionSelector::drawOverlay(QPainter& painter)
 {
     QColor dimColor(0, 0, 0, 100);
 
-    if ((m_isSelecting || m_selectionComplete) && m_selectionRect.isValid()) {
+    QRect sel = m_selectionManager->selectionRect();
+    bool hasSelection = (m_selectionManager->isSelecting() || m_selectionManager->isComplete()) && sel.isValid();
+
+    if (hasSelection) {
         // 選取模式：選取區域外繪製 overlay
-        QRect sel = m_selectionRect.normalized();
 
         // Top region
         painter.fillRect(QRect(0, 0, width(), sel.top()), dimColor);
@@ -941,7 +967,7 @@ void RegionSelector::drawOverlay(QPainter& painter)
 
 void RegionSelector::drawSelection(QPainter& painter)
 {
-    QRect sel = m_selectionRect.normalized();
+    QRect sel = m_selectionManager->selectionRect();
 
     // Draw selection border
     painter.setPen(QPen(QColor(0, 174, 255), 2));
@@ -1007,8 +1033,8 @@ void RegionSelector::drawMagnifier(QPainter& painter)
     int panelX = m_currentPoint.x() - panelWidth / 2;
     int panelY = m_currentPoint.y() + 25;
 
-    // 計算面板總高度
-    int totalHeight = magnifierHeight + 55;  // 放大鏡 + 座標 + 顏色
+    // 計算面板總高度 (放大鏡 + 座標 + 顏色 + 熱鍵說明)
+    int totalHeight = magnifierHeight + 85;  // 放大鏡 + 座標 + 顏色 + 2行熱鍵說明
 
     // 邊界檢查
     panelX = qMax(10, qMin(panelX, width() - panelWidth - 10));
@@ -1093,7 +1119,7 @@ void RegionSelector::drawMagnifier(QPainter& painter)
     QString coordText = QString("(%1 , %2)").arg(m_currentPoint.x()).arg(m_currentPoint.y());
     painter.drawText(panelX, infoY, panelWidth, 20, Qt::AlignCenter, coordText);
 
-    // 3. 顏色預覽 + HEX/RGB (置中對齊)
+    // 3. 顏色預覽 + RGB/HEX (左對齊)
     infoY += 20;
     int colorBoxSize = 14;
 
@@ -1106,32 +1132,43 @@ void RegionSelector::drawMagnifier(QPainter& painter)
             .arg(pixelColor.blue(), 2, 16, QChar('0'));
     }
     else {
-        colorText = QString("RGB(%1, %2, %3)")
+        colorText = QString("RGB: %1,%2,%3")
             .arg(pixelColor.red())
             .arg(pixelColor.green())
             .arg(pixelColor.blue());
     }
 
-    // 計算整體寬度以置中：色塊 + 間距 + 文字
-    QFontMetrics fm(font);
-    int textWidth = fm.horizontalAdvance(colorText);
-    int totalWidth = colorBoxSize + 8 + textWidth;
-    int startX = panelX + (panelWidth - totalWidth) / 2;
+    // Left-aligned layout for color swatch and text
+    int colorStartX = panelX + 8;
 
     // 繪製顏色方塊
-    painter.fillRect(startX, infoY, colorBoxSize, colorBoxSize, pixelColor);
-    painter.setPen(QPen(QColor(80, 80, 80), 1));
+    painter.fillRect(colorStartX, infoY, colorBoxSize, colorBoxSize, pixelColor);
+    painter.setPen(QPen(QColor(200, 200, 200), 1));
     painter.setBrush(Qt::NoBrush);
-    painter.drawRect(startX, infoY, colorBoxSize, colorBoxSize);
+    painter.drawRect(colorStartX, infoY, colorBoxSize, colorBoxSize);
 
     // 繪製顏色文字
     painter.setPen(Qt::white);
-    painter.drawText(startX + colorBoxSize + 8, infoY, textWidth, colorBoxSize, Qt::AlignVCenter, colorText);
+    painter.drawText(colorStartX + colorBoxSize + 8, infoY, panelWidth - 16 - colorBoxSize - 8, colorBoxSize, Qt::AlignVCenter, colorText);
+
+    // 4. Hotkey instructions (left-aligned, smaller font)
+    infoY += 18;
+    QFont smallFont = font;
+    smallFont.setPointSize(9);
+    painter.setFont(smallFont);
+    painter.setPen(QColor(200, 200, 200));
+
+    QString instruction1 = QString("Shift: Switch color format");
+    painter.drawText(colorStartX, infoY, panelWidth - 16, 14, Qt::AlignLeft | Qt::AlignVCenter, instruction1);
+
+    infoY += 14;
+    QString instruction2 = QString("C: Copy color value");
+    painter.drawText(colorStartX, infoY, panelWidth - 16, 14, Qt::AlignLeft | Qt::AlignVCenter, instruction2);
 }
 
 void RegionSelector::drawDimensionInfo(QPainter& painter)
 {
-    QRect sel = m_selectionRect.normalized();
+    QRect sel = m_selectionManager->selectionRect();
 
     // Show dimensions with "pt" suffix like Snipaste
     QString dimensions = QString("%1 x %2  pt").arg(sel.width()).arg(sel.height());
@@ -1270,7 +1307,7 @@ void RegionSelector::handleToolbarClick(ToolbarButton button)
     case ToolbarButton::Record:
     {
         // Emit recording request with the selected region in global coordinates
-        QRect globalRect = m_selectionRect.normalized()
+        QRect globalRect = m_selectionManager->selectionRect()
             .translated(m_currentScreen->geometry().topLeft());
         emit recordingRequested(globalRect, m_currentScreen);
         close();
@@ -1292,7 +1329,7 @@ void RegionSelector::handleToolbarClick(ToolbarButton button)
 
 QPixmap RegionSelector::getSelectedRegion()
 {
-    QRect sel = m_selectionRect.normalized();
+    QRect sel = m_selectionManager->selectionRect();
 
     // 使用 device pixels 座標來裁切
     QPixmap selectedRegion = m_backgroundPixmap.copy(
@@ -1381,9 +1418,10 @@ void RegionSelector::finishSelection()
     QPixmap selectedRegion = getSelectedRegion();
 
     // 直接計算全局座標：螢幕左上角 + 選區左上角
-    QPoint globalPos = m_currentScreen->geometry().topLeft() + m_selectionRect.normalized().topLeft();
+    QRect sel = m_selectionManager->selectionRect();
+    QPoint globalPos = m_currentScreen->geometry().topLeft() + sel.topLeft();
 
-    qDebug() << "finishSelection: selectionRect=" << m_selectionRect.normalized()
+    qDebug() << "finishSelection: selectionRect=" << sel
         << "globalPos=" << globalPos;
 
     emit regionSelected(selectedRegion, globalPos);
@@ -1393,7 +1431,7 @@ void RegionSelector::finishSelection()
 void RegionSelector::mousePressEvent(QMouseEvent* event)
 {
     if (event->button() == Qt::LeftButton) {
-        if (m_selectionComplete) {
+        if (m_selectionManager->isComplete()) {
             // Handle inline text editing
             if (m_textEditor->isEditing()) {
                 if (m_textEditor->isConfirmMode()) {
@@ -1531,7 +1569,7 @@ void RegionSelector::mousePressEvent(QMouseEvent* event)
             }
 
             // Handle Text tool - can be placed anywhere on screen
-            QRect sel = m_selectionRect.normalized();
+            QRect sel = m_selectionManager->selectionRect();
             if (m_currentTool == ToolbarButton::Text) {
                 m_editingTextIndex = -1;  // Creating new text
                 m_textEditor->setColor(m_annotationColor);
@@ -1550,21 +1588,17 @@ void RegionSelector::mousePressEvent(QMouseEvent* event)
 
             // Check for resize handles or move (Selection tool)
             if (m_currentTool == ToolbarButton::Selection) {
-                ResizeHandle handle = getHandleAtPosition(event->pos());
-                if (handle != ResizeHandle::None) {
-                    if (handle == ResizeHandle::Center) {
-                        // Start moving
-                        m_isMoving = true;
-                        m_isResizing = false;
-                    }
-                    else {
-                        // Start resizing
-                        m_isResizing = true;
-                        m_isMoving = false;
-                    }
-                    m_activeHandle = handle;
-                    m_resizeStartPoint = event->pos();
-                    m_originalRect = m_selectionRect;
+                auto handle = m_selectionManager->hitTestHandle(event->pos());
+                if (handle != SelectionStateManager::ResizeHandle::None) {
+                    // Start resizing
+                    m_selectionManager->startResize(event->pos(), handle);
+                    update();
+                    return;
+                }
+
+                // Check for move (interior of selection)
+                if (m_selectionManager->hitTestMove(event->pos())) {
+                    m_selectionManager->startMove(event->pos());
                     update();
                     return;
                 }
@@ -1577,16 +1611,16 @@ void RegionSelector::mousePressEvent(QMouseEvent* event)
             }
         }
         else {
-            m_isSelecting = true;
+            // Start new selection
+            m_selectionManager->startSelection(event->pos());
             m_startPoint = event->pos();
             m_currentPoint = m_startPoint;
-            m_selectionRect = QRect();
             m_lastSelectionRect = QRect();  // Reset dirty region tracking
         }
         update();
     }
     else if (event->button() == Qt::RightButton) {
-        if (m_selectionComplete) {
+        if (m_selectionManager->isComplete()) {
             // If drawing, cancel current annotation
             if (m_isDrawing) {
                 m_isDrawing = false;
@@ -1595,17 +1629,13 @@ void RegionSelector::mousePressEvent(QMouseEvent* event)
                 return;
             }
             // If resizing/moving, cancel
-            if (m_isResizing || m_isMoving) {
-                m_selectionRect = m_originalRect;
-                m_isResizing = false;
-                m_isMoving = false;
-                m_activeHandle = ResizeHandle::None;
+            if (m_selectionManager->isResizing() || m_selectionManager->isMoving()) {
+                m_selectionManager->cancelResizeOrMove();
                 update();
                 return;
             }
             // Cancel selection, go back to selection mode
-            m_selectionComplete = false;
-            m_selectionRect = QRect();
+            m_selectionManager->clearSelection();
             m_annotationLayer->clear();
             setCursor(Qt::CrossCursor);
             update();
@@ -1656,7 +1686,7 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
 
     // Window detection during hover (before any selection or dragging)
     // Throttle by distance to avoid expensive window enumeration on every mouse move
-    if (!m_isSelecting && !m_selectionComplete && m_windowDetector) {
+    if (!m_selectionManager->isSelecting() && !m_selectionManager->isComplete() && m_windowDetector) {
         int dx = event->pos().x() - m_lastWindowDetectionPos.x();
         int dy = event->pos().y() - m_lastWindowDetectionPos.y();
         if (dx * dx + dy * dy >= WINDOW_DETECTION_MIN_DISTANCE_SQ) {
@@ -1665,30 +1695,19 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
         }
     }
 
-    if (m_isSelecting) {
+    if (m_selectionManager->isSelecting()) {
         // Clear window detection when dragging
         m_highlightedWindowRect = QRect();
         m_detectedWindow.reset();
-        m_selectionRect = QRect(m_startPoint, m_currentPoint).normalized();
+        m_selectionManager->updateSelection(m_currentPoint);
     }
-    else if (m_isResizing) {
+    else if (m_selectionManager->isResizing()) {
         // Update selection rect based on resize handle
-        updateResize(event->pos());
+        m_selectionManager->updateResize(event->pos());
     }
-    else if (m_isMoving) {
+    else if (m_selectionManager->isMoving()) {
         // Move selection rect
-        QPoint delta = event->pos() - m_resizeStartPoint;
-        m_selectionRect = m_originalRect.translated(delta);
-
-        // Clamp to screen bounds
-        if (m_selectionRect.left() < 0)
-            m_selectionRect.moveLeft(0);
-        if (m_selectionRect.top() < 0)
-            m_selectionRect.moveTop(0);
-        if (m_selectionRect.right() >= width())
-            m_selectionRect.moveRight(width() - 1);
-        if (m_selectionRect.bottom() >= height())
-            m_selectionRect.moveBottom(height() - 1);
+        m_selectionManager->updateMove(event->pos());
     }
     else if (m_isDrawing) {
         // Update current annotation
@@ -1705,7 +1724,7 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
             }
         }
     }
-    else if (m_selectionComplete) {
+    else if (m_selectionManager->isComplete()) {
         bool colorPaletteHovered = false;
         bool lineWidthHovered = false;
         bool unifiedWidgetHovered = false;
@@ -1823,7 +1842,7 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
             }
             else {
                 // Selection tool: update cursor based on handle position
-                ResizeHandle handle = getHandleAtPosition(event->pos());
+                auto handle = m_selectionManager->hitTestHandle(event->pos());
                 updateCursorForHandle(handle);
             }
         }
@@ -1831,7 +1850,7 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
         if (hoveredButton < 0 && !colorPaletteHovered && !lineWidthHovered && !unifiedWidgetHovered && !textAnnotationHovered && !gizmoHandleHovered) {
             // Update cursor based on current tool
             if (m_currentTool == ToolbarButton::Selection) {
-                ResizeHandle handle = getHandleAtPosition(event->pos());
+                auto handle = m_selectionManager->hitTestHandle(event->pos());
                 updateCursorForHandle(handle);
             }
             else if (m_currentTool == ToolbarButton::Mosaic) {
@@ -1855,7 +1874,7 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
 
     // Per-operation throttling for smooth 60fps experience on high-resolution displays
     // Different operations have different update frequency requirements
-    if (m_isSelecting || m_isResizing || m_isMoving) {
+    if (m_selectionManager->isSelecting() || m_selectionManager->isResizing() || m_selectionManager->isMoving()) {
         // Selection/resize/move: high frequency (120fps) for responsiveness
         // Note: Full update required because overlay affects entire screen outside selection
         if (m_selectionUpdateTimer.elapsed() >= SELECTION_UPDATE_MS) {
@@ -1870,7 +1889,7 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
             update();
         }
     }
-    else if (m_selectionComplete) {
+    else if (m_selectionManager->isComplete()) {
         // Hover effects in selection complete mode: lower frequency (30fps)
         if (m_hoverUpdateTimer.elapsed() >= HOVER_UPDATE_MS) {
             m_hoverUpdateTimer.restart();
@@ -1930,20 +1949,17 @@ void RegionSelector::mouseReleaseEvent(QMouseEvent* event)
             return;
         }
 
-        if (m_isSelecting) {
-            m_isSelecting = false;
-
-            QRect sel = m_selectionRect.normalized();
+        if (m_selectionManager->isSelecting()) {
+            QRect sel = m_selectionManager->selectionRect();
             if (sel.width() > 5 && sel.height() > 5) {
                 // 有拖曳 - 使用拖曳選取的區域
-                m_selectionComplete = true;
+                m_selectionManager->finishSelection();
                 setCursor(Qt::ArrowCursor);
                 qDebug() << "RegionSelector: Selection complete via drag";
             }
             else if (m_detectedWindow.has_value() && m_highlightedWindowRect.isValid()) {
                 // Click on detected window - use its bounds
-                m_selectionRect = m_highlightedWindowRect;
-                m_selectionComplete = true;
+                m_selectionManager->setFromDetectedWindow(m_highlightedWindowRect);
                 setCursor(Qt::ArrowCursor);
                 qDebug() << "RegionSelector: Selection complete via detected window:" << m_detectedWindow->windowTitle;
 
@@ -1954,20 +1970,21 @@ void RegionSelector::mouseReleaseEvent(QMouseEvent* event)
             else {
                 // 點擊無拖曳且無偵測到視窗 - 選取整個螢幕（包含 menu bar）
                 QRect screenGeom = m_currentScreen->geometry();
-                m_selectionRect = QRect(0, 0, screenGeom.width(), screenGeom.height());
-                m_selectionComplete = true;
+                m_selectionManager->setFromDetectedWindow(QRect(0, 0, screenGeom.width(), screenGeom.height()));
                 setCursor(Qt::ArrowCursor);
                 qDebug() << "RegionSelector: Click without drag - selecting full screen (including menu bar)";
             }
 
             update();
         }
-        else if (m_isResizing || m_isMoving) {
-            // Finish resize/move
-            m_isResizing = false;
-            m_isMoving = false;
-            m_activeHandle = ResizeHandle::None;
-            m_selectionRect = m_selectionRect.normalized();
+        else if (m_selectionManager->isResizing()) {
+            // Finish resize
+            m_selectionManager->finishResize();
+            update();
+        }
+        else if (m_selectionManager->isMoving()) {
+            // Finish move
+            m_selectionManager->finishMove();
             update();
         }
         else if (m_isDrawing) {
@@ -2033,31 +2050,31 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
         close();
     }
     else if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) {
-        if (m_selectionComplete) {
+        if (m_selectionManager->isComplete()) {
             finishSelection();
         }
     }
     else if (event->matches(QKeySequence::Copy)) {
-        if (m_selectionComplete) {
+        if (m_selectionManager->isComplete()) {
             copyToClipboard();
         }
     }
     else if (event->matches(QKeySequence::Save)) {
-        if (m_selectionComplete) {
+        if (m_selectionManager->isComplete()) {
             saveToFile();
         }
     }
     else if (event->key() == Qt::Key_R && !event->modifiers()) {
-        if (m_selectionComplete) {
+        if (m_selectionManager->isComplete()) {
             handleToolbarClick(ToolbarButton::Record);
         }
     }
-    else if (event->key() == Qt::Key_Shift) {
-        // 切換 RGB/HEX 顯示格式
+    else if (event->key() == Qt::Key_Shift && !m_selectionManager->isComplete()) {
+        // Switch RGB/HEX color format display (only when magnifier is shown)
         m_showHexColor = !m_showHexColor;
         update();
     }
-    else if (event->key() == Qt::Key_C && !m_selectionComplete) {
+    else if (event->key() == Qt::Key_C && !m_selectionManager->isComplete()) {
         // 複製顏色到剪貼板 (僅在未選取完成時有效)
         int deviceX = static_cast<int>(m_currentPoint.x() * m_devicePixelRatio);
         int deviceY = static_cast<int>(m_currentPoint.y() * m_devicePixelRatio);
@@ -2082,31 +2099,32 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
         }
     }
     else if (event->matches(QKeySequence::Undo)) {
-        if (m_selectionComplete && m_annotationLayer->canUndo()) {
+        if (m_selectionManager->isComplete() && m_annotationLayer->canUndo()) {
             m_annotationLayer->undo();
             update();
         }
     }
     else if (event->matches(QKeySequence::Redo)) {
-        if (m_selectionComplete && m_annotationLayer->canRedo()) {
+        if (m_selectionManager->isComplete() && m_annotationLayer->canRedo()) {
             m_annotationLayer->redo();
             update();
         }
     }
     else if (event->key() == Qt::Key_Delete || event->key() == Qt::Key_Backspace) {
         // Delete selected text annotation
-        if (m_selectionComplete && m_annotationLayer->selectedIndex() >= 0) {
+        if (m_selectionManager->isComplete() && m_annotationLayer->selectedIndex() >= 0) {
             m_annotationLayer->removeSelectedItem();
             update();
         }
     }
     // Arrow keys for precise selection adjustment
-    else if (m_selectionComplete && !m_selectionRect.isEmpty()) {
+    else if (m_selectionManager->isComplete() && !m_selectionManager->selectionRect().isEmpty()) {
         bool handled = true;
+        QRect sel = m_selectionManager->selectionRect();
 
         if (event->modifiers() & Qt::ShiftModifier) {
             // Shift + Arrow: Resize selection (adjust corresponding edge)
-            QRect newRect = m_selectionRect;
+            QRect newRect = sel;
             switch (event->key()) {
             case Qt::Key_Left:  newRect.setRight(newRect.right() - 1); break;
             case Qt::Key_Right: newRect.setRight(newRect.right() + 1); break;
@@ -2115,20 +2133,24 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
             default: handled = false; break;
             }
             if (handled && newRect.width() >= 10 && newRect.height() >= 10) {
-                m_selectionRect = newRect;
+                m_selectionManager->setSelectionRect(newRect);
                 update();
             }
         }
         else {
             // Arrow only: Move selection
+            QRect newRect = sel;
             switch (event->key()) {
-            case Qt::Key_Left:  m_selectionRect.translate(-1, 0); break;
-            case Qt::Key_Right: m_selectionRect.translate(1, 0);  break;
-            case Qt::Key_Up:    m_selectionRect.translate(0, -1); break;
-            case Qt::Key_Down:  m_selectionRect.translate(0, 1);  break;
+            case Qt::Key_Left:  newRect.translate(-1, 0); break;
+            case Qt::Key_Right: newRect.translate(1, 0);  break;
+            case Qt::Key_Up:    newRect.translate(0, -1); break;
+            case Qt::Key_Down:  newRect.translate(0, 1);  break;
             default: handled = false; break;
             }
-            if (handled) update();
+            if (handled) {
+                m_selectionManager->setSelectionRect(newRect);
+                update();
+            }
         }
     }
 }
@@ -2346,7 +2368,7 @@ void RegionSelector::startTextReEditing(int annotationIndex)
     // Start editor with existing text
     m_textEditor->setColor(m_annotationColor);
     m_textEditor->setFont(m_textFormatting.toQFont());
-    m_textEditor->startEditingExisting(textItem->position(), m_selectionRect.normalized(), textItem->text());
+    m_textEditor->startEditingExisting(textItem->position(), m_selectionManager->selectionRect(), textItem->text());
 
     // Hide the original annotation while editing (prevent duplicate display)
     textItem->setVisible(false);
@@ -2437,83 +2459,9 @@ void RegionSelector::finishTextTransformation()
 // Selection Resize/Move Helper Functions
 // ============================================================================
 
-ResizeHandle RegionSelector::getHandleAtPosition(const QPoint& pos)
+void RegionSelector::updateCursorForHandle(SelectionStateManager::ResizeHandle handle)
 {
-    if (!m_selectionComplete) return ResizeHandle::None;
-
-    QRect sel = m_selectionRect.normalized();
-    const int handleSize = 16;  // Hit area for handles
-
-    // Define handle hit areas
-    QRect topLeft(sel.left() - handleSize / 2, sel.top() - handleSize / 2, handleSize, handleSize);
-    QRect top(sel.center().x() - handleSize / 2, sel.top() - handleSize / 2, handleSize, handleSize);
-    QRect topRight(sel.right() - handleSize / 2, sel.top() - handleSize / 2, handleSize, handleSize);
-    QRect left(sel.left() - handleSize / 2, sel.center().y() - handleSize / 2, handleSize, handleSize);
-    QRect right(sel.right() - handleSize / 2, sel.center().y() - handleSize / 2, handleSize, handleSize);
-    QRect bottomLeft(sel.left() - handleSize / 2, sel.bottom() - handleSize / 2, handleSize, handleSize);
-    QRect bottom(sel.center().x() - handleSize / 2, sel.bottom() - handleSize / 2, handleSize, handleSize);
-    QRect bottomRight(sel.right() - handleSize / 2, sel.bottom() - handleSize / 2, handleSize, handleSize);
-
-    // Check corners first (higher priority)
-    if (topLeft.contains(pos)) return ResizeHandle::TopLeft;
-    if (topRight.contains(pos)) return ResizeHandle::TopRight;
-    if (bottomLeft.contains(pos)) return ResizeHandle::BottomLeft;
-    if (bottomRight.contains(pos)) return ResizeHandle::BottomRight;
-
-    // Check edges
-    if (top.contains(pos)) return ResizeHandle::Top;
-    if (bottom.contains(pos)) return ResizeHandle::Bottom;
-    if (left.contains(pos)) return ResizeHandle::Left;
-    if (right.contains(pos)) return ResizeHandle::Right;
-
-    // Check if inside selection (for move)
-    if (sel.contains(pos)) return ResizeHandle::Center;
-
-    return ResizeHandle::None;
-}
-
-void RegionSelector::updateResize(const QPoint& pos)
-{
-    QPoint delta = pos - m_resizeStartPoint;
-    QRect newRect = m_originalRect;
-
-    switch (m_activeHandle) {
-    case ResizeHandle::TopLeft:
-        newRect.setTopLeft(m_originalRect.topLeft() + delta);
-        break;
-    case ResizeHandle::Top:
-        newRect.setTop(m_originalRect.top() + delta.y());
-        break;
-    case ResizeHandle::TopRight:
-        newRect.setTopRight(m_originalRect.topRight() + delta);
-        break;
-    case ResizeHandle::Left:
-        newRect.setLeft(m_originalRect.left() + delta.x());
-        break;
-    case ResizeHandle::Right:
-        newRect.setRight(m_originalRect.right() + delta.x());
-        break;
-    case ResizeHandle::BottomLeft:
-        newRect.setBottomLeft(m_originalRect.bottomLeft() + delta);
-        break;
-    case ResizeHandle::Bottom:
-        newRect.setBottom(m_originalRect.bottom() + delta.y());
-        break;
-    case ResizeHandle::BottomRight:
-        newRect.setBottomRight(m_originalRect.bottomRight() + delta);
-        break;
-    default:
-        break;
-    }
-
-    // Ensure minimum size
-    if (newRect.width() >= 10 && newRect.height() >= 10) {
-        m_selectionRect = newRect;
-    }
-}
-
-void RegionSelector::updateCursorForHandle(ResizeHandle handle)
-{
+    using ResizeHandle = SelectionStateManager::ResizeHandle;
     switch (handle) {
     case ResizeHandle::TopLeft:
     case ResizeHandle::BottomRight:
@@ -2531,8 +2479,13 @@ void RegionSelector::updateCursorForHandle(ResizeHandle handle)
     case ResizeHandle::Right:
         setCursor(Qt::SizeHorCursor);
         break;
-    case ResizeHandle::Center:
-        setCursor(Qt::SizeAllCursor);
+    case ResizeHandle::None:
+        // Check if inside selection (for move cursor)
+        if (m_selectionManager->hitTestMove(m_currentPoint)) {
+            setCursor(Qt::SizeAllCursor);
+        } else {
+            setCursor(Qt::ArrowCursor);
+        }
         break;
     default:
         setCursor(Qt::ArrowCursor);
@@ -2542,7 +2495,7 @@ void RegionSelector::updateCursorForHandle(ResizeHandle handle)
 
 void RegionSelector::performOCR()
 {
-    if (!m_ocrManager || m_ocrInProgress || !m_selectionComplete) {
+    if (!m_ocrManager || m_ocrInProgress || !m_selectionManager->isComplete()) {
         if (!m_ocrManager) {
             qDebug() << "RegionSelector: OCR not available on this platform";
         }
@@ -2556,7 +2509,7 @@ void RegionSelector::performOCR()
     qDebug() << "RegionSelector: Starting OCR recognition...";
 
     // Get the selected region (without annotations for OCR)
-    QRect sel = m_selectionRect.normalized();
+    QRect sel = m_selectionManager->selectionRect();
     QPixmap selectedRegion = m_backgroundPixmap.copy(
         static_cast<int>(sel.x() * m_devicePixelRatio),
         static_cast<int>(sel.y() * m_devicePixelRatio),
@@ -2620,8 +2573,9 @@ void RegionSelector::onOCRComplete(bool success, const QString& text, const QStr
     // Display the toast centered at top of selection area
     m_ocrToastLabel->setText(msg);
     m_ocrToastLabel->adjustSize();
-    int x = m_selectionRect.center().x() - m_ocrToastLabel->width() / 2;
-    int y = m_selectionRect.top() + 12;
+    QRect sel = m_selectionManager->selectionRect();
+    int x = sel.center().x() - m_ocrToastLabel->width() / 2;
+    int y = sel.top() + 12;
     m_ocrToastLabel->move(x, y);
     m_ocrToastLabel->show();
     m_ocrToastLabel->raise();
