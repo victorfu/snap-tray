@@ -1,6 +1,5 @@
 #include "annotations/ShapeAnnotation.h"
 #include <QPainter>
-#include <QDebug>
 
 ShapeAnnotation::ShapeAnnotation(const QRect &rect, ShapeType type,
                                  const QColor &color, int width, bool filled)
@@ -28,10 +27,6 @@ void ShapeAnnotation::draw(QPainter &painter) const
         } else {
             painter.setBrush(Qt::NoBrush);
         }
-
-        qDebug() << "ShapeAnnotation::draw (Rectangle) - rect:" << normalizedRect
-                 << "transform:" << painter.transform()
-                 << "mapped rect:" << painter.transform().mapRect(QRectF(normalizedRect));
 
         painter.drawRect(normalizedRect);
     } else {

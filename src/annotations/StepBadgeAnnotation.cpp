@@ -1,7 +1,6 @@
 #include "annotations/StepBadgeAnnotation.h"
 #include <QPainter>
 #include <QFont>
-#include <QDebug>
 
 // ============================================================================
 // StepBadgeAnnotation Implementation
@@ -16,12 +15,6 @@ StepBadgeAnnotation::StepBadgeAnnotation(const QPoint &position, const QColor &c
 
 void StepBadgeAnnotation::draw(QPainter &painter) const
 {
-    QTransform t = painter.transform();
-    QPointF mappedPos = t.map(QPointF(m_position));
-    qDebug() << "StepBadge::draw #" << m_number << "pos=" << m_position
-             << "mapped=" << mappedPos
-             << "device=" << painter.device()->width() << "x" << painter.device()->height();
-
     painter.save();
     painter.setRenderHint(QPainter::Antialiasing, true);
 
