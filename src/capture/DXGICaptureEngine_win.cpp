@@ -3,25 +3,42 @@
 #include <QScreen>
 #include <QGuiApplication>
 #include <QDebug>
+#include <QThread>
+#include <QTimer>
 
 #include <Windows.h>
 #include <d3d11.h>
 #include <dxgi1_2.h>
 #include <wrl/client.h>
 #include <chrono>
+#include <mutex>
+#include <atomic>
 
 using Microsoft::WRL::ComPtr;
 
-class DXGICaptureEngine::Private
+class DXGICaptureEngine::Private : public QObject
 {
+    Q_OBJECT
 public:
-    Private() = default;
-    ~Private() { cleanup(); }
+    Private() : QObject(nullptr) {}
+    ~Private() { cleanupThread(); cleanup(); }
 
     bool initializeDXGI();
     void cleanup();
+    void cleanupThread();
     QImage captureWithBitBlt();
     QImage captureWithDXGI();
+
+    // Thread-safe frame access (matching macOS SCKCaptureEngine pattern)
+    void setLatestFrame(const QImage &frame) {
+        std::lock_guard<std::mutex> lock(frameMutex);
+        latestFrame = frame;
+    }
+
+    QImage getLatestFrame() {
+        std::lock_guard<std::mutex> lock(frameMutex);
+        return latestFrame;
+    }
 
     ComPtr<ID3D11Device> device;
     ComPtr<ID3D11DeviceContext> context;
@@ -34,10 +51,19 @@ public:
     QRect captureRegion;
     QScreen *targetScreen = nullptr;
     int frameRate = 30;
-    bool running = false;
+    std::atomic<bool> running{false};
     bool useDXGI = false;
-    QImage lastFrame;  // Cache for when no new frame available
+    QImage lastFrame;  // Cache for when no new frame available (used during capture)
     std::chrono::steady_clock::time_point lastFrameTime;
+
+    // Worker thread members
+    QThread *workerThread = nullptr;
+    QTimer *captureTimer = nullptr;
+    QImage latestFrame;  // Thread-safe cached frame for main thread access
+    std::mutex frameMutex;
+
+public slots:
+    void doCapture();
 };
 
 bool DXGICaptureEngine::Private::initializeDXGI()
@@ -183,8 +209,49 @@ void DXGICaptureEngine::Private::cleanup()
     duplication.Reset();
     context.Reset();
     device.Reset();
-    running = false;
     useDXGI = false;
+}
+
+void DXGICaptureEngine::Private::cleanupThread()
+{
+    running = false;
+
+    if (captureTimer) {
+        // Stop timer from worker thread context
+        QMetaObject::invokeMethod(captureTimer, "stop", Qt::QueuedConnection);
+        captureTimer->deleteLater();
+        captureTimer = nullptr;
+    }
+
+    if (workerThread) {
+        workerThread->quit();
+        if (!workerThread->wait(3000)) {  // Wait up to 3 seconds
+            qWarning() << "DXGICaptureEngine: Worker thread did not exit gracefully";
+            workerThread->terminate();
+            workerThread->wait();
+        }
+        workerThread->deleteLater();
+        workerThread = nullptr;
+    }
+
+    // Move back to main thread for proper cleanup
+    moveToThread(QGuiApplication::instance()->thread());
+}
+
+void DXGICaptureEngine::Private::doCapture()
+{
+    if (!running) return;
+
+    QImage frame;
+    if (useDXGI) {
+        frame = captureWithDXGI();
+    } else {
+        frame = captureWithBitBlt();
+    }
+
+    if (!frame.isNull()) {
+        setLatestFrame(frame);
+    }
 }
 
 QImage DXGICaptureEngine::Private::captureWithBitBlt()
@@ -418,10 +485,27 @@ bool DXGICaptureEngine::start()
         qDebug() << "DXGICaptureEngine: DXGI unavailable, using BitBlt fallback";
     }
 
+    // Create worker thread for async capture
+    d->workerThread = new QThread();
+    d->moveToThread(d->workerThread);
+
+    // Create timer in worker thread context
+    d->captureTimer = new QTimer();
+    d->captureTimer->moveToThread(d->workerThread);
+    d->captureTimer->setInterval(1000 / d->frameRate);
+
+    // Connect timer to capture slot
+    connect(d->captureTimer, &QTimer::timeout, d, &Private::doCapture);
+    connect(d->workerThread, &QThread::started, d->captureTimer,
+            QOverload<>::of(&QTimer::start));
+
     d->running = true;
-    qDebug() << "DXGICaptureEngine: Started"
+    d->workerThread->start();
+
+    qDebug() << "DXGICaptureEngine: Started with worker thread"
              << (d->useDXGI ? "(DXGI Desktop Duplication)" : "(BitBlt fallback)")
-             << "region:" << d->captureRegion;
+             << "region:" << d->captureRegion
+             << "fps:" << d->frameRate;
 
     return true;
 }
@@ -429,6 +513,7 @@ bool DXGICaptureEngine::start()
 void DXGICaptureEngine::stop()
 {
     if (d->running) {
+        d->cleanupThread();
         d->cleanup();
         qDebug() << "DXGICaptureEngine: Stopped";
     }
@@ -445,11 +530,8 @@ QImage DXGICaptureEngine::captureFrame()
         return QImage();
     }
 
-    if (d->useDXGI) {
-        return d->captureWithDXGI();
-    }
-
-    return d->captureWithBitBlt();
+    // Return cached frame from worker thread (non-blocking)
+    return d->getLatestFrame();
 }
 
 QString DXGICaptureEngine::engineName() const
@@ -459,3 +541,6 @@ QString DXGICaptureEngine::engineName() const
     }
     return QStringLiteral("GDI BitBlt (fallback)");
 }
+
+// Required for Q_OBJECT in Private class defined in .cpp file
+#include "DXGICaptureEngine_win.moc"
