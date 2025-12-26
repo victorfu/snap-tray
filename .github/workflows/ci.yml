@@ -25,6 +25,9 @@ jobs:
       - name: Build
         run: cmake --build build --config Release --parallel
 
+      - name: Run Tests
+        run: ctest --test-dir build --output-on-failure
+
   build-windows:
     runs-on: windows-latest
     steps:
@@ -51,3 +54,6 @@ jobs:
 
       - name: Build
         run: cmake --build build --config Release --parallel
+
+      - name: Run Tests
+        run: ctest --test-dir build --output-on-failure -C Release
