@@ -7,8 +7,9 @@
 #include <QRect>
 #include <QPoint>
 #include <QString>
-#include "AnnotationLayer.h"
-#include "RegionSelector.h"  // For ShapeType and ShapeFillMode enums
+#include "annotations/AnnotationLayer.h"
+#include "annotations/ShapeAnnotation.h"  // For ShapeType and ShapeFillMode enums
+#include "annotations/ArrowAnnotation.h"  // For LineEndStyle enum
 
 class QPainter;
 

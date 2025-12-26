@@ -7,7 +7,8 @@
 #include <QColor>
 #include <QVector>
 #include <memory>
-#include "AnnotationLayer.h"
+#include "annotations/AnnotationLayer.h"
+#include "annotations/ArrowAnnotation.h"
 
 class QPainter;
 class AnnotationLayer;

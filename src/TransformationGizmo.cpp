@@ -1,5 +1,5 @@
 #include "TransformationGizmo.h"
-#include "AnnotationLayer.h"
+#include "annotations/TextAnnotation.h"
 #include <QtMath>
 #include <QLineF>
 

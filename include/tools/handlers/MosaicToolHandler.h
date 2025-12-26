@@ -2,7 +2,8 @@
 #define MOSAICTOOLHANDLER_H
 
 #include "../IToolHandler.h"
-#include "../../AnnotationLayer.h"
+#include "annotations/AnnotationLayer.h"
+#include "annotations/MosaicStroke.h"
 
 #include <QVector>
 #include <QPoint>

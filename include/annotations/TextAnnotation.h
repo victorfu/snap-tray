@@ -1,8 +1,7 @@
-#ifndef ANNOTATIONLAYER_H
-#define ANNOTATIONLAYER_H
+#ifndef TEXTANNOTATION_H
+#define TEXTANNOTATION_H
 
-#include <QObject>
-#include <QPainter>
+#include "annotations/AnnotationItem.h"
 #include <QPoint>
 #include <QPointF>
 #include <QRect>
@@ -10,18 +9,7 @@
 #include <QFont>
 #include <QPixmap>
 #include <QPolygonF>
-#include <QTransform>
 #include <memory>
-#include <vector>
-
-#include "annotations/AnnotationItem.h"
-#include "annotations/PencilStroke.h"
-#include "annotations/MarkerStroke.h"
-#include "annotations/ArrowAnnotation.h"
-#include "annotations/ShapeAnnotation.h"
-#include "annotations/MosaicStroke.h"
-#include "annotations/StepBadgeAnnotation.h"
-#include "annotations/ErasedItemsGroup.h"
 
 // Text annotation with rotation and scaling support
 class TextAnnotation : public AnnotationItem
@@ -79,59 +67,4 @@ private:
     void invalidateCache() const { m_cachedPixmap = QPixmap(); }
 };
 
-// Annotation layer that manages all annotations with undo/redo
-class AnnotationLayer : public QObject
-{
-    Q_OBJECT
-
-public:
-    explicit AnnotationLayer(QObject *parent = nullptr);
-    ~AnnotationLayer();
-
-    void addItem(std::unique_ptr<AnnotationItem> item);
-    void undo();
-    void redo();
-    void clear();
-    void draw(QPainter &painter) const;
-
-    bool canUndo() const;
-    bool canRedo() const;
-    bool isEmpty() const;
-    size_t itemCount() const { return m_items.size(); }
-
-    // Access item by index (for re-editing)
-    AnnotationItem* itemAt(int index);
-
-    // For rendering annotations onto the final image
-    void drawOntoPixmap(QPixmap &pixmap) const;
-
-    // Step badge helpers
-    int countStepBadges() const;
-
-    // Eraser support: remove items that intersect with the given path
-    // Returns the removed items with their original indices (for undo support)
-    std::vector<ErasedItemsGroup::IndexedItem> removeItemsIntersecting(const QPoint &point, int strokeWidth);
-
-    // Selection support for text annotations
-    int hitTestText(const QPoint &pos) const;
-    void setSelectedIndex(int index) { m_selectedIndex = index; }
-    int selectedIndex() const { return m_selectedIndex; }
-    AnnotationItem* selectedItem();
-    void clearSelection() { m_selectedIndex = -1; }
-    bool removeSelectedItem();
-
-signals:
-    void changed();
-
-private:
-    static constexpr size_t kMaxHistorySize = 50;
-
-    void trimHistory();
-    void renumberStepBadges();
-
-    std::vector<std::unique_ptr<AnnotationItem>> m_items;
-    std::vector<std::unique_ptr<AnnotationItem>> m_redoStack;
-    int m_selectedIndex = -1;
-};
-
-#endif // ANNOTATIONLAYER_H
+#endif // TEXTANNOTATION_H

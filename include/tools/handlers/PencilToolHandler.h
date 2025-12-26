@@ -2,7 +2,8 @@
 #define PENCILTOOLHANDLER_H
 
 #include "../IToolHandler.h"
-#include "../../AnnotationLayer.h"
+#include "annotations/AnnotationLayer.h"
+#include "annotations/PencilStroke.h"
 
 #include <QVector>
 #include <QPointF>

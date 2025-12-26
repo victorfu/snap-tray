@@ -2,7 +2,7 @@
 #define ERASERTOOLHANDLER_H
 
 #include "../IToolHandler.h"
-#include "../../AnnotationLayer.h"
+#include "annotations/AnnotationLayer.h"
 
 #include <QVector>
 #include <QPoint>

@@ -8,7 +8,8 @@
 #include <memory>
 
 #include "ToolId.h"
-#include "../AnnotationLayer.h"
+#include "annotations/AnnotationLayer.h"
+#include "annotations/ArrowAnnotation.h"
 
 
 class AnnotationItem;

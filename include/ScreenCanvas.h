@@ -7,7 +7,8 @@
 #include <QRect>
 #include <QVector>
 #include <QColor>
-#include "AnnotationLayer.h"
+#include "annotations/AnnotationLayer.h"
+#include "annotations/ArrowAnnotation.h"
 #include "tools/ToolId.h"
 
 class QScreen;

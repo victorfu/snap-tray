@@ -12,7 +12,8 @@
 #include <memory>
 #include <optional>
 
-#include "AnnotationLayer.h"
+#include "annotations/AnnotationLayer.h"
+#include "annotations/ShapeAnnotation.h"
 #include "ToolbarWidget.h"
 #include "InlineTextEditor.h"
 #include "WindowDetector.h"
@@ -31,8 +32,7 @@ class ColorPickerDialog;
 class QCloseEvent;
 class OCRManager;
 
-// Fill mode for Shape tool (ShapeType is defined in annotations/ShapeAnnotation.h)
-enum class ShapeFillMode { Outline, Filled };
+// ShapeType and ShapeFillMode are defined in annotations/ShapeAnnotation.h
 
 // Toolbar button types
 enum class ToolbarButton {

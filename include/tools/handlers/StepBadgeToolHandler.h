@@ -2,7 +2,8 @@
 #define STEPBADGETOOLHANDLER_H
 
 #include "../IToolHandler.h"
-#include "../../AnnotationLayer.h"
+#include "annotations/AnnotationLayer.h"
+#include "annotations/StepBadgeAnnotation.h"
 
 /**
  * @brief Tool handler for step badge (numbered circle) placement.

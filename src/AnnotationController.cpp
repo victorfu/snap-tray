@@ -1,5 +1,5 @@
 #include "AnnotationController.h"
-#include "AnnotationLayer.h"
+#include "annotations/AllAnnotations.h"
 
 #include <QPainter>
 #include <QDebug>

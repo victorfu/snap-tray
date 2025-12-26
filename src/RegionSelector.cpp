@@ -1,5 +1,5 @@
 #include "RegionSelector.h"
-#include "AnnotationLayer.h"
+#include "annotations/AllAnnotations.h"
 #include "IconRenderer.h"
 #include "ColorPaletteWidget.h"
 #include "LineWidthWidget.h"

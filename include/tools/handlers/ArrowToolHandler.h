@@ -2,7 +2,8 @@
 #define ARROWTOOLHANDLER_H
 
 #include "../IToolHandler.h"
-#include "../../AnnotationLayer.h"
+#include "annotations/AnnotationLayer.h"
+#include "annotations/ArrowAnnotation.h"
 
 #include <QPoint>
 #include <memory>

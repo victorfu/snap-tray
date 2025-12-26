@@ -69,6 +69,7 @@ set(SOURCES
     src/annotations/MosaicStroke.cpp
     src/annotations/StepBadgeAnnotation.cpp
     src/annotations/ErasedItemsGroup.cpp
+    src/annotations/TextAnnotation.cpp
     src/ScreenCanvas.cpp
     src/IconRenderer.cpp
     src/ColorPaletteWidget.cpp
@@ -119,8 +120,10 @@ set(HEADERS
     include/RegionSelector.h
     include/PinWindow.h
     include/PinWindowManager.h
-    include/AnnotationLayer.h
+    include/annotations/AllAnnotations.h
+    include/annotations/AnnotationLayer.h
     include/annotations/AnnotationItem.h
+    include/annotations/TextAnnotation.h
     include/annotations/PencilStroke.h
     include/annotations/MarkerStroke.h
     include/annotations/ArrowAnnotation.h

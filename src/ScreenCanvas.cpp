@@ -1,5 +1,5 @@
 #include "ScreenCanvas.h"
-#include "AnnotationLayer.h"
+#include "annotations/AnnotationLayer.h"
 #include "tools/ToolManager.h"
 #include "IconRenderer.h"
 #include "ColorPaletteWidget.h"

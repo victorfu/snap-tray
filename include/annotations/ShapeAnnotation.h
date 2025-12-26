@@ -11,6 +11,9 @@ enum class ShapeType {
     Ellipse = 1
 };
 
+// Fill mode for Shape tool
+enum class ShapeFillMode { Outline, Filled };
+
 /**
  * @brief Shape annotation (rectangle or ellipse)
  *
