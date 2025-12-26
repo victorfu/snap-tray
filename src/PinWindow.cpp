@@ -719,6 +719,7 @@ void PinWindow::setClickThrough(bool enabled)
     // Use native API to set click-through mode for the window
     setWindowClickThrough(this, enabled);
 
+    showClickThroughIndicator();
     update(); // Trigger repaint for border change
 }
 
