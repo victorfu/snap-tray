@@ -21,6 +21,7 @@
 #include "TextFormattingState.h"
 #include "tools/ToolId.h"
 #include "tools/ToolManager.h"
+#include "region/SelectionStateManager.h"
 
 class QScreen;
 class ColorPaletteWidget;
@@ -95,14 +96,6 @@ inline bool isToolManagerHandledTool(ToolbarButton btn) {
         return false;
     }
 }
-
-// Resize handle positions
-enum class ResizeHandle {
-    None = -1,
-    TopLeft, Top, TopRight,
-    Left, Center, Right,  // Center = move
-    BottomLeft, Bottom, BottomRight
-};
 
 class RegionSelector : public QWidget
 {
@@ -212,9 +205,7 @@ private:
     void finishTextTransformation();
 
     // Selection resize/move helpers
-    ResizeHandle getHandleAtPosition(const QPoint &pos);
-    void updateResize(const QPoint &pos);
-    void updateCursorForHandle(ResizeHandle handle);
+    void updateCursorForHandle(SelectionStateManager::ResizeHandle handle);
 
     QPixmap m_backgroundPixmap;
     mutable QImage m_backgroundImageCache;  // Lazy-loaded cache for magnifier
@@ -225,10 +216,10 @@ private:
 
     QPoint m_startPoint;
     QPoint m_currentPoint;
-    QRect m_selectionRect;
-    bool m_isSelecting;
-    bool m_selectionComplete;
     QScreen *m_currentScreen;
+
+    // Selection state manager
+    SelectionStateManager *m_selectionManager;
     qreal m_devicePixelRatio;
     bool m_showHexColor;  // true=HEX, false=RGB
 
@@ -260,14 +251,9 @@ private:
     // In-progress annotation state (managed by ToolManager, m_isDrawing tracks overall state)
     bool m_isDrawing;
 
-    // Selection resize/move state
-    ResizeHandle m_activeHandle;
-    bool m_isResizing;
-    bool m_isMoving;
+    // Selection state flags
     bool m_isClosing;
     bool m_isDialogOpen;  // Prevents close during file dialog
-    QPoint m_resizeStartPoint;
-    QRect m_originalRect;
 
     // Window detection state
     WindowDetector *m_windowDetector;

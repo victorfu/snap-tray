@@ -104,6 +104,8 @@ set(SOURCES
     src/tools/handlers/LaserPointerToolHandler.cpp
     # Utility classes
     src/utils/CoordinateHelper.cpp
+    # Region selection
+    src/region/SelectionStateManager.cpp
 )
 
 set(RESOURCES
@@ -174,6 +176,8 @@ set(HEADERS
     # Utility classes
     include/utils/ResourceCleanupHelper.h
     include/utils/CoordinateHelper.h
+    # Region selection
+    include/region/SelectionStateManager.h
 )
 
 # Cross-platform source files (used by both platforms)
