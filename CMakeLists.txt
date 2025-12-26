@@ -93,6 +93,8 @@ set(SOURCES
     src/tools/handlers/EraserToolHandler.cpp
     src/tools/handlers/SelectionToolHandler.cpp
     src/tools/handlers/LaserPointerToolHandler.cpp
+    # Utility classes
+    src/utils/CoordinateHelper.cpp
 )
 
 set(RESOURCES
@@ -153,6 +155,7 @@ set(HEADERS
     include/tools/handlers/LaserPointerToolHandler.h
     # Utility classes
     include/utils/ResourceCleanupHelper.h
+    include/utils/CoordinateHelper.h
 )
 
 # Cross-platform source files (used by both platforms)

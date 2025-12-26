@@ -1,0 +1,129 @@
+#include "utils/CoordinateHelper.h"
+#include <QScreen>
+#include <QtMath>
+
+qreal CoordinateHelper::getDevicePixelRatio(QScreen* screen)
+{
+    return screen ? screen->devicePixelRatio() : 1.0;
+}
+
+// Logical to Physical conversions
+
+QPoint CoordinateHelper::toPhysical(const QPoint& logical, qreal dpr)
+{
+    return QPoint(
+        qRound(logical.x() * dpr),
+        qRound(logical.y() * dpr)
+    );
+}
+
+QRect CoordinateHelper::toPhysical(const QRect& logical, qreal dpr)
+{
+    return QRect(
+        qRound(logical.x() * dpr),
+        qRound(logical.y() * dpr),
+        qRound(logical.width() * dpr),
+        qRound(logical.height() * dpr)
+    );
+}
+
+QSize CoordinateHelper::toPhysical(const QSize& logical, qreal dpr)
+{
+    return QSize(
+        qRound(logical.width() * dpr),
+        qRound(logical.height() * dpr)
+    );
+}
+
+// Physical to Logical conversions
+
+QPoint CoordinateHelper::toLogical(const QPoint& physical, qreal dpr)
+{
+    if (qFuzzyIsNull(dpr)) {
+        return physical;
+    }
+    return QPoint(
+        qRound(physical.x() / dpr),
+        qRound(physical.y() / dpr)
+    );
+}
+
+QRect CoordinateHelper::toLogical(const QRect& physical, qreal dpr)
+{
+    if (qFuzzyIsNull(dpr)) {
+        return physical;
+    }
+    return QRect(
+        qRound(physical.x() / dpr),
+        qRound(physical.y() / dpr),
+        qRound(physical.width() / dpr),
+        qRound(physical.height() / dpr)
+    );
+}
+
+QSize CoordinateHelper::toLogical(const QSize& physical, qreal dpr)
+{
+    if (qFuzzyIsNull(dpr)) {
+        return physical;
+    }
+    return QSize(
+        qRound(physical.width() / dpr),
+        qRound(physical.height() / dpr)
+    );
+}
+
+// Global to Screen-local coordinate conversions
+
+QPoint CoordinateHelper::globalToScreen(const QPoint& global, QScreen* screen)
+{
+    if (!screen) {
+        return global;
+    }
+    return global - screen->geometry().topLeft();
+}
+
+QPoint CoordinateHelper::screenToGlobal(const QPoint& local, QScreen* screen)
+{
+    if (!screen) {
+        return local;
+    }
+    return local + screen->geometry().topLeft();
+}
+
+QRect CoordinateHelper::globalToScreen(const QRect& global, QScreen* screen)
+{
+    if (!screen) {
+        return global;
+    }
+    QPoint offset = screen->geometry().topLeft();
+    return global.translated(-offset);
+}
+
+QRect CoordinateHelper::screenToGlobal(const QRect& local, QScreen* screen)
+{
+    if (!screen) {
+        return local;
+    }
+    QPoint offset = screen->geometry().topLeft();
+    return local.translated(offset);
+}
+
+// Calculate physical size with even dimensions (required by H.264/H.265 encoders)
+
+QSize CoordinateHelper::toEvenPhysicalSize(const QSize& logical, qreal dpr)
+{
+    QSize physical = toPhysical(logical, dpr);
+
+    // Encoders require even dimensions
+    int width = physical.width();
+    int height = physical.height();
+
+    if (width % 2 != 0) {
+        width += 1;
+    }
+    if (height % 2 != 0) {
+        height += 1;
+    }
+
+    return QSize(width, height);
+}

@@ -9,6 +9,7 @@
 #include "AudioFileWriter.h"
 #include "platform/WindowLevel.h"
 #include "utils/ResourceCleanupHelper.h"
+#include "utils/CoordinateHelper.h"
 
 #include <QGuiApplication>
 #include <QScreen>
@@ -385,11 +386,8 @@ void RecordingManager::startFrameCapture()
     }
 
     // Use physical pixel size for Retina/HiDPI displays
-    qreal scale = m_targetScreen ? m_targetScreen->devicePixelRatio() : 1.0;
-    QSize physicalSize(
-        static_cast<int>(m_recordingRegion.width() * scale),
-        static_cast<int>(m_recordingRegion.height() * scale)
-    );
+    qreal scale = CoordinateHelper::getDevicePixelRatio(m_targetScreen);
+    QSize physicalSize = CoordinateHelper::toEvenPhysicalSize(m_recordingRegion.size(), scale);
     qDebug() << "RecordingManager::startFrameCapture() - Physical size:" << physicalSize
              << "(scale:" << scale << ", logical:" << m_recordingRegion.size() << ")";
 
