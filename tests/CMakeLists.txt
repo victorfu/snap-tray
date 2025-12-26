@@ -157,3 +157,75 @@ add_pinwindow_test(PinWindow_Transform
 
 add_pinwindow_test(PinWindow_Resize
     PinWindow/tst_Resize.cpp)
+
+# ============================================================================
+# RegionSelector Tests
+# ============================================================================
+
+# Source files needed for testing MagnifierPanel
+set(MAGNIFIERPANEL_SOURCES
+    ${CMAKE_SOURCE_DIR}/src/region/MagnifierPanel.cpp
+)
+
+set(MAGNIFIERPANEL_HEADERS
+    ${CMAKE_SOURCE_DIR}/include/region/MagnifierPanel.h
+)
+
+# Source files needed for testing UpdateThrottler
+set(UPDATETHROTTLER_SOURCES
+    ${CMAKE_SOURCE_DIR}/src/region/UpdateThrottler.cpp
+)
+
+set(UPDATETHROTTLER_HEADERS
+    ${CMAKE_SOURCE_DIR}/include/region/UpdateThrottler.h
+)
+
+# MagnifierPanel test
+add_executable(RegionSelector_MagnifierPanel
+    RegionSelector/tst_MagnifierPanel.cpp
+    ${MAGNIFIERPANEL_SOURCES}
+    ${MAGNIFIERPANEL_HEADERS}
+)
+
+target_include_directories(RegionSelector_MagnifierPanel PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_BINARY_DIR}/generated
+)
+
+target_link_libraries(RegionSelector_MagnifierPanel PRIVATE
+    Qt6::Widgets
+    Qt6::Gui
+    Qt6::Test
+)
+
+add_test(NAME RegionSelector_MagnifierPanel COMMAND RegionSelector_MagnifierPanel)
+
+set_tests_properties(RegionSelector_MagnifierPanel PROPERTIES
+    TIMEOUT 60
+)
+
+# UpdateThrottler test
+add_executable(RegionSelector_UpdateThrottler
+    RegionSelector/tst_UpdateThrottler.cpp
+    ${UPDATETHROTTLER_SOURCES}
+    ${UPDATETHROTTLER_HEADERS}
+)
+
+target_include_directories(RegionSelector_UpdateThrottler PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_BINARY_DIR}/generated
+)
+
+target_link_libraries(RegionSelector_UpdateThrottler PRIVATE
+    Qt6::Widgets
+    Qt6::Gui
+    Qt6::Test
+)
+
+add_test(NAME RegionSelector_UpdateThrottler COMMAND RegionSelector_UpdateThrottler)
+
+set_tests_properties(RegionSelector_UpdateThrottler PROPERTIES
+    TIMEOUT 60
+)

@@ -84,7 +84,6 @@ RegionSelector::RegionSelector(QWidget* parent)
     , m_currentScreen(nullptr)
     , m_selectionManager(nullptr)
     , m_devicePixelRatio(1.0)
-    , m_showHexColor(false)  // Default to RGB format
     , m_toolbar(nullptr)
     , m_annotationLayer(nullptr)
     , m_currentTool(ToolbarButton::Selection)
@@ -99,6 +98,7 @@ RegionSelector::RegionSelector(QWidget* parent)
     , m_colorPalette(nullptr)
     , m_textEditor(nullptr)
     , m_colorPickerDialog(nullptr)
+    , m_magnifierPanel(nullptr)
 {
     setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::Tool);
     setAttribute(Qt::WA_DeleteOnClose);
@@ -249,13 +249,11 @@ RegionSelector::RegionSelector(QWidget* parent)
     // Start creation timer for startup protection
     m_createdAt.start();
 
-    // Initialize magnifier update timer for throttling
-    m_magnifierUpdateTimer.start();
+    // Initialize magnifier panel component
+    m_magnifierPanel = new MagnifierPanel(this);
 
-    // Initialize update throttle timers
-    m_selectionUpdateTimer.start();
-    m_annotationUpdateTimer.start();
-    m_hoverUpdateTimer.start();
+    // Initialize update throttler
+    m_updateThrottler.startAll();
 
     // 注意: 不在此處初始化螢幕，由 CaptureManager 調用 initializeForScreen()
 }
@@ -272,59 +270,6 @@ RegionSelector::~RegionSelector()
     qApp->removeEventFilter(this);
 
     qDebug() << "RegionSelector: Destroyed";
-}
-
-void RegionSelector::initializeMagnifierGridCache()
-{
-    const int pixelSizeX = MAGNIFIER_WIDTH / MAGNIFIER_GRID_COUNT_X;
-    const int pixelSizeY = MAGNIFIER_HEIGHT / MAGNIFIER_GRID_COUNT_Y;
-
-    m_gridOverlayCache = QPixmap(MAGNIFIER_WIDTH, MAGNIFIER_HEIGHT);
-    m_gridOverlayCache.fill(Qt::transparent);
-
-    QPainter gridPainter(&m_gridOverlayCache);
-    gridPainter.setRenderHint(QPainter::Antialiasing, false);  // Crisp grid lines
-
-    const int cx = MAGNIFIER_WIDTH / 2;
-    const int cy = MAGNIFIER_HEIGHT / 2;
-    const int halfCellX = pixelSizeX / 2;
-    const int halfCellY = pixelSizeY / 2;
-
-    // 中心像素區域座標
-    const int centerLeft = cx - halfCellX;
-    const int centerRight = cx + halfCellX;
-    const int centerTop = cy - halfCellY;
-    const int centerBottom = cy + halfCellY;
-
-    // Draw grid lines (light gray, subtle)
-    gridPainter.setPen(QPen(QColor(200, 200, 200, 80), 1));
-    // Vertical grid lines
-    for (int i = 1; i < MAGNIFIER_GRID_COUNT_X; ++i) {
-        int x = i * pixelSizeX;
-        gridPainter.drawLine(x, 0, x, MAGNIFIER_HEIGHT);
-    }
-    // Horizontal grid lines
-    for (int i = 1; i < MAGNIFIER_GRID_COUNT_Y; ++i) {
-        int y = i * pixelSizeY;
-        gridPainter.drawLine(0, y, MAGNIFIER_WIDTH, y);
-    }
-
-    // Crosshair - thin blue lines, centered, no gap
-    gridPainter.setPen(QPen(QColor(100, 150, 255), 2));  // Light blue crosshair
-    // Horizontal line (full width)
-    gridPainter.drawLine(0, cy, MAGNIFIER_WIDTH, cy);
-    // Vertical line (full height)
-    gridPainter.drawLine(cx, 0, cx, MAGNIFIER_HEIGHT);
-
-    // Center pixel box - white outline
-    gridPainter.setBrush(Qt::NoBrush);
-    gridPainter.setPen(QPen(Qt::white, 2));  // Thicker white border for emphasis
-    gridPainter.drawRect(centerLeft, centerTop, pixelSizeX, pixelSizeY);
-}
-
-void RegionSelector::invalidateMagnifierCache()
-{
-    m_magnifierCacheValid = false;
 }
 
 void RegionSelector::setupToolbarButtons()
@@ -631,9 +576,9 @@ void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapt
     // Set bounds for selection manager
     m_selectionManager->setBounds(QRect(0, 0, screenGeom.width(), screenGeom.height()));
 
-    // Initialize magnifier caches
-    initializeMagnifierGridCache();
-    invalidateMagnifierCache();
+    // Configure magnifier panel with device pixel ratio
+    m_magnifierPanel->setDevicePixelRatio(m_devicePixelRatio);
+    m_magnifierPanel->invalidateCache();
 
     setCursor(Qt::CrossCursor);
 
@@ -1014,156 +959,8 @@ void RegionSelector::drawCrosshair(QPainter& painter)
 
 void RegionSelector::drawMagnifier(QPainter& painter)
 {
-    const int magnifierWidth = MAGNIFIER_WIDTH;   // 放大區域顯示寬度
-    const int magnifierHeight = MAGNIFIER_HEIGHT; // 放大區域顯示高度
-    const int gridCountX = MAGNIFIER_GRID_COUNT_X;  // 顯示 15 個水平像素格子
-    const int gridCountY = MAGNIFIER_GRID_COUNT_Y;  // 顯示 10 個垂直像素格子
-    const int panelWidth = magnifierWidth;     // 面板寬度
-
-    // 取得當前像素顏色 (設備座標)
-    int deviceX = static_cast<int>(m_currentPoint.x() * m_devicePixelRatio);
-    int deviceY = static_cast<int>(m_currentPoint.y() * m_devicePixelRatio);
-    const QImage& img = getBackgroundImage();  // Lazy-loaded for memory efficiency
-    QColor pixelColor;
-    if (deviceX >= 0 && deviceX < img.width() && deviceY >= 0 && deviceY < img.height()) {
-        pixelColor = QColor(img.pixel(deviceX, deviceY));
-    }
-
-    // 計算面板位置 (在 cursor 下方)
-    int panelX = m_currentPoint.x() - panelWidth / 2;
-    int panelY = m_currentPoint.y() + 25;
-
-    // 計算面板總高度 (放大鏡 + 座標 + 顏色 + 熱鍵說明)
-    int totalHeight = magnifierHeight + 85;  // 放大鏡 + 座標 + 顏色 + 2行熱鍵說明
-
-    // 邊界檢查
-    panelX = qMax(10, qMin(panelX, width() - panelWidth - 10));
-    if (panelY + totalHeight > height()) {
-        panelY = m_currentPoint.y() - totalHeight - 25;  // 改放上方
-    }
-
-    // 計算放大鏡顯示區域
-    int magX = panelX;
-    int magY = panelY;
-
-    // 繪製下半部資訊區域背景 - 黑色，無外框
-    int infoAreaY = magY + magnifierHeight;
-    int infoAreaHeight = totalHeight - magnifierHeight;
-    painter.setPen(Qt::NoPen);
-    painter.setBrush(QColor(30, 35, 45, 240));
-    painter.drawRect(panelX, infoAreaY, panelWidth, infoAreaHeight);
-
-    // Check if magnifier cache is still valid (same device pixel position)
-    QPoint currentDevicePos(deviceX, deviceY);
-    if (!m_magnifierCacheValid || m_cachedDevicePosition != currentDevicePos) {
-        // 從設備像素 pixmap 中取樣
-        // 取 gridCount 個「邏輯像素」，每個邏輯像素 = devicePixelRatio 個設備像素
-        int deviceGridCountX = static_cast<int>(gridCountX * m_devicePixelRatio);
-        int deviceGridCountY = static_cast<int>(gridCountY * m_devicePixelRatio);
-        // 游標位置在中心
-        int sampleX = deviceX - deviceGridCountX / 2;
-        int sampleY = deviceY - deviceGridCountY / 2;
-
-        // 建立一個以游標為中心的取樣圖像，超出邊界的部分填充黑色
-        QImage sampleImage(deviceGridCountX, deviceGridCountY, QImage::Format_ARGB32);
-        sampleImage.fill(Qt::black);
-
-        // Optimized pixel sampling using scanLine() for direct memory access
-        // Pre-calculate valid source region bounds
-        int srcLeft = qMax(0, sampleX);
-        int srcTop = qMax(0, sampleY);
-        int srcRight = qMin(img.width(), sampleX + deviceGridCountX);
-        int srcBottom = qMin(img.height(), sampleY + deviceGridCountY);
-
-        // Calculate destination offsets for out-of-bounds handling
-        int dstOffsetX = srcLeft - sampleX;
-        int dstOffsetY = srcTop - sampleY;
-
-        // Copy valid region using scanLine for direct memory access (much faster than pixel-by-pixel)
-        if (srcRight > srcLeft && srcBottom > srcTop) {
-            int copyWidth = srcRight - srcLeft;
-            for (int srcY = srcTop; srcY < srcBottom; ++srcY) {
-                const QRgb* srcLine = reinterpret_cast<const QRgb*>(img.constScanLine(srcY));
-                QRgb* dstLine = reinterpret_cast<QRgb*>(sampleImage.scanLine(srcY - srcTop + dstOffsetY));
-                memcpy(dstLine + dstOffsetX, srcLine + srcLeft, copyWidth * sizeof(QRgb));
-            }
-        }
-
-        // 使用 IgnoreAspectRatio 確保填滿整個區域
-        m_magnifierPixmapCache = QPixmap::fromImage(sampleImage).scaled(magnifierWidth, magnifierHeight,
-            Qt::IgnoreAspectRatio,
-            Qt::FastTransformation);
-
-        m_cachedDevicePosition = currentDevicePos;
-        m_magnifierCacheValid = true;
-    }
-
-    // Draw cached magnified pixmap
-    painter.drawPixmap(magX, magY, m_magnifierPixmapCache);
-
-    // Draw cached grid overlay (pre-rendered in initializeMagnifierGridCache)
-    painter.drawPixmap(magX, magY, m_gridOverlayCache);
-
-    // 繪製放大鏡區域白色外框
-    painter.setPen(QPen(Qt::white, 1));
-    painter.setBrush(Qt::NoBrush);
-    painter.drawRect(magX, magY, magnifierWidth, magnifierHeight);
-
-    // 2. 座標資訊
-    int infoY = magY + magnifierHeight + 6;
-    painter.setPen(Qt::white);
-    QFont font = painter.font();
-    font.setPointSize(11);
-    painter.setFont(font);
-
-    QString coordText = QString("(%1 , %2)").arg(m_currentPoint.x()).arg(m_currentPoint.y());
-    painter.drawText(panelX, infoY, panelWidth, 20, Qt::AlignCenter, coordText);
-
-    // 3. 顏色預覽 + RGB/HEX (左對齊)
-    infoY += 20;
-    int colorBoxSize = 14;
-
-    // 計算顏色文字
-    QString colorText;
-    if (m_showHexColor) {
-        colorText = QString("#%1%2%3")
-            .arg(pixelColor.red(), 2, 16, QChar('0'))
-            .arg(pixelColor.green(), 2, 16, QChar('0'))
-            .arg(pixelColor.blue(), 2, 16, QChar('0'));
-    }
-    else {
-        colorText = QString("RGB: %1,%2,%3")
-            .arg(pixelColor.red())
-            .arg(pixelColor.green())
-            .arg(pixelColor.blue());
-    }
-
-    // Left-aligned layout for color swatch and text
-    int colorStartX = panelX + 8;
-
-    // 繪製顏色方塊
-    painter.fillRect(colorStartX, infoY, colorBoxSize, colorBoxSize, pixelColor);
-    painter.setPen(QPen(QColor(200, 200, 200), 1));
-    painter.setBrush(Qt::NoBrush);
-    painter.drawRect(colorStartX, infoY, colorBoxSize, colorBoxSize);
-
-    // 繪製顏色文字
-    painter.setPen(Qt::white);
-    painter.drawText(colorStartX + colorBoxSize + 8, infoY, panelWidth - 16 - colorBoxSize - 8, colorBoxSize, Qt::AlignVCenter, colorText);
-
-    // 4. Hotkey instructions (left-aligned, smaller font)
-    infoY += 18;
-    QFont smallFont = font;
-    smallFont.setPointSize(9);
-    painter.setFont(smallFont);
-    painter.setPen(QColor(200, 200, 200));
-
-    QString instruction1 = QString("Shift: Switch color format");
-    painter.drawText(colorStartX, infoY, panelWidth - 16, 14, Qt::AlignLeft | Qt::AlignVCenter, instruction1);
-
-    infoY += 14;
-    QString instruction2 = QString("C: Copy color value");
-    painter.drawText(colorStartX, infoY, panelWidth - 16, 14, Qt::AlignLeft | Qt::AlignVCenter, instruction2);
+    // Delegate to MagnifierPanel component
+    m_magnifierPanel->draw(painter, m_currentPoint, size(), getBackgroundImage());
 }
 
 void RegionSelector::drawDimensionInfo(QPainter& painter)
@@ -1877,36 +1674,36 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
     if (m_selectionManager->isSelecting() || m_selectionManager->isResizing() || m_selectionManager->isMoving()) {
         // Selection/resize/move: high frequency (120fps) for responsiveness
         // Note: Full update required because overlay affects entire screen outside selection
-        if (m_selectionUpdateTimer.elapsed() >= SELECTION_UPDATE_MS) {
-            m_selectionUpdateTimer.restart();
+        if (m_updateThrottler.shouldUpdate(UpdateThrottler::ThrottleType::Selection)) {
+            m_updateThrottler.reset(UpdateThrottler::ThrottleType::Selection);
             update();
         }
     }
     else if (m_isDrawing) {
         // Annotation drawing: medium frequency (80fps) to balance smoothness and performance
-        if (m_annotationUpdateTimer.elapsed() >= ANNOTATION_UPDATE_MS) {
-            m_annotationUpdateTimer.restart();
+        if (m_updateThrottler.shouldUpdate(UpdateThrottler::ThrottleType::Annotation)) {
+            m_updateThrottler.reset(UpdateThrottler::ThrottleType::Annotation);
             update();
         }
     }
     else if (m_selectionManager->isComplete()) {
         // Hover effects in selection complete mode: lower frequency (30fps)
-        if (m_hoverUpdateTimer.elapsed() >= HOVER_UPDATE_MS) {
-            m_hoverUpdateTimer.restart();
+        if (m_updateThrottler.shouldUpdate(UpdateThrottler::ThrottleType::Hover)) {
+            m_updateThrottler.reset(UpdateThrottler::ThrottleType::Hover);
             update();
         }
     }
     else {
         // Magnifier-only mode (pre-selection): use dirty region for magnifier
-        if (m_magnifierUpdateTimer.elapsed() >= MAGNIFIER_MIN_UPDATE_MS) {
-            m_magnifierUpdateTimer.restart();
+        if (m_updateThrottler.shouldUpdate(UpdateThrottler::ThrottleType::Magnifier)) {
+            m_updateThrottler.reset(UpdateThrottler::ThrottleType::Magnifier);
             // Calculate magnifier panel rect and update only that region
-            const int panelWidth = MAGNIFIER_WIDTH;
-            const int totalHeight = MAGNIFIER_HEIGHT + 55;
+            const int panelWidth = MagnifierPanel::kWidth;
+            const int totalHeight = MagnifierPanel::kHeight + 85;  // magnifier + info area
             int panelX = m_currentPoint.x() - panelWidth / 2;
             panelX = qMax(10, qMin(panelX, width() - panelWidth - 10));
 
-            // 計算兩個可能的面板位置（下方和上方），確保髒區域覆蓋翻轉情況
+            // Calculate two possible panel positions (below and above), ensure dirty region covers flip case
             int panelYBelow = m_currentPoint.y() + 25;
             int panelYAbove = m_currentPoint.y() - totalHeight - 25;
             QRect belowRect(panelX - 5, panelYBelow - 5, panelWidth + 10, totalHeight + 10);
@@ -1915,14 +1712,11 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
 
             QRect dirtyRect = m_lastMagnifierRect.united(currentMagRect);
 
-            // 十字線區域 - 加寬清除範圍並包含上一次位置
+            // Crosshair region - widen clear range and include last position
             dirtyRect = dirtyRect.united(QRect(0, m_currentPoint.y() - 3, width(), 6));
             dirtyRect = dirtyRect.united(QRect(m_currentPoint.x() - 3, 0, 6, height()));
-            dirtyRect = dirtyRect.united(QRect(0, m_lastMagnifierPosition.y() - 3, width(), 6));
-            dirtyRect = dirtyRect.united(QRect(m_lastMagnifierPosition.x() - 3, 0, 6, height()));
 
             m_lastMagnifierRect = currentMagRect;
-            m_lastMagnifierPosition = m_currentPoint;
             update(dirtyRect);
         }
     }
@@ -2071,32 +1865,23 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
     }
     else if (event->key() == Qt::Key_Shift && !m_selectionManager->isComplete()) {
         // Switch RGB/HEX color format display (only when magnifier is shown)
-        m_showHexColor = !m_showHexColor;
+        m_magnifierPanel->toggleColorFormat();
         update();
     }
     else if (event->key() == Qt::Key_C && !m_selectionManager->isComplete()) {
-        // 複製顏色到剪貼板 (僅在未選取完成時有效)
-        int deviceX = static_cast<int>(m_currentPoint.x() * m_devicePixelRatio);
-        int deviceY = static_cast<int>(m_currentPoint.y() * m_devicePixelRatio);
-        const QImage& img = m_backgroundImageCache;
-        if (deviceX >= 0 && deviceX < img.width() && deviceY >= 0 && deviceY < img.height()) {
-            QColor pixelColor = QColor(img.pixel(deviceX, deviceY));
-            QString colorText;
-            if (m_showHexColor) {
-                colorText = QString("#%1%2%3")
-                    .arg(pixelColor.red(), 2, 16, QChar('0'))
-                    .arg(pixelColor.green(), 2, 16, QChar('0'))
-                    .arg(pixelColor.blue(), 2, 16, QChar('0'));
-            }
-            else {
-                colorText = QString("rgb(%1, %2, %3)")
-                    .arg(pixelColor.red())
-                    .arg(pixelColor.green())
-                    .arg(pixelColor.blue());
-            }
-            QGuiApplication::clipboard()->setText(colorText);
-            qDebug() << "RegionSelector: Copied color to clipboard:" << colorText;
+        // Copy color to clipboard (only when selection not complete)
+        // Use the color already calculated by MagnifierPanel
+        QString colorText = m_magnifierPanel->colorString();
+        // Adjust format for clipboard (use parentheses for RGB)
+        if (!m_magnifierPanel->showHexColor()) {
+            QColor c = m_magnifierPanel->currentColor();
+            colorText = QString("rgb(%1, %2, %3)")
+                .arg(c.red())
+                .arg(c.green())
+                .arg(c.blue());
         }
+        QGuiApplication::clipboard()->setText(colorText);
+        qDebug() << "RegionSelector: Copied color to clipboard:" << colorText;
     }
     else if (event->matches(QKeySequence::Undo)) {
         if (m_selectionManager->isComplete() && m_annotationLayer->canUndo()) {

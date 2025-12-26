@@ -108,6 +108,8 @@ set(SOURCES
     src/utils/CoordinateHelper.cpp
     # Region selection
     src/region/SelectionStateManager.cpp
+    src/region/MagnifierPanel.cpp
+    src/region/UpdateThrottler.cpp
     # UI sections
     src/ui/sections/ColorSection.cpp
     src/ui/sections/WidthSection.cpp
@@ -193,6 +195,8 @@ set(HEADERS
     include/utils/CoordinateHelper.h
     # Region selection
     include/region/SelectionStateManager.h
+    include/region/MagnifierPanel.h
+    include/region/UpdateThrottler.h
     # UI sections
     include/ui/IWidgetSection.h
     include/ui/sections/ColorSection.h

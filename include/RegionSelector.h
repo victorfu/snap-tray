@@ -23,6 +23,8 @@
 #include "tools/ToolId.h"
 #include "tools/ToolManager.h"
 #include "region/SelectionStateManager.h"
+#include "region/MagnifierPanel.h"
+#include "region/UpdateThrottler.h"
 
 class QScreen;
 class ColorPaletteWidget;
@@ -221,7 +223,6 @@ private:
     // Selection state manager
     SelectionStateManager *m_selectionManager;
     qreal m_devicePixelRatio;
-    bool m_showHexColor;  // true=HEX, false=RGB
 
     // Toolbar
     ToolbarWidget *m_toolbar;
@@ -302,33 +303,15 @@ private:
     // Startup protection - ignore early ApplicationDeactivate events
     QElapsedTimer m_createdAt;
 
-    // Magnifier performance optimization
-    QElapsedTimer m_magnifierUpdateTimer;
-    QPoint m_lastMagnifierPosition;
-    QPixmap m_gridOverlayCache;
-    QPixmap m_magnifierPixmapCache;
-    QPoint m_cachedDevicePosition;
-    bool m_magnifierCacheValid = false;
-    static constexpr int MAGNIFIER_MIN_UPDATE_MS = 16;  // ~60fps cap
-    static constexpr int MAGNIFIER_WIDTH = 180;
-    static constexpr int MAGNIFIER_HEIGHT = 120;
-    static constexpr int MAGNIFIER_GRID_COUNT_X = 15;
-    static constexpr int MAGNIFIER_GRID_COUNT_Y = 10;
+    // Magnifier panel component
+    MagnifierPanel* m_magnifierPanel;
 
-    // Update frequency control - per-operation throttling
-    QElapsedTimer m_selectionUpdateTimer;
-    QElapsedTimer m_annotationUpdateTimer;
-    QElapsedTimer m_hoverUpdateTimer;
-    static constexpr int SELECTION_UPDATE_MS = 8;    // 120fps for selection
-    static constexpr int ANNOTATION_UPDATE_MS = 12;  // 80fps for drawing
-    static constexpr int HOVER_UPDATE_MS = 32;       // 30fps for hover effects
+    // Update throttling component
+    UpdateThrottler m_updateThrottler;
 
     // Dirty region tracking for partial updates
     QRect m_lastSelectionRect;  // Previous selection rect for dirty region calculation
     QRect m_lastMagnifierRect;  // Previous magnifier rect
-
-    void initializeMagnifierGridCache();
-    void invalidateMagnifierCache();
 };
 
 #endif // REGIONSELECTOR_H
