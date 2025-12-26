@@ -228,7 +228,20 @@ QList<IAudioCaptureEngine::AudioDevice> CoreAudioCaptureEngine::availableInputDe
 {
     QList<AudioDevice> devices;
 
-    NSArray<AVCaptureDevice *> *audioDevices = [AVCaptureDevice devicesWithMediaType:AVMediaTypeAudio];
+    NSArray<AVCaptureDeviceType> *deviceTypes;
+    if (@available(macOS 14.0, *)) {
+        deviceTypes = @[AVCaptureDeviceTypeMicrophone];
+    } else {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+        deviceTypes = @[AVCaptureDeviceTypeBuiltInMicrophone, AVCaptureDeviceTypeExternalUnknown];
+#pragma clang diagnostic pop
+    }
+    AVCaptureDeviceDiscoverySession *discoverySession = [AVCaptureDeviceDiscoverySession
+        discoverySessionWithDeviceTypes:deviceTypes
+        mediaType:AVMediaTypeAudio
+        position:AVCaptureDevicePositionUnspecified];
+    NSArray<AVCaptureDevice *> *audioDevices = discoverySession.devices;
     AVCaptureDevice *defaultDevice = [AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeAudio];
 
     for (AVCaptureDevice *device in audioDevices) {

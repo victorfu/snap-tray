@@ -55,7 +55,7 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     , m_ffmpegStatusLabel(nullptr)
 {
     setWindowTitle("SnapTray Settings");
-    setMinimumSize(520, 360);
+    setMinimumSize(520, 480);
     setupUi();
 
     connect(this, &QDialog::accepted, this, &SettingsDialog::onAccepted);
@@ -458,6 +458,7 @@ void SettingsDialog::setupRecordingTab(QWidget *tab)
     // System audio warning label
     m_systemAudioWarningLabel = new QLabel(tab);
     m_systemAudioWarningLabel->setWordWrap(true);
+    m_systemAudioWarningLabel->setMinimumHeight(50);
     m_systemAudioWarningLabel->setStyleSheet(
         "QLabel { background-color: #fff3cd; color: #856404; "
         "padding: 8px; border-radius: 4px; font-size: 11px; }");
