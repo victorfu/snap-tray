@@ -153,19 +153,25 @@ void MagnifierPanel::draw(QPainter& painter, const QPoint& cursorPos,
         m_currentColor = Qt::black;
     }
 
-    // Calculate panel position (below cursor)
+    // Calculate panel position (cursor at top-left corner, like Snipaste/PixPin)
     int panelWidth = kWidth;
-    int panelX = cursorPos.x() - panelWidth / 2;
-    int panelY = cursorPos.y() + 25;
+    int offset = 20;  // Small offset from cursor
+    int panelX = cursorPos.x() + offset;
+    int panelY = cursorPos.y() + offset;
 
     // Calculate total panel height (magnifier + coordinates + color + hotkey instructions)
     int totalHeight = kHeight + 85;  // magnifier + coords + color + 2 lines of hotkey hints
 
-    // Boundary checking
-    panelX = qMax(10, qMin(panelX, viewportSize.width() - panelWidth - 10));
-    if (panelY + totalHeight > viewportSize.height()) {
-        panelY = cursorPos.y() - totalHeight - 25;  // Place above cursor
+    // Boundary checking - flip to other side if near edges
+    if (panelX + panelWidth + 10 > viewportSize.width()) {
+        panelX = cursorPos.x() - panelWidth - offset;  // Place to left of cursor
     }
+    if (panelY + totalHeight + 10 > viewportSize.height()) {
+        panelY = cursorPos.y() - totalHeight - offset;  // Place above cursor
+    }
+    // Ensure minimum margins
+    panelX = qMax(10, panelX);
+    panelY = qMax(10, panelY);
 
     // Calculate magnifier display area
     int magX = panelX;

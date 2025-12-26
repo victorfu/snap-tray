@@ -856,9 +856,9 @@ void RegionSelector::paintEvent(QPaintEvent*)
         }
     }
 
-    // Draw crosshair at cursor - only show inside selection when selection is complete
-    // Hide magnifier when any annotation tool is selected
-    bool shouldShowCrosshair = !m_selectionManager->isSelecting() && !m_isDrawing && !isAnnotationTool(m_currentTool);
+    // Draw crosshair at cursor - show during selection process and inside selection when complete
+    // Hide magnifier when any annotation tool is selected or when drawing
+    bool shouldShowCrosshair = !m_isDrawing && !isAnnotationTool(m_currentTool);
     if (m_selectionManager->isComplete()) {
         // Only show crosshair inside selection area, not on toolbar
         shouldShowCrosshair = shouldShowCrosshair &&
