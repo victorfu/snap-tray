@@ -41,6 +41,15 @@ void PinWindowManager::closeAllWindows()
     }
 }
 
+void PinWindowManager::disableClickThroughAll()
+{
+    for (PinWindow *window : m_windows) {
+        if (window->isClickThrough()) {
+            window->setClickThrough(false);
+        }
+    }
+}
+
 void PinWindowManager::onWindowClosed(PinWindow *window)
 {
     m_windows.removeOne(window);

@@ -3,6 +3,7 @@
 #include "OCRManager.h"
 #include "PlatformFeatures.h"
 #include "WatermarkRenderer.h"
+#include "platform/WindowLevel.h"
 
 #include <QPainter>
 #include <QMouseEvent>
@@ -10,6 +11,7 @@
 #include <QKeyEvent>
 #include <QCloseEvent>
 #include <QContextMenuEvent>
+#include <QMoveEvent>
 #include <QMenu>
 #include <QAction>
 #include <QFileDialog>
@@ -42,6 +44,7 @@ PinWindow::PinWindow(const QPixmap &screenshot, const QPoint &position, QWidget 
     , m_opacity(1.0)
     , m_currentZoomAction(nullptr)
     , m_smoothing(true)
+    , m_clickThrough(false)
 {
     // Frameless, always on top
     // Note: Removed Qt::Tool flag as it causes the window to hide when app loses focus on macOS
@@ -102,6 +105,20 @@ PinWindow::PinWindow(const QPixmap &screenshot, const QPoint &position, QWidget 
     m_opacityLabelTimer = new QTimer(this);
     m_opacityLabelTimer->setSingleShot(true);
     connect(m_opacityLabelTimer, &QTimer::timeout, m_opacityLabel, &QLabel::hide);
+
+    // Click-through indicator label
+    m_clickThroughLabel = new QLabel(this);
+    m_clickThroughLabel->setStyleSheet(
+        "QLabel {"
+        "  background-color: rgba(88, 86, 214, 200);"
+        "  color: white;"
+        "  padding: 4px 10px;"
+        "  border-radius: 4px;"
+        "  font-size: 11px;"
+        "  font-weight: bold;"
+        "}"
+    );
+    m_clickThroughLabel->hide();
 
     // OCR toast label (shows success/failure message)
     m_ocrToastLabel = new QLabel(this);
@@ -477,6 +494,13 @@ void PinWindow::createContextMenu()
     addInfoItem("X-mirror", m_flipHorizontal ? "Yes" : "No");
     addInfoItem("Y-mirror", m_flipVertical ? "Yes" : "No");
 
+    // Click-through option
+    QAction *clickThroughAction = m_contextMenu->addAction("Click-through");
+    clickThroughAction->setCheckable(true);
+    clickThroughAction->setChecked(m_clickThrough);
+    clickThroughAction->setShortcut(QKeySequence(Qt::Key_T));
+    connect(clickThroughAction, &QAction::toggled, this, &PinWindow::setClickThrough);
+
     m_contextMenu->addSeparator();
 
     QAction *closeAction = m_contextMenu->addAction("Close");
@@ -685,6 +709,36 @@ void PinWindow::showOpacityIndicator()
     m_opacityLabelTimer->start(1500);
 }
 
+void PinWindow::setClickThrough(bool enabled)
+{
+    if (m_clickThrough == enabled)
+        return;
+
+    m_clickThrough = enabled;
+
+    // Use native API to set click-through mode for the window
+    setWindowClickThrough(this, enabled);
+
+    update(); // Trigger repaint for border change
+}
+
+void PinWindow::showClickThroughIndicator()
+{
+    if (m_clickThrough) {
+        m_clickThroughLabel->setText("Click-through (T to exit)");
+        m_clickThroughLabel->adjustSize();
+        // Position at top-right corner
+        m_clickThroughLabel->move(
+            width() - kShadowMargin - m_clickThroughLabel->width() - 8,
+            kShadowMargin + 8
+        );
+        m_clickThroughLabel->show();
+        m_clickThroughLabel->raise();
+    } else {
+        m_clickThroughLabel->hide();
+    }
+}
+
 void PinWindow::paintEvent(QPaintEvent *)
 {
     QPainter painter(this);
@@ -704,8 +758,13 @@ void PinWindow::paintEvent(QPaintEvent *)
     // Draw the screenshot at the margin offset
     painter.drawPixmap(pixmapRect, m_displayPixmap);
 
-    // Draw subtle border with slight glow effect (blue accent)
-    painter.setPen(QPen(QColor(0, 120, 215, 200), 1.5));
+    // Draw subtle border with slight glow effect
+    if (m_clickThrough) {
+        // Dashed indigo border for click-through mode
+        painter.setPen(QPen(QColor(88, 86, 214, 200), 2, Qt::DashLine));
+    } else {
+        painter.setPen(QPen(QColor(0, 120, 215, 200), 1.5));
+    }
     painter.setBrush(Qt::NoBrush);
     painter.drawRect(pixmapRect);
 
@@ -933,6 +992,8 @@ void PinWindow::keyPressEvent(QKeyEvent *event)
         saveToFile();
     } else if (event->matches(QKeySequence::Copy)) {
         copyToClipboard();
+    } else if (event->key() == Qt::Key_T) {
+        setClickThrough(!m_clickThrough);
     } else {
         QWidget::keyPressEvent(event);
     }
@@ -942,4 +1003,9 @@ void PinWindow::closeEvent(QCloseEvent *event)
 {
     emit closed(this);
     event->accept();
+}
+
+void PinWindow::moveEvent(QMoveEvent *event)
+{
+    QWidget::moveEvent(event);
 }

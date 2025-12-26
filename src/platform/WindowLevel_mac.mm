@@ -17,3 +17,15 @@ void raiseWindowAboveMenuBar(QWidget *widget)
         [window setLevel:kCGScreenSaverWindowLevel]; // level 1000
     }
 }
+
+void setWindowClickThrough(QWidget *widget, bool enabled)
+{
+    if (!widget) {
+        return;
+    }
+    NSView *view = reinterpret_cast<NSView *>(widget->winId());
+    if (view) {
+        NSWindow *window = [view window];
+        [window setIgnoresMouseEvents:enabled];
+    }
+}

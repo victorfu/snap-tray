@@ -40,6 +40,10 @@ public:
     // Pin window manager
     void setPinWindowManager(PinWindowManager *manager);
 
+    // Click-through mode
+    void setClickThrough(bool enabled);
+    bool isClickThrough() const { return m_clickThrough; }
+
 signals:
     void closed(PinWindow *window);
     void saveRequested(const QPixmap &pixmap);
@@ -55,6 +59,7 @@ protected:
     void contextMenuEvent(QContextMenuEvent *event) override;
     void keyPressEvent(QKeyEvent *event) override;
     void closeEvent(QCloseEvent *event) override;
+    void moveEvent(QMoveEvent *event) override;
 
 private:
     // Layout constants
@@ -88,6 +93,9 @@ private:
 
     // Opacity indicator
     void showOpacityIndicator();
+
+    // Click-through indicator
+    void showClickThroughIndicator();
 
     // OCR methods
     void performOCR();
@@ -123,6 +131,10 @@ private:
     qreal m_opacity;
     QLabel *m_opacityLabel;
     QTimer *m_opacityLabelTimer;
+
+    // Click-through mode
+    bool m_clickThrough;
+    QLabel *m_clickThroughLabel;
 
     // Rotation members
     int m_rotationAngle;  // 0, 90, 180, 270 degrees
