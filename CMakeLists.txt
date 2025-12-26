@@ -41,7 +41,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Widgets Gui Svg)
+find_package(Qt6 REQUIRED COMPONENTS Widgets Gui Svg Test)
 
 # Fetch QHotkey for global hotkey support
 include(FetchContent)
@@ -108,6 +108,12 @@ set(SOURCES
     src/utils/CoordinateHelper.cpp
     # Region selection
     src/region/SelectionStateManager.cpp
+    # UI sections
+    src/ui/sections/ColorSection.cpp
+    src/ui/sections/WidthSection.cpp
+    src/ui/sections/TextSection.cpp
+    src/ui/sections/ArrowStyleSection.cpp
+    src/ui/sections/ShapeSection.cpp
 )
 
 set(RESOURCES
@@ -183,6 +189,13 @@ set(HEADERS
     include/utils/CoordinateHelper.h
     # Region selection
     include/region/SelectionStateManager.h
+    # UI sections
+    include/ui/IWidgetSection.h
+    include/ui/sections/ColorSection.h
+    include/ui/sections/WidthSection.h
+    include/ui/sections/TextSection.h
+    include/ui/sections/ArrowStyleSection.h
+    include/ui/sections/ShapeSection.h
 )
 
 # Cross-platform source files (used by both platforms)
@@ -336,3 +349,9 @@ if(APPLE)
         MACOSX_BUNDLE_ICON_FILE snaptray.icns
     )
 endif()
+
+# ============================================================================
+# Testing Configuration
+# ============================================================================
+enable_testing()
+add_subdirectory(tests)

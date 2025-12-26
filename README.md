@@ -99,6 +99,23 @@ SnapTray currently supports macOS and Windows only.
 
 ## Build & Run
 
+### Running Tests
+
+```bash
+# Configure and build
+cmake -S . -B build -DCMAKE_PREFIX_PATH="$(brew --prefix qt)"
+cmake --build build
+
+# Run all tests
+cd build && ctest --output-on-failure
+
+# Or run individual test suites
+./build/tests/ColorAndWidthWidget_State
+./build/tests/ColorAndWidthWidget_Signals
+./build/tests/ColorAndWidthWidget_HitTest
+./build/tests/ColorAndWidthWidget_Events
+```
+
 ### Development Build (Debug)
 
 **macOS:**

@@ -99,6 +99,23 @@ SnapTray 是一個在系統托盤常駐的截圖與錄影小工具，提供區�
 
 ## 建置與執行
 
+### 執行測試
+
+```bash
+# 設定並建置
+cmake -S . -B build -DCMAKE_PREFIX_PATH="$(brew --prefix qt)"
+cmake --build build
+
+# 執行所有測試
+cd build && ctest --output-on-failure
+
+# 或執行個別測試套件
+./build/tests/ColorAndWidthWidget_State
+./build/tests/ColorAndWidthWidget_Signals
+./build/tests/ColorAndWidthWidget_HitTest
+./build/tests/ColorAndWidthWidget_Events
+```
+
 ### 開發版本（Debug）
 
 **macOS：**
