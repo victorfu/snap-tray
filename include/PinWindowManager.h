@@ -19,6 +19,7 @@ public:
     PinWindow* createPinWindow(const QPixmap &screenshot, const QPoint &position);
     void closeAllWindows();
     void disableClickThroughAll();
+    void toggleClickThroughAtCursor();
     int windowCount() const { return m_windows.count(); }
 
 signals:

@@ -29,6 +29,7 @@ private slots:
     void onFullScreenRecording();
     void onCloseAllPins();
     void onSettings();
+    void onToggleClickThroughAtCursor();
 
 public:
     bool updateHotkey(const QString &newHotkey);
@@ -42,6 +43,7 @@ private:
     QMenu *m_trayMenu;
     QHotkey *m_regionHotkey;
     QHotkey *m_screenCanvasHotkey;
+    QHotkey *m_toggleClickThroughHotkey;
     CaptureManager *m_captureManager;
     PinWindowManager *m_pinWindowManager;
     ScreenCanvasManager *m_screenCanvasManager;

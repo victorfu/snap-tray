@@ -24,6 +24,7 @@ MainApplication::MainApplication(QObject* parent)
     , m_trayMenu(nullptr)
     , m_regionHotkey(nullptr)
     , m_screenCanvasHotkey(nullptr)
+    , m_toggleClickThroughHotkey(nullptr)
     , m_captureManager(nullptr)
     , m_pinWindowManager(nullptr)
     , m_screenCanvasManager(nullptr)
@@ -276,6 +277,12 @@ void MainApplication::onSettings()
     m_settingsDialog->activateWindow();
 }
 
+void MainApplication::onToggleClickThroughAtCursor()
+{
+    qDebug() << "Toggle click-through at cursor triggered";
+    m_pinWindowManager->toggleClickThroughAtCursor();
+}
+
 void MainApplication::setupHotkey()
 {
     QStringList failedHotkeys;
@@ -308,6 +315,20 @@ void MainApplication::setupHotkey()
     }
 
     connect(m_screenCanvasHotkey, &QHotkey::activated, this, &MainApplication::onScreenCanvas);
+
+    // Setup toggle click-through hotkey (Shift+T)
+    // This hotkey toggles click-through mode for the pin window under the cursor
+    m_toggleClickThroughHotkey = new QHotkey(QKeySequence(Qt::SHIFT | Qt::Key_T), true, this);
+    
+    if (m_toggleClickThroughHotkey->isRegistered()) {
+        qDebug() << "Toggle click-through hotkey registered: Shift+T";
+    }
+    else {
+        qDebug() << "Failed to register toggle click-through hotkey: Shift+T";
+        failedHotkeys << "Toggle Click-through (Shift+T)";
+    }
+    
+    connect(m_toggleClickThroughHotkey, &QHotkey::activated, this, &MainApplication::onToggleClickThroughAtCursor);
 
     // Update tray menu text with current hotkey
     updateTrayMenuHotkeyText(regionKeySequence);

@@ -726,7 +726,7 @@ void PinWindow::setClickThrough(bool enabled)
 void PinWindow::showClickThroughIndicator()
 {
     if (m_clickThrough) {
-        m_clickThroughLabel->setText("Click-through (T to exit)");
+        m_clickThroughLabel->setText("Click-through (Shift+T or T to exit)");
         m_clickThroughLabel->adjustSize();
         // Position at top-right corner
         m_clickThroughLabel->move(

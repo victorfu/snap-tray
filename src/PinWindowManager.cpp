@@ -2,6 +2,9 @@
 #include "PinWindow.h"
 
 #include <QDebug>
+#include <QCursor>
+#include <QGuiApplication>
+#include <QScreen>
 
 PinWindowManager::PinWindowManager(QObject *parent)
     : QObject(parent)
@@ -48,6 +51,30 @@ void PinWindowManager::disableClickThroughAll()
             window->setClickThrough(false);
         }
     }
+}
+
+void PinWindowManager::toggleClickThroughAtCursor()
+{
+    // Get the current cursor position
+    QPoint cursorPos = QCursor::pos();
+    
+    // Find the topmost pin window at the cursor position
+    // We need to check from the end of the list (most recently created/raised)
+    // to get the topmost window
+    for (int i = m_windows.count() - 1; i >= 0; --i) {
+        PinWindow *window = m_windows[i];
+        
+        // Check if the cursor is within the window's geometry
+        if (window->geometry().contains(cursorPos)) {
+            // Toggle click-through mode for this window
+            window->setClickThrough(!window->isClickThrough());
+            qDebug() << "PinWindowManager: Toggled click-through for window at cursor, now"
+                     << (window->isClickThrough() ? "enabled" : "disabled");
+            return;
+        }
+    }
+    
+    qDebug() << "PinWindowManager: No pin window found at cursor position";
 }
 
 void PinWindowManager::onWindowClosed(PinWindow *window)
