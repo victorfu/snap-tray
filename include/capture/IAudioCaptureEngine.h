@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QByteArray>
 #include <QStringList>
+#include <functional>
 
 /**
  * @brief Abstract interface for cross-platform audio capture
@@ -16,6 +17,17 @@ class IAudioCaptureEngine : public QObject
     Q_OBJECT
 
 public:
+    /**
+     * @brief Microphone permission status (macOS)
+     */
+    enum class MicrophonePermission {
+        Authorized,      // Permission granted
+        Denied,          // User denied permission
+        NotDetermined,   // Permission not yet requested
+        Restricted       // Restricted by system policy
+    };
+    Q_ENUM(MicrophonePermission)
+
     /**
      * @brief Audio source options
      */
@@ -154,6 +166,19 @@ public:
      * @brief Check if any native audio capture engine is available
      */
     static bool isNativeEngineAvailable();
+
+    /**
+     * @brief Check current microphone permission status (macOS only)
+     * @return Permission status, always Authorized on Windows
+     */
+    static MicrophonePermission checkMicrophonePermission();
+
+    /**
+     * @brief Request microphone permission (macOS only)
+     * @param callback Called with result (true if granted)
+     * On Windows, callback is called immediately with true
+     */
+    static void requestMicrophonePermission(std::function<void(bool granted)> callback);
 
 signals:
     /**

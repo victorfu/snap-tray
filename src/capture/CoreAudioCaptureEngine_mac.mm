@@ -7,6 +7,9 @@
 #import <AudioToolbox/AudioToolbox.h>
 
 #include <QDebug>
+#include <cstddef>
+#include <cstdlib>
+#include <cstring>
 #include <chrono>
 
 // Check if ScreenCaptureKit is available (macOS 12.3+)
@@ -25,6 +28,135 @@
 @property (nonatomic, assign) bool paused;
 @end
 
+static QByteArray convertAudioBufferToPCM16(CMSampleBufferRef sampleBuffer,
+                                            const char *label,
+                                            bool *formatLogged)
+{
+    CMFormatDescriptionRef formatDesc = CMSampleBufferGetFormatDescription(sampleBuffer);
+    const AudioStreamBasicDescription *asbd = CMAudioFormatDescriptionGetStreamBasicDescription(formatDesc);
+    if (!asbd) return QByteArray();
+
+    CMItemCount numFrames = CMSampleBufferGetNumSamples(sampleBuffer);
+    if (numFrames <= 0) return QByteArray();
+
+    int channels = static_cast<int>(asbd->mChannelsPerFrame);
+    if (channels <= 0) return QByteArray();
+
+    bool isFloat = (asbd->mFormatFlags & kAudioFormatFlagIsFloat) != 0;
+    bool isNonInterleaved = (asbd->mFormatFlags & kAudioFormatFlagIsNonInterleaved) != 0;
+    int bitsPerChannel = static_cast<int>(asbd->mBitsPerChannel);
+
+    if (formatLogged && !*formatLogged) {
+        qDebug() << "CoreAudioCaptureEngine:" << label << "audio format -"
+                 << asbd->mSampleRate << "Hz,"
+                 << channels << "ch,"
+                 << bitsPerChannel << "bit"
+                 << (isFloat ? "(float)" : "(int)")
+                 << (isNonInterleaved ? "(non-interleaved)" : "(interleaved)");
+        *formatLogged = true;
+    }
+
+    int bytesPerSample = bitsPerChannel / 8;
+    if (bytesPerSample <= 0) return QByteArray();
+
+    size_t bufferListSize = offsetof(AudioBufferList, mBuffers)
+        + sizeof(AudioBuffer) * static_cast<size_t>(qMax(1, channels));
+    AudioBufferList *bufferList = reinterpret_cast<AudioBufferList *>(malloc(bufferListSize));
+    if (!bufferList) return QByteArray();
+    bufferList->mNumberBuffers = 0;
+
+    CMBlockBufferRef blockBuffer = nullptr;
+    OSStatus status = CMSampleBufferGetAudioBufferListWithRetainedBlockBuffer(
+        sampleBuffer,
+        nullptr,
+        bufferList,
+        bufferListSize,
+        nullptr,
+        nullptr,
+        kCMSampleBufferFlag_AudioBufferList_Assure16ByteAlignment,
+        &blockBuffer
+    );
+
+    if (status != noErr || bufferList->mNumberBuffers == 0) {
+        if (blockBuffer) {
+            CFRelease(blockBuffer);
+        }
+        free(bufferList);
+        return QByteArray();
+    }
+
+    int frameCount = static_cast<int>(numFrames);
+    QByteArray output(frameCount * channels * static_cast<int>(sizeof(int16_t)), 0);
+    int16_t *outPtr = reinterpret_cast<int16_t *>(output.data());
+
+    if (isFloat && bitsPerChannel == 32) {
+        if (isNonInterleaved && bufferList->mNumberBuffers >= static_cast<UInt32>(channels)) {
+            int minFrames = frameCount;
+            for (int ch = 0; ch < channels; ch++) {
+                const AudioBuffer &buf = bufferList->mBuffers[ch];
+                int available = static_cast<int>(buf.mDataByteSize / sizeof(float));
+                minFrames = qMin(minFrames, available);
+            }
+            for (int i = 0; i < minFrames; i++) {
+                for (int ch = 0; ch < channels; ch++) {
+                    const float *inPtr = reinterpret_cast<const float *>(bufferList->mBuffers[ch].mData);
+                    float sample = inPtr[i];
+                    if (sample > 1.0f) sample = 1.0f;
+                    else if (sample < -1.0f) sample = -1.0f;
+                    outPtr[i * channels + ch] = static_cast<int16_t>(sample * 32767.0f);
+                }
+            }
+        } else {
+            const AudioBuffer &buf = bufferList->mBuffers[0];
+            const float *inPtr = reinterpret_cast<const float *>(buf.mData);
+            int totalSamples = frameCount * channels;
+            int available = static_cast<int>(buf.mDataByteSize / sizeof(float));
+            int sampleCount = qMin(totalSamples, available);
+            for (int i = 0; i < sampleCount; i++) {
+                float sample = inPtr[i];
+                if (sample > 1.0f) sample = 1.0f;
+                else if (sample < -1.0f) sample = -1.0f;
+                outPtr[i] = static_cast<int16_t>(sample * 32767.0f);
+            }
+        }
+    } else if (!isFloat && bitsPerChannel == 16) {
+        if (isNonInterleaved && bufferList->mNumberBuffers >= static_cast<UInt32>(channels)) {
+            int minFrames = frameCount;
+            for (int ch = 0; ch < channels; ch++) {
+                const AudioBuffer &buf = bufferList->mBuffers[ch];
+                int available = static_cast<int>(buf.mDataByteSize / sizeof(int16_t));
+                minFrames = qMin(minFrames, available);
+            }
+            for (int i = 0; i < minFrames; i++) {
+                for (int ch = 0; ch < channels; ch++) {
+                    const int16_t *inPtr = reinterpret_cast<const int16_t *>(bufferList->mBuffers[ch].mData);
+                    outPtr[i * channels + ch] = inPtr[i];
+                }
+            }
+        } else {
+            const AudioBuffer &buf = bufferList->mBuffers[0];
+            int totalBytes = frameCount * channels * static_cast<int>(sizeof(int16_t));
+            int copyBytes = qMin(totalBytes, static_cast<int>(buf.mDataByteSize));
+            memcpy(outPtr, buf.mData, static_cast<size_t>(copyBytes));
+        }
+    } else {
+        qWarning() << "CoreAudioCaptureEngine:" << label << "unsupported audio format";
+        output.clear();
+    }
+
+    if (blockBuffer) {
+        CFRelease(blockBuffer);
+    }
+    free(bufferList);
+    return output;
+}
+
+static QByteArray convertMicAudioBufferToPCM16(CMSampleBufferRef sampleBuffer)
+{
+    static bool micFormatLogged = false;
+    return convertAudioBufferToPCM16(sampleBuffer, "Mic", &micFormatLogged);
+}
+
 @implementation AudioCaptureDelegate
 
 - (void)captureOutput:(AVCaptureOutput *)output
@@ -33,27 +165,17 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
 {
     if (self.paused || !self.engine) return;
 
-    // Get audio buffer
-    CMBlockBufferRef blockBuffer = CMSampleBufferGetDataBuffer(sampleBuffer);
-    if (!blockBuffer) return;
+    // Convert to 16-bit PCM
+    QByteArray audioData = convertMicAudioBufferToPCM16(sampleBuffer);
+    if (audioData.isEmpty()) return;
 
-    size_t length = 0;
-    char *dataPointer = nullptr;
-    CMBlockBufferGetDataPointer(blockBuffer, 0, nullptr, &length, &dataPointer);
+    qint64 now = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::steady_clock::now().time_since_epoch()).count();
+    qint64 timestamp = now - self.startTime - self.pausedDuration;
 
-    if (dataPointer && length > 0) {
-        QByteArray audioData(dataPointer, static_cast<int>(length));
-
-        // Calculate timestamp
-        qint64 now = std::chrono::duration_cast<std::chrono::milliseconds>(
-            std::chrono::steady_clock::now().time_since_epoch()).count();
-        qint64 timestamp = now - self.startTime - self.pausedDuration;
-
-        // Emit through Qt signal (must be done carefully from Obj-C context)
-        QMetaObject::invokeMethod(self.engine, [=]() {
-            emit self.engine->audioDataReady(audioData, timestamp);
-        }, Qt::QueuedConnection);
-    }
+    QMetaObject::invokeMethod(self.engine, [=]() {
+        emit self.engine->audioDataReady(audioData, timestamp);
+    }, Qt::QueuedConnection);
 }
 
 @end
@@ -68,6 +190,12 @@ API_AVAILABLE(macos(13.0))
 @property (nonatomic, assign) bool paused;
 @end
 
+static QByteArray convertSckAudioBufferToPCM16(CMSampleBufferRef sampleBuffer)
+{
+    static bool sckFormatLogged = false;
+    return convertAudioBufferToPCM16(sampleBuffer, "SCK", &sckFormatLogged);
+}
+
 API_AVAILABLE(macos(13.0))
 @implementation SCKAudioCaptureDelegate
 
@@ -76,24 +204,17 @@ API_AVAILABLE(macos(13.0))
     if (type != SCStreamOutputTypeAudio) return;
     if (self.paused || !self.engine) return;
 
-    CMBlockBufferRef blockBuffer = CMSampleBufferGetDataBuffer(sampleBuffer);
-    if (!blockBuffer) return;
+    // Convert to 16-bit PCM
+    QByteArray audioData = convertSckAudioBufferToPCM16(sampleBuffer);
+    if (audioData.isEmpty()) return;
 
-    size_t length = 0;
-    char *dataPointer = nullptr;
-    CMBlockBufferGetDataPointer(blockBuffer, 0, nullptr, &length, &dataPointer);
+    qint64 now = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::steady_clock::now().time_since_epoch()).count();
+    qint64 timestamp = now - self.startTime - self.pausedDuration;
 
-    if (dataPointer && length > 0) {
-        QByteArray audioData(dataPointer, static_cast<int>(length));
-
-        qint64 now = std::chrono::duration_cast<std::chrono::milliseconds>(
-            std::chrono::steady_clock::now().time_since_epoch()).count();
-        qint64 timestamp = now - self.startTime - self.pausedDuration;
-
-        QMetaObject::invokeMethod(self.engine, [=]() {
-            emit self.engine->audioDataReady(audioData, timestamp);
-        }, Qt::QueuedConnection);
-    }
+    QMetaObject::invokeMethod(self.engine, [=]() {
+        emit self.engine->audioDataReady(audioData, timestamp);
+    }, Qt::QueuedConnection);
 }
 
 - (void)stream:(SCStream *)stream didStopWithError:(NSError *)error
@@ -171,7 +292,12 @@ CoreAudioCaptureEngine::~CoreAudioCaptureEngine()
 
 bool CoreAudioCaptureEngine::isAvailable() const
 {
-    // Check if we have permission to access the microphone
+    // System audio via ScreenCaptureKit doesn't require microphone permission
+    if (isSystemAudioSupported()) {
+        return true;
+    }
+
+    // For microphone capture, check permission
     AVAuthorizationStatus status = [AVCaptureDevice authorizationStatusForMediaType:AVMediaTypeAudio];
     return status == AVAuthorizationStatusAuthorized || status == AVAuthorizationStatusNotDetermined;
 }
@@ -276,7 +402,8 @@ bool CoreAudioCaptureEngine::start()
         return false;
     }
 
-    // Request microphone permission if needed
+    // Check microphone permission if needed
+    bool microphoneAvailable = false;
     if (m_source == AudioSource::Microphone || m_source == AudioSource::Both) {
         AVAuthorizationStatus status = [AVCaptureDevice authorizationStatusForMediaType:AVMediaTypeAudio];
         if (status == AVAuthorizationStatusNotDetermined) {
@@ -290,13 +417,23 @@ bool CoreAudioCaptureEngine::start()
 
             dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER);
 
-            if (!granted) {
+            microphoneAvailable = granted;
+            if (!granted && m_source == AudioSource::Microphone) {
                 emit error("Microphone access denied");
                 return false;
+            } else if (!granted) {
+                emit warning("Microphone access denied. Recording system audio only.");
             }
-        } else if (status != AVAuthorizationStatusAuthorized) {
-            emit error("Microphone access not authorized. Please enable in System Settings.");
-            return false;
+        } else if (status == AVAuthorizationStatusAuthorized) {
+            microphoneAvailable = true;
+        } else {
+            // Denied or Restricted
+            if (m_source == AudioSource::Microphone) {
+                emit error("Microphone access not authorized. Please enable in System Settings.");
+                return false;
+            }
+            // For "Both" mode, warn but continue with system audio only
+            emit warning("Microphone access denied. Recording system audio only.");
         }
     }
 
@@ -308,8 +445,8 @@ bool CoreAudioCaptureEngine::start()
     // Create capture queue
     d->captureQueue = dispatch_queue_create("com.snaptray.audio.capture", DISPATCH_QUEUE_SERIAL);
 
-    // Set up microphone capture
-    if (m_source == AudioSource::Microphone || m_source == AudioSource::Both) {
+    // Set up microphone capture (only if permission granted)
+    if (microphoneAvailable && (m_source == AudioSource::Microphone || m_source == AudioSource::Both)) {
         d->captureSession = [[AVCaptureSession alloc] init];
 
         // Get the audio device
@@ -368,65 +505,139 @@ bool CoreAudioCaptureEngine::start()
     if ((m_source == AudioSource::SystemAudio || m_source == AudioSource::Both) &&
         isSystemAudioSupported()) {
         if (@available(macOS 13.0, *)) {
-            // Get shareable content
-            dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
-            __block SCShareableContent *content = nil;
+            qDebug() << "CoreAudioCaptureEngine: Setting up ScreenCaptureKit audio...";
+
+            __block SCShareableContent *contentResult = nil;
             __block NSError *contentError = nil;
 
-            [SCShareableContent getShareableContentWithCompletionHandler:^(SCShareableContent *shareableContent, NSError *error) {
-                content = shareableContent;
-                contentError = error;
-                dispatch_semaphore_signal(semaphore);
-            }];
+            @try {
+                // Get shareable content (requires screen recording permission)
+                dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
 
-            dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER);
+                [SCShareableContent getShareableContentWithCompletionHandler:^(SCShareableContent *shareableContent, NSError *error) {
+                    contentResult = [shareableContent retain];
+                    contentError = [error retain];
+                    dispatch_semaphore_signal(semaphore);
+                }];
 
-            if (contentError || !content) {
-                emit warning("Cannot access system audio");
-            } else {
-                // Create a content filter for audio-only capture
-                SCDisplay *display = content.displays.firstObject;
-                if (display) {
-                    SCContentFilter *filter = [[SCContentFilter alloc] initWithDisplay:display excludingWindows:@[]];
+                dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER);
+                qDebug() << "CoreAudioCaptureEngine: Got shareable content, error:" << (contentError != nil);
 
-                    // Configure for audio capture
-                    SCStreamConfiguration *config = [[SCStreamConfiguration alloc] init];
-                    config.capturesAudio = YES;
-                    config.excludesCurrentProcessAudio = YES;
-                    config.width = 1;  // Minimal video
-                    config.height = 1;
+                if (contentError) {
+                    qWarning() << "CoreAudioCaptureEngine: Content error:" << QString::fromNSString(contentError.localizedDescription);
+                    emit warning("Cannot access system audio. Please grant Screen Recording permission in System Settings.");
+                } else if (!contentResult) {
+                    qWarning() << "CoreAudioCaptureEngine: No shareable content available";
+                    emit warning("Cannot access system audio");
+                } else {
+                    // Immediately capture displays array to prevent ARC issues
+                    qDebug() << "CoreAudioCaptureEngine: Checking displays...";
+                    NSArray<SCDisplay *> *displays = contentResult.displays;
+                    qDebug() << "CoreAudioCaptureEngine: Displays array:" << (displays ? "valid" : "nil");
 
-                    // Create stream
-                    d->scStream = [[SCStream alloc] initWithFilter:filter configuration:config delegate:nil];
-                    d->scDelegate = [[SCKAudioCaptureDelegate alloc] init];
-                    d->scDelegate.engine = this;
-                    d->scDelegate.startTime = m_startTime;
-                    d->scDelegate.pausedDuration = 0;
-                    d->scDelegate.paused = false;
-
-                    NSError *addError = nil;
-                    [d->scStream addStreamOutput:d->scDelegate type:SCStreamOutputTypeAudio sampleHandlerQueue:d->captureQueue error:&addError];
-
-                    if (addError) {
-                        emit warning(QString("Cannot add audio output: %1").arg(
-                            QString::fromNSString(addError.localizedDescription)));
+                    if (!displays || displays.count == 0) {
+                        qWarning() << "CoreAudioCaptureEngine: No displays available";
+                        emit warning("Cannot access system audio - no displays found");
                     } else {
-                        dispatch_semaphore_t startSem = dispatch_semaphore_create(0);
-                        __block NSError *startError = nil;
+                        // Create a content filter for audio-only capture
+                        SCDisplay *display = displays.firstObject;
+                        qDebug() << "CoreAudioCaptureEngine: Got display:" << (display ? "valid" : "nil");
 
-                        [d->scStream startCaptureWithCompletionHandler:^(NSError *error) {
-                            startError = error;
-                            dispatch_semaphore_signal(startSem);
-                        }];
+                        if (!display) {
+                            qWarning() << "CoreAudioCaptureEngine: First display is nil";
+                            emit warning("Cannot access system audio - display not found");
+                        } else {
+                            qDebug() << "CoreAudioCaptureEngine: Creating content filter for display...";
 
-                        dispatch_semaphore_wait(startSem, DISPATCH_TIME_FOREVER);
+                            SCContentFilter *filter = [[SCContentFilter alloc] initWithDisplay:display excludingWindows:@[]];
+                            if (!filter) {
+                                qWarning() << "CoreAudioCaptureEngine: Failed to create content filter";
+                                emit warning("Cannot create audio capture filter");
+                            } else {
+                                // Configure for audio capture
+                                SCStreamConfiguration *config = [[SCStreamConfiguration alloc] init];
+                                config.capturesAudio = YES;
+                                config.excludesCurrentProcessAudio = YES;
+                                config.width = 2;  // Minimal video (must be at least 2)
+                                config.height = 2;
+                                config.minimumFrameInterval = CMTimeMake(1, 1);  // 1 fps minimum
+                                config.sampleRate = 48000;
+                                config.channelCount = 2;
 
-                        if (startError) {
-                            emit warning(QString("Cannot start system audio: %1").arg(
-                                QString::fromNSString(startError.localizedDescription)));
-                            d->scStream = nil;
+                                qDebug() << "CoreAudioCaptureEngine: Creating SCStream...";
+                                d->scStream = [[SCStream alloc] initWithFilter:filter configuration:config delegate:nil];
+
+                                if (!d->scStream) {
+                                    qWarning() << "CoreAudioCaptureEngine: Failed to create SCStream";
+                                    emit warning("Cannot create audio stream");
+                                } else {
+                                    qDebug() << "CoreAudioCaptureEngine: Creating delegate...";
+                                    d->scDelegate = [[SCKAudioCaptureDelegate alloc] init];
+                                    d->scDelegate.engine = this;
+                                    d->scDelegate.startTime = m_startTime;
+                                    d->scDelegate.pausedDuration = 0;
+                                    d->scDelegate.paused = false;
+
+                                    qDebug() << "CoreAudioCaptureEngine: Adding stream output...";
+                                    NSError *addError = nil;
+                                    BOOL added = [d->scStream addStreamOutput:d->scDelegate type:SCStreamOutputTypeAudio sampleHandlerQueue:d->captureQueue error:&addError];
+
+                                    if (!added || addError) {
+                                        qWarning() << "CoreAudioCaptureEngine: Failed to add stream output:"
+                                                   << (addError ? QString::fromNSString(addError.localizedDescription) : "unknown error");
+                                        emit warning(QString("Cannot add audio output: %1").arg(
+                                            addError ? QString::fromNSString(addError.localizedDescription) : "unknown error"));
+                                        d->scStream = nil;
+                                        d->scDelegate = nil;
+                                    } else {
+                                        qDebug() << "CoreAudioCaptureEngine: Starting capture...";
+                                        dispatch_semaphore_t startSem = dispatch_semaphore_create(0);
+                                        __block NSError *startError = nil;
+
+                                        [d->scStream startCaptureWithCompletionHandler:^(NSError *error) {
+                                            startError = [error retain];
+                                            dispatch_semaphore_signal(startSem);
+                                        }];
+
+                                        dispatch_semaphore_wait(startSem, DISPATCH_TIME_FOREVER);
+                                        qDebug() << "CoreAudioCaptureEngine: Capture start completed, error:" << (startError != nil);
+
+                                        if (startError) {
+                                            qWarning() << "CoreAudioCaptureEngine: Start error:" << QString::fromNSString(startError.localizedDescription);
+                                            emit warning(QString("Cannot start system audio: %1").arg(
+                                                QString::fromNSString(startError.localizedDescription)));
+                                            d->scStream = nil;
+                                            d->scDelegate = nil;
+                                        } else {
+                                            qDebug() << "CoreAudioCaptureEngine: System audio capture active";
+                                        }
+
+                                        if (startError) {
+                                            [startError release];
+                                            startError = nil;
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
+                }
+            }
+            @catch (NSException *exception) {
+                qWarning() << "CoreAudioCaptureEngine: Exception during SCK setup:"
+                           << QString::fromNSString(exception.name) << "-" << QString::fromNSString(exception.reason);
+                emit warning("System audio capture failed");
+                d->scStream = nil;
+                d->scDelegate = nil;
+            }
+            @finally {
+                if (contentResult) {
+                    [contentResult release];
+                    contentResult = nil;
+                }
+                if (contentError) {
+                    [contentError release];
+                    contentError = nil;
                 }
             }
         }
@@ -499,6 +710,36 @@ void CoreAudioCaptureEngine::resume()
 #endif
 
     qDebug() << "CoreAudioCaptureEngine: Resumed";
+}
+
+// ========== Permission Helper Functions ==========
+// These are called from IAudioCaptureEngine.cpp via extern declarations
+
+IAudioCaptureEngine::MicrophonePermission checkMicrophonePermissionMac()
+{
+    AVAuthorizationStatus status = [AVCaptureDevice authorizationStatusForMediaType:AVMediaTypeAudio];
+    switch (status) {
+        case AVAuthorizationStatusAuthorized:
+            return IAudioCaptureEngine::MicrophonePermission::Authorized;
+        case AVAuthorizationStatusDenied:
+            return IAudioCaptureEngine::MicrophonePermission::Denied;
+        case AVAuthorizationStatusRestricted:
+            return IAudioCaptureEngine::MicrophonePermission::Restricted;
+        case AVAuthorizationStatusNotDetermined:
+        default:
+            return IAudioCaptureEngine::MicrophonePermission::NotDetermined;
+    }
+}
+
+void requestMicrophonePermissionMac(std::function<void(bool)> callback)
+{
+    [AVCaptureDevice requestAccessForMediaType:AVMediaTypeAudio completionHandler:^(BOOL granted) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (callback) {
+                callback(granted == YES);
+            }
+        });
+    }];
 }
 
 #endif // Q_OS_MAC

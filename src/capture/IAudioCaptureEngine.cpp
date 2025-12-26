@@ -2,6 +2,9 @@
 
 #ifdef Q_OS_MAC
 #include "capture/CoreAudioCaptureEngine.h"
+// Forward declarations for Objective-C implementations
+extern IAudioCaptureEngine::MicrophonePermission checkMicrophonePermissionMac();
+extern void requestMicrophonePermissionMac(std::function<void(bool)> callback);
 #endif
 
 #ifdef Q_OS_WIN
@@ -47,4 +50,26 @@ bool IAudioCaptureEngine::isNativeEngineAvailable()
 #endif
 
     return false;
+}
+
+IAudioCaptureEngine::MicrophonePermission IAudioCaptureEngine::checkMicrophonePermission()
+{
+#ifdef Q_OS_MAC
+    return checkMicrophonePermissionMac();
+#else
+    // Windows doesn't require explicit microphone permission
+    return MicrophonePermission::Authorized;
+#endif
+}
+
+void IAudioCaptureEngine::requestMicrophonePermission(std::function<void(bool granted)> callback)
+{
+#ifdef Q_OS_MAC
+    requestMicrophonePermissionMac(callback);
+#else
+    // Windows doesn't require explicit permission, always grant
+    if (callback) {
+        callback(true);
+    }
+#endif
 }

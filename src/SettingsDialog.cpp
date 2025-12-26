@@ -2,6 +2,7 @@
 #include "AutoLaunchManager.h"
 #include "WatermarkRenderer.h"
 #include "FFmpegEncoder.h"
+#include "capture/IAudioCaptureEngine.h"
 
 #include <QKeySequenceEdit>
 #include <QSettings>
@@ -809,6 +810,34 @@ void SettingsDialog::onAudioSourceChanged(int index)
 
     // Show/hide warning based on audio source selection
     bool needsSystemAudio = (index == 1 || index == 2);  // System Audio or Both
+    bool needsMicrophone = (index == 0 || index == 2);   // Microphone or Both
+
+    // Check microphone permission if needed (macOS)
+    if (needsMicrophone) {
+        auto permission = IAudioCaptureEngine::checkMicrophonePermission();
+        if (permission == IAudioCaptureEngine::MicrophonePermission::NotDetermined) {
+            // Request permission
+            IAudioCaptureEngine::requestMicrophonePermission([this](bool granted) {
+                if (!granted) {
+                    m_systemAudioWarningLabel->setText(
+                        "Microphone access denied. Please enable in System Settings > "
+                        "Privacy & Security > Microphone.");
+                    m_systemAudioWarningLabel->show();
+                }
+            });
+        } else if (permission == IAudioCaptureEngine::MicrophonePermission::Denied ||
+                   permission == IAudioCaptureEngine::MicrophonePermission::Restricted) {
+            m_systemAudioWarningLabel->setText(
+                "Microphone access denied. Please enable in System Settings > "
+                "Privacy & Security > Microphone.");
+            m_systemAudioWarningLabel->show();
+        } else {
+            // Permission granted, hide warning if not showing system audio warning
+            if (!needsSystemAudio) {
+                m_systemAudioWarningLabel->hide();
+            }
+        }
+    }
 
     if (needsSystemAudio) {
 #ifdef Q_OS_MAC
@@ -822,7 +851,7 @@ void SettingsDialog::onAudioSourceChanged(int index)
         // Windows supports system audio via WASAPI loopback
         m_systemAudioWarningLabel->hide();
 #endif
-    } else {
+    } else if (!needsMicrophone) {
         m_systemAudioWarningLabel->hide();
     }
 
