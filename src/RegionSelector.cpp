@@ -44,27 +44,39 @@ static const char* SETTINGS_KEY_TEXT_UNDERLINE = "textUnderline";
 static const char* SETTINGS_KEY_TEXT_SIZE = "textFontSize";
 static const char* SETTINGS_KEY_TEXT_FAMILY = "textFontFamily";
 
-// Create a rounded square cursor for mosaic tool
+// Create a rounded square cursor for mosaic tool (matching EraserToolHandler pattern)
 static QCursor createMosaicCursor(int size) {
-    qreal dpr = qApp->devicePixelRatio();
-    int pixelSize = static_cast<int>(size * dpr);
-
-    QPixmap pixmap(pixelSize, pixelSize);
-    pixmap.setDevicePixelRatio(dpr);
+    // Use same pattern as EraserToolHandler - no devicePixelRatio scaling
+    int cursorSize = size + 4;  // Add margin for border
+    QPixmap pixmap(cursorSize, cursorSize);
     pixmap.fill(Qt::transparent);
 
     QPainter painter(&pixmap);
     painter.setRenderHint(QPainter::Antialiasing, true);
 
-    // Darker gray border with semi-transparent fill
-    painter.setPen(QPen(QColor(90, 90, 90), 1.0));
-    painter.setBrush(QColor(200, 200, 200, 20));
-    painter.drawRoundedRect(1, 1, size - 2, size - 2, 2, 2);
+    int center = cursorSize / 2;
+    int halfSize = size / 2;
+
+    // Draw semi-transparent fill
+    painter.setBrush(QColor(255, 255, 255, 60));
+    painter.setPen(Qt::NoPen);
+    QRect innerRect(center - halfSize, center - halfSize, size, size);
+    painter.drawRoundedRect(innerRect, 2, 2);
+
+    // Draw light gray/white border for better visibility
+    painter.setPen(QPen(QColor(220, 220, 220), 1.5, Qt::SolidLine));
+    painter.setBrush(Qt::NoBrush);
+    painter.drawRoundedRect(innerRect, 2, 2);
+
+    // Draw darker inner outline for contrast on light backgrounds
+    painter.setPen(QPen(QColor(100, 100, 100, 180), 0.5, Qt::SolidLine));
+    QRect innerOutline = innerRect.adjusted(1, 1, -1, -1);
+    painter.drawRoundedRect(innerOutline, 1, 1);
 
     painter.end();
 
-    // Hotspot at center
-    return QCursor(pixmap, pixelSize / 2, pixelSize / 2);
+    int hotspot = cursorSize / 2;
+    return QCursor(pixmap, hotspot, hotspot);
 }
 
 RegionSelector::RegionSelector(QWidget* parent)
@@ -1185,14 +1197,10 @@ void RegionSelector::handleToolbarClick(ToolbarButton button)
         if (m_currentTool == ToolbarButton::Eraser) {
             m_colorAndWidthWidget->setWidthRange(1, 20);
             m_colorAndWidthWidget->setCurrentWidth(m_annotationWidth);
-            m_toolManager->setWidth(m_annotationWidth);
         }
         m_currentTool = button;
         m_toolManager->setCurrentTool(ToolId::Mosaic);
-        {
-            int mosaicWidth = m_toolManager ? m_toolManager->width() : MosaicToolHandler::kDefaultBrushWidth;
-            setCursor(createMosaicCursor(mosaicWidth));
-        }
+        m_toolManager->setWidth(MosaicToolHandler::kDefaultBrushWidth);
         qDebug() << "Tool selected:" << static_cast<int>(button);
         update();
         break;
@@ -1226,10 +1234,6 @@ void RegionSelector::handleToolbarClick(ToolbarButton button)
         m_colorAndWidthWidget->setWidthRange(5, 100);
         m_colorAndWidthWidget->setCurrentWidth(m_eraserWidth);
         m_toolManager->setWidth(m_eraserWidth);
-        // Set eraser cursor immediately
-        if (auto* eraser = dynamic_cast<EraserToolHandler*>(m_toolManager->currentHandler())) {
-            setCursor(eraser->cursor());
-        }
         qDebug() << "Eraser tool selected - drag over annotations to erase them";
         update();
         break;
@@ -1823,7 +1827,8 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
                 updateCursorForHandle(handle);
             }
         }
-        else if (hoveredButton < 0 && !colorPaletteHovered && !lineWidthHovered && !unifiedWidgetHovered && !textAnnotationHovered && !gizmoHandleHovered) {
+        // Always update cursor based on current tool when not hovering any special UI element
+        if (hoveredButton < 0 && !colorPaletteHovered && !lineWidthHovered && !unifiedWidgetHovered && !textAnnotationHovered && !gizmoHandleHovered) {
             // Update cursor based on current tool
             if (m_currentTool == ToolbarButton::Selection) {
                 ResizeHandle handle = getHandleAtPosition(event->pos());
