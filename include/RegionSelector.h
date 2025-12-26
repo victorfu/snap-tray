@@ -326,8 +326,10 @@ private:
     QPoint m_cachedDevicePosition;
     bool m_magnifierCacheValid = false;
     static constexpr int MAGNIFIER_MIN_UPDATE_MS = 16;  // ~60fps cap
-    static constexpr int MAGNIFIER_SIZE = 180;
-    static constexpr int MAGNIFIER_GRID_COUNT = 15;
+    static constexpr int MAGNIFIER_WIDTH = 180;
+    static constexpr int MAGNIFIER_HEIGHT = 120;
+    static constexpr int MAGNIFIER_GRID_COUNT_X = 15;
+    static constexpr int MAGNIFIER_GRID_COUNT_Y = 10;
 
     // Update frequency control - per-operation throttling
     QElapsedTimer m_selectionUpdateTimer;

@@ -268,24 +268,39 @@ RegionSelector::~RegionSelector()
 
 void RegionSelector::initializeMagnifierGridCache()
 {
-    const int pixelSize = MAGNIFIER_SIZE / MAGNIFIER_GRID_COUNT;
+    const int pixelSizeX = MAGNIFIER_WIDTH / MAGNIFIER_GRID_COUNT_X;
+    const int pixelSizeY = MAGNIFIER_HEIGHT / MAGNIFIER_GRID_COUNT_Y;
 
-    m_gridOverlayCache = QPixmap(MAGNIFIER_SIZE, MAGNIFIER_SIZE);
+    m_gridOverlayCache = QPixmap(MAGNIFIER_WIDTH, MAGNIFIER_HEIGHT);
     m_gridOverlayCache.fill(Qt::transparent);
 
     QPainter gridPainter(&m_gridOverlayCache);
 
-    // 十字線 - 藍色粗線穿過整個區域
-    int cx = MAGNIFIER_SIZE / 2;
-    int cy = MAGNIFIER_SIZE / 2;
-    gridPainter.setPen(QPen(QColor(65, 105, 225), 2));
-    gridPainter.drawLine(0, cy, MAGNIFIER_SIZE, cy);  // 水平線
-    gridPainter.drawLine(cx, 0, cx, MAGNIFIER_SIZE);  // 垂直線
+    const int cx = MAGNIFIER_WIDTH / 2;
+    const int cy = MAGNIFIER_HEIGHT / 2;
+    const int halfCellX = pixelSizeX / 2;
+    const int halfCellY = pixelSizeY / 2;
 
-    // 中心方框 - 白色填充 + 藍色邊框
-    int halfCell = pixelSize / 2;
-    gridPainter.setBrush(Qt::white);
-    gridPainter.drawRect(cx - halfCell, cy - halfCell, pixelSize, pixelSize);
+    // 中心像素區域座標
+    const int centerLeft = cx - halfCellX;
+    const int centerRight = cx + halfCellX;
+    const int centerTop = cy - halfCellY;
+    const int centerBottom = cy + halfCellY;
+
+    // 十字準星 - 寬線條，中心留空間隔
+    const int gap = 4;  // 中心框與十字線的間距
+    gridPainter.setPen(QPen(QColor(255, 255, 255, 140), 5));
+    // 水平線（避開中心區域）
+    gridPainter.drawLine(0, cy, centerLeft - gap, cy);
+    gridPainter.drawLine(centerRight + gap, cy, MAGNIFIER_WIDTH, cy);
+    // 垂直線（避開中心區域）
+    gridPainter.drawLine(cx, 0, cx, centerTop - gap);
+    gridPainter.drawLine(cx, centerBottom + gap, cx, MAGNIFIER_HEIGHT);
+
+    // 中心像素框
+    gridPainter.setBrush(Qt::NoBrush);
+    gridPainter.setPen(QPen(QColor(255, 255, 255, 200), 1));
+    gridPainter.drawRect(centerLeft, centerTop, pixelSizeX, pixelSizeY);
 }
 
 void RegionSelector::invalidateMagnifierCache()
@@ -959,10 +974,11 @@ void RegionSelector::drawCrosshair(QPainter& painter)
 
 void RegionSelector::drawMagnifier(QPainter& painter)
 {
-    const int magnifierSize = MAGNIFIER_SIZE;  // 放大區域顯示大小
-    const int gridCount = MAGNIFIER_GRID_COUNT;       // 顯示 15x15 個像素格子
-    const int panelWidth = 180;     // 面板寬度
-    const int panelPadding = 10;
+    const int magnifierWidth = MAGNIFIER_WIDTH;   // 放大區域顯示寬度
+    const int magnifierHeight = MAGNIFIER_HEIGHT; // 放大區域顯示高度
+    const int gridCountX = MAGNIFIER_GRID_COUNT_X;  // 顯示 15 個水平像素格子
+    const int gridCountY = MAGNIFIER_GRID_COUNT_Y;  // 顯示 10 個垂直像素格子
+    const int panelWidth = magnifierWidth;     // 面板寬度
 
     // 取得當前像素顏色 (設備座標)
     int deviceX = static_cast<int>(m_currentPoint.x() * m_devicePixelRatio);
@@ -978,7 +994,7 @@ void RegionSelector::drawMagnifier(QPainter& painter)
     int panelY = m_currentPoint.y() + 25;
 
     // 計算面板總高度
-    int totalHeight = magnifierSize + 55;  // 放大鏡 + 座標 + 顏色
+    int totalHeight = magnifierHeight + 55;  // 放大鏡 + 座標 + 顏色
 
     // 邊界檢查
     panelX = qMax(10, qMin(panelX, width() - panelWidth - 10));
@@ -991,8 +1007,8 @@ void RegionSelector::drawMagnifier(QPainter& painter)
     int magY = panelY;
 
     // 繪製下半部資訊區域背景 - 黑色，無外框
-    int infoAreaY = magY + magnifierSize;
-    int infoAreaHeight = totalHeight - magnifierSize;
+    int infoAreaY = magY + magnifierHeight;
+    int infoAreaHeight = totalHeight - magnifierHeight;
     painter.setPen(Qt::NoPen);
     painter.setBrush(QColor(30, 35, 45, 240));
     painter.drawRect(panelX, infoAreaY, panelWidth, infoAreaHeight);
@@ -1002,21 +1018,22 @@ void RegionSelector::drawMagnifier(QPainter& painter)
     if (!m_magnifierCacheValid || m_cachedDevicePosition != currentDevicePos) {
         // 從設備像素 pixmap 中取樣
         // 取 gridCount 個「邏輯像素」，每個邏輯像素 = devicePixelRatio 個設備像素
-        int deviceGridCount = static_cast<int>(gridCount * m_devicePixelRatio);
+        int deviceGridCountX = static_cast<int>(gridCountX * m_devicePixelRatio);
+        int deviceGridCountY = static_cast<int>(gridCountY * m_devicePixelRatio);
         // 游標位置在中心
-        int sampleX = deviceX - deviceGridCount / 2;
-        int sampleY = deviceY - deviceGridCount / 2;
+        int sampleX = deviceX - deviceGridCountX / 2;
+        int sampleY = deviceY - deviceGridCountY / 2;
 
         // 建立一個以游標為中心的取樣圖像，超出邊界的部分填充黑色
-        QImage sampleImage(deviceGridCount, deviceGridCount, QImage::Format_ARGB32);
+        QImage sampleImage(deviceGridCountX, deviceGridCountY, QImage::Format_ARGB32);
         sampleImage.fill(Qt::black);
 
         // Optimized pixel sampling using scanLine() for direct memory access
         // Pre-calculate valid source region bounds
         int srcLeft = qMax(0, sampleX);
         int srcTop = qMax(0, sampleY);
-        int srcRight = qMin(img.width(), sampleX + deviceGridCount);
-        int srcBottom = qMin(img.height(), sampleY + deviceGridCount);
+        int srcRight = qMin(img.width(), sampleX + deviceGridCountX);
+        int srcBottom = qMin(img.height(), sampleY + deviceGridCountY);
 
         // Calculate destination offsets for out-of-bounds handling
         int dstOffsetX = srcLeft - sampleX;
@@ -1033,7 +1050,7 @@ void RegionSelector::drawMagnifier(QPainter& painter)
         }
 
         // 使用 IgnoreAspectRatio 確保填滿整個區域
-        m_magnifierPixmapCache = QPixmap::fromImage(sampleImage).scaled(magnifierSize, magnifierSize,
+        m_magnifierPixmapCache = QPixmap::fromImage(sampleImage).scaled(magnifierWidth, magnifierHeight,
             Qt::IgnoreAspectRatio,
             Qt::FastTransformation);
 
@@ -1050,10 +1067,10 @@ void RegionSelector::drawMagnifier(QPainter& painter)
     // 繪製放大鏡區域白色外框
     painter.setPen(QPen(Qt::white, 1));
     painter.setBrush(Qt::NoBrush);
-    painter.drawRect(magX, magY, magnifierSize, magnifierSize);
+    painter.drawRect(magX, magY, magnifierWidth, magnifierHeight);
 
     // 2. 座標資訊
-    int infoY = magY + magnifierSize + 6;
+    int infoY = magY + magnifierHeight + 6;
     painter.setPen(Qt::white);
     QFont font = painter.font();
     font.setPointSize(11);
@@ -1808,8 +1825,8 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
         if (m_magnifierUpdateTimer.elapsed() >= MAGNIFIER_MIN_UPDATE_MS) {
             m_magnifierUpdateTimer.restart();
             // Calculate magnifier panel rect and update only that region
-            const int panelWidth = 180;
-            const int totalHeight = MAGNIFIER_SIZE + 55;
+            const int panelWidth = MAGNIFIER_WIDTH;
+            const int totalHeight = MAGNIFIER_HEIGHT + 55;
             int panelX = m_currentPoint.x() - panelWidth / 2;
             panelX = qMax(10, qMin(panelX, width() - panelWidth - 10));
 
