@@ -736,9 +736,7 @@ void RegionSelector::updateWindowDetection(const QPoint& localPos)
 
 void RegionSelector::drawDetectedWindow(QPainter& painter)
 {
-    if (m_highlightedWindowRect.isNull() || m_selectionManager->isComplete() ||
-        m_selectionManager->isSelecting() || m_selectionManager->isResizing() ||
-        m_selectionManager->isMoving()) {
+    if (m_highlightedWindowRect.isNull() || m_selectionManager->hasActiveSelection()) {
         return;
     }
 
@@ -838,22 +836,19 @@ void RegionSelector::paintEvent(QPaintEvent*)
     // Draw dimmed overlay
     drawOverlay(painter);
 
-    // Draw detected window highlight (only during hover, before selection)
-    if (!m_selectionManager->isSelecting() && !m_selectionManager->isComplete() && m_windowDetector) {
+    // Draw detected window highlight (only during hover, before any selection)
+    if (!m_selectionManager->hasActiveSelection() && m_windowDetector) {
         drawDetectedWindow(painter);
     }
 
     // Draw selection if active or complete
     QRect selectionRect = m_selectionManager->selectionRect();
-    bool hasSelection = m_selectionManager->isSelecting() || m_selectionManager->isComplete() ||
-        m_selectionManager->isResizing() || m_selectionManager->isMoving();
-    if (hasSelection && selectionRect.isValid()) {
+    if (m_selectionManager->hasActiveSelection() && selectionRect.isValid()) {
         drawSelection(painter);
         drawDimensionInfo(painter);
 
-        // Draw annotations on top of selection
-        // Include isResizing() and isMoving() so annotations remain visible during selection box manipulation
-        if (m_selectionManager->isComplete() || m_selectionManager->isResizing() || m_selectionManager->isMoving()) {
+        // Draw annotations on top of selection (only when selection is established)
+        if (m_selectionManager->hasSelection()) {
             drawAnnotations(painter);
             drawCurrentAnnotation(painter);
 
@@ -937,8 +932,7 @@ void RegionSelector::drawOverlay(QPainter& painter)
     QColor dimColor(0, 0, 0, 100);
 
     QRect sel = m_selectionManager->selectionRect();
-    bool hasSelection = (m_selectionManager->isSelecting() || m_selectionManager->isComplete() ||
-        m_selectionManager->isResizing() || m_selectionManager->isMoving()) && sel.isValid();
+    bool hasSelection = m_selectionManager->hasActiveSelection() && sel.isValid();
 
     if (hasSelection) {
         // 選取模式：選取區域外繪製 overlay
@@ -1692,7 +1686,7 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
 
     // Window detection during hover (before any selection or dragging)
     // Throttle by distance to avoid expensive window enumeration on every mouse move
-    if (!m_selectionManager->isSelecting() && !m_selectionManager->isComplete() && m_windowDetector) {
+    if (!m_selectionManager->hasActiveSelection() && m_windowDetector) {
         int dx = event->pos().x() - m_lastWindowDetectionPos.x();
         int dy = event->pos().y() - m_lastWindowDetectionPos.y();
         if (dx * dx + dy * dy >= WINDOW_DETECTION_MIN_DISTANCE_SQ) {
