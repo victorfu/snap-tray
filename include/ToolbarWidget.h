@@ -8,6 +8,7 @@
 #include <QColor>
 #include <QString>
 #include <functional>
+#include "ToolbarStyle.h"
 
 class QPainter;
 
@@ -132,6 +133,21 @@ public:
      */
     int buttonIdAt(int index) const;
 
+    /**
+     * @brief Set the toolbar style.
+     */
+    void setStyle(ToolbarStyleType type);
+
+    /**
+     * @brief Set the toolbar style configuration directly.
+     */
+    void setStyleConfig(const ToolbarStyleConfig& config);
+
+    /**
+     * @brief Get the current style configuration.
+     */
+    const ToolbarStyleConfig& styleConfig() const { return m_styleConfig; }
+
 signals:
     /**
      * @brief Emitted when a button is clicked.
@@ -152,6 +168,7 @@ private:
     int m_viewportWidth;              // Viewport width for boundary checking
 
     IconColorProvider m_iconColorProvider;
+    ToolbarStyleConfig m_styleConfig;
 
     // Layout constants
     static const int TOOLBAR_HEIGHT = 32;

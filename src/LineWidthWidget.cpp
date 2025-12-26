@@ -12,6 +12,7 @@ LineWidthWidget::LineWidthWidget(QObject* parent)
     , m_isDragging(false)
     , m_hovered(false)
     , m_previewColor(Qt::red)
+    , m_styleConfig(ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle()))
 {
 }
 
@@ -85,16 +86,16 @@ void LineWidthWidget::draw(QPainter& painter)
     // Draw shadow
     QRect shadowRect = m_widgetRect.adjusted(2, 2, 2, 2);
     painter.setPen(Qt::NoPen);
-    painter.setBrush(QColor(0, 0, 0, 50));
+    painter.setBrush(QColor(0, 0, 0, m_styleConfig.shadowAlpha));
     painter.drawRoundedRect(shadowRect, 6, 6);
 
     // Draw background with gradient
     QLinearGradient gradient(m_widgetRect.topLeft(), m_widgetRect.bottomLeft());
-    gradient.setColorAt(0, QColor(55, 55, 55, 245));
-    gradient.setColorAt(1, QColor(40, 40, 40, 245));
+    gradient.setColorAt(0, m_styleConfig.backgroundColorTop);
+    gradient.setColorAt(1, m_styleConfig.backgroundColorBottom);
 
     painter.setBrush(gradient);
-    painter.setPen(QPen(QColor(70, 70, 70), 1));
+    painter.setPen(QPen(m_styleConfig.borderColor, 1));
     painter.drawRoundedRect(m_widgetRect, 6, 6);
 
     // Draw slider track background
@@ -136,7 +137,7 @@ void LineWidthWidget::draw(QPainter& painter)
     painter.drawEllipse(previewCircle);
 
     // Draw width label
-    painter.setPen(QColor(180, 180, 180));
+    painter.setPen(m_styleConfig.textColor);
     QFont font = painter.font();
     font.setPointSize(11);
     painter.setFont(font);

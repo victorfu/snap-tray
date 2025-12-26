@@ -76,6 +76,7 @@ set(SOURCES
     src/LineWidthWidget.cpp
     src/ColorAndWidthWidget.cpp
     src/ToolbarWidget.cpp
+    src/ToolbarStyle.cpp
     src/AnnotationController.cpp
     src/ColorPickerDialog.mm
     src/InlineTextEditor.cpp
@@ -139,6 +140,7 @@ set(HEADERS
     include/LineWidthWidget.h
     include/ColorAndWidthWidget.h
     include/ToolbarWidget.h
+    include/ToolbarStyle.h
     include/AnnotationController.h
     include/ColorPickerDialog.h
     include/InlineTextEditor.h

@@ -10,6 +10,7 @@
 #include "annotations/AnnotationLayer.h"
 #include "annotations/ShapeAnnotation.h"  // For ShapeType and ShapeFillMode enums
 #include "annotations/ArrowAnnotation.h"  // For LineEndStyle enum
+#include "ToolbarStyle.h"
 
 class QPainter;
 
@@ -432,6 +433,9 @@ private:
     // Shape section layout constants
     static const int SHAPE_BUTTON_SIZE = 24;
     static const int SHAPE_BUTTON_SPACING = 2;
+
+    // Toolbar style configuration
+    ToolbarStyleConfig m_styleConfig;
 };
 
 #endif // COLORANDWIDTHWIDGET_H

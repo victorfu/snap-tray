@@ -33,6 +33,7 @@ ScreenCanvas::ScreenCanvas(QWidget* parent)
     , m_colorPalette(nullptr)
     , m_lineWidthWidget(nullptr)
     , m_colorPickerDialog(nullptr)
+    , m_toolbarStyleConfig(ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle()))
 {
     setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::Tool);
     setAttribute(Qt::WA_DeleteOnClose);
@@ -369,16 +370,16 @@ void ScreenCanvas::drawToolbar(QPainter& painter)
     // Draw shadow
     QRect shadowRect = m_toolbarRect.adjusted(2, 2, 2, 2);
     painter.setPen(Qt::NoPen);
-    painter.setBrush(QColor(0, 0, 0, 50));
+    painter.setBrush(QColor(0, 0, 0, m_toolbarStyleConfig.shadowAlpha));
     painter.drawRoundedRect(shadowRect, 8, 8);
 
     // Draw toolbar background with gradient
     QLinearGradient gradient(m_toolbarRect.topLeft(), m_toolbarRect.bottomLeft());
-    gradient.setColorAt(0, QColor(55, 55, 55, 245));
-    gradient.setColorAt(1, QColor(40, 40, 40, 245));
+    gradient.setColorAt(0, m_toolbarStyleConfig.backgroundColorTop);
+    gradient.setColorAt(1, m_toolbarStyleConfig.backgroundColorBottom);
 
     painter.setBrush(gradient);
-    painter.setPen(QPen(QColor(70, 70, 70), 1));
+    painter.setPen(QPen(m_toolbarStyleConfig.borderColor, 1));
     painter.drawRoundedRect(m_toolbarRect, 8, 8);
 
     // Render icons
@@ -390,51 +391,51 @@ void ScreenCanvas::drawToolbar(QPainter& painter)
         // Highlight active tool (drawing tools only) or toggle state for CursorHighlight
         bool isActive = (buttonToolId == m_currentToolId) && isDrawingTool(buttonToolId);
         bool isToggleActive = (button == CanvasButton::CursorHighlight) && m_rippleRenderer->isEnabled();
+
+        // Draw separator before certain buttons
+        if (i == static_cast<int>(CanvasButton::CursorHighlight) ||
+            i == static_cast<int>(CanvasButton::Undo) ||
+            i == static_cast<int>(CanvasButton::Exit)) {
+            painter.setPen(m_toolbarStyleConfig.separatorColor);
+            painter.drawLine(btnRect.left() - 4, btnRect.top() + 6,
+                btnRect.left() - 4, btnRect.bottom() - 6);
+        }
+
         if (isActive || isToggleActive) {
-            painter.setPen(Qt::NoPen);
-            painter.setBrush(QColor(0, 120, 200));
-            painter.drawRoundedRect(btnRect.adjusted(2, 2, -2, -2), 4, 4);
+            if (m_toolbarStyleConfig.useRedDotIndicator) {
+                // Light style: draw red dot at top-right corner
+                int dotRadius = m_toolbarStyleConfig.redDotSize / 2;
+                int dotX = btnRect.right() - dotRadius - 2;
+                int dotY = btnRect.top() + dotRadius + 2;
+                painter.setPen(Qt::NoPen);
+                painter.setBrush(m_toolbarStyleConfig.redDotColor);
+                painter.drawEllipse(QPoint(dotX, dotY), dotRadius, dotRadius);
+            } else {
+                // Dark style: background highlight
+                painter.setPen(Qt::NoPen);
+                painter.setBrush(m_toolbarStyleConfig.activeBackgroundColor);
+                painter.drawRoundedRect(btnRect.adjusted(2, 2, -2, -2), 4, 4);
+            }
         }
         else if (i == m_hoveredButton) {
             painter.setPen(Qt::NoPen);
-            painter.setBrush(QColor(80, 80, 80));
+            painter.setBrush(m_toolbarStyleConfig.hoverBackgroundColor);
             painter.drawRoundedRect(btnRect.adjusted(2, 2, -2, -2), 4, 4);
-        }
-
-        // Draw separator before CursorHighlight button
-        if (i == static_cast<int>(CanvasButton::CursorHighlight)) {
-            painter.setPen(QColor(80, 80, 80));
-            painter.drawLine(btnRect.left() - 4, btnRect.top() + 6,
-                btnRect.left() - 4, btnRect.bottom() - 6);
-        }
-
-        // Draw separator before Undo button
-        if (i == static_cast<int>(CanvasButton::Undo)) {
-            painter.setPen(QColor(80, 80, 80));
-            painter.drawLine(btnRect.left() - 4, btnRect.top() + 6,
-                btnRect.left() - 4, btnRect.bottom() - 6);
-        }
-
-        // Draw separator before Exit button
-        if (i == static_cast<int>(CanvasButton::Exit)) {
-            painter.setPen(QColor(80, 80, 80));
-            painter.drawLine(btnRect.left() - 4, btnRect.top() + 6,
-                btnRect.left() - 4, btnRect.bottom() - 6);
         }
 
         // Determine icon color
         QColor iconColor;
         if (button == CanvasButton::Exit) {
-            iconColor = QColor(255, 100, 100);  // Red for exit
+            iconColor = m_toolbarStyleConfig.iconCancelColor;
         }
         else if (button == CanvasButton::Clear) {
-            iconColor = QColor(255, 180, 100);  // Orange for clear
+            iconColor = QColor(255, 180, 100);  // Orange for clear (keep as special color)
         }
         else if (isActive || isToggleActive) {
-            iconColor = Qt::white;
+            iconColor = m_toolbarStyleConfig.iconActiveColor;
         }
         else {
-            iconColor = QColor(220, 220, 220);
+            iconColor = m_toolbarStyleConfig.iconNormalColor;
         }
 
         renderIcon(painter, btnRect, button, iconColor);

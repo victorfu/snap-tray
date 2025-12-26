@@ -400,13 +400,14 @@ QColor RegionSelector::getToolbarIconColor(int buttonId, bool isActive, bool isH
 {
     Q_UNUSED(isHovered);
 
+    const auto& style = m_toolbar->styleConfig();
     ToolbarButton btn = static_cast<ToolbarButton>(buttonId);
 
     if (buttonId == static_cast<int>(ToolbarButton::Cancel)) {
-        return QColor(255, 100, 100);  // Red for cancel
+        return style.iconCancelColor;
     }
     if (btn == ToolbarButton::Record) {
-        return QColor(255, 80, 80);  // Red for recording
+        return style.iconRecordColor;
     }
     if (btn == ToolbarButton::OCR) {
         if (m_ocrInProgress) {
@@ -416,16 +417,16 @@ QColor RegionSelector::getToolbarIconColor(int buttonId, bool isActive, bool isH
             return QColor(128, 128, 128);  // Gray if unavailable
         }
         else {
-            return QColor(100, 200, 255);  // Blue accent
+            return style.iconActionColor;
         }
     }
     if (buttonId >= static_cast<int>(ToolbarButton::Pin)) {
-        return QColor(100, 200, 255);  // Blue for action buttons
+        return style.iconActionColor;
     }
     if (isActive) {
-        return Qt::white;
+        return style.iconActiveColor;
     }
-    return QColor(220, 220, 220);  // Off-white for normal state
+    return style.iconNormalColor;
 }
 
 bool RegionSelector::shouldShowColorPalette() const

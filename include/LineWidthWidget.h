@@ -5,6 +5,7 @@
 #include <QRect>
 #include <QPoint>
 #include <QColor>
+#include "ToolbarStyle.h"
 
 class QPainter;
 
@@ -130,6 +131,9 @@ private:
     static const int HANDLE_SIZE = 14;
     static const int PREVIEW_SIZE = 18;
     static const int PADDING = 8;
+
+    // Toolbar style configuration
+    ToolbarStyleConfig m_styleConfig;
 };
 
 #endif // LINEWIDTHWIDGET_H

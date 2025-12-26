@@ -10,14 +10,16 @@ ToolbarWidget::ToolbarWidget(QObject* parent)
     , m_activeButton(-1)
     , m_hoveredButton(-1)
     , m_viewportWidth(0)
+    , m_styleConfig(ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle()))
 {
-    // Default icon color provider
-    m_iconColorProvider = [](int buttonId, bool isActive, bool isHovered) -> QColor {
+    // Default icon color provider using style config
+    m_iconColorProvider = [this](int buttonId, bool isActive, bool isHovered) -> QColor {
         Q_UNUSED(buttonId);
+        Q_UNUSED(isHovered);
         if (isActive) {
-            return Qt::white;
+            return m_styleConfig.iconActiveColor;
         }
-        return QColor(220, 220, 220);
+        return m_styleConfig.iconNormalColor;
     };
 }
 
@@ -109,16 +111,16 @@ void ToolbarWidget::draw(QPainter& painter)
     // Draw shadow
     QRect shadowRect = m_toolbarRect.adjusted(2, 2, 2, 2);
     painter.setPen(Qt::NoPen);
-    painter.setBrush(QColor(0, 0, 0, 50));
+    painter.setBrush(QColor(0, 0, 0, m_styleConfig.shadowAlpha));
     painter.drawRoundedRect(shadowRect, 8, 8);
 
     // Draw toolbar background with gradient
     QLinearGradient gradient(m_toolbarRect.topLeft(), m_toolbarRect.bottomLeft());
-    gradient.setColorAt(0, QColor(55, 55, 55, 245));
-    gradient.setColorAt(1, QColor(40, 40, 40, 245));
+    gradient.setColorAt(0, m_styleConfig.backgroundColorTop);
+    gradient.setColorAt(1, m_styleConfig.backgroundColorBottom);
 
     painter.setBrush(gradient);
-    painter.setPen(QPen(QColor(70, 70, 70), 1));
+    painter.setPen(QPen(m_styleConfig.borderColor, 1));
     painter.drawRoundedRect(m_toolbarRect, 8, 8);
 
     // Render buttons
@@ -131,22 +133,33 @@ void ToolbarWidget::draw(QPainter& painter)
         bool isActive = isActiveType && (config.id == m_activeButton);
         bool isHovered = (i == m_hoveredButton);
 
-        // Highlight active tool or hovered button
-        if (isActive) {
-            painter.setPen(Qt::NoPen);
-            painter.setBrush(QColor(0, 120, 200));
-            painter.drawRoundedRect(btnRect.adjusted(2, 2, -2, -2), 4, 4);
-        } else if (isHovered) {
-            painter.setPen(Qt::NoPen);
-            painter.setBrush(QColor(80, 80, 80));
-            painter.drawRoundedRect(btnRect.adjusted(2, 2, -2, -2), 4, 4);
-        }
-
         // Draw separator before this button
         if (config.separatorBefore) {
-            painter.setPen(QColor(80, 80, 80));
+            painter.setPen(m_styleConfig.separatorColor);
             painter.drawLine(btnRect.left() - 4, btnRect.top() + 6,
                              btnRect.left() - 4, btnRect.bottom() - 6);
+        }
+
+        // Highlight active tool or hovered button
+        if (isActive) {
+            if (m_styleConfig.useRedDotIndicator) {
+                // Light style: draw red dot at top-right corner
+                int dotRadius = m_styleConfig.redDotSize / 2;
+                int dotX = btnRect.right() - dotRadius - 2;
+                int dotY = btnRect.top() + dotRadius + 2;
+                painter.setPen(Qt::NoPen);
+                painter.setBrush(m_styleConfig.redDotColor);
+                painter.drawEllipse(QPoint(dotX, dotY), dotRadius, dotRadius);
+            } else {
+                // Dark style: background highlight
+                painter.setPen(Qt::NoPen);
+                painter.setBrush(m_styleConfig.activeBackgroundColor);
+                painter.drawRoundedRect(btnRect.adjusted(2, 2, -2, -2), 4, 4);
+            }
+        } else if (isHovered) {
+            painter.setPen(Qt::NoPen);
+            painter.setBrush(m_styleConfig.hoverBackgroundColor);
+            painter.drawRoundedRect(btnRect.adjusted(2, 2, -2, -2), 4, 4);
         }
 
         // Get icon color and render
@@ -185,16 +198,16 @@ void ToolbarWidget::drawTooltip(QPainter& painter)
 
     // Draw tooltip background
     painter.setPen(Qt::NoPen);
-    painter.setBrush(QColor(30, 30, 30, 230));
+    painter.setBrush(m_styleConfig.tooltipBackground);
     painter.drawRoundedRect(textRect, 4, 4);
 
     // Draw tooltip border
-    painter.setPen(QColor(80, 80, 80));
+    painter.setPen(m_styleConfig.tooltipBorder);
     painter.setBrush(Qt::NoBrush);
     painter.drawRoundedRect(textRect, 4, 4);
 
     // Draw tooltip text
-    painter.setPen(Qt::white);
+    painter.setPen(m_styleConfig.tooltipText);
     painter.drawText(textRect, Qt::AlignCenter, tooltip);
 }
 
@@ -237,4 +250,14 @@ int ToolbarWidget::buttonIdAt(int index) const
         return m_buttons[index].id;
     }
     return -1;
+}
+
+void ToolbarWidget::setStyle(ToolbarStyleType type)
+{
+    m_styleConfig = ToolbarStyleConfig::getStyle(type);
+}
+
+void ToolbarWidget::setStyleConfig(const ToolbarStyleConfig& config)
+{
+    m_styleConfig = config;
 }

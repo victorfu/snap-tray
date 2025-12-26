@@ -10,6 +10,7 @@ ColorPaletteWidget::ColorPaletteWidget(QObject* parent)
     , m_visible(false)
     , m_showMoreButton(true)
     , m_hoveredSwatch(-1)
+    , m_styleConfig(ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle()))
 {
     // Default color palette - 15 colors in 2 rows (8 + 7, with "..." as 8th in row 2)
     m_colors = {
@@ -96,16 +97,16 @@ void ColorPaletteWidget::draw(QPainter& painter)
     // Draw shadow
     QRect shadowRect = m_paletteRect.adjusted(2, 2, 2, 2);
     painter.setPen(Qt::NoPen);
-    painter.setBrush(QColor(0, 0, 0, 50));
+    painter.setBrush(QColor(0, 0, 0, m_styleConfig.shadowAlpha));
     painter.drawRoundedRect(shadowRect, 6, 6);
 
     // Draw background with gradient
     QLinearGradient gradient(m_paletteRect.topLeft(), m_paletteRect.bottomLeft());
-    gradient.setColorAt(0, QColor(55, 55, 55, 245));
-    gradient.setColorAt(1, QColor(40, 40, 40, 245));
+    gradient.setColorAt(0, m_styleConfig.backgroundColorTop);
+    gradient.setColorAt(1, m_styleConfig.backgroundColorBottom);
 
     painter.setBrush(gradient);
-    painter.setPen(QPen(QColor(70, 70, 70), 1));
+    painter.setPen(QPen(m_styleConfig.borderColor, 1));
     painter.drawRoundedRect(m_paletteRect, 6, 6);
 
     // Draw color swatches
@@ -115,7 +116,7 @@ void ColorPaletteWidget::draw(QPainter& painter)
         // Highlight if hovered
         if (i == m_hoveredSwatch) {
             painter.setPen(Qt::NoPen);
-            painter.setBrush(QColor(80, 80, 80));
+            painter.setBrush(m_styleConfig.hoverBackgroundColor);
             painter.drawRoundedRect(swatchRect.adjusted(-2, -2, 2, 2), 4, 4);
         }
 
@@ -126,7 +127,7 @@ void ColorPaletteWidget::draw(QPainter& painter)
                         colorSize, colorSize);
 
         // Draw border (white for dark colors, dark for light colors)
-        QColor borderColor = (m_colors[i].lightness() > 200) ? QColor(80, 80, 80) : Qt::white;
+        QColor borderColor = (m_colors[i].lightness() > 200) ? m_styleConfig.separatorColor : Qt::white;
         painter.setPen(QPen(borderColor, 1));
         painter.setBrush(m_colors[i]);
         painter.drawRoundedRect(colorRect, 3, 3);
@@ -146,12 +147,12 @@ void ColorPaletteWidget::draw(QPainter& painter)
 
         if (moreIdx == m_hoveredSwatch) {
             painter.setPen(Qt::NoPen);
-            painter.setBrush(QColor(80, 80, 80));
+            painter.setBrush(m_styleConfig.hoverBackgroundColor);
             painter.drawRoundedRect(moreRect.adjusted(-2, -2, 2, 2), 4, 4);
         }
 
         // Draw "..." text
-        painter.setPen(QColor(180, 180, 180));
+        painter.setPen(m_styleConfig.textColor);
         QFont font = painter.font();
         font.setPointSize(12);
         font.setBold(true);

@@ -30,6 +30,7 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     : QDialog(parent)
     , m_tabWidget(nullptr)
     , m_startOnLoginCheckbox(nullptr)
+    , m_toolbarStyleCombo(nullptr)
     , m_hotkeyEdit(nullptr)
     , m_captureHotkeyStatus(nullptr)
     , m_screenCanvasHotkeyEdit(nullptr)
@@ -117,6 +118,27 @@ void SettingsDialog::setupGeneralTab(QWidget *tab)
     m_startOnLoginCheckbox = new QCheckBox("Start on login", tab);
     m_startOnLoginCheckbox->setChecked(AutoLaunchManager::isEnabled());
     layout->addWidget(m_startOnLoginCheckbox);
+
+    // ========== Appearance Section ==========
+    layout->addSpacing(16);
+    QLabel *appearanceLabel = new QLabel("Appearance", tab);
+    appearanceLabel->setStyleSheet("font-weight: bold; font-size: 12px;");
+    layout->addWidget(appearanceLabel);
+
+    QHBoxLayout *styleLayout = new QHBoxLayout();
+    QLabel *styleLabel = new QLabel("Toolbar Style:", tab);
+    styleLabel->setFixedWidth(120);
+    m_toolbarStyleCombo = new QComboBox(tab);
+    m_toolbarStyleCombo->addItem("Dark (Default)", static_cast<int>(ToolbarStyleType::Dark));
+    m_toolbarStyleCombo->addItem("Light (Snipaste)", static_cast<int>(ToolbarStyleType::Light));
+    styleLayout->addWidget(styleLabel);
+    styleLayout->addWidget(m_toolbarStyleCombo);
+    styleLayout->addStretch();
+    layout->addLayout(styleLayout);
+
+    // Load current setting
+    int currentStyle = static_cast<int>(ToolbarStyleConfig::loadStyle());
+    m_toolbarStyleCombo->setCurrentIndex(currentStyle);
 
     layout->addStretch();
 }
@@ -682,6 +704,12 @@ void SettingsDialog::onSave()
         m_audioSourceCombo->currentData().toInt());
     recordingSettings.setValue("recording/audioDevice",
         m_audioDeviceCombo->currentData().toString());
+
+    // Save toolbar style setting
+    ToolbarStyleType newStyle = static_cast<ToolbarStyleType>(
+        m_toolbarStyleCombo->currentData().toInt());
+    ToolbarStyleConfig::saveStyle(newStyle);
+    emit toolbarStyleChanged(newStyle);
 
     // Request hotkey change (MainApplication handles registration)
     emit hotkeyChangeRequested(newHotkey);
