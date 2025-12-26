@@ -61,6 +61,9 @@ set(SOURCES
     src/PinWindow.cpp
     src/PinWindowManager.cpp
     src/AnnotationLayer.cpp
+    src/annotations/AnnotationItem.cpp
+    src/annotations/PencilStroke.cpp
+    src/annotations/MarkerStroke.cpp
     src/ScreenCanvas.cpp
     src/IconRenderer.cpp
     src/ColorPaletteWidget.cpp
@@ -109,6 +112,9 @@ set(HEADERS
     include/PinWindow.h
     include/PinWindowManager.h
     include/AnnotationLayer.h
+    include/annotations/AnnotationItem.h
+    include/annotations/PencilStroke.h
+    include/annotations/MarkerStroke.h
     include/ScreenCanvas.h
     include/ScreenCanvasManager.h
     include/AutoLaunchManager.h

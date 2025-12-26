@@ -14,78 +14,9 @@
 #include <memory>
 #include <vector>
 
-// Abstract base class for all annotation items
-class AnnotationItem
-{
-public:
-    virtual ~AnnotationItem() = default;
-    virtual void draw(QPainter &painter) const = 0;
-    virtual QRect boundingRect() const = 0;
-    virtual std::unique_ptr<AnnotationItem> clone() const = 0;
-
-    // Visibility control (for hiding items during re-editing)
-    void setVisible(bool visible) { m_visible = visible; }
-    bool isVisible() const { return m_visible; }
-
-protected:
-    bool m_visible = true;
-};
-
-// Freehand pencil stroke
-class PencilStroke : public AnnotationItem
-{
-public:
-    PencilStroke(const QVector<QPointF> &points, const QColor &color, int width);
-    void draw(QPainter &painter) const override;
-    QRect boundingRect() const override;
-    std::unique_ptr<AnnotationItem> clone() const override;
-
-    void addPoint(const QPointF &point);
-
-    // Collision detection for eraser (path-based intersection)
-    bool intersectsCircle(const QPoint &center, int radius) const;
-    QPainterPath strokePath() const;
-
-private:
-    QVector<QPointF> m_points;
-    QColor m_color;
-    int m_width;
-
-    // Performance optimization: cached bounding rect
-    mutable QRect m_boundingRectCache;
-    mutable bool m_boundingRectDirty = true;
-};
-
-// Semi-transparent marker/highlighter stroke
-class MarkerStroke : public AnnotationItem
-{
-public:
-    MarkerStroke(const QVector<QPointF> &points, const QColor &color, int width);
-    void draw(QPainter &painter) const override;
-    QRect boundingRect() const override;
-    std::unique_ptr<AnnotationItem> clone() const override;
-
-    void addPoint(const QPointF &point);
-
-    // Collision detection for eraser (path-based intersection)
-    bool intersectsCircle(const QPoint &center, int radius) const;
-    QPainterPath strokePath() const;
-
-private:
-    QVector<QPointF> m_points;
-    QColor m_color;
-    int m_width;
-
-    // Pixmap cache for draw() optimization
-    mutable QPixmap m_cachedPixmap;
-    mutable QPoint m_cachedOrigin;
-    mutable qreal m_cachedDpr = 0.0;
-    mutable int m_cachedPointCount = 0;
-
-    // Performance optimization: cached bounding rect
-    mutable QRect m_boundingRectCache;
-    mutable bool m_boundingRectDirty = true;
-};
+#include "annotations/AnnotationItem.h"
+#include "annotations/PencilStroke.h"
+#include "annotations/MarkerStroke.h"
 
 // Line end style for arrow annotations
 enum class LineEndStyle {
@@ -204,6 +135,7 @@ private:
     mutable QString m_cachedText;
     mutable QFont m_cachedFont;
     mutable QColor m_cachedColor;
+    mutable QPoint m_cachedPosition;
 
     void regenerateCache(qreal dpr) const;
     bool isCacheValid(qreal dpr) const;
