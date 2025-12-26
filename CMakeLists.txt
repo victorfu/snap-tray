@@ -64,6 +64,8 @@ set(SOURCES
     src/annotations/AnnotationItem.cpp
     src/annotations/PencilStroke.cpp
     src/annotations/MarkerStroke.cpp
+    src/annotations/ArrowAnnotation.cpp
+    src/annotations/ShapeAnnotation.cpp
     src/ScreenCanvas.cpp
     src/IconRenderer.cpp
     src/ColorPaletteWidget.cpp
@@ -115,6 +117,8 @@ set(HEADERS
     include/annotations/AnnotationItem.h
     include/annotations/PencilStroke.h
     include/annotations/MarkerStroke.h
+    include/annotations/ArrowAnnotation.h
+    include/annotations/ShapeAnnotation.h
     include/ScreenCanvas.h
     include/ScreenCanvasManager.h
     include/AutoLaunchManager.h

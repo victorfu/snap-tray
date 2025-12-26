@@ -61,11 +61,11 @@ void AnnotationController::startDrawing(const QPoint& pos)
         break;
 
     case Tool::Rectangle:
-        m_currentRectangle = std::make_unique<RectangleAnnotation>(QRect(pos, pos), m_color, m_width);
+        m_currentShape = std::make_unique<ShapeAnnotation>(QRect(pos, pos), ShapeType::Rectangle, m_color, m_width);
         break;
 
     case Tool::Ellipse:
-        m_currentEllipse = std::make_unique<EllipseAnnotation>(QRect(pos, pos), m_color, m_width);
+        m_currentShape = std::make_unique<ShapeAnnotation>(QRect(pos, pos), ShapeType::Ellipse, m_color, m_width);
         break;
 
     default:
@@ -102,14 +102,9 @@ void AnnotationController::updateDrawing(const QPoint& pos)
         break;
 
     case Tool::Rectangle:
-        if (m_currentRectangle) {
-            m_currentRectangle->setRect(QRect(m_startPoint, pos));
-        }
-        break;
-
     case Tool::Ellipse:
-        if (m_currentEllipse) {
-            m_currentEllipse->setRect(QRect(m_startPoint, pos));
+        if (m_currentShape) {
+            m_currentShape->setRect(QRect(m_startPoint, pos));
         }
         break;
 
@@ -156,17 +151,11 @@ void AnnotationController::finishDrawing()
         break;
 
     case Tool::Rectangle:
-        if (m_currentRectangle) {
-            m_annotationLayer->addItem(std::move(m_currentRectangle));
-        }
-        m_currentRectangle.reset();
-        break;
-
     case Tool::Ellipse:
-        if (m_currentEllipse) {
-            m_annotationLayer->addItem(std::move(m_currentEllipse));
+        if (m_currentShape) {
+            m_annotationLayer->addItem(std::move(m_currentShape));
         }
-        m_currentEllipse.reset();
+        m_currentShape.reset();
         break;
 
     default:
@@ -185,8 +174,7 @@ void AnnotationController::cancelDrawing()
     m_currentPencil.reset();
     m_currentMarker.reset();
     m_currentArrow.reset();
-    m_currentRectangle.reset();
-    m_currentEllipse.reset();
+    m_currentShape.reset();
     emit drawingStateChanged(false);
 }
 
@@ -204,10 +192,8 @@ void AnnotationController::drawCurrentAnnotation(QPainter& painter) const
         if (delta.manhattanLength() >= 3) {
             m_currentArrow->draw(painter);
         }
-    } else if (m_currentRectangle) {
-        m_currentRectangle->draw(painter);
-    } else if (m_currentEllipse) {
-        m_currentEllipse->draw(painter);
+    } else if (m_currentShape) {
+        m_currentShape->draw(painter);
     }
 }
 

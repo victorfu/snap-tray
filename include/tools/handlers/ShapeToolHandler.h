@@ -2,7 +2,7 @@
 #define SHAPETOOLHANDLER_H
 
 #include "../IToolHandler.h"
-#include "../../AnnotationLayer.h"
+#include "../../annotations/ShapeAnnotation.h"
 
 #include <QPoint>
 #include <QRect>
@@ -13,9 +13,6 @@
  *
  * Unified handler that supports both Rectangle and Ellipse shapes
  * with optional fill mode.
- *
- * Shape types: 0 = Rectangle, 1 = Ellipse
- * Fill modes:  0 = Outline, 1 = Filled
  */
 class ShapeToolHandler : public IToolHandler {
 public:
@@ -39,15 +36,14 @@ public:
 
 private:
     QRect makeRect(const QPoint& start, const QPoint& end) const;
-    void updateCurrentShape(ToolContext* ctx, const QPoint& endPos);
+    void updateCurrentShape(const QPoint& endPos);
 
     bool m_isDrawing = false;
     QPoint m_startPoint;
-    int m_shapeType = 0;   // 0 = Rectangle, 1 = Ellipse
+    ShapeType m_shapeType = ShapeType::Rectangle;
     int m_fillMode = 0;    // 0 = Outline, 1 = Filled
 
-    std::unique_ptr<RectangleAnnotation> m_currentRectangle;
-    std::unique_ptr<EllipseAnnotation> m_currentEllipse;
+    std::unique_ptr<ShapeAnnotation> m_currentShape;
 };
 
 #endif // SHAPETOOLHANDLER_H

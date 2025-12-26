@@ -30,10 +30,7 @@ class ColorPickerDialog;
 class QCloseEvent;
 class OCRManager;
 
-// Shape type for Shape tool
-enum class ShapeType { Rectangle, Ellipse };
-
-// Fill mode for Shape tool
+// Fill mode for Shape tool (ShapeType is defined in annotations/ShapeAnnotation.h)
 enum class ShapeFillMode { Outline, Filled };
 
 // Toolbar button types

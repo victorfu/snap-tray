@@ -14,8 +14,7 @@ class AnnotationLayer;
 class PencilStroke;
 class MarkerStroke;
 class ArrowAnnotation;
-class RectangleAnnotation;
-class EllipseAnnotation;
+class ShapeAnnotation;
 
 /**
  * @brief Base annotation controller for managing drawing state.
@@ -154,8 +153,7 @@ protected:
     std::unique_ptr<PencilStroke> m_currentPencil;
     std::unique_ptr<MarkerStroke> m_currentMarker;
     std::unique_ptr<ArrowAnnotation> m_currentArrow;
-    std::unique_ptr<RectangleAnnotation> m_currentRectangle;
-    std::unique_ptr<EllipseAnnotation> m_currentEllipse;
+    std::unique_ptr<ShapeAnnotation> m_currentShape;
 };
 
 #endif // ANNOTATIONCONTROLLER_H

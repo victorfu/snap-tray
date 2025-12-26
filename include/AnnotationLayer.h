@@ -17,74 +17,8 @@
 #include "annotations/AnnotationItem.h"
 #include "annotations/PencilStroke.h"
 #include "annotations/MarkerStroke.h"
-
-// Line end style for arrow annotations
-enum class LineEndStyle {
-    None = 0,    // ───── Plain line (no arrows)
-    EndArrow     // ─────▶ Arrow at end (default)
-};
-
-// Arrow annotation (line with arrowhead)
-class ArrowAnnotation : public AnnotationItem
-{
-public:
-    ArrowAnnotation(const QPoint &start, const QPoint &end, const QColor &color, int width,
-                    LineEndStyle style = LineEndStyle::EndArrow);
-    void draw(QPainter &painter) const override;
-    QRect boundingRect() const override;
-    std::unique_ptr<AnnotationItem> clone() const override;
-
-    void setEnd(const QPoint &end);
-    QPoint start() const { return m_start; }
-    QPoint end() const { return m_end; }
-    void setLineEndStyle(LineEndStyle style) { m_lineEndStyle = style; }
-    LineEndStyle lineEndStyle() const { return m_lineEndStyle; }
-
-private:
-    void drawArrowhead(QPainter &painter, const QPoint &start, const QPoint &end) const;
-
-    QPoint m_start;
-    QPoint m_end;
-    QColor m_color;
-    int m_width;
-    LineEndStyle m_lineEndStyle;
-};
-
-// Rectangle annotation
-class RectangleAnnotation : public AnnotationItem
-{
-public:
-    RectangleAnnotation(const QRect &rect, const QColor &color, int width, bool filled = false);
-    void draw(QPainter &painter) const override;
-    QRect boundingRect() const override;
-    std::unique_ptr<AnnotationItem> clone() const override;
-
-    void setRect(const QRect &rect);
-
-private:
-    QRect m_rect;
-    QColor m_color;
-    int m_width;
-    bool m_filled;
-};
-
-// Ellipse/Circle annotation
-class EllipseAnnotation : public AnnotationItem
-{
-public:
-    EllipseAnnotation(const QRect &rect, const QColor &color, int width, bool filled = false);
-    void draw(QPainter &painter) const override;
-    QRect boundingRect() const override;
-    std::unique_ptr<AnnotationItem> clone() const override;
-
-    void setRect(const QRect &rect);
-
-private:
-    QRect m_rect;
-    QColor m_color;
-    int m_width;
-    bool m_filled;
-};
+#include "annotations/ArrowAnnotation.h"
+#include "annotations/ShapeAnnotation.h"
 
 // Text annotation with rotation and scaling support
 class TextAnnotation : public AnnotationItem
