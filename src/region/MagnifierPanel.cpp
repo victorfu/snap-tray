@@ -204,7 +204,7 @@ void MagnifierPanel::draw(QPainter& painter, const QPoint& cursorPos,
 
 void MagnifierPanel::drawInfoPanel(QPainter& painter, int panelX, int infoY, int panelWidth)
 {
-    // 1. Coordinate info
+    // 1. Coordinate info (centered)
     painter.setPen(Qt::white);
     QFont font = painter.font();
     font.setPointSize(11);
@@ -213,12 +213,17 @@ void MagnifierPanel::drawInfoPanel(QPainter& painter, int panelX, int infoY, int
     QString coordText = QString("(%1 , %2)").arg(m_currentCursorPos.x()).arg(m_currentCursorPos.y());
     painter.drawText(panelX, infoY, panelWidth, 20, Qt::AlignCenter, coordText);
 
-    // 2. Color preview + RGB/HEX (left-aligned)
+    // 2. Color preview + RGB/HEX (centered)
     infoY += 20;
     int colorBoxSize = 14;
+    int colorTextGap = 8;
 
-    // Left-aligned layout for color swatch and text
-    int colorStartX = panelX + 8;
+    // Calculate total width of color swatch + gap + text to center them
+    QFontMetrics fm(font);
+    QString colorText = colorString();
+    int textWidth = fm.horizontalAdvance(colorText);
+    int totalColorWidth = colorBoxSize + colorTextGap + textWidth;
+    int colorStartX = panelX + (panelWidth - totalColorWidth) / 2;
 
     // Draw color swatch
     painter.fillRect(colorStartX, infoY, colorBoxSize, colorBoxSize, m_currentColor);
@@ -228,11 +233,11 @@ void MagnifierPanel::drawInfoPanel(QPainter& painter, int panelX, int infoY, int
 
     // Draw color text
     painter.setPen(Qt::white);
-    painter.drawText(colorStartX + colorBoxSize + 8, infoY,
-                     panelWidth - 16 - colorBoxSize - 8, colorBoxSize,
-                     Qt::AlignVCenter, colorString());
+    painter.drawText(colorStartX + colorBoxSize + colorTextGap, infoY,
+                     textWidth, colorBoxSize,
+                     Qt::AlignVCenter, colorText);
 
-    // 3. Hotkey instructions (left-aligned, smaller font)
+    // 3. Hotkey instructions (centered, smaller font)
     infoY += 18;
     QFont smallFont = font;
     smallFont.setPointSize(9);
@@ -240,11 +245,9 @@ void MagnifierPanel::drawInfoPanel(QPainter& painter, int panelX, int infoY, int
     painter.setPen(QColor(200, 200, 200));
 
     QString instruction1 = QString("Shift: Switch color format");
-    painter.drawText(colorStartX, infoY, panelWidth - 16, 14,
-                     Qt::AlignLeft | Qt::AlignVCenter, instruction1);
+    painter.drawText(panelX, infoY, panelWidth, 14, Qt::AlignCenter, instruction1);
 
     infoY += 14;
     QString instruction2 = QString("C: Copy color value");
-    painter.drawText(colorStartX, infoY, panelWidth - 16, 14,
-                     Qt::AlignLeft | Qt::AlignVCenter, instruction2);
+    painter.drawText(panelX, infoY, panelWidth, 14, Qt::AlignCenter, instruction2);
 }
