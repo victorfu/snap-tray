@@ -5,6 +5,7 @@
 #import <AVFoundation/AVFoundation.h>
 #import <CoreMedia/CoreMedia.h>
 #import <CoreVideo/CoreVideo.h>
+#import <AudioToolbox/AudioToolbox.h>
 #include <QFile>
 #include <QDebug>
 
@@ -23,6 +24,14 @@ public:
     qint64 frameNumber = 0;
     bool running = false;
     int quality = 55;  // 0-100
+
+    // Audio members
+    AVAssetWriterInput *audioInput = nil;
+    bool audioEnabled = false;
+    int audioSampleRate = 48000;
+    int audioChannels = 2;
+    int audioBitsPerSample = 16;
+    qint64 audioSamplesWritten = 0;
 
     int calculateBitrate() const {
         int pixels = frameSize.width() * frameSize.height();
@@ -82,8 +91,11 @@ public:
     void cleanup() {
         videoInput = nil;
         adaptor = nil;
+        audioInput = nil;
         assetWriter = nil;
         running = false;
+        audioEnabled = false;
+        audioSamplesWritten = 0;
     }
 };
 
@@ -182,6 +194,38 @@ bool AVFoundationEncoder::start(const QString &outputPath, const QSize &frameSiz
 
     [d->assetWriter addInput:d->videoInput];
 
+    // Configure audio input if enabled
+    if (d->audioEnabled) {
+        // Audio output settings (AAC encoding)
+        AudioChannelLayout channelLayout = {0};
+        channelLayout.mChannelLayoutTag = (d->audioChannels == 1)
+            ? kAudioChannelLayoutTag_Mono
+            : kAudioChannelLayoutTag_Stereo;
+
+        NSDictionary *audioSettings = @{
+            AVFormatIDKey: @(kAudioFormatMPEG4AAC),
+            AVSampleRateKey: @(d->audioSampleRate),
+            AVNumberOfChannelsKey: @(d->audioChannels),
+            AVEncoderBitRateKey: @(128000),  // 128 kbps
+            AVChannelLayoutKey: [NSData dataWithBytes:&channelLayout
+                                               length:sizeof(AudioChannelLayout)]
+        };
+
+        d->audioInput = [[AVAssetWriterInput alloc] initWithMediaType:AVMediaTypeAudio
+                                                       outputSettings:audioSettings];
+        d->audioInput.expectsMediaDataInRealTime = YES;
+
+        if ([d->assetWriter canAddInput:d->audioInput]) {
+            [d->assetWriter addInput:d->audioInput];
+            qDebug() << "AVFoundationEncoder: Audio input added -"
+                     << d->audioSampleRate << "Hz," << d->audioChannels << "ch";
+        } else {
+            qWarning() << "AVFoundationEncoder: Cannot add audio input, continuing without audio";
+            d->audioInput = nil;
+            d->audioEnabled = false;
+        }
+    }
+
     if (![d->assetWriter startWriting]) {
         d->lastError = QString("Failed to start writing: %1")
             .arg(QString::fromNSString(d->assetWriter.error.localizedDescription));
@@ -252,6 +296,9 @@ void AVFoundationEncoder::finish()
 
     d->running = false;
     [d->videoInput markAsFinished];
+    if (d->audioInput) {
+        [d->audioInput markAsFinished];
+    }
 
     __block bool completed = false;
     __block QString errorMsg;
@@ -327,6 +374,149 @@ QString AVFoundationEncoder::outputPath() const
 void AVFoundationEncoder::setQuality(int quality)
 {
     d->quality = qBound(0, quality, 100);
+}
+
+void AVFoundationEncoder::setAudioFormat(int sampleRate, int channels, int bitsPerSample)
+{
+    if (d->running) {
+        qWarning() << "AVFoundationEncoder: Cannot set audio format while running";
+        return;
+    }
+    d->audioEnabled = true;
+    d->audioSampleRate = sampleRate;
+    d->audioChannels = channels;
+    d->audioBitsPerSample = bitsPerSample;
+    qDebug() << "AVFoundationEncoder: Audio format set -" << sampleRate << "Hz,"
+             << channels << "ch," << bitsPerSample << "bit";
+}
+
+bool AVFoundationEncoder::isAudioSupported() const
+{
+    return true;  // AVFoundation supports audio encoding
+}
+
+void AVFoundationEncoder::writeAudioSamples(const QByteArray &pcmData, qint64 timestampMs)
+{
+    if (!d->running || !d->audioInput || !d->audioEnabled) {
+        return;
+    }
+
+    // Check if input is ready for more data
+    if (!d->audioInput.readyForMoreMediaData) {
+        return;  // Skip if encoder is busy
+    }
+
+    // Create audio sample buffer
+    CMBlockBufferRef blockBuffer = nullptr;
+    size_t dataLength = static_cast<size_t>(pcmData.size());
+
+    OSStatus status = CMBlockBufferCreateWithMemoryBlock(
+        kCFAllocatorDefault,
+        nullptr,  // Will allocate memory
+        dataLength,
+        kCFAllocatorDefault,
+        nullptr,
+        0,
+        dataLength,
+        kCMBlockBufferAssureMemoryNowFlag,
+        &blockBuffer
+    );
+
+    if (status != kCMBlockBufferNoErr || !blockBuffer) {
+        qWarning() << "AVFoundationEncoder: Failed to create block buffer:" << status;
+        return;
+    }
+
+    // Copy PCM data into block buffer
+    status = CMBlockBufferReplaceDataBytes(
+        pcmData.constData(),
+        blockBuffer,
+        0,
+        dataLength
+    );
+
+    if (status != kCMBlockBufferNoErr) {
+        CFRelease(blockBuffer);
+        qWarning() << "AVFoundationEncoder: Failed to copy audio data:" << status;
+        return;
+    }
+
+    // Create audio format description
+    AudioStreamBasicDescription asbd = {0};
+    asbd.mSampleRate = d->audioSampleRate;
+    asbd.mFormatID = kAudioFormatLinearPCM;
+    asbd.mFormatFlags = kAudioFormatFlagIsSignedInteger | kAudioFormatFlagIsPacked;
+    asbd.mBytesPerPacket = d->audioChannels * (d->audioBitsPerSample / 8);
+    asbd.mFramesPerPacket = 1;
+    asbd.mBytesPerFrame = asbd.mBytesPerPacket;
+    asbd.mChannelsPerFrame = d->audioChannels;
+    asbd.mBitsPerChannel = d->audioBitsPerSample;
+
+    CMAudioFormatDescriptionRef formatDesc = nullptr;
+    status = CMAudioFormatDescriptionCreate(
+        kCFAllocatorDefault,
+        &asbd,
+        0,
+        nullptr,
+        0,
+        nullptr,
+        nullptr,
+        &formatDesc
+    );
+
+    if (status != noErr || !formatDesc) {
+        CFRelease(blockBuffer);
+        qWarning() << "AVFoundationEncoder: Failed to create audio format description:" << status;
+        return;
+    }
+
+    // Calculate number of samples
+    int bytesPerFrame = d->audioChannels * (d->audioBitsPerSample / 8);
+    CMItemCount numSamples = static_cast<CMItemCount>(dataLength / bytesPerFrame);
+
+    // Create timing info
+    CMTime presentationTime = CMTimeMake(timestampMs, 1000);
+    CMTime duration = CMTimeMake(numSamples, d->audioSampleRate);
+
+    CMSampleTimingInfo timingInfo = {0};
+    timingInfo.duration = duration;
+    timingInfo.presentationTimeStamp = presentationTime;
+    timingInfo.decodeTimeStamp = kCMTimeInvalid;
+
+    // Create sample buffer
+    CMSampleBufferRef sampleBuffer = nullptr;
+    status = CMSampleBufferCreate(
+        kCFAllocatorDefault,
+        blockBuffer,
+        true,  // dataReady
+        nullptr,
+        nullptr,
+        formatDesc,
+        numSamples,
+        1,  // numSampleTimingEntries
+        &timingInfo,
+        0,  // numSampleSizeEntries
+        nullptr,
+        &sampleBuffer
+    );
+
+    CFRelease(blockBuffer);
+    CFRelease(formatDesc);
+
+    if (status != noErr || !sampleBuffer) {
+        qWarning() << "AVFoundationEncoder: Failed to create sample buffer:" << status;
+        return;
+    }
+
+    // Append sample buffer to audio input
+    BOOL success = [d->audioInput appendSampleBuffer:sampleBuffer];
+    CFRelease(sampleBuffer);
+
+    if (success) {
+        d->audioSamplesWritten++;
+    } else {
+        qWarning() << "AVFoundationEncoder: Failed to append audio sample buffer";
+    }
 }
 
 #endif // Q_OS_MAC
