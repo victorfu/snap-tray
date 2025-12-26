@@ -66,3 +66,94 @@ add_colorandwidthwidget_test(ColorAndWidthWidget_HitTest
 
 add_colorandwidthwidget_test(ColorAndWidthWidget_Events
     ColorAndWidthWidget/tst_Events.cpp)
+
+# ============================================================================
+# PinWindow Tests
+# ============================================================================
+
+# Common source files needed for testing PinWindow
+set(PINWINDOW_COMMON_SOURCES
+    ${CMAKE_SOURCE_DIR}/src/PinWindow.cpp
+    ${CMAKE_SOURCE_DIR}/src/PinWindowManager.cpp
+    ${CMAKE_SOURCE_DIR}/src/WatermarkRenderer.cpp
+    ${CMAKE_SOURCE_DIR}/src/LoadingSpinnerRenderer.cpp
+    ${CMAKE_SOURCE_DIR}/src/pinwindow/ResizeHandler.cpp
+    ${CMAKE_SOURCE_DIR}/src/pinwindow/UIIndicators.cpp
+)
+
+# Platform-specific sources for PinWindow tests
+if(APPLE)
+    list(APPEND PINWINDOW_COMMON_SOURCES
+        ${CMAKE_SOURCE_DIR}/src/platform/PlatformFeatures_mac.mm
+        ${CMAKE_SOURCE_DIR}/src/platform/WindowLevel_mac.mm
+        ${CMAKE_SOURCE_DIR}/src/OCRManager.mm
+        ${CMAKE_SOURCE_DIR}/src/WindowDetector.mm
+    )
+elseif(WIN32)
+    list(APPEND PINWINDOW_COMMON_SOURCES
+        ${CMAKE_SOURCE_DIR}/src/platform/PlatformFeatures_win.cpp
+        ${CMAKE_SOURCE_DIR}/src/platform/WindowLevel_win.cpp
+        ${CMAKE_SOURCE_DIR}/src/OCRManager_win.cpp
+        ${CMAKE_SOURCE_DIR}/src/WindowDetector_win.cpp
+    )
+endif()
+
+# Common headers that need MOC processing
+set(PINWINDOW_COMMON_HEADERS
+    ${CMAKE_SOURCE_DIR}/include/PinWindow.h
+    ${CMAKE_SOURCE_DIR}/include/PinWindowManager.h
+    ${CMAKE_SOURCE_DIR}/include/WatermarkRenderer.h
+    ${CMAKE_SOURCE_DIR}/include/LoadingSpinnerRenderer.h
+    ${CMAKE_SOURCE_DIR}/include/PlatformFeatures.h
+    ${CMAKE_SOURCE_DIR}/include/OCRManager.h
+    ${CMAKE_SOURCE_DIR}/include/WindowDetector.h
+    ${CMAKE_SOURCE_DIR}/include/pinwindow/ResizeHandler.h
+    ${CMAKE_SOURCE_DIR}/include/pinwindow/UIIndicators.h
+)
+
+# Helper function to create a PinWindow test executable
+function(add_pinwindow_test TEST_NAME TEST_SOURCE)
+    add_executable(${TEST_NAME}
+        ${TEST_SOURCE}
+        ${PINWINDOW_COMMON_SOURCES}
+        ${PINWINDOW_COMMON_HEADERS}
+    )
+
+    target_include_directories(${TEST_NAME} PRIVATE
+        ${CMAKE_SOURCE_DIR}/include
+        ${CMAKE_SOURCE_DIR}/src
+        ${CMAKE_BINARY_DIR}/generated
+    )
+
+    target_link_libraries(${TEST_NAME} PRIVATE
+        Qt6::Widgets
+        Qt6::Gui
+        Qt6::Svg
+        Qt6::Test
+    )
+
+    # Platform-specific frameworks for PinWindow tests
+    if(APPLE)
+        find_library(COREGRAPHICS_FRAMEWORK CoreGraphics)
+        find_library(APPKIT_FRAMEWORK AppKit)
+        find_library(VISION_FRAMEWORK Vision)
+        target_link_libraries(${TEST_NAME} PRIVATE
+            ${COREGRAPHICS_FRAMEWORK}
+            ${APPKIT_FRAMEWORK}
+            ${VISION_FRAMEWORK}
+        )
+    endif()
+
+    add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
+
+    set_tests_properties(${TEST_NAME} PROPERTIES
+        TIMEOUT 60
+    )
+endfunction()
+
+# Create PinWindow test executables
+add_pinwindow_test(PinWindow_Transform
+    PinWindow/tst_Transform.cpp)
+
+add_pinwindow_test(PinWindow_Resize
+    PinWindow/tst_Resize.cpp)

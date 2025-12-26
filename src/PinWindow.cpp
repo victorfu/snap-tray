@@ -4,6 +4,8 @@
 #include "PlatformFeatures.h"
 #include "WatermarkRenderer.h"
 #include "platform/WindowLevel.h"
+#include "pinwindow/ResizeHandler.h"
+#include "pinwindow/UIIndicators.h"
 
 #include <QPainter>
 #include <QMouseEvent>
@@ -34,7 +36,6 @@ PinWindow::PinWindow(const QPixmap &screenshot, const QPoint &position, QWidget 
     , m_zoomLevel(1.0)
     , m_isDragging(false)
     , m_contextMenu(nullptr)
-    , m_resizeEdge(ResizeEdge::None)
     , m_isResizing(false)
     , m_rotationAngle(0)
     , m_flipHorizontal(false)
@@ -72,61 +73,10 @@ PinWindow::PinWindow(const QPixmap &screenshot, const QPoint &position, QWidget 
     // Enable mouse tracking for resize cursor
     setMouseTracking(true);
 
-    // Zoom indicator label
-    m_zoomLabel = new QLabel(this);
-    m_zoomLabel->setStyleSheet(
-        "QLabel {"
-        "  background-color: rgba(0, 0, 0, 180);"
-        "  color: white;"
-        "  padding: 4px 8px;"
-        "  border-radius: 4px;"
-        "  font-size: 12px;"
-        "}"
-    );
-    m_zoomLabel->hide();
-
-    m_zoomLabelTimer = new QTimer(this);
-    m_zoomLabelTimer->setSingleShot(true);
-    connect(m_zoomLabelTimer, &QTimer::timeout, m_zoomLabel, &QLabel::hide);
-
-    // Opacity indicator label
-    m_opacityLabel = new QLabel(this);
-    m_opacityLabel->setStyleSheet(
-        "QLabel {"
-        "  background-color: rgba(0, 0, 0, 180);"
-        "  color: white;"
-        "  padding: 4px 8px;"
-        "  border-radius: 4px;"
-        "  font-size: 12px;"
-        "}"
-    );
-    m_opacityLabel->hide();
-
-    m_opacityLabelTimer = new QTimer(this);
-    m_opacityLabelTimer->setSingleShot(true);
-    connect(m_opacityLabelTimer, &QTimer::timeout, m_opacityLabel, &QLabel::hide);
-
-    // Click-through indicator label
-    m_clickThroughLabel = new QLabel(this);
-    m_clickThroughLabel->setStyleSheet(
-        "QLabel {"
-        "  background-color: rgba(88, 86, 214, 200);"
-        "  color: white;"
-        "  padding: 4px 10px;"
-        "  border-radius: 4px;"
-        "  font-size: 11px;"
-        "  font-weight: bold;"
-        "}"
-    );
-    m_clickThroughLabel->hide();
-
-    // OCR toast label (shows success/failure message)
-    m_ocrToastLabel = new QLabel(this);
-    m_ocrToastLabel->hide();
-
-    m_ocrToastTimer = new QTimer(this);
-    m_ocrToastTimer->setSingleShot(true);
-    connect(m_ocrToastTimer, &QTimer::timeout, m_ocrToastLabel, &QLabel::hide);
+    // Initialize components
+    m_resizeHandler = new ResizeHandler(kShadowMargin, kMinSize, this);
+    m_uiIndicators = new UIIndicators(this, this);
+    m_uiIndicators->setShadowMargin(kShadowMargin);
 
     // Must show() first, then move() to get correct positioning on macOS
     // Moving before show() can result in incorrect window placement
@@ -585,45 +535,12 @@ void PinWindow::onOCRComplete(bool success, const QString &text, const QString &
         QGuiApplication::clipboard()->setText(text);
         qDebug() << "PinWindow: OCR complete, copied" << text.length() << "characters to clipboard";
         msg = tr("Copied %1 characters").arg(text.length());
-
-        // Show success toast with green background
-        m_ocrToastLabel->setStyleSheet(
-            "QLabel {"
-            "  background-color: rgba(34, 139, 34, 220);"
-            "  color: white;"
-            "  padding: 8px 16px;"
-            "  border-radius: 6px;"
-            "  font-size: 13px;"
-            "  font-weight: bold;"
-            "}"
-        );
     } else {
         msg = error.isEmpty() ? tr("No text found") : error;
         qDebug() << "PinWindow: OCR failed:" << msg;
-
-        // Show failure toast with red background
-        m_ocrToastLabel->setStyleSheet(
-            "QLabel {"
-            "  background-color: rgba(200, 60, 60, 220);"
-            "  color: white;"
-            "  padding: 8px 16px;"
-            "  border-radius: 6px;"
-            "  font-size: 13px;"
-            "  font-weight: bold;"
-            "}"
-        );
     }
 
-    // Display the toast centered at top of window
-    m_ocrToastLabel->setText(msg);
-    m_ocrToastLabel->adjustSize();
-    int x = (width() - m_ocrToastLabel->width()) / 2;
-    int y = kShadowMargin + 12;
-    m_ocrToastLabel->move(x, y);
-    m_ocrToastLabel->show();
-    m_ocrToastLabel->raise();
-    m_ocrToastTimer->start(2500);
-
+    m_uiIndicators->showOCRToast(success && !text.isEmpty(), msg);
     emit ocrCompleted(success && !text.isEmpty(), msg);
 }
 
@@ -640,74 +557,6 @@ void PinWindow::copyAllInfo()
     QGuiApplication::clipboard()->setText(info.join("\n"));
 }
 
-PinWindow::ResizeEdge PinWindow::getResizeEdge(const QPoint &pos) const
-{
-    int margin = kResizeMargin + kShadowMargin;
-
-    bool onLeft = pos.x() < margin;
-    bool onRight = pos.x() > width() - margin;
-    bool onTop = pos.y() < margin;
-    bool onBottom = pos.y() > height() - margin;
-
-    if (onTop && onLeft) return ResizeEdge::TopLeft;
-    if (onTop && onRight) return ResizeEdge::TopRight;
-    if (onBottom && onLeft) return ResizeEdge::BottomLeft;
-    if (onBottom && onRight) return ResizeEdge::BottomRight;
-    if (onLeft) return ResizeEdge::Left;
-    if (onRight) return ResizeEdge::Right;
-    if (onTop) return ResizeEdge::Top;
-    if (onBottom) return ResizeEdge::Bottom;
-
-    return ResizeEdge::None;
-}
-
-void PinWindow::updateCursorForEdge(ResizeEdge edge)
-{
-    switch (edge) {
-        case ResizeEdge::Left:
-        case ResizeEdge::Right:
-            setCursor(Qt::SizeHorCursor);
-            break;
-        case ResizeEdge::Top:
-        case ResizeEdge::Bottom:
-            setCursor(Qt::SizeVerCursor);
-            break;
-        case ResizeEdge::TopLeft:
-        case ResizeEdge::BottomRight:
-            setCursor(Qt::SizeFDiagCursor);
-            break;
-        case ResizeEdge::TopRight:
-        case ResizeEdge::BottomLeft:
-            setCursor(Qt::SizeBDiagCursor);
-            break;
-        default:
-            setCursor(Qt::ArrowCursor);
-            break;
-    }
-}
-
-void PinWindow::showZoomIndicator()
-{
-    m_zoomLabel->setText(QString("%1%").arg(qRound(m_zoomLevel * 100)));
-    m_zoomLabel->adjustSize();
-    // Position at top-left corner
-    m_zoomLabel->move(kShadowMargin + 8, kShadowMargin + 8);
-    m_zoomLabel->show();
-    m_zoomLabel->raise();
-    m_zoomLabelTimer->start(1500);
-}
-
-void PinWindow::showOpacityIndicator()
-{
-    m_opacityLabel->setText(QString("%1%").arg(qRound(m_opacity * 100)));
-    m_opacityLabel->adjustSize();
-    // Position at bottom-left corner (zoom indicator is at bottom-right)
-    m_opacityLabel->move(kShadowMargin + 8,
-                         height() - kShadowMargin - m_opacityLabel->height() - 8);
-    m_opacityLabel->show();
-    m_opacityLabel->raise();
-    m_opacityLabelTimer->start(1500);
-}
 
 void PinWindow::setClickThrough(bool enabled)
 {
@@ -719,25 +568,8 @@ void PinWindow::setClickThrough(bool enabled)
     // Use native API to set click-through mode for the window
     setWindowClickThrough(this, enabled);
 
-    showClickThroughIndicator();
+    m_uiIndicators->showClickThroughIndicator(enabled);
     update(); // Trigger repaint for border change
-}
-
-void PinWindow::showClickThroughIndicator()
-{
-    if (m_clickThrough) {
-        m_clickThroughLabel->setText("Click-through (T to exit)");
-        m_clickThroughLabel->adjustSize();
-        // Position at top-right corner
-        m_clickThroughLabel->move(
-            width() - kShadowMargin - m_clickThroughLabel->width() - 8,
-            kShadowMargin + 8
-        );
-        m_clickThroughLabel->show();
-        m_clickThroughLabel->raise();
-    } else {
-        m_clickThroughLabel->hide();
-    }
 }
 
 void PinWindow::paintEvent(QPaintEvent *)
@@ -782,15 +614,12 @@ void PinWindow::paintEvent(QPaintEvent *)
 void PinWindow::mousePressEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton) {
-        ResizeEdge edge = getResizeEdge(event->pos());
+        ResizeHandler::Edge edge = m_resizeHandler->getEdgeAt(event->pos(), size());
 
-        if (edge != ResizeEdge::None) {
+        if (edge != ResizeHandler::Edge::None) {
             // Start resizing
             m_isResizing = true;
-            m_resizeEdge = edge;
-            m_resizeStartPos = event->globalPosition().toPoint();
-            m_resizeStartSize = size();
-            m_resizeStartWindowPos = pos();
+            m_resizeHandler->startResize(edge, event->globalPosition().toPoint(), size(), pos());
         } else {
             // Start dragging
             m_isDragging = true;
@@ -803,68 +632,9 @@ void PinWindow::mousePressEvent(QMouseEvent *event)
 void PinWindow::mouseMoveEvent(QMouseEvent *event)
 {
     if (m_isResizing) {
-        QPoint delta = event->globalPosition().toPoint() - m_resizeStartPos;
-        QSize newSize = m_resizeStartSize;
-        QPoint newPos = m_resizeStartWindowPos;
-
-        // Calculate new size based on which edge is being dragged
-        switch (m_resizeEdge) {
-            case ResizeEdge::Right:
-                newSize.setWidth(m_resizeStartSize.width() + delta.x());
-                break;
-            case ResizeEdge::Bottom:
-                newSize.setHeight(m_resizeStartSize.height() + delta.y());
-                break;
-            case ResizeEdge::Left:
-                newSize.setWidth(m_resizeStartSize.width() - delta.x());
-                newPos.setX(m_resizeStartWindowPos.x() + delta.x());
-                break;
-            case ResizeEdge::Top:
-                newSize.setHeight(m_resizeStartSize.height() - delta.y());
-                newPos.setY(m_resizeStartWindowPos.y() + delta.y());
-                break;
-            case ResizeEdge::TopLeft:
-                newSize.setWidth(m_resizeStartSize.width() - delta.x());
-                newSize.setHeight(m_resizeStartSize.height() - delta.y());
-                newPos.setX(m_resizeStartWindowPos.x() + delta.x());
-                newPos.setY(m_resizeStartWindowPos.y() + delta.y());
-                break;
-            case ResizeEdge::TopRight:
-                newSize.setWidth(m_resizeStartSize.width() + delta.x());
-                newSize.setHeight(m_resizeStartSize.height() - delta.y());
-                newPos.setY(m_resizeStartWindowPos.y() + delta.y());
-                break;
-            case ResizeEdge::BottomLeft:
-                newSize.setWidth(m_resizeStartSize.width() - delta.x());
-                newSize.setHeight(m_resizeStartSize.height() + delta.y());
-                newPos.setX(m_resizeStartWindowPos.x() + delta.x());
-                break;
-            case ResizeEdge::BottomRight:
-                newSize.setWidth(m_resizeStartSize.width() + delta.x());
-                newSize.setHeight(m_resizeStartSize.height() + delta.y());
-                break;
-            default:
-                break;
-        }
-
-        // Enforce minimum size
-        int minWindowSize = kMinSize + kShadowMargin * 2;
-        if (newSize.width() < minWindowSize) {
-            if (m_resizeEdge == ResizeEdge::Left ||
-                m_resizeEdge == ResizeEdge::TopLeft ||
-                m_resizeEdge == ResizeEdge::BottomLeft) {
-                newPos.setX(m_resizeStartWindowPos.x() + m_resizeStartSize.width() - minWindowSize);
-            }
-            newSize.setWidth(minWindowSize);
-        }
-        if (newSize.height() < minWindowSize) {
-            if (m_resizeEdge == ResizeEdge::Top ||
-                m_resizeEdge == ResizeEdge::TopLeft ||
-                m_resizeEdge == ResizeEdge::TopRight) {
-                newPos.setY(m_resizeStartWindowPos.y() + m_resizeStartSize.height() - minWindowSize);
-            }
-            newSize.setHeight(minWindowSize);
-        }
+        QSize newSize;
+        QPoint newPos;
+        m_resizeHandler->updateResize(event->globalPosition().toPoint(), newSize, newPos);
 
         // Update zoom level based on new size
         QSize contentSize = newSize - QSize(kShadowMargin * 2, kShadowMargin * 2);
@@ -895,14 +665,14 @@ void PinWindow::mouseMoveEvent(QMouseEvent *event)
         move(newPos);
         update();
 
-        showZoomIndicator();
+        m_uiIndicators->showZoomIndicator(m_zoomLevel);
 
     } else if (m_isDragging) {
         move(event->globalPosition().toPoint() - m_dragStartPos);
     } else {
         // Update cursor based on position
-        ResizeEdge edge = getResizeEdge(event->pos());
-        updateCursorForEdge(edge);
+        ResizeHandler::Edge edge = m_resizeHandler->getEdgeAt(event->pos(), size());
+        setCursor(ResizeHandler::cursorForEdge(edge));
     }
 }
 
@@ -911,7 +681,7 @@ void PinWindow::mouseReleaseEvent(QMouseEvent *event)
     if (event->button() == Qt::LeftButton) {
         if (m_isResizing) {
             m_isResizing = false;
-            m_resizeEdge = ResizeEdge::None;
+            m_resizeHandler->finishResize();
         }
         if (m_isDragging) {
             m_isDragging = false;
@@ -944,7 +714,7 @@ void PinWindow::wheelEvent(QWheelEvent *event)
         }
 
         setOpacity(newOpacity);
-        showOpacityIndicator();
+        m_uiIndicators->showOpacityIndicator(m_opacity);
         event->accept();
         return;
     }
@@ -965,7 +735,7 @@ void PinWindow::wheelEvent(QWheelEvent *event)
     // Keep top-left corner fixed - no position adjustment needed
     setZoomLevel(newZoom);
 
-    showZoomIndicator();
+    m_uiIndicators->showZoomIndicator(m_zoomLevel);
     event->accept();
 }
 

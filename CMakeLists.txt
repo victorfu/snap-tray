@@ -114,6 +114,10 @@ set(SOURCES
     src/ui/sections/TextSection.cpp
     src/ui/sections/ArrowStyleSection.cpp
     src/ui/sections/ShapeSection.cpp
+    # PinWindow components
+    src/pinwindow/ImageTransformer.cpp
+    src/pinwindow/ResizeHandler.cpp
+    src/pinwindow/UIIndicators.cpp
 )
 
 set(RESOURCES
@@ -196,6 +200,10 @@ set(HEADERS
     include/ui/sections/TextSection.h
     include/ui/sections/ArrowStyleSection.h
     include/ui/sections/ShapeSection.h
+    # PinWindow components
+    include/pinwindow/ImageTransformer.h
+    include/pinwindow/ResizeHandler.h
+    include/pinwindow/UIIndicators.h
 )
 
 # Cross-platform source files (used by both platforms)

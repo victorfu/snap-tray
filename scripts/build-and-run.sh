@@ -21,5 +21,5 @@ cmake --build build --target SnapTray
 
 # Run
 echo ""
-echo "Launching SnapTray..."
-open build/SnapTray.app
+echo "Launching SnapTray in foreground..."
+"$BUILD_DIR/SnapTray.app/Contents/MacOS/SnapTray"

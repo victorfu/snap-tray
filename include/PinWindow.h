@@ -7,12 +7,14 @@
 #include <QElapsedTimer>
 #include "WatermarkRenderer.h"
 #include "LoadingSpinnerRenderer.h"
+#include "pinwindow/ResizeHandler.h"
 
 class QMenu;
 class QLabel;
 class QTimer;
 class OCRManager;
 class PinWindowManager;
+class UIIndicators;
 
 class PinWindow : public QWidget
 {
@@ -64,15 +66,7 @@ protected:
 private:
     // Layout constants
     static constexpr int kShadowMargin = 8;
-    static constexpr int kResizeMargin = 6;
     static constexpr int kMinSize = 50;
-
-    // Resize edge enum
-    enum class ResizeEdge {
-        None,
-        Left, Right, Top, Bottom,
-        TopLeft, TopRight, BottomLeft, BottomRight
-    };
 
     void updateSize();
     void createContextMenu();
@@ -83,19 +77,6 @@ private:
     // Performance optimization: ensure transform cache is valid
     void ensureTransformCacheValid();
     void onResizeFinished();
-
-    // Resize methods
-    ResizeEdge getResizeEdge(const QPoint &pos) const;
-    void updateCursorForEdge(ResizeEdge edge);
-
-    // Zoom indicator
-    void showZoomIndicator();
-
-    // Opacity indicator
-    void showOpacityIndicator();
-
-    // Click-through indicator
-    void showClickThroughIndicator();
 
     // OCR methods
     void performOCR();
@@ -116,25 +97,18 @@ private:
     QAction *m_currentZoomAction;
     bool m_smoothing;
 
-    // Resize members
-    ResizeEdge m_resizeEdge;
-    bool m_isResizing;
-    QPoint m_resizeStartPos;
-    QSize m_resizeStartSize;
-    QPoint m_resizeStartWindowPos;
+    // Components
+    ResizeHandler* m_resizeHandler;
+    UIIndicators* m_uiIndicators;
 
-    // Zoom indicator members
-    QLabel *m_zoomLabel;
-    QTimer *m_zoomLabelTimer;
+    // Resize state
+    bool m_isResizing;
 
     // Opacity members
     qreal m_opacity;
-    QLabel *m_opacityLabel;
-    QTimer *m_opacityLabelTimer;
 
     // Click-through mode
     bool m_clickThrough;
-    QLabel *m_clickThroughLabel;
 
     // Rotation members
     int m_rotationAngle;  // 0, 90, 180, 270 degrees
@@ -147,8 +121,6 @@ private:
     OCRManager *m_ocrManager;
     bool m_ocrInProgress;
     LoadingSpinnerRenderer *m_loadingSpinner;
-    QLabel *m_ocrToastLabel;
-    QTimer *m_ocrToastTimer;
 
     // Watermark members
     WatermarkRenderer::Settings m_watermarkSettings;
