@@ -77,7 +77,14 @@ void PinWindowManager::toggleClickThroughAtCursor()
         widgetAtCursor = widgetAtCursor->parentWidget();
     }
     
-    // Fallback: If widgetAt() doesn't find a PinWindow (e.g., due to click-through mode),
+    // Only use fallback if widgetAt() returned null (likely a click-through window)
+    // If it returned a widget, that means the cursor is over something else, not a PinWindow
+    if (QApplication::widgetAt(cursorPos) != nullptr) {
+        qDebug() << "PinWindowManager: Cursor is over another window, not a pin window";
+        return;
+    }
+    
+    // Fallback: If widgetAt() returned null (e.g., due to click-through mode),
     // check geometry manually
     for (int i = m_windows.count() - 1; i >= 0; --i) {
         PinWindow *window = m_windows[i];
@@ -87,7 +94,7 @@ void PinWindowManager::toggleClickThroughAtCursor()
             // Toggle click-through mode for this window
             window->setClickThrough(!window->isClickThrough());
             qDebug() << "PinWindowManager: Toggled click-through for window at cursor (fallback), now"
-                     << (window->isClickThrough() ? "enabled" : "disabled");
+                      << (window->isClickThrough() ? "enabled" : "disabled");
             return;
         }
     }
