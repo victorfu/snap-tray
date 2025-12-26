@@ -151,6 +151,8 @@ set(HEADERS
     include/tools/handlers/EraserToolHandler.h
     include/tools/handlers/SelectionToolHandler.h
     include/tools/handlers/LaserPointerToolHandler.h
+    # Utility classes
+    include/utils/ResourceCleanupHelper.h
 )
 
 # Cross-platform source files (used by both platforms)

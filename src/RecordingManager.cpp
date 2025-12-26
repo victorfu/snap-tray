@@ -8,6 +8,7 @@
 #include "capture/IAudioCaptureEngine.h"
 #include "AudioFileWriter.h"
 #include "platform/WindowLevel.h"
+#include "utils/ResourceCleanupHelper.h"
 
 #include <QGuiApplication>
 #include <QScreen>
@@ -860,13 +861,7 @@ void RecordingManager::stopFrameCapture()
     // Disconnect BEFORE stopping to prevent new signals from being queued during shutdown
     qDebug() << "RecordingManager: Stopping audio engine, m_audioEngine=" << (m_audioEngine ? "exists" : "null");
     if (m_audioEngine) {
-        qDebug() << "RecordingManager: Disconnecting audio engine signals...";
-        disconnect(m_audioEngine, nullptr, this, nullptr);
-        qDebug() << "RecordingManager: Calling m_audioEngine->stop()...";
-        m_audioEngine->stop();
-        qDebug() << "RecordingManager: m_audioEngine->stop() returned";
-        m_audioEngine->deleteLater();
-        m_audioEngine = nullptr;
+        ResourceCleanupHelper::stopAndDelete(m_audioEngine);
         qDebug() << "RecordingManager: Audio engine stopped and scheduled for deletion";
     }
 
@@ -883,12 +878,7 @@ void RecordingManager::stopFrameCapture()
     // Stop capture engine
     // Use deleteLater to avoid use-after-free when called from signal handler
     qDebug() << "RecordingManager: Stopping capture engine...";
-    if (m_captureEngine) {
-        m_captureEngine->stop();
-        disconnect(m_captureEngine, nullptr, this, nullptr);
-        m_captureEngine->deleteLater();
-        m_captureEngine = nullptr;
-    }
+    ResourceCleanupHelper::stopAndDelete(m_captureEngine);
     qDebug() << "RecordingManager: Capture engine stopped";
 
     // Close UI overlays
@@ -920,10 +910,7 @@ void RecordingManager::cleanupRecording()
     m_usingNativeEncoder = false;
 
     // Clean up temp audio file
-    if (!m_tempAudioPath.isEmpty() && QFile::exists(m_tempAudioPath)) {
-        QFile::remove(m_tempAudioPath);
-        m_tempAudioPath.clear();
-    }
+    ResourceCleanupHelper::removeTempFile(m_tempAudioPath);
 
     if (m_regionSelector) {
         m_regionSelector->close();
@@ -932,23 +919,10 @@ void RecordingManager::cleanupRecording()
 
 void RecordingManager::cleanupAudio()
 {
-    // Disconnect BEFORE stopping to prevent new signals from being queued during shutdown
-    if (m_audioEngine) {
-        disconnect(m_audioEngine, nullptr, this, nullptr);
-        m_audioEngine->stop();
-        m_audioEngine->deleteLater();
-        m_audioEngine = nullptr;
-    }
-
-    if (m_audioWriter) {
-        delete m_audioWriter;
-        m_audioWriter = nullptr;
-    }
-
-    if (!m_tempAudioPath.isEmpty() && QFile::exists(m_tempAudioPath)) {
-        QFile::remove(m_tempAudioPath);
-        m_tempAudioPath.clear();
-    }
+    ResourceCleanupHelper::stopAndDelete(m_audioEngine);
+    delete m_audioWriter;
+    m_audioWriter = nullptr;
+    ResourceCleanupHelper::removeTempFile(m_tempAudioPath);
 }
 
 void RecordingManager::onEncodingFinished(bool success, const QString &outputPath)
