@@ -62,7 +62,8 @@ void PinWindowManager::toggleClickThroughAtCursor()
     
     // First, try to find the widget at the cursor position
     // This correctly handles window stacking order
-    QWidget *widgetAtCursor = QApplication::widgetAt(cursorPos);
+    QWidget *initialWidgetAtCursor = QApplication::widgetAt(cursorPos);
+    QWidget *widgetAtCursor = initialWidgetAtCursor;
     
     // Check if the widget is or belongs to a PinWindow
     while (widgetAtCursor) {
@@ -79,13 +80,15 @@ void PinWindowManager::toggleClickThroughAtCursor()
     
     // Only use fallback if widgetAt() returned null (likely a click-through window)
     // If it returned a widget, that means the cursor is over something else, not a PinWindow
-    if (QApplication::widgetAt(cursorPos) != nullptr) {
+    if (initialWidgetAtCursor != nullptr) {
         qDebug() << "PinWindowManager: Cursor is over another window, not a pin window";
         return;
     }
     
     // Fallback: If widgetAt() returned null (e.g., due to click-through mode),
-    // check geometry manually
+    // check geometry manually. Iterate in reverse order to check most recently
+    // created/raised windows first, approximating Z-order for better UX when
+    // windows overlap.
     for (int i = m_windows.count() - 1; i >= 0; --i) {
         PinWindow *window = m_windows[i];
         
