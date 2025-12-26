@@ -55,10 +55,10 @@ ToolbarStyleConfig ToolbarStyleConfig::getLightStyle()
     config.borderColor = QColor(224, 224, 224);
     config.shadowAlpha = 30;
 
-    // Icon colors - darker for light background
-    config.iconNormalColor = QColor(80, 80, 80);
-    config.iconActiveColor = QColor(50, 50, 50);
-    config.iconHoveredColor = QColor(60, 60, 60);
+    // Icon colors - optimized for light background
+    config.iconNormalColor = QColor(90, 90, 90);    // Slightly lighter for softer look
+    config.iconActiveColor = Qt::white;              // White for contrast on blue highlight
+    config.iconHoveredColor = QColor(70, 70, 70);   // Darker on hover for feedback
     config.iconActionColor = QColor(0, 122, 255);       // Blue for Pin, Save, Copy
     config.iconCancelColor = QColor(220, 60, 60);       // Red for Cancel
     config.iconRecordColor = QColor(220, 50, 50);       // Red for Record

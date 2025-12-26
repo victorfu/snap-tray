@@ -130,7 +130,7 @@ void SettingsDialog::setupGeneralTab(QWidget *tab)
     styleLabel->setFixedWidth(120);
     m_toolbarStyleCombo = new QComboBox(tab);
     m_toolbarStyleCombo->addItem("Dark (Default)", static_cast<int>(ToolbarStyleType::Dark));
-    m_toolbarStyleCombo->addItem("Light (Snipaste)", static_cast<int>(ToolbarStyleType::Light));
+    m_toolbarStyleCombo->addItem("Light", static_cast<int>(ToolbarStyleType::Light));
     styleLayout->addWidget(styleLabel);
     styleLayout->addWidget(m_toolbarStyleCombo);
     styleLayout->addStretch();

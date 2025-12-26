@@ -736,7 +736,9 @@ void RegionSelector::updateWindowDetection(const QPoint& localPos)
 
 void RegionSelector::drawDetectedWindow(QPainter& painter)
 {
-    if (m_highlightedWindowRect.isNull() || m_selectionManager->isComplete() || m_selectionManager->isSelecting()) {
+    if (m_highlightedWindowRect.isNull() || m_selectionManager->isComplete() ||
+        m_selectionManager->isSelecting() || m_selectionManager->isResizing() ||
+        m_selectionManager->isMoving()) {
         return;
     }
 
@@ -843,13 +845,15 @@ void RegionSelector::paintEvent(QPaintEvent*)
 
     // Draw selection if active or complete
     QRect selectionRect = m_selectionManager->selectionRect();
-    bool hasSelection = m_selectionManager->isSelecting() || m_selectionManager->isComplete();
+    bool hasSelection = m_selectionManager->isSelecting() || m_selectionManager->isComplete() ||
+        m_selectionManager->isResizing() || m_selectionManager->isMoving();
     if (hasSelection && selectionRect.isValid()) {
         drawSelection(painter);
         drawDimensionInfo(painter);
 
         // Draw annotations on top of selection
-        if (m_selectionManager->isComplete()) {
+        // Include isResizing() and isMoving() so annotations remain visible during selection box manipulation
+        if (m_selectionManager->isComplete() || m_selectionManager->isResizing() || m_selectionManager->isMoving()) {
             drawAnnotations(painter);
             drawCurrentAnnotation(painter);
 
@@ -933,7 +937,8 @@ void RegionSelector::drawOverlay(QPainter& painter)
     QColor dimColor(0, 0, 0, 100);
 
     QRect sel = m_selectionManager->selectionRect();
-    bool hasSelection = (m_selectionManager->isSelecting() || m_selectionManager->isComplete()) && sel.isValid();
+    bool hasSelection = (m_selectionManager->isSelecting() || m_selectionManager->isComplete() ||
+        m_selectionManager->isResizing() || m_selectionManager->isMoving()) && sel.isValid();
 
     if (hasSelection) {
         // 選取模式：選取區域外繪製 overlay
