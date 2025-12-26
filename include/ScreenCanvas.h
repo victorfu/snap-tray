@@ -10,6 +10,7 @@
 #include "annotations/AnnotationLayer.h"
 #include "annotations/ArrowAnnotation.h"
 #include "tools/ToolId.h"
+#include "ToolbarStyle.h"
 
 class QScreen;
 class AnnotationLayer;
@@ -155,6 +156,9 @@ private:
 
     // Cursor position for drawing cursor dot
     QPoint m_cursorPos;
+
+    // Toolbar style configuration
+    ToolbarStyleConfig m_toolbarStyleConfig;
 };
 
 #endif // SCREENCANVAS_H

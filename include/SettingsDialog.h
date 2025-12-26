@@ -2,6 +2,7 @@
 #define SETTINGSDIALOG_H
 
 #include <QDialog>
+#include "ToolbarStyle.h"
 
 class QKeySequenceEdit;
 class QSettings;
@@ -39,6 +40,7 @@ signals:
     void hotkeyChangeRequested(const QString &newHotkey);
     void screenCanvasHotkeyChangeRequested(const QString &newHotkey);
     void startOnLoginChanged(bool enabled);
+    void toolbarStyleChanged(ToolbarStyleType style);
 
 private slots:
     void onSave();
@@ -57,6 +59,7 @@ private:
     // UI elements
     QTabWidget *m_tabWidget;
     QCheckBox *m_startOnLoginCheckbox;
+    QComboBox *m_toolbarStyleCombo;
     QKeySequenceEdit *m_hotkeyEdit;
     QLabel *m_captureHotkeyStatus;
     QKeySequenceEdit *m_screenCanvasHotkeyEdit;

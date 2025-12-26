@@ -17,6 +17,7 @@ ColorAndWidthWidget::ColorAndWidthWidget(QObject* parent)
     , m_widthSectionHovered(false)
     , m_showWidthSection(true)
     , m_visible(false)
+    , m_styleConfig(ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle()))
 {
     // Default color palette - 15 colors in 2 rows (8 + 7, with "..." as 8th in row 2)
     m_colors = {
@@ -387,15 +388,15 @@ void ColorAndWidthWidget::draw(QPainter& painter)
     // Draw unified shadow
     QRect shadowRect = m_widgetRect.adjusted(2, 2, 2, 2);
     painter.setPen(Qt::NoPen);
-    painter.setBrush(QColor(0, 0, 0, 50));
+    painter.setBrush(QColor(0, 0, 0, m_styleConfig.shadowAlpha));
     painter.drawRoundedRect(shadowRect, 6, 6);
 
     // Draw unified background with gradient
     QLinearGradient gradient(m_widgetRect.topLeft(), m_widgetRect.bottomLeft());
-    gradient.setColorAt(0, QColor(55, 55, 55, 245));
-    gradient.setColorAt(1, QColor(40, 40, 40, 245));
+    gradient.setColorAt(0, m_styleConfig.backgroundColorTop);
+    gradient.setColorAt(1, m_styleConfig.backgroundColorBottom);
     painter.setBrush(gradient);
-    painter.setPen(QPen(QColor(70, 70, 70), 1));
+    painter.setPen(QPen(m_styleConfig.borderColor, 1));
     painter.drawRoundedRect(m_widgetRect, 6, 6);
 
     // Draw color section
@@ -431,7 +432,7 @@ void ColorAndWidthWidget::drawColorSection(QPainter& painter)
         // Highlight if hovered
         if (i == m_hoveredSwatch) {
             painter.setPen(Qt::NoPen);
-            painter.setBrush(QColor(80, 80, 80));
+            painter.setBrush(m_styleConfig.hoverBackgroundColor);
             painter.drawRoundedRect(swatchRect.adjusted(-2, -2, 2, 2), 4, 4);
         }
 
@@ -442,7 +443,7 @@ void ColorAndWidthWidget::drawColorSection(QPainter& painter)
                         colorSize, colorSize);
 
         // Draw border (white for dark colors, dark for light colors)
-        QColor borderColor = (m_colors[i].lightness() > 200) ? QColor(80, 80, 80) : Qt::white;
+        QColor borderColor = (m_colors[i].lightness() > 200) ? m_styleConfig.separatorColor : Qt::white;
         painter.setPen(QPen(borderColor, 1));
         painter.setBrush(m_colors[i]);
         painter.drawRoundedRect(colorRect, 3, 3);
@@ -462,12 +463,12 @@ void ColorAndWidthWidget::drawColorSection(QPainter& painter)
 
         if (moreIdx == m_hoveredSwatch) {
             painter.setPen(Qt::NoPen);
-            painter.setBrush(QColor(80, 80, 80));
+            painter.setBrush(m_styleConfig.hoverBackgroundColor);
             painter.drawRoundedRect(moreRect.adjusted(-2, -2, 2, 2), 4, 4);
         }
 
         // Draw "..." text
-        painter.setPen(QColor(180, 180, 180));
+        painter.setPen(m_styleConfig.textColor);
         QFont font = painter.font();
         font.setPointSize(12);
         font.setBold(true);
@@ -485,8 +486,8 @@ void ColorAndWidthWidget::drawWidthSection(QPainter& painter)
     QRect containerRect(centerX - containerSize / 2, centerY - containerSize / 2,
                         containerSize, containerSize);
 
-    painter.setPen(QPen(QColor(60, 60, 60), 1));
-    painter.setBrush(QColor(35, 35, 35));
+    painter.setPen(QPen(m_styleConfig.separatorColor, 1));
+    painter.setBrush(m_styleConfig.buttonInactiveColor);
     painter.drawEllipse(containerRect);
 
     // Draw preview dot (shows actual stroke width with current color)
@@ -510,11 +511,11 @@ void ColorAndWidthWidget::drawTextSection(QPainter& painter)
         // Background
         QColor bgColor;
         if (enabled) {
-            bgColor = QColor(0, 122, 255);  // Blue when active
+            bgColor = m_styleConfig.buttonActiveColor;
         } else if (hovered) {
-            bgColor = QColor(80, 80, 80);
+            bgColor = m_styleConfig.buttonHoverColor;
         } else {
-            bgColor = QColor(50, 50, 50);
+            bgColor = m_styleConfig.buttonInactiveColor;
         }
         painter.setPen(Qt::NoPen);
         painter.setBrush(bgColor);
@@ -527,15 +528,15 @@ void ColorAndWidthWidget::drawTextSection(QPainter& painter)
         font.setItalic(isItalicStyle);
         font.setUnderline(isUnderlineStyle);
         painter.setFont(font);
-        painter.setPen(enabled ? Qt::white : QColor(200, 200, 200));
+        painter.setPen(enabled ? m_styleConfig.textActiveColor : m_styleConfig.textColor);
         painter.drawText(rect, Qt::AlignCenter, text);
     };
 
     // Helper lambda to draw a dropdown button
     auto drawDropdown = [&](const QRect& rect, const QString& text, bool hovered) {
         // Background
-        QColor bgColor = hovered ? QColor(80, 80, 80) : QColor(50, 50, 50);
-        painter.setPen(QPen(QColor(70, 70, 70), 1));
+        QColor bgColor = hovered ? m_styleConfig.buttonHoverColor : m_styleConfig.buttonInactiveColor;
+        painter.setPen(QPen(m_styleConfig.dropdownBorder, 1));
         painter.setBrush(bgColor);
         painter.drawRoundedRect(rect, 4, 4);
 
@@ -546,7 +547,7 @@ void ColorAndWidthWidget::drawTextSection(QPainter& painter)
         font.setItalic(false);
         font.setUnderline(false);
         painter.setFont(font);
-        painter.setPen(QColor(200, 200, 200));
+        painter.setPen(m_styleConfig.textColor);
 
         // Draw text left-aligned with some padding
         QRect textRect = rect.adjusted(4, 0, -12, 0);
@@ -560,7 +561,7 @@ void ColorAndWidthWidget::drawTextSection(QPainter& painter)
         arrow.lineTo(arrowX + 3, arrowY - 2);
         arrow.lineTo(arrowX, arrowY + 2);
         arrow.closeSubpath();
-        painter.fillPath(arrow, QColor(180, 180, 180));
+        painter.fillPath(arrow, m_styleConfig.textColor);
     };
 
     // Draw B/I/U toggle buttons
@@ -584,8 +585,8 @@ void ColorAndWidthWidget::drawArrowStyleSection(QPainter& painter)
 {
     // Draw the button showing current style
     bool buttonHovered = m_hoveredArrowStyleOption == -2;  // Special value for button hover
-    QColor bgColor = buttonHovered ? QColor(80, 80, 80) : QColor(50, 50, 50);
-    painter.setPen(QPen(QColor(70, 70, 70), 1));
+    QColor bgColor = buttonHovered ? m_styleConfig.buttonHoverColor : m_styleConfig.buttonInactiveColor;
+    painter.setPen(QPen(m_styleConfig.dropdownBorder, 1));
     painter.setBrush(bgColor);
     painter.drawRoundedRect(m_arrowStyleButtonRect, 4, 4);
 
@@ -601,13 +602,13 @@ void ColorAndWidthWidget::drawArrowStyleSection(QPainter& painter)
     arrow.lineTo(arrowX + 3, arrowY - 2);
     arrow.lineTo(arrowX, arrowY + 2);
     arrow.closeSubpath();
-    painter.fillPath(arrow, QColor(180, 180, 180));
+    painter.fillPath(arrow, m_styleConfig.textColor);
 
     // Draw dropdown menu if open
     if (m_arrowStyleDropdownOpen) {
         // Draw dropdown background
-        painter.setPen(QPen(QColor(70, 70, 70), 1));
-        painter.setBrush(QColor(50, 50, 50, 250));
+        painter.setPen(QPen(m_styleConfig.dropdownBorder, 1));
+        painter.setBrush(m_styleConfig.dropdownBackground);
         painter.drawRoundedRect(m_arrowStyleDropdownRect, 4, 4);
 
         // Draw each option (2 options: None, EndArrow)
@@ -625,7 +626,7 @@ void ColorAndWidthWidget::drawArrowStyleSection(QPainter& painter)
 
             // Highlight hovered or selected option
             if (isHovered || isSelected) {
-                QColor highlightColor = isSelected ? QColor(0, 122, 255, 100) : QColor(80, 80, 80);
+                QColor highlightColor = isSelected ? QColor(m_styleConfig.buttonActiveColor.red(), m_styleConfig.buttonActiveColor.green(), m_styleConfig.buttonActiveColor.blue(), 100) : m_styleConfig.buttonHoverColor;
                 painter.setPen(Qt::NoPen);
                 painter.setBrush(highlightColor);
                 painter.drawRoundedRect(optionRect.adjusted(2, 2, -2, -2), 3, 3);
@@ -651,9 +652,9 @@ void ColorAndWidthWidget::drawArrowStyleIcon(QPainter& painter, LineEndStyle sty
     int lineRight = rect.right() - 4;
     int lineWidth = 2;
 
-    QPen linePen(QColor(200, 200, 200), lineWidth, Qt::SolidLine, Qt::RoundCap);
+    QPen linePen(m_styleConfig.textColor, lineWidth, Qt::SolidLine, Qt::RoundCap);
     painter.setPen(linePen);
-    painter.setBrush(QColor(200, 200, 200));
+    painter.setBrush(m_styleConfig.textColor);
 
     // Draw the line
     painter.drawLine(lineLeft, lineY, lineRight, lineY);
@@ -678,7 +679,7 @@ void ColorAndWidthWidget::drawArrowStyleIcon(QPainter& painter, LineEndStyle sty
 
     auto drawDot = [&](int centerX) {
         painter.setPen(Qt::NoPen);
-        painter.setBrush(QColor(200, 200, 200));
+        painter.setBrush(m_styleConfig.textColor);
         painter.drawEllipse(QPoint(centerX, lineY), dotRadius, dotRadius);
     };
 
@@ -746,11 +747,11 @@ void ColorAndWidthWidget::drawShapeSection(QPainter& painter)
         // Background
         QColor bgColor;
         if (isSelected) {
-            bgColor = QColor(0, 122, 255);  // Blue when active
+            bgColor = m_styleConfig.buttonActiveColor;
         } else if (isHovered) {
-            bgColor = QColor(80, 80, 80);
+            bgColor = m_styleConfig.buttonHoverColor;
         } else {
-            bgColor = QColor(50, 50, 50);
+            bgColor = m_styleConfig.buttonInactiveColor;
         }
 
         painter.setPen(Qt::NoPen);
@@ -758,7 +759,7 @@ void ColorAndWidthWidget::drawShapeSection(QPainter& painter)
         painter.drawRoundedRect(rect, 4, 4);
 
         // Draw icon based on button index
-        QColor iconColor = isSelected ? Qt::white : QColor(200, 200, 200);
+        QColor iconColor = isSelected ? m_styleConfig.textActiveColor : m_styleConfig.textColor;
         QRect iconRect = rect.adjusted(5, 5, -5, -5);
 
         switch (i) {

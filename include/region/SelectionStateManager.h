@@ -44,6 +44,18 @@ public:
     bool isResizing() const { return m_state == State::ResizingHandle; }
     bool isMoving() const { return m_state == State::Moving; }
 
+    // Compound state queries for common patterns
+    // Has a completed selection (including while being manipulated)
+    bool hasSelection() const {
+        return m_state == State::Complete ||
+               m_state == State::ResizingHandle ||
+               m_state == State::Moving;
+    }
+    // Has any selection activity (including creation in progress)
+    bool hasActiveSelection() const { return m_state != State::None; }
+    // Currently manipulating the selection (resize or move)
+    bool isManipulating() const { return isResizing() || isMoving(); }
+
     // Selection rectangle
     QRect selectionRect() const { return m_selectionRect.normalized(); }
     void setSelectionRect(const QRect& rect);

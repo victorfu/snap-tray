@@ -400,13 +400,14 @@ QColor RegionSelector::getToolbarIconColor(int buttonId, bool isActive, bool isH
 {
     Q_UNUSED(isHovered);
 
+    const auto& style = m_toolbar->styleConfig();
     ToolbarButton btn = static_cast<ToolbarButton>(buttonId);
 
     if (buttonId == static_cast<int>(ToolbarButton::Cancel)) {
-        return QColor(255, 100, 100);  // Red for cancel
+        return style.iconCancelColor;
     }
     if (btn == ToolbarButton::Record) {
-        return QColor(255, 80, 80);  // Red for recording
+        return style.iconRecordColor;
     }
     if (btn == ToolbarButton::OCR) {
         if (m_ocrInProgress) {
@@ -416,16 +417,16 @@ QColor RegionSelector::getToolbarIconColor(int buttonId, bool isActive, bool isH
             return QColor(128, 128, 128);  // Gray if unavailable
         }
         else {
-            return QColor(100, 200, 255);  // Blue accent
+            return style.iconActionColor;
         }
     }
     if (buttonId >= static_cast<int>(ToolbarButton::Pin)) {
-        return QColor(100, 200, 255);  // Blue for action buttons
+        return style.iconActionColor;
     }
     if (isActive) {
-        return Qt::white;
+        return style.iconActiveColor;
     }
-    return QColor(220, 220, 220);  // Off-white for normal state
+    return style.iconNormalColor;
 }
 
 bool RegionSelector::shouldShowColorPalette() const
@@ -735,7 +736,7 @@ void RegionSelector::updateWindowDetection(const QPoint& localPos)
 
 void RegionSelector::drawDetectedWindow(QPainter& painter)
 {
-    if (m_highlightedWindowRect.isNull() || m_selectionManager->isComplete() || m_selectionManager->isSelecting()) {
+    if (m_highlightedWindowRect.isNull() || m_selectionManager->hasActiveSelection()) {
         return;
     }
 
@@ -835,20 +836,19 @@ void RegionSelector::paintEvent(QPaintEvent*)
     // Draw dimmed overlay
     drawOverlay(painter);
 
-    // Draw detected window highlight (only during hover, before selection)
-    if (!m_selectionManager->isSelecting() && !m_selectionManager->isComplete() && m_windowDetector) {
+    // Draw detected window highlight (only during hover, before any selection)
+    if (!m_selectionManager->hasActiveSelection() && m_windowDetector) {
         drawDetectedWindow(painter);
     }
 
     // Draw selection if active or complete
     QRect selectionRect = m_selectionManager->selectionRect();
-    bool hasSelection = m_selectionManager->isSelecting() || m_selectionManager->isComplete();
-    if (hasSelection && selectionRect.isValid()) {
+    if (m_selectionManager->hasActiveSelection() && selectionRect.isValid()) {
         drawSelection(painter);
         drawDimensionInfo(painter);
 
-        // Draw annotations on top of selection
-        if (m_selectionManager->isComplete()) {
+        // Draw annotations on top of selection (only when selection is established)
+        if (m_selectionManager->hasSelection()) {
             drawAnnotations(painter);
             drawCurrentAnnotation(painter);
 
@@ -932,7 +932,7 @@ void RegionSelector::drawOverlay(QPainter& painter)
     QColor dimColor(0, 0, 0, 100);
 
     QRect sel = m_selectionManager->selectionRect();
-    bool hasSelection = (m_selectionManager->isSelecting() || m_selectionManager->isComplete()) && sel.isValid();
+    bool hasSelection = m_selectionManager->hasActiveSelection() && sel.isValid();
 
     if (hasSelection) {
         // 選取模式：選取區域外繪製 overlay
@@ -1686,7 +1686,7 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
 
     // Window detection during hover (before any selection or dragging)
     // Throttle by distance to avoid expensive window enumeration on every mouse move
-    if (!m_selectionManager->isSelecting() && !m_selectionManager->isComplete() && m_windowDetector) {
+    if (!m_selectionManager->hasActiveSelection() && m_windowDetector) {
         int dx = event->pos().x() - m_lastWindowDetectionPos.x();
         int dy = event->pos().y() - m_lastWindowDetectionPos.y();
         if (dx * dx + dy * dy >= WINDOW_DETECTION_MIN_DISTANCE_SQ) {

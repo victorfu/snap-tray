@@ -6,6 +6,7 @@
 #include <QColor>
 #include <QRect>
 #include <QPoint>
+#include "ToolbarStyle.h"
 
 class QPainter;
 
@@ -122,6 +123,9 @@ private:
     static const int PALETTE_HEIGHT = 36;
     static const int PALETTE_PADDING = 5;
     static const int COLORS_PER_ROW = 8;
+
+    // Toolbar style configuration
+    ToolbarStyleConfig m_styleConfig;
 };
 
 #endif // COLORPALETTEWIDGET_H
