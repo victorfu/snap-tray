@@ -19,6 +19,9 @@
 #include "annotations/MarkerStroke.h"
 #include "annotations/ArrowAnnotation.h"
 #include "annotations/ShapeAnnotation.h"
+#include "annotations/MosaicStroke.h"
+#include "annotations/StepBadgeAnnotation.h"
+#include "annotations/ErasedItemsGroup.h"
 
 // Text annotation with rotation and scaling support
 class TextAnnotation : public AnnotationItem
@@ -74,91 +77,6 @@ private:
     void regenerateCache(qreal dpr) const;
     bool isCacheValid(qreal dpr) const;
     void invalidateCache() const { m_cachedPixmap = QPixmap(); }
-};
-
-// Step badge annotation (auto-incrementing numbered circle)
-class StepBadgeAnnotation : public AnnotationItem
-{
-public:
-    StepBadgeAnnotation(const QPoint &position, const QColor &color, int number = 1);
-    void draw(QPainter &painter) const override;
-    QRect boundingRect() const override;
-    std::unique_ptr<AnnotationItem> clone() const override;
-
-    void setNumber(int number);
-    int number() const { return m_number; }
-    static constexpr int kBadgeRadius = 14;
-
-private:
-    QPoint m_position;
-    QColor m_color;
-    int m_number;
-};
-
-// Freehand mosaic stroke with classic pixelation (block averaging)
-class MosaicStroke : public AnnotationItem
-{
-public:
-    MosaicStroke(const QVector<QPoint> &points, const QPixmap &sourcePixmap,
-                 int width = 24, int blockSize = 12);
-    void draw(QPainter &painter) const override;
-    QRect boundingRect() const override;
-    std::unique_ptr<AnnotationItem> clone() const override;
-
-    void addPoint(const QPoint &point);
-    void updateSource(const QPixmap &sourcePixmap);
-
-private:
-    QVector<QPoint> m_points;
-    QPixmap m_sourcePixmap;
-    mutable QImage m_sourceImageCache;
-    int m_width;      // Brush width
-    int m_blockSize;  // Mosaic block size
-    qreal m_devicePixelRatio;
-
-    // Performance optimization: rendered result cache
-    mutable QPixmap m_renderedCache;
-    mutable int m_cachedPointCount = 0;
-    mutable QRect m_cachedBounds;
-    mutable qreal m_cachedDpr = 0.0;
-
-    // Pixelated mosaic algorithm aligned to the source image grid
-    QImage applyPixelatedMosaic(const QRect &strokeBounds) const;
-    QRgb calculateBlockAverageColor(const QImage &image, int x, int y,
-                                     int blockW, int blockH) const;
-};
-
-// Group of erased items (for undo support)
-class ErasedItemsGroup : public AnnotationItem
-{
-public:
-    // Item paired with its original index for position-preserving undo
-    struct IndexedItem {
-        size_t originalIndex;
-        std::unique_ptr<AnnotationItem> item;
-    };
-
-    explicit ErasedItemsGroup(std::vector<IndexedItem> items);
-    void draw(QPainter &painter) const override;  // Does nothing (invisible marker)
-    QRect boundingRect() const override;  // Returns empty rect
-    std::unique_ptr<AnnotationItem> clone() const override;
-
-    // Check if this group contains any items
-    bool hasItems() const { return !m_erasedItems.empty(); }
-
-    // Extract items for restoration (moves ownership)
-    std::vector<IndexedItem> extractItems();
-
-    // Track original indices for redo support (stored when items are extracted)
-    const std::vector<size_t>& originalIndices() const { return m_originalIndices; }
-    void setOriginalIndices(std::vector<size_t> indices) { m_originalIndices = std::move(indices); }
-
-    // Adjust stored indices when trimHistory() removes items from front
-    void adjustIndicesForTrim(size_t trimCount);
-
-private:
-    std::vector<IndexedItem> m_erasedItems;
-    std::vector<size_t> m_originalIndices;  // Stored after extractItems() for redo
 };
 
 // Annotation layer that manages all annotations with undo/redo

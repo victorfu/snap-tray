@@ -66,6 +66,9 @@ set(SOURCES
     src/annotations/MarkerStroke.cpp
     src/annotations/ArrowAnnotation.cpp
     src/annotations/ShapeAnnotation.cpp
+    src/annotations/MosaicStroke.cpp
+    src/annotations/StepBadgeAnnotation.cpp
+    src/annotations/ErasedItemsGroup.cpp
     src/ScreenCanvas.cpp
     src/IconRenderer.cpp
     src/ColorPaletteWidget.cpp
@@ -119,6 +122,9 @@ set(HEADERS
     include/annotations/MarkerStroke.h
     include/annotations/ArrowAnnotation.h
     include/annotations/ShapeAnnotation.h
+    include/annotations/MosaicStroke.h
+    include/annotations/StepBadgeAnnotation.h
+    include/annotations/ErasedItemsGroup.h
     include/ScreenCanvas.h
     include/ScreenCanvasManager.h
     include/AutoLaunchManager.h
