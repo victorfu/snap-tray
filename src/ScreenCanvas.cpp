@@ -22,7 +22,7 @@
 static const char* SETTINGS_KEY_ANNOTATION_COLOR = "annotationColor";
 static const char* SETTINGS_KEY_ANNOTATION_WIDTH = "annotationWidth";
 
-ScreenCanvas::ScreenCanvas(QWidget *parent)
+ScreenCanvas::ScreenCanvas(QWidget* parent)
     : QWidget(parent)
     , m_currentScreen(nullptr)
     , m_devicePixelRatio(1.0)
@@ -69,9 +69,9 @@ ScreenCanvas::ScreenCanvas(QWidget *parent)
     m_colorPalette = new ColorPaletteWidget(this);
     m_colorPalette->setCurrentColor(savedColor);
     connect(m_colorPalette, &ColorPaletteWidget::colorSelected,
-            this, &ScreenCanvas::onColorSelected);
+        this, &ScreenCanvas::onColorSelected);
     connect(m_colorPalette, &ColorPaletteWidget::moreColorsRequested,
-            this, &ScreenCanvas::onMoreColorsRequested);
+        this, &ScreenCanvas::onMoreColorsRequested);
 
     // Initialize line width widget
     m_lineWidthWidget = new LineWidthWidget(this);
@@ -79,7 +79,7 @@ ScreenCanvas::ScreenCanvas(QWidget *parent)
     m_lineWidthWidget->setCurrentWidth(savedWidth);
     m_lineWidthWidget->setPreviewColor(savedColor);
     connect(m_lineWidthWidget, &LineWidthWidget::widthChanged,
-            this, &ScreenCanvas::onLineWidthChanged);
+        this, &ScreenCanvas::onLineWidthChanged);
 
     // Initialize unified color and width widget
     m_colorAndWidthWidget = new ColorAndWidthWidget(this);
@@ -88,25 +88,25 @@ ScreenCanvas::ScreenCanvas(QWidget *parent)
     m_colorAndWidthWidget->setWidthRange(1, 20);
     m_colorAndWidthWidget->setArrowStyle(savedArrowStyle);
     connect(m_colorAndWidthWidget, &ColorAndWidthWidget::colorSelected,
-            this, &ScreenCanvas::onColorSelected);
+        this, &ScreenCanvas::onColorSelected);
     connect(m_colorAndWidthWidget, &ColorAndWidthWidget::moreColorsRequested,
-            this, &ScreenCanvas::onMoreColorsRequested);
+        this, &ScreenCanvas::onMoreColorsRequested);
     connect(m_colorAndWidthWidget, &ColorAndWidthWidget::widthChanged,
-            this, &ScreenCanvas::onLineWidthChanged);
+        this, &ScreenCanvas::onLineWidthChanged);
     connect(m_colorAndWidthWidget, &ColorAndWidthWidget::arrowStyleChanged,
-            this, &ScreenCanvas::onArrowStyleChanged);
+        this, &ScreenCanvas::onArrowStyleChanged);
 
     // Initialize laser pointer renderer
     m_laserRenderer = new LaserPointerRenderer(this);
     m_laserRenderer->setColor(savedColor);
     m_laserRenderer->setWidth(savedWidth);
     connect(m_laserRenderer, &LaserPointerRenderer::needsRepaint,
-            this, QOverload<>::of(&QWidget::update));
+        this, QOverload<>::of(&QWidget::update));
 
     // Initialize click ripple renderer
     m_rippleRenderer = new ClickRippleRenderer(this);
     connect(m_rippleRenderer, &ClickRippleRenderer::needsRepaint,
-            this, QOverload<>::of(&QWidget::update));
+        this, QOverload<>::of(&QWidget::update));
 
     qDebug() << "ScreenCanvas: Created";
 }
@@ -151,7 +151,7 @@ QString ScreenCanvas::getIconKeyForButton(CanvasButton button) const
     }
 }
 
-void ScreenCanvas::renderIcon(QPainter &painter, const QRect &rect, CanvasButton button, const QColor &color)
+void ScreenCanvas::renderIcon(QPainter& painter, const QRect& rect, CanvasButton button, const QColor& color)
 {
     QString key = getIconKeyForButton(button);
     IconRenderer::instance().renderIcon(painter, rect, key, color);
@@ -172,7 +172,7 @@ bool ScreenCanvas::shouldShowColorPalette() const
     }
 }
 
-void ScreenCanvas::onColorSelected(const QColor &color)
+void ScreenCanvas::onColorSelected(const QColor& color)
 {
     m_toolManager->setColor(color);
     m_laserRenderer->setColor(color);
@@ -238,14 +238,14 @@ void ScreenCanvas::onMoreColorsRequested()
     if (!m_colorPickerDialog) {
         m_colorPickerDialog = new ColorPickerDialog();
         connect(m_colorPickerDialog, &ColorPickerDialog::colorSelected,
-                this, [this](const QColor &color) {
-            m_toolManager->setColor(color);
-            m_colorPalette->setCurrentColor(color);
-            m_lineWidthWidget->setPreviewColor(color);
-            m_colorAndWidthWidget->setCurrentColor(color);
-            qDebug() << "ScreenCanvas: Custom color selected:" << color.name();
-            update();
-        });
+            this, [this](const QColor& color) {
+                m_toolManager->setColor(color);
+                m_colorPalette->setCurrentColor(color);
+                m_lineWidthWidget->setPreviewColor(color);
+                m_colorAndWidthWidget->setCurrentColor(color);
+                qDebug() << "ScreenCanvas: Custom color selected:" << color.name();
+                update();
+            });
     }
 
     m_colorPickerDialog->setCurrentColor(m_toolManager->color());
@@ -261,7 +261,7 @@ void ScreenCanvas::onMoreColorsRequested()
     m_colorPickerDialog->activateWindow();
 }
 
-void ScreenCanvas::initializeForScreen(QScreen *screen)
+void ScreenCanvas::initializeForScreen(QScreen* screen)
 {
     m_currentScreen = screen;
     if (!m_currentScreen) {
@@ -274,9 +274,9 @@ void ScreenCanvas::initializeForScreen(QScreen *screen)
     m_backgroundPixmap = m_currentScreen->grabWindow(0);
 
     qDebug() << "ScreenCanvas: Initialized for screen" << m_currentScreen->name()
-             << "logical size:" << m_currentScreen->geometry().size()
-             << "pixmap size:" << m_backgroundPixmap.size()
-             << "devicePixelRatio:" << m_devicePixelRatio;
+        << "logical size:" << m_currentScreen->geometry().size()
+        << "pixmap size:" << m_backgroundPixmap.size()
+        << "devicePixelRatio:" << m_devicePixelRatio;
 
     // Lock window size
     setFixedSize(m_currentScreen->geometry().size());
@@ -285,7 +285,7 @@ void ScreenCanvas::initializeForScreen(QScreen *screen)
     updateToolbarPosition();
 }
 
-void ScreenCanvas::paintEvent(QPaintEvent *)
+void ScreenCanvas::paintEvent(QPaintEvent*)
 {
     QPainter painter(this);
     painter.setRenderHint(QPainter::SmoothPixmapTransform);
@@ -317,7 +317,8 @@ void ScreenCanvas::paintEvent(QPaintEvent *)
         m_colorAndWidthWidget->setShowArrowStyleSection(m_currentToolId == ToolId::Arrow);
         m_colorAndWidthWidget->updatePosition(m_toolbarRect, true, width());
         m_colorAndWidthWidget->draw(painter);
-    } else {
+    }
+    else {
         m_colorAndWidthWidget->setVisible(false);
     }
 
@@ -328,7 +329,8 @@ void ScreenCanvas::paintEvent(QPaintEvent *)
             m_colorPalette->setVisible(true);
             m_colorPalette->updatePosition(m_toolbarRect, true);
             m_colorPalette->draw(painter);
-        } else {
+        }
+        else {
             m_colorPalette->setVisible(false);
         }
 
@@ -339,7 +341,8 @@ void ScreenCanvas::paintEvent(QPaintEvent *)
             anchorRect.moveLeft(m_toolbarRect.left());  // Align with toolbar left edge
             m_lineWidthWidget->updatePosition(anchorRect, true, width());
             m_lineWidthWidget->draw(painter);
-        } else {
+        }
+        else {
             m_lineWidthWidget->setVisible(false);
         }
     }
@@ -351,17 +354,17 @@ void ScreenCanvas::paintEvent(QPaintEvent *)
     drawCursorDot(painter);
 }
 
-void ScreenCanvas::drawAnnotations(QPainter &painter)
+void ScreenCanvas::drawAnnotations(QPainter& painter)
 {
     m_annotationLayer->draw(painter);
 }
 
-void ScreenCanvas::drawCurrentAnnotation(QPainter &painter)
+void ScreenCanvas::drawCurrentAnnotation(QPainter& painter)
 {
     m_toolManager->drawCurrentPreview(painter);
 }
 
-void ScreenCanvas::drawToolbar(QPainter &painter)
+void ScreenCanvas::drawToolbar(QPainter& painter)
 {
     // Draw shadow
     QRect shadowRect = m_toolbarRect.adjusted(2, 2, 2, 2);
@@ -391,7 +394,8 @@ void ScreenCanvas::drawToolbar(QPainter &painter)
             painter.setPen(Qt::NoPen);
             painter.setBrush(QColor(0, 120, 200));
             painter.drawRoundedRect(btnRect.adjusted(2, 2, -2, -2), 4, 4);
-        } else if (i == m_hoveredButton) {
+        }
+        else if (i == m_hoveredButton) {
             painter.setPen(Qt::NoPen);
             painter.setBrush(QColor(80, 80, 80));
             painter.drawRoundedRect(btnRect.adjusted(2, 2, -2, -2), 4, 4);
@@ -401,32 +405,35 @@ void ScreenCanvas::drawToolbar(QPainter &painter)
         if (i == static_cast<int>(CanvasButton::CursorHighlight)) {
             painter.setPen(QColor(80, 80, 80));
             painter.drawLine(btnRect.left() - 4, btnRect.top() + 6,
-                             btnRect.left() - 4, btnRect.bottom() - 6);
+                btnRect.left() - 4, btnRect.bottom() - 6);
         }
 
         // Draw separator before Undo button
         if (i == static_cast<int>(CanvasButton::Undo)) {
             painter.setPen(QColor(80, 80, 80));
             painter.drawLine(btnRect.left() - 4, btnRect.top() + 6,
-                             btnRect.left() - 4, btnRect.bottom() - 6);
+                btnRect.left() - 4, btnRect.bottom() - 6);
         }
 
         // Draw separator before Exit button
         if (i == static_cast<int>(CanvasButton::Exit)) {
             painter.setPen(QColor(80, 80, 80));
             painter.drawLine(btnRect.left() - 4, btnRect.top() + 6,
-                             btnRect.left() - 4, btnRect.bottom() - 6);
+                btnRect.left() - 4, btnRect.bottom() - 6);
         }
 
         // Determine icon color
         QColor iconColor;
         if (button == CanvasButton::Exit) {
             iconColor = QColor(255, 100, 100);  // Red for exit
-        } else if (button == CanvasButton::Clear) {
+        }
+        else if (button == CanvasButton::Clear) {
             iconColor = QColor(255, 180, 100);  // Orange for clear
-        } else if (isActive || isToggleActive) {
+        }
+        else if (isActive || isToggleActive) {
             iconColor = Qt::white;
-        } else {
+        }
+        else {
             iconColor = QColor(220, 220, 220);
         }
 
@@ -462,7 +469,7 @@ void ScreenCanvas::updateToolbarPosition()
     }
 }
 
-int ScreenCanvas::getButtonAtPosition(const QPoint &pos)
+int ScreenCanvas::getButtonAtPosition(const QPoint& pos)
 {
     for (int i = 0; i < m_buttonRects.size(); ++i) {
         if (m_buttonRects[i].contains(pos)) {
@@ -493,7 +500,7 @@ QString ScreenCanvas::getButtonTooltip(int buttonIndex)
     return QString();
 }
 
-void ScreenCanvas::drawTooltip(QPainter &painter)
+void ScreenCanvas::drawTooltip(QPainter& painter)
 {
     if (m_hoveredButton < 0) return;
 
@@ -607,13 +614,15 @@ bool ScreenCanvas::isDrawingTool(ToolId toolId) const
     case ToolId::Arrow:
     case ToolId::Shape:
     case ToolId::LaserPointer:
+    case ToolId::Mosaic:
+    case ToolId::Eraser:
         return true;
     default:
         return false;
     }
 }
 
-void ScreenCanvas::mousePressEvent(QMouseEvent *event)
+void ScreenCanvas::mousePressEvent(QMouseEvent* event)
 {
     if (event->button() == Qt::LeftButton) {
         // Check if clicked on toolbar FIRST (before widgets that may overlap)
@@ -661,7 +670,8 @@ void ScreenCanvas::mousePressEvent(QMouseEvent *event)
             m_toolManager->handleMousePress(event->pos());
             update();
         }
-    } else if (event->button() == Qt::RightButton) {
+    }
+    else if (event->button() == Qt::RightButton) {
         // Cancel current annotation
         if (m_toolManager->isDrawing()) {
             m_toolManager->cancelDrawing();
@@ -670,7 +680,7 @@ void ScreenCanvas::mousePressEvent(QMouseEvent *event)
     }
 }
 
-void ScreenCanvas::mouseMoveEvent(QMouseEvent *event)
+void ScreenCanvas::mouseMoveEvent(QMouseEvent* event)
 {
     // Track cursor position for cursor dot
     QPoint oldCursorPos = m_cursorPos;
@@ -686,7 +696,8 @@ void ScreenCanvas::mouseMoveEvent(QMouseEvent *event)
     if (m_toolManager->isDrawing()) {
         m_toolManager->handleMouseMove(event->pos());
         update();
-    } else {
+    }
+    else {
         bool needsUpdate = false;
         bool widgetHovered = false;
 
@@ -742,9 +753,14 @@ void ScreenCanvas::mouseMoveEvent(QMouseEvent *event)
         // Always update cursor based on current state
         if (m_hoveredButton >= 0) {
             setCursor(Qt::PointingHandCursor);
-        } else if (widgetHovered) {
+        }
+        else if (widgetHovered) {
             setCursor(Qt::PointingHandCursor);
-        } else {
+        }
+        else if (m_currentToolId == ToolId::Mosaic || m_currentToolId == ToolId::Eraser) {
+            setCursor(Qt::BlankCursor);
+        }
+        else {
             setCursor(Qt::ArrowCursor);
         }
 
@@ -756,15 +772,19 @@ void ScreenCanvas::mouseMoveEvent(QMouseEvent *event)
     // Only update cursor dot region if position changed (performance optimization)
     // Cursor dot is 6px diameter, use 10px margin for safety
     if (m_cursorPos != oldCursorPos) {
-        static constexpr int kCursorMargin = 10;
-        update(QRect(oldCursorPos.x() - kCursorMargin, oldCursorPos.y() - kCursorMargin,
-                     kCursorMargin * 2, kCursorMargin * 2));
-        update(QRect(m_cursorPos.x() - kCursorMargin, m_cursorPos.y() - kCursorMargin,
-                     kCursorMargin * 2, kCursorMargin * 2));
+        int cursorMargin = 10;
+        if (m_currentToolId == ToolId::Mosaic || m_currentToolId == ToolId::Eraser) {
+            cursorMargin = qMax(10, m_toolManager->width() / 2 + 5);
+        }
+
+        update(QRect(oldCursorPos.x() - cursorMargin, oldCursorPos.y() - cursorMargin,
+            cursorMargin * 2, cursorMargin * 2));
+        update(QRect(m_cursorPos.x() - cursorMargin, m_cursorPos.y() - cursorMargin,
+            cursorMargin * 2, cursorMargin * 2));
     }
 }
 
-void ScreenCanvas::mouseReleaseEvent(QMouseEvent *event)
+void ScreenCanvas::mouseReleaseEvent(QMouseEvent* event)
 {
     if (event->button() == Qt::LeftButton) {
         // Handle unified widget release
@@ -794,7 +814,7 @@ void ScreenCanvas::mouseReleaseEvent(QMouseEvent *event)
     }
 }
 
-void ScreenCanvas::wheelEvent(QWheelEvent *event)
+void ScreenCanvas::wheelEvent(QWheelEvent* event)
 {
     // Forward wheel events when tools that support width adjustment are active
     if (shouldShowColorAndWidthWidget()) {
@@ -808,17 +828,19 @@ void ScreenCanvas::wheelEvent(QWheelEvent *event)
     event->ignore();
 }
 
-void ScreenCanvas::keyPressEvent(QKeyEvent *event)
+void ScreenCanvas::keyPressEvent(QKeyEvent* event)
 {
     if (event->key() == Qt::Key_Escape) {
         qDebug() << "ScreenCanvas: Closed via Escape";
         close();
-    } else if (event->matches(QKeySequence::Undo)) {
+    }
+    else if (event->matches(QKeySequence::Undo)) {
         if (m_annotationLayer->canUndo()) {
             m_annotationLayer->undo();
             update();
         }
-    } else if (event->matches(QKeySequence::Redo)) {
+    }
+    else if (event->matches(QKeySequence::Redo)) {
         if (m_annotationLayer->canRedo()) {
             m_annotationLayer->redo();
             update();
@@ -826,22 +848,36 @@ void ScreenCanvas::keyPressEvent(QKeyEvent *event)
     }
 }
 
-void ScreenCanvas::drawCursorDot(QPainter &painter)
+void ScreenCanvas::drawCursorDot(QPainter& painter)
 {
-    // Don't show when drawing, on toolbar, or on widgets
-    if (m_toolManager->isDrawing()) return;
+    bool isMosaicOrEraser = (m_currentToolId == ToolId::Mosaic || m_currentToolId == ToolId::Eraser);
+
+    // Don't show when drawing (unless it's Mosaic/Eraser), on toolbar, or on widgets
+    if (m_toolManager->isDrawing() && !isMosaicOrEraser) return;
     if (m_laserRenderer->isDrawing()) return;
     if (m_toolbarRect.contains(m_cursorPos)) return;
     if (m_hoveredButton >= 0) return;
     if (shouldShowColorAndWidthWidget() && m_colorAndWidthWidget->contains(m_cursorPos)) return;
 
-    // Draw a dot following the current tool color
-    painter.setPen(Qt::NoPen);
-    painter.setBrush(m_toolManager->color());
-    painter.drawEllipse(m_cursorPos, 3, 3);  // 6px diameter
+    if (isMosaicOrEraser) {
+        // Draw rounded square for Mosaic/Eraser
+        int size = m_toolManager->width();
+        QRect rect(0, 0, size, size);
+        rect.moveCenter(m_cursorPos);
+
+        painter.setPen(QPen(Qt::black, 1)); // Black outline
+        painter.setBrush(Qt::NoBrush);      // Transparent fill
+        painter.drawRoundedRect(rect, 2, 2); // Slight rounding
+    }
+    else {
+        // Draw a dot following the current tool color
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(m_toolManager->color());
+        painter.drawEllipse(m_cursorPos, 3, 3);  // 6px diameter
+    }
 }
 
-void ScreenCanvas::closeEvent(QCloseEvent *event)
+void ScreenCanvas::closeEvent(QCloseEvent* event)
 {
     emit closed();
     QWidget::closeEvent(event);
@@ -853,7 +889,7 @@ QColor ScreenCanvas::loadAnnotationColor() const
     return settings.value(SETTINGS_KEY_ANNOTATION_COLOR, QColor(Qt::red)).value<QColor>();
 }
 
-void ScreenCanvas::saveAnnotationColor(const QColor &color)
+void ScreenCanvas::saveAnnotationColor(const QColor& color)
 {
     QSettings settings("Victor Fu", "SnapTray");
     settings.setValue(SETTINGS_KEY_ANNOTATION_COLOR, color);

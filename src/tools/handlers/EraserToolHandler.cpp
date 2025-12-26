@@ -65,7 +65,8 @@ void EraserToolHandler::drawPreview(QPainter& painter) const {
         // Active erasing: solid border with slight fill
         painter.setPen(QPen(QColor(100, 100, 100), 1, Qt::SolidLine));
         painter.setBrush(QColor(128, 128, 128, 30));
-    } else {
+    }
+    else {
         // Hover: light gray dashed border
         painter.setPen(QPen(QColor(128, 128, 128, 180), 1, Qt::DashLine));
         painter.setBrush(Qt::NoBrush);
@@ -113,18 +114,10 @@ QPixmap EraserToolHandler::createCursorPixmap() const {
     painter.setPen(Qt::NoPen);
     painter.drawEllipse(QPoint(center, center), radius, radius);
 
-    // Draw dashed circle border
-    QPen pen(QColor(80, 80, 80), 1, Qt::DashLine);
-    pen.setDashPattern({3, 3});
-    painter.setPen(pen);
+    // Draw circle border
+    painter.setPen(QPen(QColor(80, 80, 80), 1, Qt::SolidLine));
     painter.setBrush(Qt::NoBrush);
     painter.drawEllipse(QPoint(center, center), radius, radius);
-
-    // Draw crosshair in center
-    painter.setPen(QPen(QColor(80, 80, 80), 1, Qt::SolidLine));
-    int crossSize = qMin(4, radius / 2);
-    painter.drawLine(center - crossSize, center, center + crossSize, center);
-    painter.drawLine(center, center - crossSize, center, center + crossSize);
 
     return pixmap;
 }
