@@ -110,6 +110,7 @@ set(SOURCES
     src/region/SelectionStateManager.cpp
     src/region/MagnifierPanel.cpp
     src/region/UpdateThrottler.cpp
+    src/region/TextAnnotationEditor.cpp
     # UI sections
     src/ui/sections/ColorSection.cpp
     src/ui/sections/WidthSection.cpp
@@ -197,6 +198,7 @@ set(HEADERS
     include/region/SelectionStateManager.h
     include/region/MagnifierPanel.h
     include/region/UpdateThrottler.h
+    include/region/TextAnnotationEditor.h
     # UI sections
     include/ui/IWidgetSection.h
     include/ui/sections/ColorSection.h

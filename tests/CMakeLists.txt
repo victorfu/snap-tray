@@ -229,3 +229,26 @@ add_test(NAME RegionSelector_UpdateThrottler COMMAND RegionSelector_UpdateThrott
 set_tests_properties(RegionSelector_UpdateThrottler PROPERTIES
     TIMEOUT 60
 )
+
+# TextAnnotationEditor logic test (tests core logic without full dependencies)
+add_executable(RegionSelector_TextAnnotationEditor
+    RegionSelector/tst_TextAnnotationEditor.cpp
+)
+
+target_include_directories(RegionSelector_TextAnnotationEditor PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_BINARY_DIR}/generated
+)
+
+target_link_libraries(RegionSelector_TextAnnotationEditor PRIVATE
+    Qt6::Widgets
+    Qt6::Gui
+    Qt6::Test
+)
+
+add_test(NAME RegionSelector_TextAnnotationEditor COMMAND RegionSelector_TextAnnotationEditor)
+
+set_tests_properties(RegionSelector_TextAnnotationEditor PROPERTIES
+    TIMEOUT 60
+)

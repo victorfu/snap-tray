@@ -25,6 +25,7 @@
 #include "region/SelectionStateManager.h"
 #include "region/MagnifierPanel.h"
 #include "region/UpdateThrottler.h"
+#include "region/TextAnnotationEditor.h"
 
 class QScreen;
 class ColorPaletteWidget;
@@ -177,6 +178,10 @@ private:
     void saveToFile();
     void finishSelection();
 
+    // Tool switching helpers
+    void restoreStandardWidthFromEraser();
+    void saveEraserWidthAndClearHover();
+
     // Annotation drawing helpers
     void drawAnnotations(QPainter &painter);
     void drawCurrentAnnotation(QPainter &painter);
@@ -276,26 +281,8 @@ private:
     // Inline text editing
     InlineTextEditor *m_textEditor;
 
-    // Text annotation dragging state
-    bool m_isDraggingAnnotation = false;
-    QPoint m_annotationDragStart;
-
-    // Text annotation transformation state
-    GizmoHandle m_activeGizmoHandle = GizmoHandle::None;
-    bool m_isTransformingAnnotation = false;
-    QPointF m_transformStartCenter;
-    qreal m_transformStartRotation = 0.0;
-    qreal m_transformStartScale = 1.0;
-    qreal m_transformStartAngle = 0.0;
-    qreal m_transformStartDistance = 0.0;
-
-    // Text formatting state
-    TextFormattingState m_textFormatting;
-    int m_editingTextIndex = -1;  // -1 = creating new, >=0 = editing existing
-
-    // Double-click detection for text re-editing
-    QPoint m_lastTextClickPos;
-    qint64 m_lastTextClickTime = 0;
+    // Text annotation editor component (handles editing, transformation, formatting, dragging)
+    TextAnnotationEditor *m_textAnnotationEditor;
 
     // Color picker dialog
     ColorPickerDialog *m_colorPickerDialog;

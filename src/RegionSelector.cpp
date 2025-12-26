@@ -153,17 +153,16 @@ RegionSelector::RegionSelector(QWidget* parent)
         this, &RegionSelector::onTextEditingFinished);
     connect(m_textEditor, &InlineTextEditor::editingCancelled,
         this, [this]() {
-            // Restore visibility if we were re-editing
-            if (m_editingTextIndex >= 0) {
-                auto* textItem = dynamic_cast<TextAnnotation*>(m_annotationLayer->itemAt(m_editingTextIndex));
-                if (textItem) {
-                    textItem->setVisible(true);
-                }
-                m_annotationLayer->setSelectedIndex(m_editingTextIndex);
-                m_editingTextIndex = -1;
-            }
-            update();
+            m_textAnnotationEditor->cancelEditing();
         });
+
+    // Initialize text annotation editor component
+    m_textAnnotationEditor = new TextAnnotationEditor(this);
+    m_textAnnotationEditor->setAnnotationLayer(m_annotationLayer);
+    m_textAnnotationEditor->setTextEditor(m_textEditor);
+    m_textAnnotationEditor->setParentWidget(this);
+    connect(m_textAnnotationEditor, &TextAnnotationEditor::updateRequested,
+        this, QOverload<>::of(&QWidget::update));
 
     // Initialize color palette widget
     m_colorPalette = new ColorPaletteWidget(this);
@@ -193,21 +192,24 @@ RegionSelector::RegionSelector(QWidget* parent)
     connect(m_colorAndWidthWidget, &ColorAndWidthWidget::widthChanged,
         this, &RegionSelector::onLineWidthChanged);
 
-    // Load text formatting settings
-    m_textFormatting = loadTextFormatting();
-    m_colorAndWidthWidget->setBold(m_textFormatting.bold);
-    m_colorAndWidthWidget->setItalic(m_textFormatting.italic);
-    m_colorAndWidthWidget->setUnderline(m_textFormatting.underline);
-    m_colorAndWidthWidget->setFontSize(m_textFormatting.fontSize);
-    m_colorAndWidthWidget->setFontFamily(m_textFormatting.fontFamily);
+    // Configure text annotation editor with ColorAndWidthWidget
+    m_textAnnotationEditor->setColorAndWidthWidget(m_colorAndWidthWidget);
 
-    // Connect text formatting signals
+    // Load text formatting settings from TextAnnotationEditor
+    TextFormattingState textFormatting = m_textAnnotationEditor->formatting();
+    m_colorAndWidthWidget->setBold(textFormatting.bold);
+    m_colorAndWidthWidget->setItalic(textFormatting.italic);
+    m_colorAndWidthWidget->setUnderline(textFormatting.underline);
+    m_colorAndWidthWidget->setFontSize(textFormatting.fontSize);
+    m_colorAndWidthWidget->setFontFamily(textFormatting.fontFamily);
+
+    // Connect text formatting signals to TextAnnotationEditor
     connect(m_colorAndWidthWidget, &ColorAndWidthWidget::boldToggled,
-        this, &RegionSelector::onBoldToggled);
+        m_textAnnotationEditor, &TextAnnotationEditor::setBold);
     connect(m_colorAndWidthWidget, &ColorAndWidthWidget::italicToggled,
-        this, &RegionSelector::onItalicToggled);
+        m_textAnnotationEditor, &TextAnnotationEditor::setItalic);
     connect(m_colorAndWidthWidget, &ColorAndWidthWidget::underlineToggled,
-        this, &RegionSelector::onUnderlineToggled);
+        m_textAnnotationEditor, &TextAnnotationEditor::setUnderline);
     connect(m_colorAndWidthWidget, &ColorAndWidthWidget::fontSizeDropdownRequested,
         this, &RegionSelector::onFontSizeDropdownRequested);
     connect(m_colorAndWidthWidget, &ColorAndWidthWidget::fontFamilyDropdownRequested,
@@ -998,15 +1000,28 @@ void RegionSelector::drawDimensionInfo(QPainter& painter)
     painter.drawText(textRect, Qt::AlignCenter, dimensions);
 }
 
+void RegionSelector::saveEraserWidthAndClearHover()
+{
+    m_eraserWidth = m_colorAndWidthWidget->currentWidth();
+    if (auto* eraser = dynamic_cast<EraserToolHandler*>(m_toolManager->currentHandler())) {
+        eraser->clearHoverPoint();
+    }
+}
+
+void RegionSelector::restoreStandardWidthFromEraser()
+{
+    if (m_currentTool == ToolbarButton::Eraser) {
+        m_colorAndWidthWidget->setWidthRange(1, 20);
+        m_colorAndWidthWidget->setCurrentWidth(m_annotationWidth);
+        m_toolManager->setWidth(m_annotationWidth);
+    }
+}
+
 void RegionSelector::handleToolbarClick(ToolbarButton button)
 {
     // Save eraser width and clear hover when switching FROM Eraser to another tool
     if (m_currentTool == ToolbarButton::Eraser && button != ToolbarButton::Eraser) {
-        m_eraserWidth = m_colorAndWidthWidget->currentWidth();
-        // Clear hover point when switching away from eraser
-        if (auto* eraser = dynamic_cast<EraserToolHandler*>(m_toolManager->currentHandler())) {
-            eraser->clearHoverPoint();
-        }
+        saveEraserWidthAndClearHover();
     }
 
     switch (button) {
@@ -1015,23 +1030,14 @@ void RegionSelector::handleToolbarClick(ToolbarButton button)
     case ToolbarButton::Pencil:
     case ToolbarButton::Marker:
     case ToolbarButton::Shape:
-        // Restore standard width range when switching from Eraser
-        if (m_currentTool == ToolbarButton::Eraser) {
-            m_colorAndWidthWidget->setWidthRange(1, 20);
-            m_colorAndWidthWidget->setCurrentWidth(m_annotationWidth);
-            m_toolManager->setWidth(m_annotationWidth);
-        }
+        restoreStandardWidthFromEraser();
         m_currentTool = button;
         qDebug() << "Tool selected:" << static_cast<int>(button);
         update();
         break;
 
     case ToolbarButton::Mosaic:
-        // Restore standard width range when switching from Eraser
-        if (m_currentTool == ToolbarButton::Eraser) {
-            m_colorAndWidthWidget->setWidthRange(1, 20);
-            m_colorAndWidthWidget->setCurrentWidth(m_annotationWidth);
-        }
+        restoreStandardWidthFromEraser();
         m_currentTool = button;
         m_toolManager->setCurrentTool(ToolId::Mosaic);
         m_toolManager->setWidth(MosaicToolHandler::kDefaultBrushWidth);
@@ -1040,22 +1046,14 @@ void RegionSelector::handleToolbarClick(ToolbarButton button)
         break;
 
     case ToolbarButton::Text:
-        // Restore standard width range when switching from Eraser
-        if (m_currentTool == ToolbarButton::Eraser) {
-            m_colorAndWidthWidget->setWidthRange(1, 20);
-            m_colorAndWidthWidget->setCurrentWidth(m_annotationWidth);
-        }
+        restoreStandardWidthFromEraser();
         m_currentTool = button;
         qDebug() << "Text tool selected - click in selection to add text";
         update();
         break;
 
     case ToolbarButton::StepBadge:
-        // Restore standard width range when switching from Eraser
-        if (m_currentTool == ToolbarButton::Eraser) {
-            m_colorAndWidthWidget->setWidthRange(1, 20);
-            m_colorAndWidthWidget->setCurrentWidth(m_annotationWidth);
-        }
+        restoreStandardWidthFromEraser();
         m_currentTool = button;
         qDebug() << "StepBadge tool selected - click in selection to place numbered badge";
         update();
@@ -1300,18 +1298,15 @@ void RegionSelector::mousePressEvent(QMouseEvent* event)
                         if (handle == GizmoHandle::Body) {
                             // Check for double-click to start re-editing
                             qint64 now = QDateTime::currentMSecsSinceEpoch();
-                            if (now - m_lastTextClickTime < 400 &&
-                                (event->pos() - m_lastTextClickPos).manhattanLength() < 5) {
+                            if (m_textAnnotationEditor->isDoubleClick(event->pos(), now)) {
                                 startTextReEditing(m_annotationLayer->selectedIndex());
-                                m_lastTextClickTime = 0;
+                                m_textAnnotationEditor->recordClick(QPoint(), 0);  // Reset
                                 return;
                             }
-                            m_lastTextClickPos = event->pos();
-                            m_lastTextClickTime = now;
+                            m_textAnnotationEditor->recordClick(event->pos(), now);
 
                             // Start dragging (move)
-                            m_isDraggingAnnotation = true;
-                            m_annotationDragStart = event->pos();
+                            m_textAnnotationEditor->startDragging(event->pos());
                         }
                         else {
                             // Start rotation or scaling
@@ -1329,16 +1324,14 @@ void RegionSelector::mousePressEvent(QMouseEvent* event)
             if (hitIndex >= 0) {
                 // Check for double-click to start re-editing
                 qint64 now = QDateTime::currentMSecsSinceEpoch();
-                if (now - m_lastTextClickTime < 400 &&
-                    (event->pos() - m_lastTextClickPos).manhattanLength() < 5 &&
+                if (m_textAnnotationEditor->isDoubleClick(event->pos(), now) &&
                     hitIndex == m_annotationLayer->selectedIndex()) {
                     // Double-click detected - start re-editing
                     startTextReEditing(hitIndex);
-                    m_lastTextClickTime = 0;  // Reset to prevent triple-click triggering
+                    m_textAnnotationEditor->recordClick(QPoint(), 0);  // Reset to prevent triple-click
                     return;
                 }
-                m_lastTextClickPos = event->pos();
-                m_lastTextClickTime = now;
+                m_textAnnotationEditor->recordClick(event->pos(), now);
 
                 m_annotationLayer->setSelectedIndex(hitIndex);
                 // If clicking on a different text, check its gizmo handles
@@ -1346,8 +1339,7 @@ void RegionSelector::mousePressEvent(QMouseEvent* event)
                     GizmoHandle handle = TransformationGizmo::hitTest(textItem, event->pos());
                     if (handle == GizmoHandle::Body || handle == GizmoHandle::None) {
                         // Start dragging if on body, otherwise just select
-                        m_isDraggingAnnotation = true;
-                        m_annotationDragStart = event->pos();
+                        m_textAnnotationEditor->startDragging(event->pos());
                     }
                     else {
                         // Start transformation if on a handle
@@ -1368,10 +1360,7 @@ void RegionSelector::mousePressEvent(QMouseEvent* event)
             // Handle Text tool - can be placed anywhere on screen
             QRect sel = m_selectionManager->selectionRect();
             if (m_currentTool == ToolbarButton::Text) {
-                m_editingTextIndex = -1;  // Creating new text
-                m_textEditor->setColor(m_annotationColor);
-                m_textEditor->setFont(m_textFormatting.toQFont());
-                m_textEditor->startEditing(event->pos(), rect());  // Use full screen as bounds
+                m_textAnnotationEditor->startEditing(event->pos(), rect(), m_annotationColor);
                 return;
             }
 
@@ -1463,20 +1452,15 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
     }
 
     // Handle text annotation transformation (rotation/scale)
-    if (m_isTransformingAnnotation && m_annotationLayer->selectedIndex() >= 0) {
+    if (m_textAnnotationEditor->isTransforming() && m_annotationLayer->selectedIndex() >= 0) {
         updateTextTransformation(event->pos());
         update();
         return;
     }
 
     // Handle dragging selected text annotation
-    if (m_isDraggingAnnotation && m_annotationLayer->selectedIndex() >= 0) {
-        QPoint delta = event->pos() - m_annotationDragStart;
-        auto* textItem = dynamic_cast<TextAnnotation*>(m_annotationLayer->selectedItem());
-        if (textItem) {
-            textItem->moveBy(delta);
-        }
-        m_annotationDragStart = event->pos();
+    if (m_textAnnotationEditor->isDragging() && m_annotationLayer->selectedIndex() >= 0) {
+        m_textAnnotationEditor->updateDragging(event->pos());
         update();
         return;
     }
@@ -1732,14 +1716,14 @@ void RegionSelector::mouseReleaseEvent(QMouseEvent* event)
         }
 
         // Handle text annotation transformation release
-        if (m_isTransformingAnnotation) {
+        if (m_textAnnotationEditor->isTransforming()) {
             finishTextTransformation();
             return;
         }
 
         // Handle text annotation drag release
-        if (m_isDraggingAnnotation) {
-            m_isDraggingAnnotation = false;
+        if (m_textAnnotationEditor->isDragging()) {
+            m_textAnnotationEditor->finishDragging();
             return;
         }
 
@@ -2100,67 +2084,18 @@ void RegionSelector::showTextInputDialog(const QPoint& pos)
 
 void RegionSelector::onTextEditingFinished(const QString& text, const QPoint& position)
 {
-    QFont font = m_textFormatting.toQFont();
-
-    if (m_editingTextIndex >= 0) {
-        // Re-editing: restore visibility first
-        auto* textItem = dynamic_cast<TextAnnotation*>(m_annotationLayer->itemAt(m_editingTextIndex));
-        if (textItem) {
-            textItem->setVisible(true);  // Restore visibility
-            if (!text.isEmpty()) {
-                textItem->setText(text);
-                textItem->setFont(font);
-                textItem->setColor(m_annotationColor);
-                // Position may have changed during confirm mode drag
-                textItem->setPosition(position);
-            }
-        }
-        m_annotationLayer->setSelectedIndex(m_editingTextIndex);
-        m_editingTextIndex = -1;
-    }
-    else if (!text.isEmpty()) {
-        // Create new annotation
-        auto textAnnotation = std::make_unique<TextAnnotation>(position, text, font, m_annotationColor);
-        m_annotationLayer->addItem(std::move(textAnnotation));
-
-        // Auto-select the newly created text annotation to show the gizmo
-        int newIndex = static_cast<int>(m_annotationLayer->itemCount()) - 1;
-        m_annotationLayer->setSelectedIndex(newIndex);
-    }
-
-    update();
+    m_textAnnotationEditor->finishEditing(text, position, m_annotationColor);
 }
 
 void RegionSelector::startTextReEditing(int annotationIndex)
 {
+    m_textAnnotationEditor->startReEditing(annotationIndex, m_annotationColor);
+    // Update local annotation color from the text item
     auto* textItem = dynamic_cast<TextAnnotation*>(m_annotationLayer->itemAt(annotationIndex));
-    if (!textItem) return;
-
-    m_editingTextIndex = annotationIndex;
-
-    // Extract formatting from existing annotation
-    m_textFormatting = TextFormattingState::fromQFont(textItem->font());
-    m_annotationColor = textItem->color();
-
-    // Update UI to reflect current formatting
-    m_colorAndWidthWidget->setCurrentColor(m_annotationColor);
-    m_colorAndWidthWidget->setBold(m_textFormatting.bold);
-    m_colorAndWidthWidget->setItalic(m_textFormatting.italic);
-    m_colorAndWidthWidget->setUnderline(m_textFormatting.underline);
-    m_colorAndWidthWidget->setFontSize(m_textFormatting.fontSize);
-    m_colorAndWidthWidget->setFontFamily(m_textFormatting.fontFamily);
-
-    // Start editor with existing text
-    m_textEditor->setColor(m_annotationColor);
-    m_textEditor->setFont(m_textFormatting.toQFont());
-    m_textEditor->startEditingExisting(textItem->position(), m_selectionManager->selectionRect(), textItem->text());
-
-    // Hide the original annotation while editing (prevent duplicate display)
-    textItem->setVisible(false);
-
-    // Clear selection to hide gizmo while editing
-    m_annotationLayer->clearSelection();
-    update();
+    if (textItem) {
+        m_annotationColor = textItem->color();
+        m_colorAndWidthWidget->setCurrentColor(m_annotationColor);
+    }
 }
 
 // ============================================================================
@@ -2169,75 +2104,17 @@ void RegionSelector::startTextReEditing(int annotationIndex)
 
 void RegionSelector::startTextTransformation(const QPoint& pos, GizmoHandle handle)
 {
-    auto* textItem = dynamic_cast<TextAnnotation*>(m_annotationLayer->selectedItem());
-    if (!textItem) return;
-
-    m_isTransformingAnnotation = true;
-    m_activeGizmoHandle = handle;
-    m_transformStartCenter = textItem->center();
-    m_transformStartRotation = textItem->rotation();
-    m_transformStartScale = textItem->scale();
-
-    // Calculate initial angle and distance from center to mouse
-    QPointF delta = QPointF(pos) - m_transformStartCenter;
-    m_transformStartAngle = qRadiansToDegrees(qAtan2(delta.y(), delta.x()));
-    m_transformStartDistance = qSqrt(delta.x() * delta.x() + delta.y() * delta.y());
-
-    m_annotationDragStart = pos;
+    m_textAnnotationEditor->startTransformation(pos, handle);
 }
 
 void RegionSelector::updateTextTransformation(const QPoint& pos)
 {
-    auto* textItem = dynamic_cast<TextAnnotation*>(m_annotationLayer->selectedItem());
-    if (!textItem) return;
-
-    QPointF center = m_transformStartCenter;
-    QPointF delta = QPointF(pos) - center;
-
-    switch (m_activeGizmoHandle) {
-    case GizmoHandle::Rotation: {
-        // Calculate new angle from center to mouse
-        qreal currentAngle = qRadiansToDegrees(qAtan2(delta.y(), delta.x()));
-        qreal angleDelta = currentAngle - m_transformStartAngle;
-
-        // Apply rotation
-        textItem->setRotation(m_transformStartRotation + angleDelta);
-        break;
-    }
-
-    case GizmoHandle::TopLeft:
-    case GizmoHandle::TopRight:
-    case GizmoHandle::BottomLeft:
-    case GizmoHandle::BottomRight: {
-        // Calculate scale based on distance from center
-        qreal currentDistance = qSqrt(delta.x() * delta.x() + delta.y() * delta.y());
-
-        if (m_transformStartDistance > 0) {
-            qreal scaleFactor = currentDistance / m_transformStartDistance;
-            // Clamp scale to reasonable range (10% to 1000%)
-            scaleFactor = qBound(0.1, m_transformStartScale * scaleFactor, 10.0);
-            textItem->setScale(scaleFactor);
-        }
-        break;
-    }
-
-    case GizmoHandle::Body: {
-        // Move the annotation (this case is normally handled by m_isDraggingAnnotation)
-        QPoint moveD = pos - m_annotationDragStart;
-        textItem->moveBy(moveD);
-        m_annotationDragStart = pos;
-        break;
-    }
-
-    default:
-        break;
-    }
+    m_textAnnotationEditor->updateTransformation(pos);
 }
 
 void RegionSelector::finishTextTransformation()
 {
-    m_isTransformingAnnotation = false;
-    m_activeGizmoHandle = GizmoHandle::None;
+    m_textAnnotationEditor->finishTransformation();
 }
 
 // ============================================================================
@@ -2428,42 +2305,22 @@ TextFormattingState RegionSelector::loadTextFormatting() const
 
 void RegionSelector::saveTextFormatting()
 {
-    QSettings settings("Victor Fu", "SnapTray");
-    settings.setValue(SETTINGS_KEY_TEXT_BOLD, m_textFormatting.bold);
-    settings.setValue(SETTINGS_KEY_TEXT_ITALIC, m_textFormatting.italic);
-    settings.setValue(SETTINGS_KEY_TEXT_UNDERLINE, m_textFormatting.underline);
-    settings.setValue(SETTINGS_KEY_TEXT_SIZE, m_textFormatting.fontSize);
-    settings.setValue(SETTINGS_KEY_TEXT_FAMILY, m_textFormatting.fontFamily);
+    m_textAnnotationEditor->saveSettings();
 }
 
 void RegionSelector::onBoldToggled(bool enabled)
 {
-    m_textFormatting.bold = enabled;
-    saveTextFormatting();
-    if (m_textEditor->isEditing()) {
-        m_textEditor->setBold(enabled);
-    }
-    update();
+    m_textAnnotationEditor->setBold(enabled);
 }
 
 void RegionSelector::onItalicToggled(bool enabled)
 {
-    m_textFormatting.italic = enabled;
-    saveTextFormatting();
-    if (m_textEditor->isEditing()) {
-        m_textEditor->setItalic(enabled);
-    }
-    update();
+    m_textAnnotationEditor->setItalic(enabled);
 }
 
 void RegionSelector::onUnderlineToggled(bool enabled)
 {
-    m_textFormatting.underline = enabled;
-    saveTextFormatting();
-    if (m_textEditor->isEditing()) {
-        m_textEditor->setUnderline(enabled);
-    }
-    update();
+    m_textAnnotationEditor->setUnderline(enabled);
 }
 
 void RegionSelector::onFontSizeDropdownRequested(const QPoint& pos)
@@ -2475,20 +2332,15 @@ void RegionSelector::onFontSizeDropdownRequested(const QPoint& pos)
         "QMenu::item:selected { background: #0078d4; }"
     );
 
+    TextFormattingState formatting = m_textAnnotationEditor->formatting();
     static const int sizes[] = { 8, 10, 12, 14, 16, 18, 20, 24, 28, 32, 36, 48, 72 };
     for (int size : sizes) {
         QAction* action = menu.addAction(QString::number(size));
         action->setCheckable(true);
-        action->setChecked(size == m_textFormatting.fontSize);
+        action->setChecked(size == formatting.fontSize);
         connect(action, &QAction::triggered, this, [this, size]() {
-            m_textFormatting.fontSize = size;
-            m_colorAndWidthWidget->setFontSize(size);
-            saveTextFormatting();
-            if (m_textEditor->isEditing()) {
-                m_textEditor->setFontSize(size);
-            }
-            update();
-            });
+            m_textAnnotationEditor->setFontSize(size);
+        });
     }
     menu.exec(mapToGlobal(pos));
 }
@@ -2502,41 +2354,30 @@ void RegionSelector::onFontFamilyDropdownRequested(const QPoint& pos)
         "QMenu::item:selected { background: #0078d4; }"
     );
 
+    TextFormattingState formatting = m_textAnnotationEditor->formatting();
+
     // Add "Default" option
     QAction* defaultAction = menu.addAction(tr("Default"));
     defaultAction->setCheckable(true);
-    defaultAction->setChecked(m_textFormatting.fontFamily.isEmpty());
+    defaultAction->setChecked(formatting.fontFamily.isEmpty());
     connect(defaultAction, &QAction::triggered, this, [this]() {
-        m_textFormatting.fontFamily = QString();
-        m_colorAndWidthWidget->setFontFamily(QString());
-        saveTextFormatting();
-        if (m_textEditor->isEditing()) {
-            m_textEditor->setFontFamily(QString());
-        }
-        update();
-        });
+        m_textAnnotationEditor->setFontFamily(QString());
+    });
 
     menu.addSeparator();
 
     // Add common font families
     QStringList families = QFontDatabase::families();
-    // Limit to common fonts to avoid overwhelming menu
     QStringList commonFonts = { "Arial", "Helvetica", "Times New Roman", "Courier New",
                                "Verdana", "Georgia", "Trebuchet MS", "Impact" };
     for (const QString& family : commonFonts) {
         if (families.contains(family)) {
             QAction* action = menu.addAction(family);
             action->setCheckable(true);
-            action->setChecked(family == m_textFormatting.fontFamily);
+            action->setChecked(family == formatting.fontFamily);
             connect(action, &QAction::triggered, this, [this, family]() {
-                m_textFormatting.fontFamily = family;
-                m_colorAndWidthWidget->setFontFamily(family);
-                saveTextFormatting();
-                if (m_textEditor->isEditing()) {
-                    m_textEditor->setFontFamily(family);
-                }
-                update();
-                });
+                m_textAnnotationEditor->setFontFamily(family);
+            });
         }
     }
 
