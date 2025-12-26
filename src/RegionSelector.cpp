@@ -85,7 +85,7 @@ RegionSelector::RegionSelector(QWidget* parent)
     , m_selectionComplete(false)
     , m_currentScreen(nullptr)
     , m_devicePixelRatio(1.0)
-    , m_showHexColor(true)
+    , m_showHexColor(false)  // Default to RGB format
     , m_toolbar(nullptr)
     , m_annotationLayer(nullptr)
     , m_currentTool(ToolbarButton::Selection)
@@ -272,6 +272,7 @@ void RegionSelector::initializeMagnifierGridCache()
     m_gridOverlayCache.fill(Qt::transparent);
 
     QPainter gridPainter(&m_gridOverlayCache);
+    gridPainter.setRenderHint(QPainter::Antialiasing, false);  // Crisp grid lines
 
     const int cx = MAGNIFIER_WIDTH / 2;
     const int cy = MAGNIFIER_HEIGHT / 2;
@@ -284,19 +285,29 @@ void RegionSelector::initializeMagnifierGridCache()
     const int centerTop = cy - halfCellY;
     const int centerBottom = cy + halfCellY;
 
-    // 十字準星 - 寬線條，中心留空間隔
-    const int gap = 4;  // 中心框與十字線的間距
-    gridPainter.setPen(QPen(QColor(255, 255, 255, 140), 5));
-    // 水平線（避開中心區域）
-    gridPainter.drawLine(0, cy, centerLeft - gap, cy);
-    gridPainter.drawLine(centerRight + gap, cy, MAGNIFIER_WIDTH, cy);
-    // 垂直線（避開中心區域）
-    gridPainter.drawLine(cx, 0, cx, centerTop - gap);
-    gridPainter.drawLine(cx, centerBottom + gap, cx, MAGNIFIER_HEIGHT);
+    // Draw grid lines (light gray, subtle)
+    gridPainter.setPen(QPen(QColor(200, 200, 200, 80), 1));
+    // Vertical grid lines
+    for (int i = 1; i < MAGNIFIER_GRID_COUNT_X; ++i) {
+        int x = i * pixelSizeX;
+        gridPainter.drawLine(x, 0, x, MAGNIFIER_HEIGHT);
+    }
+    // Horizontal grid lines
+    for (int i = 1; i < MAGNIFIER_GRID_COUNT_Y; ++i) {
+        int y = i * pixelSizeY;
+        gridPainter.drawLine(0, y, MAGNIFIER_WIDTH, y);
+    }
 
-    // 中心像素框
+    // Crosshair - thin blue lines, centered, no gap
+    gridPainter.setPen(QPen(QColor(100, 150, 255), 2));  // Light blue crosshair
+    // Horizontal line (full width)
+    gridPainter.drawLine(0, cy, MAGNIFIER_WIDTH, cy);
+    // Vertical line (full height)
+    gridPainter.drawLine(cx, 0, cx, MAGNIFIER_HEIGHT);
+
+    // Center pixel box - white outline
     gridPainter.setBrush(Qt::NoBrush);
-    gridPainter.setPen(QPen(QColor(255, 255, 255, 200), 1));
+    gridPainter.setPen(QPen(Qt::white, 2));  // Thicker white border for emphasis
     gridPainter.drawRect(centerLeft, centerTop, pixelSizeX, pixelSizeY);
 }
 
@@ -1007,8 +1018,8 @@ void RegionSelector::drawMagnifier(QPainter& painter)
     int panelX = m_currentPoint.x() - panelWidth / 2;
     int panelY = m_currentPoint.y() + 25;
 
-    // 計算面板總高度
-    int totalHeight = magnifierHeight + 55;  // 放大鏡 + 座標 + 顏色
+    // 計算面板總高度 (放大鏡 + 座標 + 顏色 + 熱鍵說明)
+    int totalHeight = magnifierHeight + 85;  // 放大鏡 + 座標 + 顏色 + 2行熱鍵說明
 
     // 邊界檢查
     panelX = qMax(10, qMin(panelX, width() - panelWidth - 10));
@@ -1093,7 +1104,7 @@ void RegionSelector::drawMagnifier(QPainter& painter)
     QString coordText = QString("(%1 , %2)").arg(m_currentPoint.x()).arg(m_currentPoint.y());
     painter.drawText(panelX, infoY, panelWidth, 20, Qt::AlignCenter, coordText);
 
-    // 3. 顏色預覽 + HEX/RGB (置中對齊)
+    // 3. 顏色預覽 + RGB/HEX (左對齊)
     infoY += 20;
     int colorBoxSize = 14;
 
@@ -1106,27 +1117,38 @@ void RegionSelector::drawMagnifier(QPainter& painter)
             .arg(pixelColor.blue(), 2, 16, QChar('0'));
     }
     else {
-        colorText = QString("RGB(%1, %2, %3)")
+        colorText = QString("RGB: %1,%2,%3")
             .arg(pixelColor.red())
             .arg(pixelColor.green())
             .arg(pixelColor.blue());
     }
 
-    // 計算整體寬度以置中：色塊 + 間距 + 文字
-    QFontMetrics fm(font);
-    int textWidth = fm.horizontalAdvance(colorText);
-    int totalWidth = colorBoxSize + 8 + textWidth;
-    int startX = panelX + (panelWidth - totalWidth) / 2;
+    // Left-aligned layout for color swatch and text
+    int colorStartX = panelX + 8;
 
     // 繪製顏色方塊
-    painter.fillRect(startX, infoY, colorBoxSize, colorBoxSize, pixelColor);
-    painter.setPen(QPen(QColor(80, 80, 80), 1));
+    painter.fillRect(colorStartX, infoY, colorBoxSize, colorBoxSize, pixelColor);
+    painter.setPen(QPen(QColor(200, 200, 200), 1));
     painter.setBrush(Qt::NoBrush);
-    painter.drawRect(startX, infoY, colorBoxSize, colorBoxSize);
+    painter.drawRect(colorStartX, infoY, colorBoxSize, colorBoxSize);
 
     // 繪製顏色文字
     painter.setPen(Qt::white);
-    painter.drawText(startX + colorBoxSize + 8, infoY, textWidth, colorBoxSize, Qt::AlignVCenter, colorText);
+    painter.drawText(colorStartX + colorBoxSize + 8, infoY, panelWidth - 16 - colorBoxSize - 8, colorBoxSize, Qt::AlignVCenter, colorText);
+
+    // 4. Hotkey instructions (left-aligned, smaller font)
+    infoY += 18;
+    QFont smallFont = font;
+    smallFont.setPointSize(9);
+    painter.setFont(smallFont);
+    painter.setPen(QColor(200, 200, 200));
+
+    QString instruction1 = QString("Shift: Switch color format");
+    painter.drawText(colorStartX, infoY, panelWidth - 16, 14, Qt::AlignLeft | Qt::AlignVCenter, instruction1);
+
+    infoY += 14;
+    QString instruction2 = QString("C: Copy color value");
+    painter.drawText(colorStartX, infoY, panelWidth - 16, 14, Qt::AlignLeft | Qt::AlignVCenter, instruction2);
 }
 
 void RegionSelector::drawDimensionInfo(QPainter& painter)
@@ -2052,8 +2074,8 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
             handleToolbarClick(ToolbarButton::Record);
         }
     }
-    else if (event->key() == Qt::Key_Shift) {
-        // 切換 RGB/HEX 顯示格式
+    else if (event->key() == Qt::Key_Shift && !m_selectionComplete) {
+        // Switch RGB/HEX color format display (only when magnifier is shown)
         m_showHexColor = !m_showHexColor;
         update();
     }
