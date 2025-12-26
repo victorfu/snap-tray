@@ -33,6 +33,10 @@
 #include <fcntl.h>
 #endif
 
+// Delay before starting frame capture to allow overlay to render fully
+// This prevents the border from flashing in the initial frames
+static constexpr int OVERLAY_RENDER_DELAY_MS = 100;
+
 static void syncFile(const QString &path)
 {
 #ifdef Q_OS_WIN
@@ -554,23 +558,49 @@ void RecordingManager::startFrameCapture()
     raiseWindowAboveMenuBar(m_controlBar);
     qDebug() << "RecordingManager::startFrameCapture() - Control bar shown";
 
-    // Start frame capture timer
-    qDebug() << "RecordingManager::startFrameCapture() - Starting capture timer...";
-    m_captureTimer = new QTimer(this);
-    connect(m_captureTimer, &QTimer::timeout, this, &RecordingManager::captureFrame);
-    m_captureTimer->start(1000 / m_frameRate);
-    qDebug() << "RecordingManager::startFrameCapture() - Capture timer started";
-
-    // Start duration timer (update UI every 100ms)
-    qDebug() << "RecordingManager::startFrameCapture() - Starting duration timer...";
-    m_durationTimer = new QTimer(this);
-    connect(m_durationTimer, &QTimer::timeout, this, &RecordingManager::updateDuration);
-    m_durationTimer->start(100);
-    qDebug() << "RecordingManager::startFrameCapture() - Duration timer started";
-
+    // Initialize state and counters before starting timers
     m_elapsedTimer.start();
     setState(State::Recording);
     m_frameCount = 0;
+
+    // Delay frame capture start to allow boundary overlay to render fully
+    qDebug() << "RecordingManager::startFrameCapture() - Delaying capture start for overlay rendering...";
+    QTimer::singleShot(OVERLAY_RENDER_DELAY_MS, this, [this]() {
+        // Safety check: ensure we're still in recording state
+        // Object could have been cancelled or destroyed during the delay
+        if (m_state != State::Recording) {
+            qDebug() << "RecordingManager: Capture start cancelled, state changed during delay";
+            return;
+        }
+
+        // Safety check: ensure timers don't already exist (shouldn't happen, but be defensive)
+        if (m_captureTimer) {
+            qWarning() << "RecordingManager: Capture timer already exists, cleaning up";
+            m_captureTimer->stop();
+            delete m_captureTimer;
+            m_captureTimer = nullptr;
+        }
+        if (m_durationTimer) {
+            qWarning() << "RecordingManager: Duration timer already exists, cleaning up";
+            m_durationTimer->stop();
+            delete m_durationTimer;
+            m_durationTimer = nullptr;
+        }
+
+        // Start frame capture timer
+        qDebug() << "RecordingManager::startFrameCapture() - Starting capture timer...";
+        m_captureTimer = new QTimer(this);
+        connect(m_captureTimer, &QTimer::timeout, this, &RecordingManager::captureFrame);
+        m_captureTimer->start(1000 / m_frameRate);
+        qDebug() << "RecordingManager::startFrameCapture() - Capture timer started";
+
+        // Start duration timer (update UI every 100ms)
+        qDebug() << "RecordingManager::startFrameCapture() - Starting duration timer...";
+        m_durationTimer = new QTimer(this);
+        connect(m_durationTimer, &QTimer::timeout, this, &RecordingManager::updateDuration);
+        m_durationTimer->start(100);
+        qDebug() << "RecordingManager::startFrameCapture() - Duration timer started";
+    });
 
     qDebug() << "RecordingManager: Recording started at" << m_frameRate << "FPS";
     qDebug() << "RecordingManager::startFrameCapture() - END (success)";
