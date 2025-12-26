@@ -105,6 +105,11 @@ void MainApplication::initialize()
     QAction* closeAllPinsAction = m_trayMenu->addAction("Close All Pins");
     connect(closeAllPinsAction, &QAction::triggered, this, &MainApplication::onCloseAllPins);
 
+    QAction* disableClickThroughAction = m_trayMenu->addAction("Disable Click-through on All Pins");
+    connect(disableClickThroughAction, &QAction::triggered, this, [this]() {
+        m_pinWindowManager->disableClickThroughAll();
+    });
+
     m_trayMenu->addSeparator();
 
     QAction* settingsAction = m_trayMenu->addAction("Settings");
