@@ -130,6 +130,7 @@ function(add_pinwindow_test TEST_NAME TEST_SOURCE)
         Qt6::Gui
         Qt6::Svg
         Qt6::Test
+        QHotkey::QHotkey
     )
 
     # Platform-specific frameworks for PinWindow tests
@@ -157,6 +158,9 @@ add_pinwindow_test(PinWindow_Transform
 
 add_pinwindow_test(PinWindow_Resize
     PinWindow/tst_Resize.cpp)
+
+add_pinwindow_test(PinWindow_ClickThrough
+    PinWindow/tst_ClickThrough.cpp)
 
 # ============================================================================
 # RegionSelector Tests

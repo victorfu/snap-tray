@@ -29,6 +29,7 @@
 #include <QTransform>
 #include <QDebug>
 #include <QActionGroup>
+#include <QHotkey>
 
 PinWindow::PinWindow(const QPixmap &screenshot, const QPoint &position, QWidget *parent)
     : QWidget(parent)
@@ -110,6 +111,12 @@ PinWindow::PinWindow(const QPixmap &screenshot, const QPoint &position, QWidget 
 
 PinWindow::~PinWindow()
 {
+    // Clean up click-through hotkey if it exists
+    if (m_clickThroughHotkey) {
+        m_clickThroughHotkey->setRegistered(false);
+        delete m_clickThroughHotkey;
+        m_clickThroughHotkey = nullptr;
+    }
     qDebug() << "PinWindow: Destroyed";
 }
 
@@ -564,6 +571,31 @@ void PinWindow::setClickThrough(bool enabled)
         return;
 
     m_clickThrough = enabled;
+
+    // Manage global hotkey for click-through mode
+    if (enabled) {
+        // Register global hotkey 'T' when entering click-through mode
+        if (!m_clickThroughHotkey) {
+            m_clickThroughHotkey = new QHotkey(QKeySequence(Qt::Key_T), true, this);
+            connect(m_clickThroughHotkey, &QHotkey::activated, this, [this]() {
+                setClickThrough(false);  // Toggle off when hotkey is pressed
+            });
+        }
+        
+        if (m_clickThroughHotkey->isRegistered()) {
+            qDebug() << "PinWindow: Click-through hotkey registered";
+        } else {
+            qDebug() << "PinWindow: Failed to register click-through hotkey";
+        }
+    } else {
+        // Unregister and delete global hotkey when exiting click-through mode
+        if (m_clickThroughHotkey) {
+            m_clickThroughHotkey->setRegistered(false);
+            delete m_clickThroughHotkey;
+            m_clickThroughHotkey = nullptr;
+            qDebug() << "PinWindow: Click-through hotkey unregistered";
+        }
+    }
 
     // Use native API to set click-through mode for the window
     setWindowClickThrough(this, enabled);
