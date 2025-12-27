@@ -64,7 +64,7 @@ static const std::map<ToolbarButton, ToolCapabilities> kToolCapabilities = {
     {ToolbarButton::Arrow,      {true,  true,  true}},
     {ToolbarButton::Shape,      {true,  true,  true}},
     {ToolbarButton::Text,       {true,  false, true}},
-    {ToolbarButton::Mosaic,     {false, false, false}},
+    {ToolbarButton::Mosaic,     {false, true,  true}},
     {ToolbarButton::StepBadge,  {true,  false, true}},
     {ToolbarButton::Eraser,     {false, true,  true}},
 };
@@ -476,6 +476,12 @@ void RegionSelector::onLineWidthChanged(int width)
         m_eraserWidth = width;
         // Don't save eraser width to settings
     }
+    else if (m_currentTool == ToolbarButton::Mosaic) {
+        m_mosaicWidth = width;
+        // Update cursor to reflect new width
+        setToolCursor();
+        // Don't save mosaic width to settings
+    }
     else {
         m_annotationWidth = width;
         AnnotationSettingsManager::instance().saveWidth(width);
@@ -509,7 +515,7 @@ bool RegionSelector::shouldShowWidthControl() const
 int RegionSelector::toolWidthForCurrentTool() const
 {
     if (m_currentTool == ToolbarButton::Mosaic) {
-        return MosaicToolHandler::kDefaultBrushWidth;
+        return m_mosaicWidth;
     }
     if (m_currentTool == ToolbarButton::Eraser) {
         return m_eraserWidth;
@@ -791,6 +797,7 @@ void RegionSelector::paintEvent(QPaintEvent*)
             // Use unified color and width widget
             if (shouldShowColorAndWidthWidget()) {
                 m_colorAndWidthWidget->setVisible(true);
+                m_colorAndWidthWidget->setShowColorSection(shouldShowColorPalette());
                 m_colorAndWidthWidget->setShowWidthSection(shouldShowWidthControl());
                 // Show arrow style section only for Arrow tool
                 m_colorAndWidthWidget->setShowArrowStyleSection(m_currentTool == ToolbarButton::Arrow);
@@ -1089,9 +1096,14 @@ void RegionSelector::handleToolbarClick(ToolbarButton button)
     case ToolbarButton::Mosaic:
         m_currentTool = button;
         m_toolManager->setCurrentTool(ToolId::Mosaic);
-        m_toolManager->setWidth(MosaicToolHandler::kDefaultBrushWidth);
+        // Configure mosaic-specific width range (10-100)
+        m_colorAndWidthWidget->setWidthRange(10, 100);
+        m_colorAndWidthWidget->setCurrentWidth(m_mosaicWidth);
+        m_toolManager->setWidth(m_mosaicWidth);
         m_colorAndWidthWidget->setShowSizeSection(false);
-        qDebug() << "Tool selected:" << static_cast<int>(button);
+        // Mosaic tool doesn't use color, hide color section
+        m_colorAndWidthWidget->setShowColorSection(false);
+        qDebug() << "Mosaic tool selected";
         update();
         break;
 

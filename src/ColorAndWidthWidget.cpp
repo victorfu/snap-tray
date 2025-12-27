@@ -111,6 +111,11 @@ void ColorAndWidthWidget::setShowMoreButton(bool show)
     m_colorSection->setShowMoreButton(show);
 }
 
+void ColorAndWidthWidget::setShowColorSection(bool show)
+{
+    m_showColorSection = show;
+}
+
 // =============================================================================
 // Width Methods
 // =============================================================================
@@ -287,25 +292,45 @@ StepBadgeSize ColorAndWidthWidget::stepBadgeSize() const
 void ColorAndWidthWidget::updatePosition(const QRect& anchorRect, bool above, int screenWidth)
 {
     // Calculate total width based on visible sections
-    int totalWidth = m_colorSection->preferredWidth();
+    int totalWidth = 0;
+    bool hasFirstSection = false;
+
+    if (m_showColorSection) {
+        totalWidth = m_colorSection->preferredWidth();
+        hasFirstSection = true;
+    }
 
     if (m_showWidthSection) {
-        totalWidth += SECTION_SPACING + m_widthSection->preferredWidth();
+        if (hasFirstSection) {
+            totalWidth += SECTION_SPACING;
+        }
+        totalWidth += m_widthSection->preferredWidth();
+        hasFirstSection = true;
     }
     if (m_showArrowStyleSection) {
-        totalWidth += SECTION_SPACING + m_arrowStyleSection->preferredWidth();
+        if (hasFirstSection) totalWidth += SECTION_SPACING;
+        totalWidth += m_arrowStyleSection->preferredWidth();
+        hasFirstSection = true;
     }
     if (m_showLineStyleSection) {
-        totalWidth += SECTION_SPACING + m_lineStyleSection->preferredWidth();
+        if (hasFirstSection) totalWidth += SECTION_SPACING;
+        totalWidth += m_lineStyleSection->preferredWidth();
+        hasFirstSection = true;
     }
     if (m_showTextSection) {
-        totalWidth += SECTION_SPACING + m_textSection->preferredWidth();
+        if (hasFirstSection) totalWidth += SECTION_SPACING;
+        totalWidth += m_textSection->preferredWidth();
+        hasFirstSection = true;
     }
     if (m_showShapeSection) {
-        totalWidth += SECTION_SPACING + m_shapeSection->preferredWidth();
+        if (hasFirstSection) totalWidth += SECTION_SPACING;
+        totalWidth += m_shapeSection->preferredWidth();
+        hasFirstSection = true;
     }
     if (m_showSizeSection) {
-        totalWidth += SECTION_SPACING + m_sizeSection->preferredWidth();
+        if (hasFirstSection) totalWidth += SECTION_SPACING;
+        totalWidth += m_sizeSection->preferredWidth();
+        hasFirstSection = true;
     }
 
     int widgetX = anchorRect.left();
@@ -344,49 +369,58 @@ void ColorAndWidthWidget::updatePosition(const QRect& anchorRect, bool above, in
 void ColorAndWidthWidget::updateLayout()
 {
     int xOffset = m_widgetRect.left();
+    bool hasFirstSection = false;
 
-    // Color section (always visible)
-    m_colorSection->updateLayout(m_widgetRect.top(), WIDGET_HEIGHT, xOffset);
-    xOffset += m_colorSection->preferredWidth();
+    // Color section
+    if (m_showColorSection) {
+        m_colorSection->updateLayout(m_widgetRect.top(), WIDGET_HEIGHT, xOffset);
+        xOffset += m_colorSection->preferredWidth();
+        hasFirstSection = true;
+    }
 
     // Width section
     if (m_showWidthSection) {
-        xOffset += SECTION_SPACING;
+        if (hasFirstSection) xOffset += SECTION_SPACING;
         m_widthSection->updateLayout(m_widgetRect.top(), WIDGET_HEIGHT, xOffset);
         xOffset += m_widthSection->preferredWidth();
+        hasFirstSection = true;
     }
 
     // Arrow style section
     if (m_showArrowStyleSection) {
-        xOffset += SECTION_SPACING;
+        if (hasFirstSection) xOffset += SECTION_SPACING;
         m_arrowStyleSection->updateLayout(m_widgetRect.top(), WIDGET_HEIGHT, xOffset);
         xOffset += m_arrowStyleSection->preferredWidth();
+        hasFirstSection = true;
     }
 
     // Line style section
     if (m_showLineStyleSection) {
-        xOffset += SECTION_SPACING;
+        if (hasFirstSection) xOffset += SECTION_SPACING;
         m_lineStyleSection->updateLayout(m_widgetRect.top(), WIDGET_HEIGHT, xOffset);
         xOffset += m_lineStyleSection->preferredWidth();
+        hasFirstSection = true;
     }
 
     // Text section
     if (m_showTextSection) {
-        xOffset += SECTION_SPACING;
+        if (hasFirstSection) xOffset += SECTION_SPACING;
         m_textSection->updateLayout(m_widgetRect.top(), WIDGET_HEIGHT, xOffset);
         xOffset += m_textSection->preferredWidth();
+        hasFirstSection = true;
     }
 
     // Shape section
     if (m_showShapeSection) {
-        xOffset += SECTION_SPACING;
+        if (hasFirstSection) xOffset += SECTION_SPACING;
         m_shapeSection->updateLayout(m_widgetRect.top(), WIDGET_HEIGHT, xOffset);
         xOffset += m_shapeSection->preferredWidth();
+        hasFirstSection = true;
     }
 
     // Size section (Step Badge)
     if (m_showSizeSection) {
-        xOffset += SECTION_SPACING;
+        if (hasFirstSection) xOffset += SECTION_SPACING;
         m_sizeSection->updateLayout(m_widgetRect.top(), WIDGET_HEIGHT, xOffset);
     }
 }
@@ -416,7 +450,9 @@ void ColorAndWidthWidget::draw(QPainter& painter)
     painter.drawRoundedRect(m_widgetRect, 6, 6);
 
     // Draw sections
-    m_colorSection->draw(painter, m_styleConfig);
+    if (m_showColorSection) {
+        m_colorSection->draw(painter, m_styleConfig);
+    }
 
     if (m_showWidthSection) {
         m_widthSection->draw(painter, m_styleConfig);
@@ -500,7 +536,7 @@ bool ColorAndWidthWidget::handleClick(const QPoint& pos)
     }
 
     // Color section
-    if (m_colorSection->contains(pos)) {
+    if (m_showColorSection && m_colorSection->contains(pos)) {
         return m_colorSection->handleClick(pos);
     }
 
@@ -529,7 +565,9 @@ bool ColorAndWidthWidget::updateHovered(const QPoint& pos)
 {
     bool changed = false;
 
-    changed |= m_colorSection->updateHovered(pos);
+    if (m_showColorSection) {
+        changed |= m_colorSection->updateHovered(pos);
+    }
 
     if (m_showWidthSection) {
         changed |= m_widthSection->updateHovered(pos);
