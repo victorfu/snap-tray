@@ -8,6 +8,7 @@
 #include "ColorAndWidthWidget.h"
 #include "LaserPointerRenderer.h"
 #include "ClickRippleRenderer.h"
+#include "settings/AnnotationSettingsManager.h"
 
 #include <QPainter>
 #include <QMouseEvent>
@@ -18,9 +19,22 @@
 #include <QScreen>
 #include <QDebug>
 #include <QSettings>
+#include <map>
 
-static const char* SETTINGS_KEY_ANNOTATION_COLOR = "annotationColor";
-static const char* SETTINGS_KEY_ANNOTATION_WIDTH = "annotationWidth";
+// Tool capability lookup table - replaces multiple switch statements
+struct ToolCapabilities {
+    bool showInPalette;     // Show in color palette
+    bool needsWidth;        // Show width control
+    bool needsColorOrWidth; // Show unified color/width widget
+};
+
+static const std::map<ToolId, ToolCapabilities> kToolCapabilities = {
+    {ToolId::Pencil,       {true,  true,  true}},
+    {ToolId::Marker,       {true,  false, true}},
+    {ToolId::Arrow,        {true,  true,  true}},
+    {ToolId::Shape,        {true,  true,  true}},
+    {ToolId::LaserPointer, {true,  true,  true}},
+};
 
 ScreenCanvas::ScreenCanvas(QWidget* parent)
     : QWidget(parent)
@@ -53,8 +67,9 @@ ScreenCanvas::ScreenCanvas(QWidget* parent)
     m_toolManager->setCurrentTool(m_currentToolId);
 
     // Load saved annotation settings (or defaults)
-    QColor savedColor = loadAnnotationColor();
-    int savedWidth = loadAnnotationWidth();
+    auto& annotationSettings = AnnotationSettingsManager::instance();
+    QColor savedColor = annotationSettings.loadColor();
+    int savedWidth = annotationSettings.loadWidth();
     LineEndStyle savedArrowStyle = loadArrowStyle();
     m_toolManager->setColor(savedColor);
     m_toolManager->setWidth(savedWidth);
@@ -160,17 +175,8 @@ void ScreenCanvas::renderIcon(QPainter& painter, const QRect& rect, CanvasButton
 
 bool ScreenCanvas::shouldShowColorPalette() const
 {
-    // Show palette for color-enabled tools
-    switch (m_currentToolId) {
-    case ToolId::Pencil:
-    case ToolId::Marker:
-    case ToolId::Arrow:
-    case ToolId::Shape:
-    case ToolId::LaserPointer:
-        return true;
-    default:
-        return false;
-    }
+    auto it = kToolCapabilities.find(m_currentToolId);
+    return it != kToolCapabilities.end() && it->second.showInPalette;
 }
 
 void ScreenCanvas::onColorSelected(const QColor& color)
@@ -179,59 +185,34 @@ void ScreenCanvas::onColorSelected(const QColor& color)
     m_laserRenderer->setColor(color);
     m_lineWidthWidget->setPreviewColor(color);
     m_colorAndWidthWidget->setCurrentColor(color);
-    saveAnnotationColor(color);
+    AnnotationSettingsManager::instance().saveColor(color);
     update();
 }
 
 bool ScreenCanvas::shouldShowLineWidthWidget() const
 {
-    // Show for tools that support line width adjustment
-    switch (m_currentToolId) {
-    case ToolId::Pencil:
-    case ToolId::Arrow:
-    case ToolId::Shape:
-    case ToolId::LaserPointer:
-        return true;
-    default:
-        return false;
-    }
+    auto it = kToolCapabilities.find(m_currentToolId);
+    return it != kToolCapabilities.end() && it->second.needsWidth;
 }
 
 void ScreenCanvas::onLineWidthChanged(int width)
 {
     m_toolManager->setWidth(width);
     m_laserRenderer->setWidth(width);
-    saveAnnotationWidth(width);
+    AnnotationSettingsManager::instance().saveWidth(width);
     update();
 }
 
 bool ScreenCanvas::shouldShowColorAndWidthWidget() const
 {
-    // Show for tools that need either color or width (union of both)
-    switch (m_currentToolId) {
-    case ToolId::Pencil:       // Needs both
-    case ToolId::Marker:       // Needs color only
-    case ToolId::Arrow:        // Needs both
-    case ToolId::Shape:        // Needs both
-    case ToolId::LaserPointer: // Needs both
-        return true;
-    default:
-        return false;
-    }
+    auto it = kToolCapabilities.find(m_currentToolId);
+    return it != kToolCapabilities.end() && it->second.needsColorOrWidth;
 }
 
 bool ScreenCanvas::shouldShowWidthControl() const
 {
-    // Marker has fixed width, so don't show width control for it
-    switch (m_currentToolId) {
-    case ToolId::Pencil:
-    case ToolId::Arrow:
-    case ToolId::Shape:
-    case ToolId::LaserPointer:
-        return true;
-    default:
-        return false;  // Marker and others don't need width control
-    }
+    auto it = kToolCapabilities.find(m_currentToolId);
+    return it != kToolCapabilities.end() && it->second.needsWidth;
 }
 
 void ScreenCanvas::onMoreColorsRequested()
@@ -882,30 +863,6 @@ void ScreenCanvas::closeEvent(QCloseEvent* event)
 {
     emit closed();
     QWidget::closeEvent(event);
-}
-
-QColor ScreenCanvas::loadAnnotationColor() const
-{
-    QSettings settings("Victor Fu", "SnapTray");
-    return settings.value(SETTINGS_KEY_ANNOTATION_COLOR, QColor(Qt::red)).value<QColor>();
-}
-
-void ScreenCanvas::saveAnnotationColor(const QColor& color)
-{
-    QSettings settings("Victor Fu", "SnapTray");
-    settings.setValue(SETTINGS_KEY_ANNOTATION_COLOR, color);
-}
-
-int ScreenCanvas::loadAnnotationWidth() const
-{
-    QSettings settings("Victor Fu", "SnapTray");
-    return settings.value(SETTINGS_KEY_ANNOTATION_WIDTH, 3).toInt();
-}
-
-void ScreenCanvas::saveAnnotationWidth(int width)
-{
-    QSettings settings("Victor Fu", "SnapTray");
-    settings.setValue(SETTINGS_KEY_ANNOTATION_WIDTH, width);
 }
 
 LineEndStyle ScreenCanvas::loadArrowStyle() const

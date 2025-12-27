@@ -77,6 +77,7 @@ set(SOURCES
     src/ColorAndWidthWidget.cpp
     src/ToolbarWidget.cpp
     src/ToolbarStyle.cpp
+    src/settings/AnnotationSettingsManager.cpp
     src/AnnotationController.cpp
     src/ColorPickerDialog.mm
     src/InlineTextEditor.cpp

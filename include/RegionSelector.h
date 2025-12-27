@@ -165,10 +165,6 @@ private:
     int toolWidthForCurrentTool() const;
 
     // Annotation settings persistence
-    QColor loadAnnotationColor() const;
-    void saveAnnotationColor(const QColor &color);
-    int loadAnnotationWidth() const;
-    void saveAnnotationWidth(int width);
     LineEndStyle loadArrowStyle() const;
     void saveArrowStyle(LineEndStyle style);
     void onArrowStyleChanged(LineEndStyle style);
@@ -222,6 +218,12 @@ private:
 
     // Settings helper (reduces QSettings instantiation)
     QSettings getSettings() const;
+
+    // Screen coordinate conversion helpers
+    QPoint localToGlobal(const QPoint& localPos) const;
+    QPoint globalToLocal(const QPoint& globalPos) const;
+    QRect localToGlobal(const QRect& localRect) const;
+    QRect globalToLocal(const QRect& globalRect) const;
 
     QPixmap m_backgroundPixmap;
     mutable QImage m_backgroundImageCache;  // Lazy-loaded cache for magnifier

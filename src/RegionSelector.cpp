@@ -7,11 +7,13 @@
 #include "ColorPickerDialog.h"
 #include "OCRManager.h"
 #include "PlatformFeatures.h"
+#include "settings/AnnotationSettingsManager.h"
 #include "tools/handlers/EraserToolHandler.h"
 #include "tools/handlers/MosaicToolHandler.h"
 #include <QTextEdit>
 
 #include <cstring>
+#include <map>
 #include <QPainter>
 #include <QMouseEvent>
 #include <QKeyEvent>
@@ -36,8 +38,6 @@
 #include <QFontDatabase>
 #include <QDateTime>
 
-static const char* SETTINGS_KEY_ANNOTATION_COLOR = "annotationColor";
-static const char* SETTINGS_KEY_ANNOTATION_WIDTH = "annotationWidth";
 static const char* SETTINGS_KEY_TEXT_BOLD = "textBold";
 static const char* SETTINGS_KEY_TEXT_ITALIC = "textItalic";
 static const char* SETTINGS_KEY_TEXT_UNDERLINE = "textUnderline";
@@ -49,6 +49,25 @@ static const char* kDropdownMenuStyle =
     "QMenu { background: #2d2d2d; color: white; border: 1px solid #3d3d3d; } "
     "QMenu::item { padding: 4px 20px; } "
     "QMenu::item:selected { background: #0078d4; }";
+
+// Tool capability lookup table - replaces multiple switch statements
+struct ToolCapabilities {
+    bool showInPalette;     // Show in color palette
+    bool needsWidth;        // Show width control
+    bool needsColorOrWidth; // Show unified color/width widget
+};
+
+static const std::map<ToolbarButton, ToolCapabilities> kToolCapabilities = {
+    {ToolbarButton::Selection,  {false, false, false}},
+    {ToolbarButton::Pencil,     {true,  true,  true}},
+    {ToolbarButton::Marker,     {true,  false, true}},
+    {ToolbarButton::Arrow,      {true,  true,  true}},
+    {ToolbarButton::Shape,      {true,  true,  true}},
+    {ToolbarButton::Text,       {true,  false, true}},
+    {ToolbarButton::Mosaic,     {false, false, false}},
+    {ToolbarButton::StepBadge,  {true,  false, true}},
+    {ToolbarButton::Eraser,     {false, true,  true}},
+};
 
 // Create a rounded square cursor for mosaic tool (matching EraserToolHandler pattern)
 static QCursor createMosaicCursor(int size) {
@@ -130,8 +149,9 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_annotationLayer = new AnnotationLayer(this);
 
     // Load saved annotation settings (or defaults)
-    m_annotationColor = loadAnnotationColor();
-    m_annotationWidth = loadAnnotationWidth();
+    auto& settings = AnnotationSettingsManager::instance();
+    m_annotationColor = settings.loadColor();
+    m_annotationWidth = settings.loadWidth();
     m_arrowStyle = loadArrowStyle();
 
     // Initialize tool manager
@@ -385,25 +405,14 @@ QColor RegionSelector::getToolbarIconColor(int buttonId, bool isActive, bool isH
 bool RegionSelector::shouldShowColorPalette() const
 {
     if (!m_selectionManager->isComplete()) return false;
-
-    // Show palette for color-enabled tools (not Mosaic)
-    switch (m_currentTool) {
-    case ToolbarButton::Pencil:
-    case ToolbarButton::Marker:
-    case ToolbarButton::Arrow:
-    case ToolbarButton::Shape:
-    case ToolbarButton::Text:
-    case ToolbarButton::StepBadge:
-        return true;
-    default:
-        return false;
-    }
+    auto it = kToolCapabilities.find(m_currentTool);
+    return it != kToolCapabilities.end() && it->second.showInPalette;
 }
 
 void RegionSelector::syncColorToAllWidgets(const QColor& color)
 {
     m_annotationColor = color;
-    saveAnnotationColor(color);
+    AnnotationSettingsManager::instance().saveColor(color);
     m_toolManager->setColor(color);
     m_lineWidthWidget->setPreviewColor(color);
     m_colorAndWidthWidget->setCurrentColor(color);
@@ -459,7 +468,7 @@ void RegionSelector::onLineWidthChanged(int width)
     }
     else {
         m_annotationWidth = width;
-        saveAnnotationWidth(width);
+        AnnotationSettingsManager::instance().saveWidth(width);
     }
     m_toolManager->setWidth(width);
     update();
@@ -468,34 +477,14 @@ void RegionSelector::onLineWidthChanged(int width)
 bool RegionSelector::shouldShowColorAndWidthWidget() const
 {
     if (!m_selectionManager->isComplete()) return false;
-
-    // Show for tools that need either color or width (union of both)
-    switch (m_currentTool) {
-    case ToolbarButton::Pencil:      // Needs both
-    case ToolbarButton::Marker:      // Needs color only
-    case ToolbarButton::Arrow:       // Needs both
-    case ToolbarButton::Shape:       // Needs both + shape options
-    case ToolbarButton::Text:        // Needs color only
-    case ToolbarButton::StepBadge:   // Needs color only
-    case ToolbarButton::Eraser:      // Needs width only
-        return true;
-    default:
-        return false;
-    }
+    auto it = kToolCapabilities.find(m_currentTool);
+    return it != kToolCapabilities.end() && it->second.needsColorOrWidth;
 }
 
 bool RegionSelector::shouldShowWidthControl() const
 {
-    // Marker, Text, and StepBadge have fixed width, so don't show width control
-    switch (m_currentTool) {
-    case ToolbarButton::Pencil:
-    case ToolbarButton::Arrow:
-    case ToolbarButton::Shape:
-    case ToolbarButton::Eraser:
-        return true;
-    default:
-        return false;  // Marker, Text, StepBadge don't need width control
-    }
+    auto it = kToolCapabilities.find(m_currentTool);
+    return it != kToolCapabilities.end() && it->second.needsWidth;
 }
 
 int RegionSelector::toolWidthForCurrentTool() const
@@ -633,20 +622,10 @@ void RegionSelector::updateWindowDetection(const QPoint& localPos)
         return;
     }
 
-    // Convert local position to screen coordinates
-    QPoint screenPos = m_currentScreen->geometry().topLeft() + localPos;
-
-    // Detect window at position
-    auto detected = m_windowDetector->detectWindowAt(screenPos);
+    auto detected = m_windowDetector->detectWindowAt(localToGlobal(localPos));
 
     if (detected.has_value()) {
-        // Convert screen coords to local widget coords
-        QRect localBounds = detected->bounds.translated(
-            -m_currentScreen->geometry().topLeft()
-        );
-
-        // Clip to screen bounds
-        localBounds = localBounds.intersected(rect());
+        QRect localBounds = globalToLocal(detected->bounds).intersected(rect());
 
         if (localBounds != m_highlightedWindowRect) {
             m_highlightedWindowRect = localBounds;
@@ -1117,14 +1096,9 @@ void RegionSelector::handleToolbarClick(ToolbarButton button)
         break;
 
     case ToolbarButton::Record:
-    {
-        // Emit recording request with the selected region in global coordinates
-        QRect globalRect = m_selectionManager->selectionRect()
-            .translated(m_currentScreen->geometry().topLeft());
-        emit recordingRequested(globalRect, m_currentScreen);
+        emit recordingRequested(localToGlobal(m_selectionManager->selectionRect()), m_currentScreen);
         close();
-    }
-    break;
+        break;
 
     case ToolbarButton::Save:
         saveToFile();
@@ -1228,15 +1202,12 @@ void RegionSelector::saveToFile()
 void RegionSelector::finishSelection()
 {
     QPixmap selectedRegion = getSelectedRegion();
-
-    // 直接計算全局座標：螢幕左上角 + 選區左上角
     QRect sel = m_selectionManager->selectionRect();
-    QPoint globalPos = m_currentScreen->geometry().topLeft() + sel.topLeft();
 
     qDebug() << "finishSelection: selectionRect=" << sel
-        << "globalPos=" << globalPos;
+        << "globalPos=" << localToGlobal(sel.topLeft());
 
-    emit regionSelected(selectedRegion, globalPos);
+    emit regionSelected(selectedRegion, localToGlobal(sel.topLeft()));
     close();
 }
 
@@ -2206,24 +2177,24 @@ QSettings RegionSelector::getSettings() const
     return QSettings("Victor Fu", "SnapTray");
 }
 
-QColor RegionSelector::loadAnnotationColor() const
+QPoint RegionSelector::localToGlobal(const QPoint& localPos) const
 {
-    return getSettings().value(SETTINGS_KEY_ANNOTATION_COLOR, QColor(Qt::red)).value<QColor>();
+    return m_currentScreen->geometry().topLeft() + localPos;
 }
 
-void RegionSelector::saveAnnotationColor(const QColor& color)
+QPoint RegionSelector::globalToLocal(const QPoint& globalPos) const
 {
-    getSettings().setValue(SETTINGS_KEY_ANNOTATION_COLOR, color);
+    return globalPos - m_currentScreen->geometry().topLeft();
 }
 
-int RegionSelector::loadAnnotationWidth() const
+QRect RegionSelector::localToGlobal(const QRect& localRect) const
 {
-    return getSettings().value(SETTINGS_KEY_ANNOTATION_WIDTH, 3).toInt();
+    return localRect.translated(m_currentScreen->geometry().topLeft());
 }
 
-void RegionSelector::saveAnnotationWidth(int width)
+QRect RegionSelector::globalToLocal(const QRect& globalRect) const
 {
-    getSettings().setValue(SETTINGS_KEY_ANNOTATION_WIDTH, width);
+    return globalRect.translated(-m_currentScreen->geometry().topLeft());
 }
 
 LineEndStyle RegionSelector::loadArrowStyle() const

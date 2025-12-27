@@ -109,10 +109,6 @@ private:
     bool shouldShowWidthControl() const;
 
     // Annotation settings persistence
-    QColor loadAnnotationColor() const;
-    void saveAnnotationColor(const QColor &color);
-    int loadAnnotationWidth() const;
-    void saveAnnotationWidth(int width);
     LineEndStyle loadArrowStyle() const;
     void saveArrowStyle(LineEndStyle style);
     void onArrowStyleChanged(LineEndStyle style);
