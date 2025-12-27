@@ -9,6 +9,7 @@
 #include <QVector>
 #include <QColor>
 #include <QElapsedTimer>
+#include <QSettings>
 #include <memory>
 #include <optional>
 
@@ -206,6 +207,7 @@ private:
     void onTextEditingFinished(const QString &text, const QPoint &position);
     void startTextReEditing(int annotationIndex);
     TextAnnotation* getSelectedTextAnnotation() const;
+    bool handleInlineTextEditorPress(const QPoint& pos);
 
     // Text formatting persistence
     TextFormattingState loadTextFormatting() const;
@@ -217,6 +219,9 @@ private:
 
     // Selection resize/move helpers
     void updateCursorForHandle(SelectionStateManager::ResizeHandle handle);
+
+    // Settings helper (reduces QSettings instantiation)
+    QSettings getSettings() const;
 
     QPixmap m_backgroundPixmap;
     mutable QImage m_backgroundImageCache;  // Lazy-loaded cache for magnifier

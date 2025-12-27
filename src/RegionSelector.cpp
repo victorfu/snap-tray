@@ -44,6 +44,12 @@ static const char* SETTINGS_KEY_TEXT_UNDERLINE = "textUnderline";
 static const char* SETTINGS_KEY_TEXT_SIZE = "textFontSize";
 static const char* SETTINGS_KEY_TEXT_FAMILY = "textFontFamily";
 
+// Dropdown menu stylesheet (shared by font size and font family menus)
+static const char* kDropdownMenuStyle =
+    "QMenu { background: #2d2d2d; color: white; border: 1px solid #3d3d3d; } "
+    "QMenu::item { padding: 4px 20px; } "
+    "QMenu::item:selected { background: #0078d4; }";
+
 // Create a rounded square cursor for mosaic tool (matching EraserToolHandler pattern)
 static QCursor createMosaicCursor(int size) {
     // Use same pattern as EraserToolHandler - no devicePixelRatio scaling
@@ -1239,35 +1245,8 @@ void RegionSelector::mousePressEvent(QMouseEvent* event)
     if (event->button() == Qt::LeftButton) {
         if (m_selectionManager->isComplete()) {
             // Handle inline text editing
-            if (m_textEditor->isEditing()) {
-                if (m_textEditor->isConfirmMode()) {
-                    // In confirm mode: click outside finishes, click inside starts drag
-                    if (!m_textEditor->contains(event->pos())) {
-                        m_textEditor->finishEditing();
-                        // Continue processing click for next action
-                    }
-                    else {
-                        // Start dragging
-                        m_textEditor->handleMousePress(event->pos());
-                        return;
-                    }
-                }
-                else {
-                    // In typing mode: click outside enters confirm mode
-                    if (!m_textEditor->contains(event->pos())) {
-                        if (!m_textEditor->textEdit()->toPlainText().trimmed().isEmpty()) {
-                            m_textEditor->enterConfirmMode();
-                        }
-                        else {
-                            m_textEditor->cancelEditing();
-                        }
-                        return;
-                    }
-                    else {
-                        // Click inside text edit - let it handle
-                        return;
-                    }
-                }
+            if (handleInlineTextEditorPress(event->pos())) {
+                return;
             }
 
             // Check if clicked on toolbar FIRST (before widgets that may overlap)
@@ -2072,6 +2051,37 @@ TextAnnotation* RegionSelector::getSelectedTextAnnotation() const
     return nullptr;
 }
 
+bool RegionSelector::handleInlineTextEditorPress(const QPoint& pos)
+{
+    if (!m_textEditor->isEditing()) {
+        return false;
+    }
+
+    if (m_textEditor->isConfirmMode()) {
+        // In confirm mode: click outside finishes, click inside starts drag
+        if (!m_textEditor->contains(pos)) {
+            m_textEditor->finishEditing();
+            return false;  // Continue processing click for next action
+        }
+        // Start dragging
+        m_textEditor->handleMousePress(pos);
+        return true;
+    }
+
+    // In typing mode: click outside enters confirm mode or cancels
+    if (!m_textEditor->contains(pos)) {
+        if (!m_textEditor->textEdit()->toPlainText().trimmed().isEmpty()) {
+            m_textEditor->enterConfirmMode();
+        } else {
+            m_textEditor->cancelEditing();
+        }
+        return true;
+    }
+
+    // Click inside text edit - let it handle
+    return true;
+}
+
 // ============================================================================
 // Selection Resize/Move Helper Functions
 // ============================================================================
@@ -2191,41 +2201,40 @@ void RegionSelector::onOCRComplete(bool success, const QString& text, const QStr
     update();
 }
 
+QSettings RegionSelector::getSettings() const
+{
+    return QSettings("Victor Fu", "SnapTray");
+}
+
 QColor RegionSelector::loadAnnotationColor() const
 {
-    QSettings settings("Victor Fu", "SnapTray");
-    return settings.value(SETTINGS_KEY_ANNOTATION_COLOR, QColor(Qt::red)).value<QColor>();
+    return getSettings().value(SETTINGS_KEY_ANNOTATION_COLOR, QColor(Qt::red)).value<QColor>();
 }
 
 void RegionSelector::saveAnnotationColor(const QColor& color)
 {
-    QSettings settings("Victor Fu", "SnapTray");
-    settings.setValue(SETTINGS_KEY_ANNOTATION_COLOR, color);
+    getSettings().setValue(SETTINGS_KEY_ANNOTATION_COLOR, color);
 }
 
 int RegionSelector::loadAnnotationWidth() const
 {
-    QSettings settings("Victor Fu", "SnapTray");
-    return settings.value(SETTINGS_KEY_ANNOTATION_WIDTH, 3).toInt();
+    return getSettings().value(SETTINGS_KEY_ANNOTATION_WIDTH, 3).toInt();
 }
 
 void RegionSelector::saveAnnotationWidth(int width)
 {
-    QSettings settings("Victor Fu", "SnapTray");
-    settings.setValue(SETTINGS_KEY_ANNOTATION_WIDTH, width);
+    getSettings().setValue(SETTINGS_KEY_ANNOTATION_WIDTH, width);
 }
 
 LineEndStyle RegionSelector::loadArrowStyle() const
 {
-    QSettings settings("Victor Fu", "SnapTray");
-    int style = settings.value("annotation/arrowStyle", static_cast<int>(LineEndStyle::EndArrow)).toInt();
+    int style = getSettings().value("annotation/arrowStyle", static_cast<int>(LineEndStyle::EndArrow)).toInt();
     return static_cast<LineEndStyle>(style);
 }
 
 void RegionSelector::saveArrowStyle(LineEndStyle style)
 {
-    QSettings settings("Victor Fu", "SnapTray");
-    settings.setValue("annotation/arrowStyle", static_cast<int>(style));
+    getSettings().setValue("annotation/arrowStyle", static_cast<int>(style));
 }
 
 void RegionSelector::onArrowStyleChanged(LineEndStyle style)
@@ -2238,7 +2247,7 @@ void RegionSelector::onArrowStyleChanged(LineEndStyle style)
 
 TextFormattingState RegionSelector::loadTextFormatting() const
 {
-    QSettings settings("Victor Fu", "SnapTray");
+    QSettings settings = getSettings();
     TextFormattingState state;
     state.bold = settings.value(SETTINGS_KEY_TEXT_BOLD, true).toBool();
     state.italic = settings.value(SETTINGS_KEY_TEXT_ITALIC, false).toBool();
@@ -2256,11 +2265,7 @@ void RegionSelector::saveTextFormatting()
 void RegionSelector::onFontSizeDropdownRequested(const QPoint& pos)
 {
     QMenu menu(this);
-    menu.setStyleSheet(
-        "QMenu { background: #2d2d2d; color: white; border: 1px solid #3d3d3d; } "
-        "QMenu::item { padding: 4px 20px; } "
-        "QMenu::item:selected { background: #0078d4; }"
-    );
+    menu.setStyleSheet(kDropdownMenuStyle);
 
     TextFormattingState formatting = m_textAnnotationEditor->formatting();
     static const int sizes[] = { 8, 10, 12, 14, 16, 18, 20, 24, 28, 32, 36, 48, 72 };
@@ -2278,11 +2283,7 @@ void RegionSelector::onFontSizeDropdownRequested(const QPoint& pos)
 void RegionSelector::onFontFamilyDropdownRequested(const QPoint& pos)
 {
     QMenu menu(this);
-    menu.setStyleSheet(
-        "QMenu { background: #2d2d2d; color: white; border: 1px solid #3d3d3d; } "
-        "QMenu::item { padding: 4px 20px; } "
-        "QMenu::item:selected { background: #0078d4; }"
-    );
+    menu.setStyleSheet(kDropdownMenuStyle);
 
     TextFormattingState formatting = m_textAnnotationEditor->formatting();
 

@@ -252,3 +252,36 @@ add_test(NAME RegionSelector_TextAnnotationEditor COMMAND RegionSelector_TextAnn
 set_tests_properties(RegionSelector_TextAnnotationEditor PROPERTIES
     TIMEOUT 60
 )
+
+# SelectionStateManager test
+set(SELECTIONSTATEMANAGER_SOURCES
+    ${CMAKE_SOURCE_DIR}/src/region/SelectionStateManager.cpp
+)
+
+set(SELECTIONSTATEMANAGER_HEADERS
+    ${CMAKE_SOURCE_DIR}/include/region/SelectionStateManager.h
+)
+
+add_executable(RegionSelector_SelectionStateManager
+    RegionSelector/tst_SelectionStateManager.cpp
+    ${SELECTIONSTATEMANAGER_SOURCES}
+    ${SELECTIONSTATEMANAGER_HEADERS}
+)
+
+target_include_directories(RegionSelector_SelectionStateManager PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_BINARY_DIR}/generated
+)
+
+target_link_libraries(RegionSelector_SelectionStateManager PRIVATE
+    Qt6::Widgets
+    Qt6::Gui
+    Qt6::Test
+)
+
+add_test(NAME RegionSelector_SelectionStateManager COMMAND RegionSelector_SelectionStateManager)
+
+set_tests_properties(RegionSelector_SelectionStateManager PROPERTIES
+    TIMEOUT 60
+)
