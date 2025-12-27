@@ -12,7 +12,6 @@
 class QMenu;
 class QLabel;
 class QTimer;
-class QHotkey;
 class OCRManager;
 class PinWindowManager;
 class UIIndicators;
@@ -110,7 +109,6 @@ private:
 
     // Click-through mode
     bool m_clickThrough;
-    QHotkey *m_clickThroughHotkey = nullptr;
 
     // Rotation members
     int m_rotationAngle;  // 0, 90, 180, 270 degrees

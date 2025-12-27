@@ -7,6 +7,7 @@
 #include <QPoint>
 
 class PinWindow;
+class QHotkey;
 
 class PinWindowManager : public QObject
 {
@@ -21,6 +22,9 @@ public:
     void disableClickThroughAll();
     int windowCount() const { return m_windows.count(); }
 
+    // Called by PinWindow when click-through state changes
+    void onClickThroughChanged();
+
 signals:
     void windowCreated(PinWindow *window);
     void windowClosed(PinWindow *window);
@@ -31,7 +35,10 @@ private slots:
     void onWindowClosed(PinWindow *window);
 
 private:
+    void updateClickThroughHotkey();
+
     QList<PinWindow*> m_windows;
+    QHotkey *m_clickThroughHotkey = nullptr;
 };
 
 #endif // PINWINDOWMANAGER_H

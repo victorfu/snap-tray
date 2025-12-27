@@ -2,6 +2,7 @@
 #include "PinWindow.h"
 
 #include <QDebug>
+#include <QHotkey>
 
 PinWindowManager::PinWindowManager(QObject *parent)
     : QObject(parent)
@@ -10,6 +11,12 @@ PinWindowManager::PinWindowManager(QObject *parent)
 
 PinWindowManager::~PinWindowManager()
 {
+    // Clean up click-through hotkey if it exists
+    if (m_clickThroughHotkey) {
+        m_clickThroughHotkey->setRegistered(false);
+        delete m_clickThroughHotkey;
+        m_clickThroughHotkey = nullptr;
+    }
     closeAllWindows();
 }
 
@@ -50,11 +57,53 @@ void PinWindowManager::disableClickThroughAll()
     }
 }
 
+void PinWindowManager::onClickThroughChanged()
+{
+    updateClickThroughHotkey();
+}
+
+void PinWindowManager::updateClickThroughHotkey()
+{
+    // Check if any window is in click-through mode
+    bool anyClickThrough = false;
+    for (PinWindow *window : m_windows) {
+        if (window->isClickThrough()) {
+            anyClickThrough = true;
+            break;
+        }
+    }
+
+    if (anyClickThrough) {
+        // Register hotkey if not already registered
+        if (!m_clickThroughHotkey) {
+            m_clickThroughHotkey = new QHotkey(QKeySequence(Qt::Key_T), true, this);
+            connect(m_clickThroughHotkey, &QHotkey::activated, this, &PinWindowManager::disableClickThroughAll);
+            
+            if (m_clickThroughHotkey->isRegistered()) {
+                qDebug() << "PinWindowManager: Click-through hotkey registered";
+            } else {
+                qDebug() << "PinWindowManager: Failed to register click-through hotkey";
+            }
+        }
+    } else {
+        // Unregister hotkey if no windows are in click-through mode
+        if (m_clickThroughHotkey) {
+            m_clickThroughHotkey->setRegistered(false);
+            delete m_clickThroughHotkey;
+            m_clickThroughHotkey = nullptr;
+            qDebug() << "PinWindowManager: Click-through hotkey unregistered";
+        }
+    }
+}
+
 void PinWindowManager::onWindowClosed(PinWindow *window)
 {
     m_windows.removeOne(window);
 
     qDebug() << "PinWindowManager: Window closed, remaining:" << m_windows.count();
+
+    // Update hotkey in case the closed window was in click-through mode
+    updateClickThroughHotkey();
 
     emit windowClosed(window);
 
