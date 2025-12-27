@@ -414,10 +414,17 @@ void ScrollingCaptureManager::captureFrame()
         return;
     }
 
+    // Check if frame changed relative to previous capture
+    bool frameChanged = true;
+    if (!m_lastFrame.isNull()) {
+        frameChanged = ImageStitcher::isFrameChanged(frame, m_lastFrame);
+    }
+
     bool restitched = false;
 
     // Add frame to fixed element detector (use detector's own frame count)
-    if (!m_fixedElementsDetected) {
+    // Only add if frame has changed to avoid polluting detector with static frames
+    if (frameChanged && !m_fixedElementsDetected) {
         m_fixedDetector->addFrame(frame);
 
         // Store all frames until fixed elements are detected to avoid data loss
@@ -553,10 +560,16 @@ void ScrollingCaptureManager::updateUIPositions()
 {
     if (m_toolbar) {
         m_toolbar->positionNear(m_captureRegion);
+        if (m_toolbar->isVisible()) {
+            m_toolbar->raise();
+        }
     }
 
     if (m_thumbnail) {
         m_thumbnail->positionNear(m_captureRegion);
+        if (m_thumbnail->isVisible()) {
+            m_thumbnail->raise();
+        }
     }
 }
 

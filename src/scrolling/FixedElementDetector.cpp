@@ -65,21 +65,6 @@ FixedElementDetector::DetectionResult FixedElementDetector::detect()
         return result;
     }
 
-    // Verify that scrolling is actually happening by checking if first and last
-    // regions differ (prevents false positives on static content or slow scrolling)
-    double firstLastLeadingSimilarity = calculateRegionSimilarity(
-        m_leadingRegions.front(), m_leadingRegions.back());
-    double firstLastTrailingSimilarity = calculateRegionSimilarity(
-        m_trailingRegions.front(), m_trailingRegions.back());
-
-    // If both leading and trailing are nearly identical between first and last frame,
-    // there's no scrolling happening - don't detect fixed elements
-    if (firstLastLeadingSimilarity >= SIMILARITY_THRESHOLD &&
-        firstLastTrailingSimilarity >= SIMILARITY_THRESHOLD) {
-        // Content appears static, not scrolling
-        return result;
-    }
-
     // Analyze leading region (header/left sidebar)
     analyzeLeadingRegion();
 
@@ -104,60 +89,96 @@ FixedElementDetector::DetectionResult FixedElementDetector::detect()
 
 void FixedElementDetector::analyzeLeadingRegion()
 {
-    if (m_leadingRegions.size() < MIN_FRAMES_FOR_DETECTION) {
+    if (m_leadingRegions.empty()) {
         return;
     }
 
-    // Compare consecutive frames to find consistent leading region
-    int consecutiveMatches = 0;
-    int bestMatchHeight = 0;
+    int height = m_leadingRegions[0].height();
+    int width = m_leadingRegions[0].width();
+    int consistentRows = 0;
 
-    for (size_t i = 1; i < m_leadingRegions.size(); ++i) {
-        double similarity = calculateRegionSimilarity(m_leadingRegions[i - 1], m_leadingRegions[i]);
-
-        if (similarity >= SIMILARITY_THRESHOLD) {
-            consecutiveMatches++;
-            if (consecutiveMatches >= MIN_FRAMES_FOR_DETECTION - 1) {
-                // Found consistent fixed region (vertical: height)
-                bestMatchHeight = m_leadingRegions[0].height();
+    // Check row by row from top
+    for (int y = 0; y < height; ++y) {
+        bool rowIsFixed = true;
+        
+        // Compare this row across all stored frames
+        for (size_t i = 1; i < m_leadingRegions.size(); ++i) {
+            if (!compareRows(m_leadingRegions[i-1], m_leadingRegions[i], y)) {
+                rowIsFixed = false;
+                break;
             }
+        }
+
+        if (rowIsFixed) {
+            consistentRows++;
         } else {
-            consecutiveMatches = 0;
+            // Found a changing row, stop (assume header is contiguous)
+            break;
         }
     }
 
-    if (bestMatchHeight > 0) {
-        m_leadingCropSize = bestMatchHeight;
-    }
+    m_leadingCropSize = consistentRows;
 }
 
 void FixedElementDetector::analyzeTrailingRegion()
 {
-    if (m_trailingRegions.size() < MIN_FRAMES_FOR_DETECTION) {
+    if (m_trailingRegions.empty()) {
         return;
     }
 
-    // Compare consecutive frames to find consistent trailing region
-    int consecutiveMatches = 0;
-    int bestMatchSize = 0;
+    int height = m_trailingRegions[0].height();
+    int width = m_trailingRegions[0].width();
+    int consistentRows = 0;
 
-    for (size_t i = 1; i < m_trailingRegions.size(); ++i) {
-        double similarity = calculateRegionSimilarity(m_trailingRegions[i - 1], m_trailingRegions[i]);
-
-        if (similarity >= SIMILARITY_THRESHOLD) {
-            consecutiveMatches++;
-            if (consecutiveMatches >= MIN_FRAMES_FOR_DETECTION - 1) {
-                // Found consistent fixed region (vertical: height)
-                bestMatchSize = m_trailingRegions[0].height();
+    // Check row by row from bottom
+    for (int y = height - 1; y >= 0; --y) {
+        bool rowIsFixed = true;
+        
+        // Compare this row across all stored frames
+        for (size_t i = 1; i < m_trailingRegions.size(); ++i) {
+            if (!compareRows(m_trailingRegions[i-1], m_trailingRegions[i], y)) {
+                rowIsFixed = false;
+                break;
             }
+        }
+
+        if (rowIsFixed) {
+            consistentRows++;
         } else {
-            consecutiveMatches = 0;
+            // Found a changing row, stop
+            break;
         }
     }
 
-    if (bestMatchSize > 0) {
-        m_trailingCropSize = bestMatchSize;
+    m_trailingCropSize = consistentRows;
+}
+
+bool FixedElementDetector::compareRows(const QImage &img1, const QImage &img2, int y) const
+{
+    if (img1.width() != img2.width() || y < 0 || y >= img1.height() || y >= img2.height()) {
+        return false;
     }
+
+    const QRgb *line1 = reinterpret_cast<const QRgb*>(img1.constScanLine(y));
+    const QRgb *line2 = reinterpret_cast<const QRgb*>(img2.constScanLine(y));
+    
+    int diffCount = 0;
+    int threshold = img1.width() * 0.1; // Allow 10% pixels to differ (noise/compression artifacts)
+
+    for (int x = 0; x < img1.width(); ++x) {
+        int diff = std::abs(qRed(line1[x]) - qRed(line2[x])) +
+                   std::abs(qGreen(line1[x]) - qGreen(line2[x])) +
+                   std::abs(qBlue(line1[x]) - qBlue(line2[x]));
+
+        if (diff > 30) {
+            diffCount++;
+            if (diffCount > threshold) {
+                return false;
+            }
+        }
+    }
+
+    return true;
 }
 
 double FixedElementDetector::calculateRegionSimilarity(const QImage &region1, const QImage &region2) const

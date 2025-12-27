@@ -176,6 +176,7 @@ set(SOURCES
     src/scrolling/ScrollingCaptureToolbar.cpp
     src/scrolling/ScrollingCaptureThumbnail.cpp
     src/scrolling/ImageStitcher.cpp
+    src/scrolling/ImageStitcherAlgorithms.cpp
     src/scrolling/FixedElementDetector.cpp
     src/pinwindow/ClickThroughExitButton.cpp
 )

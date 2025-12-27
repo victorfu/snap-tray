@@ -65,6 +65,9 @@ public:
     int frameCount() const { return m_frameCount; }
     QRect currentViewportRect() const { return m_currentViewportRect; }
 
+    // Helper methods
+    static bool isFrameChanged(const QImage &frame1, const QImage &frame2);
+
 signals:
     void progressUpdated(int framesProcessed, const QSize &currentSize);
 
@@ -90,7 +93,6 @@ private:
     MatchCandidate computeTemplateMatchCandidate(const QImage &newFrame, ScrollDirection direction);
     StitchResult applyCandidate(const QImage &newFrame, const MatchCandidate &candidate, Algorithm algorithm);
     StitchResult performStitch(const QImage &newFrame, int overlapPixels, ScrollDirection direction);
-    bool hasFrameChanged(const QImage &frame1, const QImage &frame2) const;
 
     Algorithm m_algorithm = Algorithm::Auto;
     bool m_detectFixedElements = true;
@@ -100,6 +102,7 @@ private:
     QImage m_lastFrame;
     QRect m_currentViewportRect;
     int m_frameCount = 0;
+    int m_validHeight = 0;
 
     // ROI parameters
     static constexpr double ROI_FIRST_RATIO = 0.25;   // Bottom/Right 25% of first frame

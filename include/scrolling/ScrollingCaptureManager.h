@@ -107,7 +107,7 @@ private:
     QImage m_stitchedResult;
 
     static constexpr int CAPTURE_INTERVAL_MS = 60;  // ~16 FPS
-    static constexpr int UNCHANGED_FRAME_THRESHOLD = 5;
+    static constexpr int UNCHANGED_FRAME_THRESHOLD = 50;
 };
 
 #endif // SCROLLINGCAPTUREMANAGER_H

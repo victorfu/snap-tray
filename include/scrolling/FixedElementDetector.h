@@ -46,6 +46,7 @@ public:
 
 private:
     double calculateRegionSimilarity(const QImage &region1, const QImage &region2) const;
+    bool compareRows(const QImage &img1, const QImage &img2, int y) const;
     void analyzeLeadingRegion();
     void analyzeTrailingRegion();
 
