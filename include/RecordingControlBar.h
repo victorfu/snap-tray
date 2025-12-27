@@ -8,7 +8,6 @@
 #include <QShortcut>
 
 class QLabel;
-class QPushButton;
 
 class RecordingControlBar : public QWidget
 {
@@ -39,22 +38,38 @@ protected:
     void mouseMoveEvent(QMouseEvent *event) override;
     void mouseReleaseEvent(QMouseEvent *event) override;
     void keyPressEvent(QKeyEvent *event) override;
+    void leaveEvent(QEvent *event) override;
 
 private:
+    enum ButtonId {
+        ButtonNone = -1,
+        ButtonPause = 0,
+        ButtonStop = 1,
+        ButtonCancel = 2
+    };
+
     void setupUi();
     QString formatDuration(qint64 ms) const;
-    void updatePauseButton();
     void updateIndicatorGradient();
+    void updateButtonRects();
+    int buttonAtPosition(const QPoint &pos) const;
+    void drawButtons(QPainter &painter);
+    void drawTooltip(QPainter &painter);
+    QString tooltipForButton(ButtonId button) const;
 
+    // Info labels
     QLabel *m_recordingIndicator;
     QLabel *m_audioIndicator;
     QLabel *m_durationLabel;
     QLabel *m_sizeLabel;
     QLabel *m_fpsLabel;
-    QPushButton *m_pauseButton;
-    QPushButton *m_stopButton;
-    QPushButton *m_cancelButton;
     bool m_audioEnabled;
+
+    // Button rectangles
+    QRect m_pauseRect;
+    QRect m_stopRect;
+    QRect m_cancelRect;
+    int m_hoveredButton;
 
     // Drag support
     QPoint m_dragStartPos;
@@ -70,6 +85,11 @@ private:
 
     // Global shortcut for ESC key
     QShortcut *m_escShortcut;
+
+    // Layout constants (matching ToolbarWidget)
+    static const int TOOLBAR_HEIGHT = 32;
+    static const int BUTTON_WIDTH = 28;
+    static const int BUTTON_SPACING = 2;
 };
 
 #endif // RECORDINGCONTROLBAR_H
