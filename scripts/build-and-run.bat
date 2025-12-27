@@ -22,4 +22,4 @@ cmake --build build --target SnapTray
 REM Run
 echo.
 echo Launching SnapTray...
-"%BUILD_DIR%\SnapTray.exe"
+"%BUILD_DIR%\bin\SnapTray.exe"

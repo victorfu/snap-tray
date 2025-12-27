@@ -74,6 +74,10 @@ void MainApplication::initialize()
     connect(m_captureManager, &CaptureManager::recordingRequested,
             m_recordingManager, &RecordingManager::startRegionSelectionWithPreset);
 
+    // Connect scrolling capture request from RegionSelector toolbar
+    connect(m_captureManager, &CaptureManager::scrollingCaptureRequested,
+            m_captureManager, &CaptureManager::startScrollingCaptureWithRegion);
+
     // Connect recording cancellation to return to capture mode
     // Use delay to ensure RecordingRegionSelector is fully closed before capturing new screenshot
     connect(m_recordingManager, &RecordingManager::selectionCancelledWithRegion,

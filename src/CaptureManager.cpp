@@ -4,6 +4,7 @@
 #include "platform/WindowLevel.h"
 #include "WindowDetector.h"
 #include "PlatformFeatures.h"
+#include "scrolling/ScrollingCaptureManager.h"
 
 #include <QDebug>
 #include <QGuiApplication>
@@ -16,6 +17,7 @@ CaptureManager::CaptureManager(PinWindowManager *pinManager, QObject *parent)
     , m_regionSelector(nullptr)
     , m_pinManager(pinManager)
     , m_windowDetector(PlatformFeatures::instance().createWindowDetector(this))
+    , m_scrollingManager(new ScrollingCaptureManager(pinManager, this))
 {
 }
 
@@ -25,7 +27,8 @@ CaptureManager::~CaptureManager()
 
 bool CaptureManager::isActive() const
 {
-    return m_regionSelector && m_regionSelector->isVisible();
+    return (m_regionSelector && m_regionSelector->isVisible()) ||
+           (m_scrollingManager && m_scrollingManager->isActive());
 }
 
 void CaptureManager::startRegionCapture()
@@ -88,6 +91,8 @@ void CaptureManager::startRegionCapture()
             this, &CaptureManager::onSelectionCancelled);
     connect(m_regionSelector, &RegionSelector::recordingRequested,
             this, &CaptureManager::recordingRequested);
+    connect(m_regionSelector, &RegionSelector::scrollingCaptureRequested,
+            this, &CaptureManager::scrollingCaptureRequested);
 
     // 5. 使用 setGeometry + show 取代 showFullScreen，確保在正確螢幕上顯示
     m_regionSelector->setGeometry(targetScreen->geometry());
@@ -155,6 +160,8 @@ void CaptureManager::startRegionCaptureWithPreset(const QRect &region, QScreen *
             this, &CaptureManager::onSelectionCancelled);
     connect(m_regionSelector, &RegionSelector::recordingRequested,
             this, &CaptureManager::recordingRequested);
+    connect(m_regionSelector, &RegionSelector::scrollingCaptureRequested,
+            this, &CaptureManager::scrollingCaptureRequested);
 
     m_regionSelector->setGeometry(screen->geometry());
     m_regionSelector->show();
@@ -162,4 +169,29 @@ void CaptureManager::startRegionCaptureWithPreset(const QRect &region, QScreen *
 
     m_regionSelector->activateWindow();
     m_regionSelector->raise();
+}
+
+void CaptureManager::startScrollingCapture()
+{
+    // Don't start if already active
+    if (isActive()) {
+        qDebug() << "CaptureManager: Already in capture mode, ignoring scrolling capture";
+        return;
+    }
+
+    qDebug() << "CaptureManager: Starting scrolling capture";
+    m_scrollingManager->start();
+}
+
+void CaptureManager::startScrollingCaptureWithRegion(const QRect &region, QScreen *screen)
+{
+    // Don't check isActive() here - we're transitioning from RegionSelector which will close
+    // Only check if scrolling capture is already running
+    if (m_scrollingManager && m_scrollingManager->isActive()) {
+        qDebug() << "CaptureManager: Scrolling capture already active, ignoring";
+        return;
+    }
+
+    qDebug() << "CaptureManager: Starting scrolling capture with region:" << region;
+    m_scrollingManager->startWithRegion(region, screen);
 }

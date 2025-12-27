@@ -58,6 +58,7 @@ enum class ToolbarButton {
     OCR,
     Pin,
     Record,
+    ScrollCapture,  // Scrolling capture (extended region capture)
     Save,
     Copy,
     Count  // Total number of buttons
@@ -126,6 +127,7 @@ signals:
     void saveRequested(const QPixmap &screenshot);
     void copyRequested(const QPixmap &screenshot);
     void recordingRequested(const QRect &region, QScreen *screen);
+    void scrollingCaptureRequested(const QRect &region, QScreen *screen);
 
 protected:
     void paintEvent(QPaintEvent *event) override;

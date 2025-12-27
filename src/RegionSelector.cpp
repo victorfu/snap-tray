@@ -332,6 +332,7 @@ void RegionSelector::setupToolbarButtons()
     }
     iconRenderer.loadIcon("pin", ":/icons/icons/pin.svg");
     iconRenderer.loadIcon("record", ":/icons/icons/record.svg");
+    iconRenderer.loadIcon("scroll-capture", ":/icons/icons/scroll-capture.svg");
     iconRenderer.loadIcon("save", ":/icons/icons/save.svg");
     iconRenderer.loadIcon("copy", ":/icons/icons/copy.svg");
 
@@ -353,6 +354,7 @@ void RegionSelector::setupToolbarButtons()
         buttons.append({ static_cast<int>(ToolbarButton::OCR), "ocr", "OCR Text Recognition", false });
     }
     buttons.append({ static_cast<int>(ToolbarButton::Record), "record", "Screen Recording (R)", false });
+    buttons.append({ static_cast<int>(ToolbarButton::ScrollCapture), "scroll-capture", "Scrolling Capture (S)", false });
     buttons.append({ static_cast<int>(ToolbarButton::Pin), "pin", "Pin to Screen (Enter)", false });
     buttons.append({ static_cast<int>(ToolbarButton::Save), "save", "Save (Ctrl+S)", false });
     buttons.append({ static_cast<int>(ToolbarButton::Copy), "copy", "Copy (Ctrl+C)", false });
@@ -1141,6 +1143,11 @@ void RegionSelector::handleToolbarClick(ToolbarButton button)
         close();
         break;
 
+    case ToolbarButton::ScrollCapture:
+        emit scrollingCaptureRequested(localToGlobal(m_selectionManager->selectionRect()), m_currentScreen);
+        close();
+        break;
+
     case ToolbarButton::Save:
         saveToFile();
         break;
@@ -1812,6 +1819,11 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
     else if (event->key() == Qt::Key_R && !event->modifiers()) {
         if (m_selectionManager->isComplete()) {
             handleToolbarClick(ToolbarButton::Record);
+        }
+    }
+    else if (event->key() == Qt::Key_S && !event->modifiers()) {
+        if (m_selectionManager->isComplete()) {
+            handleToolbarClick(ToolbarButton::ScrollCapture);
         }
     }
     else if (event->key() == Qt::Key_Shift && !m_selectionManager->isComplete()) {

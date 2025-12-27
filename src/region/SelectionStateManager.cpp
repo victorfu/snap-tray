@@ -19,6 +19,10 @@ void SelectionStateManager::setSelectionRect(const QRect& rect)
         m_selectionRect = rect;
         emit selectionChanged(m_selectionRect.normalized());
     }
+    // Ensure state is Complete so hasSelection() returns true
+    if (rect.isValid() && !rect.isEmpty() && m_state == State::None) {
+        setState(State::Complete);
+    }
 }
 
 void SelectionStateManager::setBounds(const QRect& bounds)
