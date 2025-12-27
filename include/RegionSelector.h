@@ -182,6 +182,9 @@ private:
     void restoreStandardWidthFromEraser();
     void saveEraserWidthAndClearHover();
 
+    // Cursor helpers
+    QCursor getMosaicCursor(int width);
+
     // Annotation drawing helpers
     void drawAnnotations(QPainter &painter);
     void drawCurrentAnnotation(QPainter &painter);
@@ -249,6 +252,10 @@ private:
     int m_annotationWidth;
     int m_eraserWidth = 20;  // Separate width for eraser tool (range: 5-100)
     LineEndStyle m_arrowStyle;
+
+    // Mosaic cursor cache (avoid recreating on every mouse move)
+    QCursor m_mosaicCursorCache;
+    int m_mosaicCursorCacheWidth = -1;
 
     // Shape tool state
     ShapeType m_shapeType = ShapeType::Rectangle;

@@ -1017,6 +1017,15 @@ void RegionSelector::restoreStandardWidthFromEraser()
     }
 }
 
+QCursor RegionSelector::getMosaicCursor(int width)
+{
+    if (width != m_mosaicCursorCacheWidth) {
+        m_mosaicCursorCache = createMosaicCursor(width);
+        m_mosaicCursorCacheWidth = width;
+    }
+    return m_mosaicCursorCache;
+}
+
 void RegionSelector::handleToolbarClick(ToolbarButton button)
 {
     // Save eraser width and clear hover when switching FROM Eraser to another tool
@@ -1497,7 +1506,7 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
         // Keep correct cursor during drawing for Mosaic/Eraser
         if (m_currentTool == ToolbarButton::Mosaic) {
             int mosaicWidth = m_toolManager ? m_toolManager->width() : MosaicToolHandler::kDefaultBrushWidth;
-            setCursor(createMosaicCursor(mosaicWidth));
+            setCursor(getMosaicCursor(mosaicWidth));
         }
         else if (m_currentTool == ToolbarButton::Eraser) {
             if (auto* eraser = dynamic_cast<EraserToolHandler*>(m_toolManager->currentHandler())) {
@@ -1610,7 +1619,7 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
             }
             else if (m_currentTool == ToolbarButton::Mosaic) {
                 int mosaicWidth = m_toolManager ? m_toolManager->width() : MosaicToolHandler::kDefaultBrushWidth;
-                setCursor(createMosaicCursor(mosaicWidth));
+                setCursor(getMosaicCursor(mosaicWidth));
             }
             else if (m_currentTool == ToolbarButton::Eraser) {
                 // Use eraser's dynamic cursor that shows its size
@@ -1636,7 +1645,7 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
             }
             else if (m_currentTool == ToolbarButton::Mosaic) {
                 int mosaicWidth = m_toolManager ? m_toolManager->width() : MosaicToolHandler::kDefaultBrushWidth;
-                setCursor(createMosaicCursor(mosaicWidth));
+                setCursor(getMosaicCursor(mosaicWidth));
             }
             else if (m_currentTool == ToolbarButton::Eraser) {
                 // Use eraser's dynamic cursor that shows its size
@@ -1917,6 +1926,18 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
             default: handled = false; break;
             }
             if (handled) {
+                // Clamp to screen bounds
+                QRect bounds = m_selectionManager->bounds();
+                if (!bounds.isEmpty()) {
+                    if (newRect.left() < bounds.left())
+                        newRect.moveLeft(bounds.left());
+                    if (newRect.top() < bounds.top())
+                        newRect.moveTop(bounds.top());
+                    if (newRect.right() > bounds.right())
+                        newRect.moveRight(bounds.right());
+                    if (newRect.bottom() > bounds.bottom())
+                        newRect.moveBottom(bounds.bottom());
+                }
                 m_selectionManager->setSelectionRect(newRect);
                 update();
             }
