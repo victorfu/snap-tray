@@ -310,9 +310,9 @@ QColor MagnifierPanel::calculateAdaptiveBorderColor(const QImage& backgroundImag
         }
     }
     
-    // Calculate average luminance (range: 0-255, where 255 = white)
-    // Luminance formula: 0.299*R + 0.587*G + 0.114*B
-    // Using integer coefficients: (299*R + 587*G + 114*B) / 1000
+    // Calculate average luminance
+    // Each pixel's luminance is 0-255000 (before division)
+    // After averaging and dividing by 1000, final range is 0-255 (where 255 = white)
     int avgLuminance = sampleCount > 0 ? static_cast<int>(totalLuminance / sampleCount / 1000) : 128;
     
     // Use a threshold to determine if background is light or dark
