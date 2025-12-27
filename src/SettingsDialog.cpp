@@ -1,7 +1,6 @@
 #include "SettingsDialog.h"
 #include "AutoLaunchManager.h"
 #include "WatermarkRenderer.h"
-#include "FFmpegEncoder.h"
 #include "capture/IAudioCaptureEngine.h"
 
 #include <QKeySequenceEdit>
@@ -51,10 +50,7 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     , m_recordingQualitySlider(nullptr)
     , m_recordingQualityLabel(nullptr)
     , m_gifSettingsWidget(nullptr)
-    , m_gifWarningLabel(nullptr)
-    , m_ffmpegPathEdit(nullptr)
-    , m_ffmpegBrowseBtn(nullptr)
-    , m_ffmpegStatusLabel(nullptr)
+    , m_gifInfoLabel(nullptr)
 {
     setWindowTitle("SnapTray Settings");
     setMinimumSize(520, 480);
@@ -364,8 +360,8 @@ void SettingsDialog::setupRecordingTab(QWidget *tab)
     QLabel *formatLabel = new QLabel("Output Format:", tab);
     formatLabel->setFixedWidth(120);
     m_recordingOutputFormatCombo = new QComboBox(tab);
-    m_recordingOutputFormatCombo->addItem("MP4 (H.264) - No dependencies", 0);
-    m_recordingOutputFormatCombo->addItem("GIF (Requires FFmpeg)", 1);
+    m_recordingOutputFormatCombo->addItem("MP4 (H.264)", 0);
+    m_recordingOutputFormatCombo->addItem("GIF", 1);
     formatLayout->addWidget(formatLabel);
     formatLayout->addWidget(m_recordingOutputFormatCombo);
     formatLayout->addStretch();
@@ -406,41 +402,18 @@ void SettingsDialog::setupRecordingTab(QWidget *tab)
     QVBoxLayout *gifLayout = new QVBoxLayout(m_gifSettingsWidget);
     gifLayout->setContentsMargins(0, 8, 0, 0);
 
-    // Warning label
-    m_gifWarningLabel = new QLabel(m_gifSettingsWidget);
-    m_gifWarningLabel->setWordWrap(true);
-    gifLayout->addWidget(m_gifWarningLabel);
-
-    // FFmpeg path row
-    QHBoxLayout *ffmpegPathLayout = new QHBoxLayout();
-    QLabel *ffmpegPathLabel = new QLabel("FFmpeg Path:", m_gifSettingsWidget);
-    ffmpegPathLabel->setFixedWidth(120);
-    m_ffmpegPathEdit = new QLineEdit(m_gifSettingsWidget);
-    m_ffmpegPathEdit->setPlaceholderText("Leave empty for auto-detection");
-    m_ffmpegBrowseBtn = new QPushButton("Browse...", m_gifSettingsWidget);
-    m_ffmpegBrowseBtn->setFixedWidth(80);
-    ffmpegPathLayout->addWidget(ffmpegPathLabel);
-    ffmpegPathLayout->addWidget(m_ffmpegPathEdit);
-    ffmpegPathLayout->addWidget(m_ffmpegBrowseBtn);
-    gifLayout->addLayout(ffmpegPathLayout);
-
-    // FFmpeg status
-    m_ffmpegStatusLabel = new QLabel(m_gifSettingsWidget);
-    gifLayout->addWidget(m_ffmpegStatusLabel);
-
-    // Connect signals AFTER all UI elements are created
-    connect(m_ffmpegBrowseBtn, &QPushButton::clicked, this, [this]() {
-        QString filter = "FFmpeg Executable (ffmpeg.exe ffmpeg);;All Files (*)";
-#ifdef Q_OS_WIN
-        filter = "FFmpeg Executable (ffmpeg.exe);;All Files (*)";
-#endif
-        QString path = QFileDialog::getOpenFileName(this, "Select FFmpeg Executable", QString(), filter);
-        if (!path.isEmpty()) {
-            m_ffmpegPathEdit->setText(path);
-            updateFFmpegStatus();
-        }
-    });
-    connect(m_ffmpegPathEdit, &QLineEdit::textChanged, this, &SettingsDialog::updateFFmpegStatus);
+    // Info label
+    m_gifInfoLabel = new QLabel(
+        "GIF format creates larger files than MP4.\n"
+        "Best for short clips and sharing on web.\n"
+        "Audio is not supported for GIF recordings.",
+        m_gifSettingsWidget);
+    m_gifInfoLabel->setWordWrap(true);
+    m_gifInfoLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
+    m_gifInfoLabel->setStyleSheet(
+        "QLabel { background-color: #e3f2fd; color: #1565c0; "
+        "padding: 10px; border-radius: 4px; }");
+    gifLayout->addWidget(m_gifInfoLabel);
 
     layout->addWidget(m_gifSettingsWidget);
 
@@ -556,19 +529,6 @@ void SettingsDialog::setupRecordingTab(QWidget *tab)
     // Populate audio devices (will be updated when audio engine is available)
     populateAudioDevices();
 
-    // Load FFmpeg path: use saved path, or auto-detect if not saved
-    QString savedFfmpegPath = settings.value("recording/ffmpegPath").toString();
-    if (savedFfmpegPath.isEmpty()) {
-        // Auto-detect and display (but don't save yet)
-        QString autoDetected = FFmpegEncoder::ffmpegPath();
-        if (autoDetected != "ffmpeg" && QFile::exists(autoDetected)) {
-            m_ffmpegPathEdit->setText(autoDetected);
-        }
-    } else {
-        m_ffmpegPathEdit->setText(savedFfmpegPath);
-    }
-
-    updateFFmpegStatus();
     onOutputFormatChanged(outputFormat);  // Initial visibility
 }
 
@@ -578,10 +538,6 @@ void SettingsDialog::onOutputFormatChanged(int index)
 
     m_mp4SettingsWidget->setVisible(!isGif);
     m_gifSettingsWidget->setVisible(isGif);
-
-    if (isGif) {
-        updateFFmpegStatus();
-    }
 }
 
 void SettingsDialog::updateHotkeyStatus(QLabel *statusLabel, bool isRegistered)
@@ -694,8 +650,6 @@ void SettingsDialog::onSave()
     recordingSettings.setValue("recording/crf", crf);
     recordingSettings.setValue("recording/autoSave",
         m_recordingAutoSaveCheckbox->isChecked());
-    recordingSettings.setValue("recording/ffmpegPath",
-        m_ffmpegPathEdit->text());
 
     // Save audio settings
     recordingSettings.setValue("recording/audioEnabled",
@@ -772,42 +726,6 @@ void SettingsDialog::updateWatermarkImagePreview()
     int scaledHeight = m_watermarkOriginalSize.height() * scale / 100;
     m_watermarkImageSizeLabel->setText(
         QString("Size: %1 × %2 px").arg(scaledWidth).arg(scaledHeight));
-}
-
-void SettingsDialog::updateFFmpegStatus()
-{
-    QString customPath = m_ffmpegPathEdit->text().trimmed();
-
-    // Validate FFmpeg without saving to settings (only save on Save button click)
-    bool available = false;
-
-    if (!customPath.isEmpty() && QFile::exists(customPath)) {
-        // Validate if it's a working FFmpeg executable
-        QProcess probe;
-        probe.start(customPath, {"-version"});
-        available = probe.waitForFinished(3000) && probe.exitCode() == 0;
-    } else if (customPath.isEmpty()) {
-        // When path is empty, check if system has FFmpeg available
-        available = FFmpegEncoder::isFFmpegAvailable();
-    }
-
-    if (available) {
-        m_ffmpegStatusLabel->setText("FFmpeg: Detected");
-        m_ffmpegStatusLabel->setStyleSheet("color: green;");
-        m_gifWarningLabel->setText("GIF format is enabled. Files will be larger than MP4 with lower quality.");
-        m_gifWarningLabel->setStyleSheet(
-            "QLabel { background-color: #d4edda; color: #155724; "
-            "padding: 8px; border-radius: 4px; }");
-    } else {
-        m_ffmpegStatusLabel->setText("FFmpeg: Not found");
-        m_ffmpegStatusLabel->setStyleSheet("color: red;");
-        m_gifWarningLabel->setText(
-            "FFmpeg is required for GIF recording.\n"
-            "Please install FFmpeg and ensure it's in your PATH, or specify the path below.");
-        m_gifWarningLabel->setStyleSheet(
-            "QLabel { background-color: #fff3cd; color: #856404; "
-            "padding: 8px; border-radius: 4px; }");
-    }
 }
 
 void SettingsDialog::populateAudioDevices()

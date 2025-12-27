@@ -91,12 +91,9 @@ private:
     QSlider *m_recordingQualitySlider;
     QLabel *m_recordingQualityLabel;
 
-    // GIF settings (FFmpeg)
+    // GIF settings
     QWidget *m_gifSettingsWidget;
-    QLabel *m_gifWarningLabel;
-    QLineEdit *m_ffmpegPathEdit;
-    QPushButton *m_ffmpegBrowseBtn;
-    QLabel *m_ffmpegStatusLabel;
+    QLabel *m_gifInfoLabel;
 
     // Audio settings
     QCheckBox *m_audioEnabledCheckbox;
@@ -108,7 +105,6 @@ private:
     void updateWatermarkImagePreview();
 
     // Recording UI helper methods
-    void updateFFmpegStatus();
     void onOutputFormatChanged(int index);
     void populateAudioDevices();
     void onAudioSourceChanged(int index);

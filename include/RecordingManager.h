@@ -13,7 +13,7 @@ class RecordingRegionSelector;
 class RecordingControlBar;
 class RecordingBoundaryOverlay;
 class RecordingInitTask;
-class FFmpegEncoder;
+class NativeGifEncoder;
 class IVideoEncoder;
 class ICaptureEngine;
 class IAudioCaptureEngine;
@@ -34,7 +34,7 @@ public:
         Preparing,  // Initializing capture/encoder (async)
         Recording,  // Actively capturing frames
         Paused,     // Recording paused
-        Encoding    // FFmpeg encoding after stop
+        Encoding    // Encoding after stop
     };
     Q_ENUM(State)
 
@@ -100,7 +100,7 @@ private:
     // Recording state
     QPointer<RecordingControlBar> m_controlBar;
     QPointer<RecordingBoundaryOverlay> m_boundaryOverlay;
-    FFmpegEncoder *m_encoder;           // Used for GIF and as fallback for MP4
+    NativeGifEncoder *m_gifEncoder;     // Used for GIF format
     IVideoEncoder *m_nativeEncoder;     // Native platform encoder for MP4
     bool m_usingNativeEncoder;          // True if using native encoder
     ICaptureEngine *m_captureEngine;

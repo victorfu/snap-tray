@@ -39,7 +39,7 @@ SnapTray is a lightweight tray utility for region screenshots, on-screen annotat
   - Start from capture toolbar (`Record` or `R`)
   - Adjustable region with Start/Cancel
   - Floating control bar with Pause/Resume/Stop/Cancel
-  - MP4 (H.264) via native encoder (Media Foundation/AVFoundation) with FFmpeg fallback; GIF via FFmpeg
+  - MP4 (H.264) via native encoder (Media Foundation/AVFoundation); GIF via built-in encoder
   - Optional audio capture (microphone/system audio/both; platform dependent)
 - **Pin Windows**:
   - Borderless, always on top
@@ -54,7 +54,7 @@ SnapTray is a lightweight tray utility for region screenshots, on-screen annotat
   - General tab: Launch at startup
   - Hotkeys tab: Separate hotkeys for Region Capture and Screen Canvas
   - Watermark tab: Text/Image watermark, opacity, position, and scale
-  - Recording tab: Frame rate, output format, save location, auto-save, FFmpeg status, audio (enable/source/device)
+  - Recording tab: Frame rate, output format, save location, auto-save, audio (enable/source/device)
   - Settings stored via QSettings
 
 ## Tech Stack
@@ -62,7 +62,7 @@ SnapTray is a lightweight tray utility for region screenshots, on-screen annotat
 - **Language**: C++17
 - **Framework**: Qt 6 (Widgets/Gui/Svg)
 - **Build System**: CMake 3.16+
-- **Dependencies**: [QHotkey](https://github.com/Skycoder42/QHotkey) (auto-fetched via FetchContent), FFmpeg (external, for recording)
+- **Dependencies**: [QHotkey](https://github.com/Skycoder42/QHotkey) (auto-fetched via FetchContent)
 - **macOS Frameworks**:
   - CoreGraphics / ApplicationServices (window detection)
   - AppKit (system integration)
@@ -87,7 +87,6 @@ SnapTray currently supports macOS and Windows only.
 - Xcode Command Line Tools
 - CMake 3.16+
 - Git (for FetchContent to fetch QHotkey)
-- FFmpeg (required for GIF recording; used as MP4 fallback if native encoder is unavailable)
 
 ### Windows
 - Windows 10+
@@ -95,7 +94,6 @@ SnapTray currently supports macOS and Windows only.
 - Visual Studio 2019+ or MinGW
 - CMake 3.16+
 - Git (for FetchContent to fetch QHotkey)
-- FFmpeg (required for GIF recording; used as MP4 fallback if native encoder is unavailable; ensure `ffmpeg.exe` is in PATH or `C:\ffmpeg\bin`)
 
 ## Build & Run
 
@@ -257,13 +255,6 @@ packaging\windows\package.bat
 
 ## Troubleshooting
 
-### Recording: FFmpeg not found
-
-If you see errors like:
-- "FFmpeg not found. Please install FFmpeg to use screen recording."
-
-**Solution:** Install FFmpeg and make sure it is on your PATH (or in a common location like `/opt/homebrew/bin/ffmpeg` on macOS, or `C:\ffmpeg\bin\ffmpeg.exe` on Windows). GIF recording always requires FFmpeg; MP4 uses native encoders when available.
-
 ### Windows: Application fails to start or shows missing DLL errors
 
 If you see errors like:
@@ -303,7 +294,9 @@ snap-tray/
 |   |-- PinWindow.h
 |   |-- RecordingManager.h
 |   |-- WatermarkRenderer.h
-|   |-- FFmpegEncoder.h
+|   |-- encoding/
+|   |   |-- EncoderFactory.h
+|   |   `-- NativeGifEncoder.h
 |   |-- ...
 |   `-- capture/
 |       |-- ICaptureEngine.h
@@ -320,7 +313,9 @@ snap-tray/
 |   |-- PinWindow.cpp
 |   |-- RecordingManager.cpp
 |   |-- WatermarkRenderer.cpp
-|   |-- FFmpegEncoder.cpp
+|   |-- encoding/
+|   |   |-- EncoderFactory.cpp
+|   |   `-- NativeGifEncoder.cpp
 |   |-- ...
 |   |-- capture/
 |   |   |-- ICaptureEngine.cpp

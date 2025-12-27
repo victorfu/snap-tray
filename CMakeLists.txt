@@ -90,9 +90,9 @@ set(SOURCES
     src/RecordingControlBar.cpp
     src/RecordingBoundaryOverlay.cpp
     src/RecordingInitTask.cpp
-    src/FFmpegEncoder.cpp
     src/VideoEncoderFactory.cpp
     src/encoding/EncoderFactory.cpp
+    src/encoding/NativeGifEncoder.cpp
     src/TransformationGizmo.cpp
     # Tool system
     src/tools/ToolRegistry.cpp
@@ -170,11 +170,11 @@ set(HEADERS
     include/RecordingControlBar.h
     include/RecordingBoundaryOverlay.h
     include/RecordingInitTask.h
-    include/FFmpegEncoder.h
     include/IVideoEncoder.h
     include/AVFoundationEncoder.h
     include/MediaFoundationEncoder.h
     include/encoding/EncoderFactory.h
+    include/encoding/NativeGifEncoder.h
     include/TransformationGizmo.h
     include/capture/ICaptureEngine.h
     include/capture/QtCaptureEngine.h

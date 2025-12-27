@@ -6,15 +6,14 @@
 #include <QString>
 
 class IVideoEncoder;
-class FFmpegEncoder;
+class NativeGifEncoder;
 
 /**
  * @brief Factory class for creating video encoders
  *
  * Encapsulates the encoder selection logic, handling:
- * - Native vs FFmpeg encoder selection
- * - MP4 vs GIF format requirements
- * - Priority-based fallback strategies
+ * - Native MP4 encoder (platform-specific)
+ * - Native GIF encoder (msf_gif)
  */
 class EncoderFactory {
 public:
@@ -22,18 +21,16 @@ public:
      * @brief Output format enumeration
      */
     enum class Format {
-        MP4,    // H.264 encoded MP4
-        GIF     // Palette-optimized GIF (FFmpeg only)
+        MP4,    // H.264 encoded MP4 (native encoder)
+        GIF     // Palette-optimized GIF (msf_gif)
     };
 
     /**
      * @brief Encoder selection priority
      */
     enum class Priority {
-        NativeFirst,   // Try native encoder first, fallback to FFmpeg
-        FFmpegFirst,   // Try FFmpeg first, fallback to native
-        NativeOnly,    // Only use native encoder
-        FFmpegOnly     // Only use FFmpeg
+        NativeFirst,   // Try native encoder first (default)
+        NativeOnly     // Only use native encoder
     };
 
     /**
@@ -49,11 +46,10 @@ public:
         // Native encoder settings
         int quality = 55;  // 0-100 (higher = better quality, larger file)
 
-        // FFmpeg specific settings
-        QString preset = "ultrafast";
-        int crf = 23;  // 0-51 (lower = better quality)
+        // GIF settings (msf_gif)
+        int gifBitDepth = 16;  // 1-16, higher = better colors but larger file
 
-        // Audio settings (for native encoder)
+        // Audio settings (for native MP4 encoder only)
         bool enableAudio = false;
         int audioSampleRate = 48000;
         int audioChannels = 2;
@@ -65,7 +61,7 @@ public:
      */
     struct EncoderResult {
         IVideoEncoder* nativeEncoder = nullptr;
-        FFmpegEncoder* ffmpegEncoder = nullptr;
+        NativeGifEncoder* gifEncoder = nullptr;
         bool success = false;
         bool isNative = false;
         QString errorMessage;
@@ -74,7 +70,7 @@ public:
          * @brief Check if any encoder was created
          */
         bool hasEncoder() const {
-            return nativeEncoder != nullptr || ffmpegEncoder != nullptr;
+            return nativeEncoder != nullptr || gifEncoder != nullptr;
         }
     };
 
@@ -94,11 +90,6 @@ public:
      */
     static bool isNativeEncoderAvailable();
 
-    /**
-     * @brief Check if FFmpeg is available
-     */
-    static bool isFFmpegAvailable();
-
 private:
     /**
      * @brief Try to create and start a native encoder
@@ -108,10 +99,10 @@ private:
         const EncoderConfig& config, QObject* parent);
 
     /**
-     * @brief Try to create and start an FFmpeg encoder
+     * @brief Try to create and start a GIF encoder
      * @return Encoder pointer or nullptr if failed
      */
-    static FFmpegEncoder* tryCreateFFmpegEncoder(
+    static NativeGifEncoder* tryCreateGifEncoder(
         const EncoderConfig& config, QObject* parent);
 };
 

@@ -10,7 +10,7 @@
 class QScreen;
 class ICaptureEngine;
 class IVideoEncoder;
-class FFmpegEncoder;
+class NativeGifEncoder;
 class IAudioCaptureEngine;
 class AudioFileWriter;
 
@@ -43,8 +43,6 @@ public:
         bool useGif = false;
         QSize frameSize;
         int quality = 55;
-        QString preset = "ultrafast";
-        int crf = 23;
     };
 
     /**
@@ -57,7 +55,7 @@ public:
         // Created components (ownership transfers to caller on success)
         ICaptureEngine *captureEngine = nullptr;
         IVideoEncoder *nativeEncoder = nullptr;
-        FFmpegEncoder *ffmpegEncoder = nullptr;
+        NativeGifEncoder *gifEncoder = nullptr;
         IAudioCaptureEngine *audioEngine = nullptr;
         AudioFileWriter *audioWriter = nullptr;
 

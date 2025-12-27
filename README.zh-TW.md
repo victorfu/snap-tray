@@ -39,7 +39,7 @@ SnapTray 是一個在系統托盤常駐的截圖與錄影小工具，提供區�
   - 從截圖工具列啟動（`Record` 或 `R`）
   - 可調整錄影區域，Start/Cancel 開始或取消
   - 浮動控制列：Pause/Resume/Stop/Cancel
-  - MP4 (H.264) 由原生編碼器（Media Foundation/AVFoundation）產生，FFmpeg 作為 fallback；GIF 需 FFmpeg
+  - MP4 (H.264) 由原生編碼器（Media Foundation/AVFoundation）產生；GIF 由內建編碼器產生
   - 可選音訊錄製（麥克風/系統音/混合，視平台支援）
 - **釘選視窗**：
   - 無邊框、永遠在最上層
@@ -54,7 +54,7 @@ SnapTray 是一個在系統托盤常駐的截圖與錄影小工具，提供區�
   - General 分頁：開機自動啟動
   - Hotkeys 分頁：區域截圖與螢幕畫布分別設定熱鍵
   - Watermark 分頁：文字/圖片浮水印、透明度、位置、縮放
-  - Recording 分頁：幀率、輸出格式、儲存位置、自動儲存、FFmpeg 狀態、音訊（啟用/來源/裝置）
+  - Recording 分頁：幀率、輸出格式、儲存位置、自動儲存、音訊（啟用/來源/裝置）
   - 設定儲存於系統設定 (QSettings)
 
 ## 技術棧
@@ -62,7 +62,7 @@ SnapTray 是一個在系統托盤常駐的截圖與錄影小工具，提供區�
 - **語言**: C++17
 - **框架**: Qt 6（Widgets/Gui/Svg）
 - **建置系統**: CMake 3.16+
-- **相依套件**: [QHotkey](https://github.com/Skycoder42/QHotkey)（FetchContent 自動取得）、FFmpeg（外部依賴，用於錄影）
+- **相依套件**: [QHotkey](https://github.com/Skycoder42/QHotkey)（FetchContent 自動取得）
 - **macOS 原生框架**:
   - CoreGraphics / ApplicationServices（視窗偵測）
   - AppKit（系統整合）
@@ -87,7 +87,6 @@ SnapTray 是一個在系統托盤常駐的截圖與錄影小工具，提供區�
 - Xcode Command Line Tools
 - CMake 3.16+
 - Git（用於 FetchContent 取得 QHotkey）
-- FFmpeg（GIF 錄影必需；原生 MP4 不可用時作為 fallback）
 
 ### Windows
 - Windows 10+
@@ -95,7 +94,6 @@ SnapTray 是一個在系統托盤常駐的截圖與錄影小工具，提供區�
 - Visual Studio 2019+ 或 MinGW
 - CMake 3.16+
 - Git（用於 FetchContent 取得 QHotkey）
-- FFmpeg（GIF 錄影必需；原生 MP4 不可用時作為 fallback，請確保 `ffmpeg.exe` 在 PATH 或 `C:\ffmpeg\bin`）
 
 ## 建置與執行
 
@@ -257,13 +255,6 @@ packaging\windows\package.bat
 
 ## 疑難排解
 
-### 錄影：找不到 FFmpeg
-
-如果你看到類似以下錯誤：
-- "FFmpeg not found. Please install FFmpeg to use screen recording."
-
-**解決方法：** 安裝 FFmpeg 並確保在 PATH 中（或放在 macOS 的 `/opt/homebrew/bin/ffmpeg`、Windows 的 `C:\ffmpeg\bin\ffmpeg.exe`）。GIF 錄影一定需要 FFmpeg；MP4 在可用時會使用原生編碼器。
-
 ### Windows：應用程式無法啟動或顯示缺少 DLL 錯誤
 
 如果你看到類似以下錯誤：
@@ -303,7 +294,9 @@ snap-tray/
 |   |-- PinWindow.h
 |   |-- RecordingManager.h
 |   |-- WatermarkRenderer.h
-|   |-- FFmpegEncoder.h
+|   |-- encoding/
+|   |   |-- EncoderFactory.h
+|   |   `-- NativeGifEncoder.h
 |   |-- ...
 |   `-- capture/
 |       |-- ICaptureEngine.h
@@ -320,7 +313,9 @@ snap-tray/
 |   |-- PinWindow.cpp
 |   |-- RecordingManager.cpp
 |   |-- WatermarkRenderer.cpp
-|   |-- FFmpegEncoder.cpp
+|   |-- encoding/
+|   |   |-- EncoderFactory.cpp
+|   |   `-- NativeGifEncoder.cpp
 |   |-- ...
 |   |-- capture/
 |   |   |-- ICaptureEngine.cpp

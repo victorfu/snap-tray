@@ -3,7 +3,7 @@
 #include "RecordingControlBar.h"
 #include "RecordingBoundaryOverlay.h"
 #include "RecordingInitTask.h"
-#include "FFmpegEncoder.h"
+#include "encoding/NativeGifEncoder.h"
 #include "IVideoEncoder.h"
 #include "encoding/EncoderFactory.h"
 #include "capture/ICaptureEngine.h"
@@ -67,7 +67,7 @@ static void syncFile(const QString &path)
 
 RecordingManager::RecordingManager(QObject *parent)
     : QObject(parent)
-    , m_encoder(nullptr)
+    , m_gifEncoder(nullptr)
     , m_nativeEncoder(nullptr)
     , m_usingNativeEncoder(false)
     , m_captureEngine(nullptr)
@@ -294,11 +294,11 @@ void RecordingManager::startFrameCapture()
     qDebug() << "RecordingManager::startFrameCapture() - BEGIN";
 
     // Safety check: clean up any existing encoders
-    if (m_encoder) {
-        qWarning() << "RecordingManager: Previous FFmpeg encoder still exists, cleaning up";
-        disconnect(m_encoder, nullptr, this, nullptr);
-        m_encoder->deleteLater();
-        m_encoder = nullptr;
+    if (m_gifEncoder) {
+        qWarning() << "RecordingManager: Previous GIF encoder still exists, cleaning up";
+        disconnect(m_gifEncoder, nullptr, this, nullptr);
+        m_gifEncoder->deleteLater();
+        m_gifEncoder = nullptr;
     }
     if (m_nativeEncoder) {
         qWarning() << "RecordingManager: Previous native encoder still exists, cleaning up";
@@ -382,8 +382,6 @@ void RecordingManager::beginAsyncInitialization()
     config.useGif = useGif;
     config.frameSize = physicalSize;
     config.quality = settings.value("recording/quality", 55).toInt();
-    config.preset = settings.value("recording/preset", "ultrafast").toString();
-    config.crf = settings.value("recording/crf", 23).toInt();
 
     qDebug() << "RecordingManager: Config - region:" << config.region
              << "frameSize:" << config.frameSize
@@ -456,10 +454,9 @@ void RecordingManager::onInitializationComplete()
 
     qDebug() << "RecordingManager: Initialization successful, taking ownership of resources";
 
-    // Take ownership of created resources (move to main thread and set parent)
+    // Take ownership of created resources (already moved to main thread in worker)
     m_captureEngine = result.captureEngine;
     if (m_captureEngine) {
-        m_captureEngine->moveToThread(thread());
         m_captureEngine->setParent(this);
 
         // Forward capture engine warnings to UI
@@ -479,22 +476,20 @@ void RecordingManager::onInitializationComplete()
 
     m_usingNativeEncoder = result.usingNativeEncoder;
     m_nativeEncoder = result.nativeEncoder;
-    m_encoder = result.ffmpegEncoder;
+    m_gifEncoder = result.gifEncoder;
 
     if (m_nativeEncoder) {
-        m_nativeEncoder->moveToThread(thread());
         m_nativeEncoder->setParent(this);
         connect(m_nativeEncoder, &IVideoEncoder::finished,
                 this, &RecordingManager::onEncodingFinished);
         connect(m_nativeEncoder, &IVideoEncoder::error,
                 this, &RecordingManager::onEncodingError);
     }
-    if (m_encoder) {
-        m_encoder->moveToThread(thread());
-        m_encoder->setParent(this);
-        connect(m_encoder, &FFmpegEncoder::finished,
+    if (m_gifEncoder) {
+        m_gifEncoder->setParent(this);
+        connect(m_gifEncoder, &NativeGifEncoder::finished,
                 this, &RecordingManager::onEncodingFinished);
-        connect(m_encoder, &FFmpegEncoder::error,
+        connect(m_gifEncoder, &NativeGifEncoder::error,
                 this, &RecordingManager::onEncodingError);
     }
 
@@ -546,50 +541,19 @@ void RecordingManager::onInitializationComplete()
                 }
             }, Qt::QueuedConnection);
             qDebug() << "RecordingManager: Audio connected to native encoder";
-        } else {
-            // Fallback: Use WAV file + FFmpeg muxing
-            // Create audio file writer on main thread
-            QString tempDir = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
-            QString timestamp = QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss");
-            QString uuid = QUuid::createUuid().toString(QUuid::Id128).left(8);
-            m_tempAudioPath = QString("%1/SnapTray_Audio_%2_%3.wav")
-                .arg(tempDir).arg(timestamp).arg(uuid);
-
-            m_audioWriter = new AudioFileWriter(this);
-            AudioFileWriter::AudioFormat audioFormat;
-            audioFormat.sampleRate = m_audioEngine->audioFormat().sampleRate;
-            audioFormat.channels = m_audioEngine->audioFormat().channels;
-            audioFormat.bitsPerSample = m_audioEngine->audioFormat().bitsPerSample;
-
-            if (m_audioWriter->start(m_tempAudioPath, audioFormat)) {
-                // Connect audio data signal to writer
-                connect(m_audioEngine, &IAudioCaptureEngine::audioDataReady,
-                        this, [this](const QByteArray &data, qint64 /*timestamp*/) {
-                    if (m_audioWriter) {
-                        m_audioWriter->writeAudioData(data);
-                    }
-                }, Qt::QueuedConnection);
-
-                // Set audio file path on FFmpeg encoder for muxing
-                if (m_encoder) {
-                    m_encoder->setAudioFilePath(m_tempAudioPath);
-                }
-                qDebug() << "RecordingManager: Using WAV file for audio (FFmpeg muxing)";
+            // Start audio capture
+            if (m_audioEngine->start()) {
+                qDebug() << "RecordingManager: Audio capture started using" << m_audioEngine->engineName();
             } else {
-                qWarning() << "RecordingManager: Failed to create audio file writer";
-                emit recordingWarning("Failed to create audio file. Recording without audio.");
-                delete m_audioWriter;
-                m_audioWriter = nullptr;
-                m_tempAudioPath.clear();
+                qWarning() << "RecordingManager: Failed to start audio capture";
+                emit recordingWarning("Failed to start audio capture. Recording without audio.");
+                cleanupAudio();
             }
-        }
-
-        // Start audio capture
-        if (m_audioEngine->start()) {
-            qDebug() << "RecordingManager: Audio capture started using" << m_audioEngine->engineName();
         } else {
-            qWarning() << "RecordingManager: Failed to start audio capture";
-            emit recordingWarning("Failed to start audio capture. Recording without audio.");
+            // GIF format does not support audio - this shouldn't happen as
+            // audio is disabled for GIF in beginAsyncInitialization()
+            qWarning() << "RecordingManager: Audio not supported for current format";
+            emit recordingWarning("Audio is not supported for GIF format.");
             cleanupAudio();
         }
     }
@@ -673,7 +637,7 @@ void RecordingManager::captureFrame()
     }
 
     // Check that we have an encoder available
-    if (!m_usingNativeEncoder && !m_encoder) {
+    if (!m_usingNativeEncoder && !m_gifEncoder) {
         return;
     }
     if (m_usingNativeEncoder && !m_nativeEncoder) {
@@ -698,8 +662,8 @@ void RecordingManager::captureFrame()
         // Pass QImage to the appropriate encoder with elapsed timestamp
         if (m_usingNativeEncoder && m_nativeEncoder) {
             m_nativeEncoder->writeFrame(frame, elapsedMs);
-        } else if (m_encoder) {
-            m_encoder->writeFrame(frame);  // FFmpeg encoder uses frame count internally
+        } else if (m_gifEncoder) {
+            m_gifEncoder->writeFrame(frame, elapsedMs);
         }
         m_frameCount++;
     }
@@ -818,8 +782,8 @@ void RecordingManager::stopRecording()
     // Finish encoding
     if (m_usingNativeEncoder && m_nativeEncoder) {
         m_nativeEncoder->finish();
-    } else if (m_encoder) {
-        m_encoder->finish();
+    } else if (m_gifEncoder) {
+        m_gifEncoder->finish();
     }
 }
 
@@ -848,10 +812,10 @@ void RecordingManager::cancelRecording()
         m_nativeEncoder->deleteLater();
         m_nativeEncoder = nullptr;
     }
-    if (m_encoder) {
-        m_encoder->abort();
-        m_encoder->deleteLater();
-        m_encoder = nullptr;
+    if (m_gifEncoder) {
+        m_gifEncoder->abort();
+        m_gifEncoder->deleteLater();
+        m_gifEncoder = nullptr;
     }
     m_usingNativeEncoder = false;
 
@@ -923,10 +887,10 @@ void RecordingManager::cleanupRecording()
         delete m_nativeEncoder;
         m_nativeEncoder = nullptr;
     }
-    if (m_encoder) {
-        m_encoder->abort();
-        delete m_encoder;
-        m_encoder = nullptr;
+    if (m_gifEncoder) {
+        m_gifEncoder->abort();
+        delete m_gifEncoder;
+        m_gifEncoder = nullptr;
     }
     m_usingNativeEncoder = false;
 
@@ -955,8 +919,8 @@ void RecordingManager::onEncodingFinished(bool success, const QString &outputPat
     if (!success) {
         if (m_usingNativeEncoder && m_nativeEncoder) {
             errorMsg = m_nativeEncoder->lastError();
-        } else if (m_encoder) {
-            errorMsg = m_encoder->lastError();
+        } else if (m_gifEncoder) {
+            errorMsg = m_gifEncoder->lastError();
         }
         if (errorMsg.isEmpty()) {
             errorMsg = "Failed to encode video";
@@ -968,9 +932,9 @@ void RecordingManager::onEncodingFinished(bool success, const QString &outputPat
         m_nativeEncoder->deleteLater();
         m_nativeEncoder = nullptr;
     }
-    if (m_encoder) {
-        m_encoder->deleteLater();
-        m_encoder = nullptr;
+    if (m_gifEncoder) {
+        m_gifEncoder->deleteLater();
+        m_gifEncoder = nullptr;
     }
     m_usingNativeEncoder = false;
 
@@ -1111,12 +1075,12 @@ void RecordingManager::onEncodingError(const QString &error)
         m_nativeEncoder->deleteLater();
         m_nativeEncoder = nullptr;
     }
-    if (m_encoder) {
+    if (m_gifEncoder) {
         if (outputPath.isEmpty()) {
-            outputPath = m_encoder->outputPath();
+            outputPath = m_gifEncoder->outputPath();
         }
-        m_encoder->deleteLater();
-        m_encoder = nullptr;
+        m_gifEncoder->deleteLater();
+        m_gifEncoder = nullptr;
     }
     m_usingNativeEncoder = false;
 
@@ -1141,8 +1105,7 @@ QString RecordingManager::generateOutputPath() const
     // Get output format from settings
     QSettings settings("Victor Fu", "SnapTray");
     int formatInt = settings.value("recording/outputFormat", 0).toInt();
-    FFmpegEncoder::OutputFormat format = static_cast<FFmpegEncoder::OutputFormat>(formatInt);
-    QString extension = (format == FFmpegEncoder::OutputFormat::GIF) ? "gif" : "mp4";
+    QString extension = (formatInt == 1) ? "gif" : "mp4";
 
     // Generate filename with timestamp + UUID for guaranteed uniqueness
     // This prevents file collisions when a new recording starts while save dialog is open

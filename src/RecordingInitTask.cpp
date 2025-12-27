@@ -2,7 +2,7 @@
 #include "capture/ICaptureEngine.h"
 #include "capture/IAudioCaptureEngine.h"
 #include "IVideoEncoder.h"
-#include "FFmpegEncoder.h"
+#include "encoding/NativeGifEncoder.h"
 #include "AudioFileWriter.h"
 #include "encoding/EncoderFactory.h"
 
@@ -12,6 +12,7 @@
 #include <QStandardPaths>
 #include <QDir>
 #include <QUuid>
+#include <QCoreApplication>
 
 void RecordingInitTask::Result::cleanup()
 {
@@ -25,10 +26,10 @@ void RecordingInitTask::Result::cleanup()
         delete nativeEncoder;
         nativeEncoder = nullptr;
     }
-    if (ffmpegEncoder) {
-        ffmpegEncoder->abort();
-        delete ffmpegEncoder;
-        ffmpegEncoder = nullptr;
+    if (gifEncoder) {
+        gifEncoder->abort();
+        delete gifEncoder;
+        gifEncoder = nullptr;
     }
     if (audioEngine) {
         audioEngine->stop();
@@ -110,6 +111,19 @@ void RecordingInitTask::run()
         return;
     }
 
+    // Move created QObjects to main thread before signaling completion
+    // This must be done from the worker thread (which currently owns the objects)
+    QThread *mainThread = QCoreApplication::instance()->thread();
+    if (m_result.captureEngine) {
+        m_result.captureEngine->moveToThread(mainThread);
+    }
+    if (m_result.nativeEncoder) {
+        m_result.nativeEncoder->moveToThread(mainThread);
+    }
+    if (m_result.gifEncoder) {
+        m_result.gifEncoder->moveToThread(mainThread);
+    }
+
     emit progress(tr("Ready"));
     m_result.success = true;
     qDebug() << "RecordingInitTask::run() - END (success)";
@@ -169,8 +183,6 @@ bool RecordingInitTask::initializeEncoder()
     encoderConfig.frameRate = m_config.frameRate;
     encoderConfig.outputPath = m_config.outputPath;
     encoderConfig.quality = m_config.quality;
-    encoderConfig.preset = m_config.preset;
-    encoderConfig.crf = m_config.crf;
 
     // Configure audio settings for native encoder using default format
     // (Audio engine is created on main thread, so we use standard defaults here)
@@ -191,7 +203,7 @@ bool RecordingInitTask::initializeEncoder()
 
     m_result.usingNativeEncoder = encoderResult.isNative;
     m_result.nativeEncoder = encoderResult.nativeEncoder;
-    m_result.ffmpegEncoder = encoderResult.ffmpegEncoder;
+    m_result.gifEncoder = encoderResult.gifEncoder;
 
     // Note: Audio writer will be created on main thread if needed
     // (after audio engine is created there)
