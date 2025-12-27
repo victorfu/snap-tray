@@ -16,6 +16,7 @@
 #include "annotations/AnnotationLayer.h"
 #include "annotations/ShapeAnnotation.h"
 #include "annotations/LineStyle.h"
+#include "annotations/StepBadgeAnnotation.h"
 #include "ToolbarWidget.h"
 #include "InlineTextEditor.h"
 #include "WindowDetector.h"
@@ -160,6 +161,9 @@ private:
     bool shouldShowLineWidthWidget() const;
     void onLineWidthChanged(int width);
 
+    // Step Badge size handling
+    void onStepBadgeSizeChanged(StepBadgeSize size);
+
     // Unified color and width widget helpers
     bool shouldShowColorAndWidthWidget() const;
     bool shouldShowWidthControl() const;
@@ -265,6 +269,7 @@ private:
     int m_eraserWidth = 20;  // Separate width for eraser tool (range: 5-100)
     LineEndStyle m_arrowStyle;
     LineStyle m_lineStyle = LineStyle::Solid;
+    StepBadgeSize m_stepBadgeSize = StepBadgeSize::Medium;
 
     // Mosaic cursor cache (avoid recreating on every mouse move)
     QCursor m_mosaicCursorCache;

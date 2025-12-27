@@ -154,6 +154,7 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_annotationWidth = settings.loadWidth();
     m_arrowStyle = loadArrowStyle();
     m_lineStyle = loadLineStyle();
+    m_stepBadgeSize = settings.loadStepBadgeSize();
 
     // Initialize tool manager
     m_toolManager = new ToolManager(this);
@@ -264,6 +265,8 @@ RegionSelector::RegionSelector(QWidget* parent)
             m_shapeFillMode = mode;
             m_toolManager->setShapeFillMode(static_cast<int>(mode));
         });
+    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::stepBadgeSizeChanged,
+        this, &RegionSelector::onStepBadgeSizeChanged);
 
     // Initialize loading spinner for OCR
     m_loadingSpinner = new LoadingSpinnerRenderer(this);
@@ -481,6 +484,15 @@ void RegionSelector::onLineWidthChanged(int width)
     update();
 }
 
+void RegionSelector::onStepBadgeSizeChanged(StepBadgeSize size)
+{
+    m_stepBadgeSize = size;
+    AnnotationSettingsManager::instance().saveStepBadgeSize(size);
+    int radius = StepBadgeAnnotation::radiusForSize(size);
+    m_toolManager->setWidth(radius);
+    update();
+}
+
 bool RegionSelector::shouldShowColorAndWidthWidget() const
 {
     if (!m_selectionManager->isComplete()) return false;
@@ -501,6 +513,9 @@ int RegionSelector::toolWidthForCurrentTool() const
     }
     if (m_currentTool == ToolbarButton::Eraser) {
         return m_eraserWidth;
+    }
+    if (m_currentTool == ToolbarButton::StepBadge) {
+        return StepBadgeAnnotation::radiusForSize(m_stepBadgeSize);
     }
     return m_annotationWidth;
 }
@@ -1052,9 +1067,22 @@ void RegionSelector::handleToolbarClick(ToolbarButton button)
     case ToolbarButton::Marker:
     case ToolbarButton::Shape:
     case ToolbarButton::Text:
+        m_currentTool = button;
+        m_colorAndWidthWidget->setShowSizeSection(false);
+        qDebug() << "Tool selected:" << static_cast<int>(button);
+        update();
+        break;
+
     case ToolbarButton::StepBadge:
         m_currentTool = button;
-        qDebug() << "Tool selected:" << static_cast<int>(button);
+        m_toolManager->setCurrentTool(ToolId::StepBadge);
+        // Show size section, hide width section for step badge
+        m_colorAndWidthWidget->setShowSizeSection(true);
+        m_colorAndWidthWidget->setShowWidthSection(false);
+        m_colorAndWidthWidget->setStepBadgeSize(m_stepBadgeSize);
+        // Set width to radius for tool context
+        m_toolManager->setWidth(StepBadgeAnnotation::radiusForSize(m_stepBadgeSize));
+        qDebug() << "StepBadge tool selected";
         update();
         break;
 
@@ -1062,6 +1090,7 @@ void RegionSelector::handleToolbarClick(ToolbarButton button)
         m_currentTool = button;
         m_toolManager->setCurrentTool(ToolId::Mosaic);
         m_toolManager->setWidth(MosaicToolHandler::kDefaultBrushWidth);
+        m_colorAndWidthWidget->setShowSizeSection(false);
         qDebug() << "Tool selected:" << static_cast<int>(button);
         update();
         break;
@@ -1073,6 +1102,7 @@ void RegionSelector::handleToolbarClick(ToolbarButton button)
         m_colorAndWidthWidget->setWidthRange(5, 100);
         m_colorAndWidthWidget->setCurrentWidth(m_eraserWidth);
         m_toolManager->setWidth(m_eraserWidth);
+        m_colorAndWidthWidget->setShowSizeSection(false);
         qDebug() << "Eraser tool selected - drag over annotations to erase them";
         update();
         break;
@@ -1699,6 +1729,25 @@ void RegionSelector::mouseReleaseEvent(QMouseEvent* event)
 
 void RegionSelector::wheelEvent(QWheelEvent* event)
 {
+    // Handle scroll wheel for StepBadge size adjustment
+    if (m_currentTool == ToolbarButton::StepBadge) {
+        int delta = event->angleDelta().y();
+        if (delta != 0) {
+            // Cycle through sizes: Small -> Medium -> Large -> Small
+            int current = static_cast<int>(m_stepBadgeSize);
+            if (delta > 0) {
+                current = (current + 1) % 3;  // Scroll up = increase size
+            } else {
+                current = (current + 2) % 3;  // Scroll down = decrease size
+            }
+            StepBadgeSize newSize = static_cast<StepBadgeSize>(current);
+            onStepBadgeSizeChanged(newSize);
+            m_colorAndWidthWidget->setStepBadgeSize(newSize);
+            event->accept();
+            return;
+        }
+    }
+
     // Forward wheel events when tools that support width adjustment are active
     if (shouldShowColorAndWidthWidget()) {
         if (m_colorAndWidthWidget->handleWheel(event->angleDelta().y())) {

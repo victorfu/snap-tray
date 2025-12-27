@@ -6,10 +6,24 @@
 // StepBadgeAnnotation Implementation
 // ============================================================================
 
-StepBadgeAnnotation::StepBadgeAnnotation(const QPoint &position, const QColor &color, int number)
+int StepBadgeAnnotation::radiusForSize(StepBadgeSize size)
+{
+    switch (size) {
+    case StepBadgeSize::Small:
+        return kBadgeRadiusSmall;
+    case StepBadgeSize::Large:
+        return kBadgeRadiusLarge;
+    default:
+        return kBadgeRadiusMedium;
+    }
+}
+
+StepBadgeAnnotation::StepBadgeAnnotation(const QPoint &position, const QColor &color,
+                                         int number, int radius)
     : m_position(position)
     , m_color(color)
     , m_number(number)
+    , m_radius(radius)
 {
 }
 
@@ -21,17 +35,19 @@ void StepBadgeAnnotation::draw(QPainter &painter) const
     // Draw filled circle with annotation color
     painter.setPen(Qt::NoPen);
     painter.setBrush(m_color);
-    painter.drawEllipse(m_position, kBadgeRadius, kBadgeRadius);
+    painter.drawEllipse(m_position, m_radius, m_radius);
 
     // Draw white number in center
+    // Scale font proportionally: 8pt for small (r=10), 12pt for medium (r=14), 17pt for large (r=20)
     painter.setPen(Qt::white);
     QFont font;
-    font.setPointSize(12);
+    int fontSize = (m_radius * 12) / kBadgeRadiusMedium;
+    font.setPointSize(fontSize);
     font.setBold(true);
     painter.setFont(font);
 
-    QRect textRect(m_position.x() - kBadgeRadius, m_position.y() - kBadgeRadius,
-                   kBadgeRadius * 2, kBadgeRadius * 2);
+    QRect textRect(m_position.x() - m_radius, m_position.y() - m_radius,
+                   m_radius * 2, m_radius * 2);
     painter.drawText(textRect, Qt::AlignCenter, QString::number(m_number));
 
     painter.restore();
@@ -39,14 +55,14 @@ void StepBadgeAnnotation::draw(QPainter &painter) const
 
 QRect StepBadgeAnnotation::boundingRect() const
 {
-    int margin = kBadgeRadius + 2;
+    int margin = m_radius + 2;
     return QRect(m_position.x() - margin, m_position.y() - margin,
                  margin * 2, margin * 2);
 }
 
 std::unique_ptr<AnnotationItem> StepBadgeAnnotation::clone() const
 {
-    return std::make_unique<StepBadgeAnnotation>(m_position, m_color, m_number);
+    return std::make_unique<StepBadgeAnnotation>(m_position, m_color, m_number, m_radius);
 }
 
 void StepBadgeAnnotation::setNumber(int number)

@@ -120,6 +120,7 @@ set(SOURCES
     src/ui/sections/ArrowStyleSection.cpp
     src/ui/sections/LineStyleSection.cpp
     src/ui/sections/ShapeSection.cpp
+    src/ui/sections/SizeSection.cpp
     # PinWindow components
     src/pinwindow/ImageTransformer.cpp
     src/pinwindow/ResizeHandler.cpp
@@ -212,6 +213,7 @@ set(HEADERS
     include/ui/sections/ArrowStyleSection.h
     include/ui/sections/LineStyleSection.h
     include/ui/sections/ShapeSection.h
+    include/ui/sections/SizeSection.h
     # PinWindow components
     include/pinwindow/ImageTransformer.h
     include/pinwindow/ResizeHandler.h

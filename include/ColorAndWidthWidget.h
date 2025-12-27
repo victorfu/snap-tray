@@ -10,6 +10,7 @@
 #include "annotations/ShapeAnnotation.h"  // For ShapeType and ShapeFillMode enums
 #include "annotations/ArrowAnnotation.h"  // For LineEndStyle enum
 #include "annotations/LineStyle.h"        // For LineStyle enum
+#include "annotations/StepBadgeAnnotation.h"  // For StepBadgeSize enum
 #include "ToolbarStyle.h"
 
 class QPainter;
@@ -19,6 +20,7 @@ class TextSection;
 class ArrowStyleSection;
 class LineStyleSection;
 class ShapeSection;
+class SizeSection;
 
 /**
  * @brief Unified color palette and line width picker component.
@@ -106,6 +108,15 @@ public:
     ShapeFillMode shapeFillMode() const;
 
     // =========================================================================
+    // Size Methods (for Step Badge)
+    // =========================================================================
+
+    void setShowSizeSection(bool show);
+    bool showSizeSection() const { return m_showSizeSection; }
+    void setStepBadgeSize(StepBadgeSize size);
+    StepBadgeSize stepBadgeSize() const;
+
+    // =========================================================================
     // Visibility and Positioning
     // =========================================================================
 
@@ -159,6 +170,9 @@ signals:
     void shapeTypeChanged(ShapeType type);
     void shapeFillModeChanged(ShapeFillMode mode);
 
+    // Size signals (Step Badge)
+    void stepBadgeSizeChanged(StepBadgeSize size);
+
 private:
     void updateLayout();
     void connectSectionSignals();
@@ -170,6 +184,7 @@ private:
     ArrowStyleSection* m_arrowStyleSection;
     LineStyleSection* m_lineStyleSection;
     ShapeSection* m_shapeSection;
+    SizeSection* m_sizeSection;
 
     // Section visibility
     bool m_showWidthSection = true;
@@ -177,6 +192,7 @@ private:
     bool m_showArrowStyleSection = false;
     bool m_showLineStyleSection = false;
     bool m_showShapeSection = false;
+    bool m_showSizeSection = false;
 
     // Layout state
     bool m_visible = false;

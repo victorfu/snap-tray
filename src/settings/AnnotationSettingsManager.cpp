@@ -31,3 +31,20 @@ void AnnotationSettingsManager::saveWidth(int width)
     auto settings = SnapTray::getSettings();
     settings.setValue(kSettingsKeyWidth, width);
 }
+
+StepBadgeSize AnnotationSettingsManager::loadStepBadgeSize() const
+{
+    auto settings = SnapTray::getSettings();
+    int value = settings.value(kSettingsKeyStepBadgeSize,
+                               static_cast<int>(kDefaultStepBadgeSize)).toInt();
+    if (value >= 0 && value <= 2) {
+        return static_cast<StepBadgeSize>(value);
+    }
+    return kDefaultStepBadgeSize;
+}
+
+void AnnotationSettingsManager::saveStepBadgeSize(StepBadgeSize size)
+{
+    auto settings = SnapTray::getSettings();
+    settings.setValue(kSettingsKeyStepBadgeSize, static_cast<int>(size));
+}

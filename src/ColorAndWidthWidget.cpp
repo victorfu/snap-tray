@@ -5,6 +5,7 @@
 #include "ui/sections/ArrowStyleSection.h"
 #include "ui/sections/LineStyleSection.h"
 #include "ui/sections/ShapeSection.h"
+#include "ui/sections/SizeSection.h"
 
 #include <QPainter>
 #include <QDebug>
@@ -17,6 +18,7 @@ ColorAndWidthWidget::ColorAndWidthWidget(QObject* parent)
     , m_arrowStyleSection(new ArrowStyleSection(this))
     , m_lineStyleSection(new LineStyleSection(this))
     , m_shapeSection(new ShapeSection(this))
+    , m_sizeSection(new SizeSection(this))
     , m_styleConfig(ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle()))
 {
     connectSectionSignals();
@@ -75,6 +77,12 @@ void ColorAndWidthWidget::connectSectionSignals()
     connect(m_shapeSection, &ShapeSection::shapeFillModeChanged, this, [this](ShapeFillMode mode) {
         emit shapeFillModeChanged(mode);
         qDebug() << "ColorAndWidthWidget: Shape fill mode toggled to" << static_cast<int>(mode);
+    });
+
+    // Forward SizeSection signals
+    connect(m_sizeSection, &SizeSection::sizeChanged, this, [this](StepBadgeSize size) {
+        emit stepBadgeSizeChanged(size);
+        qDebug() << "ColorAndWidthWidget: Step badge size changed to" << static_cast<int>(size);
     });
 }
 
@@ -254,6 +262,25 @@ ShapeFillMode ColorAndWidthWidget::shapeFillMode() const
 }
 
 // =============================================================================
+// Size Methods (Step Badge)
+// =============================================================================
+
+void ColorAndWidthWidget::setShowSizeSection(bool show)
+{
+    m_showSizeSection = show;
+}
+
+void ColorAndWidthWidget::setStepBadgeSize(StepBadgeSize size)
+{
+    m_sizeSection->setSize(size);
+}
+
+StepBadgeSize ColorAndWidthWidget::stepBadgeSize() const
+{
+    return m_sizeSection->size();
+}
+
+// =============================================================================
 // Positioning
 // =============================================================================
 
@@ -276,6 +303,9 @@ void ColorAndWidthWidget::updatePosition(const QRect& anchorRect, bool above, in
     }
     if (m_showShapeSection) {
         totalWidth += SECTION_SPACING + m_shapeSection->preferredWidth();
+    }
+    if (m_showSizeSection) {
+        totalWidth += SECTION_SPACING + m_sizeSection->preferredWidth();
     }
 
     int widgetX = anchorRect.left();
@@ -351,6 +381,13 @@ void ColorAndWidthWidget::updateLayout()
     if (m_showShapeSection) {
         xOffset += SECTION_SPACING;
         m_shapeSection->updateLayout(m_widgetRect.top(), WIDGET_HEIGHT, xOffset);
+        xOffset += m_shapeSection->preferredWidth();
+    }
+
+    // Size section (Step Badge)
+    if (m_showSizeSection) {
+        xOffset += SECTION_SPACING;
+        m_sizeSection->updateLayout(m_widgetRect.top(), WIDGET_HEIGHT, xOffset);
     }
 }
 
@@ -400,6 +437,10 @@ void ColorAndWidthWidget::draw(QPainter& painter)
     if (m_showShapeSection) {
         m_shapeSection->draw(painter, m_styleConfig);
     }
+
+    if (m_showSizeSection) {
+        m_sizeSection->draw(painter, m_styleConfig);
+    }
 }
 
 // =============================================================================
@@ -446,6 +487,11 @@ bool ColorAndWidthWidget::handleClick(const QPoint& pos)
     // Shape section
     if (m_showShapeSection && m_shapeSection->contains(pos)) {
         return m_shapeSection->handleClick(pos);
+    }
+
+    // Size section (Step Badge)
+    if (m_showSizeSection && m_sizeSection->contains(pos)) {
+        return m_sizeSection->handleClick(pos);
     }
 
     // Width section
@@ -503,6 +549,10 @@ bool ColorAndWidthWidget::updateHovered(const QPoint& pos)
 
     if (m_showShapeSection) {
         changed |= m_shapeSection->updateHovered(pos);
+    }
+
+    if (m_showSizeSection) {
+        changed |= m_sizeSection->updateHovered(pos);
     }
 
     return changed;

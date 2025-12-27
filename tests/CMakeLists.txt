@@ -15,6 +15,7 @@ set(COLORANDWIDTHWIDGET_COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/ui/sections/ArrowStyleSection.cpp
     ${CMAKE_SOURCE_DIR}/src/ui/sections/LineStyleSection.cpp
     ${CMAKE_SOURCE_DIR}/src/ui/sections/ShapeSection.cpp
+    ${CMAKE_SOURCE_DIR}/src/ui/sections/SizeSection.cpp
 )
 
 # Common headers that need MOC processing
@@ -26,6 +27,7 @@ set(COLORANDWIDTHWIDGET_COMMON_HEADERS
     ${CMAKE_SOURCE_DIR}/include/ui/sections/ArrowStyleSection.h
     ${CMAKE_SOURCE_DIR}/include/ui/sections/LineStyleSection.h
     ${CMAKE_SOURCE_DIR}/include/ui/sections/ShapeSection.h
+    ${CMAKE_SOURCE_DIR}/include/ui/sections/SizeSection.h
 )
 
 # Helper function to create a test executable
