@@ -394,28 +394,22 @@ bool RegionSelector::shouldShowColorPalette() const
     }
 }
 
-void RegionSelector::onColorSelected(const QColor& color)
+void RegionSelector::syncColorToAllWidgets(const QColor& color)
 {
     m_annotationColor = color;
-
-    // Update tool manager
+    saveAnnotationColor(color);
     m_toolManager->setColor(color);
-
-    // Update line width widget preview color
     m_lineWidthWidget->setPreviewColor(color);
-
-    // Update unified widget color
     m_colorAndWidthWidget->setCurrentColor(color);
-
-    // Update text editor color if currently editing
     if (m_textEditor->isEditing()) {
         m_textEditor->setColor(color);
     }
-
-    // Save for next session
-    saveAnnotationColor(color);
-
     update();
+}
+
+void RegionSelector::onColorSelected(const QColor& color)
+{
+    syncColorToAllWidgets(color);
 }
 
 void RegionSelector::onMoreColorsRequested()
@@ -424,25 +418,13 @@ void RegionSelector::onMoreColorsRequested()
         m_colorPickerDialog = new ColorPickerDialog();
         connect(m_colorPickerDialog, &ColorPickerDialog::colorSelected,
             this, [this](const QColor& color) {
-                m_annotationColor = color;
-                m_toolManager->setColor(color);
+                syncColorToAllWidgets(color);
                 m_colorPalette->setCurrentColor(color);
-                m_lineWidthWidget->setPreviewColor(color);
-                m_colorAndWidthWidget->setCurrentColor(color);
-
-                // Update text editor color if currently editing
-                if (m_textEditor->isEditing()) {
-                    m_textEditor->setColor(color);
-                }
-
                 qDebug() << "Custom color selected:" << color.name();
-                update();
             });
     }
 
     m_colorPickerDialog->setCurrentColor(m_annotationColor);
-
-    // Keep unified color/width widget in sync with current annotation color
     m_colorAndWidthWidget->setCurrentColor(m_annotationColor);
 
     // Position at center of screen
@@ -1055,6 +1037,24 @@ void RegionSelector::setToolCursor()
     }
 }
 
+Qt::CursorShape RegionSelector::getCursorForGizmoHandle(GizmoHandle handle) const
+{
+    switch (handle) {
+    case GizmoHandle::Rotation:
+        return Qt::CrossCursor;
+    case GizmoHandle::TopLeft:
+    case GizmoHandle::BottomRight:
+        return Qt::SizeFDiagCursor;
+    case GizmoHandle::TopRight:
+    case GizmoHandle::BottomLeft:
+        return Qt::SizeBDiagCursor;
+    case GizmoHandle::Body:
+        return Qt::SizeAllCursor;
+    default:
+        return Qt::ArrowCursor;
+    }
+}
+
 void RegionSelector::handleToolbarClick(ToolbarButton button)
 {
     // Save eraser width and clear hover when switching FROM Eraser to another tool
@@ -1546,27 +1546,9 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
         if (m_annotationLayer->selectedIndex() >= 0) {
             if (auto* textItem = dynamic_cast<TextAnnotation*>(m_annotationLayer->selectedItem())) {
                 GizmoHandle handle = TransformationGizmo::hitTest(textItem, event->pos());
-                switch (handle) {
-                case GizmoHandle::Rotation:
-                    setCursor(Qt::CrossCursor);
+                if (handle != GizmoHandle::None) {
+                    setCursor(getCursorForGizmoHandle(handle));
                     gizmoHandleHovered = true;
-                    break;
-                case GizmoHandle::TopLeft:
-                case GizmoHandle::BottomRight:
-                    setCursor(Qt::SizeFDiagCursor);
-                    gizmoHandleHovered = true;
-                    break;
-                case GizmoHandle::TopRight:
-                case GizmoHandle::BottomLeft:
-                    setCursor(Qt::SizeBDiagCursor);
-                    gizmoHandleHovered = true;
-                    break;
-                case GizmoHandle::Body:
-                    setCursor(Qt::SizeAllCursor);
-                    gizmoHandleHovered = true;
-                    break;
-                default:
-                    break;
                 }
             }
         }
@@ -2207,39 +2189,29 @@ void RegionSelector::onOCRComplete(bool success, const QString& text, const QStr
     m_loadingSpinner->stop();
 
     QString msg;
+    QString bgColor;
     if (success && !text.isEmpty()) {
         QGuiApplication::clipboard()->setText(text);
         qDebug() << "RegionSelector: OCR complete, copied" << text.length() << "characters to clipboard";
         msg = tr("Copied %1 characters").arg(text.length());
-
-        // Show success toast with green background
-        m_ocrToastLabel->setStyleSheet(
-            "QLabel {"
-            "  background-color: rgba(34, 139, 34, 220);"
-            "  color: white;"
-            "  padding: 8px 16px;"
-            "  border-radius: 6px;"
-            "  font-size: 13px;"
-            "  font-weight: bold;"
-            "}"
-        );
+        bgColor = "rgba(34, 139, 34, 220)";  // Green for success
     }
     else {
         msg = error.isEmpty() ? tr("No text found") : error;
         qDebug() << "RegionSelector: OCR failed:" << msg;
-
-        // Show failure toast with red background
-        m_ocrToastLabel->setStyleSheet(
-            "QLabel {"
-            "  background-color: rgba(200, 60, 60, 220);"
-            "  color: white;"
-            "  padding: 8px 16px;"
-            "  border-radius: 6px;"
-            "  font-size: 13px;"
-            "  font-weight: bold;"
-            "}"
-        );
+        bgColor = "rgba(200, 60, 60, 220)";  // Red for failure
     }
+
+    m_ocrToastLabel->setStyleSheet(QString(
+        "QLabel {"
+        "  background-color: %1;"
+        "  color: white;"
+        "  padding: 8px 16px;"
+        "  border-radius: 6px;"
+        "  font-size: 13px;"
+        "  font-weight: bold;"
+        "}"
+    ).arg(bgColor));
 
     // Display the toast centered at top of selection area
     m_ocrToastLabel->setText(msg);

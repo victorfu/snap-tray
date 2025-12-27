@@ -150,6 +150,7 @@ private:
     bool shouldShowColorPalette() const;
     void onColorSelected(const QColor &color);
     void onMoreColorsRequested();
+    void syncColorToAllWidgets(const QColor &color);
 
     // Line width widget helpers (legacy)
     bool shouldShowLineWidthWidget() const;
@@ -185,6 +186,7 @@ private:
     // Cursor helpers
     QCursor getMosaicCursor(int width);
     void setToolCursor();
+    Qt::CursorShape getCursorForGizmoHandle(GizmoHandle handle) const;
 
     // Annotation drawing helpers
     void drawAnnotations(QPainter &painter);
