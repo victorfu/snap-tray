@@ -1437,10 +1437,16 @@ void RegionSelector::mousePressEvent(QMouseEvent* event)
                     return;
                 }
 
-                // Click outside selection - cancel selection (same as ESC)
-                qDebug() << "RegionSelector: Cancelled via click outside selection";
-                emit selectionCancelled();
-                close();
+                // Click outside selection - adjust the corresponding edge(s)
+                QRect sel = m_selectionManager->selectionRect();
+                QPoint clickPos = event->pos();
+                SelectionStateManager::ResizeHandle outsideHandle =
+                    determineHandleFromOutsideClick(clickPos, sel);
+
+                if (outsideHandle != SelectionStateManager::ResizeHandle::None) {
+                    adjustEdgesToPosition(clickPos, outsideHandle);
+                    update();
+                }
                 return;
             }
         }
@@ -2204,12 +2210,107 @@ void RegionSelector::updateCursorForHandle(SelectionStateManager::ResizeHandle h
         if (m_selectionManager->hitTestMove(m_currentPoint)) {
             setCursor(Qt::SizeAllCursor);
         } else {
-            setCursor(Qt::ArrowCursor);
+            // Check if outside selection - show resize cursor based on position
+            QRect sel = m_selectionManager->selectionRect();
+            ResizeHandle outsideHandle = determineHandleFromOutsideClick(m_currentPoint, sel);
+            switch (outsideHandle) {
+            case ResizeHandle::TopLeft:
+            case ResizeHandle::BottomRight:
+                setCursor(Qt::SizeFDiagCursor);
+                break;
+            case ResizeHandle::TopRight:
+            case ResizeHandle::BottomLeft:
+                setCursor(Qt::SizeBDiagCursor);
+                break;
+            case ResizeHandle::Top:
+            case ResizeHandle::Bottom:
+                setCursor(Qt::SizeVerCursor);
+                break;
+            case ResizeHandle::Left:
+            case ResizeHandle::Right:
+                setCursor(Qt::SizeHorCursor);
+                break;
+            default:
+                setCursor(Qt::ArrowCursor);
+                break;
+            }
         }
         break;
     default:
         setCursor(Qt::ArrowCursor);
         break;
+    }
+}
+
+SelectionStateManager::ResizeHandle RegionSelector::determineHandleFromOutsideClick(
+    const QPoint& pos, const QRect& sel) const
+{
+    using ResizeHandle = SelectionStateManager::ResizeHandle;
+
+    bool isAbove = pos.y() < sel.top();
+    bool isBelow = pos.y() > sel.bottom();
+    bool isLeft = pos.x() < sel.left();
+    bool isRight = pos.x() > sel.right();
+
+    // Corner cases - adjust two edges
+    if (isAbove && isLeft) return ResizeHandle::TopLeft;
+    if (isAbove && isRight) return ResizeHandle::TopRight;
+    if (isBelow && isLeft) return ResizeHandle::BottomLeft;
+    if (isBelow && isRight) return ResizeHandle::BottomRight;
+
+    // Edge cases - adjust one edge
+    if (isAbove) return ResizeHandle::Top;
+    if (isBelow) return ResizeHandle::Bottom;
+    if (isLeft) return ResizeHandle::Left;
+    if (isRight) return ResizeHandle::Right;
+
+    return ResizeHandle::None;
+}
+
+void RegionSelector::adjustEdgesToPosition(const QPoint& pos,
+    SelectionStateManager::ResizeHandle handle)
+{
+    using ResizeHandle = SelectionStateManager::ResizeHandle;
+
+    QRect newRect = m_selectionManager->selectionRect();
+
+    switch (handle) {
+    case ResizeHandle::Top:
+        newRect.setTop(pos.y());
+        break;
+    case ResizeHandle::Bottom:
+        newRect.setBottom(pos.y());
+        break;
+    case ResizeHandle::Left:
+        newRect.setLeft(pos.x());
+        break;
+    case ResizeHandle::Right:
+        newRect.setRight(pos.x());
+        break;
+    case ResizeHandle::TopLeft:
+        newRect.setTop(pos.y());
+        newRect.setLeft(pos.x());
+        break;
+    case ResizeHandle::TopRight:
+        newRect.setTop(pos.y());
+        newRect.setRight(pos.x());
+        break;
+    case ResizeHandle::BottomLeft:
+        newRect.setBottom(pos.y());
+        newRect.setLeft(pos.x());
+        break;
+    case ResizeHandle::BottomRight:
+        newRect.setBottom(pos.y());
+        newRect.setRight(pos.x());
+        break;
+    default:
+        return;
+    }
+
+    // Normalize to handle inverted rectangles and enforce minimum size
+    newRect = newRect.normalized();
+    if (newRect.width() >= 10 && newRect.height() >= 10) {
+        m_selectionManager->setSelectionRect(newRect);
     }
 }
 

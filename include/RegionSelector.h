@@ -224,6 +224,10 @@ private:
 
     // Selection resize/move helpers
     void updateCursorForHandle(SelectionStateManager::ResizeHandle handle);
+    SelectionStateManager::ResizeHandle determineHandleFromOutsideClick(
+        const QPoint& pos, const QRect& sel) const;
+    void adjustEdgesToPosition(const QPoint& pos,
+        SelectionStateManager::ResizeHandle handle);
 
     // Settings helper (reduces QSettings instantiation)
     QSettings getSettings() const;
