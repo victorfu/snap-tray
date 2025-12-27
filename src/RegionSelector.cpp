@@ -2039,14 +2039,14 @@ bool RegionSelector::handleInlineTextEditorPress(const QPoint& pos)
         return true;
     }
 
-    // In typing mode: click outside enters confirm mode or cancels
+    // In typing mode: click outside finishes editing immediately
     if (!m_textEditor->contains(pos)) {
         if (!m_textEditor->textEdit()->toPlainText().trimmed().isEmpty()) {
-            m_textEditor->enterConfirmMode();
+            m_textEditor->finishEditing();
         } else {
             m_textEditor->cancelEditing();
         }
-        return true;
+        return false;  // Continue processing click for next action (e.g., start new text)
     }
 
     // Click inside text edit - let it handle
