@@ -279,6 +279,7 @@ QColor MagnifierPanel::calculateAdaptiveBorderColor(const QImage& backgroundImag
     // Calculate average brightness using luminance formula
     // Only sample border pixels for efficiency (not the entire area)
     // ITU-R BT.601 luminance formula: 0.299*R + 0.587*G + 0.114*B
+    // Using integer math: coefficients sum to 1000, result must be divided by 1000
     auto pixelLuminance = [](QRgb pixel) -> qint64 {
         return qRed(pixel) * 299 + qGreen(pixel) * 587 + qBlue(pixel) * 114;
     };
