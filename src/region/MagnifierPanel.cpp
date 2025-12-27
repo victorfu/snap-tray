@@ -278,19 +278,22 @@ QColor MagnifierPanel::calculateAdaptiveBorderColor(const QImage& backgroundImag
     
     // Calculate average brightness using luminance formula
     // Only sample border pixels for efficiency (not the entire area)
+    // ITU-R BT.601 luminance formula: 0.299*R + 0.587*G + 0.114*B
+    auto pixelLuminance = [](QRgb pixel) -> qint64 {
+        return qRed(pixel) * 299 + qGreen(pixel) * 587 + qBlue(pixel) * 114;
+    };
+    
     qint64 totalLuminance = 0;
     int sampleCount = 0;
     
     // Sample top and bottom edges
     for (int x = left; x < right; x += 2) {  // Skip every other pixel for performance
         if (top < backgroundImage.height()) {
-            QRgb pixel = backgroundImage.pixel(x, top);
-            totalLuminance += qRed(pixel) * 299 + qGreen(pixel) * 587 + qBlue(pixel) * 114;
+            totalLuminance += pixelLuminance(backgroundImage.pixel(x, top));
             sampleCount++;
         }
         if (bottom - 1 >= 0 && bottom - 1 < backgroundImage.height()) {
-            QRgb pixel = backgroundImage.pixel(x, bottom - 1);
-            totalLuminance += qRed(pixel) * 299 + qGreen(pixel) * 587 + qBlue(pixel) * 114;
+            totalLuminance += pixelLuminance(backgroundImage.pixel(x, bottom - 1));
             sampleCount++;
         }
     }
@@ -298,13 +301,11 @@ QColor MagnifierPanel::calculateAdaptiveBorderColor(const QImage& backgroundImag
     // Sample left and right edges
     for (int y = top; y < bottom; y += 2) {  // Skip every other pixel for performance
         if (left < backgroundImage.width()) {
-            QRgb pixel = backgroundImage.pixel(left, y);
-            totalLuminance += qRed(pixel) * 299 + qGreen(pixel) * 587 + qBlue(pixel) * 114;
+            totalLuminance += pixelLuminance(backgroundImage.pixel(left, y));
             sampleCount++;
         }
         if (right - 1 >= 0 && right - 1 < backgroundImage.width()) {
-            QRgb pixel = backgroundImage.pixel(right - 1, y);
-            totalLuminance += qRed(pixel) * 299 + qGreen(pixel) * 587 + qBlue(pixel) * 114;
+            totalLuminance += pixelLuminance(backgroundImage.pixel(right - 1, y));
             sampleCount++;
         }
     }
