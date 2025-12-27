@@ -73,6 +73,7 @@ private:
     void saveToFile();
     void copyToClipboard();
     QPixmap getTransformedPixmap() const;
+    QPixmap getExportPixmap() const;
 
     // Performance optimization: ensure transform cache is valid
     void ensureTransformCacheValid();

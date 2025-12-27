@@ -307,6 +307,38 @@ QPixmap PinWindow::getTransformedPixmap() const
     return transformed;
 }
 
+QPixmap PinWindow::getExportPixmap() const
+{
+    // 1. Get current display size (includes zoom)
+    QSize exportSize = m_displayPixmap.size();
+
+    // 2. Get transformed pixmap (rotation/flip) and scale to current size
+    QPixmap basePixmap = getTransformedPixmap();
+    QPixmap scaledPixmap = basePixmap.scaled(
+        exportSize,
+        Qt::IgnoreAspectRatio,
+        Qt::SmoothTransformation
+    );
+    scaledPixmap.setDevicePixelRatio(basePixmap.devicePixelRatio());
+
+    // 3. If opacity is adjusted, paint with opacity
+    if (m_opacity < 1.0) {
+        QPixmap resultPixmap(scaledPixmap.size());
+        resultPixmap.setDevicePixelRatio(scaledPixmap.devicePixelRatio());
+        resultPixmap.fill(Qt::transparent);
+
+        QPainter painter(&resultPixmap);
+        painter.setOpacity(m_opacity);
+        painter.drawPixmap(0, 0, scaledPixmap);
+        painter.end();
+
+        scaledPixmap = resultPixmap;
+    }
+
+    // 4. Apply watermark
+    return WatermarkRenderer::applyToPixmap(scaledPixmap, m_watermarkSettings);
+}
+
 void PinWindow::createContextMenu()
 {
     m_contextMenu = new QMenu(this);
@@ -485,9 +517,7 @@ void PinWindow::saveToFile()
     );
 
     if (!filePath.isEmpty()) {
-        QPixmap pixmapToSave = getTransformedPixmap();
-        // Apply watermark if enabled
-        pixmapToSave = WatermarkRenderer::applyToPixmap(pixmapToSave, m_watermarkSettings);
+        QPixmap pixmapToSave = getExportPixmap();
         if (pixmapToSave.save(filePath)) {
             qDebug() << "PinWindow: Saved to" << filePath;
             emit saveRequested(pixmapToSave);
@@ -499,9 +529,7 @@ void PinWindow::saveToFile()
 
 void PinWindow::copyToClipboard()
 {
-    QPixmap pixmapToCopy = getTransformedPixmap();
-    // Apply watermark if enabled
-    pixmapToCopy = WatermarkRenderer::applyToPixmap(pixmapToCopy, m_watermarkSettings);
+    QPixmap pixmapToCopy = getExportPixmap();
     QGuiApplication::clipboard()->setPixmap(pixmapToCopy);
     qDebug() << "PinWindow: Copied to clipboard";
 }
