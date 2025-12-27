@@ -48,3 +48,15 @@ void AnnotationSettingsManager::saveStepBadgeSize(StepBadgeSize size)
     auto settings = SnapTray::getSettings();
     settings.setValue(kSettingsKeyStepBadgeSize, static_cast<int>(size));
 }
+
+bool AnnotationSettingsManager::loadPolylineMode() const
+{
+    auto settings = SnapTray::getSettings();
+    return settings.value(kSettingsKeyPolylineMode, kDefaultPolylineMode).toBool();
+}
+
+void AnnotationSettingsManager::savePolylineMode(bool enabled)
+{
+    auto settings = SnapTray::getSettings();
+    settings.setValue(kSettingsKeyPolylineMode, enabled);
+}

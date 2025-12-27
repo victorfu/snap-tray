@@ -73,10 +73,12 @@ ScreenCanvas::ScreenCanvas(QWidget* parent)
     int savedWidth = annotationSettings.loadWidth();
     LineEndStyle savedArrowStyle = loadArrowStyle();
     LineStyle savedLineStyle = loadLineStyle();
+    bool savedPolylineMode = annotationSettings.loadPolylineMode();
     m_toolManager->setColor(savedColor);
     m_toolManager->setWidth(savedWidth);
     m_toolManager->setArrowStyle(savedArrowStyle);
     m_toolManager->setLineStyle(savedLineStyle);
+    m_toolManager->setPolylineMode(savedPolylineMode);
 
     // Connect tool manager signals
     connect(m_toolManager, &ToolManager::needsRepaint, this, QOverload<>::of(&QWidget::update));
@@ -107,6 +109,7 @@ ScreenCanvas::ScreenCanvas(QWidget* parent)
     m_colorAndWidthWidget->setWidthRange(1, 20);
     m_colorAndWidthWidget->setArrowStyle(savedArrowStyle);
     m_colorAndWidthWidget->setLineStyle(savedLineStyle);
+    m_colorAndWidthWidget->setPolylineMode(savedPolylineMode);
     connect(m_colorAndWidthWidget, &ColorAndWidthWidget::colorSelected,
         this, &ScreenCanvas::onColorSelected);
     connect(m_colorAndWidthWidget, &ColorAndWidthWidget::moreColorsRequested,
@@ -117,6 +120,11 @@ ScreenCanvas::ScreenCanvas(QWidget* parent)
         this, &ScreenCanvas::onArrowStyleChanged);
     connect(m_colorAndWidthWidget, &ColorAndWidthWidget::lineStyleChanged,
         this, &ScreenCanvas::onLineStyleChanged);
+    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::polylineModeChanged,
+        this, [this](bool enabled) {
+            m_toolManager->setPolylineMode(enabled);
+            AnnotationSettingsManager::instance().savePolylineMode(enabled);
+        });
 
     // Initialize laser pointer renderer
     m_laserRenderer = new LaserPointerRenderer(this);
@@ -147,6 +155,7 @@ void ScreenCanvas::initializeIcons()
     iconRenderer.loadIcon("pencil", ":/icons/icons/pencil.svg");
     iconRenderer.loadIcon("marker", ":/icons/icons/marker.svg");
     iconRenderer.loadIcon("arrow", ":/icons/icons/arrow.svg");
+    iconRenderer.loadIcon("polyline", ":/icons/icons/polyline.svg");
     iconRenderer.loadIcon("rectangle", ":/icons/icons/rectangle.svg");
     iconRenderer.loadIcon("ellipse", ":/icons/icons/ellipse.svg");
     iconRenderer.loadIcon("laser-pointer", ":/icons/icons/laser-pointer.svg");
@@ -617,31 +626,55 @@ bool ScreenCanvas::isDrawingTool(ToolId toolId) const
 void ScreenCanvas::mousePressEvent(QMouseEvent* event)
 {
     if (event->button() == Qt::LeftButton) {
+        auto finalizePolylineForUiClick = [&](const QPoint& pos) {
+            if (m_currentToolId == ToolId::Arrow &&
+                m_toolManager->polylineMode() &&
+                m_toolManager->isDrawing()) {
+                m_toolManager->handleDoubleClick(pos);
+            }
+        };
+
         // Check if clicked on toolbar FIRST (before widgets that may overlap)
         int buttonIdx = getButtonAtPosition(event->pos());
         if (buttonIdx >= 0) {
+            finalizePolylineForUiClick(event->pos());
             handleToolbarClick(static_cast<CanvasButton>(buttonIdx));
             return;
         }
 
         // Check if clicked on unified color and width widget
-        if (shouldShowColorAndWidthWidget() && m_colorAndWidthWidget->handleClick(event->pos())) {
-            update();
-            return;
+        if (shouldShowColorAndWidthWidget()) {
+            if (m_colorAndWidthWidget->contains(event->pos())) {
+                finalizePolylineForUiClick(event->pos());
+            }
+            if (m_colorAndWidthWidget->handleClick(event->pos())) {
+                update();
+                return;
+            }
         }
 
         // Legacy widgets (only handle if unified widget not shown)
         if (!shouldShowColorAndWidthWidget()) {
             // Check if clicked on line width widget
-            if (shouldShowLineWidthWidget() && m_lineWidthWidget->handleMousePress(event->pos())) {
-                update();
-                return;
+            if (shouldShowLineWidthWidget()) {
+                if (m_lineWidthWidget->contains(event->pos())) {
+                    finalizePolylineForUiClick(event->pos());
+                }
+                if (m_lineWidthWidget->handleMousePress(event->pos())) {
+                    update();
+                    return;
+                }
             }
 
             // Check if clicked on color palette
-            if (shouldShowColorPalette() && m_colorPalette->handleClick(event->pos())) {
-                update();
-                return;
+            if (shouldShowColorPalette()) {
+                if (m_colorPalette->contains(event->pos())) {
+                    finalizePolylineForUiClick(event->pos());
+                }
+                if (m_colorPalette->handleClick(event->pos())) {
+                    update();
+                    return;
+                }
             }
         }
 
@@ -804,6 +837,17 @@ void ScreenCanvas::mouseReleaseEvent(QMouseEvent* event)
             update();
         }
     }
+}
+
+void ScreenCanvas::mouseDoubleClickEvent(QMouseEvent* event)
+{
+    if (event->button() != Qt::LeftButton) {
+        return;
+    }
+
+    // Forward double-click to tool manager
+    m_toolManager->handleDoubleClick(event->pos());
+    update();
 }
 
 void ScreenCanvas::wheelEvent(QWheelEvent* event)

@@ -17,18 +17,41 @@ void ArrowStyleSection::setArrowStyle(LineEndStyle style)
     }
 }
 
+void ArrowStyleSection::setPolylineMode(bool enabled)
+{
+    if (m_polylineMode != enabled) {
+        m_polylineMode = enabled;
+        emit polylineModeChanged(m_polylineMode);
+    }
+}
+
 int ArrowStyleSection::preferredWidth() const
 {
-    return BUTTON_WIDTH + 6;  // Add right margin
+    return BUTTON_WIDTH + TOGGLE_SPACING + TOGGLE_WIDTH;
 }
 
 void ArrowStyleSection::updateLayout(int containerTop, int containerHeight, int xOffset)
 {
-    m_sectionRect = QRect(xOffset, containerTop, BUTTON_WIDTH, containerHeight);
+    int totalWidth = BUTTON_WIDTH + TOGGLE_SPACING + TOGGLE_WIDTH;
+    m_sectionRect = QRect(xOffset, containerTop, totalWidth, containerHeight);
 
-    // Center the button vertically
+    // Center the buttons vertically
     int buttonY = containerTop + (containerHeight - BUTTON_HEIGHT) / 2;
-    m_buttonRect = QRect(xOffset, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT);
+
+    // Polyline toggle button (to the left of arrow style dropdown)
+    m_polylineToggleRect = QRect(
+        xOffset,
+        buttonY,
+        TOGGLE_WIDTH,
+        BUTTON_HEIGHT
+    );
+
+    m_buttonRect = QRect(
+        xOffset + TOGGLE_WIDTH + TOGGLE_SPACING,
+        buttonY,
+        BUTTON_WIDTH,
+        BUTTON_HEIGHT
+    );
 
     // Dropdown rect - expand upward or downward based on setting
     int dropdownWidth = BUTTON_WIDTH + 10;
@@ -76,6 +99,23 @@ void ArrowStyleSection::draw(QPainter& painter, const ToolbarStyleConfig& styleC
     arrow.lineTo(arrowX, arrowY + 2);
     arrow.closeSubpath();
     painter.fillPath(arrow, styleConfig.textColor);
+
+    // Draw polyline toggle button
+    bool toggleHovered = (m_hoveredOption == -3);
+    QColor toggleBgColor;
+    if (m_polylineMode) {
+        toggleBgColor = styleConfig.buttonActiveColor;
+    } else if (toggleHovered) {
+        toggleBgColor = styleConfig.buttonHoverColor;
+    } else {
+        toggleBgColor = styleConfig.buttonInactiveColor;
+    }
+    painter.setPen(QPen(styleConfig.dropdownBorder, 1));
+    painter.setBrush(toggleBgColor);
+    painter.drawRoundedRect(m_polylineToggleRect, 4, 4);
+
+    // Draw polyline icon
+    drawPolylineIcon(painter, m_polylineToggleRect, m_polylineMode, styleConfig);
 
     // Draw dropdown menu if open
     if (m_dropdownOpen) {
@@ -164,15 +204,57 @@ void ArrowStyleSection::drawArrowStyleIcon(QPainter& painter, LineEndStyle style
     painter.restore();
 }
 
+void ArrowStyleSection::drawPolylineIcon(QPainter& painter, const QRect& rect, bool active,
+    const ToolbarStyleConfig& styleConfig) const
+{
+    painter.save();
+    painter.setRenderHint(QPainter::Antialiasing, true);
+
+    // Use contrasting color for active state
+    QColor iconColor = active ? styleConfig.textActiveColor : styleConfig.textColor;
+    QPen linePen(iconColor, 1.5, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+    painter.setPen(linePen);
+
+    // Draw a zigzag polyline icon (similar to the polyline.svg)
+    int cx = rect.center().x();
+    int cy = rect.center().y();
+    int w = rect.width() - 8;
+    int h = rect.height() - 8;
+
+    // Scale factor
+    int left = cx - w / 2;
+    int top = cy - h / 2;
+
+    // Zigzag pattern: start bottom-left, go up-right, down-right, up-right
+    QVector<QPointF> points;
+    points << QPointF(left, top + h);            // Bottom-left
+    points << QPointF(left + w * 0.35, top + h * 0.3);  // Mid-up
+    points << QPointF(left + w * 0.65, top + h * 0.6);  // Mid-down
+    points << QPointF(left + w, top);             // Top-right
+
+    // Draw the polyline
+    for (int i = 0; i < points.size() - 1; ++i) {
+        painter.drawLine(points[i], points[i + 1]);
+    }
+
+    painter.restore();
+}
+
 bool ArrowStyleSection::contains(const QPoint& pos) const
 {
     if (m_sectionRect.contains(pos)) return true;
+    if (m_polylineToggleRect.contains(pos)) return true;
     if (m_dropdownOpen && m_dropdownRect.contains(pos)) return true;
     return false;
 }
 
 int ArrowStyleSection::optionAtPosition(const QPoint& pos) const
 {
+    // Check if on polyline toggle
+    if (m_polylineToggleRect.contains(pos)) {
+        return -3;  // Special value for polyline toggle
+    }
+
     // Check if in dropdown
     if (m_dropdownOpen && m_dropdownRect.contains(pos)) {
         int relativeY = pos.y() - m_dropdownRect.top();
@@ -194,7 +276,13 @@ bool ArrowStyleSection::handleClick(const QPoint& pos)
 {
     int option = optionAtPosition(pos);
 
-    if (option >= 0) {
+    if (option == -3) {
+        // Clicked on polyline toggle
+        m_polylineMode = !m_polylineMode;
+        emit polylineModeChanged(m_polylineMode);
+        return true;
+    }
+    else if (option >= 0) {
         // Clicked on a dropdown option (2 options: None, EndArrow)
         LineEndStyle styles[] = { LineEndStyle::None, LineEndStyle::EndArrow };
         m_arrowStyle = styles[option];

@@ -28,10 +28,15 @@ public:
     StepBadgeSize loadStepBadgeSize() const;
     void saveStepBadgeSize(StepBadgeSize size);
 
+    // Polyline mode settings
+    bool loadPolylineMode() const;
+    void savePolylineMode(bool enabled);
+
     // Default values
     static constexpr int kDefaultWidth = 3;
     static QColor defaultColor() { return Qt::red; }
     static constexpr StepBadgeSize kDefaultStepBadgeSize = StepBadgeSize::Medium;
+    static constexpr bool kDefaultPolylineMode = false;
 
 private:
     AnnotationSettingsManager() = default;
@@ -41,6 +46,7 @@ private:
     static constexpr const char* kSettingsKeyColor = "annotationColor";
     static constexpr const char* kSettingsKeyWidth = "annotationWidth";
     static constexpr const char* kSettingsKeyStepBadgeSize = "stepBadgeSize";
+    static constexpr const char* kSettingsKeyPolylineMode = "polylineMode";
 };
 
 #endif // ANNOTATIONSETTINGSMANAGER_H

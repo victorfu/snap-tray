@@ -65,6 +65,7 @@ set(SOURCES
     src/annotations/PencilStroke.cpp
     src/annotations/MarkerStroke.cpp
     src/annotations/ArrowAnnotation.cpp
+    src/annotations/PolylineAnnotation.cpp
     src/annotations/ShapeAnnotation.cpp
     src/annotations/MosaicStroke.cpp
     src/annotations/StepBadgeAnnotation.cpp
@@ -100,6 +101,7 @@ set(SOURCES
     src/tools/handlers/PencilToolHandler.cpp
     src/tools/handlers/MarkerToolHandler.cpp
     src/tools/handlers/ArrowToolHandler.cpp
+    src/tools/handlers/PolylineToolHandler.cpp
     src/tools/handlers/ShapeToolHandler.cpp
     src/tools/handlers/MosaicToolHandler.cpp
     src/tools/handlers/StepBadgeToolHandler.cpp
@@ -146,6 +148,7 @@ set(HEADERS
     include/annotations/PencilStroke.h
     include/annotations/MarkerStroke.h
     include/annotations/ArrowAnnotation.h
+    include/annotations/PolylineAnnotation.h
     include/annotations/ShapeAnnotation.h
     include/annotations/MosaicStroke.h
     include/annotations/StepBadgeAnnotation.h
@@ -191,6 +194,7 @@ set(HEADERS
     include/tools/handlers/PencilToolHandler.h
     include/tools/handlers/MarkerToolHandler.h
     include/tools/handlers/ArrowToolHandler.h
+    include/tools/handlers/PolylineToolHandler.h
     include/tools/handlers/ShapeToolHandler.h
     include/tools/handlers/MosaicToolHandler.h
     include/tools/handlers/StepBadgeToolHandler.h

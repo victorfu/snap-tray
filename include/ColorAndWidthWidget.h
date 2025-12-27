@@ -90,6 +90,13 @@ public:
     LineEndStyle arrowStyle() const;
 
     // =========================================================================
+    // Polyline Mode Methods
+    // =========================================================================
+
+    void setPolylineMode(bool enabled);
+    bool polylineMode() const;
+
+    // =========================================================================
     // Line Style Methods
     // =========================================================================
 
@@ -164,6 +171,7 @@ signals:
 
     // Arrow style signals
     void arrowStyleChanged(LineEndStyle style);
+    void polylineModeChanged(bool enabled);
 
     // Line style signals
     void lineStyleChanged(LineStyle style);
@@ -208,6 +216,7 @@ private:
     // Layout constants
     static constexpr int WIDGET_HEIGHT = 36;
     static constexpr int SECTION_SPACING = 8;
+    static constexpr int WIDGET_RIGHT_MARGIN = 6;
 };
 
 #endif // COLORANDWIDTHWIDGET_H

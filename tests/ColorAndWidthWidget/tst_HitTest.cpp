@@ -85,11 +85,16 @@ void TestColorAndWidthWidgetHitTest::testContainsInDropdownWhenOpen()
 
     // First, click on the arrow style button to open the dropdown
     // The arrow style button is after color section and width section
-    // Color section width: 8 * 16 + 7 * 2 + 12 = 142
-    // Width section: 8 + 36 = 44
-    // Arrow button starts around: widgetRect.left() + 142 + 44
+    // ColorSection: 8 * 16 + 7 * 2 + 6 * 2 = 154
+    int colorSectionWidth = 8 * 16 + 7 * 2 + 6 * 2;  // 154
+    // WidthSection: SECTION_SIZE = 36
+    int widthSectionWidth = 36;
+    // SECTION_SPACING = 8
+    int sectionSpacing = 8;
+    // Arrow button is at xOffset + TOGGLE_WIDTH(28) + TOGGLE_SPACING(8), center is at + BUTTON_WIDTH(42)/2
+    int arrowButtonOffset = 28 + 8 + 21;  // polyline toggle + spacing + button center
 
-    int arrowButtonX = widgetRect.left() + 142 + 8 + 36 + 8 + 25;  // Approximate center
+    int arrowButtonX = widgetRect.left() + colorSectionWidth + sectionSpacing + widthSectionWidth + sectionSpacing + arrowButtonOffset;
     int arrowButtonY = widgetRect.center().y();
 
     m_widget->handleClick(QPoint(arrowButtonX, arrowButtonY));
@@ -174,13 +179,15 @@ void TestColorAndWidthWidgetHitTest::testBoundingRectWithColorOnly()
 
     QRect widgetRect = m_widget->boundingRect();
 
-    // Color section: 8 swatches * 16px + 7 gaps * 2px + 2 * padding (6px) = 142
+    // Color section: 8 swatches * 16px + 7 gaps * 2px + 2 * padding (6px) = 154
     // Widget height is fixed at 36
+    // Widget right margin = 6
     QCOMPARE(widgetRect.height(), 36);
 
-    // Width should be just the color section
-    int expectedColorWidth = 8 * 16 + 7 * 2 + 2 * 6;  // 142
-    QCOMPARE(widgetRect.width(), expectedColorWidth);
+    // Width should be just the color section + right margin
+    int expectedColorWidth = 8 * 16 + 7 * 2 + 2 * 6;  // 154
+    int widgetRightMargin = 6;
+    QCOMPARE(widgetRect.width(), expectedColorWidth + widgetRightMargin);
 }
 
 void TestColorAndWidthWidgetHitTest::testBoundingRectWithColorAndWidth()
@@ -194,11 +201,13 @@ void TestColorAndWidthWidgetHitTest::testBoundingRectWithColorAndWidth()
 
     QRect widgetRect = m_widget->boundingRect();
 
-    // Color section: 142
+    // Color section: 154
     // Width section: spacing (8) + size (36) = 44
-    int colorSectionWidth = 8 * 16 + 7 * 2 + 2 * 6;  // 142
+    // Widget right margin = 6
+    int colorSectionWidth = 8 * 16 + 7 * 2 + 2 * 6;  // 154
     int widthSectionWidth = 8 + 36;  // 44
-    int expectedWidth = colorSectionWidth + widthSectionWidth;
+    int widgetRightMargin = 6;
+    int expectedWidth = colorSectionWidth + widthSectionWidth + widgetRightMargin;
 
     QCOMPARE(widgetRect.width(), expectedWidth);
 }

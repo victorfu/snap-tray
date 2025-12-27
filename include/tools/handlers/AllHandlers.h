@@ -5,6 +5,7 @@
 #include "PencilToolHandler.h"
 #include "MarkerToolHandler.h"
 #include "ArrowToolHandler.h"
+#include "PolylineToolHandler.h"
 #include "ShapeToolHandler.h"
 #include "MosaicToolHandler.h"
 #include "StepBadgeToolHandler.h"

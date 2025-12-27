@@ -1,9 +1,7 @@
-#ifndef ARROWTOOLHANDLER_H
-#define ARROWTOOLHANDLER_H
+#ifndef POLYLINETOOLHANDLER_H
+#define POLYLINETOOLHANDLER_H
 
 #include "../IToolHandler.h"
-#include "annotations/AnnotationLayer.h"
-#include "annotations/ArrowAnnotation.h"
 #include "annotations/PolylineAnnotation.h"
 
 #include <QPoint>
@@ -11,18 +9,18 @@
 #include <memory>
 
 /**
- * @brief Tool handler for arrow/line drawing.
+ * @brief Tool handler for polyline (broken line) drawing.
  *
- * Supports two modes:
- * - Normal mode: drag to draw a single-segment arrow
- * - Polyline mode: click to add points, double-click to finish
+ * Click to add points, double-click to finish.
+ * Draws line segments only (no arrowhead).
  */
-class ArrowToolHandler : public IToolHandler {
+class PolylineToolHandler : public IToolHandler
+{
 public:
-    ArrowToolHandler() = default;
-    ~ArrowToolHandler() override = default;
+    PolylineToolHandler() = default;
+    ~PolylineToolHandler() override = default;
 
-    ToolId toolId() const override { return ToolId::Arrow; }
+    ToolId toolId() const override { return ToolId::Polyline; }
 
     void onActivate(ToolContext* ctx) override;
     void onDeactivate(ToolContext* ctx) override;
@@ -37,24 +35,17 @@ public:
 
     bool supportsColor() const override { return true; }
     bool supportsWidth() const override { return true; }
-    bool supportsArrowStyle() const override { return true; }
+    bool supportsArrowStyle() const override { return false; }
     bool supportsLineStyle() const override { return true; }
 
 private:
-    // Polyline mode helpers
     void finishPolyline(ToolContext* ctx);
 
     bool m_isDrawing = false;
-    QPoint m_startPoint;
-
-    // Arrow mode state
-    std::unique_ptr<ArrowAnnotation> m_currentArrow;
-
-    // Polyline mode state
-    std::unique_ptr<PolylineAnnotation> m_currentPolyline;
     QPoint m_currentMousePos;
+    std::unique_ptr<PolylineAnnotation> m_currentPolyline;
     QElapsedTimer m_clickTimer;
     static constexpr int DOUBLE_CLICK_INTERVAL = 300;  // ms
 };
 
-#endif // ARROWTOOLHANDLER_H
+#endif // POLYLINETOOLHANDLER_H

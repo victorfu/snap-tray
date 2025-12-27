@@ -65,6 +65,7 @@ public:
     void handleMousePress(const QPoint& pos);
     void handleMouseMove(const QPoint& pos);
     void handleMouseRelease(const QPoint& pos);
+    void handleDoubleClick(const QPoint& pos);
 
     /**
      * @brief Draw the current tool preview.
@@ -106,6 +107,9 @@ public:
 
     void setShapeFillMode(int mode);
     int shapeFillMode() const { return m_context->shapeFillMode; }
+
+    void setPolylineMode(bool enabled);
+    bool polylineMode() const { return m_context->polylineMode; }
 
     // Callback setup
     void setRepaintCallback(std::function<void()> callback);

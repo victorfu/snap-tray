@@ -19,7 +19,7 @@ void LineStyleSection::setLineStyle(LineStyle style)
 
 int LineStyleSection::preferredWidth() const
 {
-    return BUTTON_WIDTH + 6;  // Add right margin
+    return BUTTON_WIDTH;
 }
 
 void LineStyleSection::updateLayout(int containerTop, int containerHeight, int xOffset)
