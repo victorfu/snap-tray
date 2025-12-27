@@ -53,6 +53,53 @@ FetchContent_Declare(
 set(QHOTKEY_INSTALL OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(QHotkey)
 
+# ============================================================================
+# OpenCV for Scrolling Capture (static build)
+# ============================================================================
+FetchContent_Declare(
+    OpenCV
+    GIT_REPOSITORY https://github.com/opencv/opencv.git
+    GIT_TAG        4.9.0
+    GIT_SHALLOW    TRUE
+)
+
+# Configure OpenCV for minimal static build (only what we need)
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+set(BUILD_opencv_apps OFF CACHE BOOL "" FORCE)
+set(BUILD_opencv_calib3d OFF CACHE BOOL "" FORCE)
+set(BUILD_opencv_dnn OFF CACHE BOOL "" FORCE)
+set(BUILD_opencv_flann ON CACHE BOOL "" FORCE)  # Required by features2d
+set(BUILD_opencv_gapi OFF CACHE BOOL "" FORCE)
+set(BUILD_opencv_highgui OFF CACHE BOOL "" FORCE)
+set(BUILD_opencv_ml OFF CACHE BOOL "" FORCE)
+set(BUILD_opencv_objdetect OFF CACHE BOOL "" FORCE)
+set(BUILD_opencv_photo OFF CACHE BOOL "" FORCE)
+set(BUILD_opencv_stitching OFF CACHE BOOL "" FORCE)
+set(BUILD_opencv_video OFF CACHE BOOL "" FORCE)
+set(BUILD_opencv_videoio OFF CACHE BOOL "" FORCE)
+set(BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(BUILD_PERF_TESTS OFF CACHE BOOL "" FORCE)
+set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(BUILD_DOCS OFF CACHE BOOL "" FORCE)
+set(WITH_FFMPEG OFF CACHE BOOL "" FORCE)
+set(WITH_GSTREAMER OFF CACHE BOOL "" FORCE)
+set(WITH_GTK OFF CACHE BOOL "" FORCE)
+set(WITH_QT OFF CACHE BOOL "" FORCE)
+set(WITH_OPENEXR OFF CACHE BOOL "" FORCE)
+set(WITH_JASPER OFF CACHE BOOL "" FORCE)
+set(WITH_TIFF OFF CACHE BOOL "" FORCE)
+set(WITH_WEBP OFF CACHE BOOL "" FORCE)
+set(WITH_PNG OFF CACHE BOOL "" FORCE)
+set(WITH_JPEG OFF CACHE BOOL "" FORCE)
+# Use system zlib to avoid build conflicts on macOS
+set(BUILD_ZLIB OFF CACHE BOOL "" FORCE)
+# Keep: core, imgproc, features2d, flann
+set(BUILD_opencv_core ON CACHE BOOL "" FORCE)
+set(BUILD_opencv_imgproc ON CACHE BOOL "" FORCE)
+set(BUILD_opencv_features2d ON CACHE BOOL "" FORCE)
+
+FetchContent_MakeAvailable(OpenCV)
+
 set(SOURCES
     src/main.cpp
     src/MainApplication.cpp
@@ -123,6 +170,13 @@ set(SOURCES
     src/pinwindow/ImageTransformer.cpp
     src/pinwindow/ResizeHandler.cpp
     src/pinwindow/UIIndicators.cpp
+    # Scrolling Capture
+    src/scrolling/ScrollingCaptureManager.cpp
+    src/scrolling/ScrollingCaptureOverlay.cpp
+    src/scrolling/ScrollingCaptureToolbar.cpp
+    src/scrolling/ScrollingCaptureThumbnail.cpp
+    src/scrolling/ImageStitcher.cpp
+    src/scrolling/FixedElementDetector.cpp
     src/pinwindow/ClickThroughExitButton.cpp
 )
 
@@ -214,6 +268,13 @@ set(HEADERS
     include/pinwindow/ImageTransformer.h
     include/pinwindow/ResizeHandler.h
     include/pinwindow/UIIndicators.h
+    # Scrolling Capture
+    include/scrolling/ScrollingCaptureManager.h
+    include/scrolling/ScrollingCaptureOverlay.h
+    include/scrolling/ScrollingCaptureToolbar.h
+    include/scrolling/ScrollingCaptureThumbnail.h
+    include/scrolling/ImageStitcher.h
+    include/scrolling/FixedElementDetector.h
     include/pinwindow/ClickThroughExitButton.h
 )
 
@@ -290,6 +351,11 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_SOURCE_DIR}/include
     ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_BINARY_DIR}/generated
+    ${CMAKE_BINARY_DIR}
+    ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/core/include
+    ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/imgproc/include
+    ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/features2d/include
+    ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/flann/include
 )
 
 # macOS frameworks needed for window detection, auto-launch, and native encoding
@@ -318,6 +384,10 @@ if(APPLE)
         ${COREMEDIA_FRAMEWORK}
         ${COREVIDEO_FRAMEWORK}
         ${AVFOUNDATION_FRAMEWORK}
+        opencv_core
+        opencv_imgproc
+        opencv_features2d
+        opencv_flann
     )
     # Weak link ScreenCaptureKit if available (for macOS 12.3+ compatibility)
     if(SCREENCAPTUREKIT_FRAMEWORK)
@@ -343,11 +413,15 @@ elseif(WIN32)
         mfuuid
         ole32       # COM for WASAPI audio capture
         propsys     # Property system for audio device enumeration
+        opencv_core
+        opencv_imgproc
+        opencv_features2d
+        opencv_flann
     )
     # Enable C++/WinRT for Windows.Media.Ocr
     target_compile_options(${PROJECT_NAME} PRIVATE /await)
 else()
-    target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::Widgets Qt6::Gui Qt6::Svg Qt6::Concurrent QHotkey::QHotkey)
+    target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::Widgets Qt6::Gui Qt6::Svg Qt6::Concurrent QHotkey::QHotkey opencv_core opencv_imgproc opencv_features2d opencv_flann)
 endif()
 
 # macOS-specific settings

@@ -21,7 +21,11 @@
         <file>icons/ocr.svg</file>
         <file>icons/pin.svg</file>
         <file>icons/record.svg</file>
+        <file>icons/scroll-capture.svg</file>
         <file>icons/save.svg</file>
         <file>icons/copy.svg</file>
+        <file>icons/play.svg</file>
+        <file>icons/stop.svg</file>
+        <file>icons/close.svg</file>
     </qresource>
 </RCC>
