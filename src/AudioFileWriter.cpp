@@ -70,7 +70,9 @@ void AudioFileWriter::finish()
     }
 
     // Update the header with final sizes
-    updateHeader();
+    if (!updateHeader()) {
+        emit error("Failed to update WAV header - audio file may be corrupted");
+    }
 
     m_file.close();
 
@@ -137,24 +139,41 @@ void AudioFileWriter::writeHeader()
     m_file.write(header, sizeof(header));
 }
 
-void AudioFileWriter::updateHeader()
+bool AudioFileWriter::updateHeader()
 {
     // Seek back to update the sizes in the header
 
     // Update RIFF chunk size (file size - 8)
-    m_file.seek(4);
+    if (!m_file.seek(4)) {
+        qWarning() << "AudioFileWriter: Failed to seek to RIFF size position";
+        return false;
+    }
     quint32 riffSize = static_cast<quint32>(36 + m_dataSize);
     char riffSizeBytes[4];
     qToLittleEndian<quint32>(riffSize, reinterpret_cast<uchar*>(riffSizeBytes));
-    m_file.write(riffSizeBytes, 4);
+    if (m_file.write(riffSizeBytes, 4) != 4) {
+        qWarning() << "AudioFileWriter: Failed to write RIFF size";
+        return false;
+    }
 
     // Update data chunk size
-    m_file.seek(40);
+    if (!m_file.seek(40)) {
+        qWarning() << "AudioFileWriter: Failed to seek to data size position";
+        return false;
+    }
     quint32 dataSize = static_cast<quint32>(m_dataSize);
     char dataSizeBytes[4];
     qToLittleEndian<quint32>(dataSize, reinterpret_cast<uchar*>(dataSizeBytes));
-    m_file.write(dataSizeBytes, 4);
+    if (m_file.write(dataSizeBytes, 4) != 4) {
+        qWarning() << "AudioFileWriter: Failed to write data size";
+        return false;
+    }
 
     // Seek to end
-    m_file.seek(m_file.size());
+    if (!m_file.seek(m_file.size())) {
+        qWarning() << "AudioFileWriter: Failed to seek to end";
+        return false;
+    }
+
+    return true;
 }

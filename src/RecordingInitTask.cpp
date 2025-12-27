@@ -17,9 +17,12 @@
 void RecordingInitTask::Result::cleanup()
 {
     if (captureEngine) {
-        captureEngine->stop();
+        if (captureEngineStarted) {
+            captureEngine->stop();
+        }
         delete captureEngine;
         captureEngine = nullptr;
+        captureEngineStarted = false;
     }
     if (nativeEncoder) {
         nativeEncoder->abort();
@@ -156,6 +159,7 @@ bool RecordingInitTask::initializeCaptureEngine()
         m_result.error = "Failed to start capture engine";
         return false;
     }
+    m_result.captureEngineStarted = true;
 
     qDebug() << "RecordingInitTask: Capture engine started:"
              << m_result.captureEngine->engineName();

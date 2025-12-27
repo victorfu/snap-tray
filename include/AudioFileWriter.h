@@ -88,8 +88,9 @@ private:
 
     /**
      * @brief Update the WAV header with final sizes
+     * @return true if header was updated successfully
      */
-    void updateHeader();
+    bool updateHeader();
 
     QFile m_file;
     QString m_filePath;

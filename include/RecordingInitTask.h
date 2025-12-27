@@ -62,6 +62,9 @@ public:
         bool usingNativeEncoder = false;
         QString tempAudioPath;
 
+        // Track started state for safe cleanup
+        bool captureEngineStarted = false;
+
         // Cleanup on failure
         void cleanup();
     };
