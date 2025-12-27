@@ -4,19 +4,35 @@
 #include <QtMath>
 
 ArrowAnnotation::ArrowAnnotation(const QPoint &start, const QPoint &end, const QColor &color, int width,
-                                 LineEndStyle style)
+                                 LineEndStyle style, LineStyle lineStyle)
     : m_start(start)
     , m_end(end)
     , m_color(color)
     , m_width(width)
     , m_lineEndStyle(style)
+    , m_lineStyle(lineStyle)
 {
 }
 
 void ArrowAnnotation::draw(QPainter &painter) const
 {
     painter.save();
-    QPen pen(m_color, m_width, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+
+    // Map LineStyle to Qt::PenStyle
+    Qt::PenStyle qtStyle = Qt::SolidLine;
+    switch (m_lineStyle) {
+    case LineStyle::Solid:
+        qtStyle = Qt::SolidLine;
+        break;
+    case LineStyle::Dashed:
+        qtStyle = Qt::DashLine;
+        break;
+    case LineStyle::Dotted:
+        qtStyle = Qt::DotLine;
+        break;
+    }
+
+    QPen pen(m_color, m_width, qtStyle, Qt::RoundCap, Qt::RoundJoin);
     painter.setPen(pen);
     painter.setRenderHint(QPainter::Antialiasing, true);
 
@@ -91,7 +107,7 @@ QRect ArrowAnnotation::boundingRect() const
 
 std::unique_ptr<AnnotationItem> ArrowAnnotation::clone() const
 {
-    return std::make_unique<ArrowAnnotation>(m_start, m_end, m_color, m_width, m_lineEndStyle);
+    return std::make_unique<ArrowAnnotation>(m_start, m_end, m_color, m_width, m_lineEndStyle, m_lineStyle);
 }
 
 void ArrowAnnotation::setEnd(const QPoint &end)

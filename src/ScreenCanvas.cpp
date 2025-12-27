@@ -72,9 +72,11 @@ ScreenCanvas::ScreenCanvas(QWidget* parent)
     QColor savedColor = annotationSettings.loadColor();
     int savedWidth = annotationSettings.loadWidth();
     LineEndStyle savedArrowStyle = loadArrowStyle();
+    LineStyle savedLineStyle = loadLineStyle();
     m_toolManager->setColor(savedColor);
     m_toolManager->setWidth(savedWidth);
     m_toolManager->setArrowStyle(savedArrowStyle);
+    m_toolManager->setLineStyle(savedLineStyle);
 
     // Connect tool manager signals
     connect(m_toolManager, &ToolManager::needsRepaint, this, QOverload<>::of(&QWidget::update));
@@ -104,6 +106,7 @@ ScreenCanvas::ScreenCanvas(QWidget* parent)
     m_colorAndWidthWidget->setCurrentWidth(savedWidth);
     m_colorAndWidthWidget->setWidthRange(1, 20);
     m_colorAndWidthWidget->setArrowStyle(savedArrowStyle);
+    m_colorAndWidthWidget->setLineStyle(savedLineStyle);
     connect(m_colorAndWidthWidget, &ColorAndWidthWidget::colorSelected,
         this, &ScreenCanvas::onColorSelected);
     connect(m_colorAndWidthWidget, &ColorAndWidthWidget::moreColorsRequested,
@@ -112,6 +115,8 @@ ScreenCanvas::ScreenCanvas(QWidget* parent)
         this, &ScreenCanvas::onLineWidthChanged);
     connect(m_colorAndWidthWidget, &ColorAndWidthWidget::arrowStyleChanged,
         this, &ScreenCanvas::onArrowStyleChanged);
+    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::lineStyleChanged,
+        this, &ScreenCanvas::onLineStyleChanged);
 
     // Initialize laser pointer renderer
     m_laserRenderer = new LaserPointerRenderer(this);
@@ -298,6 +303,10 @@ void ScreenCanvas::paintEvent(QPaintEvent*)
         m_colorAndWidthWidget->setShowWidthSection(shouldShowWidthControl());
         // Show arrow style section only for Arrow tool
         m_colorAndWidthWidget->setShowArrowStyleSection(m_currentToolId == ToolId::Arrow);
+        // Show line style section for Pencil and Arrow tools
+        bool showLineStyle = (m_currentToolId == ToolId::Pencil ||
+                              m_currentToolId == ToolId::Arrow);
+        m_colorAndWidthWidget->setShowLineStyleSection(showLineStyle);
         m_colorAndWidthWidget->updatePosition(m_toolbarRect, true, width());
         m_colorAndWidthWidget->draw(painter);
     }
@@ -883,5 +892,25 @@ void ScreenCanvas::onArrowStyleChanged(LineEndStyle style)
 {
     m_toolManager->setArrowStyle(style);
     saveArrowStyle(style);
+    update();
+}
+
+LineStyle ScreenCanvas::loadLineStyle() const
+{
+    auto settings = SnapTray::getSettings();
+    int style = settings.value("annotation/lineStyle", static_cast<int>(LineStyle::Solid)).toInt();
+    return static_cast<LineStyle>(style);
+}
+
+void ScreenCanvas::saveLineStyle(LineStyle style)
+{
+    auto settings = SnapTray::getSettings();
+    settings.setValue("annotation/lineStyle", static_cast<int>(style));
+}
+
+void ScreenCanvas::onLineStyleChanged(LineStyle style)
+{
+    m_toolManager->setLineStyle(style);
+    saveLineStyle(style);
     update();
 }

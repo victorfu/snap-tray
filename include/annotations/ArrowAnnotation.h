@@ -2,6 +2,7 @@
 #define ARROWANNOTATION_H
 
 #include "AnnotationItem.h"
+#include "LineStyle.h"
 #include <QPoint>
 #include <QColor>
 
@@ -18,7 +19,8 @@ class ArrowAnnotation : public AnnotationItem
 {
 public:
     ArrowAnnotation(const QPoint &start, const QPoint &end, const QColor &color, int width,
-                    LineEndStyle style = LineEndStyle::EndArrow);
+                    LineEndStyle style = LineEndStyle::EndArrow,
+                    LineStyle lineStyle = LineStyle::Solid);
 
     void draw(QPainter &painter) const override;
     QRect boundingRect() const override;
@@ -38,6 +40,7 @@ private:
     QColor m_color;
     int m_width;
     LineEndStyle m_lineEndStyle;
+    LineStyle m_lineStyle;
 };
 
 #endif // ARROWANNOTATION_H

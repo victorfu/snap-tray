@@ -15,6 +15,7 @@
 
 #include "annotations/AnnotationLayer.h"
 #include "annotations/ShapeAnnotation.h"
+#include "annotations/LineStyle.h"
 #include "ToolbarWidget.h"
 #include "InlineTextEditor.h"
 #include "WindowDetector.h"
@@ -168,6 +169,9 @@ private:
     LineEndStyle loadArrowStyle() const;
     void saveArrowStyle(LineEndStyle style);
     void onArrowStyleChanged(LineEndStyle style);
+    LineStyle loadLineStyle() const;
+    void saveLineStyle(LineStyle style);
+    void onLineStyleChanged(LineStyle style);
 
     // Window detection drawing
     void drawDetectedWindow(QPainter &painter);
@@ -260,6 +264,7 @@ private:
     int m_annotationWidth;
     int m_eraserWidth = 20;  // Separate width for eraser tool (range: 5-100)
     LineEndStyle m_arrowStyle;
+    LineStyle m_lineStyle = LineStyle::Solid;
 
     // Mosaic cursor cache (avoid recreating on every mouse move)
     QCursor m_mosaicCursorCache;

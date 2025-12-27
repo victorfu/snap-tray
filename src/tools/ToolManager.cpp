@@ -157,6 +157,10 @@ void ToolManager::setArrowStyle(LineEndStyle style) {
     m_context->arrowStyle = style;
 }
 
+void ToolManager::setLineStyle(LineStyle style) {
+    m_context->lineStyle = style;
+}
+
 void ToolManager::setShapeType(int type) {
     m_context->shapeType = type;
 }

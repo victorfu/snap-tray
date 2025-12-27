@@ -96,6 +96,11 @@ public:
     virtual bool supportsArrowStyle() const { return false; }
 
     /**
+     * @brief Check if this tool supports line style selection.
+     */
+    virtual bool supportsLineStyle() const { return false; }
+
+    /**
      * @brief Check if this tool supports shape type selection.
      */
     virtual bool supportsShapeType() const { return false; }

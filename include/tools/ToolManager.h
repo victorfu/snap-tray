@@ -98,6 +98,9 @@ public:
     void setArrowStyle(LineEndStyle style);
     LineEndStyle arrowStyle() const { return m_context->arrowStyle; }
 
+    void setLineStyle(LineStyle style);
+    LineStyle lineStyle() const { return m_context->lineStyle; }
+
     void setShapeType(int type);
     int shapeType() const { return m_context->shapeType; }
 

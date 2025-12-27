@@ -46,10 +46,12 @@ static QPainterPath buildSmoothPath(const QVector<QPointF> &points)
 // PencilStroke Implementation
 // ============================================================================
 
-PencilStroke::PencilStroke(const QVector<QPointF> &points, const QColor &color, int width)
+PencilStroke::PencilStroke(const QVector<QPointF> &points, const QColor &color, int width,
+                           LineStyle lineStyle)
     : m_points(points)
     , m_color(color)
     , m_width(width)
+    , m_lineStyle(lineStyle)
 {
 }
 
@@ -58,7 +60,22 @@ void PencilStroke::draw(QPainter &painter) const
     if (m_points.size() < 2) return;
 
     painter.save();
-    QPen pen(m_color, m_width, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+
+    // Map LineStyle to Qt::PenStyle
+    Qt::PenStyle qtStyle = Qt::SolidLine;
+    switch (m_lineStyle) {
+    case LineStyle::Solid:
+        qtStyle = Qt::SolidLine;
+        break;
+    case LineStyle::Dashed:
+        qtStyle = Qt::DashLine;
+        break;
+    case LineStyle::Dotted:
+        qtStyle = Qt::DotLine;
+        break;
+    }
+
+    QPen pen(m_color, m_width, qtStyle, Qt::RoundCap, Qt::RoundJoin);
     painter.setPen(pen);
     painter.setBrush(Qt::NoBrush);
     painter.setRenderHint(QPainter::Antialiasing, true);
@@ -96,7 +113,7 @@ QRect PencilStroke::boundingRect() const
 
 std::unique_ptr<AnnotationItem> PencilStroke::clone() const
 {
-    return std::make_unique<PencilStroke>(m_points, m_color, m_width);
+    return std::make_unique<PencilStroke>(m_points, m_color, m_width, m_lineStyle);
 }
 
 void PencilStroke::addPoint(const QPointF &point)

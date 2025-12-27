@@ -9,6 +9,7 @@
 #include <QColor>
 #include "annotations/AnnotationLayer.h"
 #include "annotations/ArrowAnnotation.h"
+#include "annotations/LineStyle.h"
 #include "tools/ToolId.h"
 #include "ToolbarStyle.h"
 
@@ -112,6 +113,9 @@ private:
     LineEndStyle loadArrowStyle() const;
     void saveArrowStyle(LineEndStyle style);
     void onArrowStyleChanged(LineEndStyle style);
+    LineStyle loadLineStyle() const;
+    void saveLineStyle(LineStyle style);
+    void onLineStyleChanged(LineStyle style);
 
     // Screen capture
     QPixmap m_backgroundPixmap;

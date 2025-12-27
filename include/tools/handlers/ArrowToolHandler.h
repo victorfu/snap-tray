@@ -29,6 +29,7 @@ public:
     bool supportsColor() const override { return true; }
     bool supportsWidth() const override { return true; }
     bool supportsArrowStyle() const override { return true; }
+    bool supportsLineStyle() const override { return true; }
 
 private:
     bool m_isDrawing = false;

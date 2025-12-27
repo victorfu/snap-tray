@@ -9,7 +9,7 @@ void PencilToolHandler::onMousePress(ToolContext* ctx, const QPoint& pos) {
     m_currentPath.append(QPointF(pos));
 
     m_currentStroke = std::make_unique<PencilStroke>(
-        m_currentPath, ctx->color, ctx->width
+        m_currentPath, ctx->color, ctx->width, ctx->lineStyle
     );
 
     ctx->repaint();

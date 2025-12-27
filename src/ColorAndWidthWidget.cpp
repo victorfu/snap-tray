@@ -3,6 +3,7 @@
 #include "ui/sections/WidthSection.h"
 #include "ui/sections/TextSection.h"
 #include "ui/sections/ArrowStyleSection.h"
+#include "ui/sections/LineStyleSection.h"
 #include "ui/sections/ShapeSection.h"
 
 #include <QPainter>
@@ -14,6 +15,7 @@ ColorAndWidthWidget::ColorAndWidthWidget(QObject* parent)
     , m_widthSection(new WidthSection(this))
     , m_textSection(new TextSection(this))
     , m_arrowStyleSection(new ArrowStyleSection(this))
+    , m_lineStyleSection(new LineStyleSection(this))
     , m_shapeSection(new ShapeSection(this))
     , m_styleConfig(ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle()))
 {
@@ -61,6 +63,9 @@ void ColorAndWidthWidget::connectSectionSignals()
 
     // Forward ArrowStyleSection signals
     connect(m_arrowStyleSection, &ArrowStyleSection::arrowStyleChanged, this, &ColorAndWidthWidget::arrowStyleChanged);
+
+    // Forward LineStyleSection signals
+    connect(m_lineStyleSection, &LineStyleSection::lineStyleChanged, this, &ColorAndWidthWidget::lineStyleChanged);
 
     // Forward ShapeSection signals
     connect(m_shapeSection, &ShapeSection::shapeTypeChanged, this, [this](ShapeType type) {
@@ -201,6 +206,25 @@ LineEndStyle ColorAndWidthWidget::arrowStyle() const
 }
 
 // =============================================================================
+// Line Style Methods
+// =============================================================================
+
+void ColorAndWidthWidget::setShowLineStyleSection(bool show)
+{
+    m_showLineStyleSection = show;
+}
+
+void ColorAndWidthWidget::setLineStyle(LineStyle style)
+{
+    m_lineStyleSection->setLineStyle(style);
+}
+
+LineStyle ColorAndWidthWidget::lineStyle() const
+{
+    return m_lineStyleSection->lineStyle();
+}
+
+// =============================================================================
 // Shape Methods
 // =============================================================================
 
@@ -244,6 +268,9 @@ void ColorAndWidthWidget::updatePosition(const QRect& anchorRect, bool above, in
     if (m_showArrowStyleSection) {
         totalWidth += SECTION_SPACING + m_arrowStyleSection->preferredWidth();
     }
+    if (m_showLineStyleSection) {
+        totalWidth += SECTION_SPACING + m_lineStyleSection->preferredWidth();
+    }
     if (m_showTextSection) {
         totalWidth += SECTION_SPACING + m_textSection->preferredWidth();
     }
@@ -277,8 +304,9 @@ void ColorAndWidthWidget::updatePosition(const QRect& anchorRect, bool above, in
     m_widgetRect = QRect(widgetX, widgetY, totalWidth, WIDGET_HEIGHT);
     m_dropdownExpandsUpward = above;
 
-    // Update arrow style section dropdown direction
+    // Update dropdown section directions
     m_arrowStyleSection->setDropdownExpandsUpward(above);
+    m_lineStyleSection->setDropdownExpandsUpward(above);
 
     updateLayout();
 }
@@ -303,6 +331,13 @@ void ColorAndWidthWidget::updateLayout()
         xOffset += SECTION_SPACING;
         m_arrowStyleSection->updateLayout(m_widgetRect.top(), WIDGET_HEIGHT, xOffset);
         xOffset += m_arrowStyleSection->preferredWidth();
+    }
+
+    // Line style section
+    if (m_showLineStyleSection) {
+        xOffset += SECTION_SPACING;
+        m_lineStyleSection->updateLayout(m_widgetRect.top(), WIDGET_HEIGHT, xOffset);
+        xOffset += m_lineStyleSection->preferredWidth();
     }
 
     // Text section
@@ -354,6 +389,10 @@ void ColorAndWidthWidget::draw(QPainter& painter)
         m_arrowStyleSection->draw(painter, m_styleConfig);
     }
 
+    if (m_showLineStyleSection) {
+        m_lineStyleSection->draw(painter, m_styleConfig);
+    }
+
     if (m_showTextSection) {
         m_textSection->draw(painter, m_styleConfig);
     }
@@ -375,14 +414,24 @@ bool ColorAndWidthWidget::contains(const QPoint& pos) const
         m_arrowStyleSection->dropdownRect().contains(pos)) {
         return true;
     }
+    // Also include line style dropdown area when open
+    if (m_showLineStyleSection && m_lineStyleSection->isDropdownOpen() &&
+        m_lineStyleSection->dropdownRect().contains(pos)) {
+        return true;
+    }
     return false;
 }
 
 bool ColorAndWidthWidget::handleClick(const QPoint& pos)
 {
-    // Handle arrow style dropdown clicks first (even outside main widget)
+    // Handle dropdown clicks first (even outside main widget)
     if (m_showArrowStyleSection) {
         if (m_arrowStyleSection->handleClick(pos)) {
+            return true;
+        }
+    }
+    if (m_showLineStyleSection) {
+        if (m_lineStyleSection->handleClick(pos)) {
             return true;
         }
     }
@@ -442,6 +491,10 @@ bool ColorAndWidthWidget::updateHovered(const QPoint& pos)
 
     if (m_showArrowStyleSection) {
         changed |= m_arrowStyleSection->updateHovered(pos);
+    }
+
+    if (m_showLineStyleSection) {
+        changed |= m_lineStyleSection->updateHovered(pos);
     }
 
     if (m_showTextSection) {

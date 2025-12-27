@@ -2,6 +2,7 @@
 #define PENCILSTROKE_H
 
 #include "AnnotationItem.h"
+#include "LineStyle.h"
 #include <QVector>
 #include <QPointF>
 #include <QColor>
@@ -14,7 +15,8 @@ class QPainterPath;
 class PencilStroke : public AnnotationItem
 {
 public:
-    PencilStroke(const QVector<QPointF> &points, const QColor &color, int width);
+    PencilStroke(const QVector<QPointF> &points, const QColor &color, int width,
+                 LineStyle lineStyle = LineStyle::Solid);
 
     void draw(QPainter &painter) const override;
     QRect boundingRect() const override;
@@ -30,6 +32,7 @@ private:
     QVector<QPointF> m_points;
     QColor m_color;
     int m_width;
+    LineStyle m_lineStyle;
 
     // Performance optimization: cached bounding rect
     mutable QRect m_boundingRectCache;

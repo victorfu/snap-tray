@@ -153,6 +153,7 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_annotationColor = settings.loadColor();
     m_annotationWidth = settings.loadWidth();
     m_arrowStyle = loadArrowStyle();
+    m_lineStyle = loadLineStyle();
 
     // Initialize tool manager
     m_toolManager = new ToolManager(this);
@@ -161,6 +162,7 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_toolManager->setColor(m_annotationColor);
     m_toolManager->setWidth(m_annotationWidth);
     m_toolManager->setArrowStyle(m_arrowStyle);
+    m_toolManager->setLineStyle(m_lineStyle);
     connect(m_toolManager, &ToolManager::needsRepaint, this, QOverload<>::of(&QWidget::update));
 
     // Initialize OCR manager if available on this platform
@@ -245,6 +247,11 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_colorAndWidthWidget->setArrowStyle(m_arrowStyle);
     connect(m_colorAndWidthWidget, &ColorAndWidthWidget::arrowStyleChanged,
         this, &RegionSelector::onArrowStyleChanged);
+
+    // Connect line style signal
+    m_colorAndWidthWidget->setLineStyle(m_lineStyle);
+    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::lineStyleChanged,
+        this, &RegionSelector::onLineStyleChanged);
 
     // Connect shape section signals
     connect(m_colorAndWidthWidget, &ColorAndWidthWidget::shapeTypeChanged,
@@ -772,6 +779,10 @@ void RegionSelector::paintEvent(QPaintEvent*)
                 m_colorAndWidthWidget->setShowWidthSection(shouldShowWidthControl());
                 // Show arrow style section only for Arrow tool
                 m_colorAndWidthWidget->setShowArrowStyleSection(m_currentTool == ToolbarButton::Arrow);
+                // Show line style section for Pencil and Arrow tools
+                bool showLineStyle = (m_currentTool == ToolbarButton::Pencil ||
+                                      m_currentTool == ToolbarButton::Arrow);
+                m_colorAndWidthWidget->setShowLineStyleSection(showLineStyle);
                 // Show text section only for Text tool
                 m_colorAndWidthWidget->setShowTextSection(m_currentTool == ToolbarButton::Text);
                 // Show shape section only for Shape tool
@@ -1923,6 +1934,7 @@ void RegionSelector::startAnnotation(const QPoint& pos)
         m_toolManager->setColor(m_annotationColor);
         m_toolManager->setWidth(toolWidthForCurrentTool());
         m_toolManager->setArrowStyle(m_arrowStyle);
+        m_toolManager->setLineStyle(m_lineStyle);
         m_toolManager->setShapeType(static_cast<int>(m_shapeType));
         m_toolManager->setShapeFillMode(static_cast<int>(m_shapeFillMode));
 
@@ -2213,6 +2225,25 @@ void RegionSelector::onArrowStyleChanged(LineEndStyle style)
     m_arrowStyle = style;
     m_toolManager->setArrowStyle(style);
     saveArrowStyle(style);
+    update();
+}
+
+LineStyle RegionSelector::loadLineStyle() const
+{
+    int style = getSettings().value("annotation/lineStyle", static_cast<int>(LineStyle::Solid)).toInt();
+    return static_cast<LineStyle>(style);
+}
+
+void RegionSelector::saveLineStyle(LineStyle style)
+{
+    getSettings().setValue("annotation/lineStyle", static_cast<int>(style));
+}
+
+void RegionSelector::onLineStyleChanged(LineStyle style)
+{
+    m_lineStyle = style;
+    m_toolManager->setLineStyle(style);
+    saveLineStyle(style);
     update();
 }
 

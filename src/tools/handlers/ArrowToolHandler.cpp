@@ -21,7 +21,7 @@ void ArrowToolHandler::onMouseMove(ToolContext* ctx, const QPoint& pos) {
         QPoint diff = pos - m_startPoint;
         if (diff.manhattanLength() > 3) {
             m_currentArrow = std::make_unique<ArrowAnnotation>(
-                m_startPoint, pos, ctx->color, ctx->width, ctx->arrowStyle
+                m_startPoint, pos, ctx->color, ctx->width, ctx->arrowStyle, ctx->lineStyle
             );
             ctx->repaint();
         }

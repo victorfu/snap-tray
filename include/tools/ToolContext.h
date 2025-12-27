@@ -10,6 +10,7 @@
 #include "ToolId.h"
 #include "annotations/AnnotationLayer.h"
 #include "annotations/ArrowAnnotation.h"
+#include "annotations/LineStyle.h"
 
 
 class AnnotationItem;
@@ -30,6 +31,7 @@ public:
     QColor color = Qt::red;
     int width = 3;
     LineEndStyle arrowStyle = LineEndStyle::EndArrow;
+    LineStyle lineStyle = LineStyle::Solid;
 
     // Shape tool settings (initialized in ToolManager.cpp since forward declared)
     int shapeType = 0;      // 0 = Rectangle, 1 = Ellipse

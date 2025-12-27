@@ -9,6 +9,7 @@
 #include <QString>
 #include "annotations/ShapeAnnotation.h"  // For ShapeType and ShapeFillMode enums
 #include "annotations/ArrowAnnotation.h"  // For LineEndStyle enum
+#include "annotations/LineStyle.h"        // For LineStyle enum
 #include "ToolbarStyle.h"
 
 class QPainter;
@@ -16,6 +17,7 @@ class ColorSection;
 class WidthSection;
 class TextSection;
 class ArrowStyleSection;
+class LineStyleSection;
 class ShapeSection;
 
 /**
@@ -84,6 +86,15 @@ public:
     LineEndStyle arrowStyle() const;
 
     // =========================================================================
+    // Line Style Methods
+    // =========================================================================
+
+    void setShowLineStyleSection(bool show);
+    bool showLineStyleSection() const { return m_showLineStyleSection; }
+    void setLineStyle(LineStyle style);
+    LineStyle lineStyle() const;
+
+    // =========================================================================
     // Shape Methods
     // =========================================================================
 
@@ -141,6 +152,9 @@ signals:
     // Arrow style signals
     void arrowStyleChanged(LineEndStyle style);
 
+    // Line style signals
+    void lineStyleChanged(LineStyle style);
+
     // Shape signals
     void shapeTypeChanged(ShapeType type);
     void shapeFillModeChanged(ShapeFillMode mode);
@@ -154,12 +168,14 @@ private:
     WidthSection* m_widthSection;
     TextSection* m_textSection;
     ArrowStyleSection* m_arrowStyleSection;
+    LineStyleSection* m_lineStyleSection;
     ShapeSection* m_shapeSection;
 
     // Section visibility
     bool m_showWidthSection = true;
     bool m_showTextSection = false;
     bool m_showArrowStyleSection = false;
+    bool m_showLineStyleSection = false;
     bool m_showShapeSection = false;
 
     // Layout state
