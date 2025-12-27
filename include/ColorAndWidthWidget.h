@@ -46,6 +46,8 @@ public:
     // Color Methods
     // =========================================================================
 
+    void setShowColorSection(bool show);
+    bool showColorSection() const { return m_showColorSection; }
     void setColors(const QVector<QColor>& colors);
     void setCurrentColor(const QColor& color);
     QColor currentColor() const;
@@ -187,6 +189,7 @@ private:
     SizeSection* m_sizeSection;
 
     // Section visibility
+    bool m_showColorSection = true;
     bool m_showWidthSection = true;
     bool m_showTextSection = false;
     bool m_showArrowStyleSection = false;

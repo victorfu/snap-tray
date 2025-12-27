@@ -267,6 +267,7 @@ private:
     QColor m_annotationColor;
     int m_annotationWidth;
     int m_eraserWidth = 20;  // Separate width for eraser tool (range: 5-100)
+    int m_mosaicWidth = 30;  // Separate width for mosaic tool (range: 10-100)
     LineEndStyle m_arrowStyle;
     LineStyle m_lineStyle = LineStyle::Solid;
     StepBadgeSize m_stepBadgeSize = StepBadgeSize::Medium;
