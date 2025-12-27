@@ -10,6 +10,7 @@
 #include <QGuiApplication>
 #include <QConicalGradient>
 #include <QLinearGradient>
+#include <QtMath>
 
 RecordingControlBar::RecordingControlBar(QWidget *parent)
     : QWidget(parent, Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint)
@@ -22,6 +23,7 @@ RecordingControlBar::RecordingControlBar(QWidget *parent)
     , m_gradientOffset(0.0)
     , m_indicatorVisible(true)
     , m_isPaused(false)
+    , m_isPreparing(false)
 {
     setAttribute(Qt::WA_TranslucentBackground);
     setAttribute(Qt::WA_DeleteOnClose);
@@ -167,7 +169,11 @@ void RecordingControlBar::updateIndicatorGradient()
     QPainter painter(&pixmap);
     painter.setRenderHint(QPainter::Antialiasing);
 
-    if (m_isPaused) {
+    if (m_isPreparing) {
+        // Pulsing gray when preparing (loading state)
+        int alpha = 128 + static_cast<int>(64 * qSin(m_gradientOffset * 2 * M_PI));
+        painter.setBrush(QColor(180, 180, 180, alpha));
+    } else if (m_isPaused) {
         // Yellow when paused
         painter.setBrush(QColor(255, 184, 0));
     } else {
@@ -192,6 +198,42 @@ void RecordingControlBar::setPaused(bool paused)
     m_isPaused = paused;
     updatePauseButton();
     updateIndicatorGradient();
+}
+
+void RecordingControlBar::setPreparing(bool preparing)
+{
+    m_isPreparing = preparing;
+    updateIndicatorGradient();
+
+    // Disable/enable buttons based on preparing state
+    if (m_pauseButton) {
+        m_pauseButton->setEnabled(!preparing);
+        m_pauseButton->setVisible(!preparing);
+    }
+    if (m_stopButton) {
+        m_stopButton->setEnabled(!preparing);
+        m_stopButton->setVisible(!preparing);
+    }
+
+    // Show "Preparing..." in duration label while preparing
+    if (preparing) {
+        m_durationLabel->setText(tr("Preparing..."));
+        m_durationLabel->setStyleSheet(
+            "color: rgba(255, 255, 255, 0.7); font-size: 14px; font-weight: 600; font-family: 'SF Mono', Menlo, Monaco, monospace;");
+    } else {
+        m_durationLabel->setText("00:00:00");
+        m_durationLabel->setStyleSheet(
+            "color: white; font-size: 14px; font-weight: 600; font-family: 'SF Mono', Menlo, Monaco, monospace;");
+    }
+
+    adjustSize();
+}
+
+void RecordingControlBar::setPreparingStatus(const QString &status)
+{
+    if (m_isPreparing && m_durationLabel) {
+        m_durationLabel->setText(status);
+    }
 }
 
 void RecordingControlBar::updatePauseButton()

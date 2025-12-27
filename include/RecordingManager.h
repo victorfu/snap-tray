@@ -12,6 +12,7 @@
 class RecordingRegionSelector;
 class RecordingControlBar;
 class RecordingBoundaryOverlay;
+class RecordingInitTask;
 class FFmpegEncoder;
 class IVideoEncoder;
 class ICaptureEngine;
@@ -30,6 +31,7 @@ public:
     enum class State {
         Idle,       // No recording activity
         Selecting,  // Region selection in progress
+        Preparing,  // Initializing capture/encoder (async)
         Recording,  // Actively capturing frames
         Paused,     // Recording paused
         Encoding    // FFmpeg encoding after stop
@@ -57,6 +59,8 @@ public slots:
     void togglePause();             // Toggle pause state
 
 signals:
+    void preparationStarted();
+    void preparationProgress(const QString &step);
     void recordingStarted();
     void recordingStopped(const QString &outputPath);
     void recordingCancelled();
@@ -79,6 +83,9 @@ private slots:
 
 private:
     void startFrameCapture();
+    void beginAsyncInitialization();   // Start async initialization
+    void onInitializationComplete();   // Handle async init completion
+    void startCaptureTimers();         // Start capture and duration timers
     void stopFrameCapture();
     void cleanupRecording();
     void cleanupAudio();               // Clean up audio capture resources
@@ -120,6 +127,9 @@ private:
     int m_audioSource;  // 0=Microphone, 1=SystemAudio, 2=Both
     QString m_audioDevice;
     QString m_tempAudioPath;
+
+    // Async initialization
+    RecordingInitTask *m_initTask;
 };
 
 #endif // RECORDINGMANAGER_H

@@ -21,6 +21,8 @@ public:
     void positionNear(const QRect &recordingRegion);
     void updateDuration(qint64 elapsedMs);
     void setPaused(bool paused);
+    void setPreparing(bool preparing);
+    void setPreparingStatus(const QString &status);
     void updateRegionSize(int width, int height);
     void updateFps(double fps);
     void setAudioEnabled(bool enabled);
@@ -64,6 +66,7 @@ private:
     qreal m_gradientOffset;
     bool m_indicatorVisible;
     bool m_isPaused;
+    bool m_isPreparing;
 
     // Global shortcut for ESC key
     QShortcut *m_escShortcut;
