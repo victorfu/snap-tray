@@ -79,6 +79,7 @@ set(PINWINDOW_COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/LoadingSpinnerRenderer.cpp
     ${CMAKE_SOURCE_DIR}/src/pinwindow/ResizeHandler.cpp
     ${CMAKE_SOURCE_DIR}/src/pinwindow/UIIndicators.cpp
+    ${CMAKE_SOURCE_DIR}/src/pinwindow/ClickThroughExitButton.cpp
 )
 
 # Platform-specific sources for PinWindow tests
@@ -109,6 +110,7 @@ set(PINWINDOW_COMMON_HEADERS
     ${CMAKE_SOURCE_DIR}/include/WindowDetector.h
     ${CMAKE_SOURCE_DIR}/include/pinwindow/ResizeHandler.h
     ${CMAKE_SOURCE_DIR}/include/pinwindow/UIIndicators.h
+    ${CMAKE_SOURCE_DIR}/include/pinwindow/ClickThroughExitButton.h
 )
 
 # Helper function to create a PinWindow test executable

@@ -92,6 +92,7 @@ private:
     QPoint m_dragStartPos;
     bool m_isDragging;
     QMenu *m_contextMenu;
+    QAction *m_clickThroughAction = nullptr;
 
     // Zoom menu members
     QAction *m_currentZoomAction;

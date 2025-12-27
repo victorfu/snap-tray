@@ -1,10 +1,12 @@
 #include "pinwindow/UIIndicators.h"
+#include "pinwindow/ClickThroughExitButton.h"
 
 UIIndicators::UIIndicators(QWidget* parentWidget, QObject* parent)
     : QObject(parent)
     , m_parentWidget(parentWidget)
 {
     setupLabels();
+    setupClickThroughExitButton();
 }
 
 void UIIndicators::setupLabels()
@@ -43,20 +45,6 @@ void UIIndicators::setupLabels()
     m_opacityLabelTimer->setSingleShot(true);
     connect(m_opacityLabelTimer, &QTimer::timeout, m_opacityLabel, &QLabel::hide);
 
-    // Click-through indicator label
-    m_clickThroughLabel = new QLabel(m_parentWidget);
-    m_clickThroughLabel->setStyleSheet(
-        "QLabel {"
-        "  background-color: rgba(88, 86, 214, 200);"
-        "  color: white;"
-        "  padding: 4px 10px;"
-        "  border-radius: 4px;"
-        "  font-size: 11px;"
-        "  font-weight: bold;"
-        "}"
-    );
-    m_clickThroughLabel->hide();
-
     // OCR toast label
     m_ocrToastLabel = new QLabel(m_parentWidget);
     m_ocrToastLabel->hide();
@@ -64,6 +52,14 @@ void UIIndicators::setupLabels()
     m_ocrToastTimer = new QTimer(this);
     m_ocrToastTimer->setSingleShot(true);
     connect(m_ocrToastTimer, &QTimer::timeout, m_ocrToastLabel, &QLabel::hide);
+}
+
+void UIIndicators::setupClickThroughExitButton()
+{
+    m_clickThroughExitButton = new ClickThroughExitButton();
+    m_clickThroughExitButton->attachTo(m_parentWidget);
+    connect(m_clickThroughExitButton, &ClickThroughExitButton::exitClicked,
+            this, &UIIndicators::exitClickThroughRequested);
 }
 
 void UIIndicators::showZoomIndicator(qreal zoomLevel)
@@ -92,29 +88,20 @@ void UIIndicators::showOpacityIndicator(qreal opacity)
 void UIIndicators::showClickThroughIndicator(bool enabled)
 {
     if (enabled) {
-        m_clickThroughLabel->setText("Click-through (T to exit)");
-        m_clickThroughLabel->adjustSize();
-        // Position at top-right corner
-        m_clickThroughLabel->move(
-            m_parentWidget->width() - m_shadowMargin - m_clickThroughLabel->width() - 8,
-            m_shadowMargin + 8
-        );
-        m_clickThroughLabel->show();
-        m_clickThroughLabel->raise();
+        m_clickThroughExitButton->updatePosition();
+        m_clickThroughExitButton->show();
+        m_clickThroughExitButton->raise();
     } else {
-        m_clickThroughLabel->hide();
+        m_clickThroughExitButton->hide();
     }
 }
 
 void UIIndicators::updatePositions(const QSize& windowSize)
 {
     Q_UNUSED(windowSize);
-    // Update positions if labels are visible
-    if (m_clickThroughLabel->isVisible()) {
-        m_clickThroughLabel->move(
-            m_parentWidget->width() - m_shadowMargin - m_clickThroughLabel->width() - 8,
-            m_shadowMargin + 8
-        );
+    // Update click-through exit button position if visible
+    if (m_clickThroughExitButton->isVisible()) {
+        m_clickThroughExitButton->updatePosition();
     }
 }
 

@@ -123,6 +123,7 @@ set(SOURCES
     src/pinwindow/ImageTransformer.cpp
     src/pinwindow/ResizeHandler.cpp
     src/pinwindow/UIIndicators.cpp
+    src/pinwindow/ClickThroughExitButton.cpp
 )
 
 set(RESOURCES
@@ -213,6 +214,7 @@ set(HEADERS
     include/pinwindow/ImageTransformer.h
     include/pinwindow/ResizeHandler.h
     include/pinwindow/UIIndicators.h
+    include/pinwindow/ClickThroughExitButton.h
 )
 
 # Cross-platform source files (used by both platforms)

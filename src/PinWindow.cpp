@@ -77,6 +77,8 @@ PinWindow::PinWindow(const QPixmap &screenshot, const QPoint &position, QWidget 
     m_resizeHandler = new ResizeHandler(kShadowMargin, kMinSize, this);
     m_uiIndicators = new UIIndicators(this, this);
     m_uiIndicators->setShadowMargin(kShadowMargin);
+    connect(m_uiIndicators, &UIIndicators::exitClickThroughRequested,
+            this, [this]() { setClickThrough(false); });
 
     // Must show() first, then move() to get correct positioning on macOS
     // Moving before show() can result in incorrect window placement
@@ -445,11 +447,10 @@ void PinWindow::createContextMenu()
     addInfoItem("Y-mirror", m_flipVertical ? "Yes" : "No");
 
     // Click-through option
-    QAction *clickThroughAction = m_contextMenu->addAction("Click-through");
-    clickThroughAction->setCheckable(true);
-    clickThroughAction->setChecked(m_clickThrough);
-    clickThroughAction->setShortcut(QKeySequence(Qt::Key_T));
-    connect(clickThroughAction, &QAction::toggled, this, &PinWindow::setClickThrough);
+    m_clickThroughAction = m_contextMenu->addAction("Click-through");
+    m_clickThroughAction->setCheckable(true);
+    m_clickThroughAction->setChecked(m_clickThrough);
+    connect(m_clickThroughAction, &QAction::toggled, this, &PinWindow::setClickThrough);
 
     m_contextMenu->addSeparator();
 
@@ -571,9 +572,9 @@ void PinWindow::setClickThrough(bool enabled)
     m_uiIndicators->showClickThroughIndicator(enabled);
     update(); // Trigger repaint for border change
 
-    // Notify manager to update global hotkey
-    if (m_pinWindowManager) {
-        m_pinWindowManager->onClickThroughChanged();
+    // Sync context menu action state
+    if (m_clickThroughAction && m_clickThroughAction->isChecked() != enabled) {
+        m_clickThroughAction->setChecked(enabled);
     }
 }
 
@@ -768,8 +769,6 @@ void PinWindow::keyPressEvent(QKeyEvent *event)
         saveToFile();
     } else if (event->matches(QKeySequence::Copy)) {
         copyToClipboard();
-    } else if (event->key() == Qt::Key_T) {
-        setClickThrough(!m_clickThrough);
     } else {
         QWidget::keyPressEvent(event);
     }

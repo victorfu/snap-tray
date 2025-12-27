@@ -6,6 +6,8 @@
 #include <QTimer>
 #include <QWidget>
 
+class ClickThroughExitButton;
+
 class UIIndicators : public QObject
 {
     Q_OBJECT
@@ -28,8 +30,12 @@ public:
     // OCR toast
     void showOCRToast(bool success, const QString& message);
 
+signals:
+    void exitClickThroughRequested();
+
 private:
     void setupLabels();
+    void setupClickThroughExitButton();
 
     QWidget* m_parentWidget = nullptr;
     int m_shadowMargin = 8;
@@ -42,8 +48,8 @@ private:
     QLabel* m_opacityLabel = nullptr;
     QTimer* m_opacityLabelTimer = nullptr;
 
-    // Click-through indicator
-    QLabel* m_clickThroughLabel = nullptr;
+    // Click-through exit button (independent floating window)
+    ClickThroughExitButton* m_clickThroughExitButton = nullptr;
 
     // OCR toast
     QLabel* m_ocrToastLabel = nullptr;
