@@ -255,6 +255,11 @@ void MagnifierPanel::drawInfoPanel(QPainter& painter, int panelX, int infoY, int
 
 QColor MagnifierPanel::calculateAdaptiveBorderColor(const QImage& backgroundImage, const QPoint& cursorPos) const
 {
+    // Handle empty image case
+    if (backgroundImage.isNull() || backgroundImage.width() == 0 || backgroundImage.height() == 0) {
+        return Qt::white;  // Default to white for empty images
+    }
+    
     // Sample the area around the cursor to determine if it's light or dark
     // We'll check pixels around the magnifier border area
     

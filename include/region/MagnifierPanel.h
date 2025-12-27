@@ -80,6 +80,18 @@ private:
     void initializeGridCache();
     void updateMagnifierCache(const QPoint& cursorPos, const QImage& backgroundImage);
     void drawInfoPanel(QPainter& painter, int panelX, int infoY, int panelWidth);
+    
+    /**
+     * @brief Calculate adaptive border color based on background brightness.
+     * 
+     * Samples pixels around the magnifier area to determine if the background
+     * is light or dark, then returns an appropriate contrasting border color.
+     * Uses luminance formula (0.299R + 0.587G + 0.114B) for accurate brightness.
+     * 
+     * @param backgroundImage The background image to sample
+     * @param cursorPos The current cursor position
+     * @return Dark color for light backgrounds, white for dark backgrounds
+     */
     QColor calculateAdaptiveBorderColor(const QImage& backgroundImage, const QPoint& cursorPos) const;
 
     qreal m_devicePixelRatio = 1.0;
