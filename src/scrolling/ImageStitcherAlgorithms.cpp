@@ -3,6 +3,7 @@
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/features2d.hpp>
+#include <opencv2/calib3d.hpp>
 
 #include <QPainter>
 #include <QtGlobal>
@@ -122,8 +123,13 @@ ImageStitcher::MatchCandidate ImageStitcher::computeORBMatchCandidate(const QIma
     cv::Mat roiLastMat = lastGray(roiLast);
     cv::Mat roiNewMat = newGray(roiNew);
 
+    // Reduce small illumination noise that confuses feature descriptors
+    cv::GaussianBlur(roiLastMat, roiLastMat, cv::Size(3, 3), 0.8);
+    cv::GaussianBlur(roiNewMat, roiNewMat, cv::Size(3, 3), 0.8);
+
     // ORB detection
-    cv::Ptr<cv::ORB> orb = cv::ORB::create(500);
+    const int featureCount = std::max(750, (roiLastMat.rows * roiLastMat.cols) / 3000);
+    cv::Ptr<cv::ORB> orb = cv::ORB::create(featureCount);
     std::vector<cv::KeyPoint> kp1, kp2;
     cv::Mat desc1, desc2;
 
@@ -156,49 +162,80 @@ ImageStitcher::MatchCandidate ImageStitcher::computeORBMatchCandidate(const QIma
         return candidate;
     }
 
-    // Calculate median offset in full-frame coordinates with outlier filtering
+    // Calculate offsets using a robust affine estimate to handle large scrolls
+    std::vector<cv::Point2f> lastPoints;
+    std::vector<cv::Point2f> newPoints;
+    lastPoints.reserve(goodMatches.size());
+    newPoints.reserve(goodMatches.size());
+
+    for (const auto &m : goodMatches) {
+        const cv::Point2f lastPt(kp1[m.queryIdx].pt.x + roiLast.x,
+                                 kp1[m.queryIdx].pt.y + roiLast.y);
+        const cv::Point2f newPt(kp2[m.trainIdx].pt.x + roiNew.x,
+                                kp2[m.trainIdx].pt.y + roiNew.y);
+        lastPoints.push_back(lastPt);
+        newPoints.push_back(newPt);
+    }
+
+    cv::Mat inlierMask;
+    cv::Mat transform = cv::estimateAffinePartial2D(newPoints, lastPoints, inlierMask,
+                                                    cv::RANSAC, 3.0, 2000, 0.99);
+
     std::vector<double> offsets;
     offsets.reserve(goodMatches.size());
-    for (const auto &m : goodMatches) {
-        double y1 = kp1[m.queryIdx].pt.y + roiLast.y;
-        double y2 = kp2[m.trainIdx].pt.y + roiNew.y;
-        offsets.push_back(y1 - y2);
+    for (size_t i = 0; i < lastPoints.size(); ++i) {
+        offsets.push_back(lastPoints[i].y - newPoints[i].y);
     }
     std::sort(offsets.begin(), offsets.end());
 
-    // Use interquartile range (IQR) to filter outliers
-    size_t q1Idx = offsets.size() / 4;
-    size_t q3Idx = (offsets.size() * 3) / 4;
-    double q1 = offsets[q1Idx];
-    double q3 = offsets[q3Idx];
-    double iqr = q3 - q1;
-    double lowerBound = q1 - 1.5 * iqr;
-    double upperBound = q3 + 1.5 * iqr;
+    auto computeMedian = [&offsets]() {
+        if (offsets.empty()) {
+            return 0.0;
+        }
+        size_t mid = offsets.size() / 2;
+        if (offsets.size() % 2 == 0) {
+            return (offsets[mid - 1] + offsets[mid]) / 2.0;
+        }
+        return offsets[mid];
+    };
 
-    std::vector<double> filteredOffsets;
-    for (double val : offsets) {
-        if (val >= lowerBound && val <= upperBound) {
-            filteredOffsets.push_back(val);
+    double translationY = computeMedian();
+    double translationX = 0.0;
+    int inlierCount = 0;
+
+    if (!transform.empty()) {
+        translationX = transform.at<double>(0, 2);
+        translationY = transform.at<double>(1, 2);
+
+        double angle = std::abs(std::atan2(transform.at<double>(0, 1), transform.at<double>(0, 0)));
+        double scale = std::sqrt(std::pow(transform.at<double>(0, 0), 2) +
+                                 std::pow(transform.at<double>(0, 1), 2));
+
+        inlierCount = cv::countNonZero(inlierMask);
+
+        // Reject transforms with unrealistic rotation/scale for vertical scrolling
+        if (angle > 0.10 || scale < 0.75 || scale > 1.25) {
+            transform.release();
         }
     }
 
-    double medianOffset;
-    if (filteredOffsets.size() >= 3) {
-        medianOffset = filteredOffsets[filteredOffsets.size() / 2];
-    } else {
-        medianOffset = offsets[offsets.size() / 2];
+    // Fallback to median when RANSAC transform failed
+    if (transform.empty()) {
+        inlierCount = 0;
+        translationX = 0.0;
+        translationY = computeMedian();
     }
 
-    if (direction == ScrollDirection::Down && medianOffset <= 0.0) {
+    if (direction == ScrollDirection::Down && translationY <= 0.0) {
         candidate.failureReason = "Direction mismatch";
         return candidate;
     }
-    if (direction == ScrollDirection::Up && medianOffset >= 0.0) {
+    if (direction == ScrollDirection::Up && translationY >= 0.0) {
         candidate.failureReason = "Direction mismatch";
         return candidate;
     }
 
-    int overlap = newFrame.height() - static_cast<int>(std::round(std::abs(medianOffset)));
+    int overlap = newFrame.height() - static_cast<int>(std::round(std::abs(translationY)));
 
     if (overlap <= 0) {
         candidate.confidence = 0.2;
@@ -212,13 +249,11 @@ ImageStitcher::MatchCandidate ImageStitcher::computeORBMatchCandidate(const QIma
         return candidate;
     }
 
-    int inlierCount = 0;
-    for (double val : offsets) {
-        if (std::abs(val - medianOffset) < 5.0) {
-            inlierCount++;
-        }
-    }
-    candidate.confidence = offsets.empty() ? 0.0 : static_cast<double>(inlierCount) / offsets.size();
+    const double matchRatio = goodMatches.empty() ? 0.0
+                                                  : static_cast<double>(inlierCount) / goodMatches.size();
+    const double horizontalPenalty = 1.0 - std::min(std::abs(translationX) / std::max(1, lastWidth), 1.0);
+    const double featureScore = std::min(candidate.matchedFeatures / 60.0, 1.0);
+    candidate.confidence = 0.4 * matchRatio + 0.4 * horizontalPenalty + 0.2 * featureScore;
 
     if (candidate.confidence < m_confidenceThreshold) {
         candidate.failureReason = QString("Low confidence: %1").arg(candidate.confidence);
@@ -250,8 +285,8 @@ ImageStitcher::MatchCandidate ImageStitcher::computeTemplateMatchCandidate(const
     cv::cvtColor(lastMat, lastGray, cv::COLOR_BGR2GRAY);
     cv::cvtColor(newMat, newGray, cv::COLOR_BGR2GRAY);
 
-    int templateHeight = std::min(150, lastGray.rows / 3);
-    int searchMaxExtent = std::min(MAX_OVERLAP + templateHeight, newGray.rows);
+    int templateHeight = std::min(180, std::max(60, lastGray.rows / 3));
+    int searchMaxExtent = std::min(MAX_OVERLAP + templateHeight + 40, newGray.rows);
     if (templateHeight <= 0 || searchMaxExtent <= 0) {
         candidate.failureReason = "Invalid template or search region";
         return candidate;
@@ -280,8 +315,25 @@ ImageStitcher::MatchCandidate ImageStitcher::computeTemplateMatchCandidate(const
         return candidate;
     }
 
+    auto preprocess = [](const cv::Mat &src) {
+        cv::Mat equalized;
+        cv::Ptr<cv::CLAHE> clahe = cv::createCLAHE(2.0, cv::Size(8, 8));
+        clahe->apply(src, equalized);
+
+        cv::Mat blurred;
+        cv::GaussianBlur(equalized, blurred, cv::Size(3, 3), 0.8);
+
+        cv::Mat laplacian, absLap;
+        cv::Laplacian(blurred, laplacian, CV_16S, 3);
+        cv::convertScaleAbs(laplacian, absLap);
+        return absLap;
+    };
+
+    cv::Mat enhancedTemplate = preprocess(templateImg);
+    cv::Mat enhancedSearch = preprocess(searchRegion);
+
     cv::Mat matchResult;
-    cv::matchTemplate(searchRegion, templateImg, matchResult, cv::TM_CCOEFF_NORMED);
+    cv::matchTemplate(enhancedSearch, enhancedTemplate, matchResult, cv::TM_CCOEFF_NORMED);
 
     double minVal, maxVal;
     cv::Point minLoc, maxLoc;
