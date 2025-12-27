@@ -188,7 +188,7 @@ private:
     void finishSelection();
 
     // Tool switching helpers
-    void restoreStandardWidthFromEraser();
+    void restoreStandardWidth();
     void saveEraserWidthAndClearHover();
 
     // Cursor helpers

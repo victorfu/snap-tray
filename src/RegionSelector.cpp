@@ -1000,9 +1000,9 @@ void RegionSelector::saveEraserWidthAndClearHover()
     }
 }
 
-void RegionSelector::restoreStandardWidthFromEraser()
+void RegionSelector::restoreStandardWidth()
 {
-    if (m_currentTool == ToolbarButton::Eraser) {
+    if (m_currentTool == ToolbarButton::Eraser || m_currentTool == ToolbarButton::Mosaic) {
         m_colorAndWidthWidget->setWidthRange(1, 20);
         m_colorAndWidthWidget->setCurrentWidth(m_annotationWidth);
         m_toolManager->setWidth(m_annotationWidth);
@@ -1074,7 +1074,7 @@ void RegionSelector::handleToolbarClick(ToolbarButton button)
 
     // Restore standard width when switching to annotation tools (except Eraser)
     if (button != ToolbarButton::Eraser && isAnnotationTool(button)) {
-        restoreStandardWidthFromEraser();
+        restoreStandardWidth();
     }
 
     switch (button) {
