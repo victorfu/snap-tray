@@ -390,11 +390,11 @@ void RecordingRegionSelector::finishSelection()
 
 void RecordingRegionSelector::setupButtons()
 {
-    // Create button container with gradient border style
+    // Create button container with glass-style background
     m_buttonContainer = new QWidget(this);
     m_buttonContainer->setStyleSheet(
-        "background-color: rgba(25, 25, 28, 245);"
-        "border: 1px solid rgba(88, 86, 214, 0.5);"
+        "background-color: rgba(40, 40, 40, 217);"  // 85% opacity glass background
+        "border: 1px solid rgba(255, 255, 255, 25);"  // Hairline border
         "border-radius: 10px;");
     m_buttonContainer->hide();
 

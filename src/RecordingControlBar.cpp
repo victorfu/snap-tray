@@ -1,4 +1,6 @@
 #include "RecordingControlBar.h"
+#include "GlassRenderer.h"
+#include "ToolbarStyle.h"
 
 #include <QLabel>
 #include <QPushButton>
@@ -299,17 +301,12 @@ void RecordingControlBar::paintEvent(QPaintEvent *event)
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
 
-    // Dark rounded rectangle background with subtle gradient border
-    QRectF bgRect = QRectF(rect()).adjusted(1, 1, -1, -1);
+    // Use glass style for consistent appearance
+    ToolbarStyleConfig config = ToolbarStyleConfig::getDarkStyle();
+    QRect bgRect = rect().adjusted(1, 1, -1, -1);
 
-    // Draw subtle glow/border
-    QLinearGradient borderGradient(bgRect.topLeft(), bgRect.topRight());
-    borderGradient.setColorAt(0.0, QColor(0, 122, 255, 80));
-    borderGradient.setColorAt(0.5, QColor(175, 82, 222, 80));
-    borderGradient.setColorAt(1.0, QColor(0, 122, 255, 80));
-    painter.setPen(QPen(QBrush(borderGradient), 1.5));
-    painter.setBrush(QColor(25, 25, 28, 245));
-    painter.drawRoundedRect(bgRect, 12, 12);
+    // Draw glass panel with 12px radius for recording bar
+    GlassRenderer::drawGlassPanel(painter, bgRect, config, 12);
 }
 
 void RecordingControlBar::positionNear(const QRect &recordingRegion)

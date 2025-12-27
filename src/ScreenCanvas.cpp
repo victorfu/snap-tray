@@ -2,6 +2,7 @@
 #include "annotations/AnnotationLayer.h"
 #include "tools/ToolManager.h"
 #include "IconRenderer.h"
+#include "GlassRenderer.h"
 #include "ColorPaletteWidget.h"
 #include "ColorPickerDialog.h"
 #include "LineWidthWidget.h"
@@ -367,20 +368,8 @@ void ScreenCanvas::drawCurrentAnnotation(QPainter& painter)
 
 void ScreenCanvas::drawToolbar(QPainter& painter)
 {
-    // Draw shadow
-    QRect shadowRect = m_toolbarRect.adjusted(2, 2, 2, 2);
-    painter.setPen(Qt::NoPen);
-    painter.setBrush(QColor(0, 0, 0, m_toolbarStyleConfig.shadowAlpha));
-    painter.drawRoundedRect(shadowRect, 8, 8);
-
-    // Draw toolbar background with gradient
-    QLinearGradient gradient(m_toolbarRect.topLeft(), m_toolbarRect.bottomLeft());
-    gradient.setColorAt(0, m_toolbarStyleConfig.backgroundColorTop);
-    gradient.setColorAt(1, m_toolbarStyleConfig.backgroundColorBottom);
-
-    painter.setBrush(gradient);
-    painter.setPen(QPen(m_toolbarStyleConfig.borderColor, 1));
-    painter.drawRoundedRect(m_toolbarRect, 8, 8);
+    // Draw glass panel (shadow, background, border, highlight)
+    GlassRenderer::drawGlassPanel(painter, m_toolbarRect, m_toolbarStyleConfig);
 
     // Render icons
     for (int i = 0; i < static_cast<int>(CanvasButton::Count); ++i) {

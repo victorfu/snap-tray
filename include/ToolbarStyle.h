@@ -52,6 +52,19 @@ struct ToolbarStyleConfig {
     QColor dropdownBackground;      // Dropdown menu background
     QColor dropdownBorder;          // Dropdown menu border
 
+    // Glass effect properties (macOS style)
+    QColor glassBackgroundColor;    // Semi-transparent base color
+    QColor glassHighlightColor;     // Top edge inner glow
+    QColor hairlineBorderColor;     // Low opacity hairline border
+
+    // Enhanced shadow
+    QColor shadowColor;             // Shadow color with alpha
+    int shadowBlurRadius;           // Shadow spread/blur radius
+    int shadowOffsetY;              // Vertical shadow offset
+
+    // Corner radius
+    int cornerRadius;               // Default corner radius (10 for toolbar, 6 for sub-widgets)
+
     /**
      * @brief Get the dark style configuration.
      */

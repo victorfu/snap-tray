@@ -78,6 +78,7 @@ set(SOURCES
     src/ColorAndWidthWidget.cpp
     src/ToolbarWidget.cpp
     src/ToolbarStyle.cpp
+    src/GlassRenderer.cpp
     src/settings/AnnotationSettingsManager.cpp
     src/AnnotationController.cpp
     src/ColorPickerDialog.mm
@@ -162,6 +163,7 @@ set(HEADERS
     include/ColorAndWidthWidget.h
     include/ToolbarWidget.h
     include/ToolbarStyle.h
+    include/GlassRenderer.h
     include/AnnotationController.h
     include/ColorPickerDialog.h
     include/InlineTextEditor.h

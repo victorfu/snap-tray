@@ -1,5 +1,6 @@
 #include "ToolbarWidget.h"
 #include "IconRenderer.h"
+#include "GlassRenderer.h"
 
 #include <QPainter>
 #include <QLinearGradient>
@@ -108,20 +109,8 @@ void ToolbarWidget::updateButtonRects()
 
 void ToolbarWidget::draw(QPainter& painter)
 {
-    // Draw shadow
-    QRect shadowRect = m_toolbarRect.adjusted(2, 2, 2, 2);
-    painter.setPen(Qt::NoPen);
-    painter.setBrush(QColor(0, 0, 0, m_styleConfig.shadowAlpha));
-    painter.drawRoundedRect(shadowRect, 8, 8);
-
-    // Draw toolbar background with gradient
-    QLinearGradient gradient(m_toolbarRect.topLeft(), m_toolbarRect.bottomLeft());
-    gradient.setColorAt(0, m_styleConfig.backgroundColorTop);
-    gradient.setColorAt(1, m_styleConfig.backgroundColorBottom);
-
-    painter.setBrush(gradient);
-    painter.setPen(QPen(m_styleConfig.borderColor, 1));
-    painter.drawRoundedRect(m_toolbarRect, 8, 8);
+    // Draw glass panel (shadow, background, border, highlight)
+    GlassRenderer::drawGlassPanel(painter, m_toolbarRect, m_styleConfig);
 
     // Render buttons
     for (int i = 0; i < m_buttons.size(); ++i) {
@@ -196,15 +185,11 @@ void ToolbarWidget::drawTooltip(QPainter& painter)
 
     textRect.moveTo(tooltipX, tooltipY);
 
-    // Draw tooltip background
-    painter.setPen(Qt::NoPen);
-    painter.setBrush(m_styleConfig.tooltipBackground);
-    painter.drawRoundedRect(textRect, 4, 4);
-
-    // Draw tooltip border
-    painter.setPen(m_styleConfig.tooltipBorder);
-    painter.setBrush(Qt::NoBrush);
-    painter.drawRoundedRect(textRect, 4, 4);
+    // Draw glass tooltip (smaller shadow for elevated look)
+    ToolbarStyleConfig tooltipConfig = m_styleConfig;
+    tooltipConfig.shadowOffsetY = 2;
+    tooltipConfig.shadowBlurRadius = 6;
+    GlassRenderer::drawGlassPanel(painter, textRect, tooltipConfig, 4);
 
     // Draw tooltip text
     painter.setPen(m_styleConfig.tooltipText);

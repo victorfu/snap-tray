@@ -1,4 +1,5 @@
 #include "ColorAndWidthWidget.h"
+#include "GlassRenderer.h"
 #include "ui/sections/ColorSection.h"
 #include "ui/sections/WidthSection.h"
 #include "ui/sections/TextSection.h"
@@ -455,19 +456,8 @@ void ColorAndWidthWidget::draw(QPainter& painter)
 
     painter.setRenderHint(QPainter::Antialiasing, true);
 
-    // Draw unified shadow
-    QRect shadowRect = m_widgetRect.adjusted(2, 2, 2, 2);
-    painter.setPen(Qt::NoPen);
-    painter.setBrush(QColor(0, 0, 0, m_styleConfig.shadowAlpha));
-    painter.drawRoundedRect(shadowRect, 6, 6);
-
-    // Draw unified background with gradient
-    QLinearGradient gradient(m_widgetRect.topLeft(), m_widgetRect.bottomLeft());
-    gradient.setColorAt(0, m_styleConfig.backgroundColorTop);
-    gradient.setColorAt(1, m_styleConfig.backgroundColorBottom);
-    painter.setBrush(gradient);
-    painter.setPen(QPen(m_styleConfig.borderColor, 1));
-    painter.drawRoundedRect(m_widgetRect, 6, 6);
+    // Draw glass panel (6px radius for sub-widgets)
+    GlassRenderer::drawGlassPanel(painter, m_widgetRect, m_styleConfig, 6);
 
     // Draw sections
     if (m_showColorSection) {
