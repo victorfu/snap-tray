@@ -20,6 +20,22 @@ void MagnifierPanel::initializeGridCache()
     QPainter gridPainter(&m_gridOverlayCache);
     gridPainter.setRenderHint(QPainter::Antialiasing, false);
 
+    // Draw grid lines (separators between each pixel cell)
+    QPen gridPen(QColor(80, 80, 80, 100), 1);
+    gridPainter.setPen(gridPen);
+
+    // Vertical grid lines
+    for (int i = 0; i <= kGridCountX; ++i) {
+        int x = i * pixelSizeX;
+        gridPainter.drawLine(x, 0, x, kHeight);
+    }
+
+    // Horizontal grid lines
+    for (int j = 0; j <= kGridCountY; ++j) {
+        int y = j * pixelSizeY;
+        gridPainter.drawLine(0, y, kWidth, y);
+    }
+
     const int cx = kWidth / 2;
     const int cy = kHeight / 2;
     const int halfCellX = pixelSizeX / 2;
@@ -37,10 +53,7 @@ void MagnifierPanel::initializeGridCache()
     // Vertical stripe (full height, one cell width)
     gridPainter.fillRect(centerLeft, 0, pixelSizeX, kHeight, crosshairColor);
 
-    // Center pixel box - white outline
-    gridPainter.setBrush(Qt::NoBrush);
-    gridPainter.setPen(QPen(Qt::white, 2));
-    gridPainter.drawRect(centerLeft, centerTop, pixelSizeX, pixelSizeY);
+    // Note: Center pixel box is now drawn dynamically in draw() based on background brightness
 }
 
 void MagnifierPanel::invalidateCache()
@@ -181,8 +194,33 @@ void MagnifierPanel::draw(QPainter& painter, const QPoint& cursorPos,
     // Draw cached grid overlay
     painter.drawPixmap(magX, magY, m_gridOverlayCache);
 
-    // Draw magnifier area white border
-    painter.setPen(QPen(Qt::white, 1));
+    // Draw dynamic center pixel box based on background brightness
+    const int pixelSizeX = kWidth / kGridCountX;
+    const int pixelSizeY = kHeight / kGridCountY;
+    const int cx = kWidth / 2;
+    const int cy = kHeight / 2;
+    const int halfCellX = pixelSizeX / 2;
+    const int halfCellY = pixelSizeY / 2;
+    const int centerLeft = magX + cx - halfCellX;
+    const int centerTop = magY + cy - halfCellY;
+
+    // Calculate center pixel brightness
+    int brightness = (m_currentColor.red() + m_currentColor.green() + m_currentColor.blue()) / 3;
+    bool isDarkBackground = brightness < 128;
+
+    if (isDarkBackground) {
+        // Dark background: white outline only
+        painter.setPen(QPen(Qt::white, 2));
+        painter.setBrush(Qt::NoBrush);
+    } else {
+        // Light background: black outline with white fill
+        painter.setPen(QPen(Qt::black, 2));
+        painter.setBrush(Qt::white);
+    }
+    painter.drawRect(centerLeft, centerTop, pixelSizeX, pixelSizeY);
+
+    // Draw magnifier area border (color based on background brightness)
+    painter.setPen(QPen(isDarkBackground ? Qt::white : QColor(80, 80, 80), 1));
     painter.setBrush(Qt::NoBrush);
     painter.drawRect(magX, magY, kWidth, kHeight);
 
