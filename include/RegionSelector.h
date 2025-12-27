@@ -184,6 +184,7 @@ private:
 
     // Cursor helpers
     QCursor getMosaicCursor(int width);
+    void setToolCursor();
 
     // Annotation drawing helpers
     void drawAnnotations(QPainter &painter);
