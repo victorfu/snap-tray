@@ -8,6 +8,21 @@
 #include <QtGlobal>
 #include <algorithm>
 #include <cmath>
+#include <numeric>
+
+namespace
+{
+double normalizedVariance(const cv::Mat &mat)
+{
+    if (mat.empty()) {
+        return 0.0;
+    }
+
+    cv::Scalar mean, stddev;
+    cv::meanStdDev(mat, mean, stddev);
+    return (stddev[0] * stddev[0]) / 255.0;
+}
+}
 
 ImageStitcher::StitchResult ImageStitcher::tryORBMatch(const QImage &newFrame)
 {
@@ -122,8 +137,12 @@ ImageStitcher::MatchCandidate ImageStitcher::computeORBMatchCandidate(const QIma
     cv::Mat roiLastMat = lastGray(roiLast);
     cv::Mat roiNewMat = newGray(roiNew);
 
+    // Lightly blur to reduce sensor noise before feature extraction
+    cv::GaussianBlur(roiLastMat, roiLastMat, cv::Size(3, 3), 0.8);
+    cv::GaussianBlur(roiNewMat, roiNewMat, cv::Size(3, 3), 0.8);
+
     // ORB detection
-    cv::Ptr<cv::ORB> orb = cv::ORB::create(500);
+    cv::Ptr<cv::ORB> orb = cv::ORB::create(1200);
     std::vector<cv::KeyPoint> kp1, kp2;
     cv::Mat desc1, desc2;
 
@@ -245,73 +264,124 @@ ImageStitcher::MatchCandidate ImageStitcher::computeTemplateMatchCandidate(const
         return candidate;
     }
 
-    // Convert to grayscale
+    // Convert to grayscale and enhance contrast to strengthen edges
     cv::Mat lastGray, newGray;
     cv::cvtColor(lastMat, lastGray, cv::COLOR_BGR2GRAY);
     cv::cvtColor(newMat, newGray, cv::COLOR_BGR2GRAY);
 
-    // Calculate template height with proper bounds
-    int templateHeight = std::min(150, lastGray.rows / 3);
-    if (templateHeight < 10) {
-        candidate.failureReason = "Frame too small for template matching";
+    cv::Ptr<cv::CLAHE> clahe = cv::createCLAHE(2.0, cv::Size(8, 8));
+    clahe->apply(lastGray, lastGray);
+    clahe->apply(newGray, newGray);
+
+    // Try multiple template heights to avoid latching onto repetitive patterns
+    const int baseTemplateHeight = std::min(180, lastGray.rows / 2);
+    std::vector<int> templateHeights = {
+        baseTemplateHeight,
+        std::max(24, baseTemplateHeight / 2),
+        std::max(24, static_cast<int>(baseTemplateHeight * 0.75))
+    };
+
+    struct TemplateResult {
+        double confidence = 0.0;
+        double offset = 0.0;
+        double varianceWeight = 0.0;
+    };
+
+    std::vector<TemplateResult> results;
+    results.reserve(templateHeights.size());
+
+    for (int templateHeight : templateHeights) {
+        if (templateHeight < 10 || templateHeight > lastGray.rows) {
+            continue;
+        }
+
+        int searchMaxExtent = std::min(MAX_OVERLAP + templateHeight, newGray.rows);
+        if (searchMaxExtent <= templateHeight) {
+            continue;
+        }
+
+        cv::Mat templateImg;
+        cv::Mat searchRegion;
+        int templateTop = 0;
+        int searchTop = 0;
+
+        if (direction == ScrollDirection::Down) {
+            templateTop = lastGray.rows - templateHeight;
+            templateImg = lastGray(cv::Rect(0, templateTop, lastGray.cols, templateHeight));
+            searchRegion = newGray(cv::Rect(0, 0, newGray.cols, searchMaxExtent));
+            searchTop = 0;
+        } else {
+            templateTop = 0;
+            templateImg = lastGray(cv::Rect(0, 0, lastGray.cols, templateHeight));
+            searchTop = newGray.rows - searchMaxExtent;
+            searchRegion = newGray(cv::Rect(0, searchTop, newGray.cols, searchMaxExtent));
+        }
+
+        double varianceScore = normalizedVariance(templateImg);
+        if (varianceScore < 0.5) {
+            // Low detail region leads to unreliable matching
+            continue;
+        }
+
+        // Ensure template fits in search region
+        if (templateImg.cols > searchRegion.cols || templateImg.rows > searchRegion.rows) {
+            continue;
+        }
+
+        cv::Mat matchResult;
+        cv::matchTemplate(searchRegion, templateImg, matchResult, cv::TM_CCOEFF_NORMED);
+
+        double minVal, maxVal;
+        cv::Point minLoc, maxLoc;
+        cv::minMaxLoc(matchResult, &minVal, &maxVal, &minLoc, &maxLoc);
+
+        double fullOffset = templateTop - (searchTop + maxLoc.y);
+
+        if (direction == ScrollDirection::Down && fullOffset <= 0.0) {
+            continue;
+        }
+        if (direction == ScrollDirection::Up && fullOffset >= 0.0) {
+            continue;
+        }
+
+        results.push_back({maxVal, fullOffset, varianceScore});
+    }
+
+    if (results.empty()) {
+        candidate.failureReason = "No reliable template region found";
         return candidate;
     }
 
-    int searchMaxExtent = std::min(MAX_OVERLAP + templateHeight, newGray.rows);
-    if (searchMaxExtent <= templateHeight) {
-        candidate.failureReason = "Search region smaller than template";
+    std::vector<double> offsets;
+    offsets.reserve(results.size());
+    std::vector<double> confidences;
+    confidences.reserve(results.size());
+
+    for (const auto &res : results) {
+        offsets.push_back(res.offset);
+        // Weight correlation score by texture richness
+        confidences.push_back(std::clamp(res.confidence * (0.5 + res.varianceWeight / 3.0), 0.0, 1.0));
+    }
+
+    std::vector<double> sortedOffsets = offsets;
+    std::sort(sortedOffsets.begin(), sortedOffsets.end());
+    double medianOffset = sortedOffsets[sortedOffsets.size() / 2];
+    double minOffset = sortedOffsets.front();
+    double maxOffset = sortedOffsets.back();
+
+    // Penalize spread between candidate offsets to discourage unstable matches
+    double spreadPenalty = std::clamp((maxOffset - minOffset) / 80.0, 0.0, 0.45);
+
+    double averageConfidence = std::accumulate(confidences.begin(), confidences.end(), 0.0) /
+                               static_cast<double>(confidences.size());
+    candidate.confidence = averageConfidence * (1.0 - spreadPenalty);
+
+    if (candidate.confidence < m_confidenceThreshold) {
+        candidate.failureReason = QString("Template match confidence too low: %1").arg(candidate.confidence);
         return candidate;
     }
 
-    cv::Mat templateImg;
-    cv::Mat searchRegion;
-    int templateTop = 0;
-    int searchTop = 0;
-
-    if (direction == ScrollDirection::Down) {
-        templateTop = lastGray.rows - templateHeight;
-        templateImg = lastGray(cv::Rect(0, templateTop, lastGray.cols, templateHeight));
-        searchRegion = newGray(cv::Rect(0, 0, newGray.cols, searchMaxExtent));
-        searchTop = 0;
-    } else {
-        templateTop = 0;
-        templateImg = lastGray(cv::Rect(0, 0, lastGray.cols, templateHeight));
-        searchTop = newGray.rows - searchMaxExtent;
-        searchRegion = newGray(cv::Rect(0, searchTop, newGray.cols, searchMaxExtent));
-    }
-
-    // Ensure template fits in search region
-    if (templateImg.cols > searchRegion.cols || templateImg.rows > searchRegion.rows) {
-        candidate.failureReason = "Template larger than search region";
-        return candidate;
-    }
-
-    cv::Mat matchResult;
-    cv::matchTemplate(searchRegion, templateImg, matchResult, cv::TM_CCOEFF_NORMED);
-
-    double minVal, maxVal;
-    cv::Point minLoc, maxLoc;
-    cv::minMaxLoc(matchResult, &minVal, &maxVal, &minLoc, &maxLoc);
-
-    candidate.confidence = maxVal;
-
-    if (maxVal < m_confidenceThreshold) {
-        candidate.failureReason = QString("Template match confidence too low: %1").arg(maxVal);
-        return candidate;
-    }
-
-    double fullOffset = templateTop - (searchTop + maxLoc.y);
-
-    if (direction == ScrollDirection::Down && fullOffset <= 0.0) {
-        candidate.failureReason = "Direction mismatch";
-        return candidate;
-    }
-    if (direction == ScrollDirection::Up && fullOffset >= 0.0) {
-        candidate.failureReason = "Direction mismatch";
-        return candidate;
-    }
-
-    int overlap = newFrame.height() - static_cast<int>(std::round(std::abs(fullOffset)));
+    int overlap = newFrame.height() - static_cast<int>(std::round(std::abs(medianOffset)));
 
     if (overlap <= 0) {
         candidate.failureReason = QString("Negative overlap: %1 (offset too large)").arg(overlap);
