@@ -39,6 +39,16 @@ void ToolRegistry::registerTools() {
     });
 
     registerTool({
+        ToolId::Polyline,
+        "polyline",
+        "Polyline",
+        "",
+        ToolCategory::Drawing,
+        true, true, false, true, false, false,  // color, width, text, arrow, shape, fill
+        false, QColor()
+    });
+
+    registerTool({
         ToolId::Pencil,
         "pencil",
         "Pencil",
@@ -249,6 +259,7 @@ QVector<ToolId> ToolRegistry::getToolsForToolbar(ToolbarType type) const {
     switch (type) {
     case ToolbarType::RegionSelector:
         // Full toolbar for screenshot mode
+        // Note: Polyline is accessed via Arrow tool's polyline mode toggle
         tools = {
             ToolId::Selection,
             ToolId::Arrow,
@@ -272,6 +283,7 @@ QVector<ToolId> ToolRegistry::getToolsForToolbar(ToolbarType type) const {
 
     case ToolbarType::ScreenCanvas:
         // Simplified toolbar for canvas mode
+        // Note: Polyline is accessed via Arrow tool's polyline mode toggle
         tools = {
             ToolId::Pencil,
             ToolId::Marker,

@@ -65,6 +65,7 @@ void ColorAndWidthWidget::connectSectionSignals()
 
     // Forward ArrowStyleSection signals
     connect(m_arrowStyleSection, &ArrowStyleSection::arrowStyleChanged, this, &ColorAndWidthWidget::arrowStyleChanged);
+    connect(m_arrowStyleSection, &ArrowStyleSection::polylineModeChanged, this, &ColorAndWidthWidget::polylineModeChanged);
 
     // Forward LineStyleSection signals
     connect(m_lineStyleSection, &LineStyleSection::lineStyleChanged, this, &ColorAndWidthWidget::lineStyleChanged);
@@ -219,6 +220,20 @@ LineEndStyle ColorAndWidthWidget::arrowStyle() const
 }
 
 // =============================================================================
+// Polyline Mode Methods
+// =============================================================================
+
+void ColorAndWidthWidget::setPolylineMode(bool enabled)
+{
+    m_arrowStyleSection->setPolylineMode(enabled);
+}
+
+bool ColorAndWidthWidget::polylineMode() const
+{
+    return m_arrowStyleSection->polylineMode();
+}
+
+// =============================================================================
 // Line Style Methods
 // =============================================================================
 
@@ -331,6 +346,11 @@ void ColorAndWidthWidget::updatePosition(const QRect& anchorRect, bool above, in
         if (hasFirstSection) totalWidth += SECTION_SPACING;
         totalWidth += m_sizeSection->preferredWidth();
         hasFirstSection = true;
+    }
+
+    // Add right margin for visual balance
+    if (hasFirstSection) {
+        totalWidth += WIDGET_RIGHT_MARGIN;
     }
 
     int widgetX = anchorRect.left();

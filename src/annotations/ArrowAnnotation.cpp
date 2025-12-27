@@ -83,13 +83,16 @@ void ArrowAnnotation::drawArrowhead(QPainter &painter, const QPoint &start, cons
         end.y() - arrowLength * qSin(angle + arrowAngle)
     );
 
-    // Draw filled arrowhead
+    // Draw filled arrowhead with solid outline (not affected by line style)
     QPainterPath arrowPath;
     arrowPath.moveTo(end);
     arrowPath.lineTo(arrowP1);
     arrowPath.lineTo(arrowP2);
     arrowPath.closeSubpath();
 
+    // Use solid pen for arrowhead outline
+    QPen solidPen(m_color, m_width, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+    painter.setPen(solidPen);
     painter.setBrush(m_color);
     painter.drawPath(arrowPath);
 }

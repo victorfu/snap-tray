@@ -13,6 +13,7 @@ enum class ToolId {
 
     // Drawing tools (create AnnotationItems)
     Arrow,
+    Polyline,   // Multi-segment line with optional arrowhead
     Pencil,
     Marker,
     Shape,      // Unified Rectangle/Ellipse with ShapeType

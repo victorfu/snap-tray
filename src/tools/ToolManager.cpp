@@ -30,6 +30,7 @@ void ToolManager::registerDefaultHandlers() {
     registerHandler(std::make_unique<PencilToolHandler>());
     registerHandler(std::make_unique<MarkerToolHandler>());
     registerHandler(std::make_unique<ArrowToolHandler>());
+    registerHandler(std::make_unique<PolylineToolHandler>());
     registerHandler(std::make_unique<ShapeToolHandler>());
     registerHandler(std::make_unique<MosaicToolHandler>());
     registerHandler(std::make_unique<StepBadgeToolHandler>());
@@ -104,6 +105,16 @@ void ToolManager::handleMouseRelease(const QPoint& pos) {
     }
 }
 
+void ToolManager::handleDoubleClick(const QPoint& pos) {
+    if (auto* h = currentHandler()) {
+        bool wasDrawing = h->isDrawing();
+        h->onDoubleClick(m_context.get(), pos);
+        if (wasDrawing && !h->isDrawing()) {
+            emit drawingFinished();
+        }
+    }
+}
+
 void ToolManager::drawCurrentPreview(QPainter& painter) const {
     auto it = m_handlers.find(m_currentToolId);
     if (it != m_handlers.end()) {
@@ -167,6 +178,10 @@ void ToolManager::setShapeType(int type) {
 
 void ToolManager::setShapeFillMode(int mode) {
     m_context->shapeFillMode = mode;
+}
+
+void ToolManager::setPolylineMode(bool enabled) {
+    m_context->polylineMode = enabled;
 }
 
 void ToolManager::setRepaintCallback(std::function<void()> callback) {

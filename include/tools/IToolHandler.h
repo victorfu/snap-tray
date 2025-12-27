@@ -61,6 +61,14 @@ public:
     }
 
     /**
+     * @brief Called when mouse is double-clicked.
+     */
+    virtual void onDoubleClick(ToolContext* ctx, const QPoint& pos) {
+        Q_UNUSED(ctx);
+        Q_UNUSED(pos);
+    }
+
+    /**
      * @brief Draw the current in-progress annotation preview.
      */
     virtual void drawPreview(QPainter& painter) const { Q_UNUSED(painter); }

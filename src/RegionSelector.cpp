@@ -164,6 +164,7 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_toolManager->setWidth(m_annotationWidth);
     m_toolManager->setArrowStyle(m_arrowStyle);
     m_toolManager->setLineStyle(m_lineStyle);
+    m_toolManager->setPolylineMode(settings.loadPolylineMode());
     connect(m_toolManager, &ToolManager::needsRepaint, this, QOverload<>::of(&QWidget::update));
 
     // Initialize OCR manager if available on this platform
@@ -249,6 +250,14 @@ RegionSelector::RegionSelector(QWidget* parent)
     connect(m_colorAndWidthWidget, &ColorAndWidthWidget::arrowStyleChanged,
         this, &RegionSelector::onArrowStyleChanged);
 
+    // Connect polyline mode signal
+    m_colorAndWidthWidget->setPolylineMode(settings.loadPolylineMode());
+    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::polylineModeChanged,
+        this, [this](bool enabled) {
+            m_toolManager->setPolylineMode(enabled);
+            AnnotationSettingsManager::instance().savePolylineMode(enabled);
+        });
+
     // Connect line style signal
     m_colorAndWidthWidget->setLineStyle(m_lineStyle);
     connect(m_colorAndWidthWidget, &ColorAndWidthWidget::lineStyleChanged,
@@ -316,6 +325,7 @@ void RegionSelector::setupToolbarButtons()
     IconRenderer& iconRenderer = IconRenderer::instance();
     iconRenderer.loadIcon("selection", ":/icons/icons/selection.svg");
     iconRenderer.loadIcon("arrow", ":/icons/icons/arrow.svg");
+    iconRenderer.loadIcon("polyline", ":/icons/icons/polyline.svg");
     iconRenderer.loadIcon("pencil", ":/icons/icons/pencil.svg");
     iconRenderer.loadIcon("marker", ":/icons/icons/marker.svg");
     iconRenderer.loadIcon("rectangle", ":/icons/icons/rectangle.svg");
@@ -1273,34 +1283,59 @@ void RegionSelector::mousePressEvent(QMouseEvent* event)
                 return;
             }
 
+            auto finalizePolylineForUiClick = [&](const QPoint& pos) {
+                if (m_currentTool == ToolbarButton::Arrow &&
+                    m_toolManager->polylineMode() &&
+                    m_toolManager->isDrawing()) {
+                    m_toolManager->handleDoubleClick(pos);
+                    m_isDrawing = m_toolManager->isDrawing();
+                }
+            };
+
             // Check if clicked on toolbar FIRST (before widgets that may overlap)
             int buttonIdx = m_toolbar->buttonAtPosition(event->pos());
             if (buttonIdx >= 0) {
                 int buttonId = m_toolbar->buttonIdAt(buttonIdx);
                 if (buttonId >= 0) {
+                    finalizePolylineForUiClick(event->pos());
                     handleToolbarClick(static_cast<ToolbarButton>(buttonId));
                 }
                 return;
             }
 
             // Check if clicked on unified color and width widget
-            if (shouldShowColorAndWidthWidget() && m_colorAndWidthWidget->handleClick(event->pos())) {
-                update();
-                return;
+            if (shouldShowColorAndWidthWidget()) {
+                if (m_colorAndWidthWidget->contains(event->pos())) {
+                    finalizePolylineForUiClick(event->pos());
+                }
+                if (m_colorAndWidthWidget->handleClick(event->pos())) {
+                    update();
+                    return;
+                }
             }
 
             // Legacy widgets (only handle if unified widget not shown)
             if (!shouldShowColorAndWidthWidget()) {
                 // Check if clicked on color palette
-                if (shouldShowColorPalette() && m_colorPalette->handleClick(event->pos())) {
-                    update();
-                    return;
+                if (shouldShowColorPalette()) {
+                    if (m_colorPalette->contains(event->pos())) {
+                        finalizePolylineForUiClick(event->pos());
+                    }
+                    if (m_colorPalette->handleClick(event->pos())) {
+                        update();
+                        return;
+                    }
                 }
 
                 // Check if clicked on line width widget
-                if (shouldShowLineWidthWidget() && m_lineWidthWidget->handleMousePress(event->pos())) {
-                    update();
-                    return;
+                if (shouldShowLineWidthWidget()) {
+                    if (m_lineWidthWidget->contains(event->pos())) {
+                        finalizePolylineForUiClick(event->pos());
+                    }
+                    if (m_lineWidthWidget->handleMousePress(event->pos())) {
+                        update();
+                        return;
+                    }
                 }
             }
 
@@ -1736,6 +1771,19 @@ void RegionSelector::mouseReleaseEvent(QMouseEvent* event)
         else if (!shouldShowColorAndWidthWidget() && shouldShowLineWidthWidget() && m_lineWidthWidget->handleMouseRelease(event->pos())) {
             update();
         }
+    }
+}
+
+void RegionSelector::mouseDoubleClickEvent(QMouseEvent* event)
+{
+    if (event->button() != Qt::LeftButton) {
+        return;
+    }
+
+    // Forward double-click to tool manager if selection is complete
+    if (m_selectionManager->isComplete()) {
+        m_toolManager->handleDoubleClick(event->pos());
+        update();
     }
 }
 
