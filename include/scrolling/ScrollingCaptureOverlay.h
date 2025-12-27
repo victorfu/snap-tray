@@ -70,7 +70,6 @@ private:
     BorderState m_borderState = BorderState::Selecting;
     bool m_regionLocked = false;
     QScreen *m_screen = nullptr;
-    QPixmap m_backgroundPixmap;
     bool m_allowNewSelection = true;
 
     // Match failed animation

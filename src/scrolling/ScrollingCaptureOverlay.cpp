@@ -43,11 +43,7 @@ void ScrollingCaptureOverlay::initializeForScreen(QScreen *screen)
     // Set geometry to cover the entire screen
     setGeometry(m_screen->geometry());
 
-    // Capture background for transparent effect
-    m_backgroundPixmap = m_screen->grabWindow(0);
-
     m_selectionManager->setBounds(rect());
-    m_selectionManager->clearSelection();
 
     show();
     raise();
@@ -62,9 +58,6 @@ void ScrollingCaptureOverlay::initializeForScreenWithRegion(QScreen *screen, con
 
     // Set geometry to cover the entire screen
     setGeometry(m_screen->geometry());
-
-    // Capture background for transparent effect
-    m_backgroundPixmap = m_screen->grabWindow(0);
 
     m_selectionManager->setBounds(rect());
 

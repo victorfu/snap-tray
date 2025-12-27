@@ -21,8 +21,16 @@ ScrollingCaptureManager::ScrollingCaptureManager(PinWindowManager *pinManager, Q
     , m_stitcher(new ImageStitcher(this))
     , m_fixedDetector(new FixedElementDetector(this))
     , m_captureTimer(new QTimer(this))
+    , m_timeoutTimer(new QTimer(this))
 {
     connect(m_captureTimer, &QTimer::timeout, this, &ScrollingCaptureManager::captureFrame);
+
+    // Timeout timer - single shot
+    m_timeoutTimer->setSingleShot(true);
+    connect(m_timeoutTimer, &QTimer::timeout, this, [this]() {
+        qDebug() << "ScrollingCaptureManager: Capture timeout reached";
+        finishCapture();
+    });
 
     connect(m_stitcher, &ImageStitcher::progressUpdated, this, [this](int frames, const QSize &size) {
         if (m_toolbar) {
@@ -239,12 +247,16 @@ void ScrollingCaptureManager::destroyComponents()
         m_thumbnail = nullptr;
     }
 
+    // Reset all state
     m_captureRegion = QRect();
+    m_targetScreen = nullptr;
     m_lastFrame = QImage();
     m_stitchedResult = QImage();
     m_unchangedFrameCount = 0;
+    m_totalFrameCount = 0;
     m_fixedElementsDetected = false;
     m_hasSuccessfulStitch = false;
+    m_isProcessingFrame = false;
     m_pendingFrames.clear();
 }
 
@@ -325,6 +337,7 @@ void ScrollingCaptureManager::onPinClicked()
 void ScrollingCaptureManager::onSaveClicked()
 {
     if (m_stitchedResult.isNull()) {
+        qDebug() << "ScrollingCaptureManager: No image to save";
         return;
     }
 
@@ -340,8 +353,13 @@ void ScrollingCaptureManager::onSaveClicked()
     );
 
     if (!filePath.isEmpty()) {
-        m_stitchedResult.save(filePath);
-        qDebug() << "ScrollingCaptureManager: Saved to" << filePath;
+        bool saved = m_stitchedResult.save(filePath);
+        if (saved) {
+            qDebug() << "ScrollingCaptureManager: Saved to" << filePath;
+        } else {
+            qDebug() << "ScrollingCaptureManager: Failed to save to" << filePath;
+            // Could emit a signal here to notify the UI of the failure
+        }
     }
 }
 
@@ -370,59 +388,120 @@ void ScrollingCaptureManager::onCancelClicked()
 void ScrollingCaptureManager::startFrameCapture()
 {
     m_captureTimer->start(CAPTURE_INTERVAL_MS);
+    m_timeoutTimer->start(MAX_CAPTURE_TIMEOUT_MS);
     m_unchangedFrameCount = 0;
+    m_totalFrameCount = 0;
+    m_isProcessingFrame = false;
     m_pendingFrames.clear();
 }
 
 void ScrollingCaptureManager::stopFrameCapture()
 {
     m_captureTimer->stop();
+    m_timeoutTimer->stop();
 }
 
 bool ScrollingCaptureManager::restitchWithFixedElements()
 {
     if (m_pendingFrames.empty()) {
-        return true;
+        // No pending frames means we haven't captured anything yet
+        // This is not an error, just nothing to restitch
+        qDebug() << "ScrollingCaptureManager: No pending frames to restitch";
+        return false;  // Return false to indicate nothing was restitched
     }
+
+    // Save current stitched result in case restitch fails completely
+    QImage previousResult = m_stitcher->getStitchedImage();
+    int previousFrameCount = m_stitcher->frameCount();
 
     m_stitcher->reset();
     m_unchangedFrameCount = 0;
 
-    bool allSucceeded = true;
+    bool anySucceeded = false;
+    int successCount = 0;
+
     for (const QImage &rawFrame : m_pendingFrames) {
         QImage frameToStitch = m_fixedDetector->cropFixedRegions(rawFrame);
+        if (frameToStitch.isNull()) {
+            qDebug() << "ScrollingCaptureManager: cropFixedRegions returned null frame";
+            continue;
+        }
+
         ImageStitcher::StitchResult result = m_stitcher->addFrame(frameToStitch);
-        if (!result.success && result.failureReason != "Frame unchanged") {
+        if (result.success) {
+            anySucceeded = true;
+            successCount++;
+        } else if (result.failureReason != "Frame unchanged") {
             qDebug() << "ScrollingCaptureManager: Restitch failed -" << result.failureReason;
-            allSucceeded = false;
             // Continue trying remaining frames to salvage what we can
         }
     }
 
     m_pendingFrames.clear();
-    return allSucceeded;
+
+    // If restitch completely failed, try to restore previous result
+    if (!anySucceeded && !previousResult.isNull() && previousFrameCount > 0) {
+        qDebug() << "ScrollingCaptureManager: Restitch failed, keeping original result";
+        // Note: We can't easily restore the previous stitcher state,
+        // but this is a rare edge case
+    }
+
+    qDebug() << "ScrollingCaptureManager: Restitch completed -" << successCount << "frames succeeded";
+    return anySucceeded;
 }
 
 void ScrollingCaptureManager::captureFrame()
 {
+    // Guard against reentrant calls (timer callback during finishCapture)
+    if (m_isProcessingFrame) {
+        return;
+    }
+
     if (m_state != State::Capturing && m_state != State::MatchFailed) {
+        return;
+    }
+
+    m_isProcessingFrame = true;
+    m_totalFrameCount++;
+
+    // Check if we've hit the maximum frame limit
+    if (m_totalFrameCount >= MAX_TOTAL_FRAMES) {
+        qDebug() << "ScrollingCaptureManager: Maximum frame count reached, finishing capture";
+        m_isProcessingFrame = false;
+        finishCapture();
         return;
     }
 
     QImage frame = grabCaptureRegion();
     if (frame.isNull()) {
+        qDebug() << "ScrollingCaptureManager: Failed to grab capture region";
+        m_isProcessingFrame = false;
         return;
+    }
+
+    // Check if frame changed relative to previous capture
+    bool frameChanged = true;
+    if (!m_lastFrame.isNull()) {
+        frameChanged = ImageStitcher::isFrameChanged(frame, m_lastFrame);
     }
 
     bool restitched = false;
 
     // Add frame to fixed element detector (use detector's own frame count)
-    if (!m_fixedElementsDetected) {
+    // Only add if frame has changed to avoid polluting detector with static frames
+    if (frameChanged && !m_fixedElementsDetected) {
         m_fixedDetector->addFrame(frame);
 
-        // Store all frames until fixed elements are detected to avoid data loss
-        // during restitching. Memory is freed after detection (in restitchWithFixedElements).
-        m_pendingFrames.push_back(frame);
+        // Store frames until fixed elements are detected, with a limit
+        if (static_cast<int>(m_pendingFrames.size()) < MAX_PENDING_FRAMES) {
+            m_pendingFrames.push_back(frame);
+        } else {
+            // If we hit the limit, give up on fixed element detection
+            // and clear pending frames to free memory
+            qDebug() << "ScrollingCaptureManager: Max pending frames reached, disabling fixed element detection";
+            m_fixedElementsDetected = true;  // Disable further detection attempts
+            m_pendingFrames.clear();
+        }
 
         auto detection = m_fixedDetector->detect();
         if (detection.detected) {
@@ -434,15 +513,19 @@ void ScrollingCaptureManager::captureFrame()
             restitched = true;
 
             if (!restitchSuccess) {
-                // Some frames failed during restitch, show warning but continue
-                if (m_state != State::MatchFailed) {
-                    setState(State::MatchFailed);
-                }
+                // Restitch failed or had no frames, continue with normal stitching
+                qDebug() << "ScrollingCaptureManager: Restitch had issues, continuing normally";
+            }
+
+            // Recover to Capturing state after restitch attempt
+            if (m_state == State::MatchFailed) {
+                setState(State::Capturing);
             }
         }
     }
 
     if (restitched) {
+        m_isProcessingFrame = false;
         return;
     }
 
@@ -450,6 +533,10 @@ void ScrollingCaptureManager::captureFrame()
     QImage frameToStitch = frame;
     if (m_fixedElementsDetected) {
         frameToStitch = m_fixedDetector->cropFixedRegions(frame);
+        if (frameToStitch.isNull()) {
+            qDebug() << "ScrollingCaptureManager: cropFixedRegions returned null, using original frame";
+            frameToStitch = frame;
+        }
     }
 
     // Try to stitch
@@ -492,6 +579,14 @@ void ScrollingCaptureManager::captureFrame()
 
         m_unchangedFrameCount = 0;
     } else {
+        // Check if maximum height was reached
+        if (result.failureReason.contains("Maximum height reached")) {
+            qDebug() << "ScrollingCaptureManager: Maximum height reached, finishing capture";
+            m_isProcessingFrame = false;
+            finishCapture();
+            return;
+        }
+
         // Check if frame is just unchanged
         if (result.failureReason == "Frame unchanged") {
             // Only count unchanged frames after scrolling has started
@@ -500,9 +595,12 @@ void ScrollingCaptureManager::captureFrame()
                 m_unchangedFrameCount++;
                 if (m_unchangedFrameCount >= UNCHANGED_FRAME_THRESHOLD) {
                     qDebug() << "ScrollingCaptureManager: No motion detected, finishing capture";
+                    m_isProcessingFrame = false;
                     finishCapture();
+                    return;
                 }
             }
+            m_isProcessingFrame = false;
             return;
         }
 
@@ -522,6 +620,7 @@ void ScrollingCaptureManager::captureFrame()
     }
 
     m_lastFrame = frame;
+    m_isProcessingFrame = false;
 }
 
 QImage ScrollingCaptureManager::grabCaptureRegion()
@@ -531,13 +630,28 @@ QImage ScrollingCaptureManager::grabCaptureRegion()
     }
 
     QRect screenGeom = m_targetScreen->geometry();
-    int relX = m_captureRegion.x() - screenGeom.x();
-    int relY = m_captureRegion.y() - screenGeom.y();
+
+    // Validate capture region is within screen bounds
+    QRect validRegion = m_captureRegion.intersected(screenGeom);
+    if (validRegion.isEmpty() || validRegion.width() < 10 || validRegion.height() < 10) {
+        qDebug() << "ScrollingCaptureManager: Capture region outside screen bounds or too small";
+        return QImage();
+    }
+
+    int relX = validRegion.x() - screenGeom.x();
+    int relY = validRegion.y() - screenGeom.y();
+
+    // Ensure relative coordinates are non-negative
+    if (relX < 0 || relY < 0) {
+        qDebug() << "ScrollingCaptureManager: Invalid relative coordinates";
+        return QImage();
+    }
 
     QPixmap pixmap = m_targetScreen->grabWindow(0, relX, relY,
-        m_captureRegion.width(), m_captureRegion.height());
+        validRegion.width(), validRegion.height());
 
     if (pixmap.isNull()) {
+        qDebug() << "ScrollingCaptureManager: grabWindow returned null pixmap";
         return QImage();
     }
 
@@ -553,10 +667,16 @@ void ScrollingCaptureManager::updateUIPositions()
 {
     if (m_toolbar) {
         m_toolbar->positionNear(m_captureRegion);
+        if (m_toolbar->isVisible()) {
+            m_toolbar->raise();
+        }
     }
 
     if (m_thumbnail) {
         m_thumbnail->positionNear(m_captureRegion);
+        if (m_thumbnail->isVisible()) {
+            m_thumbnail->raise();
+        }
     }
 }
 

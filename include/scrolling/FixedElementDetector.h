@@ -46,13 +46,16 @@ public:
 
 private:
     double calculateRegionSimilarity(const QImage &region1, const QImage &region2) const;
+    bool compareRows(const QImage &img1, const QImage &img2, int y) const;
     void analyzeLeadingRegion();
     void analyzeTrailingRegion();
 
     bool m_enabled = true;
     bool m_detected = false;
     int m_frameCount = 0;
+    int m_regionWriteIndex = 0;  // Circular buffer write index
 
+    // Circular buffer for regions (more efficient than vector erase)
     std::vector<QImage> m_leadingRegions;
     std::vector<QImage> m_trailingRegions;
 
@@ -60,8 +63,9 @@ private:
     int m_trailingCropSize = 0;
 
     static constexpr int ANALYSIS_REGION_SIZE = 100;   // Height/width to analyze
+    static constexpr int MIN_ANALYSIS_REGION_SIZE = 20; // Minimum region size
     static constexpr double SIMILARITY_THRESHOLD = 0.95;
-    static constexpr int MIN_FRAMES_FOR_DETECTION = 3;
+    static constexpr int MIN_FRAMES_FOR_DETECTION = 4;  // Increased for more reliable detection
     static constexpr int MAX_FRAMES_TO_STORE = 5;
 };
 

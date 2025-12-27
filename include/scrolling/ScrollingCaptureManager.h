@@ -97,17 +97,23 @@ private:
     QRect m_captureRegion;  // In global coordinates
     QScreen *m_targetScreen = nullptr;
     QTimer *m_captureTimer;
+    QTimer *m_timeoutTimer;
     QImage m_lastFrame;
     int m_unchangedFrameCount = 0;
+    int m_totalFrameCount = 0;
     bool m_fixedElementsDetected = false;
     bool m_hasSuccessfulStitch = false;
+    bool m_isProcessingFrame = false;  // Guard against reentrant captureFrame calls
     std::vector<QImage> m_pendingFrames;
 
     // Result
     QImage m_stitchedResult;
 
     static constexpr int CAPTURE_INTERVAL_MS = 60;  // ~16 FPS
-    static constexpr int UNCHANGED_FRAME_THRESHOLD = 5;
+    static constexpr int UNCHANGED_FRAME_THRESHOLD = 50;
+    static constexpr int MAX_CAPTURE_TIMEOUT_MS = 300000;  // 5 minutes max capture time
+    static constexpr int MAX_PENDING_FRAMES = 100;  // Limit pending frames to prevent memory exhaustion
+    static constexpr int MAX_TOTAL_FRAMES = 1000;  // Maximum frames before auto-finish
 };
 
 #endif // SCROLLINGCAPTUREMANAGER_H
