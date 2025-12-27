@@ -159,6 +159,7 @@ void ScreenCanvas::initializeIcons()
     iconRenderer.loadIcon("polyline", ":/icons/icons/polyline.svg");
     iconRenderer.loadIcon("rectangle", ":/icons/icons/rectangle.svg");
     iconRenderer.loadIcon("ellipse", ":/icons/icons/ellipse.svg");
+    iconRenderer.loadIcon("shape", ":/icons/icons/shape.svg");
     iconRenderer.loadIcon("laser-pointer", ":/icons/icons/laser-pointer.svg");
     iconRenderer.loadIcon("cursor-highlight", ":/icons/icons/cursor-highlight.svg");
     iconRenderer.loadIcon("undo", ":/icons/icons/undo.svg");
@@ -172,7 +173,7 @@ QString ScreenCanvas::getIconKeyForButton(CanvasButton button) const
     case CanvasButton::Pencil:          return "pencil";
     case CanvasButton::Marker:          return "marker";
     case CanvasButton::Arrow:           return "arrow";
-    case CanvasButton::Shape:           return "rectangle";  // Use rectangle icon for unified shape
+    case CanvasButton::Shape:           return "shape";
     case CanvasButton::LaserPointer:    return "laser-pointer";
     case CanvasButton::CursorHighlight: return "cursor-highlight";
     case CanvasButton::Undo:            return "undo";

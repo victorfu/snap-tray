@@ -330,6 +330,7 @@ void RegionSelector::setupToolbarButtons()
     iconRenderer.loadIcon("marker", ":/icons/icons/marker.svg");
     iconRenderer.loadIcon("rectangle", ":/icons/icons/rectangle.svg");
     iconRenderer.loadIcon("ellipse", ":/icons/icons/ellipse.svg");
+    iconRenderer.loadIcon("shape", ":/icons/icons/shape.svg");
     iconRenderer.loadIcon("text", ":/icons/icons/text.svg");
     iconRenderer.loadIcon("mosaic", ":/icons/icons/mosaic.svg");
     iconRenderer.loadIcon("step-badge", ":/icons/icons/step-badge.svg");
@@ -351,7 +352,7 @@ void RegionSelector::setupToolbarButtons()
     buttons.append({ static_cast<int>(ToolbarButton::Arrow), "arrow", "Arrow", false });
     buttons.append({ static_cast<int>(ToolbarButton::Pencil), "pencil", "Pencil", false });
     buttons.append({ static_cast<int>(ToolbarButton::Marker), "marker", "Marker", false });
-    buttons.append({ static_cast<int>(ToolbarButton::Shape), "rectangle", "Shape", false });
+    buttons.append({ static_cast<int>(ToolbarButton::Shape), "shape", "Shape", false });
     buttons.append({ static_cast<int>(ToolbarButton::Text), "text", "Text", false });
     buttons.append({ static_cast<int>(ToolbarButton::Mosaic), "mosaic", "Mosaic", false });
     buttons.append({ static_cast<int>(ToolbarButton::StepBadge), "step-badge", "Step Badge", false });
