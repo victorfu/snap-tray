@@ -18,40 +18,28 @@ void MagnifierPanel::initializeGridCache()
     m_gridOverlayCache.fill(Qt::transparent);
 
     QPainter gridPainter(&m_gridOverlayCache);
-    gridPainter.setRenderHint(QPainter::Antialiasing, false);  // Crisp grid lines
+    gridPainter.setRenderHint(QPainter::Antialiasing, false);
 
     const int cx = kWidth / 2;
     const int cy = kHeight / 2;
     const int halfCellX = pixelSizeX / 2;
     const int halfCellY = pixelSizeY / 2;
 
-    // Center pixel region coordinates
     const int centerLeft = cx - halfCellX;
     const int centerTop = cy - halfCellY;
 
-    // Draw grid lines (light gray, subtle)
-    gridPainter.setPen(QPen(QColor(200, 200, 200, 80), 1));
-    // Vertical grid lines
-    for (int i = 1; i < kGridCountX; ++i) {
-        int x = i * pixelSizeX;
-        gridPainter.drawLine(x, 0, x, kHeight);
-    }
-    // Horizontal grid lines
-    for (int i = 1; i < kGridCountY; ++i) {
-        int y = i * pixelSizeY;
-        gridPainter.drawLine(0, y, kWidth, y);
-    }
+    // Blue crosshair stripes (filled rectangles)
+    QColor crosshairColor(70, 130, 180, 100);
 
-    // Crosshair - thin blue lines, centered, no gap
-    gridPainter.setPen(QPen(QColor(100, 150, 255), 2));  // Light blue crosshair
-    // Horizontal line (full width)
-    gridPainter.drawLine(0, cy, kWidth, cy);
-    // Vertical line (full height)
-    gridPainter.drawLine(cx, 0, cx, kHeight);
+    // Horizontal stripe (full width, one cell height)
+    gridPainter.fillRect(0, centerTop, kWidth, pixelSizeY, crosshairColor);
+
+    // Vertical stripe (full height, one cell width)
+    gridPainter.fillRect(centerLeft, 0, pixelSizeX, kHeight, crosshairColor);
 
     // Center pixel box - white outline
     gridPainter.setBrush(Qt::NoBrush);
-    gridPainter.setPen(QPen(Qt::white, 2));  // Thicker white border for emphasis
+    gridPainter.setPen(QPen(Qt::white, 2));
     gridPainter.drawRect(centerLeft, centerTop, pixelSizeX, pixelSizeY);
 }
 
