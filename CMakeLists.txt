@@ -41,7 +41,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Widgets Gui Svg Test)
+find_package(Qt6 REQUIRED COMPONENTS Widgets Gui Svg Test Concurrent)
 
 # Fetch QHotkey for global hotkey support
 include(FetchContent)
@@ -89,6 +89,7 @@ set(SOURCES
     src/RecordingRegionSelector.cpp
     src/RecordingControlBar.cpp
     src/RecordingBoundaryOverlay.cpp
+    src/RecordingInitTask.cpp
     src/FFmpegEncoder.cpp
     src/VideoEncoderFactory.cpp
     src/encoding/EncoderFactory.cpp
@@ -167,6 +168,7 @@ set(HEADERS
     include/RecordingRegionSelector.h
     include/RecordingControlBar.h
     include/RecordingBoundaryOverlay.h
+    include/RecordingInitTask.h
     include/FFmpegEncoder.h
     include/IVideoEncoder.h
     include/AVFoundationEncoder.h
@@ -304,6 +306,7 @@ if(APPLE)
         Qt6::Widgets
         Qt6::Gui
         Qt6::Svg
+        Qt6::Concurrent
         QHotkey::QHotkey
         ${COREGRAPHICS_FRAMEWORK}
         ${APPLICATIONSERVICES_FRAMEWORK}
@@ -326,6 +329,7 @@ elseif(WIN32)
         Qt6::Widgets
         Qt6::Gui
         Qt6::Svg
+        Qt6::Concurrent
         QHotkey::QHotkey
         dwmapi
         psapi
@@ -341,7 +345,7 @@ elseif(WIN32)
     # Enable C++/WinRT for Windows.Media.Ocr
     target_compile_options(${PROJECT_NAME} PRIVATE /await)
 else()
-    target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::Widgets Qt6::Gui Qt6::Svg QHotkey::QHotkey)
+    target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::Widgets Qt6::Gui Qt6::Svg Qt6::Concurrent QHotkey::QHotkey)
 endif()
 
 # macOS-specific settings

@@ -2,6 +2,7 @@
 #include "RecordingRegionSelector.h"
 #include "RecordingControlBar.h"
 #include "RecordingBoundaryOverlay.h"
+#include "RecordingInitTask.h"
 #include "FFmpegEncoder.h"
 #include "IVideoEncoder.h"
 #include "encoding/EncoderFactory.h"
@@ -25,6 +26,8 @@
 #include <QRandomGenerator>
 #include <QMutexLocker>
 #include <QUuid>
+#include <QtConcurrent/QtConcurrent>
+#include <QFutureWatcher>
 
 #ifdef Q_OS_WIN
 #include <windows.h>
@@ -80,6 +83,7 @@ RecordingManager::RecordingManager(QObject *parent)
     , m_audioWriter(nullptr)
     , m_audioEnabled(false)
     , m_audioSource(0)
+    , m_initTask(nullptr)
 {
     cleanupStaleTempFiles();
 }
@@ -99,7 +103,8 @@ void RecordingManager::setState(State newState)
 
 bool RecordingManager::isActive() const
 {
-    return isSelectingRegion() || isRecording() || isPaused() || (m_state == State::Encoding);
+    return isSelectingRegion() || isRecording() || isPaused() ||
+           (m_state == State::Preparing) || (m_state == State::Encoding);
 }
 
 bool RecordingManager::isRecording() const
@@ -288,51 +293,6 @@ void RecordingManager::startFrameCapture()
 {
     qDebug() << "RecordingManager::startFrameCapture() - BEGIN";
 
-    // Initialize capture engine (auto-selects best available)
-    qDebug() << "RecordingManager::startFrameCapture() - Creating capture engine...";
-    m_captureEngine = ICaptureEngine::createBestEngine(nullptr);
-    qDebug() << "RecordingManager::startFrameCapture() - Capture engine created:" << (m_captureEngine ? "valid" : "NULL");
-
-    // Forward capture engine warnings to UI
-    connect(m_captureEngine, &ICaptureEngine::warning,
-            this, &RecordingManager::recordingWarning);
-
-    // Connect capture engine error signal
-    connect(m_captureEngine, &ICaptureEngine::error,
-            this, [this](const QString &msg) {
-        qDebug() << "RecordingManager: Capture engine error:" << msg;
-        stopRecording();
-        emit recordingError(msg);
-    });
-
-    qDebug() << "RecordingManager::startFrameCapture() - Setting region:" << m_recordingRegion
-             << "screen:" << (m_targetScreen ? m_targetScreen->name() : "NULL");
-    if (!m_captureEngine->setRegion(m_recordingRegion, m_targetScreen)) {
-        emit recordingError("Failed to configure capture region");
-        disconnect(m_captureEngine, nullptr, this, nullptr);
-        m_captureEngine->deleteLater();
-        m_captureEngine = nullptr;
-        setState(State::Idle);
-        return;
-    }
-    qDebug() << "RecordingManager::startFrameCapture() - Region set successfully";
-
-    qDebug() << "RecordingManager::startFrameCapture() - Setting frame rate:" << m_frameRate;
-    m_captureEngine->setFrameRate(m_frameRate);
-
-    qDebug() << "RecordingManager::startFrameCapture() - Starting capture engine...";
-    if (!m_captureEngine->start()) {
-        emit recordingError("Failed to start capture engine");
-        disconnect(m_captureEngine, nullptr, this, nullptr);
-        m_captureEngine->deleteLater();
-        m_captureEngine = nullptr;
-        setState(State::Idle);
-        return;
-    }
-    qDebug() << "RecordingManager::startFrameCapture() - Capture engine started successfully";
-
-    qDebug() << "RecordingManager: Using capture engine:" << m_captureEngine->engineName();
-
     // Safety check: clean up any existing encoders
     if (m_encoder) {
         qWarning() << "RecordingManager: Previous FFmpeg encoder still exists, cleaning up";
@@ -348,29 +308,203 @@ void RecordingManager::startFrameCapture()
     }
     m_usingNativeEncoder = false;
 
-    QString outputPath = generateOutputPath();
-    qDebug() << "RecordingManager::startFrameCapture() - Output path:" << outputPath;
+    // Set state to Preparing and show UI immediately
+    setState(State::Preparing);
+    emit preparationStarted();
 
-    // Get output format from settings (0 = MP4, 1 = GIF)
+    // Show boundary overlay immediately (UI stays responsive)
+    qDebug() << "RecordingManager::startFrameCapture() - Creating boundary overlay...";
+    m_boundaryOverlay = new RecordingBoundaryOverlay();
+    m_boundaryOverlay->setAttribute(Qt::WA_DeleteOnClose);
+    m_boundaryOverlay->setRegion(m_recordingRegion);
+    m_boundaryOverlay->show();
+    raiseWindowAboveMenuBar(m_boundaryOverlay);
+    qDebug() << "RecordingManager::startFrameCapture() - Boundary overlay shown";
+
+    // Show control bar in preparing state
+    qDebug() << "RecordingManager::startFrameCapture() - Creating control bar...";
+    m_controlBar = new RecordingControlBar();
+    m_controlBar->setAttribute(Qt::WA_DeleteOnClose);
+    connect(m_controlBar, &RecordingControlBar::stopRequested,
+            this, &RecordingManager::stopRecording);
+    connect(m_controlBar, &RecordingControlBar::cancelRequested,
+            this, &RecordingManager::cancelRecording);
+    connect(m_controlBar, &RecordingControlBar::pauseRequested,
+            this, &RecordingManager::pauseRecording);
+    connect(m_controlBar, &RecordingControlBar::resumeRequested,
+            this, &RecordingManager::resumeRecording);
+
+    // Set initial region size
+    m_controlBar->updateRegionSize(m_recordingRegion.width(), m_recordingRegion.height());
+    m_controlBar->updateFps(m_frameRate);
+
+    // Show in preparing state (buttons disabled until ready)
+    m_controlBar->setPreparing(true);
+
+    m_controlBar->positionNear(m_recordingRegion);
+    m_controlBar->show();
+    raiseWindowAboveMenuBar(m_controlBar);
+    qDebug() << "RecordingManager::startFrameCapture() - Control bar shown";
+
+    // Start async initialization
+    beginAsyncInitialization();
+
+    qDebug() << "RecordingManager::startFrameCapture() - END (async initialization started)";
+}
+
+void RecordingManager::beginAsyncInitialization()
+{
+    qDebug() << "RecordingManager::beginAsyncInitialization() - BEGIN";
+
+    // Load settings for initialization config
     QSettings settings("Victor Fu", "SnapTray");
     int formatInt = settings.value("recording/outputFormat", 0).toInt();
     bool useGif = (formatInt == 1);
-    qDebug() << "RecordingManager::startFrameCapture() - Output format:" << (useGif ? "GIF" : "MP4");
 
-    // ========== Initialize audio capture EARLY (before encoder) ==========
-    // This must happen BEFORE starting the encoder so we can configure audio format
     m_audioEnabled = settings.value("recording/audioEnabled", false).toBool();
     m_audioSource = settings.value("recording/audioSource", 0).toInt();
     m_audioDevice = settings.value("recording/audioDevice").toString();
 
-    // Only enable audio for MP4 format (GIF doesn't support audio)
-    if (m_audioEnabled && !useGif) {
-        qDebug() << "RecordingManager: Audio enabled, source:" << m_audioSource << "- initializing early";
+    // Use physical pixel size for Retina/HiDPI displays
+    qreal scale = CoordinateHelper::getDevicePixelRatio(m_targetScreen);
+    QSize physicalSize = CoordinateHelper::toEvenPhysicalSize(m_recordingRegion.size(), scale);
 
-        // Create audio capture engine
-        m_audioEngine = IAudioCaptureEngine::createBestEngine(nullptr);
+    // Create initialization config
+    RecordingInitTask::Config config;
+    config.region = m_recordingRegion;
+    config.screen = m_targetScreen;
+    config.frameRate = m_frameRate;
+    config.audioEnabled = m_audioEnabled && !useGif;  // GIF doesn't support audio
+    config.audioSource = m_audioSource;
+    config.audioDevice = m_audioDevice;
+    config.outputPath = generateOutputPath();
+    config.useNativeEncoder = true;
+    config.useGif = useGif;
+    config.frameSize = physicalSize;
+    config.quality = settings.value("recording/quality", 55).toInt();
+    config.preset = settings.value("recording/preset", "ultrafast").toString();
+    config.crf = settings.value("recording/crf", 23).toInt();
+
+    qDebug() << "RecordingManager: Config - region:" << config.region
+             << "frameSize:" << config.frameSize
+             << "frameRate:" << config.frameRate
+             << "format:" << (config.useGif ? "GIF" : "MP4")
+             << "audio:" << config.audioEnabled;
+
+    // Create the init task
+    m_initTask = new RecordingInitTask(config, nullptr);
+
+    // Connect progress signal for UI feedback
+    connect(m_initTask, &RecordingInitTask::progress,
+            this, [this](const QString &step) {
+        emit preparationProgress(step);
+        if (m_controlBar) {
+            m_controlBar->setPreparingStatus(step);
+        }
+    }, Qt::QueuedConnection);
+
+    // Run initialization in background thread
+    QFutureWatcher<void> *watcher = new QFutureWatcher<void>(this);
+    connect(watcher, &QFutureWatcher<void>::finished, this, [this, watcher]() {
+        onInitializationComplete();
+        watcher->deleteLater();
+    });
+
+    QFuture<void> future = QtConcurrent::run([this]() {
+        m_initTask->run();
+    });
+    watcher->setFuture(future);
+
+    qDebug() << "RecordingManager::beginAsyncInitialization() - END";
+}
+
+void RecordingManager::onInitializationComplete()
+{
+    qDebug() << "RecordingManager::onInitializationComplete() - BEGIN";
+
+    // Safety check: ensure we're still in Preparing state
+    if (m_state != State::Preparing) {
+        qDebug() << "RecordingManager: Initialization completed but state changed, cleaning up";
+        if (m_initTask) {
+            delete m_initTask;
+            m_initTask = nullptr;
+        }
+        return;
+    }
+
+    // Get the result from the init task
+    const RecordingInitTask::Result &result = m_initTask->result();
+
+    if (!result.success) {
+        qWarning() << "RecordingManager: Initialization failed:" << result.error;
+        emit recordingError(result.error);
+
+        // Clean up UI
+        if (m_boundaryOverlay) {
+            m_boundaryOverlay->close();
+        }
+        if (m_controlBar) {
+            m_controlBar->close();
+        }
+
+        delete m_initTask;
+        m_initTask = nullptr;
+
+        setState(State::Idle);
+        return;
+    }
+
+    qDebug() << "RecordingManager: Initialization successful, taking ownership of resources";
+
+    // Take ownership of created resources (move to main thread and set parent)
+    m_captureEngine = result.captureEngine;
+    if (m_captureEngine) {
+        m_captureEngine->moveToThread(thread());
+        m_captureEngine->setParent(this);
+
+        // Forward capture engine warnings to UI
+        connect(m_captureEngine, &ICaptureEngine::warning,
+                this, &RecordingManager::recordingWarning);
+
+        // Connect capture engine error signal
+        connect(m_captureEngine, &ICaptureEngine::error,
+                this, [this](const QString &msg) {
+            qDebug() << "RecordingManager: Capture engine error:" << msg;
+            stopRecording();
+            emit recordingError(msg);
+        });
+
+        qDebug() << "RecordingManager: Using capture engine:" << m_captureEngine->engineName();
+    }
+
+    m_usingNativeEncoder = result.usingNativeEncoder;
+    m_nativeEncoder = result.nativeEncoder;
+    m_encoder = result.ffmpegEncoder;
+
+    if (m_nativeEncoder) {
+        m_nativeEncoder->moveToThread(thread());
+        m_nativeEncoder->setParent(this);
+        connect(m_nativeEncoder, &IVideoEncoder::finished,
+                this, &RecordingManager::onEncodingFinished);
+        connect(m_nativeEncoder, &IVideoEncoder::error,
+                this, &RecordingManager::onEncodingError);
+    }
+    if (m_encoder) {
+        m_encoder->moveToThread(thread());
+        m_encoder->setParent(this);
+        connect(m_encoder, &FFmpegEncoder::finished,
+                this, &RecordingManager::onEncodingFinished);
+        connect(m_encoder, &FFmpegEncoder::error,
+                this, &RecordingManager::onEncodingError);
+    }
+
+    // Create audio engine on main thread (macOS audio APIs require main thread)
+    // Audio engine was NOT created in worker thread due to thread affinity requirements
+    if (m_audioEnabled) {
+        qDebug() << "RecordingManager: Creating audio engine on main thread...";
+        m_audioEngine = IAudioCaptureEngine::createBestEngine(this);
         if (m_audioEngine) {
-            // Set audio source (0=Microphone, 1=SystemAudio, 2=Both)
+            // Set audio source
             IAudioCaptureEngine::AudioSource source;
             switch (m_audioSource) {
                 case 1: source = IAudioCaptureEngine::AudioSource::SystemAudio; break;
@@ -383,81 +517,24 @@ void RecordingManager::startFrameCapture()
                 m_audioEngine->setDevice(m_audioDevice);
             }
 
+            // Connect audio error/warning signals
+            connect(m_audioEngine, &IAudioCaptureEngine::error,
+                    this, [this](const QString &msg) {
+                qWarning() << "RecordingManager: Audio error:" << msg;
+                emit recordingWarning("Audio error: " + msg);
+            });
+            connect(m_audioEngine, &IAudioCaptureEngine::warning,
+                    this, &RecordingManager::recordingWarning);
+
             qDebug() << "RecordingManager: Audio engine created:" << m_audioEngine->engineName();
         } else {
-            qWarning() << "RecordingManager: No audio capture engine available";
+            qWarning() << "RecordingManager: Failed to create audio engine";
             m_audioEnabled = false;
         }
     }
 
-    // Use physical pixel size for Retina/HiDPI displays
-    qreal scale = CoordinateHelper::getDevicePixelRatio(m_targetScreen);
-    QSize physicalSize = CoordinateHelper::toEvenPhysicalSize(m_recordingRegion.size(), scale);
-    qDebug() << "RecordingManager::startFrameCapture() - Physical size:" << physicalSize
-             << "(scale:" << scale << ", logical:" << m_recordingRegion.size() << ")";
-
-    // Configure encoder using EncoderFactory
-    EncoderFactory::EncoderConfig encoderConfig;
-    encoderConfig.format = useGif ? EncoderFactory::Format::GIF : EncoderFactory::Format::MP4;
-    encoderConfig.priority = EncoderFactory::Priority::NativeFirst;
-    encoderConfig.frameSize = physicalSize;
-    encoderConfig.frameRate = m_frameRate;
-    encoderConfig.outputPath = outputPath;
-    encoderConfig.quality = settings.value("recording/quality", 55).toInt();
-    encoderConfig.preset = settings.value("recording/preset", "ultrafast").toString();
-    encoderConfig.crf = settings.value("recording/crf", 23).toInt();
-
-    // Configure audio settings for native encoder
+    // Connect audio capture to encoder/writer
     if (m_audioEngine) {
-        auto format = m_audioEngine->audioFormat();
-        encoderConfig.enableAudio = true;
-        encoderConfig.audioSampleRate = format.sampleRate;
-        encoderConfig.audioChannels = format.channels;
-        encoderConfig.audioBitsPerSample = format.bitsPerSample;
-    }
-
-    // Create encoder
-    auto encoderResult = EncoderFactory::create(encoderConfig, this);
-
-    if (!encoderResult.success) {
-        emit recordingError(encoderResult.errorMessage);
-        if (m_audioEngine) {
-            m_audioEngine->deleteLater();
-            m_audioEngine = nullptr;
-        }
-        m_captureEngine->stop();
-        disconnect(m_captureEngine, nullptr, this, nullptr);
-        m_captureEngine->deleteLater();
-        m_captureEngine = nullptr;
-        setState(State::Idle);
-        return;
-    }
-
-    // Store encoder references
-    m_usingNativeEncoder = encoderResult.isNative;
-    m_nativeEncoder = encoderResult.nativeEncoder;
-    m_encoder = encoderResult.ffmpegEncoder;
-
-    // Connect encoder signals
-    if (m_nativeEncoder) {
-        connect(m_nativeEncoder, &IVideoEncoder::finished,
-                this, &RecordingManager::onEncodingFinished);
-        connect(m_nativeEncoder, &IVideoEncoder::error,
-                this, &RecordingManager::onEncodingError);
-    }
-    if (m_encoder) {
-        connect(m_encoder, &FFmpegEncoder::finished,
-                this, &RecordingManager::onEncodingFinished);
-        connect(m_encoder, &FFmpegEncoder::error,
-                this, &RecordingManager::onEncodingError);
-    }
-
-    qDebug() << "RecordingManager::startFrameCapture() - Encoder started successfully";
-
-    // ========== Connect and start audio capture ==========
-    // Audio engine was already created earlier (before encoder start) to configure audio format
-    if (m_audioEngine) {
-        // Check if native encoder supports audio (preferred path)
         bool useNativeAudio = m_usingNativeEncoder && m_nativeEncoder && m_nativeEncoder->isAudioSupported();
 
         if (useNativeAudio) {
@@ -471,14 +548,14 @@ void RecordingManager::startFrameCapture()
             qDebug() << "RecordingManager: Audio connected to native encoder";
         } else {
             // Fallback: Use WAV file + FFmpeg muxing
+            // Create audio file writer on main thread
             QString tempDir = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
             QString timestamp = QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss");
             QString uuid = QUuid::createUuid().toString(QUuid::Id128).left(8);
             m_tempAudioPath = QString("%1/SnapTray_Audio_%2_%3.wav")
                 .arg(tempDir).arg(timestamp).arg(uuid);
 
-            // Create audio file writer
-            m_audioWriter = new AudioFileWriter(nullptr);
+            m_audioWriter = new AudioFileWriter(this);
             AudioFileWriter::AudioFormat audioFormat;
             audioFormat.sampleRate = m_audioEngine->audioFormat().sampleRate;
             audioFormat.channels = m_audioEngine->audioFormat().channels;
@@ -499,20 +576,13 @@ void RecordingManager::startFrameCapture()
                 }
                 qDebug() << "RecordingManager: Using WAV file for audio (FFmpeg muxing)";
             } else {
-                qWarning() << "RecordingManager: Failed to create audio file";
+                qWarning() << "RecordingManager: Failed to create audio file writer";
                 emit recordingWarning("Failed to create audio file. Recording without audio.");
-                cleanupAudio();
+                delete m_audioWriter;
+                m_audioWriter = nullptr;
+                m_tempAudioPath.clear();
             }
         }
-
-        // Connect audio error/warning signals
-        connect(m_audioEngine, &IAudioCaptureEngine::error,
-                this, [this](const QString &msg) {
-            qWarning() << "RecordingManager: Audio error:" << msg;
-            emit recordingWarning("Audio error: " + msg);
-        });
-        connect(m_audioEngine, &IAudioCaptureEngine::warning,
-                this, &RecordingManager::recordingWarning);
 
         // Start audio capture
         if (m_audioEngine->start()) {
@@ -524,87 +594,68 @@ void RecordingManager::startFrameCapture()
         }
     }
 
-    // Show boundary overlay
-    qDebug() << "RecordingManager::startFrameCapture() - Creating boundary overlay...";
-    m_boundaryOverlay = new RecordingBoundaryOverlay();
-    m_boundaryOverlay->setAttribute(Qt::WA_DeleteOnClose);
-    m_boundaryOverlay->setRegion(m_recordingRegion);
-    m_boundaryOverlay->show();
-    raiseWindowAboveMenuBar(m_boundaryOverlay);
-    qDebug() << "RecordingManager::startFrameCapture() - Boundary overlay shown";
+    // Update control bar to show ready state
+    if (m_controlBar) {
+        m_controlBar->setPreparing(false);
+        m_controlBar->setAudioEnabled(m_audioEngine != nullptr);
+    }
 
-    // Show control bar
-    qDebug() << "RecordingManager::startFrameCapture() - Creating control bar...";
-    m_controlBar = new RecordingControlBar();
-    m_controlBar->setAttribute(Qt::WA_DeleteOnClose);
-    connect(m_controlBar, &RecordingControlBar::stopRequested,
-            this, &RecordingManager::stopRecording);
-    connect(m_controlBar, &RecordingControlBar::cancelRequested,
-            this, &RecordingManager::cancelRecording);
-    connect(m_controlBar, &RecordingControlBar::pauseRequested,
-            this, &RecordingManager::pauseRecording);
-    connect(m_controlBar, &RecordingControlBar::resumeRequested,
-            this, &RecordingManager::resumeRecording);
+    // Clean up init task
+    delete m_initTask;
+    m_initTask = nullptr;
 
-    // Set initial region size
-    m_controlBar->updateRegionSize(m_recordingRegion.width(), m_recordingRegion.height());
-    m_controlBar->updateFps(m_frameRate);
-
-    // Show audio indicator if audio is enabled
-    m_controlBar->setAudioEnabled(m_audioEngine != nullptr);
-
-    m_controlBar->positionNear(m_recordingRegion);
-    m_controlBar->show();
-    raiseWindowAboveMenuBar(m_controlBar);
-    qDebug() << "RecordingManager::startFrameCapture() - Control bar shown";
-
-    // Initialize state and counters before starting timers
+    // Initialize state and counters
     m_elapsedTimer.start();
     setState(State::Recording);
     m_frameCount = 0;
 
     // Delay frame capture start to allow boundary overlay to render fully
-    qDebug() << "RecordingManager::startFrameCapture() - Delaying capture start for overlay rendering...";
+    qDebug() << "RecordingManager: Delaying capture start for overlay rendering...";
     QTimer::singleShot(OVERLAY_RENDER_DELAY_MS, this, [this]() {
-        // Safety check: ensure we're still in recording state
-        // Object could have been cancelled or destroyed during the delay
-        if (m_state != State::Recording) {
-            qDebug() << "RecordingManager: Capture start cancelled, state changed during delay";
-            return;
-        }
-
-        // Safety check: ensure timers don't already exist (shouldn't happen, but be defensive)
-        if (m_captureTimer) {
-            qWarning() << "RecordingManager: Capture timer already exists, cleaning up";
-            m_captureTimer->stop();
-            delete m_captureTimer;
-            m_captureTimer = nullptr;
-        }
-        if (m_durationTimer) {
-            qWarning() << "RecordingManager: Duration timer already exists, cleaning up";
-            m_durationTimer->stop();
-            delete m_durationTimer;
-            m_durationTimer = nullptr;
-        }
-
-        // Start frame capture timer
-        qDebug() << "RecordingManager::startFrameCapture() - Starting capture timer...";
-        m_captureTimer = new QTimer(this);
-        connect(m_captureTimer, &QTimer::timeout, this, &RecordingManager::captureFrame);
-        m_captureTimer->start(1000 / m_frameRate);
-        qDebug() << "RecordingManager::startFrameCapture() - Capture timer started";
-
-        // Start duration timer (update UI every 100ms)
-        qDebug() << "RecordingManager::startFrameCapture() - Starting duration timer...";
-        m_durationTimer = new QTimer(this);
-        connect(m_durationTimer, &QTimer::timeout, this, &RecordingManager::updateDuration);
-        m_durationTimer->start(100);
-        qDebug() << "RecordingManager::startFrameCapture() - Duration timer started";
+        startCaptureTimers();
     });
 
     qDebug() << "RecordingManager: Recording started at" << m_frameRate << "FPS";
-    qDebug() << "RecordingManager::startFrameCapture() - END (success)";
+    qDebug() << "RecordingManager::onInitializationComplete() - END (success)";
     emit recordingStarted();
+}
+
+void RecordingManager::startCaptureTimers()
+{
+    // Safety check: ensure we're still in recording state
+    // Object could have been cancelled or destroyed during the delay
+    if (m_state != State::Recording) {
+        qDebug() << "RecordingManager: Capture start cancelled, state changed during delay";
+        return;
+    }
+
+    // Safety check: ensure timers don't already exist (shouldn't happen, but be defensive)
+    if (m_captureTimer) {
+        qWarning() << "RecordingManager: Capture timer already exists, cleaning up";
+        m_captureTimer->stop();
+        delete m_captureTimer;
+        m_captureTimer = nullptr;
+    }
+    if (m_durationTimer) {
+        qWarning() << "RecordingManager: Duration timer already exists, cleaning up";
+        m_durationTimer->stop();
+        delete m_durationTimer;
+        m_durationTimer = nullptr;
+    }
+
+    // Start frame capture timer
+    qDebug() << "RecordingManager: Starting capture timer...";
+    m_captureTimer = new QTimer(this);
+    connect(m_captureTimer, &QTimer::timeout, this, &RecordingManager::captureFrame);
+    m_captureTimer->start(1000 / m_frameRate);
+    qDebug() << "RecordingManager: Capture timer started";
+
+    // Start duration timer (update UI every 100ms)
+    qDebug() << "RecordingManager: Starting duration timer...";
+    m_durationTimer = new QTimer(this);
+    connect(m_durationTimer, &QTimer::timeout, this, &RecordingManager::updateDuration);
+    m_durationTimer->start(100);
+    qDebug() << "RecordingManager: Duration timer started";
 }
 
 void RecordingManager::captureFrame()
@@ -774,11 +825,19 @@ void RecordingManager::stopRecording()
 
 void RecordingManager::cancelRecording()
 {
-    if (m_state != State::Recording && m_state != State::Paused && m_state != State::Encoding) {
+    if (m_state != State::Recording && m_state != State::Paused &&
+        m_state != State::Encoding && m_state != State::Preparing) {
         return;
     }
 
     qDebug() << "RecordingManager: Cancelling recording (state:" << static_cast<int>(m_state) << ")";
+
+    // Cancel any pending initialization
+    if (m_initTask) {
+        m_initTask->cancel();
+        // Note: The init task will be cleaned up when onInitializationComplete() runs
+        // and sees that state has changed
+    }
 
     stopFrameCapture();
 
