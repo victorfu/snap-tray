@@ -349,6 +349,33 @@ snap-tray/
         `-- license.txt
 ```
 
+## 架構設計
+
+程式碼採用模組化架構，提取獨立組件以提升可維護性：
+
+### 已提取組件
+
+| 組件 | 位置 | 職責 |
+|------|------|------|
+| `MagnifierPanel` | `src/region/` | 放大鏡繪製與快取管理 |
+| `UpdateThrottler` | `src/region/` | 事件節流邏輯 |
+| `TextAnnotationEditor` | `src/region/` | 文字註釋編輯/變換/格式化 |
+| `SelectionStateManager` | `src/region/` | 選取狀態與操作管理 |
+| `AnnotationSettingsManager` | `src/settings/` | 集中式註釋設定管理 |
+| `ImageTransformer` | `src/pinwindow/` | 圖片旋轉/翻轉/縮放 |
+| `ResizeHandler` | `src/pinwindow/` | 視窗邊緣調整大小 |
+| `UIIndicators` | `src/pinwindow/` | 縮放/透明度/穿透指示器 |
+| Section 類別 | `src/ui/sections/` | ColorAndWidthWidget 子組件 |
+
+### 測試覆蓋率
+
+| 組件 | 測試數量 |
+|------|----------|
+| ColorAndWidthWidget | 87 |
+| PinWindow | 49 |
+| RegionSelector | 74 |
+| **總計** | **210** |
+
 ## 自訂應用程式圖示
 
 如需更換圖示，請準備 1024x1024 的 PNG 檔案，然後執行：

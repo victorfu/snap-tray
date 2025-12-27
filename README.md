@@ -349,6 +349,33 @@ snap-tray/
         `-- license.txt
 ```
 
+## Architecture
+
+The codebase follows a modular architecture with extracted components for maintainability:
+
+### Extracted Components
+
+| Component | Location | Responsibility |
+|-----------|----------|----------------|
+| `MagnifierPanel` | `src/region/` | Magnifier rendering and caching |
+| `UpdateThrottler` | `src/region/` | Event throttling logic |
+| `TextAnnotationEditor` | `src/region/` | Text annotation editing/transformation |
+| `SelectionStateManager` | `src/region/` | Selection state and operations |
+| `AnnotationSettingsManager` | `src/settings/` | Centralized annotation settings |
+| `ImageTransformer` | `src/pinwindow/` | Image rotation/flip/scale |
+| `ResizeHandler` | `src/pinwindow/` | Window edge resize |
+| `UIIndicators` | `src/pinwindow/` | Scale/opacity/click-through indicators |
+| Section classes | `src/ui/sections/` | ColorAndWidthWidget sub-components |
+
+### Test Coverage
+
+| Component | Test Count |
+|-----------|------------|
+| ColorAndWidthWidget | 87 |
+| PinWindow | 49 |
+| RegionSelector | 74 |
+| **Total** | **210** |
+
 ## Custom App Icon
 
 To replace the icon, prepare a 1024x1024 PNG file, then run:
