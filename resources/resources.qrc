@@ -23,6 +23,7 @@
         <file>icons/ocr.svg</file>
         <file>icons/pin.svg</file>
         <file>icons/record.svg</file>
+        <file>icons/scroll-capture.svg</file>
         <file>icons/save.svg</file>
         <file>icons/copy.svg</file>
         <file>icons/pause.svg</file>
@@ -36,5 +37,8 @@
         <file>icons/arrow-end-line.svg</file>
         <file>icons/arrow-both.svg</file>
         <file>icons/arrow-both-outline.svg</file>
+        <file>icons/close.svg</file>
+        <file>icons/arrow-vertical.svg</file>
+        <file>icons/arrow-horizontal.svg</file>
     </qresource>
 </RCC>
