@@ -93,6 +93,8 @@ private:
     MatchCandidate computeTemplateMatchCandidate(const QImage &newFrame, ScrollDirection direction);
     StitchResult applyCandidate(const QImage &newFrame, const MatchCandidate &candidate, Algorithm algorithm);
     StitchResult performStitch(const QImage &newFrame, int overlapPixels, ScrollDirection direction);
+    int refineOverlap(const QImage &newFrame, int initialOverlap, ScrollDirection direction) const;
+    void applyFeatherBlend(int startY, int overlap, const QImage &oldOverlap);
 
     Algorithm m_algorithm = Algorithm::Auto;
     bool m_detectFixedElements = true;

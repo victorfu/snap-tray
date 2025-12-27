@@ -8,6 +8,7 @@
 #include <QtGlobal>
 #include <algorithm>
 #include <cmath>
+#include <limits>
 
 ImageStitcher::StitchResult ImageStitcher::tryORBMatch(const QImage &newFrame)
 {
@@ -327,7 +328,9 @@ ImageStitcher::StitchResult ImageStitcher::applyCandidate(const QImage &newFrame
                                                           const MatchCandidate &candidate,
                                                           Algorithm algorithm)
 {
-    StitchResult result = performStitch(newFrame, candidate.overlap, candidate.direction);
+    int refinedOverlap = refineOverlap(newFrame, candidate.overlap, candidate.direction);
+
+    StitchResult result = performStitch(newFrame, refinedOverlap, candidate.direction);
     result.usedAlgorithm = algorithm;
     result.confidence = candidate.confidence;
     result.matchedFeatures = candidate.matchedFeatures;
@@ -353,6 +356,12 @@ ImageStitcher::StitchResult ImageStitcher::performStitch(const QImage &newFrame,
                            qMin(currentHeight, newFrameRgb.height()) - 1);
 
     if (direction == ScrollDirection::Down) {
+        QImage oldOverlap;
+        if (overlapPixels > 0 && m_validHeight >= overlapPixels) {
+            oldOverlap = m_stitchedResult.copy(QRect(0, currentHeight - overlapPixels,
+                                                     m_stitchedResult.width(), overlapPixels));
+        }
+
         // Vertical stitching - append new frame below, removing overlap
         int drawY = currentHeight - overlapPixels;
         int newHeight = drawY + newFrameRgb.height();
@@ -378,6 +387,10 @@ ImageStitcher::StitchResult ImageStitcher::performStitch(const QImage &newFrame,
             QPainter painter(&m_stitchedResult);
             painter.drawImage(0, drawY, newFrameRgb);
             painter.end();
+        }
+
+        if (!oldOverlap.isNull() && oldOverlap.height() == overlapPixels) {
+            applyFeatherBlend(drawY, overlapPixels, oldOverlap);
         }
 
         // Calculate viewport rect BEFORE updating stitched result
@@ -406,6 +419,82 @@ ImageStitcher::StitchResult ImageStitcher::performStitch(const QImage &newFrame,
     }
 
     return result;
+}
+
+int ImageStitcher::refineOverlap(const QImage &newFrame, int initialOverlap, ScrollDirection direction) const
+{
+    cv::Mat lastMat = qImageToCvMat(m_lastFrame);
+    cv::Mat newMat = qImageToCvMat(newFrame);
+
+    if (lastMat.empty() || newMat.empty()) {
+        return initialOverlap;
+    }
+
+    cv::Mat lastGray;
+    cv::Mat newGray;
+    cv::cvtColor(lastMat, lastGray, cv::COLOR_BGR2GRAY);
+    cv::cvtColor(newMat, newGray, cv::COLOR_BGR2GRAY);
+
+    int maxOverlap = std::min({lastGray.rows, newGray.rows, MAX_OVERLAP});
+    int clampedInitial = qBound(MIN_OVERLAP, initialOverlap, maxOverlap);
+
+    const int searchRadius = 8;
+    double bestScore = std::numeric_limits<double>::max();
+    int bestOverlap = clampedInitial;
+
+    for (int delta = -searchRadius; delta <= searchRadius; ++delta) {
+        int candidateOverlap = qBound(MIN_OVERLAP, clampedInitial + delta, maxOverlap);
+
+        int lastStartY = direction == ScrollDirection::Down ? lastGray.rows - candidateOverlap : 0;
+        int newStartY = direction == ScrollDirection::Down ? 0 : newGray.rows - candidateOverlap;
+
+        if (lastStartY < 0 || newStartY < 0 ||
+            lastStartY + candidateOverlap > lastGray.rows ||
+            newStartY + candidateOverlap > newGray.rows) {
+            continue;
+        }
+
+        cv::Mat lastRoi = lastGray(cv::Rect(0, lastStartY, lastGray.cols, candidateOverlap));
+        cv::Mat newRoi = newGray(cv::Rect(0, newStartY, newGray.cols, candidateOverlap));
+
+        cv::Mat diff;
+        cv::absdiff(lastRoi, newRoi, diff);
+        double score = cv::mean(diff)[0];
+
+        if (score < bestScore) {
+            bestScore = score;
+            bestOverlap = candidateOverlap;
+        }
+    }
+
+    return bestOverlap;
+}
+
+void ImageStitcher::applyFeatherBlend(int startY, int overlap, const QImage &oldOverlap)
+{
+    if (overlap <= 1 || oldOverlap.isNull()) {
+        return;
+    }
+
+    const int width = m_stitchedResult.width();
+    const int height = qMin(overlap, oldOverlap.height());
+
+    for (int y = 0; y < height; ++y) {
+        auto *destLine = reinterpret_cast<QRgb*>(m_stitchedResult.scanLine(startY + y));
+        const auto *oldLine = reinterpret_cast<const QRgb*>(oldOverlap.constScanLine(y));
+
+        double alpha = static_cast<double>(y) / static_cast<double>(height - 1);
+        for (int x = 0; x < width; ++x) {
+            QColor oldColor(oldLine[x]);
+            QColor newColor(destLine[x]);
+
+            int r = static_cast<int>(oldColor.red() * (1.0 - alpha) + newColor.red() * alpha);
+            int g = static_cast<int>(oldColor.green() * (1.0 - alpha) + newColor.green() * alpha);
+            int b = static_cast<int>(oldColor.blue() * (1.0 - alpha) + newColor.blue() * alpha);
+
+            destLine[x] = qRgb(r, g, b);
+        }
+    }
 }
 
 cv::Mat ImageStitcher::qImageToCvMat(const QImage &image) const
