@@ -309,20 +309,29 @@ QPixmap PinWindow::getTransformedPixmap() const
 
 QPixmap PinWindow::getExportPixmap() const
 {
+    qDebug() << "PinWindow::getExportPixmap called";
+    qDebug() << "  m_watermarkSettings.enabled:" << m_watermarkSettings.enabled;
+    qDebug() << "  m_watermarkSettings.imagePath:" << m_watermarkSettings.imagePath;
+
     // 1. Get current display size (includes zoom)
     QSize exportSize = m_displayPixmap.size();
+    qDebug() << "  exportSize:" << exportSize;
 
     // 2. Get transformed pixmap (rotation/flip) and scale to current size
     QPixmap basePixmap = getTransformedPixmap();
+    qDebug() << "  basePixmap size:" << basePixmap.size();
+
     QPixmap scaledPixmap = basePixmap.scaled(
         exportSize,
         Qt::IgnoreAspectRatio,
         Qt::SmoothTransformation
     );
     scaledPixmap.setDevicePixelRatio(basePixmap.devicePixelRatio());
+    qDebug() << "  scaledPixmap size:" << scaledPixmap.size();
 
     // 3. If opacity is adjusted, paint with opacity
     if (m_opacity < 1.0) {
+        qDebug() << "  Applying opacity:" << m_opacity;
         QPixmap resultPixmap(scaledPixmap.size());
         resultPixmap.setDevicePixelRatio(scaledPixmap.devicePixelRatio());
         resultPixmap.fill(Qt::transparent);
@@ -336,6 +345,7 @@ QPixmap PinWindow::getExportPixmap() const
     }
 
     // 4. Apply watermark
+    qDebug() << "  Calling WatermarkRenderer::applyToPixmap";
     return WatermarkRenderer::applyToPixmap(scaledPixmap, m_watermarkSettings);
 }
 

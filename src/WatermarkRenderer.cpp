@@ -1,5 +1,6 @@
 #include "WatermarkRenderer.h"
 #include <QSettings>
+#include <QSizeF>
 
 static const char* SETTINGS_KEY_WATERMARK_ENABLED = "watermarkEnabled";
 static const char* SETTINGS_KEY_WATERMARK_IMAGE_PATH = "watermarkImagePath";
@@ -28,21 +29,49 @@ void WatermarkRenderer::renderImage(QPainter &painter, const QRect &targetRect, 
         return;
     }
 
-    painter.save();
+    qreal dpr = 1.0;
+    if (painter.device()) {
+        dpr = painter.device()->devicePixelRatio();
+        if (dpr <= 0.0) {
+            dpr = 1.0;
+        }
+    }
 
-    // Scale the image
+    qreal watermarkDpr = watermarkImage.devicePixelRatio();
+    if (watermarkDpr <= 0.0) {
+        watermarkDpr = 1.0;
+    }
+    QSizeF watermarkLogicalSize = QSizeF(watermarkImage.size()) / watermarkDpr;
     qreal scale = settings.imageScale / 100.0;
-    QSize scaledSize = watermarkImage.size() * scale;
-    QPixmap scaledImage = watermarkImage.scaled(scaledSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    QSizeF logicalScaledSizeF = watermarkLogicalSize * scale;
+    QSize logicalScaledSize = logicalScaledSizeF.toSize();
+    if (logicalScaledSize.isEmpty()) {
+        return;
+    }
 
-    // Calculate position
-    QRect imageRect = calculateWatermarkRect(targetRect, scaledSize, settings.position, settings.margin);
+    QSize deviceScaledSize = (logicalScaledSizeF * dpr).toSize();
+    if (deviceScaledSize.isEmpty()) {
+        return;
+    }
 
-    // Apply opacity
+    QPixmap scaledImage = watermarkImage.scaled(deviceScaledSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    scaledImage.setDevicePixelRatio(dpr);
+
+    if (scaledImage.isNull()) {
+        return;
+    }
+
+    logicalScaledSize = scaledImage.size() / dpr;
+    if (logicalScaledSize.isEmpty()) {
+        return;
+    }
+
+    int margin = settings.margin;
+    QRect imageRect = calculateWatermarkRect(targetRect, logicalScaledSize, settings.position, margin);
+
+    // Apply opacity and draw watermark
     painter.setOpacity(settings.opacity);
     painter.drawPixmap(imageRect.topLeft(), scaledImage);
-
-    painter.restore();
 }
 
 QPixmap WatermarkRenderer::applyToPixmap(const QPixmap &source, const Settings &settings)
@@ -57,9 +86,23 @@ QPixmap WatermarkRenderer::applyToPixmap(const QPixmap &source, const Settings &
 
     QPixmap result = source.copy();
     QPainter painter(&result);
+
+    if (!painter.isActive()) {
+        return source;
+    }
+
     painter.setRenderHint(QPainter::Antialiasing);
 
-    render(painter, result.rect(), settings);
+    qreal dpr = result.devicePixelRatio();
+    if (dpr <= 0.0) {
+        dpr = 1.0;
+    }
+    QSize logicalSize = result.size() / dpr;
+    QRect targetRect(QPoint(0, 0), logicalSize);
+
+    renderImage(painter, targetRect, settings);
+
+    painter.end();
 
     return result;
 }
