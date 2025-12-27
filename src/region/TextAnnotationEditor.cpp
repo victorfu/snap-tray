@@ -3,6 +3,7 @@
 #include "annotations/TextAnnotation.h"
 #include "InlineTextEditor.h"
 #include "ColorAndWidthWidget.h"
+#include "settings/Settings.h"
 #include <QWidget>
 #include <QSettings>
 #include <QtMath>
@@ -319,7 +320,7 @@ void TextAnnotationEditor::setFormatting(const TextFormattingState& formatting)
 
 void TextAnnotationEditor::loadSettings()
 {
-    QSettings settings("Victor Fu", "SnapTray");
+    auto settings = SnapTray::getSettings();
     m_formatting.bold = settings.value(SETTINGS_KEY_TEXT_BOLD, true).toBool();
     m_formatting.italic = settings.value(SETTINGS_KEY_TEXT_ITALIC, false).toBool();
     m_formatting.underline = settings.value(SETTINGS_KEY_TEXT_UNDERLINE, false).toBool();
@@ -329,7 +330,7 @@ void TextAnnotationEditor::loadSettings()
 
 void TextAnnotationEditor::saveSettings()
 {
-    QSettings settings("Victor Fu", "SnapTray");
+    auto settings = SnapTray::getSettings();
     settings.setValue(SETTINGS_KEY_TEXT_BOLD, m_formatting.bold);
     settings.setValue(SETTINGS_KEY_TEXT_ITALIC, m_formatting.italic);
     settings.setValue(SETTINGS_KEY_TEXT_UNDERLINE, m_formatting.underline);

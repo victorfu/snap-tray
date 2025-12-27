@@ -9,6 +9,7 @@
 #include "LaserPointerRenderer.h"
 #include "ClickRippleRenderer.h"
 #include "settings/AnnotationSettingsManager.h"
+#include "settings/Settings.h"
 
 #include <QPainter>
 #include <QMouseEvent>
@@ -867,14 +868,14 @@ void ScreenCanvas::closeEvent(QCloseEvent* event)
 
 LineEndStyle ScreenCanvas::loadArrowStyle() const
 {
-    QSettings settings("Victor Fu", "SnapTray");
+    auto settings = SnapTray::getSettings();
     int style = settings.value("annotation/arrowStyle", static_cast<int>(LineEndStyle::EndArrow)).toInt();
     return static_cast<LineEndStyle>(style);
 }
 
 void ScreenCanvas::saveArrowStyle(LineEndStyle style)
 {
-    QSettings settings("Victor Fu", "SnapTray");
+    auto settings = SnapTray::getSettings();
     settings.setValue("annotation/arrowStyle", static_cast<int>(style));
 }
 

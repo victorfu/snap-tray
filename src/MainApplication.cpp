@@ -5,6 +5,7 @@
 #include "ScreenCanvasManager.h"
 #include "RecordingManager.h"
 #include "PlatformFeatures.h"
+#include "settings/Settings.h"
 
 #include <QSettings>
 #include <QSystemTrayIcon>
@@ -337,7 +338,7 @@ bool MainApplication::updateHotkey(const QString& newHotkey)
         updateTrayMenuHotkeyText(newHotkey);
 
         // Save only after successful registration
-        QSettings settings("Victor Fu", "SnapTray");
+        auto settings = SnapTray::getSettings();
         settings.setValue("hotkey", newHotkey);
 
         return true;
@@ -385,7 +386,7 @@ bool MainApplication::updateScreenCanvasHotkey(const QString& newHotkey)
         }
 
         // Save only after successful registration
-        QSettings settings("Victor Fu", "SnapTray");
+        auto settings = SnapTray::getSettings();
         settings.setValue("screenCanvasHotkey", newHotkey);
 
         return true;

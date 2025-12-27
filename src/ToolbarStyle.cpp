@@ -1,4 +1,5 @@
 #include "ToolbarStyle.h"
+#include "settings/Settings.h"
 
 #include <QSettings>
 
@@ -101,14 +102,14 @@ ToolbarStyleConfig ToolbarStyleConfig::getStyle(ToolbarStyleType type)
 
 ToolbarStyleType ToolbarStyleConfig::loadStyle()
 {
-    QSettings settings("Victor Fu", "SnapTray");
+    auto settings = SnapTray::getSettings();
     int styleValue = settings.value("appearance/toolbarStyle", 0).toInt();
     return static_cast<ToolbarStyleType>(styleValue);
 }
 
 void ToolbarStyleConfig::saveStyle(ToolbarStyleType type)
 {
-    QSettings settings("Victor Fu", "SnapTray");
+    auto settings = SnapTray::getSettings();
     settings.setValue("appearance/toolbarStyle", static_cast<int>(type));
 }
 

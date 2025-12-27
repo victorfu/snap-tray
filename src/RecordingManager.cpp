@@ -12,6 +12,7 @@
 #include "platform/WindowLevel.h"
 #include "utils/ResourceCleanupHelper.h"
 #include "utils/CoordinateHelper.h"
+#include "settings/Settings.h"
 
 #include <QGuiApplication>
 #include <QScreen>
@@ -237,7 +238,7 @@ void RecordingManager::startFullScreenRecording()
     m_targetScreen = targetScreen;
 
     // Load frame rate from settings with validation
-    QSettings settings("Victor Fu", "SnapTray");
+    auto settings = SnapTray::getSettings();
     m_frameRate = settings.value("recording/framerate", 30).toInt();
     if (m_frameRate <= 0 || m_frameRate > 120) {
         qWarning() << "RecordingManager: Invalid frame rate" << m_frameRate << ", using default 30";
@@ -260,7 +261,7 @@ void RecordingManager::onRegionSelected(const QRect &region, QScreen *screen)
     m_targetScreen = screen;
 
     // Load frame rate from settings with validation
-    QSettings settings("Victor Fu", "SnapTray");
+    auto settings = SnapTray::getSettings();
     m_frameRate = settings.value("recording/framerate", 30).toInt();
     if (m_frameRate <= 0 || m_frameRate > 120) {
         qWarning() << "RecordingManager: Invalid frame rate" << m_frameRate << ", using default 30";
@@ -357,7 +358,7 @@ void RecordingManager::beginAsyncInitialization()
     qDebug() << "RecordingManager::beginAsyncInitialization() - BEGIN";
 
     // Load settings for initialization config
-    QSettings settings("Victor Fu", "SnapTray");
+    auto settings = SnapTray::getSettings();
     int formatInt = settings.value("recording/outputFormat", 0).toInt();
     bool useGif = (formatInt == 1);
 
@@ -954,7 +955,7 @@ void RecordingManager::onEncodingFinished(bool success, const QString &outputPat
 
 void RecordingManager::showSaveDialog(const QString &tempOutputPath)
 {
-    QSettings settings("Victor Fu", "SnapTray");
+    auto settings = SnapTray::getSettings();
 
     // Check auto-save setting
     bool autoSave = settings.value("recording/autoSave", false).toBool();
@@ -1103,7 +1104,7 @@ QString RecordingManager::generateOutputPath() const
     QString tempDir = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
 
     // Get output format from settings
-    QSettings settings("Victor Fu", "SnapTray");
+    auto settings = SnapTray::getSettings();
     int formatInt = settings.value("recording/outputFormat", 0).toInt();
     QString extension = (formatInt == 1) ? "gif" : "mp4";
 

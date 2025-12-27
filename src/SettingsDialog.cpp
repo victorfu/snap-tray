@@ -2,6 +2,7 @@
 #include "AutoLaunchManager.h"
 #include "WatermarkRenderer.h"
 #include "capture/IAudioCaptureEngine.h"
+#include "settings/Settings.h"
 
 #include <QKeySequenceEdit>
 #include <QSettings>
@@ -486,7 +487,7 @@ void SettingsDialog::setupRecordingTab(QWidget *tab)
             this, &SettingsDialog::onOutputFormatChanged);
 
     // ========== Load settings ==========
-    QSettings settings("Victor Fu", "SnapTray");
+    auto settings = SnapTray::getSettings();
 
     int fps = settings.value("recording/framerate", 30).toInt();
     int fpsIndex = m_recordingFrameRateCombo->findData(fps);
@@ -569,13 +570,13 @@ QString SettingsDialog::defaultHotkey()
 
 QString SettingsDialog::loadHotkey()
 {
-    QSettings settings("Victor Fu", "SnapTray");
+    auto settings = SnapTray::getSettings();
     return settings.value(SETTINGS_KEY_HOTKEY, DEFAULT_HOTKEY).toString();
 }
 
 void SettingsDialog::saveHotkey(const QString &keySequence)
 {
-    QSettings settings("Victor Fu", "SnapTray");
+    auto settings = SnapTray::getSettings();
     settings.setValue(SETTINGS_KEY_HOTKEY, keySequence);
     qDebug() << "Hotkey saved:" << keySequence;
 }
@@ -587,7 +588,7 @@ QString SettingsDialog::defaultScreenCanvasHotkey()
 
 QString SettingsDialog::loadScreenCanvasHotkey()
 {
-    QSettings settings("Victor Fu", "SnapTray");
+    auto settings = SnapTray::getSettings();
     return settings.value(SETTINGS_KEY_SCREEN_CANVAS_HOTKEY, DEFAULT_SCREEN_CANVAS_HOTKEY).toString();
 }
 
@@ -637,7 +638,7 @@ void SettingsDialog::onSave()
     WatermarkRenderer::saveSettings(watermarkSettings);
 
     // Save recording settings
-    QSettings recordingSettings("Victor Fu", "SnapTray");
+    auto recordingSettings = SnapTray::getSettings();
     recordingSettings.setValue("recording/framerate",
         m_recordingFrameRateCombo->currentData().toInt());
     recordingSettings.setValue("recording/outputFormat",
