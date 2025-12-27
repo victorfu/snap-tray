@@ -111,7 +111,35 @@ QRect ScrollingCaptureOverlay::captureRegion() const
 void ScrollingCaptureOverlay::setRegionLocked(bool locked)
 {
     m_regionLocked = locked;
-    setAttribute(Qt::WA_TransparentForMouseEvents, locked);
+    // When move during capture is allowed, don't make transparent for mouse events
+    if (locked && !m_allowMoveWhileCapturing) {
+        setAttribute(Qt::WA_TransparentForMouseEvents, true);
+    } else {
+        setAttribute(Qt::WA_TransparentForMouseEvents, false);
+    }
+    update();
+}
+
+void ScrollingCaptureOverlay::setCaptureDirection(CaptureDirection direction)
+{
+    m_captureDirection = direction;
+    update();
+}
+
+void ScrollingCaptureOverlay::setAllowMoveWhileCapturing(bool allow)
+{
+    m_allowMoveWhileCapturing = allow;
+}
+
+void ScrollingCaptureOverlay::setMatchFailedMessage(const QString &message)
+{
+    m_matchFailedMessage = message;
+    update();
+}
+
+void ScrollingCaptureOverlay::clearMatchFailedMessage()
+{
+    m_matchFailedMessage.clear();
     update();
 }
 
@@ -134,6 +162,16 @@ void ScrollingCaptureOverlay::paintEvent(QPaintEvent *event)
         }
 
         drawDimensions(painter);
+
+        // Draw scroll direction hint during capture
+        if (m_borderState == BorderState::Capturing) {
+            drawScrollDirectionHint(painter);
+        }
+
+        // Draw match failed message
+        if (!m_matchFailedMessage.isEmpty()) {
+            drawMatchFailedMessage(painter);
+        }
     }
 
     // Draw instructions when selecting
@@ -259,18 +297,20 @@ void ScrollingCaptureOverlay::drawDimensions(QPainter &painter)
 
 void ScrollingCaptureOverlay::drawInstructions(QPainter &painter)
 {
-    QString instructions = "Drag to select capture region\nPress Esc to cancel";
+    QString instructions = "Drag to select capture region\n\n"
+                           "Tip: Avoid including scrollbars for best results\n\n"
+                           "Press Esc to cancel";
 
-    painter.setFont(QFont("Arial", 14));
+    painter.setFont(QFont("Arial", 13));
     painter.setPen(Qt::white);
 
     QRect textRect = painter.fontMetrics().boundingRect(rect(), Qt::AlignCenter | Qt::TextWordWrap, instructions);
-    textRect.adjust(-20, -10, 20, 10);
+    textRect.adjust(-24, -16, 24, 16);
 
     // Background
     painter.setPen(Qt::NoPen);
-    painter.setBrush(QColor(0, 0, 0, 150));
-    painter.drawRoundedRect(textRect, 8, 8);
+    painter.setBrush(QColor(0, 0, 0, 170));
+    painter.drawRoundedRect(textRect, 10, 10);
 
     // Text
     painter.setPen(Qt::white);
@@ -284,11 +324,24 @@ void ScrollingCaptureOverlay::mousePressEvent(QMouseEvent *event)
         return;
     }
 
+    QPoint pos = event->pos();
+
+    // Allow constrained move during capture if enabled
+    if ((m_borderState == BorderState::Capturing || m_borderState == BorderState::MatchFailed) &&
+        m_allowMoveWhileCapturing && m_selectionManager->hasSelection()) {
+        if (m_selectionManager->selectionRect().contains(pos)) {
+            m_isConstrainedMoving = true;
+            m_constrainedMoveStart = pos;
+            m_constrainedMoveOriginalRect = m_selectionManager->selectionRect();
+            setCursor(m_captureDirection == CaptureDirection::Vertical ?
+                      Qt::SizeVerCursor : Qt::SizeHorCursor);
+            return;
+        }
+    }
+
     if (m_regionLocked) {
         return;
     }
-
-    QPoint pos = event->pos();
 
     if (m_borderState == BorderState::Adjusting) {
         // Check for handle hit
@@ -317,12 +370,44 @@ void ScrollingCaptureOverlay::mousePressEvent(QMouseEvent *event)
 
 void ScrollingCaptureOverlay::mouseMoveEvent(QMouseEvent *event)
 {
+    QPoint pos = event->pos();
+
+    // Handle constrained move during capture
+    if (m_isConstrainedMoving) {
+        QPoint delta = pos - m_constrainedMoveStart;
+        QRect newRect = m_constrainedMoveOriginalRect;
+
+        // Constrain movement to the scroll direction axis
+        if (m_captureDirection == CaptureDirection::Vertical) {
+            newRect.translate(0, delta.y());
+        } else {
+            newRect.translate(delta.x(), 0);
+        }
+
+        // Constrain to screen bounds
+        QRect bounds = rect();
+        if (newRect.left() < bounds.left()) {
+            newRect.moveLeft(bounds.left());
+        }
+        if (newRect.right() > bounds.right()) {
+            newRect.moveRight(bounds.right());
+        }
+        if (newRect.top() < bounds.top()) {
+            newRect.moveTop(bounds.top());
+        }
+        if (newRect.bottom() > bounds.bottom()) {
+            newRect.moveBottom(bounds.bottom());
+        }
+
+        m_selectionManager->setSelectionRect(newRect);
+        update();
+        return;
+    }
+
     if (m_regionLocked) {
         QWidget::mouseMoveEvent(event);
         return;
     }
-
-    QPoint pos = event->pos();
 
     switch (m_selectionManager->state()) {
     case SelectionStateManager::State::Selecting:
@@ -365,6 +450,16 @@ void ScrollingCaptureOverlay::mouseMoveEvent(QMouseEvent *event)
             } else {
                 setCursor(Qt::CrossCursor);
             }
+        } else if ((m_borderState == BorderState::Capturing || m_borderState == BorderState::MatchFailed) &&
+                   m_allowMoveWhileCapturing) {
+            // Show constrained move cursor during capture when hovering over selection
+            if (m_selectionManager->hasSelection() &&
+                m_selectionManager->selectionRect().contains(pos)) {
+                setCursor(m_captureDirection == CaptureDirection::Vertical ?
+                          Qt::SizeVerCursor : Qt::SizeHorCursor);
+            } else {
+                setCursor(Qt::ArrowCursor);
+            }
         }
         break;
     }
@@ -376,6 +471,15 @@ void ScrollingCaptureOverlay::mouseReleaseEvent(QMouseEvent *event)
 {
     if (event->button() != Qt::LeftButton) {
         QWidget::mouseReleaseEvent(event);
+        return;
+    }
+
+    // Handle end of constrained move during capture
+    if (m_isConstrainedMoving) {
+        m_isConstrainedMoving = false;
+        setCursor(Qt::ArrowCursor);
+        emit regionChanged(captureRegion());
+        update();
         return;
     }
 
@@ -450,6 +554,76 @@ void ScrollingCaptureOverlay::keyPressEvent(QKeyEvent *event)
         QWidget::keyPressEvent(event);
         break;
     }
+}
+
+void ScrollingCaptureOverlay::drawScrollDirectionHint(QPainter &painter)
+{
+    QRect selRect = m_selectionManager->selectionRect();
+    if (!selRect.isValid()) {
+        return;
+    }
+
+    // Draw a small arrow indicating scroll direction
+    painter.setFont(QFont("Arial", 12, QFont::Bold));
+
+    QString arrow;
+    int x, y;
+
+    if (m_captureDirection == CaptureDirection::Vertical) {
+        arrow = QString::fromUtf8("↓");
+        x = selRect.center().x() - 8;
+        y = selRect.bottom() + 25;
+    } else {
+        arrow = QString::fromUtf8("→");
+        x = selRect.right() + 10;
+        y = selRect.center().y() + 5;
+    }
+
+    // Background pill
+    QFontMetrics fm(painter.font());
+    QRect textRect = fm.boundingRect(arrow);
+    QRect bgRect(x - 6, y - textRect.height() - 2, textRect.width() + 12, textRect.height() + 8);
+
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(QColor(0, 122, 255, 200));
+    painter.drawRoundedRect(bgRect, 10, 10);
+
+    painter.setPen(Qt::white);
+    painter.drawText(x, y, arrow);
+}
+
+void ScrollingCaptureOverlay::drawMatchFailedMessage(QPainter &painter)
+{
+    QRect selRect = m_selectionManager->selectionRect();
+    if (!selRect.isValid() || m_matchFailedMessage.isEmpty()) {
+        return;
+    }
+
+    painter.setFont(QFont("Arial", 11, QFont::Bold));
+    QFontMetrics fm(painter.font());
+
+    int textWidth = fm.horizontalAdvance(m_matchFailedMessage);
+    int textHeight = fm.height();
+
+    // Position above the selection
+    int x = selRect.center().x() - textWidth / 2;
+    int y = selRect.top() - 30;
+
+    // Keep on screen
+    x = qBound(10, x, width() - textWidth - 10);
+    if (y < 30) {
+        y = selRect.bottom() + 30;
+    }
+
+    // Background
+    QRect bgRect(x - 10, y - textHeight - 4, textWidth + 20, textHeight + 12);
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(QColor(200, 50, 50, 220));
+    painter.drawRoundedRect(bgRect, 6, 6);
+
+    // Text
+    painter.setPen(Qt::white);
+    painter.drawText(x, y, m_matchFailedMessage);
 }
 
 void ScrollingCaptureOverlay::startMatchFailedAnimation()

@@ -28,9 +28,17 @@ public:
 
     enum class ScrollDirection {
         Down,
-        Up
+        Up,
+        Left,
+        Right
     };
     Q_ENUM(ScrollDirection)
+
+    enum class CaptureMode {
+        Vertical,
+        Horizontal
+    };
+    Q_ENUM(CaptureMode)
 
     struct StitchResult {
         bool success = false;
@@ -48,6 +56,9 @@ public:
     // Configuration
     void setAlgorithm(Algorithm algo);
     Algorithm algorithm() const { return m_algorithm; }
+
+    void setCaptureMode(CaptureMode mode);
+    CaptureMode captureMode() const { return m_captureMode; }
 
     void setDetectFixedElements(bool enabled);
     bool detectFixedElements() const { return m_detectFixedElements; }
@@ -95,6 +106,7 @@ private:
     StitchResult performStitch(const QImage &newFrame, int overlapPixels, ScrollDirection direction);
 
     Algorithm m_algorithm = Algorithm::Auto;
+    CaptureMode m_captureMode = CaptureMode::Vertical;
     bool m_detectFixedElements = true;
     double m_confidenceThreshold = 0.60;
 
@@ -103,6 +115,7 @@ private:
     QRect m_currentViewportRect;
     int m_frameCount = 0;
     int m_validHeight = 0;
+    int m_validWidth = 0;  // For horizontal mode
 
     // ROI parameters
     static constexpr double ROI_FIRST_RATIO = 0.25;   // Bottom/Right 25% of first frame
@@ -110,6 +123,7 @@ private:
     static constexpr int MIN_OVERLAP = 20;
     static constexpr int MAX_OVERLAP = 500;
     static constexpr int MAX_STITCHED_HEIGHT = 32768; // Maximum height in pixels (~32K)
+    static constexpr int MAX_STITCHED_WIDTH = 32768;  // Maximum width in pixels (~32K)
 };
 
 #endif // IMAGESTITCHER_H

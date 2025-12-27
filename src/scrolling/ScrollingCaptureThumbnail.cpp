@@ -14,7 +14,7 @@ ScrollingCaptureThumbnail::ScrollingCaptureThumbnail(QWidget *parent)
 #ifdef Q_OS_MACOS
     setAttribute(Qt::WA_MacAlwaysShowToolWindow);
 #endif
-    setFixedWidth(THUMBNAIL_WIDTH + 2 * MARGIN);
+    setFixedWidth(THUMBNAIL_WIDTH_VERTICAL + 2 * MARGIN);
     setMinimumHeight(100);
 }
 
@@ -39,6 +39,35 @@ void ScrollingCaptureThumbnail::setMatchStatus(MatchStatus status, double confid
 {
     m_matchStatus = status;
     m_confidence = confidence;
+    update();
+}
+
+void ScrollingCaptureThumbnail::setDirection(Direction direction)
+{
+    if (m_direction == direction) {
+        return;
+    }
+
+    m_direction = direction;
+
+    // Update size constraints based on direction
+    int thumbnailWidth = (direction == Direction::Vertical)
+        ? THUMBNAIL_WIDTH_VERTICAL : THUMBNAIL_WIDTH_HORIZONTAL;
+    setFixedWidth(thumbnailWidth + 2 * MARGIN);
+
+    updateScaledImage();
+    update();
+}
+
+void ScrollingCaptureThumbnail::setLastSuccessfulPosition(int position)
+{
+    m_lastSuccessfulPosition = position;
+    update();
+}
+
+void ScrollingCaptureThumbnail::setShowRecoveryHint(bool show)
+{
+    m_showRecoveryHint = show;
     update();
 }
 
@@ -78,6 +107,8 @@ void ScrollingCaptureThumbnail::clear()
     m_viewportRect = QRect();
     m_matchStatus = MatchStatus::Good;
     m_confidence = 1.0;
+    m_lastSuccessfulPosition = 0;
+    m_showRecoveryHint = false;
     update();
 }
 
@@ -89,20 +120,26 @@ void ScrollingCaptureThumbnail::updateScaledImage()
         return;
     }
 
+    // Get direction-aware size constraints
+    int thumbnailWidth = (m_direction == Direction::Vertical)
+        ? THUMBNAIL_WIDTH_VERTICAL : THUMBNAIL_WIDTH_HORIZONTAL;
+    int thumbnailMaxHeight = (m_direction == Direction::Vertical)
+        ? THUMBNAIL_MAX_HEIGHT_VERTICAL : THUMBNAIL_MAX_HEIGHT_HORIZONTAL;
+
     // Calculate scale to fit width
-    m_scale = static_cast<double>(THUMBNAIL_WIDTH) / m_stitchedImage.width();
+    m_scale = static_cast<double>(thumbnailWidth) / m_stitchedImage.width();
 
     int scaledHeight = static_cast<int>(m_stitchedImage.height() * m_scale);
 
     // Limit height - recalculate scale if needed
-    if (scaledHeight > THUMBNAIL_MAX_HEIGHT) {
-        scaledHeight = THUMBNAIL_MAX_HEIGHT;
+    if (scaledHeight > thumbnailMaxHeight) {
+        scaledHeight = thumbnailMaxHeight;
         // Recalculate scale based on height constraint
-        m_scale = static_cast<double>(THUMBNAIL_MAX_HEIGHT) / m_stitchedImage.height();
+        m_scale = static_cast<double>(thumbnailMaxHeight) / m_stitchedImage.height();
     }
 
     m_scaledImage = m_stitchedImage.scaled(
-        THUMBNAIL_WIDTH, scaledHeight,
+        thumbnailWidth, scaledHeight,
         Qt::KeepAspectRatio, Qt::SmoothTransformation);
 
     setFixedHeight(scaledHeight + 2 * MARGIN);
@@ -131,6 +168,11 @@ void ScrollingCaptureThumbnail::paintEvent(QPaintEvent *event)
 
         // Draw viewport indicator
         drawViewportIndicator(painter);
+
+        // Draw recovery hint if match failed
+        if (m_showRecoveryHint) {
+            drawRecoveryHint(painter);
+        }
     }
 
     // Draw match status indicator
@@ -201,6 +243,74 @@ void ScrollingCaptureThumbnail::drawMatchStatusIndicator(QPainter &painter)
         painter.setFont(QFont("Arial", 8));
         QString confText = QString("%1%").arg(static_cast<int>(m_confidence * 100));
         painter.drawText(x - 10, y + STATUS_INDICATOR_SIZE + 12, confText);
+    }
+}
+
+void ScrollingCaptureThumbnail::drawRecoveryHint(QPainter &painter)
+{
+    if (m_stitchedImage.isNull() || m_lastSuccessfulPosition <= 0) {
+        return;
+    }
+
+    // Draw a green line at the last successful position
+    if (m_direction == Direction::Vertical) {
+        // Vertical mode: draw horizontal green line
+        int scaledY = MARGIN + static_cast<int>(m_lastSuccessfulPosition * m_scale);
+
+        // Clamp to visible area
+        int maxY = MARGIN + m_scaledImage.height();
+        if (scaledY > maxY) scaledY = maxY;
+        if (scaledY < MARGIN) scaledY = MARGIN;
+
+        painter.setPen(QPen(QColor(76, 175, 80), 2));
+        painter.drawLine(MARGIN, scaledY, MARGIN + m_scaledImage.width(), scaledY);
+
+        // Draw arrow and text hint
+        painter.setPen(Qt::white);
+        painter.setFont(QFont("Arial", 9, QFont::Bold));
+        QString hint = QString::fromUtf8("↑ Scroll here");
+        QFontMetrics fm(painter.font());
+        int textWidth = fm.horizontalAdvance(hint);
+        int textX = MARGIN + (m_scaledImage.width() - textWidth) / 2;
+        int textY = scaledY - 6;
+
+        // Background for text
+        QRect textBgRect(textX - 4, textY - fm.ascent() - 2, textWidth + 8, fm.height() + 4);
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(QColor(0, 0, 0, 180));
+        painter.drawRoundedRect(textBgRect, 4, 4);
+
+        painter.setPen(QColor(76, 175, 80));
+        painter.drawText(textX, textY, hint);
+    } else {
+        // Horizontal mode: draw vertical green line
+        int scaledX = MARGIN + static_cast<int>(m_lastSuccessfulPosition * m_scale);
+
+        // Clamp to visible area
+        int maxX = MARGIN + m_scaledImage.width();
+        if (scaledX > maxX) scaledX = maxX;
+        if (scaledX < MARGIN) scaledX = MARGIN;
+
+        painter.setPen(QPen(QColor(76, 175, 80), 2));
+        painter.drawLine(scaledX, MARGIN, scaledX, MARGIN + m_scaledImage.height());
+
+        // Draw arrow and text hint
+        painter.setPen(Qt::white);
+        painter.setFont(QFont("Arial", 9, QFont::Bold));
+        QString hint = QString::fromUtf8("← Scroll");
+        QFontMetrics fm(painter.font());
+        int textHeight = fm.height();
+        int textX = scaledX - fm.horizontalAdvance(hint) - 6;
+        int textY = MARGIN + m_scaledImage.height() / 2 + textHeight / 4;
+
+        // Background for text
+        QRect textBgRect(textX - 4, textY - fm.ascent() - 2, fm.horizontalAdvance(hint) + 8, fm.height() + 4);
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(QColor(0, 0, 0, 180));
+        painter.drawRoundedRect(textBgRect, 4, 4);
+
+        painter.setPen(QColor(76, 175, 80));
+        painter.drawText(textX, textY, hint);
     }
 }
 

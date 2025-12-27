@@ -27,5 +27,7 @@
         <file>icons/play.svg</file>
         <file>icons/stop.svg</file>
         <file>icons/close.svg</file>
+        <file>icons/arrow-down.svg</file>
+        <file>icons/arrow-right.svg</file>
     </qresource>
 </RCC>

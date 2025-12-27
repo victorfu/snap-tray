@@ -26,33 +26,44 @@ double normalizedVariance(const cv::Mat &mat)
 
 ImageStitcher::StitchResult ImageStitcher::tryORBMatch(const QImage &newFrame)
 {
-    auto downCandidate = computeORBMatchCandidate(newFrame, ScrollDirection::Down);
-    auto upCandidate = computeORBMatchCandidate(newFrame, ScrollDirection::Up);
+    // Choose directions based on capture mode
+    ScrollDirection primaryDir, secondaryDir;
+    if (m_captureMode == CaptureMode::Horizontal) {
+        primaryDir = ScrollDirection::Right;
+        secondaryDir = ScrollDirection::Left;
+    } else {
+        primaryDir = ScrollDirection::Down;
+        secondaryDir = ScrollDirection::Up;
+    }
 
-    if (downCandidate.success && upCandidate.success) {
-        const auto &best = (downCandidate.confidence > upCandidate.confidence ||
-                           (downCandidate.confidence == upCandidate.confidence &&
-                            downCandidate.matchedFeatures >= upCandidate.matchedFeatures))
-                           ? downCandidate
-                           : upCandidate;
+    auto primaryCandidate = computeORBMatchCandidate(newFrame, primaryDir);
+    auto secondaryCandidate = computeORBMatchCandidate(newFrame, secondaryDir);
+
+    if (primaryCandidate.success && secondaryCandidate.success) {
+        const auto &best = (primaryCandidate.confidence > secondaryCandidate.confidence ||
+                           (primaryCandidate.confidence == secondaryCandidate.confidence &&
+                            primaryCandidate.matchedFeatures >= secondaryCandidate.matchedFeatures))
+                           ? primaryCandidate
+                           : secondaryCandidate;
         return applyCandidate(newFrame, best, Algorithm::ORB);
     }
 
-    if (downCandidate.success) {
-        return applyCandidate(newFrame, downCandidate, Algorithm::ORB);
+    if (primaryCandidate.success) {
+        return applyCandidate(newFrame, primaryCandidate, Algorithm::ORB);
     }
 
-    if (upCandidate.success) {
-        return applyCandidate(newFrame, upCandidate, Algorithm::ORB);
+    if (secondaryCandidate.success) {
+        return applyCandidate(newFrame, secondaryCandidate, Algorithm::ORB);
     }
 
     StitchResult result;
     result.usedAlgorithm = Algorithm::ORB;
-    result.confidence = std::max(downCandidate.confidence, upCandidate.confidence);
-    result.matchedFeatures = std::max(downCandidate.matchedFeatures, upCandidate.matchedFeatures);
-    result.failureReason = QString("Down: %1; Up: %2")
-        .arg(downCandidate.failureReason.isEmpty() ? "No match" : downCandidate.failureReason,
-             upCandidate.failureReason.isEmpty() ? "No match" : upCandidate.failureReason);
+    result.confidence = std::max(primaryCandidate.confidence, secondaryCandidate.confidence);
+    result.matchedFeatures = std::max(primaryCandidate.matchedFeatures, secondaryCandidate.matchedFeatures);
+    QString dirNames = (m_captureMode == CaptureMode::Horizontal) ? "Right: %1; Left: %2" : "Down: %1; Up: %2";
+    result.failureReason = dirNames
+        .arg(primaryCandidate.failureReason.isEmpty() ? "No match" : primaryCandidate.failureReason,
+             secondaryCandidate.failureReason.isEmpty() ? "No match" : secondaryCandidate.failureReason);
     return result;
 }
 
@@ -65,28 +76,39 @@ ImageStitcher::StitchResult ImageStitcher::trySIFTMatch(const QImage &newFrame)
 
 ImageStitcher::StitchResult ImageStitcher::tryTemplateMatch(const QImage &newFrame)
 {
-    auto downCandidate = computeTemplateMatchCandidate(newFrame, ScrollDirection::Down);
-    auto upCandidate = computeTemplateMatchCandidate(newFrame, ScrollDirection::Up);
+    // Choose directions based on capture mode
+    ScrollDirection primaryDir, secondaryDir;
+    if (m_captureMode == CaptureMode::Horizontal) {
+        primaryDir = ScrollDirection::Right;
+        secondaryDir = ScrollDirection::Left;
+    } else {
+        primaryDir = ScrollDirection::Down;
+        secondaryDir = ScrollDirection::Up;
+    }
 
-    if (downCandidate.success && upCandidate.success) {
-        const auto &best = (downCandidate.confidence >= upCandidate.confidence) ? downCandidate : upCandidate;
+    auto primaryCandidate = computeTemplateMatchCandidate(newFrame, primaryDir);
+    auto secondaryCandidate = computeTemplateMatchCandidate(newFrame, secondaryDir);
+
+    if (primaryCandidate.success && secondaryCandidate.success) {
+        const auto &best = (primaryCandidate.confidence >= secondaryCandidate.confidence) ? primaryCandidate : secondaryCandidate;
         return applyCandidate(newFrame, best, Algorithm::TemplateMatching);
     }
 
-    if (downCandidate.success) {
-        return applyCandidate(newFrame, downCandidate, Algorithm::TemplateMatching);
+    if (primaryCandidate.success) {
+        return applyCandidate(newFrame, primaryCandidate, Algorithm::TemplateMatching);
     }
 
-    if (upCandidate.success) {
-        return applyCandidate(newFrame, upCandidate, Algorithm::TemplateMatching);
+    if (secondaryCandidate.success) {
+        return applyCandidate(newFrame, secondaryCandidate, Algorithm::TemplateMatching);
     }
 
     StitchResult result;
     result.usedAlgorithm = Algorithm::TemplateMatching;
-    result.confidence = std::max(downCandidate.confidence, upCandidate.confidence);
-    result.failureReason = QString("Down: %1; Up: %2")
-        .arg(downCandidate.failureReason.isEmpty() ? "No match" : downCandidate.failureReason,
-             upCandidate.failureReason.isEmpty() ? "No match" : upCandidate.failureReason);
+    result.confidence = std::max(primaryCandidate.confidence, secondaryCandidate.confidence);
+    QString dirNames = (m_captureMode == CaptureMode::Horizontal) ? "Right: %1; Left: %2" : "Down: %1; Up: %2";
+    result.failureReason = dirNames
+        .arg(primaryCandidate.failureReason.isEmpty() ? "No match" : primaryCandidate.failureReason,
+             secondaryCandidate.failureReason.isEmpty() ? "No match" : secondaryCandidate.failureReason);
     return result;
 }
 
@@ -119,19 +141,38 @@ ImageStitcher::MatchCandidate ImageStitcher::computeORBMatchCandidate(const QIma
         return candidate;
     }
 
-    int roiLastHeight = static_cast<int>(lastHeight * ROI_FIRST_RATIO);
-    int roiNewHeight = static_cast<int>(newHeight * ROI_SECOND_RATIO);
-    roiLastHeight = qBound(1, roiLastHeight, lastHeight);
-    roiNewHeight = qBound(1, roiNewHeight, newHeight);
-
     cv::Rect roiLast;
     cv::Rect roiNew;
-    if (direction == ScrollDirection::Down) {
-        roiLast = cv::Rect(0, lastHeight - roiLastHeight, lastWidth, roiLastHeight);
-        roiNew = cv::Rect(0, 0, newWidth, roiNewHeight);
+    bool isHorizontal = (direction == ScrollDirection::Left || direction == ScrollDirection::Right);
+
+    if (isHorizontal) {
+        // Horizontal scrolling: use width-based ROI
+        int roiLastWidth = static_cast<int>(lastWidth * ROI_FIRST_RATIO);
+        int roiNewWidth = static_cast<int>(newWidth * ROI_SECOND_RATIO);
+        roiLastWidth = qBound(1, roiLastWidth, lastWidth);
+        roiNewWidth = qBound(1, roiNewWidth, newWidth);
+
+        if (direction == ScrollDirection::Right) {
+            roiLast = cv::Rect(lastWidth - roiLastWidth, 0, roiLastWidth, lastHeight);
+            roiNew = cv::Rect(0, 0, roiNewWidth, newHeight);
+        } else {
+            roiLast = cv::Rect(0, 0, roiLastWidth, lastHeight);
+            roiNew = cv::Rect(newWidth - roiNewWidth, 0, roiNewWidth, newHeight);
+        }
     } else {
-        roiLast = cv::Rect(0, 0, lastWidth, roiLastHeight);
-        roiNew = cv::Rect(0, newHeight - roiNewHeight, newWidth, roiNewHeight);
+        // Vertical scrolling: use height-based ROI
+        int roiLastHeight = static_cast<int>(lastHeight * ROI_FIRST_RATIO);
+        int roiNewHeight = static_cast<int>(newHeight * ROI_SECOND_RATIO);
+        roiLastHeight = qBound(1, roiLastHeight, lastHeight);
+        roiNewHeight = qBound(1, roiNewHeight, newHeight);
+
+        if (direction == ScrollDirection::Down) {
+            roiLast = cv::Rect(0, lastHeight - roiLastHeight, lastWidth, roiLastHeight);
+            roiNew = cv::Rect(0, 0, newWidth, roiNewHeight);
+        } else {
+            roiLast = cv::Rect(0, 0, lastWidth, roiLastHeight);
+            roiNew = cv::Rect(0, newHeight - roiNewHeight, newWidth, roiNewHeight);
+        }
     }
 
     cv::Mat roiLastMat = lastGray(roiLast);
@@ -179,9 +220,17 @@ ImageStitcher::MatchCandidate ImageStitcher::computeORBMatchCandidate(const QIma
     std::vector<double> offsets;
     offsets.reserve(goodMatches.size());
     for (const auto &m : goodMatches) {
-        double y1 = kp1[m.queryIdx].pt.y + roiLast.y;
-        double y2 = kp2[m.trainIdx].pt.y + roiNew.y;
-        offsets.push_back(y1 - y2);
+        if (isHorizontal) {
+            // Horizontal: use X coordinates
+            double x1 = kp1[m.queryIdx].pt.x + roiLast.x;
+            double x2 = kp2[m.trainIdx].pt.x + roiNew.x;
+            offsets.push_back(x1 - x2);
+        } else {
+            // Vertical: use Y coordinates
+            double y1 = kp1[m.queryIdx].pt.y + roiLast.y;
+            double y2 = kp2[m.trainIdx].pt.y + roiNew.y;
+            offsets.push_back(y1 - y2);
+        }
     }
     std::sort(offsets.begin(), offsets.end());
 
@@ -208,6 +257,7 @@ ImageStitcher::MatchCandidate ImageStitcher::computeORBMatchCandidate(const QIma
         medianOffset = offsets[offsets.size() / 2];
     }
 
+    // Check direction mismatch
     if (direction == ScrollDirection::Down && medianOffset <= 0.0) {
         candidate.failureReason = "Direction mismatch";
         return candidate;
@@ -216,8 +266,18 @@ ImageStitcher::MatchCandidate ImageStitcher::computeORBMatchCandidate(const QIma
         candidate.failureReason = "Direction mismatch";
         return candidate;
     }
+    if (direction == ScrollDirection::Right && medianOffset <= 0.0) {
+        candidate.failureReason = "Direction mismatch";
+        return candidate;
+    }
+    if (direction == ScrollDirection::Left && medianOffset >= 0.0) {
+        candidate.failureReason = "Direction mismatch";
+        return candidate;
+    }
 
-    int overlap = newFrame.height() - static_cast<int>(std::round(std::abs(medianOffset)));
+    // Calculate overlap based on direction
+    int frameDimension = isHorizontal ? newFrame.width() : newFrame.height();
+    int overlap = frameDimension - static_cast<int>(std::round(std::abs(medianOffset)));
 
     if (overlap <= 0) {
         candidate.confidence = 0.2;
@@ -273,13 +333,7 @@ ImageStitcher::MatchCandidate ImageStitcher::computeTemplateMatchCandidate(const
     clahe->apply(lastGray, lastGray);
     clahe->apply(newGray, newGray);
 
-    // Try multiple template heights to avoid latching onto repetitive patterns
-    const int baseTemplateHeight = std::min(180, lastGray.rows / 2);
-    std::vector<int> templateHeights = {
-        baseTemplateHeight,
-        std::max(24, baseTemplateHeight / 2),
-        std::max(24, static_cast<int>(baseTemplateHeight * 0.75))
-    };
+    bool isHorizontal = (direction == ScrollDirection::Left || direction == ScrollDirection::Right);
 
     struct TemplateResult {
         double confidence = 0.0;
@@ -288,63 +342,133 @@ ImageStitcher::MatchCandidate ImageStitcher::computeTemplateMatchCandidate(const
     };
 
     std::vector<TemplateResult> results;
-    results.reserve(templateHeights.size());
 
-    for (int templateHeight : templateHeights) {
-        if (templateHeight < 10 || templateHeight > lastGray.rows) {
-            continue;
+    if (isHorizontal) {
+        // Horizontal mode: use template widths instead of heights
+        const int baseTemplateWidth = std::min(180, lastGray.cols / 2);
+        std::vector<int> templateWidths = {
+            baseTemplateWidth,
+            std::max(24, baseTemplateWidth / 2),
+            std::max(24, static_cast<int>(baseTemplateWidth * 0.75))
+        };
+
+        for (int templateWidth : templateWidths) {
+            if (templateWidth < 10 || templateWidth > lastGray.cols) {
+                continue;
+            }
+
+            int searchMaxExtent = std::min(MAX_OVERLAP + templateWidth, newGray.cols);
+            if (searchMaxExtent <= templateWidth) {
+                continue;
+            }
+
+            cv::Mat templateImg;
+            cv::Mat searchRegion;
+            int templateLeft = 0;
+            int searchLeft = 0;
+
+            if (direction == ScrollDirection::Right) {
+                templateLeft = lastGray.cols - templateWidth;
+                templateImg = lastGray(cv::Rect(templateLeft, 0, templateWidth, lastGray.rows));
+                searchRegion = newGray(cv::Rect(0, 0, searchMaxExtent, newGray.rows));
+                searchLeft = 0;
+            } else {
+                templateLeft = 0;
+                templateImg = lastGray(cv::Rect(0, 0, templateWidth, lastGray.rows));
+                searchLeft = newGray.cols - searchMaxExtent;
+                searchRegion = newGray(cv::Rect(searchLeft, 0, searchMaxExtent, newGray.rows));
+            }
+
+            double varianceScore = normalizedVariance(templateImg);
+            if (varianceScore < 0.5) {
+                continue;
+            }
+
+            if (templateImg.cols > searchRegion.cols || templateImg.rows > searchRegion.rows) {
+                continue;
+            }
+
+            cv::Mat matchResult;
+            cv::matchTemplate(searchRegion, templateImg, matchResult, cv::TM_CCOEFF_NORMED);
+
+            double minVal, maxVal;
+            cv::Point minLoc, maxLoc;
+            cv::minMaxLoc(matchResult, &minVal, &maxVal, &minLoc, &maxLoc);
+
+            double fullOffset = templateLeft - (searchLeft + maxLoc.x);
+
+            if (direction == ScrollDirection::Right && fullOffset <= 0.0) {
+                continue;
+            }
+            if (direction == ScrollDirection::Left && fullOffset >= 0.0) {
+                continue;
+            }
+
+            results.push_back({maxVal, fullOffset, varianceScore});
         }
+    } else {
+        // Vertical mode: original height-based logic
+        const int baseTemplateHeight = std::min(180, lastGray.rows / 2);
+        std::vector<int> templateHeights = {
+            baseTemplateHeight,
+            std::max(24, baseTemplateHeight / 2),
+            std::max(24, static_cast<int>(baseTemplateHeight * 0.75))
+        };
 
-        int searchMaxExtent = std::min(MAX_OVERLAP + templateHeight, newGray.rows);
-        if (searchMaxExtent <= templateHeight) {
-            continue;
+        for (int templateHeight : templateHeights) {
+            if (templateHeight < 10 || templateHeight > lastGray.rows) {
+                continue;
+            }
+
+            int searchMaxExtent = std::min(MAX_OVERLAP + templateHeight, newGray.rows);
+            if (searchMaxExtent <= templateHeight) {
+                continue;
+            }
+
+            cv::Mat templateImg;
+            cv::Mat searchRegion;
+            int templateTop = 0;
+            int searchTop = 0;
+
+            if (direction == ScrollDirection::Down) {
+                templateTop = lastGray.rows - templateHeight;
+                templateImg = lastGray(cv::Rect(0, templateTop, lastGray.cols, templateHeight));
+                searchRegion = newGray(cv::Rect(0, 0, newGray.cols, searchMaxExtent));
+                searchTop = 0;
+            } else {
+                templateTop = 0;
+                templateImg = lastGray(cv::Rect(0, 0, lastGray.cols, templateHeight));
+                searchTop = newGray.rows - searchMaxExtent;
+                searchRegion = newGray(cv::Rect(0, searchTop, newGray.cols, searchMaxExtent));
+            }
+
+            double varianceScore = normalizedVariance(templateImg);
+            if (varianceScore < 0.5) {
+                continue;
+            }
+
+            if (templateImg.cols > searchRegion.cols || templateImg.rows > searchRegion.rows) {
+                continue;
+            }
+
+            cv::Mat matchResult;
+            cv::matchTemplate(searchRegion, templateImg, matchResult, cv::TM_CCOEFF_NORMED);
+
+            double minVal, maxVal;
+            cv::Point minLoc, maxLoc;
+            cv::minMaxLoc(matchResult, &minVal, &maxVal, &minLoc, &maxLoc);
+
+            double fullOffset = templateTop - (searchTop + maxLoc.y);
+
+            if (direction == ScrollDirection::Down && fullOffset <= 0.0) {
+                continue;
+            }
+            if (direction == ScrollDirection::Up && fullOffset >= 0.0) {
+                continue;
+            }
+
+            results.push_back({maxVal, fullOffset, varianceScore});
         }
-
-        cv::Mat templateImg;
-        cv::Mat searchRegion;
-        int templateTop = 0;
-        int searchTop = 0;
-
-        if (direction == ScrollDirection::Down) {
-            templateTop = lastGray.rows - templateHeight;
-            templateImg = lastGray(cv::Rect(0, templateTop, lastGray.cols, templateHeight));
-            searchRegion = newGray(cv::Rect(0, 0, newGray.cols, searchMaxExtent));
-            searchTop = 0;
-        } else {
-            templateTop = 0;
-            templateImg = lastGray(cv::Rect(0, 0, lastGray.cols, templateHeight));
-            searchTop = newGray.rows - searchMaxExtent;
-            searchRegion = newGray(cv::Rect(0, searchTop, newGray.cols, searchMaxExtent));
-        }
-
-        double varianceScore = normalizedVariance(templateImg);
-        if (varianceScore < 0.5) {
-            // Low detail region leads to unreliable matching
-            continue;
-        }
-
-        // Ensure template fits in search region
-        if (templateImg.cols > searchRegion.cols || templateImg.rows > searchRegion.rows) {
-            continue;
-        }
-
-        cv::Mat matchResult;
-        cv::matchTemplate(searchRegion, templateImg, matchResult, cv::TM_CCOEFF_NORMED);
-
-        double minVal, maxVal;
-        cv::Point minLoc, maxLoc;
-        cv::minMaxLoc(matchResult, &minVal, &maxVal, &minLoc, &maxLoc);
-
-        double fullOffset = templateTop - (searchTop + maxLoc.y);
-
-        if (direction == ScrollDirection::Down && fullOffset <= 0.0) {
-            continue;
-        }
-        if (direction == ScrollDirection::Up && fullOffset >= 0.0) {
-            continue;
-        }
-
-        results.push_back({maxVal, fullOffset, varianceScore});
     }
 
     if (results.empty()) {
@@ -381,7 +505,9 @@ ImageStitcher::MatchCandidate ImageStitcher::computeTemplateMatchCandidate(const
         return candidate;
     }
 
-    int overlap = newFrame.height() - static_cast<int>(std::round(std::abs(medianOffset)));
+    // Calculate overlap based on direction
+    int frameDimension = isHorizontal ? newFrame.width() : newFrame.height();
+    int overlap = frameDimension - static_cast<int>(std::round(std::abs(medianOffset)));
 
     if (overlap <= 0) {
         candidate.failureReason = QString("Negative overlap: %1 (offset too large)").arg(overlap);
@@ -421,105 +547,186 @@ ImageStitcher::StitchResult ImageStitcher::performStitch(const QImage &newFrame,
 
     QImage newFrameRgb = newFrame.convertToFormat(QImage::Format_RGB32);
 
-    int currentHeight = m_validHeight > 0 ? m_validHeight : m_stitchedResult.height();
+    bool isHorizontal = (direction == ScrollDirection::Left || direction == ScrollDirection::Right);
 
-    // Validate current state
-    if (currentHeight <= 0 || m_stitchedResult.isNull()) {
-        result.failureReason = "Invalid stitcher state";
-        return result;
-    }
+    if (isHorizontal) {
+        // Horizontal stitching
+        int currentWidth = m_validWidth > 0 ? m_validWidth : m_stitchedResult.width();
 
-    // Clamp overlap to valid range (vertical stitching)
-    overlapPixels = qBound(MIN_OVERLAP, overlapPixels,
-                           qMin(currentHeight, newFrameRgb.height()) - 1);
-
-    if (direction == ScrollDirection::Down) {
-        // Vertical stitching - append new frame below, removing overlap
-        int drawY = currentHeight - overlapPixels;
-        int newHeight = drawY + newFrameRgb.height();
-
-        // Check maximum height limit
-        if (newHeight > MAX_STITCHED_HEIGHT) {
-            result.failureReason = QString("Maximum height reached (%1 pixels)").arg(MAX_STITCHED_HEIGHT);
+        if (currentWidth <= 0 || m_stitchedResult.isNull()) {
+            result.failureReason = "Invalid stitcher state";
             return result;
         }
 
-        if (newHeight > m_stitchedResult.height()) {
-            // Need to grow
-            // Calculate new capacity: at least 1.5x current or newHeight, with 4096 min step
-            int newCapacity = std::max(newHeight, static_cast<int>(m_stitchedResult.height() * 1.5));
-            newCapacity = std::max(newCapacity, newHeight + 4096);
-            // Cap capacity to avoid excessive memory allocation
-            newCapacity = std::min(newCapacity, MAX_STITCHED_HEIGHT + 4096);
+        overlapPixels = qBound(MIN_OVERLAP, overlapPixels,
+                               qMin(currentWidth, newFrameRgb.width()) - 1);
 
-            QImage newStitched(m_stitchedResult.width(), newCapacity, QImage::Format_RGB32);
+        if (direction == ScrollDirection::Right) {
+            // Append new frame to the right
+            int drawX = currentWidth - overlapPixels;
+            int newWidth = drawX + newFrameRgb.width();
+
+            if (newWidth > MAX_STITCHED_WIDTH) {
+                result.failureReason = QString("Maximum width reached (%1 pixels)").arg(MAX_STITCHED_WIDTH);
+                return result;
+            }
+
+            if (newWidth > m_stitchedResult.width()) {
+                int newCapacity = std::max(newWidth, static_cast<int>(m_stitchedResult.width() * 1.5));
+                newCapacity = std::max(newCapacity, newWidth + 4096);
+                newCapacity = std::min(newCapacity, MAX_STITCHED_WIDTH + 4096);
+
+                QImage newStitched(newCapacity, m_stitchedResult.height(), QImage::Format_RGB32);
+                if (newStitched.isNull()) {
+                    result.failureReason = "Failed to allocate memory for stitched image";
+                    return result;
+                }
+                newStitched.fill(Qt::black);
+
+                QPainter painter(&newStitched);
+                if (!painter.isActive()) {
+                    result.failureReason = "Failed to create painter for stitching";
+                    return result;
+                }
+                painter.drawImage(0, 0, m_stitchedResult, 0, 0, currentWidth, m_stitchedResult.height());
+                painter.drawImage(drawX, 0, newFrameRgb);
+                painter.end();
+
+                m_stitchedResult = newStitched;
+            } else {
+                QPainter painter(&m_stitchedResult);
+                if (!painter.isActive()) {
+                    result.failureReason = "Failed to create painter for stitching";
+                    return result;
+                }
+                painter.drawImage(drawX, 0, newFrameRgb);
+                painter.end();
+            }
+
+            m_currentViewportRect = QRect(drawX, 0, newFrameRgb.width(), newFrameRgb.height());
+            m_validWidth = newWidth;
+            result.offset = QPoint(drawX, 0);
+        } else {
+            // Prepend new frame to the left
+            int drawX = newFrameRgb.width() - overlapPixels;
+            int newWidth = drawX + currentWidth;
+
+            if (newWidth > MAX_STITCHED_WIDTH) {
+                result.failureReason = QString("Maximum width reached (%1 pixels)").arg(MAX_STITCHED_WIDTH);
+                return result;
+            }
+
+            QImage newStitched(newWidth, m_stitchedResult.height(), QImage::Format_RGB32);
             if (newStitched.isNull()) {
                 result.failureReason = "Failed to allocate memory for stitched image";
                 return result;
             }
-            newStitched.fill(Qt::black);  // Initialize to avoid artifacts
+            newStitched.fill(Qt::black);
 
             QPainter painter(&newStitched);
             if (!painter.isActive()) {
                 result.failureReason = "Failed to create painter for stitching";
                 return result;
             }
-            // Copy only valid part of existing image - bounds are guaranteed valid
-            // since currentHeight <= m_stitchedResult.height() after capacity check
-            painter.drawImage(0, 0, m_stitchedResult, 0, 0, m_stitchedResult.width(), currentHeight);
-            painter.drawImage(0, drawY, newFrameRgb);
+            painter.drawImage(0, 0, newFrameRgb);
+            painter.drawImage(drawX, 0, m_stitchedResult, 0, 0, currentWidth, m_stitchedResult.height());
             painter.end();
 
             m_stitchedResult = newStitched;
+            m_validWidth = newWidth;
+
+            m_currentViewportRect = QRect(0, 0, newFrameRgb.width(), newFrameRgb.height());
+            result.offset = QPoint(0, 0);
+        }
+    } else {
+        // Vertical stitching
+        int currentHeight = m_validHeight > 0 ? m_validHeight : m_stitchedResult.height();
+
+        if (currentHeight <= 0 || m_stitchedResult.isNull()) {
+            result.failureReason = "Invalid stitcher state";
+            return result;
+        }
+
+        overlapPixels = qBound(MIN_OVERLAP, overlapPixels,
+                               qMin(currentHeight, newFrameRgb.height()) - 1);
+
+        if (direction == ScrollDirection::Down) {
+            // Append new frame below
+            int drawY = currentHeight - overlapPixels;
+            int newHeight = drawY + newFrameRgb.height();
+
+            if (newHeight > MAX_STITCHED_HEIGHT) {
+                result.failureReason = QString("Maximum height reached (%1 pixels)").arg(MAX_STITCHED_HEIGHT);
+                return result;
+            }
+
+            if (newHeight > m_stitchedResult.height()) {
+                int newCapacity = std::max(newHeight, static_cast<int>(m_stitchedResult.height() * 1.5));
+                newCapacity = std::max(newCapacity, newHeight + 4096);
+                newCapacity = std::min(newCapacity, MAX_STITCHED_HEIGHT + 4096);
+
+                QImage newStitched(m_stitchedResult.width(), newCapacity, QImage::Format_RGB32);
+                if (newStitched.isNull()) {
+                    result.failureReason = "Failed to allocate memory for stitched image";
+                    return result;
+                }
+                newStitched.fill(Qt::black);
+
+                QPainter painter(&newStitched);
+                if (!painter.isActive()) {
+                    result.failureReason = "Failed to create painter for stitching";
+                    return result;
+                }
+                painter.drawImage(0, 0, m_stitchedResult, 0, 0, m_stitchedResult.width(), currentHeight);
+                painter.drawImage(0, drawY, newFrameRgb);
+                painter.end();
+
+                m_stitchedResult = newStitched;
+            } else {
+                QPainter painter(&m_stitchedResult);
+                if (!painter.isActive()) {
+                    result.failureReason = "Failed to create painter for stitching";
+                    return result;
+                }
+                painter.drawImage(0, drawY, newFrameRgb);
+                painter.end();
+            }
+
+            m_currentViewportRect = QRect(0, drawY, newFrameRgb.width(), newFrameRgb.height());
+            m_validHeight = newHeight;
+            result.offset = QPoint(0, drawY);
         } else {
-            // Capacity is sufficient, just draw the new part
-            QPainter painter(&m_stitchedResult);
+            // Prepend new frame above
+            int drawY = newFrameRgb.height() - overlapPixels;
+            int newHeight = drawY + currentHeight;
+
+            if (newHeight > MAX_STITCHED_HEIGHT) {
+                result.failureReason = QString("Maximum height reached (%1 pixels)").arg(MAX_STITCHED_HEIGHT);
+                return result;
+            }
+
+            QImage newStitched(m_stitchedResult.width(), newHeight, QImage::Format_RGB32);
+            if (newStitched.isNull()) {
+                result.failureReason = "Failed to allocate memory for stitched image";
+                return result;
+            }
+            newStitched.fill(Qt::black);
+
+            QPainter painter(&newStitched);
             if (!painter.isActive()) {
                 result.failureReason = "Failed to create painter for stitching";
                 return result;
             }
-            painter.drawImage(0, drawY, newFrameRgb);
+            painter.drawImage(0, 0, newFrameRgb);
+            painter.drawImage(0, drawY, m_stitchedResult, 0, 0, m_stitchedResult.width(), currentHeight);
             painter.end();
+
+            m_stitchedResult = newStitched;
+            m_validHeight = newHeight;
+
+            m_currentViewportRect = QRect(0, 0, newFrameRgb.width(), newFrameRgb.height());
+            result.offset = QPoint(0, 0);
         }
-
-        // Calculate viewport rect BEFORE updating stitched result
-        m_currentViewportRect = QRect(0, drawY, newFrameRgb.width(), newFrameRgb.height());
-        m_validHeight = newHeight;
-        result.offset = QPoint(0, drawY);
-    } else {
-        // Vertical stitching - prepend new frame above, removing overlap
-        // For Up direction, we still have to move everything, so optimization is limited
-        int drawY = newFrameRgb.height() - overlapPixels;
-        int newHeight = drawY + currentHeight;
-
-        // Check maximum height limit
-        if (newHeight > MAX_STITCHED_HEIGHT) {
-            result.failureReason = QString("Maximum height reached (%1 pixels)").arg(MAX_STITCHED_HEIGHT);
-            return result;
-        }
-
-        QImage newStitched(m_stitchedResult.width(), newHeight, QImage::Format_RGB32);
-        if (newStitched.isNull()) {
-            result.failureReason = "Failed to allocate memory for stitched image";
-            return result;
-        }
-        newStitched.fill(Qt::black);
-
-        QPainter painter(&newStitched);
-        if (!painter.isActive()) {
-            result.failureReason = "Failed to create painter for stitching";
-            return result;
-        }
-        painter.drawImage(0, 0, newFrameRgb);
-        // Bounds are valid: drawY >= 0, currentHeight is validated above
-        painter.drawImage(0, drawY, m_stitchedResult, 0, 0, m_stitchedResult.width(), currentHeight);
-        painter.end();
-
-        m_stitchedResult = newStitched;
-        m_validHeight = newHeight;
-
-        m_currentViewportRect = QRect(0, 0, newFrameRgb.width(), newFrameRgb.height());
-        result.offset = QPoint(0, 0);
     }
 
     result.success = true;

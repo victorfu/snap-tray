@@ -40,19 +40,23 @@ void ScrollingCaptureToolbar::loadIcons()
     renderer.loadIcon("copy", ":/icons/icons/copy.svg");
     renderer.loadIcon("close", ":/icons/icons/close.svg");
     renderer.loadIcon("cancel", ":/icons/icons/cancel.svg");
+    renderer.loadIcon("arrow-down", ":/icons/icons/arrow-down.svg");
+    renderer.loadIcon("arrow-right", ":/icons/icons/arrow-right.svg");
 }
 
 void ScrollingCaptureToolbar::setupUi()
 {
     // Configure buttons: id, iconKey, tooltip, isAction, isCancel
+    // Direction button icon will be updated dynamically based on m_direction
     m_buttons = {
-        {ButtonId::Start,  "play",   "Start (Enter)", true,  false},
-        {ButtonId::Stop,   "stop",   "Stop",          true,  false},
-        {ButtonId::Pin,    "pin",    "Pin",           true,  false},
-        {ButtonId::Save,   "save",   "Save",          false, false},
-        {ButtonId::Copy,   "copy",   "Copy",          false, false},
-        {ButtonId::Close,  "close",  "Close",         false, false},
-        {ButtonId::Cancel, "cancel", "Cancel (Esc)",  false, true}
+        {ButtonId::Direction, "arrow-down", "Scroll Direction: Vertical ↕ (Click to toggle)", false, false},
+        {ButtonId::Start,  "play",   "Start Capture (Enter/Space)", true,  false},
+        {ButtonId::Stop,   "stop",   "Stop Capture (Enter/Space)",  true,  false},
+        {ButtonId::Pin,    "pin",    "Pin to Screen",               true,  false},
+        {ButtonId::Save,   "save",   "Save to File (⌘S)",           false, false},
+        {ButtonId::Copy,   "copy",   "Copy to Clipboard (⌘C)",      false, false},
+        {ButtonId::Close,  "close",  "Close",                       false, false},
+        {ButtonId::Cancel, "cancel", "Cancel (Esc)",                false, true}
     };
 
     m_buttonRects.resize(m_buttons.size());
@@ -87,7 +91,7 @@ void ScrollingCaptureToolbar::updateButtonLayout()
 
         switch (m_mode) {
         case Mode::Adjusting:
-            visible = (id == ButtonId::Start || id == ButtonId::Cancel);
+            visible = (id == ButtonId::Direction || id == ButtonId::Start || id == ButtonId::Cancel);
             break;
         case Mode::Capturing:
             visible = (id == ButtonId::Stop || id == ButtonId::Cancel);
@@ -188,6 +192,38 @@ void ScrollingCaptureToolbar::setMatchStatus(bool matched, double confidence)
 
     m_statusIndicator->setStyleSheet(
         QString("QLabel { background-color: %1; border-radius: 6px; }").arg(color));
+}
+
+void ScrollingCaptureToolbar::setDirection(Direction direction)
+{
+    if (m_direction == direction) {
+        return;
+    }
+
+    m_direction = direction;
+
+    // Update direction button icon and tooltip
+    for (int i = 0; i < m_buttons.size(); ++i) {
+        if (m_buttons[i].id == ButtonId::Direction) {
+            if (direction == Direction::Vertical) {
+                m_buttons[i].iconKey = "arrow-down";
+                m_buttons[i].tooltip = "Scroll Direction: Vertical ↕ (Click to toggle)";
+            } else {
+                m_buttons[i].iconKey = "arrow-right";
+                m_buttons[i].tooltip = "Scroll Direction: Horizontal ↔ (Click to toggle)";
+            }
+            break;
+        }
+    }
+
+    update();
+}
+
+void ScrollingCaptureToolbar::setMatchRecoveryInfo(int lastSuccessfulPos, bool showRecoveryHint)
+{
+    m_lastSuccessfulPos = lastSuccessfulPos;
+    m_showRecoveryHint = showRecoveryHint;
+    update();
 }
 
 void ScrollingCaptureToolbar::paintEvent(QPaintEvent *event)
@@ -316,6 +352,7 @@ void ScrollingCaptureToolbar::mousePressEvent(QMouseEvent *event)
         if (btnIndex >= 0) {
             // Handle button click
             switch (m_buttons[btnIndex].id) {
+            case ButtonId::Direction: emit directionToggled(); break;
             case ButtonId::Start:  emit startClicked(); break;
             case ButtonId::Stop:   emit stopClicked(); break;
             case ButtonId::Pin:    emit pinClicked(); break;

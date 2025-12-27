@@ -185,6 +185,7 @@ void ScrollingCaptureManager::createComponents()
     connect(m_toolbar, &ScrollingCaptureToolbar::copyClicked, this, &ScrollingCaptureManager::onCopyClicked);
     connect(m_toolbar, &ScrollingCaptureToolbar::closeClicked, this, &ScrollingCaptureManager::onCloseClicked);
     connect(m_toolbar, &ScrollingCaptureToolbar::cancelClicked, this, &ScrollingCaptureManager::onCancelClicked);
+    connect(m_toolbar, &ScrollingCaptureToolbar::directionToggled, this, &ScrollingCaptureManager::onDirectionToggled);
     m_toolbar->hide();
 
     // Create thumbnail
@@ -216,6 +217,7 @@ void ScrollingCaptureManager::createComponentsWithRegion()
     connect(m_toolbar, &ScrollingCaptureToolbar::copyClicked, this, &ScrollingCaptureManager::onCopyClicked);
     connect(m_toolbar, &ScrollingCaptureToolbar::closeClicked, this, &ScrollingCaptureManager::onCloseClicked);
     connect(m_toolbar, &ScrollingCaptureToolbar::cancelClicked, this, &ScrollingCaptureManager::onCancelClicked);
+    connect(m_toolbar, &ScrollingCaptureToolbar::directionToggled, this, &ScrollingCaptureManager::onDirectionToggled);
     m_toolbar->hide();
 
     // Create thumbnail
@@ -383,6 +385,55 @@ void ScrollingCaptureManager::onCancelClicked()
 {
     stop();
     emit captureCancelled();
+}
+
+void ScrollingCaptureManager::onDirectionToggled()
+{
+    // Toggle between vertical and horizontal
+    if (m_captureDirection == CaptureDirection::Vertical) {
+        setCaptureDirection(CaptureDirection::Horizontal);
+    } else {
+        setCaptureDirection(CaptureDirection::Vertical);
+    }
+}
+
+void ScrollingCaptureManager::setCaptureDirection(CaptureDirection direction)
+{
+    if (m_captureDirection == direction) {
+        return;
+    }
+
+    m_captureDirection = direction;
+
+    // Update stitcher capture mode
+    if (m_stitcher) {
+        m_stitcher->setCaptureMode(direction == CaptureDirection::Vertical
+            ? ImageStitcher::CaptureMode::Vertical
+            : ImageStitcher::CaptureMode::Horizontal);
+    }
+
+    // Update toolbar direction display
+    if (m_toolbar) {
+        m_toolbar->setDirection(direction == CaptureDirection::Vertical
+            ? ScrollingCaptureToolbar::Direction::Vertical
+            : ScrollingCaptureToolbar::Direction::Horizontal);
+    }
+
+    // Update thumbnail direction
+    if (m_thumbnail) {
+        m_thumbnail->setDirection(direction == CaptureDirection::Vertical
+            ? ScrollingCaptureThumbnail::Direction::Vertical
+            : ScrollingCaptureThumbnail::Direction::Horizontal);
+    }
+
+    // Update overlay direction for constrained move during capture
+    if (m_overlay) {
+        m_overlay->setCaptureDirection(direction == CaptureDirection::Vertical
+            ? ScrollingCaptureOverlay::CaptureDirection::Vertical
+            : ScrollingCaptureOverlay::CaptureDirection::Horizontal);
+    }
+
+    emit directionChanged(direction);
 }
 
 void ScrollingCaptureManager::startFrameCapture()
@@ -556,9 +607,15 @@ void ScrollingCaptureManager::captureFrame()
             m_hasSuccessfulStitch = true;
         }
 
+        // Track last successful position for recovery UX
+        QRect viewport = m_stitcher->currentViewportRect();
+        m_lastSuccessfulPosition = (m_captureDirection == CaptureDirection::Vertical)
+            ? viewport.bottom() : viewport.right();
+
         // Update UI
         if (m_toolbar) {
             m_toolbar->setMatchStatus(true, result.confidence);
+            m_toolbar->setMatchRecoveryInfo(m_lastSuccessfulPosition, false);
         }
         if (m_thumbnail) {
             ScrollingCaptureThumbnail::MatchStatus status;
@@ -570,14 +627,20 @@ void ScrollingCaptureManager::captureFrame()
                 status = ScrollingCaptureThumbnail::MatchStatus::Failed;
             }
             m_thumbnail->setMatchStatus(status, result.confidence);
+            m_thumbnail->setLastSuccessfulPosition(m_lastSuccessfulPosition);
+            m_thumbnail->setShowRecoveryHint(false);
         }
 
         // If we were in MatchFailed, recover to Capturing
         if (m_state == State::MatchFailed) {
             setState(State::Capturing);
+            if (m_overlay) {
+                m_overlay->clearMatchFailedMessage();
+            }
         }
 
         m_unchangedFrameCount = 0;
+        emit matchStatusChanged(true, result.confidence, m_lastSuccessfulPosition);
     } else {
         // Check if maximum height was reached
         if (result.failureReason.contains("Maximum height reached")) {
@@ -611,11 +674,20 @@ void ScrollingCaptureManager::captureFrame()
 
         if (m_toolbar) {
             m_toolbar->setMatchStatus(false, result.confidence);
+            m_toolbar->setMatchRecoveryInfo(m_lastSuccessfulPosition, true);
         }
         if (m_thumbnail) {
             m_thumbnail->setMatchStatus(ScrollingCaptureThumbnail::MatchStatus::Failed, result.confidence);
+            m_thumbnail->setShowRecoveryHint(true);
+        }
+        if (m_overlay) {
+            QString hint = (m_captureDirection == CaptureDirection::Vertical)
+                ? tr("Match failed - scroll back up slowly")
+                : tr("Match failed - scroll back left slowly");
+            m_overlay->setMatchFailedMessage(hint);
         }
 
+        emit matchStatusChanged(false, result.confidence, m_lastSuccessfulPosition);
         qDebug() << "ScrollingCaptureManager: Match failed -" << result.failureReason;
     }
 

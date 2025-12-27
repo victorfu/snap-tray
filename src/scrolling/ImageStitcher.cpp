@@ -26,6 +26,11 @@ void ImageStitcher::setConfidenceThreshold(double threshold)
     m_confidenceThreshold = qBound(0.0, threshold, 1.0);
 }
 
+void ImageStitcher::setCaptureMode(CaptureMode mode)
+{
+    m_captureMode = mode;
+}
+
 void ImageStitcher::reset()
 {
     m_stitchedResult = QImage();
@@ -33,6 +38,7 @@ void ImageStitcher::reset()
     m_currentViewportRect = QRect();
     m_frameCount = 0;
     m_validHeight = 0;
+    m_validWidth = 0;
 }
 
 ImageStitcher::StitchResult ImageStitcher::addFrame(const QImage &frame)
@@ -48,6 +54,7 @@ ImageStitcher::StitchResult ImageStitcher::addFrame(const QImage &frame)
     if (m_frameCount == 0) {
         m_stitchedResult = frame.convertToFormat(QImage::Format_RGB32);
         m_validHeight = m_stitchedResult.height();
+        m_validWidth = m_stitchedResult.width();
         m_lastFrame = m_stitchedResult;
         m_frameCount = 1;
         m_currentViewportRect = QRect(0, 0, frame.width(), frame.height());
@@ -159,13 +166,29 @@ bool ImageStitcher::isFrameChanged(const QImage &frame1, const QImage &frame2)
 
 QImage ImageStitcher::getStitchedImage() const
 {
-    if (m_stitchedResult.isNull() || m_validHeight == 0) {
+    if (m_stitchedResult.isNull()) {
         return QImage();
     }
-    if (m_validHeight == m_stitchedResult.height()) {
-        return m_stitchedResult;
+
+    if (m_captureMode == CaptureMode::Horizontal) {
+        // Horizontal mode: crop by width
+        if (m_validWidth == 0) {
+            return QImage();
+        }
+        if (m_validWidth == m_stitchedResult.width()) {
+            return m_stitchedResult;
+        }
+        return m_stitchedResult.copy(0, 0, m_validWidth, m_stitchedResult.height());
+    } else {
+        // Vertical mode: crop by height
+        if (m_validHeight == 0) {
+            return QImage();
+        }
+        if (m_validHeight == m_stitchedResult.height()) {
+            return m_stitchedResult;
+        }
+        return m_stitchedResult.copy(0, 0, m_stitchedResult.width(), m_validHeight);
     }
-    return m_stitchedResult.copy(0, 0, m_stitchedResult.width(), m_validHeight);
 }
 
 QSize ImageStitcher::getCurrentSize() const
@@ -173,5 +196,10 @@ QSize ImageStitcher::getCurrentSize() const
     if (m_stitchedResult.isNull()) {
         return QSize(0, 0);
     }
-    return QSize(m_stitchedResult.width(), m_validHeight);
+
+    if (m_captureMode == CaptureMode::Horizontal) {
+        return QSize(m_validWidth, m_stitchedResult.height());
+    } else {
+        return QSize(m_stitchedResult.width(), m_validHeight);
+    }
 }

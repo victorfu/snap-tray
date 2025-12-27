@@ -22,6 +22,12 @@ public:
     };
     Q_ENUM(BorderState)
 
+    enum class CaptureDirection {
+        Vertical,
+        Horizontal
+    };
+    Q_ENUM(CaptureDirection)
+
     explicit ScrollingCaptureOverlay(QWidget *parent = nullptr);
     ~ScrollingCaptureOverlay();
 
@@ -36,6 +42,15 @@ public:
 
     void setRegionLocked(bool locked);
     bool isRegionLocked() const { return m_regionLocked; }
+
+    void setCaptureDirection(CaptureDirection direction);
+    CaptureDirection captureDirection() const { return m_captureDirection; }
+
+    void setAllowMoveWhileCapturing(bool allow);
+    bool allowMoveWhileCapturing() const { return m_allowMoveWhileCapturing; }
+
+    void setMatchFailedMessage(const QString &message);
+    void clearMatchFailedMessage();
 
 signals:
     void regionSelected(const QRect &region);
@@ -63,14 +78,24 @@ private:
     void drawResizeHandles(QPainter &painter);
     void drawDimensions(QPainter &painter);
     void drawInstructions(QPainter &painter);
+    void drawMatchFailedMessage(QPainter &painter);
+    void drawScrollDirectionHint(QPainter &painter);
     void startMatchFailedAnimation();
     void stopMatchFailedAnimation();
 
     SelectionStateManager *m_selectionManager;
     BorderState m_borderState = BorderState::Selecting;
+    CaptureDirection m_captureDirection = CaptureDirection::Vertical;
     bool m_regionLocked = false;
+    bool m_allowMoveWhileCapturing = true;
     QScreen *m_screen = nullptr;
     bool m_allowNewSelection = true;
+    QString m_matchFailedMessage;
+
+    // Constrained move during capture
+    bool m_isConstrainedMoving = false;
+    QPoint m_constrainedMoveStart;
+    QRect m_constrainedMoveOriginalRect;
 
     // Match failed animation
     QTimer *m_flickerTimer;
