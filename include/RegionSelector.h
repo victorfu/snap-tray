@@ -34,6 +34,7 @@ class ColorAndWidthWidget;
 class ColorPickerDialog;
 class QCloseEvent;
 class OCRManager;
+class TextAnnotation;
 
 // ShapeType and ShapeFillMode are defined in annotations/ShapeAnnotation.h
 
@@ -136,6 +137,7 @@ protected:
 private:
     void captureCurrentScreen();
     void drawOverlay(QPainter &painter);
+    void drawDimmingOverlay(QPainter &painter, const QRect &clearRect, const QColor &dimColor);
     void drawSelection(QPainter &painter);
     void drawCrosshair(QPainter &painter);
     void drawMagnifier(QPainter &painter);
@@ -188,6 +190,9 @@ private:
     void setToolCursor();
     Qt::CursorShape getCursorForGizmoHandle(GizmoHandle handle) const;
 
+    // Initialization helpers
+    void setupScreenGeometry(QScreen* screen);
+
     // Annotation drawing helpers
     void drawAnnotations(QPainter &painter);
     void drawCurrentAnnotation(QPainter &painter);
@@ -200,22 +205,15 @@ private:
     // Inline text editing handlers
     void onTextEditingFinished(const QString &text, const QPoint &position);
     void startTextReEditing(int annotationIndex);
+    TextAnnotation* getSelectedTextAnnotation() const;
 
     // Text formatting persistence
     TextFormattingState loadTextFormatting() const;
     void saveTextFormatting();
 
     // Text formatting signal handlers
-    void onBoldToggled(bool enabled);
-    void onItalicToggled(bool enabled);
-    void onUnderlineToggled(bool enabled);
     void onFontSizeDropdownRequested(const QPoint& pos);
     void onFontFamilyDropdownRequested(const QPoint& pos);
-
-    // Text annotation transformation helpers
-    void startTextTransformation(const QPoint &pos, GizmoHandle handle);
-    void updateTextTransformation(const QPoint &pos);
-    void finishTextTransformation();
 
     // Selection resize/move helpers
     void updateCursorForHandle(SelectionStateManager::ResizeHandle handle);

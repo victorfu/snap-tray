@@ -514,15 +514,19 @@ const QImage& RegionSelector::getBackgroundImage() const
     return m_backgroundImageCache;
 }
 
+void RegionSelector::setupScreenGeometry(QScreen* screen)
+{
+    m_currentScreen = screen ? screen : QGuiApplication::primaryScreen();
+    m_devicePixelRatio = m_currentScreen->devicePixelRatio();
+
+    QRect screenGeom = m_currentScreen->geometry();
+    setFixedSize(screenGeom.size());
+    m_selectionManager->setBounds(QRect(0, 0, screenGeom.width(), screenGeom.height()));
+}
+
 void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapture)
 {
-    // 使用傳入的螢幕，若為空則使用主螢幕
-    m_currentScreen = screen;
-    if (!m_currentScreen) {
-        m_currentScreen = QGuiApplication::primaryScreen();
-    }
-
-    m_devicePixelRatio = m_currentScreen->devicePixelRatio();
+    setupScreenGeometry(screen);
 
     // Use pre-captured pixmap if provided, otherwise capture now
     // Pre-capture allows including popup menus in the screenshot (like Snipaste)
@@ -581,13 +585,7 @@ void RegionSelector::captureCurrentScreen()
 
 void RegionSelector::initializeWithRegion(QScreen* screen, const QRect& region)
 {
-    // Use provided screen or fallback to primary
-    m_currentScreen = screen;
-    if (!m_currentScreen) {
-        m_currentScreen = QGuiApplication::primaryScreen();
-    }
-
-    m_devicePixelRatio = m_currentScreen->devicePixelRatio();
+    setupScreenGeometry(screen);
 
     // Capture the screen first
     m_backgroundPixmap = m_currentScreen->grabWindow(0);
@@ -603,10 +601,6 @@ void RegionSelector::initializeWithRegion(QScreen* screen, const QRect& region)
     // Convert global region to local coordinates
     QRect screenGeom = m_currentScreen->geometry();
     QRect localRegion = region.translated(-screenGeom.topLeft());
-
-    // Lock window size and set bounds
-    setFixedSize(screenGeom.size());
-    m_selectionManager->setBounds(QRect(0, 0, screenGeom.width(), screenGeom.height()));
 
     // Set selection from the region (this marks selection as complete)
     m_selectionManager->setSelectionRect(localRegion);
@@ -856,6 +850,14 @@ void RegionSelector::paintEvent(QPaintEvent*)
     }
 }
 
+void RegionSelector::drawDimmingOverlay(QPainter& painter, const QRect& clearRect, const QColor& dimColor)
+{
+    painter.fillRect(QRect(0, 0, width(), clearRect.top()), dimColor);                                    // Top
+    painter.fillRect(QRect(0, clearRect.bottom() + 1, width(), height() - clearRect.bottom() - 1), dimColor);  // Bottom
+    painter.fillRect(QRect(0, clearRect.top(), clearRect.left(), clearRect.height()), dimColor);          // Left
+    painter.fillRect(QRect(clearRect.right() + 1, clearRect.top(), width() - clearRect.right() - 1, clearRect.height()), dimColor);  // Right
+}
+
 void RegionSelector::drawOverlay(QPainter& painter)
 {
     QColor dimColor(0, 0, 0, 100);
@@ -864,32 +866,12 @@ void RegionSelector::drawOverlay(QPainter& painter)
     bool hasSelection = m_selectionManager->hasActiveSelection() && sel.isValid();
 
     if (hasSelection) {
-        // 選取模式：選取區域外繪製 overlay
-
-        // Top region
-        painter.fillRect(QRect(0, 0, width(), sel.top()), dimColor);
-        // Bottom region
-        painter.fillRect(QRect(0, sel.bottom() + 1, width(), height() - sel.bottom() - 1), dimColor);
-        // Left region
-        painter.fillRect(QRect(0, sel.top(), sel.left(), sel.height()), dimColor);
-        // Right region
-        painter.fillRect(QRect(sel.right() + 1, sel.top(), width() - sel.right() - 1, sel.height()), dimColor);
+        drawDimmingOverlay(painter, sel, dimColor);
     }
     else if (!m_highlightedWindowRect.isNull()) {
-        // 窗口偵測模式：偵測到的窗口區域外繪製 overlay
-        QRect win = m_highlightedWindowRect;
-
-        // Top region
-        painter.fillRect(QRect(0, 0, width(), win.top()), dimColor);
-        // Bottom region
-        painter.fillRect(QRect(0, win.bottom() + 1, width(), height() - win.bottom() - 1), dimColor);
-        // Left region
-        painter.fillRect(QRect(0, win.top(), win.left(), win.height()), dimColor);
-        // Right region
-        painter.fillRect(QRect(win.right() + 1, win.top(), width() - win.right() - 1, win.height()), dimColor);
+        drawDimmingOverlay(painter, m_highlightedWindowRect, dimColor);
     }
     else {
-        // 無選取、無偵測窗口：整個畫面繪製 overlay
         painter.fillRect(rect(), dimColor);
     }
 }
@@ -1320,31 +1302,29 @@ void RegionSelector::mousePressEvent(QMouseEvent* event)
             }
 
             // Check if clicking on gizmo handle of currently selected text annotation
-            if (m_annotationLayer->selectedIndex() >= 0) {
-                if (auto* textItem = dynamic_cast<TextAnnotation*>(m_annotationLayer->selectedItem())) {
-                    GizmoHandle handle = TransformationGizmo::hitTest(textItem, event->pos());
-                    if (handle != GizmoHandle::None) {
-                        if (handle == GizmoHandle::Body) {
-                            // Check for double-click to start re-editing
-                            qint64 now = QDateTime::currentMSecsSinceEpoch();
-                            if (m_textAnnotationEditor->isDoubleClick(event->pos(), now)) {
-                                startTextReEditing(m_annotationLayer->selectedIndex());
-                                m_textAnnotationEditor->recordClick(QPoint(), 0);  // Reset
-                                return;
-                            }
-                            m_textAnnotationEditor->recordClick(event->pos(), now);
+            if (auto* textItem = getSelectedTextAnnotation()) {
+                GizmoHandle handle = TransformationGizmo::hitTest(textItem, event->pos());
+                if (handle != GizmoHandle::None) {
+                    if (handle == GizmoHandle::Body) {
+                        // Check for double-click to start re-editing
+                        qint64 now = QDateTime::currentMSecsSinceEpoch();
+                        if (m_textAnnotationEditor->isDoubleClick(event->pos(), now)) {
+                            startTextReEditing(m_annotationLayer->selectedIndex());
+                            m_textAnnotationEditor->recordClick(QPoint(), 0);  // Reset
+                            return;
+                        }
+                        m_textAnnotationEditor->recordClick(event->pos(), now);
 
-                            // Start dragging (move)
-                            m_textAnnotationEditor->startDragging(event->pos());
-                        }
-                        else {
-                            // Start rotation or scaling
-                            startTextTransformation(event->pos(), handle);
-                        }
-                        setFocus();
-                        update();
-                        return;
+                        // Start dragging (move)
+                        m_textAnnotationEditor->startDragging(event->pos());
                     }
+                    else {
+                        // Start rotation or scaling
+                        m_textAnnotationEditor->startTransformation(event->pos(), handle);
+                    }
+                    setFocus();
+                    update();
+                    return;
                 }
             }
 
@@ -1364,7 +1344,7 @@ void RegionSelector::mousePressEvent(QMouseEvent* event)
 
                 m_annotationLayer->setSelectedIndex(hitIndex);
                 // If clicking on a different text, check its gizmo handles
-                if (auto* textItem = dynamic_cast<TextAnnotation*>(m_annotationLayer->selectedItem())) {
+                if (auto* textItem = getSelectedTextAnnotation()) {
                     GizmoHandle handle = TransformationGizmo::hitTest(textItem, event->pos());
                     if (handle == GizmoHandle::Body || handle == GizmoHandle::None) {
                         // Start dragging if on body, otherwise just select
@@ -1372,7 +1352,7 @@ void RegionSelector::mousePressEvent(QMouseEvent* event)
                     }
                     else {
                         // Start transformation if on a handle
-                        startTextTransformation(event->pos(), handle);
+                        m_textAnnotationEditor->startTransformation(event->pos(), handle);
                     }
                 }
                 setFocus();  // Ensure we have keyboard focus for Delete key
@@ -1482,7 +1462,7 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
 
     // Handle text annotation transformation (rotation/scale)
     if (m_textAnnotationEditor->isTransforming() && m_annotationLayer->selectedIndex() >= 0) {
-        updateTextTransformation(event->pos());
+        m_textAnnotationEditor->updateTransformation(event->pos());
         update();
         return;
     }
@@ -1543,13 +1523,11 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
         }
 
         // Check if hovering over gizmo handles of selected text annotation
-        if (m_annotationLayer->selectedIndex() >= 0) {
-            if (auto* textItem = dynamic_cast<TextAnnotation*>(m_annotationLayer->selectedItem())) {
-                GizmoHandle handle = TransformationGizmo::hitTest(textItem, event->pos());
-                if (handle != GizmoHandle::None) {
-                    setCursor(getCursorForGizmoHandle(handle));
-                    gizmoHandleHovered = true;
-                }
+        if (auto* textItem = getSelectedTextAnnotation()) {
+            GizmoHandle handle = TransformationGizmo::hitTest(textItem, event->pos());
+            if (handle != GizmoHandle::None) {
+                setCursor(getCursorForGizmoHandle(handle));
+                gizmoHandleHovered = true;
             }
         }
 
@@ -1696,7 +1674,7 @@ void RegionSelector::mouseReleaseEvent(QMouseEvent* event)
 
         // Handle text annotation transformation release
         if (m_textAnnotationEditor->isTransforming()) {
-            finishTextTransformation();
+            m_textAnnotationEditor->finishTransformation();
             return;
         }
 
@@ -1971,11 +1949,8 @@ void RegionSelector::drawAnnotations(QPainter& painter)
     m_annotationLayer->draw(painter);
 
     // Draw transformation gizmo for selected text annotation
-    int selIdx = m_annotationLayer->selectedIndex();
-    if (selIdx >= 0) {
-        if (auto* textItem = dynamic_cast<TextAnnotation*>(m_annotationLayer->selectedItem())) {
-            TransformationGizmo::draw(painter, textItem);
-        }
+    if (auto* textItem = getSelectedTextAnnotation()) {
+        TransformationGizmo::draw(painter, textItem);
     }
 }
 
@@ -2089,23 +2064,12 @@ void RegionSelector::startTextReEditing(int annotationIndex)
     }
 }
 
-// ============================================================================
-// Text Annotation Transformation Helper Functions
-// ============================================================================
-
-void RegionSelector::startTextTransformation(const QPoint& pos, GizmoHandle handle)
+TextAnnotation* RegionSelector::getSelectedTextAnnotation() const
 {
-    m_textAnnotationEditor->startTransformation(pos, handle);
-}
-
-void RegionSelector::updateTextTransformation(const QPoint& pos)
-{
-    m_textAnnotationEditor->updateTransformation(pos);
-}
-
-void RegionSelector::finishTextTransformation()
-{
-    m_textAnnotationEditor->finishTransformation();
+    if (m_annotationLayer->selectedIndex() >= 0) {
+        return dynamic_cast<TextAnnotation*>(m_annotationLayer->selectedItem());
+    }
+    return nullptr;
 }
 
 // ============================================================================
@@ -2287,21 +2251,6 @@ TextFormattingState RegionSelector::loadTextFormatting() const
 void RegionSelector::saveTextFormatting()
 {
     m_textAnnotationEditor->saveSettings();
-}
-
-void RegionSelector::onBoldToggled(bool enabled)
-{
-    m_textAnnotationEditor->setBold(enabled);
-}
-
-void RegionSelector::onItalicToggled(bool enabled)
-{
-    m_textAnnotationEditor->setItalic(enabled);
-}
-
-void RegionSelector::onUnderlineToggled(bool enabled)
-{
-    m_textAnnotationEditor->setUnderline(enabled);
 }
 
 void RegionSelector::onFontSizeDropdownRequested(const QPoint& pos)
