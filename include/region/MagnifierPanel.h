@@ -80,6 +80,7 @@ private:
     void initializeGridCache();
     void updateMagnifierCache(const QPoint& cursorPos, const QImage& backgroundImage);
     void drawInfoPanel(QPainter& painter, int panelX, int infoY, int panelWidth);
+    QColor calculateAdaptiveBorderColor(const QImage& backgroundImage, const QPoint& cursorPos) const;
 
     qreal m_devicePixelRatio = 1.0;
     bool m_showHexColor = false;

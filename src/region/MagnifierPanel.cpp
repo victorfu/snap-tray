@@ -193,8 +193,9 @@ void MagnifierPanel::draw(QPainter& painter, const QPoint& cursorPos,
     // Draw cached grid overlay
     painter.drawPixmap(magX, magY, m_gridOverlayCache);
 
-    // Draw magnifier area white border
-    painter.setPen(QPen(Qt::white, 1));
+    // Draw magnifier area with adaptive border color
+    QColor borderColor = calculateAdaptiveBorderColor(backgroundImage, cursorPos);
+    painter.setPen(QPen(borderColor, 1));
     painter.setBrush(Qt::NoBrush);
     painter.drawRect(magX, magY, kWidth, kHeight);
 
@@ -250,4 +251,69 @@ void MagnifierPanel::drawInfoPanel(QPainter& painter, int panelX, int infoY, int
     infoY += 14;
     QString instruction2 = QString("C: Copy color value");
     painter.drawText(panelX, infoY, panelWidth, 14, Qt::AlignCenter, instruction2);
+}
+
+QColor MagnifierPanel::calculateAdaptiveBorderColor(const QImage& backgroundImage, const QPoint& cursorPos) const
+{
+    // Sample the area around the cursor to determine if it's light or dark
+    // We'll check pixels around the magnifier border area
+    
+    int deviceX = static_cast<int>(cursorPos.x() * m_devicePixelRatio);
+    int deviceY = static_cast<int>(cursorPos.y() * m_devicePixelRatio);
+    
+    // Sample area size (in device pixels) - slightly larger than magnifier area
+    int deviceSampleSize = static_cast<int>(kGridCountX * m_devicePixelRatio);
+    int sampleRadius = deviceSampleSize / 2;
+    
+    // Calculate bounds for sampling
+    int left = qMax(0, deviceX - sampleRadius);
+    int top = qMax(0, deviceY - sampleRadius);
+    int right = qMin(backgroundImage.width(), deviceX + sampleRadius);
+    int bottom = qMin(backgroundImage.height(), deviceY + sampleRadius);
+    
+    // Calculate average brightness using luminance formula
+    // Only sample border pixels for efficiency (not the entire area)
+    qint64 totalLuminance = 0;
+    int sampleCount = 0;
+    
+    // Sample top and bottom edges
+    for (int x = left; x < right; x += 2) {  // Skip every other pixel for performance
+        if (top < backgroundImage.height()) {
+            QRgb pixel = backgroundImage.pixel(x, top);
+            totalLuminance += qRed(pixel) * 299 + qGreen(pixel) * 587 + qBlue(pixel) * 114;
+            sampleCount++;
+        }
+        if (bottom - 1 >= 0 && bottom - 1 < backgroundImage.height()) {
+            QRgb pixel = backgroundImage.pixel(x, bottom - 1);
+            totalLuminance += qRed(pixel) * 299 + qGreen(pixel) * 587 + qBlue(pixel) * 114;
+            sampleCount++;
+        }
+    }
+    
+    // Sample left and right edges
+    for (int y = top; y < bottom; y += 2) {  // Skip every other pixel for performance
+        if (left < backgroundImage.width()) {
+            QRgb pixel = backgroundImage.pixel(left, y);
+            totalLuminance += qRed(pixel) * 299 + qGreen(pixel) * 587 + qBlue(pixel) * 114;
+            sampleCount++;
+        }
+        if (right - 1 >= 0 && right - 1 < backgroundImage.width()) {
+            QRgb pixel = backgroundImage.pixel(right - 1, y);
+            totalLuminance += qRed(pixel) * 299 + qGreen(pixel) * 587 + qBlue(pixel) * 114;
+            sampleCount++;
+        }
+    }
+    
+    // Calculate average luminance (range: 0-255000, where 255000 = white)
+    int avgLuminance = sampleCount > 0 ? (totalLuminance / sampleCount) / 1000 : 128;
+    
+    // Use a threshold to determine if background is light or dark
+    // Threshold at 128 (middle of 0-255 range)
+    if (avgLuminance > 128) {
+        // Light background - use dark border
+        return QColor(40, 40, 40);  // Dark gray/black
+    } else {
+        // Dark background - use light border
+        return Qt::white;
+    }
 }

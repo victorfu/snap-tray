@@ -32,6 +32,8 @@ private slots:
     void testDrawDoesNotCrash();
     void testDrawWithEmptyImage();
     void testDrawUpdatesCurrentColor();
+    void testDrawOnLightBackground();
+    void testDrawOnDarkBackground();
 
     // Constants tests
     void testLayoutConstants();
@@ -218,6 +220,38 @@ void tst_MagnifierPanel::testDrawUpdatesCurrentColor()
     m_panel->draw(painter, QPoint(50, 150), QSize(400, 400), *m_testImage);
     QColor blueColor = m_panel->currentColor();
     QCOMPARE(blueColor, QColor(Qt::blue));
+}
+
+void tst_MagnifierPanel::testDrawOnLightBackground()
+{
+    // Create a light background image (white)
+    QImage lightImage(200, 200, QImage::Format_ARGB32);
+    lightImage.fill(Qt::white);
+
+    QPixmap pixmap(400, 400);
+    pixmap.fill(Qt::transparent);
+    QPainter painter(&pixmap);
+
+    // Draw magnifier on light background - should not crash
+    // Border should be dark for good visibility
+    m_panel->draw(painter, QPoint(100, 100), QSize(400, 400), lightImage);
+    QVERIFY(true);  // Verify no crash
+}
+
+void tst_MagnifierPanel::testDrawOnDarkBackground()
+{
+    // Create a dark background image (black)
+    QImage darkImage(200, 200, QImage::Format_ARGB32);
+    darkImage.fill(Qt::black);
+
+    QPixmap pixmap(400, 400);
+    pixmap.fill(Qt::transparent);
+    QPainter painter(&pixmap);
+
+    // Draw magnifier on dark background - should not crash
+    // Border should be light for good visibility
+    m_panel->draw(painter, QPoint(100, 100), QSize(400, 400), darkImage);
+    QVERIFY(true);  // Verify no crash
 }
 
 void tst_MagnifierPanel::testLayoutConstants()
