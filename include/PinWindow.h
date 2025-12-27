@@ -78,6 +78,10 @@ private:
     void ensureTransformCacheValid();
     void onResizeFinished();
 
+    // Click-through handling
+    void applyClickThroughState(bool enabled);
+    void updateClickThroughForCursor();
+
     // OCR methods
     void performOCR();
     void onOCRComplete(bool success, const QString &text, const QString &error);
@@ -92,6 +96,7 @@ private:
     QPoint m_dragStartPos;
     bool m_isDragging;
     QMenu *m_contextMenu;
+    QAction *m_clickThroughAction = nullptr;
 
     // Zoom menu members
     QAction *m_currentZoomAction;
@@ -109,6 +114,8 @@ private:
 
     // Click-through mode
     bool m_clickThrough;
+    bool m_clickThroughApplied = false;
+    QTimer *m_clickThroughHoverTimer = nullptr;
 
     // Rotation members
     int m_rotationAngle;  // 0, 90, 180, 270 degrees

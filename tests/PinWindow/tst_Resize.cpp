@@ -305,22 +305,6 @@ private slots:
         QCOMPARE(window.size(), originalSize);
     }
 
-    void testKeyTTogglesClickThrough() {
-        QPixmap pixmap = createTestPixmap(100, 100);
-        PinWindow window(pixmap, QPoint(0, 0));
-
-        QCOMPARE(window.isClickThrough(), false);
-
-        QKeyEvent keyEvent(QEvent::KeyPress, Qt::Key_T, Qt::NoModifier);
-        QCoreApplication::sendEvent(&window, &keyEvent);
-
-        QCOMPARE(window.isClickThrough(), true);
-
-        QCoreApplication::sendEvent(&window, &keyEvent);
-
-        QCOMPARE(window.isClickThrough(), false);
-    }
-
     // =========================================================================
     // Double Click Test
     // =========================================================================

@@ -79,6 +79,7 @@ set(PINWINDOW_COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/LoadingSpinnerRenderer.cpp
     ${CMAKE_SOURCE_DIR}/src/pinwindow/ResizeHandler.cpp
     ${CMAKE_SOURCE_DIR}/src/pinwindow/UIIndicators.cpp
+    ${CMAKE_SOURCE_DIR}/src/pinwindow/ClickThroughExitButton.cpp
 )
 
 # Platform-specific sources for PinWindow tests
@@ -109,6 +110,7 @@ set(PINWINDOW_COMMON_HEADERS
     ${CMAKE_SOURCE_DIR}/include/WindowDetector.h
     ${CMAKE_SOURCE_DIR}/include/pinwindow/ResizeHandler.h
     ${CMAKE_SOURCE_DIR}/include/pinwindow/UIIndicators.h
+    ${CMAKE_SOURCE_DIR}/include/pinwindow/ClickThroughExitButton.h
 )
 
 # Helper function to create a PinWindow test executable
@@ -130,6 +132,7 @@ function(add_pinwindow_test TEST_NAME TEST_SOURCE)
         Qt6::Gui
         Qt6::Svg
         Qt6::Test
+        QHotkey::QHotkey
     )
 
     # Platform-specific frameworks for PinWindow tests
@@ -157,6 +160,9 @@ add_pinwindow_test(PinWindow_Transform
 
 add_pinwindow_test(PinWindow_Resize
     PinWindow/tst_Resize.cpp)
+
+add_pinwindow_test(PinWindow_ClickThrough
+    PinWindow/tst_ClickThrough.cpp)
 
 # ============================================================================
 # RegionSelector Tests

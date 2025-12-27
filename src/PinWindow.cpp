@@ -77,6 +77,8 @@ PinWindow::PinWindow(const QPixmap &screenshot, const QPoint &position, QWidget 
     m_resizeHandler = new ResizeHandler(kShadowMargin, kMinSize, this);
     m_uiIndicators = new UIIndicators(this, this);
     m_uiIndicators->setShadowMargin(kShadowMargin);
+    connect(m_uiIndicators, &UIIndicators::exitClickThroughRequested,
+            this, [this]() { setClickThrough(false); });
 
     // Must show() first, then move() to get correct positioning on macOS
     // Moving before show() can result in incorrect window placement
@@ -99,6 +101,11 @@ PinWindow::PinWindow(const QPixmap &screenshot, const QPoint &position, QWidget 
     m_resizeFinishTimer = new QTimer(this);
     m_resizeFinishTimer->setSingleShot(true);
     connect(m_resizeFinishTimer, &QTimer::timeout, this, &PinWindow::onResizeFinished);
+
+    // Track cursor near edges for click-through resize
+    m_clickThroughHoverTimer = new QTimer(this);
+    m_clickThroughHoverTimer->setInterval(50);
+    connect(m_clickThroughHoverTimer, &QTimer::timeout, this, &PinWindow::updateClickThroughForCursor);
 
     // Initialize resize throttle timer
     m_resizeThrottleTimer.start();
@@ -445,11 +452,10 @@ void PinWindow::createContextMenu()
     addInfoItem("Y-mirror", m_flipVertical ? "Yes" : "No");
 
     // Click-through option
-    QAction *clickThroughAction = m_contextMenu->addAction("Click-through");
-    clickThroughAction->setCheckable(true);
-    clickThroughAction->setChecked(m_clickThrough);
-    clickThroughAction->setShortcut(QKeySequence(Qt::Key_T));
-    connect(clickThroughAction, &QAction::toggled, this, &PinWindow::setClickThrough);
+    m_clickThroughAction = m_contextMenu->addAction("Click-through");
+    m_clickThroughAction->setCheckable(true);
+    m_clickThroughAction->setChecked(m_clickThrough);
+    connect(m_clickThroughAction, &QAction::toggled, this, &PinWindow::setClickThrough);
 
     m_contextMenu->addSeparator();
 
@@ -557,6 +563,34 @@ void PinWindow::copyAllInfo()
     QGuiApplication::clipboard()->setText(info.join("\n"));
 }
 
+void PinWindow::applyClickThroughState(bool enabled)
+{
+    if (m_clickThroughApplied == enabled) {
+        return;
+    }
+
+    setWindowClickThrough(this, enabled);
+    m_clickThroughApplied = enabled;
+}
+
+void PinWindow::updateClickThroughForCursor()
+{
+    if (!m_clickThrough) {
+        return;
+    }
+
+    bool needsInput = m_isResizing;
+    if (!needsInput) {
+        const QPoint globalPos = QCursor::pos();
+        const QPoint localPos = mapFromGlobal(globalPos);
+        if (rect().contains(localPos)) {
+            ResizeHandler::Edge edge = m_resizeHandler->getEdgeAt(localPos, size());
+            needsInput = edge != ResizeHandler::Edge::None;
+        }
+    }
+
+    applyClickThroughState(!needsInput);
+}
 
 void PinWindow::setClickThrough(bool enabled)
 {
@@ -565,11 +599,25 @@ void PinWindow::setClickThrough(bool enabled)
 
     m_clickThrough = enabled;
 
-    // Use native API to set click-through mode for the window
-    setWindowClickThrough(this, enabled);
+    if (m_clickThrough) {
+        if (m_clickThroughHoverTimer) {
+            m_clickThroughHoverTimer->start();
+        }
+        updateClickThroughForCursor();
+    } else {
+        if (m_clickThroughHoverTimer) {
+            m_clickThroughHoverTimer->stop();
+        }
+        applyClickThroughState(false);
+    }
 
     m_uiIndicators->showClickThroughIndicator(enabled);
     update(); // Trigger repaint for border change
+
+    // Sync context menu action state
+    if (m_clickThroughAction && m_clickThroughAction->isChecked() != enabled) {
+        m_clickThroughAction->setChecked(enabled);
+    }
 }
 
 void PinWindow::paintEvent(QPaintEvent *)
@@ -687,6 +735,9 @@ void PinWindow::mouseReleaseEvent(QMouseEvent *event)
             m_isDragging = false;
             setCursor(Qt::ArrowCursor);
         }
+        if (m_clickThrough) {
+            updateClickThroughForCursor();
+        }
     }
 }
 
@@ -763,8 +814,6 @@ void PinWindow::keyPressEvent(QKeyEvent *event)
         saveToFile();
     } else if (event->matches(QKeySequence::Copy)) {
         copyToClipboard();
-    } else if (event->key() == Qt::Key_T) {
-        setClickThrough(!m_clickThrough);
     } else {
         QWidget::keyPressEvent(event);
     }

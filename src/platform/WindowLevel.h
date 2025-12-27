@@ -13,4 +13,9 @@ void raiseWindowAboveMenuBar(QWidget *widget);
 // Sets click-through mode for a window (mouse events pass through to windows underneath)
 void setWindowClickThrough(QWidget *widget, bool enabled);
 
+// Sets window to float above other windows without stealing focus
+// On macOS: Uses NSPanel with non-activating style
+// On Windows: Uses WS_EX_NOACTIVATE
+void setWindowFloatingWithoutFocus(QWidget *widget);
+
 #endif // WINDOWLEVEL_H

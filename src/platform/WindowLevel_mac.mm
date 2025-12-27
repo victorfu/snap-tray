@@ -29,3 +29,34 @@ void setWindowClickThrough(QWidget *widget, bool enabled)
         [window setIgnoresMouseEvents:enabled];
     }
 }
+
+void setWindowFloatingWithoutFocus(QWidget *widget)
+{
+    if (!widget) {
+        return;
+    }
+    NSView *view = reinterpret_cast<NSView *>(widget->winId());
+    if (view) {
+        NSWindow *window = [view window];
+        NSInteger targetLevel = NSFloatingWindowLevel;
+        if (auto *parentWidget = widget->parentWidget()) {
+            NSView *parentView = reinterpret_cast<NSView *>(parentWidget->winId());
+            if (parentView) {
+                NSWindow *parentWindow = [parentView window];
+                if (parentWindow) {
+                    targetLevel = [parentWindow level];
+                }
+            }
+        }
+        // Match parent window level so it stays visible above the pin window.
+        [window setLevel:targetLevel];
+        // Set collection behavior to ignore keyboard focus cycle
+        NSWindowCollectionBehavior behavior = [window collectionBehavior];
+        behavior |= NSWindowCollectionBehaviorIgnoresCycle;
+        behavior |= NSWindowCollectionBehaviorStationary;
+        behavior |= NSWindowCollectionBehaviorFullScreenAuxiliary;
+        [window setCollectionBehavior:behavior];
+        // Keep it visible when app is not active
+        [window setHidesOnDeactivate:NO];
+    }
+}
