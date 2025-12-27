@@ -78,6 +78,10 @@ private:
     void ensureTransformCacheValid();
     void onResizeFinished();
 
+    // Click-through handling
+    void applyClickThroughState(bool enabled);
+    void updateClickThroughForCursor();
+
     // OCR methods
     void performOCR();
     void onOCRComplete(bool success, const QString &text, const QString &error);
@@ -110,6 +114,8 @@ private:
 
     // Click-through mode
     bool m_clickThrough;
+    bool m_clickThroughApplied = false;
+    QTimer *m_clickThroughHoverTimer = nullptr;
 
     // Rotation members
     int m_rotationAngle;  // 0, 90, 180, 270 degrees

@@ -30,7 +30,7 @@ protected:
 
 private:
     void setupUI();
-    void ensureOnTop();
+    void updatePositionIfNeeded();
 
     QWidget* m_targetWindow = nullptr;
     QLabel* m_label = nullptr;

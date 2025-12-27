@@ -56,7 +56,7 @@ void UIIndicators::setupLabels()
 
 void UIIndicators::setupClickThroughExitButton()
 {
-    m_clickThroughExitButton = new ClickThroughExitButton();
+    m_clickThroughExitButton = new ClickThroughExitButton(m_parentWidget);
     m_clickThroughExitButton->attachTo(m_parentWidget);
     connect(m_clickThroughExitButton, &ClickThroughExitButton::exitClicked,
             this, &UIIndicators::exitClickThroughRequested);

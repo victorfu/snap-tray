@@ -102,6 +102,11 @@ PinWindow::PinWindow(const QPixmap &screenshot, const QPoint &position, QWidget 
     m_resizeFinishTimer->setSingleShot(true);
     connect(m_resizeFinishTimer, &QTimer::timeout, this, &PinWindow::onResizeFinished);
 
+    // Track cursor near edges for click-through resize
+    m_clickThroughHoverTimer = new QTimer(this);
+    m_clickThroughHoverTimer->setInterval(50);
+    connect(m_clickThroughHoverTimer, &QTimer::timeout, this, &PinWindow::updateClickThroughForCursor);
+
     // Initialize resize throttle timer
     m_resizeThrottleTimer.start();
 
@@ -558,6 +563,34 @@ void PinWindow::copyAllInfo()
     QGuiApplication::clipboard()->setText(info.join("\n"));
 }
 
+void PinWindow::applyClickThroughState(bool enabled)
+{
+    if (m_clickThroughApplied == enabled) {
+        return;
+    }
+
+    setWindowClickThrough(this, enabled);
+    m_clickThroughApplied = enabled;
+}
+
+void PinWindow::updateClickThroughForCursor()
+{
+    if (!m_clickThrough) {
+        return;
+    }
+
+    bool needsInput = m_isResizing;
+    if (!needsInput) {
+        const QPoint globalPos = QCursor::pos();
+        const QPoint localPos = mapFromGlobal(globalPos);
+        if (rect().contains(localPos)) {
+            ResizeHandler::Edge edge = m_resizeHandler->getEdgeAt(localPos, size());
+            needsInput = edge != ResizeHandler::Edge::None;
+        }
+    }
+
+    applyClickThroughState(!needsInput);
+}
 
 void PinWindow::setClickThrough(bool enabled)
 {
@@ -566,8 +599,17 @@ void PinWindow::setClickThrough(bool enabled)
 
     m_clickThrough = enabled;
 
-    // Use native API to set click-through mode for the window
-    setWindowClickThrough(this, enabled);
+    if (m_clickThrough) {
+        if (m_clickThroughHoverTimer) {
+            m_clickThroughHoverTimer->start();
+        }
+        updateClickThroughForCursor();
+    } else {
+        if (m_clickThroughHoverTimer) {
+            m_clickThroughHoverTimer->stop();
+        }
+        applyClickThroughState(false);
+    }
 
     m_uiIndicators->showClickThroughIndicator(enabled);
     update(); // Trigger repaint for border change
@@ -692,6 +734,9 @@ void PinWindow::mouseReleaseEvent(QMouseEvent *event)
         if (m_isDragging) {
             m_isDragging = false;
             setCursor(Qt::ArrowCursor);
+        }
+        if (m_clickThrough) {
+            updateClickThroughForCursor();
         }
     }
 }

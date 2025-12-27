@@ -1,4 +1,5 @@
 #include "pinwindow/ClickThroughExitButton.h"
+#include "platform/WindowLevel.h"
 #include <QMouseEvent>
 #include <QVBoxLayout>
 #include <QShowEvent>
@@ -13,10 +14,10 @@ ClickThroughExitButton::ClickThroughExitButton(QWidget* parent)
 
     setupUI();
 
-    // Timer to periodically ensure button stays on top
+    // Timer to periodically update position (without raising/focus stealing)
     m_raiseTimer = new QTimer(this);
-    m_raiseTimer->setInterval(100); // Check every 100ms
-    connect(m_raiseTimer, &QTimer::timeout, this, &ClickThroughExitButton::ensureOnTop);
+    m_raiseTimer->setInterval(100);
+    connect(m_raiseTimer, &QTimer::timeout, this, &ClickThroughExitButton::updatePositionIfNeeded);
 }
 
 void ClickThroughExitButton::setupUI()
@@ -89,13 +90,9 @@ bool ClickThroughExitButton::eventFilter(QObject* watched, QEvent* event)
             hide();
         } else if (event->type() == QEvent::Show && isVisible()) {
             updatePosition();
-            raise();
-        } else if (event->type() == QEvent::WindowActivate) {
-            // When target window is activated, ensure exit button stays on top
-            if (isVisible()) {
-                raise();
-            }
         }
+        // Note: We intentionally do NOT call raise() here anymore as it steals focus.
+        // The native window level set by setWindowFloatingWithoutFocus() handles this.
     }
     return QWidget::eventFilter(watched, event);
 }
@@ -145,8 +142,12 @@ void ClickThroughExitButton::leaveEvent(QEvent* event)
 void ClickThroughExitButton::showEvent(QShowEvent* event)
 {
     QWidget::showEvent(event);
+
+    // Set up native floating window that doesn't steal focus
+    // Must be called after the window is shown (has a valid winId)
+    setWindowFloatingWithoutFocus(this);
+
     m_raiseTimer->start();
-    raise();
 }
 
 void ClickThroughExitButton::hideEvent(QHideEvent* event)
@@ -155,10 +156,11 @@ void ClickThroughExitButton::hideEvent(QHideEvent* event)
     QWidget::hideEvent(event);
 }
 
-void ClickThroughExitButton::ensureOnTop()
+void ClickThroughExitButton::updatePositionIfNeeded()
 {
     if (isVisible() && m_targetWindow) {
         updatePosition();
-        raise();
+        // Note: We do NOT call raise() here as it causes focus stealing.
+        // The window level is managed by setWindowFloatingWithoutFocus().
     }
 }
