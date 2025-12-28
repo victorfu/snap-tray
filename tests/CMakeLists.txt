@@ -13,11 +13,13 @@ set(COLORANDWIDTHWIDGET_COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/IconRenderer.cpp
     ${CMAKE_SOURCE_DIR}/src/ui/sections/ColorSection.cpp
     ${CMAKE_SOURCE_DIR}/src/ui/sections/WidthSection.cpp
+    ${CMAKE_SOURCE_DIR}/src/ui/sections/MosaicWidthSection.cpp
     ${CMAKE_SOURCE_DIR}/src/ui/sections/TextSection.cpp
     ${CMAKE_SOURCE_DIR}/src/ui/sections/ArrowStyleSection.cpp
     ${CMAKE_SOURCE_DIR}/src/ui/sections/LineStyleSection.cpp
     ${CMAKE_SOURCE_DIR}/src/ui/sections/ShapeSection.cpp
     ${CMAKE_SOURCE_DIR}/src/ui/sections/SizeSection.cpp
+    ${CMAKE_SOURCE_DIR}/src/ui/sections/AutoBlurSection.cpp
 )
 
 # Common headers that need MOC processing
@@ -25,11 +27,13 @@ set(COLORANDWIDTHWIDGET_COMMON_HEADERS
     ${CMAKE_SOURCE_DIR}/include/ColorAndWidthWidget.h
     ${CMAKE_SOURCE_DIR}/include/ui/sections/ColorSection.h
     ${CMAKE_SOURCE_DIR}/include/ui/sections/WidthSection.h
+    ${CMAKE_SOURCE_DIR}/include/ui/sections/MosaicWidthSection.h
     ${CMAKE_SOURCE_DIR}/include/ui/sections/TextSection.h
     ${CMAKE_SOURCE_DIR}/include/ui/sections/ArrowStyleSection.h
     ${CMAKE_SOURCE_DIR}/include/ui/sections/LineStyleSection.h
     ${CMAKE_SOURCE_DIR}/include/ui/sections/ShapeSection.h
     ${CMAKE_SOURCE_DIR}/include/ui/sections/SizeSection.h
+    ${CMAKE_SOURCE_DIR}/include/ui/sections/AutoBlurSection.h
 )
 
 # Helper function to create a test executable

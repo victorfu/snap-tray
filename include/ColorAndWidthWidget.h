@@ -16,11 +16,13 @@
 class QPainter;
 class ColorSection;
 class WidthSection;
+class MosaicWidthSection;
 class TextSection;
 class ArrowStyleSection;
 class LineStyleSection;
 class ShapeSection;
 class SizeSection;
+class AutoBlurSection;
 
 /**
  * @brief Unified color palette and line width picker component.
@@ -126,6 +128,25 @@ public:
     StepBadgeSize stepBadgeSize() const;
 
     // =========================================================================
+    // Mosaic Width Methods
+    // =========================================================================
+
+    void setShowMosaicWidthSection(bool show);
+    bool showMosaicWidthSection() const { return m_showMosaicWidthSection; }
+    void setMosaicWidthRange(int min, int max);
+    void setMosaicWidth(int width);
+    int mosaicWidth() const;
+
+    // =========================================================================
+    // Auto Blur Methods
+    // =========================================================================
+
+    void setShowAutoBlurSection(bool show);
+    bool showAutoBlurSection() const { return m_showAutoBlurSection; }
+    void setAutoBlurEnabled(bool enabled);
+    void setAutoBlurProcessing(bool processing);
+
+    // =========================================================================
     // Visibility and Positioning
     // =========================================================================
 
@@ -183,6 +204,12 @@ signals:
     // Size signals (Step Badge)
     void stepBadgeSizeChanged(StepBadgeSize size);
 
+    // Mosaic width signals
+    void mosaicWidthChanged(int width);
+
+    // Auto blur signals
+    void autoBlurRequested();
+
 private:
     void updateLayout();
     void connectSectionSignals();
@@ -190,20 +217,24 @@ private:
     // Section components
     ColorSection* m_colorSection;
     WidthSection* m_widthSection;
+    MosaicWidthSection* m_mosaicWidthSection;
     TextSection* m_textSection;
     ArrowStyleSection* m_arrowStyleSection;
     LineStyleSection* m_lineStyleSection;
     ShapeSection* m_shapeSection;
     SizeSection* m_sizeSection;
+    AutoBlurSection* m_autoBlurSection;
 
     // Section visibility
     bool m_showColorSection = true;
     bool m_showWidthSection = true;
+    bool m_showMosaicWidthSection = false;
     bool m_showTextSection = false;
     bool m_showArrowStyleSection = false;
     bool m_showLineStyleSection = false;
     bool m_showShapeSection = false;
     bool m_showSizeSection = false;
+    bool m_showAutoBlurSection = false;
 
     // Layout state
     bool m_visible = false;
@@ -214,7 +245,7 @@ private:
     ToolbarStyleConfig m_styleConfig;
 
     // Layout constants
-    static constexpr int WIDGET_HEIGHT = 36;
+    static constexpr int WIDGET_HEIGHT = 32;  // Match ToolbarWidget height
     static constexpr int SECTION_SPACING = 8;
     static constexpr int WIDGET_RIGHT_MARGIN = 6;
 };

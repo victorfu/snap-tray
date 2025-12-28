@@ -231,6 +231,13 @@ RegionSelector::RegionSelector(QWidget* parent)
         this, &RegionSelector::onMoreColorsRequested);
     connect(m_colorAndWidthWidget, &ColorAndWidthWidget::widthChanged,
         this, &RegionSelector::onLineWidthChanged);
+    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::mosaicWidthChanged,
+        this, [this](int width) {
+            m_mosaicWidth = width;
+            m_toolManager->setWidth(width);
+            setToolCursor();
+            update();
+        });
 
     // Configure text annotation editor with ColorAndWidthWidget
     m_textAnnotationEditor->setColorAndWidthWidget(m_colorAndWidthWidget);
@@ -286,6 +293,8 @@ RegionSelector::RegionSelector(QWidget* parent)
         });
     connect(m_colorAndWidthWidget, &ColorAndWidthWidget::stepBadgeSizeChanged,
         this, &RegionSelector::onStepBadgeSizeChanged);
+    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::autoBlurRequested,
+        this, &RegionSelector::performAutoBlur);
 
     // Initialize loading spinner for OCR
     m_loadingSpinner = new LoadingSpinnerRenderer(this);
@@ -391,7 +400,6 @@ void RegionSelector::setupToolbarButtons()
     if (PlatformFeatures::instance().isOCRAvailable()) {
         buttons.append({ static_cast<int>(ToolbarButton::OCR), "ocr", "OCR Text Recognition", false });
     }
-    buttons.append({ static_cast<int>(ToolbarButton::AutoBlur), "auto-blur", "Auto Blur (Detect Faces/Text)", false });
     buttons.append({ static_cast<int>(ToolbarButton::Record), "record", "Screen Recording (R)", false });
     buttons.append({ static_cast<int>(ToolbarButton::ScrollCapture), "scroll-capture", "Scrolling Capture (S)", false });
     buttons.append({ static_cast<int>(ToolbarButton::Pin), "pin", "Pin to Screen (Enter)", false });
@@ -427,37 +435,17 @@ QColor RegionSelector::getToolbarIconColor(int buttonId, bool isActive, bool isH
     const auto& style = m_toolbar->styleConfig();
     ToolbarButton btn = static_cast<ToolbarButton>(buttonId);
 
-    if (buttonId == static_cast<int>(ToolbarButton::Cancel)) {
-        return style.iconCancelColor;
+    // Show gray for unavailable features
+    if (btn == ToolbarButton::OCR && !m_ocrManager) {
+        return QColor(128, 128, 128);
     }
-    if (btn == ToolbarButton::Record) {
-        return style.iconRecordColor;
+
+    // Show yellow when processing
+    if (btn == ToolbarButton::OCR && m_ocrInProgress) {
+        return QColor(255, 200, 100);
     }
-    if (btn == ToolbarButton::OCR) {
-        if (m_ocrInProgress) {
-            return QColor(255, 200, 100);  // Yellow when processing
-        }
-        else if (!m_ocrManager) {
-            return QColor(128, 128, 128);  // Gray if unavailable
-        }
-        else {
-            return style.iconActionColor;
-        }
-    }
-    if (btn == ToolbarButton::AutoBlur) {
-        if (m_autoBlurInProgress) {
-            return QColor(255, 200, 100);  // Yellow when processing
-        }
-        else if (!m_autoBlurManager || !m_autoBlurManager->isInitialized()) {
-            return QColor(128, 128, 128);  // Gray if unavailable
-        }
-        else {
-            return style.iconActionColor;
-        }
-    }
-    if (buttonId >= static_cast<int>(ToolbarButton::Pin)) {
-        return style.iconActionColor;
-    }
+
+    // All icons use the same color scheme as Pencil
     if (isActive) {
         return style.iconActiveColor;
     }
@@ -866,7 +854,10 @@ void RegionSelector::paintEvent(QPaintEvent*)
             if (shouldShowColorAndWidthWidget()) {
                 m_colorAndWidthWidget->setVisible(true);
                 m_colorAndWidthWidget->setShowColorSection(shouldShowColorPalette());
-                m_colorAndWidthWidget->setShowWidthSection(shouldShowWidthControl());
+                // Mosaic uses dedicated MosaicWidthSection, other tools use WidthSection
+                bool isMosaicTool = (m_currentTool == ToolbarButton::Mosaic);
+                m_colorAndWidthWidget->setShowWidthSection(shouldShowWidthControl() && !isMosaicTool);
+                m_colorAndWidthWidget->setShowMosaicWidthSection(isMosaicTool);
                 // Show arrow style section only for Arrow tool
                 m_colorAndWidthWidget->setShowArrowStyleSection(m_currentTool == ToolbarButton::Arrow);
                 // Show line style section for Pencil and Arrow tools
@@ -877,6 +868,12 @@ void RegionSelector::paintEvent(QPaintEvent*)
                 m_colorAndWidthWidget->setShowTextSection(m_currentTool == ToolbarButton::Text);
                 // Show shape section only for Shape tool
                 m_colorAndWidthWidget->setShowShapeSection(m_currentTool == ToolbarButton::Shape);
+                // Show auto blur section only for Mosaic tool
+                m_colorAndWidthWidget->setShowAutoBlurSection(isMosaicTool);
+                if (isMosaicTool) {
+                    bool autoBlurAvailable = m_autoBlurManager && m_autoBlurManager->isInitialized();
+                    m_colorAndWidthWidget->setAutoBlurEnabled(autoBlurAvailable);
+                }
                 m_colorAndWidthWidget->updatePosition(m_toolbar->boundingRect(), false, width());
                 m_colorAndWidthWidget->draw(painter);
             }
@@ -1082,7 +1079,14 @@ void RegionSelector::saveEraserWidthAndClearHover()
 
 void RegionSelector::restoreStandardWidth()
 {
-    if (m_currentTool == ToolbarButton::Eraser || m_currentTool == ToolbarButton::Mosaic) {
+    if (m_currentTool == ToolbarButton::Mosaic) {
+        // Hide MosaicWidthSection and restore regular WidthSection
+        m_colorAndWidthWidget->setShowMosaicWidthSection(false);
+        m_colorAndWidthWidget->setShowWidthSection(true);
+        m_colorAndWidthWidget->setWidthRange(1, 20);
+        m_colorAndWidthWidget->setCurrentWidth(m_annotationWidth);
+        m_toolManager->setWidth(m_annotationWidth);
+    } else if (m_currentTool == ToolbarButton::Eraser) {
         m_colorAndWidthWidget->setWidthRange(1, 20);
         m_colorAndWidthWidget->setCurrentWidth(m_annotationWidth);
         m_toolManager->setWidth(m_annotationWidth);
@@ -1186,9 +1190,11 @@ void RegionSelector::handleToolbarClick(ToolbarButton button)
     case ToolbarButton::Mosaic:
         m_currentTool = button;
         m_toolManager->setCurrentTool(ToolId::Mosaic);
-        // Configure mosaic-specific width range (10-100)
-        m_colorAndWidthWidget->setWidthRange(10, 100);
-        m_colorAndWidthWidget->setCurrentWidth(m_mosaicWidth);
+        // Hide regular WidthSection, use dedicated MosaicWidthSection instead
+        m_colorAndWidthWidget->setShowWidthSection(false);
+        m_colorAndWidthWidget->setShowMosaicWidthSection(true);
+        m_colorAndWidthWidget->setMosaicWidthRange(10, 100);
+        m_colorAndWidthWidget->setMosaicWidth(m_mosaicWidth);
         m_toolManager->setWidth(m_mosaicWidth);
         m_colorAndWidthWidget->setShowSizeSection(false);
         // Mosaic tool doesn't use color, hide color section
@@ -1232,10 +1238,6 @@ void RegionSelector::handleToolbarClick(ToolbarButton button)
 
     case ToolbarButton::OCR:
         performOCR();
-        break;
-
-    case ToolbarButton::AutoBlur:
-        performAutoBlur();
         break;
 
     case ToolbarButton::Pin:
@@ -2554,13 +2556,19 @@ void RegionSelector::performAutoBlur()
     }
 
     m_autoBlurInProgress = true;
+    m_colorAndWidthWidget->setAutoBlurProcessing(true);
     m_loadingSpinner->start();
     update();
 
-    qDebug() << "RegionSelector: Starting auto-blur detection...";
-
     // Get the selected region as QImage
     QRect sel = m_selectionManager->selectionRect();
+
+    qDebug() << "RegionSelector: Starting auto-blur detection..."
+             << "selection=" << sel
+             << "dpr=" << m_devicePixelRatio
+             << "bgPixmap size=" << m_backgroundPixmap.size()
+             << "bgPixmap dpr=" << m_backgroundPixmap.devicePixelRatio();
+
     QPixmap selectedPixmap = m_backgroundPixmap.copy(
         static_cast<int>(sel.x() * m_devicePixelRatio),
         static_cast<int>(sel.y() * m_devicePixelRatio),
@@ -2569,80 +2577,65 @@ void RegionSelector::performAutoBlur()
     );
     QImage selectedImage = selectedPixmap.toImage();
 
+    qDebug() << "RegionSelector: Cropped image for detection:"
+             << "size=" << selectedImage.size();
+
     // Run detection
     auto result = m_autoBlurManager->detect(selectedImage);
 
     if (result.success) {
         int faceCount = result.faceRegions.size();
-        int textCount = result.textRegions.size();
 
-        // Apply blur to the background pixmap for each detected region
-        if (faceCount > 0 || textCount > 0) {
-            QImage bgImage = m_backgroundPixmap.toImage();
-            auto options = m_autoBlurManager->options();
-
+        // Create mosaic annotations for detected faces (skip text regions)
+        if (faceCount > 0) {
             // Detection coordinates are in device pixels (relative to the cropped region).
-            // Background image is also in device pixels.
-            // Transform: globalDevicePixel = selectionOffset_inDevicePixels + detectedRect
-            const int selOffsetX = static_cast<int>(sel.x() * m_devicePixelRatio);
-            const int selOffsetY = static_cast<int>(sel.y() * m_devicePixelRatio);
+            // Convert to logical coordinates for annotations.
+            for (int i = 0; i < result.faceRegions.size(); ++i) {
+                const QRect& r = result.faceRegions[i];
 
-            QVector<QRect> allRegions;
-            for (const QRect& r : result.faceRegions) {
-                QRect globalRect(
-                    selOffsetX + r.x(),
-                    selOffsetY + r.y(),
-                    r.width(),
-                    r.height()
+                qDebug() << "RegionSelector: Face" << i
+                         << "detection rect (device px, relative to crop)=" << r;
+
+                // Convert from device pixels to logical coordinates
+                QRect logicalRect(
+                    sel.x() + static_cast<int>(r.x() / m_devicePixelRatio),
+                    sel.y() + static_cast<int>(r.y() / m_devicePixelRatio),
+                    static_cast<int>(r.width() / m_devicePixelRatio),
+                    static_cast<int>(r.height() / m_devicePixelRatio)
                 );
-                allRegions.append(globalRect);
-            }
-            for (const QRect& r : result.textRegions) {
-                QRect globalRect(
-                    selOffsetX + r.x(),
-                    selOffsetY + r.y(),
-                    r.width(),
-                    r.height()
+
+                qDebug() << "RegionSelector: Face" << i
+                         << "logical rect (for annotation)=" << logicalRect;
+
+                // Create mosaic annotation for this face region
+                auto mosaic = std::make_unique<MosaicRectAnnotation>(
+                    logicalRect, m_backgroundPixmap, 12
                 );
-                allRegions.append(globalRect);
+                m_annotationLayer->addItem(std::move(mosaic));
             }
-
-            // Apply blur
-            m_autoBlurManager->applyBlur(bgImage, allRegions, options.blurIntensity, options.blurType);
-
-            // Update background pixmap
-            m_backgroundPixmap = QPixmap::fromImage(bgImage);
-            m_backgroundPixmap.setDevicePixelRatio(m_devicePixelRatio);
-            m_backgroundImageCacheValid = false;  // Invalidate cache
         }
 
-        onAutoBlurComplete(true, faceCount, textCount, QString());
+        onAutoBlurComplete(true, faceCount, 0, QString());
     } else {
         onAutoBlurComplete(false, 0, 0, result.errorMessage);
     }
 }
 
-void RegionSelector::onAutoBlurComplete(bool success, int faceCount, int textCount, const QString& error)
+void RegionSelector::onAutoBlurComplete(bool success, int faceCount, int /*textCount*/, const QString& error)
 {
     m_autoBlurInProgress = false;
+    m_colorAndWidthWidget->setAutoBlurProcessing(false);
     m_loadingSpinner->stop();
 
     QString msg;
     QString bgColor;
-    if (success && (faceCount > 0 || textCount > 0)) {
-        qDebug() << "RegionSelector: Auto-blur complete, blurred" << faceCount << "faces and" << textCount << "text regions";
-        QStringList parts;
-        if (faceCount > 0) {
-            parts << tr("%1 face(s)").arg(faceCount);
-        }
-        if (textCount > 0) {
-            parts << tr("%1 text region(s)").arg(textCount);
-        }
-        msg = tr("Blurred %1").arg(parts.join(", "));
+    if (success && faceCount > 0) {
+        qDebug() << "RegionSelector: Auto-blur complete, blurred" << faceCount << "faces";
+        msg = tr("Blurred %1 face(s)").arg(faceCount);
         bgColor = "rgba(34, 139, 34, 220)";  // Green for success
     }
     else if (success) {
-        msg = tr("No faces or text detected");
+        msg = tr("No faces detected");
         qDebug() << "RegionSelector: Auto-blur found nothing to blur";
         bgColor = "rgba(100, 100, 100, 220)";  // Gray for nothing found
     }

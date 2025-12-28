@@ -96,7 +96,7 @@ private:
     QVector<QRect> m_swatchRects;
 
     // Layout constants
-    static constexpr int SWATCH_SIZE = 16;
+    static constexpr int SWATCH_SIZE = 14;  // Reduced from 16 for 32px widget height
     static constexpr int SWATCH_SPACING = 2;
     static constexpr int COLORS_PER_ROW = 8;
     static constexpr int SECTION_PADDING = 6;

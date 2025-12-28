@@ -156,10 +156,6 @@ void SettingsDialog::setupGeneralTab(QWidget *tab)
     m_autoBlurFacesCheckbox->setChecked(blurOptions.detectFaces);
     layout->addWidget(m_autoBlurFacesCheckbox);
 
-    m_autoBlurTextCheckbox = new QCheckBox("Detect text", tab);
-    m_autoBlurTextCheckbox->setChecked(blurOptions.detectText);
-    layout->addWidget(m_autoBlurTextCheckbox);
-
     // Blur intensity slider
     QHBoxLayout *intensityLayout = new QHBoxLayout();
     QLabel *intensityLabel = new QLabel("Blur intensity:", tab);
@@ -193,13 +189,11 @@ void SettingsDialog::setupGeneralTab(QWidget *tab)
     // Enable/disable detection checkboxes based on main checkbox
     connect(m_autoBlurEnabledCheckbox, &QCheckBox::toggled, this, [this](bool checked) {
         m_autoBlurFacesCheckbox->setEnabled(checked);
-        m_autoBlurTextCheckbox->setEnabled(checked);
         m_blurIntensitySlider->setEnabled(checked);
         m_blurTypeCombo->setEnabled(checked);
     });
     // Initialize enabled state
     m_autoBlurFacesCheckbox->setEnabled(blurOptions.enabled);
-    m_autoBlurTextCheckbox->setEnabled(blurOptions.enabled);
     m_blurIntensitySlider->setEnabled(blurOptions.enabled);
     m_blurTypeCombo->setEnabled(blurOptions.enabled);
 
@@ -730,7 +724,7 @@ void SettingsDialog::onSave()
     AutoBlurManager::Options blurOptions;
     blurOptions.enabled = m_autoBlurEnabledCheckbox->isChecked();
     blurOptions.detectFaces = m_autoBlurFacesCheckbox->isChecked();
-    blurOptions.detectText = m_autoBlurTextCheckbox->isChecked();
+    blurOptions.detectText = false;  // Text detection not supported
     blurOptions.blurIntensity = m_blurIntensitySlider->value();
     blurOptions.blurType = m_blurTypeCombo->currentIndex() == 1
                                ? AutoBlurManager::BlurType::Gaussian

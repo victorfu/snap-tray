@@ -116,6 +116,7 @@ set(SOURCES
     src/annotations/PolylineAnnotation.cpp
     src/annotations/ShapeAnnotation.cpp
     src/annotations/MosaicStroke.cpp
+    src/annotations/MosaicRectAnnotation.cpp
     src/annotations/StepBadgeAnnotation.cpp
     src/annotations/ErasedItemsGroup.cpp
     src/annotations/EraserStroke.cpp
@@ -169,11 +170,13 @@ set(SOURCES
     # UI sections
     src/ui/sections/ColorSection.cpp
     src/ui/sections/WidthSection.cpp
+    src/ui/sections/MosaicWidthSection.cpp
     src/ui/sections/TextSection.cpp
     src/ui/sections/ArrowStyleSection.cpp
     src/ui/sections/LineStyleSection.cpp
     src/ui/sections/ShapeSection.cpp
     src/ui/sections/SizeSection.cpp
+    src/ui/sections/AutoBlurSection.cpp
     # PinWindow components
     src/pinwindow/ImageTransformer.cpp
     src/pinwindow/ResizeHandler.cpp
@@ -214,6 +217,7 @@ set(HEADERS
     include/annotations/PolylineAnnotation.h
     include/annotations/ShapeAnnotation.h
     include/annotations/MosaicStroke.h
+    include/annotations/MosaicRectAnnotation.h
     include/annotations/StepBadgeAnnotation.h
     include/annotations/EraserStroke.h
     include/annotations/ErasedItemsGroup.h
@@ -279,11 +283,13 @@ set(HEADERS
     include/ui/IWidgetSection.h
     include/ui/sections/ColorSection.h
     include/ui/sections/WidthSection.h
+    include/ui/sections/MosaicWidthSection.h
     include/ui/sections/TextSection.h
     include/ui/sections/ArrowStyleSection.h
     include/ui/sections/LineStyleSection.h
     include/ui/sections/ShapeSection.h
     include/ui/sections/SizeSection.h
+    include/ui/sections/AutoBlurSection.h
     # PinWindow components
     include/pinwindow/ImageTransformer.h
     include/pinwindow/ResizeHandler.h
