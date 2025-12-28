@@ -191,6 +191,16 @@ void ToolRegistry::registerTools() {
     });
 
     registerTool({
+        ToolId::AutoBlur,
+        "auto-blur",
+        "Auto Blur (Detect Faces/Text)",
+        "",
+        ToolCategory::Action,
+        false, false, false, false, false, false,
+        false, QColor()
+    });
+
+    registerTool({
         ToolId::Pin,
         "pin",
         "Pin to Desktop",
@@ -274,6 +284,7 @@ QVector<ToolId> ToolRegistry::getToolsForToolbar(ToolbarType type) const {
             ToolId::Redo,
             ToolId::Cancel,
             ToolId::OCR,
+            ToolId::AutoBlur,
             ToolId::Pin,
             ToolId::Record,
             ToolId::Save,

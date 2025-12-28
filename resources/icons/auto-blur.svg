@@ -1,0 +1,10 @@
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Magic wand body -->
+  <path d="M4 20L14 10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  <!-- Wand tip star -->
+  <path d="M15 9L16 6L17 9L20 10L17 11L16 14L15 11L12 10L15 9Z" fill="currentColor"/>
+  <!-- Sparkles -->
+  <path d="M20 4L20.5 2L21 4L23 4.5L21 5L20.5 7L20 5L18 4.5L20 4Z" fill="currentColor"/>
+  <circle cx="10" cy="6" r="1" fill="currentColor"/>
+  <circle cx="6" cy="10" r="0.75" fill="currentColor"/>
+</svg>

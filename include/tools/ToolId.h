@@ -32,6 +32,7 @@ enum class ToolId {
     Clear,
     Cancel,
     OCR,
+    AutoBlur,   // Auto-detect and blur faces/text
     Pin,
     Record,
     Save,

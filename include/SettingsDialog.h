@@ -108,6 +108,14 @@ private:
     void onOutputFormatChanged(int index);
     void populateAudioDevices();
     void onAudioSourceChanged(int index);
+
+    // Auto-blur settings
+    QCheckBox *m_autoBlurEnabledCheckbox;
+    QCheckBox *m_autoBlurFacesCheckbox;
+    QCheckBox *m_autoBlurTextCheckbox;
+    QSlider *m_blurIntensitySlider;
+    QLabel *m_blurIntensityLabel;
+    QComboBox *m_blurTypeCombo;
 };
 
 #endif // SETTINGSDIALOG_H

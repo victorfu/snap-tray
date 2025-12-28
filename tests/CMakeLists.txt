@@ -787,3 +787,82 @@ add_test(NAME RecordingManager_InitTask COMMAND RecordingManager_InitTask)
 set_tests_properties(RecordingManager_InitTask PROPERTIES TIMEOUT 60)
 
 endif()  # End of temporarily disabled RecordingManager tests
+
+# ============================================================================
+# Detection Tests
+# ============================================================================
+
+# Source files for detection tests
+set(DETECTION_SOURCES
+    ${CMAKE_SOURCE_DIR}/src/detection/FaceDetector.cpp
+    ${CMAKE_SOURCE_DIR}/src/detection/TextDetector.cpp
+    ${CMAKE_SOURCE_DIR}/src/detection/AutoBlurManager.cpp
+)
+
+set(DETECTION_HEADERS
+    ${CMAKE_SOURCE_DIR}/include/detection/IDetector.h
+    ${CMAKE_SOURCE_DIR}/include/detection/FaceDetector.h
+    ${CMAKE_SOURCE_DIR}/include/detection/TextDetector.h
+    ${CMAKE_SOURCE_DIR}/include/detection/AutoBlurManager.h
+)
+
+# OpenCV include directories for detection tests
+set(OPENCV_DETECTION_INCLUDES
+    ${CMAKE_BINARY_DIR}
+    ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/core/include
+    ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/imgproc/include
+    ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/features2d/include
+    ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/flann/include
+    ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/objdetect/include
+)
+
+# Helper function for detection tests
+function(add_detection_test TEST_NAME TEST_SOURCE)
+    add_executable(${TEST_NAME}
+        ${TEST_SOURCE}
+        ${DETECTION_SOURCES}
+        ${DETECTION_HEADERS}
+    )
+
+    target_include_directories(${TEST_NAME} PRIVATE
+        ${CMAKE_SOURCE_DIR}/include
+        ${CMAKE_SOURCE_DIR}/src
+        ${CMAKE_BINARY_DIR}/generated
+        ${OPENCV_DETECTION_INCLUDES}
+    )
+
+    target_link_libraries(${TEST_NAME} PRIVATE
+        Qt6::Core
+        Qt6::Gui
+        Qt6::Widgets
+        Qt6::Test
+        opencv_core
+        opencv_imgproc
+        opencv_features2d
+        opencv_flann
+        opencv_objdetect
+    )
+
+    # Add resources for cascade file
+    target_sources(${TEST_NAME} PRIVATE
+        ${CMAKE_SOURCE_DIR}/resources/resources.qrc
+    )
+
+    add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
+
+    set_tests_properties(${TEST_NAME} PROPERTIES
+        TIMEOUT 60
+    )
+endfunction()
+
+# FaceDetector test
+add_detection_test(Detection_FaceDetector
+    Detection/tst_FaceDetector.cpp)
+
+# TextDetector test
+add_detection_test(Detection_TextDetector
+    Detection/tst_TextDetector.cpp)
+
+# AutoBlurManager test
+add_detection_test(Detection_AutoBlurManager
+    Detection/tst_AutoBlurManager.cpp)

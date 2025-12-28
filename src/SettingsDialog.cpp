@@ -3,6 +3,7 @@
 #include "WatermarkRenderer.h"
 #include "capture/IAudioCaptureEngine.h"
 #include "settings/Settings.h"
+#include "detection/AutoBlurManager.h"
 
 #include <QKeySequenceEdit>
 #include <QSettings>
@@ -136,6 +137,71 @@ void SettingsDialog::setupGeneralTab(QWidget *tab)
     // Load current setting
     int currentStyle = static_cast<int>(ToolbarStyleConfig::loadStyle());
     m_toolbarStyleCombo->setCurrentIndex(currentStyle);
+
+    // ========== Auto Blur Section ==========
+    layout->addSpacing(16);
+    QLabel *autoBlurLabel = new QLabel("Auto Blur", tab);
+    autoBlurLabel->setStyleSheet("font-weight: bold; font-size: 12px;");
+    layout->addWidget(autoBlurLabel);
+
+    // Load current settings
+    auto blurOptions = AutoBlurManager::loadSettings();
+
+    m_autoBlurEnabledCheckbox = new QCheckBox("Enable auto-blur detection", tab);
+    m_autoBlurEnabledCheckbox->setChecked(blurOptions.enabled);
+    layout->addWidget(m_autoBlurEnabledCheckbox);
+
+    // Detection options
+    m_autoBlurFacesCheckbox = new QCheckBox("Detect faces", tab);
+    m_autoBlurFacesCheckbox->setChecked(blurOptions.detectFaces);
+    layout->addWidget(m_autoBlurFacesCheckbox);
+
+    m_autoBlurTextCheckbox = new QCheckBox("Detect text", tab);
+    m_autoBlurTextCheckbox->setChecked(blurOptions.detectText);
+    layout->addWidget(m_autoBlurTextCheckbox);
+
+    // Blur intensity slider
+    QHBoxLayout *intensityLayout = new QHBoxLayout();
+    QLabel *intensityLabel = new QLabel("Blur intensity:", tab);
+    intensityLabel->setFixedWidth(120);
+    m_blurIntensitySlider = new QSlider(Qt::Horizontal, tab);
+    m_blurIntensitySlider->setRange(1, 100);
+    m_blurIntensitySlider->setValue(blurOptions.blurIntensity);
+    m_blurIntensityLabel = new QLabel(QString::number(blurOptions.blurIntensity), tab);
+    m_blurIntensityLabel->setFixedWidth(30);
+    connect(m_blurIntensitySlider, &QSlider::valueChanged, this, [this](int value) {
+        m_blurIntensityLabel->setText(QString::number(value));
+    });
+    intensityLayout->addWidget(intensityLabel);
+    intensityLayout->addWidget(m_blurIntensitySlider);
+    intensityLayout->addWidget(m_blurIntensityLabel);
+    layout->addLayout(intensityLayout);
+
+    // Blur type combo
+    QHBoxLayout *typeLayout = new QHBoxLayout();
+    QLabel *typeLabel = new QLabel("Blur type:", tab);
+    typeLabel->setFixedWidth(120);
+    m_blurTypeCombo = new QComboBox(tab);
+    m_blurTypeCombo->addItem("Pixelate (Mosaic)", "pixelate");
+    m_blurTypeCombo->addItem("Gaussian Blur", "gaussian");
+    m_blurTypeCombo->setCurrentIndex(blurOptions.blurType == AutoBlurManager::BlurType::Gaussian ? 1 : 0);
+    typeLayout->addWidget(typeLabel);
+    typeLayout->addWidget(m_blurTypeCombo);
+    typeLayout->addStretch();
+    layout->addLayout(typeLayout);
+
+    // Enable/disable detection checkboxes based on main checkbox
+    connect(m_autoBlurEnabledCheckbox, &QCheckBox::toggled, this, [this](bool checked) {
+        m_autoBlurFacesCheckbox->setEnabled(checked);
+        m_autoBlurTextCheckbox->setEnabled(checked);
+        m_blurIntensitySlider->setEnabled(checked);
+        m_blurTypeCombo->setEnabled(checked);
+    });
+    // Initialize enabled state
+    m_autoBlurFacesCheckbox->setEnabled(blurOptions.enabled);
+    m_autoBlurTextCheckbox->setEnabled(blurOptions.enabled);
+    m_blurIntensitySlider->setEnabled(blurOptions.enabled);
+    m_blurTypeCombo->setEnabled(blurOptions.enabled);
 
     layout->addStretch();
 }
@@ -659,6 +725,17 @@ void SettingsDialog::onSave()
         m_audioSourceCombo->currentData().toInt());
     recordingSettings.setValue("recording/audioDevice",
         m_audioDeviceCombo->currentData().toString());
+
+    // Save auto-blur settings
+    AutoBlurManager::Options blurOptions;
+    blurOptions.enabled = m_autoBlurEnabledCheckbox->isChecked();
+    blurOptions.detectFaces = m_autoBlurFacesCheckbox->isChecked();
+    blurOptions.detectText = m_autoBlurTextCheckbox->isChecked();
+    blurOptions.blurIntensity = m_blurIntensitySlider->value();
+    blurOptions.blurType = m_blurTypeCombo->currentIndex() == 1
+                               ? AutoBlurManager::BlurType::Gaussian
+                               : AutoBlurManager::BlurType::Pixelate;
+    AutoBlurManager::saveSettings(blurOptions);
 
     // Save toolbar style setting
     ToolbarStyleType newStyle = static_cast<ToolbarStyleType>(

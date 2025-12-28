@@ -9,6 +9,7 @@
 #include "ColorPickerDialog.h"
 #include "OCRManager.h"
 #include "PlatformFeatures.h"
+#include "detection/AutoBlurManager.h"
 #include "settings/AnnotationSettingsManager.h"
 #include "tools/handlers/EraserToolHandler.h"
 #include "tools/handlers/MosaicToolHandler.h"
@@ -123,6 +124,8 @@ RegionSelector::RegionSelector(QWidget* parent)
     , m_windowDetector(nullptr)
     , m_ocrManager(nullptr)
     , m_ocrInProgress(false)
+    , m_autoBlurManager(nullptr)
+    , m_autoBlurInProgress(false)
     , m_colorPalette(nullptr)
     , m_textEditor(nullptr)
     , m_colorPickerDialog(nullptr)
@@ -172,6 +175,10 @@ RegionSelector::RegionSelector(QWidget* parent)
 
     // Initialize OCR manager if available on this platform
     m_ocrManager = PlatformFeatures::instance().createOCRManager(this);
+
+    // Initialize auto-blur manager
+    m_autoBlurManager = new AutoBlurManager(this);
+    m_autoBlurManager->initialize();
 
     // Initialize toolbar widget
     m_toolbar = new ToolbarWidget(this);
@@ -351,6 +358,7 @@ void RegionSelector::setupToolbarButtons()
     if (PlatformFeatures::instance().isOCRAvailable()) {
         iconRenderer.loadIcon("ocr", ":/icons/icons/ocr.svg");
     }
+    iconRenderer.loadIcon("auto-blur", ":/icons/icons/auto-blur.svg");
     iconRenderer.loadIcon("pin", ":/icons/icons/pin.svg");
     iconRenderer.loadIcon("record", ":/icons/icons/record.svg");
     iconRenderer.loadIcon("scroll-capture", ":/icons/icons/scroll-capture.svg");
@@ -383,6 +391,7 @@ void RegionSelector::setupToolbarButtons()
     if (PlatformFeatures::instance().isOCRAvailable()) {
         buttons.append({ static_cast<int>(ToolbarButton::OCR), "ocr", "OCR Text Recognition", false });
     }
+    buttons.append({ static_cast<int>(ToolbarButton::AutoBlur), "auto-blur", "Auto Blur (Detect Faces/Text)", false });
     buttons.append({ static_cast<int>(ToolbarButton::Record), "record", "Screen Recording (R)", false });
     buttons.append({ static_cast<int>(ToolbarButton::ScrollCapture), "scroll-capture", "Scrolling Capture (S)", false });
     buttons.append({ static_cast<int>(ToolbarButton::Pin), "pin", "Pin to Screen (Enter)", false });
@@ -429,6 +438,17 @@ QColor RegionSelector::getToolbarIconColor(int buttonId, bool isActive, bool isH
             return QColor(255, 200, 100);  // Yellow when processing
         }
         else if (!m_ocrManager) {
+            return QColor(128, 128, 128);  // Gray if unavailable
+        }
+        else {
+            return style.iconActionColor;
+        }
+    }
+    if (btn == ToolbarButton::AutoBlur) {
+        if (m_autoBlurInProgress) {
+            return QColor(255, 200, 100);  // Yellow when processing
+        }
+        else if (!m_autoBlurManager || !m_autoBlurManager->isInitialized()) {
             return QColor(128, 128, 128);  // Gray if unavailable
         }
         else {
@@ -1212,6 +1232,10 @@ void RegionSelector::handleToolbarClick(ToolbarButton button)
 
     case ToolbarButton::OCR:
         performOCR();
+        break;
+
+    case ToolbarButton::AutoBlur:
+        performAutoBlur();
         break;
 
     case ToolbarButton::Pin:
@@ -2491,6 +2515,140 @@ void RegionSelector::onOCRComplete(bool success, const QString& text, const QStr
     else {
         msg = error.isEmpty() ? tr("No text found") : error;
         qDebug() << "RegionSelector: OCR failed:" << msg;
+        bgColor = "rgba(200, 60, 60, 220)";  // Red for failure
+    }
+
+    m_ocrToastLabel->setStyleSheet(QString(
+        "QLabel {"
+        "  background-color: %1;"
+        "  color: white;"
+        "  padding: 8px 16px;"
+        "  border-radius: 6px;"
+        "  font-size: 13px;"
+        "  font-weight: bold;"
+        "}"
+    ).arg(bgColor));
+
+    // Display the toast centered at top of selection area
+    m_ocrToastLabel->setText(msg);
+    m_ocrToastLabel->adjustSize();
+    QRect sel = m_selectionManager->selectionRect();
+    int x = sel.center().x() - m_ocrToastLabel->width() / 2;
+    int y = sel.top() + 12;
+    m_ocrToastLabel->move(x, y);
+    m_ocrToastLabel->show();
+    m_ocrToastLabel->raise();
+    m_ocrToastTimer->start(2500);
+
+    update();
+}
+
+void RegionSelector::performAutoBlur()
+{
+    if (!m_autoBlurManager || !m_autoBlurManager->isInitialized() ||
+        m_autoBlurInProgress || !m_selectionManager->isComplete()) {
+        if (!m_autoBlurManager || !m_autoBlurManager->isInitialized()) {
+            qDebug() << "RegionSelector: Auto-blur not available";
+        }
+        return;
+    }
+
+    m_autoBlurInProgress = true;
+    m_loadingSpinner->start();
+    update();
+
+    qDebug() << "RegionSelector: Starting auto-blur detection...";
+
+    // Get the selected region as QImage
+    QRect sel = m_selectionManager->selectionRect();
+    QPixmap selectedPixmap = m_backgroundPixmap.copy(
+        static_cast<int>(sel.x() * m_devicePixelRatio),
+        static_cast<int>(sel.y() * m_devicePixelRatio),
+        static_cast<int>(sel.width() * m_devicePixelRatio),
+        static_cast<int>(sel.height() * m_devicePixelRatio)
+    );
+    QImage selectedImage = selectedPixmap.toImage();
+
+    // Run detection
+    auto result = m_autoBlurManager->detect(selectedImage);
+
+    if (result.success) {
+        int faceCount = result.faceRegions.size();
+        int textCount = result.textRegions.size();
+
+        // Apply blur to the background pixmap for each detected region
+        if (faceCount > 0 || textCount > 0) {
+            QImage bgImage = m_backgroundPixmap.toImage();
+            auto options = m_autoBlurManager->options();
+
+            // Detection coordinates are in device pixels (relative to the cropped region).
+            // Background image is also in device pixels.
+            // Transform: globalDevicePixel = selectionOffset_inDevicePixels + detectedRect
+            const int selOffsetX = static_cast<int>(sel.x() * m_devicePixelRatio);
+            const int selOffsetY = static_cast<int>(sel.y() * m_devicePixelRatio);
+
+            QVector<QRect> allRegions;
+            for (const QRect& r : result.faceRegions) {
+                QRect globalRect(
+                    selOffsetX + r.x(),
+                    selOffsetY + r.y(),
+                    r.width(),
+                    r.height()
+                );
+                allRegions.append(globalRect);
+            }
+            for (const QRect& r : result.textRegions) {
+                QRect globalRect(
+                    selOffsetX + r.x(),
+                    selOffsetY + r.y(),
+                    r.width(),
+                    r.height()
+                );
+                allRegions.append(globalRect);
+            }
+
+            // Apply blur
+            m_autoBlurManager->applyBlur(bgImage, allRegions, options.blurIntensity, options.blurType);
+
+            // Update background pixmap
+            m_backgroundPixmap = QPixmap::fromImage(bgImage);
+            m_backgroundPixmap.setDevicePixelRatio(m_devicePixelRatio);
+            m_backgroundImageCacheValid = false;  // Invalidate cache
+        }
+
+        onAutoBlurComplete(true, faceCount, textCount, QString());
+    } else {
+        onAutoBlurComplete(false, 0, 0, result.errorMessage);
+    }
+}
+
+void RegionSelector::onAutoBlurComplete(bool success, int faceCount, int textCount, const QString& error)
+{
+    m_autoBlurInProgress = false;
+    m_loadingSpinner->stop();
+
+    QString msg;
+    QString bgColor;
+    if (success && (faceCount > 0 || textCount > 0)) {
+        qDebug() << "RegionSelector: Auto-blur complete, blurred" << faceCount << "faces and" << textCount << "text regions";
+        QStringList parts;
+        if (faceCount > 0) {
+            parts << tr("%1 face(s)").arg(faceCount);
+        }
+        if (textCount > 0) {
+            parts << tr("%1 text region(s)").arg(textCount);
+        }
+        msg = tr("Blurred %1").arg(parts.join(", "));
+        bgColor = "rgba(34, 139, 34, 220)";  // Green for success
+    }
+    else if (success) {
+        msg = tr("No faces or text detected");
+        qDebug() << "RegionSelector: Auto-blur found nothing to blur";
+        bgColor = "rgba(100, 100, 100, 220)";  // Gray for nothing found
+    }
+    else {
+        msg = error.isEmpty() ? tr("Detection failed") : error;
+        qDebug() << "RegionSelector: Auto-blur failed:" << msg;
         bgColor = "rgba(200, 60, 60, 220)";  // Red for failure
     }
 

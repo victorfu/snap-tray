@@ -67,13 +67,13 @@ FetchContent_Declare(
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 set(BUILD_WITH_STATIC_CRT OFF CACHE BOOL "" FORCE)  # Use dynamic runtime (/MD) to match Qt6
 set(BUILD_opencv_apps OFF CACHE BOOL "" FORCE)
-set(BUILD_opencv_calib3d OFF CACHE BOOL "" FORCE)
+set(BUILD_opencv_calib3d ON CACHE BOOL "" FORCE)  # Required by objdetect
 set(BUILD_opencv_dnn OFF CACHE BOOL "" FORCE)
 set(BUILD_opencv_flann ON CACHE BOOL "" FORCE)  # Required by features2d
 set(BUILD_opencv_gapi OFF CACHE BOOL "" FORCE)
 set(BUILD_opencv_highgui OFF CACHE BOOL "" FORCE)
 set(BUILD_opencv_ml OFF CACHE BOOL "" FORCE)
-set(BUILD_opencv_objdetect OFF CACHE BOOL "" FORCE)
+set(BUILD_opencv_objdetect ON CACHE BOOL "" FORCE)  # Required for face detection (Haar Cascade)
 set(BUILD_opencv_photo OFF CACHE BOOL "" FORCE)
 set(BUILD_opencv_stitching OFF CACHE BOOL "" FORCE)
 set(BUILD_opencv_video OFF CACHE BOOL "" FORCE)
@@ -187,6 +187,10 @@ set(SOURCES
     src/scrolling/ImageStitcherAlgorithms.cpp
     src/scrolling/FixedElementDetector.cpp
     src/pinwindow/ClickThroughExitButton.cpp
+    # Auto-blur detection
+    src/detection/FaceDetector.cpp
+    src/detection/TextDetector.cpp
+    src/detection/AutoBlurManager.cpp
 )
 
 set(RESOURCES
@@ -292,6 +296,11 @@ set(HEADERS
     include/scrolling/ImageStitcher.h
     include/scrolling/FixedElementDetector.h
     include/pinwindow/ClickThroughExitButton.h
+    # Auto-blur detection
+    include/detection/IDetector.h
+    include/detection/FaceDetector.h
+    include/detection/TextDetector.h
+    include/detection/AutoBlurManager.h
 )
 
 # Cross-platform source files (used by both platforms)
@@ -372,6 +381,8 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/imgproc/include
     ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/features2d/include
     ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/flann/include
+    ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/objdetect/include
+    ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/calib3d/include
 )
 
 # macOS frameworks needed for window detection, auto-launch, and native encoding
@@ -404,6 +415,8 @@ if(APPLE)
         opencv_imgproc
         opencv_features2d
         opencv_flann
+        opencv_calib3d
+        opencv_objdetect
     )
     # Weak link ScreenCaptureKit if available (for macOS 12.3+ compatibility)
     if(SCREENCAPTUREKIT_FRAMEWORK)
@@ -433,11 +446,13 @@ elseif(WIN32)
         opencv_imgproc
         opencv_features2d
         opencv_flann
+        opencv_calib3d
+        opencv_objdetect
     )
     # Enable C++/WinRT for Windows.Media.Ocr
     target_compile_options(${PROJECT_NAME} PRIVATE /await)
 else()
-    target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::Widgets Qt6::Gui Qt6::Svg Qt6::Concurrent QHotkey::QHotkey opencv_core opencv_imgproc opencv_features2d opencv_flann)
+    target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::Widgets Qt6::Gui Qt6::Svg Qt6::Concurrent QHotkey::QHotkey opencv_core opencv_imgproc opencv_features2d opencv_flann opencv_calib3d opencv_objdetect)
 endif()
 
 # macOS-specific settings
