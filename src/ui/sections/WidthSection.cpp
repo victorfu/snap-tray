@@ -36,16 +36,16 @@ void WidthSection::draw(QPainter& painter, const ToolbarStyleConfig& styleConfig
 {
     painter.setRenderHint(QPainter::Antialiasing, true);
 
-    // Draw container circle (background)
-    int containerSize = SECTION_SIZE - 8;
+    // Draw container square (background) - perfect square using height as size
     int centerX = m_sectionRect.center().x();
     int centerY = m_sectionRect.center().y();
-    QRect containerRect(centerX - containerSize / 2, centerY - containerSize / 2,
-                        containerSize, containerSize);
+    int squareSize = m_sectionRect.height();  // Use height to ensure perfect square
+    QRect containerRect(centerX - squareSize / 2, m_sectionRect.top(),
+                        squareSize, squareSize);
 
     painter.setPen(QPen(styleConfig.separatorColor, 1));
     painter.setBrush(styleConfig.buttonInactiveColor);
-    painter.drawEllipse(containerRect);
+    painter.drawRect(containerRect);
 
     // Draw preview dot (shows actual stroke width with current color)
     // Scale the visual size: map m_currentWidth to visual dot size

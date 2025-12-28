@@ -79,7 +79,7 @@ void ColorPaletteWidget::updateSwatchRects()
 
     int baseX = m_paletteRect.left() + PALETTE_PADDING;
     int rowSpacing = 2;  // Space between rows
-    int topY = m_paletteRect.top() + 2;
+    int topY = m_paletteRect.top() + 4;  // Center vertically in the taller panel
 
     // Calculate swatch positions in 2 rows (8 per row, "..." naturally at position 15)
     for (int i = 0; i < swatchCount; ++i) {

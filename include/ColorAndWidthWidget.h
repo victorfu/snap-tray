@@ -61,6 +61,8 @@ public:
 
     void setShowWidthSection(bool show);
     bool showWidthSection() const { return m_showWidthSection; }
+    void setWidthSectionHidden(bool hidden);  // Hide UI but keep wheel functionality
+    bool isWidthSectionHidden() const { return m_widthSectionHidden; }
     void setWidthRange(int min, int max);
     void setCurrentWidth(int width);
     int currentWidth() const;
@@ -228,6 +230,7 @@ private:
     // Section visibility
     bool m_showColorSection = true;
     bool m_showWidthSection = true;
+    bool m_widthSectionHidden = false;  // Hide UI but keep wheel functionality
     bool m_showMosaicWidthSection = false;
     bool m_showTextSection = false;
     bool m_showArrowStyleSection = false;
@@ -247,6 +250,7 @@ private:
     // Layout constants
     static constexpr int WIDGET_HEIGHT = 32;  // Match ToolbarWidget height
     static constexpr int SECTION_SPACING = 8;
+    static constexpr int WIDTH_TO_COLOR_SPACING = 2;  // Smaller spacing between width and color sections
     static constexpr int WIDGET_RIGHT_MARGIN = 6;
 };
 

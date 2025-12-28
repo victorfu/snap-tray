@@ -854,10 +854,13 @@ void RegionSelector::paintEvent(QPaintEvent*)
             if (shouldShowColorAndWidthWidget()) {
                 m_colorAndWidthWidget->setVisible(true);
                 m_colorAndWidthWidget->setShowColorSection(shouldShowColorPalette());
-                // Mosaic uses dedicated MosaicWidthSection, other tools use WidthSection
                 bool isMosaicTool = (m_currentTool == ToolbarButton::Mosaic);
-                m_colorAndWidthWidget->setShowWidthSection(shouldShowWidthControl() && !isMosaicTool);
-                m_colorAndWidthWidget->setShowMosaicWidthSection(isMosaicTool);
+                bool isEraserTool = (m_currentTool == ToolbarButton::Eraser);
+                // All width-enabled tools use shared WidthSection (including Mosaic)
+                m_colorAndWidthWidget->setShowWidthSection(shouldShowWidthControl());
+                m_colorAndWidthWidget->setShowMosaicWidthSection(false);  // No longer used
+                // Hide width UI for Eraser but keep wheel functionality
+                m_colorAndWidthWidget->setWidthSectionHidden(isEraserTool);
                 // Show arrow style section only for Arrow tool
                 m_colorAndWidthWidget->setShowArrowStyleSection(m_currentTool == ToolbarButton::Arrow);
                 // Show line style section for Pencil and Arrow tools
@@ -1080,13 +1083,13 @@ void RegionSelector::saveEraserWidthAndClearHover()
 void RegionSelector::restoreStandardWidth()
 {
     if (m_currentTool == ToolbarButton::Mosaic) {
-        // Hide MosaicWidthSection and restore regular WidthSection
-        m_colorAndWidthWidget->setShowMosaicWidthSection(false);
-        m_colorAndWidthWidget->setShowWidthSection(true);
+        // Restore standard width range for regular tools
         m_colorAndWidthWidget->setWidthRange(1, 20);
         m_colorAndWidthWidget->setCurrentWidth(m_annotationWidth);
         m_toolManager->setWidth(m_annotationWidth);
     } else if (m_currentTool == ToolbarButton::Eraser) {
+        // Reset width section hidden state and restore standard width
+        m_colorAndWidthWidget->setWidthSectionHidden(false);
         m_colorAndWidthWidget->setWidthRange(1, 20);
         m_colorAndWidthWidget->setCurrentWidth(m_annotationWidth);
         m_toolManager->setWidth(m_annotationWidth);
@@ -1190,11 +1193,12 @@ void RegionSelector::handleToolbarClick(ToolbarButton button)
     case ToolbarButton::Mosaic:
         m_currentTool = button;
         m_toolManager->setCurrentTool(ToolId::Mosaic);
-        // Hide regular WidthSection, use dedicated MosaicWidthSection instead
-        m_colorAndWidthWidget->setShowWidthSection(false);
-        m_colorAndWidthWidget->setShowMosaicWidthSection(true);
-        m_colorAndWidthWidget->setMosaicWidthRange(10, 100);
-        m_colorAndWidthWidget->setMosaicWidth(m_mosaicWidth);
+        // Use shared WidthSection for Mosaic (placed at leftmost)
+        m_colorAndWidthWidget->setShowWidthSection(true);
+        m_colorAndWidthWidget->setWidthSectionHidden(false);
+        m_colorAndWidthWidget->setShowMosaicWidthSection(false);
+        m_colorAndWidthWidget->setWidthRange(10, 100);
+        m_colorAndWidthWidget->setCurrentWidth(m_mosaicWidth);
         m_toolManager->setWidth(m_mosaicWidth);
         m_colorAndWidthWidget->setShowSizeSection(false);
         // Mosaic tool doesn't use color, hide color section
@@ -1211,6 +1215,8 @@ void RegionSelector::handleToolbarClick(ToolbarButton button)
         m_colorAndWidthWidget->setCurrentWidth(m_eraserWidth);
         m_toolManager->setWidth(m_eraserWidth);
         m_colorAndWidthWidget->setShowSizeSection(false);
+        // Hide width UI but keep wheel functionality
+        m_colorAndWidthWidget->setWidthSectionHidden(true);
         qDebug() << "Eraser tool selected - drag over annotations to erase them";
         update();
         break;

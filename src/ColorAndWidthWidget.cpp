@@ -143,6 +143,11 @@ void ColorAndWidthWidget::setShowWidthSection(bool show)
     m_showWidthSection = show;
 }
 
+void ColorAndWidthWidget::setWidthSectionHidden(bool hidden)
+{
+    m_widthSectionHidden = hidden;
+}
+
 void ColorAndWidthWidget::setWidthRange(int min, int max)
 {
     m_widthSection->setWidthRange(min, max);
@@ -370,18 +375,23 @@ void ColorAndWidthWidget::updatePosition(const QRect& anchorRect, bool above, in
     int totalWidth = 0;
     bool hasFirstSection = false;
 
-    if (m_showColorSection) {
-        totalWidth = m_colorSection->preferredWidth();
+    // Width section first (leftmost) - only if not hidden
+    bool widthSectionVisible = m_showWidthSection && !m_widthSectionHidden;
+    if (widthSectionVisible) {
+        totalWidth = m_widthSection->preferredWidth();
         hasFirstSection = true;
     }
 
-    if (m_showWidthSection) {
-        if (hasFirstSection) {
+    if (m_showColorSection) {
+        if (widthSectionVisible) {
+            totalWidth += WIDTH_TO_COLOR_SPACING;  // Smaller spacing between width and color
+        } else if (hasFirstSection) {
             totalWidth += SECTION_SPACING;
         }
-        totalWidth += m_widthSection->preferredWidth();
+        totalWidth += m_colorSection->preferredWidth();
         hasFirstSection = true;
     }
+
     if (m_showArrowStyleSection) {
         if (hasFirstSection) totalWidth += SECTION_SPACING;
         totalWidth += m_arrowStyleSection->preferredWidth();
@@ -462,18 +472,23 @@ void ColorAndWidthWidget::updateLayout()
     int xOffset = m_widgetRect.left();
     bool hasFirstSection = false;
 
-    // Color section
-    if (m_showColorSection) {
-        m_colorSection->updateLayout(m_widgetRect.top(), WIDGET_HEIGHT, xOffset);
-        xOffset += m_colorSection->preferredWidth();
+    // Width section first (leftmost) - only if not hidden
+    bool widthSectionVisible = m_showWidthSection && !m_widthSectionHidden;
+    if (widthSectionVisible) {
+        m_widthSection->updateLayout(m_widgetRect.top(), WIDGET_HEIGHT, xOffset);
+        xOffset += m_widthSection->preferredWidth();
         hasFirstSection = true;
     }
 
-    // Width section
-    if (m_showWidthSection) {
-        if (hasFirstSection) xOffset += SECTION_SPACING;
-        m_widthSection->updateLayout(m_widgetRect.top(), WIDGET_HEIGHT, xOffset);
-        xOffset += m_widthSection->preferredWidth();
+    // Color section
+    if (m_showColorSection) {
+        if (widthSectionVisible) {
+            xOffset += WIDTH_TO_COLOR_SPACING;  // Smaller spacing between width and color
+        } else if (hasFirstSection) {
+            xOffset += SECTION_SPACING;
+        }
+        m_colorSection->updateLayout(m_widgetRect.top(), WIDGET_HEIGHT, xOffset);
+        xOffset += m_colorSection->preferredWidth();
         hasFirstSection = true;
     }
 
@@ -549,7 +564,7 @@ void ColorAndWidthWidget::draw(QPainter& painter)
         m_colorSection->draw(painter, m_styleConfig);
     }
 
-    if (m_showWidthSection) {
+    if (m_showWidthSection && !m_widthSectionHidden) {
         m_widthSection->draw(painter, m_styleConfig);
     }
 
