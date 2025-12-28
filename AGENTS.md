@@ -10,24 +10,20 @@ A Qt6-based screenshot and screen recording application for Windows and macOS.
 
 ```batch
 # Configure (from project root)
-cmd.exe /c "cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release"
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 
 # Build
-cmd.exe /c "cd /d d:\Documents\snap-tray\build && cmake --build ."
-
+cmake --build build
 ```
 
 ### macOS
 
 ```bash
 # Configure
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$(brew --prefix qt)"
 
 # Build
 cmake --build build
-
-# Or use make directly
-cd build && make
 ```
 
 ### Running Tests

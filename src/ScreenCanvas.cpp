@@ -404,13 +404,13 @@ void ScreenCanvas::drawToolbar(QPainter& painter)
                 // Dark style: background highlight
                 painter.setPen(Qt::NoPen);
                 painter.setBrush(m_toolbarStyleConfig.activeBackgroundColor);
-                painter.drawRoundedRect(btnRect.adjusted(2, 2, -2, -2), 4, 4);
+                painter.drawRoundedRect(btnRect.adjusted(2, 2, -2, -2), 6, 6);
             }
         }
         else if (i == m_hoveredButton) {
             painter.setPen(Qt::NoPen);
             painter.setBrush(m_toolbarStyleConfig.hoverBackgroundColor);
-            painter.drawRoundedRect(btnRect.adjusted(2, 2, -2, -2), 4, 4);
+            painter.drawRoundedRect(btnRect.adjusted(2, 2, -2, -2), 6, 6);
         }
 
         // Determine icon color

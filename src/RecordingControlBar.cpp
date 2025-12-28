@@ -223,7 +223,7 @@ void RecordingControlBar::paintEvent(QPaintEvent *event)
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
 
-    ToolbarStyleConfig config = ToolbarStyleConfig::getDarkStyle();
+    ToolbarStyleConfig config = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
     QRect bgRect = rect().adjusted(1, 1, -1, -1);
 
     GlassRenderer::drawGlassPanel(painter, bgRect, config, 10);
@@ -235,7 +235,7 @@ void RecordingControlBar::paintEvent(QPaintEvent *event)
 
 void RecordingControlBar::drawButtons(QPainter &painter)
 {
-    ToolbarStyleConfig config = ToolbarStyleConfig::getDarkStyle();
+    ToolbarStyleConfig config = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
 
     // Draw pause/resume button
     if (!m_isPreparing) {
@@ -243,7 +243,7 @@ void RecordingControlBar::drawButtons(QPainter &painter)
         if (isHovered) {
             painter.setPen(Qt::NoPen);
             painter.setBrush(config.hoverBackgroundColor);
-            painter.drawRoundedRect(m_pauseRect.adjusted(2, 2, -2, -2), 4, 4);
+            painter.drawRoundedRect(m_pauseRect.adjusted(2, 2, -2, -2), 6, 6);
         }
         QString iconKey = m_isPaused ? "play" : "pause";
         QColor iconColor = isHovered ? config.iconActiveColor : config.iconNormalColor;
@@ -256,7 +256,7 @@ void RecordingControlBar::drawButtons(QPainter &painter)
         if (isHovered) {
             painter.setPen(Qt::NoPen);
             painter.setBrush(config.hoverBackgroundColor);
-            painter.drawRoundedRect(m_stopRect.adjusted(2, 2, -2, -2), 4, 4);
+            painter.drawRoundedRect(m_stopRect.adjusted(2, 2, -2, -2), 6, 6);
         }
         QColor iconColor = config.iconRecordColor;
         IconRenderer::instance().renderIcon(painter, m_stopRect, "stop", iconColor);
@@ -268,7 +268,7 @@ void RecordingControlBar::drawButtons(QPainter &painter)
         if (isHovered) {
             painter.setPen(Qt::NoPen);
             painter.setBrush(config.hoverBackgroundColor);
-            painter.drawRoundedRect(m_cancelRect.adjusted(2, 2, -2, -2), 4, 4);
+            painter.drawRoundedRect(m_cancelRect.adjusted(2, 2, -2, -2), 6, 6);
         }
         QColor iconColor = isHovered ? config.iconCancelColor : config.iconNormalColor;
         IconRenderer::instance().renderIcon(painter, m_cancelRect, "cancel", iconColor);
@@ -308,10 +308,10 @@ void RecordingControlBar::drawTooltip(QPainter &painter)
 
     textRect.moveTo(tooltipX, tooltipY);
 
-    ToolbarStyleConfig tooltipConfig = ToolbarStyleConfig::getDarkStyle();
+    ToolbarStyleConfig tooltipConfig = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
     tooltipConfig.shadowOffsetY = 2;
     tooltipConfig.shadowBlurRadius = 6;
-    GlassRenderer::drawGlassPanel(painter, textRect, tooltipConfig, 4);
+    GlassRenderer::drawGlassPanel(painter, textRect, tooltipConfig, 6);
 
     painter.setPen(tooltipConfig.tooltipText);
     painter.drawText(textRect, Qt::AlignCenter, tooltip);

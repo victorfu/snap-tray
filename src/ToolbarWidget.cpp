@@ -143,7 +143,7 @@ void ToolbarWidget::draw(QPainter& painter)
                 // Dark style: background highlight
                 painter.setPen(Qt::NoPen);
                 painter.setBrush(m_styleConfig.activeBackgroundColor);
-                painter.drawRoundedRect(btnRect.adjusted(2, 2, -2, -2), 4, 4);
+                painter.drawRoundedRect(btnRect.adjusted(2, 2, -2, -2), 6, 6);
             }
         } else if (isHovered) {
             painter.setPen(Qt::NoPen);
@@ -189,7 +189,7 @@ void ToolbarWidget::drawTooltip(QPainter& painter)
     ToolbarStyleConfig tooltipConfig = m_styleConfig;
     tooltipConfig.shadowOffsetY = 2;
     tooltipConfig.shadowBlurRadius = 6;
-    GlassRenderer::drawGlassPanel(painter, textRect, tooltipConfig, 4);
+    GlassRenderer::drawGlassPanel(painter, textRect, tooltipConfig, 6);
 
     // Draw tooltip text
     painter.setPen(m_styleConfig.tooltipText);
