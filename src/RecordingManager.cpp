@@ -644,19 +644,22 @@ void RecordingManager::captureFrame()
         return;
     }
 
-    // Store local copy to avoid race condition where pointer becomes null
-    // between the check and actual use
+    // Store local copies to avoid race conditions where pointers become null
+    // between the check and actual use (TOCTOU protection)
     ICaptureEngine *captureEngine = m_captureEngine;
+    IVideoEncoder *nativeEncoder = m_nativeEncoder;
+    NativeGifEncoder *gifEncoder = m_gifEncoder;
+    bool usingNative = m_usingNativeEncoder;
 
     if (!captureEngine) {
         return;
     }
 
-    // Check that we have an encoder available
-    if (!m_usingNativeEncoder && !m_gifEncoder) {
+    // Check that we have an encoder available using local copies
+    if (!usingNative && !gifEncoder) {
         return;
     }
-    if (m_usingNativeEncoder && !m_nativeEncoder) {
+    if (usingNative && !nativeEncoder) {
         return;
     }
 
@@ -676,10 +679,11 @@ void RecordingManager::captureFrame()
         }
 
         // Pass QImage to the appropriate encoder with elapsed timestamp
-        if (m_usingNativeEncoder && m_nativeEncoder) {
-            m_nativeEncoder->writeFrame(frame, elapsedMs);
-        } else if (m_gifEncoder) {
-            m_gifEncoder->writeFrame(frame, elapsedMs);
+        // Use local copies for thread safety
+        if (usingNative && nativeEncoder) {
+            nativeEncoder->writeFrame(frame, elapsedMs);
+        } else if (gifEncoder) {
+            gifEncoder->writeFrame(frame, elapsedMs);
         }
         m_frameCount++;
     }
@@ -898,14 +902,16 @@ void RecordingManager::cleanupRecording()
 {
     stopFrameCapture();
 
+    // Use deleteLater() consistently to avoid double-delete if deleteLater()
+    // was already called from cancelRecording() or onEncodingError()
     if (m_nativeEncoder) {
         m_nativeEncoder->abort();
-        delete m_nativeEncoder;
+        m_nativeEncoder->deleteLater();
         m_nativeEncoder = nullptr;
     }
     if (m_gifEncoder) {
         m_gifEncoder->abort();
-        delete m_gifEncoder;
+        m_gifEncoder->deleteLater();
         m_gifEncoder = nullptr;
     }
     m_usingNativeEncoder = false;
