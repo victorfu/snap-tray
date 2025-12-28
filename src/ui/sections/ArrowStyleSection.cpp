@@ -237,6 +237,14 @@ void ArrowStyleSection::drawPolylineIcon(QPainter& painter, const QRect& rect, b
         painter.drawLine(points[i], points[i + 1]);
     }
 
+    // Draw filled circles at each connection point
+    painter.setBrush(iconColor);
+    painter.setPen(Qt::NoPen);
+    const qreal dotRadius = 2.0;
+    for (const QPointF& point : points) {
+        painter.drawEllipse(point, dotRadius, dotRadius);
+    }
+
     painter.restore();
 }
 
