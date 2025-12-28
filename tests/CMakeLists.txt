@@ -2,6 +2,9 @@
 # SnapTray Tests Configuration
 # ============================================================================
 
+# Find Qt6 Test component for unit tests
+find_package(Qt6 REQUIRED COMPONENTS Test)
+
 # Enable automoc for tests
 set(CMAKE_AUTOMOC ON)
 
@@ -383,12 +386,14 @@ set_tests_properties(Encoding_NativeGifEncoder PROPERTIES
 set(ENCODERFACTORY_SOURCES
     ${CMAKE_SOURCE_DIR}/src/encoding/EncoderFactory.cpp
     ${CMAKE_SOURCE_DIR}/src/encoding/NativeGifEncoder.cpp
+    ${CMAKE_SOURCE_DIR}/src/encoding/WebPAnimEncoder.cpp
     ${CMAKE_SOURCE_DIR}/src/VideoEncoderFactory.cpp
 )
 
 set(ENCODERFACTORY_HEADERS
     ${CMAKE_SOURCE_DIR}/include/encoding/EncoderFactory.h
     ${CMAKE_SOURCE_DIR}/include/encoding/NativeGifEncoder.h
+    ${CMAKE_SOURCE_DIR}/include/encoding/WebPAnimEncoder.h
     ${CMAKE_SOURCE_DIR}/include/IVideoEncoder.h
 )
 
@@ -420,12 +425,15 @@ target_include_directories(Encoding_EncoderFactory PRIVATE
     ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_SOURCE_DIR}/external
     ${CMAKE_BINARY_DIR}/generated
+    ${CMAKE_BINARY_DIR}/_deps/libwebp-src/src
 )
 
 target_link_libraries(Encoding_EncoderFactory PRIVATE
     Qt6::Core
     Qt6::Gui
     Qt6::Test
+    webp
+    libwebpmux
 )
 
 # Platform-specific frameworks for encoder tests

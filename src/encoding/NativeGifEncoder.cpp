@@ -170,7 +170,8 @@ int NativeGifEncoder::calculateCentiseconds(qint64 timestampMs)
 {
     if (timestampMs < 0 || m_framesWritten == 0) {
         // First frame or no timestamp provided, use base frame rate
-        return 100 / m_frameRate;
+        // Default to 10 centiseconds (100ms) if frameRate is invalid
+        return (m_frameRate > 0) ? (100 / m_frameRate) : 10;
     }
 
     // Calculate time delta from previous frame

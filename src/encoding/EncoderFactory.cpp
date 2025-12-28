@@ -1,5 +1,6 @@
 #include "encoding/EncoderFactory.h"
 #include "encoding/NativeGifEncoder.h"
+#include "encoding/WebPAnimEncoder.h"
 #include "IVideoEncoder.h"
 #include <QDebug>
 
@@ -8,8 +9,16 @@ EncoderFactory::EncoderResult EncoderFactory::create(
 {
     EncoderResult result;
 
+    auto formatToString = [](Format f) {
+        switch (f) {
+        case Format::GIF: return "GIF";
+        case Format::WebP: return "WebP";
+        default: return "MP4";
+        }
+    };
+
     qDebug() << "EncoderFactory: Creating encoder -"
-             << "format:" << (config.format == Format::GIF ? "GIF" : "MP4")
+             << "format:" << formatToString(config.format)
              << "size:" << config.frameSize
              << "fps:" << config.frameRate;
 
@@ -18,10 +27,24 @@ EncoderFactory::EncoderResult EncoderFactory::create(
         result.gifEncoder = tryCreateGifEncoder(config, parent);
         if (result.gifEncoder) {
             result.success = true;
-            result.isNative = false;  // GIF uses gifEncoder, not nativeEncoder
+            result.isNative = false;
             qDebug() << "EncoderFactory: Created native GIF encoder";
         } else {
             result.errorMessage = "Failed to create GIF encoder.";
+            qWarning() << "EncoderFactory:" << result.errorMessage;
+        }
+        return result;
+    }
+
+    // WebP format uses WebPAnimationEncoder
+    if (config.format == Format::WebP) {
+        result.webpEncoder = tryCreateWebPEncoder(config, parent);
+        if (result.webpEncoder) {
+            result.success = true;
+            result.isNative = false;
+            qDebug() << "EncoderFactory: Created WebP animation encoder";
+        } else {
+            result.errorMessage = "Failed to create WebP encoder.";
             qWarning() << "EncoderFactory:" << result.errorMessage;
         }
         return result;
@@ -119,5 +142,28 @@ NativeGifEncoder* EncoderFactory::tryCreateGifEncoder(
     }
 
     qDebug() << "EncoderFactory: GIF encoder started successfully";
+    return encoder;
+}
+
+WebPAnimationEncoder* EncoderFactory::tryCreateWebPEncoder(
+    const EncoderConfig& config, QObject* parent)
+{
+    WebPAnimationEncoder* encoder = new WebPAnimationEncoder(parent);
+
+    // Set quality and looping
+    encoder->setQuality(config.webpQuality);
+    encoder->setLooping(config.webpLooping);
+    qDebug() << "EncoderFactory: WebP encoder quality set to" << config.webpQuality
+             << "looping:" << config.webpLooping;
+
+    // Start the encoder
+    if (!encoder->start(config.outputPath, config.frameSize, config.frameRate)) {
+        qWarning() << "EncoderFactory: WebP encoder failed to start:"
+                   << encoder->lastError();
+        delete encoder;
+        return nullptr;
+    }
+
+    qDebug() << "EncoderFactory: WebP encoder started successfully";
     return encoder;
 }

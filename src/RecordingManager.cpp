@@ -2,6 +2,7 @@
 #include "RecordingRegionSelector.h"
 #include "RecordingControlBar.h"
 #include "RecordingBoundaryOverlay.h"
+#include "RecordingAnnotationOverlay.h"
 #include "RecordingInitTask.h"
 #include "encoding/NativeGifEncoder.h"
 #include "IVideoEncoder.h"
@@ -13,6 +14,7 @@
 #include "utils/ResourceCleanupHelper.h"
 #include "utils/CoordinateHelper.h"
 #include "settings/Settings.h"
+#include "AnnotationController.h"
 
 #include <QGuiApplication>
 #include <QScreen>
@@ -72,6 +74,7 @@ RecordingManager::RecordingManager(QObject *parent)
     , m_nativeEncoder(nullptr)
     , m_usingNativeEncoder(false)
     , m_captureEngine(nullptr)
+    , m_annotationEnabled(false)
     , m_captureTimer(nullptr)
     , m_durationTimer(nullptr)
     , m_targetScreen(nullptr)
@@ -104,7 +107,7 @@ void RecordingManager::setState(State newState)
 
 bool RecordingManager::isActive() const
 {
-    return isSelectingRegion() || isRecording() || isPaused() ||
+    return isSelectingRegion() || isRecording() || isPaused() || isPreviewing() ||
            (m_state == State::Preparing) || (m_state == State::Encoding);
 }
 
@@ -121,6 +124,11 @@ bool RecordingManager::isSelectingRegion() const
 bool RecordingManager::isPaused() const
 {
     return m_state == State::Paused;
+}
+
+bool RecordingManager::isPreviewing() const
+{
+    return m_state == State::Previewing;
 }
 
 void RecordingManager::startRegionSelection()
@@ -353,6 +361,58 @@ void RecordingManager::startFrameCapture()
     // Set initial region size
     m_controlBar->updateRegionSize(m_recordingRegion.width(), m_recordingRegion.height());
     m_controlBar->updateFps(m_frameRate);
+
+    // Load annotation setting and setup overlay if enabled
+    auto settings = SnapTray::getSettings();
+    m_annotationEnabled = settings.value("recording/annotationEnabled", false).toBool();
+
+    if (m_annotationEnabled) {
+        qDebug() << "RecordingManager::startFrameCapture() - Creating annotation overlay...";
+
+        // Clean up any existing annotation overlay
+        if (m_annotationOverlay) {
+            m_annotationOverlay->close();
+        }
+
+        m_annotationOverlay = new RecordingAnnotationOverlay();
+        m_annotationOverlay->setAttribute(Qt::WA_DeleteOnClose);
+        m_annotationOverlay->setRegion(m_recordingRegion);
+
+        // Initialize overlay with control bar's default color and width
+        m_annotationOverlay->setColor(m_controlBar->annotationColor());
+        m_annotationOverlay->setWidth(m_controlBar->annotationWidth());
+
+        // Connect control bar annotation signals to overlay
+        connect(m_controlBar, &RecordingControlBar::toolChanged,
+                this, [this](RecordingControlBar::AnnotationTool tool) {
+            if (m_annotationOverlay) {
+                // Map RecordingControlBar::AnnotationTool to AnnotationController::Tool
+                int overlayTool = static_cast<int>(tool);
+                m_annotationOverlay->setCurrentTool(overlayTool);
+            }
+        });
+
+        // Connect color change requests
+        connect(m_controlBar, &RecordingControlBar::colorChangeRequested,
+                this, [this]() {
+            if (m_annotationOverlay) {
+                m_annotationOverlay->setColor(m_controlBar->annotationColor());
+            }
+        });
+
+        // Connect width change requests
+        connect(m_controlBar, &RecordingControlBar::widthChangeRequested,
+                this, [this]() {
+            if (m_annotationOverlay) {
+                m_annotationOverlay->setWidth(m_controlBar->annotationWidth());
+            }
+        });
+
+        // Enable annotation mode on control bar
+        m_controlBar->setAnnotationEnabled(true);
+
+        qDebug() << "RecordingManager::startFrameCapture() - Annotation overlay created";
+    }
 
     // Show in preparing state (buttons disabled until ready)
     m_controlBar->setPreparing(true);
@@ -649,7 +709,9 @@ void RecordingManager::captureFrame()
     ICaptureEngine *captureEngine = m_captureEngine;
     IVideoEncoder *nativeEncoder = m_nativeEncoder;
     NativeGifEncoder *gifEncoder = m_gifEncoder;
+    RecordingAnnotationOverlay *annotationOverlay = m_annotationOverlay;
     bool usingNative = m_usingNativeEncoder;
+    bool annotationEnabled = m_annotationEnabled;
 
     if (!captureEngine) {
         return;
@@ -667,6 +729,13 @@ void RecordingManager::captureFrame()
     QImage frame = captureEngine->captureFrame();
 
     if (!frame.isNull()) {
+        // Composite annotations onto frame if annotation overlay is active
+        // Use local copies for thread safety
+        if (annotationEnabled && annotationOverlay) {
+            qreal scale = CoordinateHelper::getDevicePixelRatio(m_targetScreen);
+            annotationOverlay->compositeOntoFrame(frame, scale);
+        }
+
         // Use real elapsed time for timestamps to keep playback speed aligned with recording time
         qint64 elapsedMs = 0;
         {
@@ -892,6 +961,18 @@ void RecordingManager::stopFrameCapture()
         m_boundaryOverlay->close();
     }
 
+    // Disconnect annotation signals before closing overlay to prevent dangling connections
+    if (m_annotationOverlay && m_controlBar) {
+        disconnect(m_controlBar, &RecordingControlBar::toolChanged, this, nullptr);
+        disconnect(m_controlBar, &RecordingControlBar::colorChangeRequested, this, nullptr);
+        disconnect(m_controlBar, &RecordingControlBar::widthChangeRequested, this, nullptr);
+    }
+
+    if (m_annotationOverlay) {
+        m_annotationOverlay->close();
+        m_annotationOverlay = nullptr;  // Clear pointer since WA_DeleteOnClose will delete it
+    }
+
     if (m_controlBar) {
         m_controlBar->close();
     }
@@ -960,18 +1041,52 @@ void RecordingManager::onEncodingFinished(bool success, const QString &outputPat
     }
     m_usingNativeEncoder = false;
 
-    setState(State::Idle);
-
     if (success) {
-        // Defer the save dialog to avoid issues during signal emission
-        // Store the path and process it after the current event
-        QString tempPath = outputPath;
-        QMetaObject::invokeMethod(this, [this, tempPath]() {
-            showSaveDialog(tempPath);
-        }, Qt::QueuedConnection);
+        auto settings = SnapTray::getSettings();
+        bool showPreview = settings.value("recording/showPreview", true).toBool();
+
+        if (showPreview) {
+            // Enter preview state and emit signal
+            setState(State::Previewing);
+            QString tempPath = outputPath;
+            QMetaObject::invokeMethod(this, [this, tempPath]() {
+                emit previewRequested(tempPath);
+            }, Qt::QueuedConnection);
+        } else {
+            // Existing flow: go directly to save dialog
+            setState(State::Idle);
+            QString tempPath = outputPath;
+            QMetaObject::invokeMethod(this, [this, tempPath]() {
+                showSaveDialog(tempPath);
+            }, Qt::QueuedConnection);
+        }
     } else {
+        setState(State::Idle);
         emit recordingError(errorMsg);
     }
+}
+
+void RecordingManager::onPreviewClosed(bool saved)
+{
+    if (m_state != State::Previewing) {
+        qWarning() << "RecordingManager::onPreviewClosed called in unexpected state:"
+                   << static_cast<int>(m_state);
+        return;
+    }
+
+    setState(State::Idle);
+
+    if (saved) {
+        qDebug() << "RecordingManager: Preview closed, recording was saved";
+    } else {
+        qDebug() << "RecordingManager: Preview closed, recording was discarded";
+    }
+}
+
+void RecordingManager::triggerSaveDialog(const QString &videoPath)
+{
+    qDebug() << "RecordingManager: Triggering save dialog for:" << videoPath;
+    showSaveDialog(videoPath);
 }
 
 void RecordingManager::showSaveDialog(const QString &tempOutputPath)

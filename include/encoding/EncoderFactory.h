@@ -7,6 +7,7 @@
 
 class IVideoEncoder;
 class NativeGifEncoder;
+class WebPAnimationEncoder;
 
 /**
  * @brief Factory class for creating video encoders
@@ -22,7 +23,8 @@ public:
      */
     enum class Format {
         MP4,    // H.264 encoded MP4 (native encoder)
-        GIF     // Palette-optimized GIF (msf_gif)
+        GIF,    // Palette-optimized GIF (msf_gif)
+        WebP    // WebP animation (libwebp)
     };
 
     /**
@@ -49,6 +51,10 @@ public:
         // GIF settings (msf_gif)
         int gifBitDepth = 16;  // 1-16, higher = better colors but larger file
 
+        // WebP settings (libwebp)
+        int webpQuality = 80;  // 0-100, higher = better quality, larger file
+        bool webpLooping = true;  // Whether animation should loop
+
         // Audio settings (for native MP4 encoder only)
         bool enableAudio = false;
         int audioSampleRate = 48000;
@@ -62,6 +68,7 @@ public:
     struct EncoderResult {
         IVideoEncoder* nativeEncoder = nullptr;
         NativeGifEncoder* gifEncoder = nullptr;
+        WebPAnimationEncoder* webpEncoder = nullptr;
         bool success = false;
         bool isNative = false;
         QString errorMessage;
@@ -70,7 +77,7 @@ public:
          * @brief Check if any encoder was created
          */
         bool hasEncoder() const {
-            return nativeEncoder != nullptr || gifEncoder != nullptr;
+            return nativeEncoder != nullptr || gifEncoder != nullptr || webpEncoder != nullptr;
         }
     };
 
@@ -103,6 +110,13 @@ private:
      * @return Encoder pointer or nullptr if failed
      */
     static NativeGifEncoder* tryCreateGifEncoder(
+        const EncoderConfig& config, QObject* parent);
+
+    /**
+     * @brief Try to create and start a WebP encoder
+     * @return Encoder pointer or nullptr if failed
+     */
+    static WebPAnimationEncoder* tryCreateWebPEncoder(
         const EncoderConfig& config, QObject* parent);
 };
 

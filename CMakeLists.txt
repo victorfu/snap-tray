@@ -41,7 +41,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Widgets Gui Svg Test Concurrent)
+find_package(Qt6 REQUIRED COMPONENTS Widgets Gui Svg Concurrent)
 
 # Fetch QHotkey for global hotkey support
 include(FetchContent)
@@ -101,6 +101,28 @@ set(BUILD_opencv_features2d ON CACHE BOOL "" FORCE)
 
 FetchContent_MakeAvailable(OpenCV)
 
+# ============================================================================
+# libwebp for WebP animation encoding
+# ============================================================================
+FetchContent_Declare(
+    libwebp
+    GIT_REPOSITORY https://github.com/webmproject/libwebp.git
+    GIT_TAG        v1.3.2
+    GIT_SHALLOW    TRUE
+)
+# Disable building command-line tools and extras, but keep libwebpmux for animation
+set(WEBP_BUILD_ANIM_UTILS OFF CACHE BOOL "" FORCE)
+set(WEBP_BUILD_CWEBP OFF CACHE BOOL "" FORCE)
+set(WEBP_BUILD_DWEBP OFF CACHE BOOL "" FORCE)
+set(WEBP_BUILD_GIF2WEBP OFF CACHE BOOL "" FORCE)
+set(WEBP_BUILD_IMG2WEBP OFF CACHE BOOL "" FORCE)
+set(WEBP_BUILD_VWEBP OFF CACHE BOOL "" FORCE)
+set(WEBP_BUILD_WEBPINFO OFF CACHE BOOL "" FORCE)
+set(WEBP_BUILD_WEBPMUX OFF CACHE BOOL "" FORCE)
+set(WEBP_BUILD_EXTRAS OFF CACHE BOOL "" FORCE)
+set(WEBP_BUILD_LIBWEBPMUX ON CACHE BOOL "" FORCE)  # Required for animation encoding
+FetchContent_MakeAvailable(libwebp)
+
 set(SOURCES
     src/main.cpp
     src/MainApplication.cpp
@@ -141,10 +163,18 @@ set(SOURCES
     src/RecordingRegionSelector.cpp
     src/RecordingControlBar.cpp
     src/RecordingBoundaryOverlay.cpp
+    src/RecordingAnnotationOverlay.cpp
     src/RecordingInitTask.cpp
     src/VideoEncoderFactory.cpp
     src/encoding/EncoderFactory.cpp
     src/encoding/NativeGifEncoder.cpp
+    src/encoding/WebPAnimEncoder.cpp
+    # Video player
+    src/video/IVideoPlayer.cpp
+    src/video/VideoPlaybackWidget.cpp
+    src/video/VideoTimeline.cpp
+    src/video/RecordingPreviewWindow.cpp
+    src/video/FormatSelectionWidget.cpp
     src/TransformationGizmo.cpp
     # Tool system
     src/tools/ToolRegistry.cpp
@@ -249,6 +279,13 @@ set(HEADERS
     include/MediaFoundationEncoder.h
     include/encoding/EncoderFactory.h
     include/encoding/NativeGifEncoder.h
+    include/encoding/WebPAnimEncoder.h
+    # Video playback
+    include/video/IVideoPlayer.h
+    include/video/VideoPlaybackWidget.h
+    include/video/VideoTimeline.h
+    include/video/RecordingPreviewWindow.h
+    include/video/FormatSelectionWidget.h
     include/TransformationGizmo.h
     include/capture/ICaptureEngine.h
     include/capture/QtCaptureEngine.h
@@ -337,6 +374,7 @@ if(APPLE)
         src/capture/SCKCaptureEngine_mac.mm
         src/capture/CoreAudioCaptureEngine_mac.mm
         src/AVFoundationEncoder.mm
+        src/video/AVFoundationPlayer_mac.mm
     )
     list(APPEND HEADERS
         include/WindowDetector.h
@@ -345,6 +383,11 @@ if(APPLE)
         include/OCRController.h
         include/capture/SCKCaptureEngine.h
         include/capture/CoreAudioCaptureEngine.h
+    )
+    # Enable ARC for video player (uses __weak references)
+    set_source_files_properties(
+        src/video/AVFoundationPlayer_mac.mm
+        PROPERTIES COMPILE_FLAGS "-fobjc-arc"
     )
 elseif(WIN32)
     list(APPEND SOURCES
@@ -389,6 +432,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/flann/include
     ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/objdetect/include
     ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/calib3d/include
+    ${CMAKE_BINARY_DIR}/_deps/libwebp-src/src
 )
 
 # macOS frameworks needed for window detection, auto-launch, and native encoding
@@ -423,6 +467,8 @@ if(APPLE)
         opencv_flann
         opencv_calib3d
         opencv_objdetect
+        webp
+        libwebpmux
     )
     # Weak link ScreenCaptureKit if available (for macOS 12.3+ compatibility)
     if(SCREENCAPTUREKIT_FRAMEWORK)
@@ -454,11 +500,13 @@ elseif(WIN32)
         opencv_flann
         opencv_calib3d
         opencv_objdetect
+        webp
+        libwebpmux
     )
     # Enable C++/WinRT for Windows.Media.Ocr
     target_compile_options(${PROJECT_NAME} PRIVATE /await)
 else()
-    target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::Widgets Qt6::Gui Qt6::Svg Qt6::Concurrent QHotkey::QHotkey opencv_core opencv_imgproc opencv_features2d opencv_flann opencv_calib3d opencv_objdetect)
+    message(FATAL_ERROR "SnapTray only supports macOS and Windows. Current platform is not supported.")
 endif()
 
 # macOS-specific settings

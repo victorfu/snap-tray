@@ -2,6 +2,7 @@
 #define MAINAPPLICATION_H
 
 #include <QObject>
+#include <QPointer>
 
 class QSystemTrayIcon;
 class QMenu;
@@ -12,6 +13,7 @@ class PinWindowManager;
 class ScreenCanvasManager;
 class RecordingManager;
 class SettingsDialog;
+class RecordingPreviewWindow;
 
 class MainApplication : public QObject
 {
@@ -29,6 +31,9 @@ private slots:
     void onFullScreenRecording();
     void onCloseAllPins();
     void onSettings();
+    void showRecordingPreview(const QString &videoPath);
+    void onPreviewSaveRequested(const QString &videoPath);
+    void onPreviewDiscardRequested();
 
 public:
     bool updateHotkey(const QString &newHotkey);
@@ -50,6 +55,7 @@ private:
     QAction *m_screenCanvasAction;
     QAction *m_fullScreenRecordingAction;
     SettingsDialog *m_settingsDialog;
+    QPointer<RecordingPreviewWindow> m_previewWindow;
 };
 
 #endif // MAINAPPLICATION_H

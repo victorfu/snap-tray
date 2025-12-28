@@ -6,6 +6,8 @@
 #include <QRect>
 #include <QTimer>
 #include <QShortcut>
+#include <QColor>
+#include <QVector>
 
 class QLabel;
 
@@ -14,6 +16,17 @@ class RecordingControlBar : public QWidget
     Q_OBJECT
 
 public:
+    /**
+     * @brief Annotation tools available during recording.
+     */
+    enum class AnnotationTool {
+        None = 0,
+        Pencil,
+        Marker,
+        Arrow,
+        Rectangle
+    };
+
     explicit RecordingControlBar(QWidget *parent = nullptr);
     ~RecordingControlBar();
 
@@ -26,11 +39,26 @@ public:
     void updateFps(double fps);
     void setAudioEnabled(bool enabled);
 
+    // Annotation support
+    void setAnnotationEnabled(bool enabled);
+    bool isAnnotationEnabled() const { return m_annotationEnabled; }
+    void setCurrentTool(AnnotationTool tool);
+    AnnotationTool currentTool() const { return m_currentTool; }
+    void setAnnotationColor(const QColor &color);
+    QColor annotationColor() const { return m_annotationColor; }
+    void setAnnotationWidth(int width);
+    int annotationWidth() const { return m_annotationWidth; }
+
 signals:
     void stopRequested();
     void cancelRequested();
     void pauseRequested();
     void resumeRequested();
+
+    // Annotation signals
+    void toolChanged(AnnotationTool tool);
+    void colorChangeRequested();
+    void widthChangeRequested();
 
 protected:
     void paintEvent(QPaintEvent *event) override;
@@ -45,7 +73,13 @@ private:
         ButtonNone = -1,
         ButtonPause = 0,
         ButtonStop = 1,
-        ButtonCancel = 2
+        ButtonCancel = 2,
+        // Annotation tool buttons
+        ButtonPencil = 10,
+        ButtonMarker = 11,
+        ButtonArrow = 12,
+        ButtonRectangle = 13,
+        ButtonColor = 20
     };
 
     void setupUi();
@@ -54,8 +88,9 @@ private:
     void updateButtonRects();
     int buttonAtPosition(const QPoint &pos) const;
     void drawButtons(QPainter &painter);
+    void drawAnnotationButtons(QPainter &painter);
     void drawTooltip(QPainter &painter);
-    QString tooltipForButton(ButtonId button) const;
+    QString tooltipForButton(int button) const;
 
     // Info labels
     QLabel *m_recordingIndicator;
@@ -65,11 +100,24 @@ private:
     QLabel *m_fpsLabel;
     bool m_audioEnabled;
 
-    // Button rectangles
+    // Button rectangles (recording controls)
     QRect m_pauseRect;
     QRect m_stopRect;
     QRect m_cancelRect;
     int m_hoveredButton;
+
+    // Annotation tool button rectangles
+    QRect m_pencilRect;
+    QRect m_markerRect;
+    QRect m_arrowRect;
+    QRect m_rectangleRect;
+    QRect m_colorRect;
+
+    // Annotation state
+    bool m_annotationEnabled;
+    AnnotationTool m_currentTool;
+    QColor m_annotationColor;
+    int m_annotationWidth;
 
     // Drag support
     QPoint m_dragStartPos;
@@ -90,6 +138,7 @@ private:
     static const int TOOLBAR_HEIGHT = 32;
     static const int BUTTON_WIDTH = 28;
     static const int BUTTON_SPACING = 2;
+    static const int SEPARATOR_MARGIN = 8;
 };
 
 #endif // RECORDINGCONTROLBAR_H

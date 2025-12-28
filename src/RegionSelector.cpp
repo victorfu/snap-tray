@@ -1789,6 +1789,10 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
                 setToolCursor();
             }
         }
+        // Ensure hand cursor when hovering over toolbar buttons
+        else if (hoveredButton >= 0) {
+            setCursor(Qt::PointingHandCursor);
+        }
     }
 
     // Per-operation throttling for smooth 60fps experience on high-resolution displays

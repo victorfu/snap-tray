@@ -85,6 +85,8 @@ private:
     QComboBox *m_recordingFrameRateCombo;
     QComboBox *m_recordingOutputFormatCombo;
     QCheckBox *m_recordingAutoSaveCheckbox;
+    QCheckBox *m_recordingShowPreviewCheckbox;
+    QCheckBox *m_recordingAnnotationCheckbox;
 
     // MP4 settings (native encoder)
     QWidget *m_mp4SettingsWidget;

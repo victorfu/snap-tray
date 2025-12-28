@@ -6,7 +6,9 @@
 #include "RecordingManager.h"
 #include "PlatformFeatures.h"
 #include "settings/Settings.h"
+#include "video/RecordingPreviewWindow.h"
 
+#include <QFile>
 #include <QPointer>
 #include <QSettings>
 #include <QSystemTrayIcon>
@@ -58,42 +60,47 @@ void MainApplication::initialize()
 
     // Connect recording signals
     connect(m_recordingManager, &RecordingManager::recordingStopped,
-            this, [this](const QString &path) {
-                m_trayIcon->showMessage("Recording Saved",
-                    QString("Saved to: %1").arg(path),
-                    QSystemTrayIcon::Information, 3000);
-            });
+        this, [this](const QString& path) {
+            m_trayIcon->showMessage("Recording Saved",
+                QString("Saved to: %1").arg(path),
+                QSystemTrayIcon::Information, 3000);
+        });
 
     connect(m_recordingManager, &RecordingManager::recordingError,
-            this, [this](const QString &error) {
-                m_trayIcon->showMessage("Recording Error",
-                    error,
-                    QSystemTrayIcon::Warning, 5000);
-            });
+        this, [this](const QString& error) {
+            m_trayIcon->showMessage("Recording Error",
+                error,
+                QSystemTrayIcon::Warning, 5000);
+        });
+
+    // Connect preview request signal
+    connect(m_recordingManager, &RecordingManager::previewRequested,
+        this, &MainApplication::showRecordingPreview);
 
     // Connect capture manager's recording request to recording manager
     connect(m_captureManager, &CaptureManager::recordingRequested,
-            m_recordingManager, &RecordingManager::startRegionSelectionWithPreset);
+        m_recordingManager, &RecordingManager::startRegionSelectionWithPreset);
 
     // Connect scrolling capture request from RegionSelector toolbar
     connect(m_captureManager, &CaptureManager::scrollingCaptureRequested,
-            m_captureManager, &CaptureManager::startScrollingCaptureWithRegion);
+        m_captureManager, &CaptureManager::startScrollingCaptureWithRegion);
 
     // Connect recording cancellation to return to capture mode
     // Use delay to ensure RecordingRegionSelector is fully closed before capturing new screenshot
     connect(m_recordingManager, &RecordingManager::selectionCancelledWithRegion,
-            this, [this](const QRect &region, QScreen *screen) {
-                // Use QPointer to guard against screen being deleted during the delay
-                QPointer<QScreen> safeScreen = screen;
-                QTimer::singleShot(50, this, [this, region, safeScreen]() {
-                    // Check if screen is still valid before using it
-                    if (safeScreen) {
-                        m_captureManager->startRegionCaptureWithPreset(region, safeScreen);
-                    } else {
-                        qWarning() << "MainApplication: Screen was deleted during delay, skipping capture";
-                    }
+        this, [this](const QRect& region, QScreen* screen) {
+            // Use QPointer to guard against screen being deleted during the delay
+            QPointer<QScreen> safeScreen = screen;
+            QTimer::singleShot(50, this, [this, region, safeScreen]() {
+                // Check if screen is still valid before using it
+                if (safeScreen) {
+                    m_captureManager->startRegionCaptureWithPreset(region, safeScreen);
+                }
+                else {
+                    qWarning() << "MainApplication: Screen was deleted during delay, skipping capture";
+                }
                 });
-            });
+        });
 
     // Create system tray icon
     QIcon icon = PlatformFeatures::instance().createTrayIcon();
@@ -135,14 +142,14 @@ void MainApplication::initialize()
 
     // Connect OCR completion signal (must be after m_trayIcon is created)
     connect(m_pinWindowManager, &PinWindowManager::ocrCompleted,
-            this, [this](bool success, const QString &message) {
-                qDebug() << "MainApplication: OCR completed, success=" << success << ", message=" << message;
-                m_trayIcon->showMessage(
-                    success ? tr("OCR Success") : tr("OCR Failed"),
-                    message,
-                    success ? QSystemTrayIcon::Information : QSystemTrayIcon::Warning,
-                    3000);
-            });
+        this, [this](bool success, const QString& message) {
+            qDebug() << "MainApplication: OCR completed, success=" << success << ", message=" << message;
+            m_trayIcon->showMessage(
+                success ? tr("OCR Success") : tr("OCR Failed"),
+                message,
+                success ? QSystemTrayIcon::Information : QSystemTrayIcon::Warning,
+                3000);
+        });
 
     // Setup global hotkeys
     setupHotkey();
@@ -184,7 +191,7 @@ void MainApplication::onScreenCanvas()
     }
 
     // Close any open popup menus to prevent focus conflicts
-    if (QWidget *popup = QApplication::activePopupWidget()) {
+    if (QWidget* popup = QApplication::activePopupWidget()) {
         popup->close();
     }
 
@@ -213,7 +220,7 @@ void MainApplication::onFullScreenRecording()
     }
 
     // Close any open popup menus to prevent focus conflicts
-    if (QWidget *popup = QApplication::activePopupWidget()) {
+    if (QWidget* popup = QApplication::activePopupWidget()) {
         popup->close();
     }
 
@@ -419,6 +426,73 @@ bool MainApplication::updateScreenCanvasHotkey(const QString& newHotkey)
 
         return false;
     }
+}
+
+void MainApplication::showRecordingPreview(const QString& videoPath)
+{
+    qDebug() << "MainApplication: Showing recording preview for:" << videoPath;
+
+    // Prevent multiple preview windows
+    if (m_previewWindow) {
+        m_previewWindow->raise();
+        m_previewWindow->activateWindow();
+        return;
+    }
+
+    m_previewWindow = new RecordingPreviewWindow(videoPath);
+
+    // Connect save/discard signals
+    connect(m_previewWindow, &RecordingPreviewWindow::saveRequested,
+        this, &MainApplication::onPreviewSaveRequested);
+    connect(m_previewWindow, &RecordingPreviewWindow::discardRequested,
+        this, &MainApplication::onPreviewDiscardRequested);
+    connect(m_previewWindow, &RecordingPreviewWindow::closed,
+        this, [this](bool saved) {
+            m_recordingManager->onPreviewClosed(saved);
+            m_previewWindow = nullptr;
+        });
+
+    m_previewWindow->show();
+    m_previewWindow->raise();
+    m_previewWindow->activateWindow();
+}
+
+void MainApplication::onPreviewSaveRequested(const QString& videoPath)
+{
+    qDebug() << "MainApplication: Preview save requested for:" << videoPath;
+
+    // Close preview window - this will trigger closed(true) signal
+    // which will call onPreviewClosed(true) on RecordingManager
+    // Then we trigger the save dialog
+    if (m_previewWindow) {
+        m_previewWindow = nullptr;  // Clear pointer before close
+    }
+
+    // Trigger the save dialog on RecordingManager
+    m_recordingManager->triggerSaveDialog(videoPath);
+}
+
+void MainApplication::onPreviewDiscardRequested()
+{
+    qDebug() << "MainApplication: Preview discard requested";
+
+    // Get the video path before closing window
+    QString videoPath;
+    if (m_previewWindow) {
+        videoPath = m_previewWindow->videoPath();
+    }
+
+    // Delete temp file
+    if (!videoPath.isEmpty() && QFile::exists(videoPath)) {
+        if (QFile::remove(videoPath)) {
+            qDebug() << "MainApplication: Deleted temp file:" << videoPath;
+        }
+        else {
+            qWarning() << "MainApplication: Failed to delete temp file:" << videoPath;
+        }
+    }
+
+    // Close will happen via RecordingPreviewWindow::onDiscardClicked()
 }
 
 void MainApplication::updateTrayMenuHotkeyText(const QString& hotkey)

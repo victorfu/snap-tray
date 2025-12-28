@@ -12,6 +12,7 @@
 #include <QGuiApplication>
 #include <QConicalGradient>
 #include <QLinearGradient>
+#include <QToolTip>
 #include <QtMath>
 
 RecordingControlBar::RecordingControlBar(QWidget *parent)
@@ -21,6 +22,10 @@ RecordingControlBar::RecordingControlBar(QWidget *parent)
     , m_fpsLabel(nullptr)
     , m_audioEnabled(false)
     , m_hoveredButton(ButtonNone)
+    , m_annotationEnabled(false)
+    , m_currentTool(AnnotationTool::None)
+    , m_annotationColor(Qt::red)
+    , m_annotationWidth(3)
     , m_isDragging(false)
     , m_gradientOffset(0.0)
     , m_indicatorVisible(true)
@@ -61,6 +66,12 @@ void RecordingControlBar::setupUi()
     iconRenderer.loadIcon("play", ":/icons/icons/play.svg");
     iconRenderer.loadIcon("stop", ":/icons/icons/stop.svg");
     iconRenderer.loadIcon("cancel", ":/icons/icons/cancel.svg");
+
+    // Load annotation tool icons
+    iconRenderer.loadIcon("pencil", ":/icons/icons/pencil.svg");
+    iconRenderer.loadIcon("marker", ":/icons/icons/marker.svg");
+    iconRenderer.loadIcon("arrow", ":/icons/icons/arrow.svg");
+    iconRenderer.loadIcon("rectangle", ":/icons/icons/rectangle.svg");
 
     QHBoxLayout *layout = new QHBoxLayout(this);
     layout->setContentsMargins(10, 4, 10, 4);
@@ -127,17 +138,47 @@ void RecordingControlBar::setupUi()
 void RecordingControlBar::updateButtonRects()
 {
     int rightMargin = 10;
-    int y = (height() - BUTTON_WIDTH + 4) / 2;
+    // Use square button size for proper icon rendering
+    int buttonSize = BUTTON_WIDTH - 4;  // 24x24 square buttons
+    int y = (height() - buttonSize) / 2;
 
     // Buttons from right to left: cancel, stop, pause
-    int x = width() - rightMargin - BUTTON_WIDTH;
-    m_cancelRect = QRect(x, y, BUTTON_WIDTH, BUTTON_WIDTH - 4);
+    int x = width() - rightMargin - buttonSize;
+    m_cancelRect = QRect(x, y, buttonSize, buttonSize);
 
-    x -= BUTTON_WIDTH + BUTTON_SPACING;
-    m_stopRect = QRect(x, y, BUTTON_WIDTH, BUTTON_WIDTH - 4);
+    x -= buttonSize + BUTTON_SPACING;
+    m_stopRect = QRect(x, y, buttonSize, buttonSize);
 
-    x -= BUTTON_WIDTH + BUTTON_SPACING;
-    m_pauseRect = QRect(x, y, BUTTON_WIDTH, BUTTON_WIDTH - 4);
+    x -= buttonSize + BUTTON_SPACING;
+    m_pauseRect = QRect(x, y, buttonSize, buttonSize);
+
+    // Annotation tool buttons (between info labels and recording controls)
+    if (m_annotationEnabled) {
+        // Position annotation tools to the left of pause button with separator
+        x -= SEPARATOR_MARGIN;
+
+        x -= buttonSize + BUTTON_SPACING;
+        m_colorRect = QRect(x, y, buttonSize, buttonSize);
+
+        x -= buttonSize + BUTTON_SPACING;
+        m_rectangleRect = QRect(x, y, buttonSize, buttonSize);
+
+        x -= buttonSize + BUTTON_SPACING;
+        m_arrowRect = QRect(x, y, buttonSize, buttonSize);
+
+        x -= buttonSize + BUTTON_SPACING;
+        m_markerRect = QRect(x, y, buttonSize, buttonSize);
+
+        x -= buttonSize + BUTTON_SPACING;
+        m_pencilRect = QRect(x, y, buttonSize, buttonSize);
+    } else {
+        // Clear annotation button rects when disabled
+        m_pencilRect = QRect();
+        m_markerRect = QRect();
+        m_arrowRect = QRect();
+        m_rectangleRect = QRect();
+        m_colorRect = QRect();
+    }
 }
 
 void RecordingControlBar::updateIndicatorGradient()
@@ -191,7 +232,8 @@ void RecordingControlBar::setPreparing(bool preparing)
             "color: white; font-size: 11px; font-weight: 600; font-family: 'SF Mono', Menlo, Monaco, monospace;");
     }
 
-    adjustSize();
+    // Note: Don't call adjustSize() here as it would override setFixedWidth()
+    // set by setAnnotationEnabled()
     updateButtonRects();
     update();
 }
@@ -230,6 +272,12 @@ void RecordingControlBar::paintEvent(QPaintEvent *event)
 
     updateButtonRects();
     drawButtons(painter);
+
+    // Draw annotation tool buttons if enabled
+    if (m_annotationEnabled && !m_isPreparing) {
+        drawAnnotationButtons(painter);
+    }
+
     drawTooltip(painter);
 }
 
@@ -295,6 +343,11 @@ void RecordingControlBar::drawTooltip(QPainter &painter)
     case ButtonPause: btnRect = m_pauseRect; break;
     case ButtonStop: btnRect = m_stopRect; break;
     case ButtonCancel: btnRect = m_cancelRect; break;
+    case ButtonPencil: btnRect = m_pencilRect; break;
+    case ButtonMarker: btnRect = m_markerRect; break;
+    case ButtonArrow: btnRect = m_arrowRect; break;
+    case ButtonRectangle: btnRect = m_rectangleRect; break;
+    case ButtonColor: btnRect = m_colorRect; break;
     default: return;
     }
 
@@ -317,7 +370,7 @@ void RecordingControlBar::drawTooltip(QPainter &painter)
     painter.drawText(textRect, Qt::AlignCenter, tooltip);
 }
 
-QString RecordingControlBar::tooltipForButton(ButtonId button) const
+QString RecordingControlBar::tooltipForButton(int button) const
 {
     switch (button) {
     case ButtonPause:
@@ -326,6 +379,16 @@ QString RecordingControlBar::tooltipForButton(ButtonId button) const
         return tr("Stop Recording");
     case ButtonCancel:
         return tr("Cancel Recording (Esc)");
+    case ButtonPencil:
+        return tr("Pencil");
+    case ButtonMarker:
+        return tr("Marker");
+    case ButtonArrow:
+        return tr("Arrow");
+    case ButtonRectangle:
+        return tr("Rectangle");
+    case ButtonColor:
+        return tr("Color");
     default:
         return QString();
     }
@@ -336,6 +399,15 @@ int RecordingControlBar::buttonAtPosition(const QPoint &pos) const
     if (!m_isPreparing && m_pauseRect.contains(pos)) return ButtonPause;
     if (!m_isPreparing && m_stopRect.contains(pos)) return ButtonStop;
     if (m_cancelRect.contains(pos)) return ButtonCancel;
+
+    // Annotation tool buttons
+    if (m_annotationEnabled && !m_isPreparing) {
+        if (m_pencilRect.contains(pos)) return ButtonPencil;
+        if (m_markerRect.contains(pos)) return ButtonMarker;
+        if (m_arrowRect.contains(pos)) return ButtonArrow;
+        if (m_rectangleRect.contains(pos)) return ButtonRectangle;
+        if (m_colorRect.contains(pos)) return ButtonColor;
+    }
     return ButtonNone;
 }
 
@@ -351,15 +423,18 @@ void RecordingControlBar::positionNear(const QRect &recordingRegion)
 
     bool isFullScreen = (recordingRegion == screenGeom);
 
+    // Margin between toolbar and recording region boundary
+    const int kToolbarMargin = 40;
+
     if (isFullScreen) {
         x = screenGeom.center().x() - width() / 2;
         y = screenGeom.bottom() - height() - 60;
     } else {
         x = recordingRegion.center().x() - width() / 2;
-        y = recordingRegion.bottom() + 20;
+        y = recordingRegion.bottom() + kToolbarMargin;
 
         if (y + height() > screenGeom.bottom() - 10) {
-            y = recordingRegion.top() - height() - 20;
+            y = recordingRegion.top() - height() - kToolbarMargin;
         }
 
         if (y < screenGeom.top() + 10) {
@@ -408,6 +483,30 @@ void RecordingControlBar::mousePressEvent(QMouseEvent *event)
             case ButtonCancel:
                 emit cancelRequested();
                 break;
+            // Annotation tool buttons
+            case ButtonPencil:
+                setCurrentTool(m_currentTool == AnnotationTool::Pencil
+                    ? AnnotationTool::None : AnnotationTool::Pencil);
+                emit toolChanged(m_currentTool);
+                break;
+            case ButtonMarker:
+                setCurrentTool(m_currentTool == AnnotationTool::Marker
+                    ? AnnotationTool::None : AnnotationTool::Marker);
+                emit toolChanged(m_currentTool);
+                break;
+            case ButtonArrow:
+                setCurrentTool(m_currentTool == AnnotationTool::Arrow
+                    ? AnnotationTool::None : AnnotationTool::Arrow);
+                emit toolChanged(m_currentTool);
+                break;
+            case ButtonRectangle:
+                setCurrentTool(m_currentTool == AnnotationTool::Rectangle
+                    ? AnnotationTool::None : AnnotationTool::Rectangle);
+                emit toolChanged(m_currentTool);
+                break;
+            case ButtonColor:
+                emit colorChangeRequested();
+                break;
             }
             return;
         }
@@ -435,14 +534,20 @@ void RecordingControlBar::mouseMoveEvent(QMouseEvent *event)
         }
 
         move(newPos);
+        QToolTip::hideText();
     } else {
         int newHovered = buttonAtPosition(event->pos());
         if (newHovered != m_hoveredButton) {
             m_hoveredButton = newHovered;
             if (m_hoveredButton != ButtonNone) {
                 setCursor(Qt::PointingHandCursor);
+                QString tip = tooltipForButton(m_hoveredButton);
+                if (!tip.isEmpty()) {
+                    QToolTip::showText(event->globalPosition().toPoint(), tip, this);
+                }
             } else {
                 setCursor(Qt::ArrowCursor);
+                QToolTip::hideText();
             }
             update();
         }
@@ -469,6 +574,7 @@ void RecordingControlBar::leaveEvent(QEvent *event)
     if (m_hoveredButton != ButtonNone) {
         m_hoveredButton = ButtonNone;
         setCursor(Qt::ArrowCursor);
+        QToolTip::hideText();
         update();
     }
     QWidget::leaveEvent(event);
@@ -507,5 +613,108 @@ void RecordingControlBar::setAudioEnabled(bool enabled)
         m_audioIndicator->show();
     } else {
         m_audioIndicator->hide();
+    }
+}
+
+void RecordingControlBar::drawAnnotationButtons(QPainter &painter)
+{
+    ToolbarStyleConfig config = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
+
+    // Draw separator line before annotation tools
+    if (!m_pencilRect.isNull()) {
+        int sepX = m_pencilRect.left() - SEPARATOR_MARGIN / 2;
+        painter.setPen(QPen(config.hairlineBorderColor, 1));
+        painter.drawLine(sepX, 6, sepX, height() - 6);
+    }
+
+    // Helper lambda for drawing tool buttons
+    auto drawToolButton = [&](const QRect &rect, const QString &iconKey, bool isActive, int buttonId) {
+        if (rect.isNull()) return;
+
+        bool isHovered = (m_hoveredButton == buttonId);
+
+        // Draw selection/hover background
+        if (isActive || isHovered) {
+            painter.setPen(Qt::NoPen);
+            if (isActive) {
+                painter.setBrush(config.activeBackgroundColor);
+            } else {
+                painter.setBrush(config.hoverBackgroundColor);
+            }
+            painter.drawRoundedRect(rect.adjusted(2, 2, -2, -2), 6, 6);
+        }
+
+        // Draw icon
+        QColor iconColor = isActive ? config.iconActiveColor : config.iconNormalColor;
+        IconRenderer::instance().renderIcon(painter, rect, iconKey, iconColor);
+    };
+
+    // Draw annotation tool buttons
+    drawToolButton(m_pencilRect, "pencil", m_currentTool == AnnotationTool::Pencil, ButtonPencil);
+    drawToolButton(m_markerRect, "marker", m_currentTool == AnnotationTool::Marker, ButtonMarker);
+    drawToolButton(m_arrowRect, "arrow", m_currentTool == AnnotationTool::Arrow, ButtonArrow);
+    drawToolButton(m_rectangleRect, "rectangle", m_currentTool == AnnotationTool::Rectangle, ButtonRectangle);
+
+    // Draw color button with actual color
+    if (!m_colorRect.isNull()) {
+        bool isHovered = (m_hoveredButton == ButtonColor);
+        if (isHovered) {
+            painter.setPen(Qt::NoPen);
+            painter.setBrush(config.hoverBackgroundColor);
+            painter.drawRoundedRect(m_colorRect.adjusted(2, 2, -2, -2), 6, 6);
+        }
+
+        // Draw color circle
+        QRect colorCircle = m_colorRect.adjusted(6, 6, -6, -6);
+        painter.setPen(QPen(config.hairlineBorderColor, 1));
+        painter.setBrush(m_annotationColor);
+        painter.drawEllipse(colorCircle);
+    }
+}
+
+void RecordingControlBar::setAnnotationEnabled(bool enabled)
+{
+    if (m_annotationEnabled != enabled) {
+        m_annotationEnabled = enabled;
+
+        // Calculate total width needed
+        // Base layout: indicator(12) + spacing + audio(12) + duration(55) + separators + size(70) + fps(45) + stretch + buttons
+        int baseWidth = 320;  // Approximate base width from layout
+
+        if (enabled) {
+            // Add space for annotation tools: 5 buttons + separator
+            int annotationWidth = 5 * BUTTON_WIDTH + 4 * BUTTON_SPACING + SEPARATOR_MARGIN;
+            setFixedWidth(baseWidth + annotationWidth);
+        } else {
+            setFixedWidth(baseWidth);
+        }
+
+        updateButtonRects();
+        update();
+    }
+}
+
+void RecordingControlBar::setCurrentTool(AnnotationTool tool)
+{
+    if (m_currentTool != tool) {
+        m_currentTool = tool;
+        update();
+    }
+}
+
+void RecordingControlBar::setAnnotationColor(const QColor &color)
+{
+    if (m_annotationColor != color) {
+        m_annotationColor = color;
+        update();
+        emit colorChangeRequested();
+    }
+}
+
+void RecordingControlBar::setAnnotationWidth(int width)
+{
+    if (m_annotationWidth != width) {
+        m_annotationWidth = width;
+        emit widthChangeRequested();
     }
 }

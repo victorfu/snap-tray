@@ -423,6 +423,7 @@ void SettingsDialog::setupRecordingTab(QWidget *tab)
     m_recordingOutputFormatCombo = new QComboBox(tab);
     m_recordingOutputFormatCombo->addItem("MP4 (H.264)", 0);
     m_recordingOutputFormatCombo->addItem("GIF", 1);
+    m_recordingOutputFormatCombo->addItem("WebP", 2);
     formatLayout->addWidget(formatLabel);
     formatLayout->addWidget(m_recordingOutputFormatCombo);
     formatLayout->addStretch();
@@ -535,10 +536,19 @@ void SettingsDialog::setupRecordingTab(QWidget *tab)
     connect(m_audioSourceCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &SettingsDialog::onAudioSourceChanged);
 
-    // ========== Auto-save option ==========
+    // ========== Preview option ==========
     layout->addSpacing(16);
+    m_recordingShowPreviewCheckbox = new QCheckBox("Show preview after recording", tab);
+    layout->addWidget(m_recordingShowPreviewCheckbox);
+
+    // ========== Auto-save option ==========
     m_recordingAutoSaveCheckbox = new QCheckBox("Auto-save recordings (no save dialog)", tab);
     layout->addWidget(m_recordingAutoSaveCheckbox);
+
+    // ========== Annotation option ==========
+    m_recordingAnnotationCheckbox = new QCheckBox("Enable annotation during recording", tab);
+    m_recordingAnnotationCheckbox->setToolTip("Draw annotations while recording. Annotations will be embedded in the video.");
+    layout->addWidget(m_recordingAnnotationCheckbox);
 
     layout->addStretch();
 
@@ -568,7 +578,10 @@ void SettingsDialog::setupRecordingTab(QWidget *tab)
     m_recordingQualitySlider->setValue(quality);
     m_recordingQualityLabel->setText(QString::number(quality));
 
+    m_recordingShowPreviewCheckbox->setChecked(
+        settings.value("recording/showPreview", true).toBool());
     m_recordingAutoSaveCheckbox->setChecked(settings.value("recording/autoSave", false).toBool());
+    m_recordingAnnotationCheckbox->setChecked(settings.value("recording/annotationEnabled", false).toBool());
 
     // Load audio settings
     bool audioEnabled = settings.value("recording/audioEnabled", false).toBool();
@@ -709,8 +722,12 @@ void SettingsDialog::onSave()
     int quality = m_recordingQualitySlider->value();
     int crf = 51 - (quality * 51 / 100);
     recordingSettings.setValue("recording/crf", crf);
+    recordingSettings.setValue("recording/showPreview",
+        m_recordingShowPreviewCheckbox->isChecked());
     recordingSettings.setValue("recording/autoSave",
         m_recordingAutoSaveCheckbox->isChecked());
+    recordingSettings.setValue("recording/annotationEnabled",
+        m_recordingAnnotationCheckbox->isChecked());
 
     // Save audio settings
     recordingSettings.setValue("recording/audioEnabled",

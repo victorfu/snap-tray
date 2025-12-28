@@ -1,3 +1,5 @@
-<svg width="48" height="16" viewBox="0 0 48 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <path d="M2 8 L12 3 L12 7 L36 7 L36 3 L46 8 L36 13 L36 9 L12 9 L12 13 Z" fill="currentColor" fill-rule="evenodd" clip-rule="evenodd"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M8 12h8"/>
+  <path d="m7 7-5 5 5 5Z"/>
+  <path d="m17 7 5 5-5 5Z"/>
 </svg>

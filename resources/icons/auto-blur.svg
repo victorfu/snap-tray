@@ -1,9 +1,7 @@
-<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- Privacy shield with blur effect -->
-  <!-- Shield outline -->
-  <path d="M12 3 L20 6 L20 12 C20 16.5 16.5 20 12 21 C7.5 20 4 16.5 4 12 L4 6 L12 3 Z" stroke="currentColor" stroke-width="1.5" fill="none"/>
-  <!-- Blur squares inside shield -->
-  <rect x="8" y="9" width="3" height="3" fill="currentColor" opacity="0.7"/>
-  <rect x="13" y="9" width="3" height="3" fill="currentColor" opacity="0.5"/>
-  <rect x="10.5" y="13" width="3" height="3" fill="currentColor" opacity="0.6"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+  <path d="M8 10h8"/>
+  <path d="M8 14h8"/>
+  <path d="M10 8v8"/>
+  <path d="M14 8v8"/>
 </svg>
