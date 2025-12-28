@@ -157,7 +157,7 @@ void AnnotationLayer::draw(QPainter &painter) const
         return;
     }
 
-    QSize baseSize = painter.device()->size();
+    QSize baseSize(painter.device()->width(), painter.device()->height());
     qreal dpr = painter.device()->devicePixelRatioF();
     QSize deviceSize = baseSize;
     if (!dynamic_cast<const QPixmap*>(painter.device()) &&
