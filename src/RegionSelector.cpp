@@ -15,6 +15,7 @@
 #include <cstring>
 #include <map>
 #include <QPainter>
+#include <QPainterPath>
 #include <QMouseEvent>
 #include <QKeyEvent>
 #include <QCloseEvent>
@@ -299,6 +300,13 @@ RegionSelector::RegionSelector(QWidget* parent)
     // Initialize magnifier panel component
     m_magnifierPanel = new MagnifierPanel(this);
 
+    // Initialize corner radius slider widget
+    m_radiusSliderWidget = new RadiusSliderWidget(this);
+    m_cornerRadius = settings.loadCornerRadius();
+    m_radiusSliderWidget->setCurrentRadius(m_cornerRadius);
+    connect(m_radiusSliderWidget, &RadiusSliderWidget::radiusChanged,
+        this, &RegionSelector::onCornerRadiusChanged);
+
     // Initialize update throttler
     m_updateThrottler.startAll();
 
@@ -508,6 +516,22 @@ void RegionSelector::onStepBadgeSizeChanged(StepBadgeSize size)
     int radius = StepBadgeAnnotation::radiusForSize(size);
     m_toolManager->setWidth(radius);
     update();
+}
+
+void RegionSelector::onCornerRadiusChanged(int radius)
+{
+    m_cornerRadius = radius;
+    AnnotationSettingsManager::instance().saveCornerRadius(radius);
+    update();
+}
+
+int RegionSelector::effectiveCornerRadius() const
+{
+    QRect sel = m_selectionManager->selectionRect();
+    if (sel.isEmpty()) return 0;
+    // Cap radius at half the smaller dimension
+    int maxRadius = qMin(sel.width(), sel.height()) / 2;
+    return qMin(m_cornerRadius, maxRadius);
 }
 
 bool RegionSelector::shouldShowColorAndWidthWidget() const
@@ -908,11 +932,16 @@ void RegionSelector::drawOverlay(QPainter& painter)
 void RegionSelector::drawSelection(QPainter& painter)
 {
     QRect sel = m_selectionManager->selectionRect();
+    int radius = effectiveCornerRadius();
 
     // Draw selection border
     painter.setPen(QPen(QColor(0, 174, 255), 2));
     painter.setBrush(Qt::NoBrush);
-    painter.drawRect(sel);
+    if (radius > 0) {
+        painter.drawRoundedRect(sel, radius, radius);
+    } else {
+        painter.drawRect(sel);
+    }
 
     // Draw corner and edge handles
     const int handleSize = 8;
@@ -921,14 +950,17 @@ void RegionSelector::drawSelection(QPainter& painter)
     painter.setPen(Qt::white);
 
     // Corner handles (circles for Snipaste style)
+    // Skip corner handles when corner radius is large (they would overlap the rounded corner)
     auto drawHandle = [&](int x, int y) {
         painter.drawEllipse(QPoint(x, y), handleSize / 2, handleSize / 2);
         };
 
-    drawHandle(sel.left(), sel.top());
-    drawHandle(sel.right(), sel.top());
-    drawHandle(sel.left(), sel.bottom());
-    drawHandle(sel.right(), sel.bottom());
+    if (radius < 10) {
+        drawHandle(sel.left(), sel.top());
+        drawHandle(sel.right(), sel.top());
+        drawHandle(sel.left(), sel.bottom());
+        drawHandle(sel.right(), sel.bottom());
+    }
     drawHandle(sel.center().x(), sel.top());
     drawHandle(sel.center().x(), sel.bottom());
     drawHandle(sel.left(), sel.center().y());
@@ -991,6 +1023,21 @@ void RegionSelector::drawDimensionInfo(QPainter& painter)
     // Draw text
     painter.setPen(Qt::white);
     painter.drawText(textRect, Qt::AlignCenter, dimensions);
+
+    // Draw radius slider next to dimension info
+    drawRadiusSlider(painter, textRect);
+}
+
+void RegionSelector::drawRadiusSlider(QPainter& painter, const QRect& dimensionInfoRect)
+{
+    // Show radius slider when selection is complete
+    if (m_selectionManager->isComplete()) {
+        m_radiusSliderWidget->setVisible(true);
+        m_radiusSliderWidget->updatePosition(dimensionInfoRect, width());
+        m_radiusSliderWidget->draw(painter);
+    } else {
+        m_radiusSliderWidget->setVisible(false);
+    }
 }
 
 void RegionSelector::saveEraserWidthAndClearHover()
@@ -1180,6 +1227,7 @@ void RegionSelector::handleToolbarClick(ToolbarButton button)
 QPixmap RegionSelector::getSelectedRegion()
 {
     QRect sel = m_selectionManager->selectionRect();
+    int radius = effectiveCornerRadius();
 
     // 使用 device pixels 座標來裁切
     QPixmap selectedRegion = m_backgroundPixmap.copy(
@@ -1208,6 +1256,34 @@ QPixmap RegionSelector::getSelectedRegion()
             << "pixmap=" << selectedRegion.size()
             << "transform=" << painter.transform();
         m_annotationLayer->draw(painter);
+    }
+
+    // Apply rounded corners mask if radius > 0
+    if (radius > 0) {
+        // Use an explicit alpha mask to guarantee transparent corners across platforms.
+        QImage sourceImage = selectedRegion.toImage().convertToFormat(QImage::Format_ARGB32_Premultiplied);
+        sourceImage.setDevicePixelRatio(m_devicePixelRatio);
+
+        QImage alphaMask(sourceImage.size(), QImage::Format_ARGB32_Premultiplied);
+        alphaMask.setDevicePixelRatio(m_devicePixelRatio);
+        alphaMask.fill(Qt::transparent);
+
+        QPainter maskPainter(&alphaMask);
+        maskPainter.setRenderHint(QPainter::Antialiasing, true);
+        QPainterPath clipPath;
+        clipPath.addRoundedRect(QRectF(0, 0, sel.width(), sel.height()), radius, radius);
+        maskPainter.fillPath(clipPath, Qt::white);
+        maskPainter.end();
+
+        QPainter imagePainter(&sourceImage);
+        imagePainter.setRenderHint(QPainter::Antialiasing, true);
+        imagePainter.setCompositionMode(QPainter::CompositionMode_DestinationIn);
+        imagePainter.drawImage(0, 0, alphaMask);
+        imagePainter.end();
+
+        QPixmap maskedPixmap = QPixmap::fromImage(sourceImage, Qt::NoOpaqueDetection);
+        maskedPixmap.setDevicePixelRatio(m_devicePixelRatio);
+        return maskedPixmap;
     }
 
     return selectedRegion;
@@ -1301,6 +1377,13 @@ void RegionSelector::mousePressEvent(QMouseEvent* event)
                     finalizePolylineForUiClick(event->pos());
                     handleToolbarClick(static_cast<ToolbarButton>(buttonId));
                 }
+                return;
+            }
+
+            // Check if clicked on radius slider widget
+            if (m_radiusSliderWidget->isVisible() &&
+                m_radiusSliderWidget->handleMousePress(event->pos())) {
+                update();
                 return;
             }
 
@@ -1559,6 +1642,7 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
         bool unifiedWidgetHovered = false;
         bool textAnnotationHovered = false;
         bool gizmoHandleHovered = false;
+        bool radiusSliderHovered = false;
 
         // Update eraser hover point when eraser tool is active
         if (m_currentTool == ToolbarButton::Eraser && !m_isDrawing) {
@@ -1580,6 +1664,17 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
         if (!gizmoHandleHovered && m_annotationLayer->hitTestText(event->pos()) >= 0) {
             setCursor(Qt::SizeAllCursor);
             textAnnotationHovered = true;
+        }
+
+        // Update radius slider widget
+        if (m_radiusSliderWidget->isVisible()) {
+            if (m_radiusSliderWidget->handleMouseMove(event->pos(), event->buttons() & Qt::LeftButton)) {
+                update();
+            }
+            if (m_radiusSliderWidget->contains(event->pos())) {
+                setCursor(Qt::PointingHandCursor);
+                radiusSliderHovered = true;
+            }
         }
 
         // Update unified color and width widget
@@ -1630,8 +1725,8 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
             if (hoveredButton >= 0) {
                 setCursor(Qt::PointingHandCursor);
             }
-            else if (colorPaletteHovered || lineWidthHovered || unifiedWidgetHovered || textAnnotationHovered || gizmoHandleHovered) {
-                // Already set cursor for color swatch, line width widget, unified widget, text annotation, or gizmo handle
+            else if (colorPaletteHovered || lineWidthHovered || unifiedWidgetHovered || textAnnotationHovered || gizmoHandleHovered || radiusSliderHovered) {
+                // Already set cursor for color swatch, line width widget, unified widget, text annotation, gizmo handle, or radius slider
             }
             else if (m_currentTool == ToolbarButton::Selection) {
                 // Selection tool: update cursor based on handle position
@@ -1643,7 +1738,7 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
             }
         }
         // Always update cursor based on current tool when not hovering any special UI element
-        if (hoveredButton < 0 && !colorPaletteHovered && !lineWidthHovered && !unifiedWidgetHovered && !textAnnotationHovered && !gizmoHandleHovered) {
+        if (hoveredButton < 0 && !colorPaletteHovered && !lineWidthHovered && !unifiedWidgetHovered && !textAnnotationHovered && !gizmoHandleHovered && !radiusSliderHovered) {
             // Update cursor based on current tool
             if (m_currentTool == ToolbarButton::Selection) {
                 auto handle = m_selectionManager->hitTestHandle(event->pos());
@@ -1726,6 +1821,13 @@ void RegionSelector::mouseReleaseEvent(QMouseEvent* event)
         // Handle text annotation drag release
         if (m_textAnnotationEditor->isDragging()) {
             m_textAnnotationEditor->finishDragging();
+            return;
+        }
+
+        // Handle radius slider release
+        if (m_radiusSliderWidget->isVisible() &&
+            m_radiusSliderWidget->handleMouseRelease(event->pos())) {
+            update();
             return;
         }
 

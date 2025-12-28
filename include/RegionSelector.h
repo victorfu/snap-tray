@@ -29,6 +29,7 @@
 #include "region/MagnifierPanel.h"
 #include "region/UpdateThrottler.h"
 #include "region/TextAnnotationEditor.h"
+#include "region/RadiusSliderWidget.h"
 
 class QScreen;
 class ColorPaletteWidget;
@@ -146,6 +147,11 @@ private:
     void drawCrosshair(QPainter &painter);
     void drawMagnifier(QPainter &painter);
     void drawDimensionInfo(QPainter &painter);
+    void drawRadiusSlider(QPainter &painter, const QRect &dimensionInfoRect);
+
+    // Corner radius helpers
+    void onCornerRadiusChanged(int radius);
+    int effectiveCornerRadius() const;
 
     // Toolbar helpers
     void setupToolbarButtons();
@@ -330,6 +336,10 @@ private:
     // Dirty region tracking for partial updates
     QRect m_lastSelectionRect;  // Previous selection rect for dirty region calculation
     QRect m_lastMagnifierRect;  // Previous magnifier rect
+
+    // Corner radius slider widget
+    RadiusSliderWidget* m_radiusSliderWidget;
+    int m_cornerRadius = 0;  // Current corner radius in logical pixels
 };
 
 #endif // REGIONSELECTOR_H
