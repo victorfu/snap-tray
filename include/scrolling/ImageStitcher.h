@@ -98,6 +98,7 @@ private:
     StitchResult trySIFTMatch(const QImage &newFrame);
     StitchResult tryTemplateMatch(const QImage &newFrame);
     StitchResult tryRowProjectionMatch(const QImage &newFrame);
+    StitchResult tryInPlaceMatchInStitched(const QImage &newFrame);
 
     // Helper methods
     cv::Mat qImageToCvMat(const QImage &image) const;
@@ -119,14 +120,16 @@ private:
     int m_frameCount = 0;
     int m_validHeight = 0;
     int m_validWidth = 0;  // For horizontal mode
+    ScrollDirection m_lastSuccessfulDirection = ScrollDirection::Down;
 
     // ROI parameters
-    static constexpr double ROI_FIRST_RATIO = 0.25;   // Bottom/Right 25% of first frame
-    static constexpr double ROI_SECOND_RATIO = 0.45;  // Top/Left 45% of second frame
-    static constexpr int MIN_OVERLAP = 20;
-    static constexpr int MAX_OVERLAP = 500;
+    static constexpr double ROI_FIRST_RATIO = 0.40;   // Larger symmetric coverage
+    static constexpr double ROI_SECOND_RATIO = 0.50;  // More overlap detection range
+    static constexpr int MIN_OVERLAP = 15;            // Allow smaller overlaps
+    static constexpr int MAX_OVERLAP = 600;           // Allow larger overlaps
     static constexpr int MAX_STITCHED_HEIGHT = 32768; // Maximum height in pixels (~32K)
     static constexpr int MAX_STITCHED_WIDTH = 32768;  // Maximum width in pixels (~32K)
+    static constexpr double MAX_OVERLAP_RATIO = 0.90; // Max overlap as % of frame - prevents false matches
 };
 
 #endif // IMAGESTITCHER_H
