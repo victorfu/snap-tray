@@ -118,6 +118,7 @@ set(SOURCES
     src/annotations/MosaicStroke.cpp
     src/annotations/StepBadgeAnnotation.cpp
     src/annotations/ErasedItemsGroup.cpp
+    src/annotations/EraserStroke.cpp
     src/annotations/TextAnnotation.cpp
     src/ScreenCanvas.cpp
     src/IconRenderer.cpp
@@ -210,6 +211,7 @@ set(HEADERS
     include/annotations/ShapeAnnotation.h
     include/annotations/MosaicStroke.h
     include/annotations/StepBadgeAnnotation.h
+    include/annotations/EraserStroke.h
     include/annotations/ErasedItemsGroup.h
     include/ScreenCanvas.h
     include/ScreenCanvasManager.h

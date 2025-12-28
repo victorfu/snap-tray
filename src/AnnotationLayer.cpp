@@ -4,9 +4,13 @@
 #include "annotations/MarkerStroke.h"
 #include "annotations/MosaicStroke.h"
 #include "annotations/StepBadgeAnnotation.h"
+#include "annotations/EraserStroke.h"
 #include "annotations/ErasedItemsGroup.h"
+#include <QImage>
+#include <QPixmap>
 #include <QPainterPath>
 #include <QDebug>
+#include <QtMath>
 #include <algorithm>
 
 AnnotationLayer::AnnotationLayer(QObject *parent)
@@ -134,11 +138,50 @@ void AnnotationLayer::clear()
 
 void AnnotationLayer::draw(QPainter &painter) const
 {
+    if (m_items.empty()) return;
+
+    bool hasEraserStroke = false;
     for (const auto &item : m_items) {
-        if (item->isVisible()) {
-            item->draw(painter);
+        if (dynamic_cast<const EraserStroke*>(item.get())) {
+            hasEraserStroke = true;
+            break;
         }
     }
+
+    if (!hasEraserStroke) {
+        for (const auto &item : m_items) {
+            if (item->isVisible()) {
+                item->draw(painter);
+            }
+        }
+        return;
+    }
+
+    QSize baseSize = painter.device()->size();
+    qreal dpr = painter.device()->devicePixelRatioF();
+    QSize deviceSize = baseSize;
+    if (!dynamic_cast<const QPixmap*>(painter.device()) &&
+        !dynamic_cast<const QImage*>(painter.device())) {
+        deviceSize = QSize(qRound(baseSize.width() * dpr), qRound(baseSize.height() * dpr));
+    }
+
+    if (deviceSize.isEmpty()) return;
+
+    QImage layer(deviceSize, QImage::Format_ARGB32_Premultiplied);
+    layer.setDevicePixelRatio(dpr);
+    layer.fill(Qt::transparent);
+
+    QPainter layerPainter(&layer);
+    layerPainter.setRenderHints(painter.renderHints(), true);
+
+    for (const auto &item : m_items) {
+        if (item->isVisible()) {
+            item->draw(layerPainter);
+        }
+    }
+
+    layerPainter.end();
+    painter.drawImage(QPoint(0, 0), layer);
 }
 
 bool AnnotationLayer::canUndo() const

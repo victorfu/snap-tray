@@ -1,5 +1,6 @@
 #include "tools/handlers/EraserToolHandler.h"
 #include "tools/ToolContext.h"
+#include "annotations/EraserStroke.h"
 
 #include <QPainter>
 #include <QCursor>
@@ -7,23 +8,31 @@
 #include <QtMath>
 
 void EraserToolHandler::onMousePress(ToolContext* ctx, const QPoint& pos) {
-    m_isDrawing = true;
-    m_eraserPath.clear();
-    m_erasedItems.clear();
-    m_lastPoint = pos;
-    m_eraserPath.append(pos);
+    if (!ctx->annotationLayer) {
+        return;
+    }
 
-    eraseAtPoint(ctx, pos);
+    m_isDrawing = true;
+    m_lastPoint = pos;
+    m_activeStroke = nullptr;
+
+    auto stroke = std::make_unique<EraserStroke>(m_eraserWidth);
+    stroke->addPoint(QPointF(pos));
+    m_activeStroke = stroke.get();
+    ctx->addItem(std::move(stroke));
     ctx->repaint();
 }
 
 void EraserToolHandler::onMouseMove(ToolContext* ctx, const QPoint& pos) {
-    if (!m_isDrawing) {
+    if (!m_isDrawing || !m_activeStroke) {
         return;
     }
 
-    m_eraserPath.append(pos);
-    eraseAtPoint(ctx, pos);
+    if (pos == m_lastPoint) {
+        return;
+    }
+
+    m_activeStroke->addPoint(QPointF(pos));
     m_lastPoint = pos;
     ctx->repaint();
 }
@@ -33,18 +42,13 @@ void EraserToolHandler::onMouseRelease(ToolContext* ctx, const QPoint& pos) {
         return;
     }
 
-    eraseAtPoint(ctx, pos);
-
-    // If any items were erased, add an ErasedItemsGroup for undo support
-    if (!m_erasedItems.empty() && ctx->annotationLayer) {
-        auto group = std::make_unique<ErasedItemsGroup>(std::move(m_erasedItems));
-        ctx->addItem(std::move(group));
+    if (m_activeStroke && pos != m_lastPoint) {
+        m_activeStroke->addPoint(QPointF(pos));
     }
 
     // Reset state
     m_isDrawing = false;
-    m_eraserPath.clear();
-    m_erasedItems.clear();
+    m_activeStroke = nullptr;
 
     ctx->repaint();
 }
@@ -78,8 +82,7 @@ void EraserToolHandler::drawPreview(QPainter& painter) const {
 
 void EraserToolHandler::cancelDrawing() {
     m_isDrawing = false;
-    m_eraserPath.clear();
-    m_erasedItems.clear();
+    m_activeStroke = nullptr;
 }
 
 QCursor EraserToolHandler::cursor() const {
@@ -133,18 +136,4 @@ void EraserToolHandler::setHoverPoint(const QPoint& pos) {
 
 void EraserToolHandler::clearHoverPoint() {
     m_hasHoverPoint = false;
-}
-
-void EraserToolHandler::eraseAtPoint(ToolContext* ctx, const QPoint& pos) {
-    if (!ctx->annotationLayer) {
-        return;
-    }
-
-    // Remove items that intersect with the eraser
-    auto removed = ctx->annotationLayer->removeItemsIntersecting(pos, m_eraserWidth);
-
-    // Collect all erased items for undo support
-    for (auto& item : removed) {
-        m_erasedItems.push_back(std::move(item));
-    }
 }

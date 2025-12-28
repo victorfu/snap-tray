@@ -2,11 +2,10 @@
 #define ERASERTOOLHANDLER_H
 
 #include "../IToolHandler.h"
-#include "annotations/AnnotationLayer.h"
-
-#include <QVector>
 #include <QPoint>
-#include <vector>
+#include <QPixmap>
+
+class EraserStroke;
 
 /**
  * @brief Tool handler for erasing annotations.
@@ -47,12 +46,10 @@ public:
     static constexpr int kMaxWidth = 100;
 
 private:
-    void eraseAtPoint(ToolContext* ctx, const QPoint& pos);
     QPixmap createCursorPixmap() const;
 
     bool m_isDrawing = false;
-    QVector<QPoint> m_eraserPath;
-    std::vector<ErasedItemsGroup::IndexedItem> m_erasedItems;
+    EraserStroke* m_activeStroke = nullptr;
     QPoint m_lastPoint;
 
     int m_eraserWidth = kDefaultWidth;
