@@ -70,7 +70,7 @@ static const std::map<ToolbarButton, ToolCapabilities> kToolCapabilities = {
     {ToolbarButton::Text,       {true,  false, true}},
     {ToolbarButton::Mosaic,     {false, true,  true}},
     {ToolbarButton::StepBadge,  {true,  false, true}},
-    {ToolbarButton::Eraser,     {false, true,  true}},
+    {ToolbarButton::Eraser,     {false, true,  false}},
 };
 
 // Create a rounded square cursor for mosaic tool (matching EraserToolHandler pattern)
@@ -855,12 +855,10 @@ void RegionSelector::paintEvent(QPaintEvent*)
                 m_colorAndWidthWidget->setVisible(true);
                 m_colorAndWidthWidget->setShowColorSection(shouldShowColorPalette());
                 bool isMosaicTool = (m_currentTool == ToolbarButton::Mosaic);
-                bool isEraserTool = (m_currentTool == ToolbarButton::Eraser);
                 // All width-enabled tools use shared WidthSection (including Mosaic)
                 m_colorAndWidthWidget->setShowWidthSection(shouldShowWidthControl());
                 m_colorAndWidthWidget->setShowMosaicWidthSection(false);  // No longer used
-                // Hide width UI for Eraser but keep wheel functionality
-                m_colorAndWidthWidget->setWidthSectionHidden(isEraserTool);
+                m_colorAndWidthWidget->setWidthSectionHidden(false);
                 // Show arrow style section only for Arrow tool
                 m_colorAndWidthWidget->setShowArrowStyleSection(m_currentTool == ToolbarButton::Arrow);
                 // Show line style section for Pencil and Arrow tools
@@ -1210,13 +1208,7 @@ void RegionSelector::handleToolbarClick(ToolbarButton button)
     case ToolbarButton::Eraser:
         m_currentTool = button;
         m_toolManager->setCurrentTool(ToolId::Eraser);
-        // Configure eraser-specific width range (5-100)
-        m_colorAndWidthWidget->setWidthRange(5, 100);
-        m_colorAndWidthWidget->setCurrentWidth(m_eraserWidth);
         m_toolManager->setWidth(m_eraserWidth);
-        m_colorAndWidthWidget->setShowSizeSection(false);
-        // Hide width UI but keep wheel functionality
-        m_colorAndWidthWidget->setWidthSectionHidden(true);
         qDebug() << "Eraser tool selected - drag over annotations to erase them";
         update();
         break;
@@ -1961,6 +1953,22 @@ void RegionSelector::wheelEvent(QWheelEvent* event)
             StepBadgeSize newSize = static_cast<StepBadgeSize>(current);
             onStepBadgeSizeChanged(newSize);
             m_colorAndWidthWidget->setStepBadgeSize(newSize);
+            event->accept();
+            return;
+        }
+    }
+
+    // Handle scroll wheel for Eraser width adjustment (widget is hidden but wheel still works)
+    if (m_currentTool == ToolbarButton::Eraser) {
+        int delta = event->angleDelta().y();
+        if (delta != 0) {
+            int step = (delta > 0) ? 5 : -5;
+            int newWidth = qBound(5, m_eraserWidth + step, 100);
+            if (newWidth != m_eraserWidth) {
+                m_eraserWidth = newWidth;
+                m_toolManager->setWidth(m_eraserWidth);
+                update();
+            }
             event->accept();
             return;
         }

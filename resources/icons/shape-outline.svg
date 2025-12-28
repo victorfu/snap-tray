@@ -1,3 +1,7 @@
 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <path d="M4 4 C4 3.45 4.45 3 5 3 L19 3 C19.55 3 20 3.45 20 4 L20 20 C20 20.55 19.55 21 19 21 L5 21 C4.45 21 4 20.55 4 20 L4 4 Z M5.5 5.5 L5.5 19.5 L18.5 19.5 L18.5 5.5 L5.5 5.5 Z" fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" stroke-dasharray="4 2"/>
+  <!-- Simplified paint bucket outline (empty) -->
+  <!-- Bucket body (outline only) -->
+  <path d="M5 9 L7 7 L17 7 L19 9 L18 18 L6 18 Z" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linejoin="round"/>
+  <!-- Bucket handle -->
+  <path d="M9 7 C9 4.5 15 4.5 15 7" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/>
 </svg>
