@@ -8,6 +8,9 @@
 #import <AudioToolbox/AudioToolbox.h>
 #include <QFile>
 #include <QDebug>
+#include <QPointer>
+#include <QDateTime>
+#include <atomic>
 
 class AVFoundationEncoderPrivate
 {
@@ -33,6 +36,20 @@ public:
     int audioBitsPerSample = 16;
     qint64 audioSamplesWritten = 0;
 
+    // Async finish state tracking
+    std::atomic<bool> isFinishing{false};
+    QString finishOutputPath;
+    qint64 finishFramesWritten = 0;
+
+    // Drop tracking for diagnostics
+    qint64 droppedFrames = 0;
+    qint64 droppedAudioChunks = 0;
+    qint64 lastDropLogTime = 0;
+    static constexpr qint64 DROP_LOG_INTERVAL_MS = 1000;
+
+    // Cached pixel buffer attributes (reused across frames)
+    NSDictionary *pixelBufferAttributes = nil;
+
     int calculateBitrate() const {
         int pixels = frameSize.width() * frameSize.height();
         // Quality 0-100 maps to bits per pixel 0.1-0.3
@@ -47,18 +64,13 @@ public:
         QImage converted = image.convertToFormat(QImage::Format_ARGB32);
 
         CVPixelBufferRef pixelBuffer = nullptr;
-        NSDictionary *attributes = @{
-            (NSString *)kCVPixelBufferCGImageCompatibilityKey: @YES,
-            (NSString *)kCVPixelBufferCGBitmapContextCompatibilityKey: @YES,
-            (NSString *)kCVPixelBufferIOSurfacePropertiesKey: @{}
-        };
 
         CVReturn result = CVPixelBufferCreate(
             kCFAllocatorDefault,
             frameSize.width(),
             frameSize.height(),
             kCVPixelFormatType_32BGRA,
-            (__bridge CFDictionaryRef)attributes,
+            (__bridge CFDictionaryRef)pixelBufferAttributes,
             &pixelBuffer
         );
 
@@ -89,13 +101,24 @@ public:
     }
 
     void cleanup() {
+        // Log final drop statistics if any drops occurred
+        if (droppedFrames > 0 || droppedAudioChunks > 0) {
+            qWarning() << "AVFoundationEncoder: Recording finished with"
+                       << droppedFrames << "dropped frames and"
+                       << droppedAudioChunks << "dropped audio chunks";
+        }
+
         videoInput = nil;
         adaptor = nil;
         audioInput = nil;
         assetWriter = nil;
+        pixelBufferAttributes = nil;
         running = false;
         audioEnabled = false;
         audioSamplesWritten = 0;
+        droppedFrames = 0;
+        droppedAudioChunks = 0;
+        lastDropLogTime = 0;
     }
 };
 
@@ -235,6 +258,13 @@ bool AVFoundationEncoder::start(const QString &outputPath, const QSize &frameSiz
 
     [d->assetWriter startSessionAtSourceTime:kCMTimeZero];
 
+    // Cache pixel buffer attributes for frame creation (reused every frame)
+    d->pixelBufferAttributes = @{
+        (NSString *)kCVPixelBufferCGImageCompatibilityKey: @YES,
+        (NSString *)kCVPixelBufferCGBitmapContextCompatibilityKey: @YES,
+        (NSString *)kCVPixelBufferIOSurfacePropertiesKey: @{}
+    };
+
     d->running = true;
     qDebug() << "AVFoundationEncoder: Started encoding to" << outputPath
              << "size:" << d->frameSize << "fps:" << frameRate
@@ -250,7 +280,15 @@ void AVFoundationEncoder::writeFrame(const QImage &frame, qint64 timestampMs)
 
     // Check if input is ready for more data
     if (!d->videoInput.readyForMoreMediaData) {
-        // Skip frame if encoder is busy
+        d->droppedFrames++;
+
+        // Throttle logging to avoid spam
+        qint64 now = QDateTime::currentMSecsSinceEpoch();
+        if (now - d->lastDropLogTime >= d->DROP_LOG_INTERVAL_MS) {
+            qWarning() << "AVFoundationEncoder: Encoder backpressure - dropped"
+                       << d->droppedFrames << "video frames so far";
+            d->lastDropLogTime = now;
+        }
         return;
     }
 
@@ -294,57 +332,76 @@ void AVFoundationEncoder::finish()
         return;
     }
 
+    // Prevent re-entrant finish calls
+    if (d->isFinishing.exchange(true)) {
+        qWarning() << "AVFoundationEncoder: finish() already in progress";
+        return;
+    }
+
     d->running = false;
     [d->videoInput markAsFinished];
     if (d->audioInput) {
         [d->audioInput markAsFinished];
     }
 
-    __block bool completed = false;
-    __block QString errorMsg;
+    // Cache values needed by completion handler before async operation
+    d->finishOutputPath = d->outputPath;
+    d->finishFramesWritten = d->framesWritten;
 
-    dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
+    // Prevent premature cleanup by capturing a QPointer to detect if encoder is destroyed
+    QPointer<AVFoundationEncoder> weakSelf = this;
+    AVAssetWriter *writer = d->assetWriter;  // Strong reference for block
 
-    [d->assetWriter finishWritingWithCompletionHandler:^{
-        if (d->assetWriter.status == AVAssetWriterStatusCompleted) {
-            completed = true;
-        } else if (d->assetWriter.error) {
-            errorMsg = QString::fromNSString(d->assetWriter.error.localizedDescription);
-        }
-        dispatch_semaphore_signal(semaphore);
+    [writer finishWritingWithCompletionHandler:^{
+        // Always dispatch completion back to main thread for thread safety
+        dispatch_async(dispatch_get_main_queue(), ^{
+            // Check if encoder was destroyed (e.g., by abort() or deletion)
+            if (!weakSelf) {
+                qDebug() << "AVFoundationEncoder: Encoder destroyed during async finish";
+                return;
+            }
+
+            AVFoundationEncoder *self = weakSelf.data();
+
+            bool success = (writer.status == AVAssetWriterStatusCompleted);
+            QString errorMsg;
+            if (!success && writer.error) {
+                errorMsg = QString::fromNSString(writer.error.localizedDescription);
+            }
+
+            // Store cached values before cleanup
+            QString outputPath = self->d->finishOutputPath;
+            qint64 framesWritten = self->d->finishFramesWritten;
+
+            // Now safe to cleanup - we're on main thread and completion handler is done
+            self->d->cleanup();
+            self->d->isFinishing = false;
+
+            if (success) {
+                qDebug() << "AVFoundationEncoder: Finished successfully, frames:" << framesWritten;
+                emit self->finished(true, outputPath);
+            } else {
+                self->d->lastError = errorMsg.isEmpty() ? "Encoding failed" : errorMsg;
+                emit self->error(self->d->lastError);
+                emit self->finished(false, QString());
+            }
+        });
     }];
-
-    // Wait up to 30 seconds for completion
-    dispatch_time_t timeout = dispatch_time(DISPATCH_TIME_NOW, 30 * NSEC_PER_SEC);
-    long result = dispatch_semaphore_wait(semaphore, timeout);
-
-    QString outputPath = d->outputPath;
-    qint64 framesWritten = d->framesWritten;
-    d->cleanup();
-
-    if (result != 0) {
-        d->lastError = "Timeout waiting for encoding to complete";
-        emit error(d->lastError);
-        emit finished(false, QString());
-    } else if (completed) {
-        qDebug() << "AVFoundationEncoder: Finished successfully, frames:" << framesWritten;
-        emit finished(true, outputPath);
-    } else {
-        d->lastError = errorMsg.isEmpty() ? "Encoding failed" : errorMsg;
-        emit error(d->lastError);
-        emit finished(false, QString());
-    }
 }
 
 void AVFoundationEncoder::abort()
 {
-    if (!d->running) {
+    if (!d->running && !d->isFinishing) {
         return;
     }
 
     QString outputPath = d->outputPath;
+
+    // Cancel any in-progress writing
     [d->assetWriter cancelWriting];
     d->cleanup();
+    d->running = false;
+    d->isFinishing = false;
 
     // Remove partial output file
     QFile::remove(outputPath);
@@ -403,7 +460,16 @@ void AVFoundationEncoder::writeAudioSamples(const QByteArray &pcmData, qint64 ti
 
     // Check if input is ready for more data
     if (!d->audioInput.readyForMoreMediaData) {
-        return;  // Skip if encoder is busy
+        d->droppedAudioChunks++;
+
+        // Throttle logging to avoid spam
+        qint64 now = QDateTime::currentMSecsSinceEpoch();
+        if (now - d->lastDropLogTime >= d->DROP_LOG_INTERVAL_MS) {
+            qWarning() << "AVFoundationEncoder: Encoder backpressure - dropped"
+                       << d->droppedAudioChunks << "audio chunks so far";
+            d->lastDropLogTime = now;
+        }
+        return;
     }
 
     // Create audio sample buffer

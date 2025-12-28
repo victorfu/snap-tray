@@ -315,6 +315,13 @@ void RecordingManager::startFrameCapture()
 
     // Show boundary overlay immediately (UI stays responsive)
     qDebug() << "RecordingManager::startFrameCapture() - Creating boundary overlay...";
+
+    // Clean up any existing overlay first to prevent resource leak
+    if (m_boundaryOverlay) {
+        qWarning() << "RecordingManager: Previous boundary overlay still exists, cleaning up";
+        m_boundaryOverlay->close();
+    }
+
     m_boundaryOverlay = new RecordingBoundaryOverlay();
     m_boundaryOverlay->setAttribute(Qt::WA_DeleteOnClose);
     m_boundaryOverlay->setRegion(m_recordingRegion);
@@ -324,6 +331,14 @@ void RecordingManager::startFrameCapture()
 
     // Show control bar in preparing state
     qDebug() << "RecordingManager::startFrameCapture() - Creating control bar...";
+
+    // Clean up any existing control bar first to prevent resource leak
+    if (m_controlBar) {
+        qWarning() << "RecordingManager: Previous control bar still exists, cleaning up";
+        disconnect(m_controlBar, nullptr, this, nullptr);
+        m_controlBar->close();
+    }
+
     m_controlBar = new RecordingControlBar();
     m_controlBar->setAttribute(Qt::WA_DeleteOnClose);
     connect(m_controlBar, &RecordingControlBar::stopRequested,
