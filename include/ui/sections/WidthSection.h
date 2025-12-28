@@ -100,8 +100,8 @@ private:
     QRect m_sectionRect;
 
     // Layout constants
-    static constexpr int SECTION_SIZE = 36;
-    static constexpr int MAX_DOT_SIZE = 24;
+    static constexpr int SECTION_SIZE = 32;  // Match widget height
+    static constexpr int MAX_DOT_SIZE = 22;  // Slightly reduced for 32px height
 };
 
 #endif // WIDTHSECTION_H

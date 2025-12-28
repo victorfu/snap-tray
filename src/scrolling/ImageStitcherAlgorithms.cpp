@@ -23,6 +23,475 @@ double normalizedVariance(const cv::Mat &mat)
     cv::meanStdDev(mat, mean, stddev);
     return (stddev[0] * stddev[0]) / 255.0;
 }
+
+cv::Mat qImageToCvMatLocal(const QImage &image)
+{
+    QImage rgb = image.convertToFormat(QImage::Format_RGB32);
+
+    cv::Mat mat(rgb.height(), rgb.width(), CV_8UC4,
+                const_cast<uchar*>(rgb.bits()),
+                static_cast<size_t>(rgb.bytesPerLine()));
+
+    cv::Mat bgr;
+    cv::cvtColor(mat, bgr, cv::COLOR_RGBA2BGR);
+    return bgr.clone();
+}
+
+constexpr double kMaxOverlapDiff = 0.18;
+constexpr int kOverlapDiffMaxDim = 240;
+constexpr double kMinCorrelation = 0.25;
+constexpr double kPeakGapScale = 0.15;
+constexpr double kInPlaceMaxAvgDiff = 0.05;
+constexpr double kInPlaceMaxChangedRatio = 0.03;
+constexpr double kDefaultMaxOverlapRatio = 0.90;
+
+int maxOverlapForFrame(int frameDimension, int minOverlap, double maxOverlapRatio)
+{
+    if (frameDimension <= minOverlap) {
+        return 0;
+    }
+
+    int maxByRatio = static_cast<int>(std::floor(frameDimension * maxOverlapRatio));
+    maxByRatio = qBound(minOverlap, maxByRatio, frameDimension - 1);
+    return maxByRatio;
+}
+
+double maxOverlapRatioForFrame(int frameDimension)
+{
+    if (frameDimension <= 140) {
+        return 0.99;
+    }
+    if (frameDimension <= 200) {
+        return 0.97;
+    }
+    if (frameDimension <= 240) {
+        return 0.95;
+    }
+    if (frameDimension <= 360) {
+        return 0.93;
+    }
+    return kDefaultMaxOverlapRatio;
+}
+
+double normalizedCrossCorrelation(const std::vector<double> &a,
+                                  size_t startA,
+                                  const std::vector<double> &b,
+                                  size_t startB,
+                                  size_t length)
+{
+    if (length == 0 || startA + length > a.size() || startB + length > b.size()) {
+        return -1.0;
+    }
+
+    double sumA = 0.0;
+    double sumB = 0.0;
+    double sumAA = 0.0;
+    double sumBB = 0.0;
+    double sumAB = 0.0;
+
+    for (size_t i = 0; i < length; ++i) {
+        double va = a[startA + i];
+        double vb = b[startB + i];
+        sumA += va;
+        sumB += vb;
+        sumAA += va * va;
+        sumBB += vb * vb;
+        sumAB += va * vb;
+    }
+
+    double meanA = sumA / static_cast<double>(length);
+    double meanB = sumB / static_cast<double>(length);
+    double varA = sumAA - static_cast<double>(length) * meanA * meanA;
+    double varB = sumBB - static_cast<double>(length) * meanB * meanB;
+
+    if (varA <= 1e-8 || varB <= 1e-8) {
+        return -1.0;
+    }
+
+    double numerator = sumAB - static_cast<double>(length) * meanA * meanB;
+    double denominator = std::sqrt(varA * varB);
+    if (denominator <= 1e-8) {
+        return -1.0;
+    }
+
+    return numerator / denominator;
+}
+
+struct FrameDiffMetrics {
+    double averageDiff = 1.0;
+    double changedRatio = 1.0;
+};
+
+FrameDiffMetrics computeFrameDiff(const QImage &a, const QImage &b)
+{
+    FrameDiffMetrics metrics;
+    if (a.isNull() || b.isNull()) {
+        return metrics;
+    }
+
+    static constexpr int kSampleSize = 64;
+    static constexpr int kPixelDiffThreshold = 20;
+
+    QImage smallA = a.scaled(kSampleSize, kSampleSize, Qt::IgnoreAspectRatio,
+                             Qt::FastTransformation).convertToFormat(QImage::Format_RGB32);
+    QImage smallB = b.scaled(kSampleSize, kSampleSize, Qt::IgnoreAspectRatio,
+                             Qt::FastTransformation).convertToFormat(QImage::Format_RGB32);
+
+    if (smallA.size() != smallB.size()) {
+        return metrics;
+    }
+
+    const int pixelCount = kSampleSize * kSampleSize;
+    long long diffSum = 0;
+    int changedPixels = 0;
+
+    for (int y = 0; y < kSampleSize; ++y) {
+        const QRgb *lineA = reinterpret_cast<const QRgb*>(smallA.constScanLine(y));
+        const QRgb *lineB = reinterpret_cast<const QRgb*>(smallB.constScanLine(y));
+        for (int x = 0; x < kSampleSize; ++x) {
+            int diff = std::abs(qRed(lineA[x]) - qRed(lineB[x])) +
+                       std::abs(qGreen(lineA[x]) - qGreen(lineB[x])) +
+                       std::abs(qBlue(lineA[x]) - qBlue(lineB[x]));
+            diffSum += diff;
+            if (diff > kPixelDiffThreshold) {
+                changedPixels++;
+            }
+        }
+    }
+
+    metrics.averageDiff = static_cast<double>(diffSum) / (pixelCount * 3.0 * 255.0);
+    metrics.changedRatio = static_cast<double>(changedPixels) / pixelCount;
+    return metrics;
+}
+
+struct InPlaceMatch {
+    bool found = false;
+    QRect rect;
+    FrameDiffMetrics diff;
+};
+
+int searchRadiusForFrame(int frameDimension)
+{
+    int radius = frameDimension / 6;
+    return qBound(16, radius, 160);
+}
+
+std::vector<double> gradientProfile(const cv::Mat &gray, bool isHorizontal)
+{
+    if (gray.empty()) {
+        return {};
+    }
+
+    int dx = isHorizontal ? 1 : 0;
+    int dy = isHorizontal ? 0 : 1;
+    cv::Mat grad;
+    cv::Sobel(gray, grad, CV_32F, dx, dy, 3);
+
+    cv::Mat absGrad;
+    cv::absdiff(grad, cv::Scalar::all(0), absGrad);
+
+    cv::Mat profile;
+    if (isHorizontal) {
+        cv::reduce(absGrad, profile, 0, cv::REDUCE_SUM, CV_64F);
+    } else {
+        cv::reduce(absGrad, profile, 1, cv::REDUCE_SUM, CV_64F);
+    }
+
+    std::vector<double> vec;
+    if (isHorizontal) {
+        vec.assign(profile.ptr<double>(0),
+                   profile.ptr<double>(0) + profile.cols);
+    } else {
+        vec.reserve(static_cast<size_t>(profile.rows));
+        for (int i = 0; i < profile.rows; ++i) {
+            vec.push_back(profile.at<double>(i, 0));
+        }
+    }
+    return vec;
+}
+
+InPlaceMatch findInPlaceMatch(const QImage &stitched,
+                              const QRect &lastViewport,
+                              const QImage &frame,
+                              bool isHorizontal,
+                              int overlapPixels,
+                              ImageStitcher::ScrollDirection direction,
+                              int validWidth,
+                              int validHeight)
+{
+    InPlaceMatch best;
+    if (stitched.isNull() || frame.isNull() || lastViewport.isNull()) {
+        return best;
+    }
+
+    int frameWidth = frame.width();
+    int frameHeight = frame.height();
+
+    QRect bounds(0, 0, validWidth, validHeight);
+    if (!bounds.isValid()) {
+        return best;
+    }
+
+    int maxPos = isHorizontal ? (bounds.width() - frameWidth) : (bounds.height() - frameHeight);
+    if (maxPos < 0) {
+        return best;
+    }
+
+    bool isForward = (direction == ImageStitcher::ScrollDirection::Down ||
+                      direction == ImageStitcher::ScrollDirection::Right);
+    int lastPos = isHorizontal ? lastViewport.x() : lastViewport.y();
+    int delta = (isHorizontal ? frameWidth : frameHeight) - overlapPixels;
+    if (delta < 1) {
+        delta = 1;
+    }
+
+    int predictedPos = lastPos + (isForward ? delta : -delta);
+    int minPos = 0;
+    int searchRadius = searchRadiusForFrame(isHorizontal ? frameWidth : frameHeight);
+    int step = (searchRadius > 80) ? 2 : 1;
+
+    auto tryPosition = [&](int pos) {
+        QRect rect = isHorizontal
+            ? QRect(pos, 0, frameWidth, frameHeight)
+            : QRect(0, pos, frameWidth, frameHeight);
+        if (!bounds.contains(rect)) {
+            return;
+        }
+        QImage existing = stitched.copy(rect);
+        if (existing.isNull()) {
+            return;
+        }
+        FrameDiffMetrics diff = computeFrameDiff(existing, frame);
+        double score = diff.averageDiff + diff.changedRatio * 0.5;
+        double bestScore = best.diff.averageDiff + best.diff.changedRatio * 0.5;
+        if (!best.found || score < bestScore) {
+            best.found = true;
+            best.rect = rect;
+            best.diff = diff;
+        }
+    };
+
+    auto searchAround = [&](int center) {
+        center = qBound(minPos, center, maxPos);
+        int start = qMax(minPos, center - searchRadius);
+        int end = qMin(maxPos, center + searchRadius);
+        for (int pos = start; pos <= end; pos += step) {
+            tryPosition(pos);
+        }
+    };
+
+    searchAround(predictedPos);
+    if (std::abs(lastPos - predictedPos) > searchRadius / 2) {
+        searchAround(lastPos);
+    }
+
+    if (!best.found) {
+        return best;
+    }
+
+    if (best.diff.averageDiff <= kInPlaceMaxAvgDiff &&
+        best.diff.changedRatio <= kInPlaceMaxChangedRatio) {
+        return best;
+    }
+
+    best.found = false;
+    return best;
+}
+
+InPlaceMatch findGlobalInPlaceMatch(const QImage &stitched,
+                                    int validWidth,
+                                    int validHeight,
+                                    const QImage &frame,
+                                    bool isHorizontal)
+{
+    InPlaceMatch match;
+    if (stitched.isNull() || frame.isNull()) {
+        return match;
+    }
+
+    if (validWidth <= 0 || validHeight <= 0) {
+        return match;
+    }
+
+    int frameWidth = frame.width();
+    int frameHeight = frame.height();
+    if (frameWidth > validWidth || frameHeight > validHeight) {
+        return match;
+    }
+
+    QImage stitchedCropImage = stitched.copy(0, 0, validWidth, validHeight);
+    cv::Mat stitchedMat = qImageToCvMatLocal(stitchedCropImage);
+    cv::Mat frameMat = qImageToCvMatLocal(frame);
+    if (stitchedMat.empty() || frameMat.empty()) {
+        return match;
+    }
+
+    cv::Mat stitchedGray, frameGray;
+    cv::cvtColor(stitchedMat, stitchedGray, cv::COLOR_BGR2GRAY);
+    cv::cvtColor(frameMat, frameGray, cv::COLOR_BGR2GRAY);
+
+    cv::Rect validRect(0, 0, validWidth, validHeight);
+    if (validRect.width <= 0 || validRect.height <= 0 ||
+        validRect.x + validRect.width > stitchedGray.cols ||
+        validRect.y + validRect.height > stitchedGray.rows) {
+        return match;
+    }
+
+    cv::Mat stitchedCrop = stitchedGray(validRect);
+    std::vector<double> stitchedProfile = gradientProfile(stitchedCrop, isHorizontal);
+    std::vector<double> frameProfile = gradientProfile(frameGray, isHorizontal);
+
+    if (stitchedProfile.empty() || frameProfile.empty()) {
+        return match;
+    }
+
+    int totalLength = static_cast<int>(stitchedProfile.size());
+    int window = static_cast<int>(frameProfile.size());
+    if (window <= 0 || totalLength < window) {
+        return match;
+    }
+
+    int maxPos = totalLength - window;
+    int step = (totalLength > 5000) ? 2 : 1;
+    double bestCorr = -1.0;
+    double secondCorr = -1.0;
+    int bestPos = 0;
+
+    for (int pos = 0; pos <= maxPos; pos += step) {
+        double corr = normalizedCrossCorrelation(
+            stitchedProfile, static_cast<size_t>(pos),
+            frameProfile, 0, static_cast<size_t>(window));
+        if (corr > bestCorr) {
+            secondCorr = bestCorr;
+            bestCorr = corr;
+            bestPos = pos;
+        } else if (corr > secondCorr) {
+            secondCorr = corr;
+        }
+    }
+
+    int refineStart = qMax(0, bestPos - step * 3);
+    int refineEnd = qMin(maxPos, bestPos + step * 3);
+    for (int pos = refineStart; pos <= refineEnd; ++pos) {
+        double corr = normalizedCrossCorrelation(
+            stitchedProfile, static_cast<size_t>(pos),
+            frameProfile, 0, static_cast<size_t>(window));
+        if (corr > bestCorr) {
+            secondCorr = bestCorr;
+            bestCorr = corr;
+            bestPos = pos;
+        } else if (corr > secondCorr) {
+            secondCorr = corr;
+        }
+    }
+
+    if (bestCorr < 0.18 || (secondCorr > -0.5 && (bestCorr - secondCorr) < 0.05)) {
+        return match;
+    }
+
+    QRect rect = isHorizontal
+        ? QRect(bestPos, 0, frameWidth, frameHeight)
+        : QRect(0, bestPos, frameWidth, frameHeight);
+    if (!QRect(0, 0, validWidth, validHeight).contains(rect)) {
+        return match;
+    }
+
+    QImage existing = stitched.copy(rect);
+    if (existing.isNull()) {
+        return match;
+    }
+
+    FrameDiffMetrics diff = computeFrameDiff(existing, frame);
+    if (diff.averageDiff <= kInPlaceMaxAvgDiff &&
+        diff.changedRatio <= kInPlaceMaxChangedRatio) {
+        match.found = true;
+        match.rect = rect;
+        match.diff = diff;
+    }
+
+    return match;
+}
+
+cv::Mat downsampleForDiff(const cv::Mat &src, int maxDim)
+{
+    if (src.empty() || maxDim <= 0) {
+        return cv::Mat();
+    }
+
+    int longest = std::max(src.cols, src.rows);
+    if (longest <= maxDim) {
+        return src;
+    }
+
+    double scale = static_cast<double>(maxDim) / static_cast<double>(longest);
+    cv::Mat resized;
+    cv::resize(src, resized, cv::Size(), scale, scale, cv::INTER_AREA);
+    return resized;
+}
+
+double normalizedOverlapDifference(const cv::Mat &lastGray,
+                                   const cv::Mat &newGray,
+                                   ImageStitcher::ScrollDirection direction,
+                                   bool isHorizontal,
+                                   int overlap)
+{
+    if (overlap <= 0 || lastGray.empty() || newGray.empty()) {
+        return 1.0;
+    }
+
+    cv::Rect lastRect;
+    cv::Rect newRect;
+
+    if (isHorizontal) {
+        int height = std::min(lastGray.rows, newGray.rows);
+        int width = std::min({overlap, lastGray.cols, newGray.cols});
+        if (width <= 0 || height <= 0) {
+            return 1.0;
+        }
+
+        if (direction == ImageStitcher::ScrollDirection::Right) {
+            lastRect = cv::Rect(lastGray.cols - width, 0, width, height);
+            newRect = cv::Rect(0, 0, width, height);
+        } else {
+            lastRect = cv::Rect(0, 0, width, height);
+            newRect = cv::Rect(newGray.cols - width, 0, width, height);
+        }
+    } else {
+        int width = std::min(lastGray.cols, newGray.cols);
+        int height = std::min({overlap, lastGray.rows, newGray.rows});
+        if (width <= 0 || height <= 0) {
+            return 1.0;
+        }
+
+        if (direction == ImageStitcher::ScrollDirection::Down) {
+            lastRect = cv::Rect(0, lastGray.rows - height, width, height);
+            newRect = cv::Rect(0, 0, width, height);
+        } else {
+            lastRect = cv::Rect(0, 0, width, height);
+            newRect = cv::Rect(0, newGray.rows - height, width, height);
+        }
+    }
+
+    cv::Mat lastPatch = lastGray(lastRect);
+    cv::Mat newPatch = newGray(newRect);
+
+    cv::Mat lastSample = downsampleForDiff(lastPatch, kOverlapDiffMaxDim);
+    cv::Mat newSample = downsampleForDiff(newPatch, kOverlapDiffMaxDim);
+
+    if (lastSample.empty() || newSample.empty() || lastSample.size() != newSample.size()) {
+        return 1.0;
+    }
+
+    cv::Mat lastBlur;
+    cv::Mat newBlur;
+    cv::GaussianBlur(lastSample, lastBlur, cv::Size(3, 3), 0.8);
+    cv::GaussianBlur(newSample, newBlur, cv::Size(3, 3), 0.8);
+
+    cv::Mat diff;
+    cv::absdiff(lastBlur, newBlur, diff);
+    cv::Scalar meanDiff = cv::mean(diff);
+    return meanDiff[0] / 255.0;
+}
 }
 
 ImageStitcher::StitchResult ImageStitcher::tryORBMatch(const QImage &newFrame)
@@ -41,19 +510,33 @@ ImageStitcher::StitchResult ImageStitcher::tryORBMatch(const QImage &newFrame)
     auto secondaryCandidate = computeORBMatchCandidate(newFrame, secondaryDir);
 
     if (primaryCandidate.success && secondaryCandidate.success) {
-        const auto &best = (primaryCandidate.confidence > secondaryCandidate.confidence ||
-                           (primaryCandidate.confidence == secondaryCandidate.confidence &&
-                            primaryCandidate.matchedFeatures >= secondaryCandidate.matchedFeatures))
-                           ? primaryCandidate
-                           : secondaryCandidate;
+        // Direction hysteresis to reduce jitter when both directions match
+        // Higher value (0.15) makes direction switches harder, preventing accidental reversals
+        constexpr double DIRECTION_HYSTERESIS = 0.15;
+
+        bool preferPrimary = true;
+        if (secondaryCandidate.direction == m_lastSuccessfulDirection) {
+            preferPrimary = primaryCandidate.confidence >
+                            secondaryCandidate.confidence + DIRECTION_HYSTERESIS;
+        } else if (primaryCandidate.direction == m_lastSuccessfulDirection) {
+            preferPrimary = primaryCandidate.confidence + DIRECTION_HYSTERESIS >=
+                            secondaryCandidate.confidence;
+        } else {
+            preferPrimary = primaryCandidate.confidence >= secondaryCandidate.confidence;
+        }
+
+        const auto &best = preferPrimary ? primaryCandidate : secondaryCandidate;
+        m_lastSuccessfulDirection = best.direction;
         return applyCandidate(newFrame, best, Algorithm::ORB);
     }
 
     if (primaryCandidate.success) {
+        m_lastSuccessfulDirection = primaryCandidate.direction;
         return applyCandidate(newFrame, primaryCandidate, Algorithm::ORB);
     }
 
     if (secondaryCandidate.success) {
+        m_lastSuccessfulDirection = secondaryCandidate.direction;
         return applyCandidate(newFrame, secondaryCandidate, Algorithm::ORB);
     }
 
@@ -91,15 +574,33 @@ ImageStitcher::StitchResult ImageStitcher::tryTemplateMatch(const QImage &newFra
     auto secondaryCandidate = computeTemplateMatchCandidate(newFrame, secondaryDir);
 
     if (primaryCandidate.success && secondaryCandidate.success) {
-        const auto &best = (primaryCandidate.confidence >= secondaryCandidate.confidence) ? primaryCandidate : secondaryCandidate;
+        // Direction hysteresis to reduce jitter when both directions match
+        // Higher value (0.15) makes direction switches harder, preventing accidental reversals
+        constexpr double DIRECTION_HYSTERESIS = 0.15;
+
+        bool preferPrimary = true;
+        if (secondaryCandidate.direction == m_lastSuccessfulDirection) {
+            preferPrimary = primaryCandidate.confidence >
+                            secondaryCandidate.confidence + DIRECTION_HYSTERESIS;
+        } else if (primaryCandidate.direction == m_lastSuccessfulDirection) {
+            preferPrimary = primaryCandidate.confidence + DIRECTION_HYSTERESIS >=
+                            secondaryCandidate.confidence;
+        } else {
+            preferPrimary = primaryCandidate.confidence >= secondaryCandidate.confidence;
+        }
+
+        const auto &best = preferPrimary ? primaryCandidate : secondaryCandidate;
+        m_lastSuccessfulDirection = best.direction;
         return applyCandidate(newFrame, best, Algorithm::TemplateMatching);
     }
 
     if (primaryCandidate.success) {
+        m_lastSuccessfulDirection = primaryCandidate.direction;
         return applyCandidate(newFrame, primaryCandidate, Algorithm::TemplateMatching);
     }
 
     if (secondaryCandidate.success) {
+        m_lastSuccessfulDirection = secondaryCandidate.direction;
         return applyCandidate(newFrame, secondaryCandidate, Algorithm::TemplateMatching);
     }
 
@@ -258,27 +759,22 @@ ImageStitcher::MatchCandidate ImageStitcher::computeORBMatchCandidate(const QIma
         medianOffset = offsets[offsets.size() / 2];
     }
 
-    // Check direction mismatch with small tolerance for floating-point precision
-    constexpr double DIRECTION_TOLERANCE = 3.0;
-    if (direction == ScrollDirection::Down && medianOffset < -DIRECTION_TOLERANCE) {
-        candidate.failureReason = "Direction mismatch";
-        return candidate;
-    }
-    if (direction == ScrollDirection::Up && medianOffset > DIRECTION_TOLERANCE) {
-        candidate.failureReason = "Direction mismatch";
-        return candidate;
-    }
-    if (direction == ScrollDirection::Right && medianOffset < -DIRECTION_TOLERANCE) {
-        candidate.failureReason = "Direction mismatch";
-        return candidate;
-    }
-    if (direction == ScrollDirection::Left && medianOffset > DIRECTION_TOLERANCE) {
+    // Validate direction (soft failure with low confidence instead of hard rejection)
+    bool directionMatch = true;
+    if (direction == ScrollDirection::Down && medianOffset < -3.0) directionMatch = false;
+    if (direction == ScrollDirection::Up && medianOffset > 3.0) directionMatch = false;
+    if (direction == ScrollDirection::Right && medianOffset < -3.0) directionMatch = false;
+    if (direction == ScrollDirection::Left && medianOffset > 3.0) directionMatch = false;
+
+    if (!directionMatch) {
+        candidate.confidence = 0.1;
         candidate.failureReason = "Direction mismatch";
         return candidate;
     }
 
     // Calculate overlap based on direction
     int frameDimension = isHorizontal ? newFrame.width() : newFrame.height();
+    double overlapRatio = maxOverlapRatioForFrame(frameDimension);
     int overlap = frameDimension - static_cast<int>(std::round(std::abs(medianOffset)));
 
     if (overlap <= 0) {
@@ -294,9 +790,21 @@ ImageStitcher::MatchCandidate ImageStitcher::computeORBMatchCandidate(const QIma
         candidate.failureReason = QString("Overlap too small: %1").arg(overlap);
         return candidate;
     }
-    if (overlap > MAX_OVERLAP) {
-        // Clamp to max overlap - this can happen with slow scrolling
-        overlap = MAX_OVERLAP;
+
+    // Sanity check: overlap should not exceed a reasonable percentage of frame
+    int maxReasonableOverlap = static_cast<int>(frameDimension * overlapRatio);
+    if (overlap > maxReasonableOverlap) {
+        candidate.confidence = 0.25;
+        candidate.failureReason = QString("Overlap too large: %1 (>%2%% of frame)")
+            .arg(overlap).arg(static_cast<int>(overlapRatio * 100));
+        return candidate;
+    }
+
+    double overlapDiff = normalizedOverlapDifference(lastGray, newGray, direction, isHorizontal, overlap);
+    if (overlapDiff > kMaxOverlapDiff) {
+        candidate.confidence = 0.2;
+        candidate.failureReason = QString("Overlap mismatch: %1").arg(overlapDiff, 0, 'f', 3);
+        return candidate;
     }
 
     int inlierCount = 0;
@@ -344,6 +852,13 @@ ImageStitcher::MatchCandidate ImageStitcher::computeTemplateMatchCandidate(const
     clahe->apply(newGray, newGray);
 
     bool isHorizontal = (direction == ScrollDirection::Left || direction == ScrollDirection::Right);
+    int frameDimension = isHorizontal ? lastGray.cols : lastGray.rows;
+    double overlapRatio = maxOverlapRatioForFrame(frameDimension);
+    int maxOverlap = maxOverlapForFrame(frameDimension, MIN_OVERLAP, overlapRatio);
+    if (maxOverlap == 0) {
+        candidate.failureReason = "Frame too small for overlap search";
+        return candidate;
+    }
 
     struct TemplateResult {
         double confidence = 0.0;
@@ -367,7 +882,7 @@ ImageStitcher::MatchCandidate ImageStitcher::computeTemplateMatchCandidate(const
                 continue;
             }
 
-            int searchMaxExtent = std::min(MAX_OVERLAP + templateWidth, newGray.cols);
+            int searchMaxExtent = std::min(maxOverlap + templateWidth, newGray.cols);
             if (searchMaxExtent <= templateWidth) {
                 continue;
             }
@@ -430,7 +945,7 @@ ImageStitcher::MatchCandidate ImageStitcher::computeTemplateMatchCandidate(const
                 continue;
             }
 
-            int searchMaxExtent = std::min(MAX_OVERLAP + templateHeight, newGray.rows);
+            int searchMaxExtent = std::min(maxOverlap + templateHeight, newGray.rows);
             if (searchMaxExtent <= templateHeight) {
                 continue;
             }
@@ -516,7 +1031,6 @@ ImageStitcher::MatchCandidate ImageStitcher::computeTemplateMatchCandidate(const
     }
 
     // Calculate overlap based on direction
-    int frameDimension = isHorizontal ? newFrame.width() : newFrame.height();
     int overlap = frameDimension - static_cast<int>(std::round(std::abs(medianOffset)));
 
     if (overlap <= 0) {
@@ -524,8 +1038,24 @@ ImageStitcher::MatchCandidate ImageStitcher::computeTemplateMatchCandidate(const
         return candidate;
     }
 
-    if (overlap < MIN_OVERLAP || overlap > MAX_OVERLAP) {
-        candidate.failureReason = QString("Invalid overlap: %1").arg(overlap);
+    if (overlap < MIN_OVERLAP) {
+        candidate.failureReason = QString("Overlap too small: %1").arg(overlap);
+        return candidate;
+    }
+
+    // Sanity check: overlap should not exceed a reasonable percentage of frame
+    int maxReasonableOverlap = static_cast<int>(frameDimension * overlapRatio);
+    if (overlap > maxReasonableOverlap) {
+        candidate.confidence = 0.25;
+        candidate.failureReason = QString("Overlap too large: %1 (>%2%% of frame)")
+            .arg(overlap).arg(static_cast<int>(overlapRatio * 100));
+        return candidate;
+    }
+
+    double overlapDiff = normalizedOverlapDifference(lastGray, newGray, direction, isHorizontal, overlap);
+    if (overlapDiff > kMaxOverlapDiff) {
+        candidate.confidence = 0.2;
+        candidate.failureReason = QString("Overlap mismatch: %1").arg(overlapDiff, 0, 'f', 3);
         return candidate;
     }
 
@@ -570,6 +1100,47 @@ ImageStitcher::StitchResult ImageStitcher::performStitch(const QImage &newFrame,
 
         overlapPixels = qBound(MIN_OVERLAP, overlapPixels,
                                qMin(currentWidth, newFrameRgb.width()) - 1);
+
+        if (!m_currentViewportRect.isNull()) {
+            int predictedX = (direction == ScrollDirection::Right)
+                ? m_currentViewportRect.x() + m_currentViewportRect.width() - overlapPixels
+                : m_currentViewportRect.x() - (newFrameRgb.width() - overlapPixels);
+            QRect predictedRect(predictedX, 0, newFrameRgb.width(), newFrameRgb.height());
+            QRect bounds(0, 0, currentWidth, m_stitchedResult.height());
+            InPlaceMatch inPlace = findInPlaceMatch(
+                m_stitchedResult,
+                m_currentViewportRect,
+                newFrameRgb,
+                true,
+                overlapPixels,
+                direction,
+                currentWidth,
+                m_stitchedResult.height());
+            if (inPlace.found) {
+                m_currentViewportRect = inPlace.rect;
+                result.offset = inPlace.rect.topLeft();
+                result.success = true;
+                return result;
+            }
+            if (direction != m_lastSuccessfulDirection) {
+                InPlaceMatch global = findGlobalInPlaceMatch(
+                    m_stitchedResult,
+                    currentWidth,
+                    m_stitchedResult.height(),
+                    newFrameRgb,
+                    true);
+                if (global.found) {
+                    m_currentViewportRect = global.rect;
+                    result.offset = global.rect.topLeft();
+                    result.success = true;
+                    return result;
+                }
+            }
+            if (bounds.contains(predictedRect)) {
+                result.failureReason = "Viewport mismatch";
+                return result;
+            }
+        }
 
         if (direction == ScrollDirection::Right) {
             // Append new frame to the right
@@ -665,6 +1236,47 @@ ImageStitcher::StitchResult ImageStitcher::performStitch(const QImage &newFrame,
 
         overlapPixels = qBound(MIN_OVERLAP, overlapPixels,
                                qMin(currentHeight, newFrameRgb.height()) - 1);
+
+        if (!m_currentViewportRect.isNull()) {
+            int predictedY = (direction == ScrollDirection::Down)
+                ? m_currentViewportRect.y() + m_currentViewportRect.height() - overlapPixels
+                : m_currentViewportRect.y() - (newFrameRgb.height() - overlapPixels);
+            QRect predictedRect(0, predictedY, newFrameRgb.width(), newFrameRgb.height());
+            QRect bounds(0, 0, m_stitchedResult.width(), currentHeight);
+            InPlaceMatch inPlace = findInPlaceMatch(
+                m_stitchedResult,
+                m_currentViewportRect,
+                newFrameRgb,
+                false,
+                overlapPixels,
+                direction,
+                m_stitchedResult.width(),
+                currentHeight);
+            if (inPlace.found) {
+                m_currentViewportRect = inPlace.rect;
+                result.offset = inPlace.rect.topLeft();
+                result.success = true;
+                return result;
+            }
+            if (direction != m_lastSuccessfulDirection) {
+                InPlaceMatch global = findGlobalInPlaceMatch(
+                    m_stitchedResult,
+                    m_stitchedResult.width(),
+                    currentHeight,
+                    newFrameRgb,
+                    false);
+                if (global.found) {
+                    m_currentViewportRect = global.rect;
+                    result.offset = global.rect.topLeft();
+                    result.success = true;
+                    return result;
+                }
+            }
+            if (bounds.contains(predictedRect)) {
+                result.failureReason = "Viewport mismatch";
+                return result;
+            }
+        }
 
         if (direction == ScrollDirection::Down) {
             // Append new frame below
@@ -803,17 +1415,33 @@ ImageStitcher::StitchResult ImageStitcher::tryRowProjectionMatch(const QImage &n
     auto secondaryCandidate = computeRowProjectionCandidate(newFrame, secondaryDir);
 
     if (primaryCandidate.success && secondaryCandidate.success) {
-        const auto &best = (primaryCandidate.confidence >= secondaryCandidate.confidence)
-                           ? primaryCandidate
-                           : secondaryCandidate;
+        // Direction hysteresis to reduce jitter when both directions match
+        // Higher value (0.15) makes direction switches harder, preventing accidental reversals
+        constexpr double DIRECTION_HYSTERESIS = 0.15;
+
+        bool preferPrimary = true;
+        if (secondaryCandidate.direction == m_lastSuccessfulDirection) {
+            preferPrimary = primaryCandidate.confidence >
+                            secondaryCandidate.confidence + DIRECTION_HYSTERESIS;
+        } else if (primaryCandidate.direction == m_lastSuccessfulDirection) {
+            preferPrimary = primaryCandidate.confidence + DIRECTION_HYSTERESIS >=
+                            secondaryCandidate.confidence;
+        } else {
+            preferPrimary = primaryCandidate.confidence >= secondaryCandidate.confidence;
+        }
+
+        const auto &best = preferPrimary ? primaryCandidate : secondaryCandidate;
+        m_lastSuccessfulDirection = best.direction;
         return applyCandidate(newFrame, best, Algorithm::RowProjection);
     }
 
     if (primaryCandidate.success) {
+        m_lastSuccessfulDirection = primaryCandidate.direction;
         return applyCandidate(newFrame, primaryCandidate, Algorithm::RowProjection);
     }
 
     if (secondaryCandidate.success) {
+        m_lastSuccessfulDirection = secondaryCandidate.direction;
         return applyCandidate(newFrame, secondaryCandidate, Algorithm::RowProjection);
     }
 
@@ -826,6 +1454,57 @@ ImageStitcher::StitchResult ImageStitcher::tryRowProjectionMatch(const QImage &n
     result.failureReason = dirNames
         .arg(primaryCandidate.failureReason.isEmpty() ? "No match" : primaryCandidate.failureReason,
              secondaryCandidate.failureReason.isEmpty() ? "No match" : secondaryCandidate.failureReason);
+    return result;
+}
+
+ImageStitcher::StitchResult ImageStitcher::tryInPlaceMatchInStitched(const QImage &newFrame)
+{
+    StitchResult result;
+    result.usedAlgorithm = Algorithm::RowProjection;
+
+    if (newFrame.isNull() || m_stitchedResult.isNull() || m_currentViewportRect.isNull()) {
+        result.failureReason = "No stitched viewport available";
+        return result;
+    }
+
+    bool isHorizontal = (m_captureMode == CaptureMode::Horizontal);
+    int validWidth = m_validWidth > 0 ? m_validWidth : m_stitchedResult.width();
+    int validHeight = m_validHeight > 0 ? m_validHeight : m_stitchedResult.height();
+
+    if (validWidth <= 0 || validHeight <= 0) {
+        result.failureReason = "Invalid stitcher state";
+        return result;
+    }
+
+    InPlaceMatch match = findGlobalInPlaceMatch(
+        m_stitchedResult,
+        validWidth,
+        validHeight,
+        newFrame,
+        isHorizontal);
+
+    if (!match.found) {
+        result.failureReason = "No in-place match found";
+        return result;
+    }
+
+    QRect previousViewport = m_currentViewportRect;
+    m_currentViewportRect = match.rect;
+
+    if (isHorizontal) {
+        result.direction = (match.rect.x() >= previousViewport.x())
+            ? ScrollDirection::Right
+            : ScrollDirection::Left;
+    } else {
+        result.direction = (match.rect.y() >= previousViewport.y())
+            ? ScrollDirection::Down
+            : ScrollDirection::Up;
+    }
+
+    m_lastSuccessfulDirection = result.direction;
+    result.offset = match.rect.topLeft();
+    result.confidence = std::clamp(1.0 - (match.diff.averageDiff + match.diff.changedRatio * 0.5), 0.0, 1.0);
+    result.success = true;
     return result;
 }
 
@@ -850,215 +1529,114 @@ ImageStitcher::MatchCandidate ImageStitcher::computeRowProjectionCandidate(
 
     bool isHorizontal = (direction == ScrollDirection::Left || direction == ScrollDirection::Right);
 
-    // Calculate projection profiles
-    // For vertical scrolling: sum pixels horizontally to get row profile P(y)
-    // For horizontal scrolling: sum pixels vertically to get column profile P(x)
+    int dx = isHorizontal ? 1 : 0;
+    int dy = isHorizontal ? 0 : 1;
+    cv::Mat lastGrad, newGrad;
+    cv::Sobel(lastGray, lastGrad, CV_32F, dx, dy, 3);
+    cv::Sobel(newGray, newGrad, CV_32F, dx, dy, 3);
+
+    cv::Mat lastAbs, newAbs;
+    cv::absdiff(lastGrad, cv::Scalar::all(0), lastAbs);
+    cv::absdiff(newGrad, cv::Scalar::all(0), newAbs);
+
     cv::Mat lastProfile, newProfile;
-
     if (isHorizontal) {
-        // Vertical projection (sum along rows) -> 1 row x N cols
-        cv::reduce(lastGray, lastProfile, 0, cv::REDUCE_SUM, CV_64F);
-        cv::reduce(newGray, newProfile, 0, cv::REDUCE_SUM, CV_64F);
+        cv::reduce(lastAbs, lastProfile, 0, cv::REDUCE_SUM, CV_64F);
+        cv::reduce(newAbs, newProfile, 0, cv::REDUCE_SUM, CV_64F);
     } else {
-        // Horizontal projection (sum along columns) -> N rows x 1 col
-        cv::reduce(lastGray, lastProfile, 1, cv::REDUCE_SUM, CV_64F);
-        cv::reduce(newGray, newProfile, 1, cv::REDUCE_SUM, CV_64F);
+        cv::reduce(lastAbs, lastProfile, 1, cv::REDUCE_SUM, CV_64F);
+        cv::reduce(newAbs, newProfile, 1, cv::REDUCE_SUM, CV_64F);
     }
 
-    // Normalize profiles to zero mean
-    cv::Scalar lastMean = cv::mean(lastProfile);
-    cv::Scalar newMean = cv::mean(newProfile);
-    lastProfile -= lastMean[0];
-    newProfile -= newMean[0];
-
-    // Define ROI regions for cross-correlation
-    // For Down/Right: match bottom/right portion of last frame with top/left portion of new frame
-    // For Up/Left: match top/left portion of last frame with bottom/right portion of new frame
-    int profileSize = isHorizontal ? lastProfile.cols : lastProfile.rows;
-    int roiLastSize = static_cast<int>(profileSize * ROI_FIRST_RATIO);
-    int roiNewSize = static_cast<int>(profileSize * ROI_SECOND_RATIO);
-
-    roiLastSize = qBound(MIN_OVERLAP, roiLastSize, profileSize);
-    roiNewSize = qBound(MIN_OVERLAP, roiNewSize, profileSize);
-
-    cv::Mat templateProfile, searchProfile;
-    int templateStart = 0;
-    int searchStart = 0;
-
+    std::vector<double> lastVec;
+    std::vector<double> newVec;
     if (isHorizontal) {
-        if (direction == ScrollDirection::Right) {
-            // Template: right portion of last frame
-            // Search: left portion of new frame
-            templateStart = profileSize - roiLastSize;
-            templateProfile = lastProfile(cv::Rect(templateStart, 0, roiLastSize, 1));
-            searchProfile = newProfile(cv::Rect(0, 0, roiNewSize, 1));
-            searchStart = 0;
-        } else {
-            // Template: left portion of last frame
-            // Search: right portion of new frame
-            templateStart = 0;
-            templateProfile = lastProfile(cv::Rect(0, 0, roiLastSize, 1));
-            searchStart = profileSize - roiNewSize;
-            searchProfile = newProfile(cv::Rect(searchStart, 0, roiNewSize, 1));
-        }
+        lastVec.assign(lastProfile.ptr<double>(0),
+                       lastProfile.ptr<double>(0) + lastProfile.cols);
+        newVec.assign(newProfile.ptr<double>(0),
+                      newProfile.ptr<double>(0) + newProfile.cols);
     } else {
-        if (direction == ScrollDirection::Down) {
-            // Template: bottom portion of last frame
-            // Search: top portion of new frame
-            templateStart = profileSize - roiLastSize;
-            templateProfile = lastProfile(cv::Rect(0, templateStart, 1, roiLastSize));
-            searchProfile = newProfile(cv::Rect(0, 0, 1, roiNewSize));
-            searchStart = 0;
-        } else {
-            // Template: top portion of last frame
-            // Search: bottom portion of new frame
-            templateStart = 0;
-            templateProfile = lastProfile(cv::Rect(0, 0, 1, roiLastSize));
-            searchStart = profileSize - roiNewSize;
-            searchProfile = newProfile(cv::Rect(0, searchStart, 1, roiNewSize));
+        lastVec.reserve(static_cast<size_t>(lastProfile.rows));
+        newVec.reserve(static_cast<size_t>(newProfile.rows));
+        for (int i = 0; i < lastProfile.rows; ++i) {
+            lastVec.push_back(lastProfile.at<double>(i, 0));
+        }
+        for (int i = 0; i < newProfile.rows; ++i) {
+            newVec.push_back(newProfile.at<double>(i, 0));
         }
     }
 
-    // Convert to 1D vectors for cross-correlation
-    std::vector<double> templateVec, searchVec;
-    if (isHorizontal) {
-        templateVec.assign(templateProfile.ptr<double>(0),
-                           templateProfile.ptr<double>(0) + templateProfile.cols);
-        searchVec.assign(searchProfile.ptr<double>(0),
-                         searchProfile.ptr<double>(0) + searchProfile.cols);
-    } else {
-        for (int i = 0; i < templateProfile.rows; ++i) {
-            templateVec.push_back(templateProfile.at<double>(i, 0));
-        }
-        for (int i = 0; i < searchProfile.rows; ++i) {
-            searchVec.push_back(searchProfile.at<double>(i, 0));
-        }
-    }
-
-    if (templateVec.size() < 10 || searchVec.size() < 10) {
-        candidate.failureReason = "Profile too short for matching";
+    if (lastVec.size() != newVec.size() ||
+        lastVec.size() <= static_cast<size_t>(MIN_OVERLAP)) {
+        candidate.failureReason = "Profile too short for overlap search";
         return candidate;
     }
 
-    // Perform 1D cross-correlation using sliding window
-    // We search for the position where template best matches within search region
-    int maxLag = static_cast<int>(searchVec.size()) - static_cast<int>(templateVec.size());
-    if (maxLag < 0) {
-        candidate.failureReason = "Template larger than search region";
+    int frameDimension = static_cast<int>(lastVec.size());
+    double overlapRatio = maxOverlapRatioForFrame(frameDimension);
+    int maxOverlap = maxOverlapForFrame(frameDimension, MIN_OVERLAP, overlapRatio);
+    if (maxOverlap == 0) {
+        candidate.failureReason = "Frame too small for overlap search";
         return candidate;
     }
 
-    double bestCorr = -1e9;
-    int bestLag = 0;
-    double templateNorm = 0.0;
+    bool isForward = (direction == ScrollDirection::Down || direction == ScrollDirection::Right);
 
-    // Pre-compute template norm
-    for (double v : templateVec) {
-        templateNorm += v * v;
-    }
-    templateNorm = std::sqrt(templateNorm);
+    double bestCorr = -1.0;
+    double secondBestCorr = -1.0;
+    int bestOverlap = 0;
 
-    if (templateNorm < 1e-6) {
-        candidate.failureReason = "Template has no variance (uniform region)";
-        return candidate;
-    }
-
-    // Sliding window cross-correlation
-    for (int lag = 0; lag <= maxLag; ++lag) {
-        double corr = 0.0;
-        double searchNorm = 0.0;
-
-        for (size_t i = 0; i < templateVec.size(); ++i) {
-            double sv = searchVec[lag + i];
-            corr += templateVec[i] * sv;
-            searchNorm += sv * sv;
+    for (int overlap = MIN_OVERLAP; overlap <= maxOverlap; ++overlap) {
+        size_t lastStart = isForward
+            ? static_cast<size_t>(frameDimension - overlap)
+            : 0;
+        size_t newStart = isForward
+            ? 0
+            : static_cast<size_t>(frameDimension - overlap);
+        double corr = normalizedCrossCorrelation(
+            lastVec, lastStart, newVec, newStart, static_cast<size_t>(overlap));
+        if (corr < -0.5) {
+            continue;
         }
-
-        searchNorm = std::sqrt(searchNorm);
-        if (searchNorm > 1e-6) {
-            // Normalized cross-correlation coefficient
-            corr /= (templateNorm * searchNorm);
-        } else {
-            corr = 0.0;
-        }
-
         if (corr > bestCorr) {
+            secondBestCorr = bestCorr;
             bestCorr = corr;
-            bestLag = lag;
+            bestOverlap = overlap;
+        } else if (corr > secondBestCorr) {
+            secondBestCorr = corr;
         }
     }
 
-    // Calculate offset in full-frame coordinates
-    // bestLag is the position within search region where template matches
-    double offset;
-    if (isHorizontal) {
-        if (direction == ScrollDirection::Right) {
-            // Template starts at templateStart in last frame
-            // Matches at bestLag in new frame (from position 0)
-            offset = templateStart - bestLag;
-        } else {
-            // Template starts at 0 in last frame
-            // Matches at searchStart + bestLag in new frame
-            offset = -(searchStart + bestLag);
-        }
-    } else {
-        if (direction == ScrollDirection::Down) {
-            offset = templateStart - bestLag;
-        } else {
-            offset = -(searchStart + bestLag);
-        }
-    }
-
-    // Validate direction
-    constexpr double DIRECTION_TOLERANCE = 3.0;
-    if (direction == ScrollDirection::Down && offset < -DIRECTION_TOLERANCE) {
-        candidate.failureReason = "Direction mismatch (scrolling up detected)";
-        return candidate;
-    }
-    if (direction == ScrollDirection::Up && offset > DIRECTION_TOLERANCE) {
-        candidate.failureReason = "Direction mismatch (scrolling down detected)";
-        return candidate;
-    }
-    if (direction == ScrollDirection::Right && offset < -DIRECTION_TOLERANCE) {
-        candidate.failureReason = "Direction mismatch (scrolling left detected)";
-        return candidate;
-    }
-    if (direction == ScrollDirection::Left && offset > DIRECTION_TOLERANCE) {
-        candidate.failureReason = "Direction mismatch (scrolling right detected)";
-        return candidate;
-    }
-
-    // Calculate overlap
-    int frameDimension = isHorizontal ? newFrame.width() : newFrame.height();
-    int overlap = frameDimension - static_cast<int>(std::round(std::abs(offset)));
-
-    if (overlap <= 0) {
-        candidate.confidence = 0.2;
-        candidate.failureReason = QString("Negative overlap: %1").arg(overlap);
-        return candidate;
-    }
-
-    if (overlap < MIN_OVERLAP) {
-        candidate.confidence = 0.3;
-        candidate.failureReason = QString("Overlap too small: %1").arg(overlap);
-        return candidate;
-    }
-
-    if (overlap > MAX_OVERLAP) {
-        overlap = MAX_OVERLAP;
-    }
-
-    // Confidence is the normalized cross-correlation coefficient
-    // Scale it to make it comparable with other methods
-    candidate.confidence = std::clamp((bestCorr + 1.0) / 2.0, 0.0, 1.0);
-
-    if (candidate.confidence < m_confidenceThreshold) {
+    if (bestOverlap == 0 || bestCorr < kMinCorrelation) {
+        candidate.confidence = std::clamp(bestCorr, 0.0, 1.0);
         candidate.failureReason = QString("Low correlation: %1").arg(bestCorr);
         return candidate;
     }
 
+    double overlapDiff = normalizedOverlapDifference(lastGray, newGray, direction, isHorizontal, bestOverlap);
+    if (overlapDiff > kMaxOverlapDiff) {
+        candidate.confidence = 0.2;
+        candidate.failureReason = QString("Overlap mismatch: %1").arg(overlapDiff, 0, 'f', 3);
+        return candidate;
+    }
+
+    double baseConfidence = std::clamp(bestCorr, 0.0, 1.0);
+    double uniqueness = 1.0;
+    if (secondBestCorr > -0.5) {
+        double peakGap = bestCorr - secondBestCorr;
+        uniqueness = std::clamp(peakGap / kPeakGapScale, 0.0, 1.0);
+    }
+
+    double diffPenalty = std::clamp(overlapDiff / kMaxOverlapDiff, 0.0, 1.0);
+    candidate.confidence = baseConfidence * (0.7 + 0.3 * uniqueness) * (1.0 - 0.5 * diffPenalty);
+
+    if (candidate.confidence < m_confidenceThreshold) {
+        candidate.failureReason = QString("Low confidence: %1").arg(candidate.confidence);
+        return candidate;
+    }
+
     candidate.success = true;
-    candidate.overlap = overlap;
+    candidate.overlap = bestOverlap;
 
     return candidate;
 }

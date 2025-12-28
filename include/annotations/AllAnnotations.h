@@ -20,7 +20,9 @@
 #include "annotations/ShapeAnnotation.h"
 #include "annotations/TextAnnotation.h"
 #include "annotations/MosaicStroke.h"
+#include "annotations/MosaicRectAnnotation.h"
 #include "annotations/StepBadgeAnnotation.h"
+#include "annotations/EraserStroke.h"
 #include "annotations/ErasedItemsGroup.h"
 
 #endif // ALLANNOTATIONS_H

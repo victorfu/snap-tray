@@ -80,6 +80,7 @@ private:
     int m_frameRate;
     int m_maxBitDepth;
     qint64 m_framesWritten;
+    int m_consecutiveFailures;  // Track consecutive frame encoding failures
     qint64 m_lastTimestampMs;
     QString m_lastError;
     bool m_running;

@@ -16,6 +16,7 @@ NativeGifEncoder::NativeGifEncoder(QObject *parent)
     , m_frameRate(30)
     , m_maxBitDepth(16)
     , m_framesWritten(0)
+    , m_consecutiveFailures(0)
     , m_lastTimestampMs(0)
     , m_running(false)
     , m_aborted(false)
@@ -41,6 +42,14 @@ bool NativeGifEncoder::start(const QString &outputPath, const QSize &frameSize, 
         return false;
     }
 
+    // Validate minimum frame dimensions (must be at least 2x2 after rounding to even)
+    if (frameSize.width() < 2 || frameSize.height() < 2) {
+        m_lastError = QString("Frame size too small: %1x%2 (minimum 2x2)")
+            .arg(frameSize.width()).arg(frameSize.height());
+        emit error(m_lastError);
+        return false;
+    }
+
     m_outputPath = outputPath;
     // Ensure dimensions are even (required by some codecs/formats)
     m_frameSize = QSize(
@@ -49,6 +58,7 @@ bool NativeGifEncoder::start(const QString &outputPath, const QSize &frameSize, 
     );
     m_frameRate = frameRate;
     m_framesWritten = 0;
+    m_consecutiveFailures = 0;
     m_lastTimestampMs = 0;
     m_lastError.clear();
     m_aborted = false;
@@ -130,10 +140,23 @@ void NativeGifEncoder::writeFrame(const QImage &frame, qint64 timestampMs)
                        m_maxBitDepth,
                        pitchInBytes);
     if (!result) {
-        qWarning() << "NativeGifEncoder: msf_gif_frame failed for frame" << m_framesWritten;
+        m_consecutiveFailures++;
+        qWarning() << "NativeGifEncoder: msf_gif_frame failed for frame" << m_framesWritten
+                   << "(consecutive failures:" << m_consecutiveFailures << ")";
+
+        // Stop encoding after too many consecutive failures to prevent silent corruption
+        constexpr int MAX_CONSECUTIVE_FAILURES = 10;
+        if (m_consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
+            m_lastError = QString("GIF encoding failed: %1 consecutive frame failures")
+                .arg(m_consecutiveFailures);
+            m_running = false;
+            emit error(m_lastError);
+        }
         return;
     }
 
+    // Reset failure counter on success
+    m_consecutiveFailures = 0;
     m_framesWritten++;
     m_lastTimestampMs = timestampMs;
 

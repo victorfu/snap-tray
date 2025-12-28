@@ -39,6 +39,7 @@ void ImageStitcher::reset()
     m_frameCount = 0;
     m_validHeight = 0;
     m_validWidth = 0;
+    m_lastSuccessfulDirection = ScrollDirection::Down;
 }
 
 ImageStitcher::StitchResult ImageStitcher::addFrame(const QImage &frame)
@@ -106,6 +107,15 @@ ImageStitcher::StitchResult ImageStitcher::addFrame(const QImage &frame)
             return result;
         }
 
+        // Fallback: match within existing stitched image (useful when user scrolls back)
+        result = tryInPlaceMatchInStitched(frame);
+        if (result.success) {
+            m_lastFrame = frame.convertToFormat(QImage::Format_RGB32);
+            m_frameCount++;
+            emit progressUpdated(m_frameCount, getCurrentSize());
+            return result;
+        }
+
         // All failed
         result.success = false;
         result.failureReason = "No matching algorithm succeeded";
@@ -122,6 +132,13 @@ ImageStitcher::StitchResult ImageStitcher::addFrame(const QImage &frame)
     }
     else {
         result = tryRowProjectionMatch(frame);
+    }
+
+    if (!result.success) {
+        StitchResult inPlace = tryInPlaceMatchInStitched(frame);
+        if (inPlace.success) {
+            result = inPlace;
+        }
     }
 
     if (result.success) {

@@ -13,11 +13,13 @@ set(COLORANDWIDTHWIDGET_COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/IconRenderer.cpp
     ${CMAKE_SOURCE_DIR}/src/ui/sections/ColorSection.cpp
     ${CMAKE_SOURCE_DIR}/src/ui/sections/WidthSection.cpp
+    ${CMAKE_SOURCE_DIR}/src/ui/sections/MosaicWidthSection.cpp
     ${CMAKE_SOURCE_DIR}/src/ui/sections/TextSection.cpp
     ${CMAKE_SOURCE_DIR}/src/ui/sections/ArrowStyleSection.cpp
     ${CMAKE_SOURCE_DIR}/src/ui/sections/LineStyleSection.cpp
     ${CMAKE_SOURCE_DIR}/src/ui/sections/ShapeSection.cpp
     ${CMAKE_SOURCE_DIR}/src/ui/sections/SizeSection.cpp
+    ${CMAKE_SOURCE_DIR}/src/ui/sections/AutoBlurSection.cpp
 )
 
 # Common headers that need MOC processing
@@ -25,11 +27,13 @@ set(COLORANDWIDTHWIDGET_COMMON_HEADERS
     ${CMAKE_SOURCE_DIR}/include/ColorAndWidthWidget.h
     ${CMAKE_SOURCE_DIR}/include/ui/sections/ColorSection.h
     ${CMAKE_SOURCE_DIR}/include/ui/sections/WidthSection.h
+    ${CMAKE_SOURCE_DIR}/include/ui/sections/MosaicWidthSection.h
     ${CMAKE_SOURCE_DIR}/include/ui/sections/TextSection.h
     ${CMAKE_SOURCE_DIR}/include/ui/sections/ArrowStyleSection.h
     ${CMAKE_SOURCE_DIR}/include/ui/sections/LineStyleSection.h
     ${CMAKE_SOURCE_DIR}/include/ui/sections/ShapeSection.h
     ${CMAKE_SOURCE_DIR}/include/ui/sections/SizeSection.h
+    ${CMAKE_SOURCE_DIR}/include/ui/sections/AutoBlurSection.h
 )
 
 # Helper function to create a test executable
@@ -787,3 +791,82 @@ add_test(NAME RecordingManager_InitTask COMMAND RecordingManager_InitTask)
 set_tests_properties(RecordingManager_InitTask PROPERTIES TIMEOUT 60)
 
 endif()  # End of temporarily disabled RecordingManager tests
+
+# ============================================================================
+# Detection Tests
+# ============================================================================
+
+# Source files for detection tests
+set(DETECTION_SOURCES
+    ${CMAKE_SOURCE_DIR}/src/detection/FaceDetector.cpp
+    ${CMAKE_SOURCE_DIR}/src/detection/TextDetector.cpp
+    ${CMAKE_SOURCE_DIR}/src/detection/AutoBlurManager.cpp
+)
+
+set(DETECTION_HEADERS
+    ${CMAKE_SOURCE_DIR}/include/detection/IDetector.h
+    ${CMAKE_SOURCE_DIR}/include/detection/FaceDetector.h
+    ${CMAKE_SOURCE_DIR}/include/detection/TextDetector.h
+    ${CMAKE_SOURCE_DIR}/include/detection/AutoBlurManager.h
+)
+
+# OpenCV include directories for detection tests
+set(OPENCV_DETECTION_INCLUDES
+    ${CMAKE_BINARY_DIR}
+    ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/core/include
+    ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/imgproc/include
+    ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/features2d/include
+    ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/flann/include
+    ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/objdetect/include
+)
+
+# Helper function for detection tests
+function(add_detection_test TEST_NAME TEST_SOURCE)
+    add_executable(${TEST_NAME}
+        ${TEST_SOURCE}
+        ${DETECTION_SOURCES}
+        ${DETECTION_HEADERS}
+    )
+
+    target_include_directories(${TEST_NAME} PRIVATE
+        ${CMAKE_SOURCE_DIR}/include
+        ${CMAKE_SOURCE_DIR}/src
+        ${CMAKE_BINARY_DIR}/generated
+        ${OPENCV_DETECTION_INCLUDES}
+    )
+
+    target_link_libraries(${TEST_NAME} PRIVATE
+        Qt6::Core
+        Qt6::Gui
+        Qt6::Widgets
+        Qt6::Test
+        opencv_core
+        opencv_imgproc
+        opencv_features2d
+        opencv_flann
+        opencv_objdetect
+    )
+
+    # Add resources for cascade file
+    target_sources(${TEST_NAME} PRIVATE
+        ${CMAKE_SOURCE_DIR}/resources/resources.qrc
+    )
+
+    add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
+
+    set_tests_properties(${TEST_NAME} PROPERTIES
+        TIMEOUT 60
+    )
+endfunction()
+
+# FaceDetector test
+add_detection_test(Detection_FaceDetector
+    Detection/tst_FaceDetector.cpp)
+
+# TextDetector test
+add_detection_test(Detection_TextDetector
+    Detection/tst_TextDetector.cpp)
+
+# AutoBlurManager test
+add_detection_test(Detection_AutoBlurManager
+    Detection/tst_AutoBlurManager.cpp)

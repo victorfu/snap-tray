@@ -7,6 +7,7 @@
 #include "PlatformFeatures.h"
 #include "settings/Settings.h"
 
+#include <QPointer>
 #include <QSettings>
 #include <QSystemTrayIcon>
 #include <QMenu>
@@ -82,8 +83,15 @@ void MainApplication::initialize()
     // Use delay to ensure RecordingRegionSelector is fully closed before capturing new screenshot
     connect(m_recordingManager, &RecordingManager::selectionCancelledWithRegion,
             this, [this](const QRect &region, QScreen *screen) {
-                QTimer::singleShot(50, this, [this, region, screen]() {
-                    m_captureManager->startRegionCaptureWithPreset(region, screen);
+                // Use QPointer to guard against screen being deleted during the delay
+                QPointer<QScreen> safeScreen = screen;
+                QTimer::singleShot(50, this, [this, region, safeScreen]() {
+                    // Check if screen is still valid before using it
+                    if (safeScreen) {
+                        m_captureManager->startRegionCaptureWithPreset(region, safeScreen);
+                    } else {
+                        qWarning() << "MainApplication: Screen was deleted during delay, skipping capture";
+                    }
                 });
             });
 

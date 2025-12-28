@@ -120,7 +120,7 @@ private:
     // Layout constants
     static const int SWATCH_SIZE = 16;
     static const int SWATCH_SPACING = 2;
-    static const int PALETTE_HEIGHT = 36;
+    static const int PALETTE_HEIGHT = 40;
     static const int PALETTE_PADDING = 5;
     static const int COLORS_PER_ROW = 8;
 
