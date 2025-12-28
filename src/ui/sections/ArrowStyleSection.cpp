@@ -105,9 +105,11 @@ void ArrowStyleSection::draw(QPainter& painter, const ToolbarStyleConfig& styleC
     QColor toggleBgColor;
     if (m_polylineMode) {
         toggleBgColor = styleConfig.buttonActiveColor;
-    } else if (toggleHovered) {
+    }
+    else if (toggleHovered) {
         toggleBgColor = styleConfig.buttonHoverColor;
-    } else {
+    }
+    else {
         toggleBgColor = styleConfig.buttonInactiveColor;
     }
     painter.setPen(QPen(styleConfig.dropdownBorder, 1));

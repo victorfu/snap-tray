@@ -76,13 +76,13 @@ private:
      * @brief Draw the arrow style icon.
      */
     void drawArrowStyleIcon(QPainter& painter, LineEndStyle style, const QRect& rect,
-                            const ToolbarStyleConfig& styleConfig) const;
+        const ToolbarStyleConfig& styleConfig) const;
 
     /**
      * @brief Draw the polyline toggle icon.
      */
     void drawPolylineIcon(QPainter& painter, const QRect& rect, bool active,
-                          const ToolbarStyleConfig& styleConfig) const;
+        const ToolbarStyleConfig& styleConfig) const;
 
     // State
     LineEndStyle m_arrowStyle = LineEndStyle::EndArrow;
@@ -98,7 +98,7 @@ private:
     QRect m_dropdownRect;
 
     // Layout constants
-    static constexpr int BUTTON_WIDTH = 42;
+    static constexpr int BUTTON_WIDTH = 52;
     static constexpr int TOGGLE_WIDTH = 28;
     static constexpr int BUTTON_HEIGHT = 24;
     static constexpr int DROPDOWN_OPTION_HEIGHT = 28;
