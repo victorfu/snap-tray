@@ -36,20 +36,41 @@ void ArrowAnnotation::draw(QPainter &painter) const
     painter.setPen(pen);
     painter.setRenderHint(QPainter::Antialiasing, true);
 
-    // Calculate line endpoint (adjust if arrowhead is present)
+    double arrowLength = qMax(15.0, m_width * 5.0);
+
+    // Calculate line endpoints (adjust if arrowheads are present)
+    QPointF lineStart = m_start;
     QPointF lineEnd = m_end;
-    if (m_lineEndStyle != LineEndStyle::None) {
-        // Move line end back to arrowhead base so line doesn't protrude through arrow
+
+    // Check if we have arrowhead at end
+    bool hasEndArrow = (m_lineEndStyle != LineEndStyle::None);
+    // Check if we have arrowhead at start (both-ends styles)
+    bool hasStartArrow = (m_lineEndStyle == LineEndStyle::BothArrow ||
+                          m_lineEndStyle == LineEndStyle::BothArrowOutline);
+
+    // Adjust line end for filled arrowheads (so line doesn't protrude)
+    if (hasEndArrow && (m_lineEndStyle == LineEndStyle::EndArrow ||
+                        m_lineEndStyle == LineEndStyle::EndArrowOutline ||
+                        m_lineEndStyle == LineEndStyle::BothArrow ||
+                        m_lineEndStyle == LineEndStyle::BothArrowOutline)) {
         double angle = qAtan2(m_end.y() - m_start.y(), m_end.x() - m_start.x());
-        double arrowLength = qMax(15.0, m_width * 5.0);
         lineEnd = QPointF(
             m_end.x() - arrowLength * qCos(angle),
             m_end.y() - arrowLength * qSin(angle)
         );
     }
 
-    // Draw the line (to correct endpoint)
-    painter.drawLine(m_start, lineEnd.toPoint());
+    // Adjust line start for filled arrowheads at start
+    if (hasStartArrow) {
+        double angle = qAtan2(m_start.y() - m_end.y(), m_start.x() - m_end.x());
+        lineStart = QPointF(
+            m_start.x() - arrowLength * qCos(angle),
+            m_start.y() - arrowLength * qSin(angle)
+        );
+    }
+
+    // Draw the line (to correct endpoints)
+    painter.drawLine(lineStart.toPoint(), lineEnd.toPoint());
 
     // Draw arrowhead(s) based on line end style
     switch (m_lineEndStyle) {
@@ -57,14 +78,28 @@ void ArrowAnnotation::draw(QPainter &painter) const
         // Plain line, no arrowheads
         break;
     case LineEndStyle::EndArrow:
-        drawArrowhead(painter, m_start, m_end);
+        drawArrowhead(painter, m_start, m_end, true);  // filled
+        break;
+    case LineEndStyle::EndArrowOutline:
+        drawArrowhead(painter, m_start, m_end, false); // outline
+        break;
+    case LineEndStyle::EndArrowLine:
+        drawArrowheadLine(painter, m_start, m_end);
+        break;
+    case LineEndStyle::BothArrow:
+        drawArrowhead(painter, m_start, m_end, true);   // filled at end
+        drawArrowhead(painter, m_end, m_start, true);   // filled at start
+        break;
+    case LineEndStyle::BothArrowOutline:
+        drawArrowhead(painter, m_start, m_end, false);  // outline at end
+        drawArrowhead(painter, m_end, m_start, false);  // outline at start
         break;
     }
 
     painter.restore();
 }
 
-void ArrowAnnotation::drawArrowhead(QPainter &painter, const QPoint &start, const QPoint &end) const
+void ArrowAnnotation::drawArrowhead(QPainter &painter, const QPoint &start, const QPoint &end, bool filled) const
 {
     // Calculate the angle of the line
     double angle = qAtan2(end.y() - start.y(), end.x() - start.x());
@@ -83,7 +118,7 @@ void ArrowAnnotation::drawArrowhead(QPainter &painter, const QPoint &start, cons
         end.y() - arrowLength * qSin(angle + arrowAngle)
     );
 
-    // Draw filled arrowhead with solid outline (not affected by line style)
+    // Draw arrowhead triangle
     QPainterPath arrowPath;
     arrowPath.moveTo(end);
     arrowPath.lineTo(arrowP1);
@@ -93,8 +128,40 @@ void ArrowAnnotation::drawArrowhead(QPainter &painter, const QPoint &start, cons
     // Use solid pen for arrowhead outline
     QPen solidPen(m_color, m_width, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
     painter.setPen(solidPen);
-    painter.setBrush(m_color);
+
+    if (filled) {
+        painter.setBrush(m_color);
+    } else {
+        painter.setBrush(Qt::NoBrush);
+    }
     painter.drawPath(arrowPath);
+}
+
+void ArrowAnnotation::drawArrowheadLine(QPainter &painter, const QPoint &start, const QPoint &end) const
+{
+    // Calculate the angle of the line
+    double angle = qAtan2(end.y() - start.y(), end.x() - start.x());
+
+    // Arrowhead size proportional to line width
+    double arrowLength = qMax(15.0, m_width * 5.0);
+    double arrowAngle = M_PI / 6.0;  // 30 degrees
+
+    // Calculate arrowhead points
+    QPointF arrowP1(
+        end.x() - arrowLength * qCos(angle - arrowAngle),
+        end.y() - arrowLength * qSin(angle - arrowAngle)
+    );
+    QPointF arrowP2(
+        end.x() - arrowLength * qCos(angle + arrowAngle),
+        end.y() - arrowLength * qSin(angle + arrowAngle)
+    );
+
+    // Draw two lines forming a V (no closed path)
+    QPen solidPen(m_color, m_width, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+    painter.setPen(solidPen);
+    painter.setBrush(Qt::NoBrush);
+    painter.drawLine(arrowP1, QPointF(end));
+    painter.drawLine(QPointF(end), arrowP2);
 }
 
 QRect ArrowAnnotation::boundingRect() const

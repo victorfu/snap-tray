@@ -6,7 +6,6 @@
 #include <QPoint>
 
 class QScreen;
-class QPushButton;
 
 class RecordingRegionSelector : public QWidget
 {
@@ -31,16 +30,28 @@ protected:
     void mouseReleaseEvent(QMouseEvent *event) override;
     void keyPressEvent(QKeyEvent *event) override;
     void focusOutEvent(QFocusEvent *event) override;
+    void leaveEvent(QEvent *event) override;
 
 private:
+    enum ButtonId {
+        ButtonNone = -1,
+        ButtonStart = 0,
+        ButtonCancel = 1
+    };
+
     void drawOverlay(QPainter &painter);
     void drawSelection(QPainter &painter);
     void drawCrosshair(QPainter &painter);
     void drawDimensionLabel(QPainter &painter);
     void drawInstructions(QPainter &painter);
+    void drawToolbar(QPainter &painter);
+    void drawTooltip(QPainter &painter);
     void finishSelection();
-    void setupButtons();
-    void positionButtons();
+    void setupIcons();
+    void updateButtonRects();
+    int buttonAtPosition(const QPoint &pos) const;
+    QString tooltipForButton(ButtonId button) const;
+    void handleCancel();
 
     QScreen *m_currentScreen;
     qreal m_devicePixelRatio;
@@ -51,10 +62,16 @@ private:
     bool m_isSelecting;
     bool m_selectionComplete;
 
-    // Buttons for selection confirmation
-    QWidget *m_buttonContainer;
-    QPushButton *m_startButton;
-    QPushButton *m_cancelButton;
+    // Toolbar
+    QRect m_toolbarRect;
+    QRect m_startRect;
+    QRect m_cancelRect;
+    int m_hoveredButton;
+
+    // Layout constants (matching ToolbarWidget)
+    static const int TOOLBAR_HEIGHT = 32;
+    static const int BUTTON_WIDTH = 28;
+    static const int BUTTON_SPACING = 2;
 };
 
 #endif // RECORDINGREGIONSELECTOR_H

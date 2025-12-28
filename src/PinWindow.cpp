@@ -6,8 +6,10 @@
 #include "platform/WindowLevel.h"
 #include "pinwindow/ResizeHandler.h"
 #include "pinwindow/UIIndicators.h"
+#include "settings/AnnotationSettingsManager.h"
 
 #include <QPainter>
+#include <QImage>
 #include <QMouseEvent>
 #include <QWheelEvent>
 #include <QKeyEvent>
@@ -29,6 +31,35 @@
 #include <QTransform>
 #include <QDebug>
 #include <QActionGroup>
+
+namespace {
+bool hasTransparentCornerPixels(const QPixmap &pixmap)
+{
+    if (pixmap.isNull()) {
+        return false;
+    }
+
+    QImage image = pixmap.toImage().convertToFormat(QImage::Format_ARGB32_Premultiplied);
+    if (image.isNull()) {
+        return false;
+    }
+
+    int width = image.width();
+    int height = image.height();
+    if (width <= 0 || height <= 0) {
+        return false;
+    }
+
+    const auto alphaAt = [&image](int x, int y) {
+        return qAlpha(image.pixel(x, y));
+    };
+
+    return alphaAt(0, 0) < 255 ||
+           alphaAt(width - 1, 0) < 255 ||
+           alphaAt(0, height - 1) < 255 ||
+           alphaAt(width - 1, height - 1) < 255;
+}
+}  // namespace
 
 PinWindow::PinWindow(const QPixmap &screenshot, const QPoint &position, QWidget *parent)
     : QWidget(parent)
@@ -64,6 +95,18 @@ PinWindow::PinWindow(const QPixmap &screenshot, const QPoint &position, QWidget 
     QSize logicalSize = m_displayPixmap.size() / m_displayPixmap.devicePixelRatio();
     QSize windowSize = logicalSize + QSize(kShadowMargin * 2, kShadowMargin * 2);
     setFixedSize(windowSize);
+
+    // Cache the base corner radius so pin window chrome matches rounded captures.
+    qreal baseDpr = m_originalPixmap.devicePixelRatio();
+    if (baseDpr <= 0.0) {
+        baseDpr = 1.0;
+    }
+    QSize baseLogicalSize = m_originalPixmap.size() / baseDpr;
+    int maxRadius = qMin(baseLogicalSize.width(), baseLogicalSize.height()) / 2;
+    m_baseCornerRadius = qMin(AnnotationSettingsManager::instance().loadCornerRadius(), maxRadius);
+    if (m_baseCornerRadius > 0 && !hasTransparentCornerPixels(m_originalPixmap)) {
+        m_baseCornerRadius = 0;
+    }
 
     createContextMenu();
 
@@ -228,11 +271,47 @@ void PinWindow::onResizeFinished()
     }
 }
 
-void PinWindow::ensureShadowCache(const QSize &contentSize)
+int PinWindow::effectiveCornerRadius(const QSize &contentSize) const
+{
+    if (m_baseCornerRadius <= 0 || contentSize.isEmpty()) {
+        return 0;
+    }
+
+    QSize baseLogicalSize;
+    if (!m_transformedCache.isNull()) {
+        qreal dpr = m_transformedCache.devicePixelRatio();
+        if (dpr <= 0.0) {
+            dpr = 1.0;
+        }
+        baseLogicalSize = m_transformedCache.size() / dpr;
+    } else {
+        qreal dpr = m_originalPixmap.devicePixelRatio();
+        if (dpr <= 0.0) {
+            dpr = 1.0;
+        }
+        baseLogicalSize = m_originalPixmap.size() / dpr;
+    }
+
+    if (baseLogicalSize.isEmpty()) {
+        return 0;
+    }
+
+    qreal scaleX = static_cast<qreal>(contentSize.width()) / baseLogicalSize.width();
+    qreal scaleY = static_cast<qreal>(contentSize.height()) / baseLogicalSize.height();
+    qreal scale = qMin(scaleX, scaleY);
+
+    int radius = qRound(m_baseCornerRadius * scale);
+    int maxRadius = qMin(contentSize.width(), contentSize.height()) / 2;
+    return qMin(radius, maxRadius);
+}
+
+void PinWindow::ensureShadowCache(const QSize &contentSize, int cornerRadius)
 {
     QSize fullSize = contentSize + QSize(kShadowMargin * 2, kShadowMargin * 2);
 
-    if (m_shadowCacheSize == fullSize && !m_shadowCache.isNull()) {
+    if (m_shadowCacheSize == fullSize &&
+        m_shadowCornerRadius == cornerRadius &&
+        !m_shadowCache.isNull()) {
         return;  // Cache is valid
     }
 
@@ -251,10 +330,17 @@ void PinWindow::ensureShadowCache(const QSize &contentSize)
     for (int i = kShadowMargin; i >= 1; --i) {
         int alpha = 30 * (kShadowMargin - i + 1) / kShadowMargin;
         cachePainter.setBrush(QColor(0, 0, 0, alpha));
-        cachePainter.drawRoundedRect(pixmapRect.adjusted(-i, -i, i, i), 2, 2);
+        if (cornerRadius > 0) {
+            cachePainter.drawRoundedRect(pixmapRect.adjusted(-i, -i, i, i),
+                                         cornerRadius + i,
+                                         cornerRadius + i);
+        } else {
+            cachePainter.drawRoundedRect(pixmapRect.adjusted(-i, -i, i, i), 2, 2);
+        }
     }
 
     m_shadowCacheSize = fullSize;
+    m_shadowCornerRadius = cornerRadius;
 }
 
 void PinWindow::updateSize()
@@ -671,7 +757,8 @@ void PinWindow::paintEvent(QPaintEvent *)
 
     // Draw cached shadow (performance optimization)
     QSize contentSize(pixmapRect.width(), pixmapRect.height());
-    ensureShadowCache(contentSize);
+    int cornerRadius = effectiveCornerRadius(contentSize);
+    ensureShadowCache(contentSize, cornerRadius);
     painter.drawPixmap(0, 0, m_shadowCache);
 
     // Draw the screenshot at the margin offset
@@ -685,7 +772,11 @@ void PinWindow::paintEvent(QPaintEvent *)
         painter.setPen(QPen(QColor(0, 120, 215, 200), 1.5));
     }
     painter.setBrush(Qt::NoBrush);
-    painter.drawRect(pixmapRect);
+    if (cornerRadius > 0) {
+        painter.drawRoundedRect(pixmapRect, cornerRadius, cornerRadius);
+    } else {
+        painter.drawRect(pixmapRect);
+    }
 
     // Draw watermark
     WatermarkRenderer::render(painter, pixmapRect, m_watermarkSettings);

@@ -43,6 +43,19 @@ ToolbarStyleConfig ToolbarStyleConfig::getDarkStyle()
     config.dropdownBackground = QColor(50, 50, 50, 250);
     config.dropdownBorder = QColor(70, 70, 70);
 
+    // Glass effect properties (macOS dark style)
+    config.glassBackgroundColor = QColor(40, 40, 40, 217);   // 85% opacity
+    config.glassHighlightColor = QColor(255, 255, 255, 15);  // Subtle top edge glow
+    config.hairlineBorderColor = QColor(255, 255, 255, 25);  // 10% white hairline
+
+    // Enhanced shadow
+    config.shadowColor = QColor(0, 0, 0, 60);
+    config.shadowBlurRadius = 12;
+    config.shadowOffsetY = 4;
+
+    // Corner radius
+    config.cornerRadius = 10;
+
     return config;
 }
 
@@ -85,6 +98,19 @@ ToolbarStyleConfig ToolbarStyleConfig::getLightStyle()
     config.textActiveColor = Qt::white;
     config.dropdownBackground = QColor(255, 255, 255, 250);
     config.dropdownBorder = QColor(200, 200, 200);
+
+    // Glass effect properties (macOS light style)
+    config.glassBackgroundColor = QColor(255, 255, 255, 230);  // 90% opacity
+    config.glassHighlightColor = QColor(255, 255, 255, 200);   // Bright top edge
+    config.hairlineBorderColor = QColor(0, 0, 0, 20);          // 8% black hairline
+
+    // Enhanced shadow
+    config.shadowColor = QColor(0, 0, 0, 30);
+    config.shadowBlurRadius = 8;
+    config.shadowOffsetY = 2;
+
+    // Corner radius
+    config.cornerRadius = 10;
 
     return config;
 }

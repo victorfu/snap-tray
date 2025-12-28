@@ -79,6 +79,9 @@ private:
     void ensureTransformCacheValid();
     void onResizeFinished();
 
+    // Rounded corner handling
+    int effectiveCornerRadius(const QSize &contentSize) const;
+
     // Click-through handling
     void applyClickThroughState(bool enabled);
     void updateClickThroughForCursor();
@@ -151,7 +154,10 @@ private:
     // Shadow cache
     mutable QPixmap m_shadowCache;
     mutable QSize m_shadowCacheSize;
-    void ensureShadowCache(const QSize &contentSize);
+    int m_shadowCornerRadius = -1;
+    void ensureShadowCache(const QSize &contentSize, int cornerRadius);
+
+    int m_baseCornerRadius = 0;
 };
 
 #endif // PINWINDOW_H

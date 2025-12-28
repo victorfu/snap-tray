@@ -7,7 +7,7 @@
 
 size_t qHash(const IconRenderer::PixmapCacheKey& key, size_t seed)
 {
-    return qHash(key.iconKey, seed) ^ qHash(key.size)
+    return qHash(key.iconKey, seed) ^ qHash(key.width) ^ qHash(key.height)
          ^ qHash(key.color) ^ qHash(key.dpr100);
 }
 
@@ -70,7 +70,7 @@ void IconRenderer::renderIcon(QPainter& painter, const QRect& rect,
     qreal dpr = painter.device()->devicePixelRatio();
 
     // Build cache key
-    PixmapCacheKey cacheKey{key, iconSize, tintColor.rgba(),
+    PixmapCacheKey cacheKey{key, iconSize, iconSize, tintColor.rgba(),
                             static_cast<int>(dpr * 100)};
 
     // Check cache
@@ -104,6 +104,65 @@ void IconRenderer::renderIcon(QPainter& painter, const QRect& rect,
     // Store in cache and draw
     m_pixmapCache.insert(cacheKey, tintedPixmap);
     painter.drawPixmap(iconRect, tintedPixmap);
+}
+
+void IconRenderer::renderIconFit(QPainter& painter, const QRect& rect,
+                                  const QString& key, const QColor& tintColor)
+{
+    QSvgRenderer* renderer = m_renderers.value(key, nullptr);
+    if (!renderer) {
+        painter.setPen(tintColor);
+        painter.drawText(rect, Qt::AlignCenter, "?");
+        return;
+    }
+
+    // Get SVG default size and scale to fit the rect while preserving aspect ratio
+    QSizeF svgSize = renderer->defaultSize();
+    QSizeF targetSize = svgSize.scaled(rect.size(), Qt::KeepAspectRatio);
+    QRectF iconRect(0, 0, targetSize.width(), targetSize.height());
+    iconRect.moveCenter(QPointF(rect.center()));
+
+    int iconWidth = static_cast<int>(targetSize.width());
+    int iconHeight = static_cast<int>(targetSize.height());
+
+    // Get device pixel ratio for HiDPI support
+    qreal dpr = painter.device()->devicePixelRatio();
+
+    // Build cache key
+    PixmapCacheKey cacheKey{key, iconWidth, iconHeight, tintColor.rgba(),
+                            static_cast<int>(dpr * 100)};
+
+    // Check cache
+    auto it = m_pixmapCache.find(cacheKey);
+    if (it != m_pixmapCache.end()) {
+        painter.drawPixmap(iconRect.toRect(), it.value());
+        return;
+    }
+
+    // Cache miss: render SVG to pixmap
+    QPixmap iconPixmap(iconWidth * dpr, iconHeight * dpr);
+    iconPixmap.setDevicePixelRatio(dpr);
+    iconPixmap.fill(Qt::transparent);
+
+    QPainter iconPainter(&iconPixmap);
+    iconPainter.setRenderHint(QPainter::Antialiasing);
+    renderer->render(&iconPainter, QRectF(0, 0, iconWidth, iconHeight));
+    iconPainter.end();
+
+    // Create tinted version using composition
+    QPixmap tintedPixmap(iconPixmap.size());
+    tintedPixmap.setDevicePixelRatio(dpr);
+    tintedPixmap.fill(Qt::transparent);
+
+    QPainter tintPainter(&tintedPixmap);
+    tintPainter.drawPixmap(0, 0, iconPixmap);
+    tintPainter.setCompositionMode(QPainter::CompositionMode_SourceIn);
+    tintPainter.fillRect(tintedPixmap.rect(), tintColor);
+    tintPainter.end();
+
+    // Store in cache and draw
+    m_pixmapCache.insert(cacheKey, tintedPixmap);
+    painter.drawPixmap(iconRect.toRect(), tintedPixmap);
 }
 
 void IconRenderer::clearCache()

@@ -78,6 +78,7 @@ set(SOURCES
     src/ColorAndWidthWidget.cpp
     src/ToolbarWidget.cpp
     src/ToolbarStyle.cpp
+    src/GlassRenderer.cpp
     src/settings/AnnotationSettingsManager.cpp
     src/AnnotationController.cpp
     src/ColorPickerDialog.mm
@@ -115,6 +116,7 @@ set(SOURCES
     src/region/MagnifierPanel.cpp
     src/region/UpdateThrottler.cpp
     src/region/TextAnnotationEditor.cpp
+    src/region/RadiusSliderWidget.cpp
     # UI sections
     src/ui/sections/ColorSection.cpp
     src/ui/sections/WidthSection.cpp
@@ -162,6 +164,7 @@ set(HEADERS
     include/ColorAndWidthWidget.h
     include/ToolbarWidget.h
     include/ToolbarStyle.h
+    include/GlassRenderer.h
     include/AnnotationController.h
     include/ColorPickerDialog.h
     include/InlineTextEditor.h
@@ -209,6 +212,7 @@ set(HEADERS
     include/region/MagnifierPanel.h
     include/region/UpdateThrottler.h
     include/region/TextAnnotationEditor.h
+    include/region/RadiusSliderWidget.h
     # UI sections
     include/ui/IWidgetSection.h
     include/ui/sections/ColorSection.h

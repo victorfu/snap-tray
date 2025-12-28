@@ -10,24 +10,20 @@ A Qt6-based screenshot and screen recording application for Windows and macOS.
 
 ```batch
 # Configure (from project root)
-cmd.exe /c "cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release"
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 
 # Build
-cmd.exe /c "cd /d d:\Documents\snap-tray\build && cmake --build ."
-
+cmake --build build
 ```
 
 ### macOS
 
 ```bash
 # Configure
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$(brew --prefix qt)"
 
 # Build
 cmake --build build
-
-# Or use make directly
-cd build && make
 ```
 
 ### Running Tests
@@ -123,6 +119,59 @@ settings.saveColor(newColor);
 QSettings settings("Victor Fu", "SnapTray");
 QColor color = settings.value("annotationColor", Qt::red).value<QColor>();
 ```
+
+### Glass Style (macOS HIG)
+
+The UI follows macOS Human Interface Guidelines with a glass/frosted effect. Use the `GlassRenderer` class for all floating panels.
+
+#### Core Components
+
+| Component | Location | Responsibility |
+|-----------|----------|----------------|
+| `GlassRenderer` | `src/GlassRenderer.cpp` | Static utility for drawing glass panels |
+| `ToolbarStyleConfig` | `include/ToolbarStyle.h` | Theme configuration (Dark/Light) |
+
+#### Glass Effect Layers
+
+Glass panels are composed of 4 layers (drawn in order):
+
+1. **Multi-layer Shadow** - Soft shadow extending downward (macOS floating style)
+2. **Glass Background** - Semi-transparent gradient (top slightly brighter)
+3. **Hairline Border** - 1px low-opacity border for definition
+4. **Inner Highlight** - Top edge glow for depth effect
+
+#### Color Tokens
+
+| Token | Light Theme | Dark Theme | Usage |
+|-------|-------------|------------|-------|
+| `glassBackgroundColor` | `rgba(255,255,255,0.85)` | `rgba(40,40,40,0.90)` | Panel background |
+| `hairlineBorderColor` | `rgba(0,0,0,0.08)` | `rgba(255,255,255,0.10)` | Subtle borders |
+| `glassHighlightColor` | `rgba(255,255,255,0.50)` | `rgba(255,255,255,0.05)` | Top edge glow |
+| `shadowColor` | `rgba(0,0,0,0.15)` | `rgba(0,0,0,0.40)` | Drop shadow |
+
+#### Usage
+
+```cpp
+// Good: Use GlassRenderer for floating panels
+void MyWidget::paintEvent(QPaintEvent*) {
+    QPainter painter(this);
+    auto config = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
+    GlassRenderer::drawGlassPanel(painter, rect(), config);
+}
+
+// Bad: Manual painting without glass effect
+void MyWidget::paintEvent(QPaintEvent*) {
+    QPainter painter(this);
+    painter.fillRect(rect(), Qt::white);  // No glass effect
+}
+```
+
+#### Design Principles
+
+- **Subtle blur simulation** - Use gradient to simulate frosted glass (Qt doesn't have native blur)
+- **Low-opacity borders** - 1px hairline borders with ~8% opacity
+- **Soft shadows** - Multi-layer shadows with decreasing opacity
+- **Theme support** - Always use `ToolbarStyleConfig` for colors, never hardcode
 
 ## Development Guidelines
 

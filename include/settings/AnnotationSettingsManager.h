@@ -32,11 +32,16 @@ public:
     bool loadPolylineMode() const;
     void savePolylineMode(bool enabled);
 
+    // Corner radius settings
+    int loadCornerRadius() const;
+    void saveCornerRadius(int radius);
+
     // Default values
     static constexpr int kDefaultWidth = 3;
     static QColor defaultColor() { return Qt::red; }
     static constexpr StepBadgeSize kDefaultStepBadgeSize = StepBadgeSize::Medium;
     static constexpr bool kDefaultPolylineMode = false;
+    static constexpr int kDefaultCornerRadius = 0;
 
 private:
     AnnotationSettingsManager() = default;
@@ -47,6 +52,7 @@ private:
     static constexpr const char* kSettingsKeyWidth = "annotationWidth";
     static constexpr const char* kSettingsKeyStepBadgeSize = "stepBadgeSize";
     static constexpr const char* kSettingsKeyPolylineMode = "polylineMode";
+    static constexpr const char* kSettingsKeyCornerRadius = "cornerRadius";
 };
 
 #endif // ANNOTATIONSETTINGSMANAGER_H

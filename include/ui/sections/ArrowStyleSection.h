@@ -9,8 +9,15 @@
 /**
  * @brief Arrow style section for ColorAndWidthWidget.
  *
- * Provides a dropdown to select arrow line end style (None, EndArrow)
- * and a toggle for polyline mode.
+ * Provides a dropdown to select arrow line end style:
+ * - None: Plain line without arrowheads
+ * - EndArrow: Filled triangle at end
+ * - EndArrowOutline: Outline triangle at end
+ * - EndArrowLine: V-line at end (two lines, no fill)
+ * - BothArrow: Filled triangles at both ends
+ * - BothArrowOutline: Outline triangles at both ends
+ *
+ * Also includes a toggle for polyline mode.
  */
 class ArrowStyleSection : public QObject, public IWidgetSection
 {
@@ -76,20 +83,20 @@ private:
      * @brief Draw the arrow style icon.
      */
     void drawArrowStyleIcon(QPainter& painter, LineEndStyle style, const QRect& rect,
-                            const ToolbarStyleConfig& styleConfig) const;
+        const ToolbarStyleConfig& styleConfig) const;
 
     /**
      * @brief Draw the polyline toggle icon.
      */
     void drawPolylineIcon(QPainter& painter, const QRect& rect, bool active,
-                          const ToolbarStyleConfig& styleConfig) const;
+        const ToolbarStyleConfig& styleConfig) const;
 
     // State
     LineEndStyle m_arrowStyle = LineEndStyle::EndArrow;
     bool m_polylineMode = false;
     bool m_dropdownOpen = false;
     bool m_dropdownExpandsUpward = false;
-    int m_hoveredOption = -1;  // -3=polyline toggle, -2=button, 0-1=options, -1=none
+    int m_hoveredOption = -1;  // -3=polyline toggle, -2=button, 0-5=options, -1=none
 
     // Layout
     QRect m_sectionRect;
@@ -98,7 +105,7 @@ private:
     QRect m_dropdownRect;
 
     // Layout constants
-    static constexpr int BUTTON_WIDTH = 42;
+    static constexpr int BUTTON_WIDTH = 52;
     static constexpr int TOGGLE_WIDTH = 28;
     static constexpr int BUTTON_HEIGHT = 24;
     static constexpr int DROPDOWN_OPTION_HEIGHT = 28;

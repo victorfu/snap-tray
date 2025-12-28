@@ -8,8 +8,12 @@
 
 // Line end style for arrow annotations
 enum class LineEndStyle {
-    None = 0,    // Plain line (no arrows)
-    EndArrow     // Arrow at end (default)
+    None = 0,        // Plain line (no arrows)
+    EndArrow,        // Filled triangle at end (default)
+    EndArrowOutline, // Outline triangle at end
+    EndArrowLine,    // V-line at end (two lines, no fill)
+    BothArrow,       // Filled triangles at both ends
+    BothArrowOutline // Outline triangles at both ends
 };
 
 /**
@@ -33,7 +37,8 @@ public:
     LineEndStyle lineEndStyle() const { return m_lineEndStyle; }
 
 private:
-    void drawArrowhead(QPainter &painter, const QPoint &start, const QPoint &end) const;
+    void drawArrowhead(QPainter &painter, const QPoint &start, const QPoint &end, bool filled) const;
+    void drawArrowheadLine(QPainter &painter, const QPoint &start, const QPoint &end) const;
 
     QPoint m_start;
     QPoint m_end;

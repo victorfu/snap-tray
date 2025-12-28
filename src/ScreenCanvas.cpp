@@ -2,6 +2,7 @@
 #include "annotations/AnnotationLayer.h"
 #include "tools/ToolManager.h"
 #include "IconRenderer.h"
+#include "GlassRenderer.h"
 #include "ColorPaletteWidget.h"
 #include "ColorPickerDialog.h"
 #include "LineWidthWidget.h"
@@ -158,11 +159,21 @@ void ScreenCanvas::initializeIcons()
     iconRenderer.loadIcon("polyline", ":/icons/icons/polyline.svg");
     iconRenderer.loadIcon("rectangle", ":/icons/icons/rectangle.svg");
     iconRenderer.loadIcon("ellipse", ":/icons/icons/ellipse.svg");
+    iconRenderer.loadIcon("shape", ":/icons/icons/shape.svg");
     iconRenderer.loadIcon("laser-pointer", ":/icons/icons/laser-pointer.svg");
     iconRenderer.loadIcon("cursor-highlight", ":/icons/icons/cursor-highlight.svg");
     iconRenderer.loadIcon("undo", ":/icons/icons/undo.svg");
     iconRenderer.loadIcon("redo", ":/icons/icons/redo.svg");
     iconRenderer.loadIcon("cancel", ":/icons/icons/cancel.svg");
+    // Shape and arrow style icons for ColorAndWidthWidget sections
+    iconRenderer.loadIcon("shape-filled", ":/icons/icons/shape-filled.svg");
+    iconRenderer.loadIcon("shape-outline", ":/icons/icons/shape-outline.svg");
+    iconRenderer.loadIcon("arrow-none", ":/icons/icons/arrow-none.svg");
+    iconRenderer.loadIcon("arrow-end", ":/icons/icons/arrow-end.svg");
+    iconRenderer.loadIcon("arrow-end-outline", ":/icons/icons/arrow-end-outline.svg");
+    iconRenderer.loadIcon("arrow-end-line", ":/icons/icons/arrow-end-line.svg");
+    iconRenderer.loadIcon("arrow-both", ":/icons/icons/arrow-both.svg");
+    iconRenderer.loadIcon("arrow-both-outline", ":/icons/icons/arrow-both-outline.svg");
 }
 
 QString ScreenCanvas::getIconKeyForButton(CanvasButton button) const
@@ -171,7 +182,7 @@ QString ScreenCanvas::getIconKeyForButton(CanvasButton button) const
     case CanvasButton::Pencil:          return "pencil";
     case CanvasButton::Marker:          return "marker";
     case CanvasButton::Arrow:           return "arrow";
-    case CanvasButton::Shape:           return "rectangle";  // Use rectangle icon for unified shape
+    case CanvasButton::Shape:           return "shape";
     case CanvasButton::LaserPointer:    return "laser-pointer";
     case CanvasButton::CursorHighlight: return "cursor-highlight";
     case CanvasButton::Undo:            return "undo";
@@ -367,20 +378,8 @@ void ScreenCanvas::drawCurrentAnnotation(QPainter& painter)
 
 void ScreenCanvas::drawToolbar(QPainter& painter)
 {
-    // Draw shadow
-    QRect shadowRect = m_toolbarRect.adjusted(2, 2, 2, 2);
-    painter.setPen(Qt::NoPen);
-    painter.setBrush(QColor(0, 0, 0, m_toolbarStyleConfig.shadowAlpha));
-    painter.drawRoundedRect(shadowRect, 8, 8);
-
-    // Draw toolbar background with gradient
-    QLinearGradient gradient(m_toolbarRect.topLeft(), m_toolbarRect.bottomLeft());
-    gradient.setColorAt(0, m_toolbarStyleConfig.backgroundColorTop);
-    gradient.setColorAt(1, m_toolbarStyleConfig.backgroundColorBottom);
-
-    painter.setBrush(gradient);
-    painter.setPen(QPen(m_toolbarStyleConfig.borderColor, 1));
-    painter.drawRoundedRect(m_toolbarRect, 8, 8);
+    // Draw glass panel (shadow, background, border, highlight)
+    GlassRenderer::drawGlassPanel(painter, m_toolbarRect, m_toolbarStyleConfig);
 
     // Render icons
     for (int i = 0; i < static_cast<int>(CanvasButton::Count); ++i) {
@@ -414,13 +413,13 @@ void ScreenCanvas::drawToolbar(QPainter& painter)
                 // Dark style: background highlight
                 painter.setPen(Qt::NoPen);
                 painter.setBrush(m_toolbarStyleConfig.activeBackgroundColor);
-                painter.drawRoundedRect(btnRect.adjusted(2, 2, -2, -2), 4, 4);
+                painter.drawRoundedRect(btnRect.adjusted(2, 2, -2, -2), 6, 6);
             }
         }
         else if (i == m_hoveredButton) {
             painter.setPen(Qt::NoPen);
             painter.setBrush(m_toolbarStyleConfig.hoverBackgroundColor);
-            painter.drawRoundedRect(btnRect.adjusted(2, 2, -2, -2), 4, 4);
+            painter.drawRoundedRect(btnRect.adjusted(2, 2, -2, -2), 6, 6);
         }
 
         // Determine icon color

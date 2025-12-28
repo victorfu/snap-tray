@@ -45,7 +45,7 @@ void RecordingInitTask::Result::cleanup()
     }
 }
 
-RecordingInitTask::RecordingInitTask(const Config &config, QObject *parent)
+RecordingInitTask::RecordingInitTask(const Config& config, QObject* parent)
     : QObject(parent)
     , m_config(config)
     , m_cancelled(0)
@@ -70,7 +70,7 @@ void RecordingInitTask::run()
     qDebug() << "RecordingInitTask::run() - BEGIN";
 
     // Step 1: Initialize capture engine
-    emit progress(tr("Initializing capture engine..."));
+    emit progress(tr("Initializing..."));
     if (!initializeCaptureEngine()) {
         emit finished();
         return;
@@ -116,7 +116,7 @@ void RecordingInitTask::run()
 
     // Move created QObjects to main thread before signaling completion
     // This must be done from the worker thread (which currently owns the objects)
-    QThread *mainThread = QCoreApplication::instance()->thread();
+    QThread* mainThread = QCoreApplication::instance()->thread();
     if (m_result.captureEngine) {
         m_result.captureEngine->moveToThread(mainThread);
     }
@@ -145,7 +145,7 @@ bool RecordingInitTask::initializeCaptureEngine()
     }
 
     qDebug() << "RecordingInitTask: Setting region:" << m_config.region
-             << "screen:" << (m_config.screen ? m_config.screen->name() : "NULL");
+        << "screen:" << (m_config.screen ? m_config.screen->name() : "NULL");
 
     if (!m_result.captureEngine->setRegion(m_config.region, m_config.screen)) {
         m_result.error = "Failed to configure capture region";
@@ -162,7 +162,7 @@ bool RecordingInitTask::initializeCaptureEngine()
     m_result.captureEngineStarted = true;
 
     qDebug() << "RecordingInitTask: Capture engine started:"
-             << m_result.captureEngine->engineName();
+        << m_result.captureEngine->engineName();
     return true;
 }
 

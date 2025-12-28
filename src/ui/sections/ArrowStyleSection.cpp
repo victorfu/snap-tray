@@ -1,8 +1,22 @@
 #include "ui/sections/ArrowStyleSection.h"
 #include "ToolbarStyle.h"
+#include "IconRenderer.h"
 
 #include <QPainter>
 #include <QPainterPath>
+#include <map>
+
+namespace {
+// LineEndStyle to icon key mapping
+const std::map<LineEndStyle, QString> kArrowStyleIcons = {
+    {LineEndStyle::None, "arrow-none"},
+    {LineEndStyle::EndArrow, "arrow-end"},
+    {LineEndStyle::EndArrowOutline, "arrow-end-outline"},
+    {LineEndStyle::EndArrowLine, "arrow-end-line"},
+    {LineEndStyle::BothArrow, "arrow-both"},
+    {LineEndStyle::BothArrowOutline, "arrow-both-outline"},
+};
+} // namespace
 
 ArrowStyleSection::ArrowStyleSection(QObject* parent)
     : QObject(parent)
@@ -55,7 +69,7 @@ void ArrowStyleSection::updateLayout(int containerTop, int containerHeight, int 
 
     // Dropdown rect - expand upward or downward based on setting
     int dropdownWidth = BUTTON_WIDTH + 10;
-    int dropdownHeight = 2 * DROPDOWN_OPTION_HEIGHT;  // 2 options
+    int dropdownHeight = 6 * DROPDOWN_OPTION_HEIGHT;  // 6 options (None + 5 arrow styles)
 
     if (m_dropdownExpandsUpward) {
         m_dropdownRect = QRect(
@@ -105,9 +119,11 @@ void ArrowStyleSection::draw(QPainter& painter, const ToolbarStyleConfig& styleC
     QColor toggleBgColor;
     if (m_polylineMode) {
         toggleBgColor = styleConfig.buttonActiveColor;
-    } else if (toggleHovered) {
+    }
+    else if (toggleHovered) {
         toggleBgColor = styleConfig.buttonHoverColor;
-    } else {
+    }
+    else {
         toggleBgColor = styleConfig.buttonInactiveColor;
     }
     painter.setPen(QPen(styleConfig.dropdownBorder, 1));
@@ -124,9 +140,16 @@ void ArrowStyleSection::draw(QPainter& painter, const ToolbarStyleConfig& styleC
         painter.setBrush(styleConfig.dropdownBackground);
         painter.drawRoundedRect(m_dropdownRect, 4, 4);
 
-        // Draw each option (2 options: None, EndArrow)
-        LineEndStyle styles[] = { LineEndStyle::None, LineEndStyle::EndArrow };
-        for (int i = 0; i < 2; ++i) {
+        // Draw each option (6 options: None + 5 arrow styles)
+        LineEndStyle styles[] = {
+            LineEndStyle::None,
+            LineEndStyle::EndArrow,
+            LineEndStyle::EndArrowOutline,
+            LineEndStyle::EndArrowLine,
+            LineEndStyle::BothArrow,
+            LineEndStyle::BothArrowOutline
+        };
+        for (int i = 0; i < 6; ++i) {
             QRect optionRect(
                 m_dropdownRect.left(),
                 m_dropdownRect.top() + i * DROPDOWN_OPTION_HEIGHT,
@@ -159,85 +182,17 @@ void ArrowStyleSection::draw(QPainter& painter, const ToolbarStyleConfig& styleC
 void ArrowStyleSection::drawArrowStyleIcon(QPainter& painter, LineEndStyle style, const QRect& rect,
     const ToolbarStyleConfig& styleConfig) const
 {
-    painter.save();
-    painter.setRenderHint(QPainter::Antialiasing, true);
-
-    // Line parameters
-    int lineY = rect.center().y();
-    int lineLeft = rect.left() + 4;
-    int lineRight = rect.right() - 4;
-    int lineWidth = 2;
-
-    QPen linePen(styleConfig.textColor, lineWidth, Qt::SolidLine, Qt::RoundCap);
-    painter.setPen(linePen);
-    painter.setBrush(styleConfig.textColor);
-
-    // Draw the line
-    painter.drawLine(lineLeft, lineY, lineRight, lineY);
-
-    // Arrowhead parameters
-    int arrowSize = 6;
-
-    auto drawArrowhead = [&](int tipX, bool pointRight) {
-        int direction = pointRight ? -1 : 1;
-        QPointF tip(tipX, lineY);
-        QPointF p1(tipX + direction * arrowSize, lineY - arrowSize * 0.5);
-        QPointF p2(tipX + direction * arrowSize, lineY + arrowSize * 0.5);
-
-        QPainterPath arrowPath;
-        arrowPath.moveTo(tip);
-        arrowPath.lineTo(p1);
-        arrowPath.lineTo(p2);
-        arrowPath.closeSubpath();
-        painter.drawPath(arrowPath);
-        };
-
-    switch (style) {
-    case LineEndStyle::None:
-        // Just the line, no arrowheads
-        break;
-    case LineEndStyle::EndArrow:
-        drawArrowhead(lineRight, true);
-        break;
+    auto it = kArrowStyleIcons.find(style);
+    if (it != kArrowStyleIcons.end()) {
+        IconRenderer::instance().renderIconFit(painter, rect, it->second, styleConfig.textColor);
     }
-
-    painter.restore();
 }
 
 void ArrowStyleSection::drawPolylineIcon(QPainter& painter, const QRect& rect, bool active,
     const ToolbarStyleConfig& styleConfig) const
 {
-    painter.save();
-    painter.setRenderHint(QPainter::Antialiasing, true);
-
-    // Use contrasting color for active state
     QColor iconColor = active ? styleConfig.textActiveColor : styleConfig.textColor;
-    QPen linePen(iconColor, 1.5, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
-    painter.setPen(linePen);
-
-    // Draw a zigzag polyline icon (similar to the polyline.svg)
-    int cx = rect.center().x();
-    int cy = rect.center().y();
-    int w = rect.width() - 8;
-    int h = rect.height() - 8;
-
-    // Scale factor
-    int left = cx - w / 2;
-    int top = cy - h / 2;
-
-    // Zigzag pattern: start bottom-left, go up-right, down-right, up-right
-    QVector<QPointF> points;
-    points << QPointF(left, top + h);            // Bottom-left
-    points << QPointF(left + w * 0.35, top + h * 0.3);  // Mid-up
-    points << QPointF(left + w * 0.65, top + h * 0.6);  // Mid-down
-    points << QPointF(left + w, top);             // Top-right
-
-    // Draw the polyline
-    for (int i = 0; i < points.size() - 1; ++i) {
-        painter.drawLine(points[i], points[i + 1]);
-    }
-
-    painter.restore();
+    IconRenderer::instance().renderIcon(painter, rect, "polyline", iconColor, 6);
 }
 
 bool ArrowStyleSection::contains(const QPoint& pos) const
@@ -259,7 +214,7 @@ int ArrowStyleSection::optionAtPosition(const QPoint& pos) const
     if (m_dropdownOpen && m_dropdownRect.contains(pos)) {
         int relativeY = pos.y() - m_dropdownRect.top();
         int option = relativeY / DROPDOWN_OPTION_HEIGHT;
-        if (option >= 0 && option < 2) {
+        if (option >= 0 && option < 6) {
             return option;
         }
     }
@@ -283,8 +238,15 @@ bool ArrowStyleSection::handleClick(const QPoint& pos)
         return true;
     }
     else if (option >= 0) {
-        // Clicked on a dropdown option (2 options: None, EndArrow)
-        LineEndStyle styles[] = { LineEndStyle::None, LineEndStyle::EndArrow };
+        // Clicked on a dropdown option (6 options: None + 5 arrow styles)
+        LineEndStyle styles[] = {
+            LineEndStyle::None,
+            LineEndStyle::EndArrow,
+            LineEndStyle::EndArrowOutline,
+            LineEndStyle::EndArrowLine,
+            LineEndStyle::BothArrow,
+            LineEndStyle::BothArrowOutline
+        };
         m_arrowStyle = styles[option];
         m_dropdownOpen = false;
         m_hoveredOption = -1;

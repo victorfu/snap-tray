@@ -60,3 +60,15 @@ void AnnotationSettingsManager::savePolylineMode(bool enabled)
     auto settings = SnapTray::getSettings();
     settings.setValue(kSettingsKeyPolylineMode, enabled);
 }
+
+int AnnotationSettingsManager::loadCornerRadius() const
+{
+    auto settings = SnapTray::getSettings();
+    return settings.value(kSettingsKeyCornerRadius, kDefaultCornerRadius).toInt();
+}
+
+void AnnotationSettingsManager::saveCornerRadius(int radius)
+{
+    auto settings = SnapTray::getSettings();
+    settings.setValue(kSettingsKeyCornerRadius, radius);
+}

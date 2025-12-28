@@ -1,5 +1,8 @@
 #include "RecordingRegionSelector.h"
 #include "platform/WindowLevel.h"
+#include "IconRenderer.h"
+#include "GlassRenderer.h"
+#include "ToolbarStyle.h"
 
 #include <QScreen>
 #include <QPainter>
@@ -7,8 +10,6 @@
 #include <QKeyEvent>
 #include <QFocusEvent>
 #include <QGuiApplication>
-#include <QPushButton>
-#include <QHBoxLayout>
 #include <QTimer>
 #include <QDebug>
 #include <QLinearGradient>
@@ -19,19 +20,24 @@ RecordingRegionSelector::RecordingRegionSelector(QWidget *parent)
     , m_devicePixelRatio(1.0)
     , m_isSelecting(false)
     , m_selectionComplete(false)
-    , m_buttonContainer(nullptr)
-    , m_startButton(nullptr)
-    , m_cancelButton(nullptr)
+    , m_hoveredButton(ButtonNone)
 {
     setMouseTracking(true);
     setCursor(Qt::CrossCursor);
     setAttribute(Qt::WA_DeleteOnClose);
     setAttribute(Qt::WA_TranslucentBackground);
-    setupButtons();
+    setupIcons();
 }
 
 RecordingRegionSelector::~RecordingRegionSelector()
 {
+}
+
+void RecordingRegionSelector::setupIcons()
+{
+    IconRenderer& iconRenderer = IconRenderer::instance();
+    iconRenderer.loadIcon("record", ":/icons/icons/record.svg");
+    iconRenderer.loadIcon("cancel", ":/icons/icons/cancel.svg");
 }
 
 void RecordingRegionSelector::initializeForScreen(QScreen *screen)
@@ -65,16 +71,49 @@ void RecordingRegionSelector::initializeWithRegion(QScreen *screen, const QRect 
     qDebug() << "Global region:" << region;
     qDebug() << "Local selection rect:" << m_selectionRect;
 
-    // Position and show buttons after the widget is shown
-    // We need to defer this because the widget might not be sized yet
+    // Update toolbar position after the widget is shown
     QTimer::singleShot(0, this, [this]() {
-        if (m_buttonContainer) {
-            positionButtons();
-            m_buttonContainer->show();
-            m_buttonContainer->raise();
-        }
+        updateButtonRects();
         update();
     });
+}
+
+void RecordingRegionSelector::updateButtonRects()
+{
+    if (m_selectionRect.isEmpty()) return;
+
+    // Calculate toolbar width: 2 buttons + padding
+    int toolbarWidth = 2 * BUTTON_WIDTH + BUTTON_SPACING + 20;
+
+    // Position below the selection rectangle, centered
+    int x = m_selectionRect.center().x() - toolbarWidth / 2;
+    int y = m_selectionRect.bottom() + 20;
+
+    // Keep on screen
+    if (x < 10) x = 10;
+    if (x + toolbarWidth > width() - 10) {
+        x = width() - toolbarWidth - 10;
+    }
+
+    // If below would be off screen, position above
+    if (y + TOOLBAR_HEIGHT > height() - 60) {
+        y = m_selectionRect.top() - TOOLBAR_HEIGHT - 20;
+    }
+
+    // If still off screen, position inside selection
+    if (y < 10) {
+        y = m_selectionRect.top() + 10;
+    }
+
+    m_toolbarRect = QRect(x, y, toolbarWidth, TOOLBAR_HEIGHT);
+
+    // Button positions within toolbar
+    int btnY = m_toolbarRect.top() + (TOOLBAR_HEIGHT - BUTTON_WIDTH + 4) / 2;
+    int btnX = m_toolbarRect.left() + 10;
+
+    m_startRect = QRect(btnX, btnY, BUTTON_WIDTH, BUTTON_WIDTH - 4);
+    btnX += BUTTON_WIDTH + BUTTON_SPACING;
+    m_cancelRect = QRect(btnX, btnY, BUTTON_WIDTH, BUTTON_WIDTH - 4);
 }
 
 void RecordingRegionSelector::paintEvent(QPaintEvent *event)
@@ -89,6 +128,12 @@ void RecordingRegionSelector::paintEvent(QPaintEvent *event)
     if (m_isSelecting || m_selectionComplete) {
         drawSelection(painter);
         drawDimensionLabel(painter);
+
+        if (m_selectionComplete) {
+            updateButtonRects();
+            drawToolbar(painter);
+            drawTooltip(painter);
+        }
     } else {
         // Draw crosshair when not yet selecting
         drawCrosshair(painter);
@@ -96,6 +141,101 @@ void RecordingRegionSelector::paintEvent(QPaintEvent *event)
 
     // Draw help text at bottom
     drawInstructions(painter);
+}
+
+void RecordingRegionSelector::drawToolbar(QPainter &painter)
+{
+    painter.setRenderHint(QPainter::Antialiasing);
+
+    ToolbarStyleConfig config = ToolbarStyleConfig::getDarkStyle();
+
+    // Draw glass panel background
+    GlassRenderer::drawGlassPanel(painter, m_toolbarRect, config, 10);
+
+    // Draw start button
+    {
+        bool isHovered = (m_hoveredButton == ButtonStart);
+        if (isHovered) {
+            painter.setPen(Qt::NoPen);
+            painter.setBrush(config.hoverBackgroundColor);
+            painter.drawRoundedRect(m_startRect.adjusted(2, 2, -2, -2), 4, 4);
+        }
+        QColor iconColor = config.iconRecordColor;
+        IconRenderer::instance().renderIcon(painter, m_startRect, "record", iconColor);
+    }
+
+    // Draw cancel button
+    {
+        bool isHovered = (m_hoveredButton == ButtonCancel);
+        if (isHovered) {
+            painter.setPen(Qt::NoPen);
+            painter.setBrush(config.hoverBackgroundColor);
+            painter.drawRoundedRect(m_cancelRect.adjusted(2, 2, -2, -2), 4, 4);
+        }
+        QColor iconColor = isHovered ? config.iconCancelColor : config.iconNormalColor;
+        IconRenderer::instance().renderIcon(painter, m_cancelRect, "cancel", iconColor);
+    }
+}
+
+void RecordingRegionSelector::drawTooltip(QPainter &painter)
+{
+    if (m_hoveredButton == ButtonNone) return;
+
+    QString tooltip = tooltipForButton(static_cast<ButtonId>(m_hoveredButton));
+    if (tooltip.isEmpty()) return;
+
+    QFont font = painter.font();
+    font.setPointSize(11);
+    painter.setFont(font);
+
+    QFontMetrics fm(font);
+    QRect textRect = fm.boundingRect(tooltip);
+    textRect.adjust(-8, -4, 8, 4);
+
+    QRect btnRect;
+    switch (m_hoveredButton) {
+    case ButtonStart: btnRect = m_startRect; break;
+    case ButtonCancel: btnRect = m_cancelRect; break;
+    default: return;
+    }
+
+    int tooltipX = btnRect.center().x() - textRect.width() / 2;
+    int tooltipY = m_toolbarRect.top() - textRect.height() - 6;
+
+    if (tooltipX < 5) tooltipX = 5;
+    if (tooltipX + textRect.width() > width() - 5) {
+        tooltipX = width() - textRect.width() - 5;
+    }
+
+    textRect.moveTo(tooltipX, tooltipY);
+
+    ToolbarStyleConfig tooltipConfig = ToolbarStyleConfig::getDarkStyle();
+    tooltipConfig.shadowOffsetY = 2;
+    tooltipConfig.shadowBlurRadius = 6;
+    GlassRenderer::drawGlassPanel(painter, textRect, tooltipConfig, 4);
+
+    painter.setPen(tooltipConfig.tooltipText);
+    painter.drawText(textRect, Qt::AlignCenter, tooltip);
+}
+
+QString RecordingRegionSelector::tooltipForButton(ButtonId button) const
+{
+    switch (button) {
+    case ButtonStart:
+        return tr("Start Recording (Enter)");
+    case ButtonCancel:
+        return tr("Cancel (Esc)");
+    default:
+        return QString();
+    }
+}
+
+int RecordingRegionSelector::buttonAtPosition(const QPoint &pos) const
+{
+    if (!m_selectionComplete) return ButtonNone;
+    if (m_startRect.contains(pos)) return ButtonStart;
+    if (m_cancelRect.contains(pos)) return ButtonCancel;
+    return ButtonNone;
 }
 
 void RecordingRegionSelector::drawOverlay(QPainter &painter)
@@ -249,6 +389,20 @@ void RecordingRegionSelector::drawInstructions(QPainter &painter)
     painter.drawText(textRect, Qt::AlignCenter, helpText);
 }
 
+void RecordingRegionSelector::handleCancel()
+{
+    // Check if we have a valid selection to return to capture mode
+    if (m_selectionComplete && !m_selectionRect.isEmpty()) {
+        QRect globalRect = m_selectionRect.normalized();
+        globalRect.translate(m_currentScreen->geometry().topLeft());
+        emit cancelledWithRegion(globalRect, m_currentScreen);
+    } else {
+        // No valid selection, just cancel without returning to capture
+        emit cancelled();
+    }
+    close();
+}
+
 void RecordingRegionSelector::mousePressEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton) {
@@ -257,19 +411,25 @@ void RecordingRegionSelector::mousePressEvent(QMouseEvent *event)
         qDebug() << "event->globalPosition():" << event->globalPosition();
         qDebug() << "Widget geometry:" << geometry();
 
+        // Check if clicking on toolbar buttons
         if (m_selectionComplete) {
-            // Allow re-selection by clicking outside current selection
-            if (!m_selectionRect.contains(event->pos())) {
+            int button = buttonAtPosition(event->pos());
+            if (button == ButtonStart) {
+                finishSelection();
+                return;
+            } else if (button == ButtonCancel) {
+                handleCancel();
+                return;
+            }
+
+            // Allow re-selection by clicking outside current selection and toolbar
+            if (!m_selectionRect.contains(event->pos()) && !m_toolbarRect.contains(event->pos())) {
                 m_selectionComplete = false;
                 m_startPoint = event->pos();
                 m_currentPoint = event->pos();
                 m_isSelecting = true;
                 m_selectionRect = QRect();
-
-                // Hide buttons when re-selecting
-                if (m_buttonContainer) {
-                    m_buttonContainer->hide();
-                }
+                m_hoveredButton = ButtonNone;
             }
         } else {
             m_startPoint = event->pos();
@@ -292,7 +452,21 @@ void RecordingRegionSelector::mouseMoveEvent(QMouseEvent *event)
         m_selectionRect = m_selectionRect.intersected(rect());
 
         update();
-    } else if (!m_selectionComplete) {
+    } else if (m_selectionComplete) {
+        // Update hover state for toolbar buttons
+        int newHovered = buttonAtPosition(event->pos());
+        if (newHovered != m_hoveredButton) {
+            m_hoveredButton = newHovered;
+            if (m_hoveredButton != ButtonNone) {
+                setCursor(Qt::PointingHandCursor);
+            } else if (!m_selectionRect.contains(event->pos())) {
+                setCursor(Qt::CrossCursor);
+            } else {
+                setCursor(Qt::ArrowCursor);
+            }
+            update();
+        }
+    } else {
         // Update crosshair position
         update();
     }
@@ -314,19 +488,9 @@ void RecordingRegionSelector::mouseReleaseEvent(QMouseEvent *event)
             if (m_selectionRect.width() >= 10 && m_selectionRect.height() >= 10) {
                 m_selectionComplete = true;
                 setCursor(Qt::ArrowCursor);
-
-                // Show and position the buttons
-                if (m_buttonContainer) {
-                    positionButtons();
-                    m_buttonContainer->show();
-                    m_buttonContainer->raise();
-                }
             } else {
                 // Too small, reset
                 m_selectionRect = QRect();
-                if (m_buttonContainer) {
-                    m_buttonContainer->hide();
-                }
             }
 
             update();
@@ -334,22 +498,21 @@ void RecordingRegionSelector::mouseReleaseEvent(QMouseEvent *event)
     }
 }
 
+void RecordingRegionSelector::leaveEvent(QEvent *event)
+{
+    if (m_hoveredButton != ButtonNone) {
+        m_hoveredButton = ButtonNone;
+        update();
+    }
+    QWidget::leaveEvent(event);
+}
+
 void RecordingRegionSelector::keyPressEvent(QKeyEvent *event)
 {
     switch (event->key()) {
-        case Qt::Key_Escape: {
-            // Check if we have a valid selection to return to capture mode
-            if (m_selectionComplete && !m_selectionRect.isEmpty()) {
-                QRect globalRect = m_selectionRect.normalized();
-                globalRect.translate(m_currentScreen->geometry().topLeft());
-                emit cancelledWithRegion(globalRect, m_currentScreen);
-            } else {
-                // No valid selection, just cancel without returning to capture
-                emit cancelled();
-            }
-            close();
+        case Qt::Key_Escape:
+            handleCancel();
             break;
-        }
 
         case Qt::Key_Return:
         case Qt::Key_Enter:
@@ -386,104 +549,4 @@ void RecordingRegionSelector::finishSelection()
 
     emit regionSelected(globalRect, m_currentScreen);
     close();
-}
-
-void RecordingRegionSelector::setupButtons()
-{
-    // Create button container with gradient border style
-    m_buttonContainer = new QWidget(this);
-    m_buttonContainer->setStyleSheet(
-        "background-color: rgba(25, 25, 28, 245);"
-        "border: 1px solid rgba(88, 86, 214, 0.5);"
-        "border-radius: 10px;");
-    m_buttonContainer->hide();
-
-    QHBoxLayout *layout = new QHBoxLayout(m_buttonContainer);
-    layout->setContentsMargins(14, 10, 14, 10);
-    layout->setSpacing(12);
-
-    // Start Recording button (blue-purple gradient style)
-    m_startButton = new QPushButton("Start Recording", m_buttonContainer);
-    m_startButton->setStyleSheet(
-        "QPushButton {"
-        "  background-color: #5856D6;"
-        "  color: white;"
-        "  border: none;"
-        "  border-radius: 6px;"
-        "  padding: 9px 22px;"
-        "  font-weight: 600;"
-        "  font-size: 14px;"
-        "}"
-        "QPushButton:hover {"
-        "  background-color: #6D6BE0;"
-        "}"
-        "QPushButton:pressed {"
-        "  background-color: #4A48C0;"
-        "}");
-    connect(m_startButton, &QPushButton::clicked, this, &RecordingRegionSelector::finishSelection);
-    layout->addWidget(m_startButton);
-
-    // Cancel button (transparent style)
-    m_cancelButton = new QPushButton("Cancel", m_buttonContainer);
-    m_cancelButton->setStyleSheet(
-        "QPushButton {"
-        "  background-color: rgba(255, 255, 255, 0.15);"
-        "  color: white;"
-        "  border: 1px solid rgba(255, 255, 255, 0.2);"
-        "  border-radius: 6px;"
-        "  padding: 9px 18px;"
-        "  font-size: 14px;"
-        "}"
-        "QPushButton:hover {"
-        "  background-color: rgba(255, 255, 255, 0.25);"
-        "}"
-        "QPushButton:pressed {"
-        "  background-color: rgba(255, 255, 255, 0.1);"
-        "}");
-    connect(m_cancelButton, &QPushButton::clicked, this, [this]() {
-        // Check if we have a valid selection to return to capture mode
-        if (m_selectionComplete && !m_selectionRect.isEmpty()) {
-            QRect globalRect = m_selectionRect.normalized();
-            globalRect.translate(m_currentScreen->geometry().topLeft());
-            emit cancelledWithRegion(globalRect, m_currentScreen);
-        } else {
-            // No valid selection, just cancel without returning to capture
-            emit cancelled();
-        }
-        close();
-    });
-    layout->addWidget(m_cancelButton);
-
-    m_buttonContainer->adjustSize();
-}
-
-void RecordingRegionSelector::positionButtons()
-{
-    if (!m_buttonContainer || m_selectionRect.isEmpty()) {
-        return;
-    }
-
-    // Position below the selection rectangle, centered
-    int x = m_selectionRect.center().x() - m_buttonContainer->width() / 2;
-    int y = m_selectionRect.bottom() + 20;
-
-    // Keep on screen
-    if (x < 10) {
-        x = 10;
-    }
-    if (x + m_buttonContainer->width() > width() - 10) {
-        x = width() - m_buttonContainer->width() - 10;
-    }
-
-    // If below would be off screen, position above
-    if (y + m_buttonContainer->height() > height() - 60) {  // Leave room for instructions
-        y = m_selectionRect.top() - m_buttonContainer->height() - 20;
-    }
-
-    // If still off screen, position inside selection
-    if (y < 10) {
-        y = m_selectionRect.top() + 10;
-    }
-
-    m_buttonContainer->move(x, y);
 }
