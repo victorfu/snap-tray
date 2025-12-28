@@ -15,9 +15,9 @@ if not exist "%BUILD_DIR%\CMakeCache.txt" (
     cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 )
 
-REM Build
-echo Building SnapTray...
-cmake --build build --target SnapTray
+REM Build all targets (including tests)
+echo Building all targets...
+cmake --build build
 
 REM Run
 echo.

@@ -15,9 +15,9 @@ if [ ! -f "$BUILD_DIR/CMakeCache.txt" ]; then
     cmake -S . -B build -DCMAKE_PREFIX_PATH="$(brew --prefix qt)"
 fi
 
-# Build
-echo "Building SnapTray..."
-cmake --build build --target SnapTray
+# Build all targets (including tests)
+echo "Building all targets..."
+cmake --build build
 
 # Run
 echo ""

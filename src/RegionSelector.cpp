@@ -1,5 +1,7 @@
 #include "RegionSelector.h"
 #include "annotations/AllAnnotations.h"
+#include "GlassRenderer.h"
+#include "ToolbarStyle.h"
 #include "IconRenderer.h"
 #include "ColorPaletteWidget.h"
 #include "LineWidthWidget.h"
@@ -366,15 +368,15 @@ void RegionSelector::setupToolbarButtons()
     // Configure buttons
     QVector<ToolbarWidget::ButtonConfig> buttons;
     buttons.append({ static_cast<int>(ToolbarButton::Selection), "selection", "Selection", false });
+    buttons.append({ static_cast<int>(ToolbarButton::Shape), "shape", "Shape", false });
     buttons.append({ static_cast<int>(ToolbarButton::Arrow), "arrow", "Arrow", false });
     buttons.append({ static_cast<int>(ToolbarButton::Pencil), "pencil", "Pencil", false });
     buttons.append({ static_cast<int>(ToolbarButton::Marker), "marker", "Marker", false });
-    buttons.append({ static_cast<int>(ToolbarButton::Shape), "shape", "Shape", false });
     buttons.append({ static_cast<int>(ToolbarButton::Text), "text", "Text", false });
     buttons.append({ static_cast<int>(ToolbarButton::Mosaic), "mosaic", "Mosaic", false });
     buttons.append({ static_cast<int>(ToolbarButton::StepBadge), "step-badge", "Step Badge", false });
     buttons.append({ static_cast<int>(ToolbarButton::Eraser), "eraser", "Eraser", false });
-    buttons.append({ static_cast<int>(ToolbarButton::Undo), "undo", "Undo", false });
+    buttons.append({ static_cast<int>(ToolbarButton::Undo), "undo", "Undo", true });
     buttons.append({ static_cast<int>(ToolbarButton::Redo), "redo", "Redo", false });
     buttons.append({ static_cast<int>(ToolbarButton::Cancel), "cancel", "Cancel (Esc)", true });  // separator before
     if (PlatformFeatures::instance().isOCRAvailable()) {
@@ -1024,13 +1026,12 @@ void RegionSelector::drawDimensionInfo(QPainter& painter)
 
     textRect.moveTo(textX, textY);
 
-    // Draw rounded background
-    painter.setPen(Qt::NoPen);
-    painter.setBrush(QColor(40, 40, 40, 220));
-    painter.drawRoundedRect(textRect, 6, 6);
+    // Draw glass panel background (matching radius slider style)
+    auto styleConfig = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
+    GlassRenderer::drawGlassPanel(painter, textRect, styleConfig, 6);
 
     // Draw text
-    painter.setPen(Qt::white);
+    painter.setPen(styleConfig.textColor);
     painter.drawText(textRect, Qt::AlignCenter, dimensions);
 
     // Draw radius slider next to dimension info
