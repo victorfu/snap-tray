@@ -39,6 +39,7 @@ class ColorPickerDialog;
 class QCloseEvent;
 class OCRManager;
 class TextAnnotation;
+class AutoBlurManager;
 
 // ShapeType and ShapeFillMode are defined in annotations/ShapeAnnotation.h
 
@@ -57,6 +58,7 @@ enum class ToolbarButton {
     Redo,
     Cancel,
     OCR,
+    AutoBlur,  // Auto-detect and blur faces/text
     Pin,
     Record,
     ScrollCapture,  // Scrolling capture (extended region capture)
@@ -81,6 +83,7 @@ inline ToolId toolbarButtonToToolId(ToolbarButton btn) {
     case ToolbarButton::Redo:       return ToolId::Redo;
     case ToolbarButton::Cancel:     return ToolId::Cancel;
     case ToolbarButton::OCR:        return ToolId::OCR;
+    case ToolbarButton::AutoBlur:   return ToolId::AutoBlur;
     case ToolbarButton::Pin:        return ToolId::Pin;
     case ToolbarButton::Record:     return ToolId::Record;
     case ToolbarButton::Save:       return ToolId::Save;
@@ -316,6 +319,13 @@ private:
 
     void performOCR();
     void onOCRComplete(bool success, const QString &text, const QString &error);
+
+    // Auto-blur detection
+    AutoBlurManager *m_autoBlurManager;
+    bool m_autoBlurInProgress;
+
+    void performAutoBlur();
+    void onAutoBlurComplete(bool success, int faceCount, int textCount, const QString &error);
 
     // Inline text editing
     InlineTextEditor *m_textEditor;

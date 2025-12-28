@@ -1,72 +1,37 @@
-#ifndef WIDTHSECTION_H
-#define WIDTHSECTION_H
+#ifndef MOSAICWIDTHSECTION_H
+#define MOSAICWIDTHSECTION_H
 
 #include <QObject>
 #include <QRect>
-#include <QColor>
 #include "ui/IWidgetSection.h"
 
 /**
- * @brief Width preview section for ColorAndWidthWidget.
+ * @brief Dedicated width slider section for Mosaic tool.
  *
- * Displays a circular preview of the current stroke width.
- * Width is adjusted via mouse wheel events.
+ * Provides a horizontal slider for adjusting mosaic block size.
+ * This section is independent from the shared WidthSection used by other tools.
  */
-class WidthSection : public QObject, public IWidgetSection
+class MosaicWidthSection : public QObject, public IWidgetSection
 {
     Q_OBJECT
 
 public:
-    explicit WidthSection(QObject* parent = nullptr);
+    explicit MosaicWidthSection(QObject* parent = nullptr);
 
     // =========================================================================
     // Width Management
     // =========================================================================
 
-    /**
-     * @brief Set the width range.
-     */
     void setWidthRange(int min, int max);
-
-    /**
-     * @brief Set the current width value.
-     */
     void setCurrentWidth(int width);
-
-    /**
-     * @brief Get the current width value.
-     */
     int currentWidth() const { return m_currentWidth; }
-
-    /**
-     * @brief Get the minimum width.
-     */
     int minWidth() const { return m_minWidth; }
-
-    /**
-     * @brief Get the maximum width.
-     */
     int maxWidth() const { return m_maxWidth; }
-
-    /**
-     * @brief Set the preview color (usually matches the current annotation color).
-     */
-    void setPreviewColor(const QColor& color) { m_previewColor = color; }
-
-    /**
-     * @brief Get the preview color.
-     */
-    QColor previewColor() const { return m_previewColor; }
 
     // =========================================================================
     // Wheel Event
     // =========================================================================
 
-    /**
-     * @brief Handle mouse wheel event for width adjustment.
-     * @param delta Wheel delta (positive = scroll up = increase, negative = decrease)
-     * @return true if the width changed
-     */
     bool handleWheel(int delta);
 
     // =========================================================================
@@ -83,25 +48,31 @@ public:
     void resetHoverState() override;
 
 signals:
-    /**
-     * @brief Emitted when the width value changes.
-     */
     void widthChanged(int width);
 
 private:
+    // Calculate thumb position from current width
+    int thumbPositionFromWidth() const;
+    // Calculate width from click position
+    int widthFromPosition(int x) const;
+
     // State
-    int m_minWidth = 1;
-    int m_maxWidth = 20;
-    int m_currentWidth = 3;
-    QColor m_previewColor = Qt::red;
+    int m_minWidth = 10;
+    int m_maxWidth = 100;
+    int m_currentWidth = 30;
     bool m_hovered = false;
+    bool m_dragging = false;
 
     // Layout
     QRect m_sectionRect;
+    QRect m_trackRect;
+    QRect m_thumbRect;
 
     // Layout constants
-    static constexpr int SECTION_SIZE = 32;  // Match widget height
-    static constexpr int MAX_DOT_SIZE = 22;  // Slightly reduced for 32px height
+    static constexpr int SECTION_WIDTH = 70;
+    static constexpr int TRACK_HEIGHT = 4;
+    static constexpr int THUMB_SIZE = 12;
+    static constexpr int SECTION_PADDING = 6;
 };
 
-#endif // WIDTHSECTION_H
+#endif // MOSAICWIDTHSECTION_H

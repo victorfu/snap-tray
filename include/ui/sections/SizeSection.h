@@ -59,7 +59,7 @@ private:
     QVector<QRect> m_buttonRects;  // 3 buttons: [Small, Medium, Large]
 
     // Layout constants
-    static constexpr int BUTTON_SIZE = 24;
+    static constexpr int BUTTON_SIZE = 22;  // Reduced from 24 for 32px widget height
     static constexpr int BUTTON_SPACING = 2;
     static constexpr int SECTION_PADDING = 6;
 };

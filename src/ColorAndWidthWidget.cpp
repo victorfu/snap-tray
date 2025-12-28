@@ -2,11 +2,13 @@
 #include "GlassRenderer.h"
 #include "ui/sections/ColorSection.h"
 #include "ui/sections/WidthSection.h"
+#include "ui/sections/MosaicWidthSection.h"
 #include "ui/sections/TextSection.h"
 #include "ui/sections/ArrowStyleSection.h"
 #include "ui/sections/LineStyleSection.h"
 #include "ui/sections/ShapeSection.h"
 #include "ui/sections/SizeSection.h"
+#include "ui/sections/AutoBlurSection.h"
 
 #include <QPainter>
 #include <QDebug>
@@ -15,11 +17,13 @@ ColorAndWidthWidget::ColorAndWidthWidget(QObject* parent)
     : QObject(parent)
     , m_colorSection(new ColorSection(this))
     , m_widthSection(new WidthSection(this))
+    , m_mosaicWidthSection(new MosaicWidthSection(this))
     , m_textSection(new TextSection(this))
     , m_arrowStyleSection(new ArrowStyleSection(this))
     , m_lineStyleSection(new LineStyleSection(this))
     , m_shapeSection(new ShapeSection(this))
     , m_sizeSection(new SizeSection(this))
+    , m_autoBlurSection(new AutoBlurSection(this))
     , m_styleConfig(ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle()))
 {
     connectSectionSignals();
@@ -85,6 +89,18 @@ void ColorAndWidthWidget::connectSectionSignals()
     connect(m_sizeSection, &SizeSection::sizeChanged, this, [this](StepBadgeSize size) {
         emit stepBadgeSizeChanged(size);
         qDebug() << "ColorAndWidthWidget: Step badge size changed to" << static_cast<int>(size);
+    });
+
+    // Forward MosaicWidthSection signals
+    connect(m_mosaicWidthSection, &MosaicWidthSection::widthChanged, this, [this](int width) {
+        emit mosaicWidthChanged(width);
+        qDebug() << "ColorAndWidthWidget: Mosaic width changed to" << width;
+    });
+
+    // Forward AutoBlurSection signals
+    connect(m_autoBlurSection, &AutoBlurSection::autoBlurRequested, this, [this]() {
+        emit autoBlurRequested();
+        qDebug() << "ColorAndWidthWidget: Auto blur requested";
     });
 }
 
@@ -302,6 +318,49 @@ StepBadgeSize ColorAndWidthWidget::stepBadgeSize() const
 }
 
 // =============================================================================
+// Mosaic Width Methods
+// =============================================================================
+
+void ColorAndWidthWidget::setShowMosaicWidthSection(bool show)
+{
+    m_showMosaicWidthSection = show;
+}
+
+void ColorAndWidthWidget::setMosaicWidthRange(int min, int max)
+{
+    m_mosaicWidthSection->setWidthRange(min, max);
+}
+
+void ColorAndWidthWidget::setMosaicWidth(int width)
+{
+    m_mosaicWidthSection->setCurrentWidth(width);
+}
+
+int ColorAndWidthWidget::mosaicWidth() const
+{
+    return m_mosaicWidthSection->currentWidth();
+}
+
+// =============================================================================
+// Auto Blur Methods
+// =============================================================================
+
+void ColorAndWidthWidget::setShowAutoBlurSection(bool show)
+{
+    m_showAutoBlurSection = show;
+}
+
+void ColorAndWidthWidget::setAutoBlurEnabled(bool enabled)
+{
+    m_autoBlurSection->setEnabled(enabled);
+}
+
+void ColorAndWidthWidget::setAutoBlurProcessing(bool processing)
+{
+    m_autoBlurSection->setProcessing(processing);
+}
+
+// =============================================================================
 // Positioning
 // =============================================================================
 
@@ -346,6 +405,17 @@ void ColorAndWidthWidget::updatePosition(const QRect& anchorRect, bool above, in
     if (m_showSizeSection) {
         if (hasFirstSection) totalWidth += SECTION_SPACING;
         totalWidth += m_sizeSection->preferredWidth();
+        hasFirstSection = true;
+    }
+    // For Mosaic tool: AutoBlurSection first, then MosaicWidthSection
+    if (m_showAutoBlurSection) {
+        if (hasFirstSection) totalWidth += SECTION_SPACING;
+        totalWidth += m_autoBlurSection->preferredWidth();
+        hasFirstSection = true;
+    }
+    if (m_showMosaicWidthSection) {
+        if (hasFirstSection) totalWidth += SECTION_SPACING;
+        totalWidth += m_mosaicWidthSection->preferredWidth();
         hasFirstSection = true;
     }
 
@@ -443,6 +513,21 @@ void ColorAndWidthWidget::updateLayout()
     if (m_showSizeSection) {
         if (hasFirstSection) xOffset += SECTION_SPACING;
         m_sizeSection->updateLayout(m_widgetRect.top(), WIDGET_HEIGHT, xOffset);
+        xOffset += m_sizeSection->preferredWidth();
+        hasFirstSection = true;
+    }
+
+    // For Mosaic tool: AutoBlurSection first, then MosaicWidthSection
+    if (m_showAutoBlurSection) {
+        if (hasFirstSection) xOffset += SECTION_SPACING;
+        m_autoBlurSection->updateLayout(m_widgetRect.top(), WIDGET_HEIGHT, xOffset);
+        xOffset += m_autoBlurSection->preferredWidth();
+        hasFirstSection = true;
+    }
+
+    if (m_showMosaicWidthSection) {
+        if (hasFirstSection) xOffset += SECTION_SPACING;
+        m_mosaicWidthSection->updateLayout(m_widgetRect.top(), WIDGET_HEIGHT, xOffset);
     }
 }
 
@@ -486,6 +571,14 @@ void ColorAndWidthWidget::draw(QPainter& painter)
 
     if (m_showSizeSection) {
         m_sizeSection->draw(painter, m_styleConfig);
+    }
+
+    if (m_showAutoBlurSection) {
+        m_autoBlurSection->draw(painter, m_styleConfig);
+    }
+
+    if (m_showMosaicWidthSection) {
+        m_mosaicWidthSection->draw(painter, m_styleConfig);
     }
 }
 
@@ -538,6 +631,16 @@ bool ColorAndWidthWidget::handleClick(const QPoint& pos)
     // Size section (Step Badge)
     if (m_showSizeSection && m_sizeSection->contains(pos)) {
         return m_sizeSection->handleClick(pos);
+    }
+
+    // Auto blur section
+    if (m_showAutoBlurSection && m_autoBlurSection->contains(pos)) {
+        return m_autoBlurSection->handleClick(pos);
+    }
+
+    // Mosaic width section
+    if (m_showMosaicWidthSection && m_mosaicWidthSection->contains(pos)) {
+        return m_mosaicWidthSection->handleClick(pos);
     }
 
     // Width section
@@ -603,11 +706,23 @@ bool ColorAndWidthWidget::updateHovered(const QPoint& pos)
         changed |= m_sizeSection->updateHovered(pos);
     }
 
+    if (m_showAutoBlurSection) {
+        changed |= m_autoBlurSection->updateHovered(pos);
+    }
+
+    if (m_showMosaicWidthSection) {
+        changed |= m_mosaicWidthSection->updateHovered(pos);
+    }
+
     return changed;
 }
 
 bool ColorAndWidthWidget::handleWheel(int delta)
 {
+    // Handle mosaic width section first if visible
+    if (m_showMosaicWidthSection) {
+        return m_mosaicWidthSection->handleWheel(delta);
+    }
     if (!m_showWidthSection) {
         return false;
     }
