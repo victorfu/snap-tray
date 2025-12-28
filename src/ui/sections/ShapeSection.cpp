@@ -1,5 +1,6 @@
 #include "ui/sections/ShapeSection.h"
 #include "ToolbarStyle.h"
+#include "IconRenderer.h"
 
 #include <QPainter>
 #include <QPen>
@@ -84,35 +85,20 @@ void ShapeSection::draw(QPainter& painter, const ToolbarStyleConfig& styleConfig
 
         // Draw icon based on button index
         QColor iconColor = isSelected ? styleConfig.textActiveColor : styleConfig.textColor;
-        QRect iconRect = rect.adjusted(5, 5, -5, -5);
 
+        QString iconKey;
         switch (i) {
-        case 0:  // Rectangle shape - outline square
-            painter.setPen(QPen(iconColor, 2));
-            painter.setBrush(Qt::NoBrush);
-            painter.drawRect(iconRect);
+        case 0:
+            iconKey = "rectangle";
             break;
-        case 1:  // Ellipse shape - outline circle
-            painter.setPen(QPen(iconColor, 2));
-            painter.setBrush(Qt::NoBrush);
-            painter.drawEllipse(iconRect);
+        case 1:
+            iconKey = "ellipse";
             break;
-        case 2:  // Fill toggle - shows filled or outline based on current mode
-            if (m_shapeFillMode == ShapeFillMode::Filled) {
-                // Show filled square
-                painter.setPen(QPen(iconColor, 1.5));
-                painter.setBrush(iconColor);
-                painter.drawRect(iconRect);
-            } else {
-                // Show outline square (dashed to indicate "outline mode")
-                QPen dashedPen(iconColor, 1.5, Qt::DashLine);
-                dashedPen.setDashPattern({2, 2});
-                painter.setPen(dashedPen);
-                painter.setBrush(Qt::NoBrush);
-                painter.drawRect(iconRect);
-            }
+        case 2:
+            iconKey = (m_shapeFillMode == ShapeFillMode::Filled) ? "shape-filled" : "shape-outline";
             break;
         }
+        IconRenderer::instance().renderIcon(painter, rect, iconKey, iconColor);
     }
 }
 

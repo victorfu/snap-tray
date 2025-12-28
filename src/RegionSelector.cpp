@@ -353,6 +353,15 @@ void RegionSelector::setupToolbarButtons()
     iconRenderer.loadIcon("record", ":/icons/icons/record.svg");
     iconRenderer.loadIcon("save", ":/icons/icons/save.svg");
     iconRenderer.loadIcon("copy", ":/icons/icons/copy.svg");
+    // Shape and arrow style icons for ColorAndWidthWidget sections
+    iconRenderer.loadIcon("shape-filled", ":/icons/icons/shape-filled.svg");
+    iconRenderer.loadIcon("shape-outline", ":/icons/icons/shape-outline.svg");
+    iconRenderer.loadIcon("arrow-none", ":/icons/icons/arrow-none.svg");
+    iconRenderer.loadIcon("arrow-end", ":/icons/icons/arrow-end.svg");
+    iconRenderer.loadIcon("arrow-end-outline", ":/icons/icons/arrow-end-outline.svg");
+    iconRenderer.loadIcon("arrow-end-line", ":/icons/icons/arrow-end-line.svg");
+    iconRenderer.loadIcon("arrow-both", ":/icons/icons/arrow-both.svg");
+    iconRenderer.loadIcon("arrow-both-outline", ":/icons/icons/arrow-both-outline.svg");
 
     // Configure buttons
     QVector<ToolbarWidget::ButtonConfig> buttons;

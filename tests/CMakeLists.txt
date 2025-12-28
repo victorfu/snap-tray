@@ -10,6 +10,7 @@ set(COLORANDWIDTHWIDGET_COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/ColorAndWidthWidget.cpp
     ${CMAKE_SOURCE_DIR}/src/ToolbarStyle.cpp
     ${CMAKE_SOURCE_DIR}/src/GlassRenderer.cpp
+    ${CMAKE_SOURCE_DIR}/src/IconRenderer.cpp
     ${CMAKE_SOURCE_DIR}/src/ui/sections/ColorSection.cpp
     ${CMAKE_SOURCE_DIR}/src/ui/sections/WidthSection.cpp
     ${CMAKE_SOURCE_DIR}/src/ui/sections/TextSection.cpp
