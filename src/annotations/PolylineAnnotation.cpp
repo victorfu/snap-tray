@@ -50,24 +50,46 @@ void PolylineAnnotation::draw(QPainter& painter) const
     painter.setBrush(Qt::NoBrush);  // Ensure no fill for the polyline path
     painter.setRenderHint(QPainter::Antialiasing, true);
 
+    double arrowLength = qMax(15.0, m_width * 5.0);
+    int lastIdx = m_points.size() - 1;
+
+    // Check if we have arrowheads that need line adjustment
+    bool hasEndArrow = (m_lineEndStyle != LineEndStyle::None);
+    bool hasStartArrow = (m_lineEndStyle == LineEndStyle::BothArrow ||
+                          m_lineEndStyle == LineEndStyle::BothArrowOutline);
+    bool needsEndAdjust = (m_lineEndStyle == LineEndStyle::EndArrow ||
+                           m_lineEndStyle == LineEndStyle::EndArrowOutline ||
+                           m_lineEndStyle == LineEndStyle::BothArrow ||
+                           m_lineEndStyle == LineEndStyle::BothArrowOutline);
+    bool needsStartAdjust = hasStartArrow;
+
     // Build the path for all segments
     QPainterPath path;
-    path.moveTo(m_points[0]);
 
-    // For the last segment, adjust endpoint if arrowhead is present
-    int lastIdx = m_points.size() - 1;
+    // Adjust first point for start arrowhead
+    QPointF startPoint = m_points[0];
+    if (needsStartAdjust && m_points.size() >= 2) {
+        double angle = qAtan2(m_points[0].y() - m_points[1].y(),
+                             m_points[0].x() - m_points[1].x());
+        startPoint = QPointF(
+            m_points[0].x() - arrowLength * qCos(angle),
+            m_points[0].y() - arrowLength * qSin(angle)
+        );
+    }
+    path.moveTo(startPoint);
+
+    // Draw middle segments
     for (int i = 1; i < lastIdx; ++i) {
         path.lineTo(m_points[i]);
     }
 
     // Handle the last segment specially for arrowhead
-    if (m_lineEndStyle != LineEndStyle::None && m_points.size() >= 2) {
+    if (needsEndAdjust && m_points.size() >= 2) {
         // Move line end back to arrowhead base so line doesn't protrude through arrow
         const QPoint& secondLast = m_points[lastIdx - 1];
         const QPoint& last = m_points[lastIdx];
 
         double angle = qAtan2(last.y() - secondLast.y(), last.x() - secondLast.x());
-        double arrowLength = qMax(15.0, m_width * 5.0);
         QPointF lineEnd(
             last.x() - arrowLength * qCos(angle),
             last.y() - arrowLength * qSin(angle)
@@ -79,15 +101,33 @@ void PolylineAnnotation::draw(QPainter& painter) const
 
     painter.drawPath(path);
 
-    // Draw arrowhead at the end if needed
-    if (m_lineEndStyle != LineEndStyle::None && m_points.size() >= 2) {
-        drawArrowhead(painter, m_points[lastIdx - 1], m_points[lastIdx]);
+    // Draw arrowheads based on style
+    switch (m_lineEndStyle) {
+    case LineEndStyle::None:
+        break;
+    case LineEndStyle::EndArrow:
+        drawArrowhead(painter, m_points[lastIdx - 1], m_points[lastIdx], true);
+        break;
+    case LineEndStyle::EndArrowOutline:
+        drawArrowhead(painter, m_points[lastIdx - 1], m_points[lastIdx], false);
+        break;
+    case LineEndStyle::EndArrowLine:
+        drawArrowheadLine(painter, m_points[lastIdx - 1], m_points[lastIdx]);
+        break;
+    case LineEndStyle::BothArrow:
+        drawArrowhead(painter, m_points[lastIdx - 1], m_points[lastIdx], true);
+        drawArrowhead(painter, m_points[1], m_points[0], true);
+        break;
+    case LineEndStyle::BothArrowOutline:
+        drawArrowhead(painter, m_points[lastIdx - 1], m_points[lastIdx], false);
+        drawArrowhead(painter, m_points[1], m_points[0], false);
+        break;
     }
 
     painter.restore();
 }
 
-void PolylineAnnotation::drawArrowhead(QPainter& painter, const QPoint& from, const QPoint& to) const
+void PolylineAnnotation::drawArrowhead(QPainter& painter, const QPoint& from, const QPoint& to, bool filled) const
 {
     // Calculate the angle of the last segment
     double angle = qAtan2(to.y() - from.y(), to.x() - from.x());
@@ -106,15 +146,50 @@ void PolylineAnnotation::drawArrowhead(QPainter& painter, const QPoint& from, co
         to.y() - arrowLength * qSin(angle + arrowAngle)
     );
 
-    // Draw filled arrowhead
+    // Draw arrowhead triangle
     QPainterPath arrowPath;
     arrowPath.moveTo(to);
     arrowPath.lineTo(arrowP1);
     arrowPath.lineTo(arrowP2);
     arrowPath.closeSubpath();
 
-    painter.setBrush(m_color);
+    // Use solid pen for arrowhead outline
+    QPen solidPen(m_color, m_width, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+    painter.setPen(solidPen);
+
+    if (filled) {
+        painter.setBrush(m_color);
+    } else {
+        painter.setBrush(Qt::NoBrush);
+    }
     painter.drawPath(arrowPath);
+}
+
+void PolylineAnnotation::drawArrowheadLine(QPainter& painter, const QPoint& from, const QPoint& to) const
+{
+    // Calculate the angle of the last segment
+    double angle = qAtan2(to.y() - from.y(), to.x() - from.x());
+
+    // Arrowhead size proportional to line width
+    double arrowLength = qMax(15.0, m_width * 5.0);
+    double arrowAngle = M_PI / 6.0;  // 30 degrees
+
+    // Calculate arrowhead points
+    QPointF arrowP1(
+        to.x() - arrowLength * qCos(angle - arrowAngle),
+        to.y() - arrowLength * qSin(angle - arrowAngle)
+    );
+    QPointF arrowP2(
+        to.x() - arrowLength * qCos(angle + arrowAngle),
+        to.y() - arrowLength * qSin(angle + arrowAngle)
+    );
+
+    // Draw two lines forming a V (no closed path)
+    QPen solidPen(m_color, m_width, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+    painter.setPen(solidPen);
+    painter.setBrush(Qt::NoBrush);
+    painter.drawLine(arrowP1, QPointF(to));
+    painter.drawLine(QPointF(to), arrowP2);
 }
 
 QRect PolylineAnnotation::boundingRect() const

@@ -55,7 +55,7 @@ void ArrowStyleSection::updateLayout(int containerTop, int containerHeight, int 
 
     // Dropdown rect - expand upward or downward based on setting
     int dropdownWidth = BUTTON_WIDTH + 10;
-    int dropdownHeight = 2 * DROPDOWN_OPTION_HEIGHT;  // 2 options
+    int dropdownHeight = 6 * DROPDOWN_OPTION_HEIGHT;  // 6 options (None + 5 arrow styles)
 
     if (m_dropdownExpandsUpward) {
         m_dropdownRect = QRect(
@@ -126,9 +126,16 @@ void ArrowStyleSection::draw(QPainter& painter, const ToolbarStyleConfig& styleC
         painter.setBrush(styleConfig.dropdownBackground);
         painter.drawRoundedRect(m_dropdownRect, 4, 4);
 
-        // Draw each option (2 options: None, EndArrow)
-        LineEndStyle styles[] = { LineEndStyle::None, LineEndStyle::EndArrow };
-        for (int i = 0; i < 2; ++i) {
+        // Draw each option (6 options: None + 5 arrow styles)
+        LineEndStyle styles[] = {
+            LineEndStyle::None,
+            LineEndStyle::EndArrow,
+            LineEndStyle::EndArrowOutline,
+            LineEndStyle::EndArrowLine,
+            LineEndStyle::BothArrow,
+            LineEndStyle::BothArrowOutline
+        };
+        for (int i = 0; i < 6; ++i) {
             QRect optionRect(
                 m_dropdownRect.left(),
                 m_dropdownRect.top() + i * DROPDOWN_OPTION_HEIGHT,
@@ -172,15 +179,12 @@ void ArrowStyleSection::drawArrowStyleIcon(QPainter& painter, LineEndStyle style
 
     QPen linePen(styleConfig.textColor, lineWidth, Qt::SolidLine, Qt::RoundCap);
     painter.setPen(linePen);
-    painter.setBrush(styleConfig.textColor);
-
-    // Draw the line
-    painter.drawLine(lineLeft, lineY, lineRight, lineY);
 
     // Arrowhead parameters
     int arrowSize = 6;
 
-    auto drawArrowhead = [&](int tipX, bool pointRight) {
+    // Draw filled arrowhead (triangle)
+    auto drawFilledArrowhead = [&](int tipX, bool pointRight) {
         int direction = pointRight ? -1 : 1;
         QPointF tip(tipX, lineY);
         QPointF p1(tipX + direction * arrowSize, lineY - arrowSize * 0.5);
@@ -191,15 +195,76 @@ void ArrowStyleSection::drawArrowStyleIcon(QPainter& painter, LineEndStyle style
         arrowPath.lineTo(p1);
         arrowPath.lineTo(p2);
         arrowPath.closeSubpath();
+        painter.setBrush(styleConfig.textColor);
         painter.drawPath(arrowPath);
-        };
+    };
 
+    // Draw outline arrowhead (hollow triangle)
+    auto drawOutlineArrowhead = [&](int tipX, bool pointRight) {
+        int direction = pointRight ? -1 : 1;
+        QPointF tip(tipX, lineY);
+        QPointF p1(tipX + direction * arrowSize, lineY - arrowSize * 0.5);
+        QPointF p2(tipX + direction * arrowSize, lineY + arrowSize * 0.5);
+
+        QPainterPath arrowPath;
+        arrowPath.moveTo(tip);
+        arrowPath.lineTo(p1);
+        arrowPath.lineTo(p2);
+        arrowPath.closeSubpath();
+        painter.setBrush(Qt::NoBrush);
+        painter.drawPath(arrowPath);
+    };
+
+    // Draw line arrowhead (V-shape, two lines)
+    auto drawLineArrowhead = [&](int tipX, bool pointRight) {
+        int direction = pointRight ? -1 : 1;
+        QPointF tip(tipX, lineY);
+        QPointF p1(tipX + direction * arrowSize, lineY - arrowSize * 0.5);
+        QPointF p2(tipX + direction * arrowSize, lineY + arrowSize * 0.5);
+
+        painter.setBrush(Qt::NoBrush);
+        painter.drawLine(p1, tip);
+        painter.drawLine(tip, p2);
+    };
+
+    // Determine line length adjustment for different styles
+    int lineEndRight = lineRight;
+    int lineStartLeft = lineLeft;
+    bool hasBothEnds = (style == LineEndStyle::BothArrow || style == LineEndStyle::BothArrowOutline);
+
+    if (style == LineEndStyle::EndArrow || style == LineEndStyle::EndArrowOutline ||
+        style == LineEndStyle::BothArrow || style == LineEndStyle::BothArrowOutline) {
+        lineEndRight = lineRight - arrowSize;
+    }
+    if (hasBothEnds) {
+        lineStartLeft = lineLeft + arrowSize;
+    }
+
+    // Draw the line
+    painter.setBrush(Qt::NoBrush);
+    painter.drawLine(lineStartLeft, lineY, lineEndRight, lineY);
+
+    // Draw arrowheads based on style
     switch (style) {
     case LineEndStyle::None:
         // Just the line, no arrowheads
         break;
     case LineEndStyle::EndArrow:
-        drawArrowhead(lineRight, true);
+        drawFilledArrowhead(lineRight, true);
+        break;
+    case LineEndStyle::EndArrowOutline:
+        drawOutlineArrowhead(lineRight, true);
+        break;
+    case LineEndStyle::EndArrowLine:
+        drawLineArrowhead(lineRight, true);
+        break;
+    case LineEndStyle::BothArrow:
+        drawFilledArrowhead(lineRight, true);
+        drawFilledArrowhead(lineLeft, false);
+        break;
+    case LineEndStyle::BothArrowOutline:
+        drawOutlineArrowhead(lineRight, true);
+        drawOutlineArrowhead(lineLeft, false);
         break;
     }
 
@@ -269,7 +334,7 @@ int ArrowStyleSection::optionAtPosition(const QPoint& pos) const
     if (m_dropdownOpen && m_dropdownRect.contains(pos)) {
         int relativeY = pos.y() - m_dropdownRect.top();
         int option = relativeY / DROPDOWN_OPTION_HEIGHT;
-        if (option >= 0 && option < 2) {
+        if (option >= 0 && option < 6) {
             return option;
         }
     }
@@ -293,8 +358,15 @@ bool ArrowStyleSection::handleClick(const QPoint& pos)
         return true;
     }
     else if (option >= 0) {
-        // Clicked on a dropdown option (2 options: None, EndArrow)
-        LineEndStyle styles[] = { LineEndStyle::None, LineEndStyle::EndArrow };
+        // Clicked on a dropdown option (6 options: None + 5 arrow styles)
+        LineEndStyle styles[] = {
+            LineEndStyle::None,
+            LineEndStyle::EndArrow,
+            LineEndStyle::EndArrowOutline,
+            LineEndStyle::EndArrowLine,
+            LineEndStyle::BothArrow,
+            LineEndStyle::BothArrowOutline
+        };
         m_arrowStyle = styles[option];
         m_dropdownOpen = false;
         m_hoveredOption = -1;

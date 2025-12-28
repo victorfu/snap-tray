@@ -9,8 +9,15 @@
 /**
  * @brief Arrow style section for ColorAndWidthWidget.
  *
- * Provides a dropdown to select arrow line end style (None, EndArrow)
- * and a toggle for polyline mode.
+ * Provides a dropdown to select arrow line end style:
+ * - None: Plain line without arrowheads
+ * - EndArrow: Filled triangle at end
+ * - EndArrowOutline: Outline triangle at end
+ * - EndArrowLine: V-line at end (two lines, no fill)
+ * - BothArrow: Filled triangles at both ends
+ * - BothArrowOutline: Outline triangles at both ends
+ *
+ * Also includes a toggle for polyline mode.
  */
 class ArrowStyleSection : public QObject, public IWidgetSection
 {
@@ -89,7 +96,7 @@ private:
     bool m_polylineMode = false;
     bool m_dropdownOpen = false;
     bool m_dropdownExpandsUpward = false;
-    int m_hoveredOption = -1;  // -3=polyline toggle, -2=button, 0-1=options, -1=none
+    int m_hoveredOption = -1;  // -3=polyline toggle, -2=button, 0-5=options, -1=none
 
     // Layout
     QRect m_sectionRect;

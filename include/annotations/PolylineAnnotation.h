@@ -44,7 +44,8 @@ public:
     int width() const { return m_width; }
 
 private:
-    void drawArrowhead(QPainter& painter, const QPoint& from, const QPoint& to) const;
+    void drawArrowhead(QPainter& painter, const QPoint& from, const QPoint& to, bool filled) const;
+    void drawArrowheadLine(QPainter& painter, const QPoint& from, const QPoint& to) const;
 
     QVector<QPoint> m_points;
     QColor m_color;
