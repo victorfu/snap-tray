@@ -81,35 +81,45 @@ void TestColorAndWidthWidgetEvents::setupWidgetWithAllSections()
 QPoint TestColorAndWidthWidgetEvents::getColorSwatchCenter(int index)
 {
     QRect widgetRect = m_widget->boundingRect();
-    int swatchSize = 16;
+
+    // Layout: WidthSection (32px) + spacing (2px) + ColorSection
+    int widthSectionSize = 32;
+    int widthToColorSpacing = 2;
+    int colorSectionLeft = widgetRect.left() + widthSectionSize + widthToColorSpacing;
+
+    int swatchSize = 14;
     int swatchSpacing = 2;
     int padding = 6;
+    int rowSpacing = 2;
 
     int row = index / 8;
     int col = index % 8;
 
-    int x = widgetRect.left() + padding + col * (swatchSize + swatchSpacing) + swatchSize / 2;
-    int y = widgetRect.top() + 2 + row * (swatchSize + 2) + swatchSize / 2;
+    int x = colorSectionLeft + padding + col * (swatchSize + swatchSpacing) + swatchSize / 2;
+    int y = widgetRect.top() + 2 + row * (swatchSize + rowSpacing) + swatchSize / 2;
 
     return QPoint(x, y);
 }
 
 QPoint TestColorAndWidthWidgetEvents::getTextButtonCenter(int buttonIndex)
 {
-    // Text section is after color section, width section, and arrow style section
+    // Layout order: WidthSection -> ColorSection -> ArrowStyleSection -> TextSection
     QRect widgetRect = m_widget->boundingRect();
 
     // Calculate section widths based on actual layout constants
-    // ColorSection: COLORS_PER_ROW(8) * SWATCH_SIZE(16) + (COLORS_PER_ROW-1)(7) * SWATCH_SPACING(2) + SECTION_PADDING(6) * 2 = 154
-    int colorSectionWidth = 8 * 16 + 7 * 2 + 6 * 2;  // 154
-    // WidthSection: SECTION_SIZE = 36
-    int widthSectionWidth = 36;
-    // ArrowStyleSection: BUTTON_WIDTH(42) + TOGGLE_SPACING(8) + TOGGLE_WIDTH(28) = 78
-    int arrowSectionWidth = 42 + 8 + 28;  // 78
-    // SECTION_SPACING between each section = 8
+    // WidthSection: SECTION_SIZE = 32
+    int widthSectionSize = 32;
+    // WIDTH_TO_COLOR_SPACING = 2
+    int widthToColorSpacing = 2;
+    // ColorSection: COLORS_PER_ROW(8) * SWATCH_SIZE(14) + 7 * SWATCH_SPACING(2) + SECTION_PADDING(6) * 2 = 138
+    int colorSectionWidth = 8 * 14 + 7 * 2 + 6 * 2;  // 138
+    // SECTION_SPACING = 8
     int sectionSpacing = 8;
+    // ArrowStyleSection: BUTTON_WIDTH(52) + TOGGLE_SPACING(8) + TOGGLE_WIDTH(28) = 88
+    int arrowSectionWidth = 52 + 8 + 28;  // 88
 
-    int textSectionLeft = widgetRect.left() + colorSectionWidth + sectionSpacing + widthSectionWidth + sectionSpacing + arrowSectionWidth + sectionSpacing;
+    int textSectionLeft = widgetRect.left() + widthSectionSize + widthToColorSpacing +
+                          colorSectionWidth + sectionSpacing + arrowSectionWidth + sectionSpacing;
     int buttonSize = 20;
     int buttonSpacing = 2;
     int padding = 6;
@@ -122,18 +132,29 @@ QPoint TestColorAndWidthWidgetEvents::getTextButtonCenter(int buttonIndex)
 
 QPoint TestColorAndWidthWidgetEvents::getShapeButtonCenter(int buttonIndex)
 {
-    // Shape section is at the end
+    // Layout order: WidthSection -> ColorSection -> ArrowStyleSection -> TextSection -> ShapeSection
     QRect widgetRect = m_widget->boundingRect();
 
-    int buttonSize = 24;
+    // Calculate section widths based on actual layout constants
+    int widthSectionSize = 32;
+    int widthToColorSpacing = 2;
+    int colorSectionWidth = 8 * 14 + 7 * 2 + 6 * 2;  // 138
+    int sectionSpacing = 8;
+    int arrowSectionWidth = 52 + 8 + 28;  // 88
+    // TextSection: SECTION_PADDING(6) + 3*BUTTON_SIZE(20) + 2*BUTTON_SPACING(2) +
+    //              SECTION_SPACING(8) + FONT_SIZE_WIDTH(40) + SECTION_SPACING(8) +
+    //              FONT_FAMILY_WIDTH(90) + SECTION_PADDING(6) = 222
+    int textSectionWidth = 6 + (20 * 3 + 2 * 2) + 8 + 40 + 8 + 90 + 6;  // 222
+
+    int shapeSectionLeft = widgetRect.left() + widthSectionSize + widthToColorSpacing +
+                           colorSectionWidth + sectionSpacing + arrowSectionWidth + sectionSpacing +
+                           textSectionWidth + sectionSpacing;
+
+    int buttonSize = 22;
     int buttonSpacing = 2;
     int padding = 6;
 
-    // Shape section is at the right side of the widget
-    // We need to calculate from the right edge
-    int shapeSectionWidth = buttonSize * 3 + buttonSpacing * 2 + padding;
-    int shapeSectionLeft = widgetRect.right() - shapeSectionWidth;
-
+    // Buttons are laid out from xOffset + SECTION_PADDING/2
     int x = shapeSectionLeft + padding / 2 + buttonIndex * (buttonSize + buttonSpacing) + buttonSize / 2;
     int y = widgetRect.center().y();
 
@@ -333,17 +354,17 @@ void TestColorAndWidthWidgetEvents::testHandleClickOnArrowStyleButtonOpensDropdo
 
     QRect widgetRect = m_widget->boundingRect();
 
-    // Arrow style button is after color and width sections
-    // ColorSection: 8 * 16 + 7 * 2 + 6 * 2 = 154
-    int colorSectionWidth = 8 * 16 + 7 * 2 + 6 * 2;  // 154
-    // WidthSection: SECTION_SIZE = 36
-    int widthSectionWidth = 36;
-    // SECTION_SPACING = 8
+    // Layout order: WidthSection -> ColorSection -> ArrowStyleSection
+    int widthSectionSize = 32;
+    int widthToColorSpacing = 2;
+    int colorSectionWidth = 8 * 14 + 7 * 2 + 6 * 2;  // 138
     int sectionSpacing = 8;
-    // Arrow button is at xOffset + TOGGLE_WIDTH(28) + TOGGLE_SPACING(8), center is at + BUTTON_WIDTH(42)/2
-    int arrowButtonOffset = 28 + 8 + 21;  // polyline toggle + spacing + button center
+    // Arrow section: polyline toggle (28) + spacing (8) + arrow button (52)
+    // Button center is at toggle + spacing + button/2 = 28 + 8 + 26 = 62
+    int arrowButtonOffset = 28 + 8 + 26;
 
-    int arrowButtonX = widgetRect.left() + colorSectionWidth + sectionSpacing + widthSectionWidth + sectionSpacing + arrowButtonOffset;
+    int arrowButtonX = widgetRect.left() + widthSectionSize + widthToColorSpacing +
+                       colorSectionWidth + sectionSpacing + arrowButtonOffset;
     int arrowButtonY = widgetRect.center().y();
 
     bool handled = m_widget->handleClick(QPoint(arrowButtonX, arrowButtonY));
@@ -361,16 +382,15 @@ void TestColorAndWidthWidgetEvents::testHandleClickOnArrowStyleOption()
     QSignalSpy spy(m_widget, &ColorAndWidthWidget::arrowStyleChanged);
 
     QRect widgetRect = m_widget->boundingRect();
-    // ColorSection: 8 * 16 + 7 * 2 + 6 * 2 = 154
-    int colorSectionWidth = 8 * 16 + 7 * 2 + 6 * 2;  // 154
-    // WidthSection: SECTION_SIZE = 36
-    int widthSectionWidth = 36;
-    // SECTION_SPACING = 8
+    // Layout order: WidthSection -> ColorSection -> ArrowStyleSection
+    int widthSectionSize = 32;
+    int widthToColorSpacing = 2;
+    int colorSectionWidth = 8 * 14 + 7 * 2 + 6 * 2;  // 138
     int sectionSpacing = 8;
-    // Arrow button is at xOffset + TOGGLE_WIDTH(28) + TOGGLE_SPACING(8), center is at + BUTTON_WIDTH(42)/2
-    int arrowButtonOffset = 28 + 8 + 21;  // polyline toggle + spacing + button center
+    int arrowButtonOffset = 28 + 8 + 26;
 
-    int arrowButtonX = widgetRect.left() + colorSectionWidth + sectionSpacing + widthSectionWidth + sectionSpacing + arrowButtonOffset;
+    int arrowButtonX = widgetRect.left() + widthSectionSize + widthToColorSpacing +
+                       colorSectionWidth + sectionSpacing + arrowButtonOffset;
     int arrowButtonY = widgetRect.center().y();
 
     // First click to open dropdown
@@ -391,16 +411,15 @@ void TestColorAndWidthWidgetEvents::testHandleClickOutsideClosesDropdown()
     m_widget->updatePosition(QRect(100, 100, 200, 40), false, 1920);
 
     QRect widgetRect = m_widget->boundingRect();
-    // ColorSection: 8 * 16 + 7 * 2 + 6 * 2 = 154
-    int colorSectionWidth = 8 * 16 + 7 * 2 + 6 * 2;  // 154
-    // WidthSection: SECTION_SIZE = 36
-    int widthSectionWidth = 36;
-    // SECTION_SPACING = 8
+    // Layout order: WidthSection -> ColorSection -> ArrowStyleSection
+    int widthSectionSize = 32;
+    int widthToColorSpacing = 2;
+    int colorSectionWidth = 8 * 14 + 7 * 2 + 6 * 2;  // 138
     int sectionSpacing = 8;
-    // Arrow button is at xOffset + TOGGLE_WIDTH(28) + TOGGLE_SPACING(8), center is at + BUTTON_WIDTH(42)/2
-    int arrowButtonOffset = 28 + 8 + 21;  // polyline toggle + spacing + button center
+    int arrowButtonOffset = 28 + 8 + 26;
 
-    int arrowButtonX = widgetRect.left() + colorSectionWidth + sectionSpacing + widthSectionWidth + sectionSpacing + arrowButtonOffset;
+    int arrowButtonX = widgetRect.left() + widthSectionSize + widthToColorSpacing +
+                       colorSectionWidth + sectionSpacing + arrowButtonOffset;
     int arrowButtonY = widgetRect.center().y();
 
     // Open dropdown

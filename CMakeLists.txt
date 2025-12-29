@@ -54,12 +54,20 @@ set(QHOTKEY_INSTALL OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(QHotkey)
 
 # ============================================================================
-# OpenCV for Scrolling Capture (static build)
+# OpenCV for Scrolling Capture (static build) - Optimized Configuration
+# ============================================================================
+# Required modules:
+#   - core: Mat operations, basic data structures
+#   - imgproc: cvtColor, GaussianBlur, matchTemplate, CLAHE, Sobel
+#   - features2d: ORB detector, BFMatcher, MSER (text detection)
+#   - flann: Required by features2d for kNN matching
+#   - calib3d: Required by objdetect (dependency in OpenCV 4.10.0)
+#   - objdetect: CascadeClassifier for Haar Cascade face detection
 # ============================================================================
 FetchContent_Declare(
     OpenCV
     GIT_REPOSITORY https://github.com/opencv/opencv.git
-    GIT_TAG        4.9.0
+    GIT_TAG        4.10.0
     GIT_SHALLOW    TRUE
 )
 
@@ -92,6 +100,40 @@ set(WITH_TIFF OFF CACHE BOOL "" FORCE)
 set(WITH_WEBP OFF CACHE BOOL "" FORCE)
 set(WITH_PNG OFF CACHE BOOL "" FORCE)
 set(WITH_JPEG OFF CACHE BOOL "" FORCE)
+set(WITH_OBSENSOR OFF CACHE BOOL "" FORCE)
+set(WITH_1394 OFF CACHE BOOL "" FORCE)
+
+# Hardware Acceleration - DISABLED (reduces compile time and binary size)
+set(WITH_OPENCL OFF CACHE BOOL "OpenCL: Not needed" FORCE)
+set(WITH_OPENCL_SVM OFF CACHE BOOL "OpenCL SVM: Not needed" FORCE)
+set(WITH_CUDA OFF CACHE BOOL "CUDA: Not needed" FORCE)
+set(WITH_IPP OFF CACHE BOOL "Intel IPP: Reduces binary size ~1-2MB" FORCE)
+set(WITH_TBB OFF CACHE BOOL "Intel TBB: Qt provides threading" FORCE)
+set(WITH_OPENMP OFF CACHE BOOL "OpenMP: Not needed" FORCE)
+
+# Math Libraries - DISABLED
+set(WITH_EIGEN OFF CACHE BOOL "Eigen: Not needed" FORCE)
+set(WITH_LAPACK OFF CACHE BOOL "LAPACK: Not needed" FORCE)
+
+# Additional Multimedia - DISABLED
+set(WITH_V4L OFF CACHE BOOL "Video4Linux: Not needed" FORCE)
+set(WITH_DSHOW OFF CACHE BOOL "DirectShow: Not needed" FORCE)
+set(WITH_MSMF OFF CACHE BOOL "Media Foundation via OpenCV: Using directly" FORCE)
+set(WITH_AVFOUNDATION OFF CACHE BOOL "AVFoundation via OpenCV: Using directly" FORCE)
+
+# Build Optimizations
+set(ENABLE_FAST_MATH ON CACHE BOOL "Enable fast math" FORCE)
+set(CV_TRACE OFF CACHE BOOL "Disable tracing" FORCE)
+set(CV_ENABLE_INTRINSICS ON CACHE BOOL "Enable SIMD" FORCE)
+set(OPENCV_ENABLE_NONFREE OFF CACHE BOOL "Non-free: Not needed" FORCE)
+
+# Language Bindings - DISABLED
+set(BUILD_opencv_python2 OFF CACHE BOOL "Python2: Not needed" FORCE)
+set(BUILD_opencv_python3 OFF CACHE BOOL "Python3: Not needed" FORCE)
+set(BUILD_opencv_java OFF CACHE BOOL "Java: Not needed" FORCE)
+set(BUILD_JAVA OFF CACHE BOOL "Java: Not needed" FORCE)
+set(BUILD_opencv_world OFF CACHE BOOL "World module: Not needed" FORCE)
+
 # Use system zlib to avoid build conflicts on macOS
 set(BUILD_ZLIB OFF CACHE BOOL "" FORCE)
 # Keep: core, imgproc, features2d, flann

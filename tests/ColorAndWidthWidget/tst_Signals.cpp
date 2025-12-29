@@ -70,9 +70,18 @@ void TestColorAndWidthWidgetSignals::testColorSelectedSignal()
     // Get the bounding rect and calculate first swatch position
     QRect widgetRect = m_widget->boundingRect();
 
-    // First swatch is at approximately (left + 6, top + 2) with size 16x16
-    // Click on the first color swatch (red - index 0)
-    QPoint firstSwatchCenter(widgetRect.left() + 6 + 8, widgetRect.top() + 2 + 8);
+    // Layout: WidthSection (32px) + spacing (2px) + ColorSection
+    // ColorSection starts at: widgetRect.left() + 32 + 2 = widgetRect.left() + 34
+    // First swatch is at: colorSectionLeft + padding (6) + swatchSize/2 (7)
+    // Swatch size is 14px, so center is at +7
+    int widthSectionSize = 32;
+    int widthToColorSpacing = 2;
+    int colorSectionPadding = 6;
+    int swatchSize = 14;
+
+    int colorSectionLeft = widgetRect.left() + widthSectionSize + widthToColorSpacing;
+    QPoint firstSwatchCenter(colorSectionLeft + colorSectionPadding + swatchSize / 2,
+                             widgetRect.top() + 2 + swatchSize / 2);
 
     bool handled = m_widget->handleClick(firstSwatchCenter);
     QVERIFY(handled);
@@ -95,13 +104,20 @@ void TestColorAndWidthWidgetSignals::testMoreColorsRequestedSignal()
 
     QRect widgetRect = m_widget->boundingRect();
 
+    // Layout: WidthSection (32px) + spacing (2px) + ColorSection
+    int widthSectionSize = 32;
+    int widthToColorSpacing = 2;
+    int colorSectionPadding = 6;
+    int colorSectionLeft = widgetRect.left() + widthSectionSize + widthToColorSpacing;
+
     // The "..." button is at position 15 (after 15 colors, 0-indexed)
     // It's in row 1 (second row), column 7 (8th position, 0-indexed)
-    // Position: left + 6 + 7*(16+2), top + 2 + 1*(16+2)
-    int swatchSize = 16;
+    // Position: colorSectionLeft + padding + 7*(14+2), top + 2 + 1*(14+2)
+    int swatchSize = 14;
     int swatchSpacing = 2;
-    int moreButtonX = widgetRect.left() + 6 + 7 * (swatchSize + swatchSpacing) + swatchSize / 2;
-    int moreButtonY = widgetRect.top() + 2 + 1 * (swatchSize + 2) + swatchSize / 2;
+    int rowSpacing = 2;
+    int moreButtonX = colorSectionLeft + colorSectionPadding + 7 * (swatchSize + swatchSpacing) + swatchSize / 2;
+    int moreButtonY = widgetRect.top() + 2 + 1 * (swatchSize + rowSpacing) + swatchSize / 2;
 
     QPoint moreButtonCenter(moreButtonX, moreButtonY);
 
