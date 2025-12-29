@@ -430,6 +430,16 @@ QColor RegionSelector::getToolbarIconColor(int buttonId, bool isActive, bool isH
         return QColor(255, 200, 100);
     }
 
+    // Show gray for Undo when nothing to undo
+    if (btn == ToolbarButton::Undo && !m_annotationLayer->canUndo()) {
+        return QColor(128, 128, 128);
+    }
+
+    // Show gray for Redo when nothing to redo
+    if (btn == ToolbarButton::Redo && !m_annotationLayer->canRedo()) {
+        return QColor(128, 128, 128);
+    }
+
     // All icons use the same color scheme as Pencil
     if (isActive) {
         return style.iconActiveColor;

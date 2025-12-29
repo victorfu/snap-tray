@@ -422,6 +422,12 @@ void ScreenCanvas::drawToolbar(QPainter& painter)
         else if (button == CanvasButton::Clear) {
             iconColor = QColor(255, 180, 100);  // Orange for clear (keep as special color)
         }
+        else if (button == CanvasButton::Undo && !m_annotationLayer->canUndo()) {
+            iconColor = QColor(128, 128, 128);  // Gray for disabled undo
+        }
+        else if (button == CanvasButton::Redo && !m_annotationLayer->canRedo()) {
+            iconColor = QColor(128, 128, 128);  // Gray for disabled redo
+        }
         else if (isActive || isToggleActive) {
             iconColor = m_toolbarStyleConfig.iconActiveColor;
         }
