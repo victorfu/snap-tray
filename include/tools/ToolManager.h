@@ -108,9 +108,6 @@ public:
     void setShapeFillMode(int mode);
     int shapeFillMode() const { return m_context->shapeFillMode; }
 
-    void setPolylineMode(bool enabled);
-    bool polylineMode() const { return m_context->polylineMode; }
-
     // Callback setup
     void setRepaintCallback(std::function<void()> callback);
 

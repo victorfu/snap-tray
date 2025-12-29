@@ -70,7 +70,6 @@ void ColorAndWidthWidget::connectSectionSignals()
 
     // Forward ArrowStyleSection signals
     connect(m_arrowStyleSection, &ArrowStyleSection::arrowStyleChanged, this, &ColorAndWidthWidget::arrowStyleChanged);
-    connect(m_arrowStyleSection, &ArrowStyleSection::polylineModeChanged, this, &ColorAndWidthWidget::polylineModeChanged);
 
     // Forward LineStyleSection signals
     connect(m_lineStyleSection, &LineStyleSection::lineStyleChanged, this, &ColorAndWidthWidget::lineStyleChanged);
@@ -239,20 +238,6 @@ void ColorAndWidthWidget::setArrowStyle(LineEndStyle style)
 LineEndStyle ColorAndWidthWidget::arrowStyle() const
 {
     return m_arrowStyleSection->arrowStyle();
-}
-
-// =============================================================================
-// Polyline Mode Methods
-// =============================================================================
-
-void ColorAndWidthWidget::setPolylineMode(bool enabled)
-{
-    m_arrowStyleSection->setPolylineMode(enabled);
-}
-
-bool ColorAndWidthWidget::polylineMode() const
-{
-    return m_arrowStyleSection->polylineMode();
 }
 
 // =============================================================================

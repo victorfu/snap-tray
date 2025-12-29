@@ -31,37 +31,20 @@ void ArrowStyleSection::setArrowStyle(LineEndStyle style)
     }
 }
 
-void ArrowStyleSection::setPolylineMode(bool enabled)
-{
-    if (m_polylineMode != enabled) {
-        m_polylineMode = enabled;
-        emit polylineModeChanged(m_polylineMode);
-    }
-}
-
 int ArrowStyleSection::preferredWidth() const
 {
-    return BUTTON_WIDTH + TOGGLE_SPACING + TOGGLE_WIDTH;
+    return BUTTON_WIDTH;
 }
 
 void ArrowStyleSection::updateLayout(int containerTop, int containerHeight, int xOffset)
 {
-    int totalWidth = BUTTON_WIDTH + TOGGLE_SPACING + TOGGLE_WIDTH;
-    m_sectionRect = QRect(xOffset, containerTop, totalWidth, containerHeight);
+    m_sectionRect = QRect(xOffset, containerTop, BUTTON_WIDTH, containerHeight);
 
-    // Center the buttons vertically
+    // Center the button vertically
     int buttonY = containerTop + (containerHeight - BUTTON_HEIGHT) / 2;
 
-    // Polyline toggle button (to the left of arrow style dropdown)
-    m_polylineToggleRect = QRect(
-        xOffset,
-        buttonY,
-        TOGGLE_WIDTH,
-        BUTTON_HEIGHT
-    );
-
     m_buttonRect = QRect(
-        xOffset + TOGGLE_WIDTH + TOGGLE_SPACING,
+        xOffset,
         buttonY,
         BUTTON_WIDTH,
         BUTTON_HEIGHT
@@ -113,25 +96,6 @@ void ArrowStyleSection::draw(QPainter& painter, const ToolbarStyleConfig& styleC
     arrow.lineTo(arrowX, arrowY + 2);
     arrow.closeSubpath();
     painter.fillPath(arrow, styleConfig.textColor);
-
-    // Draw polyline toggle button
-    bool toggleHovered = (m_hoveredOption == -3);
-    QColor toggleBgColor;
-    if (m_polylineMode) {
-        toggleBgColor = styleConfig.buttonActiveColor;
-    }
-    else if (toggleHovered) {
-        toggleBgColor = styleConfig.buttonHoverColor;
-    }
-    else {
-        toggleBgColor = styleConfig.buttonInactiveColor;
-    }
-    painter.setPen(QPen(styleConfig.dropdownBorder, 1));
-    painter.setBrush(toggleBgColor);
-    painter.drawRoundedRect(m_polylineToggleRect, 4, 4);
-
-    // Draw polyline icon
-    drawPolylineIcon(painter, m_polylineToggleRect, m_polylineMode, styleConfig);
 
     // Draw dropdown menu if open
     if (m_dropdownOpen) {
@@ -188,28 +152,15 @@ void ArrowStyleSection::drawArrowStyleIcon(QPainter& painter, LineEndStyle style
     }
 }
 
-void ArrowStyleSection::drawPolylineIcon(QPainter& painter, const QRect& rect, bool active,
-    const ToolbarStyleConfig& styleConfig) const
-{
-    QColor iconColor = active ? styleConfig.textActiveColor : styleConfig.textColor;
-    IconRenderer::instance().renderIcon(painter, rect, "polyline", iconColor, 6);
-}
-
 bool ArrowStyleSection::contains(const QPoint& pos) const
 {
     if (m_sectionRect.contains(pos)) return true;
-    if (m_polylineToggleRect.contains(pos)) return true;
     if (m_dropdownOpen && m_dropdownRect.contains(pos)) return true;
     return false;
 }
 
 int ArrowStyleSection::optionAtPosition(const QPoint& pos) const
 {
-    // Check if on polyline toggle
-    if (m_polylineToggleRect.contains(pos)) {
-        return -3;  // Special value for polyline toggle
-    }
-
     // Check if in dropdown
     if (m_dropdownOpen && m_dropdownRect.contains(pos)) {
         int relativeY = pos.y() - m_dropdownRect.top();
@@ -231,13 +182,7 @@ bool ArrowStyleSection::handleClick(const QPoint& pos)
 {
     int option = optionAtPosition(pos);
 
-    if (option == -3) {
-        // Clicked on polyline toggle
-        m_polylineMode = !m_polylineMode;
-        emit polylineModeChanged(m_polylineMode);
-        return true;
-    }
-    else if (option >= 0) {
+    if (option >= 0) {
         // Clicked on a dropdown option (6 options: None + 5 arrow styles)
         LineEndStyle styles[] = {
             LineEndStyle::None,

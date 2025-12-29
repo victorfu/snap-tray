@@ -74,12 +74,10 @@ ScreenCanvas::ScreenCanvas(QWidget* parent)
     int savedWidth = annotationSettings.loadWidth();
     LineEndStyle savedArrowStyle = loadArrowStyle();
     LineStyle savedLineStyle = loadLineStyle();
-    bool savedPolylineMode = annotationSettings.loadPolylineMode();
     m_toolManager->setColor(savedColor);
     m_toolManager->setWidth(savedWidth);
     m_toolManager->setArrowStyle(savedArrowStyle);
     m_toolManager->setLineStyle(savedLineStyle);
-    m_toolManager->setPolylineMode(savedPolylineMode);
 
     // Connect tool manager signals
     connect(m_toolManager, &ToolManager::needsRepaint, this, QOverload<>::of(&QWidget::update));
@@ -110,7 +108,6 @@ ScreenCanvas::ScreenCanvas(QWidget* parent)
     m_colorAndWidthWidget->setWidthRange(1, 20);
     m_colorAndWidthWidget->setArrowStyle(savedArrowStyle);
     m_colorAndWidthWidget->setLineStyle(savedLineStyle);
-    m_colorAndWidthWidget->setPolylineMode(savedPolylineMode);
     connect(m_colorAndWidthWidget, &ColorAndWidthWidget::colorSelected,
         this, &ScreenCanvas::onColorSelected);
     connect(m_colorAndWidthWidget, &ColorAndWidthWidget::moreColorsRequested,
@@ -121,11 +118,6 @@ ScreenCanvas::ScreenCanvas(QWidget* parent)
         this, &ScreenCanvas::onArrowStyleChanged);
     connect(m_colorAndWidthWidget, &ColorAndWidthWidget::lineStyleChanged,
         this, &ScreenCanvas::onLineStyleChanged);
-    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::polylineModeChanged,
-        this, [this](bool enabled) {
-            m_toolManager->setPolylineMode(enabled);
-            AnnotationSettingsManager::instance().savePolylineMode(enabled);
-        });
 
     // Initialize laser pointer renderer
     m_laserRenderer = new LaserPointerRenderer(this);
@@ -625,10 +617,10 @@ bool ScreenCanvas::isDrawingTool(ToolId toolId) const
 void ScreenCanvas::mousePressEvent(QMouseEvent* event)
 {
     if (event->button() == Qt::LeftButton) {
+        // Finalize polyline when clicking on UI elements (toolbar, widgets)
+        // ArrowToolHandler's onDoubleClick returns early if not in polyline mode
         auto finalizePolylineForUiClick = [&](const QPoint& pos) {
-            if (m_currentToolId == ToolId::Arrow &&
-                m_toolManager->polylineMode() &&
-                m_toolManager->isDrawing()) {
+            if (m_currentToolId == ToolId::Arrow && m_toolManager->isDrawing()) {
                 m_toolManager->handleDoubleClick(pos);
             }
         };

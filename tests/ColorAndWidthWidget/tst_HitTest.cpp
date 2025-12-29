@@ -92,9 +92,8 @@ void TestColorAndWidthWidgetHitTest::testContainsInDropdownWhenOpen()
     int colorSectionWidth = 8 * 14 + 7 * 2 + 6 * 2;  // 138
     // SECTION_SPACING = 8
     int sectionSpacing = 8;
-    // Arrow section: polyline toggle (28) + spacing (8) + arrow button (52)
-    // Button center is at toggle + spacing + button/2 = 28 + 8 + 26 = 62
-    int arrowButtonOffset = 28 + 8 + 26;
+    // Arrow section: button (52), center at 52/2 = 26
+    int arrowButtonOffset = 26;
 
     int arrowButtonX = widgetRect.left() + widthSectionSize + widthToColorSpacing +
                        colorSectionWidth + sectionSpacing + arrowButtonOffset;

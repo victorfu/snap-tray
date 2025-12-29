@@ -13,9 +13,12 @@
 /**
  * @brief Tool handler for arrow/line drawing.
  *
- * Supports two modes:
- * - Normal mode: drag to draw a single-segment arrow
- * - Polyline mode: click to add points, double-click to finish
+ * Unified behavior:
+ * - Drag (press + move + release) = single-segment arrow
+ * - Click (press + release without much movement) = polyline mode
+ *   - Subsequent clicks add points
+ *   - Double-click finishes the polyline
+ *   - Last segment displays arrowhead based on current style
  */
 class ArrowToolHandler : public IToolHandler {
 public:
@@ -32,7 +35,7 @@ public:
     void onDoubleClick(ToolContext* ctx, const QPoint& pos) override;
 
     void drawPreview(QPainter& painter) const override;
-    bool isDrawing() const override { return m_isDrawing; }
+    bool isDrawing() const override { return m_isDrawing || m_isPolylineMode; }
     void cancelDrawing() override;
 
     bool supportsColor() const override { return true; }
@@ -41,18 +44,18 @@ public:
     bool supportsLineStyle() const override { return true; }
 
 private:
-    // Polyline mode helpers
     void finishPolyline(ToolContext* ctx);
 
     bool m_isDrawing = false;
+    bool m_hasDragged = false;      // True if mouse moved significantly during press
+    bool m_isPolylineMode = false;  // True when building a multi-point polyline
     QPoint m_startPoint;
 
-    // Arrow mode state
+    // Arrow mode state (drag-to-draw)
     std::unique_ptr<ArrowAnnotation> m_currentArrow;
 
-    // Polyline mode state
+    // Polyline mode state (click-to-add-points)
     std::unique_ptr<PolylineAnnotation> m_currentPolyline;
-    QPoint m_currentMousePos;
     QElapsedTimer m_clickTimer;
     static constexpr int DOUBLE_CLICK_INTERVAL = 300;  // ms
 };

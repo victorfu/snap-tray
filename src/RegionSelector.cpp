@@ -170,7 +170,6 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_toolManager->setWidth(m_annotationWidth);
     m_toolManager->setArrowStyle(m_arrowStyle);
     m_toolManager->setLineStyle(m_lineStyle);
-    m_toolManager->setPolylineMode(settings.loadPolylineMode());
     connect(m_toolManager, &ToolManager::needsRepaint, this, QOverload<>::of(&QWidget::update));
 
     // Initialize OCR manager if available on this platform
@@ -260,14 +259,6 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_colorAndWidthWidget->setArrowStyle(m_arrowStyle);
     connect(m_colorAndWidthWidget, &ColorAndWidthWidget::arrowStyleChanged,
         this, &RegionSelector::onArrowStyleChanged);
-
-    // Connect polyline mode signal
-    m_colorAndWidthWidget->setPolylineMode(settings.loadPolylineMode());
-    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::polylineModeChanged,
-        this, [this](bool enabled) {
-            m_toolManager->setPolylineMode(enabled);
-            AnnotationSettingsManager::instance().savePolylineMode(enabled);
-        });
 
     // Connect line style signal
     m_colorAndWidthWidget->setLineStyle(m_lineStyle);
@@ -1388,10 +1379,10 @@ void RegionSelector::mousePressEvent(QMouseEvent* event)
                 return;
             }
 
+            // Finalize polyline when clicking on UI elements (toolbar, widgets)
+            // ArrowToolHandler's onDoubleClick returns early if not in polyline mode
             auto finalizePolylineForUiClick = [&](const QPoint& pos) {
-                if (m_currentTool == ToolbarButton::Arrow &&
-                    m_toolManager->polylineMode() &&
-                    m_toolManager->isDrawing()) {
+                if (m_currentTool == ToolbarButton::Arrow && m_toolManager->isDrawing()) {
                     m_toolManager->handleDoubleClick(pos);
                     m_isDrawing = m_toolManager->isDrawing();
                 }

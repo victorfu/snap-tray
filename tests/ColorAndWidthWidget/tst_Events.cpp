@@ -115,8 +115,8 @@ QPoint TestColorAndWidthWidgetEvents::getTextButtonCenter(int buttonIndex)
     int colorSectionWidth = 8 * 14 + 7 * 2 + 6 * 2;  // 138
     // SECTION_SPACING = 8
     int sectionSpacing = 8;
-    // ArrowStyleSection: BUTTON_WIDTH(52) + TOGGLE_SPACING(8) + TOGGLE_WIDTH(28) = 88
-    int arrowSectionWidth = 52 + 8 + 28;  // 88
+    // ArrowStyleSection: BUTTON_WIDTH = 52
+    int arrowSectionWidth = 52;
 
     int textSectionLeft = widgetRect.left() + widthSectionSize + widthToColorSpacing +
                           colorSectionWidth + sectionSpacing + arrowSectionWidth + sectionSpacing;
@@ -140,7 +140,8 @@ QPoint TestColorAndWidthWidgetEvents::getShapeButtonCenter(int buttonIndex)
     int widthToColorSpacing = 2;
     int colorSectionWidth = 8 * 14 + 7 * 2 + 6 * 2;  // 138
     int sectionSpacing = 8;
-    int arrowSectionWidth = 52 + 8 + 28;  // 88
+    // ArrowStyleSection: BUTTON_WIDTH = 52
+    int arrowSectionWidth = 52;
     // TextSection: SECTION_PADDING(6) + 3*BUTTON_SIZE(20) + 2*BUTTON_SPACING(2) +
     //              SECTION_SPACING(8) + FONT_SIZE_WIDTH(40) + SECTION_SPACING(8) +
     //              FONT_FAMILY_WIDTH(90) + SECTION_PADDING(6) = 222
@@ -359,9 +360,8 @@ void TestColorAndWidthWidgetEvents::testHandleClickOnArrowStyleButtonOpensDropdo
     int widthToColorSpacing = 2;
     int colorSectionWidth = 8 * 14 + 7 * 2 + 6 * 2;  // 138
     int sectionSpacing = 8;
-    // Arrow section: polyline toggle (28) + spacing (8) + arrow button (52)
-    // Button center is at toggle + spacing + button/2 = 28 + 8 + 26 = 62
-    int arrowButtonOffset = 28 + 8 + 26;
+    // Arrow section: button (52), center at 52/2 = 26
+    int arrowButtonOffset = 26;
 
     int arrowButtonX = widgetRect.left() + widthSectionSize + widthToColorSpacing +
                        colorSectionWidth + sectionSpacing + arrowButtonOffset;
@@ -387,7 +387,8 @@ void TestColorAndWidthWidgetEvents::testHandleClickOnArrowStyleOption()
     int widthToColorSpacing = 2;
     int colorSectionWidth = 8 * 14 + 7 * 2 + 6 * 2;  // 138
     int sectionSpacing = 8;
-    int arrowButtonOffset = 28 + 8 + 26;
+    // Arrow section: button (52), center at 52/2 = 26
+    int arrowButtonOffset = 26;
 
     int arrowButtonX = widgetRect.left() + widthSectionSize + widthToColorSpacing +
                        colorSectionWidth + sectionSpacing + arrowButtonOffset;

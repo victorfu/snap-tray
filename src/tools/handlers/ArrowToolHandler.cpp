@@ -5,97 +5,90 @@
 
 void ArrowToolHandler::onActivate(ToolContext* ctx) {
     Q_UNUSED(ctx);
-    // Reset state when tool is activated
+    // Reset all state when tool is activated
     m_isDrawing = false;
+    m_hasDragged = false;
+    m_isPolylineMode = false;
     m_currentArrow.reset();
     m_currentPolyline.reset();
 }
 
 void ArrowToolHandler::onDeactivate(ToolContext* ctx) {
     // Cancel any in-progress drawing when switching tools
-    if (m_isDrawing) {
+    if (m_isDrawing || m_isPolylineMode) {
         cancelDrawing();
         ctx->repaint();
     }
 }
 
 void ArrowToolHandler::onMousePress(ToolContext* ctx, const QPoint& pos) {
-    if (ctx->polylineMode) {
-        // Polyline mode: click to add points
-        if (!m_isDrawing) {
-            // Start a new polyline
-            m_isDrawing = true;
-            m_currentPolyline = std::make_unique<PolylineAnnotation>(
-                ctx->color, ctx->width, LineEndStyle::None, ctx->lineStyle
-            );
-            m_currentPolyline->addPoint(pos);
-            // Add a second point for the preview line
-            m_currentPolyline->addPoint(pos);
-            m_currentMousePos = pos;
-            m_clickTimer.start();
-        } else {
-            // Check for double-click to finish
-            if (m_clickTimer.isValid() && m_clickTimer.elapsed() < DOUBLE_CLICK_INTERVAL) {
-                // Double-click detected - finish the polyline
-                finishPolyline(ctx);
-                return;
-            }
-
-            // Add a new point
-            m_currentPolyline->updateLastPoint(pos);  // Confirm the preview point
-            m_currentPolyline->addPoint(pos);  // Add new preview point
-            m_clickTimer.restart();
+    if (m_isPolylineMode) {
+        // Already in polyline mode - check for double-click to finish
+        if (m_clickTimer.isValid() && m_clickTimer.elapsed() < DOUBLE_CLICK_INTERVAL) {
+            // Double-click detected - finish the polyline
+            m_currentPolyline->updateLastPoint(pos);
+            finishPolyline(ctx);
+            return;
         }
-    } else {
-        // Arrow mode: drag to draw
-        m_isDrawing = true;
-        m_startPoint = pos;
-        // Don't create arrow yet - wait until mouse moves
-        m_currentArrow.reset();
-    }
 
-    ctx->repaint();
+        // Add a new point (confirm the preview point and add new preview)
+        m_currentPolyline->updateLastPoint(pos);  // Confirm current preview position
+        m_currentPolyline->addPoint(pos);  // Add new preview point
+        m_clickTimer.restart();
+        ctx->repaint();
+    } else {
+        // Start new drawing - could become drag (arrow) or click (polyline)
+        m_isDrawing = true;
+        m_hasDragged = false;
+        m_startPoint = pos;
+        m_currentArrow.reset();
+        ctx->repaint();
+    }
 }
 
 void ArrowToolHandler::onMouseMove(ToolContext* ctx, const QPoint& pos) {
+    if (m_isPolylineMode) {
+        // Update the preview point to follow cursor
+        if (m_currentPolyline) {
+            m_currentPolyline->updateLastPoint(pos);
+            ctx->repaint();
+        }
+        return;
+    }
+
     if (!m_isDrawing) {
         return;
     }
 
-    if (ctx->polylineMode) {
-        // Polyline mode: update the last point (preview) to follow the cursor
-        if (m_currentPolyline) {
-            m_currentPolyline->updateLastPoint(pos);
-            m_currentMousePos = pos;
-            ctx->repaint();
-        }
-    } else {
-        // Arrow mode: create arrow only when mouse has moved enough
+    // Check if mouse has moved enough to be considered a drag
+    QPoint diff = pos - m_startPoint;
+    if (diff.manhattanLength() > 3) {
+        m_hasDragged = true;
+
+        // Create or update arrow
         if (!m_currentArrow) {
-            QPoint diff = pos - m_startPoint;
-            if (diff.manhattanLength() > 3) {
-                m_currentArrow = std::make_unique<ArrowAnnotation>(
-                    m_startPoint, pos, ctx->color, ctx->width, ctx->arrowStyle, ctx->lineStyle
-                );
-                ctx->repaint();
-            }
+            m_currentArrow = std::make_unique<ArrowAnnotation>(
+                m_startPoint, pos, ctx->color, ctx->width, ctx->arrowStyle, ctx->lineStyle
+            );
         } else {
             m_currentArrow->setEnd(pos);
-            ctx->repaint();
         }
+        ctx->repaint();
     }
 }
 
 void ArrowToolHandler::onMouseRelease(ToolContext* ctx, const QPoint& pos) {
+    if (m_isPolylineMode) {
+        // In polyline mode, points are added on press, not release
+        return;
+    }
+
     if (!m_isDrawing) {
         return;
     }
 
-    if (ctx->polylineMode) {
-        // Polyline mode: points are added on press, not release
-        // Do nothing
-    } else {
-        // Arrow mode: finish the arrow on release
+    if (m_hasDragged) {
+        // This was a drag - finalize the arrow
         if (m_currentArrow) {
             m_currentArrow->setEnd(pos);
 
@@ -106,21 +99,35 @@ void ArrowToolHandler::onMouseRelease(ToolContext* ctx, const QPoint& pos) {
             }
         }
 
-        // Reset state
+        // Reset to initial state
         m_isDrawing = false;
+        m_hasDragged = false;
         m_currentArrow.reset();
-        ctx->repaint();
+    } else {
+        // This was a click (no significant drag) - enter polyline mode
+        m_isPolylineMode = true;
+        m_isDrawing = false;  // No longer in initial drawing state
+
+        // Create polyline with the arrow style for the last segment
+        m_currentPolyline = std::make_unique<PolylineAnnotation>(
+            ctx->color, ctx->width, ctx->arrowStyle, ctx->lineStyle
+        );
+        m_currentPolyline->addPoint(m_startPoint);  // First point
+        m_currentPolyline->addPoint(pos);  // Preview point (same as start initially)
+
+        m_clickTimer.restart();
     }
+
+    ctx->repaint();
 }
 
 void ArrowToolHandler::onDoubleClick(ToolContext* ctx, const QPoint& pos) {
-    if (!ctx->polylineMode || !m_isDrawing || !m_currentPolyline) {
+    if (!m_isPolylineMode || !m_currentPolyline) {
         return;
     }
 
     // Update the last point to the double-click position
     m_currentPolyline->updateLastPoint(pos);
-
     finishPolyline(ctx);
 }
 
@@ -137,25 +144,27 @@ void ArrowToolHandler::finishPolyline(ToolContext* ctx) {
         ctx->addItem(std::move(m_currentPolyline));
     }
 
-    // Reset state
+    // Reset all state
     m_isDrawing = false;
+    m_hasDragged = false;
+    m_isPolylineMode = false;
     m_currentPolyline.reset();
     ctx->repaint();
 }
 
 void ArrowToolHandler::drawPreview(QPainter& painter) const {
-    if (m_isDrawing) {
-        if (m_currentArrow) {
-            m_currentArrow->draw(painter);
-        }
-        if (m_currentPolyline) {
-            m_currentPolyline->draw(painter);
-        }
+    if (m_currentArrow) {
+        m_currentArrow->draw(painter);
+    }
+    if (m_currentPolyline) {
+        m_currentPolyline->draw(painter);
     }
 }
 
 void ArrowToolHandler::cancelDrawing() {
     m_isDrawing = false;
+    m_hasDragged = false;
+    m_isPolylineMode = false;
     m_currentArrow.reset();
     m_currentPolyline.reset();
 }

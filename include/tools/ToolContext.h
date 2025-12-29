@@ -40,11 +40,6 @@ public:
     // Eraser tool settings
     int eraserWidth = 20;
 
-    // Polyline mode for Arrow tool
-    // When true, Arrow tool uses click-to-add-points interaction (polyline)
-    // When false, Arrow tool uses drag-to-draw interaction (single segment)
-    bool polylineMode = false;
-
     // Source pixmap (for mosaic tool)
     const QPixmap* sourcePixmap = nullptr;
 

@@ -180,10 +180,6 @@ void ToolManager::setShapeFillMode(int mode) {
     m_context->shapeFillMode = mode;
 }
 
-void ToolManager::setPolylineMode(bool enabled) {
-    m_context->polylineMode = enabled;
-}
-
 void ToolManager::setRepaintCallback(std::function<void()> callback) {
     m_context->requestRepaint = callback;
 }
