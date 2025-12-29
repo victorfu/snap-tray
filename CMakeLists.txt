@@ -19,6 +19,9 @@ if(NOT DEFINED CMAKE_CXX_COMPILER_LAUNCHER)
     endif()
 endif()
 
+# Standard BUILD_TESTING option
+include(CTest)
+
 # ============================================================================
 # Version Configuration
 # ============================================================================
@@ -595,5 +598,6 @@ endif()
 # ============================================================================
 # Testing Configuration
 # ============================================================================
-enable_testing()
-add_subdirectory(tests)
+if(BUILD_TESTING)
+    add_subdirectory(tests)
+endif()
