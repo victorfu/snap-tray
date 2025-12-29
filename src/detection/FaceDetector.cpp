@@ -106,6 +106,12 @@ QVector<QRect> FaceDetector::detect(const QImage& image)
         maxSize
         );
 
+    // Merge overlapping detections (Haar Cascade can detect the same face at multiple scales)
+    // groupThreshold=0 keeps single detections, eps=0.2 merges boxes with 20% overlap
+    if (!faces.empty()) {
+        cv::groupRectangles(faces, 0, 0.2);
+    }
+
     // Convert cv::Rect to QRect
     for (const auto& face : faces) {
         results.append(QRect(face.x, face.y, face.width, face.height));
