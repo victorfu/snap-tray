@@ -74,7 +74,7 @@ private:
     static constexpr int WIDGET_HEIGHT = 28;
     static constexpr int WIDGET_WIDTH = 200;
     static constexpr int SLIDER_HEIGHT = 6;
-    static constexpr int HANDLE_SIZE = 14;
+    static constexpr int HANDLE_SIZE = 10;
     static constexpr int BUTTON_SIZE = 22;
     static constexpr int PADDING = 8;
     static constexpr int LABEL_WIDTH = 42;  // "Radius"
