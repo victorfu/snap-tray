@@ -2,6 +2,24 @@ cmake_minimum_required(VERSION 3.16...3.31)
 project(SnapTray VERSION 1.0.5 LANGUAGES CXX)
 
 # ============================================================================
+# Compiler Cache (ccache/sccache) for faster incremental builds
+# ============================================================================
+if(NOT DEFINED CMAKE_CXX_COMPILER_LAUNCHER)
+    # Try ccache first (macOS/Linux), then sccache (Windows/cross-platform)
+    find_program(CCACHE_PROGRAM ccache)
+    find_program(SCCACHE_PROGRAM sccache)
+    if(CCACHE_PROGRAM)
+        set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_PROGRAM}")
+        set(CMAKE_C_COMPILER_LAUNCHER "${CCACHE_PROGRAM}")
+        message(STATUS "Using ccache: ${CCACHE_PROGRAM}")
+    elseif(SCCACHE_PROGRAM)
+        set(CMAKE_CXX_COMPILER_LAUNCHER "${SCCACHE_PROGRAM}")
+        set(CMAKE_C_COMPILER_LAUNCHER "${SCCACHE_PROGRAM}")
+        message(STATUS "Using sccache: ${SCCACHE_PROGRAM}")
+    endif()
+endif()
+
+# ============================================================================
 # Version Configuration
 # ============================================================================
 # Generate version header for C++ code

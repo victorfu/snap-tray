@@ -214,6 +214,36 @@ set CODESIGN_PASSWORD=your-password
 packaging\windows\package.bat
 ```
 
+## Build Optimization
+
+The build system supports compiler caching for faster incremental builds.
+
+### Local Development
+
+Install a compiler cache tool for significantly faster rebuilds:
+
+**macOS:**
+```bash
+brew install ccache
+```
+
+**Windows:**
+```bash
+scoop install sccache
+```
+
+CMake automatically detects and uses the compiler cache when available. No additional configuration needed.
+
+### Performance Improvements
+
+| Optimization | Location | Effect |
+|--------------|----------|--------|
+| ccache/sccache auto-detection | CMakeLists.txt | 50-90% faster incremental builds |
+| CI ccache (macOS) | ci.yml | 30-50% faster CI |
+| CI sccache (Windows) | ci.yml | 30-50% faster CI |
+
+**Note:** Precompiled Headers (PCH) and Unity Build are not used due to incompatibility with Objective-C++ files on macOS.
+
 ## Usage
 
 1. After launch, a green square icon appears in the system tray.

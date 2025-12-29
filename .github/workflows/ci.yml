@@ -13,14 +13,24 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install Qt via Homebrew
-        run: brew install qt@6
+      - name: Install dependencies
+        run: |
+          brew install qt@6 ccache
+          echo "$(brew --prefix ccache)/libexec" >> $GITHUB_PATH
+
+      - name: Setup ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: macos-${{ github.ref }}
+          restore-keys: macos-
 
       - name: Configure CMake
         run: |
           cmake -S . -B build \
             -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_PREFIX_PATH="$(brew --prefix qt@6)"
+            -DCMAKE_PREFIX_PATH="$(brew --prefix qt@6)" \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache
 
       - name: Build
         run: cmake --build build --config Release --parallel
@@ -43,6 +53,9 @@ jobs:
           arch: 'win64_msvc2022_64'
           cache: true
 
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@v0.0.6
+
       - name: Setup MSVC Developer Command Prompt
         uses: ilammy/msvc-dev-cmd@v1
 
@@ -50,10 +63,16 @@ jobs:
         run: |
           cmake -S . -B build `
             -DCMAKE_BUILD_TYPE=Release `
-            -DCMAKE_PREFIX_PATH="$env:QT_ROOT_DIR"
+            -DCMAKE_PREFIX_PATH="$env:QT_ROOT_DIR" `
+            -DCMAKE_CXX_COMPILER_LAUNCHER=sccache `
+            -DCMAKE_C_COMPILER_LAUNCHER=sccache
+        env:
+          SCCACHE_GHA_ENABLED: "true"
 
       - name: Build
         run: cmake --build build --config Release --parallel
+        env:
+          SCCACHE_GHA_ENABLED: "true"
 
       - name: Run Tests
         run: ctest --test-dir build --output-on-failure -C Release

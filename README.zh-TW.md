@@ -214,6 +214,36 @@ set CODESIGN_PASSWORD=your-password
 packaging\windows\package.bat
 ```
 
+## 建置優化
+
+建置系統支援編譯器快取，可加速增量建置。
+
+### 本地開發
+
+安裝編譯器快取工具可大幅加速重新建置：
+
+**macOS：**
+```bash
+brew install ccache
+```
+
+**Windows：**
+```bash
+scoop install sccache
+```
+
+CMake 會自動偵測並使用編譯器快取，無需額外設定。
+
+### 效能提升
+
+| 優化項目 | 位置 | 效果 |
+|----------|------|------|
+| ccache/sccache 自動偵測 | CMakeLists.txt | 增量建置快 50-90% |
+| CI ccache (macOS) | ci.yml | CI 快 30-50% |
+| CI sccache (Windows) | ci.yml | CI 快 30-50% |
+
+**注意：** 由於與 macOS 上的 Objective-C++ 檔案不相容，未使用預編譯標頭 (PCH) 與 Unity Build。
+
 ## 使用方式
 
 1. 啟動後托盤會出現綠色方塊圖示。
