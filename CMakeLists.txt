@@ -58,13 +58,14 @@ endif()
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+find_package(Qt6 REQUIRED COMPONENTS Widgets Gui Svg Concurrent)
+
+# Enable AUTOMOC for Qt targets (will be disabled for non-Qt dependencies)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Widgets Gui Svg Concurrent)
-
-# Fetch QHotkey for global hotkey support
+# Fetch QHotkey for global hotkey support (needs AUTOMOC)
 include(FetchContent)
 FetchContent_Declare(
     QHotkey
@@ -73,6 +74,12 @@ FetchContent_Declare(
 )
 set(QHOTKEY_INSTALL OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(QHotkey)
+
+# Disable AUTOMOC/AUTOUIC/AUTORCC while fetching OpenCV and libwebp to avoid
+# race conditions with generated headers (e.g., OpenCV's opencl_kernels_*.hpp)
+set(CMAKE_AUTOMOC OFF)
+set(CMAKE_AUTORCC OFF)
+set(CMAKE_AUTOUIC OFF)
 
 # ============================================================================
 # OpenCV for Scrolling Capture (static build) - Optimized Configuration
@@ -185,6 +192,11 @@ set(WEBP_BUILD_WEBPMUX OFF CACHE BOOL "" FORCE)
 set(WEBP_BUILD_EXTRAS OFF CACHE BOOL "" FORCE)
 set(WEBP_BUILD_LIBWEBPMUX ON CACHE BOOL "" FORCE)  # Required for animation encoding
 FetchContent_MakeAvailable(libwebp)
+
+# Re-enable AUTOMOC/AUTOUIC/AUTORCC for the main project
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
+set(CMAKE_AUTOUIC ON)
 
 set(SOURCES
     src/main.cpp
@@ -462,6 +474,7 @@ elseif(WIN32)
         src/capture/DXGICaptureEngine_win.cpp
         src/capture/WASAPIAudioCaptureEngine_win.cpp
         src/MediaFoundationEncoder.cpp
+        src/video/MediaFoundationPlayer_win.cpp
     )
     list(APPEND HEADERS
         include/WindowDetector.h
