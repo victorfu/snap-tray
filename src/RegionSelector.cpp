@@ -231,13 +231,7 @@ RegionSelector::RegionSelector(QWidget* parent)
         this, &RegionSelector::onMoreColorsRequested);
     connect(m_colorAndWidthWidget, &ColorAndWidthWidget::widthChanged,
         this, &RegionSelector::onLineWidthChanged);
-    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::mosaicWidthChanged,
-        this, [this](int width) {
-            m_mosaicWidth = width;
-            m_toolManager->setWidth(width);
-            setToolCursor();
-            update();
-        });
+    // Mosaic now uses widthChanged signal like other tools (no separate mosaicWidthChanged)
 
     // Configure text annotation editor with ColorAndWidthWidget
     m_textAnnotationEditor->setColorAndWidthWidget(m_colorAndWidthWidget);
@@ -517,10 +511,10 @@ void RegionSelector::onLineWidthChanged(int width)
         // Don't save eraser width to settings
     }
     else if (m_currentTool == ToolbarButton::Mosaic) {
-        m_mosaicWidth = width;
+        m_annotationWidth = width;
         // Update cursor to reflect new width
         setToolCursor();
-        // Don't save mosaic width to settings
+        AnnotationSettingsManager::instance().saveWidth(width);
     }
     else {
         m_annotationWidth = width;
@@ -570,15 +564,13 @@ bool RegionSelector::shouldShowWidthControl() const
 
 int RegionSelector::toolWidthForCurrentTool() const
 {
-    if (m_currentTool == ToolbarButton::Mosaic) {
-        return m_mosaicWidth;
-    }
     if (m_currentTool == ToolbarButton::Eraser) {
         return m_eraserWidth;
     }
     if (m_currentTool == ToolbarButton::StepBadge) {
         return StepBadgeAnnotation::radiusForSize(m_stepBadgeSize);
     }
+    // Mosaic now uses m_annotationWidth (synced with other tools)
     return m_annotationWidth;
 }
 
@@ -1080,12 +1072,8 @@ void RegionSelector::saveEraserWidthAndClearHover()
 
 void RegionSelector::restoreStandardWidth()
 {
-    if (m_currentTool == ToolbarButton::Mosaic) {
-        // Restore standard width range for regular tools
-        m_colorAndWidthWidget->setWidthRange(1, 20);
-        m_colorAndWidthWidget->setCurrentWidth(m_annotationWidth);
-        m_toolManager->setWidth(m_annotationWidth);
-    } else if (m_currentTool == ToolbarButton::Eraser) {
+    // Mosaic now uses shared width with other tools, no special handling needed
+    if (m_currentTool == ToolbarButton::Eraser) {
         // Reset width section hidden state and restore standard width
         m_colorAndWidthWidget->setWidthSectionHidden(false);
         m_colorAndWidthWidget->setWidthRange(1, 20);
@@ -1191,13 +1179,12 @@ void RegionSelector::handleToolbarClick(ToolbarButton button)
     case ToolbarButton::Mosaic:
         m_currentTool = button;
         m_toolManager->setCurrentTool(ToolId::Mosaic);
-        // Use shared WidthSection for Mosaic (placed at leftmost)
+        // Use shared WidthSection for Mosaic (synced with other tools)
         m_colorAndWidthWidget->setShowWidthSection(true);
         m_colorAndWidthWidget->setWidthSectionHidden(false);
         m_colorAndWidthWidget->setShowMosaicWidthSection(false);
-        m_colorAndWidthWidget->setWidthRange(10, 100);
-        m_colorAndWidthWidget->setCurrentWidth(m_mosaicWidth);
-        m_toolManager->setWidth(m_mosaicWidth);
+        m_colorAndWidthWidget->setCurrentWidth(m_annotationWidth);
+        m_toolManager->setWidth(m_annotationWidth);
         m_colorAndWidthWidget->setShowSizeSection(false);
         // Mosaic tool doesn't use color, hide color section
         m_colorAndWidthWidget->setShowColorSection(false);
@@ -1779,7 +1766,12 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
             }
         }
         // Always update cursor based on current tool when not hovering any special UI element
-        if (hoveredButton < 0 && !colorPaletteHovered && !lineWidthHovered && !unifiedWidgetHovered && !textAnnotationHovered && !gizmoHandleHovered && !radiusSliderHovered) {
+        bool toolbarHovered = m_toolbar->contains(event->pos());
+        if (toolbarHovered) {
+            // Hand cursor for entire toolbar area (including gaps between buttons)
+            setCursor(Qt::PointingHandCursor);
+        }
+        else if (!colorPaletteHovered && !lineWidthHovered && !unifiedWidgetHovered && !textAnnotationHovered && !gizmoHandleHovered && !radiusSliderHovered) {
             // Update cursor based on current tool
             if (m_currentTool == ToolbarButton::Selection) {
                 auto handle = m_selectionManager->hitTestHandle(event->pos());
@@ -1788,10 +1780,6 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
             else {
                 setToolCursor();
             }
-        }
-        // Ensure hand cursor when hovering over toolbar buttons
-        else if (hoveredButton >= 0) {
-            setCursor(Qt::PointingHandCursor);
         }
     }
 
