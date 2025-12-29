@@ -129,6 +129,7 @@ void RecordingControlBar::setupUi()
     int buttonsWidth = 3 * BUTTON_WIDTH + 2 * BUTTON_SPACING + 4;
     QWidget *buttonSpacer = new QWidget(this);
     buttonSpacer->setFixedWidth(buttonsWidth);
+    buttonSpacer->setAttribute(Qt::WA_TransparentForMouseEvents, true);
     layout->addWidget(buttonSpacer);
 
     adjustSize();

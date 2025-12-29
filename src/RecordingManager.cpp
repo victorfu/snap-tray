@@ -15,6 +15,7 @@
 #include "utils/CoordinateHelper.h"
 #include "settings/Settings.h"
 #include "AnnotationController.h"
+#include "ColorPickerDialog.h"
 
 #include <QGuiApplication>
 #include <QScreen>
@@ -70,6 +71,7 @@ static void syncFile(const QString &path)
 
 RecordingManager::RecordingManager(QObject *parent)
     : QObject(parent)
+    , m_colorPickerDialog(nullptr)
     , m_gifEncoder(nullptr)
     , m_nativeEncoder(nullptr)
     , m_usingNativeEncoder(false)
@@ -95,6 +97,7 @@ RecordingManager::RecordingManager(QObject *parent)
 RecordingManager::~RecordingManager()
 {
     cleanupRecording();
+    delete m_colorPickerDialog;
 }
 
 void RecordingManager::setState(State newState)
@@ -395,9 +398,25 @@ void RecordingManager::startFrameCapture()
         // Connect color change requests
         connect(m_controlBar, &RecordingControlBar::colorChangeRequested,
                 this, [this]() {
-            if (m_annotationOverlay) {
-                m_annotationOverlay->setColor(m_controlBar->annotationColor());
+            if (!m_colorPickerDialog) {
+                m_colorPickerDialog = new ColorPickerDialog();
+                connect(m_colorPickerDialog, &ColorPickerDialog::colorSelected,
+                        this, [this](const QColor& color) {
+                    m_controlBar->setAnnotationColor(color);
+                    if (m_annotationOverlay) {
+                        m_annotationOverlay->setColor(color);
+                    }
+                });
             }
+
+            m_colorPickerDialog->setCurrentColor(m_controlBar->annotationColor());
+
+            // Position dialog near the control bar
+            QPoint pos = m_controlBar->pos();
+            m_colorPickerDialog->move(pos.x(), pos.y() - m_colorPickerDialog->height() - 10);
+            m_colorPickerDialog->show();
+            m_colorPickerDialog->raise();
+            m_colorPickerDialog->activateWindow();
         });
 
         // Connect width change requests

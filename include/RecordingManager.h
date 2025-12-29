@@ -19,6 +19,7 @@ class IVideoEncoder;
 class ICaptureEngine;
 class IAudioCaptureEngine;
 class AudioFileWriter;
+class ColorPickerDialog;
 class QScreen;
 
 class RecordingManager : public QObject
@@ -107,6 +108,7 @@ private:
     QPointer<RecordingControlBar> m_controlBar;
     QPointer<RecordingBoundaryOverlay> m_boundaryOverlay;
     QPointer<RecordingAnnotationOverlay> m_annotationOverlay;
+    ColorPickerDialog *m_colorPickerDialog;
     NativeGifEncoder *m_gifEncoder;     // Used for GIF format
     IVideoEncoder *m_nativeEncoder;     // Native platform encoder for MP4
     bool m_usingNativeEncoder;          // True if using native encoder
