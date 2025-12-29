@@ -14,9 +14,6 @@ void GlassRenderer::drawGlassPanel(QPainter& painter,
     painter.save();
     painter.setRenderHint(QPainter::Antialiasing, true);
 
-    // 1. Draw multi-layer soft shadow
-    drawGlassShadow(painter, rect, config, radius);
-
     // 2. Draw glass background with gradient simulation
     drawGlassBackground(painter, rect, config, radius);
 

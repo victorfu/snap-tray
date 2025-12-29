@@ -87,7 +87,7 @@ void RecordingRegionSelector::updateButtonRects()
 
     // Position below the selection rectangle, centered
     int x = m_selectionRect.center().x() - toolbarWidth / 2;
-    int y = m_selectionRect.bottom() + 20;
+    int y = m_selectionRect.bottom() + 8;
 
     // Keep on screen
     if (x < 10) x = 10;
@@ -97,7 +97,7 @@ void RecordingRegionSelector::updateButtonRects()
 
     // If below would be off screen, position above
     if (y + TOOLBAR_HEIGHT > height() - 60) {
-        y = m_selectionRect.top() - TOOLBAR_HEIGHT - 20;
+        y = m_selectionRect.top() - TOOLBAR_HEIGHT - 8;
     }
 
     // If still off screen, position inside selection
@@ -147,7 +147,7 @@ void RecordingRegionSelector::drawToolbar(QPainter &painter)
 {
     painter.setRenderHint(QPainter::Antialiasing);
 
-    ToolbarStyleConfig config = ToolbarStyleConfig::getDarkStyle();
+    ToolbarStyleConfig config = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
 
     // Draw glass panel background
     GlassRenderer::drawGlassPanel(painter, m_toolbarRect, config, 10);
@@ -206,10 +206,16 @@ void RecordingRegionSelector::drawTooltip(QPainter &painter)
     if (tooltipX + textRect.width() > width() - 5) {
         tooltipX = width() - textRect.width() - 5;
     }
+    if (tooltipY < 5) {
+        tooltipY = m_toolbarRect.bottom() + 6;
+        if (tooltipY + textRect.height() > height() - 5) {
+            tooltipY = height() - textRect.height() - 5;
+        }
+    }
 
     textRect.moveTo(tooltipX, tooltipY);
 
-    ToolbarStyleConfig tooltipConfig = ToolbarStyleConfig::getDarkStyle();
+    ToolbarStyleConfig tooltipConfig = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
     tooltipConfig.shadowOffsetY = 2;
     tooltipConfig.shadowBlurRadius = 6;
     GlassRenderer::drawGlassPanel(painter, textRect, tooltipConfig, 4);
@@ -268,19 +274,18 @@ void RecordingRegionSelector::drawSelection(QPainter &painter)
 
     painter.setRenderHint(QPainter::Antialiasing);
 
-    const int cornerRadius = 10;
     const int borderWidth = 3;
     QRectF selRect = QRectF(m_selectionRect).adjusted(0.5, 0.5, -0.5, -0.5);
 
     if (m_selectionComplete) {
-        // Draw outer glow effect
+        // Draw outer glow effect (sharp corners)
         for (int i = 3; i >= 1; --i) {
             QColor glowColor(88, 86, 214, 25 / i);  // Indigo with fading alpha
             QPen glowPen(glowColor, borderWidth + i * 2);
-            glowPen.setJoinStyle(Qt::RoundJoin);
+            glowPen.setJoinStyle(Qt::MiterJoin);
             painter.setPen(glowPen);
             painter.setBrush(Qt::NoBrush);
-            painter.drawRoundedRect(selRect, cornerRadius, cornerRadius);
+            painter.drawRect(selRect);
         }
 
         // Create gradient for the border (blue to purple)
@@ -290,17 +295,17 @@ void RecordingRegionSelector::drawSelection(QPainter &painter)
         gradient.setColorAt(1.0, QColor(175, 82, 222));     // Purple
 
         QPen pen(QBrush(gradient), borderWidth);
-        pen.setJoinStyle(Qt::RoundJoin);
+        pen.setJoinStyle(Qt::MiterJoin);
         painter.setPen(pen);
         painter.setBrush(Qt::NoBrush);
-        painter.drawRoundedRect(selRect, cornerRadius, cornerRadius);
+        painter.drawRect(selRect);
     } else {
-        // Blue dashed line while selecting
+        // Blue dashed line while selecting (sharp corners)
         QPen pen(QColor(0, 122, 255), 1);
         pen.setStyle(Qt::DashLine);
         painter.setPen(pen);
         painter.setBrush(Qt::NoBrush);
-        painter.drawRoundedRect(selRect, cornerRadius, cornerRadius);
+        painter.drawRect(selRect);
     }
 }
 
@@ -353,11 +358,15 @@ void RecordingRegionSelector::drawDimensionLabel(QPainter &painter)
 
     textRect.moveTo(x, y);
 
-    // Draw background
-    painter.fillRect(textRect, QColor(0, 0, 0, 180));
+    // Draw background with glass effect
+    ToolbarStyleConfig config = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
+    ToolbarStyleConfig dimConfig = config;
+    dimConfig.shadowOffsetY = 2;
+    dimConfig.shadowBlurRadius = 4;
+    GlassRenderer::drawGlassPanel(painter, textRect, dimConfig, 4);
 
     // Draw text
-    painter.setPen(Qt::white);
+    painter.setPen(config.tooltipText);
     painter.drawText(textRect, Qt::AlignCenter, dimensionText);
 }
 
@@ -381,11 +390,15 @@ void RecordingRegionSelector::drawInstructions(QPainter &painter)
     textRect.adjust(-12, -6, 12, 6);
     textRect.moveCenter(QPoint(width() / 2, height() - 40));
 
-    // Background for readability
-    painter.fillRect(textRect, QColor(0, 0, 0, 200));
+    // Draw background with glass effect
+    ToolbarStyleConfig config = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
+    ToolbarStyleConfig helpConfig = config;
+    helpConfig.shadowOffsetY = 2;
+    helpConfig.shadowBlurRadius = 6;
+    GlassRenderer::drawGlassPanel(painter, textRect, helpConfig, 6);
 
     // Draw text
-    painter.setPen(Qt::white);
+    painter.setPen(config.tooltipText);
     painter.drawText(textRect, Qt::AlignCenter, helpText);
 }
 

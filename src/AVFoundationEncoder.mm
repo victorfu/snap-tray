@@ -259,11 +259,12 @@ bool AVFoundationEncoder::start(const QString &outputPath, const QSize &frameSiz
     [d->assetWriter startSessionAtSourceTime:kCMTimeZero];
 
     // Cache pixel buffer attributes for frame creation (reused every frame)
-    d->pixelBufferAttributes = @{
+    // Use copy to ensure proper retain under ARC in C++ context
+    d->pixelBufferAttributes = [@{
         (NSString *)kCVPixelBufferCGImageCompatibilityKey: @YES,
         (NSString *)kCVPixelBufferCGBitmapContextCompatibilityKey: @YES,
         (NSString *)kCVPixelBufferIOSurfacePropertiesKey: @{}
-    };
+    } copy];
 
     d->running = true;
     qDebug() << "AVFoundationEncoder: Started encoding to" << outputPath

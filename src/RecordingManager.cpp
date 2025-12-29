@@ -4,6 +4,8 @@
 #include "RecordingBoundaryOverlay.h"
 #include "RecordingAnnotationOverlay.h"
 #include "RecordingInitTask.h"
+#include "video/InPlacePreviewOverlay.h"
+#include "video/IVideoPlayer.h"
 #include "encoding/NativeGifEncoder.h"
 #include "IVideoEncoder.h"
 #include "encoding/EncoderFactory.h"
@@ -440,9 +442,10 @@ void RecordingManager::startFrameCapture()
     // Show in preparing state (buttons disabled until ready)
     m_controlBar->setPreparing(true);
 
-    m_controlBar->positionNear(m_recordingRegion);
     m_controlBar->show();
     raiseWindowAboveMenuBar(m_controlBar);
+    // Position after show() to avoid Qt/macOS adjusting the position
+    m_controlBar->positionNear(m_recordingRegion);
     qDebug() << "RecordingManager::startFrameCapture() - Control bar shown";
 
     // Start async initialization
@@ -987,10 +990,11 @@ void RecordingManager::stopFrameCapture()
     ResourceCleanupHelper::stopAndDelete(m_captureEngine);
     qDebug() << "RecordingManager: Capture engine stopped";
 
-    // Close UI overlays
-    qDebug() << "RecordingManager: Closing UI overlays...";
+    // Hide UI overlays (keep boundary overlay for preview mode)
+    qDebug() << "RecordingManager: Hiding UI overlays...";
     if (m_boundaryOverlay) {
-        m_boundaryOverlay->close();
+        // Keep boundary overlay for preview mode, just hide it
+        m_boundaryOverlay->hide();
     }
 
     // Disconnect annotation signals before closing overlay to prevent dangling connections
@@ -1006,7 +1010,9 @@ void RecordingManager::stopFrameCapture()
     }
 
     if (m_controlBar) {
-        m_controlBar->close();
+        // Only hide, don't close - control bar may be reused for preview mode
+        // It will be closed in cleanupRecording() or cleanupPreviewMode()
+        m_controlBar->hide();
     }
     qDebug() << "RecordingManager::stopFrameCapture() END";
 }
@@ -1078,11 +1084,10 @@ void RecordingManager::onEncodingFinished(bool success, const QString &outputPat
         bool showPreview = settings.value("recording/showPreview", true).toBool();
 
         if (showPreview) {
-            // Enter preview state and emit signal
-            setState(State::Previewing);
+            // Transition to in-place preview mode
             QString tempPath = outputPath;
             QMetaObject::invokeMethod(this, [this, tempPath]() {
-                emit previewRequested(tempPath);
+                transitionToPreviewMode(tempPath);
             }, Qt::QueuedConnection);
         } else {
             // Existing flow: go directly to save dialog
@@ -1314,5 +1319,247 @@ void RecordingManager::cleanupStaleTempFiles()
 
     if (cleanedCount > 0) {
         qDebug() << "RecordingManager: Cleaned up" << cleanedCount << "stale temp file(s)";
+    }
+}
+
+// ============================================================================
+// In-Place Preview Mode Implementation
+// ============================================================================
+
+void RecordingManager::transitionToPreviewMode(const QString &videoPath)
+{
+    qDebug() << "RecordingManager: Transitioning to preview mode with" << videoPath;
+
+    m_tempVideoPath = videoPath;
+    setState(State::Previewing);
+
+    // Hide annotation overlay
+    if (m_annotationOverlay) {
+        m_annotationOverlay->hide();
+        m_annotationOverlay->deleteLater();
+        m_annotationOverlay = nullptr;
+    }
+
+    // 1. Keep boundary overlay but change to Paused mode and show it
+    if (m_boundaryOverlay) {
+        m_boundaryOverlay->setBorderMode(RecordingBoundaryOverlay::BorderMode::Paused);
+        m_boundaryOverlay->show();
+    }
+
+    // 2. Switch control bar to Preview mode
+    if (m_controlBar) {
+        m_controlBar->setMode(RecordingControlBar::Mode::Preview);
+        m_controlBar->setAnnotationEnabled(false);
+        connectPreviewSignals();
+
+        // Reposition after width change (320px -> 480px) and ensure visibility
+        m_controlBar->show();
+        raiseWindowAboveMenuBar(m_controlBar);
+        // Position after show() to avoid Qt/macOS adjusting the position
+        m_controlBar->positionNear(m_recordingRegion);
+    }
+
+    // 3. Create and show preview overlay
+    m_previewOverlay = new InPlacePreviewOverlay();
+    m_previewOverlay->setAttribute(Qt::WA_DeleteOnClose);
+    m_previewOverlay->setRegion(m_recordingRegion, m_targetScreen);
+
+    // Connect preview overlay signals
+    connect(m_previewOverlay, &InPlacePreviewOverlay::positionChanged,
+            this, &RecordingManager::onPreviewPositionChanged);
+    connect(m_previewOverlay, &InPlacePreviewOverlay::durationChanged,
+            this, &RecordingManager::onPreviewDurationChanged);
+    connect(m_previewOverlay, &InPlacePreviewOverlay::stateChanged,
+            this, [this](IVideoPlayer::State state) {
+                onPreviewStateChanged(static_cast<int>(state));
+            });
+    connect(m_previewOverlay, &InPlacePreviewOverlay::errorOccurred,
+            this, [this](const QString &msg) {
+                qWarning() << "Preview error:" << msg;
+                emit recordingError("Preview error: " + msg);
+            });
+
+    if (m_previewOverlay->loadVideo(m_tempVideoPath)) {
+        m_previewOverlay->show();
+        raiseWindowAboveMenuBar(m_previewOverlay);
+
+        // Enable looping for preview
+        m_previewOverlay->setLooping(true);
+
+        // Start playback automatically
+        m_previewOverlay->play();
+    } else {
+        qWarning() << "RecordingManager: Failed to load video for preview";
+        emit recordingError("Failed to load video preview");
+        cleanupPreviewMode();
+        setState(State::Idle);
+    }
+}
+
+void RecordingManager::cleanupPreviewMode()
+{
+    qDebug() << "RecordingManager: Cleaning up preview mode";
+
+    // Close and delete preview overlay
+    if (m_previewOverlay) {
+        m_previewOverlay->stop();
+        m_previewOverlay->close();
+        m_previewOverlay = nullptr;
+    }
+
+    // Hide and delete boundary overlay
+    if (m_boundaryOverlay) {
+        m_boundaryOverlay->close();
+        m_boundaryOverlay = nullptr;
+    }
+
+    // Hide and delete control bar
+    if (m_controlBar) {
+        m_controlBar->close();
+        m_controlBar = nullptr;
+    }
+}
+
+void RecordingManager::connectPreviewSignals()
+{
+    if (!m_controlBar) return;
+
+    // Disconnect any existing recording mode connections first
+    // (they're automatically handled by Qt's signal-slot mechanism)
+
+    // Connect preview mode signals
+    connect(m_controlBar, &RecordingControlBar::playRequested,
+            this, &RecordingManager::onPreviewPlayRequested);
+    connect(m_controlBar, &RecordingControlBar::pauseRequested,
+            this, &RecordingManager::onPreviewPauseRequested);
+    connect(m_controlBar, &RecordingControlBar::seekRequested,
+            this, &RecordingManager::onPreviewSeekRequested);
+    connect(m_controlBar, &RecordingControlBar::volumeToggled,
+            this, &RecordingManager::onPreviewVolumeToggled);
+    connect(m_controlBar, &RecordingControlBar::savePreviewRequested,
+            this, &RecordingManager::onPreviewSaveRequested);
+    connect(m_controlBar, &RecordingControlBar::discardPreviewRequested,
+            this, &RecordingManager::onPreviewDiscardRequested);
+}
+
+void RecordingManager::onPreviewPlayRequested()
+{
+    if (m_previewOverlay) {
+        m_previewOverlay->play();
+    }
+}
+
+void RecordingManager::onPreviewPauseRequested()
+{
+    if (m_previewOverlay) {
+        m_previewOverlay->pause();
+    }
+}
+
+void RecordingManager::onPreviewSeekRequested(qint64 positionMs)
+{
+    if (m_previewOverlay) {
+        m_previewOverlay->seek(positionMs);
+    }
+}
+
+void RecordingManager::onPreviewVolumeToggled()
+{
+    if (m_previewOverlay) {
+        bool newMuted = !m_previewOverlay->isMuted();
+        m_previewOverlay->setMuted(newMuted);
+        if (m_controlBar) {
+            m_controlBar->setMuted(newMuted);
+        }
+    }
+}
+
+void RecordingManager::onPreviewSaveRequested()
+{
+    qDebug() << "RecordingManager: Save preview requested";
+
+    // Get selected format from control bar
+    RecordingControlBar::OutputFormat format = RecordingControlBar::OutputFormat::MP4;
+    if (m_controlBar) {
+        format = m_controlBar->selectedFormat();
+    }
+
+    // Store video path before cleanup
+    QString videoPath = m_tempVideoPath;
+
+    // Stop playback and cleanup preview UI
+    if (m_previewOverlay) {
+        m_previewOverlay->stop();
+    }
+    cleanupPreviewMode();
+    setState(State::Idle);
+
+    // Handle format conversion or direct save
+    if (format == RecordingControlBar::OutputFormat::MP4) {
+        // Direct save for MP4
+        showSaveDialog(videoPath);
+    } else {
+        // TODO: Implement GIF/WebP conversion in Phase 5
+        // For now, just save as MP4
+        showSaveDialog(videoPath);
+    }
+}
+
+void RecordingManager::onPreviewDiscardRequested()
+{
+    qDebug() << "RecordingManager: Discard preview requested";
+
+    // Store path before cleanup
+    QString videoPath = m_tempVideoPath;
+
+    // Stop playback and cleanup
+    if (m_previewOverlay) {
+        m_previewOverlay->stop();
+    }
+    cleanupPreviewMode();
+
+    // Delete temp file
+    if (!videoPath.isEmpty() && QFile::exists(videoPath)) {
+        if (QFile::remove(videoPath)) {
+            qDebug() << "RecordingManager: Removed temp file:" << videoPath;
+        } else {
+            qWarning() << "RecordingManager: Failed to remove temp file:" << videoPath;
+        }
+    }
+    m_tempVideoPath.clear();
+
+    setState(State::Idle);
+    emit recordingCancelled();
+}
+
+void RecordingManager::onPreviewPositionChanged(qint64 positionMs)
+{
+    if (m_controlBar) {
+        m_controlBar->updatePreviewPosition(positionMs);
+    }
+}
+
+void RecordingManager::onPreviewDurationChanged(qint64 durationMs)
+{
+    if (m_controlBar) {
+        m_controlBar->updatePreviewDuration(durationMs);
+    }
+}
+
+void RecordingManager::onPreviewStateChanged(int state)
+{
+    IVideoPlayer::State playerState = static_cast<IVideoPlayer::State>(state);
+    bool isPlaying = (playerState == IVideoPlayer::State::Playing);
+
+    if (m_controlBar) {
+        m_controlBar->setPlaying(isPlaying);
+    }
+
+    if (m_boundaryOverlay) {
+        if (isPlaying) {
+            m_boundaryOverlay->setBorderMode(RecordingBoundaryOverlay::BorderMode::Playing);
+        } else {
+            m_boundaryOverlay->setBorderMode(RecordingBoundaryOverlay::BorderMode::Paused);
+        }
     }
 }

@@ -91,7 +91,7 @@ void RadiusSliderWidget::draw(QPainter& painter)
     painter.drawText(m_labelRect, Qt::AlignVCenter | Qt::AlignLeft, "Radius");
 
     // Draw minus button
-    QColor buttonBg = (m_hoveredButton == 0) ? m_styleConfig.hoverBackgroundColor : QColor(50, 50, 50);
+    QColor buttonBg = (m_hoveredButton == 0) ? m_styleConfig.hoverBackgroundColor : m_styleConfig.buttonInactiveColor;
     painter.setPen(Qt::NoPen);
     painter.setBrush(buttonBg);
     painter.drawRoundedRect(m_minusButtonRect, 4, 4);
@@ -99,7 +99,7 @@ void RadiusSliderWidget::draw(QPainter& painter)
     painter.drawText(m_minusButtonRect, Qt::AlignCenter, "-");
 
     // Draw plus button
-    buttonBg = (m_hoveredButton == 1) ? m_styleConfig.hoverBackgroundColor : QColor(50, 50, 50);
+    buttonBg = (m_hoveredButton == 1) ? m_styleConfig.hoverBackgroundColor : m_styleConfig.buttonInactiveColor;
     painter.setPen(Qt::NoPen);
     painter.setBrush(buttonBg);
     painter.drawRoundedRect(m_plusButtonRect, 4, 4);
@@ -108,7 +108,7 @@ void RadiusSliderWidget::draw(QPainter& painter)
 
     // Draw slider track background
     painter.setPen(Qt::NoPen);
-    painter.setBrush(QColor(30, 30, 30));
+    painter.setBrush(m_styleConfig.buttonInactiveColor);
     painter.drawRoundedRect(m_sliderTrackRect, SLIDER_HEIGHT / 2, SLIDER_HEIGHT / 2);
 
     // Draw slider track fill (from left to handle position)

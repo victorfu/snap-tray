@@ -67,7 +67,7 @@ void ScrollingCaptureToolbar::setupUi()
 
     m_sizeLabel = new QLabel("0 × 0 px", this);
     m_sizeLabel->setStyleSheet(QString("QLabel { color: %1; font-size: 12px; background: transparent; }")
-        .arg(styleConfig.textActiveColor.name()));
+        .arg(styleConfig.textColor.name()));
 
     // Status indicator
     m_statusIndicator = new QLabel(this);
@@ -152,10 +152,10 @@ void ScrollingCaptureToolbar::positionNear(const QRect &region)
     QRect screenGeom = screen->geometry();
 
     int x = region.center().x() - width() / 2;
-    int y = region.bottom() + 16;
+    int y = region.bottom() + 8;
 
     if (y + height() > screenGeom.bottom() - 10) {
-        y = region.top() - height() - 16;
+        y = region.top() - height() - 8;
     }
 
     if (y < screenGeom.top() + 10) {
@@ -236,12 +236,6 @@ void ScrollingCaptureToolbar::paintEvent(QPaintEvent *event)
     ToolbarStyleConfig styleConfig = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
 
     QRect bgRect = rect();
-
-    // Draw shadow
-    QRect shadowRect = bgRect.adjusted(2, 2, 2, 2);
-    painter.setPen(Qt::NoPen);
-    painter.setBrush(QColor(0, 0, 0, styleConfig.shadowAlpha));
-    painter.drawRoundedRect(shadowRect, 8, 8);
 
     // Draw background with gradient
     QLinearGradient gradient(bgRect.topLeft(), bgRect.bottomLeft());

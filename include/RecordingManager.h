@@ -14,6 +14,7 @@ class RecordingControlBar;
 class RecordingBoundaryOverlay;
 class RecordingAnnotationOverlay;
 class RecordingInitTask;
+class InPlacePreviewOverlay;
 class NativeGifEncoder;
 class IVideoEncoder;
 class ICaptureEngine;
@@ -101,6 +102,24 @@ private:
     void setState(State newState);
     void showSaveDialog(const QString &tempOutputPath);
 
+    // In-place preview methods
+    void transitionToPreviewMode(const QString &videoPath);
+    void cleanupPreviewMode();
+    void connectPreviewSignals();
+
+private slots:
+    // Preview mode handlers
+    void onPreviewPlayRequested();
+    void onPreviewPauseRequested();
+    void onPreviewSeekRequested(qint64 positionMs);
+    void onPreviewVolumeToggled();
+    void onPreviewSaveRequested();
+    void onPreviewDiscardRequested();
+    void onPreviewPositionChanged(qint64 positionMs);
+    void onPreviewDurationChanged(qint64 durationMs);
+    void onPreviewStateChanged(int state);
+
+private:
     // Region selection
     QPointer<RecordingRegionSelector> m_regionSelector;
 
@@ -108,6 +127,8 @@ private:
     QPointer<RecordingControlBar> m_controlBar;
     QPointer<RecordingBoundaryOverlay> m_boundaryOverlay;
     QPointer<RecordingAnnotationOverlay> m_annotationOverlay;
+    QPointer<InPlacePreviewOverlay> m_previewOverlay;
+    QString m_tempVideoPath;
     ColorPickerDialog *m_colorPickerDialog;
     NativeGifEncoder *m_gifEncoder;     // Used for GIF format
     IVideoEncoder *m_nativeEncoder;     // Native platform encoder for MP4

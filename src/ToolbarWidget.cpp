@@ -109,8 +109,12 @@ void ToolbarWidget::updateButtonRects()
 
 void ToolbarWidget::draw(QPainter& painter)
 {
-    // Draw glass panel (shadow, background, border, highlight)
-    GlassRenderer::drawGlassPanel(painter, m_toolbarRect, m_styleConfig);
+    // Draw glass panel (background, border, highlight; no shadow)
+    ToolbarStyleConfig panelConfig = m_styleConfig;
+    panelConfig.shadowColor.setAlpha(0);
+    panelConfig.shadowOffsetY = 0;
+    panelConfig.shadowBlurRadius = 0;
+    GlassRenderer::drawGlassPanel(painter, m_toolbarRect, panelConfig);
 
     // Render buttons
     for (int i = 0; i < m_buttons.size(); ++i) {
@@ -185,10 +189,11 @@ void ToolbarWidget::drawTooltip(QPainter& painter)
 
     textRect.moveTo(tooltipX, tooltipY);
 
-    // Draw glass tooltip (smaller shadow for elevated look)
+    // Draw glass tooltip without shadow
     ToolbarStyleConfig tooltipConfig = m_styleConfig;
-    tooltipConfig.shadowOffsetY = 2;
-    tooltipConfig.shadowBlurRadius = 6;
+    tooltipConfig.shadowColor.setAlpha(0);
+    tooltipConfig.shadowOffsetY = 0;
+    tooltipConfig.shadowBlurRadius = 0;
     GlassRenderer::drawGlassPanel(painter, textRect, tooltipConfig, 6);
 
     // Draw tooltip text

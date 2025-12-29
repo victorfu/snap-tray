@@ -250,6 +250,7 @@ set(SOURCES
     src/video/VideoTimeline.cpp
     src/video/RecordingPreviewWindow.cpp
     src/video/FormatSelectionWidget.cpp
+    src/video/InPlacePreviewOverlay.cpp
     src/TransformationGizmo.cpp
     # Tool system
     src/tools/ToolRegistry.cpp
@@ -361,6 +362,7 @@ set(HEADERS
     include/video/VideoTimeline.h
     include/video/RecordingPreviewWindow.h
     include/video/FormatSelectionWidget.h
+    include/video/InPlacePreviewOverlay.h
     include/TransformationGizmo.h
     include/capture/ICaptureEngine.h
     include/capture/QtCaptureEngine.h
