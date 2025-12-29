@@ -39,6 +39,7 @@ public:
     // Audio support
     void setAudioFormat(int sampleRate, int channels, int bitsPerSample) override;
     bool isAudioSupported() const override;
+    bool isAudioEnabled() const override;
     void writeAudioSamples(const QByteArray &pcmData, qint64 timestampMs) override;
 
 private:

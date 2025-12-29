@@ -468,6 +468,11 @@ bool MediaFoundationEncoder::isAudioSupported() const
     return true;  // Media Foundation supports audio encoding
 }
 
+bool MediaFoundationEncoder::isAudioEnabled() const
+{
+    return d->audioEnabled;
+}
+
 void MediaFoundationEncoder::writeAudioSamples(const QByteArray &pcmData, qint64 timestampMs)
 {
     if (!d->running || !d->sinkWriter || !d->audioEnabled) {

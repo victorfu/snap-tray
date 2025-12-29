@@ -452,6 +452,11 @@ bool AVFoundationEncoder::isAudioSupported() const
     return true;  // AVFoundation supports audio encoding
 }
 
+bool AVFoundationEncoder::isAudioEnabled() const
+{
+    return d->audioEnabled;
+}
+
 void AVFoundationEncoder::writeAudioSamples(const QByteArray &pcmData, qint64 timestampMs)
 {
     if (!d->running || !d->audioInput || !d->audioEnabled) {

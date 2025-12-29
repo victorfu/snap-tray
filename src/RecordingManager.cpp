@@ -252,8 +252,10 @@ void RecordingManager::startFullScreenRecording()
     auto settings = SnapTray::getSettings();
     m_frameRate = settings.value("recording/framerate", 30).toInt();
     if (m_frameRate <= 0 || m_frameRate > 120) {
-        qWarning() << "RecordingManager: Invalid frame rate" << m_frameRate << ", using default 30";
+        int invalidRate = m_frameRate;
         m_frameRate = 30;
+        qWarning() << "RecordingManager: Invalid frame rate" << invalidRate << ", using default 30";
+        emit recordingWarning(tr("Invalid frame rate %1, using default 30 FPS.").arg(invalidRate));
     }
 
     // Reset pause tracking
@@ -275,8 +277,10 @@ void RecordingManager::onRegionSelected(const QRect &region, QScreen *screen)
     auto settings = SnapTray::getSettings();
     m_frameRate = settings.value("recording/framerate", 30).toInt();
     if (m_frameRate <= 0 || m_frameRate > 120) {
-        qWarning() << "RecordingManager: Invalid frame rate" << m_frameRate << ", using default 30";
+        int invalidRate = m_frameRate;
         m_frameRate = 30;
+        qWarning() << "RecordingManager: Invalid frame rate" << invalidRate << ", using default 30";
+        emit recordingWarning(tr("Invalid frame rate %1, using default 30 FPS.").arg(invalidRate));
     }
 
     // Reset pause tracking
@@ -620,6 +624,7 @@ void RecordingManager::onInitializationComplete()
         } else {
             qWarning() << "RecordingManager: Failed to create audio engine";
             m_audioEnabled = false;
+            emit recordingWarning(tr("Failed to initialize audio capture. Recording without audio."));
         }
     }
 
@@ -653,10 +658,18 @@ void RecordingManager::onInitializationComplete()
         }
     }
 
+    // Check if encoder's audio was silently disabled (e.g., audio stream config failed)
+    if (m_audioEnabled && m_usingNativeEncoder && m_nativeEncoder) {
+        if (!m_nativeEncoder->isAudioEnabled()) {
+            emit recordingWarning(tr("Audio configuration failed. Recording without audio."));
+            m_audioEnabled = false;
+        }
+    }
+
     // Update control bar to show ready state
     if (m_controlBar) {
         m_controlBar->setPreparing(false);
-        m_controlBar->setAudioEnabled(m_audioEngine != nullptr);
+        m_controlBar->setAudioEnabled(m_audioEngine != nullptr && m_audioEnabled);
     }
 
     // Clean up init task

@@ -65,6 +65,16 @@ public:
     virtual bool isAudioSupported() const { return false; }
 
     /**
+     * @brief Check if audio is actually enabled after start()
+     * @return true if audio was successfully configured and enabled
+     *
+     * This may return false even if setAudioFormat() was called, if the
+     * audio stream configuration failed during start(). Use this to check
+     * actual audio status after recording begins.
+     */
+    virtual bool isAudioEnabled() const { return false; }
+
+    /**
      * @brief Write audio samples to the encoder
      * @param pcmData Raw PCM audio data
      * @param timestampMs Timestamp in milliseconds since recording start

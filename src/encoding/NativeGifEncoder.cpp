@@ -17,6 +17,7 @@ NativeGifEncoder::NativeGifEncoder(QObject *parent)
     , m_maxBitDepth(16)
     , m_framesWritten(0)
     , m_consecutiveFailures(0)
+    , m_maxConsecutiveFailures(DEFAULT_MAX_CONSECUTIVE_FAILURES)
     , m_lastTimestampMs(0)
     , m_running(false)
     , m_aborted(false)
@@ -33,6 +34,11 @@ NativeGifEncoder::~NativeGifEncoder()
 void NativeGifEncoder::setMaxBitDepth(int depth)
 {
     m_maxBitDepth = qBound(1, depth, 16);
+}
+
+void NativeGifEncoder::setMaxConsecutiveFailures(int max)
+{
+    m_maxConsecutiveFailures = qMax(1, max);
 }
 
 bool NativeGifEncoder::start(const QString &outputPath, const QSize &frameSize, int frameRate)
@@ -145,8 +151,7 @@ void NativeGifEncoder::writeFrame(const QImage &frame, qint64 timestampMs)
                    << "(consecutive failures:" << m_consecutiveFailures << ")";
 
         // Stop encoding after too many consecutive failures to prevent silent corruption
-        constexpr int MAX_CONSECUTIVE_FAILURES = 10;
-        if (m_consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
+        if (m_consecutiveFailures >= m_maxConsecutiveFailures) {
             m_lastError = QString("GIF encoding failed: %1 consecutive frame failures")
                 .arg(m_consecutiveFailures);
             m_running = false;
