@@ -148,6 +148,8 @@ RegionSelector::RegionSelector(QWidget* parent)
                 if (newState == SelectionStateManager::State::None ||
                     newState == SelectionStateManager::State::Selecting) {
                     setCursor(Qt::CrossCursor);
+                } else if (newState == SelectionStateManager::State::Moving) {
+                    setCursor(Qt::SizeAllCursor);
                 } else {
                     setCursor(Qt::ArrowCursor);
                 }
