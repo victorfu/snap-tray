@@ -109,7 +109,7 @@ bool WASAPIAudioCaptureEngine::isAvailable() const
 bool WASAPIAudioCaptureEngine::setAudioSource(AudioSource source)
 {
     if (m_running) {
-        qWarning() << "WASAPIAudioCaptureEngine: Cannot change source while running";
+        qDebug() << "WASAPIAudioCaptureEngine: Cannot change source while running";
         return false;
     }
     m_source = source;
@@ -120,7 +120,7 @@ bool WASAPIAudioCaptureEngine::setAudioSource(AudioSource source)
 bool WASAPIAudioCaptureEngine::setDevice(const QString &deviceId)
 {
     if (m_running) {
-        qWarning() << "WASAPIAudioCaptureEngine: Cannot change device while running";
+        qDebug() << "WASAPIAudioCaptureEngine: Cannot change device while running";
         return false;
     }
     m_deviceId = deviceId;
@@ -496,9 +496,9 @@ void WASAPIAudioCaptureEngine::refreshProbedFormat()
             m_micFormat.channels == m_loopbackFormat.channels) {
             m_format = m_micFormat;
         } else {
-            qWarning() << "WASAPIAudioCaptureEngine: Mismatched mic/loopback formats during probe -"
-                       << "mic:" << m_micFormat.sampleRate << "Hz," << m_micFormat.channels << "ch"
-                       << "loopback:" << m_loopbackFormat.sampleRate << "Hz," << m_loopbackFormat.channels << "ch";
+            qDebug() << "WASAPIAudioCaptureEngine: Mismatched mic/loopback formats during probe -"
+                     << "mic:" << m_micFormat.sampleRate << "Hz," << m_micFormat.channels << "ch"
+                     << "loopback:" << m_loopbackFormat.sampleRate << "Hz," << m_loopbackFormat.channels << "ch";
             m_format = m_micFormat;
         }
         return;
@@ -551,9 +551,9 @@ bool WASAPIAudioCaptureEngine::initializeInThread()
     if (m_micCaptureClient && m_loopbackCaptureClient) {
         if (m_micFormat.sampleRate != m_loopbackFormat.sampleRate ||
             m_micFormat.channels != m_loopbackFormat.channels) {
-            qWarning() << "WASAPIAudioCaptureEngine: Mic/loopback formats differ, disabling loopback."
-                       << "mic:" << m_micFormat.sampleRate << "Hz," << m_micFormat.channels << "ch"
-                       << "loopback:" << m_loopbackFormat.sampleRate << "Hz," << m_loopbackFormat.channels << "ch";
+            qDebug() << "WASAPIAudioCaptureEngine: Mic/loopback formats differ, disabling loopback."
+                     << "mic:" << m_micFormat.sampleRate << "Hz," << m_micFormat.channels << "ch"
+                     << "loopback:" << m_loopbackFormat.sampleRate << "Hz," << m_loopbackFormat.channels << "ch";
             emit warning("Mic and system audio formats differ; system audio disabled.");
             safeRelease(m_loopbackCaptureClient);
             safeRelease(m_loopbackAudioClient);
@@ -613,7 +613,7 @@ void WASAPIAudioCaptureEngine::cleanupInThread()
 bool WASAPIAudioCaptureEngine::start()
 {
     if (m_running) {
-        qWarning() << "WASAPIAudioCaptureEngine: Already running";
+        qDebug() << "WASAPIAudioCaptureEngine: Already running";
         return false;
     }
 

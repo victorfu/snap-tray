@@ -1172,7 +1172,7 @@ ImageStitcher::StitchResult ImageStitcher::performStitch(const QImage &newFrame,
                 painter.drawImage(0, 0, m_stitchedResult, 0, 0, currentWidth, m_stitchedResult.height());
                 painter.drawImage(drawX, 0, newFrameRgb);
                 if (!painter.end()) {
-                    qWarning() << "ImageStitcher: QPainter::end() failed for horizontal right stitch (expand)";
+                    qDebug() << "ImageStitcher: QPainter::end() failed for horizontal right stitch (expand)";
                 }
 
                 m_stitchedResult = newStitched;
@@ -1184,7 +1184,7 @@ ImageStitcher::StitchResult ImageStitcher::performStitch(const QImage &newFrame,
                 }
                 painter.drawImage(drawX, 0, newFrameRgb);
                 if (!painter.end()) {
-                    qWarning() << "ImageStitcher: QPainter::end() failed for horizontal right stitch (in-place)";
+                    qDebug() << "ImageStitcher: QPainter::end() failed for horizontal right stitch (in-place)";
                 }
             }
 
@@ -1216,7 +1216,7 @@ ImageStitcher::StitchResult ImageStitcher::performStitch(const QImage &newFrame,
             painter.drawImage(0, 0, newFrameRgb);
             painter.drawImage(drawX, 0, m_stitchedResult, 0, 0, currentWidth, m_stitchedResult.height());
             if (!painter.end()) {
-                qWarning() << "ImageStitcher: QPainter::end() failed for horizontal left stitch";
+                qDebug() << "ImageStitcher: QPainter::end() failed for horizontal left stitch";
             }
 
             m_stitchedResult = newStitched;
@@ -1308,7 +1308,7 @@ ImageStitcher::StitchResult ImageStitcher::performStitch(const QImage &newFrame,
                 painter.drawImage(0, 0, m_stitchedResult, 0, 0, m_stitchedResult.width(), currentHeight);
                 painter.drawImage(0, drawY, newFrameRgb);
                 if (!painter.end()) {
-                    qWarning() << "ImageStitcher: QPainter::end() failed for vertical down stitch (expand)";
+                    qDebug() << "ImageStitcher: QPainter::end() failed for vertical down stitch (expand)";
                 }
 
                 m_stitchedResult = newStitched;
@@ -1320,7 +1320,7 @@ ImageStitcher::StitchResult ImageStitcher::performStitch(const QImage &newFrame,
                 }
                 painter.drawImage(0, drawY, newFrameRgb);
                 if (!painter.end()) {
-                    qWarning() << "ImageStitcher: QPainter::end() failed for vertical down stitch (in-place)";
+                    qDebug() << "ImageStitcher: QPainter::end() failed for vertical down stitch (in-place)";
                 }
             }
 
@@ -1352,7 +1352,7 @@ ImageStitcher::StitchResult ImageStitcher::performStitch(const QImage &newFrame,
             painter.drawImage(0, 0, newFrameRgb);
             painter.drawImage(0, drawY, m_stitchedResult, 0, 0, m_stitchedResult.width(), currentHeight);
             if (!painter.end()) {
-                qWarning() << "ImageStitcher: QPainter::end() failed for vertical up stitch";
+                qDebug() << "ImageStitcher: QPainter::end() failed for vertical up stitch";
             }
 
             m_stitchedResult = newStitched;

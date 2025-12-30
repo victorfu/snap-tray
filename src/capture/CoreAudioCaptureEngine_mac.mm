@@ -325,7 +325,7 @@ QString CoreAudioCaptureEngine::engineName() const
 bool CoreAudioCaptureEngine::setAudioSource(AudioSource source)
 {
     if (m_running) {
-        qWarning() << "CoreAudioCaptureEngine: Cannot change source while running";
+        qDebug() << "CoreAudioCaptureEngine: Cannot change source while running";
         return false;
     }
 
@@ -343,7 +343,7 @@ bool CoreAudioCaptureEngine::setAudioSource(AudioSource source)
 bool CoreAudioCaptureEngine::setDevice(const QString &deviceId)
 {
     if (m_running) {
-        qWarning() << "CoreAudioCaptureEngine: Cannot change device while running";
+        qDebug() << "CoreAudioCaptureEngine: Cannot change device while running";
         return false;
     }
     m_deviceId = deviceId;
@@ -393,7 +393,7 @@ QString CoreAudioCaptureEngine::defaultInputDevice() const
 bool CoreAudioCaptureEngine::start()
 {
     if (m_running) {
-        qWarning() << "CoreAudioCaptureEngine: Already running";
+        qDebug() << "CoreAudioCaptureEngine: Already running";
         return false;
     }
 

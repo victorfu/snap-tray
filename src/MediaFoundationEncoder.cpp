@@ -452,7 +452,7 @@ void MediaFoundationEncoder::setQuality(int quality)
 void MediaFoundationEncoder::setAudioFormat(int sampleRate, int channels, int bitsPerSample)
 {
     if (d->running) {
-        qWarning() << "MediaFoundationEncoder: Cannot set audio format while running";
+        qDebug() << "MediaFoundationEncoder: Cannot set audio format while running";
         return;
     }
     d->audioEnabled = true;

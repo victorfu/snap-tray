@@ -256,7 +256,7 @@ void RecordingManager::startFullScreenRecording()
     if (m_frameRate <= 0 || m_frameRate > 120) {
         int invalidRate = m_frameRate;
         m_frameRate = 30;
-        qWarning() << "RecordingManager: Invalid frame rate" << invalidRate << ", using default 30";
+        qDebug() << "RecordingManager: Invalid frame rate" << invalidRate << ", using default 30";
         emit recordingWarning(tr("Invalid frame rate %1, using default 30 FPS.").arg(invalidRate));
     }
 
@@ -281,7 +281,7 @@ void RecordingManager::onRegionSelected(const QRect &region, QScreen *screen)
     if (m_frameRate <= 0 || m_frameRate > 120) {
         int invalidRate = m_frameRate;
         m_frameRate = 30;
-        qWarning() << "RecordingManager: Invalid frame rate" << invalidRate << ", using default 30";
+        qDebug() << "RecordingManager: Invalid frame rate" << invalidRate << ", using default 30";
         emit recordingWarning(tr("Invalid frame rate %1, using default 30 FPS.").arg(invalidRate));
     }
 
@@ -313,13 +313,13 @@ void RecordingManager::startFrameCapture()
 
     // Safety check: clean up any existing encoders
     if (m_gifEncoder) {
-        qWarning() << "RecordingManager: Previous GIF encoder still exists, cleaning up";
+        qDebug() << "RecordingManager: Previous GIF encoder still exists, cleaning up";
         disconnect(m_gifEncoder, nullptr, this, nullptr);
         m_gifEncoder->deleteLater();
         m_gifEncoder = nullptr;
     }
     if (m_nativeEncoder) {
-        qWarning() << "RecordingManager: Previous native encoder still exists, cleaning up";
+        qDebug() << "RecordingManager: Previous native encoder still exists, cleaning up";
         disconnect(m_nativeEncoder, nullptr, this, nullptr);
         m_nativeEncoder->deleteLater();
         m_nativeEncoder = nullptr;
@@ -335,7 +335,7 @@ void RecordingManager::startFrameCapture()
 
     // Clean up any existing overlay first to prevent resource leak
     if (m_boundaryOverlay) {
-        qWarning() << "RecordingManager: Previous boundary overlay still exists, cleaning up";
+        qDebug() << "RecordingManager: Previous boundary overlay still exists, cleaning up";
         m_boundaryOverlay->close();
     }
 
@@ -351,7 +351,7 @@ void RecordingManager::startFrameCapture()
 
     // Clean up any existing control bar first to prevent resource leak
     if (m_controlBar) {
-        qWarning() << "RecordingManager: Previous control bar still exists, cleaning up";
+        qDebug() << "RecordingManager: Previous control bar still exists, cleaning up";
         disconnect(m_controlBar, nullptr, this, nullptr);
         m_controlBar->close();
     }
@@ -706,13 +706,13 @@ void RecordingManager::startCaptureTimers()
 
     // Safety check: ensure timers don't already exist (shouldn't happen, but be defensive)
     if (m_captureTimer) {
-        qWarning() << "RecordingManager: Capture timer already exists, cleaning up";
+        qDebug() << "RecordingManager: Capture timer already exists, cleaning up";
         m_captureTimer->stop();
         delete m_captureTimer;
         m_captureTimer = nullptr;
     }
     if (m_durationTimer) {
-        qWarning() << "RecordingManager: Duration timer already exists, cleaning up";
+        qDebug() << "RecordingManager: Duration timer already exists, cleaning up";
         m_durationTimer->stop();
         delete m_durationTimer;
         m_durationTimer = nullptr;

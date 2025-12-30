@@ -181,6 +181,32 @@ void MyWidget::paintEvent(QPaintEvent*) {
 
 ## Development Guidelines
 
+### Logging
+
+Use `qDebug()` for development diagnostics only. Release builds automatically suppress `qDebug()` output via `QT_NO_DEBUG_OUTPUT`.
+
+| Function | Purpose | Release Behavior |
+|----------|---------|------------------|
+| `qDebug()` | Development diagnostics, state tracking, defensive cleanup | **Suppressed** |
+| `qInfo()` | General info (user may need to know) | Output |
+| `qWarning()` | Warnings: hardware/API failures, features unavailable | Output |
+| `qCritical()` | Critical errors: may cause malfunction | Output |
+| `qFatal()` | Fatal errors: program must terminate | Output and terminate |
+
+```cpp
+// Good: Use qDebug for development diagnostics
+qDebug() << "RecordingManager: Starting capture timer...";
+qDebug() << "Previous encoder still exists, cleaning up";  // Defensive cleanup
+
+// Good: Use qWarning for real errors
+qWarning() << "Failed to create D3D11 device:" << hr;
+qWarning() << "Audio capture not available on this platform";
+
+// Bad: Using qWarning for dev messages (will output in Release)
+qWarning() << "Already running";  // Should use qDebug
+qWarning() << "Invalid frame rate, using default";  // Should use qDebug
+```
+
 ### Code Style
 
 - Use C++17 features

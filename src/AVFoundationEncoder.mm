@@ -286,8 +286,8 @@ void AVFoundationEncoder::writeFrame(const QImage &frame, qint64 timestampMs)
         // Throttle logging to avoid spam
         qint64 now = QDateTime::currentMSecsSinceEpoch();
         if (now - d->lastDropLogTime >= d->DROP_LOG_INTERVAL_MS) {
-            qWarning() << "AVFoundationEncoder: Encoder backpressure - dropped"
-                       << d->droppedFrames << "video frames so far";
+            qDebug() << "AVFoundationEncoder: Encoder backpressure - dropped"
+                     << d->droppedFrames << "video frames so far";
             d->lastDropLogTime = now;
         }
         return;
@@ -335,7 +335,7 @@ void AVFoundationEncoder::finish()
 
     // Prevent re-entrant finish calls
     if (d->isFinishing.exchange(true)) {
-        qWarning() << "AVFoundationEncoder: finish() already in progress";
+        qDebug() << "AVFoundationEncoder: finish() already in progress";
         return;
     }
 
@@ -437,7 +437,7 @@ void AVFoundationEncoder::setQuality(int quality)
 void AVFoundationEncoder::setAudioFormat(int sampleRate, int channels, int bitsPerSample)
 {
     if (d->running) {
-        qWarning() << "AVFoundationEncoder: Cannot set audio format while running";
+        qDebug() << "AVFoundationEncoder: Cannot set audio format while running";
         return;
     }
     d->audioEnabled = true;
@@ -471,8 +471,8 @@ void AVFoundationEncoder::writeAudioSamples(const QByteArray &pcmData, qint64 ti
         // Throttle logging to avoid spam
         qint64 now = QDateTime::currentMSecsSinceEpoch();
         if (now - d->lastDropLogTime >= d->DROP_LOG_INTERVAL_MS) {
-            qWarning() << "AVFoundationEncoder: Encoder backpressure - dropped"
-                       << d->droppedAudioChunks << "audio chunks so far";
+            qDebug() << "AVFoundationEncoder: Encoder backpressure - dropped"
+                     << d->droppedAudioChunks << "audio chunks so far";
             d->lastDropLogTime = now;
         }
         return;

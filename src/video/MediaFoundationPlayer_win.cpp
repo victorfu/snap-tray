@@ -10,7 +10,7 @@
 IVideoPlayer* createMediaFoundationPlayer(QObject *parent)
 {
     Q_UNUSED(parent)
-    qWarning() << "MediaFoundationPlayer: Not yet implemented";
+    qDebug() << "MediaFoundationPlayer: Not yet implemented";
     return nullptr;
 }
 
