@@ -26,8 +26,9 @@ set OUTPUT_DIR=%PROJECT_ROOT%\dist
 set STAGING_DIR=%BUILD_DIR%\staging
 
 REM Extract version from CMakeLists.txt
-for /f "tokens=3 delims=() " %%a in ('findstr /C:"project(SnapTray VERSION" "%PROJECT_ROOT%\CMakeLists.txt"') do (
-    for /f "tokens=1 delims= " %%b in ("%%a") do set VERSION=%%b
+REM Line format: project(SnapTray VERSION 1.0.6 LANGUAGES CXX)
+for /f "tokens=*" %%a in ('findstr /C:"project(SnapTray VERSION" "%PROJECT_ROOT%\CMakeLists.txt"') do (
+    for /f "tokens=3" %%b in ("%%a") do set VERSION=%%b
 )
 set APP_NAME=SnapTray
 
@@ -89,7 +90,7 @@ if errorlevel 1 (
 )
 
 REM Check if exe was built
-if not exist "%BUILD_DIR%\Release\%APP_NAME%.exe" (
+if not exist "%BUILD_DIR%\bin\Release\%APP_NAME%.exe" (
     echo ERROR: Build failed - %APP_NAME%.exe not found
     exit /b 1
 )
@@ -101,7 +102,7 @@ if exist "%STAGING_DIR%" rmdir /s /q "%STAGING_DIR%"
 mkdir "%STAGING_DIR%"
 
 REM Copy executable
-copy "%BUILD_DIR%\Release\%APP_NAME%.exe" "%STAGING_DIR%\" >nul
+copy "%BUILD_DIR%\bin\Release\%APP_NAME%.exe" "%STAGING_DIR%\" >nul
 
 REM Step 3: Run windeployqt
 echo.
@@ -136,11 +137,14 @@ if not exist "%OUTPUT_DIR%" mkdir "%OUTPUT_DIR%"
 
 REM Generate version-specific NSIS header
 set NSIS_DIR=%SCRIPT_DIR%
+REM Temporarily disable delayed expansion to preserve ! character
+setlocal disabledelayedexpansion
 echo !define VERSION "%VERSION%" > "%NSIS_DIR%version.nsh"
 echo !define APP_NAME "%APP_NAME%" >> "%NSIS_DIR%version.nsh"
 echo !define STAGING_DIR "%STAGING_DIR%" >> "%NSIS_DIR%version.nsh"
 echo !define OUTPUT_DIR "%OUTPUT_DIR%" >> "%NSIS_DIR%version.nsh"
 echo !define PROJECT_ROOT "%PROJECT_ROOT%" >> "%NSIS_DIR%version.nsh"
+endlocal
 
 REM Verify generation
 if not exist "%NSIS_DIR%version.nsh" (

@@ -45,3 +45,5 @@ qrc_*.cpp
 _deps/
 
 .claude/
+
+packaging/windows/version.nsh
