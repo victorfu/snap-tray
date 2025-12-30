@@ -5,7 +5,6 @@
 #include "GlassRenderer.h"
 #include "ColorPaletteWidget.h"
 #include "ColorPickerDialog.h"
-#include "LineWidthWidget.h"
 #include "ColorAndWidthWidget.h"
 #include "LaserPointerRenderer.h"
 #include "ClickRippleRenderer.h"
@@ -46,8 +45,9 @@ ScreenCanvas::ScreenCanvas(QWidget* parent)
     , m_toolManager(nullptr)
     , m_currentToolId(ToolId::Pencil)
     , m_hoveredButton(-1)
+    , m_isDraggingToolbar(false)
+    , m_showSubToolbar(true)
     , m_colorPalette(nullptr)
-    , m_lineWidthWidget(nullptr)
     , m_colorPickerDialog(nullptr)
     , m_toolbarStyleConfig(ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle()))
 {
@@ -92,14 +92,6 @@ ScreenCanvas::ScreenCanvas(QWidget* parent)
         this, &ScreenCanvas::onColorSelected);
     connect(m_colorPalette, &ColorPaletteWidget::moreColorsRequested,
         this, &ScreenCanvas::onMoreColorsRequested);
-
-    // Initialize line width widget
-    m_lineWidthWidget = new LineWidthWidget(this);
-    m_lineWidthWidget->setWidthRange(1, 20);
-    m_lineWidthWidget->setCurrentWidth(savedWidth);
-    m_lineWidthWidget->setPreviewColor(savedColor);
-    connect(m_lineWidthWidget, &LineWidthWidget::widthChanged,
-        this, &ScreenCanvas::onLineWidthChanged);
 
     // Initialize unified color and width widget
     m_colorAndWidthWidget = new ColorAndWidthWidget(this);
@@ -193,6 +185,7 @@ void ScreenCanvas::renderIcon(QPainter& painter, const QRect& rect, CanvasButton
 
 bool ScreenCanvas::shouldShowColorPalette() const
 {
+    if (!m_showSubToolbar) return false;
     auto it = kToolCapabilities.find(m_currentToolId);
     return it != kToolCapabilities.end() && it->second.showInPalette;
 }
@@ -201,16 +194,9 @@ void ScreenCanvas::onColorSelected(const QColor& color)
 {
     m_toolManager->setColor(color);
     m_laserRenderer->setColor(color);
-    m_lineWidthWidget->setPreviewColor(color);
     m_colorAndWidthWidget->setCurrentColor(color);
     AnnotationSettingsManager::instance().saveColor(color);
     update();
-}
-
-bool ScreenCanvas::shouldShowLineWidthWidget() const
-{
-    auto it = kToolCapabilities.find(m_currentToolId);
-    return it != kToolCapabilities.end() && it->second.needsWidth;
 }
 
 void ScreenCanvas::onLineWidthChanged(int width)
@@ -223,6 +209,7 @@ void ScreenCanvas::onLineWidthChanged(int width)
 
 bool ScreenCanvas::shouldShowColorAndWidthWidget() const
 {
+    if (!m_showSubToolbar) return false;
     auto it = kToolCapabilities.find(m_currentToolId);
     return it != kToolCapabilities.end() && it->second.needsColorOrWidth;
 }
@@ -241,7 +228,6 @@ void ScreenCanvas::onMoreColorsRequested()
             this, [this](const QColor& color) {
                 m_toolManager->setColor(color);
                 m_colorPalette->setCurrentColor(color);
-                m_lineWidthWidget->setPreviewColor(color);
                 m_colorAndWidthWidget->setCurrentColor(color);
                 qDebug() << "ScreenCanvas: Custom color selected:" << color.name();
                 update();
@@ -337,18 +323,6 @@ void ScreenCanvas::paintEvent(QPaintEvent*)
         else {
             m_colorPalette->setVisible(false);
         }
-
-        // Draw line width widget (above color palette, aligned to toolbar left edge)
-        if (shouldShowLineWidthWidget()) {
-            m_lineWidthWidget->setVisible(true);
-            QRect anchorRect = m_colorPalette->boundingRect();
-            anchorRect.moveLeft(m_toolbarRect.left());  // Align with toolbar left edge
-            m_lineWidthWidget->updatePosition(anchorRect, true, width());
-            m_lineWidthWidget->draw(painter);
-        }
-        else {
-            m_lineWidthWidget->setVisible(false);
-        }
     }
 
     // Draw tooltip
@@ -379,8 +353,8 @@ void ScreenCanvas::drawToolbar(QPainter& painter)
         CanvasButton button = static_cast<CanvasButton>(i);
         ToolId buttonToolId = canvasButtonToToolId(button);
 
-        // Highlight active tool (drawing tools only) or toggle state for CursorHighlight
-        bool isActive = (buttonToolId == m_currentToolId) && isDrawingTool(buttonToolId);
+        // Highlight active tool (drawing tools only, and only when sub-toolbar is shown)
+        bool isActive = (buttonToolId == m_currentToolId) && isDrawingTool(buttonToolId) && m_showSubToolbar;
         bool isToggleActive = (button == CanvasButton::CursorHighlight) && m_rippleRenderer->isEnabled();
 
         // Draw separator before certain buttons
@@ -450,9 +424,13 @@ void ScreenCanvas::updateToolbarPosition()
 
     m_toolbarRect = QRect(toolbarX, toolbarY, toolbarWidth, TOOLBAR_HEIGHT);
 
-    // Update button rects
-    int x = toolbarX + 10;
-    int y = toolbarY + (TOOLBAR_HEIGHT - BUTTON_WIDTH + 4) / 2;
+    updateButtonRects();
+}
+
+void ScreenCanvas::updateButtonRects()
+{
+    int x = m_toolbarRect.x() + 10;
+    int y = m_toolbarRect.y() + (TOOLBAR_HEIGHT - BUTTON_WIDTH + 4) / 2;
 
     for (int i = 0; i < static_cast<int>(CanvasButton::Count); ++i) {
         m_buttonRects[i] = QRect(x, y, BUTTON_WIDTH, BUTTON_WIDTH - 4);
@@ -550,19 +528,33 @@ void ScreenCanvas::handleToolbarClick(CanvasButton button)
     case CanvasButton::Marker:
     case CanvasButton::Arrow:
     case CanvasButton::Shape:
-        m_currentToolId = toolId;
-        m_toolManager->setCurrentTool(toolId);
-        qDebug() << "ScreenCanvas: Tool selected:" << static_cast<int>(toolId);
+        if (m_currentToolId == toolId) {
+            // Same tool clicked - toggle sub-toolbar visibility
+            m_showSubToolbar = !m_showSubToolbar;
+        } else {
+            // Different tool - select it and show sub-toolbar
+            m_currentToolId = toolId;
+            m_toolManager->setCurrentTool(toolId);
+            m_showSubToolbar = true;
+        }
+        qDebug() << "ScreenCanvas: Tool selected:" << static_cast<int>(toolId) << "showSubToolbar:" << m_showSubToolbar;
         update();
         break;
 
     case CanvasButton::LaserPointer:
-        m_currentToolId = toolId;
-        m_toolManager->setCurrentTool(toolId);
-        // Sync laser pointer with current color and width settings
-        m_laserRenderer->setColor(m_toolManager->color());
-        m_laserRenderer->setWidth(m_toolManager->width());
-        qDebug() << "ScreenCanvas: Laser Pointer selected";
+        if (m_currentToolId == toolId) {
+            // Same tool clicked - toggle sub-toolbar visibility
+            m_showSubToolbar = !m_showSubToolbar;
+        } else {
+            // Different tool - select it and show sub-toolbar
+            m_currentToolId = toolId;
+            m_toolManager->setCurrentTool(toolId);
+            // Sync laser pointer with current color and width settings
+            m_laserRenderer->setColor(m_toolManager->color());
+            m_laserRenderer->setWidth(m_toolManager->width());
+            m_showSubToolbar = true;
+        }
+        qDebug() << "ScreenCanvas: Laser Pointer selected, showSubToolbar:" << m_showSubToolbar;
         update();
         break;
 
@@ -632,10 +624,17 @@ void ScreenCanvas::mousePressEvent(QMouseEvent* event)
         };
 
         // Check if clicked on toolbar FIRST (before widgets that may overlap)
-        int buttonIdx = getButtonAtPosition(event->pos());
-        if (buttonIdx >= 0) {
-            finalizePolylineForUiClick(event->pos());
-            handleToolbarClick(static_cast<CanvasButton>(buttonIdx));
+        if (m_toolbarRect.contains(event->pos())) {
+            int buttonIdx = getButtonAtPosition(event->pos());
+            if (buttonIdx >= 0) {
+                finalizePolylineForUiClick(event->pos());
+                handleToolbarClick(static_cast<CanvasButton>(buttonIdx));
+            } else {
+                // Start toolbar drag (clicked on toolbar but not on a button)
+                m_isDraggingToolbar = true;
+                m_toolbarDragOffset = event->pos() - m_toolbarRect.topLeft();
+                setCursor(Qt::ClosedHandCursor);
+            }
             return;
         }
 
@@ -652,17 +651,6 @@ void ScreenCanvas::mousePressEvent(QMouseEvent* event)
 
         // Legacy widgets (only handle if unified widget not shown)
         if (!shouldShowColorAndWidthWidget()) {
-            // Check if clicked on line width widget
-            if (shouldShowLineWidthWidget()) {
-                if (m_lineWidthWidget->contains(event->pos())) {
-                    finalizePolylineForUiClick(event->pos());
-                }
-                if (m_lineWidthWidget->handleMousePress(event->pos())) {
-                    update();
-                    return;
-                }
-            }
-
             // Check if clicked on color palette
             if (shouldShowColorPalette()) {
                 if (m_colorPalette->contains(event->pos())) {
@@ -708,6 +696,18 @@ void ScreenCanvas::mouseMoveEvent(QMouseEvent* event)
     QPoint oldCursorPos = m_cursorPos;
     m_cursorPos = event->pos();
 
+    // Handle toolbar drag
+    if (m_isDraggingToolbar) {
+        QPoint newTopLeft = event->pos() - m_toolbarDragOffset;
+        // Clamp to screen bounds
+        newTopLeft.setX(qBound(0, newTopLeft.x(), width() - m_toolbarRect.width()));
+        newTopLeft.setY(qBound(0, newTopLeft.y(), height() - m_toolbarRect.height()));
+        m_toolbarRect.moveTopLeft(newTopLeft);
+        updateButtonRects();
+        update();
+        return;
+    }
+
     // Handle laser pointer drawing
     if (m_currentToolId == ToolId::LaserPointer && m_laserRenderer->isDrawing()) {
         m_laserRenderer->updateDrawing(event->pos());
@@ -740,19 +740,6 @@ void ScreenCanvas::mouseMoveEvent(QMouseEvent* event)
 
         // Legacy widgets (only handle if unified widget not shown)
         if (!shouldShowColorAndWidthWidget()) {
-            // Handle line width widget drag
-            if (shouldShowLineWidthWidget()) {
-                if (m_lineWidthWidget->handleMouseMove(event->pos(), event->buttons() & Qt::LeftButton)) {
-                    update();
-                    return;
-                }
-                if (m_lineWidthWidget->contains(event->pos())) {
-                    setCursor(Qt::PointingHandCursor);
-                    update();
-                    return;
-                }
-            }
-
             // Update hovered color swatch
             if (shouldShowColorPalette()) {
                 if (m_colorPalette->updateHoveredSwatch(event->pos())) {
@@ -775,6 +762,10 @@ void ScreenCanvas::mouseMoveEvent(QMouseEvent* event)
         // Always update cursor based on current state
         if (m_hoveredButton >= 0) {
             setCursor(Qt::PointingHandCursor);
+        }
+        else if (m_toolbarRect.contains(event->pos())) {
+            // Hovering over toolbar but not on a button - show drag cursor
+            setCursor(Qt::OpenHandCursor);
         }
         else if (widgetHovered) {
             setCursor(Qt::PointingHandCursor);
@@ -809,14 +800,20 @@ void ScreenCanvas::mouseMoveEvent(QMouseEvent* event)
 void ScreenCanvas::mouseReleaseEvent(QMouseEvent* event)
 {
     if (event->button() == Qt::LeftButton) {
-        // Handle unified widget release
-        if (shouldShowColorAndWidthWidget() && m_colorAndWidthWidget->handleMouseRelease(event->pos())) {
-            update();
+        // Handle toolbar drag end
+        if (m_isDraggingToolbar) {
+            m_isDraggingToolbar = false;
+            // Restore cursor based on position
+            if (m_toolbarRect.contains(event->pos())) {
+                setCursor(Qt::OpenHandCursor);
+            } else {
+                setCursor(Qt::ArrowCursor);
+            }
             return;
         }
 
-        // Handle line width widget release (legacy)
-        if (!shouldShowColorAndWidthWidget() && shouldShowLineWidthWidget() && m_lineWidthWidget->handleMouseRelease(event->pos())) {
+        // Handle unified widget release
+        if (shouldShowColorAndWidthWidget() && m_colorAndWidthWidget->handleMouseRelease(event->pos())) {
             update();
             return;
         }

@@ -33,7 +33,6 @@
 
 class QScreen;
 class ColorPaletteWidget;
-class LineWidthWidget;
 class ColorAndWidthWidget;
 class ColorPickerDialog;
 class QCloseEvent;
@@ -169,8 +168,7 @@ private:
     void onMoreColorsRequested();
     void syncColorToAllWidgets(const QColor &color);
 
-    // Line width widget helpers (legacy)
-    bool shouldShowLineWidthWidget() const;
+    // Line width callback
     void onLineWidthChanged(int width);
 
     // Step Badge size handling
@@ -270,9 +268,6 @@ private:
     // Color palette
     ColorPaletteWidget *m_colorPalette;
 
-    // Line width widget
-    LineWidthWidget *m_lineWidthWidget;
-
     // Unified color and width widget
     ColorAndWidthWidget *m_colorAndWidthWidget;
 
@@ -280,6 +275,7 @@ private:
     AnnotationLayer *m_annotationLayer;
     ToolManager *m_toolManager;
     ToolbarButton m_currentTool;
+    bool m_showSubToolbar;
     QColor m_annotationColor;
     int m_annotationWidth;
     int m_eraserWidth = 20;  // Separate width for eraser tool (range: 5-100)

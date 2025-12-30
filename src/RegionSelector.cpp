@@ -4,7 +4,6 @@
 #include "ToolbarStyle.h"
 #include "IconRenderer.h"
 #include "ColorPaletteWidget.h"
-#include "LineWidthWidget.h"
 #include "ColorAndWidthWidget.h"
 #include "ColorPickerDialog.h"
 #include "OCRManager.h"
@@ -118,6 +117,7 @@ RegionSelector::RegionSelector(QWidget* parent)
     , m_toolbar(nullptr)
     , m_annotationLayer(nullptr)
     , m_currentTool(ToolbarButton::Selection)
+    , m_showSubToolbar(true)
     , m_annotationColor(Qt::red)  // Will be overwritten by loadAnnotationColor()
     , m_annotationWidth(3)        // Will be overwritten by loadAnnotationWidth()
     , m_isDrawing(false)
@@ -212,14 +212,6 @@ RegionSelector::RegionSelector(QWidget* parent)
         this, &RegionSelector::onColorSelected);
     connect(m_colorPalette, &ColorPaletteWidget::moreColorsRequested,
         this, &RegionSelector::onMoreColorsRequested);
-
-    // Initialize line width widget
-    m_lineWidthWidget = new LineWidthWidget(this);
-    m_lineWidthWidget->setWidthRange(1, 20);
-    m_lineWidthWidget->setCurrentWidth(m_annotationWidth);
-    m_lineWidthWidget->setPreviewColor(m_annotationColor);
-    connect(m_lineWidthWidget, &LineWidthWidget::widthChanged,
-        this, &RegionSelector::onLineWidthChanged);
 
     // Initialize unified color and width widget
     m_colorAndWidthWidget = new ColorAndWidthWidget(this);
@@ -454,6 +446,7 @@ QColor RegionSelector::getToolbarIconColor(int buttonId, bool isActive, bool isH
 bool RegionSelector::shouldShowColorPalette() const
 {
     if (!m_selectionManager->isComplete()) return false;
+    if (!m_showSubToolbar) return false;
     auto it = kToolCapabilities.find(m_currentTool);
     return it != kToolCapabilities.end() && it->second.showInPalette;
 }
@@ -463,7 +456,6 @@ void RegionSelector::syncColorToAllWidgets(const QColor& color)
     m_annotationColor = color;
     AnnotationSettingsManager::instance().saveColor(color);
     m_toolManager->setColor(color);
-    m_lineWidthWidget->setPreviewColor(color);
     m_colorAndWidthWidget->setCurrentColor(color);
     if (m_textEditor->isEditing()) {
         m_textEditor->setColor(color);
@@ -497,16 +489,6 @@ void RegionSelector::onMoreColorsRequested()
     m_colorPickerDialog->show();
     m_colorPickerDialog->raise();
     m_colorPickerDialog->activateWindow();
-}
-
-bool RegionSelector::shouldShowLineWidthWidget() const
-{
-    if (!m_selectionManager->isComplete()) return false;
-
-    // Show for tools that use m_annotationWidth
-    return m_currentTool == ToolbarButton::Pencil ||
-        m_currentTool == ToolbarButton::Arrow ||
-        m_currentTool == ToolbarButton::Shape;
 }
 
 void RegionSelector::onLineWidthChanged(int width)
@@ -557,6 +539,7 @@ int RegionSelector::effectiveCornerRadius() const
 bool RegionSelector::shouldShowColorAndWidthWidget() const
 {
     if (!m_selectionManager->isComplete()) return false;
+    if (!m_showSubToolbar) return false;
     auto it = kToolCapabilities.find(m_currentTool);
     return it != kToolCapabilities.end() && it->second.needsColorOrWidth;
 }
@@ -842,7 +825,8 @@ void RegionSelector::paintEvent(QPaintEvent*)
             drawCurrentAnnotation(painter);
 
             // Update toolbar position and draw
-            m_toolbar->setActiveButton(static_cast<int>(m_currentTool));
+            // Only show active indicator when sub-toolbar is visible
+            m_toolbar->setActiveButton(m_showSubToolbar ? static_cast<int>(m_currentTool) : -1);
             m_toolbar->setViewportWidth(width());
             m_toolbar->setPositionForSelection(selectionRect, height());
             m_toolbar->draw(painter);
@@ -888,20 +872,6 @@ void RegionSelector::paintEvent(QPaintEvent*)
                 }
                 else {
                     m_colorPalette->setVisible(false);
-                }
-
-                // Draw line width widget below color palette (for Pencil tool)
-                if (shouldShowLineWidthWidget()) {
-                    m_lineWidthWidget->setVisible(true);
-                    // Position below color palette if visible, otherwise below toolbar
-                    QRect anchorRect = shouldShowColorPalette()
-                        ? m_colorPalette->boundingRect()
-                        : m_toolbar->boundingRect();
-                    m_lineWidthWidget->updatePosition(anchorRect, false, width());
-                    m_lineWidthWidget->draw(painter);
-                }
-                else {
-                    m_lineWidthWidget->setVisible(false);
                 }
             }
 
@@ -1157,33 +1127,62 @@ void RegionSelector::handleToolbarClick(ToolbarButton button)
 
     switch (button) {
     case ToolbarButton::Selection:
-    case ToolbarButton::Arrow:
-    case ToolbarButton::Pencil:
-    case ToolbarButton::Marker:
-    case ToolbarButton::Shape:
-    case ToolbarButton::Text:
+        // Selection has no sub-toolbar, just switch tool
         m_currentTool = button;
+        m_showSubToolbar = true;
         m_colorAndWidthWidget->setShowSizeSection(false);
         qDebug() << "Tool selected:" << static_cast<int>(button);
         update();
         break;
 
+    case ToolbarButton::Arrow:
+    case ToolbarButton::Pencil:
+    case ToolbarButton::Marker:
+    case ToolbarButton::Shape:
+    case ToolbarButton::Text:
+        if (m_currentTool == button) {
+            // Same tool clicked - toggle sub-toolbar visibility
+            m_showSubToolbar = !m_showSubToolbar;
+        } else {
+            // Different tool - select it and show sub-toolbar
+            m_currentTool = button;
+            m_showSubToolbar = true;
+        }
+        m_colorAndWidthWidget->setShowSizeSection(false);
+        qDebug() << "Tool selected:" << static_cast<int>(button) << "showSubToolbar:" << m_showSubToolbar;
+        update();
+        break;
+
     case ToolbarButton::StepBadge:
-        m_currentTool = button;
-        m_toolManager->setCurrentTool(ToolId::StepBadge);
+        if (m_currentTool == button) {
+            // Same tool clicked - toggle sub-toolbar visibility
+            m_showSubToolbar = !m_showSubToolbar;
+        } else {
+            // Different tool - select it and show sub-toolbar
+            m_currentTool = button;
+            m_toolManager->setCurrentTool(ToolId::StepBadge);
+            m_showSubToolbar = true;
+        }
         // Show size section, hide width section for step badge
         m_colorAndWidthWidget->setShowSizeSection(true);
         m_colorAndWidthWidget->setShowWidthSection(false);
         m_colorAndWidthWidget->setStepBadgeSize(m_stepBadgeSize);
         // Set width to radius for tool context
         m_toolManager->setWidth(StepBadgeAnnotation::radiusForSize(m_stepBadgeSize));
-        qDebug() << "StepBadge tool selected";
+        qDebug() << "StepBadge tool selected, showSubToolbar:" << m_showSubToolbar;
         update();
         break;
 
     case ToolbarButton::Mosaic:
-        m_currentTool = button;
-        m_toolManager->setCurrentTool(ToolId::Mosaic);
+        if (m_currentTool == button) {
+            // Same tool clicked - toggle sub-toolbar visibility
+            m_showSubToolbar = !m_showSubToolbar;
+        } else {
+            // Different tool - select it and show sub-toolbar
+            m_currentTool = button;
+            m_toolManager->setCurrentTool(ToolId::Mosaic);
+            m_showSubToolbar = true;
+        }
         // Use shared WidthSection for Mosaic (synced with other tools)
         m_colorAndWidthWidget->setShowWidthSection(true);
         m_colorAndWidthWidget->setWidthSectionHidden(false);
@@ -1193,12 +1192,14 @@ void RegionSelector::handleToolbarClick(ToolbarButton button)
         m_colorAndWidthWidget->setShowSizeSection(false);
         // Mosaic tool doesn't use color, hide color section
         m_colorAndWidthWidget->setShowColorSection(false);
-        qDebug() << "Mosaic tool selected";
+        qDebug() << "Mosaic tool selected, showSubToolbar:" << m_showSubToolbar;
         update();
         break;
 
     case ToolbarButton::Eraser:
+        // Eraser has no sub-toolbar, just switch tool
         m_currentTool = button;
+        m_showSubToolbar = true;
         m_toolManager->setCurrentTool(ToolId::Eraser);
         m_toolManager->setWidth(m_eraserWidth);
         qDebug() << "Eraser tool selected - drag over annotations to erase them";
@@ -1453,17 +1454,6 @@ void RegionSelector::mousePressEvent(QMouseEvent* event)
                         return;
                     }
                 }
-
-                // Check if clicked on line width widget
-                if (shouldShowLineWidthWidget()) {
-                    if (m_lineWidthWidget->contains(event->pos())) {
-                        finalizePolylineForUiClick(event->pos());
-                    }
-                    if (m_lineWidthWidget->handleMousePress(event->pos())) {
-                        update();
-                        return;
-                    }
-                }
             }
 
             // Check if clicking on gizmo handle of currently selected text annotation
@@ -1681,7 +1671,6 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
     }
     else if (m_selectionManager->isComplete()) {
         bool colorPaletteHovered = false;
-        bool lineWidthHovered = false;
         bool unifiedWidgetHovered = false;
         bool textAnnotationHovered = false;
         bool gizmoHandleHovered = false;
@@ -1748,17 +1737,6 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
                     colorPaletteHovered = true;
                 }
             }
-
-            // Update line width widget (handle dragging and hover)
-            if (shouldShowLineWidthWidget()) {
-                if (m_lineWidthWidget->handleMouseMove(event->pos(), event->buttons() & Qt::LeftButton)) {
-                    update();
-                }
-                if (m_lineWidthWidget->contains(event->pos())) {
-                    setCursor(Qt::PointingHandCursor);
-                    lineWidthHovered = true;
-                }
-            }
         }
 
         // Update hovered button using toolbar widget
@@ -1768,8 +1746,8 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
             if (hoveredButton >= 0) {
                 setCursor(Qt::PointingHandCursor);
             }
-            else if (colorPaletteHovered || lineWidthHovered || unifiedWidgetHovered || textAnnotationHovered || gizmoHandleHovered || radiusSliderHovered) {
-                // Already set cursor for color swatch, line width widget, unified widget, text annotation, gizmo handle, or radius slider
+            else if (colorPaletteHovered || unifiedWidgetHovered || textAnnotationHovered || gizmoHandleHovered || radiusSliderHovered) {
+                // Already set cursor for color swatch, unified widget, text annotation, gizmo handle, or radius slider
             }
             else if (m_currentTool == ToolbarButton::Selection) {
                 // Selection tool: update cursor based on handle position
@@ -1786,7 +1764,7 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
             // Hand cursor for entire toolbar area (including gaps between buttons)
             setCursor(Qt::PointingHandCursor);
         }
-        else if (!colorPaletteHovered && !lineWidthHovered && !unifiedWidgetHovered && !textAnnotationHovered && !gizmoHandleHovered && !radiusSliderHovered) {
+        else if (!colorPaletteHovered && !unifiedWidgetHovered && !textAnnotationHovered && !gizmoHandleHovered && !radiusSliderHovered) {
             // Update cursor based on current tool
             if (m_currentTool == ToolbarButton::Selection) {
                 auto handle = m_selectionManager->hitTestHandle(event->pos());
@@ -1923,9 +1901,6 @@ void RegionSelector::mouseReleaseEvent(QMouseEvent* event)
             update();
         }
         else if (shouldShowColorAndWidthWidget() && m_colorAndWidthWidget->handleMouseRelease(event->pos())) {
-            update();
-        }
-        else if (!shouldShowColorAndWidthWidget() && shouldShowLineWidthWidget() && m_lineWidthWidget->handleMouseRelease(event->pos())) {
             update();
         }
     }

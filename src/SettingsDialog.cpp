@@ -1,4 +1,5 @@
 #include "SettingsDialog.h"
+#include "version.h"
 #include "AutoLaunchManager.h"
 #include "WatermarkRenderer.h"
 #include "capture/IAudioCaptureEngine.h"
@@ -70,7 +71,7 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     , m_dateFormatCombo(nullptr)
     , m_filenamePreviewLabel(nullptr)
 {
-    setWindowTitle("SnapTray Settings");
+    setWindowTitle(QString("%1 Settings").arg(SNAPTRAY_APP_NAME));
     setMinimumSize(520, 480);
     setupUi();
 

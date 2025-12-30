@@ -18,7 +18,6 @@ class AnnotationLayer;
 class ToolManager;
 class ColorPaletteWidget;
 class ColorPickerDialog;
-class LineWidthWidget;
 class ColorAndWidthWidget;
 class LaserPointerRenderer;
 class ClickRippleRenderer;
@@ -92,6 +91,7 @@ private:
     QString getIconKeyForButton(CanvasButton button) const;
     void renderIcon(QPainter &painter, const QRect &rect, CanvasButton button, const QColor &color);
     void updateToolbarPosition();
+    void updateButtonRects();
     int getButtonAtPosition(const QPoint &pos);
     void handleToolbarClick(CanvasButton button);
     QString getButtonTooltip(int buttonIndex);
@@ -102,8 +102,7 @@ private:
     void onColorSelected(const QColor &color);
     void onMoreColorsRequested();
 
-    // Line width helpers (legacy)
-    bool shouldShowLineWidthWidget() const;
+    // Line width callback
     void onLineWidthChanged(int width);
 
     // Unified color and width widget helpers
@@ -132,6 +131,9 @@ private:
     QRect m_toolbarRect;
     int m_hoveredButton;
     QVector<QRect> m_buttonRects;
+    bool m_isDraggingToolbar;
+    QPoint m_toolbarDragOffset;
+    bool m_showSubToolbar;
 
     static const int TOOLBAR_HEIGHT = 32;
     static const int BUTTON_WIDTH = 28;
@@ -139,9 +141,6 @@ private:
 
     // Color palette
     ColorPaletteWidget *m_colorPalette;
-
-    // Line width widget
-    LineWidthWidget *m_lineWidthWidget;
 
     // Unified color and width widget
     ColorAndWidthWidget *m_colorAndWidthWidget;

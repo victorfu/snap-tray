@@ -25,13 +25,6 @@ include(CTest)
 # ============================================================================
 # Version Configuration
 # ============================================================================
-# Generate version header for C++ code
-configure_file(
-    "${CMAKE_SOURCE_DIR}/cmake/version.h.in"
-    "${CMAKE_BINARY_DIR}/generated/version.h"
-    @ONLY
-)
-
 # Differentiate Debug builds for separate permissions on macOS
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(APP_DISPLAY_NAME "SnapTray-Debug")
@@ -40,6 +33,13 @@ else()
     set(APP_DISPLAY_NAME "SnapTray")
     set(APP_BUNDLE_ID "com.victorfu.snaptray")
 endif()
+
+# Generate version header for C++ code
+configure_file(
+    "${CMAKE_SOURCE_DIR}/cmake/version.h.in"
+    "${CMAKE_BINARY_DIR}/generated/version.h"
+    @ONLY
+)
 
 # Platform-specific version file generation
 if(APPLE)
