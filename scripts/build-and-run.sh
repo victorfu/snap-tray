@@ -19,7 +19,7 @@ fi
 echo "Building all targets..."
 cmake --build build --parallel
 
-# Run
+# Run (Debug builds use SnapTray-Debug.app)
 echo ""
 echo "Launching SnapTray in foreground..."
-"$BUILD_DIR/bin/SnapTray.app/Contents/MacOS/SnapTray"
+"$BUILD_DIR/bin/SnapTray-Debug.app/Contents/MacOS/SnapTray-Debug"
