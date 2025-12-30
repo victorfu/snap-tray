@@ -4,26 +4,28 @@ A Qt6-based screenshot and screen recording application for Windows and macOS.
 
 ## Build Instructions
 
+**Development Rule:** Always use `Debug` build type during development (both macOS and Windows). Only use `Release` for final testing and distribution.
+
 ### Windows
 
 **Important:** On Windows, use `cmd.exe` to execute build commands. Do not use bash-style `cd` syntax.
 
 ```batch
 # Configure (from project root)
-cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug
 
 # Build
-cmake --build build
+cmake --build build --parallel
 ```
 
 ### macOS
 
 ```bash
 # Configure
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$(brew --prefix qt)"
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH="$(brew --prefix qt)"
 
 # Build
-cmake --build build
+cmake --build build --parallel
 ```
 
 ### Running Tests
@@ -65,16 +67,18 @@ cd build && ctest --output-on-failure
 
 The codebase follows a modular architecture. When refactoring, prefer extracting components:
 
-| Component | Location | Responsibility |
-|-----------|----------|----------------|
-| `MagnifierPanel` | `src/region/` | Magnifier rendering and caching |
-| `UpdateThrottler` | `src/region/` | Event throttling logic |
-| `TextAnnotationEditor` | `src/region/` | Text annotation editing/transformation |
-| `SelectionStateManager` | `src/region/` | Selection state and operations |
-| `AnnotationSettingsManager` | `src/settings/` | Centralized annotation settings |
-| `ImageTransformer` | `src/pinwindow/` | Image rotation/flip/scale |
-| `ResizeHandler` | `src/pinwindow/` | Window edge resize |
-| `UIIndicators` | `src/pinwindow/` | Scale/opacity/click-through indicators |
+| Component                   | Location         | Responsibility                         |
+| --------------------------- | ---------------- | -------------------------------------- |
+| `MagnifierPanel`            | `src/region/`    | Magnifier rendering and caching        |
+| `UpdateThrottler`           | `src/region/`    | Event throttling logic                 |
+| `TextAnnotationEditor`      | `src/region/`    | Text annotation editing/transformation |
+| `SelectionStateManager`     | `src/region/`    | Selection state and operations         |
+| `RadiusSliderWidget`        | `src/region/`    | Radius slider control for tools        |
+| `AnnotationSettingsManager` | `src/settings/`  | Centralized annotation settings        |
+| `ImageTransformer`          | `src/pinwindow/` | Image rotation/flip/scale              |
+| `ResizeHandler`             | `src/pinwindow/` | Window edge resize                     |
+| `UIIndicators`              | `src/pinwindow/` | Scale/opacity/click-through indicators |
+| `ClickThroughExitButton`    | `src/pinwindow/` | Exit button for click-through mode     |
 
 ### Data-Driven Patterns
 
@@ -126,28 +130,10 @@ The UI follows macOS Human Interface Guidelines with a glass/frosted effect. Use
 
 #### Core Components
 
-| Component | Location | Responsibility |
-|-----------|----------|----------------|
-| `GlassRenderer` | `src/GlassRenderer.cpp` | Static utility for drawing glass panels |
-| `ToolbarStyleConfig` | `include/ToolbarStyle.h` | Theme configuration (Dark/Light) |
-
-#### Glass Effect Layers
-
-Glass panels are composed of 4 layers (drawn in order):
-
-1. **Multi-layer Shadow** - Soft shadow extending downward (macOS floating style)
-2. **Glass Background** - Semi-transparent gradient (top slightly brighter)
-3. **Hairline Border** - 1px low-opacity border for definition
-4. **Inner Highlight** - Top edge glow for depth effect
-
-#### Color Tokens
-
-| Token | Light Theme | Dark Theme | Usage |
-|-------|-------------|------------|-------|
-| `glassBackgroundColor` | `rgba(255,255,255,0.85)` | `rgba(40,40,40,0.90)` | Panel background |
-| `hairlineBorderColor` | `rgba(0,0,0,0.08)` | `rgba(255,255,255,0.10)` | Subtle borders |
-| `glassHighlightColor` | `rgba(255,255,255,0.50)` | `rgba(255,255,255,0.05)` | Top edge glow |
-| `shadowColor` | `rgba(0,0,0,0.15)` | `rgba(0,0,0,0.40)` | Drop shadow |
+| Component            | Location                 | Responsibility                          |
+| -------------------- | ------------------------ | --------------------------------------- |
+| `GlassRenderer`      | `src/GlassRenderer.cpp`  | Static utility for drawing glass panels |
+| `ToolbarStyleConfig` | `include/ToolbarStyle.h` | Theme configuration (Dark/Light)        |
 
 #### Usage
 
@@ -210,9 +196,13 @@ When refactoring large files:
 
 ## Test Coverage
 
-| Component | Test Count |
-|-----------|------------|
-| ColorAndWidthWidget | 87 |
-| PinWindow | 49 |
-| RegionSelector | 74 |
-| **Total** | **210** |
+| Component           | Test Count |
+| ------------------- | ---------- |
+| ColorAndWidthWidget | 113        |
+| RegionSelector      | 108        |
+| RecordingManager    | 58         |
+| Encoding            | 43         |
+| Detection           | 42         |
+| PinWindow           | 24         |
+| Audio               | 23         |
+| **Total**           | **411**    |
