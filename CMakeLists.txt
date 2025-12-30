@@ -518,6 +518,11 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
     $<$<NOT:$<CONFIG:Debug>>:QT_NO_DEBUG_OUTPUT>
 )
 
+# Enable development features only in Debug builds
+target_compile_definitions(${PROJECT_NAME} PRIVATE
+    $<$<CONFIG:Debug>:SNAPTRAY_ENABLE_DEV_FEATURES>
+)
+
 # macOS frameworks needed for window detection, auto-launch, and native encoding
 if(APPLE)
     find_library(COREGRAPHICS_FRAMEWORK CoreGraphics)

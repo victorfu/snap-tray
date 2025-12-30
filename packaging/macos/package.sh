@@ -53,8 +53,11 @@ cmake -S "$PROJECT_ROOT" -B "$BUILD_DIR" \
     -DCMAKE_PREFIX_PATH="$QT_PREFIX"
 cmake --build "$BUILD_DIR" --config Release --parallel
 
+# App is built in bin/ subdirectory
+APP_PATH="$BUILD_DIR/bin/${APP_NAME}.app"
+
 # Check if app was built
-if [ ! -d "$BUILD_DIR/${APP_NAME}.app" ]; then
+if [ ! -d "$APP_PATH" ]; then
     echo -e "${RED}Error: Build failed - ${APP_NAME}.app not found${NC}"
     exit 1
 fi
@@ -62,7 +65,7 @@ fi
 # Step 2: Run macdeployqt
 echo ""
 echo -e "${YELLOW}[2/5] Running macdeployqt...${NC}"
-"$QT_PREFIX/bin/macdeployqt" "$BUILD_DIR/${APP_NAME}.app" -verbose=1
+"$QT_PREFIX/bin/macdeployqt" "$APP_PATH" -verbose=1
 
 # Step 3: Code signing
 echo ""
@@ -72,22 +75,22 @@ if [ -n "$CODESIGN_IDENTITY" ]; then
     codesign --force --deep --sign "$CODESIGN_IDENTITY" \
         --options runtime \
         --entitlements "$SCRIPT_DIR/entitlements.plist" \
-        "$BUILD_DIR/${APP_NAME}.app"
+        "$APP_PATH"
 else
     echo "Using ad-hoc signing (no Developer ID configured)"
     codesign --force --deep --sign - \
         --options runtime \
         --entitlements "$SCRIPT_DIR/entitlements.plist" \
-        "$BUILD_DIR/${APP_NAME}.app"
+        "$APP_PATH"
 fi
 
 echo "Verifying signature..."
-codesign --verify --verbose "$BUILD_DIR/${APP_NAME}.app"
+codesign --verify --verbose "$APP_PATH"
 echo -e "${GREEN}Signature verified${NC}"
 
 # Remove quarantine attribute to prevent Gatekeeper issues
 echo "Removing quarantine attributes..."
-xattr -cr "$BUILD_DIR/${APP_NAME}.app"
+xattr -cr "$APP_PATH"
 
 # Step 4: Create DMG
 echo ""
@@ -109,11 +112,11 @@ if command -v create-dmg &> /dev/null; then
         --hide-extension "${APP_NAME}.app" \
         --app-drop-link 450 185 \
         "$OUTPUT_DIR/${DMG_NAME}.dmg" \
-        "$BUILD_DIR/${APP_NAME}.app" 2>/dev/null || {
+        "$APP_PATH" 2>/dev/null || {
             # Fallback if create-dmg fails
             echo "create-dmg failed, falling back to hdiutil..."
             hdiutil create -volname "$APP_NAME" \
-                -srcfolder "$BUILD_DIR/${APP_NAME}.app" \
+                -srcfolder "$APP_PATH" \
                 -ov -format UDZO \
                 "$OUTPUT_DIR/${DMG_NAME}.dmg"
         }
@@ -121,7 +124,7 @@ else
     # Fallback to hdiutil
     echo "Using hdiutil (install create-dmg for prettier output: brew install create-dmg)"
     hdiutil create -volname "$APP_NAME" \
-        -srcfolder "$BUILD_DIR/${APP_NAME}.app" \
+        -srcfolder "$APP_PATH" \
         -ov -format UDZO \
         "$OUTPUT_DIR/${DMG_NAME}.dmg"
 fi

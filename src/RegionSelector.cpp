@@ -386,7 +386,9 @@ void RegionSelector::setupToolbarButtons()
         buttons.append({ static_cast<int>(ToolbarButton::OCR), "ocr", "OCR Text Recognition", false });
     }
     buttons.append({ static_cast<int>(ToolbarButton::Record), "record", "Screen Recording (R)", false });
+#ifdef SNAPTRAY_ENABLE_DEV_FEATURES
     buttons.append({ static_cast<int>(ToolbarButton::ScrollCapture), "scroll-capture", "Scrolling Capture (S)", false });
+#endif
     buttons.append({ static_cast<int>(ToolbarButton::Pin), "pin", "Pin to Screen (Enter)", false });
     buttons.append({ static_cast<int>(ToolbarButton::Save), "save", "Save (Ctrl+S)", false });
     buttons.append({ static_cast<int>(ToolbarButton::Copy), "copy", "Copy (Ctrl+C)", false });
@@ -2033,11 +2035,13 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
             handleToolbarClick(ToolbarButton::Record);
         }
     }
+#ifdef SNAPTRAY_ENABLE_DEV_FEATURES
     else if (event->key() == Qt::Key_S && !event->modifiers()) {
         if (m_selectionManager->isComplete()) {
             handleToolbarClick(ToolbarButton::ScrollCapture);
         }
     }
+#endif
     else if (event->key() == Qt::Key_Shift && !m_selectionManager->isComplete()) {
         // Switch RGB/HEX color format display (only when magnifier is shown)
         m_magnifierPanel->toggleColorFormat();
