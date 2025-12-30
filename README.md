@@ -97,71 +97,66 @@ SnapTray currently supports macOS and Windows only.
 
 ## Build & Run
 
-### Running Tests
+### Debug Build (Development)
 
-```bash
-# Configure and build
-cmake -S . -B build -DCMAKE_PREFIX_PATH="$(brew --prefix qt)"
-cmake --build build
-
-# Run all tests
-cd build && ctest --output-on-failure
-
-# Or run individual test suites
-./build/tests/ColorAndWidthWidget_State
-./build/tests/ColorAndWidthWidget_Signals
-./build/tests/ColorAndWidthWidget_HitTest
-./build/tests/ColorAndWidthWidget_Events
-```
-
-### Development Build (Debug)
+Use Debug build during development for better debugging experience.
 
 **macOS:**
 ```bash
-cmake -S . -B build -DCMAKE_PREFIX_PATH="$(brew --prefix qt)"
-cmake --build build
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH="$(brew --prefix qt)"
+cmake --build build --parallel
 open build/SnapTray.app
 ```
 
 **Windows:**
 ```batch
 # Step 1: Configure (replace with your Qt path)
-cmake -S . -B build -DCMAKE_PREFIX_PATH=C:/Qt/6.x/msvc2022_64
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH=C:/Qt/6.x/msvc2022_64
 
 # Step 2: Build
-cmake --build build
+cmake --build build --parallel
 
 # Step 3: Deploy Qt dependencies (required to run the executable)
-# Replace with your Qt installation path
-C:\Qt\6.x\msvc2022_64\bin\windeployqt.exe build\SnapTray.exe
+C:\Qt\6.x\msvc2022_64\bin\windeployqt.exe build\bin\SnapTray.exe
 
 # Step 4: Run
-build\SnapTray.exe
+build\bin\SnapTray.exe
 ```
 
 **Note:** Windows development builds require running `windeployqt` to copy Qt runtime DLLs (Qt6Core.dll, qwindows.dll platform plugin, etc.) alongside the executable. This step is automated in the packaging script for release builds.
 
-### Release Build
+### Release Build (Production Testing)
+
+Use Release build to test production behavior before packaging.
 
 **macOS:**
 ```bash
-cmake -S . -B release -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$(brew --prefix qt)"
-cmake --build release
-# Output: release/SnapTray.app
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$(brew --prefix qt)"
+cmake --build build --parallel
+# Output: build/SnapTray.app
 ```
 
 **Windows:**
 ```batch
-cmake -S . -B release -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=C:/Qt/6.x/msvc2022_64
-cmake --build release --config Release
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=C:/Qt/6.x/msvc2022_64
+cmake --build build --parallel
 
 # Deploy Qt dependencies
-C:\Qt\6.x\msvc2022_64\bin\windeployqt.exe --release release\Release\SnapTray.exe
+C:\Qt\6.x\msvc2022_64\bin\windeployqt.exe --release build\bin\SnapTray.exe
 
-# Output: release\Release\SnapTray.exe
+# Output: build\bin\SnapTray.exe
 ```
 
 **Note:** For distribution, use the packaging scripts (see below) which automate the deployment process.
+
+### Running Tests
+
+```bash
+# Build and run all tests
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH="$(brew --prefix qt)"
+cmake --build build --parallel
+cd build && ctest --output-on-failure
+```
 
 ### Packaging
 

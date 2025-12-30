@@ -12,12 +12,12 @@ cd "$PROJECT_DIR"
 # Configure if needed
 if [ ! -f "$BUILD_DIR/CMakeCache.txt" ]; then
     echo "Configuring project..."
-    cmake -S . -B build -DCMAKE_PREFIX_PATH="$(brew --prefix qt)"
+    cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH="$(brew --prefix qt)"
 fi
 
 # Build test targets
 echo "Building tests..."
-cmake --build build --target ColorAndWidthWidget_State ColorAndWidthWidget_Signals ColorAndWidthWidget_HitTest ColorAndWidthWidget_Events
+cmake --build build --parallel --target ColorAndWidthWidget_State ColorAndWidthWidget_Signals ColorAndWidthWidget_HitTest ColorAndWidthWidget_Events
 
 # Run tests
 echo ""

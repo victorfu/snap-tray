@@ -12,12 +12,12 @@ cd /d "%PROJECT_DIR%"
 REM Configure if needed
 if not exist "%BUILD_DIR%\CMakeCache.txt" (
     echo Configuring project...
-    cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+    cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug
 )
 
 REM Build test targets
 echo Building tests...
-cmake --build build --target ColorAndWidthWidget_State ColorAndWidthWidget_Signals ColorAndWidthWidget_HitTest ColorAndWidthWidget_Events
+cmake --build build --parallel --target ColorAndWidthWidget_State ColorAndWidthWidget_Signals ColorAndWidthWidget_HitTest ColorAndWidthWidget_Events
 
 REM Run tests
 echo.

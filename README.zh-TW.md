@@ -97,71 +97,66 @@ SnapTray 是一個在系統托盤常駐的截圖與錄影小工具，提供區�
 
 ## 建置與執行
 
-### 執行測試
+### Debug 建置（開發用）
 
-```bash
-# 設定並建置
-cmake -S . -B build -DCMAKE_PREFIX_PATH="$(brew --prefix qt)"
-cmake --build build
-
-# 執行所有測試
-cd build && ctest --output-on-failure
-
-# 或執行個別測試套件
-./build/tests/ColorAndWidthWidget_State
-./build/tests/ColorAndWidthWidget_Signals
-./build/tests/ColorAndWidthWidget_HitTest
-./build/tests/ColorAndWidthWidget_Events
-```
-
-### 開發版本（Debug）
+開發時使用 Debug 建置以獲得更好的除錯體驗。
 
 **macOS：**
 ```bash
-cmake -S . -B build -DCMAKE_PREFIX_PATH="$(brew --prefix qt)"
-cmake --build build
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH="$(brew --prefix qt)"
+cmake --build build --parallel
 open build/SnapTray.app
 ```
 
 **Windows：**
 ```batch
 # 步驟 1：設定（請替換為你的 Qt 路徑）
-cmake -S . -B build -DCMAKE_PREFIX_PATH=C:/Qt/6.x/msvc2022_64
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH=C:/Qt/6.x/msvc2022_64
 
 # 步驟 2：建置
-cmake --build build
+cmake --build build --parallel
 
 # 步驟 3：部署 Qt 相依套件（執行程式所需）
-# 請替換為你的 Qt 安裝路徑
-C:\Qt\6.x\msvc2022_64\bin\windeployqt.exe build\SnapTray.exe
+C:\Qt\6.x\msvc2022_64\bin\windeployqt.exe build\bin\SnapTray.exe
 
 # 步驟 4：執行
-build\SnapTray.exe
+build\bin\SnapTray.exe
 ```
 
 **注意：** Windows 開發版本需要執行 `windeployqt` 來複製 Qt 執行時期 DLL 檔案（Qt6Core.dll、qwindows.dll 平台外掛等）到執行檔旁。此步驟在打包腳本中已針對正式版本自動化。
 
-### 正式版本（Release）
+### Release 建置（正式環境測試）
+
+在打包前使用 Release 建置測試正式環境行為。
 
 **macOS：**
 ```bash
-cmake -S . -B release -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$(brew --prefix qt)"
-cmake --build release
-# 產物：release/SnapTray.app
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$(brew --prefix qt)"
+cmake --build build --parallel
+# 產物：build/SnapTray.app
 ```
 
 **Windows：**
 ```batch
-cmake -S . -B release -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=C:/Qt/6.x/msvc2022_64
-cmake --build release --config Release
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=C:/Qt/6.x/msvc2022_64
+cmake --build build --parallel
 
 # 部署 Qt 相依套件
-C:\Qt\6.x\msvc2022_64\bin\windeployqt.exe --release release\Release\SnapTray.exe
+C:\Qt\6.x\msvc2022_64\bin\windeployqt.exe --release build\bin\SnapTray.exe
 
-# 產物：release\Release\SnapTray.exe
+# 產物：build\bin\SnapTray.exe
 ```
 
 **注意：** 若要發佈，請使用打包腳本（見下方），其已自動化部署流程。
+
+### 執行測試
+
+```bash
+# 建置並執行所有測試
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH="$(brew --prefix qt)"
+cmake --build build --parallel
+cd build && ctest --output-on-failure
+```
 
 ### 打包安裝檔
 

@@ -4,38 +4,58 @@ A Qt6-based screenshot and screen recording application for Windows and macOS.
 
 ## Build Instructions
 
-**Development Rule:** Always use `Debug` build type during development (both macOS and Windows). Only use `Release` for final testing and distribution.
+**Windows**: Use `cmd.exe` to execute build commands, not bash.
 
-### Windows
+### Debug Build (Development)
 
-**Important:** On Windows, use `cmd.exe` to execute build commands. Do not use bash-style `cd` syntax.
+Use Debug build during development for better debugging experience.
 
+**Windows**:
 ```batch
-# Configure (from project root)
 cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug
-
-# Build
 cmake --build build --parallel
 ```
 
-### macOS
-
+**macOS**:
 ```bash
-# Configure
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH="$(brew --prefix qt)"
-
-# Build
 cmake --build build --parallel
+```
+
+### Release Build (Production Testing)
+
+Use Release build to test production behavior before packaging.
+
+**Windows**:
+```batch
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+cmake --build build --parallel
+```
+
+**macOS**:
+```bash
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$(brew --prefix qt)"
+cmake --build build --parallel
+```
+
+### Packaging (Release)
+
+Use the packaging scripts in `packaging/` for distribution builds (automatically uses Release):
+
+**macOS** - Creates signed DMG:
+```bash
+./packaging/macos/package.sh
+```
+
+**Windows** - Creates NSIS installer:
+```batch
+packaging\windows\package.bat
 ```
 
 ### Running Tests
 
 ```bash
-# Run all tests
 cd build && ctest --output-on-failure
-
-# Run specific test
-./build/RegionSelector_SelectionStateManager
 ```
 
 ### Prerequisites
