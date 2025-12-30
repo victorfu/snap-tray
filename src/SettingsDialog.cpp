@@ -3,7 +3,10 @@
 #include "WatermarkRenderer.h"
 #include "capture/IAudioCaptureEngine.h"
 #include "settings/Settings.h"
+#include "settings/FileSettingsManager.h"
+#include "settings/PinWindowSettingsManager.h"
 #include "detection/AutoBlurManager.h"
+#include <QDir>
 
 #include <QKeySequenceEdit>
 #include <QSettings>
@@ -53,6 +56,19 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     , m_recordingQualityLabel(nullptr)
     , m_gifSettingsWidget(nullptr)
     , m_gifInfoLabel(nullptr)
+    , m_pinWindowOpacitySlider(nullptr)
+    , m_pinWindowOpacityLabel(nullptr)
+    , m_pinWindowOpacityStepSlider(nullptr)
+    , m_pinWindowOpacityStepLabel(nullptr)
+    , m_pinWindowZoomStepSlider(nullptr)
+    , m_pinWindowZoomStepLabel(nullptr)
+    , m_screenshotPathEdit(nullptr)
+    , m_screenshotPathBrowseBtn(nullptr)
+    , m_recordingPathEdit(nullptr)
+    , m_recordingPathBrowseBtn(nullptr)
+    , m_filenamePrefixEdit(nullptr)
+    , m_dateFormatCombo(nullptr)
+    , m_filenamePreviewLabel(nullptr)
 {
     setWindowTitle("SnapTray Settings");
     setMinimumSize(520, 480);
@@ -91,6 +107,11 @@ void SettingsDialog::setupUi()
     QWidget *recordingTab = new QWidget();
     setupRecordingTab(recordingTab);
     m_tabWidget->addTab(recordingTab, "Recording");
+
+    // Tab 5: Files
+    QWidget *filesTab = new QWidget();
+    setupFilesTab(filesTab);
+    m_tabWidget->addTab(filesTab, "Files");
 
     mainLayout->addWidget(m_tabWidget);
 
@@ -196,6 +217,68 @@ void SettingsDialog::setupGeneralTab(QWidget *tab)
     m_autoBlurFacesCheckbox->setEnabled(blurOptions.enabled);
     m_blurIntensitySlider->setEnabled(blurOptions.enabled);
     m_blurTypeCombo->setEnabled(blurOptions.enabled);
+
+    // ========== Pin Window Section ==========
+    layout->addSpacing(16);
+    QLabel *pinWindowLabel = new QLabel("Pin Window", tab);
+    pinWindowLabel->setStyleSheet("font-weight: bold; font-size: 12px;");
+    layout->addWidget(pinWindowLabel);
+
+    auto& pinSettings = PinWindowSettingsManager::instance();
+
+    // Default opacity slider
+    QHBoxLayout *opacityLayout = new QHBoxLayout();
+    QLabel *opacityLabel = new QLabel("Default opacity:", tab);
+    opacityLabel->setFixedWidth(120);
+    m_pinWindowOpacitySlider = new QSlider(Qt::Horizontal, tab);
+    m_pinWindowOpacitySlider->setRange(10, 100);
+    int currentOpacity = static_cast<int>(pinSettings.loadDefaultOpacity() * 100);
+    m_pinWindowOpacitySlider->setValue(currentOpacity);
+    m_pinWindowOpacityLabel = new QLabel(QString("%1%").arg(currentOpacity), tab);
+    m_pinWindowOpacityLabel->setFixedWidth(40);
+    connect(m_pinWindowOpacitySlider, &QSlider::valueChanged, this, [this](int value) {
+        m_pinWindowOpacityLabel->setText(QString("%1%").arg(value));
+    });
+    opacityLayout->addWidget(opacityLabel);
+    opacityLayout->addWidget(m_pinWindowOpacitySlider);
+    opacityLayout->addWidget(m_pinWindowOpacityLabel);
+    layout->addLayout(opacityLayout);
+
+    // Opacity step slider
+    QHBoxLayout *opacityStepLayout = new QHBoxLayout();
+    QLabel *opacityStepLabel = new QLabel("Opacity step:", tab);
+    opacityStepLabel->setFixedWidth(120);
+    m_pinWindowOpacityStepSlider = new QSlider(Qt::Horizontal, tab);
+    m_pinWindowOpacityStepSlider->setRange(1, 20);
+    int currentOpacityStep = static_cast<int>(pinSettings.loadOpacityStep() * 100);
+    m_pinWindowOpacityStepSlider->setValue(currentOpacityStep);
+    m_pinWindowOpacityStepLabel = new QLabel(QString("%1%").arg(currentOpacityStep), tab);
+    m_pinWindowOpacityStepLabel->setFixedWidth(40);
+    connect(m_pinWindowOpacityStepSlider, &QSlider::valueChanged, this, [this](int value) {
+        m_pinWindowOpacityStepLabel->setText(QString("%1%").arg(value));
+    });
+    opacityStepLayout->addWidget(opacityStepLabel);
+    opacityStepLayout->addWidget(m_pinWindowOpacityStepSlider);
+    opacityStepLayout->addWidget(m_pinWindowOpacityStepLabel);
+    layout->addLayout(opacityStepLayout);
+
+    // Zoom step slider
+    QHBoxLayout *zoomStepLayout = new QHBoxLayout();
+    QLabel *zoomStepLabel = new QLabel("Zoom step:", tab);
+    zoomStepLabel->setFixedWidth(120);
+    m_pinWindowZoomStepSlider = new QSlider(Qt::Horizontal, tab);
+    m_pinWindowZoomStepSlider->setRange(1, 20);
+    int currentZoomStep = static_cast<int>(pinSettings.loadZoomStep() * 100);
+    m_pinWindowZoomStepSlider->setValue(currentZoomStep);
+    m_pinWindowZoomStepLabel = new QLabel(QString("%1%").arg(currentZoomStep), tab);
+    m_pinWindowZoomStepLabel->setFixedWidth(40);
+    connect(m_pinWindowZoomStepSlider, &QSlider::valueChanged, this, [this](int value) {
+        m_pinWindowZoomStepLabel->setText(QString("%1%").arg(value));
+    });
+    zoomStepLayout->addWidget(zoomStepLabel);
+    zoomStepLayout->addWidget(m_pinWindowZoomStepSlider);
+    zoomStepLayout->addWidget(m_pinWindowZoomStepLabel);
+    layout->addLayout(zoomStepLayout);
 
     layout->addStretch();
 }
@@ -748,6 +831,19 @@ void SettingsDialog::onSave()
                                : AutoBlurManager::BlurType::Pixelate;
     AutoBlurManager::saveSettings(blurOptions);
 
+    // Save Pin Window settings
+    auto& pinSettings = PinWindowSettingsManager::instance();
+    pinSettings.saveDefaultOpacity(m_pinWindowOpacitySlider->value() / 100.0);
+    pinSettings.saveOpacityStep(m_pinWindowOpacityStepSlider->value() / 100.0);
+    pinSettings.saveZoomStep(m_pinWindowZoomStepSlider->value() / 100.0);
+
+    // Save file settings
+    auto& fileSettings = FileSettingsManager::instance();
+    fileSettings.saveScreenshotPath(m_screenshotPathEdit->text());
+    fileSettings.saveRecordingPath(m_recordingPathEdit->text());
+    fileSettings.saveFilenamePrefix(m_filenamePrefixEdit->text());
+    fileSettings.saveDateFormat(m_dateFormatCombo->currentData().toString());
+
     // Save toolbar style setting
     ToolbarStyleType newStyle = static_cast<ToolbarStyleType>(
         m_toolbarStyleCombo->currentData().toInt());
@@ -893,4 +989,126 @@ void SettingsDialog::onAudioSourceChanged(int index)
     // Device combo is only relevant for microphone
     bool showDeviceCombo = (index == 0 || index == 2);  // Microphone or Both
     m_audioDeviceCombo->setVisible(showDeviceCombo);
+}
+
+void SettingsDialog::setupFilesTab(QWidget *tab)
+{
+    QVBoxLayout *layout = new QVBoxLayout(tab);
+
+    auto& fileSettings = FileSettingsManager::instance();
+
+    // ========== Save Locations Section ==========
+    QLabel *locationsLabel = new QLabel("Save Locations", tab);
+    locationsLabel->setStyleSheet("font-weight: bold; font-size: 12px;");
+    layout->addWidget(locationsLabel);
+
+    // Screenshot path row
+    QHBoxLayout *screenshotLayout = new QHBoxLayout();
+    QLabel *screenshotLabel = new QLabel("Screenshots:", tab);
+    screenshotLabel->setFixedWidth(90);
+    m_screenshotPathEdit = new QLineEdit(tab);
+    m_screenshotPathEdit->setReadOnly(true);
+    m_screenshotPathEdit->setText(fileSettings.loadScreenshotPath());
+    m_screenshotPathBrowseBtn = new QPushButton("Browse...", tab);
+    m_screenshotPathBrowseBtn->setFixedWidth(80);
+    connect(m_screenshotPathBrowseBtn, &QPushButton::clicked, this, [this]() {
+        QString dir = QFileDialog::getExistingDirectory(this, "Select Screenshot Folder",
+            m_screenshotPathEdit->text());
+        if (!dir.isEmpty()) {
+            m_screenshotPathEdit->setText(dir);
+        }
+    });
+    screenshotLayout->addWidget(screenshotLabel);
+    screenshotLayout->addWidget(m_screenshotPathEdit);
+    screenshotLayout->addWidget(m_screenshotPathBrowseBtn);
+    layout->addLayout(screenshotLayout);
+
+    // Recording path row
+    QHBoxLayout *recordingLayout = new QHBoxLayout();
+    QLabel *recordingLabel = new QLabel("Recordings:", tab);
+    recordingLabel->setFixedWidth(90);
+    m_recordingPathEdit = new QLineEdit(tab);
+    m_recordingPathEdit->setReadOnly(true);
+    m_recordingPathEdit->setText(fileSettings.loadRecordingPath());
+    m_recordingPathBrowseBtn = new QPushButton("Browse...", tab);
+    m_recordingPathBrowseBtn->setFixedWidth(80);
+    connect(m_recordingPathBrowseBtn, &QPushButton::clicked, this, [this]() {
+        QString dir = QFileDialog::getExistingDirectory(this, "Select Recording Folder",
+            m_recordingPathEdit->text());
+        if (!dir.isEmpty()) {
+            m_recordingPathEdit->setText(dir);
+        }
+    });
+    recordingLayout->addWidget(recordingLabel);
+    recordingLayout->addWidget(m_recordingPathEdit);
+    recordingLayout->addWidget(m_recordingPathBrowseBtn);
+    layout->addLayout(recordingLayout);
+
+    // ========== Filename Format Section ==========
+    layout->addSpacing(16);
+    QLabel *formatLabel = new QLabel("Filename Format", tab);
+    formatLabel->setStyleSheet("font-weight: bold; font-size: 12px;");
+    layout->addWidget(formatLabel);
+
+    // Prefix row
+    QHBoxLayout *prefixLayout = new QHBoxLayout();
+    QLabel *prefixLabel = new QLabel("Prefix:", tab);
+    prefixLabel->setFixedWidth(90);
+    m_filenamePrefixEdit = new QLineEdit(tab);
+    m_filenamePrefixEdit->setPlaceholderText("Optional prefix...");
+    m_filenamePrefixEdit->setText(fileSettings.loadFilenamePrefix());
+    connect(m_filenamePrefixEdit, &QLineEdit::textChanged, this, [this]() {
+        updateFilenamePreview();
+    });
+    prefixLayout->addWidget(prefixLabel);
+    prefixLayout->addWidget(m_filenamePrefixEdit);
+    layout->addLayout(prefixLayout);
+
+    // Date format row
+    QHBoxLayout *dateFormatLayout = new QHBoxLayout();
+    QLabel *dateFormatLabel = new QLabel("Date format:", tab);
+    dateFormatLabel->setFixedWidth(90);
+    m_dateFormatCombo = new QComboBox(tab);
+    m_dateFormatCombo->addItem("yyyyMMdd_HHmmss (20250101_120000)", "yyyyMMdd_HHmmss");
+    m_dateFormatCombo->addItem("yyyy-MM-dd_HH-mm-ss (2025-01-01_12-00-00)", "yyyy-MM-dd_HH-mm-ss");
+    m_dateFormatCombo->addItem("yyMMdd_HHmmss (250101_120000)", "yyMMdd_HHmmss");
+    m_dateFormatCombo->addItem("MMdd_HHmmss (0101_120000)", "MMdd_HHmmss");
+    connect(m_dateFormatCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, [this]() { updateFilenamePreview(); });
+    dateFormatLayout->addWidget(dateFormatLabel);
+    dateFormatLayout->addWidget(m_dateFormatCombo);
+    dateFormatLayout->addStretch();
+    layout->addLayout(dateFormatLayout);
+
+    // Set current date format
+    QString currentFormat = fileSettings.loadDateFormat();
+    int formatIndex = m_dateFormatCombo->findData(currentFormat);
+    if (formatIndex >= 0) {
+        m_dateFormatCombo->setCurrentIndex(formatIndex);
+    }
+
+    // Preview label
+    m_filenamePreviewLabel = new QLabel(tab);
+    m_filenamePreviewLabel->setStyleSheet("color: gray; font-size: 11px; padding: 8px 0;");
+    layout->addWidget(m_filenamePreviewLabel);
+
+    updateFilenamePreview();
+
+    layout->addStretch();
+}
+
+void SettingsDialog::updateFilenamePreview()
+{
+    QString prefix = m_filenamePrefixEdit->text();
+    QString dateFormat = m_dateFormatCombo->currentData().toString();
+    QString timestamp = QDateTime::currentDateTime().toString(dateFormat);
+
+    QString filename;
+    if (prefix.isEmpty()) {
+        filename = QString("Screenshot_%1.png").arg(timestamp);
+    } else {
+        filename = QString("%1_Screenshot_%2.png").arg(prefix).arg(timestamp);
+    }
+
+    m_filenamePreviewLabel->setText(QString("Preview: %1").arg(filename));
 }

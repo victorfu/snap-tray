@@ -11,6 +11,7 @@
 #include "PlatformFeatures.h"
 #include "detection/AutoBlurManager.h"
 #include "settings/AnnotationSettingsManager.h"
+#include "settings/FileSettingsManager.h"
 #include "tools/handlers/EraserToolHandler.h"
 #include "tools/handlers/MosaicToolHandler.h"
 #include <QTextEdit>
@@ -30,6 +31,7 @@
 #include <QFileDialog>
 #include <QStandardPaths>
 #include <QDateTime>
+#include <QDir>
 #include <QInputDialog>
 #include <QToolTip>
 #include <QPointer>
@@ -1334,9 +1336,19 @@ void RegionSelector::saveToFile()
 {
     QPixmap selectedRegion = getSelectedRegion();
 
-    QString picturesPath = QStandardPaths::writableLocation(QStandardPaths::PicturesLocation);
-    QString timestamp = QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss");
-    QString defaultName = QString("%1/Screenshot_%2.png").arg(picturesPath).arg(timestamp);
+    auto& fileSettings = FileSettingsManager::instance();
+    QString savePath = fileSettings.loadScreenshotPath();
+    QString dateFormat = fileSettings.loadDateFormat();
+    QString prefix = fileSettings.loadFilenamePrefix();
+    QString timestamp = QDateTime::currentDateTime().toString(dateFormat);
+
+    QString filename;
+    if (prefix.isEmpty()) {
+        filename = QString("Screenshot_%1.png").arg(timestamp);
+    } else {
+        filename = QString("%1_Screenshot_%2.png").arg(prefix).arg(timestamp);
+    }
+    QString defaultName = QDir(savePath).filePath(filename);
 
     // Hide fullscreen window so save dialog is visible
     m_isDialogOpen = true;

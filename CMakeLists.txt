@@ -236,6 +236,8 @@ set(SOURCES
     src/ToolbarStyle.cpp
     src/GlassRenderer.cpp
     src/settings/AnnotationSettingsManager.cpp
+    src/settings/FileSettingsManager.cpp
+    src/settings/PinWindowSettingsManager.cpp
     src/AnnotationController.cpp
     src/ColorPickerDialog.mm
     src/InlineTextEditor.cpp

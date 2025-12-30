@@ -16,6 +16,7 @@
 #include "utils/ResourceCleanupHelper.h"
 #include "utils/CoordinateHelper.h"
 #include "settings/Settings.h"
+#include "settings/FileSettingsManager.h"
 #include "AnnotationController.h"
 #include "ColorPickerDialog.h"
 
@@ -1132,7 +1133,12 @@ void RecordingManager::showSaveDialog(const QString &tempOutputPath)
 
     // Check auto-save setting
     bool autoSave = settings.value("recording/autoSave", false).toBool();
-    QString outputDir = QStandardPaths::writableLocation(QStandardPaths::DownloadLocation);
+
+    // Get recording path from FileSettingsManager
+    auto& fileSettings = FileSettingsManager::instance();
+    QString outputDir = fileSettings.loadRecordingPath();
+    QString dateFormat = fileSettings.loadDateFormat();
+    QString prefix = fileSettings.loadFilenamePrefix();
 
     // Get extension from current file
     QFileInfo fileInfo(tempOutputPath);
@@ -1141,8 +1147,13 @@ void RecordingManager::showSaveDialog(const QString &tempOutputPath)
     if (autoSave) {
         // Auto-save: generate filename and save directly without dialog
         // Use atomic rename approach to avoid TOCTOU race condition
-        QString timestamp = QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss");
-        QString baseName = QString("SnapTray_Recording_%1").arg(timestamp);
+        QString timestamp = QDateTime::currentDateTime().toString(dateFormat);
+        QString baseName;
+        if (prefix.isEmpty()) {
+            baseName = QString("Recording_%1").arg(timestamp);
+        } else {
+            baseName = QString("%1_Recording_%2").arg(prefix).arg(timestamp);
+        }
         QString fileName = QString("%1.%2").arg(baseName).arg(extension);
         QString savePath = QDir(outputDir).filePath(fileName);
 

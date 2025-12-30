@@ -7,6 +7,7 @@
 #include "pinwindow/ResizeHandler.h"
 #include "pinwindow/UIIndicators.h"
 #include "settings/AnnotationSettingsManager.h"
+#include "settings/PinWindowSettingsManager.h"
 
 #include <QPainter>
 #include <QImage>
@@ -73,7 +74,7 @@ PinWindow::PinWindow(const QPixmap &screenshot, const QPoint &position, QWidget 
     , m_flipVertical(false)
     , m_ocrManager(nullptr)
     , m_ocrInProgress(false)
-    , m_opacity(1.0)
+    , m_opacity(PinWindowSettingsManager::instance().loadDefaultOpacity())
     , m_currentZoomAction(nullptr)
     , m_smoothing(true)
     , m_clickThrough(false)
@@ -881,7 +882,7 @@ void PinWindow::wheelEvent(QWheelEvent *event)
 {
     // Ctrl+Wheel = Opacity adjustment
     if (event->modifiers() & Qt::ControlModifier) {
-        const qreal opacityStep = 0.05;
+        const qreal opacityStep = PinWindowSettingsManager::instance().loadOpacityStep();
         qreal oldOpacity = m_opacity;
         qreal newOpacity = (event->angleDelta().y() > 0)
                            ? m_opacity + opacityStep
@@ -900,7 +901,7 @@ void PinWindow::wheelEvent(QWheelEvent *event)
     }
 
     // Plain wheel = Zoom (anchored at top-left corner)
-    const qreal zoomStep = 0.05;
+    const qreal zoomStep = PinWindowSettingsManager::instance().loadZoomStep();
     qreal oldZoom = m_zoomLevel;
     qreal newZoom = (event->angleDelta().y() > 0)
                     ? m_zoomLevel + zoomStep

@@ -117,6 +117,25 @@ private:
     QSlider *m_blurIntensitySlider;
     QLabel *m_blurIntensityLabel;
     QComboBox *m_blurTypeCombo;
+
+    // Pin Window settings (in General tab)
+    QSlider *m_pinWindowOpacitySlider;
+    QLabel *m_pinWindowOpacityLabel;
+    QSlider *m_pinWindowOpacityStepSlider;
+    QLabel *m_pinWindowOpacityStepLabel;
+    QSlider *m_pinWindowZoomStepSlider;
+    QLabel *m_pinWindowZoomStepLabel;
+
+    // Files tab
+    void setupFilesTab(QWidget *tab);
+    void updateFilenamePreview();
+    QLineEdit *m_screenshotPathEdit;
+    QPushButton *m_screenshotPathBrowseBtn;
+    QLineEdit *m_recordingPathEdit;
+    QPushButton *m_recordingPathBrowseBtn;
+    QLineEdit *m_filenamePrefixEdit;
+    QComboBox *m_dateFormatCombo;
+    QLabel *m_filenamePreviewLabel;
 };
 
 #endif // SETTINGSDIALOG_H

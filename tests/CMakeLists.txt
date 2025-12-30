@@ -94,6 +94,7 @@ set(PINWINDOW_COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/pinwindow/UIIndicators.cpp
     ${CMAKE_SOURCE_DIR}/src/pinwindow/ClickThroughExitButton.cpp
     ${CMAKE_SOURCE_DIR}/src/settings/AnnotationSettingsManager.cpp
+    ${CMAKE_SOURCE_DIR}/src/settings/PinWindowSettingsManager.cpp
 )
 
 # Platform-specific sources for PinWindow tests
