@@ -513,6 +513,11 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_BINARY_DIR}/_deps/libwebp-src/src
 )
 
+# Disable qDebug() output in Release builds
+target_compile_definitions(${PROJECT_NAME} PRIVATE
+    $<$<NOT:$<CONFIG:Debug>>:QT_NO_DEBUG_OUTPUT>
+)
+
 # macOS frameworks needed for window detection, auto-launch, and native encoding
 if(APPLE)
     find_library(COREGRAPHICS_FRAMEWORK CoreGraphics)
