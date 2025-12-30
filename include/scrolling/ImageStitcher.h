@@ -10,20 +10,38 @@
 
 namespace cv {
     class Mat;
-    class KeyPoint;
 }
+
+// Static regions detected in consecutive frames (sticky headers, footers, scrollbars)
+struct StaticRegions {
+    int headerHeight = 0;      // Pixels from top that are static (sticky header)
+    int footerHeight = 0;      // Pixels from bottom that are static (sticky footer)
+    int scrollbarWidth = 0;    // Pixels from right edge (scrollbar track)
+    bool detected = false;
+};
+
+// Configuration for the RSSA stitching algorithm
+struct StitchConfig {
+    int templateHeight = 80;              // Rows to use as template (bottom of img1)
+    int searchHeight = 400;               // Search region height (top of img2)
+    double confidenceThreshold = 0.85;    // Minimum acceptable match confidence
+    int minOverlap = 20;                  // Minimum overlap to consider valid
+    int maxOverlap = 500;                 // Maximum expected overlap
+    double staticRowThreshold = 5.0;      // Max avg pixel diff to consider row static
+    bool detectStaticRegions = true;      // Enable header/footer detection
+    bool useGrayscale = true;             // Convert to grayscale before matching
+};
 
 class ImageStitcher : public QObject
 {
     Q_OBJECT
 
 public:
+    // RSSA: Template matching and row projection only (no feature-based algorithms)
     enum class Algorithm {
-        ORB,
-        SIFT,
-        TemplateMatching,
-        RowProjection,  // Recommended for text documents - uses 1D cross-correlation
-        Auto
+        TemplateMatching,  // Default - uses cv::TM_CCOEFF_NORMED
+        RowProjection,     // Fast 1D cross-correlation for text documents
+        Auto               // Try RowProjection first, fallback to TemplateMatching
     };
     Q_ENUM(Algorithm)
 
@@ -45,8 +63,8 @@ public:
         bool success = false;
         QPoint offset;              // x for horizontal, y for vertical
         double confidence = 0.0;    // 0.0 - 1.0
-        int matchedFeatures = 0;
-        Algorithm usedAlgorithm = Algorithm::ORB;
+        int overlapPixels = 0;      // Detected overlap amount
+        Algorithm usedAlgorithm = Algorithm::TemplateMatching;
         ScrollDirection direction = ScrollDirection::Down;
         QString failureReason;
     };
@@ -61,11 +79,18 @@ public:
     void setCaptureMode(CaptureMode mode);
     CaptureMode captureMode() const { return m_captureMode; }
 
+    void setStitchConfig(const StitchConfig &config);
+    StitchConfig stitchConfig() const { return m_stitchConfig; }
+
+    // Legacy API (wraps StitchConfig)
     void setDetectFixedElements(bool enabled);
-    bool detectFixedElements() const { return m_detectFixedElements; }
+    bool detectFixedElements() const { return m_stitchConfig.detectStaticRegions; }
 
     void setConfidenceThreshold(double threshold);
-    double confidenceThreshold() const { return m_confidenceThreshold; }
+    double confidenceThreshold() const { return m_stitchConfig.confidenceThreshold; }
+
+    // Static region detection (header/footer/scrollbar)
+    StaticRegions detectedStaticRegions() const { return m_staticRegions; }
 
     // Core operations
     StitchResult addFrame(const QImage &frame);
@@ -87,23 +112,23 @@ private:
     struct MatchCandidate {
         bool success = false;
         double confidence = 0.0;
-        int matchedFeatures = 0;
         int overlap = 0;
         ScrollDirection direction = ScrollDirection::Down;
         QString failureReason;
     };
 
-    // Algorithm implementations
-    StitchResult tryORBMatch(const QImage &newFrame);
-    StitchResult trySIFTMatch(const QImage &newFrame);
+    // Algorithm implementations (RSSA: template matching and row projection only)
     StitchResult tryTemplateMatch(const QImage &newFrame);
     StitchResult tryRowProjectionMatch(const QImage &newFrame);
     StitchResult tryInPlaceMatchInStitched(const QImage &newFrame);
 
+    // Static region detection (header/footer/scrollbar)
+    StaticRegions detectStaticRegions(const QImage &img1, const QImage &img2);
+    double calculateRowDifference(const cv::Mat &row1, const cv::Mat &row2) const;
+
     // Helper methods
     cv::Mat qImageToCvMat(const QImage &image) const;
     QImage cvMatToQImage(const cv::Mat &mat) const;
-    MatchCandidate computeORBMatchCandidate(const QImage &newFrame, ScrollDirection direction);
     MatchCandidate computeTemplateMatchCandidate(const QImage &newFrame, ScrollDirection direction);
     MatchCandidate computeRowProjectionCandidate(const QImage &newFrame, ScrollDirection direction);
     StitchResult applyCandidate(const QImage &newFrame, const MatchCandidate &candidate, Algorithm algorithm);
@@ -111,8 +136,8 @@ private:
 
     Algorithm m_algorithm = Algorithm::Auto;
     CaptureMode m_captureMode = CaptureMode::Vertical;
-    bool m_detectFixedElements = true;
-    double m_confidenceThreshold = 0.45;
+    StitchConfig m_stitchConfig;
+    StaticRegions m_staticRegions;
 
     QImage m_stitchedResult;
     QImage m_lastFrame;

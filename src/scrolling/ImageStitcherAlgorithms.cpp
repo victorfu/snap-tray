@@ -2,7 +2,7 @@
 
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
-#include <opencv2/features2d.hpp>
+// RSSA: Removed opencv2/features2d.hpp - no longer using ORB/SIFT feature detection
 
 #include <QPainter>
 #include <QDebug>
@@ -37,8 +37,165 @@ cv::Mat qImageToCvMatLocal(const QImage &image)
     return bgr.clone();
 }
 
-constexpr double kMaxOverlapDiff = 0.18;
+constexpr double kMaxOverlapDiff = 0.10;
 constexpr int kOverlapDiffMaxDim = 240;
+
+// Sub-pixel refinement using parabolic interpolation
+// Returns refined position with sub-pixel accuracy
+double subPixelRefine1D(const cv::Mat &matchResult, int bestPos, bool isVertical)
+{
+    if (matchResult.empty()) {
+        return static_cast<double>(bestPos);
+    }
+
+    int maxPos = isVertical ? (matchResult.rows - 1) : (matchResult.cols - 1);
+    if (bestPos <= 0 || bestPos >= maxPos) {
+        return static_cast<double>(bestPos);
+    }
+
+    double y0, y1, y2;
+    if (isVertical) {
+        y0 = matchResult.at<float>(bestPos - 1, 0);
+        y1 = matchResult.at<float>(bestPos, 0);
+        y2 = matchResult.at<float>(bestPos + 1, 0);
+    } else {
+        y0 = matchResult.at<float>(0, bestPos - 1);
+        y1 = matchResult.at<float>(0, bestPos);
+        y2 = matchResult.at<float>(0, bestPos + 1);
+    }
+
+    // Parabolic interpolation: find vertex of parabola through (bestPos-1, y0), (bestPos, y1), (bestPos+1, y2)
+    double denominator = y0 - 2.0 * y1 + y2;
+    if (std::abs(denominator) < 1e-10) {
+        return static_cast<double>(bestPos);
+    }
+
+    double subPixelOffset = 0.5 * (y0 - y2) / denominator;
+    // Clamp to reasonable range [-0.5, 0.5]
+    subPixelOffset = std::clamp(subPixelOffset, -0.5, 0.5);
+
+    return static_cast<double>(bestPos) + subPixelOffset;
+}
+
+// Sub-pixel refinement for 2D match result (template matching)
+cv::Point2d subPixelRefine2D(const cv::Mat &matchResult, const cv::Point &bestLoc)
+{
+    if (matchResult.empty()) {
+        return cv::Point2d(bestLoc.x, bestLoc.y);
+    }
+
+    double refinedX = static_cast<double>(bestLoc.x);
+    double refinedY = static_cast<double>(bestLoc.y);
+
+    // Refine Y (vertical) position
+    if (bestLoc.y > 0 && bestLoc.y < matchResult.rows - 1) {
+        float y0 = matchResult.at<float>(bestLoc.y - 1, bestLoc.x);
+        float y1 = matchResult.at<float>(bestLoc.y, bestLoc.x);
+        float y2 = matchResult.at<float>(bestLoc.y + 1, bestLoc.x);
+        double denom = y0 - 2.0 * y1 + y2;
+        if (std::abs(denom) > 1e-10) {
+            double offset = 0.5 * (y0 - y2) / denom;
+            refinedY += std::clamp(offset, -0.5, 0.5);
+        }
+    }
+
+    // Refine X (horizontal) position
+    if (bestLoc.x > 0 && bestLoc.x < matchResult.cols - 1) {
+        float x0 = matchResult.at<float>(bestLoc.y, bestLoc.x - 1);
+        float x1 = matchResult.at<float>(bestLoc.y, bestLoc.x);
+        float x2 = matchResult.at<float>(bestLoc.y, bestLoc.x + 1);
+        double denom = x0 - 2.0 * x1 + x2;
+        if (std::abs(denom) > 1e-10) {
+            double offset = 0.5 * (x0 - x2) / denom;
+            refinedX += std::clamp(offset, -0.5, 0.5);
+        }
+    }
+
+    return cv::Point2d(refinedX, refinedY);
+}
+
+// Seam verification threshold (stricter than general overlap diff)
+constexpr double kSeamVerifyThreshold = 0.06;
+
+// Verify seam alignment at full resolution for a given overlap value
+// Returns the normalized difference at the seam (lower is better)
+double verifySeamAtOverlap(const cv::Mat &lastGray, const cv::Mat &newGray,
+                           ImageStitcher::ScrollDirection direction,
+                           bool isHorizontal, int overlap)
+{
+    if (overlap <= 0 || lastGray.empty() || newGray.empty()) {
+        return 1.0;
+    }
+
+    cv::Mat lastOverlap, newOverlap;
+
+    if (isHorizontal) {
+        int height = std::min(lastGray.rows, newGray.rows);
+        int width = std::min({overlap, lastGray.cols, newGray.cols});
+        if (width <= 0 || height <= 0) {
+            return 1.0;
+        }
+
+        if (direction == ImageStitcher::ScrollDirection::Right) {
+            lastOverlap = lastGray(cv::Rect(lastGray.cols - width, 0, width, height));
+            newOverlap = newGray(cv::Rect(0, 0, width, height));
+        } else {
+            lastOverlap = lastGray(cv::Rect(0, 0, width, height));
+            newOverlap = newGray(cv::Rect(newGray.cols - width, 0, width, height));
+        }
+    } else {
+        int width = std::min(lastGray.cols, newGray.cols);
+        int height = std::min({overlap, lastGray.rows, newGray.rows});
+        if (width <= 0 || height <= 0) {
+            return 1.0;
+        }
+
+        if (direction == ImageStitcher::ScrollDirection::Down) {
+            lastOverlap = lastGray(cv::Rect(0, lastGray.rows - height, width, height));
+            newOverlap = newGray(cv::Rect(0, 0, width, height));
+        } else {
+            lastOverlap = lastGray(cv::Rect(0, 0, width, height));
+            newOverlap = newGray(cv::Rect(0, newGray.rows - height, width, height));
+        }
+    }
+
+    cv::Mat diff;
+    cv::absdiff(lastOverlap, newOverlap, diff);
+    cv::Scalar meanDiff = cv::mean(diff);
+    return meanDiff[0] / 255.0;
+}
+
+// Try to find best overlap with ±1 pixel search around the detected overlap
+// Returns the best overlap value (may be original, +1, or -1)
+int refinedOverlapWithFallback(const cv::Mat &lastGray, const cv::Mat &newGray,
+                                ImageStitcher::ScrollDirection direction,
+                                bool isHorizontal, int detectedOverlap,
+                                int minOverlap, int maxOverlap)
+{
+    double bestDiff = verifySeamAtOverlap(lastGray, newGray, direction, isHorizontal, detectedOverlap);
+    int bestOverlap = detectedOverlap;
+
+    // Try -1 pixel
+    if (detectedOverlap - 1 >= minOverlap) {
+        double diffMinus1 = verifySeamAtOverlap(lastGray, newGray, direction, isHorizontal, detectedOverlap - 1);
+        if (diffMinus1 < bestDiff) {
+            bestDiff = diffMinus1;
+            bestOverlap = detectedOverlap - 1;
+        }
+    }
+
+    // Try +1 pixel
+    if (detectedOverlap + 1 <= maxOverlap) {
+        double diffPlus1 = verifySeamAtOverlap(lastGray, newGray, direction, isHorizontal, detectedOverlap + 1);
+        if (diffPlus1 < bestDiff) {
+            bestDiff = diffPlus1;
+            bestOverlap = detectedOverlap + 1;
+        }
+    }
+
+    return bestOverlap;
+}
+
 constexpr double kMinCorrelation = 0.25;
 constexpr double kPeakGapScale = 0.15;
 constexpr double kInPlaceMaxAvgDiff = 0.05;
@@ -482,80 +639,97 @@ double normalizedOverlapDifference(const cv::Mat &lastGray,
         return 1.0;
     }
 
-    cv::Mat lastBlur;
-    cv::Mat newBlur;
-    cv::GaussianBlur(lastSample, lastBlur, cv::Size(3, 3), 0.8);
-    cv::GaussianBlur(newSample, newBlur, cv::Size(3, 3), 0.8);
-
+    // Direct comparison without blur to preserve edge alignment precision
     cv::Mat diff;
-    cv::absdiff(lastBlur, newBlur, diff);
+    cv::absdiff(lastSample, newSample, diff);
     cv::Scalar meanDiff = cv::mean(diff);
     return meanDiff[0] / 255.0;
 }
 }
 
-ImageStitcher::StitchResult ImageStitcher::tryORBMatch(const QImage &newFrame)
+// RSSA: Static region detection (header/footer/scrollbar)
+// Detects UI elements that remain static between frames to exclude them from matching
+StaticRegions ImageStitcher::detectStaticRegions(const QImage &img1, const QImage &img2)
 {
-    // Choose directions based on capture mode
-    ScrollDirection primaryDir, secondaryDir;
-    if (m_captureMode == CaptureMode::Horizontal) {
-        primaryDir = ScrollDirection::Right;
-        secondaryDir = ScrollDirection::Left;
-    } else {
-        primaryDir = ScrollDirection::Down;
-        secondaryDir = ScrollDirection::Up;
+    StaticRegions result;
+
+    if (img1.isNull() || img2.isNull() || img1.size() != img2.size()) {
+        return result;
     }
 
-    auto primaryCandidate = computeORBMatchCandidate(newFrame, primaryDir);
-    auto secondaryCandidate = computeORBMatchCandidate(newFrame, secondaryDir);
+    cv::Mat mat1 = qImageToCvMat(img1);
+    cv::Mat mat2 = qImageToCvMat(img2);
 
-    if (primaryCandidate.success && secondaryCandidate.success) {
-        // Direction hysteresis to reduce jitter when both directions match
-        // Higher value (0.15) makes direction switches harder, preventing accidental reversals
-        constexpr double DIRECTION_HYSTERESIS = 0.15;
+    // Convert to grayscale for comparison
+    cv::Mat gray1, gray2;
+    cv::cvtColor(mat1, gray1, cv::COLOR_BGR2GRAY);
+    cv::cvtColor(mat2, gray2, cv::COLOR_BGR2GRAY);
 
-        bool preferPrimary = true;
-        if (secondaryCandidate.direction == m_lastSuccessfulDirection) {
-            preferPrimary = primaryCandidate.confidence >
-                            secondaryCandidate.confidence + DIRECTION_HYSTERESIS;
-        } else if (primaryCandidate.direction == m_lastSuccessfulDirection) {
-            preferPrimary = primaryCandidate.confidence + DIRECTION_HYSTERESIS >=
-                            secondaryCandidate.confidence;
+    const int height = gray1.rows;
+    const int width = gray1.cols;
+
+    // === TOP SCAN: Detect Sticky Header ===
+    // Scan from y=0 downward, find contiguous rows with near-zero difference
+    for (int y = 0; y < height / 3; ++y) {  // Limit to top 1/3
+        cv::Mat row1 = gray1.row(y);
+        cv::Mat row2 = gray2.row(y);
+        double diff = calculateRowDifference(row1, row2);
+
+        if (diff < m_stitchConfig.staticRowThreshold) {
+            result.headerHeight = y + 1;
         } else {
-            preferPrimary = primaryCandidate.confidence >= secondaryCandidate.confidence;
+            break;  // First non-static row ends the header
         }
-
-        const auto &best = preferPrimary ? primaryCandidate : secondaryCandidate;
-        m_lastSuccessfulDirection = best.direction;
-        return applyCandidate(newFrame, best, Algorithm::ORB);
     }
 
-    if (primaryCandidate.success) {
-        m_lastSuccessfulDirection = primaryCandidate.direction;
-        return applyCandidate(newFrame, primaryCandidate, Algorithm::ORB);
+    // === BOTTOM SCAN: Detect Sticky Footer ===
+    for (int y = height - 1; y > height * 2 / 3; --y) {  // Limit to bottom 1/3
+        cv::Mat row1 = gray1.row(y);
+        cv::Mat row2 = gray2.row(y);
+        double diff = calculateRowDifference(row1, row2);
+
+        if (diff < m_stitchConfig.staticRowThreshold) {
+            result.footerHeight = height - y;
+        } else {
+            break;
+        }
     }
 
-    if (secondaryCandidate.success) {
-        m_lastSuccessfulDirection = secondaryCandidate.direction;
-        return applyCandidate(newFrame, secondaryCandidate, Algorithm::ORB);
+    // === RIGHT SCAN: Detect Scrollbar ===
+    // Scrollbar track is typically static, thumb moves
+    // Check rightmost 30 pixels
+    const int scrollbarCheckWidth = 30;
+    int staticColumns = 0;
+    for (int x = width - 1; x > width - scrollbarCheckWidth && x >= 0; --x) {
+        cv::Mat col1 = gray1.col(x);
+        cv::Mat col2 = gray2.col(x);
+        double diff = cv::norm(col1, col2, cv::NORM_L1) / height;
+
+        if (diff < m_stitchConfig.staticRowThreshold * 2) {
+            staticColumns++;
+        }
+    }
+    if (staticColumns > scrollbarCheckWidth * 0.7) {
+        result.scrollbarWidth = scrollbarCheckWidth;
     }
 
-    StitchResult result;
-    result.usedAlgorithm = Algorithm::ORB;
-    result.confidence = std::max(primaryCandidate.confidence, secondaryCandidate.confidence);
-    result.matchedFeatures = std::max(primaryCandidate.matchedFeatures, secondaryCandidate.matchedFeatures);
-    QString dirNames = (m_captureMode == CaptureMode::Horizontal) ? "Right: %1; Left: %2" : "Down: %1; Up: %2";
-    result.failureReason = dirNames
-        .arg(primaryCandidate.failureReason.isEmpty() ? "No match" : primaryCandidate.failureReason,
-             secondaryCandidate.failureReason.isEmpty() ? "No match" : secondaryCandidate.failureReason);
+    result.detected = (result.headerHeight > 0 || result.footerHeight > 0);
+
+    if (result.detected) {
+        qDebug() << "ImageStitcher: Detected static regions - Header:" << result.headerHeight
+                 << "Footer:" << result.footerHeight
+                 << "Scrollbar:" << result.scrollbarWidth;
+    }
+
     return result;
 }
 
-ImageStitcher::StitchResult ImageStitcher::trySIFTMatch(const QImage &newFrame)
+double ImageStitcher::calculateRowDifference(const cv::Mat &row1, const cv::Mat &row2) const
 {
-    // SIFT may not be available in all OpenCV builds
-    // Fall back to ORB for now
-    return tryORBMatch(newFrame);
+    // Calculate mean absolute difference per pixel
+    cv::Mat diff;
+    cv::absdiff(row1, row2, diff);
+    return cv::mean(diff)[0];
 }
 
 ImageStitcher::StitchResult ImageStitcher::tryTemplateMatch(const QImage &newFrame)
@@ -612,220 +786,6 @@ ImageStitcher::StitchResult ImageStitcher::tryTemplateMatch(const QImage &newFra
         .arg(primaryCandidate.failureReason.isEmpty() ? "No match" : primaryCandidate.failureReason,
              secondaryCandidate.failureReason.isEmpty() ? "No match" : secondaryCandidate.failureReason);
     return result;
-}
-
-ImageStitcher::MatchCandidate ImageStitcher::computeORBMatchCandidate(const QImage &newFrame,
-                                                                       ScrollDirection direction)
-{
-    MatchCandidate candidate;
-    candidate.direction = direction;
-
-    cv::Mat lastMat = qImageToCvMat(m_lastFrame);
-    cv::Mat newMat = qImageToCvMat(newFrame);
-
-    if (lastMat.empty() || newMat.empty()) {
-        candidate.failureReason = "Failed to convert images";
-        return candidate;
-    }
-
-    // Convert to grayscale
-    cv::Mat lastGray, newGray;
-    cv::cvtColor(lastMat, lastGray, cv::COLOR_BGR2GRAY);
-    cv::cvtColor(newMat, newGray, cv::COLOR_BGR2GRAY);
-
-    const int lastHeight = lastGray.rows;
-    const int newHeight = newGray.rows;
-    const int lastWidth = lastGray.cols;
-    const int newWidth = newGray.cols;
-
-    if (lastHeight <= 0 || newHeight <= 0 || lastWidth <= 0 || newWidth <= 0) {
-        candidate.failureReason = "Empty frame";
-        return candidate;
-    }
-
-    cv::Rect roiLast;
-    cv::Rect roiNew;
-    bool isHorizontal = (direction == ScrollDirection::Left || direction == ScrollDirection::Right);
-
-    if (isHorizontal) {
-        // Horizontal scrolling: use width-based ROI
-        int roiLastWidth = static_cast<int>(lastWidth * ROI_FIRST_RATIO);
-        int roiNewWidth = static_cast<int>(newWidth * ROI_SECOND_RATIO);
-        roiLastWidth = qBound(1, roiLastWidth, lastWidth);
-        roiNewWidth = qBound(1, roiNewWidth, newWidth);
-
-        if (direction == ScrollDirection::Right) {
-            roiLast = cv::Rect(lastWidth - roiLastWidth, 0, roiLastWidth, lastHeight);
-            roiNew = cv::Rect(0, 0, roiNewWidth, newHeight);
-        } else {
-            roiLast = cv::Rect(0, 0, roiLastWidth, lastHeight);
-            roiNew = cv::Rect(newWidth - roiNewWidth, 0, roiNewWidth, newHeight);
-        }
-    } else {
-        // Vertical scrolling: use height-based ROI
-        int roiLastHeight = static_cast<int>(lastHeight * ROI_FIRST_RATIO);
-        int roiNewHeight = static_cast<int>(newHeight * ROI_SECOND_RATIO);
-        roiLastHeight = qBound(1, roiLastHeight, lastHeight);
-        roiNewHeight = qBound(1, roiNewHeight, newHeight);
-
-        if (direction == ScrollDirection::Down) {
-            roiLast = cv::Rect(0, lastHeight - roiLastHeight, lastWidth, roiLastHeight);
-            roiNew = cv::Rect(0, 0, newWidth, roiNewHeight);
-        } else {
-            roiLast = cv::Rect(0, 0, lastWidth, roiLastHeight);
-            roiNew = cv::Rect(0, newHeight - roiNewHeight, newWidth, roiNewHeight);
-        }
-    }
-
-    cv::Mat roiLastMat = lastGray(roiLast);
-    cv::Mat roiNewMat = newGray(roiNew);
-
-    // Lightly blur to reduce sensor noise before feature extraction
-    cv::GaussianBlur(roiLastMat, roiLastMat, cv::Size(3, 3), 0.8);
-    cv::GaussianBlur(roiNewMat, roiNewMat, cv::Size(3, 3), 0.8);
-
-    // ORB detection
-    cv::Ptr<cv::ORB> orb = cv::ORB::create(1200);
-    std::vector<cv::KeyPoint> kp1, kp2;
-    cv::Mat desc1, desc2;
-
-    orb->detectAndCompute(roiLastMat, cv::noArray(), kp1, desc1);
-    orb->detectAndCompute(roiNewMat, cv::noArray(), kp2, desc2);
-
-    if (desc1.empty() || desc2.empty() || kp1.size() < 5 || kp2.size() < 5) {
-        candidate.failureReason = "Insufficient features detected";
-        return candidate;
-    }
-
-    // Match using BFMatcher with Hamming distance
-    cv::BFMatcher matcher(cv::NORM_HAMMING);
-    std::vector<std::vector<cv::DMatch>> knnMatches;
-    matcher.knnMatch(desc1, desc2, knnMatches, 2);
-
-    // Apply Lowe's ratio test
-    std::vector<cv::DMatch> goodMatches;
-    for (const auto &m : knnMatches) {
-        if (m.size() >= 2 && m[0].distance < 0.75 * m[1].distance) {
-            goodMatches.push_back(m[0]);
-        }
-    }
-
-    candidate.matchedFeatures = static_cast<int>(goodMatches.size());
-
-    if (goodMatches.size() < 4) {
-        candidate.confidence = static_cast<double>(goodMatches.size()) / 20.0;
-        candidate.failureReason = QString("Too few good matches: %1").arg(goodMatches.size());
-        return candidate;
-    }
-
-    // Calculate median offset in full-frame coordinates with outlier filtering
-    std::vector<double> offsets;
-    offsets.reserve(goodMatches.size());
-    for (const auto &m : goodMatches) {
-        if (isHorizontal) {
-            // Horizontal: use X coordinates
-            double x1 = kp1[m.queryIdx].pt.x + roiLast.x;
-            double x2 = kp2[m.trainIdx].pt.x + roiNew.x;
-            offsets.push_back(x1 - x2);
-        } else {
-            // Vertical: use Y coordinates
-            double y1 = kp1[m.queryIdx].pt.y + roiLast.y;
-            double y2 = kp2[m.trainIdx].pt.y + roiNew.y;
-            offsets.push_back(y1 - y2);
-        }
-    }
-    std::sort(offsets.begin(), offsets.end());
-
-    // Use interquartile range (IQR) to filter outliers
-    size_t q1Idx = offsets.size() / 4;
-    size_t q3Idx = (offsets.size() * 3) / 4;
-    double q1 = offsets[q1Idx];
-    double q3 = offsets[q3Idx];
-    double iqr = q3 - q1;
-    double lowerBound = q1 - 1.5 * iqr;
-    double upperBound = q3 + 1.5 * iqr;
-
-    std::vector<double> filteredOffsets;
-    for (double val : offsets) {
-        if (val >= lowerBound && val <= upperBound) {
-            filteredOffsets.push_back(val);
-        }
-    }
-
-    double medianOffset;
-    if (filteredOffsets.size() >= 3) {
-        medianOffset = filteredOffsets[filteredOffsets.size() / 2];
-    } else {
-        medianOffset = offsets[offsets.size() / 2];
-    }
-
-    // Validate direction (soft failure with low confidence instead of hard rejection)
-    bool directionMatch = true;
-    if (direction == ScrollDirection::Down && medianOffset < -3.0) directionMatch = false;
-    if (direction == ScrollDirection::Up && medianOffset > 3.0) directionMatch = false;
-    if (direction == ScrollDirection::Right && medianOffset < -3.0) directionMatch = false;
-    if (direction == ScrollDirection::Left && medianOffset > 3.0) directionMatch = false;
-
-    if (!directionMatch) {
-        candidate.confidence = 0.1;
-        candidate.failureReason = "Direction mismatch";
-        return candidate;
-    }
-
-    // Calculate overlap based on direction
-    int frameDimension = isHorizontal ? newFrame.width() : newFrame.height();
-    double overlapRatio = maxOverlapRatioForFrame(frameDimension);
-    int overlap = frameDimension - static_cast<int>(std::round(std::abs(medianOffset)));
-
-    if (overlap <= 0) {
-        candidate.confidence = 0.2;
-        candidate.failureReason = QString("Negative overlap: %1 (offset too large)").arg(overlap);
-        return candidate;
-    }
-
-    // Clamp overlap to valid range instead of failing immediately
-    if (overlap < MIN_OVERLAP) {
-        // Very small overlap is likely a false match
-        candidate.confidence = 0.3;
-        candidate.failureReason = QString("Overlap too small: %1").arg(overlap);
-        return candidate;
-    }
-
-    // Sanity check: overlap should not exceed a reasonable percentage of frame
-    int maxReasonableOverlap = static_cast<int>(frameDimension * overlapRatio);
-    if (overlap > maxReasonableOverlap) {
-        candidate.confidence = 0.25;
-        candidate.failureReason = QString("Overlap too large: %1 (>%2%% of frame)")
-            .arg(overlap).arg(static_cast<int>(overlapRatio * 100));
-        return candidate;
-    }
-
-    double overlapDiff = normalizedOverlapDifference(lastGray, newGray, direction, isHorizontal, overlap);
-    if (overlapDiff > kMaxOverlapDiff) {
-        candidate.confidence = 0.2;
-        candidate.failureReason = QString("Overlap mismatch: %1").arg(overlapDiff, 0, 'f', 3);
-        return candidate;
-    }
-
-    int inlierCount = 0;
-    for (double val : offsets) {
-        if (std::abs(val - medianOffset) < 5.0) {
-            inlierCount++;
-        }
-    }
-    // Calculate confidence as ratio of inliers to total good matches
-    // Using goodMatches.size() (not filteredOffsets.size()) to avoid artificially inflating confidence
-    candidate.confidence = goodMatches.empty() ? 0.0 : static_cast<double>(inlierCount) / goodMatches.size();
-
-    if (candidate.confidence < m_confidenceThreshold) {
-        candidate.failureReason = QString("Low confidence: %1").arg(candidate.confidence);
-        return candidate;
-    }
-
-    candidate.success = true;
-    candidate.overlap = overlap;
-
-    return candidate;
 }
 
 ImageStitcher::MatchCandidate ImageStitcher::computeTemplateMatchCandidate(const QImage &newFrame,
@@ -920,7 +880,10 @@ ImageStitcher::MatchCandidate ImageStitcher::computeTemplateMatchCandidate(const
             cv::Point minLoc, maxLoc;
             cv::minMaxLoc(matchResult, &minVal, &maxVal, &minLoc, &maxLoc);
 
-            double fullOffset = templateLeft - (searchLeft + maxLoc.x);
+            // Apply sub-pixel refinement for more accurate positioning
+            cv::Point2d refinedLoc = subPixelRefine2D(matchResult, maxLoc);
+
+            double fullOffset = templateLeft - (searchLeft + refinedLoc.x);
 
             if (direction == ScrollDirection::Right && fullOffset <= 0.0) {
                 continue;
@@ -983,7 +946,10 @@ ImageStitcher::MatchCandidate ImageStitcher::computeTemplateMatchCandidate(const
             cv::Point minLoc, maxLoc;
             cv::minMaxLoc(matchResult, &minVal, &maxVal, &minLoc, &maxLoc);
 
-            double fullOffset = templateTop - (searchTop + maxLoc.y);
+            // Apply sub-pixel refinement for more accurate positioning
+            cv::Point2d refinedLoc = subPixelRefine2D(matchResult, maxLoc);
+
+            double fullOffset = templateTop - (searchTop + refinedLoc.y);
 
             if (direction == ScrollDirection::Down && fullOffset <= 0.0) {
                 continue;
@@ -1025,7 +991,7 @@ ImageStitcher::MatchCandidate ImageStitcher::computeTemplateMatchCandidate(const
                                static_cast<double>(confidences.size());
     candidate.confidence = averageConfidence * (1.0 - spreadPenalty);
 
-    if (candidate.confidence < m_confidenceThreshold) {
+    if (candidate.confidence < m_stitchConfig.confidenceThreshold) {
         candidate.failureReason = QString("Template match confidence too low: %1").arg(candidate.confidence);
         return candidate;
     }
@@ -1052,7 +1018,12 @@ ImageStitcher::MatchCandidate ImageStitcher::computeTemplateMatchCandidate(const
         return candidate;
     }
 
-    double overlapDiff = normalizedOverlapDifference(lastGray, newGray, direction, isHorizontal, overlap);
+    // Apply ±1 pixel seam verification to find the best alignment
+    int refinedOverlap = refinedOverlapWithFallback(
+        lastGray, newGray, direction, isHorizontal,
+        overlap, MIN_OVERLAP, maxReasonableOverlap);
+
+    double overlapDiff = normalizedOverlapDifference(lastGray, newGray, direction, isHorizontal, refinedOverlap);
     if (overlapDiff > kMaxOverlapDiff) {
         candidate.confidence = 0.2;
         candidate.failureReason = QString("Overlap mismatch: %1").arg(overlapDiff, 0, 'f', 3);
@@ -1060,7 +1031,7 @@ ImageStitcher::MatchCandidate ImageStitcher::computeTemplateMatchCandidate(const
     }
 
     candidate.success = true;
-    candidate.overlap = overlap;
+    candidate.overlap = refinedOverlap;
 
     return candidate;
 }
@@ -1072,7 +1043,7 @@ ImageStitcher::StitchResult ImageStitcher::applyCandidate(const QImage &newFrame
     StitchResult result = performStitch(newFrame, candidate.overlap, candidate.direction);
     result.usedAlgorithm = algorithm;
     result.confidence = candidate.confidence;
-    result.matchedFeatures = candidate.matchedFeatures;
+    result.overlapPixels = candidate.overlap;
     result.direction = candidate.direction;
     result.failureReason = candidate.failureReason;
     return result;
@@ -1613,7 +1584,12 @@ ImageStitcher::MatchCandidate ImageStitcher::computeRowProjectionCandidate(
         return candidate;
     }
 
-    double overlapDiff = normalizedOverlapDifference(lastGray, newGray, direction, isHorizontal, bestOverlap);
+    // Apply ±1 pixel seam verification to find the best alignment
+    int refinedOverlap = refinedOverlapWithFallback(
+        lastGray, newGray, direction, isHorizontal,
+        bestOverlap, MIN_OVERLAP, maxOverlap);
+
+    double overlapDiff = normalizedOverlapDifference(lastGray, newGray, direction, isHorizontal, refinedOverlap);
     if (overlapDiff > kMaxOverlapDiff) {
         candidate.confidence = 0.2;
         candidate.failureReason = QString("Overlap mismatch: %1").arg(overlapDiff, 0, 'f', 3);
@@ -1630,13 +1606,13 @@ ImageStitcher::MatchCandidate ImageStitcher::computeRowProjectionCandidate(
     double diffPenalty = std::clamp(overlapDiff / kMaxOverlapDiff, 0.0, 1.0);
     candidate.confidence = baseConfidence * (0.7 + 0.3 * uniqueness) * (1.0 - 0.5 * diffPenalty);
 
-    if (candidate.confidence < m_confidenceThreshold) {
+    if (candidate.confidence < m_stitchConfig.confidenceThreshold) {
         candidate.failureReason = QString("Low confidence: %1").arg(candidate.confidence);
         return candidate;
     }
 
     candidate.success = true;
-    candidate.overlap = bestOverlap;
+    candidate.overlap = refinedOverlap;
 
     return candidate;
 }

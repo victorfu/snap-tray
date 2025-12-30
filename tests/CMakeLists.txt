@@ -879,3 +879,40 @@ add_detection_test(Detection_TextDetector
 # AutoBlurManager test
 add_detection_test(Detection_AutoBlurManager
     Detection/tst_AutoBlurManager.cpp)
+
+# ============================================================================
+# Scrolling Tests - ImageStitcher
+# ============================================================================
+
+# OpenCV include directories for scrolling tests
+set(OPENCV_SCROLLING_INCLUDES
+    ${CMAKE_BINARY_DIR}
+    ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/core/include
+    ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/imgproc/include
+)
+
+add_executable(Scrolling_ImageStitcher
+    Scrolling/tst_ImageStitcher.cpp
+    ${CMAKE_SOURCE_DIR}/src/scrolling/ImageStitcher.cpp
+    ${CMAKE_SOURCE_DIR}/src/scrolling/ImageStitcherAlgorithms.cpp
+    ${CMAKE_SOURCE_DIR}/include/scrolling/ImageStitcher.h
+)
+
+target_include_directories(Scrolling_ImageStitcher PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_BINARY_DIR}/generated
+    ${OPENCV_SCROLLING_INCLUDES}
+)
+
+target_link_libraries(Scrolling_ImageStitcher PRIVATE
+    Qt6::Core
+    Qt6::Gui
+    Qt6::Widgets
+    Qt6::Test
+    opencv_core
+    opencv_imgproc
+)
+
+add_test(NAME Scrolling_ImageStitcher COMMAND Scrolling_ImageStitcher)
+set_tests_properties(Scrolling_ImageStitcher PROPERTIES TIMEOUT 60)

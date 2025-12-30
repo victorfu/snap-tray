@@ -16,14 +16,21 @@ void ImageStitcher::setAlgorithm(Algorithm algo)
     m_algorithm = algo;
 }
 
+void ImageStitcher::setStitchConfig(const StitchConfig &config)
+{
+    m_stitchConfig = config;
+    // Clamp confidence threshold to valid range
+    m_stitchConfig.confidenceThreshold = qBound(0.0, config.confidenceThreshold, 1.0);
+}
+
 void ImageStitcher::setDetectFixedElements(bool enabled)
 {
-    m_detectFixedElements = enabled;
+    m_stitchConfig.detectStaticRegions = enabled;
 }
 
 void ImageStitcher::setConfidenceThreshold(double threshold)
 {
-    m_confidenceThreshold = qBound(0.0, threshold, 1.0);
+    m_stitchConfig.confidenceThreshold = qBound(0.0, threshold, 1.0);
 }
 
 void ImageStitcher::setCaptureMode(CaptureMode mode)
@@ -40,6 +47,7 @@ void ImageStitcher::reset()
     m_validHeight = 0;
     m_validWidth = 0;
     m_lastSuccessfulDirection = ScrollDirection::Down;
+    m_staticRegions = StaticRegions();
 }
 
 ImageStitcher::StitchResult ImageStitcher::addFrame(const QImage &frame)
@@ -62,8 +70,8 @@ ImageStitcher::StitchResult ImageStitcher::addFrame(const QImage &frame)
 
         result.success = true;
         result.confidence = 1.0;
-        result.matchedFeatures = 0;
-        result.usedAlgorithm = Algorithm::ORB;
+        result.overlapPixels = 0;
+        result.usedAlgorithm = Algorithm::TemplateMatching;
 
         emit progressUpdated(m_frameCount, getCurrentSize());
         return result;
@@ -77,12 +85,17 @@ ImageStitcher::StitchResult ImageStitcher::addFrame(const QImage &frame)
         return result;
     }
 
-    // Try matching algorithms based on settings
+    // Detect static regions on second frame
+    if (m_frameCount == 1 && m_stitchConfig.detectStaticRegions) {
+        m_staticRegions = detectStaticRegions(m_lastFrame, frame);
+    }
+
+    // RSSA: Try matching algorithms based on settings
     if (m_algorithm == Algorithm::Auto) {
         // Use Row Projection as primary algorithm - it's faster and more robust for text documents
         // Row Projection uses 1D cross-correlation which is optimal for vertical/horizontal scrolling
         result = tryRowProjectionMatch(frame);
-        if (result.success && result.confidence >= m_confidenceThreshold) {
+        if (result.success && result.confidence >= m_stitchConfig.confidenceThreshold) {
             m_lastFrame = frame.convertToFormat(QImage::Format_RGB32);
             m_frameCount++;
             emit progressUpdated(m_frameCount, getCurrentSize());
@@ -91,16 +104,7 @@ ImageStitcher::StitchResult ImageStitcher::addFrame(const QImage &frame)
 
         // Try template matching as fallback (good for non-text content)
         result = tryTemplateMatch(frame);
-        if (result.success && result.confidence >= m_confidenceThreshold) {
-            m_lastFrame = frame.convertToFormat(QImage::Format_RGB32);
-            m_frameCount++;
-            emit progressUpdated(m_frameCount, getCurrentSize());
-            return result;
-        }
-
-        // Try ORB as last resort (works well for images with distinct features)
-        result = tryORBMatch(frame);
-        if (result.success && result.confidence >= m_confidenceThreshold) {
+        if (result.success && result.confidence >= m_stitchConfig.confidenceThreshold) {
             m_lastFrame = frame.convertToFormat(QImage::Format_RGB32);
             m_frameCount++;
             emit progressUpdated(m_frameCount, getCurrentSize());
@@ -123,9 +127,6 @@ ImageStitcher::StitchResult ImageStitcher::addFrame(const QImage &frame)
     }
     else if (m_algorithm == Algorithm::RowProjection) {
         result = tryRowProjectionMatch(frame);
-    }
-    else if (m_algorithm == Algorithm::ORB) {
-        result = tryORBMatch(frame);
     }
     else if (m_algorithm == Algorithm::TemplateMatching) {
         result = tryTemplateMatch(frame);
