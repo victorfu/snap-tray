@@ -37,10 +37,10 @@ BEGIN
             VALUE "CompanyName", "Victor Fu"
             VALUE "FileDescription", "SnapTray Screenshot Utility"
             VALUE "FileVersion", VER_STRING
-            VALUE "InternalName", "SnapTray"
+            VALUE "InternalName", "@APP_DISPLAY_NAME@"
             VALUE "LegalCopyright", "Copyright (c) 2025 Victor Fu. MIT License."
-            VALUE "OriginalFilename", "SnapTray.exe"
-            VALUE "ProductName", "SnapTray"
+            VALUE "OriginalFilename", "@APP_DISPLAY_NAME@.exe"
+            VALUE "ProductName", "@APP_DISPLAY_NAME@"
             VALUE "ProductVersion", VER_STRING
         END
     END

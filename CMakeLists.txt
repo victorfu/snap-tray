@@ -32,12 +32,21 @@ configure_file(
     @ONLY
 )
 
+# Differentiate Debug builds for separate permissions on macOS
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(APP_DISPLAY_NAME "SnapTray-Debug")
+    set(APP_BUNDLE_ID "com.victorfu.snaptray.debug")
+else()
+    set(APP_DISPLAY_NAME "SnapTray")
+    set(APP_BUNDLE_ID "com.victorfu.snaptray")
+endif()
+
 # Platform-specific version file generation
 if(APPLE)
     # Set variables for Info.plist.in template
     set(MACOSX_BUNDLE_EXECUTABLE_NAME ${PROJECT_NAME})
-    set(MACOSX_BUNDLE_BUNDLE_NAME "SnapTray")
-    set(MACOSX_BUNDLE_GUI_IDENTIFIER "com.victorfu.snaptray")
+    set(MACOSX_BUNDLE_BUNDLE_NAME "${APP_DISPLAY_NAME}")
+    set(MACOSX_BUNDLE_GUI_IDENTIFIER "${APP_BUNDLE_ID}")
     set(MACOSX_BUNDLE_ICON_FILE "snaptray.icns")
 
     # Generate Info.plist from template
@@ -496,6 +505,7 @@ add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS} ${RESOURCES} ${WIN32_RESOUR
 if(WIN32)
     set_target_properties(${PROJECT_NAME} PROPERTIES
         WIN32_EXECUTABLE $<NOT:$<CONFIG:Debug>>
+        OUTPUT_NAME "${APP_DISPLAY_NAME}"
     )
 endif()
 
@@ -612,11 +622,12 @@ if(APPLE)
     set_target_properties(${PROJECT_NAME} PROPERTIES
         MACOSX_BUNDLE TRUE
         MACOSX_BUNDLE_INFO_PLIST "${CMAKE_BINARY_DIR}/Info.plist"
-        MACOSX_BUNDLE_BUNDLE_NAME "SnapTray"
+        MACOSX_BUNDLE_BUNDLE_NAME "${APP_DISPLAY_NAME}"
         MACOSX_BUNDLE_BUNDLE_VERSION "${PROJECT_VERSION}"
         MACOSX_BUNDLE_SHORT_VERSION_STRING "${PROJECT_VERSION}"
-        MACOSX_BUNDLE_GUI_IDENTIFIER "com.victorfu.snaptray"
+        MACOSX_BUNDLE_GUI_IDENTIFIER "${APP_BUNDLE_ID}"
         MACOSX_BUNDLE_ICON_FILE snaptray.icns
+        OUTPUT_NAME "${APP_DISPLAY_NAME}"
     )
 endif()
 
