@@ -217,7 +217,7 @@ jobs:
         run: |
           $STAGING_DIR = "release\staging"
           New-Item -ItemType Directory -Force -Path $STAGING_DIR
-          Copy-Item "release\Release\${{ env.APP_NAME }}.exe" -Destination $STAGING_DIR
+          Copy-Item "release\${{ env.APP_NAME }}.exe" -Destination $STAGING_DIR
           & "$env:QT_ROOT_DIR\bin\windeployqt.exe" --release --no-translations "$STAGING_DIR\${{ env.APP_NAME }}.exe"
 
       - name: Generate NSIS version header

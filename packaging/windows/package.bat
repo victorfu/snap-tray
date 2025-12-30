@@ -42,7 +42,9 @@ echo.
 REM Check for Qt
 if "%QT_PATH%"=="" (
     REM Try common Qt installation paths
-    if exist "C:\Qt\6.8.0\msvc2022_64" (
+    if exist "C:\Qt\6.10.1\msvc2022_64" (
+        set QT_PATH=C:\Qt\6.10.1\msvc2022_64
+    ) else if exist "C:\Qt\6.8.0\msvc2022_64" (
         set QT_PATH=C:\Qt\6.8.0\msvc2022_64
     ) else if exist "C:\Qt\6.7.0\msvc2022_64" (
         set QT_PATH=C:\Qt\6.7.0\msvc2022_64
@@ -59,8 +61,14 @@ echo Qt path: %QT_PATH%
 REM Check for NSIS
 where makensis >nul 2>&1
 if errorlevel 1 (
-    echo ERROR: NSIS not found. Please install with: winget install NSIS.NSIS
-    exit /b 1
+    if exist "C:\Program Files (x86)\NSIS\makensis.exe" (
+        set "PATH=%PATH%;C:\Program Files (x86)\NSIS"
+    ) else if exist "C:\Program Files\NSIS\makensis.exe" (
+        set "PATH=%PATH%;C:\Program Files\NSIS"
+    ) else (
+        echo ERROR: NSIS not found. Please install with: winget install NSIS.NSIS
+        exit /b 1
+    )
 )
 
 REM Step 1: Build Release
