@@ -17,7 +17,7 @@ fi
 
 # Build all targets
 echo "Building all targets..."
-cmake --build release --parallel
+cmake --build release
 
 # Run (Release builds use SnapTray.app)
 echo ""

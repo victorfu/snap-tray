@@ -17,7 +17,7 @@ fi
 
 # Build all targets (including tests)
 echo "Building all targets..."
-cmake --build build --parallel
+cmake --build build
 
 # Run (Debug builds use SnapTray-Debug.app)
 echo ""

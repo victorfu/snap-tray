@@ -17,7 +17,7 @@ if not exist "%BUILD_DIR%\CMakeCache.txt" (
 
 REM Build all targets
 echo Building all targets...
-cmake --build release --parallel
+cmake --build release
 
 REM Run (Release builds use SnapTray.exe)
 echo.

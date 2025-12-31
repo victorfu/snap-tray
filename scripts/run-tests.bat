@@ -17,7 +17,7 @@ if not exist "%BUILD_DIR%\CMakeCache.txt" (
 
 REM Build test targets
 echo Building tests...
-cmake --build build --parallel --target ColorAndWidthWidget_State ColorAndWidthWidget_Signals ColorAndWidthWidget_HitTest ColorAndWidthWidget_Events
+cmake --build build --target ColorAndWidthWidget_State ColorAndWidthWidget_Signals ColorAndWidthWidget_HitTest ColorAndWidthWidget_Events
 
 REM Run tests
 echo.

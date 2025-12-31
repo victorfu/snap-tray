@@ -11,15 +11,17 @@ A Qt6-based screenshot and screen recording application for Windows and macOS.
 Use Debug build during development for better debugging experience.
 
 **Windows**:
+
 ```batch
 cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug
-cmake --build build --parallel
+cmake --build build
 ```
 
 **macOS**:
+
 ```bash
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH="$(brew --prefix qt)"
-cmake --build build --parallel
+cmake --build build
 ```
 
 ### Release Build (Production Testing)
@@ -27,15 +29,17 @@ cmake --build build --parallel
 Use Release build to test production behavior before packaging.
 
 **Windows**:
+
 ```batch
 cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
-cmake --build build --parallel
+cmake --build build
 ```
 
 **macOS**:
+
 ```bash
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$(brew --prefix qt)"
-cmake --build build --parallel
+cmake --build build
 ```
 
 ### Packaging (Release)
@@ -43,11 +47,13 @@ cmake --build build --parallel
 Use the packaging scripts in `packaging/` for distribution builds (automatically uses Release):
 
 **macOS** - Creates signed DMG:
+
 ```bash
 ./packaging/macos/package.sh
 ```
 
 **Windows** - Creates NSIS installer:
+
 ```batch
 packaging\windows\package.bat
 ```
@@ -185,13 +191,13 @@ void MyWidget::paintEvent(QPaintEvent*) {
 
 Use `qDebug()` for development diagnostics only. Release builds automatically suppress `qDebug()` output via `QT_NO_DEBUG_OUTPUT`.
 
-| Function | Purpose | Release Behavior |
-|----------|---------|------------------|
-| `qDebug()` | Development diagnostics, state tracking, defensive cleanup | **Suppressed** |
-| `qInfo()` | General info (user may need to know) | Output |
-| `qWarning()` | Warnings: hardware/API failures, features unavailable | Output |
-| `qCritical()` | Critical errors: may cause malfunction | Output |
-| `qFatal()` | Fatal errors: program must terminate | Output and terminate |
+| Function      | Purpose                                                    | Release Behavior     |
+| ------------- | ---------------------------------------------------------- | -------------------- |
+| `qDebug()`    | Development diagnostics, state tracking, defensive cleanup | **Suppressed**       |
+| `qInfo()`     | General info (user may need to know)                       | Output               |
+| `qWarning()`  | Warnings: hardware/API failures, features unavailable      | Output               |
+| `qCritical()` | Critical errors: may cause malfunction                     | Output               |
+| `qFatal()`    | Fatal errors: program must terminate                       | Output and terminate |
 
 ```cpp
 // Good: Use qDebug for development diagnostics
