@@ -27,7 +27,7 @@ struct StitchConfig {
     double confidenceThreshold = 0.85;    // Minimum acceptable match confidence
     int minOverlap = 20;                  // Minimum overlap to consider valid
     int maxOverlap = 500;                 // Maximum expected overlap
-    double staticRowThreshold = 5.0;      // Max avg pixel diff to consider row static
+    double staticRowThreshold = 8.0;      // Max avg pixel diff to consider row static
     bool detectStaticRegions = true;      // Enable header/footer detection
     bool useGrayscale = true;             // Convert to grayscale before matching
 };
@@ -133,6 +133,7 @@ private:
     MatchCandidate computeRowProjectionCandidate(const QImage &newFrame, ScrollDirection direction);
     StitchResult applyCandidate(const QImage &newFrame, const MatchCandidate &candidate, Algorithm algorithm);
     StitchResult performStitch(const QImage &newFrame, int overlapPixels, ScrollDirection direction);
+    bool wouldCreateDuplicate(const QImage &newFrame, int overlapPixels, ScrollDirection direction) const;
 
     Algorithm m_algorithm = Algorithm::Auto;
     CaptureMode m_captureMode = CaptureMode::Vertical;

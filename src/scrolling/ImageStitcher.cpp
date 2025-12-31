@@ -85,8 +85,10 @@ ImageStitcher::StitchResult ImageStitcher::addFrame(const QImage &frame)
         return result;
     }
 
-    // Detect static regions on second frame
-    if (m_frameCount == 1 && m_stitchConfig.detectStaticRegions) {
+    // Detect static regions over multiple frames (not just the second frame)
+    // This gives more reliable detection as the user scrolls
+    if (m_frameCount >= 1 && m_frameCount <= 5 &&
+        m_stitchConfig.detectStaticRegions && !m_staticRegions.detected) {
         m_staticRegions = detectStaticRegions(m_lastFrame, frame);
     }
 
@@ -111,15 +113,6 @@ ImageStitcher::StitchResult ImageStitcher::addFrame(const QImage &frame)
             return result;
         }
 
-        // Fallback: match within existing stitched image (useful when user scrolls back)
-        result = tryInPlaceMatchInStitched(frame);
-        if (result.success) {
-            m_lastFrame = frame.convertToFormat(QImage::Format_RGB32);
-            m_frameCount++;
-            emit progressUpdated(m_frameCount, getCurrentSize());
-            return result;
-        }
-
         // All failed
         result.success = false;
         result.failureReason = "No matching algorithm succeeded";
@@ -133,13 +126,6 @@ ImageStitcher::StitchResult ImageStitcher::addFrame(const QImage &frame)
     }
     else {
         result = tryRowProjectionMatch(frame);
-    }
-
-    if (!result.success) {
-        StitchResult inPlace = tryInPlaceMatchInStitched(frame);
-        if (inPlace.success) {
-            result = inPlace;
-        }
     }
 
     if (result.success) {

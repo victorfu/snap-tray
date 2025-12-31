@@ -198,6 +198,7 @@ int refinedOverlapWithFallback(const cv::Mat &lastGray, const cv::Mat &newGray,
 
 constexpr double kMinCorrelation = 0.25;
 constexpr double kPeakGapScale = 0.15;
+constexpr double kMinPeakGap = 0.08;  // Minimum absolute gap between best and second-best match
 constexpr double kInPlaceMaxAvgDiff = 0.05;
 constexpr double kInPlaceMaxChangedRatio = 0.03;
 constexpr double kDefaultMaxOverlapRatio = 0.90;
@@ -670,6 +671,9 @@ StaticRegions ImageStitcher::detectStaticRegions(const QImage &img1, const QImag
 
     // === TOP SCAN: Detect Sticky Header ===
     // Scan from y=0 downward, find contiguous rows with near-zero difference
+    // Use noise tolerance to handle compression artifacts or subpixel rendering
+    const int MAX_NOISE_ROWS = 3;  // Allow up to 3 non-static rows before breaking
+    int headerNonStaticCount = 0;
     for (int y = 0; y < height / 3; ++y) {  // Limit to top 1/3
         cv::Mat row1 = gray1.row(y);
         cv::Mat row2 = gray2.row(y);
@@ -677,12 +681,17 @@ StaticRegions ImageStitcher::detectStaticRegions(const QImage &img1, const QImag
 
         if (diff < m_stitchConfig.staticRowThreshold) {
             result.headerHeight = y + 1;
+            headerNonStaticCount = 0;  // Reset noise counter on static row
         } else {
-            break;  // First non-static row ends the header
+            headerNonStaticCount++;
+            if (headerNonStaticCount > MAX_NOISE_ROWS) {
+                break;  // Too many consecutive non-static rows
+            }
         }
     }
 
     // === BOTTOM SCAN: Detect Sticky Footer ===
+    int footerNonStaticCount = 0;
     for (int y = height - 1; y > height * 2 / 3; --y) {  // Limit to bottom 1/3
         cv::Mat row1 = gray1.row(y);
         cv::Mat row2 = gray2.row(y);
@@ -690,8 +699,12 @@ StaticRegions ImageStitcher::detectStaticRegions(const QImage &img1, const QImag
 
         if (diff < m_stitchConfig.staticRowThreshold) {
             result.footerHeight = height - y;
+            footerNonStaticCount = 0;  // Reset noise counter on static row
         } else {
-            break;
+            footerNonStaticCount++;
+            if (footerNonStaticCount > MAX_NOISE_ROWS) {
+                break;  // Too many consecutive non-static rows
+            }
         }
     }
 
@@ -1049,12 +1062,94 @@ ImageStitcher::StitchResult ImageStitcher::applyCandidate(const QImage &newFrame
     return result;
 }
 
+bool ImageStitcher::wouldCreateDuplicate(const QImage &newFrame, int overlapPixels,
+                                          ScrollDirection direction) const
+{
+    // Skip check if we don't have enough stitched content yet
+    if (m_stitchedResult.isNull()) {
+        return false;
+    }
+
+    bool isHorizontal = (direction == ScrollDirection::Left || direction == ScrollDirection::Right);
+    int validDimension = isHorizontal ? m_validWidth : m_validHeight;
+
+    if (validDimension < overlapPixels * 2) {
+        return false;
+    }
+
+    cv::Mat stitchedMat = qImageToCvMat(m_stitchedResult);
+    cv::Mat newMat = qImageToCvMat(newFrame);
+
+    if (stitchedMat.empty() || newMat.empty()) {
+        return false;
+    }
+
+    cv::Mat stitchedGray, newGray;
+    cv::cvtColor(stitchedMat, stitchedGray, cv::COLOR_BGR2GRAY);
+    cv::cvtColor(newMat, newGray, cv::COLOR_BGR2GRAY);
+
+    // Extract the NEW content (non-overlap portion of the new frame)
+    int newContentSize = isHorizontal
+        ? (newGray.cols - overlapPixels)
+        : (newGray.rows - overlapPixels);
+
+    if (newContentSize < 20) {
+        return false;  // Not enough new content to check
+    }
+
+    cv::Mat newContent;
+    if (isHorizontal) {
+        if (direction == ScrollDirection::Right) {
+            newContent = newGray(cv::Rect(overlapPixels, 0, newContentSize, newGray.rows));
+        } else {
+            newContent = newGray(cv::Rect(0, 0, newContentSize, newGray.rows));
+        }
+    } else {
+        if (direction == ScrollDirection::Down) {
+            newContent = newGray(cv::Rect(0, overlapPixels, newGray.cols, newContentSize));
+        } else {
+            newContent = newGray(cv::Rect(0, 0, newGray.cols, newContentSize));
+        }
+    }
+
+    // Search for this new content in the existing stitched image
+    cv::Rect searchRect = isHorizontal
+        ? cv::Rect(0, 0, m_validWidth, stitchedGray.rows)
+        : cv::Rect(0, 0, stitchedGray.cols, m_validHeight);
+
+    // Ensure search area is valid
+    if (searchRect.width <= newContent.cols || searchRect.height <= newContent.rows) {
+        return false;
+    }
+
+    cv::Mat searchArea = stitchedGray(searchRect);
+    cv::Mat matchResult;
+    cv::matchTemplate(searchArea, newContent, matchResult, cv::TM_CCOEFF_NORMED);
+
+    double maxVal;
+    cv::minMaxLoc(matchResult, nullptr, &maxVal);
+
+    // If we find a strong match (>0.85), the content already exists
+    if (maxVal > 0.85) {
+        qDebug() << "ImageStitcher: Duplicate content detected with confidence" << maxVal;
+        return true;
+    }
+
+    return false;
+}
+
 ImageStitcher::StitchResult ImageStitcher::performStitch(const QImage &newFrame,
                                                          int overlapPixels,
                                                          ScrollDirection direction)
 {
     StitchResult result;
     result.direction = direction;
+
+    // Check for duplicate content before stitching
+    if (wouldCreateDuplicate(newFrame, overlapPixels, direction)) {
+        result.failureReason = "Duplicate content detected";
+        return result;
+    }
 
     QImage newFrameRgb = newFrame.convertToFormat(QImage::Format_RGB32);
 
@@ -1140,6 +1235,9 @@ ImageStitcher::StitchResult ImageStitcher::performStitch(const QImage &newFrame,
                     result.failureReason = "Failed to create painter for stitching";
                     return result;
                 }
+                // Disable smoothing to prevent seam artifacts
+                painter.setRenderHint(QPainter::SmoothPixmapTransform, false);
+                painter.setRenderHint(QPainter::Antialiasing, false);
                 painter.drawImage(0, 0, m_stitchedResult, 0, 0, currentWidth, m_stitchedResult.height());
                 painter.drawImage(drawX, 0, newFrameRgb);
                 if (!painter.end()) {
@@ -1153,6 +1251,9 @@ ImageStitcher::StitchResult ImageStitcher::performStitch(const QImage &newFrame,
                     result.failureReason = "Failed to create painter for stitching";
                     return result;
                 }
+                // Disable smoothing to prevent seam artifacts
+                painter.setRenderHint(QPainter::SmoothPixmapTransform, false);
+                painter.setRenderHint(QPainter::Antialiasing, false);
                 painter.drawImage(drawX, 0, newFrameRgb);
                 if (!painter.end()) {
                     qDebug() << "ImageStitcher: QPainter::end() failed for horizontal right stitch (in-place)";
@@ -1184,6 +1285,9 @@ ImageStitcher::StitchResult ImageStitcher::performStitch(const QImage &newFrame,
                 result.failureReason = "Failed to create painter for stitching";
                 return result;
             }
+            // Disable smoothing to prevent seam artifacts
+            painter.setRenderHint(QPainter::SmoothPixmapTransform, false);
+            painter.setRenderHint(QPainter::Antialiasing, false);
             painter.drawImage(0, 0, newFrameRgb);
             painter.drawImage(drawX, 0, m_stitchedResult, 0, 0, currentWidth, m_stitchedResult.height());
             if (!painter.end()) {
@@ -1276,6 +1380,9 @@ ImageStitcher::StitchResult ImageStitcher::performStitch(const QImage &newFrame,
                     result.failureReason = "Failed to create painter for stitching";
                     return result;
                 }
+                // Disable smoothing to prevent seam artifacts
+                painter.setRenderHint(QPainter::SmoothPixmapTransform, false);
+                painter.setRenderHint(QPainter::Antialiasing, false);
                 painter.drawImage(0, 0, m_stitchedResult, 0, 0, m_stitchedResult.width(), currentHeight);
                 painter.drawImage(0, drawY, newFrameRgb);
                 if (!painter.end()) {
@@ -1289,6 +1396,9 @@ ImageStitcher::StitchResult ImageStitcher::performStitch(const QImage &newFrame,
                     result.failureReason = "Failed to create painter for stitching";
                     return result;
                 }
+                // Disable smoothing to prevent seam artifacts
+                painter.setRenderHint(QPainter::SmoothPixmapTransform, false);
+                painter.setRenderHint(QPainter::Antialiasing, false);
                 painter.drawImage(0, drawY, newFrameRgb);
                 if (!painter.end()) {
                     qDebug() << "ImageStitcher: QPainter::end() failed for vertical down stitch (in-place)";
@@ -1320,6 +1430,9 @@ ImageStitcher::StitchResult ImageStitcher::performStitch(const QImage &newFrame,
                 result.failureReason = "Failed to create painter for stitching";
                 return result;
             }
+            // Disable smoothing to prevent seam artifacts
+            painter.setRenderHint(QPainter::SmoothPixmapTransform, false);
+            painter.setRenderHint(QPainter::Antialiasing, false);
             painter.drawImage(0, 0, newFrameRgb);
             painter.drawImage(0, drawY, m_stitchedResult, 0, 0, m_stitchedResult.width(), currentHeight);
             if (!painter.end()) {
@@ -1582,6 +1695,16 @@ ImageStitcher::MatchCandidate ImageStitcher::computeRowProjectionCandidate(
         candidate.confidence = std::clamp(bestCorr, 0.0, 1.0);
         candidate.failureReason = QString("Low correlation: %1").arg(bestCorr);
         return candidate;
+    }
+
+    // Reject ambiguous matches where multiple peaks have similar scores
+    if (secondBestCorr > -0.5) {
+        double peakGap = bestCorr - secondBestCorr;
+        if (peakGap < kMinPeakGap) {
+            candidate.confidence = 0.2;
+            candidate.failureReason = QString("Ambiguous match: peak gap %1").arg(peakGap, 0, 'f', 3);
+            return candidate;
+        }
     }
 
     // Apply ±1 pixel seam verification to find the best alignment

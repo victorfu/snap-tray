@@ -121,7 +121,7 @@ set(BUILD_opencv_ml OFF CACHE BOOL "" FORCE)
 set(BUILD_opencv_objdetect ON CACHE BOOL "" FORCE)  # Required for face detection (Haar Cascade)
 set(BUILD_opencv_photo OFF CACHE BOOL "" FORCE)
 set(BUILD_opencv_stitching OFF CACHE BOOL "" FORCE)
-set(BUILD_opencv_video OFF CACHE BOOL "" FORCE)
+set(BUILD_opencv_video ON CACHE BOOL "" FORCE)  # Required for optical flow (calcOpticalFlowPyrLK)
 set(BUILD_opencv_videoio OFF CACHE BOOL "" FORCE)
 set(BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(BUILD_PERF_TESTS OFF CACHE BOOL "" FORCE)
@@ -312,6 +312,11 @@ set(SOURCES
     src/scrolling/ImageStitcher.cpp
     src/scrolling/ImageStitcherAlgorithms.cpp
     src/scrolling/FixedElementDetector.cpp
+    src/scrolling/AutoScrollController.cpp
+    # Stitching algorithms (new modular stitching system)
+    src/stitching/FeatureMatcher.cpp
+    src/stitching/OpticalFlowPredictor.cpp
+    src/stitching/StaticSceneAnalyzer.cpp
     src/pinwindow/ClickThroughExitButton.cpp
     # Auto-blur detection
     src/detection/FaceDetector.cpp
@@ -439,6 +444,11 @@ set(HEADERS
     include/scrolling/ScrollingCaptureThumbnail.h
     include/scrolling/ImageStitcher.h
     include/scrolling/FixedElementDetector.h
+    include/scrolling/AutoScrollController.h
+    # Stitching algorithms (new modular stitching system)
+    include/stitching/FeatureMatcher.h
+    include/stitching/OpticalFlowPredictor.h
+    include/stitching/StaticSceneAnalyzer.h
     include/pinwindow/ClickThroughExitButton.h
     # Auto-blur detection
     include/detection/IDetector.h
@@ -477,6 +487,7 @@ if(APPLE)
         src/AVFoundationEncoder.mm
         src/video/AVFoundationPlayer_mac.mm
         src/input/MouseClickTracker_mac.mm
+        src/scrolling/AutoScrollController_mac.mm
     )
     list(APPEND HEADERS
         include/WindowDetector.h
@@ -504,6 +515,7 @@ elseif(WIN32)
         src/MediaFoundationEncoder.cpp
         src/video/MediaFoundationPlayer_win.cpp
         src/input/MouseClickTracker_win.cpp
+        src/scrolling/AutoScrollController_win.cpp
     )
     list(APPEND HEADERS
         include/WindowDetector.h
@@ -539,6 +551,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/flann/include
     ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/objdetect/include
     ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/calib3d/include
+    ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/video/include
     ${CMAKE_BINARY_DIR}/_deps/libwebp-src/src
 )
 
@@ -584,6 +597,7 @@ if(APPLE)
         opencv_flann
         opencv_calib3d
         opencv_objdetect
+        opencv_video
         webp
         libwebpmux
     )
@@ -617,6 +631,7 @@ elseif(WIN32)
         opencv_flann
         opencv_calib3d
         opencv_objdetect
+        opencv_video
         webp
         libwebpmux
     )

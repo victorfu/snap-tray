@@ -83,7 +83,7 @@ private slots:
         QVERIFY(qFuzzyCompare(config.confidenceThreshold, 0.85));
         QCOMPARE(config.minOverlap, 20);
         QCOMPARE(config.maxOverlap, 500);
-        QVERIFY(qFuzzyCompare(config.staticRowThreshold, 5.0));
+        QVERIFY(qFuzzyCompare(config.staticRowThreshold, 8.0));
         QVERIFY(config.detectStaticRegions);
         QVERIFY(config.useGrayscale);
     }
