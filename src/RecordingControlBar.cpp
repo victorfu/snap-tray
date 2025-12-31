@@ -15,6 +15,15 @@
 #include <QLinearGradient>
 #include <QtMath>
 
+namespace {
+QColor dimmedColor(const QColor &color)
+{
+    QColor dimmed = color;
+    dimmed.setAlpha((color.alpha() * 50) / 100);
+    return dimmed;
+}
+}
+
 class GlassTooltipWidget : public QWidget
 {
 public:
@@ -574,7 +583,7 @@ void RecordingControlBar::paintEvent(QPaintEvent *event)
         drawButtons(painter);
 
         // Draw annotation tool buttons if enabled
-        if (m_annotationEnabled && !m_isPreparing) {
+        if (m_annotationEnabled) {
             drawAnnotationButtons(painter);
         }
     }
@@ -584,10 +593,11 @@ void RecordingControlBar::paintEvent(QPaintEvent *event)
 void RecordingControlBar::drawButtons(QPainter &painter)
 {
     ToolbarStyleConfig config = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
+    const bool controlsEnabled = !m_isPreparing;
 
     // Draw pause/resume button
-    if (!m_isPreparing) {
-        bool isHovered = (m_hoveredButton == ButtonPause);
+    {
+        bool isHovered = controlsEnabled && (m_hoveredButton == ButtonPause);
         if (isHovered) {
             painter.setPen(Qt::NoPen);
             painter.setBrush(config.hoverBackgroundColor);
@@ -595,18 +605,24 @@ void RecordingControlBar::drawButtons(QPainter &painter)
         }
         QString iconKey = m_isPaused ? "play" : "pause";
         QColor iconColor = isHovered ? config.iconActiveColor : config.iconNormalColor;
+        if (!controlsEnabled) {
+            iconColor = dimmedColor(iconColor);
+        }
         IconRenderer::instance().renderIcon(painter, m_pauseRect, iconKey, iconColor);
     }
 
     // Draw stop button
-    if (!m_isPreparing) {
-        bool isHovered = (m_hoveredButton == ButtonStop);
+    {
+        bool isHovered = controlsEnabled && (m_hoveredButton == ButtonStop);
         if (isHovered) {
             painter.setPen(Qt::NoPen);
             painter.setBrush(config.hoverBackgroundColor);
             painter.drawRoundedRect(m_stopRect.adjusted(2, 2, -2, -2), 6, 6);
         }
         QColor iconColor = config.iconRecordColor;
+        if (!controlsEnabled) {
+            iconColor = dimmedColor(iconColor);
+        }
         IconRenderer::instance().renderIcon(painter, m_stopRect, "stop", iconColor);
     }
 
@@ -1019,11 +1035,13 @@ void RecordingControlBar::setAudioEnabled(bool enabled)
 void RecordingControlBar::drawAnnotationButtons(QPainter &painter)
 {
     ToolbarStyleConfig config = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
+    const bool toolsEnabled = !m_isPreparing;
 
     // Draw separator line before annotation tools
     if (!m_pencilRect.isNull()) {
         int sepX = m_pencilRect.left() - SEPARATOR_MARGIN / 2;
-        painter.setPen(QPen(config.hairlineBorderColor, 1));
+        QColor lineColor = toolsEnabled ? config.hairlineBorderColor : dimmedColor(config.hairlineBorderColor);
+        painter.setPen(QPen(lineColor, 1));
         painter.drawLine(sepX, 6, sepX, TOOLBAR_HEIGHT - 6);
     }
 
@@ -1031,10 +1049,10 @@ void RecordingControlBar::drawAnnotationButtons(QPainter &painter)
     auto drawToolButton = [&](const QRect &rect, const QString &iconKey, bool isActive, int buttonId) {
         if (rect.isNull()) return;
 
-        bool isHovered = (m_hoveredButton == buttonId);
+        bool isHovered = toolsEnabled && (m_hoveredButton == buttonId);
 
         // Draw selection/hover background
-        if (isActive || isHovered) {
+        if (toolsEnabled && (isActive || isHovered)) {
             painter.setPen(Qt::NoPen);
             if (isActive) {
                 painter.setBrush(config.activeBackgroundColor);
@@ -1046,6 +1064,9 @@ void RecordingControlBar::drawAnnotationButtons(QPainter &painter)
 
         // Draw icon
         QColor iconColor = isActive ? config.iconActiveColor : config.iconNormalColor;
+        if (!toolsEnabled) {
+            iconColor = dimmedColor(iconColor);
+        }
         IconRenderer::instance().renderIcon(painter, rect, iconKey, iconColor);
     };
 
@@ -1057,7 +1078,7 @@ void RecordingControlBar::drawAnnotationButtons(QPainter &painter)
 
     // Draw color button with actual color
     if (!m_colorRect.isNull()) {
-        bool isHovered = (m_hoveredButton == ButtonColor);
+        bool isHovered = toolsEnabled && (m_hoveredButton == ButtonColor);
         if (isHovered) {
             painter.setPen(Qt::NoPen);
             painter.setBrush(config.hoverBackgroundColor);
@@ -1066,8 +1087,10 @@ void RecordingControlBar::drawAnnotationButtons(QPainter &painter)
 
         // Draw color circle
         QRect colorCircle = m_colorRect.adjusted(6, 6, -6, -6);
-        painter.setPen(QPen(config.hairlineBorderColor, 1));
-        painter.setBrush(m_annotationColor);
+        QColor borderColor = toolsEnabled ? config.hairlineBorderColor : dimmedColor(config.hairlineBorderColor);
+        QColor fillColor = toolsEnabled ? m_annotationColor : dimmedColor(m_annotationColor);
+        painter.setPen(QPen(borderColor, 1));
+        painter.setBrush(fillColor);
         painter.drawEllipse(colorCircle);
     }
 }
