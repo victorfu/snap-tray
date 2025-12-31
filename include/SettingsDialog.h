@@ -133,6 +133,9 @@ private:
 
     // Files tab
     void setupFilesTab(QWidget *tab);
+
+    // About tab
+    void setupAboutTab(QWidget *tab);
     void updateFilenamePreview();
     QLineEdit *m_screenshotPathEdit;
     QPushButton *m_screenshotPathBrowseBtn;

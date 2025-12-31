@@ -114,6 +114,11 @@ void SettingsDialog::setupUi()
     setupFilesTab(filesTab);
     m_tabWidget->addTab(filesTab, "Files");
 
+    // Tab 6: About
+    QWidget *aboutTab = new QWidget();
+    setupAboutTab(aboutTab);
+    m_tabWidget->addTab(aboutTab, "About");
+
     mainLayout->addWidget(m_tabWidget);
 
     // Buttons row (outside tabs)
@@ -1147,4 +1152,59 @@ void SettingsDialog::updateFilenamePreview()
     }
 
     m_filenamePreviewLabel->setText(QString("Preview: %1").arg(filename));
+}
+
+void SettingsDialog::setupAboutTab(QWidget *tab)
+{
+    QVBoxLayout *layout = new QVBoxLayout(tab);
+    layout->setAlignment(Qt::AlignTop | Qt::AlignHCenter);
+    layout->setSpacing(8);
+    layout->setContentsMargins(40, 30, 40, 30);
+
+    // App icon
+    QLabel *iconLabel = new QLabel(tab);
+    QPixmap iconPixmap(":/icons/icons/snaptray.png");
+    iconLabel->setPixmap(iconPixmap.scaled(64, 64, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    iconLabel->setAlignment(Qt::AlignCenter);
+    layout->addWidget(iconLabel);
+
+    layout->addSpacing(12);
+
+    // App name
+    QLabel *nameLabel = new QLabel(SNAPTRAY_APP_NAME, tab);
+    nameLabel->setStyleSheet("font-size: 18px; font-weight: bold;");
+    nameLabel->setAlignment(Qt::AlignCenter);
+    layout->addWidget(nameLabel);
+
+    // Version
+    QLabel *versionLabel = new QLabel(QString("Version %1").arg(SNAPTRAY_VERSION), tab);
+    versionLabel->setStyleSheet("font-size: 12px; color: gray;");
+    versionLabel->setAlignment(Qt::AlignCenter);
+    layout->addWidget(versionLabel);
+
+    layout->addSpacing(20);
+
+    // Copyright
+    QLabel *copyrightLabel = new QLabel("Copyright 2024-2025 Victor Fu", tab);
+    copyrightLabel->setStyleSheet("font-size: 11px;");
+    copyrightLabel->setAlignment(Qt::AlignCenter);
+    layout->addWidget(copyrightLabel);
+
+    layout->addSpacing(12);
+
+    // Author
+    QLabel *authorLabel = new QLabel("Author: Victor Fu", tab);
+    authorLabel->setStyleSheet("font-size: 11px;");
+    authorLabel->setAlignment(Qt::AlignCenter);
+    layout->addWidget(authorLabel);
+
+    // Website link
+    QLabel *websiteLabel = new QLabel(
+        "<a href=\"https://victorfu.github.io/snap-tray/\" style=\"color: #0066cc;\">https://victorfu.github.io/snap-tray/</a>", tab);
+    websiteLabel->setStyleSheet("font-size: 11px;");
+    websiteLabel->setAlignment(Qt::AlignCenter);
+    websiteLabel->setOpenExternalLinks(true);
+    layout->addWidget(websiteLabel);
+
+    layout->addStretch();
 }
