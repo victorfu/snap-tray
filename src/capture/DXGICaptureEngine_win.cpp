@@ -62,12 +62,25 @@ public:
     QImage latestFrame;  // Thread-safe cached frame for main thread access
     std::mutex frameMutex;
 
+    // Retry limit for DXGI reinitialization
+    int dxgiRetryCount = 0;
+    static constexpr int kMaxDxgiRetries = 3;
+
+    // Mutex to protect DXGI resources during cleanup
+    // Using recursive_mutex because captureWithDXGI() may call cleanup() internally
+    std::recursive_mutex resourceMutex;
+
 public slots:
     void doCapture();
 };
 
 bool DXGICaptureEngine::Private::initializeDXGI()
 {
+    if (!targetScreen) {
+        qWarning() << "DXGICaptureEngine: targetScreen is null";
+        return false;
+    }
+
     HRESULT hr;
 
     // Create D3D11 device
@@ -202,6 +215,8 @@ bool DXGICaptureEngine::Private::initializeDXGI()
 
 void DXGICaptureEngine::Private::cleanup()
 {
+    std::lock_guard<std::recursive_mutex> lock(resourceMutex);
+
     if (duplication) {
         duplication->ReleaseFrame();
     }
@@ -241,6 +256,9 @@ void DXGICaptureEngine::Private::cleanupThread()
 void DXGICaptureEngine::Private::doCapture()
 {
     if (!running) return;
+
+    std::lock_guard<std::recursive_mutex> lock(resourceMutex);
+    if (!running) return;  // Double-check after acquiring lock
 
     QImage frame;
     if (useDXGI) {
@@ -323,14 +341,23 @@ QImage DXGICaptureEngine::Private::captureWithDXGI()
     }
 
     if (hr == DXGI_ERROR_ACCESS_LOST) {
-        // Duplication was invalidated, try to reinitialize
-        qWarning() << "DXGICaptureEngine: Access lost, reinitializing";
+        // Duplication was invalidated, try to reinitialize with retry limit
+        if (dxgiRetryCount >= kMaxDxgiRetries) {
+            qWarning() << "DXGICaptureEngine: Max retries reached, falling back to BitBlt";
+            dxgiRetryCount = 0;
+            useDXGI = false;
+            return captureWithBitBlt();
+        }
+
+        qWarning() << "DXGICaptureEngine: Access lost, reinitializing (attempt"
+                   << dxgiRetryCount + 1 << "/" << kMaxDxgiRetries << ")";
         cleanup();
         useDXGI = initializeDXGI();
         if (useDXGI) {
-            // Successfully reinitialized, retry DXGI capture
+            dxgiRetryCount++;
             return captureWithDXGI();
         }
+        dxgiRetryCount = 0;
         return captureWithBitBlt();
     }
 
@@ -386,6 +413,9 @@ QImage DXGICaptureEngine::Private::captureWithDXGI()
 
     context->Unmap(stagingTexture.Get(), 0);
     duplication->ReleaseFrame();
+
+    // Reset retry counter on successful capture
+    dxgiRetryCount = 0;
 
     return lastFrame;
 }
