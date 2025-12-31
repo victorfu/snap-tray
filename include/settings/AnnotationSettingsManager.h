@@ -3,6 +3,7 @@
 
 #include <QColor>
 #include "annotations/StepBadgeAnnotation.h"
+#include "ui/sections/MosaicBlurTypeSection.h"
 
 /**
  * @brief Singleton class for managing annotation settings.
@@ -36,12 +37,17 @@ public:
     int loadCornerRadius() const;
     void saveCornerRadius(int radius);
 
+    // Mosaic blur type settings
+    MosaicBlurTypeSection::BlurType loadMosaicBlurType() const;
+    void saveMosaicBlurType(MosaicBlurTypeSection::BlurType type);
+
     // Default values
     static constexpr int kDefaultWidth = 3;
     static QColor defaultColor() { return Qt::red; }
     static constexpr StepBadgeSize kDefaultStepBadgeSize = StepBadgeSize::Medium;
     static constexpr bool kDefaultPolylineMode = false;
     static constexpr int kDefaultCornerRadius = 0;
+    static constexpr MosaicBlurTypeSection::BlurType kDefaultMosaicBlurType = MosaicBlurTypeSection::BlurType::Pixelate;
 
 private:
     AnnotationSettingsManager() = default;
@@ -53,6 +59,7 @@ private:
     static constexpr const char* kSettingsKeyStepBadgeSize = "stepBadgeSize";
     static constexpr const char* kSettingsKeyPolylineMode = "polylineMode";
     static constexpr const char* kSettingsKeyCornerRadius = "cornerRadius";
+    static constexpr const char* kSettingsKeyMosaicBlurType = "mosaicBlurType";
 };
 
 #endif // ANNOTATIONSETTINGSMANAGER_H

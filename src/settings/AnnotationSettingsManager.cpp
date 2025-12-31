@@ -72,3 +72,20 @@ void AnnotationSettingsManager::saveCornerRadius(int radius)
     auto settings = SnapTray::getSettings();
     settings.setValue(kSettingsKeyCornerRadius, radius);
 }
+
+MosaicBlurTypeSection::BlurType AnnotationSettingsManager::loadMosaicBlurType() const
+{
+    auto settings = SnapTray::getSettings();
+    int value = settings.value(kSettingsKeyMosaicBlurType,
+                               static_cast<int>(kDefaultMosaicBlurType)).toInt();
+    if (value >= 0 && value <= 1) {
+        return static_cast<MosaicBlurTypeSection::BlurType>(value);
+    }
+    return kDefaultMosaicBlurType;
+}
+
+void AnnotationSettingsManager::saveMosaicBlurType(MosaicBlurTypeSection::BlurType type)
+{
+    auto settings = SnapTray::getSettings();
+    settings.setValue(kSettingsKeyMosaicBlurType, static_cast<int>(type));
+}

@@ -12,11 +12,13 @@
 #include "annotations/LineStyle.h"        // For LineStyle enum
 #include "annotations/StepBadgeAnnotation.h"  // For StepBadgeSize enum
 #include "ToolbarStyle.h"
+#include "ui/sections/MosaicBlurTypeSection.h"
 
 class QPainter;
 class ColorSection;
 class WidthSection;
 class MosaicWidthSection;
+class MosaicBlurTypeSection;
 class TextSection;
 class ArrowStyleSection;
 class LineStyleSection;
@@ -133,6 +135,15 @@ public:
     int mosaicWidth() const;
 
     // =========================================================================
+    // Mosaic Blur Type Methods
+    // =========================================================================
+
+    void setShowMosaicBlurTypeSection(bool show);
+    bool showMosaicBlurTypeSection() const { return m_showMosaicBlurTypeSection; }
+    void setMosaicBlurType(MosaicBlurTypeSection::BlurType type);
+    MosaicBlurTypeSection::BlurType mosaicBlurType() const;
+
+    // =========================================================================
     // Auto Blur Methods
     // =========================================================================
 
@@ -201,6 +212,9 @@ signals:
     // Mosaic width signals
     void mosaicWidthChanged(int width);
 
+    // Mosaic blur type signals
+    void mosaicBlurTypeChanged(MosaicBlurTypeSection::BlurType type);
+
     // Auto blur signals
     void autoBlurRequested();
 
@@ -212,6 +226,7 @@ private:
     ColorSection* m_colorSection;
     WidthSection* m_widthSection;
     MosaicWidthSection* m_mosaicWidthSection;
+    MosaicBlurTypeSection* m_mosaicBlurTypeSection;
     TextSection* m_textSection;
     ArrowStyleSection* m_arrowStyleSection;
     LineStyleSection* m_lineStyleSection;
@@ -224,6 +239,7 @@ private:
     bool m_showWidthSection = true;
     bool m_widthSectionHidden = false;  // Hide UI but keep wheel functionality
     bool m_showMosaicWidthSection = false;
+    bool m_showMosaicBlurTypeSection = false;
     bool m_showTextSection = false;
     bool m_showArrowStyleSection = false;
     bool m_showLineStyleSection = false;

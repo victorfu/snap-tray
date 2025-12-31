@@ -7,7 +7,7 @@
 #include <QImage>
 
 /**
- * @brief Rectangular mosaic annotation with pixelation effect.
+ * @brief Rectangular mosaic annotation with pixelation or Gaussian blur effect.
  *
  * Used by auto-blur to cover detected faces with a mosaic overlay.
  * Unlike MosaicStroke (freehand), this fills an entire rectangle.
@@ -15,16 +15,26 @@
 class MosaicRectAnnotation : public AnnotationItem
 {
 public:
-    MosaicRectAnnotation(const QRect& rect, const QPixmap& sourcePixmap, int blockSize = 12);
+    enum class BlurType {
+        Pixelate,
+        Gaussian
+    };
+
+    MosaicRectAnnotation(const QRect& rect, const QPixmap& sourcePixmap,
+                         int blockSize = 12, BlurType blurType = BlurType::Pixelate);
 
     void draw(QPainter& painter) const override;
     QRect boundingRect() const override;
     std::unique_ptr<AnnotationItem> clone() const override;
 
+    void setBlurType(BlurType type);
+    BlurType blurType() const { return m_blurType; }
+
 private:
     QRect m_rect;           // Rectangle in logical coordinates
     QPixmap m_sourcePixmap; // Source image for mosaic sampling
     int m_blockSize;        // Pixelation block size
+    BlurType m_blurType;
     qreal m_devicePixelRatio;
 
     // Performance cache
@@ -34,6 +44,7 @@ private:
     mutable QImage m_sourceImageCache;
 
     QImage applyPixelatedMosaic(qreal dpr) const;
+    QImage applyGaussianBlur(qreal dpr) const;
     QRgb calculateBlockAverageColor(const QImage& image, int x, int y, int blockW, int blockH) const;
 };
 

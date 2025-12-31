@@ -2,17 +2,19 @@
 #include <QPainter>
 #include <QtMath>
 #include <algorithm>
+#include <opencv2/imgproc.hpp>
 
 // ============================================================================
 // MosaicStroke Implementation (classic pixelation)
 // ============================================================================
 
 MosaicStroke::MosaicStroke(const QVector<QPoint> &points, const QPixmap &sourcePixmap,
-                           int width, int blockSize)
+                           int width, int blockSize, BlurType blurType)
     : m_points(points)
     , m_sourcePixmap(sourcePixmap)
     , m_width(width)
     , m_blockSize(blockSize)
+    , m_blurType(blurType)
     , m_devicePixelRatio(sourcePixmap.devicePixelRatio())
 {
 }
@@ -134,6 +136,74 @@ QImage MosaicStroke::applyPixelatedMosaic(const QRect &strokeBounds) const
     return resultImage;
 }
 
+QImage MosaicStroke::applyGaussianBlur(const QRect &strokeBounds) const
+{
+    // Get the full source image for sampling
+    if (m_sourceImageCache.isNull()) {
+        m_sourceImageCache = m_sourcePixmap.toImage().convertToFormat(QImage::Format_ARGB32);
+    }
+
+    // Convert stroke bounds to device pixels
+    QRect deviceStrokeBounds(
+        static_cast<int>(strokeBounds.x() * m_devicePixelRatio),
+        static_cast<int>(strokeBounds.y() * m_devicePixelRatio),
+        static_cast<int>(strokeBounds.width() * m_devicePixelRatio),
+        static_cast<int>(strokeBounds.height() * m_devicePixelRatio)
+    );
+
+    if (deviceStrokeBounds.isEmpty()) {
+        return QImage();
+    }
+
+    // Clamp to image bounds
+    QRect clampedBounds = deviceStrokeBounds.intersected(
+        QRect(0, 0, m_sourceImageCache.width(), m_sourceImageCache.height())
+    );
+    if (clampedBounds.isEmpty()) {
+        return QImage();
+    }
+
+    // Extract region from source
+    QImage regionImage = m_sourceImageCache.copy(clampedBounds);
+    QImage rgb = regionImage.convertToFormat(QImage::Format_RGB32);
+
+    cv::Mat mat(rgb.height(), rgb.width(), CV_8UC4,
+                const_cast<uchar*>(rgb.bits()),
+                static_cast<size_t>(rgb.bytesPerLine()));
+
+    cv::Mat bgr;
+    cv::cvtColor(mat, bgr, cv::COLOR_RGBA2BGR);
+
+    // Calculate sigma based on block size (larger block = more blur)
+    double sigma = static_cast<double>(m_blockSize) * m_devicePixelRatio / 2.0;
+    if (sigma < 1.0) sigma = 1.0;
+
+    // Apply Gaussian blur
+    cv::GaussianBlur(bgr, bgr, cv::Size(0, 0), sigma);
+
+    // Convert back to QImage
+    cv::Mat rgba;
+    cv::cvtColor(bgr, rgba, cv::COLOR_BGR2RGBA);
+
+    QImage blurred(rgba.data, rgba.cols, rgba.rows,
+                   static_cast<int>(rgba.step), QImage::Format_RGBA8888);
+    blurred = blurred.copy();  // Deep copy
+
+    // Create result image with proper offset
+    QImage resultImage(deviceStrokeBounds.size(), QImage::Format_ARGB32);
+    resultImage.fill(Qt::transparent);
+
+    // Paint blurred region into result at correct offset
+    int offsetX = clampedBounds.x() - deviceStrokeBounds.x();
+    int offsetY = clampedBounds.y() - deviceStrokeBounds.y();
+
+    QPainter p(&resultImage);
+    p.drawImage(offsetX, offsetY, blurred);
+    p.end();
+
+    return resultImage;
+}
+
 void MosaicStroke::draw(QPainter &painter) const
 {
     if (m_points.size() < 2) return;
@@ -152,8 +222,17 @@ void MosaicStroke::draw(QPainter &painter) const
     if (!cacheValid) {
         int halfWidth = m_width / 2;
 
-        // === Step 1: Create pixelated mosaic ===
-        QImage mosaicImage = applyPixelatedMosaic(bounds);
+        // === Step 1: Create blurred/pixelated effect ===
+        QImage mosaicImage;
+        switch (m_blurType) {
+        case BlurType::Gaussian:
+            mosaicImage = applyGaussianBlur(bounds);
+            break;
+        case BlurType::Pixelate:
+        default:
+            mosaicImage = applyPixelatedMosaic(bounds);
+            break;
+        }
         if (mosaicImage.isNull()) {
             m_renderedCache = QPixmap();
             return;
@@ -256,7 +335,7 @@ QRect MosaicStroke::boundingRect() const
 
 std::unique_ptr<AnnotationItem> MosaicStroke::clone() const
 {
-    return std::make_unique<MosaicStroke>(m_points, m_sourcePixmap, m_width, m_blockSize);
+    return std::make_unique<MosaicStroke>(m_points, m_sourcePixmap, m_width, m_blockSize, m_blurType);
 }
 
 void MosaicStroke::addPoint(const QPoint &point)
@@ -269,4 +348,12 @@ void MosaicStroke::updateSource(const QPixmap &sourcePixmap)
     m_sourcePixmap = sourcePixmap;
     m_devicePixelRatio = sourcePixmap.devicePixelRatio();
     m_sourceImageCache = QImage();  // Clear cache so it regenerates on next draw
+}
+
+void MosaicStroke::setBlurType(BlurType type)
+{
+    if (m_blurType != type) {
+        m_blurType = type;
+        m_renderedCache = QPixmap();  // Clear cache to regenerate with new blur type
+    }
 }

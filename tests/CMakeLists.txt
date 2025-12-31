@@ -17,6 +17,7 @@ set(COLORANDWIDTHWIDGET_COMMON_SOURCES
     ${CMAKE_SOURCE_DIR}/src/ui/sections/ColorSection.cpp
     ${CMAKE_SOURCE_DIR}/src/ui/sections/WidthSection.cpp
     ${CMAKE_SOURCE_DIR}/src/ui/sections/MosaicWidthSection.cpp
+    ${CMAKE_SOURCE_DIR}/src/ui/sections/MosaicBlurTypeSection.cpp
     ${CMAKE_SOURCE_DIR}/src/ui/sections/TextSection.cpp
     ${CMAKE_SOURCE_DIR}/src/ui/sections/ArrowStyleSection.cpp
     ${CMAKE_SOURCE_DIR}/src/ui/sections/LineStyleSection.cpp
@@ -31,6 +32,7 @@ set(COLORANDWIDTHWIDGET_COMMON_HEADERS
     ${CMAKE_SOURCE_DIR}/include/ui/sections/ColorSection.h
     ${CMAKE_SOURCE_DIR}/include/ui/sections/WidthSection.h
     ${CMAKE_SOURCE_DIR}/include/ui/sections/MosaicWidthSection.h
+    ${CMAKE_SOURCE_DIR}/include/ui/sections/MosaicBlurTypeSection.h
     ${CMAKE_SOURCE_DIR}/include/ui/sections/TextSection.h
     ${CMAKE_SOURCE_DIR}/include/ui/sections/ArrowStyleSection.h
     ${CMAKE_SOURCE_DIR}/include/ui/sections/LineStyleSection.h

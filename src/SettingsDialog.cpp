@@ -160,23 +160,14 @@ void SettingsDialog::setupGeneralTab(QWidget *tab)
     int currentStyle = static_cast<int>(ToolbarStyleConfig::loadStyle());
     m_toolbarStyleCombo->setCurrentIndex(currentStyle);
 
-    // ========== Auto Blur Section ==========
+    // ========== Blur Section ==========
     layout->addSpacing(16);
-    QLabel *autoBlurLabel = new QLabel("Auto Blur", tab);
+    QLabel *autoBlurLabel = new QLabel("Blur", tab);
     autoBlurLabel->setStyleSheet("font-weight: bold; font-size: 12px;");
     layout->addWidget(autoBlurLabel);
 
     // Load current settings
     auto blurOptions = AutoBlurManager::loadSettings();
-
-    m_autoBlurEnabledCheckbox = new QCheckBox("Enable auto-blur detection", tab);
-    m_autoBlurEnabledCheckbox->setChecked(blurOptions.enabled);
-    layout->addWidget(m_autoBlurEnabledCheckbox);
-
-    // Detection options
-    m_autoBlurFacesCheckbox = new QCheckBox("Detect faces", tab);
-    m_autoBlurFacesCheckbox->setChecked(blurOptions.detectFaces);
-    layout->addWidget(m_autoBlurFacesCheckbox);
 
     // Blur intensity slider
     QHBoxLayout *intensityLayout = new QHBoxLayout();
@@ -200,24 +191,13 @@ void SettingsDialog::setupGeneralTab(QWidget *tab)
     QLabel *typeLabel = new QLabel("Blur type:", tab);
     typeLabel->setFixedWidth(120);
     m_blurTypeCombo = new QComboBox(tab);
-    m_blurTypeCombo->addItem("Pixelate (Mosaic)", "pixelate");
-    m_blurTypeCombo->addItem("Gaussian Blur", "gaussian");
+    m_blurTypeCombo->addItem("Pixelate", "pixelate");
+    m_blurTypeCombo->addItem("Gaussian", "gaussian");
     m_blurTypeCombo->setCurrentIndex(blurOptions.blurType == AutoBlurManager::BlurType::Gaussian ? 1 : 0);
     typeLayout->addWidget(typeLabel);
     typeLayout->addWidget(m_blurTypeCombo);
     typeLayout->addStretch();
     layout->addLayout(typeLayout);
-
-    // Enable/disable detection checkboxes based on main checkbox
-    connect(m_autoBlurEnabledCheckbox, &QCheckBox::toggled, this, [this](bool checked) {
-        m_autoBlurFacesCheckbox->setEnabled(checked);
-        m_blurIntensitySlider->setEnabled(checked);
-        m_blurTypeCombo->setEnabled(checked);
-    });
-    // Initialize enabled state
-    m_autoBlurFacesCheckbox->setEnabled(blurOptions.enabled);
-    m_blurIntensitySlider->setEnabled(blurOptions.enabled);
-    m_blurTypeCombo->setEnabled(blurOptions.enabled);
 
     // ========== Pin Window Section ==========
     layout->addSpacing(16);
@@ -823,9 +803,6 @@ void SettingsDialog::onSave()
 
     // Save auto-blur settings
     AutoBlurManager::Options blurOptions;
-    blurOptions.enabled = m_autoBlurEnabledCheckbox->isChecked();
-    blurOptions.detectFaces = m_autoBlurFacesCheckbox->isChecked();
-    blurOptions.detectText = false;  // Text detection not supported
     blurOptions.blurIntensity = m_blurIntensitySlider->value();
     blurOptions.blurType = m_blurTypeCombo->currentIndex() == 1
                                ? AutoBlurManager::BlurType::Gaussian

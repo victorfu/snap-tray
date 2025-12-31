@@ -17,7 +17,8 @@ void MosaicToolHandler::onMousePress(ToolContext* ctx, const QPoint& pos) {
         m_currentPath,
         *ctx->sourcePixmap,
         brushWidth,
-        kDefaultBlockSize
+        kDefaultBlockSize,
+        ctx->mosaicBlurType
     );
 
     ctx->repaint();

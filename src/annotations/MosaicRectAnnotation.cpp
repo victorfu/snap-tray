@@ -2,15 +2,18 @@
 #include <QPainter>
 #include <QDebug>
 #include <algorithm>
+#include <opencv2/imgproc.hpp>
 
 // ============================================================================
 // MosaicRectAnnotation Implementation (rectangular pixelation for auto-blur)
 // ============================================================================
 
-MosaicRectAnnotation::MosaicRectAnnotation(const QRect& rect, const QPixmap& sourcePixmap, int blockSize)
+MosaicRectAnnotation::MosaicRectAnnotation(const QRect& rect, const QPixmap& sourcePixmap,
+                                           int blockSize, BlurType blurType)
     : m_rect(rect)
     , m_sourcePixmap(sourcePixmap)
     , m_blockSize(blockSize)
+    , m_blurType(blurType)
     , m_devicePixelRatio(sourcePixmap.devicePixelRatio())
 {
 }
@@ -148,6 +151,76 @@ QImage MosaicRectAnnotation::applyPixelatedMosaic(qreal dpr) const
     return resultImage;
 }
 
+QImage MosaicRectAnnotation::applyGaussianBlur(qreal dpr) const
+{
+    // Get the full source image for sampling
+    if (m_sourceImageCache.isNull()) {
+        m_sourceImageCache = m_sourcePixmap.toImage().convertToFormat(QImage::Format_ARGB32);
+    }
+
+    qreal sourceDpr = m_devicePixelRatio;
+
+    // Convert rect bounds to device pixels
+    QRect deviceRect(
+        static_cast<int>(m_rect.x() * sourceDpr),
+        static_cast<int>(m_rect.y() * sourceDpr),
+        static_cast<int>(m_rect.width() * sourceDpr),
+        static_cast<int>(m_rect.height() * sourceDpr)
+    );
+
+    if (deviceRect.isEmpty()) {
+        return QImage();
+    }
+
+    // Clamp to image bounds
+    QRect clampedRect = deviceRect.intersected(
+        QRect(0, 0, m_sourceImageCache.width(), m_sourceImageCache.height())
+    );
+    if (clampedRect.isEmpty()) {
+        return QImage();
+    }
+
+    // Extract region from source
+    QImage regionImage = m_sourceImageCache.copy(clampedRect);
+    QImage rgb = regionImage.convertToFormat(QImage::Format_RGB32);
+
+    cv::Mat mat(rgb.height(), rgb.width(), CV_8UC4,
+                const_cast<uchar*>(rgb.bits()),
+                static_cast<size_t>(rgb.bytesPerLine()));
+
+    cv::Mat bgr;
+    cv::cvtColor(mat, bgr, cv::COLOR_RGBA2BGR);
+
+    // Calculate sigma based on block size (larger block = more blur)
+    double sigma = static_cast<double>(m_blockSize) * sourceDpr / 2.0;
+    if (sigma < 1.0) sigma = 1.0;
+
+    // Apply Gaussian blur
+    cv::GaussianBlur(bgr, bgr, cv::Size(0, 0), sigma);
+
+    // Convert back to QImage
+    cv::Mat rgba;
+    cv::cvtColor(bgr, rgba, cv::COLOR_BGR2RGBA);
+
+    QImage blurred(rgba.data, rgba.cols, rgba.rows,
+                   static_cast<int>(rgba.step), QImage::Format_RGBA8888);
+    blurred = blurred.copy();  // Deep copy
+
+    // Create result image with proper offset
+    QImage resultImage(deviceRect.size(), QImage::Format_ARGB32);
+    resultImage.fill(Qt::transparent);
+
+    // Paint blurred region into result at correct offset
+    int offsetX = clampedRect.x() - deviceRect.x();
+    int offsetY = clampedRect.y() - deviceRect.y();
+
+    QPainter p(&resultImage);
+    p.drawImage(offsetX, offsetY, blurred);
+    p.end();
+
+    return resultImage;
+}
+
 void MosaicRectAnnotation::draw(QPainter& painter) const
 {
     if (m_rect.isEmpty()) return;
@@ -160,7 +233,16 @@ void MosaicRectAnnotation::draw(QPainter& painter) const
         && m_cachedDpr == m_devicePixelRatio;
 
     if (!cacheValid) {
-        QImage mosaicImage = applyPixelatedMosaic(dpr);
+        QImage mosaicImage;
+        switch (m_blurType) {
+        case BlurType::Gaussian:
+            mosaicImage = applyGaussianBlur(dpr);
+            break;
+        case BlurType::Pixelate:
+        default:
+            mosaicImage = applyPixelatedMosaic(dpr);
+            break;
+        }
         if (mosaicImage.isNull()) {
             m_renderedCache = QPixmap();
             return;
@@ -185,5 +267,13 @@ QRect MosaicRectAnnotation::boundingRect() const
 
 std::unique_ptr<AnnotationItem> MosaicRectAnnotation::clone() const
 {
-    return std::make_unique<MosaicRectAnnotation>(m_rect, m_sourcePixmap, m_blockSize);
+    return std::make_unique<MosaicRectAnnotation>(m_rect, m_sourcePixmap, m_blockSize, m_blurType);
+}
+
+void MosaicRectAnnotation::setBlurType(BlurType type)
+{
+    if (m_blurType != type) {
+        m_blurType = type;
+        m_renderedCache = QPixmap();  // Clear cache to regenerate with new blur type
+    }
 }

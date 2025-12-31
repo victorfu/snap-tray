@@ -290,6 +290,7 @@ set(SOURCES
     src/ui/sections/ColorSection.cpp
     src/ui/sections/WidthSection.cpp
     src/ui/sections/MosaicWidthSection.cpp
+    src/ui/sections/MosaicBlurTypeSection.cpp
     src/ui/sections/TextSection.cpp
     src/ui/sections/ArrowStyleSection.cpp
     src/ui/sections/LineStyleSection.cpp
@@ -414,6 +415,7 @@ set(HEADERS
     include/ui/sections/ColorSection.h
     include/ui/sections/WidthSection.h
     include/ui/sections/MosaicWidthSection.h
+    include/ui/sections/MosaicBlurTypeSection.h
     include/ui/sections/TextSection.h
     include/ui/sections/ArrowStyleSection.h
     include/ui/sections/LineStyleSection.h

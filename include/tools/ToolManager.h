@@ -108,6 +108,9 @@ public:
     void setShapeFillMode(int mode);
     int shapeFillMode() const { return m_context->shapeFillMode; }
 
+    void setMosaicBlurType(MosaicStroke::BlurType type);
+    MosaicStroke::BlurType mosaicBlurType() const { return m_context->mosaicBlurType; }
+
     // Callback setup
     void setRepaintCallback(std::function<void()> callback);
 

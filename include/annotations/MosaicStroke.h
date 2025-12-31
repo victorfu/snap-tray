@@ -8,13 +8,18 @@
 #include <QImage>
 
 /**
- * @brief Freehand mosaic stroke with classic pixelation (block averaging)
+ * @brief Freehand mosaic stroke with pixelation or Gaussian blur
  */
 class MosaicStroke : public AnnotationItem
 {
 public:
+    enum class BlurType {
+        Pixelate,
+        Gaussian
+    };
+
     MosaicStroke(const QVector<QPoint> &points, const QPixmap &sourcePixmap,
-                 int width = 24, int blockSize = 12);
+                 int width = 24, int blockSize = 12, BlurType blurType = BlurType::Pixelate);
 
     void draw(QPainter &painter) const override;
     QRect boundingRect() const override;
@@ -22,6 +27,8 @@ public:
 
     void addPoint(const QPoint &point);
     void updateSource(const QPixmap &sourcePixmap);
+    void setBlurType(BlurType type);
+    BlurType blurType() const { return m_blurType; }
 
 private:
     QVector<QPoint> m_points;
@@ -29,6 +36,7 @@ private:
     mutable QImage m_sourceImageCache;
     int m_width;      // Brush width
     int m_blockSize;  // Mosaic block size
+    BlurType m_blurType;
     qreal m_devicePixelRatio;
 
     // Performance optimization: rendered result cache
@@ -39,6 +47,8 @@ private:
 
     // Pixelated mosaic algorithm aligned to the source image grid
     QImage applyPixelatedMosaic(const QRect &strokeBounds) const;
+    // Gaussian blur algorithm
+    QImage applyGaussianBlur(const QRect &strokeBounds) const;
     QRgb calculateBlockAverageColor(const QImage &image, int x, int y,
                                      int blockW, int blockH) const;
 };

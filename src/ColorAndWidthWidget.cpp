@@ -18,6 +18,7 @@ ColorAndWidthWidget::ColorAndWidthWidget(QObject* parent)
     , m_colorSection(new ColorSection(this))
     , m_widthSection(new WidthSection(this))
     , m_mosaicWidthSection(new MosaicWidthSection(this))
+    , m_mosaicBlurTypeSection(new MosaicBlurTypeSection(this))
     , m_textSection(new TextSection(this))
     , m_arrowStyleSection(new ArrowStyleSection(this))
     , m_lineStyleSection(new LineStyleSection(this))
@@ -94,6 +95,12 @@ void ColorAndWidthWidget::connectSectionSignals()
     connect(m_mosaicWidthSection, &MosaicWidthSection::widthChanged, this, [this](int width) {
         emit mosaicWidthChanged(width);
         qDebug() << "ColorAndWidthWidget: Mosaic width changed to" << width;
+    });
+
+    // Forward MosaicBlurTypeSection signals
+    connect(m_mosaicBlurTypeSection, &MosaicBlurTypeSection::blurTypeChanged, this, [this](MosaicBlurTypeSection::BlurType type) {
+        emit mosaicBlurTypeChanged(type);
+        qDebug() << "ColorAndWidthWidget: Mosaic blur type changed to" << static_cast<int>(type);
     });
 
     // Forward AutoBlurSection signals
@@ -332,6 +339,25 @@ int ColorAndWidthWidget::mosaicWidth() const
 }
 
 // =============================================================================
+// Mosaic Blur Type Methods
+// =============================================================================
+
+void ColorAndWidthWidget::setShowMosaicBlurTypeSection(bool show)
+{
+    m_showMosaicBlurTypeSection = show;
+}
+
+void ColorAndWidthWidget::setMosaicBlurType(MosaicBlurTypeSection::BlurType type)
+{
+    m_mosaicBlurTypeSection->setBlurType(type);
+}
+
+MosaicBlurTypeSection::BlurType ColorAndWidthWidget::mosaicBlurType() const
+{
+    return m_mosaicBlurTypeSection->blurType();
+}
+
+// =============================================================================
 // Auto Blur Methods
 // =============================================================================
 
@@ -413,6 +439,11 @@ void ColorAndWidthWidget::updatePosition(const QRect& anchorRect, bool above, in
         totalWidth += m_mosaicWidthSection->preferredWidth();
         hasFirstSection = true;
     }
+    if (m_showMosaicBlurTypeSection) {
+        if (hasFirstSection) totalWidth += SECTION_SPACING;
+        totalWidth += m_mosaicBlurTypeSection->preferredWidth();
+        hasFirstSection = true;
+    }
 
     // Add right margin for visual balance
     if (hasFirstSection) {
@@ -448,6 +479,7 @@ void ColorAndWidthWidget::updatePosition(const QRect& anchorRect, bool above, in
     // Update dropdown section directions
     m_arrowStyleSection->setDropdownExpandsUpward(above);
     m_lineStyleSection->setDropdownExpandsUpward(above);
+    m_mosaicBlurTypeSection->setDropdownExpandsUpward(above);
 
     updateLayout();
 }
@@ -528,6 +560,13 @@ void ColorAndWidthWidget::updateLayout()
     if (m_showMosaicWidthSection) {
         if (hasFirstSection) xOffset += SECTION_SPACING;
         m_mosaicWidthSection->updateLayout(m_widgetRect.top(), WIDGET_HEIGHT, xOffset);
+        xOffset += m_mosaicWidthSection->preferredWidth();
+        hasFirstSection = true;
+    }
+
+    if (m_showMosaicBlurTypeSection) {
+        if (hasFirstSection) xOffset += SECTION_SPACING;
+        m_mosaicBlurTypeSection->updateLayout(m_widgetRect.top(), WIDGET_HEIGHT, xOffset);
     }
 }
 
@@ -580,6 +619,10 @@ void ColorAndWidthWidget::draw(QPainter& painter)
     if (m_showMosaicWidthSection) {
         m_mosaicWidthSection->draw(painter, m_styleConfig);
     }
+
+    if (m_showMosaicBlurTypeSection) {
+        m_mosaicBlurTypeSection->draw(painter, m_styleConfig);
+    }
 }
 
 // =============================================================================
@@ -599,6 +642,11 @@ bool ColorAndWidthWidget::contains(const QPoint& pos) const
         m_lineStyleSection->dropdownRect().contains(pos)) {
         return true;
     }
+    // Also include mosaic blur type dropdown area when open
+    if (m_showMosaicBlurTypeSection && m_mosaicBlurTypeSection->isDropdownOpen() &&
+        m_mosaicBlurTypeSection->dropdownRect().contains(pos)) {
+        return true;
+    }
     return false;
 }
 
@@ -612,6 +660,11 @@ bool ColorAndWidthWidget::handleClick(const QPoint& pos)
     }
     if (m_showLineStyleSection) {
         if (m_lineStyleSection->handleClick(pos)) {
+            return true;
+        }
+    }
+    if (m_showMosaicBlurTypeSection) {
+        if (m_mosaicBlurTypeSection->handleClick(pos)) {
             return true;
         }
     }
@@ -712,6 +765,10 @@ bool ColorAndWidthWidget::updateHovered(const QPoint& pos)
 
     if (m_showMosaicWidthSection) {
         changed |= m_mosaicWidthSection->updateHovered(pos);
+    }
+
+    if (m_showMosaicBlurTypeSection) {
+        changed |= m_mosaicBlurTypeSection->updateHovered(pos);
     }
 
     return changed;

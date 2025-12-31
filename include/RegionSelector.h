@@ -30,6 +30,7 @@
 #include "region/UpdateThrottler.h"
 #include "region/TextAnnotationEditor.h"
 #include "region/RadiusSliderWidget.h"
+#include "ui/sections/MosaicBlurTypeSection.h"
 
 class QScreen;
 class ColorPaletteWidget;
@@ -282,6 +283,7 @@ private:
     LineEndStyle m_arrowStyle;
     LineStyle m_lineStyle = LineStyle::Solid;
     StepBadgeSize m_stepBadgeSize = StepBadgeSize::Medium;
+    MosaicBlurTypeSection::BlurType m_mosaicBlurType = MosaicBlurTypeSection::BlurType::Pixelate;
 
     // Mosaic cursor cache (avoid recreating on every mouse move)
     QCursor m_mosaicCursorCache;

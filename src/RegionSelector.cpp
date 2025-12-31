@@ -165,6 +165,7 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_arrowStyle = loadArrowStyle();
     m_lineStyle = loadLineStyle();
     m_stepBadgeSize = settings.loadStepBadgeSize();
+    m_mosaicBlurType = settings.loadMosaicBlurType();
 
     // Initialize tool manager
     m_toolManager = new ToolManager(this);
@@ -174,6 +175,7 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_toolManager->setWidth(m_annotationWidth);
     m_toolManager->setArrowStyle(m_arrowStyle);
     m_toolManager->setLineStyle(m_lineStyle);
+    m_toolManager->setMosaicBlurType(static_cast<MosaicStroke::BlurType>(m_mosaicBlurType));
     connect(m_toolManager, &ToolManager::needsRepaint, this, QOverload<>::of(&QWidget::update));
 
     // Initialize OCR manager if available on this platform
@@ -276,6 +278,12 @@ RegionSelector::RegionSelector(QWidget* parent)
         this, &RegionSelector::onStepBadgeSizeChanged);
     connect(m_colorAndWidthWidget, &ColorAndWidthWidget::autoBlurRequested,
         this, &RegionSelector::performAutoBlur);
+    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::mosaicBlurTypeChanged,
+        this, [this](MosaicBlurTypeSection::BlurType type) {
+            m_mosaicBlurType = type;
+            m_toolManager->setMosaicBlurType(static_cast<MosaicStroke::BlurType>(type));
+            AnnotationSettingsManager::instance().saveMosaicBlurType(type);
+        });
 
     // Initialize loading spinner for OCR
     m_loadingSpinner = new LoadingSpinnerRenderer(this);
@@ -852,8 +860,9 @@ void RegionSelector::paintEvent(QPaintEvent*)
                 m_colorAndWidthWidget->setShowTextSection(m_currentTool == ToolbarButton::Text);
                 // Show shape section only for Shape tool
                 m_colorAndWidthWidget->setShowShapeSection(m_currentTool == ToolbarButton::Shape);
-                // Show auto blur section only for Mosaic tool
+                // Show auto blur section and blur type section only for Mosaic tool
                 m_colorAndWidthWidget->setShowAutoBlurSection(isMosaicTool);
+                m_colorAndWidthWidget->setShowMosaicBlurTypeSection(isMosaicTool);
                 if (isMosaicTool) {
                     bool autoBlurAvailable = m_autoBlurManager && m_autoBlurManager->isInitialized();
                     m_colorAndWidthWidget->setAutoBlurEnabled(autoBlurAvailable);
@@ -1189,6 +1198,8 @@ void RegionSelector::handleToolbarClick(ToolbarButton button)
         m_colorAndWidthWidget->setShowWidthSection(true);
         m_colorAndWidthWidget->setWidthSectionHidden(false);
         m_colorAndWidthWidget->setShowMosaicWidthSection(false);
+        m_colorAndWidthWidget->setShowMosaicBlurTypeSection(true);  // Show blur type selector
+        m_colorAndWidthWidget->setMosaicBlurType(m_mosaicBlurType);  // Set current blur type
         m_colorAndWidthWidget->setCurrentWidth(m_annotationWidth);
         m_toolManager->setWidth(m_annotationWidth);
         m_colorAndWidthWidget->setShowSizeSection(false);
@@ -2608,8 +2619,12 @@ void RegionSelector::performAutoBlur()
                          << "logical rect (for annotation)=" << logicalRect;
 
                 // Create mosaic annotation for this face region
+                // Use current blur type setting (convert from MosaicBlurTypeSection to MosaicRectAnnotation enum)
+                auto blurType = static_cast<MosaicRectAnnotation::BlurType>(
+                    static_cast<int>(m_colorAndWidthWidget->mosaicBlurType())
+                );
                 auto mosaic = std::make_unique<MosaicRectAnnotation>(
-                    logicalRect, m_backgroundPixmap, 12
+                    logicalRect, m_backgroundPixmap, 12, blurType
                 );
                 m_annotationLayer->addItem(std::move(mosaic));
             }

@@ -11,6 +11,7 @@
 #include "annotations/AnnotationLayer.h"
 #include "annotations/ArrowAnnotation.h"
 #include "annotations/LineStyle.h"
+#include "annotations/MosaicStroke.h"
 
 
 class AnnotationItem;
@@ -39,6 +40,9 @@ public:
 
     // Eraser tool settings
     int eraserWidth = 20;
+
+    // Mosaic tool settings
+    MosaicStroke::BlurType mosaicBlurType = MosaicStroke::BlurType::Pixelate;
 
     // Source pixmap (for mosaic tool)
     const QPixmap* sourcePixmap = nullptr;
