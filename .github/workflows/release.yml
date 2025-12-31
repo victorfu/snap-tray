@@ -66,7 +66,7 @@ jobs:
       - name: Run macdeployqt
         run: |
           QT_PREFIX=$(brew --prefix qt@6)
-          "$QT_PREFIX/bin/macdeployqt" release/${{ env.APP_NAME }}.app -verbose=1
+          "$QT_PREFIX/bin/macdeployqt" release/bin/${{ env.APP_NAME }}.app -verbose=1
 
       # Code signing step
       # For full Developer ID signing and notarization, set these secrets:
@@ -109,20 +109,20 @@ jobs:
             codesign --force --deep --sign "$IDENTITY" \
               --options runtime \
               --entitlements packaging/macos/entitlements.plist \
-              "release/${{ env.APP_NAME }}.app"
+              "release/bin/${{ env.APP_NAME }}.app"
           else
             echo "Using ad-hoc signing (no Apple Developer certificate configured)..."
             codesign --force --deep --sign - \
               --options runtime \
               --entitlements packaging/macos/entitlements.plist \
-              "release/${{ env.APP_NAME }}.app"
+              "release/bin/${{ env.APP_NAME }}.app"
           fi
 
           # Verify signature
-          codesign --verify --verbose "release/${{ env.APP_NAME }}.app"
+          codesign --verify --verbose "release/bin/${{ env.APP_NAME }}.app"
 
           # Remove quarantine attributes
-          xattr -cr "release/${{ env.APP_NAME }}.app"
+          xattr -cr "release/bin/${{ env.APP_NAME }}.app"
 
       - name: Create DMG
         run: |
@@ -137,9 +137,9 @@ jobs:
             --hide-extension "${{ env.APP_NAME }}.app" \
             --app-drop-link 450 185 \
             "dist/${{ env.APP_NAME }}-${VERSION}-macOS.dmg" \
-            "release/${{ env.APP_NAME }}.app" || \
+            "release/bin/${{ env.APP_NAME }}.app" || \
           hdiutil create -volname "${{ env.APP_NAME }}" \
-            -srcfolder "release/${{ env.APP_NAME }}.app" \
+            -srcfolder "release/bin/${{ env.APP_NAME }}.app" \
             -ov -format UDZO \
             "dist/${{ env.APP_NAME }}-${VERSION}-macOS.dmg"
 
