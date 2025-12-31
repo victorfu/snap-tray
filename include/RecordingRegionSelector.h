@@ -6,6 +6,7 @@
 #include <QPoint>
 
 class QScreen;
+class ToolbarWidget;
 
 class RecordingRegionSelector : public QWidget
 {
@@ -44,13 +45,10 @@ private:
     void drawCrosshair(QPainter &painter);
     void drawDimensionLabel(QPainter &painter);
     void drawInstructions(QPainter &painter);
-    void drawToolbar(QPainter &painter);
-    void drawTooltip(QPainter &painter);
     void finishSelection();
     void setupIcons();
-    void updateButtonRects();
-    int buttonAtPosition(const QPoint &pos) const;
-    QString tooltipForButton(ButtonId button) const;
+    void setupToolbar();
+    void updateToolbarPosition();
     void handleCancel();
 
     QScreen *m_currentScreen;
@@ -62,16 +60,8 @@ private:
     bool m_isSelecting;
     bool m_selectionComplete;
 
-    // Toolbar
-    QRect m_toolbarRect;
-    QRect m_startRect;
-    QRect m_cancelRect;
-    int m_hoveredButton;
-
-    // Layout constants (matching ToolbarWidget)
-    static const int TOOLBAR_HEIGHT = 32;
-    static const int BUTTON_WIDTH = 28;
-    static const int BUTTON_SPACING = 2;
+    // Toolbar using ToolbarWidget
+    ToolbarWidget *m_toolbar;
 };
 
 #endif // RECORDINGREGIONSELECTOR_H

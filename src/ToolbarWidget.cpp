@@ -1,6 +1,7 @@
 #include "ToolbarWidget.h"
 #include "IconRenderer.h"
 #include "GlassRenderer.h"
+#include "toolbar/ToolbarRenderer.h"
 
 #include <QPainter>
 #include <QLinearGradient>
@@ -43,68 +44,22 @@ void ToolbarWidget::setIconColorProvider(const IconColorProvider& provider)
 
 void ToolbarWidget::setPosition(int centerX, int bottomY)
 {
-    // Count separators
-    int separatorCount = 0;
-    for (const auto& btn : m_buttons) {
-        if (btn.separatorBefore) {
-            separatorCount++;
-        }
-    }
-
-    int toolbarWidth = m_buttons.size() * (BUTTON_WIDTH + BUTTON_SPACING) + 20 + separatorCount * SEPARATOR_WIDTH;
-    int toolbarX = centerX - toolbarWidth / 2;
-    int toolbarY = bottomY - TOOLBAR_HEIGHT;
-
-    m_toolbarRect = QRect(toolbarX, toolbarY, toolbarWidth, TOOLBAR_HEIGHT);
+    int toolbarWidth = Toolbar::ToolbarRenderer::calculateWidth(m_buttons);
+    m_toolbarRect = Toolbar::ToolbarRenderer::positionAtBottom(centerX, bottomY, toolbarWidth);
     updateButtonRects();
 }
 
 void ToolbarWidget::setPositionForSelection(const QRect& referenceRect, int viewportHeight)
 {
-    // Count separators
-    int separatorCount = 0;
-    for (const auto& btn : m_buttons) {
-        if (btn.separatorBefore) {
-            separatorCount++;
-        }
-    }
-
-    int toolbarWidth = m_buttons.size() * (BUTTON_WIDTH + BUTTON_SPACING) + 20 + separatorCount * SEPARATOR_WIDTH;
-
-    QRect sel = referenceRect.normalized();
-
-    // Position below selection, right-aligned
-    int toolbarX = sel.right() - toolbarWidth + 1;
-    int toolbarY = sel.bottom() + 8;
-
-    // If toolbar would go off screen, position inside selection (top-right corner)
-    if (toolbarY + TOOLBAR_HEIGHT > viewportHeight - 5) {
-        toolbarY = sel.top() + 8;
-    }
-
-    // Keep on screen horizontally
-    if (toolbarX < 5) toolbarX = 5;
-
-    m_toolbarRect = QRect(toolbarX, toolbarY, toolbarWidth, TOOLBAR_HEIGHT);
+    int toolbarWidth = Toolbar::ToolbarRenderer::calculateWidth(m_buttons);
+    m_toolbarRect = Toolbar::ToolbarRenderer::positionBelow(referenceRect, toolbarWidth,
+                                                             m_viewportWidth, viewportHeight);
     updateButtonRects();
 }
 
 void ToolbarWidget::updateButtonRects()
 {
-    if (m_buttons.isEmpty()) return;
-
-    int x = m_toolbarRect.left() + 10;
-    int y = m_toolbarRect.top() + (TOOLBAR_HEIGHT - BUTTON_WIDTH + 4) / 2;
-
-    for (int i = 0; i < m_buttons.size(); ++i) {
-        // Add separator space
-        if (m_buttons[i].separatorBefore) {
-            x += SEPARATOR_WIDTH;
-        }
-
-        m_buttonRects[i] = QRect(x, y, BUTTON_WIDTH, BUTTON_WIDTH - 4);
-        x += BUTTON_WIDTH + BUTTON_SPACING;
-    }
+    m_buttonRects = Toolbar::ToolbarRenderer::calculateButtonRects(m_toolbarRect, m_buttons);
 }
 
 void ToolbarWidget::draw(QPainter& painter)
@@ -203,12 +158,7 @@ void ToolbarWidget::drawTooltip(QPainter& painter)
 
 int ToolbarWidget::buttonAtPosition(const QPoint& pos) const
 {
-    for (int i = 0; i < m_buttonRects.size(); ++i) {
-        if (m_buttonRects[i].contains(pos)) {
-            return i;
-        }
-    }
-    return -1;
+    return Toolbar::ToolbarRenderer::buttonAtPosition(pos, m_buttonRects);
 }
 
 bool ToolbarWidget::updateHoveredButton(const QPoint& pos)

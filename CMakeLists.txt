@@ -235,6 +235,8 @@ set(SOURCES
     src/ToolbarWidget.cpp
     src/ToolbarStyle.cpp
     src/GlassRenderer.cpp
+    src/toolbar/ToolbarButtonConfig.cpp
+    src/toolbar/ToolbarRenderer.cpp
     src/settings/AnnotationSettingsManager.cpp
     src/settings/FileSettingsManager.cpp
     src/settings/PinWindowSettingsManager.cpp
@@ -348,6 +350,9 @@ set(HEADERS
     include/ToolbarWidget.h
     include/ToolbarStyle.h
     include/GlassRenderer.h
+    include/toolbar/ToolbarButtonConfig.h
+    include/toolbar/ToolbarRenderer.h
+    include/toolbar/ToolbarTypes.h
     include/AnnotationController.h
     include/ColorPickerDialog.h
     include/InlineTextEditor.h

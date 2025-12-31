@@ -6,6 +6,7 @@
 #include <QRect>
 #include <QVector>
 #include <QString>
+#include "toolbar/ToolbarButtonConfig.h"
 
 class QLabel;
 
@@ -59,24 +60,20 @@ protected:
     void leaveEvent(QEvent *event) override;
 
 private:
-    enum class ButtonId {
-        Direction,  // Toggle vertical/horizontal
-        Start,
-        Stop,
-        Pin,
-        Save,
-        Copy,
-        Close,
-        Cancel
+    // Button IDs specific to ScrollingCaptureToolbar
+    enum ButtonId {
+        ButtonDirection = 0,  // Toggle vertical/horizontal
+        ButtonStart,
+        ButtonStop,
+        ButtonPin,
+        ButtonSave,
+        ButtonCopy,
+        ButtonClose,
+        ButtonCancel
     };
 
-    struct ButtonConfig {
-        ButtonId id;
-        QString iconKey;
-        QString tooltip;
-        bool isAction;   // Blue action button
-        bool isCancel;   // Red cancel button
-    };
+    // Use shared ButtonConfig
+    using ButtonConfig = Toolbar::ButtonConfig;
 
     void setupUi();
     void loadIcons();

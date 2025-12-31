@@ -9,6 +9,7 @@
 #include <QString>
 #include <functional>
 #include "ToolbarStyle.h"
+#include "toolbar/ToolbarButtonConfig.h"
 
 class QPainter;
 
@@ -25,17 +26,10 @@ class ToolbarWidget : public QObject
 public:
     /**
      * @brief Button configuration structure.
+     *
+     * Uses Toolbar::ButtonConfig for unified configuration across all toolbars.
      */
-    struct ButtonConfig {
-        int id;                     // Unique button identifier
-        QString iconKey;            // Key for IconRenderer
-        QString tooltip;            // Tooltip text
-        bool separatorBefore;       // Draw separator before this button
-
-        ButtonConfig(int id = 0, const QString& iconKey = QString(),
-                     const QString& tooltip = QString(), bool separatorBefore = false)
-            : id(id), iconKey(iconKey), tooltip(tooltip), separatorBefore(separatorBefore) {}
-    };
+    using ButtonConfig = Toolbar::ButtonConfig;
 
     /**
      * @brief Function type for determining icon color.

@@ -21,6 +21,7 @@ class ColorPickerDialog;
 class ColorAndWidthWidget;
 class LaserPointerRenderer;
 class ClickRippleRenderer;
+class ToolbarWidget;
 
 // Canvas toolbar button IDs (for UI display only)
 // These represent button positions in the toolbar
@@ -80,22 +81,19 @@ protected:
 
 private:
     // Painting helpers
-    void drawToolbar(QPainter &painter);
     void drawAnnotations(QPainter &painter);
     void drawCurrentAnnotation(QPainter &painter);
-    void drawTooltip(QPainter &painter);
     void drawCursorDot(QPainter &painter);
 
     // Toolbar helpers
     void initializeIcons();
+    void setupToolbar();
+    void updateToolbarPosition();
     QString getIconKeyForButton(CanvasButton button) const;
     void renderIcon(QPainter &painter, const QRect &rect, CanvasButton button, const QColor &color);
-    void updateToolbarPosition();
-    void updateButtonRects();
-    int getButtonAtPosition(const QPoint &pos);
     void handleToolbarClick(CanvasButton button);
-    QString getButtonTooltip(int buttonIndex);
     bool isDrawingTool(ToolId toolId) const;
+    QColor getButtonIconColor(int buttonId) const;
 
     // Color palette helpers (legacy)
     bool shouldShowColorPalette() const;
@@ -127,17 +125,11 @@ private:
     ToolManager *m_toolManager;
     ToolId m_currentToolId;
 
-    // Toolbar
-    QRect m_toolbarRect;
-    int m_hoveredButton;
-    QVector<QRect> m_buttonRects;
+    // Toolbar using ToolbarWidget
+    ToolbarWidget *m_toolbar;
     bool m_isDraggingToolbar;
     QPoint m_toolbarDragOffset;
     bool m_showSubToolbar;
-
-    static const int TOOLBAR_HEIGHT = 32;
-    static const int BUTTON_WIDTH = 28;
-    static const int BUTTON_SPACING = 2;
 
     // Color palette
     ColorPaletteWidget *m_colorPalette;

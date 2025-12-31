@@ -8,6 +8,7 @@
 #include "ColorAndWidthWidget.h"
 #include "LaserPointerRenderer.h"
 #include "ClickRippleRenderer.h"
+#include "ToolbarWidget.h"
 #include "settings/AnnotationSettingsManager.h"
 #include "settings/Settings.h"
 
@@ -44,7 +45,7 @@ ScreenCanvas::ScreenCanvas(QWidget* parent)
     , m_annotationLayer(nullptr)
     , m_toolManager(nullptr)
     , m_currentToolId(ToolId::Pencil)
-    , m_hoveredButton(-1)
+    , m_toolbar(nullptr)
     , m_isDraggingToolbar(false)
     , m_showSubToolbar(true)
     , m_colorPalette(nullptr)
@@ -55,9 +56,6 @@ ScreenCanvas::ScreenCanvas(QWidget* parent)
     setAttribute(Qt::WA_DeleteOnClose);
     setMouseTracking(true);
     setCursor(Qt::ArrowCursor);
-
-    // Initialize button rects
-    m_buttonRects.resize(static_cast<int>(CanvasButton::Count));
 
     // Initialize annotation layer
     m_annotationLayer = new AnnotationLayer(this);
@@ -84,6 +82,9 @@ ScreenCanvas::ScreenCanvas(QWidget* parent)
 
     // Initialize SVG icons
     initializeIcons();
+
+    // Initialize toolbar
+    setupToolbar();
 
     // Initialize color palette widget
     m_colorPalette = new ColorPaletteWidget(this);
@@ -158,6 +159,71 @@ void ScreenCanvas::initializeIcons()
     iconRenderer.loadIcon("arrow-end-line", ":/icons/icons/arrow-end-line.svg");
     iconRenderer.loadIcon("arrow-both", ":/icons/icons/arrow-both.svg");
     iconRenderer.loadIcon("arrow-both-outline", ":/icons/icons/arrow-both-outline.svg");
+}
+
+void ScreenCanvas::setupToolbar()
+{
+    m_toolbar = new ToolbarWidget(this);
+
+    // Configure buttons with separators at appropriate positions
+    QVector<ToolbarWidget::ButtonConfig> buttons = {
+        {static_cast<int>(CanvasButton::Pencil), "pencil", "Pencil"},
+        {static_cast<int>(CanvasButton::Marker), "marker", "Marker"},
+        {static_cast<int>(CanvasButton::Arrow), "arrow", "Arrow"},
+        {static_cast<int>(CanvasButton::Shape), "shape", "Shape"},
+        {static_cast<int>(CanvasButton::LaserPointer), "laser-pointer", "Laser Pointer"},
+        ToolbarWidget::ButtonConfig(static_cast<int>(CanvasButton::CursorHighlight), "cursor-highlight", "Cursor Highlight (Toggle)").separator(),
+        ToolbarWidget::ButtonConfig(static_cast<int>(CanvasButton::Undo), "undo", "Undo (Ctrl+Z)").separator(),
+        {static_cast<int>(CanvasButton::Redo), "redo", "Redo (Ctrl+Y)"},
+        {static_cast<int>(CanvasButton::Clear), "cancel", "Clear All"},
+        ToolbarWidget::ButtonConfig(static_cast<int>(CanvasButton::Exit), "cancel", "Exit (Esc)").separator().cancel()
+    };
+    m_toolbar->setButtons(buttons);
+
+    // Set which buttons can be active (drawing tools and cursor highlight toggle)
+    QVector<int> activeButtonIds = {
+        static_cast<int>(CanvasButton::Pencil),
+        static_cast<int>(CanvasButton::Marker),
+        static_cast<int>(CanvasButton::Arrow),
+        static_cast<int>(CanvasButton::Shape),
+        static_cast<int>(CanvasButton::LaserPointer),
+        static_cast<int>(CanvasButton::CursorHighlight)
+    };
+    m_toolbar->setActiveButtonIds(activeButtonIds);
+
+    m_toolbar->setStyleConfig(m_toolbarStyleConfig);
+
+    // Set custom icon color provider for complex color logic
+    m_toolbar->setIconColorProvider([this](int buttonId, bool isActive, bool isHovered) -> QColor {
+        Q_UNUSED(isHovered)
+        return getButtonIconColor(buttonId);
+    });
+}
+
+QColor ScreenCanvas::getButtonIconColor(int buttonId) const
+{
+    CanvasButton button = static_cast<CanvasButton>(buttonId);
+    ToolId buttonToolId = canvasButtonToToolId(button);
+
+    bool isButtonActive = (buttonToolId == m_currentToolId) && isDrawingTool(buttonToolId) && m_showSubToolbar;
+    bool isToggleActive = (button == CanvasButton::CursorHighlight) && m_rippleRenderer->isEnabled();
+
+    if (button == CanvasButton::Exit) {
+        return m_toolbarStyleConfig.iconCancelColor;
+    }
+    if (button == CanvasButton::Clear) {
+        return QColor(255, 180, 100);  // Orange for clear
+    }
+    if (button == CanvasButton::Undo && !m_annotationLayer->canUndo()) {
+        return QColor(128, 128, 128);  // Gray for disabled undo
+    }
+    if (button == CanvasButton::Redo && !m_annotationLayer->canRedo()) {
+        return QColor(128, 128, 128);  // Gray for disabled redo
+    }
+    if (isButtonActive || isToggleActive) {
+        return m_toolbarStyleConfig.iconActiveColor;
+    }
+    return m_toolbarStyleConfig.iconNormalColor;
 }
 
 QString ScreenCanvas::getIconKeyForButton(CanvasButton button) const
@@ -292,10 +358,33 @@ void ScreenCanvas::paintEvent(QPaintEvent*)
     // Draw click ripple effects
     m_rippleRenderer->draw(painter);
 
-    // Draw toolbar
-    drawToolbar(painter);
+    // Update toolbar position only when not dragging (dragging sets position directly)
+    if (!m_isDraggingToolbar) {
+        updateToolbarPosition();
+    }
+    // Update active button based on current tool state
+    int activeButtonId = -1;
+    if (m_showSubToolbar && isDrawingTool(m_currentToolId)) {
+        activeButtonId = static_cast<int>(m_currentToolId);  // ToolId maps to CanvasButton
+        // Map ToolId to CanvasButton
+        switch (m_currentToolId) {
+        case ToolId::Pencil: activeButtonId = static_cast<int>(CanvasButton::Pencil); break;
+        case ToolId::Marker: activeButtonId = static_cast<int>(CanvasButton::Marker); break;
+        case ToolId::Arrow: activeButtonId = static_cast<int>(CanvasButton::Arrow); break;
+        case ToolId::Shape: activeButtonId = static_cast<int>(CanvasButton::Shape); break;
+        case ToolId::LaserPointer: activeButtonId = static_cast<int>(CanvasButton::LaserPointer); break;
+        default: activeButtonId = -1; break;
+        }
+    }
+    // Handle CursorHighlight toggle separately
+    if (m_rippleRenderer->isEnabled()) {
+        activeButtonId = static_cast<int>(CanvasButton::CursorHighlight);
+    }
+    m_toolbar->setActiveButton(activeButtonId);
+    m_toolbar->draw(painter);
 
     // Use unified color and width widget
+    QRect toolbarRect = m_toolbar->boundingRect();
     if (shouldShowColorAndWidthWidget()) {
         m_colorAndWidthWidget->setVisible(true);
         m_colorAndWidthWidget->setShowWidthSection(shouldShowWidthControl());
@@ -305,7 +394,7 @@ void ScreenCanvas::paintEvent(QPaintEvent*)
         bool showLineStyle = (m_currentToolId == ToolId::Pencil ||
                               m_currentToolId == ToolId::Arrow);
         m_colorAndWidthWidget->setShowLineStyleSection(showLineStyle);
-        m_colorAndWidthWidget->updatePosition(m_toolbarRect, true, width());
+        m_colorAndWidthWidget->updatePosition(toolbarRect, true, width());
         m_colorAndWidthWidget->draw(painter);
     }
     else {
@@ -317,7 +406,7 @@ void ScreenCanvas::paintEvent(QPaintEvent*)
         // Draw color palette
         if (shouldShowColorPalette()) {
             m_colorPalette->setVisible(true);
-            m_colorPalette->updatePosition(m_toolbarRect, true);
+            m_colorPalette->updatePosition(toolbarRect, true);
             m_colorPalette->draw(painter);
         }
         else {
@@ -326,7 +415,7 @@ void ScreenCanvas::paintEvent(QPaintEvent*)
     }
 
     // Draw tooltip
-    drawTooltip(painter);
+    m_toolbar->drawTooltip(painter);
 
     // Draw cursor dot
     drawCursorDot(painter);
@@ -342,181 +431,14 @@ void ScreenCanvas::drawCurrentAnnotation(QPainter& painter)
     m_toolManager->drawCurrentPreview(painter);
 }
 
-void ScreenCanvas::drawToolbar(QPainter& painter)
-{
-    // Draw glass panel (shadow, background, border, highlight)
-    GlassRenderer::drawGlassPanel(painter, m_toolbarRect, m_toolbarStyleConfig);
-
-    // Render icons
-    for (int i = 0; i < static_cast<int>(CanvasButton::Count); ++i) {
-        QRect btnRect = m_buttonRects[i];
-        CanvasButton button = static_cast<CanvasButton>(i);
-        ToolId buttonToolId = canvasButtonToToolId(button);
-
-        // Highlight active tool (drawing tools only, and only when sub-toolbar is shown)
-        bool isActive = (buttonToolId == m_currentToolId) && isDrawingTool(buttonToolId) && m_showSubToolbar;
-        bool isToggleActive = (button == CanvasButton::CursorHighlight) && m_rippleRenderer->isEnabled();
-
-        // Draw separator before certain buttons
-        if (i == static_cast<int>(CanvasButton::CursorHighlight) ||
-            i == static_cast<int>(CanvasButton::Undo) ||
-            i == static_cast<int>(CanvasButton::Exit)) {
-            painter.setPen(m_toolbarStyleConfig.separatorColor);
-            painter.drawLine(btnRect.left() - 4, btnRect.top() + 6,
-                btnRect.left() - 4, btnRect.bottom() - 6);
-        }
-
-        if (isActive || isToggleActive) {
-            if (m_toolbarStyleConfig.useRedDotIndicator) {
-                // Light style: draw red dot at top-right corner
-                int dotRadius = m_toolbarStyleConfig.redDotSize / 2;
-                int dotX = btnRect.right() - dotRadius - 2;
-                int dotY = btnRect.top() + dotRadius + 2;
-                painter.setPen(Qt::NoPen);
-                painter.setBrush(m_toolbarStyleConfig.redDotColor);
-                painter.drawEllipse(QPoint(dotX, dotY), dotRadius, dotRadius);
-            } else {
-                // Dark style: background highlight
-                painter.setPen(Qt::NoPen);
-                painter.setBrush(m_toolbarStyleConfig.activeBackgroundColor);
-                painter.drawRoundedRect(btnRect.adjusted(2, 2, -2, -2), 6, 6);
-            }
-        }
-        else if (i == m_hoveredButton) {
-            painter.setPen(Qt::NoPen);
-            painter.setBrush(m_toolbarStyleConfig.hoverBackgroundColor);
-            painter.drawRoundedRect(btnRect.adjusted(2, 2, -2, -2), 6, 6);
-        }
-
-        // Determine icon color
-        QColor iconColor;
-        if (button == CanvasButton::Exit) {
-            iconColor = m_toolbarStyleConfig.iconCancelColor;
-        }
-        else if (button == CanvasButton::Clear) {
-            iconColor = QColor(255, 180, 100);  // Orange for clear (keep as special color)
-        }
-        else if (button == CanvasButton::Undo && !m_annotationLayer->canUndo()) {
-            iconColor = QColor(128, 128, 128);  // Gray for disabled undo
-        }
-        else if (button == CanvasButton::Redo && !m_annotationLayer->canRedo()) {
-            iconColor = QColor(128, 128, 128);  // Gray for disabled redo
-        }
-        else if (isActive || isToggleActive) {
-            iconColor = m_toolbarStyleConfig.iconActiveColor;
-        }
-        else {
-            iconColor = m_toolbarStyleConfig.iconNormalColor;
-        }
-
-        renderIcon(painter, btnRect, button, iconColor);
-    }
-}
-
 void ScreenCanvas::updateToolbarPosition()
 {
-    int separatorCount = 3;  // CursorHighlight, Undo, Exit 前各有分隔線
-    int toolbarWidth = static_cast<int>(CanvasButton::Count) * (BUTTON_WIDTH + BUTTON_SPACING) + 20 + separatorCount * 6;
-
     // Center horizontally, 30px from bottom
-    int toolbarX = (width() - toolbarWidth) / 2;
-    int toolbarY = height() - TOOLBAR_HEIGHT - 30;
+    int centerX = width() / 2;
+    int bottomY = height() - 30;
 
-    m_toolbarRect = QRect(toolbarX, toolbarY, toolbarWidth, TOOLBAR_HEIGHT);
-
-    updateButtonRects();
-}
-
-void ScreenCanvas::updateButtonRects()
-{
-    int x = m_toolbarRect.x() + 10;
-    int y = m_toolbarRect.y() + (TOOLBAR_HEIGHT - BUTTON_WIDTH + 4) / 2;
-
-    for (int i = 0; i < static_cast<int>(CanvasButton::Count); ++i) {
-        m_buttonRects[i] = QRect(x, y, BUTTON_WIDTH, BUTTON_WIDTH - 4);
-        x += BUTTON_WIDTH + BUTTON_SPACING;
-
-        // Add extra spacing for separators
-        if (i == static_cast<int>(CanvasButton::LaserPointer) ||
-            i == static_cast<int>(CanvasButton::CursorHighlight) ||
-            i == static_cast<int>(CanvasButton::Clear)) {
-            x += 6;
-        }
-    }
-}
-
-int ScreenCanvas::getButtonAtPosition(const QPoint& pos)
-{
-    for (int i = 0; i < m_buttonRects.size(); ++i) {
-        if (m_buttonRects[i].contains(pos)) {
-            return i;
-        }
-    }
-    return -1;
-}
-
-QString ScreenCanvas::getButtonTooltip(int buttonIndex)
-{
-    static const QStringList tooltips = {
-        "Pencil",
-        "Marker",
-        "Arrow",
-        "Shape",  // Unified Rectangle/Ellipse
-        "Laser Pointer",
-        "Cursor Highlight (Toggle)",
-        "Undo (Ctrl+Z)",
-        "Redo (Ctrl+Y)",
-        "Clear All",
-        "Exit (Esc)"
-    };
-
-    if (buttonIndex >= 0 && buttonIndex < tooltips.size()) {
-        return tooltips[buttonIndex];
-    }
-    return QString();
-}
-
-void ScreenCanvas::drawTooltip(QPainter& painter)
-{
-    if (m_hoveredButton < 0) return;
-
-    QString tooltip = getButtonTooltip(m_hoveredButton);
-    if (tooltip.isEmpty()) return;
-
-    QFont font = painter.font();
-    font.setPointSize(11);
-    painter.setFont(font);
-
-    QFontMetrics fm(font);
-    QRect textRect = fm.boundingRect(tooltip);
-    textRect.adjust(-8, -4, 8, 4);
-
-    // Position tooltip above the toolbar
-    QRect btnRect = m_buttonRects[m_hoveredButton];
-    int tooltipX = btnRect.center().x() - textRect.width() / 2;
-    int tooltipY = m_toolbarRect.top() - textRect.height() - 6;
-
-    // Keep on screen
-    if (tooltipX < 5) tooltipX = 5;
-    if (tooltipX + textRect.width() > width() - 5) {
-        tooltipX = width() - textRect.width() - 5;
-    }
-
-    textRect.moveTo(tooltipX, tooltipY);
-
-    // Draw tooltip background
-    painter.setPen(Qt::NoPen);
-    painter.setBrush(QColor(30, 30, 30, 230));
-    painter.drawRoundedRect(textRect, 4, 4);
-
-    // Draw tooltip border
-    painter.setPen(QColor(80, 80, 80));
-    painter.setBrush(Qt::NoBrush);
-    painter.drawRoundedRect(textRect, 4, 4);
-
-    // Draw tooltip text
-    painter.setPen(Qt::white);
-    painter.drawText(textRect, Qt::AlignCenter, tooltip);
+    m_toolbar->setPosition(centerX, bottomY);
+    m_toolbar->setViewportWidth(width());
 }
 
 void ScreenCanvas::handleToolbarClick(CanvasButton button)
@@ -624,15 +546,16 @@ void ScreenCanvas::mousePressEvent(QMouseEvent* event)
         };
 
         // Check if clicked on toolbar FIRST (before widgets that may overlap)
-        if (m_toolbarRect.contains(event->pos())) {
-            int buttonIdx = getButtonAtPosition(event->pos());
+        if (m_toolbar->contains(event->pos())) {
+            int buttonIdx = m_toolbar->buttonAtPosition(event->pos());
             if (buttonIdx >= 0) {
                 finalizePolylineForUiClick(event->pos());
-                handleToolbarClick(static_cast<CanvasButton>(buttonIdx));
+                int buttonId = m_toolbar->buttonIdAt(buttonIdx);
+                handleToolbarClick(static_cast<CanvasButton>(buttonId));
             } else {
                 // Start toolbar drag (clicked on toolbar but not on a button)
                 m_isDraggingToolbar = true;
-                m_toolbarDragOffset = event->pos() - m_toolbarRect.topLeft();
+                m_toolbarDragOffset = event->pos() - m_toolbar->boundingRect().topLeft();
                 setCursor(Qt::ClosedHandCursor);
             }
             return;
@@ -699,11 +622,14 @@ void ScreenCanvas::mouseMoveEvent(QMouseEvent* event)
     // Handle toolbar drag
     if (m_isDraggingToolbar) {
         QPoint newTopLeft = event->pos() - m_toolbarDragOffset;
+        QRect toolbarRect = m_toolbar->boundingRect();
         // Clamp to screen bounds
-        newTopLeft.setX(qBound(0, newTopLeft.x(), width() - m_toolbarRect.width()));
-        newTopLeft.setY(qBound(0, newTopLeft.y(), height() - m_toolbarRect.height()));
-        m_toolbarRect.moveTopLeft(newTopLeft);
-        updateButtonRects();
+        newTopLeft.setX(qBound(0, newTopLeft.x(), width() - toolbarRect.width()));
+        newTopLeft.setY(qBound(0, newTopLeft.y(), height() - toolbarRect.height()));
+        // Update toolbar position using setPosition (centered, so adjust)
+        int centerX = newTopLeft.x() + toolbarRect.width() / 2;
+        int bottomY = newTopLeft.y() + toolbarRect.height();
+        m_toolbar->setPosition(centerX, bottomY);
         update();
         return;
     }
@@ -752,18 +678,16 @@ void ScreenCanvas::mouseMoveEvent(QMouseEvent* event)
             }
         }
 
-        // Update hovered button
-        int newHovered = getButtonAtPosition(event->pos());
-        if (newHovered != m_hoveredButton) {
-            m_hoveredButton = newHovered;
+        // Update hovered button via ToolbarWidget
+        if (m_toolbar->updateHoveredButton(event->pos())) {
             needsUpdate = true;
         }
 
         // Always update cursor based on current state
-        if (m_hoveredButton >= 0) {
+        if (m_toolbar->hoveredButton() >= 0) {
             setCursor(Qt::PointingHandCursor);
         }
-        else if (m_toolbarRect.contains(event->pos())) {
+        else if (m_toolbar->contains(event->pos())) {
             // Hovering over toolbar but not on a button - show drag cursor
             setCursor(Qt::OpenHandCursor);
         }
@@ -804,7 +728,7 @@ void ScreenCanvas::mouseReleaseEvent(QMouseEvent* event)
         if (m_isDraggingToolbar) {
             m_isDraggingToolbar = false;
             // Restore cursor based on position
-            if (m_toolbarRect.contains(event->pos())) {
+            if (m_toolbar->contains(event->pos())) {
                 setCursor(Qt::OpenHandCursor);
             } else {
                 setCursor(Qt::ArrowCursor);
@@ -885,8 +809,8 @@ void ScreenCanvas::drawCursorDot(QPainter& painter)
     // Don't show when drawing (unless it's Mosaic/Eraser), on toolbar, or on widgets
     if (m_toolManager->isDrawing() && !isMosaicOrEraser) return;
     if (m_laserRenderer->isDrawing()) return;
-    if (m_toolbarRect.contains(m_cursorPos)) return;
-    if (m_hoveredButton >= 0) return;
+    if (m_toolbar->contains(m_cursorPos)) return;
+    if (m_toolbar->hoveredButton() >= 0) return;
     if (shouldShowColorAndWidthWidget() && m_colorAndWidthWidget->contains(m_cursorPos)) return;
 
     if (isMosaicOrEraser) {
