@@ -989,11 +989,18 @@ void RecordingManager::stopRecording()
 void RecordingManager::cancelRecording()
 {
     if (m_state != State::Recording && m_state != State::Paused &&
-        m_state != State::Encoding && m_state != State::Preparing) {
+        m_state != State::Encoding && m_state != State::Preparing &&
+        m_state != State::Countdown) {
         return;
     }
 
     qDebug() << "RecordingManager: Cancelling recording (state:" << static_cast<int>(m_state) << ")";
+
+    // Cancel countdown overlay if active
+    if (m_countdownOverlay) {
+        m_countdownOverlay->close();
+        m_countdownOverlay = nullptr;
+    }
 
     // Cancel any pending initialization
     if (m_initTask) {
@@ -1006,15 +1013,19 @@ void RecordingManager::cancelRecording()
 
     // Abort encoding and remove output file
     // Use deleteLater to avoid use-after-free when called from signal handler
+    // Set pointer to null BEFORE calling abort() to prevent double-delete
+    // if abort() synchronously emits an error signal that triggers onEncodingError()
     if (m_nativeEncoder) {
-        m_nativeEncoder->abort();
-        m_nativeEncoder->deleteLater();
+        auto encoder = m_nativeEncoder;
         m_nativeEncoder = nullptr;
+        encoder->abort();
+        encoder->deleteLater();
     }
     if (m_gifEncoder) {
-        m_gifEncoder->abort();
-        m_gifEncoder->deleteLater();
+        auto encoder = m_gifEncoder;
         m_gifEncoder = nullptr;
+        encoder->abort();
+        encoder->deleteLater();
     }
     m_usingNativeEncoder = false;
 

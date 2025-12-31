@@ -344,7 +344,10 @@ void MediaFoundationEncoder::writeFrame(const QImage &frame, qint64 timestampMs)
             memcpy(bufferData + y * stride, srcLine, stride);
         }
 
-        buffer->Unlock();
+        HRESULT unlockHr = buffer->Unlock();
+        if (FAILED(unlockHr)) {
+            qWarning() << "MediaFoundationEncoder: Buffer Unlock failed:" << Qt::hex << unlockHr;
+        }
     }
 
     hr = buffer->SetCurrentLength(bufferSize);
@@ -492,7 +495,10 @@ void MediaFoundationEncoder::writeAudioSamples(const QByteArray &pcmData, qint64
         hr = buffer->Lock(&bufferData, nullptr, nullptr);
         if (FAILED(hr)) goto done;
         memcpy(bufferData, pcmData.constData(), bufferSize);
-        buffer->Unlock();
+        HRESULT unlockHr = buffer->Unlock();
+        if (FAILED(unlockHr)) {
+            qWarning() << "MediaFoundationEncoder: Audio buffer Unlock failed:" << Qt::hex << unlockHr;
+        }
     }
 
     hr = buffer->SetCurrentLength(bufferSize);

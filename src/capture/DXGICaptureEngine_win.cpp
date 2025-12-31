@@ -136,12 +136,20 @@ bool DXGICaptureEngine::Private::initializeDXGI()
     QRect screenGeom = targetScreen->geometry();
     qreal dpr = targetScreen->devicePixelRatio();
     QRect physicalGeom(
-        static_cast<int>(screenGeom.x() * dpr),
-        static_cast<int>(screenGeom.y() * dpr),
-        static_cast<int>(screenGeom.width() * dpr),
-        static_cast<int>(screenGeom.height() * dpr)
+        qRound(screenGeom.x() * dpr),
+        qRound(screenGeom.y() * dpr),
+        qRound(screenGeom.width() * dpr),
+        qRound(screenGeom.height() * dpr)
     );
     bool foundMatch = false;
+
+    // Tolerance for coordinate matching to handle DPI rounding differences
+    auto matchesWithTolerance = [](const QRect& a, const QRect& b, int tolerance = 5) {
+        return qAbs(a.x() - b.x()) <= tolerance &&
+               qAbs(a.y() - b.y()) <= tolerance &&
+               qAbs(a.width() - b.width()) <= tolerance &&
+               qAbs(a.height() - b.height()) <= tolerance;
+    };
 
     while (adapter->EnumOutputs(outputIndex, &output) != DXGI_ERROR_NOT_FOUND) {
         DXGI_OUTPUT_DESC desc;
@@ -154,8 +162,8 @@ bool DXGICaptureEngine::Private::initializeDXGI()
             desc.DesktopCoordinates.bottom - desc.DesktopCoordinates.top
         );
 
-        // Compare using physical coordinates for HiDPI compatibility
-        if (outputRect == physicalGeom) {
+        // Compare with tolerance for HiDPI compatibility (non-integer DPI scales cause rounding differences)
+        if (matchesWithTolerance(outputRect, physicalGeom)) {
             outputDesc = desc;
             foundMatch = true;
             break;
@@ -276,7 +284,15 @@ QImage DXGICaptureEngine::Private::captureWithBitBlt()
 {
     // Fallback: Use GDI BitBlt for capture
     HDC hdcScreen = GetDC(NULL);
+    if (!hdcScreen) {
+        return QImage();
+    }
+
     HDC hdcMem = CreateCompatibleDC(hdcScreen);
+    if (!hdcMem) {
+        ReleaseDC(NULL, hdcScreen);
+        return QImage();
+    }
 
     // Convert logical coordinates to physical coordinates for HiDPI
     qreal dpr = targetScreen ? targetScreen->devicePixelRatio() : 1.0;
@@ -286,6 +302,12 @@ QImage DXGICaptureEngine::Private::captureWithBitBlt()
     int physHeight = static_cast<int>(captureRegion.height() * dpr);
 
     HBITMAP hBitmap = CreateCompatibleBitmap(hdcScreen, physWidth, physHeight);
+    if (!hBitmap) {
+        DeleteDC(hdcMem);
+        ReleaseDC(NULL, hdcScreen);
+        return QImage();
+    }
+
     HGDIOBJ hOld = SelectObject(hdcMem, hBitmap);
 
     // Capture screen region using physical coordinates
