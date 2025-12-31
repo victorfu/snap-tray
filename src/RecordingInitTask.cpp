@@ -86,10 +86,7 @@ void RecordingInitTask::run()
     // Step 2: Initialize audio engine (if enabled)
     if (m_config.audioEnabled && !m_config.useGif) {
         emit progress(tr("Setting up audio capture..."));
-        if (!initializeAudioEngine()) {
-            // Audio failure is non-fatal, continue without audio
-            qWarning() << "RecordingInitTask: Audio initialization failed, continuing without audio";
-        }
+        initializeAudioEngine();  // Actual creation happens on main thread
     }
 
     if (isCancelled()) {
