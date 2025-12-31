@@ -1394,6 +1394,11 @@ void RecordingManager::transitionToPreviewMode(const QString &videoPath)
         m_previewOverlay->show();
         raiseWindowAboveMenuBar(m_previewOverlay);
 
+        // Raise control bar again to ensure it's above the preview overlay
+        if (m_controlBar) {
+            raiseWindowAboveMenuBar(m_controlBar);
+        }
+
         // Enable looping for preview
         m_previewOverlay->setLooping(true);
 

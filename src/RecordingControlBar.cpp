@@ -412,7 +412,15 @@ void RecordingControlBar::showTooltip(const QString &text, const QRect &anchorRe
     QPoint globalAnchorCenter = mapToGlobal(anchorCenter);
 
     int x = globalAnchorCenter.x() - size.width() / 2;
-    int y = mapToGlobal(anchorRect.topLeft()).y() - size.height() - 6;
+    int y;
+
+    // In Recording mode, show tooltip below to avoid being captured in recording
+    // In Preview mode, show tooltip above (default behavior)
+    if (m_mode == Mode::Recording) {
+        y = mapToGlobal(anchorRect.bottomLeft()).y() + 6;
+    } else {
+        y = mapToGlobal(anchorRect.topLeft()).y() - size.height() - 6;
+    }
 
     QScreen *screen = QGuiApplication::screenAt(globalAnchorCenter);
     if (!screen) {
@@ -422,8 +430,15 @@ void RecordingControlBar::showTooltip(const QString &text, const QRect &anchorRe
     if (screen) {
         QRect bounds = screen->availableGeometry();
         x = qBound(bounds.left() + 5, x, bounds.right() - size.width() - 5);
-        if (y < bounds.top() + 5) {
-            y = mapToGlobal(anchorRect.bottomLeft()).y() + 6;
+        // Fallback: if tooltip goes off screen, flip direction
+        if (m_mode == Mode::Recording) {
+            if (y + size.height() > bounds.bottom() - 5) {
+                y = mapToGlobal(anchorRect.topLeft()).y() - size.height() - 6;
+            }
+        } else {
+            if (y < bounds.top() + 5) {
+                y = mapToGlobal(anchorRect.bottomLeft()).y() + 6;
+            }
         }
         if (y + size.height() > bounds.bottom() - 5) {
             y = bounds.bottom() - size.height() - 5;
