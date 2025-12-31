@@ -496,7 +496,7 @@ void SettingsDialog::setupRecordingTab(QWidget *tab)
     // ========== MP4 Settings (visible when MP4 selected) ==========
     m_mp4SettingsWidget = new QWidget(tab);
     QVBoxLayout *mp4Layout = new QVBoxLayout(m_mp4SettingsWidget);
-    mp4Layout->setContentsMargins(0, 16, 0, 8);  // Increased top margin for slider handle visibility
+    mp4Layout->setContentsMargins(0, 8, 0, 0);
 
     // Quality slider
     QHBoxLayout *qualityLayout = new QHBoxLayout();
@@ -505,7 +505,6 @@ void SettingsDialog::setupRecordingTab(QWidget *tab)
     m_recordingQualitySlider = new QSlider(Qt::Horizontal, m_mp4SettingsWidget);
     m_recordingQualitySlider->setRange(0, 100);
     m_recordingQualitySlider->setValue(55);  // Default quality
-    m_recordingQualitySlider->setMinimumHeight(22);  // Ensure handle is not clipped
     m_recordingQualityLabel = new QLabel("55", m_mp4SettingsWidget);
     m_recordingQualityLabel->setFixedWidth(40);
     connect(m_recordingQualitySlider, &QSlider::valueChanged, this, [this](int value) {
@@ -515,12 +514,6 @@ void SettingsDialog::setupRecordingTab(QWidget *tab)
     qualityLayout->addWidget(m_recordingQualitySlider);
     qualityLayout->addWidget(m_recordingQualityLabel);
     mp4Layout->addLayout(qualityLayout);
-
-    // Quality hint
-    QLabel *qualityHint = new QLabel("Higher = better quality, larger file", m_mp4SettingsWidget);
-    qualityHint->setStyleSheet("color: gray; font-size: 11px;");
-    qualityHint->setContentsMargins(120, 0, 0, 0);
-    mp4Layout->addWidget(qualityHint);
 
     layout->addWidget(m_mp4SettingsWidget);
 
