@@ -614,6 +614,46 @@ void SettingsDialog::setupRecordingTab(QWidget *tab)
     m_recordingAnnotationCheckbox->setToolTip("Draw annotations while recording. Annotations will be embedded in the video.");
     layout->addWidget(m_recordingAnnotationCheckbox);
 
+    // ========== Countdown settings ==========
+    layout->addSpacing(16);
+    QLabel *countdownHeader = new QLabel("Countdown", tab);
+    QFont headerFont = countdownHeader->font();
+    headerFont.setBold(true);
+    countdownHeader->setFont(headerFont);
+    layout->addWidget(countdownHeader);
+
+    m_countdownEnabledCheckbox = new QCheckBox("Show countdown before recording", tab);
+    m_countdownEnabledCheckbox->setToolTip("Display a 3-2-1 countdown before recording starts");
+    layout->addWidget(m_countdownEnabledCheckbox);
+
+    QHBoxLayout *countdownSecondsLayout = new QHBoxLayout();
+    countdownSecondsLayout->setContentsMargins(20, 0, 0, 0);  // Indent under checkbox
+    QLabel *countdownSecondsLabel = new QLabel("Countdown duration:", tab);
+    m_countdownSecondsCombo = new QComboBox(tab);
+    m_countdownSecondsCombo->addItem("1 second", 1);
+    m_countdownSecondsCombo->addItem("2 seconds", 2);
+    m_countdownSecondsCombo->addItem("3 seconds", 3);
+    m_countdownSecondsCombo->addItem("4 seconds", 4);
+    m_countdownSecondsCombo->addItem("5 seconds", 5);
+    m_countdownSecondsCombo->setCurrentIndex(2);  // Default: 3 seconds
+    countdownSecondsLayout->addWidget(countdownSecondsLabel);
+    countdownSecondsLayout->addWidget(m_countdownSecondsCombo);
+    countdownSecondsLayout->addStretch();
+    layout->addLayout(countdownSecondsLayout);
+
+    // Connect countdown enabled to seconds combo
+    connect(m_countdownEnabledCheckbox, &QCheckBox::toggled, m_countdownSecondsCombo, &QWidget::setEnabled);
+
+    // ========== Click highlight settings ==========
+    layout->addSpacing(16);
+    QLabel *clickHighlightHeader = new QLabel("Mouse Clicks", tab);
+    clickHighlightHeader->setFont(headerFont);
+    layout->addWidget(clickHighlightHeader);
+
+    m_clickHighlightEnabledCheckbox = new QCheckBox("Show mouse click effects", tab);
+    m_clickHighlightEnabledCheckbox->setToolTip("Display a ripple animation at mouse click locations during recording");
+    layout->addWidget(m_clickHighlightEnabledCheckbox);
+
     layout->addStretch();
 
     // ========== Connect format change to show/hide widgets ==========
@@ -646,6 +686,20 @@ void SettingsDialog::setupRecordingTab(QWidget *tab)
         settings.value("recording/showPreview", true).toBool());
     m_recordingAutoSaveCheckbox->setChecked(settings.value("recording/autoSave", false).toBool());
     m_recordingAnnotationCheckbox->setChecked(settings.value("recording/annotationEnabled", false).toBool());
+
+    // Load countdown settings
+    bool countdownEnabled = settings.value("recording/countdownEnabled", true).toBool();
+    m_countdownEnabledCheckbox->setChecked(countdownEnabled);
+    int countdownSeconds = settings.value("recording/countdownSeconds", 3).toInt();
+    int countdownIndex = m_countdownSecondsCombo->findData(countdownSeconds);
+    if (countdownIndex >= 0) {
+        m_countdownSecondsCombo->setCurrentIndex(countdownIndex);
+    }
+    m_countdownSecondsCombo->setEnabled(countdownEnabled);
+
+    // Load click highlight settings
+    m_clickHighlightEnabledCheckbox->setChecked(
+        settings.value("recording/clickHighlightEnabled", false).toBool());
 
     // Load audio settings
     bool audioEnabled = settings.value("recording/audioEnabled", false).toBool();
@@ -792,6 +846,16 @@ void SettingsDialog::onSave()
         m_recordingAutoSaveCheckbox->isChecked());
     recordingSettings.setValue("recording/annotationEnabled",
         m_recordingAnnotationCheckbox->isChecked());
+
+    // Save countdown settings
+    recordingSettings.setValue("recording/countdownEnabled",
+        m_countdownEnabledCheckbox->isChecked());
+    recordingSettings.setValue("recording/countdownSeconds",
+        m_countdownSecondsCombo->currentData().toInt());
+
+    // Save click highlight settings
+    recordingSettings.setValue("recording/clickHighlightEnabled",
+        m_clickHighlightEnabledCheckbox->isChecked());
 
     // Save audio settings
     recordingSettings.setValue("recording/audioEnabled",

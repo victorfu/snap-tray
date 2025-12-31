@@ -88,6 +88,13 @@ private:
     QCheckBox *m_recordingShowPreviewCheckbox;
     QCheckBox *m_recordingAnnotationCheckbox;
 
+    // Countdown settings
+    QCheckBox *m_countdownEnabledCheckbox;
+    QComboBox *m_countdownSecondsCombo;
+
+    // Click highlight settings
+    QCheckBox *m_clickHighlightEnabledCheckbox;
+
     // MP4 settings (native encoder)
     QWidget *m_mp4SettingsWidget;
     QSlider *m_recordingQualitySlider;

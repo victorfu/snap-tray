@@ -15,6 +15,7 @@ class RecordingBoundaryOverlay;
 class RecordingAnnotationOverlay;
 class RecordingInitTask;
 class InPlacePreviewOverlay;
+class CountdownOverlay;
 class NativeGifEncoder;
 class IVideoEncoder;
 class ICaptureEngine;
@@ -35,6 +36,7 @@ public:
         Idle,       // No recording activity
         Selecting,  // Region selection in progress
         Preparing,  // Initializing capture/encoder (async)
+        Countdown,  // Countdown before recording
         Recording,  // Actively capturing frames
         Paused,     // Recording paused
         Encoding,   // Encoding after stop
@@ -102,6 +104,11 @@ private:
     void setState(State newState);
     void showSaveDialog(const QString &tempOutputPath);
 
+    // Countdown methods
+    void startCountdown();                    // Begin countdown overlay
+    void startRecordingAfterCountdown();      // Called when countdown finishes
+    void onCountdownCancelled();              // Handle countdown cancellation
+
     // In-place preview methods
     void transitionToPreviewMode(const QString &videoPath);
     void cleanupPreviewMode();
@@ -161,6 +168,11 @@ private:
 
     // Async initialization
     RecordingInitTask *m_initTask;
+
+    // Countdown
+    QPointer<CountdownOverlay> m_countdownOverlay;
+    bool m_countdownEnabled;
+    int m_countdownSeconds;
 };
 
 #endif // RECORDINGMANAGER_H

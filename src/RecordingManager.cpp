@@ -5,6 +5,7 @@
 #include "RecordingAnnotationOverlay.h"
 #include "RecordingInitTask.h"
 #include "video/InPlacePreviewOverlay.h"
+#include "video/CountdownOverlay.h"
 #include "video/IVideoPlayer.h"
 #include "encoding/NativeGifEncoder.h"
 #include "IVideoEncoder.h"
@@ -93,6 +94,8 @@ RecordingManager::RecordingManager(QObject *parent)
     , m_audioEnabled(false)
     , m_audioSource(0)
     , m_initTask(nullptr)
+    , m_countdownEnabled(true)
+    , m_countdownSeconds(3)
 {
     cleanupStaleTempFiles();
 }
@@ -372,12 +375,16 @@ void RecordingManager::startFrameCapture()
     m_controlBar->updateRegionSize(m_recordingRegion.width(), m_recordingRegion.height());
     m_controlBar->updateFps(m_frameRate);
 
-    // Load annotation setting and setup overlay if enabled
+    // Load annotation and click highlight settings
     auto settings = SnapTray::getSettings();
     m_annotationEnabled = settings.value("recording/annotationEnabled", false).toBool();
+    bool clickHighlightEnabled = settings.value("recording/clickHighlightEnabled", false).toBool();
 
-    if (m_annotationEnabled) {
-        qDebug() << "RecordingManager::startFrameCapture() - Creating annotation overlay...";
+    // Create annotation overlay if either annotations or click highlight is enabled
+    if (m_annotationEnabled || clickHighlightEnabled) {
+        qDebug() << "RecordingManager::startFrameCapture() - Creating annotation overlay..."
+                 << "annotations:" << m_annotationEnabled
+                 << "clickHighlight:" << clickHighlightEnabled;
 
         // Clean up any existing annotation overlay
         if (m_annotationOverlay) {
@@ -434,8 +441,15 @@ void RecordingManager::startFrameCapture()
             }
         });
 
-        // Enable annotation mode on control bar
-        m_controlBar->setAnnotationEnabled(true);
+        // Enable annotation mode on control bar only if annotations are enabled
+        if (m_annotationEnabled) {
+            m_controlBar->setAnnotationEnabled(true);
+        }
+
+        // Enable click highlight if configured
+        if (clickHighlightEnabled) {
+            m_annotationOverlay->setClickHighlightEnabled(true);
+        }
 
         qDebug() << "RecordingManager::startFrameCapture() - Annotation overlay created";
     }
@@ -680,6 +694,50 @@ void RecordingManager::onInitializationComplete()
     delete m_initTask;
     m_initTask = nullptr;
 
+    // Load countdown settings
+    auto settings = SnapTray::getSettings();
+    m_countdownEnabled = settings.value("recording/countdownEnabled", true).toBool();
+    m_countdownSeconds = settings.value("recording/countdownSeconds", 3).toInt();
+
+    // Start countdown if enabled, otherwise go directly to recording
+    if (m_countdownEnabled && m_countdownSeconds > 0) {
+        qDebug() << "RecordingManager: Starting countdown for" << m_countdownSeconds << "seconds";
+        startCountdown();
+    } else {
+        qDebug() << "RecordingManager: Countdown disabled, starting recording directly";
+        startRecordingAfterCountdown();
+    }
+
+    qDebug() << "RecordingManager::onInitializationComplete() - END (success)";
+}
+
+void RecordingManager::startCountdown()
+{
+    setState(State::Countdown);
+
+    m_countdownOverlay = new CountdownOverlay();
+    m_countdownOverlay->setAttribute(Qt::WA_DeleteOnClose);
+    m_countdownOverlay->setRegion(m_recordingRegion, m_targetScreen);
+    m_countdownOverlay->setCountdownSeconds(m_countdownSeconds);
+
+    connect(m_countdownOverlay, &CountdownOverlay::countdownFinished,
+            this, &RecordingManager::startRecordingAfterCountdown);
+    connect(m_countdownOverlay, &CountdownOverlay::countdownCancelled,
+            this, &RecordingManager::onCountdownCancelled);
+
+    m_countdownOverlay->show();
+    raiseWindowAboveMenuBar(m_countdownOverlay);
+    m_countdownOverlay->start();
+}
+
+void RecordingManager::startRecordingAfterCountdown()
+{
+    // Clean up countdown overlay if it exists
+    if (m_countdownOverlay) {
+        m_countdownOverlay->close();
+        m_countdownOverlay = nullptr;
+    }
+
     // Initialize state and counters
     m_elapsedTimer.start();
     setState(State::Recording);
@@ -692,8 +750,18 @@ void RecordingManager::onInitializationComplete()
     });
 
     qDebug() << "RecordingManager: Recording started at" << m_frameRate << "FPS";
-    qDebug() << "RecordingManager::onInitializationComplete() - END (success)";
     emit recordingStarted();
+}
+
+void RecordingManager::onCountdownCancelled()
+{
+    qDebug() << "RecordingManager: Countdown cancelled by user";
+
+    // Clean up countdown overlay
+    m_countdownOverlay = nullptr;  // Already deleted via WA_DeleteOnClose
+
+    // Cancel the recording
+    cancelRecording();
 }
 
 void RecordingManager::startCaptureTimers()

@@ -261,9 +261,12 @@ set(SOURCES
     src/video/IVideoPlayer.cpp
     src/video/VideoPlaybackWidget.cpp
     src/video/VideoTimeline.cpp
+    src/video/TrimTimeline.cpp
+    src/video/VideoTrimmer.cpp
     src/video/RecordingPreviewWindow.cpp
     src/video/FormatSelectionWidget.cpp
     src/video/InPlacePreviewOverlay.cpp
+    src/video/CountdownOverlay.cpp
     src/TransformationGizmo.cpp
     # Tool system
     src/tools/ToolRegistry.cpp
@@ -377,9 +380,12 @@ set(HEADERS
     include/video/IVideoPlayer.h
     include/video/VideoPlaybackWidget.h
     include/video/VideoTimeline.h
+    include/video/TrimTimeline.h
+    include/video/VideoTrimmer.h
     include/video/RecordingPreviewWindow.h
     include/video/FormatSelectionWidget.h
     include/video/InPlacePreviewOverlay.h
+    include/video/CountdownOverlay.h
     include/TransformationGizmo.h
     include/capture/ICaptureEngine.h
     include/capture/QtCaptureEngine.h
@@ -470,6 +476,7 @@ if(APPLE)
         src/capture/CoreAudioCaptureEngine_mac.mm
         src/AVFoundationEncoder.mm
         src/video/AVFoundationPlayer_mac.mm
+        src/input/MouseClickTracker_mac.mm
     )
     list(APPEND HEADERS
         include/WindowDetector.h
@@ -478,6 +485,7 @@ if(APPLE)
         include/OCRController.h
         include/capture/SCKCaptureEngine.h
         include/capture/CoreAudioCaptureEngine.h
+        include/input/MouseClickTracker.h
     )
     # Enable ARC for video player (uses __weak references)
     set_source_files_properties(
@@ -495,12 +503,14 @@ elseif(WIN32)
         src/capture/WASAPIAudioCaptureEngine_win.cpp
         src/MediaFoundationEncoder.cpp
         src/video/MediaFoundationPlayer_win.cpp
+        src/input/MouseClickTracker_win.cpp
     )
     list(APPEND HEADERS
         include/WindowDetector.h
         include/OCRManager.h
         include/capture/DXGICaptureEngine.h
         include/capture/WASAPIAudioCaptureEngine.h
+        include/input/MouseClickTracker.h
     )
     # Windows application icon resource (generated from template)
     set(WIN32_RESOURCES "${CMAKE_BINARY_DIR}/snaptray.rc")

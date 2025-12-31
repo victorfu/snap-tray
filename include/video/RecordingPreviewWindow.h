@@ -6,11 +6,13 @@
 #include <QWidget>
 
 class VideoPlaybackWidget;
-class VideoTimeline;
+class TrimTimeline;
+class VideoTrimmer;
 class QPushButton;
 class QSlider;
 class QLabel;
 class QComboBox;
+class QCheckBox;
 class QProgressDialog;
 
 class RecordingPreviewWindow : public QWidget
@@ -50,6 +52,13 @@ private slots:
     void onScrubbingStarted();
     void onScrubbingEnded();
 
+    // Trim slots
+    void onTrimRangeChanged(qint64 startMs, qint64 endMs);
+    void onTrimHandleDoubleClicked(bool isStartHandle);
+    void onTrimPreviewToggled(bool enabled);
+    void onTrimProgress(int percent);
+    void onTrimFinished(bool success, const QString &outputPath);
+
     // Speed control slots
     void onSpeedChanged(int index);
 
@@ -68,12 +77,16 @@ private:
     // Format conversion
     QString convertToFormat(FormatSelectionWidget::Format format);
 
+    // Trim helpers
+    void showTrimTimeInputDialog(bool isStartHandle);
+    void performTrim();
+
     // Video
     VideoPlaybackWidget *m_videoWidget;
     QString m_videoPath;
 
-    // Timeline
-    VideoTimeline *m_timeline;
+    // Timeline with trim
+    TrimTimeline *m_timeline;
 
     // Controls
     QPushButton *m_playPauseBtn;
@@ -89,9 +102,15 @@ private:
     QPushButton *m_saveBtn;
     QPushButton *m_discardBtn;
 
+    // Trim controls
+    QCheckBox *m_trimPreviewCheckbox;
+    VideoTrimmer *m_trimmer;
+    QProgressDialog *m_trimProgressDialog;
+
     // State
     bool m_saved;
     bool m_wasPlayingBeforeScrub;
+    bool m_trimPreviewEnabled;
     qint64 m_duration;
 
     // Speed options

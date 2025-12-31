@@ -33,7 +33,8 @@ protected:
     QSize sizeHint() const override;
     QSize minimumSizeHint() const override;
 
-private:
+protected:
+    // Helper methods accessible by subclasses
     qint64 positionFromX(int x) const;
     int xFromPosition(qint64 pos) const;
     QString formatTime(qint64 ms) const;

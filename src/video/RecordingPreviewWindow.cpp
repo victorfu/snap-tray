@@ -1,17 +1,21 @@
 #include "video/RecordingPreviewWindow.h"
 #include "video/VideoPlaybackWidget.h"
-#include "video/VideoTimeline.h"
+#include "video/TrimTimeline.h"
+#include "video/VideoTrimmer.h"
 #include "video/FormatSelectionWidget.h"
+#include "encoding/EncoderFactory.h"
 #include "encoding/NativeGifEncoder.h"
 #include "encoding/WebPAnimEncoder.h"
 #include "GlassRenderer.h"
 #include "IconRenderer.h"
 #include "ToolbarStyle.h"
 
+#include <QCheckBox>
 #include <QCloseEvent>
 #include <QCoreApplication>
 #include <QEventLoop>
 #include <QFile>
+#include <QInputDialog>
 #include <QProgressDialog>
 #include <QTimer>
 #include <QComboBox>
@@ -34,7 +38,10 @@ RecordingPreviewWindow::RecordingPreviewWindow(const QString &videoPath,
     , m_videoPath(videoPath)
     , m_saved(false)
     , m_wasPlayingBeforeScrub(false)
+    , m_trimPreviewEnabled(false)
     , m_duration(0)
+    , m_trimmer(nullptr)
+    , m_trimProgressDialog(nullptr)
 {
     // Window setup
     setWindowTitle("Recording Preview");
@@ -89,17 +96,23 @@ void RecordingPreviewWindow::setupUI()
     connect(m_videoWidget, &VideoPlaybackWidget::errorOccurred,
             this, &RecordingPreviewWindow::onVideoError);
 
-    // Timeline
-    m_timeline = new VideoTimeline(this);
+    // Timeline with trim handles
+    m_timeline = new TrimTimeline(this);
     mainLayout->addWidget(m_timeline);
 
     // Connect timeline signals
-    connect(m_timeline, &VideoTimeline::seekRequested,
+    connect(m_timeline, &TrimTimeline::seekRequested,
             this, &RecordingPreviewWindow::onTimelineSeek);
-    connect(m_timeline, &VideoTimeline::scrubbingStarted,
+    connect(m_timeline, &TrimTimeline::scrubbingStarted,
             this, &RecordingPreviewWindow::onScrubbingStarted);
-    connect(m_timeline, &VideoTimeline::scrubbingEnded,
+    connect(m_timeline, &TrimTimeline::scrubbingEnded,
             this, &RecordingPreviewWindow::onScrubbingEnded);
+
+    // Connect trim signals
+    connect(m_timeline, &TrimTimeline::trimRangeChanged,
+            this, &RecordingPreviewWindow::onTrimRangeChanged);
+    connect(m_timeline, &TrimTimeline::trimHandleDoubleClicked,
+            this, &RecordingPreviewWindow::onTrimHandleDoubleClicked);
 
     // Controls container
     QWidget *controlsContainer = new QWidget(this);
@@ -158,7 +171,17 @@ void RecordingPreviewWindow::setupUI()
             this, &RecordingPreviewWindow::onVolumeChanged);
     controlsLayout->addWidget(m_volumeSlider);
 
-    controlsLayout->addSpacing(20);
+    controlsLayout->addSpacing(10);
+
+    // Trim preview checkbox
+    m_trimPreviewCheckbox = new QCheckBox(tr("Preview trimmed only"), this);
+    m_trimPreviewCheckbox->setChecked(false);
+    m_trimPreviewEnabled = false;
+    connect(m_trimPreviewCheckbox, &QCheckBox::toggled,
+            this, &RecordingPreviewWindow::onTrimPreviewToggled);
+    controlsLayout->addWidget(m_trimPreviewCheckbox);
+
+    controlsLayout->addSpacing(10);
 
     // Format selection widget
     m_formatWidget = new FormatSelectionWidget(this);
@@ -301,6 +324,15 @@ void RecordingPreviewWindow::onSaveClicked()
     m_videoWidget->stop();
 
     auto format = m_formatWidget->selectedFormat();
+
+    // Check if we need to trim
+    if (m_timeline->hasTrim()) {
+        qDebug() << "RecordingPreviewWindow: Trimming video from"
+                 << m_timeline->trimStart() << "to" << m_timeline->trimEnd();
+        performTrim();
+        return;  // Will close after trim completes
+    }
+
     QString outputPath;
 
     if (format == FormatSelectionWidget::Format::MP4) {
@@ -598,4 +630,178 @@ QString RecordingPreviewWindow::convertToFormat(FormatSelectionWidget::Format fo
     delete webpEncoder;
 
     return outputPath;
+}
+
+// ============================================================================
+// Trim slot implementations
+// ============================================================================
+
+void RecordingPreviewWindow::onTrimRangeChanged(qint64 startMs, qint64 endMs)
+{
+    qDebug() << "RecordingPreviewWindow: Trim range changed:" << startMs << "-" << endMs;
+
+    // Update time label to show trimmed duration if trim is active
+    updateTimeLabel();
+
+    // If trim preview is enabled, constrain playback
+    if (m_trimPreviewEnabled && m_videoWidget->state() == IVideoPlayer::State::Playing) {
+        qint64 pos = m_videoWidget->position();
+        if (pos < startMs) {
+            m_videoWidget->seek(startMs);
+        } else if (pos >= endMs) {
+            m_videoWidget->seek(startMs);
+        }
+    }
+}
+
+void RecordingPreviewWindow::onTrimHandleDoubleClicked(bool isStartHandle)
+{
+    showTrimTimeInputDialog(isStartHandle);
+}
+
+void RecordingPreviewWindow::onTrimPreviewToggled(bool enabled)
+{
+    m_trimPreviewEnabled = enabled;
+    qDebug() << "RecordingPreviewWindow: Trim preview" << (enabled ? "enabled" : "disabled");
+
+    if (enabled && m_timeline->hasTrim()) {
+        // Jump to start of trim range
+        m_videoWidget->seek(m_timeline->trimStart());
+    }
+}
+
+void RecordingPreviewWindow::onTrimProgress(int percent)
+{
+    if (m_trimProgressDialog) {
+        m_trimProgressDialog->setValue(percent);
+    }
+}
+
+void RecordingPreviewWindow::onTrimFinished(bool success, const QString &outputPath)
+{
+    qDebug() << "RecordingPreviewWindow: Trim finished, success:" << success;
+
+    // Clean up progress dialog
+    if (m_trimProgressDialog) {
+        m_trimProgressDialog->close();
+        delete m_trimProgressDialog;
+        m_trimProgressDialog = nullptr;
+    }
+
+    // Clean up trimmer
+    if (m_trimmer) {
+        delete m_trimmer;
+        m_trimmer = nullptr;
+    }
+
+    if (success) {
+        // Delete original file
+        QFile::remove(m_videoPath);
+
+        m_saved = true;
+        emit saveRequested(outputPath);
+        close();
+    } else {
+        QMessageBox::warning(this, tr("Trim Failed"),
+                            tr("Failed to trim the video. Please try again."));
+    }
+}
+
+void RecordingPreviewWindow::showTrimTimeInputDialog(bool isStartHandle)
+{
+    QString title = isStartHandle ? tr("Set Trim Start") : tr("Set Trim End");
+    qint64 currentValue = isStartHandle ? m_timeline->trimStart() : m_timeline->trimEnd();
+
+    // Convert to seconds with one decimal
+    double seconds = currentValue / 1000.0;
+
+    bool ok;
+    double newSeconds = QInputDialog::getDouble(
+        this,
+        title,
+        tr("Enter time in seconds:"),
+        seconds,
+        0.0,
+        m_duration / 1000.0,
+        1,  // decimals
+        &ok
+    );
+
+    if (ok) {
+        qint64 newMs = static_cast<qint64>(newSeconds * 1000);
+        if (isStartHandle) {
+            // Ensure start < end
+            qint64 end = m_timeline->trimEnd();
+            if (end < 0) end = m_duration;
+            if (newMs < end) {
+                m_timeline->setTrimRange(newMs, end);
+            }
+        } else {
+            // Ensure end > start
+            qint64 start = m_timeline->trimStart();
+            if (newMs > start) {
+                m_timeline->setTrimRange(start, newMs);
+            }
+        }
+    }
+}
+
+void RecordingPreviewWindow::performTrim()
+{
+    auto format = m_formatWidget->selectedFormat();
+
+    // Determine output path
+    QString extension;
+    EncoderFactory::Format encoderFormat;
+    switch (format) {
+    case FormatSelectionWidget::Format::GIF:
+        extension = ".gif";
+        encoderFormat = EncoderFactory::Format::GIF;
+        break;
+    case FormatSelectionWidget::Format::WebP:
+        extension = ".webp";
+        encoderFormat = EncoderFactory::Format::WebP;
+        break;
+    case FormatSelectionWidget::Format::MP4:
+    default:
+        extension = ".mp4";
+        encoderFormat = EncoderFactory::Format::MP4;
+        break;
+    }
+
+    // Create output path
+    QString outputPath = m_videoPath;
+    int dotIndex = outputPath.lastIndexOf('.');
+    if (dotIndex > 0) {
+        outputPath = outputPath.left(dotIndex) + "_trimmed" + extension;
+    } else {
+        outputPath += "_trimmed" + extension;
+    }
+
+    // Create trimmer
+    m_trimmer = new VideoTrimmer(this);
+    m_trimmer->setInputPath(m_videoPath);
+    m_trimmer->setTrimRange(m_timeline->trimStart(), m_timeline->trimEnd());
+    m_trimmer->setOutputFormat(encoderFormat);
+    m_trimmer->setOutputPath(outputPath);
+
+    connect(m_trimmer, &VideoTrimmer::progress,
+            this, &RecordingPreviewWindow::onTrimProgress);
+    connect(m_trimmer, &VideoTrimmer::finished,
+            this, &RecordingPreviewWindow::onTrimFinished);
+
+    // Create progress dialog
+    m_trimProgressDialog = new QProgressDialog(tr("Trimming video..."), tr("Cancel"), 0, 100, this);
+    m_trimProgressDialog->setWindowModality(Qt::WindowModal);
+    m_trimProgressDialog->setMinimumDuration(0);
+    m_trimProgressDialog->setValue(0);
+
+    connect(m_trimProgressDialog, &QProgressDialog::canceled, [this]() {
+        if (m_trimmer) {
+            m_trimmer->cancel();
+        }
+    });
+
+    // Start trimming
+    m_trimmer->startTrim();
 }

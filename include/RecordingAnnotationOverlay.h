@@ -8,6 +8,8 @@
 
 class AnnotationLayer;
 class AnnotationController;
+class ClickRippleRenderer;
+class MouseClickTracker;
 
 /**
  * @brief Transparent overlay for drawing annotations during recording.
@@ -95,6 +97,17 @@ public:
      */
     void redo();
 
+    /**
+     * @brief Enable or disable click highlight effect.
+     * @param enabled True to show click ripples during recording
+     */
+    void setClickHighlightEnabled(bool enabled);
+
+    /**
+     * @brief Check if click highlight is enabled.
+     */
+    bool isClickHighlightEnabled() const;
+
 signals:
     /**
      * @brief Emitted when annotations change.
@@ -108,6 +121,10 @@ protected:
     void mouseReleaseEvent(QMouseEvent *event) override;
     void keyPressEvent(QKeyEvent *event) override;
 
+private slots:
+    void onMouseClicked(QPoint globalPos);
+    void onClickRippleNeedsRepaint();
+
 private:
     void setupWindow();
     void invalidateCache();
@@ -120,6 +137,10 @@ private:
     mutable QImage m_annotationCache;
     mutable bool m_cacheInvalid;
     mutable QSize m_cacheSize;
+
+    // Click highlight
+    ClickRippleRenderer *m_clickRipple;
+    MouseClickTracker *m_clickTracker;
 };
 
 #endif // RECORDINGANNOTATIONOVERLAY_H

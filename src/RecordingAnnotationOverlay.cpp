@@ -1,6 +1,8 @@
 #include "RecordingAnnotationOverlay.h"
 #include "annotations/AnnotationLayer.h"
 #include "AnnotationController.h"
+#include "ClickRippleRenderer.h"
+#include "input/MouseClickTracker.h"
 #include "platform/WindowLevel.h"
 
 #include <QPainter>
@@ -13,6 +15,8 @@ RecordingAnnotationOverlay::RecordingAnnotationOverlay(QWidget *parent)
     , m_annotationLayer(nullptr)
     , m_annotationController(nullptr)
     , m_cacheInvalid(true)
+    , m_clickRipple(nullptr)
+    , m_clickTracker(nullptr)
 {
     setupWindow();
 
@@ -34,10 +38,27 @@ RecordingAnnotationOverlay::RecordingAnnotationOverlay(QWidget *parent)
         invalidateCache();
         update();
     });
+
+    // Create click ripple renderer
+    m_clickRipple = new ClickRippleRenderer(this);
+    m_clickRipple->setColor(QColor(0, 122, 255, 200));  // Apple blue
+    connect(m_clickRipple, &ClickRippleRenderer::needsRepaint,
+            this, &RecordingAnnotationOverlay::onClickRippleNeedsRepaint);
+
+    // Create mouse click tracker (platform-specific)
+    m_clickTracker = MouseClickTracker::create(this);
+    if (m_clickTracker) {
+        connect(m_clickTracker, &MouseClickTracker::mouseClicked,
+                this, &RecordingAnnotationOverlay::onMouseClicked);
+    }
 }
 
 RecordingAnnotationOverlay::~RecordingAnnotationOverlay()
 {
+    // Stop click tracker if running
+    if (m_clickTracker && m_clickTracker->isRunning()) {
+        m_clickTracker->stop();
+    }
     // Children are parented, will be deleted automatically
 }
 
@@ -126,7 +147,10 @@ int RecordingAnnotationOverlay::width() const
 
 void RecordingAnnotationOverlay::compositeOntoFrame(QImage &frame, qreal scale) const
 {
-    if (!m_annotationLayer || m_annotationLayer->isEmpty()) {
+    bool hasAnnotations = m_annotationLayer && !m_annotationLayer->isEmpty();
+    bool hasRipples = m_clickRipple && m_clickRipple->hasActiveAnimations();
+
+    if (!hasAnnotations && !hasRipples) {
         return;
     }
 
@@ -141,18 +165,25 @@ void RecordingAnnotationOverlay::compositeOntoFrame(QImage &frame, qreal scale) 
             QPainter cachePainter(&m_annotationCache);
             cachePainter.setRenderHint(QPainter::Antialiasing);
 
-            // Scale annotations to physical pixel size
-            // Annotations are drawn in logical coordinates, frame is in physical coordinates
+            // Scale to physical pixel size
+            // Annotations and ripples are drawn in logical coordinates, frame is in physical coordinates
             if (scale != 1.0) {
                 cachePainter.scale(scale, scale);
             }
 
             // Draw annotations
-            m_annotationLayer->draw(cachePainter);
+            if (m_annotationLayer) {
+                m_annotationLayer->draw(cachePainter);
+            }
 
             // Draw in-progress annotation
             if (m_annotationController && m_annotationController->isDrawing()) {
                 m_annotationController->drawCurrentAnnotation(cachePainter);
+            }
+
+            // Draw click ripple effects
+            if (hasRipples) {
+                m_clickRipple->draw(cachePainter);
             }
         } // cachePainter destroyed here, releasing resources
 
@@ -200,6 +231,50 @@ void RecordingAnnotationOverlay::redo()
     }
 }
 
+void RecordingAnnotationOverlay::setClickHighlightEnabled(bool enabled)
+{
+    if (m_clickRipple) {
+        m_clickRipple->setEnabled(enabled);
+    }
+
+    if (enabled && m_clickTracker) {
+        if (!m_clickTracker->isRunning()) {
+            if (!m_clickTracker->start()) {
+                qWarning() << "RecordingAnnotationOverlay: Failed to start mouse click tracker";
+            } else {
+                qDebug() << "RecordingAnnotationOverlay: Mouse click tracking started";
+            }
+        }
+    } else if (!enabled && m_clickTracker && m_clickTracker->isRunning()) {
+        m_clickTracker->stop();
+        qDebug() << "RecordingAnnotationOverlay: Mouse click tracking stopped";
+    }
+}
+
+bool RecordingAnnotationOverlay::isClickHighlightEnabled() const
+{
+    return m_clickRipple && m_clickRipple->isEnabled();
+}
+
+void RecordingAnnotationOverlay::onMouseClicked(QPoint globalPos)
+{
+    // Convert global position to local overlay coordinates
+    QPoint localPos = globalPos - m_region.topLeft();
+
+    // Only show ripple if click is within the recording region
+    if (rect().contains(localPos)) {
+        if (m_clickRipple && m_clickRipple->isEnabled()) {
+            m_clickRipple->triggerRipple(localPos);
+        }
+    }
+}
+
+void RecordingAnnotationOverlay::onClickRippleNeedsRepaint()
+{
+    invalidateCache();
+    update();
+}
+
 void RecordingAnnotationOverlay::invalidateCache()
 {
     m_cacheInvalid = true;
@@ -220,6 +295,11 @@ void RecordingAnnotationOverlay::paintEvent(QPaintEvent *event)
     // Draw in-progress annotation
     if (m_annotationController && m_annotationController->isDrawing()) {
         m_annotationController->drawCurrentAnnotation(painter);
+    }
+
+    // Draw click ripple effects
+    if (m_clickRipple && m_clickRipple->hasActiveAnimations()) {
+        m_clickRipple->draw(painter);
     }
 }
 
