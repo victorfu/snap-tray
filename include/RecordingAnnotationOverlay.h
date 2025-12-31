@@ -100,8 +100,10 @@ public:
     /**
      * @brief Enable or disable click highlight effect.
      * @param enabled True to show click ripples during recording
+     * @return True if successfully enabled (or disabled), false if failed
+     *         (e.g., due to missing Accessibility permission on macOS)
      */
-    void setClickHighlightEnabled(bool enabled);
+    bool setClickHighlightEnabled(bool enabled);
 
     /**
      * @brief Check if click highlight is enabled.

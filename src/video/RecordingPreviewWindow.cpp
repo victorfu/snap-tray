@@ -789,6 +789,16 @@ void RecordingPreviewWindow::performTrim()
             this, &RecordingPreviewWindow::onTrimProgress);
     connect(m_trimmer, &VideoTrimmer::finished,
             this, &RecordingPreviewWindow::onTrimFinished);
+    connect(m_trimmer, &VideoTrimmer::error,
+            this, [this](const QString &msg) {
+        qWarning() << "RecordingPreviewWindow: Trim error:" << msg;
+        if (m_trimProgressDialog) {
+            m_trimProgressDialog->close();
+            delete m_trimProgressDialog;
+            m_trimProgressDialog = nullptr;
+        }
+        QMessageBox::warning(this, tr("Trim Error"), msg);
+    });
 
     // Create progress dialog
     m_trimProgressDialog = new QProgressDialog(tr("Trimming video..."), tr("Cancel"), 0, 100, this);

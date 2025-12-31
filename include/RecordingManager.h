@@ -142,6 +142,7 @@ private:
     bool m_usingNativeEncoder;          // True if using native encoder
     ICaptureEngine *m_captureEngine;
     bool m_annotationEnabled;           // True if annotation is enabled
+    bool m_clickHighlightEnabled;        // True if click highlight is enabled
 
     // Capture state
     QTimer *m_captureTimer;

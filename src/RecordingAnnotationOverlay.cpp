@@ -231,7 +231,7 @@ void RecordingAnnotationOverlay::redo()
     }
 }
 
-void RecordingAnnotationOverlay::setClickHighlightEnabled(bool enabled)
+bool RecordingAnnotationOverlay::setClickHighlightEnabled(bool enabled)
 {
     if (m_clickRipple) {
         m_clickRipple->setEnabled(enabled);
@@ -241,6 +241,11 @@ void RecordingAnnotationOverlay::setClickHighlightEnabled(bool enabled)
         if (!m_clickTracker->isRunning()) {
             if (!m_clickTracker->start()) {
                 qWarning() << "RecordingAnnotationOverlay: Failed to start mouse click tracker";
+                // Disable ripple since tracker failed
+                if (m_clickRipple) {
+                    m_clickRipple->setEnabled(false);
+                }
+                return false;
             } else {
                 qDebug() << "RecordingAnnotationOverlay: Mouse click tracking started";
             }
@@ -249,6 +254,8 @@ void RecordingAnnotationOverlay::setClickHighlightEnabled(bool enabled)
         m_clickTracker->stop();
         qDebug() << "RecordingAnnotationOverlay: Mouse click tracking stopped";
     }
+
+    return true;
 }
 
 bool RecordingAnnotationOverlay::isClickHighlightEnabled() const

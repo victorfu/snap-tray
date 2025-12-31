@@ -104,6 +104,7 @@ private:
     bool m_running = false;
     bool m_cancelled = false;
     qint64 m_currentPosition = 0;
+    qint64 m_seekPosition = 0;    // Position we requested frame from (for timestamp calculation)
     int m_frameCount = 0;
     int m_totalFrames = 0;
 };

@@ -81,6 +81,7 @@ RecordingManager::RecordingManager(QObject *parent)
     , m_usingNativeEncoder(false)
     , m_captureEngine(nullptr)
     , m_annotationEnabled(false)
+    , m_clickHighlightEnabled(false)
     , m_captureTimer(nullptr)
     , m_durationTimer(nullptr)
     , m_targetScreen(nullptr)
@@ -378,13 +379,13 @@ void RecordingManager::startFrameCapture()
     // Load annotation and click highlight settings
     auto settings = SnapTray::getSettings();
     m_annotationEnabled = settings.value("recording/annotationEnabled", false).toBool();
-    bool clickHighlightEnabled = settings.value("recording/clickHighlightEnabled", false).toBool();
+    m_clickHighlightEnabled = settings.value("recording/clickHighlightEnabled", false).toBool();
 
     // Create annotation overlay if either annotations or click highlight is enabled
-    if (m_annotationEnabled || clickHighlightEnabled) {
+    if (m_annotationEnabled || m_clickHighlightEnabled) {
         qDebug() << "RecordingManager::startFrameCapture() - Creating annotation overlay..."
                  << "annotations:" << m_annotationEnabled
-                 << "clickHighlight:" << clickHighlightEnabled;
+                 << "clickHighlight:" << m_clickHighlightEnabled;
 
         // Clean up any existing annotation overlay
         if (m_annotationOverlay) {
@@ -447,8 +448,13 @@ void RecordingManager::startFrameCapture()
         }
 
         // Enable click highlight if configured
-        if (clickHighlightEnabled) {
-            m_annotationOverlay->setClickHighlightEnabled(true);
+        if (m_clickHighlightEnabled) {
+            bool started = m_annotationOverlay->setClickHighlightEnabled(true);
+            if (!started) {
+                qWarning() << "RecordingManager: Click highlight requires Accessibility permission. "
+                           << "Grant permission in System Preferences > Security & Privacy > Privacy > Accessibility";
+                // Continue recording without click highlight - don't block the user
+            }
         }
 
         qDebug() << "RecordingManager::startFrameCapture() - Annotation overlay created";
@@ -833,9 +839,9 @@ void RecordingManager::captureFrame()
     QImage frame = captureEngine->captureFrame();
 
     if (!frame.isNull()) {
-        // Composite annotations onto frame if annotation overlay is active
+        // Composite annotations and click highlights onto frame if overlay is active
         // Use local copies for thread safety
-        if (annotationEnabled && annotationOverlay) {
+        if ((annotationEnabled || m_clickHighlightEnabled) && annotationOverlay) {
             qreal scale = CoordinateHelper::getDevicePixelRatio(m_targetScreen);
             annotationOverlay->compositeOntoFrame(frame, scale);
         }

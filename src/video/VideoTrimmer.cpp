@@ -129,11 +129,15 @@ void VideoTrimmer::startTrim()
     connect(m_player, &IVideoPlayer::frameReady,
             this, &VideoTrimmer::onFrameReady);
 
+    // Initialize seek position to start - we'll extract first frame at m_trimStart
+    m_seekPosition = m_trimStart;
+    m_currentPosition = m_trimStart;
+
     // Seek to start position and begin extraction
     m_player->seek(m_trimStart);
 
-    // Start processing frames
-    QTimer::singleShot(100, this, &VideoTrimmer::processNextFrame);
+    // Wait for first frame via frameReady signal (no processNextFrame call here)
+    // The frame will arrive via onFrameReady, which will then trigger processNextFrame
 }
 
 void VideoTrimmer::cancel()
@@ -164,8 +168,9 @@ void VideoTrimmer::onFrameReady(const QImage &frame)
         return;
     }
 
-    // Calculate adjusted timestamp (relative to trim start)
-    qint64 adjustedTime = m_currentPosition - m_trimStart;
+    // Calculate adjusted timestamp using m_seekPosition (the position we requested)
+    // This ensures correct timestamps since m_seekPosition hasn't been incremented yet
+    qint64 adjustedTime = m_seekPosition - m_trimStart;
 
     // Write frame to encoder
     if (m_videoEncoder) {
@@ -193,7 +198,7 @@ void VideoTrimmer::processNextFrame()
         return;
     }
 
-    // Advance position (33ms = ~30fps)
+    // Advance position (33ms = ~30fps) for next frame
     m_currentPosition += 33;
 
     if (m_currentPosition >= m_trimEnd) {
@@ -209,6 +214,9 @@ void VideoTrimmer::processNextFrame()
         }
         return;
     }
+
+    // Update seek position BEFORE seeking so onFrameReady knows the correct timestamp
+    m_seekPosition = m_currentPosition;
 
     // Seek to next position and request frame
     if (m_player) {

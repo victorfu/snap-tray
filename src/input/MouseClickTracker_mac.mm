@@ -34,13 +34,13 @@ public:
             return true;
         }
 
-        // Check for Accessibility permission
-        NSDictionary *options = @{(__bridge NSString *)kAXTrustedCheckOptionPrompt: @NO};
+        // Check for Accessibility permission and prompt user if not granted
+        NSDictionary *options = @{(__bridge NSString *)kAXTrustedCheckOptionPrompt: @YES};
         bool trusted = AXIsProcessTrustedWithOptions((__bridge CFDictionaryRef)options);
 
         if (!trusted) {
-            qWarning() << "MouseClickTracker: Accessibility permission not granted";
-            // Don't prompt here - let the app handle permission requests
+            qWarning() << "MouseClickTracker: Accessibility permission not granted. "
+                       << "Please grant permission in System Preferences > Security & Privacy > Privacy > Accessibility";
             return false;
         }
 
