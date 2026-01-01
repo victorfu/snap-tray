@@ -254,6 +254,11 @@ set(SOURCES
     src/RecordingAnnotationOverlay.cpp
     src/RecordingInitTask.cpp
     src/VideoEncoderFactory.cpp
+    # Recording visual effects
+    include/recording/CursorHighlightEffect.h
+    include/recording/SpotlightEffect.h
+    src/recording/CursorHighlightEffect.cpp
+    src/recording/SpotlightEffect.cpp
     src/encoding/EncoderFactory.cpp
     src/encoding/NativeGifEncoder.cpp
     src/encoding/WebPAnimEncoder.cpp
@@ -267,6 +272,17 @@ set(SOURCES
     src/video/FormatSelectionWidget.cpp
     src/video/InPlacePreviewOverlay.cpp
     src/video/CountdownOverlay.cpp
+    # Video annotation system
+    include/video/VideoAnnotation.h
+    include/video/AnnotationTrack.h
+    include/video/VideoAnnotationRenderer.h
+    include/video/AnnotationTimelineWidget.h
+    include/video/VideoAnnotationEditor.h
+    src/video/VideoAnnotation.cpp
+    src/video/AnnotationTrack.cpp
+    src/video/VideoAnnotationRenderer.cpp
+    src/video/AnnotationTimelineWidget.cpp
+    src/video/VideoAnnotationEditor.cpp
     src/TransformationGizmo.cpp
     # Tool system
     src/tools/ToolRegistry.cpp

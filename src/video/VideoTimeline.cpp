@@ -1,4 +1,5 @@
 #include "video/VideoTimeline.h"
+#include "ToolbarStyle.h"
 
 #include <QMouseEvent>
 #include <QPainter>
@@ -100,11 +101,14 @@ void VideoTimeline::paintEvent(QPaintEvent *event)
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
 
+    ToolbarStyleConfig config = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
     QRect track = trackRect();
 
     // Draw track background
     painter.setPen(Qt::NoPen);
-    painter.setBrush(QColor(60, 60, 60));
+    QColor trackColor = config.buttonInactiveColor;
+    trackColor.setAlpha(200);
+    painter.setBrush(trackColor);
     painter.drawRoundedRect(track, kTrackHeight / 2, kTrackHeight / 2);
 
     // Draw progress (filled portion)
@@ -112,14 +116,16 @@ void VideoTimeline::paintEvent(QPaintEvent *event)
         int progressX = xFromPosition(m_position);
         QRect progressRect(track.left(), track.top(),
                            progressX - track.left(), track.height());
-        painter.setBrush(QColor(0, 122, 255));  // macOS accent blue
+        painter.setBrush(config.buttonActiveColor);
         painter.drawRoundedRect(progressRect, kTrackHeight / 2, kTrackHeight / 2);
     }
 
     // Draw hover time indicator
     if (m_hovering && m_duration > 0 && !m_scrubbing) {
         int hoverX = qBound(track.left(), m_hoverX, track.right());
-        painter.setPen(QPen(QColor(255, 255, 255, 100), 1));
+        QColor hoverColor = config.hairlineBorderColor;
+        hoverColor.setAlpha(120);
+        painter.setPen(QPen(hoverColor, 1));
         painter.drawLine(hoverX, track.top(), hoverX, track.bottom());
     }
 
@@ -136,12 +142,12 @@ void VideoTimeline::paintEvent(QPaintEvent *event)
         painter.drawEllipse(QPoint(centerX + 1, centerY + 1), radius, radius);
 
         // Playhead
-        painter.setBrush(Qt::white);
+        painter.setBrush(config.textActiveColor);
         painter.drawEllipse(QPoint(centerX, centerY), radius, radius);
 
         // Highlight when scrubbing or hovering near playhead
         if (m_scrubbing) {
-            painter.setBrush(QColor(0, 122, 255));
+            painter.setBrush(config.buttonActiveColor);
             painter.drawEllipse(QPoint(centerX, centerY), radius - 2, radius - 2);
         }
     }

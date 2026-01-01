@@ -11,8 +11,9 @@
 
 class QLabel;
 class QHBoxLayout;
+class QFont;
+class QFontMetrics;
 class GlassTooltipWidget;
-
 class RecordingControlBar : public QWidget
 {
     Q_OBJECT
@@ -68,6 +69,18 @@ public:
     void setAnnotationWidth(int width);
     int annotationWidth() const { return m_annotationWidth; }
 
+    // Visual effect support
+    void setLaserPointerEnabled(bool enabled);
+    bool isLaserPointerEnabled() const { return m_laserEnabled; }
+    void setCursorHighlightEnabled(bool enabled);
+    bool isCursorHighlightEnabled() const { return m_cursorHighlightEnabled; }
+    void setSpotlightEnabled(bool enabled);
+    bool isSpotlightEnabled() const { return m_spotlightEnabled; }
+    void setCompositeIndicatorsEnabled(bool enabled);
+    bool isCompositeIndicatorsEnabled() const { return m_compositeIndicators; }
+    void setClickHighlightEnabled(bool enabled);
+    bool isClickHighlightEnabled() const { return m_clickHighlightEnabled; }
+
     // Mode support
     void setMode(Mode mode);
     Mode mode() const { return m_mode; }
@@ -93,11 +106,18 @@ signals:
     void colorChangeRequested();
     void widthChangeRequested();
 
+    // Visual effect signals
+    void laserPointerToggled(bool enabled);
+    void cursorHighlightToggled(bool enabled);
+    void spotlightToggled(bool enabled);
+    void compositeIndicatorsToggled(bool enabled);
+
     // Preview mode signals
     void playRequested();
     void seekRequested(qint64 positionMs);
     void volumeToggled();
     void formatSelected(OutputFormat format);
+    void annotateRequested();
     void savePreviewRequested();
     void discardPreviewRequested();
 
@@ -122,16 +142,33 @@ private:
         ButtonArrow = 12,
         ButtonRectangle = 13,
         ButtonColor = 20,
+        // Visual effect buttons
+        ButtonEffects = 25,
+        ButtonEffectLaser = 26,
+        ButtonEffectCursorHighlight = 27,
+        ButtonEffectSpotlight = 28,
+        ButtonEffectClickRipple = 29,
+        ButtonEffectComposite = 30,
         // Preview mode buttons
-        ButtonPlayPause = 30,
-        ButtonVolume = 31,
-        ButtonFormatMP4 = 32,
-        ButtonFormatGIF = 33,
-        ButtonFormatWebP = 34,
-        ButtonSave = 35,
-        ButtonDiscard = 36,
+        ButtonPlayPause = 40,
+        ButtonVolume = 41,
+        ButtonFormatMP4 = 42,
+        ButtonFormatGIF = 43,
+        ButtonFormatWebP = 44,
+        ButtonAnnotate = 45,
+        ButtonSave = 46,
+        ButtonDiscard = 47,
         // Timeline area (special - not a button but a drag area)
-        AreaTimeline = 40
+        AreaTimeline = 60
+    };
+
+    // Effects toolbar items
+    enum class EffectsMenuItem {
+        LaserPointer,
+        CursorHighlight,
+        Spotlight,
+        ClickRipple,
+        CompositeToVideo
     };
 
     void setupUi();
@@ -143,6 +180,19 @@ private:
     int buttonAtPosition(const QPoint &pos) const;
     void drawButtons(QPainter &painter);
     void drawAnnotationButtons(QPainter &painter);
+    void drawEffectsButton(QPainter &painter);
+    void drawEffectsToolbar(QPainter &painter);
+    void toggleEffectsToolbar();
+    void updateButtonSpacerWidth();
+    int effectsToolbarWidth() const;
+    int effectsToolbarButtonsWidth(const QFontMetrics &metrics) const;
+    int effectsToolbarButtonWidth(EffectsMenuItem item, const QFontMetrics &metrics) const;
+    const QVector<EffectsMenuItem> &effectsToolbarItems() const;
+    QString effectsToolbarLabel(EffectsMenuItem item) const;
+    QString effectsToolbarTooltip(EffectsMenuItem item) const;
+    int effectsToolbarButtonId(EffectsMenuItem item) const;
+    QFont effectsToolbarFont() const;
+    bool isEffectEnabled(EffectsMenuItem item) const;
     void drawPreviewModeUI(QPainter &painter);
     void drawTimeline(QPainter &painter);
     void drawFormatButtons(QPainter &painter);
@@ -151,6 +201,7 @@ private:
     QRect backgroundRect() const;
     QRect anchorRectForButton(int button) const;
     int previewWidth() const;
+    int annotateButtonWidth() const;
     void updateFixedWidth();
     void applyFixedWidth(int targetWidth);
     void showTooltipForButton(int buttonId);
@@ -188,6 +239,17 @@ private:
     QColor m_annotationColor;
     int m_annotationWidth;
 
+    // Visual effects state
+    bool m_laserEnabled = false;
+    bool m_cursorHighlightEnabled = false;
+    bool m_spotlightEnabled = false;
+    bool m_clickHighlightEnabled = true;  // Default on
+    bool m_compositeIndicators = false;
+    QRect m_effectsButtonRect;
+    bool m_effectsToolbarVisible = false;
+    QRect m_effectsToolbarRect;
+    QVector<QPair<QRect, EffectsMenuItem>> m_effectsToolbarItems;
+
     // Mode state
     Mode m_mode;
 
@@ -198,6 +260,7 @@ private:
     QRect m_formatMP4Rect;
     QRect m_formatGIFRect;
     QRect m_formatWebPRect;
+    QRect m_annotateRect;
     QRect m_saveRect;
     QRect m_discardRect;
     QRect m_indicatorRect;

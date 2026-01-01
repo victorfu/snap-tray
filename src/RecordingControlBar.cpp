@@ -5,6 +5,7 @@
 
 #include <QLabel>
 #include <QHBoxLayout>
+#include <QFont>
 #include <QFontMetrics>
 #include <QPainter>
 #include <QMouseEvent>
@@ -22,6 +23,12 @@ QColor dimmedColor(const QColor &color)
     dimmed.setAlpha((color.alpha() * 50) / 100);
     return dimmed;
 }
+
+constexpr int kEffectsToolbarGap = 6;
+constexpr int kEffectsButtonPaddingX = 8;
+constexpr int kEffectsButtonSpacing = 4;
+constexpr int kEffectsToolbarPaddingX = 4;
+constexpr int kEffectsToolbarPaddingY = 2;
 }
 
 class GlassTooltipWidget : public QWidget
@@ -216,13 +223,10 @@ void RecordingControlBar::setupUi()
     // Add stretch to push buttons to the right
     m_layout->addStretch();
 
-    // Reserve space for icon buttons (will be drawn in paintEvent)
-    // 3 buttons: pause/resume, stop, cancel
-    int buttonsWidth = 3 * BUTTON_WIDTH + 2 * BUTTON_SPACING + 4;
     m_buttonSpacer = new QWidget(this);
-    m_buttonSpacer->setFixedWidth(buttonsWidth);
     m_buttonSpacer->setAttribute(Qt::WA_TransparentForMouseEvents, true);
     m_layout->addWidget(m_buttonSpacer);
+    updateButtonSpacerWidth();
 
     updateButtonRects();
     updateFixedWidth();
@@ -240,6 +244,9 @@ void RecordingControlBar::updateButtonRects()
         m_arrowRect = QRect();
         m_rectangleRect = QRect();
         m_colorRect = QRect();
+        m_effectsButtonRect = QRect();
+        m_effectsToolbarRect = QRect();
+        m_effectsToolbarItems.clear();
         return;
     }
 
@@ -286,6 +293,37 @@ void RecordingControlBar::updateButtonRects()
         m_rectangleRect = QRect();
         m_colorRect = QRect();
     }
+
+    // Effects button (always shown, to the left of annotation tools or pause button)
+    x -= SEPARATOR_MARGIN;
+    x -= buttonSize + BUTTON_SPACING;
+    m_effectsButtonRect = QRect(x, y, buttonSize, buttonSize);
+
+    m_effectsToolbarItems.clear();
+    m_effectsToolbarRect = QRect();
+    if (m_effectsToolbarVisible) {
+        QFontMetrics metrics(effectsToolbarFont());
+        int buttonsWidth = effectsToolbarButtonsWidth(metrics);
+        int startX = x - kEffectsToolbarGap - buttonsWidth;
+        int currentX = startX;
+
+        for (EffectsMenuItem item : effectsToolbarItems()) {
+            int width = effectsToolbarButtonWidth(item, metrics);
+            QRect rect(currentX, y, width, buttonSize);
+            m_effectsToolbarItems.append(qMakePair(rect, item));
+            currentX += width + kEffectsButtonSpacing;
+        }
+
+        if (!m_effectsToolbarItems.isEmpty()) {
+            QRect groupRect = m_effectsToolbarItems.first().first;
+            for (const auto &entry : m_effectsToolbarItems) {
+                groupRect = groupRect.united(entry.first);
+            }
+            groupRect.adjust(-kEffectsToolbarPaddingX, -kEffectsToolbarPaddingY,
+                             kEffectsToolbarPaddingX, kEffectsToolbarPaddingY);
+            m_effectsToolbarRect = groupRect;
+        }
+    }
 }
 
 QRect RecordingControlBar::backgroundRect() const
@@ -307,18 +345,27 @@ int RecordingControlBar::previewWidth() const
     int webpWidth = 42;
     int gifWidth = 32;
     int mp4Width = 38;
+    int annotateWidth = annotateButtonWidth();
     int indicatorSize = 12;
     int durationWidth = 90;
     int timelineMinWidth = 50;
 
     int leftBlock = leftMargin + indicatorSize + 6 + durationWidth + 8 + timelineMinWidth;
     int rightBlock = rightMargin + buttonSize + BUTTON_SPACING + buttonSize +
+        BUTTON_SPACING + annotateWidth +
         SEPARATOR_MARGIN + webpWidth + formatSpacing + gifWidth + formatSpacing + mp4Width +
         SEPARATOR_MARGIN + buttonSize + BUTTON_SPACING + buttonSize;
 
     int minBackgroundWidth = leftBlock + rightBlock;
     int minWidgetWidth = minBackgroundWidth + SHADOW_MARGIN_X * 2;
     return qMax(minWidgetWidth, 500);
+}
+
+int RecordingControlBar::annotateButtonWidth() const
+{
+    QFont font = effectsToolbarFont();
+    QFontMetrics metrics(font);
+    return metrics.horizontalAdvance(tr("Annotate")) + 16;
 }
 
 void RecordingControlBar::updateFixedWidth()
@@ -366,8 +413,40 @@ void RecordingControlBar::applyFixedWidth(int targetWidth)
     }
 }
 
+void RecordingControlBar::updateButtonSpacerWidth()
+{
+    if (!m_buttonSpacer) {
+        return;
+    }
+
+    // Base: 3 control buttons
+    int baseButtonsWidth = 3 * BUTTON_WIDTH + 2 * BUTTON_SPACING + 4;
+
+    // Effects button plus separator
+    int effectsWidth = SEPARATOR_MARGIN + BUTTON_WIDTH + BUTTON_SPACING;
+
+    // Optional annotation tools: 5 buttons + separator
+    int annotationWidth = 0;
+    if (m_annotationEnabled) {
+        annotationWidth = 5 * BUTTON_WIDTH + 4 * BUTTON_SPACING + SEPARATOR_MARGIN;
+    }
+
+    int totalWidth = baseButtonsWidth + effectsWidth + annotationWidth + effectsToolbarWidth();
+    m_buttonSpacer->setFixedWidth(totalWidth);
+}
+
 QRect RecordingControlBar::anchorRectForButton(int button) const
 {
+    if (button == ButtonEffectLaser || button == ButtonEffectCursorHighlight ||
+        button == ButtonEffectSpotlight || button == ButtonEffectClickRipple ||
+        button == ButtonEffectComposite) {
+        for (const auto &entry : m_effectsToolbarItems) {
+            if (effectsToolbarButtonId(entry.second) == button) {
+                return entry.first;
+            }
+        }
+    }
+
     switch (button) {
     case ButtonPause: return m_pauseRect;
     case ButtonStop: return m_stopRect;
@@ -377,11 +456,13 @@ QRect RecordingControlBar::anchorRectForButton(int button) const
     case ButtonArrow: return m_arrowRect;
     case ButtonRectangle: return m_rectangleRect;
     case ButtonColor: return m_colorRect;
+    case ButtonEffects: return m_effectsButtonRect;
     case ButtonPlayPause: return m_playPauseRect;
     case ButtonVolume: return m_volumeRect;
     case ButtonFormatMP4: return m_formatMP4Rect;
     case ButtonFormatGIF: return m_formatGIFRect;
     case ButtonFormatWebP: return m_formatWebPRect;
+    case ButtonAnnotate: return m_annotateRect;
     case ButtonSave: return m_saveRect;
     case ButtonDiscard: return m_discardRect;
     case AreaTimeline: return m_timelineRect;
@@ -586,6 +667,12 @@ void RecordingControlBar::paintEvent(QPaintEvent *event)
         if (m_annotationEnabled) {
             drawAnnotationButtons(painter);
         }
+
+        // Draw effects button (always visible in recording mode)
+        drawEffectsButton(painter);
+
+        // Draw effects sub-toolbar if visible
+        drawEffectsToolbar(painter);
     }
 
 }
@@ -659,6 +746,18 @@ QString RecordingControlBar::tooltipForButton(int button) const
         return tr("Rectangle");
     case ButtonColor:
         return tr("Color");
+    case ButtonEffects:
+        return tr("Visual Effects");
+    case ButtonEffectLaser:
+        return effectsToolbarTooltip(EffectsMenuItem::LaserPointer);
+    case ButtonEffectCursorHighlight:
+        return effectsToolbarTooltip(EffectsMenuItem::CursorHighlight);
+    case ButtonEffectSpotlight:
+        return effectsToolbarTooltip(EffectsMenuItem::Spotlight);
+    case ButtonEffectClickRipple:
+        return effectsToolbarTooltip(EffectsMenuItem::ClickRipple);
+    case ButtonEffectComposite:
+        return effectsToolbarTooltip(EffectsMenuItem::CompositeToVideo);
     // Preview mode buttons
     case ButtonPlayPause:
         return m_isPlaying ? tr("Pause (Space)") : tr("Play (Space)");
@@ -670,6 +769,8 @@ QString RecordingControlBar::tooltipForButton(int button) const
         return tr("GIF - Universal support");
     case ButtonFormatWebP:
         return tr("WebP - Small size");
+    case ButtonAnnotate:
+        return tr("Annotate Video");
     case ButtonSave:
         return tr("Save (Enter)");
     case ButtonDiscard:
@@ -683,6 +784,9 @@ QString RecordingControlBar::tooltipForButton(int button) const
 
 int RecordingControlBar::buttonAtPosition(const QPoint &pos) const
 {
+    // Ensure button rects are up-to-date (they're calculated based on current widget size)
+    const_cast<RecordingControlBar *>(this)->updateButtonRects();
+
     if (m_mode == Mode::Preview) {
         // Preview mode buttons
         if (m_playPauseRect.contains(pos)) return ButtonPlayPause;
@@ -690,6 +794,7 @@ int RecordingControlBar::buttonAtPosition(const QPoint &pos) const
         if (m_formatMP4Rect.contains(pos)) return ButtonFormatMP4;
         if (m_formatGIFRect.contains(pos)) return ButtonFormatGIF;
         if (m_formatWebPRect.contains(pos)) return ButtonFormatWebP;
+        if (m_annotateRect.contains(pos)) return ButtonAnnotate;
         if (m_saveRect.contains(pos)) return ButtonSave;
         if (m_discardRect.contains(pos)) return ButtonDiscard;
 
@@ -713,6 +818,18 @@ int RecordingControlBar::buttonAtPosition(const QPoint &pos) const
         if (m_rectangleRect.contains(pos)) return ButtonRectangle;
         if (m_colorRect.contains(pos)) return ButtonColor;
     }
+
+    if (m_effectsToolbarVisible && !m_isPreparing) {
+        for (const auto &entry : m_effectsToolbarItems) {
+            if (entry.first.contains(pos)) {
+                return effectsToolbarButtonId(entry.second);
+            }
+        }
+    }
+
+    // Effects button
+    if (!m_isPreparing && m_effectsButtonRect.contains(pos)) return ButtonEffects;
+
     return ButtonNone;
 }
 
@@ -798,6 +915,9 @@ void RecordingControlBar::mousePressEvent(QMouseEvent *event)
                 case ButtonFormatWebP:
                     setSelectedFormat(OutputFormat::WebP);
                     break;
+                case ButtonAnnotate:
+                    emit annotateRequested();
+                    break;
                 case ButtonSave:
                     emit savePreviewRequested();
                     break;
@@ -856,6 +976,24 @@ void RecordingControlBar::mousePressEvent(QMouseEvent *event)
                     break;
                 case ButtonColor:
                     emit colorChangeRequested();
+                    break;
+                case ButtonEffects:
+                    toggleEffectsToolbar();
+                    break;
+                case ButtonEffectLaser:
+                    setLaserPointerEnabled(!m_laserEnabled);
+                    break;
+                case ButtonEffectCursorHighlight:
+                    setCursorHighlightEnabled(!m_cursorHighlightEnabled);
+                    break;
+                case ButtonEffectSpotlight:
+                    setSpotlightEnabled(!m_spotlightEnabled);
+                    break;
+                case ButtonEffectClickRipple:
+                    setClickHighlightEnabled(!m_clickHighlightEnabled);
+                    break;
+                case ButtonEffectComposite:
+                    setCompositeIndicatorsEnabled(!m_compositeIndicators);
                     break;
                 }
                 return;
@@ -1107,16 +1245,7 @@ void RecordingControlBar::setAnnotationEnabled(bool enabled)
             hideTooltip();
         }
 
-        int baseButtonsWidth = 3 * BUTTON_WIDTH + 2 * BUTTON_SPACING + 4;
-
-        if (enabled) {
-            // Add space for annotation tools: 5 buttons + separator
-            int annotationWidth = 5 * BUTTON_WIDTH + 4 * BUTTON_SPACING + SEPARATOR_MARGIN;
-            m_buttonSpacer->setFixedWidth(baseButtonsWidth + annotationWidth);
-        } else {
-            m_buttonSpacer->setFixedWidth(baseButtonsWidth);
-        }
-
+        updateButtonSpacerWidth();
         updateFixedWidth();
         update();
     }
@@ -1144,6 +1273,264 @@ void RecordingControlBar::setAnnotationWidth(int width)
     if (m_annotationWidth != width) {
         m_annotationWidth = width;
         emit widthChangeRequested();
+    }
+}
+
+const QVector<RecordingControlBar::EffectsMenuItem> &RecordingControlBar::effectsToolbarItems() const
+{
+    static const QVector<EffectsMenuItem> kItems = {
+        EffectsMenuItem::LaserPointer,
+        EffectsMenuItem::CursorHighlight,
+        EffectsMenuItem::Spotlight,
+        EffectsMenuItem::ClickRipple,
+        EffectsMenuItem::CompositeToVideo
+    };
+    return kItems;
+}
+
+QString RecordingControlBar::effectsToolbarLabel(EffectsMenuItem item) const
+{
+    switch (item) {
+    case EffectsMenuItem::LaserPointer:
+        return tr("Laser");
+    case EffectsMenuItem::CursorHighlight:
+        return tr("Cursor");
+    case EffectsMenuItem::Spotlight:
+        return tr("Spot");
+    case EffectsMenuItem::ClickRipple:
+        return tr("Click");
+    case EffectsMenuItem::CompositeToVideo:
+        return tr("Embed");
+    }
+    return QString();
+}
+
+QString RecordingControlBar::effectsToolbarTooltip(EffectsMenuItem item) const
+{
+    switch (item) {
+    case EffectsMenuItem::LaserPointer:
+        return tr("Laser Pointer");
+    case EffectsMenuItem::CursorHighlight:
+        return tr("Cursor Highlight");
+    case EffectsMenuItem::Spotlight:
+        return tr("Spotlight");
+    case EffectsMenuItem::ClickRipple:
+        return tr("Click Ripple");
+    case EffectsMenuItem::CompositeToVideo:
+        return tr("Embed in Video");
+    }
+    return QString();
+}
+
+int RecordingControlBar::effectsToolbarButtonId(EffectsMenuItem item) const
+{
+    switch (item) {
+    case EffectsMenuItem::LaserPointer:
+        return ButtonEffectLaser;
+    case EffectsMenuItem::CursorHighlight:
+        return ButtonEffectCursorHighlight;
+    case EffectsMenuItem::Spotlight:
+        return ButtonEffectSpotlight;
+    case EffectsMenuItem::ClickRipple:
+        return ButtonEffectClickRipple;
+    case EffectsMenuItem::CompositeToVideo:
+        return ButtonEffectComposite;
+    }
+    return ButtonNone;
+}
+
+QFont RecordingControlBar::effectsToolbarFont() const
+{
+    QFont font = this->font();
+    font.setPointSize(9);
+    font.setWeight(QFont::Medium);
+    return font;
+}
+
+int RecordingControlBar::effectsToolbarButtonWidth(EffectsMenuItem item, const QFontMetrics &metrics) const
+{
+    return metrics.horizontalAdvance(effectsToolbarLabel(item)) + kEffectsButtonPaddingX * 2;
+}
+
+int RecordingControlBar::effectsToolbarButtonsWidth(const QFontMetrics &metrics) const
+{
+    const auto &items = effectsToolbarItems();
+    if (items.isEmpty()) {
+        return 0;
+    }
+
+    int total = 0;
+    for (EffectsMenuItem item : items) {
+        total += effectsToolbarButtonWidth(item, metrics);
+    }
+    total += kEffectsButtonSpacing * (items.size() - 1);
+    return total;
+}
+
+int RecordingControlBar::effectsToolbarWidth() const
+{
+    if (!m_effectsToolbarVisible) {
+        return 0;
+    }
+
+    QFontMetrics metrics(effectsToolbarFont());
+    int buttonsWidth = effectsToolbarButtonsWidth(metrics);
+    return buttonsWidth > 0 ? (kEffectsToolbarGap + buttonsWidth) : 0;
+}
+
+bool RecordingControlBar::isEffectEnabled(EffectsMenuItem item) const
+{
+    switch (item) {
+    case EffectsMenuItem::LaserPointer:
+        return m_laserEnabled;
+    case EffectsMenuItem::CursorHighlight:
+        return m_cursorHighlightEnabled;
+    case EffectsMenuItem::Spotlight:
+        return m_spotlightEnabled;
+    case EffectsMenuItem::ClickRipple:
+        return m_clickHighlightEnabled;
+    case EffectsMenuItem::CompositeToVideo:
+        return m_compositeIndicators;
+    }
+    return false;
+}
+
+// ============================================================================
+// Visual Effects Implementation
+// ============================================================================
+
+void RecordingControlBar::setLaserPointerEnabled(bool enabled)
+{
+    if (m_laserEnabled != enabled) {
+        m_laserEnabled = enabled;
+        update();
+        emit laserPointerToggled(enabled);
+    }
+}
+
+void RecordingControlBar::setCursorHighlightEnabled(bool enabled)
+{
+    if (m_cursorHighlightEnabled != enabled) {
+        m_cursorHighlightEnabled = enabled;
+        update();
+        emit cursorHighlightToggled(enabled);
+    }
+}
+
+void RecordingControlBar::setSpotlightEnabled(bool enabled)
+{
+    if (m_spotlightEnabled != enabled) {
+        m_spotlightEnabled = enabled;
+        update();
+        emit spotlightToggled(enabled);
+    }
+}
+
+void RecordingControlBar::setCompositeIndicatorsEnabled(bool enabled)
+{
+    if (m_compositeIndicators != enabled) {
+        m_compositeIndicators = enabled;
+        update();
+        emit compositeIndicatorsToggled(enabled);
+    }
+}
+
+void RecordingControlBar::setClickHighlightEnabled(bool enabled)
+{
+    if (m_clickHighlightEnabled != enabled) {
+        m_clickHighlightEnabled = enabled;
+        update();
+        // Note: Click highlight is handled through setClickHighlightEnabled on overlay
+    }
+}
+
+void RecordingControlBar::toggleEffectsToolbar()
+{
+    m_effectsToolbarVisible = !m_effectsToolbarVisible;
+    if (!m_effectsToolbarVisible &&
+        (m_hoveredButton == ButtonEffectLaser ||
+         m_hoveredButton == ButtonEffectCursorHighlight ||
+         m_hoveredButton == ButtonEffectSpotlight ||
+         m_hoveredButton == ButtonEffectClickRipple ||
+         m_hoveredButton == ButtonEffectComposite)) {
+        m_hoveredButton = ButtonNone;
+        hideTooltip();
+    }
+
+    updateButtonSpacerWidth();
+    updateFixedWidth();
+    update();
+}
+
+void RecordingControlBar::drawEffectsButton(QPainter &painter)
+{
+    if (m_effectsButtonRect.isNull()) return;
+
+    ToolbarStyleConfig config = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
+    const bool enabled = !m_isPreparing;
+
+    bool isHovered = enabled && (m_hoveredButton == ButtonEffects);
+    bool hasActiveEffect = m_laserEnabled || m_cursorHighlightEnabled ||
+                          m_spotlightEnabled || m_clickHighlightEnabled ||
+                          m_compositeIndicators;
+
+    // Draw background
+    if (enabled && (hasActiveEffect || isHovered || m_effectsToolbarVisible)) {
+        QColor bgColor = hasActiveEffect || m_effectsToolbarVisible
+                       ? QColor(0, 122, 255, 60)
+                       : config.hoverBackgroundColor;
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(bgColor);
+        painter.drawRoundedRect(m_effectsButtonRect.adjusted(2, 2, -2, -2), 6, 6);
+    }
+
+    // Draw icon (using a simple "fx" text or effect icon)
+    QColor iconColor = enabled ? (hasActiveEffect ? QColor(0, 122, 255) : config.iconNormalColor)
+                               : dimmedColor(config.iconNormalColor);
+
+    painter.setPen(iconColor);
+    QFont smallFont = painter.font();
+    smallFont.setPointSize(9);
+    smallFont.setBold(true);
+    painter.setFont(smallFont);
+    painter.drawText(m_effectsButtonRect, Qt::AlignCenter, "FX");
+}
+
+void RecordingControlBar::drawEffectsToolbar(QPainter &painter)
+{
+    if (!m_effectsToolbarVisible || m_effectsToolbarItems.isEmpty()) {
+        return;
+    }
+
+    ToolbarStyleConfig config = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
+    if (!m_effectsToolbarRect.isNull()) {
+        GlassRenderer::drawGlassPanel(painter, m_effectsToolbarRect, config, 6);
+    }
+
+    QFont font = effectsToolbarFont();
+    painter.setFont(font);
+
+    const bool enabled = !m_isPreparing;
+    for (const auto &entry : m_effectsToolbarItems) {
+        const QRect &rect = entry.first;
+        EffectsMenuItem item = entry.second;
+
+        int buttonId = effectsToolbarButtonId(item);
+        bool isHovered = enabled && (m_hoveredButton == buttonId);
+        bool isActive = enabled && isEffectEnabled(item);
+
+        if (isActive || isHovered) {
+            painter.setPen(Qt::NoPen);
+            painter.setBrush(isActive ? config.buttonActiveColor : config.hoverBackgroundColor);
+            painter.drawRoundedRect(rect, 4, 4);
+        }
+
+        QColor textColor = isActive ? config.textActiveColor : config.textColor;
+        if (!enabled) {
+            textColor = dimmedColor(textColor);
+        }
+        painter.setPen(textColor);
+        painter.drawText(rect, Qt::AlignCenter, effectsToolbarLabel(item));
     }
 }
 
@@ -1177,6 +1564,9 @@ void RecordingControlBar::setMode(Mode mode)
         m_previewPosition = 0;
         m_selectedFormat = OutputFormat::MP4;
         m_isMuted = false;
+        m_effectsToolbarVisible = false;
+        m_effectsToolbarItems.clear();
+        m_effectsToolbarRect = QRect();
     } else {
         // Show recording-specific widgets
         if (m_sizeLabel) m_sizeLabel->show();
@@ -1188,6 +1578,7 @@ void RecordingControlBar::setMode(Mode mode)
         if (m_buttonSpacer) m_buttonSpacer->show();
     }
 
+    updateButtonSpacerWidth();
     updateFixedWidth();
     update();
 }
@@ -1202,6 +1593,7 @@ void RecordingControlBar::updatePreviewButtonRects()
         m_formatMP4Rect = QRect();
         m_formatGIFRect = QRect();
         m_formatWebPRect = QRect();
+        m_annotateRect = QRect();
         m_saveRect = QRect();
         m_discardRect = QRect();
         m_indicatorRect = QRect();
@@ -1225,6 +1617,11 @@ void RecordingControlBar::updatePreviewButtonRects()
     // Save button
     x -= buttonSize + BUTTON_SPACING;
     m_saveRect = QRect(x, y, buttonSize, buttonSize);
+
+    // Annotate button (text)
+    int annotateWidth = annotateButtonWidth();
+    x -= annotateWidth + BUTTON_SPACING;
+    m_annotateRect = QRect(x, y, annotateWidth, buttonSize);
 
     // Separator margin before format buttons
     x -= SEPARATOR_MARGIN;
@@ -1418,11 +1815,35 @@ void RecordingControlBar::drawPreviewModeUI(QPainter &painter)
     // Draw format selection buttons
     drawFormatButtons(painter);
 
-    // Draw separator before save/discard
+    // Draw separator before annotate/save/discard
     {
-        int sepX = m_saveRect.left() - SEPARATOR_MARGIN / 2;
+        int sepX = m_annotateRect.left() - SEPARATOR_MARGIN / 2;
         painter.setPen(QPen(config.hairlineBorderColor, 1));
         painter.drawLine(sepX, 6, sepX, TOOLBAR_HEIGHT - 6);
+    }
+
+    // Draw Annotate button
+    {
+        bool isHovered = (m_hoveredButton == ButtonAnnotate);
+        QColor bgColor = config.hoverBackgroundColor;
+        if (isHovered) {
+            painter.setPen(Qt::NoPen);
+            painter.setBrush(bgColor);
+            painter.drawRoundedRect(m_annotateRect, 4, 4);
+        } else {
+            QColor inactiveColor = config.hoverBackgroundColor;
+            inactiveColor.setAlpha(40);
+            painter.setPen(Qt::NoPen);
+            painter.setBrush(inactiveColor);
+            painter.drawRoundedRect(m_annotateRect, 4, 4);
+        }
+
+        QFont font = painter.font();
+        font.setPointSize(9);
+        font.setWeight(QFont::Medium);
+        painter.setFont(font);
+        painter.setPen(config.textColor);
+        painter.drawText(m_annotateRect, Qt::AlignCenter, tr("Annotate"));
     }
 
     // Draw Save button

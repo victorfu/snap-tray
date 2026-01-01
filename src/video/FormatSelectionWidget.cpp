@@ -1,4 +1,5 @@
 #include "video/FormatSelectionWidget.h"
+#include "ToolbarStyle.h"
 
 #include <QButtonGroup>
 #include <QHBoxLayout>
@@ -80,26 +81,38 @@ void FormatSelectionWidget::onButtonClicked(int id)
 
 void FormatSelectionWidget::updateButtonStyles()
 {
-    // Style for selected and unselected states
-    QString selectedStyle = R"(
-        QPushButton {
-            background-color: #007AFF;
-            color: white;
-            border: 1px solid #0066CC;
-            font-weight: bold;
-        }
-    )";
+    ToolbarStyleConfig config = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
 
-    QString unselectedStyle = R"(
-        QPushButton {
-            background-color: #3A3A3C;
-            color: #CCCCCC;
-            border: 1px solid #48484A;
-        }
-        QPushButton:hover {
-            background-color: #48484A;
-        }
-    )";
+    auto rgbaString = [](const QColor &color) {
+        return QString("rgba(%1, %2, %3, %4)")
+            .arg(color.red())
+            .arg(color.green())
+            .arg(color.blue())
+            .arg(color.alpha());
+    };
+
+    QColor activeBg = config.buttonActiveColor;
+    QColor inactiveBg = config.buttonInactiveColor;
+    QColor hoverBg = config.buttonHoverColor;
+    QColor borderColor = config.hairlineBorderColor;
+    activeBg.setAlpha(230);
+    inactiveBg.setAlpha(200);
+    hoverBg.setAlpha(220);
+
+    // Style for selected and unselected states
+    QString selectedStyle = QString(
+        "QPushButton { background-color: %1; color: %2; border: 1px solid %3; font-weight: 600; }"
+    ).arg(rgbaString(activeBg))
+     .arg(rgbaString(config.textActiveColor))
+     .arg(rgbaString(borderColor));
+
+    QString unselectedStyle = QString(
+        "QPushButton { background-color: %1; color: %2; border: 1px solid %3; }"
+        "QPushButton:hover { background-color: %4; }"
+    ).arg(rgbaString(inactiveBg))
+     .arg(rgbaString(config.textColor))
+     .arg(rgbaString(borderColor))
+     .arg(rgbaString(hoverBg));
 
     // Left button (rounded left corners)
     QString leftStyle = R"(

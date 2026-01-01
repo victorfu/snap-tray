@@ -32,6 +32,7 @@ private slots:
     void onCloseAllPins();
     void onSettings();
     void showRecordingPreview(const QString &videoPath);
+    void showRecordingPreviewForAnnotation(const QString& videoPath);
     void onPreviewSaveRequested(const QString &videoPath);
     void onPreviewDiscardRequested();
 

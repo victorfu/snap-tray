@@ -8,23 +8,35 @@
 class VideoPlaybackWidget;
 class TrimTimeline;
 class VideoTrimmer;
-class QPushButton;
+class VideoAnnotationEditor;
+class PreviewIconButton;
+class PreviewPillButton;
+class PreviewVolumeButton;
+class QPaintEvent;
 class QSlider;
 class QLabel;
 class QComboBox;
-class QCheckBox;
 class QProgressDialog;
+class QStackedWidget;
 
 class RecordingPreviewWindow : public QWidget
 {
     Q_OBJECT
 
 public:
+    enum class Mode { Preview, Annotate };
+    Q_ENUM(Mode)
+
     explicit RecordingPreviewWindow(const QString &videoPath,
                                     QWidget *parent = nullptr);
     ~RecordingPreviewWindow() override;
 
     QString videoPath() const { return m_videoPath; }
+
+    // Mode switching
+    Mode currentMode() const { return m_currentMode; }
+    void switchToAnnotateMode();
+    void switchToPreviewMode();
 
 signals:
     void saveRequested(const QString &videoPath);
@@ -34,6 +46,7 @@ signals:
 protected:
     void closeEvent(QCloseEvent *event) override;
     void keyPressEvent(QKeyEvent *event) override;
+    void paintEvent(QPaintEvent *event) override;
 
 private slots:
     void onPlayPauseClicked();
@@ -89,9 +102,9 @@ private:
     TrimTimeline *m_timeline;
 
     // Controls
-    QPushButton *m_playPauseBtn;
+    PreviewIconButton *m_playPauseBtn;
     QLabel *m_timeLabel;
-    QPushButton *m_muteBtn;
+    PreviewVolumeButton *m_muteBtn;
     QSlider *m_volumeSlider;
     QComboBox *m_speedCombo;
 
@@ -99,11 +112,11 @@ private:
     FormatSelectionWidget *m_formatWidget;
 
     // Action buttons
-    QPushButton *m_saveBtn;
-    QPushButton *m_discardBtn;
+    PreviewIconButton *m_saveBtn;
+    PreviewIconButton *m_discardBtn;
 
     // Trim controls
-    QCheckBox *m_trimPreviewCheckbox;
+    PreviewPillButton *m_trimPreviewToggle;
     VideoTrimmer *m_trimmer;
     QProgressDialog *m_trimProgressDialog;
 
@@ -112,6 +125,14 @@ private:
     bool m_wasPlayingBeforeScrub;
     bool m_trimPreviewEnabled;
     qint64 m_duration;
+
+    // Mode switching
+    Mode m_currentMode = Mode::Preview;
+    QStackedWidget *m_stackedWidget = nullptr;
+    QWidget *m_previewModeWidget = nullptr;
+    VideoAnnotationEditor *m_annotationEditor = nullptr;
+    PreviewPillButton *m_annotateBtn = nullptr;
+    PreviewPillButton *m_doneEditingBtn = nullptr;
 
     // Speed options
     static constexpr float kSpeedOptions[] = {0.25f, 0.5f, 0.75f, 1.0f, 1.25f, 1.5f, 2.0f};

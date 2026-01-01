@@ -3,6 +3,7 @@
 #include "video/TrimTimeline.h"
 #include "video/VideoTrimmer.h"
 #include "video/FormatSelectionWidget.h"
+#include "video/VideoAnnotationEditor.h"
 #include "encoding/EncoderFactory.h"
 #include "encoding/NativeGifEncoder.h"
 #include "encoding/WebPAnimEncoder.h"
@@ -10,25 +11,358 @@
 #include "IconRenderer.h"
 #include "ToolbarStyle.h"
 
-#include <QCheckBox>
+#include <QAbstractButton>
 #include <QCloseEvent>
 #include <QCoreApplication>
 #include <QEventLoop>
 #include <QFile>
 #include <QInputDialog>
 #include <QProgressDialog>
+#include <QStackedWidget>
 #include <QTimer>
 #include <QComboBox>
 #include <QDebug>
+#include <QEnterEvent>
+#include <QFontMetrics>
 #include <QGuiApplication>
 #include <QHBoxLayout>
 #include <QKeyEvent>
 #include <QLabel>
+#include <QLinearGradient>
 #include <QMessageBox>
-#include <QPushButton>
+#include <QPainter>
 #include <QScreen>
 #include <QSlider>
 #include <QVBoxLayout>
+
+namespace {
+QString rgbaString(const QColor &color)
+{
+    return QString("rgba(%1, %2, %3, %4)")
+        .arg(color.red())
+        .arg(color.green())
+        .arg(color.blue())
+        .arg(color.alpha());
+}
+}
+
+class GlassPanel : public QWidget
+{
+public:
+    explicit GlassPanel(QWidget *parent = nullptr)
+        : QWidget(parent)
+        , m_cornerRadius(10)
+    {
+        setAttribute(Qt::WA_TranslucentBackground);
+        setAutoFillBackground(false);
+    }
+
+    void setCornerRadius(int radius)
+    {
+        if (m_cornerRadius != radius) {
+            m_cornerRadius = radius;
+            update();
+        }
+    }
+
+protected:
+    void paintEvent(QPaintEvent *event) override
+    {
+        Q_UNUSED(event);
+        QPainter painter(this);
+        painter.setRenderHint(QPainter::Antialiasing);
+
+        ToolbarStyleConfig config = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
+        GlassRenderer::drawGlassPanel(painter, rect(), config, m_cornerRadius);
+    }
+
+private:
+    int m_cornerRadius;
+};
+
+class PreviewIconButton : public QAbstractButton
+{
+public:
+    explicit PreviewIconButton(const QString &iconKey, QWidget *parent = nullptr)
+        : QAbstractButton(parent)
+        , m_iconKey(iconKey)
+        , m_hovered(false)
+        , m_useCustomIconColor(false)
+        , m_cornerRadius(6)
+    {
+        setCursor(Qt::PointingHandCursor);
+        setFocusPolicy(Qt::NoFocus);
+    }
+
+    void setIconKey(const QString &key)
+    {
+        if (m_iconKey != key) {
+            m_iconKey = key;
+            updateGeometry();
+            update();
+        }
+    }
+
+    void setIconColor(const QColor &color)
+    {
+        m_iconColor = color;
+        m_useCustomIconColor = true;
+        update();
+    }
+
+    void clearIconColor()
+    {
+        m_useCustomIconColor = false;
+        update();
+    }
+
+    QSize sizeHint() const override
+    {
+        return QSize(32, 32);
+    }
+
+protected:
+    void paintEvent(QPaintEvent *event) override
+    {
+        Q_UNUSED(event);
+        QPainter painter(this);
+        painter.setRenderHint(QPainter::Antialiasing);
+
+        ToolbarStyleConfig config = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
+        const bool active = isDown() || isChecked();
+
+        if (m_hovered || active) {
+            QColor bg = active ? config.activeBackgroundColor : config.hoverBackgroundColor;
+            painter.setPen(Qt::NoPen);
+            painter.setBrush(bg);
+            painter.drawRoundedRect(rect().adjusted(2, 2, -2, -2), m_cornerRadius, m_cornerRadius);
+        }
+
+        QColor iconColor = m_useCustomIconColor ? m_iconColor
+            : (m_hovered || active ? config.iconActiveColor : config.iconNormalColor);
+        IconRenderer::instance().renderIcon(painter, rect(), m_iconKey, iconColor);
+    }
+
+    void enterEvent(QEnterEvent *event) override
+    {
+        m_hovered = true;
+        update();
+        QAbstractButton::enterEvent(event);
+    }
+
+    void leaveEvent(QEvent *event) override
+    {
+        m_hovered = false;
+        update();
+        QAbstractButton::leaveEvent(event);
+    }
+
+private:
+    QString m_iconKey;
+    QColor m_iconColor;
+    bool m_hovered;
+    bool m_useCustomIconColor;
+    int m_cornerRadius;
+};
+
+class PreviewVolumeButton : public QAbstractButton
+{
+public:
+    explicit PreviewVolumeButton(QWidget *parent = nullptr)
+        : QAbstractButton(parent)
+        , m_muted(false)
+        , m_hovered(false)
+    {
+        setCursor(Qt::PointingHandCursor);
+        setFocusPolicy(Qt::NoFocus);
+    }
+
+    void setMuted(bool muted)
+    {
+        if (m_muted != muted) {
+            m_muted = muted;
+            update();
+        }
+    }
+
+    bool isMuted() const
+    {
+        return m_muted;
+    }
+
+    QSize sizeHint() const override
+    {
+        return QSize(32, 32);
+    }
+
+protected:
+    void paintEvent(QPaintEvent *event) override
+    {
+        Q_UNUSED(event);
+        QPainter painter(this);
+        painter.setRenderHint(QPainter::Antialiasing);
+
+        ToolbarStyleConfig config = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
+        if (m_hovered || isDown()) {
+            painter.setPen(Qt::NoPen);
+            painter.setBrush(config.hoverBackgroundColor);
+            painter.drawRoundedRect(rect().adjusted(2, 2, -2, -2), 6, 6);
+        }
+
+        QColor iconColor = m_hovered ? config.iconActiveColor : config.iconNormalColor;
+        if (m_muted) {
+            QRect iconRect = rect().adjusted(7, 7, -7, -7);
+            painter.setPen(QPen(iconColor, 1.6));
+            painter.drawLine(iconRect.topLeft(), iconRect.bottomRight());
+            painter.drawLine(iconRect.topRight(), iconRect.bottomLeft());
+        } else {
+            QRect iconRect = rect().adjusted(8, 8, -8, -8);
+            painter.setPen(Qt::NoPen);
+            painter.setBrush(iconColor);
+
+            int barWidth = 3;
+            int spacing = 2;
+            int barCount = 3;
+            int totalWidth = barCount * barWidth + (barCount - 1) * spacing;
+            int startX = iconRect.center().x() - totalWidth / 2;
+
+            for (int i = 0; i < barCount; ++i) {
+                int barHeight = 4 + i * 3;
+                int barY = iconRect.bottom() - barHeight;
+                painter.drawRoundedRect(startX + i * (barWidth + spacing), barY,
+                                        barWidth, barHeight, 1, 1);
+            }
+        }
+    }
+
+    void enterEvent(QEnterEvent *event) override
+    {
+        m_hovered = true;
+        update();
+        QAbstractButton::enterEvent(event);
+    }
+
+    void leaveEvent(QEvent *event) override
+    {
+        m_hovered = false;
+        update();
+        QAbstractButton::leaveEvent(event);
+    }
+
+private:
+    bool m_muted;
+    bool m_hovered;
+};
+
+class PreviewPillButton : public QAbstractButton
+{
+public:
+    explicit PreviewPillButton(const QString &text, QWidget *parent = nullptr)
+        : QAbstractButton(parent)
+        , m_hovered(false)
+        , m_useAccentColor(false)
+    {
+        setText(text);
+        setCursor(Qt::PointingHandCursor);
+        setFocusPolicy(Qt::NoFocus);
+        setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
+    }
+
+    void setIconKey(const QString &key)
+    {
+        if (m_iconKey != key) {
+            m_iconKey = key;
+            update();
+        }
+    }
+
+    void setAccentColor(const QColor &color)
+    {
+        m_accentColor = color;
+        m_useAccentColor = true;
+        update();
+    }
+
+    QSize sizeHint() const override
+    {
+        QFontMetrics fm(font());
+        int height = 28;
+        int textWidth = fm.horizontalAdvance(text());
+        int iconWidth = m_iconKey.isEmpty() ? 0 : (height - 12) + 6;
+        int width = textWidth + iconWidth + 20;
+        return QSize(width, height);
+    }
+
+protected:
+    void paintEvent(QPaintEvent *event) override
+    {
+        Q_UNUSED(event);
+        QPainter painter(this);
+        painter.setRenderHint(QPainter::Antialiasing);
+
+        ToolbarStyleConfig config = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
+        const bool active = isDown() || isChecked();
+
+        QColor bg = config.buttonInactiveColor;
+        bg.setAlpha(120);
+        if (m_hovered) {
+            bg = config.buttonHoverColor;
+        }
+        if (active) {
+            bg = m_useAccentColor ? m_accentColor : config.buttonActiveColor;
+        }
+
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(bg);
+        painter.drawRoundedRect(rect().adjusted(0, 0, -1, -1), 8, 8);
+
+        painter.setPen(QPen(config.hairlineBorderColor, 1));
+        painter.setBrush(Qt::NoBrush);
+        painter.drawRoundedRect(rect().adjusted(0, 0, -1, -1), 8, 8);
+
+        QFont font = painter.font();
+        font.setPointSize(10);
+        font.setWeight(QFont::Medium);
+        painter.setFont(font);
+
+        QColor textColor = active ? config.textActiveColor : config.textColor;
+        painter.setPen(textColor);
+
+        int leftPadding = 10;
+        QRect textRect = rect().adjusted(leftPadding, 0, -10, 0);
+
+        if (!m_iconKey.isEmpty()) {
+            int iconSize = height() - 12;
+            QRect iconRect(rect().left() + leftPadding,
+                           rect().center().y() - iconSize / 2,
+                           iconSize, iconSize);
+            IconRenderer::instance().renderIcon(painter, iconRect, m_iconKey, textColor);
+            textRect.setLeft(iconRect.right() + 6);
+        }
+
+        painter.drawText(textRect, Qt::AlignVCenter | Qt::AlignLeft, text());
+    }
+
+    void enterEvent(QEnterEvent *event) override
+    {
+        m_hovered = true;
+        update();
+        QAbstractButton::enterEvent(event);
+    }
+
+    void leaveEvent(QEvent *event) override
+    {
+        m_hovered = false;
+        update();
+        QAbstractButton::leaveEvent(event);
+    }
+
+private:
+    QString m_iconKey;
+    QColor m_accentColor;
+    bool m_hovered;
+    bool m_useAccentColor;
+};
 
 constexpr float RecordingPreviewWindow::kSpeedOptions[];
 
@@ -75,14 +409,31 @@ RecordingPreviewWindow::~RecordingPreviewWindow()
 
 void RecordingPreviewWindow::setupUI()
 {
+    IconRenderer& iconRenderer = IconRenderer::instance();
+    iconRenderer.loadIcon("play", ":/icons/icons/play.svg");
+    iconRenderer.loadIcon("pause", ":/icons/icons/pause.svg");
+    iconRenderer.loadIcon("save", ":/icons/icons/save.svg");
+    iconRenderer.loadIcon("cancel", ":/icons/icons/cancel.svg");
+    iconRenderer.loadIcon("pencil", ":/icons/icons/pencil.svg");
+
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
-    mainLayout->setContentsMargins(10, 10, 10, 10);
-    mainLayout->setSpacing(10);
+    mainLayout->setContentsMargins(16, 16, 16, 16);
+    mainLayout->setSpacing(12);
+
+    m_stackedWidget = new QStackedWidget(this);
+    mainLayout->addWidget(m_stackedWidget);
+
+    m_previewModeWidget = new QWidget(m_stackedWidget);
+    QVBoxLayout *previewLayout = new QVBoxLayout(m_previewModeWidget);
+    previewLayout->setContentsMargins(0, 0, 0, 0);
+    previewLayout->setSpacing(12);
+    m_stackedWidget->addWidget(m_previewModeWidget);
+    m_stackedWidget->setCurrentWidget(m_previewModeWidget);
 
     // Video widget
-    m_videoWidget = new VideoPlaybackWidget(this);
+    m_videoWidget = new VideoPlaybackWidget(m_previewModeWidget);
     m_videoWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    mainLayout->addWidget(m_videoWidget);
+    previewLayout->addWidget(m_videoWidget, 1);
 
     // Connect video signals
     connect(m_videoWidget, &VideoPlaybackWidget::positionChanged,
@@ -96,9 +447,16 @@ void RecordingPreviewWindow::setupUI()
     connect(m_videoWidget, &VideoPlaybackWidget::errorOccurred,
             this, &RecordingPreviewWindow::onVideoError);
 
-    // Timeline with trim handles
-    m_timeline = new TrimTimeline(this);
-    mainLayout->addWidget(m_timeline);
+    // Timeline panel with trim handles
+    GlassPanel *timelinePanel = new GlassPanel(m_previewModeWidget);
+    timelinePanel->setCornerRadius(12);
+    QHBoxLayout *timelineLayout = new QHBoxLayout(timelinePanel);
+    timelineLayout->setContentsMargins(12, 6, 12, 6);
+    timelineLayout->setSpacing(10);
+
+    m_timeline = new TrimTimeline(timelinePanel);
+    timelineLayout->addWidget(m_timeline, 1);
+    previewLayout->addWidget(timelinePanel);
 
     // Connect timeline signals
     connect(m_timeline, &TrimTimeline::seekRequested,
@@ -114,30 +472,39 @@ void RecordingPreviewWindow::setupUI()
     connect(m_timeline, &TrimTimeline::trimHandleDoubleClicked,
             this, &RecordingPreviewWindow::onTrimHandleDoubleClicked);
 
-    // Controls container
-    QWidget *controlsContainer = new QWidget(this);
-    controlsContainer->setFixedHeight(48);
-    QHBoxLayout *controlsLayout = new QHBoxLayout(controlsContainer);
-    controlsLayout->setContentsMargins(10, 5, 10, 5);
-    controlsLayout->setSpacing(10);
+    m_trimPreviewToggle = new PreviewPillButton(tr("Trim Preview"), timelinePanel);
+    m_trimPreviewToggle->setCheckable(true);
+    m_trimPreviewToggle->setFixedHeight(28);
+    m_trimPreviewToggle->setToolTip(tr("Play only the trimmed range"));
+    m_trimPreviewEnabled = false;
+    connect(m_trimPreviewToggle, &QAbstractButton::toggled,
+            this, &RecordingPreviewWindow::onTrimPreviewToggled);
+    timelineLayout->addWidget(m_trimPreviewToggle);
 
-    // Play/Pause button
-    m_playPauseBtn = new QPushButton(this);
+    // Row 1: Playback controls (glass panel)
+    GlassPanel *row1Panel = new GlassPanel(m_previewModeWidget);
+    row1Panel->setCornerRadius(12);
+    row1Panel->setMinimumHeight(44);
+    QHBoxLayout *row1Layout = new QHBoxLayout(row1Panel);
+    row1Layout->setContentsMargins(12, 6, 12, 6);
+    row1Layout->setSpacing(8);
+
+    m_playPauseBtn = new PreviewIconButton("play", row1Panel);
     m_playPauseBtn->setFixedSize(32, 32);
-    m_playPauseBtn->setFlat(true);
-    m_playPauseBtn->setCursor(Qt::PointingHandCursor);
-    connect(m_playPauseBtn, &QPushButton::clicked,
+    m_playPauseBtn->setToolTip(tr("Play/Pause (Space)"));
+    connect(m_playPauseBtn, &QAbstractButton::clicked,
             this, &RecordingPreviewWindow::onPlayPauseClicked);
-    controlsLayout->addWidget(m_playPauseBtn);
+    row1Layout->addWidget(m_playPauseBtn);
 
-    // Time label
-    m_timeLabel = new QLabel("00:00 / 00:00", this);
-    m_timeLabel->setFixedWidth(100);
+    m_timeLabel = new QLabel("00:00 / 00:00", row1Panel);
+    QFont timeFont("SF Mono", 11);
+    timeFont.setWeight(QFont::DemiBold);
+    m_timeLabel->setFont(timeFont);
     m_timeLabel->setAlignment(Qt::AlignCenter);
-    controlsLayout->addWidget(m_timeLabel);
+    m_timeLabel->setMinimumWidth(110);
+    row1Layout->addWidget(m_timeLabel);
 
-    // Speed combo box
-    m_speedCombo = new QComboBox(this);
+    m_speedCombo = new QComboBox(row1Panel);
     m_speedCombo->addItem("0.25x", 0.25f);
     m_speedCombo->addItem("0.5x", 0.5f);
     m_speedCombo->addItem("0.75x", 0.75f);
@@ -146,73 +513,108 @@ void RecordingPreviewWindow::setupUI()
     m_speedCombo->addItem("1.5x", 1.5f);
     m_speedCombo->addItem("2.0x", 2.0f);
     m_speedCombo->setCurrentIndex(kDefaultSpeedIndex);
-    m_speedCombo->setFixedWidth(70);
+    m_speedCombo->setFixedWidth(64);
+    m_speedCombo->setFixedHeight(28);
+    m_speedCombo->setToolTip(tr("Playback speed"));
     connect(m_speedCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &RecordingPreviewWindow::onSpeedChanged);
-    controlsLayout->addWidget(m_speedCombo);
+    row1Layout->addWidget(m_speedCombo);
 
-    controlsLayout->addStretch();
+    row1Layout->addStretch();
 
-    // Volume controls
-    m_muteBtn = new QPushButton(this);
+    m_muteBtn = new PreviewVolumeButton(row1Panel);
     m_muteBtn->setFixedSize(32, 32);
-    m_muteBtn->setFlat(true);
-    m_muteBtn->setCursor(Qt::PointingHandCursor);
-    connect(m_muteBtn, &QPushButton::clicked,
+    m_muteBtn->setToolTip(tr("Mute (M)"));
+    connect(m_muteBtn, &QAbstractButton::clicked,
             this, &RecordingPreviewWindow::onMuteToggled);
-    controlsLayout->addWidget(m_muteBtn);
+    row1Layout->addWidget(m_muteBtn);
 
-    m_volumeSlider = new QSlider(Qt::Horizontal, this);
+    m_volumeSlider = new QSlider(Qt::Horizontal, row1Panel);
     m_volumeSlider->setMinimum(0);
     m_volumeSlider->setMaximum(100);
     m_volumeSlider->setValue(100);
-    m_volumeSlider->setFixedWidth(80);
+    m_volumeSlider->setFixedWidth(110);
     connect(m_volumeSlider, &QSlider::valueChanged,
             this, &RecordingPreviewWindow::onVolumeChanged);
-    controlsLayout->addWidget(m_volumeSlider);
+    row1Layout->addWidget(m_volumeSlider);
 
-    controlsLayout->addSpacing(10);
+    previewLayout->addWidget(row1Panel);
 
-    // Trim preview checkbox
-    m_trimPreviewCheckbox = new QCheckBox(tr("Preview trimmed only"), this);
-    m_trimPreviewCheckbox->setChecked(false);
-    m_trimPreviewEnabled = false;
-    connect(m_trimPreviewCheckbox, &QCheckBox::toggled,
-            this, &RecordingPreviewWindow::onTrimPreviewToggled);
-    controlsLayout->addWidget(m_trimPreviewCheckbox);
+    // Row 2: Action controls (glass panel)
+    GlassPanel *row2Panel = new GlassPanel(m_previewModeWidget);
+    row2Panel->setCornerRadius(12);
+    row2Panel->setMinimumHeight(44);
+    QHBoxLayout *row2Layout = new QHBoxLayout(row2Panel);
+    row2Layout->setContentsMargins(12, 6, 12, 6);
+    row2Layout->setSpacing(8);
 
-    controlsLayout->addSpacing(10);
+    m_formatWidget = new FormatSelectionWidget(row2Panel);
+    row2Layout->addWidget(m_formatWidget);
 
-    // Format selection widget
-    m_formatWidget = new FormatSelectionWidget(this);
-    controlsLayout->addWidget(m_formatWidget);
+    m_annotateBtn = new PreviewPillButton(tr("Annotate"), row2Panel);
+    m_annotateBtn->setIconKey("pencil");
+    m_annotateBtn->setFixedHeight(28);
+    m_annotateBtn->setToolTip(tr("Add annotations to the video"));
+    connect(m_annotateBtn, &QAbstractButton::clicked, this, &RecordingPreviewWindow::switchToAnnotateMode);
+    row2Layout->addWidget(m_annotateBtn);
 
-    controlsLayout->addSpacing(10);
+    row2Layout->addStretch();
 
-    // Action buttons
-    m_discardBtn = new QPushButton("Discard", this);
-    m_discardBtn->setFixedHeight(32);
-    m_discardBtn->setCursor(Qt::PointingHandCursor);
-    connect(m_discardBtn, &QPushButton::clicked,
+    m_discardBtn = new PreviewIconButton("cancel", row2Panel);
+    m_discardBtn->setFixedSize(32, 32);
+    m_discardBtn->setToolTip(tr("Discard (Esc)"));
+    connect(m_discardBtn, &QAbstractButton::clicked,
             this, &RecordingPreviewWindow::onDiscardClicked);
-    controlsLayout->addWidget(m_discardBtn);
+    row2Layout->addWidget(m_discardBtn);
 
-    m_saveBtn = new QPushButton("Save", this);
-    m_saveBtn->setFixedHeight(32);
-    m_saveBtn->setCursor(Qt::PointingHandCursor);
-    m_saveBtn->setDefault(true);
-    connect(m_saveBtn, &QPushButton::clicked,
+    m_saveBtn = new PreviewIconButton("save", row2Panel);
+    m_saveBtn->setFixedSize(32, 32);
+    m_saveBtn->setToolTip(tr("Save (Enter)"));
+    m_saveBtn->setIconColor(QColor(52, 199, 89));
+    connect(m_saveBtn, &QAbstractButton::clicked,
             this, &RecordingPreviewWindow::onSaveClicked);
-    controlsLayout->addWidget(m_saveBtn);
+    row2Layout->addWidget(m_saveBtn);
 
-    mainLayout->addWidget(controlsContainer);
+    previewLayout->addWidget(row2Panel);
+
+    ToolbarStyleConfig config = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
+    m_timeLabel->setStyleSheet(QString("color: %1;").arg(rgbaString(config.textColor)));
+    m_discardBtn->setIconColor(config.iconCancelColor);
+
+    QColor comboBg = config.buttonInactiveColor;
+    comboBg.setAlpha(180);
+    QColor comboHover = config.buttonHoverColor;
+    comboHover.setAlpha(200);
+    QString comboStyle = QString(
+        "QComboBox { background-color: %1; color: %2; border: 1px solid %3; border-radius: 6px; padding: 2px 6px; }"
+        "QComboBox:hover { background-color: %4; }"
+        "QComboBox::drop-down { border: none; width: 16px; }"
+        "QComboBox QAbstractItemView { background-color: %5; color: %2; border: 1px solid %3; selection-background-color: %6; }"
+    )
+        .arg(rgbaString(comboBg))
+        .arg(rgbaString(config.textColor))
+        .arg(rgbaString(config.hairlineBorderColor))
+        .arg(rgbaString(comboHover))
+        .arg(rgbaString(config.dropdownBackground))
+        .arg(rgbaString(config.buttonActiveColor));
+    m_speedCombo->setStyleSheet(comboStyle);
+
+    QColor grooveColor = config.hoverBackgroundColor;
+    grooveColor.setAlpha(160);
+    QString sliderStyle = QString(
+        "QSlider::groove:horizontal { height: 4px; background: %1; border-radius: 2px; }"
+        "QSlider::sub-page:horizontal { background: %2; border-radius: 2px; }"
+        "QSlider::handle:horizontal { width: 12px; margin: -4px 0; background: white; border: 1px solid %3; border-radius: 6px; }"
+    )
+        .arg(rgbaString(grooveColor))
+        .arg(rgbaString(config.buttonActiveColor))
+        .arg(rgbaString(config.hairlineBorderColor));
+    m_volumeSlider->setStyleSheet(sliderStyle);
 
     // Initial button states
     updatePlayPauseButton();
     updateTimeLabel();
-
-    // Update mute button icon
-    m_muteBtn->setText(m_videoWidget->isMuted() ? "Muted" : "Vol");
+    m_muteBtn->setMuted(m_videoWidget->isMuted());
 }
 
 void RecordingPreviewWindow::closeEvent(QCloseEvent *event)
@@ -269,6 +671,20 @@ void RecordingPreviewWindow::keyPressEvent(QKeyEvent *event)
     }
 }
 
+void RecordingPreviewWindow::paintEvent(QPaintEvent *event)
+{
+    Q_UNUSED(event);
+    QPainter painter(this);
+    painter.setRenderHint(QPainter::Antialiasing);
+
+    ToolbarStyleConfig config = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
+    QLinearGradient gradient(rect().topLeft(), rect().bottomLeft());
+    gradient.setColorAt(0.0, config.backgroundColorTop);
+    gradient.setColorAt(1.0, config.backgroundColorBottom);
+
+    painter.fillRect(rect(), gradient);
+}
+
 void RecordingPreviewWindow::onPlayPauseClicked()
 {
     m_videoWidget->togglePlayPause();
@@ -303,6 +719,8 @@ void RecordingPreviewWindow::onVideoLoaded()
     // Auto-play on load
     m_videoWidget->play();
     updatePlayPauseButton();
+    m_muteBtn->setMuted(m_videoWidget->isMuted());
+    m_volumeSlider->setValue(static_cast<int>(m_videoWidget->volume() * 100));
 }
 
 void RecordingPreviewWindow::onVideoError(const QString &message)
@@ -373,14 +791,14 @@ void RecordingPreviewWindow::onVolumeChanged(int value)
         m_videoWidget->setMuted(false);
     }
 
-    m_muteBtn->setText(value == 0 ? "Muted" : "Vol");
+    m_muteBtn->setMuted(m_videoWidget->isMuted());
 }
 
 void RecordingPreviewWindow::onMuteToggled()
 {
     bool muted = !m_videoWidget->isMuted();
     m_videoWidget->setMuted(muted);
-    m_muteBtn->setText(muted ? "Muted" : "Vol");
+    m_muteBtn->setMuted(muted);
 
     // Update slider position
     if (muted) {
@@ -457,7 +875,7 @@ void RecordingPreviewWindow::updateTimeLabel()
 void RecordingPreviewWindow::updatePlayPauseButton()
 {
     bool isPlaying = m_videoWidget->state() == IVideoPlayer::State::Playing;
-    m_playPauseBtn->setText(isPlaying ? "||" : ">");
+    m_playPauseBtn->setIconKey(isPlaying ? "pause" : "play");
 }
 
 QString RecordingPreviewWindow::formatTime(qint64 ms) const
@@ -814,4 +1232,71 @@ void RecordingPreviewWindow::performTrim()
 
     // Start trimming
     m_trimmer->startTrim();
+}
+
+// ============================================================================
+// Mode switching implementations
+// ============================================================================
+
+void RecordingPreviewWindow::switchToAnnotateMode()
+{
+    if (m_currentMode == Mode::Annotate) {
+        return;
+    }
+
+    qDebug() << "RecordingPreviewWindow: Switching to annotate mode";
+    m_currentMode = Mode::Annotate;
+
+    // Pause video playback
+    m_videoWidget->pause();
+
+    // Create annotation editor if not already created
+    if (!m_annotationEditor) {
+        m_annotationEditor = new VideoAnnotationEditor(m_stackedWidget);
+        m_annotationEditor->setVideoPath(m_videoPath);
+
+        // Create done editing button
+        m_doneEditingBtn = new PreviewPillButton(tr("Done Editing"), m_annotationEditor);
+        m_doneEditingBtn->setFixedHeight(28);
+        m_doneEditingBtn->setToolTip(tr("Back to preview"));
+        connect(m_doneEditingBtn, &QAbstractButton::clicked, this, &RecordingPreviewWindow::switchToPreviewMode);
+
+        // Add button to annotation editor layout
+        if (QVBoxLayout *layout = qobject_cast<QVBoxLayout *>(m_annotationEditor->layout())) {
+            QHBoxLayout *buttonLayout = new QHBoxLayout();
+            buttonLayout->addStretch();
+            buttonLayout->addWidget(m_doneEditingBtn);
+            layout->addLayout(buttonLayout);
+        }
+    }
+
+    if (m_stackedWidget) {
+        if (m_stackedWidget->indexOf(m_annotationEditor) == -1) {
+            m_stackedWidget->addWidget(m_annotationEditor);
+        }
+        m_stackedWidget->setCurrentWidget(m_annotationEditor);
+        m_annotationEditor->setFocus(Qt::OtherFocusReason);
+    } else {
+        m_annotationEditor->show();
+    }
+
+    setWindowTitle("Recording Preview - Annotation Editor");
+}
+
+void RecordingPreviewWindow::switchToPreviewMode()
+{
+    if (m_currentMode == Mode::Preview) {
+        return;
+    }
+
+    qDebug() << "RecordingPreviewWindow: Switching to preview mode";
+    m_currentMode = Mode::Preview;
+
+    if (m_stackedWidget && m_previewModeWidget) {
+        m_stackedWidget->setCurrentWidget(m_previewModeWidget);
+    } else if (m_annotationEditor) {
+        m_annotationEditor->hide();
+    }
+
+    setWindowTitle("Recording Preview");
 }

@@ -81,6 +81,7 @@ signals:
     void stateChanged(State state);
     void selectionCancelledWithRegion(const QRect &region, QScreen *screen);
     void previewRequested(const QString &tempVideoPath);
+    void annotatePreviewRequested(const QString &tempVideoPath);
 
 private slots:
     void onRegionSelected(const QRect &region, QScreen *screen);
@@ -120,6 +121,7 @@ private slots:
     void onPreviewPauseRequested();
     void onPreviewSeekRequested(qint64 positionMs);
     void onPreviewVolumeToggled();
+    void onPreviewAnnotateRequested();
     void onPreviewSaveRequested();
     void onPreviewDiscardRequested();
     void onPreviewPositionChanged(qint64 positionMs);

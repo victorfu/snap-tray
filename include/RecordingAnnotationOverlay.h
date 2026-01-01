@@ -10,6 +10,9 @@ class AnnotationLayer;
 class AnnotationController;
 class ClickRippleRenderer;
 class MouseClickTracker;
+class LaserPointerRenderer;
+class CursorHighlightEffect;
+class SpotlightEffect;
 
 /**
  * @brief Transparent overlay for drawing annotations during recording.
@@ -110,6 +113,57 @@ public:
      */
     bool isClickHighlightEnabled() const;
 
+    /**
+     * @brief Enable or disable laser pointer effect.
+     */
+    void setLaserPointerEnabled(bool enabled);
+    bool isLaserPointerEnabled() const;
+
+    /**
+     * @brief Enable or disable cursor highlight effect.
+     */
+    void setCursorHighlightEnabled(bool enabled);
+    bool isCursorHighlightEnabled() const;
+
+    /**
+     * @brief Enable or disable spotlight effect.
+     */
+    void setSpotlightEnabled(bool enabled);
+    bool isSpotlightEnabled() const;
+
+    /**
+     * @brief Set whether visual effects should be embedded in the recorded video.
+     * When true, laser pointer, cursor highlight, and spotlight are composited onto frames.
+     * When false, effects display live but are not recorded.
+     */
+    void setCompositeIndicatorsToVideo(bool enabled);
+    bool compositeIndicatorsToVideo() const;
+
+    /**
+     * @brief Set laser pointer color.
+     */
+    void setLaserColor(const QColor &color);
+
+    /**
+     * @brief Set cursor highlight color.
+     */
+    void setCursorHighlightColor(const QColor &color);
+
+    /**
+     * @brief Set cursor highlight radius.
+     */
+    void setCursorHighlightRadius(int radius);
+
+    /**
+     * @brief Set spotlight follow radius.
+     */
+    void setSpotlightRadius(int radius);
+
+    /**
+     * @brief Set spotlight dim opacity.
+     */
+    void setSpotlightDimOpacity(qreal opacity);
+
 signals:
     /**
      * @brief Emitted when annotations change.
@@ -126,10 +180,12 @@ protected:
 private slots:
     void onMouseClicked(QPoint globalPos);
     void onClickRippleNeedsRepaint();
+    void onEffectNeedsRepaint();
 
 private:
     void setupWindow();
     void invalidateCache();
+    void updateCursorEffects(const QPoint &localPos);
 
     QRect m_region;
     AnnotationLayer *m_annotationLayer;
@@ -143,6 +199,13 @@ private:
     // Click highlight
     ClickRippleRenderer *m_clickRipple;
     MouseClickTracker *m_clickTracker;
+
+    // Visual effects
+    LaserPointerRenderer *m_laserRenderer;
+    CursorHighlightEffect *m_cursorHighlight;
+    SpotlightEffect *m_spotlightEffect;
+    bool m_laserPointerEnabled = false;
+    bool m_compositeIndicatorsToVideo = false;
 };
 
 #endif // RECORDINGANNOTATIONOVERLAY_H

@@ -457,6 +457,38 @@ void RecordingManager::startFrameCapture()
             }
         }
 
+        // Connect visual effect signals from control bar
+        connect(m_controlBar, &RecordingControlBar::laserPointerToggled,
+                this, [this](bool enabled) {
+            if (m_annotationOverlay) {
+                m_annotationOverlay->setLaserPointerEnabled(enabled);
+            }
+        });
+
+        connect(m_controlBar, &RecordingControlBar::cursorHighlightToggled,
+                this, [this](bool enabled) {
+            if (m_annotationOverlay) {
+                m_annotationOverlay->setCursorHighlightEnabled(enabled);
+            }
+        });
+
+        connect(m_controlBar, &RecordingControlBar::spotlightToggled,
+                this, [this](bool enabled) {
+            if (m_annotationOverlay) {
+                m_annotationOverlay->setSpotlightEnabled(enabled);
+            }
+        });
+
+        connect(m_controlBar, &RecordingControlBar::compositeIndicatorsToggled,
+                this, [this](bool enabled) {
+            if (m_annotationOverlay) {
+                m_annotationOverlay->setCompositeIndicatorsToVideo(enabled);
+            }
+        });
+
+        // Sync control bar state with click highlight
+        m_controlBar->setClickHighlightEnabled(m_clickHighlightEnabled);
+
         qDebug() << "RecordingManager::startFrameCapture() - Annotation overlay created";
     }
 
@@ -1076,11 +1108,11 @@ void RecordingManager::stopFrameCapture()
     ResourceCleanupHelper::stopAndDelete(m_captureEngine);
     qDebug() << "RecordingManager: Capture engine stopped";
 
-    // Hide UI overlays (keep boundary overlay for preview mode)
-    qDebug() << "RecordingManager: Hiding UI overlays...";
+    // Close UI overlays
+    qDebug() << "RecordingManager: Closing UI overlays...";
     if (m_boundaryOverlay) {
-        // Keep boundary overlay for preview mode, just hide it
-        m_boundaryOverlay->hide();
+        m_boundaryOverlay->close();
+        m_boundaryOverlay = nullptr;
     }
 
     // Disconnect annotation signals before closing overlay to prevent dangling connections
@@ -1096,9 +1128,8 @@ void RecordingManager::stopFrameCapture()
     }
 
     if (m_controlBar) {
-        // Only hide, don't close - control bar may be reused for preview mode
-        // It will be closed in cleanupRecording() or cleanupPreviewMode()
-        m_controlBar->hide();
+        m_controlBar->close();
+        m_controlBar = nullptr;
     }
     qDebug() << "RecordingManager::stopFrameCapture() END";
 }
@@ -1170,10 +1201,11 @@ void RecordingManager::onEncodingFinished(bool success, const QString &outputPat
         bool showPreview = settings.value("recording/showPreview", true).toBool();
 
         if (showPreview) {
-            // Transition to in-place preview mode
             QString tempPath = outputPath;
             QMetaObject::invokeMethod(this, [this, tempPath]() {
-                transitionToPreviewMode(tempPath);
+                m_tempVideoPath = tempPath;
+                setState(State::Previewing);
+                emit previewRequested(tempPath);
             }, Qt::QueuedConnection);
         } else {
             // Existing flow: go directly to save dialog
@@ -1198,6 +1230,7 @@ void RecordingManager::onPreviewClosed(bool saved)
     }
 
     setState(State::Idle);
+    m_tempVideoPath.clear();
 
     if (saved) {
         qDebug() << "RecordingManager: Preview closed, recording was saved";
@@ -1537,6 +1570,8 @@ void RecordingManager::connectPreviewSignals()
             this, &RecordingManager::onPreviewSeekRequested);
     connect(m_controlBar, &RecordingControlBar::volumeToggled,
             this, &RecordingManager::onPreviewVolumeToggled);
+    connect(m_controlBar, &RecordingControlBar::annotateRequested,
+            this, &RecordingManager::onPreviewAnnotateRequested);
     connect(m_controlBar, &RecordingControlBar::savePreviewRequested,
             this, &RecordingManager::onPreviewSaveRequested);
     connect(m_controlBar, &RecordingControlBar::discardPreviewRequested,
@@ -1572,6 +1607,21 @@ void RecordingManager::onPreviewVolumeToggled()
         if (m_controlBar) {
             m_controlBar->setMuted(newMuted);
         }
+    }
+}
+
+void RecordingManager::onPreviewAnnotateRequested()
+{
+    if (m_state != State::Previewing) {
+        return;
+    }
+
+    QString tempPath = m_tempVideoPath;
+    cleanupPreviewMode();
+    if (!tempPath.isEmpty()) {
+        emit annotatePreviewRequested(tempPath);
+    } else {
+        qWarning() << "RecordingManager: No preview video path for annotation";
     }
 }
 

@@ -76,6 +76,8 @@ void MainApplication::initialize()
     // Connect preview request signal
     connect(m_recordingManager, &RecordingManager::previewRequested,
         this, &MainApplication::showRecordingPreview);
+    connect(m_recordingManager, &RecordingManager::annotatePreviewRequested,
+        this, &MainApplication::showRecordingPreviewForAnnotation);
 
     // Connect capture manager's recording request to recording manager
     connect(m_captureManager, &CaptureManager::recordingRequested,
@@ -455,6 +457,18 @@ void MainApplication::showRecordingPreview(const QString& videoPath)
     m_previewWindow->show();
     m_previewWindow->raise();
     m_previewWindow->activateWindow();
+}
+
+void MainApplication::showRecordingPreviewForAnnotation(const QString& videoPath)
+{
+    showRecordingPreview(videoPath);
+    if (m_previewWindow) {
+        QTimer::singleShot(0, m_previewWindow, [this]() {
+            if (m_previewWindow) {
+                m_previewWindow->switchToAnnotateMode();
+            }
+        });
+    }
 }
 
 void MainApplication::onPreviewSaveRequested(const QString& videoPath)
