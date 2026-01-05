@@ -448,8 +448,8 @@ void UpdateAnnotationCommand::redo()
 
 int UpdateAnnotationCommand::id() const
 {
-    // Use annotation ID hash for merging similar updates
-    return qHash(m_newAnnotation.id) % 1000;
+    // Use hash with mask to ensure positive value (avoid -1 which means "don't merge")
+    return static_cast<int>(qHash(m_newAnnotation.id) & 0x7FFFFFFF);
 }
 
 bool UpdateAnnotationCommand::mergeWith(const QUndoCommand *other)

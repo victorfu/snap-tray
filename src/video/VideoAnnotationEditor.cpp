@@ -3,6 +3,7 @@
 #include "video/TrimTimeline.h"
 #include "video/VideoPlaybackWidget.h"
 #include "GlassRenderer.h"
+#include "InlineTextEditor.h"
 #include "ToolbarStyle.h"
 #include <QBoxLayout>
 #include <QColorDialog>
@@ -17,6 +18,7 @@
 #include <QPushButton>
 #include <QShowEvent>
 #include <QSlider>
+#include <QTextEdit>
 #include <QTimer>
 #include <QToolButton>
 
@@ -344,6 +346,13 @@ void VideoAnnotationEditor::setupUI()
     m_annotationCanvas->setGeometry(m_videoContainer->rect());
     m_annotationCanvas->raise();
 
+    // Inline text editor for text annotations
+    m_textEditor = new InlineTextEditor(m_annotationCanvas);
+    connect(m_textEditor, &InlineTextEditor::editingFinished, this,
+            &VideoAnnotationEditor::onTextEditingFinished);
+    connect(m_textEditor, &InlineTextEditor::editingCancelled, this,
+            &VideoAnnotationEditor::onTextEditingCancelled);
+
     connect(m_videoWidget, &VideoPlaybackWidget::positionChanged, this,
             &VideoAnnotationEditor::onVideoPositionChanged);
     connect(m_videoWidget, &VideoPlaybackWidget::durationChanged, this,
@@ -503,6 +512,11 @@ void VideoAnnotationEditor::renderAnnotations(QPainter &painter, const QRect &ta
 
 void VideoAnnotationEditor::handleCanvasMousePress(const QPoint &pos)
 {
+    // Handle inline text editor first
+    if (handleTextEditorPress(pos)) {
+        return;
+    }
+
     if (!m_track || m_videoRect.isEmpty() || !m_videoRect.contains(pos)) {
         return;
     }
@@ -527,6 +541,16 @@ void VideoAnnotationEditor::handleCanvasMousePress(const QPoint &pos)
 
 void VideoAnnotationEditor::handleCanvasMouseMove(const QPoint &pos)
 {
+    // Handle text editor dragging in confirm mode
+    if (m_textEditor && m_textEditor->isEditing() && m_textEditor->isConfirmMode()) {
+        m_textEditor->handleMouseMove(pos);
+        if (m_annotationCanvas) {
+            m_annotationCanvas->setCursor(m_textEditor->contains(pos) ? Qt::SizeAllCursor
+                                                                      : Qt::ArrowCursor);
+        }
+        return;
+    }
+
     if (m_isDrawing) {
         updateAnnotation(pos);
     }
@@ -534,6 +558,12 @@ void VideoAnnotationEditor::handleCanvasMouseMove(const QPoint &pos)
 
 void VideoAnnotationEditor::handleCanvasMouseRelease(const QPoint &pos)
 {
+    // Handle text editor drag release
+    if (m_textEditor && m_textEditor->isEditing() && m_textEditor->isConfirmMode()) {
+        m_textEditor->handleMouseRelease(pos);
+        return;
+    }
+
     Q_UNUSED(pos);
     if (m_isDrawing) {
         finishAnnotation();
@@ -547,16 +577,27 @@ AnnotationTrack *VideoAnnotationEditor::track() const
 
 void VideoAnnotationEditor::setTrack(AnnotationTrack *track)
 {
-    if (m_ownsTrack && m_track) {
-        delete m_track;
-    }
-
+    // Disconnect before delete to avoid use-after-free
     if (m_track) {
         disconnect(m_track, nullptr, this, nullptr);
     }
 
+    if (m_ownsTrack && m_track) {
+        delete m_track;
+    }
+
     m_track = track;
     m_ownsTrack = false;
+
+    // Calculate next step number from existing annotations
+    m_nextStepNumber = 1;
+    if (m_track) {
+        for (const auto &ann : m_track->allAnnotations()) {
+            if (ann.type == VideoAnnotationType::StepBadge) {
+                m_nextStepNumber = qMax(m_nextStepNumber, ann.stepNumber + 1);
+            }
+        }
+    }
 
     if (m_annotationTimeline) {
         m_annotationTimeline->setTrack(track);
@@ -793,6 +834,36 @@ void VideoAnnotationEditor::mouseReleaseEvent(QMouseEvent *event)
 
 void VideoAnnotationEditor::keyPressEvent(QKeyEvent *event)
 {
+    // Handle inline text editing keys first
+    if (m_textEditor && m_textEditor->isEditing()) {
+        if (event->key() == Qt::Key_Escape) {
+            m_textEditor->cancelEditing();
+            event->accept();
+            return;
+        }
+
+        if (m_textEditor->isConfirmMode()) {
+            // In confirm mode: Enter finishes editing
+            if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) {
+                m_textEditor->finishEditing();
+                event->accept();
+                return;
+            }
+        } else {
+            // In typing mode: Ctrl+Enter or Shift+Enter enters confirm mode
+            if ((event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) &&
+                (event->modifiers() & (Qt::ControlModifier | Qt::ShiftModifier))) {
+                if (!m_textEditor->textEdit()->toPlainText().trimmed().isEmpty()) {
+                    m_textEditor->enterConfirmMode();
+                }
+                event->accept();
+                return;
+            }
+        }
+        // Let other keys pass through to the text editor
+        return;
+    }
+
     bool handled = false;
     if (event->key() == Qt::Key_Escape) {
         if (m_isDrawing) {
@@ -978,9 +1049,10 @@ void VideoAnnotationEditor::beginAnnotation(const QPoint &pos)
         m_currentPath.append(relPos);
         break;
     case Tool::Text:
-        m_currentAnnotation.type = VideoAnnotationType::Text;
-        m_currentAnnotation.text = "Text"; // TODO: Show text input dialog
-        break;
+        // Use inline text editor instead of modal dialog
+        startTextEditing(pos);
+        m_isDrawing = false;
+        return;
     case Tool::StepBadge:
         m_currentAnnotation.type = VideoAnnotationType::StepBadge;
         m_currentAnnotation.stepNumber = m_nextStepNumber++;
@@ -1054,5 +1126,74 @@ void VideoAnnotationEditor::cancelAnnotation()
     m_isDrawing = false;
     m_currentAnnotation = VideoAnnotation();
     m_currentPath.clear();
+    updateAnnotationDisplay();
+}
+
+void VideoAnnotationEditor::startTextEditing(const QPoint &pos)
+{
+    if (!m_textEditor || !m_videoRect.contains(pos)) {
+        return;
+    }
+
+    m_textEditor->setColor(m_annotationColor);
+    m_textEditor->startEditing(pos, m_videoRect);
+}
+
+bool VideoAnnotationEditor::handleTextEditorPress(const QPoint &pos)
+{
+    if (!m_textEditor || !m_textEditor->isEditing()) {
+        return false;
+    }
+
+    if (m_textEditor->isConfirmMode()) {
+        // In confirm mode: click outside finishes, click inside starts drag
+        if (!m_textEditor->contains(pos)) {
+            m_textEditor->finishEditing();
+            return false; // Allow processing next action
+        }
+        m_textEditor->handleMousePress(pos);
+        return true;
+    }
+
+    // In typing mode: click outside finishes
+    if (!m_textEditor->contains(pos)) {
+        if (!m_textEditor->textEdit()->toPlainText().trimmed().isEmpty()) {
+            m_textEditor->finishEditing();
+        } else {
+            m_textEditor->cancelEditing();
+        }
+        return false;
+    }
+
+    return true; // Click is inside text editor
+}
+
+void VideoAnnotationEditor::onTextEditingFinished(const QString &text, const QPoint &position)
+{
+    if (text.isEmpty() || !m_track) {
+        return;
+    }
+
+    // Convert widget position to relative coordinates
+    QPointF relPos = widgetToRelative(position);
+
+    // Create the video annotation
+    VideoAnnotation annotation;
+    annotation.id = VideoAnnotation::generateId();
+    annotation.type = VideoAnnotationType::Text;
+    annotation.startTimeMs = m_currentTimeMs;
+    annotation.endTimeMs = m_currentTimeMs + m_defaultDurationMs;
+    annotation.startPoint = relPos;
+    annotation.endPoint = relPos;
+    annotation.text = text;
+    annotation.color = m_annotationColor;
+
+    m_track->addAnnotation(annotation);
+    m_track->setSelectedId(annotation.id);
+    updateAnnotationDisplay();
+}
+
+void VideoAnnotationEditor::onTextEditingCancelled()
+{
     updateAnnotationDisplay();
 }

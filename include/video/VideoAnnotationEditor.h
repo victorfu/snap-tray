@@ -18,6 +18,7 @@ class QPushButton;
 class QSlider;
 class AnnotationCanvas;
 class QPainter;
+class InlineTextEditor;
 
 class VideoAnnotationEditor : public QWidget {
     Q_OBJECT
@@ -104,6 +105,8 @@ private slots:
     void onTimelineSeekRequested(qint64 timeMs);
     void onAnnotationTimingChanged(const QString &id, qint64 startMs, qint64 endMs);
     void onUndoStackIndexChanged();
+    void onTextEditingFinished(const QString &text, const QPoint &position);
+    void onTextEditingCancelled();
 
 private:
     friend class AnnotationCanvas;
@@ -125,6 +128,10 @@ private:
     void finishAnnotation();
     void cancelAnnotation();
 
+    // Text editing helpers
+    void startTextEditing(const QPoint &pos);
+    bool handleTextEditorPress(const QPoint &pos);
+
     // Components
     VideoPlaybackWidget *m_videoWidget = nullptr;
     TrimTimeline *m_trimTimeline = nullptr;
@@ -133,6 +140,7 @@ private:
     QWidget *m_toolbarWidget = nullptr;
     QWidget *m_videoContainer = nullptr;
     AnnotationCanvas *m_annotationCanvas = nullptr;
+    InlineTextEditor *m_textEditor = nullptr;
     QWidget *m_controlsWidget = nullptr;
 
     QVector<QToolButton *> m_toolButtons;
