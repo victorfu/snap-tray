@@ -1,4 +1,8 @@
 #include "RegionSelector.h"
+#include "region/RegionPainter.h"
+#include "region/RegionInputHandler.h"
+#include "region/RegionToolbarHandler.h"
+#include "region/RegionSettingsHelper.h"
 #include "annotations/AllAnnotations.h"
 #include "GlassRenderer.h"
 #include "ToolbarStyle.h"
@@ -42,18 +46,6 @@
 #include <QMenu>
 #include <QFontDatabase>
 #include <QDateTime>
-
-static const char* SETTINGS_KEY_TEXT_BOLD = "textBold";
-static const char* SETTINGS_KEY_TEXT_ITALIC = "textItalic";
-static const char* SETTINGS_KEY_TEXT_UNDERLINE = "textUnderline";
-static const char* SETTINGS_KEY_TEXT_SIZE = "textFontSize";
-static const char* SETTINGS_KEY_TEXT_FAMILY = "textFontFamily";
-
-// Dropdown menu stylesheet (shared by font size and font family menus)
-static const char* kDropdownMenuStyle =
-    "QMenu { background: #2d2d2d; color: white; border: 1px solid #3d3d3d; } "
-    "QMenu::item { padding: 4px 20px; } "
-    "QMenu::item:selected { background: #0078d4; }";
 
 // Tool capability lookup table - replaces multiple switch statements
 struct ToolCapabilities {
@@ -162,8 +154,8 @@ RegionSelector::RegionSelector(QWidget* parent)
     auto& settings = AnnotationSettingsManager::instance();
     m_annotationColor = settings.loadColor();
     m_annotationWidth = settings.loadWidth();
-    m_arrowStyle = loadArrowStyle();
-    m_lineStyle = loadLineStyle();
+    m_arrowStyle = RegionSettingsHelper::loadArrowStyle();
+    m_lineStyle = RegionSettingsHelper::loadLineStyle();
     m_stepBadgeSize = settings.loadStepBadgeSize();
     m_mosaicBlurType = settings.loadMosaicBlurType();
 
@@ -187,7 +179,6 @@ RegionSelector::RegionSelector(QWidget* parent)
 
     // Initialize toolbar widget
     m_toolbar = new ToolbarWidget(this);
-    setupToolbarButtons();
     connect(m_toolbar, &ToolbarWidget::buttonClicked, this, [this](int buttonId) {
         handleToolbarClick(static_cast<ToolbarButton>(buttonId));
         });
@@ -314,6 +305,150 @@ RegionSelector::RegionSelector(QWidget* parent)
     connect(m_radiusSliderWidget, &RadiusSliderWidget::radiusChanged,
         this, &RegionSelector::onCornerRadiusChanged);
 
+    // Initialize painting component
+    m_painter = new RegionPainter(this);
+    m_painter->setSelectionManager(m_selectionManager);
+    m_painter->setAnnotationLayer(m_annotationLayer);
+    m_painter->setToolManager(m_toolManager);
+    m_painter->setToolbar(m_toolbar);
+    m_painter->setRadiusSliderWidget(m_radiusSliderWidget);
+    m_painter->setParentWidget(this);
+
+    // Initialize input handling component
+    m_inputHandler = new RegionInputHandler(this);
+    m_inputHandler->setSelectionManager(m_selectionManager);
+    m_inputHandler->setAnnotationLayer(m_annotationLayer);
+    m_inputHandler->setToolManager(m_toolManager);
+    m_inputHandler->setToolbar(m_toolbar);
+    m_inputHandler->setTextEditor(m_textEditor);
+    m_inputHandler->setTextAnnotationEditor(m_textAnnotationEditor);
+    m_inputHandler->setColorAndWidthWidget(m_colorAndWidthWidget);
+    m_inputHandler->setColorPalette(m_colorPalette);
+    m_inputHandler->setRadiusSliderWidget(m_radiusSliderWidget);
+    m_inputHandler->setUpdateThrottler(&m_updateThrottler);
+    m_inputHandler->setParentWidget(this);
+
+    // Connect input handler signals
+    connect(m_inputHandler, &RegionInputHandler::cursorChangeRequested,
+        this, [this](Qt::CursorShape cursor) { setCursor(cursor); });
+    connect(m_inputHandler, &RegionInputHandler::toolCursorRequested,
+        this, &RegionSelector::setToolCursor);
+    connect(m_inputHandler, qOverload<>(&RegionInputHandler::updateRequested),
+        this, qOverload<>(&QWidget::update));
+    connect(m_inputHandler, qOverload<const QRect&>(&RegionInputHandler::updateRequested),
+        this, qOverload<const QRect&>(&QWidget::update));
+    connect(m_inputHandler, &RegionInputHandler::toolbarClickRequested,
+        this, [this](int buttonId) { handleToolbarClick(static_cast<ToolbarButton>(buttonId)); });
+    connect(m_inputHandler, &RegionInputHandler::windowDetectionRequested,
+        this, &RegionSelector::updateWindowDetection);
+    connect(m_inputHandler, &RegionInputHandler::textReEditingRequested,
+        this, &RegionSelector::startTextReEditing);
+    connect(m_inputHandler, &RegionInputHandler::selectionFinished,
+        this, [this]() {
+            m_selectionManager->finishSelection();
+            setCursor(Qt::ArrowCursor);
+        });
+    connect(m_inputHandler, &RegionInputHandler::fullScreenSelectionRequested,
+        this, [this]() {
+            QRect screenGeom = m_currentScreen->geometry();
+            m_selectionManager->setFromDetectedWindow(QRect(0, 0, screenGeom.width(), screenGeom.height()));
+            setCursor(Qt::ArrowCursor);
+        });
+    connect(m_inputHandler, &RegionInputHandler::drawingStateChanged,
+        this, [this](bool isDrawing) { m_isDrawing = isDrawing; });
+    connect(m_inputHandler, &RegionInputHandler::detectionCleared,
+        this, [this]() {
+            m_highlightedWindowRect = QRect();
+            m_detectedWindow.reset();
+        });
+
+    // Initialize toolbar handler component
+    m_toolbarHandler = new RegionToolbarHandler(this);
+    m_toolbarHandler->setToolbar(m_toolbar);
+    m_toolbarHandler->setToolManager(m_toolManager);
+    m_toolbarHandler->setAnnotationLayer(m_annotationLayer);
+    m_toolbarHandler->setColorAndWidthWidget(m_colorAndWidthWidget);
+    m_toolbarHandler->setSelectionManager(m_selectionManager);
+    m_toolbarHandler->setOCRManager(m_ocrManager);
+    m_toolbarHandler->setParentWidget(this);
+
+    // Connect toolbar handler signals
+    connect(m_toolbarHandler, &RegionToolbarHandler::toolChanged,
+        this, [this](ToolbarButton tool, bool showSubToolbar) {
+            m_currentTool = tool;
+            m_showSubToolbar = showSubToolbar;
+        });
+    connect(m_toolbarHandler, &RegionToolbarHandler::updateRequested,
+        this, qOverload<>(&QWidget::update));
+    connect(m_toolbarHandler, &RegionToolbarHandler::undoRequested,
+        m_annotationLayer, &AnnotationLayer::undo);
+    connect(m_toolbarHandler, &RegionToolbarHandler::redoRequested,
+        m_annotationLayer, &AnnotationLayer::redo);
+    connect(m_toolbarHandler, &RegionToolbarHandler::cancelRequested,
+        this, [this]() {
+            emit selectionCancelled();
+            close();
+        });
+    connect(m_toolbarHandler, &RegionToolbarHandler::pinRequested,
+        this, &RegionSelector::finishSelection);
+    connect(m_toolbarHandler, &RegionToolbarHandler::recordRequested,
+        this, [this]() {
+            emit recordingRequested(localToGlobal(m_selectionManager->selectionRect()), m_currentScreen);
+            close();
+        });
+    connect(m_toolbarHandler, &RegionToolbarHandler::scrollCaptureRequested,
+        this, [this]() {
+            emit scrollingCaptureRequested(localToGlobal(m_selectionManager->selectionRect()), m_currentScreen);
+            close();
+        });
+    connect(m_toolbarHandler, &RegionToolbarHandler::saveRequested,
+        this, &RegionSelector::saveToFile);
+    connect(m_toolbarHandler, &RegionToolbarHandler::copyRequested,
+        this, &RegionSelector::copyToClipboard);
+    connect(m_toolbarHandler, &RegionToolbarHandler::ocrRequested,
+        this, &RegionSelector::performOCR);
+
+    // Connect ColorAndWidthWidget configuration signals
+    connect(m_toolbarHandler, &RegionToolbarHandler::showSizeSectionRequested,
+        m_colorAndWidthWidget, &ColorAndWidthWidget::setShowSizeSection);
+    connect(m_toolbarHandler, &RegionToolbarHandler::showWidthSectionRequested,
+        m_colorAndWidthWidget, &ColorAndWidthWidget::setShowWidthSection);
+    connect(m_toolbarHandler, &RegionToolbarHandler::widthSectionHiddenRequested,
+        m_colorAndWidthWidget, &ColorAndWidthWidget::setWidthSectionHidden);
+    connect(m_toolbarHandler, &RegionToolbarHandler::showColorSectionRequested,
+        m_colorAndWidthWidget, &ColorAndWidthWidget::setShowColorSection);
+    connect(m_toolbarHandler, &RegionToolbarHandler::showMosaicBlurTypeSectionRequested,
+        m_colorAndWidthWidget, &ColorAndWidthWidget::setShowMosaicBlurTypeSection);
+    connect(m_toolbarHandler, &RegionToolbarHandler::widthRangeRequested,
+        m_colorAndWidthWidget, &ColorAndWidthWidget::setWidthRange);
+    connect(m_toolbarHandler, &RegionToolbarHandler::currentWidthRequested,
+        m_colorAndWidthWidget, &ColorAndWidthWidget::setCurrentWidth);
+    connect(m_toolbarHandler, &RegionToolbarHandler::stepBadgeSizeRequested,
+        m_colorAndWidthWidget, &ColorAndWidthWidget::setStepBadgeSize);
+    connect(m_toolbarHandler, &RegionToolbarHandler::mosaicBlurTypeRequested,
+        this, [this](int type) {
+            m_colorAndWidthWidget->setMosaicBlurType(static_cast<MosaicBlurTypeSection::BlurType>(type));
+        });
+
+    // Connect eraser hover clear signal
+    connect(m_toolbarHandler, &RegionToolbarHandler::eraserHoverClearRequested,
+        this, [this]() {
+            if (auto* eraser = dynamic_cast<EraserToolHandler*>(m_toolManager->currentHandler())) {
+                eraser->clearHoverPoint();
+            }
+        });
+
+    // Setup toolbar buttons via handler
+    m_toolbarHandler->setupToolbarButtons();
+
+    // Initialize settings helper
+    m_settingsHelper = new RegionSettingsHelper(this);
+    m_settingsHelper->setParentWidget(this);
+    connect(m_settingsHelper, &RegionSettingsHelper::fontSizeSelected,
+        this, &RegionSelector::onFontSizeSelected);
+    connect(m_settingsHelper, &RegionSettingsHelper::fontFamilySelected,
+        this, &RegionSelector::onFontFamilySelected);
+
     // Initialize update throttler
     m_updateThrottler.startAll();
 
@@ -332,125 +467,6 @@ RegionSelector::~RegionSelector()
     qApp->removeEventFilter(this);
 
     qDebug() << "RegionSelector: Destroyed";
-}
-
-void RegionSelector::setupToolbarButtons()
-{
-    // Load icons
-    IconRenderer& iconRenderer = IconRenderer::instance();
-    iconRenderer.loadIcon("selection", ":/icons/icons/selection.svg");
-    iconRenderer.loadIcon("arrow", ":/icons/icons/arrow.svg");
-    iconRenderer.loadIcon("polyline", ":/icons/icons/polyline.svg");
-    iconRenderer.loadIcon("pencil", ":/icons/icons/pencil.svg");
-    iconRenderer.loadIcon("marker", ":/icons/icons/marker.svg");
-    iconRenderer.loadIcon("rectangle", ":/icons/icons/rectangle.svg");
-    iconRenderer.loadIcon("ellipse", ":/icons/icons/ellipse.svg");
-    iconRenderer.loadIcon("shape", ":/icons/icons/shape.svg");
-    iconRenderer.loadIcon("text", ":/icons/icons/text.svg");
-    iconRenderer.loadIcon("mosaic", ":/icons/icons/mosaic.svg");
-    iconRenderer.loadIcon("step-badge", ":/icons/icons/step-badge.svg");
-    iconRenderer.loadIcon("eraser", ":/icons/icons/eraser.svg");
-    iconRenderer.loadIcon("undo", ":/icons/icons/undo.svg");
-    iconRenderer.loadIcon("redo", ":/icons/icons/redo.svg");
-    iconRenderer.loadIcon("cancel", ":/icons/icons/cancel.svg");
-    if (PlatformFeatures::instance().isOCRAvailable()) {
-        iconRenderer.loadIcon("ocr", ":/icons/icons/ocr.svg");
-    }
-    iconRenderer.loadIcon("auto-blur", ":/icons/icons/auto-blur.svg");
-    iconRenderer.loadIcon("pin", ":/icons/icons/pin.svg");
-    iconRenderer.loadIcon("record", ":/icons/icons/record.svg");
-    iconRenderer.loadIcon("scroll-capture", ":/icons/icons/scroll-capture.svg");
-    iconRenderer.loadIcon("save", ":/icons/icons/save.svg");
-    iconRenderer.loadIcon("copy", ":/icons/icons/copy.svg");
-    // Shape and arrow style icons for ColorAndWidthWidget sections
-    iconRenderer.loadIcon("shape-filled", ":/icons/icons/shape-filled.svg");
-    iconRenderer.loadIcon("shape-outline", ":/icons/icons/shape-outline.svg");
-    iconRenderer.loadIcon("arrow-none", ":/icons/icons/arrow-none.svg");
-    iconRenderer.loadIcon("arrow-end", ":/icons/icons/arrow-end.svg");
-    iconRenderer.loadIcon("arrow-end-outline", ":/icons/icons/arrow-end-outline.svg");
-    iconRenderer.loadIcon("arrow-end-line", ":/icons/icons/arrow-end-line.svg");
-    iconRenderer.loadIcon("arrow-both", ":/icons/icons/arrow-both.svg");
-    iconRenderer.loadIcon("arrow-both-outline", ":/icons/icons/arrow-both-outline.svg");
-
-    // Configure buttons
-    QVector<ToolbarWidget::ButtonConfig> buttons;
-    buttons.append({ static_cast<int>(ToolbarButton::Selection), "selection", "Selection", false });
-    buttons.append({ static_cast<int>(ToolbarButton::Shape), "shape", "Shape", false });
-    buttons.append({ static_cast<int>(ToolbarButton::Arrow), "arrow", "Arrow", false });
-    buttons.append({ static_cast<int>(ToolbarButton::Pencil), "pencil", "Pencil", false });
-    buttons.append({ static_cast<int>(ToolbarButton::Marker), "marker", "Marker", false });
-    buttons.append({ static_cast<int>(ToolbarButton::Text), "text", "Text", false });
-    buttons.append({ static_cast<int>(ToolbarButton::Mosaic), "mosaic", "Mosaic", false });
-    buttons.append({ static_cast<int>(ToolbarButton::StepBadge), "step-badge", "Step Badge", false });
-    buttons.append({ static_cast<int>(ToolbarButton::Eraser), "eraser", "Eraser", false });
-    buttons.append({ static_cast<int>(ToolbarButton::Undo), "undo", "Undo", true });
-    buttons.append({ static_cast<int>(ToolbarButton::Redo), "redo", "Redo", false });
-    buttons.append({ static_cast<int>(ToolbarButton::Cancel), "cancel", "Cancel (Esc)", true });  // separator before
-    if (PlatformFeatures::instance().isOCRAvailable()) {
-        buttons.append({ static_cast<int>(ToolbarButton::OCR), "ocr", "OCR Text Recognition", false });
-    }
-    buttons.append({ static_cast<int>(ToolbarButton::Record), "record", "Screen Recording (R)", false });
-#ifdef SNAPTRAY_ENABLE_DEV_FEATURES
-    buttons.append({ static_cast<int>(ToolbarButton::ScrollCapture), "scroll-capture", "Scrolling Capture (S)", false });
-#endif
-    buttons.append({ static_cast<int>(ToolbarButton::Pin), "pin", "Pin to Screen (Enter)", false });
-    buttons.append({ static_cast<int>(ToolbarButton::Save), "save", "Save (Ctrl+S)", false });
-    buttons.append({ static_cast<int>(ToolbarButton::Copy), "copy", "Copy (Ctrl+C)", false });
-
-    m_toolbar->setButtons(buttons);
-
-    // Set which buttons are "active" type (annotation tools that stay highlighted)
-    QVector<int> activeButtonIds = {
-        static_cast<int>(ToolbarButton::Selection),
-        static_cast<int>(ToolbarButton::Arrow),
-        static_cast<int>(ToolbarButton::Pencil),
-        static_cast<int>(ToolbarButton::Marker),
-        static_cast<int>(ToolbarButton::Shape),
-        static_cast<int>(ToolbarButton::Text),
-        static_cast<int>(ToolbarButton::Mosaic),
-        static_cast<int>(ToolbarButton::StepBadge),
-        static_cast<int>(ToolbarButton::Eraser)
-    };
-    m_toolbar->setActiveButtonIds(activeButtonIds);
-
-    // Set icon color provider
-    m_toolbar->setIconColorProvider([this](int buttonId, bool isActive, bool isHovered) {
-        return getToolbarIconColor(buttonId, isActive, isHovered);
-        });
-}
-
-QColor RegionSelector::getToolbarIconColor(int buttonId, bool isActive, bool isHovered) const
-{
-    Q_UNUSED(isHovered);
-
-    const auto& style = m_toolbar->styleConfig();
-    ToolbarButton btn = static_cast<ToolbarButton>(buttonId);
-
-    // Show gray for unavailable features
-    if (btn == ToolbarButton::OCR && !m_ocrManager) {
-        return QColor(128, 128, 128);
-    }
-
-    // Show yellow when processing
-    if (btn == ToolbarButton::OCR && m_ocrInProgress) {
-        return QColor(255, 200, 100);
-    }
-
-    // Show gray for Undo when nothing to undo
-    if (btn == ToolbarButton::Undo && !m_annotationLayer->canUndo()) {
-        return QColor(128, 128, 128);
-    }
-
-    // Show gray for Redo when nothing to redo
-    if (btn == ToolbarButton::Redo && !m_annotationLayer->canRedo()) {
-        return QColor(128, 128, 128);
-    }
-
-    // All icons use the same color scheme as Pencil
-    if (isActive) {
-        return style.iconActiveColor;
-    }
-    return style.iconNormalColor;
 }
 
 bool RegionSelector::shouldShowColorPalette() const
@@ -716,124 +732,30 @@ void RegionSelector::updateWindowDetection(const QPoint& localPos)
     }
 }
 
-void RegionSelector::drawDetectedWindow(QPainter& painter)
-{
-    if (m_highlightedWindowRect.isNull() || m_selectionManager->hasActiveSelection()) {
-        return;
-    }
-
-    // Dashed border to distinguish from final selection
-    QPen dashedPen(QColor(0, 174, 255), 2, Qt::DashLine);
-    painter.setPen(dashedPen);
-    painter.setBrush(Qt::NoBrush);
-    painter.drawRect(m_highlightedWindowRect);
-
-    // Show window dimensions hint
-    if (m_detectedWindow.has_value()) {
-        QString displayText = QString("%1x%2")
-            .arg(m_detectedWindow->bounds.width())
-            .arg(m_detectedWindow->bounds.height());
-        drawWindowHint(painter, displayText);
-    }
-}
-
-void RegionSelector::drawWindowHint(QPainter& painter, const QString& title)
-{
-    QFont font = painter.font();
-    font.setPointSize(11);
-    painter.setFont(font);
-
-    QFontMetrics fm(font);
-    QString displayTitle = fm.elidedText(title, Qt::ElideRight, 200);
-    QRect textRect = fm.boundingRect(displayTitle);
-    textRect.adjust(-8, -4, 8, 4);
-
-    // For small elements (like menu bar icons), position to the right
-    // For larger windows, position below
-    bool isSmallElement = m_highlightedWindowRect.width() < 60 || m_highlightedWindowRect.height() < 60;
-
-    int hintX, hintY;
-
-    if (isSmallElement) {
-        // Position to the right of the element
-        hintX = m_highlightedWindowRect.right() + 4;
-        hintY = m_highlightedWindowRect.top();
-
-        // If no space on right, try left
-        if (hintX + textRect.width() > width() - 5) {
-            hintX = m_highlightedWindowRect.left() - textRect.width() - 4;
-        }
-        // If no space on left either, position below
-        if (hintX < 5) {
-            hintX = m_highlightedWindowRect.left();
-            hintY = m_highlightedWindowRect.bottom() + 4;
-        }
-    }
-    else {
-        // Position below the detected window
-        hintX = m_highlightedWindowRect.left();
-        hintY = m_highlightedWindowRect.bottom() + 4;
-
-        // If no space below, position above
-        if (hintY + textRect.height() > height() - 5) {
-            hintY = m_highlightedWindowRect.top() - textRect.height() - 4;
-        }
-    }
-
-    textRect.moveTo(hintX, hintY);
-
-    // Keep on screen
-    if (textRect.right() > width() - 5) {
-        textRect.moveRight(width() - 5);
-    }
-    if (textRect.left() < 5) {
-        textRect.moveLeft(5);
-    }
-    if (textRect.bottom() > height() - 5) {
-        textRect.moveBottom(height() - 5);
-    }
-    if (textRect.top() < 5) {
-        textRect.moveTop(5);
-    }
-
-    // Draw background pill
-    painter.setPen(Qt::NoPen);
-    painter.setBrush(QColor(0, 0, 0, 180));
-    painter.drawRoundedRect(textRect, 4, 4);
-
-    // Draw text
-    painter.setPen(Qt::white);
-    painter.drawText(textRect, Qt::AlignCenter, displayTitle);
-}
-
 void RegionSelector::paintEvent(QPaintEvent*)
 {
     QPainter painter(this);
     painter.setRenderHint(QPainter::SmoothPixmapTransform);
     painter.setRenderHint(QPainter::Antialiasing);
 
-    // Draw the captured background scaled to fit the widget (logical pixels)
-    painter.drawPixmap(rect(), m_backgroundPixmap);
+    // Update painter state before painting
+    m_painter->setHighlightedWindowRect(m_highlightedWindowRect);
+    m_painter->setDetectedWindowTitle(
+        m_detectedWindow.has_value()
+            ? QString("%1x%2").arg(m_detectedWindow->bounds.width()).arg(m_detectedWindow->bounds.height())
+            : QString());
+    m_painter->setCornerRadius(m_cornerRadius);
+    m_painter->setShowSubToolbar(m_showSubToolbar);
+    m_painter->setCurrentTool(static_cast<int>(m_currentTool));
+    m_painter->setDevicePixelRatio(m_devicePixelRatio);
 
-    // Draw dimmed overlay
-    drawOverlay(painter);
+    // Delegate core painting (background, overlay, selection, annotations)
+    m_painter->paint(painter, m_backgroundPixmap);
 
-    // Draw detected window highlight (only during hover, before any selection)
-    if (!m_selectionManager->hasActiveSelection() && m_windowDetector) {
-        drawDetectedWindow(painter);
-    }
-
-    // Draw selection if active or complete
+    // Draw toolbar and widgets (UI management stays in RegionSelector)
     QRect selectionRect = m_selectionManager->selectionRect();
     if (m_selectionManager->hasActiveSelection() && selectionRect.isValid()) {
-        drawSelection(painter);
-        drawDimensionInfo(painter);
-
-        // Draw annotations on top of selection (only when selection is established)
         if (m_selectionManager->hasSelection()) {
-            drawAnnotations(painter);
-            drawCurrentAnnotation(painter);
-
             // Update toolbar position and draw
             // Only show active indicator when sub-toolbar is visible
             m_toolbar->setActiveButton(m_showSubToolbar ? static_cast<int>(m_currentTool) : -1);
@@ -912,70 +834,6 @@ void RegionSelector::paintEvent(QPaintEvent*)
     }
 }
 
-void RegionSelector::drawDimmingOverlay(QPainter& painter, const QRect& clearRect, const QColor& dimColor)
-{
-    painter.fillRect(QRect(0, 0, width(), clearRect.top()), dimColor);                                    // Top
-    painter.fillRect(QRect(0, clearRect.bottom() + 1, width(), height() - clearRect.bottom() - 1), dimColor);  // Bottom
-    painter.fillRect(QRect(0, clearRect.top(), clearRect.left(), clearRect.height()), dimColor);          // Left
-    painter.fillRect(QRect(clearRect.right() + 1, clearRect.top(), width() - clearRect.right() - 1, clearRect.height()), dimColor);  // Right
-}
-
-void RegionSelector::drawOverlay(QPainter& painter)
-{
-    QColor dimColor(0, 0, 0, 100);
-
-    QRect sel = m_selectionManager->selectionRect();
-    bool hasSelection = m_selectionManager->hasActiveSelection() && sel.isValid();
-
-    if (hasSelection) {
-        drawDimmingOverlay(painter, sel, dimColor);
-    }
-    else if (!m_highlightedWindowRect.isNull()) {
-        drawDimmingOverlay(painter, m_highlightedWindowRect, dimColor);
-    }
-    else {
-        painter.fillRect(rect(), dimColor);
-    }
-}
-
-void RegionSelector::drawSelection(QPainter& painter)
-{
-    QRect sel = m_selectionManager->selectionRect();
-    int radius = effectiveCornerRadius();
-
-    // Draw selection border
-    painter.setPen(QPen(QColor(0, 174, 255), 2));
-    painter.setBrush(Qt::NoBrush);
-    if (radius > 0) {
-        painter.drawRoundedRect(sel, radius, radius);
-    } else {
-        painter.drawRect(sel);
-    }
-
-    // Draw corner and edge handles
-    const int handleSize = 8;
-    QColor handleColor(0, 174, 255);
-    painter.setBrush(handleColor);
-    painter.setPen(Qt::white);
-
-    // Corner handles (circles for Snipaste style)
-    // Skip corner handles when corner radius is large (they would overlap the rounded corner)
-    auto drawHandle = [&](int x, int y) {
-        painter.drawEllipse(QPoint(x, y), handleSize / 2, handleSize / 2);
-        };
-
-    if (radius < 10) {
-        drawHandle(sel.left(), sel.top());
-        drawHandle(sel.right(), sel.top());
-        drawHandle(sel.left(), sel.bottom());
-        drawHandle(sel.right(), sel.bottom());
-    }
-    drawHandle(sel.center().x(), sel.top());
-    drawHandle(sel.center().x(), sel.bottom());
-    drawHandle(sel.left(), sel.center().y());
-    drawHandle(sel.right(), sel.center().y());
-}
-
 void RegionSelector::drawCrosshair(QPainter& painter)
 {
     // 深藍色實線
@@ -997,75 +855,6 @@ void RegionSelector::drawMagnifier(QPainter& painter)
 {
     // Delegate to MagnifierPanel component
     m_magnifierPanel->draw(painter, m_currentPoint, size(), getBackgroundImage());
-}
-
-void RegionSelector::drawDimensionInfo(QPainter& painter)
-{
-    QRect sel = m_selectionManager->selectionRect();
-
-    // Show dimensions with "pt" suffix like Snipaste
-    QString dimensions = QString("%1 x %2  pt").arg(sel.width()).arg(sel.height());
-
-    QFont font = painter.font();
-    font.setPointSize(12);
-    painter.setFont(font);
-
-    QFontMetrics fm(font);
-    QRect textRect = fm.boundingRect(dimensions);
-    textRect.adjust(-12, -6, 12, 6);
-
-    // Position above selection
-    int textX = sel.left();
-    int textY = sel.top() - textRect.height() - 8;
-    if (textY < 5) {
-        textY = sel.top() + 5;
-        textX = sel.left() + 5;
-    }
-
-    textRect.moveTo(textX, textY);
-
-    // Draw glass panel background (matching radius slider style)
-    auto styleConfig = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
-    GlassRenderer::drawGlassPanel(painter, textRect, styleConfig, 6);
-
-    // Draw text
-    painter.setPen(styleConfig.textColor);
-    painter.drawText(textRect, Qt::AlignCenter, dimensions);
-
-    // Draw radius slider next to dimension info
-    drawRadiusSlider(painter, textRect);
-}
-
-void RegionSelector::drawRadiusSlider(QPainter& painter, const QRect& dimensionInfoRect)
-{
-    // Show radius slider when selection is complete
-    if (m_selectionManager->isComplete()) {
-        m_radiusSliderWidget->setVisible(true);
-        m_radiusSliderWidget->updatePosition(dimensionInfoRect, width());
-        m_radiusSliderWidget->draw(painter);
-    } else {
-        m_radiusSliderWidget->setVisible(false);
-    }
-}
-
-void RegionSelector::saveEraserWidthAndClearHover()
-{
-    m_eraserWidth = m_colorAndWidthWidget->currentWidth();
-    if (auto* eraser = dynamic_cast<EraserToolHandler*>(m_toolManager->currentHandler())) {
-        eraser->clearHoverPoint();
-    }
-}
-
-void RegionSelector::restoreStandardWidth()
-{
-    // Mosaic now uses shared width with other tools, no special handling needed
-    if (m_currentTool == ToolbarButton::Eraser) {
-        // Reset width section hidden state and restore standard width
-        m_colorAndWidthWidget->setWidthSectionHidden(false);
-        m_colorAndWidthWidget->setWidthRange(1, 20);
-        m_colorAndWidthWidget->setCurrentWidth(m_annotationWidth);
-        m_toolManager->setWidth(m_annotationWidth);
-    }
 }
 
 QCursor RegionSelector::getMosaicCursor(int width)
@@ -1106,169 +895,20 @@ void RegionSelector::setToolCursor()
     }
 }
 
-Qt::CursorShape RegionSelector::getCursorForGizmoHandle(GizmoHandle handle) const
-{
-    switch (handle) {
-    case GizmoHandle::Rotation:
-        return Qt::CrossCursor;
-    case GizmoHandle::TopLeft:
-    case GizmoHandle::BottomRight:
-        return Qt::SizeFDiagCursor;
-    case GizmoHandle::TopRight:
-    case GizmoHandle::BottomLeft:
-        return Qt::SizeBDiagCursor;
-    case GizmoHandle::Body:
-        return Qt::SizeAllCursor;
-    default:
-        return Qt::ArrowCursor;
-    }
-}
-
 void RegionSelector::handleToolbarClick(ToolbarButton button)
 {
-    // Save eraser width and clear hover when switching FROM Eraser to another tool
-    if (m_currentTool == ToolbarButton::Eraser && button != ToolbarButton::Eraser) {
-        saveEraserWidthAndClearHover();
-    }
+    // Sync current state to handler
+    m_toolbarHandler->setCurrentTool(m_currentTool);
+    m_toolbarHandler->setShowSubToolbar(m_showSubToolbar);
+    m_toolbarHandler->setEraserWidth(m_eraserWidth);
+    m_toolbarHandler->setAnnotationWidth(m_annotationWidth);
+    m_toolbarHandler->setAnnotationColor(m_annotationColor);
+    m_toolbarHandler->setStepBadgeSize(m_stepBadgeSize);
+    m_toolbarHandler->setMosaicBlurType(static_cast<int>(m_mosaicBlurType));
+    m_toolbarHandler->setOCRInProgress(m_ocrInProgress);
 
-    // Restore standard width when switching to annotation tools (except Eraser)
-    if (button != ToolbarButton::Eraser && isAnnotationTool(button)) {
-        restoreStandardWidth();
-    }
-
-    switch (button) {
-    case ToolbarButton::Selection:
-        // Selection has no sub-toolbar, just switch tool
-        m_currentTool = button;
-        m_showSubToolbar = true;
-        m_colorAndWidthWidget->setShowSizeSection(false);
-        qDebug() << "Tool selected:" << static_cast<int>(button);
-        update();
-        break;
-
-    case ToolbarButton::Arrow:
-    case ToolbarButton::Pencil:
-    case ToolbarButton::Marker:
-    case ToolbarButton::Shape:
-    case ToolbarButton::Text:
-        if (m_currentTool == button) {
-            // Same tool clicked - toggle sub-toolbar visibility
-            m_showSubToolbar = !m_showSubToolbar;
-        } else {
-            // Different tool - select it and show sub-toolbar
-            m_currentTool = button;
-            m_showSubToolbar = true;
-        }
-        m_colorAndWidthWidget->setShowSizeSection(false);
-        qDebug() << "Tool selected:" << static_cast<int>(button) << "showSubToolbar:" << m_showSubToolbar;
-        update();
-        break;
-
-    case ToolbarButton::StepBadge:
-        if (m_currentTool == button) {
-            // Same tool clicked - toggle sub-toolbar visibility
-            m_showSubToolbar = !m_showSubToolbar;
-        } else {
-            // Different tool - select it and show sub-toolbar
-            m_currentTool = button;
-            m_toolManager->setCurrentTool(ToolId::StepBadge);
-            m_showSubToolbar = true;
-        }
-        // Show size section, hide width section for step badge
-        m_colorAndWidthWidget->setShowSizeSection(true);
-        m_colorAndWidthWidget->setShowWidthSection(false);
-        m_colorAndWidthWidget->setStepBadgeSize(m_stepBadgeSize);
-        // Set width to radius for tool context
-        m_toolManager->setWidth(StepBadgeAnnotation::radiusForSize(m_stepBadgeSize));
-        qDebug() << "StepBadge tool selected, showSubToolbar:" << m_showSubToolbar;
-        update();
-        break;
-
-    case ToolbarButton::Mosaic:
-        if (m_currentTool == button) {
-            // Same tool clicked - toggle sub-toolbar visibility
-            m_showSubToolbar = !m_showSubToolbar;
-        } else {
-            // Different tool - select it and show sub-toolbar
-            m_currentTool = button;
-            m_toolManager->setCurrentTool(ToolId::Mosaic);
-            m_showSubToolbar = true;
-        }
-        // Use shared WidthSection for Mosaic (synced with other tools)
-        m_colorAndWidthWidget->setShowWidthSection(true);
-        m_colorAndWidthWidget->setWidthSectionHidden(false);
-        m_colorAndWidthWidget->setShowMosaicWidthSection(false);
-        m_colorAndWidthWidget->setShowMosaicBlurTypeSection(true);  // Show blur type selector
-        m_colorAndWidthWidget->setMosaicBlurType(m_mosaicBlurType);  // Set current blur type
-        m_colorAndWidthWidget->setCurrentWidth(m_annotationWidth);
-        m_toolManager->setWidth(m_annotationWidth);
-        m_colorAndWidthWidget->setShowSizeSection(false);
-        // Mosaic tool doesn't use color, hide color section
-        m_colorAndWidthWidget->setShowColorSection(false);
-        qDebug() << "Mosaic tool selected, showSubToolbar:" << m_showSubToolbar;
-        update();
-        break;
-
-    case ToolbarButton::Eraser:
-        // Eraser has no sub-toolbar, just switch tool
-        m_currentTool = button;
-        m_showSubToolbar = true;
-        m_toolManager->setCurrentTool(ToolId::Eraser);
-        m_toolManager->setWidth(m_eraserWidth);
-        qDebug() << "Eraser tool selected - drag over annotations to erase them";
-        update();
-        break;
-
-    case ToolbarButton::Undo:
-        if (m_annotationLayer->canUndo()) {
-            m_annotationLayer->undo();
-            qDebug() << "Undo";
-            update();
-        }
-        break;
-
-    case ToolbarButton::Redo:
-        if (m_annotationLayer->canRedo()) {
-            m_annotationLayer->redo();
-            qDebug() << "Redo";
-            update();
-        }
-        break;
-
-    case ToolbarButton::Cancel:
-        emit selectionCancelled();
-        close();
-        break;
-
-    case ToolbarButton::OCR:
-        performOCR();
-        break;
-
-    case ToolbarButton::Pin:
-        finishSelection();
-        break;
-
-    case ToolbarButton::Record:
-        emit recordingRequested(localToGlobal(m_selectionManager->selectionRect()), m_currentScreen);
-        close();
-        break;
-
-    case ToolbarButton::ScrollCapture:
-        emit scrollingCaptureRequested(localToGlobal(m_selectionManager->selectionRect()), m_currentScreen);
-        close();
-        break;
-
-    case ToolbarButton::Save:
-        saveToFile();
-        break;
-
-    case ToolbarButton::Copy:
-        copyToClipboard();
-        break;
-
-    default:
-        break;
-    }
+    // Delegate to handler
+    m_toolbarHandler->handleToolbarClick(button);
 }
 
 QPixmap RegionSelector::getSelectedRegion()
@@ -1410,513 +1050,62 @@ void RegionSelector::finishSelection()
 
 void RegionSelector::mousePressEvent(QMouseEvent* event)
 {
-    if (event->button() == Qt::LeftButton) {
-        if (m_selectionManager->isComplete()) {
-            // Handle inline text editing
-            if (handleInlineTextEditorPress(event->pos())) {
-                return;
-            }
+    // Sync state to input handler
+    m_inputHandler->setCurrentTool(m_currentTool);
+    m_inputHandler->setShowSubToolbar(m_showSubToolbar);
+    m_inputHandler->setHighlightedWindowRect(m_highlightedWindowRect);
+    m_inputHandler->setDetectedWindow(m_detectedWindow.has_value(),
+        m_detectedWindow.has_value() ? m_detectedWindow->bounds : QRect());
+    m_inputHandler->setAnnotationColor(m_annotationColor);
+    m_inputHandler->setAnnotationWidth(m_annotationWidth);
+    m_inputHandler->setArrowStyle(static_cast<int>(m_arrowStyle));
+    m_inputHandler->setLineStyle(static_cast<int>(m_lineStyle));
+    m_inputHandler->setShapeType(static_cast<int>(m_shapeType));
+    m_inputHandler->setShapeFillMode(static_cast<int>(m_shapeFillMode));
 
-            // Finalize polyline when clicking on UI elements (toolbar, widgets)
-            // ArrowToolHandler's onDoubleClick returns early if not in polyline mode
-            auto finalizePolylineForUiClick = [&](const QPoint& pos) {
-                if (m_currentTool == ToolbarButton::Arrow && m_toolManager->isDrawing()) {
-                    m_toolManager->handleDoubleClick(pos);
-                    m_isDrawing = m_toolManager->isDrawing();
-                }
-            };
+    // Delegate to input handler
+    m_inputHandler->handleMousePress(event);
 
-            // Check if clicked on toolbar FIRST (before widgets that may overlap)
-            int buttonIdx = m_toolbar->buttonAtPosition(event->pos());
-            if (buttonIdx >= 0) {
-                int buttonId = m_toolbar->buttonIdAt(buttonIdx);
-                if (buttonId >= 0) {
-                    finalizePolylineForUiClick(event->pos());
-                    handleToolbarClick(static_cast<ToolbarButton>(buttonId));
-                }
-                return;
-            }
-
-            // Check if clicked on radius slider widget
-            if (m_radiusSliderWidget->isVisible() &&
-                m_radiusSliderWidget->handleMousePress(event->pos())) {
-                update();
-                return;
-            }
-
-            // Check if clicked on unified color and width widget
-            if (shouldShowColorAndWidthWidget()) {
-                if (m_colorAndWidthWidget->contains(event->pos())) {
-                    finalizePolylineForUiClick(event->pos());
-                }
-                if (m_colorAndWidthWidget->handleClick(event->pos())) {
-                    update();
-                    return;
-                }
-            }
-
-            // Legacy widgets (only handle if unified widget not shown)
-            if (!shouldShowColorAndWidthWidget()) {
-                // Check if clicked on color palette
-                if (shouldShowColorPalette()) {
-                    if (m_colorPalette->contains(event->pos())) {
-                        finalizePolylineForUiClick(event->pos());
-                    }
-                    if (m_colorPalette->handleClick(event->pos())) {
-                        update();
-                        return;
-                    }
-                }
-            }
-
-            // Check if clicking on gizmo handle of currently selected text annotation
-            if (auto* textItem = getSelectedTextAnnotation()) {
-                GizmoHandle handle = TransformationGizmo::hitTest(textItem, event->pos());
-                if (handle != GizmoHandle::None) {
-                    if (handle == GizmoHandle::Body) {
-                        // Check for double-click to start re-editing
-                        qint64 now = QDateTime::currentMSecsSinceEpoch();
-                        if (m_textAnnotationEditor->isDoubleClick(event->pos(), now)) {
-                            startTextReEditing(m_annotationLayer->selectedIndex());
-                            m_textAnnotationEditor->recordClick(QPoint(), 0);  // Reset
-                            return;
-                        }
-                        m_textAnnotationEditor->recordClick(event->pos(), now);
-
-                        // Start dragging (move)
-                        m_textAnnotationEditor->startDragging(event->pos());
-                    }
-                    else {
-                        // Start rotation or scaling
-                        m_textAnnotationEditor->startTransformation(event->pos(), handle);
-                    }
-                    setFocus();
-                    update();
-                    return;
-                }
-            }
-
-            // Check if clicked on existing text annotation (for selection or re-editing)
-            int hitIndex = m_annotationLayer->hitTestText(event->pos());
-            if (hitIndex >= 0) {
-                // Check for double-click to start re-editing
-                qint64 now = QDateTime::currentMSecsSinceEpoch();
-                if (m_textAnnotationEditor->isDoubleClick(event->pos(), now) &&
-                    hitIndex == m_annotationLayer->selectedIndex()) {
-                    // Double-click detected - start re-editing
-                    startTextReEditing(hitIndex);
-                    m_textAnnotationEditor->recordClick(QPoint(), 0);  // Reset to prevent triple-click
-                    return;
-                }
-                m_textAnnotationEditor->recordClick(event->pos(), now);
-
-                m_annotationLayer->setSelectedIndex(hitIndex);
-                // If clicking on a different text, check its gizmo handles
-                if (auto* textItem = getSelectedTextAnnotation()) {
-                    GizmoHandle handle = TransformationGizmo::hitTest(textItem, event->pos());
-                    if (handle == GizmoHandle::Body || handle == GizmoHandle::None) {
-                        // Start dragging if on body, otherwise just select
-                        m_textAnnotationEditor->startDragging(event->pos());
-                    }
-                    else {
-                        // Start transformation if on a handle
-                        m_textAnnotationEditor->startTransformation(event->pos(), handle);
-                    }
-                }
-                setFocus();  // Ensure we have keyboard focus for Delete key
-                update();
-                return;
-            }
-
-            // Click elsewhere clears selection (auto-deselect)
-            if (m_annotationLayer->selectedIndex() >= 0) {
-                m_annotationLayer->clearSelection();
-                update();
-            }
-
-            // Handle Text tool - can be placed anywhere on screen
-            QRect sel = m_selectionManager->selectionRect();
-            if (m_currentTool == ToolbarButton::Text) {
-                m_textAnnotationEditor->startEditing(event->pos(), rect(), m_annotationColor);
-                return;
-            }
-
-            // Check if we're using an annotation tool and clicking inside selection
-            if (isAnnotationTool(m_currentTool) && m_currentTool != ToolbarButton::Selection && sel.contains(event->pos())) {
-                // Start annotation drawing
-                qDebug() << "Starting annotation with tool:" << static_cast<int>(m_currentTool) << "at pos:" << event->pos();
-                startAnnotation(event->pos());
-                return;
-            }
-
-            // Check for resize handles or move (Selection tool)
-            if (m_currentTool == ToolbarButton::Selection) {
-                auto handle = m_selectionManager->hitTestHandle(event->pos());
-                if (handle != SelectionStateManager::ResizeHandle::None) {
-                    // Start resizing
-                    m_selectionManager->startResize(event->pos(), handle);
-                    update();
-                    return;
-                }
-
-                // Check for move (interior of selection)
-                if (m_selectionManager->hitTestMove(event->pos())) {
-                    m_selectionManager->startMove(event->pos());
-                    update();
-                    return;
-                }
-
-                // Click outside selection - adjust the corresponding edge(s)
-                QRect sel = m_selectionManager->selectionRect();
-                QPoint clickPos = event->pos();
-                SelectionStateManager::ResizeHandle outsideHandle =
-                    determineHandleFromOutsideClick(clickPos, sel);
-
-                if (outsideHandle != SelectionStateManager::ResizeHandle::None) {
-                    adjustEdgesToPosition(clickPos, outsideHandle);
-                    update();
-                }
-                return;
-            }
-        }
-        else {
-            // Start new selection
-            m_selectionManager->startSelection(event->pos());
-            m_startPoint = event->pos();
-            m_currentPoint = m_startPoint;
-            m_lastSelectionRect = QRect();  // Reset dirty region tracking
-        }
-        update();
-    }
-    else if (event->button() == Qt::RightButton) {
-        if (m_selectionManager->isComplete()) {
-            // If drawing, cancel current annotation
-            if (m_isDrawing) {
-                m_isDrawing = false;
-                m_toolManager->cancelDrawing();
-                update();
-                return;
-            }
-            // If resizing/moving, cancel
-            if (m_selectionManager->isResizing() || m_selectionManager->isMoving()) {
-                m_selectionManager->cancelResizeOrMove();
-                update();
-                return;
-            }
-            // Cancel selection, go back to selection mode
-            m_selectionManager->clearSelection();
-            m_annotationLayer->clear();
-            setCursor(Qt::CrossCursor);
-            update();
-        }
-        else {
-            // Before selection is made, right-click is a no-op (stay in Region Capture mode)
-            return;
-        }
-    }
+    // Sync state back from handler
+    m_startPoint = m_inputHandler->startPoint();
+    m_currentPoint = m_inputHandler->currentPoint();
+    m_isDrawing = m_inputHandler->isDrawing();
+    m_lastMagnifierRect = m_inputHandler->lastMagnifierRect();
 }
 
 void RegionSelector::mouseMoveEvent(QMouseEvent* event)
 {
-    m_currentPoint = event->pos();
+    // Sync state to input handler
+    m_inputHandler->setCurrentTool(m_currentTool);
+    m_inputHandler->setShowSubToolbar(m_showSubToolbar);
+    m_inputHandler->setHighlightedWindowRect(m_highlightedWindowRect);
+    m_inputHandler->setDetectedWindow(m_detectedWindow.has_value(),
+        m_detectedWindow.has_value() ? m_detectedWindow->bounds : QRect());
 
-    // Handle text editor in confirm mode
-    if (m_textEditor->isEditing() && m_textEditor->isConfirmMode()) {
-        m_textEditor->handleMouseMove(event->pos());
-        // Show appropriate cursor when in confirm mode
-        if (m_textEditor->contains(event->pos())) {
-            setCursor(Qt::SizeAllCursor);
-        }
-        else {
-            setCursor(Qt::ArrowCursor);
-        }
-        update();
-        return;
-    }
+    // Delegate to input handler
+    m_inputHandler->handleMouseMove(event);
 
-    // Handle text annotation transformation (rotation/scale)
-    if (m_textAnnotationEditor->isTransforming() && m_annotationLayer->selectedIndex() >= 0) {
-        m_textAnnotationEditor->updateTransformation(event->pos());
-        update();
-        return;
-    }
-
-    // Handle dragging selected text annotation
-    if (m_textAnnotationEditor->isDragging() && m_annotationLayer->selectedIndex() >= 0) {
-        m_textAnnotationEditor->updateDragging(event->pos());
-        update();
-        return;
-    }
-
-    // Window detection during hover (before any selection or dragging)
-    // Throttle by distance to avoid expensive window enumeration on every mouse move
-    if (!m_selectionManager->hasActiveSelection() && m_windowDetector) {
-        int dx = event->pos().x() - m_lastWindowDetectionPos.x();
-        int dy = event->pos().y() - m_lastWindowDetectionPos.y();
-        if (dx * dx + dy * dy >= WINDOW_DETECTION_MIN_DISTANCE_SQ) {
-            updateWindowDetection(event->pos());
-            m_lastWindowDetectionPos = event->pos();
-        }
-    }
-
-    if (m_selectionManager->isSelecting()) {
-        // Clear window detection when dragging
-        m_highlightedWindowRect = QRect();
-        m_detectedWindow.reset();
-        m_selectionManager->updateSelection(m_currentPoint);
-    }
-    else if (m_selectionManager->isResizing()) {
-        // Update selection rect based on resize handle
-        m_selectionManager->updateResize(event->pos());
-    }
-    else if (m_selectionManager->isMoving()) {
-        // Move selection rect
-        m_selectionManager->updateMove(event->pos());
-    }
-    else if (m_isDrawing) {
-        // Update current annotation
-        updateAnnotation(event->pos());
-
-        // Keep correct cursor during drawing for Mosaic/Eraser
-        if (m_currentTool == ToolbarButton::Mosaic || m_currentTool == ToolbarButton::Eraser) {
-            setToolCursor();
-        }
-    }
-    else if (m_selectionManager->isComplete()) {
-        bool colorPaletteHovered = false;
-        bool unifiedWidgetHovered = false;
-        bool textAnnotationHovered = false;
-        bool gizmoHandleHovered = false;
-        bool radiusSliderHovered = false;
-
-        // Update eraser hover point when eraser tool is active
-        if (m_currentTool == ToolbarButton::Eraser && !m_isDrawing) {
-            if (auto* eraser = dynamic_cast<EraserToolHandler*>(m_toolManager->currentHandler())) {
-                eraser->setHoverPoint(event->pos());
-            }
-        }
-
-        // Check if hovering over gizmo handles of selected text annotation
-        if (auto* textItem = getSelectedTextAnnotation()) {
-            GizmoHandle handle = TransformationGizmo::hitTest(textItem, event->pos());
-            if (handle != GizmoHandle::None) {
-                setCursor(getCursorForGizmoHandle(handle));
-                gizmoHandleHovered = true;
-            }
-        }
-
-        // Check if hovering over any text annotation (including unselected ones)
-        if (!gizmoHandleHovered && m_annotationLayer->hitTestText(event->pos()) >= 0) {
-            setCursor(Qt::SizeAllCursor);
-            textAnnotationHovered = true;
-        }
-
-        // Update radius slider widget
-        if (m_radiusSliderWidget->isVisible()) {
-            if (m_radiusSliderWidget->handleMouseMove(event->pos(), event->buttons() & Qt::LeftButton)) {
-                update();
-            }
-            if (m_radiusSliderWidget->contains(event->pos())) {
-                setCursor(Qt::PointingHandCursor);
-                radiusSliderHovered = true;
-            }
-        }
-
-        // Update unified color and width widget
-        if (shouldShowColorAndWidthWidget()) {
-            if (m_colorAndWidthWidget->handleMouseMove(event->pos(), event->buttons() & Qt::LeftButton)) {
-                update();
-            }
-            if (m_colorAndWidthWidget->updateHovered(event->pos())) {
-                update();
-            }
-            if (m_colorAndWidthWidget->contains(event->pos())) {
-                setCursor(Qt::PointingHandCursor);
-                unifiedWidgetHovered = true;
-            }
-        }
-
-        // Legacy widgets (only handle if unified widget not shown)
-        if (!shouldShowColorAndWidthWidget()) {
-            // Update hovered color swatch
-            if (shouldShowColorPalette()) {
-                if (m_colorPalette->updateHoveredSwatch(event->pos())) {
-                    if (m_colorPalette->contains(event->pos())) {
-                        setCursor(Qt::PointingHandCursor);
-                        colorPaletteHovered = true;
-                    }
-                }
-                else if (m_colorPalette->contains(event->pos())) {
-                    colorPaletteHovered = true;
-                }
-            }
-        }
-
-        // Update hovered button using toolbar widget
-        bool hoverChanged = m_toolbar->updateHoveredButton(event->pos());
-        int hoveredButton = m_toolbar->hoveredButton();
-        if (hoverChanged) {
-            if (hoveredButton >= 0) {
-                setCursor(Qt::PointingHandCursor);
-            }
-            else if (colorPaletteHovered || unifiedWidgetHovered || textAnnotationHovered || gizmoHandleHovered || radiusSliderHovered) {
-                // Already set cursor for color swatch, unified widget, text annotation, gizmo handle, or radius slider
-            }
-            else if (m_currentTool == ToolbarButton::Selection) {
-                // Selection tool: update cursor based on handle position
-                auto handle = m_selectionManager->hitTestHandle(event->pos());
-                updateCursorForHandle(handle);
-            }
-            else {
-                setToolCursor();
-            }
-        }
-        // Always update cursor based on current tool when not hovering any special UI element
-        bool toolbarHovered = m_toolbar->contains(event->pos());
-        if (toolbarHovered) {
-            // Hand cursor for entire toolbar area (including gaps between buttons)
-            setCursor(Qt::PointingHandCursor);
-        }
-        else if (!colorPaletteHovered && !unifiedWidgetHovered && !textAnnotationHovered && !gizmoHandleHovered && !radiusSliderHovered) {
-            // Update cursor based on current tool
-            if (m_currentTool == ToolbarButton::Selection) {
-                auto handle = m_selectionManager->hitTestHandle(event->pos());
-                updateCursorForHandle(handle);
-            }
-            else {
-                setToolCursor();
-            }
-        }
-    }
-
-    // Per-operation throttling for smooth 60fps experience on high-resolution displays
-    // Different operations have different update frequency requirements
-    if (m_selectionManager->isSelecting() || m_selectionManager->isResizing() || m_selectionManager->isMoving()) {
-        // Selection/resize/move: high frequency (120fps) for responsiveness
-        // Note: Full update required because overlay affects entire screen outside selection
-        if (m_updateThrottler.shouldUpdate(UpdateThrottler::ThrottleType::Selection)) {
-            m_updateThrottler.reset(UpdateThrottler::ThrottleType::Selection);
-            update();
-        }
-    }
-    else if (m_isDrawing) {
-        // Annotation drawing: medium frequency (80fps) to balance smoothness and performance
-        if (m_updateThrottler.shouldUpdate(UpdateThrottler::ThrottleType::Annotation)) {
-            m_updateThrottler.reset(UpdateThrottler::ThrottleType::Annotation);
-            update();
-        }
-    }
-    else if (m_selectionManager->isComplete()) {
-        // Hover effects in selection complete mode: lower frequency (30fps)
-        if (m_updateThrottler.shouldUpdate(UpdateThrottler::ThrottleType::Hover)) {
-            m_updateThrottler.reset(UpdateThrottler::ThrottleType::Hover);
-            update();
-        }
-    }
-    else {
-        // Magnifier-only mode (pre-selection): use dirty region for magnifier
-        if (m_updateThrottler.shouldUpdate(UpdateThrottler::ThrottleType::Magnifier)) {
-            m_updateThrottler.reset(UpdateThrottler::ThrottleType::Magnifier);
-            // Calculate magnifier panel rect and update only that region
-            const int panelWidth = MagnifierPanel::kWidth;
-            const int totalHeight = MagnifierPanel::kHeight + 85;  // magnifier + info area
-            int panelX = m_currentPoint.x() - panelWidth / 2;
-            panelX = qMax(10, qMin(panelX, width() - panelWidth - 10));
-
-            // Calculate two possible panel positions (below and above), ensure dirty region covers flip case
-            int panelYBelow = m_currentPoint.y() + 25;
-            int panelYAbove = m_currentPoint.y() - totalHeight - 25;
-            QRect belowRect(panelX - 5, panelYBelow - 5, panelWidth + 10, totalHeight + 10);
-            QRect aboveRect(panelX - 5, panelYAbove - 5, panelWidth + 10, totalHeight + 10);
-            QRect currentMagRect = belowRect.united(aboveRect);
-
-            QRect dirtyRect = m_lastMagnifierRect.united(currentMagRect);
-
-            // Crosshair region - widen clear range and include last position
-            dirtyRect = dirtyRect.united(QRect(0, m_currentPoint.y() - 3, width(), 6));
-            dirtyRect = dirtyRect.united(QRect(m_currentPoint.x() - 3, 0, 6, height()));
-
-            m_lastMagnifierRect = currentMagRect;
-            update(dirtyRect);
-        }
-    }
+    // Sync state back from handler
+    m_currentPoint = m_inputHandler->currentPoint();
+    m_isDrawing = m_inputHandler->isDrawing();
+    m_lastMagnifierRect = m_inputHandler->lastMagnifierRect();
 }
 
 void RegionSelector::mouseReleaseEvent(QMouseEvent* event)
 {
-    if (event->button() == Qt::LeftButton) {
-        // Handle text editor drag release
-        if (m_textEditor->isEditing() && m_textEditor->isConfirmMode()) {
-            m_textEditor->handleMouseRelease(event->pos());
-            return;
-        }
+    // Sync state to input handler
+    m_inputHandler->setCurrentTool(m_currentTool);
+    m_inputHandler->setShowSubToolbar(m_showSubToolbar);
+    m_inputHandler->setHighlightedWindowRect(m_highlightedWindowRect);
+    m_inputHandler->setDetectedWindow(m_detectedWindow.has_value(),
+        m_detectedWindow.has_value() ? m_detectedWindow->bounds : QRect());
 
-        // Handle text annotation transformation release
-        if (m_textAnnotationEditor->isTransforming()) {
-            m_textAnnotationEditor->finishTransformation();
-            return;
-        }
+    // Delegate to input handler
+    m_inputHandler->handleMouseRelease(event);
 
-        // Handle text annotation drag release
-        if (m_textAnnotationEditor->isDragging()) {
-            m_textAnnotationEditor->finishDragging();
-            return;
-        }
-
-        // Handle radius slider release
-        if (m_radiusSliderWidget->isVisible() &&
-            m_radiusSliderWidget->handleMouseRelease(event->pos())) {
-            update();
-            return;
-        }
-
-        if (m_selectionManager->isSelecting()) {
-            QRect sel = m_selectionManager->selectionRect();
-            if (sel.width() > 5 && sel.height() > 5) {
-                // 有拖曳 - 使用拖曳選取的區域
-                m_selectionManager->finishSelection();
-                setCursor(Qt::ArrowCursor);
-                qDebug() << "RegionSelector: Selection complete via drag";
-            }
-            else if (m_detectedWindow.has_value() && m_highlightedWindowRect.isValid()) {
-                // Click on detected window - use its bounds
-                m_selectionManager->setFromDetectedWindow(m_highlightedWindowRect);
-                setCursor(Qt::ArrowCursor);
-                qDebug() << "RegionSelector: Selection complete via detected window:" << m_detectedWindow->windowTitle;
-
-                // Clear detection state
-                m_highlightedWindowRect = QRect();
-                m_detectedWindow.reset();
-            }
-            else {
-                // 點擊無拖曳且無偵測到視窗 - 選取整個螢幕（包含 menu bar）
-                QRect screenGeom = m_currentScreen->geometry();
-                m_selectionManager->setFromDetectedWindow(QRect(0, 0, screenGeom.width(), screenGeom.height()));
-                setCursor(Qt::ArrowCursor);
-                qDebug() << "RegionSelector: Click without drag - selecting full screen (including menu bar)";
-            }
-
-            update();
-        }
-        else if (m_selectionManager->isResizing()) {
-            // Finish resize
-            m_selectionManager->finishResize();
-            update();
-        }
-        else if (m_selectionManager->isMoving()) {
-            // Finish move
-            m_selectionManager->finishMove();
-            update();
-        }
-        else if (m_isDrawing) {
-            // Finish annotation
-            finishAnnotation();
-            update();
-        }
-        else if (shouldShowColorAndWidthWidget() && m_colorAndWidthWidget->handleMouseRelease(event->pos())) {
-            update();
-        }
-    }
+    // Sync state back from handler
+    m_currentPoint = m_inputHandler->currentPoint();
+    m_isDrawing = m_inputHandler->isDrawing();
 }
 
 void RegionSelector::mouseDoubleClickEvent(QMouseEvent* event)
@@ -2182,78 +1371,6 @@ bool RegionSelector::eventFilter(QObject* obj, QEvent* event)
 // Annotation Helper Functions
 // ============================================================================
 
-void RegionSelector::drawAnnotations(QPainter& painter)
-{
-    m_annotationLayer->draw(painter);
-
-    // Draw transformation gizmo for selected text annotation
-    if (auto* textItem = getSelectedTextAnnotation()) {
-        TransformationGizmo::draw(painter, textItem);
-    }
-}
-
-void RegionSelector::drawCurrentAnnotation(QPainter& painter)
-{
-    // Use ToolManager for tools it handles
-    if (isToolManagerHandledTool(m_currentTool)) {
-        m_toolManager->drawCurrentPreview(painter);
-        return;
-    }
-
-    // Text tool is handled by InlineTextEditor, no preview needed here
-}
-
-void RegionSelector::startAnnotation(const QPoint& pos)
-{
-    // Use ToolManager for tools it handles
-    if (isToolManagerHandledTool(m_currentTool)) {
-        // Sync tool manager settings before starting
-        m_toolManager->setColor(m_annotationColor);
-        m_toolManager->setWidth(toolWidthForCurrentTool());
-        m_toolManager->setArrowStyle(m_arrowStyle);
-        m_toolManager->setLineStyle(m_lineStyle);
-        m_toolManager->setShapeType(static_cast<int>(m_shapeType));
-        m_toolManager->setShapeFillMode(static_cast<int>(m_shapeFillMode));
-
-        ToolId toolId = toolbarButtonToToolId(m_currentTool);
-        m_toolManager->setCurrentTool(toolId);
-        m_toolManager->handleMousePress(pos);
-        m_isDrawing = m_toolManager->isDrawing();
-
-        // For click-to-place tools (like StepBadge), set flag so mouseRelease still calls finishAnnotation
-        if (!m_isDrawing && m_currentTool == ToolbarButton::StepBadge) {
-            m_isDrawing = true;  // Force mouseRelease to call finishAnnotation
-        }
-        return;
-    }
-
-    // Text tool is handled by InlineTextEditor, not here
-}
-
-void RegionSelector::updateAnnotation(const QPoint& pos)
-{
-    // Use ToolManager for tools it handles
-    if (isToolManagerHandledTool(m_currentTool)) {
-        m_toolManager->handleMouseMove(pos);
-        return;
-    }
-
-    // Text tool is handled by InlineTextEditor, no mouse move handling needed
-}
-
-void RegionSelector::finishAnnotation()
-{
-    // Use ToolManager for tools it handles
-    if (isToolManagerHandledTool(m_currentTool)) {
-        m_toolManager->handleMouseRelease(m_currentPoint);
-        m_isDrawing = m_toolManager->isDrawing();
-        return;
-    }
-
-    // Text tool is handled by InlineTextEditor
-    m_isDrawing = false;
-}
-
 bool RegionSelector::isAnnotationTool(ToolbarButton tool) const
 {
     switch (tool) {
@@ -2300,178 +1417,6 @@ void RegionSelector::startTextReEditing(int annotationIndex)
     if (textItem) {
         m_annotationColor = textItem->color();
         m_colorAndWidthWidget->setCurrentColor(m_annotationColor);
-    }
-}
-
-TextAnnotation* RegionSelector::getSelectedTextAnnotation() const
-{
-    if (m_annotationLayer->selectedIndex() >= 0) {
-        return dynamic_cast<TextAnnotation*>(m_annotationLayer->selectedItem());
-    }
-    return nullptr;
-}
-
-bool RegionSelector::handleInlineTextEditorPress(const QPoint& pos)
-{
-    if (!m_textEditor->isEditing()) {
-        return false;
-    }
-
-    if (m_textEditor->isConfirmMode()) {
-        // In confirm mode: click outside finishes, click inside starts drag
-        if (!m_textEditor->contains(pos)) {
-            m_textEditor->finishEditing();
-            return false;  // Continue processing click for next action
-        }
-        // Start dragging
-        m_textEditor->handleMousePress(pos);
-        return true;
-    }
-
-    // In typing mode: click outside finishes editing immediately
-    if (!m_textEditor->contains(pos)) {
-        if (!m_textEditor->textEdit()->toPlainText().trimmed().isEmpty()) {
-            m_textEditor->finishEditing();
-        } else {
-            m_textEditor->cancelEditing();
-        }
-        return false;  // Continue processing click for next action (e.g., start new text)
-    }
-
-    // Click inside text edit - let it handle
-    return true;
-}
-
-// ============================================================================
-// Selection Resize/Move Helper Functions
-// ============================================================================
-
-void RegionSelector::updateCursorForHandle(SelectionStateManager::ResizeHandle handle)
-{
-    using ResizeHandle = SelectionStateManager::ResizeHandle;
-    switch (handle) {
-    case ResizeHandle::TopLeft:
-    case ResizeHandle::BottomRight:
-        setCursor(Qt::SizeFDiagCursor);
-        break;
-    case ResizeHandle::TopRight:
-    case ResizeHandle::BottomLeft:
-        setCursor(Qt::SizeBDiagCursor);
-        break;
-    case ResizeHandle::Top:
-    case ResizeHandle::Bottom:
-        setCursor(Qt::SizeVerCursor);
-        break;
-    case ResizeHandle::Left:
-    case ResizeHandle::Right:
-        setCursor(Qt::SizeHorCursor);
-        break;
-    case ResizeHandle::None:
-        // Check if inside selection (for move cursor)
-        if (m_selectionManager->hitTestMove(m_currentPoint)) {
-            setCursor(Qt::SizeAllCursor);
-        } else {
-            // Check if outside selection - show resize cursor based on position
-            QRect sel = m_selectionManager->selectionRect();
-            ResizeHandle outsideHandle = determineHandleFromOutsideClick(m_currentPoint, sel);
-            switch (outsideHandle) {
-            case ResizeHandle::TopLeft:
-            case ResizeHandle::BottomRight:
-                setCursor(Qt::SizeFDiagCursor);
-                break;
-            case ResizeHandle::TopRight:
-            case ResizeHandle::BottomLeft:
-                setCursor(Qt::SizeBDiagCursor);
-                break;
-            case ResizeHandle::Top:
-            case ResizeHandle::Bottom:
-                setCursor(Qt::SizeVerCursor);
-                break;
-            case ResizeHandle::Left:
-            case ResizeHandle::Right:
-                setCursor(Qt::SizeHorCursor);
-                break;
-            default:
-                setCursor(Qt::ArrowCursor);
-                break;
-            }
-        }
-        break;
-    default:
-        setCursor(Qt::ArrowCursor);
-        break;
-    }
-}
-
-SelectionStateManager::ResizeHandle RegionSelector::determineHandleFromOutsideClick(
-    const QPoint& pos, const QRect& sel) const
-{
-    using ResizeHandle = SelectionStateManager::ResizeHandle;
-
-    bool isAbove = pos.y() < sel.top();
-    bool isBelow = pos.y() > sel.bottom();
-    bool isLeft = pos.x() < sel.left();
-    bool isRight = pos.x() > sel.right();
-
-    // Corner cases - adjust two edges
-    if (isAbove && isLeft) return ResizeHandle::TopLeft;
-    if (isAbove && isRight) return ResizeHandle::TopRight;
-    if (isBelow && isLeft) return ResizeHandle::BottomLeft;
-    if (isBelow && isRight) return ResizeHandle::BottomRight;
-
-    // Edge cases - adjust one edge
-    if (isAbove) return ResizeHandle::Top;
-    if (isBelow) return ResizeHandle::Bottom;
-    if (isLeft) return ResizeHandle::Left;
-    if (isRight) return ResizeHandle::Right;
-
-    return ResizeHandle::None;
-}
-
-void RegionSelector::adjustEdgesToPosition(const QPoint& pos,
-    SelectionStateManager::ResizeHandle handle)
-{
-    using ResizeHandle = SelectionStateManager::ResizeHandle;
-
-    QRect newRect = m_selectionManager->selectionRect();
-
-    switch (handle) {
-    case ResizeHandle::Top:
-        newRect.setTop(pos.y());
-        break;
-    case ResizeHandle::Bottom:
-        newRect.setBottom(pos.y());
-        break;
-    case ResizeHandle::Left:
-        newRect.setLeft(pos.x());
-        break;
-    case ResizeHandle::Right:
-        newRect.setRight(pos.x());
-        break;
-    case ResizeHandle::TopLeft:
-        newRect.setTop(pos.y());
-        newRect.setLeft(pos.x());
-        break;
-    case ResizeHandle::TopRight:
-        newRect.setTop(pos.y());
-        newRect.setRight(pos.x());
-        break;
-    case ResizeHandle::BottomLeft:
-        newRect.setBottom(pos.y());
-        newRect.setLeft(pos.x());
-        break;
-    case ResizeHandle::BottomRight:
-        newRect.setBottom(pos.y());
-        newRect.setRight(pos.x());
-        break;
-    default:
-        return;
-    }
-
-    // Normalize to handle inverted rectangles and enforce minimum size
-    newRect = newRect.normalized();
-    if (newRect.width() >= 10 && newRect.height() >= 10) {
-        m_selectionManager->setSelectionRect(newRect);
     }
 }
 
@@ -2685,11 +1630,6 @@ void RegionSelector::onAutoBlurComplete(bool success, int faceCount, int /*textC
     update();
 }
 
-QSettings RegionSelector::getSettings() const
-{
-    return QSettings("Victor Fu", "SnapTray");
-}
-
 QPoint RegionSelector::localToGlobal(const QPoint& localPos) const
 {
     return m_currentScreen->geometry().topLeft() + localPos;
@@ -2710,110 +1650,40 @@ QRect RegionSelector::globalToLocal(const QRect& globalRect) const
     return globalRect.translated(-m_currentScreen->geometry().topLeft());
 }
 
-LineEndStyle RegionSelector::loadArrowStyle() const
-{
-    int style = getSettings().value("annotation/arrowStyle", static_cast<int>(LineEndStyle::EndArrow)).toInt();
-    return static_cast<LineEndStyle>(style);
-}
-
-void RegionSelector::saveArrowStyle(LineEndStyle style)
-{
-    getSettings().setValue("annotation/arrowStyle", static_cast<int>(style));
-}
-
 void RegionSelector::onArrowStyleChanged(LineEndStyle style)
 {
     m_arrowStyle = style;
     m_toolManager->setArrowStyle(style);
-    saveArrowStyle(style);
+    RegionSettingsHelper::saveArrowStyle(style);
     update();
-}
-
-LineStyle RegionSelector::loadLineStyle() const
-{
-    int style = getSettings().value("annotation/lineStyle", static_cast<int>(LineStyle::Solid)).toInt();
-    return static_cast<LineStyle>(style);
-}
-
-void RegionSelector::saveLineStyle(LineStyle style)
-{
-    getSettings().setValue("annotation/lineStyle", static_cast<int>(style));
 }
 
 void RegionSelector::onLineStyleChanged(LineStyle style)
 {
     m_lineStyle = style;
     m_toolManager->setLineStyle(style);
-    saveLineStyle(style);
+    RegionSettingsHelper::saveLineStyle(style);
     update();
-}
-
-TextFormattingState RegionSelector::loadTextFormatting() const
-{
-    QSettings settings = getSettings();
-    TextFormattingState state;
-    state.bold = settings.value(SETTINGS_KEY_TEXT_BOLD, true).toBool();
-    state.italic = settings.value(SETTINGS_KEY_TEXT_ITALIC, false).toBool();
-    state.underline = settings.value(SETTINGS_KEY_TEXT_UNDERLINE, false).toBool();
-    state.fontSize = settings.value(SETTINGS_KEY_TEXT_SIZE, 16).toInt();
-    state.fontFamily = settings.value(SETTINGS_KEY_TEXT_FAMILY, QString()).toString();
-    return state;
-}
-
-void RegionSelector::saveTextFormatting()
-{
-    m_textAnnotationEditor->saveSettings();
 }
 
 void RegionSelector::onFontSizeDropdownRequested(const QPoint& pos)
 {
-    QMenu menu(this);
-    menu.setStyleSheet(kDropdownMenuStyle);
-
     TextFormattingState formatting = m_textAnnotationEditor->formatting();
-    static const int sizes[] = { 8, 10, 12, 14, 16, 18, 20, 24, 28, 32, 36, 48, 72 };
-    for (int size : sizes) {
-        QAction* action = menu.addAction(QString::number(size));
-        action->setCheckable(true);
-        action->setChecked(size == formatting.fontSize);
-        connect(action, &QAction::triggered, this, [this, size]() {
-            m_textAnnotationEditor->setFontSize(size);
-        });
-    }
-    menu.exec(mapToGlobal(pos));
+    m_settingsHelper->showFontSizeDropdown(pos, formatting.fontSize);
 }
 
 void RegionSelector::onFontFamilyDropdownRequested(const QPoint& pos)
 {
-    QMenu menu(this);
-    menu.setStyleSheet(kDropdownMenuStyle);
-
     TextFormattingState formatting = m_textAnnotationEditor->formatting();
+    m_settingsHelper->showFontFamilyDropdown(pos, formatting.fontFamily);
+}
 
-    // Add "Default" option
-    QAction* defaultAction = menu.addAction(tr("Default"));
-    defaultAction->setCheckable(true);
-    defaultAction->setChecked(formatting.fontFamily.isEmpty());
-    connect(defaultAction, &QAction::triggered, this, [this]() {
-        m_textAnnotationEditor->setFontFamily(QString());
-    });
+void RegionSelector::onFontSizeSelected(int size)
+{
+    m_textAnnotationEditor->setFontSize(size);
+}
 
-    menu.addSeparator();
-
-    // Add common font families
-    QStringList families = QFontDatabase::families();
-    QStringList commonFonts = { "Arial", "Helvetica", "Times New Roman", "Courier New",
-                               "Verdana", "Georgia", "Trebuchet MS", "Impact" };
-    for (const QString& family : commonFonts) {
-        if (families.contains(family)) {
-            QAction* action = menu.addAction(family);
-            action->setCheckable(true);
-            action->setChecked(family == formatting.fontFamily);
-            connect(action, &QAction::triggered, this, [this, family]() {
-                m_textAnnotationEditor->setFontFamily(family);
-            });
-        }
-    }
-
-    menu.exec(mapToGlobal(pos));
+void RegionSelector::onFontFamilySelected(const QString& family)
+{
+    m_textAnnotationEditor->setFontFamily(family);
 }

@@ -305,6 +305,11 @@ set(SOURCES
     src/region/UpdateThrottler.cpp
     src/region/TextAnnotationEditor.cpp
     src/region/RadiusSliderWidget.cpp
+    src/region/RegionPainter.cpp
+    src/region/RegionInputHandler.cpp
+    src/region/RegionToolbarHandler.cpp
+    src/region/RegionSettingsHelper.cpp
+    src/region/SelectionResizeHelper.cpp
     # UI sections
     src/ui/sections/ColorSection.cpp
     src/ui/sections/WidthSection.cpp
@@ -437,6 +442,11 @@ set(HEADERS
     include/region/UpdateThrottler.h
     include/region/TextAnnotationEditor.h
     include/region/RadiusSliderWidget.h
+    include/region/RegionPainter.h
+    include/region/RegionInputHandler.h
+    include/region/RegionToolbarHandler.h
+    include/region/RegionSettingsHelper.h
+    include/region/SelectionResizeHelper.h
     # UI sections
     include/ui/IWidgetSection.h
     include/ui/sections/ColorSection.h

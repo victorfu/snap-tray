@@ -1,0 +1,977 @@
+#include "region/RegionInputHandler.h"
+#include "region/SelectionStateManager.h"
+#include "region/SelectionResizeHelper.h"
+#include "region/TextAnnotationEditor.h"
+#include "region/RadiusSliderWidget.h"
+#include "region/UpdateThrottler.h"
+#include "region/MagnifierPanel.h"
+#include "annotations/AnnotationLayer.h"
+#include "annotations/TextAnnotation.h"
+#include "tools/ToolManager.h"
+#include "tools/handlers/EraserToolHandler.h"
+#include "ToolbarWidget.h"
+#include "InlineTextEditor.h"
+#include "ColorAndWidthWidget.h"
+#include "ColorPaletteWidget.h"
+#include "TransformationGizmo.h"
+#include "RegionSelector.h"  // For ToolbarButton enum
+
+#include <QMouseEvent>
+#include <QWidget>
+#include <QDateTime>
+#include <QDebug>
+#include <QTextEdit>
+
+RegionInputHandler::RegionInputHandler(QObject* parent)
+    : QObject(parent)
+    , m_currentTool(ToolbarButton::Selection)
+{
+}
+
+void RegionInputHandler::setSelectionManager(SelectionStateManager* manager)
+{
+    m_selectionManager = manager;
+}
+
+void RegionInputHandler::setAnnotationLayer(AnnotationLayer* layer)
+{
+    m_annotationLayer = layer;
+}
+
+void RegionInputHandler::setToolManager(ToolManager* manager)
+{
+    m_toolManager = manager;
+}
+
+void RegionInputHandler::setToolbar(ToolbarWidget* toolbar)
+{
+    m_toolbar = toolbar;
+}
+
+void RegionInputHandler::setTextEditor(InlineTextEditor* editor)
+{
+    m_textEditor = editor;
+}
+
+void RegionInputHandler::setTextAnnotationEditor(TextAnnotationEditor* editor)
+{
+    m_textAnnotationEditor = editor;
+}
+
+void RegionInputHandler::setColorAndWidthWidget(ColorAndWidthWidget* widget)
+{
+    m_colorAndWidthWidget = widget;
+}
+
+void RegionInputHandler::setColorPalette(ColorPaletteWidget* palette)
+{
+    m_colorPalette = palette;
+}
+
+void RegionInputHandler::setRadiusSliderWidget(RadiusSliderWidget* widget)
+{
+    m_radiusSliderWidget = widget;
+}
+
+void RegionInputHandler::setUpdateThrottler(UpdateThrottler* throttler)
+{
+    m_updateThrottler = throttler;
+}
+
+void RegionInputHandler::setParentWidget(QWidget* widget)
+{
+    m_parentWidget = widget;
+}
+
+void RegionInputHandler::setCurrentTool(ToolbarButton tool)
+{
+    m_currentTool = tool;
+}
+
+void RegionInputHandler::setShowSubToolbar(bool show)
+{
+    m_showSubToolbar = show;
+}
+
+void RegionInputHandler::setHighlightedWindowRect(const QRect& rect)
+{
+    m_highlightedWindowRect = rect;
+}
+
+void RegionInputHandler::setDetectedWindow(bool hasWindow, const QRect& bounds)
+{
+    m_hasDetectedWindow = hasWindow;
+    m_detectedWindowBounds = bounds;
+}
+
+void RegionInputHandler::setAnnotationColor(const QColor& color)
+{
+    m_annotationColor = color;
+}
+
+void RegionInputHandler::setAnnotationWidth(int width)
+{
+    m_annotationWidth = width;
+}
+
+void RegionInputHandler::setArrowStyle(int style)
+{
+    m_arrowStyle = style;
+}
+
+void RegionInputHandler::setLineStyle(int style)
+{
+    m_lineStyle = style;
+}
+
+void RegionInputHandler::setShapeType(int type)
+{
+    m_shapeType = type;
+}
+
+void RegionInputHandler::setShapeFillMode(int mode)
+{
+    m_shapeFillMode = mode;
+}
+
+// ============================================================================
+// Main Event Handlers
+// ============================================================================
+
+void RegionInputHandler::handleMousePress(QMouseEvent* event)
+{
+    if (event->button() == Qt::LeftButton) {
+        if (m_selectionManager->isComplete()) {
+            // Handle inline text editing
+            if (handleTextEditorPress(event->pos())) {
+                return;
+            }
+
+            // Finalize polyline when clicking on UI elements
+            auto finalizePolylineForUiClick = [&](const QPoint& pos) {
+                if (m_currentTool == ToolbarButton::Arrow && m_toolManager->isDrawing()) {
+                    m_toolManager->handleDoubleClick(pos);
+                    m_isDrawing = m_toolManager->isDrawing();
+                    emit drawingStateChanged(m_isDrawing);
+                }
+            };
+
+            // Check toolbar
+            if (handleToolbarPress(event->pos())) {
+                finalizePolylineForUiClick(event->pos());
+                return;
+            }
+
+            // Check radius slider
+            if (handleRadiusSliderPress(event->pos())) {
+                return;
+            }
+
+            // Check color/width widgets
+            if (handleColorWidgetPress(event->pos())) {
+                finalizePolylineForUiClick(event->pos());
+                return;
+            }
+
+            // Check gizmo handles
+            if (handleGizmoPress(event->pos())) {
+                return;
+            }
+
+            // Check text annotations
+            if (handleTextAnnotationPress(event->pos())) {
+                return;
+            }
+
+            // Clear selection if clicking elsewhere
+            if (m_annotationLayer->selectedIndex() >= 0) {
+                m_annotationLayer->clearSelection();
+                emit updateRequested();
+            }
+
+            // Handle Text tool
+            QRect sel = m_selectionManager->selectionRect();
+            if (m_currentTool == ToolbarButton::Text) {
+                m_textAnnotationEditor->startEditing(event->pos(),
+                    m_parentWidget ? m_parentWidget->rect() : QRect(), m_annotationColor);
+                return;
+            }
+
+            // Handle annotation tool inside selection
+            if (handleAnnotationToolPress(event->pos())) {
+                return;
+            }
+
+            // Handle Selection tool
+            if (handleSelectionToolPress(event->pos())) {
+                return;
+            }
+        }
+        else {
+            // Start new selection
+            handleNewSelectionPress(event->pos());
+        }
+        emit updateRequested();
+    }
+    else if (event->button() == Qt::RightButton) {
+        handleRightButtonPress();
+    }
+}
+
+void RegionInputHandler::handleMouseMove(QMouseEvent* event)
+{
+    m_currentPoint = event->pos();
+
+    // Handle text editor in confirm mode
+    if (handleTextEditorMove(event->pos())) {
+        return;
+    }
+
+    // Handle text annotation transformation/dragging
+    if (handleTextAnnotationMove(event->pos())) {
+        return;
+    }
+
+    // Window detection during hover
+    handleWindowDetectionMove(event->pos());
+
+    // Handle selection states
+    if (m_selectionManager->isSelecting()) {
+        handleSelectionMove(event->pos());
+    }
+    else if (m_selectionManager->isResizing()) {
+        m_selectionManager->updateResize(event->pos());
+    }
+    else if (m_selectionManager->isMoving()) {
+        m_selectionManager->updateMove(event->pos());
+    }
+    else if (m_isDrawing) {
+        handleAnnotationMove(event->pos());
+    }
+    else if (m_selectionManager->isComplete()) {
+        handleHoverMove(event->pos(), event->buttons());
+    }
+
+    // Throttled updates
+    handleThrottledUpdate();
+}
+
+void RegionInputHandler::handleMouseRelease(QMouseEvent* event)
+{
+    if (event->button() == Qt::LeftButton) {
+        // Handle text editor drag release
+        if (handleTextEditorRelease(event->pos())) {
+            return;
+        }
+
+        // Handle text annotation transformation/drag release
+        if (handleTextAnnotationRelease()) {
+            return;
+        }
+
+        // Handle radius slider release
+        if (handleRadiusSliderRelease(event->pos())) {
+            return;
+        }
+
+        // Handle selection release
+        if (m_selectionManager->isSelecting()) {
+            handleSelectionRelease(event->pos());
+            emit updateRequested();
+        }
+        else if (m_selectionManager->isResizing()) {
+            m_selectionManager->finishResize();
+            emit updateRequested();
+        }
+        else if (m_selectionManager->isMoving()) {
+            m_selectionManager->finishMove();
+            emit updateRequested();
+        }
+        else if (m_isDrawing) {
+            handleAnnotationRelease();
+            emit updateRequested();
+        }
+        else if (shouldShowColorAndWidthWidget() &&
+                 m_colorAndWidthWidget->handleMouseRelease(event->pos())) {
+            emit updateRequested();
+        }
+    }
+}
+
+// ============================================================================
+// Mouse Press Helpers
+// ============================================================================
+
+bool RegionInputHandler::handleTextEditorPress(const QPoint& pos)
+{
+    if (!m_textEditor->isEditing()) {
+        return false;
+    }
+
+    if (m_textEditor->isConfirmMode()) {
+        if (!m_textEditor->contains(pos)) {
+            m_textEditor->finishEditing();
+            return false;
+        }
+        m_textEditor->handleMousePress(pos);
+        return true;
+    }
+
+    // In typing mode
+    if (!m_textEditor->contains(pos)) {
+        if (!m_textEditor->textEdit()->toPlainText().trimmed().isEmpty()) {
+            m_textEditor->finishEditing();
+        } else {
+            m_textEditor->cancelEditing();
+        }
+        return false;
+    }
+
+    return true;
+}
+
+bool RegionInputHandler::handleToolbarPress(const QPoint& pos)
+{
+    int buttonIdx = m_toolbar->buttonAtPosition(pos);
+    if (buttonIdx >= 0) {
+        int buttonId = m_toolbar->buttonIdAt(buttonIdx);
+        if (buttonId >= 0) {
+            emit toolbarClickRequested(buttonId);
+        }
+        return true;
+    }
+    return false;
+}
+
+bool RegionInputHandler::handleRadiusSliderPress(const QPoint& pos)
+{
+    if (m_radiusSliderWidget->isVisible() &&
+        m_radiusSliderWidget->handleMousePress(pos)) {
+        emit updateRequested();
+        return true;
+    }
+    return false;
+}
+
+bool RegionInputHandler::handleColorWidgetPress(const QPoint& pos)
+{
+    if (shouldShowColorAndWidthWidget()) {
+        if (m_colorAndWidthWidget->handleClick(pos)) {
+            emit updateRequested();
+            return true;
+        }
+    }
+
+    if (!shouldShowColorAndWidthWidget() && shouldShowColorPalette()) {
+        if (m_colorPalette->handleClick(pos)) {
+            emit updateRequested();
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool RegionInputHandler::handleGizmoPress(const QPoint& pos)
+{
+    auto* textItem = getSelectedTextAnnotation();
+    if (!textItem) {
+        return false;
+    }
+
+    GizmoHandle handle = TransformationGizmo::hitTest(textItem, pos);
+    if (handle == GizmoHandle::None) {
+        return false;
+    }
+
+    if (handle == GizmoHandle::Body) {
+        qint64 now = QDateTime::currentMSecsSinceEpoch();
+        if (m_textAnnotationEditor->isDoubleClick(pos, now)) {
+            emit textReEditingRequested(m_annotationLayer->selectedIndex());
+            m_textAnnotationEditor->recordClick(QPoint(), 0);
+            return true;
+        }
+        m_textAnnotationEditor->recordClick(pos, now);
+        m_textAnnotationEditor->startDragging(pos);
+    }
+    else {
+        m_textAnnotationEditor->startTransformation(pos, handle);
+    }
+
+    if (m_parentWidget) {
+        m_parentWidget->setFocus();
+    }
+    emit updateRequested();
+    return true;
+}
+
+bool RegionInputHandler::handleTextAnnotationPress(const QPoint& pos)
+{
+    int hitIndex = m_annotationLayer->hitTestText(pos);
+    if (hitIndex < 0) {
+        return false;
+    }
+
+    qint64 now = QDateTime::currentMSecsSinceEpoch();
+    if (m_textAnnotationEditor->isDoubleClick(pos, now) &&
+        hitIndex == m_annotationLayer->selectedIndex()) {
+        emit textReEditingRequested(hitIndex);
+        m_textAnnotationEditor->recordClick(QPoint(), 0);
+        return true;
+    }
+    m_textAnnotationEditor->recordClick(pos, now);
+
+    m_annotationLayer->setSelectedIndex(hitIndex);
+    if (auto* textItem = getSelectedTextAnnotation()) {
+        GizmoHandle handle = TransformationGizmo::hitTest(textItem, pos);
+        if (handle == GizmoHandle::Body || handle == GizmoHandle::None) {
+            m_textAnnotationEditor->startDragging(pos);
+        }
+        else {
+            m_textAnnotationEditor->startTransformation(pos, handle);
+        }
+    }
+
+    if (m_parentWidget) {
+        m_parentWidget->setFocus();
+    }
+    emit updateRequested();
+    return true;
+}
+
+bool RegionInputHandler::handleAnnotationToolPress(const QPoint& pos)
+{
+    QRect sel = m_selectionManager->selectionRect();
+    if (isAnnotationTool(m_currentTool) &&
+        m_currentTool != ToolbarButton::Selection &&
+        sel.contains(pos)) {
+        qDebug() << "Starting annotation with tool:" << static_cast<int>(m_currentTool) << "at pos:" << pos;
+        startAnnotation(pos);
+        return true;
+    }
+    return false;
+}
+
+bool RegionInputHandler::handleSelectionToolPress(const QPoint& pos)
+{
+    if (m_currentTool != ToolbarButton::Selection) {
+        return false;
+    }
+
+    auto handle = m_selectionManager->hitTestHandle(pos);
+    if (handle != SelectionStateManager::ResizeHandle::None) {
+        m_selectionManager->startResize(pos, handle);
+        emit updateRequested();
+        return true;
+    }
+
+    if (m_selectionManager->hitTestMove(pos)) {
+        m_selectionManager->startMove(pos);
+        emit updateRequested();
+        return true;
+    }
+
+    // Click outside - adjust edges
+    QRect sel = m_selectionManager->selectionRect();
+    SelectionStateManager::ResizeHandle outsideHandle = determineHandleFromOutsideClick(pos, sel);
+    if (outsideHandle != SelectionStateManager::ResizeHandle::None) {
+        adjustEdgesToPosition(pos, outsideHandle);
+        emit updateRequested();
+    }
+    return true;
+}
+
+void RegionInputHandler::handleNewSelectionPress(const QPoint& pos)
+{
+    m_selectionManager->startSelection(pos);
+    m_startPoint = pos;
+    m_currentPoint = pos;
+    m_lastSelectionRect = QRect();
+}
+
+void RegionInputHandler::handleRightButtonPress()
+{
+    if (m_selectionManager->isComplete()) {
+        if (m_isDrawing) {
+            m_isDrawing = false;
+            emit drawingStateChanged(false);
+            m_toolManager->cancelDrawing();
+            emit updateRequested();
+            return;
+        }
+        if (m_selectionManager->isResizing() || m_selectionManager->isMoving()) {
+            m_selectionManager->cancelResizeOrMove();
+            emit updateRequested();
+            return;
+        }
+        m_selectionManager->clearSelection();
+        m_annotationLayer->clear();
+        emit cursorChangeRequested(Qt::CrossCursor);
+        emit updateRequested();
+    }
+}
+
+// ============================================================================
+// Mouse Move Helpers
+// ============================================================================
+
+bool RegionInputHandler::handleTextEditorMove(const QPoint& pos)
+{
+    if (m_textEditor->isEditing() && m_textEditor->isConfirmMode()) {
+        m_textEditor->handleMouseMove(pos);
+        if (m_textEditor->contains(pos)) {
+            emit cursorChangeRequested(Qt::SizeAllCursor);
+        }
+        else {
+            emit cursorChangeRequested(Qt::ArrowCursor);
+        }
+        emit updateRequested();
+        return true;
+    }
+    return false;
+}
+
+bool RegionInputHandler::handleTextAnnotationMove(const QPoint& pos)
+{
+    if (m_textAnnotationEditor->isTransforming() && m_annotationLayer->selectedIndex() >= 0) {
+        m_textAnnotationEditor->updateTransformation(pos);
+        emit updateRequested();
+        return true;
+    }
+
+    if (m_textAnnotationEditor->isDragging() && m_annotationLayer->selectedIndex() >= 0) {
+        m_textAnnotationEditor->updateDragging(pos);
+        emit updateRequested();
+        return true;
+    }
+
+    return false;
+}
+
+void RegionInputHandler::handleWindowDetectionMove(const QPoint& pos)
+{
+    if (!m_selectionManager->hasActiveSelection()) {
+        int dx = pos.x() - m_lastWindowDetectionPos.x();
+        int dy = pos.y() - m_lastWindowDetectionPos.y();
+        if (dx * dx + dy * dy >= WINDOW_DETECTION_MIN_DISTANCE_SQ) {
+            emit windowDetectionRequested(pos);
+            m_lastWindowDetectionPos = pos;
+        }
+    }
+}
+
+void RegionInputHandler::handleSelectionMove(const QPoint& pos)
+{
+    m_highlightedWindowRect = QRect();
+    m_hasDetectedWindow = false;
+    emit detectionCleared();
+    m_selectionManager->updateSelection(m_currentPoint);
+}
+
+void RegionInputHandler::handleAnnotationMove(const QPoint& pos)
+{
+    updateAnnotation(pos);
+
+    if (m_currentTool == ToolbarButton::Mosaic || m_currentTool == ToolbarButton::Eraser) {
+        emit toolCursorRequested();
+    }
+}
+
+void RegionInputHandler::handleHoverMove(const QPoint& pos, Qt::MouseButtons buttons)
+{
+    bool colorPaletteHovered = false;
+    bool unifiedWidgetHovered = false;
+    bool textAnnotationHovered = false;
+    bool gizmoHandleHovered = false;
+    bool radiusSliderHovered = false;
+
+    // Update eraser hover point
+    if (m_currentTool == ToolbarButton::Eraser && !m_isDrawing) {
+        if (auto* eraser = dynamic_cast<EraserToolHandler*>(m_toolManager->currentHandler())) {
+            eraser->setHoverPoint(pos);
+        }
+    }
+
+    // Check gizmo handles
+    if (auto* textItem = getSelectedTextAnnotation()) {
+        GizmoHandle handle = TransformationGizmo::hitTest(textItem, pos);
+        if (handle != GizmoHandle::None) {
+            emit cursorChangeRequested(getCursorForGizmoHandle(handle));
+            gizmoHandleHovered = true;
+        }
+    }
+
+    // Check text annotation hover
+    if (!gizmoHandleHovered && m_annotationLayer->hitTestText(pos) >= 0) {
+        emit cursorChangeRequested(Qt::SizeAllCursor);
+        textAnnotationHovered = true;
+    }
+
+    // Update radius slider
+    if (m_radiusSliderWidget->isVisible()) {
+        if (m_radiusSliderWidget->handleMouseMove(pos, buttons & Qt::LeftButton)) {
+            emit updateRequested();
+        }
+        if (m_radiusSliderWidget->contains(pos)) {
+            emit cursorChangeRequested(Qt::PointingHandCursor);
+            radiusSliderHovered = true;
+        }
+    }
+
+    // Update color/width widget
+    if (shouldShowColorAndWidthWidget()) {
+        if (m_colorAndWidthWidget->handleMouseMove(pos, buttons & Qt::LeftButton)) {
+            emit updateRequested();
+        }
+        if (m_colorAndWidthWidget->updateHovered(pos)) {
+            emit updateRequested();
+        }
+        if (m_colorAndWidthWidget->contains(pos)) {
+            emit cursorChangeRequested(Qt::PointingHandCursor);
+            unifiedWidgetHovered = true;
+        }
+    }
+
+    // Legacy color palette
+    if (!shouldShowColorAndWidthWidget() && shouldShowColorPalette()) {
+        if (m_colorPalette->updateHoveredSwatch(pos)) {
+            if (m_colorPalette->contains(pos)) {
+                emit cursorChangeRequested(Qt::PointingHandCursor);
+                colorPaletteHovered = true;
+            }
+        }
+        else if (m_colorPalette->contains(pos)) {
+            colorPaletteHovered = true;
+        }
+    }
+
+    // Update toolbar hover
+    bool hoverChanged = m_toolbar->updateHoveredButton(pos);
+    int hoveredButton = m_toolbar->hoveredButton();
+    if (hoverChanged) {
+        if (hoveredButton >= 0) {
+            emit cursorChangeRequested(Qt::PointingHandCursor);
+        }
+        else if (!colorPaletteHovered && !unifiedWidgetHovered &&
+                 !textAnnotationHovered && !gizmoHandleHovered && !radiusSliderHovered) {
+            if (m_currentTool == ToolbarButton::Selection) {
+                auto handle = m_selectionManager->hitTestHandle(pos);
+                updateCursorForHandle(handle);
+            }
+            else {
+                emit toolCursorRequested();
+            }
+        }
+    }
+
+    // Toolbar area cursor
+    bool toolbarHovered = m_toolbar->contains(pos);
+    if (toolbarHovered) {
+        emit cursorChangeRequested(Qt::PointingHandCursor);
+    }
+    else if (!colorPaletteHovered && !unifiedWidgetHovered &&
+             !textAnnotationHovered && !gizmoHandleHovered && !radiusSliderHovered) {
+        if (m_currentTool == ToolbarButton::Selection) {
+            auto handle = m_selectionManager->hitTestHandle(pos);
+            updateCursorForHandle(handle);
+        }
+        else {
+            emit toolCursorRequested();
+        }
+    }
+}
+
+void RegionInputHandler::handleThrottledUpdate()
+{
+    if (!m_updateThrottler || !m_parentWidget) {
+        return;
+    }
+
+    if (m_selectionManager->isSelecting() || m_selectionManager->isResizing() || m_selectionManager->isMoving()) {
+        if (m_updateThrottler->shouldUpdate(UpdateThrottler::ThrottleType::Selection)) {
+            m_updateThrottler->reset(UpdateThrottler::ThrottleType::Selection);
+            emit updateRequested();
+        }
+    }
+    else if (m_isDrawing) {
+        if (m_updateThrottler->shouldUpdate(UpdateThrottler::ThrottleType::Annotation)) {
+            m_updateThrottler->reset(UpdateThrottler::ThrottleType::Annotation);
+            emit updateRequested();
+        }
+    }
+    else if (m_selectionManager->isComplete()) {
+        if (m_updateThrottler->shouldUpdate(UpdateThrottler::ThrottleType::Hover)) {
+            m_updateThrottler->reset(UpdateThrottler::ThrottleType::Hover);
+            emit updateRequested();
+        }
+    }
+    else {
+        if (m_updateThrottler->shouldUpdate(UpdateThrottler::ThrottleType::Magnifier)) {
+            m_updateThrottler->reset(UpdateThrottler::ThrottleType::Magnifier);
+
+            const int panelWidth = MagnifierPanel::kWidth;
+            const int totalHeight = MagnifierPanel::kHeight + 85;
+            int panelX = m_currentPoint.x() - panelWidth / 2;
+            panelX = qMax(10, qMin(panelX, m_parentWidget->width() - panelWidth - 10));
+
+            int panelYBelow = m_currentPoint.y() + 25;
+            int panelYAbove = m_currentPoint.y() - totalHeight - 25;
+            QRect belowRect(panelX - 5, panelYBelow - 5, panelWidth + 10, totalHeight + 10);
+            QRect aboveRect(panelX - 5, panelYAbove - 5, panelWidth + 10, totalHeight + 10);
+            QRect currentMagRect = belowRect.united(aboveRect);
+
+            QRect dirtyRect = m_lastMagnifierRect.united(currentMagRect);
+            dirtyRect = dirtyRect.united(QRect(0, m_currentPoint.y() - 3, m_parentWidget->width(), 6));
+            dirtyRect = dirtyRect.united(QRect(m_currentPoint.x() - 3, 0, 6, m_parentWidget->height()));
+
+            m_lastMagnifierRect = currentMagRect;
+            emit updateRequested(dirtyRect);
+        }
+    }
+}
+
+// ============================================================================
+// Mouse Release Helpers
+// ============================================================================
+
+bool RegionInputHandler::handleTextEditorRelease(const QPoint& pos)
+{
+    if (m_textEditor->isEditing() && m_textEditor->isConfirmMode()) {
+        m_textEditor->handleMouseRelease(pos);
+        return true;
+    }
+    return false;
+}
+
+bool RegionInputHandler::handleTextAnnotationRelease()
+{
+    if (m_textAnnotationEditor->isTransforming()) {
+        m_textAnnotationEditor->finishTransformation();
+        return true;
+    }
+    if (m_textAnnotationEditor->isDragging()) {
+        m_textAnnotationEditor->finishDragging();
+        return true;
+    }
+    return false;
+}
+
+bool RegionInputHandler::handleRadiusSliderRelease(const QPoint& pos)
+{
+    if (m_radiusSliderWidget->isVisible() &&
+        m_radiusSliderWidget->handleMouseRelease(pos)) {
+        emit updateRequested();
+        return true;
+    }
+    return false;
+}
+
+void RegionInputHandler::handleSelectionRelease(const QPoint& pos)
+{
+    QRect sel = m_selectionManager->selectionRect();
+    if (sel.width() > 5 && sel.height() > 5) {
+        m_selectionManager->finishSelection();
+        emit cursorChangeRequested(Qt::ArrowCursor);
+        emit selectionFinished();
+        qDebug() << "RegionInputHandler: Selection complete via drag";
+    }
+    else if (m_hasDetectedWindow && m_highlightedWindowRect.isValid()) {
+        m_selectionManager->setFromDetectedWindow(m_highlightedWindowRect);
+        emit cursorChangeRequested(Qt::ArrowCursor);
+        emit selectionFinished();
+        qDebug() << "RegionInputHandler: Selection complete via detected window";
+
+        m_highlightedWindowRect = QRect();
+        m_hasDetectedWindow = false;
+        emit detectionCleared();
+    }
+    else {
+        emit fullScreenSelectionRequested();
+        emit cursorChangeRequested(Qt::ArrowCursor);
+        emit selectionFinished();
+        qDebug() << "RegionInputHandler: Click without drag - selecting full screen";
+    }
+}
+
+void RegionInputHandler::handleAnnotationRelease()
+{
+    finishAnnotation();
+}
+
+// ============================================================================
+// Annotation Helpers
+// ============================================================================
+
+void RegionInputHandler::startAnnotation(const QPoint& pos)
+{
+    if (isToolManagerHandledTool(m_currentTool)) {
+        m_toolManager->setColor(m_annotationColor);
+        m_toolManager->setWidth(m_annotationWidth);
+        m_toolManager->setArrowStyle(static_cast<LineEndStyle>(m_arrowStyle));
+        m_toolManager->setLineStyle(static_cast<LineStyle>(m_lineStyle));
+        m_toolManager->setShapeType(m_shapeType);
+        m_toolManager->setShapeFillMode(m_shapeFillMode);
+
+        ToolId toolId = toolbarButtonToToolId(m_currentTool);
+        m_toolManager->setCurrentTool(toolId);
+        m_toolManager->handleMousePress(pos);
+        m_isDrawing = m_toolManager->isDrawing();
+
+        if (!m_isDrawing && m_currentTool == ToolbarButton::StepBadge) {
+            m_isDrawing = true;
+        }
+        emit drawingStateChanged(m_isDrawing);
+        return;
+    }
+}
+
+void RegionInputHandler::updateAnnotation(const QPoint& pos)
+{
+    if (isToolManagerHandledTool(m_currentTool)) {
+        m_toolManager->handleMouseMove(pos);
+    }
+}
+
+void RegionInputHandler::finishAnnotation()
+{
+    if (isToolManagerHandledTool(m_currentTool)) {
+        m_toolManager->handleMouseRelease(m_currentPoint);
+        m_isDrawing = m_toolManager->isDrawing();
+    }
+    else {
+        m_isDrawing = false;
+    }
+    emit drawingStateChanged(m_isDrawing);
+}
+
+// ============================================================================
+// Cursor Helpers
+// ============================================================================
+
+Qt::CursorShape RegionInputHandler::getCursorForGizmoHandle(GizmoHandle handle) const
+{
+    switch (handle) {
+    case GizmoHandle::Rotation:
+        return Qt::CrossCursor;
+    case GizmoHandle::TopLeft:
+    case GizmoHandle::BottomRight:
+        return Qt::SizeFDiagCursor;
+    case GizmoHandle::TopRight:
+    case GizmoHandle::BottomLeft:
+        return Qt::SizeBDiagCursor;
+    case GizmoHandle::Body:
+        return Qt::SizeAllCursor;
+    default:
+        return Qt::ArrowCursor;
+    }
+}
+
+void RegionInputHandler::updateCursorForHandle(SelectionStateManager::ResizeHandle handle)
+{
+    using ResizeHandle = SelectionStateManager::ResizeHandle;
+
+    if (handle != ResizeHandle::None) {
+        emit cursorChangeRequested(SelectionResizeHelper::cursorForHandle(handle));
+        return;
+    }
+
+    // Handle::None - check for move or outside click
+    if (m_selectionManager->hitTestMove(m_currentPoint)) {
+        emit cursorChangeRequested(Qt::SizeAllCursor);
+    } else {
+        QRect sel = m_selectionManager->selectionRect();
+        ResizeHandle outsideHandle = SelectionResizeHelper::determineHandleFromOutsideClick(
+            m_currentPoint, sel);
+        emit cursorChangeRequested(SelectionResizeHelper::cursorForHandle(outsideHandle));
+    }
+}
+
+// ============================================================================
+// Selection Helpers
+// ============================================================================
+
+SelectionStateManager::ResizeHandle RegionInputHandler::determineHandleFromOutsideClick(
+    const QPoint& pos, const QRect& sel) const
+{
+    return SelectionResizeHelper::determineHandleFromOutsideClick(pos, sel);
+}
+
+void RegionInputHandler::adjustEdgesToPosition(const QPoint& pos,
+    SelectionStateManager::ResizeHandle handle)
+{
+    QRect currentRect = m_selectionManager->selectionRect();
+    QRect newRect = SelectionResizeHelper::adjustEdgesToPosition(pos, handle, currentRect);
+
+    if (SelectionResizeHelper::meetsMinimumSize(newRect)) {
+        m_selectionManager->setSelectionRect(newRect);
+    }
+}
+
+// ============================================================================
+// Utility Methods
+// ============================================================================
+
+TextAnnotation* RegionInputHandler::getSelectedTextAnnotation() const
+{
+    if (!m_annotationLayer) {
+        return nullptr;
+    }
+    if (m_annotationLayer->selectedIndex() >= 0) {
+        return dynamic_cast<TextAnnotation*>(m_annotationLayer->selectedItem());
+    }
+    return nullptr;
+}
+
+bool RegionInputHandler::shouldShowColorPalette() const
+{
+    if (!m_selectionManager->isComplete()) return false;
+    if (!m_showSubToolbar) return false;
+
+    switch (m_currentTool) {
+    case ToolbarButton::Pencil:
+    case ToolbarButton::Marker:
+    case ToolbarButton::Arrow:
+    case ToolbarButton::Shape:
+    case ToolbarButton::Text:
+    case ToolbarButton::StepBadge:
+        return true;
+    default:
+        return false;
+    }
+}
+
+bool RegionInputHandler::shouldShowColorAndWidthWidget() const
+{
+    if (!m_selectionManager->isComplete()) return false;
+    if (!m_showSubToolbar) return false;
+
+    switch (m_currentTool) {
+    case ToolbarButton::Pencil:
+    case ToolbarButton::Marker:
+    case ToolbarButton::Arrow:
+    case ToolbarButton::Shape:
+    case ToolbarButton::Text:
+    case ToolbarButton::Mosaic:
+    case ToolbarButton::StepBadge:
+        return true;
+    default:
+        return false;
+    }
+}
+
+bool RegionInputHandler::isAnnotationTool(ToolbarButton tool) const
+{
+    switch (tool) {
+    case ToolbarButton::Pencil:
+    case ToolbarButton::Marker:
+    case ToolbarButton::Arrow:
+    case ToolbarButton::Shape:
+    case ToolbarButton::Text:
+    case ToolbarButton::Mosaic:
+    case ToolbarButton::StepBadge:
+    case ToolbarButton::Eraser:
+        return true;
+    default:
+        return false;
+    }
+}

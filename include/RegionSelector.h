@@ -40,6 +40,10 @@ class QCloseEvent;
 class OCRManager;
 class TextAnnotation;
 class AutoBlurManager;
+class RegionPainter;
+class RegionInputHandler;
+class RegionToolbarHandler;
+class RegionSettingsHelper;
 
 // ShapeType and ShapeFillMode are defined in annotations/ShapeAnnotation.h
 
@@ -146,22 +150,15 @@ protected:
 
 private:
     void captureCurrentScreen();
-    void drawOverlay(QPainter &painter);
-    void drawDimmingOverlay(QPainter &painter, const QRect &clearRect, const QColor &dimColor);
-    void drawSelection(QPainter &painter);
     void drawCrosshair(QPainter &painter);
     void drawMagnifier(QPainter &painter);
-    void drawDimensionInfo(QPainter &painter);
-    void drawRadiusSlider(QPainter &painter, const QRect &dimensionInfoRect);
 
     // Corner radius helpers
     void onCornerRadiusChanged(int radius);
     int effectiveCornerRadius() const;
 
     // Toolbar helpers
-    void setupToolbarButtons();
     void handleToolbarClick(ToolbarButton button);
-    QColor getToolbarIconColor(int buttonId, bool isActive, bool isHovered) const;
 
     // Color palette helpers (legacy)
     bool shouldShowColorPalette() const;
@@ -180,67 +177,37 @@ private:
     bool shouldShowWidthControl() const;
     int toolWidthForCurrentTool() const;
 
-    // Annotation settings persistence
-    LineEndStyle loadArrowStyle() const;
-    void saveArrowStyle(LineEndStyle style);
+    // Annotation settings handlers
     void onArrowStyleChanged(LineEndStyle style);
-    LineStyle loadLineStyle() const;
-    void saveLineStyle(LineStyle style);
     void onLineStyleChanged(LineStyle style);
 
-    // Window detection drawing
-    void drawDetectedWindow(QPainter &painter);
-    void drawWindowHint(QPainter &painter, const QString &title);
+    // Window detection
     void updateWindowDetection(const QPoint &localPos);
     QPixmap getSelectedRegion();
     void copyToClipboard();
     void saveToFile();
     void finishSelection();
 
-    // Tool switching helpers
-    void restoreStandardWidth();
-    void saveEraserWidthAndClearHover();
-
     // Cursor helpers
     QCursor getMosaicCursor(int width);
     void setToolCursor();
-    Qt::CursorShape getCursorForGizmoHandle(GizmoHandle handle) const;
 
     // Initialization helpers
     void setupScreenGeometry(QScreen* screen);
 
-    // Annotation drawing helpers
-    void drawAnnotations(QPainter &painter);
-    void drawCurrentAnnotation(QPainter &painter);
-    void startAnnotation(const QPoint &pos);
-    void updateAnnotation(const QPoint &pos);
-    void finishAnnotation();
-    bool isAnnotationTool(ToolbarButton tool) const;
+    // Annotation helpers
     void showTextInputDialog(const QPoint &pos);
+    bool isAnnotationTool(ToolbarButton tool) const;
 
     // Inline text editing handlers
     void onTextEditingFinished(const QString &text, const QPoint &position);
     void startTextReEditing(int annotationIndex);
-    TextAnnotation* getSelectedTextAnnotation() const;
-    bool handleInlineTextEditorPress(const QPoint& pos);
-
-    // Text formatting persistence
-    TextFormattingState loadTextFormatting() const;
-    void saveTextFormatting();
 
     // Text formatting signal handlers
     void onFontSizeDropdownRequested(const QPoint& pos);
     void onFontFamilyDropdownRequested(const QPoint& pos);
-
-    // Selection resize/move helpers
-    void updateCursorForHandle(SelectionStateManager::ResizeHandle handle);
-    SelectionStateManager::ResizeHandle determineHandleFromOutsideClick(
-        const QPoint& pos, const QRect& sel) const;
-    void adjustEdgesToPosition(const QPoint& pos,
-        SelectionStateManager::ResizeHandle handle);
-
-    // Settings helper (reduces QSettings instantiation)
-    QSettings getSettings() const;
+    void onFontSizeSelected(int size);
+    void onFontFamilySelected(const QString& family);
 
     // Screen coordinate conversion helpers
     QPoint localToGlobal(const QPoint& localPos) const;
@@ -349,6 +316,18 @@ private:
     // Corner radius slider widget
     RadiusSliderWidget* m_radiusSliderWidget;
     int m_cornerRadius = 0;  // Current corner radius in logical pixels
+
+    // Painting component
+    RegionPainter* m_painter;
+
+    // Input handling component
+    RegionInputHandler* m_inputHandler;
+
+    // Toolbar handling component
+    RegionToolbarHandler* m_toolbarHandler;
+
+    // Settings helper component
+    RegionSettingsHelper* m_settingsHelper;
 };
 
 #endif // REGIONSELECTOR_H
