@@ -13,6 +13,7 @@ class TrimTimeline;
 class AnnotationTimelineWidget;
 class ColorAndWidthWidget;
 class IVideoPlayer;
+class QAbstractButton;
 class QToolButton;
 class QPushButton;
 class QSlider;
@@ -143,11 +144,11 @@ private:
     InlineTextEditor *m_textEditor = nullptr;
     QWidget *m_controlsWidget = nullptr;
 
-    QVector<QToolButton *> m_toolButtons;
+    QVector<QAbstractButton *> m_toolButtons;
     QToolButton *m_colorButton = nullptr;
     QSlider *m_widthSlider = nullptr;
-    QPushButton *m_undoButton = nullptr;
-    QPushButton *m_redoButton = nullptr;
+    QAbstractButton *m_undoButton = nullptr;
+    QAbstractButton *m_redoButton = nullptr;
     QPushButton *m_playButton = nullptr;
 
     // State

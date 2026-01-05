@@ -97,10 +97,6 @@ RecordingControlBar::RecordingControlBar(QWidget *parent)
     , m_layout(nullptr)
     , m_audioEnabled(false)
     , m_hoveredButton(ButtonNone)
-    , m_annotationEnabled(false)
-    , m_currentTool(AnnotationTool::None)
-    , m_annotationColor(Qt::red)
-    , m_annotationWidth(3)
     , m_mode(Mode::Recording)
     , m_previewDuration(0)
     , m_previewPosition(0)
@@ -155,12 +151,6 @@ void RecordingControlBar::setupUi()
     iconRenderer.loadIcon("play", ":/icons/icons/play.svg");
     iconRenderer.loadIcon("stop", ":/icons/icons/stop.svg");
     iconRenderer.loadIcon("cancel", ":/icons/icons/cancel.svg");
-
-    // Load annotation tool icons
-    iconRenderer.loadIcon("pencil", ":/icons/icons/pencil.svg");
-    iconRenderer.loadIcon("marker", ":/icons/icons/marker.svg");
-    iconRenderer.loadIcon("arrow", ":/icons/icons/arrow.svg");
-    iconRenderer.loadIcon("rectangle", ":/icons/icons/rectangle.svg");
 
     // Load preview mode icons
     iconRenderer.loadIcon("save", ":/icons/icons/save.svg");
@@ -239,11 +229,6 @@ void RecordingControlBar::updateButtonRects()
         m_pauseRect = QRect();
         m_stopRect = QRect();
         m_cancelRect = QRect();
-        m_pencilRect = QRect();
-        m_markerRect = QRect();
-        m_arrowRect = QRect();
-        m_rectangleRect = QRect();
-        m_colorRect = QRect();
         m_effectsButtonRect = QRect();
         m_effectsToolbarRect = QRect();
         m_effectsToolbarItems.clear();
@@ -266,42 +251,14 @@ void RecordingControlBar::updateButtonRects()
     x -= buttonSize + BUTTON_SPACING;
     m_pauseRect = QRect(x, y, buttonSize, buttonSize);
 
-    // Annotation tool buttons (between info labels and recording controls)
-    if (m_annotationEnabled) {
-        // Position annotation tools to the left of pause button with separator
-        x -= SEPARATOR_MARGIN;
-
-        x -= buttonSize + BUTTON_SPACING;
-        m_colorRect = QRect(x, y, buttonSize, buttonSize);
-
-        x -= buttonSize + BUTTON_SPACING;
-        m_rectangleRect = QRect(x, y, buttonSize, buttonSize);
-
-        x -= buttonSize + BUTTON_SPACING;
-        m_arrowRect = QRect(x, y, buttonSize, buttonSize);
-
-        x -= buttonSize + BUTTON_SPACING;
-        m_markerRect = QRect(x, y, buttonSize, buttonSize);
-
-        x -= buttonSize + BUTTON_SPACING;
-        m_pencilRect = QRect(x, y, buttonSize, buttonSize);
-    } else {
-        // Clear annotation button rects when disabled
-        m_pencilRect = QRect();
-        m_markerRect = QRect();
-        m_arrowRect = QRect();
-        m_rectangleRect = QRect();
-        m_colorRect = QRect();
-    }
-
-    // Effects button (always shown, to the left of annotation tools or pause button)
-    x -= SEPARATOR_MARGIN;
-    x -= buttonSize + BUTTON_SPACING;
-    m_effectsButtonRect = QRect(x, y, buttonSize, buttonSize);
+    // Effects button removed - FX effects are now applied in Preview mode only
+    // Cursor metadata is automatically recorded and effects can be applied during preview/export
+    m_effectsButtonRect = QRect();
 
     m_effectsToolbarItems.clear();
     m_effectsToolbarRect = QRect();
-    if (m_effectsToolbarVisible) {
+    m_effectsToolbarVisible = false;  // Never show effects toolbar
+    if (false) {  // Effects toolbar disabled
         QFontMetrics metrics(effectsToolbarFont());
         int buttonsWidth = effectsToolbarButtonsWidth(metrics);
         int startX = x - kEffectsToolbarGap - buttonsWidth;
@@ -422,16 +379,10 @@ void RecordingControlBar::updateButtonSpacerWidth()
     // Base: 3 control buttons
     int baseButtonsWidth = 3 * BUTTON_WIDTH + 2 * BUTTON_SPACING + 4;
 
-    // Effects button plus separator
-    int effectsWidth = SEPARATOR_MARGIN + BUTTON_WIDTH + BUTTON_SPACING;
+    // Effects button removed - FX effects are now in Preview mode only
+    int effectsWidth = 0;
 
-    // Optional annotation tools: 5 buttons + separator
-    int annotationWidth = 0;
-    if (m_annotationEnabled) {
-        annotationWidth = 5 * BUTTON_WIDTH + 4 * BUTTON_SPACING + SEPARATOR_MARGIN;
-    }
-
-    int totalWidth = baseButtonsWidth + effectsWidth + annotationWidth + effectsToolbarWidth();
+    int totalWidth = baseButtonsWidth + effectsWidth;
     m_buttonSpacer->setFixedWidth(totalWidth);
 }
 
@@ -451,11 +402,6 @@ QRect RecordingControlBar::anchorRectForButton(int button) const
     case ButtonPause: return m_pauseRect;
     case ButtonStop: return m_stopRect;
     case ButtonCancel: return m_cancelRect;
-    case ButtonPencil: return m_pencilRect;
-    case ButtonMarker: return m_markerRect;
-    case ButtonArrow: return m_arrowRect;
-    case ButtonRectangle: return m_rectangleRect;
-    case ButtonColor: return m_colorRect;
     case ButtonEffects: return m_effectsButtonRect;
     case ButtonPlayPause: return m_playPauseRect;
     case ButtonVolume: return m_volumeRect;
@@ -663,11 +609,6 @@ void RecordingControlBar::paintEvent(QPaintEvent *event)
         updateButtonRects();
         drawButtons(painter);
 
-        // Draw annotation tool buttons if enabled
-        if (m_annotationEnabled) {
-            drawAnnotationButtons(painter);
-        }
-
         // Draw effects button (always visible in recording mode)
         drawEffectsButton(painter);
 
@@ -736,16 +677,6 @@ QString RecordingControlBar::tooltipForButton(int button) const
         return tr("Stop Recording");
     case ButtonCancel:
         return tr("Cancel Recording (Esc)");
-    case ButtonPencil:
-        return tr("Pencil");
-    case ButtonMarker:
-        return tr("Marker");
-    case ButtonArrow:
-        return tr("Arrow");
-    case ButtonRectangle:
-        return tr("Rectangle");
-    case ButtonColor:
-        return tr("Color");
     case ButtonEffects:
         return tr("Visual Effects");
     case ButtonEffectLaser:
@@ -809,15 +740,6 @@ int RecordingControlBar::buttonAtPosition(const QPoint &pos) const
     if (!m_isPreparing && m_pauseRect.contains(pos)) return ButtonPause;
     if (!m_isPreparing && m_stopRect.contains(pos)) return ButtonStop;
     if (m_cancelRect.contains(pos)) return ButtonCancel;
-
-    // Annotation tool buttons
-    if (m_annotationEnabled && !m_isPreparing) {
-        if (m_pencilRect.contains(pos)) return ButtonPencil;
-        if (m_markerRect.contains(pos)) return ButtonMarker;
-        if (m_arrowRect.contains(pos)) return ButtonArrow;
-        if (m_rectangleRect.contains(pos)) return ButtonRectangle;
-        if (m_colorRect.contains(pos)) return ButtonColor;
-    }
 
     if (m_effectsToolbarVisible && !m_isPreparing) {
         for (const auto &entry : m_effectsToolbarItems) {
@@ -952,30 +874,6 @@ void RecordingControlBar::mousePressEvent(QMouseEvent *event)
                     break;
                 case ButtonCancel:
                     emit cancelRequested();
-                    break;
-                // Annotation tool buttons
-                case ButtonPencil:
-                    setCurrentTool(m_currentTool == AnnotationTool::Pencil
-                        ? AnnotationTool::None : AnnotationTool::Pencil);
-                    emit toolChanged(m_currentTool);
-                    break;
-                case ButtonMarker:
-                    setCurrentTool(m_currentTool == AnnotationTool::Marker
-                        ? AnnotationTool::None : AnnotationTool::Marker);
-                    emit toolChanged(m_currentTool);
-                    break;
-                case ButtonArrow:
-                    setCurrentTool(m_currentTool == AnnotationTool::Arrow
-                        ? AnnotationTool::None : AnnotationTool::Arrow);
-                    emit toolChanged(m_currentTool);
-                    break;
-                case ButtonRectangle:
-                    setCurrentTool(m_currentTool == AnnotationTool::Rectangle
-                        ? AnnotationTool::None : AnnotationTool::Rectangle);
-                    emit toolChanged(m_currentTool);
-                    break;
-                case ButtonColor:
-                    emit colorChangeRequested();
                     break;
                 case ButtonEffects:
                     toggleEffectsToolbar();
@@ -1168,112 +1066,6 @@ void RecordingControlBar::setAudioEnabled(bool enabled)
     }
 
     updateFixedWidth();
-}
-
-void RecordingControlBar::drawAnnotationButtons(QPainter &painter)
-{
-    ToolbarStyleConfig config = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
-    const bool toolsEnabled = !m_isPreparing;
-
-    // Draw separator line before annotation tools
-    if (!m_pencilRect.isNull()) {
-        int sepX = m_pencilRect.left() - SEPARATOR_MARGIN / 2;
-        QColor lineColor = toolsEnabled ? config.hairlineBorderColor : dimmedColor(config.hairlineBorderColor);
-        painter.setPen(QPen(lineColor, 1));
-        painter.drawLine(sepX, 6, sepX, TOOLBAR_HEIGHT - 6);
-    }
-
-    // Helper lambda for drawing tool buttons
-    auto drawToolButton = [&](const QRect &rect, const QString &iconKey, bool isActive, int buttonId) {
-        if (rect.isNull()) return;
-
-        bool isHovered = toolsEnabled && (m_hoveredButton == buttonId);
-
-        // Draw selection/hover background
-        if (toolsEnabled && (isActive || isHovered)) {
-            painter.setPen(Qt::NoPen);
-            if (isActive) {
-                painter.setBrush(config.activeBackgroundColor);
-            } else {
-                painter.setBrush(config.hoverBackgroundColor);
-            }
-            painter.drawRoundedRect(rect.adjusted(2, 2, -2, -2), 6, 6);
-        }
-
-        // Draw icon
-        QColor iconColor = isActive ? config.iconActiveColor : config.iconNormalColor;
-        if (!toolsEnabled) {
-            iconColor = dimmedColor(iconColor);
-        }
-        IconRenderer::instance().renderIcon(painter, rect, iconKey, iconColor);
-    };
-
-    // Draw annotation tool buttons
-    drawToolButton(m_pencilRect, "pencil", m_currentTool == AnnotationTool::Pencil, ButtonPencil);
-    drawToolButton(m_markerRect, "marker", m_currentTool == AnnotationTool::Marker, ButtonMarker);
-    drawToolButton(m_arrowRect, "arrow", m_currentTool == AnnotationTool::Arrow, ButtonArrow);
-    drawToolButton(m_rectangleRect, "rectangle", m_currentTool == AnnotationTool::Rectangle, ButtonRectangle);
-
-    // Draw color button with actual color
-    if (!m_colorRect.isNull()) {
-        bool isHovered = toolsEnabled && (m_hoveredButton == ButtonColor);
-        if (isHovered) {
-            painter.setPen(Qt::NoPen);
-            painter.setBrush(config.hoverBackgroundColor);
-            painter.drawRoundedRect(m_colorRect.adjusted(2, 2, -2, -2), 6, 6);
-        }
-
-        // Draw color circle
-        QRect colorCircle = m_colorRect.adjusted(6, 6, -6, -6);
-        QColor borderColor = toolsEnabled ? config.hairlineBorderColor : dimmedColor(config.hairlineBorderColor);
-        QColor fillColor = toolsEnabled ? m_annotationColor : dimmedColor(m_annotationColor);
-        painter.setPen(QPen(borderColor, 1));
-        painter.setBrush(fillColor);
-        painter.drawEllipse(colorCircle);
-    }
-}
-
-void RecordingControlBar::setAnnotationEnabled(bool enabled)
-{
-    if (m_annotationEnabled != enabled) {
-        m_annotationEnabled = enabled;
-        if (!enabled &&
-            (m_hoveredButton == ButtonPencil || m_hoveredButton == ButtonMarker ||
-             m_hoveredButton == ButtonArrow || m_hoveredButton == ButtonRectangle ||
-             m_hoveredButton == ButtonColor)) {
-            m_hoveredButton = ButtonNone;
-            hideTooltip();
-        }
-
-        updateButtonSpacerWidth();
-        updateFixedWidth();
-        update();
-    }
-}
-
-void RecordingControlBar::setCurrentTool(AnnotationTool tool)
-{
-    if (m_currentTool != tool) {
-        m_currentTool = tool;
-        update();
-    }
-}
-
-void RecordingControlBar::setAnnotationColor(const QColor &color)
-{
-    if (m_annotationColor != color) {
-        m_annotationColor = color;
-        update();
-        emit colorChangeRequested();
-    }
-}
-
-void RecordingControlBar::setAnnotationWidth(int width)
-{
-    if (m_annotationWidth != width) {
-        m_annotationWidth = width;
-        emit widthChangeRequested();
-    }
 }
 
 const QVector<RecordingControlBar::EffectsMenuItem> &RecordingControlBar::effectsToolbarItems() const

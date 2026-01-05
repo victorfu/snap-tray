@@ -9,6 +9,8 @@ class VideoPlaybackWidget;
 class TrimTimeline;
 class VideoTrimmer;
 class VideoAnnotationEditor;
+class AnnotationTrack;
+class PreviewAnnotationOverlay;
 class PreviewIconButton;
 class PreviewPillButton;
 class PreviewVolumeButton;
@@ -47,6 +49,7 @@ protected:
     void closeEvent(QCloseEvent *event) override;
     void keyPressEvent(QKeyEvent *event) override;
     void paintEvent(QPaintEvent *event) override;
+    bool eventFilter(QObject *watched, QEvent *event) override;
 
 private slots:
     void onPlayPauseClicked();
@@ -133,6 +136,15 @@ private:
     VideoAnnotationEditor *m_annotationEditor = nullptr;
     PreviewPillButton *m_annotateBtn = nullptr;
     PreviewPillButton *m_doneEditingBtn = nullptr;
+
+    // Annotation overlay (for main preview mode)
+    AnnotationTrack *m_annotationTrack = nullptr;
+    PreviewAnnotationOverlay *m_annotationOverlay = nullptr;
+
+    // Annotation persistence helpers
+    void saveAnnotations();
+    void loadAnnotations();
+    QString annotationFilePath() const;
 
     // Speed options
     static constexpr float kSpeedOptions[] = {0.25f, 0.5f, 0.75f, 1.0f, 1.25f, 1.5f, 2.0f};

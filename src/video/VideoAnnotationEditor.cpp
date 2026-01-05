@@ -1,18 +1,27 @@
 #include "video/VideoAnnotationEditor.h"
 #include "video/AnnotationTimelineWidget.h"
+#include "video/IVideoPlayer.h"
 #include "video/TrimTimeline.h"
 #include "video/VideoPlaybackWidget.h"
+#include "encoding/EncoderFactory.h"
+#include "encoding/NativeGifEncoder.h"
+#include "encoding/WebPAnimEncoder.h"
+#include "IVideoEncoder.h"
 #include "GlassRenderer.h"
+#include "IconRenderer.h"
 #include "InlineTextEditor.h"
 #include "ToolbarStyle.h"
 #include <QBoxLayout>
 #include <QColorDialog>
 #include <QCoreApplication>
+#include <QEventLoop>
 #include <QFile>
+#include <QFrame>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QKeyEvent>
 #include <QMouseEvent>
+#include <QAbstractButton>
 #include <QPainter>
 #include <QPointer>
 #include <QPushButton>
@@ -156,6 +165,121 @@ protected:
 private:
     int m_cornerRadius;
 };
+
+class IconToolButton : public QAbstractButton
+{
+public:
+    explicit IconToolButton(const QString &iconKey, QWidget *parent = nullptr)
+        : QAbstractButton(parent)
+        , m_iconKey(iconKey)
+        , m_hovered(false)
+        , m_cornerRadius(6)
+    {
+        setCursor(Qt::PointingHandCursor);
+        setFocusPolicy(Qt::NoFocus);
+        setCheckable(true);
+    }
+
+    QSize sizeHint() const override { return QSize(28, 28); }
+    QSize minimumSizeHint() const override { return QSize(28, 28); }
+
+protected:
+    void paintEvent(QPaintEvent *event) override
+    {
+        Q_UNUSED(event);
+        QPainter painter(this);
+        painter.setRenderHint(QPainter::Antialiasing);
+
+        ToolbarStyleConfig config = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
+        const bool active = isDown() || isChecked();
+
+        if (m_hovered || active) {
+            QColor bg = active ? config.activeBackgroundColor : config.hoverBackgroundColor;
+            painter.setPen(Qt::NoPen);
+            painter.setBrush(bg);
+            painter.drawRoundedRect(rect().adjusted(2, 2, -2, -2), m_cornerRadius, m_cornerRadius);
+        }
+
+        QColor iconColor = (m_hovered || active) ? config.iconActiveColor : config.iconNormalColor;
+        IconRenderer::instance().renderIcon(painter, rect(), m_iconKey, iconColor);
+    }
+
+    void enterEvent(QEnterEvent *event) override
+    {
+        m_hovered = true;
+        update();
+        QAbstractButton::enterEvent(event);
+    }
+
+    void leaveEvent(QEvent *event) override
+    {
+        m_hovered = false;
+        update();
+        QAbstractButton::leaveEvent(event);
+    }
+
+private:
+    QString m_iconKey;
+    bool m_hovered;
+    int m_cornerRadius;
+};
+
+class IconButton : public QAbstractButton
+{
+public:
+    explicit IconButton(const QString &iconKey, QWidget *parent = nullptr)
+        : QAbstractButton(parent)
+        , m_iconKey(iconKey)
+        , m_hovered(false)
+        , m_cornerRadius(6)
+    {
+        setCursor(Qt::PointingHandCursor);
+        setFocusPolicy(Qt::NoFocus);
+    }
+
+    QSize sizeHint() const override { return QSize(28, 28); }
+    QSize minimumSizeHint() const override { return QSize(28, 28); }
+
+protected:
+    void paintEvent(QPaintEvent *event) override
+    {
+        Q_UNUSED(event);
+        QPainter painter(this);
+        painter.setRenderHint(QPainter::Antialiasing);
+
+        ToolbarStyleConfig config = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
+        const bool active = isDown();
+
+        if (m_hovered || active) {
+            QColor bg = active ? config.activeBackgroundColor : config.hoverBackgroundColor;
+            painter.setPen(Qt::NoPen);
+            painter.setBrush(bg);
+            painter.drawRoundedRect(rect().adjusted(2, 2, -2, -2), m_cornerRadius, m_cornerRadius);
+        }
+
+        QColor iconColor = (m_hovered || active) ? config.iconActiveColor : config.iconNormalColor;
+        IconRenderer::instance().renderIcon(painter, rect(), m_iconKey, iconColor);
+    }
+
+    void enterEvent(QEnterEvent *event) override
+    {
+        m_hovered = true;
+        update();
+        QAbstractButton::enterEvent(event);
+    }
+
+    void leaveEvent(QEvent *event) override
+    {
+        m_hovered = false;
+        update();
+        QAbstractButton::leaveEvent(event);
+    }
+
+private:
+    QString m_iconKey;
+    bool m_hovered;
+    int m_cornerRadius;
+};
 }
 
 class AnnotationCanvas : public QWidget
@@ -260,14 +384,28 @@ void VideoAnnotationEditor::setupUI()
     toolbarLayout->setContentsMargins(8, 4, 8, 4);
     toolbarLayout->setSpacing(2);
 
-    auto addToolButton = [this, toolbarLayout](const QString &text, const QString &tooltip,
+    // Load SVG icons
+    IconRenderer &iconRenderer = IconRenderer::instance();
+    iconRenderer.loadIcon("selection", ":/icons/icons/selection.svg");
+    iconRenderer.loadIcon("arrow", ":/icons/icons/arrow.svg");
+    iconRenderer.loadIcon("line", ":/icons/icons/line.svg");
+    iconRenderer.loadIcon("rectangle", ":/icons/icons/rectangle.svg");
+    iconRenderer.loadIcon("ellipse", ":/icons/icons/ellipse.svg");
+    iconRenderer.loadIcon("pencil", ":/icons/icons/pencil.svg");
+    iconRenderer.loadIcon("marker", ":/icons/icons/marker.svg");
+    iconRenderer.loadIcon("text", ":/icons/icons/text.svg");
+    iconRenderer.loadIcon("step-badge", ":/icons/icons/step-badge.svg");
+    iconRenderer.loadIcon("mosaic", ":/icons/icons/mosaic.svg");
+    iconRenderer.loadIcon("highlight", ":/icons/icons/highlight.svg");
+    iconRenderer.loadIcon("undo", ":/icons/icons/undo.svg");
+    iconRenderer.loadIcon("redo", ":/icons/icons/redo.svg");
+
+    auto addToolButton = [this, toolbarLayout](const QString &iconKey, const QString &tooltip,
                                                Tool tool) {
-        QToolButton *btn = new QToolButton(m_toolbarWidget);
-        btn->setText(text);
+        IconToolButton *btn = new IconToolButton(iconKey, m_toolbarWidget);
         btn->setToolTip(tooltip);
-        btn->setCheckable(true);
-        btn->setMinimumWidth(32);
-        connect(btn, &QToolButton::clicked, this, [this, btn, tool]() {
+        btn->setFixedSize(28, 28);
+        connect(btn, &QAbstractButton::clicked, this, [this, btn, tool]() {
             setCurrentTool(tool);
             // Uncheck other buttons
             for (auto *child : m_toolButtons) {
@@ -281,18 +419,18 @@ void VideoAnnotationEditor::setupUI()
         return btn;
     };
 
-    QToolButton *selectBtn = addToolButton("↖", "Select", Tool::Select);
+    IconToolButton *selectBtn = addToolButton("selection", "Select", Tool::Select);
     selectBtn->setChecked(true);
-    addToolButton("→", "Arrow", Tool::Arrow);
-    addToolButton("—", "Line", Tool::Line);
-    addToolButton("□", "Rectangle", Tool::Rectangle);
-    addToolButton("○", "Ellipse", Tool::Ellipse);
-    addToolButton("✎", "Pencil", Tool::Pencil);
-    addToolButton("▬", "Marker", Tool::Marker);
-    addToolButton("T", "Text", Tool::Text);
-    addToolButton("①", "Step Badge", Tool::StepBadge);
-    addToolButton("▒", "Blur", Tool::Blur);
-    addToolButton("▓", "Highlight", Tool::Highlight);
+    addToolButton("arrow", "Arrow", Tool::Arrow);
+    addToolButton("line", "Line", Tool::Line);
+    addToolButton("rectangle", "Rectangle", Tool::Rectangle);
+    addToolButton("ellipse", "Ellipse", Tool::Ellipse);
+    addToolButton("pencil", "Pencil", Tool::Pencil);
+    addToolButton("marker", "Marker", Tool::Marker);
+    addToolButton("text", "Text", Tool::Text);
+    addToolButton("step-badge", "Step Badge", Tool::StepBadge);
+    addToolButton("mosaic", "Blur", Tool::Blur);
+    addToolButton("highlight", "Highlight", Tool::Highlight);
 
     toolbarLayout->addStretch();
 
@@ -318,16 +456,16 @@ void VideoAnnotationEditor::setupUI()
     toolbarLayout->addWidget(m_widthSlider);
 
     // Undo/Redo buttons
-    m_undoButton = new QPushButton("↶", m_toolbarWidget);
-    m_undoButton->setFixedWidth(32);
+    m_undoButton = new IconButton("undo", m_toolbarWidget);
+    m_undoButton->setFixedSize(28, 28);
     m_undoButton->setToolTip("Undo");
-    connect(m_undoButton, &QPushButton::clicked, m_track, &AnnotationTrack::undo);
+    connect(m_undoButton, &QAbstractButton::clicked, m_track, &AnnotationTrack::undo);
     toolbarLayout->addWidget(m_undoButton);
 
-    m_redoButton = new QPushButton("↷", m_toolbarWidget);
-    m_redoButton->setFixedWidth(32);
+    m_redoButton = new IconButton("redo", m_toolbarWidget);
+    m_redoButton->setFixedSize(28, 28);
     m_redoButton->setToolTip("Redo");
-    connect(m_redoButton, &QPushButton::clicked, m_track, &AnnotationTrack::redo);
+    connect(m_redoButton, &QAbstractButton::clicked, m_track, &AnnotationTrack::redo);
     toolbarLayout->addWidget(m_redoButton);
 
     mainLayout->addWidget(m_toolbarWidget);
@@ -457,13 +595,7 @@ void VideoAnnotationEditor::applyTheme()
         m_colorButton->setStyleSheet(toolButtonStyle(config, m_annotationColor));
     }
 
-    QString actionStyle = actionButtonStyle(config);
-    if (m_undoButton) {
-        m_undoButton->setStyleSheet(actionStyle);
-    }
-    if (m_redoButton) {
-        m_redoButton->setStyleSheet(actionStyle);
-    }
+    // IconButton handles its own styling, no stylesheet needed for undo/redo
 
     if (m_playButton) {
         m_playButton->setStyleSheet(playButtonStyle(config));
@@ -577,19 +709,35 @@ AnnotationTrack *VideoAnnotationEditor::track() const
 
 void VideoAnnotationEditor::setTrack(AnnotationTrack *track)
 {
-    // Disconnect before delete to avoid use-after-free
+    // 1. Disconnect all signals from old track
     if (m_track) {
         disconnect(m_track, nullptr, this, nullptr);
+        if (m_undoButton) {
+            disconnect(m_undoButton, nullptr, m_track, nullptr);
+        }
+        if (m_redoButton) {
+            disconnect(m_redoButton, nullptr, m_track, nullptr);
+        }
     }
 
-    if (m_ownsTrack && m_track) {
-        delete m_track;
+    // 2. Update timeline BEFORE deleting old track (prevents dangling pointer)
+    if (m_annotationTimeline) {
+        m_annotationTimeline->setTrack(nullptr);
     }
 
+    // 3. Save old track and update to new track
+    AnnotationTrack *oldTrack = m_track;
     m_track = track;
     m_ownsTrack = false;
 
-    // Calculate next step number from existing annotations
+    // 4. Now safe to delete old track
+    if (oldTrack && oldTrack != track) {
+        // Remove parent to avoid Qt auto-delete issues
+        oldTrack->setParent(nullptr);
+        delete oldTrack;
+    }
+
+    // 5. Calculate next step number from existing annotations
     m_nextStepNumber = 1;
     if (m_track) {
         for (const auto &ann : m_track->allAnnotations()) {
@@ -599,10 +747,12 @@ void VideoAnnotationEditor::setTrack(AnnotationTrack *track)
         }
     }
 
-    if (m_annotationTimeline) {
-        m_annotationTimeline->setTrack(track);
+    // 6. Set new track to timeline
+    if (m_annotationTimeline && m_track) {
+        m_annotationTimeline->setTrack(m_track);
     }
 
+    // 7. Connect signals from new track
     if (m_track) {
         connect(m_track->undoStack(), &QUndoStack::indexChanged, this,
                 &VideoAnnotationEditor::onUndoStackIndexChanged);
@@ -614,6 +764,14 @@ void VideoAnnotationEditor::setTrack(AnnotationTrack *track)
                 this, &VideoAnnotationEditor::updateAnnotationDisplay);
         connect(m_track, &AnnotationTrack::selectionChanged,
                 this, &VideoAnnotationEditor::updateAnnotationDisplay);
+
+        // Reconnect undo/redo buttons to new track
+        if (m_undoButton) {
+            connect(m_undoButton, &QAbstractButton::clicked, m_track, &AnnotationTrack::undo);
+        }
+        if (m_redoButton) {
+            connect(m_redoButton, &QAbstractButton::clicked, m_track, &AnnotationTrack::redo);
+        }
     }
 
     updateAnnotationDisplay();
@@ -717,11 +875,205 @@ qint64 VideoAnnotationEditor::duration() const
 bool VideoAnnotationEditor::exportWithAnnotations(const QString &outputPath, int format,
                                                   std::function<void(int)> progressCallback)
 {
-    Q_UNUSED(outputPath)
-    Q_UNUSED(format)
-    Q_UNUSED(progressCallback)
-    // TODO: Implement export pipeline
-    return false;
+    if (m_videoPath.isEmpty()) {
+        qWarning() << "VideoAnnotationEditor::exportWithAnnotations: No video loaded";
+        return false;
+    }
+
+    // Create a dedicated video player for frame extraction
+    IVideoPlayer *exportPlayer = IVideoPlayer::create(this);
+    if (!exportPlayer) {
+        qWarning() << "VideoAnnotationEditor::exportWithAnnotations: Failed to create video player";
+        return false;
+    }
+
+    if (!exportPlayer->load(m_videoPath)) {
+        qWarning() << "VideoAnnotationEditor::exportWithAnnotations: Failed to load video";
+        delete exportPlayer;
+        return false;
+    }
+
+    // Wait for media to load
+    QEventLoop loadLoop;
+    bool mediaLoaded = false;
+    connect(exportPlayer, &IVideoPlayer::mediaLoaded, [&]() {
+        mediaLoaded = true;
+        loadLoop.quit();
+    });
+    connect(exportPlayer, &IVideoPlayer::error, [&](const QString &msg) {
+        qWarning() << "VideoAnnotationEditor::exportWithAnnotations: Player error:" << msg;
+        loadLoop.quit();
+    });
+    QTimer::singleShot(5000, &loadLoop, &QEventLoop::quit); // 5 second timeout
+    loadLoop.exec();
+
+    if (!mediaLoaded || !exportPlayer->hasVideo()) {
+        qWarning() << "VideoAnnotationEditor::exportWithAnnotations: Media load failed";
+        delete exportPlayer;
+        return false;
+    }
+
+    QSize videoSize = exportPlayer->videoSize();
+    qint64 videoDuration = exportPlayer->duration();
+
+    if (videoSize.isEmpty() || videoDuration <= 0) {
+        qWarning() << "VideoAnnotationEditor::exportWithAnnotations: Invalid video dimensions or duration";
+        delete exportPlayer;
+        return false;
+    }
+
+    // Create encoder based on format
+    EncoderFactory::Format encoderFormat;
+    switch (format) {
+    case 0:
+        encoderFormat = EncoderFactory::Format::MP4;
+        break;
+    case 1:
+        encoderFormat = EncoderFactory::Format::GIF;
+        break;
+    case 2:
+        encoderFormat = EncoderFactory::Format::WebP;
+        break;
+    default:
+        encoderFormat = EncoderFactory::Format::MP4;
+        break;
+    }
+
+    EncoderFactory::EncoderConfig config;
+    config.format = encoderFormat;
+    config.frameSize = videoSize;
+    config.frameRate = 30;
+    config.outputPath = outputPath;
+    config.quality = 80;
+
+    auto result = EncoderFactory::create(config, this);
+    if (!result.success) {
+        qWarning() << "VideoAnnotationEditor::exportWithAnnotations: Failed to create encoder:"
+                   << result.errorMessage;
+        delete exportPlayer;
+        return false;
+    }
+
+    IVideoEncoder *videoEncoder = result.nativeEncoder;
+    NativeGifEncoder *gifEncoder = result.gifEncoder;
+    WebPAnimationEncoder *webpEncoder = result.webpEncoder;
+
+    // Export state
+    bool exportSuccess = false;
+    bool exportFinished = false;
+    qint64 currentPosition = 0;
+    int frameCount = 0;
+    int totalFrames = static_cast<int>(videoDuration * 30 / 1000);
+    if (totalFrames <= 0) totalFrames = 1;
+
+    // Event loop for async export
+    QEventLoop exportLoop;
+
+    // Connect encoder finished signals
+    auto onEncodingFinished = [&](bool success, const QString &) {
+        exportSuccess = success;
+        exportFinished = true;
+        exportLoop.quit();
+    };
+
+    if (videoEncoder) {
+        connect(videoEncoder, &IVideoEncoder::finished, onEncodingFinished);
+    } else if (gifEncoder) {
+        connect(gifEncoder, &NativeGifEncoder::finished, onEncodingFinished);
+    } else if (webpEncoder) {
+        connect(webpEncoder, &WebPAnimationEncoder::finished, onEncodingFinished);
+    }
+
+    // Frame processing
+    std::function<void()> processNextFrame;
+    qint64 seekPosition = 0;
+
+    auto onFrameReady = [&](const QImage &frame) {
+        if (exportFinished) return;
+
+        // Create a copy to render effects on
+        QImage compositeFrame = frame.convertToFormat(QImage::Format_ARGB32_Premultiplied);
+
+        // Calculate timestamp for this frame (relative to start)
+        qint64 frameTimeMs = seekPosition;
+
+        // Render annotations
+        if (m_track) {
+            m_renderer.renderToFrame(compositeFrame, m_track, frameTimeMs, videoDuration);
+        }
+
+        // Write frame to encoder
+        if (videoEncoder) {
+            videoEncoder->writeFrame(compositeFrame, frameTimeMs);
+        } else if (gifEncoder) {
+            gifEncoder->writeFrame(compositeFrame, frameTimeMs);
+        } else if (webpEncoder) {
+            webpEncoder->writeFrame(compositeFrame, frameTimeMs);
+        }
+
+        frameCount++;
+
+        // Report progress
+        if (progressCallback) {
+            int percent = (frameCount * 100) / totalFrames;
+            percent = qBound(0, percent, 99);
+            progressCallback(percent);
+        }
+
+        // Schedule next frame
+        QTimer::singleShot(0, processNextFrame);
+    };
+
+    connect(exportPlayer, &IVideoPlayer::frameReady, onFrameReady);
+
+    processNextFrame = [&]() {
+        if (exportFinished) return;
+
+        currentPosition += 33; // ~30fps
+
+        if (currentPosition >= videoDuration) {
+            // Finished extracting frames
+            if (videoEncoder) {
+                videoEncoder->finish();
+            } else if (gifEncoder) {
+                gifEncoder->finish();
+            } else if (webpEncoder) {
+                webpEncoder->finish();
+            }
+            return;
+        }
+
+        seekPosition = currentPosition;
+        exportPlayer->seek(currentPosition);
+    };
+
+    // Start export by seeking to first frame
+    seekPosition = 0;
+    exportPlayer->seek(0);
+
+    // Wait for export to complete
+    exportLoop.exec();
+
+    // Cleanup
+    delete exportPlayer;
+
+    // Encoders are parented to this, they'll be cleaned up automatically
+    // but we should disconnect signals
+    if (videoEncoder) {
+        videoEncoder->deleteLater();
+    }
+    if (gifEncoder) {
+        gifEncoder->deleteLater();
+    }
+    if (webpEncoder) {
+        webpEncoder->deleteLater();
+    }
+
+    if (progressCallback && exportSuccess) {
+        progressCallback(100);
+    }
+
+    return exportSuccess;
 }
 
 bool VideoAnnotationEditor::saveProject(const QString &projectPath)

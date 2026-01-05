@@ -36,17 +36,6 @@ public:
         WebP = 2
     };
 
-    /**
-     * @brief Annotation tools available during recording.
-     */
-    enum class AnnotationTool {
-        None = 0,
-        Pencil,
-        Marker,
-        Arrow,
-        Rectangle
-    };
-
     explicit RecordingControlBar(QWidget *parent = nullptr);
     ~RecordingControlBar();
 
@@ -58,16 +47,6 @@ public:
     void updateRegionSize(int width, int height);
     void updateFps(double fps);
     void setAudioEnabled(bool enabled);
-
-    // Annotation support
-    void setAnnotationEnabled(bool enabled);
-    bool isAnnotationEnabled() const { return m_annotationEnabled; }
-    void setCurrentTool(AnnotationTool tool);
-    AnnotationTool currentTool() const { return m_currentTool; }
-    void setAnnotationColor(const QColor &color);
-    QColor annotationColor() const { return m_annotationColor; }
-    void setAnnotationWidth(int width);
-    int annotationWidth() const { return m_annotationWidth; }
 
     // Visual effect support
     void setLaserPointerEnabled(bool enabled);
@@ -101,11 +80,6 @@ signals:
     void pauseRequested();
     void resumeRequested();
 
-    // Annotation signals
-    void toolChanged(AnnotationTool tool);
-    void colorChangeRequested();
-    void widthChangeRequested();
-
     // Visual effect signals
     void laserPointerToggled(bool enabled);
     void cursorHighlightToggled(bool enabled);
@@ -136,12 +110,6 @@ private:
         ButtonPause = 0,
         ButtonStop = 1,
         ButtonCancel = 2,
-        // Annotation tool buttons
-        ButtonPencil = 10,
-        ButtonMarker = 11,
-        ButtonArrow = 12,
-        ButtonRectangle = 13,
-        ButtonColor = 20,
         // Visual effect buttons
         ButtonEffects = 25,
         ButtonEffectLaser = 26,
@@ -179,7 +147,6 @@ private:
     void updatePreviewButtonRects();
     int buttonAtPosition(const QPoint &pos) const;
     void drawButtons(QPainter &painter);
-    void drawAnnotationButtons(QPainter &painter);
     void drawEffectsButton(QPainter &painter);
     void drawEffectsToolbar(QPainter &painter);
     void toggleEffectsToolbar();
@@ -225,19 +192,6 @@ private:
     QRect m_stopRect;
     QRect m_cancelRect;
     int m_hoveredButton;
-
-    // Annotation tool button rectangles
-    QRect m_pencilRect;
-    QRect m_markerRect;
-    QRect m_arrowRect;
-    QRect m_rectangleRect;
-    QRect m_colorRect;
-
-    // Annotation state
-    bool m_annotationEnabled;
-    AnnotationTool m_currentTool;
-    QColor m_annotationColor;
-    int m_annotationWidth;
 
     // Visual effects state
     bool m_laserEnabled = false;

@@ -18,8 +18,6 @@
 #include "utils/CoordinateHelper.h"
 #include "settings/Settings.h"
 #include "settings/FileSettingsManager.h"
-#include "AnnotationController.h"
-#include "ColorPickerDialog.h"
 
 #include <QGuiApplication>
 #include <QScreen>
@@ -75,12 +73,10 @@ static void syncFile(const QString &path)
 
 RecordingManager::RecordingManager(QObject *parent)
     : QObject(parent)
-    , m_colorPickerDialog(nullptr)
     , m_gifEncoder(nullptr)
     , m_nativeEncoder(nullptr)
     , m_usingNativeEncoder(false)
     , m_captureEngine(nullptr)
-    , m_annotationEnabled(false)
     , m_clickHighlightEnabled(false)
     , m_captureTimer(nullptr)
     , m_durationTimer(nullptr)
@@ -104,7 +100,6 @@ RecordingManager::RecordingManager(QObject *parent)
 RecordingManager::~RecordingManager()
 {
     cleanupRecording();
-    delete m_colorPickerDialog;
 }
 
 void RecordingManager::setState(State newState)
@@ -376,121 +371,63 @@ void RecordingManager::startFrameCapture()
     m_controlBar->updateRegionSize(m_recordingRegion.width(), m_recordingRegion.height());
     m_controlBar->updateFps(m_frameRate);
 
-    // Load annotation and click highlight settings
+    // Load click highlight settings
     auto settings = SnapTray::getSettings();
-    m_annotationEnabled = settings.value("recording/annotationEnabled", false).toBool();
     m_clickHighlightEnabled = settings.value("recording/clickHighlightEnabled", false).toBool();
 
-    // Create annotation overlay if either annotations or click highlight is enabled
-    if (m_annotationEnabled || m_clickHighlightEnabled) {
-        qDebug() << "RecordingManager::startFrameCapture() - Creating annotation overlay..."
-                 << "annotations:" << m_annotationEnabled
-                 << "clickHighlight:" << m_clickHighlightEnabled;
-
-        // Clean up any existing annotation overlay
-        if (m_annotationOverlay) {
-            m_annotationOverlay->close();
-        }
-
-        m_annotationOverlay = new RecordingAnnotationOverlay();
-        m_annotationOverlay->setAttribute(Qt::WA_DeleteOnClose);
-        m_annotationOverlay->setRegion(m_recordingRegion);
-
-        // Initialize overlay with control bar's default color and width
-        m_annotationOverlay->setColor(m_controlBar->annotationColor());
-        m_annotationOverlay->setWidth(m_controlBar->annotationWidth());
-
-        // Connect control bar annotation signals to overlay
-        connect(m_controlBar, &RecordingControlBar::toolChanged,
-                this, [this](RecordingControlBar::AnnotationTool tool) {
-            if (m_annotationOverlay) {
-                // Map RecordingControlBar::AnnotationTool to AnnotationController::Tool
-                int overlayTool = static_cast<int>(tool);
-                m_annotationOverlay->setCurrentTool(overlayTool);
-            }
-        });
-
-        // Connect color change requests
-        connect(m_controlBar, &RecordingControlBar::colorChangeRequested,
-                this, [this]() {
-            if (!m_colorPickerDialog) {
-                m_colorPickerDialog = new ColorPickerDialog();
-                connect(m_colorPickerDialog, &ColorPickerDialog::colorSelected,
-                        this, [this](const QColor& color) {
-                    m_controlBar->setAnnotationColor(color);
-                    if (m_annotationOverlay) {
-                        m_annotationOverlay->setColor(color);
-                    }
-                });
-            }
-
-            m_colorPickerDialog->setCurrentColor(m_controlBar->annotationColor());
-
-            // Position dialog near the control bar
-            QPoint pos = m_controlBar->pos();
-            m_colorPickerDialog->move(pos.x(), pos.y() - m_colorPickerDialog->height() - 10);
-            m_colorPickerDialog->show();
-            m_colorPickerDialog->raise();
-            m_colorPickerDialog->activateWindow();
-        });
-
-        // Connect width change requests
-        connect(m_controlBar, &RecordingControlBar::widthChangeRequested,
-                this, [this]() {
-            if (m_annotationOverlay) {
-                m_annotationOverlay->setWidth(m_controlBar->annotationWidth());
-            }
-        });
-
-        // Enable annotation mode on control bar only if annotations are enabled
-        if (m_annotationEnabled) {
-            m_controlBar->setAnnotationEnabled(true);
-        }
-
-        // Enable click highlight if configured
-        if (m_clickHighlightEnabled) {
-            bool started = m_annotationOverlay->setClickHighlightEnabled(true);
-            if (!started) {
-                qWarning() << "RecordingManager: Click highlight requires Accessibility permission. "
-                           << "Grant permission in System Preferences > Security & Privacy > Privacy > Accessibility";
-                // Continue recording without click highlight - don't block the user
-            }
-        }
-
-        // Connect visual effect signals from control bar
-        connect(m_controlBar, &RecordingControlBar::laserPointerToggled,
-                this, [this](bool enabled) {
-            if (m_annotationOverlay) {
-                m_annotationOverlay->setLaserPointerEnabled(enabled);
-            }
-        });
-
-        connect(m_controlBar, &RecordingControlBar::cursorHighlightToggled,
-                this, [this](bool enabled) {
-            if (m_annotationOverlay) {
-                m_annotationOverlay->setCursorHighlightEnabled(enabled);
-            }
-        });
-
-        connect(m_controlBar, &RecordingControlBar::spotlightToggled,
-                this, [this](bool enabled) {
-            if (m_annotationOverlay) {
-                m_annotationOverlay->setSpotlightEnabled(enabled);
-            }
-        });
-
-        connect(m_controlBar, &RecordingControlBar::compositeIndicatorsToggled,
-                this, [this](bool enabled) {
-            if (m_annotationOverlay) {
-                m_annotationOverlay->setCompositeIndicatorsToVideo(enabled);
-            }
-        });
-
-        // Sync control bar state with click highlight
-        m_controlBar->setClickHighlightEnabled(m_clickHighlightEnabled);
-
-        qDebug() << "RecordingManager::startFrameCapture() - Annotation overlay created";
+    // Create effects overlay if click highlight or visual effects are enabled
+    // Clean up any existing annotation overlay
+    if (m_annotationOverlay) {
+        m_annotationOverlay->close();
     }
+
+    m_annotationOverlay = new RecordingAnnotationOverlay();
+    m_annotationOverlay->setAttribute(Qt::WA_DeleteOnClose);
+    m_annotationOverlay->setRegion(m_recordingRegion);
+
+    // Enable click highlight if configured
+    if (m_clickHighlightEnabled) {
+        bool started = m_annotationOverlay->setClickHighlightEnabled(true);
+        if (!started) {
+            qWarning() << "RecordingManager: Click highlight requires Accessibility permission. "
+                       << "Grant permission in System Preferences > Security & Privacy > Privacy > Accessibility";
+            // Continue recording without click highlight - don't block the user
+        }
+    }
+
+    // Connect visual effect signals from control bar
+    connect(m_controlBar, &RecordingControlBar::laserPointerToggled,
+            this, [this](bool enabled) {
+        if (m_annotationOverlay) {
+            m_annotationOverlay->setLaserPointerEnabled(enabled);
+        }
+    });
+
+    connect(m_controlBar, &RecordingControlBar::cursorHighlightToggled,
+            this, [this](bool enabled) {
+        if (m_annotationOverlay) {
+            m_annotationOverlay->setCursorHighlightEnabled(enabled);
+        }
+    });
+
+    connect(m_controlBar, &RecordingControlBar::spotlightToggled,
+            this, [this](bool enabled) {
+        if (m_annotationOverlay) {
+            m_annotationOverlay->setSpotlightEnabled(enabled);
+        }
+    });
+
+    connect(m_controlBar, &RecordingControlBar::compositeIndicatorsToggled,
+            this, [this](bool enabled) {
+        if (m_annotationOverlay) {
+            m_annotationOverlay->setCompositeIndicatorsToVideo(enabled);
+        }
+    });
+
+    // Sync control bar state with click highlight
+    m_controlBar->setClickHighlightEnabled(m_clickHighlightEnabled);
+
+    qDebug() << "RecordingManager::startFrameCapture() - Effects overlay created";
 
     // Show in preparing state (buttons disabled until ready)
     m_controlBar->setPreparing(true);
@@ -853,7 +790,6 @@ void RecordingManager::captureFrame()
     NativeGifEncoder *gifEncoder = m_gifEncoder;
     RecordingAnnotationOverlay *annotationOverlay = m_annotationOverlay;
     bool usingNative = m_usingNativeEncoder;
-    bool annotationEnabled = m_annotationEnabled;
 
     if (!captureEngine) {
         return;
@@ -871,13 +807,6 @@ void RecordingManager::captureFrame()
     QImage frame = captureEngine->captureFrame();
 
     if (!frame.isNull()) {
-        // Composite annotations and click highlights onto frame if overlay is active
-        // Use local copies for thread safety
-        if ((annotationEnabled || m_clickHighlightEnabled) && annotationOverlay) {
-            qreal scale = CoordinateHelper::getDevicePixelRatio(m_targetScreen);
-            annotationOverlay->compositeOntoFrame(frame, scale);
-        }
-
         // Use real elapsed time for timestamps to keep playback speed aligned with recording time
         qint64 elapsedMs = 0;
         {
@@ -887,6 +816,13 @@ void RecordingManager::captureFrame()
         }
         if (elapsedMs < 0) {
             elapsedMs = 0;
+        }
+
+        // Composite visual effects onto frame if overlay is active
+        // Use local copies for thread safety
+        if (annotationOverlay) {
+            qreal scale = CoordinateHelper::getDevicePixelRatio(m_targetScreen);
+            annotationOverlay->compositeOntoFrame(frame, scale);
         }
 
         // Pass QImage to the appropriate encoder with elapsed timestamp
@@ -1084,6 +1020,14 @@ void RecordingManager::stopFrameCapture()
     }
     qDebug() << "RecordingManager: Timers stopped";
 
+    // Calculate final recording duration
+    qint64 finalDuration = 0;
+    {
+        QMutexLocker locker(&m_durationMutex);
+        finalDuration = m_elapsedTimer.elapsed() - m_pausedDuration;
+    }
+    if (finalDuration < 0) finalDuration = 0;
+
     // Stop audio capture and finalize audio file
     // Disconnect BEFORE stopping to prevent new signals from being queued during shutdown
     qDebug() << "RecordingManager: Stopping audio engine, m_audioEngine=" << (m_audioEngine ? "exists" : "null");
@@ -1113,13 +1057,6 @@ void RecordingManager::stopFrameCapture()
     if (m_boundaryOverlay) {
         m_boundaryOverlay->close();
         m_boundaryOverlay = nullptr;
-    }
-
-    // Disconnect annotation signals before closing overlay to prevent dangling connections
-    if (m_annotationOverlay && m_controlBar) {
-        disconnect(m_controlBar, &RecordingControlBar::toolChanged, this, nullptr);
-        disconnect(m_controlBar, &RecordingControlBar::colorChangeRequested, this, nullptr);
-        disconnect(m_controlBar, &RecordingControlBar::widthChangeRequested, this, nullptr);
     }
 
     if (m_annotationOverlay) {
@@ -1478,7 +1415,6 @@ void RecordingManager::transitionToPreviewMode(const QString &videoPath)
     // 2. Switch control bar to Preview mode
     if (m_controlBar) {
         m_controlBar->setMode(RecordingControlBar::Mode::Preview);
-        m_controlBar->setAnnotationEnabled(false);
         connectPreviewSignals();
 
         // Reposition after width change (320px -> 480px) and ensure visibility

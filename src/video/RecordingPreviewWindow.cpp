@@ -4,6 +4,8 @@
 #include "video/VideoTrimmer.h"
 #include "video/FormatSelectionWidget.h"
 #include "video/VideoAnnotationEditor.h"
+#include "video/AnnotationTrack.h"
+#include "video/VideoAnnotationRenderer.h"
 #include "encoding/EncoderFactory.h"
 #include "encoding/NativeGifEncoder.h"
 #include "encoding/WebPAnimEncoder.h"
@@ -16,7 +18,10 @@
 #include <QCoreApplication>
 #include <QEventLoop>
 #include <QFile>
+#include <QFileInfo>
 #include <QInputDialog>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QProgressDialog>
 #include <QStackedWidget>
 #include <QTimer>
@@ -364,6 +369,65 @@ private:
     bool m_useAccentColor;
 };
 
+// Annotation overlay for main preview mode
+class PreviewAnnotationOverlay : public QWidget
+{
+public:
+    explicit PreviewAnnotationOverlay(QWidget *parent = nullptr)
+        : QWidget(parent)
+    {
+        setAttribute(Qt::WA_TranslucentBackground);
+        setAutoFillBackground(false);
+        setAttribute(Qt::WA_TransparentForMouseEvents);
+    }
+
+    void setTrack(AnnotationTrack *track)
+    {
+        m_track = track;
+        update();
+    }
+
+    void setCurrentTime(qint64 timeMs)
+    {
+        if (m_currentTimeMs != timeMs) {
+            m_currentTimeMs = timeMs;
+            update();
+        }
+    }
+
+    void setDuration(qint64 durationMs)
+    {
+        m_durationMs = durationMs;
+    }
+
+    void setVideoSize(const QSize &size)
+    {
+        m_videoSize = size;
+    }
+
+protected:
+    void paintEvent(QPaintEvent *event) override
+    {
+        Q_UNUSED(event);
+        if (!m_track || m_track->isEmpty() || m_videoSize.isEmpty()) {
+            return;
+        }
+
+        QPainter painter(this);
+        painter.setRenderHint(QPainter::Antialiasing);
+
+        m_renderer.renderToWidget(painter, m_track, m_currentTimeMs, m_durationMs,
+                                  rect(), m_videoSize);
+    }
+
+private:
+    AnnotationTrack *m_track = nullptr;
+    VideoAnnotationRenderer m_renderer;
+    qint64 m_currentTimeMs = 0;
+    qint64 m_durationMs = 0;
+    QSize m_videoSize;
+};
+
 constexpr float RecordingPreviewWindow::kSpeedOptions[];
 
 RecordingPreviewWindow::RecordingPreviewWindow(const QString &videoPath,
@@ -434,6 +498,17 @@ void RecordingPreviewWindow::setupUI()
     m_videoWidget = new VideoPlaybackWidget(m_previewModeWidget);
     m_videoWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     previewLayout->addWidget(m_videoWidget, 1);
+
+    // Create annotation track (shared between preview and editor)
+    m_annotationTrack = new AnnotationTrack(this);
+
+    // Create annotation overlay on top of video widget
+    m_annotationOverlay = new PreviewAnnotationOverlay(m_videoWidget);
+    m_annotationOverlay->setTrack(m_annotationTrack);
+    m_annotationOverlay->setGeometry(m_videoWidget->rect());
+
+    // Install event filter to handle video widget resize
+    m_videoWidget->installEventFilter(this);
 
     // Connect video signals
     connect(m_videoWidget, &VideoPlaybackWidget::positionChanged,
@@ -513,7 +588,7 @@ void RecordingPreviewWindow::setupUI()
     m_speedCombo->addItem("1.5x", 1.5f);
     m_speedCombo->addItem("2.0x", 2.0f);
     m_speedCombo->setCurrentIndex(kDefaultSpeedIndex);
-    m_speedCombo->setFixedWidth(64);
+    m_speedCombo->setFixedWidth(90);
     m_speedCombo->setFixedHeight(28);
     m_speedCombo->setToolTip(tr("Playback speed"));
     connect(m_speedCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
@@ -586,10 +661,11 @@ void RecordingPreviewWindow::setupUI()
     QColor comboHover = config.buttonHoverColor;
     comboHover.setAlpha(200);
     QString comboStyle = QString(
-        "QComboBox { background-color: %1; color: %2; border: 1px solid %3; border-radius: 6px; padding: 2px 6px; }"
+        "QComboBox { background-color: %1; color: %2; border: 1px solid %3; border-radius: 6px; padding: 2px 4px 2px 8px; }"
         "QComboBox:hover { background-color: %4; }"
-        "QComboBox::drop-down { border: none; width: 16px; }"
-        "QComboBox QAbstractItemView { background-color: %5; color: %2; border: 1px solid %3; selection-background-color: %6; }"
+        "QComboBox::drop-down { border: none; width: 20px; subcontrol-position: right center; }"
+        "QComboBox::down-arrow { image: none; border-left: 4px solid transparent; border-right: 4px solid transparent; border-top: 5px solid %2; margin-right: 6px; }"
+        "QComboBox QAbstractItemView { background-color: %5; color: %2; border: 1px solid %3; selection-background-color: %6; padding: 4px; }"
     )
         .arg(rgbaString(comboBg))
         .arg(rgbaString(config.textColor))
@@ -685,6 +761,17 @@ void RecordingPreviewWindow::paintEvent(QPaintEvent *event)
     painter.fillRect(rect(), gradient);
 }
 
+bool RecordingPreviewWindow::eventFilter(QObject *watched, QEvent *event)
+{
+    if (watched == m_videoWidget && event->type() == QEvent::Resize) {
+        if (m_annotationOverlay) {
+            m_annotationOverlay->setGeometry(m_videoWidget->rect());
+            m_annotationOverlay->raise();
+        }
+    }
+    return QWidget::eventFilter(watched, event);
+}
+
 void RecordingPreviewWindow::onPlayPauseClicked()
 {
     m_videoWidget->togglePlayPause();
@@ -697,6 +784,11 @@ void RecordingPreviewWindow::onPositionChanged(qint64 positionMs)
         m_timeline->setPosition(positionMs);
     }
     updateTimeLabel();
+
+    // Update annotation overlay
+    if (m_annotationOverlay) {
+        m_annotationOverlay->setCurrentTime(positionMs);
+    }
 }
 
 void RecordingPreviewWindow::onDurationChanged(qint64 durationMs)
@@ -704,6 +796,11 @@ void RecordingPreviewWindow::onDurationChanged(qint64 durationMs)
     m_duration = durationMs;
     m_timeline->setDuration(durationMs);
     updateTimeLabel();
+
+    // Update annotation overlay
+    if (m_annotationOverlay) {
+        m_annotationOverlay->setDuration(durationMs);
+    }
 }
 
 void RecordingPreviewWindow::onVideoLoaded()
@@ -716,11 +813,21 @@ void RecordingPreviewWindow::onVideoLoaded()
         qDebug() << "RecordingPreviewWindow: GIF detected, looping enabled";
     }
 
+    // Update annotation overlay with video size
+    if (m_annotationOverlay) {
+        m_annotationOverlay->setVideoSize(m_videoWidget->videoSize());
+        m_annotationOverlay->setGeometry(m_videoWidget->rect());
+        m_annotationOverlay->raise();
+    }
+
     // Auto-play on load
     m_videoWidget->play();
     updatePlayPauseButton();
     m_muteBtn->setMuted(m_videoWidget->isMuted());
     m_volumeSlider->setValue(static_cast<int>(m_videoWidget->volume() * 100));
+
+    // Load any existing annotations
+    loadAnnotations();
 }
 
 void RecordingPreviewWindow::onVideoError(const QString &message)
@@ -740,6 +847,9 @@ void RecordingPreviewWindow::onSaveClicked()
 {
     qDebug() << "RecordingPreviewWindow: Save clicked";
     m_videoWidget->stop();
+
+    // Save annotations to sidecar file
+    saveAnnotations();
 
     auto format = m_formatWidget->selectedFormat();
 
@@ -1253,6 +1363,8 @@ void RecordingPreviewWindow::switchToAnnotateMode()
     // Create annotation editor if not already created
     if (!m_annotationEditor) {
         m_annotationEditor = new VideoAnnotationEditor(m_stackedWidget);
+        // Set track BEFORE video path to avoid race condition during async video loading
+        m_annotationEditor->setTrack(m_annotationTrack);
         m_annotationEditor->setVideoPath(m_videoPath);
 
         // Create done editing button
@@ -1298,5 +1410,76 @@ void RecordingPreviewWindow::switchToPreviewMode()
         m_annotationEditor->hide();
     }
 
+    // Update annotation overlay with current video size and position
+    if (m_annotationOverlay) {
+        m_annotationOverlay->setVideoSize(m_videoWidget->videoSize());
+        m_annotationOverlay->setGeometry(m_videoWidget->rect());
+        m_annotationOverlay->raise();
+        m_annotationOverlay->update();
+    }
+
     setWindowTitle("Recording Preview");
+}
+
+// ============================================================================
+// Annotation persistence
+// ============================================================================
+
+QString RecordingPreviewWindow::annotationFilePath() const
+{
+    return m_videoPath + ".annotations.json";
+}
+
+void RecordingPreviewWindow::saveAnnotations()
+{
+    if (!m_annotationTrack || m_annotationTrack->isEmpty()) {
+        return;
+    }
+
+    QString path = annotationFilePath();
+    QJsonObject root;
+    root["version"] = 1;
+    root["videoPath"] = QFileInfo(m_videoPath).fileName();
+    root["annotations"] = m_annotationTrack->toJson();
+
+    QJsonDocument doc(root);
+    QFile file(path);
+    if (file.open(QIODevice::WriteOnly)) {
+        file.write(doc.toJson(QJsonDocument::Indented));
+        qDebug() << "RecordingPreviewWindow: Saved annotations to" << path;
+    } else {
+        qWarning() << "RecordingPreviewWindow: Failed to save annotations to" << path;
+    }
+}
+
+void RecordingPreviewWindow::loadAnnotations()
+{
+    QString path = annotationFilePath();
+    if (!QFile::exists(path)) {
+        return;
+    }
+
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly)) {
+        qWarning() << "RecordingPreviewWindow: Failed to open annotations file" << path;
+        return;
+    }
+
+    QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
+    if (doc.isNull() || !doc.isObject()) {
+        qWarning() << "RecordingPreviewWindow: Invalid annotations file format";
+        return;
+    }
+
+    QJsonObject root = doc.object();
+    if (root.contains("annotations") && m_annotationTrack) {
+        m_annotationTrack->fromJson(root["annotations"].toObject());
+        qDebug() << "RecordingPreviewWindow: Loaded annotations from" << path
+                 << "count:" << m_annotationTrack->allAnnotations().size();
+
+        // Update overlay
+        if (m_annotationOverlay) {
+            m_annotationOverlay->update();
+        }
+    }
 }

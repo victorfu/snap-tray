@@ -41,6 +41,8 @@
         <file>icons/arrow-vertical.svg</file>
         <file>icons/arrow-horizontal.svg</file>
         <file>icons/auto-blur.svg</file>
+        <file>icons/line.svg</file>
+        <file>icons/highlight.svg</file>
     </qresource>
     <qresource prefix="/cascades">
         <file>cascades/haarcascade_frontalface_default.xml</file>

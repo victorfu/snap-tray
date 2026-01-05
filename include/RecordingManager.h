@@ -21,7 +21,6 @@ class IVideoEncoder;
 class ICaptureEngine;
 class IAudioCaptureEngine;
 class AudioFileWriter;
-class ColorPickerDialog;
 class QScreen;
 
 class RecordingManager : public QObject
@@ -138,12 +137,10 @@ private:
     QPointer<RecordingAnnotationOverlay> m_annotationOverlay;
     QPointer<InPlacePreviewOverlay> m_previewOverlay;
     QString m_tempVideoPath;
-    ColorPickerDialog *m_colorPickerDialog;
     NativeGifEncoder *m_gifEncoder;     // Used for GIF format
     IVideoEncoder *m_nativeEncoder;     // Native platform encoder for MP4
     bool m_usingNativeEncoder;          // True if using native encoder
     ICaptureEngine *m_captureEngine;
-    bool m_annotationEnabled;           // True if annotation is enabled
     bool m_clickHighlightEnabled;        // True if click highlight is enabled
 
     // Capture state
