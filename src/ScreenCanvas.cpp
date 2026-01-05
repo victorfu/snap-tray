@@ -35,6 +35,9 @@ static const std::map<ToolId, ToolCapabilities> kToolCapabilities = {
     {ToolId::Marker,       {true,  false, true}},
     {ToolId::Arrow,        {true,  true,  true}},
     {ToolId::Shape,        {true,  true,  true}},
+    {ToolId::Mosaic,       {false, true,  true}},
+    {ToolId::StepBadge,    {true,  false, true}},
+    {ToolId::Text,         {true,  false, true}},
     {ToolId::LaserPointer, {true,  true,  true}},
 };
 
@@ -72,6 +75,7 @@ ScreenCanvas::ScreenCanvas(QWidget* parent)
     int savedWidth = annotationSettings.loadWidth();
     LineEndStyle savedArrowStyle = loadArrowStyle();
     LineStyle savedLineStyle = loadLineStyle();
+    m_stepBadgeSize = annotationSettings.loadStepBadgeSize();
     m_toolManager->setColor(savedColor);
     m_toolManager->setWidth(savedWidth);
     m_toolManager->setArrowStyle(savedArrowStyle);
@@ -101,6 +105,7 @@ ScreenCanvas::ScreenCanvas(QWidget* parent)
     m_colorAndWidthWidget->setWidthRange(1, 20);
     m_colorAndWidthWidget->setArrowStyle(savedArrowStyle);
     m_colorAndWidthWidget->setLineStyle(savedLineStyle);
+    m_colorAndWidthWidget->setStepBadgeSize(m_stepBadgeSize);
     connect(m_colorAndWidthWidget, &ColorAndWidthWidget::colorSelected,
         this, &ScreenCanvas::onColorSelected);
     connect(m_colorAndWidthWidget, &ColorAndWidthWidget::moreColorsRequested,
@@ -111,6 +116,61 @@ ScreenCanvas::ScreenCanvas(QWidget* parent)
         this, &ScreenCanvas::onArrowStyleChanged);
     connect(m_colorAndWidthWidget, &ColorAndWidthWidget::lineStyleChanged,
         this, &ScreenCanvas::onLineStyleChanged);
+    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::shapeTypeChanged,
+        this, [this](ShapeType type) {
+            m_shapeType = type;
+            m_toolManager->setShapeType(static_cast<int>(type));
+        });
+    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::shapeFillModeChanged,
+        this, [this](ShapeFillMode mode) {
+            m_shapeFillMode = mode;
+            m_toolManager->setShapeFillMode(static_cast<int>(mode));
+        });
+    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::mosaicBlurTypeChanged,
+        this, [this](MosaicBlurTypeSection::BlurType type) {
+            m_mosaicBlurType = type;
+            m_toolManager->setMosaicBlurType(static_cast<MosaicStroke::BlurType>(type));
+        });
+    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::stepBadgeSizeChanged,
+        this, [this](StepBadgeSize size) {
+            m_stepBadgeSize = size;
+            int radius = StepBadgeAnnotation::radiusForSize(size);
+            m_toolManager->setWidth(radius);
+        });
+
+    // Initialize inline text editor
+    m_textEditor = new InlineTextEditor(this);
+    connect(m_textEditor, &InlineTextEditor::editingFinished,
+        this, &ScreenCanvas::onTextEditingFinished);
+    connect(m_textEditor, &InlineTextEditor::editingCancelled,
+        this, [this]() {
+            m_textAnnotationEditor->cancelEditing();
+        });
+
+    // Initialize text annotation editor component
+    m_textAnnotationEditor = new TextAnnotationEditor(this);
+    m_textAnnotationEditor->setAnnotationLayer(m_annotationLayer);
+    m_textAnnotationEditor->setTextEditor(m_textEditor);
+    m_textAnnotationEditor->setColorAndWidthWidget(m_colorAndWidthWidget);
+    m_textAnnotationEditor->setParentWidget(this);
+    connect(m_textAnnotationEditor, &TextAnnotationEditor::updateRequested,
+        this, QOverload<>::of(&QWidget::update));
+
+    // Load text formatting settings from TextAnnotationEditor
+    TextFormattingState textFormatting = m_textAnnotationEditor->formatting();
+    m_colorAndWidthWidget->setBold(textFormatting.bold);
+    m_colorAndWidthWidget->setItalic(textFormatting.italic);
+    m_colorAndWidthWidget->setUnderline(textFormatting.underline);
+    m_colorAndWidthWidget->setFontSize(textFormatting.fontSize);
+    m_colorAndWidthWidget->setFontFamily(textFormatting.fontFamily);
+
+    // Connect text formatting signals
+    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::boldToggled,
+        m_textAnnotationEditor, &TextAnnotationEditor::setBold);
+    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::italicToggled,
+        m_textAnnotationEditor, &TextAnnotationEditor::setItalic);
+    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::underlineToggled,
+        m_textAnnotationEditor, &TextAnnotationEditor::setUnderline);
 
     // Initialize laser pointer renderer
     m_laserRenderer = new LaserPointerRenderer(this);
@@ -122,6 +182,11 @@ ScreenCanvas::ScreenCanvas(QWidget* parent)
     // Initialize click ripple renderer
     m_rippleRenderer = new ClickRippleRenderer(this);
     connect(m_rippleRenderer, &ClickRippleRenderer::needsRepaint,
+        this, QOverload<>::of(&QWidget::update));
+
+    // Initialize spotlight effect
+    m_spotlightEffect = new SpotlightEffect(this);
+    connect(m_spotlightEffect, &SpotlightEffect::needsRepaint,
         this, QOverload<>::of(&QWidget::update));
 
     qDebug() << "ScreenCanvas: Created";
@@ -145,8 +210,13 @@ void ScreenCanvas::initializeIcons()
     iconRenderer.loadIcon("rectangle", ":/icons/icons/rectangle.svg");
     iconRenderer.loadIcon("ellipse", ":/icons/icons/ellipse.svg");
     iconRenderer.loadIcon("shape", ":/icons/icons/shape.svg");
+    iconRenderer.loadIcon("mosaic", ":/icons/icons/mosaic.svg");
+    iconRenderer.loadIcon("eraser", ":/icons/icons/eraser.svg");
+    iconRenderer.loadIcon("step-badge", ":/icons/icons/step-badge.svg");
+    iconRenderer.loadIcon("text", ":/icons/icons/text.svg");
     iconRenderer.loadIcon("laser-pointer", ":/icons/icons/laser-pointer.svg");
     iconRenderer.loadIcon("cursor-highlight", ":/icons/icons/cursor-highlight.svg");
+    iconRenderer.loadIcon("spotlight", ":/icons/icons/spotlight.svg");
     iconRenderer.loadIcon("undo", ":/icons/icons/undo.svg");
     iconRenderer.loadIcon("redo", ":/icons/icons/redo.svg");
     iconRenderer.loadIcon("cancel", ":/icons/icons/cancel.svg");
@@ -171,8 +241,12 @@ void ScreenCanvas::setupToolbar()
         {static_cast<int>(CanvasButton::Marker), "marker", "Marker"},
         {static_cast<int>(CanvasButton::Arrow), "arrow", "Arrow"},
         {static_cast<int>(CanvasButton::Shape), "shape", "Shape"},
+        {static_cast<int>(CanvasButton::Mosaic), "mosaic", "Mosaic"},
+        {static_cast<int>(CanvasButton::StepBadge), "step-badge", "Step Badge"},
+        {static_cast<int>(CanvasButton::Text), "text", "Text"},
         {static_cast<int>(CanvasButton::LaserPointer), "laser-pointer", "Laser Pointer"},
         ToolbarWidget::ButtonConfig(static_cast<int>(CanvasButton::CursorHighlight), "cursor-highlight", "Cursor Highlight (Toggle)").separator(),
+        {static_cast<int>(CanvasButton::Spotlight), "spotlight", "Spotlight (Toggle)"},
         ToolbarWidget::ButtonConfig(static_cast<int>(CanvasButton::Undo), "undo", "Undo (Ctrl+Z)").separator(),
         {static_cast<int>(CanvasButton::Redo), "redo", "Redo (Ctrl+Y)"},
         {static_cast<int>(CanvasButton::Clear), "cancel", "Clear All"},
@@ -186,8 +260,12 @@ void ScreenCanvas::setupToolbar()
         static_cast<int>(CanvasButton::Marker),
         static_cast<int>(CanvasButton::Arrow),
         static_cast<int>(CanvasButton::Shape),
+        static_cast<int>(CanvasButton::Mosaic),
+        static_cast<int>(CanvasButton::StepBadge),
+        static_cast<int>(CanvasButton::Text),
         static_cast<int>(CanvasButton::LaserPointer),
-        static_cast<int>(CanvasButton::CursorHighlight)
+        static_cast<int>(CanvasButton::CursorHighlight),
+        static_cast<int>(CanvasButton::Spotlight)
     };
     m_toolbar->setActiveButtonIds(activeButtonIds);
 
@@ -206,7 +284,8 @@ QColor ScreenCanvas::getButtonIconColor(int buttonId) const
     ToolId buttonToolId = canvasButtonToToolId(button);
 
     bool isButtonActive = (buttonToolId == m_currentToolId) && isDrawingTool(buttonToolId) && m_showSubToolbar;
-    bool isToggleActive = (button == CanvasButton::CursorHighlight) && m_rippleRenderer->isEnabled();
+    bool isToggleActive = ((button == CanvasButton::CursorHighlight) && m_rippleRenderer->isEnabled()) ||
+                          ((button == CanvasButton::Spotlight) && m_spotlightEffect->isEnabled());
 
     if (button == CanvasButton::Exit) {
         return m_toolbarStyleConfig.iconCancelColor;
@@ -233,8 +312,12 @@ QString ScreenCanvas::getIconKeyForButton(CanvasButton button) const
     case CanvasButton::Marker:          return "marker";
     case CanvasButton::Arrow:           return "arrow";
     case CanvasButton::Shape:           return "shape";
+    case CanvasButton::Mosaic:          return "mosaic";
+    case CanvasButton::StepBadge:       return "step-badge";
+    case CanvasButton::Text:            return "text";
     case CanvasButton::LaserPointer:    return "laser-pointer";
     case CanvasButton::CursorHighlight: return "cursor-highlight";
+    case CanvasButton::Spotlight:       return "spotlight";
     case CanvasButton::Undo:            return "undo";
     case CanvasButton::Redo:            return "redo";
     case CanvasButton::Clear:           return "cancel";
@@ -325,6 +408,10 @@ void ScreenCanvas::initializeForScreen(QScreen* screen)
     // Capture the screen
     m_backgroundPixmap = m_currentScreen->grabWindow(0);
 
+    // Update tool manager with background pixmap for mosaic tool
+    m_toolManager->setSourcePixmap(&m_backgroundPixmap);
+    m_toolManager->setDevicePixelRatio(m_devicePixelRatio);
+
     qDebug() << "ScreenCanvas: Initialized for screen" << m_currentScreen->name()
         << "logical size:" << m_currentScreen->geometry().size()
         << "pixmap size:" << m_backgroundPixmap.size()
@@ -358,6 +445,11 @@ void ScreenCanvas::paintEvent(QPaintEvent*)
     // Draw click ripple effects
     m_rippleRenderer->draw(painter);
 
+    // Draw spotlight effect
+    if (m_spotlightEffect->isEnabled()) {
+        m_spotlightEffect->render(painter, rect());
+    }
+
     // Update toolbar position only when not dragging (dragging sets position directly)
     if (!m_isDraggingToolbar) {
         updateToolbarPosition();
@@ -372,6 +464,9 @@ void ScreenCanvas::paintEvent(QPaintEvent*)
         case ToolId::Marker: activeButtonId = static_cast<int>(CanvasButton::Marker); break;
         case ToolId::Arrow: activeButtonId = static_cast<int>(CanvasButton::Arrow); break;
         case ToolId::Shape: activeButtonId = static_cast<int>(CanvasButton::Shape); break;
+        case ToolId::Mosaic: activeButtonId = static_cast<int>(CanvasButton::Mosaic); break;
+        case ToolId::StepBadge: activeButtonId = static_cast<int>(CanvasButton::StepBadge); break;
+        case ToolId::Text: activeButtonId = static_cast<int>(CanvasButton::Text); break;
         case ToolId::LaserPointer: activeButtonId = static_cast<int>(CanvasButton::LaserPointer); break;
         default: activeButtonId = -1; break;
         }
@@ -379,6 +474,10 @@ void ScreenCanvas::paintEvent(QPaintEvent*)
     // Handle CursorHighlight toggle separately
     if (m_rippleRenderer->isEnabled()) {
         activeButtonId = static_cast<int>(CanvasButton::CursorHighlight);
+    }
+    // Handle Spotlight toggle separately
+    if (m_spotlightEffect->isEnabled()) {
+        activeButtonId = static_cast<int>(CanvasButton::Spotlight);
     }
     m_toolbar->setActiveButton(activeButtonId);
     m_toolbar->draw(painter);
@@ -394,6 +493,15 @@ void ScreenCanvas::paintEvent(QPaintEvent*)
         bool showLineStyle = (m_currentToolId == ToolId::Pencil ||
                               m_currentToolId == ToolId::Arrow);
         m_colorAndWidthWidget->setShowLineStyleSection(showLineStyle);
+        // Show shape section for Shape tool
+        m_colorAndWidthWidget->setShowShapeSection(m_currentToolId == ToolId::Shape);
+        // Show mosaic blur type section for Mosaic tool (hide color for Mosaic)
+        m_colorAndWidthWidget->setShowMosaicBlurTypeSection(m_currentToolId == ToolId::Mosaic);
+        m_colorAndWidthWidget->setShowColorSection(m_currentToolId != ToolId::Mosaic);
+        // Show size section for StepBadge (replaces width section)
+        m_colorAndWidthWidget->setShowSizeSection(m_currentToolId == ToolId::StepBadge);
+        // Show text section for Text tool
+        m_colorAndWidthWidget->setShowTextSection(m_currentToolId == ToolId::Text);
         m_colorAndWidthWidget->updatePosition(toolbarRect, true, width());
         m_colorAndWidthWidget->draw(painter);
     }
@@ -450,6 +558,8 @@ void ScreenCanvas::handleToolbarClick(CanvasButton button)
     case CanvasButton::Marker:
     case CanvasButton::Arrow:
     case CanvasButton::Shape:
+    case CanvasButton::Mosaic:
+    case CanvasButton::Text:
         if (m_currentToolId == toolId) {
             // Same tool clicked - toggle sub-toolbar visibility
             m_showSubToolbar = !m_showSubToolbar;
@@ -460,6 +570,22 @@ void ScreenCanvas::handleToolbarClick(CanvasButton button)
             m_showSubToolbar = true;
         }
         qDebug() << "ScreenCanvas: Tool selected:" << static_cast<int>(toolId) << "showSubToolbar:" << m_showSubToolbar;
+        update();
+        break;
+
+    case CanvasButton::StepBadge:
+        if (m_currentToolId == toolId) {
+            // Same tool clicked - toggle sub-toolbar visibility
+            m_showSubToolbar = !m_showSubToolbar;
+        } else {
+            // Different tool - select it and show sub-toolbar
+            m_currentToolId = toolId;
+            m_toolManager->setCurrentTool(toolId);
+            // Set width to badge radius (StepBadgeToolHandler uses ctx->width for radius)
+            m_toolManager->setWidth(StepBadgeAnnotation::radiusForSize(m_stepBadgeSize));
+            m_showSubToolbar = true;
+        }
+        qDebug() << "ScreenCanvas: StepBadge selected, showSubToolbar:" << m_showSubToolbar;
         update();
         break;
 
@@ -484,6 +610,13 @@ void ScreenCanvas::handleToolbarClick(CanvasButton button)
         // Toggle cursor highlight (not a drawing tool)
         m_rippleRenderer->setEnabled(!m_rippleRenderer->isEnabled());
         qDebug() << "ScreenCanvas: Cursor Highlight" << (m_rippleRenderer->isEnabled() ? "enabled" : "disabled");
+        update();
+        break;
+
+    case CanvasButton::Spotlight:
+        // Toggle spotlight effect (not a drawing tool)
+        m_spotlightEffect->setEnabled(!m_spotlightEffect->isEnabled());
+        qDebug() << "ScreenCanvas: Spotlight" << (m_spotlightEffect->isEnabled() ? "enabled" : "disabled");
         update();
         break;
 
@@ -527,7 +660,8 @@ bool ScreenCanvas::isDrawingTool(ToolId toolId) const
     case ToolId::Shape:
     case ToolId::LaserPointer:
     case ToolId::Mosaic:
-    case ToolId::Eraser:
+    case ToolId::StepBadge:
+    case ToolId::Text:
         return true;
     default:
         return false;
@@ -598,6 +732,12 @@ void ScreenCanvas::mousePressEvent(QMouseEvent* event)
             return;
         }
 
+        // Handle text tool - start text editing
+        if (m_currentToolId == ToolId::Text) {
+            m_textAnnotationEditor->startEditing(event->pos(), rect(), m_toolManager->color());
+            return;
+        }
+
         // Start annotation drawing
         if (isDrawingTool(m_currentToolId)) {
             m_toolManager->handleMousePress(event->pos());
@@ -618,6 +758,11 @@ void ScreenCanvas::mouseMoveEvent(QMouseEvent* event)
     // Track cursor position for cursor dot
     QPoint oldCursorPos = m_cursorPos;
     m_cursorPos = event->pos();
+
+    // Update spotlight cursor position
+    if (m_spotlightEffect->isEnabled()) {
+        m_spotlightEffect->updateCursorPosition(event->pos());
+    }
 
     // Handle toolbar drag
     if (m_isDraggingToolbar) {
@@ -694,7 +839,7 @@ void ScreenCanvas::mouseMoveEvent(QMouseEvent* event)
         else if (widgetHovered) {
             setCursor(Qt::PointingHandCursor);
         }
-        else if (m_currentToolId == ToolId::Mosaic || m_currentToolId == ToolId::Eraser) {
+        else if (m_currentToolId == ToolId::Mosaic) {
             setCursor(Qt::BlankCursor);
         }
         else {
@@ -710,7 +855,7 @@ void ScreenCanvas::mouseMoveEvent(QMouseEvent* event)
     // Cursor dot is 6px diameter, use 10px margin for safety
     if (m_cursorPos != oldCursorPos) {
         int cursorMargin = 10;
-        if (m_currentToolId == ToolId::Mosaic || m_currentToolId == ToolId::Eraser) {
+        if (m_currentToolId == ToolId::Mosaic) {
             cursorMargin = qMax(10, m_toolManager->width() / 2 + 5);
         }
 
@@ -750,7 +895,8 @@ void ScreenCanvas::mouseReleaseEvent(QMouseEvent* event)
         }
 
         // Finish drawing annotation
-        if (m_toolManager->isDrawing()) {
+        // StepBadge places on release but isDrawing() returns false, so handle it specially
+        if (m_toolManager->isDrawing() || m_currentToolId == ToolId::StepBadge) {
             m_toolManager->handleMouseRelease(event->pos());
             update();
         }
@@ -804,24 +950,37 @@ void ScreenCanvas::keyPressEvent(QKeyEvent* event)
 
 void ScreenCanvas::drawCursorDot(QPainter& painter)
 {
-    bool isMosaicOrEraser = (m_currentToolId == ToolId::Mosaic || m_currentToolId == ToolId::Eraser);
+    bool isMosaic = (m_currentToolId == ToolId::Mosaic);
 
-    // Don't show when drawing (unless it's Mosaic/Eraser), on toolbar, or on widgets
-    if (m_toolManager->isDrawing() && !isMosaicOrEraser) return;
+    // Don't show when drawing (unless it's Mosaic), on toolbar, or on widgets
+    if (m_toolManager->isDrawing() && !isMosaic) return;
     if (m_laserRenderer->isDrawing()) return;
     if (m_toolbar->contains(m_cursorPos)) return;
     if (m_toolbar->hoveredButton() >= 0) return;
     if (shouldShowColorAndWidthWidget() && m_colorAndWidthWidget->contains(m_cursorPos)) return;
 
-    if (isMosaicOrEraser) {
-        // Draw rounded square for Mosaic/Eraser
+    if (isMosaic) {
+        // Draw rounded square for Mosaic (matching RegionSelector style)
         int size = m_toolManager->width();
         QRect rect(0, 0, size, size);
         rect.moveCenter(m_cursorPos);
 
-        painter.setPen(QPen(Qt::black, 1)); // Black outline
-        painter.setBrush(Qt::NoBrush);      // Transparent fill
-        painter.drawRoundedRect(rect, 2, 2); // Slight rounding
+        painter.setRenderHint(QPainter::Antialiasing, true);
+
+        // Draw semi-transparent fill
+        painter.setBrush(QColor(255, 255, 255, 60));
+        painter.setPen(Qt::NoPen);
+        painter.drawRoundedRect(rect, 2, 2);
+
+        // Draw light gray/white border for better visibility
+        painter.setPen(QPen(QColor(220, 220, 220), 1.5, Qt::SolidLine));
+        painter.setBrush(Qt::NoBrush);
+        painter.drawRoundedRect(rect, 2, 2);
+
+        // Draw darker inner outline for contrast on light backgrounds
+        painter.setPen(QPen(QColor(100, 100, 100, 180), 0.5, Qt::SolidLine));
+        QRect innerRect = rect.adjusted(1, 1, -1, -1);
+        painter.drawRoundedRect(innerRect, 1, 1);
     }
     else {
         // Draw a dot following the current tool color
@@ -875,4 +1034,9 @@ void ScreenCanvas::onLineStyleChanged(LineStyle style)
     m_toolManager->setLineStyle(style);
     saveLineStyle(style);
     update();
+}
+
+void ScreenCanvas::onTextEditingFinished(const QString& text, const QPoint& position)
+{
+    m_textAnnotationEditor->finishEditing(text, position, m_toolManager->color());
 }

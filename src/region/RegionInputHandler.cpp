@@ -919,7 +919,10 @@ void RegionInputHandler::startAnnotation(const QPoint& pos)
 {
     if (isToolManagerHandledTool(m_currentTool)) {
         m_toolManager->setColor(m_annotationColor);
-        m_toolManager->setWidth(m_annotationWidth);
+        // Don't overwrite width for StepBadge - it uses a separate radius setting
+        if (m_currentTool != ToolbarButton::StepBadge) {
+            m_toolManager->setWidth(m_annotationWidth);
+        }
         m_toolManager->setArrowStyle(static_cast<LineEndStyle>(m_arrowStyle));
         m_toolManager->setLineStyle(static_cast<LineStyle>(m_lineStyle));
         m_toolManager->setShapeType(m_shapeType);

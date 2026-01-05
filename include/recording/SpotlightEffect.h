@@ -22,8 +22,8 @@ class SpotlightEffect : public QObject
 
 public:
     enum class Mode {
-        FollowCursor   // Circular spotlight follows cursor
-        // FixedRegion mode deferred for future implementation
+        FollowCursor,   // Circular spotlight follows cursor
+        FixedPosition   // Spotlight stays at a fixed position
     };
 
     explicit SpotlightEffect(QObject *parent = nullptr);
@@ -52,6 +52,26 @@ public:
     void updateCursorPosition(const QPoint &localPos);
 
     /**
+     * @brief Set a fixed position for the spotlight (FixedPosition mode).
+     */
+    void setFixedPosition(const QPoint &pos);
+
+    /**
+     * @brief Get the fixed position.
+     */
+    QPoint fixedPosition() const { return m_fixedPos.toPoint(); }
+
+    /**
+     * @brief Check if a fixed position has been set.
+     */
+    bool hasFixedPosition() const { return m_hasFixedPosition; }
+
+    /**
+     * @brief Clear the fixed position.
+     */
+    void clearFixedPosition();
+
+    /**
      * @brief Render the spotlight effect.
      * @param painter Painter to draw with
      * @param recordingRegion Recording area bounds (in local coordinates)
@@ -78,6 +98,10 @@ private:
     QPointF m_cursorPos;
     QPointF m_smoothCursorPos;
     bool m_hasPosition = false;
+
+    // FixedPosition settings
+    QPointF m_fixedPos;
+    bool m_hasFixedPosition = false;
 
     // Common settings
     qreal m_dimOpacity = 0.6;

@@ -25,6 +25,7 @@ enum class ToolId {
     // Toggle tools (affect canvas behavior)
     LaserPointer,
     CursorHighlight,
+    Spotlight,
 
     // Actions (one-shot operations)
     Undo,

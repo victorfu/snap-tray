@@ -85,6 +85,25 @@ void SpotlightEffect::updateCursorPosition(const QPoint &localPos)
     emit needsRepaint();
 }
 
+void SpotlightEffect::setFixedPosition(const QPoint &pos)
+{
+    m_fixedPos = pos;
+    m_hasFixedPosition = true;
+    m_mode = Mode::FixedPosition;
+
+    // Stop the update timer since we don't need smoothing for fixed position
+    m_updateTimer->stop();
+
+    emit needsRepaint();
+}
+
+void SpotlightEffect::clearFixedPosition()
+{
+    m_hasFixedPosition = false;
+    m_fixedPos = QPointF();
+    emit needsRepaint();
+}
+
 void SpotlightEffect::onUpdateTimer()
 {
     if (!m_enabled || !m_hasPosition || m_mode != Mode::FollowCursor) {
@@ -104,9 +123,25 @@ void SpotlightEffect::onUpdateTimer()
 
 void SpotlightEffect::render(QPainter &painter, const QRect &recordingRegion) const
 {
-    if (!m_enabled || !m_hasPosition) {
+    if (!m_enabled) {
         return;
     }
+
+    // Determine the spotlight center based on mode
+    QPointF spotCenter;
+    bool hasPosition = false;
+
+    if (m_mode == Mode::FixedPosition) {
+        if (!m_hasFixedPosition) return;
+        spotCenter = m_fixedPos;
+        hasPosition = true;
+    } else {
+        if (!m_hasPosition) return;
+        spotCenter = m_smoothCursorPos;
+        hasPosition = true;
+    }
+
+    if (!hasPosition) return;
 
     painter.save();
     painter.setRenderHint(QPainter::Antialiasing);
@@ -115,11 +150,9 @@ void SpotlightEffect::render(QPainter &painter, const QRect &recordingRegion) co
     QPainterPath fullPath;
     fullPath.addRect(recordingRegion);
 
-    // Create the spotlight path based on mode
+    // Create the spotlight path
     QPainterPath spotPath;
-    if (m_mode == Mode::FollowCursor) {
-        spotPath.addEllipse(m_smoothCursorPos, m_followRadius, m_followRadius);
-    }
+    spotPath.addEllipse(spotCenter, m_followRadius, m_followRadius);
 
     // Calculate dimmed area = full region - spotlight
     QPainterPath dimPath = fullPath.subtracted(spotPath);
@@ -131,11 +164,11 @@ void SpotlightEffect::render(QPainter &painter, const QRect &recordingRegion) co
     painter.drawPath(dimPath);
 
     // Draw feathered edge around spotlight for smooth transition
-    if (m_featherRadius > 0 && m_mode == Mode::FollowCursor) {
+    if (m_featherRadius > 0) {
         // Create a gradient ring around the spotlight edge
         int outerRadius = m_followRadius + m_featherRadius;
 
-        QRadialGradient gradient(m_smoothCursorPos, outerRadius);
+        QRadialGradient gradient(spotCenter, outerRadius);
 
         // Inside the spotlight - transparent
         qreal innerStop = static_cast<qreal>(m_followRadius) / outerRadius;
@@ -147,9 +180,9 @@ void SpotlightEffect::render(QPainter &painter, const QRect &recordingRegion) co
 
         // Create ring path (outer circle minus inner circle)
         QPainterPath ringPath;
-        ringPath.addEllipse(m_smoothCursorPos, outerRadius, outerRadius);
+        ringPath.addEllipse(spotCenter, outerRadius, outerRadius);
         QPainterPath innerPath;
-        innerPath.addEllipse(m_smoothCursorPos, m_followRadius, m_followRadius);
+        innerPath.addEllipse(spotCenter, m_followRadius, m_followRadius);
         ringPath = ringPath.subtracted(innerPath);
 
         // Also subtract anything outside the recording region
@@ -164,5 +197,7 @@ void SpotlightEffect::render(QPainter &painter, const QRect &recordingRegion) co
 
 bool SpotlightEffect::hasVisibleContent() const
 {
-    return m_enabled && m_hasPosition;
+    if (!m_enabled) return false;
+    if (m_mode == Mode::FixedPosition) return m_hasFixedPosition;
+    return m_hasPosition;
 }

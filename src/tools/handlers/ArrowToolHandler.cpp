@@ -65,7 +65,7 @@ void ArrowToolHandler::onMouseMove(ToolContext* ctx, const QPoint& pos) {
     if (diff.manhattanLength() > 3) {
         m_hasDragged = true;
 
-        // Create or update arrow
+        // Create or update straight arrow
         if (!m_currentArrow) {
             m_currentArrow = std::make_unique<ArrowAnnotation>(
                 m_startPoint, pos, ctx->color, ctx->width, ctx->arrowStyle, ctx->lineStyle
@@ -89,12 +89,10 @@ void ArrowToolHandler::onMouseRelease(ToolContext* ctx, const QPoint& pos) {
 
     if (m_hasDragged) {
         // This was a drag - finalize the arrow
-        if (m_currentArrow) {
-            m_currentArrow->setEnd(pos);
-
-            // Only add if the arrow has some length
-            QPoint diff = pos - m_startPoint;
-            if (diff.manhattanLength() > 5) {
+        QPoint diff = pos - m_startPoint;
+        if (diff.manhattanLength() > 5) {
+            if (m_currentArrow) {
+                m_currentArrow->setEnd(pos);
                 ctx->addItem(std::move(m_currentArrow));
             }
         }

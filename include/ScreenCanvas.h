@@ -10,6 +10,13 @@
 #include "annotations/AnnotationLayer.h"
 #include "annotations/ArrowAnnotation.h"
 #include "annotations/LineStyle.h"
+#include "annotations/ShapeAnnotation.h"
+#include "annotations/MosaicStroke.h"
+#include "annotations/StepBadgeAnnotation.h"
+#include "ui/sections/MosaicBlurTypeSection.h"
+#include "InlineTextEditor.h"
+#include "region/TextAnnotationEditor.h"
+#include "recording/SpotlightEffect.h"
 #include "tools/ToolId.h"
 #include "ToolbarStyle.h"
 
@@ -30,8 +37,12 @@ enum class CanvasButton {
     Marker,
     Arrow,
     Shape,          // Unified Rectangle/Ellipse
+    Mosaic,
+    StepBadge,
+    Text,
     LaserPointer,
     CursorHighlight,
+    Spotlight,
     Undo,
     Redo,
     Clear,
@@ -46,8 +57,12 @@ inline ToolId canvasButtonToToolId(CanvasButton btn) {
     case CanvasButton::Marker:       return ToolId::Marker;
     case CanvasButton::Arrow:        return ToolId::Arrow;
     case CanvasButton::Shape:        return ToolId::Shape;
+    case CanvasButton::Mosaic:       return ToolId::Mosaic;
+    case CanvasButton::StepBadge:    return ToolId::StepBadge;
+    case CanvasButton::Text:         return ToolId::Text;
     case CanvasButton::LaserPointer: return ToolId::LaserPointer;
     case CanvasButton::CursorHighlight: return ToolId::CursorHighlight;
+    case CanvasButton::Spotlight:    return ToolId::Spotlight;
     case CanvasButton::Undo:         return ToolId::Undo;
     case CanvasButton::Redo:         return ToolId::Redo;
     case CanvasButton::Clear:        return ToolId::Clear;
@@ -115,6 +130,9 @@ private:
     void saveLineStyle(LineStyle style);
     void onLineStyleChanged(LineStyle style);
 
+    // Text editing handlers
+    void onTextEditingFinished(const QString &text, const QPoint &position);
+
     // Screen capture
     QPixmap m_backgroundPixmap;
     QScreen *m_currentScreen;
@@ -151,6 +169,23 @@ private:
 
     // Toolbar style configuration
     ToolbarStyleConfig m_toolbarStyleConfig;
+
+    // Shape tool state
+    ShapeType m_shapeType = ShapeType::Rectangle;
+    ShapeFillMode m_shapeFillMode = ShapeFillMode::Outline;
+
+    // Mosaic tool state
+    MosaicBlurTypeSection::BlurType m_mosaicBlurType = MosaicBlurTypeSection::BlurType::Pixelate;
+
+    // StepBadge tool state
+    StepBadgeSize m_stepBadgeSize = StepBadgeSize::Medium;
+
+    // Text editing components
+    InlineTextEditor *m_textEditor;
+    TextAnnotationEditor *m_textAnnotationEditor;
+
+    // Spotlight effect
+    SpotlightEffect *m_spotlightEffect;
 };
 
 #endif // SCREENCANVAS_H
