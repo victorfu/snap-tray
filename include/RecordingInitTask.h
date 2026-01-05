@@ -6,6 +6,8 @@
 #include <QSize>
 #include <QString>
 #include <QAtomicInt>
+#include <QList>
+#include <qwindowdefs.h>
 
 class QScreen;
 class ICaptureEngine;
@@ -43,6 +45,7 @@ public:
         bool useGif = false;
         QSize frameSize;
         int quality = 55;
+        QList<WId> excludedWindowIds;  // Windows to exclude from capture (e.g., recording UI)
     };
 
     /**

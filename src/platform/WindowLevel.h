@@ -23,4 +23,9 @@ void setWindowFloatingWithoutFocus(QWidget *widget);
 // On Windows: No-op (Windows uses our custom-drawn shadow)
 void setWindowShadow(QWidget *widget, bool enabled);
 
+// Excludes a window from screen capture
+// On Windows: Uses SetWindowDisplayAffinity with WDA_EXCLUDEFROMCAPTURE (Windows 10 2004+)
+// On macOS: No-op (use ScreenCaptureKit's excludingWindows instead)
+void setWindowExcludedFromCapture(QWidget *widget, bool excluded);
+
 #endif // WINDOWLEVEL_H

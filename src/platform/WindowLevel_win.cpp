@@ -59,3 +59,26 @@ void setWindowShadow(QWidget *, bool)
 {
     // Windows uses our custom-drawn shadow, not system shadow
 }
+
+void setWindowExcludedFromCapture(QWidget *widget, bool excluded)
+{
+#ifdef Q_OS_WIN
+    if (!widget) {
+        return;
+    }
+    HWND hwnd = reinterpret_cast<HWND>(widget->winId());
+    if (hwnd) {
+        // WDA_EXCLUDEFROMCAPTURE = 0x00000011, available on Windows 10 version 2004+
+        // This makes the window invisible to screen capture APIs (including DXGI)
+        constexpr DWORD WDA_EXCLUDEFROMCAPTURE_VALUE = 0x00000011;
+        DWORD affinity = excluded ? WDA_EXCLUDEFROMCAPTURE_VALUE : WDA_NONE;
+        if (!SetWindowDisplayAffinity(hwnd, affinity)) {
+            // May fail on older Windows versions - this is expected
+            // The window will still be visible in captures on older systems
+        }
+    }
+#else
+    Q_UNUSED(widget)
+    Q_UNUSED(excluded)
+#endif
+}

@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QRect>
 #include <QImage>
+#include <QList>
 
 class QScreen;
 
@@ -37,6 +38,16 @@ public:
      * @param fps Frames per second (used by engines with async delivery)
      */
     virtual void setFrameRate(int fps) { m_frameRate = fps; }
+
+    /**
+     * @brief Set windows to exclude from capture
+     * @param windowIds List of native window IDs (WId) to exclude
+     *
+     * On macOS with ScreenCaptureKit, these windows are passed to
+     * SCContentFilter's excludingWindows parameter.
+     * On Windows, this is a no-op (use setWindowExcludedFromCapture instead).
+     */
+    virtual void setExcludedWindows(const QList<WId> &windowIds) { Q_UNUSED(windowIds); }
 
     /**
      * @brief Initialize and start the capture engine

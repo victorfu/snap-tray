@@ -151,6 +151,12 @@ bool RecordingInitTask::initializeCaptureEngine()
 
     m_result.captureEngine->setFrameRate(m_config.frameRate);
 
+    // Set windows to exclude from capture (e.g., recording UI overlays)
+    if (!m_config.excludedWindowIds.isEmpty()) {
+        qDebug() << "RecordingInitTask: Setting" << m_config.excludedWindowIds.size() << "excluded windows";
+        m_result.captureEngine->setExcludedWindows(m_config.excludedWindowIds);
+    }
+
     qDebug() << "RecordingInitTask: Starting capture engine...";
     if (!m_result.captureEngine->start()) {
         m_result.error = "Failed to start capture engine";

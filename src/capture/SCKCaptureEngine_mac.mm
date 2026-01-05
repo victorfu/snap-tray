@@ -56,6 +56,9 @@ public:
     std::atomic<bool> running{false};
     bool useScreenCaptureKit = false;
 
+    // Windows to exclude from capture (stored as CGWindowID)
+    QList<CGWindowID> excludedWindowIds;
+
     // Latest captured frame (for async delivery)
     QImage latestFrame;
     std::mutex frameMutex;
@@ -286,6 +289,23 @@ void SCKCaptureEngine::setFrameRate(int fps)
     d->frameRate = fps;
 }
 
+void SCKCaptureEngine::setExcludedWindows(const QList<WId> &windowIds)
+{
+    d->excludedWindowIds.clear();
+    for (WId wid : windowIds) {
+        // Convert Qt WId (NSView*) to CGWindowID
+        NSView *view = reinterpret_cast<NSView *>(wid);
+        if (view) {
+            NSWindow *window = [view window];
+            if (window) {
+                CGWindowID windowId = static_cast<CGWindowID>([window windowNumber]);
+                d->excludedWindowIds.append(windowId);
+                qDebug() << "SCKCaptureEngine: Added excluded window ID:" << windowId;
+            }
+        }
+    }
+}
+
 bool SCKCaptureEngine::start()
 {
     qDebug() << "SCKCaptureEngine::start() - BEGIN";
@@ -406,10 +426,26 @@ bool SCKCaptureEngine::start()
             }
 
             qDebug() << "SCKCaptureEngine::start() - Creating content filter...";
-            // Create content filter for the display
+
+            // Build list of windows to exclude from capture
+            NSMutableArray<SCWindow *> *excludedWindows = [NSMutableArray array];
+            if (!d->excludedWindowIds.isEmpty()) {
+                qDebug() << "SCKCaptureEngine::start() - Looking for" << d->excludedWindowIds.size() << "windows to exclude";
+                for (SCWindow *window in content.windows) {
+                    CGWindowID windowId = window.windowID;
+                    if (d->excludedWindowIds.contains(windowId)) {
+                        [excludedWindows addObject:window];
+                        qDebug() << "SCKCaptureEngine::start() - Excluding window ID:" << windowId
+                                 << "title:" << QString::fromNSString(window.title);
+                    }
+                }
+                qDebug() << "SCKCaptureEngine::start() - Found" << excludedWindows.count << "windows to exclude";
+            }
+
+            // Create content filter for the display, excluding our UI windows
             SCContentFilter *filter = [[SCContentFilter alloc]
                 initWithDisplay:d->targetDisplay
-                excludingWindows:@[]];
+                excludingWindows:excludedWindows];
             qDebug() << "SCKCaptureEngine::start() - Content filter created:" << (filter ? "valid" : "nil");
 
             // Get device pixel ratio for output scaling

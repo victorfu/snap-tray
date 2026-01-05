@@ -31,6 +31,7 @@ public:
 
     bool setRegion(const QRect &region, QScreen *screen) override;
     void setFrameRate(int fps) override;
+    void setExcludedWindows(const QList<WId> &windowIds) override;
     bool start() override;
     void stop() override;
     bool isRunning() const override;

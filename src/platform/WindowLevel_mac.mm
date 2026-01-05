@@ -72,3 +72,8 @@ void setWindowShadow(QWidget *widget, bool enabled)
         [window setHasShadow:enabled];
     }
 }
+
+void setWindowExcludedFromCapture(QWidget *, bool)
+{
+    // No-op on macOS - use ScreenCaptureKit's excludingWindows parameter instead
+}

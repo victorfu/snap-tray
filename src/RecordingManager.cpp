@@ -475,6 +475,22 @@ void RecordingManager::beginAsyncInitialization()
     config.frameSize = physicalSize;
     config.quality = settings.value("recording/quality", 55).toInt();
 
+    // Collect UI window IDs to exclude from capture
+    // These are set after show() to ensure Qt has created the native window
+    if (m_boundaryOverlay) {
+        config.excludedWindowIds.append(m_boundaryOverlay->winId());
+        setWindowExcludedFromCapture(m_boundaryOverlay, true);
+    }
+    if (m_controlBar) {
+        config.excludedWindowIds.append(m_controlBar->winId());
+        setWindowExcludedFromCapture(m_controlBar, true);
+    }
+    if (m_annotationOverlay) {
+        config.excludedWindowIds.append(m_annotationOverlay->winId());
+        setWindowExcludedFromCapture(m_annotationOverlay, true);
+    }
+    qDebug() << "RecordingManager: Excluding" << config.excludedWindowIds.size() << "windows from capture";
+
     qDebug() << "RecordingManager: Config - region:" << config.region
              << "frameSize:" << config.frameSize
              << "frameRate:" << config.frameRate
