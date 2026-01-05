@@ -173,6 +173,7 @@ void AnnotationLayer::draw(QPainter &painter) const
 
     QPainter layerPainter(&layer);
     layerPainter.setRenderHints(painter.renderHints(), true);
+    layerPainter.setTransform(painter.transform());
 
     for (const auto &item : m_items) {
         if (item->isVisible()) {
@@ -181,7 +182,12 @@ void AnnotationLayer::draw(QPainter &painter) const
     }
 
     layerPainter.end();
+
+    // Save transform, reset it to draw layer at correct position, then restore
+    QTransform savedTransform = painter.transform();
+    painter.resetTransform();
     painter.drawImage(QPoint(0, 0), layer);
+    painter.setTransform(savedTransform);
 }
 
 bool AnnotationLayer::canUndo() const
