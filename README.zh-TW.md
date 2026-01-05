@@ -25,7 +25,9 @@ SnapTray 是一個在系統托盤常駐的截圖與錄影小工具，提供區�
   - `Copy` 複製 (Ctrl+C / macOS 為 Cmd+C)
   - `Cancel` 取消 (Esc)
   - `OCR` 文字辨識（macOS/Windows，支援繁體中文、簡體中文、英文）
+  - `Auto Blur` 自動偵測並模糊臉孔/文字
   - `Record` 螢幕錄影（`R`）使用選取區域
+  - `Scroll Capture` 長頁面/捲動截圖，擷取延伸內容
   - 顏色/線寬控制（支援的工具）
   - 文字工具格式控制（字型/大小、粗體/斜體/底線）
 - **螢幕畫布**：
@@ -51,10 +53,12 @@ SnapTray 是一個在系統托盤常駐的截圖與錄影小工具，提供區�
   - 雙擊或 Esc 關閉
   - 右鍵選單：複製/存檔/OCR/浮水印/Click-through/關閉
 - **設定對話框**：
-  - General 分頁：開機自動啟動
+  - General 分頁：開機自動啟動、工具列樣式（深色/淺色）、釘選視窗透明度/縮放設定
   - Hotkeys 分頁：區域截圖與螢幕畫布分別設定熱鍵
-  - Watermark 分頁：文字/圖片浮水印、透明度、位置、縮放
-  - Recording 分頁：幀率、輸出格式、儲存位置、自動儲存、音訊（啟用/來源/裝置）
+  - Watermark 分頁：圖片浮水印、透明度、位置、縮放
+  - Recording 分頁：幀率、輸出格式、品質、倒數計時、點擊高亮、音訊（啟用/來源/裝置）
+  - Files 分頁：截圖/錄影儲存路徑、檔名格式
+  - About 分頁：版本資訊
   - 設定儲存於系統設定 (QSettings)
 
 ## 技術棧
@@ -381,20 +385,29 @@ snap-tray/
 | `UpdateThrottler` | `src/region/` | 事件節流邏輯 |
 | `TextAnnotationEditor` | `src/region/` | 文字註釋編輯/變換/格式化 |
 | `SelectionStateManager` | `src/region/` | 選取狀態與操作管理 |
+| `RadiusSliderWidget` | `src/region/` | 工具半徑滑桿控制 |
 | `AnnotationSettingsManager` | `src/settings/` | 集中式註釋設定管理 |
+| `FileSettingsManager` | `src/settings/` | 檔案路徑設定 |
+| `PinWindowSettingsManager` | `src/settings/` | 釘選視窗設定 |
 | `ImageTransformer` | `src/pinwindow/` | 圖片旋轉/翻轉/縮放 |
 | `ResizeHandler` | `src/pinwindow/` | 視窗邊緣調整大小 |
 | `UIIndicators` | `src/pinwindow/` | 縮放/透明度/穿透指示器 |
+| `ClickThroughExitButton` | `src/pinwindow/` | 穿透模式離開按鈕 |
 | Section 類別 | `src/ui/sections/` | ColorAndWidthWidget 子組件 |
 
 ### 測試覆蓋率
 
 | 組件 | 測試數量 |
 |------|----------|
-| ColorAndWidthWidget | 87 |
-| PinWindow | 49 |
-| RegionSelector | 74 |
-| **總計** | **210** |
+| ColorAndWidthWidget | 113 |
+| RegionSelector | 108 |
+| RecordingManager | 58 |
+| Encoding | 43 |
+| Detection | 42 |
+| PinWindow | 24 |
+| Audio | 23 |
+| Scrolling | 22 |
+| **總計** | **433** |
 
 ## 自訂應用程式圖示
 

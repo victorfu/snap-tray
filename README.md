@@ -25,7 +25,9 @@ SnapTray is a lightweight tray utility for region screenshots, on-screen annotat
   - `Copy` to clipboard (Ctrl+C / Cmd+C on macOS)
   - `Cancel` (Esc)
   - `OCR` text recognition (macOS/Windows, supports Traditional Chinese, Simplified Chinese, English)
+  - `Auto Blur` auto-detect and blur faces/text in the selection
   - `Record` screen recording (R) for the selected region
+  - `Scroll Capture` long page/scrolling capture for extended content
   - Color + line width controls for supported tools
   - Text formatting controls for Text tool (font family/size, bold/italic/underline)
 - **Screen Canvas**:
@@ -51,10 +53,12 @@ SnapTray is a lightweight tray utility for region screenshots, on-screen annotat
   - Double-click or Esc to close
   - Context menu: Copy/Save/OCR/Watermark/Click-through/Close
 - **Settings Dialog**:
-  - General tab: Launch at startup
+  - General tab: Launch at startup, toolbar style (Dark/Light), pin window opacity/zoom settings
   - Hotkeys tab: Separate hotkeys for Region Capture and Screen Canvas
-  - Watermark tab: Text/Image watermark, opacity, position, and scale
-  - Recording tab: Frame rate, output format, save location, auto-save, audio (enable/source/device)
+  - Watermark tab: Image watermark, opacity, position, and scale
+  - Recording tab: Frame rate, output format, quality, countdown, click highlight, audio (enable/source/device)
+  - Files tab: Screenshot/recording save paths, filename format
+  - About tab: Version information
   - Settings stored via QSettings
 
 ## Tech Stack
@@ -381,20 +385,29 @@ The codebase follows a modular architecture with extracted components for mainta
 | `UpdateThrottler` | `src/region/` | Event throttling logic |
 | `TextAnnotationEditor` | `src/region/` | Text annotation editing/transformation |
 | `SelectionStateManager` | `src/region/` | Selection state and operations |
+| `RadiusSliderWidget` | `src/region/` | Radius slider control for tools |
 | `AnnotationSettingsManager` | `src/settings/` | Centralized annotation settings |
+| `FileSettingsManager` | `src/settings/` | File path settings |
+| `PinWindowSettingsManager` | `src/settings/` | Pin window settings |
 | `ImageTransformer` | `src/pinwindow/` | Image rotation/flip/scale |
 | `ResizeHandler` | `src/pinwindow/` | Window edge resize |
 | `UIIndicators` | `src/pinwindow/` | Scale/opacity/click-through indicators |
+| `ClickThroughExitButton` | `src/pinwindow/` | Exit button for click-through mode |
 | Section classes | `src/ui/sections/` | ColorAndWidthWidget sub-components |
 
 ### Test Coverage
 
 | Component | Test Count |
 |-----------|------------|
-| ColorAndWidthWidget | 87 |
-| PinWindow | 49 |
-| RegionSelector | 74 |
-| **Total** | **210** |
+| ColorAndWidthWidget | 113 |
+| RegionSelector | 108 |
+| RecordingManager | 58 |
+| Encoding | 43 |
+| Detection | 42 |
+| PinWindow | 24 |
+| Audio | 23 |
+| Scrolling | 22 |
+| **Total** | **433** |
 
 ## Custom App Icon
 
