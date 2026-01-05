@@ -37,6 +37,13 @@ public:
     int loadCornerRadius() const;
     void saveCornerRadius(int radius);
 
+    // Aspect ratio lock settings (region selection)
+    bool loadAspectRatioLocked() const;
+    void saveAspectRatioLocked(bool locked);
+    int loadAspectRatioWidth() const;
+    int loadAspectRatioHeight() const;
+    void saveAspectRatio(int width, int height);
+
     // Mosaic blur type settings
     MosaicBlurTypeSection::BlurType loadMosaicBlurType() const;
     void saveMosaicBlurType(MosaicBlurTypeSection::BlurType type);
@@ -47,6 +54,9 @@ public:
     static constexpr StepBadgeSize kDefaultStepBadgeSize = StepBadgeSize::Medium;
     static constexpr bool kDefaultPolylineMode = false;
     static constexpr int kDefaultCornerRadius = 0;
+    static constexpr bool kDefaultAspectRatioLocked = false;
+    static constexpr int kDefaultAspectRatioWidth = 1;
+    static constexpr int kDefaultAspectRatioHeight = 1;
     static constexpr MosaicBlurTypeSection::BlurType kDefaultMosaicBlurType = MosaicBlurTypeSection::BlurType::Pixelate;
 
 private:
@@ -59,6 +69,10 @@ private:
     static constexpr const char* kSettingsKeyStepBadgeSize = "stepBadgeSize";
     static constexpr const char* kSettingsKeyPolylineMode = "polylineMode";
     static constexpr const char* kSettingsKeyCornerRadius = "cornerRadius";
+    static constexpr const char* kSettingsKeyAspectRatioLocked = "aspectRatioLocked";
+    static constexpr const char* kSettingsKeyAspectRatioMode = "aspectRatioMode";
+    static constexpr const char* kSettingsKeyAspectRatioWidth = "aspectRatioWidth";
+    static constexpr const char* kSettingsKeyAspectRatioHeight = "aspectRatioHeight";
     static constexpr const char* kSettingsKeyMosaicBlurType = "mosaicBlurType";
 };
 

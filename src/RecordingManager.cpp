@@ -456,6 +456,7 @@ void RecordingManager::beginAsyncInitialization()
     m_audioEnabled = settings.value("recording/audioEnabled", false).toBool();
     m_audioSource = settings.value("recording/audioSource", 0).toInt();
     m_audioDevice = settings.value("recording/audioDevice").toString();
+    bool includeCursor = settings.value("screenshot/includeCursor", false).toBool();
 
     // Use physical pixel size for Retina/HiDPI displays
     qreal scale = CoordinateHelper::getDevicePixelRatio(m_targetScreen);
@@ -466,6 +467,7 @@ void RecordingManager::beginAsyncInitialization()
     config.region = m_recordingRegion;
     config.screen = m_targetScreen;
     config.frameRate = m_frameRate;
+    config.includeCursor = includeCursor;
     config.audioEnabled = m_audioEnabled && !useGif;  // GIF doesn't support audio
     config.audioSource = m_audioSource;
     config.audioDevice = m_audioDevice;

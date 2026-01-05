@@ -92,6 +92,8 @@ void RegionToolbarHandler::setupToolbarButtons()
     iconRenderer.loadIcon("scroll-capture", ":/icons/icons/scroll-capture.svg");
     iconRenderer.loadIcon("save", ":/icons/icons/save.svg");
     iconRenderer.loadIcon("copy", ":/icons/icons/copy.svg");
+    iconRenderer.loadIcon("multi-region", ":/icons/icons/multi-region.svg");
+    iconRenderer.loadIcon("done", ":/icons/icons/done.svg");
     // Shape and arrow style icons for ColorAndWidthWidget sections
     iconRenderer.loadIcon("shape-filled", ":/icons/icons/shape-filled.svg");
     iconRenderer.loadIcon("shape-outline", ":/icons/icons/shape-outline.svg");
@@ -104,6 +106,17 @@ void RegionToolbarHandler::setupToolbarButtons()
 
     // Configure buttons
     QVector<ToolbarWidget::ButtonConfig> buttons;
+    if (m_multiRegionMode) {
+        buttons.append({ static_cast<int>(ToolbarButton::MultiRegionDone), "done", "Done", false });
+        buttons.append({ static_cast<int>(ToolbarButton::Cancel), "cancel", "Cancel (Esc)", true });
+        m_toolbar->setButtons(buttons);
+        m_toolbar->setActiveButtonIds({});
+        m_toolbar->setIconColorProvider([this](int buttonId, bool isActive, bool isHovered) {
+            return getToolbarIconColor(buttonId, isActive, isHovered);
+        });
+        return;
+    }
+
     buttons.append({ static_cast<int>(ToolbarButton::Selection), "selection", "Selection", false });
     buttons.append({ static_cast<int>(ToolbarButton::Shape), "shape", "Shape", false });
     buttons.append({ static_cast<int>(ToolbarButton::Arrow), "arrow", "Arrow", false });
@@ -120,6 +133,7 @@ void RegionToolbarHandler::setupToolbarButtons()
         buttons.append({ static_cast<int>(ToolbarButton::OCR), "ocr", "OCR Text Recognition", false });
     }
     buttons.append({ static_cast<int>(ToolbarButton::Record), "record", "Screen Recording (R)", false });
+    buttons.append({ static_cast<int>(ToolbarButton::MultiRegion), "multi-region", "Multi-Region Capture (M)", false });
 #ifdef SNAPTRAY_ENABLE_DEV_FEATURES
     buttons.append({ static_cast<int>(ToolbarButton::ScrollCapture), "scroll-capture", "Scrolling Capture (S)", false });
 #endif
@@ -166,6 +180,10 @@ QColor RegionToolbarHandler::getToolbarIconColor(int buttonId, bool isActive, bo
     // Show yellow when processing
     if (btn == ToolbarButton::OCR && m_ocrInProgress) {
         return QColor(255, 200, 100);
+    }
+
+    if (btn == ToolbarButton::MultiRegionDone) {
+        return style.iconActionColor;
     }
 
     // Show gray for Undo when nothing to undo
@@ -238,6 +256,14 @@ void RegionToolbarHandler::handleToolbarClick(ToolbarButton button)
     case ToolbarButton::Save:
     case ToolbarButton::Copy:
         handleActionButton(button);
+        break;
+
+    case ToolbarButton::MultiRegion:
+        emit multiRegionToggled(!m_multiRegionMode);
+        break;
+
+    case ToolbarButton::MultiRegionDone:
+        emit multiRegionDoneRequested();
         break;
 
     default:
@@ -351,7 +377,11 @@ void RegionToolbarHandler::handleActionButton(ToolbarButton button)
         break;
 
     case ToolbarButton::Cancel:
-        emit cancelRequested();
+        if (m_multiRegionMode) {
+            emit multiRegionCancelRequested();
+        } else {
+            emit cancelRequested();
+        }
         break;
 
     case ToolbarButton::OCR:

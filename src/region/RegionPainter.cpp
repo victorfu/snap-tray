@@ -1,6 +1,8 @@
 #include "region/RegionPainter.h"
 #include "region/SelectionStateManager.h"
+#include "region/AspectRatioWidget.h"
 #include "region/RadiusSliderWidget.h"
+#include "region/MultiRegionManager.h"
 #include "annotations/AnnotationLayer.h"
 #include "annotations/TextAnnotation.h"
 #include "tools/ToolManager.h"
@@ -39,6 +41,11 @@ void RegionPainter::setToolbar(ToolbarWidget* toolbar)
     m_toolbar = toolbar;
 }
 
+void RegionPainter::setAspectRatioWidget(AspectRatioWidget* widget)
+{
+    m_aspectRatioWidget = widget;
+}
+
 void RegionPainter::setRadiusSliderWidget(RadiusSliderWidget* widget)
 {
     m_radiusSliderWidget = widget;
@@ -47,6 +54,11 @@ void RegionPainter::setRadiusSliderWidget(RadiusSliderWidget* widget)
 void RegionPainter::setParentWidget(QWidget* widget)
 {
     m_parentWidget = widget;
+}
+
+void RegionPainter::setMultiRegionManager(MultiRegionManager* manager)
+{
+    m_multiRegionManager = manager;
 }
 
 void RegionPainter::setHighlightedWindowRect(const QRect& rect)
@@ -103,7 +115,7 @@ void RegionPainter::paint(QPainter& painter, const QPixmap& background)
         drawDimensionInfo(painter);
 
         // Draw annotations on top of selection (only when selection is established)
-        if (m_selectionManager->hasSelection()) {
+        if (!m_multiRegionMode && m_selectionManager->hasSelection()) {
             drawAnnotations(painter);
             drawCurrentAnnotation(painter);
         }
@@ -127,6 +139,21 @@ void RegionPainter::drawOverlay(QPainter& painter)
     QRect sel = m_selectionManager->selectionRect();
     bool hasSelection = m_selectionManager->hasActiveSelection() && sel.isValid();
 
+    if (m_multiRegionMode && m_multiRegionManager) {
+        painter.fillRect(m_parentWidget->rect(), dimColor);
+        painter.setCompositionMode(QPainter::CompositionMode_Clear);
+
+        const auto regions = m_multiRegionManager->regions();
+        for (const auto& region : regions) {
+            painter.fillRect(region.rect, Qt::transparent);
+        }
+        if (m_selectionManager->isSelecting() && m_multiRegionManager->activeIndex() < 0 && hasSelection) {
+            painter.fillRect(sel, Qt::transparent);
+        }
+        painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
+        return;
+    }
+
     if (hasSelection) {
         drawDimmingOverlay(painter, sel, dimColor);
     }
@@ -140,6 +167,11 @@ void RegionPainter::drawOverlay(QPainter& painter)
 
 void RegionPainter::drawSelection(QPainter& painter)
 {
+    if (m_multiRegionMode && m_multiRegionManager) {
+        drawMultiSelection(painter);
+        return;
+    }
+
     QRect sel = m_selectionManager->selectionRect();
     int radius = effectiveCornerRadius();
 
@@ -178,39 +210,59 @@ void RegionPainter::drawSelection(QPainter& painter)
 
 void RegionPainter::drawDimensionInfo(QPainter& painter)
 {
-    QRect sel = m_selectionManager->selectionRect();
+    if (m_multiRegionMode && m_multiRegionManager) {
+        QRect activeInfoRect;
+        const auto regions = m_multiRegionManager->regions();
+        for (const auto& region : regions) {
+            QString dimensions = QString("%1 x %2  pt").arg(region.rect.width()).arg(region.rect.height());
+            QRect infoRect = drawDimensionInfoPanel(painter, region.rect, dimensions);
+            if (region.isActive) {
+                activeInfoRect = infoRect;
+            }
+        }
 
-    // Show dimensions with "pt" suffix like Snipaste
-    QString dimensions = QString("%1 x %2  pt").arg(sel.width()).arg(sel.height());
+        if (activeInfoRect.isNull() && m_selectionManager->isSelecting()) {
+            QRect sel = m_selectionManager->selectionRect();
+            if (sel.isValid()) {
+                QString dimensions = QString("%1 x %2  pt").arg(sel.width()).arg(sel.height());
+                activeInfoRect = drawDimensionInfoPanel(painter, sel, dimensions);
+            }
+        }
 
-    QFont font = painter.font();
-    font.setPointSize(12);
-    painter.setFont(font);
-
-    QFontMetrics fm(font);
-    QRect textRect = fm.boundingRect(dimensions);
-    textRect.adjust(-12, -6, 12, 6);
-
-    // Position above selection
-    int textX = sel.left();
-    int textY = sel.top() - textRect.height() - 8;
-    if (textY < 5) {
-        textY = sel.top() + 5;
-        textX = sel.left() + 5;
+        if (!activeInfoRect.isNull()) {
+            QRect anchorRect = activeInfoRect;
+            if (m_aspectRatioWidget) {
+                if (m_selectionManager->isComplete()) {
+                    m_aspectRatioWidget->setVisible(true);
+                    m_aspectRatioWidget->updatePosition(activeInfoRect, m_parentWidget->width(), m_parentWidget->height());
+                    m_aspectRatioWidget->draw(painter);
+                    anchorRect = m_aspectRatioWidget->boundingRect();
+                } else {
+                    m_aspectRatioWidget->setVisible(false);
+                }
+            }
+            drawRadiusSlider(painter, anchorRect);
+        }
+        return;
     }
 
-    textRect.moveTo(textX, textY);
+    QRect sel = m_selectionManager->selectionRect();
+    QString dimensions = QString("%1 x %2  pt").arg(sel.width()).arg(sel.height());
+    QRect textRect = drawDimensionInfoPanel(painter, sel, dimensions);
 
-    // Draw glass panel background (matching radius slider style)
-    auto styleConfig = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
-    GlassRenderer::drawGlassPanel(painter, textRect, styleConfig, 6);
-
-    // Draw text
-    painter.setPen(styleConfig.textColor);
-    painter.drawText(textRect, Qt::AlignCenter, dimensions);
-
-    // Draw radius slider next to dimension info
-    drawRadiusSlider(painter, textRect);
+    // Draw aspect ratio widget and radius slider next to dimension info
+    QRect anchorRect = textRect;
+    if (m_aspectRatioWidget) {
+        if (m_selectionManager->isComplete()) {
+            m_aspectRatioWidget->setVisible(true);
+            m_aspectRatioWidget->updatePosition(textRect, m_parentWidget->width(), m_parentWidget->height());
+            m_aspectRatioWidget->draw(painter);
+            anchorRect = m_aspectRatioWidget->boundingRect();
+        } else {
+            m_aspectRatioWidget->setVisible(false);
+        }
+    }
+    drawRadiusSlider(painter, anchorRect);
 }
 
 void RegionPainter::drawRadiusSlider(QPainter& painter, const QRect& dimensionInfoRect)
@@ -227,6 +279,105 @@ void RegionPainter::drawRadiusSlider(QPainter& painter, const QRect& dimensionIn
     } else {
         m_radiusSliderWidget->setVisible(false);
     }
+}
+
+void RegionPainter::drawMultiSelection(QPainter& painter)
+{
+    if (!m_multiRegionManager) {
+        return;
+    }
+
+    const auto regions = m_multiRegionManager->regions();
+    for (const auto& region : regions) {
+        QColor borderColor = region.color;
+        int borderWidth = region.isActive ? 2 : 1;
+        painter.setPen(QPen(borderColor, borderWidth));
+        painter.setBrush(Qt::NoBrush);
+        painter.drawRect(region.rect);
+
+        drawRegionBadge(painter, region.rect, borderColor, region.index, region.isActive);
+
+        if (region.isActive) {
+            const int handleSize = 8;
+            painter.setBrush(borderColor);
+            painter.setPen(Qt::white);
+            auto drawHandle = [&](int x, int y) {
+                painter.drawEllipse(QPoint(x, y), handleSize / 2, handleSize / 2);
+            };
+            drawHandle(region.rect.left(), region.rect.top());
+            drawHandle(region.rect.right(), region.rect.top());
+            drawHandle(region.rect.left(), region.rect.bottom());
+            drawHandle(region.rect.right(), region.rect.bottom());
+            drawHandle(region.rect.center().x(), region.rect.top());
+            drawHandle(region.rect.center().x(), region.rect.bottom());
+            drawHandle(region.rect.left(), region.rect.center().y());
+            drawHandle(region.rect.right(), region.rect.center().y());
+        }
+    }
+
+    if (m_selectionManager->isSelecting() && m_multiRegionManager->activeIndex() < 0) {
+        QRect sel = m_selectionManager->selectionRect();
+        if (sel.isValid()) {
+            QColor previewColor = m_multiRegionManager->nextColor();
+            painter.setPen(QPen(previewColor, 2, Qt::DashLine));
+            painter.setBrush(Qt::NoBrush);
+            painter.drawRect(sel);
+            drawRegionBadge(painter, sel, previewColor, m_multiRegionManager->nextIndex(), true);
+        }
+    }
+}
+
+QRect RegionPainter::drawDimensionInfoPanel(QPainter& painter, const QRect& selectionRect,
+                                            const QString& label) const
+{
+    QFont font = painter.font();
+    font.setPointSize(12);
+    painter.setFont(font);
+
+    QFontMetrics fm(font);
+    QRect textRect = fm.boundingRect(label);
+    textRect.adjust(-12, -6, 12, 6);
+
+    int textX = selectionRect.left();
+    int textY = selectionRect.top() - textRect.height() - 8;
+    if (textY < 5) {
+        textY = selectionRect.top() + 5;
+        textX = selectionRect.left() + 5;
+    }
+
+    textRect.moveTo(textX, textY);
+
+    auto styleConfig = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
+    GlassRenderer::drawGlassPanel(painter, textRect, styleConfig, 6);
+
+    painter.setPen(styleConfig.textColor);
+    painter.drawText(textRect, Qt::AlignCenter, label);
+
+    return textRect;
+}
+
+void RegionPainter::drawRegionBadge(QPainter& painter, const QRect& selectionRect, const QColor& color,
+                                    int index, bool isActive) const
+{
+    const int badgeSize = 18;
+    QRect badgeRect(selectionRect.left() + 4, selectionRect.top() + 4, badgeSize, badgeSize);
+
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(color);
+    painter.drawEllipse(badgeRect);
+
+    if (isActive) {
+        painter.setPen(QPen(Qt::white, 1.5));
+        painter.setBrush(Qt::NoBrush);
+        painter.drawEllipse(badgeRect.adjusted(1, 1, -1, -1));
+    }
+
+    QFont font = painter.font();
+    font.setPointSize(9);
+    font.setBold(true);
+    painter.setFont(font);
+    painter.setPen(Qt::white);
+    painter.drawText(badgeRect, Qt::AlignCenter, QString::number(index));
 }
 
 void RegionPainter::drawDetectedWindow(QPainter& painter)

@@ -464,7 +464,7 @@ bool SCKCaptureEngine::start()
             config.width = outputWidth;
             config.height = outputHeight;
             config.minimumFrameInterval = CMTimeMake(1, d->frameRate);
-            config.showsCursor = YES;
+            config.showsCursor = m_includeCursor ? YES : NO;
             config.pixelFormat = kCVPixelFormatType_32BGRA;
             qDebug() << "SCKCaptureEngine::start() - Frame rate:" << d->frameRate;
 

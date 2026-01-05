@@ -29,7 +29,9 @@
 #include "region/MagnifierPanel.h"
 #include "region/UpdateThrottler.h"
 #include "region/TextAnnotationEditor.h"
+#include "region/AspectRatioWidget.h"
 #include "region/RadiusSliderWidget.h"
+#include "region/MultiRegionManager.h"
 #include "ui/sections/MosaicBlurTypeSection.h"
 
 class QScreen;
@@ -68,6 +70,8 @@ enum class ToolbarButton {
     ScrollCapture,  // Scrolling capture (extended region capture)
     Save,
     Copy,
+    MultiRegion,     // Multi-region capture mode
+    MultiRegionDone, // Complete multi-region capture
     Count  // Total number of buttons
 };
 
@@ -92,6 +96,9 @@ inline ToolId toolbarButtonToToolId(ToolbarButton btn) {
     case ToolbarButton::Record:     return ToolId::Record;
     case ToolbarButton::Save:       return ToolId::Save;
     case ToolbarButton::Copy:       return ToolId::Copy;
+    case ToolbarButton::MultiRegion:
+    case ToolbarButton::MultiRegionDone:
+        return ToolId::Selection;
     default:                        return ToolId::Selection;
     }
 }
@@ -184,6 +191,9 @@ private:
     // Window detection
     void updateWindowDetection(const QPoint &localPos);
     QPixmap getSelectedRegion();
+    void setMultiRegionMode(bool enabled);
+    void completeMultiRegionCapture();
+    void cancelMultiRegionCapture();
     void copyToClipboard();
     void saveToFile();
     void finishSelection();
@@ -314,8 +324,13 @@ private:
     QRect m_lastMagnifierRect;  // Previous magnifier rect
 
     // Corner radius slider widget
+    AspectRatioWidget* m_aspectRatioWidget = nullptr;
     RadiusSliderWidget* m_radiusSliderWidget;
     int m_cornerRadius = 0;  // Current corner radius in logical pixels
+
+    // Multi-region capture
+    MultiRegionManager* m_multiRegionManager = nullptr;
+    bool m_multiRegionMode = false;
 
     // Painting component
     RegionPainter* m_painter;

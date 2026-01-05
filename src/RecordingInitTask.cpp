@@ -150,6 +150,7 @@ bool RecordingInitTask::initializeCaptureEngine()
     }
 
     m_result.captureEngine->setFrameRate(m_config.frameRate);
+    m_result.captureEngine->setIncludeCursor(m_config.includeCursor);
 
     // Set windows to exclude from capture (e.g., recording UI overlays)
     if (!m_config.excludedWindowIds.isEmpty()) {

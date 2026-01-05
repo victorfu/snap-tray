@@ -304,7 +304,9 @@ set(SOURCES
     src/region/MagnifierPanel.cpp
     src/region/UpdateThrottler.cpp
     src/region/TextAnnotationEditor.cpp
+    src/region/AspectRatioWidget.cpp
     src/region/RadiusSliderWidget.cpp
+    src/region/MultiRegionManager.cpp
     src/region/RegionPainter.cpp
     src/region/RegionInputHandler.cpp
     src/region/RegionToolbarHandler.cpp
@@ -441,7 +443,9 @@ set(HEADERS
     include/region/MagnifierPanel.h
     include/region/UpdateThrottler.h
     include/region/TextAnnotationEditor.h
+    include/region/AspectRatioWidget.h
     include/region/RadiusSliderWidget.h
+    include/region/MultiRegionManager.h
     include/region/RegionPainter.h
     include/region/RegionInputHandler.h
     include/region/RegionToolbarHandler.h

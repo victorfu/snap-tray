@@ -23,19 +23,19 @@ void RadiusSliderWidget::setCurrentRadius(int radius)
     m_currentRadius = qBound(m_minRadius, radius, m_maxRadius);
 }
 
-void RadiusSliderWidget::updatePosition(const QRect& dimensionInfoRect, int screenWidth)
+void RadiusSliderWidget::updatePosition(const QRect& anchorRect, int screenWidth)
 {
     // Position to the right of the dimension info rect
-    int widgetX = dimensionInfoRect.right() + GAP;
-    int widgetY = dimensionInfoRect.top() + (dimensionInfoRect.height() - WIDGET_HEIGHT) / 2;
+    int widgetX = anchorRect.right() + GAP;
+    int widgetY = anchorRect.top() + (anchorRect.height() - WIDGET_HEIGHT) / 2;
 
     // Keep on screen - right boundary
     if (screenWidth > 0) {
         int maxX = screenWidth - WIDGET_WIDTH - 5;
         if (widgetX > maxX) {
             // Fall back to positioning below the dimension info
-            widgetX = dimensionInfoRect.left();
-            widgetY = dimensionInfoRect.bottom() + 4;
+            widgetX = anchorRect.left();
+            widgetY = anchorRect.bottom() + 4;
         }
     }
 

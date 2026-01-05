@@ -13,8 +13,10 @@ class SelectionStateManager;
 class AnnotationLayer;
 class ToolManager;
 class ToolbarWidget;
+class AspectRatioWidget;
 class RadiusSliderWidget;
 class TextAnnotation;
+class MultiRegionManager;
 
 /**
  * @brief Handles all painting operations for RegionSelector.
@@ -36,8 +38,10 @@ public:
     void setAnnotationLayer(AnnotationLayer* layer);
     void setToolManager(ToolManager* manager);
     void setToolbar(ToolbarWidget* toolbar);
+    void setAspectRatioWidget(AspectRatioWidget* widget);
     void setRadiusSliderWidget(RadiusSliderWidget* widget);
     void setParentWidget(QWidget* widget);
+    void setMultiRegionManager(MultiRegionManager* manager);
 
     /**
      * @brief Main paint method called from RegionSelector::paintEvent.
@@ -57,6 +61,7 @@ public:
     void setShowSubToolbar(bool show);
     void setCurrentTool(int tool);
     void setDevicePixelRatio(qreal ratio);
+    void setMultiRegionMode(bool enabled) { m_multiRegionMode = enabled; }
 
 private:
     // Drawing methods (extracted from RegionSelector)
@@ -69,6 +74,10 @@ private:
     void drawWindowHint(QPainter& painter, const QString& title);
     void drawAnnotations(QPainter& painter);
     void drawCurrentAnnotation(QPainter& painter);
+    void drawMultiSelection(QPainter& painter);
+    QRect drawDimensionInfoPanel(QPainter& painter, const QRect& selectionRect, const QString& label) const;
+    void drawRegionBadge(QPainter& painter, const QRect& selectionRect, const QColor& color,
+                         int index, bool isActive) const;
 
     // Helper methods
     int effectiveCornerRadius() const;
@@ -79,8 +88,10 @@ private:
     AnnotationLayer* m_annotationLayer = nullptr;
     ToolManager* m_toolManager = nullptr;
     ToolbarWidget* m_toolbar = nullptr;
+    AspectRatioWidget* m_aspectRatioWidget = nullptr;
     RadiusSliderWidget* m_radiusSliderWidget = nullptr;
     QWidget* m_parentWidget = nullptr;
+    MultiRegionManager* m_multiRegionManager = nullptr;
 
     // State
     QRect m_highlightedWindowRect;
@@ -89,6 +100,7 @@ private:
     bool m_showSubToolbar = true;
     int m_currentTool = 0;
     qreal m_devicePixelRatio = 1.0;
+    bool m_multiRegionMode = false;
 };
 
 #endif // REGIONPAINTER_H

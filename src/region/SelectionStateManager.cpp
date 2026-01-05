@@ -46,8 +46,13 @@ void SelectionStateManager::updateSelection(const QPoint& pos)
 {
     if (m_state != State::Selecting) return;
 
-    m_lastPoint = pos;
-    m_selectionRect = QRect(m_startPoint, pos);
+    QPoint delta = pos - m_startPoint;
+    if (m_aspectRatio > 0.0) {
+        delta = adjustDeltaForAspectRatio(delta);
+    }
+
+    m_lastPoint = m_startPoint + delta;
+    m_selectionRect = QRect(m_startPoint, m_lastPoint);
     emit selectionChanged(m_selectionRect.normalized());
 }
 
@@ -128,39 +133,80 @@ void SelectionStateManager::updateResize(const QPoint& pos)
     QPoint delta = pos - m_startPoint;
     QRect newRect = m_originalRect;
 
-    switch (m_activeHandle) {
-    case ResizeHandle::TopLeft:
-        newRect.setTopLeft(m_originalRect.topLeft() + delta);
-        break;
-    case ResizeHandle::Top:
-        newRect.setTop(m_originalRect.top() + delta.y());
-        break;
-    case ResizeHandle::TopRight:
-        newRect.setTopRight(m_originalRect.topRight() + delta);
-        break;
-    case ResizeHandle::Left:
-        newRect.setLeft(m_originalRect.left() + delta.x());
-        break;
-    case ResizeHandle::Right:
-        newRect.setRight(m_originalRect.right() + delta.x());
-        break;
-    case ResizeHandle::BottomLeft:
-        newRect.setBottomLeft(m_originalRect.bottomLeft() + delta);
-        break;
-    case ResizeHandle::Bottom:
-        newRect.setBottom(m_originalRect.bottom() + delta.y());
-        break;
-    case ResizeHandle::BottomRight:
-        newRect.setBottomRight(m_originalRect.bottomRight() + delta);
-        break;
-    default:
-        break;
+    if (m_aspectRatio > 0.0 && isCornerHandle(m_activeHandle)) {
+        QRect rect = m_originalRect.normalized();
+        QPoint anchor;
+        switch (m_activeHandle) {
+        case ResizeHandle::TopLeft:
+            anchor = rect.bottomRight();
+            break;
+        case ResizeHandle::TopRight:
+            anchor = rect.bottomLeft();
+            break;
+        case ResizeHandle::BottomLeft:
+            anchor = rect.topRight();
+            break;
+        case ResizeHandle::BottomRight:
+            anchor = rect.topLeft();
+            break;
+        default:
+            anchor = rect.topLeft();
+            break;
+        }
+
+        int dx = pos.x() - anchor.x();
+        int dy = pos.y() - anchor.y();
+        double absDx = qAbs(dx);
+        double absDy = qAbs(dy);
+        if (absDx < 1.0) absDx = 1.0;
+        if (absDy < 1.0) absDy = 1.0;
+
+        if (absDx / absDy > m_aspectRatio) {
+            absDx = absDy * m_aspectRatio;
+        } else {
+            absDy = absDx / m_aspectRatio;
+        }
+
+        int adjDx = (dx < 0 ? -1 : 1) * static_cast<int>(absDx + 0.5);
+        int adjDy = (dy < 0 ? -1 : 1) * static_cast<int>(absDy + 0.5);
+        QPoint newCorner(anchor.x() + adjDx, anchor.y() + adjDy);
+        newRect = QRect(anchor, newCorner);
+    } else {
+        switch (m_activeHandle) {
+        case ResizeHandle::TopLeft:
+            newRect.setTopLeft(m_originalRect.topLeft() + delta);
+            break;
+        case ResizeHandle::Top:
+            newRect.setTop(m_originalRect.top() + delta.y());
+            break;
+        case ResizeHandle::TopRight:
+            newRect.setTopRight(m_originalRect.topRight() + delta);
+            break;
+        case ResizeHandle::Left:
+            newRect.setLeft(m_originalRect.left() + delta.x());
+            break;
+        case ResizeHandle::Right:
+            newRect.setRight(m_originalRect.right() + delta.x());
+            break;
+        case ResizeHandle::BottomLeft:
+            newRect.setBottomLeft(m_originalRect.bottomLeft() + delta);
+            break;
+        case ResizeHandle::Bottom:
+            newRect.setBottom(m_originalRect.bottom() + delta.y());
+            break;
+        case ResizeHandle::BottomRight:
+            newRect.setBottomRight(m_originalRect.bottomRight() + delta);
+            break;
+        default:
+            break;
+        }
     }
 
     // Ensure minimum size
-    if (newRect.width() >= 10 && newRect.height() >= 10) {
+    QRect normalized = newRect.normalized();
+    if (normalized.width() >= 10 && normalized.height() >= 10) {
         m_selectionRect = newRect;
-        emit selectionChanged(m_selectionRect.normalized());
+        emit selectionChanged(normalized);
     }
 }
 
@@ -255,4 +301,40 @@ void SelectionStateManager::clampToBounds()
         m_selectionRect.moveRight(m_bounds.right());
     if (m_selectionRect.bottom() > m_bounds.bottom())
         m_selectionRect.moveBottom(m_bounds.bottom());
+}
+
+QPoint SelectionStateManager::adjustDeltaForAspectRatio(const QPoint& delta) const
+{
+    if (m_aspectRatio <= 0.0) {
+        return delta;
+    }
+
+    int dx = delta.x();
+    int dy = delta.y();
+    if (dx == 0 && dy == 0) {
+        return delta;
+    }
+
+    double absDx = qAbs(dx);
+    double absDy = qAbs(dy);
+    if (absDx < 1.0) absDx = 1.0;
+    if (absDy < 1.0) absDy = 1.0;
+
+    if (absDx / absDy > m_aspectRatio) {
+        absDx = absDy * m_aspectRatio;
+    } else {
+        absDy = absDx / m_aspectRatio;
+    }
+
+    int adjDx = (dx < 0 ? -1 : 1) * static_cast<int>(absDx + 0.5);
+    int adjDy = (dy < 0 ? -1 : 1) * static_cast<int>(absDy + 0.5);
+    return QPoint(adjDx, adjDy);
+}
+
+bool SelectionStateManager::isCornerHandle(ResizeHandle handle) const
+{
+    return handle == ResizeHandle::TopLeft ||
+           handle == ResizeHandle::TopRight ||
+           handle == ResizeHandle::BottomLeft ||
+           handle == ResizeHandle::BottomRight;
 }

@@ -60,6 +60,10 @@ public:
     QRect selectionRect() const { return m_selectionRect.normalized(); }
     void setSelectionRect(const QRect& rect);
 
+    // Aspect ratio lock (0 = free)
+    void setAspectRatio(qreal ratio) { m_aspectRatio = ratio; }
+    qreal aspectRatio() const { return m_aspectRatio; }
+
     // Bounds setting
     void setBounds(const QRect& bounds);
     QRect bounds() const { return m_bounds; }
@@ -98,10 +102,13 @@ signals:
 private:
     void setState(State state);
     void clampToBounds();
+    QPoint adjustDeltaForAspectRatio(const QPoint& delta) const;
+    bool isCornerHandle(ResizeHandle handle) const;
 
     State m_state = State::None;
     QRect m_selectionRect;
     QRect m_bounds;
+    qreal m_aspectRatio = 0.0;
 
     // Operation temporaries
     QPoint m_startPoint;

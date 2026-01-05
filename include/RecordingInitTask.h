@@ -37,6 +37,7 @@ public:
         QRect region;
         QScreen *screen = nullptr;
         int frameRate = 30;
+        bool includeCursor = false;
         bool audioEnabled = false;
         int audioSource = 0;  // 0=Microphone, 1=SystemAudio, 2=Both
         QString audioDevice;

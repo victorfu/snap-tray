@@ -2,7 +2,9 @@
 #include "region/SelectionStateManager.h"
 #include "region/SelectionResizeHelper.h"
 #include "region/TextAnnotationEditor.h"
+#include "region/AspectRatioWidget.h"
 #include "region/RadiusSliderWidget.h"
+#include "region/MultiRegionManager.h"
 #include "region/UpdateThrottler.h"
 #include "region/MagnifierPanel.h"
 #include "annotations/AnnotationLayer.h"
@@ -68,9 +70,19 @@ void RegionInputHandler::setColorPalette(ColorPaletteWidget* palette)
     m_colorPalette = palette;
 }
 
+void RegionInputHandler::setAspectRatioWidget(AspectRatioWidget* widget)
+{
+    m_aspectRatioWidget = widget;
+}
+
 void RegionInputHandler::setRadiusSliderWidget(RadiusSliderWidget* widget)
 {
     m_radiusSliderWidget = widget;
+}
+
+void RegionInputHandler::setMultiRegionManager(MultiRegionManager* manager)
+{
+    m_multiRegionManager = manager;
 }
 
 void RegionInputHandler::setUpdateThrottler(UpdateThrottler* throttler)
@@ -167,6 +179,11 @@ void RegionInputHandler::handleMousePress(QMouseEvent* event)
                 return;
             }
 
+            // Check aspect ratio widget
+            if (handleAspectRatioWidgetPress(event->pos())) {
+                return;
+            }
+
             // Check color/width widgets
             if (handleColorWidgetPress(event->pos())) {
                 finalizePolylineForUiClick(event->pos());
@@ -214,7 +231,7 @@ void RegionInputHandler::handleMousePress(QMouseEvent* event)
         emit updateRequested();
     }
     else if (event->button() == Qt::RightButton) {
-        handleRightButtonPress();
+        handleRightButtonPress(event->pos());
     }
 }
 
@@ -343,6 +360,16 @@ bool RegionInputHandler::handleToolbarPress(const QPoint& pos)
     return false;
 }
 
+bool RegionInputHandler::handleAspectRatioWidgetPress(const QPoint& pos)
+{
+    if (m_aspectRatioWidget && m_aspectRatioWidget->isVisible() &&
+        m_aspectRatioWidget->handleMousePress(pos)) {
+        emit updateRequested();
+        return true;
+    }
+    return false;
+}
+
 bool RegionInputHandler::handleRadiusSliderPress(const QPoint& pos)
 {
     if (m_radiusSliderWidget->isVisible() &&
@@ -458,6 +485,34 @@ bool RegionInputHandler::handleSelectionToolPress(const QPoint& pos)
         return false;
     }
 
+    if (m_multiRegionMode && m_multiRegionManager) {
+        int hitIndex = m_multiRegionManager->hitTest(pos);
+        if (hitIndex >= 0) {
+            m_multiRegionManager->setActiveIndex(hitIndex);
+            m_selectionManager->setSelectionRect(m_multiRegionManager->regionRect(hitIndex));
+
+            auto handle = m_selectionManager->hitTestHandle(pos);
+            if (handle != SelectionStateManager::ResizeHandle::None) {
+                m_selectionManager->startResize(pos, handle);
+                emit updateRequested();
+                return true;
+            }
+
+            if (m_selectionManager->hitTestMove(pos)) {
+                m_selectionManager->startMove(pos);
+                emit updateRequested();
+                return true;
+            }
+
+            return true;
+        }
+
+        m_multiRegionManager->setActiveIndex(-1);
+        handleNewSelectionPress(pos);
+        emit updateRequested();
+        return true;
+    }
+
     auto handle = m_selectionManager->hitTestHandle(pos);
     if (handle != SelectionStateManager::ResizeHandle::None) {
         m_selectionManager->startResize(pos, handle);
@@ -489,8 +544,24 @@ void RegionInputHandler::handleNewSelectionPress(const QPoint& pos)
     m_lastSelectionRect = QRect();
 }
 
-void RegionInputHandler::handleRightButtonPress()
+void RegionInputHandler::handleRightButtonPress(const QPoint& pos)
 {
+    if (m_multiRegionMode && m_multiRegionManager) {
+        int hitIndex = m_multiRegionManager->hitTest(pos);
+        if (hitIndex >= 0) {
+            m_multiRegionManager->removeRegion(hitIndex);
+            int activeIndex = m_multiRegionManager->activeIndex();
+            if (activeIndex >= 0) {
+                m_selectionManager->setSelectionRect(m_multiRegionManager->regionRect(activeIndex));
+            } else {
+                m_selectionManager->clearSelection();
+            }
+            emit updateRequested();
+            return;
+        }
+        return;
+    }
+
     if (m_selectionManager->isComplete()) {
         if (m_isDrawing) {
             m_isDrawing = false;
@@ -583,7 +654,9 @@ void RegionInputHandler::handleHoverMove(const QPoint& pos, Qt::MouseButtons but
     bool unifiedWidgetHovered = false;
     bool textAnnotationHovered = false;
     bool gizmoHandleHovered = false;
+    bool aspectRatioHovered = false;
     bool radiusSliderHovered = false;
+    bool multiRegionHovered = false;
 
     // Update eraser hover point
     if (m_currentTool == ToolbarButton::Eraser && !m_isDrawing) {
@@ -605,6 +678,17 @@ void RegionInputHandler::handleHoverMove(const QPoint& pos, Qt::MouseButtons but
     if (!gizmoHandleHovered && m_annotationLayer->hitTestText(pos) >= 0) {
         emit cursorChangeRequested(Qt::SizeAllCursor);
         textAnnotationHovered = true;
+    }
+
+    // Update aspect ratio widget
+    if (m_aspectRatioWidget && m_aspectRatioWidget->isVisible()) {
+        if (m_aspectRatioWidget->handleMouseMove(pos, buttons & Qt::LeftButton)) {
+            emit updateRequested();
+        }
+        if (m_aspectRatioWidget->contains(pos)) {
+            emit cursorChangeRequested(Qt::PointingHandCursor);
+            aspectRatioHovered = true;
+        }
     }
 
     // Update radius slider
@@ -645,6 +729,13 @@ void RegionInputHandler::handleHoverMove(const QPoint& pos, Qt::MouseButtons but
         }
     }
 
+    if (m_multiRegionMode && m_multiRegionManager && m_currentTool == ToolbarButton::Selection) {
+        if (m_multiRegionManager->hitTest(pos) >= 0) {
+            emit cursorChangeRequested(Qt::PointingHandCursor);
+            multiRegionHovered = true;
+        }
+    }
+
     // Update toolbar hover
     bool hoverChanged = m_toolbar->updateHoveredButton(pos);
     int hoveredButton = m_toolbar->hoveredButton();
@@ -653,7 +744,8 @@ void RegionInputHandler::handleHoverMove(const QPoint& pos, Qt::MouseButtons but
             emit cursorChangeRequested(Qt::PointingHandCursor);
         }
         else if (!colorPaletteHovered && !unifiedWidgetHovered &&
-                 !textAnnotationHovered && !gizmoHandleHovered && !radiusSliderHovered) {
+                 !textAnnotationHovered && !gizmoHandleHovered &&
+                 !aspectRatioHovered && !radiusSliderHovered && !multiRegionHovered) {
             if (m_currentTool == ToolbarButton::Selection) {
                 auto handle = m_selectionManager->hitTestHandle(pos);
                 updateCursorForHandle(handle);
@@ -670,7 +762,8 @@ void RegionInputHandler::handleHoverMove(const QPoint& pos, Qt::MouseButtons but
         emit cursorChangeRequested(Qt::PointingHandCursor);
     }
     else if (!colorPaletteHovered && !unifiedWidgetHovered &&
-             !textAnnotationHovered && !gizmoHandleHovered && !radiusSliderHovered) {
+             !textAnnotationHovered && !gizmoHandleHovered &&
+             !aspectRatioHovered && !radiusSliderHovered && !multiRegionHovered) {
         if (m_currentTool == ToolbarButton::Selection) {
             auto handle = m_selectionManager->hitTestHandle(pos);
             updateCursorForHandle(handle);
@@ -769,6 +862,26 @@ bool RegionInputHandler::handleRadiusSliderRelease(const QPoint& pos)
 void RegionInputHandler::handleSelectionRelease(const QPoint& pos)
 {
     QRect sel = m_selectionManager->selectionRect();
+    if (m_multiRegionMode) {
+        if (sel.width() > 5 && sel.height() > 5) {
+            m_selectionManager->finishSelection();
+            emit cursorChangeRequested(Qt::ArrowCursor);
+            emit selectionFinished();
+            qDebug() << "RegionInputHandler: Multi-region selection complete via drag";
+        }
+        else if (m_hasDetectedWindow && m_highlightedWindowRect.isValid()) {
+            m_selectionManager->setFromDetectedWindow(m_highlightedWindowRect);
+            emit cursorChangeRequested(Qt::ArrowCursor);
+            emit selectionFinished();
+            qDebug() << "RegionInputHandler: Multi-region selection via detected window";
+
+            m_highlightedWindowRect = QRect();
+            m_hasDetectedWindow = false;
+            emit detectionCleared();
+        }
+        return;
+    }
+
     if (sel.width() > 5 && sel.height() > 5) {
         m_selectionManager->finishSelection();
         emit cursorChangeRequested(Qt::ArrowCursor);

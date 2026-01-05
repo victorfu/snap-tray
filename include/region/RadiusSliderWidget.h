@@ -33,8 +33,8 @@ public:
     void setVisible(bool visible) { m_visible = visible; }
     bool isVisible() const { return m_visible; }
 
-    // Positioning - positions to the right of dimension info panel
-    void updatePosition(const QRect& dimensionInfoRect, int screenWidth);
+    // Positioning - positions to the right of anchor rect
+    void updatePosition(const QRect& anchorRect, int screenWidth);
 
     // Rendering
     void draw(QPainter& painter);

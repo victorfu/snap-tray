@@ -68,6 +68,7 @@ public:
     void setStepBadgeSize(StepBadgeSize size);
     void setMosaicBlurType(int type) { m_mosaicBlurType = type; }
     void setOCRInProgress(bool inProgress) { m_ocrInProgress = inProgress; }
+    void setMultiRegionMode(bool enabled) { m_multiRegionMode = enabled; }
 
 signals:
     // Tool state changes
@@ -85,6 +86,9 @@ signals:
     void saveRequested();
     void copyRequested();
     void ocrRequested();
+    void multiRegionToggled(bool enabled);
+    void multiRegionDoneRequested();
+    void multiRegionCancelRequested();
 
     // ColorAndWidthWidget configuration signals
     void showSizeSectionRequested(bool show);
@@ -131,6 +135,7 @@ private:
     StepBadgeSize m_stepBadgeSize;
     int m_mosaicBlurType = 0;
     bool m_ocrInProgress = false;
+    bool m_multiRegionMode = false;
 };
 
 #endif // REGIONTOOLBARHANDLER_H

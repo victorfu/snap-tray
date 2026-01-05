@@ -17,9 +17,11 @@ class InlineTextEditor;
 class TextAnnotationEditor;
 class ColorAndWidthWidget;
 class ColorPaletteWidget;
+class AspectRatioWidget;
 class RadiusSliderWidget;
 class UpdateThrottler;
 class TextAnnotation;
+class MultiRegionManager;
 
 enum class ToolbarButton;
 
@@ -46,7 +48,9 @@ public:
     void setTextAnnotationEditor(TextAnnotationEditor* editor);
     void setColorAndWidthWidget(ColorAndWidthWidget* widget);
     void setColorPalette(ColorPaletteWidget* palette);
+    void setAspectRatioWidget(AspectRatioWidget* widget);
     void setRadiusSliderWidget(RadiusSliderWidget* widget);
+    void setMultiRegionManager(MultiRegionManager* manager);
     void setUpdateThrottler(UpdateThrottler* throttler);
     void setParentWidget(QWidget* widget);
 
@@ -72,6 +76,7 @@ public:
     void setLineStyle(int style);
     void setShapeType(int type);
     void setShapeFillMode(int mode);
+    void setMultiRegionMode(bool enabled) { m_multiRegionMode = enabled; }
 
 signals:
     // Cursor management
@@ -97,6 +102,7 @@ private:
     // Mouse press helpers
     bool handleTextEditorPress(const QPoint& pos);
     bool handleToolbarPress(const QPoint& pos);
+    bool handleAspectRatioWidgetPress(const QPoint& pos);
     bool handleRadiusSliderPress(const QPoint& pos);
     bool handleColorWidgetPress(const QPoint& pos);
     bool handleGizmoPress(const QPoint& pos);
@@ -104,7 +110,7 @@ private:
     bool handleAnnotationToolPress(const QPoint& pos);
     bool handleSelectionToolPress(const QPoint& pos);
     void handleNewSelectionPress(const QPoint& pos);
-    void handleRightButtonPress();
+    void handleRightButtonPress(const QPoint& pos);
 
     // Mouse move helpers
     bool handleTextEditorMove(const QPoint& pos);
@@ -151,7 +157,9 @@ private:
     TextAnnotationEditor* m_textAnnotationEditor = nullptr;
     ColorAndWidthWidget* m_colorAndWidthWidget = nullptr;
     ColorPaletteWidget* m_colorPalette = nullptr;
+    AspectRatioWidget* m_aspectRatioWidget = nullptr;
     RadiusSliderWidget* m_radiusSliderWidget = nullptr;
+    MultiRegionManager* m_multiRegionManager = nullptr;
     UpdateThrottler* m_updateThrottler = nullptr;
     QWidget* m_parentWidget = nullptr;
 
@@ -175,6 +183,7 @@ private:
     int m_lineStyle = 0;
     int m_shapeType = 0;
     int m_shapeFillMode = 0;
+    bool m_multiRegionMode = false;
 
     // Constants
     static constexpr int WINDOW_DETECTION_MIN_DISTANCE_SQ = 25;  // 5px threshold squared

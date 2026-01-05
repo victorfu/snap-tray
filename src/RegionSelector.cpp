@@ -32,8 +32,12 @@
 #include <QCursor>
 #include <QClipboard>
 #include <QFileDialog>
+#include <QMessageBox>
+#include <QAbstractButton>
+#include <QPushButton>
 #include <QStandardPaths>
 #include <QDateTime>
+#include <numeric>
 #include <QDir>
 #include <QInputDialog>
 #include <QToolTip>
@@ -56,6 +60,7 @@ struct ToolCapabilities {
 
 static const std::map<ToolbarButton, ToolCapabilities> kToolCapabilities = {
     {ToolbarButton::Selection,  {false, false, false}},
+    {ToolbarButton::MultiRegion,{false, false, false}},
     {ToolbarButton::Pencil,     {true,  true,  true}},
     {ToolbarButton::Marker,     {true,  false, true}},
     {ToolbarButton::Arrow,      {true,  true,  true}},
@@ -133,7 +138,15 @@ RegionSelector::RegionSelector(QWidget* parent)
     // Initialize selection state manager
     m_selectionManager = new SelectionStateManager(this);
     connect(m_selectionManager, &SelectionStateManager::selectionChanged,
-            this, [this](const QRect&) { update(); });
+            this, [this](const QRect& rect) {
+                if (m_multiRegionMode && m_multiRegionManager) {
+                    int activeIndex = m_multiRegionManager->activeIndex();
+                    if (activeIndex >= 0) {
+                        m_multiRegionManager->updateRegion(activeIndex, rect);
+                    }
+                }
+                update();
+            });
     connect(m_selectionManager, &SelectionStateManager::stateChanged,
             this, [this](SelectionStateManager::State newState) {
                 // Update cursor based on state
@@ -145,6 +158,25 @@ RegionSelector::RegionSelector(QWidget* parent)
                 } else {
                     setCursor(Qt::ArrowCursor);
                 }
+            });
+
+    // Initialize multi-region manager
+    m_multiRegionManager = new MultiRegionManager(this);
+    connect(m_multiRegionManager, &MultiRegionManager::regionAdded,
+            this, [this](int) { update(); });
+    connect(m_multiRegionManager, &MultiRegionManager::regionRemoved,
+            this, [this](int) { update(); });
+    connect(m_multiRegionManager, &MultiRegionManager::regionUpdated,
+            this, [this](int) { update(); });
+    connect(m_multiRegionManager, &MultiRegionManager::activeIndexChanged,
+            this, [this](int index) {
+                if (!m_multiRegionMode) return;
+                if (index >= 0) {
+                    m_selectionManager->setSelectionRect(m_multiRegionManager->regionRect(index));
+                } else if (!m_selectionManager->isSelecting()) {
+                    m_selectionManager->clearSelection();
+                }
+                update();
             });
 
     // Initialize annotation layer
@@ -298,6 +330,50 @@ RegionSelector::RegionSelector(QWidget* parent)
     // Initialize magnifier panel component
     m_magnifierPanel = new MagnifierPanel(this);
 
+    // Initialize aspect ratio lock widget
+    m_aspectRatioWidget = new AspectRatioWidget(this);
+    bool ratioLocked = settings.loadAspectRatioLocked();
+    int savedRatioWidth = settings.loadAspectRatioWidth();
+    int savedRatioHeight = settings.loadAspectRatioHeight();
+    m_aspectRatioWidget->setLocked(ratioLocked);
+    m_aspectRatioWidget->setLockedRatio(savedRatioWidth, savedRatioHeight);
+    if (ratioLocked && savedRatioHeight > 0) {
+        m_selectionManager->setAspectRatio(static_cast<qreal>(savedRatioWidth) /
+                                           static_cast<qreal>(savedRatioHeight));
+    }
+    connect(m_aspectRatioWidget, &AspectRatioWidget::lockChanged,
+        this, [this](bool locked) {
+            auto& settings = AnnotationSettingsManager::instance();
+            settings.saveAspectRatioLocked(locked);
+            if (!locked) {
+                m_selectionManager->setAspectRatio(0.0);
+                update();
+                return;
+            }
+
+            QRect sel = m_selectionManager->selectionRect();
+            int ratioWidth = sel.width();
+            int ratioHeight = sel.height();
+            if (ratioWidth <= 0 || ratioHeight <= 0) {
+                ratioWidth = settings.loadAspectRatioWidth();
+                ratioHeight = settings.loadAspectRatioHeight();
+            }
+
+            if (ratioWidth <= 0 || ratioHeight <= 0) {
+                ratioWidth = 1;
+                ratioHeight = 1;
+            }
+
+            int gcd = std::gcd(ratioWidth, ratioHeight);
+            ratioWidth /= gcd;
+            ratioHeight /= gcd;
+            m_aspectRatioWidget->setLockedRatio(ratioWidth, ratioHeight);
+            settings.saveAspectRatio(ratioWidth, ratioHeight);
+            m_selectionManager->setAspectRatio(static_cast<qreal>(ratioWidth) /
+                                               static_cast<qreal>(ratioHeight));
+            update();
+        });
+
     // Initialize corner radius slider widget
     m_radiusSliderWidget = new RadiusSliderWidget(this);
     m_cornerRadius = settings.loadCornerRadius();
@@ -311,7 +387,9 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_painter->setAnnotationLayer(m_annotationLayer);
     m_painter->setToolManager(m_toolManager);
     m_painter->setToolbar(m_toolbar);
+    m_painter->setAspectRatioWidget(m_aspectRatioWidget);
     m_painter->setRadiusSliderWidget(m_radiusSliderWidget);
+    m_painter->setMultiRegionManager(m_multiRegionManager);
     m_painter->setParentWidget(this);
 
     // Initialize input handling component
@@ -324,7 +402,9 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_inputHandler->setTextAnnotationEditor(m_textAnnotationEditor);
     m_inputHandler->setColorAndWidthWidget(m_colorAndWidthWidget);
     m_inputHandler->setColorPalette(m_colorPalette);
+    m_inputHandler->setAspectRatioWidget(m_aspectRatioWidget);
     m_inputHandler->setRadiusSliderWidget(m_radiusSliderWidget);
+    m_inputHandler->setMultiRegionManager(m_multiRegionManager);
     m_inputHandler->setUpdateThrottler(&m_updateThrottler);
     m_inputHandler->setParentWidget(this);
 
@@ -347,6 +427,13 @@ RegionSelector::RegionSelector(QWidget* parent)
         this, [this]() {
             m_selectionManager->finishSelection();
             setCursor(Qt::ArrowCursor);
+            if (m_multiRegionMode && m_multiRegionManager) {
+                QRect sel = m_selectionManager->selectionRect();
+                if (sel.isValid() && sel.width() > 5 && sel.height() > 5 &&
+                    m_multiRegionManager->activeIndex() < 0) {
+                    m_multiRegionManager->addRegion(sel);
+                }
+            }
         });
     connect(m_inputHandler, &RegionInputHandler::fullScreenSelectionRequested,
         this, [this]() {
@@ -407,6 +494,12 @@ RegionSelector::RegionSelector(QWidget* parent)
         this, &RegionSelector::copyToClipboard);
     connect(m_toolbarHandler, &RegionToolbarHandler::ocrRequested,
         this, &RegionSelector::performOCR);
+    connect(m_toolbarHandler, &RegionToolbarHandler::multiRegionToggled,
+        this, &RegionSelector::setMultiRegionMode);
+    connect(m_toolbarHandler, &RegionToolbarHandler::multiRegionDoneRequested,
+        this, &RegionSelector::completeMultiRegionCapture);
+    connect(m_toolbarHandler, &RegionToolbarHandler::multiRegionCancelRequested,
+        this, &RegionSelector::cancelMultiRegionCapture);
 
     // Connect ColorAndWidthWidget configuration signals
     connect(m_toolbarHandler, &RegionToolbarHandler::showSizeSectionRequested,
@@ -471,6 +564,7 @@ RegionSelector::~RegionSelector()
 
 bool RegionSelector::shouldShowColorPalette() const
 {
+    if (m_multiRegionMode) return false;
     if (!m_selectionManager->isComplete()) return false;
     if (!m_showSubToolbar) return false;
     auto it = kToolCapabilities.find(m_currentTool);
@@ -564,6 +658,7 @@ int RegionSelector::effectiveCornerRadius() const
 
 bool RegionSelector::shouldShowColorAndWidthWidget() const
 {
+    if (m_multiRegionMode) return false;
     if (!m_selectionManager->isComplete()) return false;
     if (!m_showSubToolbar) return false;
     auto it = kToolCapabilities.find(m_currentTool);
@@ -572,6 +667,7 @@ bool RegionSelector::shouldShowColorAndWidthWidget() const
 
 bool RegionSelector::shouldShowWidthControl() const
 {
+    if (m_multiRegionMode) return false;
     auto it = kToolCapabilities.find(m_currentTool);
     return it != kToolCapabilities.end() && it->second.needsWidth;
 }
@@ -748,6 +844,7 @@ void RegionSelector::paintEvent(QPaintEvent*)
     m_painter->setShowSubToolbar(m_showSubToolbar);
     m_painter->setCurrentTool(static_cast<int>(m_currentTool));
     m_painter->setDevicePixelRatio(m_devicePixelRatio);
+    m_painter->setMultiRegionMode(m_multiRegionMode);
 
     // Delegate core painting (background, overlay, selection, annotations)
     m_painter->paint(painter, m_backgroundPixmap);
@@ -762,6 +859,30 @@ void RegionSelector::paintEvent(QPaintEvent*)
             m_toolbar->setViewportWidth(width());
             m_toolbar->setPositionForSelection(selectionRect, height());
             m_toolbar->draw(painter);
+
+            if (m_multiRegionMode && m_multiRegionManager && m_multiRegionManager->count() > 0) {
+                QString countText = QString("%1 regions").arg(m_multiRegionManager->count());
+                QFont countFont = painter.font();
+                countFont.setPointSize(11);
+                painter.setFont(countFont);
+
+                QFontMetrics fm(countFont);
+                QRect countRect = fm.boundingRect(countText);
+                countRect.adjust(-8, -4, 8, 4);
+
+                QRect toolbarRect = m_toolbar->boundingRect();
+                int countX = toolbarRect.right() - countRect.width();
+                int countY = toolbarRect.top() - countRect.height() - 6;
+                if (countY < 5) {
+                    countY = toolbarRect.bottom() + 6;
+                }
+                countRect.moveTo(countX, countY);
+
+                auto styleConfig = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
+                GlassRenderer::drawGlassPanel(painter, countRect, styleConfig, 6);
+                painter.setPen(styleConfig.textColor);
+                painter.drawText(countRect, Qt::AlignCenter, countText);
+            }
 
             // Use unified color and width widget
             if (shouldShowColorAndWidthWidget()) {
@@ -906,6 +1027,7 @@ void RegionSelector::handleToolbarClick(ToolbarButton button)
     m_toolbarHandler->setStepBadgeSize(m_stepBadgeSize);
     m_toolbarHandler->setMosaicBlurType(static_cast<int>(m_mosaicBlurType));
     m_toolbarHandler->setOCRInProgress(m_ocrInProgress);
+    m_toolbarHandler->setMultiRegionMode(m_multiRegionMode);
 
     // Delegate to handler
     m_toolbarHandler->handleToolbarClick(button);
@@ -974,6 +1096,118 @@ QPixmap RegionSelector::getSelectedRegion()
     }
 
     return selectedRegion;
+}
+
+void RegionSelector::setMultiRegionMode(bool enabled)
+{
+    if (m_multiRegionMode == enabled) {
+        return;
+    }
+
+    m_multiRegionMode = enabled;
+    m_inputHandler->setMultiRegionMode(enabled);
+    m_painter->setMultiRegionMode(enabled);
+    m_toolbarHandler->setMultiRegionMode(enabled);
+    m_toolbarHandler->setupToolbarButtons();
+
+    if (enabled) {
+        m_multiRegionManager->clear();
+        QRect existingSelection = m_selectionManager->selectionRect();
+        if (m_selectionManager->hasSelection() && existingSelection.isValid()) {
+            m_multiRegionManager->addRegion(existingSelection);
+        } else {
+            m_multiRegionManager->setActiveIndex(-1);
+            m_selectionManager->clearSelection();
+        }
+        m_annotationLayer->clear();
+        m_currentTool = ToolbarButton::Selection;
+        m_showSubToolbar = false;
+    } else {
+        m_multiRegionManager->clear();
+        m_selectionManager->clearSelection();
+        m_showSubToolbar = true;
+    }
+
+    update();
+}
+
+void RegionSelector::completeMultiRegionCapture()
+{
+    if (!m_multiRegionMode || !m_multiRegionManager || m_multiRegionManager->count() == 0) {
+        return;
+    }
+
+    QMessageBox msgBox(this);
+    msgBox.setWindowTitle("Multi-Region Capture");
+    msgBox.setText("Choose how to export the capture:");
+    QAbstractButton* mergeButton = msgBox.addButton("Merge to One Image", QMessageBox::AcceptRole);
+    QAbstractButton* separateButton = msgBox.addButton("Save Separate Images", QMessageBox::AcceptRole);
+    QAbstractButton* cancelButton = msgBox.addButton("Cancel", QMessageBox::RejectRole);
+    msgBox.exec();
+
+    if (msgBox.clickedButton() == cancelButton) {
+        return;
+    }
+
+    if (msgBox.clickedButton() == mergeButton) {
+        QImage merged = m_multiRegionManager->mergeToSingleImage(m_backgroundPixmap, m_devicePixelRatio);
+        if (merged.isNull()) {
+            return;
+        }
+        QPixmap pixmap = QPixmap::fromImage(merged, Qt::NoOpaqueDetection);
+        pixmap.setDevicePixelRatio(m_devicePixelRatio);
+        QRect bounds = m_multiRegionManager->boundingBox();
+        emit regionSelected(pixmap, localToGlobal(bounds.topLeft()));
+        close();
+        return;
+    }
+
+    if (msgBox.clickedButton() == separateButton) {
+        auto& fileSettings = FileSettingsManager::instance();
+        QString baseDir = fileSettings.loadScreenshotPath();
+        QString dateFormat = fileSettings.loadDateFormat();
+        QString prefix = fileSettings.loadFilenamePrefix();
+        QString timestamp = QDateTime::currentDateTime().toString(dateFormat);
+
+        m_isDialogOpen = true;
+        hide();
+
+        QString targetDir = QFileDialog::getExistingDirectory(
+            nullptr,
+            "Save Screenshots",
+            baseDir
+        );
+
+        if (targetDir.isEmpty()) {
+            m_isDialogOpen = false;
+            show();
+            activateWindow();
+            raise();
+            return;
+        }
+
+        QVector<QImage> images = m_multiRegionManager->separateImages(m_backgroundPixmap, m_devicePixelRatio);
+        for (int i = 0; i < images.size(); ++i) {
+            QString filename;
+            if (prefix.isEmpty()) {
+                filename = QString("Screenshot_%1_%2.png").arg(timestamp).arg(i + 1);
+            } else {
+                filename = QString("%1_Screenshot_%2_%3.png").arg(prefix).arg(timestamp).arg(i + 1);
+            }
+            QString filePath = QDir(targetDir).filePath(filename);
+            if (!images[i].save(filePath)) {
+                qDebug() << "RegionSelector: Failed to save multi-region image to" << filePath;
+            }
+        }
+
+        m_isDialogOpen = false;
+        close();
+    }
+}
+
+void RegionSelector::cancelMultiRegionCapture()
+{
+    setMultiRegionMode(false);
 }
 
 void RegionSelector::copyToClipboard()
@@ -1062,6 +1296,7 @@ void RegionSelector::mousePressEvent(QMouseEvent* event)
     m_inputHandler->setLineStyle(static_cast<int>(m_lineStyle));
     m_inputHandler->setShapeType(static_cast<int>(m_shapeType));
     m_inputHandler->setShapeFillMode(static_cast<int>(m_shapeFillMode));
+    m_inputHandler->setMultiRegionMode(m_multiRegionMode);
 
     // Delegate to input handler
     m_inputHandler->handleMousePress(event);
@@ -1081,6 +1316,7 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
     m_inputHandler->setHighlightedWindowRect(m_highlightedWindowRect);
     m_inputHandler->setDetectedWindow(m_detectedWindow.has_value(),
         m_detectedWindow.has_value() ? m_detectedWindow->bounds : QRect());
+    m_inputHandler->setMultiRegionMode(m_multiRegionMode);
 
     // Delegate to input handler
     m_inputHandler->handleMouseMove(event);
@@ -1099,6 +1335,7 @@ void RegionSelector::mouseReleaseEvent(QMouseEvent* event)
     m_inputHandler->setHighlightedWindowRect(m_highlightedWindowRect);
     m_inputHandler->setDetectedWindow(m_detectedWindow.has_value(),
         m_detectedWindow.has_value() ? m_detectedWindow->bounds : QRect());
+    m_inputHandler->setMultiRegionMode(m_multiRegionMode);
 
     // Delegate to input handler
     m_inputHandler->handleMouseRelease(event);
@@ -1201,23 +1438,33 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
     if (event->key() == Qt::Key_Escape) {
         // ESC 直接離開 capture mode
         qDebug() << "RegionSelector: Cancelled via Escape";
-        emit selectionCancelled();
-        close();
+        if (m_multiRegionMode) {
+            cancelMultiRegionCapture();
+        } else {
+            emit selectionCancelled();
+            close();
+        }
     }
     else if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) {
-        if (m_selectionManager->isComplete()) {
+        if (m_multiRegionMode) {
+            completeMultiRegionCapture();
+        }
+        else if (m_selectionManager->isComplete()) {
             finishSelection();
         }
     }
     else if (event->matches(QKeySequence::Copy)) {
-        if (m_selectionManager->isComplete()) {
+        if (!m_multiRegionMode && m_selectionManager->isComplete()) {
             copyToClipboard();
         }
     }
     else if (event->matches(QKeySequence::Save)) {
-        if (m_selectionManager->isComplete()) {
+        if (!m_multiRegionMode && m_selectionManager->isComplete()) {
             saveToFile();
         }
+    }
+    else if (event->key() == Qt::Key_M) {
+        setMultiRegionMode(!m_multiRegionMode);
     }
     else if (event->key() == Qt::Key_R && !event->modifiers()) {
         if (m_selectionManager->isComplete()) {
