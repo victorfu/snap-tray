@@ -11,6 +11,7 @@
 #include "ToolbarWidget.h"
 #include "settings/AnnotationSettingsManager.h"
 #include "settings/Settings.h"
+#include "tools/handlers/MosaicToolHandler.h"
 
 #include <QPainter>
 #include <QMouseEvent>
@@ -41,6 +42,41 @@ static const std::map<ToolId, ToolCapabilities> kToolCapabilities = {
     {ToolId::LaserPointer, {true,  true,  true}},
 };
 
+// Create a rounded square cursor for mosaic tool (matching RegionSelector pattern)
+static QCursor createMosaicCursor(int size) {
+    // Use same pattern as EraserToolHandler - no devicePixelRatio scaling
+    int cursorSize = size + 4;  // Add margin for border
+    QPixmap pixmap(cursorSize, cursorSize);
+    pixmap.fill(Qt::transparent);
+
+    QPainter painter(&pixmap);
+    painter.setRenderHint(QPainter::Antialiasing, true);
+
+    int center = cursorSize / 2;
+    int halfSize = size / 2;
+
+    // Draw semi-transparent fill
+    painter.setBrush(QColor(255, 255, 255, 60));
+    painter.setPen(Qt::NoPen);
+    QRect innerRect(center - halfSize, center - halfSize, size, size);
+    painter.drawRoundedRect(innerRect, 2, 2);
+
+    // Draw light gray/white border for better visibility
+    painter.setPen(QPen(QColor(220, 220, 220), 1.5, Qt::SolidLine));
+    painter.setBrush(Qt::NoBrush);
+    painter.drawRoundedRect(innerRect, 2, 2);
+
+    // Draw darker inner outline for contrast on light backgrounds
+    painter.setPen(QPen(QColor(100, 100, 100, 180), 0.5, Qt::SolidLine));
+    QRect innerOutline = innerRect.adjusted(1, 1, -1, -1);
+    painter.drawRoundedRect(innerOutline, 1, 1);
+
+    painter.end();
+
+    int hotspot = cursorSize / 2;
+    return QCursor(pixmap, hotspot, hotspot);
+}
+
 ScreenCanvas::ScreenCanvas(QWidget* parent)
     : QWidget(parent)
     , m_currentScreen(nullptr)
@@ -58,7 +94,6 @@ ScreenCanvas::ScreenCanvas(QWidget* parent)
     setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::Tool);
     setAttribute(Qt::WA_DeleteOnClose);
     setMouseTracking(true);
-    setCursor(Qt::ArrowCursor);
 
     // Initialize annotation layer
     m_annotationLayer = new AnnotationLayer(this);
@@ -188,6 +223,9 @@ ScreenCanvas::ScreenCanvas(QWidget* parent)
     m_spotlightEffect = new SpotlightEffect(this);
     connect(m_spotlightEffect, &SpotlightEffect::needsRepaint,
         this, QOverload<>::of(&QWidget::update));
+
+    // Set initial cursor based on default tool
+    setToolCursor();
 
     qDebug() << "ScreenCanvas: Created";
 }
@@ -422,6 +460,9 @@ void ScreenCanvas::initializeForScreen(QScreen* screen)
 
     // Update toolbar position
     updateToolbarPosition();
+
+    // Set initial cursor based on current tool
+    setToolCursor();
 }
 
 void ScreenCanvas::paintEvent(QPaintEvent*)
@@ -570,6 +611,7 @@ void ScreenCanvas::handleToolbarClick(CanvasButton button)
             m_showSubToolbar = true;
         }
         qDebug() << "ScreenCanvas: Tool selected:" << static_cast<int>(toolId) << "showSubToolbar:" << m_showSubToolbar;
+        setToolCursor();
         update();
         break;
 
@@ -586,6 +628,7 @@ void ScreenCanvas::handleToolbarClick(CanvasButton button)
             m_showSubToolbar = true;
         }
         qDebug() << "ScreenCanvas: StepBadge selected, showSubToolbar:" << m_showSubToolbar;
+        setToolCursor();
         update();
         break;
 
@@ -603,6 +646,7 @@ void ScreenCanvas::handleToolbarClick(CanvasButton button)
             m_showSubToolbar = true;
         }
         qDebug() << "ScreenCanvas: Laser Pointer selected, showSubToolbar:" << m_showSubToolbar;
+        setToolCursor();
         update();
         break;
 
@@ -665,6 +709,33 @@ bool ScreenCanvas::isDrawingTool(ToolId toolId) const
         return true;
     default:
         return false;
+    }
+}
+
+void ScreenCanvas::setToolCursor()
+{
+    switch (m_currentToolId) {
+    case ToolId::Text:
+        setCursor(Qt::IBeamCursor);
+        break;
+    case ToolId::Mosaic: {
+        int mosaicWidth = m_toolManager ? m_toolManager->width() : MosaicToolHandler::kDefaultBrushWidth;
+        setCursor(createMosaicCursor(mosaicWidth));
+        break;
+    }
+    case ToolId::LaserPointer:
+    case ToolId::CursorHighlight:
+    case ToolId::Spotlight:
+        // Effect tools - use arrow cursor
+        setCursor(Qt::ArrowCursor);
+        break;
+    default:
+        if (isDrawingTool(m_currentToolId)) {
+            setCursor(Qt::CrossCursor);
+        } else {
+            setCursor(Qt::ArrowCursor);
+        }
+        break;
     }
 }
 
@@ -839,11 +910,8 @@ void ScreenCanvas::mouseMoveEvent(QMouseEvent* event)
         else if (widgetHovered) {
             setCursor(Qt::PointingHandCursor);
         }
-        else if (m_currentToolId == ToolId::Mosaic) {
-            setCursor(Qt::BlankCursor);
-        }
         else {
-            setCursor(Qt::ArrowCursor);
+            setToolCursor();
         }
 
         if (needsUpdate) {
@@ -876,7 +944,7 @@ void ScreenCanvas::mouseReleaseEvent(QMouseEvent* event)
             if (m_toolbar->contains(event->pos())) {
                 setCursor(Qt::OpenHandCursor);
             } else {
-                setCursor(Qt::ArrowCursor);
+                setToolCursor();
             }
             return;
         }
@@ -891,6 +959,15 @@ void ScreenCanvas::mouseReleaseEvent(QMouseEvent* event)
         if (m_currentToolId == ToolId::LaserPointer && m_laserRenderer->isDrawing()) {
             m_laserRenderer->stopDrawing();
             update();
+            return;
+        }
+
+        // Skip annotation handling if releasing on toolbar or widgets
+        // This prevents StepBadge from creating badges when clicking on UI elements
+        if (m_toolbar->contains(event->pos())) {
+            return;
+        }
+        if (shouldShowColorAndWidthWidget() && m_colorAndWidthWidget->contains(event->pos())) {
             return;
         }
 

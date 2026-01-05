@@ -109,6 +109,7 @@ private:
     void handleToolbarClick(CanvasButton button);
     bool isDrawingTool(ToolId toolId) const;
     QColor getButtonIconColor(int buttonId) const;
+    void setToolCursor();
 
     // Color palette helpers (legacy)
     bool shouldShowColorPalette() const;
