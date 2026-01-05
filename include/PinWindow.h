@@ -46,6 +46,10 @@ public:
     void setClickThrough(bool enabled);
     bool isClickThrough() const { return m_clickThrough; }
 
+    // Shadow visibility
+    void setShowShadow(bool enabled);
+    bool showShadow() const { return m_showShadow; }
+
 signals:
     void closed(PinWindow *window);
     void saveRequested(const QPixmap &pixmap);
@@ -86,6 +90,9 @@ private:
     void applyClickThroughState(bool enabled);
     void updateClickThroughForCursor();
 
+    // Shadow margin helper
+    int currentShadowMargin() const;
+
     // OCR methods
     void performOCR();
     void onOCRComplete(bool success, const QString &text, const QString &error);
@@ -101,6 +108,7 @@ private:
     bool m_isDragging;
     QMenu *m_contextMenu;
     QAction *m_clickThroughAction = nullptr;
+    QAction *m_showShadowAction = nullptr;
 
     // Zoom menu members
     QAction *m_currentZoomAction;
@@ -120,6 +128,9 @@ private:
     bool m_clickThrough;
     bool m_clickThroughApplied = false;
     QTimer *m_clickThroughHoverTimer = nullptr;
+
+    // Shadow visibility
+    bool m_showShadow;
 
     // Rotation members
     int m_rotationAngle;  // 0, 90, 180, 270 degrees

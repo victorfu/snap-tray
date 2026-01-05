@@ -54,3 +54,8 @@ void setWindowFloatingWithoutFocus(QWidget *widget)
     Q_UNUSED(widget)
 #endif
 }
+
+void setWindowShadow(QWidget *, bool)
+{
+    // Windows uses our custom-drawn shadow, not system shadow
+}

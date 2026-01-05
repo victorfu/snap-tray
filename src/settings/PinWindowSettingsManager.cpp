@@ -55,3 +55,15 @@ void PinWindowSettingsManager::saveZoomStep(qreal step)
     auto settings = SnapTray::getSettings();
     settings.setValue(kSettingsKeyZoomStep, step);
 }
+
+bool PinWindowSettingsManager::loadShadowEnabled() const
+{
+    auto settings = SnapTray::getSettings();
+    return settings.value(kSettingsKeyShadowEnabled, kDefaultShadowEnabled).toBool();
+}
+
+void PinWindowSettingsManager::saveShadowEnabled(bool enabled)
+{
+    auto settings = SnapTray::getSettings();
+    settings.setValue(kSettingsKeyShadowEnabled, enabled);
+}

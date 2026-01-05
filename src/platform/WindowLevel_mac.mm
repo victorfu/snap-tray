@@ -60,3 +60,15 @@ void setWindowFloatingWithoutFocus(QWidget *widget)
         [window setHidesOnDeactivate:NO];
     }
 }
+
+void setWindowShadow(QWidget *widget, bool enabled)
+{
+    if (!widget) {
+        return;
+    }
+    NSView *view = reinterpret_cast<NSView *>(widget->winId());
+    if (view) {
+        NSWindow *window = [view window];
+        [window setHasShadow:enabled];
+    }
+}

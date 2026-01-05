@@ -18,4 +18,9 @@ void setWindowClickThrough(QWidget *widget, bool enabled);
 // On Windows: Uses WS_EX_NOACTIVATE
 void setWindowFloatingWithoutFocus(QWidget *widget);
 
+// Sets or removes the system window shadow
+// On macOS: Uses NSWindow setHasShadow:
+// On Windows: No-op (Windows uses our custom-drawn shadow)
+void setWindowShadow(QWidget *widget, bool enabled);
+
 #endif // WINDOWLEVEL_H

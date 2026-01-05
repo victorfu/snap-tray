@@ -4,6 +4,7 @@
 #include <QMouseEvent>
 
 #include "PinWindow.h"
+#include "settings/PinWindowSettingsManager.h"
 
 class TestPinWindowResize : public QObject
 {
@@ -23,7 +24,8 @@ private:
 
 private slots:
     void initTestCase() {
-        // Ensure we have a QApplication for GUI tests
+        // Ensure shadow is enabled for consistent test behavior
+        PinWindowSettingsManager::instance().saveShadowEnabled(true);
     }
 
     // =========================================================================

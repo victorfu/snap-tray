@@ -26,10 +26,15 @@ public:
     qreal loadZoomStep() const;
     void saveZoomStep(qreal step);
 
+    // Shadow visibility
+    bool loadShadowEnabled() const;
+    void saveShadowEnabled(bool enabled);
+
     // Default values
     static constexpr qreal kDefaultOpacity = 1.0;
     static constexpr qreal kDefaultOpacityStep = 0.05;
     static constexpr qreal kDefaultZoomStep = 0.05;
+    static constexpr bool kDefaultShadowEnabled = true;
 
 private:
     PinWindowSettingsManager() = default;
@@ -39,6 +44,7 @@ private:
     static constexpr const char* kSettingsKeyDefaultOpacity = "pinWindow/defaultOpacity";
     static constexpr const char* kSettingsKeyOpacityStep = "pinWindow/opacityStep";
     static constexpr const char* kSettingsKeyZoomStep = "pinWindow/zoomStep";
+    static constexpr const char* kSettingsKeyShadowEnabled = "pinWindow/shadowEnabled";
 };
 
 #endif // PINWINDOWSETTINGSMANAGER_H
