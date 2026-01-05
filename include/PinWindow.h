@@ -46,9 +46,9 @@ public:
     void setClickThrough(bool enabled);
     bool isClickThrough() const { return m_clickThrough; }
 
-    // Shadow visibility
-    void setShowShadow(bool enabled);
-    bool showShadow() const { return m_showShadow; }
+    // Border visibility
+    void setShowBorder(bool enabled);
+    bool showBorder() const { return m_showBorder; }
 
 signals:
     void closed(PinWindow *window);
@@ -69,7 +69,6 @@ protected:
 
 private:
     // Layout constants
-    static constexpr int kShadowMargin = 8;
     static constexpr int kMinSize = 50;
 
     void updateSize();
@@ -90,9 +89,6 @@ private:
     void applyClickThroughState(bool enabled);
     void updateClickThroughForCursor();
 
-    // Shadow margin helper
-    int currentShadowMargin() const;
-
     // OCR methods
     void performOCR();
     void onOCRComplete(bool success, const QString &text, const QString &error);
@@ -108,7 +104,7 @@ private:
     bool m_isDragging;
     QMenu *m_contextMenu;
     QAction *m_clickThroughAction = nullptr;
-    QAction *m_showShadowAction = nullptr;
+    QAction *m_showBorderAction = nullptr;
 
     // Zoom menu members
     QAction *m_currentZoomAction;
@@ -129,8 +125,8 @@ private:
     bool m_clickThroughApplied = false;
     QTimer *m_clickThroughHoverTimer = nullptr;
 
-    // Shadow visibility
-    bool m_showShadow;
+    // Border visibility
+    bool m_showBorder = true;
 
     // Rotation members
     int m_rotationAngle;  // 0, 90, 180, 270 degrees
@@ -161,12 +157,6 @@ private:
     QTimer *m_resizeFinishTimer = nullptr;
     bool m_pendingHighQualityUpdate = false;
     static constexpr int kResizeThrottleMs = 16;  // ~60fps during resize
-
-    // Shadow cache
-    mutable QPixmap m_shadowCache;
-    mutable QSize m_shadowCacheSize;
-    int m_shadowCornerRadius = -1;
-    void ensureShadowCache(const QSize &contentSize, int cornerRadius);
 
     int m_baseCornerRadius = 0;
 };

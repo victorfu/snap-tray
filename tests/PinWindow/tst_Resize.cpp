@@ -4,7 +4,6 @@
 #include <QMouseEvent>
 
 #include "PinWindow.h"
-#include "settings/PinWindowSettingsManager.h"
 
 class TestPinWindowResize : public QObject
 {
@@ -17,16 +16,10 @@ private:
         return pixmap;
     }
 
-    // Shadow margin constant (matches PinWindow::kShadowMargin)
-    static constexpr int kShadowMargin = 8;
     static constexpr int kResizeMargin = 6;
     static constexpr int kMinSize = 50;
 
 private slots:
-    void initTestCase() {
-        // Ensure shadow is enabled for consistent test behavior
-        PinWindowSettingsManager::instance().saveShadowEnabled(true);
-    }
 
     // =========================================================================
     // Initial Size Tests
@@ -36,21 +29,15 @@ private slots:
         QPixmap pixmap = createTestPixmap(100, 100);
         PinWindow window(pixmap, QPoint(0, 0));
 
-        // Window size = pixmap size + shadow margins on each side
-        int expectedWidth = 100 + kShadowMargin * 2;
-        int expectedHeight = 100 + kShadowMargin * 2;
-
-        QCOMPARE(window.size(), QSize(expectedWidth, expectedHeight));
+        // Window size = pixmap size
+        QCOMPARE(window.size(), QSize(100, 100));
     }
 
     void testInitialWindowSizeNonSquare() {
         QPixmap pixmap = createTestPixmap(200, 100);
         PinWindow window(pixmap, QPoint(0, 0));
 
-        int expectedWidth = 200 + kShadowMargin * 2;
-        int expectedHeight = 100 + kShadowMargin * 2;
-
-        QCOMPARE(window.size(), QSize(expectedWidth, expectedHeight));
+        QCOMPARE(window.size(), QSize(200, 100));
     }
 
     void testInitialPosition() {
@@ -58,9 +45,7 @@ private slots:
         QPoint requestedPos(100, 200);
         PinWindow window(pixmap, requestedPos);
 
-        // Position is offset by shadow margin so content appears at requested position
-        QPoint expectedPos = requestedPos - QPoint(kShadowMargin, kShadowMargin);
-        QCOMPARE(window.pos(), expectedPos);
+        QCOMPARE(window.pos(), requestedPos);
     }
 
     // =========================================================================
@@ -76,11 +61,8 @@ private slots:
         window.setZoomLevel(2.0);
         QSize zoomedSize = window.size();
 
-        // At 2x zoom, the window should be roughly twice the size (minus margins)
-        int originalContent = originalSize.width() - kShadowMargin * 2;
-        int zoomedContent = zoomedSize.width() - kShadowMargin * 2;
-
-        QCOMPARE(zoomedContent, originalContent * 2);
+        // At 2x zoom, the window should be twice the size
+        QCOMPARE(zoomedSize.width(), originalSize.width() * 2);
     }
 
     void testZoomDoesNotGoAboveMax() {
@@ -175,10 +157,7 @@ private slots:
         QSize afterZoom = window.size();
 
         // Content should double
-        int rotatedContent = afterRotation.width() - kShadowMargin * 2;
-        int zoomedContent = afterZoom.width() - kShadowMargin * 2;
-
-        QCOMPARE(zoomedContent, rotatedContent * 2);
+        QCOMPARE(afterZoom.width(), afterRotation.width() * 2);
     }
 
     void testMultipleTransformsSize() {
@@ -191,8 +170,8 @@ private slots:
         window.flipHorizontal();
 
         // Verify the window is still valid and has reasonable size
-        QVERIFY(window.size().width() > kShadowMargin * 2 + kMinSize);
-        QVERIFY(window.size().height() > kShadowMargin * 2 + kMinSize);
+        QVERIFY(window.size().width() >= kMinSize);
+        QVERIFY(window.size().height() >= kMinSize);
     }
 
     // =========================================================================

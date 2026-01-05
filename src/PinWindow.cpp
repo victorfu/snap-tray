@@ -78,7 +78,6 @@ PinWindow::PinWindow(const QPixmap &screenshot, const QPoint &position, QWidget 
     , m_currentZoomAction(nullptr)
     , m_smoothing(true)
     , m_clickThrough(false)
-    , m_showShadow(PinWindowSettingsManager::instance().loadShadowEnabled())
 {
     // Frameless, always on top
     // Note: Removed Qt::Tool flag as it causes the window to hide when app loses focus on macOS
@@ -92,12 +91,10 @@ PinWindow::PinWindow(const QPixmap &screenshot, const QPoint &position, QWidget 
     setAttribute(Qt::WA_MacAlwaysShowToolWindow);
 #endif
 
-    // Initial size matches screenshot plus shadow margins (use logical size for HiDPI)
+    // Initial size matches screenshot (use logical size for HiDPI)
     m_displayPixmap = m_originalPixmap;
     QSize logicalSize = m_displayPixmap.size() / m_displayPixmap.devicePixelRatio();
-    int margin = currentShadowMargin();
-    QSize windowSize = logicalSize + QSize(margin * 2, margin * 2);
-    setFixedSize(windowSize);
+    setFixedSize(logicalSize);
 
     // Cache the base corner radius so pin window chrome matches rounded captures.
     qreal baseDpr = m_originalPixmap.devicePixelRatio();
@@ -119,21 +116,16 @@ PinWindow::PinWindow(const QPixmap &screenshot, const QPoint &position, QWidget 
     // Enable mouse tracking for resize cursor
     setMouseTracking(true);
 
-    // Initialize components (reuse margin from window size calculation)
-    m_resizeHandler = new ResizeHandler(margin, kMinSize, this);
+    // Initialize components
+    m_resizeHandler = new ResizeHandler(0, kMinSize, this);
     m_uiIndicators = new UIIndicators(this, this);
-    m_uiIndicators->setShadowMargin(margin);
     connect(m_uiIndicators, &UIIndicators::exitClickThroughRequested,
             this, [this]() { setClickThrough(false); });
 
     // Must show() first, then move() to get correct positioning on macOS
     // Moving before show() can result in incorrect window placement
-    // Offset position by shadow margin so the pixmap content appears at the expected location
     show();
-    move(position - QPoint(margin, margin));
-
-    // Set system window shadow based on setting (must be after show())
-    setWindowShadow(this, m_showShadow);
+    move(position);
 
     // Apply default opacity (90%)
     setWindowOpacity(m_opacity);
@@ -264,9 +256,7 @@ void PinWindow::onResizeFinished()
         // Perform high-quality scaling after resize is complete
         ensureTransformCacheValid();
 
-        int margin = currentShadowMargin();
-        QSize contentSize = size() - QSize(margin * 2, margin * 2);
-        QSize newDeviceSize = contentSize * m_transformedCache.devicePixelRatio();
+        QSize newDeviceSize = size() * m_transformedCache.devicePixelRatio();
 
         m_displayPixmap = m_transformedCache.scaled(newDeviceSize,
                                                     Qt::KeepAspectRatio,
@@ -312,44 +302,6 @@ int PinWindow::effectiveCornerRadius(const QSize &contentSize) const
     return qMin(radius, maxRadius);
 }
 
-void PinWindow::ensureShadowCache(const QSize &contentSize, int cornerRadius)
-{
-    QSize fullSize = contentSize + QSize(kShadowMargin * 2, kShadowMargin * 2);
-
-    if (m_shadowCacheSize == fullSize &&
-        m_shadowCornerRadius == cornerRadius &&
-        !m_shadowCache.isNull()) {
-        return;  // Cache is valid
-    }
-
-    // Pre-render shadow to cache
-    m_shadowCache = QPixmap(fullSize * devicePixelRatio());
-    m_shadowCache.setDevicePixelRatio(devicePixelRatio());
-    m_shadowCache.fill(Qt::transparent);
-
-    QPainter cachePainter(&m_shadowCache);
-    cachePainter.setRenderHint(QPainter::Antialiasing);
-
-    QRect pixmapRect(kShadowMargin, kShadowMargin,
-                     contentSize.width(), contentSize.height());
-
-    cachePainter.setPen(Qt::NoPen);
-    for (int i = kShadowMargin; i >= 1; --i) {
-        int alpha = 40 * (kShadowMargin - i + 1) / kShadowMargin;
-        cachePainter.setBrush(QColor(255, 255, 255, alpha));
-        if (cornerRadius > 0) {
-            cachePainter.drawRoundedRect(pixmapRect.adjusted(-i, -i, i, i),
-                                         cornerRadius + i,
-                                         cornerRadius + i);
-        } else {
-            cachePainter.drawRoundedRect(pixmapRect.adjusted(-i, -i, i, i), 2, 2);
-        }
-    }
-
-    m_shadowCacheSize = fullSize;
-    m_shadowCornerRadius = cornerRadius;
-}
-
 void PinWindow::updateSize()
 {
     // Use cached transform (only rebuild if rotation/flip changed)
@@ -367,10 +319,7 @@ void PinWindow::updateSize()
                                                 mode);
     m_displayPixmap.setDevicePixelRatio(m_transformedCache.devicePixelRatio());
 
-    // Add shadow margins to window size
-    int margin = currentShadowMargin();
-    QSize windowSize = newLogicalSize + QSize(margin * 2, margin * 2);
-    setFixedSize(windowSize);
+    setFixedSize(newLogicalSize);
     update();
 
     qDebug() << "PinWindow: Zoom level" << m_zoomLevel << "rotation" << m_rotationAngle
@@ -587,11 +536,11 @@ void PinWindow::createContextMenu()
     addInfoItem("X-mirror", m_flipHorizontal ? "Yes" : "No");
     addInfoItem("Y-mirror", m_flipVertical ? "Yes" : "No");
 
-    // Show shadow option
-    m_showShadowAction = m_contextMenu->addAction("Show Shadow");
-    m_showShadowAction->setCheckable(true);
-    m_showShadowAction->setChecked(m_showShadow);
-    connect(m_showShadowAction, &QAction::toggled, this, &PinWindow::setShowShadow);
+    // Show border option
+    m_showBorderAction = m_contextMenu->addAction("Show Border");
+    m_showBorderAction->setCheckable(true);
+    m_showBorderAction->setChecked(m_showBorder);
+    connect(m_showBorderAction, &QAction::toggled, this, &PinWindow::setShowBorder);
 
     // Click-through option
     m_clickThroughAction = m_contextMenu->addAction("Click-through");
@@ -758,43 +707,18 @@ void PinWindow::setClickThrough(bool enabled)
     }
 }
 
-void PinWindow::setShowShadow(bool enabled)
+void PinWindow::setShowBorder(bool enabled)
 {
-    if (m_showShadow == enabled)
+    if (m_showBorder == enabled)
         return;
 
-    int oldMargin = currentShadowMargin();
-    m_showShadow = enabled;
-    int newMargin = currentShadowMargin();
-    int delta = oldMargin - newMargin;
-
-    // Save setting
-    PinWindowSettingsManager::instance().saveShadowEnabled(enabled);
-
-    // Update system window shadow (macOS)
-    setWindowShadow(this, enabled);
-
-    // Update components with new margin
-    m_resizeHandler->setShadowMargin(newMargin);
-    m_uiIndicators->setShadowMargin(newMargin);
-
-    // Adjust position to keep content in same place
-    move(pos() + QPoint(delta, delta));
-
-    // Invalidate shadow cache
-    m_shadowCacheSize = QSize();
+    m_showBorder = enabled;
+    update();
 
     // Sync context menu action state
-    if (m_showShadowAction && m_showShadowAction->isChecked() != enabled) {
-        m_showShadowAction->setChecked(enabled);
+    if (m_showBorderAction && m_showBorderAction->isChecked() != enabled) {
+        m_showBorderAction->setChecked(enabled);
     }
-
-    updateSize();
-}
-
-int PinWindow::currentShadowMargin() const
-{
-    return m_showShadow ? kShadowMargin : 0;
 }
 
 void PinWindow::paintEvent(QPaintEvent *)
@@ -803,36 +727,26 @@ void PinWindow::paintEvent(QPaintEvent *)
     painter.setRenderHint(QPainter::SmoothPixmapTransform);
     painter.setRenderHint(QPainter::Antialiasing);
 
-    // Calculate the pixmap rectangle (excluding shadow margins)
-    int margin = currentShadowMargin();
-    QRect pixmapRect(margin, margin,
-                     width() - margin * 2,
-                     height() - margin * 2);
+    QRect pixmapRect = rect();
 
-    // Draw cached shadow (performance optimization) if shadow is enabled
-    QSize contentSize(pixmapRect.width(), pixmapRect.height());
-    int cornerRadius = effectiveCornerRadius(contentSize);
-    if (m_showShadow) {
-        ensureShadowCache(contentSize, cornerRadius);
-        painter.drawPixmap(0, 0, m_shadowCache);
-    }
-
-    // Draw the screenshot at the margin offset
+    // Draw the screenshot
     painter.drawPixmap(pixmapRect, m_displayPixmap);
 
-    // Draw subtle border with slight glow effect (only when shadow is enabled)
-    if (m_showShadow) {
+    // Draw border if enabled
+    if (m_showBorder) {
+        int cornerRadius = effectiveCornerRadius(size());
         if (m_clickThrough) {
             // Dashed indigo border for click-through mode
             painter.setPen(QPen(QColor(88, 86, 214, 200), 2, Qt::DashLine));
         } else {
-            painter.setPen(QPen(QColor(0, 120, 215, 200), 1.5));
+            // Blue border
+            painter.setPen(QPen(QColor(0, 122, 255, 200), 1.5));
         }
         painter.setBrush(Qt::NoBrush);
         if (cornerRadius > 0) {
-            painter.drawRoundedRect(pixmapRect, cornerRadius, cornerRadius);
+            painter.drawRoundedRect(pixmapRect.adjusted(1, 1, -1, -1), cornerRadius, cornerRadius);
         } else {
-            painter.drawRect(pixmapRect);
+            painter.drawRect(pixmapRect.adjusted(1, 1, -1, -1));
         }
     }
 
@@ -871,22 +785,18 @@ void PinWindow::mouseMoveEvent(QMouseEvent *event)
         QPoint newPos;
         m_resizeHandler->updateResize(event->globalPosition().toPoint(), newSize, newPos);
 
-        // Update zoom level based on new size
-        int margin = currentShadowMargin();
-        QSize contentSize = newSize - QSize(margin * 2, margin * 2);
-
         // Use cached transform (performance optimization)
         ensureTransformCacheValid();
 
         // Use transformed dimensions for zoom calculation
         QSize transformedLogicalSize = m_transformedCache.size() / m_transformedCache.devicePixelRatio();
-        qreal scaleX = static_cast<qreal>(contentSize.width()) / transformedLogicalSize.width();
-        qreal scaleY = static_cast<qreal>(contentSize.height()) / transformedLogicalSize.height();
+        qreal scaleX = static_cast<qreal>(newSize.width()) / transformedLogicalSize.width();
+        qreal scaleY = static_cast<qreal>(newSize.height()) / transformedLogicalSize.height();
         m_zoomLevel = qMin(scaleX, scaleY);
 
         // Use FastTransformation during resize for responsiveness
         // High-quality scaling will be done after resize is complete
-        QSize newDeviceSize = contentSize * m_transformedCache.devicePixelRatio();
+        QSize newDeviceSize = newSize * m_transformedCache.devicePixelRatio();
         m_displayPixmap = m_transformedCache.scaled(newDeviceSize,
                                                     Qt::KeepAspectRatio,
                                                     Qt::FastTransformation);
