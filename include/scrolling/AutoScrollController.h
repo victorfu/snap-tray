@@ -3,7 +3,10 @@
 
 #include <QObject>
 #include <QRect>
+#include <QImage>
 #include <memory>
+
+class FrameStabilityDetector;
 
 /**
  * @brief Controls automated scrolling for perfect capture conditions
@@ -83,6 +86,14 @@ public:
     // Notify that a frame was captured and processed
     // Used for end-of-content detection via frame hash comparison
     void notifyFrameCaptured(uint64_t frameHash);
+
+    // Closed-loop frame stability control
+    // Call this with each grabbed frame during Stabilizing state
+    // Returns true when frame is stable and ready for capture
+    bool checkFrameStability(const QImage &frame);
+
+    // Configure stability detection
+    void setStabilityThreshold(double threshold);  // 0.0-1.0, default 0.98
 
     // Platform support
     static bool isSupported();

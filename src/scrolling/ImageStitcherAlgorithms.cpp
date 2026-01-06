@@ -2,7 +2,8 @@
 
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
-// RSSA: Removed opencv2/features2d.hpp - no longer using ORB/SIFT feature detection
+#include <opencv2/features2d.hpp>
+#include <opencv2/calib3d.hpp>
 
 #include <QPainter>
 #include <QDebug>
@@ -1738,4 +1739,226 @@ ImageStitcher::MatchCandidate ImageStitcher::computeRowProjectionCandidate(
     candidate.overlap = refinedOverlap;
 
     return candidate;
+}
+
+// ORB + RANSAC feature-based matching as robust fallback
+// This method handles challenging cases that template/row projection can't:
+// - Non-linear motion (slight rotation, scale)
+// - Horizontal drift during scrolling
+// - Periodic patterns (spreadsheets, code)
+ImageStitcher::StitchResult ImageStitcher::tryFeatureMatch(const QImage &newFrame)
+{
+    StitchResult result;
+    result.usedAlgorithm = Algorithm::FeatureBased;
+
+    bool isHorizontal = (m_captureMode == CaptureMode::Horizontal);
+    ScrollDirection primaryDir = isHorizontal ? ScrollDirection::Right : ScrollDirection::Down;
+
+    cv::Mat lastMat = qImageToCvMat(m_lastFrame);
+    cv::Mat newMat = qImageToCvMat(newFrame);
+
+    if (lastMat.empty() || newMat.empty()) {
+        result.failureReason = "Failed to convert images";
+        return result;
+    }
+
+    // Convert to grayscale
+    cv::Mat lastGray, newGray;
+    cv::cvtColor(lastMat, lastGray, cv::COLOR_BGR2GRAY);
+    cv::cvtColor(newMat, newGray, cv::COLOR_BGR2GRAY);
+
+    // Define ROI for feature detection
+    // For vertical scrolling: bottom of last frame, top of new frame
+    // For horizontal scrolling: right of last frame, left of new frame
+    int frameDimension = isHorizontal ? lastGray.cols : lastGray.rows;
+    double overlapRatio = maxOverlapRatioForFrame(frameDimension);
+    int roiSize = static_cast<int>(frameDimension * 0.5);  // Use 50% of frame for features
+
+    cv::Rect lastROIRect, newROIRect;
+    int lastOffsetY = 0, newOffsetY = 0;
+    int lastOffsetX = 0, newOffsetX = 0;
+
+    if (isHorizontal) {
+        int roiWidth = std::min(roiSize, lastGray.cols);
+        lastROIRect = cv::Rect(lastGray.cols - roiWidth, 0, roiWidth, lastGray.rows);
+        newROIRect = cv::Rect(0, 0, roiWidth, newGray.rows);
+        lastOffsetX = lastGray.cols - roiWidth;
+        newOffsetX = 0;
+    } else {
+        int roiHeight = std::min(roiSize, lastGray.rows);
+        lastROIRect = cv::Rect(0, lastGray.rows - roiHeight, lastGray.cols, roiHeight);
+        newROIRect = cv::Rect(0, 0, newGray.cols, roiHeight);
+        lastOffsetY = lastGray.rows - roiHeight;
+        newOffsetY = 0;
+    }
+
+    cv::Mat lastROI = lastGray(lastROIRect);
+    cv::Mat newROI = newGray(newROIRect);
+
+    // Create ORB detector
+    cv::Ptr<cv::ORB> orb = cv::ORB::create(
+        2000,    // maxFeatures
+        1.2f,    // scaleFactor
+        8,       // nlevels
+        31,      // edgeThreshold
+        0,       // firstLevel
+        2,       // WTA_K
+        cv::ORB::HARRIS_SCORE,
+        31,      // patchSize
+        20       // fastThreshold
+    );
+
+    // Detect keypoints and compute descriptors
+    std::vector<cv::KeyPoint> kp1, kp2;
+    cv::Mat desc1, desc2;
+    orb->detectAndCompute(lastROI, cv::noArray(), kp1, desc1);
+    orb->detectAndCompute(newROI, cv::noArray(), kp2, desc2);
+
+    if (kp1.size() < 15 || kp2.size() < 15) {
+        result.failureReason = QString("Insufficient keypoints: %1 vs %2")
+                                   .arg(kp1.size()).arg(kp2.size());
+        return result;
+    }
+
+    // BFMatcher with Hamming distance for binary descriptors
+    cv::Ptr<cv::BFMatcher> matcher = cv::BFMatcher::create(cv::NORM_HAMMING, false);
+
+    // KNN matching (k=2 for ratio test)
+    std::vector<std::vector<cv::DMatch>> knnMatches;
+    matcher->knnMatch(desc1, desc2, knnMatches, 2);
+
+    // Apply Lowe's ratio test
+    std::vector<cv::DMatch> goodMatches;
+    constexpr float ratioThreshold = 0.75f;
+    for (const auto &knn : knnMatches) {
+        if (knn.size() >= 2) {
+            if (knn[0].distance < ratioThreshold * knn[1].distance) {
+                goodMatches.push_back(knn[0]);
+            }
+        } else if (knn.size() == 1 && knn[0].distance < 64) {
+            goodMatches.push_back(knn[0]);
+        }
+    }
+
+    if (goodMatches.size() < 15) {
+        result.failureReason = QString("Insufficient matches after ratio test: %1")
+                                   .arg(goodMatches.size());
+        return result;
+    }
+
+    // Extract matched point coordinates
+    std::vector<cv::Point2f> srcPts, dstPts;
+    srcPts.reserve(goodMatches.size());
+    dstPts.reserve(goodMatches.size());
+
+    for (const auto &m : goodMatches) {
+        srcPts.push_back(kp1[m.queryIdx].pt);
+        dstPts.push_back(kp2[m.trainIdx].pt);
+    }
+
+    // RANSAC homography estimation
+    std::vector<unsigned char> inlierMask;
+    cv::Mat H = cv::findHomography(srcPts, dstPts, cv::RANSAC, 3.0, inlierMask);
+
+    if (H.empty()) {
+        result.failureReason = "Homography estimation failed";
+        return result;
+    }
+
+    // Count inliers
+    int numInliers = cv::countNonZero(inlierMask);
+    if (numInliers < 10) {
+        result.failureReason = QString("Insufficient inliers: %1").arg(numInliers);
+        return result;
+    }
+
+    // Extract translation from homography
+    // H = [h00 h01 h02]
+    //     [h10 h11 h12]
+    //     [h20 h21 h22]
+    // dx = h02, dy = h12 (for pure translation)
+
+    double dx = H.at<double>(0, 2);
+    double dy = H.at<double>(1, 2);
+
+    // Adjust for ROI offsets
+    if (isHorizontal) {
+        dx = dx + (lastOffsetX - newOffsetX);
+    } else {
+        dy = dy + (lastOffsetY - newOffsetY);
+    }
+
+    // Extract scale and rotation for validation
+    double scale = std::sqrt(H.at<double>(0, 0) * H.at<double>(0, 0) +
+                             H.at<double>(1, 0) * H.at<double>(1, 0));
+    double rotation = std::atan2(H.at<double>(1, 0), H.at<double>(0, 0));
+
+    // Reject excessive rotation or scale
+    constexpr double maxRotation = 0.05;  // ~3 degrees
+    constexpr double maxScaleDeviation = 0.05;  // 5% scale change
+    if (std::abs(rotation) > maxRotation || std::abs(scale - 1.0) > maxScaleDeviation) {
+        result.failureReason = QString("Excessive transform: rot=%1 deg, scale=%2")
+                                   .arg(rotation * 180.0 / M_PI, 0, 'f', 2)
+                                   .arg(scale, 0, 'f', 3);
+        return result;
+    }
+
+    // Convert to overlap
+    int overlap;
+    ScrollDirection detectedDirection = primaryDir;
+
+    if (isHorizontal) {
+        overlap = lastGray.cols - static_cast<int>(std::round(std::abs(dx)));
+        if (dx < 0) {
+            detectedDirection = ScrollDirection::Left;
+        }
+    } else {
+        overlap = lastGray.rows - static_cast<int>(std::round(std::abs(dy)));
+        if (dy < 0) {
+            detectedDirection = ScrollDirection::Up;
+        }
+    }
+
+    if (overlap < MIN_OVERLAP) {
+        result.failureReason = QString("Overlap too small: %1").arg(overlap);
+        return result;
+    }
+
+    int maxOverlap = static_cast<int>(frameDimension * overlapRatio);
+    if (overlap > maxOverlap) {
+        result.failureReason = QString("Overlap too large: %1 > %2").arg(overlap).arg(maxOverlap);
+        return result;
+    }
+
+    // Verify seam quality
+    double seamDiff = normalizedOverlapDifference(lastGray, newGray, detectedDirection, isHorizontal, overlap);
+    if (seamDiff > kMaxOverlapDiff * 1.5) {  // Slightly relaxed threshold for feature matching
+        result.failureReason = QString("Seam mismatch: %1").arg(seamDiff, 0, 'f', 3);
+        return result;
+    }
+
+    // Compute confidence from inlier ratio
+    double inlierRatio = static_cast<double>(numInliers) / goodMatches.size();
+    result.confidence = std::clamp(inlierRatio + 0.1, 0.0, 1.0);  // Boost slightly
+
+    if (result.confidence < m_stitchConfig.confidenceThreshold) {
+        result.failureReason = QString("Low confidence: %1").arg(result.confidence, 0, 'f', 3);
+        return result;
+    }
+
+    // Perform the actual stitch
+    m_lastSuccessfulDirection = detectedDirection;
+    result = performStitch(newFrame, overlap, detectedDirection);
+    result.usedAlgorithm = Algorithm::FeatureBased;
+    result.confidence = std::clamp(inlierRatio + 0.1, 0.0, 1.0);
+    result.overlapPixels = overlap;
+    result.direction = detectedDirection;
+
+    qDebug() << "ImageStitcher: Feature match succeeded -"
+             << "dx:" << dx << "dy:" << dy
+             << "overlap:" << overlap
+             << "inliers:" << numInliers << "/" << goodMatches.size()
+             << "confidence:" << result.confidence;
+
+    return result;
 }

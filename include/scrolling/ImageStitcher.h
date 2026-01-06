@@ -37,11 +37,12 @@ class ImageStitcher : public QObject
     Q_OBJECT
 
 public:
-    // RSSA: Template matching and row projection only (no feature-based algorithms)
+    // Matching algorithms for frame alignment
     enum class Algorithm {
         TemplateMatching,  // Default - uses cv::TM_CCOEFF_NORMED
         RowProjection,     // Fast 1D cross-correlation for text documents
-        Auto               // Try RowProjection first, fallback to TemplateMatching
+        FeatureBased,      // ORB + RANSAC for robust matching (handles rotation/scale)
+        Auto               // Try fast methods first, FeatureBased as robust fallback
     };
     Q_ENUM(Algorithm)
 
@@ -94,6 +95,8 @@ public:
 
     // Core operations
     StitchResult addFrame(const QImage &frame);
+    bool undoLastFrame();  // Remove the last stitched frame
+    bool canUndo() const;  // Returns true if there's a frame to undo
     void reset();
 
     // Getters
@@ -117,9 +120,10 @@ private:
         QString failureReason;
     };
 
-    // Algorithm implementations (RSSA: template matching and row projection only)
+    // Algorithm implementations
     StitchResult tryTemplateMatch(const QImage &newFrame);
     StitchResult tryRowProjectionMatch(const QImage &newFrame);
+    StitchResult tryFeatureMatch(const QImage &newFrame);  // ORB + RANSAC robust fallback
     StitchResult tryInPlaceMatchInStitched(const QImage &newFrame);
 
     // Static region detection (header/footer/scrollbar)
@@ -147,6 +151,17 @@ private:
     int m_validHeight = 0;
     int m_validWidth = 0;  // For horizontal mode
     ScrollDirection m_lastSuccessfulDirection = ScrollDirection::Down;
+
+    // Undo history - stores state snapshots for undo support
+    struct HistoryEntry {
+        QImage frame;           // The frame that was added
+        QRect viewport;         // Viewport after this frame
+        int validHeight = 0;
+        int validWidth = 0;
+        ScrollDirection direction = ScrollDirection::Down;
+    };
+    std::vector<HistoryEntry> m_history;
+    static constexpr int MAX_HISTORY_SIZE = 10;  // Keep last N states for undo
 
     // ROI parameters
     static constexpr double ROI_FIRST_RATIO = 0.40;   // Larger symmetric coverage

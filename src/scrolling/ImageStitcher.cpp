@@ -48,6 +48,79 @@ void ImageStitcher::reset()
     m_validWidth = 0;
     m_lastSuccessfulDirection = ScrollDirection::Down;
     m_staticRegions = StaticRegions();
+    m_history.clear();
+}
+
+bool ImageStitcher::canUndo() const
+{
+    // Need at least 2 frames to undo (can't undo the first frame)
+    return m_history.size() >= 2;
+}
+
+bool ImageStitcher::undoLastFrame()
+{
+    if (!canUndo()) {
+        qDebug() << "ImageStitcher::undoLastFrame - Cannot undo, history size:" << m_history.size();
+        return false;
+    }
+
+    // Remove the last entry
+    m_history.pop_back();
+
+    // Get the previous state
+    const HistoryEntry &prev = m_history.back();
+
+    // Restore state to the previous entry
+    m_frameCount = static_cast<int>(m_history.size());
+    m_validHeight = prev.validHeight;
+    m_validWidth = prev.validWidth;
+    m_currentViewportRect = prev.viewport;
+    m_lastFrame = prev.frame;
+    m_lastSuccessfulDirection = prev.direction;
+
+    // Rebuild the stitched result from history
+    // This is expensive but correct - we need to restitch all frames
+    QImage prevStitched = m_stitchedResult;
+
+    // For now, crop the stitched result to the previous valid size
+    // This is an approximation - a full rebuild would be more accurate
+    // but much more expensive
+    if (m_captureMode == CaptureMode::Horizontal) {
+        if (m_validWidth > 0 && m_validWidth < m_stitchedResult.width()) {
+            m_stitchedResult = m_stitchedResult.copy(0, 0, m_validWidth, m_stitchedResult.height());
+        }
+    } else {
+        if (m_validHeight > 0 && m_validHeight < m_stitchedResult.height()) {
+            m_stitchedResult = m_stitchedResult.copy(0, 0, m_stitchedResult.width(), m_validHeight);
+        }
+    }
+
+    qDebug() << "ImageStitcher::undoLastFrame - Restored to frame" << m_frameCount
+             << "validHeight:" << m_validHeight << "validWidth:" << m_validWidth;
+
+    emit progressUpdated(m_frameCount, getCurrentSize());
+    return true;
+}
+
+// Helper to save current state to history for undo support
+void saveHistoryEntry(std::vector<ImageStitcher::HistoryEntry> &history,
+                      const QImage &frame, const QRect &viewport,
+                      int validHeight, int validWidth,
+                      ImageStitcher::ScrollDirection direction)
+{
+    ImageStitcher::HistoryEntry entry;
+    entry.frame = frame;
+    entry.viewport = viewport;
+    entry.validHeight = validHeight;
+    entry.validWidth = validWidth;
+    entry.direction = direction;
+
+    history.push_back(entry);
+
+    // Keep history size bounded
+    while (history.size() > ImageStitcher::MAX_HISTORY_SIZE) {
+        history.erase(history.begin());
+    }
 }
 
 ImageStitcher::StitchResult ImageStitcher::addFrame(const QImage &frame)
@@ -67,6 +140,10 @@ ImageStitcher::StitchResult ImageStitcher::addFrame(const QImage &frame)
         m_lastFrame = m_stitchedResult;
         m_frameCount = 1;
         m_currentViewportRect = QRect(0, 0, frame.width(), frame.height());
+
+        // Save initial state to history
+        saveHistoryEntry(m_history, m_lastFrame, m_currentViewportRect,
+                         m_validHeight, m_validWidth, m_lastSuccessfulDirection);
 
         result.success = true;
         result.confidence = 1.0;
@@ -92,7 +169,7 @@ ImageStitcher::StitchResult ImageStitcher::addFrame(const QImage &frame)
         m_staticRegions = detectStaticRegions(m_lastFrame, frame);
     }
 
-    // RSSA: Try matching algorithms based on settings
+    // Try matching algorithms based on settings
     if (m_algorithm == Algorithm::Auto) {
         // Use Row Projection as primary algorithm - it's faster and more robust for text documents
         // Row Projection uses 1D cross-correlation which is optimal for vertical/horizontal scrolling
@@ -100,15 +177,31 @@ ImageStitcher::StitchResult ImageStitcher::addFrame(const QImage &frame)
         if (result.success && result.confidence >= m_stitchConfig.confidenceThreshold) {
             m_lastFrame = frame.convertToFormat(QImage::Format_RGB32);
             m_frameCount++;
+            saveHistoryEntry(m_history, m_lastFrame, m_currentViewportRect,
+                             m_validHeight, m_validWidth, m_lastSuccessfulDirection);
             emit progressUpdated(m_frameCount, getCurrentSize());
             return result;
         }
 
-        // Try template matching as fallback (good for non-text content)
+        // Try template matching as second choice (good for non-text content)
         result = tryTemplateMatch(frame);
         if (result.success && result.confidence >= m_stitchConfig.confidenceThreshold) {
             m_lastFrame = frame.convertToFormat(QImage::Format_RGB32);
             m_frameCount++;
+            saveHistoryEntry(m_history, m_lastFrame, m_currentViewportRect,
+                             m_validHeight, m_validWidth, m_lastSuccessfulDirection);
+            emit progressUpdated(m_frameCount, getCurrentSize());
+            return result;
+        }
+
+        // Try ORB + RANSAC feature-based matching as robust fallback
+        // This handles challenging cases like periodic patterns, rotation, scale
+        result = tryFeatureMatch(frame);
+        if (result.success && result.confidence >= m_stitchConfig.confidenceThreshold) {
+            m_lastFrame = frame.convertToFormat(QImage::Format_RGB32);
+            m_frameCount++;
+            saveHistoryEntry(m_history, m_lastFrame, m_currentViewportRect,
+                             m_validHeight, m_validWidth, m_lastSuccessfulDirection);
             emit progressUpdated(m_frameCount, getCurrentSize());
             return result;
         }
@@ -124,6 +217,9 @@ ImageStitcher::StitchResult ImageStitcher::addFrame(const QImage &frame)
     else if (m_algorithm == Algorithm::TemplateMatching) {
         result = tryTemplateMatch(frame);
     }
+    else if (m_algorithm == Algorithm::FeatureBased) {
+        result = tryFeatureMatch(frame);
+    }
     else {
         result = tryRowProjectionMatch(frame);
     }
@@ -131,6 +227,8 @@ ImageStitcher::StitchResult ImageStitcher::addFrame(const QImage &frame)
     if (result.success) {
         m_lastFrame = frame.convertToFormat(QImage::Format_RGB32);
         m_frameCount++;
+        saveHistoryEntry(m_history, m_lastFrame, m_currentViewportRect,
+                         m_validHeight, m_validWidth, m_lastSuccessfulDirection);
         emit progressUpdated(m_frameCount, getCurrentSize());
     }
 

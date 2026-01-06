@@ -1,4 +1,5 @@
 #include "scrolling/AutoScrollController.h"
+#include "scrolling/FrameStabilityDetector.h"
 
 #include <QTimer>
 #include <QDebug>
@@ -22,6 +23,8 @@ public:
     uint64_t lastFrameHash = 0;
 
     QTimer *stabilizationTimer = nullptr;
+    FrameStabilityDetector *stabilityDetector = nullptr;
+    double stabilityThreshold = 0.98;
 };
 
 // === Public Implementation ===
@@ -34,6 +37,14 @@ AutoScrollController::AutoScrollController(QObject *parent)
     d->stabilizationTimer->setSingleShot(true);
     connect(d->stabilizationTimer, &QTimer::timeout,
             this, &AutoScrollController::onStabilizationTimeout);
+
+    // Create stability detector for closed-loop control
+    d->stabilityDetector = new FrameStabilityDetector(this);
+    FrameStabilityDetector::Config stabConfig;
+    stabConfig.stabilityThreshold = d->stabilityThreshold;
+    stabConfig.consecutiveStableRequired = 2;
+    stabConfig.maxWaitFrames = 30;
+    d->stabilityDetector->setConfig(stabConfig);
 }
 
 AutoScrollController::~AutoScrollController() = default;
@@ -181,6 +192,49 @@ void AutoScrollController::notifyFrameCaptured(uint64_t frameHash)
     d->lastFrameHash = frameHash;
 }
 
+bool AutoScrollController::checkFrameStability(const QImage &frame)
+{
+    if (!d->stabilityDetector) {
+        return true;  // No detector, assume stable
+    }
+
+    if (d->state != State::Stabilizing) {
+        return false;  // Only check during stabilization phase
+    }
+
+    auto result = d->stabilityDetector->addFrame(frame);
+
+    if (result.timedOut) {
+        // Stability detection timed out - proceed anyway but log warning
+        qWarning() << "AutoScrollController: Stability timeout after" << result.totalFramesChecked << "frames";
+        d->stabilizationTimer->stop();  // Cancel timer if running
+        setState(State::Capturing);
+        emit readyForCapture();
+        return true;
+    }
+
+    if (result.stable) {
+        qDebug() << "AutoScrollController: Frame stable after" << result.totalFramesChecked
+                 << "frames, score:" << result.stabilityScore;
+        d->stabilizationTimer->stop();  // Cancel timer if running
+        setState(State::Capturing);
+        emit readyForCapture();
+        return true;
+    }
+
+    return false;
+}
+
+void AutoScrollController::setStabilityThreshold(double threshold)
+{
+    d->stabilityThreshold = qBound(0.0, threshold, 1.0);
+    if (d->stabilityDetector) {
+        auto config = d->stabilityDetector->config();
+        config.stabilityThreshold = d->stabilityThreshold;
+        d->stabilityDetector->setConfig(config);
+    }
+}
+
 void AutoScrollController::performScroll()
 {
     setState(State::Scrolling);
@@ -199,7 +253,13 @@ void AutoScrollController::performScroll()
         d->scrollCount++;
         emit scrollPerformed(d->scrollCount, scrollDelta);
 
+        // Reset stability detector for closed-loop control
+        if (d->stabilityDetector) {
+            d->stabilityDetector->reset();
+        }
+
         // Wait for stabilization
+        // The timer serves as a fallback; closed-loop checkFrameStability() is preferred
         setState(State::Stabilizing);
         d->stabilizationTimer->start(d->config.stabilizationDelayMs);
     } else {

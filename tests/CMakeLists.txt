@@ -914,10 +914,59 @@ target_link_libraries(Scrolling_ImageStitcher PRIVATE
     Qt6::Test
     opencv_core
     opencv_imgproc
+    opencv_features2d
+    opencv_calib3d
+    opencv_flann
 )
 
 add_test(NAME Scrolling_ImageStitcher COMMAND Scrolling_ImageStitcher)
 set_tests_properties(Scrolling_ImageStitcher PROPERTIES TIMEOUT 60)
+
+# FrameStabilityDetector test
+add_executable(Scrolling_FrameStabilityDetector
+    Scrolling/tst_FrameStabilityDetector.cpp
+    ${CMAKE_SOURCE_DIR}/src/scrolling/FrameStabilityDetector.cpp
+    ${CMAKE_SOURCE_DIR}/include/scrolling/FrameStabilityDetector.h
+)
+
+target_include_directories(Scrolling_FrameStabilityDetector PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_BINARY_DIR}/generated
+)
+
+target_link_libraries(Scrolling_FrameStabilityDetector PRIVATE
+    Qt6::Core
+    Qt6::Gui
+    Qt6::Widgets
+    Qt6::Test
+)
+
+add_test(NAME Scrolling_FrameStabilityDetector COMMAND Scrolling_FrameStabilityDetector)
+set_tests_properties(Scrolling_FrameStabilityDetector PROPERTIES TIMEOUT 30)
+
+# SeamQualityEvaluator test
+add_executable(Scrolling_SeamQualityEvaluator
+    Scrolling/tst_SeamQualityEvaluator.cpp
+    ${CMAKE_SOURCE_DIR}/src/scrolling/SeamQualityEvaluator.cpp
+    ${CMAKE_SOURCE_DIR}/include/scrolling/SeamQualityEvaluator.h
+)
+
+target_include_directories(Scrolling_SeamQualityEvaluator PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_BINARY_DIR}/generated
+)
+
+target_link_libraries(Scrolling_SeamQualityEvaluator PRIVATE
+    Qt6::Core
+    Qt6::Gui
+    Qt6::Widgets
+    Qt6::Test
+)
+
+add_test(NAME Scrolling_SeamQualityEvaluator COMMAND Scrolling_SeamQualityEvaluator)
+set_tests_properties(Scrolling_SeamQualityEvaluator PROPERTIES TIMEOUT 30)
 
 # ============================================================================
 # Utils Tests - CoordinateHelper

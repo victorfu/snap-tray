@@ -339,6 +339,8 @@ set(SOURCES
     src/scrolling/ImageStitcherAlgorithms.cpp
     src/scrolling/FixedElementDetector.cpp
     src/scrolling/AutoScrollController.cpp
+    src/scrolling/FrameStabilityDetector.cpp
+    src/scrolling/SeamQualityEvaluator.cpp
     # Stitching algorithms (new modular stitching system)
     src/stitching/FeatureMatcher.cpp
     src/stitching/OpticalFlowPredictor.cpp
