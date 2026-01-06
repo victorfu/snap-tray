@@ -88,7 +88,7 @@ private:
 
     // Layout constants
     static constexpr int BUTTON_WIDTH = 52;
-    static constexpr int BUTTON_HEIGHT = 22;  // Reduced from 24 for 32px widget height
+    static constexpr int BUTTON_HEIGHT = 22;  // Reduced from 24 for 28px widget height
     static constexpr int DROPDOWN_OPTION_HEIGHT = 28;
 };
 

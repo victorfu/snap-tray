@@ -2,6 +2,20 @@
 #include <QSignalSpy>
 #include "ColorAndWidthWidget.h"
 
+namespace {
+constexpr int kWidthSectionSize = 28;
+constexpr int kWidthToColorSpacing = 2;
+constexpr int kSwatchSize = 14;
+constexpr int kSwatchSpacing = 2;
+constexpr int kColorPadding = 6;
+constexpr int kColorRowSpacing = 0;
+constexpr int kColorsPerRow = 8;
+constexpr int kSectionSpacing = 8;
+constexpr int kColorSectionWidth =
+    kColorsPerRow * kSwatchSize + (kColorsPerRow - 1) * kSwatchSpacing + kColorPadding * 2;
+constexpr int kArrowSectionWidth = 52;
+}
+
 class TestColorAndWidthWidgetEvents : public QObject
 {
     Q_OBJECT
@@ -13,7 +27,7 @@ private slots:
     // Click handling tests
     void testHandleClickOnColorSwatch();
     void testHandleClickOnSecondColorSwatch();
-    void testHandleClickOnMoreButton();
+    void testHandleClickOnPreviewOpensColorPicker();
     void testHandleClickOutsideWidget();
 
     // Text section click tests
@@ -53,6 +67,7 @@ private:
 
     void setupWidgetWithAllSections();
     QPoint getColorSwatchCenter(int index);
+    QPoint getPreviewCenter();
     QPoint getTextButtonCenter(int buttonIndex);
     QPoint getShapeButtonCenter(int buttonIndex);
 };
@@ -82,23 +97,31 @@ QPoint TestColorAndWidthWidgetEvents::getColorSwatchCenter(int index)
 {
     QRect widgetRect = m_widget->boundingRect();
 
-    // Layout: WidthSection (32px) + spacing (2px) + ColorSection
-    int widthSectionSize = 32;
-    int widthToColorSpacing = 2;
-    int colorSectionLeft = widgetRect.left() + widthSectionSize + widthToColorSpacing;
+    // Layout: WidthSection (28px) + spacing (2px) + ColorSection
+    int colorSectionLeft = widgetRect.left() + kWidthSectionSize + kWidthToColorSpacing;
 
-    int swatchSize = 14;
-    int swatchSpacing = 2;
-    int padding = 6;
-    int rowSpacing = 2;
+    int rows = 2;
+    int gridHeight = rows * kSwatchSize + (rows - 1) * kColorRowSpacing;
+    int gridTop = widgetRect.top() + (widgetRect.height() - gridHeight) / 2;
+    int gridLeft = colorSectionLeft + kColorPadding;
 
     int row = index / 8;
     int col = index % 8;
 
-    int x = colorSectionLeft + padding + col * (swatchSize + swatchSpacing) + swatchSize / 2;
-    int y = widgetRect.top() + 2 + row * (swatchSize + rowSpacing) + swatchSize / 2;
+    int x = gridLeft + col * (kSwatchSize + kSwatchSpacing) + kSwatchSize / 2;
+    int y = gridTop + row * (kSwatchSize + kColorRowSpacing) + kSwatchSize / 2;
 
     return QPoint(x, y);
+}
+
+QPoint TestColorAndWidthWidgetEvents::getPreviewCenter()
+{
+    QRect widgetRect = m_widget->boundingRect();
+
+    int previewCenterX = widgetRect.left() + kWidthSectionSize / 2;
+    int previewCenterY = widgetRect.center().y();
+
+    return QPoint(previewCenterX, previewCenterY);
 }
 
 QPoint TestColorAndWidthWidgetEvents::getTextButtonCenter(int buttonIndex)
@@ -107,19 +130,11 @@ QPoint TestColorAndWidthWidgetEvents::getTextButtonCenter(int buttonIndex)
     QRect widgetRect = m_widget->boundingRect();
 
     // Calculate section widths based on actual layout constants
-    // WidthSection: SECTION_SIZE = 32
-    int widthSectionSize = 32;
-    // WIDTH_TO_COLOR_SPACING = 2
-    int widthToColorSpacing = 2;
-    // ColorSection: COLORS_PER_ROW(8) * SWATCH_SIZE(14) + 7 * SWATCH_SPACING(2) + SECTION_PADDING(6) * 2 = 138
-    int colorSectionWidth = 8 * 14 + 7 * 2 + 6 * 2;  // 138
-    // SECTION_SPACING = 8
-    int sectionSpacing = 8;
+    // WidthSection: SECTION_SIZE = 28
+    // ColorSection: grid(8 * 14 + 7 * 2) + padding(6 * 2) = 138
     // ArrowStyleSection: BUTTON_WIDTH = 52
-    int arrowSectionWidth = 52;
-
-    int textSectionLeft = widgetRect.left() + widthSectionSize + widthToColorSpacing +
-                          colorSectionWidth + sectionSpacing + arrowSectionWidth + sectionSpacing;
+    int textSectionLeft = widgetRect.left() + kWidthSectionSize + kWidthToColorSpacing +
+                          kColorSectionWidth + kSectionSpacing + kArrowSectionWidth + kSectionSpacing;
     int buttonSize = 20;
     int buttonSpacing = 2;
     int padding = 6;
@@ -136,20 +151,16 @@ QPoint TestColorAndWidthWidgetEvents::getShapeButtonCenter(int buttonIndex)
     QRect widgetRect = m_widget->boundingRect();
 
     // Calculate section widths based on actual layout constants
-    int widthSectionSize = 32;
-    int widthToColorSpacing = 2;
-    int colorSectionWidth = 8 * 14 + 7 * 2 + 6 * 2;  // 138
-    int sectionSpacing = 8;
-    // ArrowStyleSection: BUTTON_WIDTH = 52
-    int arrowSectionWidth = 52;
+    // WidthSection: SECTION_SIZE = 28
+    // ColorSection: grid(8 * 14 + 7 * 2) + padding(6 * 2) = 138
     // TextSection: SECTION_PADDING(6) + 3*BUTTON_SIZE(20) + 2*BUTTON_SPACING(2) +
     //              SECTION_SPACING(8) + FONT_SIZE_WIDTH(40) + SECTION_SPACING(8) +
     //              FONT_FAMILY_WIDTH(90) + SECTION_PADDING(6) = 222
     int textSectionWidth = 6 + (20 * 3 + 2 * 2) + 8 + 40 + 8 + 90 + 6;  // 222
 
-    int shapeSectionLeft = widgetRect.left() + widthSectionSize + widthToColorSpacing +
-                           colorSectionWidth + sectionSpacing + arrowSectionWidth + sectionSpacing +
-                           textSectionWidth + sectionSpacing;
+    int shapeSectionLeft = widgetRect.left() + kWidthSectionSize + kWidthToColorSpacing +
+                           kColorSectionWidth + kSectionSpacing + kArrowSectionWidth + kSectionSpacing +
+                           textSectionWidth + kSectionSpacing;
 
     int buttonSize = 22;
     int buttonSpacing = 2;
@@ -176,7 +187,7 @@ void TestColorAndWidthWidgetEvents::testHandleClickOnColorSwatch()
 
     QVERIFY(handled);
     QCOMPARE(spy.count(), 1);
-    QCOMPARE(m_widget->currentColor(), QColor(Qt::red));
+    QCOMPARE(m_widget->currentColor(), QColor(Qt::white));
 }
 
 void TestColorAndWidthWidgetEvents::testHandleClickOnSecondColorSwatch()
@@ -184,24 +195,22 @@ void TestColorAndWidthWidgetEvents::testHandleClickOnSecondColorSwatch()
     setupWidgetWithAllSections();
     QSignalSpy spy(m_widget, &ColorAndWidthWidget::colorSelected);
 
-    // Second swatch (orange)
+    // Second swatch (light gray)
     QPoint secondSwatchCenter = getColorSwatchCenter(1);
     bool handled = m_widget->handleClick(secondSwatchCenter);
 
     QVERIFY(handled);
     QCOMPARE(spy.count(), 1);
-    // Orange color from the default palette
-    QCOMPARE(m_widget->currentColor(), QColor(255, 149, 0));
+    QCOMPARE(m_widget->currentColor(), QColor(224, 224, 224));
 }
 
-void TestColorAndWidthWidgetEvents::testHandleClickOnMoreButton()
+void TestColorAndWidthWidgetEvents::testHandleClickOnPreviewOpensColorPicker()
 {
     setupWidgetWithAllSections();
     QSignalSpy spy(m_widget, &ColorAndWidthWidget::moreColorsRequested);
 
-    // More button is at index 15 (after 15 colors)
-    QPoint moreButtonCenter = getColorSwatchCenter(15);
-    bool handled = m_widget->handleClick(moreButtonCenter);
+    QPoint previewCenter = getPreviewCenter();
+    bool handled = m_widget->handleClick(previewCenter);
 
     QVERIFY(handled);
     QCOMPARE(spy.count(), 1);
@@ -356,15 +365,8 @@ void TestColorAndWidthWidgetEvents::testHandleClickOnArrowStyleButtonOpensDropdo
     QRect widgetRect = m_widget->boundingRect();
 
     // Layout order: WidthSection -> ColorSection -> ArrowStyleSection
-    int widthSectionSize = 32;
-    int widthToColorSpacing = 2;
-    int colorSectionWidth = 8 * 14 + 7 * 2 + 6 * 2;  // 138
-    int sectionSpacing = 8;
-    // Arrow section: button (52), center at 52/2 = 26
-    int arrowButtonOffset = 26;
-
-    int arrowButtonX = widgetRect.left() + widthSectionSize + widthToColorSpacing +
-                       colorSectionWidth + sectionSpacing + arrowButtonOffset;
+    int arrowButtonX = widgetRect.left() + kWidthSectionSize + kWidthToColorSpacing +
+                       kColorSectionWidth + kSectionSpacing + kArrowSectionWidth / 2;
     int arrowButtonY = widgetRect.center().y();
 
     bool handled = m_widget->handleClick(QPoint(arrowButtonX, arrowButtonY));
@@ -383,15 +385,8 @@ void TestColorAndWidthWidgetEvents::testHandleClickOnArrowStyleOption()
 
     QRect widgetRect = m_widget->boundingRect();
     // Layout order: WidthSection -> ColorSection -> ArrowStyleSection
-    int widthSectionSize = 32;
-    int widthToColorSpacing = 2;
-    int colorSectionWidth = 8 * 14 + 7 * 2 + 6 * 2;  // 138
-    int sectionSpacing = 8;
-    // Arrow section: button (52), center at 52/2 = 26
-    int arrowButtonOffset = 26;
-
-    int arrowButtonX = widgetRect.left() + widthSectionSize + widthToColorSpacing +
-                       colorSectionWidth + sectionSpacing + arrowButtonOffset;
+    int arrowButtonX = widgetRect.left() + kWidthSectionSize + kWidthToColorSpacing +
+                       kColorSectionWidth + kSectionSpacing + kArrowSectionWidth / 2;
     int arrowButtonY = widgetRect.center().y();
 
     // First click to open dropdown
@@ -413,14 +408,8 @@ void TestColorAndWidthWidgetEvents::testHandleClickOutsideClosesDropdown()
 
     QRect widgetRect = m_widget->boundingRect();
     // Layout order: WidthSection -> ColorSection -> ArrowStyleSection
-    int widthSectionSize = 32;
-    int widthToColorSpacing = 2;
-    int colorSectionWidth = 8 * 14 + 7 * 2 + 6 * 2;  // 138
-    int sectionSpacing = 8;
-    int arrowButtonOffset = 28 + 8 + 26;
-
-    int arrowButtonX = widgetRect.left() + widthSectionSize + widthToColorSpacing +
-                       colorSectionWidth + sectionSpacing + arrowButtonOffset;
+    int arrowButtonX = widgetRect.left() + kWidthSectionSize + kWidthToColorSpacing +
+                       kColorSectionWidth + kSectionSpacing + kArrowSectionWidth / 2;
     int arrowButtonY = widgetRect.center().y();
 
     // Open dropdown

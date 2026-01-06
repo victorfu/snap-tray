@@ -10,7 +10,8 @@
 /**
  * @brief Color palette section for ColorAndWidthWidget.
  *
- * Displays a grid of color swatches (15 colors in 2 rows of 8, with "..." button).
+ * Displays a grid of color swatches (16 colors in 2 rows of 8) with an optional
+ * "..." button.
  * Emits signals when a color is selected or "more colors" is requested.
  */
 class ColorSection : public QObject, public IWidgetSection
@@ -60,6 +61,7 @@ public:
 
     void updateLayout(int containerTop, int containerHeight, int xOffset) override;
     int preferredWidth() const override;
+    int preferredHeight() const;
     QRect boundingRect() const override { return m_sectionRect; }
     void draw(QPainter& painter, const ToolbarStyleConfig& styleConfig) override;
     bool contains(const QPoint& pos) const override;
@@ -84,23 +86,27 @@ private:
      * @return Swatch index, or -1 if not on a swatch
      */
     int swatchAtPosition(const QPoint& pos) const;
+    int rowCount() const;
 
     // State
     QVector<QColor> m_colors;
     QColor m_currentColor;
-    bool m_showMoreButton = true;
+    bool m_showMoreButton = false;
     int m_hoveredSwatch = -1;
 
     // Layout
     QRect m_sectionRect;
+    QRect m_moreButtonRect;
     QVector<QRect> m_swatchRects;
 
     // Layout constants
-    static constexpr int SWATCH_SIZE = 14;  // Reduced from 16 for 32px widget height
+    static constexpr int SWATCH_SIZE = 14;
     static constexpr int SWATCH_SPACING = 2;
     static constexpr int COLORS_PER_ROW = 8;
+    static constexpr int NUM_ROWS = 2;
     static constexpr int SECTION_PADDING = 6;
-    static constexpr int ROW_SPACING = 2;
+    static constexpr int ROW_SPACING = 0;
+    static constexpr int GRID_VERTICAL_PADDING = 0;
 };
 
 #endif // COLORSECTION_H

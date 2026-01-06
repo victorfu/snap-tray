@@ -12,6 +12,7 @@
 
 #include <QPainter>
 #include <QDebug>
+#include <QtGlobal>
 
 ColorAndWidthWidget::ColorAndWidthWidget(QObject* parent)
     : QObject(parent)
@@ -450,11 +451,16 @@ void ColorAndWidthWidget::updatePosition(const QRect& anchorRect, bool above, in
         totalWidth += WIDGET_RIGHT_MARGIN;
     }
 
+    int widgetHeight = WIDGET_HEIGHT;
+    if (m_showColorSection) {
+        widgetHeight = qMax(widgetHeight, m_colorSection->preferredHeight());
+    }
+
     int widgetX = anchorRect.left();
     int widgetY;
 
     if (above) {
-        widgetY = anchorRect.top() - WIDGET_HEIGHT - 4;
+        widgetY = anchorRect.top() - widgetHeight - 4;
     } else {
         widgetY = anchorRect.bottom() + 4;
     }
@@ -473,7 +479,7 @@ void ColorAndWidthWidget::updatePosition(const QRect& anchorRect, bool above, in
         widgetY = anchorRect.bottom() + 4;
     }
 
-    m_widgetRect = QRect(widgetX, widgetY, totalWidth, WIDGET_HEIGHT);
+    m_widgetRect = QRect(widgetX, widgetY, totalWidth, widgetHeight);
     m_dropdownExpandsUpward = above;
 
     // Update dropdown section directions
@@ -486,13 +492,14 @@ void ColorAndWidthWidget::updatePosition(const QRect& anchorRect, bool above, in
 
 void ColorAndWidthWidget::updateLayout()
 {
+    int containerHeight = m_widgetRect.height();
     int xOffset = m_widgetRect.left();
     bool hasFirstSection = false;
 
     // Width section first (leftmost) - only if not hidden
     bool widthSectionVisible = m_showWidthSection && !m_widthSectionHidden;
     if (widthSectionVisible) {
-        m_widthSection->updateLayout(m_widgetRect.top(), WIDGET_HEIGHT, xOffset);
+        m_widthSection->updateLayout(m_widgetRect.top(), containerHeight, xOffset);
         xOffset += m_widthSection->preferredWidth();
         hasFirstSection = true;
     }
@@ -504,7 +511,7 @@ void ColorAndWidthWidget::updateLayout()
         } else if (hasFirstSection) {
             xOffset += SECTION_SPACING;
         }
-        m_colorSection->updateLayout(m_widgetRect.top(), WIDGET_HEIGHT, xOffset);
+        m_colorSection->updateLayout(m_widgetRect.top(), containerHeight, xOffset);
         xOffset += m_colorSection->preferredWidth();
         hasFirstSection = true;
     }
@@ -512,7 +519,7 @@ void ColorAndWidthWidget::updateLayout()
     // Arrow style section
     if (m_showArrowStyleSection) {
         if (hasFirstSection) xOffset += SECTION_SPACING;
-        m_arrowStyleSection->updateLayout(m_widgetRect.top(), WIDGET_HEIGHT, xOffset);
+        m_arrowStyleSection->updateLayout(m_widgetRect.top(), containerHeight, xOffset);
         xOffset += m_arrowStyleSection->preferredWidth();
         hasFirstSection = true;
     }
@@ -520,7 +527,7 @@ void ColorAndWidthWidget::updateLayout()
     // Line style section
     if (m_showLineStyleSection) {
         if (hasFirstSection) xOffset += SECTION_SPACING;
-        m_lineStyleSection->updateLayout(m_widgetRect.top(), WIDGET_HEIGHT, xOffset);
+        m_lineStyleSection->updateLayout(m_widgetRect.top(), containerHeight, xOffset);
         xOffset += m_lineStyleSection->preferredWidth();
         hasFirstSection = true;
     }
@@ -528,7 +535,7 @@ void ColorAndWidthWidget::updateLayout()
     // Text section
     if (m_showTextSection) {
         if (hasFirstSection) xOffset += SECTION_SPACING;
-        m_textSection->updateLayout(m_widgetRect.top(), WIDGET_HEIGHT, xOffset);
+        m_textSection->updateLayout(m_widgetRect.top(), containerHeight, xOffset);
         xOffset += m_textSection->preferredWidth();
         hasFirstSection = true;
     }
@@ -536,7 +543,7 @@ void ColorAndWidthWidget::updateLayout()
     // Shape section
     if (m_showShapeSection) {
         if (hasFirstSection) xOffset += SECTION_SPACING;
-        m_shapeSection->updateLayout(m_widgetRect.top(), WIDGET_HEIGHT, xOffset);
+        m_shapeSection->updateLayout(m_widgetRect.top(), containerHeight, xOffset);
         xOffset += m_shapeSection->preferredWidth();
         hasFirstSection = true;
     }
@@ -544,7 +551,7 @@ void ColorAndWidthWidget::updateLayout()
     // Size section (Step Badge)
     if (m_showSizeSection) {
         if (hasFirstSection) xOffset += SECTION_SPACING;
-        m_sizeSection->updateLayout(m_widgetRect.top(), WIDGET_HEIGHT, xOffset);
+        m_sizeSection->updateLayout(m_widgetRect.top(), containerHeight, xOffset);
         xOffset += m_sizeSection->preferredWidth();
         hasFirstSection = true;
     }
@@ -552,21 +559,21 @@ void ColorAndWidthWidget::updateLayout()
     // For Mosaic tool: AutoBlurSection first, then MosaicWidthSection
     if (m_showAutoBlurSection) {
         if (hasFirstSection) xOffset += SECTION_SPACING;
-        m_autoBlurSection->updateLayout(m_widgetRect.top(), WIDGET_HEIGHT, xOffset);
+        m_autoBlurSection->updateLayout(m_widgetRect.top(), containerHeight, xOffset);
         xOffset += m_autoBlurSection->preferredWidth();
         hasFirstSection = true;
     }
 
     if (m_showMosaicWidthSection) {
         if (hasFirstSection) xOffset += SECTION_SPACING;
-        m_mosaicWidthSection->updateLayout(m_widgetRect.top(), WIDGET_HEIGHT, xOffset);
+        m_mosaicWidthSection->updateLayout(m_widgetRect.top(), containerHeight, xOffset);
         xOffset += m_mosaicWidthSection->preferredWidth();
         hasFirstSection = true;
     }
 
     if (m_showMosaicBlurTypeSection) {
         if (hasFirstSection) xOffset += SECTION_SPACING;
-        m_mosaicBlurTypeSection->updateLayout(m_widgetRect.top(), WIDGET_HEIGHT, xOffset);
+        m_mosaicBlurTypeSection->updateLayout(m_widgetRect.top(), containerHeight, xOffset);
     }
 }
 
@@ -696,9 +703,10 @@ bool ColorAndWidthWidget::handleClick(const QPoint& pos)
         return m_mosaicWidthSection->handleClick(pos);
     }
 
-    // Width section
-    if (m_showWidthSection && m_widthSection->contains(pos)) {
-        return m_widthSection->handleClick(pos);
+    // Width section: click opens color picker
+    if (m_showWidthSection && !m_widthSectionHidden && m_widthSection->contains(pos)) {
+        emit moreColorsRequested();
+        return true;
     }
 
     // Color section

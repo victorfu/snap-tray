@@ -100,8 +100,8 @@ private:
     QRect m_sectionRect;
 
     // Layout constants
-    static constexpr int SECTION_SIZE = 32;  // Match widget height
-    static constexpr int MAX_DOT_SIZE = 22;  // Slightly reduced for 32px height
+    static constexpr int SECTION_SIZE = 28;  // Match sub-toolbar height
+    static constexpr int MAX_DOT_SIZE = 20;  // Slightly reduced for 28px height
 };
 
 #endif // WIDTHSECTION_H

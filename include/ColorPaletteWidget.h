@@ -114,15 +114,17 @@ private:
     bool m_showMoreButton;
 
     QRect m_paletteRect;
+    QRect m_moreButtonRect;
     QVector<QRect> m_swatchRects;
     int m_hoveredSwatch;
 
     // Layout constants
-    static const int SWATCH_SIZE = 16;
-    static const int SWATCH_SPACING = 2;
-    static const int PALETTE_HEIGHT = 40;
-    static const int PALETTE_PADDING = 5;
-    static const int COLORS_PER_ROW = 8;
+    static constexpr int SWATCH_SIZE = 18;
+    static constexpr int SWATCH_SPACING = 2;
+    static constexpr int ROW_SPACING = 2;
+    static constexpr int PALETTE_PADDING = 6;
+    static constexpr int COLORS_PER_ROW = 8;
+    static constexpr int MIN_ROWS = 2;
 
     // Toolbar style configuration
     ToolbarStyleConfig m_styleConfig;

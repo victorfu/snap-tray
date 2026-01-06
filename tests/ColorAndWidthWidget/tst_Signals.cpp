@@ -2,6 +2,17 @@
 #include <QSignalSpy>
 #include "ColorAndWidthWidget.h"
 
+namespace {
+constexpr int kWidthSectionSize = 28;
+constexpr int kWidthToColorSpacing = 2;
+constexpr int kSwatchSize = 14;
+constexpr int kSwatchSpacing = 2;
+constexpr int kColorPadding = 6;
+constexpr int kColorRowSpacing = 0;
+constexpr int kColorsPerRow = 8;
+constexpr int kBaseColorCount = 16;
+}
+
 class TestColorAndWidthWidgetSignals : public QObject
 {
     Q_OBJECT
@@ -70,18 +81,16 @@ void TestColorAndWidthWidgetSignals::testColorSelectedSignal()
     // Get the bounding rect and calculate first swatch position
     QRect widgetRect = m_widget->boundingRect();
 
-    // Layout: WidthSection (32px) + spacing (2px) + ColorSection
-    // ColorSection starts at: widgetRect.left() + 32 + 2 = widgetRect.left() + 34
+    // Layout: WidthSection (28px) + spacing (2px) + ColorSection
     // First swatch is at: colorSectionLeft + padding (6) + swatchSize/2 (7)
-    // Swatch size is 14px, so center is at +7
-    int widthSectionSize = 32;
-    int widthToColorSpacing = 2;
-    int colorSectionPadding = 6;
-    int swatchSize = 14;
+    int rows = 2;
+    int gridHeight = rows * kSwatchSize + (rows - 1) * kColorRowSpacing;
 
-    int colorSectionLeft = widgetRect.left() + widthSectionSize + widthToColorSpacing;
-    QPoint firstSwatchCenter(colorSectionLeft + colorSectionPadding + swatchSize / 2,
-                             widgetRect.top() + 2 + swatchSize / 2);
+    int colorSectionLeft = widgetRect.left() + kWidthSectionSize + kWidthToColorSpacing;
+    int gridLeft = colorSectionLeft + kColorPadding;
+    int gridTop = widgetRect.top() + (widgetRect.height() - gridHeight) / 2;
+    QPoint firstSwatchCenter(gridLeft + kSwatchSize / 2,
+                             gridTop + kSwatchSize / 2);
 
     bool handled = m_widget->handleClick(firstSwatchCenter);
     QVERIFY(handled);
@@ -89,7 +98,7 @@ void TestColorAndWidthWidgetSignals::testColorSelectedSignal()
 
     QList<QVariant> arguments = spy.takeFirst();
     QColor selectedColor = arguments.at(0).value<QColor>();
-    QCOMPARE(selectedColor, QColor(Qt::red));
+    QCOMPARE(selectedColor, QColor(Qt::white));
 }
 
 void TestColorAndWidthWidgetSignals::testMoreColorsRequestedSignal()
@@ -104,22 +113,18 @@ void TestColorAndWidthWidgetSignals::testMoreColorsRequestedSignal()
 
     QRect widgetRect = m_widget->boundingRect();
 
-    // Layout: WidthSection (32px) + spacing (2px) + ColorSection
-    int widthSectionSize = 32;
-    int widthToColorSpacing = 2;
-    int colorSectionPadding = 6;
-    int colorSectionLeft = widgetRect.left() + widthSectionSize + widthToColorSpacing;
+    int colorSectionLeft = widgetRect.left() + kWidthSectionSize + kWidthToColorSpacing;
+    int swatchCount = kBaseColorCount + 1;
+    int rows = (swatchCount + kColorsPerRow - 1) / kColorsPerRow;
+    int gridHeight = rows * kSwatchSize + (rows - 1) * kColorRowSpacing;
+    int gridTop = widgetRect.top() + (widgetRect.height() - gridHeight) / 2;
+    int gridLeft = colorSectionLeft + kColorPadding;
 
-    // The "..." button is at position 15 (after 15 colors, 0-indexed)
-    // It's in row 1 (second row), column 7 (8th position, 0-indexed)
-    // Position: colorSectionLeft + padding + 7*(14+2), top + 2 + 1*(14+2)
-    int swatchSize = 14;
-    int swatchSpacing = 2;
-    int rowSpacing = 2;
-    int moreButtonX = colorSectionLeft + colorSectionPadding + 7 * (swatchSize + swatchSpacing) + swatchSize / 2;
-    int moreButtonY = widgetRect.top() + 2 + 1 * (swatchSize + rowSpacing) + swatchSize / 2;
-
-    QPoint moreButtonCenter(moreButtonX, moreButtonY);
+    int moreIndex = kBaseColorCount;
+    int row = moreIndex / kColorsPerRow;
+    int col = moreIndex % kColorsPerRow;
+    QPoint moreButtonCenter(gridLeft + col * (kSwatchSize + kSwatchSpacing) + kSwatchSize / 2,
+                            gridTop + row * (kSwatchSize + kColorRowSpacing) + kSwatchSize / 2);
 
     bool handled = m_widget->handleClick(moreButtonCenter);
     QVERIFY(handled);

@@ -4,6 +4,7 @@
 #include <QPainter>
 #include <QPainterPath>
 #include <QtMath>
+#include <QtGlobal>
 
 WidthSection::WidthSection(QObject* parent)
     : QObject(parent)
@@ -37,15 +38,12 @@ void WidthSection::draw(QPainter& painter, const ToolbarStyleConfig& styleConfig
 {
     painter.setRenderHint(QPainter::Antialiasing, true);
 
-    // Draw container square (background) - perfect square using height as size
-    int centerX = m_sectionRect.center().x();
-    int centerY = m_sectionRect.center().y();
-    int squareSize = m_sectionRect.height();  // Use height to ensure perfect square
-    QRect containerRect(centerX - squareSize / 2, m_sectionRect.top(),
-                        squareSize, squareSize);
+    // Draw container background inside the glass border for clean alignment
+    const int borderInset = 1;
+    QRect containerRect = m_sectionRect.adjusted(borderInset, borderInset, 0, -borderInset);
 
     // Draw container with rounded left corners to match toolbar radius
-    const int radius = 6;  // Match parent glass panel radius
+    const int radius = 6 - borderInset;  // Match parent glass panel radius, inset by border
     QPainterPath path;
     path.moveTo(containerRect.right(), containerRect.top());
     path.lineTo(containerRect.left() + radius, containerRect.top());
@@ -55,7 +53,7 @@ void WidthSection::draw(QPainter& painter, const ToolbarStyleConfig& styleConfig
     path.lineTo(containerRect.right(), containerRect.bottom());
     path.closeSubpath();
 
-    painter.setPen(QPen(styleConfig.separatorColor, 1));
+    painter.setPen(Qt::NoPen);
     painter.setBrush(styleConfig.buttonInactiveColor);
     painter.drawPath(path);
 
@@ -66,6 +64,8 @@ void WidthSection::draw(QPainter& painter, const ToolbarStyleConfig& styleConfig
     int maxDotSize = MAX_DOT_SIZE;
     int dotSize = minDotSize + static_cast<int>(ratio * (maxDotSize - minDotSize));
 
+    int centerX = containerRect.center().x();
+    int centerY = containerRect.center().y();
     QRect dotRect(centerX - dotSize / 2, centerY - dotSize / 2, dotSize, dotSize);
 
     painter.setPen(Qt::NoPen);

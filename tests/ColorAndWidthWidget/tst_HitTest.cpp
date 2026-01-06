@@ -1,6 +1,24 @@
 #include <QtTest/QtTest>
 #include "ColorAndWidthWidget.h"
 
+namespace {
+constexpr int kWidthSectionSize = 28;
+constexpr int kWidthToColorSpacing = 2;
+constexpr int kSwatchSize = 14;
+constexpr int kSwatchSpacing = 2;
+constexpr int kColorPadding = 6;
+constexpr int kColorRows = 2;
+constexpr int kColorRowSpacing = 0;
+constexpr int kColorGridWidth = kSwatchSize * 8 + kSwatchSpacing * 7;
+constexpr int kColorGridHeight = kColorRows * kSwatchSize +
+                                 (kColorRows - 1) * kColorRowSpacing;
+constexpr int kColorSectionWidth = kColorGridWidth + kColorPadding * 2;
+constexpr int kSectionSpacing = 8;
+constexpr int kWidgetRightMargin = 6;
+constexpr int kArrowSectionWidth = 52;
+constexpr int kArrowButtonOffset = kArrowSectionWidth / 2;
+}
+
 class TestColorAndWidthWidgetHitTest : public QObject
 {
     Q_OBJECT
@@ -84,19 +102,11 @@ void TestColorAndWidthWidgetHitTest::testContainsInDropdownWhenOpen()
     QRect widgetRect = m_widget->boundingRect();
 
     // Layout order: WidthSection -> ColorSection -> ArrowStyleSection
-    // WidthSection: SECTION_SIZE = 32
-    int widthSectionSize = 32;
-    // WIDTH_TO_COLOR_SPACING = 2
-    int widthToColorSpacing = 2;
-    // ColorSection: 8 * 14 + 7 * 2 + 6 * 2 = 138
-    int colorSectionWidth = 8 * 14 + 7 * 2 + 6 * 2;  // 138
-    // SECTION_SPACING = 8
-    int sectionSpacing = 8;
+    // WidthSection: SECTION_SIZE = 28
+    // ColorSection: grid(8 * 14 + 7 * 2) + padding(6 * 2) = 138
     // Arrow section: button (52), center at 52/2 = 26
-    int arrowButtonOffset = 26;
-
-    int arrowButtonX = widgetRect.left() + widthSectionSize + widthToColorSpacing +
-                       colorSectionWidth + sectionSpacing + arrowButtonOffset;
+    int arrowButtonX = widgetRect.left() + kWidthSectionSize + kWidthToColorSpacing +
+                       kColorSectionWidth + kSectionSpacing + kArrowButtonOffset;
     int arrowButtonY = widgetRect.center().y();
 
     m_widget->handleClick(QPoint(arrowButtonX, arrowButtonY));
@@ -181,15 +191,12 @@ void TestColorAndWidthWidgetHitTest::testBoundingRectWithColorOnly()
 
     QRect widgetRect = m_widget->boundingRect();
 
-    // Color section: 8 swatches * 14px + 7 gaps * 2px + 2 * padding (6px) = 138
-    // Widget height is fixed at 32
+    // Color section: grid(8 * 14 + 7 * 2) + padding(6 * 2) = 138
     // Widget right margin = 6
-    QCOMPARE(widgetRect.height(), 32);
+    QCOMPARE(widgetRect.height(), kColorGridHeight);
 
     // Width should be just the color section + right margin
-    int expectedColorWidth = 8 * 14 + 7 * 2 + 2 * 6;  // 138
-    int widgetRightMargin = 6;
-    QCOMPARE(widgetRect.width(), expectedColorWidth + widgetRightMargin);
+    QCOMPARE(widgetRect.width(), kColorSectionWidth + kWidgetRightMargin);
 }
 
 void TestColorAndWidthWidgetHitTest::testBoundingRectWithColorAndWidth()
@@ -204,16 +211,12 @@ void TestColorAndWidthWidgetHitTest::testBoundingRectWithColorAndWidth()
     QRect widgetRect = m_widget->boundingRect();
 
     // Layout order: WidthSection (left) -> ColorSection
-    // Width section: size (32)
+    // Width section: size (28)
     // Width-to-color spacing: 2
-    // Color section: 8 swatches * 14px + 7 gaps * 2px + 2 * padding (6px) = 138
+    // Color section: grid(8 * 14 + 7 * 2) + padding(6 * 2) = 138
     // Widget right margin = 6
-    int widthSectionSize = 32;
-    int widthToColorSpacing = 2;
-    int colorSectionWidth = 8 * 14 + 7 * 2 + 2 * 6;  // 138
-    int widgetRightMargin = 6;
-    int expectedWidth = widthSectionSize + widthToColorSpacing + colorSectionWidth + widgetRightMargin;
-
+    int expectedWidth = kWidthSectionSize + kWidthToColorSpacing +
+                        kColorSectionWidth + kWidgetRightMargin;
     QCOMPARE(widgetRect.width(), expectedWidth);
 }
 
@@ -230,11 +233,11 @@ void TestColorAndWidthWidgetHitTest::testBoundingRectWithAllSections()
 
     // Widget should be wider with all sections
     // Just verify it's larger than with color only
-    int colorOnlyWidth = 8 * 14 + 7 * 2 + 2 * 6;  // 138
+    int colorOnlyWidth = kColorSectionWidth;
     QVERIFY(widgetRect.width() > colorOnlyWidth);
 
-    // Height should still be fixed at 32
-    QCOMPARE(widgetRect.height(), 32);
+    // Height should match the expanded color section
+    QCOMPARE(widgetRect.height(), kColorGridHeight);
 }
 
 QTEST_MAIN(TestColorAndWidthWidgetHitTest)

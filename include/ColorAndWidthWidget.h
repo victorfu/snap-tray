@@ -256,7 +256,7 @@ private:
     ToolbarStyleConfig m_styleConfig;
 
     // Layout constants
-    static constexpr int WIDGET_HEIGHT = 32;  // Match ToolbarWidget height
+    static constexpr int WIDGET_HEIGHT = 28;  // Compact height for sub-toolbar
     static constexpr int SECTION_SPACING = 8;
     static constexpr int WIDTH_TO_COLOR_SPACING = 2;  // Smaller spacing between width and color sections
     static constexpr int WIDGET_RIGHT_MARGIN = 6;
