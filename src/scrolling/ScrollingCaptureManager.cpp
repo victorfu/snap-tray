@@ -483,12 +483,16 @@ bool ScrollingCaptureManager::restitchWithFixedElements()
     bool anySucceeded = false;
     int successCount = 0;
 
+    QImage lastRestitchedFrame;
+
     for (const QImage &rawFrame : m_pendingFrames) {
         QImage frameToStitch = m_fixedDetector->cropFixedRegions(rawFrame);
         if (frameToStitch.isNull()) {
             qDebug() << "ScrollingCaptureManager: cropFixedRegions returned null frame";
             continue;
         }
+
+        lastRestitchedFrame = rawFrame;
 
         ImageStitcher::StitchResult result = m_stitcher->addFrame(frameToStitch);
         if (result.success) {
@@ -501,6 +505,19 @@ bool ScrollingCaptureManager::restitchWithFixedElements()
     }
 
     m_pendingFrames.clear();
+
+    if (anySucceeded) {
+        if (!lastRestitchedFrame.isNull()) {
+            m_lastFrame = lastRestitchedFrame;
+        }
+
+        m_hasSuccessfulStitch = m_stitcher->frameCount() > 1;
+
+        QRect viewport = m_stitcher->currentViewportRect();
+        m_lastSuccessfulPosition = (m_captureDirection == CaptureDirection::Vertical)
+            ? viewport.bottom()
+            : viewport.right();
+    }
 
     // If restitch completely failed, try to restore previous state
     if (!anySucceeded && !previousResult.isNull() && previousFrameCount > 0) {
