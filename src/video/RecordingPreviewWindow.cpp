@@ -49,6 +49,15 @@ QString rgbaString(const QColor &color)
         .arg(color.blue())
         .arg(color.alpha());
 }
+
+bool isAnnotateEnabled()
+{
+#ifndef QT_NO_DEBUG
+    return true;
+#else
+    return false;
+#endif
+}
 }
 
 class GlassPanel : public QWidget
@@ -631,6 +640,9 @@ void RecordingPreviewWindow::setupUI()
     m_annotateBtn->setFixedHeight(28);
     m_annotateBtn->setToolTip(tr("Add annotations to the video"));
     connect(m_annotateBtn, &QAbstractButton::clicked, this, &RecordingPreviewWindow::switchToAnnotateMode);
+    const bool annotateEnabled = isAnnotateEnabled();
+    m_annotateBtn->setEnabled(annotateEnabled);
+    m_annotateBtn->setVisible(annotateEnabled);
     row2Layout->addWidget(m_annotateBtn);
 
     row2Layout->addStretch();
@@ -1350,6 +1362,10 @@ void RecordingPreviewWindow::performTrim()
 
 void RecordingPreviewWindow::switchToAnnotateMode()
 {
+    if (!isAnnotateEnabled()) {
+        qInfo() << "RecordingPreviewWindow: Annotate mode disabled in non-debug builds";
+        return;
+    }
     if (m_currentMode == Mode::Annotate) {
         return;
     }
