@@ -918,3 +918,104 @@ target_link_libraries(Scrolling_ImageStitcher PRIVATE
 
 add_test(NAME Scrolling_ImageStitcher COMMAND Scrolling_ImageStitcher)
 set_tests_properties(Scrolling_ImageStitcher PROPERTIES TIMEOUT 60)
+
+# ============================================================================
+# Utils Tests - CoordinateHelper
+# ============================================================================
+
+set(COORDINATEHELPER_SOURCES
+    ${CMAKE_SOURCE_DIR}/src/utils/CoordinateHelper.cpp
+)
+
+set(COORDINATEHELPER_HEADERS
+    ${CMAKE_SOURCE_DIR}/include/utils/CoordinateHelper.h
+)
+
+add_executable(Utils_CoordinateHelper
+    Utils/tst_CoordinateHelper.cpp
+    ${COORDINATEHELPER_SOURCES}
+    ${COORDINATEHELPER_HEADERS}
+)
+
+target_include_directories(Utils_CoordinateHelper PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_BINARY_DIR}/generated
+)
+
+target_link_libraries(Utils_CoordinateHelper PRIVATE
+    Qt6::Widgets
+    Qt6::Gui
+    Qt6::Test
+)
+
+add_test(NAME Utils_CoordinateHelper COMMAND Utils_CoordinateHelper)
+set_tests_properties(Utils_CoordinateHelper PROPERTIES TIMEOUT 60)
+
+# ============================================================================
+# PinWindow Tests - ImageTransformer
+# ============================================================================
+
+add_executable(PinWindow_ImageTransformer
+    PinWindow/tst_ImageTransformer.cpp
+    ${CMAKE_SOURCE_DIR}/src/pinwindow/ImageTransformer.cpp
+    ${CMAKE_SOURCE_DIR}/include/pinwindow/ImageTransformer.h
+)
+
+target_include_directories(PinWindow_ImageTransformer PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_BINARY_DIR}/generated
+)
+
+target_link_libraries(PinWindow_ImageTransformer PRIVATE
+    Qt6::Widgets
+    Qt6::Gui
+    Qt6::Test
+)
+
+add_test(NAME PinWindow_ImageTransformer COMMAND PinWindow_ImageTransformer)
+set_tests_properties(PinWindow_ImageTransformer PROPERTIES TIMEOUT 60)
+
+# ============================================================================
+# Settings Tests - AnnotationSettingsManager
+# ============================================================================
+
+set(ANNOTATIONSETTINGSMANAGER_SOURCES
+    ${CMAKE_SOURCE_DIR}/src/settings/AnnotationSettingsManager.cpp
+    ${CMAKE_SOURCE_DIR}/src/ui/sections/MosaicBlurTypeSection.cpp
+    ${CMAKE_SOURCE_DIR}/src/ToolbarStyle.cpp
+    ${CMAKE_SOURCE_DIR}/src/GlassRenderer.cpp
+)
+
+set(ANNOTATIONSETTINGSMANAGER_HEADERS
+    ${CMAKE_SOURCE_DIR}/include/settings/AnnotationSettingsManager.h
+    ${CMAKE_SOURCE_DIR}/include/settings/Settings.h
+    ${CMAKE_SOURCE_DIR}/include/annotations/StepBadgeAnnotation.h
+    ${CMAKE_SOURCE_DIR}/include/ui/sections/MosaicBlurTypeSection.h
+    ${CMAKE_SOURCE_DIR}/include/ui/IWidgetSection.h
+    ${CMAKE_SOURCE_DIR}/include/ToolbarStyle.h
+    ${CMAKE_SOURCE_DIR}/include/GlassRenderer.h
+)
+
+add_executable(Settings_AnnotationSettingsManager
+    Settings/tst_AnnotationSettingsManager.cpp
+    ${ANNOTATIONSETTINGSMANAGER_SOURCES}
+    ${ANNOTATIONSETTINGSMANAGER_HEADERS}
+)
+
+target_include_directories(Settings_AnnotationSettingsManager PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_BINARY_DIR}/generated
+)
+
+target_link_libraries(Settings_AnnotationSettingsManager PRIVATE
+    Qt6::Widgets
+    Qt6::Gui
+    Qt6::Svg
+    Qt6::Test
+)
+
+add_test(NAME Settings_AnnotationSettingsManager COMMAND Settings_AnnotationSettingsManager)
+set_tests_properties(Settings_AnnotationSettingsManager PROPERTIES TIMEOUT 60)
