@@ -335,7 +335,6 @@ set(SOURCES
     src/scrolling/ImageStitcher.cpp
     src/scrolling/ImageStitcherAlgorithms.cpp
     src/scrolling/FixedElementDetector.cpp
-    src/scrolling/AutoScrollController.cpp
     # Stitching algorithms (new modular stitching system)
     src/stitching/FeatureMatcher.cpp
     src/stitching/OpticalFlowPredictor.cpp
@@ -474,7 +473,6 @@ set(HEADERS
     include/scrolling/ScrollingCaptureThumbnail.h
     include/scrolling/ImageStitcher.h
     include/scrolling/FixedElementDetector.h
-    include/scrolling/AutoScrollController.h
     # Stitching algorithms (new modular stitching system)
     include/stitching/FeatureMatcher.h
     include/stitching/OpticalFlowPredictor.h
@@ -517,7 +515,6 @@ if(APPLE)
         src/AVFoundationEncoder.mm
         src/video/AVFoundationPlayer_mac.mm
         src/input/MouseClickTracker_mac.mm
-        src/scrolling/AutoScrollController_mac.mm
     )
     list(APPEND HEADERS
         include/WindowDetector.h
@@ -545,7 +542,6 @@ elseif(WIN32)
         src/MediaFoundationEncoder.cpp
         src/video/MediaFoundationPlayer_win.cpp
         src/input/MouseClickTracker_win.cpp
-        src/scrolling/AutoScrollController_win.cpp
     )
     list(APPEND HEADERS
         include/WindowDetector.h
