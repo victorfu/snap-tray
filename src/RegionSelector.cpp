@@ -1647,6 +1647,7 @@ bool RegionSelector::isAnnotationTool(ToolbarButton tool) const
     case ToolbarButton::Text:
     case ToolbarButton::Mosaic:
     case ToolbarButton::StepBadge:
+    case ToolbarButton::EmojiSticker:
     case ToolbarButton::Eraser:
         return true;
     default:
