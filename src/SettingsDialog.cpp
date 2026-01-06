@@ -318,9 +318,13 @@ void SettingsDialog::setupWatermarkTab(QWidget *tab)
     QVBoxLayout *mainLayout = new QVBoxLayout(tab);
     mainLayout->setContentsMargins(9, 12, 9, 9);  // Increase top margin for checkbox
 
-    // Enable watermark checkbox
-    m_watermarkEnabledCheckbox = new QCheckBox("Enable watermark", tab);
+    // Apply to images checkbox (for screenshots via PinWindow context menu)
+    m_watermarkEnabledCheckbox = new QCheckBox("Apply to images", tab);
     mainLayout->addWidget(m_watermarkEnabledCheckbox);
+
+    // Apply to recordings checkbox
+    m_watermarkApplyToRecordingCheckbox = new QCheckBox("Apply to recordings", tab);
+    mainLayout->addWidget(m_watermarkApplyToRecordingCheckbox);
 
     mainLayout->addSpacing(8);
 
@@ -450,6 +454,7 @@ void SettingsDialog::setupWatermarkTab(QWidget *tab)
     // Load current settings
     WatermarkRenderer::Settings settings = WatermarkRenderer::loadSettings();
     m_watermarkEnabledCheckbox->setChecked(settings.enabled);
+    m_watermarkApplyToRecordingCheckbox->setChecked(settings.applyToRecording);
     m_watermarkImagePathEdit->setText(settings.imagePath);
     m_watermarkImageScaleSlider->setValue(settings.imageScale);
     m_watermarkImageScaleLabel->setText(QString("%1%").arg(settings.imageScale));
@@ -819,6 +824,7 @@ void SettingsDialog::onSave()
     // Save watermark settings
     WatermarkRenderer::Settings watermarkSettings;
     watermarkSettings.enabled = m_watermarkEnabledCheckbox->isChecked();
+    watermarkSettings.applyToRecording = m_watermarkApplyToRecordingCheckbox->isChecked();
     watermarkSettings.imagePath = m_watermarkImagePathEdit->text();
     watermarkSettings.opacity = m_watermarkOpacitySlider->value() / 100.0;
     watermarkSettings.position = static_cast<WatermarkRenderer::Position>(

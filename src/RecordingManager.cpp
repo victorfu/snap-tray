@@ -734,6 +734,15 @@ void RecordingManager::startRecordingAfterCountdown()
     setState(State::Recording);
     m_frameCount = 0;
 
+    // Load watermark settings for recording
+    m_watermarkSettings = WatermarkRenderer::loadSettings();
+    if (m_watermarkSettings.applyToRecording && !m_watermarkSettings.imagePath.isEmpty()) {
+        m_watermarkSettings.enabled = true;  // Enable for render() to work
+        m_cachedWatermark = QPixmap(m_watermarkSettings.imagePath);
+    } else {
+        m_cachedWatermark = QPixmap();
+    }
+
     // Delay frame capture start to allow boundary overlay to render fully
     qDebug() << "RecordingManager: Delaying capture start for overlay rendering...";
     QTimer::singleShot(OVERLAY_RENDER_DELAY_MS, this, [this]() {
@@ -839,6 +848,13 @@ void RecordingManager::captureFrame()
         if (annotationOverlay) {
             qreal scale = CoordinateHelper::getDevicePixelRatio(m_targetScreen);
             annotationOverlay->compositeOntoFrame(frame, scale);
+        }
+
+        // Apply watermark if enabled for recordings
+        if (m_watermarkSettings.applyToRecording && !m_cachedWatermark.isNull()) {
+            QPainter painter(&frame);
+            painter.setRenderHint(QPainter::Antialiasing);
+            WatermarkRenderer::render(painter, frame.rect(), m_watermarkSettings);
         }
 
         // Pass QImage to the appropriate encoder with elapsed timestamp
@@ -1090,6 +1106,9 @@ void RecordingManager::stopFrameCapture()
 void RecordingManager::cleanupRecording()
 {
     stopFrameCapture();
+
+    // Clear watermark cache
+    m_cachedWatermark = QPixmap();
 
     // Use deleteLater() consistently to avoid double-delete if deleteLater()
     // was already called from cancelRecording() or onEncodingError()

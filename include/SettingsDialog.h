@@ -80,6 +80,7 @@ private:
     QLabel *m_watermarkImagePreview;
     QLabel *m_watermarkImageSizeLabel;
     QSize m_watermarkOriginalSize;
+    QCheckBox *m_watermarkApplyToRecordingCheckbox;
 
     // Recording UI elements
     QComboBox *m_recordingFrameRateCombo;

@@ -23,6 +23,7 @@ public:
         Position position = BottomRight;
         int imageScale = 100;  // 10-200%
         int margin = 12;       // 0-100 pixels
+        bool applyToRecording = false;
     };
 
     // Render watermark directly onto a painter (for display)

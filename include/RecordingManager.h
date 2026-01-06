@@ -9,6 +9,8 @@
 #include <QElapsedTimer>
 #include <QMutex>
 
+#include "WatermarkRenderer.h"
+
 class RecordingRegionSelector;
 class RecordingControlBar;
 class RecordingBoundaryOverlay;
@@ -173,6 +175,10 @@ private:
     QPointer<CountdownOverlay> m_countdownOverlay;
     bool m_countdownEnabled;
     int m_countdownSeconds;
+
+    // Watermark for recording
+    WatermarkRenderer::Settings m_watermarkSettings;
+    QPixmap m_cachedWatermark;
 };
 
 #endif // RECORDINGMANAGER_H
