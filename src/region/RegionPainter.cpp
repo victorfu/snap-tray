@@ -5,6 +5,7 @@
 #include "region/MultiRegionManager.h"
 #include "annotations/AnnotationLayer.h"
 #include "annotations/TextAnnotation.h"
+#include "annotations/EmojiStickerAnnotation.h"
 #include "tools/ToolManager.h"
 #include "ToolbarWidget.h"
 #include "GlassRenderer.h"
@@ -491,6 +492,11 @@ void RegionPainter::drawAnnotations(QPainter& painter)
     if (auto* textItem = getSelectedTextAnnotation()) {
         TransformationGizmo::draw(painter, textItem);
     }
+
+    // Draw transformation gizmo for selected emoji sticker annotation
+    if (auto* emojiItem = getSelectedEmojiStickerAnnotation()) {
+        TransformationGizmo::draw(painter, emojiItem);
+    }
 }
 
 void RegionPainter::drawCurrentAnnotation(QPainter& painter)
@@ -525,6 +531,17 @@ TextAnnotation* RegionPainter::getSelectedTextAnnotation() const
     }
     if (m_annotationLayer->selectedIndex() >= 0) {
         return dynamic_cast<TextAnnotation*>(m_annotationLayer->selectedItem());
+    }
+    return nullptr;
+}
+
+EmojiStickerAnnotation* RegionPainter::getSelectedEmojiStickerAnnotation() const
+{
+    if (!m_annotationLayer) {
+        return nullptr;
+    }
+    if (m_annotationLayer->selectedIndex() >= 0) {
+        return dynamic_cast<EmojiStickerAnnotation*>(m_annotationLayer->selectedItem());
     }
     return nullptr;
 }

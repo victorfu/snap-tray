@@ -8,6 +8,7 @@
 #include <QVector>
 
 class TextAnnotation;
+class EmojiStickerAnnotation;
 
 // Handle types for hit-testing transformation gizmo
 enum class GizmoHandle {
@@ -65,6 +66,11 @@ public:
      * @return Vector of 4 corner positions (TopLeft, TopRight, BottomRight, BottomLeft)
      */
     static QVector<QPointF> cornerHandlePositions(const TextAnnotation *annotation);
+
+    // EmojiStickerAnnotation overloads (no rotation handle)
+    static void draw(QPainter &painter, const EmojiStickerAnnotation *annotation);
+    static GizmoHandle hitTest(const EmojiStickerAnnotation *annotation, const QPoint &point);
+    static QVector<QPointF> cornerHandlePositions(const EmojiStickerAnnotation *annotation);
 
 private:
     static void drawDashedBorder(QPainter &painter, const QPolygonF &polygon);

@@ -47,9 +47,9 @@ private:
     QVector<QRect> m_emojiRects;
     int m_hoveredEmoji;
 
-    static const int EMOJI_SIZE = 28;
+    static const int EMOJI_SIZE = 24;
     static const int EMOJI_SPACING = 4;
-    static const int PICKER_HEIGHT = 72;
+    static const int PICKER_HEIGHT = 64;
     static const int PICKER_PADDING = 8;
     static const int EMOJIS_PER_ROW = 8;
 

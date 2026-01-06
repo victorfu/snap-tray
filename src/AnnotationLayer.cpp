@@ -4,6 +4,7 @@
 #include "annotations/MarkerStroke.h"
 #include "annotations/MosaicStroke.h"
 #include "annotations/StepBadgeAnnotation.h"
+#include "annotations/EmojiStickerAnnotation.h"
 #include "annotations/EraserStroke.h"
 #include "annotations/ErasedItemsGroup.h"
 #include <QImage>
@@ -290,6 +291,19 @@ int AnnotationLayer::hitTestText(const QPoint &pos) const
         if (auto* textItem = dynamic_cast<TextAnnotation*>(m_items[i].get())) {
             // Use containsPoint() for accurate hit-testing of rotated/scaled text
             if (textItem->containsPoint(pos)) {
+                return i;
+            }
+        }
+    }
+    return -1;
+}
+
+int AnnotationLayer::hitTestEmojiSticker(const QPoint &pos) const
+{
+    // Iterate in reverse order (top-most items first)
+    for (int i = static_cast<int>(m_items.size()) - 1; i >= 0; --i) {
+        if (auto* emojiItem = dynamic_cast<EmojiStickerAnnotation*>(m_items[i].get())) {
+            if (emojiItem->containsPoint(pos)) {
                 return i;
             }
         }

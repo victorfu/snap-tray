@@ -22,6 +22,7 @@ class AspectRatioWidget;
 class RadiusSliderWidget;
 class UpdateThrottler;
 class TextAnnotation;
+class EmojiStickerAnnotation;
 class MultiRegionManager;
 
 enum class ToolbarButton;
@@ -109,6 +110,7 @@ private:
     bool handleColorWidgetPress(const QPoint& pos);
     bool handleGizmoPress(const QPoint& pos);
     bool handleTextAnnotationPress(const QPoint& pos);
+    bool handleEmojiStickerAnnotationPress(const QPoint& pos);
     bool handleAnnotationToolPress(const QPoint& pos);
     bool handleSelectionToolPress(const QPoint& pos);
     void handleNewSelectionPress(const QPoint& pos);
@@ -117,6 +119,7 @@ private:
     // Mouse move helpers
     bool handleTextEditorMove(const QPoint& pos);
     bool handleTextAnnotationMove(const QPoint& pos);
+    bool handleEmojiStickerMove(const QPoint& pos);
     void handleWindowDetectionMove(const QPoint& pos);
     void handleSelectionMove(const QPoint& pos);
     void handleAnnotationMove(const QPoint& pos);
@@ -126,6 +129,7 @@ private:
     // Mouse release helpers
     bool handleTextEditorRelease(const QPoint& pos);
     bool handleTextAnnotationRelease();
+    bool handleEmojiStickerRelease();
     bool handleRadiusSliderRelease(const QPoint& pos);
     void handleSelectionRelease(const QPoint& pos);
     void handleAnnotationRelease();
@@ -146,6 +150,7 @@ private:
 
     // Utility
     TextAnnotation* getSelectedTextAnnotation() const;
+    EmojiStickerAnnotation* getSelectedEmojiStickerAnnotation() const;
     bool shouldShowColorPalette() const;
     bool shouldShowColorAndWidthWidget() const;
     bool isAnnotationTool(ToolbarButton tool) const;
@@ -187,6 +192,15 @@ private:
     int m_shapeType = 0;
     int m_shapeFillMode = 0;
     bool m_multiRegionMode = false;
+
+    // Emoji sticker transformation state
+    bool m_isEmojiDragging = false;
+    bool m_isEmojiScaling = false;
+    GizmoHandle m_activeEmojiHandle = GizmoHandle::None;
+    QPoint m_emojiDragStart;
+    qreal m_emojiStartScale = 1.0;
+    qreal m_emojiStartDistance = 0.0;
+    QPointF m_emojiStartCenter;
 
     // Constants
     static constexpr int WINDOW_DETECTION_MIN_DISTANCE_SQ = 25;  // 5px threshold squared

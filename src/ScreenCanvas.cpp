@@ -739,6 +739,7 @@ bool ScreenCanvas::isDrawingTool(ToolId toolId) const
     case ToolId::LaserPointer:
     case ToolId::Mosaic:
     case ToolId::StepBadge:
+    case ToolId::EmojiSticker:
     case ToolId::Text:
         return true;
     default:
@@ -1025,8 +1026,9 @@ void ScreenCanvas::mouseReleaseEvent(QMouseEvent* event)
         }
 
         // Finish drawing annotation
-        // StepBadge places on release but isDrawing() returns false, so handle it specially
-        if (m_toolManager->isDrawing() || m_currentToolId == ToolId::StepBadge) {
+        // StepBadge/EmojiSticker place on release but isDrawing() returns false, so handle them specially
+        if (m_toolManager->isDrawing() || m_currentToolId == ToolId::StepBadge ||
+            m_currentToolId == ToolId::EmojiSticker) {
             m_toolManager->handleMouseRelease(event->pos());
             update();
         }

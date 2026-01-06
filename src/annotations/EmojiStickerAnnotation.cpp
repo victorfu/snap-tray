@@ -23,17 +23,34 @@ QSize EmojiStickerAnnotation::emojiSize() const
 
 QPointF EmojiStickerAnnotation::center() const
 {
-    return QPointF(m_position);
+    // Return center of the actual bounding polygon
+    QPolygonF poly = transformedBoundingPolygon();
+    QRectF bounds = poly.boundingRect();
+    return bounds.center();
 }
 
 QPolygonF EmojiStickerAnnotation::transformedBoundingPolygon() const
 {
-    QSize size = emojiSize();
-    int halfW = size.width() / 2;
-    int halfH = size.height() / 2;
+    // Use actual font metrics to match the draw() calculation
+    int fontSize = static_cast<int>(kBaseSize * m_scale);
+    QFont font;
+#ifdef Q_OS_MAC
+    font.setFamily("Apple Color Emoji");
+#elif defined(Q_OS_WIN)
+    font.setFamily("Segoe UI Emoji");
+#else
+    font.setFamily("Noto Color Emoji");
+#endif
+    font.setPointSize(fontSize);
 
-    QRectF rect(m_position.x() - halfW, m_position.y() - halfH,
-                size.width(), size.height());
+    QFontMetrics fm(font);
+    QRect textRect = fm.boundingRect(m_emoji);
+
+    // Match the draw() positioning exactly
+    int x = m_position.x() - textRect.width() / 2;
+    int y = m_position.y() + fm.ascent() / 2 - fm.ascent();
+
+    QRectF rect(x, y, textRect.width(), fm.height());
 
     QPolygonF poly;
     poly << rect.topLeft()
@@ -81,13 +98,11 @@ void EmojiStickerAnnotation::draw(QPainter &painter) const
 
 QRect EmojiStickerAnnotation::boundingRect() const
 {
-    QSize size = emojiSize();
+    QPolygonF poly = transformedBoundingPolygon();
+    QRect rect = poly.boundingRect().toRect();
+    // Add margin for selection handles
     int margin = 4;
-    int halfW = size.width() / 2 + margin;
-    int halfH = size.height() / 2 + margin;
-
-    return QRect(m_position.x() - halfW, m_position.y() - halfH,
-                 halfW * 2, halfH * 2);
+    return rect.adjusted(-margin, -margin, margin, margin);
 }
 
 std::unique_ptr<AnnotationItem> EmojiStickerAnnotation::clone() const

@@ -16,6 +16,7 @@ class ToolbarWidget;
 class AspectRatioWidget;
 class RadiusSliderWidget;
 class TextAnnotation;
+class EmojiStickerAnnotation;
 class MultiRegionManager;
 
 /**
@@ -82,6 +83,7 @@ private:
     // Helper methods
     int effectiveCornerRadius() const;
     TextAnnotation* getSelectedTextAnnotation() const;
+    EmojiStickerAnnotation* getSelectedEmojiStickerAnnotation() const;
 
     // Dependencies (non-owning pointers)
     SelectionStateManager* m_selectionManager = nullptr;

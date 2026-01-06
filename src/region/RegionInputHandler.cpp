@@ -9,6 +9,7 @@
 #include "region/MagnifierPanel.h"
 #include "annotations/AnnotationLayer.h"
 #include "annotations/TextAnnotation.h"
+#include "annotations/EmojiStickerAnnotation.h"
 #include "tools/ToolManager.h"
 #include "tools/handlers/EraserToolHandler.h"
 #include "ToolbarWidget.h"
@@ -206,6 +207,11 @@ void RegionInputHandler::handleMousePress(QMouseEvent* event)
                 return;
             }
 
+            // Check emoji sticker annotations
+            if (handleEmojiStickerAnnotationPress(event->pos())) {
+                return;
+            }
+
             // Clear selection if clicking elsewhere
             if (m_annotationLayer->selectedIndex() >= 0) {
                 m_annotationLayer->clearSelection();
@@ -255,6 +261,11 @@ void RegionInputHandler::handleMouseMove(QMouseEvent* event)
         return;
     }
 
+    // Handle emoji sticker dragging/scaling
+    if (handleEmojiStickerMove(event->pos())) {
+        return;
+    }
+
     // Window detection during hover
     handleWindowDetectionMove(event->pos());
 
@@ -289,6 +300,11 @@ void RegionInputHandler::handleMouseRelease(QMouseEvent* event)
 
         // Handle text annotation transformation/drag release
         if (handleTextAnnotationRelease()) {
+            return;
+        }
+
+        // Handle emoji sticker drag/scale release
+        if (handleEmojiStickerRelease()) {
             return;
         }
 
@@ -480,6 +496,70 @@ bool RegionInputHandler::handleTextAnnotationPress(const QPoint& pos)
     return true;
 }
 
+bool RegionInputHandler::handleEmojiStickerAnnotationPress(const QPoint& pos)
+{
+    // First check if we're clicking on a gizmo handle of an already-selected emoji
+    if (auto* emojiItem = getSelectedEmojiStickerAnnotation()) {
+        GizmoHandle handle = TransformationGizmo::hitTest(emojiItem, pos);
+        if (handle != GizmoHandle::None) {
+            if (handle == GizmoHandle::Body) {
+                // Start dragging
+                m_isEmojiDragging = true;
+                m_emojiDragStart = pos;
+                emit cursorChangeRequested(Qt::SizeAllCursor);
+            } else {
+                // Start scaling (corner handles)
+                m_isEmojiScaling = true;
+                m_activeEmojiHandle = handle;
+                m_emojiStartCenter = emojiItem->center();
+                m_emojiStartScale = emojiItem->scale();
+                QPointF delta = QPointF(pos) - m_emojiStartCenter;
+                m_emojiStartDistance = qSqrt(delta.x() * delta.x() + delta.y() * delta.y());
+                emit cursorChangeRequested(getCursorForGizmoHandle(handle));
+            }
+            if (m_parentWidget) {
+                m_parentWidget->setFocus();
+            }
+            emit updateRequested();
+            return true;
+        }
+    }
+
+    // Check if clicking on a different emoji sticker
+    int hitIndex = m_annotationLayer->hitTestEmojiSticker(pos);
+    if (hitIndex < 0) {
+        return false;
+    }
+
+    // Select this emoji sticker
+    m_annotationLayer->setSelectedIndex(hitIndex);
+
+    // Start dragging by default when clicking on the emoji body
+    if (auto* emojiItem = getSelectedEmojiStickerAnnotation()) {
+        GizmoHandle handle = TransformationGizmo::hitTest(emojiItem, pos);
+        if (handle == GizmoHandle::Body || handle == GizmoHandle::None) {
+            m_isEmojiDragging = true;
+            m_emojiDragStart = pos;
+            emit cursorChangeRequested(Qt::SizeAllCursor);
+        } else {
+            // Corner handle - start scaling
+            m_isEmojiScaling = true;
+            m_activeEmojiHandle = handle;
+            m_emojiStartCenter = emojiItem->center();
+            m_emojiStartScale = emojiItem->scale();
+            QPointF delta = QPointF(pos) - m_emojiStartCenter;
+            m_emojiStartDistance = qSqrt(delta.x() * delta.x() + delta.y() * delta.y());
+            emit cursorChangeRequested(getCursorForGizmoHandle(handle));
+        }
+    }
+
+    if (m_parentWidget) {
+        m_parentWidget->setFocus();
+    }
+    emit updateRequested();
+    return true;
+}
+
 bool RegionInputHandler::handleAnnotationToolPress(const QPoint& pos)
 {
     QRect sel = m_selectionManager->selectionRect();
@@ -633,6 +713,36 @@ bool RegionInputHandler::handleTextAnnotationMove(const QPoint& pos)
     return false;
 }
 
+bool RegionInputHandler::handleEmojiStickerMove(const QPoint& pos)
+{
+    if (m_isEmojiDragging && m_annotationLayer->selectedIndex() >= 0) {
+        auto* emojiItem = getSelectedEmojiStickerAnnotation();
+        if (emojiItem) {
+            QPoint delta = pos - m_emojiDragStart;
+            emojiItem->moveBy(delta);
+            m_emojiDragStart = pos;
+            emit updateRequested();
+            return true;
+        }
+    }
+
+    if (m_isEmojiScaling && m_annotationLayer->selectedIndex() >= 0) {
+        auto* emojiItem = getSelectedEmojiStickerAnnotation();
+        if (emojiItem && m_emojiStartDistance > 0) {
+            QPointF delta = QPointF(pos) - m_emojiStartCenter;
+            qreal currentDistance = qSqrt(delta.x() * delta.x() + delta.y() * delta.y());
+            qreal scaleFactor = currentDistance / m_emojiStartDistance;
+            qreal newScale = m_emojiStartScale * scaleFactor;
+            // setScale already clamps to kMinScale/kMaxScale
+            emojiItem->setScale(newScale);
+            emit updateRequested();
+            return true;
+        }
+    }
+
+    return false;
+}
+
 void RegionInputHandler::handleWindowDetectionMove(const QPoint& pos)
 {
     if (!m_selectionManager->hasActiveSelection()) {
@@ -667,6 +777,7 @@ void RegionInputHandler::handleHoverMove(const QPoint& pos, Qt::MouseButtons but
     bool colorPaletteHovered = false;
     bool unifiedWidgetHovered = false;
     bool textAnnotationHovered = false;
+    bool emojiStickerHovered = false;
     bool gizmoHandleHovered = false;
     bool aspectRatioHovered = false;
     bool radiusSliderHovered = false;
@@ -692,6 +803,20 @@ void RegionInputHandler::handleHoverMove(const QPoint& pos, Qt::MouseButtons but
     if (!gizmoHandleHovered && m_annotationLayer->hitTestText(pos) >= 0) {
         emit cursorChangeRequested(Qt::SizeAllCursor);
         textAnnotationHovered = true;
+    }
+
+    // Check emoji sticker gizmo handles (only for selected emoji)
+    // Skip cursor change for EmojiSticker tool - only show selection cursor during actual drag
+    if (!gizmoHandleHovered && !textAnnotationHovered &&
+        m_currentTool != ToolbarButton::EmojiSticker) {
+        if (auto* emojiItem = getSelectedEmojiStickerAnnotation()) {
+            GizmoHandle handle = TransformationGizmo::hitTest(emojiItem, pos);
+            if (handle != GizmoHandle::None) {
+                emit cursorChangeRequested(getCursorForGizmoHandle(handle));
+                gizmoHandleHovered = true;
+                emojiStickerHovered = true;
+            }
+        }
     }
 
     // Update aspect ratio widget
@@ -768,7 +893,7 @@ void RegionInputHandler::handleHoverMove(const QPoint& pos, Qt::MouseButtons but
             emit cursorChangeRequested(Qt::PointingHandCursor);
         }
         else if (!colorPaletteHovered && !unifiedWidgetHovered &&
-                 !textAnnotationHovered && !gizmoHandleHovered &&
+                 !textAnnotationHovered && !emojiStickerHovered && !gizmoHandleHovered &&
                  !aspectRatioHovered && !radiusSliderHovered && !multiRegionHovered) {
             if (m_currentTool == ToolbarButton::Selection) {
                 auto handle = m_selectionManager->hitTestHandle(pos);
@@ -786,7 +911,7 @@ void RegionInputHandler::handleHoverMove(const QPoint& pos, Qt::MouseButtons but
         emit cursorChangeRequested(Qt::PointingHandCursor);
     }
     else if (!colorPaletteHovered && !unifiedWidgetHovered &&
-             !textAnnotationHovered && !gizmoHandleHovered &&
+             !textAnnotationHovered && !emojiStickerHovered && !gizmoHandleHovered &&
              !aspectRatioHovered && !radiusSliderHovered && !multiRegionHovered) {
         if (m_currentTool == ToolbarButton::Selection) {
             auto handle = m_selectionManager->hitTestHandle(pos);
@@ -868,6 +993,28 @@ bool RegionInputHandler::handleTextAnnotationRelease()
     }
     if (m_textAnnotationEditor->isDragging()) {
         m_textAnnotationEditor->finishDragging();
+        return true;
+    }
+    return false;
+}
+
+bool RegionInputHandler::handleEmojiStickerRelease()
+{
+    if (m_isEmojiDragging) {
+        m_isEmojiDragging = false;
+        // Restore cross cursor for EmojiSticker tool
+        if (m_currentTool == ToolbarButton::EmojiSticker) {
+            emit cursorChangeRequested(Qt::CrossCursor);
+        }
+        return true;
+    }
+    if (m_isEmojiScaling) {
+        m_isEmojiScaling = false;
+        m_activeEmojiHandle = GizmoHandle::None;
+        // Restore cross cursor for EmojiSticker tool
+        if (m_currentTool == ToolbarButton::EmojiSticker) {
+            emit cursorChangeRequested(Qt::CrossCursor);
+        }
         return true;
     }
     return false;
@@ -957,7 +1104,8 @@ void RegionInputHandler::startAnnotation(const QPoint& pos)
         m_toolManager->handleMousePress(pos);
         m_isDrawing = m_toolManager->isDrawing();
 
-        if (!m_isDrawing && m_currentTool == ToolbarButton::StepBadge) {
+        if (!m_isDrawing && (m_currentTool == ToolbarButton::StepBadge ||
+                              m_currentTool == ToolbarButton::EmojiSticker)) {
             m_isDrawing = true;
         }
         emit drawingStateChanged(m_isDrawing);
@@ -1062,6 +1210,17 @@ TextAnnotation* RegionInputHandler::getSelectedTextAnnotation() const
     return nullptr;
 }
 
+EmojiStickerAnnotation* RegionInputHandler::getSelectedEmojiStickerAnnotation() const
+{
+    if (!m_annotationLayer) {
+        return nullptr;
+    }
+    if (m_annotationLayer->selectedIndex() >= 0) {
+        return dynamic_cast<EmojiStickerAnnotation*>(m_annotationLayer->selectedItem());
+    }
+    return nullptr;
+}
+
 bool RegionInputHandler::shouldShowColorPalette() const
 {
     if (!m_selectionManager->isComplete()) return false;
@@ -1109,6 +1268,7 @@ bool RegionInputHandler::isAnnotationTool(ToolbarButton tool) const
     case ToolbarButton::Text:
     case ToolbarButton::Mosaic:
     case ToolbarButton::StepBadge:
+    case ToolbarButton::EmojiSticker:
     case ToolbarButton::Eraser:
         return true;
     default:

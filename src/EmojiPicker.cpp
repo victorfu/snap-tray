@@ -101,7 +101,7 @@ void EmojiPicker::draw(QPainter& painter)
 #else
     font.setFamily("Noto Color Emoji");
 #endif
-    font.setPointSize(18);
+    font.setPointSize(14);
     painter.setFont(font);
 
     for (int i = 0; i < m_emojis.size(); ++i) {

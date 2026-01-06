@@ -14,6 +14,7 @@
 
 // Forward declarations
 class TextAnnotation;
+class EmojiStickerAnnotation;
 
 // Annotation layer that manages all annotations with undo/redo
 class AnnotationLayer : public QObject
@@ -48,8 +49,9 @@ public:
     // Returns the removed items with their original indices (for undo support)
     std::vector<ErasedItemsGroup::IndexedItem> removeItemsIntersecting(const QPoint &point, int strokeWidth);
 
-    // Selection support for text annotations
+    // Selection support for text/emoji annotations
     int hitTestText(const QPoint &pos) const;
+    int hitTestEmojiSticker(const QPoint &pos) const;
     void setSelectedIndex(int index) { m_selectedIndex = index; }
     int selectedIndex() const { return m_selectedIndex; }
     AnnotationItem* selectedItem();

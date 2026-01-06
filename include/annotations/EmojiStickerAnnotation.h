@@ -10,7 +10,7 @@
 class EmojiStickerAnnotation : public AnnotationItem
 {
 public:
-    static constexpr int kBaseSize = 48;
+    static constexpr int kBaseSize = 32;
     static constexpr qreal kMinScale = 0.25;
     static constexpr qreal kMaxScale = 4.0;
 

@@ -1,5 +1,6 @@
 #include "TransformationGizmo.h"
 #include "annotations/TextAnnotation.h"
+#include "annotations/EmojiStickerAnnotation.h"
 #include <QtMath>
 #include <QLineF>
 
@@ -142,6 +143,72 @@ GizmoHandle TransformationGizmo::hitTest(const TextAnnotation *annotation, const
     }
 
     // 3. Check if inside the text body (for moving)
+    if (annotation->containsPoint(point)) {
+        return GizmoHandle::Body;
+    }
+
+    return GizmoHandle::None;
+}
+
+// ============================================================================
+// EmojiStickerAnnotation overloads (no rotation handle)
+// ============================================================================
+
+void TransformationGizmo::draw(QPainter &painter, const EmojiStickerAnnotation *annotation)
+{
+    if (!annotation) return;
+
+    painter.save();
+    painter.setRenderHint(QPainter::Antialiasing, true);
+
+    QPolygonF poly = annotation->transformedBoundingPolygon();
+
+    // 1. Draw dashed border
+    drawDashedBorder(painter, poly);
+
+    // 2. Draw corner resize handles (no rotation handle for emoji)
+    QVector<QPointF> corners = cornerHandlePositions(annotation);
+    drawCornerHandles(painter, corners);
+
+    painter.restore();
+}
+
+QVector<QPointF> TransformationGizmo::cornerHandlePositions(const EmojiStickerAnnotation *annotation)
+{
+    QVector<QPointF> corners;
+    if (!annotation) return corners;
+
+    QPolygonF poly = annotation->transformedBoundingPolygon();
+    // poly: TopLeft[0], TopRight[1], BottomRight[2], BottomLeft[3]
+    for (int i = 0; i < 4; ++i) {
+        corners.append(poly.at(i));
+    }
+    return corners;
+}
+
+GizmoHandle TransformationGizmo::hitTest(const EmojiStickerAnnotation *annotation, const QPoint &point)
+{
+    if (!annotation) return GizmoHandle::None;
+
+    QPointF p(point);
+
+    // 1. Check corner handles first (they're on the corners, so check before body)
+    QVector<QPointF> corners = cornerHandlePositions(annotation);
+    GizmoHandle cornerHandles[] = {
+        GizmoHandle::TopLeft,
+        GizmoHandle::TopRight,
+        GizmoHandle::BottomRight,
+        GizmoHandle::BottomLeft
+    };
+
+    for (int i = 0; i < 4; ++i) {
+        qreal dist = QLineF(p, corners[i]).length();
+        if (dist <= kHandleRadius + kHitTolerance) {
+            return cornerHandles[i];
+        }
+    }
+
+    // 2. Check if inside the emoji body (for moving)
     if (annotation->containsPoint(point)) {
         return GizmoHandle::Body;
     }
