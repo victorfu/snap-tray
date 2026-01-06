@@ -21,6 +21,41 @@ Qt::CursorShape SelectionResizeHelper::cursorForHandle(ResizeHandle handle)
     }
 }
 
+SelectionResizeHelper::ResizeHandle SelectionResizeHelper::hitTestHandle(
+    const QRect& selectionRect, const QPoint& pos, int handleSize)
+{
+    QRect rect = selectionRect.normalized();
+    if (!rect.isValid() || rect.isEmpty()) {
+        return ResizeHandle::None;
+    }
+
+    int half = handleSize / 2;
+
+    // Define handle hit areas
+    QRect topLeft(rect.left() - half, rect.top() - half, handleSize, handleSize);
+    QRect top(rect.center().x() - half, rect.top() - half, handleSize, handleSize);
+    QRect topRight(rect.right() - half, rect.top() - half, handleSize, handleSize);
+    QRect left(rect.left() - half, rect.center().y() - half, handleSize, handleSize);
+    QRect right(rect.right() - half, rect.center().y() - half, handleSize, handleSize);
+    QRect bottomLeft(rect.left() - half, rect.bottom() - half, handleSize, handleSize);
+    QRect bottom(rect.center().x() - half, rect.bottom() - half, handleSize, handleSize);
+    QRect bottomRight(rect.right() - half, rect.bottom() - half, handleSize, handleSize);
+
+    // Check corners first (higher priority)
+    if (topLeft.contains(pos)) return ResizeHandle::TopLeft;
+    if (topRight.contains(pos)) return ResizeHandle::TopRight;
+    if (bottomLeft.contains(pos)) return ResizeHandle::BottomLeft;
+    if (bottomRight.contains(pos)) return ResizeHandle::BottomRight;
+
+    // Check edges
+    if (top.contains(pos)) return ResizeHandle::Top;
+    if (bottom.contains(pos)) return ResizeHandle::Bottom;
+    if (left.contains(pos)) return ResizeHandle::Left;
+    if (right.contains(pos)) return ResizeHandle::Right;
+
+    return ResizeHandle::None;
+}
+
 SelectionResizeHelper::ResizeHandle SelectionResizeHelper::determineHandleFromOutsideClick(
     const QPoint& clickPos, const QRect& selectionRect)
 {

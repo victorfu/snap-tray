@@ -24,6 +24,17 @@ public:
     static Qt::CursorShape cursorForHandle(ResizeHandle handle);
 
     /**
+     * @brief Hit test resize handles for an arbitrary selection rect.
+     *
+     * @param selectionRect The selection rectangle to test against
+     * @param pos The cursor position
+     * @param handleSize The handle hit box size (default 16)
+     * @return The handle under the cursor, or None
+     */
+    static ResizeHandle hitTestHandle(
+        const QRect& selectionRect, const QPoint& pos, int handleSize = 16);
+
+    /**
      * @brief Determine which handle/edge to use when clicking outside selection.
      *
      * When user clicks outside the selection rectangle, this determines

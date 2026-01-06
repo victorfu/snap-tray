@@ -173,7 +173,7 @@ void RegionInputHandler::handleMousePress(QMouseEvent* event)
                     m_isDrawing = m_toolManager->isDrawing();
                     emit drawingStateChanged(m_isDrawing);
                 }
-            };
+                };
 
             // Check toolbar
             if (handleToolbarPress(event->pos())) {
@@ -282,7 +282,8 @@ void RegionInputHandler::handleMouseMove(QMouseEvent* event)
     else if (m_isDrawing) {
         handleAnnotationMove(event->pos());
     }
-    else if (m_selectionManager->isComplete()) {
+    else if (m_selectionManager->isComplete() ||
+        (m_multiRegionMode && m_multiRegionManager && m_multiRegionManager->count() > 0)) {
         handleHoverMove(event->pos(), event->buttons());
     }
 
@@ -331,7 +332,7 @@ void RegionInputHandler::handleMouseRelease(QMouseEvent* event)
             emit updateRequested();
         }
         else if (shouldShowColorAndWidthWidget() &&
-                 m_colorAndWidthWidget->handleMouseRelease(event->pos())) {
+            m_colorAndWidthWidget->handleMouseRelease(event->pos())) {
             emit updateRequested();
         }
     }
@@ -360,7 +361,8 @@ bool RegionInputHandler::handleTextEditorPress(const QPoint& pos)
     if (!m_textEditor->contains(pos)) {
         if (!m_textEditor->textEdit()->toPlainText().trimmed().isEmpty()) {
             m_textEditor->finishEditing();
-        } else {
+        }
+        else {
             m_textEditor->cancelEditing();
         }
         return false;
@@ -507,7 +509,8 @@ bool RegionInputHandler::handleEmojiStickerAnnotationPress(const QPoint& pos)
                 m_isEmojiDragging = true;
                 m_emojiDragStart = pos;
                 emit cursorChangeRequested(Qt::SizeAllCursor);
-            } else {
+            }
+            else {
                 // Start scaling (corner handles)
                 m_isEmojiScaling = true;
                 m_activeEmojiHandle = handle;
@@ -541,7 +544,8 @@ bool RegionInputHandler::handleEmojiStickerAnnotationPress(const QPoint& pos)
             m_isEmojiDragging = true;
             m_emojiDragStart = pos;
             emit cursorChangeRequested(Qt::SizeAllCursor);
-        } else {
+        }
+        else {
             // Corner handle - start scaling
             m_isEmojiScaling = true;
             m_activeEmojiHandle = handle;
@@ -601,6 +605,20 @@ bool RegionInputHandler::handleSelectionToolPress(const QPoint& pos)
             return true;
         }
 
+        // Check if clicking on active region's resize handles (handles extend outside rect)
+        int activeIndex = m_multiRegionManager->activeIndex();
+        if (activeIndex >= 0) {
+            QRect activeRect = m_multiRegionManager->regionRect(activeIndex);
+            m_selectionManager->setSelectionRect(activeRect);
+            auto handle = m_selectionManager->hitTestHandle(pos);
+            if (handle != SelectionStateManager::ResizeHandle::None) {
+                m_selectionManager->startResize(pos, handle);
+                emit updateRequested();
+                return true;
+            }
+        }
+
+        // In multi-region mode, clicking outside any region starts a new selection
         m_multiRegionManager->setActiveIndex(-1);
         handleNewSelectionPress(pos);
         emit updateRequested();
@@ -647,7 +665,8 @@ void RegionInputHandler::handleRightButtonPress(const QPoint& pos)
             int activeIndex = m_multiRegionManager->activeIndex();
             if (activeIndex >= 0) {
                 m_selectionManager->setSelectionRect(m_multiRegionManager->regionRect(activeIndex));
-            } else {
+            }
+            else {
                 m_selectionManager->clearSelection();
             }
             emit updateRequested();
@@ -774,6 +793,39 @@ void RegionInputHandler::handleAnnotationMove(const QPoint& pos)
 
 void RegionInputHandler::handleHoverMove(const QPoint& pos, Qt::MouseButtons buttons)
 {
+    // Multi-region mode cursor handling - MUST be checked FIRST and return early
+    // Use direct setCursor instead of signal to avoid potential signal/slot issues
+    if (m_multiRegionMode && m_multiRegionManager && m_parentWidget) {
+        // Update toolbar hover first (toolbar always takes priority)
+        m_toolbar->updateHoveredButton(pos);
+        int hoveredButton = m_toolbar->hoveredButton();
+
+        if (hoveredButton >= 0 || m_toolbar->contains(pos)) {
+            m_parentWidget->setCursor(Qt::PointingHandCursor);
+            return;
+        }
+
+        int activeIndex = m_multiRegionManager->activeIndex();
+
+        // Active region: only show resize cursors on 8 handles
+        if (activeIndex >= 0) {
+            QRect activeRect = m_multiRegionManager->regionRect(activeIndex);
+            m_selectionManager->setSelectionRect(activeRect);
+
+            // Check handles - only these show resize cursors
+            auto handle = SelectionResizeHelper::hitTestHandle(activeRect, pos);
+            if (handle != SelectionStateManager::ResizeHandle::None) {
+                m_parentWidget->setCursor(SelectionResizeHelper::cursorForHandle(handle));
+                return;
+            }
+        }
+
+        // Everything else in multi-region mode shows CrossCursor
+        m_parentWidget->setCursor(Qt::CrossCursor);
+        return;
+    }
+
+    // === Single-region mode handling below ===
     bool colorPaletteHovered = false;
     bool unifiedWidgetHovered = false;
     bool textAnnotationHovered = false;
@@ -781,7 +833,6 @@ void RegionInputHandler::handleHoverMove(const QPoint& pos, Qt::MouseButtons but
     bool gizmoHandleHovered = false;
     bool aspectRatioHovered = false;
     bool radiusSliderHovered = false;
-    bool multiRegionHovered = false;
 
     // Update eraser hover point
     if (m_currentTool == ToolbarButton::Eraser && !m_isDrawing) {
@@ -878,13 +929,6 @@ void RegionInputHandler::handleHoverMove(const QPoint& pos, Qt::MouseButtons but
         }
     }
 
-    if (m_multiRegionMode && m_multiRegionManager && m_currentTool == ToolbarButton::Selection) {
-        if (m_multiRegionManager->hitTest(pos) >= 0) {
-            emit cursorChangeRequested(Qt::PointingHandCursor);
-            multiRegionHovered = true;
-        }
-    }
-
     // Update toolbar hover
     bool hoverChanged = m_toolbar->updateHoveredButton(pos);
     int hoveredButton = m_toolbar->hoveredButton();
@@ -893,8 +937,8 @@ void RegionInputHandler::handleHoverMove(const QPoint& pos, Qt::MouseButtons but
             emit cursorChangeRequested(Qt::PointingHandCursor);
         }
         else if (!colorPaletteHovered && !unifiedWidgetHovered &&
-                 !textAnnotationHovered && !emojiStickerHovered && !gizmoHandleHovered &&
-                 !aspectRatioHovered && !radiusSliderHovered && !multiRegionHovered) {
+            !textAnnotationHovered && !emojiStickerHovered && !gizmoHandleHovered &&
+            !aspectRatioHovered && !radiusSliderHovered) {
             if (m_currentTool == ToolbarButton::Selection) {
                 auto handle = m_selectionManager->hitTestHandle(pos);
                 updateCursorForHandle(handle);
@@ -911,8 +955,8 @@ void RegionInputHandler::handleHoverMove(const QPoint& pos, Qt::MouseButtons but
         emit cursorChangeRequested(Qt::PointingHandCursor);
     }
     else if (!colorPaletteHovered && !unifiedWidgetHovered &&
-             !textAnnotationHovered && !emojiStickerHovered && !gizmoHandleHovered &&
-             !aspectRatioHovered && !radiusSliderHovered && !multiRegionHovered) {
+        !textAnnotationHovered && !emojiStickerHovered && !gizmoHandleHovered &&
+        !aspectRatioHovered && !radiusSliderHovered) {
         if (m_currentTool == ToolbarButton::Selection) {
             auto handle = m_selectionManager->hitTestHandle(pos);
             updateCursorForHandle(handle);
@@ -1105,7 +1149,7 @@ void RegionInputHandler::startAnnotation(const QPoint& pos)
         m_isDrawing = m_toolManager->isDrawing();
 
         if (!m_isDrawing && (m_currentTool == ToolbarButton::StepBadge ||
-                              m_currentTool == ToolbarButton::EmojiSticker)) {
+            m_currentTool == ToolbarButton::EmojiSticker)) {
             m_isDrawing = true;
         }
         emit drawingStateChanged(m_isDrawing);
@@ -1166,7 +1210,8 @@ void RegionInputHandler::updateCursorForHandle(SelectionStateManager::ResizeHand
     // Handle::None - check for move or outside click
     if (m_selectionManager->hitTestMove(m_currentPoint)) {
         emit cursorChangeRequested(Qt::SizeAllCursor);
-    } else {
+    }
+    else {
         QRect sel = m_selectionManager->selectionRect();
         ResizeHandle outsideHandle = SelectionResizeHelper::determineHandleFromOutsideClick(
             m_currentPoint, sel);

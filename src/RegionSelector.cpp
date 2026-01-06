@@ -152,7 +152,12 @@ RegionSelector::RegionSelector(QWidget* parent)
             });
     connect(m_selectionManager, &SelectionStateManager::stateChanged,
             this, [this](SelectionStateManager::State newState) {
-                // Update cursor based on state
+                // Skip automatic cursor updates in multi-region mode
+                // (multi-region mode handles its own cursor logic)
+                if (m_multiRegionMode) {
+                    return;
+                }
+                // Update cursor based on state (single-region mode only)
                 if (newState == SelectionStateManager::State::None ||
                     newState == SelectionStateManager::State::Selecting) {
                     setCursor(Qt::CrossCursor);
@@ -435,7 +440,9 @@ RegionSelector::RegionSelector(QWidget* parent)
     connect(m_inputHandler, &RegionInputHandler::selectionFinished,
         this, [this]() {
             m_selectionManager->finishSelection();
-            setCursor(Qt::ArrowCursor);
+            if (!m_multiRegionMode) {
+                setCursor(Qt::ArrowCursor);
+            }
             if (m_multiRegionMode && m_multiRegionManager) {
                 QRect sel = m_selectionManager->selectionRect();
                 if (sel.isValid() && sel.width() > 5 && sel.height() > 5 &&
@@ -447,8 +454,17 @@ RegionSelector::RegionSelector(QWidget* parent)
     connect(m_inputHandler, &RegionInputHandler::fullScreenSelectionRequested,
         this, [this]() {
             QRect screenGeom = m_currentScreen->geometry();
-            m_selectionManager->setFromDetectedWindow(QRect(0, 0, screenGeom.width(), screenGeom.height()));
-            setCursor(Qt::ArrowCursor);
+            QRect fullScreenRect = QRect(0, 0, screenGeom.width(), screenGeom.height());
+            m_selectionManager->setFromDetectedWindow(fullScreenRect);
+            if (!m_multiRegionMode) {
+                setCursor(Qt::ArrowCursor);
+            }
+
+            // Add full-screen region in multi-region mode
+            if (m_multiRegionMode && m_multiRegionManager &&
+                m_multiRegionManager->activeIndex() < 0) {
+                m_multiRegionManager->addRegion(fullScreenRect);
+            }
         });
     connect(m_inputHandler, &RegionInputHandler::drawingStateChanged,
         this, [this](bool isDrawing) { m_isDrawing = isDrawing; });
@@ -1156,72 +1172,18 @@ void RegionSelector::completeMultiRegionCapture()
         return;
     }
 
-    QMessageBox msgBox(this);
-    msgBox.setWindowTitle("Multi-Region Capture");
-    msgBox.setText("Choose how to export the capture:");
-    QAbstractButton* mergeButton = msgBox.addButton("Merge to One Image", QMessageBox::AcceptRole);
-    QAbstractButton* separateButton = msgBox.addButton("Save Separate Images", QMessageBox::AcceptRole);
-    QAbstractButton* cancelButton = msgBox.addButton("Cancel", QMessageBox::RejectRole);
-    msgBox.exec();
-
-    if (msgBox.clickedButton() == cancelButton) {
+    // Directly merge regions without showing modal
+    QImage merged = m_multiRegionManager->mergeToSingleImage(m_backgroundPixmap, m_devicePixelRatio);
+    if (merged.isNull()) {
+        qWarning() << "RegionSelector: Failed to merge multi-region capture";
+        QMessageBox::warning(this, "Error", "Failed to merge regions. Please try again.");
         return;
     }
-
-    if (msgBox.clickedButton() == mergeButton) {
-        QImage merged = m_multiRegionManager->mergeToSingleImage(m_backgroundPixmap, m_devicePixelRatio);
-        if (merged.isNull()) {
-            return;
-        }
-        QPixmap pixmap = QPixmap::fromImage(merged, Qt::NoOpaqueDetection);
-        pixmap.setDevicePixelRatio(m_devicePixelRatio);
-        QRect bounds = m_multiRegionManager->boundingBox();
-        emit regionSelected(pixmap, localToGlobal(bounds.topLeft()));
-        close();
-        return;
-    }
-
-    if (msgBox.clickedButton() == separateButton) {
-        auto& fileSettings = FileSettingsManager::instance();
-        QString baseDir = fileSettings.loadScreenshotPath();
-        QString dateFormat = fileSettings.loadDateFormat();
-        QString prefix = fileSettings.loadFilenamePrefix();
-        QString timestamp = QDateTime::currentDateTime().toString(dateFormat);
-
-        m_isDialogOpen = true;
-        hide();
-
-        QString targetDir = QFileDialog::getExistingDirectory(
-            nullptr,
-            "Save Screenshots",
-            baseDir
-        );
-
-        if (targetDir.isEmpty()) {
-            m_isDialogOpen = false;
-            show();
-            activateWindow();
-            raise();
-            return;
-        }
-
-        QVector<QImage> images = m_multiRegionManager->separateImages(m_backgroundPixmap, m_devicePixelRatio);
-        for (int i = 0; i < images.size(); ++i) {
-            QString filename;
-            if (prefix.isEmpty()) {
-                filename = QString("Screenshot_%1_%2.png").arg(timestamp).arg(i + 1);
-            } else {
-                filename = QString("%1_Screenshot_%2_%3.png").arg(prefix).arg(timestamp).arg(i + 1);
-            }
-            QString filePath = QDir(targetDir).filePath(filename);
-            if (!images[i].save(filePath)) {
-                qDebug() << "RegionSelector: Failed to save multi-region image to" << filePath;
-            }
-        }
-
-        m_isDialogOpen = false;
-        close();
-    }
+    QPixmap pixmap = QPixmap::fromImage(merged, Qt::NoOpaqueDetection);
+    pixmap.setDevicePixelRatio(m_devicePixelRatio);
+    QRect bounds = m_multiRegionManager->boundingBox();
+    emit regionSelected(pixmap, localToGlobal(bounds.topLeft()));
+    close();
 }
 
 void RegionSelector::cancelMultiRegionCapture()
