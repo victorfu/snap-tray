@@ -3,33 +3,92 @@
 #ifdef Q_OS_WIN
 
 #include <QDebug>
+#include <QGuiApplication>
+#include <QScreen>
+#include <windows.h>
 
-// Windows implementation using SendInput (stub for now)
+// Windows implementation using SendInput API
 namespace AutoScrollPlatform {
 
 bool injectScrollEvent(int deltaPixels, AutoScrollController::ScrollDirection dir, const QRect &region)
 {
-    Q_UNUSED(deltaPixels)
-    Q_UNUSED(dir)
-    Q_UNUSED(region)
+    // Calculate target point (center of capture region)
+    QPoint center = region.center();
 
-    qWarning() << "AutoScrollController: Windows scroll injection not yet implemented";
-    return false;
+    // Get device pixel ratio for high-DPI displays
+    QScreen *screen = QGuiApplication::primaryScreen();
+    qreal devicePixelRatio = screen ? screen->devicePixelRatio() : 1.0;
 
-    // Future implementation:
-    // INPUT input = {};
-    // input.type = INPUT_MOUSE;
-    // input.mi.dwFlags = MOUSEEVENTF_WHEEL;
-    // input.mi.mouseData = -deltaPixels; // Negative = scroll down
-    // SendInput(1, &input, sizeof(INPUT));
+    // Convert to screen coordinates (Windows uses physical pixels)
+    int screenX = static_cast<int>(center.x() * devicePixelRatio);
+    int screenY = static_cast<int>(center.y() * devicePixelRatio);
+
+    // Move cursor to center of capture region
+    // This ensures scroll events are received by the correct window
+    if (!SetCursorPos(screenX, screenY)) {
+        qWarning() << "AutoScrollController: Failed to set cursor position";
+        return false;
+    }
+
+    // Prepare scroll input
+    INPUT input = {};
+    input.type = INPUT_MOUSE;
+
+    // WHEEL_DELTA is the standard unit for mouse wheel scrolling (typically 120)
+    // We convert pixel delta to wheel units
+    int wheelUnits = (deltaPixels * WHEEL_DELTA) / 100;
+    if (wheelUnits == 0) {
+        wheelUnits = WHEEL_DELTA; // Minimum one notch
+    }
+
+    switch (dir) {
+    case AutoScrollController::ScrollDirection::Down:
+        // Scroll down = negative wheel delta (content moves up)
+        input.mi.dwFlags = MOUSEEVENTF_WHEEL;
+        input.mi.mouseData = static_cast<DWORD>(-wheelUnits);
+        break;
+
+    case AutoScrollController::ScrollDirection::Up:
+        // Scroll up = positive wheel delta (content moves down)
+        input.mi.dwFlags = MOUSEEVENTF_WHEEL;
+        input.mi.mouseData = static_cast<DWORD>(wheelUnits);
+        break;
+
+    case AutoScrollController::ScrollDirection::Right:
+        // Scroll right = positive horizontal wheel delta
+        input.mi.dwFlags = MOUSEEVENTF_HWHEEL;
+        input.mi.mouseData = static_cast<DWORD>(wheelUnits);
+        break;
+
+    case AutoScrollController::ScrollDirection::Left:
+        // Scroll left = negative horizontal wheel delta
+        input.mi.dwFlags = MOUSEEVENTF_HWHEEL;
+        input.mi.mouseData = static_cast<DWORD>(-wheelUnits);
+        break;
+    }
+
+    // Send the scroll input
+    UINT result = SendInput(1, &input, sizeof(INPUT));
+    if (result != 1) {
+        qWarning() << "AutoScrollController: SendInput failed, error:" << GetLastError();
+        return false;
+    }
+
+    qDebug() << "AutoScrollController: Injected scroll event"
+             << "delta:" << deltaPixels
+             << "wheelUnits:" << wheelUnits
+             << "direction:" << static_cast<int>(dir)
+             << "at:" << screenX << "," << screenY;
+
+    return true;
 }
 
 } // namespace AutoScrollPlatform
 
 bool AutoScrollController::isSupported()
 {
-    // Windows will support this once implemented
-    return false;
+    // Windows supports scroll injection via SendInput
+    return true;
 }
 
 bool AutoScrollController::hasAccessibilityPermission()
