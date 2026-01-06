@@ -70,7 +70,7 @@ static const std::map<ToolbarButton, ToolCapabilities> kToolCapabilities = {
     {ToolbarButton::Text,       {true,  false, true}},
     {ToolbarButton::Mosaic,     {false, true,  true}},
     {ToolbarButton::StepBadge,  {true,  false, true}},
-    {ToolbarButton::Eraser,     {false, true,  false}},
+    {ToolbarButton::Eraser,     {false, true,  true}},
 };
 
 // Create a rounded square cursor for mosaic tool (matching EraserToolHandler pattern)

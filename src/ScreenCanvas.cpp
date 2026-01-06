@@ -259,6 +259,7 @@ void ScreenCanvas::initializeIcons()
     iconRenderer.loadIcon("mosaic", ":/icons/icons/mosaic.svg");
     iconRenderer.loadIcon("eraser", ":/icons/icons/eraser.svg");
     iconRenderer.loadIcon("step-badge", ":/icons/icons/step-badge.svg");
+    iconRenderer.loadIcon("emoji", ":/icons/icons/emoji.svg");
     iconRenderer.loadIcon("text", ":/icons/icons/text.svg");
     iconRenderer.loadIcon("laser-pointer", ":/icons/icons/laser-pointer.svg");
     iconRenderer.loadIcon("cursor-highlight", ":/icons/icons/cursor-highlight.svg");
@@ -275,6 +276,9 @@ void ScreenCanvas::initializeIcons()
     iconRenderer.loadIcon("arrow-end-line", ":/icons/icons/arrow-end-line.svg");
     iconRenderer.loadIcon("arrow-both", ":/icons/icons/arrow-both.svg");
     iconRenderer.loadIcon("arrow-both-outline", ":/icons/icons/arrow-both-outline.svg");
+    // Background mode icons
+    iconRenderer.loadIcon("whiteboard", ":/icons/icons/whiteboard.svg");
+    iconRenderer.loadIcon("blackboard", ":/icons/icons/blackboard.svg");
 }
 
 void ScreenCanvas::setupToolbar()
@@ -294,6 +298,8 @@ void ScreenCanvas::setupToolbar()
         {static_cast<int>(CanvasButton::LaserPointer), "laser-pointer", "Laser Pointer"},
         ToolbarWidget::ButtonConfig(static_cast<int>(CanvasButton::CursorHighlight), "cursor-highlight", "Cursor Highlight (Toggle)").separator(),
         {static_cast<int>(CanvasButton::Spotlight), "spotlight", "Spotlight (Toggle)"},
+        ToolbarWidget::ButtonConfig(static_cast<int>(CanvasButton::Whiteboard), "whiteboard", "Whiteboard (W)").separator(),
+        {static_cast<int>(CanvasButton::Blackboard), "blackboard", "Blackboard (B)"},
         ToolbarWidget::ButtonConfig(static_cast<int>(CanvasButton::Undo), "undo", "Undo (Ctrl+Z)").separator(),
         {static_cast<int>(CanvasButton::Redo), "redo", "Redo (Ctrl+Y)"},
         {static_cast<int>(CanvasButton::Clear), "cancel", "Clear All"},
@@ -313,7 +319,9 @@ void ScreenCanvas::setupToolbar()
         static_cast<int>(CanvasButton::Text),
         static_cast<int>(CanvasButton::LaserPointer),
         static_cast<int>(CanvasButton::CursorHighlight),
-        static_cast<int>(CanvasButton::Spotlight)
+        static_cast<int>(CanvasButton::Spotlight),
+        static_cast<int>(CanvasButton::Whiteboard),
+        static_cast<int>(CanvasButton::Blackboard)
     };
     m_toolbar->setActiveButtonIds(activeButtonIds);
 
@@ -334,6 +342,8 @@ QColor ScreenCanvas::getButtonIconColor(int buttonId) const
     bool isButtonActive = (buttonToolId == m_currentToolId) && isDrawingTool(buttonToolId) && m_showSubToolbar;
     bool isToggleActive = ((button == CanvasButton::CursorHighlight) && m_rippleRenderer->isEnabled()) ||
                           ((button == CanvasButton::Spotlight) && m_spotlightEffect->isEnabled());
+    bool isBgModeActive = ((button == CanvasButton::Whiteboard) && m_bgMode == CanvasBackgroundMode::Whiteboard) ||
+                          ((button == CanvasButton::Blackboard) && m_bgMode == CanvasBackgroundMode::Blackboard);
 
     if (button == CanvasButton::Exit) {
         return m_toolbarStyleConfig.iconCancelColor;
@@ -347,7 +357,7 @@ QColor ScreenCanvas::getButtonIconColor(int buttonId) const
     if (button == CanvasButton::Redo && !m_annotationLayer->canRedo()) {
         return QColor(128, 128, 128);  // Gray for disabled redo
     }
-    if (isButtonActive || isToggleActive) {
+    if (isButtonActive || isToggleActive || isBgModeActive) {
         return m_toolbarStyleConfig.iconActiveColor;
     }
     return m_toolbarStyleConfig.iconNormalColor;
@@ -367,6 +377,8 @@ QString ScreenCanvas::getIconKeyForButton(CanvasButton button) const
     case CanvasButton::LaserPointer:    return "laser-pointer";
     case CanvasButton::CursorHighlight: return "cursor-highlight";
     case CanvasButton::Spotlight:       return "spotlight";
+    case CanvasButton::Whiteboard:      return "whiteboard";
+    case CanvasButton::Blackboard:      return "blackboard";
     case CanvasButton::Undo:            return "undo";
     case CanvasButton::Redo:            return "redo";
     case CanvasButton::Clear:           return "cancel";
@@ -454,8 +466,9 @@ void ScreenCanvas::initializeForScreen(QScreen* screen)
 
     m_devicePixelRatio = m_currentScreen->devicePixelRatio();
 
-    // Capture the screen
-    m_backgroundPixmap = m_currentScreen->grabWindow(0);
+    // Capture the screen and store original for later restoration
+    m_originalScreenPixmap = m_currentScreen->grabWindow(0);
+    m_backgroundPixmap = m_originalScreenPixmap;
 
     // Update tool manager with background pixmap for mosaic tool
     m_toolManager->setSourcePixmap(&m_backgroundPixmap);
@@ -519,6 +532,7 @@ void ScreenCanvas::paintEvent(QPaintEvent*)
         case ToolId::Mosaic: activeButtonId = static_cast<int>(CanvasButton::Mosaic); break;
         case ToolId::StepBadge: activeButtonId = static_cast<int>(CanvasButton::StepBadge); break;
         case ToolId::Text: activeButtonId = static_cast<int>(CanvasButton::Text); break;
+        case ToolId::EmojiSticker: activeButtonId = static_cast<int>(CanvasButton::EmojiSticker); break;
         case ToolId::LaserPointer: activeButtonId = static_cast<int>(CanvasButton::LaserPointer); break;
         default: activeButtonId = -1; break;
         }
@@ -530,6 +544,13 @@ void ScreenCanvas::paintEvent(QPaintEvent*)
     // Handle Spotlight toggle separately
     if (m_spotlightEffect->isEnabled()) {
         activeButtonId = static_cast<int>(CanvasButton::Spotlight);
+    }
+    // Handle Whiteboard/Blackboard background mode
+    if (m_bgMode == CanvasBackgroundMode::Whiteboard) {
+        activeButtonId = static_cast<int>(CanvasButton::Whiteboard);
+    }
+    if (m_bgMode == CanvasBackgroundMode::Blackboard) {
+        activeButtonId = static_cast<int>(CanvasButton::Blackboard);
     }
     m_toolbar->setActiveButton(activeButtonId);
     m_toolbar->draw(painter);
@@ -698,6 +719,30 @@ void ScreenCanvas::handleToolbarClick(CanvasButton button)
         update();
         break;
 
+    case CanvasButton::Whiteboard:
+        // Toggle whiteboard mode
+        qDebug() << "ScreenCanvas: Whiteboard clicked, current m_bgMode:" << static_cast<int>(m_bgMode);
+        if (m_bgMode == CanvasBackgroundMode::Whiteboard) {
+            qDebug() << "ScreenCanvas: Toggling from Whiteboard to Screen";
+            setBackgroundMode(CanvasBackgroundMode::Screen);
+        } else {
+            qDebug() << "ScreenCanvas: Switching to Whiteboard";
+            setBackgroundMode(CanvasBackgroundMode::Whiteboard);
+        }
+        break;
+
+    case CanvasButton::Blackboard:
+        // Toggle blackboard mode
+        qDebug() << "ScreenCanvas: Blackboard clicked, current m_bgMode:" << static_cast<int>(m_bgMode);
+        if (m_bgMode == CanvasBackgroundMode::Blackboard) {
+            qDebug() << "ScreenCanvas: Toggling from Blackboard to Screen";
+            setBackgroundMode(CanvasBackgroundMode::Screen);
+        } else {
+            qDebug() << "ScreenCanvas: Switching to Blackboard";
+            setBackgroundMode(CanvasBackgroundMode::Blackboard);
+        }
+        break;
+
     case CanvasButton::Undo:
         if (m_annotationLayer->canUndo()) {
             m_annotationLayer->undo();
@@ -788,9 +833,13 @@ void ScreenCanvas::mousePressEvent(QMouseEvent* event)
         // Check if clicked on toolbar FIRST (before widgets that may overlap)
         if (m_toolbar->contains(event->pos())) {
             int buttonIdx = m_toolbar->buttonAtPosition(event->pos());
+            qDebug() << "ScreenCanvas: Toolbar click at" << event->pos() << "buttonIdx:" << buttonIdx;
             if (buttonIdx >= 0) {
                 finalizePolylineForUiClick(event->pos());
                 int buttonId = m_toolbar->buttonIdAt(buttonIdx);
+                qDebug() << "ScreenCanvas: Button ID:" << buttonId
+                         << "Whiteboard:" << static_cast<int>(CanvasButton::Whiteboard)
+                         << "Blackboard:" << static_cast<int>(CanvasButton::Blackboard);
                 handleToolbarClick(static_cast<CanvasButton>(buttonId));
             } else {
                 // Start toolbar drag (clicked on toolbar but not on a button)
@@ -1062,9 +1111,37 @@ void ScreenCanvas::wheelEvent(QWheelEvent* event)
 
 void ScreenCanvas::keyPressEvent(QKeyEvent* event)
 {
+    // Don't intercept letter keys during text editing
+    if (m_textEditor && m_textEditor->isEditing()) {
+        event->ignore();
+        return;
+    }
+
     if (event->key() == Qt::Key_Escape) {
         qDebug() << "ScreenCanvas: Closed via Escape";
         close();
+    }
+    else if (event->key() == Qt::Key_W) {
+        // Toggle Whiteboard <-> Screen
+        if (m_bgMode == CanvasBackgroundMode::Whiteboard) {
+            setBackgroundMode(CanvasBackgroundMode::Screen);
+        } else {
+            setBackgroundMode(CanvasBackgroundMode::Whiteboard);
+        }
+    }
+    else if (event->key() == Qt::Key_B) {
+        // Toggle Blackboard <-> Screen
+        if (m_bgMode == CanvasBackgroundMode::Blackboard) {
+            setBackgroundMode(CanvasBackgroundMode::Screen);
+        } else {
+            setBackgroundMode(CanvasBackgroundMode::Blackboard);
+        }
+    }
+    else if (event->key() == Qt::Key_R) {
+        // Refresh screenshot (only in Screen mode)
+        if (m_bgMode == CanvasBackgroundMode::Screen) {
+            refreshScreenBackground();
+        }
     }
     else if (event->matches(QKeySequence::Undo)) {
         if (m_annotationLayer->canUndo()) {
@@ -1142,4 +1219,57 @@ void ScreenCanvas::onLineStyleChanged(LineStyle style)
 void ScreenCanvas::onTextEditingFinished(const QString& text, const QPoint& position)
 {
     m_textAnnotationEditor->finishEditing(text, position, m_toolManager->color());
+}
+
+// Background mode helper methods
+
+void ScreenCanvas::setBackgroundMode(CanvasBackgroundMode mode)
+{
+    // Cancel any in-progress drawing to avoid stuck preview state
+    if (m_toolManager->isDrawing()) {
+        m_toolManager->cancelDrawing();
+    }
+    if (m_laserRenderer->isDrawing()) {
+        m_laserRenderer->stopDrawing();
+    }
+
+    m_bgMode = mode;
+
+    switch (mode) {
+    case CanvasBackgroundMode::Screen:
+        refreshScreenBackground();
+        qDebug() << "ScreenCanvas: Switched to Screen mode";
+        break;
+    case CanvasBackgroundMode::Whiteboard:
+        m_backgroundPixmap = createSolidBackgroundPixmap(Qt::white);
+        m_toolManager->setSourcePixmap(&m_backgroundPixmap);
+        qDebug() << "ScreenCanvas: Switched to Whiteboard mode";
+        break;
+    case CanvasBackgroundMode::Blackboard:
+        m_backgroundPixmap = createSolidBackgroundPixmap(Qt::black);
+        m_toolManager->setSourcePixmap(&m_backgroundPixmap);
+        qDebug() << "ScreenCanvas: Switched to Blackboard mode";
+        break;
+    }
+
+    update();
+}
+
+void ScreenCanvas::refreshScreenBackground()
+{
+    // Restore original screenshot (don't re-capture as window is visible)
+    m_backgroundPixmap = m_originalScreenPixmap;
+    m_toolManager->setSourcePixmap(&m_backgroundPixmap);
+    qDebug() << "ScreenCanvas: Screenshot restored from original";
+    update();
+}
+
+QPixmap ScreenCanvas::createSolidBackgroundPixmap(const QColor& color) const
+{
+    // Create pixmap at physical pixel size for HiDPI support
+    QSize physicalSize = size() * m_devicePixelRatio;
+    QPixmap pixmap(physicalSize);
+    pixmap.setDevicePixelRatio(m_devicePixelRatio);
+    pixmap.fill(color);
+    return pixmap;
 }

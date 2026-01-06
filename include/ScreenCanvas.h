@@ -31,6 +31,13 @@ class LaserPointerRenderer;
 class ClickRippleRenderer;
 class ToolbarWidget;
 
+// Canvas background mode
+enum class CanvasBackgroundMode {
+    Screen,     // Screenshot background (default)
+    Whiteboard, // Solid white background
+    Blackboard  // Solid black background
+};
+
 // Canvas toolbar button IDs (for UI display only)
 // These represent button positions in the toolbar
 enum class CanvasButton {
@@ -45,6 +52,8 @@ enum class CanvasButton {
     LaserPointer,
     CursorHighlight,
     Spotlight,
+    Whiteboard,
+    Blackboard,
     Undo,
     Redo,
     Clear,
@@ -66,6 +75,8 @@ inline ToolId canvasButtonToToolId(CanvasButton btn) {
     case CanvasButton::LaserPointer: return ToolId::LaserPointer;
     case CanvasButton::CursorHighlight: return ToolId::CursorHighlight;
     case CanvasButton::Spotlight:    return ToolId::Spotlight;
+    case CanvasButton::Whiteboard:   return ToolId::Selection;  // Not a tool
+    case CanvasButton::Blackboard:   return ToolId::Selection;  // Not a tool
     case CanvasButton::Undo:         return ToolId::Undo;
     case CanvasButton::Redo:         return ToolId::Redo;
     case CanvasButton::Clear:        return ToolId::Clear;
@@ -139,6 +150,7 @@ private:
 
     // Screen capture
     QPixmap m_backgroundPixmap;
+    QPixmap m_originalScreenPixmap;  // Original screenshot captured at initialization
     QScreen *m_currentScreen;
     qreal m_devicePixelRatio;
 
@@ -193,6 +205,14 @@ private:
 
     // Spotlight effect
     SpotlightEffect *m_spotlightEffect;
+
+    // Background mode
+    CanvasBackgroundMode m_bgMode = CanvasBackgroundMode::Screen;
+
+    // Background mode helpers
+    void setBackgroundMode(CanvasBackgroundMode mode);
+    void refreshScreenBackground();
+    QPixmap createSolidBackgroundPixmap(const QColor& color) const;
 };
 
 #endif // SCREENCANVAS_H

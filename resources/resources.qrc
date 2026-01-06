@@ -50,6 +50,8 @@
         <file>icons/radius.svg</file>
         <file>icons/ratio-free.svg</file>
         <file>icons/ratio-lock.svg</file>
+        <file>icons/whiteboard.svg</file>
+        <file>icons/blackboard.svg</file>
     </qresource>
     <qresource prefix="/cascades">
         <file>cascades/haarcascade_frontalface_default.xml</file>
