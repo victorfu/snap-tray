@@ -376,6 +376,7 @@ set(HEADERS
     include/annotations/EmojiStickerAnnotation.h
     include/annotations/EraserStroke.h
     include/annotations/ErasedItemsGroup.h
+    include/annotations/LineStyle.h
     include/ScreenCanvas.h
     include/ScreenCanvasManager.h
     include/AutoLaunchManager.h
@@ -393,6 +394,7 @@ set(HEADERS
     include/AnnotationController.h
     include/ColorPickerDialog.h
     include/InlineTextEditor.h
+    include/TextFormattingState.h
     include/PlatformFeatures.h
     include/LaserPointerRenderer.h
     include/ClickRippleRenderer.h
@@ -402,6 +404,7 @@ set(HEADERS
     include/RecordingRegionSelector.h
     include/RecordingControlBar.h
     include/RecordingBoundaryOverlay.h
+    include/RecordingAnnotationOverlay.h
     include/RecordingInitTask.h
     include/IVideoEncoder.h
     include/AVFoundationEncoder.h
@@ -457,6 +460,11 @@ set(HEADERS
     include/region/RegionToolbarHandler.h
     include/region/RegionSettingsHelper.h
     include/region/SelectionResizeHelper.h
+    # Settings managers
+    include/settings/Settings.h
+    include/settings/AnnotationSettingsManager.h
+    include/settings/FileSettingsManager.h
+    include/settings/PinWindowSettingsManager.h
     # UI sections
     include/ui/IWidgetSection.h
     include/ui/sections/ColorSection.h
