@@ -331,20 +331,14 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_magnifierPanel = new MagnifierPanel(this);
 
     // Initialize aspect ratio lock widget
+    // Note: Always starts in "Free" mode - lock only applies to current session
     m_aspectRatioWidget = new AspectRatioWidget(this);
-    bool ratioLocked = settings.loadAspectRatioLocked();
     int savedRatioWidth = settings.loadAspectRatioWidth();
     int savedRatioHeight = settings.loadAspectRatioHeight();
-    m_aspectRatioWidget->setLocked(ratioLocked);
     m_aspectRatioWidget->setLockedRatio(savedRatioWidth, savedRatioHeight);
-    if (ratioLocked && savedRatioHeight > 0) {
-        m_selectionManager->setAspectRatio(static_cast<qreal>(savedRatioWidth) /
-                                           static_cast<qreal>(savedRatioHeight));
-    }
     connect(m_aspectRatioWidget, &AspectRatioWidget::lockChanged,
         this, [this](bool locked) {
             auto& settings = AnnotationSettingsManager::instance();
-            settings.saveAspectRatioLocked(locked);
             if (!locked) {
                 m_selectionManager->setAspectRatio(0.0);
                 update();

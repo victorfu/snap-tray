@@ -232,7 +232,7 @@ void RegionPainter::drawDimensionInfo(QPainter& painter)
         if (!activeInfoRect.isNull()) {
             QRect anchorRect = activeInfoRect;
             if (m_aspectRatioWidget) {
-                if (m_selectionManager->isComplete()) {
+                if (m_selectionManager->hasSelection()) {
                     m_aspectRatioWidget->setVisible(true);
                     m_aspectRatioWidget->updatePosition(activeInfoRect, m_parentWidget->width(), m_parentWidget->height());
                     m_aspectRatioWidget->draw(painter);
@@ -253,7 +253,7 @@ void RegionPainter::drawDimensionInfo(QPainter& painter)
     // Draw aspect ratio widget and radius slider next to dimension info
     QRect anchorRect = textRect;
     if (m_aspectRatioWidget) {
-        if (m_selectionManager->isComplete()) {
+        if (m_selectionManager->hasSelection()) {
             m_aspectRatioWidget->setVisible(true);
             m_aspectRatioWidget->updatePosition(textRect, m_parentWidget->width(), m_parentWidget->height());
             m_aspectRatioWidget->draw(painter);
@@ -271,8 +271,8 @@ void RegionPainter::drawRadiusSlider(QPainter& painter, const QRect& dimensionIn
         return;
     }
 
-    // Show radius slider when selection is complete
-    if (m_selectionManager->isComplete()) {
+    // Show radius slider when selection has been made (including during move/resize)
+    if (m_selectionManager->hasSelection()) {
         m_radiusSliderWidget->setVisible(true);
         m_radiusSliderWidget->updatePosition(dimensionInfoRect, m_parentWidget->width());
         m_radiusSliderWidget->draw(painter);
@@ -335,8 +335,17 @@ QRect RegionPainter::drawDimensionInfoPanel(QPainter& painter, const QRect& sele
     painter.setFont(font);
 
     QFontMetrics fm(font);
+
+    // Calculate fixed minimum width for "9999 x 9999  pt" to prevent jittering
+    QString maxWidthText = "9999 x 9999  pt";
+    int fixedWidth = fm.horizontalAdvance(maxWidthText) + 24;  // +24 for padding
+
     QRect textRect = fm.boundingRect(label);
-    textRect.adjust(-12, -6, 12, 6);
+    int actualWidth = textRect.width() + 24;
+    int width = qMax(fixedWidth, actualWidth);
+
+    textRect.setWidth(width);
+    textRect.adjust(0, -6, 0, 6);
 
     int textX = selectionRect.left();
     int textY = selectionRect.top() - textRect.height() - 8;

@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QRect>
 #include <QPoint>
+#include <QString>
 #include "ToolbarStyle.h"
 
 class QPainter;
@@ -41,12 +42,16 @@ public:
     bool handleMouseMove(const QPoint& pos, bool pressed);
     bool handleMouseRelease(const QPoint& pos);
 
+    // Tooltip
+    QString tooltipText() const;
+
 signals:
     void lockChanged(bool locked);
 
 private:
     void updateLayout();
     QString labelText() const;
+    void drawTooltip(QPainter& painter);
 
     // State
     bool m_locked = false;
@@ -57,14 +62,17 @@ private:
 
     // Layout rects
     QRect m_widgetRect;
+    QRect m_iconRect;
     QRect m_textRect;
 
     ToolbarStyleConfig m_styleConfig;
 
     // Layout constants
     static constexpr int WIDGET_HEIGHT = 28;
-    static constexpr int WIDGET_WIDTH = 110;
+    static constexpr int WIDGET_WIDTH_FREE = 36;   // Icon only when unlocked
+    static constexpr int WIDGET_WIDTH_LOCKED = 95; // Icon + ratio text when locked
     static constexpr int PADDING = 8;
+    static constexpr int ICON_SIZE = 18;
     static constexpr int GAP = 8;
 };
 

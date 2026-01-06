@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QRect>
 #include <QPoint>
+#include <QString>
 #include "ToolbarStyle.h"
 
 class QPainter;
@@ -46,6 +47,9 @@ public:
     bool handleMouseMove(const QPoint& pos, bool pressed);
     bool handleMouseRelease(const QPoint& pos);
 
+    // Tooltip
+    QString tooltipText() const;
+
 signals:
     void radiusChanged(int radius);
 
@@ -53,6 +57,7 @@ private:
     void updateLayout();
     int positionToRadius(int x) const;
     int radiusToPosition(int radius) const;
+    void drawTooltip(QPainter& painter);
 
     // State
     int m_minRadius = 0;
@@ -60,11 +65,12 @@ private:
     int m_currentRadius = 0;
     bool m_visible = false;
     bool m_isDragging = false;
+    bool m_hovered = false;
     int m_hoveredButton = -1;  // -1: none, 0: minus, 1: plus
 
     // Layout rects
     QRect m_widgetRect;
-    QRect m_labelRect;
+    QRect m_iconRect;
     QRect m_sliderTrackRect;
     QRect m_valueRect;
     QRect m_minusButtonRect;
@@ -72,12 +78,12 @@ private:
 
     // Layout constants
     static constexpr int WIDGET_HEIGHT = 28;
-    static constexpr int WIDGET_WIDTH = 200;
+    static constexpr int WIDGET_WIDTH = 180;  // Reduced since icon is smaller than text
     static constexpr int SLIDER_HEIGHT = 6;
     static constexpr int HANDLE_SIZE = 10;
     static constexpr int BUTTON_SIZE = 22;
     static constexpr int PADDING = 8;
-    static constexpr int LABEL_WIDTH = 42;  // "Radius"
+    static constexpr int ICON_SIZE = 18;  // Icon size
     static constexpr int VALUE_WIDTH = 28;  // "100"
     static constexpr int GAP = 8;  // Gap between dimension info and this widget
 

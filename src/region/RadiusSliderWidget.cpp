@@ -1,5 +1,6 @@
 #include "region/RadiusSliderWidget.h"
 #include "GlassRenderer.h"
+#include "IconRenderer.h"
 
 #include <QPainter>
 #include <QDebug>
@@ -8,6 +9,8 @@ RadiusSliderWidget::RadiusSliderWidget(QObject* parent)
     : QObject(parent)
     , m_styleConfig(ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle()))
 {
+    // Load icon
+    IconRenderer::instance().loadIcon("radius", ":/icons/icons/radius.svg");
 }
 
 void RadiusSliderWidget::setRadiusRange(int min, int max)
@@ -51,9 +54,9 @@ void RadiusSliderWidget::updateLayout()
     int currentX = m_widgetRect.left() + PADDING;
     int centerY = m_widgetRect.center().y();
 
-    // Label "Radius" on the left
-    m_labelRect = QRect(currentX, m_widgetRect.top(), LABEL_WIDTH, WIDGET_HEIGHT);
-    currentX += LABEL_WIDTH + 4;
+    // Icon on the left
+    m_iconRect = QRect(currentX, centerY - ICON_SIZE / 2, ICON_SIZE, ICON_SIZE);
+    currentX += ICON_SIZE + 4;
 
     // Minus button
     m_minusButtonRect = QRect(currentX, centerY - BUTTON_SIZE / 2, BUTTON_SIZE, BUTTON_SIZE);
@@ -83,12 +86,13 @@ void RadiusSliderWidget::draw(QPainter& painter)
     // Draw glass panel background (6px radius for sub-widgets)
     GlassRenderer::drawGlassPanel(painter, m_widgetRect, m_styleConfig, 6);
 
-    // Draw "Radius" label
-    painter.setPen(m_styleConfig.textColor);
+    // Draw radius icon
+    IconRenderer::instance().renderIcon(painter, m_iconRect, "radius", m_styleConfig.textColor, 0);
+
+    // Set font for text elements
     QFont font = painter.font();
     font.setPointSize(11);
     painter.setFont(font);
-    painter.drawText(m_labelRect, Qt::AlignVCenter | Qt::AlignLeft, "Radius");
 
     // Draw minus button
     QColor buttonBg = (m_hoveredButton == 0) ? m_styleConfig.hoverBackgroundColor : m_styleConfig.buttonInactiveColor;
@@ -136,6 +140,37 @@ void RadiusSliderWidget::draw(QPainter& painter)
     painter.setPen(m_styleConfig.textColor);
     QString label = QString::number(m_currentRadius);
     painter.drawText(m_valueRect, Qt::AlignCenter, label);
+
+    // Draw tooltip when hovered
+    drawTooltip(painter);
+}
+
+void RadiusSliderWidget::drawTooltip(QPainter& painter)
+{
+    if (!m_hovered) return;
+
+    QString tooltip = tooltipText();
+    QFont font = painter.font();
+    font.setPointSize(11);
+    painter.setFont(font);
+    QFontMetrics fm(font);
+    QRect textRect = fm.boundingRect(tooltip).adjusted(-8, -4, 8, 4);
+
+    // Position tooltip above the widget
+    int x = m_widgetRect.center().x() - textRect.width() / 2;
+    int y = m_widgetRect.top() - textRect.height() - 6;
+    textRect.moveTo(x, y);
+
+    // Draw glass panel without shadow
+    ToolbarStyleConfig tooltipConfig = m_styleConfig;
+    tooltipConfig.shadowColor.setAlpha(0);
+    tooltipConfig.shadowOffsetY = 0;
+    tooltipConfig.shadowBlurRadius = 0;
+    GlassRenderer::drawGlassPanel(painter, textRect, tooltipConfig, 6);
+
+    // Draw tooltip text
+    painter.setPen(m_styleConfig.tooltipText);
+    painter.drawText(textRect, Qt::AlignCenter, tooltip);
 }
 
 bool RadiusSliderWidget::contains(const QPoint& pos) const
@@ -200,6 +235,13 @@ bool RadiusSliderWidget::handleMouseMove(const QPoint& pos, bool pressed)
         }
     }
 
+    // Update overall hover state
+    bool hovered = m_widgetRect.contains(pos);
+    if (hovered != m_hovered) {
+        m_hovered = hovered;
+        needsUpdate = true;
+    }
+
     // Update hover state for buttons
     int newHovered = -1;
     if (m_minusButtonRect.contains(pos)) {
@@ -247,4 +289,9 @@ int RadiusSliderWidget::radiusToPosition(int radius) const
 
     double ratio = static_cast<double>(radius - m_minRadius) / (m_maxRadius - m_minRadius);
     return trackLeft + static_cast<int>(ratio * (trackRight - trackLeft));
+}
+
+QString RadiusSliderWidget::tooltipText() const
+{
+    return tr("Corner Radius");
 }
