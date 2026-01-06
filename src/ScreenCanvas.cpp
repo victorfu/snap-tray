@@ -66,11 +66,6 @@ static QCursor createMosaicCursor(int size) {
     painter.setBrush(Qt::NoBrush);
     painter.drawRoundedRect(innerRect, 2, 2);
 
-    // Draw darker inner outline for contrast on light backgrounds
-    painter.setPen(QPen(QColor(100, 100, 100, 180), 0.5, Qt::SolidLine));
-    QRect innerOutline = innerRect.adjusted(1, 1, -1, -1);
-    painter.drawRoundedRect(innerOutline, 1, 1);
-
     painter.end();
 
     int hotspot = cursorSize / 2;
@@ -1027,44 +1022,15 @@ void ScreenCanvas::keyPressEvent(QKeyEvent* event)
 
 void ScreenCanvas::drawCursorDot(QPainter& painter)
 {
-    bool isMosaic = (m_currentToolId == ToolId::Mosaic);
+    // Mosaic uses system cursor only (like RegionSelector)
+    if (m_currentToolId == ToolId::Mosaic) return;
 
-    // Don't show when drawing (unless it's Mosaic), on toolbar, or on widgets
-    if (m_toolManager->isDrawing() && !isMosaic) return;
+    // Don't show when drawing, on toolbar, or on widgets
+    if (m_toolManager->isDrawing()) return;
     if (m_laserRenderer->isDrawing()) return;
     if (m_toolbar->contains(m_cursorPos)) return;
     if (m_toolbar->hoveredButton() >= 0) return;
     if (shouldShowColorAndWidthWidget() && m_colorAndWidthWidget->contains(m_cursorPos)) return;
-
-    if (isMosaic) {
-        // Draw rounded square for Mosaic (matching RegionSelector style)
-        int size = m_toolManager->width();
-        QRect rect(0, 0, size, size);
-        rect.moveCenter(m_cursorPos);
-
-        painter.setRenderHint(QPainter::Antialiasing, true);
-
-        // Draw semi-transparent fill
-        painter.setBrush(QColor(255, 255, 255, 60));
-        painter.setPen(Qt::NoPen);
-        painter.drawRoundedRect(rect, 2, 2);
-
-        // Draw light gray/white border for better visibility
-        painter.setPen(QPen(QColor(220, 220, 220), 1.5, Qt::SolidLine));
-        painter.setBrush(Qt::NoBrush);
-        painter.drawRoundedRect(rect, 2, 2);
-
-        // Draw darker inner outline for contrast on light backgrounds
-        painter.setPen(QPen(QColor(100, 100, 100, 180), 0.5, Qt::SolidLine));
-        QRect innerRect = rect.adjusted(1, 1, -1, -1);
-        painter.drawRoundedRect(innerRect, 1, 1);
-    }
-    else {
-        // Draw a dot following the current tool color
-        painter.setPen(Qt::NoPen);
-        painter.setBrush(m_toolManager->color());
-        painter.drawEllipse(m_cursorPos, 3, 3);  // 6px diameter
-    }
 }
 
 void ScreenCanvas::closeEvent(QCloseEvent* event)
