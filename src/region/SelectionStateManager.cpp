@@ -171,6 +171,58 @@ void SelectionStateManager::updateResize(const QPoint& pos)
         int adjDy = (dy < 0 ? -1 : 1) * static_cast<int>(absDy + 0.5);
         QPoint newCorner(anchor.x() + adjDx, anchor.y() + adjDy);
         newRect = QRect(anchor, newCorner);
+    } else if (m_aspectRatio > 0.0 && !isCornerHandle(m_activeHandle)) {
+        // Edge resize with aspect ratio locked: adjust both dimensions
+        QRect rect = m_originalRect.normalized();
+        int newWidth = rect.width();
+        int newHeight = rect.height();
+        int centerX = rect.center().x();
+        int centerY = rect.center().y();
+
+        switch (m_activeHandle) {
+        case ResizeHandle::Top:
+        case ResizeHandle::Bottom: {
+            // Vertical edge: height changes, width adjusts to maintain ratio
+            if (m_activeHandle == ResizeHandle::Top) {
+                newHeight = rect.bottom() - (m_originalRect.top() + delta.y()) + 1;
+            } else {
+                newHeight = (m_originalRect.bottom() + delta.y()) - rect.top() + 1;
+            }
+            if (newHeight < 10) newHeight = 10;
+            newWidth = static_cast<int>(newHeight * m_aspectRatio + 0.5);
+            if (newWidth < 10) {
+                newWidth = 10;
+                newHeight = static_cast<int>(newWidth / m_aspectRatio + 0.5);
+            }
+            // Keep horizontally centered
+            newRect = QRect(centerX - newWidth / 2,
+                           m_activeHandle == ResizeHandle::Top ? rect.bottom() - newHeight + 1 : rect.top(),
+                           newWidth, newHeight);
+            break;
+        }
+        case ResizeHandle::Left:
+        case ResizeHandle::Right: {
+            // Horizontal edge: width changes, height adjusts to maintain ratio
+            if (m_activeHandle == ResizeHandle::Left) {
+                newWidth = rect.right() - (m_originalRect.left() + delta.x()) + 1;
+            } else {
+                newWidth = (m_originalRect.right() + delta.x()) - rect.left() + 1;
+            }
+            if (newWidth < 10) newWidth = 10;
+            newHeight = static_cast<int>(newWidth / m_aspectRatio + 0.5);
+            if (newHeight < 10) {
+                newHeight = 10;
+                newWidth = static_cast<int>(newHeight * m_aspectRatio + 0.5);
+            }
+            // Keep vertically centered
+            newRect = QRect(m_activeHandle == ResizeHandle::Left ? rect.right() - newWidth + 1 : rect.left(),
+                           centerY - newHeight / 2,
+                           newWidth, newHeight);
+            break;
+        }
+        default:
+            break;
+        }
     } else {
         switch (m_activeHandle) {
         case ResizeHandle::TopLeft:
