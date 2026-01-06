@@ -35,7 +35,6 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     : QDialog(parent)
     , m_tabWidget(nullptr)
     , m_startOnLoginCheckbox(nullptr)
-    , m_includeCursorCheckbox(nullptr)
     , m_toolbarStyleCombo(nullptr)
     , m_hotkeyEdit(nullptr)
     , m_captureHotkeyStatus(nullptr)
@@ -165,18 +164,6 @@ void SettingsDialog::setupGeneralTab(QWidget *tab)
     // Load current setting
     int currentStyle = static_cast<int>(ToolbarStyleConfig::loadStyle());
     m_toolbarStyleCombo->setCurrentIndex(currentStyle);
-
-    // ========== Screenshot Section ==========
-    layout->addSpacing(16);
-    QLabel *screenshotLabel = new QLabel("Screenshot", tab);
-    screenshotLabel->setStyleSheet("font-weight: bold; font-size: 12px;");
-    layout->addWidget(screenshotLabel);
-
-    m_includeCursorCheckbox = new QCheckBox("Include cursor in screenshots", tab);
-    auto screenshotSettings = SnapTray::getSettings();
-    m_includeCursorCheckbox->setChecked(
-        screenshotSettings.value("screenshot/includeCursor", false).toBool());
-    layout->addWidget(m_includeCursorCheckbox);
 
     // ========== Blur Section ==========
     layout->addSpacing(16);
@@ -828,11 +815,6 @@ void SettingsDialog::onSave()
         }
         emit startOnLoginChanged(desiredStartOnLogin);
     }
-
-    // Save screenshot settings
-    auto screenshotSettings = SnapTray::getSettings();
-    screenshotSettings.setValue("screenshot/includeCursor",
-        m_includeCursorCheckbox && m_includeCursorCheckbox->isChecked());
 
     // Save watermark settings
     WatermarkRenderer::Settings watermarkSettings;

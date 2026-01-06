@@ -59,7 +59,6 @@ private:
     // UI elements
     QTabWidget *m_tabWidget;
     QCheckBox *m_startOnLoginCheckbox;
-    QCheckBox *m_includeCursorCheckbox;
     QComboBox *m_toolbarStyleCombo;
     QKeySequenceEdit *m_hotkeyEdit;
     QLabel *m_captureHotkeyStatus;

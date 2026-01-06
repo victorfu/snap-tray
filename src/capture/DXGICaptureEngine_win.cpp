@@ -29,7 +29,6 @@ public:
     void cleanupThread();
     QImage captureWithBitBlt();
     QImage captureWithDXGI();
-    void drawCursorOnImage(QImage& image, qreal dpr);
 
     // Thread-safe frame access (matching macOS SCKCaptureEngine pattern)
     void setLatestFrame(const QImage &frame) {
@@ -55,7 +54,6 @@ public:
     int frameRate = 30;
     std::atomic<bool> running{false};
     bool useDXGI = false;
-    bool includeCursor = false;
     QImage lastFrame;  // Cache for when no new frame available (used during capture)
     std::chrono::steady_clock::time_point lastFrameTime;
 
@@ -337,7 +335,6 @@ QImage DXGICaptureEngine::Private::captureWithBitBlt()
     DeleteDC(hdcMem);
     ReleaseDC(NULL, hdcScreen);
 
-    drawCursorOnImage(image, dpr);
     return image;
 }
 
@@ -435,7 +432,6 @@ QImage DXGICaptureEngine::Private::captureWithDXGI()
 
     // Crop to capture region and deep copy
     lastFrame = fullImage.copy(relX, relY, physWidth, physHeight);
-    drawCursorOnImage(lastFrame, dpr);
     lastFrameTime = std::chrono::steady_clock::now();
 
     context->Unmap(stagingTexture.Get(), 0);
@@ -445,70 +441,6 @@ QImage DXGICaptureEngine::Private::captureWithDXGI()
     dxgiRetryCount = 0;
 
     return lastFrame;
-}
-
-void DXGICaptureEngine::Private::drawCursorOnImage(QImage& image, qreal dpr)
-{
-    if (!includeCursor || image.isNull()) {
-        return;
-    }
-
-    CURSORINFO ci = { sizeof(CURSORINFO) };
-    if (!GetCursorInfo(&ci) || !(ci.flags & CURSOR_SHOWING)) {
-        return;
-    }
-
-    ICONINFO ii;
-    if (!GetIconInfo(ci.hCursor, &ii)) {
-        return;
-    }
-
-    int physX = static_cast<int>(captureRegion.x() * dpr);
-    int physY = static_cast<int>(captureRegion.y() * dpr);
-    int drawX = static_cast<int>(ci.ptScreenPos.x - physX - static_cast<int>(ii.xHotspot));
-    int drawY = static_cast<int>(ci.ptScreenPos.y - physY - static_cast<int>(ii.yHotspot));
-
-    if (ii.hbmColor) {
-        DeleteObject(ii.hbmColor);
-    }
-    if (ii.hbmMask) {
-        DeleteObject(ii.hbmMask);
-    }
-
-    HDC hdc = CreateCompatibleDC(NULL);
-    if (!hdc) {
-        return;
-    }
-
-    BITMAPINFO bmi;
-    ZeroMemory(&bmi, sizeof(bmi));
-    bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-    bmi.bmiHeader.biWidth = image.width();
-    bmi.bmiHeader.biHeight = -image.height();  // Top-down
-    bmi.bmiHeader.biPlanes = 1;
-    bmi.bmiHeader.biBitCount = 32;
-    bmi.bmiHeader.biCompression = BI_RGB;
-
-    void* bits = nullptr;
-    HBITMAP hBitmap = CreateDIBSection(hdc, &bmi, DIB_RGB_COLORS, &bits, NULL, 0);
-    if (!hBitmap || !bits) {
-        if (hBitmap) {
-            DeleteObject(hBitmap);
-        }
-        DeleteDC(hdc);
-        return;
-    }
-
-    std::memcpy(bits, image.bits(), image.sizeInBytes());
-    HGDIOBJ old = SelectObject(hdc, hBitmap);
-
-    DrawIconEx(hdc, drawX, drawY, ci.hCursor, 0, 0, 0, NULL, DI_NORMAL);
-
-    std::memcpy(image.bits(), bits, image.sizeInBytes());
-
-    SelectObject(hdc, old);
-    DeleteObject(hBitmap);
-    DeleteDC(hdc);
 }
 
 // DXGICaptureEngine implementation
@@ -590,14 +522,6 @@ bool DXGICaptureEngine::setRegion(const QRect &region, QScreen *screen)
     m_captureRegion = region;
     m_targetScreen = screen;
     return true;
-}
-
-void DXGICaptureEngine::setIncludeCursor(bool include)
-{
-    m_includeCursor = include;
-    if (d) {
-        d->includeCursor = include;
-    }
 }
 
 bool DXGICaptureEngine::start()

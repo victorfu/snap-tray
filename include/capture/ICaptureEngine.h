@@ -40,17 +40,6 @@ public:
     virtual void setFrameRate(int fps) { m_frameRate = fps; }
 
     /**
-     * @brief Include cursor in captured frames
-     * @param include true to include cursor, false to exclude
-     */
-    virtual void setIncludeCursor(bool include) { m_includeCursor = include; }
-
-    /**
-     * @brief Current cursor inclusion setting
-     */
-    bool includeCursor() const { return m_includeCursor; }
-
-    /**
      * @brief Set windows to exclude from capture
      * @param windowIds List of native window IDs (WId) to exclude
      *
@@ -123,7 +112,6 @@ protected:
     QRect m_captureRegion;
     QScreen *m_targetScreen = nullptr;
     int m_frameRate = 30;
-    bool m_includeCursor = false;
 };
 
 #endif // ICAPTUREENGINE_H

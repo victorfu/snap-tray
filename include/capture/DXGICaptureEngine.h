@@ -31,7 +31,6 @@ public:
     ~DXGICaptureEngine() override;
 
     bool setRegion(const QRect &region, QScreen *screen) override;
-    void setIncludeCursor(bool include) override;
     bool start() override;
     void stop() override;
     bool isRunning() const override;
