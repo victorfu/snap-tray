@@ -15,6 +15,9 @@ SnapTray is a lightweight tray utility for region screenshots, on-screen annotat
   - RGB/HEX color preview (Shift to toggle, C to copy color code)
   - Dimension display
   - Selection handles (Snipaste-style)
+  - Aspect ratio lock (hold Shift to constrain proportions)
+  - Multi-region selection (capture multiple areas, merge or save separately)
+  - Include cursor option in screenshots
   - Window detection (macOS/Windows): Auto-detect window under cursor, single-click to select
 - **Capture Toolbar**:
   - `Selection` tool (adjust selection area)
@@ -32,8 +35,8 @@ SnapTray is a lightweight tray utility for region screenshots, on-screen annotat
   - Text formatting controls for Text tool (font family/size, bold/italic/underline)
 - **Screen Canvas**:
   - Full-screen annotation mode, draw directly on screen
-  - Drawing tools: `Pencil` / `Marker` / `Arrow` / `Shape` (Rectangle)
-  - Presentation tools: `Laser Pointer` / `Cursor Highlight` (click ripple)
+  - Drawing tools: `Pencil` / `Marker` / `Arrow` / `Shape` (Rectangle) / `Mosaic` / `StepBadge` / `Text` / `EmojiSticker`
+  - Presentation tools: `Laser Pointer` / `Cursor Highlight` (click ripple) / `Spotlight` (focus attention)
   - Color + line width controls
   - Undo/Redo/Clear support
   - `Esc` to exit
@@ -41,8 +44,10 @@ SnapTray is a lightweight tray utility for region screenshots, on-screen annotat
   - Start from capture toolbar (`Record` or `R`)
   - Adjustable region with Start/Cancel
   - Floating control bar with Pause/Resume/Stop/Cancel
-  - MP4 (H.264) via native encoder (Media Foundation/AVFoundation); GIF via built-in encoder
+  - MP4 (H.264) via native encoder (Media Foundation/AVFoundation); GIF and WebP via built-in encoders
   - Optional audio capture (microphone/system audio/both; platform dependent)
+  - Include cursor option in recordings
+  - Spotlight effect during recording (dim surroundings, highlight focus area)
 - **Pin Windows**:
   - Borderless, always on top
   - Drag to move
@@ -56,7 +61,7 @@ SnapTray is a lightweight tray utility for region screenshots, on-screen annotat
   - General tab: Launch at startup, toolbar style (Dark/Light), pin window opacity/zoom settings
   - Hotkeys tab: Separate hotkeys for Region Capture and Screen Canvas
   - Watermark tab: Image watermark, opacity, position, and scale
-  - Recording tab: Frame rate, output format, quality, countdown, click highlight, audio (enable/source/device)
+  - Recording tab: Frame rate, output format (MP4/GIF/WebP), quality, countdown, click highlight, cursor visibility, spotlight, audio (enable/source/device)
   - Files tab: Screenshot/recording save paths, filename format
   - About tab: Version information
   - Settings stored via QSettings

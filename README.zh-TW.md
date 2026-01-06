@@ -15,6 +15,9 @@ SnapTray 是一個在系統托盤常駐的截圖與錄影小工具，提供區�
   - RGB/HEX 顏色預覽（按 Shift 切換，按 C 複製顏色代碼）
   - 尺寸標示
   - 選取框控制點（類 Snipaste 風格）
+  - 比例鎖定（按住 Shift 限制比例）
+  - 多區域選取（擷取多個區域，可合併或分開儲存）
+  - 截圖包含游標選項
   - 視窗偵測（macOS/Windows）：自動偵測游標下的視窗，單擊快速選取
 - **截圖工具列**：
   - `Selection` 選取工具（調整選取區域）
@@ -32,8 +35,8 @@ SnapTray 是一個在系統托盤常駐的截圖與錄影小工具，提供區�
   - 文字工具格式控制（字型/大小、粗體/斜體/底線）
 - **螢幕畫布**：
   - 全螢幕標註模式，直接在螢幕上繪圖
-  - 繪圖工具：`Pencil` / `Marker` / `Arrow` / `Shape`（Rectangle）
-  - 簡報工具：`Laser Pointer` / `Cursor Highlight`（點擊波紋）
+  - 繪圖工具：`Pencil` / `Marker` / `Arrow` / `Shape`（Rectangle）/ `Mosaic` / `StepBadge` / `Text` / `EmojiSticker`
+  - 簡報工具：`Laser Pointer` / `Cursor Highlight`（點擊波紋）/ `Spotlight`（聚光燈聚焦）
   - 顏色/線寬控制
   - 支援 Undo/Redo/Clear
   - `Esc` 離開
@@ -41,8 +44,10 @@ SnapTray 是一個在系統托盤常駐的截圖與錄影小工具，提供區�
   - 從截圖工具列啟動（`Record` 或 `R`）
   - 可調整錄影區域，Start/Cancel 開始或取消
   - 浮動控制列：Pause/Resume/Stop/Cancel
-  - MP4 (H.264) 由原生編碼器（Media Foundation/AVFoundation）產生；GIF 由內建編碼器產生
+  - MP4 (H.264) 由原生編碼器（Media Foundation/AVFoundation）產生；GIF 與 WebP 由內建編碼器產生
   - 可選音訊錄製（麥克風/系統音/混合，視平台支援）
+  - 錄影包含游標選項
+  - 聚光燈效果（錄影時調暗周圍，突顯焦點區域）
 - **釘選視窗**：
   - 無邊框、永遠在最上層
   - 可拖曳移動
@@ -56,7 +61,7 @@ SnapTray 是一個在系統托盤常駐的截圖與錄影小工具，提供區�
   - General 分頁：開機自動啟動、工具列樣式（深色/淺色）、釘選視窗透明度/縮放設定
   - Hotkeys 分頁：區域截圖與螢幕畫布分別設定熱鍵
   - Watermark 分頁：圖片浮水印、透明度、位置、縮放
-  - Recording 分頁：幀率、輸出格式、品質、倒數計時、點擊高亮、音訊（啟用/來源/裝置）
+  - Recording 分頁：幀率、輸出格式（MP4/GIF/WebP）、品質、倒數計時、點擊高亮、游標顯示、聚光燈、音訊（啟用/來源/裝置）
   - Files 分頁：截圖/錄影儲存路徑、檔名格式
   - About 分頁：版本資訊
   - 設定儲存於系統設定 (QSettings)
