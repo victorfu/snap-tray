@@ -16,7 +16,7 @@ SnapTray is a lightweight tray utility for region screenshots, on-screen annotat
   - Dimension display
   - Selection handles (Snipaste-style)
   - Aspect ratio lock (hold Shift to constrain proportions)
-  - Multi-region selection (capture multiple areas, merge or save separately)
+  - Multi-region selection (Debug build only; capture multiple areas, merge or save separately)
   - Include cursor option in screenshots
   - Window detection (macOS/Windows): Auto-detect window under cursor, single-click to select
 - **Capture Toolbar**:
@@ -30,7 +30,7 @@ SnapTray is a lightweight tray utility for region screenshots, on-screen annotat
   - `OCR` text recognition (macOS/Windows, supports Traditional Chinese, Simplified Chinese, English)
   - `Auto Blur` auto-detect and blur faces/text in the selection
   - `Record` screen recording (R) for the selected region
-  - `Scroll Capture` long page/scrolling capture for extended content
+  - `Scroll Capture` long page/scrolling capture for extended content (Debug build only)
   - Color + line width controls for supported tools
   - Text formatting controls for Text tool (font family/size, bold/italic/underline)
 - **Screen Canvas**:

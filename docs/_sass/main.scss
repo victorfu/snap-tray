@@ -198,6 +198,16 @@ main {
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: $spacing-lg;
   }
+
+  .feature-note {
+    text-align: center;
+    color: $text-muted;
+    font-size: 0.875rem;
+    margin-top: $spacing-lg;
+    max-width: 680px;
+    margin-left: auto;
+    margin-right: auto;
+  }
 }
 
 .feature-card {
