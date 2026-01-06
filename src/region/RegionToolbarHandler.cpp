@@ -79,6 +79,7 @@ void RegionToolbarHandler::setupToolbarButtons()
     iconRenderer.loadIcon("text", ":/icons/icons/text.svg");
     iconRenderer.loadIcon("mosaic", ":/icons/icons/mosaic.svg");
     iconRenderer.loadIcon("step-badge", ":/icons/icons/step-badge.svg");
+    iconRenderer.loadIcon("emoji", ":/icons/icons/emoji.svg");
     iconRenderer.loadIcon("eraser", ":/icons/icons/eraser.svg");
     iconRenderer.loadIcon("undo", ":/icons/icons/undo.svg");
     iconRenderer.loadIcon("redo", ":/icons/icons/redo.svg");
@@ -125,6 +126,7 @@ void RegionToolbarHandler::setupToolbarButtons()
     buttons.append({ static_cast<int>(ToolbarButton::Text), "text", "Text", false });
     buttons.append({ static_cast<int>(ToolbarButton::Mosaic), "mosaic", "Mosaic", false });
     buttons.append({ static_cast<int>(ToolbarButton::StepBadge), "step-badge", "Step Badge", false });
+    buttons.append({ static_cast<int>(ToolbarButton::EmojiSticker), "emoji", "Emoji Sticker", false });
     buttons.append({ static_cast<int>(ToolbarButton::Eraser), "eraser", "Eraser", false });
     buttons.append({ static_cast<int>(ToolbarButton::Undo), "undo", "Undo", true });
     buttons.append({ static_cast<int>(ToolbarButton::Redo), "redo", "Redo", false });
@@ -153,6 +155,7 @@ void RegionToolbarHandler::setupToolbarButtons()
         static_cast<int>(ToolbarButton::Text),
         static_cast<int>(ToolbarButton::Mosaic),
         static_cast<int>(ToolbarButton::StepBadge),
+        static_cast<int>(ToolbarButton::EmojiSticker),
         static_cast<int>(ToolbarButton::Eraser)
     };
     m_toolbar->setActiveButtonIds(activeButtonIds);
@@ -231,6 +234,7 @@ void RegionToolbarHandler::handleToolbarClick(ToolbarButton button)
     case ToolbarButton::Marker:
     case ToolbarButton::Shape:
     case ToolbarButton::Text:
+    case ToolbarButton::EmojiSticker:
         handleAnnotationTool(button);
         break;
 
@@ -423,6 +427,7 @@ bool RegionToolbarHandler::isAnnotationTool(ToolbarButton tool) const
     case ToolbarButton::Text:
     case ToolbarButton::Mosaic:
     case ToolbarButton::StepBadge:
+    case ToolbarButton::EmojiSticker:
     case ToolbarButton::Eraser:
         return true;
     default:

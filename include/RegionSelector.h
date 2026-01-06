@@ -37,6 +37,7 @@
 class QScreen;
 class ColorPaletteWidget;
 class ColorAndWidthWidget;
+class EmojiPicker;
 class ColorPickerDialog;
 class QCloseEvent;
 class OCRManager;
@@ -59,6 +60,7 @@ enum class ToolbarButton {
     Text,
     Mosaic,
     StepBadge,
+    EmojiSticker,
     Eraser,
     Undo,
     Redo,
@@ -86,6 +88,7 @@ inline ToolId toolbarButtonToToolId(ToolbarButton btn) {
     case ToolbarButton::Text:       return ToolId::Text;
     case ToolbarButton::Mosaic:     return ToolId::Mosaic;
     case ToolbarButton::StepBadge:  return ToolId::StepBadge;
+    case ToolbarButton::EmojiSticker: return ToolId::EmojiSticker;
     case ToolbarButton::Eraser:     return ToolId::Eraser;
     case ToolbarButton::Undo:       return ToolId::Undo;
     case ToolbarButton::Redo:       return ToolId::Redo;
@@ -113,6 +116,7 @@ inline bool isToolManagerHandledTool(ToolbarButton btn) {
     case ToolbarButton::Shape:
     case ToolbarButton::Mosaic:
     case ToolbarButton::StepBadge:
+    case ToolbarButton::EmojiSticker:
     case ToolbarButton::Eraser:
         return true;
     default:
@@ -248,6 +252,9 @@ private:
 
     // Unified color and width widget
     ColorAndWidthWidget *m_colorAndWidthWidget;
+
+    // Emoji picker
+    EmojiPicker *m_emojiPicker;
 
     // Annotation layer and tool manager
     AnnotationLayer *m_annotationLayer;

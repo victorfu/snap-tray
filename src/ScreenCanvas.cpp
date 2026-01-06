@@ -6,12 +6,14 @@
 #include "ColorPaletteWidget.h"
 #include "ColorPickerDialog.h"
 #include "ColorAndWidthWidget.h"
+#include "EmojiPicker.h"
 #include "LaserPointerRenderer.h"
 #include "ClickRippleRenderer.h"
 #include "ToolbarWidget.h"
 #include "settings/AnnotationSettingsManager.h"
 #include "settings/Settings.h"
 #include "tools/handlers/MosaicToolHandler.h"
+#include "tools/handlers/EmojiStickerToolHandler.h"
 
 #include <QPainter>
 #include <QMouseEvent>
@@ -168,6 +170,17 @@ ScreenCanvas::ScreenCanvas(QWidget* parent)
             m_toolManager->setWidth(radius);
         });
 
+    // Initialize emoji picker
+    m_emojiPicker = new EmojiPicker(this);
+    connect(m_emojiPicker, &EmojiPicker::emojiSelected,
+        this, [this](const QString& emoji) {
+            if (auto* handler = dynamic_cast<EmojiStickerToolHandler*>(
+                    m_toolManager->handler(ToolId::EmojiSticker))) {
+                handler->setCurrentEmoji(emoji);
+            }
+            update();
+        });
+
     // Initialize inline text editor
     m_textEditor = new InlineTextEditor(this);
     connect(m_textEditor, &InlineTextEditor::editingFinished,
@@ -276,6 +289,7 @@ void ScreenCanvas::setupToolbar()
         {static_cast<int>(CanvasButton::Shape), "shape", "Shape"},
         {static_cast<int>(CanvasButton::Mosaic), "mosaic", "Mosaic"},
         {static_cast<int>(CanvasButton::StepBadge), "step-badge", "Step Badge"},
+        {static_cast<int>(CanvasButton::EmojiSticker), "emoji", "Emoji Sticker"},
         {static_cast<int>(CanvasButton::Text), "text", "Text"},
         {static_cast<int>(CanvasButton::LaserPointer), "laser-pointer", "Laser Pointer"},
         ToolbarWidget::ButtonConfig(static_cast<int>(CanvasButton::CursorHighlight), "cursor-highlight", "Cursor Highlight (Toggle)").separator(),
@@ -295,6 +309,7 @@ void ScreenCanvas::setupToolbar()
         static_cast<int>(CanvasButton::Shape),
         static_cast<int>(CanvasButton::Mosaic),
         static_cast<int>(CanvasButton::StepBadge),
+        static_cast<int>(CanvasButton::EmojiSticker),
         static_cast<int>(CanvasButton::Text),
         static_cast<int>(CanvasButton::LaserPointer),
         static_cast<int>(CanvasButton::CursorHighlight),
@@ -347,6 +362,7 @@ QString ScreenCanvas::getIconKeyForButton(CanvasButton button) const
     case CanvasButton::Shape:           return "shape";
     case CanvasButton::Mosaic:          return "mosaic";
     case CanvasButton::StepBadge:       return "step-badge";
+    case CanvasButton::EmojiSticker:    return "emoji";
     case CanvasButton::Text:            return "text";
     case CanvasButton::LaserPointer:    return "laser-pointer";
     case CanvasButton::CursorHighlight: return "cursor-highlight";
@@ -558,6 +574,16 @@ void ScreenCanvas::paintEvent(QPaintEvent*)
         }
     }
 
+    // Draw emoji picker when EmojiSticker tool is selected
+    if (m_currentToolId == ToolId::EmojiSticker) {
+        m_emojiPicker->setVisible(true);
+        m_emojiPicker->updatePosition(toolbarRect, true);
+        m_emojiPicker->draw(painter);
+    }
+    else {
+        m_emojiPicker->setVisible(false);
+    }
+
     // Draw tooltip
     m_toolbar->drawTooltip(painter);
 
@@ -623,6 +649,19 @@ void ScreenCanvas::handleToolbarClick(CanvasButton button)
             m_showSubToolbar = true;
         }
         qDebug() << "ScreenCanvas: StepBadge selected, showSubToolbar:" << m_showSubToolbar;
+        setToolCursor();
+        update();
+        break;
+
+    case CanvasButton::EmojiSticker:
+        if (m_currentToolId == toolId) {
+            m_showSubToolbar = !m_showSubToolbar;
+        } else {
+            m_currentToolId = toolId;
+            m_toolManager->setCurrentTool(toolId);
+            m_showSubToolbar = true;
+        }
+        qDebug() << "ScreenCanvas: EmojiSticker selected, showSubToolbar:" << m_showSubToolbar;
         setToolCursor();
         update();
         break;
@@ -786,6 +825,14 @@ void ScreenCanvas::mousePressEvent(QMouseEvent* event)
             }
         }
 
+        // Check if clicked on emoji picker
+        if (m_emojiPicker->isVisible()) {
+            if (m_emojiPicker->handleClick(event->pos())) {
+                update();
+                return;
+            }
+        }
+
         // Trigger click ripple if enabled
         if (m_rippleRenderer->isEnabled()) {
             m_rippleRenderer->triggerRipple(event->pos());
@@ -886,6 +933,17 @@ void ScreenCanvas::mouseMoveEvent(QMouseEvent* event)
                         widgetHovered = true;
                     }
                 }
+            }
+        }
+
+        // Update hovered emoji in emoji picker
+        if (m_emojiPicker->isVisible()) {
+            if (m_emojiPicker->updateHoveredEmoji(event->pos())) {
+                needsUpdate = true;
+            }
+            if (m_emojiPicker->contains(event->pos())) {
+                setCursor(Qt::PointingHandCursor);
+                widgetHovered = true;
             }
         }
 

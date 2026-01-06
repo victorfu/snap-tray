@@ -20,6 +20,7 @@ enum class ToolId {
     Text,
     Mosaic,
     StepBadge,
+    EmojiSticker,
     Eraser,
 
     // Toggle tools (affect canvas behavior)

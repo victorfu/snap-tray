@@ -25,6 +25,7 @@ class AnnotationLayer;
 class ToolManager;
 class ColorPaletteWidget;
 class ColorPickerDialog;
+class EmojiPicker;
 class ColorAndWidthWidget;
 class LaserPointerRenderer;
 class ClickRippleRenderer;
@@ -40,6 +41,7 @@ enum class CanvasButton {
     Mosaic,
     StepBadge,
     Text,
+    EmojiSticker,
     LaserPointer,
     CursorHighlight,
     Spotlight,
@@ -60,6 +62,7 @@ inline ToolId canvasButtonToToolId(CanvasButton btn) {
     case CanvasButton::Mosaic:       return ToolId::Mosaic;
     case CanvasButton::StepBadge:    return ToolId::StepBadge;
     case CanvasButton::Text:         return ToolId::Text;
+    case CanvasButton::EmojiSticker: return ToolId::EmojiSticker;
     case CanvasButton::LaserPointer: return ToolId::LaserPointer;
     case CanvasButton::CursorHighlight: return ToolId::CursorHighlight;
     case CanvasButton::Spotlight:    return ToolId::Spotlight;
@@ -155,6 +158,9 @@ private:
 
     // Unified color and width widget
     ColorAndWidthWidget *m_colorAndWidthWidget;
+
+    // Emoji picker
+    EmojiPicker *m_emojiPicker;
 
     // Color picker dialog
     ColorPickerDialog *m_colorPickerDialog;

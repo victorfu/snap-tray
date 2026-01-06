@@ -15,6 +15,7 @@
 #include "InlineTextEditor.h"
 #include "ColorAndWidthWidget.h"
 #include "ColorPaletteWidget.h"
+#include "EmojiPicker.h"
 #include "TransformationGizmo.h"
 #include "RegionSelector.h"  // For ToolbarButton enum
 
@@ -68,6 +69,11 @@ void RegionInputHandler::setColorAndWidthWidget(ColorAndWidthWidget* widget)
 void RegionInputHandler::setColorPalette(ColorPaletteWidget* palette)
 {
     m_colorPalette = palette;
+}
+
+void RegionInputHandler::setEmojiPicker(EmojiPicker* picker)
+{
+    m_emojiPicker = picker;
 }
 
 void RegionInputHandler::setAspectRatioWidget(AspectRatioWidget* widget)
@@ -391,6 +397,14 @@ bool RegionInputHandler::handleColorWidgetPress(const QPoint& pos)
 
     if (!shouldShowColorAndWidthWidget() && shouldShowColorPalette()) {
         if (m_colorPalette->handleClick(pos)) {
+            emit updateRequested();
+            return true;
+        }
+    }
+
+    // Handle emoji picker clicks
+    if (m_emojiPicker && m_emojiPicker->isVisible()) {
+        if (m_emojiPicker->handleClick(pos)) {
             emit updateRequested();
             return true;
         }
@@ -726,6 +740,16 @@ void RegionInputHandler::handleHoverMove(const QPoint& pos, Qt::MouseButtons but
         }
         else if (m_colorPalette->contains(pos)) {
             colorPaletteHovered = true;
+        }
+    }
+
+    // Emoji picker hover
+    if (m_emojiPicker && m_emojiPicker->isVisible()) {
+        if (m_emojiPicker->updateHoveredEmoji(pos)) {
+            emit updateRequested();
+        }
+        if (m_emojiPicker->contains(pos)) {
+            emit cursorChangeRequested(Qt::PointingHandCursor);
         }
     }
 

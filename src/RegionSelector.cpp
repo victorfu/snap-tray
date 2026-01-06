@@ -10,6 +10,7 @@
 #include "ColorPaletteWidget.h"
 #include "ColorAndWidthWidget.h"
 #include "ColorPickerDialog.h"
+#include "EmojiPicker.h"
 #include "OCRManager.h"
 #include "PlatformFeatures.h"
 #include "detection/AutoBlurManager.h"
@@ -17,6 +18,7 @@
 #include "settings/FileSettingsManager.h"
 #include "tools/handlers/EraserToolHandler.h"
 #include "tools/handlers/MosaicToolHandler.h"
+#include "tools/handlers/EmojiStickerToolHandler.h"
 #include <QTextEdit>
 
 #include <cstring>
@@ -126,6 +128,7 @@ RegionSelector::RegionSelector(QWidget* parent)
     , m_autoBlurManager(nullptr)
     , m_autoBlurInProgress(false)
     , m_colorPalette(nullptr)
+    , m_emojiPicker(nullptr)
     , m_textEditor(nullptr)
     , m_colorPickerDialog(nullptr)
     , m_magnifierPanel(nullptr)
@@ -308,6 +311,17 @@ RegionSelector::RegionSelector(QWidget* parent)
             AnnotationSettingsManager::instance().saveMosaicBlurType(type);
         });
 
+    // Initialize emoji picker
+    m_emojiPicker = new EmojiPicker(this);
+    connect(m_emojiPicker, &EmojiPicker::emojiSelected,
+        this, [this](const QString& emoji) {
+            if (auto* handler = dynamic_cast<EmojiStickerToolHandler*>(
+                    m_toolManager->handler(ToolId::EmojiSticker))) {
+                handler->setCurrentEmoji(emoji);
+            }
+            update();
+        });
+
     // Initialize loading spinner for OCR
     m_loadingSpinner = new LoadingSpinnerRenderer(this);
     connect(m_loadingSpinner, &LoadingSpinnerRenderer::needsRepaint,
@@ -396,6 +410,7 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_inputHandler->setTextAnnotationEditor(m_textAnnotationEditor);
     m_inputHandler->setColorAndWidthWidget(m_colorAndWidthWidget);
     m_inputHandler->setColorPalette(m_colorPalette);
+    m_inputHandler->setEmojiPicker(m_emojiPicker);
     m_inputHandler->setAspectRatioWidget(m_aspectRatioWidget);
     m_inputHandler->setRadiusSliderWidget(m_radiusSliderWidget);
     m_inputHandler->setMultiRegionManager(m_multiRegionManager);
@@ -921,6 +936,16 @@ void RegionSelector::paintEvent(QPaintEvent*)
                 else {
                     m_colorPalette->setVisible(false);
                 }
+            }
+
+            // Draw emoji picker when EmojiSticker tool is selected
+            if (m_currentTool == ToolbarButton::EmojiSticker) {
+                m_emojiPicker->setVisible(true);
+                m_emojiPicker->updatePosition(m_toolbar->boundingRect(), false);
+                m_emojiPicker->draw(painter);
+            }
+            else {
+                m_emojiPicker->setVisible(false);
             }
 
             m_toolbar->drawTooltip(painter);

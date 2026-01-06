@@ -17,6 +17,7 @@ class InlineTextEditor;
 class TextAnnotationEditor;
 class ColorAndWidthWidget;
 class ColorPaletteWidget;
+class EmojiPicker;
 class AspectRatioWidget;
 class RadiusSliderWidget;
 class UpdateThrottler;
@@ -48,6 +49,7 @@ public:
     void setTextAnnotationEditor(TextAnnotationEditor* editor);
     void setColorAndWidthWidget(ColorAndWidthWidget* widget);
     void setColorPalette(ColorPaletteWidget* palette);
+    void setEmojiPicker(EmojiPicker* picker);
     void setAspectRatioWidget(AspectRatioWidget* widget);
     void setRadiusSliderWidget(RadiusSliderWidget* widget);
     void setMultiRegionManager(MultiRegionManager* manager);
@@ -157,6 +159,7 @@ private:
     TextAnnotationEditor* m_textAnnotationEditor = nullptr;
     ColorAndWidthWidget* m_colorAndWidthWidget = nullptr;
     ColorPaletteWidget* m_colorPalette = nullptr;
+    EmojiPicker* m_emojiPicker = nullptr;
     AspectRatioWidget* m_aspectRatioWidget = nullptr;
     RadiusSliderWidget* m_radiusSliderWidget = nullptr;
     MultiRegionManager* m_multiRegionManager = nullptr;

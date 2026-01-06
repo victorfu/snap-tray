@@ -224,12 +224,14 @@ set(SOURCES
     src/annotations/MosaicStroke.cpp
     src/annotations/MosaicRectAnnotation.cpp
     src/annotations/StepBadgeAnnotation.cpp
+    src/annotations/EmojiStickerAnnotation.cpp
     src/annotations/ErasedItemsGroup.cpp
     src/annotations/EraserStroke.cpp
     src/annotations/TextAnnotation.cpp
     src/ScreenCanvas.cpp
     src/IconRenderer.cpp
     src/ColorPaletteWidget.cpp
+    src/EmojiPicker.cpp
     src/LineWidthWidget.cpp
     src/ColorAndWidthWidget.cpp
     src/ToolbarWidget.cpp
@@ -294,6 +296,7 @@ set(SOURCES
     src/tools/handlers/ShapeToolHandler.cpp
     src/tools/handlers/MosaicToolHandler.cpp
     src/tools/handlers/StepBadgeToolHandler.cpp
+    src/tools/handlers/EmojiStickerToolHandler.cpp
     src/tools/handlers/EraserToolHandler.cpp
     src/tools/handlers/SelectionToolHandler.cpp
     src/tools/handlers/LaserPointerToolHandler.cpp
@@ -370,6 +373,7 @@ set(HEADERS
     include/annotations/MosaicStroke.h
     include/annotations/MosaicRectAnnotation.h
     include/annotations/StepBadgeAnnotation.h
+    include/annotations/EmojiStickerAnnotation.h
     include/annotations/EraserStroke.h
     include/annotations/ErasedItemsGroup.h
     include/ScreenCanvas.h
@@ -377,6 +381,7 @@ set(HEADERS
     include/AutoLaunchManager.h
     include/IconRenderer.h
     include/ColorPaletteWidget.h
+    include/EmojiPicker.h
     include/LineWidthWidget.h
     include/ColorAndWidthWidget.h
     include/ToolbarWidget.h
@@ -432,6 +437,7 @@ set(HEADERS
     include/tools/handlers/ShapeToolHandler.h
     include/tools/handlers/MosaicToolHandler.h
     include/tools/handlers/StepBadgeToolHandler.h
+    include/tools/handlers/EmojiStickerToolHandler.h
     include/tools/handlers/EraserToolHandler.h
     include/tools/handlers/SelectionToolHandler.h
     include/tools/handlers/LaserPointerToolHandler.h
