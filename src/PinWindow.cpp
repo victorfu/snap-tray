@@ -6,8 +6,11 @@
 #include "platform/WindowLevel.h"
 #include "pinwindow/ResizeHandler.h"
 #include "pinwindow/UIIndicators.h"
+#include "pinwindow/PinWindowAnnotationController.h"
+#include "pinwindow/PinWindowToolbar.h"
 #include "settings/AnnotationSettingsManager.h"
 #include "settings/PinWindowSettingsManager.h"
+#include "tools/ToolId.h"
 
 #include <QPainter>
 #include <QImage>
@@ -150,6 +153,9 @@ PinWindow::PinWindow(const QPixmap &screenshot, const QPoint &position, QWidget 
 
     // Initialize resize throttle timer
     m_resizeThrottleTimer.start();
+
+    // Initialize annotation system
+    setupAnnotationSystem();
 
     qDebug() << "PinWindow: Created with size" << m_displayPixmap.size()
              << "requested position" << position
@@ -356,14 +362,38 @@ QPixmap PinWindow::getExportPixmap() const
     qDebug() << "  m_watermarkSettings.enabled:" << m_watermarkSettings.enabled;
     qDebug() << "  m_watermarkSettings.imagePath:" << m_watermarkSettings.imagePath;
 
-    // 1. Get current display size (includes zoom)
+    // 1. Start with original pixmap and draw annotations onto it
+    QPixmap annotatedPixmap = m_originalPixmap.copy();
+    if (m_annotationController && m_annotationController->hasAnnotations()) {
+        m_annotationController->drawOntoPixmap(annotatedPixmap);
+        qDebug() << "  Drew annotations onto pixmap";
+    }
+
+    // 2. Apply rotation/flip transforms
+    QPixmap basePixmap = annotatedPixmap;
+    if (m_rotationAngle != 0 || m_flipHorizontal || m_flipVertical) {
+        QTransform transform;
+
+        if (m_rotationAngle != 0) {
+            transform.rotate(m_rotationAngle);
+        }
+
+        if (m_flipHorizontal || m_flipVertical) {
+            qreal scaleX = m_flipHorizontal ? -1.0 : 1.0;
+            qreal scaleY = m_flipVertical ? -1.0 : 1.0;
+            transform.scale(scaleX, scaleY);
+        }
+
+        basePixmap = annotatedPixmap.transformed(transform, Qt::SmoothTransformation);
+        basePixmap.setDevicePixelRatio(annotatedPixmap.devicePixelRatio());
+    }
+    qDebug() << "  basePixmap size:" << basePixmap.size();
+
+    // 3. Get current display size (includes zoom)
     QSize exportSize = m_displayPixmap.size();
     qDebug() << "  exportSize:" << exportSize;
 
-    // 2. Get transformed pixmap (rotation/flip) and scale to current size
-    QPixmap basePixmap = getTransformedPixmap();
-    qDebug() << "  basePixmap size:" << basePixmap.size();
-
+    // 4. Scale to current size
     QPixmap scaledPixmap = basePixmap.scaled(
         exportSize,
         Qt::IgnoreAspectRatio,
@@ -372,7 +402,7 @@ QPixmap PinWindow::getExportPixmap() const
     scaledPixmap.setDevicePixelRatio(basePixmap.devicePixelRatio());
     qDebug() << "  scaledPixmap size:" << scaledPixmap.size();
 
-    // 3. If opacity is adjusted, paint with opacity
+    // 5. If opacity is adjusted, paint with opacity
     if (m_opacity < 1.0) {
         qDebug() << "  Applying opacity:" << m_opacity;
         QPixmap resultPixmap(scaledPixmap.size());
@@ -387,7 +417,7 @@ QPixmap PinWindow::getExportPixmap() const
         scaledPixmap = resultPixmap;
     }
 
-    // 4. Apply watermark
+    // 6. Apply watermark
     qDebug() << "  Calling WatermarkRenderer::applyToPixmap";
     return WatermarkRenderer::applyToPixmap(scaledPixmap, m_watermarkSettings);
 }
@@ -547,6 +577,13 @@ void PinWindow::createContextMenu()
     m_clickThroughAction->setCheckable(true);
     m_clickThroughAction->setChecked(m_clickThrough);
     connect(m_clickThroughAction, &QAction::toggled, this, &PinWindow::setClickThrough);
+
+    // Annotation mode
+    QAction *annotateAction = m_contextMenu->addAction("Annotate");
+    annotateAction->setShortcut(QKeySequence(Qt::Key_A));
+    connect(annotateAction, &QAction::triggered, this, [this]() {
+        setAnnotationMode(true);
+    });
 
     m_contextMenu->addSeparator();
 
@@ -732,12 +769,20 @@ void PinWindow::paintEvent(QPaintEvent *)
     // Draw the screenshot
     painter.drawPixmap(pixmapRect, m_displayPixmap);
 
+    // Draw annotations
+    if (m_annotationController) {
+        m_annotationController->draw(painter);
+    }
+
     // Draw border if enabled
     if (m_showBorder) {
         int cornerRadius = effectiveCornerRadius(size());
         if (m_clickThrough) {
             // Dashed indigo border for click-through mode
             painter.setPen(QPen(QColor(88, 86, 214, 200), 2, Qt::DashLine));
+        } else if (isAnnotationMode()) {
+            // Green border for annotation mode
+            painter.setPen(QPen(QColor(52, 199, 89, 200), 2));
         } else {
             // Blue border
             painter.setPen(QPen(QColor(0, 122, 255, 200), 1.5));
@@ -763,6 +808,13 @@ void PinWindow::paintEvent(QPaintEvent *)
 void PinWindow::mousePressEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton) {
+        // Handle annotation mode
+        if (isAnnotationMode() && m_annotationController) {
+            m_annotationController->handleMousePress(event->pos());
+            update();
+            return;
+        }
+
         ResizeHandler::Edge edge = m_resizeHandler->getEdgeAt(event->pos(), size());
 
         if (edge != ResizeHandler::Edge::None) {
@@ -780,6 +832,13 @@ void PinWindow::mousePressEvent(QMouseEvent *event)
 
 void PinWindow::mouseMoveEvent(QMouseEvent *event)
 {
+    // Handle annotation mode
+    if (isAnnotationMode() && m_annotationController) {
+        m_annotationController->handleMouseMove(event->pos());
+        update();
+        // Don't return - still need to update cursor for resize edges
+    }
+
     if (m_isResizing) {
         QSize newSize;
         QPoint newPos;
@@ -825,6 +884,12 @@ void PinWindow::mouseMoveEvent(QMouseEvent *event)
 void PinWindow::mouseReleaseEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton) {
+        // Handle annotation mode
+        if (isAnnotationMode() && m_annotationController) {
+            m_annotationController->handleMouseRelease(event->pos());
+            update();
+        }
+
         if (m_isResizing) {
             m_isResizing = false;
             m_resizeHandler->finishResize();
@@ -842,6 +907,13 @@ void PinWindow::mouseReleaseEvent(QMouseEvent *event)
 void PinWindow::mouseDoubleClickEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton) {
+        // Handle annotation mode
+        if (isAnnotationMode() && m_annotationController) {
+            m_annotationController->handleDoubleClick(event->pos());
+            update();
+            return;
+        }
+
         close();
     }
 }
@@ -898,8 +970,71 @@ void PinWindow::contextMenuEvent(QContextMenuEvent *event)
 
 void PinWindow::keyPressEvent(QKeyEvent *event)
 {
+    // Handle annotation mode shortcuts
+    if (isAnnotationMode()) {
+        if (event->key() == Qt::Key_Escape) {
+            setAnnotationMode(false);
+            return;
+        }
+        if (event->matches(QKeySequence::Undo) && m_annotationController) {
+            m_annotationController->undo();
+            update();
+            return;
+        }
+        if (event->matches(QKeySequence::Redo) && m_annotationController) {
+            m_annotationController->redo();
+            update();
+            return;
+        }
+        // Tool shortcuts
+        if (m_annotationController) {
+            switch (event->key()) {
+            case Qt::Key_S:
+                m_annotationController->setCurrentTool(static_cast<int>(ToolId::Shape));
+                if (m_annotationToolbar) m_annotationToolbar->setCurrentTool(ToolId::Shape);
+                return;
+            case Qt::Key_A:
+                m_annotationController->setCurrentTool(static_cast<int>(ToolId::Arrow));
+                if (m_annotationToolbar) m_annotationToolbar->setCurrentTool(ToolId::Arrow);
+                return;
+            case Qt::Key_P:
+                m_annotationController->setCurrentTool(static_cast<int>(ToolId::Pencil));
+                if (m_annotationToolbar) m_annotationToolbar->setCurrentTool(ToolId::Pencil);
+                return;
+            case Qt::Key_H:
+                m_annotationController->setCurrentTool(static_cast<int>(ToolId::Marker));
+                if (m_annotationToolbar) m_annotationToolbar->setCurrentTool(ToolId::Marker);
+                return;
+            case Qt::Key_T:
+                m_annotationController->setCurrentTool(static_cast<int>(ToolId::Text));
+                if (m_annotationToolbar) m_annotationToolbar->setCurrentTool(ToolId::Text);
+                return;
+            case Qt::Key_M:
+                m_annotationController->setCurrentTool(static_cast<int>(ToolId::Mosaic));
+                if (m_annotationToolbar) m_annotationToolbar->setCurrentTool(ToolId::Mosaic);
+                return;
+            case Qt::Key_B:
+                m_annotationController->setCurrentTool(static_cast<int>(ToolId::StepBadge));
+                if (m_annotationToolbar) m_annotationToolbar->setCurrentTool(ToolId::StepBadge);
+                return;
+            case Qt::Key_E:
+                m_annotationController->setCurrentTool(static_cast<int>(ToolId::Eraser));
+                if (m_annotationToolbar) m_annotationToolbar->setCurrentTool(ToolId::Eraser);
+                return;
+            case Qt::Key_Return:
+            case Qt::Key_Enter:
+                setAnnotationMode(false);
+                return;
+            default:
+                break;
+            }
+        }
+    }
+
     if (event->key() == Qt::Key_Escape) {
         close();
+    } else if (event->key() == Qt::Key_A && !isAnnotationMode()) {
+        setAnnotationMode(true);
     } else if (event->key() == Qt::Key_1) {
         rotateRight();
     } else if (event->key() == Qt::Key_2) {
@@ -926,4 +1061,132 @@ void PinWindow::closeEvent(QCloseEvent *event)
 void PinWindow::moveEvent(QMoveEvent *event)
 {
     QWidget::moveEvent(event);
+
+    // Update toolbar position when window moves
+    if (m_annotationToolbar && m_annotationToolbar->isVisible()) {
+        positionAnnotationToolbar();
+    }
+}
+
+void PinWindow::setupAnnotationSystem()
+{
+    // Create annotation controller
+    m_annotationController = new PinWindowAnnotationController(this);
+    m_annotationController->setSourcePixmap(&m_originalPixmap);
+    m_annotationController->setDevicePixelRatio(m_originalPixmap.devicePixelRatio());
+
+    // Connect signals
+    connect(m_annotationController, &PinWindowAnnotationController::needsRepaint,
+            this, QOverload<>::of(&QWidget::update));
+    connect(m_annotationController, &PinWindowAnnotationController::undoRedoStateChanged,
+            this, [this]() {
+                if (m_annotationToolbar) {
+                    m_annotationToolbar->setUndoEnabled(m_annotationController->canUndo());
+                    m_annotationToolbar->setRedoEnabled(m_annotationController->canRedo());
+                }
+            });
+
+    // Create annotation toolbar
+    m_annotationToolbar = new PinWindowToolbar(nullptr);  // No parent - separate window
+    m_annotationToolbar->hide();
+
+    // Connect toolbar signals
+    connect(m_annotationToolbar, &PinWindowToolbar::toolSelected, this, [this](ToolId tool) {
+        if (m_annotationController) {
+            m_annotationController->setCurrentTool(static_cast<int>(tool));
+        }
+    });
+    connect(m_annotationToolbar, &PinWindowToolbar::colorChanged, this, [this](const QColor& color) {
+        if (m_annotationController) {
+            m_annotationController->setColor(color);
+        }
+    });
+    connect(m_annotationToolbar, &PinWindowToolbar::widthChanged, this, [this](int width) {
+        if (m_annotationController) {
+            m_annotationController->setWidth(width);
+        }
+    });
+    connect(m_annotationToolbar, &PinWindowToolbar::undoRequested, this, [this]() {
+        if (m_annotationController) {
+            m_annotationController->undo();
+            update();
+        }
+    });
+    connect(m_annotationToolbar, &PinWindowToolbar::redoRequested, this, [this]() {
+        if (m_annotationController) {
+            m_annotationController->redo();
+            update();
+        }
+    });
+    connect(m_annotationToolbar, &PinWindowToolbar::closeRequested, this, [this]() {
+        setAnnotationMode(false);
+    });
+
+    qDebug() << "PinWindow: Annotation system initialized";
+}
+
+void PinWindow::updateAnnotationTransformState()
+{
+    if (m_annotationController) {
+        m_annotationController->setZoomLevel(m_zoomLevel);
+        m_annotationController->setRotationAngle(m_rotationAngle);
+        m_annotationController->setFlipState(m_flipHorizontal, m_flipVertical);
+    }
+}
+
+void PinWindow::positionAnnotationToolbar()
+{
+    if (!m_annotationToolbar) {
+        return;
+    }
+
+    // Calculate toolbar size (approximate)
+    int toolbarWidth = 400;  // Approximate width
+    int toolbarHeight = 80;  // Approximate height including color widget
+    m_annotationToolbar->setFixedSize(toolbarWidth, toolbarHeight);
+
+    // Position below the pin window, centered
+    QRect windowRect = frameGeometry();
+    int x = windowRect.center().x() - toolbarWidth / 2;
+    int y = windowRect.bottom() + 8;
+
+    m_annotationToolbar->move(x, y);
+}
+
+void PinWindow::setAnnotationMode(bool enabled)
+{
+    if (m_annotationController && m_annotationController->isAnnotationMode() == enabled) {
+        return;
+    }
+
+    if (m_annotationController) {
+        m_annotationController->setAnnotationMode(enabled);
+        updateAnnotationTransformState();
+    }
+
+    if (m_annotationToolbar) {
+        if (enabled) {
+            positionAnnotationToolbar();
+            m_annotationToolbar->show();
+            m_annotationToolbar->raise();
+        } else {
+            m_annotationToolbar->hide();
+        }
+    }
+
+    // Set cursor for annotation mode
+    if (enabled) {
+        setCursor(Qt::CrossCursor);
+    } else {
+        setCursor(Qt::ArrowCursor);
+    }
+
+    update();
+
+    qDebug() << "PinWindow: Annotation mode" << (enabled ? "enabled" : "disabled");
+}
+
+bool PinWindow::isAnnotationMode() const
+{
+    return m_annotationController && m_annotationController->isAnnotationMode();
 }

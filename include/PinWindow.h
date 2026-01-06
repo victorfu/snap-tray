@@ -15,6 +15,8 @@ class QTimer;
 class OCRManager;
 class PinWindowManager;
 class UIIndicators;
+class PinWindowAnnotationController;
+class PinWindowToolbar;
 
 class PinWindow : public QWidget
 {
@@ -49,6 +51,10 @@ public:
     // Border visibility
     void setShowBorder(bool enabled);
     bool showBorder() const { return m_showBorder; }
+
+    // Annotation mode
+    void setAnnotationMode(bool enabled);
+    bool isAnnotationMode() const;
 
 signals:
     void closed(PinWindow *window);
@@ -159,6 +165,14 @@ private:
     static constexpr int kResizeThrottleMs = 16;  // ~60fps during resize
 
     int m_baseCornerRadius = 0;
+
+    // Annotation support
+    PinWindowAnnotationController *m_annotationController = nullptr;
+    PinWindowToolbar *m_annotationToolbar = nullptr;
+
+    void setupAnnotationSystem();
+    void updateAnnotationTransformState();
+    void positionAnnotationToolbar();
 };
 
 #endif // PINWINDOW_H

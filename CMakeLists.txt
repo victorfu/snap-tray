@@ -327,6 +327,8 @@ set(SOURCES
     src/pinwindow/ImageTransformer.cpp
     src/pinwindow/ResizeHandler.cpp
     src/pinwindow/UIIndicators.cpp
+    src/pinwindow/PinWindowAnnotationController.cpp
+    src/pinwindow/PinWindowToolbar.cpp
     # Scrolling Capture
     src/scrolling/ScrollingCaptureManager.cpp
     src/scrolling/ScrollingCaptureOverlay.cpp
@@ -467,6 +469,8 @@ set(HEADERS
     include/pinwindow/ImageTransformer.h
     include/pinwindow/ResizeHandler.h
     include/pinwindow/UIIndicators.h
+    include/pinwindow/PinWindowAnnotationController.h
+    include/pinwindow/PinWindowToolbar.h
     # Scrolling Capture
     include/scrolling/ScrollingCaptureManager.h
     include/scrolling/ScrollingCaptureOverlay.h
