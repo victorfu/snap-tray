@@ -865,6 +865,17 @@ void RegionSelector::setWindowDetector(WindowDetector* detector)
     m_windowDetector = detector;
 }
 
+void RegionSelector::refreshWindowDetectionAtCursor()
+{
+    if (!m_windowDetector || !m_windowDetector->isEnabled() || !m_currentScreen) {
+        return;
+    }
+
+    const auto globalPos = QCursor::pos();
+    const auto localPos = globalToLocal(globalPos);
+    updateWindowDetection(localPos);
+}
+
 void RegionSelector::updateWindowDetection(const QPoint& localPos)
 {
     if (!m_windowDetector || !m_windowDetector->isEnabled() || !m_currentScreen) {

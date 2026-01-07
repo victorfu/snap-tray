@@ -58,28 +58,33 @@ void CaptureManager::startRegionCapture()
              << "geometry:" << targetScreen->geometry()
              << "cursor pos:" << QCursor::pos();
 
-    // 2. Capture screenshot FIRST while popup is still visible
+    // 2. Start window detection FIRST (async, runs in parallel with grabWindow)
+    // This allows window list to be ready by the time RegionSelector is shown
+    if (m_windowDetector) {
+        m_windowDetector->setScreen(targetScreen);
+        m_windowDetector->refreshWindowListAsync();
+    }
+
+    // 3. Capture screenshot while popup is still visible
     // This allows capturing context menus (like Snipaste)
+    // grabWindow() runs on main thread while window detection runs in background
     QWidget *popup = QApplication::activePopupWidget();
     qDebug() << "CaptureManager: Pre-capture screenshot, popup active:" << (popup != nullptr);
 
     QPixmap preCapture = targetScreen->grabWindow(0);
     qDebug() << "CaptureManager: Screenshot captured, size:" << preCapture.size();
 
-    // 3. Close popup AFTER screenshot to avoid event loop conflict with RegionSelector
+    // 4. Close popup AFTER screenshot to avoid event loop conflict with RegionSelector
     if (popup) {
         qDebug() << "CaptureManager: Closing popup to avoid event loop conflict";
         popup->close();
     }
 
-    // 4. 創建 RegionSelector
+    // 5. 創建 RegionSelector
     m_regionSelector = new RegionSelector();
 
-    // 5. 設置視窗偵測器 (if available on this platform)
-    // Use async version to avoid blocking UI startup on high-DPI screens
+    // 6. 設置視窗偵測器 (window list should be ready or nearly ready by now)
     if (m_windowDetector) {
-        m_windowDetector->setScreen(targetScreen);
-        m_windowDetector->refreshWindowListAsync();
         m_regionSelector->setWindowDetector(m_windowDetector);
     }
 
@@ -94,6 +99,26 @@ void CaptureManager::startRegionCapture()
             this, &CaptureManager::recordingRequested);
     connect(m_regionSelector, &RegionSelector::scrollingCaptureRequested,
             this, &CaptureManager::scrollingCaptureRequested);
+
+    // Trigger initial window highlight once the async window list is ready.
+    if (m_windowDetector && m_windowDetector->isEnabled()) {
+        const auto regionSelector = m_regionSelector;
+        const auto triggerDetection = [regionSelector]() {
+            if (!regionSelector) {
+                return;
+            }
+            regionSelector->refreshWindowDetectionAtCursor();
+        };
+
+        if (m_windowDetector->isRefreshComplete()) {
+            triggerDetection();
+        } else {
+            connect(m_windowDetector, &WindowDetector::windowListReady,
+                    m_regionSelector, [triggerDetection]() {
+                        triggerDetection();
+                    });
+        }
+    }
 
     // 5. 使用 setGeometry + show 取代 showFullScreen，確保在正確螢幕上顯示
     m_regionSelector->setGeometry(targetScreen->geometry());

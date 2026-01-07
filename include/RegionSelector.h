@@ -140,6 +140,7 @@ public:
     void initializeWithRegion(QScreen *screen, const QRect &region);
 
     void setWindowDetector(WindowDetector *detector);
+    void refreshWindowDetectionAtCursor();
 
 signals:
     void regionSelected(const QPixmap &screenshot, const QPoint &globalPosition);
