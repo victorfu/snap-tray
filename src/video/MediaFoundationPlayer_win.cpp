@@ -452,6 +452,7 @@ bool MediaFoundationPlayer::createTopology()
     pd->GetStreamDescriptorCount(&streamCount);
     qDebug() << "MediaFoundationPlayer: Creating topology, streams:" << streamCount;
     bool videoNodeAdded = false;
+    bool audioNodeAdded = false;
 
     for (DWORD i = 0; i < streamCount; i++) {
         BOOL selected = FALSE;
@@ -525,6 +526,9 @@ bool MediaFoundationPlayer::createTopology()
             }
         } else if (majorType == MFMediaType_Audio) {
             nodeCreated = addAudioOutputNode(topology, &outputNode);
+            if (nodeCreated) {
+                audioNodeAdded = true;
+            }
         }
 
         if (nodeCreated && outputNode) {
