@@ -69,6 +69,13 @@ void RecordingInitTask::run()
 {
     qDebug() << "RecordingInitTask::run() - BEGIN";
 
+    // Check for early cancellation before any work
+    if (isCancelled()) {
+        m_result.error = "Initialization cancelled";
+        emit finished();
+        return;
+    }
+
     // Step 1: Initialize capture engine
     emit progress(tr("Initializing..."));
     if (!initializeCaptureEngine()) {
