@@ -51,8 +51,9 @@ public:
      *
      * Updates the WAV header with final sizes.
      * Must be called before using the file.
+     * @return true if header was updated successfully, false otherwise
      */
-    void finish();
+    bool finish();
 
     /**
      * @brief Check if the writer is currently active
@@ -79,6 +80,11 @@ signals:
      * @brief Emitted when an error occurs
      */
     void error(const QString &message);
+
+    /**
+     * @brief Emitted when a non-fatal warning occurs
+     */
+    void warning(const QString &message);
 
 private:
     /**

@@ -118,28 +118,33 @@ void TestRecordingManagerStateMachine::testInitialStateIsNotSelecting()
 void TestRecordingManagerStateMachine::testStateEnumValues()
 {
     // Verify expected state values exist
+    // Order: Idle, Selecting, Preparing, Countdown, Recording, Paused, Encoding, Previewing
     QCOMPARE(static_cast<int>(RecordingManager::State::Idle), 0);
     QCOMPARE(static_cast<int>(RecordingManager::State::Selecting), 1);
     QCOMPARE(static_cast<int>(RecordingManager::State::Preparing), 2);
-    QCOMPARE(static_cast<int>(RecordingManager::State::Recording), 3);
-    QCOMPARE(static_cast<int>(RecordingManager::State::Paused), 4);
-    QCOMPARE(static_cast<int>(RecordingManager::State::Encoding), 5);
+    QCOMPARE(static_cast<int>(RecordingManager::State::Countdown), 3);
+    QCOMPARE(static_cast<int>(RecordingManager::State::Recording), 4);
+    QCOMPARE(static_cast<int>(RecordingManager::State::Paused), 5);
+    QCOMPARE(static_cast<int>(RecordingManager::State::Encoding), 6);
+    QCOMPARE(static_cast<int>(RecordingManager::State::Previewing), 7);
 }
 
 void TestRecordingManagerStateMachine::testStateEnumCount()
 {
     // Verify we have the expected number of states
     // This catches accidental additions without test updates
-    int expectedStates = 6;  // Idle, Selecting, Preparing, Recording, Paused, Encoding
+    int expectedStates = 8;  // Idle, Selecting, Preparing, Countdown, Recording, Paused, Encoding, Previewing
 
     // Create a set of known state values
     QSet<int> stateValues;
     stateValues.insert(static_cast<int>(RecordingManager::State::Idle));
     stateValues.insert(static_cast<int>(RecordingManager::State::Selecting));
     stateValues.insert(static_cast<int>(RecordingManager::State::Preparing));
+    stateValues.insert(static_cast<int>(RecordingManager::State::Countdown));
     stateValues.insert(static_cast<int>(RecordingManager::State::Recording));
     stateValues.insert(static_cast<int>(RecordingManager::State::Paused));
     stateValues.insert(static_cast<int>(RecordingManager::State::Encoding));
+    stateValues.insert(static_cast<int>(RecordingManager::State::Previewing));
 
     QCOMPARE(stateValues.size(), expectedStates);
 }

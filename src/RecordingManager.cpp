@@ -538,6 +538,14 @@ void RecordingManager::onInitializationComplete()
         return;
     }
 
+    // Safety check: ensure m_initTask is valid
+    if (!m_initTask) {
+        qWarning() << "RecordingManager: onInitializationComplete called with null initTask";
+        setState(State::Idle);
+        emit recordingError(tr("Internal error: initialization task is null"));
+        return;
+    }
+
     // Get the result from the init task
     const RecordingInitTask::Result &result = m_initTask->result();
 

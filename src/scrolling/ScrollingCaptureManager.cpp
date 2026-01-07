@@ -14,6 +14,7 @@
 #include <QStandardPaths>
 #include <QDateTime>
 #include <QDebug>
+#include <QElapsedTimer>
 
 ScrollingCaptureManager::ScrollingCaptureManager(PinWindowManager *pinManager, QObject *parent)
     : QObject(parent)
@@ -549,6 +550,11 @@ void ScrollingCaptureManager::captureFrame()
 
     m_isProcessingFrame = true;
 
+    // Performance timing for Phase 0 profiling
+    QElapsedTimer perfTimer;
+    qint64 grabMs = 0, detectMs = 0, stitchMs = 0, totalMs = 0;
+    perfTimer.start();
+
     // Check if we've hit the maximum frame limit BEFORE incrementing
     // This prevents processing one extra frame beyond the limit
     if (m_totalFrameCount >= MAX_TOTAL_FRAMES) {
@@ -561,6 +567,8 @@ void ScrollingCaptureManager::captureFrame()
     m_totalFrameCount++;
 
     QImage frame = grabCaptureRegion();
+    grabMs = perfTimer.elapsed();
+
     if (frame.isNull()) {
         qDebug() << "ScrollingCaptureManager: Failed to grab capture region";
         m_isProcessingFrame = false;
@@ -592,7 +600,10 @@ void ScrollingCaptureManager::captureFrame()
             emit fixedElementDetectionDisabled();
         }
 
+        perfTimer.restart();
         auto detection = m_fixedDetector->detect();
+        detectMs = perfTimer.elapsed();
+
         if (detection.detected) {
             m_fixedElementsDetected = true;
             qDebug() << "ScrollingCaptureManager: Fixed elements detected -"
@@ -622,6 +633,9 @@ void ScrollingCaptureManager::captureFrame()
         if (m_stitcher->frameCount() > 0) {
             emit matchStatusChanged(true, 0.8, m_lastSuccessfulPosition);
         }
+        totalMs = grabMs + detectMs;
+        qDebug() << "ScrollingCaptureManager::captureFrame perf (restitch) - grab:" << grabMs
+                 << "ms, detect:" << detectMs << "ms, total:" << totalMs << "ms";
         m_isProcessingFrame = false;
         return;
     }
@@ -637,7 +651,9 @@ void ScrollingCaptureManager::captureFrame()
     }
 
     // Try to stitch
+    perfTimer.restart();
     ImageStitcher::StitchResult result = m_stitcher->addFrame(frameToStitch);
+    stitchMs = perfTimer.elapsed();
 
     qDebug() << "ScrollingCaptureManager::captureFrame -"
              << "success:" << result.success
@@ -725,6 +741,13 @@ void ScrollingCaptureManager::captureFrame()
     }
 
     m_lastFrame = frame;
+
+    // Log performance metrics
+    totalMs = grabMs + detectMs + stitchMs;
+    qDebug() << "ScrollingCaptureManager::captureFrame perf - grab:" << grabMs
+             << "ms, detect:" << detectMs << "ms, stitch:" << stitchMs
+             << "ms, total:" << totalMs << "ms";
+
     m_isProcessingFrame = false;
 }
 

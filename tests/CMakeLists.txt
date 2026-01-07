@@ -157,15 +157,12 @@ add_test(NAME Settings_AnnotationSettingsManager COMMAND Settings_AnnotationSett
 set_tests_properties(Settings_AnnotationSettingsManager PROPERTIES TIMEOUT 60 LABELS "unit")
 
 # ============================================================================
-# RecordingManager Tests (currently disabled - complex factory dependencies)
+# RecordingManager Tests
 # ============================================================================
-# NOTE: These tests are disabled due to complex factory dependencies.
-# To enable, either:
-# 1. Add factory source files to snaptray_platform
-# 2. Create a shared library target for recording components
-# 3. Use mock classes in tests/mocks/ with dependency injection
+# Re-enabled: Recording components moved to snaptray_ui library for testability
+# Mock classes available in tests/mocks/ for advanced testing scenarios
 
-if(FALSE)  # Temporarily disabled
+if(TRUE)  # Enabled
 
 add_executable(RecordingManager_StateMachine RecordingManager/tst_StateMachine.cpp)
 target_link_libraries(RecordingManager_StateMachine PRIVATE snaptray_ui snaptray_platform Qt6::Test)

@@ -61,20 +61,26 @@ void AudioFileWriter::writeAudioData(const QByteArray &data)
     m_dataSize += written;
 }
 
-void AudioFileWriter::finish()
+bool AudioFileWriter::finish()
 {
     QMutexLocker locker(&m_mutex);
 
     if (!m_file.isOpen()) {
-        return;
+        qWarning() << "AudioFileWriter::finish called but file is not open";
+        return false;
     }
 
     // Update the header with final sizes
-    if (!updateHeader()) {
-        emit error("Failed to update WAV header - audio file may be corrupted");
-    }
+    bool headerUpdated = updateHeader();
 
+    // Always close the file, regardless of header update result
     m_file.close();
+
+    if (!headerUpdated) {
+        QString warningMsg = tr("WAV header update failed - audio file may be incomplete");
+        qWarning() << "AudioFileWriter:" << warningMsg;
+        emit warning(warningMsg);
+    }
 
     // Calculate duration locally to avoid deadlock (durationMs() also takes mutex)
     int bytesPerSample = m_format.bitsPerSample / 8;
@@ -84,6 +90,8 @@ void AudioFileWriter::finish()
     qDebug() << "AudioFileWriter: Finished writing"
              << m_dataSize << "bytes,"
              << durationMillis << "ms";
+
+    return headerUpdated;
 }
 
 qint64 AudioFileWriter::durationMs() const
@@ -145,34 +153,38 @@ bool AudioFileWriter::updateHeader()
 
     // Update RIFF chunk size (file size - 8)
     if (!m_file.seek(4)) {
-        qWarning() << "AudioFileWriter: Failed to seek to RIFF size position";
+        qWarning() << "AudioFileWriter: Failed to seek to RIFF size position -"
+                   << m_file.errorString();
         return false;
     }
     quint32 riffSize = static_cast<quint32>(36 + m_dataSize);
     char riffSizeBytes[4];
     qToLittleEndian<quint32>(riffSize, reinterpret_cast<uchar*>(riffSizeBytes));
     if (m_file.write(riffSizeBytes, 4) != 4) {
-        qWarning() << "AudioFileWriter: Failed to write RIFF size";
+        qWarning() << "AudioFileWriter: Failed to write RIFF size -"
+                   << m_file.errorString();
         return false;
     }
 
     // Update data chunk size
     if (!m_file.seek(40)) {
-        qWarning() << "AudioFileWriter: Failed to seek to data size position";
+        qWarning() << "AudioFileWriter: Failed to seek to data size position -"
+                   << m_file.errorString();
         return false;
     }
     quint32 dataSize = static_cast<quint32>(m_dataSize);
     char dataSizeBytes[4];
     qToLittleEndian<quint32>(dataSize, reinterpret_cast<uchar*>(dataSizeBytes));
     if (m_file.write(dataSizeBytes, 4) != 4) {
-        qWarning() << "AudioFileWriter: Failed to write data size";
+        qWarning() << "AudioFileWriter: Failed to write data size -"
+                   << m_file.errorString();
         return false;
     }
 
-    // Seek to end
+    // Seek to end (non-fatal if this fails, header is already updated)
     if (!m_file.seek(m_file.size())) {
-        qWarning() << "AudioFileWriter: Failed to seek to end";
-        return false;
+        qDebug() << "AudioFileWriter: Could not seek to end (non-fatal) -"
+                 << m_file.errorString();
     }
 
     return true;

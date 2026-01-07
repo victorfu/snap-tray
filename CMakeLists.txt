@@ -281,6 +281,7 @@ add_library(snaptray_algorithms STATIC
     src/scrolling/ImageStitcher.cpp
     src/scrolling/ImageStitcherAlgorithms.cpp
     src/scrolling/FixedElementDetector.cpp
+    src/scrolling/StitchWorker.cpp
     src/stitching/FeatureMatcher.cpp
     src/stitching/OpticalFlowPredictor.cpp
     src/stitching/StaticSceneAnalyzer.cpp
@@ -290,6 +291,7 @@ add_library(snaptray_algorithms STATIC
     include/detection/AutoBlurManager.h
     include/scrolling/ImageStitcher.h
     include/scrolling/FixedElementDetector.h
+    include/scrolling/StitchWorker.h
 )
 
 target_include_directories(snaptray_algorithms
@@ -532,6 +534,7 @@ add_library(snaptray_ui STATIC
     src/region/RegionToolbarHandler.cpp
     src/region/RegionSettingsHelper.cpp
     src/region/SelectionResizeHelper.cpp
+    src/region/RegionExportManager.cpp
 
     # PinWindow
     src/PinWindow.cpp
@@ -619,6 +622,7 @@ add_library(snaptray_ui STATIC
     include/region/RegionInputHandler.h
     include/region/RegionToolbarHandler.h
     include/region/RegionSettingsHelper.h
+    include/region/RegionExportManager.h
     include/PinWindow.h
     include/PinWindowManager.h
     include/pinwindow/ImageTransformer.h
@@ -655,6 +659,20 @@ add_library(snaptray_ui STATIC
         include/WindowDetectionOverlay.h
         include/OCRController.h
     >
+
+    # Recording management (moved from APP_SOURCES for testability)
+    src/RecordingManager.cpp
+    src/RecordingRegionSelector.cpp
+    src/RecordingControlBar.cpp
+    src/RecordingBoundaryOverlay.cpp
+    src/RecordingAnnotationOverlay.cpp
+    src/RecordingInitTask.cpp
+    include/RecordingManager.h
+    include/RecordingRegionSelector.h
+    include/RecordingControlBar.h
+    include/RecordingBoundaryOverlay.h
+    include/RecordingAnnotationOverlay.h
+    include/RecordingInitTask.h
 )
 
 target_include_directories(snaptray_ui
@@ -687,16 +705,11 @@ target_compile_definitions(snaptray_ui PRIVATE
 # ============================================================================
 
 # Application-specific sources (orchestration and entry point)
+# NOTE: Recording components moved to snaptray_ui for testability
 set(APP_SOURCES
     src/main.cpp
     src/MainApplication.cpp
     src/CaptureManager.cpp
-    src/RecordingManager.cpp
-    src/RecordingRegionSelector.cpp
-    src/RecordingControlBar.cpp
-    src/RecordingBoundaryOverlay.cpp
-    src/RecordingAnnotationOverlay.cpp
-    src/RecordingInitTask.cpp
 )
 
 set(RESOURCES
@@ -707,12 +720,6 @@ set(RESOURCES
 set(APP_HEADERS
     include/MainApplication.h
     include/CaptureManager.h
-    include/RecordingManager.h
-    include/RecordingRegionSelector.h
-    include/RecordingControlBar.h
-    include/RecordingBoundaryOverlay.h
-    include/RecordingAnnotationOverlay.h
-    include/RecordingInitTask.h
 )
 
 # Windows application icon resource

@@ -4,6 +4,7 @@
 #include <opencv2/imgproc.hpp>
 
 #include <QDebug>
+#include <QElapsedTimer>
 #include <cmath>
 
 FixedElementDetector::FixedElementDetector(QObject *parent)
@@ -115,11 +116,18 @@ FixedElementDetector::DetectionResult FixedElementDetector::detect()
         return result;
     }
 
+    // Performance timing for Phase 0 profiling
+    QElapsedTimer perfTimer;
+    perfTimer.start();
+
     // Analyze leading region (header/left sidebar)
     analyzeLeadingRegion();
+    qint64 leadingMs = perfTimer.elapsed();
 
+    perfTimer.restart();
     // Analyze trailing region (footer/right sidebar)
     analyzeTrailingRegion();
+    qint64 trailingMs = perfTimer.elapsed();
 
     result.detected = (m_leadingCropSize > 0 || m_trailingCropSize > 0);
     result.leadingFixed = m_leadingCropSize;
@@ -127,6 +135,9 @@ FixedElementDetector::DetectionResult FixedElementDetector::detect()
     result.confidence = result.detected ? 0.9 : 0.0;
 
     m_detected = result.detected;
+
+    qDebug() << "FixedElementDetector::detect perf - leading:" << leadingMs
+             << "ms, trailing:" << trailingMs << "ms, total:" << (leadingMs + trailingMs) << "ms";
 
     if (result.detected) {
         qDebug() << "FixedElementDetector: Detected fixed elements -"

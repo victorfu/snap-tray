@@ -1,6 +1,8 @@
 #include "scrolling/ImageStitcher.h"
 
 #include <cmath>
+#include <QDebug>
+#include <QElapsedTimer>
 
 ImageStitcher::ImageStitcher(QObject *parent)
     : QObject(parent)
@@ -54,6 +56,10 @@ ImageStitcher::StitchResult ImageStitcher::addFrame(const QImage &frame)
 {
     StitchResult result;
 
+    // Performance timing for Phase 0 profiling
+    QElapsedTimer perfTimer;
+    perfTimer.start();
+
     if (frame.isNull()) {
         result.failureReason = "Empty frame";
         return result;
@@ -74,6 +80,7 @@ ImageStitcher::StitchResult ImageStitcher::addFrame(const QImage &frame)
         result.usedAlgorithm = Algorithm::TemplateMatching;
 
         emit progressUpdated(m_frameCount, getCurrentSize());
+        qDebug() << "ImageStitcher::addFrame perf - first frame:" << perfTimer.elapsed() << "ms";
         return result;
     }
 
@@ -85,47 +92,71 @@ ImageStitcher::StitchResult ImageStitcher::addFrame(const QImage &frame)
         return result;
     }
 
+    qint64 staticDetectMs = 0;
     // Detect static regions over multiple frames (not just the second frame)
     // This gives more reliable detection as the user scrolls
     if (m_frameCount >= 1 && m_frameCount <= 5 &&
         m_stitchConfig.detectStaticRegions && !m_staticRegions.detected) {
+        QElapsedTimer staticTimer;
+        staticTimer.start();
         m_staticRegions = detectStaticRegions(m_lastFrame, frame);
+        staticDetectMs = staticTimer.elapsed();
     }
+
+    qint64 rowProjMs = 0, templateMs = 0;
 
     // RSSA: Try matching algorithms based on settings
     if (m_algorithm == Algorithm::Auto) {
         // Use Row Projection as primary algorithm - it's faster and more robust for text documents
         // Row Projection uses 1D cross-correlation which is optimal for vertical/horizontal scrolling
+        perfTimer.restart();
         result = tryRowProjectionMatch(frame);
+        rowProjMs = perfTimer.elapsed();
+
         if (result.success && result.confidence >= m_stitchConfig.confidenceThreshold) {
             m_lastFrame = frame.convertToFormat(QImage::Format_RGB32);
             m_frameCount++;
             emit progressUpdated(m_frameCount, getCurrentSize());
+            qDebug() << "ImageStitcher::addFrame perf - staticDetect:" << staticDetectMs
+                     << "ms, rowProj:" << rowProjMs << "ms (success)";
             return result;
         }
 
         // Try template matching as fallback (good for non-text content)
+        perfTimer.restart();
         result = tryTemplateMatch(frame);
+        templateMs = perfTimer.elapsed();
+
         if (result.success && result.confidence >= m_stitchConfig.confidenceThreshold) {
             m_lastFrame = frame.convertToFormat(QImage::Format_RGB32);
             m_frameCount++;
             emit progressUpdated(m_frameCount, getCurrentSize());
+            qDebug() << "ImageStitcher::addFrame perf - staticDetect:" << staticDetectMs
+                     << "ms, rowProj:" << rowProjMs << "ms, template:" << templateMs << "ms (fallback success)";
             return result;
         }
 
         // All failed
         result.success = false;
         result.failureReason = "No matching algorithm succeeded";
+        qDebug() << "ImageStitcher::addFrame perf - staticDetect:" << staticDetectMs
+                 << "ms, rowProj:" << rowProjMs << "ms, template:" << templateMs << "ms (all failed)";
         return result;
     }
     else if (m_algorithm == Algorithm::RowProjection) {
+        perfTimer.restart();
         result = tryRowProjectionMatch(frame);
+        rowProjMs = perfTimer.elapsed();
     }
     else if (m_algorithm == Algorithm::TemplateMatching) {
+        perfTimer.restart();
         result = tryTemplateMatch(frame);
+        templateMs = perfTimer.elapsed();
     }
     else {
+        perfTimer.restart();
         result = tryRowProjectionMatch(frame);
+        rowProjMs = perfTimer.elapsed();
     }
 
     if (result.success) {
@@ -134,6 +165,8 @@ ImageStitcher::StitchResult ImageStitcher::addFrame(const QImage &frame)
         emit progressUpdated(m_frameCount, getCurrentSize());
     }
 
+    qDebug() << "ImageStitcher::addFrame perf - staticDetect:" << staticDetectMs
+             << "ms, rowProj:" << rowProjMs << "ms, template:" << templateMs << "ms";
     return result;
 }
 

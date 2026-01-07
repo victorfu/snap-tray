@@ -3,6 +3,7 @@
 #include "region/RegionInputHandler.h"
 #include "region/RegionToolbarHandler.h"
 #include "region/RegionSettingsHelper.h"
+#include "region/RegionExportManager.h"
 #include "annotations/AllAnnotations.h"
 #include "GlassRenderer.h"
 #include "ToolbarStyle.h"
@@ -405,6 +406,35 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_painter->setMultiRegionManager(m_multiRegionManager);
     m_painter->setParentWidget(this);
 
+    // Initialize export manager component
+    m_exportManager = new RegionExportManager(this);
+    m_exportManager->setAnnotationLayer(m_annotationLayer);
+    connect(m_exportManager, &RegionExportManager::copyCompleted,
+        this, [this](const QPixmap &pixmap) {
+            emit copyRequested(pixmap);
+            close();
+        });
+    connect(m_exportManager, &RegionExportManager::saveDialogOpening,
+        this, [this]() {
+            m_isDialogOpen = true;
+            hide();
+        });
+    connect(m_exportManager, &RegionExportManager::saveDialogClosed,
+        this, [this](bool saved) {
+            m_isDialogOpen = false;
+            if (saved) {
+                // Get the selected region again for the signal
+                QPixmap selectedRegion = m_exportManager->getSelectedRegion(
+                    m_selectionManager->selectionRect(), effectiveCornerRadius());
+                emit saveRequested(selectedRegion);
+                close();
+            } else {
+                show();
+                activateWindow();
+                raise();
+            }
+        });
+
     // Initialize input handling component
     m_inputHandler = new RegionInputHandler(this);
     m_inputHandler->setSelectionManager(m_selectionManager);
@@ -751,6 +781,10 @@ void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapt
     m_toolManager->setSourcePixmap(&m_backgroundPixmap);
     m_toolManager->setDevicePixelRatio(m_devicePixelRatio);
 
+    // Update export manager with background pixmap and DPR
+    m_exportManager->setBackgroundPixmap(m_backgroundPixmap);
+    m_exportManager->setDevicePixelRatio(m_devicePixelRatio);
+
     qDebug() << "RegionSelector: Initialized for screen" << m_currentScreen->name()
         << "logical size:" << m_currentScreen->geometry().size()
         << "pixmap size:" << m_backgroundPixmap.size()
@@ -800,6 +834,10 @@ void RegionSelector::initializeWithRegion(QScreen* screen, const QRect& region)
     // Update tool manager with background pixmap for mosaic tool
     m_toolManager->setSourcePixmap(&m_backgroundPixmap);
     m_toolManager->setDevicePixelRatio(m_devicePixelRatio);
+
+    // Update export manager with background pixmap and DPR
+    m_exportManager->setBackgroundPixmap(m_backgroundPixmap);
+    m_exportManager->setDevicePixelRatio(m_devicePixelRatio);
 
     qDebug() << "RegionSelector: Initialized with region" << region
         << "on screen" << m_currentScreen->name();
@@ -1068,71 +1106,6 @@ void RegionSelector::handleToolbarClick(ToolbarButton button)
     m_toolbarHandler->handleToolbarClick(button);
 }
 
-QPixmap RegionSelector::getSelectedRegion()
-{
-    QRect sel = m_selectionManager->selectionRect();
-    int radius = effectiveCornerRadius();
-
-    // 使用 device pixels 座標來裁切
-    QPixmap selectedRegion = m_backgroundPixmap.copy(
-        static_cast<int>(sel.x() * m_devicePixelRatio),
-        static_cast<int>(sel.y() * m_devicePixelRatio),
-        static_cast<int>(sel.width() * m_devicePixelRatio),
-        static_cast<int>(sel.height() * m_devicePixelRatio)
-    );
-
-    // KEY FIX: Set DPR BEFORE painting so Qt handles scaling automatically
-    // This ensures annotation sizes (radius, pen width, font) stay in logical units
-    // while positions are automatically converted to device pixels by Qt
-    selectedRegion.setDevicePixelRatio(m_devicePixelRatio);
-
-    // Draw annotations onto the selected region
-    if (!m_annotationLayer->isEmpty()) {
-        QPainter painter(&selectedRegion);
-        painter.setRenderHint(QPainter::Antialiasing, true);
-
-        // Only translate - no manual scale() needed
-        // Qt automatically handles DPR conversion because we set devicePixelRatio above
-        // Annotation at screen position P will appear at (P - sel.topLeft) in logical coords
-        painter.translate(-sel.x(), -sel.y());
-
-        qDebug() << "Drawing annotations: sel=" << sel << "DPR=" << m_devicePixelRatio
-            << "pixmap=" << selectedRegion.size()
-            << "transform=" << painter.transform();
-        m_annotationLayer->draw(painter);
-    }
-
-    // Apply rounded corners mask if radius > 0
-    if (radius > 0) {
-        // Use an explicit alpha mask to guarantee transparent corners across platforms.
-        QImage sourceImage = selectedRegion.toImage().convertToFormat(QImage::Format_ARGB32_Premultiplied);
-        sourceImage.setDevicePixelRatio(m_devicePixelRatio);
-
-        QImage alphaMask(sourceImage.size(), QImage::Format_ARGB32_Premultiplied);
-        alphaMask.setDevicePixelRatio(m_devicePixelRatio);
-        alphaMask.fill(Qt::transparent);
-
-        QPainter maskPainter(&alphaMask);
-        maskPainter.setRenderHint(QPainter::Antialiasing, true);
-        QPainterPath clipPath;
-        clipPath.addRoundedRect(QRectF(0, 0, sel.width(), sel.height()), radius, radius);
-        maskPainter.fillPath(clipPath, Qt::white);
-        maskPainter.end();
-
-        QPainter imagePainter(&sourceImage);
-        imagePainter.setRenderHint(QPainter::Antialiasing, true);
-        imagePainter.setCompositionMode(QPainter::CompositionMode_DestinationIn);
-        imagePainter.drawImage(0, 0, alphaMask);
-        imagePainter.end();
-
-        QPixmap maskedPixmap = QPixmap::fromImage(sourceImage, Qt::NoOpaqueDetection);
-        maskedPixmap.setDevicePixelRatio(m_devicePixelRatio);
-        return maskedPixmap;
-    }
-
-    return selectedRegion;
-}
-
 void RegionSelector::setMultiRegionMode(bool enabled)
 {
     if (m_multiRegionMode == enabled) {
@@ -1193,68 +1166,23 @@ void RegionSelector::cancelMultiRegionCapture()
 
 void RegionSelector::copyToClipboard()
 {
-    QPixmap selectedRegion = getSelectedRegion();
-    QGuiApplication::clipboard()->setPixmap(selectedRegion);
-    qDebug() << "RegionSelector: Copied to clipboard";
-
-    emit copyRequested(selectedRegion);
-    close();
+    m_exportManager->copyToClipboard(
+        m_selectionManager->selectionRect(), effectiveCornerRadius());
+    // Note: close() will be called via copyCompleted signal connection
 }
 
 void RegionSelector::saveToFile()
 {
-    QPixmap selectedRegion = getSelectedRegion();
-
-    auto& fileSettings = FileSettingsManager::instance();
-    QString savePath = fileSettings.loadScreenshotPath();
-    QString dateFormat = fileSettings.loadDateFormat();
-    QString prefix = fileSettings.loadFilenamePrefix();
-    QString timestamp = QDateTime::currentDateTime().toString(dateFormat);
-
-    QString filename;
-    if (prefix.isEmpty()) {
-        filename = QString("Screenshot_%1.png").arg(timestamp);
-    } else {
-        filename = QString("%1_Screenshot_%2.png").arg(prefix).arg(timestamp);
-    }
-    QString defaultName = QDir(savePath).filePath(filename);
-
-    // Hide fullscreen window so save dialog is visible
-    m_isDialogOpen = true;
-    hide();
-
-    QString filePath = QFileDialog::getSaveFileName(
-        nullptr,
-        "Save Screenshot",
-        defaultName,
-        "PNG Image (*.png);;JPEG Image (*.jpg *.jpeg);;All Files (*)"
-    );
-
-    if (!filePath.isEmpty()) {
-        // User selected a file -> save and close
-        if (selectedRegion.save(filePath)) {
-            qDebug() << "RegionSelector: Saved to" << filePath;
-        }
-        else {
-            qDebug() << "RegionSelector: Failed to save to" << filePath;
-        }
-        emit saveRequested(selectedRegion);
-        m_isDialogOpen = false;
-        close();
-    }
-    else {
-        // User cancelled -> restore display
-        m_isDialogOpen = false;
-        show();
-        activateWindow();
-        raise();
-    }
+    // Delegate to export manager - it will emit signals for UI coordination
+    m_exportManager->saveToFile(
+        m_selectionManager->selectionRect(), effectiveCornerRadius(), nullptr);
+    // Note: UI handling (hide/show/close) is done via signal connections
 }
 
 void RegionSelector::finishSelection()
 {
-    QPixmap selectedRegion = getSelectedRegion();
     QRect sel = m_selectionManager->selectionRect();
+    QPixmap selectedRegion = m_exportManager->getSelectedRegion(sel, effectiveCornerRadius());
 
     qDebug() << "finishSelection: selectionRect=" << sel
         << "globalPos=" << localToGlobal(sel.topLeft());

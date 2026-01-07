@@ -47,6 +47,7 @@ class RegionPainter;
 class RegionInputHandler;
 class RegionToolbarHandler;
 class RegionSettingsHelper;
+class RegionExportManager;
 
 // ShapeType and ShapeFillMode are defined in annotations/ShapeAnnotation.h
 
@@ -194,7 +195,6 @@ private:
 
     // Window detection
     void updateWindowDetection(const QPoint &localPos);
-    QPixmap getSelectedRegion();
     void setMultiRegionMode(bool enabled);
     void completeMultiRegionCapture();
     void cancelMultiRegionCapture();
@@ -350,6 +350,9 @@ private:
 
     // Settings helper component
     RegionSettingsHelper* m_settingsHelper;
+
+    // Export manager component
+    RegionExportManager* m_exportManager;
 };
 
 #endif // REGIONSELECTOR_H
