@@ -9,6 +9,8 @@
 #include <QElapsedTimer>
 #include <vector>
 
+#include "scrolling/StitchWorker.h"
+
 class ScrollingCaptureOverlay;
 class ScrollingCaptureToolbar;
 class ScrollingCaptureThumbnail;
@@ -86,6 +88,12 @@ private slots:
     // Frame capture
     void captureFrame();
 
+    // StitchWorker signals (async processing)
+    void onStitchFrameProcessed(const StitchWorker::Result &result);
+    void onStitchFixedElementsDetected(int leading, int trailing);
+    void onStitchQueueNearFull();
+    void onStitchError(const QString &message);
+
 private:
     void setState(State newState);
     void createComponents();
@@ -111,6 +119,8 @@ private:
     // Processing
     ImageStitcher *m_stitcher;
     FixedElementDetector *m_fixedDetector;
+    StitchWorker *m_stitchWorker;
+    bool m_useAsyncStitching = true;  // Use worker thread for stitching
 
     // Capture state
     QRect m_captureRegion;  // In global coordinates
