@@ -2,6 +2,8 @@
 
 #include <QScreen>
 #include <QDebug>
+#include <QtConcurrent>
+#include <unistd.h>
 
 #import <ApplicationServices/ApplicationServices.h>
 #import <CoreGraphics/CoreGraphics.h>
@@ -156,6 +158,7 @@ DetectionFlags WindowDetector::detectionFlags() const
 
 void WindowDetector::refreshWindowList()
 {
+    QMutexLocker locker(&m_cacheMutex);
     m_windowCache.clear();
 
     if (!m_enabled) {
@@ -306,4 +309,124 @@ std::optional<DetectedElement> WindowDetector::detectWindowAt(const QPoint &scre
     }
 
     return std::nullopt;
+}
+
+void WindowDetector::refreshWindowListAsync()
+{
+    m_refreshComplete = false;
+
+    m_refreshFuture = QtConcurrent::run([this]() {
+        std::vector<DetectedElement> newCache;
+
+        // Determine CGWindowList options based on detection flags
+        CGWindowListOption options = kCGWindowListOptionOnScreenOnly;
+        bool detectingSystemUI = m_detectionFlags & DetectionFlag::AllSystemUI;
+        if (!detectingSystemUI) {
+            options |= kCGWindowListExcludeDesktopElements;
+        }
+
+        CFArrayRef windowList = CGWindowListCopyWindowInfo(options, kCGNullWindowID);
+
+        if (!windowList) {
+            m_refreshComplete = true;
+            QMetaObject::invokeMethod(this, "windowListReady", Qt::QueuedConnection);
+            return;
+        }
+
+        CFIndex count = CFArrayGetCount(windowList);
+        pid_t myPid = getpid();
+
+        for (CFIndex i = 0; i < count; ++i) {
+            CFDictionaryRef windowInfo = (CFDictionaryRef)CFArrayGetValueAtIndex(windowList, i);
+
+            CFNumberRef pidRef = (CFNumberRef)CFDictionaryGetValue(windowInfo, kCGWindowOwnerPID);
+            pid_t windowPid = 0;
+            if (pidRef) {
+                CFNumberGetValue(pidRef, kCFNumberIntType, &windowPid);
+            }
+
+            if (windowPid == myPid) {
+                continue;
+            }
+
+            CFNumberRef layerRef = (CFNumberRef)CFDictionaryGetValue(windowInfo, kCGWindowLayer);
+            int windowLayer = 0;
+            if (layerRef) {
+                CFNumberGetValue(layerRef, kCFNumberIntType, &windowLayer);
+            }
+
+            CFDictionaryRef boundsDict = (CFDictionaryRef)CFDictionaryGetValue(windowInfo, kCGWindowBounds);
+            if (!boundsDict) {
+                continue;
+            }
+
+            CGRect cgBounds;
+            if (!CGRectMakeWithDictionaryRepresentation(boundsDict, &cgBounds)) {
+                continue;
+            }
+
+            ElementType elementType = classifyElementType(windowLayer, windowInfo, cgBounds);
+
+            if (!shouldIncludeElementType(elementType, m_detectionFlags)) {
+                continue;
+            }
+
+            int minSize = getMinimumSize(elementType);
+            if (cgBounds.size.width < minSize || cgBounds.size.height < minSize) {
+                continue;
+            }
+
+            CFNumberRef windowIdRef = (CFNumberRef)CFDictionaryGetValue(windowInfo, kCGWindowNumber);
+            uint32_t windowId = 0;
+            if (windowIdRef) {
+                CFNumberGetValue(windowIdRef, kCFNumberSInt32Type, &windowId);
+            }
+
+            QString windowTitle;
+            CFStringRef nameRef = (CFStringRef)CFDictionaryGetValue(windowInfo, kCGWindowName);
+            if (nameRef) {
+                NSString *name = (__bridge NSString *)nameRef;
+                windowTitle = QString::fromNSString(name);
+            }
+
+            QString ownerApp;
+            CFStringRef ownerNameRef = (CFStringRef)CFDictionaryGetValue(windowInfo, kCGWindowOwnerName);
+            if (ownerNameRef) {
+                NSString *ownerName = (__bridge NSString *)ownerNameRef;
+                ownerApp = QString::fromNSString(ownerName);
+            }
+
+            QRect bounds(
+                static_cast<int>(cgBounds.origin.x),
+                static_cast<int>(cgBounds.origin.y),
+                static_cast<int>(cgBounds.size.width),
+                static_cast<int>(cgBounds.size.height)
+            );
+
+            DetectedElement element;
+            element.bounds = bounds;
+            element.windowTitle = windowTitle;
+            element.ownerApp = ownerApp;
+            element.windowLayer = windowLayer;
+            element.windowId = windowId;
+            element.elementType = elementType;
+
+            newCache.push_back(element);
+        }
+
+        CFRelease(windowList);
+
+        {
+            QMutexLocker locker(&m_cacheMutex);
+            m_windowCache = std::move(newCache);
+        }
+
+        m_refreshComplete = true;
+        QMetaObject::invokeMethod(this, "windowListReady", Qt::QueuedConnection);
+    });
+}
+
+bool WindowDetector::isRefreshComplete() const
+{
+    return m_refreshComplete.load();
 }
