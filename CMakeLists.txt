@@ -397,6 +397,7 @@ add_library(snaptray_platform STATIC
         include/capture/DXGICaptureEngine.h
         include/capture/WASAPIAudioCaptureEngine.h
         include/ColorPickerDialog.h
+        include/input/MouseClickTracker.h
     >
 )
 
