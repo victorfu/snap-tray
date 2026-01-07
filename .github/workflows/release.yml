@@ -188,6 +188,9 @@ jobs:
       - name: Setup MSVC Developer Command Prompt
         uses: ilammy/msvc-dev-cmd@v1
 
+      - name: Install Ninja
+        run: choco install ninja -y
+
       # ========================================
       # FetchContent Dependencies Cache
       # ========================================

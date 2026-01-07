@@ -88,6 +88,9 @@ jobs:
       - name: Setup MSVC Developer Command Prompt
         uses: ilammy/msvc-dev-cmd@v1
 
+      - name: Install Ninja
+        run: choco install ninja -y
+
       # ========================================
       # FetchContent Dependencies Cache
       # ========================================
@@ -118,7 +121,7 @@ jobs:
 
       - name: Configure CMake
         run: |
-          cmake -S . -B build `
+          cmake -S . -B build -G Ninja `
             -DCMAKE_BUILD_TYPE=Release `
             -DCMAKE_PREFIX_PATH="$env:QT_ROOT_DIR" `
             -DCMAKE_CXX_COMPILER_LAUNCHER=sccache `

@@ -80,7 +80,7 @@ if not errorlevel 1 (
     set SCCACHE_ARGS=-DCMAKE_CXX_COMPILER_LAUNCHER=sccache -DCMAKE_C_COMPILER_LAUNCHER=sccache
 )
 
-cmake -S "%PROJECT_ROOT%" -B "%BUILD_DIR%" ^
+cmake -S "%PROJECT_ROOT%" -B "%BUILD_DIR%" -G Ninja ^
     -DCMAKE_BUILD_TYPE=Release ^
     -DCMAKE_PREFIX_PATH="%QT_PATH%" ^
     %SCCACHE_ARGS%

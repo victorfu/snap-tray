@@ -67,6 +67,18 @@ endif()
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# ============================================================================
+# MSVC sccache Compatibility: Use /Z7 instead of /Zi for cacheable debug info
+# ============================================================================
+if(MSVC)
+    # Replace /Zi with /Z7 to embed debug info in object files
+    # This allows sccache to cache compilations (PDB files are not cacheable)
+    string(REPLACE "/Zi" "/Z7" CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG}")
+    string(REPLACE "/Zi" "/Z7" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
+    string(REPLACE "/Zi" "/Z7" CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELWITHDEBINFO}")
+    string(REPLACE "/Zi" "/Z7" CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO}")
+endif()
+
 find_package(Qt6 REQUIRED COMPONENTS Widgets Gui Svg Concurrent)
 
 # Enable AUTOMOC for Qt targets (will be disabled for non-Qt dependencies)
