@@ -24,6 +24,26 @@ jobs:
           key: macos-${{ github.ref }}
           restore-keys: macos-
 
+      # ========================================
+      # FetchContent Dependencies Cache
+      # ========================================
+      - name: Cache FetchContent dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            build/_deps/opencv-src
+            build/_deps/opencv-build
+            build/_deps/opencv-subbuild
+            build/_deps/libwebp-src
+            build/_deps/libwebp-build
+            build/_deps/libwebp-subbuild
+            build/_deps/qhotkey-src
+            build/_deps/qhotkey-build
+            build/_deps/qhotkey-subbuild
+          key: deps-macos-${{ hashFiles('CMakeLists.txt') }}
+          restore-keys: |
+            deps-macos-
+
       - name: Configure CMake
         run: |
           cmake -S . -B build \
@@ -58,6 +78,26 @@ jobs:
 
       - name: Setup MSVC Developer Command Prompt
         uses: ilammy/msvc-dev-cmd@v1
+
+      # ========================================
+      # FetchContent Dependencies Cache
+      # ========================================
+      - name: Cache FetchContent dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            build/_deps/opencv-src
+            build/_deps/opencv-build
+            build/_deps/opencv-subbuild
+            build/_deps/libwebp-src
+            build/_deps/libwebp-build
+            build/_deps/libwebp-subbuild
+            build/_deps/qhotkey-src
+            build/_deps/qhotkey-build
+            build/_deps/qhotkey-subbuild
+          key: deps-windows-${{ hashFiles('CMakeLists.txt') }}
+          restore-keys: |
+            deps-windows-
 
       - name: Configure CMake
         run: |

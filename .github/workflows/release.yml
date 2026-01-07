@@ -64,8 +64,41 @@ jobs:
       - name: Install Qt via Homebrew
         run: brew install qt@6
 
-      - name: Install create-dmg
-        run: brew install create-dmg
+      - name: Install build tools
+        run: |
+          brew install create-dmg ccache
+          echo "$(brew --prefix ccache)/libexec" >> $GITHUB_PATH
+
+      # ========================================
+      # Compiler Cache
+      # ========================================
+      - name: Setup ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: release-macos-${{ github.ref }}
+          restore-keys: |
+            release-macos-
+            macos-
+
+      # ========================================
+      # FetchContent Dependencies Cache
+      # ========================================
+      - name: Cache FetchContent dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            build/_deps/opencv-src
+            build/_deps/opencv-build
+            build/_deps/opencv-subbuild
+            build/_deps/libwebp-src
+            build/_deps/libwebp-build
+            build/_deps/libwebp-subbuild
+            build/_deps/qhotkey-src
+            build/_deps/qhotkey-build
+            build/_deps/qhotkey-subbuild
+          key: deps-macos-${{ hashFiles('CMakeLists.txt') }}
+          restore-keys: |
+            deps-macos-
 
       # Code signing step
       # For full Developer ID signing and notarization, set these secrets:
@@ -137,8 +170,34 @@ jobs:
           arch: 'win64_msvc2022_64'
           cache: true
 
+      # ========================================
+      # Compiler Cache
+      # ========================================
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@v0.0.6
+
       - name: Setup MSVC Developer Command Prompt
         uses: ilammy/msvc-dev-cmd@v1
+
+      # ========================================
+      # FetchContent Dependencies Cache
+      # ========================================
+      - name: Cache FetchContent dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            build/_deps/opencv-src
+            build/_deps/opencv-build
+            build/_deps/opencv-subbuild
+            build/_deps/libwebp-src
+            build/_deps/libwebp-build
+            build/_deps/libwebp-subbuild
+            build/_deps/qhotkey-src
+            build/_deps/qhotkey-build
+            build/_deps/qhotkey-subbuild
+          key: deps-windows-${{ hashFiles('CMakeLists.txt') }}
+          restore-keys: |
+            deps-windows-
 
       - name: Install NSIS
         run: choco install nsis -y
@@ -159,6 +218,7 @@ jobs:
         shell: cmd
         env:
           QT_PATH: ${{ env.QT_ROOT_DIR }}
+          SCCACHE_GHA_ENABLED: "true"
         run: packaging\windows\package.bat
 
       - name: Upload Windows artifact
