@@ -6,40 +6,48 @@ A Qt6-based screenshot and screen recording application for Windows and macOS.
 
 **Windows**: Use `cmd.exe` to execute build commands, not bash.
 
-### Debug Build (Development)
+Use scripts in `scripts/` for building and testing. These scripts automatically handle Qt dependency deployment (`windeployqt`) on first run.
 
-Use Debug build during development for better debugging experience.
+### Debug Build and Run (Development)
 
 **Windows**:
 
 ```batch
-cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug
-cmake --build build
+scripts\build-and-run.bat
 ```
 
 **macOS**:
 
 ```bash
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH="$(brew --prefix qt)"
-cmake --build build
+./scripts/build-and-run.sh
 ```
 
-### Release Build (Production Testing)
-
-Use Release build to test production behavior before packaging.
+### Release Build and Run (Production Testing)
 
 **Windows**:
 
 ```batch
-cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
-cmake --build build
+scripts\build-and-run-release.bat
 ```
 
 **macOS**:
 
 ```bash
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$(brew --prefix qt)"
-cmake --build build
+./scripts/build-and-run-release.sh
+```
+
+### Running Tests
+
+**Windows**:
+
+```batch
+scripts\run-tests.bat
+```
+
+**macOS**:
+
+```bash
+./scripts/run-tests.sh
 ```
 
 ### Packaging (Release)
@@ -68,12 +76,6 @@ Output files:
 MSIX local testing:
 ```powershell
 Add-AppPackage -Path "dist\SnapTray-<version>.msix" -AllowUnsigned
-```
-
-### Running Tests
-
-```bash
-cd build && ctest --output-on-failure
 ```
 
 ### Prerequisites

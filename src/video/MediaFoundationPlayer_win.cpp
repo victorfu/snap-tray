@@ -2,6 +2,7 @@
 
 #ifdef Q_OS_WIN
 
+#include <QCoreApplication>
 #include <QDebug>
 #include <QDir>
 #include <QImage>
@@ -169,6 +170,7 @@ private:
     bool m_pendingSeek = false;
     qint64 m_seekPosition = 0;
     bool m_mfInitialized = false;
+    bool m_firstFrameReceived = false;
 
     QMutex m_mutex;
 };
@@ -193,12 +195,23 @@ STDMETHODIMP SampleGrabberCallback::OnProcessSample(REFGUID majorType, DWORD dwS
 
     // Create QImage from RGB32 buffer
     // Media Foundation outputs bottom-up, so we need to flip
-    int stride = m_width * 4;
+    // Calculate actual stride (may include padding for memory alignment)
+    int minStride = m_width * 4;
+    int actualStride = static_cast<int>(dwSampleSize / m_height);
+
+    // Validate buffer size
+    if (actualStride < minStride || dwSampleSize < static_cast<DWORD>(m_height * minStride)) {
+        qWarning() << "OnProcessSample: Invalid buffer size - got:" << dwSampleSize
+                   << "expected min:" << (m_height * minStride)
+                   << "stride:" << actualStride << "minStride:" << minStride;
+        return S_OK;
+    }
+
     QImage frame(m_width, m_height, QImage::Format_RGB32);
 
     for (int y = 0; y < m_height; y++) {
-        const BYTE *srcRow = pSampleBuffer + (m_height - 1 - y) * stride;
-        memcpy(frame.scanLine(y), srcRow, stride);
+        const BYTE *srcRow = pSampleBuffer + (m_height - 1 - y) * actualStride;
+        memcpy(frame.scanLine(y), srcRow, minStride);
     }
 
     qint64 timestampMs = llSampleTime / 10000; // 100ns -> ms
@@ -303,6 +316,8 @@ bool MediaFoundationPlayer::load(const QString &filePath)
     // Start playback briefly to get the first frame, then pause
     if (m_hasVideo && m_session) {
         qDebug() << "MediaFoundationPlayer: Starting briefly to get first frame...";
+        m_firstFrameReceived = false;
+
         PROPVARIANT varStart;
         PropVariantInit(&varStart);
         varStart.vt = VT_I8;
@@ -312,10 +327,21 @@ bool MediaFoundationPlayer::load(const QString &filePath)
         PropVariantClear(&varStart);
 
         if (SUCCEEDED(startHr)) {
-            // Give time for first frame to be decoded and delivered
-            Sleep(150);
+            // Wait for first frame with event-driven polling
+            const int maxWaitMs = 500;
+            const int pollIntervalMs = 10;
+            int waitedMs = 0;
+
+            while (!m_firstFrameReceived && waitedMs < maxWaitMs) {
+                Sleep(pollIntervalMs);
+                waitedMs += pollIntervalMs;
+                // Process Qt events to allow frame signal delivery
+                QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
+            }
+
             m_session->Pause();
-            qDebug() << "MediaFoundationPlayer: Paused after getting first frame";
+            qDebug() << "MediaFoundationPlayer: First frame wait completed in"
+                     << waitedMs << "ms, received:" << m_firstFrameReceived;
         }
     }
 
@@ -694,8 +720,8 @@ bool MediaFoundationPlayer::addVideoOutputNode(IMFTopology *topology, IMFTopolog
         return false;
     }
 
-    // Configure for video processing
-    hr = activate->SetUINT32(MF_SAMPLEGRABBERSINK_IGNORE_CLOCK, FALSE);
+    // Configure for immediate frame delivery (don't wait for presentation clock)
+    hr = activate->SetUINT32(MF_SAMPLEGRABBERSINK_IGNORE_CLOCK, TRUE);
 
     hr = node->SetObject(activate);
     activate->Release();
@@ -902,6 +928,7 @@ void MediaFoundationPlayer::handleEndOfStream()
 void MediaFoundationPlayer::onFrameReceived(const QImage &frame, qint64 timestampMs)
 {
     Q_UNUSED(timestampMs)
+    m_firstFrameReceived = true;
     // Marshal to main thread since this is called from MF worker thread
     QMetaObject::invokeMethod(this, [this, frame]() {
         emit frameReady(frame);
