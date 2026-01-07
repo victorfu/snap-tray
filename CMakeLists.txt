@@ -369,10 +369,12 @@ add_library(snaptray_platform STATIC
         include/capture/SCKCaptureEngine.h
         include/capture/CoreAudioCaptureEngine.h
         include/ColorPickerDialog.h
-        include/OCRManager.h
-        include/WindowDetector.h
         include/input/MouseClickTracker.h
     >
+
+    # Cross-platform headers with Q_OBJECT (need MOC on all platforms)
+    include/OCRManager.h
+    include/WindowDetector.h
 
     # Windows sources
     $<$<PLATFORM_ID:Windows>:
@@ -387,12 +389,14 @@ add_library(snaptray_platform STATIC
         src/video/MediaFoundationPlayer_win.cpp
         src/input/MouseClickTracker_win.cpp
         src/scrolling/AutoScrollController_win.cpp
+        src/ColorPickerDialog_win.cpp
     >
     # Windows headers with Q_OBJECT
     $<$<PLATFORM_ID:Windows>:
         include/MediaFoundationEncoder.h
         include/capture/DXGICaptureEngine.h
         include/capture/WASAPIAudioCaptureEngine.h
+        include/ColorPickerDialog.h
     >
 )
 
