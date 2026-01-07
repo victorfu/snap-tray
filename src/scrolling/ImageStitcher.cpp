@@ -1,5 +1,6 @@
 #include "scrolling/ImageStitcher.h"
 
+#include <QDebug>
 #include <cmath>
 
 ImageStitcher::ImageStitcher(QObject *parent)
@@ -103,23 +104,22 @@ bool ImageStitcher::undoLastFrame()
 }
 
 // Helper to save current state to history for undo support
-void saveHistoryEntry(std::vector<ImageStitcher::HistoryEntry> &history,
-                      const QImage &frame, const QRect &viewport,
-                      int validHeight, int validWidth,
-                      ImageStitcher::ScrollDirection direction)
+void ImageStitcher::saveHistoryEntry(const QImage &frame, const QRect &viewport,
+                                     int validHeight, int validWidth,
+                                     ScrollDirection direction)
 {
-    ImageStitcher::HistoryEntry entry;
+    HistoryEntry entry;
     entry.frame = frame;
     entry.viewport = viewport;
     entry.validHeight = validHeight;
     entry.validWidth = validWidth;
     entry.direction = direction;
 
-    history.push_back(entry);
+    m_history.push_back(entry);
 
     // Keep history size bounded
-    while (history.size() > ImageStitcher::MAX_HISTORY_SIZE) {
-        history.erase(history.begin());
+    while (m_history.size() > MAX_HISTORY_SIZE) {
+        m_history.erase(m_history.begin());
     }
 }
 
@@ -142,7 +142,7 @@ ImageStitcher::StitchResult ImageStitcher::addFrame(const QImage &frame)
         m_currentViewportRect = QRect(0, 0, frame.width(), frame.height());
 
         // Save initial state to history
-        saveHistoryEntry(m_history, m_lastFrame, m_currentViewportRect,
+        saveHistoryEntry(m_lastFrame, m_currentViewportRect,
                          m_validHeight, m_validWidth, m_lastSuccessfulDirection);
 
         result.success = true;
@@ -177,7 +177,7 @@ ImageStitcher::StitchResult ImageStitcher::addFrame(const QImage &frame)
         if (result.success && result.confidence >= m_stitchConfig.confidenceThreshold) {
             m_lastFrame = frame.convertToFormat(QImage::Format_RGB32);
             m_frameCount++;
-            saveHistoryEntry(m_history, m_lastFrame, m_currentViewportRect,
+            saveHistoryEntry(m_lastFrame, m_currentViewportRect,
                              m_validHeight, m_validWidth, m_lastSuccessfulDirection);
             emit progressUpdated(m_frameCount, getCurrentSize());
             return result;
@@ -188,7 +188,7 @@ ImageStitcher::StitchResult ImageStitcher::addFrame(const QImage &frame)
         if (result.success && result.confidence >= m_stitchConfig.confidenceThreshold) {
             m_lastFrame = frame.convertToFormat(QImage::Format_RGB32);
             m_frameCount++;
-            saveHistoryEntry(m_history, m_lastFrame, m_currentViewportRect,
+            saveHistoryEntry(m_lastFrame, m_currentViewportRect,
                              m_validHeight, m_validWidth, m_lastSuccessfulDirection);
             emit progressUpdated(m_frameCount, getCurrentSize());
             return result;
@@ -200,7 +200,7 @@ ImageStitcher::StitchResult ImageStitcher::addFrame(const QImage &frame)
         if (result.success && result.confidence >= m_stitchConfig.confidenceThreshold) {
             m_lastFrame = frame.convertToFormat(QImage::Format_RGB32);
             m_frameCount++;
-            saveHistoryEntry(m_history, m_lastFrame, m_currentViewportRect,
+            saveHistoryEntry(m_lastFrame, m_currentViewportRect,
                              m_validHeight, m_validWidth, m_lastSuccessfulDirection);
             emit progressUpdated(m_frameCount, getCurrentSize());
             return result;
@@ -227,7 +227,7 @@ ImageStitcher::StitchResult ImageStitcher::addFrame(const QImage &frame)
     if (result.success) {
         m_lastFrame = frame.convertToFormat(QImage::Format_RGB32);
         m_frameCount++;
-        saveHistoryEntry(m_history, m_lastFrame, m_currentViewportRect,
+        saveHistoryEntry(m_lastFrame, m_currentViewportRect,
                          m_validHeight, m_validWidth, m_lastSuccessfulDirection);
         emit progressUpdated(m_frameCount, getCurrentSize());
     }

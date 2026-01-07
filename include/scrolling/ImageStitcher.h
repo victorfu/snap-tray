@@ -138,6 +138,7 @@ private:
     StitchResult applyCandidate(const QImage &newFrame, const MatchCandidate &candidate, Algorithm algorithm);
     StitchResult performStitch(const QImage &newFrame, int overlapPixels, ScrollDirection direction);
     bool wouldCreateDuplicate(const QImage &newFrame, int overlapPixels, ScrollDirection direction) const;
+    void saveHistoryEntry(const QImage &frame, const QRect &viewport, int validHeight, int validWidth, ScrollDirection direction);
 
     Algorithm m_algorithm = Algorithm::Auto;
     CaptureMode m_captureMode = CaptureMode::Vertical;

@@ -36,11 +36,19 @@ public:
     };
 
     struct Config {
-        double nccThreshold = 0.85;           // Minimum NCC for pass
-        double mseThreshold = 0.08;           // Maximum normalized MSE for pass (0..1)
-        double edgeAlignThreshold = 0.80;     // Minimum edge alignment score
-        int sampleStripHeight = 8;            // Height of strip to sample at seam
-        bool useEdgeAlignment = true;         // Enable edge-based scoring
+        double nccThreshold;           // Minimum NCC for pass
+        double mseThreshold;           // Maximum normalized MSE for pass (0..1)
+        double edgeAlignThreshold;     // Minimum edge alignment score
+        int sampleStripHeight;         // Height of strip to sample at seam
+        bool useEdgeAlignment;         // Enable edge-based scoring
+
+        Config()
+            : nccThreshold(0.85)
+            , mseThreshold(0.08)
+            , edgeAlignThreshold(0.80)
+            , sampleStripHeight(8)
+            , useEdgeAlignment(true)
+        {}
     };
 
     struct Result {

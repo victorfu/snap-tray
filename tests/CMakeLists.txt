@@ -891,6 +891,9 @@ set(OPENCV_SCROLLING_INCLUDES
     ${CMAKE_BINARY_DIR}
     ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/core/include
     ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/imgproc/include
+    ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/features2d/include
+    ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/calib3d/include
+    ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/flann/include
 )
 
 add_executable(Scrolling_ImageStitcher

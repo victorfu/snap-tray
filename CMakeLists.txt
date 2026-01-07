@@ -491,6 +491,8 @@ set(HEADERS
     include/scrolling/ImageStitcher.h
     include/scrolling/FixedElementDetector.h
     include/scrolling/AutoScrollController.h
+    include/scrolling/FrameStabilityDetector.h
+    include/scrolling/SeamQualityEvaluator.h
     # Stitching algorithms (new modular stitching system)
     include/stitching/FeatureMatcher.h
     include/stitching/OpticalFlowPredictor.h
