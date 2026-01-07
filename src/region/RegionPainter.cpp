@@ -14,6 +14,7 @@
 #include "RegionSelector.h"  // For ToolbarButton enum and isToolManagerHandledTool
 
 #include <QPainter>
+#include <QPainterPath>
 #include <QWidget>
 #include <QtMath>
 
@@ -156,17 +157,23 @@ void RegionPainter::drawOverlay(QPainter& painter)
     bool hasSelection = m_selectionManager->hasActiveSelection() && sel.isValid();
 
     if (m_multiRegionMode && m_multiRegionManager) {
-        painter.fillRect(m_parentWidget->rect(), dimColor);
-        painter.setCompositionMode(QPainter::CompositionMode_Clear);
+        // Use QPainterPath subtraction instead of CompositionMode_Clear
+        // CompositionMode_Clear doesn't work correctly on Windows (produces black instead of transparent)
+        QPainterPath dimPath;
+        dimPath.addRect(m_parentWidget->rect());
 
         const auto regions = m_multiRegionManager->regions();
         for (const auto& region : regions) {
-            painter.fillRect(region.rect, Qt::transparent);
+            QPainterPath regionPath;
+            regionPath.addRect(region.rect);
+            dimPath = dimPath.subtracted(regionPath);
         }
         if (m_selectionManager->isSelecting() && m_multiRegionManager->activeIndex() < 0 && hasSelection) {
-            painter.fillRect(sel, Qt::transparent);
+            QPainterPath selPath;
+            selPath.addRect(sel);
+            dimPath = dimPath.subtracted(selPath);
         }
-        painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
+        painter.fillPath(dimPath, dimColor);
         return;
     }
 
