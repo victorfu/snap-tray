@@ -92,14 +92,29 @@ void RegionPainter::setDevicePixelRatio(qreal ratio)
     m_devicePixelRatio = ratio;
 }
 
-void RegionPainter::paint(QPainter& painter, const QPixmap& background)
+void RegionPainter::paint(QPainter& painter, const QPixmap& background, const QRect& dirtyRect)
 {
     if (!m_parentWidget || !m_selectionManager) {
         return;
     }
 
-    // Draw the captured background scaled to fit the widget (logical pixels)
-    painter.drawPixmap(m_parentWidget->rect(), background);
+    // Use dirty rect for optimized partial repainting
+    // Only draw the background portion that needs updating
+    const QRect updateRect = dirtyRect.isEmpty() ? m_parentWidget->rect() : dirtyRect;
+
+    // Draw only the dirty portion of the background
+    // This is much faster than drawing the entire background on high-DPI screens
+    if (!background.isNull()) {
+        // Calculate source rect in pixmap coordinates (accounting for device pixel ratio)
+        const qreal dpr = background.devicePixelRatio();
+        const QRect sourceRect(
+            static_cast<int>(updateRect.x() * dpr),
+            static_cast<int>(updateRect.y() * dpr),
+            static_cast<int>(updateRect.width() * dpr),
+            static_cast<int>(updateRect.height() * dpr)
+        );
+        painter.drawPixmap(updateRect, background, sourceRect);
+    }
 
     // Draw dimmed overlay
     drawOverlay(painter);

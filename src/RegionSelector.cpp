@@ -891,9 +891,14 @@ void RegionSelector::updateWindowDetection(const QPoint& localPos)
     }
 }
 
-void RegionSelector::paintEvent(QPaintEvent*)
+void RegionSelector::paintEvent(QPaintEvent* event)
 {
     QPainter painter(this);
+
+    // Use the dirty rect for clipping to avoid full repaint
+    const QRect dirtyRect = event->rect();
+    painter.setClipRect(dirtyRect);
+
     painter.setRenderHint(QPainter::SmoothPixmapTransform);
     painter.setRenderHint(QPainter::Antialiasing);
 
@@ -910,7 +915,7 @@ void RegionSelector::paintEvent(QPaintEvent*)
     m_painter->setMultiRegionMode(m_multiRegionMode);
 
     // Delegate core painting (background, overlay, selection, annotations)
-    m_painter->paint(painter, m_backgroundPixmap);
+    m_painter->paint(painter, m_backgroundPixmap, dirtyRect);
 
     // Draw toolbar and widgets (UI management stays in RegionSelector)
     QRect selectionRect = m_selectionManager->selectionRect();

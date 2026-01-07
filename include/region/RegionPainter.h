@@ -52,8 +52,9 @@ public:
      *
      * @param painter The painter to draw with
      * @param background The captured background pixmap
+     * @param dirtyRect Optional dirty rect for partial updates (empty = full repaint)
      */
-    void paint(QPainter& painter, const QPixmap& background);
+    void paint(QPainter& painter, const QPixmap& background, const QRect& dirtyRect = QRect());
 
     // Configuration setters (call before paint)
     void setHighlightedWindowRect(const QRect& rect);

@@ -87,7 +87,6 @@ private:
     QComboBox *m_recordingOutputFormatCombo;
     QCheckBox *m_recordingAutoSaveCheckbox;
     QCheckBox *m_recordingShowPreviewCheckbox;
-    QCheckBox *m_recordingAnnotationCheckbox;
 
     // Countdown settings
     QCheckBox *m_countdownEnabledCheckbox;

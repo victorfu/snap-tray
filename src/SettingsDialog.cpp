@@ -154,7 +154,7 @@ void SettingsDialog::setupGeneralTab(QWidget *tab)
     QLabel *styleLabel = new QLabel("Toolbar Style:", tab);
     styleLabel->setFixedWidth(120);
     m_toolbarStyleCombo = new QComboBox(tab);
-    m_toolbarStyleCombo->addItem("Dark (Default)", static_cast<int>(ToolbarStyleType::Dark));
+    m_toolbarStyleCombo->addItem("Dark", static_cast<int>(ToolbarStyleType::Dark));
     m_toolbarStyleCombo->addItem("Light", static_cast<int>(ToolbarStyleType::Light));
     styleLayout->addWidget(styleLabel);
     styleLayout->addWidget(m_toolbarStyleCombo);
@@ -495,6 +495,7 @@ void SettingsDialog::setupRecordingTab(QWidget *tab)
     QLabel *formatLabel = new QLabel("Output Format:", tab);
     formatLabel->setFixedWidth(120);
     m_recordingOutputFormatCombo = new QComboBox(tab);
+    m_recordingOutputFormatCombo->setMinimumWidth(120);
     m_recordingOutputFormatCombo->addItem("MP4 (H.264)", 0);
     m_recordingOutputFormatCombo->addItem("GIF", 1);
     m_recordingOutputFormatCombo->addItem("WebP", 2);
@@ -613,11 +614,6 @@ void SettingsDialog::setupRecordingTab(QWidget *tab)
     m_recordingAutoSaveCheckbox = new QCheckBox("Auto-save recordings (no save dialog)", tab);
     layout->addWidget(m_recordingAutoSaveCheckbox);
 
-    // ========== Annotation option ==========
-    m_recordingAnnotationCheckbox = new QCheckBox("Enable annotation during recording", tab);
-    m_recordingAnnotationCheckbox->setToolTip("Draw annotations while recording. Annotations will be embedded in the video.");
-    layout->addWidget(m_recordingAnnotationCheckbox);
-
     // ========== Countdown settings ==========
     layout->addSpacing(16);
     QLabel *countdownHeader = new QLabel("Countdown", tab);
@@ -689,7 +685,6 @@ void SettingsDialog::setupRecordingTab(QWidget *tab)
     m_recordingShowPreviewCheckbox->setChecked(
         settings.value("recording/showPreview", true).toBool());
     m_recordingAutoSaveCheckbox->setChecked(settings.value("recording/autoSave", false).toBool());
-    m_recordingAnnotationCheckbox->setChecked(settings.value("recording/annotationEnabled", false).toBool());
 
     // Load countdown settings
     bool countdownEnabled = settings.value("recording/countdownEnabled", true).toBool();
@@ -849,8 +844,6 @@ void SettingsDialog::onSave()
         m_recordingShowPreviewCheckbox->isChecked());
     recordingSettings.setValue("recording/autoSave",
         m_recordingAutoSaveCheckbox->isChecked());
-    recordingSettings.setValue("recording/annotationEnabled",
-        m_recordingAnnotationCheckbox->isChecked());
 
     // Save countdown settings
     recordingSettings.setValue("recording/countdownEnabled",

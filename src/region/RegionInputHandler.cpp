@@ -591,12 +591,14 @@ bool RegionInputHandler::handleSelectionToolPress(const QPoint& pos)
 
             auto handle = m_selectionManager->hitTestHandle(pos);
             if (handle != SelectionStateManager::ResizeHandle::None) {
+                m_lastSelectionRect = m_selectionManager->selectionRect();
                 m_selectionManager->startResize(pos, handle);
                 emit updateRequested();
                 return true;
             }
 
             if (m_selectionManager->hitTestMove(pos)) {
+                m_lastSelectionRect = m_selectionManager->selectionRect();
                 m_selectionManager->startMove(pos);
                 emit updateRequested();
                 return true;
@@ -612,6 +614,7 @@ bool RegionInputHandler::handleSelectionToolPress(const QPoint& pos)
             m_selectionManager->setSelectionRect(activeRect);
             auto handle = m_selectionManager->hitTestHandle(pos);
             if (handle != SelectionStateManager::ResizeHandle::None) {
+                m_lastSelectionRect = m_selectionManager->selectionRect();
                 m_selectionManager->startResize(pos, handle);
                 emit updateRequested();
                 return true;
@@ -627,12 +630,14 @@ bool RegionInputHandler::handleSelectionToolPress(const QPoint& pos)
 
     auto handle = m_selectionManager->hitTestHandle(pos);
     if (handle != SelectionStateManager::ResizeHandle::None) {
+        m_lastSelectionRect = m_selectionManager->selectionRect();
         m_selectionManager->startResize(pos, handle);
         emit updateRequested();
         return true;
     }
 
     if (m_selectionManager->hitTestMove(pos)) {
+        m_lastSelectionRect = m_selectionManager->selectionRect();
         m_selectionManager->startMove(pos);
         emit updateRequested();
         return true;
@@ -976,7 +981,46 @@ void RegionInputHandler::handleThrottledUpdate()
     if (m_selectionManager->isSelecting() || m_selectionManager->isResizing() || m_selectionManager->isMoving()) {
         if (m_updateThrottler->shouldUpdate(UpdateThrottler::ThrottleType::Selection)) {
             m_updateThrottler->reset(UpdateThrottler::ThrottleType::Selection);
-            emit updateRequested();
+
+            // Calculate dirty rect for selection changes
+            // Include both old and new selection rects, plus dimension info area
+            QRect currentSelRect = m_selectionManager->selectionRect().normalized();
+
+            // Expand to include selection border and handles (8px handles + 2px border)
+            const int handleMargin = 12;
+            QRect expandedCurrent = currentSelRect.adjusted(-handleMargin, -handleMargin, handleMargin, handleMargin);
+            QRect expandedLast = m_lastSelectionRect.adjusted(-handleMargin, -handleMargin, handleMargin, handleMargin);
+
+            QRect dirtyRect = expandedCurrent.united(expandedLast);
+
+            // Include dimension info panel area (above selection)
+            const int dimInfoHeight = 40;
+            const int dimInfoWidth = 180;
+            QRect dimInfoRect(currentSelRect.left(), currentSelRect.top() - dimInfoHeight - 10,
+                              dimInfoWidth, dimInfoHeight);
+            QRect lastDimInfoRect(m_lastSelectionRect.left(), m_lastSelectionRect.top() - dimInfoHeight - 10,
+                                  dimInfoWidth, dimInfoHeight);
+            dirtyRect = dirtyRect.united(dimInfoRect).united(lastDimInfoRect);
+
+            // Include crosshair lines (full width/height thin strips)
+            dirtyRect = dirtyRect.united(QRect(0, m_currentPoint.y() - 2, m_parentWidget->width(), 4));
+            dirtyRect = dirtyRect.united(QRect(m_currentPoint.x() - 2, 0, 4, m_parentWidget->height()));
+
+            // Include magnifier panel area
+            const int panelWidth = MagnifierPanel::kWidth;
+            const int totalHeight = MagnifierPanel::kHeight + 85;
+            int panelX = m_currentPoint.x() - panelWidth / 2;
+            panelX = qMax(10, qMin(panelX, m_parentWidget->width() - panelWidth - 10));
+            int panelYBelow = m_currentPoint.y() + 25;
+            int panelYAbove = m_currentPoint.y() - totalHeight - 25;
+            QRect magRect(panelX - 5, qMin(panelYAbove, panelYBelow) - 5,
+                          panelWidth + 10, totalHeight + qAbs(panelYBelow - panelYAbove) + 10);
+            dirtyRect = dirtyRect.united(magRect).united(m_lastMagnifierRect);
+
+            m_lastSelectionRect = currentSelRect;
+            m_lastMagnifierRect = magRect;
+
+            emit updateRequested(dirtyRect);
         }
     }
     else if (m_isDrawing) {
