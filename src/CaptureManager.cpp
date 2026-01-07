@@ -76,9 +76,10 @@ void CaptureManager::startRegionCapture()
     m_regionSelector = new RegionSelector();
 
     // 5. 設置視窗偵測器 (if available on this platform)
+    // Use async version to avoid blocking UI startup on high-DPI screens
     if (m_windowDetector) {
         m_windowDetector->setScreen(targetScreen);
-        m_windowDetector->refreshWindowList();
+        m_windowDetector->refreshWindowListAsync();
         m_regionSelector->setWindowDetector(m_windowDetector);
     }
 
@@ -145,9 +146,10 @@ void CaptureManager::startRegionCaptureWithPreset(const QRect &region, QScreen *
     m_regionSelector = new RegionSelector();
 
     // Setup window detector if available
+    // Use async version to avoid blocking UI startup
     if (m_windowDetector) {
         m_windowDetector->setScreen(screen);
-        m_windowDetector->refreshWindowList();
+        m_windowDetector->refreshWindowListAsync();
         m_regionSelector->setWindowDetector(m_windowDetector);
     }
 

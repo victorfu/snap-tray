@@ -180,19 +180,49 @@ The packaging scripts automatically perform Release builds, deploy Qt dependenci
 # Output: dist/SnapTray-<version>-macOS.dmg
 ```
 
-**Windows (NSIS Installer):**
+**Windows:**
 ```batch
 REM Prerequisites:
 REM   - Qt 6: https://www.qt.io/download-qt-installer
-REM   - NSIS: winget install NSIS.NSIS
+REM   - NSIS: winget install NSIS.NSIS (for NSIS installer)
+REM   - Windows 10 SDK: Included with Visual Studio (for MSIX package)
 REM   - Visual Studio Build Tools or Visual Studio
 
 REM Set Qt path (if not default location)
 set QT_PATH=C:\Qt\6.x\msvc2022_64
 
-packaging\windows\package.bat
-REM Output: dist\SnapTray-<version>-Setup.exe
+packaging\windows\package.bat           REM Build both NSIS and MSIX
+packaging\windows\package.bat nsis      REM Build NSIS installer only
+packaging\windows\package.bat msix      REM Build MSIX package only
+
+REM Output:
+REM   dist\SnapTray-<version>-Setup.exe     (NSIS installer)
+REM   dist\SnapTray-<version>.msix          (MSIX package)
+REM   dist\SnapTray-<version>.msixupload    (for Store submission)
 ```
+
+**MSIX Local Installation (Testing):**
+
+Install the unsigned MSIX package locally for testing:
+```powershell
+Add-AppPackage -Path "dist\SnapTray-1.0.7.msix" -AllowUnsigned
+```
+
+To uninstall:
+```powershell
+Get-AppPackage SnapTray* | Remove-AppPackage
+```
+
+**Microsoft Store Submission:**
+
+1. Sign in to [Partner Center](https://partner.microsoft.com)
+2. Create a new app reservation or select existing app
+3. Create a new submission
+4. Upload the `.msixupload` file
+5. Complete store listing, pricing, and age rating
+6. Submit for certification
+
+> **Note:** Store submission requires a Microsoft Partner Center account. The package is automatically signed by Microsoft during the submission process.
 
 #### Code Signing (Optional)
 
@@ -212,11 +242,19 @@ export NOTARIZE_PASSWORD="xxxx-xxxx-xxxx-xxxx"  # App-Specific Password
 
 **Windows Signing:**
 ```batch
-REM Requires Code Signing Certificate (purchase from DigiCert, Sectigo, etc.)
+REM NSIS installer signing (requires Code Signing Certificate)
 set CODESIGN_CERT=path\to\certificate.pfx
 set CODESIGN_PASSWORD=your-password
-packaging\windows\package.bat
+packaging\windows\package.bat nsis
+
+REM MSIX signing (for sideloading/enterprise deployment)
+set MSIX_SIGN_CERT=path\to\certificate.pfx
+set MSIX_SIGN_PASSWORD=your-password
+set PUBLISHER_ID=CN=SnapTray Dev
+packaging\windows\package.bat msix
 ```
+
+> **Note:** For Microsoft Store distribution, MSIX signing is not required - Microsoft signs the package during the certification process.
 
 ## Build Optimization
 
@@ -374,8 +412,13 @@ snap-tray/
     |   `-- entitlements.plist
     `-- windows/
         |-- package.bat
+        |-- package-nsis.bat
+        |-- package-msix.bat
         |-- installer.nsi
-        `-- license.txt
+        |-- license.txt
+        |-- AppxManifest.xml.in
+        |-- generate-assets.ps1
+        `-- assets/
 ```
 
 ## Architecture

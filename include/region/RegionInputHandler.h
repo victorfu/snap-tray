@@ -203,7 +203,7 @@ private:
     QPointF m_emojiStartCenter;
 
     // Constants
-    static constexpr int WINDOW_DETECTION_MIN_DISTANCE_SQ = 25;  // 5px threshold squared
+    static constexpr int WINDOW_DETECTION_MIN_DISTANCE_SQ = 64;  // 8px threshold squared (improved for high-DPI)
 };
 
 #endif // REGIONINPUTHANDLER_H

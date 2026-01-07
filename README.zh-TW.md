@@ -180,19 +180,49 @@ cd build && ctest --output-on-failure
 # 輸出：dist/SnapTray-<version>-macOS.dmg
 ```
 
-**Windows（NSIS 安裝程式）：**
+**Windows：**
 ```batch
 REM 前置需求：
 REM   - Qt 6: https://www.qt.io/download-qt-installer
-REM   - NSIS: winget install NSIS.NSIS
+REM   - NSIS: winget install NSIS.NSIS（用於 NSIS 安裝程式）
+REM   - Windows 10 SDK：Visual Studio 已包含（用於 MSIX 套件）
 REM   - Visual Studio Build Tools 或 Visual Studio
 
 REM 設定 Qt 路徑（如果不是預設位置）
 set QT_PATH=C:\Qt\6.x\msvc2022_64
 
-packaging\windows\package.bat
-REM 輸出：dist\SnapTray-<version>-Setup.exe
+packaging\windows\package.bat           REM 建置 NSIS 和 MSIX
+packaging\windows\package.bat nsis      REM 僅建置 NSIS 安裝程式
+packaging\windows\package.bat msix      REM 僅建置 MSIX 套件
+
+REM 輸出：
+REM   dist\SnapTray-<version>-Setup.exe     (NSIS 安裝程式)
+REM   dist\SnapTray-<version>.msix          (MSIX 套件)
+REM   dist\SnapTray-<version>.msixupload    (用於 Store 提交)
 ```
+
+**MSIX 本地安裝（測試用）：**
+
+在本地安裝未簽章的 MSIX 套件進行測試：
+```powershell
+Add-AppPackage -Path "dist\SnapTray-1.0.7.msix" -AllowUnsigned
+```
+
+解除安裝：
+```powershell
+Get-AppPackage SnapTray* | Remove-AppPackage
+```
+
+**Microsoft Store 提交：**
+
+1. 登入 [Partner Center](https://partner.microsoft.com)
+2. 建立新的應用程式保留或選擇現有應用程式
+3. 建立新的提交
+4. 上傳 `.msixupload` 檔案
+5. 完成 Store 清單、定價與年齡分級
+6. 提交認證
+
+> **注意：** Store 提交需要 Microsoft Partner Center 帳戶。套件會在提交過程中由 Microsoft 自動簽章。
 
 #### Code Signing（可選）
 
@@ -212,11 +242,19 @@ export NOTARIZE_PASSWORD="xxxx-xxxx-xxxx-xxxx"  # App-Specific Password
 
 **Windows 簽章：**
 ```batch
-REM 需要 Code Signing Certificate（向 DigiCert、Sectigo 等 CA 購買）
+REM NSIS 安裝程式簽章（需要 Code Signing Certificate）
 set CODESIGN_CERT=path\to\certificate.pfx
 set CODESIGN_PASSWORD=your-password
-packaging\windows\package.bat
+packaging\windows\package.bat nsis
+
+REM MSIX 簽章（用於側載/企業部署）
+set MSIX_SIGN_CERT=path\to\certificate.pfx
+set MSIX_SIGN_PASSWORD=your-password
+set PUBLISHER_ID=CN=SnapTray Dev
+packaging\windows\package.bat msix
 ```
+
+> **注意：** 若要上架 Microsoft Store，MSIX 不需要簽章 - Microsoft 會在認證過程中自動簽章套件。
 
 ## 建置優化
 
@@ -374,8 +412,13 @@ snap-tray/
     |   `-- entitlements.plist
     `-- windows/
         |-- package.bat
+        |-- package-nsis.bat
+        |-- package-msix.bat
         |-- installer.nsi
-        `-- license.txt
+        |-- license.txt
+        |-- AppxManifest.xml.in
+        |-- generate-assets.ps1
+        `-- assets/
 ```
 
 ## 架構設計

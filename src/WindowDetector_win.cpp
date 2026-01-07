@@ -2,6 +2,8 @@
 #include <QScreen>
 #include <QDebug>
 #include <QFileInfo>
+#include <QtConcurrent>
+#include <QMutexLocker>
 
 #include <windows.h>
 #include <dwmapi.h>
@@ -189,13 +191,11 @@ BOOL CALLBACK enumWindowsProc(HWND hwnd, LPARAM lParam)
         return TRUE;
     }
 
-    // Get window title
-    WCHAR titleBuffer[512];
-    int titleLen = GetWindowTextW(hwnd, titleBuffer, 512);
-    QString windowTitle = QString::fromWCharArray(titleBuffer, titleLen);
-
-    // Get owner application name
-    QString ownerApp = getProcessName(windowProcessId);
+    // Skip expensive API calls for window title and process name
+    // These are only used for debug/hint display and not critical for window detection
+    // This significantly improves performance, especially on high-DPI screens with many windows
+    QString windowTitle;  // Empty - not needed for detection
+    QString ownerApp;     // Empty - not needed for detection
 
     // Convert physical pixels to logical pixels for Qt coordinate system
     qreal dpr = context->devicePixelRatio;
@@ -270,8 +270,33 @@ DetectionFlags WindowDetector::detectionFlags() const
 
 void WindowDetector::refreshWindowList()
 {
+    QMutexLocker locker(&m_cacheMutex);
     m_windowCache.clear();
     enumerateWindows();
+}
+
+void WindowDetector::refreshWindowListAsync()
+{
+    m_refreshComplete = false;
+    qreal dpr = m_currentScreen ? m_currentScreen->devicePixelRatio() : 1.0;
+
+    m_refreshFuture = QtConcurrent::run([this, dpr]() {
+        std::vector<DetectedElement> newCache;
+        enumerateWindowsInternal(newCache, dpr);
+
+        {
+            QMutexLocker locker(&m_cacheMutex);
+            m_windowCache = std::move(newCache);
+        }
+
+        m_refreshComplete = true;
+        QMetaObject::invokeMethod(this, "windowListReady", Qt::QueuedConnection);
+    });
+}
+
+bool WindowDetector::isRefreshComplete() const
+{
+    return m_refreshComplete.load();
 }
 
 void WindowDetector::enumerateWindows()
@@ -336,6 +361,63 @@ void WindowDetector::enumerateWindows()
     qDebug() << "WindowDetector: Enumerated" << m_windowCache.size() << "windows";
 }
 
+void WindowDetector::enumerateWindowsInternal(std::vector<DetectedElement>& cache, qreal dpr)
+{
+    EnumWindowsContext context;
+    context.windowCache = &cache;
+    context.currentProcessId = GetCurrentProcessId();
+    context.devicePixelRatio = dpr;
+    context.detectionFlags = m_detectionFlags;
+
+    // EnumWindows returns windows in z-order (topmost first)
+    EnumWindows(enumWindowsProc, reinterpret_cast<LPARAM>(&context));
+
+    // Additionally enumerate menu windows directly if detecting context menus
+    if (m_detectionFlags.testFlag(DetectionFlag::ContextMenus)) {
+        HWND menuWnd = FindWindowExW(nullptr, nullptr, L"#32768", nullptr);
+        while (menuWnd) {
+            if (IsWindowVisible(menuWnd)) {
+                RECT rect;
+                if (GetWindowRect(menuWnd, &rect)) {
+                    int width = rect.right - rect.left;
+                    int height = rect.bottom - rect.top;
+                    int minSize = getMinimumSize(ElementType::ContextMenu);
+
+                    if (width >= minSize && height >= minSize) {
+                        uint32_t windowId = reinterpret_cast<uintptr_t>(menuWnd) & 0xFFFFFFFF;
+                        bool alreadyExists = false;
+                        for (const auto &elem : cache) {
+                            if (elem.windowId == windowId) {
+                                alreadyExists = true;
+                                break;
+                            }
+                        }
+
+                        if (!alreadyExists) {
+                            DetectedElement element;
+                            element.bounds = QRect(
+                                static_cast<int>(rect.left / dpr),
+                                static_cast<int>(rect.top / dpr),
+                                static_cast<int>(width / dpr),
+                                static_cast<int>(height / dpr)
+                            );
+                            element.windowTitle = QString();
+                            element.ownerApp = QString();
+                            element.windowLayer = 0;
+                            element.windowId = windowId;
+                            element.elementType = ElementType::ContextMenu;
+                            cache.insert(cache.begin(), element);
+                        }
+                    }
+                }
+            }
+            menuWnd = FindWindowExW(nullptr, menuWnd, L"#32768", nullptr);
+        }
+    }
+
+    qDebug() << "WindowDetector: Enumerated" << cache.size() << "windows (async)";
+}
+
 std::optional<DetectedElement> WindowDetector::detectWindowAt(const QPoint &screenPos) const
 {
     if (!m_enabled) {
@@ -349,6 +431,9 @@ std::optional<DetectedElement> WindowDetector::detectWindowAt(const QPoint &scre
             return std::nullopt;
         }
     }
+
+    // Lock mutex for thread-safe cache access
+    QMutexLocker locker(&m_cacheMutex);
 
     // Iterate through cached windows in z-order (topmost first)
     for (const auto &element : m_windowCache) {

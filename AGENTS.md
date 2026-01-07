@@ -52,10 +52,22 @@ Use the packaging scripts in `packaging/` for distribution builds (automatically
 ./packaging/macos/package.sh
 ```
 
-**Windows** - Creates NSIS installer:
+**Windows** - Creates NSIS installer and MSIX package:
 
 ```batch
-packaging\windows\package.bat
+packaging\windows\package.bat           REM Build both NSIS and MSIX
+packaging\windows\package.bat nsis      REM Build NSIS installer only
+packaging\windows\package.bat msix      REM Build MSIX package only
+```
+
+Output files:
+- `dist\SnapTray-<version>-Setup.exe` - NSIS installer
+- `dist\SnapTray-<version>.msix` - MSIX package for local installation
+- `dist\SnapTray-<version>.msixupload` - Upload file for Microsoft Store
+
+MSIX local testing:
+```powershell
+Add-AppPackage -Path "dist\SnapTray-<version>.msix" -AllowUnsigned
 ```
 
 ### Running Tests

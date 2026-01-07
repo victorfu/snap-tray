@@ -6,6 +6,8 @@
 #include <QPoint>
 #include <QString>
 #include <QFlags>
+#include <QMutex>
+#include <QFuture>
 #include <vector>
 #include <optional>
 
@@ -65,6 +67,12 @@ public:
     // Refresh window list (call before capture session starts)
     void refreshWindowList();
 
+    // Async version - enumerate windows in background thread
+    void refreshWindowListAsync();
+
+    // Check if async refresh is complete
+    bool isRefreshComplete() const;
+
     // Find window at point (screen coordinates)
     std::optional<DetectedElement> detectWindowAt(const QPoint &screenPos) const;
 
@@ -72,13 +80,20 @@ public:
     void setDetectionFlags(DetectionFlags flags);
     DetectionFlags detectionFlags() const;
 
+signals:
+    void windowListReady();
+
 private:
     void enumerateWindows();
+    void enumerateWindowsInternal(std::vector<DetectedElement>& cache, qreal dpr);
 
     std::vector<DetectedElement> m_windowCache;
+    mutable QMutex m_cacheMutex;
     QScreen *m_currentScreen;
     bool m_enabled;
     DetectionFlags m_detectionFlags = DetectionFlag::All;
+    QFuture<void> m_refreshFuture;
+    std::atomic<bool> m_refreshComplete{true};
 };
 
 #endif // WINDOWDETECTOR_H
