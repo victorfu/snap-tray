@@ -508,7 +508,7 @@ bool RegionInputHandler::handleEmojiStickerAnnotationPress(const QPoint& pos)
                 // Start dragging
                 m_isEmojiDragging = true;
                 m_emojiDragStart = pos;
-                emit cursorChangeRequested(Qt::SizeAllCursor);
+                emitCursorChangeIfNeeded(Qt::SizeAllCursor);
             }
             else {
                 // Start scaling (corner handles)
@@ -518,7 +518,7 @@ bool RegionInputHandler::handleEmojiStickerAnnotationPress(const QPoint& pos)
                 m_emojiStartScale = emojiItem->scale();
                 QPointF delta = QPointF(pos) - m_emojiStartCenter;
                 m_emojiStartDistance = qSqrt(delta.x() * delta.x() + delta.y() * delta.y());
-                emit cursorChangeRequested(getCursorForGizmoHandle(handle));
+                emitCursorChangeIfNeeded(getCursorForGizmoHandle(handle));
             }
             if (m_parentWidget) {
                 m_parentWidget->setFocus();
@@ -543,7 +543,7 @@ bool RegionInputHandler::handleEmojiStickerAnnotationPress(const QPoint& pos)
         if (handle == GizmoHandle::Body || handle == GizmoHandle::None) {
             m_isEmojiDragging = true;
             m_emojiDragStart = pos;
-            emit cursorChangeRequested(Qt::SizeAllCursor);
+            emitCursorChangeIfNeeded(Qt::SizeAllCursor);
         }
         else {
             // Corner handle - start scaling
@@ -553,7 +553,7 @@ bool RegionInputHandler::handleEmojiStickerAnnotationPress(const QPoint& pos)
             m_emojiStartScale = emojiItem->scale();
             QPointF delta = QPointF(pos) - m_emojiStartCenter;
             m_emojiStartDistance = qSqrt(delta.x() * delta.x() + delta.y() * delta.y());
-            emit cursorChangeRequested(getCursorForGizmoHandle(handle));
+            emitCursorChangeIfNeeded(getCursorForGizmoHandle(handle));
         }
     }
 
@@ -695,7 +695,7 @@ void RegionInputHandler::handleRightButtonPress(const QPoint& pos)
         }
         m_selectionManager->clearSelection();
         m_annotationLayer->clear();
-        emit cursorChangeRequested(Qt::CrossCursor);
+        emitCursorChangeIfNeeded(Qt::CrossCursor);
         emit updateRequested();
     }
 }
@@ -709,10 +709,10 @@ bool RegionInputHandler::handleTextEditorMove(const QPoint& pos)
     if (m_textEditor->isEditing() && m_textEditor->isConfirmMode()) {
         m_textEditor->handleMouseMove(pos);
         if (m_textEditor->contains(pos)) {
-            emit cursorChangeRequested(Qt::SizeAllCursor);
+            emitCursorChangeIfNeeded(Qt::SizeAllCursor);
         }
         else {
-            emit cursorChangeRequested(Qt::ArrowCursor);
+            emitCursorChangeIfNeeded(Qt::ArrowCursor);
         }
         emit updateRequested();
         return true;
@@ -850,14 +850,14 @@ void RegionInputHandler::handleHoverMove(const QPoint& pos, Qt::MouseButtons but
     if (auto* textItem = getSelectedTextAnnotation()) {
         GizmoHandle handle = TransformationGizmo::hitTest(textItem, pos);
         if (handle != GizmoHandle::None) {
-            emit cursorChangeRequested(getCursorForGizmoHandle(handle));
+            emitCursorChangeIfNeeded(getCursorForGizmoHandle(handle));
             gizmoHandleHovered = true;
         }
     }
 
     // Check text annotation hover
     if (!gizmoHandleHovered && m_annotationLayer->hitTestText(pos) >= 0) {
-        emit cursorChangeRequested(Qt::SizeAllCursor);
+        emitCursorChangeIfNeeded(Qt::SizeAllCursor);
         textAnnotationHovered = true;
     }
 
@@ -868,7 +868,7 @@ void RegionInputHandler::handleHoverMove(const QPoint& pos, Qt::MouseButtons but
         if (auto* emojiItem = getSelectedEmojiStickerAnnotation()) {
             GizmoHandle handle = TransformationGizmo::hitTest(emojiItem, pos);
             if (handle != GizmoHandle::None) {
-                emit cursorChangeRequested(getCursorForGizmoHandle(handle));
+                emitCursorChangeIfNeeded(getCursorForGizmoHandle(handle));
                 gizmoHandleHovered = true;
                 emojiStickerHovered = true;
             }
@@ -881,7 +881,7 @@ void RegionInputHandler::handleHoverMove(const QPoint& pos, Qt::MouseButtons but
             emit updateRequested();
         }
         if (m_aspectRatioWidget->contains(pos)) {
-            emit cursorChangeRequested(Qt::PointingHandCursor);
+            emitCursorChangeIfNeeded(Qt::PointingHandCursor);
             aspectRatioHovered = true;
         }
     }
@@ -892,7 +892,7 @@ void RegionInputHandler::handleHoverMove(const QPoint& pos, Qt::MouseButtons but
             emit updateRequested();
         }
         if (m_radiusSliderWidget->contains(pos)) {
-            emit cursorChangeRequested(Qt::PointingHandCursor);
+            emitCursorChangeIfNeeded(Qt::PointingHandCursor);
             radiusSliderHovered = true;
         }
     }
@@ -906,7 +906,7 @@ void RegionInputHandler::handleHoverMove(const QPoint& pos, Qt::MouseButtons but
             emit updateRequested();
         }
         if (m_colorAndWidthWidget->contains(pos)) {
-            emit cursorChangeRequested(Qt::PointingHandCursor);
+            emitCursorChangeIfNeeded(Qt::PointingHandCursor);
             unifiedWidgetHovered = true;
         }
     }
@@ -915,7 +915,7 @@ void RegionInputHandler::handleHoverMove(const QPoint& pos, Qt::MouseButtons but
     if (!shouldShowColorAndWidthWidget() && shouldShowColorPalette()) {
         if (m_colorPalette->updateHoveredSwatch(pos)) {
             if (m_colorPalette->contains(pos)) {
-                emit cursorChangeRequested(Qt::PointingHandCursor);
+                emitCursorChangeIfNeeded(Qt::PointingHandCursor);
                 colorPaletteHovered = true;
             }
         }
@@ -930,7 +930,7 @@ void RegionInputHandler::handleHoverMove(const QPoint& pos, Qt::MouseButtons but
             emit updateRequested();
         }
         if (m_emojiPicker->contains(pos)) {
-            emit cursorChangeRequested(Qt::PointingHandCursor);
+            emitCursorChangeIfNeeded(Qt::PointingHandCursor);
         }
     }
 
@@ -939,7 +939,7 @@ void RegionInputHandler::handleHoverMove(const QPoint& pos, Qt::MouseButtons but
     int hoveredButton = m_toolbar->hoveredButton();
     if (hoverChanged) {
         if (hoveredButton >= 0) {
-            emit cursorChangeRequested(Qt::PointingHandCursor);
+            emitCursorChangeIfNeeded(Qt::PointingHandCursor);
         }
         else if (!colorPaletteHovered && !unifiedWidgetHovered &&
             !textAnnotationHovered && !emojiStickerHovered && !gizmoHandleHovered &&
@@ -957,7 +957,7 @@ void RegionInputHandler::handleHoverMove(const QPoint& pos, Qt::MouseButtons but
     // Toolbar area cursor
     bool toolbarHovered = m_toolbar->contains(pos);
     if (toolbarHovered) {
-        emit cursorChangeRequested(Qt::PointingHandCursor);
+        emitCursorChangeIfNeeded(Qt::PointingHandCursor);
     }
     else if (!colorPaletteHovered && !unifiedWidgetHovered &&
         !textAnnotationHovered && !emojiStickerHovered && !gizmoHandleHovered &&
@@ -1092,7 +1092,7 @@ bool RegionInputHandler::handleEmojiStickerRelease()
         m_isEmojiDragging = false;
         // Restore cross cursor for EmojiSticker tool
         if (m_currentTool == ToolbarButton::EmojiSticker) {
-            emit cursorChangeRequested(Qt::CrossCursor);
+            emitCursorChangeIfNeeded(Qt::CrossCursor);
         }
         return true;
     }
@@ -1101,7 +1101,7 @@ bool RegionInputHandler::handleEmojiStickerRelease()
         m_activeEmojiHandle = GizmoHandle::None;
         // Restore cross cursor for EmojiSticker tool
         if (m_currentTool == ToolbarButton::EmojiSticker) {
-            emit cursorChangeRequested(Qt::CrossCursor);
+            emitCursorChangeIfNeeded(Qt::CrossCursor);
         }
         return true;
     }
@@ -1124,13 +1124,13 @@ void RegionInputHandler::handleSelectionRelease(const QPoint& pos)
     if (m_multiRegionMode) {
         if (sel.width() > 5 && sel.height() > 5) {
             m_selectionManager->finishSelection();
-            emit cursorChangeRequested(Qt::ArrowCursor);
+            emitCursorChangeIfNeeded(Qt::ArrowCursor);
             emit selectionFinished();
             qDebug() << "RegionInputHandler: Multi-region selection complete via drag";
         }
         else if (m_hasDetectedWindow && m_highlightedWindowRect.isValid()) {
             m_selectionManager->setFromDetectedWindow(m_highlightedWindowRect);
-            emit cursorChangeRequested(Qt::ArrowCursor);
+            emitCursorChangeIfNeeded(Qt::ArrowCursor);
             emit selectionFinished();
             qDebug() << "RegionInputHandler: Multi-region selection via detected window";
 
@@ -1143,13 +1143,13 @@ void RegionInputHandler::handleSelectionRelease(const QPoint& pos)
 
     if (sel.width() > 5 && sel.height() > 5) {
         m_selectionManager->finishSelection();
-        emit cursorChangeRequested(Qt::ArrowCursor);
+        emitCursorChangeIfNeeded(Qt::ArrowCursor);
         emit selectionFinished();
         qDebug() << "RegionInputHandler: Selection complete via drag";
     }
     else if (m_hasDetectedWindow && m_highlightedWindowRect.isValid()) {
         m_selectionManager->setFromDetectedWindow(m_highlightedWindowRect);
-        emit cursorChangeRequested(Qt::ArrowCursor);
+        emitCursorChangeIfNeeded(Qt::ArrowCursor);
         emit selectionFinished();
         qDebug() << "RegionInputHandler: Selection complete via detected window";
 
@@ -1159,7 +1159,7 @@ void RegionInputHandler::handleSelectionRelease(const QPoint& pos)
     }
     else {
         emit fullScreenSelectionRequested();
-        emit cursorChangeRequested(Qt::ArrowCursor);
+        emitCursorChangeIfNeeded(Qt::ArrowCursor);
         emit selectionFinished();
         qDebug() << "RegionInputHandler: Click without drag - selecting full screen";
     }
@@ -1247,19 +1247,27 @@ void RegionInputHandler::updateCursorForHandle(SelectionStateManager::ResizeHand
     using ResizeHandle = SelectionStateManager::ResizeHandle;
 
     if (handle != ResizeHandle::None) {
-        emit cursorChangeRequested(SelectionResizeHelper::cursorForHandle(handle));
+        emitCursorChangeIfNeeded(SelectionResizeHelper::cursorForHandle(handle));
         return;
     }
 
     // Handle::None - check for move or outside click
     if (m_selectionManager->hitTestMove(m_currentPoint)) {
-        emit cursorChangeRequested(Qt::SizeAllCursor);
+        emitCursorChangeIfNeeded(Qt::SizeAllCursor);
     }
     else {
         QRect sel = m_selectionManager->selectionRect();
         ResizeHandle outsideHandle = SelectionResizeHelper::determineHandleFromOutsideClick(
             m_currentPoint, sel);
-        emit cursorChangeRequested(SelectionResizeHelper::cursorForHandle(outsideHandle));
+        emitCursorChangeIfNeeded(SelectionResizeHelper::cursorForHandle(outsideHandle));
+    }
+}
+
+void RegionInputHandler::emitCursorChangeIfNeeded(Qt::CursorShape cursor)
+{
+    if (cursor != m_lastEmittedCursor) {
+        m_lastEmittedCursor = cursor;
+        emit cursorChangeRequested(cursor);
     }
 }
 

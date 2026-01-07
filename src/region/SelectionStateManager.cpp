@@ -17,12 +17,18 @@ void SelectionStateManager::setSelectionRect(const QRect& rect)
 {
     if (m_selectionRect != rect) {
         m_selectionRect = rect;
+        m_handleCacheValid = false;  // Invalidate handle cache when selection changes
         emit selectionChanged(m_selectionRect.normalized());
     }
     // Ensure state is Complete so hasSelection() returns true
     if (rect.isValid() && !rect.isEmpty() && m_state == State::None) {
         setState(State::Complete);
     }
+}
+
+void SelectionStateManager::invalidateHandleCache()
+{
+    m_handleCacheValid = false;
 }
 
 void SelectionStateManager::setBounds(const QRect& bounds)
@@ -53,6 +59,7 @@ void SelectionStateManager::updateSelection(const QPoint& pos)
 
     m_lastPoint = m_startPoint + delta;
     m_selectionRect = QRect(m_startPoint, m_lastPoint);
+    m_handleCacheValid = false;  // Invalidate handle cache
     emit selectionChanged(m_selectionRect.normalized());
 }
 
@@ -83,35 +90,51 @@ void SelectionStateManager::clearSelection()
 // Resize Operations
 // ============================================================================
 
+void SelectionStateManager::updateHandleRectsCache(int handleSize) const
+{
+    QRect rect = m_selectionRect.normalized();
+
+    // Check if cache is still valid
+    if (m_handleCacheValid && m_cachedSelectionForHandles == rect && m_cachedHandleSize == handleSize) {
+        return;
+    }
+
+    int half = handleSize / 2;
+
+    // Define handle hit areas - order matches ResizeHandle enum (minus None)
+    m_cachedHandleRects[0] = QRect(rect.left() - half, rect.top() - half, handleSize, handleSize);     // TopLeft
+    m_cachedHandleRects[1] = QRect(rect.center().x() - half, rect.top() - half, handleSize, handleSize); // Top
+    m_cachedHandleRects[2] = QRect(rect.right() - half, rect.top() - half, handleSize, handleSize);    // TopRight
+    m_cachedHandleRects[3] = QRect(rect.left() - half, rect.center().y() - half, handleSize, handleSize); // Left
+    m_cachedHandleRects[4] = QRect(rect.right() - half, rect.center().y() - half, handleSize, handleSize); // Right
+    m_cachedHandleRects[5] = QRect(rect.left() - half, rect.bottom() - half, handleSize, handleSize);   // BottomLeft
+    m_cachedHandleRects[6] = QRect(rect.center().x() - half, rect.bottom() - half, handleSize, handleSize); // Bottom
+    m_cachedHandleRects[7] = QRect(rect.right() - half, rect.bottom() - half, handleSize, handleSize);  // BottomRight
+
+    m_cachedSelectionForHandles = rect;
+    m_cachedHandleSize = handleSize;
+    m_handleCacheValid = true;
+}
+
 SelectionStateManager::ResizeHandle SelectionStateManager::hitTestHandle(
     const QPoint& pos, int handleSize) const
 {
     if (m_state != State::Complete) return ResizeHandle::None;
 
-    QRect rect = m_selectionRect.normalized();
-    int half = handleSize / 2;
+    // Update cache if needed
+    updateHandleRectsCache(handleSize);
 
-    // Define handle hit areas
-    QRect topLeft(rect.left() - half, rect.top() - half, handleSize, handleSize);
-    QRect top(rect.center().x() - half, rect.top() - half, handleSize, handleSize);
-    QRect topRight(rect.right() - half, rect.top() - half, handleSize, handleSize);
-    QRect left(rect.left() - half, rect.center().y() - half, handleSize, handleSize);
-    QRect right(rect.right() - half, rect.center().y() - half, handleSize, handleSize);
-    QRect bottomLeft(rect.left() - half, rect.bottom() - half, handleSize, handleSize);
-    QRect bottom(rect.center().x() - half, rect.bottom() - half, handleSize, handleSize);
-    QRect bottomRight(rect.right() - half, rect.bottom() - half, handleSize, handleSize);
+    // Check corners first (higher priority) - indices 0, 2, 5, 7
+    if (m_cachedHandleRects[0].contains(pos)) return ResizeHandle::TopLeft;
+    if (m_cachedHandleRects[2].contains(pos)) return ResizeHandle::TopRight;
+    if (m_cachedHandleRects[5].contains(pos)) return ResizeHandle::BottomLeft;
+    if (m_cachedHandleRects[7].contains(pos)) return ResizeHandle::BottomRight;
 
-    // Check corners first (higher priority)
-    if (topLeft.contains(pos)) return ResizeHandle::TopLeft;
-    if (topRight.contains(pos)) return ResizeHandle::TopRight;
-    if (bottomLeft.contains(pos)) return ResizeHandle::BottomLeft;
-    if (bottomRight.contains(pos)) return ResizeHandle::BottomRight;
-
-    // Check edges
-    if (top.contains(pos)) return ResizeHandle::Top;
-    if (bottom.contains(pos)) return ResizeHandle::Bottom;
-    if (left.contains(pos)) return ResizeHandle::Left;
-    if (right.contains(pos)) return ResizeHandle::Right;
+    // Check edges - indices 1, 6, 3, 4
+    if (m_cachedHandleRects[1].contains(pos)) return ResizeHandle::Top;
+    if (m_cachedHandleRects[6].contains(pos)) return ResizeHandle::Bottom;
+    if (m_cachedHandleRects[3].contains(pos)) return ResizeHandle::Left;
+    if (m_cachedHandleRects[4].contains(pos)) return ResizeHandle::Right;
 
     return ResizeHandle::None;
 }
@@ -258,6 +281,7 @@ void SelectionStateManager::updateResize(const QPoint& pos)
     QRect normalized = newRect.normalized();
     if (normalized.width() >= 10 && normalized.height() >= 10) {
         m_selectionRect = newRect;
+        m_handleCacheValid = false;  // Invalidate handle cache
         emit selectionChanged(normalized);
     }
 }
@@ -300,6 +324,7 @@ void SelectionStateManager::updateMove(const QPoint& pos)
     // Clamp to bounds
     clampToBounds();
 
+    m_handleCacheValid = false;  // Invalidate handle cache
     emit selectionChanged(m_selectionRect.normalized());
 }
 

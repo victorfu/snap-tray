@@ -93,6 +93,87 @@ void RegionPainter::setDevicePixelRatio(qreal ratio)
     m_devicePixelRatio = ratio;
 }
 
+void RegionPainter::invalidateOverlayCache()
+{
+    m_overlayCacheValid = false;
+}
+
+void RegionPainter::invalidateDimensionCache()
+{
+    m_dimensionCacheValid = false;
+}
+
+void RegionPainter::updateOverlayCache(const QPixmap& background)
+{
+    if (!m_parentWidget || background.isNull()) {
+        return;
+    }
+
+    // Get current selection state
+    QRect sel = m_selectionManager->selectionRect().normalized();
+    bool hasSelection = m_selectionManager->hasActiveSelection() && sel.isValid();
+    QRect highlightRect = m_highlightedWindowRect;
+
+    // Check if cache is still valid
+    if (m_overlayCacheValid &&
+        m_cachedSelectionRect == sel &&
+        m_cachedHighlightRect == highlightRect &&
+        !m_overlayCache.isNull() &&
+        m_overlayCache.size() == m_parentWidget->size()) {
+        return;  // Cache is still valid
+    }
+
+    // Create new cached overlay
+    const int w = m_parentWidget->width();
+    const int h = m_parentWidget->height();
+    m_overlayCache = QPixmap(w, h);
+    m_overlayCache.fill(Qt::transparent);
+
+    QPainter cachePainter(&m_overlayCache);
+    QColor dimColor(0, 0, 0, 100);
+
+    if (m_multiRegionMode && m_multiRegionManager) {
+        // Multi-region mode: use path subtraction (cached, so only done once per change)
+        QPainterPath dimPath;
+        dimPath.addRect(m_parentWidget->rect());
+
+        const auto regions = m_multiRegionManager->regions();
+        for (const auto& region : regions) {
+            QPainterPath regionPath;
+            regionPath.addRect(region.rect);
+            dimPath = dimPath.subtracted(regionPath);
+        }
+        if (m_selectionManager->isSelecting() && m_multiRegionManager->activeIndex() < 0 && hasSelection) {
+            QPainterPath selPath;
+            selPath.addRect(sel);
+            dimPath = dimPath.subtracted(selPath);
+        }
+        cachePainter.fillPath(dimPath, dimColor);
+    } else if (hasSelection) {
+        // Single selection: use fast 4-rect approach
+        cachePainter.fillRect(QRect(0, 0, w, sel.top()), dimColor);                                    // Top
+        cachePainter.fillRect(QRect(0, sel.bottom() + 1, w, h - sel.bottom() - 1), dimColor);          // Bottom
+        cachePainter.fillRect(QRect(0, sel.top(), sel.left(), sel.height()), dimColor);                // Left
+        cachePainter.fillRect(QRect(sel.right() + 1, sel.top(), w - sel.right() - 1, sel.height()), dimColor);  // Right
+    } else if (!highlightRect.isNull()) {
+        // Window detection highlight
+        cachePainter.fillRect(QRect(0, 0, w, highlightRect.top()), dimColor);
+        cachePainter.fillRect(QRect(0, highlightRect.bottom() + 1, w, h - highlightRect.bottom() - 1), dimColor);
+        cachePainter.fillRect(QRect(0, highlightRect.top(), highlightRect.left(), highlightRect.height()), dimColor);
+        cachePainter.fillRect(QRect(highlightRect.right() + 1, highlightRect.top(), w - highlightRect.right() - 1, highlightRect.height()), dimColor);
+    } else {
+        // No selection: full dim
+        cachePainter.fillRect(m_parentWidget->rect(), dimColor);
+    }
+
+    cachePainter.end();
+
+    // Update cache metadata
+    m_cachedSelectionRect = sel;
+    m_cachedHighlightRect = highlightRect;
+    m_overlayCacheValid = true;
+}
+
 void RegionPainter::paint(QPainter& painter, const QPixmap& background, const QRect& dirtyRect)
 {
     if (!m_parentWidget || !m_selectionManager) {

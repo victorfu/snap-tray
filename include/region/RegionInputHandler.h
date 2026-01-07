@@ -142,6 +142,7 @@ private:
     // Cursor helpers
     Qt::CursorShape getCursorForGizmoHandle(GizmoHandle handle) const;
     void updateCursorForHandle(SelectionStateManager::ResizeHandle handle);
+    void emitCursorChangeIfNeeded(Qt::CursorShape cursor);
 
     // Selection helpers
     SelectionStateManager::ResizeHandle determineHandleFromOutsideClick(
@@ -201,6 +202,9 @@ private:
     qreal m_emojiStartScale = 1.0;
     qreal m_emojiStartDistance = 0.0;
     QPointF m_emojiStartCenter;
+
+    // Cursor batching - avoid redundant cursor change signals
+    Qt::CursorShape m_lastEmittedCursor = Qt::ArrowCursor;
 
     // Constants
     static constexpr int WINDOW_DETECTION_MIN_DISTANCE_SQ = 64;  // 8px threshold squared (improved for high-DPI)

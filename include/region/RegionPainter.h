@@ -6,6 +6,8 @@
 #include <QColor>
 #include <QPixmap>
 #include <QString>
+#include <QFont>
+#include <QSize>
 
 class QPainter;
 class QWidget;
@@ -65,6 +67,18 @@ public:
     void setDevicePixelRatio(qreal ratio);
     void setMultiRegionMode(bool enabled) { m_multiRegionMode = enabled; }
 
+    /**
+     * @brief Invalidate caches when selection changes.
+     * Call this when the selection rect is modified.
+     */
+    void invalidateOverlayCache();
+
+    /**
+     * @brief Invalidate dimension panel cache.
+     * Call this when selection dimensions change.
+     */
+    void invalidateDimensionCache();
+
 private:
     // Drawing methods (extracted from RegionSelector)
     void drawOverlay(QPainter& painter);
@@ -104,6 +118,26 @@ private:
     int m_currentTool = 0;
     qreal m_devicePixelRatio = 1.0;
     bool m_multiRegionMode = false;
+
+    // Performance caches
+    // Overlay cache: background + dimming overlay composited together
+    QPixmap m_overlayCache;
+    QRect m_cachedSelectionRect;
+    QRect m_cachedHighlightRect;
+    bool m_overlayCacheValid = false;
+
+    // Dimension panel cache
+    QPixmap m_dimensionPanelCache;
+    QSize m_cachedDimensions;
+    bool m_dimensionCacheValid = false;
+
+    // Font metrics cache
+    mutable QFont m_cachedFont;
+    mutable int m_cachedFontPointSize = -1;
+
+    // Helper methods for caching
+    void updateOverlayCache(const QPixmap& background);
+    void updateDimensionPanelCache(const QRect& selectionRect);
 };
 
 #endif // REGIONPAINTER_H

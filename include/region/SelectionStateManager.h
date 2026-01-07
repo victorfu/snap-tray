@@ -80,6 +80,9 @@ public:
     void updateResize(const QPoint& pos);
     void finishResize();
 
+    // Cache invalidation
+    void invalidateHandleCache();
+
     // Move operations
     bool hitTestMove(const QPoint& pos) const;
     void startMove(const QPoint& pos);
@@ -104,6 +107,7 @@ private:
     void clampToBounds();
     QPoint adjustDeltaForAspectRatio(const QPoint& delta) const;
     bool isCornerHandle(ResizeHandle handle) const;
+    void updateHandleRectsCache(int handleSize) const;
 
     State m_state = State::None;
     QRect m_selectionRect;
@@ -115,6 +119,12 @@ private:
     QPoint m_lastPoint;
     QRect m_originalRect;  // For resize/move restoration
     ResizeHandle m_activeHandle = ResizeHandle::None;
+
+    // Handle hit-test cache (avoid creating 8 QRects per mouse move)
+    mutable QRect m_cachedHandleRects[8];  // Order: TopLeft, Top, TopRight, Left, Right, BottomLeft, Bottom, BottomRight
+    mutable QRect m_cachedSelectionForHandles;
+    mutable int m_cachedHandleSize = 0;
+    mutable bool m_handleCacheValid = false;
 };
 
 #endif // SELECTIONSTATEMANAGER_H
