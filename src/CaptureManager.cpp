@@ -67,7 +67,8 @@ void CaptureManager::startRegionCapture()
 
     // 3. Capture screenshot while popup is still visible
     // This allows capturing context menus (like Snipaste)
-    // grabWindow() runs on main thread while window detection runs in background
+    // NOTE: grabWindow() is blocking (50-200ms on 4K). Qt doesn't guarantee thread safety
+    // for grabWindow(), so async capture via QtConcurrent is risky without platform testing.
     QWidget *popup = QApplication::activePopupWidget();
     qDebug() << "CaptureManager: Pre-capture screenshot, popup active:" << (popup != nullptr);
 
@@ -88,7 +89,7 @@ void CaptureManager::startRegionCapture()
         m_regionSelector->setWindowDetector(m_windowDetector);
     }
 
-    // 6. 初始化指定螢幕 (使用預截圖)
+    // 7. 初始化指定螢幕 (使用預截圖)
     m_regionSelector->initializeForScreen(targetScreen, preCapture);
 
     connect(m_regionSelector, &RegionSelector::regionSelected,

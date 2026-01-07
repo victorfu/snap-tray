@@ -182,6 +182,9 @@ private:
     // Line width callback
     void onLineWidthChanged(int width);
 
+    // Lazy component creation
+    EmojiPicker* ensureEmojiPicker();
+
     // Step Badge size handling
     void onStepBadgeSizeChanged(StepBadgeSize size);
 

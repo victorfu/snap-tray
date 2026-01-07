@@ -214,9 +214,8 @@ RegionSelector::RegionSelector(QWidget* parent)
     // Initialize OCR manager if available on this platform
     m_ocrManager = PlatformFeatures::instance().createOCRManager(this);
 
-    // Initialize auto-blur manager
+    // Initialize auto-blur manager (lazy initialization - cascade loaded on first use)
     m_autoBlurManager = new AutoBlurManager(this);
-    m_autoBlurManager->initialize();
 
     // Initialize toolbar widget
     m_toolbar = new ToolbarWidget(this);
@@ -317,16 +316,7 @@ RegionSelector::RegionSelector(QWidget* parent)
             AnnotationSettingsManager::instance().saveMosaicBlurType(type);
         });
 
-    // Initialize emoji picker
-    m_emojiPicker = new EmojiPicker(this);
-    connect(m_emojiPicker, &EmojiPicker::emojiSelected,
-        this, [this](const QString& emoji) {
-            if (auto* handler = dynamic_cast<EmojiStickerToolHandler*>(
-                    m_toolManager->handler(ToolId::EmojiSticker))) {
-                handler->setCurrentEmoji(emoji);
-            }
-            update();
-        });
+    // EmojiPicker is lazy-initialized via ensureEmojiPicker() when first needed
 
     // Initialize loading spinner for OCR
     m_loadingSpinner = new LoadingSpinnerRenderer(this);
@@ -445,7 +435,7 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_inputHandler->setTextAnnotationEditor(m_textAnnotationEditor);
     m_inputHandler->setColorAndWidthWidget(m_colorAndWidthWidget);
     m_inputHandler->setColorPalette(m_colorPalette);
-    m_inputHandler->setEmojiPicker(m_emojiPicker);
+    // EmojiPicker is set lazily via ensureEmojiPicker() when first needed
     m_inputHandler->setAspectRatioWidget(m_aspectRatioWidget);
     m_inputHandler->setRadiusSliderWidget(m_radiusSliderWidget);
     m_inputHandler->setMultiRegionManager(m_multiRegionManager);
@@ -702,6 +692,24 @@ void RegionSelector::onCornerRadiusChanged(int radius)
     update();
 }
 
+EmojiPicker* RegionSelector::ensureEmojiPicker()
+{
+    if (!m_emojiPicker) {
+        m_emojiPicker = new EmojiPicker(this);
+        connect(m_emojiPicker, &EmojiPicker::emojiSelected,
+            this, [this](const QString& emoji) {
+                if (auto* handler = dynamic_cast<EmojiStickerToolHandler*>(
+                        m_toolManager->handler(ToolId::EmojiSticker))) {
+                    handler->setCurrentEmoji(emoji);
+                }
+                update();
+            });
+        // Update input handler reference
+        m_inputHandler->setEmojiPicker(m_emojiPicker);
+    }
+    return m_emojiPicker;
+}
+
 int RegionSelector::effectiveCornerRadius() const
 {
     QRect sel = m_selectionManager->selectionRect();
@@ -829,7 +837,8 @@ void RegionSelector::initializeWithRegion(QScreen* screen, const QRect& region)
 
     // Capture the screen first
     m_backgroundPixmap = m_currentScreen->grabWindow(0);
-    m_backgroundImageCache = m_backgroundPixmap.toImage();
+    // Lazy-load image cache: don't convert now, create on first magnifier access
+    m_backgroundImageCacheValid = false;
 
     // Update tool manager with background pixmap for mosaic tool
     m_toolManager->setSourcePixmap(&m_backgroundPixmap);
@@ -1008,13 +1017,14 @@ void RegionSelector::paintEvent(QPaintEvent* event)
                 }
             }
 
-            // Draw emoji picker when EmojiSticker tool is selected
+            // Draw emoji picker when EmojiSticker tool is selected (lazy creation)
             if (m_currentTool == ToolbarButton::EmojiSticker) {
-                m_emojiPicker->setVisible(true);
-                m_emojiPicker->updatePosition(m_toolbar->boundingRect(), false);
-                m_emojiPicker->draw(painter);
+                EmojiPicker* picker = ensureEmojiPicker();
+                picker->setVisible(true);
+                picker->updatePosition(m_toolbar->boundingRect(), false);
+                picker->draw(painter);
             }
-            else {
+            else if (m_emojiPicker) {
                 m_emojiPicker->setVisible(false);
             }
 
@@ -1678,12 +1688,17 @@ void RegionSelector::onOCRComplete(bool success, const QString& text, const QStr
 
 void RegionSelector::performAutoBlur()
 {
-    if (!m_autoBlurManager || !m_autoBlurManager->isInitialized() ||
-        m_autoBlurInProgress || !m_selectionManager->isComplete()) {
-        if (!m_autoBlurManager || !m_autoBlurManager->isInitialized()) {
-            qDebug() << "RegionSelector: Auto-blur not available";
-        }
+    if (!m_autoBlurManager || m_autoBlurInProgress || !m_selectionManager->isComplete()) {
         return;
+    }
+
+    // Lazy initialization: load cascade classifier on first use
+    if (!m_autoBlurManager->isInitialized()) {
+        qDebug() << "RegionSelector: Lazy-initializing AutoBlurManager...";
+        if (!m_autoBlurManager->initialize()) {
+            qDebug() << "RegionSelector: Auto-blur initialization failed";
+            return;
+        }
     }
 
     m_autoBlurInProgress = true;
