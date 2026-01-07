@@ -1,6 +1,9 @@
 # ============================================================================
 # SnapTray Tests Configuration
 # ============================================================================
+# Tests now link against library targets instead of compiling source files directly.
+# This provides faster incremental builds and ensures tests use the same code as the app.
+# ============================================================================
 
 # Find Qt6 Test component for unit tests
 find_package(Qt6 REQUIRED COMPONENTS Test)
@@ -8,1014 +11,195 @@ find_package(Qt6 REQUIRED COMPONENTS Test)
 # Enable automoc for tests
 set(CMAKE_AUTOMOC ON)
 
-# Common source files needed for testing ColorAndWidthWidget
-set(COLORANDWIDTHWIDGET_COMMON_SOURCES
-    ${CMAKE_SOURCE_DIR}/src/ColorAndWidthWidget.cpp
-    ${CMAKE_SOURCE_DIR}/src/ToolbarStyle.cpp
-    ${CMAKE_SOURCE_DIR}/src/GlassRenderer.cpp
-    ${CMAKE_SOURCE_DIR}/src/IconRenderer.cpp
-    ${CMAKE_SOURCE_DIR}/src/ui/sections/ColorSection.cpp
-    ${CMAKE_SOURCE_DIR}/src/ui/sections/WidthSection.cpp
-    ${CMAKE_SOURCE_DIR}/src/ui/sections/MosaicWidthSection.cpp
-    ${CMAKE_SOURCE_DIR}/src/ui/sections/MosaicBlurTypeSection.cpp
-    ${CMAKE_SOURCE_DIR}/src/ui/sections/TextSection.cpp
-    ${CMAKE_SOURCE_DIR}/src/ui/sections/ArrowStyleSection.cpp
-    ${CMAKE_SOURCE_DIR}/src/ui/sections/LineStyleSection.cpp
-    ${CMAKE_SOURCE_DIR}/src/ui/sections/ShapeSection.cpp
-    ${CMAKE_SOURCE_DIR}/src/ui/sections/SizeSection.cpp
-    ${CMAKE_SOURCE_DIR}/src/ui/sections/AutoBlurSection.cpp
-)
-
-# Common headers that need MOC processing
-set(COLORANDWIDTHWIDGET_COMMON_HEADERS
-    ${CMAKE_SOURCE_DIR}/include/ColorAndWidthWidget.h
-    ${CMAKE_SOURCE_DIR}/include/ui/sections/ColorSection.h
-    ${CMAKE_SOURCE_DIR}/include/ui/sections/WidthSection.h
-    ${CMAKE_SOURCE_DIR}/include/ui/sections/MosaicWidthSection.h
-    ${CMAKE_SOURCE_DIR}/include/ui/sections/MosaicBlurTypeSection.h
-    ${CMAKE_SOURCE_DIR}/include/ui/sections/TextSection.h
-    ${CMAKE_SOURCE_DIR}/include/ui/sections/ArrowStyleSection.h
-    ${CMAKE_SOURCE_DIR}/include/ui/sections/LineStyleSection.h
-    ${CMAKE_SOURCE_DIR}/include/ui/sections/ShapeSection.h
-    ${CMAKE_SOURCE_DIR}/include/ui/sections/SizeSection.h
-    ${CMAKE_SOURCE_DIR}/include/ui/sections/AutoBlurSection.h
-)
-
-# Helper function to create a test executable
-function(add_colorandwidthwidget_test TEST_NAME TEST_SOURCE)
-    add_executable(${TEST_NAME}
-        ${TEST_SOURCE}
-        ${COLORANDWIDTHWIDGET_COMMON_SOURCES}
-        ${COLORANDWIDTHWIDGET_COMMON_HEADERS}
-    )
-
-    target_include_directories(${TEST_NAME} PRIVATE
-        ${CMAKE_SOURCE_DIR}/include
-        ${CMAKE_SOURCE_DIR}/src
-        ${CMAKE_BINARY_DIR}/generated
-    )
-
-    target_link_libraries(${TEST_NAME} PRIVATE
-        Qt6::Widgets
-        Qt6::Gui
-        Qt6::Svg
-        Qt6::Test
-    )
-
-    add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
-
-    set_tests_properties(${TEST_NAME} PROPERTIES
-        TIMEOUT 60
-    )
-endfunction()
-
-# Create individual test executables
-add_colorandwidthwidget_test(ColorAndWidthWidget_State
-    ColorAndWidthWidget/tst_State.cpp)
-
-add_colorandwidthwidget_test(ColorAndWidthWidget_Signals
-    ColorAndWidthWidget/tst_Signals.cpp)
-
-add_colorandwidthwidget_test(ColorAndWidthWidget_HitTest
-    ColorAndWidthWidget/tst_HitTest.cpp)
-
-add_colorandwidthwidget_test(ColorAndWidthWidget_Events
-    ColorAndWidthWidget/tst_Events.cpp)
-
 # ============================================================================
-# PinWindow Tests
+# ColorAndWidthWidget Tests (link snaptray_ui)
 # ============================================================================
 
-# Common source files needed for testing PinWindow
-set(PINWINDOW_COMMON_SOURCES
-    ${CMAKE_SOURCE_DIR}/src/PinWindow.cpp
-    ${CMAKE_SOURCE_DIR}/src/PinWindowManager.cpp
-    ${CMAKE_SOURCE_DIR}/src/WatermarkRenderer.cpp
-    ${CMAKE_SOURCE_DIR}/src/LoadingSpinnerRenderer.cpp
-    ${CMAKE_SOURCE_DIR}/src/pinwindow/ResizeHandler.cpp
-    ${CMAKE_SOURCE_DIR}/src/pinwindow/UIIndicators.cpp
-    ${CMAKE_SOURCE_DIR}/src/pinwindow/ClickThroughExitButton.cpp
-    ${CMAKE_SOURCE_DIR}/src/settings/AnnotationSettingsManager.cpp
-    ${CMAKE_SOURCE_DIR}/src/settings/PinWindowSettingsManager.cpp
-)
+add_executable(ColorAndWidthWidget_State ColorAndWidthWidget/tst_State.cpp)
+target_link_libraries(ColorAndWidthWidget_State PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME ColorAndWidthWidget_State COMMAND ColorAndWidthWidget_State)
+set_tests_properties(ColorAndWidthWidget_State PROPERTIES TIMEOUT 60 LABELS "unit")
 
-# Platform-specific sources for PinWindow tests
-if(APPLE)
-    list(APPEND PINWINDOW_COMMON_SOURCES
-        ${CMAKE_SOURCE_DIR}/src/platform/PlatformFeatures_mac.mm
-        ${CMAKE_SOURCE_DIR}/src/platform/WindowLevel_mac.mm
-        ${CMAKE_SOURCE_DIR}/src/OCRManager.mm
-        ${CMAKE_SOURCE_DIR}/src/WindowDetector.mm
-    )
-elseif(WIN32)
-    list(APPEND PINWINDOW_COMMON_SOURCES
-        ${CMAKE_SOURCE_DIR}/src/platform/PlatformFeatures_win.cpp
-        ${CMAKE_SOURCE_DIR}/src/platform/WindowLevel_win.cpp
-        ${CMAKE_SOURCE_DIR}/src/OCRManager_win.cpp
-        ${CMAKE_SOURCE_DIR}/src/WindowDetector_win.cpp
-    )
-endif()
+add_executable(ColorAndWidthWidget_Signals ColorAndWidthWidget/tst_Signals.cpp)
+target_link_libraries(ColorAndWidthWidget_Signals PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME ColorAndWidthWidget_Signals COMMAND ColorAndWidthWidget_Signals)
+set_tests_properties(ColorAndWidthWidget_Signals PROPERTIES TIMEOUT 60 LABELS "unit")
 
-# Common headers that need MOC processing
-set(PINWINDOW_COMMON_HEADERS
-    ${CMAKE_SOURCE_DIR}/include/PinWindow.h
-    ${CMAKE_SOURCE_DIR}/include/PinWindowManager.h
-    ${CMAKE_SOURCE_DIR}/include/WatermarkRenderer.h
-    ${CMAKE_SOURCE_DIR}/include/LoadingSpinnerRenderer.h
-    ${CMAKE_SOURCE_DIR}/include/PlatformFeatures.h
-    ${CMAKE_SOURCE_DIR}/include/OCRManager.h
-    ${CMAKE_SOURCE_DIR}/include/WindowDetector.h
-    ${CMAKE_SOURCE_DIR}/include/pinwindow/ResizeHandler.h
-    ${CMAKE_SOURCE_DIR}/include/pinwindow/UIIndicators.h
-    ${CMAKE_SOURCE_DIR}/include/pinwindow/ClickThroughExitButton.h
-)
+add_executable(ColorAndWidthWidget_HitTest ColorAndWidthWidget/tst_HitTest.cpp)
+target_link_libraries(ColorAndWidthWidget_HitTest PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME ColorAndWidthWidget_HitTest COMMAND ColorAndWidthWidget_HitTest)
+set_tests_properties(ColorAndWidthWidget_HitTest PROPERTIES TIMEOUT 60 LABELS "unit")
 
-# Helper function to create a PinWindow test executable
-function(add_pinwindow_test TEST_NAME TEST_SOURCE)
-    add_executable(${TEST_NAME}
-        ${TEST_SOURCE}
-        ${PINWINDOW_COMMON_SOURCES}
-        ${PINWINDOW_COMMON_HEADERS}
-    )
+add_executable(ColorAndWidthWidget_Events ColorAndWidthWidget/tst_Events.cpp)
+target_link_libraries(ColorAndWidthWidget_Events PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME ColorAndWidthWidget_Events COMMAND ColorAndWidthWidget_Events)
+set_tests_properties(ColorAndWidthWidget_Events PROPERTIES TIMEOUT 60 LABELS "unit")
 
-    target_include_directories(${TEST_NAME} PRIVATE
-        ${CMAKE_SOURCE_DIR}/include
-        ${CMAKE_SOURCE_DIR}/src
-        ${CMAKE_BINARY_DIR}/generated
-    )
+# ============================================================================
+# PinWindow Tests (link snaptray_ui which includes snaptray_platform)
+# ============================================================================
 
-    target_link_libraries(${TEST_NAME} PRIVATE
-        Qt6::Widgets
-        Qt6::Gui
-        Qt6::Svg
-        Qt6::Test
-        QHotkey::QHotkey
-    )
+add_executable(PinWindow_Transform PinWindow/tst_Transform.cpp)
+target_link_libraries(PinWindow_Transform PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME PinWindow_Transform COMMAND PinWindow_Transform)
+set_tests_properties(PinWindow_Transform PROPERTIES TIMEOUT 60 LABELS "unit;integration")
 
-    # Platform-specific frameworks for PinWindow tests
-    if(APPLE)
-        find_library(COREGRAPHICS_FRAMEWORK CoreGraphics)
-        find_library(APPKIT_FRAMEWORK AppKit)
-        find_library(VISION_FRAMEWORK Vision)
-        target_link_libraries(${TEST_NAME} PRIVATE
-            ${COREGRAPHICS_FRAMEWORK}
-            ${APPKIT_FRAMEWORK}
-            ${VISION_FRAMEWORK}
-        )
-    endif()
+add_executable(PinWindow_Resize PinWindow/tst_Resize.cpp)
+target_link_libraries(PinWindow_Resize PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME PinWindow_Resize COMMAND PinWindow_Resize)
+set_tests_properties(PinWindow_Resize PROPERTIES TIMEOUT 60 LABELS "unit;integration")
 
-    add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
+add_executable(PinWindow_ClickThrough PinWindow/tst_ClickThrough.cpp)
+target_link_libraries(PinWindow_ClickThrough PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME PinWindow_ClickThrough COMMAND PinWindow_ClickThrough)
+set_tests_properties(PinWindow_ClickThrough PROPERTIES TIMEOUT 60 LABELS "unit;integration")
 
-    set_tests_properties(${TEST_NAME} PROPERTIES
-        TIMEOUT 60
-    )
-endfunction()
-
-# Create PinWindow test executables
-add_pinwindow_test(PinWindow_Transform
-    PinWindow/tst_Transform.cpp)
-
-add_pinwindow_test(PinWindow_Resize
-    PinWindow/tst_Resize.cpp)
-
-add_pinwindow_test(PinWindow_ClickThrough
-    PinWindow/tst_ClickThrough.cpp)
+add_executable(PinWindow_ImageTransformer PinWindow/tst_ImageTransformer.cpp)
+target_link_libraries(PinWindow_ImageTransformer PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME PinWindow_ImageTransformer COMMAND PinWindow_ImageTransformer)
+set_tests_properties(PinWindow_ImageTransformer PROPERTIES TIMEOUT 60 LABELS "unit")
 
 # ============================================================================
 # RegionSelector Tests
 # ============================================================================
 
-# Source files needed for testing MagnifierPanel
-set(MAGNIFIERPANEL_SOURCES
-    ${CMAKE_SOURCE_DIR}/src/region/MagnifierPanel.cpp
-)
-
-set(MAGNIFIERPANEL_HEADERS
-    ${CMAKE_SOURCE_DIR}/include/region/MagnifierPanel.h
-)
-
-# Source files needed for testing UpdateThrottler
-set(UPDATETHROTTLER_SOURCES
-    ${CMAKE_SOURCE_DIR}/src/region/UpdateThrottler.cpp
-)
-
-set(UPDATETHROTTLER_HEADERS
-    ${CMAKE_SOURCE_DIR}/include/region/UpdateThrottler.h
-)
-
-# MagnifierPanel test
-add_executable(RegionSelector_MagnifierPanel
-    RegionSelector/tst_MagnifierPanel.cpp
-    ${MAGNIFIERPANEL_SOURCES}
-    ${MAGNIFIERPANEL_HEADERS}
-)
-
-target_include_directories(RegionSelector_MagnifierPanel PRIVATE
-    ${CMAKE_SOURCE_DIR}/include
-    ${CMAKE_SOURCE_DIR}/src
-    ${CMAKE_BINARY_DIR}/generated
-)
-
-target_link_libraries(RegionSelector_MagnifierPanel PRIVATE
-    Qt6::Widgets
-    Qt6::Gui
-    Qt6::Test
-)
-
+add_executable(RegionSelector_MagnifierPanel RegionSelector/tst_MagnifierPanel.cpp)
+target_link_libraries(RegionSelector_MagnifierPanel PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME RegionSelector_MagnifierPanel COMMAND RegionSelector_MagnifierPanel)
+set_tests_properties(RegionSelector_MagnifierPanel PROPERTIES TIMEOUT 60 LABELS "unit")
 
-set_tests_properties(RegionSelector_MagnifierPanel PROPERTIES
-    TIMEOUT 60
-)
-
-# UpdateThrottler test
-add_executable(RegionSelector_UpdateThrottler
-    RegionSelector/tst_UpdateThrottler.cpp
-    ${UPDATETHROTTLER_SOURCES}
-    ${UPDATETHROTTLER_HEADERS}
-)
-
-target_include_directories(RegionSelector_UpdateThrottler PRIVATE
-    ${CMAKE_SOURCE_DIR}/include
-    ${CMAKE_SOURCE_DIR}/src
-    ${CMAKE_BINARY_DIR}/generated
-)
-
-target_link_libraries(RegionSelector_UpdateThrottler PRIVATE
-    Qt6::Widgets
-    Qt6::Gui
-    Qt6::Test
-)
-
+add_executable(RegionSelector_UpdateThrottler RegionSelector/tst_UpdateThrottler.cpp)
+target_link_libraries(RegionSelector_UpdateThrottler PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME RegionSelector_UpdateThrottler COMMAND RegionSelector_UpdateThrottler)
+set_tests_properties(RegionSelector_UpdateThrottler PROPERTIES TIMEOUT 60 LABELS "unit")
 
-set_tests_properties(RegionSelector_UpdateThrottler PROPERTIES
-    TIMEOUT 60
-)
-
-# TextAnnotationEditor logic test (tests core logic without full dependencies)
-add_executable(RegionSelector_TextAnnotationEditor
-    RegionSelector/tst_TextAnnotationEditor.cpp
-)
-
-target_include_directories(RegionSelector_TextAnnotationEditor PRIVATE
-    ${CMAKE_SOURCE_DIR}/include
-    ${CMAKE_SOURCE_DIR}/src
-    ${CMAKE_BINARY_DIR}/generated
-)
-
-target_link_libraries(RegionSelector_TextAnnotationEditor PRIVATE
-    Qt6::Widgets
-    Qt6::Gui
-    Qt6::Test
-)
-
+add_executable(RegionSelector_TextAnnotationEditor RegionSelector/tst_TextAnnotationEditor.cpp)
+target_link_libraries(RegionSelector_TextAnnotationEditor PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME RegionSelector_TextAnnotationEditor COMMAND RegionSelector_TextAnnotationEditor)
+set_tests_properties(RegionSelector_TextAnnotationEditor PROPERTIES TIMEOUT 60 LABELS "unit")
 
-set_tests_properties(RegionSelector_TextAnnotationEditor PROPERTIES
-    TIMEOUT 60
-)
-
-# SelectionStateManager test
-set(SELECTIONSTATEMANAGER_SOURCES
-    ${CMAKE_SOURCE_DIR}/src/region/SelectionStateManager.cpp
-)
-
-set(SELECTIONSTATEMANAGER_HEADERS
-    ${CMAKE_SOURCE_DIR}/include/region/SelectionStateManager.h
-)
-
-add_executable(RegionSelector_SelectionStateManager
-    RegionSelector/tst_SelectionStateManager.cpp
-    ${SELECTIONSTATEMANAGER_SOURCES}
-    ${SELECTIONSTATEMANAGER_HEADERS}
-)
-
-target_include_directories(RegionSelector_SelectionStateManager PRIVATE
-    ${CMAKE_SOURCE_DIR}/include
-    ${CMAKE_SOURCE_DIR}/src
-    ${CMAKE_BINARY_DIR}/generated
-)
-
-target_link_libraries(RegionSelector_SelectionStateManager PRIVATE
-    Qt6::Widgets
-    Qt6::Gui
-    Qt6::Test
-)
-
+add_executable(RegionSelector_SelectionStateManager RegionSelector/tst_SelectionStateManager.cpp)
+target_link_libraries(RegionSelector_SelectionStateManager PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME RegionSelector_SelectionStateManager COMMAND RegionSelector_SelectionStateManager)
-
-set_tests_properties(RegionSelector_SelectionStateManager PROPERTIES
-    TIMEOUT 60
-)
+set_tests_properties(RegionSelector_SelectionStateManager PROPERTIES TIMEOUT 60 LABELS "unit")
 
 # ============================================================================
-# AudioFileWriter Tests
+# Audio Tests (link snaptray_platform for full audio dependencies)
 # ============================================================================
 
-set(AUDIOFILEWRITER_SOURCES
-    ${CMAKE_SOURCE_DIR}/src/AudioFileWriter.cpp
-)
-
-set(AUDIOFILEWRITER_HEADERS
-    ${CMAKE_SOURCE_DIR}/include/AudioFileWriter.h
-)
-
-add_executable(Audio_AudioFileWriter
-    Audio/tst_AudioFileWriter.cpp
-    ${AUDIOFILEWRITER_SOURCES}
-    ${AUDIOFILEWRITER_HEADERS}
-)
-
-target_include_directories(Audio_AudioFileWriter PRIVATE
-    ${CMAKE_SOURCE_DIR}/include
-    ${CMAKE_SOURCE_DIR}/src
-    ${CMAKE_BINARY_DIR}/generated
-)
-
-target_link_libraries(Audio_AudioFileWriter PRIVATE
-    Qt6::Core
-    Qt6::Test
-    Qt6::Concurrent
-)
-
+add_executable(Audio_AudioFileWriter Audio/tst_AudioFileWriter.cpp)
+target_link_libraries(Audio_AudioFileWriter PRIVATE snaptray_platform Qt6::Test)
 add_test(NAME Audio_AudioFileWriter COMMAND Audio_AudioFileWriter)
-
-set_tests_properties(Audio_AudioFileWriter PROPERTIES
-    TIMEOUT 60
-)
+set_tests_properties(Audio_AudioFileWriter PROPERTIES TIMEOUT 60 LABELS "unit")
 
 # ============================================================================
-# NativeGifEncoder Tests
+# Encoding Tests (link snaptray_platform)
 # ============================================================================
 
-set(NATIVEGIFENCODER_SOURCES
-    ${CMAKE_SOURCE_DIR}/src/encoding/NativeGifEncoder.cpp
-)
-
-set(NATIVEGIFENCODER_HEADERS
-    ${CMAKE_SOURCE_DIR}/include/encoding/NativeGifEncoder.h
-)
-
-add_executable(Encoding_NativeGifEncoder
-    Encoding/tst_NativeGifEncoder.cpp
-    ${NATIVEGIFENCODER_SOURCES}
-    ${NATIVEGIFENCODER_HEADERS}
-)
-
-target_include_directories(Encoding_NativeGifEncoder PRIVATE
-    ${CMAKE_SOURCE_DIR}/include
-    ${CMAKE_SOURCE_DIR}/src
-    ${CMAKE_SOURCE_DIR}/external
-    ${CMAKE_BINARY_DIR}/generated
-)
-
-target_link_libraries(Encoding_NativeGifEncoder PRIVATE
-    Qt6::Core
-    Qt6::Gui
-    Qt6::Test
-)
-
+add_executable(Encoding_NativeGifEncoder Encoding/tst_NativeGifEncoder.cpp)
+target_link_libraries(Encoding_NativeGifEncoder PRIVATE snaptray_platform Qt6::Test)
 add_test(NAME Encoding_NativeGifEncoder COMMAND Encoding_NativeGifEncoder)
+set_tests_properties(Encoding_NativeGifEncoder PROPERTIES TIMEOUT 120 LABELS "integration;slow")
 
-set_tests_properties(Encoding_NativeGifEncoder PROPERTIES
-    TIMEOUT 120
-)
-
-# ============================================================================
-# EncoderFactory Tests
-# ============================================================================
-
-set(ENCODERFACTORY_SOURCES
-    ${CMAKE_SOURCE_DIR}/src/encoding/EncoderFactory.cpp
-    ${CMAKE_SOURCE_DIR}/src/encoding/NativeGifEncoder.cpp
-    ${CMAKE_SOURCE_DIR}/src/encoding/WebPAnimEncoder.cpp
-    ${CMAKE_SOURCE_DIR}/src/VideoEncoderFactory.cpp
-)
-
-set(ENCODERFACTORY_HEADERS
-    ${CMAKE_SOURCE_DIR}/include/encoding/EncoderFactory.h
-    ${CMAKE_SOURCE_DIR}/include/encoding/NativeGifEncoder.h
-    ${CMAKE_SOURCE_DIR}/include/encoding/WebPAnimEncoder.h
-    ${CMAKE_SOURCE_DIR}/include/IVideoEncoder.h
-)
-
-# Platform-specific encoder sources
-if(APPLE)
-    list(APPEND ENCODERFACTORY_SOURCES
-        ${CMAKE_SOURCE_DIR}/src/AVFoundationEncoder.mm
-    )
-    list(APPEND ENCODERFACTORY_HEADERS
-        ${CMAKE_SOURCE_DIR}/include/AVFoundationEncoder.h
-    )
-elseif(WIN32)
-    list(APPEND ENCODERFACTORY_SOURCES
-        ${CMAKE_SOURCE_DIR}/src/MediaFoundationEncoder.cpp
-    )
-    list(APPEND ENCODERFACTORY_HEADERS
-        ${CMAKE_SOURCE_DIR}/include/MediaFoundationEncoder.h
-    )
-endif()
-
-add_executable(Encoding_EncoderFactory
-    Encoding/tst_EncoderFactory.cpp
-    ${ENCODERFACTORY_SOURCES}
-    ${ENCODERFACTORY_HEADERS}
-)
-
-target_include_directories(Encoding_EncoderFactory PRIVATE
-    ${CMAKE_SOURCE_DIR}/include
-    ${CMAKE_SOURCE_DIR}/src
-    ${CMAKE_SOURCE_DIR}/external
-    ${CMAKE_BINARY_DIR}/generated
-    ${CMAKE_BINARY_DIR}/_deps/libwebp-src/src
-)
-
-target_link_libraries(Encoding_EncoderFactory PRIVATE
-    Qt6::Core
-    Qt6::Gui
-    Qt6::Test
-    webp
-    libwebpmux
-)
-
-# Platform-specific frameworks for encoder tests
-if(APPLE)
-    find_library(AVFOUNDATION_FRAMEWORK AVFoundation)
-    find_library(COREMEDIA_FRAMEWORK CoreMedia)
-    find_library(COREVIDEO_FRAMEWORK CoreVideo)
-    target_link_libraries(Encoding_EncoderFactory PRIVATE
-        ${AVFOUNDATION_FRAMEWORK}
-        ${COREMEDIA_FRAMEWORK}
-        ${COREVIDEO_FRAMEWORK}
-    )
-elseif(WIN32)
-    target_link_libraries(Encoding_EncoderFactory PRIVATE
-        mfplat
-        mfreadwrite
-        mfuuid
-    )
-endif()
-
+add_executable(Encoding_EncoderFactory Encoding/tst_EncoderFactory.cpp)
+target_link_libraries(Encoding_EncoderFactory PRIVATE snaptray_platform Qt6::Test)
 add_test(NAME Encoding_EncoderFactory COMMAND Encoding_EncoderFactory)
-
-set_tests_properties(Encoding_EncoderFactory PROPERTIES
-    TIMEOUT 120
-)
+set_tests_properties(Encoding_EncoderFactory PROPERTIES TIMEOUT 120 LABELS "integration;slow")
 
 # ============================================================================
-# RecordingManager Tests
+# Detection Tests (link snaptray_algorithms)
 # ============================================================================
 
-# NOTE: RecordingManager tests require linking with the main application's
-# compiled objects due to complex Qt MOC dependencies. These tests are
-# configured but may require additional setup to build correctly.
-#
-# TODO: Consider one of these approaches:
-# 1. Create a static library target for recording components
-# 2. Use dependency injection to allow mock testing
-# 3. Link against the main application's object files
-#
-# For now, we provide simplified tests that work with available infrastructure.
+add_executable(Detection_FaceDetector Detection/tst_FaceDetector.cpp)
+target_link_libraries(Detection_FaceDetector PRIVATE snaptray_algorithms Qt6::Widgets Qt6::Test)
+# Add resources for cascade file
+target_sources(Detection_FaceDetector PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
+add_test(NAME Detection_FaceDetector COMMAND Detection_FaceDetector)
+set_tests_properties(Detection_FaceDetector PROPERTIES TIMEOUT 60 LABELS "unit")
 
-# RecordingManager has many dependencies; we test with minimal coupling
-set(RECORDINGMANAGER_HEADERS
-    ${CMAKE_SOURCE_DIR}/include/RecordingManager.h
-    ${CMAKE_SOURCE_DIR}/include/RecordingInitTask.h
-    ${CMAKE_SOURCE_DIR}/include/RecordingRegionSelector.h
-    ${CMAKE_SOURCE_DIR}/include/RecordingControlBar.h
-    ${CMAKE_SOURCE_DIR}/include/RecordingBoundaryOverlay.h
-    ${CMAKE_SOURCE_DIR}/include/encoding/NativeGifEncoder.h
-    ${CMAKE_SOURCE_DIR}/include/AudioFileWriter.h
-    ${CMAKE_SOURCE_DIR}/include/capture/QtCaptureEngine.h
-    ${CMAKE_SOURCE_DIR}/include/IVideoEncoder.h
-    ${CMAKE_SOURCE_DIR}/include/capture/ICaptureEngine.h
-    ${CMAKE_SOURCE_DIR}/include/capture/IAudioCaptureEngine.h
-)
+add_executable(Detection_TextDetector Detection/tst_TextDetector.cpp)
+target_link_libraries(Detection_TextDetector PRIVATE snaptray_algorithms Qt6::Widgets Qt6::Test)
+target_sources(Detection_TextDetector PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
+add_test(NAME Detection_TextDetector COMMAND Detection_TextDetector)
+set_tests_properties(Detection_TextDetector PROPERTIES TIMEOUT 60 LABELS "unit")
 
-if(APPLE)
-    list(APPEND RECORDINGMANAGER_HEADERS
-        ${CMAKE_SOURCE_DIR}/include/capture/SCKCaptureEngine.h
-        ${CMAKE_SOURCE_DIR}/include/capture/CoreAudioCaptureEngine.h
-        ${CMAKE_SOURCE_DIR}/include/AVFoundationEncoder.h
-    )
-endif()
+add_executable(Detection_AutoBlurManager Detection/tst_AutoBlurManager.cpp)
+target_link_libraries(Detection_AutoBlurManager PRIVATE snaptray_algorithms Qt6::Widgets Qt6::Test)
+target_sources(Detection_AutoBlurManager PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
+add_test(NAME Detection_AutoBlurManager COMMAND Detection_AutoBlurManager)
+set_tests_properties(Detection_AutoBlurManager PROPERTIES TIMEOUT 60 LABELS "unit")
 
-# The following tests are temporarily disabled due to complex factory dependencies.
-# They require linking with CaptureEngineFactory, VideoEncoderFactory, and
-# AudioCaptureEngineFactory implementations which are defined in platform-specific
-# source files that need to be included.
-#
-# To enable these tests, either:
-# 1. Add the factory source files (e.g., src/CaptureEngineFactory.cpp)
+# ============================================================================
+# Scrolling Tests (link snaptray_algorithms)
+# ============================================================================
+
+add_executable(Scrolling_ImageStitcher Scrolling/tst_ImageStitcher.cpp)
+target_link_libraries(Scrolling_ImageStitcher PRIVATE snaptray_algorithms Qt6::Widgets Qt6::Test)
+add_test(NAME Scrolling_ImageStitcher COMMAND Scrolling_ImageStitcher)
+set_tests_properties(Scrolling_ImageStitcher PROPERTIES TIMEOUT 60 LABELS "unit")
+
+# ============================================================================
+# Utils Tests (link snaptray_core)
+# ============================================================================
+
+add_executable(Utils_CoordinateHelper Utils/tst_CoordinateHelper.cpp)
+target_link_libraries(Utils_CoordinateHelper PRIVATE snaptray_core Qt6::Widgets Qt6::Test)
+add_test(NAME Utils_CoordinateHelper COMMAND Utils_CoordinateHelper)
+set_tests_properties(Utils_CoordinateHelper PROPERTIES TIMEOUT 60 LABELS "unit")
+
+# ============================================================================
+# Settings Tests (link snaptray_ui for full settings dependencies)
+# ============================================================================
+
+add_executable(Settings_AnnotationSettingsManager Settings/tst_AnnotationSettingsManager.cpp)
+target_link_libraries(Settings_AnnotationSettingsManager PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME Settings_AnnotationSettingsManager COMMAND Settings_AnnotationSettingsManager)
+set_tests_properties(Settings_AnnotationSettingsManager PROPERTIES TIMEOUT 60 LABELS "unit")
+
+# ============================================================================
+# RecordingManager Tests (currently disabled - complex factory dependencies)
+# ============================================================================
+# NOTE: These tests are disabled due to complex factory dependencies.
+# To enable, either:
+# 1. Add factory source files to snaptray_platform
 # 2. Create a shared library target for recording components
-# 3. Use the mock classes in tests/mocks/ with dependency injection
+# 3. Use mock classes in tests/mocks/ with dependency injection
 
 if(FALSE)  # Temporarily disabled
 
-# StateMachine test - tests state machine logic
-add_executable(RecordingManager_StateMachine
-    RecordingManager/tst_StateMachine.cpp
-    ${CMAKE_SOURCE_DIR}/src/RecordingManager.cpp
-    ${CMAKE_SOURCE_DIR}/src/RecordingInitTask.cpp
-    ${CMAKE_SOURCE_DIR}/src/RecordingRegionSelector.cpp
-    ${CMAKE_SOURCE_DIR}/src/RecordingControlBar.cpp
-    ${CMAKE_SOURCE_DIR}/src/RecordingBoundaryOverlay.cpp
-    ${CMAKE_SOURCE_DIR}/src/encoding/EncoderFactory.cpp
-    ${CMAKE_SOURCE_DIR}/src/encoding/NativeGifEncoder.cpp
-    ${CMAKE_SOURCE_DIR}/src/AudioFileWriter.cpp
-    ${CMAKE_SOURCE_DIR}/src/capture/QtCaptureEngine.cpp
-    ${CMAKE_SOURCE_DIR}/src/utils/CoordinateHelper.cpp
-    ${CMAKE_SOURCE_DIR}/src/IconRenderer.cpp
-    ${RECORDINGMANAGER_HEADERS}
-)
-
-# Add platform-specific sources
-if(APPLE)
-    target_sources(RecordingManager_StateMachine PRIVATE
-        ${CMAKE_SOURCE_DIR}/src/platform/WindowLevel_mac.mm
-        ${CMAKE_SOURCE_DIR}/src/capture/SCKCaptureEngine_mac.mm
-        ${CMAKE_SOURCE_DIR}/src/capture/CoreAudioCaptureEngine_mac.mm
-        ${CMAKE_SOURCE_DIR}/src/AVFoundationEncoder.mm
-    )
-elseif(WIN32)
-    target_sources(RecordingManager_StateMachine PRIVATE
-        ${CMAKE_SOURCE_DIR}/src/platform/WindowLevel_win.cpp
-        ${CMAKE_SOURCE_DIR}/src/capture/DXGICaptureEngine_win.cpp
-        ${CMAKE_SOURCE_DIR}/src/capture/WASAPIAudioCaptureEngine_win.cpp
-        ${CMAKE_SOURCE_DIR}/src/MediaFoundationEncoder.cpp
-    )
-endif()
-
-target_include_directories(RecordingManager_StateMachine PRIVATE
-    ${CMAKE_SOURCE_DIR}/include
-    ${CMAKE_SOURCE_DIR}/src
-    ${CMAKE_SOURCE_DIR}/external
-    ${CMAKE_BINARY_DIR}/generated
-)
-
-target_link_libraries(RecordingManager_StateMachine PRIVATE
-    Qt6::Widgets
-    Qt6::Gui
-    Qt6::Svg
-    Qt6::Test
-    Qt6::Concurrent
-)
-
-if(APPLE)
-    find_library(AVFOUNDATION_FRAMEWORK AVFoundation)
-    find_library(COREMEDIA_FRAMEWORK CoreMedia)
-    find_library(COREVIDEO_FRAMEWORK CoreVideo)
-    find_library(COREAUDIO_FRAMEWORK CoreAudio)
-    find_library(AUDIOTOOLBOX_FRAMEWORK AudioToolbox)
-    find_library(SCREENCAPTUREKIT_FRAMEWORK ScreenCaptureKit)
-    find_library(COREGRAPHICS_FRAMEWORK CoreGraphics)
-    find_library(APPKIT_FRAMEWORK AppKit)
-    target_link_libraries(RecordingManager_StateMachine PRIVATE
-        ${AVFOUNDATION_FRAMEWORK}
-        ${COREMEDIA_FRAMEWORK}
-        ${COREVIDEO_FRAMEWORK}
-        ${COREAUDIO_FRAMEWORK}
-        ${AUDIOTOOLBOX_FRAMEWORK}
-        ${COREGRAPHICS_FRAMEWORK}
-        ${APPKIT_FRAMEWORK}
-    )
-    if(SCREENCAPTUREKIT_FRAMEWORK)
-        target_link_libraries(RecordingManager_StateMachine PRIVATE
-            ${SCREENCAPTUREKIT_FRAMEWORK}
-        )
-    endif()
-elseif(WIN32)
-    target_link_libraries(RecordingManager_StateMachine PRIVATE
-        mfplat mfreadwrite mfuuid d3d11 dxgi
-    )
-endif()
-
+add_executable(RecordingManager_StateMachine RecordingManager/tst_StateMachine.cpp)
+target_link_libraries(RecordingManager_StateMachine PRIVATE snaptray_ui snaptray_platform Qt6::Test)
 add_test(NAME RecordingManager_StateMachine COMMAND RecordingManager_StateMachine)
-set_tests_properties(RecordingManager_StateMachine PROPERTIES TIMEOUT 60)
+set_tests_properties(RecordingManager_StateMachine PROPERTIES TIMEOUT 60 LABELS "integration")
 
-# Lifecycle test - reuses same sources
-add_executable(RecordingManager_Lifecycle
-    RecordingManager/tst_Lifecycle.cpp
-    ${CMAKE_SOURCE_DIR}/src/RecordingManager.cpp
-    ${CMAKE_SOURCE_DIR}/src/RecordingInitTask.cpp
-    ${CMAKE_SOURCE_DIR}/src/RecordingRegionSelector.cpp
-    ${CMAKE_SOURCE_DIR}/src/RecordingControlBar.cpp
-    ${CMAKE_SOURCE_DIR}/src/RecordingBoundaryOverlay.cpp
-    ${CMAKE_SOURCE_DIR}/src/encoding/EncoderFactory.cpp
-    ${CMAKE_SOURCE_DIR}/src/encoding/NativeGifEncoder.cpp
-    ${CMAKE_SOURCE_DIR}/src/AudioFileWriter.cpp
-    ${CMAKE_SOURCE_DIR}/src/capture/QtCaptureEngine.cpp
-    ${CMAKE_SOURCE_DIR}/src/utils/CoordinateHelper.cpp
-    ${CMAKE_SOURCE_DIR}/src/IconRenderer.cpp
-)
-
-if(APPLE)
-    target_sources(RecordingManager_Lifecycle PRIVATE
-        ${CMAKE_SOURCE_DIR}/src/platform/WindowLevel_mac.mm
-        ${CMAKE_SOURCE_DIR}/src/capture/SCKCaptureEngine_mac.mm
-        ${CMAKE_SOURCE_DIR}/src/capture/CoreAudioCaptureEngine_mac.mm
-        ${CMAKE_SOURCE_DIR}/src/AVFoundationEncoder.mm
-    )
-elseif(WIN32)
-    target_sources(RecordingManager_Lifecycle PRIVATE
-        ${CMAKE_SOURCE_DIR}/src/platform/WindowLevel_win.cpp
-        ${CMAKE_SOURCE_DIR}/src/capture/DXGICaptureEngine_win.cpp
-        ${CMAKE_SOURCE_DIR}/src/capture/WASAPIAudioCaptureEngine_win.cpp
-        ${CMAKE_SOURCE_DIR}/src/MediaFoundationEncoder.cpp
-    )
-endif()
-
-target_include_directories(RecordingManager_Lifecycle PRIVATE
-    ${CMAKE_SOURCE_DIR}/include
-    ${CMAKE_SOURCE_DIR}/src
-    ${CMAKE_SOURCE_DIR}/external
-    ${CMAKE_BINARY_DIR}/generated
-)
-
-target_link_libraries(RecordingManager_Lifecycle PRIVATE
-    Qt6::Widgets
-    Qt6::Gui
-    Qt6::Svg
-    Qt6::Test
-    Qt6::Concurrent
-)
-
-if(APPLE)
-    target_link_libraries(RecordingManager_Lifecycle PRIVATE
-        ${AVFOUNDATION_FRAMEWORK}
-        ${COREMEDIA_FRAMEWORK}
-        ${COREVIDEO_FRAMEWORK}
-        ${COREAUDIO_FRAMEWORK}
-        ${AUDIOTOOLBOX_FRAMEWORK}
-        ${COREGRAPHICS_FRAMEWORK}
-        ${APPKIT_FRAMEWORK}
-    )
-    if(SCREENCAPTUREKIT_FRAMEWORK)
-        target_link_libraries(RecordingManager_Lifecycle PRIVATE
-            ${SCREENCAPTUREKIT_FRAMEWORK}
-        )
-    endif()
-elseif(WIN32)
-    target_link_libraries(RecordingManager_Lifecycle PRIVATE
-        mfplat mfreadwrite mfuuid d3d11 dxgi
-    )
-endif()
-
+add_executable(RecordingManager_Lifecycle RecordingManager/tst_Lifecycle.cpp)
+target_link_libraries(RecordingManager_Lifecycle PRIVATE snaptray_ui snaptray_platform Qt6::Test)
 add_test(NAME RecordingManager_Lifecycle COMMAND RecordingManager_Lifecycle)
-set_tests_properties(RecordingManager_Lifecycle PROPERTIES TIMEOUT 60)
+set_tests_properties(RecordingManager_Lifecycle PROPERTIES TIMEOUT 60 LABELS "integration")
 
-# AudioIntegration test
-add_executable(RecordingManager_AudioIntegration
-    RecordingManager/tst_AudioIntegration.cpp
-    ${CMAKE_SOURCE_DIR}/src/RecordingManager.cpp
-    ${CMAKE_SOURCE_DIR}/src/RecordingInitTask.cpp
-    ${CMAKE_SOURCE_DIR}/src/RecordingRegionSelector.cpp
-    ${CMAKE_SOURCE_DIR}/src/RecordingControlBar.cpp
-    ${CMAKE_SOURCE_DIR}/src/RecordingBoundaryOverlay.cpp
-    ${CMAKE_SOURCE_DIR}/src/encoding/EncoderFactory.cpp
-    ${CMAKE_SOURCE_DIR}/src/encoding/NativeGifEncoder.cpp
-    ${CMAKE_SOURCE_DIR}/src/AudioFileWriter.cpp
-    ${CMAKE_SOURCE_DIR}/src/capture/QtCaptureEngine.cpp
-    ${CMAKE_SOURCE_DIR}/src/utils/CoordinateHelper.cpp
-    ${CMAKE_SOURCE_DIR}/src/IconRenderer.cpp
-)
-
-if(APPLE)
-    target_sources(RecordingManager_AudioIntegration PRIVATE
-        ${CMAKE_SOURCE_DIR}/src/platform/WindowLevel_mac.mm
-        ${CMAKE_SOURCE_DIR}/src/capture/SCKCaptureEngine_mac.mm
-        ${CMAKE_SOURCE_DIR}/src/capture/CoreAudioCaptureEngine_mac.mm
-        ${CMAKE_SOURCE_DIR}/src/AVFoundationEncoder.mm
-    )
-elseif(WIN32)
-    target_sources(RecordingManager_AudioIntegration PRIVATE
-        ${CMAKE_SOURCE_DIR}/src/platform/WindowLevel_win.cpp
-        ${CMAKE_SOURCE_DIR}/src/capture/DXGICaptureEngine_win.cpp
-        ${CMAKE_SOURCE_DIR}/src/capture/WASAPIAudioCaptureEngine_win.cpp
-        ${CMAKE_SOURCE_DIR}/src/MediaFoundationEncoder.cpp
-    )
-endif()
-
-target_include_directories(RecordingManager_AudioIntegration PRIVATE
-    ${CMAKE_SOURCE_DIR}/include
-    ${CMAKE_SOURCE_DIR}/src
-    ${CMAKE_SOURCE_DIR}/external
-    ${CMAKE_BINARY_DIR}/generated
-)
-
-target_link_libraries(RecordingManager_AudioIntegration PRIVATE
-    Qt6::Widgets
-    Qt6::Gui
-    Qt6::Svg
-    Qt6::Test
-    Qt6::Concurrent
-)
-
-if(APPLE)
-    target_link_libraries(RecordingManager_AudioIntegration PRIVATE
-        ${AVFOUNDATION_FRAMEWORK}
-        ${COREMEDIA_FRAMEWORK}
-        ${COREVIDEO_FRAMEWORK}
-        ${COREAUDIO_FRAMEWORK}
-        ${AUDIOTOOLBOX_FRAMEWORK}
-        ${COREGRAPHICS_FRAMEWORK}
-        ${APPKIT_FRAMEWORK}
-    )
-    if(SCREENCAPTUREKIT_FRAMEWORK)
-        target_link_libraries(RecordingManager_AudioIntegration PRIVATE
-            ${SCREENCAPTUREKIT_FRAMEWORK}
-        )
-    endif()
-elseif(WIN32)
-    target_link_libraries(RecordingManager_AudioIntegration PRIVATE
-        mfplat mfreadwrite mfuuid d3d11 dxgi
-    )
-endif()
-
+add_executable(RecordingManager_AudioIntegration RecordingManager/tst_AudioIntegration.cpp)
+target_link_libraries(RecordingManager_AudioIntegration PRIVATE snaptray_ui snaptray_platform Qt6::Test)
 add_test(NAME RecordingManager_AudioIntegration COMMAND RecordingManager_AudioIntegration)
-set_tests_properties(RecordingManager_AudioIntegration PROPERTIES TIMEOUT 60)
+set_tests_properties(RecordingManager_AudioIntegration PROPERTIES TIMEOUT 60 LABELS "integration")
 
-# ============================================================================
-# RecordingInitTask Tests
-# ============================================================================
-
-add_executable(RecordingManager_InitTask
-    RecordingManager/tst_InitTask.cpp
-    ${CMAKE_SOURCE_DIR}/src/RecordingInitTask.cpp
-    ${CMAKE_SOURCE_DIR}/src/encoding/EncoderFactory.cpp
-    ${CMAKE_SOURCE_DIR}/src/encoding/NativeGifEncoder.cpp
-    ${CMAKE_SOURCE_DIR}/src/AudioFileWriter.cpp
-    ${CMAKE_SOURCE_DIR}/src/capture/QtCaptureEngine.cpp
-)
-
-if(APPLE)
-    target_sources(RecordingManager_InitTask PRIVATE
-        ${CMAKE_SOURCE_DIR}/src/capture/SCKCaptureEngine_mac.mm
-        ${CMAKE_SOURCE_DIR}/src/capture/CoreAudioCaptureEngine_mac.mm
-        ${CMAKE_SOURCE_DIR}/src/AVFoundationEncoder.mm
-    )
-elseif(WIN32)
-    target_sources(RecordingManager_InitTask PRIVATE
-        ${CMAKE_SOURCE_DIR}/src/capture/DXGICaptureEngine_win.cpp
-        ${CMAKE_SOURCE_DIR}/src/capture/WASAPIAudioCaptureEngine_win.cpp
-        ${CMAKE_SOURCE_DIR}/src/MediaFoundationEncoder.cpp
-    )
-endif()
-
-target_include_directories(RecordingManager_InitTask PRIVATE
-    ${CMAKE_SOURCE_DIR}/include
-    ${CMAKE_SOURCE_DIR}/src
-    ${CMAKE_SOURCE_DIR}/external
-    ${CMAKE_BINARY_DIR}/generated
-)
-
-target_link_libraries(RecordingManager_InitTask PRIVATE
-    Qt6::Core
-    Qt6::Gui
-    Qt6::Widgets
-    Qt6::Test
-    Qt6::Concurrent
-)
-
-if(APPLE)
-    target_link_libraries(RecordingManager_InitTask PRIVATE
-        ${AVFOUNDATION_FRAMEWORK}
-        ${COREMEDIA_FRAMEWORK}
-        ${COREVIDEO_FRAMEWORK}
-        ${COREAUDIO_FRAMEWORK}
-        ${AUDIOTOOLBOX_FRAMEWORK}
-        ${COREGRAPHICS_FRAMEWORK}
-    )
-    if(SCREENCAPTUREKIT_FRAMEWORK)
-        target_link_libraries(RecordingManager_InitTask PRIVATE
-            ${SCREENCAPTUREKIT_FRAMEWORK}
-        )
-    endif()
-elseif(WIN32)
-    target_link_libraries(RecordingManager_InitTask PRIVATE
-        mfplat mfreadwrite mfuuid d3d11 dxgi
-    )
-endif()
-
+add_executable(RecordingManager_InitTask RecordingManager/tst_InitTask.cpp)
+target_link_libraries(RecordingManager_InitTask PRIVATE snaptray_ui snaptray_platform Qt6::Test)
 add_test(NAME RecordingManager_InitTask COMMAND RecordingManager_InitTask)
-set_tests_properties(RecordingManager_InitTask PROPERTIES TIMEOUT 60)
+set_tests_properties(RecordingManager_InitTask PROPERTIES TIMEOUT 60 LABELS "integration")
 
 endif()  # End of temporarily disabled RecordingManager tests
 
 # ============================================================================
-# Detection Tests
+# CTest Label Summary
 # ============================================================================
-
-# Source files for detection tests
-set(DETECTION_SOURCES
-    ${CMAKE_SOURCE_DIR}/src/detection/FaceDetector.cpp
-    ${CMAKE_SOURCE_DIR}/src/detection/TextDetector.cpp
-    ${CMAKE_SOURCE_DIR}/src/detection/AutoBlurManager.cpp
-)
-
-set(DETECTION_HEADERS
-    ${CMAKE_SOURCE_DIR}/include/detection/IDetector.h
-    ${CMAKE_SOURCE_DIR}/include/detection/FaceDetector.h
-    ${CMAKE_SOURCE_DIR}/include/detection/TextDetector.h
-    ${CMAKE_SOURCE_DIR}/include/detection/AutoBlurManager.h
-)
-
-# OpenCV include directories for detection tests
-set(OPENCV_DETECTION_INCLUDES
-    ${CMAKE_BINARY_DIR}
-    ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/core/include
-    ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/imgproc/include
-    ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/features2d/include
-    ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/flann/include
-    ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/objdetect/include
-)
-
-# Helper function for detection tests
-function(add_detection_test TEST_NAME TEST_SOURCE)
-    add_executable(${TEST_NAME}
-        ${TEST_SOURCE}
-        ${DETECTION_SOURCES}
-        ${DETECTION_HEADERS}
-    )
-
-    target_include_directories(${TEST_NAME} PRIVATE
-        ${CMAKE_SOURCE_DIR}/include
-        ${CMAKE_SOURCE_DIR}/src
-        ${CMAKE_BINARY_DIR}/generated
-        ${OPENCV_DETECTION_INCLUDES}
-    )
-
-    target_link_libraries(${TEST_NAME} PRIVATE
-        Qt6::Core
-        Qt6::Gui
-        Qt6::Widgets
-        Qt6::Test
-        opencv_core
-        opencv_imgproc
-        opencv_features2d
-        opencv_flann
-        opencv_objdetect
-    )
-
-    # Add resources for cascade file
-    target_sources(${TEST_NAME} PRIVATE
-        ${CMAKE_SOURCE_DIR}/resources/resources.qrc
-    )
-
-    add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
-
-    set_tests_properties(${TEST_NAME} PROPERTIES
-        TIMEOUT 60
-    )
-endfunction()
-
-# FaceDetector test
-add_detection_test(Detection_FaceDetector
-    Detection/tst_FaceDetector.cpp)
-
-# TextDetector test
-add_detection_test(Detection_TextDetector
-    Detection/tst_TextDetector.cpp)
-
-# AutoBlurManager test
-add_detection_test(Detection_AutoBlurManager
-    Detection/tst_AutoBlurManager.cpp)
-
+# Labels:
+#   unit        - Fast unit tests (most tests)
+#   integration - Tests requiring platform features or external resources
+#   slow        - Tests with longer timeouts (120s+)
+#
+# Run by label:
+#   ctest -L unit           # Run all unit tests
+#   ctest -L integration    # Run integration tests
+#   ctest -L slow           # Run slow tests
+#   ctest -LE slow          # Exclude slow tests
 # ============================================================================
-# Scrolling Tests - ImageStitcher
-# ============================================================================
-
-# OpenCV include directories for scrolling tests
-set(OPENCV_SCROLLING_INCLUDES
-    ${CMAKE_BINARY_DIR}
-    ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/core/include
-    ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/imgproc/include
-)
-
-add_executable(Scrolling_ImageStitcher
-    Scrolling/tst_ImageStitcher.cpp
-    ${CMAKE_SOURCE_DIR}/src/scrolling/ImageStitcher.cpp
-    ${CMAKE_SOURCE_DIR}/src/scrolling/ImageStitcherAlgorithms.cpp
-    ${CMAKE_SOURCE_DIR}/include/scrolling/ImageStitcher.h
-)
-
-target_include_directories(Scrolling_ImageStitcher PRIVATE
-    ${CMAKE_SOURCE_DIR}/include
-    ${CMAKE_SOURCE_DIR}/src
-    ${CMAKE_BINARY_DIR}/generated
-    ${OPENCV_SCROLLING_INCLUDES}
-)
-
-target_link_libraries(Scrolling_ImageStitcher PRIVATE
-    Qt6::Core
-    Qt6::Gui
-    Qt6::Widgets
-    Qt6::Test
-    opencv_core
-    opencv_imgproc
-)
-
-add_test(NAME Scrolling_ImageStitcher COMMAND Scrolling_ImageStitcher)
-set_tests_properties(Scrolling_ImageStitcher PROPERTIES TIMEOUT 60)
-
-# ============================================================================
-# Utils Tests - CoordinateHelper
-# ============================================================================
-
-set(COORDINATEHELPER_SOURCES
-    ${CMAKE_SOURCE_DIR}/src/utils/CoordinateHelper.cpp
-)
-
-set(COORDINATEHELPER_HEADERS
-    ${CMAKE_SOURCE_DIR}/include/utils/CoordinateHelper.h
-)
-
-add_executable(Utils_CoordinateHelper
-    Utils/tst_CoordinateHelper.cpp
-    ${COORDINATEHELPER_SOURCES}
-    ${COORDINATEHELPER_HEADERS}
-)
-
-target_include_directories(Utils_CoordinateHelper PRIVATE
-    ${CMAKE_SOURCE_DIR}/include
-    ${CMAKE_SOURCE_DIR}/src
-    ${CMAKE_BINARY_DIR}/generated
-)
-
-target_link_libraries(Utils_CoordinateHelper PRIVATE
-    Qt6::Widgets
-    Qt6::Gui
-    Qt6::Test
-)
-
-add_test(NAME Utils_CoordinateHelper COMMAND Utils_CoordinateHelper)
-set_tests_properties(Utils_CoordinateHelper PROPERTIES TIMEOUT 60)
-
-# ============================================================================
-# PinWindow Tests - ImageTransformer
-# ============================================================================
-
-add_executable(PinWindow_ImageTransformer
-    PinWindow/tst_ImageTransformer.cpp
-    ${CMAKE_SOURCE_DIR}/src/pinwindow/ImageTransformer.cpp
-    ${CMAKE_SOURCE_DIR}/include/pinwindow/ImageTransformer.h
-)
-
-target_include_directories(PinWindow_ImageTransformer PRIVATE
-    ${CMAKE_SOURCE_DIR}/include
-    ${CMAKE_SOURCE_DIR}/src
-    ${CMAKE_BINARY_DIR}/generated
-)
-
-target_link_libraries(PinWindow_ImageTransformer PRIVATE
-    Qt6::Widgets
-    Qt6::Gui
-    Qt6::Test
-)
-
-add_test(NAME PinWindow_ImageTransformer COMMAND PinWindow_ImageTransformer)
-set_tests_properties(PinWindow_ImageTransformer PROPERTIES TIMEOUT 60)
-
-# ============================================================================
-# Settings Tests - AnnotationSettingsManager
-# ============================================================================
-
-set(ANNOTATIONSETTINGSMANAGER_SOURCES
-    ${CMAKE_SOURCE_DIR}/src/settings/AnnotationSettingsManager.cpp
-    ${CMAKE_SOURCE_DIR}/src/ui/sections/MosaicBlurTypeSection.cpp
-    ${CMAKE_SOURCE_DIR}/src/ToolbarStyle.cpp
-    ${CMAKE_SOURCE_DIR}/src/GlassRenderer.cpp
-)
-
-set(ANNOTATIONSETTINGSMANAGER_HEADERS
-    ${CMAKE_SOURCE_DIR}/include/settings/AnnotationSettingsManager.h
-    ${CMAKE_SOURCE_DIR}/include/settings/Settings.h
-    ${CMAKE_SOURCE_DIR}/include/annotations/StepBadgeAnnotation.h
-    ${CMAKE_SOURCE_DIR}/include/ui/sections/MosaicBlurTypeSection.h
-    ${CMAKE_SOURCE_DIR}/include/ui/IWidgetSection.h
-    ${CMAKE_SOURCE_DIR}/include/ToolbarStyle.h
-    ${CMAKE_SOURCE_DIR}/include/GlassRenderer.h
-)
-
-add_executable(Settings_AnnotationSettingsManager
-    Settings/tst_AnnotationSettingsManager.cpp
-    ${ANNOTATIONSETTINGSMANAGER_SOURCES}
-    ${ANNOTATIONSETTINGSMANAGER_HEADERS}
-)
-
-target_include_directories(Settings_AnnotationSettingsManager PRIVATE
-    ${CMAKE_SOURCE_DIR}/include
-    ${CMAKE_SOURCE_DIR}/src
-    ${CMAKE_BINARY_DIR}/generated
-)
-
-target_link_libraries(Settings_AnnotationSettingsManager PRIVATE
-    Qt6::Widgets
-    Qt6::Gui
-    Qt6::Svg
-    Qt6::Test
-)
-
-add_test(NAME Settings_AnnotationSettingsManager COMMAND Settings_AnnotationSettingsManager)
-set_tests_properties(Settings_AnnotationSettingsManager PROPERTIES TIMEOUT 60)

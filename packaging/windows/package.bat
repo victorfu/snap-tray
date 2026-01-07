@@ -21,7 +21,7 @@ REM   CODESIGN_PASSWORD    - Certificate password
 
 set SCRIPT_DIR=%~dp0
 set PROJECT_ROOT=%SCRIPT_DIR%..\..
-set BUILD_DIR=%PROJECT_ROOT%\release
+set BUILD_DIR=%PROJECT_ROOT%\build
 set OUTPUT_DIR=%PROJECT_ROOT%\dist
 set STAGING_DIR=%BUILD_DIR%\staging
 
@@ -75,9 +75,19 @@ if errorlevel 1 (
 REM Step 1: Build Release
 echo.
 echo [1/5] Building release...
+
+REM Check for sccache (improves rebuild times significantly)
+set SCCACHE_ARGS=
+where sccache >nul 2>&1
+if not errorlevel 1 (
+    echo Using sccache for faster builds
+    set SCCACHE_ARGS=-DCMAKE_CXX_COMPILER_LAUNCHER=sccache -DCMAKE_C_COMPILER_LAUNCHER=sccache
+)
+
 cmake -S "%PROJECT_ROOT%" -B "%BUILD_DIR%" ^
     -DCMAKE_BUILD_TYPE=Release ^
-    -DCMAKE_PREFIX_PATH="%QT_PATH%"
+    -DCMAKE_PREFIX_PATH="%QT_PATH%" ^
+    %SCCACHE_ARGS%
 if errorlevel 1 (
     echo ERROR: CMake configure failed
     exit /b 1

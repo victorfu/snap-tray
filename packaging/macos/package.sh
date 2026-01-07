@@ -16,7 +16,7 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-BUILD_DIR="${PROJECT_ROOT}/release"
+BUILD_DIR="${PROJECT_ROOT}/build"
 OUTPUT_DIR="${PROJECT_ROOT}/dist"
 
 # Extract version from CMakeLists.txt
@@ -48,9 +48,18 @@ echo "Qt path: $QT_PREFIX"
 # Step 1: Build Release
 echo ""
 echo -e "${YELLOW}[1/5] Building release...${NC}"
+
+# Check for ccache (improves rebuild times significantly)
+CCACHE_ARGS=""
+if command -v ccache &> /dev/null; then
+    echo "Using ccache for faster builds"
+    CCACHE_ARGS="-DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DCMAKE_C_COMPILER_LAUNCHER=ccache"
+fi
+
 cmake -S "$PROJECT_ROOT" -B "$BUILD_DIR" \
     -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_PREFIX_PATH="$QT_PREFIX"
+    -DCMAKE_PREFIX_PATH="$QT_PREFIX" \
+    $CCACHE_ARGS
 cmake --build "$BUILD_DIR" --config Release --parallel
 
 # App is built in bin/ subdirectory

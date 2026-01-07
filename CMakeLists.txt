@@ -207,85 +207,279 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-set(SOURCES
-    src/main.cpp
-    src/MainApplication.cpp
-    src/SettingsDialog.cpp
-    src/RegionSelector.cpp
-    src/PinWindow.cpp
-    src/PinWindowManager.cpp
-    src/AnnotationLayer.cpp
+# ============================================================================
+# Library Targets for Modular Build
+# ============================================================================
+# Dependency graph:
+#   snaptray_app -> snaptray_ui, snaptray_platform, snaptray_algorithms
+#   snaptray_ui -> snaptray_core, snaptray_algorithms, snaptray_platform
+#   snaptray_platform -> snaptray_core
+#   snaptray_algorithms -> snaptray_core
+#   snaptray_core -> Qt6 only
+# ============================================================================
+
+# ----------------------------------------------------------------------------
+# snaptray_core: Foundation layer (annotations, settings, utilities)
+# ----------------------------------------------------------------------------
+add_library(snaptray_core STATIC
     src/annotations/AnnotationItem.cpp
     src/annotations/PencilStroke.cpp
     src/annotations/MarkerStroke.cpp
     src/annotations/ArrowAnnotation.cpp
     src/annotations/PolylineAnnotation.cpp
     src/annotations/ShapeAnnotation.cpp
-    src/annotations/MosaicStroke.cpp
-    src/annotations/MosaicRectAnnotation.cpp
     src/annotations/StepBadgeAnnotation.cpp
     src/annotations/EmojiStickerAnnotation.cpp
     src/annotations/ErasedItemsGroup.cpp
     src/annotations/EraserStroke.cpp
     src/annotations/TextAnnotation.cpp
-    src/ScreenCanvas.cpp
-    src/IconRenderer.cpp
-    src/ColorPaletteWidget.cpp
-    src/EmojiPicker.cpp
-    src/LineWidthWidget.cpp
-    src/ColorAndWidthWidget.cpp
-    src/ToolbarWidget.cpp
-    src/ToolbarStyle.cpp
-    src/GlassRenderer.cpp
-    src/toolbar/ToolbarButtonConfig.cpp
-    src/toolbar/ToolbarRenderer.cpp
     src/settings/AnnotationSettingsManager.cpp
     src/settings/FileSettingsManager.cpp
     src/settings/PinWindowSettingsManager.cpp
-    src/AnnotationController.cpp
-    src/ColorPickerDialog.mm
-    src/InlineTextEditor.cpp
-    src/LaserPointerRenderer.cpp
-    src/ClickRippleRenderer.cpp
-    src/WatermarkRenderer.cpp
-    src/LoadingSpinnerRenderer.cpp
-    src/RecordingManager.cpp
-    src/RecordingRegionSelector.cpp
-    src/RecordingControlBar.cpp
-    src/RecordingBoundaryOverlay.cpp
-    src/RecordingAnnotationOverlay.cpp
-    src/RecordingInitTask.cpp
-    src/VideoEncoderFactory.cpp
-    # Recording visual effects
-    include/recording/CursorHighlightEffect.h
-    include/recording/SpotlightEffect.h
-    src/recording/CursorHighlightEffect.cpp
-    src/recording/SpotlightEffect.cpp
+    src/utils/CoordinateHelper.cpp
+    src/AudioFileWriter.cpp
+    # Headers with Q_OBJECT for MOC processing
+    include/AudioFileWriter.h
+    include/settings/AnnotationSettingsManager.h
+    include/settings/FileSettingsManager.h
+    include/settings/PinWindowSettingsManager.h
+)
+
+target_include_directories(snaptray_core
+    PUBLIC
+        ${CMAKE_SOURCE_DIR}/include
+    PRIVATE
+        ${CMAKE_SOURCE_DIR}/src
+        ${CMAKE_BINARY_DIR}/generated
+        ${CMAKE_BINARY_DIR}
+)
+
+target_link_libraries(snaptray_core
+    PUBLIC
+        Qt6::Core
+        Qt6::Gui
+        Qt6::Concurrent
+)
+
+# Disable qDebug() output in Release builds for core library
+target_compile_definitions(snaptray_core PRIVATE
+    $<$<NOT:$<CONFIG:Debug>>:QT_NO_DEBUG_OUTPUT>
+)
+
+# ----------------------------------------------------------------------------
+# snaptray_algorithms: Detection and stitching algorithms (OpenCV dependency)
+# ----------------------------------------------------------------------------
+add_library(snaptray_algorithms STATIC
+    # Mosaic annotations (require OpenCV for blur)
+    src/annotations/MosaicStroke.cpp
+    src/annotations/MosaicRectAnnotation.cpp
+    # Detection
+    src/detection/FaceDetector.cpp
+    src/detection/TextDetector.cpp
+    src/detection/AutoBlurManager.cpp
+    # Scrolling/Stitching
+    src/scrolling/ImageStitcher.cpp
+    src/scrolling/ImageStitcherAlgorithms.cpp
+    src/scrolling/FixedElementDetector.cpp
+    src/stitching/FeatureMatcher.cpp
+    src/stitching/OpticalFlowPredictor.cpp
+    src/stitching/StaticSceneAnalyzer.cpp
+    # Headers with Q_OBJECT for MOC processing
+    include/detection/FaceDetector.h
+    include/detection/TextDetector.h
+    include/detection/AutoBlurManager.h
+    include/scrolling/ImageStitcher.h
+    include/scrolling/FixedElementDetector.h
+)
+
+target_include_directories(snaptray_algorithms
+    PUBLIC
+        ${CMAKE_SOURCE_DIR}/include
+    PRIVATE
+        ${CMAKE_SOURCE_DIR}/src
+        ${CMAKE_BINARY_DIR}/generated
+        ${CMAKE_BINARY_DIR}
+        ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/core/include
+        ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/imgproc/include
+        ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/features2d/include
+        ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/flann/include
+        ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/objdetect/include
+        ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/calib3d/include
+        ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/video/include
+)
+
+target_link_libraries(snaptray_algorithms
+    PUBLIC
+        snaptray_core
+    PRIVATE
+        opencv_core
+        opencv_imgproc
+        opencv_features2d
+        opencv_flann
+        opencv_calib3d
+        opencv_objdetect
+        opencv_video
+)
+
+target_compile_definitions(snaptray_algorithms PRIVATE
+    $<$<NOT:$<CONFIG:Debug>>:QT_NO_DEBUG_OUTPUT>
+)
+
+# ----------------------------------------------------------------------------
+# snaptray_platform: Platform-specific code (capture, encoding, OS APIs)
+# ----------------------------------------------------------------------------
+add_library(snaptray_platform STATIC
+    # Common sources
+    src/capture/ICaptureEngine.cpp
+    src/capture/IAudioCaptureEngine.cpp
+    src/capture/QtCaptureEngine.cpp
     src/encoding/EncoderFactory.cpp
     src/encoding/NativeGifEncoder.cpp
     src/encoding/WebPAnimEncoder.cpp
-    # Video player
     src/video/IVideoPlayer.cpp
-    src/video/VideoPlaybackWidget.cpp
-    src/video/VideoTimeline.cpp
-    src/video/TrimTimeline.cpp
-    src/video/VideoTrimmer.cpp
-    src/video/RecordingPreviewWindow.cpp
-    src/video/FormatSelectionWidget.cpp
-    src/video/InPlacePreviewOverlay.cpp
-    src/video/CountdownOverlay.cpp
-    # Video annotation system
-    include/video/VideoAnnotation.h
-    include/video/AnnotationTrack.h
-    include/video/VideoAnnotationRenderer.h
-    include/video/AnnotationTimelineWidget.h
-    include/video/VideoAnnotationEditor.h
-    src/video/VideoAnnotation.cpp
-    src/video/AnnotationTrack.cpp
-    src/video/VideoAnnotationRenderer.cpp
-    src/video/AnnotationTimelineWidget.cpp
-    src/video/VideoAnnotationEditor.cpp
+    src/VideoEncoderFactory.cpp
+    src/scrolling/AutoScrollController.cpp
+    # Headers with Q_OBJECT for MOC processing
+    include/IVideoEncoder.h
+    include/encoding/NativeGifEncoder.h
+    include/encoding/WebPAnimEncoder.h
+    include/capture/ICaptureEngine.h
+    include/capture/IAudioCaptureEngine.h
+    include/capture/QtCaptureEngine.h
+    include/video/IVideoPlayer.h
+
+    # macOS sources
+    $<$<PLATFORM_ID:Darwin>:
+        src/platform/WindowLevel_mac.mm
+        src/platform/PlatformFeatures_mac.mm
+        src/WindowDetector.mm
+        src/OCRManager.mm
+        src/AutoLaunchManager_mac.mm
+        src/capture/SCKCaptureEngine_mac.mm
+        src/capture/CoreAudioCaptureEngine_mac.mm
+        src/AVFoundationEncoder.mm
+        src/video/AVFoundationPlayer_mac.mm
+        src/input/MouseClickTracker_mac.mm
+        src/scrolling/AutoScrollController_mac.mm
+        src/ColorPickerDialog.mm
+    >
+    # macOS headers with Q_OBJECT
+    $<$<PLATFORM_ID:Darwin>:
+        include/AVFoundationEncoder.h
+        include/capture/SCKCaptureEngine.h
+        include/capture/CoreAudioCaptureEngine.h
+        include/ColorPickerDialog.h
+        include/OCRManager.h
+        include/WindowDetector.h
+        include/input/MouseClickTracker.h
+    >
+
+    # Windows sources
+    $<$<PLATFORM_ID:Windows>:
+        src/platform/WindowLevel_win.cpp
+        src/platform/PlatformFeatures_win.cpp
+        src/WindowDetector_win.cpp
+        src/OCRManager_win.cpp
+        src/AutoLaunchManager_win.cpp
+        src/capture/DXGICaptureEngine_win.cpp
+        src/capture/WASAPIAudioCaptureEngine_win.cpp
+        src/MediaFoundationEncoder.cpp
+        src/video/MediaFoundationPlayer_win.cpp
+        src/input/MouseClickTracker_win.cpp
+        src/scrolling/AutoScrollController_win.cpp
+    >
+    # Windows headers with Q_OBJECT
+    $<$<PLATFORM_ID:Windows>:
+        include/MediaFoundationEncoder.h
+        include/capture/DXGICaptureEngine.h
+        include/capture/WASAPIAudioCaptureEngine.h
+    >
+)
+
+# Enable ARC for AVFoundationPlayer (uses __weak references)
+set_source_files_properties(
+    src/video/AVFoundationPlayer_mac.mm
+    PROPERTIES COMPILE_FLAGS "-fobjc-arc"
+)
+
+target_include_directories(snaptray_platform
+    PUBLIC
+        ${CMAKE_SOURCE_DIR}/include
+    PRIVATE
+        ${CMAKE_SOURCE_DIR}/src
+        ${CMAKE_BINARY_DIR}/generated
+        ${CMAKE_BINARY_DIR}
+        ${CMAKE_BINARY_DIR}/_deps/libwebp-src/src
+)
+
+target_link_libraries(snaptray_platform
+    PUBLIC
+        snaptray_core
+        Qt6::Widgets
+        Qt6::Gui
+        Qt6::Concurrent
+        webp
+        libwebpmux
+    PRIVATE
+        $<$<PLATFORM_ID:Darwin>:
+            "-framework CoreGraphics"
+            "-framework ApplicationServices"
+            "-framework AppKit"
+            "-framework Vision"
+            "-framework ServiceManagement"
+            "-framework CoreMedia"
+            "-framework CoreVideo"
+            "-framework AVFoundation"
+            "-framework CoreAudio"
+            "-framework AudioToolbox"
+            "-weak_framework ScreenCaptureKit"
+        >
+        $<$<PLATFORM_ID:Windows>:
+            dwmapi
+            psapi
+            windowsapp
+            d3d11
+            dxgi
+            mfreadwrite
+            mfplat
+            mfuuid
+            ole32
+            propsys
+        >
+)
+
+# Windows-specific compiler flags
+if(WIN32)
+    target_compile_options(snaptray_platform PRIVATE /await)
+endif()
+
+target_compile_definitions(snaptray_platform PRIVATE
+    $<$<NOT:$<CONFIG:Debug>>:QT_NO_DEBUG_OUTPUT>
+)
+
+# Suppress duplicate library warnings on macOS
+if(APPLE)
+    target_link_options(snaptray_platform PRIVATE "-Wl,-no_warn_duplicate_libraries")
+endif()
+
+# ----------------------------------------------------------------------------
+# snaptray_ui: UI components (widgets, tools, renderers)
+# ----------------------------------------------------------------------------
+add_library(snaptray_ui STATIC
+    # Rendering
+    src/GlassRenderer.cpp
+    src/IconRenderer.cpp
+    src/ToolbarStyle.cpp
+    src/ToolbarWidget.cpp
+    src/toolbar/ToolbarButtonConfig.cpp
+    src/toolbar/ToolbarRenderer.cpp
+
+    # Annotation UI
+    src/AnnotationLayer.cpp
+    src/AnnotationController.cpp
+    src/InlineTextEditor.cpp
     src/TransformationGizmo.cpp
+
     # Tool system
     src/tools/ToolRegistry.cpp
     src/tools/ToolManager.cpp
@@ -300,9 +494,27 @@ set(SOURCES
     src/tools/handlers/EraserToolHandler.cpp
     src/tools/handlers/SelectionToolHandler.cpp
     src/tools/handlers/LaserPointerToolHandler.cpp
-    # Utility classes
-    src/utils/CoordinateHelper.cpp
+
+    # Widgets
+    src/ColorPaletteWidget.cpp
+    src/ColorAndWidthWidget.cpp
+    src/LineWidthWidget.cpp
+    src/EmojiPicker.cpp
+
+    # UI sections
+    src/ui/sections/ColorSection.cpp
+    src/ui/sections/WidthSection.cpp
+    src/ui/sections/MosaicWidthSection.cpp
+    src/ui/sections/MosaicBlurTypeSection.cpp
+    src/ui/sections/TextSection.cpp
+    src/ui/sections/ArrowStyleSection.cpp
+    src/ui/sections/LineStyleSection.cpp
+    src/ui/sections/ShapeSection.cpp
+    src/ui/sections/SizeSection.cpp
+    src/ui/sections/AutoBlurSection.cpp
+
     # Region selection
+    src/RegionSelector.cpp
     src/region/SelectionStateManager.cpp
     src/region/MagnifierPanel.cpp
     src/region/UpdateThrottler.cpp
@@ -315,139 +527,82 @@ set(SOURCES
     src/region/RegionToolbarHandler.cpp
     src/region/RegionSettingsHelper.cpp
     src/region/SelectionResizeHelper.cpp
-    # UI sections
-    src/ui/sections/ColorSection.cpp
-    src/ui/sections/WidthSection.cpp
-    src/ui/sections/MosaicWidthSection.cpp
-    src/ui/sections/MosaicBlurTypeSection.cpp
-    src/ui/sections/TextSection.cpp
-    src/ui/sections/ArrowStyleSection.cpp
-    src/ui/sections/LineStyleSection.cpp
-    src/ui/sections/ShapeSection.cpp
-    src/ui/sections/SizeSection.cpp
-    src/ui/sections/AutoBlurSection.cpp
-    # PinWindow components
+
+    # PinWindow
+    src/PinWindow.cpp
+    src/PinWindowManager.cpp
     src/pinwindow/ImageTransformer.cpp
     src/pinwindow/ResizeHandler.cpp
     src/pinwindow/UIIndicators.cpp
-    # Scrolling Capture
+    src/pinwindow/ClickThroughExitButton.cpp
+
+    # Screen canvas
+    src/ScreenCanvas.cpp
+    src/ScreenCanvasManager.cpp
+
+    # Renderers
+    src/LaserPointerRenderer.cpp
+    src/ClickRippleRenderer.cpp
+    src/WatermarkRenderer.cpp
+    src/LoadingSpinnerRenderer.cpp
+
+    # Recording effects
+    src/recording/CursorHighlightEffect.cpp
+    src/recording/SpotlightEffect.cpp
+
+    # Video UI
+    src/video/VideoPlaybackWidget.cpp
+    src/video/VideoTimeline.cpp
+    src/video/TrimTimeline.cpp
+    src/video/VideoTrimmer.cpp
+    src/video/RecordingPreviewWindow.cpp
+    src/video/FormatSelectionWidget.cpp
+    src/video/InPlacePreviewOverlay.cpp
+    src/video/CountdownOverlay.cpp
+    src/video/VideoAnnotation.cpp
+    src/video/AnnotationTrack.cpp
+    src/video/VideoAnnotationRenderer.cpp
+    src/video/AnnotationTimelineWidget.cpp
+    src/video/VideoAnnotationEditor.cpp
+
+    # Scrolling capture UI
     src/scrolling/ScrollingCaptureManager.cpp
     src/scrolling/ScrollingCaptureOverlay.cpp
     src/scrolling/ScrollingCaptureToolbar.cpp
     src/scrolling/ScrollingCaptureThumbnail.cpp
-    src/scrolling/ImageStitcher.cpp
-    src/scrolling/ImageStitcherAlgorithms.cpp
-    src/scrolling/FixedElementDetector.cpp
-    src/scrolling/AutoScrollController.cpp
-    # Stitching algorithms (new modular stitching system)
-    src/stitching/FeatureMatcher.cpp
-    src/stitching/OpticalFlowPredictor.cpp
-    src/stitching/StaticSceneAnalyzer.cpp
-    src/pinwindow/ClickThroughExitButton.cpp
-    # Auto-blur detection
-    src/detection/FaceDetector.cpp
-    src/detection/TextDetector.cpp
-    src/detection/AutoBlurManager.cpp
-)
 
-set(RESOURCES
-    resources/resources.qrc
-)
+    # Dialogs and overlays
+    src/SettingsDialog.cpp
 
-set(HEADERS
-    include/MainApplication.h
-    include/SettingsDialog.h
-    include/CaptureManager.h
-    include/RegionSelector.h
-    include/PinWindow.h
-    include/PinWindowManager.h
-    include/annotations/AllAnnotations.h
-    include/annotations/AnnotationLayer.h
-    include/annotations/AnnotationItem.h
-    include/annotations/TextAnnotation.h
-    include/annotations/PencilStroke.h
-    include/annotations/MarkerStroke.h
-    include/annotations/ArrowAnnotation.h
-    include/annotations/PolylineAnnotation.h
-    include/annotations/ShapeAnnotation.h
-    include/annotations/MosaicStroke.h
-    include/annotations/MosaicRectAnnotation.h
-    include/annotations/StepBadgeAnnotation.h
-    include/annotations/EmojiStickerAnnotation.h
-    include/annotations/EraserStroke.h
-    include/annotations/ErasedItemsGroup.h
-    include/annotations/LineStyle.h
-    include/ScreenCanvas.h
-    include/ScreenCanvasManager.h
-    include/AutoLaunchManager.h
-    include/IconRenderer.h
-    include/ColorPaletteWidget.h
-    include/EmojiPicker.h
-    include/LineWidthWidget.h
-    include/ColorAndWidthWidget.h
+    # macOS-only UI
+    $<$<PLATFORM_ID:Darwin>:
+        src/WindowDetectionOverlay.cpp
+        src/OCRController.cpp
+    >
+
+    # Headers with Q_OBJECT for MOC processing
     include/ToolbarWidget.h
-    include/ToolbarStyle.h
-    include/GlassRenderer.h
-    include/toolbar/ToolbarButtonConfig.h
-    include/toolbar/ToolbarRenderer.h
-    include/toolbar/ToolbarTypes.h
+    include/annotations/AnnotationLayer.h
     include/AnnotationController.h
-    include/ColorPickerDialog.h
     include/InlineTextEditor.h
-    include/TextFormattingState.h
-    include/PlatformFeatures.h
-    include/LaserPointerRenderer.h
-    include/ClickRippleRenderer.h
-    include/WatermarkRenderer.h
-    include/LoadingSpinnerRenderer.h
-    include/RecordingManager.h
-    include/RecordingRegionSelector.h
-    include/RecordingControlBar.h
-    include/RecordingBoundaryOverlay.h
-    include/RecordingAnnotationOverlay.h
-    include/RecordingInitTask.h
-    include/IVideoEncoder.h
-    include/AVFoundationEncoder.h
-    include/MediaFoundationEncoder.h
-    include/encoding/EncoderFactory.h
-    include/encoding/NativeGifEncoder.h
-    include/encoding/WebPAnimEncoder.h
-    # Video playback
-    include/video/IVideoPlayer.h
-    include/video/VideoPlaybackWidget.h
-    include/video/VideoTimeline.h
-    include/video/TrimTimeline.h
-    include/video/VideoTrimmer.h
-    include/video/RecordingPreviewWindow.h
-    include/video/FormatSelectionWidget.h
-    include/video/InPlacePreviewOverlay.h
-    include/video/CountdownOverlay.h
     include/TransformationGizmo.h
-    include/capture/ICaptureEngine.h
-    include/capture/QtCaptureEngine.h
-    # Tool system
-    include/tools/ToolId.h
-    include/tools/ToolDefinition.h
-    include/tools/ToolContext.h
-    include/tools/IToolHandler.h
     include/tools/ToolRegistry.h
     include/tools/ToolManager.h
-    include/tools/handlers/AllHandlers.h
-    include/tools/handlers/PencilToolHandler.h
-    include/tools/handlers/MarkerToolHandler.h
-    include/tools/handlers/ArrowToolHandler.h
-    include/tools/handlers/PolylineToolHandler.h
-    include/tools/handlers/ShapeToolHandler.h
-    include/tools/handlers/MosaicToolHandler.h
-    include/tools/handlers/StepBadgeToolHandler.h
-    include/tools/handlers/EmojiStickerToolHandler.h
-    include/tools/handlers/EraserToolHandler.h
-    include/tools/handlers/SelectionToolHandler.h
-    include/tools/handlers/LaserPointerToolHandler.h
-    # Utility classes
-    include/utils/ResourceCleanupHelper.h
-    include/utils/CoordinateHelper.h
-    # Region selection
+    include/ColorPaletteWidget.h
+    include/ColorAndWidthWidget.h
+    include/LineWidthWidget.h
+    include/EmojiPicker.h
+    include/ui/sections/ColorSection.h
+    include/ui/sections/WidthSection.h
+    include/ui/sections/MosaicWidthSection.h
+    include/ui/sections/MosaicBlurTypeSection.h
+    include/ui/sections/TextSection.h
+    include/ui/sections/ArrowStyleSection.h
+    include/ui/sections/LineStyleSection.h
+    include/ui/sections/ShapeSection.h
+    include/ui/sections/SizeSection.h
+    include/ui/sections/AutoBlurSection.h
+    include/RegionSelector.h
     include/region/SelectionStateManager.h
     include/region/MagnifierPanel.h
     include/region/UpdateThrottler.h
@@ -459,121 +614,109 @@ set(HEADERS
     include/region/RegionInputHandler.h
     include/region/RegionToolbarHandler.h
     include/region/RegionSettingsHelper.h
-    include/region/SelectionResizeHelper.h
-    # Settings managers
-    include/settings/Settings.h
-    include/settings/AnnotationSettingsManager.h
-    include/settings/FileSettingsManager.h
-    include/settings/PinWindowSettingsManager.h
-    # UI sections
-    include/ui/IWidgetSection.h
-    include/ui/sections/ColorSection.h
-    include/ui/sections/WidthSection.h
-    include/ui/sections/MosaicWidthSection.h
-    include/ui/sections/MosaicBlurTypeSection.h
-    include/ui/sections/TextSection.h
-    include/ui/sections/ArrowStyleSection.h
-    include/ui/sections/LineStyleSection.h
-    include/ui/sections/ShapeSection.h
-    include/ui/sections/SizeSection.h
-    include/ui/sections/AutoBlurSection.h
-    # PinWindow components
+    include/PinWindow.h
+    include/PinWindowManager.h
     include/pinwindow/ImageTransformer.h
     include/pinwindow/ResizeHandler.h
     include/pinwindow/UIIndicators.h
-    # Scrolling Capture
+    include/pinwindow/ClickThroughExitButton.h
+    include/ScreenCanvas.h
+    include/ScreenCanvasManager.h
+    include/LaserPointerRenderer.h
+    include/ClickRippleRenderer.h
+    include/WatermarkRenderer.h
+    include/LoadingSpinnerRenderer.h
+    include/recording/CursorHighlightEffect.h
+    include/recording/SpotlightEffect.h
+    include/video/VideoPlaybackWidget.h
+    include/video/VideoTimeline.h
+    include/video/TrimTimeline.h
+    include/video/VideoTrimmer.h
+    include/video/RecordingPreviewWindow.h
+    include/video/FormatSelectionWidget.h
+    include/video/InPlacePreviewOverlay.h
+    include/video/CountdownOverlay.h
+    include/video/VideoAnnotation.h
+    include/video/AnnotationTrack.h
+    include/video/VideoAnnotationRenderer.h
+    include/video/AnnotationTimelineWidget.h
+    include/video/VideoAnnotationEditor.h
     include/scrolling/ScrollingCaptureManager.h
     include/scrolling/ScrollingCaptureOverlay.h
     include/scrolling/ScrollingCaptureToolbar.h
     include/scrolling/ScrollingCaptureThumbnail.h
-    include/scrolling/ImageStitcher.h
-    include/scrolling/FixedElementDetector.h
-    include/scrolling/AutoScrollController.h
-    # Stitching algorithms (new modular stitching system)
-    include/stitching/FeatureMatcher.h
-    include/stitching/OpticalFlowPredictor.h
-    include/stitching/StaticSceneAnalyzer.h
-    include/pinwindow/ClickThroughExitButton.h
-    # Auto-blur detection
-    include/detection/IDetector.h
-    include/detection/FaceDetector.h
-    include/detection/TextDetector.h
-    include/detection/AutoBlurManager.h
-)
-
-# Cross-platform source files (used by both platforms)
-list(APPEND SOURCES
-    src/CaptureManager.cpp
-    src/ScreenCanvasManager.cpp
-    src/capture/ICaptureEngine.cpp
-    src/capture/QtCaptureEngine.cpp
-    src/capture/IAudioCaptureEngine.cpp
-    src/AudioFileWriter.cpp
-)
-
-list(APPEND HEADERS
-    include/capture/IAudioCaptureEngine.h
-    include/AudioFileWriter.h
-)
-
-# Platform-specific source files
-if(APPLE)
-    list(APPEND SOURCES
-        src/platform/WindowLevel_mac.mm
-        src/platform/PlatformFeatures_mac.mm
-        src/WindowDetector.mm
-        src/OCRManager.mm
-        src/AutoLaunchManager_mac.mm
-        src/WindowDetectionOverlay.cpp
-        src/OCRController.cpp
-        src/capture/SCKCaptureEngine_mac.mm
-        src/capture/CoreAudioCaptureEngine_mac.mm
-        src/AVFoundationEncoder.mm
-        src/video/AVFoundationPlayer_mac.mm
-        src/input/MouseClickTracker_mac.mm
-        src/scrolling/AutoScrollController_mac.mm
-    )
-    list(APPEND HEADERS
-        include/WindowDetector.h
-        include/OCRManager.h
+    include/SettingsDialog.h
+    $<$<PLATFORM_ID:Darwin>:
         include/WindowDetectionOverlay.h
         include/OCRController.h
-        include/capture/SCKCaptureEngine.h
-        include/capture/CoreAudioCaptureEngine.h
-        include/input/MouseClickTracker.h
-    )
-    # Enable ARC for video player (uses __weak references)
-    set_source_files_properties(
-        src/video/AVFoundationPlayer_mac.mm
-        PROPERTIES COMPILE_FLAGS "-fobjc-arc"
-    )
-elseif(WIN32)
-    list(APPEND SOURCES
-        src/platform/WindowLevel_win.cpp
-        src/platform/PlatformFeatures_win.cpp
-        src/WindowDetector_win.cpp
-        src/OCRManager_win.cpp
-        src/AutoLaunchManager_win.cpp
-        src/capture/DXGICaptureEngine_win.cpp
-        src/capture/WASAPIAudioCaptureEngine_win.cpp
-        src/MediaFoundationEncoder.cpp
-        src/video/MediaFoundationPlayer_win.cpp
-        src/input/MouseClickTracker_win.cpp
-        src/scrolling/AutoScrollController_win.cpp
-    )
-    list(APPEND HEADERS
-        include/WindowDetector.h
-        include/OCRManager.h
-        include/capture/DXGICaptureEngine.h
-        include/capture/WASAPIAudioCaptureEngine.h
-        include/input/MouseClickTracker.h
-    )
-    # Windows application icon resource (generated from template)
+    >
+)
+
+target_include_directories(snaptray_ui
+    PUBLIC
+        ${CMAKE_SOURCE_DIR}/include
+    PRIVATE
+        ${CMAKE_SOURCE_DIR}/src
+        ${CMAKE_BINARY_DIR}/generated
+        ${CMAKE_BINARY_DIR}
+)
+
+target_link_libraries(snaptray_ui
+    PUBLIC
+        snaptray_core
+        snaptray_algorithms
+        snaptray_platform
+        Qt6::Widgets
+        Qt6::Gui
+        Qt6::Svg
+        QHotkey::QHotkey
+)
+
+target_compile_definitions(snaptray_ui PRIVATE
+    $<$<NOT:$<CONFIG:Debug>>:QT_NO_DEBUG_OUTPUT>
+    $<$<CONFIG:Debug>:SNAPTRAY_ENABLE_DEV_FEATURES>
+)
+
+# ============================================================================
+# Main Application Executable
+# ============================================================================
+
+# Application-specific sources (orchestration and entry point)
+set(APP_SOURCES
+    src/main.cpp
+    src/MainApplication.cpp
+    src/CaptureManager.cpp
+    src/RecordingManager.cpp
+    src/RecordingRegionSelector.cpp
+    src/RecordingControlBar.cpp
+    src/RecordingBoundaryOverlay.cpp
+    src/RecordingAnnotationOverlay.cpp
+    src/RecordingInitTask.cpp
+)
+
+set(RESOURCES
+    resources/resources.qrc
+)
+
+# Application-specific headers
+set(APP_HEADERS
+    include/MainApplication.h
+    include/CaptureManager.h
+    include/RecordingManager.h
+    include/RecordingRegionSelector.h
+    include/RecordingControlBar.h
+    include/RecordingBoundaryOverlay.h
+    include/RecordingAnnotationOverlay.h
+    include/RecordingInitTask.h
+)
+
+# Windows application icon resource
+if(WIN32)
     set(WIN32_RESOURCES "${CMAKE_BINARY_DIR}/snaptray.rc")
 endif()
 
-# Create executable without WIN32 flag (we'll set it conditionally below)
-add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS} ${RESOURCES} ${WIN32_RESOURCES})
+# Create executable linking to library targets
+add_executable(${PROJECT_NAME} ${APP_SOURCES} ${APP_HEADERS} ${RESOURCES} ${WIN32_RESOURCES})
 
 # Only use Windows subsystem (no console) for non-Debug builds
 # Debug builds will show a console window for easier debugging
@@ -589,14 +732,14 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_BINARY_DIR}/generated
     ${CMAKE_BINARY_DIR}
-    ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/core/include
-    ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/imgproc/include
-    ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/features2d/include
-    ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/flann/include
-    ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/objdetect/include
-    ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/calib3d/include
-    ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/video/include
-    ${CMAKE_BINARY_DIR}/_deps/libwebp-src/src
+)
+
+# Link all library targets - they handle their own dependencies
+target_link_libraries(${PROJECT_NAME} PRIVATE
+    snaptray_ui
+    snaptray_platform
+    snaptray_algorithms
+    snaptray_core
 )
 
 # Disable qDebug() output in Release builds
@@ -608,82 +751,6 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
 target_compile_definitions(${PROJECT_NAME} PRIVATE
     $<$<CONFIG:Debug>:SNAPTRAY_ENABLE_DEV_FEATURES>
 )
-
-# macOS frameworks needed for window detection, auto-launch, and native encoding
-if(APPLE)
-    find_library(COREGRAPHICS_FRAMEWORK CoreGraphics)
-    find_library(APPLICATIONSERVICES_FRAMEWORK ApplicationServices)
-    find_library(APPKIT_FRAMEWORK AppKit)
-    find_library(VISION_FRAMEWORK Vision)
-    find_library(SERVICEMANAGEMENT_FRAMEWORK ServiceManagement)
-    find_library(COREMEDIA_FRAMEWORK CoreMedia)
-    find_library(COREVIDEO_FRAMEWORK CoreVideo)
-    find_library(AVFOUNDATION_FRAMEWORK AVFoundation)
-    # ScreenCaptureKit is optional (macOS 12.3+), weak link to allow running on older systems
-    find_library(SCREENCAPTUREKIT_FRAMEWORK ScreenCaptureKit)
-    target_link_libraries(${PROJECT_NAME} PRIVATE
-        Qt6::Widgets
-        Qt6::Gui
-        Qt6::Svg
-        Qt6::Concurrent
-        QHotkey::QHotkey
-        ${COREGRAPHICS_FRAMEWORK}
-        ${APPLICATIONSERVICES_FRAMEWORK}
-        ${APPKIT_FRAMEWORK}
-        ${VISION_FRAMEWORK}
-        ${SERVICEMANAGEMENT_FRAMEWORK}
-        ${COREMEDIA_FRAMEWORK}
-        ${COREVIDEO_FRAMEWORK}
-        ${AVFOUNDATION_FRAMEWORK}
-        opencv_core
-        opencv_imgproc
-        opencv_features2d
-        opencv_flann
-        opencv_calib3d
-        opencv_objdetect
-        opencv_video
-        webp
-        libwebpmux
-    )
-    # Weak link ScreenCaptureKit if available (for macOS 12.3+ compatibility)
-    if(SCREENCAPTUREKIT_FRAMEWORK)
-        target_link_libraries(${PROJECT_NAME} PRIVATE
-            "-weak_framework ScreenCaptureKit"
-        )
-    endif()
-elseif(WIN32)
-    # Windows-specific libraries for WindowDetector, OCR, DXGI capture, Media Foundation, and WASAPI
-    target_link_libraries(${PROJECT_NAME} PRIVATE
-        Qt6::Widgets
-        Qt6::Gui
-        Qt6::Svg
-        Qt6::Concurrent
-        QHotkey::QHotkey
-        dwmapi
-        psapi
-        windowsapp
-        d3d11
-        dxgi
-        mfreadwrite
-        mfplat
-        mfuuid
-        ole32       # COM for WASAPI audio capture
-        propsys     # Property system for audio device enumeration
-        opencv_core
-        opencv_imgproc
-        opencv_features2d
-        opencv_flann
-        opencv_calib3d
-        opencv_objdetect
-        opencv_video
-        webp
-        libwebpmux
-    )
-    # Enable C++/WinRT for Windows.Media.Ocr
-    target_compile_options(${PROJECT_NAME} PRIVATE /await)
-else()
-    message(FATAL_ERROR "SnapTray only supports macOS and Windows. Current platform is not supported.")
-endif()
 
 # macOS-specific settings
 if(APPLE)

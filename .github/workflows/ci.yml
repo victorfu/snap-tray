@@ -27,6 +27,13 @@ jobs:
       # ========================================
       # FetchContent Dependencies Cache
       # ========================================
+      - name: Generate deps cache key
+        id: deps-key
+        run: |
+          # Extract GIT_TAG lines and generate stable hash
+          DEPS_HASH=$(grep -E "GIT_TAG\s+" CMakeLists.txt | sort | shasum -a 256 | cut -c1-16)
+          echo "hash=$DEPS_HASH" >> $GITHUB_OUTPUT
+
       - name: Cache FetchContent dependencies
         uses: actions/cache@v4
         with:
@@ -40,7 +47,7 @@ jobs:
             build/_deps/qhotkey-src
             build/_deps/qhotkey-build
             build/_deps/qhotkey-subbuild
-          key: deps-macos-${{ hashFiles('CMakeLists.txt') }}
+          key: deps-macos-${{ steps.deps-key.outputs.hash }}
           restore-keys: |
             deps-macos-
 
@@ -82,6 +89,14 @@ jobs:
       # ========================================
       # FetchContent Dependencies Cache
       # ========================================
+      - name: Generate deps cache key
+        id: deps-key
+        shell: bash
+        run: |
+          # Extract GIT_TAG lines and generate stable hash
+          DEPS_HASH=$(grep -E "GIT_TAG\s+" CMakeLists.txt | sort | sha256sum | cut -c1-16)
+          echo "hash=$DEPS_HASH" >> $GITHUB_OUTPUT
+
       - name: Cache FetchContent dependencies
         uses: actions/cache@v4
         with:
@@ -95,7 +110,7 @@ jobs:
             build/_deps/qhotkey-src
             build/_deps/qhotkey-build
             build/_deps/qhotkey-subbuild
-          key: deps-windows-${{ hashFiles('CMakeLists.txt') }}
+          key: deps-windows-${{ steps.deps-key.outputs.hash }}
           restore-keys: |
             deps-windows-
 
