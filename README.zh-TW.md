@@ -104,6 +104,12 @@ SnapTray 是一個在系統托盤常駐的截圖與錄影小工具，提供區�
 - CMake 3.16+
 - Git（用於 FetchContent 取得 QHotkey）
 
+**PowerShell 使用 MSVC**：若使用 PowerShell，需先載入 Visual Studio 環境：
+```powershell
+Import-Module "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\Tools\Microsoft.VisualStudio.DevShell.dll"
+Enter-VsDevShell -VsInstallPath "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools" -DevCmdArguments '-arch=x64' -SkipAutomaticLocation
+```
+
 ## 建置與執行
 
 ### Debug 建置（開發用）
@@ -120,13 +126,13 @@ open build/SnapTray.app
 **Windows：**
 ```batch
 # 步驟 1：設定（請替換為你的 Qt 路徑）
-cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH=C:/Qt/6.x/msvc2022_64
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH=C:/Qt/6.10.1/msvc2022_64
 
 # 步驟 2：建置
 cmake --build build --parallel
 
 # 步驟 3：部署 Qt 相依套件（執行程式所需）
-C:\Qt\6.x\msvc2022_64\bin\windeployqt.exe build\bin\SnapTray.exe
+C:\Qt\6.10.1\msvc2022_64\bin\windeployqt.exe build\bin\SnapTray.exe
 
 # 步驟 4：執行
 build\bin\SnapTray.exe
@@ -147,11 +153,11 @@ cmake --build build --parallel
 
 **Windows：**
 ```batch
-cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=C:/Qt/6.x/msvc2022_64
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=C:/Qt/6.10.1/msvc2022_64
 cmake --build build --parallel
 
 # 部署 Qt 相依套件
-C:\Qt\6.x\msvc2022_64\bin\windeployqt.exe --release build\bin\SnapTray.exe
+C:\Qt\6.10.1\msvc2022_64\bin\windeployqt.exe --release build\bin\SnapTray.exe
 
 # 產物：build\bin\SnapTray.exe
 ```
@@ -189,7 +195,7 @@ REM   - Windows 10 SDK：Visual Studio 已包含（用於 MSIX 套件）
 REM   - Visual Studio Build Tools 或 Visual Studio
 
 REM 設定 Qt 路徑（如果不是預設位置）
-set QT_PATH=C:\Qt\6.x\msvc2022_64
+set QT_PATH=C:\Qt\6.10.1\msvc2022_64
 
 packaging\windows\package.bat           REM 建置 NSIS 和 MSIX
 packaging\windows\package.bat nsis      REM 僅建置 NSIS 安裝程式
@@ -335,10 +341,10 @@ CMake 會自動偵測並使用編譯器快取，無需額外設定。
 
 **解決方法：** 執行 windeployqt 來部署 Qt 相依套件：
 ```batch
-C:\Qt\6.x\msvc2022_64\bin\windeployqt.exe build\SnapTray.exe
+C:\Qt\6.10.1\msvc2022_64\bin\windeployqt.exe build\SnapTray.exe
 ```
 
-請將 `C:\Qt\6.x\msvc2022_64` 替換為你實際的 Qt 安裝路徑（應與設定時使用的 CMAKE_PREFIX_PATH 相同）。
+請將 `C:\Qt\6.10.1\msvc2022_64` 替換為你實際的 Qt 安裝路徑（應與設定時使用的 CMAKE_PREFIX_PATH 相同）。
 
 ## macOS 權限
 

@@ -104,6 +104,12 @@ SnapTray currently supports macOS and Windows only.
 - CMake 3.16+
 - Git (for FetchContent to fetch QHotkey)
 
+**PowerShell with MSVC**: If using PowerShell, load the Visual Studio environment first:
+```powershell
+Import-Module "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\Tools\Microsoft.VisualStudio.DevShell.dll"
+Enter-VsDevShell -VsInstallPath "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools" -DevCmdArguments '-arch=x64' -SkipAutomaticLocation
+```
+
 ## Build & Run
 
 ### Debug Build (Development)
@@ -120,13 +126,13 @@ open build/SnapTray.app
 **Windows:**
 ```batch
 # Step 1: Configure (replace with your Qt path)
-cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH=C:/Qt/6.x/msvc2022_64
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH=C:/Qt/6.10.1/msvc2022_64
 
 # Step 2: Build
 cmake --build build --parallel
 
 # Step 3: Deploy Qt dependencies (required to run the executable)
-C:\Qt\6.x\msvc2022_64\bin\windeployqt.exe build\bin\SnapTray.exe
+C:\Qt\6.10.1\msvc2022_64\bin\windeployqt.exe build\bin\SnapTray.exe
 
 # Step 4: Run
 build\bin\SnapTray.exe
@@ -147,11 +153,11 @@ cmake --build build --parallel
 
 **Windows:**
 ```batch
-cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=C:/Qt/6.x/msvc2022_64
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=C:/Qt/6.10.1/msvc2022_64
 cmake --build build --parallel
 
 # Deploy Qt dependencies
-C:\Qt\6.x\msvc2022_64\bin\windeployqt.exe --release build\bin\SnapTray.exe
+C:\Qt\6.10.1\msvc2022_64\bin\windeployqt.exe --release build\bin\SnapTray.exe
 
 # Output: build\bin\SnapTray.exe
 ```
@@ -189,7 +195,7 @@ REM   - Windows 10 SDK: Included with Visual Studio (for MSIX package)
 REM   - Visual Studio Build Tools or Visual Studio
 
 REM Set Qt path (if not default location)
-set QT_PATH=C:\Qt\6.x\msvc2022_64
+set QT_PATH=C:\Qt\6.10.1\msvc2022_64
 
 packaging\windows\package.bat           REM Build both NSIS and MSIX
 packaging\windows\package.bat nsis      REM Build NSIS installer only
@@ -335,10 +341,10 @@ If you see errors like:
 
 **Solution:** Run windeployqt to deploy Qt dependencies:
 ```batch
-C:\Qt\6.x\msvc2022_64\bin\windeployqt.exe build\SnapTray.exe
+C:\Qt\6.10.1\msvc2022_64\bin\windeployqt.exe build\SnapTray.exe
 ```
 
-Replace `C:\Qt\6.x\msvc2022_64` with your actual Qt installation path (should match the CMAKE_PREFIX_PATH you used during configuration).
+Replace `C:\Qt\6.10.1\msvc2022_64` with your actual Qt installation path (should match the CMAKE_PREFIX_PATH you used during configuration).
 
 ## macOS Permissions
 

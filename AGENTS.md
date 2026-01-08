@@ -4,258 +4,163 @@ A Qt6-based screenshot and screen recording application for Windows and macOS.
 
 ## Build Instructions
 
-**Windows**: Use `cmd.exe` to execute build commands, not bash.
+**Windows**: Use `cmd.exe` or PowerShell (with MSVC environment loaded).
 
-Use scripts in `scripts/` for building and testing. These scripts automatically handle Qt dependency deployment (`windeployqt`) on first run.
-
-### Debug Build and Run (Development)
-
-**Windows**:
+Use scripts in `scripts/` for building and testing:
 
 ```batch
-scripts\build-and-run.bat
+scripts\build-and-run.bat           # Debug build
+scripts\build-and-run-release.bat   # Release build
+scripts\run-tests.bat               # Run tests
 ```
-
-**macOS**:
 
 ```bash
-./scripts/build-and-run.sh
+# macOS
+./scripts/build-and-run.sh          # Debug build
+./scripts/build-and-run-release.sh  # Release build
+./scripts/run-tests.sh              # Run tests
 ```
 
-### Release Build and Run (Production Testing)
-
-**Windows**:
+### Packaging
 
 ```batch
-scripts\build-and-run-release.bat
+# Windows
+packaging\windows\package.bat           # Build both NSIS and MSIX
+packaging\windows\package.bat nsis      # NSIS installer only
+packaging\windows\package.bat msix      # MSIX package only
 ```
-
-**macOS**:
 
 ```bash
-./scripts/build-and-run-release.sh
-```
-
-### Running Tests
-
-**Windows**:
-
-```batch
-scripts\run-tests.bat
-```
-
-**macOS**:
-
-```bash
-./scripts/run-tests.sh
-```
-
-### Packaging (Release)
-
-Use the packaging scripts in `packaging/` for distribution builds (automatically uses Release):
-
-**macOS** - Creates signed DMG:
-
-```bash
+# macOS - Creates signed DMG
 ./packaging/macos/package.sh
-```
-
-**Windows** - Creates NSIS installer and MSIX package:
-
-```batch
-packaging\windows\package.bat           REM Build both NSIS and MSIX
-packaging\windows\package.bat nsis      REM Build NSIS installer only
-packaging\windows\package.bat msix      REM Build MSIX package only
-```
-
-Output files:
-- `dist\SnapTray-<version>-Setup.exe` - NSIS installer
-- `dist\SnapTray-<version>.msix` - MSIX package for local installation
-- `dist\SnapTray-<version>.msixupload` - Upload file for Microsoft Store
-
-MSIX local testing:
-```powershell
-Add-AppPackage -Path "dist\SnapTray-<version>.msix" -AllowUnsigned
 ```
 
 ### Prerequisites
 
-- Qt6 (Widgets, Gui, Svg)
+- Qt 6.10.1 (Widgets, Gui, Svg, Concurrent)
 - CMake 3.16+
-- Ninja or Visual Studio generator
-- Windows SDK (for DXGI, Media Foundation, WASAPI)
+- Ninja build system
+- Windows: Visual Studio 2022 Build Tools, Windows SDK (DXGI, Media Foundation, WASAPI)
+- macOS: Xcode Command Line Tools
 
 ## Project Structure
 
-- `src/` - Source files
-- `include/` - Header files
-- `resources/` - Qt resources (icons, qrc)
-- `cmake/` - CMake templates (version.h.in, snaptray.rc.in)
-- `tests/` - Unit tests (Qt Test framework)
-
-## Key Features
-
-- Screen capture with region selection
-- Screen recording (MP4 via Media Foundation on Windows, AVFoundation on macOS)
-- Annotation tools (pencil, marker, arrow, shapes, mosaic, step badges)
-- Pin windows for captured screenshots
-- Global hotkey support (via QHotkey)
+```
+src/
+├── annotations/     # 13 annotation types (Pencil, Arrow, Shape, Mosaic, etc.)
+├── capture/         # Screen capture (DXGICaptureEngine, SCKCaptureEngine)
+├── detection/       # Face/text detection, auto-blur
+├── encoding/        # GIF/WebP encoders
+├── pinwindow/       # Pin window components
+├── platform/        # Platform abstraction (WindowLevel, PlatformFeatures)
+├── recording/       # Recording effects (Spotlight, CursorHighlight)
+├── region/          # Region selection UI
+├── scrolling/       # Scrolling capture and image stitching
+├── settings/        # Settings managers
+├── stitching/       # Feature matching, optical flow
+├── toolbar/         # Toolbar rendering
+├── tools/           # Tool handlers and registry
+├── ui/sections/     # Tool option panels
+└── video/           # Video playback and recording UI
+```
 
 ## Architecture Patterns
 
-### Extracted Components
+### Settings Managers (Singleton)
 
-The codebase follows a modular architecture. When refactoring, prefer extracting components:
+Use the appropriate settings manager instead of direct QSettings:
 
-| Component                   | Location         | Responsibility                         |
-| --------------------------- | ---------------- | -------------------------------------- |
-| `MagnifierPanel`            | `src/region/`    | Magnifier rendering and caching        |
-| `UpdateThrottler`           | `src/region/`    | Event throttling logic                 |
-| `TextAnnotationEditor`      | `src/region/`    | Text annotation editing/transformation |
-| `SelectionStateManager`     | `src/region/`    | Selection state and operations         |
-| `RadiusSliderWidget`        | `src/region/`    | Radius slider control for tools        |
-| `AnnotationSettingsManager` | `src/settings/`  | Centralized annotation settings        |
-| `ImageTransformer`          | `src/pinwindow/` | Image rotation/flip/scale              |
-| `ResizeHandler`             | `src/pinwindow/` | Window edge resize                     |
-| `UIIndicators`              | `src/pinwindow/` | Scale/opacity/click-through indicators |
-| `ClickThroughExitButton`    | `src/pinwindow/` | Exit button for click-through mode     |
+```cpp
+// Annotation settings (color, width, mosaic type, etc.)
+auto& settings = AnnotationSettingsManager::instance();
+settings.loadColor();
+settings.saveColor(newColor);
+
+// File paths (screenshot/recording locations)
+FileSettingsManager::instance();
+
+// Pin window settings (opacity, zoom)
+PinWindowSettingsManager::instance();
+
+// Other settings
+QSettings settings = getSettings();  // From include/settings/Settings.h
+```
+
+### Tool System
+
+Tools use `ToolId` enum and are registered in `ToolRegistry`. Tool handlers implement `IToolHandler`.
+
+```cpp
+// Tool definitions in include/tools/
+ToolId.h          // Unified enum for all tools
+ToolDefinition.h  // Tool metadata
+IToolHandler.h    // Handler interface
+ToolRegistry.h    // Tool registration
+ToolManager.h     // Active tool management
+```
 
 ### Data-Driven Patterns
 
-Use lookup tables instead of switch statements for tool capabilities:
+Use lookup tables instead of switch statements:
 
 ```cpp
-// Good: Data-driven lookup table
-static const std::map<ToolbarButton, ToolCapabilities> kToolCapabilities = {
-    {ToolbarButton::Pencil, {true, true, true}},
-    {ToolbarButton::Marker, {true, false, true}},
-    // ...
+// Good: Data-driven lookup
+static const std::map<ToolId, ToolCapabilities> kToolCapabilities = {
+    {ToolId::Pencil, {true, true, true}},
+    {ToolId::Marker, {true, false, true}},
 };
 
-bool shouldShowColorPalette() const {
-    auto it = kToolCapabilities.find(m_currentTool);
-    return it != kToolCapabilities.end() && it->second.showInPalette;
-}
-
 // Bad: Repetitive switch statements
-bool shouldShowColorPalette() const {
-    switch (m_currentTool) {
-    case ToolbarButton::Pencil:
-    case ToolbarButton::Marker:
-        return true;
-    default:
-        return false;
-    }
-}
+switch (toolId) { case ToolId::Pencil: ... }
 ```
 
-### Shared Settings
+### Glass Style UI
 
-Use `AnnotationSettingsManager` for annotation-related settings:
-
-```cpp
-// Good: Use shared manager
-auto& settings = AnnotationSettingsManager::instance();
-QColor color = settings.loadColor();
-settings.saveColor(newColor);
-
-// Bad: Direct QSettings access in each file
-QSettings settings("Victor Fu", "SnapTray");
-QColor color = settings.value("annotationColor", Qt::red).value<QColor>();
-```
-
-### Glass Style (macOS HIG)
-
-The UI follows macOS Human Interface Guidelines with a glass/frosted effect. Use the `GlassRenderer` class for all floating panels.
-
-#### Core Components
-
-| Component            | Location                 | Responsibility                          |
-| -------------------- | ------------------------ | --------------------------------------- |
-| `GlassRenderer`      | `src/GlassRenderer.cpp`  | Static utility for drawing glass panels |
-| `ToolbarStyleConfig` | `include/ToolbarStyle.h` | Theme configuration (Dark/Light)        |
-
-#### Usage
+Use `GlassRenderer` for floating panels (macOS HIG style):
 
 ```cpp
-// Good: Use GlassRenderer for floating panels
 void MyWidget::paintEvent(QPaintEvent*) {
     QPainter painter(this);
     auto config = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
     GlassRenderer::drawGlassPanel(painter, rect(), config);
 }
-
-// Bad: Manual painting without glass effect
-void MyWidget::paintEvent(QPaintEvent*) {
-    QPainter painter(this);
-    painter.fillRect(rect(), Qt::white);  // No glass effect
-}
 ```
 
-#### Design Principles
+## Platform-Specific Code
 
-- **Subtle blur simulation** - Use gradient to simulate frosted glass (Qt doesn't have native blur)
-- **Low-opacity borders** - 1px hairline borders with ~8% opacity
-- **Soft shadows** - Multi-layer shadows with decreasing opacity
-- **Theme support** - Always use `ToolbarStyleConfig` for colors, never hardcode
+| Feature | Windows | macOS |
+|---------|---------|-------|
+| Screen Capture | `DXGICaptureEngine` | `SCKCaptureEngine` |
+| Video Encoding | `MediaFoundationEncoder` | `AVFoundationEncoder` |
+| Audio Capture | `WASAPIAudioCaptureEngine` | `CoreAudioCaptureEngine` |
+| Window Detection | `WindowDetector_win.cpp` | `WindowDetector.mm` |
+| OCR | `OCRManager_win.cpp` | `OCRManager.mm` |
 
 ## Development Guidelines
 
 ### Logging
 
-Use `qDebug()` for development diagnostics only. Release builds automatically suppress `qDebug()` output via `QT_NO_DEBUG_OUTPUT`.
-
-| Function      | Purpose                                                    | Release Behavior     |
-| ------------- | ---------------------------------------------------------- | -------------------- |
-| `qDebug()`    | Development diagnostics, state tracking, defensive cleanup | **Suppressed**       |
-| `qInfo()`     | General info (user may need to know)                       | Output               |
-| `qWarning()`  | Warnings: hardware/API failures, features unavailable      | Output               |
-| `qCritical()` | Critical errors: may cause malfunction                     | Output               |
-| `qFatal()`    | Fatal errors: program must terminate                       | Output and terminate |
-
-```cpp
-// Good: Use qDebug for development diagnostics
-qDebug() << "RecordingManager: Starting capture timer...";
-qDebug() << "Previous encoder still exists, cleaning up";  // Defensive cleanup
-
-// Good: Use qWarning for real errors
-qWarning() << "Failed to create D3D11 device:" << hr;
-qWarning() << "Audio capture not available on this platform";
-
-// Bad: Using qWarning for dev messages (will output in Release)
-qWarning() << "Already running";  // Should use qDebug
-qWarning() << "Invalid frame rate, using default";  // Should use qDebug
-```
+| Function | Purpose | Release |
+|----------|---------|---------|
+| `qDebug()` | Development diagnostics | **Suppressed** |
+| `qWarning()` | Hardware/API failures | Output |
+| `qCritical()` | Critical errors | Output |
 
 ### Code Style
 
-- Use C++17 features
-- Prefer `auto` for complex types, explicit types for primitives
-- Use `nullptr` instead of `NULL`
-- Use range-based for loops when possible
-- Prefer `QPoint`/`QRect` over separate x/y/width/height variables
+- C++17 features
+- `auto` for complex types, explicit for primitives
+- `nullptr` instead of `NULL`
+- `QPoint`/`QRect` over separate x/y/width/height
 
 ### Testing
 
-- Write tests for extracted components
-- Test files go in `tests/<ComponentName>/tst_<TestName>.cpp`
-- Use Qt Test framework (`QCOMPARE`, `QVERIFY`)
-- Run tests after each significant change
-
-### Refactoring Checklist
-
-When refactoring large files:
-
-1. Identify repeated patterns (3+ occurrences)
-2. Extract to helper methods or separate classes
-3. Use data-driven approaches for switch statements
-4. Write tests for extracted components
-5. Update CMakeLists.txt for new files
-6. Run all tests to verify no regressions
+- Test files: `tests/<ComponentName>/tst_<TestName>.cpp`
+- Qt Test framework (`QCOMPARE`, `QVERIFY`)
+- Run `scripts\run-tests.bat` after changes
 
 ### Common Patterns to Avoid
 
-- Avoid creating QSettings objects in multiple places (use `getSettings()` or `AnnotationSettingsManager`)
-- Avoid duplicate coordinate conversion code (use `localToGlobal()`/`globalToLocal()`)
-- Avoid repetitive tool capability checks (use lookup tables)
-- Avoid inline magic numbers (use named constants)
+- Direct QSettings access (use settings managers)
+- Repetitive switch statements (use lookup tables)
+- Inline magic numbers (use named constants)

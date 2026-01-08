@@ -21,9 +21,9 @@ REM Build all targets (including tests)
 echo Building all targets...
 cmake --build build
 
-REM Check if windeployqt is needed (detect by checking for Qt6Core.dll)
+REM Check if windeployqt is needed (detect by checking for Qt6Cored.dll - debug suffix)
 if exist "%EXE_PATH%" (
-    if not exist "%BIN_DIR%\Qt6Core.dll" (
+    if not exist "%BIN_DIR%\Qt6Cored.dll" (
         echo.
         echo Qt dependencies not found. Running windeployqt...
 
