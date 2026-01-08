@@ -95,7 +95,13 @@ if errorlevel 1 (
     exit /b 1
 )
 
-if not exist "%BUILD_DIR%\bin\Release\%APP_NAME%.exe" (
+REM Find the executable (Ninja puts it in bin\, VS puts it in bin\Release\)
+set EXE_PATH=
+if exist "%BUILD_DIR%\bin\Release\%APP_NAME%.exe" (
+    set EXE_PATH=%BUILD_DIR%\bin\Release\%APP_NAME%.exe
+) else if exist "%BUILD_DIR%\bin\%APP_NAME%.exe" (
+    set EXE_PATH=%BUILD_DIR%\bin\%APP_NAME%.exe
+) else (
     echo ERROR: Build failed - %APP_NAME%.exe not found
     exit /b 1
 )
@@ -105,7 +111,7 @@ echo.
 echo [2/5] Preparing staging directory...
 if exist "%STAGING_DIR%" rmdir /s /q "%STAGING_DIR%"
 mkdir "%STAGING_DIR%"
-copy "%BUILD_DIR%\bin\Release\%APP_NAME%.exe" "%STAGING_DIR%\" >nul
+copy "%EXE_PATH%" "%STAGING_DIR%\" >nul
 
 REM Step 3: Run windeployqt
 echo.

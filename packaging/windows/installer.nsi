@@ -8,7 +8,8 @@
 ; Installer attributes
 Name "${APP_NAME}"
 OutFile "${OUTPUT_DIR}\${APP_NAME}-${VERSION}-Setup.exe"
-InstallDir "$PROGRAMFILES64\${APP_NAME}"
+; Use $PROGRAMFILES which resolves to Program Files on 64-bit Windows when installer is 64-bit
+InstallDir "$PROGRAMFILES\${APP_NAME}"
 InstallDirRegKey HKLM "Software\${APP_NAME}" "InstallDir"
 RequestExecutionLevel admin
 
