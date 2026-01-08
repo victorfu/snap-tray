@@ -9,15 +9,19 @@ A Qt6-based screenshot and screen recording application for Windows and macOS.
 Use scripts in `scripts/` for building and testing:
 
 ```batch
-scripts\build-and-run.bat           # Debug build
-scripts\build-and-run-release.bat   # Release build
+scripts\build.bat                   # Debug build only
+scripts\build-release.bat           # Release build only
+scripts\build-and-run.bat           # Debug build + run
+scripts\build-and-run-release.bat   # Release build + run
 scripts\run-tests.bat               # Run tests
 ```
 
 ```bash
 # macOS
-./scripts/build-and-run.sh          # Debug build
-./scripts/build-and-run-release.sh  # Release build
+./scripts/build.sh                  # Debug build only
+./scripts/build-release.sh          # Release build only
+./scripts/build-and-run.sh          # Debug build + run
+./scripts/build-and-run-release.sh  # Release build + run
 ./scripts/run-tests.sh              # Run tests
 ```
 
