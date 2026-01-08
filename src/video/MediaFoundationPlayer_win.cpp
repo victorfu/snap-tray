@@ -3,11 +3,13 @@
 #ifdef Q_OS_WIN
 
 #include <QCoreApplication>
+#include <QDateTime>
 #include <QDebug>
 #include <QDir>
 #include <QImage>
 #include <QMutex>
 #include <QMutexLocker>
+#include <QThread>
 #include <QTimer>
 #include <QUrl>
 
@@ -18,91 +20,335 @@
 #include <mferror.h>
 #include <Mfobjects.h>
 #include <propvarutil.h>
-#include <evr.h>
 
 #pragma comment(lib, "mf.lib")
 #pragma comment(lib, "mfplat.lib")
 #pragma comment(lib, "mfuuid.lib")
 #pragma comment(lib, "mfreadwrite.lib")
 #pragma comment(lib, "propsys.lib")
-#pragma comment(lib, "strmiids.lib")
 
-// Forward declaration
-class MediaFoundationPlayer;
+namespace {
+constexpr int kBytesPerPixel = 4;
+constexpr int kStrideAlignments[] = { 16, 32, 64, 128, 256 };
+constexpr int kHeightAlignments[] = { 1, 2, 4, 8, 16, 32 };
 
-// Sample grabber callback for extracting video frames
-class SampleGrabberCallback : public IMFSampleGrabberSinkCallback
+struct StrideResult {
+    int stride = 0;
+    int usedHeight = 0;
+    bool exact = false;
+};
+
+int alignUp(int value, int alignment)
 {
+    return ((value + alignment - 1) / alignment) * alignment;
+}
+
+StrideResult computeStrideFromLength(int width, int height, DWORD length, int defaultStride)
+{
+    StrideResult result{0, height, false};
+    if (width <= 0 || height <= 0) {
+        return result;
+    }
+
+    int minStride = width * kBytesPerPixel;
+    int baseStride = defaultStride >= minStride ? defaultStride : minStride;
+
+    for (int alignment : kHeightAlignments) {
+        int alignedHeight = alignUp(height, alignment);
+        if (alignedHeight <= 0) {
+            continue;
+        }
+        if (length % static_cast<DWORD>(alignedHeight) != 0) {
+            continue;
+        }
+        int stride = static_cast<int>(length / static_cast<DWORD>(alignedHeight));
+        if (stride < minStride || (stride % kBytesPerPixel) != 0) {
+            continue;
+        }
+        result.stride = stride;
+        result.usedHeight = alignedHeight;
+        result.exact = true;
+        return result;
+    }
+
+    if (length < static_cast<DWORD>(baseStride * height)) {
+        return result;
+    }
+
+    int maxStride = static_cast<int>(length / static_cast<DWORD>(height));
+    if (maxStride <= baseStride) {
+        result.stride = baseStride;
+        return result;
+    }
+
+    int extraPerRow = maxStride - baseStride;
+    if (extraPerRow < kBytesPerPixel) {
+        result.stride = baseStride;
+        return result;
+    }
+
+    for (int alignment : kStrideAlignments) {
+        int candidate = alignUp(baseStride, alignment);
+        if (candidate > baseStride && candidate <= maxStride) {
+            result.stride = candidate;
+            return result;
+        }
+    }
+
+    int alignedDown = maxStride - (maxStride % kBytesPerPixel);
+    result.stride = alignedDown >= minStride ? alignedDown : baseStride;
+    return result;
+}
+
+}
+
+// Forward declarations
+class MediaFoundationPlayer;
+class FrameReaderThread;
+
+// Worker thread for reading video frames without blocking the UI
+class FrameReaderThread : public QThread
+{
+    Q_OBJECT
+
 public:
-    SampleGrabberCallback(MediaFoundationPlayer *player)
-        : m_refCount(1)
-        , m_player(player)
-        , m_width(0)
-        , m_height(0)
+    explicit FrameReaderThread(QObject *parent = nullptr)
+        : QThread(parent)
     {}
 
-    // IUnknown methods
-    STDMETHODIMP QueryInterface(REFIID riid, void** ppv) override
-    {
-        if (!ppv) return E_POINTER;
+    void setReader(IMFSourceReader *reader) { m_reader = reader; }
+    void setVideoSize(QSize size) { m_videoSize = size; }
+    void setStride(int stride) { m_stride = stride; }
+    void setFrameInterval(int intervalMs) { m_frameIntervalMs = intervalMs; }
+    void setPlaybackRate(float rate) { m_playbackRate = rate; }
 
-        if (riid == IID_IUnknown) {
-            *ppv = static_cast<IUnknown*>(this);
-        } else if (riid == IID_IMFClockStateSink) {
-            *ppv = static_cast<IMFClockStateSink*>(this);
-        } else if (riid == IID_IMFSampleGrabberSinkCallback) {
-            *ppv = static_cast<IMFSampleGrabberSinkCallback*>(this);
-        } else {
-            *ppv = nullptr;
-            return E_NOINTERFACE;
+    void requestStop() { m_stopRequested = true; }
+    void requestPause() { m_paused = true; }
+    void requestResume() { m_paused = false; }
+    void requestSeek(qint64 positionMs) {
+        m_seekPosition = positionMs;
+        m_seekRequested = true;
+    }
+
+signals:
+    void frameReady(const QImage &frame, qint64 timestampMs);
+    void endOfStream();
+    void errorOccurred(const QString &message);
+
+protected:
+    void run() override
+    {
+        // Initialize COM for this thread
+        HRESULT hr = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
+        if (FAILED(hr)) {
+            emit errorOccurred("Failed to initialize COM in reader thread");
+            return;
         }
 
-        AddRef();
-        return S_OK;
-    }
+        while (!m_stopRequested) {
+            // Handle pause
+            if (m_paused) {
+                QThread::msleep(10);
+                continue;
+            }
 
-    STDMETHODIMP_(ULONG) AddRef() override
-    {
-        return InterlockedIncrement(&m_refCount);
-    }
+            // Handle seek request
+            if (m_seekRequested) {
+                m_seekRequested = false;
+                PROPVARIANT var;
+                PropVariantInit(&var);
+                var.vt = VT_I8;
+                var.hVal.QuadPart = m_seekPosition * 10000;
+                m_reader->SetCurrentPosition(GUID_NULL, var);
+                PropVariantClear(&var);
+            }
 
-    STDMETHODIMP_(ULONG) Release() override
-    {
-        ULONG count = InterlockedDecrement(&m_refCount);
-        if (count == 0) {
-            delete this;
+            if (!m_reader) {
+                QThread::msleep(10);
+                continue;
+            }
+
+            // Read next frame
+            DWORD streamIndex = 0;
+            DWORD flags = 0;
+            LONGLONG timestamp = 0;
+            IMFSample *sample = nullptr;
+
+            hr = m_reader->ReadSample(
+                MF_SOURCE_READER_FIRST_VIDEO_STREAM,
+                0,
+                &streamIndex,
+                &flags,
+                &timestamp,
+                &sample);
+
+            if (FAILED(hr)) {
+                emit errorOccurred(QString("ReadSample failed: 0x%1").arg(hr, 8, 16, QChar('0')));
+                break;
+            }
+
+            // Check for end of stream
+            if (flags & MF_SOURCE_READERF_ENDOFSTREAM) {
+                emit endOfStream();
+                break;
+            }
+
+            if (sample) {
+                QImage frame = extractFrame(sample);
+                if (!frame.isNull()) {
+                    qint64 timestampMs = timestamp / 10000;
+                    emit frameReady(frame, timestampMs);
+                }
+                sample->Release();
+
+                // Pace the frame reading based on playback rate
+                int sleepMs = static_cast<int>(m_frameIntervalMs / m_playbackRate);
+                if (sleepMs > 0) {
+                    QThread::msleep(sleepMs);
+                }
+            }
         }
-        return count;
-    }
 
-    // IMFClockStateSink methods
-    STDMETHODIMP OnClockStart(MFTIME, LONGLONG) override { return S_OK; }
-    STDMETHODIMP OnClockStop(MFTIME) override { return S_OK; }
-    STDMETHODIMP OnClockPause(MFTIME) override { return S_OK; }
-    STDMETHODIMP OnClockRestart(MFTIME) override { return S_OK; }
-    STDMETHODIMP OnClockSetRate(MFTIME, float) override { return S_OK; }
-
-    // IMFSampleGrabberSinkCallback methods
-    STDMETHODIMP OnSetPresentationClock(IMFPresentationClock*) override { return S_OK; }
-    STDMETHODIMP OnShutdown() override { return S_OK; }
-
-    STDMETHODIMP OnProcessSample(REFGUID majorType, DWORD dwSampleFlags,
-        LONGLONG llSampleTime, LONGLONG llSampleDuration,
-        const BYTE* pSampleBuffer, DWORD dwSampleSize) override;
-
-    void setVideoSize(int width, int height)
-    {
-        m_width = width;
-        m_height = height;
+        CoUninitialize();
     }
 
 private:
-    long m_refCount;
-    MediaFoundationPlayer *m_player;
-    int m_width;
-    int m_height;
+    QImage extractFrame(IMFSample *sample)
+    {
+        IMFMediaBuffer *buffer = nullptr;
+        HRESULT hr = sample->GetBufferByIndex(0, &buffer);
+        if (FAILED(hr)) {
+            return QImage();
+        }
+
+        QImage frame;
+
+        // Try IMF2DBuffer first to get actual stride (pitch) from the buffer
+        IMF2DBuffer *buffer2D = nullptr;
+        hr = buffer->QueryInterface(IID_PPV_ARGS(&buffer2D));
+        if (SUCCEEDED(hr)) {
+            BYTE *data = nullptr;
+            LONG pitch = 0;
+            hr = buffer2D->Lock2D(&data, &pitch);
+            if (SUCCEEDED(hr)) {
+                // Debug log on first frame
+                static bool firstFrameLogged = false;
+                if (!firstFrameLogged) {
+                    qDebug() << "MediaFoundationPlayer extractFrame (2D): videoSize:" << m_videoSize
+                             << "pitch:" << pitch << "width*4:" << (m_videoSize.width() * 4);
+                    firstFrameLogged = true;
+                }
+
+                if (m_stride != static_cast<int>(pitch)) {
+                    m_stride = static_cast<int>(pitch);
+                }
+
+                frame = QImage(m_videoSize.width(), m_videoSize.height(), QImage::Format_RGB32);
+                int absPitch = qAbs(pitch);
+
+                if (pitch < 0) {
+                    // Bottom-up buffer - flip vertically
+                    for (int y = 0; y < m_videoSize.height(); y++) {
+                        const BYTE *srcRow = data + (m_videoSize.height() - 1 - y) * absPitch;
+                        memcpy(frame.scanLine(y), srcRow, m_videoSize.width() * 4);
+                    }
+                } else {
+                    // Top-down - copy directly
+                    for (int y = 0; y < m_videoSize.height(); y++) {
+                        const BYTE *srcRow = data + y * absPitch;
+                        memcpy(frame.scanLine(y), srcRow, m_videoSize.width() * 4);
+                    }
+                }
+                buffer2D->Unlock2D();
+            }
+            buffer2D->Release();
+        } else {
+            // Fallback: use regular buffer with m_stride
+            static bool fallbackLogged = false;
+            if (!fallbackLogged) {
+                qDebug() << "MediaFoundationPlayer: IMF2DBuffer not available, using fallback. hr:" << Qt::hex << hr;
+                fallbackLogged = true;
+            }
+
+            BYTE *data = nullptr;
+            DWORD maxLength = 0;
+            DWORD currentLength = 0;
+
+            hr = buffer->Lock(&data, &maxLength, &currentLength);
+            if (SUCCEEDED(hr)) {
+                int height = m_videoSize.height();
+                int width = m_videoSize.width();
+                int minStride = width * kBytesPerPixel;
+                int defaultStride = qAbs(m_stride);
+                StrideResult fromMax = computeStrideFromLength(width, height, maxLength, defaultStride);
+                StrideResult fromCurrent = computeStrideFromLength(width, height, currentLength, defaultStride);
+                StrideResult chosen = fromCurrent;
+                if (chosen.stride <= 0 || (!chosen.exact && fromMax.exact)) {
+                    chosen = fromMax;
+                }
+                int strideToUse = chosen.stride;
+                int strideSign = (m_stride < 0) ? -1 : 1;
+                int signedStride = strideSign * strideToUse;
+                int expectedSize = height * strideToUse;
+
+                static bool fallbackFrameLogged = false;
+                if (!fallbackFrameLogged) {
+                    qDebug() << "MediaFoundationPlayer extractFrame (fallback): videoSize:" << m_videoSize
+                             << "m_stride:" << m_stride << "minStride:" << minStride
+                             << "strideFromMax:" << fromMax.stride << "maxHeight:" << fromMax.usedHeight
+                             << "strideFromCurrent:" << fromCurrent.stride << "currentHeight:" << fromCurrent.usedHeight
+                             << "strideToUse:" << strideToUse << "exactStride:" << chosen.exact
+                             << "currentLength:" << currentLength << "maxLength:" << maxLength
+                             << "expectedSize:" << expectedSize;
+                fallbackFrameLogged = true;
+            }
+
+                if (strideToUse <= 0) {
+                    buffer->Unlock();
+                    buffer->Release();
+                    return QImage();
+                }
+
+                if (m_stride != signedStride) {
+                    m_stride = signedStride;
+                }
+
+                if (height > 0 && maxLength >= static_cast<DWORD>(height * strideToUse)) {
+                    frame = QImage(m_videoSize.width(), m_videoSize.height(), QImage::Format_RGB32);
+
+                    if (m_stride < 0) {
+                        for (int y = 0; y < m_videoSize.height(); y++) {
+                            const BYTE *srcRow = data + (m_videoSize.height() - 1 - y) * strideToUse;
+                            memcpy(frame.scanLine(y), srcRow, m_videoSize.width() * 4);
+                        }
+                    } else {
+                        for (int y = 0; y < m_videoSize.height(); y++) {
+                            const BYTE *srcRow = data + y * strideToUse;
+                            memcpy(frame.scanLine(y), srcRow, m_videoSize.width() * 4);
+                        }
+                    }
+                }
+                buffer->Unlock();
+            }
+        }
+
+        buffer->Release();
+        return frame;
+    }
+
+    IMFSourceReader *m_reader = nullptr;
+    QSize m_videoSize;
+    int m_stride = 0;
+    int m_frameIntervalMs = 33;
+    float m_playbackRate = 1.0f;
+
+    std::atomic<bool> m_stopRequested{false};
+    std::atomic<bool> m_paused{true};
+    std::atomic<bool> m_seekRequested{false};
+    std::atomic<qint64> m_seekPosition{0};
 };
 
+// MediaFoundationPlayer implementation using IMFSourceReader with background thread
 class MediaFoundationPlayer : public IVideoPlayer
 {
     Q_OBJECT
@@ -124,9 +370,9 @@ public:
     QSize videoSize() const override { return m_videoSize; }
     bool hasVideo() const override { return m_hasVideo; }
 
-    void setVolume(float volume) override;
+    void setVolume(float volume) override { m_volume = qBound(0.0f, volume, 1.0f); }
     float volume() const override { return m_volume; }
-    void setMuted(bool muted) override;
+    void setMuted(bool muted) override { m_muted = muted; }
     bool isMuted() const override { return m_muted; }
 
     void setLooping(bool loop) override { m_looping = loop; }
@@ -135,29 +381,30 @@ public:
     void setPlaybackRate(float rate) override;
     float playbackRate() const override { return m_playbackRate; }
 
-    // Called from SampleGrabberCallback
-    void onFrameReceived(const QImage &frame, qint64 timestampMs);
+private slots:
+    void onFrameReady(const QImage &frame, qint64 timestampMs);
+    void onEndOfStream();
+    void onReaderError(const QString &message);
 
 private:
     void cleanup();
-    bool createMediaSource(const QString &filePath);
-    bool createTopology();
-    bool addSourceNode(IMFTopology *topology, IMFPresentationDescriptor *pd,
-                       IMFStreamDescriptor *sd, IMFTopologyNode **ppNode);
-    bool addVideoOutputNode(IMFTopology *topology, IMFTopologyNode **ppNode);
-    bool addAudioOutputNode(IMFTopology *topology, IMFTopologyNode **ppNode);
-    void updatePosition();
-    void handleEndOfStream();
+    bool createSourceReader(const QString &filePath);
+    bool configureVideoOutput();
+    bool getMediaDuration();
+    bool readFirstFrame();
     void setState(State newState);
+    void stopReaderThread();
 
     // Media Foundation objects
-    IMFMediaSession *m_session = nullptr;
-    IMFMediaSource *m_source = nullptr;
-    IMFSimpleAudioVolume *m_audioVolume = nullptr;
-    SampleGrabberCallback *m_grabberCallback = nullptr;
+    IMFSourceReader *m_reader = nullptr;
 
-    QTimer *m_positionTimer;
+    // Worker thread
+    FrameReaderThread *m_readerThread = nullptr;
 
+    // Position timer
+    QTimer *m_positionTimer = nullptr;
+
+    // State
     State m_state = State::Stopped;
     qint64 m_duration = 0;
     qint64 m_position = 0;
@@ -167,60 +414,17 @@ private:
     bool m_muted = false;
     bool m_looping = false;
     float m_playbackRate = 1.0f;
-    bool m_pendingSeek = false;
-    qint64 m_seekPosition = 0;
     bool m_mfInitialized = false;
-    bool m_firstFrameReceived = false;
 
-    QMutex m_mutex;
+    // Frame timing
+    int m_frameIntervalMs = 33;
+    qint64 m_playbackStartTime = 0;
+    qint64 m_playbackStartPosition = 0;
+
+    // Stride for RGB32 frame data
+    int m_stride = 0;
 };
 
-// SampleGrabberCallback implementation
-STDMETHODIMP SampleGrabberCallback::OnProcessSample(REFGUID majorType, DWORD dwSampleFlags,
-    LONGLONG llSampleTime, LONGLONG llSampleDuration,
-    const BYTE* pSampleBuffer, DWORD dwSampleSize)
-{
-    Q_UNUSED(majorType)
-    Q_UNUSED(dwSampleFlags)
-    Q_UNUSED(llSampleDuration)
-
-    qDebug() << "SampleGrabberCallback::OnProcessSample - time:" << (llSampleTime / 10000)
-             << "ms, size:" << dwSampleSize << "bytes";
-
-    if (!m_player || m_width <= 0 || m_height <= 0 || !pSampleBuffer) {
-        qDebug() << "OnProcessSample: Invalid params - player:" << (void*)m_player
-                 << "w:" << m_width << "h:" << m_height << "buf:" << (void*)pSampleBuffer;
-        return S_OK;
-    }
-
-    // Create QImage from RGB32 buffer
-    // Media Foundation outputs bottom-up, so we need to flip
-    // Calculate actual stride (may include padding for memory alignment)
-    int minStride = m_width * 4;
-    int actualStride = static_cast<int>(dwSampleSize / m_height);
-
-    // Validate buffer size
-    if (actualStride < minStride || dwSampleSize < static_cast<DWORD>(m_height * minStride)) {
-        qWarning() << "OnProcessSample: Invalid buffer size - got:" << dwSampleSize
-                   << "expected min:" << (m_height * minStride)
-                   << "stride:" << actualStride << "minStride:" << minStride;
-        return S_OK;
-    }
-
-    QImage frame(m_width, m_height, QImage::Format_RGB32);
-
-    for (int y = 0; y < m_height; y++) {
-        const BYTE *srcRow = pSampleBuffer + (m_height - 1 - y) * actualStride;
-        memcpy(frame.scanLine(y), srcRow, minStride);
-    }
-
-    qint64 timestampMs = llSampleTime / 10000; // 100ns -> ms
-    m_player->onFrameReceived(frame, timestampMs);
-
-    return S_OK;
-}
-
-// MediaFoundationPlayer implementation
 MediaFoundationPlayer::MediaFoundationPlayer(QObject *parent)
     : IVideoPlayer(parent)
     , m_positionTimer(new QTimer(this))
@@ -231,12 +435,17 @@ MediaFoundationPlayer::MediaFoundationPlayer(QObject *parent)
         qWarning() << "MediaFoundationPlayer: Failed to initialize Media Foundation:" << Qt::hex << hr;
     }
 
-    connect(m_positionTimer, &QTimer::timeout, this, &MediaFoundationPlayer::updatePosition);
-    m_positionTimer->setInterval(100); // 10 Hz position updates
+    connect(m_positionTimer, &QTimer::timeout, this, [this]() {
+        if (m_state == State::Playing && m_duration > 0) {
+            emit positionChanged(m_position);
+        }
+    });
+    m_positionTimer->setInterval(100);
 }
 
 MediaFoundationPlayer::~MediaFoundationPlayer()
 {
+    stopReaderThread();
     m_positionTimer->stop();
     cleanup();
     if (m_mfInitialized) {
@@ -244,37 +453,34 @@ MediaFoundationPlayer::~MediaFoundationPlayer()
     }
 }
 
+void MediaFoundationPlayer::stopReaderThread()
+{
+    if (m_readerThread) {
+        m_readerThread->requestStop();
+        m_readerThread->wait(1000);
+        if (m_readerThread->isRunning()) {
+            m_readerThread->terminate();
+            m_readerThread->wait(500);
+        }
+        delete m_readerThread;
+        m_readerThread = nullptr;
+    }
+}
+
 void MediaFoundationPlayer::cleanup()
 {
-    QMutexLocker locker(&m_mutex);
+    stopReaderThread();
 
-    if (m_session) {
-        m_session->Stop();
-        m_session->Close();
-        m_session->Release();
-        m_session = nullptr;
-    }
-
-    if (m_source) {
-        m_source->Shutdown();
-        m_source->Release();
-        m_source = nullptr;
-    }
-
-    if (m_audioVolume) {
-        m_audioVolume->Release();
-        m_audioVolume = nullptr;
-    }
-
-    if (m_grabberCallback) {
-        m_grabberCallback->Release();
-        m_grabberCallback = nullptr;
+    if (m_reader) {
+        m_reader->Release();
+        m_reader = nullptr;
     }
 
     m_hasVideo = false;
     m_duration = 0;
     m_position = 0;
     m_videoSize = QSize();
+    m_stride = 0;
 }
 
 bool MediaFoundationPlayer::load(const QString &filePath)
@@ -288,68 +494,52 @@ bool MediaFoundationPlayer::load(const QString &filePath)
 
     qDebug() << "MediaFoundationPlayer: Loading" << filePath;
 
-    // Create media source
-    if (!createMediaSource(filePath)) {
-        emit error("Failed to create media source");
+    if (!createSourceReader(filePath)) {
+        emit error("Failed to create source reader");
         return false;
     }
 
-    // Create media session
-    HRESULT hr = MFCreateMediaSession(nullptr, &m_session);
-    if (FAILED(hr)) {
-        qWarning() << "MediaFoundationPlayer: Failed to create media session:" << Qt::hex << hr;
-        emit error("Failed to create media session");
+    if (!configureVideoOutput()) {
+        emit error("Failed to configure video output");
         cleanup();
         return false;
     }
 
-    // Create and set topology
-    if (!createTopology()) {
-        emit error("Failed to create playback topology");
-        cleanup();
-        return false;
+    if (!getMediaDuration()) {
+        qWarning() << "MediaFoundationPlayer: Could not get media duration";
     }
 
     qDebug() << "MediaFoundationPlayer: Media loaded, duration:" << m_duration
              << "size:" << m_videoSize;
 
-    // Start playback briefly to get the first frame, then pause
-    if (m_hasVideo && m_session) {
-        qDebug() << "MediaFoundationPlayer: Starting briefly to get first frame...";
-        m_firstFrameReceived = false;
+    m_position = 0;
+    emit durationChanged(m_duration);
+    emit positionChanged(m_position);
 
-        PROPVARIANT varStart;
-        PropVariantInit(&varStart);
-        varStart.vt = VT_I8;
-        varStart.hVal.QuadPart = 0;  // Start from beginning
+    // Read first frame synchronously (small blocking call, acceptable at load time)
+    readFirstFrame();
 
-        HRESULT startHr = m_session->Start(&GUID_NULL, &varStart);
-        PropVariantClear(&varStart);
+    // Create reader thread
+    m_readerThread = new FrameReaderThread(this);
+    m_readerThread->setReader(m_reader);
+    m_readerThread->setVideoSize(m_videoSize);
+    m_readerThread->setStride(m_stride);
+    m_readerThread->setFrameInterval(m_frameIntervalMs);
 
-        if (SUCCEEDED(startHr)) {
-            // Wait for first frame with event-driven polling
-            const int maxWaitMs = 500;
-            const int pollIntervalMs = 10;
-            int waitedMs = 0;
+    connect(m_readerThread, &FrameReaderThread::frameReady,
+            this, &MediaFoundationPlayer::onFrameReady, Qt::QueuedConnection);
+    connect(m_readerThread, &FrameReaderThread::endOfStream,
+            this, &MediaFoundationPlayer::onEndOfStream, Qt::QueuedConnection);
+    connect(m_readerThread, &FrameReaderThread::errorOccurred,
+            this, &MediaFoundationPlayer::onReaderError, Qt::QueuedConnection);
 
-            while (!m_firstFrameReceived && waitedMs < maxWaitMs) {
-                Sleep(pollIntervalMs);
-                waitedMs += pollIntervalMs;
-                // Process Qt events to allow frame signal delivery
-                QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
-            }
-
-            m_session->Pause();
-            qDebug() << "MediaFoundationPlayer: First frame wait completed in"
-                     << waitedMs << "ms, received:" << m_firstFrameReceived;
-        }
-    }
+    m_readerThread->start();
 
     emit mediaLoaded();
     return true;
 }
 
-bool MediaFoundationPlayer::createMediaSource(const QString &filePath)
+bool MediaFoundationPlayer::createSourceReader(const QString &filePath)
 {
     QString resolvedPath = filePath;
     if (filePath.startsWith("file://", Qt::CaseInsensitive)) {
@@ -360,505 +550,339 @@ bool MediaFoundationPlayer::createMediaSource(const QString &filePath)
     }
     resolvedPath = QDir::toNativeSeparators(resolvedPath);
 
-    IMFSourceResolver *resolver = nullptr;
-    MF_OBJECT_TYPE objectType = MF_OBJECT_INVALID;
-    IUnknown *sourceUnk = nullptr;
-
-    HRESULT hr = MFCreateSourceResolver(&resolver);
+    IMFAttributes *attributes = nullptr;
+    HRESULT hr = MFCreateAttributes(&attributes, 3);
     if (FAILED(hr)) {
-        qWarning() << "MediaFoundationPlayer: Failed to create source resolver:" << Qt::hex << hr;
+        qWarning() << "MediaFoundationPlayer: Failed to create attributes:" << Qt::hex << hr;
         return false;
     }
 
-    // Pass file path directly - MF expects native Windows paths, not file:// URLs
-    hr = resolver->CreateObjectFromURL(
+    // Enable video processing for format conversion
+    hr = attributes->SetUINT32(MF_SOURCE_READER_ENABLE_VIDEO_PROCESSING, TRUE);
+    if (FAILED(hr)) {
+        qWarning() << "MediaFoundationPlayer: Failed to enable video processing:" << Qt::hex << hr;
+    }
+
+    // Prefer software decode for stable system-memory buffers and valid 2D pitch.
+    hr = attributes->SetUINT32(MF_SOURCE_READER_DISABLE_DXVA, TRUE);
+    if (FAILED(hr)) {
+        qWarning() << "MediaFoundationPlayer: Failed to disable DXVA:" << Qt::hex << hr;
+    }
+
+    hr = attributes->SetUINT32(MF_READWRITE_ENABLE_HARDWARE_TRANSFORMS, FALSE);
+    if (FAILED(hr)) {
+        qWarning() << "MediaFoundationPlayer: Failed to disable hardware transforms:" << Qt::hex << hr;
+    }
+
+    hr = MFCreateSourceReaderFromURL(
         reinterpret_cast<LPCWSTR>(resolvedPath.utf16()),
-        MF_RESOLUTION_MEDIASOURCE,
+        attributes,
+        &m_reader);
+
+    attributes->Release();
+
+    if (FAILED(hr)) {
+        qWarning() << "MediaFoundationPlayer: Failed to create source reader:" << Qt::hex << hr;
+        return false;
+    }
+
+    return true;
+}
+
+bool MediaFoundationPlayer::configureVideoOutput()
+{
+    if (!m_reader) return false;
+
+    IMFMediaType *nativeType = nullptr;
+    HRESULT hr = m_reader->GetNativeMediaType(
+        MF_SOURCE_READER_FIRST_VIDEO_STREAM,
+        0,
+        &nativeType);
+
+    if (FAILED(hr)) {
+        qWarning() << "MediaFoundationPlayer: No video stream found:" << Qt::hex << hr;
+        return false;
+    }
+
+    UINT32 width = 0, height = 0;
+    hr = MFGetAttributeSize(nativeType, MF_MT_FRAME_SIZE, &width, &height);
+    if (SUCCEEDED(hr) && width > 0 && height > 0) {
+        m_videoSize = QSize(width, height);
+        m_hasVideo = true;
+    }
+
+    UINT32 numerator = 0, denominator = 0;
+    hr = MFGetAttributeRatio(nativeType, MF_MT_FRAME_RATE, &numerator, &denominator);
+    if (SUCCEEDED(hr) && numerator > 0 && denominator > 0) {
+        double fps = static_cast<double>(numerator) / denominator;
+        m_frameIntervalMs = static_cast<int>(1000.0 / fps);
+        qDebug() << "MediaFoundationPlayer: Frame rate:" << fps << "fps";
+    }
+
+    nativeType->Release();
+
+    if (!m_hasVideo) {
+        qWarning() << "MediaFoundationPlayer: Could not get video dimensions";
+        return false;
+    }
+
+    // Configure RGB32 output
+    IMFMediaType *outputType = nullptr;
+    hr = MFCreateMediaType(&outputType);
+    if (FAILED(hr)) return false;
+
+    hr = outputType->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Video);
+    if (FAILED(hr)) { outputType->Release(); return false; }
+
+    hr = outputType->SetGUID(MF_MT_SUBTYPE, MFVideoFormat_RGB32);
+    if (FAILED(hr)) { outputType->Release(); return false; }
+
+    hr = m_reader->SetCurrentMediaType(
+        MF_SOURCE_READER_FIRST_VIDEO_STREAM,
         nullptr,
-        &objectType,
-        &sourceUnk
-    );
+        outputType);
 
-    resolver->Release();
+    outputType->Release();
 
     if (FAILED(hr)) {
-        qWarning() << "MediaFoundationPlayer: Failed to create media source from URL:" << Qt::hex << hr;
+        qWarning() << "MediaFoundationPlayer: Failed to set output type:" << Qt::hex << hr;
         return false;
     }
 
-    hr = sourceUnk->QueryInterface(IID_PPV_ARGS(&m_source));
-    sourceUnk->Release();
-
-    if (FAILED(hr)) {
-        qWarning() << "MediaFoundationPlayer: Failed to get IMFMediaSource:" << Qt::hex << hr;
-        return false;
-    }
-
-    // Get presentation descriptor for duration and video info
-    IMFPresentationDescriptor *pd = nullptr;
-    hr = m_source->CreatePresentationDescriptor(&pd);
+    // Get stride - MF_MT_DEFAULT_STRIDE is signed (negative = bottom-up buffer)
+    IMFMediaType *actualType = nullptr;
+    hr = m_reader->GetCurrentMediaType(MF_SOURCE_READER_FIRST_VIDEO_STREAM, &actualType);
     if (SUCCEEDED(hr)) {
-        // Get duration
-        UINT64 duration = 0;
-        hr = pd->GetUINT64(MF_PD_DURATION, &duration);
-        if (SUCCEEDED(hr)) {
-            m_duration = duration / 10000; // 100ns -> ms
-        }
-
-        // Iterate streams to find video info
-        DWORD streamCount = 0;
-        pd->GetStreamDescriptorCount(&streamCount);
-
-        for (DWORD i = 0; i < streamCount; i++) {
-            BOOL selected = FALSE;
-            IMFStreamDescriptor *sd = nullptr;
-
-            hr = pd->GetStreamDescriptorByIndex(i, &selected, &sd);
-            if (SUCCEEDED(hr)) {
-                IMFMediaTypeHandler *handler = nullptr;
-                hr = sd->GetMediaTypeHandler(&handler);
-                if (SUCCEEDED(hr)) {
-                    GUID majorType;
-                    hr = handler->GetMajorType(&majorType);
-                    if (SUCCEEDED(hr) && majorType == MFMediaType_Video) {
-                        m_hasVideo = true;
-
-                        // Get video dimensions (fallback to first media type if current is unset).
-                        IMFMediaType *mediaType = nullptr;
-                        hr = handler->GetCurrentMediaType(&mediaType);
-                        if (FAILED(hr)) {
-                            hr = handler->GetMediaTypeByIndex(0, &mediaType);
-                        }
-                        if (SUCCEEDED(hr) && mediaType) {
-                            UINT32 width = 0, height = 0;
-                            if (SUCCEEDED(MFGetAttributeSize(mediaType, MF_MT_FRAME_SIZE, &width, &height)) &&
-                                width > 0 && height > 0) {
-                                m_videoSize = QSize(width, height);
-                            }
-                            mediaType->Release();
-                        }
-                    }
-                    handler->Release();
-                }
-                sd->Release();
+        UINT32 outWidth = 0, outHeight = 0;
+        if (SUCCEEDED(MFGetAttributeSize(actualType, MF_MT_FRAME_SIZE, &outWidth, &outHeight))
+            && outWidth > 0 && outHeight > 0) {
+            QSize outputSize(outWidth, outHeight);
+            if (m_videoSize != outputSize) {
+                qDebug() << "MediaFoundationPlayer: Output frame size:" << outputSize;
             }
-        }
-
-        pd->Release();
-    }
-
-    return true;
-}
-
-bool MediaFoundationPlayer::createTopology()
-{
-    if (!m_session || !m_source) return false;
-
-    HRESULT hr = S_OK;
-    IMFTopology *topology = nullptr;
-    IMFPresentationDescriptor *pd = nullptr;
-
-    // Create topology
-    hr = MFCreateTopology(&topology);
-    if (FAILED(hr)) {
-        qWarning() << "MediaFoundationPlayer: Failed to create topology:" << Qt::hex << hr;
-        return false;
-    }
-
-    // Get presentation descriptor
-    hr = m_source->CreatePresentationDescriptor(&pd);
-    if (FAILED(hr)) {
-        topology->Release();
-        qWarning() << "MediaFoundationPlayer: Failed to get presentation descriptor:" << Qt::hex << hr;
-        return false;
-    }
-
-    // Add streams to topology
-    DWORD streamCount = 0;
-    pd->GetStreamDescriptorCount(&streamCount);
-    qDebug() << "MediaFoundationPlayer: Creating topology, streams:" << streamCount;
-    bool videoNodeAdded = false;
-    bool audioNodeAdded = false;
-
-    for (DWORD i = 0; i < streamCount; i++) {
-        BOOL selected = FALSE;
-        IMFStreamDescriptor *sd = nullptr;
-
-        hr = pd->GetStreamDescriptorByIndex(i, &selected, &sd);
-        if (FAILED(hr)) {
-            if (sd) sd->Release();
-            continue;
-        }
-        if (!selected) {
-            hr = pd->SelectStream(i);
-            if (FAILED(hr)) {
-                qWarning() << "MediaFoundationPlayer: Failed to select stream" << i << ":" << Qt::hex << hr;
-                sd->Release();
-                continue;
-            }
-        }
-
-        IMFMediaTypeHandler *handler = nullptr;
-        hr = sd->GetMediaTypeHandler(&handler);
-        if (FAILED(hr)) {
-            sd->Release();
-            continue;
-        }
-
-        GUID majorType;
-        hr = handler->GetMajorType(&majorType);
-        if (FAILED(hr)) {
-            handler->Release();
-            sd->Release();
-            continue;
-        }
-
-        if (majorType == MFMediaType_Video) {
+            m_videoSize = outputSize;
             m_hasVideo = true;
-            if (m_videoSize.isEmpty()) {
-                IMFMediaType *mediaType = nullptr;
-                HRESULT typeHr = handler->GetCurrentMediaType(&mediaType);
-                if (FAILED(typeHr)) {
-                    typeHr = handler->GetMediaTypeByIndex(0, &mediaType);
+        }
+
+        UINT32 strideRaw = 0;
+        hr = actualType->GetUINT32(MF_MT_DEFAULT_STRIDE, &strideRaw);
+        qDebug() << "MediaFoundationPlayer: GetUINT32(MF_MT_DEFAULT_STRIDE) hr:" << Qt::hex << hr
+                 << "strideRaw:" << strideRaw << "as INT32:" << static_cast<INT32>(strideRaw);
+        if (SUCCEEDED(hr)) {
+            m_stride = static_cast<INT32>(strideRaw);
+        } else {
+            // Fallback: calculate stride using MFGetStrideForBitmapInfoHeader
+            LONG calcStride = 0;
+            hr = MFGetStrideForBitmapInfoHeader(MFVideoFormat_RGB32.Data1, m_videoSize.width(), &calcStride);
+            qDebug() << "MediaFoundationPlayer: MFGetStrideForBitmapInfoHeader hr:" << Qt::hex << hr
+                     << "calcStride:" << calcStride;
+            m_stride = SUCCEEDED(hr) ? calcStride : m_videoSize.width() * 4;
+        }
+        actualType->Release();
+    } else {
+        qDebug() << "MediaFoundationPlayer: GetCurrentMediaType failed hr:" << Qt::hex << hr;
+        m_stride = m_videoSize.width() * 4;
+    }
+
+    qDebug() << "MediaFoundationPlayer: Configured RGB32, size:" << m_videoSize
+             << "stride:" << m_stride << "width*4:" << (m_videoSize.width() * 4);
+    return true;
+}
+
+bool MediaFoundationPlayer::getMediaDuration()
+{
+    if (!m_reader) return false;
+
+    PROPVARIANT var;
+    PropVariantInit(&var);
+
+    HRESULT hr = m_reader->GetPresentationAttribute(
+        MF_SOURCE_READER_MEDIASOURCE,
+        MF_PD_DURATION,
+        &var);
+
+    if (SUCCEEDED(hr)) {
+        m_duration = var.hVal.QuadPart / 10000;
+        PropVariantClear(&var);
+        return true;
+    }
+
+    PropVariantClear(&var);
+    return false;
+}
+
+bool MediaFoundationPlayer::readFirstFrame()
+{
+    if (!m_reader) return false;
+
+    DWORD streamIndex = 0;
+    DWORD flags = 0;
+    LONGLONG timestamp = 0;
+    IMFSample *sample = nullptr;
+
+    HRESULT hr = m_reader->ReadSample(
+        MF_SOURCE_READER_FIRST_VIDEO_STREAM,
+        0,
+        &streamIndex,
+        &flags,
+        &timestamp,
+        &sample);
+
+    if (FAILED(hr) || !sample) {
+        return false;
+    }
+
+    // Extract and emit first frame
+    IMFMediaBuffer *buffer = nullptr;
+    hr = sample->GetBufferByIndex(0, &buffer);
+    if (SUCCEEDED(hr)) {
+        QImage frame;
+
+        // Try IMF2DBuffer first to get actual stride
+        IMF2DBuffer *buffer2D = nullptr;
+        hr = buffer->QueryInterface(IID_PPV_ARGS(&buffer2D));
+        if (SUCCEEDED(hr)) {
+            BYTE *data = nullptr;
+            LONG pitch = 0;
+            hr = buffer2D->Lock2D(&data, &pitch);
+            if (SUCCEEDED(hr)) {
+                if (m_stride != static_cast<int>(pitch)) {
+                    m_stride = static_cast<int>(pitch);
                 }
-                if (SUCCEEDED(typeHr) && mediaType) {
-                    UINT32 width = 0;
-                    UINT32 height = 0;
-                    if (SUCCEEDED(MFGetAttributeSize(mediaType, MF_MT_FRAME_SIZE, &width, &height)) &&
-                        width > 0 && height > 0) {
-                        m_videoSize = QSize(width, height);
+                frame = QImage(m_videoSize.width(), m_videoSize.height(), QImage::Format_RGB32);
+                int absPitch = qAbs(pitch);
+
+                if (pitch < 0) {
+                    for (int y = 0; y < m_videoSize.height(); y++) {
+                        const BYTE *srcRow = data + (m_videoSize.height() - 1 - y) * absPitch;
+                        memcpy(frame.scanLine(y), srcRow, m_videoSize.width() * 4);
                     }
-                    mediaType->Release();
+                } else {
+                    for (int y = 0; y < m_videoSize.height(); y++) {
+                        const BYTE *srcRow = data + y * absPitch;
+                        memcpy(frame.scanLine(y), srcRow, m_videoSize.width() * 4);
+                    }
                 }
+                buffer2D->Unlock2D();
             }
-        }
-        handler->Release();
+            buffer2D->Release();
+        } else {
+            // Fallback to regular buffer - calculate actual stride from buffer size
+            BYTE *data = nullptr;
+            DWORD maxLength = 0, currentLength = 0;
 
-        IMFTopologyNode *sourceNode = nullptr;
-        IMFTopologyNode *outputNode = nullptr;
-
-        // Create source node
-        if (!addSourceNode(topology, pd, sd, &sourceNode)) {
-            sd->Release();
-            continue;
-        }
-
-        // Create output node based on stream type
-        bool nodeCreated = false;
-        if (majorType == MFMediaType_Video) {
-            nodeCreated = addVideoOutputNode(topology, &outputNode);
-            if (nodeCreated) {
-                videoNodeAdded = true;
-            }
-        } else if (majorType == MFMediaType_Audio) {
-            nodeCreated = addAudioOutputNode(topology, &outputNode);
-            if (nodeCreated) {
-                audioNodeAdded = true;
-            }
-        }
-
-        if (nodeCreated && outputNode) {
-            // Connect source to output
-            sourceNode->ConnectOutput(0, outputNode, 0);
-            outputNode->Release();
-        }
-
-        sourceNode->Release();
-        sd->Release();
-    }
-
-    if (!videoNodeAdded) {
-        qWarning() << "MediaFoundationPlayer: No video stream available for playback";
-        pd->Release();
-        topology->Release();
-        return false;
-    }
-
-    // Set topology on session
-    hr = m_session->SetTopology(0, topology);
-
-    pd->Release();
-    topology->Release();
-
-    if (FAILED(hr)) {
-        qWarning() << "MediaFoundationPlayer: Failed to set topology:" << Qt::hex << hr;
-        return false;
-    }
-
-    // Wait for topology to be ready with timeout (non-blocking polling)
-    qDebug() << "MediaFoundationPlayer: Waiting for topology to be ready...";
-    IMFMediaEvent *event = nullptr;
-    bool topologyReady = false;
-
-    const int maxWaitMs = 5000;  // 5 second timeout
-    const int pollIntervalMs = 50;
-    int elapsedMs = 0;
-
-    while (!topologyReady && elapsedMs < maxWaitMs) {
-        // Use non-blocking event retrieval
-        hr = m_session->GetEvent(MF_EVENT_FLAG_NO_WAIT, &event);
-
-        if (hr == MF_E_NO_EVENTS_AVAILABLE) {
-            // No event yet, wait a bit and try again
-            Sleep(pollIntervalMs);
-            elapsedMs += pollIntervalMs;
-            continue;
-        }
-
-        if (FAILED(hr)) {
-            qWarning() << "MediaFoundationPlayer: GetEvent failed:" << Qt::hex << hr;
-            break;
-        }
-
-        MediaEventType eventType;
-        event->GetType(&eventType);
-        qDebug() << "MediaFoundationPlayer: Received event type:" << eventType;
-
-        if (eventType == MESessionTopologyStatus) {
-            MF_TOPOSTATUS status;
-            hr = event->GetUINT32(MF_EVENT_TOPOLOGY_STATUS, (UINT32*)&status);
-            qDebug() << "MediaFoundationPlayer: Topology status:" << status;
-            if (SUCCEEDED(hr) && status == MF_TOPOSTATUS_READY) {
-                topologyReady = true;
-                qDebug() << "MediaFoundationPlayer: Topology ready!";
-
-                // Get audio volume interface
-                hr = MFGetService(m_session, MR_POLICY_VOLUME_SERVICE,
-                                  IID_PPV_ARGS(&m_audioVolume));
-                if (FAILED(hr)) {
-                    qDebug() << "MediaFoundationPlayer: Audio volume control not available";
-                    m_audioVolume = nullptr;
+            hr = buffer->Lock(&data, &maxLength, &currentLength);
+            if (SUCCEEDED(hr)) {
+                int height = m_videoSize.height();
+                int width = m_videoSize.width();
+                int defaultStride = qAbs(m_stride);
+                StrideResult fromMax = computeStrideFromLength(width, height, maxLength, defaultStride);
+                StrideResult fromCurrent = computeStrideFromLength(width, height, currentLength, defaultStride);
+                StrideResult chosen = fromCurrent;
+                if (chosen.stride <= 0 || (!chosen.exact && fromMax.exact)) {
+                    chosen = fromMax;
                 }
+                int strideToUse = chosen.stride;
+                int strideSign = (m_stride < 0) ? -1 : 1;
+                int signedStride = strideSign * strideToUse;
+
+                if (strideToUse > 0) {
+                    if (m_stride != signedStride) {
+                        m_stride = signedStride;
+                    }
+
+                    if (height > 0 && maxLength >= static_cast<DWORD>(height * strideToUse)) {
+                        frame = QImage(m_videoSize.width(), m_videoSize.height(), QImage::Format_RGB32);
+
+                    if (m_stride < 0) {
+                        for (int y = 0; y < m_videoSize.height(); y++) {
+                            const BYTE *srcRow = data + (m_videoSize.height() - 1 - y) * strideToUse;
+                            memcpy(frame.scanLine(y), srcRow, m_videoSize.width() * 4);
+                        }
+                    } else {
+                            for (int y = 0; y < m_videoSize.height(); y++) {
+                                const BYTE *srcRow = data + y * strideToUse;
+                                memcpy(frame.scanLine(y), srcRow, m_videoSize.width() * 4);
+                            }
+                        }
+                    }
+                }
+                buffer->Unlock();
             }
-        } else if (eventType == MESessionClosed) {
-            qWarning() << "MediaFoundationPlayer: Session closed event";
-            event->Release();
-            break;
-        } else if (eventType == MEError) {
-            HRESULT errorCode = S_OK;
-            event->GetStatus(&errorCode);
-            qWarning() << "MediaFoundationPlayer: Session error:" << Qt::hex << errorCode;
-            event->Release();
-            break;
         }
 
-        event->Release();
+        if (!frame.isNull()) {
+            emit frameReady(frame);
+        }
+        buffer->Release();
     }
+    sample->Release();
 
-    if (!topologyReady && elapsedMs >= maxWaitMs) {
-        qWarning() << "MediaFoundationPlayer: Topology timeout after" << elapsedMs << "ms";
-    }
+    // Seek back to beginning for playback
+    PROPVARIANT var;
+    PropVariantInit(&var);
+    var.vt = VT_I8;
+    var.hVal.QuadPart = 0;
+    m_reader->SetCurrentPosition(GUID_NULL, var);
+    PropVariantClear(&var);
 
-    qDebug() << "MediaFoundationPlayer: createTopology returning:" << topologyReady;
-    return topologyReady;
-}
-
-bool MediaFoundationPlayer::addSourceNode(IMFTopology *topology, IMFPresentationDescriptor *pd,
-                                          IMFStreamDescriptor *sd, IMFTopologyNode **ppNode)
-{
-    IMFTopologyNode *node = nullptr;
-    HRESULT hr = MFCreateTopologyNode(MF_TOPOLOGY_SOURCESTREAM_NODE, &node);
-    if (FAILED(hr)) return false;
-
-    hr = node->SetUnknown(MF_TOPONODE_SOURCE, m_source);
-    if (FAILED(hr)) { node->Release(); return false; }
-
-    hr = node->SetUnknown(MF_TOPONODE_PRESENTATION_DESCRIPTOR, pd);
-    if (FAILED(hr)) { node->Release(); return false; }
-
-    hr = node->SetUnknown(MF_TOPONODE_STREAM_DESCRIPTOR, sd);
-    if (FAILED(hr)) { node->Release(); return false; }
-
-    hr = topology->AddNode(node);
-    if (FAILED(hr)) { node->Release(); return false; }
-
-    *ppNode = node;
-    return true;
-}
-
-bool MediaFoundationPlayer::addVideoOutputNode(IMFTopology *topology, IMFTopologyNode **ppNode)
-{
-    qDebug() << "MediaFoundationPlayer: Adding video output node, size:" << m_videoSize;
-    if (m_videoSize.isEmpty()) {
-        qWarning() << "MediaFoundationPlayer: Video size unavailable for sample grabber";
-        return false;
-    }
-
-    // Create sample grabber sink for video frame extraction
-    IMFTopologyNode *node = nullptr;
-    IMFMediaType *mediaType = nullptr;
-    IMFActivate *activate = nullptr;
-
-    HRESULT hr = MFCreateTopologyNode(MF_TOPOLOGY_OUTPUT_NODE, &node);
-    if (FAILED(hr)) return false;
-
-    // Create media type for RGB32 output
-    hr = MFCreateMediaType(&mediaType);
-    if (FAILED(hr)) { node->Release(); return false; }
-
-    hr = mediaType->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Video);
-    if (FAILED(hr)) { mediaType->Release(); node->Release(); return false; }
-
-    hr = mediaType->SetGUID(MF_MT_SUBTYPE, MFVideoFormat_RGB32);
-    if (FAILED(hr)) { mediaType->Release(); node->Release(); return false; }
-
-    // Must specify frame size for proper format negotiation
-    hr = MFSetAttributeSize(mediaType, MF_MT_FRAME_SIZE, m_videoSize.width(), m_videoSize.height());
-    if (FAILED(hr)) { mediaType->Release(); node->Release(); return false; }
-
-    // Create sample grabber callback
-    m_grabberCallback = new SampleGrabberCallback(this);
-    m_grabberCallback->setVideoSize(m_videoSize.width(), m_videoSize.height());
-
-    // Create sample grabber sink activate
-    hr = MFCreateSampleGrabberSinkActivate(mediaType, m_grabberCallback, &activate);
-    mediaType->Release();
-
-    if (FAILED(hr)) {
-        qWarning() << "MediaFoundationPlayer: Failed to create sample grabber:" << Qt::hex << hr;
-        node->Release();
-        return false;
-    }
-
-    // Configure for immediate frame delivery (don't wait for presentation clock)
-    hr = activate->SetUINT32(MF_SAMPLEGRABBERSINK_IGNORE_CLOCK, TRUE);
-
-    hr = node->SetObject(activate);
-    activate->Release();
-
-    if (FAILED(hr)) { node->Release(); return false; }
-
-    hr = topology->AddNode(node);
-    if (FAILED(hr)) { node->Release(); return false; }
-
-    *ppNode = node;
-    return true;
-}
-
-bool MediaFoundationPlayer::addAudioOutputNode(IMFTopology *topology, IMFTopologyNode **ppNode)
-{
-    IMFTopologyNode *node = nullptr;
-    IMFActivate *activate = nullptr;
-
-    HRESULT hr = MFCreateTopologyNode(MF_TOPOLOGY_OUTPUT_NODE, &node);
-    if (FAILED(hr)) return false;
-
-    // Create SAR (Streaming Audio Renderer) activate
-    hr = MFCreateAudioRendererActivate(&activate);
-    if (FAILED(hr)) {
-        qWarning() << "MediaFoundationPlayer: Failed to create audio renderer:" << Qt::hex << hr;
-        node->Release();
-        return false;
-    }
-
-    hr = node->SetObject(activate);
-    activate->Release();
-
-    if (FAILED(hr)) { node->Release(); return false; }
-
-    hr = topology->AddNode(node);
-    if (FAILED(hr)) { node->Release(); return false; }
-
-    *ppNode = node;
     return true;
 }
 
 void MediaFoundationPlayer::play()
 {
-    qDebug() << "MediaFoundationPlayer::play() - session:" << (void*)m_session
-             << "state:" << (int)m_state;
+    qDebug() << "MediaFoundationPlayer::play()";
 
-    if (!m_session) return;
+    if (!m_readerThread || !m_hasVideo) return;
 
-    PROPVARIANT varStart;
-    PropVariantInit(&varStart);
+    m_playbackStartTime = QDateTime::currentMSecsSinceEpoch();
+    m_playbackStartPosition = m_position;
 
-    if (m_pendingSeek) {
-        varStart.vt = VT_I8;
-        varStart.hVal.QuadPart = m_seekPosition * 10000; // ms -> 100ns
-        m_pendingSeek = false;
-        qDebug() << "MediaFoundationPlayer: Starting from seek position:" << m_seekPosition;
-    }
-
-    HRESULT hr = m_session->Start(&GUID_NULL, &varStart);
-    PropVariantClear(&varStart);
-
-    qDebug() << "MediaFoundationPlayer: Start() returned:" << Qt::hex << hr;
-
-    if (SUCCEEDED(hr)) {
-        setState(State::Playing);
-        m_positionTimer->start();
-    } else {
-        qWarning() << "MediaFoundationPlayer: Failed to start:" << Qt::hex << hr;
-    }
+    m_readerThread->setPlaybackRate(m_playbackRate);
+    m_readerThread->requestResume();
+    m_positionTimer->start();
+    setState(State::Playing);
 }
 
 void MediaFoundationPlayer::pause()
 {
-    if (!m_session) return;
+    qDebug() << "MediaFoundationPlayer::pause()";
 
-    HRESULT hr = m_session->Pause();
-    if (SUCCEEDED(hr)) {
-        setState(State::Paused);
-        m_positionTimer->stop();
+    if (m_readerThread) {
+        m_readerThread->requestPause();
     }
+    m_positionTimer->stop();
+    setState(State::Paused);
 }
 
 void MediaFoundationPlayer::stop()
 {
-    if (!m_session) return;
+    qDebug() << "MediaFoundationPlayer::stop()";
 
-    HRESULT hr = m_session->Stop();
-    if (SUCCEEDED(hr)) {
-        m_position = 0;
-        emit positionChanged(0);
-        setState(State::Stopped);
-        m_positionTimer->stop();
+    if (m_readerThread) {
+        m_readerThread->requestPause();
+        m_readerThread->requestSeek(0);
     }
+    m_positionTimer->stop();
+    m_position = 0;
+    emit positionChanged(0);
+    setState(State::Stopped);
 }
 
 void MediaFoundationPlayer::seek(qint64 positionMs)
 {
-    if (!m_session) return;
+    qDebug() << "MediaFoundationPlayer::seek() to" << positionMs << "ms";
 
     positionMs = qBound(0LL, positionMs, m_duration);
+    m_position = positionMs;
+    m_playbackStartPosition = positionMs;
+    m_playbackStartTime = QDateTime::currentMSecsSinceEpoch();
 
-    if (m_state == State::Playing) {
-        // Seek while playing
-        PROPVARIANT varStart;
-        PropVariantInit(&varStart);
-        varStart.vt = VT_I8;
-        varStart.hVal.QuadPart = positionMs * 10000; // ms -> 100ns
-
-        HRESULT hr = m_session->Start(&GUID_NULL, &varStart);
-        PropVariantClear(&varStart);
-
-        if (FAILED(hr)) {
-            qWarning() << "MediaFoundationPlayer: Seek failed:" << Qt::hex << hr;
-        }
-    } else {
-        // Store seek position for next play
-        m_pendingSeek = true;
-        m_seekPosition = positionMs;
-        m_position = positionMs;
-        emit positionChanged(positionMs);
+    if (m_readerThread) {
+        m_readerThread->requestSeek(positionMs);
     }
-}
 
-void MediaFoundationPlayer::setVolume(float volume)
-{
-    m_volume = qBound(0.0f, volume, 1.0f);
-    if (m_audioVolume && !m_muted) {
-        m_audioVolume->SetMasterVolume(m_volume);
-    }
-}
-
-void MediaFoundationPlayer::setMuted(bool muted)
-{
-    m_muted = muted;
-    if (m_audioVolume) {
-        m_audioVolume->SetMute(muted);
-    }
+    emit positionChanged(positionMs);
 }
 
 void MediaFoundationPlayer::setPlaybackRate(float rate)
@@ -866,73 +890,39 @@ void MediaFoundationPlayer::setPlaybackRate(float rate)
     float newRate = qBound(0.25f, rate, 2.0f);
     if (m_playbackRate == newRate) return;
 
-    if (m_session) {
-        IMFRateControl *rateControl = nullptr;
-        HRESULT hr = MFGetService(m_session, MF_RATE_CONTROL_SERVICE,
-                                  IID_PPV_ARGS(&rateControl));
-        if (SUCCEEDED(hr)) {
-            hr = rateControl->SetRate(FALSE, newRate);
-            rateControl->Release();
-
-            if (SUCCEEDED(hr)) {
-                m_playbackRate = newRate;
-                emit playbackRateChanged(newRate);
-            }
-        }
+    m_playbackRate = newRate;
+    if (m_readerThread) {
+        m_readerThread->setPlaybackRate(newRate);
     }
+    emit playbackRateChanged(newRate);
 }
 
-void MediaFoundationPlayer::updatePosition()
+void MediaFoundationPlayer::onFrameReady(const QImage &frame, qint64 timestampMs)
 {
-    if (!m_session || m_state != State::Playing) return;
-
-    IMFClock *clock = nullptr;
-    HRESULT hr = m_session->GetClock(&clock);
-    if (FAILED(hr)) return;
-
-    IMFPresentationClock *presentationClock = nullptr;
-    hr = clock->QueryInterface(IID_PPV_ARGS(&presentationClock));
-    clock->Release();
-
-    if (FAILED(hr)) return;
-
-    MFTIME time = 0;
-    hr = presentationClock->GetTime(&time);
-    presentationClock->Release();
-
-    if (SUCCEEDED(hr)) {
-        qint64 newPosition = time / 10000; // 100ns -> ms
-        if (newPosition != m_position) {
-            m_position = newPosition;
-            emit positionChanged(m_position);
-        }
-
-        // Check for end of stream
-        if (m_position >= m_duration && m_duration > 0) {
-            handleEndOfStream();
-        }
-    }
+    m_position = timestampMs;
+    emit frameReady(frame);
 }
 
-void MediaFoundationPlayer::handleEndOfStream()
+void MediaFoundationPlayer::onEndOfStream()
 {
+    qDebug() << "MediaFoundationPlayer: End of stream";
+
     if (m_looping) {
         seek(0);
         play();
     } else {
-        stop();
+        m_positionTimer->stop();
+        setState(State::Stopped);
+        m_position = m_duration;
+        emit positionChanged(m_duration);
         emit playbackFinished();
     }
 }
 
-void MediaFoundationPlayer::onFrameReceived(const QImage &frame, qint64 timestampMs)
+void MediaFoundationPlayer::onReaderError(const QString &message)
 {
-    Q_UNUSED(timestampMs)
-    m_firstFrameReceived = true;
-    // Marshal to main thread since this is called from MF worker thread
-    QMetaObject::invokeMethod(this, [this, frame]() {
-        emit frameReady(frame);
-    }, Qt::QueuedConnection);
+    qWarning() << "MediaFoundationPlayer: Reader error:" << message;
+    emit error(message);
 }
 
 void MediaFoundationPlayer::setState(State newState)
@@ -951,7 +941,6 @@ IVideoPlayer* createMediaFoundationPlayer(QObject *parent)
 
 bool isMediaFoundationAvailable()
 {
-    // Test if Media Foundation can be initialized
     HRESULT hr = MFStartup(MF_VERSION);
     if (SUCCEEDED(hr)) {
         MFShutdown();

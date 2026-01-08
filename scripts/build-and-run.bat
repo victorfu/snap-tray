@@ -20,6 +20,11 @@ if not exist "%BUILD_DIR%\CMakeCache.txt" (
 REM Build all targets (including tests)
 echo Building all targets...
 cmake --build build
+if %ERRORLEVEL% neq 0 (
+    echo.
+    echo Build failed with error code %ERRORLEVEL%
+    exit /b %ERRORLEVEL%
+)
 
 REM Check if windeployqt is needed (detect by checking for Qt6Cored.dll - debug suffix)
 if exist "%EXE_PATH%" (

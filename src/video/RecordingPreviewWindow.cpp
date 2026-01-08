@@ -67,7 +67,8 @@ public:
         : QWidget(parent)
         , m_cornerRadius(10)
     {
-        setAttribute(Qt::WA_TranslucentBackground);
+        // Don't use setAutoFillBackground - we handle background explicitly in paintEvent
+        // This is required for proper rendering on Windows
         setAutoFillBackground(false);
     }
 
@@ -87,6 +88,11 @@ protected:
         painter.setRenderHint(QPainter::Antialiasing);
 
         ToolbarStyleConfig config = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
+
+        // CRITICAL for Windows: Fill background explicitly FIRST before any other painting
+        painter.fillRect(rect(), config.glassBackgroundColor);
+
+        // Then draw glass panel effect on top
         GlassRenderer::drawGlassPanel(painter, rect(), config, m_cornerRadius);
     }
 
@@ -299,11 +305,14 @@ public:
 
     QSize sizeHint() const override
     {
-        QFontMetrics fm(font());
+        QFont f = font();
+        f.setPointSize(10);
+        f.setWeight(QFont::Medium);
+        QFontMetrics fm(f);
         int height = 28;
         int textWidth = fm.horizontalAdvance(text());
         int iconWidth = m_iconKey.isEmpty() ? 0 : (height - 12) + 6;
-        int width = textWidth + iconWidth + 20;
+        int width = textWidth + iconWidth + 24;
         return QSize(width, height);
     }
 
@@ -534,6 +543,7 @@ void RecordingPreviewWindow::setupUI()
     // Timeline panel with trim handles
     GlassPanel *timelinePanel = new GlassPanel(m_previewModeWidget);
     timelinePanel->setCornerRadius(12);
+    timelinePanel->setMinimumHeight(44);
     QHBoxLayout *timelineLayout = new QHBoxLayout(timelinePanel);
     timelineLayout->setContentsMargins(12, 6, 12, 6);
     timelineLayout->setSpacing(10);
@@ -556,10 +566,10 @@ void RecordingPreviewWindow::setupUI()
     connect(m_timeline, &TrimTimeline::trimHandleDoubleClicked,
             this, &RecordingPreviewWindow::onTrimHandleDoubleClicked);
 
-    m_trimPreviewToggle = new PreviewPillButton(tr("Trim Preview"), timelinePanel);
+    m_trimPreviewToggle = new PreviewPillButton(tr("Trim"), timelinePanel);
     m_trimPreviewToggle->setCheckable(true);
     m_trimPreviewToggle->setFixedHeight(28);
-    m_trimPreviewToggle->setToolTip(tr("Play only the trimmed range"));
+    m_trimPreviewToggle->setToolTip(tr("Loop playback within the trimmed range"));
     m_trimPreviewEnabled = false;
     connect(m_trimPreviewToggle, &QAbstractButton::toggled,
             this, &RecordingPreviewWindow::onTrimPreviewToggled);
