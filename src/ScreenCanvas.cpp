@@ -960,6 +960,9 @@ void ScreenCanvas::mouseMoveEvent(QMouseEvent* event)
         // Handle unified color and width widget
         if (shouldShowColorAndWidthWidget()) {
             if (m_colorAndWidthWidget->handleMouseMove(event->pos(), event->buttons() & Qt::LeftButton)) {
+                if (m_colorAndWidthWidget->contains(event->pos())) {
+                    setCursor(Qt::PointingHandCursor);
+                }
                 update();
                 return;
             }
@@ -1006,12 +1009,12 @@ void ScreenCanvas::mouseMoveEvent(QMouseEvent* event)
         if (m_toolbar->hoveredButton() >= 0) {
             setCursor(Qt::PointingHandCursor);
         }
+        else if (widgetHovered) {
+            setCursor(Qt::PointingHandCursor);
+        }
         else if (m_toolbar->contains(event->pos())) {
             // Hovering over toolbar but not on a button - show drag cursor
             setCursor(Qt::OpenHandCursor);
-        }
-        else if (widgetHovered) {
-            setCursor(Qt::PointingHandCursor);
         }
         else {
             setToolCursor();
