@@ -7,8 +7,8 @@
 #include <QQueue>
 #include <QFuture>
 #include <atomic>
+#include "scrolling/ImageStitcher.h"
 
-class ImageStitcher;
 class FixedElementDetector;
 
 /**
@@ -39,6 +39,7 @@ public:
      */
     struct Result {
         bool success = false;
+        ImageStitcher::FailureCode failureCode = ImageStitcher::FailureCode::None;
         double confidence = 0.0;
         QString failureReason;
         int overlapPixels = 0;
@@ -48,6 +49,7 @@ public:
         bool fixedElementsDetected = false;
         int leadingFixed = 0;
         int trailingFixed = 0;
+        QSize frameSize;
     };
 
     /**
@@ -118,7 +120,12 @@ signals:
     /**
      * @brief Emitted when queue is getting full
      */
-    void queueNearFull();
+    void queueNearFull(int currentDepth, int maxDepth);
+    
+    /**
+     * @brief Emitted when queue pressure is relieved
+     */
+    void queueLow(int currentDepth, int maxDepth);
 
     /**
      * @brief Emitted when an error occurs
@@ -145,6 +152,18 @@ private:
     QFuture<void> m_processingFuture;
     bool m_fixedElementsFound = false;
     QImage m_lastFrame;
+    bool m_wasNearFull = false;
+
+    // Fixed element detection buffering
+    QVector<QImage> m_pendingRawFrames;
+    qint64 m_pendingMemoryUsage = 0;
+    bool m_fixedDetected = false;           // fixed elements detection succeeded
+    bool m_detectionDisabled = false;       // stop pending/detect when budget exceeded
+    int m_minFramesForDetection = 6;
+    QImage m_lastRawFrameForChange;         // baseline for isFrameChanged (raw)
+    QImage m_lastProcessedFrameForChange;   // baseline for isFrameChanged (cropped)
+    static constexpr int MAX_PENDING_FRAMES = 30;
+    static constexpr qint64 MAX_PENDING_MEMORY_BYTES = 300 * 1024 * 1024;  // 300MB
 
     // Configuration
     CaptureMode m_captureMode = CaptureMode::Vertical;

@@ -30,6 +30,17 @@ struct StitchConfig {
     double staticRowThreshold = 8.0;      // Max avg pixel diff to consider row static
     bool detectStaticRegions = true;      // Enable header/footer detection
     bool useGrayscale = true;             // Convert to grayscale before matching
+
+    // Algorithm flags
+    bool usePhaseCorrelation = true;
+    bool useWindowedDuplicateCheck = true;
+    
+    // Thresholds
+    double ambiguityThreshold = 0.05;       // best - secondBest gap (lower = stricter)
+    double duplicateThreshold = 0.95;       // matchVal above this = duplicate candidate
+    double minPhaseResponse = 0.30;         // phase correlation response threshold
+    int duplicateWindowSize = 200;          // min window size for duplicate check
+    int phaseMaxCrossAxisShift = 8;         // max pixels off scroll axis
 };
 
 class ImageStitcher : public QObject
@@ -59,8 +70,27 @@ public:
     };
     Q_ENUM(CaptureMode)
 
+    enum class FailureCode {
+        None,                   // Success
+        FrameUnchanged,         // Frame identical to previous (normal, skip)
+        ScrollTooSmall,         // Scroll delta too small (warning)
+        OverlapTooSmall,        // Overlap region too small to match
+        OverlapMismatch,        // Cannot find matching overlap
+        AmbiguousMatch,         // Multiple similar match candidates (NEW)
+        LowConfidence,          // Match confidence below threshold
+        ViewportMismatch,       // Viewport/window size changed
+        DuplicateDetected,      // Duplicate content detected
+        MaxSizeReached,         // Maximum stitch dimensions reached
+        InvalidState,           // Internal error (e.g., frame size mismatch)
+        NoAlgorithmSucceeded,   // All algorithms failed
+        Timeout,                // Reserved for future use (processing timeout)
+        Unknown                 // Unclassified error
+    };
+    Q_ENUM(FailureCode)
+
     struct StitchResult {
         bool success = false;
+        FailureCode failureCode = FailureCode::None;
         QPoint offset;              // x for horizontal, y for vertical
         double confidence = 0.0;    // 0.0 - 1.0
         int overlapPixels = 0;      // Detected overlap amount
@@ -111,6 +141,7 @@ signals:
 private:
     struct MatchCandidate {
         bool success = false;
+        FailureCode failureCode = FailureCode::None;
         double confidence = 0.0;
         int overlap = 0;
         ScrollDirection direction = ScrollDirection::Down;
@@ -120,6 +151,7 @@ private:
     // Algorithm implementations (RSSA: template matching and row projection only)
     StitchResult tryTemplateMatch(const QImage &newFrame);
     StitchResult tryRowProjectionMatch(const QImage &newFrame);
+    StitchResult tryPhaseCorrelation(const QImage &newFrame);
     StitchResult tryInPlaceMatchInStitched(const QImage &newFrame);
 
     // Static region detection (header/footer/scrollbar)

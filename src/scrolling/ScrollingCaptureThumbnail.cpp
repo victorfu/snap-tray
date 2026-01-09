@@ -1,317 +1,275 @@
 #include "scrolling/ScrollingCaptureThumbnail.h"
-
+#include "GlassRenderer.h"
+#include "ToolbarStyle.h"
 #include <QPainter>
 #include <QMouseEvent>
-#include <QScreen>
-#include <QGuiApplication>
+#include <QEvent>
+#include <QHBoxLayout>
+#include <QVBoxLayout>
+#include <QGraphicsDropShadowEffect>
+
+// Colors for glass panel UI (always uses light text on dark translucent background)
+struct GlassPanelColors {
+    QColor text;
+    QColor textSecondary;
+    QColor viewportBg;
+    QColor errorText;
+};
+
+static GlassPanelColors getGlassPanelColors() {
+    // Glass panels have dark translucent backgrounds, so always use light text
+    ToolbarStyleConfig styleConfig = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
+    return {
+        styleConfig.textColor,                    // text - from style config
+        styleConfig.textColor.darker(130),        // textSecondary - slightly dimmer
+        QColor(0, 0, 0, 60),                      // viewportBg - semi-transparent dark
+        QColor("#FF6B6B")                         // errorText - bright red for visibility
+    };
+}
+
+// Status colors
+static const QMap<ScrollingCaptureThumbnail::CaptureStatus, QColor> STATUS_COLORS = {
+    {ScrollingCaptureThumbnail::CaptureStatus::Idle,      QColor("#888888")},
+    {ScrollingCaptureThumbnail::CaptureStatus::Capturing, QColor("#4CAF50")},
+    {ScrollingCaptureThumbnail::CaptureStatus::Warning,   QColor("#FFC107")},
+    {ScrollingCaptureThumbnail::CaptureStatus::Failed,    QColor("#FF3B30")},
+    {ScrollingCaptureThumbnail::CaptureStatus::Recovered, QColor("#007AFF")}
+};
 
 ScrollingCaptureThumbnail::ScrollingCaptureThumbnail(QWidget *parent)
     : QWidget(parent)
 {
-    // NOTE: Removed Qt::Tool flag as it causes the window to hide when app loses focus on macOS
-    setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
+    setWindowFlags(Qt::FramelessWindowHint | Qt::Tool | Qt::WindowStaysOnTopHint);
     setAttribute(Qt::WA_TranslucentBackground);
-#ifdef Q_OS_MACOS
-    setAttribute(Qt::WA_MacAlwaysShowToolWindow);
-#endif
-    setFixedWidth(THUMBNAIL_WIDTH_VERTICAL + 2 * MARGIN);
-    setMinimumHeight(100);
+
+    setupUI();
+    applyThemeColors();
+
+    // Throttling timer
+    m_viewportThrottleTimer = new QTimer(this);
+    m_viewportThrottleTimer->setSingleShot(true);
+    connect(m_viewportThrottleTimer, &QTimer::timeout, this, [this]() {
+        if (!m_pendingViewportImage.isNull()) {
+            applyViewportImage(m_pendingViewportImage);
+        }
+    });
 }
 
 ScrollingCaptureThumbnail::~ScrollingCaptureThumbnail()
 {
 }
 
-void ScrollingCaptureThumbnail::setStitchedImage(const QImage &image)
+void ScrollingCaptureThumbnail::setupUI()
 {
-    m_stitchedImage = image;
-    updateScaledImage();
-    update();
+    QVBoxLayout* mainLayout = new QVBoxLayout(this);
+    mainLayout->setContentsMargins(12, 12, 12, 12);
+    mainLayout->setSpacing(8);
+
+    // Viewport Preview
+    m_viewportLabel = new QLabel(this);
+    m_viewportLabel->setAlignment(Qt::AlignCenter);
+    m_viewportLabel->setFixedSize(200, 120); // Fixed size for consistency
+    mainLayout->addWidget(m_viewportLabel);
+
+    // Status Row
+    QHBoxLayout* statusLayout = new QHBoxLayout();
+    m_statusLabel = new QLabel("Ready", this);
+    statusLayout->addWidget(m_statusLabel);
+    statusLayout->addStretch();
+    mainLayout->addLayout(statusLayout);
+
+    // Stats
+    m_statsLabel = new QLabel("0 frames • 0 x 0 px", this);
+    mainLayout->addWidget(m_statsLabel);
+
+    // Error Section (Hidden by default)
+    m_errorSection = new QWidget(this);
+    QVBoxLayout* errorLayout = new QVBoxLayout(m_errorSection);
+    errorLayout->setContentsMargins(0, 4, 0, 0);
+    errorLayout->setSpacing(2);
+
+    m_errorTitleLabel = new QLabel(this);
+    m_errorTitleLabel->setWordWrap(true);
+    errorLayout->addWidget(m_errorTitleLabel);
+
+    m_errorHintLabel = new QLabel(this);
+    m_errorHintLabel->setWordWrap(true);
+    errorLayout->addWidget(m_errorHintLabel);
+
+    m_errorSection->setVisible(false);
+    mainLayout->addWidget(m_errorSection);
+
+    // Set initial size
+    resize(224, 200);
 }
 
-void ScrollingCaptureThumbnail::setViewportRect(const QRect &viewportInStitched)
+void ScrollingCaptureThumbnail::applyThemeColors()
 {
-    m_viewportRect = viewportInStitched;
-    update();
+    auto colors = getGlassPanelColors();
+
+    // Use rgba for semi-transparent background
+    m_viewportLabel->setStyleSheet(
+        QString("background-color: rgba(%1, %2, %3, %4); border-radius: 4px;")
+            .arg(colors.viewportBg.red())
+            .arg(colors.viewportBg.green())
+            .arg(colors.viewportBg.blue())
+            .arg(colors.viewportBg.alpha()));
+
+    m_statusLabel->setStyleSheet(
+        QString("color: %1; font-weight: bold; font-size: 12px;")
+            .arg(colors.text.name()));
+
+    m_statsLabel->setStyleSheet(
+        QString("color: %1; font-size: 11px;")
+            .arg(colors.textSecondary.name()));
+
+    m_errorTitleLabel->setStyleSheet(
+        QString("color: %1; font-weight: bold; font-size: 11px;")
+            .arg(colors.errorText.name()));
+
+    m_errorHintLabel->setStyleSheet(
+        QString("color: %1; font-size: 11px;")
+            .arg(colors.errorText.name()));
 }
 
-void ScrollingCaptureThumbnail::setMatchStatus(MatchStatus status, double confidence)
+void ScrollingCaptureThumbnail::setViewportImage(const QImage& image)
 {
-    m_matchStatus = status;
-    m_confidence = confidence;
-    update();
-}
-
-void ScrollingCaptureThumbnail::setDirection(Direction direction)
-{
-    if (m_direction == direction) {
+    if (m_lastViewportUpdate.isValid() &&
+        m_lastViewportUpdate.elapsed() < VIEWPORT_UPDATE_INTERVAL_MS) {
+        m_pendingViewportImage = image;
+        if (!m_viewportThrottleTimer->isActive()) {
+            m_viewportThrottleTimer->start(VIEWPORT_UPDATE_INTERVAL_MS);
+        }
         return;
     }
-
-    m_direction = direction;
-
-    // Update size constraints based on direction
-    int thumbnailWidth = (direction == Direction::Vertical)
-        ? THUMBNAIL_WIDTH_VERTICAL : THUMBNAIL_WIDTH_HORIZONTAL;
-    setFixedWidth(thumbnailWidth + 2 * MARGIN);
-
-    updateScaledImage();
-    update();
+    applyViewportImage(image);
 }
 
-void ScrollingCaptureThumbnail::setLastSuccessfulPosition(int position)
+void ScrollingCaptureThumbnail::applyViewportImage(const QImage& image)
 {
-    m_lastSuccessfulPosition = position;
-    update();
+    if (image.isNull()) return;
+    
+    QPixmap pixmap = QPixmap::fromImage(image).scaled(
+        m_viewportLabel->size(), 
+        Qt::KeepAspectRatio, 
+        Qt::SmoothTransformation
+    );
+    m_viewportLabel->setPixmap(pixmap);
+    
+    m_pendingViewportImage = QImage();
+    m_lastViewportUpdate.restart();
 }
 
-void ScrollingCaptureThumbnail::setShowRecoveryHint(bool show)
+void ScrollingCaptureThumbnail::setStats(int frameCount, QSize totalSize)
 {
-    m_showRecoveryHint = show;
-    update();
+    m_statsLabel->setText(QString("%1 frames • %2 x %3 px")
+        .arg(frameCount)
+        .arg(totalSize.width())
+        .arg(totalSize.height()));
+}
+
+void ScrollingCaptureThumbnail::setStatus(CaptureStatus status, const QString& message)
+{
+    // Cancel any pending recovered timer
+    if (m_recoveredTimer && m_recoveredTimer->isActive()) {
+        m_recoveredTimer->stop();
+    }
+    
+    // Transition Failed -> Capturing shows Recovered first
+    if (m_currentStatus == CaptureStatus::Failed && status == CaptureStatus::Capturing) {
+        m_pendingStatus = status;
+        applyStatus(CaptureStatus::Recovered, "Recovered");
+        
+        if (!m_recoveredTimer) {
+            m_recoveredTimer = new QTimer(this);
+            m_recoveredTimer->setSingleShot(true);
+            connect(m_recoveredTimer, &QTimer::timeout, this, [this]() {
+                applyStatus(m_pendingStatus, "Capturing");
+            });
+        }
+        m_recoveredTimer->start(1500);
+        return;
+    }
+    
+    applyStatus(status, message);
+}
+
+void ScrollingCaptureThumbnail::applyStatus(CaptureStatus status, const QString& message)
+{
+    m_currentStatus = status;
+    QColor color = STATUS_COLORS.value(status, Qt::white);
+    
+    QString statusText = message.isEmpty() ? "Capturing" : message;
+    if (status == CaptureStatus::Idle) statusText = "Ready";
+    if (status == CaptureStatus::Failed) statusText = "Failed";
+    if (status == CaptureStatus::Recovered) statusText = "Recovered";
+    
+    // Update indicator dot + text
+    m_statusLabel->setText(QString("<font color='%1'>●</font> %2")
+        .arg(color.name())
+        .arg(statusText));
+        
+    update(); // Repaint glass border if needed
+}
+
+void ScrollingCaptureThumbnail::setErrorInfo(ImageStitcher::FailureCode code, const QString& debugReason, int recoveryDistancePx)
+{
+    m_errorSection->setVisible(true);
+    
+    QString title = failureCodeToUserMessage(code);
+    m_errorTitleLabel->setText(QString("⚠ %1").arg(title));
+    
+    QString arrow = (m_captureDirection == CaptureDirection::Vertical) ? "↑" : "←"; 
+    // Wait, Vertical usually means Down. So recovery is Up (Scroll Back).
+    // The plan says: "arrow = (m_captureDirection == CaptureDirection::Down) ? "↑" : "↓";"
+    // But CaptureDirection is Vertical/Horizontal. 
+    // If we scroll Down (standard), we need to scroll Up to recover.
+    // If we scroll Up, we need to scroll Down.
+    // Manager doesn't pass scroll direction here, just capture direction mode.
+    // But Manager knows ScrollDirection from Stitcher.
+    // For now, assuming standard Top-Down scrolling for Vertical.
+    
+    m_errorHintLabel->setText(QString("Scroll back ~%1px %2").arg(recoveryDistancePx).arg(arrow));
+    
+    m_errorSection->setToolTip(debugReason);
+    
+    // Adjust height
+    adjustSize();
+}
+
+void ScrollingCaptureThumbnail::clearError()
+{
+    m_errorSection->setVisible(false);
+    adjustSize();
+}
+
+void ScrollingCaptureThumbnail::setCaptureDirection(CaptureDirection direction)
+{
+    m_captureDirection = direction;
 }
 
 void ScrollingCaptureThumbnail::positionNear(const QRect &captureRegion)
 {
-    QScreen *screen = QGuiApplication::screenAt(captureRegion.center());
-    if (!screen) {
-        screen = QGuiApplication::primaryScreen();
-    }
-
-    QRect screenGeom = screen->geometry();
-
-    // Prefer right side of capture region
-    int x = captureRegion.right() + 16;
+    // Position to the right of capture region if possible, else left
+    int x = captureRegion.right() + 20;
     int y = captureRegion.top();
-
-    // If would go off right edge, try left side
-    if (x + width() > screenGeom.right() - 10) {
-        x = captureRegion.left() - width() - 16;
+    
+    // Basic screen bounds check (using primary screen logic for simplicity)
+    // In real app, check m_targetScreen
+    if (parentWidget()) {
+        if (x + width() > parentWidget()->width()) {
+            x = captureRegion.left() - width() - 20;
+        }
     }
-
-    // If would go off left edge, position inside at right
-    if (x < screenGeom.left() + 10) {
-        x = captureRegion.right() - width() - 10;
-    }
-
-    // Vertical bounds
-    y = qBound(screenGeom.top() + 10, y, screenGeom.bottom() - height() - 10);
-
+    
     move(x, y);
-}
-
-void ScrollingCaptureThumbnail::clear()
-{
-    m_stitchedImage = QImage();
-    m_scaledImage = QImage();
-    m_viewportRect = QRect();
-    m_matchStatus = MatchStatus::Good;
-    m_confidence = 1.0;
-    m_lastSuccessfulPosition = 0;
-    m_showRecoveryHint = false;
-    update();
-}
-
-void ScrollingCaptureThumbnail::updateScaledImage()
-{
-    if (m_stitchedImage.isNull()) {
-        m_scaledImage = QImage();
-        setFixedHeight(100);
-        return;
-    }
-
-    // Get direction-aware size constraints
-    int thumbnailWidth = (m_direction == Direction::Vertical)
-        ? THUMBNAIL_WIDTH_VERTICAL : THUMBNAIL_WIDTH_HORIZONTAL;
-    int thumbnailMaxHeight = (m_direction == Direction::Vertical)
-        ? THUMBNAIL_MAX_HEIGHT_VERTICAL : THUMBNAIL_MAX_HEIGHT_HORIZONTAL;
-
-    // Calculate scale to fit width
-    m_scale = static_cast<double>(thumbnailWidth) / m_stitchedImage.width();
-
-    int scaledHeight = static_cast<int>(m_stitchedImage.height() * m_scale);
-
-    // Limit height - recalculate scale if needed
-    if (scaledHeight > thumbnailMaxHeight) {
-        scaledHeight = thumbnailMaxHeight;
-        // Recalculate scale based on height constraint
-        m_scale = static_cast<double>(thumbnailMaxHeight) / m_stitchedImage.height();
-    }
-
-    m_scaledImage = m_stitchedImage.scaled(
-        thumbnailWidth, scaledHeight,
-        Qt::KeepAspectRatio, Qt::SmoothTransformation);
-
-    setFixedHeight(scaledHeight + 2 * MARGIN);
 }
 
 void ScrollingCaptureThumbnail::paintEvent(QPaintEvent *event)
 {
-    Q_UNUSED(event)
-
     QPainter painter(this);
-    painter.setRenderHint(QPainter::Antialiasing);
-
-    // Draw background
-    QRect bgRect = rect();
-    painter.setPen(Qt::NoPen);
-    painter.setBrush(QColor(40, 40, 40, 230));
-    painter.drawRoundedRect(bgRect, BORDER_RADIUS, BORDER_RADIUS);
-
-    // Draw border
-    drawBorder(painter);
-
-    // Draw scaled image
-    if (!m_scaledImage.isNull()) {
-        QRect imageRect(MARGIN, MARGIN, m_scaledImage.width(), m_scaledImage.height());
-        painter.drawImage(imageRect, m_scaledImage);
-
-        // Draw viewport indicator
-        drawViewportIndicator(painter);
-
-        // Draw recovery hint if match failed
-        if (m_showRecoveryHint) {
-            drawRecoveryHint(painter);
-        }
-    }
-
-    // Draw match status indicator
-    drawMatchStatusIndicator(painter);
-}
-
-void ScrollingCaptureThumbnail::drawBorder(QPainter &painter)
-{
-    painter.setPen(QPen(QColor(80, 80, 80), 1));
-    painter.setBrush(Qt::NoBrush);
-    painter.drawRoundedRect(rect().adjusted(0, 0, -1, -1), BORDER_RADIUS, BORDER_RADIUS);
-}
-
-void ScrollingCaptureThumbnail::drawViewportIndicator(QPainter &painter)
-{
-    if (m_viewportRect.isNull() || m_stitchedImage.isNull()) {
-        return;
-    }
-
-    // Scale viewport rect to thumbnail coordinates
-    QRectF scaledViewport(
-        MARGIN + m_viewportRect.x() * m_scale,
-        MARGIN + m_viewportRect.y() * m_scale,
-        m_viewportRect.width() * m_scale,
-        m_viewportRect.height() * m_scale
-    );
-
-    // Clip to image bounds
-    QRect imageRect(MARGIN, MARGIN, m_scaledImage.width(), m_scaledImage.height());
-    scaledViewport = scaledViewport.intersected(QRectF(imageRect));
-
-    if (scaledViewport.isEmpty()) {
-        return;
-    }
-
-    // Draw semi-transparent overlay
-    painter.setPen(QPen(QColor(0, 122, 255), 2));
-    painter.setBrush(QColor(0, 122, 255, 50));
-    painter.drawRect(scaledViewport);
-}
-
-void ScrollingCaptureThumbnail::drawMatchStatusIndicator(QPainter &painter)
-{
-    // Draw status indicator in top-right corner
-    int x = width() - STATUS_INDICATOR_SIZE - MARGIN;
-    int y = MARGIN;
-
-    QColor color;
-    switch (m_matchStatus) {
-    case MatchStatus::Good:
-        color = QColor(76, 175, 80);   // Green
-        break;
-    case MatchStatus::Warning:
-        color = QColor(255, 193, 7);   // Yellow
-        break;
-    case MatchStatus::Failed:
-        color = QColor(255, 59, 48);   // Red
-        break;
-    }
-
-    painter.setPen(Qt::NoPen);
-    painter.setBrush(color);
-    painter.drawEllipse(x, y, STATUS_INDICATOR_SIZE, STATUS_INDICATOR_SIZE);
-
-    // Draw confidence text below if not perfect
-    if (m_confidence < 1.0 && m_confidence > 0.0) {
-        painter.setPen(Qt::white);
-        painter.setFont(QFont("Arial", 8));
-        QString confText = QString("%1%").arg(static_cast<int>(m_confidence * 100));
-        painter.drawText(x - 10, y + STATUS_INDICATOR_SIZE + 12, confText);
-    }
-}
-
-void ScrollingCaptureThumbnail::drawRecoveryHint(QPainter &painter)
-{
-    if (m_stitchedImage.isNull() || m_lastSuccessfulPosition <= 0) {
-        return;
-    }
-
-    // Draw a green line at the last successful position
-    if (m_direction == Direction::Vertical) {
-        // Vertical mode: draw horizontal green line
-        int scaledY = MARGIN + static_cast<int>(m_lastSuccessfulPosition * m_scale);
-
-        // Clamp to visible area
-        int maxY = MARGIN + m_scaledImage.height();
-        if (scaledY > maxY) scaledY = maxY;
-        if (scaledY < MARGIN) scaledY = MARGIN;
-
-        painter.setPen(QPen(QColor(76, 175, 80), 2));
-        painter.drawLine(MARGIN, scaledY, MARGIN + m_scaledImage.width(), scaledY);
-
-        // Draw arrow and text hint
-        painter.setPen(Qt::white);
-        painter.setFont(QFont("Arial", 9, QFont::Bold));
-        QString hint = QString::fromUtf8("↑ Scroll here");
-        QFontMetrics fm(painter.font());
-        int textWidth = fm.horizontalAdvance(hint);
-        int textX = MARGIN + (m_scaledImage.width() - textWidth) / 2;
-        int textY = scaledY - 6;
-
-        // Background for text
-        QRect textBgRect(textX - 4, textY - fm.ascent() - 2, textWidth + 8, fm.height() + 4);
-        painter.setPen(Qt::NoPen);
-        painter.setBrush(QColor(0, 0, 0, 180));
-        painter.drawRoundedRect(textBgRect, 4, 4);
-
-        painter.setPen(QColor(76, 175, 80));
-        painter.drawText(textX, textY, hint);
-    } else {
-        // Horizontal mode: draw vertical green line
-        int scaledX = MARGIN + static_cast<int>(m_lastSuccessfulPosition * m_scale);
-
-        // Clamp to visible area
-        int maxX = MARGIN + m_scaledImage.width();
-        if (scaledX > maxX) scaledX = maxX;
-        if (scaledX < MARGIN) scaledX = MARGIN;
-
-        painter.setPen(QPen(QColor(76, 175, 80), 2));
-        painter.drawLine(scaledX, MARGIN, scaledX, MARGIN + m_scaledImage.height());
-
-        // Draw arrow and text hint
-        painter.setPen(Qt::white);
-        painter.setFont(QFont("Arial", 9, QFont::Bold));
-        QString hint = QString::fromUtf8("← Scroll");
-        QFontMetrics fm(painter.font());
-        int textHeight = fm.height();
-        int textX = scaledX - fm.horizontalAdvance(hint) - 6;
-        int textY = MARGIN + m_scaledImage.height() / 2 + textHeight / 4;
-
-        // Background for text
-        QRect textBgRect(textX - 4, textY - fm.ascent() - 2, fm.horizontalAdvance(hint) + 8, fm.height() + 4);
-        painter.setPen(Qt::NoPen);
-        painter.setBrush(QColor(0, 0, 0, 180));
-        painter.drawRoundedRect(textBgRect, 4, 4);
-
-        painter.setPen(QColor(76, 175, 80));
-        painter.drawText(textX, textY, hint);
-    }
+    auto config = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
+    GlassRenderer::drawGlassPanel(painter, rect(), config);
 }
 
 void ScrollingCaptureThumbnail::mousePressEvent(QMouseEvent *event)
@@ -320,8 +278,8 @@ void ScrollingCaptureThumbnail::mousePressEvent(QMouseEvent *event)
         m_isDragging = true;
         m_dragStartPos = event->globalPosition().toPoint();
         m_dragStartWidgetPos = pos();
+        event->accept();
     }
-    QWidget::mousePressEvent(event);
 }
 
 void ScrollingCaptureThumbnail::mouseMoveEvent(QMouseEvent *event)
@@ -329,14 +287,61 @@ void ScrollingCaptureThumbnail::mouseMoveEvent(QMouseEvent *event)
     if (m_isDragging) {
         QPoint delta = event->globalPosition().toPoint() - m_dragStartPos;
         move(m_dragStartWidgetPos + delta);
+        event->accept();
     }
-    QWidget::mouseMoveEvent(event);
 }
 
 void ScrollingCaptureThumbnail::mouseReleaseEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton) {
         m_isDragging = false;
+        event->accept();
     }
-    QWidget::mouseReleaseEvent(event);
+}
+
+bool ScrollingCaptureThumbnail::event(QEvent *event)
+{
+    if (event->type() == QEvent::PaletteChange ||
+        event->type() == QEvent::ApplicationPaletteChange) {
+        applyThemeColors();
+    }
+    return QWidget::event(event);
+}
+
+QString ScrollingCaptureThumbnail::failureCodeToUserMessage(ImageStitcher::FailureCode code) {
+    switch (code) {
+        case ImageStitcher::FailureCode::OverlapMismatch:   return "Content mismatch";
+        case ImageStitcher::FailureCode::AmbiguousMatch:    return "Ambiguous content";
+        case ImageStitcher::FailureCode::LowConfidence:     return "Low confidence";
+        case ImageStitcher::FailureCode::ViewportMismatch:  return "Window size changed";
+        case ImageStitcher::FailureCode::Timeout:           return "Processing slow";
+        case ImageStitcher::FailureCode::InvalidState:      return "Internal error";
+        case ImageStitcher::FailureCode::OverlapTooSmall:   return "Overlap too small";
+        default:                                            return "Stitching error";
+    }
+}
+
+// Compatibility methods
+void ScrollingCaptureThumbnail::setMatchStatus(CaptureStatus status, double confidence)
+{
+    setStatus(status);
+}
+
+void ScrollingCaptureThumbnail::setMatchStatus(MatchStatus status, double confidence)
+{
+    CaptureStatus newStatus = CaptureStatus::Capturing;
+    if (status == MatchStatus::Warning) newStatus = CaptureStatus::Warning;
+    if (status == MatchStatus::Failed) newStatus = CaptureStatus::Failed;
+    setStatus(newStatus);
+}
+
+void ScrollingCaptureThumbnail::setMatchStatus(int statusInt, double confidence)
+{
+    // Map int to CaptureStatus if coming from old code
+    // Legacy MatchStatus: Good=0, Warning=1, Failed=2
+    CaptureStatus status = CaptureStatus::Capturing;
+    if (statusInt == 1) status = CaptureStatus::Warning;
+    if (statusInt == 2) status = CaptureStatus::Failed;
+    
+    setStatus(status);
 }

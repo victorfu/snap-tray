@@ -794,6 +794,12 @@ ImageStitcher::StitchResult ImageStitcher::tryTemplateMatch(const QImage &newFra
     StitchResult result;
     result.usedAlgorithm = Algorithm::TemplateMatching;
     result.confidence = std::max(primaryCandidate.confidence, secondaryCandidate.confidence);
+    // Propagate failure code from best candidate (highest confidence)
+    result.failureCode = (primaryCandidate.confidence >= secondaryCandidate.confidence)
+        ? primaryCandidate.failureCode : secondaryCandidate.failureCode;
+    if (result.failureCode == FailureCode::None) {
+        result.failureCode = FailureCode::NoAlgorithmSucceeded;
+    }
     QString dirNames = (m_captureMode == CaptureMode::Horizontal) ? "Right: %1; Left: %2" : "Down: %1; Up: %2";
     result.failureReason = dirNames
         .arg(primaryCandidate.failureReason.isEmpty() ? "No match" : primaryCandidate.failureReason,
@@ -830,6 +836,7 @@ ImageStitcher::MatchCandidate ImageStitcher::computeTemplateMatchCandidate(const
     int maxOverlap = maxOverlapForFrame(frameDimension, MIN_OVERLAP, overlapRatio);
     if (maxOverlap == 0) {
         candidate.failureReason = "Frame too small for overlap search";
+        candidate.failureCode = FailureCode::OverlapTooSmall;
         return candidate;
     }
 
@@ -840,6 +847,7 @@ ImageStitcher::MatchCandidate ImageStitcher::computeTemplateMatchCandidate(const
     };
 
     std::vector<TemplateResult> results;
+    bool foundAmbiguous = false;
 
     if (isHorizontal) {
         // Horizontal mode: use template widths instead of heights
@@ -892,6 +900,30 @@ ImageStitcher::MatchCandidate ImageStitcher::computeTemplateMatchCandidate(const
             double minVal, maxVal;
             cv::Point minLoc, maxLoc;
             cv::minMaxLoc(matchResult, &minVal, &maxVal, &minLoc, &maxLoc);
+
+            // Ambiguity check
+            cv::Mat suppressed = matchResult.clone();
+            int suppressRadius = 10;
+            
+            if (isHorizontal) {
+                int x0 = std::max(0, maxLoc.x - suppressRadius);
+                int x1 = std::min(matchResult.cols, maxLoc.x + suppressRadius + 1);
+                suppressed.colRange(x0, x1).setTo(-1.0);
+            } else {
+                int y0 = std::max(0, maxLoc.y - suppressRadius);
+                int y1 = std::min(matchResult.rows, maxLoc.y + suppressRadius + 1);
+                suppressed.rowRange(y0, y1).setTo(-1.0);
+            }
+            
+            double secondMaxVal;
+            cv::minMaxLoc(suppressed, nullptr, &secondMaxVal, nullptr, nullptr);
+            
+            if (maxVal - secondMaxVal < m_stitchConfig.ambiguityThreshold) {
+                if (maxVal > 0.4) {
+                    foundAmbiguous = true;
+                }
+                continue;
+            }
 
             // Apply sub-pixel refinement for more accurate positioning
             cv::Point2d refinedLoc = subPixelRefine2D(matchResult, maxLoc);
@@ -959,6 +991,30 @@ ImageStitcher::MatchCandidate ImageStitcher::computeTemplateMatchCandidate(const
             cv::Point minLoc, maxLoc;
             cv::minMaxLoc(matchResult, &minVal, &maxVal, &minLoc, &maxLoc);
 
+            // Ambiguity check
+            cv::Mat suppressed = matchResult.clone();
+            int suppressRadius = 10;
+            
+            if (isHorizontal) {
+                int x0 = std::max(0, maxLoc.x - suppressRadius);
+                int x1 = std::min(matchResult.cols, maxLoc.x + suppressRadius + 1);
+                suppressed.colRange(x0, x1).setTo(-1.0);
+            } else {
+                int y0 = std::max(0, maxLoc.y - suppressRadius);
+                int y1 = std::min(matchResult.rows, maxLoc.y + suppressRadius + 1);
+                suppressed.rowRange(y0, y1).setTo(-1.0);
+            }
+            
+            double secondMaxVal;
+            cv::minMaxLoc(suppressed, nullptr, &secondMaxVal, nullptr, nullptr);
+            
+            if (maxVal - secondMaxVal < m_stitchConfig.ambiguityThreshold) {
+                if (maxVal > 0.4) {
+                    foundAmbiguous = true;
+                }
+                continue;
+            }
+
             // Apply sub-pixel refinement for more accurate positioning
             cv::Point2d refinedLoc = subPixelRefine2D(matchResult, maxLoc);
 
@@ -976,7 +1032,13 @@ ImageStitcher::MatchCandidate ImageStitcher::computeTemplateMatchCandidate(const
     }
 
     if (results.empty()) {
-        candidate.failureReason = "No reliable template region found";
+        if (foundAmbiguous) {
+            candidate.failureReason = "Template match rejected due to ambiguity";
+            candidate.failureCode = FailureCode::AmbiguousMatch;
+        } else {
+            candidate.failureReason = "No reliable template match found";
+            candidate.failureCode = FailureCode::OverlapMismatch;
+        }
         return candidate;
     }
 
@@ -1006,6 +1068,7 @@ ImageStitcher::MatchCandidate ImageStitcher::computeTemplateMatchCandidate(const
 
     if (candidate.confidence < m_stitchConfig.confidenceThreshold) {
         candidate.failureReason = QString("Template match confidence too low: %1").arg(candidate.confidence);
+        candidate.failureCode = FailureCode::LowConfidence;
         return candidate;
     }
 
@@ -1014,11 +1077,13 @@ ImageStitcher::MatchCandidate ImageStitcher::computeTemplateMatchCandidate(const
 
     if (overlap <= 0) {
         candidate.failureReason = QString("Negative overlap: %1 (offset too large)").arg(overlap);
+        candidate.failureCode = FailureCode::OverlapMismatch;
         return candidate;
     }
 
     if (overlap < MIN_OVERLAP) {
         candidate.failureReason = QString("Overlap too small: %1").arg(overlap);
+        candidate.failureCode = FailureCode::OverlapTooSmall;
         return candidate;
     }
 
@@ -1028,6 +1093,7 @@ ImageStitcher::MatchCandidate ImageStitcher::computeTemplateMatchCandidate(const
         candidate.confidence = 0.25;
         candidate.failureReason = QString("Overlap too large: %1 (>%2%% of frame)")
             .arg(overlap).arg(static_cast<int>(overlapRatio * 100));
+        candidate.failureCode = FailureCode::ScrollTooSmall;
         return candidate;
     }
 
@@ -1040,6 +1106,7 @@ ImageStitcher::MatchCandidate ImageStitcher::computeTemplateMatchCandidate(const
     if (overlapDiff > kMaxOverlapDiff) {
         candidate.confidence = 0.2;
         candidate.failureReason = QString("Overlap mismatch: %1").arg(overlapDiff, 0, 'f', 3);
+        candidate.failureCode = FailureCode::OverlapMismatch;
         return candidate;
     }
 
@@ -1059,21 +1126,21 @@ ImageStitcher::StitchResult ImageStitcher::applyCandidate(const QImage &newFrame
     result.overlapPixels = candidate.overlap;
     result.direction = candidate.direction;
     result.failureReason = candidate.failureReason;
+    if (result.failureCode == FailureCode::None && candidate.failureCode != FailureCode::None) {
+        result.failureCode = candidate.failureCode;
+    }
     return result;
 }
 
 bool ImageStitcher::wouldCreateDuplicate(const QImage &newFrame, int overlapPixels,
                                           ScrollDirection direction) const
 {
-    // Skip check if we don't have enough stitched content yet
-    if (m_stitchedResult.isNull()) {
+    if (!m_stitchConfig.useWindowedDuplicateCheck) {
         return false;
     }
 
-    bool isHorizontal = (direction == ScrollDirection::Left || direction == ScrollDirection::Right);
-    int validDimension = isHorizontal ? m_validWidth : m_validHeight;
-
-    if (validDimension < overlapPixels * 2) {
+    // Skip check if we don't have enough stitched content yet
+    if (m_stitchedResult.isNull()) {
         return false;
     }
 
@@ -1088,53 +1155,99 @@ bool ImageStitcher::wouldCreateDuplicate(const QImage &newFrame, int overlapPixe
     cv::cvtColor(stitchedMat, stitchedGray, cv::COLOR_BGR2GRAY);
     cv::cvtColor(newMat, newGray, cv::COLOR_BGR2GRAY);
 
-    // Extract the NEW content (non-overlap portion of the new frame)
-    int newContentSize = isHorizontal
-        ? (newGray.cols - overlapPixels)
-        : (newGray.rows - overlapPixels);
+    bool isVertical = (direction == ScrollDirection::Down || direction == ScrollDirection::Up);
+    
+    // Calculate seam-centered window
+    int seamPos = (direction == ScrollDirection::Down) ? stitchedGray.rows : 0; 
+    // Wait, seamPos is where we are stitching. 
+    // If Down, we append at bottom. So seam is at bottom of existing stitched.
+    // But we want to check if new content exists NEAR the seam (overlap).
+    // The plan says:
+    /*
+    int seamPos = (m_direction == CaptureDirection::Down)
+        ? m_stitchedImage.rows - newFrame.rows // This logic looks weird in plan.
+        : newFrame.rows;
+    */
+    // If we append, the duplicate content would be "new content that was already stitched".
+    // Usually duplicate happens if we scroll back up and capture something we already have.
+    // So we search in the stitched image.
+    
+    int windowSize = std::max({
+        overlapPixels * 2,
+        m_stitchConfig.duplicateWindowSize,
+        200
+    });
+    
+    int windowStart, windowEnd;
+    
+    if (direction == ScrollDirection::Down) {
+        // Search near the bottom of stitched image
+        windowStart = std::max(0, stitchedGray.rows - windowSize);
+        windowEnd = stitchedGray.rows;
+    } else if (direction == ScrollDirection::Up) {
+        windowStart = 0;
+        windowEnd = std::min(stitchedGray.rows, windowSize);
+    } else if (direction == ScrollDirection::Right) {
+        windowStart = std::max(0, stitchedGray.cols - windowSize);
+        windowEnd = stitchedGray.cols;
+    } else {
+        windowStart = 0;
+        windowEnd = std::min(stitchedGray.cols, windowSize);
+    }
+    
+    // Extract search region
+    cv::Mat searchRegion;
+    if (isVertical) {
+        if (windowEnd <= windowStart) return false;
+        searchRegion = stitchedGray.rowRange(windowStart, windowEnd);
+    } else {
+        if (windowEnd <= windowStart) return false;
+        searchRegion = stitchedGray.colRange(windowStart, windowEnd);
+    }
+    
+    // Extract the content we want to check
+    // We check the NEW content (non-overlap) or the whole frame?
+    // If we check the whole frame, we might find the overlap itself (which is valid).
+    // We want to check if the "new content" part already exists.
+    
+    int newContentSize = isVertical
+        ? (newGray.rows - overlapPixels)
+        : (newGray.cols - overlapPixels);
 
     if (newContentSize < 20) {
-        return false;  // Not enough new content to check
-    }
-
-    cv::Mat newContent;
-    if (isHorizontal) {
-        if (direction == ScrollDirection::Right) {
-            newContent = newGray(cv::Rect(overlapPixels, 0, newContentSize, newGray.rows));
-        } else {
-            newContent = newGray(cv::Rect(0, 0, newContentSize, newGray.rows));
-        }
-    } else {
-        if (direction == ScrollDirection::Down) {
-            newContent = newGray(cv::Rect(0, overlapPixels, newGray.cols, newContentSize));
-        } else {
-            newContent = newGray(cv::Rect(0, 0, newGray.cols, newContentSize));
-        }
-    }
-
-    // Search for this new content in the existing stitched image
-    cv::Rect searchRect = isHorizontal
-        ? cv::Rect(0, 0, m_validWidth, stitchedGray.rows)
-        : cv::Rect(0, 0, stitchedGray.cols, m_validHeight);
-
-    // Ensure search area is valid
-    if (searchRect.width <= newContent.cols || searchRect.height <= newContent.rows) {
         return false;
     }
 
-    cv::Mat searchArea = stitchedGray(searchRect);
-    cv::Mat matchResult;
-    cv::matchTemplate(searchArea, newContent, matchResult, cv::TM_CCOEFF_NORMED);
+    cv::Mat newContent;
+    if (isVertical) {
+        if (direction == ScrollDirection::Down) {
+            newContent = newGray.rowRange(overlapPixels, newGray.rows);
+        } else {
+            newContent = newGray.rowRange(0, newContentSize);
+        }
+    } else {
+        if (direction == ScrollDirection::Right) {
+            newContent = newGray.colRange(overlapPixels, newGray.cols);
+        } else {
+            newContent = newGray.colRange(0, newContentSize);
+        }
+    }
+    
+    if (searchRegion.rows < newContent.rows || searchRegion.cols < newContent.cols) {
+        return false;
+    }
 
+    cv::Mat result;
+    cv::matchTemplate(searchRegion, newContent, result, cv::TM_CCOEFF_NORMED);
+    
     double maxVal;
-    cv::minMaxLoc(matchResult, nullptr, &maxVal);
-
-    // If we find a strong match (>0.85), the content already exists
-    if (maxVal > 0.85) {
+    cv::minMaxLoc(result, nullptr, &maxVal, nullptr, nullptr);
+    
+    if (maxVal > m_stitchConfig.duplicateThreshold) {
         qDebug() << "ImageStitcher: Duplicate content detected with confidence" << maxVal;
         return true;
     }
-
+    
     return false;
 }
 
@@ -1148,6 +1261,7 @@ ImageStitcher::StitchResult ImageStitcher::performStitch(const QImage &newFrame,
     // Check for duplicate content before stitching
     if (wouldCreateDuplicate(newFrame, overlapPixels, direction)) {
         result.failureReason = "Duplicate content detected";
+        result.failureCode = FailureCode::DuplicateDetected;
         return result;
     }
 
@@ -1161,6 +1275,7 @@ ImageStitcher::StitchResult ImageStitcher::performStitch(const QImage &newFrame,
 
         if (currentWidth <= 0 || m_stitchedResult.isNull()) {
             result.failureReason = "Invalid stitcher state";
+            result.failureCode = FailureCode::InvalidState;
             return result;
         }
 
@@ -1204,6 +1319,7 @@ ImageStitcher::StitchResult ImageStitcher::performStitch(const QImage &newFrame,
             }
             if (bounds.contains(predictedRect)) {
                 result.failureReason = "Viewport mismatch";
+                result.failureCode = FailureCode::ViewportMismatch;
                 return result;
             }
         }
@@ -1215,6 +1331,7 @@ ImageStitcher::StitchResult ImageStitcher::performStitch(const QImage &newFrame,
 
             if (newWidth > MAX_STITCHED_WIDTH) {
                 result.failureReason = QString("Maximum width reached (%1 pixels)").arg(MAX_STITCHED_WIDTH);
+                result.failureCode = FailureCode::MaxSizeReached;
                 return result;
             }
 
@@ -1226,6 +1343,7 @@ ImageStitcher::StitchResult ImageStitcher::performStitch(const QImage &newFrame,
                 QImage newStitched(newCapacity, m_stitchedResult.height(), QImage::Format_RGB32);
                 if (newStitched.isNull()) {
                     result.failureReason = "Failed to allocate memory for stitched image";
+                    result.failureCode = FailureCode::InvalidState;
                     return result;
                 }
                 newStitched.fill(Qt::black);
@@ -1233,6 +1351,7 @@ ImageStitcher::StitchResult ImageStitcher::performStitch(const QImage &newFrame,
                 QPainter painter(&newStitched);
                 if (!painter.isActive()) {
                     result.failureReason = "Failed to create painter for stitching";
+                    result.failureCode = FailureCode::InvalidState;
                     return result;
                 }
                 // Disable smoothing to prevent seam artifacts
@@ -1249,6 +1368,7 @@ ImageStitcher::StitchResult ImageStitcher::performStitch(const QImage &newFrame,
                 QPainter painter(&m_stitchedResult);
                 if (!painter.isActive()) {
                     result.failureReason = "Failed to create painter for stitching";
+                    result.failureCode = FailureCode::InvalidState;
                     return result;
                 }
                 // Disable smoothing to prevent seam artifacts
@@ -1270,12 +1390,14 @@ ImageStitcher::StitchResult ImageStitcher::performStitch(const QImage &newFrame,
 
             if (newWidth > MAX_STITCHED_WIDTH) {
                 result.failureReason = QString("Maximum width reached (%1 pixels)").arg(MAX_STITCHED_WIDTH);
+                result.failureCode = FailureCode::MaxSizeReached;
                 return result;
             }
 
             QImage newStitched(newWidth, m_stitchedResult.height(), QImage::Format_RGB32);
             if (newStitched.isNull()) {
                 result.failureReason = "Failed to allocate memory for stitched image";
+                result.failureCode = FailureCode::InvalidState;
                 return result;
             }
             newStitched.fill(Qt::black);
@@ -1283,6 +1405,7 @@ ImageStitcher::StitchResult ImageStitcher::performStitch(const QImage &newFrame,
             QPainter painter(&newStitched);
             if (!painter.isActive()) {
                 result.failureReason = "Failed to create painter for stitching";
+                result.failureCode = FailureCode::InvalidState;
                 return result;
             }
             // Disable smoothing to prevent seam artifacts
@@ -1306,6 +1429,7 @@ ImageStitcher::StitchResult ImageStitcher::performStitch(const QImage &newFrame,
 
         if (currentHeight <= 0 || m_stitchedResult.isNull()) {
             result.failureReason = "Invalid stitcher state";
+            result.failureCode = FailureCode::InvalidState;
             return result;
         }
 
@@ -1349,6 +1473,7 @@ ImageStitcher::StitchResult ImageStitcher::performStitch(const QImage &newFrame,
             }
             if (bounds.contains(predictedRect)) {
                 result.failureReason = "Viewport mismatch";
+                result.failureCode = FailureCode::ViewportMismatch;
                 return result;
             }
         }
@@ -1360,6 +1485,7 @@ ImageStitcher::StitchResult ImageStitcher::performStitch(const QImage &newFrame,
 
             if (newHeight > MAX_STITCHED_HEIGHT) {
                 result.failureReason = QString("Maximum height reached (%1 pixels)").arg(MAX_STITCHED_HEIGHT);
+                result.failureCode = FailureCode::MaxSizeReached;
                 return result;
             }
 
@@ -1371,6 +1497,7 @@ ImageStitcher::StitchResult ImageStitcher::performStitch(const QImage &newFrame,
                 QImage newStitched(m_stitchedResult.width(), newCapacity, QImage::Format_RGB32);
                 if (newStitched.isNull()) {
                     result.failureReason = "Failed to allocate memory for stitched image";
+                    result.failureCode = FailureCode::InvalidState;
                     return result;
                 }
                 newStitched.fill(Qt::black);
@@ -1378,6 +1505,7 @@ ImageStitcher::StitchResult ImageStitcher::performStitch(const QImage &newFrame,
                 QPainter painter(&newStitched);
                 if (!painter.isActive()) {
                     result.failureReason = "Failed to create painter for stitching";
+                    result.failureCode = FailureCode::InvalidState;
                     return result;
                 }
                 // Disable smoothing to prevent seam artifacts
@@ -1394,6 +1522,7 @@ ImageStitcher::StitchResult ImageStitcher::performStitch(const QImage &newFrame,
                 QPainter painter(&m_stitchedResult);
                 if (!painter.isActive()) {
                     result.failureReason = "Failed to create painter for stitching";
+                    result.failureCode = FailureCode::InvalidState;
                     return result;
                 }
                 // Disable smoothing to prevent seam artifacts
@@ -1415,12 +1544,14 @@ ImageStitcher::StitchResult ImageStitcher::performStitch(const QImage &newFrame,
 
             if (newHeight > MAX_STITCHED_HEIGHT) {
                 result.failureReason = QString("Maximum height reached (%1 pixels)").arg(MAX_STITCHED_HEIGHT);
+                result.failureCode = FailureCode::MaxSizeReached;
                 return result;
             }
 
             QImage newStitched(m_stitchedResult.width(), newHeight, QImage::Format_RGB32);
             if (newStitched.isNull()) {
                 result.failureReason = "Failed to allocate memory for stitched image";
+                result.failureCode = FailureCode::InvalidState;
                 return result;
             }
             newStitched.fill(Qt::black);
@@ -1428,6 +1559,7 @@ ImageStitcher::StitchResult ImageStitcher::performStitch(const QImage &newFrame,
             QPainter painter(&newStitched);
             if (!painter.isActive()) {
                 result.failureReason = "Failed to create painter for stitching";
+                result.failureCode = FailureCode::InvalidState;
                 return result;
             }
             // Disable smoothing to prevent seam artifacts
@@ -1532,12 +1664,218 @@ ImageStitcher::StitchResult ImageStitcher::tryRowProjectionMatch(const QImage &n
     StitchResult result;
     result.usedAlgorithm = Algorithm::RowProjection;
     result.confidence = std::max(primaryCandidate.confidence, secondaryCandidate.confidence);
+    // Propagate failure code from best candidate (highest confidence)
+    result.failureCode = (primaryCandidate.confidence >= secondaryCandidate.confidence)
+        ? primaryCandidate.failureCode : secondaryCandidate.failureCode;
+    if (result.failureCode == FailureCode::None) {
+        result.failureCode = FailureCode::NoAlgorithmSucceeded;
+    }
     QString dirNames = (m_captureMode == CaptureMode::Horizontal)
         ? "Right: %1; Left: %2"
         : "Down: %1; Up: %2";
     result.failureReason = dirNames
         .arg(primaryCandidate.failureReason.isEmpty() ? "No match" : primaryCandidate.failureReason,
              secondaryCandidate.failureReason.isEmpty() ? "No match" : secondaryCandidate.failureReason);
+    return result;
+}
+
+ImageStitcher::StitchResult ImageStitcher::tryPhaseCorrelation(const QImage &newFrame)
+{
+    StitchResult result;
+    result.failureCode = FailureCode::NoAlgorithmSucceeded;
+
+    if (!m_stitchConfig.usePhaseCorrelation) {
+        return result;
+    }
+
+    if (m_lastFrame.isNull() || newFrame.isNull()) {
+        return result;
+    }
+
+    cv::Mat prevMat = qImageToCvMat(m_lastFrame);
+    cv::Mat currMat = qImageToCvMat(newFrame);
+
+    if (prevMat.empty() || currMat.empty()) {
+        return result;
+    }
+
+    // Convert to grayscale and gradients for better phase correlation
+    cv::Mat grayPrev, grayCurr;
+    cv::cvtColor(prevMat, grayPrev, cv::COLOR_BGR2GRAY);
+    cv::cvtColor(currMat, grayCurr, cv::COLOR_BGR2GRAY);
+    
+    // Apply Sobel to emphasize edges (features)
+    cv::Mat gradPrev, gradCurr;
+    cv::Mat sobelX, sobelY;
+    
+    cv::Sobel(grayPrev, sobelX, CV_32F, 1, 0);
+    cv::Sobel(grayPrev, sobelY, CV_32F, 0, 1);
+    cv::magnitude(sobelX, sobelY, gradPrev);
+    
+    cv::Sobel(grayCurr, sobelX, CV_32F, 1, 0);
+    cv::Sobel(grayCurr, sobelY, CV_32F, 0, 1);
+    cv::magnitude(sobelX, sobelY, gradCurr);
+
+    ScrollDirection candidates[2];
+    if (m_captureMode == CaptureMode::Horizontal) {
+        candidates[0] = ScrollDirection::Right;
+        candidates[1] = ScrollDirection::Left;
+    } else {
+        candidates[0] = ScrollDirection::Down;
+        candidates[1] = ScrollDirection::Up;
+    }
+    
+    // Prioritize last successful direction
+    if (candidates[1] == m_lastSuccessfulDirection) {
+        std::swap(candidates[0], candidates[1]);
+    }
+
+    for (ScrollDirection dir : candidates) {
+        bool isVertical = (dir == ScrollDirection::Down || dir == ScrollDirection::Up);
+        int frameDim = isVertical ? grayPrev.rows : grayPrev.cols;
+        
+        int roiSize = std::min({
+            frameDim / 2,
+            300
+        });
+        
+        cv::Mat roiPrev, roiCurr;
+        
+        if (dir == ScrollDirection::Down) {
+            roiPrev = gradPrev.rowRange(gradPrev.rows - roiSize, gradPrev.rows);
+            roiCurr = gradCurr.rowRange(0, roiSize);
+        } else if (dir == ScrollDirection::Up) {
+            roiPrev = gradPrev.rowRange(0, roiSize);
+            roiCurr = gradCurr.rowRange(gradCurr.rows - roiSize, gradCurr.rows);
+        } else if (dir == ScrollDirection::Right) {
+            roiPrev = gradPrev.colRange(gradPrev.cols - roiSize, gradPrev.cols);
+            roiCurr = gradCurr.colRange(0, roiSize);
+        } else {
+            roiPrev = gradPrev.colRange(0, roiSize);
+            roiCurr = gradCurr.colRange(currMat.cols - roiSize, currMat.cols);
+        }
+        
+        // Apply Hanning window to reduce edge effects
+        cv::Mat hann;
+        cv::createHanningWindow(hann, roiPrev.size(), CV_32F);
+        roiPrev = roiPrev.mul(hann);
+        roiCurr = roiCurr.mul(hann);
+        
+        double response = 0.0;
+        cv::Point2d shift = cv::phaseCorrelate(roiPrev, roiCurr, cv::noArray(), &response);
+        
+        if (response < m_stitchConfig.minPhaseResponse) {
+            continue;
+        }
+        
+        double crossAxisShift = isVertical ? std::abs(shift.x) : std::abs(shift.y);
+        double mainAxisShift = isVertical ? std::abs(shift.y) : std::abs(shift.x);
+        
+        if (crossAxisShift > m_stitchConfig.phaseMaxCrossAxisShift) {
+            continue;
+        }
+        
+        // In phase correlation between ROI (PrevBottom) and ROI (CurrTop) [for Down]
+        // If they match perfectly (shift=0), overlap is roiSize.
+        // If curr is shifted by 'shift' relative to prev ROI.
+        // We need to map 'shift' to overlap.
+        // If shift.y > 0, curr is shifted down. Overlap decreases.
+        // overlap = roiSize - shift.y;
+        // BUT phaseCorrelate return value sign convention:
+        // shift is (dx, dy) such that src1(x,y) corresponds to src2(x+dx, y+dy).
+        // If src2 (curr) is shifted down by 5 pixels (dy=5), then src1(0,0) matches src2(0,5).
+        // So src2(x,y) = src1(x, y-5).
+        // Correct.
+        // So overlap = roiSize - shift.mainAxis.
+        
+        // Wait, 'mainAxisShift' is absolute.
+        // We need signed shift.
+        double signedShift = isVertical ? shift.y : shift.x;
+        
+        // If we scroll Down:
+        // We expect curr to be "below" prev bottom? No.
+        // ROI prev is bottom. ROI curr is top.
+        // Ideally they match.
+        // If we scrolled, the content in ROI prev (bottom of screen) moves up.
+        // And disappears.
+        // The content at top of curr (ROI curr) is what appeared.
+        // Wait, we are matching Overlap.
+        // The overlapping region should be identical.
+        // If overlap is 100px.
+        // Bottom 100px of prev == Top 100px of curr.
+        // So roiPrev (size 300) and roiCurr (size 300).
+        // Bottom 100px of prev matches Top 100px of curr?
+        // NO.
+        // Overlap region is Bottom of Prev AND Top of Curr.
+        // So `roiPrev` (Bottom 300 of prev) contains the overlap.
+        // `roiCurr` (Top 300 of curr) contains the overlap.
+        // If overlap is 100.
+        // Then Bottom 100 of Prev == Top 100 of Curr.
+        // Where is Top 100 of Curr in `roiCurr`? It is `roiCurr(0..100)`.
+        // Where is Bottom 100 of Prev in `roiPrev`? It is `roiPrev(200..300)`.
+        // So there is a shift of 200px!
+        // `phaseCorrelate` finds this shift.
+        
+        // If `roiPrev` and `roiCurr` are same size (roiSize).
+        // And they match with shift `dy`.
+        // It implies `roiPrev(y) ~ roiCurr(y + dy)`.
+        // If overlap is `K`.
+        // `roiPrev(roiSize - K .. roiSize)` matches `roiCurr(0 .. K)`.
+        // Let y_prev = roiSize - K + i.
+        // Let y_curr = i.
+        // y_curr = y_prev - (roiSize - K).
+        // So shift `dy` = -(roiSize - K) = K - roiSize.
+        // So K = dy + roiSize.
+        
+        // Since `phaseCorrelate` returns `dy` such that `roiPrev(x,y) ~ roiCurr(x+dx, y+dy)`.
+        // Wait, standard `phaseCorrelate` computes shift from src1 to src2.
+        // `G_a` and `G_b`. `R = G_a * G_b* / |...|`.
+        // It gives shift to align `src2` to `src1`? Or `src1` to `src2`?
+        // OpenCV docs: "The function calculates the cross-power spectrum ... and then finds the peak location."
+        // "return value is the weighted centroid ... of the peak".
+        // It usually means shift of `src2` relative to `src1`.
+        
+        // If `K = dy + roiSize`.
+        // If `dy` is negative (which it should be, since `roiCurr` content is "above" `roiPrev` content in the stitched frame? No).
+        // In the frame coordinate system:
+        // `roiPrev` content is at `Y_prev`.
+        // `roiCurr` content is at `Y_curr`.
+        // `Y_curr` corresponds to `Y_prev` in the world?
+        // Let's rely on the math:
+        // We expect `dy` to be approx `-(roiSize - K)`.
+        // So `K = dy + roiSize`.
+        
+        // Calculate overlap
+        double calculatedOverlap = signedShift + roiSize;
+        int overlap = static_cast<int>(std::round(calculatedOverlap));
+        
+        if (overlap < MIN_OVERLAP || overlap > roiSize) {
+             // Invalid overlap
+             continue;
+        }
+        
+        // Verify result using performStitch or checking duplicate
+        // But first, populate result
+        result.success = true; // Potentially
+        result.overlapPixels = overlap;
+        result.direction = dir;
+        result.confidence = response;
+        result.failureCode = FailureCode::None;
+        result.failureReason = QString();
+        result.usedAlgorithm = Algorithm::Auto; // Or PhaseCorrelation?
+        
+        // Perform stitch to verify (and actually stitch)
+        // This sets result.offset etc.
+        StitchResult stitchRes = performStitch(newFrame, overlap, dir);
+        if (stitchRes.success) {
+            stitchRes.confidence = response;
+            stitchRes.usedAlgorithm = Algorithm::Auto; // Mark as auto/fallback
+            stitchRes.failureReason = QString("Phase correlation (response=%1)").arg(response, 0, 'f', 2);
+            m_lastSuccessfulDirection = dir;
+            return stitchRes;
+        }
+    }
+
     return result;
 }
 
@@ -1548,6 +1886,7 @@ ImageStitcher::StitchResult ImageStitcher::tryInPlaceMatchInStitched(const QImag
 
     if (newFrame.isNull() || m_stitchedResult.isNull() || m_currentViewportRect.isNull()) {
         result.failureReason = "No stitched viewport available";
+        result.failureCode = FailureCode::InvalidState;
         return result;
     }
 
@@ -1569,6 +1908,7 @@ ImageStitcher::StitchResult ImageStitcher::tryInPlaceMatchInStitched(const QImag
 
     if (!match.found) {
         result.failureReason = "No in-place match found";
+        result.failureCode = FailureCode::NoAlgorithmSucceeded;
         return result;
     }
 
@@ -1700,9 +2040,10 @@ ImageStitcher::MatchCandidate ImageStitcher::computeRowProjectionCandidate(
     // Reject ambiguous matches where multiple peaks have similar scores
     if (secondBestCorr > -0.5) {
         double peakGap = bestCorr - secondBestCorr;
-        if (peakGap < kMinPeakGap) {
+        if (peakGap < m_stitchConfig.ambiguityThreshold) {
             candidate.confidence = 0.2;
             candidate.failureReason = QString("Ambiguous match: peak gap %1").arg(peakGap, 0, 'f', 3);
+            candidate.failureCode = FailureCode::AmbiguousMatch;
             return candidate;
         }
     }

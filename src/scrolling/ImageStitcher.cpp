@@ -62,6 +62,7 @@ ImageStitcher::StitchResult ImageStitcher::addFrame(const QImage &frame)
 
     if (frame.isNull()) {
         result.failureReason = "Empty frame";
+        result.failureCode = FailureCode::InvalidState;
         return result;
     }
 
@@ -84,11 +85,22 @@ ImageStitcher::StitchResult ImageStitcher::addFrame(const QImage &frame)
         return result;
     }
 
+    // Frame size consistency check
+    if (!m_lastFrame.isNull() && frame.size() != m_lastFrame.size()) {
+        result.success = false;
+        result.failureReason = QString("Frame size mismatch: expected %1x%2, got %3x%4")
+            .arg(m_lastFrame.width()).arg(m_lastFrame.height())
+            .arg(frame.width()).arg(frame.height());
+        result.failureCode = FailureCode::InvalidState;
+        return result;
+    }
+
     // Check if frame has changed enough - skip stitching but not a failure
     if (!isFrameChanged(frame, m_lastFrame)) {
         result.success = false;  // Not a successful stitch (no new content)
         result.confidence = 1.0;
         result.failureReason = "Frame unchanged";
+        result.failureCode = FailureCode::FrameUnchanged;
         return result;
     }
 
@@ -136,9 +148,35 @@ ImageStitcher::StitchResult ImageStitcher::addFrame(const QImage &frame)
             return result;
         }
 
-        // All failed
+        // All failed. Preserve the last result's failure code if it's more specific than None
+        FailureCode finalCode = result.failureCode;
+        if (finalCode == FailureCode::None) {
+            finalCode = FailureCode::NoAlgorithmSucceeded;
+        }
+        
         result.success = false;
-        result.failureReason = "No matching algorithm succeeded";
+        result.failureCode = finalCode;
+        if (result.failureReason.isEmpty()) {
+            result.failureReason = "No matching algorithm succeeded";
+        }
+
+        if (m_stitchConfig.usePhaseCorrelation) {
+            perfTimer.restart();
+            StitchResult phaseResult = tryPhaseCorrelation(frame);
+            qint64 phaseMs = perfTimer.elapsed();
+
+            if (phaseResult.success) {
+                result = phaseResult;
+                m_lastFrame = frame.convertToFormat(QImage::Format_RGB32);
+                m_frameCount++;
+                emit progressUpdated(m_frameCount, getCurrentSize());
+                qDebug() << "ImageStitcher::addFrame perf - staticDetect:" << staticDetectMs
+                         << "ms, rowProj:" << rowProjMs << "ms, template:" << templateMs 
+                         << "ms, phase:" << phaseMs << "ms (fallback success)";
+                return result;
+            }
+        }
+
         qDebug() << "ImageStitcher::addFrame perf - staticDetect:" << staticDetectMs
                  << "ms, rowProj:" << rowProjMs << "ms, template:" << templateMs << "ms (all failed)";
         return result;

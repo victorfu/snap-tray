@@ -2,6 +2,7 @@
 #include "scrolling/ScrollingCaptureOverlay.h"
 #include "scrolling/ScrollingCaptureToolbar.h"
 #include "scrolling/ScrollingCaptureThumbnail.h"
+#include "scrolling/ScrollingCaptureOnboarding.h"
 #include "scrolling/ImageStitcher.h"
 #include "scrolling/FixedElementDetector.h"
 #include "scrolling/StitchWorker.h"
@@ -43,8 +44,7 @@ ScrollingCaptureManager::ScrollingCaptureManager(PinWindowManager *pinManager, Q
                 m_toolbar->updateSize(size.width() / dpr, size.height() / dpr);
             }
             if (m_thumbnail) {
-                m_thumbnail->setStitchedImage(m_stitcher->getStitchedImage());
-                m_thumbnail->setViewportRect(m_stitcher->currentViewportRect());
+                // Legacy thumbnail calls removed
             }
         }
     });
@@ -56,6 +56,8 @@ ScrollingCaptureManager::ScrollingCaptureManager(PinWindowManager *pinManager, Q
             this, &ScrollingCaptureManager::onStitchFixedElementsDetected);
     connect(m_stitchWorker, &StitchWorker::queueNearFull,
             this, &ScrollingCaptureManager::onStitchQueueNearFull);
+    connect(m_stitchWorker, &StitchWorker::queueLow,
+            this, &ScrollingCaptureManager::onStitchQueueLow);
     connect(m_stitchWorker, &StitchWorker::error,
             this, &ScrollingCaptureManager::onStitchError);
 }
@@ -118,6 +120,12 @@ void ScrollingCaptureManager::startWithRegion(const QRect &region, QScreen *scre
 void ScrollingCaptureManager::stop()
 {
     stopFrameCapture();
+
+    // Reset worker to clear any pending frames and release resources
+    if (m_stitchWorker) {
+        m_stitchWorker->reset();
+    }
+
     destroyComponents();
     setState(State::Idle);
 }
@@ -210,6 +218,10 @@ void ScrollingCaptureManager::createComponents()
     m_thumbnail = new ScrollingCaptureThumbnail();
     m_thumbnail->hide();
 
+    // Create onboarding
+    m_onboarding = new ScrollingCaptureOnboarding(m_overlay);
+    m_onboarding->hide();
+
     // Reset stitcher and detector
     m_stitcher->reset();
     m_fixedDetector->reset();
@@ -242,6 +254,10 @@ void ScrollingCaptureManager::createComponentsWithRegion()
     m_thumbnail = new ScrollingCaptureThumbnail();
     m_thumbnail->hide();
 
+    // Create onboarding
+    m_onboarding = new ScrollingCaptureOnboarding(m_overlay);
+    m_onboarding->hide();
+
     // Reset stitcher and detector
     m_stitcher->reset();
     m_fixedDetector->reset();
@@ -265,6 +281,12 @@ void ScrollingCaptureManager::destroyComponents()
         m_thumbnail->close();
         m_thumbnail->deleteLater();
         m_thumbnail = nullptr;
+    }
+
+    if (m_onboarding) {
+        m_onboarding->close();
+        m_onboarding->deleteLater();
+        m_onboarding = nullptr;
     }
 
     // Reset all state
@@ -303,7 +325,20 @@ void ScrollingCaptureManager::onRegionChanged(const QRect &region)
 
 void ScrollingCaptureManager::onSelectionConfirmed()
 {
-    if (m_state == State::WaitingToStart) {
+    if (m_state != State::WaitingToStart) {
+        return;
+    }
+
+    if (m_onboarding && !ScrollingCaptureOnboarding::hasSeenTutorial()) {
+        m_onboarding->showTutorial();
+        // Connect signal to start capture when tutorial is dismissed
+        connect(m_onboarding, &ScrollingCaptureOnboarding::tutorialCompleted,
+                this, &ScrollingCaptureManager::onStartClicked,
+                Qt::UniqueConnection);
+    } else {
+        if (m_onboarding) {
+            m_onboarding->showHint();
+        }
         onStartClicked();
     }
 }
@@ -339,7 +374,11 @@ void ScrollingCaptureManager::onStartClicked()
 
 void ScrollingCaptureManager::onStopClicked()
 {
-    finishCapture();
+    // Defer finishCapture() to allow toolbar's event handler to complete
+    // (finishCapture may call stop() which destroys the toolbar)
+    QTimer::singleShot(0, this, [this]() {
+        finishCapture();
+    });
 }
 
 void ScrollingCaptureManager::onPinClicked()
@@ -354,7 +393,11 @@ void ScrollingCaptureManager::onPinClicked()
     }
 
     emit captureCompleted(pixmap);
-    stop();
+
+    // Defer stop() to allow toolbar's event handler to complete
+    QTimer::singleShot(0, this, [this]() {
+        stop();
+    });
 }
 
 void ScrollingCaptureManager::onSaveClicked()
@@ -399,13 +442,21 @@ void ScrollingCaptureManager::onCopyClicked()
 
 void ScrollingCaptureManager::onCloseClicked()
 {
-    stop();
+    // Defer stop() to allow toolbar's event handler to complete
+    QTimer::singleShot(0, this, [this]() {
+        stop();
+    });
 }
 
 void ScrollingCaptureManager::onCancelClicked()
 {
-    stop();
-    emit captureCancelled();
+    // Defer stop() to next event loop iteration to allow the toolbar's
+    // mouse event handler to complete first (avoids crash from destroying
+    // widget while inside its own event handler)
+    QTimer::singleShot(0, this, [this]() {
+        stop();
+        emit captureCancelled();
+    });
 }
 
 void ScrollingCaptureManager::onDirectionToggled()
@@ -466,9 +517,19 @@ void ScrollingCaptureManager::setCaptureDirection(CaptureDirection direction)
 
 void ScrollingCaptureManager::startFrameCapture()
 {
-    m_captureTimer->start(CAPTURE_INTERVAL_MS);
+    m_captureIntervalMs = CAPTURE_INTERVAL_MS;
+    m_captureTimer->setInterval(m_captureIntervalMs);
+    m_captureTimer->start(m_captureIntervalMs);
     m_timeoutTimer->start(MAX_CAPTURE_TIMEOUT_MS);
     m_totalFrameCount = 0;
+    m_consecutiveSuccessCount = 0;
+    m_queuePressureRelieved = false;
+    m_currentStatus = ScrollingCaptureThumbnail::CaptureStatus::Capturing;
+    m_lastIntervalAdjustment.invalidate();
+    m_captureIndex = 0;
+    m_lastSuccessCaptureIndex = 0;
+    m_estimatedScrollPerFrame = 0;
+    m_hasScrollEstimate = false;
     m_isProcessingFrame = false;
     m_pendingFrames.clear();
 
@@ -486,6 +547,10 @@ void ScrollingCaptureManager::stopFrameCapture()
 {
     m_captureTimer->stop();
     m_timeoutTimer->stop();
+    m_currentStatus = ScrollingCaptureThumbnail::CaptureStatus::Idle;
+
+    // Note: Do NOT reset worker here - finishCapture() needs to retrieve the stitched result first.
+    // The worker will be reset when a new capture starts or when stop() is called.
 }
 
 bool ScrollingCaptureManager::restitchWithFixedElements()
@@ -601,7 +666,11 @@ void ScrollingCaptureManager::captureFrame()
 
     // Async mode: just enqueue frame and return quickly
     if (m_useAsyncStitching) {
+        if (m_thumbnail) {
+            m_thumbnail->setViewportImage(frame);
+        }
         m_lastFrame = frame;
+        m_captureIndex++;
         bool queued = m_stitchWorker->enqueueFrame(frame);
         if (!queued) {
             qDebug() << "ScrollingCaptureManager: Frame dropped (queue full)";
@@ -876,7 +945,7 @@ void ScrollingCaptureManager::finishCapture()
 
     // Update thumbnail with final image
     if (m_thumbnail) {
-        m_thumbnail->setStitchedImage(m_stitchedResult);
+        // Legacy thumbnail call removed
     }
 }
 
@@ -884,100 +953,251 @@ void ScrollingCaptureManager::finishCapture()
 // StitchWorker signal handlers (async processing)
 // ============================================================================
 
+void ScrollingCaptureManager::updateRecoveryEstimate(const StitchWorker::Result &result)
+{
+    if (!result.success || result.failureCode != ImageStitcher::FailureCode::None) {
+        return;
+    }
+    
+    // Calculate actual scroll delta
+    bool isVertical = (m_captureDirection == CaptureDirection::Vertical);
+    int frameDim = isVertical ? result.frameSize.height() : result.frameSize.width();
+    int deltaPx = frameDim - result.overlapPixels;
+    
+    if (deltaPx <= 0) return;  // Invalid
+    
+    // Update EMA
+    if (!m_hasScrollEstimate) {
+        m_estimatedScrollPerFrame = deltaPx;
+        m_hasScrollEstimate = true;
+    } else {
+        m_estimatedScrollPerFrame = qRound(
+            (1.0 - EMA_ALPHA) * m_estimatedScrollPerFrame + EMA_ALPHA * deltaPx
+        );
+    }
+    
+    m_lastSuccessCaptureIndex = m_captureIndex;
+}
+
+int ScrollingCaptureManager::calculateRecoveryDistance() const
+{
+    int failedFrames = m_captureIndex - m_lastSuccessCaptureIndex;
+    
+    int estimate = m_hasScrollEstimate ? m_estimatedScrollPerFrame : DEFAULT_SCROLL_ESTIMATE;
+    estimate = qMax(estimate, 30);  // Floor
+    
+    int recoveryPx = failedFrames * estimate;
+    
+    return qBound(MIN_RECOVERY_PX, recoveryPx, MAX_RECOVERY_PX);
+}
+
+bool ScrollingCaptureManager::isWarningFailure(ImageStitcher::FailureCode code) const
+{
+    switch (code) {
+        case ImageStitcher::FailureCode::AmbiguousMatch:
+        case ImageStitcher::FailureCode::LowConfidence:
+        case ImageStitcher::FailureCode::DuplicateDetected:
+            return true;
+        default:
+            return false;
+    }
+}
+
 void ScrollingCaptureManager::onStitchFrameProcessed(const StitchWorker::Result &result)
 {
+    if (m_state != State::Capturing && m_state != State::MatchFailed) {
+        qDebug() << "ScrollingCaptureManager: Ignoring frame processed signal in state" << static_cast<int>(m_state);
+        return;
+    }
+
     qDebug() << "ScrollingCaptureManager::onStitchFrameProcessed -"
              << "success:" << result.success
              << "confidence:" << result.confidence
-             << "frameCount:" << result.frameCount;
+             << "frameCount:" << result.frameCount
+             << "code:" << static_cast<int>(result.failureCode);
 
-    if (result.success) {
-        // Mark that scrolling has started only after actual stitching
-        if (result.frameCount > 1) {
-            m_hasSuccessfulStitch = true;
-        }
+    using FailureCode = ImageStitcher::FailureCode;
 
-        m_lastSuccessfulPosition = result.lastSuccessfulPosition;
+    switch (result.failureCode) {
+        case FailureCode::None:
+            handleSuccess(result);
+            break;
 
-        // Update UI
-        if (m_toolbar) {
-            m_toolbar->setMatchStatus(true, result.confidence);
-            m_toolbar->setMatchRecoveryInfo(m_lastSuccessfulPosition, false);
-            qreal dpr = m_targetScreen ? m_targetScreen->devicePixelRatio() : 1.0;
-            m_toolbar->updateSize(result.currentSize.width() / dpr, result.currentSize.height() / dpr);
-        }
-        if (m_thumbnail) {
-            ScrollingCaptureThumbnail::MatchStatus status;
-            if (result.confidence >= 0.70) {
-                status = ScrollingCaptureThumbnail::MatchStatus::Good;
-            } else if (result.confidence >= 0.50) {
-                status = ScrollingCaptureThumbnail::MatchStatus::Warning;
-            } else {
-                status = ScrollingCaptureThumbnail::MatchStatus::Failed;
-            }
-            m_thumbnail->setMatchStatus(status, result.confidence);
-            m_thumbnail->setLastSuccessfulPosition(m_lastSuccessfulPosition);
-            m_thumbnail->setShowRecoveryHint(false);
-            // Update thumbnail with current stitched image
-            m_thumbnail->setStitchedImage(m_stitchWorker->getStitchedImage());
-        }
+        case FailureCode::FrameUnchanged:
+        case FailureCode::ScrollTooSmall:
+            // Keep Capturing, do not show error
+            break;
 
-        // If we were in MatchFailed, recover to Capturing
-        if (m_state == State::MatchFailed) {
-            setState(State::Capturing);
-            if (m_overlay) {
-                m_overlay->clearMatchFailedMessage();
-            }
-        }
-        emit matchStatusChanged(true, result.confidence, m_lastSuccessfulPosition);
-    } else {
-        // Check for special failure reasons
-        if (result.failureReason.contains("Maximum height reached") ||
-            result.failureReason.contains("Maximum width reached")) {
-            qDebug() << "ScrollingCaptureManager: Maximum size reached (async), finishing capture";
+        case FailureCode::MaxSizeReached:
+            qDebug() << "ScrollingCaptureManager: Max size reached, finishing capture";
             finishCapture();
-            return;
-        }
+            break;
 
-        // Frame unchanged - just skip
-        if (result.failureReason == "Frame unchanged") {
-            return;
-        }
+        case FailureCode::AmbiguousMatch:
+        case FailureCode::LowConfidence:
+        case FailureCode::DuplicateDetected:
+            showWarning(result);
+            break;
 
-        // Match failed
-        if (m_state != State::MatchFailed) {
-            setState(State::MatchFailed);
-        }
-
-        if (m_toolbar) {
-            m_toolbar->setMatchStatus(false, result.confidence);
-            m_toolbar->setMatchRecoveryInfo(m_lastSuccessfulPosition, true);
-        }
-        if (m_thumbnail) {
-            m_thumbnail->setMatchStatus(ScrollingCaptureThumbnail::MatchStatus::Failed, result.confidence);
-            m_thumbnail->setShowRecoveryHint(true);
-        }
-        if (m_overlay) {
-            QString hint = (m_captureDirection == CaptureDirection::Vertical)
-                ? tr("Match failed - scroll back up slowly")
-                : tr("Match failed - scroll back left slowly");
-            m_overlay->setMatchFailedMessage(hint);
-        }
-
-        emit matchStatusChanged(false, result.confidence, m_lastSuccessfulPosition);
+        case FailureCode::OverlapMismatch:
+        case FailureCode::ViewportMismatch:
+        case FailureCode::InvalidState:
+        case FailureCode::NoAlgorithmSucceeded:
+        case FailureCode::Timeout:
+        case FailureCode::OverlapTooSmall:
+        default:
+            handleFailure(result);
+            break;
     }
+}
+
+void ScrollingCaptureManager::handleSuccess(const StitchWorker::Result &result)
+{
+    m_consecutiveSuccessCount++;
+
+    // Try to restore speed if pressure was relieved
+    if (m_queuePressureRelieved &&
+        m_consecutiveSuccessCount >= SUCCESS_COUNT_FOR_SPEEDUP &&
+        m_captureIntervalMs > CAPTURE_INTERVAL_MS) {
+        
+        if (!m_lastIntervalAdjustment.isValid() ||
+            m_lastIntervalAdjustment.elapsed() >= ADJUSTMENT_COOLDOWN_MS) {
+            
+            m_captureIntervalMs = qMax(m_captureIntervalMs - INTERVAL_DECREMENT_MS,
+                                       CAPTURE_INTERVAL_MS);
+            m_captureTimer->setInterval(m_captureIntervalMs);
+            m_lastIntervalAdjustment.restart();
+            m_consecutiveSuccessCount = 0;
+            
+            qDebug() << "ScrollingCaptureManager: Capture rate restored to" << m_captureIntervalMs << "ms";
+        }
+    }
+
+    // Clear warning when back to default speed
+    if (m_captureIntervalMs == CAPTURE_INTERVAL_MS && m_currentStatus == ScrollingCaptureThumbnail::CaptureStatus::Warning) {
+        if (m_thumbnail) {
+            m_thumbnail->setStatus(ScrollingCaptureThumbnail::CaptureStatus::Capturing);
+        }
+        m_queuePressureRelieved = false;
+    }
+
+    if (result.frameCount > 1) {
+        m_hasSuccessfulStitch = true;
+    }
+
+    m_lastSuccessfulPosition = result.lastSuccessfulPosition;
+    updateRecoveryEstimate(result);
+
+    // Update UI
+    if (m_toolbar) {
+        m_toolbar->setMatchStatus(true, result.confidence);
+        m_toolbar->setMatchRecoveryInfo(m_lastSuccessfulPosition, false);
+        qreal dpr = m_targetScreen ? m_targetScreen->devicePixelRatio() : 1.0;
+        m_toolbar->updateSize(result.currentSize.width() / dpr, result.currentSize.height() / dpr);
+    }
+    if (m_thumbnail) {
+        m_thumbnail->setStats(result.frameCount, result.currentSize);
+        m_currentStatus = ScrollingCaptureThumbnail::CaptureStatus::Capturing;
+        m_thumbnail->setStatus(m_currentStatus);
+        m_thumbnail->clearError();
+    }
+
+    // If we were in MatchFailed, recover to Capturing
+    if (m_state == State::MatchFailed) {
+        setState(State::Capturing);
+        if (m_overlay) {
+            m_overlay->clearMatchFailedMessage();
+        }
+    }
+    emit matchStatusChanged(true, result.confidence, m_lastSuccessfulPosition);
+}
+
+void ScrollingCaptureManager::handleFailure(const StitchWorker::Result &result)
+{
+    m_consecutiveSuccessCount = 0;
+    
+    using CStatus = ScrollingCaptureThumbnail::CaptureStatus;
+    CStatus status = isWarningFailure(result.failureCode)
+        ? CStatus::Warning
+        : CStatus::Failed;
+    
+    // Match failed
+    if (m_state != State::MatchFailed && status == CStatus::Failed) {
+        setState(State::MatchFailed);
+    }
+
+    if (m_toolbar) {
+        m_toolbar->setMatchStatus(false, result.confidence);
+        m_toolbar->setMatchRecoveryInfo(m_lastSuccessfulPosition, true);
+    }
+    if (m_thumbnail) {
+        m_currentStatus = status;
+        m_thumbnail->setStatus(m_currentStatus);
+        int recoveryPx = calculateRecoveryDistance();
+        m_thumbnail->setErrorInfo(result.failureCode, result.failureReason, recoveryPx);
+    }
+    if (m_overlay && status == CStatus::Failed) {
+        QString hint = (m_captureDirection == CaptureDirection::Vertical)
+            ? tr("Match failed - scroll back up slowly")
+            : tr("Match failed - scroll back left slowly");
+        m_overlay->setMatchFailedMessage(hint);
+    }
+
+    emit matchStatusChanged(false, result.confidence, m_lastSuccessfulPosition);
+    qDebug() << "ScrollingCaptureManager: Match failed -" << result.failureReason;
+}
+
+void ScrollingCaptureManager::showWarning(const StitchWorker::Result &result)
+{
+    m_consecutiveSuccessCount = 0;
+    if (m_thumbnail) {
+        m_currentStatus = ScrollingCaptureThumbnail::CaptureStatus::Warning;
+        m_thumbnail->setStatus(m_currentStatus, result.failureReason);
+    }
+    qDebug() << "ScrollingCaptureManager: Warning -" << result.failureReason;
 }
 
 void ScrollingCaptureManager::onStitchFixedElementsDetected(int leading, int trailing)
 {
+    if (m_state != State::Capturing && m_state != State::MatchFailed) {
+        return;
+    }
     qDebug() << "ScrollingCaptureManager::onStitchFixedElementsDetected -"
              << "leading:" << leading << "trailing:" << trailing;
     m_fixedElementsDetected = true;
 }
 
-void ScrollingCaptureManager::onStitchQueueNearFull()
+void ScrollingCaptureManager::onStitchQueueNearFull(int currentDepth, int maxDepth)
 {
-    qDebug() << "ScrollingCaptureManager::onStitchQueueNearFull - consider slowing down capture";
+    if (m_state != State::Capturing && m_state != State::MatchFailed) {
+        return;
+    }
+    // Cooldown check
+    if (m_lastIntervalAdjustment.isValid() &&
+        m_lastIntervalAdjustment.elapsed() < ADJUSTMENT_COOLDOWN_MS) {
+        return;
+    }
+    
+    // Slow down capture rate
+    m_captureIntervalMs = qMin(m_captureIntervalMs + INTERVAL_INCREMENT_MS, MAX_CAPTURE_INTERVAL_MS);
+    m_captureTimer->setInterval(m_captureIntervalMs);
+    m_lastIntervalAdjustment.restart();
+    m_consecutiveSuccessCount = 0;
+    
+    // Show warning
+    if (m_thumbnail) {
+        m_currentStatus = ScrollingCaptureThumbnail::CaptureStatus::Warning;
+        m_thumbnail->setStatus(m_currentStatus,
+            QString("Processing behind (%1/%2) — scroll slower").arg(currentDepth).arg(maxDepth));
+    }
+    
+    qDebug() << "ScrollingCaptureManager: Capture rate slowed to" << m_captureIntervalMs << "ms";
+}
+
+void ScrollingCaptureManager::onStitchQueueLow(int currentDepth, int maxDepth)
+{
+    m_queuePressureRelieved = true;
+    qDebug() << "ScrollingCaptureManager: Queue pressure relieved (" << currentDepth << "/" << maxDepth << ")";
 }
 
 void ScrollingCaptureManager::onStitchError(const QString &message)

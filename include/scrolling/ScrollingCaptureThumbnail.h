@@ -3,79 +3,110 @@
 
 #include <QWidget>
 #include <QImage>
-#include <QRect>
-#include <QPoint>
+#include <QElapsedTimer>
+#include <QTimer>
+#include <QMap>
+#include <QLabel>
+#include <QProgressBar>
+#include <QVBoxLayout>
+
+#include "scrolling/ImageStitcher.h"
 
 class ScrollingCaptureThumbnail : public QWidget
 {
     Q_OBJECT
 
 public:
-    enum class MatchStatus {
-        Good,       // Green indicator
-        Warning,    // Yellow indicator
-        Failed      // Red indicator
+    enum class CaptureStatus {
+        Idle,       // Not capturing
+        Capturing,  // Active capture (green)
+        Warning,    // Recoverable issue (yellow)
+        Failed,     // Needs user action (red)
+        Recovered   // Transitioning from Failed to Capturing (blue, 1.5s)
     };
-    Q_ENUM(MatchStatus)
+    Q_ENUM(CaptureStatus)
 
-    enum class Direction {
+    enum class CaptureDirection {
         Vertical,
         Horizontal
     };
-    Q_ENUM(Direction)
+    Q_ENUM(CaptureDirection)
 
     explicit ScrollingCaptureThumbnail(QWidget *parent = nullptr);
     ~ScrollingCaptureThumbnail();
 
-    void setStitchedImage(const QImage &image);
-    void setViewportRect(const QRect &viewportInStitched);
-    void setMatchStatus(MatchStatus status, double confidence);
+    void setViewportImage(const QImage& image);
+    void setStats(int frameCount, QSize totalSize);
+    void setStatus(CaptureStatus status, const QString& message = QString());
+    void setErrorInfo(ImageStitcher::FailureCode code, const QString& debugReason, int recoveryDistancePx);
+    void clearError();
+    void setCaptureDirection(CaptureDirection direction);
     void positionNear(const QRect &captureRegion);
 
-    void setDirection(Direction direction);
-    Direction direction() const { return m_direction; }
+    // Compatibility method for existing code that uses Direction
+    using Direction = CaptureDirection;
+    void setDirection(Direction direction) { setCaptureDirection(direction); }
+    
+    enum class MatchStatus {
+        Good,
+        Warning,
+        Failed
+    };
+    Q_ENUM(MatchStatus)
 
-    void setLastSuccessfulPosition(int position);
-    void setShowRecoveryHint(bool show);
-
-    void clear();
+    // Compatibility methods for existing code
+    void setMatchStatus(CaptureStatus status, double confidence); // Maps to setStatus
+    void setMatchStatus(int status, double confidence); // Overload for legacy MatchStatus if needed? 
+    void setMatchStatus(MatchStatus status, double confidence); // Overload for legacy MatchStatus
+    
+    // For now I will declare legacy enum for compatibility to avoid breaking compilation of Manager immediately,
+    // but I will update Manager in this PR anyway.
+    
+    // Legacy support methods (will be removed/updated in Manager)
+    void setLastSuccessfulPosition(int position) {} // No-op in new UI
+    void setShowRecoveryHint(bool show) {} // Handled by setErrorInfo
+    void setStitchedImage(const QImage &image) {} // Removed functionality (no-op)
 
 protected:
     void paintEvent(QPaintEvent *event) override;
     void mousePressEvent(QMouseEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
     void mouseReleaseEvent(QMouseEvent *event) override;
+    bool event(QEvent *event) override;
 
 private:
-    void updateScaledImage();
-    void drawViewportIndicator(QPainter &painter);
-    void drawMatchStatusIndicator(QPainter &painter);
-    void drawRecoveryHint(QPainter &painter);
-    void drawBorder(QPainter &painter);
+    void setupUI();
+    void applyThemeColors();
+    void applyViewportImage(const QImage& image);
+    void applyStatus(CaptureStatus status, const QString& message);
+    QString failureCodeToUserMessage(ImageStitcher::FailureCode code);
 
-    QImage m_stitchedImage;
-    QImage m_scaledImage;
-    QRect m_viewportRect;      // In stitched image coordinates
-    MatchStatus m_matchStatus = MatchStatus::Good;
-    double m_confidence = 1.0;
-    double m_scale = 1.0;
-    Direction m_direction = Direction::Vertical;
-    int m_lastSuccessfulPosition = 0;
-    bool m_showRecoveryHint = false;
+    // UI Components
+    QLabel* m_viewportLabel;
+    QLabel* m_statusLabel;     // "● Capturing"
+    QLabel* m_statsLabel;      // "45 frames • 800 x 12000 px"
+    QProgressBar* m_progressBar; // Visual indicator of progress (maybe just infinite or based on size)
+    QWidget* m_errorSection;
+    QLabel* m_errorTitleLabel;
+    QLabel* m_errorHintLabel;
+    
+    // Throttling
+    QElapsedTimer m_lastViewportUpdate;
+    static constexpr int VIEWPORT_UPDATE_INTERVAL_MS = 100;
+    QImage m_pendingViewportImage;
+    QTimer* m_viewportThrottleTimer = nullptr;
+    
+    // Status management
+    QTimer* m_recoveredTimer = nullptr;
+    CaptureStatus m_pendingStatus = CaptureStatus::Idle;
+    CaptureStatus m_currentStatus = CaptureStatus::Idle;
+    
+    CaptureDirection m_captureDirection = CaptureDirection::Vertical;
 
     // Drag support
     QPoint m_dragStartPos;
     QPoint m_dragStartWidgetPos;
     bool m_isDragging = false;
-
-    // Size constants - vary by direction
-    static constexpr int THUMBNAIL_WIDTH_VERTICAL = 150;
-    static constexpr int THUMBNAIL_MAX_HEIGHT_VERTICAL = 400;
-    static constexpr int THUMBNAIL_WIDTH_HORIZONTAL = 300;
-    static constexpr int THUMBNAIL_MAX_HEIGHT_HORIZONTAL = 150;
-    static constexpr int STATUS_INDICATOR_SIZE = 12;
-    static constexpr int MARGIN = 8;
-    static constexpr int BORDER_RADIUS = 8;
 };
 
 #endif // SCROLLINGCAPTURETHUMBNAIL_H

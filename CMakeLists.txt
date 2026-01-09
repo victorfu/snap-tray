@@ -591,8 +591,9 @@ add_library(snaptray_ui STATIC
     # Scrolling capture UI
     src/scrolling/ScrollingCaptureManager.cpp
     src/scrolling/ScrollingCaptureOverlay.cpp
-    src/scrolling/ScrollingCaptureToolbar.cpp
     src/scrolling/ScrollingCaptureThumbnail.cpp
+    src/scrolling/ScrollingCaptureOnboarding.cpp
+    src/scrolling/ScrollingCaptureToolbar.cpp
 
     # Dialogs and overlays
     src/SettingsDialog.cpp
@@ -666,8 +667,9 @@ add_library(snaptray_ui STATIC
     include/video/VideoAnnotationEditor.h
     include/scrolling/ScrollingCaptureManager.h
     include/scrolling/ScrollingCaptureOverlay.h
-    include/scrolling/ScrollingCaptureToolbar.h
     include/scrolling/ScrollingCaptureThumbnail.h
+    include/scrolling/ScrollingCaptureOnboarding.h
+    include/scrolling/ScrollingCaptureToolbar.h
     include/SettingsDialog.h
     $<$<PLATFORM_ID:Darwin>:
         include/WindowDetectionOverlay.h
