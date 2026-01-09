@@ -4,7 +4,6 @@
 #include <QDialog>
 #include "ToolbarStyle.h"
 
-class QKeySequenceEdit;
 class QSettings;
 class QTabWidget;
 class QCheckBox;
@@ -13,6 +12,7 @@ class QPushButton;
 class QLineEdit;
 class QSlider;
 class QComboBox;
+class HotkeyEdit;
 
 class SettingsDialog : public QDialog
 {
@@ -60,9 +60,9 @@ private:
     QTabWidget *m_tabWidget;
     QCheckBox *m_startOnLoginCheckbox;
     QComboBox *m_toolbarStyleCombo;
-    QKeySequenceEdit *m_hotkeyEdit;
+    HotkeyEdit *m_hotkeyEdit;
     QLabel *m_captureHotkeyStatus;
-    QKeySequenceEdit *m_screenCanvasHotkeyEdit;
+    HotkeyEdit *m_screenCanvasHotkeyEdit;
     QLabel *m_screenCanvasHotkeyStatus;
     QPushButton *m_restoreDefaultsBtn;
 

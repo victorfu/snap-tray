@@ -7,9 +7,8 @@
 #include "settings/FileSettingsManager.h"
 #include "settings/PinWindowSettingsManager.h"
 #include "detection/AutoBlurManager.h"
+#include "widgets/HotkeyEdit.h"
 #include <QDir>
-
-#include <QKeySequenceEdit>
 #include <QSettings>
 #include <QPushButton>
 #include <QVBoxLayout>
@@ -277,8 +276,8 @@ void SettingsDialog::setupHotkeysTab(QWidget *tab)
     QHBoxLayout *captureLayout = new QHBoxLayout();
     QLabel *captureLabel = new QLabel("Region Capture:", tab);
     captureLabel->setFixedWidth(120);
-    m_hotkeyEdit = new QKeySequenceEdit(tab);
-    m_hotkeyEdit->setKeySequence(QKeySequence(loadHotkey()));
+    m_hotkeyEdit = new HotkeyEdit(tab);
+    m_hotkeyEdit->setKeySequence(loadHotkey());
     m_captureHotkeyStatus = new QLabel(tab);
     m_captureHotkeyStatus->setFixedSize(24, 24);
     m_captureHotkeyStatus->setAlignment(Qt::AlignCenter);
@@ -291,8 +290,8 @@ void SettingsDialog::setupHotkeysTab(QWidget *tab)
     QHBoxLayout *canvasLayout = new QHBoxLayout();
     QLabel *canvasLabel = new QLabel("Screen Canvas:", tab);
     canvasLabel->setFixedWidth(120);
-    m_screenCanvasHotkeyEdit = new QKeySequenceEdit(tab);
-    m_screenCanvasHotkeyEdit->setKeySequence(QKeySequence(loadScreenCanvasHotkey()));
+    m_screenCanvasHotkeyEdit = new HotkeyEdit(tab);
+    m_screenCanvasHotkeyEdit->setKeySequence(loadScreenCanvasHotkey());
     m_screenCanvasHotkeyStatus = new QLabel(tab);
     m_screenCanvasHotkeyStatus->setFixedSize(24, 24);
     m_screenCanvasHotkeyStatus->setAlignment(Qt::AlignCenter);
@@ -749,8 +748,8 @@ void SettingsDialog::updateCaptureHotkeyStatus(bool isRegistered)
 
 void SettingsDialog::onRestoreDefaults()
 {
-    m_hotkeyEdit->setKeySequence(QKeySequence(DEFAULT_HOTKEY));
-    m_screenCanvasHotkeyEdit->setKeySequence(QKeySequence(DEFAULT_SCREEN_CANVAS_HOTKEY));
+    m_hotkeyEdit->setKeySequence(QString(DEFAULT_HOTKEY));
+    m_screenCanvasHotkeyEdit->setKeySequence(QString(DEFAULT_SCREEN_CANVAS_HOTKEY));
 }
 
 QString SettingsDialog::defaultHotkey()
@@ -789,8 +788,8 @@ void SettingsDialog::updateScreenCanvasHotkeyStatus(bool isRegistered)
 
 void SettingsDialog::onSave()
 {
-    QString newHotkey = m_hotkeyEdit->keySequence().toString();
-    QString newScreenCanvasHotkey = m_screenCanvasHotkeyEdit->keySequence().toString();
+    QString newHotkey = m_hotkeyEdit->keySequence();
+    QString newScreenCanvasHotkey = m_screenCanvasHotkeyEdit->keySequence();
 
     // Validate hotkeys are not empty
     if (newHotkey.isEmpty()) {

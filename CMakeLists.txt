@@ -521,6 +521,8 @@ add_library(snaptray_ui STATIC
     src/ColorAndWidthWidget.cpp
     src/LineWidthWidget.cpp
     src/EmojiPicker.cpp
+    src/widgets/HotkeyEdit.cpp
+    include/widgets/HotkeyEdit.h
 
     # UI sections
     src/ui/sections/ColorSection.cpp
