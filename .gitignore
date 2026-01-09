@@ -47,3 +47,6 @@ _deps/
 .claude/
 
 packaging/windows/version.nsh
+
+# clangd cache
+.cache
