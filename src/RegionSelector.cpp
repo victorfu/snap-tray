@@ -1364,11 +1364,9 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
             saveToFile();
         }
     }
-#ifdef SNAPTRAY_ENABLE_DEV_FEATURES
     else if (event->key() == Qt::Key_M) {
         setMultiRegionMode(!m_multiRegionMode);
     }
-#endif
     else if (event->key() == Qt::Key_R && !event->modifiers()) {
         if (m_selectionManager->isComplete()) {
             handleToolbarClick(ToolbarButton::Record);
