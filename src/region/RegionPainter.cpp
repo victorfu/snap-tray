@@ -1,7 +1,6 @@
 #include "region/RegionPainter.h"
 #include "region/SelectionStateManager.h"
-#include "region/AspectRatioWidget.h"
-#include "region/RadiusSliderWidget.h"
+#include "region/RegionControlWidget.h"
 #include "region/MultiRegionManager.h"
 #include "annotations/AnnotationLayer.h"
 #include "annotations/TextAnnotation.h"
@@ -43,14 +42,9 @@ void RegionPainter::setToolbar(ToolbarWidget* toolbar)
     m_toolbar = toolbar;
 }
 
-void RegionPainter::setAspectRatioWidget(AspectRatioWidget* widget)
+void RegionPainter::setRegionControlWidget(RegionControlWidget* widget)
 {
-    m_aspectRatioWidget = widget;
-}
-
-void RegionPainter::setRadiusSliderWidget(RadiusSliderWidget* widget)
-{
-    m_radiusSliderWidget = widget;
+    m_regionControlWidget = widget;
 }
 
 void RegionPainter::setParentWidget(QWidget* widget)
@@ -334,18 +328,7 @@ void RegionPainter::drawDimensionInfo(QPainter& painter)
         }
 
         if (!activeInfoRect.isNull()) {
-            QRect anchorRect = activeInfoRect;
-            if (m_aspectRatioWidget) {
-                if (m_selectionManager->hasSelection()) {
-                    m_aspectRatioWidget->setVisible(true);
-                    m_aspectRatioWidget->updatePosition(activeInfoRect, m_parentWidget->width(), m_parentWidget->height());
-                    m_aspectRatioWidget->draw(painter);
-                    anchorRect = m_aspectRatioWidget->boundingRect();
-                } else {
-                    m_aspectRatioWidget->setVisible(false);
-                }
-            }
-            drawRadiusSlider(painter, anchorRect);
+            drawRegionControlWidget(painter, activeInfoRect);
         }
         return;
     }
@@ -354,34 +337,23 @@ void RegionPainter::drawDimensionInfo(QPainter& painter)
     QString dimensions = QString("%1 x %2  pt").arg(sel.width()).arg(sel.height());
     QRect textRect = drawDimensionInfoPanel(painter, sel, dimensions);
 
-    // Draw aspect ratio widget and radius slider next to dimension info
-    QRect anchorRect = textRect;
-    if (m_aspectRatioWidget) {
-        if (m_selectionManager->hasSelection()) {
-            m_aspectRatioWidget->setVisible(true);
-            m_aspectRatioWidget->updatePosition(textRect, m_parentWidget->width(), m_parentWidget->height());
-            m_aspectRatioWidget->draw(painter);
-            anchorRect = m_aspectRatioWidget->boundingRect();
-        } else {
-            m_aspectRatioWidget->setVisible(false);
-        }
-    }
-    drawRadiusSlider(painter, anchorRect);
+    // Draw region control widget next to dimension info
+    drawRegionControlWidget(painter, textRect);
 }
 
-void RegionPainter::drawRadiusSlider(QPainter& painter, const QRect& dimensionInfoRect)
+void RegionPainter::drawRegionControlWidget(QPainter& painter, const QRect& dimensionInfoRect)
 {
-    if (!m_radiusSliderWidget) {
+    if (!m_regionControlWidget) {
         return;
     }
 
-    // Show radius slider when selection has been made (including during move/resize)
+    // Show region control widget when selection has been made
     if (m_selectionManager->hasSelection()) {
-        m_radiusSliderWidget->setVisible(true);
-        m_radiusSliderWidget->updatePosition(dimensionInfoRect, m_parentWidget->width());
-        m_radiusSliderWidget->draw(painter);
+        m_regionControlWidget->setVisible(true);
+        m_regionControlWidget->updatePosition(dimensionInfoRect, m_parentWidget->width(), m_parentWidget->height());
+        m_regionControlWidget->draw(painter);
     } else {
-        m_radiusSliderWidget->setVisible(false);
+        m_regionControlWidget->setVisible(false);
     }
 }
 

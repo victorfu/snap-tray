@@ -29,8 +29,7 @@
 #include "region/MagnifierPanel.h"
 #include "region/UpdateThrottler.h"
 #include "region/TextAnnotationEditor.h"
-#include "region/AspectRatioWidget.h"
-#include "region/RadiusSliderWidget.h"
+#include "region/RegionControlWidget.h"
 #include "region/MultiRegionManager.h"
 #include "ui/sections/MosaicBlurTypeSection.h"
 
@@ -330,9 +329,8 @@ private:
     QRect m_lastSelectionRect;  // Previous selection rect for dirty region calculation
     QRect m_lastMagnifierRect;  // Previous magnifier rect
 
-    // Corner radius slider widget
-    AspectRatioWidget* m_aspectRatioWidget = nullptr;
-    RadiusSliderWidget* m_radiusSliderWidget;
+    // Region control widget (radius + aspect ratio)
+    RegionControlWidget* m_regionControlWidget = nullptr;
     int m_cornerRadius = 0;  // Current corner radius in logical pixels
 
     // Multi-region capture

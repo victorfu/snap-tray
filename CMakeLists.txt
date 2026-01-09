@@ -536,8 +536,7 @@ add_library(snaptray_ui STATIC
     src/region/MagnifierPanel.cpp
     src/region/UpdateThrottler.cpp
     src/region/TextAnnotationEditor.cpp
-    src/region/AspectRatioWidget.cpp
-    src/region/RadiusSliderWidget.cpp
+    src/region/RegionControlWidget.cpp
     src/region/MultiRegionManager.cpp
     src/region/RegionPainter.cpp
     src/region/RegionInputHandler.cpp
@@ -625,8 +624,7 @@ add_library(snaptray_ui STATIC
     include/region/MagnifierPanel.h
     include/region/UpdateThrottler.h
     include/region/TextAnnotationEditor.h
-    include/region/AspectRatioWidget.h
-    include/region/RadiusSliderWidget.h
+    include/region/RegionControlWidget.h
     include/region/MultiRegionManager.h
     include/region/RegionPainter.h
     include/region/RegionInputHandler.h

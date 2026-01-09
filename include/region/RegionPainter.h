@@ -15,8 +15,7 @@ class SelectionStateManager;
 class AnnotationLayer;
 class ToolManager;
 class ToolbarWidget;
-class AspectRatioWidget;
-class RadiusSliderWidget;
+class RegionControlWidget;
 class TextAnnotation;
 class EmojiStickerAnnotation;
 class MultiRegionManager;
@@ -41,8 +40,7 @@ public:
     void setAnnotationLayer(AnnotationLayer* layer);
     void setToolManager(ToolManager* manager);
     void setToolbar(ToolbarWidget* toolbar);
-    void setAspectRatioWidget(AspectRatioWidget* widget);
-    void setRadiusSliderWidget(RadiusSliderWidget* widget);
+    void setRegionControlWidget(RegionControlWidget* widget);
     void setParentWidget(QWidget* widget);
     void setMultiRegionManager(MultiRegionManager* manager);
 
@@ -85,7 +83,7 @@ private:
     void drawDimmingOverlay(QPainter& painter, const QRect& clearRect, const QColor& dimColor);
     void drawSelection(QPainter& painter);
     void drawDimensionInfo(QPainter& painter);
-    void drawRadiusSlider(QPainter& painter, const QRect& dimensionInfoRect);
+    void drawRegionControlWidget(QPainter& painter, const QRect& dimensionInfoRect);
     void drawDetectedWindow(QPainter& painter);
     void drawWindowHint(QPainter& painter, const QString& title);
     void drawAnnotations(QPainter& painter);
@@ -105,8 +103,7 @@ private:
     AnnotationLayer* m_annotationLayer = nullptr;
     ToolManager* m_toolManager = nullptr;
     ToolbarWidget* m_toolbar = nullptr;
-    AspectRatioWidget* m_aspectRatioWidget = nullptr;
-    RadiusSliderWidget* m_radiusSliderWidget = nullptr;
+    RegionControlWidget* m_regionControlWidget = nullptr;
     QWidget* m_parentWidget = nullptr;
     MultiRegionManager* m_multiRegionManager = nullptr;
 

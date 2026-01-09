@@ -73,6 +73,18 @@ void AnnotationSettingsManager::saveCornerRadius(int radius)
     settings.setValue(kSettingsKeyCornerRadius, radius);
 }
 
+bool AnnotationSettingsManager::loadCornerRadiusEnabled() const
+{
+    auto settings = SnapTray::getSettings();
+    return settings.value(kSettingsKeyCornerRadiusEnabled, kDefaultCornerRadiusEnabled).toBool();
+}
+
+void AnnotationSettingsManager::saveCornerRadiusEnabled(bool enabled)
+{
+    auto settings = SnapTray::getSettings();
+    settings.setValue(kSettingsKeyCornerRadiusEnabled, enabled);
+}
+
 bool AnnotationSettingsManager::loadAspectRatioLocked() const
 {
     auto settings = SnapTray::getSettings();

@@ -18,8 +18,7 @@ class TextAnnotationEditor;
 class ColorAndWidthWidget;
 class ColorPaletteWidget;
 class EmojiPicker;
-class AspectRatioWidget;
-class RadiusSliderWidget;
+class RegionControlWidget;
 class UpdateThrottler;
 class TextAnnotation;
 class EmojiStickerAnnotation;
@@ -51,8 +50,7 @@ public:
     void setColorAndWidthWidget(ColorAndWidthWidget* widget);
     void setColorPalette(ColorPaletteWidget* palette);
     void setEmojiPicker(EmojiPicker* picker);
-    void setAspectRatioWidget(AspectRatioWidget* widget);
-    void setRadiusSliderWidget(RadiusSliderWidget* widget);
+    void setRegionControlWidget(RegionControlWidget* widget);
     void setMultiRegionManager(MultiRegionManager* manager);
     void setUpdateThrottler(UpdateThrottler* throttler);
     void setParentWidget(QWidget* widget);
@@ -105,8 +103,7 @@ private:
     // Mouse press helpers
     bool handleTextEditorPress(const QPoint& pos);
     bool handleToolbarPress(const QPoint& pos);
-    bool handleAspectRatioWidgetPress(const QPoint& pos);
-    bool handleRadiusSliderPress(const QPoint& pos);
+    bool handleRegionControlWidgetPress(const QPoint& pos);
     bool handleColorWidgetPress(const QPoint& pos);
     bool handleGizmoPress(const QPoint& pos);
     bool handleTextAnnotationPress(const QPoint& pos);
@@ -130,7 +127,7 @@ private:
     bool handleTextEditorRelease(const QPoint& pos);
     bool handleTextAnnotationRelease();
     bool handleEmojiStickerRelease();
-    bool handleRadiusSliderRelease(const QPoint& pos);
+    bool handleRegionControlWidgetRelease(const QPoint& pos);
     void handleSelectionRelease(const QPoint& pos);
     void handleAnnotationRelease();
 
@@ -166,8 +163,7 @@ private:
     ColorAndWidthWidget* m_colorAndWidthWidget = nullptr;
     ColorPaletteWidget* m_colorPalette = nullptr;
     EmojiPicker* m_emojiPicker = nullptr;
-    AspectRatioWidget* m_aspectRatioWidget = nullptr;
-    RadiusSliderWidget* m_radiusSliderWidget = nullptr;
+    RegionControlWidget* m_regionControlWidget = nullptr;
     MultiRegionManager* m_multiRegionManager = nullptr;
     UpdateThrottler* m_updateThrottler = nullptr;
     QWidget* m_parentWidget = nullptr;

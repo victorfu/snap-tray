@@ -2,8 +2,7 @@
 #include "region/SelectionStateManager.h"
 #include "region/SelectionResizeHelper.h"
 #include "region/TextAnnotationEditor.h"
-#include "region/AspectRatioWidget.h"
-#include "region/RadiusSliderWidget.h"
+#include "region/RegionControlWidget.h"
 #include "region/MultiRegionManager.h"
 #include "region/UpdateThrottler.h"
 #include "region/MagnifierPanel.h"
@@ -76,14 +75,9 @@ void RegionInputHandler::setEmojiPicker(EmojiPicker* picker)
     m_emojiPicker = picker;
 }
 
-void RegionInputHandler::setAspectRatioWidget(AspectRatioWidget* widget)
+void RegionInputHandler::setRegionControlWidget(RegionControlWidget* widget)
 {
-    m_aspectRatioWidget = widget;
-}
-
-void RegionInputHandler::setRadiusSliderWidget(RadiusSliderWidget* widget)
-{
-    m_radiusSliderWidget = widget;
+    m_regionControlWidget = widget;
 }
 
 void RegionInputHandler::setMultiRegionManager(MultiRegionManager* manager)
@@ -180,13 +174,8 @@ void RegionInputHandler::handleMousePress(QMouseEvent* event)
                 return;
             }
 
-            // Check radius slider
-            if (handleRadiusSliderPress(event->pos())) {
-                return;
-            }
-
-            // Check aspect ratio widget
-            if (handleAspectRatioWidgetPress(event->pos())) {
+            // Check region control widget (radius + aspect ratio)
+            if (handleRegionControlWidgetPress(event->pos())) {
                 return;
             }
 
@@ -308,8 +297,8 @@ void RegionInputHandler::handleMouseRelease(QMouseEvent* event)
             return;
         }
 
-        // Handle radius slider release
-        if (handleRadiusSliderRelease(event->pos())) {
+        // Handle region control widget release
+        if (handleRegionControlWidgetRelease(event->pos())) {
             return;
         }
 
@@ -383,20 +372,10 @@ bool RegionInputHandler::handleToolbarPress(const QPoint& pos)
     return false;
 }
 
-bool RegionInputHandler::handleAspectRatioWidgetPress(const QPoint& pos)
+bool RegionInputHandler::handleRegionControlWidgetPress(const QPoint& pos)
 {
-    if (m_aspectRatioWidget && m_aspectRatioWidget->isVisible() &&
-        m_aspectRatioWidget->handleMousePress(pos)) {
-        emit updateRequested();
-        return true;
-    }
-    return false;
-}
-
-bool RegionInputHandler::handleRadiusSliderPress(const QPoint& pos)
-{
-    if (m_radiusSliderWidget->isVisible() &&
-        m_radiusSliderWidget->handleMousePress(pos)) {
+    if (m_regionControlWidget && m_regionControlWidget->isVisible() &&
+        m_regionControlWidget->handleMousePress(pos)) {
         emit updateRequested();
         return true;
     }
@@ -844,8 +823,7 @@ void RegionInputHandler::handleHoverMove(const QPoint& pos, Qt::MouseButtons but
     bool emojiStickerHovered = false;
     bool emojiPickerHovered = false;
     bool gizmoHandleHovered = false;
-    bool aspectRatioHovered = false;
-    bool radiusSliderHovered = false;
+    bool regionControlHovered = false;
 
     // Check gizmo handles
     if (auto* textItem = getSelectedTextAnnotation()) {
@@ -876,29 +854,16 @@ void RegionInputHandler::handleHoverMove(const QPoint& pos, Qt::MouseButtons but
         }
     }
 
-    // Update aspect ratio widget
-    if (m_aspectRatioWidget && m_aspectRatioWidget->isVisible()) {
-        if (m_aspectRatioWidget->handleMouseMove(pos, buttons & Qt::LeftButton)) {
+    // Update region control widget (radius + aspect ratio)
+    if (m_regionControlWidget && m_regionControlWidget->isVisible()) {
+        if (m_regionControlWidget->handleMouseMove(pos, buttons & Qt::LeftButton)) {
             emit updateRequested();
         }
-        if (m_aspectRatioWidget->contains(pos)) {
+        if (m_regionControlWidget->contains(pos)) {
             if (m_parentWidget) {
                 m_parentWidget->setCursor(Qt::PointingHandCursor);
             }
-            aspectRatioHovered = true;
-        }
-    }
-
-    // Update radius slider
-    if (m_radiusSliderWidget->isVisible()) {
-        if (m_radiusSliderWidget->handleMouseMove(pos, buttons & Qt::LeftButton)) {
-            emit updateRequested();
-        }
-        if (m_radiusSliderWidget->contains(pos)) {
-            if (m_parentWidget) {
-                m_parentWidget->setCursor(Qt::PointingHandCursor);
-            }
-            radiusSliderHovered = true;
+            regionControlHovered = true;
         }
     }
 
@@ -961,7 +926,7 @@ void RegionInputHandler::handleHoverMove(const QPoint& pos, Qt::MouseButtons but
     bool toolbarButtonHovered = m_toolbar->hoveredButton() >= 0;
     bool uiHovered = toolbarHovered || toolbarButtonHovered ||
         unifiedWidgetHovered || colorPaletteHovered || emojiPickerHovered ||
-        aspectRatioHovered || radiusSliderHovered;
+        regionControlHovered;
 
     if (uiHovered) {
         if (m_parentWidget) {
@@ -1116,10 +1081,10 @@ bool RegionInputHandler::handleEmojiStickerRelease()
     return false;
 }
 
-bool RegionInputHandler::handleRadiusSliderRelease(const QPoint& pos)
+bool RegionInputHandler::handleRegionControlWidgetRelease(const QPoint& pos)
 {
-    if (m_radiusSliderWidget->isVisible() &&
-        m_radiusSliderWidget->handleMouseRelease(pos)) {
+    if (m_regionControlWidget && m_regionControlWidget->isVisible() &&
+        m_regionControlWidget->handleMouseRelease(pos)) {
         emit updateRequested();
         return true;
     }

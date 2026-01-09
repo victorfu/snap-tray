@@ -36,6 +36,8 @@ public:
     // Corner radius settings
     int loadCornerRadius() const;
     void saveCornerRadius(int radius);
+    bool loadCornerRadiusEnabled() const;
+    void saveCornerRadiusEnabled(bool enabled);
 
     // Aspect ratio lock settings (region selection)
     bool loadAspectRatioLocked() const;
@@ -54,6 +56,7 @@ public:
     static constexpr StepBadgeSize kDefaultStepBadgeSize = StepBadgeSize::Medium;
     static constexpr bool kDefaultPolylineMode = false;
     static constexpr int kDefaultCornerRadius = 0;
+    static constexpr bool kDefaultCornerRadiusEnabled = false;
     static constexpr bool kDefaultAspectRatioLocked = false;
     static constexpr int kDefaultAspectRatioWidth = 1;
     static constexpr int kDefaultAspectRatioHeight = 1;
@@ -69,6 +72,7 @@ private:
     static constexpr const char* kSettingsKeyStepBadgeSize = "stepBadgeSize";
     static constexpr const char* kSettingsKeyPolylineMode = "polylineMode";
     static constexpr const char* kSettingsKeyCornerRadius = "cornerRadius";
+    static constexpr const char* kSettingsKeyCornerRadiusEnabled = "cornerRadiusEnabled";
     static constexpr const char* kSettingsKeyAspectRatioLocked = "aspectRatioLocked";
     static constexpr const char* kSettingsKeyAspectRatioMode = "aspectRatioMode";
     static constexpr const char* kSettingsKeyAspectRatioWidth = "aspectRatioWidth";

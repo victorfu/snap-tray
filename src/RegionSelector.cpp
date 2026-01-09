@@ -331,13 +331,27 @@ RegionSelector::RegionSelector(QWidget* parent)
     // Initialize magnifier panel component
     m_magnifierPanel = new MagnifierPanel(this);
 
-    // Initialize aspect ratio lock widget
-    // Note: Always starts in "Free" mode - lock only applies to current session
-    m_aspectRatioWidget = new AspectRatioWidget(this);
+    // Initialize region control widget (combines radius toggle + aspect ratio lock)
+    m_regionControlWidget = new RegionControlWidget(this);
+
+    // Load saved aspect ratio
     int savedRatioWidth = settings.loadAspectRatioWidth();
     int savedRatioHeight = settings.loadAspectRatioHeight();
-    m_aspectRatioWidget->setLockedRatio(savedRatioWidth, savedRatioHeight);
-    connect(m_aspectRatioWidget, &AspectRatioWidget::lockChanged,
+    m_regionControlWidget->setLockedRatio(savedRatioWidth, savedRatioHeight);
+
+    // Load saved corner radius and enabled state
+    m_cornerRadius = settings.loadCornerRadius();
+    m_regionControlWidget->setCurrentRadius(m_cornerRadius);
+    m_regionControlWidget->setRadiusEnabled(settings.loadCornerRadiusEnabled());
+
+    // Connect radius enabled state signal
+    connect(m_regionControlWidget, &RegionControlWidget::radiusEnabledChanged,
+        this, [](bool enabled) {
+            AnnotationSettingsManager::instance().saveCornerRadiusEnabled(enabled);
+        });
+
+    // Connect aspect ratio lock signal
+    connect(m_regionControlWidget, &RegionControlWidget::lockChanged,
         this, [this](bool locked) {
             auto& settings = AnnotationSettingsManager::instance();
             if (!locked) {
@@ -362,18 +376,15 @@ RegionSelector::RegionSelector(QWidget* parent)
             int gcd = std::gcd(ratioWidth, ratioHeight);
             ratioWidth /= gcd;
             ratioHeight /= gcd;
-            m_aspectRatioWidget->setLockedRatio(ratioWidth, ratioHeight);
+            m_regionControlWidget->setLockedRatio(ratioWidth, ratioHeight);
             settings.saveAspectRatio(ratioWidth, ratioHeight);
             m_selectionManager->setAspectRatio(static_cast<qreal>(ratioWidth) /
                                                static_cast<qreal>(ratioHeight));
             update();
         });
 
-    // Initialize corner radius slider widget
-    m_radiusSliderWidget = new RadiusSliderWidget(this);
-    m_cornerRadius = settings.loadCornerRadius();
-    m_radiusSliderWidget->setCurrentRadius(m_cornerRadius);
-    connect(m_radiusSliderWidget, &RadiusSliderWidget::radiusChanged,
+    // Connect corner radius signal
+    connect(m_regionControlWidget, &RegionControlWidget::radiusChanged,
         this, &RegionSelector::onCornerRadiusChanged);
 
     // Initialize painting component
@@ -382,8 +393,7 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_painter->setAnnotationLayer(m_annotationLayer);
     m_painter->setToolManager(m_toolManager);
     m_painter->setToolbar(m_toolbar);
-    m_painter->setAspectRatioWidget(m_aspectRatioWidget);
-    m_painter->setRadiusSliderWidget(m_radiusSliderWidget);
+    m_painter->setRegionControlWidget(m_regionControlWidget);
     m_painter->setMultiRegionManager(m_multiRegionManager);
     m_painter->setParentWidget(this);
 
@@ -427,8 +437,7 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_inputHandler->setColorAndWidthWidget(m_colorAndWidthWidget);
     m_inputHandler->setColorPalette(m_colorPalette);
     // EmojiPicker is set lazily via ensureEmojiPicker() when first needed
-    m_inputHandler->setAspectRatioWidget(m_aspectRatioWidget);
-    m_inputHandler->setRadiusSliderWidget(m_radiusSliderWidget);
+    m_inputHandler->setRegionControlWidget(m_regionControlWidget);
     m_inputHandler->setMultiRegionManager(m_multiRegionManager);
     m_inputHandler->setUpdateThrottler(&m_updateThrottler);
     m_inputHandler->setParentWidget(this);
