@@ -7,6 +7,7 @@
 #include <QRect>
 #include <QVector>
 #include <QColor>
+#include <QPointer>
 #include "annotations/AnnotationLayer.h"
 #include "annotations/ArrowAnnotation.h"
 #include "annotations/LineStyle.h"
@@ -149,7 +150,7 @@ private:
     // Screen capture
     QPixmap m_backgroundPixmap;
     QPixmap m_originalScreenPixmap;  // Original screenshot captured at initialization
-    QScreen *m_currentScreen;
+    QPointer<QScreen> m_currentScreen;
     qreal m_devicePixelRatio;
 
     // Annotation layer and tool manager

@@ -8,6 +8,7 @@
 #include <QFlags>
 #include <QMutex>
 #include <QFuture>
+#include <QPointer>
 #include <vector>
 #include <optional>
 
@@ -89,7 +90,7 @@ private:
 
     std::vector<DetectedElement> m_windowCache;
     mutable QMutex m_cacheMutex;
-    QScreen *m_currentScreen;
+    QPointer<QScreen> m_currentScreen;
     bool m_enabled;
     DetectionFlags m_detectionFlags = DetectionFlag::All;
     QFuture<void> m_refreshFuture;

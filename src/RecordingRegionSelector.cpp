@@ -14,6 +14,7 @@
 #include <QTimer>
 #include <QDebug>
 #include <QLinearGradient>
+#include <QPointer>
 
 RecordingRegionSelector::RecordingRegionSelector(QWidget *parent)
     : QWidget(parent, Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::Window)
@@ -29,6 +30,16 @@ RecordingRegionSelector::RecordingRegionSelector(QWidget *parent)
     setAttribute(Qt::WA_TranslucentBackground);
     setupIcons();
     setupToolbar();
+
+    // Connect to screen removal signal for graceful handling
+    connect(qApp, &QGuiApplication::screenRemoved,
+            this, [this](QScreen *screen) {
+                if (m_currentScreen == screen || m_currentScreen.isNull()) {
+                    qWarning() << "RecordingRegionSelector: Screen disconnected, closing";
+                    emit cancelled();
+                    close();
+                }
+            });
 }
 
 RecordingRegionSelector::~RecordingRegionSelector()
@@ -71,21 +82,33 @@ void RecordingRegionSelector::setupToolbar()
 void RecordingRegionSelector::initializeForScreen(QScreen *screen)
 {
     m_currentScreen = screen;
-    m_devicePixelRatio = screen->devicePixelRatio();
+    if (m_currentScreen.isNull()) {
+        qWarning() << "RecordingRegionSelector: No valid screen available";
+        emit cancelled();
+        QTimer::singleShot(0, this, &QWidget::close);
+        return;
+    }
+    m_devicePixelRatio = m_currentScreen->devicePixelRatio();
 
     qDebug() << "=== RecordingRegionSelector::initializeForScreen ===";
-    qDebug() << "Screen name:" << screen->name();
-    qDebug() << "Screen geometry:" << screen->geometry();
+    qDebug() << "Screen name:" << m_currentScreen->name();
+    qDebug() << "Screen geometry:" << m_currentScreen->geometry();
     qDebug() << "Screen devicePixelRatio:" << m_devicePixelRatio;
 }
 
 void RecordingRegionSelector::initializeWithRegion(QScreen *screen, const QRect &region)
 {
     m_currentScreen = screen;
-    m_devicePixelRatio = screen->devicePixelRatio();
+    if (m_currentScreen.isNull()) {
+        qWarning() << "RecordingRegionSelector: No valid screen available";
+        emit cancelled();
+        QTimer::singleShot(0, this, &QWidget::close);
+        return;
+    }
+    m_devicePixelRatio = m_currentScreen->devicePixelRatio();
 
     // Convert global region to local coordinates
-    QRect screenGeom = screen->geometry();
+    QRect screenGeom = m_currentScreen->geometry();
     m_selectionRect = region.translated(-screenGeom.topLeft());
 
     // Set selection as complete (skip the selection step)
@@ -318,10 +341,10 @@ void RecordingRegionSelector::drawInstructions(QPainter &painter)
 void RecordingRegionSelector::handleCancel()
 {
     // Check if we have a valid selection to return to capture mode
-    if (m_selectionComplete && !m_selectionRect.isEmpty()) {
+    if (m_selectionComplete && !m_selectionRect.isEmpty() && !m_currentScreen.isNull()) {
         QRect globalRect = m_selectionRect.normalized();
         globalRect.translate(m_currentScreen->geometry().topLeft());
-        emit cancelledWithRegion(globalRect, m_currentScreen);
+        emit cancelledWithRegion(globalRect, m_currentScreen.data());
     } else {
         // No valid selection, just cancel without returning to capture
         emit cancelled();
@@ -469,12 +492,19 @@ void RecordingRegionSelector::finishSelection()
         return;
     }
 
+    if (m_currentScreen.isNull()) {
+        qWarning() << "RecordingRegionSelector: Screen invalid, cannot finish selection";
+        emit cancelled();
+        close();
+        return;
+    }
+
     // Convert to global coordinates
     QRect globalRect = m_selectionRect;
     globalRect.translate(m_currentScreen->geometry().topLeft());
 
     qDebug() << "RecordingRegionSelector: Selection complete, region:" << globalRect;
 
-    emit regionSelected(globalRect, m_currentScreen);
+    emit regionSelected(globalRect, m_currentScreen.data());
     close();
 }

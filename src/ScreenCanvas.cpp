@@ -25,6 +25,7 @@
 #include <QScreen>
 #include <QDebug>
 #include <QSettings>
+#include <QTimer>
 #include <map>
 
 // Tool capability lookup table - replaces multiple switch statements
@@ -205,6 +206,16 @@ ScreenCanvas::ScreenCanvas(QWidget* parent)
 
     // Set initial cursor based on default tool
     setToolCursor();
+
+    // Connect to screen removal signal for graceful handling
+    connect(qApp, &QGuiApplication::screenRemoved,
+            this, [this](QScreen *screen) {
+                if (m_currentScreen == screen || m_currentScreen.isNull()) {
+                    qWarning() << "ScreenCanvas: Screen disconnected, closing";
+                    emit closed();
+                    close();
+                }
+            });
 
     qDebug() << "ScreenCanvas: Created";
 }
@@ -431,8 +442,14 @@ void ScreenCanvas::onMoreColorsRequested()
 void ScreenCanvas::initializeForScreen(QScreen* screen)
 {
     m_currentScreen = screen;
-    if (!m_currentScreen) {
+    if (m_currentScreen.isNull()) {
         m_currentScreen = QGuiApplication::primaryScreen();
+    }
+    if (m_currentScreen.isNull()) {
+        qWarning() << "ScreenCanvas: No valid screen available";
+        emit closed();
+        QTimer::singleShot(0, this, &QWidget::close);
+        return;
     }
 
     m_devicePixelRatio = m_currentScreen->devicePixelRatio();

@@ -4,6 +4,7 @@
 #include <QWidget>
 #include <QRect>
 #include <QPoint>
+#include <QPointer>
 
 class QScreen;
 class ToolbarWidget;
@@ -51,7 +52,7 @@ private:
     void updateToolbarPosition();
     void handleCancel();
 
-    QScreen *m_currentScreen;
+    QPointer<QScreen> m_currentScreen;
     qreal m_devicePixelRatio;
 
     QPoint m_startPoint;

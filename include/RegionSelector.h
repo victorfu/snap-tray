@@ -10,6 +10,7 @@
 #include <QColor>
 #include <QElapsedTimer>
 #include <QSettings>
+#include <QPointer>
 #include <memory>
 #include <optional>
 
@@ -212,6 +213,10 @@ private:
     // Initialization helpers
     void setupScreenGeometry(QScreen* screen);
 
+    // Screen lifecycle management
+    void onScreenRemoved(QScreen *screen);
+    bool isScreenValid() const;
+
     // Annotation helpers
     void showTextInputDialog(const QPoint &pos);
     bool isAnnotationTool(ToolbarButton tool) const;
@@ -241,7 +246,7 @@ private:
 
     QPoint m_startPoint;
     QPoint m_currentPoint;
-    QScreen *m_currentScreen;
+    QPointer<QScreen> m_currentScreen;
 
     // Selection state manager
     SelectionStateManager *m_selectionManager;

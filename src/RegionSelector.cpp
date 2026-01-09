@@ -301,6 +301,10 @@ RegionSelector::RegionSelector(QWidget* parent)
     // Start creation timer for startup protection
     m_createdAt.start();
 
+    // Connect to screen removal signal for graceful handling
+    connect(qApp, &QGuiApplication::screenRemoved,
+            this, &RegionSelector::onScreenRemoved);
+
     // Initialize magnifier panel component
     m_magnifierPanel = new MagnifierPanel(this);
 
@@ -445,6 +449,9 @@ RegionSelector::RegionSelector(QWidget* parent)
         });
     connect(m_inputHandler, &RegionInputHandler::fullScreenSelectionRequested,
         this, [this]() {
+            if (!isScreenValid()) {
+                return;
+            }
             QRect screenGeom = m_currentScreen->geometry();
             QRect fullScreenRect = QRect(0, 0, screenGeom.width(), screenGeom.height());
             m_selectionManager->setFromDetectedWindow(fullScreenRect);
@@ -497,12 +504,24 @@ RegionSelector::RegionSelector(QWidget* parent)
         this, &RegionSelector::finishSelection);
     connect(m_toolbarHandler, &RegionToolbarHandler::recordRequested,
         this, [this]() {
-            emit recordingRequested(localToGlobal(m_selectionManager->selectionRect()), m_currentScreen);
+            if (!isScreenValid()) {
+                qWarning() << "RegionSelector: Screen invalid, cannot start recording";
+                emit selectionCancelled();
+                close();
+                return;
+            }
+            emit recordingRequested(localToGlobal(m_selectionManager->selectionRect()), m_currentScreen.data());
             close();
         });
     connect(m_toolbarHandler, &RegionToolbarHandler::scrollCaptureRequested,
         this, [this]() {
-            emit scrollingCaptureRequested(localToGlobal(m_selectionManager->selectionRect()), m_currentScreen);
+            if (!isScreenValid()) {
+                qWarning() << "RegionSelector: Screen invalid, cannot start scrolling capture";
+                emit selectionCancelled();
+                close();
+                return;
+            }
+            emit scrollingCaptureRequested(localToGlobal(m_selectionManager->selectionRect()), m_currentScreen.data());
             close();
         });
     connect(m_toolbarHandler, &RegionToolbarHandler::saveRequested,
@@ -563,6 +582,21 @@ RegionSelector::~RegionSelector()
     qApp->removeEventFilter(this);
 
     qDebug() << "RegionSelector: Destroyed";
+}
+
+void RegionSelector::onScreenRemoved(QScreen *screen)
+{
+    // Check if our current screen was removed
+    if (m_currentScreen == screen || m_currentScreen.isNull()) {
+        qWarning() << "RegionSelector: Current screen disconnected, closing gracefully";
+        emit selectionCancelled();
+        close();
+    }
+}
+
+bool RegionSelector::isScreenValid() const
+{
+    return !m_currentScreen.isNull();
 }
 
 bool RegionSelector::shouldShowColorPalette() const
@@ -712,6 +746,10 @@ const QImage& RegionSelector::getBackgroundImage() const
 void RegionSelector::setupScreenGeometry(QScreen* screen)
 {
     m_currentScreen = screen ? screen : QGuiApplication::primaryScreen();
+    if (m_currentScreen.isNull()) {
+        qCritical() << "RegionSelector: No valid screen available";
+        return;
+    }
     m_devicePixelRatio = m_currentScreen->devicePixelRatio();
 
     QRect screenGeom = m_currentScreen->geometry();
@@ -722,6 +760,12 @@ void RegionSelector::setupScreenGeometry(QScreen* screen)
 void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapture)
 {
     setupScreenGeometry(screen);
+    if (!isScreenValid()) {
+        qWarning() << "RegionSelector: Cannot initialize, no valid screen";
+        emit selectionCancelled();
+        QTimer::singleShot(0, this, &QWidget::close);
+        return;
+    }
 
     // Use pre-captured pixmap if provided, otherwise capture now
     // Pre-capture allows including popup menus in the screenshot (like Snipaste)
@@ -786,6 +830,12 @@ void RegionSelector::captureCurrentScreen()
 void RegionSelector::initializeWithRegion(QScreen* screen, const QRect& region)
 {
     setupScreenGeometry(screen);
+    if (!isScreenValid()) {
+        qWarning() << "RegionSelector: Cannot initialize with region, no valid screen";
+        emit selectionCancelled();
+        QTimer::singleShot(0, this, &QWidget::close);
+        return;
+    }
 
     // Capture the screen first
     m_backgroundPixmap = m_currentScreen->grabWindow(0);
@@ -1750,21 +1800,37 @@ void RegionSelector::onAutoBlurComplete(bool success, int faceCount, int /*textC
 
 QPoint RegionSelector::localToGlobal(const QPoint& localPos) const
 {
+    if (m_currentScreen.isNull()) {
+        qWarning() << "RegionSelector: Screen null in localToGlobal";
+        return localPos;
+    }
     return m_currentScreen->geometry().topLeft() + localPos;
 }
 
 QPoint RegionSelector::globalToLocal(const QPoint& globalPos) const
 {
+    if (m_currentScreen.isNull()) {
+        qWarning() << "RegionSelector: Screen null in globalToLocal";
+        return globalPos;
+    }
     return globalPos - m_currentScreen->geometry().topLeft();
 }
 
 QRect RegionSelector::localToGlobal(const QRect& localRect) const
 {
+    if (m_currentScreen.isNull()) {
+        qWarning() << "RegionSelector: Screen null in localToGlobal(QRect)";
+        return localRect;
+    }
     return localRect.translated(m_currentScreen->geometry().topLeft());
 }
 
 QRect RegionSelector::globalToLocal(const QRect& globalRect) const
 {
+    if (m_currentScreen.isNull()) {
+        qWarning() << "RegionSelector: Screen null in globalToLocal(QRect)";
+        return globalRect;
+    }
     return globalRect.translated(-m_currentScreen->geometry().topLeft());
 }
 
