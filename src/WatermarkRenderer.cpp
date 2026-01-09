@@ -1,4 +1,5 @@
 #include "WatermarkRenderer.h"
+#include "settings/Settings.h"
 #include <QSettings>
 #include <QSizeF>
 
@@ -110,7 +111,7 @@ QPixmap WatermarkRenderer::applyToPixmap(const QPixmap &source, const Settings &
 
 WatermarkRenderer::Settings WatermarkRenderer::loadSettings()
 {
-    QSettings qsettings("Victor Fu", "SnapTray");
+    QSettings qsettings = SnapTray::getSettings();
     Settings settings;
 
     settings.enabled = qsettings.value(SETTINGS_KEY_WATERMARK_ENABLED, false).toBool();
@@ -126,7 +127,7 @@ WatermarkRenderer::Settings WatermarkRenderer::loadSettings()
 
 void WatermarkRenderer::saveSettings(const Settings &settings)
 {
-    QSettings qsettings("Victor Fu", "SnapTray");
+    QSettings qsettings = SnapTray::getSettings();
 
     qsettings.setValue(SETTINGS_KEY_WATERMARK_ENABLED, settings.enabled);
     qsettings.setValue(SETTINGS_KEY_WATERMARK_IMAGE_PATH, settings.imagePath);

@@ -1,6 +1,7 @@
 #include "detection/AutoBlurManager.h"
 #include "detection/FaceDetector.h"
 #include "detection/TextDetector.h"
+#include "settings/Settings.h"
 
 #include <QDebug>
 #include <QPainter>
@@ -201,7 +202,7 @@ AutoBlurManager::Options AutoBlurManager::loadSettings()
 {
     Options options;
 
-    QSettings settings("Victor Fu", "SnapTray");
+    QSettings settings = SnapTray::getSettings();
     settings.beginGroup(kSettingsGroup);
 
     options.enabled = settings.value(kAutoBlurEnabled, true).toBool();
@@ -221,7 +222,7 @@ AutoBlurManager::Options AutoBlurManager::loadSettings()
 
 void AutoBlurManager::saveSettings(const Options& options)
 {
-    QSettings settings("Victor Fu", "SnapTray");
+    QSettings settings = SnapTray::getSettings();
     settings.beginGroup(kSettingsGroup);
 
     settings.setValue(kAutoBlurEnabled, options.enabled);

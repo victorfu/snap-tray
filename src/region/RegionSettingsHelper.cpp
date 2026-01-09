@@ -2,6 +2,7 @@
 #include "annotations/ArrowAnnotation.h"
 #include "annotations/LineStyle.h"
 #include "annotations/ShapeAnnotation.h"
+#include "settings/Settings.h"
 #include "TextFormattingState.h"
 
 #include <QSettings>
@@ -21,14 +22,10 @@ static const char* SETTINGS_KEY_TEXT_UNDERLINE = "textUnderline";
 static const char* SETTINGS_KEY_TEXT_SIZE = "textFontSize";
 static const char* SETTINGS_KEY_TEXT_FAMILY = "textFontFamily";
 
-// Settings organization
-static const char* SETTINGS_ORG = "Victor Fu";
-static const char* SETTINGS_APP = "SnapTray";
-
 // Helper to get QSettings instance
 static QSettings getSettings()
 {
-    return QSettings(SETTINGS_ORG, SETTINGS_APP);
+    return SnapTray::getSettings();
 }
 
 RegionSettingsHelper::RegionSettingsHelper(QObject* parent)

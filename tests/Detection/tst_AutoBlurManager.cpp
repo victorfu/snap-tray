@@ -1,5 +1,6 @@
 #include <QtTest>
 #include "detection/AutoBlurManager.h"
+#include "settings/Settings.h"
 #include <QImage>
 #include <QPainter>
 #include <QSettings>
@@ -89,7 +90,7 @@ void tst_AutoBlurManager::cleanup()
 
 void tst_AutoBlurManager::clearTestSettings()
 {
-    QSettings settings("Victor Fu", "SnapTray");
+    QSettings settings = SnapTray::getSettings();
     settings.remove("detection/autoBlurEnabled");
     settings.remove("detection/detectFaces");
     settings.remove("detection/detectText");
