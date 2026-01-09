@@ -1,5 +1,6 @@
 #include "scrolling/ScrollingCaptureOverlay.h"
 #include "region/SelectionStateManager.h"
+#include "cursor/CursorManager.h"
 
 #include <QPainter>
 #include <QMouseEvent>
@@ -421,27 +422,9 @@ void ScrollingCaptureOverlay::mouseMoveEvent(QMouseEvent *event)
         if (m_borderState == BorderState::Adjusting) {
             SelectionStateManager::ResizeHandle handle = m_selectionManager->hitTestHandle(pos);
             if (handle != SelectionStateManager::ResizeHandle::None) {
-                // Set appropriate cursor based on handle
-                switch (handle) {
-                case SelectionStateManager::ResizeHandle::TopLeft:
-                case SelectionStateManager::ResizeHandle::BottomRight:
-                    setCursor(Qt::SizeFDiagCursor);
-                    break;
-                case SelectionStateManager::ResizeHandle::TopRight:
-                case SelectionStateManager::ResizeHandle::BottomLeft:
-                    setCursor(Qt::SizeBDiagCursor);
-                    break;
-                case SelectionStateManager::ResizeHandle::Top:
-                case SelectionStateManager::ResizeHandle::Bottom:
-                    setCursor(Qt::SizeVerCursor);
-                    break;
-                case SelectionStateManager::ResizeHandle::Left:
-                case SelectionStateManager::ResizeHandle::Right:
-                    setCursor(Qt::SizeHorCursor);
-                    break;
-                default:
-                    break;
-                }
+                // Use centralized cursor mapping from CursorManager
+                Qt::CursorShape cursorShape = CursorManager::cursorForResizeHandle(static_cast<int>(handle));
+                setCursor(cursorShape);
             } else if (m_selectionManager->selectionRect().contains(pos)) {
                 setCursor(Qt::SizeAllCursor);
             } else {

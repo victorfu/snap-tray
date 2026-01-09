@@ -1,6 +1,7 @@
 #include "ScreenCanvas.h"
 #include "annotations/AnnotationLayer.h"
 #include "tools/ToolManager.h"
+#include "cursor/CursorManager.h"
 #include "IconRenderer.h"
 #include "GlassRenderer.h"
 #include "ColorPaletteWidget.h"
@@ -44,36 +45,6 @@ static const std::map<ToolId, ToolCapabilities> kToolCapabilities = {
     {ToolId::LaserPointer, {true,  true,  true}},
 };
 
-// Create a rounded square cursor for mosaic tool (matching RegionSelector pattern)
-static QCursor createMosaicCursor(int size) {
-    // Use same pattern as EraserToolHandler - no devicePixelRatio scaling
-    int cursorSize = size + 4;  // Add margin for border
-    QPixmap pixmap(cursorSize, cursorSize);
-    pixmap.fill(Qt::transparent);
-
-    QPainter painter(&pixmap);
-    painter.setRenderHint(QPainter::Antialiasing, true);
-
-    int center = cursorSize / 2;
-    int halfSize = size / 2;
-
-    // Draw semi-transparent fill
-    painter.setBrush(QColor(255, 255, 255, 60));
-    painter.setPen(Qt::NoPen);
-    QRect innerRect(center - halfSize, center - halfSize, size, size);
-    painter.drawRoundedRect(innerRect, 2, 2);
-
-    // Draw light gray/white border for better visibility
-    painter.setPen(QPen(QColor(220, 220, 220), 1.5, Qt::SolidLine));
-    painter.setBrush(Qt::NoBrush);
-    painter.drawRoundedRect(innerRect, 2, 2);
-
-    painter.end();
-
-    int hotspot = cursorSize / 2;
-    return QCursor(pixmap, hotspot, hotspot);
-}
-
 ScreenCanvas::ScreenCanvas(QWidget* parent)
     : QWidget(parent)
     , m_currentScreen(nullptr)
@@ -115,6 +86,11 @@ ScreenCanvas::ScreenCanvas(QWidget* parent)
 
     // Connect tool manager signals
     connect(m_toolManager, &ToolManager::needsRepaint, this, QOverload<>::of(&QWidget::update));
+
+    // Initialize cursor manager
+    auto& cursorManager = CursorManager::instance();
+    cursorManager.setTargetWidget(this);
+    cursorManager.setToolManager(m_toolManager);
 
     // Initialize SVG icons
     initializeIcons();
@@ -788,29 +764,9 @@ bool ScreenCanvas::isDrawingTool(ToolId toolId) const
 
 void ScreenCanvas::setToolCursor()
 {
-    switch (m_currentToolId) {
-    case ToolId::Text:
-        setCursor(Qt::IBeamCursor);
-        break;
-    case ToolId::Mosaic: {
-        int mosaicWidth = m_toolManager ? m_toolManager->width() : MosaicToolHandler::kDefaultBrushWidth;
-        setCursor(createMosaicCursor(mosaicWidth));
-        break;
-    }
-    case ToolId::LaserPointer:
-    case ToolId::CursorHighlight:
-    case ToolId::Spotlight:
-        // Effect tools - use arrow cursor
-        setCursor(Qt::ArrowCursor);
-        break;
-    default:
-        if (isDrawingTool(m_currentToolId)) {
-            setCursor(Qt::CrossCursor);
-        } else {
-            setCursor(Qt::ArrowCursor);
-        }
-        break;
-    }
+    // Use centralized cursor manager - it will get the cursor from IToolHandler::cursor()
+    // and handle special cases like Mosaic with dynamic size
+    CursorManager::instance().updateToolCursor();
 }
 
 void ScreenCanvas::mousePressEvent(QMouseEvent* event)
@@ -839,7 +795,7 @@ void ScreenCanvas::mousePressEvent(QMouseEvent* event)
                 // Start toolbar drag (clicked on toolbar but not on a button)
                 m_isDraggingToolbar = true;
                 m_toolbarDragOffset = event->pos() - m_toolbar->boundingRect().topLeft();
-                setCursor(Qt::ClosedHandCursor);
+                CursorManager::instance().pushCursor(CursorContext::Drag, Qt::ClosedHandCursor);
             }
             return;
         }
@@ -950,12 +906,13 @@ void ScreenCanvas::mouseMoveEvent(QMouseEvent* event)
     else {
         bool needsUpdate = false;
         bool widgetHovered = false;
+        auto& cursorManager = CursorManager::instance();
 
         // Handle unified color and width widget
         if (shouldShowColorAndWidthWidget()) {
             if (m_colorAndWidthWidget->handleMouseMove(event->pos(), event->buttons() & Qt::LeftButton)) {
                 if (m_colorAndWidthWidget->contains(event->pos())) {
-                    setCursor(Qt::PointingHandCursor);
+                    cursorManager.pushCursor(CursorContext::Hover, Qt::PointingHandCursor);
                 }
                 update();
                 return;
@@ -964,7 +921,6 @@ void ScreenCanvas::mouseMoveEvent(QMouseEvent* event)
                 needsUpdate = true;
             }
             if (m_colorAndWidthWidget->contains(event->pos())) {
-                setCursor(Qt::PointingHandCursor);
                 widgetHovered = true;
             }
         }
@@ -976,7 +932,6 @@ void ScreenCanvas::mouseMoveEvent(QMouseEvent* event)
                 if (m_colorPalette->updateHoveredSwatch(event->pos())) {
                     needsUpdate = true;
                     if (m_colorPalette->contains(event->pos())) {
-                        setCursor(Qt::PointingHandCursor);
                         widgetHovered = true;
                     }
                 }
@@ -989,7 +944,6 @@ void ScreenCanvas::mouseMoveEvent(QMouseEvent* event)
                 needsUpdate = true;
             }
             if (m_emojiPicker->contains(event->pos())) {
-                setCursor(Qt::PointingHandCursor);
                 widgetHovered = true;
             }
         }
@@ -999,19 +953,17 @@ void ScreenCanvas::mouseMoveEvent(QMouseEvent* event)
             needsUpdate = true;
         }
 
-        // Always update cursor based on current state
-        if (m_toolbar->hoveredButton() >= 0) {
-            setCursor(Qt::PointingHandCursor);
-        }
-        else if (widgetHovered) {
-            setCursor(Qt::PointingHandCursor);
+        // Update cursor based on current hover state using CursorManager
+        if (m_toolbar->hoveredButton() >= 0 || widgetHovered) {
+            cursorManager.pushCursor(CursorContext::Hover, Qt::PointingHandCursor);
         }
         else if (m_toolbar->contains(event->pos())) {
             // Hovering over toolbar but not on a button - show drag cursor
-            setCursor(Qt::OpenHandCursor);
+            cursorManager.pushCursor(CursorContext::Hover, Qt::OpenHandCursor);
         }
         else {
-            setToolCursor();
+            // Not hovering on any UI element - pop hover cursor to show tool cursor
+            cursorManager.popCursor(CursorContext::Hover);
         }
 
         if (needsUpdate) {
@@ -1040,11 +992,11 @@ void ScreenCanvas::mouseReleaseEvent(QMouseEvent* event)
         // Handle toolbar drag end
         if (m_isDraggingToolbar) {
             m_isDraggingToolbar = false;
-            // Restore cursor based on position
+            // Pop drag cursor - cursor will revert to hover or tool cursor
+            auto& cursorManager = CursorManager::instance();
+            cursorManager.popCursor(CursorContext::Drag);
             if (m_toolbar->contains(event->pos())) {
-                setCursor(Qt::OpenHandCursor);
-            } else {
-                setToolCursor();
+                cursorManager.pushCursor(CursorContext::Hover, Qt::OpenHandCursor);
             }
             return;
         }

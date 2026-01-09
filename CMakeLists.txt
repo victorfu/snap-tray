@@ -247,6 +247,7 @@ add_library(snaptray_core STATIC
     src/settings/AnnotationSettingsManager.cpp
     src/settings/FileSettingsManager.cpp
     src/settings/PinWindowSettingsManager.cpp
+    src/cursor/CursorManager.cpp
     src/utils/CoordinateHelper.cpp
     src/AudioFileWriter.cpp
     # Headers with Q_OBJECT for MOC processing
@@ -254,6 +255,7 @@ add_library(snaptray_core STATIC
     include/settings/AnnotationSettingsManager.h
     include/settings/FileSettingsManager.h
     include/settings/PinWindowSettingsManager.h
+    include/cursor/CursorManager.h
 )
 
 target_include_directories(snaptray_core
@@ -269,6 +271,7 @@ target_link_libraries(snaptray_core
     PUBLIC
         Qt6::Core
         Qt6::Gui
+        Qt6::Widgets
         Qt6::Concurrent
 )
 

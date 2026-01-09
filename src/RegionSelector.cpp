@@ -5,6 +5,7 @@
 #include "region/RegionSettingsHelper.h"
 #include "region/RegionExportManager.h"
 #include "annotations/AllAnnotations.h"
+#include "cursor/CursorManager.h"
 #include "GlassRenderer.h"
 #include "ToolbarStyle.h"
 #include "IconRenderer.h"
@@ -73,40 +74,6 @@ static const std::map<ToolbarButton, ToolCapabilities> kToolCapabilities = {
     {ToolbarButton::StepBadge,  {true,  false, true}},
 };
 
-// Create a rounded square cursor for mosaic tool
-static QCursor createMosaicCursor(int size) {
-    int cursorSize = size + 4;  // Add margin for border
-    QPixmap pixmap(cursorSize, cursorSize);
-    pixmap.fill(Qt::transparent);
-
-    QPainter painter(&pixmap);
-    painter.setRenderHint(QPainter::Antialiasing, true);
-
-    int center = cursorSize / 2;
-    int halfSize = size / 2;
-
-    // Draw semi-transparent fill
-    painter.setBrush(QColor(255, 255, 255, 60));
-    painter.setPen(Qt::NoPen);
-    QRect innerRect(center - halfSize, center - halfSize, size, size);
-    painter.drawRoundedRect(innerRect, 2, 2);
-
-    // Draw light gray/white border for better visibility
-    painter.setPen(QPen(QColor(220, 220, 220), 1.5, Qt::SolidLine));
-    painter.setBrush(Qt::NoBrush);
-    painter.drawRoundedRect(innerRect, 2, 2);
-
-    // Draw darker inner outline for contrast on light backgrounds
-    painter.setPen(QPen(QColor(100, 100, 100, 180), 0.5, Qt::SolidLine));
-    QRect innerOutline = innerRect.adjusted(1, 1, -1, -1);
-    painter.drawRoundedRect(innerOutline, 1, 1);
-
-    painter.end();
-
-    int hotspot = cursorSize / 2;
-    return QCursor(pixmap, hotspot, hotspot);
-}
-
 RegionSelector::RegionSelector(QWidget* parent)
     : QWidget(parent)
     , m_currentScreen(nullptr)
@@ -135,7 +102,6 @@ RegionSelector::RegionSelector(QWidget* parent)
     setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::Tool);
     setAttribute(Qt::WA_DeleteOnClose);
     setMouseTracking(true);
-    setCursor(Qt::ArrowCursor);  // 預設已選取完成，使用 ArrowCursor
 
     // Initialize selection state manager
     m_selectionManager = new SelectionStateManager(this);
@@ -157,13 +123,14 @@ RegionSelector::RegionSelector(QWidget* parent)
                     return;
                 }
                 // Update cursor based on state (single-region mode only)
+                auto& cm = CursorManager::instance();
                 if (newState == SelectionStateManager::State::None ||
                     newState == SelectionStateManager::State::Selecting) {
-                    setCursor(Qt::CrossCursor);
+                    cm.pushCursor(CursorContext::Selection, Qt::CrossCursor);
                 } else if (newState == SelectionStateManager::State::Moving) {
-                    setCursor(Qt::SizeAllCursor);
+                    cm.pushCursor(CursorContext::Selection, Qt::SizeAllCursor);
                 } else {
-                    setCursor(Qt::ArrowCursor);
+                    cm.popCursor(CursorContext::Selection);
                 }
             });
 
@@ -208,6 +175,11 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_toolManager->setLineStyle(m_lineStyle);
     m_toolManager->setMosaicBlurType(static_cast<MosaicStroke::BlurType>(m_mosaicBlurType));
     connect(m_toolManager, &ToolManager::needsRepaint, this, QOverload<>::of(&QWidget::update));
+
+    // Initialize cursor manager for centralized cursor handling
+    auto& cursorManager = CursorManager::instance();
+    cursorManager.setTargetWidget(this);
+    cursorManager.setToolManager(m_toolManager);
 
     // Initialize OCR manager if available on this platform
     m_ocrManager = PlatformFeatures::instance().createOCRManager(this);
@@ -444,8 +416,7 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_inputHandler->setParentWidget(this);
 
     // Connect input handler signals
-    connect(m_inputHandler, &RegionInputHandler::cursorChangeRequested,
-        this, [this](Qt::CursorShape cursor) { setCursor(cursor); });
+    // Note: cursorChangeRequested is no longer used - RegionInputHandler uses CursorManager directly
     connect(m_inputHandler, &RegionInputHandler::toolCursorRequested,
         this, &RegionSelector::setToolCursor);
     connect(m_inputHandler, qOverload<>(&RegionInputHandler::updateRequested),
@@ -462,7 +433,7 @@ RegionSelector::RegionSelector(QWidget* parent)
         this, [this]() {
             m_selectionManager->finishSelection();
             if (!m_multiRegionMode) {
-                setCursor(Qt::ArrowCursor);
+                CursorManager::instance().popCursor(CursorContext::Selection);
             }
             if (m_multiRegionMode && m_multiRegionManager) {
                 QRect sel = m_selectionManager->selectionRect();
@@ -478,7 +449,7 @@ RegionSelector::RegionSelector(QWidget* parent)
             QRect fullScreenRect = QRect(0, 0, screenGeom.width(), screenGeom.height());
             m_selectionManager->setFromDetectedWindow(fullScreenRect);
             if (!m_multiRegionMode) {
-                setCursor(Qt::ArrowCursor);
+                CursorManager::instance().popCursor(CursorContext::Selection);
             }
 
             // Add full-screen region in multi-region mode
@@ -796,7 +767,8 @@ void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapt
     m_magnifierPanel->setDevicePixelRatio(m_devicePixelRatio);
     m_magnifierPanel->invalidateCache();
 
-    setCursor(Qt::CrossCursor);
+    // Initialize cursor via CursorManager
+    CursorManager::instance().pushCursor(CursorContext::Selection, Qt::CrossCursor);
 
     // Initial window detection at cursor position
     if (m_windowDetector && m_windowDetector->isEnabled()) {
@@ -1058,8 +1030,9 @@ void RegionSelector::drawMagnifier(QPainter& painter)
 
 QCursor RegionSelector::getMosaicCursor(int width)
 {
+    // Use centralized CursorManager for mosaic cursor
     if (width != m_mosaicCursorCacheWidth) {
-        m_mosaicCursorCache = createMosaicCursor(width);
+        m_mosaicCursorCache = CursorManager::createMosaicCursor(width);
         m_mosaicCursorCacheWidth = width;
     }
     return m_mosaicCursorCache;
@@ -1067,36 +1040,16 @@ QCursor RegionSelector::getMosaicCursor(int width)
 
 void RegionSelector::setToolCursor()
 {
-    switch (m_currentTool) {
-    case ToolbarButton::Text:
-        if (!m_textEditor->isEditing()) {
-            setCursor(Qt::IBeamCursor);
-        }
-        break;
-    case ToolbarButton::Mosaic: {
-        int mosaicWidth = m_toolManager ? m_toolManager->width() : MosaicToolHandler::kDefaultBrushWidth;
-        setCursor(getMosaicCursor(mosaicWidth));
-        break;
+    auto& cursorManager = CursorManager::instance();
+
+    // Special handling for text tool during editing
+    if (m_currentTool == ToolbarButton::Text && m_textEditor->isEditing()) {
+        return;
     }
-    case ToolbarButton::Eraser: {
-        if (m_toolManager) {
-            if (auto* handler = m_toolManager->handler(ToolId::Eraser)) {
-                setCursor(handler->cursor());
-            } else {
-                setCursor(Qt::CrossCursor);
-            }
-        }
-        break;
-    }
-    case ToolbarButton::Selection:
-        // Selection tool uses updateCursorForHandle separately
-        break;
-    default:
-        if (isAnnotationTool(m_currentTool)) {
-            setCursor(Qt::CrossCursor);
-        }
-        break;
-    }
+
+    // Use CursorManager's unified tool cursor update
+    // This delegates to IToolHandler::cursor() for proper cursor behavior
+    cursorManager.updateToolCursor();
 }
 
 void RegionSelector::handleToolbarClick(ToolbarButton button)

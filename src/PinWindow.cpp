@@ -3,6 +3,7 @@
 #include "OCRManager.h"
 #include "PlatformFeatures.h"
 #include "WatermarkRenderer.h"
+#include "cursor/CursorManager.h"
 #include "platform/WindowLevel.h"
 #include "pinwindow/ResizeHandler.h"
 #include "pinwindow/UIIndicators.h"
@@ -816,9 +817,9 @@ void PinWindow::mouseMoveEvent(QMouseEvent *event)
     } else if (m_isDragging) {
         move(event->globalPosition().toPoint() - m_dragStartPos);
     } else {
-        // Update cursor based on position
+        // Update cursor based on position using centralized CursorManager
         ResizeHandler::Edge edge = m_resizeHandler->getEdgeAt(event->pos(), size());
-        setCursor(ResizeHandler::cursorForEdge(edge));
+        setCursor(CursorManager::cursorForEdge(static_cast<int>(edge)));
     }
 }
 
