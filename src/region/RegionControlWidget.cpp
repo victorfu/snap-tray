@@ -163,6 +163,7 @@ void RegionControlWidget::draw(QPainter& painter)
 {
     if (!m_visible) return;
 
+    painter.save();
     painter.setRenderHint(QPainter::Antialiasing, true);
 
     // Draw shared glass panel background
@@ -178,6 +179,8 @@ void RegionControlWidget::draw(QPainter& painter)
     if (m_sliderPopupVisible) {
         drawSliderPopup(painter);
     }
+
+    painter.restore();
 }
 
 void RegionControlWidget::drawRadiusToggle(QPainter& painter)
