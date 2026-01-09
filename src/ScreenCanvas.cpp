@@ -583,7 +583,7 @@ void ScreenCanvas::paintEvent(QPaintEvent*)
     }
 
     // Draw emoji picker when EmojiSticker tool is selected
-    if (m_currentToolId == ToolId::EmojiSticker) {
+    if (m_currentToolId == ToolId::EmojiSticker && m_showSubToolbar) {
         m_emojiPicker->setVisible(true);
         m_emojiPicker->updatePosition(toolbarRect, true);
         m_emojiPicker->draw(painter);
