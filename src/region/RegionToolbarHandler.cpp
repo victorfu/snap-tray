@@ -335,8 +335,6 @@ void RegionToolbarHandler::handleMosaicTool()
     // Use shared WidthSection for Mosaic (synced with other tools)
     emit showWidthSectionRequested(true);
     emit widthSectionHiddenRequested(false);
-    emit showMosaicBlurTypeSectionRequested(true);  // Show blur type selector
-    emit mosaicBlurTypeRequested(m_mosaicBlurType);  // Set current blur type
     emit currentWidthRequested(m_annotationWidth);
     if (m_toolManager) {
         m_toolManager->setWidth(m_annotationWidth);

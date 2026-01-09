@@ -66,7 +66,6 @@ public:
     void setAnnotationWidth(int width) { m_annotationWidth = width; }
     void setAnnotationColor(const QColor& color) { m_annotationColor = color; }
     void setStepBadgeSize(StepBadgeSize size);
-    void setMosaicBlurType(int type) { m_mosaicBlurType = type; }
     void setOCRInProgress(bool inProgress) { m_ocrInProgress = inProgress; }
     void setMultiRegionMode(bool enabled) { m_multiRegionMode = enabled; }
 
@@ -95,11 +94,9 @@ signals:
     void showWidthSectionRequested(bool show);
     void widthSectionHiddenRequested(bool hidden);
     void showColorSectionRequested(bool show);
-    void showMosaicBlurTypeSectionRequested(bool show);
     void widthRangeRequested(int min, int max);
     void currentWidthRequested(int width);
     void stepBadgeSizeRequested(StepBadgeSize size);
-    void mosaicBlurTypeRequested(int type);
 
     // Tool-specific signals
     void eraserHoverClearRequested();
@@ -133,7 +130,6 @@ private:
     int m_annotationWidth = 3;
     int m_eraserWidth = 20;
     StepBadgeSize m_stepBadgeSize;
-    int m_mosaicBlurType = 0;
     bool m_ocrInProgress = false;
     bool m_multiRegionMode = false;
 };

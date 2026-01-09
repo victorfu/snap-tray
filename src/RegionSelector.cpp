@@ -309,12 +309,6 @@ RegionSelector::RegionSelector(QWidget* parent)
         this, &RegionSelector::onStepBadgeSizeChanged);
     connect(m_colorAndWidthWidget, &ColorAndWidthWidget::autoBlurRequested,
         this, &RegionSelector::performAutoBlur);
-    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::mosaicBlurTypeChanged,
-        this, [this](MosaicBlurTypeSection::BlurType type) {
-            m_mosaicBlurType = type;
-            m_toolManager->setMosaicBlurType(static_cast<MosaicStroke::BlurType>(type));
-            AnnotationSettingsManager::instance().saveMosaicBlurType(type);
-        });
 
     // EmojiPicker is lazy-initialized via ensureEmojiPicker() when first needed
 
@@ -555,18 +549,12 @@ RegionSelector::RegionSelector(QWidget* parent)
         m_colorAndWidthWidget, &ColorAndWidthWidget::setWidthSectionHidden);
     connect(m_toolbarHandler, &RegionToolbarHandler::showColorSectionRequested,
         m_colorAndWidthWidget, &ColorAndWidthWidget::setShowColorSection);
-    connect(m_toolbarHandler, &RegionToolbarHandler::showMosaicBlurTypeSectionRequested,
-        m_colorAndWidthWidget, &ColorAndWidthWidget::setShowMosaicBlurTypeSection);
     connect(m_toolbarHandler, &RegionToolbarHandler::widthRangeRequested,
         m_colorAndWidthWidget, &ColorAndWidthWidget::setWidthRange);
     connect(m_toolbarHandler, &RegionToolbarHandler::currentWidthRequested,
         m_colorAndWidthWidget, &ColorAndWidthWidget::setCurrentWidth);
     connect(m_toolbarHandler, &RegionToolbarHandler::stepBadgeSizeRequested,
         m_colorAndWidthWidget, &ColorAndWidthWidget::setStepBadgeSize);
-    connect(m_toolbarHandler, &RegionToolbarHandler::mosaicBlurTypeRequested,
-        this, [this](int type) {
-            m_colorAndWidthWidget->setMosaicBlurType(static_cast<MosaicBlurTypeSection::BlurType>(type));
-        });
 
     // Connect eraser hover clear signal
     connect(m_toolbarHandler, &RegionToolbarHandler::eraserHoverClearRequested,
@@ -991,9 +979,8 @@ void RegionSelector::paintEvent(QPaintEvent* event)
                 m_colorAndWidthWidget->setShowTextSection(m_currentTool == ToolbarButton::Text);
                 // Show shape section only for Shape tool
                 m_colorAndWidthWidget->setShowShapeSection(m_currentTool == ToolbarButton::Shape);
-                // Show auto blur section and blur type section only for Mosaic tool
+                // Show auto blur section only for Mosaic tool
                 m_colorAndWidthWidget->setShowAutoBlurSection(isMosaicTool);
-                m_colorAndWidthWidget->setShowMosaicBlurTypeSection(isMosaicTool);
                 if (isMosaicTool) {
                     // Always enable - lazy initialization happens in performAutoBlur()
                     m_colorAndWidthWidget->setAutoBlurEnabled(m_autoBlurManager != nullptr);
@@ -1124,7 +1111,6 @@ void RegionSelector::handleToolbarClick(ToolbarButton button)
     m_toolbarHandler->setAnnotationWidth(m_annotationWidth);
     m_toolbarHandler->setAnnotationColor(m_annotationColor);
     m_toolbarHandler->setStepBadgeSize(m_stepBadgeSize);
-    m_toolbarHandler->setMosaicBlurType(static_cast<int>(m_mosaicBlurType));
     m_toolbarHandler->setOCRInProgress(m_ocrInProgress);
     m_toolbarHandler->setMultiRegionMode(m_multiRegionMode);
 
@@ -1754,9 +1740,9 @@ void RegionSelector::performAutoBlur()
                          << "logical rect (for annotation)=" << logicalRect;
 
                 // Create mosaic annotation for this face region
-                // Use current blur type setting (convert from MosaicBlurTypeSection to MosaicRectAnnotation enum)
+                // Use blur type from settings
                 auto blurType = static_cast<MosaicRectAnnotation::BlurType>(
-                    static_cast<int>(m_colorAndWidthWidget->mosaicBlurType())
+                    static_cast<int>(m_mosaicBlurType)
                 );
                 auto mosaic = std::make_unique<MosaicRectAnnotation>(
                     logicalRect, m_backgroundPixmap, 12, blurType

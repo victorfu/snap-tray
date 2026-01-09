@@ -11,9 +11,7 @@
 #include "annotations/ArrowAnnotation.h"
 #include "annotations/LineStyle.h"
 #include "annotations/ShapeAnnotation.h"
-#include "annotations/MosaicStroke.h"
 #include "annotations/StepBadgeAnnotation.h"
-#include "ui/sections/MosaicBlurTypeSection.h"
 #include "InlineTextEditor.h"
 #include "region/TextAnnotationEditor.h"
 #include "recording/SpotlightEffect.h"
@@ -192,9 +190,6 @@ private:
     // Shape tool state
     ShapeType m_shapeType = ShapeType::Rectangle;
     ShapeFillMode m_shapeFillMode = ShapeFillMode::Outline;
-
-    // Mosaic tool state
-    MosaicBlurTypeSection::BlurType m_mosaicBlurType = MosaicBlurTypeSection::BlurType::Pixelate;
 
     // StepBadge tool state
     StepBadgeSize m_stepBadgeSize = StepBadgeSize::Medium;

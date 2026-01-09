@@ -158,11 +158,6 @@ ScreenCanvas::ScreenCanvas(QWidget* parent)
             m_shapeFillMode = mode;
             m_toolManager->setShapeFillMode(static_cast<int>(mode));
         });
-    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::mosaicBlurTypeChanged,
-        this, [this](MosaicBlurTypeSection::BlurType type) {
-            m_mosaicBlurType = type;
-            m_toolManager->setMosaicBlurType(static_cast<MosaicStroke::BlurType>(type));
-        });
     connect(m_colorAndWidthWidget, &ColorAndWidthWidget::stepBadgeSizeChanged,
         this, [this](StepBadgeSize size) {
             m_stepBadgeSize = size;
@@ -568,8 +563,7 @@ void ScreenCanvas::paintEvent(QPaintEvent*)
         m_colorAndWidthWidget->setShowLineStyleSection(showLineStyle);
         // Show shape section for Shape tool
         m_colorAndWidthWidget->setShowShapeSection(m_currentToolId == ToolId::Shape);
-        // Show mosaic blur type section for Mosaic tool (hide color for Mosaic)
-        m_colorAndWidthWidget->setShowMosaicBlurTypeSection(m_currentToolId == ToolId::Mosaic);
+        // Hide color section for Mosaic tool
         m_colorAndWidthWidget->setShowColorSection(m_currentToolId != ToolId::Mosaic);
         // Show size section for StepBadge (replaces width section)
         m_colorAndWidthWidget->setShowSizeSection(m_currentToolId == ToolId::StepBadge);
