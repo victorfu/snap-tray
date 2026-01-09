@@ -638,6 +638,9 @@ void ColorAndWidthWidget::draw(QPainter& painter)
 
 bool ColorAndWidthWidget::contains(const QPoint& pos) const
 {
+    if (!m_visible) {
+        return false;
+    }
     if (m_widgetRect.contains(pos)) return true;
     // Also include arrow style dropdown area when open
     if (m_showArrowStyleSection && m_arrowStyleSection->isDropdownOpen() &&
