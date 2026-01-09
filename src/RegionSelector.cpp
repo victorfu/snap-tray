@@ -472,6 +472,12 @@ RegionSelector::RegionSelector(QWidget* parent)
             m_highlightedWindowRect = QRect();
             m_detectedWindow.reset();
         });
+    connect(m_inputHandler, &RegionInputHandler::selectionCancelledByRightClick,
+        this, [this]() {
+            qDebug() << "RegionSelector: Cancelled via right-click";
+            emit selectionCancelled();
+            close();
+        });
 
     // Initialize toolbar handler component
     m_toolbarHandler = new RegionToolbarHandler(this);

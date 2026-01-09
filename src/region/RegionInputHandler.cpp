@@ -659,6 +659,13 @@ void RegionInputHandler::handleRightButtonPress(const QPoint& pos)
         return;
     }
 
+    // Cancel capture if still selecting or not yet started
+    if (m_selectionManager->isSelecting() || !m_selectionManager->isComplete()) {
+        m_selectionManager->clearSelection();
+        emit selectionCancelledByRightClick();
+        return;
+    }
+
     if (m_selectionManager->isComplete()) {
         if (m_isDrawing) {
             m_isDrawing = false;
