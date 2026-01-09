@@ -1152,7 +1152,17 @@ void ScrollingCaptureManager::showWarning(const StitchWorker::Result &result)
     m_consecutiveSuccessCount = 0;
     if (m_thumbnail) {
         m_currentStatus = ScrollingCaptureThumbnail::CaptureStatus::Warning;
-        m_thumbnail->setStatus(m_currentStatus, result.failureReason);
+        
+        QString msg;
+        using FailureCode = ImageStitcher::FailureCode;
+        switch (result.failureCode) {
+            case FailureCode::AmbiguousMatch:    msg = "Ambiguous"; break;
+            case FailureCode::LowConfidence:     msg = "Unsure"; break;
+            case FailureCode::DuplicateDetected: msg = "Duplicate"; break;
+            default:                             msg = "Warning"; break;
+        }
+        
+        m_thumbnail->setStatus(m_currentStatus, msg);
     }
     qDebug() << "ScrollingCaptureManager: Warning -" << result.failureReason;
 }
@@ -1188,7 +1198,7 @@ void ScrollingCaptureManager::onStitchQueueNearFull(int currentDepth, int maxDep
     if (m_thumbnail) {
         m_currentStatus = ScrollingCaptureThumbnail::CaptureStatus::Warning;
         m_thumbnail->setStatus(m_currentStatus,
-            QString("Processing behind (%1/%2) — scroll slower").arg(currentDepth).arg(maxDepth));
+            QString("Lag (%1/%2)").arg(currentDepth).arg(maxDepth));
     }
     
     qDebug() << "ScrollingCaptureManager: Capture rate slowed to" << m_captureIntervalMs << "ms";

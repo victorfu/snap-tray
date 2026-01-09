@@ -178,13 +178,13 @@ void ScrollingCaptureThumbnail::setStatus(CaptureStatus status, const QString& m
     // Transition Failed -> Capturing shows Recovered first
     if (m_currentStatus == CaptureStatus::Failed && status == CaptureStatus::Capturing) {
         m_pendingStatus = status;
-        applyStatus(CaptureStatus::Recovered, "Recovered");
+        applyStatus(CaptureStatus::Recovered, "Fixed");
         
         if (!m_recoveredTimer) {
             m_recoveredTimer = new QTimer(this);
             m_recoveredTimer->setSingleShot(true);
             connect(m_recoveredTimer, &QTimer::timeout, this, [this]() {
-                applyStatus(m_pendingStatus, "Capturing");
+                applyStatus(m_pendingStatus, "Active");
             });
         }
         m_recoveredTimer->start(1500);
@@ -199,10 +199,10 @@ void ScrollingCaptureThumbnail::applyStatus(CaptureStatus status, const QString&
     m_currentStatus = status;
     QColor color = STATUS_COLORS.value(status, Qt::white);
     
-    QString statusText = message.isEmpty() ? "Capturing" : message;
-    if (status == CaptureStatus::Idle) statusText = "Ready";
+    QString statusText = message.isEmpty() ? "Active" : message;
+    if (status == CaptureStatus::Idle) statusText = "Idle";
     if (status == CaptureStatus::Failed) statusText = "Failed";
-    if (status == CaptureStatus::Recovered) statusText = "Recovered";
+    if (status == CaptureStatus::Recovered) statusText = "Fixed";
     
     // Update indicator dot + text
     m_statusLabel->setText(QString("<font color='%1'>●</font> %2")
@@ -310,14 +310,14 @@ bool ScrollingCaptureThumbnail::event(QEvent *event)
 
 QString ScrollingCaptureThumbnail::failureCodeToUserMessage(ImageStitcher::FailureCode code) {
     switch (code) {
-        case ImageStitcher::FailureCode::OverlapMismatch:   return "Content mismatch";
-        case ImageStitcher::FailureCode::AmbiguousMatch:    return "Ambiguous content";
-        case ImageStitcher::FailureCode::LowConfidence:     return "Low confidence";
-        case ImageStitcher::FailureCode::ViewportMismatch:  return "Window size changed";
-        case ImageStitcher::FailureCode::Timeout:           return "Processing slow";
-        case ImageStitcher::FailureCode::InvalidState:      return "Internal error";
-        case ImageStitcher::FailureCode::OverlapTooSmall:   return "Overlap too small";
-        default:                                            return "Stitching error";
+        case ImageStitcher::FailureCode::OverlapMismatch:   return "Mismatch";
+        case ImageStitcher::FailureCode::AmbiguousMatch:    return "Ambiguous";
+        case ImageStitcher::FailureCode::LowConfidence:     return "Unsure";
+        case ImageStitcher::FailureCode::ViewportMismatch:  return "Size chg";
+        case ImageStitcher::FailureCode::Timeout:           return "Slow";
+        case ImageStitcher::FailureCode::InvalidState:      return "Error";
+        case ImageStitcher::FailureCode::OverlapTooSmall:   return "No overlap";
+        default:                                            return "Error";
     }
 }
 
