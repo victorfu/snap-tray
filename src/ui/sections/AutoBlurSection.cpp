@@ -40,23 +40,18 @@ void AutoBlurSection::draw(QPainter& painter, const ToolbarStyleConfig& styleCon
 {
     painter.setRenderHint(QPainter::Antialiasing, true);
 
-    // Determine button background color based on state
-    QColor bgColor;
+    // Draw button background only when processing or hovered
     if (m_processing) {
         // Yellow/orange when processing
-        bgColor = QColor(255, 193, 7);  // Material amber
-    } else if (!m_enabled) {
-        // Dimmed when disabled
-        bgColor = styleConfig.buttonInactiveColor;
-    } else if (m_hovered) {
-        bgColor = styleConfig.buttonHoverColor;
-    } else {
-        bgColor = styleConfig.buttonInactiveColor;
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(QColor(255, 193, 7));  // Material amber
+        painter.drawRoundedRect(m_buttonRect, 4, 4);
+    } else if (m_hovered && m_enabled) {
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(styleConfig.buttonHoverColor);
+        painter.drawRoundedRect(m_buttonRect, 4, 4);
     }
-
-    painter.setPen(Qt::NoPen);
-    painter.setBrush(bgColor);
-    painter.drawRoundedRect(m_buttonRect, 4, 4);
+    // Normal state: no background (flat appearance)
 
     // Draw icon
     QColor iconColor;
