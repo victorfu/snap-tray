@@ -240,6 +240,16 @@ void RegionInputHandler::handleMouseMove(QMouseEvent* event)
 {
     m_currentPoint = event->pos();
 
+    // Race condition recovery: mouse button was already pressed when window appeared
+    // Qt doesn't fire mousePressEvent for already-pressed buttons, so we detect
+    // this broken state here and synthesize the missing selection start
+    if (!m_selectionManager->hasActiveSelection() &&
+        (event->buttons() & Qt::LeftButton)) {
+        qDebug() << "RegionInputHandler: Recovering from race condition - "
+                 << "starting selection from mouseMoveEvent";
+        handleNewSelectionPress(event->pos());
+    }
+
     // Handle text editor in confirm mode
     if (handleTextEditorMove(event->pos())) {
         return;

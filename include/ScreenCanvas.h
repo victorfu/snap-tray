@@ -15,7 +15,6 @@
 #include "annotations/StepBadgeAnnotation.h"
 #include "InlineTextEditor.h"
 #include "region/TextAnnotationEditor.h"
-#include "recording/SpotlightEffect.h"
 #include "tools/ToolId.h"
 #include "ToolbarStyle.h"
 
@@ -27,7 +26,6 @@ class ColorPickerDialog;
 class EmojiPicker;
 class ColorAndWidthWidget;
 class LaserPointerRenderer;
-class ClickRippleRenderer;
 class ToolbarWidget;
 
 // Canvas background mode
@@ -48,8 +46,6 @@ enum class CanvasButton {
     Text,
     EmojiSticker,
     LaserPointer,
-    CursorHighlight,
-    Spotlight,
     Whiteboard,
     Blackboard,
     Undo,
@@ -70,8 +66,6 @@ inline ToolId canvasButtonToToolId(CanvasButton btn) {
     case CanvasButton::Text:         return ToolId::Text;
     case CanvasButton::EmojiSticker: return ToolId::EmojiSticker;
     case CanvasButton::LaserPointer: return ToolId::LaserPointer;
-    case CanvasButton::CursorHighlight: return ToolId::CursorHighlight;
-    case CanvasButton::Spotlight:    return ToolId::Spotlight;
     case CanvasButton::Whiteboard:   return ToolId::Selection;  // Not a tool
     case CanvasButton::Blackboard:   return ToolId::Selection;  // Not a tool
     case CanvasButton::Undo:         return ToolId::Undo;
@@ -176,9 +170,6 @@ private:
     // Laser pointer renderer
     LaserPointerRenderer *m_laserRenderer;
 
-    // Click ripple renderer
-    ClickRippleRenderer *m_rippleRenderer;
-
     // Cursor position for drawing cursor dot
     QPoint m_cursorPos;
 
@@ -195,9 +186,6 @@ private:
     // Text editing components
     InlineTextEditor *m_textEditor;
     TextAnnotationEditor *m_textAnnotationEditor;
-
-    // Spotlight effect
-    SpotlightEffect *m_spotlightEffect;
 
     // Background mode
     CanvasBackgroundMode m_bgMode = CanvasBackgroundMode::Screen;

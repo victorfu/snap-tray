@@ -9,7 +9,6 @@
 #include "ColorAndWidthWidget.h"
 #include "EmojiPicker.h"
 #include "LaserPointerRenderer.h"
-#include "ClickRippleRenderer.h"
 #include "ToolbarWidget.h"
 #include "settings/AnnotationSettingsManager.h"
 #include "settings/Settings.h"
@@ -193,16 +192,6 @@ ScreenCanvas::ScreenCanvas(QWidget* parent)
     connect(m_laserRenderer, &LaserPointerRenderer::needsRepaint,
         this, QOverload<>::of(&QWidget::update));
 
-    // Initialize click ripple renderer
-    m_rippleRenderer = new ClickRippleRenderer(this);
-    connect(m_rippleRenderer, &ClickRippleRenderer::needsRepaint,
-        this, QOverload<>::of(&QWidget::update));
-
-    // Initialize spotlight effect
-    m_spotlightEffect = new SpotlightEffect(this);
-    connect(m_spotlightEffect, &SpotlightEffect::needsRepaint,
-        this, QOverload<>::of(&QWidget::update));
-
     // Set initial cursor based on default tool
     setToolCursor();
 
@@ -243,8 +232,6 @@ void ScreenCanvas::initializeIcons()
     iconRenderer.loadIcon("emoji", ":/icons/icons/emoji.svg");
     iconRenderer.loadIcon("text", ":/icons/icons/text.svg");
     iconRenderer.loadIcon("laser-pointer", ":/icons/icons/laser-pointer.svg");
-    iconRenderer.loadIcon("cursor-highlight", ":/icons/icons/cursor-highlight.svg");
-    iconRenderer.loadIcon("spotlight", ":/icons/icons/spotlight.svg");
     iconRenderer.loadIcon("undo", ":/icons/icons/undo.svg");
     iconRenderer.loadIcon("redo", ":/icons/icons/redo.svg");
     iconRenderer.loadIcon("cancel", ":/icons/icons/cancel.svg");
@@ -276,8 +263,6 @@ void ScreenCanvas::setupToolbar()
         {static_cast<int>(CanvasButton::EmojiSticker), "emoji", "Emoji Sticker"},
         {static_cast<int>(CanvasButton::Text), "text", "Text"},
         {static_cast<int>(CanvasButton::LaserPointer), "laser-pointer", "Laser Pointer"},
-        ToolbarWidget::ButtonConfig(static_cast<int>(CanvasButton::CursorHighlight), "cursor-highlight", "Cursor Highlight (Toggle)").separator(),
-        {static_cast<int>(CanvasButton::Spotlight), "spotlight", "Spotlight (Toggle)"},
         ToolbarWidget::ButtonConfig(static_cast<int>(CanvasButton::Whiteboard), "whiteboard", "Whiteboard (W)").separator(),
         {static_cast<int>(CanvasButton::Blackboard), "blackboard", "Blackboard (B)"},
         ToolbarWidget::ButtonConfig(static_cast<int>(CanvasButton::Undo), "undo", "Undo (Ctrl+Z)").separator(),
@@ -297,8 +282,6 @@ void ScreenCanvas::setupToolbar()
         static_cast<int>(CanvasButton::EmojiSticker),
         static_cast<int>(CanvasButton::Text),
         static_cast<int>(CanvasButton::LaserPointer),
-        static_cast<int>(CanvasButton::CursorHighlight),
-        static_cast<int>(CanvasButton::Spotlight),
         static_cast<int>(CanvasButton::Whiteboard),
         static_cast<int>(CanvasButton::Blackboard)
     };
@@ -319,8 +302,6 @@ QColor ScreenCanvas::getButtonIconColor(int buttonId) const
     ToolId buttonToolId = canvasButtonToToolId(button);
 
     bool isButtonActive = (buttonToolId == m_currentToolId) && isDrawingTool(buttonToolId) && m_showSubToolbar;
-    bool isToggleActive = ((button == CanvasButton::CursorHighlight) && m_rippleRenderer->isEnabled()) ||
-                          ((button == CanvasButton::Spotlight) && m_spotlightEffect->isEnabled());
     bool isBgModeActive = ((button == CanvasButton::Whiteboard) && m_bgMode == CanvasBackgroundMode::Whiteboard) ||
                           ((button == CanvasButton::Blackboard) && m_bgMode == CanvasBackgroundMode::Blackboard);
 
@@ -336,7 +317,7 @@ QColor ScreenCanvas::getButtonIconColor(int buttonId) const
     if (button == CanvasButton::Redo && !m_annotationLayer->canRedo()) {
         return QColor(128, 128, 128);  // Gray for disabled redo
     }
-    if (isButtonActive || isToggleActive || isBgModeActive) {
+    if (isButtonActive || isBgModeActive) {
         return m_toolbarStyleConfig.iconActiveColor;
     }
     return m_toolbarStyleConfig.iconNormalColor;
@@ -353,8 +334,6 @@ QString ScreenCanvas::getIconKeyForButton(CanvasButton button) const
     case CanvasButton::EmojiSticker:    return "emoji";
     case CanvasButton::Text:            return "text";
     case CanvasButton::LaserPointer:    return "laser-pointer";
-    case CanvasButton::CursorHighlight: return "cursor-highlight";
-    case CanvasButton::Spotlight:       return "spotlight";
     case CanvasButton::Whiteboard:      return "whiteboard";
     case CanvasButton::Blackboard:      return "blackboard";
     case CanvasButton::Undo:            return "undo";
@@ -485,14 +464,6 @@ void ScreenCanvas::paintEvent(QPaintEvent*)
     // Draw laser pointer trail
     m_laserRenderer->draw(painter);
 
-    // Draw click ripple effects
-    m_rippleRenderer->draw(painter);
-
-    // Draw spotlight effect
-    if (m_spotlightEffect->isEnabled()) {
-        m_spotlightEffect->render(painter, rect());
-    }
-
     // Update toolbar position only when not dragging (dragging sets position directly)
     if (!m_isDraggingToolbar) {
         updateToolbarPosition();
@@ -513,14 +484,6 @@ void ScreenCanvas::paintEvent(QPaintEvent*)
         case ToolId::LaserPointer: activeButtonId = static_cast<int>(CanvasButton::LaserPointer); break;
         default: activeButtonId = -1; break;
         }
-    }
-    // Handle CursorHighlight toggle separately
-    if (m_rippleRenderer->isEnabled()) {
-        activeButtonId = static_cast<int>(CanvasButton::CursorHighlight);
-    }
-    // Handle Spotlight toggle separately
-    if (m_spotlightEffect->isEnabled()) {
-        activeButtonId = static_cast<int>(CanvasButton::Spotlight);
     }
     // Handle Whiteboard/Blackboard background mode
     if (m_bgMode == CanvasBackgroundMode::Whiteboard) {
@@ -679,20 +642,6 @@ void ScreenCanvas::handleToolbarClick(CanvasButton button)
         update();
         break;
 
-    case CanvasButton::CursorHighlight:
-        // Toggle cursor highlight (not a drawing tool)
-        m_rippleRenderer->setEnabled(!m_rippleRenderer->isEnabled());
-        qDebug() << "ScreenCanvas: Cursor Highlight" << (m_rippleRenderer->isEnabled() ? "enabled" : "disabled");
-        update();
-        break;
-
-    case CanvasButton::Spotlight:
-        // Toggle spotlight effect (not a drawing tool)
-        m_spotlightEffect->setEnabled(!m_spotlightEffect->isEnabled());
-        qDebug() << "ScreenCanvas: Spotlight" << (m_spotlightEffect->isEnabled() ? "enabled" : "disabled");
-        update();
-        break;
-
     case CanvasButton::Whiteboard:
         // Toggle whiteboard mode
         qDebug() << "ScreenCanvas: Whiteboard clicked, current m_bgMode:" << static_cast<int>(m_bgMode);
@@ -834,11 +783,6 @@ void ScreenCanvas::mousePressEvent(QMouseEvent* event)
             }
         }
 
-        // Trigger click ripple if enabled
-        if (m_rippleRenderer->isEnabled()) {
-            m_rippleRenderer->triggerRipple(event->pos());
-        }
-
         // Handle laser pointer drawing
         if (m_currentToolId == ToolId::LaserPointer) {
             m_laserRenderer->startDrawing(event->pos());
@@ -872,11 +816,6 @@ void ScreenCanvas::mouseMoveEvent(QMouseEvent* event)
     // Track cursor position for cursor dot
     QPoint oldCursorPos = m_cursorPos;
     m_cursorPos = event->pos();
-
-    // Update spotlight cursor position
-    if (m_spotlightEffect->isEnabled()) {
-        m_spotlightEffect->updateCursorPosition(event->pos());
-    }
 
     // Handle toolbar drag
     if (m_isDraggingToolbar) {
