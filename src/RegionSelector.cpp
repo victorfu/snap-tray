@@ -995,8 +995,8 @@ void RegionSelector::paintEvent(QPaintEvent* event)
                 m_colorAndWidthWidget->setShowAutoBlurSection(isMosaicTool);
                 m_colorAndWidthWidget->setShowMosaicBlurTypeSection(isMosaicTool);
                 if (isMosaicTool) {
-                    bool autoBlurAvailable = m_autoBlurManager && m_autoBlurManager->isInitialized();
-                    m_colorAndWidthWidget->setAutoBlurEnabled(autoBlurAvailable);
+                    // Always enable - lazy initialization happens in performAutoBlur()
+                    m_colorAndWidthWidget->setAutoBlurEnabled(m_autoBlurManager != nullptr);
                 }
                 m_colorAndWidthWidget->updatePosition(m_toolbar->boundingRect(), false, width());
                 m_colorAndWidthWidget->draw(painter);
