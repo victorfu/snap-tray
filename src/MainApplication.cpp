@@ -512,10 +512,13 @@ void MainApplication::onPreviewDiscardRequested()
 void MainApplication::updateTrayMenuHotkeyText(const QString& hotkey)
 {
     if (m_regionCaptureAction) {
-        m_regionCaptureAction->setText(QString("Region Capture (%1)").arg(hotkey));
+        // Convert to native display format (⌘ on macOS, Ctrl on Windows)
+        QString displayHotkey = QKeySequence(hotkey).toString(QKeySequence::NativeText);
+        m_regionCaptureAction->setText(QString("Region Capture (%1)").arg(displayHotkey));
     }
     if (m_screenCanvasAction) {
         QString screenCanvasHotkey = SettingsDialog::loadScreenCanvasHotkey();
-        m_screenCanvasAction->setText(QString("Screen Canvas (%1)").arg(screenCanvasHotkey));
+        QString displayHotkey = QKeySequence(screenCanvasHotkey).toString(QKeySequence::NativeText);
+        m_screenCanvasAction->setText(QString("Screen Canvas (%1)").arg(displayHotkey));
     }
 }
