@@ -118,16 +118,6 @@ void ToolRegistry::registerTools() {
         false, QColor()
     });
 
-    registerTool({
-        ToolId::Eraser,
-        "eraser",
-        "Eraser",
-        "",
-        ToolCategory::Drawing,
-        false, false, false, false, false, false,  // no color/width
-        false, QColor()
-    });
-
     // Toggle tools
     registerTool({
         ToolId::LaserPointer,
@@ -290,7 +280,6 @@ QVector<ToolId> ToolRegistry::getToolsForToolbar(ToolbarType type) const {
             ToolId::Mosaic,
             ToolId::StepBadge,
             ToolId::EmojiSticker,
-            ToolId::Eraser,
             ToolId::Undo,
             ToolId::Redo,
             ToolId::Cancel,

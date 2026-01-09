@@ -62,7 +62,6 @@ enum class ToolbarButton {
     Mosaic,
     StepBadge,
     EmojiSticker,
-    Eraser,
     Undo,
     Redo,
     Cancel,
@@ -90,7 +89,6 @@ inline ToolId toolbarButtonToToolId(ToolbarButton btn) {
     case ToolbarButton::Mosaic:     return ToolId::Mosaic;
     case ToolbarButton::StepBadge:  return ToolId::StepBadge;
     case ToolbarButton::EmojiSticker: return ToolId::EmojiSticker;
-    case ToolbarButton::Eraser:     return ToolId::Eraser;
     case ToolbarButton::Undo:       return ToolId::Undo;
     case ToolbarButton::Redo:       return ToolId::Redo;
     case ToolbarButton::Cancel:     return ToolId::Cancel;
@@ -118,7 +116,6 @@ inline bool isToolManagerHandledTool(ToolbarButton btn) {
     case ToolbarButton::Mosaic:
     case ToolbarButton::StepBadge:
     case ToolbarButton::EmojiSticker:
-    case ToolbarButton::Eraser:
         return true;
     default:
         return false;
@@ -267,7 +264,6 @@ private:
     bool m_showSubToolbar;
     QColor m_annotationColor;
     int m_annotationWidth;
-    int m_eraserWidth = 20;  // Separate width for eraser tool (range: 5-100)
     LineEndStyle m_arrowStyle;
     LineStyle m_lineStyle = LineStyle::Solid;
     StepBadgeSize m_stepBadgeSize = StepBadgeSize::Medium;

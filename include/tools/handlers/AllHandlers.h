@@ -10,7 +10,6 @@
 #include "MosaicToolHandler.h"
 #include "StepBadgeToolHandler.h"
 #include "EmojiStickerToolHandler.h"
-#include "EraserToolHandler.h"
 #include "SelectionToolHandler.h"
 #include "LaserPointerToolHandler.h"
 

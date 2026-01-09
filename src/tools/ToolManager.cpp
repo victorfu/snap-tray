@@ -1,7 +1,6 @@
 #include "tools/ToolManager.h"
 #include "tools/ToolRegistry.h"
 #include "tools/handlers/AllHandlers.h"
-#include "tools/handlers/EraserToolHandler.h"
 
 #include <QPainter>
 
@@ -35,7 +34,6 @@ void ToolManager::registerDefaultHandlers() {
     registerHandler(std::make_unique<MosaicToolHandler>());
     registerHandler(std::make_unique<StepBadgeToolHandler>());
     registerHandler(std::make_unique<EmojiStickerToolHandler>());
-    registerHandler(std::make_unique<EraserToolHandler>());
     registerHandler(std::make_unique<LaserPointerToolHandler>());
 }
 
@@ -55,13 +53,6 @@ void ToolManager::setCurrentTool(ToolId id) {
     // Activate new handler
     if (auto* newHandler = currentHandler()) {
         newHandler->onActivate(m_context.get());
-
-        // Sync eraser width when switching to Eraser tool
-        if (id == ToolId::Eraser) {
-            if (auto* eraser = dynamic_cast<EraserToolHandler*>(newHandler)) {
-                eraser->setWidth(m_context->eraserWidth);
-            }
-        }
     }
 
     Q_UNUSED(oldTool);
@@ -155,14 +146,6 @@ void ToolManager::setColor(const QColor& color) {
 
 void ToolManager::setWidth(int width) {
     m_context->width = width;
-
-    // Sync width to EraserToolHandler if it's active
-    if (m_currentToolId == ToolId::Eraser) {
-        if (auto* eraser = dynamic_cast<EraserToolHandler*>(currentHandler())) {
-            eraser->setWidth(width);
-            m_context->eraserWidth = width;
-        }
-    }
 }
 
 void ToolManager::setArrowStyle(LineEndStyle style) {

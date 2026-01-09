@@ -21,7 +21,6 @@ enum class ToolId {
     Mosaic,
     StepBadge,
     EmojiSticker,
-    Eraser,
 
     // Toggle tools (affect canvas behavior)
     LaserPointer,

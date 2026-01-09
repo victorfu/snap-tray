@@ -38,9 +38,6 @@ public:
     int shapeType = 0;      // 0 = Rectangle, 1 = Ellipse
     int shapeFillMode = 0;  // 0 = Outline, 1 = Filled
 
-    // Eraser tool settings
-    int eraserWidth = 20;
-
     // Mosaic tool settings
     MosaicStroke::BlurType mosaicBlurType = MosaicStroke::BlurType::Pixelate;
 

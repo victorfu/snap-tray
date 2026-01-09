@@ -5,7 +5,6 @@
 #include "annotations/MosaicStroke.h"
 #include "annotations/StepBadgeAnnotation.h"
 #include "annotations/EmojiStickerAnnotation.h"
-#include "annotations/EraserStroke.h"
 #include "annotations/ErasedItemsGroup.h"
 #include <QImage>
 #include <QPixmap>
@@ -141,54 +140,11 @@ void AnnotationLayer::draw(QPainter &painter) const
 {
     if (m_items.empty()) return;
 
-    bool hasEraserStroke = false;
-    for (const auto &item : m_items) {
-        if (dynamic_cast<const EraserStroke*>(item.get())) {
-            hasEraserStroke = true;
-            break;
-        }
-    }
-
-    if (!hasEraserStroke) {
-        for (const auto &item : m_items) {
-            if (item->isVisible()) {
-                item->draw(painter);
-            }
-        }
-        return;
-    }
-
-    QSize baseSize(painter.device()->width(), painter.device()->height());
-    qreal dpr = painter.device()->devicePixelRatioF();
-    QSize deviceSize = baseSize;
-    if (!dynamic_cast<const QPixmap*>(painter.device()) &&
-        !dynamic_cast<const QImage*>(painter.device())) {
-        deviceSize = QSize(qRound(baseSize.width() * dpr), qRound(baseSize.height() * dpr));
-    }
-
-    if (deviceSize.isEmpty()) return;
-
-    QImage layer(deviceSize, QImage::Format_ARGB32_Premultiplied);
-    layer.setDevicePixelRatio(dpr);
-    layer.fill(Qt::transparent);
-
-    QPainter layerPainter(&layer);
-    layerPainter.setRenderHints(painter.renderHints(), true);
-    layerPainter.setTransform(painter.transform());
-
     for (const auto &item : m_items) {
         if (item->isVisible()) {
-            item->draw(layerPainter);
+            item->draw(painter);
         }
     }
-
-    layerPainter.end();
-
-    // Save transform, reset it to draw layer at correct position, then restore
-    QTransform savedTransform = painter.transform();
-    painter.resetTransform();
-    painter.drawImage(QPoint(0, 0), layer);
-    painter.setTransform(savedTransform);
 }
 
 bool AnnotationLayer::canUndo() const

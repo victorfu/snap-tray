@@ -4,7 +4,6 @@
 #include "annotations/StepBadgeAnnotation.h"
 #include "tools/ToolManager.h"
 #include "tools/ToolId.h"
-#include "tools/handlers/EraserToolHandler.h"
 #include "ToolbarWidget.h"
 #include "ColorAndWidthWidget.h"
 #include "IconRenderer.h"
@@ -80,7 +79,6 @@ void RegionToolbarHandler::setupToolbarButtons()
     iconRenderer.loadIcon("mosaic", ":/icons/icons/mosaic.svg");
     iconRenderer.loadIcon("step-badge", ":/icons/icons/step-badge.svg");
     iconRenderer.loadIcon("emoji", ":/icons/icons/emoji.svg");
-    iconRenderer.loadIcon("eraser", ":/icons/icons/eraser.svg");
     iconRenderer.loadIcon("undo", ":/icons/icons/undo.svg");
     iconRenderer.loadIcon("redo", ":/icons/icons/redo.svg");
     iconRenderer.loadIcon("cancel", ":/icons/icons/cancel.svg");
@@ -127,7 +125,6 @@ void RegionToolbarHandler::setupToolbarButtons()
     buttons.append({ static_cast<int>(ToolbarButton::Mosaic), "mosaic", "Mosaic", false });
     buttons.append({ static_cast<int>(ToolbarButton::StepBadge), "step-badge", "Step Badge", false });
     buttons.append({ static_cast<int>(ToolbarButton::EmojiSticker), "emoji", "Emoji Sticker", false });
-    buttons.append({ static_cast<int>(ToolbarButton::Eraser), "eraser", "Eraser", false });
     buttons.append({ static_cast<int>(ToolbarButton::Undo), "undo", "Undo", true });
     buttons.append({ static_cast<int>(ToolbarButton::Redo), "redo", "Redo", false });
     buttons.append({ static_cast<int>(ToolbarButton::Cancel), "cancel", "Cancel (Esc)", true });  // separator before
@@ -157,8 +154,7 @@ void RegionToolbarHandler::setupToolbarButtons()
         static_cast<int>(ToolbarButton::Text),
         static_cast<int>(ToolbarButton::Mosaic),
         static_cast<int>(ToolbarButton::StepBadge),
-        static_cast<int>(ToolbarButton::EmojiSticker),
-        static_cast<int>(ToolbarButton::Eraser)
+        static_cast<int>(ToolbarButton::EmojiSticker)
     };
     m_toolbar->setActiveButtonIds(activeButtonIds);
 
@@ -210,16 +206,6 @@ QColor RegionToolbarHandler::getToolbarIconColor(int buttonId, bool isActive, bo
 
 void RegionToolbarHandler::handleToolbarClick(ToolbarButton button)
 {
-    // Save eraser width and clear hover when switching FROM Eraser to another tool
-    if (m_currentTool == ToolbarButton::Eraser && button != ToolbarButton::Eraser) {
-        saveEraserWidthAndClearHover();
-    }
-
-    // Restore standard width when switching to annotation tools (except Eraser)
-    if (button != ToolbarButton::Eraser && isAnnotationTool(button)) {
-        restoreStandardWidth();
-    }
-
     switch (button) {
     case ToolbarButton::Selection:
         // Selection has no sub-toolbar, just switch tool
@@ -246,10 +232,6 @@ void RegionToolbarHandler::handleToolbarClick(ToolbarButton button)
 
     case ToolbarButton::Mosaic:
         handleMosaicTool();
-        break;
-
-    case ToolbarButton::Eraser:
-        handleEraserTool();
         break;
 
     case ToolbarButton::Undo:
@@ -347,20 +329,6 @@ void RegionToolbarHandler::handleMosaicTool()
     emit updateRequested();
 }
 
-void RegionToolbarHandler::handleEraserTool()
-{
-    // Eraser has no sub-toolbar, just switch tool
-    m_currentTool = ToolbarButton::Eraser;
-    m_showSubToolbar = true;
-    if (m_toolManager) {
-        m_toolManager->setCurrentTool(ToolId::Eraser);
-        m_toolManager->setWidth(m_eraserWidth);
-    }
-    qDebug() << "Eraser tool selected - drag over annotations to erase them";
-    emit toolChanged(m_currentTool, m_showSubToolbar);
-    emit updateRequested();
-}
-
 void RegionToolbarHandler::handleActionButton(ToolbarButton button)
 {
     switch (button) {
@@ -428,31 +396,8 @@ bool RegionToolbarHandler::isAnnotationTool(ToolbarButton tool) const
     case ToolbarButton::Mosaic:
     case ToolbarButton::StepBadge:
     case ToolbarButton::EmojiSticker:
-    case ToolbarButton::Eraser:
         return true;
     default:
         return false;
-    }
-}
-
-void RegionToolbarHandler::saveEraserWidthAndClearHover()
-{
-    if (m_colorAndWidthWidget) {
-        m_eraserWidth = m_colorAndWidthWidget->currentWidth();
-    }
-    emit eraserHoverClearRequested();
-}
-
-void RegionToolbarHandler::restoreStandardWidth()
-{
-    // Mosaic now uses shared width with other tools, no special handling needed
-    if (m_currentTool == ToolbarButton::Eraser) {
-        // Reset width section hidden state and restore standard width
-        emit widthSectionHiddenRequested(false);
-        emit widthRangeRequested(1, 20);
-        emit currentWidthRequested(m_annotationWidth);
-        if (m_toolManager) {
-            m_toolManager->setWidth(m_annotationWidth);
-        }
     }
 }

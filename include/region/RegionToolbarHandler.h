@@ -56,13 +56,11 @@ public:
     // Current state
     ToolbarButton currentTool() const { return m_currentTool; }
     bool showSubToolbar() const { return m_showSubToolbar; }
-    int eraserWidth() const { return m_eraserWidth; }
     int annotationWidth() const { return m_annotationWidth; }
 
     // State setters (synced from RegionSelector before handle calls)
     void setCurrentTool(ToolbarButton tool) { m_currentTool = tool; }
     void setShowSubToolbar(bool show) { m_showSubToolbar = show; }
-    void setEraserWidth(int width) { m_eraserWidth = width; }
     void setAnnotationWidth(int width) { m_annotationWidth = width; }
     void setAnnotationColor(const QColor& color) { m_annotationColor = color; }
     void setStepBadgeSize(StepBadgeSize size);
@@ -98,20 +96,15 @@ signals:
     void currentWidthRequested(int width);
     void stepBadgeSizeRequested(StepBadgeSize size);
 
-    // Tool-specific signals
-    void eraserHoverClearRequested();
-
 private:
     // Tool switching helpers
     void handleAnnotationTool(ToolbarButton button);
     void handleStepBadgeTool();
     void handleMosaicTool();
-    void handleEraserTool();
     void handleActionButton(ToolbarButton button);
 
     // Tool state helpers
     bool isAnnotationTool(ToolbarButton tool) const;
-    void saveEraserWidthAndClearHover();
     void restoreStandardWidth();
 
     // Dependencies (non-owning pointers)
@@ -128,7 +121,6 @@ private:
     bool m_showSubToolbar = true;
     QColor m_annotationColor = Qt::red;
     int m_annotationWidth = 3;
-    int m_eraserWidth = 20;
     StepBadgeSize m_stepBadgeSize;
     bool m_ocrInProgress = false;
     bool m_multiRegionMode = false;

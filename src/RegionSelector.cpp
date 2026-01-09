@@ -17,7 +17,6 @@
 #include "detection/AutoBlurManager.h"
 #include "settings/AnnotationSettingsManager.h"
 #include "settings/FileSettingsManager.h"
-#include "tools/handlers/EraserToolHandler.h"
 #include "tools/handlers/MosaicToolHandler.h"
 #include "tools/handlers/EmojiStickerToolHandler.h"
 #include <QTextEdit>
@@ -71,12 +70,10 @@ static const std::map<ToolbarButton, ToolCapabilities> kToolCapabilities = {
     {ToolbarButton::Text,       {true,  false, true}},
     {ToolbarButton::Mosaic,     {false, true,  true}},
     {ToolbarButton::StepBadge,  {true,  false, true}},
-    {ToolbarButton::Eraser,     {false, true,  true}},
 };
 
-// Create a rounded square cursor for mosaic tool (matching EraserToolHandler pattern)
+// Create a rounded square cursor for mosaic tool
 static QCursor createMosaicCursor(int size) {
-    // Use same pattern as EraserToolHandler - no devicePixelRatio scaling
     int cursorSize = size + 4;  // Add margin for border
     QPixmap pixmap(cursorSize, cursorSize);
     pixmap.fill(Qt::transparent);
@@ -556,14 +553,6 @@ RegionSelector::RegionSelector(QWidget* parent)
     connect(m_toolbarHandler, &RegionToolbarHandler::stepBadgeSizeRequested,
         m_colorAndWidthWidget, &ColorAndWidthWidget::setStepBadgeSize);
 
-    // Connect eraser hover clear signal
-    connect(m_toolbarHandler, &RegionToolbarHandler::eraserHoverClearRequested,
-        this, [this]() {
-            if (auto* eraser = dynamic_cast<EraserToolHandler*>(m_toolManager->currentHandler())) {
-                eraser->clearHoverPoint();
-            }
-        });
-
     // Setup toolbar buttons via handler
     m_toolbarHandler->setupToolbarButtons();
 
@@ -646,11 +635,7 @@ void RegionSelector::onMoreColorsRequested()
 
 void RegionSelector::onLineWidthChanged(int width)
 {
-    if (m_currentTool == ToolbarButton::Eraser) {
-        m_eraserWidth = width;
-        // Don't save eraser width to settings
-    }
-    else if (m_currentTool == ToolbarButton::Mosaic) {
+    if (m_currentTool == ToolbarButton::Mosaic) {
         m_annotationWidth = width;
         // Update cursor to reflect new width
         setToolCursor();
@@ -725,9 +710,6 @@ bool RegionSelector::shouldShowWidthControl() const
 
 int RegionSelector::toolWidthForCurrentTool() const
 {
-    if (m_currentTool == ToolbarButton::Eraser) {
-        return m_eraserWidth;
-    }
     if (m_currentTool == ToolbarButton::StepBadge) {
         return StepBadgeAnnotation::radiusForSize(m_stepBadgeSize);
     }
@@ -1086,11 +1068,6 @@ void RegionSelector::setToolCursor()
         setCursor(getMosaicCursor(mosaicWidth));
         break;
     }
-    case ToolbarButton::Eraser:
-        if (auto* eraser = dynamic_cast<EraserToolHandler*>(m_toolManager->currentHandler())) {
-            setCursor(eraser->cursor());
-        }
-        break;
     case ToolbarButton::Selection:
         // Selection tool uses updateCursorForHandle separately
         break;
@@ -1107,7 +1084,6 @@ void RegionSelector::handleToolbarClick(ToolbarButton button)
     // Sync current state to handler
     m_toolbarHandler->setCurrentTool(m_currentTool);
     m_toolbarHandler->setShowSubToolbar(m_showSubToolbar);
-    m_toolbarHandler->setEraserWidth(m_eraserWidth);
     m_toolbarHandler->setAnnotationWidth(m_annotationWidth);
     m_toolbarHandler->setAnnotationColor(m_annotationColor);
     m_toolbarHandler->setStepBadgeSize(m_stepBadgeSize);
@@ -1295,22 +1271,6 @@ void RegionSelector::wheelEvent(QWheelEvent* event)
             StepBadgeSize newSize = static_cast<StepBadgeSize>(current);
             onStepBadgeSizeChanged(newSize);
             m_colorAndWidthWidget->setStepBadgeSize(newSize);
-            event->accept();
-            return;
-        }
-    }
-
-    // Handle scroll wheel for Eraser width adjustment (widget is hidden but wheel still works)
-    if (m_currentTool == ToolbarButton::Eraser) {
-        int delta = event->angleDelta().y();
-        if (delta != 0) {
-            int step = (delta > 0) ? 5 : -5;
-            int newWidth = qBound(5, m_eraserWidth + step, 100);
-            if (newWidth != m_eraserWidth) {
-                m_eraserWidth = newWidth;
-                m_toolManager->setWidth(m_eraserWidth);
-                update();
-            }
             event->accept();
             return;
         }
@@ -1552,7 +1512,6 @@ bool RegionSelector::isAnnotationTool(ToolbarButton tool) const
     case ToolbarButton::Mosaic:
     case ToolbarButton::StepBadge:
     case ToolbarButton::EmojiSticker:
-    case ToolbarButton::Eraser:
         return true;
     default:
         return false;

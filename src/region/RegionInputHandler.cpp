@@ -11,7 +11,6 @@
 #include "annotations/TextAnnotation.h"
 #include "annotations/EmojiStickerAnnotation.h"
 #include "tools/ToolManager.h"
-#include "tools/handlers/EraserToolHandler.h"
 #include "ToolbarWidget.h"
 #include "InlineTextEditor.h"
 #include "ColorAndWidthWidget.h"
@@ -791,7 +790,7 @@ void RegionInputHandler::handleAnnotationMove(const QPoint& pos)
 {
     updateAnnotation(pos);
 
-    if (m_currentTool == ToolbarButton::Mosaic || m_currentTool == ToolbarButton::Eraser) {
+    if (m_currentTool == ToolbarButton::Mosaic) {
         emit toolCursorRequested();
     }
 }
@@ -825,6 +824,14 @@ void RegionInputHandler::handleHoverMove(const QPoint& pos, Qt::MouseButtons but
             }
         }
 
+        // Check color/width widget before falling back to CrossCursor
+        if (shouldShowColorAndWidthWidget() && m_colorAndWidthWidget->contains(pos)) {
+            m_colorAndWidthWidget->handleMouseMove(pos, buttons & Qt::LeftButton);
+            m_colorAndWidthWidget->updateHovered(pos);
+            m_parentWidget->setCursor(Qt::PointingHandCursor);
+            return;
+        }
+
         // Everything else in multi-region mode shows CrossCursor
         m_parentWidget->setCursor(Qt::CrossCursor);
         return;
@@ -835,16 +842,10 @@ void RegionInputHandler::handleHoverMove(const QPoint& pos, Qt::MouseButtons but
     bool unifiedWidgetHovered = false;
     bool textAnnotationHovered = false;
     bool emojiStickerHovered = false;
+    bool emojiPickerHovered = false;
     bool gizmoHandleHovered = false;
     bool aspectRatioHovered = false;
     bool radiusSliderHovered = false;
-
-    // Update eraser hover point
-    if (m_currentTool == ToolbarButton::Eraser && !m_isDrawing) {
-        if (auto* eraser = dynamic_cast<EraserToolHandler*>(m_toolManager->currentHandler())) {
-            eraser->setHoverPoint(pos);
-        }
-    }
 
     // Check gizmo handles
     if (auto* textItem = getSelectedTextAnnotation()) {
@@ -881,7 +882,9 @@ void RegionInputHandler::handleHoverMove(const QPoint& pos, Qt::MouseButtons but
             emit updateRequested();
         }
         if (m_aspectRatioWidget->contains(pos)) {
-            emitCursorChangeIfNeeded(Qt::PointingHandCursor);
+            if (m_parentWidget) {
+                m_parentWidget->setCursor(Qt::PointingHandCursor);
+            }
             aspectRatioHovered = true;
         }
     }
@@ -892,30 +895,45 @@ void RegionInputHandler::handleHoverMove(const QPoint& pos, Qt::MouseButtons but
             emit updateRequested();
         }
         if (m_radiusSliderWidget->contains(pos)) {
-            emitCursorChangeIfNeeded(Qt::PointingHandCursor);
+            if (m_parentWidget) {
+                m_parentWidget->setCursor(Qt::PointingHandCursor);
+            }
             radiusSliderHovered = true;
         }
     }
 
+    const bool colorAndWidthVisible = shouldShowColorAndWidthWidget();
+    const bool colorPaletteVisible = shouldShowColorPalette();
+
     // Update color/width widget
-    if (shouldShowColorAndWidthWidget()) {
+    if (colorAndWidthVisible) {
         if (m_colorAndWidthWidget->handleMouseMove(pos, buttons & Qt::LeftButton)) {
+            if (m_colorAndWidthWidget->contains(pos)) {
+                if (m_parentWidget) {
+                    m_parentWidget->setCursor(Qt::PointingHandCursor);
+                }
+                unifiedWidgetHovered = true;
+            }
             emit updateRequested();
         }
         if (m_colorAndWidthWidget->updateHovered(pos)) {
             emit updateRequested();
         }
         if (m_colorAndWidthWidget->contains(pos)) {
-            emitCursorChangeIfNeeded(Qt::PointingHandCursor);
+            if (m_parentWidget) {
+                m_parentWidget->setCursor(Qt::PointingHandCursor);
+            }
             unifiedWidgetHovered = true;
         }
     }
 
     // Legacy color palette
-    if (!shouldShowColorAndWidthWidget() && shouldShowColorPalette()) {
+    if (colorPaletteVisible) {
         if (m_colorPalette->updateHoveredSwatch(pos)) {
             if (m_colorPalette->contains(pos)) {
-                emitCursorChangeIfNeeded(Qt::PointingHandCursor);
+                if (m_parentWidget) {
+                    m_parentWidget->setCursor(Qt::PointingHandCursor);
+                }
                 colorPaletteHovered = true;
             }
         }
@@ -930,38 +948,27 @@ void RegionInputHandler::handleHoverMove(const QPoint& pos, Qt::MouseButtons but
             emit updateRequested();
         }
         if (m_emojiPicker->contains(pos)) {
-            emitCursorChangeIfNeeded(Qt::PointingHandCursor);
+            if (m_parentWidget) {
+                m_parentWidget->setCursor(Qt::PointingHandCursor);
+            }
+            emojiPickerHovered = true;
         }
     }
 
     // Update toolbar hover
-    bool hoverChanged = m_toolbar->updateHoveredButton(pos);
-    int hoveredButton = m_toolbar->hoveredButton();
-    if (hoverChanged) {
-        if (hoveredButton >= 0) {
-            emitCursorChangeIfNeeded(Qt::PointingHandCursor);
-        }
-        else if (!colorPaletteHovered && !unifiedWidgetHovered &&
-            !textAnnotationHovered && !emojiStickerHovered && !gizmoHandleHovered &&
-            !aspectRatioHovered && !radiusSliderHovered) {
-            if (m_currentTool == ToolbarButton::Selection) {
-                auto handle = m_selectionManager->hitTestHandle(pos);
-                updateCursorForHandle(handle);
-            }
-            else {
-                emit toolCursorRequested();
-            }
-        }
-    }
-
-    // Toolbar area cursor
+    m_toolbar->updateHoveredButton(pos);
     bool toolbarHovered = m_toolbar->contains(pos);
-    if (toolbarHovered) {
-        emitCursorChangeIfNeeded(Qt::PointingHandCursor);
+    bool toolbarButtonHovered = m_toolbar->hoveredButton() >= 0;
+    bool uiHovered = toolbarHovered || toolbarButtonHovered ||
+        unifiedWidgetHovered || colorPaletteHovered || emojiPickerHovered ||
+        aspectRatioHovered || radiusSliderHovered;
+
+    if (uiHovered) {
+        if (m_parentWidget) {
+            m_parentWidget->setCursor(Qt::PointingHandCursor);
+        }
     }
-    else if (!colorPaletteHovered && !unifiedWidgetHovered &&
-        !textAnnotationHovered && !emojiStickerHovered && !gizmoHandleHovered &&
-        !aspectRatioHovered && !radiusSliderHovered) {
+    else if (!textAnnotationHovered && !emojiStickerHovered && !gizmoHandleHovered) {
         if (m_currentTool == ToolbarButton::Selection) {
             auto handle = m_selectionManager->hitTestHandle(pos);
             updateCursorForHandle(handle);
@@ -970,6 +977,7 @@ void RegionInputHandler::handleHoverMove(const QPoint& pos, Qt::MouseButtons but
             emit toolCursorRequested();
         }
     }
+    qDebug() << "Final cursor decision - toolbarHovered:" << toolbarHovered << "unifiedWidgetHovered:" << unifiedWidgetHovered;
 }
 
 void RegionInputHandler::handleThrottledUpdate()
@@ -1320,39 +1328,15 @@ EmojiStickerAnnotation* RegionInputHandler::getSelectedEmojiStickerAnnotation() 
 
 bool RegionInputHandler::shouldShowColorPalette() const
 {
-    if (!m_selectionManager->isComplete()) return false;
-    if (!m_showSubToolbar) return false;
-
-    switch (m_currentTool) {
-    case ToolbarButton::Pencil:
-    case ToolbarButton::Marker:
-    case ToolbarButton::Arrow:
-    case ToolbarButton::Shape:
-    case ToolbarButton::Text:
-    case ToolbarButton::StepBadge:
-        return true;
-    default:
-        return false;
-    }
+    if (!m_colorPalette) return false;
+    if (shouldShowColorAndWidthWidget()) return false;
+    return m_colorPalette->isVisible();
 }
 
 bool RegionInputHandler::shouldShowColorAndWidthWidget() const
 {
-    if (!m_selectionManager->isComplete()) return false;
-    if (!m_showSubToolbar) return false;
-
-    switch (m_currentTool) {
-    case ToolbarButton::Pencil:
-    case ToolbarButton::Marker:
-    case ToolbarButton::Arrow:
-    case ToolbarButton::Shape:
-    case ToolbarButton::Text:
-    case ToolbarButton::Mosaic:
-    case ToolbarButton::StepBadge:
-        return true;
-    default:
-        return false;
-    }
+    if (!m_colorAndWidthWidget) return false;
+    return m_colorAndWidthWidget->isVisible();
 }
 
 bool RegionInputHandler::isAnnotationTool(ToolbarButton tool) const
@@ -1366,7 +1350,6 @@ bool RegionInputHandler::isAnnotationTool(ToolbarButton tool) const
     case ToolbarButton::Mosaic:
     case ToolbarButton::StepBadge:
     case ToolbarButton::EmojiSticker:
-    case ToolbarButton::Eraser:
         return true;
     default:
         return false;
