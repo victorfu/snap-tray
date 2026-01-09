@@ -1,6 +1,7 @@
 #include "region/MultiRegionManager.h"
 
 #include <QDebug>
+#include <QPainter>
 
 namespace {
 const QVector<QColor> kRegionColors = {
@@ -144,17 +145,44 @@ QImage MultiRegionManager::mergeToSingleImage(const QPixmap& background, qreal d
     }
 
     QRect bounds = boundingBox();
-    QPixmap merged = background.copy(
-        static_cast<int>(bounds.x() * dpr),
-        static_cast<int>(bounds.y() * dpr),
-        static_cast<int>(bounds.width() * dpr),
-        static_cast<int>(bounds.height() * dpr)
-    );
-    merged.setDevicePixelRatio(dpr);
 
-    QImage image = merged.toImage();
-    image.setDevicePixelRatio(dpr);
-    return image;
+    // Create a transparent image of the bounding box size (in physical pixels)
+    int physWidth = qRound(bounds.width() * dpr);
+    int physHeight = qRound(bounds.height() * dpr);
+
+    QImage result(physWidth, physHeight, QImage::Format_ARGB32_Premultiplied);
+    result.fill(Qt::transparent);
+
+    QPainter painter(&result);
+    painter.setRenderHint(QPainter::SmoothPixmapTransform, false);
+    painter.setRenderHint(QPainter::Antialiasing, false);
+
+    for (const auto& region : m_regions) {
+        // Extract raw pixels for this region from background
+        // We assume background.copy() with these coordinates extracts the correct raw pixels
+        // matching the region's position on screen.
+        QPixmap regionPix = background.copy(
+            static_cast<int>(region.rect.x() * dpr),
+            static_cast<int>(region.rect.y() * dpr),
+            static_cast<int>(region.rect.width() * dpr),
+            static_cast<int>(region.rect.height() * dpr)
+        );
+
+        // Ensure we treat this as a raw bitmap for 1:1 copying
+        regionPix.setDevicePixelRatio(1.0);
+
+        // Calculate target position in the result image (physical coords)
+        int targetX = static_cast<int>((region.rect.x() - bounds.x()) * dpr);
+        int targetY = static_cast<int>((region.rect.y() - bounds.y()) * dpr);
+
+        painter.drawPixmap(targetX, targetY, regionPix);
+    }
+
+    painter.end();
+
+    // Set the correct DPR on the result so it renders correctly in logical coords later
+    result.setDevicePixelRatio(dpr);
+    return result;
 }
 
 QVector<QImage> MultiRegionManager::separateImages(const QPixmap& background, qreal dpr) const

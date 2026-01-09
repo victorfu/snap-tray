@@ -1402,7 +1402,12 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
         qDebug() << "RegionSelector: Copied color to clipboard:" << colorText;
     }
     else if (event->matches(QKeySequence::Undo)) {
-        if (m_selectionManager->isComplete() && m_annotationLayer->canUndo()) {
+        if (m_multiRegionMode && m_multiRegionManager) {
+            if (m_multiRegionManager->count() > 0) {
+                m_multiRegionManager->removeRegion(m_multiRegionManager->count() - 1);
+            }
+        }
+        else if (m_selectionManager->isComplete() && m_annotationLayer->canUndo()) {
             m_annotationLayer->undo();
             update();
         }
@@ -1414,8 +1419,14 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
         }
     }
     else if (event->key() == Qt::Key_Delete || event->key() == Qt::Key_Backspace) {
+        if (m_multiRegionMode && m_multiRegionManager) {
+            int activeIndex = m_multiRegionManager->activeIndex();
+            if (activeIndex >= 0) {
+                m_multiRegionManager->removeRegion(activeIndex);
+            }
+        }
         // Delete selected text annotation
-        if (m_selectionManager->isComplete() && m_annotationLayer->selectedIndex() >= 0) {
+        else if (m_selectionManager->isComplete() && m_annotationLayer->selectedIndex() >= 0) {
             m_annotationLayer->removeSelectedItem();
             update();
         }
