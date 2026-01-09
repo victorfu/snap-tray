@@ -44,7 +44,6 @@ enum class CanvasButton {
     Marker,
     Arrow,
     Shape,          // Unified Rectangle/Ellipse
-    Mosaic,
     StepBadge,
     Text,
     EmojiSticker,
@@ -67,7 +66,6 @@ inline ToolId canvasButtonToToolId(CanvasButton btn) {
     case CanvasButton::Marker:       return ToolId::Marker;
     case CanvasButton::Arrow:        return ToolId::Arrow;
     case CanvasButton::Shape:        return ToolId::Shape;
-    case CanvasButton::Mosaic:       return ToolId::Mosaic;
     case CanvasButton::StepBadge:    return ToolId::StepBadge;
     case CanvasButton::Text:         return ToolId::Text;
     case CanvasButton::EmojiSticker: return ToolId::EmojiSticker;
@@ -147,9 +145,8 @@ private:
     // Text editing handlers
     void onTextEditingFinished(const QString &text, const QPoint &position);
 
-    // Screen capture
+    // Background pixmap (used for Whiteboard/Blackboard modes)
     QPixmap m_backgroundPixmap;
-    QPixmap m_originalScreenPixmap;  // Original screenshot captured at initialization
     QPointer<QScreen> m_currentScreen;
     qreal m_devicePixelRatio;
 
@@ -207,7 +204,6 @@ private:
 
     // Background mode helpers
     void setBackgroundMode(CanvasBackgroundMode mode);
-    void refreshScreenBackground();
     QPixmap createSolidBackgroundPixmap(const QColor& color) const;
 };
 

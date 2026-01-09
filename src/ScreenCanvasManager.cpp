@@ -51,6 +51,7 @@ void ScreenCanvasManager::toggle()
         m_canvas->setGeometry(targetScreen->geometry());
         m_canvas->show();
         raiseWindowAboveMenuBar(m_canvas);
+        setWindowClickThrough(m_canvas, false);
         m_canvas->activateWindow();
         m_canvas->raise();
 

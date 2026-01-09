@@ -13,7 +13,6 @@
 #include "ToolbarWidget.h"
 #include "settings/AnnotationSettingsManager.h"
 #include "settings/Settings.h"
-#include "tools/handlers/MosaicToolHandler.h"
 #include "tools/handlers/EmojiStickerToolHandler.h"
 
 #include <QPainter>
@@ -40,7 +39,6 @@ static const std::map<ToolId, ToolCapabilities> kToolCapabilities = {
     {ToolId::Marker,       {true,  false, true}},
     {ToolId::Arrow,        {true,  true,  true}},
     {ToolId::Shape,        {true,  true,  true}},
-    {ToolId::Mosaic,       {false, true,  true}},
     {ToolId::StepBadge,    {true,  false, true}},
     {ToolId::Text,         {true,  false, true}},
     {ToolId::LaserPointer, {true,  true,  true}},
@@ -62,6 +60,7 @@ ScreenCanvas::ScreenCanvas(QWidget* parent)
 {
     setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::Tool);
     setAttribute(Qt::WA_DeleteOnClose);
+    setAttribute(Qt::WA_TranslucentBackground, true);
     setMouseTracking(true);
 
     // Initialize annotation layer
@@ -273,7 +272,6 @@ void ScreenCanvas::setupToolbar()
         {static_cast<int>(CanvasButton::Marker), "marker", "Marker"},
         {static_cast<int>(CanvasButton::Arrow), "arrow", "Arrow"},
         {static_cast<int>(CanvasButton::Shape), "shape", "Shape"},
-        {static_cast<int>(CanvasButton::Mosaic), "mosaic", "Mosaic"},
         {static_cast<int>(CanvasButton::StepBadge), "step-badge", "Step Badge"},
         {static_cast<int>(CanvasButton::EmojiSticker), "emoji", "Emoji Sticker"},
         {static_cast<int>(CanvasButton::Text), "text", "Text"},
@@ -295,7 +293,6 @@ void ScreenCanvas::setupToolbar()
         static_cast<int>(CanvasButton::Marker),
         static_cast<int>(CanvasButton::Arrow),
         static_cast<int>(CanvasButton::Shape),
-        static_cast<int>(CanvasButton::Mosaic),
         static_cast<int>(CanvasButton::StepBadge),
         static_cast<int>(CanvasButton::EmojiSticker),
         static_cast<int>(CanvasButton::Text),
@@ -352,7 +349,6 @@ QString ScreenCanvas::getIconKeyForButton(CanvasButton button) const
     case CanvasButton::Marker:          return "marker";
     case CanvasButton::Arrow:           return "arrow";
     case CanvasButton::Shape:           return "shape";
-    case CanvasButton::Mosaic:          return "mosaic";
     case CanvasButton::StepBadge:       return "step-badge";
     case CanvasButton::EmojiSticker:    return "emoji";
     case CanvasButton::Text:            return "text";
@@ -453,18 +449,10 @@ void ScreenCanvas::initializeForScreen(QScreen* screen)
     }
 
     m_devicePixelRatio = m_currentScreen->devicePixelRatio();
-
-    // Capture the screen and store original for later restoration
-    m_originalScreenPixmap = m_currentScreen->grabWindow(0);
-    m_backgroundPixmap = m_originalScreenPixmap;
-
-    // Update tool manager with background pixmap for mosaic tool
-    m_toolManager->setSourcePixmap(&m_backgroundPixmap);
     m_toolManager->setDevicePixelRatio(m_devicePixelRatio);
 
     qDebug() << "ScreenCanvas: Initialized for screen" << m_currentScreen->name()
         << "logical size:" << m_currentScreen->geometry().size()
-        << "pixmap size:" << m_backgroundPixmap.size()
         << "devicePixelRatio:" << m_devicePixelRatio;
 
     // Lock window size
@@ -483,8 +471,10 @@ void ScreenCanvas::paintEvent(QPaintEvent*)
     painter.setRenderHint(QPainter::SmoothPixmapTransform);
     painter.setRenderHint(QPainter::Antialiasing);
 
-    // Draw background screenshot
-    painter.drawPixmap(rect(), m_backgroundPixmap);
+    // Draw background only in non-transparent modes (Whiteboard/Blackboard)
+    if (m_bgMode != CanvasBackgroundMode::Screen) {
+        painter.drawPixmap(rect(), m_backgroundPixmap);
+    }
 
     // Draw completed annotations
     drawAnnotations(painter);
@@ -517,7 +507,6 @@ void ScreenCanvas::paintEvent(QPaintEvent*)
         case ToolId::Marker: activeButtonId = static_cast<int>(CanvasButton::Marker); break;
         case ToolId::Arrow: activeButtonId = static_cast<int>(CanvasButton::Arrow); break;
         case ToolId::Shape: activeButtonId = static_cast<int>(CanvasButton::Shape); break;
-        case ToolId::Mosaic: activeButtonId = static_cast<int>(CanvasButton::Mosaic); break;
         case ToolId::StepBadge: activeButtonId = static_cast<int>(CanvasButton::StepBadge); break;
         case ToolId::Text: activeButtonId = static_cast<int>(CanvasButton::Text); break;
         case ToolId::EmojiSticker: activeButtonId = static_cast<int>(CanvasButton::EmojiSticker); break;
@@ -556,8 +545,7 @@ void ScreenCanvas::paintEvent(QPaintEvent*)
         m_colorAndWidthWidget->setShowLineStyleSection(showLineStyle);
         // Show shape section for Shape tool
         m_colorAndWidthWidget->setShowShapeSection(m_currentToolId == ToolId::Shape);
-        // Hide color section for Mosaic tool
-        m_colorAndWidthWidget->setShowColorSection(m_currentToolId != ToolId::Mosaic);
+        m_colorAndWidthWidget->setShowColorSection(true);
         // Show size section for StepBadge (replaces width section)
         m_colorAndWidthWidget->setShowSizeSection(m_currentToolId == ToolId::StepBadge);
         // Show text section for Text tool
@@ -628,7 +616,6 @@ void ScreenCanvas::handleToolbarClick(CanvasButton button)
     case CanvasButton::Marker:
     case CanvasButton::Arrow:
     case CanvasButton::Shape:
-    case CanvasButton::Mosaic:
     case CanvasButton::Text:
         if (m_currentToolId == toolId) {
             // Same tool clicked - toggle sub-toolbar visibility
@@ -769,7 +756,6 @@ bool ScreenCanvas::isDrawingTool(ToolId toolId) const
     case ToolId::Arrow:
     case ToolId::Shape:
     case ToolId::LaserPointer:
-    case ToolId::Mosaic:
     case ToolId::StepBadge:
     case ToolId::EmojiSticker:
     case ToolId::Text:
@@ -781,8 +767,6 @@ bool ScreenCanvas::isDrawingTool(ToolId toolId) const
 
 void ScreenCanvas::setToolCursor()
 {
-    // Use centralized cursor manager - it will get the cursor from IToolHandler::cursor()
-    // and handle special cases like Mosaic with dynamic size
     CursorManager::instance().updateToolCursor();
 }
 
@@ -992,10 +976,6 @@ void ScreenCanvas::mouseMoveEvent(QMouseEvent* event)
     // Cursor dot is 6px diameter, use 10px margin for safety
     if (m_cursorPos != oldCursorPos) {
         int cursorMargin = 10;
-        if (m_currentToolId == ToolId::Mosaic) {
-            cursorMargin = qMax(10, m_toolManager->width() / 2 + 5);
-        }
-
         update(QRect(oldCursorPos.x() - cursorMargin, oldCursorPos.y() - cursorMargin,
             cursorMargin * 2, cursorMargin * 2));
         update(QRect(m_cursorPos.x() - cursorMargin, m_cursorPos.y() - cursorMargin,
@@ -1103,12 +1083,6 @@ void ScreenCanvas::keyPressEvent(QKeyEvent* event)
             setBackgroundMode(CanvasBackgroundMode::Blackboard);
         }
     }
-    else if (event->key() == Qt::Key_R) {
-        // Refresh screenshot (only in Screen mode)
-        if (m_bgMode == CanvasBackgroundMode::Screen) {
-            refreshScreenBackground();
-        }
-    }
     else if (event->matches(QKeySequence::Undo)) {
         if (m_annotationLayer->canUndo()) {
             m_annotationLayer->undo();
@@ -1125,9 +1099,6 @@ void ScreenCanvas::keyPressEvent(QKeyEvent* event)
 
 void ScreenCanvas::drawCursorDot(QPainter& painter)
 {
-    // Mosaic uses system cursor only (like RegionSelector)
-    if (m_currentToolId == ToolId::Mosaic) return;
-
     // Don't show when drawing, on toolbar, or on widgets
     if (m_toolManager->isDrawing()) return;
     if (m_laserRenderer->isDrawing()) return;
@@ -1203,17 +1174,16 @@ void ScreenCanvas::setBackgroundMode(CanvasBackgroundMode mode)
 
     switch (mode) {
     case CanvasBackgroundMode::Screen:
-        refreshScreenBackground();
-        qDebug() << "ScreenCanvas: Switched to Screen mode";
+        // Transparent background - clear pixmap
+        m_backgroundPixmap = QPixmap();
+        qDebug() << "ScreenCanvas: Switched to Screen mode (transparent)";
         break;
     case CanvasBackgroundMode::Whiteboard:
         m_backgroundPixmap = createSolidBackgroundPixmap(Qt::white);
-        m_toolManager->setSourcePixmap(&m_backgroundPixmap);
         qDebug() << "ScreenCanvas: Switched to Whiteboard mode";
         break;
     case CanvasBackgroundMode::Blackboard:
         m_backgroundPixmap = createSolidBackgroundPixmap(Qt::black);
-        m_toolManager->setSourcePixmap(&m_backgroundPixmap);
         qDebug() << "ScreenCanvas: Switched to Blackboard mode";
         break;
     }
@@ -1221,14 +1191,6 @@ void ScreenCanvas::setBackgroundMode(CanvasBackgroundMode mode)
     update();
 }
 
-void ScreenCanvas::refreshScreenBackground()
-{
-    // Restore original screenshot (don't re-capture as window is visible)
-    m_backgroundPixmap = m_originalScreenPixmap;
-    m_toolManager->setSourcePixmap(&m_backgroundPixmap);
-    qDebug() << "ScreenCanvas: Screenshot restored from original";
-    update();
-}
 
 QPixmap ScreenCanvas::createSolidBackgroundPixmap(const QColor& color) const
 {
