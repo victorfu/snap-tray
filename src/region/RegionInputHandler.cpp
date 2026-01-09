@@ -942,6 +942,9 @@ void RegionInputHandler::handleHoverMove(const QPoint& pos, Qt::MouseButtons but
             emit toolCursorRequested();
         }
     }
+    if (m_currentTool == ToolbarButton::Eraser && m_toolManager && !uiHovered) {
+        m_toolManager->handleMouseMove(pos);
+    }
     qDebug() << "Final cursor decision - toolbarHovered:" << toolbarHovered << "unifiedWidgetHovered:" << unifiedWidgetHovered;
 }
 
@@ -1313,6 +1316,7 @@ bool RegionInputHandler::isAnnotationTool(ToolbarButton tool) const
     case ToolbarButton::Shape:
     case ToolbarButton::Text:
     case ToolbarButton::Mosaic:
+    case ToolbarButton::Eraser:
     case ToolbarButton::StepBadge:
     case ToolbarButton::EmojiSticker:
         return true;

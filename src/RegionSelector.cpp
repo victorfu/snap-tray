@@ -69,6 +69,7 @@ static const std::map<ToolbarButton, ToolCapabilities> kToolCapabilities = {
     {ToolbarButton::Shape,      {true,  true,  true}},
     {ToolbarButton::Text,       {true,  false, true}},
     {ToolbarButton::Mosaic,     {false, true,  true}},
+    {ToolbarButton::Eraser,     {false, false, false}},
     {ToolbarButton::StepBadge,  {true,  false, true}},
 };
 
@@ -1077,6 +1078,16 @@ void RegionSelector::setToolCursor()
         setCursor(getMosaicCursor(mosaicWidth));
         break;
     }
+    case ToolbarButton::Eraser: {
+        if (m_toolManager) {
+            if (auto* handler = m_toolManager->handler(ToolId::Eraser)) {
+                setCursor(handler->cursor());
+            } else {
+                setCursor(Qt::CrossCursor);
+            }
+        }
+        break;
+    }
     case ToolbarButton::Selection:
         // Selection tool uses updateCursorForHandle separately
         break;
@@ -1519,6 +1530,7 @@ bool RegionSelector::isAnnotationTool(ToolbarButton tool) const
     case ToolbarButton::Shape:
     case ToolbarButton::Text:
     case ToolbarButton::Mosaic:
+    case ToolbarButton::Eraser:
     case ToolbarButton::StepBadge:
     case ToolbarButton::EmojiSticker:
         return true;

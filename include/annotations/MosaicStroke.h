@@ -30,6 +30,9 @@ public:
     void setBlurType(BlurType type);
     BlurType blurType() const { return m_blurType; }
 
+    // Collision detection for eraser (path-based intersection)
+    bool intersectsCircle(const QPoint &center, int radius) const;
+
 private:
     QVector<QPoint> m_points;
     QPixmap m_sourcePixmap;

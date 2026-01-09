@@ -19,6 +19,7 @@ enum class ToolId {
     Shape,      // Unified Rectangle/Ellipse with ShapeType
     Text,
     Mosaic,
+    Eraser,
     StepBadge,
     EmojiSticker,
 

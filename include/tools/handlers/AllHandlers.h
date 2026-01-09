@@ -8,6 +8,7 @@
 #include "PolylineToolHandler.h"
 #include "ShapeToolHandler.h"
 #include "MosaicToolHandler.h"
+#include "EraserToolHandler.h"
 #include "StepBadgeToolHandler.h"
 #include "EmojiStickerToolHandler.h"
 #include "SelectionToolHandler.h"

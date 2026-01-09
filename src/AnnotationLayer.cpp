@@ -212,6 +212,8 @@ std::vector<ErasedItemsGroup::IndexedItem> AnnotationLayer::removeItemsIntersect
             shouldRemove = pencil->intersectsCircle(point, radius);
         } else if (auto* marker = dynamic_cast<MarkerStroke*>(it->get())) {
             shouldRemove = marker->intersectsCircle(point, radius);
+        } else if (auto* mosaic = dynamic_cast<MosaicStroke*>(it->get())) {
+            shouldRemove = mosaic->intersectsCircle(point, radius);
         } else {
             // Fallback: expanded bounding rect for shapes/text/badges/etc.
             QRect itemRect = (*it)->boundingRect();

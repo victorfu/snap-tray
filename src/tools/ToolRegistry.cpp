@@ -99,6 +99,16 @@ void ToolRegistry::registerTools() {
     });
 
     registerTool({
+        ToolId::Eraser,
+        "eraser",
+        "Eraser",
+        "",
+        ToolCategory::Drawing,
+        false, false, false, false, false, false,  // no color/width UI
+        false, QColor()
+    });
+
+    registerTool({
         ToolId::StepBadge,
         "step",
         "Step Badge",
@@ -278,6 +288,7 @@ QVector<ToolId> ToolRegistry::getToolsForToolbar(ToolbarType type) const {
             ToolId::Shape,
             ToolId::Text,
             ToolId::Mosaic,
+            ToolId::Eraser,
             ToolId::StepBadge,
             ToolId::EmojiSticker,
             ToolId::Undo,

@@ -59,6 +59,7 @@ enum class ToolbarButton {
     Shape,  // Unified shape tool (Rectangle + Ellipse)
     Text,
     Mosaic,
+    Eraser,
     StepBadge,
     EmojiSticker,
     Undo,
@@ -86,6 +87,7 @@ inline ToolId toolbarButtonToToolId(ToolbarButton btn) {
     case ToolbarButton::Shape:      return ToolId::Shape;
     case ToolbarButton::Text:       return ToolId::Text;
     case ToolbarButton::Mosaic:     return ToolId::Mosaic;
+    case ToolbarButton::Eraser:     return ToolId::Eraser;
     case ToolbarButton::StepBadge:  return ToolId::StepBadge;
     case ToolbarButton::EmojiSticker: return ToolId::EmojiSticker;
     case ToolbarButton::Undo:       return ToolId::Undo;
@@ -113,6 +115,7 @@ inline bool isToolManagerHandledTool(ToolbarButton btn) {
     case ToolbarButton::Arrow:
     case ToolbarButton::Shape:
     case ToolbarButton::Mosaic:
+    case ToolbarButton::Eraser:
     case ToolbarButton::StepBadge:
     case ToolbarButton::EmojiSticker:
         return true;

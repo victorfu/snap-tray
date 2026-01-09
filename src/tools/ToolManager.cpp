@@ -32,6 +32,7 @@ void ToolManager::registerDefaultHandlers() {
     registerHandler(std::make_unique<PolylineToolHandler>());
     registerHandler(std::make_unique<ShapeToolHandler>());
     registerHandler(std::make_unique<MosaicToolHandler>());
+    registerHandler(std::make_unique<EraserToolHandler>());
     registerHandler(std::make_unique<StepBadgeToolHandler>());
     registerHandler(std::make_unique<EmojiStickerToolHandler>());
     registerHandler(std::make_unique<LaserPointerToolHandler>());

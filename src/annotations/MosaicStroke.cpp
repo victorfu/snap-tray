@@ -1,5 +1,7 @@
 #include "annotations/MosaicStroke.h"
 #include <QPainter>
+#include <QPainterPath>
+#include <QPainterPathStroker>
 #include <QtMath>
 #include <algorithm>
 #include <opencv2/imgproc.hpp>
@@ -356,4 +358,33 @@ void MosaicStroke::setBlurType(BlurType type)
         m_blurType = type;
         m_renderedCache = QPixmap();  // Clear cache to regenerate with new blur type
     }
+}
+
+bool MosaicStroke::intersectsCircle(const QPoint &center, int radius) const
+{
+    if (m_points.size() < 2) {
+        return false;
+    }
+
+    QRect bbox = boundingRect();
+    QRect eraserRect(center.x() - radius, center.y() - radius, radius * 2, radius * 2);
+    if (!bbox.intersects(eraserRect)) {
+        return false;
+    }
+
+    QPainterPath linePath;
+    linePath.moveTo(m_points[0]);
+    for (int i = 1; i < m_points.size(); ++i) {
+        linePath.lineTo(m_points[i]);
+    }
+
+    QPainterPathStroker stroker;
+    stroker.setWidth(m_width);
+    stroker.setCapStyle(Qt::RoundCap);
+    stroker.setJoinStyle(Qt::RoundJoin);
+    QPainterPath strokePath = stroker.createStroke(linePath);
+
+    QPainterPath eraserPath;
+    eraserPath.addEllipse(center, radius, radius);
+    return strokePath.intersects(eraserPath);
 }
