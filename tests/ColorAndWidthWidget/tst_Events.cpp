@@ -4,13 +4,13 @@
 
 namespace {
 constexpr int kWidthSectionSize = 28;
-constexpr int kWidthToColorSpacing = 2;
+constexpr int kWidthToColorSpacing = -2;
+constexpr int kSectionSpacing = 8;
 constexpr int kSwatchSize = 14;
 constexpr int kSwatchSpacing = 2;
 constexpr int kColorPadding = 6;
 constexpr int kColorRowSpacing = 0;
 constexpr int kColorsPerRow = 8;
-constexpr int kSectionSpacing = 8;
 constexpr int kColorSectionWidth =
     kColorsPerRow * kSwatchSize + (kColorsPerRow - 1) * kSwatchSpacing + kColorPadding * 2;
 constexpr int kArrowSectionWidth = 52;

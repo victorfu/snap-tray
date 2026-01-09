@@ -4,7 +4,8 @@
 
 namespace {
 constexpr int kWidthSectionSize = 28;
-constexpr int kWidthToColorSpacing = 2;
+constexpr int kWidthToColorSpacing = -2;
+constexpr int kSectionSpacing = 8;
 constexpr int kSwatchSize = 14;
 constexpr int kSwatchSpacing = 2;
 constexpr int kColorPadding = 6;

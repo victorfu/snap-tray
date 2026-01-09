@@ -243,7 +243,7 @@ private:
     static constexpr int VERTICAL_PADDING = 4;  // Padding at top and bottom
     static constexpr int WIDGET_HEIGHT = 28 + 2 * VERTICAL_PADDING;  // Content height + padding
     static constexpr int SECTION_SPACING = 8;
-    static constexpr int WIDTH_TO_COLOR_SPACING = 2;  // Smaller spacing between width and color sections
+    static constexpr int WIDTH_TO_COLOR_SPACING = -2;  // Smaller spacing between width and color sections
     static constexpr int WIDGET_RIGHT_MARGIN = 6;
 };
 

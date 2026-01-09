@@ -3,7 +3,8 @@
 
 namespace {
 constexpr int kWidthSectionSize = 28;
-constexpr int kWidthToColorSpacing = 2;
+constexpr int kWidthToColorSpacing = -2;
+constexpr int kSectionSpacing = 8;
 constexpr int kSwatchSize = 14;
 constexpr int kSwatchSpacing = 2;
 constexpr int kColorPadding = 6;
@@ -13,7 +14,6 @@ constexpr int kColorGridWidth = kSwatchSize * 8 + kSwatchSpacing * 7;
 constexpr int kColorGridHeight = kColorRows * kSwatchSize +
                                  (kColorRows - 1) * kColorRowSpacing;
 constexpr int kColorSectionWidth = kColorGridWidth + kColorPadding * 2;
-constexpr int kSectionSpacing = 8;
 constexpr int kWidgetRightMargin = 6;
 constexpr int kArrowSectionWidth = 52;
 constexpr int kArrowButtonOffset = kArrowSectionWidth / 2;
