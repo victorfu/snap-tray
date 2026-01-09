@@ -98,6 +98,7 @@ signals:
     // State change notifications
     void drawingStateChanged(bool isDrawing);
     void detectionCleared();
+    void selectionCancelledByRightClick();
 
 private:
     // Mouse press helpers
