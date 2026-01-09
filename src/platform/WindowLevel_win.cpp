@@ -82,3 +82,25 @@ void setWindowExcludedFromCapture(QWidget *widget, bool excluded)
     Q_UNUSED(excluded)
 #endif
 }
+
+void setWindowVisibleOnAllWorkspaces(QWidget *widget, bool enabled)
+{
+#ifdef Q_OS_WIN
+    if (!widget) {
+        return;
+    }
+    HWND hwnd = reinterpret_cast<HWND>(widget->winId());
+    if (hwnd) {
+        LONG_PTR exStyle = GetWindowLongPtr(hwnd, GWL_EXSTYLE);
+        if (enabled) {
+            exStyle |= WS_EX_TOOLWINDOW;
+        } else {
+            exStyle &= ~WS_EX_TOOLWINDOW;
+        }
+        SetWindowLongPtr(hwnd, GWL_EXSTYLE, exStyle);
+    }
+#else
+    Q_UNUSED(widget)
+    Q_UNUSED(enabled)
+#endif
+}

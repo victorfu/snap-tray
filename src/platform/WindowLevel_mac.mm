@@ -77,3 +77,22 @@ void setWindowExcludedFromCapture(QWidget *, bool)
 {
     // No-op on macOS - use ScreenCaptureKit's excludingWindows parameter instead
 }
+
+void setWindowVisibleOnAllWorkspaces(QWidget *widget, bool enabled)
+{
+    if (!widget) {
+        return;
+    }
+    NSView *view = reinterpret_cast<NSView *>(widget->winId());
+    if (view) {
+        NSWindow *window = [view window];
+        NSWindowCollectionBehavior behavior = [window collectionBehavior];
+        if (enabled) {
+            behavior |= NSWindowCollectionBehaviorCanJoinAllSpaces;
+            behavior &= ~NSWindowCollectionBehaviorMoveToActiveSpace;
+        } else {
+            behavior &= ~NSWindowCollectionBehaviorCanJoinAllSpaces;
+        }
+        [window setCollectionBehavior:behavior];
+    }
+}

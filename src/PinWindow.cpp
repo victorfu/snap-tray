@@ -126,6 +126,10 @@ PinWindow::PinWindow(const QPixmap &screenshot, const QPoint &position, QWidget 
     // Must show() first, then move() to get correct positioning on macOS
     // Moving before show() can result in incorrect window placement
     show();
+
+    // Enable visibility on all virtual desktops/workspaces
+    setWindowVisibleOnAllWorkspaces(this, true);
+
     move(position);
 
     // Apply default opacity (90%)

@@ -28,4 +28,9 @@ void setWindowShadow(QWidget *widget, bool enabled);
 // On macOS: No-op (use ScreenCaptureKit's excludingWindows instead)
 void setWindowExcludedFromCapture(QWidget *widget, bool excluded);
 
+// Sets window to be visible on all virtual desktops/workspaces
+// On macOS: Uses NSWindowCollectionBehaviorCanJoinAllSpaces
+// On Windows: Uses WS_EX_TOOLWINDOW style
+void setWindowVisibleOnAllWorkspaces(QWidget *widget, bool enabled);
+
 #endif // WINDOWLEVEL_H
