@@ -155,10 +155,10 @@ void WebPAnimationEncoder::writeFrame(const QImage &frame, qint64 timestampMs)
         return;
     }
 
-    // Calculate timestamp
+    // Calculate timestamp (cap at INT_MAX to prevent overflow for very long recordings)
     int currentTimestampMs;
     if (timestampMs >= 0 && m_framesWritten > 0) {
-        currentTimestampMs = static_cast<int>(timestampMs);
+        currentTimestampMs = timestampMs > INT_MAX ? INT_MAX : static_cast<int>(timestampMs);
     } else {
         // Use frame rate to calculate timestamp
         currentTimestampMs = m_data->timestampMs;
@@ -202,7 +202,8 @@ void WebPAnimationEncoder::writeFrame(const QImage &frame, qint64 timestampMs)
     // Update timestamp for next frame
     int frameDurationMs = 1000 / m_frameRate;
     if (timestampMs >= 0 && m_framesWritten > 0) {
-        m_data->timestampMs = static_cast<int>(timestampMs) + frameDurationMs;
+        qint64 nextTs = timestampMs + frameDurationMs;
+        m_data->timestampMs = nextTs > INT_MAX ? INT_MAX : static_cast<int>(nextTs);
     } else {
         m_data->timestampMs += frameDurationMs;
     }

@@ -152,6 +152,11 @@ protected:
                 continue;
             }
 
+            if (!m_reader) {
+                QThread::msleep(10);
+                continue;
+            }
+
             // Handle seek request
             if (m_seekRequested) {
                 m_seekRequested = false;
@@ -161,11 +166,6 @@ protected:
                 var.hVal.QuadPart = m_seekPosition * 10000;
                 m_reader->SetCurrentPosition(GUID_NULL, var);
                 PropVariantClear(&var);
-            }
-
-            if (!m_reader) {
-                QThread::msleep(10);
-                continue;
             }
 
             // Read next frame
@@ -244,19 +244,21 @@ private:
                 }
 
                 frame = QImage(m_videoSize.width(), m_videoSize.height(), QImage::Format_RGB32);
-                int absPitch = qAbs(pitch);
+                if (!frame.isNull()) {
+                    int absPitch = qAbs(pitch);
 
-                if (pitch < 0) {
-                    // Bottom-up buffer - flip vertically
-                    for (int y = 0; y < m_videoSize.height(); y++) {
-                        const BYTE *srcRow = data + (m_videoSize.height() - 1 - y) * absPitch;
-                        memcpy(frame.scanLine(y), srcRow, m_videoSize.width() * 4);
-                    }
-                } else {
-                    // Top-down - copy directly
-                    for (int y = 0; y < m_videoSize.height(); y++) {
-                        const BYTE *srcRow = data + y * absPitch;
-                        memcpy(frame.scanLine(y), srcRow, m_videoSize.width() * 4);
+                    if (pitch < 0) {
+                        // Bottom-up buffer - flip vertically
+                        for (int y = 0; y < m_videoSize.height(); y++) {
+                            const BYTE *srcRow = data + (m_videoSize.height() - 1 - y) * absPitch;
+                            memcpy(frame.scanLine(y), srcRow, m_videoSize.width() * 4);
+                        }
+                    } else {
+                        // Top-down - copy directly
+                        for (int y = 0; y < m_videoSize.height(); y++) {
+                            const BYTE *srcRow = data + y * absPitch;
+                            memcpy(frame.scanLine(y), srcRow, m_videoSize.width() * 4);
+                        }
                     }
                 }
                 buffer2D->Unlock2D();
@@ -316,15 +318,17 @@ private:
                 if (height > 0 && maxLength >= static_cast<DWORD>(height * strideToUse)) {
                     frame = QImage(m_videoSize.width(), m_videoSize.height(), QImage::Format_RGB32);
 
-                    if (m_stride < 0) {
-                        for (int y = 0; y < m_videoSize.height(); y++) {
-                            const BYTE *srcRow = data + (m_videoSize.height() - 1 - y) * strideToUse;
-                            memcpy(frame.scanLine(y), srcRow, m_videoSize.width() * 4);
-                        }
-                    } else {
-                        for (int y = 0; y < m_videoSize.height(); y++) {
-                            const BYTE *srcRow = data + y * strideToUse;
-                            memcpy(frame.scanLine(y), srcRow, m_videoSize.width() * 4);
+                    if (!frame.isNull()) {
+                        if (m_stride < 0) {
+                            for (int y = 0; y < m_videoSize.height(); y++) {
+                                const BYTE *srcRow = data + (m_videoSize.height() - 1 - y) * strideToUse;
+                                memcpy(frame.scanLine(y), srcRow, m_videoSize.width() * 4);
+                            }
+                        } else {
+                            for (int y = 0; y < m_videoSize.height(); y++) {
+                                const BYTE *srcRow = data + y * strideToUse;
+                                memcpy(frame.scanLine(y), srcRow, m_videoSize.width() * 4);
+                            }
                         }
                     }
                 }
@@ -750,17 +754,19 @@ bool MediaFoundationPlayer::readFirstFrame()
                     m_stride = static_cast<int>(pitch);
                 }
                 frame = QImage(m_videoSize.width(), m_videoSize.height(), QImage::Format_RGB32);
-                int absPitch = qAbs(pitch);
+                if (!frame.isNull()) {
+                    int absPitch = qAbs(pitch);
 
-                if (pitch < 0) {
-                    for (int y = 0; y < m_videoSize.height(); y++) {
-                        const BYTE *srcRow = data + (m_videoSize.height() - 1 - y) * absPitch;
-                        memcpy(frame.scanLine(y), srcRow, m_videoSize.width() * 4);
-                    }
-                } else {
-                    for (int y = 0; y < m_videoSize.height(); y++) {
-                        const BYTE *srcRow = data + y * absPitch;
-                        memcpy(frame.scanLine(y), srcRow, m_videoSize.width() * 4);
+                    if (pitch < 0) {
+                        for (int y = 0; y < m_videoSize.height(); y++) {
+                            const BYTE *srcRow = data + (m_videoSize.height() - 1 - y) * absPitch;
+                            memcpy(frame.scanLine(y), srcRow, m_videoSize.width() * 4);
+                        }
+                    } else {
+                        for (int y = 0; y < m_videoSize.height(); y++) {
+                            const BYTE *srcRow = data + y * absPitch;
+                            memcpy(frame.scanLine(y), srcRow, m_videoSize.width() * 4);
+                        }
                     }
                 }
                 buffer2D->Unlock2D();
@@ -794,15 +800,17 @@ bool MediaFoundationPlayer::readFirstFrame()
                     if (height > 0 && maxLength >= static_cast<DWORD>(height * strideToUse)) {
                         frame = QImage(m_videoSize.width(), m_videoSize.height(), QImage::Format_RGB32);
 
-                    if (m_stride < 0) {
-                        for (int y = 0; y < m_videoSize.height(); y++) {
-                            const BYTE *srcRow = data + (m_videoSize.height() - 1 - y) * strideToUse;
-                            memcpy(frame.scanLine(y), srcRow, m_videoSize.width() * 4);
-                        }
-                    } else {
-                            for (int y = 0; y < m_videoSize.height(); y++) {
-                                const BYTE *srcRow = data + y * strideToUse;
-                                memcpy(frame.scanLine(y), srcRow, m_videoSize.width() * 4);
+                        if (!frame.isNull()) {
+                            if (m_stride < 0) {
+                                for (int y = 0; y < m_videoSize.height(); y++) {
+                                    const BYTE *srcRow = data + (m_videoSize.height() - 1 - y) * strideToUse;
+                                    memcpy(frame.scanLine(y), srcRow, m_videoSize.width() * 4);
+                                }
+                            } else {
+                                for (int y = 0; y < m_videoSize.height(); y++) {
+                                    const BYTE *srcRow = data + y * strideToUse;
+                                    memcpy(frame.scanLine(y), srcRow, m_videoSize.width() * 4);
+                                }
                             }
                         }
                     }

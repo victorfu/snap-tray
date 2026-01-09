@@ -785,13 +785,13 @@ void RecordingManager::startCaptureTimers()
     if (m_captureTimer) {
         qDebug() << "RecordingManager: Capture timer already exists, cleaning up";
         m_captureTimer->stop();
-        delete m_captureTimer;
+        m_captureTimer->deleteLater();
         m_captureTimer = nullptr;
     }
     if (m_durationTimer) {
         qDebug() << "RecordingManager: Duration timer already exists, cleaning up";
         m_durationTimer->stop();
-        delete m_durationTimer;
+        m_durationTimer->deleteLater();
         m_durationTimer = nullptr;
     }
 
@@ -1049,13 +1049,13 @@ void RecordingManager::stopFrameCapture()
     qDebug() << "RecordingManager: Stopping timers...";
     if (m_captureTimer) {
         m_captureTimer->stop();
-        delete m_captureTimer;
+        m_captureTimer->deleteLater();
         m_captureTimer = nullptr;
     }
 
     if (m_durationTimer) {
         m_durationTimer->stop();
-        delete m_durationTimer;
+        m_durationTimer->deleteLater();
         m_durationTimer = nullptr;
     }
     qDebug() << "RecordingManager: Timers stopped";

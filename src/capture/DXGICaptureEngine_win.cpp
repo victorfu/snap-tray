@@ -385,6 +385,7 @@ QImage DXGICaptureEngine::Private::captureWithDXGI()
     }
 
     if (FAILED(hr)) {
+        qWarning() << "DXGICaptureEngine: AcquireNextFrame failed with hr:" << Qt::hex << hr;
         return captureWithBitBlt();
     }
 

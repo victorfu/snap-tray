@@ -728,6 +728,12 @@ void WASAPIAudioCaptureEngine::resume()
 QByteArray WASAPIAudioCaptureEngine::convertToInt16PCM(const unsigned char *data, int numFrames,
                                                        const NativeFormatInfo &nativeFormat) const
 {
+    // Validate input parameters
+    if (!data || numFrames <= 0 || nativeFormat.channels <= 0 || nativeFormat.bitsPerSample <= 0) {
+        qWarning() << "WASAPIAudioCaptureEngine: Invalid parameters in convertToInt16PCM";
+        return QByteArray();
+    }
+
     // Output: 16-bit PCM, same channels as input
     int outputSize = numFrames * nativeFormat.channels * sizeof(int16_t);
     QByteArray output(outputSize, 0);
