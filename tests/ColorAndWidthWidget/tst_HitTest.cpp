@@ -17,6 +17,8 @@ constexpr int kSectionSpacing = 8;
 constexpr int kWidgetRightMargin = 6;
 constexpr int kArrowSectionWidth = 52;
 constexpr int kArrowButtonOffset = kArrowSectionWidth / 2;
+constexpr int kVerticalPadding = 4;
+constexpr int kWidgetHeight = kColorGridHeight + 2 * kVerticalPadding;  // 28 + 8 = 36
 }
 
 class TestColorAndWidthWidgetHitTest : public QObject
@@ -193,7 +195,7 @@ void TestColorAndWidthWidgetHitTest::testBoundingRectWithColorOnly()
 
     // Color section: grid(8 * 14 + 7 * 2) + padding(6 * 2) = 138
     // Widget right margin = 6
-    QCOMPARE(widgetRect.height(), kColorGridHeight);
+    QCOMPARE(widgetRect.height(), kWidgetHeight);
 
     // Width should be just the color section + right margin
     QCOMPARE(widgetRect.width(), kColorSectionWidth + kWidgetRightMargin);
@@ -236,8 +238,8 @@ void TestColorAndWidthWidgetHitTest::testBoundingRectWithAllSections()
     int colorOnlyWidth = kColorSectionWidth;
     QVERIFY(widgetRect.width() > colorOnlyWidth);
 
-    // Height should match the expanded color section
-    QCOMPARE(widgetRect.height(), kColorGridHeight);
+    // Height should match the widget height with padding
+    QCOMPARE(widgetRect.height(), kWidgetHeight);
 }
 
 QTEST_MAIN(TestColorAndWidthWidgetHitTest)

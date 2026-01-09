@@ -460,14 +460,15 @@ void ColorAndWidthWidget::updatePosition(const QRect& anchorRect, bool above, in
 
 void ColorAndWidthWidget::updateLayout()
 {
-    int containerHeight = m_widgetRect.height();
+    int containerTop = m_widgetRect.top() + VERTICAL_PADDING;
+    int containerHeight = m_widgetRect.height() - 2 * VERTICAL_PADDING;
     int xOffset = m_widgetRect.left();
     bool hasFirstSection = false;
 
     // Width section first (leftmost) - only if not hidden
     bool widthSectionVisible = m_showWidthSection && !m_widthSectionHidden;
     if (widthSectionVisible) {
-        m_widthSection->updateLayout(m_widgetRect.top(), containerHeight, xOffset);
+        m_widthSection->updateLayout(containerTop, containerHeight, xOffset);
         xOffset += m_widthSection->preferredWidth();
         hasFirstSection = true;
     }
@@ -479,7 +480,7 @@ void ColorAndWidthWidget::updateLayout()
         } else if (hasFirstSection) {
             xOffset += SECTION_SPACING;
         }
-        m_colorSection->updateLayout(m_widgetRect.top(), containerHeight, xOffset);
+        m_colorSection->updateLayout(containerTop, containerHeight, xOffset);
         xOffset += m_colorSection->preferredWidth();
         hasFirstSection = true;
     }
@@ -487,7 +488,7 @@ void ColorAndWidthWidget::updateLayout()
     // Arrow style section
     if (m_showArrowStyleSection) {
         if (hasFirstSection) xOffset += SECTION_SPACING;
-        m_arrowStyleSection->updateLayout(m_widgetRect.top(), containerHeight, xOffset);
+        m_arrowStyleSection->updateLayout(containerTop, containerHeight, xOffset);
         xOffset += m_arrowStyleSection->preferredWidth();
         hasFirstSection = true;
     }
@@ -495,7 +496,7 @@ void ColorAndWidthWidget::updateLayout()
     // Line style section
     if (m_showLineStyleSection) {
         if (hasFirstSection) xOffset += SECTION_SPACING;
-        m_lineStyleSection->updateLayout(m_widgetRect.top(), containerHeight, xOffset);
+        m_lineStyleSection->updateLayout(containerTop, containerHeight, xOffset);
         xOffset += m_lineStyleSection->preferredWidth();
         hasFirstSection = true;
     }
@@ -503,7 +504,7 @@ void ColorAndWidthWidget::updateLayout()
     // Text section
     if (m_showTextSection) {
         if (hasFirstSection) xOffset += SECTION_SPACING;
-        m_textSection->updateLayout(m_widgetRect.top(), containerHeight, xOffset);
+        m_textSection->updateLayout(containerTop, containerHeight, xOffset);
         xOffset += m_textSection->preferredWidth();
         hasFirstSection = true;
     }
@@ -511,7 +512,7 @@ void ColorAndWidthWidget::updateLayout()
     // Shape section
     if (m_showShapeSection) {
         if (hasFirstSection) xOffset += SECTION_SPACING;
-        m_shapeSection->updateLayout(m_widgetRect.top(), containerHeight, xOffset);
+        m_shapeSection->updateLayout(containerTop, containerHeight, xOffset);
         xOffset += m_shapeSection->preferredWidth();
         hasFirstSection = true;
     }
@@ -519,7 +520,7 @@ void ColorAndWidthWidget::updateLayout()
     // Size section (Step Badge)
     if (m_showSizeSection) {
         if (hasFirstSection) xOffset += SECTION_SPACING;
-        m_sizeSection->updateLayout(m_widgetRect.top(), containerHeight, xOffset);
+        m_sizeSection->updateLayout(containerTop, containerHeight, xOffset);
         xOffset += m_sizeSection->preferredWidth();
         hasFirstSection = true;
     }
@@ -527,14 +528,14 @@ void ColorAndWidthWidget::updateLayout()
     // For Mosaic tool: AutoBlurSection first, then MosaicWidthSection
     if (m_showAutoBlurSection) {
         if (hasFirstSection) xOffset += SECTION_SPACING;
-        m_autoBlurSection->updateLayout(m_widgetRect.top(), containerHeight, xOffset);
+        m_autoBlurSection->updateLayout(containerTop, containerHeight, xOffset);
         xOffset += m_autoBlurSection->preferredWidth();
         hasFirstSection = true;
     }
 
     if (m_showMosaicWidthSection) {
         if (hasFirstSection) xOffset += SECTION_SPACING;
-        m_mosaicWidthSection->updateLayout(m_widgetRect.top(), containerHeight, xOffset);
+        m_mosaicWidthSection->updateLayout(containerTop, containerHeight, xOffset);
         xOffset += m_mosaicWidthSection->preferredWidth();
         hasFirstSection = true;
     }
