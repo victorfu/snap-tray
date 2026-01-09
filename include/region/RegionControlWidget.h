@@ -145,7 +145,7 @@ private:
     static constexpr int TOGGLE_SIZE = 36;              // Radius toggle width
     static constexpr int RATIO_WIDTH_FREE = 36;         // Ratio section when unlocked
     static constexpr int RATIO_WIDTH_LOCKED = 95;       // Ratio section when locked
-    static constexpr int SECTION_SPACING = 2;           // Between radius and ratio sections
+    static constexpr int SECTION_SPACING = 0;           // Between radius and ratio sections
     static constexpr int PADDING = 8;
     static constexpr int ICON_SIZE = 18;
     static constexpr int GAP = 8;                       // Gap from anchor rect
