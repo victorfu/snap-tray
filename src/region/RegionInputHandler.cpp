@@ -817,135 +817,112 @@ void RegionInputHandler::handleHoverMove(const QPoint& pos, Qt::MouseButtons but
     }
 
     // === Single-region mode handling below ===
-    bool colorPaletteHovered = false;
-    bool unifiedWidgetHovered = false;
-    bool textAnnotationHovered = false;
-    bool emojiStickerHovered = false;
-    bool emojiPickerHovered = false;
-    bool gizmoHandleHovered = false;
-    bool regionControlHovered = false;
+    // 1. Check UI elements (Highest Priority)
+    bool uiHovered = false;
 
-    // Check gizmo handles
-    if (auto* textItem = getSelectedTextAnnotation()) {
-        GizmoHandle handle = TransformationGizmo::hitTest(textItem, pos);
-        if (handle != GizmoHandle::None) {
-            emitCursorChangeIfNeeded(getCursorForGizmoHandle(handle));
-            gizmoHandleHovered = true;
-        }
-    }
-
-    // Check text annotation hover
-    if (!gizmoHandleHovered && m_annotationLayer->hitTestText(pos) >= 0) {
-        emitCursorChangeIfNeeded(Qt::SizeAllCursor);
-        textAnnotationHovered = true;
-    }
-
-    // Check emoji sticker gizmo handles (only for selected emoji)
-    // Skip cursor change for EmojiSticker tool - only show selection cursor during actual drag
-    if (!gizmoHandleHovered && !textAnnotationHovered &&
-        m_currentTool != ToolbarButton::EmojiSticker) {
-        if (auto* emojiItem = getSelectedEmojiStickerAnnotation()) {
-            GizmoHandle handle = TransformationGizmo::hitTest(emojiItem, pos);
-            if (handle != GizmoHandle::None) {
-                emitCursorChangeIfNeeded(getCursorForGizmoHandle(handle));
-                gizmoHandleHovered = true;
-                emojiStickerHovered = true;
-            }
-        }
-    }
-
-    // Update region control widget (radius + aspect ratio)
-    if (m_regionControlWidget && m_regionControlWidget->isVisible()) {
-        if (m_regionControlWidget->handleMouseMove(pos, buttons & Qt::LeftButton)) {
-            emit updateRequested();
-        }
-        if (m_regionControlWidget->contains(pos)) {
-            if (m_parentWidget) {
-                m_parentWidget->setCursor(Qt::PointingHandCursor);
-            }
-            regionControlHovered = true;
-        }
-    }
-
-    const bool colorAndWidthVisible = shouldShowColorAndWidthWidget();
-    const bool colorPaletteVisible = shouldShowColorPalette();
-
-    // Update color/width widget
-    if (colorAndWidthVisible) {
+    // Check color/width widget
+    if (shouldShowColorAndWidthWidget()) {
         if (m_colorAndWidthWidget->handleMouseMove(pos, buttons & Qt::LeftButton)) {
-            if (m_colorAndWidthWidget->contains(pos)) {
-                if (m_parentWidget) {
-                    m_parentWidget->setCursor(Qt::PointingHandCursor);
-                }
-                unifiedWidgetHovered = true;
-            }
             emit updateRequested();
         }
         if (m_colorAndWidthWidget->updateHovered(pos)) {
             emit updateRequested();
         }
         if (m_colorAndWidthWidget->contains(pos)) {
-            if (m_parentWidget) {
-                m_parentWidget->setCursor(Qt::PointingHandCursor);
-            }
-            unifiedWidgetHovered = true;
+            uiHovered = true;
         }
     }
 
-    // Legacy color palette
-    if (colorPaletteVisible) {
+    // Check legacy color palette
+    if (shouldShowColorPalette()) {
         if (m_colorPalette->updateHoveredSwatch(pos)) {
             if (m_colorPalette->contains(pos)) {
-                if (m_parentWidget) {
-                    m_parentWidget->setCursor(Qt::PointingHandCursor);
-                }
-                colorPaletteHovered = true;
+                uiHovered = true;
             }
         }
         else if (m_colorPalette->contains(pos)) {
-            colorPaletteHovered = true;
+            uiHovered = true;
         }
     }
 
-    // Emoji picker hover
+    // Check emoji picker
     if (m_emojiPicker && m_emojiPicker->isVisible()) {
         if (m_emojiPicker->updateHoveredEmoji(pos)) {
             emit updateRequested();
         }
         if (m_emojiPicker->contains(pos)) {
-            if (m_parentWidget) {
-                m_parentWidget->setCursor(Qt::PointingHandCursor);
-            }
-            emojiPickerHovered = true;
+            uiHovered = true;
+        }
+    }
+
+    // Check region control widget
+    if (m_regionControlWidget && m_regionControlWidget->isVisible()) {
+        if (m_regionControlWidget->handleMouseMove(pos, buttons & Qt::LeftButton)) {
+            emit updateRequested();
+        }
+        if (m_regionControlWidget->contains(pos)) {
+            uiHovered = true;
         }
     }
 
     // Update toolbar hover
     m_toolbar->updateHoveredButton(pos);
-    bool toolbarHovered = m_toolbar->contains(pos);
-    bool toolbarButtonHovered = m_toolbar->hoveredButton() >= 0;
-    bool uiHovered = toolbarHovered || toolbarButtonHovered ||
-        unifiedWidgetHovered || colorPaletteHovered || emojiPickerHovered ||
-        regionControlHovered;
+    if (m_toolbar->contains(pos) || m_toolbar->hoveredButton() >= 0) {
+        uiHovered = true;
+    }
 
+    // If over any UI element, force PointingHandCursor and return
     if (uiHovered) {
-        if (m_parentWidget) {
-            m_parentWidget->setCursor(Qt::PointingHandCursor);
+        emitCursorChangeIfNeeded(Qt::PointingHandCursor);
+        return;
+    }
+
+    // 2. Check Annotations (Gizmos, Dragging)
+    // Check gizmo handles (Text)
+    if (auto* textItem = getSelectedTextAnnotation()) {
+        GizmoHandle handle = TransformationGizmo::hitTest(textItem, pos);
+        if (handle != GizmoHandle::None) {
+            emitCursorChangeIfNeeded(getCursorForGizmoHandle(handle));
+            return;
         }
     }
-    else if (!textAnnotationHovered && !emojiStickerHovered && !gizmoHandleHovered) {
-        if (m_currentTool == ToolbarButton::Selection) {
-            auto handle = m_selectionManager->hitTestHandle(pos);
-            updateCursorForHandle(handle);
-        }
-        else {
-            emit toolCursorRequested();
+
+    // Check text annotation hover
+    if (m_annotationLayer->hitTestText(pos) >= 0) {
+        emitCursorChangeIfNeeded(Qt::SizeAllCursor);
+        return;
+    }
+
+    // Check emoji sticker gizmo handles
+    // Skip cursor change for EmojiSticker tool - only show selection cursor during actual drag
+    if (m_currentTool != ToolbarButton::EmojiSticker) {
+        if (auto* emojiItem = getSelectedEmojiStickerAnnotation()) {
+            GizmoHandle handle = TransformationGizmo::hitTest(emojiItem, pos);
+            if (handle != GizmoHandle::None) {
+                emitCursorChangeIfNeeded(getCursorForGizmoHandle(handle));
+                return;
+            }
         }
     }
-    if (m_currentTool == ToolbarButton::Eraser && m_toolManager && !uiHovered) {
+
+    // 3. Fallback to Tool Cursor
+    if (m_currentTool == ToolbarButton::Selection) {
+        auto handle = m_selectionManager->hitTestHandle(pos);
+        updateCursorForHandle(handle);
+    }
+    else {
+        // We are handing off cursor control to the tool manager/external logic.
+        // We must invalidate our tracked cursor state because the external logic
+        // will change the cursor directly (via setToolCursor -> setCursor) without
+        // us knowing. If we don't invalidate, we might fail to restore the cursor
+        // when moving back to UI elements (because we think it's still what we last emitted).
+        m_lastEmittedCursor = Qt::BitmapCursor; // Use BitmapCursor as a sentinel for "Unknown/External"
+        emit toolCursorRequested();
+    }
+
+    if (m_currentTool == ToolbarButton::Eraser && m_toolManager) {
         m_toolManager->handleMouseMove(pos);
     }
-    qDebug() << "Final cursor decision - toolbarHovered:" << toolbarHovered << "unifiedWidgetHovered:" << unifiedWidgetHovered;
 }
 
 void RegionInputHandler::handleThrottledUpdate()
