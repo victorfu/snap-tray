@@ -194,8 +194,8 @@ void RegionControlWidget::drawRadiusToggle(QPainter& painter)
         painter.drawRoundedRect(m_radiusToggleRect.adjusted(2, 2, -2, -2), 4, 4);
     }
 
-    // Draw radius icon - dimmed when disabled
-    QColor iconColor = m_styleConfig.textColor;
+    // Draw radius icon - use active color when enabled
+    QColor iconColor = m_radiusEnabled ? m_styleConfig.iconActiveColor : m_styleConfig.textColor;
     if (!m_radiusEnabled) {
         iconColor.setAlphaF(0.4);  // Dimmed when disabled
     }
@@ -215,12 +215,13 @@ void RegionControlWidget::drawRatioSection(QPainter& painter)
 
     // Draw appropriate icon based on lock state
     QString iconKey = m_ratioLocked ? "ratio-lock" : "ratio-free";
+    QColor iconColor = m_ratioLocked ? m_styleConfig.iconActiveColor : m_styleConfig.textColor;
     IconRenderer::instance().renderIcon(painter, m_ratioIconRect, iconKey,
-                                         m_styleConfig.textColor, 0);
+                                         iconColor, 0);
 
     // Draw ratio text only when locked
     if (m_ratioLocked) {
-        painter.setPen(m_styleConfig.textColor);
+        painter.setPen(m_styleConfig.textActiveColor);
         QFont font = painter.font();
         font.setPointSize(11);
         painter.setFont(font);
