@@ -1525,6 +1525,14 @@ bool RegionSelector::eventFilter(QObject* obj, QEvent* event)
         if (m_createdAt.elapsed() < 300) {
             qDebug() << "RegionSelector: Ignoring early ApplicationDeactivate (elapsed:"
                 << m_createdAt.elapsed() << "ms)";
+
+            // Restore focus to re-enable mouse event delivery
+            // Without this, Qt stops delivering mouse events to deactivated windows
+            QTimer::singleShot(0, this, [this]() {
+                activateWindow();
+                raise();
+            });
+
             return false;
         }
         qDebug() << "RegionSelector: Cancelled due to app deactivation";

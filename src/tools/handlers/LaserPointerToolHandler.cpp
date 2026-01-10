@@ -19,5 +19,5 @@ void LaserPointerToolHandler::onMouseMove(ToolContext* ctx, const QPoint& pos) {
 }
 
 QCursor LaserPointerToolHandler::cursor() const {
-    return Qt::BlankCursor;  // Hide cursor, laser pointer replaces it
+    return Qt::CrossCursor;
 }
