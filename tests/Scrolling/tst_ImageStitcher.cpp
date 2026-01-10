@@ -43,17 +43,32 @@ private:
         img.fill(Qt::white);
         QPainter painter(&img);
         
+        // Use a simple deterministic LCG for platform independence
+        // std::rand() implementation varies by platform (0..32767 on Windows, larger on *nix)
+        unsigned int state = static_cast<unsigned int>(seed);
+        auto myRand = [&state]() {
+            state = state * 1103515245 + 12345;
+            return (state / 65536) % 32768;
+        };
+        
         // Draw many random lines and rects to ensure high variance
-        std::srand(seed);
-        for (int i = 0; i < 100; ++i) {
-            painter.setPen(QColor(std::rand() % 256, std::rand() % 256, std::rand() % 256));
-            painter.setBrush(QColor(std::rand() % 256, std::rand() % 256, std::rand() % 256, 128));
-            if (std::rand() % 2 == 0) {
-                painter.drawLine(std::rand() % width, std::rand() % height, std::rand() % width, std::rand() % height);
+        // Increased count to ensure dense texture
+        for (int i = 0; i < 200; ++i) {
+            painter.setPen(QColor(myRand() % 256, myRand() % 256, myRand() % 256));
+            painter.setBrush(QColor(myRand() % 256, myRand() % 256, myRand() % 256, 128));
+            if (myRand() % 2 == 0) {
+                painter.drawLine(myRand() % width, myRand() % height, myRand() % width, myRand() % height);
             } else {
-                painter.drawRect(std::rand() % width, std::rand() % height, std::rand() % 50, std::rand() % 50);
+                painter.drawRect(myRand() % width, myRand() % height, myRand() % 50, myRand() % 50);
             }
         }
+
+        // Ensure edges have content (important for template matching at edges)
+        painter.setPen(Qt::black);
+        painter.drawRect(0, 0, width-1, height-1);
+        painter.drawLine(0, 0, width, height);
+        painter.drawLine(0, height, width, 0);
+
         return img;
     }
 
