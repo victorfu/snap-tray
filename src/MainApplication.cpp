@@ -117,10 +117,12 @@ void MainApplication::initialize()
     m_screenCanvasAction = m_trayMenu->addAction("Screen Canvas");
     connect(m_screenCanvasAction, &QAction::triggered, this, &MainApplication::onScreenCanvas);
 
+#ifdef SNAPTRAY_ENABLE_DEV_FEATURES
     m_trayMenu->addSeparator();
 
     m_fullScreenRecordingAction = m_trayMenu->addAction("Record Full Screen");
     connect(m_fullScreenRecordingAction, &QAction::triggered, this, &MainApplication::onFullScreenRecording);
+#endif
 
     m_trayMenu->addSeparator();
 

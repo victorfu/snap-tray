@@ -133,7 +133,9 @@ void RegionToolbarHandler::setupToolbarButtons()
     if (PlatformFeatures::instance().isOCRAvailable()) {
         buttons.append({ static_cast<int>(ToolbarButton::OCR), "ocr", "OCR Text Recognition", false });
     }
+#ifdef SNAPTRAY_ENABLE_DEV_FEATURES
     buttons.append({ static_cast<int>(ToolbarButton::Record), "record", "Screen Recording (R)", false });
+#endif
     buttons.append({ static_cast<int>(ToolbarButton::MultiRegion), "multi-region", "Multi-Region Capture (M)", false });
 #ifdef SNAPTRAY_ENABLE_DEV_FEATURES
     buttons.append({ static_cast<int>(ToolbarButton::ScrollCapture), "scroll-capture", "Scrolling Capture (S)", false });

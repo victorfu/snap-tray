@@ -52,11 +52,7 @@ QString rgbaString(const QColor &color)
 
 bool isAnnotateEnabled()
 {
-#ifndef QT_NO_DEBUG
     return true;
-#else
-    return false;
-#endif
 }
 }
 
