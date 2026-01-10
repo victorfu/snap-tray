@@ -48,6 +48,7 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     , m_watermarkOpacitySlider(nullptr)
     , m_watermarkOpacityLabel(nullptr)
     , m_watermarkPositionCombo(nullptr)
+#ifdef SNAPTRAY_ENABLE_DEV_FEATURES
     , m_recordingFrameRateCombo(nullptr)
     , m_recordingOutputFormatCombo(nullptr)
     , m_recordingAutoSaveCheckbox(nullptr)
@@ -56,6 +57,7 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     , m_recordingQualityLabel(nullptr)
     , m_gifSettingsWidget(nullptr)
     , m_gifInfoLabel(nullptr)
+#endif
     , m_pinWindowOpacitySlider(nullptr)
     , m_pinWindowOpacityLabel(nullptr)
     , m_pinWindowOpacityStepSlider(nullptr)
@@ -103,10 +105,12 @@ void SettingsDialog::setupUi()
     setupWatermarkTab(watermarkTab);
     m_tabWidget->addTab(watermarkTab, "Watermark");
 
-    // Tab 4: Recording
+#ifdef SNAPTRAY_ENABLE_DEV_FEATURES
+    // Tab 4: Recording (Debug builds only)
     QWidget *recordingTab = new QWidget();
     setupRecordingTab(recordingTab);
     m_tabWidget->addTab(recordingTab, "Recording");
+#endif
 
     // Tab 5: Files
     QWidget *filesTab = new QWidget();
@@ -470,6 +474,7 @@ void SettingsDialog::setupWatermarkTab(QWidget *tab)
     updateWatermarkImagePreview();
 }
 
+#ifdef SNAPTRAY_ENABLE_DEV_FEATURES
 void SettingsDialog::setupRecordingTab(QWidget *tab)
 {
     QVBoxLayout *layout = new QVBoxLayout(tab);
@@ -729,6 +734,7 @@ void SettingsDialog::onOutputFormatChanged(int index)
     m_mp4SettingsWidget->setVisible(!isGif);
     m_gifSettingsWidget->setVisible(isGif);
 }
+#endif // SNAPTRAY_ENABLE_DEV_FEATURES
 
 void SettingsDialog::updateHotkeyStatus(QLabel *statusLabel, bool isRegistered)
 {
@@ -827,6 +833,7 @@ void SettingsDialog::onSave()
     watermarkSettings.margin = m_watermarkMarginSlider->value();
     WatermarkRenderer::saveSettings(watermarkSettings);
 
+#ifdef SNAPTRAY_ENABLE_DEV_FEATURES
     // Save recording settings
     auto recordingSettings = SnapTray::getSettings();
     recordingSettings.setValue("recording/framerate",
@@ -861,6 +868,7 @@ void SettingsDialog::onSave()
         m_audioSourceCombo->currentData().toInt());
     recordingSettings.setValue("recording/audioDevice",
         m_audioDeviceCombo->currentData().toString());
+#endif
 
     // Save auto-blur settings
     AutoBlurManager::Options blurOptions;
@@ -952,6 +960,7 @@ void SettingsDialog::updateWatermarkImagePreview()
         QString("Size: %1 × %2 px").arg(scaledWidth).arg(scaledHeight));
 }
 
+#ifdef SNAPTRAY_ENABLE_DEV_FEATURES
 void SettingsDialog::populateAudioDevices()
 {
     // Save current selection
@@ -1029,6 +1038,7 @@ void SettingsDialog::onAudioSourceChanged(int index)
     bool showDeviceCombo = (index == 0 || index == 2);  // Microphone or Both
     m_audioDeviceCombo->setVisible(showDeviceCombo);
 }
+#endif // SNAPTRAY_ENABLE_DEV_FEATURES
 
 void SettingsDialog::setupFilesTab(QWidget *tab)
 {
