@@ -53,7 +53,9 @@ private:
     void setupGeneralTab(QWidget *tab);
     void setupHotkeysTab(QWidget *tab);
     void setupWatermarkTab(QWidget *tab);
+#ifdef SNAPTRAY_ENABLE_DEV_FEATURES
     void setupRecordingTab(QWidget *tab);
+#endif
     void updateHotkeyStatus(QLabel *statusLabel, bool isRegistered);
 
     // UI elements
@@ -82,6 +84,7 @@ private:
     QSize m_watermarkOriginalSize;
     QCheckBox *m_watermarkApplyToRecordingCheckbox;
 
+#ifdef SNAPTRAY_ENABLE_DEV_FEATURES
     // Recording UI elements
     QComboBox *m_recordingFrameRateCombo;
     QComboBox *m_recordingOutputFormatCombo;
@@ -109,14 +112,17 @@ private:
     QComboBox *m_audioSourceCombo;
     QComboBox *m_audioDeviceCombo;
     QLabel *m_systemAudioWarningLabel;
+#endif
 
     // Watermark UI helper methods
     void updateWatermarkImagePreview();
 
+#ifdef SNAPTRAY_ENABLE_DEV_FEATURES
     // Recording UI helper methods
     void onOutputFormatChanged(int index);
     void populateAudioDevices();
     void onAudioSourceChanged(int index);
+#endif
 
     // Auto-blur settings
     QSlider *m_blurIntensitySlider;
