@@ -87,34 +87,49 @@ void LineWidthWidget::draw(QPainter& painter)
     // Draw glass panel (6px radius for sub-widgets)
     GlassRenderer::drawGlassPanel(painter, m_widgetRect, m_styleConfig, 6);
 
-    // Draw slider track background
+    // --- Slider Track ---
+    // Use buttonInactiveColor for the track background (unfilled part)
+    // Make it thinner (4px) for a modern look
+    int trackHeight = 4;
+    int trackY = m_sliderTrackRect.center().y() - trackHeight / 2;
+    QRect trackRect(m_sliderTrackRect.left(), trackY, m_sliderTrackRect.width(), trackHeight);
+
     painter.setPen(Qt::NoPen);
-    painter.setBrush(QColor(30, 30, 30));
-    painter.drawRoundedRect(m_sliderTrackRect, SLIDER_HEIGHT / 2, SLIDER_HEIGHT / 2);
+    painter.setBrush(m_styleConfig.buttonInactiveColor);
+    painter.drawRoundedRect(trackRect, trackHeight / 2, trackHeight / 2);
 
-    // Draw slider track fill (from left to handle position)
+    // --- Slider Fill (Active part) ---
+    // Use iconActiveColor (primary theme color) for the filled part
     int handleX = widthToPosition(m_currentWidth);
-    QRect fillRect(m_sliderTrackRect.left(), m_sliderTrackRect.top(),
-                   handleX - m_sliderTrackRect.left(), SLIDER_HEIGHT);
-    painter.setBrush(QColor(0, 174, 255));
-    painter.drawRoundedRect(fillRect, SLIDER_HEIGHT / 2, SLIDER_HEIGHT / 2);
+    int fillWidth = qMax(trackHeight, handleX - m_sliderTrackRect.left()); // Ensure at least a dot visible
+    QRect fillRect(m_sliderTrackRect.left(), trackY, fillWidth, trackHeight);
+    
+    painter.setBrush(m_styleConfig.iconActiveColor);
+    painter.drawRoundedRect(fillRect, trackHeight / 2, trackHeight / 2);
 
-    // Draw handle
+    // --- Handle ---
+    int handleSize = 16; // Slightly larger for better touch/click target
     int handleY = m_sliderTrackRect.center().y();
-    QRect handleRect(handleX - HANDLE_SIZE / 2, handleY - HANDLE_SIZE / 2,
-                     HANDLE_SIZE, HANDLE_SIZE);
+    QRect handleRect(handleX - handleSize / 2, handleY - handleSize / 2,
+                     handleSize, handleSize);
 
-    // Handle shadow
-    painter.setBrush(QColor(0, 0, 0, 30));
+    // Handle Shadow (Soft drop shadow)
+    painter.setBrush(m_styleConfig.shadowColor); 
     painter.drawEllipse(handleRect.adjusted(1, 1, 1, 1));
 
-    // Handle fill
-    painter.setBrush(Qt::white);
-    painter.setPen(QPen(QColor(0, 174, 255), 2));
+    // Handle Body
+    // In Dark mode, white handle pops. In Light mode, white handle with border works too.
+    painter.setBrush(Qt::white); 
+    // Add subtle border for definition against light backgrounds
+    painter.setPen(QPen(m_styleConfig.hairlineBorderColor, 1));
     painter.drawEllipse(handleRect);
+    
+    // Optional: Subtle border for handle in light mode to separate from white bg if needed
+    // But since we are on a glass panel, pure white usually stands out well against the track.
 
+    // --- Preview Circle ---
     // Draw preview circle (shows actual stroke width)
-    int previewDiameter = qMin(m_currentWidth, PREVIEW_SIZE - 4);
+    int previewDiameter = qMin(m_currentWidth, PREVIEW_SIZE - 2);
     int previewCenterX = m_previewRect.center().x();
     int previewCenterY = m_previewRect.center().y();
     QRect previewCircle(previewCenterX - previewDiameter / 2,
@@ -125,10 +140,11 @@ void LineWidthWidget::draw(QPainter& painter)
     painter.setBrush(m_previewColor);
     painter.drawEllipse(previewCircle);
 
-    // Draw width label
+    // --- Width Label ---
     painter.setPen(m_styleConfig.textColor);
     QFont font = painter.font();
-    font.setPointSize(11);
+    font.setPointSize(10); // Slightly smaller for cleaner look
+    font.setWeight(QFont::Medium);
     painter.setFont(font);
     QString label = QString("%1 px").arg(m_currentWidth);
     painter.drawText(m_labelRect, Qt::AlignCenter, label);
