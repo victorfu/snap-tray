@@ -552,8 +552,10 @@ void ColorAndWidthWidget::draw(QPainter& painter)
 
     painter.setRenderHint(QPainter::Antialiasing, true);
 
-    // Draw glass panel (6px radius for sub-widgets)
-    GlassRenderer::drawGlassPanel(painter, m_widgetRect, m_styleConfig, 6);
+    // Draw glass panel (6px radius for sub-widgets) if enabled
+    if (m_drawBackground) {
+        GlassRenderer::drawGlassPanel(painter, m_widgetRect, m_styleConfig, 6);
+    }
 
     // Draw sections
     if (m_showColorSection) {
@@ -618,17 +620,33 @@ bool ColorAndWidthWidget::contains(const QPoint& pos) const
 
 bool ColorAndWidthWidget::handleClick(const QPoint& pos)
 {
+    // Track dropdown state before handling click
+    bool wasArrowOpen = m_showArrowStyleSection && m_arrowStyleSection->isDropdownOpen();
+    bool wasLineOpen = m_showLineStyleSection && m_lineStyleSection->isDropdownOpen();
+
+    bool handled = false;
+
     // Handle dropdown clicks first (even outside main widget)
     if (m_showArrowStyleSection) {
         if (m_arrowStyleSection->handleClick(pos)) {
-            return true;
+            handled = true;
         }
     }
-    if (m_showLineStyleSection) {
+    if (!handled && m_showLineStyleSection) {
         if (m_lineStyleSection->handleClick(pos)) {
-            return true;
+            handled = true;
         }
     }
+
+    // Check if dropdown state changed (emit signal regardless of handled status)
+    // This ensures window resizes back when clicking outside to close dropdown
+    bool isArrowOpen = m_showArrowStyleSection && m_arrowStyleSection->isDropdownOpen();
+    bool isLineOpen = m_showLineStyleSection && m_lineStyleSection->isDropdownOpen();
+    if (wasArrowOpen != isArrowOpen || wasLineOpen != isLineOpen) {
+        emit dropdownStateChanged();
+    }
+
+    if (handled) return true;
 
     if (!m_widgetRect.contains(pos)) return false;
 
@@ -742,4 +760,19 @@ bool ColorAndWidthWidget::handleWheel(int delta)
         return false;
     }
     return m_widthSection->handleWheel(delta);
+}
+
+int ColorAndWidthWidget::activeDropdownHeight() const
+{
+    int dropdownHeight = 0;
+
+    if (m_showArrowStyleSection && m_arrowStyleSection->isDropdownOpen()) {
+        dropdownHeight = qMax(dropdownHeight, m_arrowStyleSection->dropdownRect().height());
+    }
+
+    if (m_showLineStyleSection && m_lineStyleSection->isDropdownOpen()) {
+        dropdownHeight = qMax(dropdownHeight, m_lineStyleSection->dropdownRect().height());
+    }
+
+    return dropdownHeight;
 }

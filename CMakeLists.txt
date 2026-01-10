@@ -555,6 +555,8 @@ add_library(snaptray_ui STATIC
     src/PinWindow.cpp
     src/PinWindowManager.cpp
     src/pinwindow/ImageTransformer.cpp
+    src/pinwindow/PinWindowToolbar.cpp
+    src/pinwindow/PinWindowSubToolbar.cpp
     src/pinwindow/ResizeHandler.cpp
     src/pinwindow/UIIndicators.cpp
     src/pinwindow/ClickThroughExitButton.cpp
@@ -641,6 +643,8 @@ add_library(snaptray_ui STATIC
     include/PinWindow.h
     include/PinWindowManager.h
     include/pinwindow/ImageTransformer.h
+    include/pinwindow/PinWindowToolbar.h
+    include/pinwindow/PinWindowSubToolbar.h
     include/pinwindow/ResizeHandler.h
     include/pinwindow/UIIndicators.h
     include/pinwindow/ClickThroughExitButton.h

@@ -149,6 +149,9 @@ signals:
      */
     void editingCancelled();
 
+protected:
+    bool eventFilter(QObject* obj, QEvent* event) override;
+
 private slots:
     void onContentsChanged();
 

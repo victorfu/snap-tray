@@ -5,6 +5,7 @@
 #include <QTextCursor>
 #include <QFontMetrics>
 #include <QWidget>
+#include <QKeyEvent>
 
 const int InlineTextEditor::MIN_WIDTH;
 const int InlineTextEditor::MIN_HEIGHT;
@@ -116,6 +117,9 @@ QString InlineTextEditor::finishEditing()
         return QString();
     }
 
+    // Remove event filter installed during confirm mode
+    m_textEdit->removeEventFilter(this);
+
     QString text = m_textEdit->toPlainText().trimmed();
 
     m_textEdit->hide();
@@ -144,7 +148,15 @@ void InlineTextEditor::enterConfirmMode()
     // Switch from editing mode to confirm mode
     m_isConfirmMode = true;
     m_textEdit->setReadOnly(true);
-    m_textEdit->clearFocus();
+
+    // Install event filter to intercept Enter/Escape keys in confirm mode
+    // IMPORTANT: Keep focus on QTextEdit so the event filter receives key events
+    // The event filter will intercept Enter/Escape before QTextEdit processes them
+    m_textEdit->installEventFilter(this);
+
+    // DON'T clear focus - keep focus on QTextEdit so event filter works
+    // For floating frameless windows like PinWindow, transferring focus doesn't
+    // reliably deliver keyboard events to the parent widget
 
     // Disable mouse events on QTextEdit so parent can handle dragging
     m_textEdit->setAttribute(Qt::WA_TransparentForMouseEvents, true);
@@ -158,6 +170,9 @@ void InlineTextEditor::cancelEditing()
     if (!m_isEditing || !m_textEdit) {
         return;
     }
+
+    // Remove event filter installed during confirm mode
+    m_textEdit->removeEventFilter(this);
 
     m_textEdit->hide();
     m_textEdit->clear();
@@ -374,4 +389,24 @@ void InlineTextEditor::adjustSize()
     newHeight = qMax(30, newHeight);
 
     m_textEdit->setFixedSize(newWidth, newHeight);
+}
+
+bool InlineTextEditor::eventFilter(QObject* obj, QEvent* event)
+{
+    if (obj == m_textEdit && m_isConfirmMode && event->type() == QEvent::KeyPress) {
+        QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
+
+        if (keyEvent->key() == Qt::Key_Return || keyEvent->key() == Qt::Key_Enter) {
+            // Finish editing on Enter
+            finishEditing();
+            return true;  // Event handled
+        }
+        else if (keyEvent->key() == Qt::Key_Escape) {
+            // Cancel editing on Escape
+            cancelEditing();
+            return true;  // Event handled
+        }
+    }
+
+    return QObject::eventFilter(obj, event);
 }

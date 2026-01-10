@@ -50,7 +50,7 @@ void PolylineAnnotation::draw(QPainter& painter) const
     painter.setBrush(Qt::NoBrush);  // Ensure no fill for the polyline path
     painter.setRenderHint(QPainter::Antialiasing, true);
 
-    double arrowLength = qMax(15.0, m_width * 5.0);
+    double arrowLength = qMax(10.0, m_width * 3.0);
     int lastIdx = m_points.size() - 1;
 
     // Check if we have arrowheads that need line adjustment
@@ -133,7 +133,7 @@ void PolylineAnnotation::drawArrowhead(QPainter& painter, const QPoint& from, co
     double angle = qAtan2(to.y() - from.y(), to.x() - from.x());
 
     // Arrowhead size proportional to line width
-    double arrowLength = qMax(15.0, m_width * 5.0);
+    double arrowLength = qMax(10.0, m_width * 3.0);
     double arrowAngle = M_PI / 6.0;  // 30 degrees
 
     // Calculate arrowhead points
@@ -171,7 +171,7 @@ void PolylineAnnotation::drawArrowheadLine(QPainter& painter, const QPoint& from
     double angle = qAtan2(to.y() - from.y(), to.x() - from.x());
 
     // Arrowhead size proportional to line width
-    double arrowLength = qMax(15.0, m_width * 5.0);
+    double arrowLength = qMax(10.0, m_width * 3.0);
     double arrowAngle = M_PI / 6.0;  // 30 degrees
 
     // Calculate arrowhead points

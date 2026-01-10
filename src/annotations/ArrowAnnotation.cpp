@@ -36,7 +36,7 @@ void ArrowAnnotation::draw(QPainter &painter) const
     painter.setPen(pen);
     painter.setRenderHint(QPainter::Antialiasing, true);
 
-    double arrowLength = qMax(15.0, m_width * 5.0);
+    double arrowLength = qMax(10.0, m_width * 3.0);
 
     // Calculate line endpoints (adjust if arrowheads are present)
     QPointF lineStart = m_start;
@@ -105,7 +105,7 @@ void ArrowAnnotation::drawArrowhead(QPainter &painter, const QPoint &start, cons
     double angle = qAtan2(end.y() - start.y(), end.x() - start.x());
 
     // Arrowhead size proportional to line width
-    double arrowLength = qMax(15.0, m_width * 5.0);
+    double arrowLength = qMax(10.0, m_width * 3.0);
     double arrowAngle = M_PI / 6.0;  // 30 degrees
 
     // Calculate arrowhead points
@@ -125,13 +125,14 @@ void ArrowAnnotation::drawArrowhead(QPainter &painter, const QPoint &start, cons
     arrowPath.lineTo(arrowP2);
     arrowPath.closeSubpath();
 
-    // Use solid pen for arrowhead outline
-    QPen solidPen(m_color, m_width, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
-    painter.setPen(solidPen);
-
     if (filled) {
+        // Solid fill without outline stroke
+        painter.setPen(Qt::NoPen);
         painter.setBrush(m_color);
     } else {
+        // Outline only
+        QPen solidPen(m_color, m_width, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+        painter.setPen(solidPen);
         painter.setBrush(Qt::NoBrush);
     }
     painter.drawPath(arrowPath);
@@ -143,7 +144,7 @@ void ArrowAnnotation::drawArrowheadLine(QPainter &painter, const QPoint &start, 
     double angle = qAtan2(end.y() - start.y(), end.x() - start.x());
 
     // Arrowhead size proportional to line width
-    double arrowLength = qMax(15.0, m_width * 5.0);
+    double arrowLength = qMax(10.0, m_width * 3.0);
     double arrowAngle = M_PI / 6.0;  // 30 degrees
 
     // Calculate arrowhead points

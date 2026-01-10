@@ -147,8 +147,16 @@ public:
 
     void setVisible(bool visible) { m_visible = visible; }
     bool isVisible() const { return m_visible; }
+    void setDrawBackground(bool draw) { m_drawBackground = draw; }
+    bool drawBackground() const { return m_drawBackground; }
     void updatePosition(const QRect& anchorRect, bool above = false, int screenWidth = 0);
     QRect boundingRect() const { return m_widgetRect; }
+
+    /**
+     * @brief Get height needed for any active dropdown.
+     * @return Height of the largest open dropdown, or 0 if none open.
+     */
+    int activeDropdownHeight() const;
 
     // =========================================================================
     // Rendering
@@ -204,6 +212,9 @@ signals:
     // Auto blur signals
     void autoBlurRequested();
 
+    // Dropdown state signal (for window resizing)
+    void dropdownStateChanged();
+
 private:
     void updateLayout();
     void connectSectionSignals();
@@ -233,6 +244,7 @@ private:
 
     // Layout state
     bool m_visible = false;
+    bool m_drawBackground = true;  // Whether to draw glass panel background
     bool m_dropdownExpandsUpward = false;
     QRect m_widgetRect;
 

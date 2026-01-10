@@ -8,6 +8,11 @@
 #include "WatermarkRenderer.h"
 #include "LoadingSpinnerRenderer.h"
 #include "pinwindow/ResizeHandler.h"
+#include "tools/ToolId.h"
+#include "annotations/StepBadgeAnnotation.h"
+#include "annotations/ShapeAnnotation.h"
+#include "annotations/ArrowAnnotation.h"
+#include "annotations/LineStyle.h"
 
 class QMenu;
 class QLabel;
@@ -15,6 +20,14 @@ class QTimer;
 class OCRManager;
 class PinWindowManager;
 class UIIndicators;
+class PinWindowToolbar;
+class PinWindowSubToolbar;
+class AnnotationLayer;
+class ToolManager;
+class InlineTextEditor;
+class TextAnnotationEditor;
+class AutoBlurManager;
+class TextAnnotation;
 
 class PinWindow : public QWidget
 {
@@ -49,6 +62,13 @@ public:
     // Border visibility
     void setShowBorder(bool enabled);
     bool showBorder() const { return m_showBorder; }
+
+    // Toolbar visibility
+    void toggleToolbar();
+    bool isToolbarVisible() const { return m_toolbarVisible; }
+
+    // Annotation mode
+    bool isAnnotationMode() const { return m_annotationMode; }
 
 signals:
     void closed(PinWindow *window);
@@ -96,6 +116,40 @@ private:
     // Info methods
     void copyAllInfo();
 
+    // Toolbar and annotation methods
+    void showToolbar();
+    void hideToolbar();
+    void initializeAnnotationComponents();
+    void updateToolbarPosition();
+    void enterAnnotationMode();
+    void exitAnnotationMode();
+    void updateCursorForTool();
+    void handleToolbarToolSelected(int toolId);
+    void handleToolbarUndo();
+    void handleToolbarRedo();
+    void updateUndoRedoState();
+    bool isAnnotationTool(ToolId toolId) const;
+    QPixmap getExportPixmapWithAnnotations() const;
+    void updateSubToolbarPosition();
+    void hideSubToolbar();
+    void onColorSelected(const QColor &color);
+    void onWidthChanged(int width);
+    void onEmojiSelected(const QString &emoji);
+    void onStepBadgeSizeChanged(StepBadgeSize size);
+    void onShapeTypeChanged(ShapeType type);
+    void onShapeFillModeChanged(ShapeFillMode mode);
+    void onArrowStyleChanged(LineEndStyle style);
+    void onLineStyleChanged(LineStyle style);
+    void onFontSizeDropdownRequested(const QPoint &pos);
+    void onFontFamilyDropdownRequested(const QPoint &pos);
+    void onAutoBlurRequested();
+
+    // Text annotation helper methods
+    bool handleTextEditorPress(const QPoint& pos);
+    bool handleTextAnnotationPress(const QPoint& pos);
+    bool handleGizmoPress(const QPoint& pos);
+    TextAnnotation* getSelectedTextAnnotation();
+
     // Original members
     QPixmap m_originalPixmap;
     QPixmap m_displayPixmap;
@@ -103,6 +157,7 @@ private:
     QPoint m_dragStartPos;
     bool m_isDragging;
     QMenu *m_contextMenu;
+    QAction *m_showToolbarAction = nullptr;
     QAction *m_clickThroughAction = nullptr;
     QAction *m_showBorderAction = nullptr;
 
@@ -159,6 +214,23 @@ private:
     static constexpr int kResizeThrottleMs = 16;  // ~60fps during resize
 
     int m_baseCornerRadius = 0;
+
+    // Toolbar and annotation members
+    PinWindowToolbar *m_toolbar = nullptr;
+    PinWindowSubToolbar *m_subToolbar = nullptr;
+    AnnotationLayer *m_annotationLayer = nullptr;
+    ToolManager *m_toolManager = nullptr;
+    InlineTextEditor *m_textEditor = nullptr;
+    TextAnnotationEditor *m_textAnnotationEditor = nullptr;
+    bool m_toolbarVisible = false;
+    bool m_annotationMode = false;
+    ToolId m_currentToolId = ToolId::Selection;
+    QColor m_annotationColor;
+    int m_annotationWidth = 3;
+    StepBadgeSize m_stepBadgeSize = StepBadgeSize::Medium;
+
+    // AutoBlur
+    AutoBlurManager *m_autoBlurManager = nullptr;
 };
 
 #endif // PINWINDOW_H

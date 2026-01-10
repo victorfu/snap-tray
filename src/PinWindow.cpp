@@ -7,8 +7,22 @@
 #include "platform/WindowLevel.h"
 #include "pinwindow/ResizeHandler.h"
 #include "pinwindow/UIIndicators.h"
+#include "pinwindow/PinWindowToolbar.h"
+#include "pinwindow/PinWindowSubToolbar.h"
+#include "annotations/AnnotationLayer.h"
+#include "annotations/EmojiStickerAnnotation.h"
+#include "annotations/MosaicRectAnnotation.h"
+#include "detection/AutoBlurManager.h"
+#include "tools/ToolManager.h"
+#include "tools/IToolHandler.h"
+#include "tools/handlers/EmojiStickerToolHandler.h"
 #include "settings/AnnotationSettingsManager.h"
 #include "settings/PinWindowSettingsManager.h"
+#include "InlineTextEditor.h"
+#include "region/TextAnnotationEditor.h"
+#include "ColorAndWidthWidget.h"
+#include "annotations/TextAnnotation.h"
+#include "TransformationGizmo.h"
 
 #include <QPainter>
 #include <QImage>
@@ -27,6 +41,7 @@
 #include <QStandardPaths>
 #include <QDateTime>
 #include <QToolTip>
+#include <QTextEdit>
 #include <QLabel>
 #include <QTimer>
 #include <QPointer>
@@ -163,6 +178,18 @@ PinWindow::PinWindow(const QPixmap &screenshot, const QPoint &position, QWidget 
 
 PinWindow::~PinWindow()
 {
+    // Clean up floating windows (not parented to this window)
+    if (m_toolbar) {
+        m_toolbar->close();
+        delete m_toolbar;
+        m_toolbar = nullptr;
+    }
+    if (m_subToolbar) {
+        m_subToolbar->close();
+        delete m_subToolbar;
+        m_subToolbar = nullptr;
+    }
+    // InlineTextEditor, TextAnnotationEditor are QObjects parented to this
     qDebug() << "PinWindow: Destroyed";
 }
 
@@ -401,6 +428,20 @@ void PinWindow::createContextMenu()
 {
     m_contextMenu = new QMenu(this);
 
+    // Show Toolbar action
+    m_showToolbarAction = m_contextMenu->addAction("Show Toolbar");
+    m_showToolbarAction->setShortcut(QKeySequence(Qt::Key_Space));
+    m_showToolbarAction->setCheckable(true);
+    connect(m_showToolbarAction, &QAction::triggered, this, &PinWindow::toggleToolbar);
+
+    // Show border option (placed right after Show Toolbar)
+    m_showBorderAction = m_contextMenu->addAction("Show Border");
+    m_showBorderAction->setCheckable(true);
+    m_showBorderAction->setChecked(m_showBorder);
+    connect(m_showBorderAction, &QAction::toggled, this, &PinWindow::setShowBorder);
+
+    m_contextMenu->addSeparator();
+
     QAction *copyAction = m_contextMenu->addAction("Copy to Clipboard");
     copyAction->setShortcut(QKeySequence::Copy);
     connect(copyAction, &QAction::triggered, this, &PinWindow::copyToClipboard);
@@ -541,12 +582,6 @@ void PinWindow::createContextMenu()
     addInfoItem("X-mirror", m_flipHorizontal ? "Yes" : "No");
     addInfoItem("Y-mirror", m_flipVertical ? "Yes" : "No");
 
-    // Show border option
-    m_showBorderAction = m_contextMenu->addAction("Show Border");
-    m_showBorderAction->setCheckable(true);
-    m_showBorderAction->setChecked(m_showBorder);
-    connect(m_showBorderAction, &QAction::toggled, this, &PinWindow::setShowBorder);
-
     // Click-through option
     m_clickThroughAction = m_contextMenu->addAction("Click-through");
     m_clickThroughAction->setCheckable(true);
@@ -581,7 +616,7 @@ void PinWindow::saveToFile()
     );
 
     if (!filePath.isEmpty()) {
-        QPixmap pixmapToSave = getExportPixmap();
+        QPixmap pixmapToSave = getExportPixmapWithAnnotations();
         if (pixmapToSave.save(filePath)) {
             qDebug() << "PinWindow: Saved to" << filePath;
             emit saveRequested(pixmapToSave);
@@ -593,7 +628,7 @@ void PinWindow::saveToFile()
 
 void PinWindow::copyToClipboard()
 {
-    QPixmap pixmapToCopy = getExportPixmap();
+    QPixmap pixmapToCopy = getExportPixmapWithAnnotations();
     QGuiApplication::clipboard()->setPixmap(pixmapToCopy);
     qDebug() << "PinWindow: Copied to clipboard";
 }
@@ -737,12 +772,105 @@ void PinWindow::paintEvent(QPaintEvent *)
     // Draw the screenshot
     painter.drawPixmap(pixmapRect, m_displayPixmap);
 
+    // Draw annotations with the same rotation/flip transform as the pixmap
+    if (m_annotationLayer && !m_annotationLayer->isEmpty()) {
+        painter.save();
+
+        // Apply the same rotation/flip transform used for the pixmap
+        // QPixmap::transformed() with rotate() rotates around origin (0,0),
+        // so we need to match that transformation exactly
+        if (m_rotationAngle != 0 || m_flipHorizontal || m_flipVertical) {
+            // Get original (unrotated) dimensions - annotations are stored in this space
+            qreal origW = pixmapRect.width();
+            qreal origH = pixmapRect.height();
+            if (m_rotationAngle == 90 || m_rotationAngle == 270) {
+                // Current dimensions are swapped, so swap back to get original
+                std::swap(origW, origH);
+            }
+
+            // Build transform matching QPixmap::transformed() behavior
+            // The transform order is: rotate first, then flip (matching ensureTransformCacheValid)
+            QTransform transform;
+
+            // Step 1: Apply rotation with proper translation to keep in positive coords
+            if (m_rotationAngle == 90) {
+                transform.translate(pixmapRect.width(), 0);
+                transform.rotate(90);
+            } else if (m_rotationAngle == 180) {
+                transform.translate(pixmapRect.width(), pixmapRect.height());
+                transform.rotate(180);
+            } else if (m_rotationAngle == 270) {
+                transform.translate(0, pixmapRect.height());
+                transform.rotate(270);
+            }
+
+            // Step 2: Apply flip around the center of current (post-rotation) rect
+            if (m_flipHorizontal || m_flipVertical) {
+                QPointF center(pixmapRect.width() / 2.0, pixmapRect.height() / 2.0);
+                transform.translate(center.x(), center.y());
+                if (m_flipHorizontal) transform.scale(-1, 1);
+                if (m_flipVertical) transform.scale(1, -1);
+                transform.translate(-center.x(), -center.y());
+            }
+
+            painter.setTransform(transform, true);
+        }
+
+        m_annotationLayer->draw(painter);
+
+        // Draw transformation gizmo for selected text annotation
+        if (auto* textItem = getSelectedTextAnnotation()) {
+            TransformationGizmo::draw(painter, textItem);
+        }
+
+        painter.restore();
+    }
+
+    // Draw annotation preview (current stroke in progress)
+    if (m_annotationMode && m_toolManager) {
+        painter.save();
+
+        // Apply the same transform to preview (matching annotation layer transform above)
+        if (m_rotationAngle != 0 || m_flipHorizontal || m_flipVertical) {
+            QTransform transform;
+
+            // Step 1: Apply rotation with proper translation to keep in positive coords
+            if (m_rotationAngle == 90) {
+                transform.translate(pixmapRect.width(), 0);
+                transform.rotate(90);
+            } else if (m_rotationAngle == 180) {
+                transform.translate(pixmapRect.width(), pixmapRect.height());
+                transform.rotate(180);
+            } else if (m_rotationAngle == 270) {
+                transform.translate(0, pixmapRect.height());
+                transform.rotate(270);
+            }
+
+            // Step 2: Apply flip around the center of current (post-rotation) rect
+            if (m_flipHorizontal || m_flipVertical) {
+                QPointF center(pixmapRect.width() / 2.0, pixmapRect.height() / 2.0);
+                transform.translate(center.x(), center.y());
+                if (m_flipHorizontal) transform.scale(-1, 1);
+                if (m_flipVertical) transform.scale(1, -1);
+                transform.translate(-center.x(), -center.y());
+            }
+
+            painter.setTransform(transform, true);
+        }
+
+        m_toolManager->drawCurrentPreview(painter);
+        painter.restore();
+    }
+
     // Draw border if enabled
     if (m_showBorder) {
         int cornerRadius = effectiveCornerRadius(size());
         if (m_clickThrough) {
             // Dashed indigo border for click-through mode
             painter.setPen(QPen(QColor(88, 86, 214, 200), 2, Qt::DashLine));
+        } else if (m_annotationMode) {
+            // Green border for annotation mode
+            painter.setPen(QPen(QColor(52, 199, 89, 200), 2));
         } else {
             // Blue border
             painter.setPen(QPen(QColor(0, 122, 255, 200), 1.5));
@@ -768,6 +896,44 @@ void PinWindow::paintEvent(QPaintEvent *)
 void PinWindow::mousePressEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton) {
+        // 1. First handle inline text editing (finish/cancel when clicking outside)
+        if (handleTextEditorPress(event->pos())) {
+            return;
+        }
+
+        // 2. Handle gizmo interaction (scale/rotate selected text)
+        if (m_annotationMode && handleGizmoPress(event->pos())) {
+            return;
+        }
+
+        // 3. Handle clicking on existing text annotations
+        if (m_annotationMode && handleTextAnnotationPress(event->pos())) {
+            return;
+        }
+
+        // 4. Clear text annotation selection if clicking elsewhere in annotation mode
+        if (m_annotationMode && m_annotationLayer && m_annotationLayer->selectedIndex() >= 0) {
+            m_annotationLayer->clearSelection();
+            update();
+        }
+
+        // 5. In annotation mode with a drawing tool
+        if (m_annotationMode && isAnnotationTool(m_currentToolId)) {
+            // Text tool: start new text editing
+            if (m_currentToolId == ToolId::Text && m_textAnnotationEditor) {
+                m_textAnnotationEditor->startEditing(event->pos(), rect(), m_annotationColor);
+                update();
+                return;
+            }
+
+            // Other annotation tools route to ToolManager
+            if (m_toolManager) {
+                m_toolManager->handleMousePress(event->pos());
+                update();
+                return;
+            }
+        }
+
         ResizeHandler::Edge edge = m_resizeHandler->getEdgeAt(event->pos(), size());
 
         if (edge != ResizeHandler::Edge::None) {
@@ -785,6 +951,34 @@ void PinWindow::mousePressEvent(QMouseEvent *event)
 
 void PinWindow::mouseMoveEvent(QMouseEvent *event)
 {
+    // Handle confirm mode text dragging
+    if (m_textEditor && m_textEditor->isConfirmMode() && m_textEditor->isDragging()) {
+        m_textEditor->handleMouseMove(event->pos());
+        update();
+        return;
+    }
+
+    // Handle TextAnnotationEditor transformation (rotate/scale)
+    if (m_textAnnotationEditor && m_textAnnotationEditor->isTransforming()) {
+        m_textAnnotationEditor->updateTransformation(event->pos());
+        update();
+        return;
+    }
+
+    // Handle TextAnnotationEditor dragging
+    if (m_textAnnotationEditor && m_textAnnotationEditor->isDragging()) {
+        m_textAnnotationEditor->updateDragging(event->pos());
+        update();
+        return;
+    }
+
+    // In annotation mode with active drawing, route to ToolManager
+    if (m_annotationMode && m_toolManager && m_toolManager->isDrawing()) {
+        m_toolManager->handleMouseMove(event->pos());
+        update();
+        return;
+    }
+
     if (m_isResizing) {
         QSize newSize;
         QPoint newPos;
@@ -821,15 +1015,56 @@ void PinWindow::mouseMoveEvent(QMouseEvent *event)
     } else if (m_isDragging) {
         move(event->globalPosition().toPoint() - m_dragStartPos);
     } else {
-        // Update cursor based on position using centralized CursorManager
-        ResizeHandler::Edge edge = m_resizeHandler->getEdgeAt(event->pos(), size());
-        setCursor(CursorManager::cursorForEdge(static_cast<int>(edge)));
+        // Only update resize cursor when NOT in annotation mode
+        // In annotation mode, keep the tool cursor (set by updateCursorForTool)
+        if (!m_annotationMode) {
+            ResizeHandler::Edge edge = m_resizeHandler->getEdgeAt(event->pos(), size());
+            setCursor(CursorManager::cursorForEdge(static_cast<int>(edge)));
+        }
     }
 }
 
 void PinWindow::mouseReleaseEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton) {
+        // Handle confirm mode text dragging end
+        if (m_textEditor && m_textEditor->isDragging()) {
+            m_textEditor->handleMouseRelease(event->pos());
+            update();
+            return;
+        }
+
+        // Handle TextAnnotationEditor transformation/dragging end
+        if (m_textAnnotationEditor) {
+            if (m_textAnnotationEditor->isTransforming()) {
+                m_textAnnotationEditor->finishTransformation();
+                updateUndoRedoState();
+                update();
+                return;
+            }
+            if (m_textAnnotationEditor->isDragging()) {
+                m_textAnnotationEditor->finishDragging();
+                updateUndoRedoState();
+                update();
+                return;
+            }
+        }
+
+        // In annotation mode, route to ToolManager
+        if (m_annotationMode && m_toolManager) {
+            // For drawing tools: only route if actively drawing
+            // For single-click tools (Emoji, StepBadge): always route release
+            bool isSingleClickTool = (m_currentToolId == ToolId::EmojiSticker ||
+                                      m_currentToolId == ToolId::StepBadge);
+
+            if (m_toolManager->isDrawing() || isSingleClickTool) {
+                m_toolManager->handleMouseRelease(event->pos());
+                updateUndoRedoState();
+                update();
+                return;
+            }
+        }
+
         if (m_isResizing) {
             m_isResizing = false;
             m_resizeHandler->finishResize();
@@ -895,6 +1130,11 @@ void PinWindow::wheelEvent(QWheelEvent *event)
 
 void PinWindow::contextMenuEvent(QContextMenuEvent *event)
 {
+    // Update Show Toolbar checked state
+    if (m_showToolbarAction) {
+        m_showToolbarAction->setChecked(m_toolbarVisible);
+    }
+
     // Use popup() instead of exec() to avoid blocking the event loop.
     // This prevents UI freeze when global hotkeys (like F2) are pressed
     // while the context menu is open.
@@ -903,9 +1143,72 @@ void PinWindow::contextMenuEvent(QContextMenuEvent *event)
 
 void PinWindow::keyPressEvent(QKeyEvent *event)
 {
+    qDebug() << "PinWindow::keyPressEvent - key:" << event->key()
+             << "modifiers:" << event->modifiers()
+             << "isEditing:" << (m_textEditor ? m_textEditor->isEditing() : false)
+             << "isConfirmMode:" << (m_textEditor ? m_textEditor->isConfirmMode() : false)
+             << "hasFocus:" << hasFocus();
+
+    // Handle text editor state first (like RegionSelector)
+    if (m_textEditor && m_textEditor->isEditing()) {
+        if (event->key() == Qt::Key_Escape) {
+            m_textEditor->cancelEditing();
+            return;
+        }
+        if (m_textEditor->isConfirmMode()) {
+            // In confirm mode: Enter finishes editing
+            if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) {
+                m_textEditor->finishEditing();  // Emits editingFinished signal
+                return;
+            }
+        } else {
+            // In typing mode: Ctrl+Enter or Shift+Enter enters confirm mode
+            if ((event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) &&
+                (event->modifiers() & (Qt::ControlModifier | Qt::ShiftModifier))) {
+                if (!m_textEditor->textEdit()->toPlainText().trimmed().isEmpty()) {
+                    m_textEditor->enterConfirmMode();
+                }
+                return;
+            }
+        }
+        // Let other keys pass through to text editor
+        return;
+    }
+
+    // Spacebar toggles toolbar
+    if (event->key() == Qt::Key_Space) {
+        toggleToolbar();
+        event->accept();
+        return;
+    }
+
+    // Escape handling
     if (event->key() == Qt::Key_Escape) {
+        if (m_toolbarVisible) {
+            hideToolbar();
+            event->accept();
+            return;
+        }
         close();
-    } else if (event->key() == Qt::Key_1) {
+        return;
+    }
+
+    // Undo/Redo in annotation mode
+    if (m_annotationMode && m_annotationLayer) {
+        if (event->matches(QKeySequence::Undo)) {
+            handleToolbarUndo();
+            event->accept();
+            return;
+        }
+        if (event->matches(QKeySequence::Redo)) {
+            handleToolbarRedo();
+            event->accept();
+            return;
+        }
+    }
+
+    // Rotation and flip shortcuts
+    if (event->key() == Qt::Key_1) {
         rotateRight();
     } else if (event->key() == Qt::Key_2) {
         rotateLeft();
@@ -931,4 +1234,669 @@ void PinWindow::closeEvent(QCloseEvent *event)
 void PinWindow::moveEvent(QMoveEvent *event)
 {
     QWidget::moveEvent(event);
+    updateToolbarPosition();
+}
+
+// ============================================================================
+// Toolbar and Annotation Methods
+// ============================================================================
+
+void PinWindow::initializeAnnotationComponents()
+{
+    // Initialize annotation layer
+    m_annotationLayer = new AnnotationLayer(this);
+    connect(m_annotationLayer, &AnnotationLayer::changed,
+            this, QOverload<>::of(&QWidget::update));
+
+    // Initialize tool manager
+    m_toolManager = new ToolManager(this);
+    m_toolManager->registerDefaultHandlers();
+    m_toolManager->setAnnotationLayer(m_annotationLayer);
+    m_toolManager->setSourcePixmap(&m_originalPixmap);  // Required for Mosaic tool
+
+    // Load saved annotation settings
+    auto& annotationSettings = AnnotationSettingsManager::instance();
+    m_annotationColor = annotationSettings.loadColor();
+    m_annotationWidth = annotationSettings.loadWidth();
+    m_stepBadgeSize = annotationSettings.loadStepBadgeSize();
+    m_toolManager->setColor(m_annotationColor);
+    m_toolManager->setWidth(m_annotationWidth);
+
+    // Connect tool manager signals
+    connect(m_toolManager, &ToolManager::needsRepaint,
+            this, QOverload<>::of(&QWidget::update));
+
+    // Initialize cursor manager for centralized cursor handling (like RegionSelector)
+    auto& cursorManager = CursorManager::instance();
+    cursorManager.setTargetWidget(this);
+    cursorManager.setToolManager(m_toolManager);
+
+    // Initialize text annotation editor components
+    m_textEditor = new InlineTextEditor(this);
+    m_textAnnotationEditor = new TextAnnotationEditor(this);
+    m_textAnnotationEditor->setAnnotationLayer(m_annotationLayer);
+    m_textAnnotationEditor->setTextEditor(m_textEditor);
+    m_textAnnotationEditor->setParentWidget(this);
+
+    // Connect text editor signals
+    connect(m_textEditor, &InlineTextEditor::editingFinished,
+            this, [this](const QString& text, const QPoint& position) {
+                m_textAnnotationEditor->finishEditing(text, position, m_annotationColor);
+                updateUndoRedoState();
+                update();
+            });
+    connect(m_textEditor, &InlineTextEditor::editingCancelled,
+            this, [this]() {
+                m_textAnnotationEditor->cancelEditing();
+                update();
+            });
+
+    // Initialize toolbar (not parented - separate floating window)
+    m_toolbar = new PinWindowToolbar(nullptr);
+    m_toolbar->setOCRAvailable(PlatformFeatures::instance().isOCRAvailable());
+
+    // Connect toolbar signals
+    connect(m_toolbar, &PinWindowToolbar::toolSelected,
+            this, &PinWindow::handleToolbarToolSelected);
+    connect(m_toolbar, &PinWindowToolbar::undoClicked,
+            this, &PinWindow::handleToolbarUndo);
+    connect(m_toolbar, &PinWindowToolbar::redoClicked,
+            this, &PinWindow::handleToolbarRedo);
+    connect(m_toolbar, &PinWindowToolbar::ocrClicked,
+            this, &PinWindow::performOCR);
+    connect(m_toolbar, &PinWindowToolbar::copyClicked,
+            this, &PinWindow::copyToClipboard);
+    connect(m_toolbar, &PinWindowToolbar::saveClicked,
+            this, &PinWindow::saveToFile);
+    connect(m_toolbar, &PinWindowToolbar::doneClicked,
+            this, &PinWindow::hideToolbar);
+    connect(m_toolbar, &PinWindowToolbar::cursorRestoreRequested,
+            this, &PinWindow::updateCursorForTool);
+
+    // Initialize sub-toolbar (not parented - separate floating window)
+    m_subToolbar = new PinWindowSubToolbar(nullptr);
+
+    // Connect sub-toolbar signals
+    connect(m_subToolbar, &PinWindowSubToolbar::colorSelected,
+            this, &PinWindow::onColorSelected);
+    connect(m_subToolbar, &PinWindowSubToolbar::widthChanged,
+            this, &PinWindow::onWidthChanged);
+    connect(m_subToolbar, &PinWindowSubToolbar::emojiSelected,
+            this, &PinWindow::onEmojiSelected);
+    connect(m_subToolbar, &PinWindowSubToolbar::stepBadgeSizeChanged,
+            this, &PinWindow::onStepBadgeSizeChanged);
+    connect(m_subToolbar, &PinWindowSubToolbar::shapeTypeChanged,
+            this, &PinWindow::onShapeTypeChanged);
+    connect(m_subToolbar, &PinWindowSubToolbar::shapeFillModeChanged,
+            this, &PinWindow::onShapeFillModeChanged);
+    connect(m_subToolbar, &PinWindowSubToolbar::arrowStyleChanged,
+            this, &PinWindow::onArrowStyleChanged);
+    connect(m_subToolbar, &PinWindowSubToolbar::lineStyleChanged,
+            this, &PinWindow::onLineStyleChanged);
+    connect(m_subToolbar, &PinWindowSubToolbar::fontSizeDropdownRequested,
+            this, &PinWindow::onFontSizeDropdownRequested);
+    connect(m_subToolbar, &PinWindowSubToolbar::fontFamilyDropdownRequested,
+            this, &PinWindow::onFontFamilyDropdownRequested);
+    connect(m_subToolbar, &PinWindowSubToolbar::autoBlurRequested,
+            this, &PinWindow::onAutoBlurRequested);
+    connect(m_subToolbar, &PinWindowSubToolbar::cursorRestoreRequested,
+            this, &PinWindow::updateCursorForTool);
+
+    // Connect TextAnnotationEditor to ColorAndWidthWidget (must be after sub-toolbar creation)
+    m_textAnnotationEditor->setColorAndWidthWidget(m_subToolbar->colorAndWidthWidget());
+
+    // Sync initial width and color to sub-toolbar UI
+    m_subToolbar->colorAndWidthWidget()->setCurrentWidth(m_annotationWidth);
+    m_subToolbar->colorAndWidthWidget()->setCurrentColor(m_annotationColor);
+
+    qDebug() << "PinWindow: Annotation components initialized";
+}
+
+void PinWindow::toggleToolbar()
+{
+    if (m_toolbarVisible) {
+        hideToolbar();
+    } else {
+        showToolbar();
+    }
+}
+
+void PinWindow::showToolbar()
+{
+    // Lazy initialization of annotation components
+    if (!m_toolbar) {
+        initializeAnnotationComponents();
+    }
+
+    // Set associated widgets for click-outside detection
+    m_toolbar->setAssociatedWidgets(this, m_subToolbar);
+
+    // Connect close request signal
+    connect(m_toolbar, &PinWindowToolbar::closeRequested,
+            this, &PinWindow::hideToolbar, Qt::UniqueConnection);
+
+    m_toolbarVisible = true;
+    updateUndoRedoState();
+    m_toolbar->show();
+    m_toolbar->raise();
+
+    // Position AFTER show to ensure correct geometry on macOS
+    updateToolbarPosition();
+
+    qDebug() << "PinWindow: Toolbar shown at" << m_toolbar->geometry();
+}
+
+void PinWindow::hideToolbar()
+{
+    if (m_toolbar) {
+        m_toolbar->hide();
+    }
+    m_toolbarVisible = false;
+    exitAnnotationMode();
+
+    qDebug() << "PinWindow: Toolbar hidden";
+}
+
+void PinWindow::updateToolbarPosition()
+{
+    if (m_toolbar && m_toolbarVisible) {
+        qDebug() << "PinWindow::updateToolbarPosition - frameGeometry():" << frameGeometry()
+                 << "geometry():" << geometry() << "pos():" << pos();
+        m_toolbar->positionNear(frameGeometry());
+        // Also update sub-toolbar position if visible
+        updateSubToolbarPosition();
+    }
+}
+
+void PinWindow::enterAnnotationMode()
+{
+    if (m_annotationMode) {
+        return;
+    }
+
+    m_annotationMode = true;
+    updateCursorForTool();
+    update();
+
+    qDebug() << "PinWindow: Entered annotation mode";
+}
+
+void PinWindow::updateCursorForTool()
+{
+    if (!m_annotationMode) {
+        setCursor(Qt::ArrowCursor);
+        return;
+    }
+
+    // Directly set cursor on this widget instead of using CursorManager
+    // (CursorManager is designed for single-window apps like RegionSelector,
+    // but PinWindow has a separate floating toolbar that can steal focus)
+    if (!m_toolManager) {
+        setCursor(Qt::CrossCursor);
+        return;
+    }
+
+    ToolId currentTool = m_toolManager->currentTool();
+
+    // Special handling for mosaic tool
+    if (currentTool == ToolId::Mosaic) {
+        int mosaicWidth = m_toolManager->width();
+        setCursor(CursorManager::createMosaicCursor(mosaicWidth));
+        return;
+    }
+
+    // Use handler's cursor() method
+    IToolHandler* handler = m_toolManager->currentHandler();
+    if (handler) {
+        setCursor(handler->cursor());
+    } else {
+        // Fallback to cross cursor for drawing tools (including Text which has no handler)
+        setCursor(Qt::CrossCursor);
+    }
+}
+
+void PinWindow::exitAnnotationMode()
+{
+    if (!m_annotationMode) {
+        return;
+    }
+
+    m_annotationMode = false;
+    m_currentToolId = ToolId::Selection;
+
+    if (m_toolbar) {
+        m_toolbar->setActiveButton(-1);
+    }
+
+    // Hide sub-toolbar when exiting annotation mode
+    hideSubToolbar();
+
+    setCursor(Qt::ArrowCursor);
+    update();
+
+    qDebug() << "PinWindow: Exited annotation mode";
+}
+
+void PinWindow::handleToolbarToolSelected(int toolId)
+{
+    // Map toolbar button ID to ToolId
+    ToolId tool = ToolId::Selection;
+
+    switch (toolId) {
+    case PinWindowToolbar::ButtonPencil:
+        tool = ToolId::Pencil;
+        break;
+    case PinWindowToolbar::ButtonMarker:
+        tool = ToolId::Marker;
+        break;
+    case PinWindowToolbar::ButtonArrow:
+        tool = ToolId::Arrow;
+        break;
+    case PinWindowToolbar::ButtonShape:
+        tool = ToolId::Shape;
+        break;
+    case PinWindowToolbar::ButtonText:
+        tool = ToolId::Text;
+        break;
+    case PinWindowToolbar::ButtonMosaic:
+        tool = ToolId::Mosaic;
+        break;
+    case PinWindowToolbar::ButtonEraser:
+        tool = ToolId::Eraser;
+        break;
+    case PinWindowToolbar::ButtonStepBadge:
+        tool = ToolId::StepBadge;
+        // Apply step badge radius when tool is selected
+        {
+            int radius = StepBadgeAnnotation::radiusForSize(m_stepBadgeSize);
+            if (m_toolManager) {
+                m_toolManager->setWidth(radius);
+            }
+        }
+        break;
+    case PinWindowToolbar::ButtonEmoji:
+        tool = ToolId::EmojiSticker;
+        break;
+    default:
+        break;
+    }
+
+    // Check if same tool clicked - toggle sub-toolbar visibility (matches RegionSelector behavior)
+    bool sameToolClicked = (m_currentToolId == tool && m_annotationMode);
+
+    m_currentToolId = tool;
+
+    if (m_toolManager) {
+        m_toolManager->setCurrentTool(tool);
+    }
+
+    if (m_toolbar) {
+        m_toolbar->setActiveButton(toolId);
+    }
+
+    if (isAnnotationTool(tool)) {
+        enterAnnotationMode();
+        // Update cursor for the new tool (enterAnnotationMode also calls this,
+        // but we need to update when switching between annotation tools too)
+        updateCursorForTool();
+
+        if (sameToolClicked && m_subToolbar && m_subToolbar->isVisible()) {
+            // Same tool clicked while sub-toolbar visible - hide sub-toolbar
+            qDebug() << "PinWindow: Same tool clicked, hiding sub-toolbar";
+            hideSubToolbar();
+        } else {
+            // Different tool or sub-toolbar hidden - show sub-toolbar
+            if (m_subToolbar) {
+                qDebug() << "PinWindow: Showing sub-toolbar for toolId:" << toolId;
+                m_subToolbar->showForTool(toolId);
+                updateSubToolbarPosition();
+            }
+        }
+    } else {
+        exitAnnotationMode();
+        hideSubToolbar();
+    }
+
+    qDebug() << "PinWindow: Tool selected:" << static_cast<int>(tool);
+}
+
+void PinWindow::handleToolbarUndo()
+{
+    if (m_annotationLayer && m_annotationLayer->canUndo()) {
+        m_annotationLayer->undo();
+        updateUndoRedoState();
+        update();
+        qDebug() << "PinWindow: Undo";
+    }
+}
+
+void PinWindow::handleToolbarRedo()
+{
+    if (m_annotationLayer && m_annotationLayer->canRedo()) {
+        m_annotationLayer->redo();
+        updateUndoRedoState();
+        update();
+        qDebug() << "PinWindow: Redo";
+    }
+}
+
+void PinWindow::updateUndoRedoState()
+{
+    if (m_toolbar && m_annotationLayer) {
+        m_toolbar->setCanUndo(m_annotationLayer->canUndo());
+        m_toolbar->setCanRedo(m_annotationLayer->canRedo());
+    }
+}
+
+bool PinWindow::isAnnotationTool(ToolId toolId) const
+{
+    switch (toolId) {
+    case ToolId::Pencil:
+    case ToolId::Marker:
+    case ToolId::Arrow:
+    case ToolId::Shape:
+    case ToolId::Text:
+    case ToolId::Mosaic:
+    case ToolId::Eraser:
+    case ToolId::StepBadge:
+    case ToolId::EmojiSticker:
+        return true;
+    default:
+        return false;
+    }
+}
+
+QPixmap PinWindow::getExportPixmapWithAnnotations() const
+{
+    QPixmap result = getExportPixmap();
+
+    // Draw annotations onto the exported pixmap
+    if (m_annotationLayer && !m_annotationLayer->isEmpty()) {
+        QPainter painter(&result);
+        painter.setRenderHint(QPainter::Antialiasing);
+        m_annotationLayer->draw(painter);
+        painter.end();
+        qDebug() << "PinWindow: Export includes annotations";
+    }
+
+    return result;
+}
+
+void PinWindow::updateSubToolbarPosition()
+{
+    // Only position if sub-toolbar is visible
+    if (m_subToolbar && m_subToolbar->isVisible() && m_toolbar) {
+        QRect toolbarGeom = m_toolbar->frameGeometry();
+        qDebug() << "PinWindow::updateSubToolbarPosition - toolbar frameGeometry=" << toolbarGeom
+                 << "subToolbar size=" << m_subToolbar->size();
+        m_subToolbar->positionBelow(toolbarGeom);
+    }
+}
+
+void PinWindow::hideSubToolbar()
+{
+    if (m_subToolbar) {
+        m_subToolbar->hide();
+    }
+}
+
+void PinWindow::onColorSelected(const QColor &color)
+{
+    m_annotationColor = color;
+    if (m_toolManager) {
+        m_toolManager->setColor(color);
+    }
+    // Save to settings
+    AnnotationSettingsManager::instance().saveColor(color);
+    qDebug() << "PinWindow: Color selected:" << color.name();
+}
+
+void PinWindow::onWidthChanged(int width)
+{
+    m_annotationWidth = width;
+    if (m_toolManager) {
+        m_toolManager->setWidth(width);
+    }
+    // Update cursor if Mosaic tool is active (CursorManager handles this)
+    if (m_currentToolId == ToolId::Mosaic) {
+        CursorManager::instance().updateMosaicCursor(width);
+    }
+    // Save to settings
+    AnnotationSettingsManager::instance().saveWidth(width);
+    qDebug() << "PinWindow: Width changed:" << width;
+}
+
+void PinWindow::onEmojiSelected(const QString &emoji)
+{
+    qDebug() << "PinWindow: Emoji selected:" << emoji;
+    // Set emoji in handler - user clicks canvas to place it (like RegionSelector)
+    if (m_toolManager) {
+        auto* handler = dynamic_cast<EmojiStickerToolHandler*>(
+            m_toolManager->handler(ToolId::EmojiSticker));
+        if (handler) {
+            handler->setCurrentEmoji(emoji);
+        }
+    }
+}
+
+void PinWindow::onStepBadgeSizeChanged(StepBadgeSize size)
+{
+    m_stepBadgeSize = size;
+    // Save to settings
+    AnnotationSettingsManager::instance().saveStepBadgeSize(size);
+    // Convert size to radius and apply to ToolManager (StepBadgeToolHandler reads from ctx->width)
+    int radius = StepBadgeAnnotation::radiusForSize(size);
+    if (m_toolManager) {
+        m_toolManager->setWidth(radius);
+    }
+    qDebug() << "PinWindow: Step badge size changed:" << static_cast<int>(size) << "radius:" << radius;
+}
+
+void PinWindow::onShapeTypeChanged(ShapeType type)
+{
+    if (m_toolManager) {
+        m_toolManager->setShapeType(static_cast<int>(type));
+    }
+    qDebug() << "PinWindow: Shape type changed:" << static_cast<int>(type);
+}
+
+void PinWindow::onShapeFillModeChanged(ShapeFillMode mode)
+{
+    if (m_toolManager) {
+        m_toolManager->setShapeFillMode(static_cast<int>(mode));
+    }
+    qDebug() << "PinWindow: Shape fill mode changed:" << static_cast<int>(mode);
+}
+
+void PinWindow::onArrowStyleChanged(LineEndStyle style)
+{
+    if (m_toolManager) {
+        m_toolManager->setArrowStyle(style);
+    }
+    qDebug() << "PinWindow: Arrow style changed:" << static_cast<int>(style);
+}
+
+void PinWindow::onLineStyleChanged(LineStyle style)
+{
+    if (m_toolManager) {
+        m_toolManager->setLineStyle(style);
+    }
+    qDebug() << "PinWindow: Line style changed:" << static_cast<int>(style);
+}
+
+void PinWindow::onFontSizeDropdownRequested(const QPoint &pos)
+{
+    if (!m_subToolbar) return;
+
+    QMenu menu;
+    QVector<int> sizes = {8, 10, 12, 14, 16, 18, 20, 24, 28, 32, 36, 48, 72};
+    for (int size : sizes) {
+        QAction *action = menu.addAction(QString::number(size));
+        connect(action, &QAction::triggered, this, [this, size]() {
+            if (m_subToolbar) {
+                m_subToolbar->colorAndWidthWidget()->setFontSize(size);
+            }
+            qDebug() << "PinWindow: Font size changed:" << size;
+        });
+    }
+    menu.exec(m_subToolbar->mapToGlobal(pos));
+}
+
+void PinWindow::onFontFamilyDropdownRequested(const QPoint &pos)
+{
+    if (!m_subToolbar) return;
+
+    QMenu menu;
+    QStringList families = {"Arial", "Helvetica", "Times New Roman", "Georgia",
+                            "Courier New", "Verdana", "Tahoma"};
+    for (const QString &family : families) {
+        QAction *action = menu.addAction(family);
+        connect(action, &QAction::triggered, this, [this, family]() {
+            if (m_subToolbar) {
+                m_subToolbar->colorAndWidthWidget()->setFontFamily(family);
+            }
+            qDebug() << "PinWindow: Font family changed:" << family;
+        });
+    }
+    menu.exec(m_subToolbar->mapToGlobal(pos));
+}
+
+void PinWindow::onAutoBlurRequested()
+{
+    // Lazy initialize AutoBlurManager
+    if (!m_autoBlurManager) {
+        m_autoBlurManager = new AutoBlurManager(this);
+    }
+
+    // Get current display image
+    QImage image = m_displayPixmap.toImage();
+    qreal dpr = m_displayPixmap.devicePixelRatio();
+
+    // Detect faces
+    auto result = m_autoBlurManager->detect(image);
+
+    if (!result.success || result.faceRegions.isEmpty()) {
+        qDebug() << "PinWindow: AutoBlur - no faces detected";
+        return;
+    }
+
+    // Create mosaic annotations for each detected face
+    for (const QRect &faceRect : result.faceRegions) {
+        // Convert from device pixels to logical pixels
+        QRect logicalRect(
+            faceRect.x() / dpr,
+            faceRect.y() / dpr,
+            faceRect.width() / dpr,
+            faceRect.height() / dpr
+        );
+
+        auto mosaic = std::make_unique<MosaicRectAnnotation>(
+            logicalRect,
+            m_displayPixmap,
+            12,  // Block size
+            MosaicRectAnnotation::BlurType::Pixelate
+        );
+        m_annotationLayer->addItem(std::move(mosaic));
+    }
+
+    updateUndoRedoState();
+    update();
+    qDebug() << "PinWindow: AutoBlur - added" << result.faceRegions.size() << "mosaic regions";
+}
+
+// ============================================================================
+// Text Annotation Helper Methods
+// ============================================================================
+
+TextAnnotation* PinWindow::getSelectedTextAnnotation()
+{
+    if (!m_annotationLayer) return nullptr;
+    int idx = m_annotationLayer->selectedIndex();
+    if (idx < 0) return nullptr;
+    return dynamic_cast<TextAnnotation*>(m_annotationLayer->itemAt(idx));
+}
+
+bool PinWindow::handleTextEditorPress(const QPoint& pos)
+{
+    if (!m_textEditor || !m_textEditor->isEditing()) {
+        return false;
+    }
+
+    if (m_textEditor->isConfirmMode()) {
+        if (!m_textEditor->contains(pos)) {
+            m_textEditor->finishEditing();
+            return false;
+        }
+        m_textEditor->handleMousePress(pos);
+        return true;
+    }
+
+    // In typing mode
+    if (!m_textEditor->contains(pos)) {
+        if (!m_textEditor->textEdit()->toPlainText().trimmed().isEmpty()) {
+            m_textEditor->finishEditing();
+        } else {
+            m_textEditor->cancelEditing();
+        }
+        return false;
+    }
+
+    return true;
+}
+
+bool PinWindow::handleTextAnnotationPress(const QPoint& pos)
+{
+    if (!m_annotationLayer) return false;
+
+    int hitIndex = m_annotationLayer->hitTestText(pos);
+    if (hitIndex < 0) return false;
+
+    qint64 now = QDateTime::currentMSecsSinceEpoch();
+    if (m_textAnnotationEditor->isDoubleClick(pos, now) &&
+        hitIndex == m_annotationLayer->selectedIndex()) {
+        // Double-click to re-edit
+        m_textAnnotationEditor->startReEditing(hitIndex, m_annotationColor);
+        m_textAnnotationEditor->recordClick(QPoint(), 0);
+        return true;
+    }
+    m_textAnnotationEditor->recordClick(pos, now);
+
+    m_annotationLayer->setSelectedIndex(hitIndex);
+    if (auto* textItem = getSelectedTextAnnotation()) {
+        GizmoHandle handle = TransformationGizmo::hitTest(textItem, pos);
+        if (handle == GizmoHandle::Body || handle == GizmoHandle::None) {
+            m_textAnnotationEditor->startDragging(pos);
+        } else {
+            m_textAnnotationEditor->startTransformation(pos, handle);
+        }
+    }
+
+    update();
+    return true;
+}
+
+bool PinWindow::handleGizmoPress(const QPoint& pos)
+{
+    auto* textItem = getSelectedTextAnnotation();
+    if (!textItem) return false;
+
+    GizmoHandle handle = TransformationGizmo::hitTest(textItem, pos);
+    if (handle == GizmoHandle::None) return false;
+
+    if (handle == GizmoHandle::Body) {
+        qint64 now = QDateTime::currentMSecsSinceEpoch();
+        if (m_textAnnotationEditor->isDoubleClick(pos, now)) {
+            m_textAnnotationEditor->startReEditing(
+                m_annotationLayer->selectedIndex(), m_annotationColor);
+            m_textAnnotationEditor->recordClick(QPoint(), 0);
+            return true;
+        }
+        m_textAnnotationEditor->recordClick(pos, now);
+        m_textAnnotationEditor->startDragging(pos);
+    } else {
+        m_textAnnotationEditor->startTransformation(pos, handle);
+    }
+
+    update();
+    return true;
 }
