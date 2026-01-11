@@ -21,6 +21,7 @@ private:
     {
         QImage img(width, height, QImage::Format_RGB32);
         QPainter painter(&img);
+        painter.setRenderHint(QPainter::Antialiasing, false);
 
         if (horizontal) {
             QLinearGradient gradient(0, 0, width, 0);
@@ -42,7 +43,8 @@ private:
         QImage img(width, height, QImage::Format_RGB32);
         img.fill(Qt::white);
         QPainter painter(&img);
-        
+        painter.setRenderHint(QPainter::Antialiasing, false);
+
         // Use a simple deterministic LCG for platform independence
         // std::rand() implementation varies by platform (0..32767 on Windows, larger on *nix)
         unsigned int state = static_cast<unsigned int>(seed);
@@ -81,6 +83,7 @@ private:
         img.fill(contentColor);
 
         QPainter painter(&img);
+        painter.setRenderHint(QPainter::Antialiasing, false);
 
         // Draw header
         painter.fillRect(0, 0, width, headerHeight, headerColor);
@@ -434,6 +437,7 @@ private slots:
         QImage frame2(400, 300, QImage::Format_RGB32);
         frame2.fill(Qt::white);
         QPainter p2(&frame2);
+        p2.setRenderHint(QPainter::Antialiasing, false);
         p2.drawImage(0, 5, frame1); // Content moved down by 5px
         
         stitcher.addFrame(frame1);
@@ -475,14 +479,16 @@ private slots:
         QImage frame1(width, height, QImage::Format_RGB32);
         frame1.fill(Qt::white);
         QPainter p1(&frame1);
+        p1.setRenderHint(QPainter::Antialiasing, false);
         for (int y = 0; y < height; y += 40) {
             p1.fillRect(0, y, width, 20, Qt::black);
         }
-        
+
         // Shifted by exactly one period
         QImage frame2(width, height, QImage::Format_RGB32);
         frame2.fill(Qt::white);
         QPainter p2(&frame2);
+        p2.setRenderHint(QPainter::Antialiasing, false);
         for (int y = 0; y < height; y += 40) {
             p2.fillRect(0, y + 40, width, 20, Qt::black);
         }
@@ -504,11 +510,11 @@ private slots:
         
         // Build up a small stitched image
         QImage frame1 = createSolidImage(400, 300, Qt::white);
-        { QPainter p(&frame1); p.drawText(10, 10, "Unique 1"); }
+        { QPainter p(&frame1); p.setRenderHint(QPainter::Antialiasing, false); p.drawText(10, 10, "Unique 1"); }
         stitcher.addFrame(frame1);
-        
+
         QImage frame2 = createSolidImage(400, 300, Qt::white);
-        { QPainter p(&frame2); p.drawImage(0, 0, frame1, 0, 100, 400, 200); p.drawText(10, 250, "Unique 2"); }
+        { QPainter p(&frame2); p.setRenderHint(QPainter::Antialiasing, false); p.drawImage(0, 0, frame1, 0, 100, 400, 200); p.drawText(10, 250, "Unique 2"); }
         stitcher.addFrame(frame2);
         
         // frame2 should succeed and NOT be detected as duplicate
@@ -529,6 +535,7 @@ private slots:
         QImage frame1 = createGradientImage(400, 300);
         QImage frame2(400, 300, QImage::Format_RGB32);
         QPainter p2(&frame2);
+        p2.setRenderHint(QPainter::Antialiasing, false);
         p2.drawImage(0, 50, frame1); // Shift 50px
         
         stitcher.addFrame(frame1);
