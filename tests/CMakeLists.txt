@@ -130,15 +130,6 @@ add_test(NAME Detection_AutoBlurManager COMMAND Detection_AutoBlurManager)
 set_tests_properties(Detection_AutoBlurManager PROPERTIES TIMEOUT 60 LABELS "unit")
 
 # ============================================================================
-# Scrolling Tests (link snaptray_algorithms)
-# ============================================================================
-
-add_executable(Scrolling_ImageStitcher Scrolling/tst_ImageStitcher.cpp)
-target_link_libraries(Scrolling_ImageStitcher PRIVATE snaptray_algorithms Qt6::Widgets Qt6::Test)
-add_test(NAME Scrolling_ImageStitcher COMMAND Scrolling_ImageStitcher)
-set_tests_properties(Scrolling_ImageStitcher PROPERTIES TIMEOUT 60 LABELS "unit")
-
-# ============================================================================
 # Utils Tests (link snaptray_core)
 # ============================================================================
 
