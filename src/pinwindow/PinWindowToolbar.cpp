@@ -17,6 +17,8 @@ PinWindowToolbar::PinWindowToolbar(QWidget *parent)
 {
     setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
     setAttribute(Qt::WA_TranslucentBackground);
+    setAttribute(Qt::WA_ShowWithoutActivating);
+    setFocusPolicy(Qt::NoFocus);
 #ifdef Q_OS_MACOS
     setAttribute(Qt::WA_MacAlwaysShowToolWindow);
 #endif
