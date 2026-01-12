@@ -96,6 +96,7 @@ SnapTray 是一個在系統托盤常駐的截圖與錄影小工具，提供區�
 目前僅支援 macOS 與 Windows。
 
 ### macOS
+
 - macOS 10.15+（ScreenCaptureKit 錄影需 12.3+）
 - Qt 6（建議以 Homebrew 安裝）
 - Xcode Command Line Tools
@@ -103,6 +104,7 @@ SnapTray 是一個在系統托盤常駐的截圖與錄影小工具，提供區�
 - Git（用於 FetchContent 取得 QHotkey）
 
 ### Windows
+
 - Windows 10+
 - Qt 6
 - Visual Studio 2019+ 或 MinGW
@@ -110,6 +112,7 @@ SnapTray 是一個在系統托盤常駐的截圖與錄影小工具，提供區�
 - Git（用於 FetchContent 取得 QHotkey）
 
 **PowerShell 使用 MSVC**：若使用 PowerShell，需先載入 Visual Studio 環境：
+
 ```powershell
 Import-Module "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\Tools\Microsoft.VisualStudio.DevShell.dll"
 Enter-VsDevShell -VsInstallPath "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools" -DevCmdArguments '-arch=x64' -SkipAutomaticLocation
@@ -122,6 +125,7 @@ Enter-VsDevShell -VsInstallPath "C:\Program Files (x86)\Microsoft Visual Studio\
 開發時使用 Debug 建置以獲得更好的除錯體驗。
 
 **macOS：**
+
 ```bash
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH="$(brew --prefix qt)"
 cmake --build build --parallel
@@ -129,6 +133,7 @@ open build/SnapTray.app
 ```
 
 **Windows：**
+
 ```batch
 # 步驟 1：設定（請替換為你的 Qt 路徑）
 cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH=C:/Qt/6.10.1/msvc2022_64
@@ -150,6 +155,7 @@ build\bin\SnapTray.exe
 在打包前使用 Release 建置測試正式環境行為。
 
 **macOS：**
+
 ```bash
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$(brew --prefix qt)"
 cmake --build build --parallel
@@ -157,6 +163,7 @@ cmake --build build --parallel
 ```
 
 **Windows：**
+
 ```batch
 cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=C:/Qt/6.10.1/msvc2022_64
 cmake --build build --parallel
@@ -183,6 +190,7 @@ cd build && ctest --output-on-failure
 打包腳本會自動執行 Release 建置、部署 Qt 依賴、並產生安裝檔。
 
 **macOS（DMG）：**
+
 ```bash
 # 前置需求：brew install qt（如尚未安裝）
 # 可選：brew install create-dmg（產生更美觀的 DMG）
@@ -192,6 +200,7 @@ cd build && ctest --output-on-failure
 ```
 
 **Windows：**
+
 ```batch
 REM 前置需求：
 REM   - Qt 6: https://www.qt.io/download-qt-installer
@@ -215,11 +224,13 @@ REM   dist\SnapTray-<version>.msixupload    (用於 Store 提交)
 **MSIX 本地安裝（測試用）：**
 
 在本地安裝未簽章的 MSIX 套件進行測試：
+
 ```powershell
 Add-AppPackage -Path "dist\SnapTray-1.0.7.msix" -AllowUnsigned
 ```
 
 解除安裝：
+
 ```powershell
 Get-AppPackage SnapTray* | Remove-AppPackage
 ```
@@ -238,10 +249,12 @@ Get-AppPackage SnapTray* | Remove-AppPackage
 #### Code Signing（可選）
 
 未簽章的安裝檔在使用者安裝時會顯示警告：
+
 - macOS：「無法驗證開發者」（需右鍵 → 打開）
 - Windows：SmartScreen 警告
 
 **macOS 簽章與公證：**
+
 ```bash
 # 需要 Apple Developer Program 會員資格（$99 USD/年）
 export CODESIGN_IDENTITY="Developer ID Application: Your Name (TEAMID)"
@@ -252,6 +265,7 @@ export NOTARIZE_PASSWORD="xxxx-xxxx-xxxx-xxxx"  # App-Specific Password
 ```
 
 **Windows 簽章：**
+
 ```batch
 REM NSIS 安裝程式簽章（需要 Code Signing Certificate）
 set CODESIGN_CERT=path\to\certificate.pfx
@@ -276,11 +290,13 @@ packaging\windows\package.bat msix
 安裝編譯器快取工具可大幅加速重新建置：
 
 **macOS：**
+
 ```bash
 brew install ccache
 ```
 
 **Windows：**
+
 ```bash
 scoop install sccache
 ```
@@ -289,11 +305,11 @@ CMake 會自動偵測並使用編譯器快取，無需額外設定。
 
 ### 效能提升
 
-| 優化項目 | 位置 | 效果 |
-|----------|------|------|
+| 優化項目                | 位置           | 效果              |
+| ----------------------- | -------------- | ----------------- |
 | ccache/sccache 自動偵測 | CMakeLists.txt | 增量建置快 50-90% |
-| CI ccache (macOS) | ci.yml | CI 快 30-50% |
-| CI sccache (Windows) | ci.yml | CI 快 30-50% |
+| CI ccache (macOS)       | ci.yml         | CI 快 30-50%      |
+| CI sccache (Windows)    | ci.yml         | CI 快 30-50%      |
 
 **注意：** 由於與 macOS 上的 Objective-C++ 檔案不相容，未使用預編譯標頭 (PCH) 與 Unity Build。
 
@@ -342,9 +358,11 @@ CMake 會自動偵測並使用編譯器快取，無需額外設定。
 ### macOS：「SnapTray」無法打開，因為 Apple 無法驗證
 
 如果你看到以下訊息：
+
 - 「SnapTray」無法打開，因為 Apple 無法驗證其不含惡意軟體
 
 **解決方法：** 使用終端機移除隔離屬性：
+
 ```bash
 xattr -cr /Applications/SnapTray.app
 ```
@@ -354,10 +372,12 @@ xattr -cr /Applications/SnapTray.app
 ### Windows：應用程式無法啟動或顯示缺少 DLL 錯誤
 
 如果你看到類似以下錯誤：
+
 - "The code execution cannot proceed because Qt6Core.dll was not found"
 - "This application failed to start because no Qt platform plugin could be initialized"
 
 **解決方法：** 執行 windeployqt 來部署 Qt 相依套件：
+
 ```batch
 C:\Qt\6.10.1\msvc2022_64\bin\windeployqt.exe build\SnapTray.exe
 ```
@@ -451,45 +471,46 @@ snap-tray/
 
 ### 已提取組件
 
-| 組件 | 位置 | 職責 |
-|------|------|------|
-| `MagnifierPanel` | `src/region/` | 放大鏡繪製與快取管理 |
-| `UpdateThrottler` | `src/region/` | 事件節流邏輯 |
-| `TextAnnotationEditor` | `src/region/` | 文字註釋編輯/變換/格式化 |
-| `SelectionStateManager` | `src/region/` | 選取狀態與操作管理 |
-| `RadiusSliderWidget` | `src/region/` | 工具半徑滑桿控制 |
-| `AnnotationSettingsManager` | `src/settings/` | 集中式註釋設定管理 |
-| `FileSettingsManager` | `src/settings/` | 檔案路徑設定 |
-| `PinWindowSettingsManager` | `src/settings/` | 釘選視窗設定 |
-| `ImageTransformer` | `src/pinwindow/` | 圖片旋轉/翻轉/縮放 |
-| `ResizeHandler` | `src/pinwindow/` | 視窗邊緣調整大小 |
-| `UIIndicators` | `src/pinwindow/` | 縮放/透明度/穿透指示器 |
-| `ClickThroughExitButton` | `src/pinwindow/` | 穿透模式離開按鈕 |
-| `PinWindowToolbar` | `src/pinwindow/` | 釘選視窗標註工具列 |
-| `PinWindowSubToolbar` | `src/pinwindow/` | Shape/Arrow 選項子工具列 |
-| Section 類別 | `src/ui/sections/` | ColorAndWidthWidget 子組件 |
+| 組件                        | 位置               | 職責                       |
+| --------------------------- | ------------------ | -------------------------- |
+| `MagnifierPanel`            | `src/region/`      | 放大鏡繪製與快取管理       |
+| `UpdateThrottler`           | `src/region/`      | 事件節流邏輯               |
+| `TextAnnotationEditor`      | `src/region/`      | 文字註釋編輯/變換/格式化   |
+| `SelectionStateManager`     | `src/region/`      | 選取狀態與操作管理         |
+| `RadiusSliderWidget`        | `src/region/`      | 工具半徑滑桿控制           |
+| `AnnotationSettingsManager` | `src/settings/`    | 集中式註釋設定管理         |
+| `FileSettingsManager`       | `src/settings/`    | 檔案路徑設定               |
+| `PinWindowSettingsManager`  | `src/settings/`    | 釘選視窗設定               |
+| `ImageTransformer`          | `src/pinwindow/`   | 圖片旋轉/翻轉/縮放         |
+| `ResizeHandler`             | `src/pinwindow/`   | 視窗邊緣調整大小           |
+| `UIIndicators`              | `src/pinwindow/`   | 縮放/透明度/穿透指示器     |
+| `ClickThroughExitButton`    | `src/pinwindow/`   | 穿透模式離開按鈕           |
+| `PinWindowToolbar`          | `src/pinwindow/`   | 釘選視窗標註工具列         |
+| `PinWindowSubToolbar`       | `src/pinwindow/`   | Shape/Arrow 選項子工具列   |
+| Section 類別                | `src/ui/sections/` | ColorAndWidthWidget 子組件 |
 
 ### 測試覆蓋率
 
-| 組件 | 測試數量 |
-|------|----------|
-| ColorAndWidthWidget | 113 |
-| RegionSelector | 108 |
-| RecordingManager | 58 |
-| Encoding | 43 |
-| Detection | 42 |
-| PinWindow | 24 |
-| Audio | 23 |
-| Utils | 23 |
-| Settings | 14 |
-| Other | 34 |
-| **總計** | **482** |
+| 組件                | 測試數量 |
+| ------------------- | -------- |
+| ColorAndWidthWidget | 113      |
+| RegionSelector      | 108      |
+| RecordingManager    | 58       |
+| Encoding            | 43       |
+| Detection           | 42       |
+| PinWindow           | 24       |
+| Audio               | 23       |
+| Utils               | 23       |
+| Settings            | 14       |
+| Other               | 34       |
+| **總計**            | **482**  |
 
 ## 自訂應用程式圖示
 
 如需更換圖示，請準備 1024x1024 的 PNG 檔案，然後執行：
 
 **macOS (.icns)：**
+
 ```bash
 cd resources/icons
 mkdir snaptray.iconset
@@ -508,6 +529,7 @@ rm -rf snaptray.iconset
 ```
 
 **Windows (.ico)：**
+
 ```bash
 # 需要 ImageMagick: brew install imagemagick
 magick snaptray.png -define icon:auto-resize=256,128,64,48,32,16 snaptray.ico
@@ -518,7 +540,6 @@ magick snaptray.png -define icon:auto-resize=256,128,64,48,32,16 snaptray.ico
 - 多螢幕支援：截圖會在游標所在螢幕啟動，但不同螢幕 DPI/縮放仍需要更多實機測試。
 - 螢幕錄影在無法使用原生 API（ScreenCaptureKit/DXGI）時會改用 Qt 擷取，效能可能較慢。
 - macOS 系統音錄製需 macOS 13+（Ventura）或虛擬音訊裝置（如 BlackHole）。
-- 視窗偵測與 OCR 功能支援 macOS 與 Windows。
 
 ## 授權條款
 

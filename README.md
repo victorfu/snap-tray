@@ -96,6 +96,7 @@ SnapTray is a lightweight tray utility for region screenshots, on-screen annotat
 SnapTray currently supports macOS and Windows only.
 
 ### macOS
+
 - macOS 10.15+ (ScreenCaptureKit recording uses 12.3+ when available)
 - Qt 6 (recommend installing via Homebrew)
 - Xcode Command Line Tools
@@ -103,6 +104,7 @@ SnapTray currently supports macOS and Windows only.
 - Git (for FetchContent to fetch QHotkey)
 
 ### Windows
+
 - Windows 10+
 - Qt 6
 - Visual Studio 2019+ or MinGW
@@ -110,6 +112,7 @@ SnapTray currently supports macOS and Windows only.
 - Git (for FetchContent to fetch QHotkey)
 
 **PowerShell with MSVC**: If using PowerShell, load the Visual Studio environment first:
+
 ```powershell
 Import-Module "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\Tools\Microsoft.VisualStudio.DevShell.dll"
 Enter-VsDevShell -VsInstallPath "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools" -DevCmdArguments '-arch=x64' -SkipAutomaticLocation
@@ -122,6 +125,7 @@ Enter-VsDevShell -VsInstallPath "C:\Program Files (x86)\Microsoft Visual Studio\
 Use Debug build during development for better debugging experience.
 
 **macOS:**
+
 ```bash
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH="$(brew --prefix qt)"
 cmake --build build --parallel
@@ -129,6 +133,7 @@ open build/SnapTray.app
 ```
 
 **Windows:**
+
 ```batch
 # Step 1: Configure (replace with your Qt path)
 cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH=C:/Qt/6.10.1/msvc2022_64
@@ -150,6 +155,7 @@ build\bin\SnapTray.exe
 Use Release build to test production behavior before packaging.
 
 **macOS:**
+
 ```bash
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$(brew --prefix qt)"
 cmake --build build --parallel
@@ -157,6 +163,7 @@ cmake --build build --parallel
 ```
 
 **Windows:**
+
 ```batch
 cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=C:/Qt/6.10.1/msvc2022_64
 cmake --build build --parallel
@@ -183,6 +190,7 @@ cd build && ctest --output-on-failure
 The packaging scripts automatically perform Release builds, deploy Qt dependencies, and create installers.
 
 **macOS (DMG):**
+
 ```bash
 # Prerequisites: brew install qt (if not installed)
 # Optional: brew install create-dmg (for prettier DMG)
@@ -192,6 +200,7 @@ The packaging scripts automatically perform Release builds, deploy Qt dependenci
 ```
 
 **Windows:**
+
 ```batch
 REM Prerequisites:
 REM   - Qt 6: https://www.qt.io/download-qt-installer
@@ -215,11 +224,13 @@ REM   dist\SnapTray-<version>.msixupload    (for Store submission)
 **MSIX Local Installation (Testing):**
 
 Install the unsigned MSIX package locally for testing:
+
 ```powershell
 Add-AppPackage -Path "dist\SnapTray-1.0.7.msix" -AllowUnsigned
 ```
 
 To uninstall:
+
 ```powershell
 Get-AppPackage SnapTray* | Remove-AppPackage
 ```
@@ -238,10 +249,12 @@ Get-AppPackage SnapTray* | Remove-AppPackage
 #### Code Signing (Optional)
 
 Unsigned installers will show warnings during installation:
+
 - macOS: "Cannot verify developer" (requires right-click -> Open)
 - Windows: SmartScreen warning
 
 **macOS Signing & Notarization:**
+
 ```bash
 # Requires Apple Developer Program membership ($99 USD/year)
 export CODESIGN_IDENTITY="Developer ID Application: Your Name (TEAMID)"
@@ -252,6 +265,7 @@ export NOTARIZE_PASSWORD="xxxx-xxxx-xxxx-xxxx"  # App-Specific Password
 ```
 
 **Windows Signing:**
+
 ```batch
 REM NSIS installer signing (requires Code Signing Certificate)
 set CODESIGN_CERT=path\to\certificate.pfx
@@ -276,11 +290,13 @@ The build system supports compiler caching for faster incremental builds.
 Install a compiler cache tool for significantly faster rebuilds:
 
 **macOS:**
+
 ```bash
 brew install ccache
 ```
 
 **Windows:**
+
 ```bash
 scoop install sccache
 ```
@@ -289,11 +305,11 @@ CMake automatically detects and uses the compiler cache when available. No addit
 
 ### Performance Improvements
 
-| Optimization | Location | Effect |
-|--------------|----------|--------|
+| Optimization                  | Location       | Effect                           |
+| ----------------------------- | -------------- | -------------------------------- |
 | ccache/sccache auto-detection | CMakeLists.txt | 50-90% faster incremental builds |
-| CI ccache (macOS) | ci.yml | 30-50% faster CI |
-| CI sccache (Windows) | ci.yml | 30-50% faster CI |
+| CI ccache (macOS)             | ci.yml         | 30-50% faster CI                 |
+| CI sccache (Windows)          | ci.yml         | 30-50% faster CI                 |
 
 **Note:** Precompiled Headers (PCH) and Unity Build are not used due to incompatibility with Objective-C++ files on macOS.
 
@@ -342,9 +358,11 @@ CMake automatically detects and uses the compiler cache when available. No addit
 ### macOS: "SnapTray" cannot be opened because Apple cannot verify it
 
 If you see the message:
+
 - "SnapTray" cannot be opened because Apple could not verify it is free of malware
 
 **Solution:** Remove the quarantine attribute using Terminal:
+
 ```bash
 xattr -cr /Applications/SnapTray.app
 ```
@@ -354,10 +372,12 @@ This removes the quarantine flag that macOS adds to downloaded applications. Aft
 ### Windows: Application fails to start or shows missing DLL errors
 
 If you see errors like:
+
 - "The code execution cannot proceed because Qt6Core.dll was not found"
 - "This application failed to start because no Qt platform plugin could be initialized"
 
 **Solution:** Run windeployqt to deploy Qt dependencies:
+
 ```batch
 C:\Qt\6.10.1\msvc2022_64\bin\windeployqt.exe build\SnapTray.exe
 ```
@@ -451,45 +471,46 @@ The codebase follows a modular architecture with extracted components for mainta
 
 ### Extracted Components
 
-| Component | Location | Responsibility |
-|-----------|----------|----------------|
-| `MagnifierPanel` | `src/region/` | Magnifier rendering and caching |
-| `UpdateThrottler` | `src/region/` | Event throttling logic |
-| `TextAnnotationEditor` | `src/region/` | Text annotation editing/transformation |
-| `SelectionStateManager` | `src/region/` | Selection state and operations |
-| `RadiusSliderWidget` | `src/region/` | Radius slider control for tools |
-| `AnnotationSettingsManager` | `src/settings/` | Centralized annotation settings |
-| `FileSettingsManager` | `src/settings/` | File path settings |
-| `PinWindowSettingsManager` | `src/settings/` | Pin window settings |
-| `ImageTransformer` | `src/pinwindow/` | Image rotation/flip/scale |
-| `ResizeHandler` | `src/pinwindow/` | Window edge resize |
-| `UIIndicators` | `src/pinwindow/` | Scale/opacity/click-through indicators |
-| `ClickThroughExitButton` | `src/pinwindow/` | Exit button for click-through mode |
-| `PinWindowToolbar` | `src/pinwindow/` | Annotation toolbar for pin windows |
-| `PinWindowSubToolbar` | `src/pinwindow/` | Sub-toolbar for shape/arrow options |
-| Section classes | `src/ui/sections/` | ColorAndWidthWidget sub-components |
+| Component                   | Location           | Responsibility                         |
+| --------------------------- | ------------------ | -------------------------------------- |
+| `MagnifierPanel`            | `src/region/`      | Magnifier rendering and caching        |
+| `UpdateThrottler`           | `src/region/`      | Event throttling logic                 |
+| `TextAnnotationEditor`      | `src/region/`      | Text annotation editing/transformation |
+| `SelectionStateManager`     | `src/region/`      | Selection state and operations         |
+| `RadiusSliderWidget`        | `src/region/`      | Radius slider control for tools        |
+| `AnnotationSettingsManager` | `src/settings/`    | Centralized annotation settings        |
+| `FileSettingsManager`       | `src/settings/`    | File path settings                     |
+| `PinWindowSettingsManager`  | `src/settings/`    | Pin window settings                    |
+| `ImageTransformer`          | `src/pinwindow/`   | Image rotation/flip/scale              |
+| `ResizeHandler`             | `src/pinwindow/`   | Window edge resize                     |
+| `UIIndicators`              | `src/pinwindow/`   | Scale/opacity/click-through indicators |
+| `ClickThroughExitButton`    | `src/pinwindow/`   | Exit button for click-through mode     |
+| `PinWindowToolbar`          | `src/pinwindow/`   | Annotation toolbar for pin windows     |
+| `PinWindowSubToolbar`       | `src/pinwindow/`   | Sub-toolbar for shape/arrow options    |
+| Section classes             | `src/ui/sections/` | ColorAndWidthWidget sub-components     |
 
 ### Test Coverage
 
-| Component | Test Count |
-|-----------|------------|
-| ColorAndWidthWidget | 113 |
-| RegionSelector | 108 |
-| RecordingManager | 58 |
-| Encoding | 43 |
-| Detection | 42 |
-| PinWindow | 24 |
-| Audio | 23 |
-| Utils | 23 |
-| Settings | 14 |
-| Other | 34 |
-| **Total** | **482** |
+| Component           | Test Count |
+| ------------------- | ---------- |
+| ColorAndWidthWidget | 113        |
+| RegionSelector      | 108        |
+| RecordingManager    | 58         |
+| Encoding            | 43         |
+| Detection           | 42         |
+| PinWindow           | 24         |
+| Audio               | 23         |
+| Utils               | 23         |
+| Settings            | 14         |
+| Other               | 34         |
+| **Total**           | **482**    |
 
 ## Custom App Icon
 
 To replace the icon, prepare a 1024x1024 PNG file, then run:
 
 **macOS (.icns):**
+
 ```bash
 cd resources/icons
 mkdir snaptray.iconset
@@ -508,6 +529,7 @@ rm -rf snaptray.iconset
 ```
 
 **Windows (.ico):**
+
 ```bash
 # Requires ImageMagick: brew install imagemagick
 magick snaptray.png -define icon:auto-resize=256,128,64,48,32,16 snaptray.ico
@@ -518,7 +540,6 @@ magick snaptray.png -define icon:auto-resize=256,128,64,48,32,16 snaptray.ico
 - Multi-monitor support: Capture starts on the monitor where cursor is located, but different monitor DPI/scaling needs more real-device testing.
 - Screen recording falls back to the Qt capture engine when native APIs (ScreenCaptureKit/DXGI) are unavailable, which may be slower.
 - System audio capture on macOS requires macOS 13+ (Ventura) or a virtual audio device (e.g., BlackHole).
-- Window detection and OCR are supported on macOS and Windows.
 
 ## License
 
