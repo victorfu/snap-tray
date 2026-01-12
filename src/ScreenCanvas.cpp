@@ -455,6 +455,13 @@ void ScreenCanvas::paintEvent(QPaintEvent*)
     if (m_bgMode != CanvasBackgroundMode::Screen) {
         painter.drawPixmap(rect(), m_backgroundPixmap);
     }
+#ifdef Q_OS_WIN
+    else {
+        // Windows workaround: fully transparent windows are click-through.
+        // Draw a nearly transparent background to capture mouse events.
+        painter.fillRect(rect(), QColor(255, 255, 255, 1));
+    }
+#endif
 
     // Draw completed annotations
     drawAnnotations(painter);
