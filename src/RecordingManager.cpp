@@ -337,6 +337,7 @@ void RecordingManager::startFrameCapture()
     if (m_boundaryOverlay) {
         qDebug() << "RecordingManager: Previous boundary overlay still exists, cleaning up";
         m_boundaryOverlay->close();
+        m_boundaryOverlay = nullptr;
     }
 
     m_boundaryOverlay = new RecordingBoundaryOverlay();
@@ -354,6 +355,7 @@ void RecordingManager::startFrameCapture()
         qDebug() << "RecordingManager: Previous control bar still exists, cleaning up";
         disconnect(m_controlBar, nullptr, this, nullptr);
         m_controlBar->close();
+        m_controlBar = nullptr;
     }
 
     m_controlBar = new RecordingControlBar();
