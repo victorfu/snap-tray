@@ -266,8 +266,9 @@ void RegionToolbarHandler::handleToolbarClick(ToolbarButton button)
 void RegionToolbarHandler::handleAnnotationTool(ToolbarButton button)
 {
     if (m_currentTool == button) {
-        // Same tool clicked - toggle sub-toolbar visibility
-        m_showSubToolbar = !m_showSubToolbar;
+        // Same tool clicked - switch to Selection tool
+        m_currentTool = ToolbarButton::Selection;
+        m_showSubToolbar = true;
     } else {
         // Different tool - select it and show sub-toolbar
         m_currentTool = button;
@@ -285,8 +286,13 @@ void RegionToolbarHandler::handleAnnotationTool(ToolbarButton button)
 void RegionToolbarHandler::handleStepBadgeTool()
 {
     if (m_currentTool == ToolbarButton::StepBadge) {
-        // Same tool clicked - toggle sub-toolbar visibility
-        m_showSubToolbar = !m_showSubToolbar;
+        // Same tool clicked - switch to Selection tool
+        m_currentTool = ToolbarButton::Selection;
+        m_showSubToolbar = true;
+        emit showSizeSectionRequested(false);
+        emit toolChanged(m_currentTool, m_showSubToolbar);
+        emit updateRequested();
+        return;
     } else {
         // Different tool - select it and show sub-toolbar
         m_currentTool = ToolbarButton::StepBadge;
@@ -311,8 +317,13 @@ void RegionToolbarHandler::handleStepBadgeTool()
 void RegionToolbarHandler::handleMosaicTool()
 {
     if (m_currentTool == ToolbarButton::Mosaic) {
-        // Same tool clicked - toggle sub-toolbar visibility
-        m_showSubToolbar = !m_showSubToolbar;
+        // Same tool clicked - switch to Selection tool
+        m_currentTool = ToolbarButton::Selection;
+        m_showSubToolbar = true;
+        emit showColorSectionRequested(true);  // Restore color section visibility
+        emit toolChanged(m_currentTool, m_showSubToolbar);
+        emit updateRequested();
+        return;
     } else {
         // Different tool - select it and show sub-toolbar
         m_currentTool = ToolbarButton::Mosaic;

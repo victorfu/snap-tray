@@ -1535,22 +1535,23 @@ void PinWindow::handleToolbarToolSelected(int toolId)
     }
 
     if (isAnnotationTool(tool)) {
+        if (sameToolClicked && m_subToolbar && m_subToolbar->isVisible()) {
+            // Same tool clicked while sub-toolbar visible - exit annotation mode entirely
+            qDebug() << "PinWindow: Same tool clicked, exiting annotation mode";
+            exitAnnotationMode();
+            return;
+        }
+
         enterAnnotationMode();
         // Update cursor for the new tool (enterAnnotationMode also calls this,
         // but we need to update when switching between annotation tools too)
         updateCursorForTool();
 
-        if (sameToolClicked && m_subToolbar && m_subToolbar->isVisible()) {
-            // Same tool clicked while sub-toolbar visible - hide sub-toolbar
-            qDebug() << "PinWindow: Same tool clicked, hiding sub-toolbar";
-            hideSubToolbar();
-        } else {
-            // Different tool or sub-toolbar hidden - show sub-toolbar
-            if (m_subToolbar) {
-                qDebug() << "PinWindow: Showing sub-toolbar for toolId:" << toolId;
-                m_subToolbar->showForTool(toolId);
-                updateSubToolbarPosition();
-            }
+        // Show sub-toolbar for the selected tool
+        if (m_subToolbar) {
+            qDebug() << "PinWindow: Showing sub-toolbar for toolId:" << toolId;
+            m_subToolbar->showForTool(toolId);
+            updateSubToolbarPosition();
         }
     } else {
         exitAnnotationMode();
