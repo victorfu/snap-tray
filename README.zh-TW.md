@@ -19,6 +19,7 @@ SnapTray 是一個在系統托盤常駐的截圖與錄影小工具，提供區�
   - 多區域選取（僅 Debug 建置，可擷取多個區域並合併或分開儲存）
   - 截圖包含游標選項
   - 視窗偵測（macOS/Windows）：自動偵測游標下的視窗，單擊快速選取
+  - 右鍵取消選取
 - **截圖工具列**：
   - `Selection` 選取工具（調整選取區域）
   - 標註工具：`Arrow` / `Pencil` / `Marker` / `Shape`（Rectangle/Ellipse，外框/填滿）/ `Text` / `Mosaic` / `StepBadge` / `Eraser`
@@ -35,7 +36,7 @@ SnapTray 是一個在系統托盤常駐的截圖與錄影小工具，提供區�
   - 文字工具格式控制（字型/大小、粗體/斜體/底線）
 - **螢幕畫布**：
   - 全螢幕標註模式，直接在螢幕上繪圖
-  - 繪圖工具：`Pencil` / `Marker` / `Arrow` / `Shape`（Rectangle）/ `Mosaic` / `StepBadge` / `Text` / `EmojiSticker`
+  - 繪圖工具：`Pencil` / `Marker` / `Arrow` / `Shape`（Rectangle）/ `StepBadge` / `Text` / `EmojiSticker` / `Eraser`
   - 簡報工具：`Laser Pointer` / `Cursor Highlight`（點擊波紋）/ `Spotlight`（聚光燈聚焦）
   - 顏色/線寬控制
   - 支援 Undo/Redo/Clear
@@ -57,6 +58,10 @@ SnapTray 是一個在系統托盤常駐的截圖與錄影小工具，提供區�
   - 鍵盤旋轉/翻轉：`1` 順時針旋轉、`2` 逆時針旋轉、`3` 水平翻轉、`4` 垂直翻轉
   - 雙擊或 Esc 關閉
   - 右鍵選單：複製/存檔/OCR/浮水印/Click-through/關閉
+  - **標註工具列**：點擊鉛筆圖示開啟標註工具
+    - 繪圖工具：`Pencil` / `Marker` / `Arrow` / `Shape` / `Text` / `Mosaic` / `StepBadge` / `EmojiSticker` / `Eraser`
+    - 支援 `Undo` / `Redo`
+    - `OCR` / `Copy` / `Save` 快捷操作
 - **設定對話框**：
   - General 分頁：開機自動啟動、工具列樣式（深色/淺色）、釘選視窗透明度/縮放設定
   - Hotkeys 分頁：區域截圖與螢幕畫布分別設定熱鍵
@@ -330,8 +335,21 @@ CMake 會自動偵測並使用編譯器快取，無需額外設定。
    - `1` 順時針旋轉、`2` 逆時針旋轉、`3` 水平翻轉、`4` 垂直翻轉
    - 右鍵選單（複製/存檔/OCR/浮水印/關閉）
    - 雙擊或 `Esc` 關閉
+   - 點擊鉛筆圖示開啟標註工具列，可在釘選圖片上繪圖
 
 ## 疑難排解
+
+### macOS：「SnapTray」無法打開，因為 Apple 無法驗證
+
+如果你看到以下訊息：
+- 「SnapTray」無法打開，因為 Apple 無法驗證其不含惡意軟體
+
+**解決方法：** 使用終端機移除隔離屬性：
+```bash
+xattr -cr /Applications/SnapTray.app
+```
+
+這會移除 macOS 對下載應用程式添加的隔離標記。執行此指令後，你應該可以正常開啟 SnapTray。
 
 ### Windows：應用程式無法啟動或顯示缺少 DLL 錯誤
 
@@ -447,6 +465,8 @@ snap-tray/
 | `ResizeHandler` | `src/pinwindow/` | 視窗邊緣調整大小 |
 | `UIIndicators` | `src/pinwindow/` | 縮放/透明度/穿透指示器 |
 | `ClickThroughExitButton` | `src/pinwindow/` | 穿透模式離開按鈕 |
+| `PinWindowToolbar` | `src/pinwindow/` | 釘選視窗標註工具列 |
+| `PinWindowSubToolbar` | `src/pinwindow/` | Shape/Arrow 選項子工具列 |
 | Section 類別 | `src/ui/sections/` | ColorAndWidthWidget 子組件 |
 
 ### 測試覆蓋率
@@ -460,8 +480,10 @@ snap-tray/
 | Detection | 42 |
 | PinWindow | 24 |
 | Audio | 23 |
-| Scrolling | 22 |
-| **總計** | **433** |
+| Utils | 23 |
+| Settings | 14 |
+| Other | 34 |
+| **總計** | **482** |
 
 ## 自訂應用程式圖示
 

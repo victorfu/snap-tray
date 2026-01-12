@@ -19,6 +19,7 @@ SnapTray is a lightweight tray utility for region screenshots, on-screen annotat
   - Multi-region selection (Debug build only; capture multiple areas, merge or save separately)
   - Include cursor option in screenshots
   - Window detection (macOS/Windows): Auto-detect window under cursor, single-click to select
+  - Right-click to cancel selection
 - **Capture Toolbar**:
   - `Selection` tool (adjust selection area)
   - Annotation tools: `Arrow` / `Pencil` / `Marker` / `Shape` (Rectangle/Ellipse, outline/filled) / `Text` / `Mosaic` / `StepBadge` / `Eraser`
@@ -35,7 +36,7 @@ SnapTray is a lightweight tray utility for region screenshots, on-screen annotat
   - Text formatting controls for Text tool (font family/size, bold/italic/underline)
 - **Screen Canvas**:
   - Full-screen annotation mode, draw directly on screen
-  - Drawing tools: `Pencil` / `Marker` / `Arrow` / `Shape` (Rectangle) / `Mosaic` / `StepBadge` / `Text` / `EmojiSticker`
+  - Drawing tools: `Pencil` / `Marker` / `Arrow` / `Shape` (Rectangle) / `StepBadge` / `Text` / `EmojiSticker` / `Eraser`
   - Presentation tools: `Laser Pointer` / `Cursor Highlight` (click ripple) / `Spotlight` (focus attention)
   - Color + line width controls
   - Undo/Redo/Clear support
@@ -57,6 +58,10 @@ SnapTray is a lightweight tray utility for region screenshots, on-screen annotat
   - Rotation/flip via keyboard: `1` rotate CW, `2` rotate CCW, `3` flip horizontal, `4` flip vertical
   - Double-click or Esc to close
   - Context menu: Copy/Save/OCR/Watermark/Click-through/Close
+  - **Annotation Toolbar**: Click the pencil icon to open annotation tools
+    - Drawing tools: `Pencil` / `Marker` / `Arrow` / `Shape` / `Text` / `Mosaic` / `StepBadge` / `EmojiSticker` / `Eraser`
+    - `Undo` / `Redo` support
+    - `OCR` / `Copy` / `Save` quick actions
 - **Settings Dialog**:
   - General tab: Launch at startup, toolbar style (Dark/Light), pin window opacity/zoom settings
   - Hotkeys tab: Separate hotkeys for Region Capture and Screen Canvas
@@ -330,8 +335,21 @@ CMake automatically detects and uses the compiler cache when available. No addit
    - `1` rotate CW, `2` rotate CCW, `3` flip horizontal, `4` flip vertical
    - Context menu (Copy/Save/OCR/Watermark/Close)
    - Double-click or `Esc` to close
+   - Click pencil icon to open annotation toolbar for drawing on pinned images
 
 ## Troubleshooting
+
+### macOS: "SnapTray" cannot be opened because Apple cannot verify it
+
+If you see the message:
+- "SnapTray" cannot be opened because Apple could not verify it is free of malware
+
+**Solution:** Remove the quarantine attribute using Terminal:
+```bash
+xattr -cr /Applications/SnapTray.app
+```
+
+This removes the quarantine flag that macOS adds to downloaded applications. After running this command, you should be able to open SnapTray normally.
 
 ### Windows: Application fails to start or shows missing DLL errors
 
@@ -447,6 +465,8 @@ The codebase follows a modular architecture with extracted components for mainta
 | `ResizeHandler` | `src/pinwindow/` | Window edge resize |
 | `UIIndicators` | `src/pinwindow/` | Scale/opacity/click-through indicators |
 | `ClickThroughExitButton` | `src/pinwindow/` | Exit button for click-through mode |
+| `PinWindowToolbar` | `src/pinwindow/` | Annotation toolbar for pin windows |
+| `PinWindowSubToolbar` | `src/pinwindow/` | Sub-toolbar for shape/arrow options |
 | Section classes | `src/ui/sections/` | ColorAndWidthWidget sub-components |
 
 ### Test Coverage
@@ -460,8 +480,10 @@ The codebase follows a modular architecture with extracted components for mainta
 | Detection | 42 |
 | PinWindow | 24 |
 | Audio | 23 |
-| Scrolling | 22 |
-| **Total** | **433** |
+| Utils | 23 |
+| Settings | 14 |
+| Other | 34 |
+| **Total** | **482** |
 
 ## Custom App Icon
 
