@@ -416,12 +416,12 @@ QRect RegionPainter::drawDimensionInfoPanel(QPainter& painter, const QRect& sele
     QString maxWidthText = "9999 x 9999  pt";
     int fixedWidth = fm.horizontalAdvance(maxWidthText) + 24;  // +24 for padding
 
-    QRect textRect = fm.boundingRect(label);
-    int actualWidth = textRect.width() + 24;
+    int actualWidth = fm.horizontalAdvance(label) + 24;
     int width = qMax(fixedWidth, actualWidth);
 
-    textRect.setWidth(width);
-    textRect.adjust(0, -6, 0, 6);
+    // Use fixed height 28px to match RegionControlWidget
+    static constexpr int PANEL_HEIGHT = 28;
+    QRect textRect(0, 0, width, PANEL_HEIGHT);
 
     int textX = selectionRect.left();
     int textY = selectionRect.top() - textRect.height() - 8;
