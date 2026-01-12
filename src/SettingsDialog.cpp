@@ -29,6 +29,8 @@ static const char* SETTINGS_KEY_HOTKEY = "hotkey";
 static const char* DEFAULT_HOTKEY = "F2";
 static const char* SETTINGS_KEY_SCREEN_CANVAS_HOTKEY = "screenCanvasHotkey";
 static const char* DEFAULT_SCREEN_CANVAS_HOTKEY = "Ctrl+F2";
+static const char* SETTINGS_KEY_PASTE_HOTKEY = "pasteHotkey";
+static const char* DEFAULT_PASTE_HOTKEY = "F8";
 
 SettingsDialog::SettingsDialog(QWidget *parent)
     : QDialog(parent)
@@ -39,6 +41,8 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     , m_captureHotkeyStatus(nullptr)
     , m_screenCanvasHotkeyEdit(nullptr)
     , m_screenCanvasHotkeyStatus(nullptr)
+    , m_pasteHotkeyEdit(nullptr)
+    , m_pasteHotkeyStatus(nullptr)
     , m_restoreDefaultsBtn(nullptr)
     , m_watermarkEnabledCheckbox(nullptr)
     , m_watermarkImagePathEdit(nullptr)
@@ -303,6 +307,20 @@ void SettingsDialog::setupHotkeysTab(QWidget *tab)
     canvasLayout->addWidget(m_screenCanvasHotkeyEdit);
     canvasLayout->addWidget(m_screenCanvasHotkeyStatus);
     layout->addLayout(canvasLayout);
+
+    // Paste (Pin from Clipboard) hotkey row
+    QHBoxLayout *pasteLayout = new QHBoxLayout();
+    QLabel *pasteLabel = new QLabel("Paste:", tab);
+    pasteLabel->setFixedWidth(120);
+    m_pasteHotkeyEdit = new HotkeyEdit(tab);
+    m_pasteHotkeyEdit->setKeySequence(loadPasteHotkey());
+    m_pasteHotkeyStatus = new QLabel(tab);
+    m_pasteHotkeyStatus->setFixedSize(24, 24);
+    m_pasteHotkeyStatus->setAlignment(Qt::AlignCenter);
+    pasteLayout->addWidget(pasteLabel);
+    pasteLayout->addWidget(m_pasteHotkeyEdit);
+    pasteLayout->addWidget(m_pasteHotkeyStatus);
+    layout->addLayout(pasteLayout);
 
     layout->addStretch();
 
@@ -756,6 +774,7 @@ void SettingsDialog::onRestoreDefaults()
 {
     m_hotkeyEdit->setKeySequence(QString(DEFAULT_HOTKEY));
     m_screenCanvasHotkeyEdit->setKeySequence(QString(DEFAULT_SCREEN_CANVAS_HOTKEY));
+    m_pasteHotkeyEdit->setKeySequence(QString(DEFAULT_PASTE_HOTKEY));
 }
 
 QString SettingsDialog::defaultHotkey()
@@ -792,10 +811,27 @@ void SettingsDialog::updateScreenCanvasHotkeyStatus(bool isRegistered)
     updateHotkeyStatus(m_screenCanvasHotkeyStatus, isRegistered);
 }
 
+QString SettingsDialog::defaultPasteHotkey()
+{
+    return QString(DEFAULT_PASTE_HOTKEY);
+}
+
+QString SettingsDialog::loadPasteHotkey()
+{
+    auto settings = SnapTray::getSettings();
+    return settings.value(SETTINGS_KEY_PASTE_HOTKEY, DEFAULT_PASTE_HOTKEY).toString();
+}
+
+void SettingsDialog::updatePasteHotkeyStatus(bool isRegistered)
+{
+    updateHotkeyStatus(m_pasteHotkeyStatus, isRegistered);
+}
+
 void SettingsDialog::onSave()
 {
     QString newHotkey = m_hotkeyEdit->keySequence();
     QString newScreenCanvasHotkey = m_screenCanvasHotkeyEdit->keySequence();
+    QString newPasteHotkey = m_pasteHotkeyEdit->keySequence();
 
     // Validate hotkeys are not empty
     if (newHotkey.isEmpty()) {
@@ -807,6 +843,12 @@ void SettingsDialog::onSave()
     if (newScreenCanvasHotkey.isEmpty()) {
         QMessageBox::warning(this, "Invalid Hotkey",
             "Screen Canvas hotkey cannot be empty. Please set a valid key combination.");
+        return;
+    }
+
+    if (newPasteHotkey.isEmpty()) {
+        QMessageBox::warning(this, "Invalid Hotkey",
+            "Paste hotkey cannot be empty. Please set a valid key combination.");
         return;
     }
 
@@ -900,6 +942,7 @@ void SettingsDialog::onSave()
     // Request hotkey change (MainApplication handles registration)
     emit hotkeyChangeRequested(newHotkey);
     emit screenCanvasHotkeyChangeRequested(newScreenCanvasHotkey);
+    emit pasteHotkeyChangeRequested(newPasteHotkey);
 
     // Close dialog (non-modal mode)
     accept();

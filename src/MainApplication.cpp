@@ -21,6 +21,8 @@
 #include <QHotkey>
 #include <QTimer>
 #include <QDebug>
+#include <QClipboard>
+#include <QMimeData>
 
 MainApplication::MainApplication(QObject* parent)
     : QObject(parent)
@@ -28,6 +30,7 @@ MainApplication::MainApplication(QObject* parent)
     , m_trayMenu(nullptr)
     , m_regionHotkey(nullptr)
     , m_screenCanvasHotkey(nullptr)
+    , m_pasteHotkey(nullptr)
     , m_captureManager(nullptr)
     , m_pinWindowManager(nullptr)
     , m_screenCanvasManager(nullptr)
@@ -256,6 +259,7 @@ void MainApplication::onSettings()
     // Show current hotkey registration status
     m_settingsDialog->updateCaptureHotkeyStatus(m_regionHotkey->isRegistered());
     m_settingsDialog->updateScreenCanvasHotkeyStatus(m_screenCanvasHotkey->isRegistered());
+    m_settingsDialog->updatePasteHotkeyStatus(m_pasteHotkey->isRegistered());
 
     // Connect hotkey change signal
     connect(m_settingsDialog, &SettingsDialog::hotkeyChangeRequested,
@@ -279,6 +283,19 @@ void MainApplication::onSettings()
                 if (!success) {
                     m_settingsDialog->showHotkeyError(
                         "Failed to register screen canvas hotkey. It may be in use by another application.");
+                }
+            }
+        });
+
+    // Connect paste hotkey change signal
+    connect(m_settingsDialog, &SettingsDialog::pasteHotkeyChangeRequested,
+        this, [this](const QString& newHotkey) {
+            bool success = updatePasteHotkey(newHotkey);
+            if (m_settingsDialog) {
+                m_settingsDialog->updatePasteHotkeyStatus(success);
+                if (!success) {
+                    m_settingsDialog->showHotkeyError(
+                        "Failed to register paste hotkey. It may be in use by another application.");
                 }
             }
         });
@@ -327,6 +344,20 @@ void MainApplication::setupHotkey()
     }
 
     connect(m_screenCanvasHotkey, &QHotkey::activated, this, &MainApplication::onScreenCanvas);
+
+    // Load Paste hotkey from settings (default is F8)
+    QString pasteKeySequence = SettingsDialog::loadPasteHotkey();
+    m_pasteHotkey = new QHotkey(QKeySequence(pasteKeySequence), true, this);
+
+    if (m_pasteHotkey->isRegistered()) {
+        qDebug() << "Paste hotkey registered:" << pasteKeySequence;
+    }
+    else {
+        qDebug() << "Failed to register paste hotkey:" << pasteKeySequence;
+        failedHotkeys << QString("Paste (%1)").arg(pasteKeySequence);
+    }
+
+    connect(m_pasteHotkey, &QHotkey::activated, this, &MainApplication::onPasteFromClipboard);
 
     // Update tray menu text with current hotkey
     updateTrayMenuHotkeyText(regionKeySequence);
@@ -430,6 +461,78 @@ bool MainApplication::updateScreenCanvasHotkey(const QString& newHotkey)
 
         return false;
     }
+}
+
+bool MainApplication::updatePasteHotkey(const QString& newHotkey)
+{
+    qDebug() << "Updating paste hotkey to:" << newHotkey;
+
+    // Save old hotkey for reverting
+    QKeySequence oldShortcut = m_pasteHotkey->shortcut();
+
+    // Unregister old hotkey
+    m_pasteHotkey->setRegistered(false);
+
+    // Set new key sequence
+    m_pasteHotkey->setShortcut(QKeySequence(newHotkey));
+
+    // Re-register
+    m_pasteHotkey->setRegistered(true);
+
+    if (m_pasteHotkey->isRegistered()) {
+        qDebug() << "Paste hotkey updated and registered:" << newHotkey;
+
+        // Save only after successful registration
+        auto settings = SnapTray::getSettings();
+        settings.setValue("pasteHotkey", newHotkey);
+
+        return true;
+    }
+    else {
+        qDebug() << "Failed to register new paste hotkey:" << newHotkey << ", reverting...";
+
+        // Revert to old hotkey
+        m_pasteHotkey->setShortcut(oldShortcut);
+        m_pasteHotkey->setRegistered(true);
+
+        if (m_pasteHotkey->isRegistered()) {
+            qDebug() << "Reverted to old paste hotkey:" << oldShortcut.toString();
+        }
+        else {
+            qDebug() << "Critical: Failed to restore old paste hotkey!";
+        }
+
+        return false;
+    }
+}
+
+void MainApplication::onPasteFromClipboard()
+{
+    qDebug() << "Paste hotkey activated";
+
+    QClipboard *clipboard = QGuiApplication::clipboard();
+    QPixmap pixmap = clipboard->pixmap();
+
+    if (pixmap.isNull()) {
+        // Try to get image from mimeData
+        const QMimeData *mimeData = clipboard->mimeData();
+        if (mimeData && mimeData->hasImage()) {
+            pixmap = qvariant_cast<QPixmap>(mimeData->imageData());
+        }
+    }
+
+    if (!pixmap.isNull()) {
+        // Create pin window at screen center
+        QScreen *screen = QGuiApplication::screenAt(QCursor::pos());
+        if (!screen) {
+            screen = QGuiApplication::primaryScreen();
+        }
+        QRect screenGeometry = screen->geometry();
+        QPoint position = screenGeometry.center() - QPoint(pixmap.width() / 2, pixmap.height() / 2);
+        m_pinWindowManager->createPinWindow(pixmap, position);
+        qDebug() << "Created pin window from clipboard at screen center" << position;
+    }
+    // Silently ignore if no image in clipboard
 }
 
 void MainApplication::showRecordingPreview(const QString& videoPath)

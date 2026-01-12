@@ -28,6 +28,7 @@ public:
 private slots:
     void onRegionCapture();
     void onScreenCanvas();
+    void onPasteFromClipboard();
     void onFullScreenRecording();
     void onCloseAllPins();
     void onSettings();
@@ -39,6 +40,7 @@ private slots:
 public:
     bool updateHotkey(const QString &newHotkey);
     bool updateScreenCanvasHotkey(const QString &newHotkey);
+    bool updatePasteHotkey(const QString &newHotkey);
 
 private:
     void setupHotkey();
@@ -48,6 +50,7 @@ private:
     QMenu *m_trayMenu;
     QHotkey *m_regionHotkey;
     QHotkey *m_screenCanvasHotkey;
+    QHotkey *m_pasteHotkey;
     CaptureManager *m_captureManager;
     PinWindowManager *m_pinWindowManager;
     ScreenCanvasManager *m_screenCanvasManager;
