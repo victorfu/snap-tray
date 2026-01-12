@@ -33,9 +33,9 @@ for /f "tokens=*" %%a in ('findstr /C:"project(SnapTray VERSION" "%PROJECT_ROOT%
 )
 set APP_NAME=SnapTray
 
-REM Default MSIX identity values for local development
-if "%IDENTITY_NAME%"=="" set IDENTITY_NAME=SnapTray.Dev
-if "%PUBLISHER_ID%"=="" set PUBLISHER_ID=CN=SnapTray Dev
+REM Default MSIX identity values for Microsoft Store
+if "%IDENTITY_NAME%"=="" set IDENTITY_NAME=VictorFu.3115791294772
+if "%PUBLISHER_ID%"=="" set PUBLISHER_ID=CN=88BB68F4-693F-45D9-BF2F-3CF9C709619F
 
 echo =======================================
 echo   SnapTray MSIX Packager

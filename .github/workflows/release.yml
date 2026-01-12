@@ -258,8 +258,8 @@ jobs:
         env:
           QT_PATH: ${{ env.QT_ROOT_DIR }}
           SCCACHE_GHA_ENABLED: "true"
-          IDENTITY_NAME: ${{ secrets.MSIX_IDENTITY_NAME || 'SnapTray.Dev' }}
-          PUBLISHER_ID: ${{ secrets.MSIX_PUBLISHER_ID || 'CN=SnapTray Dev' }}
+          IDENTITY_NAME: ${{ secrets.MSIX_IDENTITY_NAME || 'VictorFu.3115791294772' }}
+          PUBLISHER_ID: ${{ secrets.MSIX_PUBLISHER_ID || 'CN=88BB68F4-693F-45D9-BF2F-3CF9C709619F' }}
         run: packaging\windows\package.bat
 
       - name: Show sccache stats
