@@ -124,6 +124,10 @@ PinWindow::PinWindow(const QPixmap &screenshot, const QPoint &position, QWidget 
         m_baseCornerRadius = 0;
     }
 
+    // Load watermark settings before creating context menu
+    // (so the "Enable" checkbox reflects the correct state)
+    m_watermarkSettings = WatermarkRenderer::loadSettings();
+
     createContextMenu();
 
     // Initialize OCR manager if available on this platform
@@ -149,9 +153,6 @@ PinWindow::PinWindow(const QPixmap &screenshot, const QPoint &position, QWidget 
 
     // Apply default opacity (90%)
     setWindowOpacity(m_opacity);
-
-    // Load watermark settings
-    m_watermarkSettings = WatermarkRenderer::loadSettings();
 
     // Initialize loading spinner for OCR
     m_loadingSpinner = new LoadingSpinnerRenderer(this);
