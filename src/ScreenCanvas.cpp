@@ -61,6 +61,7 @@ ScreenCanvas::ScreenCanvas(QWidget* parent)
     setAttribute(Qt::WA_DeleteOnClose);
     setAttribute(Qt::WA_TranslucentBackground, true);
     setMouseTracking(true);
+    setFocusPolicy(Qt::StrongFocus);
 
     // Initialize annotation layer
     m_annotationLayer = new AnnotationLayer(this);

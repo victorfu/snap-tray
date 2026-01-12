@@ -53,6 +53,7 @@ void ScreenCanvasManager::toggle()
         raiseWindowAboveMenuBar(m_canvas);
         setWindowClickThrough(m_canvas, false);
         m_canvas->activateWindow();
+        m_canvas->setFocus();
         m_canvas->raise();
 
         emit canvasOpened();
