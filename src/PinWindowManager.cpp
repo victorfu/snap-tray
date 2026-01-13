@@ -55,3 +55,13 @@ void PinWindowManager::onWindowClosed(PinWindow *window)
         emit allWindowsClosed();
     }
 }
+
+void PinWindowManager::updateOcrLanguages(const QStringList &languages)
+{
+    qDebug() << "PinWindowManager: Updating OCR languages for" << m_windows.count() << "windows";
+    for (PinWindow *window : m_windows) {
+        if (window) {
+            window->updateOcrLanguages(languages);
+        }
+    }
+}

@@ -32,29 +32,55 @@ IMemoryBufferByteAccess : ::IUnknown
 
 namespace {
 
-// Try to create OCR engine with preferred languages
-OcrEngine tryCreateOcrEngine()
+// Map BCP-47 language codes to Windows language tags
+QString mapToWindowsLanguageTag(const QString &bcp47)
 {
-    // Preferred language order: Traditional Chinese, Simplified Chinese, English
-    // Note: Windows 10 OCR uses short language tags (zh-TW, zh-CN) not BCP-47 (zh-Hant-TW)
-    static const wchar_t* languageTags[] = {
-        L"zh-TW",
-        L"zh-CN",
-        L"en-US"
-    };
+    // Windows uses region codes (zh-TW, zh-CN) instead of script subtags (zh-Hant, zh-Hans)
+    if (bcp47 == "zh-Hant") {
+        return "zh-TW";
+    } else if (bcp47 == "zh-Hans") {
+        return "zh-CN";
+    }
+    return bcp47;
+}
 
-    for (const auto* tag : languageTags) {
+// Map Windows language tags back to BCP-47 codes
+QString mapToBcp47(const QString &winTag)
+{
+    // Convert Windows region codes to BCP-47 script subtags
+    if (winTag == "zh-TW" || winTag == "zh-Hant-TW") {
+        return "zh-Hant";
+    } else if (winTag == "zh-CN" || winTag == "zh-Hans-CN") {
+        return "zh-Hans";
+    }
+    return winTag;
+}
+
+// Try to create OCR engine with preferred languages
+OcrEngine tryCreateOcrEngine(const QStringList &preferredLanguages)
+{
+    // Try each preferred language in order
+    for (const QString &langCode : preferredLanguages) {
         try {
-            Windows::Globalization::Language lang(tag);
+            // Convert BCP-47 codes to Windows format
+            QString winLangCode = mapToWindowsLanguageTag(langCode);
+
+            Windows::Globalization::Language lang(winLangCode.toStdWString().c_str());
             if (OcrEngine::IsLanguageSupported(lang)) {
-                return OcrEngine::TryCreateFromLanguage(lang);
+                OcrEngine engine = OcrEngine::TryCreateFromLanguage(lang);
+                if (engine) {
+                    qDebug() << "OCRManager: Created engine for language:" << langCode;
+                    return engine;
+                }
             }
         } catch (...) {
             // Language not available, try next
+            continue;
         }
     }
 
     // Fall back to user profile languages
+    qDebug() << "OCRManager: Falling back to user profile languages";
     return OcrEngine::TryCreateFromUserProfileLanguages();
 }
 
@@ -96,9 +122,10 @@ SoftwareBitmap qImageToSoftwareBitmap(const QImage &image)
 class OcrWorker : public QThread
 {
 public:
-    OcrWorker(const QImage &image, QObject *parent = nullptr)
+    OcrWorker(const QImage &image, const QStringList &languages, QObject *parent = nullptr)
         : QThread(parent)
         , m_image(image)
+        , m_languages(languages)
         , m_success(false)
     {
     }
@@ -124,12 +151,14 @@ protected:
         }
 
         try {
-            OcrEngine engine = tryCreateOcrEngine();
+            OcrEngine engine = tryCreateOcrEngine(m_languages);
             if (!engine) {
                 m_error = QStringLiteral("Failed to create OCR engine. "
                     "Please install OCR language packs in Windows Settings.");
                 return;
             }
+
+            qDebug() << "OCRManager: Starting text recognition with languages:" << m_languages;
 
             SoftwareBitmap bitmap = qImageToSoftwareBitmap(m_image);
             OcrResult result = engine.RecognizeAsync(bitmap).get();
@@ -155,6 +184,7 @@ protected:
 
 private:
     QImage m_image;
+    QStringList m_languages;
     bool m_success;
     QString m_text;
     QString m_error;
@@ -186,7 +216,8 @@ bool OCRManager::isAvailable()
             }
         }
 
-        OcrEngine engine = tryCreateOcrEngine();
+        // Try with default language (en-US) to check availability
+        OcrEngine engine = tryCreateOcrEngine({"en-US"});
         return engine != nullptr;
     } catch (...) {
         return false;
@@ -205,7 +236,7 @@ void OCRManager::recognizeText(const QPixmap &pixmap, const OCRCallback &callbac
     }
 
     QImage image = pixmap.toImage();
-    OcrWorker *worker = new OcrWorker(image, this);
+    OcrWorker *worker = new OcrWorker(image, m_languages, this);
 
     connect(worker, &QThread::finished, this, [this, worker, callback]() {
         bool success = worker->success();
@@ -221,4 +252,52 @@ void OCRManager::recognizeText(const QPixmap &pixmap, const OCRCallback &callbac
     });
 
     worker->start();
+}
+
+QList<OCRLanguageInfo> OCRManager::availableLanguages()
+{
+    QList<OCRLanguageInfo> result;
+
+    try {
+        // Initialize WinRT if needed
+        try {
+            winrt::init_apartment(winrt::apartment_type::multi_threaded);
+        } catch (const winrt::hresult_error& ex) {
+            if (ex.code() != HRESULT(0x80010106)) {
+                throw;
+            }
+        }
+
+        auto languages = OcrEngine::AvailableRecognizerLanguages();
+
+        for (const auto& lang : languages) {
+            OCRLanguageInfo info;
+            QString tag = QString::fromStdWString(std::wstring(lang.LanguageTag()));
+            info.code = mapToBcp47(tag);
+            info.nativeName = QString::fromStdWString(std::wstring(lang.NativeName()));
+            info.englishName = QString::fromStdWString(std::wstring(lang.DisplayName()));
+            result.append(info);
+        }
+
+        qDebug() << "OCRManager: Found" << result.size() << "available languages";
+
+    } catch (const winrt::hresult_error& ex) {
+        qDebug() << "OCRManager: Failed to enumerate languages:"
+                 << QString::fromStdWString(std::wstring(ex.message()));
+    } catch (...) {
+        qDebug() << "OCRManager: Unknown error enumerating languages";
+    }
+
+    return result;
+}
+
+void OCRManager::setRecognitionLanguages(const QStringList &languageCodes)
+{
+    m_languages = languageCodes;
+    qDebug() << "OCRManager: Recognition languages set to:" << m_languages;
+}
+
+QStringList OCRManager::recognitionLanguages() const
+{
+    return m_languages;
 }

@@ -254,6 +254,7 @@ add_library(snaptray_core STATIC
     src/settings/AnnotationSettingsManager.cpp
     src/settings/FileSettingsManager.cpp
     src/settings/PinWindowSettingsManager.cpp
+    src/settings/OCRSettingsManager.cpp
     src/cursor/CursorManager.cpp
     src/utils/CoordinateHelper.cpp
     src/AudioFileWriter.cpp

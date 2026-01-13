@@ -2,10 +2,12 @@
 #include "version.h"
 #include "AutoLaunchManager.h"
 #include "WatermarkRenderer.h"
+#include "OCRManager.h"
 #include "capture/IAudioCaptureEngine.h"
 #include "settings/Settings.h"
 #include "settings/FileSettingsManager.h"
 #include "settings/PinWindowSettingsManager.h"
+#include "settings/OCRSettingsManager.h"
 #include "detection/AutoBlurManager.h"
 #include "widgets/HotkeyEdit.h"
 #include <QDir>
@@ -21,6 +23,7 @@
 #include <QLineEdit>
 #include <QSlider>
 #include <QComboBox>
+#include <QListWidget>
 #include <QFileDialog>
 #include <QStandardPaths>
 #include <QFile>
@@ -76,6 +79,11 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     , m_filenamePrefixEdit(nullptr)
     , m_dateFormatCombo(nullptr)
     , m_filenamePreviewLabel(nullptr)
+    , m_ocrAvailableList(nullptr)
+    , m_ocrSelectedList(nullptr)
+    , m_ocrAddBtn(nullptr)
+    , m_ocrRemoveBtn(nullptr)
+    , m_ocrInfoLabel(nullptr)
 {
     setWindowTitle(QString("%1 Settings").arg(SNAPTRAY_APP_NAME));
     setMinimumSize(520, 480);
@@ -109,6 +117,11 @@ void SettingsDialog::setupUi()
     QWidget *watermarkTab = new QWidget();
     setupWatermarkTab(watermarkTab);
     m_tabWidget->addTab(watermarkTab, "Watermark");
+
+    // Tab 4: OCR
+    QWidget *ocrTab = new QWidget();
+    setupOcrTab(ocrTab);
+    m_tabWidget->addTab(ocrTab, "OCR");
 
 #ifdef SNAPTRAY_ENABLE_DEV_FEATURES
     // Tab 4: Recording (Debug builds only)
@@ -967,6 +980,16 @@ void SettingsDialog::onSave()
     fileSettings.saveAutoSaveScreenshots(m_autoSaveScreenshotsCheckbox->isChecked());
     fileSettings.saveAutoSaveRecordings(m_autoSaveRecordingsCheckbox->isChecked());
 
+    // Save OCR language settings
+    QStringList ocrLanguages;
+    for (int i = 0; i < m_ocrSelectedList->count(); ++i) {
+        ocrLanguages << m_ocrSelectedList->item(i)->data(Qt::UserRole).toString();
+    }
+    auto& ocrSettings = OCRSettingsManager::instance();
+    ocrSettings.setLanguages(ocrLanguages);
+    ocrSettings.save();
+    emit ocrLanguagesChanged(ocrLanguages);
+
     // Save toolbar style setting
     ToolbarStyleType newStyle = static_cast<ToolbarStyleType>(
         m_toolbarStyleCombo->currentData().toInt());
@@ -1117,6 +1140,177 @@ void SettingsDialog::onAudioSourceChanged(int index)
     m_audioDeviceCombo->setVisible(showDeviceCombo);
 }
 #endif // SNAPTRAY_ENABLE_DEV_FEATURES
+
+void SettingsDialog::setupOcrTab(QWidget *tab)
+{
+    QVBoxLayout *mainLayout = new QVBoxLayout(tab);
+
+    // Info label
+    m_ocrInfoLabel = new QLabel(
+        tr("Select and order the languages for OCR recognition.\n"
+           "English is always included and cannot be removed. Drag to reorder selected languages."), tab);
+    m_ocrInfoLabel->setWordWrap(true);
+    mainLayout->addWidget(m_ocrInfoLabel);
+
+    mainLayout->addSpacing(12);
+
+    // Horizontal layout for the two lists
+    QHBoxLayout *listsLayout = new QHBoxLayout();
+
+    // Left: Available languages
+    QVBoxLayout *availableLayout = new QVBoxLayout();
+    QLabel *availableLabel = new QLabel(tr("Available Languages"), tab);
+    availableLabel->setStyleSheet("font-weight: bold;");
+    availableLayout->addWidget(availableLabel);
+
+    m_ocrAvailableList = new QListWidget(tab);
+    m_ocrAvailableList->setSelectionMode(QAbstractItemView::ExtendedSelection);
+    m_ocrAvailableList->setSortingEnabled(true);
+    availableLayout->addWidget(m_ocrAvailableList);
+    listsLayout->addLayout(availableLayout);
+
+    // Middle: Add/Remove buttons
+    QVBoxLayout *btnLayout = new QVBoxLayout();
+    btnLayout->addStretch();
+    m_ocrAddBtn = new QPushButton(QString::fromUtf8("\u2192"), tab);  // →
+    m_ocrAddBtn->setFixedWidth(40);
+    m_ocrAddBtn->setToolTip(tr("Add selected languages"));
+    m_ocrRemoveBtn = new QPushButton(QString::fromUtf8("\u2190"), tab);  // ←
+    m_ocrRemoveBtn->setFixedWidth(40);
+    m_ocrRemoveBtn->setToolTip(tr("Remove selected languages"));
+    btnLayout->addWidget(m_ocrAddBtn);
+    btnLayout->addSpacing(8);
+    btnLayout->addWidget(m_ocrRemoveBtn);
+    btnLayout->addStretch();
+    listsLayout->addLayout(btnLayout);
+
+    // Right: Selected languages (with drag-drop reorder)
+    QVBoxLayout *selectedLayout = new QVBoxLayout();
+    QLabel *selectedLabel = new QLabel(tr("Selected Languages (priority order)"), tab);
+    selectedLabel->setStyleSheet("font-weight: bold;");
+    selectedLayout->addWidget(selectedLabel);
+
+    m_ocrSelectedList = new QListWidget(tab);
+    m_ocrSelectedList->setSelectionMode(QAbstractItemView::SingleSelection);
+    m_ocrSelectedList->setDragDropMode(QAbstractItemView::InternalMove);
+    m_ocrSelectedList->setDefaultDropAction(Qt::MoveAction);
+    selectedLayout->addWidget(m_ocrSelectedList);
+    listsLayout->addLayout(selectedLayout);
+
+    mainLayout->addLayout(listsLayout);
+
+    // Populate available languages
+    auto availableLanguages = OCRManager::availableLanguages();
+    auto& ocrSettings = OCRSettingsManager::instance();
+    QStringList selectedCodes = ocrSettings.languages();
+    if (!selectedCodes.contains("en-US")) {
+        selectedCodes.append("en-US");
+    }
+
+    for (const auto &lang : availableLanguages) {
+        // Skip en-US in available list (always required)
+        if (lang.code == "en-US") {
+            continue;
+        }
+
+        // Skip if already selected
+        if (selectedCodes.contains(lang.code)) {
+            continue;
+        }
+
+        QString displayText = QString("%1 (%2)").arg(lang.nativeName, lang.englishName);
+        QListWidgetItem *item = new QListWidgetItem(displayText);
+        item->setData(Qt::UserRole, lang.code);
+        m_ocrAvailableList->addItem(item);
+    }
+
+    // Populate selected languages (priority order)
+    for (const QString &code : selectedCodes) {
+        QString displayText = code;
+        if (code == "en-US") {
+            displayText = QStringLiteral("English (en-US)");
+        } else {
+            for (const auto &lang : availableLanguages) {
+                if (lang.code == code) {
+                    displayText = QString("%1 (%2)").arg(lang.nativeName, lang.englishName);
+                    break;
+                }
+            }
+        }
+
+        QListWidgetItem *item = new QListWidgetItem(displayText);
+        item->setData(Qt::UserRole, code);
+        if (code == "en-US") {
+            item->setToolTip(tr("English is always included and cannot be removed"));
+        }
+        m_ocrSelectedList->addItem(item);
+    }
+
+    // Connect signals
+    connect(m_ocrAddBtn, &QPushButton::clicked, this, &SettingsDialog::onAddOcrLanguage);
+    connect(m_ocrRemoveBtn, &QPushButton::clicked, this, &SettingsDialog::onRemoveOcrLanguage);
+    // Double-click to add/remove
+    connect(m_ocrAvailableList, &QListWidget::itemDoubleClicked,
+            this, &SettingsDialog::onAddOcrLanguage);
+    connect(m_ocrSelectedList, &QListWidget::itemDoubleClicked,
+            this, [this](QListWidgetItem *item) {
+                if (item->data(Qt::UserRole).toString() != "en-US") {
+                    onRemoveOcrLanguage();
+                }
+            });
+
+    mainLayout->addStretch();
+
+    // Show warning if no languages available
+    if (availableLanguages.isEmpty()) {
+        m_ocrInfoLabel->setText(
+            tr("No OCR languages available.\n\n"
+               "macOS: OCR requires macOS 10.15 or later.\n"
+               "Windows: Install language packs in Settings > Time & Language > Language."));
+        m_ocrAddBtn->setEnabled(false);
+        m_ocrRemoveBtn->setEnabled(false);
+    }
+}
+
+void SettingsDialog::onAddOcrLanguage()
+{
+    QList<QListWidgetItem*> selected = m_ocrAvailableList->selectedItems();
+    for (QListWidgetItem *item : selected) {
+        QString code = item->data(Qt::UserRole).toString();
+        QString text = item->text();
+
+        // Add to selected list
+        QListWidgetItem *newItem = new QListWidgetItem(text);
+        newItem->setData(Qt::UserRole, code);
+        m_ocrSelectedList->addItem(newItem);
+
+        // Remove from available list
+        delete m_ocrAvailableList->takeItem(m_ocrAvailableList->row(item));
+    }
+}
+
+void SettingsDialog::onRemoveOcrLanguage()
+{
+    QList<QListWidgetItem*> selected = m_ocrSelectedList->selectedItems();
+    for (QListWidgetItem *item : selected) {
+        QString code = item->data(Qt::UserRole).toString();
+
+        // Cannot remove en-US
+        if (code == "en-US") {
+            continue;
+        }
+
+        QString text = item->text();
+
+        // Add back to available list
+        QListWidgetItem *newItem = new QListWidgetItem(text);
+        newItem->setData(Qt::UserRole, code);
+        m_ocrAvailableList->addItem(newItem);
+
+        // Remove from selected list
+        delete m_ocrSelectedList->takeItem(m_ocrSelectedList->row(item));
+    }
+}
 
 void SettingsDialog::setupFilesTab(QWidget *tab)
 {

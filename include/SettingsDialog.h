@@ -12,6 +12,7 @@ class QPushButton;
 class QLineEdit;
 class QSlider;
 class QComboBox;
+class QListWidget;
 class HotkeyEdit;
 
 class SettingsDialog : public QDialog
@@ -53,18 +54,22 @@ signals:
     void quickPinHotkeyChangeRequested(const QString &newHotkey);
     void startOnLoginChanged(bool enabled);
     void toolbarStyleChanged(ToolbarStyleType style);
+    void ocrLanguagesChanged(const QStringList &languages);
 
 private slots:
     void onSave();
     void onCancel();
     void onRestoreDefaults();
     void onAccepted();
+    void onAddOcrLanguage();
+    void onRemoveOcrLanguage();
 
 private:
     void setupUi();
     void setupGeneralTab(QWidget *tab);
     void setupHotkeysTab(QWidget *tab);
     void setupWatermarkTab(QWidget *tab);
+    void setupOcrTab(QWidget *tab);
 #ifdef SNAPTRAY_ENABLE_DEV_FEATURES
     void setupRecordingTab(QWidget *tab);
 #endif
@@ -167,6 +172,13 @@ private:
     QLabel *m_filenamePreviewLabel;
     QCheckBox *m_autoSaveScreenshotsCheckbox;
     QCheckBox *m_autoSaveRecordingsCheckbox;
+
+    // OCR tab UI elements
+    QListWidget *m_ocrAvailableList;
+    QListWidget *m_ocrSelectedList;
+    QPushButton *m_ocrAddBtn;
+    QPushButton *m_ocrRemoveBtn;
+    QLabel *m_ocrInfoLabel;
 };
 
 #endif // SETTINGSDIALOG_H

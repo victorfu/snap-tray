@@ -376,6 +376,10 @@ void MainApplication::onSettings()
             }
         });
 
+    // Connect OCR languages change signal
+    connect(m_settingsDialog, &SettingsDialog::ocrLanguagesChanged,
+        m_pinWindowManager, &PinWindowManager::updateOcrLanguages);
+
     // Clean up pointer when dialog is destroyed (WA_DeleteOnClose triggers this)
     connect(m_settingsDialog, &QDialog::destroyed,
         this, [this]() {

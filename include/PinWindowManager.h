@@ -19,6 +19,7 @@ public:
     PinWindow* createPinWindow(const QPixmap &screenshot, const QPoint &position);
     void closeAllWindows();
     int windowCount() const { return m_windows.count(); }
+    void updateOcrLanguages(const QStringList &languages);
 
 signals:
     void windowCreated(PinWindow *window);

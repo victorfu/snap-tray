@@ -11,6 +11,48 @@
 
 namespace {
 
+// Language code to display name mapping
+NSDictionary<NSString*, NSArray<NSString*>*>* getLanguageNameMap()
+{
+    return @{
+        @"en-US": @[@"English", @"English"],
+        @"en-GB": @[@"English (UK)", @"English (UK)"],
+        @"zh-Hant": @[@"繁體中文", @"Traditional Chinese"],
+        @"zh-Hans": @[@"简体中文", @"Simplified Chinese"],
+        @"ja-JP": @[@"日本語", @"Japanese"],
+        @"ko-KR": @[@"한국어", @"Korean"],
+        @"fr-FR": @[@"Français", @"French"],
+        @"de-DE": @[@"Deutsch", @"German"],
+        @"es-ES": @[@"Español", @"Spanish"],
+        @"pt-BR": @[@"Português (Brasil)", @"Portuguese (Brazil)"],
+        @"pt-PT": @[@"Português", @"Portuguese"],
+        @"it-IT": @[@"Italiano", @"Italian"],
+        @"nl-NL": @[@"Nederlands", @"Dutch"],
+        @"pl-PL": @[@"Polski", @"Polish"],
+        @"ru-RU": @[@"Русский", @"Russian"],
+        @"uk-UA": @[@"Українська", @"Ukrainian"],
+        @"tr-TR": @[@"Türkçe", @"Turkish"],
+        @"th-TH": @[@"ไทย", @"Thai"],
+        @"vi-VN": @[@"Tiếng Việt", @"Vietnamese"],
+        @"ar-SA": @[@"العربية", @"Arabic"],
+        @"he-IL": @[@"עברית", @"Hebrew"],
+        @"hi-IN": @[@"हिन्दी", @"Hindi"],
+        @"id-ID": @[@"Bahasa Indonesia", @"Indonesian"],
+        @"ms-MY": @[@"Bahasa Melayu", @"Malay"],
+        @"sv-SE": @[@"Svenska", @"Swedish"],
+        @"da-DK": @[@"Dansk", @"Danish"],
+        @"fi-FI": @[@"Suomi", @"Finnish"],
+        @"nb-NO": @[@"Norsk", @"Norwegian"],
+        @"cs-CZ": @[@"Čeština", @"Czech"],
+        @"el-GR": @[@"Ελληνικά", @"Greek"],
+        @"hu-HU": @[@"Magyar", @"Hungarian"],
+        @"ro-RO": @[@"Română", @"Romanian"],
+        @"sk-SK": @[@"Slovenčina", @"Slovak"],
+        @"ca-ES": @[@"Català", @"Catalan"],
+        @"hr-HR": @[@"Hrvatski", @"Croatian"],
+    };
+}
+
 CGImageRef createCGImageFromPixmap(const QPixmap &pixmap)
 {
     if (pixmap.isNull()) {
@@ -165,13 +207,17 @@ void OCRManager::recognizeText(const QPixmap &pixmap, const OCRCallback &callbac
         // Configure request for accurate recognition
         request.recognitionLevel = VNRequestTextRecognitionLevelAccurate;
 
-        // Set recognition languages: Traditional Chinese, Simplified Chinese, English
-        request.recognitionLanguages = @[@"zh-Hant", @"zh-Hans", @"en-US"];
+        // Build language array from settings
+        NSMutableArray<NSString*> *langArray = [NSMutableArray array];
+        for (const QString &lang : m_languages) {
+            [langArray addObject:lang.toNSString()];
+        }
+        request.recognitionLanguages = langArray;
 
         // Enable language correction for better accuracy
         request.usesLanguageCorrection = YES;
 
-        qDebug() << "OCRManager: Starting text recognition...";
+        qDebug() << "OCRManager: Starting text recognition with languages:" << m_languages;
 
         // Perform request asynchronously
         dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
@@ -193,4 +239,71 @@ void OCRManager::recognizeText(const QPixmap &pixmap, const OCRCallback &callbac
             callback(false, QString(), QStringLiteral("Vision Framework not available (requires macOS 10.15+)"));
         }
     }
+}
+
+QList<OCRLanguageInfo> OCRManager::availableLanguages()
+{
+    QList<OCRLanguageInfo> result;
+
+    if (@available(macOS 10.15, *)) {
+        NSError *error = nil;
+        NSArray<NSString *> *supported = nil;
+
+        // Use modern instance method for macOS 12+, fall back to deprecated class method for older
+        if (@available(macOS 12.0, *)) {
+            // Create a temporary request to query supported languages
+            VNRecognizeTextRequest *request = [[VNRecognizeTextRequest alloc] init];
+            request.recognitionLevel = VNRequestTextRecognitionLevelAccurate;
+            supported = [request supportedRecognitionLanguagesAndReturnError:&error];
+        } else {
+            // Fall back to deprecated API for macOS 10.15-11.x
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+            supported = [VNRecognizeTextRequest
+                supportedRecognitionLanguagesForTextRecognitionLevel:VNRequestTextRecognitionLevelAccurate
+                revision:VNRecognizeTextRequestRevision2
+                error:&error];
+#pragma clang diagnostic pop
+        }
+
+        if (error) {
+            qDebug() << "OCRManager: Failed to get supported languages:"
+                     << QString::fromNSString([error localizedDescription]);
+            return result;
+        }
+
+        NSDictionary *nameMap = getLanguageNameMap();
+
+        for (NSString *code in supported) {
+            OCRLanguageInfo info;
+            info.code = QString::fromNSString(code);
+
+            NSArray<NSString*> *names = nameMap[code];
+            if (names && names.count >= 2) {
+                info.nativeName = QString::fromNSString(names[0]);
+                info.englishName = QString::fromNSString(names[1]);
+            } else {
+                // Fallback: use code as name
+                info.nativeName = info.code;
+                info.englishName = info.code;
+            }
+
+            result.append(info);
+        }
+
+        qDebug() << "OCRManager: Found" << result.size() << "supported languages";
+    }
+
+    return result;
+}
+
+void OCRManager::setRecognitionLanguages(const QStringList &languageCodes)
+{
+    m_languages = languageCodes;
+    qDebug() << "OCRManager: Recognition languages set to:" << m_languages;
+}
+
+QStringList OCRManager::recognitionLanguages() const
+{
+    return m_languages;
 }

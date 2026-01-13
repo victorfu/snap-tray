@@ -18,6 +18,7 @@
 #include "detection/AutoBlurManager.h"
 #include "settings/AnnotationSettingsManager.h"
 #include "settings/FileSettingsManager.h"
+#include "settings/OCRSettingsManager.h"
 #include "tools/handlers/MosaicToolHandler.h"
 #include "tools/handlers/EmojiStickerToolHandler.h"
 #include <QTextEdit>
@@ -183,6 +184,9 @@ RegionSelector::RegionSelector(QWidget* parent)
 
     // Initialize OCR manager if available on this platform
     m_ocrManager = PlatformFeatures::instance().createOCRManager(this);
+    if (m_ocrManager) {
+        m_ocrManager->setRecognitionLanguages(OCRSettingsManager::instance().languages());
+    }
 
     // Initialize auto-blur manager (lazy initialization - cascade loaded on first use)
     m_autoBlurManager = new AutoBlurManager(this);

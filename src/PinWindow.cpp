@@ -21,6 +21,7 @@
 #include "settings/AnnotationSettingsManager.h"
 #include "settings/FileSettingsManager.h"
 #include "settings/PinWindowSettingsManager.h"
+#include "settings/OCRSettingsManager.h"
 #include "InlineTextEditor.h"
 #include "region/TextAnnotationEditor.h"
 #include "ColorAndWidthWidget.h"
@@ -750,6 +751,9 @@ void PinWindow::performOCR()
     // Lazy-create OCR manager on first use to improve initial window creation performance
     if (!m_ocrManager) {
         m_ocrManager = PlatformFeatures::instance().createOCRManager(this);
+        if (m_ocrManager) {
+            m_ocrManager->setRecognitionLanguages(OCRSettingsManager::instance().languages());
+        }
     }
 
     if (!m_ocrManager) {
@@ -790,6 +794,14 @@ void PinWindow::onOCRComplete(bool success, const QString &text, const QString &
 
     m_uiIndicators->showOCRToast(success && !text.isEmpty(), msg);
     emit ocrCompleted(success && !text.isEmpty(), msg);
+}
+
+void PinWindow::updateOcrLanguages(const QStringList &languages)
+{
+    if (m_ocrManager) {
+        m_ocrManager->setRecognitionLanguages(languages);
+        qDebug() << "PinWindow: Updated OCR languages to:" << languages;
+    }
 }
 
 void PinWindow::copyAllInfo()

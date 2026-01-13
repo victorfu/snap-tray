@@ -84,6 +84,9 @@ public:
     bool isLivePaused() const { return m_livePaused; }
     void setLiveFrameRate(int fps);
 
+    // OCR language settings
+    void updateOcrLanguages(const QStringList &languages);
+
 signals:
     void closed(PinWindow *window);
     void saveRequested(const QPixmap &pixmap);
