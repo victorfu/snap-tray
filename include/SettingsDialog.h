@@ -35,16 +35,22 @@ public:
     static QString defaultPasteHotkey();
     static QString loadPasteHotkey();
 
+    // Quick Pin hotkey settings
+    static QString defaultQuickPinHotkey();
+    static QString loadQuickPinHotkey();
+
     // Status display
     void showHotkeyError(const QString &message);
     void updateCaptureHotkeyStatus(bool isRegistered);
     void updateScreenCanvasHotkeyStatus(bool isRegistered);
     void updatePasteHotkeyStatus(bool isRegistered);
+    void updateQuickPinHotkeyStatus(bool isRegistered);
 
 signals:
     void hotkeyChangeRequested(const QString &newHotkey);
     void screenCanvasHotkeyChangeRequested(const QString &newHotkey);
     void pasteHotkeyChangeRequested(const QString &newHotkey);
+    void quickPinHotkeyChangeRequested(const QString &newHotkey);
     void startOnLoginChanged(bool enabled);
     void toolbarStyleChanged(ToolbarStyleType style);
 
@@ -74,6 +80,8 @@ private:
     QLabel *m_screenCanvasHotkeyStatus;
     HotkeyEdit *m_pasteHotkeyEdit;
     QLabel *m_pasteHotkeyStatus;
+    HotkeyEdit *m_quickPinHotkeyEdit;
+    QLabel *m_quickPinHotkeyStatus;
     QPushButton *m_restoreDefaultsBtn;
 
     // Watermark UI elements

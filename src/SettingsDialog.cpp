@@ -31,6 +31,8 @@ static const char* SETTINGS_KEY_SCREEN_CANVAS_HOTKEY = "screenCanvasHotkey";
 static const char* DEFAULT_SCREEN_CANVAS_HOTKEY = "Ctrl+F2";
 static const char* SETTINGS_KEY_PASTE_HOTKEY = "pasteHotkey";
 static const char* DEFAULT_PASTE_HOTKEY = "F8";
+static const char* SETTINGS_KEY_QUICK_PIN_HOTKEY = "quickPinHotkey";
+static const char* DEFAULT_QUICK_PIN_HOTKEY = "Shift+F2";
 
 SettingsDialog::SettingsDialog(QWidget *parent)
     : QDialog(parent)
@@ -320,6 +322,20 @@ void SettingsDialog::setupHotkeysTab(QWidget *tab)
     pasteLayout->addWidget(m_pasteHotkeyEdit);
     pasteLayout->addWidget(m_pasteHotkeyStatus);
     layout->addLayout(pasteLayout);
+
+    // Quick Pin hotkey row
+    QHBoxLayout *quickPinLayout = new QHBoxLayout();
+    QLabel *quickPinLabel = new QLabel("Quick Pin:", tab);
+    quickPinLabel->setFixedWidth(120);
+    m_quickPinHotkeyEdit = new HotkeyEdit(tab);
+    m_quickPinHotkeyEdit->setKeySequence(loadQuickPinHotkey());
+    m_quickPinHotkeyStatus = new QLabel(tab);
+    m_quickPinHotkeyStatus->setFixedSize(24, 24);
+    m_quickPinHotkeyStatus->setAlignment(Qt::AlignCenter);
+    quickPinLayout->addWidget(quickPinLabel);
+    quickPinLayout->addWidget(m_quickPinHotkeyEdit);
+    quickPinLayout->addWidget(m_quickPinHotkeyStatus);
+    layout->addLayout(quickPinLayout);
 
     layout->addStretch();
 
@@ -769,6 +785,7 @@ void SettingsDialog::onRestoreDefaults()
     m_hotkeyEdit->setKeySequence(QString(DEFAULT_HOTKEY));
     m_screenCanvasHotkeyEdit->setKeySequence(QString(DEFAULT_SCREEN_CANVAS_HOTKEY));
     m_pasteHotkeyEdit->setKeySequence(QString(DEFAULT_PASTE_HOTKEY));
+    m_quickPinHotkeyEdit->setKeySequence(QString(DEFAULT_QUICK_PIN_HOTKEY));
 }
 
 QString SettingsDialog::defaultHotkey()
@@ -821,11 +838,28 @@ void SettingsDialog::updatePasteHotkeyStatus(bool isRegistered)
     updateHotkeyStatus(m_pasteHotkeyStatus, isRegistered);
 }
 
+QString SettingsDialog::defaultQuickPinHotkey()
+{
+    return QString(DEFAULT_QUICK_PIN_HOTKEY);
+}
+
+QString SettingsDialog::loadQuickPinHotkey()
+{
+    auto settings = SnapTray::getSettings();
+    return settings.value(SETTINGS_KEY_QUICK_PIN_HOTKEY, DEFAULT_QUICK_PIN_HOTKEY).toString();
+}
+
+void SettingsDialog::updateQuickPinHotkeyStatus(bool isRegistered)
+{
+    updateHotkeyStatus(m_quickPinHotkeyStatus, isRegistered);
+}
+
 void SettingsDialog::onSave()
 {
     QString newHotkey = m_hotkeyEdit->keySequence();
     QString newScreenCanvasHotkey = m_screenCanvasHotkeyEdit->keySequence();
     QString newPasteHotkey = m_pasteHotkeyEdit->keySequence();
+    QString newQuickPinHotkey = m_quickPinHotkeyEdit->keySequence();
 
     // Validate hotkeys are not empty
     if (newHotkey.isEmpty()) {
@@ -843,6 +877,12 @@ void SettingsDialog::onSave()
     if (newPasteHotkey.isEmpty()) {
         QMessageBox::warning(this, "Invalid Hotkey",
             "Paste hotkey cannot be empty. Please set a valid key combination.");
+        return;
+    }
+
+    if (newQuickPinHotkey.isEmpty()) {
+        QMessageBox::warning(this, "Invalid Hotkey",
+            "Quick Pin hotkey cannot be empty. Please set a valid key combination.");
         return;
     }
 
@@ -937,6 +977,7 @@ void SettingsDialog::onSave()
     emit hotkeyChangeRequested(newHotkey);
     emit screenCanvasHotkeyChangeRequested(newScreenCanvasHotkey);
     emit pasteHotkeyChangeRequested(newPasteHotkey);
+    emit quickPinHotkeyChangeRequested(newQuickPinHotkey);
 
     // Close dialog (non-modal mode)
     accept();

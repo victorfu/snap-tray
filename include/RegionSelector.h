@@ -139,6 +139,9 @@ public:
     // 初始化指定螢幕並使用預設區域 (用於錄影取消後返回)
     void initializeWithRegion(QScreen *screen, const QRect &region);
 
+    // 設置 Quick Pin 模式 (選擇區域後直接 pin，不顯示 toolbar)
+    void setQuickPinMode(bool enabled);
+
     void setWindowDetector(WindowDetector *detector);
     void refreshWindowDetectionAtCursor();
 
@@ -346,6 +349,9 @@ private:
     // Multi-region capture
     MultiRegionManager* m_multiRegionManager = nullptr;
     bool m_multiRegionMode = false;
+
+    // Quick Pin mode (select region and pin immediately, skip toolbar)
+    bool m_quickPinMode = false;
 
     // Painting component
     RegionPainter* m_painter;

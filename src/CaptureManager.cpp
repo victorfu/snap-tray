@@ -135,6 +135,97 @@ void CaptureManager::startRegionCapture()
     m_regionSelector->raise();
 }
 
+void CaptureManager::startQuickPinCapture()
+{
+    // 如果已經在 capture mode 中，不要重複進入
+    if (m_regionSelector && m_regionSelector->isVisible()) {
+        qDebug() << "CaptureManager: Already in capture mode, ignoring";
+        return;
+    }
+
+    qDebug() << "CaptureManager: Starting quick pin capture";
+
+    // Clean up any existing selector (QPointer auto-nulls when deleted)
+    if (m_regionSelector) {
+        m_regionSelector->close();
+    }
+
+    emit captureStarted();
+
+    // 1. 先檢測目標螢幕 (cursor 所在的螢幕)
+    QScreen *targetScreen = QGuiApplication::screenAt(QCursor::pos());
+    if (!targetScreen) {
+        targetScreen = QGuiApplication::primaryScreen();
+    }
+
+    qDebug() << "CaptureManager: Target screen:" << targetScreen->name()
+             << "geometry:" << targetScreen->geometry()
+             << "cursor pos:" << QCursor::pos();
+
+    // 2. Start window detection FIRST (async, runs in parallel with grabWindow)
+    if (m_windowDetector) {
+        m_windowDetector->setScreen(targetScreen);
+        m_windowDetector->refreshWindowListAsync();
+    }
+
+    // 3. Capture screenshot while popup is still visible
+    QWidget *popup = QApplication::activePopupWidget();
+    qDebug() << "CaptureManager: Pre-capture screenshot, popup active:" << (popup != nullptr);
+
+    QPixmap preCapture = targetScreen->grabWindow(0);
+    qDebug() << "CaptureManager: Screenshot captured, size:" << preCapture.size();
+
+    // 4. Close popup AFTER screenshot
+    if (popup) {
+        qDebug() << "CaptureManager: Closing popup to avoid event loop conflict";
+        popup->close();
+    }
+
+    // 5. 創建 RegionSelector 並設置 Quick Pin 模式
+    m_regionSelector = new RegionSelector();
+    m_regionSelector->setQuickPinMode(true);
+
+    // 6. 設置視窗偵測器
+    if (m_windowDetector) {
+        m_regionSelector->setWindowDetector(m_windowDetector);
+    }
+
+    // 7. 初始化指定螢幕 (使用預截圖)
+    m_regionSelector->initializeForScreen(targetScreen, preCapture);
+
+    connect(m_regionSelector, &RegionSelector::regionSelected,
+            this, &CaptureManager::onRegionSelected);
+    connect(m_regionSelector, &RegionSelector::selectionCancelled,
+            this, &CaptureManager::onSelectionCancelled);
+
+    // Trigger initial window highlight once the async window list is ready.
+    if (m_windowDetector && m_windowDetector->isEnabled()) {
+        const auto regionSelector = m_regionSelector;
+        const auto triggerDetection = [regionSelector]() {
+            if (!regionSelector) {
+                return;
+            }
+            regionSelector->refreshWindowDetectionAtCursor();
+        };
+
+        if (m_windowDetector->isRefreshComplete()) {
+            triggerDetection();
+        } else {
+            connect(m_windowDetector, &WindowDetector::windowListReady,
+                    m_regionSelector, [triggerDetection]() {
+                        triggerDetection();
+                    });
+        }
+    }
+
+    m_regionSelector->setGeometry(targetScreen->geometry());
+    m_regionSelector->show();
+    raiseWindowAboveMenuBar(m_regionSelector);
+
+    m_regionSelector->activateWindow();
+    m_regionSelector->raise();
+}
+
 void CaptureManager::onRegionSelected(const QPixmap &screenshot, const QPoint &globalPosition, const QRect &globalRect)
 {
     qDebug() << "CaptureManager: Region selected at global position:" << globalPosition;

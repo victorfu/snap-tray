@@ -456,6 +456,10 @@ RegionSelector::RegionSelector(QWidget* parent)
                     m_multiRegionManager->addRegion(sel);
                 }
             }
+            // Quick Pin mode: directly pin without showing toolbar
+            if (m_quickPinMode && !m_multiRegionMode) {
+                finishSelection();
+            }
         });
     connect(m_inputHandler, &RegionInputHandler::fullScreenSelectionRequested,
         this, [this]() {
@@ -473,6 +477,11 @@ RegionSelector::RegionSelector(QWidget* parent)
             if (m_multiRegionMode && m_multiRegionManager &&
                 m_multiRegionManager->activeIndex() < 0) {
                 m_multiRegionManager->addRegion(fullScreenRect);
+            }
+
+            // Quick Pin mode: directly pin without showing toolbar
+            if (m_quickPinMode && !m_multiRegionMode) {
+                finishSelection();
             }
         });
     connect(m_inputHandler, &RegionInputHandler::drawingStateChanged,
@@ -885,6 +894,11 @@ void RegionSelector::initializeWithRegion(QScreen* screen, const QRect& region)
     QTimer::singleShot(0, this, [this]() {
         update();
         });
+}
+
+void RegionSelector::setQuickPinMode(bool enabled)
+{
+    m_quickPinMode = enabled;
 }
 
 void RegionSelector::setWindowDetector(WindowDetector* detector)

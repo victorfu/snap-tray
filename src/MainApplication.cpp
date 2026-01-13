@@ -33,6 +33,7 @@ MainApplication::MainApplication(QObject* parent)
     , m_trayIcon(nullptr)
     , m_trayMenu(nullptr)
     , m_regionHotkey(nullptr)
+    , m_quickPinHotkey(nullptr)
     , m_screenCanvasHotkey(nullptr)
     , m_pasteHotkey(nullptr)
     , m_captureManager(nullptr)
@@ -214,6 +215,25 @@ void MainApplication::onRegionCapture()
     m_captureManager->startRegionCapture();
 }
 
+void MainApplication::onQuickPin()
+{
+    // Don't trigger if screen canvas is active
+    if (m_screenCanvasManager->isActive()) {
+        qDebug() << "Quick pin blocked: Screen canvas is active";
+        return;
+    }
+
+    // Don't trigger if recording is active
+    if (m_recordingManager->isActive()) {
+        qDebug() << "Quick pin blocked: Recording is active";
+        return;
+    }
+
+    // Note: Don't close popup menus - allow capturing them (like Snipaste)
+    qDebug() << "Quick pin triggered";
+    m_captureManager->startQuickPinCapture();
+}
+
 void MainApplication::onScreenCanvas()
 {
     // Don't trigger if capture is active
@@ -291,6 +311,7 @@ void MainApplication::onSettings()
     m_settingsDialog->updateCaptureHotkeyStatus(m_regionHotkey->isRegistered());
     m_settingsDialog->updateScreenCanvasHotkeyStatus(m_screenCanvasHotkey->isRegistered());
     m_settingsDialog->updatePasteHotkeyStatus(m_pasteHotkey->isRegistered());
+    m_settingsDialog->updateQuickPinHotkeyStatus(m_quickPinHotkey->isRegistered());
 
     // Connect hotkey change signal
     connect(m_settingsDialog, &SettingsDialog::hotkeyChangeRequested,
@@ -331,6 +352,19 @@ void MainApplication::onSettings()
             }
         });
 
+    // Connect Quick Pin hotkey change signal
+    connect(m_settingsDialog, &SettingsDialog::quickPinHotkeyChangeRequested,
+        this, [this](const QString& newHotkey) {
+            bool success = updateQuickPinHotkey(newHotkey);
+            if (m_settingsDialog) {
+                m_settingsDialog->updateQuickPinHotkeyStatus(success);
+                if (!success) {
+                    m_settingsDialog->showHotkeyError(
+                        "Failed to register Quick Pin hotkey. It may be in use by another application.");
+                }
+            }
+        });
+
     // Clean up pointer when dialog is destroyed (WA_DeleteOnClose triggers this)
     connect(m_settingsDialog, &QDialog::destroyed,
         this, [this]() {
@@ -361,6 +395,20 @@ void MainApplication::setupHotkey()
 
     // Connect region hotkey directly to region capture
     connect(m_regionHotkey, &QHotkey::activated, this, &MainApplication::onRegionCapture);
+
+    // Quick Pin hotkey - select region and pin directly without toolbar
+    QString quickPinKeySequence = SettingsDialog::loadQuickPinHotkey();
+    m_quickPinHotkey = new QHotkey(QKeySequence(quickPinKeySequence), true, this);
+
+    if (m_quickPinHotkey->isRegistered()) {
+        qDebug() << "Quick Pin hotkey registered:" << quickPinKeySequence;
+    }
+    else {
+        qDebug() << "Failed to register Quick Pin hotkey:" << quickPinKeySequence;
+        failedHotkeys << QString("Quick Pin (%1)").arg(quickPinKeySequence);
+    }
+
+    connect(m_quickPinHotkey, &QHotkey::activated, this, &MainApplication::onQuickPin);
 
     // Load Screen Canvas hotkey from settings (default is Ctrl+F2)
     QString screenCanvasKeySequence = SettingsDialog::loadScreenCanvasHotkey();
@@ -531,6 +579,49 @@ bool MainApplication::updatePasteHotkey(const QString& newHotkey)
         }
         else {
             qDebug() << "Critical: Failed to restore old paste hotkey!";
+        }
+
+        return false;
+    }
+}
+
+bool MainApplication::updateQuickPinHotkey(const QString& newHotkey)
+{
+    qDebug() << "Updating Quick Pin hotkey to:" << newHotkey;
+
+    // Save old hotkey for reverting
+    QKeySequence oldShortcut = m_quickPinHotkey->shortcut();
+
+    // Unregister old hotkey
+    m_quickPinHotkey->setRegistered(false);
+
+    // Set new key sequence
+    m_quickPinHotkey->setShortcut(QKeySequence(newHotkey));
+
+    // Re-register
+    m_quickPinHotkey->setRegistered(true);
+
+    if (m_quickPinHotkey->isRegistered()) {
+        qDebug() << "Quick Pin hotkey updated and registered:" << newHotkey;
+
+        // Save only after successful registration
+        auto settings = SnapTray::getSettings();
+        settings.setValue("quickPinHotkey", newHotkey);
+
+        return true;
+    }
+    else {
+        qDebug() << "Failed to register new Quick Pin hotkey:" << newHotkey << ", reverting...";
+
+        // Revert to old hotkey
+        m_quickPinHotkey->setShortcut(oldShortcut);
+        m_quickPinHotkey->setRegistered(true);
+
+        if (m_quickPinHotkey->isRegistered()) {
+            qDebug() << "Reverted to old Quick Pin hotkey:" << oldShortcut.toString();
+        }
+        else {
+            qDebug() << "Critical: Failed to restore old Quick Pin hotkey!";
         }
 
         return false;

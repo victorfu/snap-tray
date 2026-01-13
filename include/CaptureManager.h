@@ -25,6 +25,7 @@ public:
 
 public slots:
     void startRegionCapture();
+    void startQuickPinCapture();
     void startRegionCaptureWithPreset(const QRect &region, QScreen *screen);
     void startScrollingCapture();
     void startScrollingCaptureWithRegion(const QRect &region, QScreen *screen);
