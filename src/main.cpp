@@ -1,4 +1,5 @@
 #include <QApplication>
+#include <QDebug>
 #include "MainApplication.h"
 #include "SingleInstanceGuard.h"
 #include "settings/Settings.h"
@@ -20,6 +21,7 @@ int main(int argc, char *argv[])
     SingleInstanceGuard guard("com.victorfu.snaptray");
     if (!guard.tryLock()) {
         // Another instance is already running, notify it and exit
+        qDebug() << "Another instance of SnapTray is already running. Exiting.";
         guard.sendActivateMessage();
         return 0;
     }
