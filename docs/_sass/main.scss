@@ -187,6 +187,10 @@ main {
   display: flex;
   justify-content: center;
   margin: $spacing-md 0;
+
+  ms-store-badge {
+    max-width: 100%;
+  }
 }
 
 .btn-alt {
