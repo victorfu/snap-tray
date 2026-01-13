@@ -76,30 +76,70 @@ echo ""
 echo -e "${YELLOW}[2/5] Running macdeployqt...${NC}"
 "$QT_PREFIX/bin/macdeployqt" "$APP_PATH" -verbose=1
 
-# Fix library install names that macdeployqt misses
-# This handles brotli and any other libraries with absolute Homebrew paths
-echo "Fixing library install names..."
-FRAMEWORKS_PATH="$APP_PATH/Contents/Frameworks"
+# Fix brotli dependencies not handled by macdeployqt (QTBUG-100686)
+echo "Fixing brotli dependencies..."
+FRAMEWORKS_DIR="$APP_PATH/Contents/Frameworks"
 
-for lib in "$FRAMEWORKS_PATH"/*.dylib; do
-    [ -f "$lib" ] || continue
-    libname=$(basename "$lib")
+# Find Qt's lib directory
+QT_LIB_DIR="$QT_PREFIX/lib"
 
-    # Fix the library's own install name (ID)
-    current_id=$(otool -D "$lib" 2>/dev/null | tail -1)
-    if [[ "$current_id" != @* ]]; then
-        install_name_tool -id "@executable_path/../Frameworks/$libname" "$lib"
+# List of brotli libraries that need to be copied
+BROTLI_LIBS=(
+    "libbrotlicommon.1.dylib"
+    "libbrotlidec.1.dylib"
+    "libbrotlienc.1.dylib"
+)
+
+for lib in "${BROTLI_LIBS[@]}"; do
+    src_lib="$QT_LIB_DIR/$lib"
+    dst_lib="$FRAMEWORKS_DIR/$lib"
+
+    if [ -f "$src_lib" ] && [ ! -f "$dst_lib" ]; then
+        echo "  Copying $lib..."
+        cp "$src_lib" "$dst_lib"
+        chmod 644 "$dst_lib"
     fi
-
-    # Fix references to other libraries in Frameworks
-    otool -L "$lib" | tail -n +2 | awk '{print $1}' | while read dep; do
-        depname=$(basename "$dep")
-        # Fix absolute paths (Homebrew, system, etc.) to relative paths
-        if [[ "$dep" != @* ]] && [ -f "$FRAMEWORKS_PATH/$depname" ]; then
-            install_name_tool -change "$dep" "@executable_path/../Frameworks/$depname" "$lib" 2>/dev/null || true
-        fi
-    done
 done
+
+# Fix the install names for brotli libraries
+# libbrotlidec depends on libbrotlicommon
+if [ -f "$FRAMEWORKS_DIR/libbrotlidec.1.dylib" ]; then
+    echo "  Fixing libbrotlidec.1.dylib install name..."
+    install_name_tool -change \
+        "@rpath/libbrotlicommon.1.dylib" \
+        "@loader_path/libbrotlicommon.1.dylib" \
+        "$FRAMEWORKS_DIR/libbrotlidec.1.dylib" 2>/dev/null || true
+
+    # Also try the absolute path variant
+    install_name_tool -change \
+        "$QT_LIB_DIR/libbrotlicommon.1.dylib" \
+        "@loader_path/libbrotlicommon.1.dylib" \
+        "$FRAMEWORKS_DIR/libbrotlidec.1.dylib" 2>/dev/null || true
+fi
+
+# libbrotlienc also depends on libbrotlicommon
+if [ -f "$FRAMEWORKS_DIR/libbrotlienc.1.dylib" ]; then
+    echo "  Fixing libbrotlienc.1.dylib install name..."
+    install_name_tool -change \
+        "@rpath/libbrotlicommon.1.dylib" \
+        "@loader_path/libbrotlicommon.1.dylib" \
+        "$FRAMEWORKS_DIR/libbrotlienc.1.dylib" 2>/dev/null || true
+
+    install_name_tool -change \
+        "$QT_LIB_DIR/libbrotlicommon.1.dylib" \
+        "@loader_path/libbrotlicommon.1.dylib" \
+        "$FRAMEWORKS_DIR/libbrotlienc.1.dylib" 2>/dev/null || true
+fi
+
+# Fix the ID of libbrotlicommon itself
+if [ -f "$FRAMEWORKS_DIR/libbrotlicommon.1.dylib" ]; then
+    echo "  Fixing libbrotlicommon.1.dylib ID..."
+    install_name_tool -id \
+        "@loader_path/libbrotlicommon.1.dylib" \
+        "$FRAMEWORKS_DIR/libbrotlicommon.1.dylib" 2>/dev/null || true
+fi
+
+echo "Brotli dependencies fixed."
 
 # Step 3: Code signing
 echo ""
