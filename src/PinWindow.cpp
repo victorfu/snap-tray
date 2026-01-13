@@ -1257,7 +1257,8 @@ void PinWindow::contextMenuEvent(QContextMenuEvent *event)
         m_pauseLiveAction->setText(m_livePaused ? tr("Resume Live Update") : tr("Pause Live Update"));
     }
     if (m_fpsMenu) {
-        m_fpsMenu->setVisible(m_isLiveMode);
+        // Use menuAction() to control visibility - direct setVisible on QMenu causes positioning issues
+        m_fpsMenu->menuAction()->setVisible(m_isLiveMode);
         // Update checked state for current frame rate
         for (QAction *action : m_fpsMenu->actions()) {
             action->setChecked(action->data().toInt() == m_captureFrameRate);
