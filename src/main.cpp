@@ -1,5 +1,6 @@
 #include <QApplication>
 #include "MainApplication.h"
+#include "SingleInstanceGuard.h"
 #include "settings/Settings.h"
 #include "version.h"
 
@@ -15,7 +16,19 @@ int main(int argc, char *argv[])
     app.setOrganizationName(SnapTray::kOrganizationName);
     app.setApplicationVersion(SNAPTRAY_VERSION);
 
+    // Single instance check
+    SingleInstanceGuard guard("com.victorfu.snaptray");
+    if (!guard.tryLock()) {
+        // Another instance is already running, notify it and exit
+        guard.sendActivateMessage();
+        return 0;
+    }
+
     MainApplication mainApp;
+
+    QObject::connect(&guard, &SingleInstanceGuard::activateRequested,
+                     &mainApp, &MainApplication::activate);
+
     mainApp.initialize();
 
     return app.exec();

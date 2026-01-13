@@ -52,6 +52,17 @@ MainApplication::~MainApplication()
     delete m_trayMenu;
 }
 
+void MainApplication::activate()
+{
+    if (m_trayIcon) {
+        m_trayIcon->showMessage(
+            QStringLiteral("SnapTray"),
+            tr("SnapTray is already running"),
+            QSystemTrayIcon::Information,
+            2000);
+    }
+}
+
 void MainApplication::initialize()
 {
     // Create pin window manager first (needed by capture manager)

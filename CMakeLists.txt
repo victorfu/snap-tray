@@ -79,7 +79,7 @@ if(MSVC)
     string(REPLACE "/Zi" "/Z7" CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO}")
 endif()
 
-find_package(Qt6 REQUIRED COMPONENTS Widgets Gui Svg Concurrent)
+find_package(Qt6 REQUIRED COMPONENTS Widgets Gui Svg Concurrent Network)
 
 # Enable AUTOMOC for Qt targets (will be disabled for non-Qt dependencies)
 set(CMAKE_AUTOMOC ON)
@@ -734,6 +734,7 @@ set(APP_SOURCES
     src/main.cpp
     src/MainApplication.cpp
     src/CaptureManager.cpp
+    src/SingleInstanceGuard.cpp
 )
 
 set(RESOURCES
@@ -744,6 +745,7 @@ set(RESOURCES
 set(APP_HEADERS
     include/MainApplication.h
     include/CaptureManager.h
+    include/SingleInstanceGuard.h
 )
 
 # Windows application icon resource
@@ -776,6 +778,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     snaptray_platform
     snaptray_algorithms
     snaptray_core
+    Qt6::Network
 )
 
 # Disable qDebug() output in Release builds

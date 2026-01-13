@@ -26,6 +26,9 @@ public:
 
     void initialize();
 
+public slots:
+    void activate();
+
 private slots:
     void onRegionCapture();
     void onQuickPin();
