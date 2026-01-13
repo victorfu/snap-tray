@@ -4,6 +4,7 @@
 #include <QWidget>
 #include <QPixmap>
 #include <QPoint>
+#include <QRect>
 #include <QElapsedTimer>
 #include "WatermarkRenderer.h"
 #include "LoadingSpinnerRenderer.h"
@@ -17,6 +18,8 @@
 class QMenu;
 class QLabel;
 class QTimer;
+class QScreen;
+class ICaptureEngine;
 class OCRManager;
 class PinWindowManager;
 class UIIndicators;
@@ -69,6 +72,16 @@ public:
 
     // Annotation mode
     bool isAnnotationMode() const { return m_annotationMode; }
+
+    // Live capture mode
+    void setSourceRegion(const QRect& region, QScreen* screen);
+    void startLiveCapture();
+    void stopLiveCapture();
+    void pauseLiveCapture();
+    void resumeLiveCapture();
+    bool isLiveMode() const { return m_isLiveMode; }
+    bool isLivePaused() const { return m_livePaused; }
+    void setLiveFrameRate(int fps);
 
 signals:
     void closed(PinWindow *window);
@@ -163,6 +176,11 @@ private:
     QAction *m_clickThroughAction = nullptr;
     QAction *m_showBorderAction = nullptr;
 
+    // Live capture context menu items
+    QAction *m_startLiveAction = nullptr;
+    QAction *m_pauseLiveAction = nullptr;
+    QMenu *m_fpsMenu = nullptr;
+
     // Zoom menu members
     QAction *m_currentZoomAction;
     bool m_smoothing;
@@ -233,6 +251,18 @@ private:
 
     // AutoBlur
     AutoBlurManager *m_autoBlurManager = nullptr;
+
+    // Live capture mode
+    QRect m_sourceRegion;
+    QScreen* m_sourceScreen = nullptr;
+    bool m_isLiveMode = false;
+    ICaptureEngine* m_captureEngine = nullptr;
+    QTimer* m_captureTimer = nullptr;
+    QTimer* m_liveIndicatorTimer = nullptr;
+    int m_captureFrameRate = 15;
+    bool m_livePaused = false;
+
+    void updateLiveFrame();
 };
 
 #endif // PINWINDOW_H

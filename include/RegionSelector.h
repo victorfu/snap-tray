@@ -143,7 +143,7 @@ public:
     void refreshWindowDetectionAtCursor();
 
 signals:
-    void regionSelected(const QPixmap &screenshot, const QPoint &globalPosition);
+    void regionSelected(const QPixmap &screenshot, const QPoint &globalPosition, const QRect &globalRect);
     void selectionCancelled();
     void saveRequested(const QPixmap &screenshot);
     void saveCompleted(const QPixmap &screenshot, const QString &filePath);

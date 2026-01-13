@@ -1,6 +1,7 @@
 #include "CaptureManager.h"
 #include "RegionSelector.h"
 #include "PinWindowManager.h"
+#include "PinWindow.h"
 #include "platform/WindowLevel.h"
 #include "WindowDetector.h"
 #include "PlatformFeatures.h"
@@ -134,14 +135,18 @@ void CaptureManager::startRegionCapture()
     m_regionSelector->raise();
 }
 
-void CaptureManager::onRegionSelected(const QPixmap &screenshot, const QPoint &globalPosition)
+void CaptureManager::onRegionSelected(const QPixmap &screenshot, const QPoint &globalPosition, const QRect &globalRect)
 {
     qDebug() << "CaptureManager: Region selected at global position:" << globalPosition;
     // m_regionSelector will auto-null via QPointer when WA_DeleteOnClose triggers
 
     // 直接使用 RegionSelector 計算好的全局座標
     if (m_pinManager) {
-        m_pinManager->createPinWindow(screenshot, globalPosition);
+        QScreen *targetScreen = m_regionSelector ? m_regionSelector->screen() : nullptr;
+        PinWindow *window = m_pinManager->createPinWindow(screenshot, globalPosition);
+        if (window && targetScreen) {
+            window->setSourceRegion(globalRect, targetScreen);
+        }
     }
 
     emit captureCompleted(screenshot);

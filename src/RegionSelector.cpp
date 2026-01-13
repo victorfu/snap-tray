@@ -1182,7 +1182,8 @@ void RegionSelector::completeMultiRegionCapture()
     QPixmap pixmap = QPixmap::fromImage(merged, Qt::NoOpaqueDetection);
     pixmap.setDevicePixelRatio(m_devicePixelRatio);
     QRect bounds = m_multiRegionManager->boundingBox();
-    emit regionSelected(pixmap, localToGlobal(bounds.topLeft()));
+    QRect globalBounds(localToGlobal(bounds.topLeft()), bounds.size());
+    emit regionSelected(pixmap, localToGlobal(bounds.topLeft()), globalBounds);
     close();
 }
 
@@ -1214,7 +1215,8 @@ void RegionSelector::finishSelection()
     qDebug() << "finishSelection: selectionRect=" << sel
         << "globalPos=" << localToGlobal(sel.topLeft());
 
-    emit regionSelected(selectedRegion, localToGlobal(sel.topLeft()));
+    QRect globalRect(localToGlobal(sel.topLeft()), sel.size());
+    emit regionSelected(selectedRegion, localToGlobal(sel.topLeft()), globalRect);
     close();
 }
 

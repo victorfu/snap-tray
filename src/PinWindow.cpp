@@ -5,6 +5,7 @@
 #include "WatermarkRenderer.h"
 #include "cursor/CursorManager.h"
 #include "platform/WindowLevel.h"
+#include "capture/ICaptureEngine.h"
 #include "pinwindow/ResizeHandler.h"
 #include "pinwindow/UIIndicators.h"
 #include "pinwindow/PinWindowToolbar.h"
@@ -42,6 +43,8 @@
 #include <QGuiApplication>
 #include <QClipboard>
 #include <QCursor>
+#include <QScreen>
+#include <QtMath>
 #include <QStandardPaths>
 #include <QDateTime>
 #include <QToolTip>
@@ -183,6 +186,11 @@ PinWindow::PinWindow(const QPixmap &screenshot, const QPoint &position, QWidget 
 
 PinWindow::~PinWindow()
 {
+    // Stop live capture if active
+    if (m_isLiveMode) {
+        stopLiveCapture();
+    }
+
     // Clean up floating windows (not parented to this window)
     if (m_toolbar) {
         m_toolbar->close();
@@ -593,6 +601,45 @@ void PinWindow::createContextMenu()
     m_clickThroughAction->setChecked(m_clickThrough);
     connect(m_clickThroughAction, &QAction::toggled, this, &PinWindow::setClickThrough);
 
+    // Live capture section - actions are updated dynamically in contextMenuEvent
+    m_contextMenu->addSeparator();
+
+    // Start/Stop Live action
+    m_startLiveAction = m_contextMenu->addAction("Start Live Update");
+    connect(m_startLiveAction, &QAction::triggered, this, [this]() {
+        if (m_isLiveMode) {
+            stopLiveCapture();
+        } else {
+            startLiveCapture();
+        }
+    });
+
+    // Pause/Resume Live action
+    m_pauseLiveAction = m_contextMenu->addAction("Pause Live Update");
+    connect(m_pauseLiveAction, &QAction::triggered, this, [this]() {
+        if (m_livePaused) {
+            resumeLiveCapture();
+        } else {
+            pauseLiveCapture();
+        }
+    });
+
+    // Frame rate submenu
+    m_fpsMenu = m_contextMenu->addMenu("Frame Rate");
+    QActionGroup *fpsGroup = new QActionGroup(this);
+    for (int fps : {5, 10, 15, 30}) {
+        QAction *fpsAction = m_fpsMenu->addAction(QString("%1 FPS").arg(fps));
+        fpsAction->setCheckable(true);
+        fpsAction->setData(fps);
+        fpsGroup->addAction(fpsAction);
+        if (fps == m_captureFrameRate) {
+            fpsAction->setChecked(true);
+        }
+    }
+    connect(fpsGroup, &QActionGroup::triggered, this, [this](QAction *action) {
+        setLiveFrameRate(action->data().toInt());
+    });
+
     m_contextMenu->addSeparator();
 
     QAction *closeAction = m_contextMenu->addAction("Close");
@@ -934,6 +981,27 @@ void PinWindow::paintEvent(QPaintEvent *)
         QPoint center = pixmapRect.center();
         m_loadingSpinner->draw(painter, center);
     }
+
+    // Draw live capture indicator
+    if (m_isLiveMode) {
+        painter.save();
+
+        constexpr int dotRadius = 6;
+        constexpr int margin = 8;
+        QPointF dotCenter(margin + dotRadius, margin + dotRadius);
+
+        // Pulsing effect based on time
+        qreal pulse = 0.5 + 0.5 * qSin(QDateTime::currentMSecsSinceEpoch() / 500.0);
+        QColor dotColor = m_livePaused
+            ? QColor(255, 165, 0, 200)                   // Orange when paused
+            : QColor(255, 0, 0, 150 + static_cast<int>(pulse * 100));  // Pulsing red when live
+
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(dotColor);
+        painter.drawEllipse(dotCenter, dotRadius, dotRadius);
+
+        painter.restore();
+    }
 }
 
 void PinWindow::mousePressEvent(QMouseEvent *event)
@@ -1178,6 +1246,24 @@ void PinWindow::contextMenuEvent(QContextMenuEvent *event)
         m_showToolbarAction->setChecked(m_toolbarVisible);
     }
 
+    // Update live mode menu items based on current state
+    if (m_startLiveAction) {
+        bool canStartLive = !m_sourceRegion.isEmpty() && m_sourceScreen;
+        m_startLiveAction->setEnabled(canStartLive || m_isLiveMode);
+        m_startLiveAction->setText(m_isLiveMode ? tr("Stop Live Update") : tr("Start Live Update"));
+    }
+    if (m_pauseLiveAction) {
+        m_pauseLiveAction->setVisible(m_isLiveMode);
+        m_pauseLiveAction->setText(m_livePaused ? tr("Resume Live Update") : tr("Pause Live Update"));
+    }
+    if (m_fpsMenu) {
+        m_fpsMenu->setVisible(m_isLiveMode);
+        // Update checked state for current frame rate
+        for (QAction *action : m_fpsMenu->actions()) {
+            action->setChecked(action->data().toInt() == m_captureFrameRate);
+        }
+    }
+
     // Use popup() instead of exec() to avoid blocking the event loop.
     // This prevents UI freeze when global hotkeys (like F2) are pressed
     // while the context menu is open.
@@ -1248,6 +1334,29 @@ void PinWindow::keyPressEvent(QKeyEvent *event)
             event->accept();
             return;
         }
+    }
+
+    // Live capture shortcuts
+    // L - Toggle live mode (start/stop)
+    if (event->key() == Qt::Key_L && !m_sourceRegion.isEmpty()) {
+        if (m_isLiveMode) {
+            stopLiveCapture();
+        } else {
+            startLiveCapture();
+        }
+        event->accept();
+        return;
+    }
+
+    // P - Pause/Resume live capture (only when live mode is active)
+    if (event->key() == Qt::Key_P && m_isLiveMode) {
+        if (m_livePaused) {
+            resumeLiveCapture();
+        } else {
+            pauseLiveCapture();
+        }
+        event->accept();
+        return;
     }
 
     // Rotation and flip shortcuts
@@ -1943,4 +2052,148 @@ bool PinWindow::handleGizmoPress(const QPoint& pos)
 
     update();
     return true;
+}
+
+// ============================================================================
+// Live Capture Mode
+// ============================================================================
+
+void PinWindow::setSourceRegion(const QRect& region, QScreen* screen)
+{
+    m_sourceRegion = region;
+    m_sourceScreen = screen;
+}
+
+void PinWindow::startLiveCapture()
+{
+    if (m_isLiveMode || m_sourceRegion.isEmpty() || !m_sourceScreen) {
+        qWarning() << "Cannot start live capture: invalid state or no source region";
+        return;
+    }
+
+    // Validate screen still exists
+    if (!QGuiApplication::screens().contains(m_sourceScreen)) {
+        qWarning() << "Source screen no longer available";
+        return;
+    }
+
+    m_isLiveMode = true;
+
+    // Create capture engine
+    m_captureEngine = ICaptureEngine::createBestEngine(this);
+    m_captureEngine->setRegion(m_sourceRegion, m_sourceScreen);
+    m_captureEngine->setFrameRate(m_captureFrameRate);
+
+    // Exclude self from capture to avoid infinite recursion
+#ifdef Q_OS_MACOS
+    m_captureEngine->setExcludedWindows({winId()});
+#endif
+    setWindowExcludedFromCapture(this, true);
+
+    if (!m_captureEngine->start()) {
+        qWarning() << "Failed to start live capture engine";
+        stopLiveCapture();
+        return;
+    }
+
+    // Timer-driven polling
+    m_captureTimer = new QTimer(this);
+    connect(m_captureTimer, &QTimer::timeout, this, &PinWindow::updateLiveFrame);
+    m_captureTimer->start(1000 / m_captureFrameRate);
+
+    // Pulsing indicator animation timer
+    m_liveIndicatorTimer = new QTimer(this);
+    connect(m_liveIndicatorTimer, &QTimer::timeout, this, QOverload<>::of(&QWidget::update));
+    m_liveIndicatorTimer->start(50);  // 20 fps for smooth pulse
+
+    qDebug() << "Live capture started at" << m_captureFrameRate << "FPS";
+    update();
+}
+
+void PinWindow::stopLiveCapture()
+{
+    if (m_captureTimer) {
+        m_captureTimer->stop();
+        delete m_captureTimer;
+        m_captureTimer = nullptr;
+    }
+
+    if (m_liveIndicatorTimer) {
+        m_liveIndicatorTimer->stop();
+        delete m_liveIndicatorTimer;
+        m_liveIndicatorTimer = nullptr;
+    }
+
+    if (m_captureEngine) {
+        m_captureEngine->stop();
+        m_captureEngine->deleteLater();
+        m_captureEngine = nullptr;
+    }
+
+    setWindowExcludedFromCapture(this, false);
+    m_isLiveMode = false;
+    m_livePaused = false;
+
+    qDebug() << "Live capture stopped";
+    update();
+}
+
+void PinWindow::pauseLiveCapture()
+{
+    if (!m_isLiveMode || m_livePaused) return;
+
+    m_livePaused = true;
+    if (m_captureTimer) {
+        m_captureTimer->stop();
+    }
+
+    qDebug() << "Live capture paused";
+    update();
+}
+
+void PinWindow::resumeLiveCapture()
+{
+    if (!m_isLiveMode || !m_livePaused) return;
+
+    m_livePaused = false;
+    if (m_captureTimer) {
+        m_captureTimer->start(1000 / m_captureFrameRate);
+    }
+
+    qDebug() << "Live capture resumed";
+    update();
+}
+
+void PinWindow::setLiveFrameRate(int fps)
+{
+    m_captureFrameRate = qBound(1, fps, 60);
+
+    if (m_captureEngine) {
+        m_captureEngine->setFrameRate(m_captureFrameRate);
+    }
+
+    if (m_captureTimer && m_captureTimer->isActive()) {
+        m_captureTimer->setInterval(1000 / m_captureFrameRate);
+    }
+
+    qDebug() << "Live capture frame rate set to" << m_captureFrameRate << "FPS";
+}
+
+void PinWindow::updateLiveFrame()
+{
+    if (!m_captureEngine || !m_isLiveMode || m_livePaused) {
+        return;
+    }
+
+    QImage frame = m_captureEngine->captureFrame();
+    if (!frame.isNull()) {
+        m_originalPixmap = QPixmap::fromImage(frame);
+        m_originalPixmap.setDevicePixelRatio(m_sourceScreen->devicePixelRatio());
+
+        // Invalidate transform cache
+        m_cachedRotation = -1;
+
+        // Update display
+        updateSize();
+    }
 }

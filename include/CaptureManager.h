@@ -39,7 +39,7 @@ signals:
     void saveFailed(const QString &filePath, const QString &error);
 
 private slots:
-    void onRegionSelected(const QPixmap &screenshot, const QPoint &globalPosition);
+    void onRegionSelected(const QPixmap &screenshot, const QPoint &globalPosition, const QRect &globalRect);
     void onSelectionCancelled();
 
 private:
