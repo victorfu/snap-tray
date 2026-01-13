@@ -41,6 +41,11 @@ void ScreenCanvasManager::toggle()
             targetScreen = QGuiApplication::primaryScreen();
         }
 
+        if (!targetScreen) {
+            qWarning() << "ScreenCanvasManager: No screen available";
+            return;
+        }
+
         qDebug() << "ScreenCanvasManager: Opening canvas on screen" << targetScreen->name();
 
         m_canvas = new ScreenCanvas();

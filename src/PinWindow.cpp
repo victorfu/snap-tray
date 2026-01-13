@@ -2186,6 +2186,12 @@ void PinWindow::updateLiveFrame()
         return;
     }
 
+    if (!m_sourceScreen || !QGuiApplication::screens().contains(m_sourceScreen)) {
+        qWarning() << "Source screen disconnected during live capture";
+        stopLiveCapture();
+        return;
+    }
+
     QImage frame = m_captureEngine->captureFrame();
     if (!frame.isNull()) {
         m_originalPixmap = QPixmap::fromImage(frame);

@@ -150,6 +150,11 @@ void ScrollingCaptureToolbar::positionNear(const QRect &region)
         screen = QGuiApplication::primaryScreen();
     }
 
+    if (!screen) {
+        qWarning() << "ScrollingCaptureToolbar: No screen available for positioning";
+        return;
+    }
+
     QRect screenGeom = screen->geometry();
 
     int x = region.center().x() - width() / 2;
