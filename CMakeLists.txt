@@ -79,7 +79,7 @@ if(MSVC)
     string(REPLACE "/Zi" "/Z7" CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO}")
 endif()
 
-find_package(Qt6 REQUIRED COMPONENTS Widgets Gui Svg Concurrent Network)
+find_package(Qt6 REQUIRED COMPONENTS Widgets Gui Svg Concurrent Network DBus)
 
 # Enable AUTOMOC for Qt targets (will be disabled for non-Qt dependencies)
 set(CMAKE_AUTOMOC ON)
@@ -779,6 +779,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     snaptray_algorithms
     snaptray_core
     Qt6::Network
+    Qt6::DBus
 )
 
 # Disable qDebug() output in Release builds
