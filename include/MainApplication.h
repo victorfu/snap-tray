@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include <QPointer>
+#include <QPixmap>
 
 class QSystemTrayIcon;
 class QMenu;
@@ -45,6 +46,7 @@ public:
 private:
     void setupHotkey();
     void updateTrayMenuHotkeyText(const QString &hotkey);
+    QPixmap renderTextToPixmap(const QString &text);
 
     QSystemTrayIcon *m_trayIcon;
     QMenu *m_trayMenu;

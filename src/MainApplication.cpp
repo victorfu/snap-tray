@@ -23,6 +23,9 @@
 #include <QDebug>
 #include <QClipboard>
 #include <QMimeData>
+#include <QPainter>
+#include <QFont>
+#include <QFontMetrics>
 
 MainApplication::MainApplication(QObject* parent)
     : QObject(parent)
@@ -506,6 +509,54 @@ bool MainApplication::updatePasteHotkey(const QString& newHotkey)
     }
 }
 
+QPixmap MainApplication::renderTextToPixmap(const QString &text)
+{
+    // Set up font
+    QFont font("SF Pro", 14);
+    font.setStyleHint(QFont::SansSerif);
+    QFontMetrics fm(font);
+
+    // Calculate text dimensions (support multi-line)
+    QStringList lines = text.split('\n');
+    int maxWidth = 0;
+    for (const QString &line : lines) {
+        maxWidth = qMax(maxWidth, fm.horizontalAdvance(line));
+    }
+    int totalHeight = lines.count() * fm.lineSpacing();
+
+    // Limit maximum size
+    const int kMaxPixmapWidth = 800;
+    const int kMaxPixmapHeight = 600;
+    maxWidth = qMin(maxWidth, kMaxPixmapWidth);
+    totalHeight = qMin(totalHeight, kMaxPixmapHeight);
+
+    // Create pixmap with padding
+    int padding = 16;
+    qreal dpr = qApp->devicePixelRatio();
+    QSize pixmapSize(maxWidth + 2 * padding, totalHeight + 2 * padding);
+
+    QPixmap pixmap(pixmapSize * dpr);
+    pixmap.setDevicePixelRatio(dpr);
+    pixmap.fill(QColor(255, 255, 240));  // Light yellow background (sticky note style)
+
+    // Draw text
+    QPainter painter(&pixmap);
+    painter.setRenderHint(QPainter::TextAntialiasing, true);
+    painter.setFont(font);
+    painter.setPen(QColor(40, 40, 40));  // Dark text
+
+    int y = padding + fm.ascent();
+    for (const QString &line : lines) {
+        painter.drawText(padding, y, line);
+        y += fm.lineSpacing();
+        if (y > totalHeight + padding) {
+            break;  // Stop if exceeding max height
+        }
+    }
+
+    return pixmap;
+}
+
 void MainApplication::onPasteFromClipboard()
 {
     qDebug() << "Paste hotkey activated";
@@ -521,6 +572,17 @@ void MainApplication::onPasteFromClipboard()
         }
     }
 
+    // If no image, try to get text and convert to image
+    if (pixmap.isNull()) {
+        const QMimeData *mimeData = clipboard->mimeData();
+        if (mimeData && mimeData->hasText()) {
+            QString text = mimeData->text();
+            if (!text.isEmpty()) {
+                pixmap = renderTextToPixmap(text);
+            }
+        }
+    }
+
     if (!pixmap.isNull()) {
         // Create pin window at screen center
         QScreen *screen = QGuiApplication::screenAt(QCursor::pos());
@@ -528,11 +590,14 @@ void MainApplication::onPasteFromClipboard()
             screen = QGuiApplication::primaryScreen();
         }
         QRect screenGeometry = screen->geometry();
-        QPoint position = screenGeometry.center() - QPoint(pixmap.width() / 2, pixmap.height() / 2);
+
+        // Use logical size for centering (HiDPI support)
+        QSize logicalSize = pixmap.size() / pixmap.devicePixelRatio();
+        QPoint position = screenGeometry.center() - QPoint(logicalSize.width() / 2, logicalSize.height() / 2);
+
         m_pinWindowManager->createPinWindow(pixmap, position);
         qDebug() << "Created pin window from clipboard at screen center" << position;
     }
-    // Silently ignore if no image in clipboard
 }
 
 void MainApplication::showRecordingPreview(const QString& videoPath)
