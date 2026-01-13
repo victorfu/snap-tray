@@ -55,6 +55,11 @@ void CaptureManager::startRegionCapture()
         targetScreen = QGuiApplication::primaryScreen();
     }
 
+    if (!targetScreen) {
+        qCritical() << "CaptureManager: No valid screen available for region capture";
+        return;
+    }
+
     qDebug() << "CaptureManager: Target screen:" << targetScreen->name()
              << "geometry:" << targetScreen->geometry()
              << "cursor pos:" << QCursor::pos();
@@ -156,6 +161,11 @@ void CaptureManager::startQuickPinCapture()
     QScreen *targetScreen = QGuiApplication::screenAt(QCursor::pos());
     if (!targetScreen) {
         targetScreen = QGuiApplication::primaryScreen();
+    }
+
+    if (!targetScreen) {
+        qCritical() << "CaptureManager: No valid screen available for quick pin capture";
+        return;
     }
 
     qDebug() << "CaptureManager: Target screen:" << targetScreen->name()
