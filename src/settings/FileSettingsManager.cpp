@@ -67,3 +67,27 @@ void FileSettingsManager::saveDateFormat(const QString& format)
     auto settings = SnapTray::getSettings();
     settings.setValue(kSettingsKeyDateFormat, format);
 }
+
+bool FileSettingsManager::loadAutoSaveScreenshots() const
+{
+    auto settings = SnapTray::getSettings();
+    return settings.value(kSettingsKeyAutoSaveScreenshots, defaultAutoSaveScreenshots()).toBool();
+}
+
+void FileSettingsManager::saveAutoSaveScreenshots(bool enabled)
+{
+    auto settings = SnapTray::getSettings();
+    settings.setValue(kSettingsKeyAutoSaveScreenshots, enabled);
+}
+
+bool FileSettingsManager::loadAutoSaveRecordings() const
+{
+    auto settings = SnapTray::getSettings();
+    return settings.value(kSettingsKeyAutoSaveRecordings, defaultAutoSaveRecordings()).toBool();
+}
+
+void FileSettingsManager::saveAutoSaveRecordings(bool enabled)
+{
+    auto settings = SnapTray::getSettings();
+    settings.setValue(kSettingsKeyAutoSaveRecordings, enabled);
+}

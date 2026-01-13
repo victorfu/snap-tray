@@ -25,6 +25,8 @@ signals:
     void windowClosed(PinWindow *window);
     void allWindowsClosed();
     void ocrCompleted(bool success, const QString &message);
+    void saveCompleted(const QPixmap &pixmap, const QString &filePath);
+    void saveFailed(const QString &filePath, const QString &error);
 
 private slots:
     void onWindowClosed(PinWindow *window);

@@ -600,6 +600,10 @@ add_library(snaptray_ui STATIC
     # Dialogs and overlays
     src/SettingsDialog.cpp
 
+    # Global UI components
+    src/ui/GlobalToast.cpp
+    include/ui/GlobalToast.h
+
     # macOS-only UI
     $<$<PLATFORM_ID:Darwin>:
         src/WindowDetectionOverlay.cpp

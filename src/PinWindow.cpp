@@ -17,6 +17,7 @@
 #include "tools/IToolHandler.h"
 #include "tools/handlers/EmojiStickerToolHandler.h"
 #include "settings/AnnotationSettingsManager.h"
+#include "settings/FileSettingsManager.h"
 #include "settings/PinWindowSettingsManager.h"
 #include "InlineTextEditor.h"
 #include "region/TextAnnotationEditor.h"
@@ -34,7 +35,10 @@
 #include <QMoveEvent>
 #include <QMenu>
 #include <QAction>
+#include <QDir>
+#include <QFile>
 #include <QFileDialog>
+#include <QFileInfo>
 #include <QGuiApplication>
 #include <QClipboard>
 #include <QCursor>
@@ -605,10 +609,49 @@ void PinWindow::createContextMenu()
 
 void PinWindow::saveToFile()
 {
-    QString picturesPath = QStandardPaths::writableLocation(QStandardPaths::PicturesLocation);
-    QString timestamp = QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss");
-    QString defaultName = QString("%1/Screenshot_%2.png").arg(picturesPath).arg(timestamp);
+    // Use FileSettingsManager for consistent path and filename format
+    auto &fileSettings = FileSettingsManager::instance();
+    QString savePath = fileSettings.loadScreenshotPath();
+    QString dateFormat = fileSettings.loadDateFormat();
+    QString prefix = fileSettings.loadFilenamePrefix();
+    QString timestamp = QDateTime::currentDateTime().toString(dateFormat);
 
+    QString filename;
+    if (prefix.isEmpty()) {
+        filename = QString("Screenshot_%1.png").arg(timestamp);
+    } else {
+        filename = QString("%1_Screenshot_%2.png").arg(prefix).arg(timestamp);
+    }
+
+    QPixmap pixmapToSave = getExportPixmapWithAnnotations();
+
+    // Check auto-save setting
+    if (fileSettings.loadAutoSaveScreenshots()) {
+        QString filePath = QDir(savePath).filePath(filename);
+
+        // Handle file collision (add counter if file exists)
+        if (QFile::exists(filePath)) {
+            QString baseName = QFileInfo(filePath).completeBaseName();
+            QString ext = QFileInfo(filePath).suffix();
+            int counter = 1;
+            while (QFile::exists(filePath) && counter < 100) {
+                filePath = QDir(savePath).filePath(QString("%1_%2.%3").arg(baseName).arg(counter).arg(ext));
+                counter++;
+            }
+        }
+
+        if (pixmapToSave.save(filePath)) {
+            qDebug() << "PinWindow: Auto-saved to" << filePath;
+            emit saveCompleted(pixmapToSave, filePath);
+        } else {
+            qDebug() << "PinWindow: Failed to auto-save to" << filePath;
+            emit saveFailed(filePath, tr("Failed to save screenshot"));
+        }
+        return;
+    }
+
+    // Show save dialog
+    QString defaultName = QDir(savePath).filePath(filename);
     QString filePath = QFileDialog::getSaveFileName(
         this,
         "Save Screenshot",
@@ -617,7 +660,6 @@ void PinWindow::saveToFile()
     );
 
     if (!filePath.isEmpty()) {
-        QPixmap pixmapToSave = getExportPixmapWithAnnotations();
         if (pixmapToSave.save(filePath)) {
             qDebug() << "PinWindow: Saved to" << filePath;
             emit saveRequested(pixmapToSave);

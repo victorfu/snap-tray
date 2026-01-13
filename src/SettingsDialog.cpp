@@ -55,7 +55,6 @@ SettingsDialog::SettingsDialog(QWidget *parent)
 #ifdef SNAPTRAY_ENABLE_DEV_FEATURES
     , m_recordingFrameRateCombo(nullptr)
     , m_recordingOutputFormatCombo(nullptr)
-    , m_recordingAutoSaveCheckbox(nullptr)
     , m_mp4SettingsWidget(nullptr)
     , m_recordingQualitySlider(nullptr)
     , m_recordingQualityLabel(nullptr)
@@ -632,10 +631,6 @@ void SettingsDialog::setupRecordingTab(QWidget *tab)
     m_recordingShowPreviewCheckbox = new QCheckBox("Show preview after recording", tab);
     layout->addWidget(m_recordingShowPreviewCheckbox);
 
-    // ========== Auto-save option ==========
-    m_recordingAutoSaveCheckbox = new QCheckBox("Auto-save recordings (no save dialog)", tab);
-    layout->addWidget(m_recordingAutoSaveCheckbox);
-
     // ========== Countdown settings ==========
     layout->addSpacing(16);
     QLabel *countdownHeader = new QLabel("Countdown", tab);
@@ -706,7 +701,6 @@ void SettingsDialog::setupRecordingTab(QWidget *tab)
 
     m_recordingShowPreviewCheckbox->setChecked(
         settings.value("recording/showPreview", true).toBool());
-    m_recordingAutoSaveCheckbox->setChecked(settings.value("recording/autoSave", false).toBool());
 
     // Load countdown settings
     bool countdownEnabled = settings.value("recording/countdownEnabled", true).toBool();
@@ -890,8 +884,6 @@ void SettingsDialog::onSave()
     recordingSettings.setValue("recording/crf", crf);
     recordingSettings.setValue("recording/showPreview",
         m_recordingShowPreviewCheckbox->isChecked());
-    recordingSettings.setValue("recording/autoSave",
-        m_recordingAutoSaveCheckbox->isChecked());
 
     // Save countdown settings
     recordingSettings.setValue("recording/countdownEnabled",
@@ -932,6 +924,8 @@ void SettingsDialog::onSave()
     fileSettings.saveRecordingPath(m_recordingPathEdit->text());
     fileSettings.saveFilenamePrefix(m_filenamePrefixEdit->text());
     fileSettings.saveDateFormat(m_dateFormatCombo->currentData().toString());
+    fileSettings.saveAutoSaveScreenshots(m_autoSaveScreenshotsCheckbox->isChecked());
+    fileSettings.saveAutoSaveRecordings(m_autoSaveRecordingsCheckbox->isChecked());
 
     // Save toolbar style setting
     ToolbarStyleType newStyle = static_cast<ToolbarStyleType>(
@@ -1185,6 +1179,20 @@ void SettingsDialog::setupFilesTab(QWidget *tab)
     layout->addWidget(m_filenamePreviewLabel);
 
     updateFilenamePreview();
+
+    // ========== Save Behavior Section ==========
+    layout->addSpacing(16);
+    QLabel *behaviorLabel = new QLabel("Save Behavior", tab);
+    behaviorLabel->setStyleSheet("font-weight: bold; font-size: 12px;");
+    layout->addWidget(behaviorLabel);
+
+    m_autoSaveScreenshotsCheckbox = new QCheckBox("Auto-save screenshots (save directly without dialog)", tab);
+    m_autoSaveScreenshotsCheckbox->setChecked(fileSettings.loadAutoSaveScreenshots());
+    layout->addWidget(m_autoSaveScreenshotsCheckbox);
+
+    m_autoSaveRecordingsCheckbox = new QCheckBox("Auto-save recordings (save directly without dialog)", tab);
+    m_autoSaveRecordingsCheckbox->setChecked(fileSettings.loadAutoSaveRecordings());
+    layout->addWidget(m_autoSaveRecordingsCheckbox);
 
     layout->addStretch();
 }

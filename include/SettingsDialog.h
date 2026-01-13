@@ -96,7 +96,6 @@ private:
     // Recording UI elements
     QComboBox *m_recordingFrameRateCombo;
     QComboBox *m_recordingOutputFormatCombo;
-    QCheckBox *m_recordingAutoSaveCheckbox;
     QCheckBox *m_recordingShowPreviewCheckbox;
 
     // Countdown settings
@@ -158,6 +157,8 @@ private:
     QLineEdit *m_filenamePrefixEdit;
     QComboBox *m_dateFormatCombo;
     QLabel *m_filenamePreviewLabel;
+    QCheckBox *m_autoSaveScreenshotsCheckbox;
+    QCheckBox *m_autoSaveRecordingsCheckbox;
 };
 
 #endif // SETTINGSDIALOG_H

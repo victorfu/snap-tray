@@ -6,7 +6,9 @@
 #include <QDateTime>
 #include <QDebug>
 #include <QDir>
+#include <QFile>
 #include <QFileDialog>
+#include <QFileInfo>
 #include <QGuiApplication>
 #include <QImage>
 #include <QPainter>
@@ -138,6 +140,34 @@ bool RegionExportManager::saveToFile(const QRect &selectionRect, int cornerRadiu
     } else {
         filename = QString("%1_Screenshot_%2.png").arg(prefix).arg(timestamp);
     }
+
+    // Check auto-save setting
+    if (fileSettings.loadAutoSaveScreenshots()) {
+        QString filePath = QDir(savePath).filePath(filename);
+
+        // Handle file collision (add counter if file exists)
+        if (QFile::exists(filePath)) {
+            QString baseName = QFileInfo(filePath).completeBaseName();
+            QString ext = QFileInfo(filePath).suffix();
+            int counter = 1;
+            while (QFile::exists(filePath) && counter < 100) {
+                filePath = QDir(savePath).filePath(QString("%1_%2.%3").arg(baseName).arg(counter).arg(ext));
+                counter++;
+            }
+        }
+
+        bool success = selectedRegion.save(filePath);
+        if (success) {
+            qDebug() << "RegionExportManager: Auto-saved to" << filePath;
+            emit saveCompleted(selectedRegion, filePath);
+        } else {
+            qWarning() << "RegionExportManager: Failed to auto-save to" << filePath;
+            emit saveFailed(filePath, tr("Failed to save screenshot"));
+        }
+        return success;
+    }
+
+    // Show save dialog
     QString defaultName = QDir(savePath).filePath(filename);
 
     // Notify parent before showing dialog

@@ -146,6 +146,8 @@ signals:
     void regionSelected(const QPixmap &screenshot, const QPoint &globalPosition);
     void selectionCancelled();
     void saveRequested(const QPixmap &screenshot);
+    void saveCompleted(const QPixmap &screenshot, const QString &filePath);
+    void saveFailed(const QString &filePath, const QString &error);
     void copyRequested(const QPixmap &screenshot);
     void recordingRequested(const QRect &region, QScreen *screen);
     void scrollingCaptureRequested(const QRect &region, QScreen *screen);

@@ -6,6 +6,7 @@
 #include "RecordingManager.h"
 #include "PlatformFeatures.h"
 #include "settings/Settings.h"
+#include "ui/GlobalToast.h"
 #include "video/RecordingPreviewWindow.h"
 
 #include <QFile>
@@ -66,17 +67,45 @@ void MainApplication::initialize()
 
     // Connect recording signals
     connect(m_recordingManager, &RecordingManager::recordingStopped,
-        this, [this](const QString& path) {
-            m_trayIcon->showMessage("Recording Saved",
-                QString("Saved to: %1").arg(path),
-                QSystemTrayIcon::Information, 3000);
+        this, [](const QString& path) {
+            GlobalToast::instance().showToast(GlobalToast::Success,
+                tr("Recording Saved"),
+                QString("Saved to: %1").arg(path));
         });
 
     connect(m_recordingManager, &RecordingManager::recordingError,
-        this, [this](const QString& error) {
-            m_trayIcon->showMessage("Recording Error",
-                error,
-                QSystemTrayIcon::Warning, 5000);
+        this, [](const QString& error) {
+            GlobalToast::instance().showToast(GlobalToast::Error,
+                tr("Recording Error"),
+                error, 5000);
+        });
+
+    // Connect screenshot save signals from CaptureManager
+    connect(m_captureManager, &CaptureManager::saveCompleted,
+        this, [](const QPixmap&, const QString& path) {
+            GlobalToast::instance().showToast(GlobalToast::Success,
+                tr("Screenshot Saved"),
+                QString("Saved to: %1").arg(path));
+        });
+    connect(m_captureManager, &CaptureManager::saveFailed,
+        this, [](const QString& path, const QString& error) {
+            GlobalToast::instance().showToast(GlobalToast::Error,
+                tr("Screenshot Save Failed"),
+                QString("%1\n%2").arg(error).arg(path), 5000);
+        });
+
+    // Connect screenshot save signals from PinWindowManager
+    connect(m_pinWindowManager, &PinWindowManager::saveCompleted,
+        this, [](const QPixmap&, const QString& path) {
+            GlobalToast::instance().showToast(GlobalToast::Success,
+                tr("Screenshot Saved"),
+                QString("Saved to: %1").arg(path));
+        });
+    connect(m_pinWindowManager, &PinWindowManager::saveFailed,
+        this, [](const QString& path, const QString& error) {
+            GlobalToast::instance().showToast(GlobalToast::Error,
+                tr("Screenshot Save Failed"),
+                QString("%1\n%2").arg(error).arg(path), 5000);
         });
 
     // Connect preview request signal
@@ -152,13 +181,12 @@ void MainApplication::initialize()
 
     // Connect OCR completion signal (must be after m_trayIcon is created)
     connect(m_pinWindowManager, &PinWindowManager::ocrCompleted,
-        this, [this](bool success, const QString& message) {
+        this, [](bool success, const QString& message) {
             qDebug() << "MainApplication: OCR completed, success=" << success << ", message=" << message;
-            m_trayIcon->showMessage(
+            GlobalToast::instance().showToast(
+                success ? GlobalToast::Success : GlobalToast::Error,
                 success ? tr("OCR Success") : tr("OCR Failed"),
-                message,
-                success ? QSystemTrayIcon::Information : QSystemTrayIcon::Warning,
-                3000);
+                message);
         });
 
     // Setup global hotkeys
@@ -369,8 +397,8 @@ void MainApplication::setupHotkey()
     if (!failedHotkeys.isEmpty()) {
         QString message = failedHotkeys.join(", ") +
             " hotkey failed to register. It may be in use by another application.";
-        m_trayIcon->showMessage("Hotkey Registration Failed", message,
-            QSystemTrayIcon::Warning, 5000);
+        GlobalToast::instance().showToast(GlobalToast::Error,
+            tr("Hotkey Registration Failed"), message, 5000);
     }
 }
 

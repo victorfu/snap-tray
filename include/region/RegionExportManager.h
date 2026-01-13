@@ -75,6 +75,11 @@ signals:
     void saveCompleted(const QPixmap &pixmap, const QString &filePath);
 
     /**
+     * @brief Emitted when auto-save fails
+     */
+    void saveFailed(const QString &filePath, const QString &error);
+
+    /**
      * @brief Emitted before showing save dialog (so parent can hide)
      */
     void saveDialogOpening();

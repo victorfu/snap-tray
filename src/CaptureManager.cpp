@@ -100,6 +100,10 @@ void CaptureManager::startRegionCapture()
             this, &CaptureManager::recordingRequested);
     connect(m_regionSelector, &RegionSelector::scrollingCaptureRequested,
             this, &CaptureManager::scrollingCaptureRequested);
+    connect(m_regionSelector, &RegionSelector::saveCompleted,
+            this, &CaptureManager::saveCompleted);
+    connect(m_regionSelector, &RegionSelector::saveFailed,
+            this, &CaptureManager::saveFailed);
 
     // Trigger initial window highlight once the async window list is ready.
     if (m_windowDetector && m_windowDetector->isEnabled()) {
@@ -190,6 +194,10 @@ void CaptureManager::startRegionCaptureWithPreset(const QRect &region, QScreen *
             this, &CaptureManager::recordingRequested);
     connect(m_regionSelector, &RegionSelector::scrollingCaptureRequested,
             this, &CaptureManager::scrollingCaptureRequested);
+    connect(m_regionSelector, &RegionSelector::saveCompleted,
+            this, &CaptureManager::saveCompleted);
+    connect(m_regionSelector, &RegionSelector::saveFailed,
+            this, &CaptureManager::saveFailed);
 
     m_regionSelector->setGeometry(screen->geometry());
     m_regionSelector->show();

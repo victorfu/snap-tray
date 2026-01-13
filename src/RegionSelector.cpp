@@ -402,6 +402,16 @@ RegionSelector::RegionSelector(QWidget* parent)
                 raise();
             }
         });
+    connect(m_exportManager, &RegionExportManager::saveCompleted,
+        this, [this](const QPixmap &pixmap, const QString &filePath) {
+            emit saveCompleted(pixmap, filePath);
+            close();
+        });
+    connect(m_exportManager, &RegionExportManager::saveFailed,
+        this, [this](const QString &filePath, const QString &error) {
+            emit saveFailed(filePath, error);
+            close();
+        });
 
     // Initialize input handling component
     m_inputHandler = new RegionInputHandler(this);

@@ -1229,13 +1229,11 @@ void RecordingManager::triggerSaveDialog(const QString &videoPath)
 
 void RecordingManager::showSaveDialog(const QString &tempOutputPath)
 {
-    auto settings = SnapTray::getSettings();
+    // Get settings from FileSettingsManager
+    auto& fileSettings = FileSettingsManager::instance();
 
     // Check auto-save setting
-    bool autoSave = settings.value("recording/autoSave", false).toBool();
-
-    // Get recording path from FileSettingsManager
-    auto& fileSettings = FileSettingsManager::instance();
+    bool autoSave = fileSettings.loadAutoSaveRecordings();
     QString outputDir = fileSettings.loadRecordingPath();
     QString dateFormat = fileSettings.loadDateFormat();
     QString prefix = fileSettings.loadFilenamePrefix();

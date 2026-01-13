@@ -35,6 +35,8 @@ signals:
     void captureCancelled();
     void recordingRequested(const QRect &region, QScreen *screen);
     void scrollingCaptureRequested(const QRect &region, QScreen *screen);
+    void saveCompleted(const QPixmap &screenshot, const QString &filePath);
+    void saveFailed(const QString &filePath, const QString &error);
 
 private slots:
     void onRegionSelected(const QPixmap &screenshot, const QPoint &globalPosition);

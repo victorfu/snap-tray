@@ -73,6 +73,8 @@ public:
 signals:
     void closed(PinWindow *window);
     void saveRequested(const QPixmap &pixmap);
+    void saveCompleted(const QPixmap &pixmap, const QString &filePath);
+    void saveFailed(const QString &filePath, const QString &error);
     void ocrCompleted(bool success, const QString &message);
 
 protected:

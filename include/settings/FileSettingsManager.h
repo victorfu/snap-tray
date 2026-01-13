@@ -30,11 +30,19 @@ public:
     QString loadDateFormat() const;
     void saveDateFormat(const QString& format);
 
+    // Auto-save settings
+    bool loadAutoSaveScreenshots() const;
+    void saveAutoSaveScreenshots(bool enabled);
+    bool loadAutoSaveRecordings() const;
+    void saveAutoSaveRecordings(bool enabled);
+
     // Default values
     static QString defaultScreenshotPath();
     static QString defaultRecordingPath();
     static QString defaultFilenamePrefix() { return QString(); }
     static QString defaultDateFormat() { return QStringLiteral("yyyyMMdd_HHmmss"); }
+    static bool defaultAutoSaveScreenshots() { return true; }
+    static bool defaultAutoSaveRecordings() { return true; }
 
 private:
     FileSettingsManager() = default;
@@ -45,6 +53,8 @@ private:
     static constexpr const char* kSettingsKeyRecordingPath = "files/recordingPath";
     static constexpr const char* kSettingsKeyFilenamePrefix = "files/filenamePrefix";
     static constexpr const char* kSettingsKeyDateFormat = "files/dateFormat";
+    static constexpr const char* kSettingsKeyAutoSaveScreenshots = "files/autoSaveScreenshots";
+    static constexpr const char* kSettingsKeyAutoSaveRecordings = "files/autoSaveRecordings";
 };
 
 #endif // FILESETTINGSMANAGER_H
