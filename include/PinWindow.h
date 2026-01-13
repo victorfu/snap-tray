@@ -131,6 +131,11 @@ private:
     // Info methods
     void copyAllInfo();
 
+    // Cache folder methods
+    static QString cacheFolderPath();
+    void openCacheFolder();
+    void saveToCacheAsync();
+
     // Toolbar and annotation methods
     void showToolbar();
     void hideToolbar();

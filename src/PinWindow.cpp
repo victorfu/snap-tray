@@ -55,6 +55,9 @@
 #include <QTransform>
 #include <QDebug>
 #include <QActionGroup>
+#include <QDesktopServices>
+#include <QUrl>
+#include <QThreadPool>
 
 namespace {
 bool hasTransparentCornerPixels(const QPixmap &pixmap)
@@ -136,6 +139,9 @@ PinWindow::PinWindow(const QPixmap &screenshot, const QPoint &position, QWidget 
     m_watermarkSettings = WatermarkRenderer::loadSettings();
 
     createContextMenu();
+
+    // Auto-save to cache folder asynchronously
+    saveToCacheAsync();
 
     // Initialize OCR manager if available on this platform
     m_ocrManager = PlatformFeatures::instance().createOCRManager(this);
@@ -463,6 +469,9 @@ void PinWindow::createContextMenu()
     saveAction->setShortcut(QKeySequence::Save);
     connect(saveAction, &QAction::triggered, this, &PinWindow::saveToFile);
 
+    QAction *openCacheFolderAction = m_contextMenu->addAction(tr("Open Cache Folder"));
+    connect(openCacheFolderAction, &QAction::triggered, this, &PinWindow::openCacheFolder);
+
     if (PlatformFeatures::instance().isOCRAvailable()) {
         QAction *ocrAction = m_contextMenu->addAction("OCR Text Recognition");
         connect(ocrAction, &QAction::triggered, this, &PinWindow::performOCR);
@@ -778,6 +787,53 @@ void PinWindow::copyAllInfo()
     info << QString("Y-mirror: %1").arg(m_flipVertical ? "Yes" : "No");
 
     QGuiApplication::clipboard()->setText(info.join("\n"));
+}
+
+QString PinWindow::cacheFolderPath()
+{
+    QString basePath = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
+    return QDir(basePath).filePath("pinwindow_history");
+}
+
+void PinWindow::openCacheFolder()
+{
+    QString path = cacheFolderPath();
+
+    QDir dir(path);
+    if (!dir.exists()) {
+        if (!dir.mkpath(".")) {
+            qWarning() << "PinWindow: Failed to create cache folder:" << path;
+            return;
+        }
+    }
+
+    QDesktopServices::openUrl(QUrl::fromLocalFile(path));
+}
+
+void PinWindow::saveToCacheAsync()
+{
+    QPixmap pixmapToSave = m_originalPixmap;
+
+    QThreadPool::globalInstance()->start([pixmapToSave]() {
+        QString path = cacheFolderPath();
+        QDir dir(path);
+        if (!dir.exists()) {
+            if (!dir.mkpath(".")) {
+                qWarning() << "PinWindow: Failed to create cache folder:" << path;
+                return;
+            }
+        }
+
+        QString timestamp = QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss_zzz");
+        QString filename = QString("cache_%1.png").arg(timestamp);
+        QString filePath = dir.filePath(filename);
+
+        if (pixmapToSave.save(filePath)) {
+            qDebug() << "PinWindow: Saved to cache:" << filePath;
+        } else {
+            qWarning() << "PinWindow: Failed to save to cache:" << filePath;
+        }
+    });
 }
 
 void PinWindow::applyClickThroughState(bool enabled)
