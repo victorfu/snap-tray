@@ -76,6 +76,31 @@ echo ""
 echo -e "${YELLOW}[2/5] Running macdeployqt...${NC}"
 "$QT_PREFIX/bin/macdeployqt" "$APP_PATH" -verbose=1
 
+# Fix library install names that macdeployqt misses
+# This handles brotli and any other libraries with absolute Homebrew paths
+echo "Fixing library install names..."
+FRAMEWORKS_PATH="$APP_PATH/Contents/Frameworks"
+
+for lib in "$FRAMEWORKS_PATH"/*.dylib; do
+    [ -f "$lib" ] || continue
+    libname=$(basename "$lib")
+
+    # Fix the library's own install name (ID)
+    current_id=$(otool -D "$lib" 2>/dev/null | tail -1)
+    if [[ "$current_id" != @* ]]; then
+        install_name_tool -id "@executable_path/../Frameworks/$libname" "$lib"
+    fi
+
+    # Fix references to other libraries in Frameworks
+    otool -L "$lib" | tail -n +2 | awk '{print $1}' | while read dep; do
+        depname=$(basename "$dep")
+        # Fix absolute paths (Homebrew, system, etc.) to relative paths
+        if [[ "$dep" != @* ]] && [ -f "$FRAMEWORKS_PATH/$depname" ]; then
+            install_name_tool -change "$dep" "@executable_path/../Frameworks/$depname" "$lib" 2>/dev/null || true
+        fi
+    done
+done
+
 # Step 3: Code signing
 echo ""
 echo -e "${YELLOW}[3/5] Signing application...${NC}"
