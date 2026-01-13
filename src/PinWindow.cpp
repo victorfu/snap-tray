@@ -60,31 +60,38 @@
 #include <QThreadPool>
 
 namespace {
+// Optimized: Only copy 4 single-pixel regions instead of the entire image.
+// On high-DPI displays (e.g., 4K at 200% scaling), the original toImage()
+// would copy ~15MB of pixel data just to check 4 corner pixels.
 bool hasTransparentCornerPixels(const QPixmap &pixmap)
 {
     if (pixmap.isNull()) {
         return false;
     }
 
-    QImage image = pixmap.toImage().convertToFormat(QImage::Format_ARGB32_Premultiplied);
-    if (image.isNull()) {
-        return false;
-    }
-
-    int width = image.width();
-    int height = image.height();
+    int width = pixmap.width();
+    int height = pixmap.height();
     if (width <= 0 || height <= 0) {
         return false;
     }
 
-    const auto alphaAt = [&image](int x, int y) {
-        return qAlpha(image.pixel(x, y));
+    const QPoint corners[] = {
+        {0, 0},
+        {width - 1, 0},
+        {0, height - 1},
+        {width - 1, height - 1}
     };
 
-    return alphaAt(0, 0) < 255 ||
-           alphaAt(width - 1, 0) < 255 ||
-           alphaAt(0, height - 1) < 255 ||
-           alphaAt(width - 1, height - 1) < 255;
+    for (const QPoint &corner : corners) {
+        QImage cornerImg = pixmap.copy(corner.x(), corner.y(), 1, 1).toImage();
+        if (cornerImg.isNull()) {
+            continue;
+        }
+        if (qAlpha(cornerImg.pixel(0, 0)) < 255) {
+            return true;
+        }
+    }
+    return false;
 }
 }  // namespace
 
@@ -134,17 +141,15 @@ PinWindow::PinWindow(const QPixmap &screenshot, const QPoint &position, QWidget 
         m_baseCornerRadius = 0;
     }
 
-    // Load watermark settings before creating context menu
-    // (so the "Enable" checkbox reflects the correct state)
+    // Load watermark settings (used by context menu when created lazily)
     m_watermarkSettings = WatermarkRenderer::loadSettings();
 
-    createContextMenu();
+    // Context menu is now created lazily in contextMenuEvent() to improve initial performance
 
     // Auto-save to cache folder asynchronously
     saveToCacheAsync();
 
-    // Initialize OCR manager if available on this platform
-    m_ocrManager = PlatformFeatures::instance().createOCRManager(this);
+    // OCR manager is now created lazily in performOCR() to improve initial performance
 
     // Enable mouse tracking for resize cursor
     setMouseTracking(true);
@@ -734,10 +739,17 @@ void PinWindow::copyToClipboard()
 
 void PinWindow::performOCR()
 {
-    if (!m_ocrManager || m_ocrInProgress) {
-        if (!m_ocrManager) {
-            qDebug() << "PinWindow: OCR not available on this platform";
-        }
+    if (m_ocrInProgress) {
+        return;
+    }
+
+    // Lazy-create OCR manager on first use to improve initial window creation performance
+    if (!m_ocrManager) {
+        m_ocrManager = PlatformFeatures::instance().createOCRManager(this);
+    }
+
+    if (!m_ocrManager) {
+        qDebug() << "PinWindow: OCR not available on this platform";
         return;
     }
 
@@ -1297,6 +1309,11 @@ void PinWindow::wheelEvent(QWheelEvent *event)
 
 void PinWindow::contextMenuEvent(QContextMenuEvent *event)
 {
+    // Lazy-create context menu on first right-click to improve initial window creation performance
+    if (!m_contextMenu) {
+        createContextMenu();
+    }
+
     // Update Show Toolbar checked state
     if (m_showToolbarAction) {
         m_showToolbarAction->setChecked(m_toolbarVisible);

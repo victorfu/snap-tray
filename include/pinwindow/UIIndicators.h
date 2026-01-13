@@ -34,8 +34,10 @@ signals:
     void exitClickThroughRequested();
 
 private:
-    void setupLabels();
-    void setupClickThroughExitButton();
+    void ensureZoomLabelCreated();
+    void ensureOpacityLabelCreated();
+    void ensureOCRToastLabelCreated();
+    void ensureClickThroughExitButtonCreated();
 
     QWidget* m_parentWidget = nullptr;
     int m_shadowMargin = 8;

@@ -5,13 +5,14 @@ UIIndicators::UIIndicators(QWidget* parentWidget, QObject* parent)
     : QObject(parent)
     , m_parentWidget(parentWidget)
 {
-    setupLabels();
-    setupClickThroughExitButton();
+    // All UI components are now created lazily on first use to improve
+    // initial PinWindow creation performance
 }
 
-void UIIndicators::setupLabels()
+void UIIndicators::ensureZoomLabelCreated()
 {
-    // Zoom indicator label
+    if (m_zoomLabel) return;
+
     m_zoomLabel = new QLabel(m_parentWidget);
     m_zoomLabel->setStyleSheet(
         "QLabel {"
@@ -27,8 +28,12 @@ void UIIndicators::setupLabels()
     m_zoomLabelTimer = new QTimer(this);
     m_zoomLabelTimer->setSingleShot(true);
     connect(m_zoomLabelTimer, &QTimer::timeout, m_zoomLabel, &QLabel::hide);
+}
 
-    // Opacity indicator label
+void UIIndicators::ensureOpacityLabelCreated()
+{
+    if (m_opacityLabel) return;
+
     m_opacityLabel = new QLabel(m_parentWidget);
     m_opacityLabel->setStyleSheet(
         "QLabel {"
@@ -44,8 +49,12 @@ void UIIndicators::setupLabels()
     m_opacityLabelTimer = new QTimer(this);
     m_opacityLabelTimer->setSingleShot(true);
     connect(m_opacityLabelTimer, &QTimer::timeout, m_opacityLabel, &QLabel::hide);
+}
 
-    // OCR toast label
+void UIIndicators::ensureOCRToastLabelCreated()
+{
+    if (m_ocrToastLabel) return;
+
     m_ocrToastLabel = new QLabel(m_parentWidget);
     m_ocrToastLabel->hide();
 
@@ -54,8 +63,10 @@ void UIIndicators::setupLabels()
     connect(m_ocrToastTimer, &QTimer::timeout, m_ocrToastLabel, &QLabel::hide);
 }
 
-void UIIndicators::setupClickThroughExitButton()
+void UIIndicators::ensureClickThroughExitButtonCreated()
 {
+    if (m_clickThroughExitButton) return;
+
     m_clickThroughExitButton = new ClickThroughExitButton(m_parentWidget);
     m_clickThroughExitButton->attachTo(m_parentWidget);
     connect(m_clickThroughExitButton, &ClickThroughExitButton::exitClicked,
@@ -64,6 +75,7 @@ void UIIndicators::setupClickThroughExitButton()
 
 void UIIndicators::showZoomIndicator(qreal zoomLevel)
 {
+    ensureZoomLabelCreated();
     m_zoomLabel->setText(QString("%1%").arg(qRound(zoomLevel * 100)));
     m_zoomLabel->adjustSize();
     // Position at top-left corner
@@ -75,6 +87,7 @@ void UIIndicators::showZoomIndicator(qreal zoomLevel)
 
 void UIIndicators::showOpacityIndicator(qreal opacity)
 {
+    ensureOpacityLabelCreated();
     m_opacityLabel->setText(QString("%1%").arg(qRound(opacity * 100)));
     m_opacityLabel->adjustSize();
     // Position at bottom-left corner
@@ -87,6 +100,7 @@ void UIIndicators::showOpacityIndicator(qreal opacity)
 
 void UIIndicators::showClickThroughIndicator(bool enabled)
 {
+    ensureClickThroughExitButtonCreated();
     if (enabled) {
         m_clickThroughExitButton->updatePosition();
         m_clickThroughExitButton->show();
@@ -100,13 +114,14 @@ void UIIndicators::updatePositions(const QSize& windowSize)
 {
     Q_UNUSED(windowSize);
     // Update click-through exit button position if visible
-    if (m_clickThroughExitButton->isVisible()) {
+    if (m_clickThroughExitButton && m_clickThroughExitButton->isVisible()) {
         m_clickThroughExitButton->updatePosition();
     }
 }
 
 void UIIndicators::showOCRToast(bool success, const QString& message)
 {
+    ensureOCRToastLabelCreated();
     if (success) {
         m_ocrToastLabel->setStyleSheet(
             "QLabel {"
