@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16...3.31)
-project(SnapTray VERSION 1.0.14 LANGUAGES CXX)
+project(SnapTray VERSION 1.0.15 LANGUAGES CXX)
 
 # ============================================================================
 # Compiler Cache (ccache/sccache) for faster incremental builds
