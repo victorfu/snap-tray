@@ -37,9 +37,6 @@ void WidthSection::updateLayout(int containerTop, int containerHeight, int xOffs
 
 void WidthSection::draw(QPainter& painter, const ToolbarStyleConfig& styleConfig)
 {
-    qDebug() << "WidthSection::draw() called, sectionRect:" << m_sectionRect
-             << "background=#007AFF, circle=white";
-
     painter.setRenderHint(QPainter::Antialiasing, true);
 
     // Draw container background inside the glass border for clean alignment
