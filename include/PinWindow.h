@@ -6,6 +6,7 @@
 #include <QPoint>
 #include <QRect>
 #include <QElapsedTimer>
+#include "Constants.h"
 #include "WatermarkRenderer.h"
 #include "LoadingSpinnerRenderer.h"
 #include "pinwindow/ResizeHandler.h"
@@ -103,8 +104,6 @@ protected:
     void moveEvent(QMoveEvent *event) override;
 
 private:
-    // Layout constants
-    static constexpr int kMinSize = 50;
 
     void updateSize();
     void createContextMenu();
@@ -236,7 +235,6 @@ private:
     QElapsedTimer m_resizeThrottleTimer;
     QTimer *m_resizeFinishTimer = nullptr;
     bool m_pendingHighQualityUpdate = false;
-    static constexpr int kResizeThrottleMs = 16;  // ~60fps during resize
 
     int m_baseCornerRadius = 0;
 
@@ -264,7 +262,7 @@ private:
     ICaptureEngine* m_captureEngine = nullptr;
     QTimer* m_captureTimer = nullptr;
     QTimer* m_liveIndicatorTimer = nullptr;
-    int m_captureFrameRate = 15;
+    int m_captureFrameRate = SnapTray::FrameRate::kLivePreview;
     bool m_livePaused = false;
 
     void updateLiveFrame();

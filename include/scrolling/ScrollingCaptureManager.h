@@ -9,6 +9,7 @@
 #include <QElapsedTimer>
 #include <vector>
 
+#include "Constants.h"
 #include "scrolling/StitchWorker.h"
 #include "scrolling/ScrollingCaptureThumbnail.h"
 
@@ -160,19 +161,19 @@ private:
     int calculateRecoveryDistance() const;
     bool isWarningFailure(ImageStitcher::FailureCode code) const;
 
-    static constexpr int CAPTURE_INTERVAL_MS = 60;  // ~16 FPS
-    static constexpr int MAX_CAPTURE_INTERVAL_MS = 200;
+    static constexpr int CAPTURE_INTERVAL_MS = SnapTray::ScrollCapture::kCaptureIntervalMs;
+    static constexpr int MAX_CAPTURE_INTERVAL_MS = SnapTray::ScrollCapture::kMaxCaptureIntervalMs;
     static constexpr int INTERVAL_INCREMENT_MS = 20;
     static constexpr int INTERVAL_DECREMENT_MS = 10;
-    static constexpr int ADJUSTMENT_COOLDOWN_MS = 500;
+    static constexpr int ADJUSTMENT_COOLDOWN_MS = SnapTray::ScrollCapture::kAdjustmentCooldownMs;
     static constexpr int SUCCESS_COUNT_FOR_SPEEDUP = 5;
     static constexpr double EMA_ALPHA = 0.3;
     static constexpr int MIN_RECOVERY_PX = 30;
-    static constexpr int MAX_RECOVERY_PX = 600;
-    static constexpr int DEFAULT_SCROLL_ESTIMATE = 60;
-    static constexpr int MAX_CAPTURE_TIMEOUT_MS = 300000;  // 5 minutes max capture time
-    static constexpr int MAX_PENDING_FRAMES = 100;  // Limit pending frames to prevent memory exhaustion
-    static constexpr int MAX_TOTAL_FRAMES = 1000;  // Maximum frames before auto-finish
+    static constexpr int MAX_RECOVERY_PX = SnapTray::ScrollCapture::kMaxRecoveryPixels;
+    static constexpr int DEFAULT_SCROLL_ESTIMATE = SnapTray::ScrollCapture::kDefaultScrollEstimate;
+    static constexpr int MAX_CAPTURE_TIMEOUT_MS = SnapTray::Timer::kMaxCaptureTimeout;
+    static constexpr int MAX_PENDING_FRAMES = SnapTray::ScrollCapture::kMaxPendingFrames;
+    static constexpr int MAX_TOTAL_FRAMES = SnapTray::ScrollCapture::kMaxTotalFrames;
 };
 
 #endif // SCROLLINGCAPTUREMANAGER_H

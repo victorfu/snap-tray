@@ -6,6 +6,7 @@
 #include <QPointF>
 #include <QColor>
 #include <QTimer>
+#include "Constants.h"
 
 class QPainter;
 
@@ -74,7 +75,7 @@ private:
     QTimer *m_updateTimer;
     bool m_hasPosition = false;
 
-    static constexpr int kUpdateIntervalMs = 16;  // ~60fps
+    static constexpr int kUpdateIntervalMs = SnapTray::Timer::k60FpsInterval;
     static constexpr qreal kSmoothingFactor = 0.3;  // Smoothing coefficient
 };
 

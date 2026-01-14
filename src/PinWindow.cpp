@@ -1,4 +1,5 @@
 #include "PinWindow.h"
+#include "Constants.h"
 #include "PinWindowManager.h"
 #include "OCRManager.h"
 #include "PlatformFeatures.h"
@@ -25,6 +26,8 @@
 #include "ColorAndWidthWidget.h"
 #include "annotations/TextAnnotation.h"
 #include "TransformationGizmo.h"
+
+using namespace SnapTray;
 
 #include <QPainter>
 #include <QImage>
@@ -155,7 +158,7 @@ PinWindow::PinWindow(const QPixmap &screenshot, const QPoint &position, QWidget 
     setMouseTracking(true);
 
     // Initialize components
-    m_resizeHandler = new ResizeHandler(0, kMinSize, this);
+    m_resizeHandler = new ResizeHandler(0, SnapTray::UI::PinWindow::kMinSize, this);
     m_uiIndicators = new UIIndicators(this, this);
     connect(m_uiIndicators, &UIIndicators::exitClickThroughRequested,
             this, [this]() { setClickThrough(false); });
@@ -184,7 +187,7 @@ PinWindow::PinWindow(const QPixmap &screenshot, const QPoint &position, QWidget 
 
     // Track cursor near edges for click-through resize
     m_clickThroughHoverTimer = new QTimer(this);
-    m_clickThroughHoverTimer->setInterval(50);
+    m_clickThroughHoverTimer->setInterval(SnapTray::Timer::kClickThroughHover);
     connect(m_clickThroughHoverTimer, &QTimer::timeout, this, &PinWindow::updateClickThroughForCursor);
 
     // Initialize resize throttle timer
@@ -224,7 +227,7 @@ void PinWindow::setPinWindowManager(PinWindowManager *manager)
 
 void PinWindow::setZoomLevel(qreal zoom)
 {
-    m_zoomLevel = qBound(0.1, zoom, 5.0);
+    m_zoomLevel = qBound(Bounds::kMinZoom, zoom, Bounds::kMaxZoom);
     if (m_currentZoomAction) {
         m_currentZoomAction->setText(QString("%1%").arg(qRound(m_zoomLevel * 100)));
     }
@@ -233,7 +236,7 @@ void PinWindow::setZoomLevel(qreal zoom)
 
 void PinWindow::setOpacity(qreal opacity)
 {
-    m_opacity = qBound(0.1, opacity, 1.0);
+    m_opacity = qBound(Bounds::kMinOpacity, opacity, Bounds::kMaxOpacity);
     setWindowOpacity(m_opacity);
 }
 
@@ -1025,13 +1028,13 @@ void PinWindow::paintEvent(QPaintEvent *)
         int cornerRadius = effectiveCornerRadius(size());
         if (m_clickThrough) {
             // Dashed indigo border for click-through mode
-            painter.setPen(QPen(QColor(88, 86, 214, 200), 2, Qt::DashLine));
+            painter.setPen(QPen(Color::kBorderIndigo, 2, Qt::DashLine));
         } else if (m_annotationMode) {
             // Green border for annotation mode
-            painter.setPen(QPen(QColor(52, 199, 89, 200), 2));
+            painter.setPen(QPen(Color::kBorderGreen, 2));
         } else {
             // Blue border
-            painter.setPen(QPen(QColor(0, 122, 255, 200), 1.5));
+            painter.setPen(QPen(Color::kBorderBlue, 1.5));
         }
         painter.setBrush(Qt::NoBrush);
         if (cornerRadius > 0) {
@@ -1054,15 +1057,16 @@ void PinWindow::paintEvent(QPaintEvent *)
     if (m_isLiveMode) {
         painter.save();
 
-        constexpr int dotRadius = 6;
-        constexpr int margin = 8;
+        constexpr int dotRadius = SnapTray::UI::PinWindow::kLiveIndicatorRadius;
+        constexpr int margin = SnapTray::UI::PinWindow::kLiveIndicatorMargin;
         QPointF dotCenter(margin + dotRadius, margin + dotRadius);
 
         // Pulsing effect based on time
         qreal pulse = 0.5 + 0.5 * qSin(QDateTime::currentMSecsSinceEpoch() / 500.0);
         QColor dotColor = m_livePaused
-            ? QColor(255, 165, 0, 200)                   // Orange when paused
-            : QColor(255, 0, 0, 150 + static_cast<int>(pulse * 100));  // Pulsing red when live
+            ? Color::kLivePaused.darker(80)              // Orange when paused (with alpha)
+            : QColor(Color::kLiveActive.red(), Color::kLiveActive.green(),
+                     Color::kLiveActive.blue(), 150 + static_cast<int>(pulse * 100));  // Pulsing red
 
         painter.setPen(Qt::NoPen);
         painter.setBrush(dotColor);
@@ -1182,7 +1186,7 @@ void PinWindow::mouseMoveEvent(QMouseEvent *event)
 
         // Schedule high-quality update after resize ends
         m_pendingHighQualityUpdate = true;
-        m_resizeFinishTimer->start(150);  // Debounce: wait 150ms after last resize
+        m_resizeFinishTimer->start(Timer::kResizeDebounce);
 
         // Apply new size and position
         setFixedSize(newSize);
@@ -1283,7 +1287,7 @@ void PinWindow::wheelEvent(QWheelEvent *event)
         qreal newOpacity = (event->angleDelta().y() > 0)
                            ? m_opacity + opacityStep
                            : m_opacity - opacityStep;
-        newOpacity = qBound(0.1, newOpacity, 1.0);
+        newOpacity = qBound(Bounds::kMinOpacity, newOpacity, Bounds::kMaxOpacity);
 
         if (qFuzzyCompare(oldOpacity, newOpacity)) {
             event->accept();
@@ -1302,7 +1306,7 @@ void PinWindow::wheelEvent(QWheelEvent *event)
     qreal newZoom = (event->angleDelta().y() > 0)
                     ? m_zoomLevel + zoomStep
                     : m_zoomLevel - zoomStep;
-    newZoom = qBound(0.1, newZoom, 5.0);
+    newZoom = qBound(Bounds::kMinZoom, newZoom, Bounds::kMaxZoom);
 
     if (qFuzzyCompare(oldZoom, newZoom)) {
         event->accept();
@@ -2029,7 +2033,7 @@ void PinWindow::onAutoBlurRequested()
         auto mosaic = std::make_unique<MosaicRectAnnotation>(
             logicalRect,
             m_displayPixmap,
-            12,  // Block size
+            ImageProcessing::kMosaicBlockSize,
             MosaicRectAnnotation::BlurType::Pixelate
         );
         m_annotationLayer->addItem(std::move(mosaic));

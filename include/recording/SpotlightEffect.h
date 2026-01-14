@@ -7,6 +7,7 @@
 #include <QRect>
 #include <QColor>
 #include <QTimer>
+#include "Constants.h"
 
 class QPainter;
 
@@ -94,7 +95,7 @@ private:
     Mode m_mode = Mode::FollowCursor;
 
     // FollowCursor settings
-    int m_followRadius = 100;
+    int m_followRadius = SnapTray::Bounds::kDefaultSpotlightRadius;
     QPointF m_cursorPos;
     QPointF m_smoothCursorPos;
     bool m_hasPosition = false;
@@ -109,7 +110,7 @@ private:
 
     QTimer *m_updateTimer;
 
-    static constexpr int kUpdateIntervalMs = 16;  // ~60fps
+    static constexpr int kUpdateIntervalMs = SnapTray::Timer::k60FpsInterval;
     static constexpr qreal kSmoothingFactor = 0.25;  // Smoothing coefficient
 };
 

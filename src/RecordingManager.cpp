@@ -1,4 +1,5 @@
 #include "RecordingManager.h"
+#include "Constants.h"
 #include "RecordingRegionSelector.h"
 #include "RecordingControlBar.h"
 #include "RecordingBoundaryOverlay.h"
@@ -18,6 +19,8 @@
 #include "utils/CoordinateHelper.h"
 #include "settings/Settings.h"
 #include "settings/FileSettingsManager.h"
+
+using namespace SnapTray;
 
 #include <QGuiApplication>
 #include <QScreen>
@@ -42,9 +45,8 @@
 #include <fcntl.h>
 #endif
 
-// Delay before starting frame capture to allow overlay to render fully
-// This prevents the border from flashing in the initial frames
-static constexpr int OVERLAY_RENDER_DELAY_MS = 100;
+// Use Timer::kOverlayRenderDelay from Constants.h for the delay before starting
+// frame capture to allow overlay to render fully
 
 static void syncFile(const QString &path)
 {
@@ -82,7 +84,7 @@ RecordingManager::RecordingManager(QObject *parent)
     , m_durationTimer(nullptr)
     , m_targetScreen(nullptr)
     , m_state(State::Idle)
-    , m_frameRate(30)
+    , m_frameRate(FrameRate::kDefault)
     , m_frameCount(0)
     , m_pausedDuration(0)
     , m_pauseStartTime(0)
@@ -252,12 +254,12 @@ void RecordingManager::startFullScreenRecording()
 
     // Load frame rate from settings with validation
     auto settings = SnapTray::getSettings();
-    m_frameRate = settings.value("recording/framerate", 30).toInt();
-    if (m_frameRate <= 0 || m_frameRate > 120) {
+    m_frameRate = settings.value("recording/framerate", FrameRate::kDefault).toInt();
+    if (m_frameRate <= 0 || m_frameRate > FrameRate::kMax) {
         int invalidRate = m_frameRate;
-        m_frameRate = 30;
-        qDebug() << "RecordingManager: Invalid frame rate" << invalidRate << ", using default 30";
-        emit recordingWarning(tr("Invalid frame rate %1, using default 30 FPS.").arg(invalidRate));
+        m_frameRate = FrameRate::kDefault;
+        qDebug() << "RecordingManager: Invalid frame rate" << invalidRate << ", using default" << FrameRate::kDefault;
+        emit recordingWarning(tr("Invalid frame rate %1, using default %2 FPS.").arg(invalidRate).arg(FrameRate::kDefault));
     }
 
     // Reset pause tracking
@@ -277,12 +279,12 @@ void RecordingManager::onRegionSelected(const QRect &region, QScreen *screen)
 
     // Load frame rate from settings with validation
     auto settings = SnapTray::getSettings();
-    m_frameRate = settings.value("recording/framerate", 30).toInt();
-    if (m_frameRate <= 0 || m_frameRate > 120) {
+    m_frameRate = settings.value("recording/framerate", FrameRate::kDefault).toInt();
+    if (m_frameRate <= 0 || m_frameRate > FrameRate::kMax) {
         int invalidRate = m_frameRate;
-        m_frameRate = 30;
-        qDebug() << "RecordingManager: Invalid frame rate" << invalidRate << ", using default 30";
-        emit recordingWarning(tr("Invalid frame rate %1, using default 30 FPS.").arg(invalidRate));
+        m_frameRate = FrameRate::kDefault;
+        qDebug() << "RecordingManager: Invalid frame rate" << invalidRate << ", using default" << FrameRate::kDefault;
+        emit recordingWarning(tr("Invalid frame rate %1, using default %2 FPS.").arg(invalidRate).arg(FrameRate::kDefault));
     }
 
     // Reset pause tracking
@@ -755,7 +757,7 @@ void RecordingManager::startRecordingAfterCountdown()
 
     // Delay frame capture start to allow boundary overlay to render fully
     qDebug() << "RecordingManager: Delaying capture start for overlay rendering...";
-    QTimer::singleShot(OVERLAY_RENDER_DELAY_MS, this, [this]() {
+    QTimer::singleShot(Timer::kOverlayRenderDelay, this, [this]() {
         startCaptureTimers();
     });
 
@@ -804,11 +806,11 @@ void RecordingManager::startCaptureTimers()
     m_captureTimer->start(1000 / m_frameRate);
     qDebug() << "RecordingManager: Capture timer started";
 
-    // Start duration timer (update UI every 100ms)
+    // Start duration timer (update UI at regular intervals)
     qDebug() << "RecordingManager: Starting duration timer...";
     m_durationTimer = new QTimer(this);
     connect(m_durationTimer, &QTimer::timeout, this, &RecordingManager::updateDuration);
-    m_durationTimer->start(100);
+    m_durationTimer->start(Timer::kDurationUpdate);
     qDebug() << "RecordingManager: Duration timer started";
 }
 
