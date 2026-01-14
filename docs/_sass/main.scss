@@ -183,14 +183,31 @@ main {
   }
 }
 
-.ms-store-badge-container {
-  display: flex;
-  justify-content: center;
-  margin: $spacing-md 0;
+.btn-ms-store {
+  background: #1F1F1F;
+  color: white;
+  padding: $spacing-md $spacing-lg;
+  font-size: 0.875rem;
+  gap: $spacing-sm;
 
-  ms-store-badge::part(img) {
-    max-width: 100%;
-    height: auto;
+  &:hover {
+    background: #2D2D2D;
+  }
+
+  .ms-logo {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+  }
+
+  .ms-text {
+    text-align: left;
+    line-height: 1.2;
+
+    strong {
+      display: block;
+      font-size: 1.125rem;
+    }
   }
 }
 
