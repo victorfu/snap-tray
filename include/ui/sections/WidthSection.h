@@ -3,7 +3,6 @@
 
 #include <QObject>
 #include <QRect>
-#include <QColor>
 #include "ui/IWidgetSection.h"
 
 /**
@@ -48,16 +47,6 @@ public:
      */
     int maxWidth() const { return m_maxWidth; }
 
-    /**
-     * @brief Set the preview color (usually matches the current annotation color).
-     */
-    void setPreviewColor(const QColor& color) { m_previewColor = color; }
-
-    /**
-     * @brief Get the preview color.
-     */
-    QColor previewColor() const { return m_previewColor; }
-
     // =========================================================================
     // Wheel Event
     // =========================================================================
@@ -93,7 +82,6 @@ private:
     int m_minWidth = 1;
     int m_maxWidth = 20;
     int m_currentWidth = 3;
-    QColor m_previewColor = Qt::red;
     bool m_hovered = false;
 
     // Layout

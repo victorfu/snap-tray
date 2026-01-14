@@ -5,6 +5,7 @@
 #include <QPainterPath>
 #include <QtMath>
 #include <QtGlobal>
+#include <QDebug>
 
 WidthSection::WidthSection(QObject* parent)
     : QObject(parent)
@@ -36,6 +37,9 @@ void WidthSection::updateLayout(int containerTop, int containerHeight, int xOffs
 
 void WidthSection::draw(QPainter& painter, const ToolbarStyleConfig& styleConfig)
 {
+    qDebug() << "WidthSection::draw() called, sectionRect:" << m_sectionRect
+             << "background=#007AFF, circle=white";
+
     painter.setRenderHint(QPainter::Antialiasing, true);
 
     // Draw container background inside the glass border for clean alignment
@@ -54,7 +58,7 @@ void WidthSection::draw(QPainter& painter, const ToolbarStyleConfig& styleConfig
     path.closeSubpath();
 
     painter.setPen(Qt::NoPen);
-    painter.setBrush(styleConfig.buttonInactiveColor);
+    painter.setBrush(QColor("#007AFF"));
     painter.drawPath(path);
 
     // Draw preview dot (shows actual stroke width with current color)
@@ -69,7 +73,7 @@ void WidthSection::draw(QPainter& painter, const ToolbarStyleConfig& styleConfig
     QRect dotRect(centerX - dotSize / 2, centerY - dotSize / 2, dotSize, dotSize);
 
     painter.setPen(Qt::NoPen);
-    painter.setBrush(m_previewColor);
+    painter.setBrush(Qt::white);
     painter.drawEllipse(dotRect);
 }
 

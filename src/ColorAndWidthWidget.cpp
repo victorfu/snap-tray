@@ -39,7 +39,6 @@ void ColorAndWidthWidget::connectSectionSignals()
 {
     // Forward ColorSection signals
     connect(m_colorSection, &ColorSection::colorSelected, this, [this](const QColor& color) {
-        m_widthSection->setPreviewColor(color);
         emit colorSelected(color);
         qDebug() << "ColorAndWidthWidget: Color selected:" << color.name();
     });
@@ -116,7 +115,6 @@ void ColorAndWidthWidget::setColors(const QVector<QColor>& colors)
 void ColorAndWidthWidget::setCurrentColor(const QColor& color)
 {
     m_colorSection->setCurrentColor(color);
-    m_widthSection->setPreviewColor(color);
 }
 
 QColor ColorAndWidthWidget::currentColor() const
@@ -670,14 +668,21 @@ bool ColorAndWidthWidget::handleClick(const QPoint& pos)
         return m_mosaicWidthSection->handleClick(pos);
     }
 
-    // Width section: click opens color picker
+    // Width section: consume click but don't trigger color picker
+    qDebug() << "ColorAndWidthWidget::handleClick checking width section:"
+             << "showWidthSection=" << m_showWidthSection
+             << "widthSectionHidden=" << m_widthSectionHidden
+             << "contains=" << m_widthSection->contains(pos)
+             << "pos=" << pos
+             << "widthRect=" << m_widthSection->boundingRect();
     if (m_showWidthSection && !m_widthSectionHidden && m_widthSection->contains(pos)) {
-        emit customColorPickerRequested();
+        qDebug() << "WidthSection click CONSUMED - should NOT open color picker";
         return true;
     }
 
     // Color section
     if (m_showColorSection && m_colorSection->contains(pos)) {
+        qDebug() << "ColorSection handleClick called - pos=" << pos;
         return m_colorSection->handleClick(pos);
     }
 
