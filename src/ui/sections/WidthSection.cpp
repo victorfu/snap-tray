@@ -44,22 +44,18 @@ void WidthSection::draw(QPainter& painter, const ToolbarStyleConfig& styleConfig
 
     // Draw container background inside the glass border for clean alignment
     const int borderInset = 1;
-    QRect containerRect = m_sectionRect.adjusted(borderInset, borderInset, 0, -borderInset);
+    const int leftMargin = 4;   // Extra margin from toolbar left edge
+    const int rightMargin = 4;  // Extra margin on right side
+    int size = m_sectionRect.height() - 2 * borderInset - rightMargin;  // Square size
+    int x = m_sectionRect.left() + borderInset + leftMargin;
+    int y = m_sectionRect.top() + borderInset;
+    QRect containerRect(x, y, size, size);
 
-    // Draw container with rounded left corners to match toolbar radius
-    const int radius = 6 - borderInset;  // Match parent glass panel radius, inset by border
-    QPainterPath path;
-    path.moveTo(containerRect.right(), containerRect.top());
-    path.lineTo(containerRect.left() + radius, containerRect.top());
-    path.arcTo(containerRect.left(), containerRect.top(), radius * 2, radius * 2, 90, 90);
-    path.lineTo(containerRect.left(), containerRect.bottom() - radius);
-    path.arcTo(containerRect.left(), containerRect.bottom() - radius * 2, radius * 2, radius * 2, 180, 90);
-    path.lineTo(containerRect.right(), containerRect.bottom());
-    path.closeSubpath();
-
+    // Draw container with all rounded corners
+    const int radius = 6 - borderInset;
     painter.setPen(Qt::NoPen);
     painter.setBrush(QColor("#007AFF"));
-    painter.drawPath(path);
+    painter.drawRoundedRect(containerRect, radius, radius);
 
     // Draw preview dot (shows actual stroke width with current color)
     // Scale the visual size: map m_currentWidth to visual dot size
@@ -68,13 +64,11 @@ void WidthSection::draw(QPainter& painter, const ToolbarStyleConfig& styleConfig
     int maxDotSize = MAX_DOT_SIZE;
     int dotSize = minDotSize + static_cast<int>(ratio * (maxDotSize - minDotSize));
 
-    int centerX = containerRect.center().x();
-    int centerY = containerRect.center().y();
-    QRect dotRect(centerX - dotSize / 2, centerY - dotSize / 2, dotSize, dotSize);
-
+    // Use QPointF for precise centering
+    QPointF center = QRectF(containerRect).center();
     painter.setPen(Qt::NoPen);
     painter.setBrush(Qt::white);
-    painter.drawEllipse(dotRect);
+    painter.drawEllipse(center, dotSize / 2.0, dotSize / 2.0);
 }
 
 bool WidthSection::contains(const QPoint& pos) const
