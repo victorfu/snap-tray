@@ -302,9 +302,6 @@ RegionSelector::RegionSelector(QWidget* parent)
     // Install application-level event filter to capture ESC even when window loses focus
     qApp->installEventFilter(this);
 
-    // Start creation timer for startup protection
-    m_createdAt.start();
-
     // Connect to screen removal signal for graceful handling
     connect(qApp, &QGuiApplication::screenRemoved,
             this, &RegionSelector::onScreenRemoved);
@@ -1545,16 +1542,19 @@ bool RegionSelector::eventFilter(QObject* obj, QEvent* event)
             return true;  // Event handled
         }
     }
+    else if (event->type() == QEvent::WindowActivate) {
+        m_activationCount++;
+    }
     else if (event->type() == QEvent::ApplicationDeactivate) {
         // Don't cancel if a dialog is open (e.g., save dialog)
         if (m_isDialogOpen) {
             return false;
         }
-        // Startup protection: ignore early deactivation (within 300ms of creation)
-        // This prevents false cancellation when popup menus close during startup
-        if (m_createdAt.elapsed() < 300) {
-            qDebug() << "RegionSelector: Ignoring early ApplicationDeactivate (elapsed:"
-                << m_createdAt.elapsed() << "ms)";
+        // Startup protection: ignore deactivation if window hasn't been activated yet
+        // This prevents false cancellation when popup menus close during startup or
+        // when window manager focus changes are still settling
+        if (m_activationCount == 0) {
+            qDebug() << "RegionSelector: Ignoring premature deactivation (activation count: 0)";
 
             // Restore focus to re-enable mouse event delivery
             // Without this, Qt stops delivering mouse events to deactivated windows

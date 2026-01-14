@@ -329,8 +329,8 @@ private:
     // Color picker dialog
     ColorPickerDialog *m_colorPickerDialog;
 
-    // Startup protection - ignore early ApplicationDeactivate events
-    QElapsedTimer m_createdAt;
+    // Startup protection - track window activation for robust deactivate handling
+    int m_activationCount = 0;
 
     // Magnifier panel component
     MagnifierPanel* m_magnifierPanel;
