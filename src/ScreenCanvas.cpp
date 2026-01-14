@@ -52,6 +52,7 @@ ScreenCanvas::ScreenCanvas(QWidget* parent)
     , m_currentToolId(ToolId::Pencil)
     , m_toolbar(nullptr)
     , m_isDraggingToolbar(false)
+    , m_toolbarManuallyPositioned(false)
     , m_showSubToolbar(true)
     , m_colorPalette(nullptr)
     , m_colorPickerDialog(nullptr)
@@ -472,8 +473,8 @@ void ScreenCanvas::paintEvent(QPaintEvent*)
     // Draw laser pointer trail
     m_laserRenderer->draw(painter);
 
-    // Update toolbar position only when not dragging (dragging sets position directly)
-    if (!m_isDraggingToolbar) {
+    // Update toolbar position only when not dragging and not manually positioned
+    if (!m_isDraggingToolbar && !m_toolbarManuallyPositioned) {
         updateToolbarPosition();
     }
     // Update active button based on current tool state
@@ -936,6 +937,7 @@ void ScreenCanvas::mouseReleaseEvent(QMouseEvent* event)
         // Handle toolbar drag end
         if (m_isDraggingToolbar) {
             m_isDraggingToolbar = false;
+            m_toolbarManuallyPositioned = true;
             // Pop drag cursor - cursor will revert to hover or tool cursor
             auto& cursorManager = CursorManager::instance();
             cursorManager.popCursor(CursorContext::Drag);

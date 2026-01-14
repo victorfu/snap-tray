@@ -152,6 +152,7 @@ private:
     // Toolbar using ToolbarWidget
     ToolbarWidget *m_toolbar;
     bool m_isDraggingToolbar;
+    bool m_toolbarManuallyPositioned;
     QPoint m_toolbarDragOffset;
     bool m_showSubToolbar;
 
