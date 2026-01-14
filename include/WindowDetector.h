@@ -95,6 +95,7 @@ private:
     DetectionFlags m_detectionFlags = DetectionFlag::All;
     QFuture<void> m_refreshFuture;
     std::atomic<bool> m_refreshComplete{true};
+    std::atomic<uint64_t> m_refreshRequestId{0};
 };
 
 #endif // WINDOWDETECTOR_H

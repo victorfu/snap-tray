@@ -230,6 +230,9 @@ WindowDetector::WindowDetector(QObject *parent)
 
 WindowDetector::~WindowDetector()
 {
+    if (m_refreshFuture.isValid() && m_refreshFuture.isRunning()) {
+        m_refreshFuture.waitForFinished();
+    }
 }
 
 bool WindowDetector::hasAccessibilityPermission()
@@ -277,12 +280,19 @@ void WindowDetector::refreshWindowList()
 
 void WindowDetector::refreshWindowListAsync()
 {
+    uint64_t requestId = ++m_refreshRequestId;
+
     m_refreshComplete = false;
     qreal dpr = m_currentScreen ? m_currentScreen->devicePixelRatio() : 1.0;
 
-    m_refreshFuture = QtConcurrent::run([this, dpr]() {
+    m_refreshFuture = QtConcurrent::run([this, dpr, requestId]() {
         std::vector<DetectedElement> newCache;
         enumerateWindowsInternal(newCache, dpr);
+
+        if (m_refreshRequestId.load() != requestId) {
+            qDebug() << "WindowDetector: Discarding stale refresh result";
+            return;
+        }
 
         {
             QMutexLocker locker(&m_cacheMutex);

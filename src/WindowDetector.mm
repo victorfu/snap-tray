@@ -113,6 +113,9 @@ WindowDetector::WindowDetector(QObject *parent)
 
 WindowDetector::~WindowDetector()
 {
+    if (m_refreshFuture.isValid() && m_refreshFuture.isRunning()) {
+        m_refreshFuture.waitForFinished();
+    }
 }
 
 bool WindowDetector::hasAccessibilityPermission()
@@ -313,9 +316,11 @@ std::optional<DetectedElement> WindowDetector::detectWindowAt(const QPoint &scre
 
 void WindowDetector::refreshWindowListAsync()
 {
+    uint64_t requestId = ++m_refreshRequestId;
+
     m_refreshComplete = false;
 
-    m_refreshFuture = QtConcurrent::run([this]() {
+    m_refreshFuture = QtConcurrent::run([this, requestId]() {
         std::vector<DetectedElement> newCache;
 
         // Determine CGWindowList options based on detection flags
@@ -328,8 +333,10 @@ void WindowDetector::refreshWindowListAsync()
         CFArrayRef windowList = CGWindowListCopyWindowInfo(options, kCGNullWindowID);
 
         if (!windowList) {
-            m_refreshComplete = true;
-            QMetaObject::invokeMethod(this, "windowListReady", Qt::QueuedConnection);
+            if (m_refreshRequestId.load() == requestId) {
+                m_refreshComplete = true;
+                QMetaObject::invokeMethod(this, "windowListReady", Qt::QueuedConnection);
+            }
             return;
         }
 
@@ -415,6 +422,11 @@ void WindowDetector::refreshWindowListAsync()
         }
 
         CFRelease(windowList);
+
+        if (m_refreshRequestId.load() != requestId) {
+            qDebug() << "WindowDetector: Discarding stale refresh result";
+            return;
+        }
 
         {
             QMutexLocker locker(&m_cacheMutex);
