@@ -274,8 +274,10 @@ void RegionToolbarHandler::handleAnnotationTool(ToolbarButton button)
         m_currentTool = button;
         m_showSubToolbar = true;
     }
-    if (button == ToolbarButton::Eraser && m_toolManager) {
-        m_toolManager->setCurrentTool(ToolId::Eraser);
+    // Update ToolManager for all annotation tools (not just Eraser)
+    // This triggers CursorManager::updateToolCursor() via toolChanged signal
+    if (m_toolManager) {
+        m_toolManager->setCurrentTool(toolbarButtonToToolId(m_currentTool));
     }
     emit showSizeSectionRequested(false);
     qDebug() << "Tool selected:" << static_cast<int>(button) << "showSubToolbar:" << m_showSubToolbar;
