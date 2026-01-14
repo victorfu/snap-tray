@@ -11,6 +11,19 @@
 #include <cmath>
 #include <numeric>
 
+// Definition of FrameCacheImpl (PIMPL for ImageStitcher::FrameCache)
+struct ImageStitcher::FrameCacheImpl {
+    cv::Mat bgr;       // BGR Mat (from QImage)
+    cv::Mat gray;      // Grayscale (for most algorithms)
+    bool valid = false;
+
+    void clear() {
+        bgr = cv::Mat();
+        gray = cv::Mat();
+        valid = false;
+    }
+};
+
 namespace
 {
 double normalizedVariance(const cv::Mat &mat)
@@ -24,14 +37,13 @@ double normalizedVariance(const cv::Mat &mat)
     return (stddev[0] * stddev[0]) / 255.0;
 }
 
-cv::Mat qImageToCvMatLocal(const QImage &image)
+// Helper function for anonymous namespace (non-member functions)
+inline cv::Mat qImageToBgrMat(const QImage &image)
 {
     QImage rgb = image.convertToFormat(QImage::Format_RGB32);
-
     cv::Mat mat(rgb.height(), rgb.width(), CV_8UC4,
                 const_cast<uchar*>(rgb.bits()),
                 static_cast<size_t>(rgb.bytesPerLine()));
-
     cv::Mat bgr;
     cv::cvtColor(mat, bgr, cv::COLOR_RGBA2BGR);
     return bgr.clone();
@@ -478,8 +490,8 @@ InPlaceMatch findGlobalInPlaceMatch(const QImage &stitched,
     }
 
     QImage stitchedCropImage = stitched.copy(0, 0, validWidth, validHeight);
-    cv::Mat stitchedMat = qImageToCvMatLocal(stitchedCropImage);
-    cv::Mat frameMat = qImageToCvMatLocal(frame);
+    cv::Mat stitchedMat = qImageToBgrMat(stitchedCropImage);
+    cv::Mat frameMat = qImageToBgrMat(frame);
     if (stitchedMat.empty() || frameMat.empty()) {
         return match;
     }
@@ -648,103 +660,6 @@ double normalizedOverlapDifference(const cv::Mat &lastGray,
 }
 }
 
-// RSSA: Static region detection (header/footer/scrollbar)
-// Detects UI elements that remain static between frames to exclude them from matching
-StaticRegions ImageStitcher::detectStaticRegions(const QImage &img1, const QImage &img2)
-{
-    StaticRegions result;
-
-    if (img1.isNull() || img2.isNull() || img1.size() != img2.size()) {
-        return result;
-    }
-
-    cv::Mat mat1 = qImageToCvMat(img1);
-    cv::Mat mat2 = qImageToCvMat(img2);
-
-    // Convert to grayscale for comparison
-    cv::Mat gray1, gray2;
-    cv::cvtColor(mat1, gray1, cv::COLOR_BGR2GRAY);
-    cv::cvtColor(mat2, gray2, cv::COLOR_BGR2GRAY);
-
-    const int height = gray1.rows;
-    const int width = gray1.cols;
-
-    // === TOP SCAN: Detect Sticky Header ===
-    // Scan from y=0 downward, find contiguous rows with near-zero difference
-    // Use noise tolerance to handle compression artifacts or subpixel rendering
-    const int MAX_NOISE_ROWS = 3;  // Allow up to 3 non-static rows before breaking
-    int headerNonStaticCount = 0;
-    for (int y = 0; y < height / 3; ++y) {  // Limit to top 1/3
-        cv::Mat row1 = gray1.row(y);
-        cv::Mat row2 = gray2.row(y);
-        double diff = calculateRowDifference(row1, row2);
-
-        if (diff < m_stitchConfig.staticRowThreshold) {
-            result.headerHeight = y + 1;
-            headerNonStaticCount = 0;  // Reset noise counter on static row
-        } else {
-            headerNonStaticCount++;
-            if (headerNonStaticCount > MAX_NOISE_ROWS) {
-                break;  // Too many consecutive non-static rows
-            }
-        }
-    }
-
-    // === BOTTOM SCAN: Detect Sticky Footer ===
-    int footerNonStaticCount = 0;
-    for (int y = height - 1; y > height * 2 / 3; --y) {  // Limit to bottom 1/3
-        cv::Mat row1 = gray1.row(y);
-        cv::Mat row2 = gray2.row(y);
-        double diff = calculateRowDifference(row1, row2);
-
-        if (diff < m_stitchConfig.staticRowThreshold) {
-            result.footerHeight = height - y;
-            footerNonStaticCount = 0;  // Reset noise counter on static row
-        } else {
-            footerNonStaticCount++;
-            if (footerNonStaticCount > MAX_NOISE_ROWS) {
-                break;  // Too many consecutive non-static rows
-            }
-        }
-    }
-
-    // === RIGHT SCAN: Detect Scrollbar ===
-    // Scrollbar track is typically static, thumb moves
-    // Check rightmost 30 pixels
-    const int scrollbarCheckWidth = 30;
-    int staticColumns = 0;
-    for (int x = width - 1; x > width - scrollbarCheckWidth && x >= 0; --x) {
-        cv::Mat col1 = gray1.col(x);
-        cv::Mat col2 = gray2.col(x);
-        double diff = cv::norm(col1, col2, cv::NORM_L1) / height;
-
-        if (diff < m_stitchConfig.staticRowThreshold * 2) {
-            staticColumns++;
-        }
-    }
-    if (staticColumns > scrollbarCheckWidth * 0.7) {
-        result.scrollbarWidth = scrollbarCheckWidth;
-    }
-
-    result.detected = (result.headerHeight > 0 || result.footerHeight > 0);
-
-    if (result.detected) {
-        qDebug() << "ImageStitcher: Detected static regions - Header:" << result.headerHeight
-                 << "Footer:" << result.footerHeight
-                 << "Scrollbar:" << result.scrollbarWidth;
-    }
-
-    return result;
-}
-
-double ImageStitcher::calculateRowDifference(const cv::Mat &row1, const cv::Mat &row2) const
-{
-    // Calculate mean absolute difference per pixel
-    cv::Mat diff;
-    cv::absdiff(row1, row2, diff);
-    return cv::mean(diff)[0];
-}
-
 ImageStitcher::StitchResult ImageStitcher::tryTemplateMatch(const QImage &newFrame)
 {
     // Choose directions based on capture mode
@@ -810,22 +725,27 @@ ImageStitcher::StitchResult ImageStitcher::tryTemplateMatch(const QImage &newFra
 ImageStitcher::MatchCandidate ImageStitcher::computeTemplateMatchCandidate(const QImage &newFrame,
                                                                             ScrollDirection direction)
 {
+    Q_UNUSED(newFrame)  // Using cached version instead
     MatchCandidate candidate;
     candidate.direction = direction;
 
-    cv::Mat lastMat = qImageToCvMat(m_lastFrame);
-    cv::Mat newMat = qImageToCvMat(newFrame);
-
-    if (lastMat.empty() || newMat.empty()) {
-        candidate.failureReason = "Failed to convert images";
+    // Use cached grayscale images instead of converting again
+    if (!m_lastFrameCache || !m_lastFrameCache->valid ||
+        !m_currentFrameCache || !m_currentFrameCache->valid) {
+        candidate.failureReason = "Frame cache not valid";
         return candidate;
     }
 
-    // Convert to grayscale and enhance contrast to strengthen edges
-    cv::Mat lastGray, newGray;
-    cv::cvtColor(lastMat, lastGray, cv::COLOR_BGR2GRAY);
-    cv::cvtColor(newMat, newGray, cv::COLOR_BGR2GRAY);
+    // Clone the cached gray images for CLAHE processing (don't modify cache)
+    cv::Mat lastGray = m_lastFrameCache->gray.clone();
+    cv::Mat newGray = m_currentFrameCache->gray.clone();
 
+    if (lastGray.empty() || newGray.empty()) {
+        candidate.failureReason = "Failed to get grayscale images from cache";
+        return candidate;
+    }
+
+    // Enhance contrast to strengthen edges
     cv::Ptr<cv::CLAHE> clahe = cv::createCLAHE(2.0, cv::Size(8, 8));
     clahe->apply(lastGray, lastGray);
     clahe->apply(newGray, newGray);
@@ -1583,6 +1503,36 @@ ImageStitcher::StitchResult ImageStitcher::performStitch(const QImage &newFrame,
     return result;
 }
 
+void ImageStitcher::prepareFrameCache(const QImage &frame, FrameCacheImpl &cache)
+{
+    if (frame.isNull()) {
+        cache.clear();
+        return;
+    }
+
+    // Convert QImage to BGR Mat (one-time conversion)
+    QImage rgb = (frame.format() == QImage::Format_RGB32)
+        ? frame
+        : frame.convertToFormat(QImage::Format_RGB32);
+
+    cv::Mat mat(rgb.height(), rgb.width(), CV_8UC4,
+                const_cast<uchar*>(rgb.bits()),
+                static_cast<size_t>(rgb.bytesPerLine()));
+
+    cv::cvtColor(mat, cache.bgr, cv::COLOR_RGBA2BGR);
+    cache.bgr = cache.bgr.clone();  // Ensure ownership (rgb goes out of scope)
+
+    // Pre-compute grayscale (most algorithms need this)
+    cv::cvtColor(cache.bgr, cache.gray, cv::COLOR_BGR2GRAY);
+
+    cache.valid = true;
+}
+
+void ImageStitcher::clearFrameCache(FrameCacheImpl &cache)
+{
+    cache.clear();
+}
+
 cv::Mat ImageStitcher::qImageToCvMat(const QImage &image) const
 {
     QImage rgb = image.convertToFormat(QImage::Format_RGB32);
@@ -1681,6 +1631,7 @@ ImageStitcher::StitchResult ImageStitcher::tryRowProjectionMatch(const QImage &n
 
 ImageStitcher::StitchResult ImageStitcher::tryPhaseCorrelation(const QImage &newFrame)
 {
+    Q_UNUSED(newFrame)  // Using cached version instead
     StitchResult result;
     result.failureCode = FailureCode::NoAlgorithmSucceeded;
 
@@ -1688,21 +1639,18 @@ ImageStitcher::StitchResult ImageStitcher::tryPhaseCorrelation(const QImage &new
         return result;
     }
 
-    if (m_lastFrame.isNull() || newFrame.isNull()) {
+    // Use cached grayscale images instead of converting again
+    if (!m_lastFrameCache || !m_lastFrameCache->valid ||
+        !m_currentFrameCache || !m_currentFrameCache->valid) {
         return result;
     }
 
-    cv::Mat prevMat = qImageToCvMat(m_lastFrame);
-    cv::Mat currMat = qImageToCvMat(newFrame);
+    const cv::Mat& grayPrev = m_lastFrameCache->gray;
+    const cv::Mat& grayCurr = m_currentFrameCache->gray;
 
-    if (prevMat.empty() || currMat.empty()) {
+    if (grayPrev.empty() || grayCurr.empty()) {
         return result;
     }
-
-    // Convert to grayscale and gradients for better phase correlation
-    cv::Mat grayPrev, grayCurr;
-    cv::cvtColor(prevMat, grayPrev, cv::COLOR_BGR2GRAY);
-    cv::cvtColor(currMat, grayCurr, cv::COLOR_BGR2GRAY);
     
     // Apply Sobel to emphasize edges (features)
     cv::Mat gradPrev, gradCurr;
@@ -1752,7 +1700,7 @@ ImageStitcher::StitchResult ImageStitcher::tryPhaseCorrelation(const QImage &new
             roiCurr = gradCurr.colRange(0, roiSize);
         } else {
             roiPrev = gradPrev.colRange(0, roiSize);
-            roiCurr = gradCurr.colRange(currMat.cols - roiSize, currMat.cols);
+            roiCurr = gradCurr.colRange(grayCurr.cols - roiSize, grayCurr.cols);
         }
         
         // Apply Hanning window to reduce edge effects
@@ -1935,21 +1883,24 @@ ImageStitcher::StitchResult ImageStitcher::tryInPlaceMatchInStitched(const QImag
 ImageStitcher::MatchCandidate ImageStitcher::computeRowProjectionCandidate(
     const QImage &newFrame, ScrollDirection direction)
 {
+    Q_UNUSED(newFrame)  // Using cached version instead
     MatchCandidate candidate;
     candidate.direction = direction;
 
-    cv::Mat lastMat = qImageToCvMat(m_lastFrame);
-    cv::Mat newMat = qImageToCvMat(newFrame);
-
-    if (lastMat.empty() || newMat.empty()) {
-        candidate.failureReason = "Failed to convert images";
+    // Use cached grayscale images instead of converting again
+    if (!m_lastFrameCache || !m_lastFrameCache->valid ||
+        !m_currentFrameCache || !m_currentFrameCache->valid) {
+        candidate.failureReason = "Frame cache not valid";
         return candidate;
     }
 
-    // Convert to grayscale
-    cv::Mat lastGray, newGray;
-    cv::cvtColor(lastMat, lastGray, cv::COLOR_BGR2GRAY);
-    cv::cvtColor(newMat, newGray, cv::COLOR_BGR2GRAY);
+    const cv::Mat& lastGray = m_lastFrameCache->gray;
+    const cv::Mat& newGray = m_currentFrameCache->gray;
+
+    if (lastGray.empty() || newGray.empty()) {
+        candidate.failureReason = "Cached grayscale images are empty";
+        return candidate;
+    }
 
     bool isHorizontal = (direction == ScrollDirection::Left || direction == ScrollDirection::Right);
 

@@ -588,7 +588,7 @@ bool ScrollingCaptureManager::restitchWithFixedElements()
         if (result.success) {
             anySucceeded = true;
             successCount++;
-        } else if (result.failureReason != "Frame unchanged") {
+        } else if (result.failureCode != ImageStitcher::FailureCode::FrameUnchanged) {
             qDebug() << "ScrollingCaptureManager: Restitch failed -" << result.failureReason;
             // Continue trying remaining frames to salvage what we can
         }
@@ -644,7 +644,7 @@ void ScrollingCaptureManager::captureFrame()
     qint64 grabMs = 0, detectMs = 0, stitchMs = 0, totalMs = 0;
     perfTimer.start();
 
-    // Check if we've hit the maximum frame limit BEFORE incrementing
+    // Check if we've hit the maximum frame limit BEFORE attempting grab
     // This prevents processing one extra frame beyond the limit
     if (m_totalFrameCount >= MAX_TOTAL_FRAMES) {
         qDebug() << "ScrollingCaptureManager: Maximum frame count reached, finishing capture";
@@ -652,8 +652,6 @@ void ScrollingCaptureManager::captureFrame()
         finishCapture();
         return;
     }
-
-    m_totalFrameCount++;
 
     QImage frame = grabCaptureRegion();
     grabMs = perfTimer.elapsed();
@@ -663,6 +661,9 @@ void ScrollingCaptureManager::captureFrame()
         m_isProcessingFrame = false;
         return;
     }
+
+    // Increment frame count only after successful grab
+    m_totalFrameCount++;
 
     // Async mode: just enqueue frame and return quickly
     if (m_useAsyncStitching) {
@@ -817,7 +818,7 @@ void ScrollingCaptureManager::captureFrame()
         }
 
         // Frame unchanged - just skip, don't count or auto-finish
-        if (result.failureReason == "Frame unchanged") {
+        if (result.failureCode == ImageStitcher::FailureCode::FrameUnchanged) {
             m_isProcessingFrame = false;
             return;
         }
@@ -925,7 +926,9 @@ void ScrollingCaptureManager::finishCapture()
 
     // Get stitched result from appropriate source
     if (m_useAsyncStitching) {
-        m_stitchedResult = m_stitchWorker->getStitchedImage();
+        // Use finishAndGetResult to ensure thread-safe access to the result
+        // This waits for any pending processing to complete before returning
+        m_stitchedResult = m_stitchWorker->finishAndGetResult();
     } else {
         m_stitchedResult = m_stitcher->getStitchedImage();
     }

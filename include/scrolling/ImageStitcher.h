@@ -7,18 +7,11 @@
 #include <QSize>
 #include <QString>
 #include <vector>
+#include <memory>
 
 namespace cv {
     class Mat;
 }
-
-// Static regions detected in consecutive frames (sticky headers, footers, scrollbars)
-struct StaticRegions {
-    int headerHeight = 0;      // Pixels from top that are static (sticky header)
-    int footerHeight = 0;      // Pixels from bottom that are static (sticky footer)
-    int scrollbarWidth = 0;    // Pixels from right edge (scrollbar track)
-    bool detected = false;
-};
 
 // Configuration for the RSSA stitching algorithm
 struct StitchConfig {
@@ -113,14 +106,8 @@ public:
     StitchConfig stitchConfig() const { return m_stitchConfig; }
 
     // Legacy API (wraps StitchConfig)
-    void setDetectFixedElements(bool enabled);
-    bool detectFixedElements() const { return m_stitchConfig.detectStaticRegions; }
-
     void setConfidenceThreshold(double threshold);
     double confidenceThreshold() const { return m_stitchConfig.confidenceThreshold; }
-
-    // Static region detection (header/footer/scrollbar)
-    StaticRegions detectedStaticRegions() const { return m_staticRegions; }
 
     // Core operations
     StitchResult addFrame(const QImage &frame);
@@ -134,6 +121,18 @@ public:
 
     // Helper methods
     static bool isFrameChanged(const QImage &frame1, const QImage &frame2);
+
+    /**
+     * @brief Downsample a frame for fast comparison (64x64 RGB32)
+     * Use with compareDownsampled() to avoid redundant downsampling
+     */
+    static QImage downsampleForComparison(const QImage &frame);
+
+    /**
+     * @brief Compare two already-downsampled images (64x64 expected)
+     * @return true if frames are different enough to be considered changed
+     */
+    static bool compareDownsampled(const QImage &small1, const QImage &small2);
 
 signals:
     void progressUpdated(int framesProcessed, const QSize &currentSize);
@@ -154,9 +153,10 @@ private:
     StitchResult tryPhaseCorrelation(const QImage &newFrame);
     StitchResult tryInPlaceMatchInStitched(const QImage &newFrame);
 
-    // Static region detection (header/footer/scrollbar)
-    StaticRegions detectStaticRegions(const QImage &img1, const QImage &img2);
-    double calculateRowDifference(const cv::Mat &row1, const cv::Mat &row2) const;
+    // Frame cache for avoiding redundant QImage→Mat conversions (PIMPL pattern)
+    struct FrameCacheImpl;  // Forward declaration - defined in cpp file
+    void prepareFrameCache(const QImage &frame, FrameCacheImpl &cache);
+    void clearFrameCache(FrameCacheImpl &cache);
 
     // Helper methods
     cv::Mat qImageToCvMat(const QImage &image) const;
@@ -170,11 +170,12 @@ private:
     Algorithm m_algorithm = Algorithm::Auto;
     CaptureMode m_captureMode = CaptureMode::Vertical;
     StitchConfig m_stitchConfig;
-    StaticRegions m_staticRegions;
 
     QImage m_stitchedResult;
     QImage m_lastFrame;
     QRect m_currentViewportRect;
+    std::unique_ptr<FrameCacheImpl> m_lastFrameCache;    // Cache for m_lastFrame
+    std::unique_ptr<FrameCacheImpl> m_currentFrameCache; // Cache for current processing frame
     int m_frameCount = 0;
     int m_validHeight = 0;
     int m_validWidth = 0;  // For horizontal mode

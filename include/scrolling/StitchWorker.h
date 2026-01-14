@@ -95,8 +95,20 @@ public:
     /**
      * @brief Get the final stitched result
      * @return The fully stitched image (call after stopping)
+     * @note This method is NOT thread-safe. Use finishAndGetResult() instead
+     *       when the worker thread may still be processing.
      */
     QImage getStitchedImage() const;
+
+    /**
+     * @brief Stop accepting frames, wait for processing to complete, and return result
+     * @param timeoutMs Maximum time to wait for processing to complete
+     * @return The fully stitched image (deep copy, thread-safe)
+     *
+     * This method is thread-safe and should be used when finishing capture
+     * while the worker thread may still be processing frames.
+     */
+    QImage finishAndGetResult(int timeoutMs = 5000);
 
     /**
      * @brief Get current frame count
@@ -149,6 +161,7 @@ private:
 
     // Processing state
     std::atomic<bool> m_isProcessing{false};
+    std::atomic<bool> m_acceptingFrames{true};  // Set to false to stop accepting new frames
     QFuture<void> m_processingFuture;
     bool m_fixedElementsFound = false;
     QImage m_lastFrame;
@@ -162,6 +175,8 @@ private:
     int m_minFramesForDetection = 6;
     QImage m_lastRawFrameForChange;         // baseline for isFrameChanged (raw)
     QImage m_lastProcessedFrameForChange;   // baseline for isFrameChanged (cropped)
+    QImage m_lastRawSmall;                  // cached downsampled raw (64x64)
+    QImage m_lastProcessedSmall;            // cached downsampled processed (64x64)
     static constexpr int MAX_PENDING_FRAMES = 30;
     static constexpr qint64 MAX_PENDING_MEMORY_BYTES = 300 * 1024 * 1024;  // 300MB
 

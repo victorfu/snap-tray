@@ -1,8 +1,23 @@
 #include "scrolling/ImageStitcher.h"
 
 #include <cmath>
+#include <utility>
 #include <QDebug>
 #include <QElapsedTimer>
+
+#include <opencv2/core.hpp>
+
+// Definition of FrameCacheImpl (must match the one in ImageStitcherAlgorithms.cpp)
+struct ImageStitcher::FrameCacheImpl {
+    cv::Mat bgr;
+    cv::Mat gray;
+    bool valid = false;
+    void clear() {
+        bgr = cv::Mat();
+        gray = cv::Mat();
+        valid = false;
+    }
+};
 
 ImageStitcher::ImageStitcher(QObject *parent)
     : QObject(parent)
@@ -25,11 +40,6 @@ void ImageStitcher::setStitchConfig(const StitchConfig &config)
     m_stitchConfig.confidenceThreshold = qBound(0.0, config.confidenceThreshold, 1.0);
 }
 
-void ImageStitcher::setDetectFixedElements(bool enabled)
-{
-    m_stitchConfig.detectStaticRegions = enabled;
-}
-
 void ImageStitcher::setConfidenceThreshold(double threshold)
 {
     m_stitchConfig.confidenceThreshold = qBound(0.0, threshold, 1.0);
@@ -49,7 +59,12 @@ void ImageStitcher::reset()
     m_validHeight = 0;
     m_validWidth = 0;
     m_lastSuccessfulDirection = ScrollDirection::Down;
-    m_staticRegions = StaticRegions();
+    if (m_lastFrameCache) {
+        clearFrameCache(*m_lastFrameCache);
+    }
+    if (m_currentFrameCache) {
+        clearFrameCache(*m_currentFrameCache);
+    }
 }
 
 ImageStitcher::StitchResult ImageStitcher::addFrame(const QImage &frame)
@@ -104,15 +119,17 @@ ImageStitcher::StitchResult ImageStitcher::addFrame(const QImage &frame)
         return result;
     }
 
-    qint64 staticDetectMs = 0;
-    // Detect static regions over multiple frames (not just the second frame)
-    // This gives more reliable detection as the user scrolls
-    if (m_frameCount >= 1 && m_frameCount <= 5 &&
-        m_stitchConfig.detectStaticRegions && !m_staticRegions.detected) {
-        QElapsedTimer staticTimer;
-        staticTimer.start();
-        m_staticRegions = detectStaticRegions(m_lastFrame, frame);
-        staticDetectMs = staticTimer.elapsed();
+    // Prepare frame caches before algorithm execution (avoid redundant QImage→Mat conversions)
+    if (!m_currentFrameCache) {
+        m_currentFrameCache = std::make_unique<FrameCacheImpl>();
+    }
+    prepareFrameCache(frame, *m_currentFrameCache);
+
+    if (!m_lastFrameCache) {
+        m_lastFrameCache = std::make_unique<FrameCacheImpl>();
+    }
+    if (!m_lastFrameCache->valid && !m_lastFrame.isNull()) {
+        prepareFrameCache(m_lastFrame, *m_lastFrameCache);
     }
 
     qint64 rowProjMs = 0, templateMs = 0;
@@ -127,10 +144,10 @@ ImageStitcher::StitchResult ImageStitcher::addFrame(const QImage &frame)
 
         if (result.success && result.confidence >= m_stitchConfig.confidenceThreshold) {
             m_lastFrame = frame.convertToFormat(QImage::Format_RGB32);
+            std::swap(m_lastFrameCache, m_currentFrameCache);
             m_frameCount++;
             emit progressUpdated(m_frameCount, getCurrentSize());
-            qDebug() << "ImageStitcher::addFrame perf - staticDetect:" << staticDetectMs
-                     << "ms, rowProj:" << rowProjMs << "ms (success)";
+            qDebug() << "ImageStitcher::addFrame perf - rowProj:" << rowProjMs << "ms (success)";
             return result;
         }
 
@@ -141,10 +158,10 @@ ImageStitcher::StitchResult ImageStitcher::addFrame(const QImage &frame)
 
         if (result.success && result.confidence >= m_stitchConfig.confidenceThreshold) {
             m_lastFrame = frame.convertToFormat(QImage::Format_RGB32);
+            std::swap(m_lastFrameCache, m_currentFrameCache);
             m_frameCount++;
             emit progressUpdated(m_frameCount, getCurrentSize());
-            qDebug() << "ImageStitcher::addFrame perf - staticDetect:" << staticDetectMs
-                     << "ms, rowProj:" << rowProjMs << "ms, template:" << templateMs << "ms (fallback success)";
+            qDebug() << "ImageStitcher::addFrame perf - rowProj:" << rowProjMs << "ms, template:" << templateMs << "ms (fallback success)";
             return result;
         }
 
@@ -168,17 +185,16 @@ ImageStitcher::StitchResult ImageStitcher::addFrame(const QImage &frame)
             if (phaseResult.success) {
                 result = phaseResult;
                 m_lastFrame = frame.convertToFormat(QImage::Format_RGB32);
+                std::swap(m_lastFrameCache, m_currentFrameCache);
                 m_frameCount++;
                 emit progressUpdated(m_frameCount, getCurrentSize());
-                qDebug() << "ImageStitcher::addFrame perf - staticDetect:" << staticDetectMs
-                         << "ms, rowProj:" << rowProjMs << "ms, template:" << templateMs 
+                qDebug() << "ImageStitcher::addFrame perf - rowProj:" << rowProjMs << "ms, template:" << templateMs
                          << "ms, phase:" << phaseMs << "ms (fallback success)";
                 return result;
             }
         }
 
-        qDebug() << "ImageStitcher::addFrame perf - staticDetect:" << staticDetectMs
-                 << "ms, rowProj:" << rowProjMs << "ms, template:" << templateMs << "ms (all failed)";
+        qDebug() << "ImageStitcher::addFrame perf - rowProj:" << rowProjMs << "ms, template:" << templateMs << "ms (all failed)";
         return result;
     }
     else if (m_algorithm == Algorithm::RowProjection) {
@@ -199,43 +215,45 @@ ImageStitcher::StitchResult ImageStitcher::addFrame(const QImage &frame)
 
     if (result.success) {
         m_lastFrame = frame.convertToFormat(QImage::Format_RGB32);
+        std::swap(m_lastFrameCache, m_currentFrameCache);
         m_frameCount++;
         emit progressUpdated(m_frameCount, getCurrentSize());
     }
 
-    qDebug() << "ImageStitcher::addFrame perf - staticDetect:" << staticDetectMs
-             << "ms, rowProj:" << rowProjMs << "ms, template:" << templateMs << "ms";
+    qDebug() << "ImageStitcher::addFrame perf - rowProj:" << rowProjMs << "ms, template:" << templateMs << "ms";
     return result;
 }
 
-bool ImageStitcher::isFrameChanged(const QImage &frame1, const QImage &frame2)
+// Constants for frame change detection
+namespace {
+    constexpr int kSampleSize = 64;
+    constexpr int kPixelDiffThreshold = 20;
+    constexpr double kAverageDiffThreshold = 2.0;
+    constexpr double kChangedRatioThreshold = 0.005;
+}
+
+QImage ImageStitcher::downsampleForComparison(const QImage &frame)
 {
-    if (frame1.size() != frame2.size()) {
-        return true;
-    }
+    return frame.scaled(kSampleSize, kSampleSize, Qt::IgnoreAspectRatio,
+                        Qt::FastTransformation).convertToFormat(QImage::Format_RGB32);
+}
 
-    static constexpr int kSampleSize = 64;
-    static constexpr int kPixelDiffThreshold = 20;
-    static constexpr double kAverageDiffThreshold = 2.0;
-    static constexpr double kChangedRatioThreshold = 0.005;
-
-    QImage small1 = frame1.scaled(kSampleSize, kSampleSize, Qt::IgnoreAspectRatio,
-                                  Qt::FastTransformation).convertToFormat(QImage::Format_RGB32);
-    QImage small2 = frame2.scaled(kSampleSize, kSampleSize, Qt::IgnoreAspectRatio,
-                                  Qt::FastTransformation).convertToFormat(QImage::Format_RGB32);
-
+bool ImageStitcher::compareDownsampled(const QImage &small1, const QImage &small2)
+{
     if (small1.size() != small2.size()) {
-        return true;
+        return true;  // Consider changed if sizes differ
     }
 
-    const int pixelCount = kSampleSize * kSampleSize;
+    const int width = small1.width();
+    const int height = small1.height();
+    const int pixelCount = width * height;
     long long diffSum = 0;
     int changedPixels = 0;
 
-    for (int y = 0; y < kSampleSize; ++y) {
+    for (int y = 0; y < height; ++y) {
         const QRgb *line1 = reinterpret_cast<const QRgb*>(small1.constScanLine(y));
         const QRgb *line2 = reinterpret_cast<const QRgb*>(small2.constScanLine(y));
-        for (int x = 0; x < kSampleSize; ++x) {
+        for (int x = 0; x < width; ++x) {
             int diff = std::abs(qRed(line1[x]) - qRed(line2[x])) +
                        std::abs(qGreen(line1[x]) - qGreen(line2[x])) +
                        std::abs(qBlue(line1[x]) - qBlue(line2[x]));
@@ -250,6 +268,19 @@ bool ImageStitcher::isFrameChanged(const QImage &frame1, const QImage &frame2)
     double changedRatio = static_cast<double>(changedPixels) / pixelCount;
 
     return averageDiff > kAverageDiffThreshold || changedRatio > kChangedRatioThreshold;
+}
+
+bool ImageStitcher::isFrameChanged(const QImage &frame1, const QImage &frame2)
+{
+    if (frame1.size() != frame2.size()) {
+        return true;
+    }
+
+    // Use the helper methods - downsamples both frames
+    QImage small1 = downsampleForComparison(frame1);
+    QImage small2 = downsampleForComparison(frame2);
+
+    return compareDownsampled(small1, small2);
 }
 
 QImage ImageStitcher::getStitchedImage() const

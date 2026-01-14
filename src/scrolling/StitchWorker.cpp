@@ -4,6 +4,7 @@
 
 #include <QDebug>
 #include <QElapsedTimer>
+#include <QThread>
 #include <QtConcurrent>
 
 StitchWorker::StitchWorker(QObject *parent)
@@ -68,6 +69,7 @@ void StitchWorker::reset()
     m_fixedElementsFound = false;
     m_lastFrame = QImage();
     m_isProcessing = false;
+    m_acceptingFrames = true;  // Re-enable accepting frames for next capture
 
     // Reset buffering state
     m_pendingRawFrames.clear();
@@ -77,6 +79,8 @@ void StitchWorker::reset()
     m_detectionDisabled = false;
     m_lastRawFrameForChange = QImage();
     m_lastProcessedFrameForChange = QImage();
+    m_lastRawSmall = QImage();
+    m_lastProcessedSmall = QImage();
 }
 
 namespace {
@@ -95,6 +99,18 @@ bool StitchWorker::enqueueFrame(const QImage &frame)
         return false;
     }
 
+    // Check if we're still accepting frames
+    if (!m_acceptingFrames.load()) {
+        qDebug() << "StitchWorker: Not accepting frames, dropping frame";
+        return false;
+    }
+
+    // Normalize frame format - avoid double copy by using implicit sharing
+    // when already RGB32, otherwise convertToFormat does the necessary copy
+    QImage normalized = (frame.format() == QImage::Format_RGB32)
+        ? frame  // implicit sharing, no deep copy
+        : frame.convertToFormat(QImage::Format_RGB32);
+
     int depth;
     {
         QMutexLocker locker(&m_queueMutex);
@@ -104,7 +120,7 @@ bool StitchWorker::enqueueFrame(const QImage &frame)
             return false;
         }
 
-        m_frameQueue.enqueue(frame.copy());
+        m_frameQueue.enqueue(normalized);
         depth = m_frameQueue.size();
     }
 
@@ -138,6 +154,33 @@ bool StitchWorker::isProcessing() const
 QImage StitchWorker::getStitchedImage() const
 {
     return m_stitcher->getStitchedImage();
+}
+
+QImage StitchWorker::finishAndGetResult(int timeoutMs)
+{
+    // 1. Stop accepting new frames
+    m_acceptingFrames = false;
+
+    // 2. Wait for queue to drain and processing to complete
+    if (m_processingFuture.isRunning()) {
+        if (timeoutMs > 0) {
+            // Wait with timeout
+            QElapsedTimer timer;
+            timer.start();
+            while (m_processingFuture.isRunning() && timer.elapsed() < timeoutMs) {
+                // Brief sleep to avoid busy-waiting
+                QThread::msleep(10);
+            }
+            if (m_processingFuture.isRunning()) {
+                qWarning() << "StitchWorker::finishAndGetResult: Timeout waiting for processing to complete";
+            }
+        } else {
+            m_processingFuture.waitForFinished();
+        }
+    }
+
+    // 3. Return deep copy of stitched result (thread-safe)
+    return m_stitcher->getStitchedImage().copy();
 }
 
 int StitchWorker::frameCount() const
@@ -182,10 +225,11 @@ void StitchWorker::doProcessFrame(const QImage &frame)
 
     QImage rawFrame = frame;
 
-    // 1. Frame Change Detection
+    // 1. Frame Change Detection (using cached downsampled images for efficiency)
     if (!m_fixedDetected) {
-        // Compare raw vs raw
-        if (!m_lastRawFrameForChange.isNull() && !ImageStitcher::isFrameChanged(rawFrame, m_lastRawFrameForChange)) {
+        // Compare raw vs raw using cached downsampled images
+        QImage rawSmall = ImageStitcher::downsampleForComparison(rawFrame);
+        if (!m_lastRawSmall.isNull() && !ImageStitcher::compareDownsampled(rawSmall, m_lastRawSmall)) {
             result.success = false;
             result.failureReason = "Frame unchanged";
             result.confidence = 1.0;
@@ -194,11 +238,13 @@ void StitchWorker::doProcessFrame(const QImage &frame)
             return;
         }
         m_lastRawFrameForChange = rawFrame;
+        m_lastRawSmall = rawSmall;  // Cache the downsampled version
     } else {
-        // Compare processed vs processed
+        // Compare processed vs processed using cached downsampled images
         QImage processed = m_fixedDetector->cropFixedRegions(rawFrame);
-        if (!m_lastProcessedFrameForChange.isNull() &&
-            !ImageStitcher::isFrameChanged(processed, m_lastProcessedFrameForChange)) {
+        QImage processedSmall = ImageStitcher::downsampleForComparison(processed);
+        if (!m_lastProcessedSmall.isNull() &&
+            !ImageStitcher::compareDownsampled(processedSmall, m_lastProcessedSmall)) {
             result.success = false;
             result.failureReason = "Frame unchanged";
             result.confidence = 1.0;
@@ -207,6 +253,7 @@ void StitchWorker::doProcessFrame(const QImage &frame)
             return;
         }
         m_lastProcessedFrameForChange = processed;
+        m_lastProcessedSmall = processedSmall;  // Cache the downsampled version
     }
 
     bool justRestitched = false;
@@ -224,7 +271,9 @@ void StitchWorker::doProcessFrame(const QImage &frame)
             m_pendingMemoryUsage = 0;
             qWarning() << "StitchWorker: Fixed detection budget exceeded, disabling detection.";
         } else {
-            m_pendingRawFrames.append(rawFrame.copy());
+            // Use implicit sharing - rawFrame is already normalized (RGB32) from queue
+            // and won't be modified, so deep copy is unnecessary
+            m_pendingRawFrames.append(rawFrame);
             m_pendingMemoryUsage += frameBytes;
             m_fixedDetector->addFrame(rawFrame);
 
@@ -276,6 +325,7 @@ void StitchWorker::doProcessFrame(const QImage &frame)
                     // Update processed baseline to last valid cropped frame
                     if (!m_pendingRawFrames.isEmpty()) {
                         m_lastProcessedFrameForChange = m_fixedDetector->cropFixedRegions(m_pendingRawFrames.last());
+                        m_lastProcessedSmall = ImageStitcher::downsampleForComparison(m_lastProcessedFrameForChange);
                     }
 
                     m_pendingRawFrames.clear();
