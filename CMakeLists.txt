@@ -1,4 +1,11 @@
 cmake_minimum_required(VERSION 3.16...3.31)
+
+# macOS deployment target - MUST be set before project() for proper compiler detection
+# Support macOS 12.3+ (ScreenCaptureKit minimum)
+if(APPLE)
+    set(CMAKE_OSX_DEPLOYMENT_TARGET "12.3" CACHE STRING "Minimum macOS deployment target" FORCE)
+endif()
+
 project(SnapTray VERSION 1.0.15 LANGUAGES CXX)
 
 # ============================================================================

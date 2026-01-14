@@ -21,7 +21,7 @@
     <key>CFBundleVersion</key>
     <string>@PROJECT_VERSION_MAJOR@</string>
     <key>LSMinimumSystemVersion</key>
-    <string>10.15</string>
+    <string>12.3</string>
     <key>LSUIElement</key>
     <true/>
     <key>NSHighResolutionCapable</key>
