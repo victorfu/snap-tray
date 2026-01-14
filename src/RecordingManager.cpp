@@ -655,14 +655,8 @@ void RecordingManager::onInitializationComplete()
                 }
             }, Qt::QueuedConnection);
             qDebug() << "RecordingManager: Audio connected to native encoder";
-            // Start audio capture
-            if (m_audioEngine->start()) {
-                qDebug() << "RecordingManager: Audio capture started using" << m_audioEngine->engineName();
-            } else {
-                qWarning() << "RecordingManager: Failed to start audio capture";
-                emit recordingWarning("Failed to start audio capture. Recording without audio.");
-                cleanupAudio();
-            }
+            // NOTE: Audio capture is started in startRecordingAfterCountdown() 
+            // to synchronize timestamps with video
         } else {
             // GIF format does not support audio - this shouldn't happen as
             // audio is disabled for GIF in beginAsyncInitialization()
@@ -737,6 +731,17 @@ void RecordingManager::startRecordingAfterCountdown()
     m_elapsedTimer.start();
     setState(State::Recording);
     m_frameCount = 0;
+
+    // Start audio capture here to synchronize with video timer
+    if (m_audioEngine) {
+        if (m_audioEngine->start()) {
+            qDebug() << "RecordingManager: Audio capture started using" << m_audioEngine->engineName();
+        } else {
+            qWarning() << "RecordingManager: Failed to start audio capture";
+            emit recordingWarning("Failed to start audio capture. Recording without audio.");
+            cleanupAudio();
+        }
+    }
 
     // Load watermark settings for recording
     m_watermarkSettings = WatermarkRenderer::loadSettings();
