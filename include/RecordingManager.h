@@ -8,6 +8,7 @@
 #include <QTimer>
 #include <QElapsedTimer>
 #include <QMutex>
+#include <memory>
 
 #include "WatermarkRenderer.h"
 
@@ -139,15 +140,15 @@ private:
     QPointer<RecordingAnnotationOverlay> m_annotationOverlay;
     QPointer<InPlacePreviewOverlay> m_previewOverlay;
     QString m_tempVideoPath;
-    NativeGifEncoder *m_gifEncoder;     // Used for GIF format
-    IVideoEncoder *m_nativeEncoder;     // Native platform encoder for MP4
+    std::unique_ptr<NativeGifEncoder> m_gifEncoder;     // Used for GIF format
+    std::unique_ptr<IVideoEncoder> m_nativeEncoder;     // Native platform encoder for MP4
     bool m_usingNativeEncoder;          // True if using native encoder
-    ICaptureEngine *m_captureEngine;
+    std::unique_ptr<ICaptureEngine> m_captureEngine;
     bool m_clickHighlightEnabled;        // True if click highlight is enabled
 
     // Capture state
-    QTimer *m_captureTimer;
-    QTimer *m_durationTimer;
+    std::unique_ptr<QTimer> m_captureTimer;
+    std::unique_ptr<QTimer> m_durationTimer;
     QElapsedTimer m_elapsedTimer;
     QRect m_recordingRegion;
     QScreen *m_targetScreen;
@@ -161,15 +162,15 @@ private:
     mutable QMutex m_durationMutex;  // Protects pause duration variables
 
     // Audio capture
-    IAudioCaptureEngine *m_audioEngine;
-    AudioFileWriter *m_audioWriter;
+    std::unique_ptr<IAudioCaptureEngine> m_audioEngine;
+    std::unique_ptr<AudioFileWriter> m_audioWriter;
     bool m_audioEnabled;
     int m_audioSource;  // 0=Microphone, 1=SystemAudio, 2=Both
     QString m_audioDevice;
     QString m_tempAudioPath;
 
     // Async initialization
-    RecordingInitTask *m_initTask;
+    std::unique_ptr<RecordingInitTask> m_initTask;
 
     // Countdown
     QPointer<CountdownOverlay> m_countdownOverlay;

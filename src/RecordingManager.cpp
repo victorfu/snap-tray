@@ -75,24 +75,16 @@ static void syncFile(const QString &path)
 
 RecordingManager::RecordingManager(QObject *parent)
     : QObject(parent)
-    , m_gifEncoder(nullptr)
-    , m_nativeEncoder(nullptr)
     , m_usingNativeEncoder(false)
-    , m_captureEngine(nullptr)
     , m_clickHighlightEnabled(false)
-    , m_captureTimer(nullptr)
-    , m_durationTimer(nullptr)
     , m_targetScreen(nullptr)
     , m_state(State::Idle)
     , m_frameRate(FrameRate::kDefault)
     , m_frameCount(0)
     , m_pausedDuration(0)
     , m_pauseStartTime(0)
-    , m_audioEngine(nullptr)
-    , m_audioWriter(nullptr)
     , m_audioEnabled(false)
     , m_audioSource(0)
-    , m_initTask(nullptr)
     , m_countdownEnabled(true)
     , m_countdownSeconds(3)
 {
@@ -316,15 +308,17 @@ void RecordingManager::startFrameCapture()
     // Safety check: clean up any existing encoders
     if (m_gifEncoder) {
         qDebug() << "RecordingManager: Previous GIF encoder still exists, cleaning up";
-        disconnect(m_gifEncoder, nullptr, this, nullptr);
-        m_gifEncoder->deleteLater();
-        m_gifEncoder = nullptr;
+        disconnect(m_gifEncoder.get(), nullptr, this, nullptr);
+        // Release ownership and delete later to be safe with signals
+        auto* ptr = m_gifEncoder.release();
+        ptr->deleteLater();
     }
     if (m_nativeEncoder) {
         qDebug() << "RecordingManager: Previous native encoder still exists, cleaning up";
-        disconnect(m_nativeEncoder, nullptr, this, nullptr);
-        m_nativeEncoder->deleteLater();
-        m_nativeEncoder = nullptr;
+        disconnect(m_nativeEncoder.get(), nullptr, this, nullptr);
+        // Release ownership and delete later to be safe with signals
+        auto* ptr = m_nativeEncoder.release();
+        ptr->deleteLater();
     }
     m_usingNativeEncoder = false;
 
@@ -502,10 +496,10 @@ void RecordingManager::beginAsyncInitialization()
              << "audio:" << config.audioEnabled;
 
     // Create the init task
-    m_initTask = new RecordingInitTask(config, nullptr);
+    m_initTask = std::make_unique<RecordingInitTask>(config, nullptr);
 
     // Connect progress signal for UI feedback
-    connect(m_initTask, &RecordingInitTask::progress,
+    connect(m_initTask.get(), &RecordingInitTask::progress,
             this, [this](const QString &step) {
         emit preparationProgress(step);
         if (m_controlBar) {
@@ -521,7 +515,9 @@ void RecordingManager::beginAsyncInitialization()
     });
 
     QFuture<void> future = QtConcurrent::run([this]() {
-        m_initTask->run();
+        if (m_initTask) {
+            m_initTask->run();
+        }
     });
     watcher->setFuture(future);
 
@@ -535,10 +531,7 @@ void RecordingManager::onInitializationComplete()
     // Safety check: ensure we're still in Preparing state
     if (m_state != State::Preparing) {
         qDebug() << "RecordingManager: Initialization completed but state changed, cleaning up";
-        if (m_initTask) {
-            delete m_initTask;
-            m_initTask = nullptr;
-        }
+        m_initTask.reset();
         return;
     }
 
@@ -565,8 +558,7 @@ void RecordingManager::onInitializationComplete()
             m_controlBar->close();
         }
 
-        delete m_initTask;
-        m_initTask = nullptr;
+        m_initTask.reset();
 
         setState(State::Idle);
         return;
@@ -575,16 +567,16 @@ void RecordingManager::onInitializationComplete()
     qDebug() << "RecordingManager: Initialization successful, taking ownership of resources";
 
     // Take ownership of created resources (already moved to main thread in worker)
-    m_captureEngine = result.captureEngine;
+    m_captureEngine.reset(result.captureEngine);
     if (m_captureEngine) {
-        m_captureEngine->setParent(this);
-
+        // IMPORTANT: Do NOT set parent to this, as we use std::unique_ptr for ownership
+        
         // Forward capture engine warnings to UI
-        connect(m_captureEngine, &ICaptureEngine::warning,
+        connect(m_captureEngine.get(), &ICaptureEngine::warning,
                 this, &RecordingManager::recordingWarning);
 
         // Connect capture engine error signal
-        connect(m_captureEngine, &ICaptureEngine::error,
+        connect(m_captureEngine.get(), &ICaptureEngine::error,
                 this, [this](const QString &msg) {
             qDebug() << "RecordingManager: Capture engine error:" << msg;
             stopRecording();
@@ -595,21 +587,21 @@ void RecordingManager::onInitializationComplete()
     }
 
     m_usingNativeEncoder = result.usingNativeEncoder;
-    m_nativeEncoder = result.nativeEncoder;
-    m_gifEncoder = result.gifEncoder;
+    m_nativeEncoder.reset(result.nativeEncoder);
+    m_gifEncoder.reset(result.gifEncoder);
 
     if (m_nativeEncoder) {
-        m_nativeEncoder->setParent(this);
-        connect(m_nativeEncoder, &IVideoEncoder::finished,
+        // IMPORTANT: Do NOT set parent to this, as we use std::unique_ptr for ownership
+        connect(m_nativeEncoder.get(), &IVideoEncoder::finished,
                 this, &RecordingManager::onEncodingFinished);
-        connect(m_nativeEncoder, &IVideoEncoder::error,
+        connect(m_nativeEncoder.get(), &IVideoEncoder::error,
                 this, &RecordingManager::onEncodingError);
     }
     if (m_gifEncoder) {
-        m_gifEncoder->setParent(this);
-        connect(m_gifEncoder, &NativeGifEncoder::finished,
+        // IMPORTANT: Do NOT set parent to this, as we use std::unique_ptr for ownership
+        connect(m_gifEncoder.get(), &NativeGifEncoder::finished,
                 this, &RecordingManager::onEncodingFinished);
-        connect(m_gifEncoder, &NativeGifEncoder::error,
+        connect(m_gifEncoder.get(), &NativeGifEncoder::error,
                 this, &RecordingManager::onEncodingError);
     }
 
@@ -617,7 +609,8 @@ void RecordingManager::onInitializationComplete()
     // Audio engine was NOT created in worker thread due to thread affinity requirements
     if (m_audioEnabled) {
         qDebug() << "RecordingManager: Creating audio engine on main thread...";
-        m_audioEngine = IAudioCaptureEngine::createBestEngine(this);
+        // Pass nullptr as parent since we use unique_ptr
+        m_audioEngine = std::unique_ptr<IAudioCaptureEngine>(IAudioCaptureEngine::createBestEngine(nullptr));
         if (m_audioEngine) {
             // Set audio source
             IAudioCaptureEngine::AudioSource source;
@@ -633,12 +626,12 @@ void RecordingManager::onInitializationComplete()
             }
 
             // Connect audio error/warning signals
-            connect(m_audioEngine, &IAudioCaptureEngine::error,
+            connect(m_audioEngine.get(), &IAudioCaptureEngine::error,
                     this, [this](const QString &msg) {
                 qWarning() << "RecordingManager: Audio error:" << msg;
                 emit recordingWarning("Audio error: " + msg);
             });
-            connect(m_audioEngine, &IAudioCaptureEngine::warning,
+            connect(m_audioEngine.get(), &IAudioCaptureEngine::warning,
                     this, &RecordingManager::recordingWarning);
 
             qDebug() << "RecordingManager: Audio engine created:" << m_audioEngine->engineName();
@@ -655,7 +648,7 @@ void RecordingManager::onInitializationComplete()
 
         if (useNativeAudio) {
             // Connect audio data directly to native encoder
-            connect(m_audioEngine, &IAudioCaptureEngine::audioDataReady,
+            connect(m_audioEngine.get(), &IAudioCaptureEngine::audioDataReady,
                     this, [this](const QByteArray &data, qint64 timestamp) {
                 if (m_nativeEncoder) {
                     m_nativeEncoder->writeAudioSamples(data, timestamp);
@@ -694,8 +687,7 @@ void RecordingManager::onInitializationComplete()
     }
 
     // Clean up init task
-    delete m_initTask;
-    m_initTask = nullptr;
+    m_initTask.reset();
 
     // Load countdown settings
     auto settings = SnapTray::getSettings();
@@ -789,27 +781,27 @@ void RecordingManager::startCaptureTimers()
     if (m_captureTimer) {
         qDebug() << "RecordingManager: Capture timer already exists, cleaning up";
         m_captureTimer->stop();
-        m_captureTimer->deleteLater();
-        m_captureTimer = nullptr;
+        m_captureTimer.reset();
     }
     if (m_durationTimer) {
         qDebug() << "RecordingManager: Duration timer already exists, cleaning up";
         m_durationTimer->stop();
-        m_durationTimer->deleteLater();
-        m_durationTimer = nullptr;
+        m_durationTimer.reset();
     }
 
     // Start frame capture timer
     qDebug() << "RecordingManager: Starting capture timer...";
-    m_captureTimer = new QTimer(this);
-    connect(m_captureTimer, &QTimer::timeout, this, &RecordingManager::captureFrame);
+    // No parent, managed by unique_ptr
+    m_captureTimer = std::make_unique<QTimer>(nullptr);
+    connect(m_captureTimer.get(), &QTimer::timeout, this, &RecordingManager::captureFrame);
     m_captureTimer->start(1000 / m_frameRate);
     qDebug() << "RecordingManager: Capture timer started";
 
     // Start duration timer (update UI at regular intervals)
     qDebug() << "RecordingManager: Starting duration timer...";
-    m_durationTimer = new QTimer(this);
-    connect(m_durationTimer, &QTimer::timeout, this, &RecordingManager::updateDuration);
+    // No parent, managed by unique_ptr
+    m_durationTimer = std::make_unique<QTimer>(nullptr);
+    connect(m_durationTimer.get(), &QTimer::timeout, this, &RecordingManager::updateDuration);
     m_durationTimer->start(Timer::kDurationUpdate);
     qDebug() << "RecordingManager: Duration timer started";
 }
@@ -820,11 +812,11 @@ void RecordingManager::captureFrame()
         return;
     }
 
-    // Store local copies to avoid race conditions where pointers become null
-    // between the check and actual use (TOCTOU protection)
-    ICaptureEngine *captureEngine = m_captureEngine;
-    IVideoEncoder *nativeEncoder = m_nativeEncoder;
-    NativeGifEncoder *gifEncoder = m_gifEncoder;
+    // Store local copies (raw pointers) to avoid race conditions 
+    // where unique_ptrs might be reset during execution
+    ICaptureEngine *captureEngine = m_captureEngine.get();
+    IVideoEncoder *nativeEncoder = m_nativeEncoder.get();
+    NativeGifEncoder *gifEncoder = m_gifEncoder.get();
     RecordingAnnotationOverlay *annotationOverlay = m_annotationOverlay;
     bool usingNative = m_usingNativeEncoder;
 
@@ -1028,14 +1020,12 @@ void RecordingManager::cancelRecording()
     // Set pointer to null BEFORE calling abort() to prevent double-delete
     // if abort() synchronously emits an error signal that triggers onEncodingError()
     if (m_nativeEncoder) {
-        auto encoder = m_nativeEncoder;
-        m_nativeEncoder = nullptr;
+        auto *encoder = m_nativeEncoder.release();
         encoder->abort();
         encoder->deleteLater();
     }
     if (m_gifEncoder) {
-        auto encoder = m_gifEncoder;
-        m_gifEncoder = nullptr;
+        auto *encoder = m_gifEncoder.release();
         encoder->abort();
         encoder->deleteLater();
     }
@@ -1053,14 +1043,12 @@ void RecordingManager::stopFrameCapture()
     qDebug() << "RecordingManager: Stopping timers...";
     if (m_captureTimer) {
         m_captureTimer->stop();
-        m_captureTimer->deleteLater();
-        m_captureTimer = nullptr;
+        m_captureTimer.reset();
     }
 
     if (m_durationTimer) {
         m_durationTimer->stop();
-        m_durationTimer->deleteLater();
-        m_durationTimer = nullptr;
+        m_durationTimer.reset();
     }
     qDebug() << "RecordingManager: Timers stopped";
 
@@ -1076,7 +1064,8 @@ void RecordingManager::stopFrameCapture()
     // Disconnect BEFORE stopping to prevent new signals from being queued during shutdown
     qDebug() << "RecordingManager: Stopping audio engine, m_audioEngine=" << (m_audioEngine ? "exists" : "null");
     if (m_audioEngine) {
-        ResourceCleanupHelper::stopAndDelete(m_audioEngine);
+        auto* ptr = m_audioEngine.release();
+        ResourceCleanupHelper::stopAndDelete(ptr);
         qDebug() << "RecordingManager: Audio engine stopped and scheduled for deletion";
     }
 
@@ -1085,15 +1074,17 @@ void RecordingManager::stopFrameCapture()
         m_audioWriter->finish();
         qDebug() << "RecordingManager: Audio file written:" << m_tempAudioPath
                  << "Duration:" << m_audioWriter->durationMs() << "ms";
-        delete m_audioWriter;
-        m_audioWriter = nullptr;
+        m_audioWriter.reset();
     }
     qDebug() << "RecordingManager: Audio writer finished";
 
     // Stop capture engine
     // Use deleteLater to avoid use-after-free when called from signal handler
     qDebug() << "RecordingManager: Stopping capture engine...";
-    ResourceCleanupHelper::stopAndDelete(m_captureEngine);
+    if (m_captureEngine) {
+        auto* ptr = m_captureEngine.release();
+        ResourceCleanupHelper::stopAndDelete(ptr);
+    }
     qDebug() << "RecordingManager: Capture engine stopped";
 
     // Close UI overlays
@@ -1125,14 +1116,14 @@ void RecordingManager::cleanupRecording()
     // Use deleteLater() consistently to avoid double-delete if deleteLater()
     // was already called from cancelRecording() or onEncodingError()
     if (m_nativeEncoder) {
-        m_nativeEncoder->abort();
-        m_nativeEncoder->deleteLater();
-        m_nativeEncoder = nullptr;
+        auto* ptr = m_nativeEncoder.release();
+        ptr->abort();
+        ptr->deleteLater();
     }
     if (m_gifEncoder) {
-        m_gifEncoder->abort();
-        m_gifEncoder->deleteLater();
-        m_gifEncoder = nullptr;
+        auto* ptr = m_gifEncoder.release();
+        ptr->abort();
+        ptr->deleteLater();
     }
     m_usingNativeEncoder = false;
 
@@ -1146,9 +1137,11 @@ void RecordingManager::cleanupRecording()
 
 void RecordingManager::cleanupAudio()
 {
-    ResourceCleanupHelper::stopAndDelete(m_audioEngine);
-    delete m_audioWriter;
-    m_audioWriter = nullptr;
+    if (m_audioEngine) {
+        auto* ptr = m_audioEngine.release();
+        ResourceCleanupHelper::stopAndDelete(ptr);
+    }
+    m_audioWriter.reset();
     ResourceCleanupHelper::removeTempFile(m_tempAudioPath);
 }
 
@@ -1171,12 +1164,12 @@ void RecordingManager::onEncodingFinished(bool success, const QString &outputPat
 
     // Use deleteLater to avoid deleting during signal emission
     if (m_nativeEncoder) {
-        m_nativeEncoder->deleteLater();
-        m_nativeEncoder = nullptr;
+        auto* ptr = m_nativeEncoder.release();
+        ptr->deleteLater();
     }
     if (m_gifEncoder) {
-        m_gifEncoder->deleteLater();
-        m_gifEncoder = nullptr;
+        auto* ptr = m_gifEncoder.release();
+        ptr->deleteLater();
     }
     m_usingNativeEncoder = false;
 
@@ -1357,15 +1350,17 @@ void RecordingManager::onEncodingError(const QString &error)
     QString outputPath;
     if (m_usingNativeEncoder && m_nativeEncoder) {
         outputPath = m_nativeEncoder->outputPath();
-        m_nativeEncoder->deleteLater();
-        m_nativeEncoder = nullptr;
+        // Release ownership and delete later to handle safe deletion during signal
+        auto* ptr = m_nativeEncoder.release();
+        ptr->deleteLater();
     }
     if (m_gifEncoder) {
         if (outputPath.isEmpty()) {
             outputPath = m_gifEncoder->outputPath();
         }
-        m_gifEncoder->deleteLater();
-        m_gifEncoder = nullptr;
+        // Release ownership and delete later
+        auto* ptr = m_gifEncoder.release();
+        ptr->deleteLater();
     }
     m_usingNativeEncoder = false;
 
