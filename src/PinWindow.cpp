@@ -1261,6 +1261,15 @@ void PinWindow::mouseReleaseEvent(QMouseEvent *event)
 void PinWindow::mouseDoubleClickEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton) {
+        // In annotation mode with active drawing, forward to tool handler
+        // (e.g., polyline mode uses double-click to finish drawing)
+        if (m_annotationMode && m_toolManager && m_toolManager->isDrawing()) {
+            m_toolManager->handleDoubleClick(event->pos());
+            update();
+            return;
+        }
+
+        // Otherwise, close the window (default behavior)
         close();
     }
 }
