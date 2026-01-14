@@ -126,8 +126,16 @@ QPoint TestColorAndWidthWidgetEvents::getPreviewCenter()
 {
     QRect widgetRect = m_widget->boundingRect();
 
-    int previewCenterX = widgetRect.left() + kWidthSectionSize / 2;
-    int previewCenterY = widgetRect.center().y();
+    // Color section starts after width section + spacing
+    int colorSectionLeft = widgetRect.left() + kWidthSectionSize + kWidthToColorSpacing;
+    // Grid starts with padding
+    int gridLeft = colorSectionLeft + kColorPadding;
+    // Grid top is centered vertically
+    int gridTop = widgetRect.top() + (widgetRect.height() - kSwatchSize) / 2;
+
+    // Custom swatch (preview) is first in the grid
+    int previewCenterX = gridLeft + kSwatchSize / 2;
+    int previewCenterY = gridTop + kSwatchSize / 2;
 
     return QPoint(previewCenterX, previewCenterY);
 }
