@@ -41,6 +41,8 @@ public:
 
     // Video properties
     QSize videoSize() const;
+    double frameRate() const;
+    int frameIntervalMs() const;
 
 signals:
     void frameReady(const QImage &frame);

@@ -968,15 +968,15 @@ void RecordingPreviewWindow::onSpeedChanged(int index)
 
 void RecordingPreviewWindow::stepForward()
 {
-    // Step forward by ~33ms (one frame at 30fps)
-    qint64 newPos = qMin(m_videoWidget->position() + 33, m_duration);
+    int frameMs = m_videoWidget->frameIntervalMs();
+    qint64 newPos = qMin(m_videoWidget->position() + frameMs, m_duration);
     m_videoWidget->seek(newPos);
 }
 
 void RecordingPreviewWindow::stepBackward()
 {
-    // Step backward by ~33ms (one frame at 30fps)
-    qint64 newPos = qMax(m_videoWidget->position() - 33, qint64(0));
+    int frameMs = m_videoWidget->frameIntervalMs();
+    qint64 newPos = qMax(m_videoWidget->position() - frameMs, qint64(0));
     m_videoWidget->seek(newPos);
 }
 
@@ -1044,7 +1044,7 @@ QString RecordingPreviewWindow::convertToFormat(FormatSelectionWidget::Format fo
 
     // Get video properties
     QSize videoSize = m_videoWidget->videoSize();
-    int frameRate = 30;  // Assume 30fps
+    int frameRate = static_cast<int>(m_videoWidget->frameRate());
     qint64 duration = m_videoWidget->duration();
 
     if (duration <= 0 || videoSize.isEmpty()) {

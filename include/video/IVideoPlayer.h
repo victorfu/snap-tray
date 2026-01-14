@@ -30,6 +30,8 @@ public:
     virtual qint64 position() const = 0;      // Current position in ms
     virtual QSize videoSize() const = 0;      // Native video dimensions
     virtual bool hasVideo() const = 0;
+    virtual double frameRate() const = 0;     // FPS (e.g., 29.97, 60.0)
+    virtual int frameIntervalMs() const = 0;  // Milliseconds per frame
 
     // Volume control
     virtual void setVolume(float volume) = 0; // 0.0 - 1.0

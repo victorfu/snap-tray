@@ -67,10 +67,6 @@ void VideoTrimmer::startTrim()
     m_currentPosition = m_trimStart;
     m_frameCount = 0;
 
-    // Estimate total frames (assuming 30fps)
-    m_totalFrames = static_cast<int>((m_trimEnd - m_trimStart) * 30 / 1000);
-    if (m_totalFrames <= 0) m_totalFrames = 1;
-
     // Create video player to extract frames
     m_player = IVideoPlayer::create(this);
     if (!m_player) {
@@ -88,6 +84,11 @@ void VideoTrimmer::startTrim()
         return;
     }
 
+    // Estimate total frames using actual frame rate from video
+    int frameIntervalMs = m_player->frameIntervalMs();
+    m_totalFrames = static_cast<int>((m_trimEnd - m_trimStart) / frameIntervalMs);
+    if (m_totalFrames <= 0) m_totalFrames = 1;
+
     // Wait for video to load and get dimensions
     // For now, use a reasonable default; the first frame will give us actual size
     QSize videoSize(1920, 1080);  // Will be updated on first frame
@@ -96,7 +97,7 @@ void VideoTrimmer::startTrim()
     EncoderFactory::EncoderConfig config;
     config.format = m_format;
     config.frameSize = videoSize;
-    config.frameRate = 30;
+    config.frameRate = static_cast<int>(m_player->frameRate());
     config.outputPath = m_outputPath;
     config.quality = 80;
 
@@ -198,8 +199,8 @@ void VideoTrimmer::processNextFrame()
         return;
     }
 
-    // Advance position (33ms = ~30fps) for next frame
-    m_currentPosition += 33;
+    // Advance position by one frame interval
+    m_currentPosition += m_player->frameIntervalMs();
 
     if (m_currentPosition >= m_trimEnd) {
         // Finished extracting frames

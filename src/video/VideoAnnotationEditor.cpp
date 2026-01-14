@@ -942,7 +942,7 @@ bool VideoAnnotationEditor::exportWithAnnotations(const QString &outputPath, int
     EncoderFactory::EncoderConfig config;
     config.format = encoderFormat;
     config.frameSize = videoSize;
-    config.frameRate = 30;
+    config.frameRate = static_cast<int>(exportPlayer->frameRate());
     config.outputPath = outputPath;
     config.quality = 80;
 
@@ -963,7 +963,8 @@ bool VideoAnnotationEditor::exportWithAnnotations(const QString &outputPath, int
     bool exportFinished = false;
     qint64 currentPosition = 0;
     int frameCount = 0;
-    int totalFrames = static_cast<int>(videoDuration * 30 / 1000);
+    int frameIntervalMs = exportPlayer->frameIntervalMs();
+    int totalFrames = static_cast<int>(videoDuration / frameIntervalMs);
     if (totalFrames <= 0) totalFrames = 1;
 
     // Event loop for async export
@@ -1029,7 +1030,7 @@ bool VideoAnnotationEditor::exportWithAnnotations(const QString &outputPath, int
     processNextFrame = [&]() {
         if (exportFinished) return;
 
-        currentPosition += 33; // ~30fps
+        currentPosition += frameIntervalMs;
 
         if (currentPosition >= videoDuration) {
             // Finished extracting frames

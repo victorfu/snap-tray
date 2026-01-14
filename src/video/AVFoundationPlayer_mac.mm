@@ -58,6 +58,9 @@ public:
     void setPlaybackRate(float rate) override;
     float playbackRate() const override { return m_playbackRate; }
 
+    double frameRate() const override { return m_frameIntervalMs > 0 ? 1000.0 / m_frameIntervalMs : 30.0; }
+    int frameIntervalMs() const override { return m_frameIntervalMs; }
+
     // Called from Objective-C helper
     void onStatusChanged(int status);
     void onTimeUpdate(qint64 timeMs);
@@ -79,6 +82,7 @@ private:
     bool m_muted;
     bool m_looping;
     float m_playbackRate;
+    int m_frameIntervalMs;
 };
 
 @implementation AVFoundationPlayerHelper
@@ -216,12 +220,13 @@ AVFoundationPlayer::AVFoundationPlayer(QObject *parent)
     , m_muted(false)
     , m_looping(false)
     , m_playbackRate(1.0f)
+    , m_frameIntervalMs(33)
 {
     m_helper.player = this;
 
-    // Frame update timer (30 fps)
+    // Frame update timer - interval will be updated when video loads
     connect(m_frameTimer, &QTimer::timeout, this, &AVFoundationPlayer::updateFrame);
-    m_frameTimer->setInterval(33);  // ~30 fps
+    m_frameTimer->setInterval(m_frameIntervalMs);
 }
 
 AVFoundationPlayer::~AVFoundationPlayer()
@@ -365,7 +370,7 @@ void AVFoundationPlayer::onStatusChanged(int status)
                 emit durationChanged(m_duration);
             }
 
-            // Get video size
+            // Get video size and frame rate
             NSArray *tracks = item.asset.tracks;
             for (AVAssetTrack *track in tracks) {
                 if ([track.mediaType isEqualToString:AVMediaTypeVideo]) {
@@ -380,12 +385,19 @@ void AVFoundationPlayer::onStatusChanged(int status)
                     } else {
                         m_videoSize = QSize((int)size.width, (int)size.height);
                     }
+
+                    // Extract frame rate from video track
+                    float fps = track.nominalFrameRate;
+                    if (fps > 0) {
+                        m_frameIntervalMs = static_cast<int>(1000.0 / fps);
+                        m_frameTimer->setInterval(m_frameIntervalMs);
+                    }
                     break;
                 }
             }
 
             qDebug() << "AVFoundationPlayer: Media loaded, duration:" << m_duration
-                     << "size:" << m_videoSize;
+                     << "size:" << m_videoSize << "fps:" << frameRate();
             emit mediaLoaded();
         }
     } else if (status == AVPlayerItemStatusFailed) {

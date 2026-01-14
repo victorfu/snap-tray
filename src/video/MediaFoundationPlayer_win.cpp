@@ -385,6 +385,9 @@ public:
     void setPlaybackRate(float rate) override;
     float playbackRate() const override { return m_playbackRate; }
 
+    double frameRate() const override { return m_frameIntervalMs > 0 ? 1000.0 / m_frameIntervalMs : 30.0; }
+    int frameIntervalMs() const override { return m_frameIntervalMs; }
+
 private slots:
     void onFrameReady(const QImage &frame, qint64 timestampMs);
     void onEndOfStream();

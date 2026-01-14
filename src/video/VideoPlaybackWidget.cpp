@@ -181,6 +181,16 @@ QSize VideoPlaybackWidget::videoSize() const
     return m_player ? m_player->videoSize() : QSize();
 }
 
+double VideoPlaybackWidget::frameRate() const
+{
+    return m_player ? m_player->frameRate() : 30.0;
+}
+
+int VideoPlaybackWidget::frameIntervalMs() const
+{
+    return m_player ? m_player->frameIntervalMs() : 33;
+}
+
 void VideoPlaybackWidget::paintEvent(QPaintEvent *event)
 {
     Q_UNUSED(event)
