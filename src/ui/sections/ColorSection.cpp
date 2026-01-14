@@ -2,33 +2,21 @@
 #include "ToolbarStyle.h"
 
 #include <QPainter>
+#include <QPainterPath>
 #include <QtGlobal>
 
 ColorSection::ColorSection(QObject* parent)
     : QObject(parent)
     , m_currentColor(Qt::red)
 {
-    // Default color palette - 16 colors in 2 rows (8 per row)
+    // Standard preset colors (6 colors)
     m_colors = {
-        // Row 1: Grayscale
-        Qt::white,
-        QColor(224, 224, 224),
-        QColor(192, 192, 192),
-        QColor(160, 160, 160),
-        QColor(128, 128, 128),
-        QColor(96, 96, 96),
-        QColor(64, 64, 64),
-        Qt::black,
-
-        // Row 2: Primary/Standard
-        Qt::red,
-        QColor(255, 128, 0),
-        Qt::yellow,
-        Qt::green,
-        Qt::cyan,
-        Qt::blue,
-        QColor(128, 0, 255),
-        Qt::magenta
+        QColor(220, 53, 69),    // Red
+        QColor(255, 240, 120),  // Yellow (brighter)
+        QColor(80, 200, 120),   // Green (lighter)
+        QColor(0, 123, 255),    // Blue
+        QColor(33, 37, 41),     // Black (soft)
+        Qt::white               // White
     };
 }
 
@@ -42,24 +30,23 @@ void ColorSection::setCurrentColor(const QColor& color)
     m_currentColor = color;
 }
 
+
 int ColorSection::preferredWidth() const
 {
-    int gridWidth = COLORS_PER_ROW * SWATCH_SIZE + (COLORS_PER_ROW - 1) * SWATCH_SPACING;
+    // Width = custom swatch + standard colors
+    int itemCount = 1 + m_colors.size();  // 1 custom + N standard
+    int gridWidth = itemCount * SWATCH_SIZE + (itemCount - 1) * SWATCH_SPACING;
     return SECTION_PADDING + gridWidth + SECTION_PADDING;
 }
 
 int ColorSection::preferredHeight() const
 {
-    int rows = rowCount();
-    int gridHeight = rows * SWATCH_SIZE + (rows - 1) * ROW_SPACING;
-    return gridHeight + GRID_VERTICAL_PADDING * 2;
+    return SWATCH_SIZE;
 }
 
 int ColorSection::rowCount() const
 {
-    int swatchCount = m_colors.size() + (m_showMoreButton ? 1 : 0);
-    int rows = (swatchCount + COLORS_PER_ROW - 1) / COLORS_PER_ROW;
-    return qMax(NUM_ROWS, rows);
+    return 1;  // Always single row
 }
 
 void ColorSection::updateLayout(int containerTop, int containerHeight, int xOffset)
@@ -67,88 +54,129 @@ void ColorSection::updateLayout(int containerTop, int containerHeight, int xOffs
     int width = preferredWidth();
     m_sectionRect = QRect(xOffset, containerTop, width, containerHeight);
 
-    int rows = rowCount();
-    int gridHeight = rows * SWATCH_SIZE + (rows - 1) * ROW_SPACING;
-    int gridTop = m_sectionRect.top() + (m_sectionRect.height() - gridHeight) / 2;
+    int gridTop = m_sectionRect.top() + (m_sectionRect.height() - SWATCH_SIZE) / 2;
     int gridLeft = m_sectionRect.left() + SECTION_PADDING;
 
-    // Calculate swatch positions in rows of 8
-    int swatchCount = m_colors.size() + (m_showMoreButton ? 1 : 0);
-    m_swatchRects.resize(swatchCount);
+    // Custom swatch is first (index -1 conceptually, but stored separately)
+    m_customSwatchRect = QRect(gridLeft, gridTop, SWATCH_SIZE, SWATCH_SIZE);
+
+    // Standard color swatches start after custom swatch
+    int standardLeft = gridLeft + SWATCH_SIZE + SWATCH_SPACING;
+    m_swatchRects.resize(m_colors.size());
 
     for (int i = 0; i < m_colors.size(); ++i) {
-        int row = i / COLORS_PER_ROW;
-        int col = i % COLORS_PER_ROW;
-        int x = gridLeft + col * (SWATCH_SIZE + SWATCH_SPACING);
-        int y = gridTop + row * (SWATCH_SIZE + ROW_SPACING);
-        m_swatchRects[i] = QRect(x, y, SWATCH_SIZE, SWATCH_SIZE);
+        int x = standardLeft + i * (SWATCH_SIZE + SWATCH_SPACING);
+        m_swatchRects[i] = QRect(x, gridTop, SWATCH_SIZE, SWATCH_SIZE);
+    }
+}
+
+// Helper to draw a mini color wheel icon
+static void drawColorWheelIcon(QPainter& painter, const QRect& rect)
+{
+    painter.save();
+    painter.setRenderHint(QPainter::Antialiasing, true);
+
+    int cx = rect.center().x();
+    int cy = rect.center().y();
+    int radius = qMin(rect.width(), rect.height()) / 2 - 1;
+
+    // Draw 6 colored pie segments
+    const QColor wheelColors[] = {
+        QColor(255, 0, 0),      // Red
+        QColor(255, 255, 0),    // Yellow
+        QColor(0, 255, 0),      // Green
+        QColor(0, 255, 255),    // Cyan
+        QColor(0, 0, 255),      // Blue
+        QColor(255, 0, 255)     // Magenta
+    };
+
+    for (int i = 0; i < 6; ++i) {
+        QPainterPath path;
+        path.moveTo(cx, cy);
+        int startAngle = i * 60 * 16;  // Qt uses 1/16th degree
+        int spanAngle = 60 * 16;
+        path.arcTo(rect, startAngle / 16.0, spanAngle / 16.0);
+        path.closeSubpath();
+
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(wheelColors[i]);
+        painter.drawPath(path);
     }
 
-    if (m_showMoreButton) {
-        int moreIdx = m_colors.size();
-        int row = moreIdx / COLORS_PER_ROW;
-        int col = moreIdx % COLORS_PER_ROW;
-        int x = gridLeft + col * (SWATCH_SIZE + SWATCH_SPACING);
-        int y = gridTop + row * (SWATCH_SIZE + ROW_SPACING);
-        m_moreButtonRect = QRect(x, y, SWATCH_SIZE, SWATCH_SIZE);
-        m_swatchRects[moreIdx] = m_moreButtonRect;
-    } else {
-        m_moreButtonRect = QRect();
-    }
+    // Draw small white center circle
+    painter.setBrush(Qt::white);
+    painter.setPen(Qt::NoPen);
+    painter.drawEllipse(QPoint(cx, cy), radius / 3, radius / 3);
+
+    painter.restore();
 }
 
 void ColorSection::draw(QPainter& painter, const ToolbarStyleConfig& styleConfig)
 {
     painter.setRenderHint(QPainter::Antialiasing, true);
 
-    // Draw color swatches
-    for (int i = 0; i < m_colors.size(); ++i) {
-        QRect swatchRect = m_swatchRects[i];
+    // Border colors for light theme visibility
+    const QColor darkBorder(96, 96, 96);     // For light colors (white, yellow)
+    const QColor lightBorder(192, 192, 192); // For dark colors
 
-        // Highlight if hovered
-        if (i == m_hoveredSwatch) {
-            painter.setPen(Qt::NoPen);
-            painter.setBrush(styleConfig.hoverBackgroundColor);
-            painter.drawRoundedRect(swatchRect, 4, 4);
+    auto getBorderColor = [&](const QColor& color) {
+        return (color.lightness() > 180) ? darkBorder : lightBorder;
+    };
+
+    // =========================================================================
+    // Draw Color Preview Swatch (first position) - shows current selected color
+    // =========================================================================
+    {
+        QRect swatchRect = m_customSwatchRect;
+        bool isHovered = (m_hoveredSwatch == -1);
+
+        // Draw swatch fill with current color
+        QColor borderColor = getBorderColor(m_currentColor);
+
+        // Hover effect: darken border
+        if (isHovered) {
+            borderColor = borderColor.darker(120);
         }
 
-        // Draw color rounded square
-        const int kSwatchInset = 2;
-        QRect colorRect = swatchRect.adjusted(kSwatchInset, kSwatchInset,
-                                              -kSwatchInset, -kSwatchInset);
-
-        // Draw border (white for dark colors, dark for light colors)
-        QColor borderColor = (m_colors[i].lightness() > 200) ? styleConfig.separatorColor : Qt::white;
+        // Swatch border and fill - shows currently selected color
         painter.setPen(QPen(borderColor, 1));
-        painter.setBrush(m_colors[i]);
-        painter.drawRoundedRect(colorRect, 4, 4);
+        painter.setBrush(m_currentColor);
+        painter.drawRoundedRect(swatchRect, BORDER_RADIUS, BORDER_RADIUS);
 
-        // Draw selection indicator for current color
-        if (m_colors[i] == m_currentColor) {
-            painter.setPen(QPen(QColor(0, 174, 255), 2));
-            painter.setBrush(Qt::NoBrush);
-            painter.drawRoundedRect(colorRect.adjusted(-2, -2, 2, 2), 4, 4);
-        }
+        // Draw color wheel icon in bottom-right corner (indicates color picker)
+        int iconSize = 10;
+        QRect iconRect(swatchRect.right() - iconSize + 1,
+                       swatchRect.bottom() - iconSize + 1,
+                       iconSize, iconSize);
+        drawColorWheelIcon(painter, iconRect);
     }
 
-    // Draw "more colors" button (last swatch position)
-    if (m_showMoreButton) {
-        int moreIdx = m_colors.size();
-        QRect moreRect = m_moreButtonRect;
+    // =========================================================================
+    // Draw Standard Color Swatches
+    // =========================================================================
+    for (int i = 0; i < m_colors.size(); ++i) {
+        QRect swatchRect = m_swatchRects[i];
+        bool isHovered = (i == m_hoveredSwatch);
+        bool isSelected = (m_colors[i] == m_currentColor);
 
-        if (moreIdx == m_hoveredSwatch) {
-            painter.setPen(Qt::NoPen);
-            painter.setBrush(styleConfig.hoverBackgroundColor);
-            painter.drawRoundedRect(moreRect, 4, 4);
+        QColor borderColor = getBorderColor(m_colors[i]);
+
+        // Hover effect: darken border
+        if (isHovered) {
+            borderColor = borderColor.darker(120);
         }
 
-        // Draw "..." text
-        painter.setPen(styleConfig.textColor);
-        QFont font = painter.font();
-        font.setPointSize(12);
-        font.setBold(true);
-        painter.setFont(font);
-        painter.drawText(moreRect, Qt::AlignCenter, "...");
+        // Selection ring (outside the swatch)
+        if (isSelected) {
+            painter.setPen(QPen(QColor(0, 174, 255), 2));
+            painter.setBrush(Qt::NoBrush);
+            painter.drawRoundedRect(swatchRect.adjusted(-2, -2, 2, 2), BORDER_RADIUS + 1, BORDER_RADIUS + 1);
+        }
+
+        // Swatch border and fill
+        painter.setPen(QPen(borderColor, 1));
+        painter.setBrush(m_colors[i]);
+        painter.drawRoundedRect(swatchRect, BORDER_RADIUS, BORDER_RADIUS);
     }
 }
 
@@ -159,28 +187,43 @@ bool ColorSection::contains(const QPoint& pos) const
 
 int ColorSection::swatchAtPosition(const QPoint& pos) const
 {
-    if (!m_sectionRect.contains(pos)) return -1;
+    if (!m_sectionRect.contains(pos)) return -2;  // -2 = outside
 
+    // Check custom swatch first
+    if (m_customSwatchRect.contains(pos)) {
+        return -1;  // -1 = custom swatch
+    }
+
+    // Check standard swatches
     for (int i = 0; i < m_swatchRects.size(); ++i) {
         if (m_swatchRects[i].contains(pos)) {
             return i;
         }
     }
-    return -1;
+    return -2;  // Not on any swatch
 }
 
 bool ColorSection::handleClick(const QPoint& pos)
 {
     int swatchIdx = swatchAtPosition(pos);
-    if (swatchIdx >= 0) {
-        if (swatchIdx < m_colors.size()) {
-            m_currentColor = m_colors[swatchIdx];
-            emit colorSelected(m_currentColor);
-        } else if (m_showMoreButton) {
-            emit moreColorsRequested();
-        }
+
+    if (swatchIdx == -1) {
+        // Preview swatch clicked - open color picker
+        emit customColorPickerRequested();
+        return true;
+    } else if (swatchIdx >= 0 && swatchIdx < m_colors.size()) {
+        // Standard color clicked
+        m_currentColor = m_colors[swatchIdx];
+        emit colorSelected(m_currentColor);
         return true;
     }
+    return false;
+}
+
+bool ColorSection::handleDoubleClick(const QPoint& pos)
+{
+    Q_UNUSED(pos);
+    // No special double-click behavior needed
     return false;
 }
 
@@ -196,5 +239,5 @@ bool ColorSection::updateHovered(const QPoint& pos)
 
 void ColorSection::resetHoverState()
 {
-    m_hoveredSwatch = -1;
+    m_hoveredSwatch = -2;  // -2 = nothing hovered
 }

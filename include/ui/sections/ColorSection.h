@@ -45,15 +45,6 @@ public:
      */
     QColor currentColor() const { return m_currentColor; }
 
-    /**
-     * @brief Set whether to show the "more colors" button.
-     */
-    void setShowMoreButton(bool show) { m_showMoreButton = show; }
-
-    /**
-     * @brief Check if the "more colors" button is shown.
-     */
-    bool showMoreButton() const { return m_showMoreButton; }
 
     // =========================================================================
     // IWidgetSection Implementation
@@ -66,6 +57,7 @@ public:
     void draw(QPainter& painter, const ToolbarStyleConfig& styleConfig) override;
     bool contains(const QPoint& pos) const override;
     bool handleClick(const QPoint& pos) override;
+    bool handleDoubleClick(const QPoint& pos);
     bool updateHovered(const QPoint& pos) override;
     void resetHoverState() override;
 
@@ -76,9 +68,9 @@ signals:
     void colorSelected(const QColor& color);
 
     /**
-     * @brief Emitted when "more colors" button is clicked.
+     * @brief Emitted when preview swatch is clicked to open color picker.
      */
-    void moreColorsRequested();
+    void customColorPickerRequested();
 
 private:
     /**
@@ -89,24 +81,20 @@ private:
     int rowCount() const;
 
     // State
-    QVector<QColor> m_colors;
-    QColor m_currentColor;
-    bool m_showMoreButton = false;
+    QVector<QColor> m_colors;      // Standard preset colors
+    QColor m_currentColor;         // Currently selected color
     int m_hoveredSwatch = -1;
 
     // Layout
     QRect m_sectionRect;
-    QRect m_moreButtonRect;
-    QVector<QRect> m_swatchRects;
+    QRect m_customSwatchRect;      // Custom swatch (first position)
+    QVector<QRect> m_swatchRects;  // Standard color swatches
 
     // Layout constants
-    static constexpr int SWATCH_SIZE = 14;
-    static constexpr int SWATCH_SPACING = 2;
-    static constexpr int COLORS_PER_ROW = 8;
-    static constexpr int NUM_ROWS = 2;
-    static constexpr int SECTION_PADDING = 6;
-    static constexpr int ROW_SPACING = 0;
-    static constexpr int GRID_VERTICAL_PADDING = 0;
+    static constexpr int SWATCH_SIZE = 20;       // Larger swatches for better visibility
+    static constexpr int SWATCH_SPACING = 3;     // Slightly more spacing
+    static constexpr int SECTION_PADDING = 4;
+    static constexpr int BORDER_RADIUS = 3;      // Rounded corners
 };
 
 #endif // COLORSECTION_H

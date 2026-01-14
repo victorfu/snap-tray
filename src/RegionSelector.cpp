@@ -215,7 +215,7 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_colorPalette->setCurrentColor(m_annotationColor);
     connect(m_colorPalette, &ColorPaletteWidget::colorSelected,
         this, &RegionSelector::onColorSelected);
-    connect(m_colorPalette, &ColorPaletteWidget::moreColorsRequested,
+    connect(m_colorPalette, &ColorPaletteWidget::customColorPickerRequested,
         this, &RegionSelector::onMoreColorsRequested);
 
     // Initialize unified color and width widget
@@ -225,7 +225,7 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_colorAndWidthWidget->setWidthRange(1, 20);
     connect(m_colorAndWidthWidget, &ColorAndWidthWidget::colorSelected,
         this, &RegionSelector::onColorSelected);
-    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::moreColorsRequested,
+    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::customColorPickerRequested,
         this, &RegionSelector::onMoreColorsRequested);
     connect(m_colorAndWidthWidget, &ColorAndWidthWidget::widthChanged,
         this, &RegionSelector::onLineWidthChanged);

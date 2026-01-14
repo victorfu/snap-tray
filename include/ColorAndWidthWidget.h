@@ -53,7 +53,6 @@ public:
     void setColors(const QVector<QColor>& colors);
     void setCurrentColor(const QColor& color);
     QColor currentColor() const;
-    void setShowMoreButton(bool show);
 
     // =========================================================================
     // Width Methods
@@ -179,7 +178,7 @@ public:
 signals:
     // Color signals
     void colorSelected(const QColor& color);
-    void moreColorsRequested();
+    void customColorPickerRequested();
 
     // Width signals
     void widthChanged(int width);

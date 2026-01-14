@@ -104,7 +104,7 @@ ScreenCanvas::ScreenCanvas(QWidget* parent)
     m_colorPalette->setCurrentColor(savedColor);
     connect(m_colorPalette, &ColorPaletteWidget::colorSelected,
         this, &ScreenCanvas::onColorSelected);
-    connect(m_colorPalette, &ColorPaletteWidget::moreColorsRequested,
+    connect(m_colorPalette, &ColorPaletteWidget::customColorPickerRequested,
         this, &ScreenCanvas::onMoreColorsRequested);
 
     // Initialize unified color and width widget
@@ -117,7 +117,7 @@ ScreenCanvas::ScreenCanvas(QWidget* parent)
     m_colorAndWidthWidget->setStepBadgeSize(m_stepBadgeSize);
     connect(m_colorAndWidthWidget, &ColorAndWidthWidget::colorSelected,
         this, &ScreenCanvas::onColorSelected);
-    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::moreColorsRequested,
+    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::customColorPickerRequested,
         this, &ScreenCanvas::onMoreColorsRequested);
     connect(m_colorAndWidthWidget, &ColorAndWidthWidget::widthChanged,
         this, &ScreenCanvas::onLineWidthChanged);

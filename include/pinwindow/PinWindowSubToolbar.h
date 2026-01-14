@@ -48,7 +48,7 @@ public:
 signals:
     // Color/width signals
     void colorSelected(const QColor &color);
-    void moreColorsRequested();
+    void customColorPickerRequested();
     void widthChanged(int width);
 
     // Shape signals

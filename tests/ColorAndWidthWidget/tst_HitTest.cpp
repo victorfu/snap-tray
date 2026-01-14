@@ -5,20 +5,20 @@ namespace {
 constexpr int kWidthSectionSize = 28;
 constexpr int kWidthToColorSpacing = -2;
 constexpr int kSectionSpacing = 8;
-constexpr int kSwatchSize = 14;
-constexpr int kSwatchSpacing = 2;
-constexpr int kColorPadding = 6;
-constexpr int kColorRows = 2;
-constexpr int kColorRowSpacing = 0;
-constexpr int kColorGridWidth = kSwatchSize * 8 + kSwatchSpacing * 7;
-constexpr int kColorGridHeight = kColorRows * kSwatchSize +
-                                 (kColorRows - 1) * kColorRowSpacing;
+constexpr int kSwatchSize = 20;        // Larger swatches
+constexpr int kSwatchSpacing = 3;      // Slightly more spacing
+constexpr int kColorPadding = 4;
+constexpr int kStandardColorCount = 6; // 6 standard colors
+// Grid width = 1 custom swatch + 6 standard colors = 7 items in single row
+constexpr int kColorItemCount = 1 + kStandardColorCount;  // Custom + standard colors
+constexpr int kColorGridWidth = kColorItemCount * kSwatchSize + (kColorItemCount - 1) * kSwatchSpacing;
 constexpr int kColorSectionWidth = kColorGridWidth + kColorPadding * 2;
 constexpr int kWidgetRightMargin = 6;
 constexpr int kArrowSectionWidth = 52;
 constexpr int kArrowButtonOffset = kArrowSectionWidth / 2;
 constexpr int kVerticalPadding = 4;
-constexpr int kWidgetHeight = kColorGridHeight + 2 * kVerticalPadding;  // 28 + 8 = 36
+// Widget has minimum height based on other sections (28 + 2*4 = 36)
+constexpr int kWidgetHeight = 28 + 2 * kVerticalPadding;
 }
 
 class TestColorAndWidthWidgetHitTest : public QObject
@@ -105,7 +105,7 @@ void TestColorAndWidthWidgetHitTest::testContainsInDropdownWhenOpen()
 
     // Layout order: WidthSection -> ColorSection -> ArrowStyleSection
     // WidthSection: SECTION_SIZE = 28
-    // ColorSection: grid(8 * 14 + 7 * 2) + padding(6 * 2) = 138
+    // ColorSection: grid(7 * 20 + 6 * 3) + padding(4 * 2) = 166
     // Arrow section: button (52), center at 52/2 = 26
     int arrowButtonX = widgetRect.left() + kWidthSectionSize + kWidthToColorSpacing +
                        kColorSectionWidth + kSectionSpacing + kArrowButtonOffset;
@@ -193,7 +193,7 @@ void TestColorAndWidthWidgetHitTest::testBoundingRectWithColorOnly()
 
     QRect widgetRect = m_widget->boundingRect();
 
-    // Color section: grid(8 * 14 + 7 * 2) + padding(6 * 2) = 138
+    // Color section: grid(7 * 20 + 6 * 3) + padding(4 * 2) = 166
     // Widget right margin = 6
     QCOMPARE(widgetRect.height(), kWidgetHeight);
 
@@ -214,8 +214,8 @@ void TestColorAndWidthWidgetHitTest::testBoundingRectWithColorAndWidth()
 
     // Layout order: WidthSection (left) -> ColorSection
     // Width section: size (28)
-    // Width-to-color spacing: 2
-    // Color section: grid(8 * 14 + 7 * 2) + padding(6 * 2) = 138
+    // Width-to-color spacing: -2
+    // Color section: grid(7 * 20 + 6 * 3) + padding(4 * 2) = 166
     // Widget right margin = 6
     int expectedWidth = kWidthSectionSize + kWidthToColorSpacing +
                         kColorSectionWidth + kWidgetRightMargin;

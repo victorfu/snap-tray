@@ -43,7 +43,7 @@ void ColorAndWidthWidget::connectSectionSignals()
         emit colorSelected(color);
         qDebug() << "ColorAndWidthWidget: Color selected:" << color.name();
     });
-    connect(m_colorSection, &ColorSection::moreColorsRequested, this, &ColorAndWidthWidget::moreColorsRequested);
+    connect(m_colorSection, &ColorSection::customColorPickerRequested, this, &ColorAndWidthWidget::customColorPickerRequested);
 
     // Forward WidthSection signals
     connect(m_widthSection, &WidthSection::widthChanged, this, [this](int width) {
@@ -122,11 +122,6 @@ void ColorAndWidthWidget::setCurrentColor(const QColor& color)
 QColor ColorAndWidthWidget::currentColor() const
 {
     return m_colorSection->currentColor();
-}
-
-void ColorAndWidthWidget::setShowMoreButton(bool show)
-{
-    m_colorSection->setShowMoreButton(show);
 }
 
 void ColorAndWidthWidget::setShowColorSection(bool show)
@@ -677,7 +672,7 @@ bool ColorAndWidthWidget::handleClick(const QPoint& pos)
 
     // Width section: click opens color picker
     if (m_showWidthSection && !m_widthSectionHidden && m_widthSection->contains(pos)) {
-        emit moreColorsRequested();
+        emit customColorPickerRequested();
         return true;
     }
 

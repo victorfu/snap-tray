@@ -6,13 +6,14 @@ namespace {
 constexpr int kWidthSectionSize = 28;
 constexpr int kWidthToColorSpacing = -2;
 constexpr int kSectionSpacing = 8;
-constexpr int kSwatchSize = 14;
-constexpr int kSwatchSpacing = 2;
-constexpr int kColorPadding = 6;
-constexpr int kColorRowSpacing = 0;
-constexpr int kColorsPerRow = 8;
+constexpr int kSwatchSize = 20;        // Larger swatches
+constexpr int kSwatchSpacing = 3;      // Slightly more spacing
+constexpr int kColorPadding = 4;
+constexpr int kStandardColorCount = 6; // 6 standard colors
+// ColorSection width = 1 custom swatch + 6 standard colors = 7 items in single row
+constexpr int kColorItemCount = 1 + kStandardColorCount;  // Custom + standard colors
 constexpr int kColorSectionWidth =
-    kColorsPerRow * kSwatchSize + (kColorsPerRow - 1) * kSwatchSpacing + kColorPadding * 2;
+    kColorItemCount * kSwatchSize + (kColorItemCount - 1) * kSwatchSpacing + kColorPadding * 2;
 constexpr int kArrowSectionWidth = 52;
 }
 
@@ -97,19 +98,26 @@ QPoint TestColorAndWidthWidgetEvents::getColorSwatchCenter(int index)
 {
     QRect widgetRect = m_widget->boundingRect();
 
-    // Layout: WidthSection (28px) + spacing (2px) + ColorSection
+    // Layout: WidthSection (28px) + spacing (-2px) + ColorSection
+    // ColorSection: custom swatch + 6 standard colors
     int colorSectionLeft = widgetRect.left() + kWidthSectionSize + kWidthToColorSpacing;
 
-    int rows = 2;
-    int gridHeight = rows * kSwatchSize + (rows - 1) * kColorRowSpacing;
-    int gridTop = widgetRect.top() + (widgetRect.height() - gridHeight) / 2;
+    int gridTop = widgetRect.top() + (widgetRect.height() - kSwatchSize) / 2;
     int gridLeft = colorSectionLeft + kColorPadding;
 
-    int row = index / 8;
-    int col = index % 8;
+    // Index -1 = custom swatch (first position)
+    // Index 0-5 = standard colors (after custom swatch)
+    if (index < 0) {
+        // Custom swatch
+        int x = gridLeft + kSwatchSize / 2;
+        int y = gridTop + kSwatchSize / 2;
+        return QPoint(x, y);
+    }
 
-    int x = gridLeft + col * (kSwatchSize + kSwatchSpacing) + kSwatchSize / 2;
-    int y = gridTop + row * (kSwatchSize + kColorRowSpacing) + kSwatchSize / 2;
+    // Standard colors start after custom swatch
+    int standardLeft = gridLeft + kSwatchSize + kSwatchSpacing;
+    int x = standardLeft + index * (kSwatchSize + kSwatchSpacing) + kSwatchSize / 2;
+    int y = gridTop + kSwatchSize / 2;
 
     return QPoint(x, y);
 }
@@ -131,7 +139,7 @@ QPoint TestColorAndWidthWidgetEvents::getTextButtonCenter(int buttonIndex)
 
     // Calculate section widths based on actual layout constants
     // WidthSection: SECTION_SIZE = 28
-    // ColorSection: grid(8 * 14 + 7 * 2) + padding(6 * 2) = 138
+    // ColorSection: grid(7 * 20 + 6 * 3) + padding(4 * 2) = 166
     // ArrowStyleSection: BUTTON_WIDTH = 52
     int textSectionLeft = widgetRect.left() + kWidthSectionSize + kWidthToColorSpacing +
                           kColorSectionWidth + kSectionSpacing + kArrowSectionWidth + kSectionSpacing;
@@ -152,7 +160,7 @@ QPoint TestColorAndWidthWidgetEvents::getShapeButtonCenter(int buttonIndex)
 
     // Calculate section widths based on actual layout constants
     // WidthSection: SECTION_SIZE = 28
-    // ColorSection: grid(8 * 14 + 7 * 2) + padding(6 * 2) = 138
+    // ColorSection: grid(7 * 20 + 6 * 3) + padding(4 * 2) = 166
     // TextSection: SECTION_PADDING(6) + 3*BUTTON_SIZE(20) + 2*BUTTON_SPACING(2) +
     //              SECTION_SPACING(8) + FONT_SIZE_WIDTH(40) + SECTION_SPACING(8) +
     //              FONT_FAMILY_WIDTH(90) + SECTION_PADDING(6) = 222
@@ -182,12 +190,13 @@ void TestColorAndWidthWidgetEvents::testHandleClickOnColorSwatch()
     setupWidgetWithAllSections();
     QSignalSpy spy(m_widget, &ColorAndWidthWidget::colorSelected);
 
+    // Click on first standard color swatch (index 0 = Red)
     QPoint firstSwatchCenter = getColorSwatchCenter(0);
     bool handled = m_widget->handleClick(firstSwatchCenter);
 
     QVERIFY(handled);
     QCOMPARE(spy.count(), 1);
-    QCOMPARE(m_widget->currentColor(), QColor(Qt::white));
+    QCOMPARE(m_widget->currentColor(), QColor(220, 53, 69));  // First standard color (Red)
 }
 
 void TestColorAndWidthWidgetEvents::testHandleClickOnSecondColorSwatch()
@@ -195,19 +204,19 @@ void TestColorAndWidthWidgetEvents::testHandleClickOnSecondColorSwatch()
     setupWidgetWithAllSections();
     QSignalSpy spy(m_widget, &ColorAndWidthWidget::colorSelected);
 
-    // Second swatch (light gray)
+    // Second standard swatch (index 1 = Yellow amber)
     QPoint secondSwatchCenter = getColorSwatchCenter(1);
     bool handled = m_widget->handleClick(secondSwatchCenter);
 
     QVERIFY(handled);
     QCOMPARE(spy.count(), 1);
-    QCOMPARE(m_widget->currentColor(), QColor(224, 224, 224));
+    QCOMPARE(m_widget->currentColor(), QColor(255, 240, 120));  // Second standard color (Yellow brighter)
 }
 
 void TestColorAndWidthWidgetEvents::testHandleClickOnPreviewOpensColorPicker()
 {
     setupWidgetWithAllSections();
-    QSignalSpy spy(m_widget, &ColorAndWidthWidget::moreColorsRequested);
+    QSignalSpy spy(m_widget, &ColorAndWidthWidget::customColorPickerRequested);
 
     QPoint previewCenter = getPreviewCenter();
     bool handled = m_widget->handleClick(previewCenter);

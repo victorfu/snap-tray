@@ -46,8 +46,8 @@ void PinWindowSubToolbar::setupConnections()
     // Color/width signals
     connect(m_colorAndWidthWidget, &ColorAndWidthWidget::colorSelected,
             this, &PinWindowSubToolbar::colorSelected);
-    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::moreColorsRequested,
-            this, &PinWindowSubToolbar::moreColorsRequested);
+    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::customColorPickerRequested,
+            this, &PinWindowSubToolbar::customColorPickerRequested);
     connect(m_colorAndWidthWidget, &ColorAndWidthWidget::widthChanged,
             this, &PinWindowSubToolbar::widthChanged);
 

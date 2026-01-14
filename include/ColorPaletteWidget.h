@@ -90,9 +90,10 @@ public:
     bool contains(const QPoint& pos) const;
 
     /**
-     * @brief Set whether to show the "more colors" button.
+     * @brief Handle a double-click at the given position.
+     * @return true if the click was handled
      */
-    void setShowMoreButton(bool show) { m_showMoreButton = show; }
+    bool handleDoubleClick(const QPoint& pos);
 
 signals:
     /**
@@ -101,9 +102,9 @@ signals:
     void colorSelected(const QColor& color);
 
     /**
-     * @brief Emitted when "more colors" button is clicked.
+     * @brief Emitted when preview swatch is clicked to open color picker.
      */
-    void moreColorsRequested();
+    void customColorPickerRequested();
 
 private:
     void updateSwatchRects();
@@ -111,20 +112,18 @@ private:
     QVector<QColor> m_colors;
     QColor m_currentColor;
     bool m_visible;
-    bool m_showMoreButton;
 
     QRect m_paletteRect;
-    QRect m_moreButtonRect;
-    QVector<QRect> m_swatchRects;
+    QRect m_customSwatchRect;      // Custom swatch (first position)
+    QVector<QRect> m_swatchRects;  // Standard color swatches
     int m_hoveredSwatch;
 
     // Layout constants
-    static constexpr int SWATCH_SIZE = 18;
-    static constexpr int SWATCH_SPACING = 2;
-    static constexpr int ROW_SPACING = 2;
-    static constexpr int PALETTE_PADDING = 6;
-    static constexpr int COLORS_PER_ROW = 8;
-    static constexpr int MIN_ROWS = 2;
+    static constexpr int SWATCH_SIZE = 20;       // Larger swatches for better visibility
+    static constexpr int SWATCH_SPACING = 3;     // Slightly more spacing
+    static constexpr int ROW_SPACING = 3;
+    static constexpr int PALETTE_PADDING = 4;
+    static constexpr int BORDER_RADIUS = 3;      // Rounded corners
 
     // Toolbar style configuration
     ToolbarStyleConfig m_styleConfig;
