@@ -243,11 +243,6 @@ private:
     QRect globalToLocal(const QRect& globalRect) const;
 
     QPixmap m_backgroundPixmap;
-    mutable QImage m_backgroundImageCache;  // Lazy-loaded cache for magnifier
-    mutable bool m_backgroundImageCacheValid = false;  // Cache validity flag
-
-    // Lazy accessor for background image (creates on first access)
-    const QImage& getBackgroundImage() const;
 
     QPoint m_startPoint;
     QPoint m_currentPoint;

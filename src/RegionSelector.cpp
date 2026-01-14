@@ -758,16 +758,6 @@ int RegionSelector::toolWidthForCurrentTool() const
     return m_annotationWidth;
 }
 
-const QImage& RegionSelector::getBackgroundImage() const
-{
-    // Lazy initialization: convert pixmap to image only when first needed (for magnifier)
-    // This saves ~126MB on 4K displays until magnifier is actually used
-    if (!m_backgroundImageCacheValid) {
-        m_backgroundImageCache = m_backgroundPixmap.toImage();
-        m_backgroundImageCacheValid = true;
-    }
-    return m_backgroundImageCache;
-}
 
 void RegionSelector::setupScreenGeometry(QScreen* screen)
 {
@@ -803,8 +793,6 @@ void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapt
         m_backgroundPixmap = m_currentScreen->grabWindow(0);
         qDebug() << "RegionSelector: Captured screenshot now, size:" << m_backgroundPixmap.size();
     }
-    // Lazy-load image cache: don't convert now, create on first magnifier access
-    m_backgroundImageCacheValid = false;
 
     // Update tool manager with background pixmap for mosaic tool
     m_toolManager->setSourcePixmap(&m_backgroundPixmap);
@@ -865,8 +853,6 @@ void RegionSelector::initializeWithRegion(QScreen* screen, const QRect& region)
 
     // Capture the screen first
     m_backgroundPixmap = m_currentScreen->grabWindow(0);
-    // Lazy-load image cache: don't convert now, create on first magnifier access
-    m_backgroundImageCacheValid = false;
 
     // Update tool manager with background pixmap for mosaic tool
     m_toolManager->setSourcePixmap(&m_backgroundPixmap);
@@ -1106,7 +1092,7 @@ void RegionSelector::drawCrosshair(QPainter& painter)
 void RegionSelector::drawMagnifier(QPainter& painter)
 {
     // Delegate to MagnifierPanel component
-    m_magnifierPanel->draw(painter, m_currentPoint, size(), getBackgroundImage());
+    m_magnifierPanel->draw(painter, m_currentPoint, size(), m_backgroundPixmap);
 }
 
 QCursor RegionSelector::getMosaicCursor(int width)

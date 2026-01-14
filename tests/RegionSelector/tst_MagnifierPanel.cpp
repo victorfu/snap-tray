@@ -38,7 +38,7 @@ private slots:
 
 private:
     MagnifierPanel* m_panel;
-    QImage* m_testImage;
+    QPixmap* m_testPixmap;
 };
 
 void tst_MagnifierPanel::initTestCase()
@@ -54,23 +54,25 @@ void tst_MagnifierPanel::init()
     m_panel = new MagnifierPanel();
 
     // Create a simple test image with known colors
-    m_testImage = new QImage(200, 200, QImage::Format_ARGB32);
-    m_testImage->fill(Qt::white);
+    QImage image(200, 200, QImage::Format_ARGB32);
+    image.fill(Qt::white);
 
     // Add some colored regions for testing
-    QPainter painter(m_testImage);
+    QPainter painter(&image);
     painter.fillRect(0, 0, 100, 100, Qt::red);      // Top-left: red
     painter.fillRect(100, 0, 100, 100, Qt::green);  // Top-right: green
     painter.fillRect(0, 100, 100, 100, Qt::blue);   // Bottom-left: blue
     painter.fillRect(100, 100, 100, 100, Qt::yellow); // Bottom-right: yellow
+    
+    m_testPixmap = new QPixmap(QPixmap::fromImage(image));
 }
 
 void tst_MagnifierPanel::cleanup()
 {
     delete m_panel;
     m_panel = nullptr;
-    delete m_testImage;
-    m_testImage = nullptr;
+    delete m_testPixmap;
+    m_testPixmap = nullptr;
 }
 
 void tst_MagnifierPanel::testDefaultValues()
@@ -117,7 +119,7 @@ void tst_MagnifierPanel::testColorStringRGB()
     QPainter painter(&pixmap);
 
     m_panel->setShowHexColor(false);
-    m_panel->draw(painter, QPoint(50, 50), QSize(400, 400), *m_testImage);
+    m_panel->draw(painter, QPoint(50, 50), QSize(400, 400), *m_testPixmap);
 
     // Should be in RGB format
     QString colorStr = m_panel->colorString();
@@ -131,7 +133,7 @@ void tst_MagnifierPanel::testColorStringHex()
     QPainter painter(&pixmap);
 
     m_panel->setShowHexColor(true);
-    m_panel->draw(painter, QPoint(50, 50), QSize(400, 400), *m_testImage);
+    m_panel->draw(painter, QPoint(50, 50), QSize(400, 400), *m_testPixmap);
 
     // Should be in HEX format
     QString colorStr = m_panel->colorString();
@@ -177,13 +179,13 @@ void tst_MagnifierPanel::testDrawDoesNotCrash()
     QPainter painter(&pixmap);
 
     // Test various cursor positions
-    m_panel->draw(painter, QPoint(100, 100), QSize(400, 400), *m_testImage);
+    m_panel->draw(painter, QPoint(100, 100), QSize(400, 400), *m_testPixmap);
     QVERIFY(true);
 
-    m_panel->draw(painter, QPoint(0, 0), QSize(400, 400), *m_testImage);
+    m_panel->draw(painter, QPoint(0, 0), QSize(400, 400), *m_testPixmap);
     QVERIFY(true);
 
-    m_panel->draw(painter, QPoint(199, 199), QSize(400, 400), *m_testImage);
+    m_panel->draw(painter, QPoint(199, 199), QSize(400, 400), *m_testPixmap);
     QVERIFY(true);
 }
 
@@ -193,8 +195,8 @@ void tst_MagnifierPanel::testDrawWithEmptyImage()
     pixmap.fill(Qt::transparent);
     QPainter painter(&pixmap);
 
-    QImage emptyImage;
-    m_panel->draw(painter, QPoint(100, 100), QSize(400, 400), emptyImage);
+    QPixmap emptyPixmap;
+    m_panel->draw(painter, QPoint(100, 100), QSize(400, 400), emptyPixmap);
     QVERIFY(true);  // Should not crash
 }
 
@@ -205,17 +207,17 @@ void tst_MagnifierPanel::testDrawUpdatesCurrentColor()
     QPainter painter(&pixmap);
 
     // Draw at red region (top-left)
-    m_panel->draw(painter, QPoint(50, 50), QSize(400, 400), *m_testImage);
+    m_panel->draw(painter, QPoint(50, 50), QSize(400, 400), *m_testPixmap);
     QColor redColor = m_panel->currentColor();
     QCOMPARE(redColor, QColor(Qt::red));
 
     // Draw at green region (top-right)
-    m_panel->draw(painter, QPoint(150, 50), QSize(400, 400), *m_testImage);
+    m_panel->draw(painter, QPoint(150, 50), QSize(400, 400), *m_testPixmap);
     QColor greenColor = m_panel->currentColor();
     QCOMPARE(greenColor, QColor(Qt::green));
 
     // Draw at blue region (bottom-left)
-    m_panel->draw(painter, QPoint(50, 150), QSize(400, 400), *m_testImage);
+    m_panel->draw(painter, QPoint(50, 150), QSize(400, 400), *m_testPixmap);
     QColor blueColor = m_panel->currentColor();
     QCOMPARE(blueColor, QColor(Qt::blue));
 }

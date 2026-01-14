@@ -87,7 +87,7 @@ QString MagnifierPanel::colorString() const
     }
 }
 
-void MagnifierPanel::updateMagnifierCache(const QPoint& cursorPos, const QImage& backgroundImage)
+void MagnifierPanel::updateMagnifierCache(const QPoint& cursorPos, const QPixmap& backgroundPixmap)
 {
     int deviceX = static_cast<int>(cursorPos.x() * m_devicePixelRatio);
     int deviceY = static_cast<int>(cursorPos.y() * m_devicePixelRatio);
@@ -109,25 +109,35 @@ void MagnifierPanel::updateMagnifierCache(const QPoint& cursorPos, const QImage&
     QImage sampleImage(deviceGridCountX, deviceGridCountY, QImage::Format_ARGB32);
     sampleImage.fill(Qt::black);
 
-    // Optimized pixel sampling using scanLine() for direct memory access
-    // Pre-calculate valid source region bounds
-    int srcLeft = qMax(0, sampleX);
-    int srcTop = qMax(0, sampleY);
-    int srcRight = qMin(backgroundImage.width(), sampleX + deviceGridCountX);
-    int srcBottom = qMin(backgroundImage.height(), sampleY + deviceGridCountY);
+    // Calculate source rect in pixmap coordinates
+    QRect srcRect(sampleX, sampleY, deviceGridCountX, deviceGridCountY);
+    
+    // Clip to background bounds to find valid area
+    QRect validSrcRect = srcRect.intersected(backgroundPixmap.rect());
 
-    // Calculate destination offsets for out-of-bounds handling
-    int dstOffsetX = srcLeft - sampleX;
-    int dstOffsetY = srcTop - sampleY;
+    if (!validSrcRect.isEmpty()) {
+        // Convert only the visible portion to QImage (FAST!)
+        QImage croppedImage = backgroundPixmap.copy(validSrcRect).toImage();
 
-    // Copy valid region using scanLine for direct memory access (much faster than pixel-by-pixel)
-    if (srcRight > srcLeft && srcBottom > srcTop) {
-        int copyWidth = srcRight - srcLeft;
-        for (int srcY = srcTop; srcY < srcBottom; ++srcY) {
-            const QRgb* srcLine = reinterpret_cast<const QRgb*>(backgroundImage.constScanLine(srcY));
-            QRgb* dstLine = reinterpret_cast<QRgb*>(sampleImage.scanLine(srcY - srcTop + dstOffsetY));
-            memcpy(dstLine + dstOffsetX, srcLine + srcLeft, copyWidth * sizeof(QRgb));
-        }
+        // Draw cropped image into sample image at correct offset
+        int dstX = validSrcRect.x() - sampleX;
+        int dstY = validSrcRect.y() - sampleY;
+
+        QPainter p(&sampleImage);
+        p.setCompositionMode(QPainter::CompositionMode_Source);
+        p.drawImage(dstX, dstY, croppedImage);
+    }
+
+    // Update current color (center pixel)
+    // The center pixel is at offset (deviceGridCountX/2, deviceGridCountY/2) in sampleImage
+    int centerX = deviceGridCountX / 2;
+    int centerY = deviceGridCountY / 2;
+    // Check bounds just in case, though it should always be valid for non-empty grid
+    if (centerX >= 0 && centerX < sampleImage.width() && 
+        centerY >= 0 && centerY < sampleImage.height()) {
+        m_currentColor = sampleImage.pixelColor(centerX, centerY);
+    } else {
+        m_currentColor = Qt::black;
     }
 
     // Use IgnoreAspectRatio to ensure it fills the entire region
@@ -140,19 +150,9 @@ void MagnifierPanel::updateMagnifierCache(const QPoint& cursorPos, const QImage&
 }
 
 void MagnifierPanel::draw(QPainter& painter, const QPoint& cursorPos,
-                          const QSize& viewportSize, const QImage& backgroundImage)
+                          const QSize& viewportSize, const QPixmap& backgroundPixmap)
 {
     m_currentCursorPos = cursorPos;
-
-    // Get current pixel color (device coordinates)
-    int deviceX = static_cast<int>(cursorPos.x() * m_devicePixelRatio);
-    int deviceY = static_cast<int>(cursorPos.y() * m_devicePixelRatio);
-    if (deviceX >= 0 && deviceX < backgroundImage.width() &&
-        deviceY >= 0 && deviceY < backgroundImage.height()) {
-        m_currentColor = QColor(backgroundImage.pixel(deviceX, deviceY));
-    } else {
-        m_currentColor = Qt::black;
-    }
 
     // Calculate panel position (cursor at top-left corner, like Snipaste/PixPin)
     int panelWidth = kWidth;
@@ -186,7 +186,8 @@ void MagnifierPanel::draw(QPainter& painter, const QPoint& cursorPos,
     painter.drawRect(panelX, infoAreaY, panelWidth, infoAreaHeight);
 
     // Update magnifier cache if needed
-    updateMagnifierCache(cursorPos, backgroundImage);
+    // This will also update m_currentColor
+    updateMagnifierCache(cursorPos, backgroundPixmap);
 
     // Draw cached magnified pixmap
     painter.drawPixmap(magX, magY, m_magnifierPixmapCache);

@@ -40,7 +40,7 @@ public:
      * @param backgroundImage The background image to magnify (device pixels)
      */
     void draw(QPainter& painter, const QPoint& cursorPos,
-              const QSize& viewportSize, const QImage& backgroundImage);
+              const QSize& viewportSize, const QPixmap& backgroundPixmap);
 
     /**
      * @brief Get the color at the current cursor position.
@@ -78,7 +78,7 @@ public:
 
 private:
     void initializeGridCache();
-    void updateMagnifierCache(const QPoint& cursorPos, const QImage& backgroundImage);
+    void updateMagnifierCache(const QPoint& cursorPos, const QPixmap& backgroundPixmap);
     void drawInfoPanel(QPainter& painter, int panelX, int infoY, int panelWidth);
 
     qreal m_devicePixelRatio = 1.0;
