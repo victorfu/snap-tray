@@ -48,7 +48,7 @@ void WidthSection::draw(QPainter& painter, const ToolbarStyleConfig& styleConfig
     const int rightMargin = 4;  // Extra margin on right side
     int size = m_sectionRect.height() - 2 * borderInset - rightMargin;  // Square size
     int x = m_sectionRect.left() + borderInset + leftMargin;
-    int y = m_sectionRect.top() + borderInset;
+    int y = m_sectionRect.top() + (m_sectionRect.height() - size) / 2;  // Vertically centered
     QRect containerRect(x, y, size, size);
 
     // Draw container with all rounded corners
