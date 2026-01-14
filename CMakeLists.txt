@@ -296,9 +296,6 @@ add_library(snaptray_algorithms STATIC
     src/scrolling/ImageStitcherAlgorithms.cpp
     src/scrolling/FixedElementDetector.cpp
     src/scrolling/StitchWorker.cpp
-    src/stitching/FeatureMatcher.cpp
-    src/stitching/OpticalFlowPredictor.cpp
-    src/stitching/StaticSceneAnalyzer.cpp
     # Headers with Q_OBJECT for MOC processing
     include/detection/FaceDetector.h
     include/detection/TextDetector.h
