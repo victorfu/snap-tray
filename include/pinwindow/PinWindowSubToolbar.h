@@ -3,6 +3,7 @@
 
 #include <QWidget>
 #include <QRect>
+#include <QCursor>
 #include "annotations/StepBadgeAnnotation.h"  // For StepBadgeSize enum
 #include "annotations/ShapeAnnotation.h"      // For ShapeType and ShapeFillMode
 #include "annotations/ArrowAnnotation.h"      // For LineEndStyle
@@ -39,6 +40,10 @@ public:
 
     // Mode: sub-toolbar or emoji picker
     bool isShowingEmojiPicker() const { return m_showingEmojiPicker; }
+
+    // Annotation cursor - used to override toolbar cursor when in annotation mode
+    void setAnnotationCursor(const QCursor& cursor);
+    void clearAnnotationCursor();
 
 signals:
     // Color/width signals
@@ -92,6 +97,10 @@ private:
     ColorAndWidthWidget *m_colorAndWidthWidget;
     EmojiPicker *m_emojiPicker;
     bool m_showingEmojiPicker = false;
+
+    // Annotation cursor override
+    QCursor m_annotationCursor;
+    bool m_hasAnnotationCursor = false;
 
     // Match RegionSelector's 4px gap between toolbar and sub-toolbar
     static constexpr int MARGIN = 4;

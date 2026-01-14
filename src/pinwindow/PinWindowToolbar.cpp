@@ -382,6 +382,13 @@ void PinWindowToolbar::mousePressEvent(QMouseEvent *event)
 
 void PinWindowToolbar::enterEvent(QEnterEvent *event)
 {
+    // If in annotation mode, use the annotation cursor
+    if (m_hasAnnotationCursor) {
+        setCursor(m_annotationCursor);
+        QWidget::enterEvent(event);
+        return;
+    }
+
     // Set initial cursor when mouse enters (mouseMoveEvent requires movement)
     int hovered = buttonAtPosition(event->position().toPoint());
     if (hovered >= 0) {
@@ -398,19 +405,28 @@ void PinWindowToolbar::mouseMoveEvent(QMouseEvent *event)
         QPoint delta = event->globalPosition().toPoint() - m_dragStartPos;
         move(m_dragStartWidgetPos + delta);
         setCursor(Qt::ClosedHandCursor);
+        QWidget::mouseMoveEvent(event);
+        return;
+    }
+
+    // Update hover state
+    int newHovered = buttonAtPosition(event->pos());
+    if (newHovered != m_hoveredButton) {
+        m_hoveredButton = newHovered;
+        update();
+    }
+
+    // Don't change cursor when in annotation mode
+    if (m_hasAnnotationCursor) {
+        QWidget::mouseMoveEvent(event);
+        return;
+    }
+
+    // Set hover cursor (matches RegionSelector behavior)
+    if (newHovered >= 0) {
+        setCursor(Qt::PointingHandCursor);
     } else {
-        // Update hover state
-        int newHovered = buttonAtPosition(event->pos());
-        if (newHovered != m_hoveredButton) {
-            m_hoveredButton = newHovered;
-            update();
-        }
-        // Set hover cursor (matches RegionSelector behavior)
-        if (newHovered >= 0) {
-            setCursor(Qt::PointingHandCursor);
-        } else {
-            setCursor(Qt::OpenHandCursor);
-        }
+        setCursor(Qt::OpenHandCursor);
     }
     QWidget::mouseMoveEvent(event);
 }
@@ -429,7 +445,9 @@ void PinWindowToolbar::leaveEvent(QEvent *event)
         m_hoveredButton = -1;
         update();
     }
-    setCursor(Qt::ArrowCursor);
+    if (!m_hasAnnotationCursor) {
+        setCursor(Qt::ArrowCursor);
+    }
     emit cursorRestoreRequested();
     QWidget::leaveEvent(event);
 }
@@ -485,4 +503,21 @@ bool PinWindowToolbar::eventFilter(QObject *obj, QEvent *event)
     }
 
     return QWidget::eventFilter(obj, event);
+}
+
+void PinWindowToolbar::setAnnotationCursor(const QCursor& cursor)
+{
+    m_annotationCursor = cursor;
+    m_hasAnnotationCursor = true;
+    setCursor(cursor);
+}
+
+void PinWindowToolbar::clearAnnotationCursor()
+{
+    m_hasAnnotationCursor = false;
+    if (m_hoveredButton >= 0) {
+        setCursor(Qt::PointingHandCursor);
+    } else {
+        setCursor(Qt::ArrowCursor);
+    }
 }

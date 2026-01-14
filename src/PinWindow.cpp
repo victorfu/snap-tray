@@ -44,6 +44,7 @@ using namespace SnapTray;
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QGuiApplication>
+#include <QApplication>
 #include <QClipboard>
 #include <QCursor>
 #include <QScreen>
@@ -1076,6 +1077,14 @@ void PinWindow::paintEvent(QPaintEvent *)
     }
 }
 
+void PinWindow::enterEvent(QEnterEvent *event)
+{
+    if (m_annotationMode) {
+        updateCursorForTool();
+    }
+    QWidget::enterEvent(event);
+}
+
 void PinWindow::mousePressEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton) {
@@ -1254,7 +1263,13 @@ void PinWindow::mouseReleaseEvent(QMouseEvent *event)
         }
         if (m_isDragging) {
             m_isDragging = false;
-            setCursor(Qt::ArrowCursor);
+            // Only set Arrow cursor if not in annotation mode
+            if (!m_annotationMode) {
+                setCursor(Qt::ArrowCursor);
+            } else {
+                // Restore tool cursor after drag
+                updateCursorForTool();
+            }
         }
         if (m_clickThrough) {
             updateClickThroughForCursor();
@@ -1654,6 +1669,7 @@ void PinWindow::enterAnnotationMode()
     }
 
     m_annotationMode = true;
+    CursorManager::instance().clearAll();
     updateCursorForTool();
     update();
 
@@ -1662,35 +1678,55 @@ void PinWindow::enterAnnotationMode()
 
 void PinWindow::updateCursorForTool()
 {
+    auto& cursorManager = CursorManager::instance();
+
     if (!m_annotationMode) {
+        // Clear annotation cursor from toolbars
+        if (m_toolbar) {
+            m_toolbar->clearAnnotationCursor();
+        }
+        if (m_subToolbar) {
+            m_subToolbar->clearAnnotationCursor();
+        }
+        cursorManager.popCursor(CursorContext::Tool);
         setCursor(Qt::ArrowCursor);
         return;
     }
 
-    // Directly set cursor on this widget instead of using CursorManager
-    // (CursorManager is designed for single-window apps like RegionSelector,
-    // but PinWindow has a separate floating toolbar that can steal focus)
-    if (!m_toolManager) {
-        setCursor(Qt::CrossCursor);
-        return;
+    if (cursorManager.targetWidget() != this) {
+        cursorManager.setTargetWidget(this);
     }
 
-    ToolId currentTool = m_toolManager->currentTool();
+    // Determine the appropriate cursor for the current tool
+    QCursor toolCursor = Qt::CrossCursor;
 
-    // Special handling for mosaic tool
-    if (currentTool == ToolId::Mosaic) {
-        int mosaicWidth = m_toolManager->width();
-        setCursor(CursorManager::createMosaicCursor(mosaicWidth));
-        return;
+    if (m_toolManager) {
+        ToolId currentTool = m_toolManager->currentTool();
+
+        // Special handling for mosaic tool
+        if (currentTool == ToolId::Mosaic) {
+            int mosaicWidth = m_toolManager->width();
+            toolCursor = CursorManager::createMosaicCursor(mosaicWidth);
+        } else {
+            // Use handler's cursor() method
+            IToolHandler* handler = m_toolManager->currentHandler();
+            if (handler) {
+                toolCursor = handler->cursor();
+            }
+        }
     }
 
-    // Use handler's cursor() method
-    IToolHandler* handler = m_toolManager->currentHandler();
-    if (handler) {
-        setCursor(handler->cursor());
-    } else {
-        // Fallback to cross cursor for drawing tools (including Text which has no handler)
-        setCursor(Qt::CrossCursor);
+    // Use CursorManager so the tool cursor persists across hover/drag contexts
+    cursorManager.pushCursor(CursorContext::Tool, toolCursor);
+    // Fallback for platforms where the target widget cursor doesn't update immediately
+    setCursor(toolCursor);
+
+    // Also set on toolbars for when mouse is over them
+    if (m_toolbar) {
+        m_toolbar->setAnnotationCursor(toolCursor);
+    }
+    if (m_subToolbar) {
+        m_subToolbar->setAnnotationCursor(toolCursor);
     }
 }
 
@@ -1702,18 +1738,21 @@ void PinWindow::exitAnnotationMode()
 
     m_annotationMode = false;
     m_currentToolId = ToolId::Selection;
+    CursorManager::instance().popCursor(CursorContext::Tool);
 
     if (m_toolbar) {
         m_toolbar->setActiveButton(-1);
+        m_toolbar->clearAnnotationCursor();
     }
 
     // Hide sub-toolbar when exiting annotation mode
     hideSubToolbar();
+    if (m_subToolbar) {
+        m_subToolbar->clearAnnotationCursor();
+    }
 
     setCursor(Qt::ArrowCursor);
     update();
-
-    qDebug() << "PinWindow: Exited annotation mode";
 }
 
 void PinWindow::handleToolbarToolSelected(int toolId)
@@ -1774,6 +1813,13 @@ void PinWindow::handleToolbarToolSelected(int toolId)
     }
 
     if (isAnnotationTool(tool)) {
+        if (!isActiveWindow()) {
+            activateWindow();
+            raise();
+        }
+        if (!hasFocus()) {
+            setFocus(Qt::OtherFocusReason);
+        }
         if (sameToolClicked && m_subToolbar && m_subToolbar->isVisible()) {
             // Same tool clicked while sub-toolbar visible - exit annotation mode entirely
             qDebug() << "PinWindow: Same tool clicked, exiting annotation mode";
@@ -1897,9 +1943,9 @@ void PinWindow::onWidthChanged(int width)
     if (m_toolManager) {
         m_toolManager->setWidth(width);
     }
-    // Update cursor if Mosaic tool is active (CursorManager handles this)
-    if (m_currentToolId == ToolId::Mosaic) {
-        CursorManager::instance().updateMosaicCursor(width);
+    // Update cursor if Mosaic tool is active
+    if (m_annotationMode && m_currentToolId == ToolId::Mosaic) {
+        updateCursorForTool();
     }
     // Save to settings
     AnnotationSettingsManager::instance().saveWidth(width);

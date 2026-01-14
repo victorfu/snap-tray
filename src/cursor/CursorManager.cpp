@@ -109,6 +109,7 @@ void CursorManager::clearAll()
     m_cursorStack.clear();
     if (m_targetWidget) {
         m_targetWidget->setCursor(Qt::ArrowCursor);
+        m_lastAppliedCursor = QCursor(Qt::ArrowCursor);
     }
 }
 
@@ -243,14 +244,15 @@ void CursorManager::applyCursor()
     }
 
     QCursor newCursor = effectiveCursor();
+    QCursor currentCursor = m_targetWidget->cursor();
 
     // Only apply if changed (compare by shape for standard cursors)
-    if (newCursor.shape() != m_lastAppliedCursor.shape() ||
-        newCursor.pixmap().cacheKey() != m_lastAppliedCursor.pixmap().cacheKey()) {
+    if (newCursor.shape() != currentCursor.shape() ||
+        newCursor.pixmap().cacheKey() != currentCursor.pixmap().cacheKey()) {
         m_targetWidget->setCursor(newCursor);
-        m_lastAppliedCursor = newCursor;
         emit cursorChanged(newCursor);
     }
+    m_lastAppliedCursor = newCursor;
 }
 
 QCursor CursorManager::effectiveCursor() const
