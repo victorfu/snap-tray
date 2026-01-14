@@ -64,11 +64,6 @@ QRgb MosaicStroke::calculateBlockAverageColor(const QImage &image, int x, int y,
 
 QImage MosaicStroke::applyPixelatedMosaic(const QRect &strokeBounds) const
 {
-    // Get the full source image for sampling
-    if (m_sourceImageCache.isNull()) {
-        m_sourceImageCache = m_sourcePixmap.toImage().convertToFormat(QImage::Format_ARGB32);
-    }
-
     // Calculate effective block size with DPI scaling
     int effectiveBlockSize = qMax(8, static_cast<int>(m_blockSize * m_devicePixelRatio));
 
@@ -84,12 +79,6 @@ QImage MosaicStroke::applyPixelatedMosaic(const QRect &strokeBounds) const
         return QImage();
     }
 
-    // Create result image for the stroke bounds region
-    QImage resultImage(deviceStrokeBounds.size(), QImage::Format_ARGB32);
-    resultImage.fill(Qt::transparent);
-
-    const QRect imageBounds(0, 0, m_sourceImageCache.width(), m_sourceImageCache.height());
-
     auto floorToBlock = [](int value, int block) {
         int rem = value % block;
         if (rem < 0) {
@@ -103,34 +92,68 @@ QImage MosaicStroke::applyPixelatedMosaic(const QRect &strokeBounds) const
     int endBlockX = deviceStrokeBounds.right();
     int endBlockY = deviceStrokeBounds.bottom();
 
+    // Determine fetch area (aligned blocks)
+    QRect blockAlignedRect(
+        startBlockX,
+        startBlockY,
+        endBlockX - startBlockX + effectiveBlockSize,
+        endBlockY - startBlockY + effectiveBlockSize
+    );
+    
+    // Intersect with source image bounds
+    QRect sourceBounds(0, 0, m_sourcePixmap.width(), m_sourcePixmap.height());
+    QRect fetchRect = blockAlignedRect.intersected(sourceBounds);
+
+    if (fetchRect.isEmpty()) {
+        return QImage();
+    }
+
+    // Fetch ONLY the required patch
+    QImage sourcePatch = m_sourcePixmap.copy(fetchRect).toImage().convertToFormat(QImage::Format_ARGB32);
+
+    // Create result image for the stroke bounds region
+    QImage resultImage(deviceStrokeBounds.size(), QImage::Format_ARGB32);
+    resultImage.fill(Qt::transparent);
+
     // Process blocks aligned to the full image grid for stable pixelation
     for (int blockY = startBlockY; blockY <= endBlockY; blockY += effectiveBlockSize) {
         for (int blockX = startBlockX; blockX <= endBlockX; blockX += effectiveBlockSize) {
-            QRect blockRect(blockX, blockY, effectiveBlockSize, effectiveBlockSize);
-            QRect sampleRect = blockRect.intersected(imageBounds);
-            if (sampleRect.isEmpty()) {
-                continue;
-            }
-
-            QRgb blockColor = calculateBlockAverageColor(
-                m_sourceImageCache,
-                sampleRect.x(),
-                sampleRect.y(),
-                sampleRect.width(),
-                sampleRect.height()
-            );
-
-            QRect targetRect = blockRect.intersected(deviceStrokeBounds);
+            QRect blockRectGlobal(blockX, blockY, effectiveBlockSize, effectiveBlockSize);
+            
+            // Check intersection with deviceStrokeBounds (target)
+            QRect targetRect = blockRectGlobal.intersected(deviceStrokeBounds);
             if (targetRect.isEmpty()) {
                 continue;
             }
+
+            // Check intersection with fetchRect (source data)
+            QRect sampleRectGlobal = blockRectGlobal.intersected(fetchRect);
+            if (sampleRectGlobal.isEmpty()) {
+                continue;
+            }
+
+            // Calculate local coordinates for sampling from sourcePatch
+            int localSampleX = sampleRectGlobal.x() - fetchRect.x();
+            int localSampleY = sampleRectGlobal.y() - fetchRect.y();
+
+            QRgb blockColor = calculateBlockAverageColor(
+                sourcePatch,
+                localSampleX,
+                localSampleY,
+                sampleRectGlobal.width(),
+                sampleRectGlobal.height()
+            );
 
             int destX = targetRect.x() - deviceStrokeBounds.x();
             int destY = targetRect.y() - deviceStrokeBounds.y();
 
             for (int py = 0; py < targetRect.height(); ++py) {
+                if (destY + py >= resultImage.height()) break;
                 QRgb *destLine = reinterpret_cast<QRgb*>(resultImage.scanLine(destY + py));
-                std::fill(destLine + destX, destLine + destX + targetRect.width(), blockColor);
+                int fillWidth = qMin(targetRect.width(), resultImage.width() - destX);
+                if (fillWidth > 0 && destX >= 0) {
+                    std::fill(destLine + destX, destLine + destX + fillWidth, blockColor);
+                }
             }
         }
     }
@@ -140,11 +163,6 @@ QImage MosaicStroke::applyPixelatedMosaic(const QRect &strokeBounds) const
 
 QImage MosaicStroke::applyGaussianBlur(const QRect &strokeBounds) const
 {
-    // Get the full source image for sampling
-    if (m_sourceImageCache.isNull()) {
-        m_sourceImageCache = m_sourcePixmap.toImage().convertToFormat(QImage::Format_ARGB32);
-    }
-
     // Convert stroke bounds to device pixels
     QRect deviceStrokeBounds(
         static_cast<int>(strokeBounds.x() * m_devicePixelRatio),
@@ -158,15 +176,15 @@ QImage MosaicStroke::applyGaussianBlur(const QRect &strokeBounds) const
     }
 
     // Clamp to image bounds
-    QRect clampedBounds = deviceStrokeBounds.intersected(
-        QRect(0, 0, m_sourceImageCache.width(), m_sourceImageCache.height())
-    );
+    QRect sourceBounds(0, 0, m_sourcePixmap.width(), m_sourcePixmap.height());
+    QRect clampedBounds = deviceStrokeBounds.intersected(sourceBounds);
+    
     if (clampedBounds.isEmpty()) {
         return QImage();
     }
 
-    // Extract region from source
-    QImage regionImage = m_sourceImageCache.copy(clampedBounds);
+    // Extract region from source (Just the needed part)
+    QImage regionImage = m_sourcePixmap.copy(clampedBounds).toImage();
     QImage rgb = regionImage.convertToFormat(QImage::Format_RGB32);
 
     cv::Mat mat(rgb.height(), rgb.width(), CV_8UC4,
@@ -349,7 +367,6 @@ void MosaicStroke::updateSource(const QPixmap &sourcePixmap)
 {
     m_sourcePixmap = sourcePixmap;
     m_devicePixelRatio = sourcePixmap.devicePixelRatio();
-    m_sourceImageCache = QImage();  // Clear cache so it regenerates on next draw
 }
 
 void MosaicStroke::setBlurType(BlurType type)

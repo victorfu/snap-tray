@@ -36,7 +36,6 @@ public:
 private:
     QVector<QPoint> m_points;
     QPixmap m_sourcePixmap;
-    mutable QImage m_sourceImageCache;
     int m_width;      // Brush width
     int m_blockSize;  // Mosaic block size
     BlurType m_blurType;

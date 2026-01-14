@@ -41,7 +41,6 @@ private:
     mutable QPixmap m_renderedCache;
     mutable QRect m_cachedRect;
     mutable qreal m_cachedDpr = 0.0;
-    mutable QImage m_sourceImageCache;
 
     QImage applyPixelatedMosaic(qreal dpr) const;
     QImage applyGaussianBlur(qreal dpr) const;

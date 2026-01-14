@@ -61,13 +61,7 @@ QRgb MosaicRectAnnotation::calculateBlockAverageColor(const QImage& image, int x
 
 QImage MosaicRectAnnotation::applyPixelatedMosaic(qreal dpr) const
 {
-    // Get the full source image for sampling
-    if (m_sourceImageCache.isNull()) {
-        m_sourceImageCache = m_sourcePixmap.toImage().convertToFormat(QImage::Format_ARGB32);
-    }
-
     // Use the source pixmap's DPR consistently for both sampling and output
-    // This ensures the mosaic pixels align correctly with the source image
     qreal sourceDpr = m_devicePixelRatio;
 
     // Calculate effective block size with DPI scaling
@@ -82,23 +76,12 @@ QImage MosaicRectAnnotation::applyPixelatedMosaic(qreal dpr) const
         static_cast<int>(m_rect.height() * sourceDpr)
     );
 
-    qDebug() << "MosaicRectAnnotation::applyPixelatedMosaic:"
-             << "m_rect=" << m_rect
-             << "deviceRect=" << deviceRect
-             << "sourceDpr=" << sourceDpr
-             << "painterDpr=" << dpr
-             << "sourceImageSize=" << m_sourceImageCache.size();
-
     if (deviceRect.isEmpty()) {
         return QImage();
     }
 
-    // Create result image in device pixels (matching deviceRect size)
-    QImage resultImage(deviceRect.size(), QImage::Format_ARGB32);
-    resultImage.fill(Qt::transparent);
-
-    const QRect imageBounds(0, 0, m_sourceImageCache.width(), m_sourceImageCache.height());
-
+    // Determine the source region to copy (aligned to blocks)
+    // We need to fetch enough context to handle the blocks correctly
     auto floorToBlock = [](int value, int block) {
         int rem = value % block;
         if (rem < 0) {
@@ -112,27 +95,58 @@ QImage MosaicRectAnnotation::applyPixelatedMosaic(qreal dpr) const
     int endBlockX = deviceRect.right();
     int endBlockY = deviceRect.bottom();
 
+    // Calculate the union of all involved blocks
+    QRect blockAlignedRect(
+        startBlockX,
+        startBlockY,
+        endBlockX - startBlockX + effectiveBlockSize, // Add one extra block size to be safe
+        endBlockY - startBlockY + effectiveBlockSize
+    );
+    
+    // Intersect with source image bounds
+    QRect sourceBounds(0, 0, m_sourcePixmap.width(), m_sourcePixmap.height());
+    QRect fetchRect = blockAlignedRect.intersected(sourceBounds);
+
+    if (fetchRect.isEmpty()) {
+        return QImage();
+    }
+
+    // Fetch ONLY the required part of the image
+    // This is the key optimization: avoiding full screen conversion
+    QImage sourcePatch = m_sourcePixmap.copy(fetchRect).toImage().convertToFormat(QImage::Format_ARGB32);
+
+    // Create result image in device pixels (matching deviceRect size)
+    QImage resultImage(deviceRect.size(), QImage::Format_ARGB32);
+    resultImage.fill(Qt::transparent);
+
     // Process blocks aligned to the full image grid for stable pixelation
+    // Iterate in GLOBAL coordinates (relative to full image)
     for (int blockY = startBlockY; blockY <= endBlockY; blockY += effectiveBlockSize) {
         for (int blockX = startBlockX; blockX <= endBlockX; blockX += effectiveBlockSize) {
-            QRect blockRect(blockX, blockY, effectiveBlockSize, effectiveBlockSize);
-            QRect sampleRect = blockRect.intersected(imageBounds);
-            if (sampleRect.isEmpty()) {
-                continue;
-            }
-
-            QRgb blockColor = calculateBlockAverageColor(
-                m_sourceImageCache,
-                sampleRect.x(),
-                sampleRect.y(),
-                sampleRect.width(),
-                sampleRect.height()
-            );
-
-            QRect targetRect = blockRect.intersected(deviceRect);
+            // Check intersection with deviceRect (target area)
+            QRect blockRectGlobal(blockX, blockY, effectiveBlockSize, effectiveBlockSize);
+            QRect targetRect = blockRectGlobal.intersected(deviceRect);
             if (targetRect.isEmpty()) {
                 continue;
             }
+
+            // Check intersection with fetchRect (source data available)
+            QRect sampleRectGlobal = blockRectGlobal.intersected(fetchRect);
+            if (sampleRectGlobal.isEmpty()) {
+                continue;
+            }
+            
+            // Calculate local coordinates for sampling from sourcePatch
+            int localSampleX = sampleRectGlobal.x() - fetchRect.x();
+            int localSampleY = sampleRectGlobal.y() - fetchRect.y();
+
+            QRgb blockColor = calculateBlockAverageColor(
+                sourcePatch,
+                localSampleX,
+                localSampleY,
+                sampleRectGlobal.width(),
+                sampleRectGlobal.height()
+            );
 
             int destX = targetRect.x() - deviceRect.x();
             int destY = targetRect.y() - deviceRect.y();
@@ -153,11 +167,6 @@ QImage MosaicRectAnnotation::applyPixelatedMosaic(qreal dpr) const
 
 QImage MosaicRectAnnotation::applyGaussianBlur(qreal dpr) const
 {
-    // Get the full source image for sampling
-    if (m_sourceImageCache.isNull()) {
-        m_sourceImageCache = m_sourcePixmap.toImage().convertToFormat(QImage::Format_ARGB32);
-    }
-
     qreal sourceDpr = m_devicePixelRatio;
 
     // Convert rect bounds to device pixels
@@ -173,15 +182,19 @@ QImage MosaicRectAnnotation::applyGaussianBlur(qreal dpr) const
     }
 
     // Clamp to image bounds
-    QRect clampedRect = deviceRect.intersected(
-        QRect(0, 0, m_sourceImageCache.width(), m_sourceImageCache.height())
-    );
+    QRect sourceBounds(0, 0, m_sourcePixmap.width(), m_sourcePixmap.height());
+    QRect clampedRect = deviceRect.intersected(sourceBounds);
+    
     if (clampedRect.isEmpty()) {
         return QImage();
     }
 
-    // Extract region from source
-    QImage regionImage = m_sourceImageCache.copy(clampedRect);
+    // Extract region from source (Avoid full image conversion)
+    // fetchRect is same as clampedRect because for Gaussian blur we just need the content
+    // Note: Technically for proper edge blurring we might need a margin, 
+    // but clampedRect is usually sufficient for visual purposes or we could expand it slightly.
+    // For simplicity and correctness with existing logic, we use the intersection.
+    QImage regionImage = m_sourcePixmap.copy(clampedRect).toImage();
     QImage rgb = regionImage.convertToFormat(QImage::Format_RGB32);
 
     cv::Mat mat(rgb.height(), rgb.width(), CV_8UC4,
