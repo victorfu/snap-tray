@@ -131,8 +131,8 @@ void ToolManager::setAnnotationLayer(AnnotationLayer* layer) {
     m_context->annotationLayer = layer;
 }
 
-void ToolManager::setSourcePixmap(const QPixmap* pixmap) {
-    m_context->sourcePixmap = pixmap;
+void ToolManager::setSourcePixmap(SharedPixmap pixmap) {
+    m_context->sourcePixmap = std::move(pixmap);
 }
 
 void ToolManager::setDevicePixelRatio(qreal dpr) {

@@ -10,14 +10,14 @@
 // MosaicStroke Implementation (classic pixelation)
 // ============================================================================
 
-MosaicStroke::MosaicStroke(const QVector<QPoint> &points, const QPixmap &sourcePixmap,
+MosaicStroke::MosaicStroke(const QVector<QPoint> &points, SharedPixmap sourcePixmap,
                            int width, int blockSize, BlurType blurType)
     : m_points(points)
-    , m_sourcePixmap(sourcePixmap)
+    , m_sourcePixmap(std::move(sourcePixmap))
     , m_width(width)
     , m_blockSize(blockSize)
     , m_blurType(blurType)
-    , m_devicePixelRatio(sourcePixmap.devicePixelRatio())
+    , m_devicePixelRatio(m_sourcePixmap ? m_sourcePixmap->devicePixelRatio() : 1.0)
 {
 }
 
@@ -101,7 +101,10 @@ QImage MosaicStroke::applyPixelatedMosaic(const QRect &strokeBounds) const
     );
     
     // Intersect with source image bounds
-    QRect sourceBounds(0, 0, m_sourcePixmap.width(), m_sourcePixmap.height());
+    if (!m_sourcePixmap) {
+        return QImage();
+    }
+    QRect sourceBounds(0, 0, m_sourcePixmap->width(), m_sourcePixmap->height());
     QRect fetchRect = blockAlignedRect.intersected(sourceBounds);
 
     if (fetchRect.isEmpty()) {
@@ -109,7 +112,7 @@ QImage MosaicStroke::applyPixelatedMosaic(const QRect &strokeBounds) const
     }
 
     // Fetch ONLY the required patch
-    QImage sourcePatch = m_sourcePixmap.copy(fetchRect).toImage().convertToFormat(QImage::Format_ARGB32);
+    QImage sourcePatch = m_sourcePixmap->copy(fetchRect).toImage().convertToFormat(QImage::Format_ARGB32);
 
     // Create result image for the stroke bounds region
     QImage resultImage(deviceStrokeBounds.size(), QImage::Format_ARGB32);
@@ -176,15 +179,18 @@ QImage MosaicStroke::applyGaussianBlur(const QRect &strokeBounds) const
     }
 
     // Clamp to image bounds
-    QRect sourceBounds(0, 0, m_sourcePixmap.width(), m_sourcePixmap.height());
+    if (!m_sourcePixmap) {
+        return QImage();
+    }
+    QRect sourceBounds(0, 0, m_sourcePixmap->width(), m_sourcePixmap->height());
     QRect clampedBounds = deviceStrokeBounds.intersected(sourceBounds);
-    
+
     if (clampedBounds.isEmpty()) {
         return QImage();
     }
 
     // Extract region from source (Just the needed part)
-    QImage regionImage = m_sourcePixmap.copy(clampedBounds).toImage();
+    QImage regionImage = m_sourcePixmap->copy(clampedBounds).toImage();
     QImage rgb = regionImage.convertToFormat(QImage::Format_RGB32);
 
     cv::Mat mat(rgb.height(), rgb.width(), CV_8UC4,
@@ -358,6 +364,7 @@ QRect MosaicStroke::boundingRect() const
 
 std::unique_ptr<AnnotationItem> MosaicStroke::clone() const
 {
+    // SharedPixmap copy is cheap - just increments reference count
     return std::make_unique<MosaicStroke>(m_points, m_sourcePixmap, m_width, m_blockSize, m_blurType);
 }
 
@@ -366,10 +373,10 @@ void MosaicStroke::addPoint(const QPoint &point)
     m_points.append(point);
 }
 
-void MosaicStroke::updateSource(const QPixmap &sourcePixmap)
+void MosaicStroke::updateSource(SharedPixmap sourcePixmap)
 {
-    m_sourcePixmap = sourcePixmap;
-    m_devicePixelRatio = sourcePixmap.devicePixelRatio();
+    m_sourcePixmap = std::move(sourcePixmap);
+    m_devicePixelRatio = m_sourcePixmap ? m_sourcePixmap->devicePixelRatio() : 1.0;
 }
 
 void MosaicStroke::setBlurType(BlurType type)

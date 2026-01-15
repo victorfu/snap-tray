@@ -5,6 +5,10 @@
 #include <QRect>
 #include <QPixmap>
 #include <QImage>
+#include <memory>
+
+// Shared pixmap type for explicit memory sharing across mosaic annotations
+using SharedPixmap = std::shared_ptr<const QPixmap>;
 
 /**
  * @brief Rectangular mosaic annotation with pixelation or Gaussian blur effect.
@@ -20,7 +24,7 @@ public:
         Gaussian
     };
 
-    MosaicRectAnnotation(const QRect& rect, const QPixmap& sourcePixmap,
+    MosaicRectAnnotation(const QRect& rect, SharedPixmap sourcePixmap,
                          int blockSize = 12, BlurType blurType = BlurType::Pixelate);
 
     void draw(QPainter& painter) const override;
@@ -32,7 +36,7 @@ public:
 
 private:
     QRect m_rect;           // Rectangle in logical coordinates
-    QPixmap m_sourcePixmap; // Source image for mosaic sampling
+    SharedPixmap m_sourcePixmap; // Shared to avoid memory duplication
     int m_blockSize;        // Pixelation block size
     BlurType m_blurType;
     qreal m_devicePixelRatio;

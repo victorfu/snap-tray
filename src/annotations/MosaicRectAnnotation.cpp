@@ -8,13 +8,13 @@
 // MosaicRectAnnotation Implementation (rectangular pixelation for auto-blur)
 // ============================================================================
 
-MosaicRectAnnotation::MosaicRectAnnotation(const QRect& rect, const QPixmap& sourcePixmap,
+MosaicRectAnnotation::MosaicRectAnnotation(const QRect& rect, SharedPixmap sourcePixmap,
                                            int blockSize, BlurType blurType)
     : m_rect(rect)
-    , m_sourcePixmap(sourcePixmap)
+    , m_sourcePixmap(std::move(sourcePixmap))
     , m_blockSize(blockSize)
     , m_blurType(blurType)
-    , m_devicePixelRatio(sourcePixmap.devicePixelRatio())
+    , m_devicePixelRatio(m_sourcePixmap ? m_sourcePixmap->devicePixelRatio() : 1.0)
 {
 }
 
@@ -104,7 +104,10 @@ QImage MosaicRectAnnotation::applyPixelatedMosaic(qreal dpr) const
     );
     
     // Intersect with source image bounds
-    QRect sourceBounds(0, 0, m_sourcePixmap.width(), m_sourcePixmap.height());
+    if (!m_sourcePixmap) {
+        return QImage();
+    }
+    QRect sourceBounds(0, 0, m_sourcePixmap->width(), m_sourcePixmap->height());
     QRect fetchRect = blockAlignedRect.intersected(sourceBounds);
 
     if (fetchRect.isEmpty()) {
@@ -113,7 +116,7 @@ QImage MosaicRectAnnotation::applyPixelatedMosaic(qreal dpr) const
 
     // Fetch ONLY the required part of the image
     // This is the key optimization: avoiding full screen conversion
-    QImage sourcePatch = m_sourcePixmap.copy(fetchRect).toImage().convertToFormat(QImage::Format_ARGB32);
+    QImage sourcePatch = m_sourcePixmap->copy(fetchRect).toImage().convertToFormat(QImage::Format_ARGB32);
 
     // Create result image in device pixels (matching deviceRect size)
     QImage resultImage(deviceRect.size(), QImage::Format_ARGB32);
@@ -182,19 +185,22 @@ QImage MosaicRectAnnotation::applyGaussianBlur(qreal dpr) const
     }
 
     // Clamp to image bounds
-    QRect sourceBounds(0, 0, m_sourcePixmap.width(), m_sourcePixmap.height());
+    if (!m_sourcePixmap) {
+        return QImage();
+    }
+    QRect sourceBounds(0, 0, m_sourcePixmap->width(), m_sourcePixmap->height());
     QRect clampedRect = deviceRect.intersected(sourceBounds);
-    
+
     if (clampedRect.isEmpty()) {
         return QImage();
     }
 
     // Extract region from source (Avoid full image conversion)
     // fetchRect is same as clampedRect because for Gaussian blur we just need the content
-    // Note: Technically for proper edge blurring we might need a margin, 
+    // Note: Technically for proper edge blurring we might need a margin,
     // but clampedRect is usually sufficient for visual purposes or we could expand it slightly.
     // For simplicity and correctness with existing logic, we use the intersection.
-    QImage regionImage = m_sourcePixmap.copy(clampedRect).toImage();
+    QImage regionImage = m_sourcePixmap->copy(clampedRect).toImage();
     QImage rgb = regionImage.convertToFormat(QImage::Format_RGB32);
 
     cv::Mat mat(rgb.height(), rgb.width(), CV_8UC4,
@@ -280,6 +286,7 @@ QRect MosaicRectAnnotation::boundingRect() const
 
 std::unique_ptr<AnnotationItem> MosaicRectAnnotation::clone() const
 {
+    // SharedPixmap copy is cheap - just increments reference count
     return std::make_unique<MosaicRectAnnotation>(m_rect, m_sourcePixmap, m_blockSize, m_blurType);
 }
 

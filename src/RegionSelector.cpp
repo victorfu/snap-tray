@@ -782,8 +782,11 @@ void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapt
         qDebug() << "RegionSelector: Captured screenshot now, size:" << m_backgroundPixmap.size();
     }
 
-    // Update tool manager with background pixmap for mosaic tool
-    m_toolManager->setSourcePixmap(&m_backgroundPixmap);
+    // Create shared pixmap for mosaic tool (explicit sharing to avoid memory duplication)
+    m_sharedSourcePixmap = std::make_shared<const QPixmap>(m_backgroundPixmap);
+
+    // Update tool manager with shared pixmap for mosaic tool
+    m_toolManager->setSourcePixmap(m_sharedSourcePixmap);
     m_toolManager->setDevicePixelRatio(m_devicePixelRatio);
 
     // Update export manager with background pixmap and DPR
@@ -842,8 +845,11 @@ void RegionSelector::initializeWithRegion(QScreen* screen, const QRect& region)
     // Capture the screen first
     m_backgroundPixmap = m_currentScreen->grabWindow(0);
 
-    // Update tool manager with background pixmap for mosaic tool
-    m_toolManager->setSourcePixmap(&m_backgroundPixmap);
+    // Create shared pixmap for mosaic tool (explicit sharing to avoid memory duplication)
+    m_sharedSourcePixmap = std::make_shared<const QPixmap>(m_backgroundPixmap);
+
+    // Update tool manager with shared pixmap for mosaic tool
+    m_toolManager->setSourcePixmap(m_sharedSourcePixmap);
     m_toolManager->setDevicePixelRatio(m_devicePixelRatio);
 
     // Update export manager with background pixmap and DPR
@@ -1744,7 +1750,7 @@ void RegionSelector::performAutoBlur()
                     static_cast<int>(m_mosaicBlurType)
                 );
                 auto mosaic = std::make_unique<MosaicRectAnnotation>(
-                    logicalRect, m_backgroundPixmap, 12, blurType
+                    logicalRect, m_sharedSourcePixmap, 12, blurType
                 );
                 m_annotationLayer->addItem(std::move(mosaic));
             }

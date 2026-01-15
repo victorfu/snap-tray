@@ -86,7 +86,7 @@ public:
     ToolContext* context() { return m_context.get(); }
 
     void setAnnotationLayer(AnnotationLayer* layer);
-    void setSourcePixmap(const QPixmap* pixmap);
+    void setSourcePixmap(SharedPixmap pixmap);
     void setDevicePixelRatio(qreal dpr);
 
     // Drawing settings

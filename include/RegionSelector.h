@@ -242,6 +242,7 @@ private:
     QRect globalToLocal(const QRect& globalRect) const;
 
     QPixmap m_backgroundPixmap;
+    SharedPixmap m_sharedSourcePixmap;  // Shared for mosaic tool memory efficiency
 
     QPoint m_startPoint;
     QPoint m_currentPoint;

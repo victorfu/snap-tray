@@ -6,7 +6,11 @@
 #include <QPoint>
 #include <QRect>
 #include <QElapsedTimer>
+#include <memory>
 #include "Constants.h"
+
+// Shared pixmap type for explicit memory sharing across mosaic annotations
+using SharedPixmap = std::shared_ptr<const QPixmap>;
 #include "WatermarkRenderer.h"
 #include "LoadingSpinnerRenderer.h"
 #include "pinwindow/ResizeHandler.h"
@@ -175,6 +179,7 @@ private:
 
     // Original members
     QPixmap m_originalPixmap;
+    SharedPixmap m_sharedSourcePixmap;  // Shared for mosaic tool memory efficiency
     QPixmap m_displayPixmap;
     qreal m_zoomLevel;
     QPoint m_dragStartPos;

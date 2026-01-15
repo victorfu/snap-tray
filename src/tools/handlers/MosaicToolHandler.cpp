@@ -15,7 +15,7 @@ void MosaicToolHandler::onMousePress(ToolContext* ctx, const QPoint& pos) {
     int brushWidth = ctx->width > 0 ? ctx->width : kDefaultBrushWidth;
     m_currentStroke = std::make_unique<MosaicStroke>(
         m_currentPath,
-        *ctx->sourcePixmap,
+        ctx->sourcePixmap,  // Pass shared pointer directly
         brushWidth,
         kDefaultBlockSize,
         ctx->mosaicBlurType

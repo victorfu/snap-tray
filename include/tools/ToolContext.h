@@ -13,6 +13,8 @@
 #include "annotations/LineStyle.h"
 #include "annotations/MosaicStroke.h"
 
+// Shared pixmap type for explicit memory sharing across mosaic annotations
+using SharedPixmap = std::shared_ptr<const QPixmap>;
 
 class AnnotationItem;
 
@@ -41,8 +43,8 @@ public:
     // Mosaic tool settings
     MosaicStroke::BlurType mosaicBlurType = MosaicStroke::BlurType::Pixelate;
 
-    // Source pixmap (for mosaic tool)
-    const QPixmap* sourcePixmap = nullptr;
+    // Source pixmap (for mosaic tool) - shared to avoid memory duplication
+    SharedPixmap sourcePixmap;
 
     // Device pixel ratio for high-DPI support
     qreal devicePixelRatio = 1.0;

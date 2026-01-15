@@ -1515,7 +1515,9 @@ void PinWindow::initializeAnnotationComponents()
     m_toolManager = new ToolManager(this);
     m_toolManager->registerDefaultHandlers();
     m_toolManager->setAnnotationLayer(m_annotationLayer);
-    m_toolManager->setSourcePixmap(&m_originalPixmap);  // Required for Mosaic tool
+    // Create shared pixmap for mosaic tool (explicit sharing to avoid memory duplication)
+    m_sharedSourcePixmap = std::make_shared<const QPixmap>(m_originalPixmap);
+    m_toolManager->setSourcePixmap(m_sharedSourcePixmap);  // Required for Mosaic tool
 
     // Load saved annotation settings
     auto& annotationSettings = AnnotationSettingsManager::instance();
@@ -2076,6 +2078,9 @@ void PinWindow::onAutoBlurRequested()
         return;
     }
 
+    // Create shared pixmap for all face annotations (explicit sharing to avoid memory duplication)
+    auto sharedDisplayPixmap = std::make_shared<const QPixmap>(m_displayPixmap);
+
     // Create mosaic annotations for each detected face
     for (const QRect &faceRect : result.faceRegions) {
         // Convert from device pixels to logical pixels
@@ -2088,7 +2093,7 @@ void PinWindow::onAutoBlurRequested()
 
         auto mosaic = std::make_unique<MosaicRectAnnotation>(
             logicalRect,
-            m_displayPixmap,
+            sharedDisplayPixmap,
             ImageProcessing::kMosaicBlockSize,
             MosaicRectAnnotation::BlurType::Pixelate
         );
@@ -2338,6 +2343,10 @@ void PinWindow::updateLiveFrame()
     if (!frame.isNull()) {
         m_originalPixmap = QPixmap::fromImage(frame);
         m_originalPixmap.setDevicePixelRatio(m_sourceScreen->devicePixelRatio());
+
+        // Update shared pixmap for mosaic tool to use latest frame
+        m_sharedSourcePixmap = std::make_shared<const QPixmap>(m_originalPixmap);
+        m_toolManager->setSourcePixmap(m_sharedSourcePixmap);
 
         // Invalidate transform cache
         m_cachedRotation = -1;

@@ -6,6 +6,10 @@
 #include <QPoint>
 #include <QPixmap>
 #include <QImage>
+#include <memory>
+
+// Shared pixmap type for explicit memory sharing across mosaic annotations
+using SharedPixmap = std::shared_ptr<const QPixmap>;
 
 /**
  * @brief Freehand mosaic stroke with pixelation or Gaussian blur
@@ -18,7 +22,7 @@ public:
         Gaussian
     };
 
-    MosaicStroke(const QVector<QPoint> &points, const QPixmap &sourcePixmap,
+    MosaicStroke(const QVector<QPoint> &points, SharedPixmap sourcePixmap,
                  int width = 24, int blockSize = 12, BlurType blurType = BlurType::Pixelate);
 
     void draw(QPainter &painter) const override;
@@ -26,7 +30,7 @@ public:
     std::unique_ptr<AnnotationItem> clone() const override;
 
     void addPoint(const QPoint &point);
-    void updateSource(const QPixmap &sourcePixmap);
+    void updateSource(SharedPixmap sourcePixmap);
     void setBlurType(BlurType type);
     BlurType blurType() const { return m_blurType; }
 
@@ -35,7 +39,7 @@ public:
 
 private:
     QVector<QPoint> m_points;
-    QPixmap m_sourcePixmap;
+    SharedPixmap m_sourcePixmap;  // Shared to avoid memory duplication
     int m_width;      // Brush width
     int m_blockSize;  // Mosaic block size
     BlurType m_blurType;
