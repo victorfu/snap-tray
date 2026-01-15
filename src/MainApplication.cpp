@@ -779,14 +779,9 @@ void MainApplication::onPreviewSaveRequested(const QString& videoPath)
 {
     qDebug() << "MainApplication: Preview save requested for:" << videoPath;
 
-    // Close preview window - this will trigger closed(true) signal
-    // which will call onPreviewClosed(true) on RecordingManager
-    // Then we trigger the save dialog
-    if (m_previewWindow) {
-        m_previewWindow = nullptr;  // Clear pointer before close
-    }
-
     // Trigger the save dialog on RecordingManager
+    // Note: The preview window closes itself via close() after emitting saveRequested,
+    // and the closed signal handler already sets m_previewWindow = nullptr
     m_recordingManager->triggerSaveDialog(videoPath);
 }
 
