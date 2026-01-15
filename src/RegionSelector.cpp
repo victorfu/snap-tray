@@ -998,7 +998,6 @@ void RegionSelector::paintEvent(QPaintEvent* event)
                 bool isMosaicTool = (m_currentTool == ToolbarButton::Mosaic);
                 // All width-enabled tools use shared WidthSection (including Mosaic)
                 m_colorAndWidthWidget->setShowWidthSection(shouldShowWidthControl());
-                m_colorAndWidthWidget->setShowMosaicWidthSection(false);  // No longer used
                 m_colorAndWidthWidget->setWidthSectionHidden(false);
                 // Show arrow style section only for Arrow tool
                 m_colorAndWidthWidget->setShowArrowStyleSection(m_currentTool == ToolbarButton::Arrow);

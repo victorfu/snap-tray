@@ -532,7 +532,6 @@ add_library(snaptray_ui STATIC
     # UI sections
     src/ui/sections/ColorSection.cpp
     src/ui/sections/WidthSection.cpp
-    src/ui/sections/MosaicWidthSection.cpp
     src/ui/sections/MosaicBlurTypeSection.cpp
     src/ui/sections/TextSection.cpp
     src/ui/sections/ArrowStyleSection.cpp
@@ -629,7 +628,6 @@ add_library(snaptray_ui STATIC
     include/EmojiPicker.h
     include/ui/sections/ColorSection.h
     include/ui/sections/WidthSection.h
-    include/ui/sections/MosaicWidthSection.h
     include/ui/sections/MosaicBlurTypeSection.h
     include/ui/sections/TextSection.h
     include/ui/sections/ArrowStyleSection.h

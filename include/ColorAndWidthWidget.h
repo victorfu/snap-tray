@@ -16,7 +16,6 @@
 class QPainter;
 class ColorSection;
 class WidthSection;
-class MosaicWidthSection;
 class TextSection;
 class ArrowStyleSection;
 class LineStyleSection;
@@ -122,16 +121,6 @@ public:
     StepBadgeSize stepBadgeSize() const;
 
     // =========================================================================
-    // Mosaic Width Methods
-    // =========================================================================
-
-    void setShowMosaicWidthSection(bool show);
-    bool showMosaicWidthSection() const { return m_showMosaicWidthSection; }
-    void setMosaicWidthRange(int min, int max);
-    void setMosaicWidth(int width);
-    int mosaicWidth() const;
-
-    // =========================================================================
     // Auto Blur Methods
     // =========================================================================
 
@@ -205,9 +194,6 @@ signals:
     // Size signals (Step Badge)
     void stepBadgeSizeChanged(StepBadgeSize size);
 
-    // Mosaic width signals
-    void mosaicWidthChanged(int width);
-
     // Auto blur signals
     void autoBlurRequested();
 
@@ -221,7 +207,6 @@ private:
     // Section components
     ColorSection* m_colorSection;
     WidthSection* m_widthSection;
-    MosaicWidthSection* m_mosaicWidthSection;
     TextSection* m_textSection;
     ArrowStyleSection* m_arrowStyleSection;
     LineStyleSection* m_lineStyleSection;
@@ -233,7 +218,6 @@ private:
     bool m_showColorSection = true;
     bool m_showWidthSection = true;
     bool m_widthSectionHidden = false;  // Hide UI but keep wheel functionality
-    bool m_showMosaicWidthSection = false;
     bool m_showTextSection = false;
     bool m_showArrowStyleSection = false;
     bool m_showLineStyleSection = false;

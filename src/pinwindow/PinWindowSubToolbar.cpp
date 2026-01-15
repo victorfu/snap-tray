@@ -139,7 +139,6 @@ void PinWindowSubToolbar::showForTool(int toolId)
     m_colorAndWidthWidget->setShowLineStyleSection(false);
     m_colorAndWidthWidget->setShowShapeSection(false);
     m_colorAndWidthWidget->setShowSizeSection(false);
-    m_colorAndWidthWidget->setShowMosaicWidthSection(false);
     m_colorAndWidthWidget->setShowAutoBlurSection(false);
     m_showingEmojiPicker = false;
     m_emojiPicker->setVisible(false);
