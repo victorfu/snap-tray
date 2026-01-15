@@ -642,6 +642,96 @@ double normalizedOverlapDifference(const cv::Mat &lastGray,
     cv::Scalar meanDiff = cv::mean(diff);
     return meanDiff[0] / 255.0;
 }
+
+// Multi-block seam verification for repetitive content detection
+// Splits the overlap region into multiple blocks and checks consistency
+// Returns the maximum seam difference across blocks (lower = more consistent)
+constexpr int kMultiBlockCount = 3;
+constexpr double kMultiBlockMaxDiff = 0.15;
+
+double verifyMultiBlockSeam(const cv::Mat &lastGray,
+                            const cv::Mat &newGray,
+                            ImageStitcher::ScrollDirection direction,
+                            bool isHorizontal,
+                            int overlap)
+{
+    if (overlap <= 0 || lastGray.empty() || newGray.empty()) {
+        return 1.0;
+    }
+
+    // Determine the cross-axis dimension to split into blocks
+    int crossDim = isHorizontal ? lastGray.rows : lastGray.cols;
+    int blockSize = crossDim / kMultiBlockCount;
+
+    if (blockSize < 20) {
+        // Too small to split meaningfully, skip verification
+        return 0.0;
+    }
+
+    double maxDiff = 0.0;
+
+    for (int i = 0; i < kMultiBlockCount; ++i) {
+        int blockStart = i * blockSize;
+        int blockEnd = (i == kMultiBlockCount - 1) ? crossDim : (i + 1) * blockSize;
+        int actualBlockSize = blockEnd - blockStart;
+
+        cv::Mat lastBlock, newBlock;
+        cv::Rect lastRect, newRect;
+
+        if (isHorizontal) {
+            // Horizontal scroll: blocks are horizontal strips
+            int width = std::min({overlap, lastGray.cols, newGray.cols});
+            if (width <= 0) continue;
+
+            if (direction == ImageStitcher::ScrollDirection::Right) {
+                lastRect = cv::Rect(lastGray.cols - width, blockStart, width, actualBlockSize);
+                newRect = cv::Rect(0, blockStart, width, actualBlockSize);
+            } else {
+                lastRect = cv::Rect(0, blockStart, width, actualBlockSize);
+                newRect = cv::Rect(newGray.cols - width, blockStart, width, actualBlockSize);
+            }
+        } else {
+            // Vertical scroll: blocks are vertical strips
+            int height = std::min({overlap, lastGray.rows, newGray.rows});
+            if (height <= 0) continue;
+
+            if (direction == ImageStitcher::ScrollDirection::Down) {
+                lastRect = cv::Rect(blockStart, lastGray.rows - height, actualBlockSize, height);
+                newRect = cv::Rect(blockStart, 0, actualBlockSize, height);
+            } else {
+                lastRect = cv::Rect(blockStart, 0, actualBlockSize, height);
+                newRect = cv::Rect(blockStart, newGray.rows - height, actualBlockSize, height);
+            }
+        }
+
+        // Bounds check
+        if (lastRect.x < 0 || lastRect.y < 0 ||
+            lastRect.x + lastRect.width > lastGray.cols ||
+            lastRect.y + lastRect.height > lastGray.rows ||
+            newRect.x < 0 || newRect.y < 0 ||
+            newRect.x + newRect.width > newGray.cols ||
+            newRect.y + newRect.height > newGray.rows) {
+            continue;
+        }
+
+        lastBlock = lastGray(lastRect);
+        newBlock = newGray(newRect);
+
+        if (lastBlock.empty() || newBlock.empty()) {
+            continue;
+        }
+
+        // Compute difference for this block
+        cv::Mat diff;
+        cv::absdiff(lastBlock, newBlock, diff);
+        cv::Scalar meanDiff = cv::mean(diff);
+        double blockDiff = meanDiff[0] / 255.0;
+
+        maxDiff = std::max(maxDiff, blockDiff);
+    }
+
+    return maxDiff;
+}
 }
 
 ImageStitcher::StitchResult ImageStitcher::tryTemplateMatch(const QImage &newFrame)
@@ -1012,6 +1102,17 @@ ImageStitcher::MatchCandidate ImageStitcher::computeTemplateMatchCandidate(const
         candidate.failureReason = QString("Overlap mismatch: %1").arg(overlapDiff, 0, 'f', 3);
         candidate.failureCode = FailureCode::OverlapMismatch;
         return candidate;
+    }
+
+    // Multi-block verification to detect repetitive content misalignment
+    double multiBlockDiff = verifyMultiBlockSeam(lastGray, newGray, direction, isHorizontal, refinedOverlap);
+    if (multiBlockDiff > kMultiBlockMaxDiff) {
+        candidate.confidence *= 0.5;  // Penalize inconsistent matches
+        if (candidate.confidence < m_stitchConfig.confidenceThreshold) {
+            candidate.failureReason = QString("Multi-block inconsistency: %1").arg(multiBlockDiff, 0, 'f', 3);
+            candidate.failureCode = FailureCode::AmbiguousMatch;
+            return candidate;
+        }
     }
 
     candidate.success = true;
@@ -1888,6 +1989,7 @@ ImageStitcher::MatchCandidate ImageStitcher::computeRowProjectionCandidate(
     double bestCorr = -1.0;
     double secondBestCorr = -1.0;
     int bestOverlap = 0;
+    int secondBestOverlap = 0;
 
     for (int overlap = MIN_OVERLAP; overlap <= maxOverlap; ++overlap) {
         size_t lastStart = isForward
@@ -1903,10 +2005,12 @@ ImageStitcher::MatchCandidate ImageStitcher::computeRowProjectionCandidate(
         }
         if (corr > bestCorr) {
             secondBestCorr = bestCorr;
+            secondBestOverlap = bestOverlap;
             bestCorr = corr;
             bestOverlap = overlap;
         } else if (corr > secondBestCorr) {
             secondBestCorr = corr;
+            secondBestOverlap = overlap;
         }
     }
 
@@ -1925,6 +2029,15 @@ ImageStitcher::MatchCandidate ImageStitcher::computeRowProjectionCandidate(
             candidate.failureCode = FailureCode::AmbiguousMatch;
             return candidate;
         }
+
+        // Repetitive pattern detection: if peaks are close together, likely repetitive content
+        int peakDistance = std::abs(bestOverlap - secondBestOverlap);
+        if (peakDistance < 30 && peakGap < 0.15) {
+            candidate.confidence = 0.2;
+            candidate.failureReason = QString("Repetitive pattern detected: peaks %1px apart").arg(peakDistance);
+            candidate.failureCode = FailureCode::AmbiguousMatch;
+            return candidate;
+        }
     }
 
     // Apply ±1 pixel seam verification to find the best alignment
@@ -1939,6 +2052,9 @@ ImageStitcher::MatchCandidate ImageStitcher::computeRowProjectionCandidate(
         return candidate;
     }
 
+    // Multi-block verification to detect repetitive content misalignment
+    double multiBlockDiff = verifyMultiBlockSeam(lastGray, newGray, direction, isHorizontal, refinedOverlap);
+
     double baseConfidence = std::clamp(bestCorr, 0.0, 1.0);
     double uniqueness = 1.0;
     if (secondBestCorr > -0.5) {
@@ -1947,10 +2063,16 @@ ImageStitcher::MatchCandidate ImageStitcher::computeRowProjectionCandidate(
     }
 
     double diffPenalty = std::clamp(overlapDiff / kMaxOverlapDiff, 0.0, 1.0);
-    candidate.confidence = baseConfidence * (0.7 + 0.3 * uniqueness) * (1.0 - 0.5 * diffPenalty);
+    double multiBlockPenalty = (multiBlockDiff > kMultiBlockMaxDiff) ? 0.5 : 0.0;
+    candidate.confidence = baseConfidence * (0.7 + 0.3 * uniqueness) * (1.0 - 0.5 * diffPenalty) * (1.0 - multiBlockPenalty);
 
     if (candidate.confidence < m_stitchConfig.confidenceThreshold) {
-        candidate.failureReason = QString("Low confidence: %1").arg(candidate.confidence);
+        if (multiBlockDiff > kMultiBlockMaxDiff) {
+            candidate.failureReason = QString("Multi-block inconsistency: %1").arg(multiBlockDiff, 0, 'f', 3);
+            candidate.failureCode = FailureCode::AmbiguousMatch;
+        } else {
+            candidate.failureReason = QString("Low confidence: %1").arg(candidate.confidence);
+        }
         return candidate;
     }
 

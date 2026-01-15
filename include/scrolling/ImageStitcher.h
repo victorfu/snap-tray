@@ -177,7 +177,7 @@ private:
     // ROI parameters
     static constexpr double ROI_FIRST_RATIO = 0.40;   // Larger symmetric coverage
     static constexpr double ROI_SECOND_RATIO = 0.50;  // More overlap detection range
-    static constexpr int MIN_OVERLAP = 15;            // Allow smaller overlaps
+    static constexpr int MIN_OVERLAP = 10;            // Allow smaller overlaps for fast scrolling
     static constexpr int MAX_OVERLAP = 600;           // Allow larger overlaps
     static constexpr int MAX_STITCHED_HEIGHT = 32768; // Maximum height in pixels (~32K)
     static constexpr int MAX_STITCHED_WIDTH = 32768;  // Maximum width in pixels (~32K)
