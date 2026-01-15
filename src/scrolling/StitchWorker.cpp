@@ -40,7 +40,6 @@ void StitchWorker::setCaptureMode(CaptureMode mode)
 
 void StitchWorker::setStitchConfig(double confidenceThreshold, bool detectStaticRegions)
 {
-    m_confidenceThreshold = confidenceThreshold;
     m_detectStaticRegions = detectStaticRegions;
 
     StitchConfig config;
@@ -66,8 +65,6 @@ void StitchWorker::reset()
     // Reset components
     m_stitcher->reset();
     m_fixedDetector->reset();
-    m_fixedElementsFound = false;
-    m_lastFrame = QImage();
     m_isProcessing = false;
     m_acceptingFrames = true;  // Re-enable accepting frames for next capture
     m_finishRequested = false;
@@ -307,7 +304,6 @@ void StitchWorker::doProcessFrame(const QImage &frame)
 
                 if (detection.detected) {
                     m_fixedDetected = true;
-                    m_fixedElementsFound = true; // Sync legacy flag
                     result.fixedElementsDetected = true;
                     result.leadingFixed = detection.leadingFixed;
                     result.trailingFixed = detection.trailingFixed;
@@ -389,7 +385,6 @@ void StitchWorker::doProcessFrame(const QImage &frame)
     }
 
     result.frameCount = m_stitcher->frameCount();
-    m_lastFrame = frame; // Update legacy tracking just in case
 
     qDebug() << "StitchWorker: Frame processed -"
              << "success:" << result.success

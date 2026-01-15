@@ -225,13 +225,6 @@ void ScrollingCaptureToolbar::setDirection(Direction direction)
     update();
 }
 
-void ScrollingCaptureToolbar::setMatchRecoveryInfo(int lastSuccessfulPos, bool showRecoveryHint)
-{
-    m_lastSuccessfulPos = lastSuccessfulPos;
-    m_showRecoveryHint = showRecoveryHint;
-    update();
-}
-
 void ScrollingCaptureToolbar::paintEvent(QPaintEvent *event)
 {
     Q_UNUSED(event)

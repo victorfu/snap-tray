@@ -7,7 +7,6 @@
 #include <QTimer>
 #include <QMap>
 #include <QLabel>
-#include <QProgressBar>
 #include <QVBoxLayout>
 
 #include "scrolling/ImageStitcher.h"
@@ -54,18 +53,9 @@ public:
     };
     Q_ENUM(MatchStatus)
 
-    // Compatibility methods for existing code
-    void setMatchStatus(CaptureStatus status, double confidence); // Maps to setStatus
-    void setMatchStatus(int status, double confidence); // Overload for legacy MatchStatus if needed? 
-    void setMatchStatus(MatchStatus status, double confidence); // Overload for legacy MatchStatus
-    
-    // For now I will declare legacy enum for compatibility to avoid breaking compilation of Manager immediately,
-    // but I will update Manager in this PR anyway.
-    
-    // Legacy support methods (will be removed/updated in Manager)
-    void setLastSuccessfulPosition(int position) {} // No-op in new UI
-    void setShowRecoveryHint(bool show) {} // Handled by setErrorInfo
-    void setStitchedImage(const QImage &image) {} // Removed functionality (no-op)
+    // Compatibility method for existing code
+    void setMatchStatus(MatchStatus status, double confidence);
+
 
 protected:
     void paintEvent(QPaintEvent *event) override;
@@ -85,7 +75,6 @@ private:
     QLabel* m_viewportLabel;
     QLabel* m_statusLabel;     // "● Capturing"
     QLabel* m_statsLabel;      // "45 frames • 800 x 12000 px"
-    QProgressBar* m_progressBar; // Visual indicator of progress (maybe just infinite or based on size)
     QWidget* m_errorSection;
     QLabel* m_errorTitleLabel;
     QLabel* m_errorHintLabel;

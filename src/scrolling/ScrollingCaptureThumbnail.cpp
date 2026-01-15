@@ -321,27 +321,11 @@ QString ScrollingCaptureThumbnail::failureCodeToUserMessage(ImageStitcher::Failu
     }
 }
 
-// Compatibility methods
-void ScrollingCaptureThumbnail::setMatchStatus(CaptureStatus status, double confidence)
-{
-    setStatus(status);
-}
-
+// Compatibility method
 void ScrollingCaptureThumbnail::setMatchStatus(MatchStatus status, double confidence)
 {
     CaptureStatus newStatus = CaptureStatus::Capturing;
     if (status == MatchStatus::Warning) newStatus = CaptureStatus::Warning;
     if (status == MatchStatus::Failed) newStatus = CaptureStatus::Failed;
     setStatus(newStatus);
-}
-
-void ScrollingCaptureThumbnail::setMatchStatus(int statusInt, double confidence)
-{
-    // Map int to CaptureStatus if coming from old code
-    // Legacy MatchStatus: Good=0, Warning=1, Failed=2
-    CaptureStatus status = CaptureStatus::Capturing;
-    if (statusInt == 1) status = CaptureStatus::Warning;
-    if (statusInt == 2) status = CaptureStatus::Failed;
-    
-    setStatus(status);
 }

@@ -178,8 +178,6 @@ private:
     std::atomic<bool> m_acceptingFrames{true};  // Set to false to stop accepting new frames
     std::atomic<bool> m_finishRequested{false}; // Set to true when requestFinish() is called
     QFuture<void> m_processingFuture;
-    bool m_fixedElementsFound = false;
-    QImage m_lastFrame;
     bool m_wasNearFull = false;
 
     // Fixed element detection buffering
@@ -197,7 +195,6 @@ private:
 
     // Configuration
     CaptureMode m_captureMode = CaptureMode::Vertical;
-    double m_confidenceThreshold = 0.4;
     bool m_detectStaticRegions = true;
 };
 

@@ -867,7 +867,6 @@ void ScrollingCaptureManager::handleSuccess(const StitchWorker::Result &result)
     // Update UI
     if (m_toolbar) {
         m_toolbar->setMatchStatus(true, result.confidence);
-        m_toolbar->setMatchRecoveryInfo(m_lastSuccessfulPosition, false);
         qreal dpr = m_targetScreen ? m_targetScreen->devicePixelRatio() : 1.0;
         m_toolbar->updateSize(result.currentSize.width() / dpr, result.currentSize.height() / dpr);
     }
@@ -904,7 +903,6 @@ void ScrollingCaptureManager::handleFailure(const StitchWorker::Result &result)
 
     if (m_toolbar) {
         m_toolbar->setMatchStatus(false, result.confidence);
-        m_toolbar->setMatchRecoveryInfo(m_lastSuccessfulPosition, true);
     }
     if (m_thumbnail) {
         m_currentStatus = status;

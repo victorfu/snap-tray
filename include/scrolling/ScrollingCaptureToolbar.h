@@ -40,7 +40,6 @@ public:
     void positionNear(const QRect &region);
     void updateSize(int width, int height);
     void setMatchStatus(bool matched, double confidence);
-    void setMatchRecoveryInfo(int lastSuccessfulPos, bool showRecoveryHint);
 
 signals:
     void startClicked();
@@ -84,8 +83,6 @@ private:
 
     Mode m_mode = Mode::Adjusting;
     Direction m_direction = Direction::Vertical;
-    bool m_showRecoveryHint = false;
-    int m_lastSuccessfulPos = 0;
 
     // Labels
     QLabel *m_sizeLabel;
