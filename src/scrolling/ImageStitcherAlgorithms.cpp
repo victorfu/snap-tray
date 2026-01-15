@@ -810,19 +810,14 @@ ImageStitcher::MatchCandidate ImageStitcher::computeTemplateMatchCandidate(const
         return candidate;
     }
 
-    // Clone the cached gray images for CLAHE processing (don't modify cache)
-    cv::Mat lastGray = m_lastFrameCache->gray.clone();
-    cv::Mat newGray = m_currentFrameCache->gray.clone();
+    // Use pre-computed CLAHE-enhanced grayscale from cache
+    const cv::Mat& lastGray = m_lastFrameCache->grayEq;
+    const cv::Mat& newGray = m_currentFrameCache->grayEq;
 
     if (lastGray.empty() || newGray.empty()) {
         candidate.failureReason = "Failed to get grayscale images from cache";
         return candidate;
     }
-
-    // Enhance contrast to strengthen edges
-    cv::Ptr<cv::CLAHE> clahe = cv::createCLAHE(2.0, cv::Size(8, 8));
-    clahe->apply(lastGray, lastGray);
-    clahe->apply(newGray, newGray);
 
     bool isHorizontal = (direction == ScrollDirection::Left || direction == ScrollDirection::Right);
     int frameDimension = isHorizontal ? lastGray.cols : lastGray.rows;
@@ -1156,62 +1151,50 @@ bool ImageStitcher::wouldCreateDuplicate(const QImage &newFrame, int overlapPixe
         return false;
     }
 
-    cv::Mat stitchedMat = qImageToCvMat(m_stitchedResult);
-    cv::Mat newMat = qImageToCvMat(newFrame);
-
-    if (stitchedMat.empty() || newMat.empty()) {
-        return false;
-    }
-
-    cv::Mat stitchedGray, newGray;
-    cv::cvtColor(stitchedMat, stitchedGray, cv::COLOR_BGR2GRAY);
-    cv::cvtColor(newMat, newGray, cv::COLOR_BGR2GRAY);
-
     bool isVertical = (direction == ScrollDirection::Down || direction == ScrollDirection::Up);
-    
-    // Calculate seam-centered window
-    // seamPos is where we are stitching (if Down, we append at bottom).
-    // We search in the stitched image for duplicate content that was already captured.
-    int seamPos = (direction == ScrollDirection::Down) ? stitchedGray.rows : 0;
-    
+
+    // Calculate window size first (before any conversion)
     int windowSize = std::max({
         overlapPixels * 2,
         m_stitchConfig.duplicateWindowSize,
         200
     });
-    
-    int windowStart, windowEnd;
-    
+
+    // Extract only the window region from stitched result (avoid full image conversion)
+    QImage windowImage;
     if (direction == ScrollDirection::Down) {
-        // Search near the bottom of stitched image
-        windowStart = std::max(0, stitchedGray.rows - windowSize);
-        windowEnd = stitchedGray.rows;
+        int y = std::max(0, m_stitchedResult.height() - windowSize);
+        int h = m_stitchedResult.height() - y;
+        if (h <= 0) return false;
+        windowImage = m_stitchedResult.copy(0, y, m_stitchedResult.width(), h);
     } else if (direction == ScrollDirection::Up) {
-        windowStart = 0;
-        windowEnd = std::min(stitchedGray.rows, windowSize);
+        int h = std::min(m_stitchedResult.height(), windowSize);
+        if (h <= 0) return false;
+        windowImage = m_stitchedResult.copy(0, 0, m_stitchedResult.width(), h);
     } else if (direction == ScrollDirection::Right) {
-        windowStart = std::max(0, stitchedGray.cols - windowSize);
-        windowEnd = stitchedGray.cols;
-    } else {
-        windowStart = 0;
-        windowEnd = std::min(stitchedGray.cols, windowSize);
+        int x = std::max(0, m_stitchedResult.width() - windowSize);
+        int w = m_stitchedResult.width() - x;
+        if (w <= 0) return false;
+        windowImage = m_stitchedResult.copy(x, 0, w, m_stitchedResult.height());
+    } else { // Left
+        int w = std::min(m_stitchedResult.width(), windowSize);
+        if (w <= 0) return false;
+        windowImage = m_stitchedResult.copy(0, 0, w, m_stitchedResult.height());
     }
-    
-    // Extract search region
-    cv::Mat searchRegion;
-    if (isVertical) {
-        if (windowEnd <= windowStart) return false;
-        searchRegion = stitchedGray.rowRange(windowStart, windowEnd);
-    } else {
-        if (windowEnd <= windowStart) return false;
-        searchRegion = stitchedGray.colRange(windowStart, windowEnd);
+
+    // Convert only the window and new frame (not the entire stitched result)
+    cv::Mat windowMat = qImageToCvMat(windowImage);
+    cv::Mat newMat = qImageToCvMat(newFrame);
+
+    if (windowMat.empty() || newMat.empty()) {
+        return false;
     }
-    
-    // Extract the content we want to check
-    // We check the NEW content (non-overlap) or the whole frame?
-    // If we check the whole frame, we might find the overlap itself (which is valid).
-    // We want to check if the "new content" part already exists.
-    
+
+    cv::Mat searchRegion, newGray;
+    cv::cvtColor(windowMat, searchRegion, cv::COLOR_BGR2GRAY);
+    cv::cvtColor(newMat, newGray, cv::COLOR_BGR2GRAY);
+
+    // Extract the new content (non-overlap portion) to check for duplicates
     int newContentSize = isVertical
         ? (newGray.rows - overlapPixels)
         : (newGray.cols - overlapPixels);
@@ -1234,22 +1217,22 @@ bool ImageStitcher::wouldCreateDuplicate(const QImage &newFrame, int overlapPixe
             newContent = newGray.colRange(0, newContentSize);
         }
     }
-    
+
     if (searchRegion.rows < newContent.rows || searchRegion.cols < newContent.cols) {
         return false;
     }
 
     cv::Mat result;
     cv::matchTemplate(searchRegion, newContent, result, cv::TM_CCOEFF_NORMED);
-    
+
     double maxVal;
     cv::minMaxLoc(result, nullptr, &maxVal, nullptr, nullptr);
-    
+
     if (maxVal > m_stitchConfig.duplicateThreshold) {
         qDebug() << "ImageStitcher: Duplicate content detected with confidence" << maxVal;
         return true;
     }
-    
+
     return false;
 }
 
@@ -1606,6 +1589,10 @@ void ImageStitcher::prepareFrameCache(const QImage &frame, FrameCacheImpl &cache
 
     // Pre-compute grayscale (most algorithms need this)
     cv::cvtColor(cache.bgr, cache.gray, cv::COLOR_BGR2GRAY);
+
+    // Pre-compute CLAHE-enhanced grayscale (for template matching)
+    cv::Ptr<cv::CLAHE> clahe = cv::createCLAHE(2.0, cv::Size(8, 8));
+    clahe->apply(cache.gray, cache.grayEq);
 
     cache.valid = true;
 }

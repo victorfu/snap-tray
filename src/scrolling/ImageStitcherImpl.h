@@ -11,11 +11,13 @@
 struct ImageStitcher::FrameCacheImpl {
     cv::Mat bgr;       // BGR Mat (from QImage)
     cv::Mat gray;      // Grayscale (for most algorithms)
+    cv::Mat grayEq;    // CLAHE-enhanced grayscale (for template matching)
     bool valid = false;
 
     void clear() {
         bgr = cv::Mat();
         gray = cv::Mat();
+        grayEq = cv::Mat();
         valid = false;
     }
 };
