@@ -25,7 +25,7 @@
 #include "InlineTextEditor.h"
 #include "region/TextAnnotationEditor.h"
 #include "ColorAndWidthWidget.h"
-#include "annotations/TextAnnotation.h"
+#include "annotations/TextBoxAnnotation.h"
 #include "TransformationGizmo.h"
 #include "utils/CoordinateHelper.h"
 
@@ -1299,6 +1299,17 @@ void PinWindow::mouseDoubleClickEvent(QMouseEvent *event)
             return;
         }
 
+        // Check if double-click is on a text annotation (for re-editing)
+        if (m_annotationMode && m_annotationLayer) {
+            int hitIndex = m_annotationLayer->hitTestText(event->pos());
+            if (hitIndex >= 0) {
+                m_annotationLayer->setSelectedIndex(hitIndex);
+                m_textAnnotationEditor->startReEditing(hitIndex, m_annotationColor);
+                update();
+                return;
+            }
+        }
+
         // Otherwise, close the window (default behavior)
         close();
     }
@@ -2106,12 +2117,12 @@ void PinWindow::onAutoBlurRequested()
 // Text Annotation Helper Methods
 // ============================================================================
 
-TextAnnotation* PinWindow::getSelectedTextAnnotation()
+TextBoxAnnotation* PinWindow::getSelectedTextAnnotation()
 {
     if (!m_annotationLayer) return nullptr;
     int idx = m_annotationLayer->selectedIndex();
     if (idx < 0) return nullptr;
-    return dynamic_cast<TextAnnotation*>(m_annotationLayer->itemAt(idx));
+    return dynamic_cast<TextBoxAnnotation*>(m_annotationLayer->itemAt(idx));
 }
 
 bool PinWindow::handleTextEditorPress(const QPoint& pos)
@@ -2150,15 +2161,16 @@ bool PinWindow::handleTextAnnotationPress(const QPoint& pos)
     if (hitIndex < 0) return false;
 
     qint64 now = QDateTime::currentMSecsSinceEpoch();
-    if (m_textAnnotationEditor->isDoubleClick(pos, now) &&
-        hitIndex == m_annotationLayer->selectedIndex()) {
-        // Double-click to re-edit
+    // Double-click on ANY text annotation triggers re-edit (no need to be pre-selected)
+    if (m_textAnnotationEditor->isDoubleClick(pos, now)) {
+        m_annotationLayer->setSelectedIndex(hitIndex);
         m_textAnnotationEditor->startReEditing(hitIndex, m_annotationColor);
         m_textAnnotationEditor->recordClick(QPoint(), 0);
         return true;
     }
     m_textAnnotationEditor->recordClick(pos, now);
 
+    // Single click: select and start dragging
     m_annotationLayer->setSelectedIndex(hitIndex);
     if (auto* textItem = getSelectedTextAnnotation()) {
         GizmoHandle handle = TransformationGizmo::hitTest(textItem, pos);

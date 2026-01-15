@@ -5,6 +5,7 @@
 #include <QPoint>
 #include <QPointF>
 #include <QRect>
+#include <QRectF>
 #include <QColor>
 #include "TextFormattingState.h"
 #include "TransformationGizmo.h"
@@ -99,8 +100,8 @@ private:
     bool m_isTransforming = false;
     QPointF m_transformStartCenter;
     qreal m_transformStartRotation = 0.0;
-    qreal m_transformStartScale = 1.0;
     qreal m_transformStartAngle = 0.0;
+    qreal m_transformStartScale = 1.0;
     qreal m_transformStartDistance = 0.0;
     QPoint m_dragStart;
 

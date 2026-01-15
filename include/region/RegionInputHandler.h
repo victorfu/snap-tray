@@ -20,7 +20,7 @@ class ColorAndWidthWidget;
 class EmojiPicker;
 class RegionControlWidget;
 class UpdateThrottler;
-class TextAnnotation;
+class TextBoxAnnotation;
 class EmojiStickerAnnotation;
 class MultiRegionManager;
 
@@ -143,7 +143,7 @@ private:
     void adjustEdgesToPosition(const QPoint& pos, SelectionStateManager::ResizeHandle handle);
 
     // Utility
-    TextAnnotation* getSelectedTextAnnotation() const;
+    TextBoxAnnotation* getSelectedTextAnnotation() const;
     EmojiStickerAnnotation* getSelectedEmojiStickerAnnotation() const;
     bool shouldShowColorAndWidthWidget() const;
     bool isAnnotationTool(ToolId tool) const;

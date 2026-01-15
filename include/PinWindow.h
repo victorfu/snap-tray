@@ -35,7 +35,7 @@ class ToolManager;
 class InlineTextEditor;
 class TextAnnotationEditor;
 class AutoBlurManager;
-class TextAnnotation;
+class TextBoxAnnotation;
 
 class PinWindow : public QWidget
 {
@@ -175,7 +175,7 @@ private:
     bool handleTextEditorPress(const QPoint& pos);
     bool handleTextAnnotationPress(const QPoint& pos);
     bool handleGizmoPress(const QPoint& pos);
-    TextAnnotation* getSelectedTextAnnotation();
+    TextBoxAnnotation* getSelectedTextAnnotation();
 
     // Original members
     QPixmap m_originalPixmap;

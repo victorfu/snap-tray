@@ -7,6 +7,7 @@
 #include "tools/ToolManager.h"
 #include "tools/IToolHandler.h"
 #include "tools/ToolId.h"
+#include "TransformationGizmo.h"  // For GizmoHandle enum
 
 CursorManager::CursorManager()
     : QObject(nullptr)
@@ -339,10 +340,12 @@ void CursorManager::updateCursorFromState()
             hoverCursor = Qt::OpenHandCursor;
             break;
         case HoverTarget::ToolbarButton:
-        case HoverTarget::Annotation:
         case HoverTarget::ColorPalette:
         case HoverTarget::Widget:
             hoverCursor = Qt::PointingHandCursor;
+            break;
+        case HoverTarget::Annotation:
+            hoverCursor = Qt::SizeAllCursor;  // Draggable cursor for annotations
             break;
         case HoverTarget::ResizeHandle:
             if (m_hoverHandleIndex >= 0) {
@@ -350,8 +353,29 @@ void CursorManager::updateCursorFromState()
             }
             break;
         case HoverTarget::GizmoHandle:
-            // Gizmo handles typically use pointing hand or specialized cursors
-            hoverCursor = Qt::PointingHandCursor;
+            // Use appropriate cursor based on gizmo handle type
+            if (m_hoverHandleIndex >= 0) {
+                GizmoHandle handle = static_cast<GizmoHandle>(m_hoverHandleIndex);
+                switch (handle) {
+                case GizmoHandle::Body:
+                    hoverCursor = Qt::SizeAllCursor;
+                    break;
+                case GizmoHandle::Rotation:
+                    hoverCursor = Qt::PointingHandCursor;
+                    break;
+                case GizmoHandle::TopLeft:
+                case GizmoHandle::BottomRight:
+                    hoverCursor = Qt::SizeFDiagCursor;
+                    break;
+                case GizmoHandle::TopRight:
+                case GizmoHandle::BottomLeft:
+                    hoverCursor = Qt::SizeBDiagCursor;
+                    break;
+                default:
+                    hoverCursor = Qt::ArrowCursor;
+                    break;
+                }
+            }
             break;
         default:
             break;

@@ -7,7 +7,7 @@
 #include "region/UpdateThrottler.h"
 #include "region/MagnifierPanel.h"
 #include "annotations/AnnotationLayer.h"
-#include "annotations/TextAnnotation.h"
+#include "annotations/TextBoxAnnotation.h"
 #include "annotations/EmojiStickerAnnotation.h"
 #include "cursor/CursorManager.h"
 #include "tools/ToolManager.h"
@@ -447,14 +447,16 @@ bool RegionInputHandler::handleTextAnnotationPress(const QPoint& pos)
     }
 
     qint64 now = QDateTime::currentMSecsSinceEpoch();
-    if (m_textAnnotationEditor->isDoubleClick(pos, now) &&
-        hitIndex == m_annotationLayer->selectedIndex()) {
+    // Double-click on ANY text annotation triggers re-edit (no need to be pre-selected)
+    if (m_textAnnotationEditor->isDoubleClick(pos, now)) {
+        m_annotationLayer->setSelectedIndex(hitIndex);
         emit textReEditingRequested(hitIndex);
         m_textAnnotationEditor->recordClick(QPoint(), 0);
         return true;
     }
     m_textAnnotationEditor->recordClick(pos, now);
 
+    // Single click: select and start dragging
     m_annotationLayer->setSelectedIndex(hitIndex);
     if (auto* textItem = getSelectedTextAnnotation()) {
         GizmoHandle handle = TransformationGizmo::hitTest(textItem, pos);
@@ -1245,13 +1247,13 @@ void RegionInputHandler::adjustEdgesToPosition(const QPoint& pos,
 // Utility Methods
 // ============================================================================
 
-TextAnnotation* RegionInputHandler::getSelectedTextAnnotation() const
+TextBoxAnnotation* RegionInputHandler::getSelectedTextAnnotation() const
 {
     if (!m_annotationLayer) {
         return nullptr;
     }
     if (m_annotationLayer->selectedIndex() >= 0) {
-        return dynamic_cast<TextAnnotation*>(m_annotationLayer->selectedItem());
+        return dynamic_cast<TextBoxAnnotation*>(m_annotationLayer->selectedItem());
     }
     return nullptr;
 }

@@ -1024,7 +1024,8 @@ ImageStitcher::StitchResult ImageStitcher::applyCandidate(const QImage &newFrame
                                                           const MatchCandidate &candidate,
                                                           Algorithm algorithm)
 {
-    StitchResult result = performStitch(newFrame, candidate.overlap, candidate.direction);
+    StitchResult result;
+    result.success = candidate.success;
     result.usedAlgorithm = algorithm;
     result.confidence = candidate.confidence;
     result.overlapPixels = candidate.overlap;
@@ -1033,6 +1034,12 @@ ImageStitcher::StitchResult ImageStitcher::applyCandidate(const QImage &newFrame
     if (result.failureCode == FailureCode::None && candidate.failureCode != FailureCode::None) {
         result.failureCode = candidate.failureCode;
     }
+    
+    // Explicitly set offset failure if not success
+    if (!result.success) {
+        result.offset = QPoint(0, 0);
+    }
+    
     return result;
 }
 

@@ -1,12 +1,13 @@
 #include "region/TextAnnotationEditor.h"
 #include "annotations/AnnotationLayer.h"
-#include "annotations/TextAnnotation.h"
+#include "annotations/TextBoxAnnotation.h"
 #include "InlineTextEditor.h"
 #include "ColorAndWidthWidget.h"
 #include "settings/Settings.h"
 #include <QWidget>
 #include <QSettings>
 #include <QtMath>
+#include <QFontMetrics>
 
 namespace {
     const char* SETTINGS_KEY_TEXT_BOLD = "annotation/text_bold";
@@ -56,7 +57,7 @@ void TextAnnotationEditor::startReEditing(int annotationIndex, const QColor& col
 {
     if (!m_annotationLayer || !m_textEditor) return;
 
-    auto* textItem = dynamic_cast<TextAnnotation*>(m_annotationLayer->itemAt(annotationIndex));
+    auto* textItem = dynamic_cast<TextBoxAnnotation*>(m_annotationLayer->itemAt(annotationIndex));
     if (!textItem) return;
 
     m_editingIndex = annotationIndex;
@@ -83,7 +84,12 @@ void TextAnnotationEditor::startReEditing(int annotationIndex, const QColor& col
     if (m_parentWidget) {
         selectionRect = m_parentWidget->rect();
     }
-    m_textEditor->startEditingExisting(textItem->position(), selectionRect, textItem->text());
+
+    // Convert position to QPoint for InlineTextEditor (baseline position)
+    // TextBoxAnnotation position is top-left, need to add font ascent for baseline
+    QFontMetrics fm(textItem->font());
+    QPoint baselinePos = textItem->position().toPoint() + QPoint(TextBoxAnnotation::kPadding, fm.ascent() + TextBoxAnnotation::kPadding);
+    m_textEditor->startEditingExisting(baselinePos, selectionRect, textItem->text());
 
     // Hide the original annotation while editing (prevent duplicate display)
     textItem->setVisible(false);
@@ -101,23 +107,30 @@ void TextAnnotationEditor::finishEditing(const QString& text, const QPoint& posi
 
     if (m_editingIndex >= 0) {
         // Re-editing: restore visibility first
-        auto* textItem = dynamic_cast<TextAnnotation*>(m_annotationLayer->itemAt(m_editingIndex));
+        auto* textItem = dynamic_cast<TextBoxAnnotation*>(m_annotationLayer->itemAt(m_editingIndex));
         if (textItem) {
             textItem->setVisible(true);  // Restore visibility
             if (!text.isEmpty()) {
                 textItem->setText(text);
                 textItem->setFont(font);
                 textItem->setColor(color);
-                // Position may have changed during confirm mode drag
-                textItem->setPosition(position);
+                // Convert baseline position back to top-left for TextBoxAnnotation
+                QFontMetrics fm(font);
+                QPointF topLeft(position.x() - TextBoxAnnotation::kPadding,
+                               position.y() - fm.ascent() - TextBoxAnnotation::kPadding);
+                textItem->setPosition(topLeft);
             }
         }
         m_annotationLayer->setSelectedIndex(m_editingIndex);
         m_editingIndex = -1;
     }
     else if (!text.isEmpty()) {
-        // Create new annotation
-        auto textAnnotation = std::make_unique<TextAnnotation>(position, text, font, color);
+        // Create new TextBoxAnnotation
+        // Convert baseline position to top-left position
+        QFontMetrics fm(font);
+        QPointF topLeft(position.x() - TextBoxAnnotation::kPadding,
+                       position.y() - fm.ascent() - TextBoxAnnotation::kPadding);
+        auto textAnnotation = std::make_unique<TextBoxAnnotation>(topLeft, text, font, color);
         m_annotationLayer->addItem(std::move(textAnnotation));
 
         // Auto-select the newly created text annotation to show the gizmo
@@ -133,7 +146,7 @@ void TextAnnotationEditor::cancelEditing()
 {
     if (m_editingIndex >= 0 && m_annotationLayer) {
         // Restore visibility of the original annotation
-        auto* textItem = dynamic_cast<TextAnnotation*>(m_annotationLayer->itemAt(m_editingIndex));
+        auto* textItem = dynamic_cast<TextBoxAnnotation*>(m_annotationLayer->itemAt(m_editingIndex));
         if (textItem) {
             textItem->setVisible(true);
         }
@@ -152,7 +165,7 @@ void TextAnnotationEditor::startTransformation(const QPoint& pos, GizmoHandle ha
 {
     if (!m_annotationLayer) return;
 
-    auto* textItem = dynamic_cast<TextAnnotation*>(m_annotationLayer->selectedItem());
+    auto* textItem = dynamic_cast<TextBoxAnnotation*>(m_annotationLayer->selectedItem());
     if (!textItem) return;
 
     m_isTransforming = true;
@@ -173,7 +186,7 @@ void TextAnnotationEditor::updateTransformation(const QPoint& pos)
 {
     if (!m_annotationLayer) return;
 
-    auto* textItem = dynamic_cast<TextAnnotation*>(m_annotationLayer->selectedItem());
+    auto* textItem = dynamic_cast<TextBoxAnnotation*>(m_annotationLayer->selectedItem());
     if (!textItem) return;
 
     QPointF center = m_transformStartCenter;
@@ -238,7 +251,7 @@ void TextAnnotationEditor::updateDragging(const QPoint& pos)
 {
     if (!m_annotationLayer || !m_isDragging) return;
 
-    auto* textItem = dynamic_cast<TextAnnotation*>(m_annotationLayer->selectedItem());
+    auto* textItem = dynamic_cast<TextBoxAnnotation*>(m_annotationLayer->selectedItem());
     if (!textItem) return;
 
     QPoint delta = pos - m_dragStart;

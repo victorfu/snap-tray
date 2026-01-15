@@ -3,7 +3,7 @@
 #include "region/RegionControlWidget.h"
 #include "region/MultiRegionManager.h"
 #include "annotations/AnnotationLayer.h"
-#include "annotations/TextAnnotation.h"
+#include "annotations/TextBoxAnnotation.h"
 #include "annotations/EmojiStickerAnnotation.h"
 #include "tools/ToolManager.h"
 #include "ToolbarWidget.h"
@@ -591,13 +591,13 @@ int RegionPainter::effectiveCornerRadius() const
     return qMin(m_cornerRadius, maxRadius);
 }
 
-TextAnnotation* RegionPainter::getSelectedTextAnnotation() const
+TextBoxAnnotation* RegionPainter::getSelectedTextAnnotation() const
 {
     if (!m_annotationLayer) {
         return nullptr;
     }
     if (m_annotationLayer->selectedIndex() >= 0) {
-        return dynamic_cast<TextAnnotation*>(m_annotationLayer->selectedItem());
+        return dynamic_cast<TextBoxAnnotation*>(m_annotationLayer->selectedItem());
     }
     return nullptr;
 }

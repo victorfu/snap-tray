@@ -7,7 +7,7 @@
 #include <QPolygonF>
 #include <QVector>
 
-class TextAnnotation;
+class TextBoxAnnotation;
 class EmojiStickerAnnotation;
 
 // Handle types for hit-testing transformation gizmo
@@ -43,7 +43,7 @@ public:
      * @param painter The painter to draw with
      * @param annotation The text annotation to draw the gizmo for
      */
-    static void draw(QPainter &painter, const TextAnnotation *annotation);
+    static void draw(QPainter &painter, const TextBoxAnnotation *annotation);
 
     /**
      * @brief Hit-test the gizmo to determine which handle (if any) is at the given point.
@@ -51,21 +51,21 @@ public:
      * @param point The point to test (in global/widget coordinates)
      * @return The handle at the point, or GizmoHandle::None if no handle is hit
      */
-    static GizmoHandle hitTest(const TextAnnotation *annotation, const QPoint &point);
+    static GizmoHandle hitTest(const TextBoxAnnotation *annotation, const QPoint &point);
 
     /**
      * @brief Get the position of the rotation handle.
      * @param annotation The text annotation
      * @return The position of the rotation handle circle center
      */
-    static QPointF rotationHandlePosition(const TextAnnotation *annotation);
+    static QPointF rotationHandlePosition(const TextBoxAnnotation *annotation);
 
     /**
      * @brief Get the positions of the four corner handles.
      * @param annotation The text annotation
      * @return Vector of 4 corner positions (TopLeft, TopRight, BottomRight, BottomLeft)
      */
-    static QVector<QPointF> cornerHandlePositions(const TextAnnotation *annotation);
+    static QVector<QPointF> cornerHandlePositions(const TextBoxAnnotation *annotation);
 
     // EmojiStickerAnnotation overloads (no rotation handle)
     static void draw(QPainter &painter, const EmojiStickerAnnotation *annotation);

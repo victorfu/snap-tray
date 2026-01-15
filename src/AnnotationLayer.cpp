@@ -1,5 +1,5 @@
 #include "annotations/AnnotationLayer.h"
-#include "annotations/TextAnnotation.h"
+#include "annotations/TextBoxAnnotation.h"
 #include "annotations/PencilStroke.h"
 #include "annotations/MarkerStroke.h"
 #include "annotations/MosaicStroke.h"
@@ -252,9 +252,8 @@ int AnnotationLayer::hitTestText(const QPoint &pos) const
 {
     // Iterate in reverse order (top-most items first)
     for (int i = static_cast<int>(m_items.size()) - 1; i >= 0; --i) {
-        // Only hit-test TextAnnotation items
-        if (auto* textItem = dynamic_cast<TextAnnotation*>(m_items[i].get())) {
-            // Use containsPoint() for accurate hit-testing of rotated/scaled text
+        // Hit-test TextBoxAnnotation items (new resizable text boxes)
+        if (auto* textItem = dynamic_cast<TextBoxAnnotation*>(m_items[i].get())) {
             if (textItem->containsPoint(pos)) {
                 return i;
             }

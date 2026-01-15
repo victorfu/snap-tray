@@ -13,7 +13,7 @@
 #include "annotations/ErasedItemsGroup.h"
 
 // Forward declarations
-class TextAnnotation;
+class TextBoxAnnotation;
 class EmojiStickerAnnotation;
 
 // Annotation layer that manages all annotations with undo/redo

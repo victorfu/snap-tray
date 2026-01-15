@@ -250,7 +250,7 @@ add_library(snaptray_core STATIC
     src/annotations/StepBadgeAnnotation.cpp
     src/annotations/EmojiStickerAnnotation.cpp
     src/annotations/ErasedItemsGroup.cpp
-    src/annotations/TextAnnotation.cpp
+    src/annotations/TextBoxAnnotation.cpp
     src/settings/AnnotationSettingsManager.cpp
     src/settings/FileSettingsManager.cpp
     src/settings/PinWindowSettingsManager.cpp

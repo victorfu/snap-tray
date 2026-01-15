@@ -213,30 +213,47 @@ void tst_TextAnnotationEditor::testRotationCalculation()
 
 void tst_TextAnnotationEditor::testScaleCalculation()
 {
-    // Test scale factor calculation (based on distance from center)
+    // Test scale calculation based on distance from center
     QPointF center(100, 100);
-    QPointF startPos(150, 100);  // 50 pixels away
 
-    qreal startDistance = qSqrt(50.0 * 50.0);
+    // Start position at distance 50 from center
+    QPointF startPos(150, 100);
+    qreal startDistance = qSqrt(qPow(startPos.x() - center.x(), 2) +
+                                qPow(startPos.y() - center.y(), 2));
     QCOMPARE(startDistance, 50.0);
 
-    // Move to 100 pixels away - should double the scale
-    QPointF currentPos(200, 100);
-    QPointF delta = currentPos - center;
-    qreal currentDistance = qSqrt(delta.x() * delta.x() + delta.y() * delta.y());
+    // Drag to position at distance 100 from center (double the distance)
+    QPointF newPos(200, 100);
+    qreal currentDistance = qSqrt(qPow(newPos.x() - center.x(), 2) +
+                                  qPow(newPos.y() - center.y(), 2));
     QCOMPARE(currentDistance, 100.0);
 
+    // Scale factor = currentDistance / startDistance = 100/50 = 2.0
+    qreal startScale = 1.0;
     qreal scaleFactor = currentDistance / startDistance;
-    QCOMPARE(scaleFactor, 2.0);
+    qreal newScale = startScale * scaleFactor;
+    QCOMPARE(newScale, 2.0);
 
-    // Move to 25 pixels away - should halve the scale
-    currentPos = QPointF(125, 100);
-    delta = currentPos - center;
-    currentDistance = qSqrt(delta.x() * delta.x() + delta.y() * delta.y());
-    QCOMPARE(currentDistance, 25.0);
+    // Test scale clamping (0.1 to 10.0)
+    // Move very close to center (distance 5)
+    newPos = QPointF(105, 100);
+    currentDistance = qSqrt(qPow(newPos.x() - center.x(), 2) +
+                           qPow(newPos.y() - center.y(), 2));
+    QCOMPARE(currentDistance, 5.0);
 
-    scaleFactor = currentDistance / startDistance;
-    QCOMPARE(scaleFactor, 0.5);
+    scaleFactor = currentDistance / startDistance;  // 5/50 = 0.1
+    newScale = qBound(0.1, startScale * scaleFactor, 10.0);
+    QCOMPARE(newScale, 0.1);  // Clamped to minimum
+
+    // Move very far from center (distance 600)
+    newPos = QPointF(700, 100);
+    currentDistance = qSqrt(qPow(newPos.x() - center.x(), 2) +
+                           qPow(newPos.y() - center.y(), 2));
+    QCOMPARE(currentDistance, 600.0);
+
+    scaleFactor = currentDistance / startDistance;  // 600/50 = 12.0
+    newScale = qBound(0.1, startScale * scaleFactor, 10.0);
+    QCOMPARE(newScale, 10.0);  // Clamped to maximum
 }
 
 void tst_TextAnnotationEditor::testDoubleClickConstants()

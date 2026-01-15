@@ -198,7 +198,7 @@ void MainApplication::initialize()
             qDebug() << "MainApplication: OCR completed, success=" << success << ", message=" << message;
             GlobalToast::instance().showToast(
                 success ? GlobalToast::Success : GlobalToast::Error,
-                success ? tr("OCR Success") : tr("OCR Failed"),
+                success ? MainApplication::tr("OCR Success") : MainApplication::tr("OCR Failed"),
                 message);
         });
 

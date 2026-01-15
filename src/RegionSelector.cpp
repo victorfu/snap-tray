@@ -1243,11 +1243,24 @@ void RegionSelector::mouseDoubleClickEvent(QMouseEvent* event)
         return;
     }
 
-    // Forward double-click to tool manager if selection is complete
-    if (m_selectionManager->isComplete()) {
-        m_toolManager->handleDoubleClick(event->pos());
-        update();
+    if (!m_selectionManager->isComplete()) {
+        return;
     }
+
+    // Check if double-click is on a text annotation (for re-editing)
+    if (m_annotationLayer) {
+        int hitIndex = m_annotationLayer->hitTestText(event->pos());
+        if (hitIndex >= 0) {
+            m_annotationLayer->setSelectedIndex(hitIndex);
+            m_textAnnotationEditor->startReEditing(hitIndex, m_annotationColor);
+            update();
+            return;
+        }
+    }
+
+    // Forward other double-clicks to tool manager
+    m_toolManager->handleDoubleClick(event->pos());
+    update();
 }
 
 void RegionSelector::wheelEvent(QWheelEvent* event)
@@ -1544,7 +1557,7 @@ void RegionSelector::showTextInputDialog(const QPoint& pos)
         font.setPointSize(16);
         font.setBold(true);
 
-        auto textAnnotation = std::make_unique<TextAnnotation>(pos, text, font, m_annotationColor);
+        auto textAnnotation = std::make_unique<TextBoxAnnotation>(QPointF(pos), text, font, m_annotationColor);
         m_annotationLayer->addItem(std::move(textAnnotation));
         update();
     }
@@ -1559,7 +1572,7 @@ void RegionSelector::startTextReEditing(int annotationIndex)
 {
     m_textAnnotationEditor->startReEditing(annotationIndex, m_annotationColor);
     // Update local annotation color from the text item
-    auto* textItem = dynamic_cast<TextAnnotation*>(m_annotationLayer->itemAt(annotationIndex));
+    auto* textItem = dynamic_cast<TextBoxAnnotation*>(m_annotationLayer->itemAt(annotationIndex));
     if (textItem) {
         m_annotationColor = textItem->color();
         m_colorAndWidthWidget->setCurrentColor(m_annotationColor);

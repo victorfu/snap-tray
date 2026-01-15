@@ -1,10 +1,10 @@
 #include "TransformationGizmo.h"
-#include "annotations/TextAnnotation.h"
+#include "annotations/TextBoxAnnotation.h"
 #include "annotations/EmojiStickerAnnotation.h"
 #include <QtMath>
 #include <QLineF>
 
-void TransformationGizmo::draw(QPainter &painter, const TextAnnotation *annotation)
+void TransformationGizmo::draw(QPainter &painter, const TextBoxAnnotation *annotation)
 {
     if (!annotation) return;
 
@@ -77,7 +77,7 @@ void TransformationGizmo::drawRotationHandle(QPainter &painter, const QPointF &t
     painter.drawArc(arcRect, 45 * 16, 270 * 16);
 }
 
-QPointF TransformationGizmo::rotationHandlePosition(const TextAnnotation *annotation)
+QPointF TransformationGizmo::rotationHandlePosition(const TextBoxAnnotation *annotation)
 {
     if (!annotation) return QPointF();
 
@@ -100,7 +100,7 @@ QPointF TransformationGizmo::rotationHandlePosition(const TextAnnotation *annota
     return topCenter + direction * kRotationHandleDistance;
 }
 
-QVector<QPointF> TransformationGizmo::cornerHandlePositions(const TextAnnotation *annotation)
+QVector<QPointF> TransformationGizmo::cornerHandlePositions(const TextBoxAnnotation *annotation)
 {
     QVector<QPointF> corners;
     if (!annotation) return corners;
@@ -113,7 +113,7 @@ QVector<QPointF> TransformationGizmo::cornerHandlePositions(const TextAnnotation
     return corners;
 }
 
-GizmoHandle TransformationGizmo::hitTest(const TextAnnotation *annotation, const QPoint &point)
+GizmoHandle TransformationGizmo::hitTest(const TextBoxAnnotation *annotation, const QPoint &point)
 {
     if (!annotation) return GizmoHandle::None;
 

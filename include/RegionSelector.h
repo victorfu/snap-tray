@@ -40,7 +40,6 @@ class EmojiPicker;
 class ColorPickerDialog;
 class QCloseEvent;
 class OCRManager;
-class TextAnnotation;
 class AutoBlurManager;
 class RegionPainter;
 class RegionInputHandler;

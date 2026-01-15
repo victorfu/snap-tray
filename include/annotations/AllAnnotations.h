@@ -9,7 +9,7 @@
  *
  * 或者個別引入需要的類型：
  *   #include "annotations/PencilStroke.h"
- *   #include "annotations/TextAnnotation.h"
+ *   #include "annotations/TextBoxAnnotation.h"
  */
 
 #include "annotations/AnnotationItem.h"
@@ -18,7 +18,7 @@
 #include "annotations/MarkerStroke.h"
 #include "annotations/ArrowAnnotation.h"
 #include "annotations/ShapeAnnotation.h"
-#include "annotations/TextAnnotation.h"
+#include "annotations/TextBoxAnnotation.h"
 #include "annotations/MosaicStroke.h"
 #include "annotations/MosaicRectAnnotation.h"
 #include "annotations/StepBadgeAnnotation.h"

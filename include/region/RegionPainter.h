@@ -16,7 +16,7 @@ class AnnotationLayer;
 class ToolManager;
 class ToolbarWidget;
 class RegionControlWidget;
-class TextAnnotation;
+class TextBoxAnnotation;
 class EmojiStickerAnnotation;
 class MultiRegionManager;
 
@@ -90,7 +90,7 @@ private:
 
     // Helper methods
     int effectiveCornerRadius() const;
-    TextAnnotation* getSelectedTextAnnotation() const;
+    TextBoxAnnotation* getSelectedTextAnnotation() const;
     EmojiStickerAnnotation* getSelectedEmojiStickerAnnotation() const;
 
     // Dependencies (non-owning pointers)

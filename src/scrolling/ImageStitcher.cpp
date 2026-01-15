@@ -132,12 +132,23 @@ ImageStitcher::StitchResult ImageStitcher::addFrame(const QImage &frame)
         rowProjMs = perfTimer.elapsed();
 
         if (result.success && result.confidence >= m_stitchConfig.confidenceThreshold) {
-            m_lastFrame = frame.convertToFormat(QImage::Format_RGB32);
-            std::swap(m_lastFrameCache, m_currentFrameCache);
-            m_frameCount++;
-            emit progressUpdated(m_frameCount, getCurrentSize());
-            qDebug() << "ImageStitcher::addFrame perf - rowProj:" << rowProjMs << "ms (success)";
-            return result;
+            // Apply the stitch
+            StitchResult stitchRes = performStitch(frame, result.overlapPixels, result.direction);
+            
+            if (stitchRes.success) {
+                // Merge stitch result (offset) into the match result
+                result.offset = stitchRes.offset;
+                
+                m_lastFrame = frame.convertToFormat(QImage::Format_RGB32);
+                std::swap(m_lastFrameCache, m_currentFrameCache);
+                m_frameCount++;
+                emit progressUpdated(m_frameCount, getCurrentSize());
+                qDebug() << "ImageStitcher::addFrame perf - rowProj:" << rowProjMs << "ms (success)";
+                return result;
+            } else {
+                // Stitch failed (e.g. duplicate detected or size limit)
+                result = stitchRes; // Propagate failure reason
+            }
         }
 
         // Try template matching as fallback (good for non-text content)
@@ -146,12 +157,21 @@ ImageStitcher::StitchResult ImageStitcher::addFrame(const QImage &frame)
         templateMs = perfTimer.elapsed();
 
         if (result.success && result.confidence >= m_stitchConfig.confidenceThreshold) {
-            m_lastFrame = frame.convertToFormat(QImage::Format_RGB32);
-            std::swap(m_lastFrameCache, m_currentFrameCache);
-            m_frameCount++;
-            emit progressUpdated(m_frameCount, getCurrentSize());
-            qDebug() << "ImageStitcher::addFrame perf - rowProj:" << rowProjMs << "ms, template:" << templateMs << "ms (fallback success)";
-            return result;
+            // Apply the stitch
+            StitchResult stitchRes = performStitch(frame, result.overlapPixels, result.direction);
+            
+            if (stitchRes.success) {
+                result.offset = stitchRes.offset;
+                
+                m_lastFrame = frame.convertToFormat(QImage::Format_RGB32);
+                std::swap(m_lastFrameCache, m_currentFrameCache);
+                m_frameCount++;
+                emit progressUpdated(m_frameCount, getCurrentSize());
+                qDebug() << "ImageStitcher::addFrame perf - rowProj:" << rowProjMs << "ms, template:" << templateMs << "ms (fallback success)";
+                return result;
+            } else {
+                result = stitchRes;
+            }
         }
 
         // All failed. Preserve the last result's failure code if it's more specific than None
@@ -172,14 +192,23 @@ ImageStitcher::StitchResult ImageStitcher::addFrame(const QImage &frame)
             qint64 phaseMs = perfTimer.elapsed();
 
             if (phaseResult.success) {
-                result = phaseResult;
-                m_lastFrame = frame.convertToFormat(QImage::Format_RGB32);
-                std::swap(m_lastFrameCache, m_currentFrameCache);
-                m_frameCount++;
-                emit progressUpdated(m_frameCount, getCurrentSize());
-                qDebug() << "ImageStitcher::addFrame perf - rowProj:" << rowProjMs << "ms, template:" << templateMs
-                         << "ms, phase:" << phaseMs << "ms (fallback success)";
-                return result;
+                // Apply the stitch
+                StitchResult stitchRes = performStitch(frame, phaseResult.overlapPixels, phaseResult.direction);
+                
+                if (stitchRes.success) {
+                    result = phaseResult; // Use phase result as base
+                    result.offset = stitchRes.offset;
+                    
+                    m_lastFrame = frame.convertToFormat(QImage::Format_RGB32);
+                    std::swap(m_lastFrameCache, m_currentFrameCache);
+                    m_frameCount++;
+                    emit progressUpdated(m_frameCount, getCurrentSize());
+                    qDebug() << "ImageStitcher::addFrame perf - rowProj:" << rowProjMs << "ms, template:" << templateMs
+                             << "ms, phase:" << phaseMs << "ms (fallback success)";
+                    return result;
+                } else {
+                    result = stitchRes; 
+                }
             }
         }
 
@@ -203,10 +232,18 @@ ImageStitcher::StitchResult ImageStitcher::addFrame(const QImage &frame)
     }
 
     if (result.success) {
-        m_lastFrame = frame.convertToFormat(QImage::Format_RGB32);
-        std::swap(m_lastFrameCache, m_currentFrameCache);
-        m_frameCount++;
-        emit progressUpdated(m_frameCount, getCurrentSize());
+        // Apply the stitch for single-algorithm mode
+        StitchResult stitchRes = performStitch(frame, result.overlapPixels, result.direction);
+        
+        if (stitchRes.success) {
+            result.offset = stitchRes.offset;
+            m_lastFrame = frame.convertToFormat(QImage::Format_RGB32);
+            std::swap(m_lastFrameCache, m_currentFrameCache);
+            m_frameCount++;
+            emit progressUpdated(m_frameCount, getCurrentSize());
+        } else {
+            result = stitchRes;
+        }
     }
 
     qDebug() << "ImageStitcher::addFrame perf - rowProj:" << rowProjMs << "ms, template:" << templateMs << "ms";
