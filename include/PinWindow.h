@@ -177,6 +177,9 @@ private:
     bool handleGizmoPress(const QPoint& pos);
     TextBoxAnnotation* getSelectedTextAnnotation();
 
+    // Coordinate transformation for rotated/flipped state
+    QPoint mapToOriginalCoords(const QPoint& displayPos) const;
+
     // Original members
     QPixmap m_originalPixmap;
     SharedPixmap m_sharedSourcePixmap;  // Shared for mosaic tool memory efficiency

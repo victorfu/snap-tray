@@ -268,6 +268,45 @@ void PinWindow::flipVertical()
     qDebug() << "PinWindow: Flipped vertical, now" << m_flipVertical;
 }
 
+QPoint PinWindow::mapToOriginalCoords(const QPoint& displayPos) const
+{
+    // No transformation needed if no rotation or flip applied
+    if (m_rotationAngle == 0 && !m_flipHorizontal && !m_flipVertical) {
+        return displayPos;
+    }
+
+    // Build the same forward transform used in paintEvent for annotations
+    // Then invert it to map display coordinates back to original coordinates
+    QRectF pixmapRect = rect();
+
+    QTransform transform;
+
+    // Step 1: Apply rotation with proper translation (same as paintEvent)
+    if (m_rotationAngle == 90) {
+        transform.translate(pixmapRect.width(), 0);
+        transform.rotate(90);
+    } else if (m_rotationAngle == 180) {
+        transform.translate(pixmapRect.width(), pixmapRect.height());
+        transform.rotate(180);
+    } else if (m_rotationAngle == 270) {
+        transform.translate(0, pixmapRect.height());
+        transform.rotate(270);
+    }
+
+    // Step 2: Apply flip around the center (same as paintEvent)
+    if (m_flipHorizontal || m_flipVertical) {
+        QPointF center(pixmapRect.width() / 2.0, pixmapRect.height() / 2.0);
+        transform.translate(center.x(), center.y());
+        if (m_flipHorizontal) transform.scale(-1, 1);
+        if (m_flipVertical) transform.scale(1, -1);
+        transform.translate(-center.x(), -center.y());
+    }
+
+    // Invert the transform to map from display coords to original coords
+    QTransform inverse = transform.inverted();
+    return inverse.map(displayPos);
+}
+
 void PinWindow::setWatermarkSettings(const WatermarkRenderer::Settings &settings)
 {
     m_watermarkSettings = settings;
@@ -1131,7 +1170,10 @@ void PinWindow::mousePressEvent(QMouseEvent *event)
 
             // Other annotation tools route to ToolManager
             if (m_toolManager) {
-                m_toolManager->handleMousePress(event->pos());
+                // Transform display coordinates to original image coordinates
+                // This is needed because annotations are stored in original space
+                // but rendered with rotation/flip transforms applied
+                m_toolManager->handleMousePress(mapToOriginalCoords(event->pos()));
                 update();
                 return;
             }
@@ -1177,7 +1219,7 @@ void PinWindow::mouseMoveEvent(QMouseEvent *event)
 
     // In annotation mode with active drawing, route to ToolManager
     if (m_annotationMode && m_toolManager && m_toolManager->isDrawing()) {
-        m_toolManager->handleMouseMove(event->pos());
+        m_toolManager->handleMouseMove(mapToOriginalCoords(event->pos()));
         update();
         return;
     }
@@ -1261,7 +1303,7 @@ void PinWindow::mouseReleaseEvent(QMouseEvent *event)
                                       m_currentToolId == ToolId::StepBadge);
 
             if (m_toolManager->isDrawing() || isSingleClickTool) {
-                m_toolManager->handleMouseRelease(event->pos());
+                m_toolManager->handleMouseRelease(mapToOriginalCoords(event->pos()));
                 updateUndoRedoState();
                 update();
                 return;
