@@ -1,6 +1,7 @@
 #include "AudioFileWriter.h"
 #include <QDebug>
 #include <QtEndian>
+#include <climits>
 
 AudioFileWriter::AudioFileWriter(QObject *parent)
     : QObject(parent)
@@ -149,6 +150,14 @@ void AudioFileWriter::writeHeader()
 
 bool AudioFileWriter::updateHeader()
 {
+    // Check for WAV format 4GB limit
+    constexpr qint64 kMaxWavDataSize = static_cast<qint64>(UINT32_MAX) - 36;
+    if (m_dataSize > kMaxWavDataSize) {
+        qWarning() << "AudioFileWriter: File size exceeds WAV format limit (~4GB),"
+                   << "audio header will be truncated";
+        emit warning(tr("Audio file exceeds WAV format limit - file may not play correctly"));
+    }
+
     // Seek back to update the sizes in the header
 
     // Update RIFF chunk size (file size - 8)
