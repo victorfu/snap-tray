@@ -58,6 +58,10 @@ public:
     void clearSelection() { m_selectedIndex = -1; }
     bool removeSelectedItem();
 
+    // Cache management for rendering optimization
+    void invalidateCache();
+    void drawCached(QPainter &painter, const QSize &canvasSize, qreal devicePixelRatio = 1.0) const;
+
 signals:
     void changed();
 
@@ -70,6 +74,10 @@ private:
     std::vector<std::unique_ptr<AnnotationItem>> m_items;
     std::vector<std::unique_ptr<AnnotationItem>> m_redoStack;
     int m_selectedIndex = -1;
+
+    // Completed annotations cache for rendering optimization
+    mutable QPixmap m_annotationCache;
+    mutable bool m_cacheValid = false;
 };
 
 #endif // ANNOTATIONLAYER_H

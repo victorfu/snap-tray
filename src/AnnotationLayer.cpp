@@ -10,6 +10,7 @@
 #include <QPixmap>
 #include <QPainterPath>
 #include <QDebug>
+#include <QSize>
 #include <QtMath>
 #include <algorithm>
 
@@ -25,6 +26,7 @@ void AnnotationLayer::addItem(std::unique_ptr<AnnotationItem> item)
     m_items.push_back(std::move(item));
     m_redoStack.clear();  // Clear redo stack when new item is added
     trimHistory();
+    invalidateCache();
     emit changed();
 }
 
@@ -89,6 +91,7 @@ void AnnotationLayer::undo()
     }
 
     renumberStepBadges();
+    invalidateCache();
     emit changed();
 }
 
@@ -127,6 +130,7 @@ void AnnotationLayer::redo()
     }
 
     renumberStepBadges();
+    invalidateCache();
     emit changed();
 }
 
@@ -134,6 +138,7 @@ void AnnotationLayer::clear()
 {
     m_items.clear();
     m_redoStack.clear();
+    invalidateCache();
     emit changed();
 }
 
@@ -236,6 +241,7 @@ std::vector<ErasedItemsGroup::IndexedItem> AnnotationLayer::removeItemsIntersect
     if (!removedItems.empty()) {
         m_redoStack.clear();  // Clear redo stack when items are erased
         renumberStepBadges();
+        invalidateCache();
         emit changed();
     }
 
@@ -303,6 +309,40 @@ bool AnnotationLayer::removeSelectedItem()
     m_redoStack.clear();
     m_selectedIndex = -1;
     renumberStepBadges();
+    invalidateCache();
     emit changed();
     return true;
+}
+
+void AnnotationLayer::invalidateCache()
+{
+    m_cacheValid = false;
+}
+
+void AnnotationLayer::drawCached(QPainter &painter, const QSize &canvasSize, qreal devicePixelRatio) const
+{
+    if (m_items.empty()) return;
+
+    const QSize physicalSize = canvasSize * devicePixelRatio;
+
+    if (!m_cacheValid || m_annotationCache.isNull() ||
+        m_annotationCache.size() != physicalSize) {
+
+        m_annotationCache = QPixmap(physicalSize);
+        m_annotationCache.setDevicePixelRatio(devicePixelRatio);
+        m_annotationCache.fill(Qt::transparent);
+
+        QPainter cachePainter(&m_annotationCache);
+        cachePainter.setRenderHint(QPainter::Antialiasing);
+        cachePainter.setRenderHint(QPainter::SmoothPixmapTransform);
+
+        for (const auto &item : m_items) {
+            if (item->isVisible()) {
+                item->draw(cachePainter);
+            }
+        }
+        m_cacheValid = true;
+    }
+
+    painter.drawPixmap(0, 0, m_annotationCache);
 }

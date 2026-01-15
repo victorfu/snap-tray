@@ -537,7 +537,7 @@ void ScreenCanvas::paintEvent(QPaintEvent*)
 
 void ScreenCanvas::drawAnnotations(QPainter& painter)
 {
-    m_annotationLayer->draw(painter);
+    m_annotationLayer->drawCached(painter, size(), devicePixelRatioF());
 }
 
 void ScreenCanvas::drawCurrentAnnotation(QPainter& painter)
