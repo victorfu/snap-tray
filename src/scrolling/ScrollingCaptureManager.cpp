@@ -90,7 +90,7 @@ void ScrollingCaptureManager::startWithRegion(const QRect &region, QScreen *scre
 
     qDebug() << "ScrollingCaptureManager: Starting with pre-selected region:" << region;
 
-    createComponentsWithRegion();
+    createComponents(&m_captureRegion);
     setState(State::WaitingToStart);
 
     // Show and position toolbar immediately
@@ -186,50 +186,24 @@ void ScrollingCaptureManager::setState(State newState)
     emit stateChanged(newState);
 }
 
-void ScrollingCaptureManager::createComponents()
+void ScrollingCaptureManager::createComponents(const QRect* presetRegion)
 {
     // Create overlay
     m_overlay = new ScrollingCaptureOverlay();
-    connect(m_overlay, &ScrollingCaptureOverlay::regionSelected, this, &ScrollingCaptureManager::onRegionSelected);
+    if (presetRegion) {
+        // Pre-selected region: skip regionSelected signal
+        m_overlay->initializeForScreenWithRegion(m_targetScreen, *presetRegion);
+    } else {
+        // Normal selection flow
+        connect(m_overlay, &ScrollingCaptureOverlay::regionSelected, this, &ScrollingCaptureManager::onRegionSelected);
+        m_overlay->initializeForScreen(m_targetScreen);
+    }
     connect(m_overlay, &ScrollingCaptureOverlay::regionChanged, this, &ScrollingCaptureManager::onRegionChanged);
     connect(m_overlay, &ScrollingCaptureOverlay::selectionConfirmed, this, &ScrollingCaptureManager::onSelectionConfirmed);
     connect(m_overlay, &ScrollingCaptureOverlay::stopRequested, this, &ScrollingCaptureManager::onStopRequested);
     connect(m_overlay, &ScrollingCaptureOverlay::cancelled, this, &ScrollingCaptureManager::onOverlayCancelled);
-    m_overlay->initializeForScreen(m_targetScreen);
 
     // Create toolbar
-    m_toolbar = new ScrollingCaptureToolbar();
-    connect(m_toolbar, &ScrollingCaptureToolbar::startClicked, this, &ScrollingCaptureManager::onStartClicked);
-    connect(m_toolbar, &ScrollingCaptureToolbar::stopClicked, this, &ScrollingCaptureManager::onStopClicked);
-    connect(m_toolbar, &ScrollingCaptureToolbar::pinClicked, this, &ScrollingCaptureManager::onPinClicked);
-    connect(m_toolbar, &ScrollingCaptureToolbar::saveClicked, this, &ScrollingCaptureManager::onSaveClicked);
-    connect(m_toolbar, &ScrollingCaptureToolbar::copyClicked, this, &ScrollingCaptureManager::onCopyClicked);
-    connect(m_toolbar, &ScrollingCaptureToolbar::closeClicked, this, &ScrollingCaptureManager::onCloseClicked);
-    connect(m_toolbar, &ScrollingCaptureToolbar::cancelClicked, this, &ScrollingCaptureManager::onCancelClicked);
-    connect(m_toolbar, &ScrollingCaptureToolbar::directionToggled, this, &ScrollingCaptureManager::onDirectionToggled);
-    m_toolbar->hide();
-
-    // Create thumbnail
-    m_thumbnail = new ScrollingCaptureThumbnail();
-    m_thumbnail->hide();
-
-    // Create onboarding
-    m_onboarding = new ScrollingCaptureOnboarding(m_overlay);
-    m_onboarding->hide();
-}
-
-void ScrollingCaptureManager::createComponentsWithRegion()
-{
-    // Create overlay with pre-selected region (skips selection phase)
-    m_overlay = new ScrollingCaptureOverlay();
-    // Don't connect regionSelected since we already have the region
-    connect(m_overlay, &ScrollingCaptureOverlay::regionChanged, this, &ScrollingCaptureManager::onRegionChanged);
-    connect(m_overlay, &ScrollingCaptureOverlay::selectionConfirmed, this, &ScrollingCaptureManager::onSelectionConfirmed);
-    connect(m_overlay, &ScrollingCaptureOverlay::stopRequested, this, &ScrollingCaptureManager::onStopRequested);
-    connect(m_overlay, &ScrollingCaptureOverlay::cancelled, this, &ScrollingCaptureManager::onOverlayCancelled);
-    m_overlay->initializeForScreenWithRegion(m_targetScreen, m_captureRegion);
-
-    // Create toolbar (same as createComponents)
     m_toolbar = new ScrollingCaptureToolbar();
     connect(m_toolbar, &ScrollingCaptureToolbar::startClicked, this, &ScrollingCaptureManager::onStartClicked);
     connect(m_toolbar, &ScrollingCaptureToolbar::stopClicked, this, &ScrollingCaptureManager::onStopClicked);

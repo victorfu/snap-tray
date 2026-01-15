@@ -97,8 +97,7 @@ private slots:
 
 private:
     void setState(State newState);
-    void createComponents();
-    void createComponentsWithRegion();
+    void createComponents(const QRect* presetRegion = nullptr);
     void destroyComponents();
     void startFrameCapture();
     void stopFrameCapture();
