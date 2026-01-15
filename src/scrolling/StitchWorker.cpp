@@ -103,11 +103,9 @@ bool StitchWorker::enqueueFrame(const QImage &frame)
         return false;
     }
 
-    // Normalize frame format - avoid double copy by using implicit sharing
-    // when already RGB32, otherwise convertToFormat does the necessary copy
-    QImage normalized = (frame.format() == QImage::Format_RGB32)
-        ? frame  // implicit sharing, no deep copy
-        : frame.convertToFormat(QImage::Format_RGB32);
+    // Enqueue original frame - format conversion moved to worker thread for UI responsiveness
+    // Uses implicit sharing (COW), no deep copy here
+    QImage normalized = frame;
 
     int depth;
     {
@@ -243,7 +241,10 @@ void StitchWorker::doProcessFrame(const QImage &frame)
     Result result;
     result.frameCount = m_stitcher->frameCount();
 
-    QImage rawFrame = frame;
+    // Normalize format in worker thread (moved from enqueueFrame for UI responsiveness)
+    QImage rawFrame = (frame.format() == QImage::Format_RGB32)
+        ? frame
+        : frame.convertToFormat(QImage::Format_RGB32);
 
     // 1. Frame Change Detection (using cached downsampled images for efficiency)
     if (!m_fixedDetected) {
