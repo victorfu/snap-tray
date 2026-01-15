@@ -803,13 +803,6 @@ void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapt
     }
 }
 
-// 保留舊方法以保持向後兼容 (但不再使用)
-void RegionSelector::captureCurrentScreen()
-{
-    QScreen* screen = QGuiApplication::screenAt(QCursor::pos());
-    initializeForScreen(screen);
-}
-
 void RegionSelector::initializeWithRegion(QScreen* screen, const QRect& region)
 {
     setupScreenGeometry(screen);

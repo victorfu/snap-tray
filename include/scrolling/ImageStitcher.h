@@ -151,7 +151,6 @@ private:
     StitchResult tryTemplateMatch(const QImage &newFrame);
     StitchResult tryRowProjectionMatch(const QImage &newFrame);
     StitchResult tryPhaseCorrelation(const QImage &newFrame);
-    StitchResult tryInPlaceMatchInStitched(const QImage &newFrame);
 
     // Frame cache for avoiding redundant QImage→Mat conversions (PIMPL pattern)
     struct FrameCacheImpl;  // Forward declaration - defined in cpp file

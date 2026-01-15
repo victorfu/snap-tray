@@ -1817,59 +1817,6 @@ ImageStitcher::StitchResult ImageStitcher::tryPhaseCorrelation(const QImage &new
     return result;
 }
 
-ImageStitcher::StitchResult ImageStitcher::tryInPlaceMatchInStitched(const QImage &newFrame)
-{
-    StitchResult result;
-    result.usedAlgorithm = Algorithm::RowProjection;
-
-    if (newFrame.isNull() || m_stitchedResult.isNull() || m_currentViewportRect.isNull()) {
-        result.failureReason = "No stitched viewport available";
-        result.failureCode = FailureCode::InvalidState;
-        return result;
-    }
-
-    bool isHorizontal = (m_captureMode == CaptureMode::Horizontal);
-    int validWidth = m_validWidth > 0 ? m_validWidth : m_stitchedResult.width();
-    int validHeight = m_validHeight > 0 ? m_validHeight : m_stitchedResult.height();
-
-    if (validWidth <= 0 || validHeight <= 0) {
-        result.failureReason = "Invalid stitcher state";
-        return result;
-    }
-
-    InPlaceMatch match = findGlobalInPlaceMatch(
-        m_stitchedResult,
-        validWidth,
-        validHeight,
-        newFrame,
-        isHorizontal);
-
-    if (!match.found) {
-        result.failureReason = "No in-place match found";
-        result.failureCode = FailureCode::NoAlgorithmSucceeded;
-        return result;
-    }
-
-    QRect previousViewport = m_currentViewportRect;
-    m_currentViewportRect = match.rect;
-
-    if (isHorizontal) {
-        result.direction = (match.rect.x() >= previousViewport.x())
-            ? ScrollDirection::Right
-            : ScrollDirection::Left;
-    } else {
-        result.direction = (match.rect.y() >= previousViewport.y())
-            ? ScrollDirection::Down
-            : ScrollDirection::Up;
-    }
-
-    m_lastSuccessfulDirection = result.direction;
-    result.offset = match.rect.topLeft();
-    result.confidence = std::clamp(1.0 - (match.diff.averageDiff + match.diff.changedRatio * 0.5), 0.0, 1.0);
-    result.success = true;
-    return result;
-}
-
 ImageStitcher::MatchCandidate ImageStitcher::computeRowProjectionCandidate(
     const QImage &newFrame, ScrollDirection direction)
 {

@@ -110,7 +110,6 @@ protected:
     bool eventFilter(QObject *obj, QEvent *event) override;
 
 private:
-    void captureCurrentScreen();
     void drawCrosshair(QPainter &painter);
     void drawMagnifier(QPainter &painter);
 
