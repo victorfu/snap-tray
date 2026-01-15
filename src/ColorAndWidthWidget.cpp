@@ -483,9 +483,7 @@ void ColorAndWidthWidget::updateLayout()
         if (hasFirstSection) xOffset += SECTION_SPACING;
         m_autoBlurSection->updateLayout(containerTop, containerHeight, xOffset);
         xOffset += m_autoBlurSection->preferredWidth();
-        hasFirstSection = true;
     }
-    Q_UNUSED(hasFirstSection);
 }
 
 // =============================================================================
