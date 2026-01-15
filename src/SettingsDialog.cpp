@@ -27,6 +27,7 @@
 #include <QFileDialog>
 #include <QStandardPaths>
 #include <QFile>
+#include <memory>
 
 static const char* SETTINGS_KEY_HOTKEY = "hotkey";
 static const char* DEFAULT_HOTKEY = "F2";
@@ -1070,9 +1071,17 @@ void SettingsDialog::populateAudioDevices()
     m_audioDeviceCombo->clear();
     m_audioDeviceCombo->addItem("Default", QString());
 
-    // Audio devices will be populated when IAudioCaptureEngine is available
-    // For now, just show the default option
-    // TODO: Once IAudioCaptureEngine is implemented, enumerate devices here
+    // Enumerate available audio input devices
+    std::unique_ptr<IAudioCaptureEngine> engine(
+        IAudioCaptureEngine::createBestEngine(nullptr));
+    if (engine && engine->isAvailable()) {
+        auto devices = engine->availableInputDevices();
+        for (const auto &device : devices) {
+            if (!device.id.isEmpty()) {
+                m_audioDeviceCombo->addItem(device.name, device.id);
+            }
+        }
+    }
 
     // Restore selection if possible
     int index = m_audioDeviceCombo->findData(currentDevice);

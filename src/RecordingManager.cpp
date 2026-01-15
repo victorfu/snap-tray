@@ -32,7 +32,6 @@ using namespace SnapTray;
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QFile>
-#include <QRandomGenerator>
 #include <QMutexLocker>
 #include <QUuid>
 #include <QtConcurrent/QtConcurrent>
@@ -1611,12 +1610,6 @@ void RecordingManager::onPreviewSaveRequested()
 {
     qDebug() << "RecordingManager: Save preview requested";
 
-    // Get selected format from control bar
-    RecordingControlBar::OutputFormat format = RecordingControlBar::OutputFormat::MP4;
-    if (m_controlBar) {
-        format = m_controlBar->selectedFormat();
-    }
-
     // Store video path before cleanup
     QString videoPath = m_tempVideoPath;
 
@@ -1627,8 +1620,6 @@ void RecordingManager::onPreviewSaveRequested()
     cleanupPreviewMode();
     setState(State::Idle);
 
-    // TODO: Implement GIF/WebP conversion - currently all formats save as MP4
-    Q_UNUSED(format);
     showSaveDialog(videoPath);
 }
 
