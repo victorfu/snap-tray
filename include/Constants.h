@@ -82,6 +82,14 @@ namespace Border {
 constexpr int kWidth = 2;
 constexpr int kCornerRadius = 10;
 }  // namespace Border
+
+namespace RecordingControl {
+constexpr int kEffectsToolbarGap = 6;
+constexpr int kEffectsButtonPaddingX = 8;
+constexpr int kEffectsButtonSpacing = 4;
+constexpr int kEffectsToolbarPaddingX = 4;
+constexpr int kEffectsToolbarPaddingY = 2;
+}  // namespace RecordingControl
 }  // namespace UI
 
 // ============================================================================
