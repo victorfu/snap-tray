@@ -22,7 +22,7 @@ double normalizedVariance(const cv::Mat &mat)
 
     cv::Scalar mean, stddev;
     cv::meanStdDev(mat, mean, stddev);
-    return (stddev[0] * stddev[0]) / 255.0;
+    return (stddev[0] * stddev[0]) / (255.0 * 255.0);
 }
 
 // Helper function for anonymous namespace (non-member functions)
@@ -114,9 +114,6 @@ cv::Point2d subPixelRefine2D(const cv::Mat &matchResult, const cv::Point &bestLo
     return cv::Point2d(refinedX, refinedY);
 }
 
-// Seam verification threshold (stricter than general overlap diff)
-constexpr double kSeamVerifyThreshold = 0.06;
-
 // Verify seam alignment at full resolution for a given overlap value
 // Returns the normalized difference at the seam (lower is better)
 double verifySeamAtOverlap(const cv::Mat &lastGray, const cv::Mat &newGray,
@@ -198,7 +195,6 @@ int refinedOverlapWithFallback(const cv::Mat &lastGray, const cv::Mat &newGray,
 
 constexpr double kMinCorrelation = 0.25;
 constexpr double kPeakGapScale = 0.15;
-constexpr double kMinPeakGap = 0.08;  // Minimum absolute gap between best and second-best match
 constexpr double kInPlaceMaxAvgDiff = 0.05;
 constexpr double kInPlaceMaxChangedRatio = 0.03;
 constexpr double kDefaultMaxOverlapRatio = 0.90;
@@ -794,7 +790,7 @@ ImageStitcher::MatchCandidate ImageStitcher::computeTemplateMatchCandidate(const
             }
 
             double varianceScore = normalizedVariance(templateImg);
-            if (varianceScore < 0.5) {
+            if (varianceScore < 0.002) {
                 continue;
             }
 
@@ -812,7 +808,7 @@ ImageStitcher::MatchCandidate ImageStitcher::computeTemplateMatchCandidate(const
             // Ambiguity check
             cv::Mat suppressed = matchResult.clone();
             int suppressRadius = 10;
-            
+
             if (isHorizontal) {
                 int x0 = std::max(0, maxLoc.x - suppressRadius);
                 int x1 = std::min(matchResult.cols, maxLoc.x + suppressRadius + 1);
@@ -822,10 +818,10 @@ ImageStitcher::MatchCandidate ImageStitcher::computeTemplateMatchCandidate(const
                 int y1 = std::min(matchResult.rows, maxLoc.y + suppressRadius + 1);
                 suppressed.rowRange(y0, y1).setTo(-1.0);
             }
-            
+
             double secondMaxVal;
             cv::minMaxLoc(suppressed, nullptr, &secondMaxVal, nullptr, nullptr);
-            
+
             if (maxVal - secondMaxVal < m_stitchConfig.ambiguityThreshold) {
                 if (maxVal > 0.4) {
                     foundAmbiguous = true;
@@ -884,7 +880,7 @@ ImageStitcher::MatchCandidate ImageStitcher::computeTemplateMatchCandidate(const
             }
 
             double varianceScore = normalizedVariance(templateImg);
-            if (varianceScore < 0.5) {
+            if (varianceScore < 0.002) {
                 continue;
             }
 
@@ -902,7 +898,7 @@ ImageStitcher::MatchCandidate ImageStitcher::computeTemplateMatchCandidate(const
             // Ambiguity check
             cv::Mat suppressed = matchResult.clone();
             int suppressRadius = 10;
-            
+
             if (isHorizontal) {
                 int x0 = std::max(0, maxLoc.x - suppressRadius);
                 int x1 = std::min(matchResult.cols, maxLoc.x + suppressRadius + 1);
@@ -912,10 +908,10 @@ ImageStitcher::MatchCandidate ImageStitcher::computeTemplateMatchCandidate(const
                 int y1 = std::min(matchResult.rows, maxLoc.y + suppressRadius + 1);
                 suppressed.rowRange(y0, y1).setTo(-1.0);
             }
-            
+
             double secondMaxVal;
             cv::minMaxLoc(suppressed, nullptr, &secondMaxVal, nullptr, nullptr);
-            
+
             if (maxVal - secondMaxVal < m_stitchConfig.ambiguityThreshold) {
                 if (maxVal > 0.4) {
                     foundAmbiguous = true;
@@ -958,7 +954,7 @@ ImageStitcher::MatchCandidate ImageStitcher::computeTemplateMatchCandidate(const
     for (const auto &res : results) {
         offsets.push_back(res.offset);
         // Weight correlation score by texture richness
-        confidences.push_back(std::clamp(res.confidence * (0.5 + res.varianceWeight / 3.0), 0.0, 1.0));
+        confidences.push_back(std::clamp(res.confidence * (0.5 + res.varianceWeight * 2.0), 0.0, 1.0));
     }
 
     std::vector<double> sortedOffsets = offsets;

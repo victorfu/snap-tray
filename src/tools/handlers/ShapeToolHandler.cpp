@@ -6,8 +6,6 @@
 // Shape types: 0 = Rectangle, 1 = Ellipse
 // Fill modes:  0 = Outline, 1 = Filled
 static constexpr int kShapeRectangle = 0;
-static constexpr int kShapeEllipse = 1;
-static constexpr int kFillOutline = 0;
 static constexpr int kFillFilled = 1;
 
 void ShapeToolHandler::onMousePress(ToolContext* ctx, const QPoint& pos) {

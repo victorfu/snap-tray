@@ -191,7 +191,6 @@ constexpr int kDuplicateCheckWindow = 200;
 // ============================================================================
 namespace ImageProcessing {
 constexpr double kMaxOverlapDiffThreshold = 0.10;
-constexpr double kSeamVerifyThreshold = 0.06;
 constexpr double kMinCorrelationThreshold = 0.25;
 constexpr double kConfidenceGood = 0.50;
 constexpr double kConfidenceExcellent = 0.70;
