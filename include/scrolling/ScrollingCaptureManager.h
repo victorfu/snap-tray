@@ -20,6 +20,7 @@ class ImageStitcher;
 class FixedElementDetector;
 class PinWindowManager;
 class QScreen;
+class ICaptureEngine;
 
 class ScrollingCaptureManager : public QObject
 {
@@ -32,6 +33,7 @@ public:
         WaitingToStart,
         Capturing,
         MatchFailed,
+        Completing,  // Waiting for worker thread to finish processing
         Completed
     };
     Q_ENUM(State)
@@ -96,6 +98,7 @@ private slots:
     void onStitchQueueNearFull(int currentDepth, int maxDepth);
     void onStitchQueueLow(int currentDepth, int maxDepth);
     void onStitchError(const QString &message);
+    void onStitchFinishCompleted(const QImage &result);
 
 private:
     void setState(State newState);
@@ -107,6 +110,7 @@ private:
     QImage grabCaptureRegion();
     void updateUIPositions();
     void finishCapture();
+    void completeCapture();  // Common completion logic after result is ready
     bool restitchWithFixedElements();
     void handleSuccess(const StitchWorker::Result &result);
     void handleFailure(const StitchWorker::Result &result);
@@ -128,6 +132,9 @@ private:
     FixedElementDetector *m_fixedDetector;
     StitchWorker *m_stitchWorker;
     bool m_useAsyncStitching = true;  // Use worker thread for stitching
+
+    // Capture engine (GPU-accelerated alternative to grabWindow)
+    ICaptureEngine *m_captureEngine = nullptr;
 
     // Capture state
     QRect m_captureRegion;  // In global coordinates

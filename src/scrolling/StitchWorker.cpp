@@ -70,6 +70,7 @@ void StitchWorker::reset()
     m_lastFrame = QImage();
     m_isProcessing = false;
     m_acceptingFrames = true;  // Re-enable accepting frames for next capture
+    m_finishRequested = false;
 
     // Reset buffering state
     m_pendingRawFrames.clear();
@@ -188,6 +189,20 @@ int StitchWorker::frameCount() const
     return m_stitcher->frameCount();
 }
 
+void StitchWorker::requestFinish()
+{
+    // Stop accepting new frames
+    m_acceptingFrames = false;
+    m_finishRequested = true;
+
+    // If not currently processing, emit result immediately
+    if (!m_isProcessing.load()) {
+        m_finishRequested = false;
+        emit finishCompleted(m_stitcher->getStitchedImage().copy());
+    }
+    // Otherwise, processNextFrame() will emit finishCompleted when queue empties
+}
+
 void StitchWorker::processNextFrame()
 {
     while (true) {
@@ -199,6 +214,14 @@ void StitchWorker::processNextFrame()
             QMutexLocker locker(&m_queueMutex);
             if (m_frameQueue.isEmpty()) {
                 m_isProcessing = false;
+
+                // Check if finish was requested - emit result via queued connection
+                if (m_finishRequested.exchange(false)) {
+                    QImage result = m_stitcher->getStitchedImage().copy();
+                    QMetaObject::invokeMethod(this, [this, result]() {
+                        emit finishCompleted(result);
+                    }, Qt::QueuedConnection);
+                }
                 return;
             }
             frame = m_frameQueue.dequeue();

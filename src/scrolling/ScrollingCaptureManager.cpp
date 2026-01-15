@@ -6,6 +6,8 @@
 #include "scrolling/ImageStitcher.h"
 #include "scrolling/FixedElementDetector.h"
 #include "scrolling/StitchWorker.h"
+#include "capture/ICaptureEngine.h"
+#include "platform/WindowLevel.h"
 #include "PinWindowManager.h"
 
 #include <QScreen>
@@ -60,6 +62,8 @@ ScrollingCaptureManager::ScrollingCaptureManager(PinWindowManager *pinManager, Q
             this, &ScrollingCaptureManager::onStitchQueueLow);
     connect(m_stitchWorker, &StitchWorker::error,
             this, &ScrollingCaptureManager::onStitchError);
+    connect(m_stitchWorker, &StitchWorker::finishCompleted,
+            this, &ScrollingCaptureManager::onStitchFinishCompleted);
 }
 
 ScrollingCaptureManager::~ScrollingCaptureManager()
@@ -161,6 +165,11 @@ void ScrollingCaptureManager::setState(State newState)
             m_overlay->setBorderState(ScrollingCaptureOverlay::BorderState::MatchFailed);
             m_overlay->setRegionLocked(true);
             break;
+        case State::Completing:
+            // Keep capturing state visual while processing
+            m_overlay->setBorderState(ScrollingCaptureOverlay::BorderState::Capturing);
+            m_overlay->setRegionLocked(true);
+            break;
         case State::Completed:
             m_overlay->setBorderState(ScrollingCaptureOverlay::BorderState::Capturing);
             m_overlay->setRegionLocked(true);
@@ -178,6 +187,10 @@ void ScrollingCaptureManager::setState(State newState)
             break;
         case State::Capturing:
         case State::MatchFailed:
+            m_toolbar->setMode(ScrollingCaptureToolbar::Mode::Capturing);
+            break;
+        case State::Completing:
+            // Keep capturing mode while processing (or could add Processing mode)
             m_toolbar->setMode(ScrollingCaptureToolbar::Mode::Capturing);
             break;
         case State::Completed:
@@ -533,6 +546,35 @@ void ScrollingCaptureManager::startFrameCapture()
     m_isProcessingFrame = false;
     m_pendingFrames.clear();
 
+    // Initialize capture engine (GPU-accelerated alternative to grabWindow)
+    m_captureEngine = ICaptureEngine::createBestEngine(this);
+    if (m_captureEngine) {
+        m_captureEngine->setRegion(m_captureRegion, m_targetScreen);
+
+        // Exclude UI windows from capture
+        QList<WId> excludedWindows;
+        if (m_overlay) excludedWindows.append(m_overlay->winId());
+        if (m_toolbar) excludedWindows.append(m_toolbar->winId());
+        if (m_thumbnail) excludedWindows.append(m_thumbnail->winId());
+
+#ifdef Q_OS_MACOS
+        m_captureEngine->setExcludedWindows(excludedWindows);
+#else
+        // Windows: use SetWindowDisplayAffinity to exclude from capture
+        if (m_overlay) setWindowExcludedFromCapture(m_overlay, true);
+        if (m_toolbar) setWindowExcludedFromCapture(m_toolbar, true);
+        if (m_thumbnail) setWindowExcludedFromCapture(m_thumbnail, true);
+#endif
+
+        if (!m_captureEngine->start()) {
+            qWarning() << "ScrollingCaptureManager: Capture engine failed to start, using grabWindow fallback";
+            delete m_captureEngine;
+            m_captureEngine = nullptr;
+        } else {
+            qDebug() << "ScrollingCaptureManager: Using" << m_captureEngine->engineName();
+        }
+    }
+
     // Initialize StitchWorker if using async mode
     if (m_useAsyncStitching) {
         m_stitchWorker->reset();
@@ -548,6 +590,20 @@ void ScrollingCaptureManager::stopFrameCapture()
     m_captureTimer->stop();
     m_timeoutTimer->stop();
     m_currentStatus = ScrollingCaptureThumbnail::CaptureStatus::Idle;
+
+    // Cleanup capture engine
+    if (m_captureEngine) {
+        m_captureEngine->stop();
+        m_captureEngine->deleteLater();
+        m_captureEngine = nullptr;
+    }
+
+#ifndef Q_OS_MACOS
+    // Windows: restore window capture visibility
+    if (m_overlay) setWindowExcludedFromCapture(m_overlay, false);
+    if (m_toolbar) setWindowExcludedFromCapture(m_toolbar, false);
+    if (m_thumbnail) setWindowExcludedFromCapture(m_thumbnail, false);
+#endif
 
     // Note: Do NOT reset worker here - finishCapture() needs to retrieve the stitched result first.
     // The worker will be reset when a new capture starts or when stop() is called.
@@ -864,6 +920,18 @@ QImage ScrollingCaptureManager::grabCaptureRegion()
         return QImage();
     }
 
+    // Try GPU-accelerated capture engine first
+    if (m_captureEngine && m_captureEngine->isRunning()) {
+        QImage frame = m_captureEngine->captureFrame();
+        if (!frame.isNull()) {
+            frame.setDevicePixelRatio(1.0);
+            return frame;
+        }
+        // Fall through to grabWindow fallback if engine returned null
+        qDebug() << "ScrollingCaptureManager: Capture engine returned null, falling back to grabWindow";
+    }
+
+    // Fallback: QScreen::grabWindow (slower but always works)
     QRect screenGeom = m_targetScreen->geometry();
 
     // Validate capture region is within screen bounds
@@ -920,18 +988,34 @@ void ScrollingCaptureManager::finishCapture()
     // Stop timer first to prevent any more captureFrame() calls
     stopFrameCapture();
 
-    // Change state immediately after stopping timer to prevent race conditions
-    // with any pending timer callbacks in the event queue
-    setState(State::Completed);
-
     // Get stitched result from appropriate source
     if (m_useAsyncStitching) {
-        // Use finishAndGetResult to ensure thread-safe access to the result
-        // This waits for any pending processing to complete before returning
-        m_stitchedResult = m_stitchWorker->finishAndGetResult();
-    } else {
-        m_stitchedResult = m_stitcher->getStitchedImage();
+        // Non-blocking: transition to Completing state and wait for signal
+        setState(State::Completing);
+        m_stitchWorker->requestFinish();
+        // Result will be delivered via onStitchFinishCompleted signal
+        return;
     }
+
+    // Sync mode: get result directly
+    m_stitchedResult = m_stitcher->getStitchedImage();
+    completeCapture();
+}
+
+void ScrollingCaptureManager::onStitchFinishCompleted(const QImage &result)
+{
+    if (m_state != State::Completing) {
+        qDebug() << "ScrollingCaptureManager: Ignoring finish signal in state" << static_cast<int>(m_state);
+        return;
+    }
+
+    m_stitchedResult = result;
+    completeCapture();
+}
+
+void ScrollingCaptureManager::completeCapture()
+{
+    setState(State::Completed);
 
     if (m_stitchedResult.isNull()) {
         qDebug() << "ScrollingCaptureManager: No stitched result";
@@ -946,10 +1030,6 @@ void ScrollingCaptureManager::finishCapture()
         m_toolbar->updateSize(m_stitchedResult.width() / dpr, m_stitchedResult.height() / dpr);
     }
 
-    // Update thumbnail with final image
-    if (m_thumbnail) {
-        // Legacy thumbnail call removed
-    }
 }
 
 // ============================================================================

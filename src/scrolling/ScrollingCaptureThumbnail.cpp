@@ -150,9 +150,9 @@ void ScrollingCaptureThumbnail::applyViewportImage(const QImage& image)
     if (image.isNull()) return;
     
     QPixmap pixmap = QPixmap::fromImage(image).scaled(
-        m_viewportLabel->size(), 
-        Qt::KeepAspectRatio, 
-        Qt::SmoothTransformation
+        m_viewportLabel->size(),
+        Qt::KeepAspectRatio,
+        Qt::FastTransformation  // Use fast scaling for real-time preview
     );
     m_viewportLabel->setPixmap(pixmap);
     

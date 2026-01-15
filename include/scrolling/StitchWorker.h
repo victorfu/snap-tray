@@ -115,6 +115,14 @@ public:
      */
     int frameCount() const;
 
+    /**
+     * @brief Request finish processing and emit finishCompleted signal when done
+     *
+     * Non-blocking alternative to finishAndGetResult(). Stops accepting new frames
+     * and emits finishCompleted(QImage) when all queued frames are processed.
+     */
+    void requestFinish();
+
 signals:
     /**
      * @brief Emitted when a frame has been processed
@@ -144,6 +152,12 @@ signals:
      */
     void error(const QString &message);
 
+    /**
+     * @brief Emitted when finish processing is complete (non-blocking finish)
+     * @param result The final stitched image
+     */
+    void finishCompleted(const QImage &result);
+
 private slots:
     void processNextFrame();
 
@@ -162,6 +176,7 @@ private:
     // Processing state
     std::atomic<bool> m_isProcessing{false};
     std::atomic<bool> m_acceptingFrames{true};  // Set to false to stop accepting new frames
+    std::atomic<bool> m_finishRequested{false}; // Set to true when requestFinish() is called
     QFuture<void> m_processingFuture;
     bool m_fixedElementsFound = false;
     QImage m_lastFrame;
