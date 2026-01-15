@@ -7,7 +7,6 @@
 #include <QImage>
 #include <QTimer>
 #include <QElapsedTimer>
-#include <vector>
 
 #include "Constants.h"
 #include "scrolling/StitchWorker.h"
@@ -16,8 +15,6 @@
 class ScrollingCaptureOverlay;
 class ScrollingCaptureToolbar;
 class ScrollingCaptureOnboarding;
-class ImageStitcher;
-class FixedElementDetector;
 class PinWindowManager;
 class QScreen;
 class ICaptureEngine;
@@ -69,7 +66,6 @@ signals:
     void stateChanged(State state);
     void directionChanged(CaptureDirection direction);
     void matchStatusChanged(bool matched, double confidence, int lastSuccessfulPos);
-    void fixedElementDetectionDisabled();  // Emitted when pending frame limit reached
 
 private slots:
     // Overlay signals
@@ -94,7 +90,6 @@ private slots:
 
     // StitchWorker signals (async processing)
     void onStitchFrameProcessed(const StitchWorker::Result &result);
-    void onStitchFixedElementsDetected(int leading, int trailing);
     void onStitchQueueNearFull(int currentDepth, int maxDepth);
     void onStitchQueueLow(int currentDepth, int maxDepth);
     void onStitchError(const QString &message);
@@ -111,7 +106,6 @@ private:
     void updateUIPositions();
     void finishCapture();
     void completeCapture();  // Common completion logic after result is ready
-    bool restitchWithFixedElements();
     void handleSuccess(const StitchWorker::Result &result);
     void handleFailure(const StitchWorker::Result &result);
     void showWarning(const StitchWorker::Result &result);
@@ -128,10 +122,7 @@ private:
     QPointer<ScrollingCaptureOnboarding> m_onboarding;
 
     // Processing
-    ImageStitcher *m_stitcher;
-    FixedElementDetector *m_fixedDetector;
     StitchWorker *m_stitchWorker;
-    bool m_useAsyncStitching = true;  // Use worker thread for stitching
 
     // Capture engine (GPU-accelerated alternative to grabWindow)
     ICaptureEngine *m_captureEngine = nullptr;
@@ -143,10 +134,8 @@ private:
     QTimer *m_timeoutTimer;
     QImage m_lastFrame;
     int m_totalFrameCount = 0;
-    bool m_fixedElementsDetected = false;
     bool m_hasSuccessfulStitch = false;
     bool m_isProcessingFrame = false;  // Guard against reentrant captureFrame calls
-    std::vector<QImage> m_pendingFrames;
 
     // Result
     QImage m_stitchedResult;
@@ -179,7 +168,6 @@ private:
     static constexpr int MAX_RECOVERY_PX = SnapTray::ScrollCapture::kMaxRecoveryPixels;
     static constexpr int DEFAULT_SCROLL_ESTIMATE = SnapTray::ScrollCapture::kDefaultScrollEstimate;
     static constexpr int MAX_CAPTURE_TIMEOUT_MS = SnapTray::Timer::kMaxCaptureTimeout;
-    static constexpr int MAX_PENDING_FRAMES = SnapTray::ScrollCapture::kMaxPendingFrames;
     static constexpr int MAX_TOTAL_FRAMES = SnapTray::ScrollCapture::kMaxTotalFrames;
 };
 

@@ -3,9 +3,8 @@
 #include "scrolling/ScrollingCaptureToolbar.h"
 #include "scrolling/ScrollingCaptureThumbnail.h"
 #include "scrolling/ScrollingCaptureOnboarding.h"
-#include "scrolling/ImageStitcher.h"
-#include "scrolling/FixedElementDetector.h"
 #include "scrolling/StitchWorker.h"
+#include "scrolling/ImageStitcher.h"  // For FailureCode enum
 #include "capture/ICaptureEngine.h"
 #include "platform/WindowLevel.h"
 #include "PinWindowManager.h"
@@ -23,8 +22,6 @@
 ScrollingCaptureManager::ScrollingCaptureManager(PinWindowManager *pinManager, QObject *parent)
     : QObject(parent)
     , m_pinManager(pinManager)
-    , m_stitcher(new ImageStitcher(this))
-    , m_fixedDetector(new FixedElementDetector(this))
     , m_stitchWorker(new StitchWorker(this))
     , m_captureTimer(new QTimer(this))
     , m_timeoutTimer(new QTimer(this))
@@ -38,24 +35,9 @@ ScrollingCaptureManager::ScrollingCaptureManager(PinWindowManager *pinManager, Q
         finishCapture();
     });
 
-    // Connect sync stitcher signals (used when m_useAsyncStitching is false)
-    connect(m_stitcher, &ImageStitcher::progressUpdated, this, [this](int frames, const QSize &size) {
-        if (!m_useAsyncStitching) {
-            if (m_toolbar) {
-                qreal dpr = m_targetScreen ? m_targetScreen->devicePixelRatio() : 1.0;
-                m_toolbar->updateSize(size.width() / dpr, size.height() / dpr);
-            }
-            if (m_thumbnail) {
-                // Legacy thumbnail calls removed
-            }
-        }
-    });
-
-    // Connect async StitchWorker signals
+    // Connect StitchWorker signals
     connect(m_stitchWorker, &StitchWorker::frameProcessed,
             this, &ScrollingCaptureManager::onStitchFrameProcessed);
-    connect(m_stitchWorker, &StitchWorker::fixedElementsDetected,
-            this, &ScrollingCaptureManager::onStitchFixedElementsDetected);
     connect(m_stitchWorker, &StitchWorker::queueNearFull,
             this, &ScrollingCaptureManager::onStitchQueueNearFull);
     connect(m_stitchWorker, &StitchWorker::queueLow,
@@ -234,10 +216,6 @@ void ScrollingCaptureManager::createComponents()
     // Create onboarding
     m_onboarding = new ScrollingCaptureOnboarding(m_overlay);
     m_onboarding->hide();
-
-    // Reset stitcher and detector
-    m_stitcher->reset();
-    m_fixedDetector->reset();
 }
 
 void ScrollingCaptureManager::createComponentsWithRegion()
@@ -270,10 +248,6 @@ void ScrollingCaptureManager::createComponentsWithRegion()
     // Create onboarding
     m_onboarding = new ScrollingCaptureOnboarding(m_overlay);
     m_onboarding->hide();
-
-    // Reset stitcher and detector
-    m_stitcher->reset();
-    m_fixedDetector->reset();
 }
 
 void ScrollingCaptureManager::destroyComponents()
@@ -308,10 +282,8 @@ void ScrollingCaptureManager::destroyComponents()
     m_lastFrame = QImage();
     m_stitchedResult = QImage();
     m_totalFrameCount = 0;
-    m_fixedElementsDetected = false;
     m_hasSuccessfulStitch = false;
     m_isProcessingFrame = false;
-    m_pendingFrames.clear();
 }
 
 void ScrollingCaptureManager::onRegionSelected(const QRect &region)
@@ -490,20 +462,6 @@ void ScrollingCaptureManager::setCaptureDirection(CaptureDirection direction)
 
     m_captureDirection = direction;
 
-    // Update stitcher capture mode
-    if (m_stitcher) {
-        m_stitcher->setCaptureMode(direction == CaptureDirection::Vertical
-            ? ImageStitcher::CaptureMode::Vertical
-            : ImageStitcher::CaptureMode::Horizontal);
-    }
-
-    // Update fixed element detector capture mode
-    if (m_fixedDetector) {
-        m_fixedDetector->setCaptureMode(direction == CaptureDirection::Vertical
-            ? FixedElementDetector::CaptureMode::Vertical
-            : FixedElementDetector::CaptureMode::Horizontal);
-    }
-
     // Update toolbar direction display
     if (m_toolbar) {
         m_toolbar->setDirection(direction == CaptureDirection::Vertical
@@ -544,7 +502,6 @@ void ScrollingCaptureManager::startFrameCapture()
     m_estimatedScrollPerFrame = 0;
     m_hasScrollEstimate = false;
     m_isProcessingFrame = false;
-    m_pendingFrames.clear();
 
     // Initialize capture engine (GPU-accelerated alternative to grabWindow)
     m_captureEngine = ICaptureEngine::createBestEngine(this);
@@ -575,14 +532,12 @@ void ScrollingCaptureManager::startFrameCapture()
         }
     }
 
-    // Initialize StitchWorker if using async mode
-    if (m_useAsyncStitching) {
-        m_stitchWorker->reset();
-        m_stitchWorker->setCaptureMode(m_captureDirection == CaptureDirection::Vertical
-            ? StitchWorker::CaptureMode::Vertical
-            : StitchWorker::CaptureMode::Horizontal);
-        m_stitchWorker->setStitchConfig(0.4, true);  // confidence threshold, detect static regions
-    }
+    // Initialize StitchWorker
+    m_stitchWorker->reset();
+    m_stitchWorker->setCaptureMode(m_captureDirection == CaptureDirection::Vertical
+        ? StitchWorker::CaptureMode::Vertical
+        : StitchWorker::CaptureMode::Horizontal);
+    m_stitchWorker->setStitchConfig(0.4, true);  // confidence threshold, detect static regions
 }
 
 void ScrollingCaptureManager::stopFrameCapture()
@@ -609,79 +564,6 @@ void ScrollingCaptureManager::stopFrameCapture()
     // The worker will be reset when a new capture starts or when stop() is called.
 }
 
-bool ScrollingCaptureManager::restitchWithFixedElements()
-{
-    if (m_pendingFrames.empty()) {
-        // No pending frames means we haven't captured anything yet
-        // This is not an error, just nothing to restitch
-        qDebug() << "ScrollingCaptureManager: No pending frames to restitch";
-        return false;  // Return false to indicate nothing was restitched
-    }
-
-    // Save current stitcher state in case restitch fails completely
-    QImage previousResult = m_stitcher->getStitchedImage();
-    int previousFrameCount = m_stitcher->frameCount();
-    QImage previousLastFrame = m_lastFrame;
-    bool previousHasSuccessfulStitch = m_hasSuccessfulStitch;
-
-    m_stitcher->reset();
-
-    bool anySucceeded = false;
-    int successCount = 0;
-
-    QImage lastRestitchedFrame;
-
-    for (const QImage &rawFrame : m_pendingFrames) {
-        QImage frameToStitch = m_fixedDetector->cropFixedRegions(rawFrame);
-        if (frameToStitch.isNull()) {
-            qDebug() << "ScrollingCaptureManager: cropFixedRegions returned null frame";
-            continue;
-        }
-
-        lastRestitchedFrame = rawFrame;
-
-        ImageStitcher::StitchResult result = m_stitcher->addFrame(frameToStitch);
-        if (result.success) {
-            anySucceeded = true;
-            successCount++;
-        } else if (result.failureCode != ImageStitcher::FailureCode::FrameUnchanged) {
-            qDebug() << "ScrollingCaptureManager: Restitch failed -" << result.failureReason;
-            // Continue trying remaining frames to salvage what we can
-        }
-    }
-
-    m_pendingFrames.clear();
-
-    if (anySucceeded) {
-        if (!lastRestitchedFrame.isNull()) {
-            m_lastFrame = lastRestitchedFrame;
-        }
-
-        m_hasSuccessfulStitch = m_stitcher->frameCount() > 1;
-
-        QRect viewport = m_stitcher->currentViewportRect();
-        m_lastSuccessfulPosition = (m_captureDirection == CaptureDirection::Vertical)
-            ? viewport.bottom()
-            : viewport.right();
-    }
-
-    // If restitch completely failed, try to restore previous state
-    if (!anySucceeded && !previousResult.isNull() && previousFrameCount > 0) {
-        qDebug() << "ScrollingCaptureManager: Restitch failed, restoring previous state";
-        // Restore stitcher by re-adding the previous result as initial frame
-        m_stitcher->reset();
-        // Re-initialize with previous result - add it as the first frame
-        // This isn't perfect but preserves the work done so far
-        m_stitcher->addFrame(previousResult);
-        m_lastFrame = previousLastFrame;
-        m_hasSuccessfulStitch = previousHasSuccessfulStitch;
-        return false;
-    }
-
-    qDebug() << "ScrollingCaptureManager: Restitch completed -" << successCount << "frames succeeded";
-    return anySucceeded;
-}
-
 void ScrollingCaptureManager::captureFrame()
 {
     // Guard against reentrant calls (timer callback during finishCapture)
@@ -695,11 +577,6 @@ void ScrollingCaptureManager::captureFrame()
 
     m_isProcessingFrame = true;
 
-    // Performance timing for Phase 0 profiling
-    QElapsedTimer perfTimer;
-    qint64 grabMs = 0, detectMs = 0, stitchMs = 0, totalMs = 0;
-    perfTimer.start();
-
     // Check if we've hit the maximum frame limit BEFORE attempting grab
     // This prevents processing one extra frame beyond the limit
     if (m_totalFrameCount >= MAX_TOTAL_FRAMES) {
@@ -709,8 +586,11 @@ void ScrollingCaptureManager::captureFrame()
         return;
     }
 
+    QElapsedTimer perfTimer;
+    perfTimer.start();
+
     QImage frame = grabCaptureRegion();
-    grabMs = perfTimer.elapsed();
+    qint64 grabMs = perfTimer.elapsed();
 
     if (frame.isNull()) {
         qDebug() << "ScrollingCaptureManager: Failed to grab capture region";
@@ -721,196 +601,17 @@ void ScrollingCaptureManager::captureFrame()
     // Increment frame count only after successful grab
     m_totalFrameCount++;
 
-    // Async mode: just enqueue frame and return quickly
-    if (m_useAsyncStitching) {
-        if (m_thumbnail) {
-            m_thumbnail->setViewportImage(frame);
-        }
-        m_lastFrame = frame;
-        m_captureIndex++;
-        bool queued = m_stitchWorker->enqueueFrame(frame);
-        if (!queued) {
-            qDebug() << "ScrollingCaptureManager: Frame dropped (queue full)";
-        }
-        qDebug() << "ScrollingCaptureManager::captureFrame (async) - grab:" << grabMs << "ms";
-        m_isProcessingFrame = false;
-        return;
+    // Enqueue frame for async processing
+    if (m_thumbnail) {
+        m_thumbnail->setViewportImage(frame);
     }
-
-    // Sync mode: process frame directly (original logic)
-    // Check if frame changed relative to previous capture
-    bool frameChanged = true;
-    if (!m_lastFrame.isNull()) {
-        frameChanged = ImageStitcher::isFrameChanged(frame, m_lastFrame);
-    }
-
-    bool restitched = false;
-
-    // Add frame to fixed element detector (use detector's own frame count)
-    // Only add if frame has changed to avoid polluting detector with static frames
-    if (frameChanged && !m_fixedElementsDetected) {
-        m_fixedDetector->addFrame(frame);
-
-        // Store frames until fixed elements are detected, with a limit
-        if (static_cast<int>(m_pendingFrames.size()) < MAX_PENDING_FRAMES) {
-            m_pendingFrames.push_back(frame);
-        } else {
-            // If we hit the limit, give up on fixed element detection
-            // and clear pending frames to free memory
-            qDebug() << "ScrollingCaptureManager: Max pending frames reached, disabling fixed element detection";
-            m_fixedElementsDetected = true;  // Disable further detection attempts
-            m_pendingFrames.clear();
-            emit fixedElementDetectionDisabled();
-        }
-
-        perfTimer.restart();
-        auto detection = m_fixedDetector->detect();
-        detectMs = perfTimer.elapsed();
-
-        if (detection.detected) {
-            m_fixedElementsDetected = true;
-            qDebug() << "ScrollingCaptureManager: Fixed elements detected -"
-                     << "leading:" << detection.leadingFixed
-                     << "trailing:" << detection.trailingFixed;
-            bool restitchSuccess = restitchWithFixedElements();
-            restitched = true;
-
-            if (!restitchSuccess) {
-                // Restitch failed or had no frames, continue with normal stitching
-                qDebug() << "ScrollingCaptureManager: Restitch had issues, continuing normally";
-            }
-
-            // Recover to Capturing state after restitch attempt
-            if (m_state == State::MatchFailed) {
-                setState(State::Capturing);
-            }
-        }
-    }
-
-    if (restitched) {
-        // Always store the raw frame for frame change detection
-        // This ensures consistent comparison (raw vs raw) to avoid false positives
-        // after fixed element cropping. The cropping is applied separately during stitching.
-        m_lastFrame = frame;
-        // Emit UI update signal after successful restitch
-        if (m_stitcher->frameCount() > 0) {
-            emit matchStatusChanged(true, 0.8, m_lastSuccessfulPosition);
-        }
-        totalMs = grabMs + detectMs;
-        qDebug() << "ScrollingCaptureManager::captureFrame perf (restitch) - grab:" << grabMs
-                 << "ms, detect:" << detectMs << "ms, total:" << totalMs << "ms";
-        m_isProcessingFrame = false;
-        return;
-    }
-
-    // Crop fixed elements if detected
-    QImage frameToStitch = frame;
-    if (m_fixedElementsDetected) {
-        frameToStitch = m_fixedDetector->cropFixedRegions(frame);
-        if (frameToStitch.isNull()) {
-            qDebug() << "ScrollingCaptureManager: cropFixedRegions returned null, using original frame";
-            frameToStitch = frame;
-        }
-    }
-
-    // Try to stitch
-    perfTimer.restart();
-    ImageStitcher::StitchResult result = m_stitcher->addFrame(frameToStitch);
-    stitchMs = perfTimer.elapsed();
-
-    qDebug() << "ScrollingCaptureManager::captureFrame -"
-             << "success:" << result.success
-             << "frameCount:" << m_stitcher->frameCount()
-             << "hasSuccessfulStitch:" << m_hasSuccessfulStitch
-             << "reason:" << result.failureReason;
-
-    if (result.success) {
-        // Mark that scrolling has started only after actual stitching (not first frame)
-        // frameCount > 1 means at least 2 frames have been processed (actual stitch occurred)
-        if (m_stitcher->frameCount() > 1) {
-            m_hasSuccessfulStitch = true;
-        }
-
-        // Track last successful position for recovery UX
-        QRect viewport = m_stitcher->currentViewportRect();
-        m_lastSuccessfulPosition = (m_captureDirection == CaptureDirection::Vertical)
-            ? viewport.bottom() : viewport.right();
-
-        // Update UI
-        if (m_toolbar) {
-            m_toolbar->setMatchStatus(true, result.confidence);
-            m_toolbar->setMatchRecoveryInfo(m_lastSuccessfulPosition, false);
-        }
-        if (m_thumbnail) {
-            ScrollingCaptureThumbnail::MatchStatus status;
-            if (result.confidence >= 0.70) {
-                status = ScrollingCaptureThumbnail::MatchStatus::Good;
-            } else if (result.confidence >= 0.50) {
-                status = ScrollingCaptureThumbnail::MatchStatus::Warning;
-            } else {
-                status = ScrollingCaptureThumbnail::MatchStatus::Failed;
-            }
-            m_thumbnail->setMatchStatus(status, result.confidence);
-            m_thumbnail->setLastSuccessfulPosition(m_lastSuccessfulPosition);
-            m_thumbnail->setShowRecoveryHint(false);
-        }
-
-        // If we were in MatchFailed, recover to Capturing
-        if (m_state == State::MatchFailed) {
-            setState(State::Capturing);
-            if (m_overlay) {
-                m_overlay->clearMatchFailedMessage();
-            }
-        }
-        emit matchStatusChanged(true, result.confidence, m_lastSuccessfulPosition);
-    } else {
-        // Check if maximum size was reached (height for vertical, width for horizontal)
-        if (result.failureReason.contains("Maximum height reached") ||
-            result.failureReason.contains("Maximum width reached")) {
-            qDebug() << "ScrollingCaptureManager: Maximum size reached, finishing capture";
-            m_isProcessingFrame = false;
-            finishCapture();
-            return;
-        }
-
-        // Frame unchanged - just skip, don't count or auto-finish
-        if (result.failureCode == ImageStitcher::FailureCode::FrameUnchanged) {
-            m_isProcessingFrame = false;
-            return;
-        }
-
-        // Match failed
-        if (m_state != State::MatchFailed) {
-            setState(State::MatchFailed);
-        }
-
-        if (m_toolbar) {
-            m_toolbar->setMatchStatus(false, result.confidence);
-            m_toolbar->setMatchRecoveryInfo(m_lastSuccessfulPosition, true);
-        }
-        if (m_thumbnail) {
-            m_thumbnail->setMatchStatus(ScrollingCaptureThumbnail::MatchStatus::Failed, result.confidence);
-            m_thumbnail->setShowRecoveryHint(true);
-        }
-        if (m_overlay) {
-            QString hint = (m_captureDirection == CaptureDirection::Vertical)
-                ? tr("Match failed - scroll back up slowly")
-                : tr("Match failed - scroll back left slowly");
-            m_overlay->setMatchFailedMessage(hint);
-        }
-
-        emit matchStatusChanged(false, result.confidence, m_lastSuccessfulPosition);
-        qDebug() << "ScrollingCaptureManager: Match failed -" << result.failureReason;
-    }
-
     m_lastFrame = frame;
-
-    // Log performance metrics
-    totalMs = grabMs + detectMs + stitchMs;
-    qDebug() << "ScrollingCaptureManager::captureFrame perf - grab:" << grabMs
-             << "ms, detect:" << detectMs << "ms, stitch:" << stitchMs
-             << "ms, total:" << totalMs << "ms";
-
+    m_captureIndex++;
+    bool queued = m_stitchWorker->enqueueFrame(frame);
+    if (!queued) {
+        qDebug() << "ScrollingCaptureManager: Frame dropped (queue full)";
+    }
+    qDebug() << "ScrollingCaptureManager::captureFrame - grab:" << grabMs << "ms";
     m_isProcessingFrame = false;
 }
 
@@ -988,18 +689,10 @@ void ScrollingCaptureManager::finishCapture()
     // Stop timer first to prevent any more captureFrame() calls
     stopFrameCapture();
 
-    // Get stitched result from appropriate source
-    if (m_useAsyncStitching) {
-        // Non-blocking: transition to Completing state and wait for signal
-        setState(State::Completing);
-        m_stitchWorker->requestFinish();
-        // Result will be delivered via onStitchFinishCompleted signal
-        return;
-    }
-
-    // Sync mode: get result directly
-    m_stitchedResult = m_stitcher->getStitchedImage();
-    completeCapture();
+    // Non-blocking: transition to Completing state and wait for signal
+    setState(State::Completing);
+    m_stitchWorker->requestFinish();
+    // Result will be delivered via onStitchFinishCompleted signal
 }
 
 void ScrollingCaptureManager::onStitchFinishCompleted(const QImage &result)
@@ -1248,16 +941,6 @@ void ScrollingCaptureManager::showWarning(const StitchWorker::Result &result)
         m_thumbnail->setStatus(m_currentStatus, msg);
     }
     qDebug() << "ScrollingCaptureManager: Warning -" << result.failureReason;
-}
-
-void ScrollingCaptureManager::onStitchFixedElementsDetected(int leading, int trailing)
-{
-    if (m_state != State::Capturing && m_state != State::MatchFailed) {
-        return;
-    }
-    qDebug() << "ScrollingCaptureManager::onStitchFixedElementsDetected -"
-             << "leading:" << leading << "trailing:" << trailing;
-    m_fixedElementsDetected = true;
 }
 
 void ScrollingCaptureManager::onStitchQueueNearFull(int currentDepth, int maxDepth)
