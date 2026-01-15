@@ -15,19 +15,13 @@ namespace cv {
 
 // Configuration for the RSSA stitching algorithm
 struct StitchConfig {
-    int templateHeight = 80;              // Rows to use as template (bottom of img1)
-    int searchHeight = 400;               // Search region height (top of img2)
     double confidenceThreshold = 0.85;    // Minimum acceptable match confidence
-    int minOverlap = 20;                  // Minimum overlap to consider valid
-    int maxOverlap = 500;                 // Maximum expected overlap
-    double staticRowThreshold = 8.0;      // Max avg pixel diff to consider row static
     bool detectStaticRegions = true;      // Enable header/footer detection
-    bool useGrayscale = true;             // Convert to grayscale before matching
 
     // Algorithm flags
     bool usePhaseCorrelation = true;
     bool useWindowedDuplicateCheck = true;
-    
+
     // Thresholds
     double ambiguityThreshold = 0.05;       // best - secondBest gap (lower = stricter)
     double duplicateThreshold = 0.95;       // matchVal above this = duplicate candidate
