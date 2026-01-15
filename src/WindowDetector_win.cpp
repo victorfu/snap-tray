@@ -284,9 +284,12 @@ void WindowDetector::refreshWindowListAsync()
     m_refreshComplete = false;
     qreal dpr = m_currentScreen ? m_currentScreen->devicePixelRatio() : 1.0;
 
-    m_refreshFuture = QtConcurrent::run([this, dpr, requestId]() {
+    // Snapshot detection flags to avoid data race with main thread
+    const DetectionFlags flags = m_detectionFlags;
+
+    m_refreshFuture = QtConcurrent::run([this, dpr, requestId, flags]() {
         std::vector<DetectedElement> newCache;
-        enumerateWindowsInternal(newCache, dpr);
+        enumerateWindowsInternal(newCache, dpr, flags);
 
         if (m_refreshRequestId.load() != requestId) {
             qDebug() << "WindowDetector: Discarding stale refresh result";
@@ -366,19 +369,19 @@ void WindowDetector::enumerateWindows()
     qDebug() << "WindowDetector: Enumerated" << m_windowCache.size() << "windows";
 }
 
-void WindowDetector::enumerateWindowsInternal(std::vector<DetectedElement>& cache, qreal dpr)
+void WindowDetector::enumerateWindowsInternal(std::vector<DetectedElement>& cache, qreal dpr, DetectionFlags flags)
 {
     EnumWindowsContext context;
     context.windowCache = &cache;
     context.currentProcessId = GetCurrentProcessId();
     context.devicePixelRatio = dpr;
-    context.detectionFlags = m_detectionFlags;
+    context.detectionFlags = flags;
 
     // EnumWindows returns windows in z-order (topmost first)
     EnumWindows(enumWindowsProc, reinterpret_cast<LPARAM>(&context));
 
     // Additionally enumerate menu windows directly if detecting context menus
-    if (m_detectionFlags.testFlag(DetectionFlag::ContextMenus)) {
+    if (flags.testFlag(DetectionFlag::ContextMenus)) {
         HWND menuWnd = FindWindowExW(nullptr, nullptr, L"#32768", nullptr);
         while (menuWnd) {
             if (IsWindowVisible(menuWnd)) {

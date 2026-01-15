@@ -8,6 +8,7 @@
 #include <QTimer>
 #include <QElapsedTimer>
 #include <QMutex>
+#include <QFuture>
 #include <memory>
 
 #include "WatermarkRenderer.h"
@@ -171,6 +172,7 @@ private:
 
     // Async initialization
     std::unique_ptr<RecordingInitTask> m_initTask;
+    QFuture<void> m_initFuture;
 
     // Countdown
     QPointer<CountdownOverlay> m_countdownOverlay;

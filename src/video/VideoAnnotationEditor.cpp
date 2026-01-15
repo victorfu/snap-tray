@@ -30,6 +30,7 @@
 #include <QTextEdit>
 #include <QTimer>
 #include <QToolButton>
+#include <memory>
 
 namespace {
 QString rgbaString(const QColor &color)
@@ -888,19 +889,23 @@ bool VideoAnnotationEditor::exportWithAnnotations(const QString &outputPath, int
         return false;
     }
 
-    // Wait for media to load
+    // Wait for media to load using a scope guard to ensure connections are cleaned up
     QEventLoop loadLoop;
     bool mediaLoaded = false;
-    connect(exportPlayer, &IVideoPlayer::mediaLoaded, [&]() {
-        mediaLoaded = true;
-        loadLoop.quit();
-    });
-    connect(exportPlayer, &IVideoPlayer::error, [&](const QString &msg) {
-        qWarning() << "VideoAnnotationEditor::exportWithAnnotations: Player error:" << msg;
-        loadLoop.quit();
-    });
-    QTimer::singleShot(5000, &loadLoop, &QEventLoop::quit); // 5 second timeout
-    loadLoop.exec();
+    {
+        // Scope guard - connections are auto-disconnected when loadScope is destroyed
+        QObject loadScope;
+        connect(exportPlayer, &IVideoPlayer::mediaLoaded, &loadScope, [&mediaLoaded, &loadLoop]() {
+            mediaLoaded = true;
+            loadLoop.quit();
+        });
+        connect(exportPlayer, &IVideoPlayer::error, &loadScope, [&loadLoop](const QString &msg) {
+            qWarning() << "VideoAnnotationEditor::exportWithAnnotations: Player error:" << msg;
+            loadLoop.quit();
+        });
+        QTimer::singleShot(5000, &loadLoop, &QEventLoop::quit); // 5 second timeout
+        loadLoop.exec();
+    }
 
     if (!mediaLoaded || !exportPlayer->hasVideo()) {
         qWarning() << "VideoAnnotationEditor::exportWithAnnotations: Media load failed";
@@ -953,105 +958,140 @@ bool VideoAnnotationEditor::exportWithAnnotations(const QString &outputPath, int
     NativeGifEncoder *gifEncoder = result.gifEncoder;
     WebPAnimationEncoder *webpEncoder = result.webpEncoder;
 
-    // Export state
-    bool exportSuccess = false;
-    bool exportFinished = false;
-    qint64 currentPosition = 0;
-    int frameCount = 0;
-    int frameIntervalMs = exportPlayer->frameIntervalMs();
-    int totalFrames = static_cast<int>(videoDuration / frameIntervalMs);
-    if (totalFrames <= 0) totalFrames = 1;
+    // Heap-allocated export state to avoid UAF from [&] captures
+    struct ExportState {
+        bool exportSuccess = false;
+        bool exportFinished = false;
+        qint64 currentPosition = 0;
+        qint64 seekPosition = 0;
+        int frameCount = 0;
+        int frameIntervalMs = 0;
+        int totalFrames = 1;
+        qint64 videoDuration = 0;
+        std::function<void(int)> progressCallback;
+        IVideoPlayer *exportPlayer = nullptr;
+        IVideoEncoder *videoEncoder = nullptr;
+        NativeGifEncoder *gifEncoder = nullptr;
+        WebPAnimationEncoder *webpEncoder = nullptr;
+        AnnotationTrack *track = nullptr;
+        VideoAnnotationRenderer *renderer = nullptr;
+        QEventLoop *exportLoop = nullptr;
+    };
 
-    // Event loop for async export
+    auto state = std::make_shared<ExportState>();
+    state->frameIntervalMs = exportPlayer->frameIntervalMs();
+    state->totalFrames = static_cast<int>(videoDuration / state->frameIntervalMs);
+    if (state->totalFrames <= 0) state->totalFrames = 1;
+    state->videoDuration = videoDuration;
+    state->progressCallback = progressCallback;
+    state->exportPlayer = exportPlayer;
+    state->videoEncoder = videoEncoder;
+    state->gifEncoder = gifEncoder;
+    state->webpEncoder = webpEncoder;
+    state->track = m_track;
+    state->renderer = &m_renderer;
+
+    // Event loop and scope guard for async export
     QEventLoop exportLoop;
+    state->exportLoop = &exportLoop;
+    QObject exportScope;  // All connections use this as context
 
     // Connect encoder finished signals
-    auto onEncodingFinished = [&](bool success, const QString &) {
-        exportSuccess = success;
-        exportFinished = true;
-        exportLoop.quit();
+    auto onEncodingFinished = [state](bool success, const QString &) {
+        state->exportSuccess = success;
+        state->exportFinished = true;
+        if (state->exportLoop) {
+            state->exportLoop->quit();
+        }
     };
 
     if (videoEncoder) {
-        connect(videoEncoder, &IVideoEncoder::finished, onEncodingFinished);
+        connect(videoEncoder, &IVideoEncoder::finished, &exportScope, onEncodingFinished);
     } else if (gifEncoder) {
-        connect(gifEncoder, &NativeGifEncoder::finished, onEncodingFinished);
+        connect(gifEncoder, &NativeGifEncoder::finished, &exportScope, onEncodingFinished);
     } else if (webpEncoder) {
-        connect(webpEncoder, &WebPAnimationEncoder::finished, onEncodingFinished);
+        connect(webpEncoder, &WebPAnimationEncoder::finished, &exportScope, onEncodingFinished);
     }
 
-    // Frame processing
-    std::function<void()> processNextFrame;
-    qint64 seekPosition = 0;
+    // Frame processing - using shared_ptr to avoid UAF
+    std::shared_ptr<std::function<void()>> processNextFrame = std::make_shared<std::function<void()>>();
 
-    auto onFrameReady = [&](const QImage &frame) {
-        if (exportFinished) return;
+    auto onFrameReady = [state, processNextFrame](const QImage &frame) {
+        if (state->exportFinished) return;
 
         // Create a copy to render effects on
         QImage compositeFrame = frame.convertToFormat(QImage::Format_ARGB32_Premultiplied);
 
         // Calculate timestamp for this frame (relative to start)
-        qint64 frameTimeMs = seekPosition;
+        qint64 frameTimeMs = state->seekPosition;
 
         // Render annotations
-        if (m_track) {
-            m_renderer.renderToFrame(compositeFrame, m_track, frameTimeMs, videoDuration);
+        if (state->track && state->renderer) {
+            state->renderer->renderToFrame(compositeFrame, state->track, frameTimeMs, state->videoDuration);
         }
 
         // Write frame to encoder
-        if (videoEncoder) {
-            videoEncoder->writeFrame(compositeFrame, frameTimeMs);
-        } else if (gifEncoder) {
-            gifEncoder->writeFrame(compositeFrame, frameTimeMs);
-        } else if (webpEncoder) {
-            webpEncoder->writeFrame(compositeFrame, frameTimeMs);
+        if (state->videoEncoder) {
+            state->videoEncoder->writeFrame(compositeFrame, frameTimeMs);
+        } else if (state->gifEncoder) {
+            state->gifEncoder->writeFrame(compositeFrame, frameTimeMs);
+        } else if (state->webpEncoder) {
+            state->webpEncoder->writeFrame(compositeFrame, frameTimeMs);
         }
 
-        frameCount++;
+        state->frameCount++;
 
         // Report progress
-        if (progressCallback) {
-            int percent = (frameCount * 100) / totalFrames;
+        if (state->progressCallback) {
+            int percent = (state->frameCount * 100) / state->totalFrames;
             percent = qBound(0, percent, 99);
-            progressCallback(percent);
+            state->progressCallback(percent);
         }
 
-        // Schedule next frame
-        QTimer::singleShot(0, processNextFrame);
+        // Schedule next frame with scope guard context
+        if (*processNextFrame) {
+            QTimer::singleShot(0, *processNextFrame);
+        }
     };
 
-    connect(exportPlayer, &IVideoPlayer::frameReady, onFrameReady);
+    connect(exportPlayer, &IVideoPlayer::frameReady, &exportScope, onFrameReady);
 
-    processNextFrame = [&]() {
-        if (exportFinished) return;
+    *processNextFrame = [state]() {
+        if (state->exportFinished) return;
 
-        currentPosition += frameIntervalMs;
+        state->currentPosition += state->frameIntervalMs;
 
-        if (currentPosition >= videoDuration) {
+        if (state->currentPosition >= state->videoDuration) {
             // Finished extracting frames
-            if (videoEncoder) {
-                videoEncoder->finish();
-            } else if (gifEncoder) {
-                gifEncoder->finish();
-            } else if (webpEncoder) {
-                webpEncoder->finish();
+            if (state->videoEncoder) {
+                state->videoEncoder->finish();
+            } else if (state->gifEncoder) {
+                state->gifEncoder->finish();
+            } else if (state->webpEncoder) {
+                state->webpEncoder->finish();
             }
             return;
         }
 
-        seekPosition = currentPosition;
-        exportPlayer->seek(currentPosition);
+        state->seekPosition = state->currentPosition;
+        if (state->exportPlayer) {
+            state->exportPlayer->seek(state->currentPosition);
+        }
     };
 
     // Start export by seeking to first frame
-    seekPosition = 0;
+    state->seekPosition = 0;
     exportPlayer->seek(0);
 
     // Wait for export to complete
     exportLoop.exec();
 
+    // Clear the loop pointer to prevent access after scope exit
+    state->exportLoop = nullptr;
+
     // Cleanup
     delete exportPlayer;
+    state->exportPlayer = nullptr;
 
     // Encoders are parented to this, they'll be cleaned up automatically
     // but we should disconnect signals
@@ -1065,11 +1105,11 @@ bool VideoAnnotationEditor::exportWithAnnotations(const QString &outputPath, int
         webpEncoder->deleteLater();
     }
 
-    if (progressCallback && exportSuccess) {
+    if (progressCallback && state->exportSuccess) {
         progressCallback(100);
     }
 
-    return exportSuccess;
+    return state->exportSuccess;
 }
 
 bool VideoAnnotationEditor::saveProject(const QString &projectPath)

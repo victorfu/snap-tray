@@ -1109,8 +1109,9 @@ QString RecordingPreviewWindow::convertToFormat(FormatSelectionWidget::Format fo
         timer.setSingleShot(true);
 
         // Single connection that both captures frame and quits loop
+        // Use &loop as receiver so connection is auto-broken when loop is destroyed
         auto frameConnection = connect(m_videoWidget, &VideoPlaybackWidget::frameReady,
-                                       this, [&capturedFrame, &frameReceived, &loop](const QImage &frame) {
+                                       &loop, [&capturedFrame, &frameReceived, &loop](const QImage &frame) {
             capturedFrame = frame.copy();
             frameReceived = true;
             loop.quit();

@@ -86,7 +86,7 @@ signals:
 
 private:
     void enumerateWindows();
-    void enumerateWindowsInternal(std::vector<DetectedElement>& cache, qreal dpr);
+    void enumerateWindowsInternal(std::vector<DetectedElement>& cache, qreal dpr, DetectionFlags flags);
 
     std::vector<DetectedElement> m_windowCache;
     mutable QMutex m_cacheMutex;

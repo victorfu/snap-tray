@@ -289,6 +289,9 @@ void WindowDetector::enumerateWindows()
 
 std::optional<DetectedElement> WindowDetector::detectWindowAt(const QPoint &screenPos) const
 {
+    // Lock mutex for thread-safe cache access (matches Windows implementation)
+    QMutexLocker locker(&m_cacheMutex);
+
     if (!m_enabled || m_windowCache.empty()) {
         return std::nullopt;
     }
@@ -320,12 +323,15 @@ void WindowDetector::refreshWindowListAsync()
 
     m_refreshComplete = false;
 
-    m_refreshFuture = QtConcurrent::run([this, requestId]() {
+    // Snapshot detection flags to avoid data race with main thread
+    const DetectionFlags flags = m_detectionFlags;
+
+    m_refreshFuture = QtConcurrent::run([this, requestId, flags]() {
         std::vector<DetectedElement> newCache;
 
         // Determine CGWindowList options based on detection flags
         CGWindowListOption options = kCGWindowListOptionOnScreenOnly;
-        bool detectingSystemUI = m_detectionFlags & DetectionFlag::AllSystemUI;
+        bool detectingSystemUI = flags & DetectionFlag::AllSystemUI;
         if (!detectingSystemUI) {
             options |= kCGWindowListExcludeDesktopElements;
         }
@@ -374,7 +380,7 @@ void WindowDetector::refreshWindowListAsync()
 
             ElementType elementType = classifyElementType(windowLayer, windowInfo, cgBounds);
 
-            if (!shouldIncludeElementType(elementType, m_detectionFlags)) {
+            if (!shouldIncludeElementType(elementType, flags)) {
                 continue;
             }
 

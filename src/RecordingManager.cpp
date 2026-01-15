@@ -93,6 +93,13 @@ RecordingManager::RecordingManager(QObject *parent)
 
 RecordingManager::~RecordingManager()
 {
+    // Cancel and wait for any pending async initialization
+    if (m_initTask) {
+        m_initTask->cancel();
+    }
+    if (m_initFuture.isRunning()) {
+        m_initFuture.waitForFinished();
+    }
     cleanupRecording();
 }
 
@@ -508,18 +515,24 @@ void RecordingManager::beginAsyncInitialization()
     }, Qt::QueuedConnection);
 
     // Run initialization in background thread
+    // Use QPointer to guard against this being deleted while task runs
+    QPointer<RecordingManager> guard(this);
     QFutureWatcher<void> *watcher = new QFutureWatcher<void>(this);
-    connect(watcher, &QFutureWatcher<void>::finished, this, [this, watcher]() {
-        onInitializationComplete();
+    connect(watcher, &QFutureWatcher<void>::finished, this, [guard, watcher]() {
+        if (guard) {
+            guard->onInitializationComplete();
+        }
         watcher->deleteLater();
     });
 
-    QFuture<void> future = QtConcurrent::run([this]() {
-        if (m_initTask) {
-            m_initTask->run();
+    // Capture task pointer to avoid accessing this in background thread
+    RecordingInitTask *task = m_initTask.get();
+    m_initFuture = QtConcurrent::run([task]() {
+        if (task) {
+            task->run();
         }
     });
-    watcher->setFuture(future);
+    watcher->setFuture(m_initFuture);
 
     qDebug() << "RecordingManager::beginAsyncInitialization() - END";
 }
