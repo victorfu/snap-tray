@@ -23,24 +23,7 @@
 #include <QDebug>
 #include <QSettings>
 #include <QTimer>
-#include <map>
-
-// Tool capability lookup table - replaces multiple switch statements
-struct ToolCapabilities {
-    bool showInPalette;     // Show in color palette
-    bool needsWidth;        // Show width control
-    bool needsColorOrWidth; // Show unified color/width widget
-};
-
-static const std::map<ToolId, ToolCapabilities> kToolCapabilities = {
-    {ToolId::Pencil,       {true,  true,  true}},
-    {ToolId::Marker,       {true,  false, true}},
-    {ToolId::Arrow,        {true,  true,  true}},
-    {ToolId::Shape,        {true,  true,  true}},
-    {ToolId::StepBadge,    {true,  false, true}},
-    {ToolId::Text,         {true,  false, true}},
-    {ToolId::LaserPointer, {true,  true,  true}},
-};
+#include "tools/ToolRegistry.h"
 
 ScreenCanvas::ScreenCanvas(QWidget* parent)
     : QWidget(parent)
@@ -345,8 +328,7 @@ void ScreenCanvas::renderIcon(QPainter& painter, const QRect& rect, CanvasButton
 bool ScreenCanvas::shouldShowColorPalette() const
 {
     if (!m_showSubToolbar) return false;
-    auto it = kToolCapabilities.find(m_currentToolId);
-    return it != kToolCapabilities.end() && it->second.showInPalette;
+    return ToolRegistry::instance().showColorPalette(m_currentToolId);
 }
 
 void ScreenCanvas::onColorSelected(const QColor& color)
@@ -369,14 +351,12 @@ void ScreenCanvas::onLineWidthChanged(int width)
 bool ScreenCanvas::shouldShowColorAndWidthWidget() const
 {
     if (!m_showSubToolbar) return false;
-    auto it = kToolCapabilities.find(m_currentToolId);
-    return it != kToolCapabilities.end() && it->second.needsColorOrWidth;
+    return ToolRegistry::instance().showColorWidthWidget(m_currentToolId);
 }
 
 bool ScreenCanvas::shouldShowWidthControl() const
 {
-    auto it = kToolCapabilities.find(m_currentToolId);
-    return it != kToolCapabilities.end() && it->second.needsWidth;
+    return ToolRegistry::instance().showWidthControl(m_currentToolId);
 }
 
 void ScreenCanvas::onMoreColorsRequested()

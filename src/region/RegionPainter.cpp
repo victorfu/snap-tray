@@ -10,7 +10,7 @@
 #include "GlassRenderer.h"
 #include "ToolbarStyle.h"
 #include "TransformationGizmo.h"
-#include "RegionSelector.h"  // For ToolbarButton enum and isToolManagerHandledTool
+#include "RegionSelector.h"  // For isToolManagerHandledTool
 
 #include <QPainter>
 #include <QPainterPath>
@@ -577,7 +577,7 @@ void RegionPainter::drawCurrentAnnotation(QPainter& painter)
     }
 
     // Use ToolManager for tools it handles
-    ToolbarButton tool = static_cast<ToolbarButton>(m_currentTool);
+    ToolId tool = static_cast<ToolId>(m_currentTool);
     if (isToolManagerHandledTool(tool)) {
         m_toolManager->drawCurrentPreview(painter);
         return;

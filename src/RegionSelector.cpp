@@ -53,26 +53,7 @@
 #include <QMenu>
 #include <QFontDatabase>
 #include <QDateTime>
-
-// Tool capability lookup table - replaces multiple switch statements
-struct ToolCapabilities {
-    bool showInPalette;     // Show in color palette
-    bool needsWidth;        // Show width control
-    bool needsColorOrWidth; // Show unified color/width widget
-};
-
-static const std::map<ToolbarButton, ToolCapabilities> kToolCapabilities = {
-    {ToolbarButton::Selection,  {false, false, false}},
-    {ToolbarButton::MultiRegion,{false, false, false}},
-    {ToolbarButton::Pencil,     {true,  true,  true}},
-    {ToolbarButton::Marker,     {true,  false, true}},
-    {ToolbarButton::Arrow,      {true,  true,  true}},
-    {ToolbarButton::Shape,      {true,  true,  true}},
-    {ToolbarButton::Text,       {true,  false, true}},
-    {ToolbarButton::Mosaic,     {false, true,  true}},
-    {ToolbarButton::Eraser,     {false, false, false}},
-    {ToolbarButton::StepBadge,  {true,  false, true}},
-};
+#include "tools/ToolRegistry.h"
 
 RegionSelector::RegionSelector(QWidget* parent)
     : QWidget(parent)
@@ -81,7 +62,7 @@ RegionSelector::RegionSelector(QWidget* parent)
     , m_devicePixelRatio(1.0)
     , m_toolbar(nullptr)
     , m_annotationLayer(nullptr)
-    , m_currentTool(ToolbarButton::Selection)
+    , m_currentTool(ToolId::Selection)
     , m_showSubToolbar(true)
     , m_annotationColor(Qt::red)  // Will be overwritten by loadAnnotationColor()
     , m_annotationWidth(3)        // Will be overwritten by loadAnnotationWidth()
@@ -192,7 +173,7 @@ RegionSelector::RegionSelector(QWidget* parent)
     // Initialize toolbar widget
     m_toolbar = new ToolbarWidget(this);
     connect(m_toolbar, &ToolbarWidget::buttonClicked, this, [this](int buttonId) {
-        handleToolbarClick(static_cast<ToolbarButton>(buttonId));
+        handleToolbarClick(static_cast<ToolId>(buttonId));
         });
 
     // Initialize inline text editor
@@ -428,7 +409,7 @@ RegionSelector::RegionSelector(QWidget* parent)
     connect(m_inputHandler, qOverload<const QRect&>(&RegionInputHandler::updateRequested),
         this, qOverload<const QRect&>(&QWidget::update));
     connect(m_inputHandler, &RegionInputHandler::toolbarClickRequested,
-        this, [this](int buttonId) { handleToolbarClick(static_cast<ToolbarButton>(buttonId)); });
+        this, [this](int buttonId) { handleToolbarClick(static_cast<ToolId>(buttonId)); });
     connect(m_inputHandler, &RegionInputHandler::windowDetectionRequested,
         this, &RegionSelector::updateWindowDetection);
     connect(m_inputHandler, &RegionInputHandler::textReEditingRequested,
@@ -500,7 +481,7 @@ RegionSelector::RegionSelector(QWidget* parent)
 
     // Connect toolbar handler signals
     connect(m_toolbarHandler, &RegionToolbarHandler::toolChanged,
-        this, [this](ToolbarButton tool, bool showSubToolbar) {
+        this, [this](ToolId tool, bool showSubToolbar) {
             m_currentTool = tool;
             m_showSubToolbar = showSubToolbar;
         });
@@ -619,8 +600,7 @@ bool RegionSelector::shouldShowColorPalette() const
     if (m_multiRegionMode) return false;
     if (!m_selectionManager->isComplete()) return false;
     if (!m_showSubToolbar) return false;
-    auto it = kToolCapabilities.find(m_currentTool);
-    return it != kToolCapabilities.end() && it->second.showInPalette;
+    return ToolRegistry::instance().showColorPalette(m_currentTool);
 }
 
 void RegionSelector::syncColorToAllWidgets(const QColor& color)
@@ -664,7 +644,7 @@ void RegionSelector::onMoreColorsRequested()
 
 void RegionSelector::onLineWidthChanged(int width)
 {
-    if (m_currentTool == ToolbarButton::Mosaic) {
+    if (m_currentTool == ToolId::Mosaic) {
         m_annotationWidth = width;
         // Update cursor to reflect new width
         setToolCursor();
@@ -726,20 +706,18 @@ bool RegionSelector::shouldShowColorAndWidthWidget() const
     if (m_multiRegionMode) return false;
     if (!m_selectionManager->isComplete()) return false;
     if (!m_showSubToolbar) return false;
-    auto it = kToolCapabilities.find(m_currentTool);
-    return it != kToolCapabilities.end() && it->second.needsColorOrWidth;
+    return ToolRegistry::instance().showColorWidthWidget(m_currentTool);
 }
 
 bool RegionSelector::shouldShowWidthControl() const
 {
     if (m_multiRegionMode) return false;
-    auto it = kToolCapabilities.find(m_currentTool);
-    return it != kToolCapabilities.end() && it->second.needsWidth;
+    return ToolRegistry::instance().showWidthControl(m_currentTool);
 }
 
 int RegionSelector::toolWidthForCurrentTool() const
 {
-    if (m_currentTool == ToolbarButton::StepBadge) {
+    if (m_currentTool == ToolId::StepBadge) {
         return StepBadgeAnnotation::radiusForSize(m_stepBadgeSize);
     }
     // Mosaic now uses m_annotationWidth (synced with other tools)
@@ -989,20 +967,20 @@ void RegionSelector::paintEvent(QPaintEvent* event)
             if (shouldShowColorAndWidthWidget()) {
                 m_colorAndWidthWidget->setVisible(true);
                 m_colorAndWidthWidget->setShowColorSection(shouldShowColorPalette());
-                bool isMosaicTool = (m_currentTool == ToolbarButton::Mosaic);
+                bool isMosaicTool = (m_currentTool == ToolId::Mosaic);
                 // All width-enabled tools use shared WidthSection (including Mosaic)
                 m_colorAndWidthWidget->setShowWidthSection(shouldShowWidthControl());
                 m_colorAndWidthWidget->setWidthSectionHidden(false);
                 // Show arrow style section only for Arrow tool
-                m_colorAndWidthWidget->setShowArrowStyleSection(m_currentTool == ToolbarButton::Arrow);
+                m_colorAndWidthWidget->setShowArrowStyleSection(m_currentTool == ToolId::Arrow);
                 // Show line style section for Pencil and Arrow tools
-                bool showLineStyle = (m_currentTool == ToolbarButton::Pencil ||
-                                      m_currentTool == ToolbarButton::Arrow);
+                bool showLineStyle = (m_currentTool == ToolId::Pencil ||
+                                      m_currentTool == ToolId::Arrow);
                 m_colorAndWidthWidget->setShowLineStyleSection(showLineStyle);
                 // Show text section only for Text tool
-                m_colorAndWidthWidget->setShowTextSection(m_currentTool == ToolbarButton::Text);
+                m_colorAndWidthWidget->setShowTextSection(m_currentTool == ToolId::Text);
                 // Show shape section only for Shape tool
-                m_colorAndWidthWidget->setShowShapeSection(m_currentTool == ToolbarButton::Shape);
+                m_colorAndWidthWidget->setShowShapeSection(m_currentTool == ToolId::Shape);
                 // Show auto blur section only for Mosaic tool
                 m_colorAndWidthWidget->setShowAutoBlurSection(isMosaicTool);
                 if (isMosaicTool) {
@@ -1017,7 +995,7 @@ void RegionSelector::paintEvent(QPaintEvent* event)
             }
 
             // Draw emoji picker when EmojiSticker tool is selected (lazy creation)
-            if (m_currentTool == ToolbarButton::EmojiSticker) {
+            if (m_currentTool == ToolId::EmojiSticker) {
                 EmojiPicker* picker = ensureEmojiPicker();
                 picker->setVisible(true);
                 picker->updatePosition(m_toolbar->boundingRect(), false);
@@ -1093,7 +1071,7 @@ void RegionSelector::setToolCursor()
     auto& cursorManager = CursorManager::instance();
 
     // Special handling for text tool during editing
-    if (m_currentTool == ToolbarButton::Text && m_textEditor->isEditing()) {
+    if (m_currentTool == ToolId::Text && m_textEditor->isEditing()) {
         return;
     }
 
@@ -1102,7 +1080,7 @@ void RegionSelector::setToolCursor()
     cursorManager.updateToolCursor();
 }
 
-void RegionSelector::handleToolbarClick(ToolbarButton button)
+void RegionSelector::handleToolbarClick(ToolId tool)
 {
     // Sync current state to handler
     m_toolbarHandler->setCurrentTool(m_currentTool);
@@ -1114,7 +1092,7 @@ void RegionSelector::handleToolbarClick(ToolbarButton button)
     m_toolbarHandler->setMultiRegionMode(m_multiRegionMode);
 
     // Delegate to handler
-    m_toolbarHandler->handleToolbarClick(button);
+    m_toolbarHandler->handleToolbarClick(tool);
 }
 
 void RegionSelector::setMultiRegionMode(bool enabled)
@@ -1139,7 +1117,7 @@ void RegionSelector::setMultiRegionMode(bool enabled)
             m_selectionManager->clearSelection();
         }
         m_annotationLayer->clear();
-        m_currentTool = ToolbarButton::Selection;
+        m_currentTool = ToolId::Selection;
         m_showSubToolbar = false;
     } else {
         m_multiRegionManager->clear();
@@ -1283,7 +1261,7 @@ void RegionSelector::mouseDoubleClickEvent(QMouseEvent* event)
 void RegionSelector::wheelEvent(QWheelEvent* event)
 {
     // Handle scroll wheel for StepBadge size adjustment
-    if (m_currentTool == ToolbarButton::StepBadge) {
+    if (m_currentTool == ToolId::StepBadge) {
         int delta = event->angleDelta().y();
         if (delta != 0) {
             // Cycle through sizes: Small -> Medium -> Large -> Small
@@ -1374,13 +1352,13 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
     }
     else if (event->key() == Qt::Key_R && !event->modifiers()) {
         if (m_selectionManager->isComplete()) {
-            handleToolbarClick(ToolbarButton::Record);
+            handleToolbarClick(ToolId::Record);
         }
     }
 #ifdef SNAPTRAY_ENABLE_DEV_FEATURES
     else if (event->key() == Qt::Key_S && !event->modifiers()) {
         if (m_selectionManager->isComplete()) {
-            handleToolbarClick(ToolbarButton::ScrollCapture);
+            handleToolbarClick(ToolId::ScrollCapture);
         }
     }
 #endif
@@ -1546,18 +1524,18 @@ bool RegionSelector::eventFilter(QObject* obj, QEvent* event)
 // Annotation Helper Functions
 // ============================================================================
 
-bool RegionSelector::isAnnotationTool(ToolbarButton tool) const
+bool RegionSelector::isAnnotationTool(ToolId tool) const
 {
     switch (tool) {
-    case ToolbarButton::Pencil:
-    case ToolbarButton::Marker:
-    case ToolbarButton::Arrow:
-    case ToolbarButton::Shape:
-    case ToolbarButton::Text:
-    case ToolbarButton::Mosaic:
-    case ToolbarButton::Eraser:
-    case ToolbarButton::StepBadge:
-    case ToolbarButton::EmojiSticker:
+    case ToolId::Pencil:
+    case ToolId::Marker:
+    case ToolId::Arrow:
+    case ToolId::Shape:
+    case ToolId::Text:
+    case ToolId::Mosaic:
+    case ToolId::Eraser:
+    case ToolId::StepBadge:
+    case ToolId::EmojiSticker:
         return true;
     default:
         return false;

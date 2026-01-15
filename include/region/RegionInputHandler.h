@@ -7,6 +7,7 @@
 #include <QCursor>
 #include "TransformationGizmo.h"
 #include "region/SelectionStateManager.h"
+#include "tools/ToolId.h"
 
 class QMouseEvent;
 class QWidget;
@@ -22,8 +23,6 @@ class UpdateThrottler;
 class TextAnnotation;
 class EmojiStickerAnnotation;
 class MultiRegionManager;
-
-enum class ToolbarButton;
 
 /**
  * @brief Handles mouse input for RegionSelector.
@@ -65,7 +64,7 @@ public:
     QRect lastMagnifierRect() const { return m_lastMagnifierRect; }
 
     // Configuration setters (call before event handling)
-    void setCurrentTool(ToolbarButton tool);
+    void setCurrentTool(ToolId tool);
     void setShowSubToolbar(bool show);
     void setHighlightedWindowRect(const QRect& rect);
     void setDetectedWindow(bool hasWindow, const QRect& bounds = QRect());
@@ -149,7 +148,7 @@ private:
     TextAnnotation* getSelectedTextAnnotation() const;
     EmojiStickerAnnotation* getSelectedEmojiStickerAnnotation() const;
     bool shouldShowColorAndWidthWidget() const;
-    bool isAnnotationTool(ToolbarButton tool) const;
+    bool isAnnotationTool(ToolId tool) const;
 
     // Dependencies (non-owning pointers)
     SelectionStateManager* m_selectionManager = nullptr;
@@ -173,7 +172,7 @@ private:
     QRect m_lastMagnifierRect;
     QRect m_highlightedWindowRect;
     bool m_hasDetectedWindow = false;
-    ToolbarButton m_currentTool;
+    ToolId m_currentTool;
     bool m_isDrawing = false;
     bool m_showSubToolbar = true;
 

@@ -50,74 +50,18 @@ class RegionExportManager;
 
 // ShapeType and ShapeFillMode are defined in annotations/ShapeAnnotation.h
 
-// Toolbar button types
-enum class ToolbarButton {
-    Selection = 0,
-    Arrow,
-    Pencil,
-    Marker,
-    Shape,  // Unified shape tool (Rectangle + Ellipse)
-    Text,
-    Mosaic,
-    Eraser,
-    StepBadge,
-    EmojiSticker,
-    Undo,
-    Redo,
-    Cancel,
-    OCR,
-    AutoBlur,  // Auto-detect and blur faces/text
-    Pin,
-    Record,
-    ScrollCapture,  // Scrolling capture (extended region capture)
-    Save,
-    Copy,
-    MultiRegion,     // Multi-region capture mode
-    MultiRegionDone, // Complete multi-region capture
-    Count  // Total number of buttons
-};
-
-// Helper to map ToolbarButton to ToolId
-inline ToolId toolbarButtonToToolId(ToolbarButton btn) {
-    switch (btn) {
-    case ToolbarButton::Selection:  return ToolId::Selection;
-    case ToolbarButton::Arrow:      return ToolId::Arrow;
-    case ToolbarButton::Pencil:     return ToolId::Pencil;
-    case ToolbarButton::Marker:     return ToolId::Marker;
-    case ToolbarButton::Shape:      return ToolId::Shape;
-    case ToolbarButton::Text:       return ToolId::Text;
-    case ToolbarButton::Mosaic:     return ToolId::Mosaic;
-    case ToolbarButton::Eraser:     return ToolId::Eraser;
-    case ToolbarButton::StepBadge:  return ToolId::StepBadge;
-    case ToolbarButton::EmojiSticker: return ToolId::EmojiSticker;
-    case ToolbarButton::Undo:       return ToolId::Undo;
-    case ToolbarButton::Redo:       return ToolId::Redo;
-    case ToolbarButton::Cancel:     return ToolId::Cancel;
-    case ToolbarButton::OCR:        return ToolId::OCR;
-    case ToolbarButton::AutoBlur:   return ToolId::AutoBlur;
-    case ToolbarButton::Pin:        return ToolId::Pin;
-    case ToolbarButton::Record:     return ToolId::Record;
-    case ToolbarButton::Save:       return ToolId::Save;
-    case ToolbarButton::Copy:       return ToolId::Copy;
-    case ToolbarButton::MultiRegion:
-    case ToolbarButton::MultiRegionDone:
-        return ToolId::Selection;
-    default:                        return ToolId::Selection;
-    }
-}
-
 // Helper to check if a tool is handled by ToolManager
 // (vs. custom handling like Text which has special UI needs)
-inline bool isToolManagerHandledTool(ToolbarButton btn) {
-    switch (btn) {
-    case ToolbarButton::Pencil:
-    case ToolbarButton::Marker:
-    case ToolbarButton::Arrow:
-    case ToolbarButton::Shape:
-    case ToolbarButton::Mosaic:
-    case ToolbarButton::Eraser:
-    case ToolbarButton::StepBadge:
-    case ToolbarButton::EmojiSticker:
+inline bool isToolManagerHandledTool(ToolId id) {
+    switch (id) {
+    case ToolId::Pencil:
+    case ToolId::Marker:
+    case ToolId::Arrow:
+    case ToolId::Shape:
+    case ToolId::Mosaic:
+    case ToolId::Eraser:
+    case ToolId::StepBadge:
+    case ToolId::EmojiSticker:
         return true;
     default:
         return false;
@@ -175,7 +119,7 @@ private:
     int effectiveCornerRadius() const;
 
     // Toolbar helpers
-    void handleToolbarClick(ToolbarButton button);
+    void handleToolbarClick(ToolId tool);
 
     // Color palette helpers (legacy)
     bool shouldShowColorPalette() const;
@@ -223,7 +167,7 @@ private:
 
     // Annotation helpers
     void showTextInputDialog(const QPoint &pos);
-    bool isAnnotationTool(ToolbarButton tool) const;
+    bool isAnnotationTool(ToolId tool) const;
 
     // Inline text editing handlers
     void onTextEditingFinished(const QString &text, const QPoint &position);
@@ -264,7 +208,7 @@ private:
     // Annotation layer and tool manager
     AnnotationLayer *m_annotationLayer;
     ToolManager *m_toolManager;
-    ToolbarButton m_currentTool;
+    ToolId m_currentTool;
     bool m_showSubToolbar;
     QColor m_annotationColor;
     int m_annotationWidth;

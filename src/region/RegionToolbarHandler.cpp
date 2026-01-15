@@ -9,14 +9,13 @@
 #include "IconRenderer.h"
 #include "OCRManager.h"
 #include "PlatformFeatures.h"
-#include "RegionSelector.h"  // For ToolbarButton enum
 
 #include <QWidget>
 #include <QDebug>
 
 RegionToolbarHandler::RegionToolbarHandler(QObject* parent)
     : QObject(parent)
-    , m_currentTool(ToolbarButton::Selection)
+    , m_currentTool(ToolId::Selection)
     , m_stepBadgeSize(StepBadgeSize::Medium)
 {
 }
@@ -107,8 +106,8 @@ void RegionToolbarHandler::setupToolbarButtons()
     // Configure buttons
     QVector<ToolbarWidget::ButtonConfig> buttons;
     if (m_multiRegionMode) {
-        buttons.append({ static_cast<int>(ToolbarButton::MultiRegionDone), "done", "Done", false });
-        buttons.append({ static_cast<int>(ToolbarButton::Cancel), "cancel", "Cancel (Esc)", true });
+        buttons.append({ static_cast<int>(ToolId::MultiRegionDone), "done", "Done", false });
+        buttons.append({ static_cast<int>(ToolId::Cancel), "cancel", "Cancel (Esc)", true });
         m_toolbar->setButtons(buttons);
         m_toolbar->setActiveButtonIds({});
         m_toolbar->setIconColorProvider([this](int buttonId, bool isActive, bool isHovered) {
@@ -117,47 +116,47 @@ void RegionToolbarHandler::setupToolbarButtons()
         return;
     }
 
-    buttons.append({ static_cast<int>(ToolbarButton::Selection), "selection", "Selection", false });
-    buttons.append({ static_cast<int>(ToolbarButton::Shape), "shape", "Shape", false });
-    buttons.append({ static_cast<int>(ToolbarButton::Arrow), "arrow", "Arrow", false });
-    buttons.append({ static_cast<int>(ToolbarButton::Pencil), "pencil", "Pencil", false });
-    buttons.append({ static_cast<int>(ToolbarButton::Marker), "marker", "Marker", false });
-    buttons.append({ static_cast<int>(ToolbarButton::Text), "text", "Text", false });
-    buttons.append({ static_cast<int>(ToolbarButton::Mosaic), "mosaic", "Mosaic", false });
-    buttons.append({ static_cast<int>(ToolbarButton::Eraser), "eraser", "Eraser", false });
-    buttons.append({ static_cast<int>(ToolbarButton::StepBadge), "step-badge", "Step Badge", false });
-    buttons.append({ static_cast<int>(ToolbarButton::EmojiSticker), "emoji", "Emoji Sticker", false });
-    buttons.append({ static_cast<int>(ToolbarButton::Undo), "undo", "Undo", true });
-    buttons.append({ static_cast<int>(ToolbarButton::Redo), "redo", "Redo", false });
-    buttons.append({ static_cast<int>(ToolbarButton::Cancel), "cancel", "Cancel (Esc)", true });  // separator before
+    buttons.append({ static_cast<int>(ToolId::Selection), "selection", "Selection", false });
+    buttons.append({ static_cast<int>(ToolId::Shape), "shape", "Shape", false });
+    buttons.append({ static_cast<int>(ToolId::Arrow), "arrow", "Arrow", false });
+    buttons.append({ static_cast<int>(ToolId::Pencil), "pencil", "Pencil", false });
+    buttons.append({ static_cast<int>(ToolId::Marker), "marker", "Marker", false });
+    buttons.append({ static_cast<int>(ToolId::Text), "text", "Text", false });
+    buttons.append({ static_cast<int>(ToolId::Mosaic), "mosaic", "Mosaic", false });
+    buttons.append({ static_cast<int>(ToolId::Eraser), "eraser", "Eraser", false });
+    buttons.append({ static_cast<int>(ToolId::StepBadge), "step-badge", "Step Badge", false });
+    buttons.append({ static_cast<int>(ToolId::EmojiSticker), "emoji", "Emoji Sticker", false });
+    buttons.append({ static_cast<int>(ToolId::Undo), "undo", "Undo", true });
+    buttons.append({ static_cast<int>(ToolId::Redo), "redo", "Redo", false });
+    buttons.append({ static_cast<int>(ToolId::Cancel), "cancel", "Cancel (Esc)", true });  // separator before
     if (PlatformFeatures::instance().isOCRAvailable()) {
-        buttons.append({ static_cast<int>(ToolbarButton::OCR), "ocr", "OCR Text Recognition", false });
+        buttons.append({ static_cast<int>(ToolId::OCR), "ocr", "OCR Text Recognition", false });
     }
 #ifdef SNAPTRAY_ENABLE_DEV_FEATURES
-    buttons.append({ static_cast<int>(ToolbarButton::Record), "record", "Screen Recording (R)", false });
+    buttons.append({ static_cast<int>(ToolId::Record), "record", "Screen Recording (R)", false });
 #endif
-    buttons.append({ static_cast<int>(ToolbarButton::MultiRegion), "multi-region", "Multi-Region Capture (M)", false });
+    buttons.append({ static_cast<int>(ToolId::MultiRegion), "multi-region", "Multi-Region Capture (M)", false });
 #ifdef SNAPTRAY_ENABLE_DEV_FEATURES
-    buttons.append({ static_cast<int>(ToolbarButton::ScrollCapture), "scroll-capture", "Scrolling Capture (S)", false });
+    buttons.append({ static_cast<int>(ToolId::ScrollCapture), "scroll-capture", "Scrolling Capture (S)", false });
 #endif
-    buttons.append({ static_cast<int>(ToolbarButton::Pin), "pin", "Pin to Screen (Enter)", false });
-    buttons.append({ static_cast<int>(ToolbarButton::Save), "save", "Save (Ctrl+S)", false });
-    buttons.append({ static_cast<int>(ToolbarButton::Copy), "copy", "Copy (Ctrl+C)", false });
+    buttons.append({ static_cast<int>(ToolId::Pin), "pin", "Pin to Screen (Enter)", false });
+    buttons.append({ static_cast<int>(ToolId::Save), "save", "Save (Ctrl+S)", false });
+    buttons.append({ static_cast<int>(ToolId::Copy), "copy", "Copy (Ctrl+C)", false });
 
     m_toolbar->setButtons(buttons);
 
     // Set which buttons are "active" type (annotation tools that stay highlighted)
     QVector<int> activeButtonIds = {
-        static_cast<int>(ToolbarButton::Selection),
-        static_cast<int>(ToolbarButton::Arrow),
-        static_cast<int>(ToolbarButton::Pencil),
-        static_cast<int>(ToolbarButton::Marker),
-        static_cast<int>(ToolbarButton::Shape),
-        static_cast<int>(ToolbarButton::Text),
-        static_cast<int>(ToolbarButton::Mosaic),
-        static_cast<int>(ToolbarButton::Eraser),
-        static_cast<int>(ToolbarButton::StepBadge),
-        static_cast<int>(ToolbarButton::EmojiSticker)
+        static_cast<int>(ToolId::Selection),
+        static_cast<int>(ToolId::Arrow),
+        static_cast<int>(ToolId::Pencil),
+        static_cast<int>(ToolId::Marker),
+        static_cast<int>(ToolId::Shape),
+        static_cast<int>(ToolId::Text),
+        static_cast<int>(ToolId::Mosaic),
+        static_cast<int>(ToolId::Eraser),
+        static_cast<int>(ToolId::StepBadge),
+        static_cast<int>(ToolId::EmojiSticker)
     };
     m_toolbar->setActiveButtonIds(activeButtonIds);
 
@@ -174,29 +173,29 @@ QColor RegionToolbarHandler::getToolbarIconColor(int buttonId, bool isActive, bo
     if (!m_toolbar) return QColor(128, 128, 128);
 
     const auto& style = m_toolbar->styleConfig();
-    ToolbarButton btn = static_cast<ToolbarButton>(buttonId);
+    ToolId btn = static_cast<ToolId>(buttonId);
 
     // Show gray for unavailable features
-    if (btn == ToolbarButton::OCR && !m_ocrManager) {
+    if (btn == ToolId::OCR && !m_ocrManager) {
         return QColor(128, 128, 128);
     }
 
     // Show yellow when processing
-    if (btn == ToolbarButton::OCR && m_ocrInProgress) {
+    if (btn == ToolId::OCR && m_ocrInProgress) {
         return QColor(255, 200, 100);
     }
 
-    if (btn == ToolbarButton::MultiRegionDone) {
+    if (btn == ToolId::MultiRegionDone) {
         return style.iconActionColor;
     }
 
     // Show gray for Undo when nothing to undo
-    if (btn == ToolbarButton::Undo && m_annotationLayer && !m_annotationLayer->canUndo()) {
+    if (btn == ToolId::Undo && m_annotationLayer && !m_annotationLayer->canUndo()) {
         return QColor(128, 128, 128);
     }
 
     // Show gray for Redo when nothing to redo
-    if (btn == ToolbarButton::Redo && m_annotationLayer && !m_annotationLayer->canRedo()) {
+    if (btn == ToolId::Redo && m_annotationLayer && !m_annotationLayer->canRedo()) {
         return QColor(128, 128, 128);
     }
 
@@ -207,10 +206,10 @@ QColor RegionToolbarHandler::getToolbarIconColor(int buttonId, bool isActive, bo
     return style.iconNormalColor;
 }
 
-void RegionToolbarHandler::handleToolbarClick(ToolbarButton button)
+void RegionToolbarHandler::handleToolbarClick(ToolId button)
 {
     switch (button) {
-    case ToolbarButton::Selection:
+    case ToolId::Selection:
         // Selection has no sub-toolbar, just switch tool
         m_currentTool = button;
         m_showSubToolbar = true;
@@ -220,41 +219,41 @@ void RegionToolbarHandler::handleToolbarClick(ToolbarButton button)
         emit updateRequested();
         break;
 
-    case ToolbarButton::Arrow:
-    case ToolbarButton::Pencil:
-    case ToolbarButton::Marker:
-    case ToolbarButton::Shape:
-    case ToolbarButton::Text:
-    case ToolbarButton::Eraser:
-    case ToolbarButton::EmojiSticker:
+    case ToolId::Arrow:
+    case ToolId::Pencil:
+    case ToolId::Marker:
+    case ToolId::Shape:
+    case ToolId::Text:
+    case ToolId::Eraser:
+    case ToolId::EmojiSticker:
         handleAnnotationTool(button);
         break;
 
-    case ToolbarButton::StepBadge:
+    case ToolId::StepBadge:
         handleStepBadgeTool();
         break;
 
-    case ToolbarButton::Mosaic:
+    case ToolId::Mosaic:
         handleMosaicTool();
         break;
 
-    case ToolbarButton::Undo:
-    case ToolbarButton::Redo:
-    case ToolbarButton::Cancel:
-    case ToolbarButton::OCR:
-    case ToolbarButton::Pin:
-    case ToolbarButton::Record:
-    case ToolbarButton::ScrollCapture:
-    case ToolbarButton::Save:
-    case ToolbarButton::Copy:
+    case ToolId::Undo:
+    case ToolId::Redo:
+    case ToolId::Cancel:
+    case ToolId::OCR:
+    case ToolId::Pin:
+    case ToolId::Record:
+    case ToolId::ScrollCapture:
+    case ToolId::Save:
+    case ToolId::Copy:
         handleActionButton(button);
         break;
 
-    case ToolbarButton::MultiRegion:
+    case ToolId::MultiRegion:
         emit multiRegionToggled(!m_multiRegionMode);
         break;
 
-    case ToolbarButton::MultiRegionDone:
+    case ToolId::MultiRegionDone:
         emit multiRegionDoneRequested();
         break;
 
@@ -263,11 +262,11 @@ void RegionToolbarHandler::handleToolbarClick(ToolbarButton button)
     }
 }
 
-void RegionToolbarHandler::handleAnnotationTool(ToolbarButton button)
+void RegionToolbarHandler::handleAnnotationTool(ToolId button)
 {
     if (m_currentTool == button) {
         // Same tool clicked - switch to Selection tool
-        m_currentTool = ToolbarButton::Selection;
+        m_currentTool = ToolId::Selection;
         m_showSubToolbar = true;
     } else {
         // Different tool - select it and show sub-toolbar
@@ -277,7 +276,7 @@ void RegionToolbarHandler::handleAnnotationTool(ToolbarButton button)
     // Update ToolManager for all annotation tools (not just Eraser)
     // This triggers CursorManager::updateToolCursor() via toolChanged signal
     if (m_toolManager) {
-        m_toolManager->setCurrentTool(toolbarButtonToToolId(m_currentTool));
+        m_toolManager->setCurrentTool(m_currentTool);
     }
     emit showSizeSectionRequested(false);
     qDebug() << "Tool selected:" << static_cast<int>(button) << "showSubToolbar:" << m_showSubToolbar;
@@ -287,9 +286,9 @@ void RegionToolbarHandler::handleAnnotationTool(ToolbarButton button)
 
 void RegionToolbarHandler::handleStepBadgeTool()
 {
-    if (m_currentTool == ToolbarButton::StepBadge) {
+    if (m_currentTool == ToolId::StepBadge) {
         // Same tool clicked - switch to Selection tool
-        m_currentTool = ToolbarButton::Selection;
+        m_currentTool = ToolId::Selection;
         m_showSubToolbar = true;
         emit showSizeSectionRequested(false);
         emit toolChanged(m_currentTool, m_showSubToolbar);
@@ -297,7 +296,7 @@ void RegionToolbarHandler::handleStepBadgeTool()
         return;
     } else {
         // Different tool - select it and show sub-toolbar
-        m_currentTool = ToolbarButton::StepBadge;
+        m_currentTool = ToolId::StepBadge;
         if (m_toolManager) {
             m_toolManager->setCurrentTool(ToolId::StepBadge);
         }
@@ -318,9 +317,9 @@ void RegionToolbarHandler::handleStepBadgeTool()
 
 void RegionToolbarHandler::handleMosaicTool()
 {
-    if (m_currentTool == ToolbarButton::Mosaic) {
+    if (m_currentTool == ToolId::Mosaic) {
         // Same tool clicked - switch to Selection tool
-        m_currentTool = ToolbarButton::Selection;
+        m_currentTool = ToolId::Selection;
         m_showSubToolbar = true;
         emit showColorSectionRequested(true);  // Restore color section visibility
         emit toolChanged(m_currentTool, m_showSubToolbar);
@@ -328,7 +327,7 @@ void RegionToolbarHandler::handleMosaicTool()
         return;
     } else {
         // Different tool - select it and show sub-toolbar
-        m_currentTool = ToolbarButton::Mosaic;
+        m_currentTool = ToolId::Mosaic;
         if (m_toolManager) {
             m_toolManager->setCurrentTool(ToolId::Mosaic);
         }
@@ -349,10 +348,10 @@ void RegionToolbarHandler::handleMosaicTool()
     emit updateRequested();
 }
 
-void RegionToolbarHandler::handleActionButton(ToolbarButton button)
+void RegionToolbarHandler::handleActionButton(ToolId button)
 {
     switch (button) {
-    case ToolbarButton::Undo:
+    case ToolId::Undo:
         if (m_annotationLayer && m_annotationLayer->canUndo()) {
             emit undoRequested();
             qDebug() << "Undo";
@@ -360,7 +359,7 @@ void RegionToolbarHandler::handleActionButton(ToolbarButton button)
         }
         break;
 
-    case ToolbarButton::Redo:
+    case ToolId::Redo:
         if (m_annotationLayer && m_annotationLayer->canRedo()) {
             emit redoRequested();
             qDebug() << "Redo";
@@ -368,7 +367,7 @@ void RegionToolbarHandler::handleActionButton(ToolbarButton button)
         }
         break;
 
-    case ToolbarButton::Cancel:
+    case ToolId::Cancel:
         if (m_multiRegionMode) {
             emit multiRegionCancelRequested();
         } else {
@@ -376,27 +375,27 @@ void RegionToolbarHandler::handleActionButton(ToolbarButton button)
         }
         break;
 
-    case ToolbarButton::OCR:
+    case ToolId::OCR:
         emit ocrRequested();
         break;
 
-    case ToolbarButton::Pin:
+    case ToolId::Pin:
         emit pinRequested();
         break;
 
-    case ToolbarButton::Record:
+    case ToolId::Record:
         emit recordRequested();
         break;
 
-    case ToolbarButton::ScrollCapture:
+    case ToolId::ScrollCapture:
         emit scrollCaptureRequested();
         break;
 
-    case ToolbarButton::Save:
+    case ToolId::Save:
         emit saveRequested();
         break;
 
-    case ToolbarButton::Copy:
+    case ToolId::Copy:
         emit copyRequested();
         break;
 
@@ -405,18 +404,18 @@ void RegionToolbarHandler::handleActionButton(ToolbarButton button)
     }
 }
 
-bool RegionToolbarHandler::isAnnotationTool(ToolbarButton tool) const
+bool RegionToolbarHandler::isAnnotationTool(ToolId tool) const
 {
     switch (tool) {
-    case ToolbarButton::Pencil:
-    case ToolbarButton::Marker:
-    case ToolbarButton::Arrow:
-    case ToolbarButton::Shape:
-    case ToolbarButton::Text:
-    case ToolbarButton::Mosaic:
-    case ToolbarButton::Eraser:
-    case ToolbarButton::StepBadge:
-    case ToolbarButton::EmojiSticker:
+    case ToolId::Pencil:
+    case ToolId::Marker:
+    case ToolId::Arrow:
+    case ToolId::Shape:
+    case ToolId::Text:
+    case ToolId::Mosaic:
+    case ToolId::Eraser:
+    case ToolId::StepBadge:
+    case ToolId::EmojiSticker:
         return true;
     default:
         return false;

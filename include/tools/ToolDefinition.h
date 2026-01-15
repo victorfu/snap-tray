@@ -36,6 +36,11 @@ struct ToolDefinition {
     bool hasShapeType = false;
     bool hasFillMode = false;
 
+    // UI visibility for sub-toolbar
+    bool showColorPalette = false;      // Show in color palette
+    bool showWidthControl = false;      // Show width slider
+    bool showColorWidthWidget = false;  // Show unified color/width widget
+
     // UI configuration
     bool showSeparatorBefore = false;
     QColor iconColorOverride;  // Empty = use default

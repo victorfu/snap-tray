@@ -24,6 +24,7 @@ void ToolRegistry::registerTools() {
         "",
         ToolCategory::Selection,
         false, false, false, false, false, false,  // capabilities
+        false, false, false,  // UI visibility: colorPalette, widthControl, colorWidthWidget
         false, QColor()  // UI config
     });
 
@@ -35,6 +36,7 @@ void ToolRegistry::registerTools() {
         "",
         ToolCategory::Drawing,
         true, true, false, true, false, false,  // color, width, text, arrow, shape, fill
+        true, true, true,  // UI visibility
         false, QColor()
     });
 
@@ -45,6 +47,7 @@ void ToolRegistry::registerTools() {
         "",
         ToolCategory::Drawing,
         true, true, false, true, false, false,  // color, width, text, arrow, shape, fill
+        true, true, true,  // UI visibility
         false, QColor()
     });
 
@@ -55,6 +58,7 @@ void ToolRegistry::registerTools() {
         "",
         ToolCategory::Drawing,
         true, true, false, false, false, false,
+        true, true, true,  // UI visibility
         false, QColor()
     });
 
@@ -65,6 +69,7 @@ void ToolRegistry::registerTools() {
         "",
         ToolCategory::Drawing,
         true, true, false, false, false, false,
+        true, false, true,  // UI visibility: color yes, width no
         false, QColor()
     });
 
@@ -75,6 +80,7 @@ void ToolRegistry::registerTools() {
         "",
         ToolCategory::Drawing,
         true, true, false, false, true, true,  // color, width, shape, fill
+        true, true, true,  // UI visibility
         false, QColor()
     });
 
@@ -85,6 +91,7 @@ void ToolRegistry::registerTools() {
         "",
         ToolCategory::Drawing,
         true, false, true, false, false, false,  // color, text formatting
+        true, false, true,  // UI visibility: color yes, width no
         false, QColor()
     });
 
@@ -95,6 +102,7 @@ void ToolRegistry::registerTools() {
         "",
         ToolCategory::Drawing,
         false, true, false, false, false, false,  // width only
+        false, true, true,  // UI visibility: color no, width yes
         false, QColor()
     });
 
@@ -105,6 +113,7 @@ void ToolRegistry::registerTools() {
         "",
         ToolCategory::Drawing,
         false, false, false, false, false, false,  // no color/width UI
+        false, false, false,  // UI visibility: none
         false, QColor()
     });
 
@@ -115,6 +124,7 @@ void ToolRegistry::registerTools() {
         "",
         ToolCategory::Drawing,
         true, false, false, false, false, false,  // color only
+        true, false, true,  // UI visibility: color yes, width no
         false, QColor()
     });
 
@@ -125,6 +135,7 @@ void ToolRegistry::registerTools() {
         "",
         ToolCategory::Drawing,
         false, false, false, false, false, false,  // no color/width UI
+        false, false, false,  // UI visibility: none
         false, QColor()
     });
 
@@ -136,6 +147,7 @@ void ToolRegistry::registerTools() {
         "",
         ToolCategory::Toggle,
         false, false, false, false, false, false,
+        true, true, true,  // UI visibility (for ScreenCanvas)
         false, QColor()
     });
 
@@ -146,6 +158,7 @@ void ToolRegistry::registerTools() {
         "",
         ToolCategory::Toggle,
         false, false, false, false, false, false,
+        false, false, false,  // UI visibility: none
         false, QColor()
     });
 
@@ -157,6 +170,7 @@ void ToolRegistry::registerTools() {
         "Ctrl+Z",
         ToolCategory::Action,
         false, false, false, false, false, false,
+        false, false, false,  // UI visibility: none
         true, QColor()  // separator before
     });
 
@@ -167,6 +181,7 @@ void ToolRegistry::registerTools() {
         "Ctrl+Y",
         ToolCategory::Action,
         false, false, false, false, false, false,
+        false, false, false,  // UI visibility: none
         false, QColor()
     });
 
@@ -177,6 +192,7 @@ void ToolRegistry::registerTools() {
         "",
         ToolCategory::Action,
         false, false, false, false, false, false,
+        false, false, false,  // UI visibility: none
         false, QColor()
     });
 
@@ -187,6 +203,7 @@ void ToolRegistry::registerTools() {
         "Esc",
         ToolCategory::Action,
         false, false, false, false, false, false,
+        false, false, false,  // UI visibility: none
         true, QColor(255, 100, 100)  // red icon
     });
 
@@ -197,6 +214,7 @@ void ToolRegistry::registerTools() {
         "",
         ToolCategory::Action,
         false, false, false, false, false, false,
+        false, false, false,  // UI visibility: none
         false, QColor()
     });
 
@@ -207,6 +225,7 @@ void ToolRegistry::registerTools() {
         "",
         ToolCategory::Action,
         false, false, false, false, false, false,
+        false, false, false,  // UI visibility: none
         false, QColor()
     });
 
@@ -217,6 +236,7 @@ void ToolRegistry::registerTools() {
         "",
         ToolCategory::Action,
         false, false, false, false, false, false,
+        false, false, false,  // UI visibility: none
         false, QColor()
     });
 
@@ -227,6 +247,7 @@ void ToolRegistry::registerTools() {
         "",
         ToolCategory::Action,
         false, false, false, false, false, false,
+        false, false, false,  // UI visibility: none
         false, QColor(255, 80, 80)  // red icon
     });
 
@@ -237,6 +258,7 @@ void ToolRegistry::registerTools() {
         "Ctrl+S",
         ToolCategory::Action,
         false, false, false, false, false, false,
+        false, false, false,  // UI visibility: none
         true, QColor()
     });
 
@@ -247,6 +269,7 @@ void ToolRegistry::registerTools() {
         "Ctrl+C",
         ToolCategory::Action,
         false, false, false, false, false, false,
+        false, false, false,  // UI visibility: none
         false, QColor()
     });
 
@@ -257,6 +280,41 @@ void ToolRegistry::registerTools() {
         "",
         ToolCategory::Action,
         false, false, false, false, false, false,
+        false, false, false,  // UI visibility: none
+        false, QColor()
+    });
+
+    // Region-specific tools
+    registerTool({
+        ToolId::MultiRegion,
+        "multi-region",
+        "Multi-Region Capture",
+        "",
+        ToolCategory::Action,
+        false, false, false, false, false, false,
+        false, false, false,  // UI visibility: none
+        false, QColor()
+    });
+
+    registerTool({
+        ToolId::MultiRegionDone,
+        "multi-region-done",
+        "Complete Multi-Region",
+        "",
+        ToolCategory::Action,
+        false, false, false, false, false, false,
+        false, false, false,  // UI visibility: none
+        false, QColor()
+    });
+
+    registerTool({
+        ToolId::ScrollCapture,
+        "scroll-capture",
+        "Scrolling Capture",
+        "",
+        ToolCategory::Action,
+        false, false, false, false, false, false,
+        false, false, false,  // UI visibility: none
         false, QColor()
     });
 }
@@ -350,4 +408,16 @@ QString ToolRegistry::getIconKey(ToolId id) const {
 
 QString ToolRegistry::getTooltip(ToolId id) const {
     return get(id).tooltip;
+}
+
+bool ToolRegistry::showColorPalette(ToolId id) const {
+    return get(id).showColorPalette;
+}
+
+bool ToolRegistry::showWidthControl(ToolId id) const {
+    return get(id).showWidthControl;
+}
+
+bool ToolRegistry::showColorWidthWidget(ToolId id) const {
+    return get(id).showColorWidthWidget;
 }

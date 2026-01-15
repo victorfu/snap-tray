@@ -71,6 +71,21 @@ public:
      */
     QString getTooltip(ToolId id) const;
 
+    /**
+     * @brief Check if tool should show color palette in sub-toolbar.
+     */
+    bool showColorPalette(ToolId id) const;
+
+    /**
+     * @brief Check if tool should show width control in sub-toolbar.
+     */
+    bool showWidthControl(ToolId id) const;
+
+    /**
+     * @brief Check if tool should show unified color/width widget.
+     */
+    bool showColorWidthWidget(ToolId id) const;
+
 private:
     ToolRegistry();
     ~ToolRegistry() = default;

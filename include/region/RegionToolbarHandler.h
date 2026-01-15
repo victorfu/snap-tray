@@ -5,6 +5,7 @@
 #include <QColor>
 #include <QCursor>
 #include <functional>
+#include "tools/ToolId.h"
 
 class QWidget;
 class ToolbarWidget;
@@ -14,7 +15,6 @@ class ColorAndWidthWidget;
 class SelectionStateManager;
 class OCRManager;
 
-enum class ToolbarButton;
 enum class LineEndStyle;
 enum class LineStyle;
 enum class ShapeType;
@@ -48,18 +48,18 @@ public:
     void setupToolbarButtons();
 
     // Handle toolbar button click
-    void handleToolbarClick(ToolbarButton button);
+    void handleToolbarClick(ToolId button);
 
     // Icon color provider (passed to ToolbarWidget)
     QColor getToolbarIconColor(int buttonId, bool isActive, bool isHovered) const;
 
     // Current state
-    ToolbarButton currentTool() const { return m_currentTool; }
+    ToolId currentTool() const { return m_currentTool; }
     bool showSubToolbar() const { return m_showSubToolbar; }
     int annotationWidth() const { return m_annotationWidth; }
 
     // State setters (synced from RegionSelector before handle calls)
-    void setCurrentTool(ToolbarButton tool) { m_currentTool = tool; }
+    void setCurrentTool(ToolId tool) { m_currentTool = tool; }
     void setShowSubToolbar(bool show) { m_showSubToolbar = show; }
     void setAnnotationWidth(int width) { m_annotationWidth = width; }
     void setAnnotationColor(const QColor& color) { m_annotationColor = color; }
@@ -69,7 +69,7 @@ public:
 
 signals:
     // Tool state changes
-    void toolChanged(ToolbarButton tool, bool showSubToolbar);
+    void toolChanged(ToolId tool, bool showSubToolbar);
     void cursorChangeRequested(Qt::CursorShape cursor);
     void updateRequested();
 
@@ -98,13 +98,13 @@ signals:
 
 private:
     // Tool switching helpers
-    void handleAnnotationTool(ToolbarButton button);
+    void handleAnnotationTool(ToolId button);
     void handleStepBadgeTool();
     void handleMosaicTool();
-    void handleActionButton(ToolbarButton button);
+    void handleActionButton(ToolId button);
 
     // Tool state helpers
-    bool isAnnotationTool(ToolbarButton tool) const;
+    bool isAnnotationTool(ToolId tool) const;
     void restoreStandardWidth();
 
     // Dependencies (non-owning pointers)
@@ -117,7 +117,7 @@ private:
     QWidget* m_parentWidget = nullptr;
 
     // State
-    ToolbarButton m_currentTool;
+    ToolId m_currentTool;
     bool m_showSubToolbar = true;
     QColor m_annotationColor = Qt::red;
     int m_annotationWidth = 3;

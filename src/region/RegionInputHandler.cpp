@@ -16,7 +16,7 @@
 #include "ColorAndWidthWidget.h"
 #include "EmojiPicker.h"
 #include "TransformationGizmo.h"
-#include "RegionSelector.h"  // For ToolbarButton enum
+#include "RegionSelector.h"  // For isToolManagerHandledTool
 
 #include <QMouseEvent>
 #include <QWidget>
@@ -26,7 +26,7 @@
 
 RegionInputHandler::RegionInputHandler(QObject* parent)
     : QObject(parent)
-    , m_currentTool(ToolbarButton::Selection)
+    , m_currentTool(ToolId::Selection)
 {
 }
 
@@ -90,7 +90,7 @@ void RegionInputHandler::setParentWidget(QWidget* widget)
     m_parentWidget = widget;
 }
 
-void RegionInputHandler::setCurrentTool(ToolbarButton tool)
+void RegionInputHandler::setCurrentTool(ToolId tool)
 {
     m_currentTool = tool;
 }
@@ -155,7 +155,7 @@ void RegionInputHandler::handleMousePress(QMouseEvent* event)
 
             // Finalize polyline when clicking on UI elements
             auto finalizePolylineForUiClick = [&](const QPoint& pos) {
-                if (m_currentTool == ToolbarButton::Arrow && m_toolManager->isDrawing()) {
+                if (m_currentTool == ToolId::Arrow && m_toolManager->isDrawing()) {
                     m_toolManager->handleDoubleClick(pos);
                     m_isDrawing = m_toolManager->isDrawing();
                     emit drawingStateChanged(m_isDrawing);
@@ -202,7 +202,7 @@ void RegionInputHandler::handleMousePress(QMouseEvent* event)
 
             // Handle Text tool
             QRect sel = m_selectionManager->selectionRect();
-            if (m_currentTool == ToolbarButton::Text) {
+            if (m_currentTool == ToolId::Text) {
                 m_textAnnotationEditor->startEditing(event->pos(),
                     m_parentWidget ? m_parentWidget->rect() : QRect(), m_annotationColor);
                 return;
@@ -543,7 +543,7 @@ bool RegionInputHandler::handleAnnotationToolPress(const QPoint& pos)
 {
     QRect sel = m_selectionManager->selectionRect();
     if (isAnnotationTool(m_currentTool) &&
-        m_currentTool != ToolbarButton::Selection &&
+        m_currentTool != ToolId::Selection &&
         sel.contains(pos)) {
         qDebug() << "Starting annotation with tool:" << static_cast<int>(m_currentTool) << "at pos:" << pos;
         startAnnotation(pos);
@@ -554,7 +554,7 @@ bool RegionInputHandler::handleAnnotationToolPress(const QPoint& pos)
 
 bool RegionInputHandler::handleSelectionToolPress(const QPoint& pos)
 {
-    if (m_currentTool != ToolbarButton::Selection) {
+    if (m_currentTool != ToolId::Selection) {
         return false;
     }
 
@@ -773,7 +773,7 @@ void RegionInputHandler::handleAnnotationMove(const QPoint& pos)
 {
     updateAnnotation(pos);
 
-    if (m_currentTool == ToolbarButton::Mosaic) {
+    if (m_currentTool == ToolId::Mosaic) {
         emit toolCursorRequested();
     }
 }
@@ -843,7 +843,7 @@ void RegionInputHandler::handleHoverMove(const QPoint& pos, Qt::MouseButtons but
     }
 
     // Check emoji sticker gizmo handles (only for selected emoji)
-    if (m_currentTool != ToolbarButton::EmojiSticker) {
+    if (m_currentTool != ToolId::EmojiSticker) {
         if (auto* emojiItem = getSelectedEmojiStickerAnnotation()) {
             GizmoHandle handle = TransformationGizmo::hitTest(emojiItem, pos);
             if (handle != GizmoHandle::None) {
@@ -903,7 +903,7 @@ void RegionInputHandler::handleHoverMove(const QPoint& pos, Qt::MouseButtons but
     }
 
     // Check resize handles for selection tool
-    if (m_currentTool == ToolbarButton::Selection) {
+    if (m_currentTool == ToolId::Selection) {
         auto handle = m_selectionManager->hitTestHandle(pos);
         if (handle != SelectionStateManager::ResizeHandle::None) {
             cm.setHoverTarget(HoverTarget::ResizeHandle, static_cast<int>(handle));
@@ -916,7 +916,7 @@ void RegionInputHandler::handleHoverMove(const QPoint& pos, Qt::MouseButtons but
     emit toolCursorRequested();
 
     // Handle eraser tool mouse move for hover highlighting
-    if (m_currentTool == ToolbarButton::Eraser && m_toolManager) {
+    if (m_currentTool == ToolId::Eraser && m_toolManager) {
         m_toolManager->handleMouseMove(pos);
     }
 }
@@ -1040,7 +1040,7 @@ bool RegionInputHandler::handleEmojiStickerRelease()
     if (m_isEmojiDragging) {
         m_isEmojiDragging = false;
         // Restore cross cursor for EmojiSticker tool
-        if (m_currentTool == ToolbarButton::EmojiSticker) {
+        if (m_currentTool == ToolId::EmojiSticker) {
             emitCursorChangeIfNeeded(Qt::CrossCursor);
         }
         return true;
@@ -1049,7 +1049,7 @@ bool RegionInputHandler::handleEmojiStickerRelease()
         m_isEmojiScaling = false;
         m_activeEmojiHandle = GizmoHandle::None;
         // Restore cross cursor for EmojiSticker tool
-        if (m_currentTool == ToolbarButton::EmojiSticker) {
+        if (m_currentTool == ToolId::EmojiSticker) {
             emitCursorChangeIfNeeded(Qt::CrossCursor);
         }
         return true;
@@ -1128,7 +1128,7 @@ void RegionInputHandler::startAnnotation(const QPoint& pos)
     if (isToolManagerHandledTool(m_currentTool)) {
         m_toolManager->setColor(m_annotationColor);
         // Don't overwrite width for StepBadge - it uses a separate radius setting
-        if (m_currentTool != ToolbarButton::StepBadge) {
+        if (m_currentTool != ToolId::StepBadge) {
             m_toolManager->setWidth(m_annotationWidth);
         }
         m_toolManager->setArrowStyle(static_cast<LineEndStyle>(m_arrowStyle));
@@ -1136,13 +1136,12 @@ void RegionInputHandler::startAnnotation(const QPoint& pos)
         m_toolManager->setShapeType(m_shapeType);
         m_toolManager->setShapeFillMode(m_shapeFillMode);
 
-        ToolId toolId = toolbarButtonToToolId(m_currentTool);
-        m_toolManager->setCurrentTool(toolId);
+        m_toolManager->setCurrentTool(m_currentTool);
         m_toolManager->handleMousePress(pos);
         m_isDrawing = m_toolManager->isDrawing();
 
-        if (!m_isDrawing && (m_currentTool == ToolbarButton::StepBadge ||
-            m_currentTool == ToolbarButton::EmojiSticker)) {
+        if (!m_isDrawing && (m_currentTool == ToolId::StepBadge ||
+            m_currentTool == ToolId::EmojiSticker)) {
             m_isDrawing = true;
         }
         emit drawingStateChanged(m_isDrawing);
@@ -1274,18 +1273,18 @@ bool RegionInputHandler::shouldShowColorAndWidthWidget() const
     return m_colorAndWidthWidget->isVisible();
 }
 
-bool RegionInputHandler::isAnnotationTool(ToolbarButton tool) const
+bool RegionInputHandler::isAnnotationTool(ToolId tool) const
 {
     switch (tool) {
-    case ToolbarButton::Pencil:
-    case ToolbarButton::Marker:
-    case ToolbarButton::Arrow:
-    case ToolbarButton::Shape:
-    case ToolbarButton::Text:
-    case ToolbarButton::Mosaic:
-    case ToolbarButton::Eraser:
-    case ToolbarButton::StepBadge:
-    case ToolbarButton::EmojiSticker:
+    case ToolId::Pencil:
+    case ToolId::Marker:
+    case ToolId::Arrow:
+    case ToolId::Shape:
+    case ToolId::Text:
+    case ToolId::Mosaic:
+    case ToolId::Eraser:
+    case ToolId::StepBadge:
+    case ToolId::EmojiSticker:
         return true;
     default:
         return false;

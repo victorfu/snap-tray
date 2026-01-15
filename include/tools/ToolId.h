@@ -41,6 +41,11 @@ enum class ToolId {
     Copy,
     Exit,
 
+    // Region-specific tools
+    MultiRegion,        // Multi-region capture mode
+    MultiRegionDone,    // Complete multi-region capture
+    ScrollCapture,      // Scrolling capture feature
+
     Count
 };
 
