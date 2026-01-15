@@ -137,21 +137,43 @@ bool RecordingManager::isPreviewing() const
     return m_state == State::Previewing;
 }
 
-void RecordingManager::startRegionSelection()
+RecordingRegionSelector* RecordingManager::createRegionSelector()
 {
     if (m_regionSelector && m_regionSelector->isVisible()) {
         qDebug() << "RecordingManager: Already selecting region";
-        return;
+        return nullptr;
     }
 
     if (m_state == State::Recording || m_state == State::Paused || m_state == State::Encoding) {
         qDebug() << "RecordingManager: Already recording or encoding";
-        return;
+        return nullptr;
     }
 
     // Clean up any existing selector
     if (m_regionSelector) {
         m_regionSelector->close();
+    }
+
+    setState(State::Selecting);
+
+    m_regionSelector = new RecordingRegionSelector();
+    m_regionSelector->setAttribute(Qt::WA_DeleteOnClose);
+
+    connect(m_regionSelector, &RecordingRegionSelector::regionSelected,
+            this, &RecordingManager::onRegionSelected);
+    connect(m_regionSelector, &RecordingRegionSelector::cancelledWithRegion,
+            this, &RecordingManager::onRegionCancelledWithRegion);
+    connect(m_regionSelector, &RecordingRegionSelector::cancelled,
+            this, &RecordingManager::onRegionCancelled);
+
+    return m_regionSelector;
+}
+
+void RecordingManager::startRegionSelection()
+{
+    auto* selector = createRegionSelector();
+    if (!selector) {
+        return;
     }
 
     // Determine target screen (cursor location)
@@ -161,69 +183,35 @@ void RecordingManager::startRegionSelection()
     }
 
     qDebug() << "RecordingManager: Starting region selection on screen:" << targetScreen->name();
-
-    setState(State::Selecting);
-
-    m_regionSelector = new RecordingRegionSelector();
-    m_regionSelector->setAttribute(Qt::WA_DeleteOnClose);
-
-    connect(m_regionSelector, &RecordingRegionSelector::regionSelected,
-            this, &RecordingManager::onRegionSelected);
-    connect(m_regionSelector, &RecordingRegionSelector::cancelledWithRegion,
-            this, &RecordingManager::onRegionCancelledWithRegion);
-    connect(m_regionSelector, &RecordingRegionSelector::cancelled,
-            this, &RecordingManager::onRegionCancelled);
-
     qDebug() << "=== RecordingManager: Setting up region selector ===";
     qDebug() << "Target screen geometry:" << targetScreen->geometry();
-    m_regionSelector->setGeometry(targetScreen->geometry());
-    qDebug() << "Widget geometry after setGeometry:" << m_regionSelector->geometry();
-    m_regionSelector->initializeForScreen(targetScreen);
-    m_regionSelector->show();
-    qDebug() << "Widget geometry after show:" << m_regionSelector->geometry();
-    raiseWindowAboveMenuBar(m_regionSelector);
-    m_regionSelector->activateWindow();
-    m_regionSelector->raise();
+
+    selector->setGeometry(targetScreen->geometry());
+    qDebug() << "Widget geometry after setGeometry:" << selector->geometry();
+    selector->initializeForScreen(targetScreen);
+    selector->show();
+    qDebug() << "Widget geometry after show:" << selector->geometry();
+    raiseWindowAboveMenuBar(selector);
+    selector->activateWindow();
+    selector->raise();
 }
 
 void RecordingManager::startRegionSelectionWithPreset(const QRect &region, QScreen *screen)
 {
-    if (m_regionSelector && m_regionSelector->isVisible()) {
-        qDebug() << "RecordingManager: Already selecting region";
+    auto* selector = createRegionSelector();
+    if (!selector) {
         return;
-    }
-
-    if (m_state == State::Recording || m_state == State::Paused || m_state == State::Encoding) {
-        qDebug() << "RecordingManager: Already recording or encoding";
-        return;
-    }
-
-    // Clean up any existing selector
-    if (m_regionSelector) {
-        m_regionSelector->close();
     }
 
     qDebug() << "RecordingManager: Starting region selection with preset region:" << region
              << "on screen:" << screen->name();
 
-    setState(State::Selecting);
-
-    m_regionSelector = new RecordingRegionSelector();
-    m_regionSelector->setAttribute(Qt::WA_DeleteOnClose);
-
-    connect(m_regionSelector, &RecordingRegionSelector::regionSelected,
-            this, &RecordingManager::onRegionSelected);
-    connect(m_regionSelector, &RecordingRegionSelector::cancelledWithRegion,
-            this, &RecordingManager::onRegionCancelledWithRegion);
-    connect(m_regionSelector, &RecordingRegionSelector::cancelled,
-            this, &RecordingManager::onRegionCancelled);
-
-    m_regionSelector->setGeometry(screen->geometry());
-    m_regionSelector->initializeWithRegion(screen, region);
-    m_regionSelector->show();
-    raiseWindowAboveMenuBar(m_regionSelector);
-    m_regionSelector->activateWindow();
-    m_regionSelector->raise();
+    selector->setGeometry(screen->geometry());
+    selector->initializeWithRegion(screen, region);
+    selector->show();
+    raiseWindowAboveMenuBar(selector);
+    selector->activateWindow();
+    selector->raise();
 }
 
 void RecordingManager::startFullScreenRecording()

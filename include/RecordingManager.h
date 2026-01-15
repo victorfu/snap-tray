@@ -107,6 +107,7 @@ private:
     QString generateOutputPath() const;
     void setState(State newState);
     void showSaveDialog(const QString &tempOutputPath);
+    RecordingRegionSelector* createRegionSelector();
 
     // Countdown methods
     void startCountdown();                    // Begin countdown overlay
