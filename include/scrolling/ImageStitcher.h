@@ -174,9 +174,7 @@ private:
     int m_validWidth = 0;  // For horizontal mode
     ScrollDirection m_lastSuccessfulDirection = ScrollDirection::Down;
 
-    // ROI parameters
-    static constexpr double ROI_FIRST_RATIO = 0.40;   // Larger symmetric coverage
-    static constexpr double ROI_SECOND_RATIO = 0.50;  // More overlap detection range
+    // Overlap parameters
     static constexpr int MIN_OVERLAP = 10;            // Allow smaller overlaps for fast scrolling
     static constexpr int MAX_OVERLAP = 600;           // Allow larger overlaps
     static constexpr int MAX_STITCHED_HEIGHT = 32768; // Maximum height in pixels (~32K)

@@ -330,34 +330,6 @@ bool FixedElementDetector::compareColumns(const QImage &img1, const QImage &img2
     return true;
 }
 
-double FixedElementDetector::calculateRegionSimilarity(const QImage &region1, const QImage &region2) const
-{
-    if (region1.size() != region2.size() || region1.isNull() || region2.isNull()) {
-        return 0.0;
-    }
-
-    // Simple pixel-by-pixel comparison
-    int totalPixels = region1.width() * region1.height();
-    int matchingPixels = 0;
-
-    for (int y = 0; y < region1.height(); ++y) {
-        const QRgb *line1 = reinterpret_cast<const QRgb*>(region1.constScanLine(y));
-        const QRgb *line2 = reinterpret_cast<const QRgb*>(region2.constScanLine(y));
-
-        for (int x = 0; x < region1.width(); ++x) {
-            int diff = std::abs(qRed(line1[x]) - qRed(line2[x])) +
-                       std::abs(qGreen(line1[x]) - qGreen(line2[x])) +
-                       std::abs(qBlue(line1[x]) - qBlue(line2[x]));
-
-            if (diff < 30) {  // threshold for pixel match
-                matchingPixels++;
-            }
-        }
-    }
-
-    return static_cast<double>(matchingPixels) / totalPixels;
-}
-
 bool FixedElementDetector::hasDetectedElements() const
 {
     return m_detected && (m_leadingCropSize > 0 || m_trailingCropSize > 0);

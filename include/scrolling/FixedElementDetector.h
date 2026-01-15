@@ -54,7 +54,6 @@ public:
     QImage cropFixedRegions(const QImage &frame) const;
 
 private:
-    double calculateRegionSimilarity(const QImage &region1, const QImage &region2) const;
     bool compareRows(const QImage &img1, const QImage &img2, int y) const;
     bool compareColumns(const QImage &img1, const QImage &img2, int x) const;
     void analyzeLeadingRegion();
