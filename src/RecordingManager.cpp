@@ -1626,15 +1626,9 @@ void RecordingManager::onPreviewSaveRequested()
     cleanupPreviewMode();
     setState(State::Idle);
 
-    // Handle format conversion or direct save
-    if (format == RecordingControlBar::OutputFormat::MP4) {
-        // Direct save for MP4
-        showSaveDialog(videoPath);
-    } else {
-        // TODO: Implement GIF/WebP conversion in Phase 5
-        // For now, just save as MP4
-        showSaveDialog(videoPath);
-    }
+    // TODO: Implement GIF/WebP conversion - currently all formats save as MP4
+    Q_UNUSED(format);
+    showSaveDialog(videoPath);
 }
 
 void RecordingManager::onPreviewDiscardRequested()
