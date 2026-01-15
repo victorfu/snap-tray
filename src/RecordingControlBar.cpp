@@ -257,30 +257,7 @@ void RecordingControlBar::updateButtonRects()
 
     m_effectsToolbarItems.clear();
     m_effectsToolbarRect = QRect();
-    m_effectsToolbarVisible = false;  // Never show effects toolbar
-    if (false) {  // Effects toolbar disabled
-        QFontMetrics metrics(effectsToolbarFont());
-        int buttonsWidth = effectsToolbarButtonsWidth(metrics);
-        int startX = x - kEffectsToolbarGap - buttonsWidth;
-        int currentX = startX;
-
-        for (EffectsMenuItem item : effectsToolbarItems()) {
-            int width = effectsToolbarButtonWidth(item, metrics);
-            QRect rect(currentX, y, width, buttonSize);
-            m_effectsToolbarItems.append(qMakePair(rect, item));
-            currentX += width + kEffectsButtonSpacing;
-        }
-
-        if (!m_effectsToolbarItems.isEmpty()) {
-            QRect groupRect = m_effectsToolbarItems.first().first;
-            for (const auto &entry : m_effectsToolbarItems) {
-                groupRect = groupRect.united(entry.first);
-            }
-            groupRect.adjust(-kEffectsToolbarPaddingX, -kEffectsToolbarPaddingY,
-                             kEffectsToolbarPaddingX, kEffectsToolbarPaddingY);
-            m_effectsToolbarRect = groupRect;
-        }
-    }
+    m_effectsToolbarVisible = false;
 }
 
 QRect RecordingControlBar::backgroundRect() const

@@ -28,7 +28,6 @@ ToolbarWidget::ToolbarWidget(QObject* parent)
 void ToolbarWidget::setButtons(const QVector<ButtonConfig>& buttons)
 {
     m_buttons = buttons;
-    m_buttonRects.resize(buttons.size());
     updateButtonRects();
 }
 
