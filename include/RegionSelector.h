@@ -35,7 +35,6 @@
 #include "ui/sections/MosaicBlurTypeSection.h"
 
 class QScreen;
-class ColorPaletteWidget;
 class ColorAndWidthWidget;
 class EmojiPicker;
 class ColorPickerDialog;
@@ -254,9 +253,6 @@ private:
 
     // Toolbar
     ToolbarWidget *m_toolbar;
-
-    // Color palette
-    ColorPaletteWidget *m_colorPalette;
 
     // Unified color and width widget
     ColorAndWidthWidget *m_colorAndWidthWidget;

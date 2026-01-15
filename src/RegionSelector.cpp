@@ -9,7 +9,6 @@
 #include "GlassRenderer.h"
 #include "ToolbarStyle.h"
 #include "IconRenderer.h"
-#include "ColorPaletteWidget.h"
 #include "ColorAndWidthWidget.h"
 #include "ColorPickerDialog.h"
 #include "EmojiPicker.h"
@@ -94,7 +93,6 @@ RegionSelector::RegionSelector(QWidget* parent)
     , m_ocrInProgress(false)
     , m_autoBlurManager(nullptr)
     , m_autoBlurInProgress(false)
-    , m_colorPalette(nullptr)
     , m_emojiPicker(nullptr)
     , m_textEditor(nullptr)
     , m_colorPickerDialog(nullptr)
@@ -213,14 +211,6 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_textAnnotationEditor->setParentWidget(this);
     connect(m_textAnnotationEditor, &TextAnnotationEditor::updateRequested,
         this, QOverload<>::of(&QWidget::update));
-
-    // Initialize color palette widget
-    m_colorPalette = new ColorPaletteWidget(this);
-    m_colorPalette->setCurrentColor(m_annotationColor);
-    connect(m_colorPalette, &ColorPaletteWidget::colorSelected,
-        this, &RegionSelector::onColorSelected);
-    connect(m_colorPalette, &ColorPaletteWidget::customColorPickerRequested,
-        this, &RegionSelector::onMoreColorsRequested);
 
     // Initialize unified color and width widget
     m_colorAndWidthWidget = new ColorAndWidthWidget(this);
@@ -423,7 +413,6 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_inputHandler->setTextEditor(m_textEditor);
     m_inputHandler->setTextAnnotationEditor(m_textAnnotationEditor);
     m_inputHandler->setColorAndWidthWidget(m_colorAndWidthWidget);
-    m_inputHandler->setColorPalette(m_colorPalette);
     // EmojiPicker is set lazily via ensureEmojiPicker() when first needed
     m_inputHandler->setRegionControlWidget(m_regionControlWidget);
     m_inputHandler->setMultiRegionManager(m_multiRegionManager);
@@ -658,7 +647,6 @@ void RegionSelector::onMoreColorsRequested()
         connect(m_colorPickerDialog, &ColorPickerDialog::colorSelected,
             this, [this](const QColor& color) {
                 syncColorToAllWidgets(color);
-                m_colorPalette->setCurrentColor(color);
                 qDebug() << "Custom color selected:" << color.name();
             });
     }
@@ -1020,18 +1008,6 @@ void RegionSelector::paintEvent(QPaintEvent* event)
             }
             else {
                 m_colorAndWidthWidget->setVisible(false);
-            }
-
-            // Legacy widgets (keep for compatibility, but hidden when unified widget is shown)
-            if (!shouldShowColorAndWidthWidget()) {
-                if (shouldShowColorPalette()) {
-                    m_colorPalette->setVisible(true);
-                    m_colorPalette->updatePosition(m_toolbar->boundingRect(), false);
-                    m_colorPalette->draw(painter);
-                }
-                else {
-                    m_colorPalette->setVisible(false);
-                }
             }
 
             // Draw emoji picker when EmojiSticker tool is selected (lazy creation)

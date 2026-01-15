@@ -14,7 +14,6 @@
 #include "ToolbarWidget.h"
 #include "InlineTextEditor.h"
 #include "ColorAndWidthWidget.h"
-#include "ColorPaletteWidget.h"
 #include "EmojiPicker.h"
 #include "TransformationGizmo.h"
 #include "RegionSelector.h"  // For ToolbarButton enum
@@ -64,11 +63,6 @@ void RegionInputHandler::setTextAnnotationEditor(TextAnnotationEditor* editor)
 void RegionInputHandler::setColorAndWidthWidget(ColorAndWidthWidget* widget)
 {
     m_colorAndWidthWidget = widget;
-}
-
-void RegionInputHandler::setColorPalette(ColorPaletteWidget* palette)
-{
-    m_colorPalette = palette;
 }
 
 void RegionInputHandler::setEmojiPicker(EmojiPicker* picker)
@@ -396,13 +390,6 @@ bool RegionInputHandler::handleColorWidgetPress(const QPoint& pos)
 {
     if (shouldShowColorAndWidthWidget()) {
         if (m_colorAndWidthWidget->handleClick(pos)) {
-            emit updateRequested();
-            return true;
-        }
-    }
-
-    if (!shouldShowColorAndWidthWidget() && shouldShowColorPalette()) {
-        if (m_colorPalette->handleClick(pos)) {
             emit updateRequested();
             return true;
         }
@@ -878,7 +865,6 @@ void RegionInputHandler::handleHoverMove(const QPoint& pos, Qt::MouseButtons but
     }
 
     const bool colorAndWidthVisible = shouldShowColorAndWidthWidget();
-    const bool colorPaletteVisible = shouldShowColorPalette();
 
     // Update color/width widget
     if (colorAndWidthVisible) {
@@ -890,15 +876,6 @@ void RegionInputHandler::handleHoverMove(const QPoint& pos, Qt::MouseButtons but
         }
         if (m_colorAndWidthWidget->contains(pos)) {
             cm.setHoverTarget(HoverTarget::Widget);
-            return;
-        }
-    }
-
-    // Legacy color palette
-    if (colorPaletteVisible) {
-        m_colorPalette->updateHoveredSwatch(pos);
-        if (m_colorPalette->contains(pos)) {
-            cm.setHoverTarget(HoverTarget::ColorPalette);
             return;
         }
     }
@@ -1289,13 +1266,6 @@ EmojiStickerAnnotation* RegionInputHandler::getSelectedEmojiStickerAnnotation() 
         return dynamic_cast<EmojiStickerAnnotation*>(m_annotationLayer->selectedItem());
     }
     return nullptr;
-}
-
-bool RegionInputHandler::shouldShowColorPalette() const
-{
-    if (!m_colorPalette) return false;
-    if (shouldShowColorAndWidthWidget()) return false;
-    return m_colorPalette->isVisible();
 }
 
 bool RegionInputHandler::shouldShowColorAndWidthWidget() const

@@ -520,7 +520,6 @@ add_library(snaptray_ui STATIC
     src/tools/handlers/LaserPointerToolHandler.cpp
 
     # Widgets
-    src/ColorPaletteWidget.cpp
     src/ColorAndWidthWidget.cpp
     src/EmojiPicker.cpp
     src/widgets/HotkeyEdit.cpp
@@ -619,7 +618,6 @@ add_library(snaptray_ui STATIC
     include/TransformationGizmo.h
     include/tools/ToolRegistry.h
     include/tools/ToolManager.h
-    include/ColorPaletteWidget.h
     include/ColorAndWidthWidget.h
     include/EmojiPicker.h
     include/ui/sections/ColorSection.h

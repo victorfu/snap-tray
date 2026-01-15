@@ -4,7 +4,6 @@
 #include "cursor/CursorManager.h"
 #include "IconRenderer.h"
 #include "GlassRenderer.h"
-#include "ColorPaletteWidget.h"
 #include "ColorPickerDialog.h"
 #include "ColorAndWidthWidget.h"
 #include "EmojiPicker.h"
@@ -54,7 +53,6 @@ ScreenCanvas::ScreenCanvas(QWidget* parent)
     , m_isDraggingToolbar(false)
     , m_toolbarManuallyPositioned(false)
     , m_showSubToolbar(true)
-    , m_colorPalette(nullptr)
     , m_colorPickerDialog(nullptr)
     , m_toolbarStyleConfig(ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle()))
 {
@@ -98,14 +96,6 @@ ScreenCanvas::ScreenCanvas(QWidget* parent)
 
     // Initialize toolbar
     setupToolbar();
-
-    // Initialize color palette widget
-    m_colorPalette = new ColorPaletteWidget(this);
-    m_colorPalette->setCurrentColor(savedColor);
-    connect(m_colorPalette, &ColorPaletteWidget::colorSelected,
-        this, &ScreenCanvas::onColorSelected);
-    connect(m_colorPalette, &ColorPaletteWidget::customColorPickerRequested,
-        this, &ScreenCanvas::onMoreColorsRequested);
 
     // Initialize unified color and width widget
     m_colorAndWidthWidget = new ColorAndWidthWidget(this);
@@ -396,7 +386,6 @@ void ScreenCanvas::onMoreColorsRequested()
         connect(m_colorPickerDialog, &ColorPickerDialog::colorSelected,
             this, [this](const QColor& color) {
                 m_toolManager->setColor(color);
-                m_colorPalette->setCurrentColor(color);
                 m_colorAndWidthWidget->setCurrentColor(color);
                 qDebug() << "ScreenCanvas: Custom color selected:" << color.name();
                 update();
@@ -527,19 +516,6 @@ void ScreenCanvas::paintEvent(QPaintEvent*)
     }
     else {
         m_colorAndWidthWidget->setVisible(false);
-    }
-
-    // Legacy widgets (keep for compatibility, but hidden when unified widget is shown)
-    if (!shouldShowColorAndWidthWidget()) {
-        // Draw color palette
-        if (shouldShowColorPalette()) {
-            m_colorPalette->setVisible(true);
-            m_colorPalette->updatePosition(toolbarRect, true);
-            m_colorPalette->draw(painter);
-        }
-        else {
-            m_colorPalette->setVisible(false);
-        }
     }
 
     // Draw emoji picker when EmojiSticker tool is selected
@@ -770,20 +746,6 @@ void ScreenCanvas::mousePressEvent(QMouseEvent* event)
             }
         }
 
-        // Legacy widgets (only handle if unified widget not shown)
-        if (!shouldShowColorAndWidthWidget()) {
-            // Check if clicked on color palette
-            if (shouldShowColorPalette()) {
-                if (m_colorPalette->contains(event->pos())) {
-                    finalizePolylineForUiClick(event->pos());
-                }
-                if (m_colorPalette->handleClick(event->pos())) {
-                    update();
-                    return;
-                }
-            }
-        }
-
         // Check if clicked on emoji picker
         if (m_emojiPicker->isVisible()) {
             if (m_emojiPicker->handleClick(event->pos())) {
@@ -871,19 +833,6 @@ void ScreenCanvas::mouseMoveEvent(QMouseEvent* event)
             }
             if (m_colorAndWidthWidget->contains(event->pos())) {
                 widgetHovered = true;
-            }
-        }
-
-        // Legacy widgets (only handle if unified widget not shown)
-        if (!shouldShowColorAndWidthWidget()) {
-            // Update hovered color swatch
-            if (shouldShowColorPalette()) {
-                if (m_colorPalette->updateHoveredSwatch(event->pos())) {
-                    needsUpdate = true;
-                    if (m_colorPalette->contains(event->pos())) {
-                        widgetHovered = true;
-                    }
-                }
             }
         }
 

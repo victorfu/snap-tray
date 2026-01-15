@@ -21,7 +21,6 @@
 class QScreen;
 class AnnotationLayer;
 class ToolManager;
-class ColorPaletteWidget;
 class ColorPickerDialog;
 class EmojiPicker;
 class ColorAndWidthWidget;
@@ -155,9 +154,6 @@ private:
     bool m_toolbarManuallyPositioned;
     QPoint m_toolbarDragOffset;
     bool m_showSubToolbar;
-
-    // Color palette
-    ColorPaletteWidget *m_colorPalette;
 
     // Unified color and width widget
     ColorAndWidthWidget *m_colorAndWidthWidget;

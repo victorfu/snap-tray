@@ -16,7 +16,6 @@ class ToolbarWidget;
 class InlineTextEditor;
 class TextAnnotationEditor;
 class ColorAndWidthWidget;
-class ColorPaletteWidget;
 class EmojiPicker;
 class RegionControlWidget;
 class UpdateThrottler;
@@ -48,7 +47,6 @@ public:
     void setTextEditor(InlineTextEditor* editor);
     void setTextAnnotationEditor(TextAnnotationEditor* editor);
     void setColorAndWidthWidget(ColorAndWidthWidget* widget);
-    void setColorPalette(ColorPaletteWidget* palette);
     void setEmojiPicker(EmojiPicker* picker);
     void setRegionControlWidget(RegionControlWidget* widget);
     void setMultiRegionManager(MultiRegionManager* manager);
@@ -150,7 +148,6 @@ private:
     // Utility
     TextAnnotation* getSelectedTextAnnotation() const;
     EmojiStickerAnnotation* getSelectedEmojiStickerAnnotation() const;
-    bool shouldShowColorPalette() const;
     bool shouldShowColorAndWidthWidget() const;
     bool isAnnotationTool(ToolbarButton tool) const;
 
@@ -162,7 +159,6 @@ private:
     InlineTextEditor* m_textEditor = nullptr;
     TextAnnotationEditor* m_textAnnotationEditor = nullptr;
     ColorAndWidthWidget* m_colorAndWidthWidget = nullptr;
-    ColorPaletteWidget* m_colorPalette = nullptr;
     EmojiPicker* m_emojiPicker = nullptr;
     RegionControlWidget* m_regionControlWidget = nullptr;
     MultiRegionManager* m_multiRegionManager = nullptr;
