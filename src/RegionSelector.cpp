@@ -1018,7 +1018,6 @@ void RegionSelector::paintEvent(QPaintEvent* event)
     }
 
     if (shouldShowCrosshair) {
-        drawCrosshair(painter);
         drawMagnifier(painter);
     }
 }
