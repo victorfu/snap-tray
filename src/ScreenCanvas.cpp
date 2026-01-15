@@ -247,13 +247,13 @@ void ScreenCanvas::setupToolbar()
 
     // Configure buttons with separators at appropriate positions
     QVector<ToolbarWidget::ButtonConfig> buttons = {
+        {static_cast<int>(CanvasButton::Shape), "shape", "Shape"},
+        {static_cast<int>(CanvasButton::Arrow), "arrow", "Arrow"},
         {static_cast<int>(CanvasButton::Pencil), "pencil", "Pencil"},
         {static_cast<int>(CanvasButton::Marker), "marker", "Marker"},
-        {static_cast<int>(CanvasButton::Arrow), "arrow", "Arrow"},
-        {static_cast<int>(CanvasButton::Shape), "shape", "Shape"},
+        {static_cast<int>(CanvasButton::Text), "text", "Text"},
         {static_cast<int>(CanvasButton::StepBadge), "step-badge", "Step Badge"},
         {static_cast<int>(CanvasButton::EmojiSticker), "emoji", "Emoji Sticker"},
-        {static_cast<int>(CanvasButton::Text), "text", "Text"},
         {static_cast<int>(CanvasButton::LaserPointer), "laser-pointer", "Laser Pointer"},
         ToolbarWidget::ButtonConfig(static_cast<int>(CanvasButton::Whiteboard), "whiteboard", "Whiteboard (W)").separator(),
         {static_cast<int>(CanvasButton::Blackboard), "blackboard", "Blackboard (B)"},
@@ -266,13 +266,13 @@ void ScreenCanvas::setupToolbar()
 
     // Set which buttons can be active (drawing tools and cursor highlight toggle)
     QVector<int> activeButtonIds = {
+        static_cast<int>(CanvasButton::Shape),
+        static_cast<int>(CanvasButton::Arrow),
         static_cast<int>(CanvasButton::Pencil),
         static_cast<int>(CanvasButton::Marker),
-        static_cast<int>(CanvasButton::Arrow),
-        static_cast<int>(CanvasButton::Shape),
+        static_cast<int>(CanvasButton::Text),
         static_cast<int>(CanvasButton::StepBadge),
         static_cast<int>(CanvasButton::EmojiSticker),
-        static_cast<int>(CanvasButton::Text),
         static_cast<int>(CanvasButton::LaserPointer),
         static_cast<int>(CanvasButton::Whiteboard),
         static_cast<int>(CanvasButton::Blackboard)
