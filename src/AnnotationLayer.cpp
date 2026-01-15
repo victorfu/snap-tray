@@ -30,25 +30,26 @@ void AnnotationLayer::addItem(std::unique_ptr<AnnotationItem> item)
 
 void AnnotationLayer::trimHistory()
 {
-    size_t trimCount = 0;
-    while (m_items.size() > kMaxHistorySize) {
-        m_items.erase(m_items.begin());
-        ++trimCount;
+    if (m_items.size() <= kMaxHistorySize) {
+        return;
     }
-    if (trimCount > 0) {
-        // Adjust stored indices in all ErasedItemsGroups
-        for (auto& item : m_items) {
-            if (auto* group = dynamic_cast<ErasedItemsGroup*>(item.get())) {
-                group->adjustIndicesForTrim(trimCount);
-            }
+
+    // Calculate items to trim and remove in one O(n) operation instead of O(n²)
+    size_t trimCount = m_items.size() - kMaxHistorySize;
+    m_items.erase(m_items.begin(), m_items.begin() + static_cast<ptrdiff_t>(trimCount));
+
+    // Adjust stored indices in all ErasedItemsGroups
+    for (auto& item : m_items) {
+        if (auto* group = dynamic_cast<ErasedItemsGroup*>(item.get())) {
+            group->adjustIndicesForTrim(trimCount);
         }
-        for (auto& item : m_redoStack) {
-            if (auto* group = dynamic_cast<ErasedItemsGroup*>(item.get())) {
-                group->adjustIndicesForTrim(trimCount);
-            }
-        }
-        renumberStepBadges();
     }
+    for (auto& item : m_redoStack) {
+        if (auto* group = dynamic_cast<ErasedItemsGroup*>(item.get())) {
+            group->adjustIndicesForTrim(trimCount);
+        }
+    }
+    renumberStepBadges();
 }
 
 void AnnotationLayer::undo()

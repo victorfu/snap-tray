@@ -1078,19 +1078,9 @@ bool ImageStitcher::wouldCreateDuplicate(const QImage &newFrame, int overlapPixe
     bool isVertical = (direction == ScrollDirection::Down || direction == ScrollDirection::Up);
     
     // Calculate seam-centered window
-    int seamPos = (direction == ScrollDirection::Down) ? stitchedGray.rows : 0; 
-    // Wait, seamPos is where we are stitching. 
-    // If Down, we append at bottom. So seam is at bottom of existing stitched.
-    // But we want to check if new content exists NEAR the seam (overlap).
-    // The plan says:
-    /*
-    int seamPos = (m_direction == CaptureDirection::Down)
-        ? m_stitchedImage.rows - newFrame.rows // This logic looks weird in plan.
-        : newFrame.rows;
-    */
-    // If we append, the duplicate content would be "new content that was already stitched".
-    // Usually duplicate happens if we scroll back up and capture something we already have.
-    // So we search in the stitched image.
+    // seamPos is where we are stitching (if Down, we append at bottom).
+    // We search in the stitched image for duplicate content that was already captured.
+    int seamPos = (direction == ScrollDirection::Down) ? stitchedGray.rows : 0;
     
     int windowSize = std::max({
         overlapPixels * 2,

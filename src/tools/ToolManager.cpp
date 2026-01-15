@@ -48,7 +48,6 @@ void ToolManager::setCurrentTool(ToolId id) {
         current->onDeactivate(m_context.get());
     }
 
-    ToolId oldTool = m_currentToolId;
     m_currentToolId = id;
 
     // Activate new handler
@@ -56,7 +55,6 @@ void ToolManager::setCurrentTool(ToolId id) {
         newHandler->onActivate(m_context.get());
     }
 
-    Q_UNUSED(oldTool);
     emit toolChanged(m_currentToolId);
 }
 
