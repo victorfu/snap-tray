@@ -47,7 +47,7 @@ QPolygonF TextAnnotation::transformedBoundingPolygon() const
                     m_position.y() - fm.ascent(),
                     maxWidth,
                     totalHeight);
-    textRect.adjust(-5, -5, 5, 5);
+    textRect.adjust(-2, -2, 2, 2);
 
     // Build transformation matrix around center
     QPointF c = center();
@@ -94,8 +94,7 @@ void TextAnnotation::regenerateCache(qreal dpr) const
     }
     int totalHeight = lines.count() * fm.lineSpacing();
 
-    // Create pixmap with padding for outline (3px on each side)
-    int padding = 4;
+    int padding = 1;
     QSize pixmapSize(maxWidth + 2 * padding, totalHeight + 2 * padding);
 
     m_cachedPixmap = QPixmap(pixmapSize * dpr);
@@ -113,10 +112,6 @@ void TextAnnotation::regenerateCache(qreal dpr) const
             if (!line.isEmpty()) {
                 QPainterPath path;
                 path.addText(pos, m_font, line);
-
-                // White outline
-                offPainter.setPen(QPen(Qt::white, 3, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
-                offPainter.drawPath(path);
 
                 // Fill with color
                 offPainter.setPen(Qt::NoPen);

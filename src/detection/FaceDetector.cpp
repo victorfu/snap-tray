@@ -84,7 +84,7 @@ QVector<QRect> FaceDetector::detect(const QImage& image)
                 static_cast<size_t>(rgb.bytesPerLine()));
 
     cv::Mat gray;
-    cv::cvtColor(mat, gray, cv::COLOR_RGBA2GRAY);
+    cv::cvtColor(mat, gray, cv::COLOR_BGRA2GRAY);
 
     // Enhance contrast for better detection
     cv::equalizeHist(gray, gray);

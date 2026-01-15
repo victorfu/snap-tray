@@ -117,12 +117,6 @@ target_sources(Detection_FaceDetector PRIVATE ${CMAKE_SOURCE_DIR}/resources/reso
 add_test(NAME Detection_FaceDetector COMMAND Detection_FaceDetector)
 set_tests_properties(Detection_FaceDetector PROPERTIES TIMEOUT 60 LABELS "unit")
 
-add_executable(Detection_TextDetector Detection/tst_TextDetector.cpp)
-target_link_libraries(Detection_TextDetector PRIVATE snaptray_algorithms Qt6::Widgets Qt6::Test)
-target_sources(Detection_TextDetector PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
-add_test(NAME Detection_TextDetector COMMAND Detection_TextDetector)
-set_tests_properties(Detection_TextDetector PROPERTIES TIMEOUT 60 LABELS "unit")
-
 add_executable(Detection_AutoBlurManager Detection/tst_AutoBlurManager.cpp)
 target_link_libraries(Detection_AutoBlurManager PRIVATE snaptray_algorithms Qt6::Widgets Qt6::Test)
 target_sources(Detection_AutoBlurManager PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)

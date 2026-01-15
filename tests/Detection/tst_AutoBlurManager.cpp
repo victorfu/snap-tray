@@ -8,7 +8,7 @@
 /**
  * @brief Test class for AutoBlurManager.
  *
- * Tests the orchestration of face and text detection,
+ * Tests the orchestration of face detection,
  * blur application, and settings management.
  */
 class tst_AutoBlurManager : public QObject
@@ -40,8 +40,8 @@ private slots:
     void testDetect_NullImage();
     void testDetect_BeforeInitialize();
     void testDetect_ValidImage();
-    void testDetect_FacesOnly();
-    void testDetect_TextOnly();
+    void testDetect_FacesEnabled();
+    void testDetect_FacesDisabled();
 
     // Blur application tests
     void testApplyBlur_EmptyRegions();
@@ -93,7 +93,6 @@ void tst_AutoBlurManager::clearTestSettings()
     QSettings settings = SnapTray::getSettings();
     settings.remove("detection/autoBlurEnabled");
     settings.remove("detection/detectFaces");
-    settings.remove("detection/detectText");
     settings.remove("detection/blurIntensity");
     settings.remove("detection/blurType");
     settings.sync();
@@ -127,7 +126,6 @@ void tst_AutoBlurManager::testDefaultOptions()
 
     QVERIFY(opts.enabled);
     QVERIFY(opts.detectFaces);
-    QVERIFY(opts.detectText);
     QCOMPARE(opts.blurIntensity, 50);
     QCOMPARE(opts.blurType, AutoBlurManager::BlurType::Pixelate);
 }
@@ -137,7 +135,6 @@ void tst_AutoBlurManager::testSetOptions()
     AutoBlurManager::Options newOpts;
     newOpts.enabled = false;
     newOpts.detectFaces = true;
-    newOpts.detectText = false;
     newOpts.blurIntensity = 75;
     newOpts.blurType = AutoBlurManager::BlurType::Gaussian;
 
@@ -146,7 +143,6 @@ void tst_AutoBlurManager::testSetOptions()
     AutoBlurManager::Options retrieved = m_manager->options();
     QVERIFY(!retrieved.enabled);
     QVERIFY(retrieved.detectFaces);
-    QVERIFY(!retrieved.detectText);
     QCOMPARE(retrieved.blurIntensity, 75);
     QCOMPARE(retrieved.blurType, AutoBlurManager::BlurType::Gaussian);
 }
@@ -178,7 +174,6 @@ void tst_AutoBlurManager::testSaveAndLoadSettings()
     AutoBlurManager::Options opts;
     opts.enabled = true;
     opts.detectFaces = false;
-    opts.detectText = true;
     opts.blurIntensity = 80;
     opts.blurType = AutoBlurManager::BlurType::Gaussian;
 
@@ -188,7 +183,6 @@ void tst_AutoBlurManager::testSaveAndLoadSettings()
     AutoBlurManager::Options loaded = AutoBlurManager::loadSettings();
     QVERIFY(loaded.enabled);
     QVERIFY(!loaded.detectFaces);
-    QVERIFY(loaded.detectText);
     QCOMPARE(loaded.blurIntensity, 80);
     QCOMPARE(loaded.blurType, AutoBlurManager::BlurType::Gaussian);
 }
@@ -201,7 +195,6 @@ void tst_AutoBlurManager::testSettingsDefaults()
     AutoBlurManager::Options opts = AutoBlurManager::loadSettings();
     QVERIFY(opts.enabled);
     QVERIFY(opts.detectFaces);
-    QVERIFY(opts.detectText);
     QCOMPARE(opts.blurIntensity, 50);
     QCOMPARE(opts.blurType, AutoBlurManager::BlurType::Pixelate);
 }
@@ -215,7 +208,6 @@ void tst_AutoBlurManager::testDetect_EmptyImage()
 
     QVERIFY(!result.success);
     QVERIFY(result.faceRegions.isEmpty());
-    QVERIFY(result.textRegions.isEmpty());
 }
 
 void tst_AutoBlurManager::testDetect_NullImage()
@@ -245,34 +237,30 @@ void tst_AutoBlurManager::testDetect_ValidImage()
     AutoBlurManager::DetectionResult result = m_manager->detect(testImage);
 
     QVERIFY(result.success);
-    // Results may be empty (no actual faces/text in synthetic image)
+    // Results may be empty (no actual faces in synthetic image)
     QVERIFY(result.errorMessage.isEmpty());
 }
 
-void tst_AutoBlurManager::testDetect_FacesOnly()
+void tst_AutoBlurManager::testDetect_FacesEnabled()
 {
     QVERIFY(m_manager->initialize());
 
     AutoBlurManager::Options opts = m_manager->options();
     opts.detectFaces = true;
-    opts.detectText = false;
     m_manager->setOptions(opts);
 
     QImage testImage = createTestImage(400, 300);
     AutoBlurManager::DetectionResult result = m_manager->detect(testImage);
 
     QVERIFY(result.success);
-    // Text regions should be empty when detectText is false
-    QVERIFY(result.textRegions.isEmpty());
 }
 
-void tst_AutoBlurManager::testDetect_TextOnly()
+void tst_AutoBlurManager::testDetect_FacesDisabled()
 {
     QVERIFY(m_manager->initialize());
 
     AutoBlurManager::Options opts = m_manager->options();
     opts.detectFaces = false;
-    opts.detectText = true;
     m_manager->setOptions(opts);
 
     QImage testImage = createTestImage(400, 300);

@@ -297,7 +297,6 @@ add_library(snaptray_algorithms STATIC
     src/annotations/MosaicRectAnnotation.cpp
     # Detection
     src/detection/FaceDetector.cpp
-    src/detection/TextDetector.cpp
     src/detection/AutoBlurManager.cpp
     # Scrolling/Stitching
     src/scrolling/ImageStitcher.cpp
@@ -306,7 +305,6 @@ add_library(snaptray_algorithms STATIC
     src/scrolling/StitchWorker.cpp
     # Headers with Q_OBJECT for MOC processing
     include/detection/FaceDetector.h
-    include/detection/TextDetector.h
     include/detection/AutoBlurManager.h
     include/scrolling/ImageStitcher.h
     include/scrolling/FixedElementDetector.h

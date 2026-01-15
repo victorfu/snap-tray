@@ -8,12 +8,11 @@
 #include <memory>
 
 class FaceDetector;
-class TextDetector;
 
 /**
  * @brief Manages auto-detection and blurring of sensitive content.
  *
- * Orchestrates face and text detection, applies blur effects,
+ * Orchestrates face detection, applies blur effects,
  * and manages settings persistence via QSettings.
  */
 class AutoBlurManager : public QObject
@@ -35,7 +34,6 @@ public:
     struct Options {
         bool enabled = true;
         bool detectFaces = true;
-        bool detectText = true;
         int blurIntensity = 50;         ///< 1-100
         BlurType blurType = BlurType::Pixelate;
     };
@@ -45,7 +43,6 @@ public:
      */
     struct DetectionResult {
         QVector<QRect> faceRegions;
-        QVector<QRect> textRegions;
         bool success = false;
         QString errorMessage;
     };
@@ -54,8 +51,8 @@ public:
     ~AutoBlurManager() override;
 
     /**
-     * @brief Initialize both detectors.
-     * @return true if at least one detector initialized successfully
+     * @brief Initialize face detector.
+     * @return true if detector initialized successfully
      */
     bool initialize();
 
@@ -65,7 +62,7 @@ public:
     bool isInitialized() const;
 
     /**
-     * @brief Detect faces and/or text in the image.
+     * @brief Detect faces in the image.
      * @param image Image to analyze
      * @return Detection result with regions
      */
@@ -109,7 +106,6 @@ signals:
 
 private:
     std::unique_ptr<FaceDetector> m_faceDetector;
-    std::unique_ptr<TextDetector> m_textDetector;
     bool m_initialized = false;
     Options m_options;
 

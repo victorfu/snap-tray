@@ -202,7 +202,7 @@ QImage MosaicRectAnnotation::applyGaussianBlur(qreal dpr) const
                 static_cast<size_t>(rgb.bytesPerLine()));
 
     cv::Mat bgr;
-    cv::cvtColor(mat, bgr, cv::COLOR_RGBA2BGR);
+    cv::cvtColor(mat, bgr, cv::COLOR_BGRA2BGR);
 
     // Calculate sigma based on block size (larger block = more blur)
     double sigma = static_cast<double>(m_blockSize) * sourceDpr / 2.0;
@@ -212,11 +212,11 @@ QImage MosaicRectAnnotation::applyGaussianBlur(qreal dpr) const
     cv::GaussianBlur(bgr, bgr, cv::Size(0, 0), sigma);
 
     // Convert back to QImage
-    cv::Mat rgba;
-    cv::cvtColor(bgr, rgba, cv::COLOR_BGR2RGBA);
+    cv::Mat bgra;
+    cv::cvtColor(bgr, bgra, cv::COLOR_BGR2BGRA);
 
-    QImage blurred(rgba.data, rgba.cols, rgba.rows,
-                   static_cast<int>(rgba.step), QImage::Format_RGBA8888);
+    QImage blurred(bgra.data, bgra.cols, bgra.rows,
+                   static_cast<int>(bgra.step), QImage::Format_RGB32);
     blurred = blurred.copy();  // Deep copy
 
     // Create result image with proper offset

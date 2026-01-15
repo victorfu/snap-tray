@@ -1,6 +1,5 @@
 #include "detection/AutoBlurManager.h"
 #include "detection/FaceDetector.h"
-#include "detection/TextDetector.h"
 #include "settings/Settings.h"
 
 #include <QDebug>
@@ -13,14 +12,12 @@
 static const char* kSettingsGroup = "detection";
 static const char* kAutoBlurEnabled = "autoBlurEnabled";
 static const char* kDetectFaces = "detectFaces";
-static const char* kDetectText = "detectText";
 static const char* kBlurIntensity = "blurIntensity";
 static const char* kBlurType = "blurType";
 
 AutoBlurManager::AutoBlurManager(QObject* parent)
     : QObject(parent)
     , m_faceDetector(std::make_unique<FaceDetector>())
-    , m_textDetector(std::make_unique<TextDetector>())
 {
     m_options = loadSettings();
 }
@@ -33,15 +30,12 @@ bool AutoBlurManager::initialize()
         return true;
     }
 
-    bool faceOk = m_faceDetector->initialize();
-    bool textOk = m_textDetector->initialize();
-
-    m_initialized = faceOk || textOk;
+    m_initialized = m_faceDetector->initialize();
 
     if (m_initialized) {
-        qDebug() << "AutoBlurManager: Initialized (face:" << faceOk << ", text:" << textOk << ")";
+        qDebug() << "AutoBlurManager: Initialized";
     } else {
-        qWarning() << "AutoBlurManager: Failed to initialize any detector";
+        qWarning() << "AutoBlurManager: Failed to initialize face detector";
     }
 
     return m_initialized;
@@ -72,15 +66,9 @@ AutoBlurManager::DetectionResult AutoBlurManager::detect(const QImage& image)
     // Detect faces if enabled
     if (m_options.detectFaces && m_faceDetector->isInitialized()) {
         result.faceRegions = m_faceDetector->detect(image);
-        emit detectionProgress(50);
     }
 
-    // Detect text if enabled
-    if (m_options.detectText && m_textDetector->isInitialized()) {
-        result.textRegions = m_textDetector->detect(image);
-        emit detectionProgress(100);
-    }
-
+    emit detectionProgress(100);
     result.success = true;
     emit detectionFinished(result);
 
@@ -116,13 +104,8 @@ AutoBlurManager::DetectionResult AutoBlurManager::detectAndBlur(QImage& image)
         return result;
     }
 
-    // Combine all regions
-    QVector<QRect> allRegions;
-    allRegions.append(result.faceRegions);
-    allRegions.append(result.textRegions);
-
-    if (!allRegions.isEmpty()) {
-        applyBlur(image, allRegions, m_options.blurIntensity, m_options.blurType);
+    if (!result.faceRegions.isEmpty()) {
+        applyBlur(image, result.faceRegions, m_options.blurIntensity, m_options.blurType);
     }
 
     return result;
@@ -143,17 +126,17 @@ void AutoBlurManager::applyGaussianBlur(QImage& image, const QRect& region, int 
                 static_cast<size_t>(rgb.bytesPerLine()));
 
     cv::Mat bgr;
-    cv::cvtColor(mat, bgr, cv::COLOR_RGBA2BGR);
+    cv::cvtColor(mat, bgr, cv::COLOR_BGRA2BGR);
 
     // Apply Gaussian blur
     cv::GaussianBlur(bgr, bgr, cv::Size(0, 0), sigma);
 
     // Convert back to QImage
-    cv::Mat rgba;
-    cv::cvtColor(bgr, rgba, cv::COLOR_BGR2RGBA);
+    cv::Mat bgra;
+    cv::cvtColor(bgr, bgra, cv::COLOR_BGR2BGRA);
 
-    QImage blurred(rgba.data, rgba.cols, rgba.rows,
-                   static_cast<int>(rgba.step), QImage::Format_RGBA8888);
+    QImage blurred(bgra.data, bgra.cols, bgra.rows,
+                   static_cast<int>(bgra.step), QImage::Format_RGB32);
     blurred = blurred.copy();  // Deep copy
 
     // Paint back to original image
@@ -175,7 +158,7 @@ void AutoBlurManager::applyPixelate(QImage& image, const QRect& region, int inte
                 static_cast<size_t>(rgb.bytesPerLine()));
 
     cv::Mat bgr;
-    cv::cvtColor(mat, bgr, cv::COLOR_RGBA2BGR);
+    cv::cvtColor(mat, bgr, cv::COLOR_BGRA2BGR);
 
     // Pixelate: downscale then upscale with nearest neighbor
     int smallWidth = std::max(1, bgr.cols / blockSize);
@@ -186,11 +169,11 @@ void AutoBlurManager::applyPixelate(QImage& image, const QRect& region, int inte
     cv::resize(small, bgr, cv::Size(rgb.width(), rgb.height()), 0, 0, cv::INTER_NEAREST);
 
     // Convert back to QImage
-    cv::Mat rgba;
-    cv::cvtColor(bgr, rgba, cv::COLOR_BGR2RGBA);
+    cv::Mat bgra;
+    cv::cvtColor(bgr, bgra, cv::COLOR_BGR2BGRA);
 
-    QImage pixelated(rgba.data, rgba.cols, rgba.rows,
-                     static_cast<int>(rgba.step), QImage::Format_RGBA8888);
+    QImage pixelated(bgra.data, bgra.cols, bgra.rows,
+                     static_cast<int>(bgra.step), QImage::Format_RGB32);
     pixelated = pixelated.copy();  // Deep copy
 
     // Paint back to original image
@@ -207,7 +190,6 @@ AutoBlurManager::Options AutoBlurManager::loadSettings()
 
     options.enabled = settings.value(kAutoBlurEnabled, true).toBool();
     options.detectFaces = settings.value(kDetectFaces, true).toBool();
-    options.detectText = settings.value(kDetectText, true).toBool();
     options.blurIntensity = settings.value(kBlurIntensity, 50).toInt();
 
     QString blurTypeStr = settings.value(kBlurType, "pixelate").toString();
@@ -227,7 +209,6 @@ void AutoBlurManager::saveSettings(const Options& options)
 
     settings.setValue(kAutoBlurEnabled, options.enabled);
     settings.setValue(kDetectFaces, options.detectFaces);
-    settings.setValue(kDetectText, options.detectText);
     settings.setValue(kBlurIntensity, options.blurIntensity);
     settings.setValue(kBlurType, options.blurType == BlurType::Gaussian ? "gaussian" : "pixelate");
 

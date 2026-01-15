@@ -45,7 +45,7 @@ inline cv::Mat qImageToBgrMat(const QImage &image)
                 const_cast<uchar*>(rgb.bits()),
                 static_cast<size_t>(rgb.bytesPerLine()));
     cv::Mat bgr;
-    cv::cvtColor(mat, bgr, cv::COLOR_RGBA2BGR);
+    cv::cvtColor(mat, bgr, cv::COLOR_BGRA2BGR);
     return bgr.clone();
 }
 
@@ -1519,7 +1519,7 @@ void ImageStitcher::prepareFrameCache(const QImage &frame, FrameCacheImpl &cache
                 const_cast<uchar*>(rgb.bits()),
                 static_cast<size_t>(rgb.bytesPerLine()));
 
-    cv::cvtColor(mat, cache.bgr, cv::COLOR_RGBA2BGR);
+    cv::cvtColor(mat, cache.bgr, cv::COLOR_BGRA2BGR);
     cache.bgr = cache.bgr.clone();  // Ensure ownership (rgb goes out of scope)
 
     // Pre-compute grayscale (most algorithms need this)
@@ -1542,7 +1542,7 @@ cv::Mat ImageStitcher::qImageToCvMat(const QImage &image) const
                 static_cast<size_t>(rgb.bytesPerLine()));
 
     cv::Mat bgr;
-    cv::cvtColor(mat, bgr, cv::COLOR_RGBA2BGR);
+    cv::cvtColor(mat, bgr, cv::COLOR_BGRA2BGR);
 
     return bgr.clone();
 }
