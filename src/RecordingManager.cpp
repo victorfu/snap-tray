@@ -302,14 +302,20 @@ void RecordingManager::startFrameCapture()
     // Safety check: clean up any existing encoders
     if (m_gifEncoder) {
         qDebug() << "RecordingManager: Previous GIF encoder still exists, cleaning up";
-        disconnect(m_gifEncoder.get(), nullptr, this, nullptr);
+        disconnect(m_gifEncoder.get(), &NativeGifEncoder::finished,
+                   this, &RecordingManager::onEncodingFinished);
+        disconnect(m_gifEncoder.get(), &NativeGifEncoder::error,
+                   this, &RecordingManager::onEncodingError);
         // Release ownership and delete later to be safe with signals
         auto* ptr = m_gifEncoder.release();
         ptr->deleteLater();
     }
     if (m_nativeEncoder) {
         qDebug() << "RecordingManager: Previous native encoder still exists, cleaning up";
-        disconnect(m_nativeEncoder.get(), nullptr, this, nullptr);
+        disconnect(m_nativeEncoder.get(), &IVideoEncoder::finished,
+                   this, &RecordingManager::onEncodingFinished);
+        disconnect(m_nativeEncoder.get(), &IVideoEncoder::error,
+                   this, &RecordingManager::onEncodingError);
         // Release ownership and delete later to be safe with signals
         auto* ptr = m_nativeEncoder.release();
         ptr->deleteLater();
