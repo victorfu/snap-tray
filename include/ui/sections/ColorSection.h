@@ -57,7 +57,6 @@ public:
     void draw(QPainter& painter, const ToolbarStyleConfig& styleConfig) override;
     bool contains(const QPoint& pos) const override;
     bool handleClick(const QPoint& pos) override;
-    bool handleDoubleClick(const QPoint& pos);
     bool updateHovered(const QPoint& pos) override;
     void resetHoverState() override;
 

@@ -220,13 +220,6 @@ bool ColorSection::handleClick(const QPoint& pos)
     return false;
 }
 
-bool ColorSection::handleDoubleClick(const QPoint& pos)
-{
-    Q_UNUSED(pos);
-    // No special double-click behavior needed
-    return false;
-}
-
 bool ColorSection::updateHovered(const QPoint& pos)
 {
     int newHovered = swatchAtPosition(pos);

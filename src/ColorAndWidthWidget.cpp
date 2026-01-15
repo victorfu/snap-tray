@@ -364,7 +364,6 @@ void ColorAndWidthWidget::updatePosition(const QRect& anchorRect, bool above, in
         totalWidth += m_sizeSection->preferredWidth();
         hasFirstSection = true;
     }
-    // For Mosaic tool: AutoBlurSection first, then MosaicWidthSection
     if (m_showAutoBlurSection) {
         if (hasFirstSection) totalWidth += SECTION_SPACING;
         totalWidth += m_autoBlurSection->preferredWidth();

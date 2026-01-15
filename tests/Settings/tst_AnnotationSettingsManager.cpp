@@ -42,10 +42,6 @@ private slots:
     void testSaveLoadStepBadgeSize_AllValues();
     void testLoadStepBadgeSize_InvalidValue();
 
-    // Polyline mode tests
-    void testLoadPolylineMode_DefaultValue();
-    void testSaveLoadPolylineMode_Roundtrip();
-
     // Corner radius tests
     void testLoadCornerRadius_DefaultValue();
     void testSaveLoadCornerRadius_Roundtrip();
@@ -256,28 +252,6 @@ void tst_AnnotationSettingsManager::testLoadStepBadgeSize_InvalidValue()
 
     StepBadgeSize size = AnnotationSettingsManager::instance().loadStepBadgeSize();
     QCOMPARE(size, AnnotationSettingsManager::kDefaultStepBadgeSize);
-}
-
-// ============================================================================
-// Polyline mode tests
-// ============================================================================
-
-void tst_AnnotationSettingsManager::testLoadPolylineMode_DefaultValue()
-{
-    bool mode = AnnotationSettingsManager::instance().loadPolylineMode();
-    QCOMPARE(mode, AnnotationSettingsManager::kDefaultPolylineMode);
-    QCOMPARE(mode, false);
-}
-
-void tst_AnnotationSettingsManager::testSaveLoadPolylineMode_Roundtrip()
-{
-    AnnotationSettingsManager& manager = AnnotationSettingsManager::instance();
-
-    manager.savePolylineMode(true);
-    QCOMPARE(manager.loadPolylineMode(), true);
-
-    manager.savePolylineMode(false);
-    QCOMPARE(manager.loadPolylineMode(), false);
 }
 
 // ============================================================================
