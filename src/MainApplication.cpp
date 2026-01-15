@@ -82,14 +82,14 @@ void MainApplication::initialize()
     connect(m_recordingManager, &RecordingManager::recordingStopped,
         this, [](const QString& path) {
             GlobalToast::instance().showToast(GlobalToast::Success,
-                tr("Recording Saved"),
+                MainApplication::tr("Recording Saved"),
                 QString("Saved to: %1").arg(path));
         });
 
     connect(m_recordingManager, &RecordingManager::recordingError,
         this, [](const QString& error) {
             GlobalToast::instance().showToast(GlobalToast::Error,
-                tr("Recording Error"),
+                MainApplication::tr("Recording Error"),
                 error, 5000);
         });
 
@@ -97,13 +97,13 @@ void MainApplication::initialize()
     connect(m_captureManager, &CaptureManager::saveCompleted,
         this, [](const QPixmap&, const QString& path) {
             GlobalToast::instance().showToast(GlobalToast::Success,
-                tr("Screenshot Saved"),
+                MainApplication::tr("Screenshot Saved"),
                 QString("Saved to: %1").arg(path));
         });
     connect(m_captureManager, &CaptureManager::saveFailed,
         this, [](const QString& path, const QString& error) {
             GlobalToast::instance().showToast(GlobalToast::Error,
-                tr("Screenshot Save Failed"),
+                MainApplication::tr("Screenshot Save Failed"),
                 QString("%1\n%2").arg(error).arg(path), 5000);
         });
 
@@ -111,13 +111,13 @@ void MainApplication::initialize()
     connect(m_pinWindowManager, &PinWindowManager::saveCompleted,
         this, [](const QPixmap&, const QString& path) {
             GlobalToast::instance().showToast(GlobalToast::Success,
-                tr("Screenshot Saved"),
+                MainApplication::tr("Screenshot Saved"),
                 QString("Saved to: %1").arg(path));
         });
     connect(m_pinWindowManager, &PinWindowManager::saveFailed,
         this, [](const QString& path, const QString& error) {
             GlobalToast::instance().showToast(GlobalToast::Error,
-                tr("Screenshot Save Failed"),
+                MainApplication::tr("Screenshot Save Failed"),
                 QString("%1\n%2").arg(error).arg(path), 5000);
         });
 
