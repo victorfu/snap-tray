@@ -111,10 +111,9 @@ void RegionInputHandler::setHighlightedWindowRect(const QRect& rect)
     m_highlightedWindowRect = rect;
 }
 
-void RegionInputHandler::setDetectedWindow(bool hasWindow, const QRect& bounds)
+void RegionInputHandler::setDetectedWindow(bool hasWindow, const QRect& /* bounds */)
 {
     m_hasDetectedWindow = hasWindow;
-    m_detectedWindowBounds = bounds;
 }
 
 void RegionInputHandler::setAnnotationColor(const QColor& color)

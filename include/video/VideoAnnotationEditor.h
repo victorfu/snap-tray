@@ -11,8 +11,6 @@
 class VideoPlaybackWidget;
 class TrimTimeline;
 class AnnotationTimelineWidget;
-class ColorAndWidthWidget;
-class IVideoPlayer;
 class QAbstractButton;
 class QToolButton;
 class QPushButton;
@@ -29,7 +27,6 @@ public:
     ~VideoAnnotationEditor() override;
 
     // Video source
-    void setVideoPlayer(IVideoPlayer *player);
     void setVideoPath(const QString &path);
     QString videoPath() const;
 
@@ -137,7 +134,6 @@ private:
     VideoPlaybackWidget *m_videoWidget = nullptr;
     TrimTimeline *m_trimTimeline = nullptr;
     AnnotationTimelineWidget *m_annotationTimeline = nullptr;
-    ColorAndWidthWidget *m_colorWidget = nullptr;
     QWidget *m_toolbarWidget = nullptr;
     QWidget *m_videoContainer = nullptr;
     AnnotationCanvas *m_annotationCanvas = nullptr;
@@ -152,7 +148,6 @@ private:
     QPushButton *m_playButton = nullptr;
 
     // State
-    IVideoPlayer *m_videoPlayer = nullptr;
     QString m_videoPath;
     AnnotationTrack *m_track = nullptr;
     bool m_ownsTrack = false;

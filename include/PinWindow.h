@@ -236,7 +236,6 @@ private:
     mutable bool m_cachedFlipV = false;
 
     // Resize optimization
-    QElapsedTimer m_resizeThrottleTimer;
     QTimer *m_resizeFinishTimer = nullptr;
     bool m_pendingHighQualityUpdate = false;
 

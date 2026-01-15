@@ -177,7 +177,6 @@ private:
     QRect m_lastMagnifierRect;
     QRect m_highlightedWindowRect;
     bool m_hasDetectedWindow = false;
-    QRect m_detectedWindowBounds;
     ToolbarButton m_currentTool;
     bool m_isDrawing = false;
     bool m_showSubToolbar = true;

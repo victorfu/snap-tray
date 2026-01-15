@@ -562,11 +562,6 @@ void VideoAnnotationEditor::setupUI()
             this, &VideoAnnotationEditor::updateAnnotationDisplay);
 }
 
-void VideoAnnotationEditor::setVideoPlayer(IVideoPlayer *player)
-{
-    m_videoPlayer = player;
-}
-
 void VideoAnnotationEditor::setVideoPath(const QString &path)
 {
     m_videoPath = path;

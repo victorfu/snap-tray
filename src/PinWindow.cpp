@@ -192,9 +192,6 @@ PinWindow::PinWindow(const QPixmap &screenshot, const QPoint &position, QWidget 
     m_clickThroughHoverTimer->setInterval(SnapTray::Timer::kClickThroughHover);
     connect(m_clickThroughHoverTimer, &QTimer::timeout, this, &PinWindow::updateClickThroughForCursor);
 
-    // Initialize resize throttle timer
-    m_resizeThrottleTimer.start();
-
     qDebug() << "PinWindow: Created with size" << m_displayPixmap.size()
              << "requested position" << position
              << "actual position" << pos();

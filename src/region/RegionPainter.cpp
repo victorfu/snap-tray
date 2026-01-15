@@ -92,10 +92,6 @@ void RegionPainter::invalidateOverlayCache()
     m_overlayCacheValid = false;
 }
 
-void RegionPainter::invalidateDimensionCache()
-{
-    m_dimensionCacheValid = false;
-}
 
 void RegionPainter::updateOverlayCache(const QPixmap& background)
 {

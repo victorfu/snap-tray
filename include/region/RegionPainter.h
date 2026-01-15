@@ -71,11 +71,6 @@ public:
      */
     void invalidateOverlayCache();
 
-    /**
-     * @brief Invalidate dimension panel cache.
-     * Call this when selection dimensions change.
-     */
-    void invalidateDimensionCache();
 
 private:
     // Drawing methods (extracted from RegionSelector)
@@ -123,18 +118,8 @@ private:
     QRect m_cachedHighlightRect;
     bool m_overlayCacheValid = false;
 
-    // Dimension panel cache
-    QPixmap m_dimensionPanelCache;
-    QSize m_cachedDimensions;
-    bool m_dimensionCacheValid = false;
-
-    // Font metrics cache
-    mutable QFont m_cachedFont;
-    mutable int m_cachedFontPointSize = -1;
-
     // Helper methods for caching
     void updateOverlayCache(const QPixmap& background);
-    void updateDimensionPanelCache(const QRect& selectionRect);
 };
 
 #endif // REGIONPAINTER_H

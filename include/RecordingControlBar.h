@@ -238,7 +238,6 @@ private:
     // Animation timer for indicator gradient
     QTimer *m_blinkTimer;
     qreal m_gradientOffset;
-    bool m_indicatorVisible;
     bool m_isPaused;
     bool m_isPreparing;
 
