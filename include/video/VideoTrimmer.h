@@ -86,6 +86,7 @@ private slots:
     void onFrameReady(const QImage &frame);
     void processNextFrame();
     void onEncodingFinished(bool success, const QString &path);
+    void onMediaLoaded();
 
 private:
     void cleanup();

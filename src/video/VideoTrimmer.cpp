@@ -76,7 +76,17 @@ void VideoTrimmer::startTrim()
         return;
     }
 
-    // Get video dimensions from input
+    // Connect to mediaLoaded to continue initialization after player is ready
+    connect(m_player, &IVideoPlayer::mediaLoaded,
+            this, &VideoTrimmer::onMediaLoaded);
+    connect(m_player, &IVideoPlayer::error,
+            this, [this](const QString &msg) {
+        emit error(tr("Failed to load video: %1").arg(msg));
+        cleanup();
+        m_running = false;
+    });
+
+    // Start loading - onMediaLoaded will be called when ready
     if (!m_player->load(m_inputPath)) {
         emit error(tr("Failed to load input video"));
         cleanup();
@@ -84,14 +94,30 @@ void VideoTrimmer::startTrim()
         return;
     }
 
-    // Estimate total frames using actual frame rate from video
+    // Wait for mediaLoaded signal before proceeding
+}
+
+void VideoTrimmer::onMediaLoaded()
+{
+    if (m_cancelled || !m_running) {
+        return;
+    }
+
+    qDebug() << "VideoTrimmer: Media loaded, continuing initialization";
+
+    // Now we can get accurate video properties
+    QSize videoSize = m_player->videoSize();
+    if (videoSize.isEmpty()) {
+        videoSize = QSize(1920, 1080);  // Fallback
+    }
+
     int frameIntervalMs = m_player->frameIntervalMs();
     m_totalFrames = static_cast<int>((m_trimEnd - m_trimStart) / frameIntervalMs);
     if (m_totalFrames <= 0) m_totalFrames = 1;
 
-    // Wait for video to load and get dimensions
-    // For now, use a reasonable default; the first frame will give us actual size
-    QSize videoSize(1920, 1080);  // Will be updated on first frame
+    qDebug() << "VideoTrimmer: Video size:" << videoSize
+             << "frame rate:" << m_player->frameRate()
+             << "total frames:" << m_totalFrames;
 
     // Create encoder based on format using EncoderFactory
     EncoderFactory::EncoderConfig config;
