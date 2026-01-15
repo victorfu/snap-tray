@@ -1,4 +1,5 @@
 #include "capture/DXGICaptureEngine.h"
+#include "utils/CoordinateHelper.h"
 
 #include <QScreen>
 #include <QGuiApplication>
@@ -136,12 +137,7 @@ bool DXGICaptureEngine::Private::initializeDXGI()
     // We need to convert using devicePixelRatio for HiDPI displays
     QRect screenGeom = targetScreen->geometry();
     qreal dpr = targetScreen->devicePixelRatio();
-    QRect physicalGeom(
-        qRound(screenGeom.x() * dpr),
-        qRound(screenGeom.y() * dpr),
-        qRound(screenGeom.width() * dpr),
-        qRound(screenGeom.height() * dpr)
-    );
+    QRect physicalGeom = CoordinateHelper::toPhysical(screenGeom, dpr);
     bool foundMatch = false;
 
     // Tolerance for coordinate matching to handle DPI rounding differences
@@ -297,12 +293,9 @@ QImage DXGICaptureEngine::Private::captureWithBitBlt()
 
     // Convert logical coordinates to physical coordinates for HiDPI
     qreal dpr = targetScreen ? targetScreen->devicePixelRatio() : 1.0;
-    int physX = static_cast<int>(captureRegion.x() * dpr);
-    int physY = static_cast<int>(captureRegion.y() * dpr);
-    int physWidth = static_cast<int>(captureRegion.width() * dpr);
-    int physHeight = static_cast<int>(captureRegion.height() * dpr);
+    QRect physRegion = CoordinateHelper::toPhysical(captureRegion, dpr);
 
-    HBITMAP hBitmap = CreateCompatibleBitmap(hdcScreen, physWidth, physHeight);
+    HBITMAP hBitmap = CreateCompatibleBitmap(hdcScreen, physRegion.width(), physRegion.height());
     if (!hBitmap) {
         DeleteDC(hdcMem);
         ReleaseDC(NULL, hdcScreen);
@@ -312,8 +305,8 @@ QImage DXGICaptureEngine::Private::captureWithBitBlt()
     HGDIOBJ hOld = SelectObject(hdcMem, hBitmap);
 
     // Capture screen region using physical coordinates
-    BitBlt(hdcMem, 0, 0, physWidth, physHeight,
-           hdcScreen, physX, physY,
+    BitBlt(hdcMem, 0, 0, physRegion.width(), physRegion.height(),
+           hdcScreen, physRegion.x(), physRegion.y(),
            SRCCOPY | CAPTUREBLT);
 
     SelectObject(hdcMem, hOld);
@@ -322,14 +315,14 @@ QImage DXGICaptureEngine::Private::captureWithBitBlt()
     BITMAPINFO bmi;
     ZeroMemory(&bmi, sizeof(bmi));
     bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-    bmi.bmiHeader.biWidth = physWidth;
-    bmi.bmiHeader.biHeight = -physHeight;  // Top-down
+    bmi.bmiHeader.biWidth = physRegion.width();
+    bmi.bmiHeader.biHeight = -physRegion.height();  // Top-down
     bmi.bmiHeader.biPlanes = 1;
     bmi.bmiHeader.biBitCount = 32;
     bmi.bmiHeader.biCompression = BI_RGB;
 
-    QImage image(physWidth, physHeight, QImage::Format_ARGB32);
-    GetDIBits(hdcMem, hBitmap, 0, physHeight, image.bits(), &bmi, DIB_RGB_COLORS);
+    QImage image(physRegion.width(), physRegion.height(), QImage::Format_ARGB32);
+    GetDIBits(hdcMem, hBitmap, 0, physRegion.height(), image.bits(), &bmi, DIB_RGB_COLORS);
 
     DeleteObject(hBitmap);
     DeleteDC(hdcMem);
@@ -423,16 +416,13 @@ QImage DXGICaptureEngine::Private::captureWithDXGI()
     // Calculate region relative to output in physical coordinates
     // captureRegion is in logical coordinates, DXGI texture is in physical coordinates
     qreal dpr = targetScreen ? targetScreen->devicePixelRatio() : 1.0;
-    int physX = static_cast<int>(captureRegion.x() * dpr);
-    int physY = static_cast<int>(captureRegion.y() * dpr);
-    int physWidth = static_cast<int>(captureRegion.width() * dpr);
-    int physHeight = static_cast<int>(captureRegion.height() * dpr);
+    QRect physRegion = CoordinateHelper::toPhysical(captureRegion, dpr);
 
-    int relX = physX - outputDesc.DesktopCoordinates.left;
-    int relY = physY - outputDesc.DesktopCoordinates.top;
+    int relX = physRegion.x() - outputDesc.DesktopCoordinates.left;
+    int relY = physRegion.y() - outputDesc.DesktopCoordinates.top;
 
     // Crop to capture region and deep copy
-    lastFrame = fullImage.copy(relX, relY, physWidth, physHeight);
+    lastFrame = fullImage.copy(relX, relY, physRegion.width(), physRegion.height());
     lastFrameTime = std::chrono::steady_clock::now();
 
     context->Unmap(stagingTexture.Get(), 0);

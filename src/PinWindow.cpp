@@ -27,6 +27,7 @@
 #include "ColorAndWidthWidget.h"
 #include "annotations/TextAnnotation.h"
 #include "TransformationGizmo.h"
+#include "utils/CoordinateHelper.h"
 
 using namespace SnapTray;
 
@@ -2084,12 +2085,7 @@ void PinWindow::onAutoBlurRequested()
     // Create mosaic annotations for each detected face
     for (const QRect &faceRect : result.faceRegions) {
         // Convert from device pixels to logical pixels
-        QRect logicalRect(
-            faceRect.x() / dpr,
-            faceRect.y() / dpr,
-            faceRect.width() / dpr,
-            faceRect.height() / dpr
-        );
+        QRect logicalRect = CoordinateHelper::toLogical(faceRect, dpr);
 
         auto mosaic = std::make_unique<MosaicRectAnnotation>(
             logicalRect,

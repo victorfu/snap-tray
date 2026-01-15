@@ -1,5 +1,6 @@
 #include "WatermarkRenderer.h"
 #include "settings/Settings.h"
+#include "utils/CoordinateHelper.h"
 #include <QSettings>
 #include <QSizeF>
 
@@ -63,7 +64,7 @@ void WatermarkRenderer::renderImage(QPainter &painter, const QRect &targetRect, 
         return;
     }
 
-    logicalScaledSize = scaledImage.size() / dpr;
+    logicalScaledSize = CoordinateHelper::toLogical(scaledImage.size(), dpr);
     if (logicalScaledSize.isEmpty()) {
         return;
     }
@@ -99,7 +100,7 @@ QPixmap WatermarkRenderer::applyToPixmap(const QPixmap &source, const Settings &
     if (dpr <= 0.0) {
         dpr = 1.0;
     }
-    QSize logicalSize = result.size() / dpr;
+    QSize logicalSize = CoordinateHelper::toLogical(result.size(), dpr);
     QRect targetRect(QPoint(0, 0), logicalSize);
 
     renderImage(painter, targetRect, settings);

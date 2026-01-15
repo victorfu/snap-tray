@@ -11,6 +11,7 @@
 #include "ToolbarStyle.h"
 #include "TransformationGizmo.h"
 #include "RegionSelector.h"  // For isToolManagerHandledTool
+#include "utils/CoordinateHelper.h"
 
 #include <QPainter>
 #include <QPainterPath>
@@ -179,12 +180,7 @@ void RegionPainter::paint(QPainter& painter, const QPixmap& background, const QR
     if (!background.isNull()) {
         // Calculate source rect in pixmap coordinates (accounting for device pixel ratio)
         const qreal dpr = background.devicePixelRatio();
-        const QRect sourceRect(
-            static_cast<int>(updateRect.x() * dpr),
-            static_cast<int>(updateRect.y() * dpr),
-            static_cast<int>(updateRect.width() * dpr),
-            static_cast<int>(updateRect.height() * dpr)
-        );
+        const QRect sourceRect = CoordinateHelper::toPhysical(updateRect, dpr);
         painter.drawPixmap(updateRect, background, sourceRect);
     }
 

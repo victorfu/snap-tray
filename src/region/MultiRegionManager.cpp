@@ -1,4 +1,5 @@
 #include "region/MultiRegionManager.h"
+#include "utils/CoordinateHelper.h"
 
 #include <QDebug>
 #include <QPainter>
@@ -147,10 +148,9 @@ QImage MultiRegionManager::mergeToSingleImage(const QPixmap& background, qreal d
     QRect bounds = boundingBox();
 
     // Create a transparent image of the bounding box size (in physical pixels)
-    int physWidth = qRound(bounds.width() * dpr);
-    int physHeight = qRound(bounds.height() * dpr);
+    QSize physSize = CoordinateHelper::toPhysical(bounds.size(), dpr);
 
-    QImage result(physWidth, physHeight, QImage::Format_ARGB32_Premultiplied);
+    QImage result(physSize, QImage::Format_ARGB32_Premultiplied);
     result.fill(Qt::transparent);
 
     QPainter painter(&result);
@@ -161,21 +161,17 @@ QImage MultiRegionManager::mergeToSingleImage(const QPixmap& background, qreal d
         // Extract raw pixels for this region from background
         // We assume background.copy() with these coordinates extracts the correct raw pixels
         // matching the region's position on screen.
-        QPixmap regionPix = background.copy(
-            static_cast<int>(region.rect.x() * dpr),
-            static_cast<int>(region.rect.y() * dpr),
-            static_cast<int>(region.rect.width() * dpr),
-            static_cast<int>(region.rect.height() * dpr)
-        );
+        QRect physRegionRect = CoordinateHelper::toPhysical(region.rect, dpr);
+        QPixmap regionPix = background.copy(physRegionRect);
 
         // Ensure we treat this as a raw bitmap for 1:1 copying
         regionPix.setDevicePixelRatio(1.0);
 
         // Calculate target position in the result image (physical coords)
-        int targetX = static_cast<int>((region.rect.x() - bounds.x()) * dpr);
-        int targetY = static_cast<int>((region.rect.y() - bounds.y()) * dpr);
+        QPoint offset(region.rect.x() - bounds.x(), region.rect.y() - bounds.y());
+        QPoint targetPos = CoordinateHelper::toPhysical(offset, dpr);
 
-        painter.drawPixmap(targetX, targetY, regionPix);
+        painter.drawPixmap(targetPos, regionPix);
     }
 
     painter.end();
@@ -191,12 +187,8 @@ QVector<QImage> MultiRegionManager::separateImages(const QPixmap& background, qr
     images.reserve(m_regions.size());
 
     for (const auto& region : m_regions) {
-        QPixmap pixmap = background.copy(
-            static_cast<int>(region.rect.x() * dpr),
-            static_cast<int>(region.rect.y() * dpr),
-            static_cast<int>(region.rect.width() * dpr),
-            static_cast<int>(region.rect.height() * dpr)
-        );
+        QRect physRegionRect = CoordinateHelper::toPhysical(region.rect, dpr);
+        QPixmap pixmap = background.copy(physRegionRect);
         pixmap.setDevicePixelRatio(dpr);
 
         QImage image = pixmap.toImage();

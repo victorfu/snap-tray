@@ -8,6 +8,7 @@
 #include "capture/ICaptureEngine.h"
 #include "platform/WindowLevel.h"
 #include "PinWindowManager.h"
+#include "utils/CoordinateHelper.h"
 
 #include <QScreen>
 #include <QGuiApplication>
@@ -694,7 +695,8 @@ void ScrollingCaptureManager::completeCapture()
     // Update toolbar with final size (convert to logical pixels)
     if (m_toolbar) {
         qreal dpr = m_targetScreen ? m_targetScreen->devicePixelRatio() : 1.0;
-        m_toolbar->updateSize(m_stitchedResult.width() / dpr, m_stitchedResult.height() / dpr);
+        QSize logicalSize = CoordinateHelper::toLogical(m_stitchedResult.size(), dpr);
+        m_toolbar->updateSize(logicalSize.width(), logicalSize.height());
     }
 
 }
@@ -842,7 +844,8 @@ void ScrollingCaptureManager::handleSuccess(const StitchWorker::Result &result)
     if (m_toolbar) {
         m_toolbar->setMatchStatus(true, result.confidence);
         qreal dpr = m_targetScreen ? m_targetScreen->devicePixelRatio() : 1.0;
-        m_toolbar->updateSize(result.currentSize.width() / dpr, result.currentSize.height() / dpr);
+        QSize logicalSize = CoordinateHelper::toLogical(result.currentSize, dpr);
+        m_toolbar->updateSize(logicalSize.width(), logicalSize.height());
     }
     if (m_thumbnail) {
         m_thumbnail->setStats(result.frameCount, result.currentSize);

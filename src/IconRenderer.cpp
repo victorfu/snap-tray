@@ -1,4 +1,5 @@
 #include "IconRenderer.h"
+#include "utils/CoordinateHelper.h"
 
 #include <QPainter>
 #include <QSvgRenderer>
@@ -81,7 +82,8 @@ void IconRenderer::renderIcon(QPainter& painter, const QRect& rect,
     }
 
     // Cache miss: render SVG to pixmap
-    QPixmap iconPixmap(iconSize * dpr, iconSize * dpr);
+    QSize physSize = CoordinateHelper::toPhysical(QSize(iconSize, iconSize), dpr);
+    QPixmap iconPixmap(physSize);
     iconPixmap.setDevicePixelRatio(dpr);
     iconPixmap.fill(Qt::transparent);
 
@@ -140,7 +142,8 @@ void IconRenderer::renderIconFit(QPainter& painter, const QRect& rect,
     }
 
     // Cache miss: render SVG to pixmap
-    QPixmap iconPixmap(iconWidth * dpr, iconHeight * dpr);
+    QSize physSize = CoordinateHelper::toPhysical(QSize(iconWidth, iconHeight), dpr);
+    QPixmap iconPixmap(physSize);
     iconPixmap.setDevicePixelRatio(dpr);
     iconPixmap.fill(Qt::transparent);
 

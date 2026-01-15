@@ -1,4 +1,5 @@
 #include "WindowDetector.h"
+#include "utils/CoordinateHelper.h"
 #include <QScreen>
 #include <QDebug>
 #include <QFileInfo>
@@ -199,14 +200,12 @@ BOOL CALLBACK enumWindowsProc(HWND hwnd, LPARAM lParam)
 
     // Convert physical pixels to logical pixels for Qt coordinate system
     qreal dpr = context->devicePixelRatio;
-    int logicalLeft = static_cast<int>(rect.left / dpr);
-    int logicalTop = static_cast<int>(rect.top / dpr);
-    int logicalWidth = static_cast<int>(width / dpr);
-    int logicalHeight = static_cast<int>(height / dpr);
+    QRect physicalBounds(rect.left, rect.top, width, height);
+    QRect logicalBounds = CoordinateHelper::toLogical(physicalBounds, dpr);
 
     // Create DetectedElement
     DetectedElement element;
-    element.bounds = QRect(logicalLeft, logicalTop, logicalWidth, logicalHeight);
+    element.bounds = logicalBounds;
     element.windowTitle = windowTitle;
     element.ownerApp = ownerApp;
     element.windowLayer = 0;  // Windows doesn't have explicit layers like macOS
@@ -345,13 +344,9 @@ void WindowDetector::enumerateWindows()
 
                         if (!alreadyExists) {
                             qreal dpr = context.devicePixelRatio;
+                            QRect physicalBounds(rect.left, rect.top, width, height);
                             DetectedElement element;
-                            element.bounds = QRect(
-                                static_cast<int>(rect.left / dpr),
-                                static_cast<int>(rect.top / dpr),
-                                static_cast<int>(width / dpr),
-                                static_cast<int>(height / dpr)
-                            );
+                            element.bounds = CoordinateHelper::toLogical(physicalBounds, dpr);
                             element.windowTitle = QString();
                             element.ownerApp = QString();
                             element.windowLayer = 0;
@@ -404,13 +399,9 @@ void WindowDetector::enumerateWindowsInternal(std::vector<DetectedElement>& cach
                         }
 
                         if (!alreadyExists) {
+                            QRect physicalBounds(rect.left, rect.top, width, height);
                             DetectedElement element;
-                            element.bounds = QRect(
-                                static_cast<int>(rect.left / dpr),
-                                static_cast<int>(rect.top / dpr),
-                                static_cast<int>(width / dpr),
-                                static_cast<int>(height / dpr)
-                            );
+                            element.bounds = CoordinateHelper::toLogical(physicalBounds, dpr);
                             element.windowTitle = QString();
                             element.ownerApp = QString();
                             element.windowLayer = 0;

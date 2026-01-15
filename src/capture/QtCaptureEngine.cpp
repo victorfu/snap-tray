@@ -1,4 +1,5 @@
 #include "capture/QtCaptureEngine.h"
+#include "utils/CoordinateHelper.h"
 
 #include <QScreen>
 #include <QPixmap>
@@ -71,16 +72,15 @@ QImage QtCaptureEngine::captureFrame()
     int relativeY = m_captureRegion.y() - screenGeom.y();
 
     // Use physical pixel dimensions for HiDPI displays
-    int physWidth = static_cast<int>(m_captureRegion.width() * scale);
-    int physHeight = static_cast<int>(m_captureRegion.height() * scale);
+    QSize physSize = CoordinateHelper::toPhysical(m_captureRegion.size(), scale);
 
     // Capture the region using Qt's screen grab
     QPixmap pixmap = m_targetScreen->grabWindow(
         0,  // Window ID 0 = entire screen
         relativeX,
         relativeY,
-        physWidth,
-        physHeight
+        physSize.width(),
+        physSize.height()
     );
 
     if (pixmap.isNull()) {
