@@ -77,8 +77,6 @@ public:
     void setMultiRegionMode(bool enabled) { m_multiRegionMode = enabled; }
 
 signals:
-    // Cursor management
-    void cursorChangeRequested(Qt::CursorShape cursor);
     void toolCursorRequested();
 
     // Repaint requests

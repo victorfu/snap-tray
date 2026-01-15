@@ -70,7 +70,6 @@ public:
 signals:
     // Tool state changes
     void toolChanged(ToolId tool, bool showSubToolbar);
-    void cursorChangeRequested(Qt::CursorShape cursor);
     void updateRequested();
 
     // Action button signals

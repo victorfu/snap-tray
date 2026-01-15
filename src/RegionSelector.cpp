@@ -401,7 +401,6 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_inputHandler->setParentWidget(this);
 
     // Connect input handler signals
-    // Note: cursorChangeRequested is no longer used - RegionInputHandler uses CursorManager directly
     connect(m_inputHandler, &RegionInputHandler::toolCursorRequested,
         this, &RegionSelector::setToolCursor);
     connect(m_inputHandler, qOverload<>(&RegionInputHandler::updateRequested),
