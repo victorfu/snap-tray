@@ -1,4 +1,5 @@
 #include "input/MouseClickTracker.h"
+#include "utils/CoordinateHelper.h"
 
 #ifdef Q_OS_WIN
 #include <Windows.h>
@@ -6,8 +7,31 @@
 
 #include <QDebug>
 #include <QCoreApplication>
+#include <QGuiApplication>
+#include <QScreen>
 
 #ifdef Q_OS_WIN
+
+namespace {
+
+// Find screen containing a physical coordinate
+// QGuiApplication::screenAt() expects logical coordinates, so we need custom logic
+QScreen* screenAtPhysical(const QPoint &physicalPos)
+{
+    const auto screens = QGuiApplication::screens();
+    for (QScreen *screen : screens) {
+        QRect logicalGeom = screen->geometry();
+        qreal dpr = screen->devicePixelRatio();
+        QRect physicalGeom = CoordinateHelper::toPhysical(logicalGeom, dpr);
+
+        if (physicalGeom.contains(physicalPos)) {
+            return screen;
+        }
+    }
+    return QGuiApplication::primaryScreen();
+}
+
+} // anonymous namespace
 
 /**
  * @brief Windows implementation using low-level mouse hook.
@@ -84,7 +108,14 @@ private:
     {
         if (nCode >= 0 && s_instance && s_instance->m_running) {
             MSLLHOOKSTRUCT *mouseStruct = reinterpret_cast<MSLLHOOKSTRUCT*>(lParam);
-            QPoint pos(mouseStruct->pt.x, mouseStruct->pt.y);
+
+            // MSLLHOOKSTRUCT.pt is in physical screen coordinates
+            QPoint physicalPos(mouseStruct->pt.x, mouseStruct->pt.y);
+
+            // Convert to Qt logical coordinates for consistency with the rest of the app
+            QScreen *screen = screenAtPhysical(physicalPos);
+            qreal dpr = screen ? screen->devicePixelRatio() : 1.0;
+            QPoint pos = CoordinateHelper::toLogical(physicalPos, dpr);
 
             switch (wParam) {
             case WM_LBUTTONDOWN:
