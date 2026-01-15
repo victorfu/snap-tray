@@ -67,6 +67,8 @@ private:
     QImage m_currentFrame;
     QImage m_scaledFrame;
     QSize m_lastWidgetSize;
+    QSize m_lastFrameSize;
+    QSize m_targetScaledSize;
     bool m_videoLoaded;
 };
 

@@ -218,13 +218,17 @@ void VideoPlaybackWidget::resizeEvent(QResizeEvent *event)
 {
     QWidget::resizeEvent(event);
 
-    // Recalculate scaled frame if we have a current frame
+    // Recalculate scaled frame if we have a current frame and size changed
     if (!m_currentFrame.isNull() && size() != m_lastWidgetSize) {
         m_lastWidgetSize = size();
+        m_targetScaledSize = m_currentFrame.size().scaled(size(), Qt::KeepAspectRatio);
 
-        // Scale frame to fit widget while maintaining aspect ratio
-        m_scaledFrame = m_currentFrame.scaled(size(), Qt::KeepAspectRatio,
-                                               Qt::SmoothTransformation);
+        if (m_currentFrame.size() == m_targetScaledSize) {
+            m_scaledFrame = m_currentFrame;
+        } else {
+            m_scaledFrame = m_currentFrame.scaled(m_targetScaledSize, Qt::IgnoreAspectRatio,
+                                                   Qt::SmoothTransformation);
+        }
     }
 }
 
@@ -240,15 +244,21 @@ void VideoPlaybackWidget::onFrameReady(const QImage &frame)
 
     m_currentFrame = frame;
 
-    // Scale frame to fit widget
-    if (size() != m_lastWidgetSize || m_scaledFrame.isNull()) {
+    // Only recalculate target size when dimensions change
+    if (size() != m_lastWidgetSize || frame.size() != m_lastFrameSize) {
         m_lastWidgetSize = size();
-        m_scaledFrame = frame.scaled(size(), Qt::KeepAspectRatio,
-                                     Qt::SmoothTransformation);
+        m_lastFrameSize = frame.size();
+        m_targetScaledSize = frame.size().scaled(size(), Qt::KeepAspectRatio);
+    }
+
+    // Check if scaling is actually needed
+    if (frame.size() == m_targetScaledSize) {
+        // No scaling needed - frame already fits
+        m_scaledFrame = frame;
     } else {
-        // Fast path: same size, just scale
-        m_scaledFrame = frame.scaled(size(), Qt::KeepAspectRatio,
-                                     Qt::FastTransformation);
+        // Scale to pre-calculated target size (aspect ratio already accounted for)
+        m_scaledFrame = frame.scaled(m_targetScaledSize, Qt::IgnoreAspectRatio,
+                                     Qt::SmoothTransformation);
     }
 
     update();
