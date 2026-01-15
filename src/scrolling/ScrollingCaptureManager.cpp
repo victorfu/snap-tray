@@ -561,20 +561,13 @@ void ScrollingCaptureManager::captureFrame()
         return;
     }
 
-    QElapsedTimer perfTimer;
-    perfTimer.start();
-
     QImage frame = grabCaptureRegion();
-    qint64 grabMs = perfTimer.elapsed();
 
     if (frame.isNull()) {
-        qDebug() << "ScrollingCaptureManager: Failed to grab capture region";
+        qWarning() << "ScrollingCaptureManager: Failed to grab capture region";
         m_isProcessingFrame = false;
         return;
     }
-
-    // Increment frame count only after successful grab
-    m_totalFrameCount++;
 
     // Enqueue frame for async processing
     if (m_thumbnail) {
@@ -583,10 +576,10 @@ void ScrollingCaptureManager::captureFrame()
     m_lastFrame = frame;
     m_captureIndex++;
     bool queued = m_stitchWorker->enqueueFrame(frame);
-    if (!queued) {
-        qDebug() << "ScrollingCaptureManager: Frame dropped (queue full)";
+    if (queued) {
+        // Increment frame count only after successful enqueue
+        m_totalFrameCount++;
     }
-    qDebug() << "ScrollingCaptureManager::captureFrame - grab:" << grabMs << "ms";
     m_isProcessingFrame = false;
 }
 
@@ -613,7 +606,7 @@ QImage ScrollingCaptureManager::grabCaptureRegion()
     // Validate capture region is within screen bounds
     QRect validRegion = m_captureRegion.intersected(screenGeom);
     if (validRegion.isEmpty() || validRegion.width() < 10 || validRegion.height() < 10) {
-        qDebug() << "ScrollingCaptureManager: Capture region outside screen bounds or too small";
+        qWarning() << "ScrollingCaptureManager: Capture region outside screen bounds or too small";
         return QImage();
     }
 
@@ -622,7 +615,7 @@ QImage ScrollingCaptureManager::grabCaptureRegion()
 
     // Ensure relative coordinates are non-negative
     if (relX < 0 || relY < 0) {
-        qDebug() << "ScrollingCaptureManager: Invalid relative coordinates";
+        qWarning() << "ScrollingCaptureManager: Invalid relative coordinates";
         return QImage();
     }
 
@@ -630,7 +623,7 @@ QImage ScrollingCaptureManager::grabCaptureRegion()
         validRegion.width(), validRegion.height());
 
     if (pixmap.isNull()) {
-        qDebug() << "ScrollingCaptureManager: grabWindow returned null pixmap";
+        qWarning() << "ScrollingCaptureManager: grabWindow returned null pixmap";
         return QImage();
     }
 

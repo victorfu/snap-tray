@@ -99,7 +99,6 @@ bool StitchWorker::enqueueFrame(const QImage &frame)
 
     // Check if we're still accepting frames
     if (!m_acceptingFrames.load()) {
-        qDebug() << "StitchWorker: Not accepting frames, dropping frame";
         return false;
     }
 
@@ -112,7 +111,6 @@ bool StitchWorker::enqueueFrame(const QImage &frame)
         QMutexLocker locker(&m_queueMutex);
 
         if (m_frameQueue.size() >= MAX_QUEUE_SIZE) {
-            qDebug() << "StitchWorker: Queue full, dropping frame";
             return false;
         }
 
@@ -236,7 +234,7 @@ void StitchWorker::processNextFrame()
 void StitchWorker::doProcessFrame(const QImage &frame)
 {
     QElapsedTimer perfTimer;
-    qint64 detectMs = 0, stitchMs = 0;
+    qint64 detectMs = 0;
 
     Result result;
     result.frameCount = m_stitcher->frameCount();
@@ -367,9 +365,7 @@ void StitchWorker::doProcessFrame(const QImage &frame)
             }
         }
 
-        perfTimer.restart();
         ImageStitcher::StitchResult stitchResult = m_stitcher->addFrame(frameToStitch);
-        stitchMs = perfTimer.elapsed();
 
         result.success = stitchResult.success;
         result.confidence = stitchResult.confidence;
@@ -386,11 +382,6 @@ void StitchWorker::doProcessFrame(const QImage &frame)
     }
 
     result.frameCount = m_stitcher->frameCount();
-
-    qDebug() << "StitchWorker: Frame processed -"
-             << "success:" << result.success
-             << "confidence:" << result.confidence
-             << "detect:" << detectMs << "ms, stitch:" << stitchMs << "ms";
 
     emit frameProcessed(result);
 }

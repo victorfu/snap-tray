@@ -1,4 +1,5 @@
 #include "scrolling/ImageStitcher.h"
+#include "ImageStitcherImpl.h"
 
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
@@ -10,19 +11,6 @@
 #include <algorithm>
 #include <cmath>
 #include <numeric>
-
-// Definition of FrameCacheImpl (PIMPL for ImageStitcher::FrameCache)
-struct ImageStitcher::FrameCacheImpl {
-    cv::Mat bgr;       // BGR Mat (from QImage)
-    cv::Mat gray;      // Grayscale (for most algorithms)
-    bool valid = false;
-
-    void clear() {
-        bgr = cv::Mat();
-        gray = cv::Mat();
-        valid = false;
-    }
-};
 
 namespace
 {

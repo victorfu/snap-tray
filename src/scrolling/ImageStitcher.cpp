@@ -1,4 +1,5 @@
 #include "scrolling/ImageStitcher.h"
+#include "ImageStitcherImpl.h"
 
 #include <cmath>
 #include <utility>
@@ -6,18 +7,6 @@
 #include <QElapsedTimer>
 
 #include <opencv2/core.hpp>
-
-// Definition of FrameCacheImpl (must match the one in ImageStitcherAlgorithms.cpp)
-struct ImageStitcher::FrameCacheImpl {
-    cv::Mat bgr;
-    cv::Mat gray;
-    bool valid = false;
-    void clear() {
-        bgr = cv::Mat();
-        gray = cv::Mat();
-        valid = false;
-    }
-};
 
 ImageStitcher::ImageStitcher(QObject *parent)
     : QObject(parent)
