@@ -26,10 +26,12 @@ constexpr int kSpinnerRotation = 1000;        // Spinner full rotation
 constexpr int kLaserFade = 1000;              // Laser pointer fade
 constexpr int kRecoveryTimer = 1500;          // Recovery timer duration
 constexpr int kUIIndicatorTimeout = 1500;     // Zoom/opacity label timeout
+constexpr int kUIToastTimeout = 2000;         // Standard UI toast display
 constexpr int kLaserStrokeFade = 2000;        // Laser stroke fade
 constexpr int kOCRToastTimeout = 2500;        // OCR notification
 constexpr int kHintHideDelay = 3000;          // Onboarding hint hide
 constexpr int kErrorToastTimeout = 5000;      // Error notifications
+constexpr int kLiveIndicatorRefresh = 50;     // Live indicator animation (~20fps)
 constexpr int kMaxCaptureTimeout = 300000;    // 5 minutes max capture
 }  // namespace Timer
 
@@ -90,6 +92,11 @@ constexpr int kEffectsButtonSpacing = 4;
 constexpr int kEffectsToolbarPaddingX = 4;
 constexpr int kEffectsToolbarPaddingY = 2;
 }  // namespace RecordingControl
+
+namespace TextAnnotation {
+constexpr int kMaxPixmapWidth = 800;
+constexpr int kMaxPixmapHeight = 600;
+}  // namespace TextAnnotation
 }  // namespace UI
 
 // ============================================================================
@@ -143,6 +150,10 @@ inline const QColor kCaptureActive{0x4C, 0xAF, 0x50};
 inline const QColor kCaptureWarning{0xFF, 0xC1, 0x07};
 inline const QColor kCaptureFailed{0xFF, 0x3B, 0x30};
 inline const QColor kCaptureRecovered{0x00, 0x7A, 0xFF};
+
+// Text annotation colors
+inline const QColor kStickyNoteBackground{255, 255, 240};   // Light yellow
+inline const QColor kTextAnnotationForeground{40, 40, 40};  // Dark gray text
 }  // namespace Color
 
 // ============================================================================
@@ -202,6 +213,20 @@ constexpr int kOverride = 500;
 }  // namespace CursorPriority
 
 // ============================================================================
+// ANIMATION PARAMETERS
+// ============================================================================
+namespace Animation {
+namespace LiveIndicator {
+constexpr double kPulseBase = 0.5;
+constexpr double kPulseAmplitude = 0.5;
+constexpr double kPulsePeriodMs = 500.0;
+constexpr int kMinAlpha = 150;
+constexpr int kAlphaRange = 100;
+constexpr int kPausedDarkerPercent = 80;
+}  // namespace LiveIndicator
+}  // namespace Animation
+
+// ============================================================================
 // MISCELLANEOUS
 // ============================================================================
 namespace Misc {
@@ -213,6 +238,8 @@ constexpr int kMinCaptureRegionDim = 10;
 constexpr int kTextEditorMinWidth = 150;
 constexpr int kDefaultFontSize = 16;
 constexpr int kRotationIncrement = 90;
+constexpr int kMaxFileCollisionRetries = 100;
+constexpr int kFullOpacity = 255;
 constexpr size_t kMaxPendingMemoryBytes = 300 * 1024 * 1024;  // 300MB
 }  // namespace Misc
 

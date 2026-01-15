@@ -93,7 +93,7 @@ bool hasTransparentCornerPixels(const QPixmap &pixmap)
         if (cornerImg.isNull()) {
             continue;
         }
-        if (qAlpha(cornerImg.pixel(0, 0)) < 255) {
+        if (qAlpha(cornerImg.pixel(0, 0)) < SnapTray::Misc::kFullOpacity) {
             return true;
         }
     }
@@ -698,7 +698,7 @@ void PinWindow::saveToFile()
             QString baseName = QFileInfo(filePath).completeBaseName();
             QString ext = QFileInfo(filePath).suffix();
             int counter = 1;
-            while (QFile::exists(filePath) && counter < 100) {
+            while (QFile::exists(filePath) && counter < SnapTray::Misc::kMaxFileCollisionRetries) {
                 filePath = QDir(savePath).filePath(QString("%1_%2.%3").arg(baseName).arg(counter).arg(ext));
                 counter++;
             }
@@ -1073,11 +1073,12 @@ void PinWindow::paintEvent(QPaintEvent *)
         QPointF dotCenter(margin + dotRadius, margin + dotRadius);
 
         // Pulsing effect based on time
-        qreal pulse = 0.5 + 0.5 * qSin(QDateTime::currentMSecsSinceEpoch() / 500.0);
+        using namespace SnapTray::Animation::LiveIndicator;
+        qreal pulse = kPulseBase + kPulseAmplitude * qSin(QDateTime::currentMSecsSinceEpoch() / kPulsePeriodMs);
         QColor dotColor = m_livePaused
-            ? Color::kLivePaused.darker(80)              // Orange when paused (with alpha)
+            ? Color::kLivePaused.darker(kPausedDarkerPercent)
             : QColor(Color::kLiveActive.red(), Color::kLiveActive.green(),
-                     Color::kLiveActive.blue(), 150 + static_cast<int>(pulse * 100));  // Pulsing red
+                     Color::kLiveActive.blue(), kMinAlpha + static_cast<int>(pulse * kAlphaRange));
 
         painter.setPen(Qt::NoPen);
         painter.setBrush(dotColor);
@@ -2248,7 +2249,7 @@ void PinWindow::startLiveCapture()
     // Pulsing indicator animation timer
     m_liveIndicatorTimer = new QTimer(this);
     connect(m_liveIndicatorTimer, &QTimer::timeout, this, QOverload<>::of(&QWidget::update));
-    m_liveIndicatorTimer->start(50);  // 20 fps for smooth pulse
+    m_liveIndicatorTimer->start(SnapTray::Timer::kLiveIndicatorRefresh);
 
     qDebug() << "Live capture started at" << m_captureFrameRate << "FPS";
     update();

@@ -44,6 +44,10 @@ private slots:
     void onSelectionCancelled();
 
 private:
+    void initializeRegionSelector(QScreen *targetScreen,
+                                  const QPixmap &preCapture,
+                                  bool quickPinMode);
+
     QPointer<RegionSelector> m_regionSelector;
     PinWindowManager *m_pinManager;
     WindowDetector *m_windowDetector;

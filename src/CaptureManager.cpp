@@ -87,57 +87,7 @@ void CaptureManager::startRegionCapture()
         popup->close();
     }
 
-    // 5. 創建 RegionSelector
-    m_regionSelector = new RegionSelector();
-
-    // 6. 設置視窗偵測器 (window list should be ready or nearly ready by now)
-    if (m_windowDetector) {
-        m_regionSelector->setWindowDetector(m_windowDetector);
-    }
-
-    // 7. 初始化指定螢幕 (使用預截圖)
-    m_regionSelector->initializeForScreen(targetScreen, preCapture);
-
-    connect(m_regionSelector, &RegionSelector::regionSelected,
-            this, &CaptureManager::onRegionSelected);
-    connect(m_regionSelector, &RegionSelector::selectionCancelled,
-            this, &CaptureManager::onSelectionCancelled);
-    connect(m_regionSelector, &RegionSelector::recordingRequested,
-            this, &CaptureManager::recordingRequested);
-    connect(m_regionSelector, &RegionSelector::scrollingCaptureRequested,
-            this, &CaptureManager::scrollingCaptureRequested);
-    connect(m_regionSelector, &RegionSelector::saveCompleted,
-            this, &CaptureManager::saveCompleted);
-    connect(m_regionSelector, &RegionSelector::saveFailed,
-            this, &CaptureManager::saveFailed);
-
-    // Trigger initial window highlight once the async window list is ready.
-    if (m_windowDetector && m_windowDetector->isEnabled()) {
-        const auto regionSelector = m_regionSelector;
-        const auto triggerDetection = [regionSelector]() {
-            if (!regionSelector) {
-                return;
-            }
-            regionSelector->refreshWindowDetectionAtCursor();
-        };
-
-        if (m_windowDetector->isRefreshComplete()) {
-            triggerDetection();
-        } else {
-            connect(m_windowDetector, &WindowDetector::windowListReady,
-                    m_regionSelector, [triggerDetection]() {
-                        triggerDetection();
-                    });
-        }
-    }
-
-    // 5. 使用 setGeometry + show 取代 showFullScreen，確保在正確螢幕上顯示
-    m_regionSelector->setGeometry(targetScreen->geometry());
-    m_regionSelector->show();
-    raiseWindowAboveMenuBar(m_regionSelector);
-
-    m_regionSelector->activateWindow();
-    m_regionSelector->raise();
+    initializeRegionSelector(targetScreen, preCapture, /*quickPinMode=*/false);
 }
 
 void CaptureManager::startQuickPinCapture()
@@ -191,49 +141,7 @@ void CaptureManager::startQuickPinCapture()
         popup->close();
     }
 
-    // 5. 創建 RegionSelector 並設置 Quick Pin 模式
-    m_regionSelector = new RegionSelector();
-    m_regionSelector->setQuickPinMode(true);
-
-    // 6. 設置視窗偵測器
-    if (m_windowDetector) {
-        m_regionSelector->setWindowDetector(m_windowDetector);
-    }
-
-    // 7. 初始化指定螢幕 (使用預截圖)
-    m_regionSelector->initializeForScreen(targetScreen, preCapture);
-
-    connect(m_regionSelector, &RegionSelector::regionSelected,
-            this, &CaptureManager::onRegionSelected);
-    connect(m_regionSelector, &RegionSelector::selectionCancelled,
-            this, &CaptureManager::onSelectionCancelled);
-
-    // Trigger initial window highlight once the async window list is ready.
-    if (m_windowDetector && m_windowDetector->isEnabled()) {
-        const auto regionSelector = m_regionSelector;
-        const auto triggerDetection = [regionSelector]() {
-            if (!regionSelector) {
-                return;
-            }
-            regionSelector->refreshWindowDetectionAtCursor();
-        };
-
-        if (m_windowDetector->isRefreshComplete()) {
-            triggerDetection();
-        } else {
-            connect(m_windowDetector, &WindowDetector::windowListReady,
-                    m_regionSelector, [triggerDetection]() {
-                        triggerDetection();
-                    });
-        }
-    }
-
-    m_regionSelector->setGeometry(targetScreen->geometry());
-    m_regionSelector->show();
-    raiseWindowAboveMenuBar(m_regionSelector);
-
-    m_regionSelector->activateWindow();
-    m_regionSelector->raise();
+    initializeRegionSelector(targetScreen, preCapture, /*quickPinMode=*/true);
 }
 
 void CaptureManager::onRegionSelected(const QPixmap &screenshot, const QPoint &globalPosition, const QRect &globalRect)
@@ -336,4 +244,66 @@ void CaptureManager::startScrollingCaptureWithRegion(const QRect &region, QScree
 
     qDebug() << "CaptureManager: Starting scrolling capture with region:" << region;
     m_scrollingManager->startWithRegion(region, screen);
+}
+
+void CaptureManager::initializeRegionSelector(QScreen *targetScreen,
+                                              const QPixmap &preCapture,
+                                              bool quickPinMode)
+{
+    m_regionSelector = new RegionSelector();
+
+    if (quickPinMode) {
+        m_regionSelector->setQuickPinMode(true);
+    }
+
+    if (m_windowDetector) {
+        m_regionSelector->setWindowDetector(m_windowDetector);
+    }
+
+    m_regionSelector->initializeForScreen(targetScreen, preCapture);
+
+    // Core signals (always connected)
+    connect(m_regionSelector, &RegionSelector::regionSelected,
+            this, &CaptureManager::onRegionSelected);
+    connect(m_regionSelector, &RegionSelector::selectionCancelled,
+            this, &CaptureManager::onSelectionCancelled);
+
+    // Additional signals for full region capture mode
+    if (!quickPinMode) {
+        connect(m_regionSelector, &RegionSelector::recordingRequested,
+                this, &CaptureManager::recordingRequested);
+        connect(m_regionSelector, &RegionSelector::scrollingCaptureRequested,
+                this, &CaptureManager::scrollingCaptureRequested);
+        connect(m_regionSelector, &RegionSelector::saveCompleted,
+                this, &CaptureManager::saveCompleted);
+        connect(m_regionSelector, &RegionSelector::saveFailed,
+                this, &CaptureManager::saveFailed);
+    }
+
+    // Trigger initial window highlight once the async window list is ready.
+    if (m_windowDetector && m_windowDetector->isEnabled()) {
+        const auto regionSelector = m_regionSelector;
+        const auto triggerDetection = [regionSelector]() {
+            if (!regionSelector) {
+                return;
+            }
+            regionSelector->refreshWindowDetectionAtCursor();
+        };
+
+        if (m_windowDetector->isRefreshComplete()) {
+            triggerDetection();
+        } else {
+            connect(m_windowDetector, &WindowDetector::windowListReady,
+                    m_regionSelector, [triggerDetection]() {
+                        triggerDetection();
+                    });
+        }
+    }
+
+    m_regionSelector->setGeometry(targetScreen->geometry());
+    m_regionSelector->show();
+    raiseWindowAboveMenuBar(m_regionSelector);
+
+    m_regionSelector->activateWindow();
+    m_regionSelector->raise();
 }

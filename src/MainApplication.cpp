@@ -8,6 +8,7 @@
 #include "settings/Settings.h"
 #include "ui/GlobalToast.h"
 #include "video/RecordingPreviewWindow.h"
+#include "Constants.h"
 
 #include <QFile>
 #include <QPointer>
@@ -59,7 +60,7 @@ void MainApplication::activate()
             QStringLiteral("SnapTray"),
             tr("SnapTray is already running"),
             QSystemTrayIcon::Information,
-            2000);
+            SnapTray::Timer::kUIToastTimeout);
     }
 }
 
@@ -659,25 +660,23 @@ QPixmap MainApplication::renderTextToPixmap(const QString &text)
     int totalHeight = lines.count() * fm.lineSpacing();
 
     // Limit maximum size
-    const int kMaxPixmapWidth = 800;
-    const int kMaxPixmapHeight = 600;
-    maxWidth = qMin(maxWidth, kMaxPixmapWidth);
-    totalHeight = qMin(totalHeight, kMaxPixmapHeight);
+    maxWidth = qMin(maxWidth, SnapTray::UI::TextAnnotation::kMaxPixmapWidth);
+    totalHeight = qMin(totalHeight, SnapTray::UI::TextAnnotation::kMaxPixmapHeight);
 
     // Create pixmap with padding
-    int padding = 16;
+    const int padding = SnapTray::UI::Layout::kSpacingLarge;
     qreal dpr = qApp->devicePixelRatio();
     QSize pixmapSize(maxWidth + 2 * padding, totalHeight + 2 * padding);
 
     QPixmap pixmap(pixmapSize * dpr);
     pixmap.setDevicePixelRatio(dpr);
-    pixmap.fill(QColor(255, 255, 240));  // Light yellow background (sticky note style)
+    pixmap.fill(SnapTray::Color::kStickyNoteBackground);
 
     // Draw text
     QPainter painter(&pixmap);
     painter.setRenderHint(QPainter::TextAntialiasing, true);
     painter.setFont(font);
-    painter.setPen(QColor(40, 40, 40));  // Dark text
+    painter.setPen(SnapTray::Color::kTextAnnotationForeground);
 
     int y = padding + fm.ascent();
     for (const QString &line : lines) {
