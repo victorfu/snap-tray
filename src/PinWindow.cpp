@@ -1716,8 +1716,9 @@ void PinWindow::updateCursorForTool()
         ToolId currentTool = m_toolManager->currentTool();
 
         // Special handling for mosaic tool
+        // Use 2x width for mosaic cursor (UI shows half the actual drawing size)
         if (currentTool == ToolId::Mosaic) {
-            int mosaicWidth = m_toolManager->width();
+            int mosaicWidth = m_toolManager->width() * 2;
             toolCursor = CursorManager::createMosaicCursor(mosaicWidth);
         } else {
             // Use handler's cursor() method

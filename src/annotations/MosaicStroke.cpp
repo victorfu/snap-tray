@@ -240,7 +240,9 @@ void MosaicStroke::draw(QPainter &painter) const
         && m_cachedDpr == dpr;
 
     if (!cacheValid) {
-        int halfWidth = m_width / 2;
+        // Use 2x width for mosaic brush (UI shows half the actual drawing size)
+        int effectiveWidth = m_width * 2;
+        int halfWidth = effectiveWidth / 2;
 
         // === Step 1: Create blurred/pixelated effect ===
         QImage mosaicImage;
@@ -276,7 +278,7 @@ void MosaicStroke::draw(QPainter &painter) const
             // Convert to mask coordinates (relative to bounds)
             int mx = static_cast<int>((pt.x() - bounds.left()) * dpr);
             int my = static_cast<int>((pt.y() - bounds.top()) * dpr);
-            int size = static_cast<int>(m_width * dpr);
+            int size = static_cast<int>(effectiveWidth * dpr);
 
             maskPainter.fillRect(mx - size / 2, my - size / 2, size, size, Qt::white);
 
@@ -348,7 +350,8 @@ QRect MosaicStroke::boundingRect() const
         maxY = qMax(maxY, p.y());
     }
 
-    int margin = m_width / 2 + m_blockSize;
+    // Use 2x width for mosaic brush (UI shows half the actual drawing size)
+    int margin = m_width + m_blockSize;
     return QRect(minX - margin, minY - margin,
                  maxX - minX + 2 * margin, maxY - minY + 2 * margin);
 }
@@ -396,7 +399,7 @@ bool MosaicStroke::intersectsCircle(const QPoint &center, int radius) const
     }
 
     QPainterPathStroker stroker;
-    stroker.setWidth(m_width);
+    stroker.setWidth(m_width * 2);  // 2x width for mosaic brush
     stroker.setCapStyle(Qt::RoundCap);
     stroker.setJoinStyle(Qt::RoundJoin);
     QPainterPath strokePath = stroker.createStroke(linePath);

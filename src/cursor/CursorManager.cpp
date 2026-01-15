@@ -127,8 +127,9 @@ void CursorManager::updateToolCursor()
     IToolHandler* handler = m_toolManager->currentHandler();
 
     // Special handling for mosaic tool - needs dynamic size
+    // Use 2x width for mosaic cursor (UI shows half the actual drawing size)
     if (currentTool == ToolId::Mosaic) {
-        int mosaicWidth = m_toolManager->width();
+        int mosaicWidth = m_toolManager->width() * 2;
         pushCursor(CursorContext::Tool, createMosaicCursor(mosaicWidth));
         return;
     }

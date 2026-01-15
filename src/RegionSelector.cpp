@@ -1097,9 +1097,11 @@ void RegionSelector::drawMagnifier(QPainter& painter)
 QCursor RegionSelector::getMosaicCursor(int width)
 {
     // Use centralized CursorManager for mosaic cursor
-    if (width != m_mosaicCursorCacheWidth) {
-        m_mosaicCursorCache = CursorManager::createMosaicCursor(width);
-        m_mosaicCursorCacheWidth = width;
+    // Use 2x width for mosaic cursor (UI shows half the actual drawing size)
+    int effectiveWidth = width * 2;
+    if (effectiveWidth != m_mosaicCursorCacheWidth) {
+        m_mosaicCursorCache = CursorManager::createMosaicCursor(effectiveWidth);
+        m_mosaicCursorCacheWidth = effectiveWidth;
     }
     return m_mosaicCursorCache;
 }
