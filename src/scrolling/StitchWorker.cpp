@@ -153,33 +153,6 @@ QImage StitchWorker::getStitchedImage() const
     return m_stitcher->getStitchedImage();
 }
 
-QImage StitchWorker::finishAndGetResult(int timeoutMs)
-{
-    // 1. Stop accepting new frames
-    m_acceptingFrames = false;
-
-    // 2. Wait for queue to drain and processing to complete
-    if (m_processingFuture.isRunning()) {
-        if (timeoutMs > 0) {
-            // Wait with timeout
-            QElapsedTimer timer;
-            timer.start();
-            while (m_processingFuture.isRunning() && timer.elapsed() < timeoutMs) {
-                // Brief sleep to avoid busy-waiting
-                QThread::msleep(10);
-            }
-            if (m_processingFuture.isRunning()) {
-                qWarning() << "StitchWorker::finishAndGetResult: Timeout waiting for processing to complete";
-            }
-        } else {
-            m_processingFuture.waitForFinished();
-        }
-    }
-
-    // 3. Return deep copy of stitched result (thread-safe)
-    return m_stitcher->getStitchedImage().copy();
-}
-
 int StitchWorker::frameCount() const
 {
     return m_stitcher->frameCount();

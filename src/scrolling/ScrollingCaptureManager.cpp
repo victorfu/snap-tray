@@ -254,7 +254,6 @@ void ScrollingCaptureManager::destroyComponents()
     // Reset all state
     m_captureRegion = QRect();
     m_targetScreen = nullptr;
-    m_lastFrame = QImage();
     m_stitchedResult = QImage();
     m_totalFrameCount = 0;
     m_hasSuccessfulStitch = false;
@@ -573,7 +572,6 @@ void ScrollingCaptureManager::captureFrame()
     if (m_thumbnail) {
         m_thumbnail->setViewportImage(frame);
     }
-    m_lastFrame = frame;
     m_captureIndex++;
     bool queued = m_stitchWorker->enqueueFrame(frame);
     if (queued) {

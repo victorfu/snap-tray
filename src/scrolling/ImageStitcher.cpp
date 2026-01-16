@@ -17,21 +17,11 @@ ImageStitcher::~ImageStitcher()
 {
 }
 
-void ImageStitcher::setAlgorithm(Algorithm algo)
-{
-    m_algorithm = algo;
-}
-
 void ImageStitcher::setStitchConfig(const StitchConfig &config)
 {
     m_stitchConfig = config;
     // Clamp confidence threshold to valid range
     m_stitchConfig.confidenceThreshold = qBound(0.0, config.confidenceThreshold, 1.0);
-}
-
-void ImageStitcher::setConfidenceThreshold(double threshold)
-{
-    m_stitchConfig.confidenceThreshold = qBound(0.0, threshold, 1.0);
 }
 
 void ImageStitcher::setCaptureMode(CaptureMode mode)

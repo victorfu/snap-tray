@@ -131,7 +131,6 @@ private:
     QScreen *m_targetScreen = nullptr;
     QTimer *m_captureTimer;
     QTimer *m_timeoutTimer;
-    QImage m_lastFrame;
     int m_totalFrameCount = 0;
     bool m_hasSuccessfulStitch = false;
     bool m_isProcessingFrame = false;  // Guard against reentrant captureFrame calls

@@ -95,20 +95,10 @@ public:
     /**
      * @brief Get the final stitched result
      * @return The fully stitched image (call after stopping)
-     * @note This method is NOT thread-safe. Use finishAndGetResult() instead
+     * @note This method is NOT thread-safe. Use requestFinish() instead
      *       when the worker thread may still be processing.
      */
     QImage getStitchedImage() const;
-
-    /**
-     * @brief Stop accepting frames, wait for processing to complete, and return result
-     * @param timeoutMs Maximum time to wait for processing to complete
-     * @return The fully stitched image (deep copy, thread-safe)
-     *
-     * This method is thread-safe and should be used when finishing capture
-     * while the worker thread may still be processing frames.
-     */
-    QImage finishAndGetResult(int timeoutMs = 5000);
 
     /**
      * @brief Get current frame count

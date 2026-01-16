@@ -90,18 +90,11 @@ public:
     ~ImageStitcher();
 
     // Configuration
-    void setAlgorithm(Algorithm algo);
-    Algorithm algorithm() const { return m_algorithm; }
-
     void setCaptureMode(CaptureMode mode);
     CaptureMode captureMode() const { return m_captureMode; }
 
     void setStitchConfig(const StitchConfig &config);
     StitchConfig stitchConfig() const { return m_stitchConfig; }
-
-    // Legacy API (wraps StitchConfig)
-    void setConfidenceThreshold(double threshold);
-    double confidenceThreshold() const { return m_stitchConfig.confidenceThreshold; }
 
     // Core operations
     StitchResult addFrame(const QImage &frame);
