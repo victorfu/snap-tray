@@ -97,50 +97,50 @@ void MagnifierPanel::updateMagnifierCache(const QPoint& cursorPos, const QPixmap
         return;  // Cache still valid
     }
 
-    // Sample from device pixel pixmap
-    // Take gridCount "logical pixels", each logical pixel = devicePixelRatio device pixels
     int deviceGridCountX = static_cast<int>(kGridCountX * m_devicePixelRatio);
     int deviceGridCountY = static_cast<int>(kGridCountY * m_devicePixelRatio);
-    // Cursor position at center
     int sampleX = deviceX - deviceGridCountX / 2;
     int sampleY = deviceY - deviceGridCountY / 2;
 
-    // Create a sample image centered on cursor, fill out-of-bounds with black
-    QImage sampleImage(deviceGridCountX, deviceGridCountY, QImage::Format_ARGB32);
+    // Convert pixmap to QImage for pixel access
+    QImage backgroundImage = backgroundPixmap.toImage();
+
+    // Create sample image with SAME format as background to avoid conversion issues
+    QImage sampleImage(deviceGridCountX, deviceGridCountY, backgroundImage.format());
     sampleImage.fill(Qt::black);
 
-    // Calculate source rect in pixmap coordinates
+    // Calculate valid source rect
     QRect srcRect(sampleX, sampleY, deviceGridCountX, deviceGridCountY);
-    
-    // Clip to background bounds to find valid area
-    QRect validSrcRect = srcRect.intersected(backgroundPixmap.rect());
+    QRect validSrcRect = srcRect.intersected(backgroundImage.rect());
 
     if (!validSrcRect.isEmpty()) {
-        // Convert only the visible portion to QImage (FAST!)
-        QImage croppedImage = backgroundPixmap.copy(validSrcRect).toImage();
-
-        // Draw cropped image into sample image at correct offset
+        // Direct pixel copy - avoid QPainter entirely to prevent any painter state issues
         int dstX = validSrcRect.x() - sampleX;
         int dstY = validSrcRect.y() - sampleY;
+        int bytesPerPixel = backgroundImage.depth() / 8;
 
-        QPainter p(&sampleImage);
-        p.setCompositionMode(QPainter::CompositionMode_Source);
-        p.drawImage(dstX, dstY, croppedImage);
+        for (int y = 0; y < validSrcRect.height(); ++y) {
+            const uchar* srcLine = backgroundImage.constScanLine(validSrcRect.y() + y);
+            uchar* dstLine = sampleImage.scanLine(dstY + y);
+
+            std::memcpy(
+                dstLine + (dstX * bytesPerPixel),
+                srcLine + (validSrcRect.x() * bytesPerPixel),
+                validSrcRect.width() * bytesPerPixel
+            );
+        }
     }
 
-    // Update current color (center pixel)
-    // The center pixel is at offset (deviceGridCountX/2, deviceGridCountY/2) in sampleImage
+    // Update current color from center pixel
     int centerX = deviceGridCountX / 2;
     int centerY = deviceGridCountY / 2;
-    // Check bounds just in case, though it should always be valid for non-empty grid
-    if (centerX >= 0 && centerX < sampleImage.width() && 
+    if (centerX >= 0 && centerX < sampleImage.width() &&
         centerY >= 0 && centerY < sampleImage.height()) {
         m_currentColor = sampleImage.pixelColor(centerX, centerY);
     } else {
         m_currentColor = Qt::black;
     }
 
-    // Use IgnoreAspectRatio to ensure it fills the entire region
     m_magnifierPixmapCache = QPixmap::fromImage(sampleImage).scaled(kWidth, kHeight,
         Qt::IgnoreAspectRatio,
         Qt::FastTransformation);
