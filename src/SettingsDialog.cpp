@@ -25,6 +25,7 @@
 #include <QComboBox>
 #include <QListWidget>
 #include <QFileDialog>
+#include <QFrame>
 #include <QStandardPaths>
 #include <QFile>
 #include <QTimer>
@@ -1231,6 +1232,9 @@ void SettingsDialog::loadOcrLanguages()
     availableLayout->addWidget(availableLabel);
 
     m_ocrAvailableList = new QListWidget(m_ocrContentWidget);
+    m_ocrAvailableList->setFrameShape(QFrame::Box);
+    m_ocrAvailableList->setFrameShadow(QFrame::Plain);
+    m_ocrAvailableList->setLineWidth(1);
     m_ocrAvailableList->setSelectionMode(QAbstractItemView::ExtendedSelection);
     m_ocrAvailableList->setSortingEnabled(true);
     availableLayout->addWidget(m_ocrAvailableList);
@@ -1258,6 +1262,9 @@ void SettingsDialog::loadOcrLanguages()
     selectedLayout->addWidget(selectedLabel);
 
     m_ocrSelectedList = new QListWidget(m_ocrContentWidget);
+    m_ocrSelectedList->setFrameShape(QFrame::Box);
+    m_ocrSelectedList->setFrameShadow(QFrame::Plain);
+    m_ocrSelectedList->setLineWidth(1);
     m_ocrSelectedList->setSelectionMode(QAbstractItemView::SingleSelection);
     m_ocrSelectedList->setDragDropMode(QAbstractItemView::InternalMove);
     m_ocrSelectedList->setDefaultDropAction(Qt::MoveAction);
