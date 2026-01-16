@@ -1,6 +1,7 @@
 #include "annotations/StepBadgeAnnotation.h"
 #include <QPainter>
 #include <QFont>
+#include <QtMath>
 
 // ============================================================================
 // StepBadgeAnnotation Implementation
@@ -32,10 +33,19 @@ void StepBadgeAnnotation::draw(QPainter &painter) const
     painter.save();
     painter.setRenderHint(QPainter::Antialiasing, true);
 
-    // Draw filled circle with annotation color
+    // Draw filled circle with annotation color (rotates with canvas - OK since circle is symmetric)
     painter.setPen(Qt::NoPen);
     painter.setBrush(m_color);
     painter.drawEllipse(m_position, m_radius, m_radius);
+
+    // Counter-rotate text to keep it upright regardless of canvas rotation
+    QTransform worldTransform = painter.worldTransform();
+    qreal rotationAngle = qRadiansToDegrees(qAtan2(worldTransform.m12(), worldTransform.m11()));
+
+    painter.save();
+    painter.translate(m_position);
+    painter.rotate(-rotationAngle);
+    painter.translate(-m_position);
 
     // Draw white number in center
     // Scale font proportionally: 8pt for small (r=10), 12pt for medium (r=14), 17pt for large (r=20)
@@ -50,6 +60,7 @@ void StepBadgeAnnotation::draw(QPainter &painter) const
                    m_radius * 2, m_radius * 2);
     painter.drawText(textRect, Qt::AlignCenter, QString::number(m_number));
 
+    painter.restore();
     painter.restore();
 }
 
