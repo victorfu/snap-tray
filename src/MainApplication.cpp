@@ -762,6 +762,13 @@ void MainApplication::onPasteFromClipboard()
 {
     qDebug() << "Paste hotkey activated";
 
+    // If region selection is active with complete selection, trigger pin (same as Enter)
+    if (m_captureManager && m_captureManager->hasCompleteSelection()) {
+        qDebug() << "Region selection active, triggering pin instead of paste";
+        m_captureManager->triggerFinishSelection();
+        return;
+    }
+
     QClipboard *clipboard = QGuiApplication::clipboard();
     QPixmap pixmap = clipboard->pixmap();
 

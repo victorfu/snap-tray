@@ -852,6 +852,11 @@ void RegionSelector::setQuickPinMode(bool enabled)
     m_quickPinMode = enabled;
 }
 
+bool RegionSelector::isSelectionComplete() const
+{
+    return m_selectionManager && m_selectionManager->isComplete();
+}
+
 void RegionSelector::setWindowDetector(WindowDetector* detector)
 {
     m_windowDetector = detector;

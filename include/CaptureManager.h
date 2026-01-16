@@ -22,6 +22,8 @@ public:
     ~CaptureManager();
 
     bool isActive() const;
+    bool hasCompleteSelection() const;
+    void triggerFinishSelection();
 
 public slots:
     void startRegionCapture();

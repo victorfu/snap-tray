@@ -84,6 +84,9 @@ public:
     // 設置 Quick Pin 模式 (選擇區域後直接 pin，不顯示 toolbar)
     void setQuickPinMode(bool enabled);
 
+    // Check if selection is complete (for external queries)
+    bool isSelectionComplete() const;
+
     void setWindowDetector(WindowDetector *detector);
     void refreshWindowDetectionAtCursor();
 

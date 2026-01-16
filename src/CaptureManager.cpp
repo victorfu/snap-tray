@@ -12,6 +12,7 @@
 #include <QApplication>
 #include <QScreen>
 #include <QCursor>
+#include <QKeyEvent>
 
 CaptureManager::CaptureManager(PinWindowManager *pinManager, QObject *parent)
     : QObject(parent)
@@ -30,6 +31,20 @@ bool CaptureManager::isActive() const
 {
     return (m_regionSelector && m_regionSelector->isVisible()) ||
            (m_scrollingManager && m_scrollingManager->isActive());
+}
+
+bool CaptureManager::hasCompleteSelection() const
+{
+    return m_regionSelector && m_regionSelector->isVisible() &&
+           m_regionSelector->isSelectionComplete();
+}
+
+void CaptureManager::triggerFinishSelection()
+{
+    if (m_regionSelector && m_regionSelector->isVisible()) {
+        QKeyEvent event(QEvent::KeyPress, Qt::Key_Return, Qt::NoModifier);
+        QApplication::sendEvent(m_regionSelector, &event);
+    }
 }
 
 void CaptureManager::startRegionCapture()
