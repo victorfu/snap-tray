@@ -63,6 +63,8 @@ private slots:
     void onAccepted();
     void onAddOcrLanguage();
     void onRemoveOcrLanguage();
+    void onTabChanged(int index);
+    void loadOcrLanguages();
 
 private:
     void setupUi();
@@ -179,6 +181,13 @@ private:
     QPushButton *m_ocrAddBtn;
     QPushButton *m_ocrRemoveBtn;
     QLabel *m_ocrInfoLabel;
+
+    // OCR tab lazy loading
+    QWidget *m_ocrLoadingWidget;
+    QLabel *m_ocrLoadingLabel;
+    QWidget *m_ocrContentWidget;
+    bool m_ocrTabInitialized;
+    int m_ocrTabIndex;
 };
 
 #endif // SETTINGSDIALOG_H
