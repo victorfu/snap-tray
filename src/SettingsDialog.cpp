@@ -30,14 +30,7 @@
 #include <QTimer>
 #include <memory>
 
-static const char* SETTINGS_KEY_HOTKEY = "hotkey";
-static const char* DEFAULT_HOTKEY = "F2";
-static const char* SETTINGS_KEY_SCREEN_CANVAS_HOTKEY = "screenCanvasHotkey";
-static const char* DEFAULT_SCREEN_CANVAS_HOTKEY = "Ctrl+F2";
-static const char* SETTINGS_KEY_PASTE_HOTKEY = "pasteHotkey";
-static const char* DEFAULT_PASTE_HOTKEY = "F3";
-static const char* SETTINGS_KEY_QUICK_PIN_HOTKEY = "quickPinHotkey";
-static const char* DEFAULT_QUICK_PIN_HOTKEY = "Shift+F2";
+// Hotkey constants are defined in settings/Settings.h
 
 SettingsDialog::SettingsDialog(QWidget* parent)
     : QDialog(parent)
@@ -821,39 +814,39 @@ void SettingsDialog::updateCaptureHotkeyStatus(bool isRegistered)
 
 void SettingsDialog::onRestoreDefaults()
 {
-    m_hotkeyEdit->setKeySequence(QString(DEFAULT_HOTKEY));
-    m_screenCanvasHotkeyEdit->setKeySequence(QString(DEFAULT_SCREEN_CANVAS_HOTKEY));
-    m_pasteHotkeyEdit->setKeySequence(QString(DEFAULT_PASTE_HOTKEY));
-    m_quickPinHotkeyEdit->setKeySequence(QString(DEFAULT_QUICK_PIN_HOTKEY));
+    m_hotkeyEdit->setKeySequence(QString(SnapTray::kDefaultHotkey));
+    m_screenCanvasHotkeyEdit->setKeySequence(QString(SnapTray::kDefaultScreenCanvasHotkey));
+    m_pasteHotkeyEdit->setKeySequence(QString(SnapTray::kDefaultPasteHotkey));
+    m_quickPinHotkeyEdit->setKeySequence(QString(SnapTray::kDefaultQuickPinHotkey));
 }
 
 QString SettingsDialog::defaultHotkey()
 {
-    return QString(DEFAULT_HOTKEY);
+    return QString(SnapTray::kDefaultHotkey);
 }
 
 QString SettingsDialog::loadHotkey()
 {
     auto settings = SnapTray::getSettings();
-    return settings.value(SETTINGS_KEY_HOTKEY, DEFAULT_HOTKEY).toString();
+    return settings.value(SnapTray::kSettingsKeyHotkey, SnapTray::kDefaultHotkey).toString();
 }
 
 void SettingsDialog::saveHotkey(const QString& keySequence)
 {
     auto settings = SnapTray::getSettings();
-    settings.setValue(SETTINGS_KEY_HOTKEY, keySequence);
+    settings.setValue(SnapTray::kSettingsKeyHotkey, keySequence);
     qDebug() << "Hotkey saved:" << keySequence;
 }
 
 QString SettingsDialog::defaultScreenCanvasHotkey()
 {
-    return QString(DEFAULT_SCREEN_CANVAS_HOTKEY);
+    return QString(SnapTray::kDefaultScreenCanvasHotkey);
 }
 
 QString SettingsDialog::loadScreenCanvasHotkey()
 {
     auto settings = SnapTray::getSettings();
-    return settings.value(SETTINGS_KEY_SCREEN_CANVAS_HOTKEY, DEFAULT_SCREEN_CANVAS_HOTKEY).toString();
+    return settings.value(SnapTray::kSettingsKeyScreenCanvasHotkey, SnapTray::kDefaultScreenCanvasHotkey).toString();
 }
 
 void SettingsDialog::updateScreenCanvasHotkeyStatus(bool isRegistered)
@@ -863,13 +856,13 @@ void SettingsDialog::updateScreenCanvasHotkeyStatus(bool isRegistered)
 
 QString SettingsDialog::defaultPasteHotkey()
 {
-    return QString(DEFAULT_PASTE_HOTKEY);
+    return QString(SnapTray::kDefaultPasteHotkey);
 }
 
 QString SettingsDialog::loadPasteHotkey()
 {
     auto settings = SnapTray::getSettings();
-    return settings.value(SETTINGS_KEY_PASTE_HOTKEY, DEFAULT_PASTE_HOTKEY).toString();
+    return settings.value(SnapTray::kSettingsKeyPasteHotkey, SnapTray::kDefaultPasteHotkey).toString();
 }
 
 void SettingsDialog::updatePasteHotkeyStatus(bool isRegistered)
@@ -879,13 +872,13 @@ void SettingsDialog::updatePasteHotkeyStatus(bool isRegistered)
 
 QString SettingsDialog::defaultQuickPinHotkey()
 {
-    return QString(DEFAULT_QUICK_PIN_HOTKEY);
+    return QString(SnapTray::kDefaultQuickPinHotkey);
 }
 
 QString SettingsDialog::loadQuickPinHotkey()
 {
     auto settings = SnapTray::getSettings();
-    return settings.value(SETTINGS_KEY_QUICK_PIN_HOTKEY, DEFAULT_QUICK_PIN_HOTKEY).toString();
+    return settings.value(SnapTray::kSettingsKeyQuickPinHotkey, SnapTray::kDefaultQuickPinHotkey).toString();
 }
 
 void SettingsDialog::updateQuickPinHotkeyStatus(bool isRegistered)

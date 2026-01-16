@@ -498,9 +498,9 @@ bool MainApplication::updateHotkey(const QString& newHotkey)
 {
     qDebug() << "Updating hotkey to:" << newHotkey;
 
-    // Save old state for reverting
-    QKeySequence oldShortcut = m_regionHotkey->shortcut();
-    QHotkey::NativeShortcut oldNative = m_regionHotkey->currentNativeShortcut();
+    // Save old hotkey string for reverting
+    auto settings = SnapTray::getSettings();
+    QString oldHotkey = settings.value(SnapTray::kSettingsKeyHotkey, SnapTray::kDefaultHotkey).toString();
 
     // Unregister old hotkey
     m_regionHotkey->setRegistered(false);
@@ -519,26 +519,22 @@ bool MainApplication::updateHotkey(const QString& newHotkey)
     if (m_regionHotkey->isRegistered()) {
         qDebug() << "Hotkey updated and registered:" << newHotkey;
         updateTrayMenuHotkeyText(newHotkey);
-
-        // Save only after successful registration
-        auto settings = SnapTray::getSettings();
-        settings.setValue("hotkey", newHotkey);
-
+        settings.setValue(SnapTray::kSettingsKeyHotkey, newHotkey);
         return true;
     }
     else {
         qDebug() << "Failed to register new hotkey:" << newHotkey << ", reverting...";
 
-        // Revert to old hotkey
-        if (oldNative.isValid()) {
-            m_regionHotkey->setNativeShortcut(oldNative);
+        // Revert using saved string
+        if (isNativeKeyCode(oldHotkey, nativeKey)) {
+            m_regionHotkey->setNativeShortcut(QHotkey::NativeShortcut(nativeKey, 0));
         } else {
-            m_regionHotkey->setShortcut(oldShortcut);
+            m_regionHotkey->setShortcut(QKeySequence(oldHotkey));
         }
         m_regionHotkey->setRegistered(true);
 
         if (m_regionHotkey->isRegistered()) {
-            qDebug() << "Reverted to old hotkey:" << oldShortcut.toString();
+            qDebug() << "Reverted to old hotkey:" << oldHotkey;
         }
         else {
             qDebug() << "Critical: Failed to restore old hotkey!";
@@ -552,9 +548,9 @@ bool MainApplication::updateScreenCanvasHotkey(const QString& newHotkey)
 {
     qDebug() << "Updating screen canvas hotkey to:" << newHotkey;
 
-    // Save old state for reverting
-    QKeySequence oldShortcut = m_screenCanvasHotkey->shortcut();
-    QHotkey::NativeShortcut oldNative = m_screenCanvasHotkey->currentNativeShortcut();
+    // Save old hotkey string for reverting
+    auto settings = SnapTray::getSettings();
+    QString oldHotkey = settings.value(SnapTray::kSettingsKeyScreenCanvasHotkey, SnapTray::kDefaultScreenCanvasHotkey).toString();
 
     // Unregister old hotkey
     m_screenCanvasHotkey->setRegistered(false);
@@ -579,24 +575,23 @@ bool MainApplication::updateScreenCanvasHotkey(const QString& newHotkey)
         }
 
         // Save only after successful registration
-        auto settings = SnapTray::getSettings();
-        settings.setValue("screenCanvasHotkey", newHotkey);
+        settings.setValue(SnapTray::kSettingsKeyScreenCanvasHotkey, newHotkey);
 
         return true;
     }
     else {
         qDebug() << "Failed to register new screen canvas hotkey:" << newHotkey << ", reverting...";
 
-        // Revert to old hotkey
-        if (oldNative.isValid()) {
-            m_screenCanvasHotkey->setNativeShortcut(oldNative);
+        // Revert using saved string
+        if (isNativeKeyCode(oldHotkey, nativeKey)) {
+            m_screenCanvasHotkey->setNativeShortcut(QHotkey::NativeShortcut(nativeKey, 0));
         } else {
-            m_screenCanvasHotkey->setShortcut(oldShortcut);
+            m_screenCanvasHotkey->setShortcut(QKeySequence(oldHotkey));
         }
         m_screenCanvasHotkey->setRegistered(true);
 
         if (m_screenCanvasHotkey->isRegistered()) {
-            qDebug() << "Reverted to old screen canvas hotkey:" << oldShortcut.toString();
+            qDebug() << "Reverted to old screen canvas hotkey:" << oldHotkey;
         }
         else {
             qDebug() << "Critical: Failed to restore old screen canvas hotkey!";
@@ -610,9 +605,9 @@ bool MainApplication::updatePasteHotkey(const QString& newHotkey)
 {
     qDebug() << "Updating paste hotkey to:" << newHotkey;
 
-    // Save old state for reverting
-    QKeySequence oldShortcut = m_pasteHotkey->shortcut();
-    QHotkey::NativeShortcut oldNative = m_pasteHotkey->currentNativeShortcut();
+    // Save old hotkey string for reverting
+    auto settings = SnapTray::getSettings();
+    QString oldHotkey = settings.value(SnapTray::kSettingsKeyPasteHotkey, SnapTray::kDefaultPasteHotkey).toString();
 
     // Unregister old hotkey
     m_pasteHotkey->setRegistered(false);
@@ -632,24 +627,23 @@ bool MainApplication::updatePasteHotkey(const QString& newHotkey)
         qDebug() << "Paste hotkey updated and registered:" << newHotkey;
 
         // Save only after successful registration
-        auto settings = SnapTray::getSettings();
-        settings.setValue("pasteHotkey", newHotkey);
+        settings.setValue(SnapTray::kSettingsKeyPasteHotkey, newHotkey);
 
         return true;
     }
     else {
         qDebug() << "Failed to register new paste hotkey:" << newHotkey << ", reverting...";
 
-        // Revert to old hotkey
-        if (oldNative.isValid()) {
-            m_pasteHotkey->setNativeShortcut(oldNative);
+        // Revert using saved string
+        if (isNativeKeyCode(oldHotkey, nativeKey)) {
+            m_pasteHotkey->setNativeShortcut(QHotkey::NativeShortcut(nativeKey, 0));
         } else {
-            m_pasteHotkey->setShortcut(oldShortcut);
+            m_pasteHotkey->setShortcut(QKeySequence(oldHotkey));
         }
         m_pasteHotkey->setRegistered(true);
 
         if (m_pasteHotkey->isRegistered()) {
-            qDebug() << "Reverted to old paste hotkey:" << oldShortcut.toString();
+            qDebug() << "Reverted to old paste hotkey:" << oldHotkey;
         }
         else {
             qDebug() << "Critical: Failed to restore old paste hotkey!";
@@ -663,9 +657,9 @@ bool MainApplication::updateQuickPinHotkey(const QString& newHotkey)
 {
     qDebug() << "Updating Quick Pin hotkey to:" << newHotkey;
 
-    // Save old state for reverting
-    QKeySequence oldShortcut = m_quickPinHotkey->shortcut();
-    QHotkey::NativeShortcut oldNative = m_quickPinHotkey->currentNativeShortcut();
+    // Save old hotkey string for reverting
+    auto settings = SnapTray::getSettings();
+    QString oldHotkey = settings.value(SnapTray::kSettingsKeyQuickPinHotkey, SnapTray::kDefaultQuickPinHotkey).toString();
 
     // Unregister old hotkey
     m_quickPinHotkey->setRegistered(false);
@@ -685,24 +679,23 @@ bool MainApplication::updateQuickPinHotkey(const QString& newHotkey)
         qDebug() << "Quick Pin hotkey updated and registered:" << newHotkey;
 
         // Save only after successful registration
-        auto settings = SnapTray::getSettings();
-        settings.setValue("quickPinHotkey", newHotkey);
+        settings.setValue(SnapTray::kSettingsKeyQuickPinHotkey, newHotkey);
 
         return true;
     }
     else {
         qDebug() << "Failed to register new Quick Pin hotkey:" << newHotkey << ", reverting...";
 
-        // Revert to old hotkey
-        if (oldNative.isValid()) {
-            m_quickPinHotkey->setNativeShortcut(oldNative);
+        // Revert using saved string
+        if (isNativeKeyCode(oldHotkey, nativeKey)) {
+            m_quickPinHotkey->setNativeShortcut(QHotkey::NativeShortcut(nativeKey, 0));
         } else {
-            m_quickPinHotkey->setShortcut(oldShortcut);
+            m_quickPinHotkey->setShortcut(QKeySequence(oldHotkey));
         }
         m_quickPinHotkey->setRegistered(true);
 
         if (m_quickPinHotkey->isRegistered()) {
-            qDebug() << "Reverted to old Quick Pin hotkey:" << oldShortcut.toString();
+            qDebug() << "Reverted to old Quick Pin hotkey:" << oldHotkey;
         }
         else {
             qDebug() << "Critical: Failed to restore old Quick Pin hotkey!";

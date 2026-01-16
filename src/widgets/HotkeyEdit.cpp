@@ -7,6 +7,7 @@
 #include <QKeyEvent>
 #include <QInputDialog>
 #include <QMessageBox>
+#include <QPalette>
 
 #ifdef Q_OS_WIN
 #include <windows.h>
@@ -203,6 +204,26 @@ void HotkeyEdit::updateDisplay()
     }
 }
 
+bool HotkeyEdit::eventFilter(QObject *watched, QEvent *event)
+{
+    if (watched == m_lineEdit) {
+        if (event->type() == QEvent::KeyPress) {
+            QKeyEvent *keyEvent = static_cast<QKeyEvent*>(event);
+            keyPressEvent(keyEvent);
+            return true;  // Intercept the event, don't let QLineEdit handle it
+        }
+        if (event->type() == QEvent::FocusIn) {
+            QFocusEvent *focusEvent = static_cast<QFocusEvent*>(event);
+            focusInEvent(focusEvent);
+        }
+        if (event->type() == QEvent::FocusOut) {
+            QFocusEvent *focusEvent = static_cast<QFocusEvent*>(event);
+            focusOutEvent(focusEvent);
+        }
+    }
+    return QWidget::eventFilter(watched, event);
+}
+
 void HotkeyEdit::keyPressEvent(QKeyEvent *event)
 {
     if (!m_isRecording) {
@@ -248,7 +269,13 @@ void HotkeyEdit::focusInEvent(QFocusEvent *event)
 {
     QWidget::focusInEvent(event);
     m_isRecording = true;
-    m_lineEdit->setStyleSheet("QLineEdit { background-color: #ffffcc; }");
+
+    // Use QPalette for reliable background color on macOS (stylesheets can be overridden by native styling)
+    QPalette pal = m_lineEdit->palette();
+    pal.setColor(QPalette::Base, QColor("#ffffcc"));
+    m_lineEdit->setAutoFillBackground(true);
+    m_lineEdit->setPalette(pal);
+
     m_lineEdit->setPlaceholderText("Press a key combination...");
 }
 
@@ -256,7 +283,11 @@ void HotkeyEdit::focusOutEvent(QFocusEvent *event)
 {
     QWidget::focusOutEvent(event);
     m_isRecording = false;
-    m_lineEdit->setStyleSheet("");
+
+    // Restore default palette
+    m_lineEdit->setPalette(QPalette());
+    m_lineEdit->setAutoFillBackground(false);
+
     m_lineEdit->setPlaceholderText("Click to record hotkey...");
 }
 
