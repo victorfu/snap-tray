@@ -75,8 +75,6 @@ void StitchWorker::reset()
     m_pendingMemoryUsage = 0;
     m_fixedDetected = false;
     m_detectionDisabled = false;
-    m_lastRawFrameForChange = QImage();
-    m_lastProcessedFrameForChange = QImage();
     m_lastRawSmall = QImage();
     m_lastProcessedSmall = QImage();
 }
@@ -256,7 +254,6 @@ void StitchWorker::doProcessFrame(const QImage &frame)
             emit frameProcessed(result);
             return;
         }
-        m_lastRawFrameForChange = rawFrame;
         m_lastRawSmall = rawSmall;  // Cache the downsampled version
     } else {
         // Compare processed vs processed using cached downsampled images
@@ -271,7 +268,6 @@ void StitchWorker::doProcessFrame(const QImage &frame)
             emit frameProcessed(result);
             return;
         }
-        m_lastProcessedFrameForChange = processed;
         m_lastProcessedSmall = processedSmall;  // Cache the downsampled version
     }
 
@@ -342,8 +338,8 @@ void StitchWorker::doProcessFrame(const QImage &frame)
 
                     // Update processed baseline to last valid cropped frame
                     if (!m_pendingRawFrames.isEmpty()) {
-                        m_lastProcessedFrameForChange = m_fixedDetector->cropFixedRegions(m_pendingRawFrames.last());
-                        m_lastProcessedSmall = ImageStitcher::downsampleForComparison(m_lastProcessedFrameForChange);
+                        QImage lastCropped = m_fixedDetector->cropFixedRegions(m_pendingRawFrames.last());
+                        m_lastProcessedSmall = ImageStitcher::downsampleForComparison(lastCropped);
                     }
 
                     m_pendingRawFrames.clear();

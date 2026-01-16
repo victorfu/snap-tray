@@ -186,8 +186,6 @@ private:
     bool m_fixedDetected = false;           // fixed elements detection succeeded
     bool m_detectionDisabled = false;       // stop pending/detect when budget exceeded
     int m_minFramesForDetection = 6;
-    QImage m_lastRawFrameForChange;         // baseline for isFrameChanged (raw)
-    QImage m_lastProcessedFrameForChange;   // baseline for isFrameChanged (cropped)
     QImage m_lastRawSmall;                  // cached downsampled raw (64x64)
     QImage m_lastProcessedSmall;            // cached downsampled processed (64x64)
     static constexpr int MAX_PENDING_FRAMES = 30;

@@ -153,7 +153,6 @@ private:
 
     // Helper methods
     cv::Mat qImageToCvMat(const QImage &image) const;
-    QImage cvMatToQImage(const cv::Mat &mat) const;
     MatchCandidate computeTemplateMatchCandidate(const QImage &newFrame, ScrollDirection direction);
     MatchCandidate computeRowProjectionCandidate(const QImage &newFrame, ScrollDirection direction);
     StitchResult applyCandidate(const QImage &newFrame, const MatchCandidate &candidate, Algorithm algorithm);

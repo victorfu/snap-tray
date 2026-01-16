@@ -1616,22 +1616,6 @@ cv::Mat ImageStitcher::qImageToCvMat(const QImage &image) const
     return bgr.clone();
 }
 
-QImage ImageStitcher::cvMatToQImage(const cv::Mat &mat) const
-{
-    if (mat.type() == CV_8UC3) {
-        cv::Mat rgb;
-        cv::cvtColor(mat, rgb, cv::COLOR_BGR2RGB);
-        return QImage(rgb.data, rgb.cols, rgb.rows, static_cast<int>(rgb.step),
-                      QImage::Format_RGB888).copy();
-    }
-    else if (mat.type() == CV_8UC1) {
-        return QImage(mat.data, mat.cols, mat.rows, static_cast<int>(mat.step),
-                      QImage::Format_Grayscale8).copy();
-    }
-
-    return QImage();
-}
-
 // Row Projection Profile algorithm - optimal for text documents and vertical/horizontal scrolling
 // This method calculates horizontal/vertical projection profiles and uses 1D cross-correlation
 // to find the offset. It's extremely fast (1D signal processing) and robust for repetitive patterns.
