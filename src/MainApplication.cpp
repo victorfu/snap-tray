@@ -29,6 +29,17 @@
 #include <QFont>
 #include <QFontMetrics>
 
+// Helper to check if a hotkey string is a native keycode format (e.g., "Native:0x2C")
+static bool isNativeKeyCode(const QString& hotkeyStr, quint32& outKeyCode)
+{
+    if (hotkeyStr.startsWith("Native:0x", Qt::CaseInsensitive)) {
+        bool ok;
+        outKeyCode = hotkeyStr.mid(9).toUInt(&ok, 16);
+        return ok && outKeyCode > 0;
+    }
+    return false;
+}
+
 MainApplication::MainApplication(QObject* parent)
     : QObject(parent)
     , m_trayIcon(nullptr)
@@ -399,7 +410,12 @@ void MainApplication::setupHotkey()
 
     // Load region capture hotkey from settings (default is F2)
     QString regionKeySequence = SettingsDialog::loadHotkey();
-    m_regionHotkey = new QHotkey(QKeySequence(regionKeySequence), true, this);
+    quint32 nativeKey;
+    if (isNativeKeyCode(regionKeySequence, nativeKey)) {
+        m_regionHotkey = new QHotkey(QHotkey::NativeShortcut(nativeKey, 0), true, this);
+    } else {
+        m_regionHotkey = new QHotkey(QKeySequence(regionKeySequence), true, this);
+    }
 
     if (m_regionHotkey->isRegistered()) {
         qDebug() << "Region hotkey registered:" << regionKeySequence;
@@ -414,7 +430,11 @@ void MainApplication::setupHotkey()
 
     // Quick Pin hotkey - select region and pin directly without toolbar
     QString quickPinKeySequence = SettingsDialog::loadQuickPinHotkey();
-    m_quickPinHotkey = new QHotkey(QKeySequence(quickPinKeySequence), true, this);
+    if (isNativeKeyCode(quickPinKeySequence, nativeKey)) {
+        m_quickPinHotkey = new QHotkey(QHotkey::NativeShortcut(nativeKey, 0), true, this);
+    } else {
+        m_quickPinHotkey = new QHotkey(QKeySequence(quickPinKeySequence), true, this);
+    }
 
     if (m_quickPinHotkey->isRegistered()) {
         qDebug() << "Quick Pin hotkey registered:" << quickPinKeySequence;
@@ -428,7 +448,11 @@ void MainApplication::setupHotkey()
 
     // Load Screen Canvas hotkey from settings (default is Ctrl+F2)
     QString screenCanvasKeySequence = SettingsDialog::loadScreenCanvasHotkey();
-    m_screenCanvasHotkey = new QHotkey(QKeySequence(screenCanvasKeySequence), true, this);
+    if (isNativeKeyCode(screenCanvasKeySequence, nativeKey)) {
+        m_screenCanvasHotkey = new QHotkey(QHotkey::NativeShortcut(nativeKey, 0), true, this);
+    } else {
+        m_screenCanvasHotkey = new QHotkey(QKeySequence(screenCanvasKeySequence), true, this);
+    }
 
     if (m_screenCanvasHotkey->isRegistered()) {
         qDebug() << "Screen canvas hotkey registered:" << screenCanvasKeySequence;
@@ -442,7 +466,11 @@ void MainApplication::setupHotkey()
 
     // Load Paste hotkey from settings (default is F8)
     QString pasteKeySequence = SettingsDialog::loadPasteHotkey();
-    m_pasteHotkey = new QHotkey(QKeySequence(pasteKeySequence), true, this);
+    if (isNativeKeyCode(pasteKeySequence, nativeKey)) {
+        m_pasteHotkey = new QHotkey(QHotkey::NativeShortcut(nativeKey, 0), true, this);
+    } else {
+        m_pasteHotkey = new QHotkey(QKeySequence(pasteKeySequence), true, this);
+    }
 
     if (m_pasteHotkey->isRegistered()) {
         qDebug() << "Paste hotkey registered:" << pasteKeySequence;
@@ -470,14 +498,20 @@ bool MainApplication::updateHotkey(const QString& newHotkey)
 {
     qDebug() << "Updating hotkey to:" << newHotkey;
 
-    // 保存舊熱鍵以便回復
+    // Save old state for reverting
     QKeySequence oldShortcut = m_regionHotkey->shortcut();
+    QHotkey::NativeShortcut oldNative = m_regionHotkey->currentNativeShortcut();
 
     // Unregister old hotkey
     m_regionHotkey->setRegistered(false);
 
-    // Set new key sequence
-    m_regionHotkey->setShortcut(QKeySequence(newHotkey));
+    // Set new key sequence (handle native keycodes)
+    quint32 nativeKey;
+    if (isNativeKeyCode(newHotkey, nativeKey)) {
+        m_regionHotkey->setNativeShortcut(QHotkey::NativeShortcut(nativeKey, 0));
+    } else {
+        m_regionHotkey->setShortcut(QKeySequence(newHotkey));
+    }
 
     // Re-register
     m_regionHotkey->setRegistered(true);
@@ -495,8 +529,12 @@ bool MainApplication::updateHotkey(const QString& newHotkey)
     else {
         qDebug() << "Failed to register new hotkey:" << newHotkey << ", reverting...";
 
-        // 回復舊熱鍵
-        m_regionHotkey->setShortcut(oldShortcut);
+        // Revert to old hotkey
+        if (oldNative.isValid()) {
+            m_regionHotkey->setNativeShortcut(oldNative);
+        } else {
+            m_regionHotkey->setShortcut(oldShortcut);
+        }
         m_regionHotkey->setRegistered(true);
 
         if (m_regionHotkey->isRegistered()) {
@@ -514,14 +552,20 @@ bool MainApplication::updateScreenCanvasHotkey(const QString& newHotkey)
 {
     qDebug() << "Updating screen canvas hotkey to:" << newHotkey;
 
-    // Save old hotkey for reverting
+    // Save old state for reverting
     QKeySequence oldShortcut = m_screenCanvasHotkey->shortcut();
+    QHotkey::NativeShortcut oldNative = m_screenCanvasHotkey->currentNativeShortcut();
 
     // Unregister old hotkey
     m_screenCanvasHotkey->setRegistered(false);
 
-    // Set new key sequence
-    m_screenCanvasHotkey->setShortcut(QKeySequence(newHotkey));
+    // Set new key sequence (handle native keycodes)
+    quint32 nativeKey;
+    if (isNativeKeyCode(newHotkey, nativeKey)) {
+        m_screenCanvasHotkey->setNativeShortcut(QHotkey::NativeShortcut(nativeKey, 0));
+    } else {
+        m_screenCanvasHotkey->setShortcut(QKeySequence(newHotkey));
+    }
 
     // Re-register
     m_screenCanvasHotkey->setRegistered(true);
@@ -544,7 +588,11 @@ bool MainApplication::updateScreenCanvasHotkey(const QString& newHotkey)
         qDebug() << "Failed to register new screen canvas hotkey:" << newHotkey << ", reverting...";
 
         // Revert to old hotkey
-        m_screenCanvasHotkey->setShortcut(oldShortcut);
+        if (oldNative.isValid()) {
+            m_screenCanvasHotkey->setNativeShortcut(oldNative);
+        } else {
+            m_screenCanvasHotkey->setShortcut(oldShortcut);
+        }
         m_screenCanvasHotkey->setRegistered(true);
 
         if (m_screenCanvasHotkey->isRegistered()) {
@@ -562,14 +610,20 @@ bool MainApplication::updatePasteHotkey(const QString& newHotkey)
 {
     qDebug() << "Updating paste hotkey to:" << newHotkey;
 
-    // Save old hotkey for reverting
+    // Save old state for reverting
     QKeySequence oldShortcut = m_pasteHotkey->shortcut();
+    QHotkey::NativeShortcut oldNative = m_pasteHotkey->currentNativeShortcut();
 
     // Unregister old hotkey
     m_pasteHotkey->setRegistered(false);
 
-    // Set new key sequence
-    m_pasteHotkey->setShortcut(QKeySequence(newHotkey));
+    // Set new key sequence (handle native keycodes)
+    quint32 nativeKey;
+    if (isNativeKeyCode(newHotkey, nativeKey)) {
+        m_pasteHotkey->setNativeShortcut(QHotkey::NativeShortcut(nativeKey, 0));
+    } else {
+        m_pasteHotkey->setShortcut(QKeySequence(newHotkey));
+    }
 
     // Re-register
     m_pasteHotkey->setRegistered(true);
@@ -587,7 +641,11 @@ bool MainApplication::updatePasteHotkey(const QString& newHotkey)
         qDebug() << "Failed to register new paste hotkey:" << newHotkey << ", reverting...";
 
         // Revert to old hotkey
-        m_pasteHotkey->setShortcut(oldShortcut);
+        if (oldNative.isValid()) {
+            m_pasteHotkey->setNativeShortcut(oldNative);
+        } else {
+            m_pasteHotkey->setShortcut(oldShortcut);
+        }
         m_pasteHotkey->setRegistered(true);
 
         if (m_pasteHotkey->isRegistered()) {
@@ -605,14 +663,20 @@ bool MainApplication::updateQuickPinHotkey(const QString& newHotkey)
 {
     qDebug() << "Updating Quick Pin hotkey to:" << newHotkey;
 
-    // Save old hotkey for reverting
+    // Save old state for reverting
     QKeySequence oldShortcut = m_quickPinHotkey->shortcut();
+    QHotkey::NativeShortcut oldNative = m_quickPinHotkey->currentNativeShortcut();
 
     // Unregister old hotkey
     m_quickPinHotkey->setRegistered(false);
 
-    // Set new key sequence
-    m_quickPinHotkey->setShortcut(QKeySequence(newHotkey));
+    // Set new key sequence (handle native keycodes)
+    quint32 nativeKey;
+    if (isNativeKeyCode(newHotkey, nativeKey)) {
+        m_quickPinHotkey->setNativeShortcut(QHotkey::NativeShortcut(nativeKey, 0));
+    } else {
+        m_quickPinHotkey->setShortcut(QKeySequence(newHotkey));
+    }
 
     // Re-register
     m_quickPinHotkey->setRegistered(true);
@@ -630,7 +694,11 @@ bool MainApplication::updateQuickPinHotkey(const QString& newHotkey)
         qDebug() << "Failed to register new Quick Pin hotkey:" << newHotkey << ", reverting...";
 
         // Revert to old hotkey
-        m_quickPinHotkey->setShortcut(oldShortcut);
+        if (oldNative.isValid()) {
+            m_quickPinHotkey->setNativeShortcut(oldNative);
+        } else {
+            m_quickPinHotkey->setShortcut(oldShortcut);
+        }
         m_quickPinHotkey->setRegistered(true);
 
         if (m_quickPinHotkey->isRegistered()) {
