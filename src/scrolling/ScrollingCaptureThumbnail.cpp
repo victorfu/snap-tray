@@ -36,6 +36,21 @@ static const QMap<ScrollingCaptureThumbnail::CaptureStatus, QColor> STATUS_COLOR
     {ScrollingCaptureThumbnail::CaptureStatus::Recovered, QColor("#007AFF")}
 };
 
+// Scroll speed colors and labels
+static const QMap<ScrollingCaptureThumbnail::ScrollSpeed, QColor> SPEED_COLORS = {
+    {ScrollingCaptureThumbnail::ScrollSpeed::Idle,    QColor("#888888")},
+    {ScrollingCaptureThumbnail::ScrollSpeed::TooSlow, QColor("#64B5F6")},  // Blue
+    {ScrollingCaptureThumbnail::ScrollSpeed::Good,    QColor("#4CAF50")},  // Green
+    {ScrollingCaptureThumbnail::ScrollSpeed::TooFast, QColor("#FFC107")}   // Yellow/Orange
+};
+
+static const QMap<ScrollingCaptureThumbnail::ScrollSpeed, QString> SPEED_LABELS = {
+    {ScrollingCaptureThumbnail::ScrollSpeed::Idle,    "—"},
+    {ScrollingCaptureThumbnail::ScrollSpeed::TooSlow, "Slow"},
+    {ScrollingCaptureThumbnail::ScrollSpeed::Good,    "Good"},
+    {ScrollingCaptureThumbnail::ScrollSpeed::TooFast, "Fast"}
+};
+
 ScrollingCaptureThumbnail::ScrollingCaptureThumbnail(QWidget *parent)
     : QWidget(parent)
 {
@@ -71,11 +86,13 @@ void ScrollingCaptureThumbnail::setupUI()
     m_viewportLabel->setFixedSize(200, 120); // Fixed size for consistency
     mainLayout->addWidget(m_viewportLabel);
 
-    // Status Row
+    // Status Row (status on left, speed on right)
     QHBoxLayout* statusLayout = new QHBoxLayout();
     m_statusLabel = new QLabel("Ready", this);
     statusLayout->addWidget(m_statusLabel);
     statusLayout->addStretch();
+    m_speedLabel = new QLabel("—", this);
+    statusLayout->addWidget(m_speedLabel);
     mainLayout->addLayout(statusLayout);
 
     // Stats
@@ -120,6 +137,10 @@ void ScrollingCaptureThumbnail::applyThemeColors()
             .arg(colors.text.name()));
 
     m_statsLabel->setStyleSheet(
+        QString("color: %1; font-size: 11px;")
+            .arg(colors.textSecondary.name()));
+
+    m_speedLabel->setStyleSheet(
         QString("color: %1; font-size: 11px;")
             .arg(colors.textSecondary.name()));
 
@@ -215,24 +236,13 @@ void ScrollingCaptureThumbnail::applyStatus(CaptureStatus status, const QString&
 void ScrollingCaptureThumbnail::setErrorInfo(ImageStitcher::FailureCode code, const QString& debugReason, int recoveryDistancePx)
 {
     m_errorSection->setVisible(true);
-    
-    QString title = failureCodeToUserMessage(code);
-    m_errorTitleLabel->setText(QString("⚠ %1").arg(title));
-    
-    QString arrow = (m_captureDirection == CaptureDirection::Vertical) ? "↑" : "←"; 
-    // Wait, Vertical usually means Down. So recovery is Up (Scroll Back).
-    // The plan says: "arrow = (m_captureDirection == CaptureDirection::Down) ? "↑" : "↓";"
-    // But CaptureDirection is Vertical/Horizontal. 
-    // If we scroll Down (standard), we need to scroll Up to recover.
-    // If we scroll Up, we need to scroll Down.
-    // Manager doesn't pass scroll direction here, just capture direction mode.
-    // But Manager knows ScrollDirection from Stitcher.
-    // For now, assuming standard Top-Down scrolling for Vertical.
-    
-    m_errorHintLabel->setText(QString("Scroll back ~%1px %2").arg(recoveryDistancePx).arg(arrow));
-    
+
+    ErrorInfo info = failureCodeToErrorInfo(code, recoveryDistancePx);
+    m_errorTitleLabel->setText(QString::fromUtf8("\u26A0 %1").arg(info.title));  // ⚠
+    m_errorHintLabel->setText(info.hint);
+
     m_errorSection->setToolTip(debugReason);
-    
+
     // Adjust height
     adjustSize();
 }
@@ -308,17 +318,78 @@ bool ScrollingCaptureThumbnail::event(QEvent *event)
     return QWidget::event(event);
 }
 
-QString ScrollingCaptureThumbnail::failureCodeToUserMessage(ImageStitcher::FailureCode code) {
+ScrollingCaptureThumbnail::ErrorInfo ScrollingCaptureThumbnail::failureCodeToErrorInfo(
+    ImageStitcher::FailureCode code, int recoveryPx) const
+{
+    // Direction arrow for recovery hint (vertical = scroll back up, horizontal = scroll back left)
+    QString arrow = (m_captureDirection == CaptureDirection::Vertical)
+        ? QString::fromUtf8("\u2191")   // ↑
+        : QString::fromUtf8("\u2190");  // ←
+
+    QString recoveryHint = QString("Scroll back %1 ~%2px").arg(arrow).arg(recoveryPx);
+
     switch (code) {
-        case ImageStitcher::FailureCode::OverlapMismatch:   return "Mismatch";
-        case ImageStitcher::FailureCode::AmbiguousMatch:    return "Ambiguous";
-        case ImageStitcher::FailureCode::LowConfidence:     return "Unsure";
-        case ImageStitcher::FailureCode::ViewportMismatch:  return "Size chg";
-        case ImageStitcher::FailureCode::Timeout:           return "Slow";
-        case ImageStitcher::FailureCode::InvalidState:      return "Error";
-        case ImageStitcher::FailureCode::OverlapTooSmall:   return "No overlap";
-        default:                                            return "Error";
+        case ImageStitcher::FailureCode::OverlapMismatch:
+            return {"Lost track", recoveryHint};
+
+        case ImageStitcher::FailureCode::AmbiguousMatch:
+            return {"Repetitive content", "Vary scroll speed slightly"};
+
+        case ImageStitcher::FailureCode::LowConfidence:
+            return {"Uncertain match", "Slow down scroll speed"};
+
+        case ImageStitcher::FailureCode::ViewportMismatch:
+            return {"Window resized", "Keep window size unchanged"};
+
+        case ImageStitcher::FailureCode::OverlapTooSmall:
+            return {"Scrolled too fast", recoveryHint};
+
+        case ImageStitcher::FailureCode::NoAlgorithmSucceeded:
+            return {"Match failed", recoveryHint};
+
+        case ImageStitcher::FailureCode::Timeout:
+            return {"Processing slow", "Wait a moment"};
+
+        case ImageStitcher::FailureCode::InvalidState:
+            return {"Internal error", "Try again"};
+
+        case ImageStitcher::FailureCode::DuplicateDetected:
+            return {"Duplicate content", "Continue scrolling"};
+
+        case ImageStitcher::FailureCode::MaxSizeReached:
+            return {"Max size reached", "Capture will finish"};
+
+        default:
+            return {"Error", recoveryHint};
     }
+}
+
+void ScrollingCaptureThumbnail::setOverlapRatio(double ratio)
+{
+    // Convert overlap ratio to scroll speed category
+    // Higher overlap = slower scrolling, lower overlap = faster scrolling
+    ScrollSpeed speed;
+
+    if (ratio > 0.80) {
+        speed = ScrollSpeed::TooSlow;
+    } else if (ratio >= 0.30) {
+        speed = ScrollSpeed::Good;
+    } else {
+        speed = ScrollSpeed::TooFast;
+    }
+
+    if (speed != m_scrollSpeed) {
+        m_scrollSpeed = speed;
+        applyScrollSpeed(speed);
+    }
+}
+
+void ScrollingCaptureThumbnail::applyScrollSpeed(ScrollSpeed speed)
+{
+    QColor color = SPEED_COLORS.value(speed, QColor("#888888"));
+    QString label = SPEED_LABELS.value(speed, "—");
+
+    m_speedLabel->setText(QString("<font color='%1'>%2</font>").arg(color.name()).arg(label));
 }
 
 // Compatibility method

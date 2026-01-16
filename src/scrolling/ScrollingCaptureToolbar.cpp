@@ -49,8 +49,10 @@ void ScrollingCaptureToolbar::setupUi()
 {
     // Configure buttons using Toolbar::ButtonConfig builder pattern
     // Direction button icon will be updated dynamically based on m_direction
+    // AutoScroll button icon will be updated dynamically based on m_scrollMode
     m_buttons = {
         ButtonConfig(ButtonDirection, "arrow-vertical", "Scroll Direction: Vertical ↕ (Click to toggle)"),
+        ButtonConfig(ButtonAutoScroll, "play", "Scroll Mode: Manual (Click to enable auto-scroll)"),
         ButtonConfig(ButtonStart, "play", "Start Capture (Enter/Space)").action(),
         ButtonConfig(ButtonStop, "stop", "Stop Capture (Enter/Space)").action(),
         ButtonConfig(ButtonPin, "pin", "Pin to Screen").action(),
@@ -92,7 +94,12 @@ void ScrollingCaptureToolbar::updateButtonLayout()
 
         switch (m_mode) {
         case Mode::Adjusting:
-            visible = (id == ButtonDirection || id == ButtonStart || id == ButtonCancel);
+            // Show auto-scroll button only if available
+            if (id == ButtonAutoScroll) {
+                visible = m_autoScrollAvailable;
+            } else {
+                visible = (id == ButtonDirection || id == ButtonStart || id == ButtonCancel);
+            }
             break;
         case Mode::Capturing:
             visible = (id == ButtonStop || id == ButtonCancel);
@@ -225,6 +232,42 @@ void ScrollingCaptureToolbar::setDirection(Direction direction)
     update();
 }
 
+void ScrollingCaptureToolbar::setScrollMode(ScrollMode mode)
+{
+    if (m_scrollMode == mode) {
+        return;
+    }
+
+    m_scrollMode = mode;
+
+    // Update auto-scroll button icon and tooltip
+    for (int i = 0; i < m_buttons.size(); ++i) {
+        if (m_buttons[i].id == ButtonAutoScroll) {
+            if (mode == ScrollMode::Auto) {
+                m_buttons[i].iconKey = "stop";  // Shows "Auto" is active (click to stop)
+                m_buttons[i].tooltip = "Scroll Mode: Auto (Click to switch to manual)";
+            } else {
+                m_buttons[i].iconKey = "play";  // Shows "Manual" (click to start auto)
+                m_buttons[i].tooltip = "Scroll Mode: Manual (Click to enable auto-scroll)";
+            }
+            break;
+        }
+    }
+
+    update();
+}
+
+void ScrollingCaptureToolbar::setAutoScrollAvailable(bool available)
+{
+    if (m_autoScrollAvailable == available) {
+        return;
+    }
+
+    m_autoScrollAvailable = available;
+    updateButtonLayout();
+    update();
+}
+
 void ScrollingCaptureToolbar::paintEvent(QPaintEvent *event)
 {
     Q_UNUSED(event)
@@ -338,14 +381,15 @@ void ScrollingCaptureToolbar::mousePressEvent(QMouseEvent *event)
         if (btnIndex >= 0) {
             // Handle button click
             switch (m_buttons[btnIndex].id) {
-            case ButtonDirection: emit directionToggled(); break;
-            case ButtonStart:  emit startClicked(); break;
-            case ButtonStop:   emit stopClicked(); break;
-            case ButtonPin:    emit pinClicked(); break;
-            case ButtonSave:   emit saveClicked(); break;
-            case ButtonCopy:   emit copyClicked(); break;
-            case ButtonClose:  emit closeClicked(); break;
-            case ButtonCancel: emit cancelClicked(); break;
+            case ButtonDirection:  emit directionToggled(); break;
+            case ButtonAutoScroll: emit scrollModeToggled(); break;
+            case ButtonStart:      emit startClicked(); break;
+            case ButtonStop:       emit stopClicked(); break;
+            case ButtonPin:        emit pinClicked(); break;
+            case ButtonSave:       emit saveClicked(); break;
+            case ButtonCopy:       emit copyClicked(); break;
+            case ButtonClose:      emit closeClicked(); break;
+            case ButtonCancel:     emit cancelClicked(); break;
             default: break;
             }
             return;

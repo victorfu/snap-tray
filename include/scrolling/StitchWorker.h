@@ -72,8 +72,18 @@ public:
 
     /**
      * @brief Reset the worker state (clears queue, resets stitcher)
+     * @note This is a blocking call - use resetAsync() from UI thread
      */
     void reset();
+
+    /**
+     * @brief Non-blocking reset for UI thread
+     *
+     * Immediately stops accepting frames and clears the queue.
+     * If processing is in progress, waits asynchronously and emits
+     * resetCompleted() when done.
+     */
+    void resetAsync();
 
     /**
      * @brief Enqueue a frame for processing (called from UI thread, non-blocking)
@@ -148,11 +158,17 @@ signals:
      */
     void finishCompleted(const QImage &result);
 
+    /**
+     * @brief Emitted when async reset is complete
+     */
+    void resetCompleted();
+
 private slots:
     void processNextFrame();
 
 private:
     void doProcessFrame(const QImage &frame);
+    void doResetCleanup();
 
     // Processing components (owned, accessed only by worker)
     ImageStitcher *m_stitcher;

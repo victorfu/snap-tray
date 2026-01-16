@@ -359,6 +359,7 @@ add_library(snaptray_platform STATIC
     src/VideoEncoderFactory.cpp
     src/scrolling/AutoScrollController.cpp
     # Headers with Q_OBJECT for MOC processing
+    include/scrolling/AutoScrollController.h
     include/IVideoEncoder.h
     include/encoding/NativeGifEncoder.h
     include/encoding/WebPAnimEncoder.h

@@ -6,6 +6,7 @@
 #include <QElapsedTimer>
 #include <QThread>
 #include <QtConcurrent>
+#include <QFutureWatcher>
 
 StitchWorker::StitchWorker(QObject *parent)
     : QObject(parent)
@@ -67,6 +68,38 @@ void StitchWorker::reset()
         m_frameQueue.clear();
     }
 
+    doResetCleanup();
+}
+
+void StitchWorker::resetAsync()
+{
+    // Stop accepting new frames immediately
+    m_acceptingFrames = false;
+    m_finishRequested = false;
+
+    // Clear queue immediately (safe under mutex)
+    {
+        QMutexLocker locker(&m_queueMutex);
+        m_frameQueue.clear();
+    }
+
+    // If processing, wait asynchronously; otherwise reset now
+    if (m_processingFuture.isRunning()) {
+        auto *watcher = new QFutureWatcher<void>(this);
+        connect(watcher, &QFutureWatcher<void>::finished, this, [this, watcher]() {
+            doResetCleanup();
+            emit resetCompleted();
+            watcher->deleteLater();
+        });
+        watcher->setFuture(m_processingFuture);
+    } else {
+        doResetCleanup();
+        emit resetCompleted();
+    }
+}
+
+void StitchWorker::doResetCleanup()
+{
     // Reset components
     m_stitcher->reset();
     m_fixedDetector->reset();

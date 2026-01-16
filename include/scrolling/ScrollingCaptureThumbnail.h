@@ -31,6 +31,14 @@ public:
     };
     Q_ENUM(CaptureDirection)
 
+    enum class ScrollSpeed {
+        Idle,       // Not capturing
+        TooSlow,    // Overlap > 80% - could scroll faster
+        Good,       // Overlap 30-70% - optimal range
+        TooFast     // Overlap < 30% - needs to slow down
+    };
+    Q_ENUM(ScrollSpeed)
+
     explicit ScrollingCaptureThumbnail(QWidget *parent = nullptr);
     ~ScrollingCaptureThumbnail();
 
@@ -40,6 +48,7 @@ public:
     void setErrorInfo(ImageStitcher::FailureCode code, const QString& debugReason, int recoveryDistancePx);
     void clearError();
     void setCaptureDirection(CaptureDirection direction);
+    void setOverlapRatio(double ratio);  // Updates scroll speed indicator (0.0-1.0)
     void positionNear(const QRect &captureRegion);
 
     // Compatibility method for existing code that uses Direction
@@ -65,16 +74,23 @@ protected:
     bool event(QEvent *event) override;
 
 private:
+    struct ErrorInfo {
+        QString title;
+        QString hint;
+    };
+
     void setupUI();
     void applyThemeColors();
     void applyViewportImage(const QImage& image);
     void applyStatus(CaptureStatus status, const QString& message);
-    QString failureCodeToUserMessage(ImageStitcher::FailureCode code);
+    void applyScrollSpeed(ScrollSpeed speed);
+    ErrorInfo failureCodeToErrorInfo(ImageStitcher::FailureCode code, int recoveryPx) const;
 
     // UI Components
     QLabel* m_viewportLabel;
-    QLabel* m_statusLabel;     // "● Capturing"
-    QLabel* m_statsLabel;      // "45 frames • 800 x 12000 px"
+    QLabel* m_statusLabel;      // "● Capturing"
+    QLabel* m_statsLabel;       // "45 frames • 800 x 12000 px"
+    QLabel* m_speedLabel;       // Scroll speed indicator
     QWidget* m_errorSection;
     QLabel* m_errorTitleLabel;
     QLabel* m_errorHintLabel;
@@ -91,6 +107,7 @@ private:
     CaptureStatus m_currentStatus = CaptureStatus::Idle;
     
     CaptureDirection m_captureDirection = CaptureDirection::Vertical;
+    ScrollSpeed m_scrollSpeed = ScrollSpeed::Idle;
 
     // Drag support
     QPoint m_dragStartPos;

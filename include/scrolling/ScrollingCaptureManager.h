@@ -11,6 +11,7 @@
 #include "Constants.h"
 #include "scrolling/StitchWorker.h"
 #include "scrolling/ScrollingCaptureThumbnail.h"
+#include "scrolling/AutoScrollController.h"
 
 class ScrollingCaptureOverlay;
 class ScrollingCaptureToolbar;
@@ -41,6 +42,12 @@ public:
     };
     Q_ENUM(CaptureDirection)
 
+    enum class ScrollMode {
+        Manual,     // User scrolls manually
+        Auto        // AutoScrollController injects scroll events
+    };
+    Q_ENUM(ScrollMode)
+
     explicit ScrollingCaptureManager(PinWindowManager *pinManager, QObject *parent = nullptr);
     ~ScrollingCaptureManager();
 
@@ -49,6 +56,15 @@ public:
 
     CaptureDirection captureDirection() const { return m_captureDirection; }
     void setCaptureDirection(CaptureDirection direction);
+
+    // Scroll mode (manual vs auto-scroll)
+    ScrollMode scrollMode() const { return m_scrollMode; }
+    void setScrollMode(ScrollMode mode);
+
+    // Auto-scroll support
+    static bool isAutoScrollSupported();
+    static bool hasAutoScrollPermission();
+    static void requestAutoScrollPermission();
 
     // Recovery info for match failure UX
     int lastSuccessfulPosition() const { return m_lastSuccessfulPosition; }
@@ -66,6 +82,8 @@ signals:
     void stateChanged(State state);
     void directionChanged(CaptureDirection direction);
     void matchStatusChanged(bool matched, double confidence, int lastSuccessfulPos);
+    void scrollModeChanged(ScrollMode mode);
+    void autoScrollError(const QString &message);
 
 private slots:
     // Overlay signals
@@ -84,9 +102,16 @@ private slots:
     void onCloseClicked();
     void onCancelClicked();
     void onDirectionToggled();
+    void onScrollModeToggled();
 
     // Frame capture
     void captureFrame();
+
+    // AutoScrollController signals
+    void onAutoScrollReadyForCapture();
+    void onAutoScrollEndOfContent();
+    void onAutoScrollStateChanged(AutoScrollController::State state);
+    void onAutoScrollError(const QString &message);
 
     // StitchWorker signals (async processing)
     void onStitchFrameProcessed(const StitchWorker::Result &result);
@@ -112,6 +137,7 @@ private:
     PinWindowManager *m_pinManager;
     State m_state = State::Idle;
     CaptureDirection m_captureDirection = CaptureDirection::Vertical;
+    ScrollMode m_scrollMode = ScrollMode::Manual;
     int m_lastSuccessfulPosition = 0;  // Y for vertical, X for horizontal
 
     // UI Components
@@ -122,6 +148,7 @@ private:
 
     // Processing
     StitchWorker *m_stitchWorker;
+    AutoScrollController *m_autoScrollController;
 
     // Capture engine (GPU-accelerated alternative to grabWindow)
     ICaptureEngine *m_captureEngine = nullptr;
@@ -154,6 +181,7 @@ private:
     void updateRecoveryEstimate(const StitchWorker::Result &result);
     int calculateRecoveryDistance() const;
     bool isWarningFailure(ImageStitcher::FailureCode code) const;
+    uint64_t computeFrameHash(const QImage &frame) const;
 
     static constexpr int CAPTURE_INTERVAL_MS = SnapTray::ScrollCapture::kCaptureIntervalMs;
     static constexpr int MAX_CAPTURE_INTERVAL_MS = SnapTray::ScrollCapture::kMaxCaptureIntervalMs;

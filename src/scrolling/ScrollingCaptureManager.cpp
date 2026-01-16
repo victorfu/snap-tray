@@ -24,6 +24,7 @@ ScrollingCaptureManager::ScrollingCaptureManager(PinWindowManager *pinManager, Q
     : QObject(parent)
     , m_pinManager(pinManager)
     , m_stitchWorker(new StitchWorker(this))
+    , m_autoScrollController(new AutoScrollController(this))
     , m_captureTimer(new QTimer(this))
     , m_timeoutTimer(new QTimer(this))
 {
@@ -47,6 +48,16 @@ ScrollingCaptureManager::ScrollingCaptureManager(PinWindowManager *pinManager, Q
             this, &ScrollingCaptureManager::onStitchError);
     connect(m_stitchWorker, &StitchWorker::finishCompleted,
             this, &ScrollingCaptureManager::onStitchFinishCompleted);
+
+    // Connect AutoScrollController signals
+    connect(m_autoScrollController, &AutoScrollController::readyForCapture,
+            this, &ScrollingCaptureManager::onAutoScrollReadyForCapture);
+    connect(m_autoScrollController, &AutoScrollController::endOfContentReached,
+            this, &ScrollingCaptureManager::onAutoScrollEndOfContent);
+    connect(m_autoScrollController, &AutoScrollController::stateChanged,
+            this, &ScrollingCaptureManager::onAutoScrollStateChanged);
+    connect(m_autoScrollController, &AutoScrollController::error,
+            this, &ScrollingCaptureManager::onAutoScrollError);
 }
 
 ScrollingCaptureManager::~ScrollingCaptureManager()
@@ -108,9 +119,15 @@ void ScrollingCaptureManager::stop()
 {
     stopFrameCapture();
 
+    // Stop auto-scroll if active
+    if (m_autoScrollController) {
+        m_autoScrollController->stop();
+    }
+
     // Reset worker to clear any pending frames and release resources
+    // Use async reset to avoid blocking UI thread
     if (m_stitchWorker) {
-        m_stitchWorker->reset();
+        m_stitchWorker->resetAsync();
     }
 
     destroyComponents();
@@ -214,6 +231,10 @@ void ScrollingCaptureManager::createComponents(const QRect* presetRegion)
     connect(m_toolbar, &ScrollingCaptureToolbar::closeClicked, this, &ScrollingCaptureManager::onCloseClicked);
     connect(m_toolbar, &ScrollingCaptureToolbar::cancelClicked, this, &ScrollingCaptureManager::onCancelClicked);
     connect(m_toolbar, &ScrollingCaptureToolbar::directionToggled, this, &ScrollingCaptureManager::onDirectionToggled);
+    connect(m_toolbar, &ScrollingCaptureToolbar::scrollModeToggled, this, &ScrollingCaptureManager::onScrollModeToggled);
+
+    // Set auto-scroll availability based on platform support and permissions
+    m_toolbar->setAutoScrollAvailable(isAutoScrollSupported() && hasAutoScrollPermission());
     m_toolbar->hide();
 
     // Create thumbnail
@@ -460,6 +481,47 @@ void ScrollingCaptureManager::setCaptureDirection(CaptureDirection direction)
     emit directionChanged(direction);
 }
 
+void ScrollingCaptureManager::setScrollMode(ScrollMode mode)
+{
+    if (mode == ScrollMode::Auto) {
+        if (!isAutoScrollSupported()) {
+            emit autoScrollError(tr("Auto-scroll not supported on this platform"));
+            return;
+        }
+
+        if (!hasAutoScrollPermission()) {
+            requestAutoScrollPermission();
+            emit autoScrollError(tr("Please grant accessibility permission in System Settings"));
+            return;
+        }
+    }
+
+    if (m_scrollMode != mode) {
+        m_scrollMode = mode;
+        if (m_toolbar) {
+            m_toolbar->setScrollMode(mode == ScrollMode::Auto
+                ? ScrollingCaptureToolbar::ScrollMode::Auto
+                : ScrollingCaptureToolbar::ScrollMode::Manual);
+        }
+        emit scrollModeChanged(mode);
+    }
+}
+
+bool ScrollingCaptureManager::isAutoScrollSupported()
+{
+    return AutoScrollController::isSupported();
+}
+
+bool ScrollingCaptureManager::hasAutoScrollPermission()
+{
+    return AutoScrollController::hasAccessibilityPermission();
+}
+
+void ScrollingCaptureManager::requestAutoScrollPermission()
+{
+    AutoScrollController::requestAccessibilityPermission();
+}
+
 void ScrollingCaptureManager::startFrameCapture()
 {
     m_captureIntervalMs = CAPTURE_INTERVAL_MS;
@@ -512,6 +574,37 @@ void ScrollingCaptureManager::startFrameCapture()
         ? StitchWorker::CaptureMode::Vertical
         : StitchWorker::CaptureMode::Horizontal);
     m_stitchWorker->setStitchConfig(0.85, true);  // confidence threshold, detect static regions
+
+    // Configure auto-scroll mode
+    if (m_scrollMode == ScrollMode::Auto) {
+        AutoScrollController::Config config;
+        // Scroll 65% of frame height to achieve ~35% overlap
+        int scrollDelta = (m_captureDirection == CaptureDirection::Vertical)
+            ? static_cast<int>(m_captureRegion.height() * 0.65)
+            : static_cast<int>(m_captureRegion.width() * 0.65);
+        config.scrollDeltaPixels = scrollDelta;
+        config.stabilizationDelayMs = 50;
+        config.targetOverlapRatio = 0.35;
+
+        m_autoScrollController->setConfig(config);
+        m_autoScrollController->setCaptureRegion(m_captureRegion);
+        m_autoScrollController->setDirection(
+            m_captureDirection == CaptureDirection::Vertical
+                ? AutoScrollController::ScrollDirection::Down
+                : AutoScrollController::ScrollDirection::Right);
+
+        // Stop the capture timer - auto-scroll will drive capture via readyForCapture signal
+        m_captureTimer->stop();
+
+        // Start auto-scroll controller
+        if (!m_autoScrollController->start()) {
+            qWarning() << "ScrollingCaptureManager: AutoScroll failed to start, falling back to manual";
+            setScrollMode(ScrollMode::Manual);
+            m_captureTimer->start(m_captureIntervalMs);
+        } else {
+            qDebug() << "ScrollingCaptureManager: Auto-scroll started with delta" << scrollDelta << "px";
+        }
+    }
 }
 
 void ScrollingCaptureManager::stopFrameCapture()
@@ -519,6 +612,11 @@ void ScrollingCaptureManager::stopFrameCapture()
     m_captureTimer->stop();
     m_timeoutTimer->stop();
     m_currentStatus = ScrollingCaptureThumbnail::CaptureStatus::Idle;
+
+    // Stop auto-scroll controller
+    if (m_autoScrollController) {
+        m_autoScrollController->stop();
+    }
 
     // Cleanup capture engine
     if (m_captureEngine) {
@@ -843,6 +941,15 @@ void ScrollingCaptureManager::handleSuccess(const StitchWorker::Result &result)
         m_currentStatus = ScrollingCaptureThumbnail::CaptureStatus::Capturing;
         m_thumbnail->setStatus(m_currentStatus);
         m_thumbnail->clearError();
+
+        // Update scroll speed indicator based on overlap ratio
+        int frameHeight = (m_captureDirection == CaptureDirection::Vertical)
+            ? result.frameSize.height()
+            : result.frameSize.width();
+        if (frameHeight > 0 && result.overlapPixels > 0) {
+            double overlapRatio = static_cast<double>(result.overlapPixels) / frameHeight;
+            m_thumbnail->setOverlapRatio(overlapRatio);
+        }
     }
 
     // If we were in MatchFailed, recover to Capturing
@@ -852,6 +959,16 @@ void ScrollingCaptureManager::handleSuccess(const StitchWorker::Result &result)
             m_overlay->clearMatchFailedMessage();
         }
     }
+
+    // In auto-scroll mode, trigger the next scroll after successful frame processing
+    if (m_scrollMode == ScrollMode::Auto && m_autoScrollController) {
+        // Compute frame hash for end-of-content detection
+        QImage lastFrame = grabCaptureRegion();
+        uint64_t frameHash = computeFrameHash(lastFrame);
+        m_autoScrollController->notifyFrameCaptured(frameHash);
+        m_autoScrollController->triggerNextScroll();
+    }
+
     emit matchStatusChanged(true, result.confidence, m_lastSuccessfulPosition);
 }
 
@@ -945,4 +1062,77 @@ void ScrollingCaptureManager::onStitchQueueLow(int currentDepth, int maxDepth)
 void ScrollingCaptureManager::onStitchError(const QString &message)
 {
     qWarning() << "ScrollingCaptureManager::onStitchError -" << message;
+}
+
+// ============================================================================
+// AutoScrollController slots
+// ============================================================================
+
+void ScrollingCaptureManager::onAutoScrollReadyForCapture()
+{
+    if (m_state != State::Capturing || m_scrollMode != ScrollMode::Auto) {
+        return;
+    }
+
+    // Capture frame immediately (auto-scroll drives the capture loop)
+    captureFrame();
+}
+
+void ScrollingCaptureManager::onAutoScrollEndOfContent()
+{
+    qDebug() << "ScrollingCaptureManager: Auto-scroll detected end of content";
+    finishCapture();
+}
+
+void ScrollingCaptureManager::onAutoScrollStateChanged(AutoScrollController::State state)
+{
+    qDebug() << "ScrollingCaptureManager: AutoScroll state changed to" << static_cast<int>(state);
+
+    if (state == AutoScrollController::State::Error) {
+        // Fall back to manual mode
+        qWarning() << "ScrollingCaptureManager: AutoScroll error, falling back to manual mode";
+        setScrollMode(ScrollMode::Manual);
+        m_captureTimer->start(m_captureIntervalMs);
+        emit autoScrollError(tr("Auto-scroll error, switched to manual mode"));
+    }
+}
+
+void ScrollingCaptureManager::onAutoScrollError(const QString &message)
+{
+    qWarning() << "ScrollingCaptureManager: AutoScroll error -" << message;
+    setScrollMode(ScrollMode::Manual);
+    m_captureTimer->start(m_captureIntervalMs);
+    emit autoScrollError(message);
+}
+
+void ScrollingCaptureManager::onScrollModeToggled()
+{
+    if (m_scrollMode == ScrollMode::Manual) {
+        setScrollMode(ScrollMode::Auto);
+    } else {
+        setScrollMode(ScrollMode::Manual);
+    }
+}
+
+uint64_t ScrollingCaptureManager::computeFrameHash(const QImage &frame) const
+{
+    // Downsample for fast hash computation
+    QImage small = frame.scaled(64, 64, Qt::IgnoreAspectRatio, Qt::FastTransformation);
+    if (small.format() != QImage::Format_RGB32) {
+        small = small.convertToFormat(QImage::Format_RGB32);
+    }
+
+    // Simple hash using XOR and rotation
+    const uchar* data = small.constBits();
+    int bytes = small.sizeInBytes();
+
+    uint64_t hash = 0;
+    for (int i = 0; i + 7 < bytes; i += 8) {
+        uint64_t chunk;
+        memcpy(&chunk, data + i, sizeof(chunk));
+        hash ^= chunk;
+        hash = (hash << 7) | (hash >> 57); // Rotate
+    }
+
+    return hash;
 }
