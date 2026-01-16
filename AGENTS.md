@@ -25,6 +25,8 @@ scripts\run-tests.bat               # Run tests
 ./scripts/run-tests.sh              # Run tests
 ```
 
+**For coding agents**: Use `build.bat` (Windows) or `build.sh` (macOS) to verify changes compile successfully. Running the application (`build-and-run`) is not necessary for validation.
+
 ### Packaging
 
 ```batch
