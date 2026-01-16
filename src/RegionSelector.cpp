@@ -1189,8 +1189,7 @@ void RegionSelector::mousePressEvent(QMouseEvent* event)
     m_inputHandler->setCurrentTool(m_currentTool);
     m_inputHandler->setShowSubToolbar(m_showSubToolbar);
     m_inputHandler->setHighlightedWindowRect(m_highlightedWindowRect);
-    m_inputHandler->setDetectedWindow(m_detectedWindow.has_value(),
-        m_detectedWindow.has_value() ? m_detectedWindow->bounds : QRect());
+    m_inputHandler->setDetectedWindow(m_detectedWindow.has_value());
     m_inputHandler->setAnnotationColor(m_annotationColor);
     m_inputHandler->setAnnotationWidth(m_annotationWidth);
     m_inputHandler->setArrowStyle(static_cast<int>(m_arrowStyle));
@@ -1215,8 +1214,7 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
     m_inputHandler->setCurrentTool(m_currentTool);
     m_inputHandler->setShowSubToolbar(m_showSubToolbar);
     m_inputHandler->setHighlightedWindowRect(m_highlightedWindowRect);
-    m_inputHandler->setDetectedWindow(m_detectedWindow.has_value(),
-        m_detectedWindow.has_value() ? m_detectedWindow->bounds : QRect());
+    m_inputHandler->setDetectedWindow(m_detectedWindow.has_value());
     m_inputHandler->setMultiRegionMode(m_multiRegionMode);
 
     // Delegate to input handler
@@ -1234,8 +1232,7 @@ void RegionSelector::mouseReleaseEvent(QMouseEvent* event)
     m_inputHandler->setCurrentTool(m_currentTool);
     m_inputHandler->setShowSubToolbar(m_showSubToolbar);
     m_inputHandler->setHighlightedWindowRect(m_highlightedWindowRect);
-    m_inputHandler->setDetectedWindow(m_detectedWindow.has_value(),
-        m_detectedWindow.has_value() ? m_detectedWindow->bounds : QRect());
+    m_inputHandler->setDetectedWindow(m_detectedWindow.has_value());
     m_inputHandler->setMultiRegionMode(m_multiRegionMode);
 
     // Delegate to input handler

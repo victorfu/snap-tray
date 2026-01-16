@@ -67,7 +67,7 @@ public:
     void setCurrentTool(ToolId tool);
     void setShowSubToolbar(bool show);
     void setHighlightedWindowRect(const QRect& rect);
-    void setDetectedWindow(bool hasWindow, const QRect& bounds = QRect());
+    void setDetectedWindow(bool hasWindow);
     void setAnnotationColor(const QColor& color);
     void setAnnotationWidth(int width);
     void setArrowStyle(int style);
