@@ -83,7 +83,7 @@ static void drawColorWheelIcon(QPainter& painter, const QRect& rect)
     // Draw 6 colored pie segments
     const QColor wheelColors[] = {
         QColor(255, 0, 0),      // Red
-        QColor(255, 255, 0),    // Yellow
+        QColor(255, 242, 0),    // Yellow
         QColor(0, 255, 0),      // Green
         QColor(0, 255, 255),    // Cyan
         QColor(0, 0, 255),      // Blue
