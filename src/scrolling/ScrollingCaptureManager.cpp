@@ -512,7 +512,7 @@ void ScrollingCaptureManager::startFrameCapture()
     m_stitchWorker->setCaptureMode(m_captureDirection == CaptureDirection::Vertical
         ? StitchWorker::CaptureMode::Vertical
         : StitchWorker::CaptureMode::Horizontal);
-    m_stitchWorker->setStitchConfig(0.4, true);  // confidence threshold, detect static regions
+    m_stitchWorker->setStitchConfig(0.85, true);  // confidence threshold, detect static regions
 }
 
 void ScrollingCaptureManager::stopFrameCapture()

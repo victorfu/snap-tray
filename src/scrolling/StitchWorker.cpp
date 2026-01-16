@@ -45,6 +45,11 @@ void StitchWorker::setStitchConfig(double confidenceThreshold, bool detectStatic
     StitchConfig config;
     config.confidenceThreshold = confidenceThreshold;
     config.detectStaticRegions = detectStaticRegions;
+
+    // Stricter thresholds for repetitive content (terminal/logs/code)
+    config.ambiguityThreshold = 0.02;   // best-second gap must be clearer (default 0.05)
+    config.duplicateThreshold = 0.92;   // catch repeats earlier (default 0.95)
+
     m_stitcher->setStitchConfig(config);
     m_fixedDetector->setEnabled(detectStaticRegions);
 }

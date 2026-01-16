@@ -99,15 +99,6 @@ ImageStitcher::StitchResult ImageStitcher::addFrame(const QImage &frame)
         return result;
     }
 
-    // Check if frame has changed enough - skip stitching but not a failure
-    if (!isFrameChanged(frame, m_lastFrame)) {
-        result.success = false;  // Not a successful stitch (no new content)
-        result.confidence = 1.0;
-        result.failureReason = "Frame unchanged";
-        result.failureCode = FailureCode::FrameUnchanged;
-        return result;
-    }
-
     // Prepare frame caches before algorithm execution (avoid redundant QImage→Mat conversions)
     if (!m_currentFrameCache) {
         m_currentFrameCache = std::make_unique<FrameCacheImpl>();
