@@ -52,7 +52,6 @@
 #include <QtMath>
 #include <QMenu>
 #include <QFontDatabase>
-#include <QDateTime>
 #include "tools/ToolRegistry.h"
 
 RegionSelector::RegionSelector(QWidget* parent)
@@ -86,52 +85,55 @@ RegionSelector::RegionSelector(QWidget* parent)
     // Initialize selection state manager
     m_selectionManager = new SelectionStateManager(this);
     connect(m_selectionManager, &SelectionStateManager::selectionChanged,
-            this, [this](const QRect& rect) {
-                if (m_multiRegionMode && m_multiRegionManager) {
-                    int activeIndex = m_multiRegionManager->activeIndex();
-                    if (activeIndex >= 0) {
-                        m_multiRegionManager->updateRegion(activeIndex, rect);
-                    }
+        this, [this](const QRect& rect) {
+            if (m_multiRegionMode && m_multiRegionManager) {
+                int activeIndex = m_multiRegionManager->activeIndex();
+                if (activeIndex >= 0) {
+                    m_multiRegionManager->updateRegion(activeIndex, rect);
                 }
-                update();
-            });
+            }
+            update();
+        });
     connect(m_selectionManager, &SelectionStateManager::stateChanged,
-            this, [this](SelectionStateManager::State newState) {
-                // Skip automatic cursor updates in multi-region mode
-                // (multi-region mode handles its own cursor logic)
-                if (m_multiRegionMode) {
-                    return;
-                }
-                // Update cursor based on state (single-region mode only)
-                auto& cm = CursorManager::instance();
-                if (newState == SelectionStateManager::State::None ||
-                    newState == SelectionStateManager::State::Selecting) {
-                    cm.pushCursor(CursorContext::Selection, Qt::CrossCursor);
-                } else if (newState == SelectionStateManager::State::Moving) {
-                    cm.pushCursor(CursorContext::Selection, Qt::SizeAllCursor);
-                } else {
-                    cm.popCursor(CursorContext::Selection);
-                }
-            });
+        this, [this](SelectionStateManager::State newState) {
+            // Skip automatic cursor updates in multi-region mode
+            // (multi-region mode handles its own cursor logic)
+            if (m_multiRegionMode) {
+                return;
+            }
+            // Update cursor based on state (single-region mode only)
+            auto& cm = CursorManager::instance();
+            if (newState == SelectionStateManager::State::None ||
+                newState == SelectionStateManager::State::Selecting) {
+                cm.pushCursor(CursorContext::Selection, Qt::CrossCursor);
+            }
+            else if (newState == SelectionStateManager::State::Moving) {
+                cm.pushCursor(CursorContext::Selection, Qt::SizeAllCursor);
+            }
+            else {
+                cm.popCursor(CursorContext::Selection);
+            }
+        });
 
     // Initialize multi-region manager
     m_multiRegionManager = new MultiRegionManager(this);
     connect(m_multiRegionManager, &MultiRegionManager::regionAdded,
-            this, [this](int) { update(); });
+        this, [this](int) { update(); });
     connect(m_multiRegionManager, &MultiRegionManager::regionRemoved,
-            this, [this](int) { update(); });
+        this, [this](int) { update(); });
     connect(m_multiRegionManager, &MultiRegionManager::regionUpdated,
-            this, [this](int) { update(); });
+        this, [this](int) { update(); });
     connect(m_multiRegionManager, &MultiRegionManager::activeIndexChanged,
-            this, [this](int index) {
-                if (!m_multiRegionMode) return;
-                if (index >= 0) {
-                    m_selectionManager->setSelectionRect(m_multiRegionManager->regionRect(index));
-                } else if (!m_selectionManager->isSelecting()) {
-                    m_selectionManager->clearSelection();
-                }
-                update();
-            });
+        this, [this](int index) {
+            if (!m_multiRegionMode) return;
+            if (index >= 0) {
+                m_selectionManager->setSelectionRect(m_multiRegionManager->regionRect(index));
+            }
+            else if (!m_selectionManager->isSelecting()) {
+                m_selectionManager->clearSelection();
+            }
+            update();
+        });
 
     // Initialize annotation layer
     m_annotationLayer = new AnnotationLayer(this);
@@ -275,7 +277,7 @@ RegionSelector::RegionSelector(QWidget* parent)
 
     // Connect to screen removal signal for graceful handling
     connect(qApp, &QGuiApplication::screenRemoved,
-            this, &RegionSelector::onScreenRemoved);
+        this, &RegionSelector::onScreenRemoved);
 
     // Initialize magnifier panel component
     m_magnifierPanel = new MagnifierPanel(this);
@@ -328,7 +330,7 @@ RegionSelector::RegionSelector(QWidget* parent)
             m_regionControlWidget->setLockedRatio(ratioWidth, ratioHeight);
             settings.saveAspectRatio(ratioWidth, ratioHeight);
             m_selectionManager->setAspectRatio(static_cast<qreal>(ratioWidth) /
-                                               static_cast<qreal>(ratioHeight));
+                static_cast<qreal>(ratioHeight));
             update();
         });
 
@@ -350,7 +352,7 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_exportManager = new RegionExportManager(this);
     m_exportManager->setAnnotationLayer(m_annotationLayer);
     connect(m_exportManager, &RegionExportManager::copyCompleted,
-        this, [this](const QPixmap &pixmap) {
+        this, [this](const QPixmap& pixmap) {
             emit copyRequested(pixmap);
             close();
         });
@@ -368,19 +370,20 @@ RegionSelector::RegionSelector(QWidget* parent)
                     m_selectionManager->selectionRect(), effectiveCornerRadius());
                 emit saveRequested(selectedRegion);
                 close();
-            } else {
+            }
+            else {
                 show();
                 activateWindow();
                 raise();
             }
         });
     connect(m_exportManager, &RegionExportManager::saveCompleted,
-        this, [this](const QPixmap &pixmap, const QString &filePath) {
+        this, [this](const QPixmap& pixmap, const QString& filePath) {
             emit saveCompleted(pixmap, filePath);
             close();
         });
     connect(m_exportManager, &RegionExportManager::saveFailed,
-        this, [this](const QString &filePath, const QString &error) {
+        this, [this](const QString& filePath, const QString& error) {
             emit saveFailed(filePath, error);
             close();
         });
@@ -579,7 +582,7 @@ RegionSelector::~RegionSelector()
     qDebug() << "RegionSelector: Destroyed";
 }
 
-void RegionSelector::onScreenRemoved(QScreen *screen)
+void RegionSelector::onScreenRemoved(QScreen* screen)
 {
     // Check if our current screen was removed
     if (m_currentScreen == screen || m_currentScreen.isNull()) {
@@ -680,7 +683,7 @@ EmojiPicker* RegionSelector::ensureEmojiPicker()
         connect(m_emojiPicker, &EmojiPicker::emojiSelected,
             this, [this](const QString& emoji) {
                 if (auto* handler = dynamic_cast<EmojiStickerToolHandler*>(
-                        m_toolManager->handler(ToolId::EmojiSticker))) {
+                    m_toolManager->handler(ToolId::EmojiSticker))) {
                     handler->setCurrentEmoji(emoji);
                 }
                 update();
@@ -914,8 +917,8 @@ void RegionSelector::paintEvent(QPaintEvent* event)
     m_painter->setHighlightedWindowRect(m_highlightedWindowRect);
     m_painter->setDetectedWindowTitle(
         m_detectedWindow.has_value()
-            ? QString("%1x%2").arg(m_detectedWindow->bounds.width()).arg(m_detectedWindow->bounds.height())
-            : QString());
+        ? QString("%1x%2").arg(m_detectedWindow->bounds.width()).arg(m_detectedWindow->bounds.height())
+        : QString());
     m_painter->setCornerRadius(m_cornerRadius);
     m_painter->setShowSubToolbar(m_showSubToolbar);
     m_painter->setCurrentTool(static_cast<int>(m_currentTool));
@@ -972,7 +975,7 @@ void RegionSelector::paintEvent(QPaintEvent* event)
                 m_colorAndWidthWidget->setShowArrowStyleSection(m_currentTool == ToolId::Arrow);
                 // Show line style section for Pencil and Arrow tools
                 bool showLineStyle = (m_currentTool == ToolId::Pencil ||
-                                      m_currentTool == ToolId::Arrow);
+                    m_currentTool == ToolId::Arrow);
                 m_colorAndWidthWidget->setShowLineStyleSection(showLineStyle);
                 // Show text section only for Text tool
                 m_colorAndWidthWidget->setShowTextSection(m_currentTool == ToolId::Text);
@@ -1108,14 +1111,16 @@ void RegionSelector::setMultiRegionMode(bool enabled)
         QRect existingSelection = m_selectionManager->selectionRect();
         if (m_selectionManager->hasSelection() && existingSelection.isValid()) {
             m_multiRegionManager->addRegion(existingSelection);
-        } else {
+        }
+        else {
             m_multiRegionManager->setActiveIndex(-1);
             m_selectionManager->clearSelection();
         }
         m_annotationLayer->clear();
         m_currentTool = ToolId::Selection;
         m_showSubToolbar = false;
-    } else {
+    }
+    else {
         m_multiRegionManager->clear();
         m_selectionManager->clearSelection();
         m_showSubToolbar = true;
@@ -1277,7 +1282,8 @@ void RegionSelector::wheelEvent(QWheelEvent* event)
             int current = static_cast<int>(m_stepBadgeSize);
             if (delta > 0) {
                 current = (current + 1) % 3;  // Scroll up = increase size
-            } else {
+            }
+            else {
                 current = (current + 2) % 3;  // Scroll down = decrease size
             }
             StepBadgeSize newSize = static_cast<StepBadgeSize>(current);
@@ -1333,7 +1339,8 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
         qDebug() << "RegionSelector: Cancelled via Escape";
         if (m_multiRegionMode) {
             cancelMultiRegionCapture();
-        } else {
+        }
+        else {
             emit selectionCancelled();
             close();
         }
@@ -1469,7 +1476,7 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
             }
         }
     }
-}
+    }
 
 void RegionSelector::closeEvent(QCloseEvent* event)
 {
@@ -1517,7 +1524,7 @@ bool RegionSelector::eventFilter(QObject* obj, QEvent* event)
             QTimer::singleShot(0, this, [this]() {
                 activateWindow();
                 raise();
-            });
+                });
 
             return false;
         }
@@ -1688,10 +1695,10 @@ void RegionSelector::performAutoBlur()
     QRect sel = m_selectionManager->selectionRect();
 
     qDebug() << "RegionSelector: Starting auto-blur detection..."
-             << "selection=" << sel
-             << "dpr=" << m_devicePixelRatio
-             << "bgPixmap size=" << m_backgroundPixmap.size()
-             << "bgPixmap dpr=" << m_backgroundPixmap.devicePixelRatio();
+        << "selection=" << sel
+        << "dpr=" << m_devicePixelRatio
+        << "bgPixmap size=" << m_backgroundPixmap.size()
+        << "bgPixmap dpr=" << m_backgroundPixmap.devicePixelRatio();
 
     QPixmap selectedPixmap = m_backgroundPixmap.copy(
         static_cast<int>(sel.x() * m_devicePixelRatio),
@@ -1702,7 +1709,7 @@ void RegionSelector::performAutoBlur()
     QImage selectedImage = selectedPixmap.toImage();
 
     qDebug() << "RegionSelector: Cropped image for detection:"
-             << "size=" << selectedImage.size();
+        << "size=" << selectedImage.size();
 
     // Run detection
     auto result = m_autoBlurManager->detect(selectedImage);
@@ -1718,7 +1725,7 @@ void RegionSelector::performAutoBlur()
                 const QRect& r = result.faceRegions[i];
 
                 qDebug() << "RegionSelector: Face" << i
-                         << "detection rect (device px, relative to crop)=" << r;
+                    << "detection rect (device px, relative to crop)=" << r;
 
                 // Convert from device pixels to logical coordinates
                 QRect logicalRect(
@@ -1729,13 +1736,13 @@ void RegionSelector::performAutoBlur()
                 );
 
                 qDebug() << "RegionSelector: Face" << i
-                         << "logical rect (for annotation)=" << logicalRect;
+                    << "logical rect (for annotation)=" << logicalRect;
 
                 // Create mosaic annotation for this face region
                 // Use blur type from settings
                 auto blurType = static_cast<MosaicRectAnnotation::BlurType>(
                     static_cast<int>(m_mosaicBlurType)
-                );
+                    );
                 auto mosaic = std::make_unique<MosaicRectAnnotation>(
                     logicalRect, m_sharedSourcePixmap, 12, blurType
                 );
@@ -1744,7 +1751,8 @@ void RegionSelector::performAutoBlur()
         }
 
         onAutoBlurComplete(true, faceCount, 0, QString());
-    } else {
+    }
+    else {
         onAutoBlurComplete(false, 0, 0, result.errorMessage);
     }
 }
