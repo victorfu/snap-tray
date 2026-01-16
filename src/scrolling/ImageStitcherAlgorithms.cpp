@@ -1264,8 +1264,13 @@ ImageStitcher::StitchResult ImageStitcher::performStitch(const QImage &newFrame,
             return result;
         }
 
-        overlapPixels = qBound(MIN_OVERLAP, overlapPixels,
-                               qMin(currentWidth, newFrameRgb.width()) - 1);
+        int maxOverlap = qMin(currentWidth, newFrameRgb.width()) - 1;
+        if (maxOverlap < MIN_OVERLAP) {
+            result.failureReason = QString("Overlap range too small (max %1 < min %2)").arg(maxOverlap).arg(MIN_OVERLAP);
+            result.failureCode = FailureCode::OverlapTooSmall;
+            return result;
+        }
+        overlapPixels = qBound(MIN_OVERLAP, overlapPixels, maxOverlap);
 
         if (!m_currentViewportRect.isNull()) {
             int predictedX = (direction == ScrollDirection::Right)
@@ -1418,8 +1423,13 @@ ImageStitcher::StitchResult ImageStitcher::performStitch(const QImage &newFrame,
             return result;
         }
 
-        overlapPixels = qBound(MIN_OVERLAP, overlapPixels,
-                               qMin(currentHeight, newFrameRgb.height()) - 1);
+        int maxOverlap = qMin(currentHeight, newFrameRgb.height()) - 1;
+        if (maxOverlap < MIN_OVERLAP) {
+            result.failureReason = QString("Overlap range too small (max %1 < min %2)").arg(maxOverlap).arg(MIN_OVERLAP);
+            result.failureCode = FailureCode::OverlapTooSmall;
+            return result;
+        }
+        overlapPixels = qBound(MIN_OVERLAP, overlapPixels, maxOverlap);
 
         if (!m_currentViewportRect.isNull()) {
             int predictedY = (direction == ScrollDirection::Down)

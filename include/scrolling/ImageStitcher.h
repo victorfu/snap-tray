@@ -78,7 +78,7 @@ public:
     struct StitchResult {
         bool success = false;
         FailureCode failureCode = FailureCode::None;
-        QPoint offset;              // x for horizontal, y for vertical
+        QPoint offset{0, 0};        // x for horizontal, y for vertical
         double confidence = 0.0;    // 0.0 - 1.0
         int overlapPixels = 0;      // Detected overlap amount
         Algorithm usedAlgorithm = Algorithm::TemplateMatching;
