@@ -692,7 +692,6 @@ void VideoAnnotationEditor::handleCanvasMouseRelease(const QPoint &pos)
         return;
     }
 
-    Q_UNUSED(pos);
     if (m_isDrawing) {
         finishAnnotation();
     }
