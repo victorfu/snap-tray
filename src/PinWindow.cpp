@@ -66,42 +66,42 @@ using namespace SnapTray;
 #include <QThreadPool>
 
 namespace {
-// Optimized: Only copy 4 single-pixel regions instead of the entire image.
-// On high-DPI displays (e.g., 4K at 200% scaling), the original toImage()
-// would copy ~15MB of pixel data just to check 4 corner pixels.
-bool hasTransparentCornerPixels(const QPixmap &pixmap)
-{
-    if (pixmap.isNull()) {
+    // Optimized: Only copy 4 single-pixel regions instead of the entire image.
+    // On high-DPI displays (e.g., 4K at 200% scaling), the original toImage()
+    // would copy ~15MB of pixel data just to check 4 corner pixels.
+    bool hasTransparentCornerPixels(const QPixmap& pixmap)
+    {
+        if (pixmap.isNull()) {
+            return false;
+        }
+
+        int width = pixmap.width();
+        int height = pixmap.height();
+        if (width <= 0 || height <= 0) {
+            return false;
+        }
+
+        const QPoint corners[] = {
+            {0, 0},
+            {width - 1, 0},
+            {0, height - 1},
+            {width - 1, height - 1}
+        };
+
+        for (const QPoint& corner : corners) {
+            QImage cornerImg = pixmap.copy(corner.x(), corner.y(), 1, 1).toImage();
+            if (cornerImg.isNull()) {
+                continue;
+            }
+            if (qAlpha(cornerImg.pixel(0, 0)) < SnapTray::Misc::kFullOpacity) {
+                return true;
+            }
+        }
         return false;
     }
-
-    int width = pixmap.width();
-    int height = pixmap.height();
-    if (width <= 0 || height <= 0) {
-        return false;
-    }
-
-    const QPoint corners[] = {
-        {0, 0},
-        {width - 1, 0},
-        {0, height - 1},
-        {width - 1, height - 1}
-    };
-
-    for (const QPoint &corner : corners) {
-        QImage cornerImg = pixmap.copy(corner.x(), corner.y(), 1, 1).toImage();
-        if (cornerImg.isNull()) {
-            continue;
-        }
-        if (qAlpha(cornerImg.pixel(0, 0)) < SnapTray::Misc::kFullOpacity) {
-            return true;
-        }
-    }
-    return false;
-}
 }  // namespace
 
-PinWindow::PinWindow(const QPixmap &screenshot, const QPoint &position, QWidget *parent)
+PinWindow::PinWindow(const QPixmap& screenshot, const QPoint& position, QWidget* parent)
     : QWidget(parent)
     , m_originalPixmap(screenshot)
     , m_zoomLevel(1.0)
@@ -121,7 +121,7 @@ PinWindow::PinWindow(const QPixmap &screenshot, const QPoint &position, QWidget 
     // Frameless, always on top
     // Note: Removed Qt::Tool flag as it causes the window to hide when app loses focus on macOS
     setWindowFlags(Qt::FramelessWindowHint |
-                   Qt::WindowStaysOnTopHint);
+        Qt::WindowStaysOnTopHint);
 
     setAttribute(Qt::WA_DeleteOnClose);
     setAttribute(Qt::WA_TranslucentBackground);
@@ -164,7 +164,7 @@ PinWindow::PinWindow(const QPixmap &screenshot, const QPoint &position, QWidget 
     m_resizeHandler = new ResizeHandler(0, SnapTray::UI::PinWindow::kMinSize, this);
     m_uiIndicators = new UIIndicators(this, this);
     connect(m_uiIndicators, &UIIndicators::exitClickThroughRequested,
-            this, [this]() { setClickThrough(false); });
+        this, [this]() { setClickThrough(false); });
 
     // Must show() first, then move() to get correct positioning on macOS
     // Moving before show() can result in incorrect window placement
@@ -181,7 +181,7 @@ PinWindow::PinWindow(const QPixmap &screenshot, const QPoint &position, QWidget 
     // Initialize loading spinner for OCR
     m_loadingSpinner = new LoadingSpinnerRenderer(this);
     connect(m_loadingSpinner, &LoadingSpinnerRenderer::needsRepaint,
-            this, QOverload<>::of(&QWidget::update));
+        this, QOverload<>::of(&QWidget::update));
 
     // Initialize resize finish timer for high-quality update
     m_resizeFinishTimer = new QTimer(this);
@@ -194,8 +194,8 @@ PinWindow::PinWindow(const QPixmap &screenshot, const QPoint &position, QWidget 
     connect(m_clickThroughHoverTimer, &QTimer::timeout, this, &PinWindow::updateClickThroughForCursor);
 
     qDebug() << "PinWindow: Created with size" << m_displayPixmap.size()
-             << "requested position" << position
-             << "actual position" << pos();
+        << "requested position" << position
+        << "actual position" << pos();
 }
 
 PinWindow::~PinWindow()
@@ -220,7 +220,7 @@ PinWindow::~PinWindow()
     qDebug() << "PinWindow: Destroyed";
 }
 
-void PinWindow::setPinWindowManager(PinWindowManager *manager)
+void PinWindow::setPinWindowManager(PinWindowManager* manager)
 {
     m_pinWindowManager = manager;
 }
@@ -285,10 +285,12 @@ QPoint PinWindow::mapToOriginalCoords(const QPoint& displayPos) const
     if (m_rotationAngle == 90) {
         transform.translate(pixmapRect.width(), 0);
         transform.rotate(90);
-    } else if (m_rotationAngle == 180) {
+    }
+    else if (m_rotationAngle == 180) {
         transform.translate(pixmapRect.width(), pixmapRect.height());
         transform.rotate(180);
-    } else if (m_rotationAngle == 270) {
+    }
+    else if (m_rotationAngle == 270) {
         transform.translate(0, pixmapRect.height());
         transform.rotate(270);
     }
@@ -307,7 +309,7 @@ QPoint PinWindow::mapToOriginalCoords(const QPoint& displayPos) const
     return inverse.map(displayPos);
 }
 
-void PinWindow::setWatermarkSettings(const WatermarkRenderer::Settings &settings)
+void PinWindow::setWatermarkSettings(const WatermarkRenderer::Settings& settings)
 {
     m_watermarkSettings = settings;
     update();
@@ -339,7 +341,8 @@ void PinWindow::ensureTransformCacheValid()
 
         m_transformedCache = m_originalPixmap.transformed(transform, Qt::SmoothTransformation);
         m_transformedCache.setDevicePixelRatio(m_originalPixmap.devicePixelRatio());
-    } else {
+    }
+    else {
         m_transformedCache = m_originalPixmap;
     }
 
@@ -357,8 +360,8 @@ void PinWindow::onResizeFinished()
         QSize newDeviceSize = size() * m_transformedCache.devicePixelRatio();
 
         m_displayPixmap = m_transformedCache.scaled(newDeviceSize,
-                                                    Qt::KeepAspectRatio,
-                                                    Qt::SmoothTransformation);
+            Qt::KeepAspectRatio,
+            Qt::SmoothTransformation);
         m_displayPixmap.setDevicePixelRatio(m_transformedCache.devicePixelRatio());
 
         m_pendingHighQualityUpdate = false;
@@ -366,7 +369,7 @@ void PinWindow::onResizeFinished()
     }
 }
 
-int PinWindow::effectiveCornerRadius(const QSize &contentSize) const
+int PinWindow::effectiveCornerRadius(const QSize& contentSize) const
 {
     if (m_baseCornerRadius <= 0 || contentSize.isEmpty()) {
         return 0;
@@ -379,7 +382,8 @@ int PinWindow::effectiveCornerRadius(const QSize &contentSize) const
             dpr = 1.0;
         }
         baseLogicalSize = m_transformedCache.size() / dpr;
-    } else {
+    }
+    else {
         qreal dpr = m_originalPixmap.devicePixelRatio();
         if (dpr <= 0.0) {
             dpr = 1.0;
@@ -413,16 +417,16 @@ void PinWindow::updateSize()
     QSize newDeviceSize = newLogicalSize * m_transformedCache.devicePixelRatio();
     Qt::TransformationMode mode = m_smoothing ? Qt::SmoothTransformation : Qt::FastTransformation;
     m_displayPixmap = m_transformedCache.scaled(newDeviceSize,
-                                                Qt::KeepAspectRatio,
-                                                mode);
+        Qt::KeepAspectRatio,
+        mode);
     m_displayPixmap.setDevicePixelRatio(m_transformedCache.devicePixelRatio());
 
     setFixedSize(newLogicalSize);
     update();
 
     qDebug() << "PinWindow: Zoom level" << m_zoomLevel << "rotation" << m_rotationAngle
-             << "flipH" << m_flipHorizontal << "flipV" << m_flipVertical
-             << "logical size" << newLogicalSize;
+        << "flipH" << m_flipHorizontal << "flipV" << m_flipVertical
+        << "logical size" << newLogicalSize;
 }
 
 QPixmap PinWindow::getTransformedPixmap() const
@@ -508,92 +512,92 @@ void PinWindow::createContextMenu()
 
     m_contextMenu->addSeparator();
 
-    QAction *copyAction = m_contextMenu->addAction("Copy to Clipboard");
+    QAction* copyAction = m_contextMenu->addAction("Copy to Clipboard");
     copyAction->setShortcut(QKeySequence::Copy);
     connect(copyAction, &QAction::triggered, this, &PinWindow::copyToClipboard);
 
-    QAction *saveAction = m_contextMenu->addAction("Save to file");
+    QAction* saveAction = m_contextMenu->addAction("Save to file");
     saveAction->setShortcut(QKeySequence::Save);
     connect(saveAction, &QAction::triggered, this, &PinWindow::saveToFile);
 
-    QAction *openCacheFolderAction = m_contextMenu->addAction(tr("Open Cache Folder"));
+    QAction* openCacheFolderAction = m_contextMenu->addAction(tr("Open Cache Folder"));
     connect(openCacheFolderAction, &QAction::triggered, this, &PinWindow::openCacheFolder);
 
     if (PlatformFeatures::instance().isOCRAvailable()) {
-        QAction *ocrAction = m_contextMenu->addAction("OCR Text Recognition");
+        QAction* ocrAction = m_contextMenu->addAction("OCR Text Recognition");
         connect(ocrAction, &QAction::triggered, this, &PinWindow::performOCR);
     }
 
     m_contextMenu->addSeparator();
 
     // Watermark submenu
-    QMenu *watermarkMenu = m_contextMenu->addMenu("Watermark");
+    QMenu* watermarkMenu = m_contextMenu->addMenu("Watermark");
 
     // Enable watermark action
-    QAction *enableWatermarkAction = watermarkMenu->addAction("Enable");
+    QAction* enableWatermarkAction = watermarkMenu->addAction("Enable");
     enableWatermarkAction->setCheckable(true);
     enableWatermarkAction->setChecked(m_watermarkSettings.enabled);
     connect(enableWatermarkAction, &QAction::toggled, this, [this](bool checked) {
         m_watermarkSettings.enabled = checked;
         update();
-    });
+        });
 
     watermarkMenu->addSeparator();
 
     // Position submenu
-    QMenu *positionMenu = watermarkMenu->addMenu("Position");
-    QActionGroup *positionGroup = new QActionGroup(this);
+    QMenu* positionMenu = watermarkMenu->addMenu("Position");
+    QActionGroup* positionGroup = new QActionGroup(this);
 
-    QAction *topLeftAction = positionMenu->addAction("Top-Left");
+    QAction* topLeftAction = positionMenu->addAction("Top-Left");
     topLeftAction->setCheckable(true);
     topLeftAction->setData(static_cast<int>(WatermarkRenderer::TopLeft));
     positionGroup->addAction(topLeftAction);
 
-    QAction *topRightAction = positionMenu->addAction("Top-Right");
+    QAction* topRightAction = positionMenu->addAction("Top-Right");
     topRightAction->setCheckable(true);
     topRightAction->setData(static_cast<int>(WatermarkRenderer::TopRight));
     positionGroup->addAction(topRightAction);
 
-    QAction *bottomLeftAction = positionMenu->addAction("Bottom-Left");
+    QAction* bottomLeftAction = positionMenu->addAction("Bottom-Left");
     bottomLeftAction->setCheckable(true);
     bottomLeftAction->setData(static_cast<int>(WatermarkRenderer::BottomLeft));
     positionGroup->addAction(bottomLeftAction);
 
-    QAction *bottomRightAction = positionMenu->addAction("Bottom-Right");
+    QAction* bottomRightAction = positionMenu->addAction("Bottom-Right");
     bottomRightAction->setCheckable(true);
     bottomRightAction->setData(static_cast<int>(WatermarkRenderer::BottomRight));
     positionGroup->addAction(bottomRightAction);
 
     // Set current position
-    for (QAction *action : positionGroup->actions()) {
+    for (QAction* action : positionGroup->actions()) {
         if (action->data().toInt() == static_cast<int>(m_watermarkSettings.position)) {
             action->setChecked(true);
             break;
         }
     }
 
-    connect(positionGroup, &QActionGroup::triggered, this, [this](QAction *action) {
+    connect(positionGroup, &QActionGroup::triggered, this, [this](QAction* action) {
         m_watermarkSettings.position = static_cast<WatermarkRenderer::Position>(action->data().toInt());
         update();
-    });
+        });
 
     // Zoom submenu
-    QMenu *zoomMenu = m_contextMenu->addMenu("Zoom");
+    QMenu* zoomMenu = m_contextMenu->addMenu("Zoom");
 
     // Preset zoom levels
-    QAction *zoom33Action = zoomMenu->addAction("33.3%");
+    QAction* zoom33Action = zoomMenu->addAction("33.3%");
     connect(zoom33Action, &QAction::triggered, this, [this]() { setZoomLevel(1.0 / 3.0); });
 
-    QAction *zoom50Action = zoomMenu->addAction("50%");
+    QAction* zoom50Action = zoomMenu->addAction("50%");
     connect(zoom50Action, &QAction::triggered, this, [this]() { setZoomLevel(0.5); });
 
-    QAction *zoom67Action = zoomMenu->addAction("66.7%");
+    QAction* zoom67Action = zoomMenu->addAction("66.7%");
     connect(zoom67Action, &QAction::triggered, this, [this]() { setZoomLevel(2.0 / 3.0); });
 
-    QAction *zoom100Action = zoomMenu->addAction("100%");
+    QAction* zoom100Action = zoomMenu->addAction("100%");
     connect(zoom100Action, &QAction::triggered, this, [this]() { setZoomLevel(1.0); });
 
-    QAction *zoom200Action = zoomMenu->addAction("200%");
+    QAction* zoom200Action = zoomMenu->addAction("200%");
     connect(zoom200Action, &QAction::triggered, this, [this]() { setZoomLevel(2.0); });
 
     zoomMenu->addSeparator();
@@ -603,46 +607,46 @@ void PinWindow::createContextMenu()
     m_currentZoomAction->setEnabled(false);
 
     // Smoothing option
-    QAction *smoothingAction = zoomMenu->addAction("Smoothing");
+    QAction* smoothingAction = zoomMenu->addAction("Smoothing");
     smoothingAction->setCheckable(true);
     smoothingAction->setChecked(m_smoothing);
     connect(smoothingAction, &QAction::toggled, this, [this](bool checked) {
         m_smoothing = checked;
         updateSize();
-    });
+        });
 
     // Image processing submenu
-    QMenu *imageProcessingMenu = m_contextMenu->addMenu("Image processing");
+    QMenu* imageProcessingMenu = m_contextMenu->addMenu("Image processing");
 
-    QAction *rotateLeftAction = imageProcessingMenu->addAction("Rotate left");
+    QAction* rotateLeftAction = imageProcessingMenu->addAction("Rotate left");
     connect(rotateLeftAction, &QAction::triggered, this, &PinWindow::rotateLeft);
 
-    QAction *rotateRightAction = imageProcessingMenu->addAction("Rotate right");
+    QAction* rotateRightAction = imageProcessingMenu->addAction("Rotate right");
     connect(rotateRightAction, &QAction::triggered, this, &PinWindow::rotateRight);
 
-    QAction *horizontalFlipAction = imageProcessingMenu->addAction("Horizontal flip");
+    QAction* horizontalFlipAction = imageProcessingMenu->addAction("Horizontal flip");
     connect(horizontalFlipAction, &QAction::triggered, this, &PinWindow::flipHorizontal);
 
-    QAction *verticalFlipAction = imageProcessingMenu->addAction("Vertical flip");
+    QAction* verticalFlipAction = imageProcessingMenu->addAction("Vertical flip");
     connect(verticalFlipAction, &QAction::triggered, this, &PinWindow::flipVertical);
 
     // Info submenu - displays image properties
-    QMenu *infoMenu = m_contextMenu->addMenu(
+    QMenu* infoMenu = m_contextMenu->addMenu(
         QString("%1 × %2").arg(m_originalPixmap.width()).arg(m_originalPixmap.height()));
 
     // Copy all info action
-    QAction *copyAllInfoAction = infoMenu->addAction("Copy All");
+    QAction* copyAllInfoAction = infoMenu->addAction("Copy All");
     connect(copyAllInfoAction, &QAction::triggered, this, &PinWindow::copyAllInfo);
 
     infoMenu->addSeparator();
 
     // Info items - clicking copies that value
-    auto addInfoItem = [infoMenu](const QString &label, const QString &value) {
-        QAction *action = infoMenu->addAction(QString("%1: %2").arg(label, value));
+    auto addInfoItem = [infoMenu](const QString& label, const QString& value) {
+        QAction* action = infoMenu->addAction(QString("%1: %2").arg(label, value));
         QObject::connect(action, &QAction::triggered, [value]() {
             QGuiApplication::clipboard()->setText(value);
-        });
-    };
+            });
+        };
 
     addInfoItem("Size", QString("%1 × %2").arg(m_originalPixmap.width()).arg(m_originalPixmap.height()));
     addInfoItem("Zoom", QString("%1%").arg(qRound(m_zoomLevel * 100)));
@@ -665,26 +669,28 @@ void PinWindow::createContextMenu()
     connect(m_startLiveAction, &QAction::triggered, this, [this]() {
         if (m_isLiveMode) {
             stopLiveCapture();
-        } else {
+        }
+        else {
             startLiveCapture();
         }
-    });
+        });
 
     // Pause/Resume Live action
     m_pauseLiveAction = m_contextMenu->addAction("Pause Live Update");
     connect(m_pauseLiveAction, &QAction::triggered, this, [this]() {
         if (m_livePaused) {
             resumeLiveCapture();
-        } else {
+        }
+        else {
             pauseLiveCapture();
         }
-    });
+        });
 
     // Frame rate submenu
     m_fpsMenu = m_contextMenu->addMenu("Frame Rate");
-    QActionGroup *fpsGroup = new QActionGroup(this);
+    QActionGroup* fpsGroup = new QActionGroup(this);
     for (int fps : {5, 10, 15, 30}) {
-        QAction *fpsAction = m_fpsMenu->addAction(QString("%1 FPS").arg(fps));
+        QAction* fpsAction = m_fpsMenu->addAction(QString("%1 FPS").arg(fps));
         fpsAction->setCheckable(true);
         fpsAction->setData(fps);
         fpsGroup->addAction(fpsAction);
@@ -692,28 +698,28 @@ void PinWindow::createContextMenu()
             fpsAction->setChecked(true);
         }
     }
-    connect(fpsGroup, &QActionGroup::triggered, this, [this](QAction *action) {
+    connect(fpsGroup, &QActionGroup::triggered, this, [this](QAction* action) {
         setLiveFrameRate(action->data().toInt());
-    });
+        });
 
     m_contextMenu->addSeparator();
 
-    QAction *closeAction = m_contextMenu->addAction("Close");
+    QAction* closeAction = m_contextMenu->addAction("Close");
     closeAction->setShortcut(QKeySequence(Qt::Key_Escape));
     connect(closeAction, &QAction::triggered, this, &PinWindow::close);
 
-    QAction *closeAllPinsAction = m_contextMenu->addAction("Close All Pins");
+    QAction* closeAllPinsAction = m_contextMenu->addAction("Close All Pins");
     connect(closeAllPinsAction, &QAction::triggered, this, [this]() {
         if (m_pinWindowManager) {
             m_pinWindowManager->closeAllWindows();
         }
-    });
+        });
 }
 
 void PinWindow::saveToFile()
 {
     // Use FileSettingsManager for consistent path and filename format
-    auto &fileSettings = FileSettingsManager::instance();
+    auto& fileSettings = FileSettingsManager::instance();
     QString savePath = fileSettings.loadScreenshotPath();
     QString dateFormat = fileSettings.loadDateFormat();
     QString prefix = fileSettings.loadFilenamePrefix();
@@ -722,7 +728,8 @@ void PinWindow::saveToFile()
     QString filename;
     if (prefix.isEmpty()) {
         filename = QString("Screenshot_%1.png").arg(timestamp);
-    } else {
+    }
+    else {
         filename = QString("%1_Screenshot_%2.png").arg(prefix).arg(timestamp);
     }
 
@@ -746,7 +753,8 @@ void PinWindow::saveToFile()
         if (pixmapToSave.save(filePath)) {
             qDebug() << "PinWindow: Auto-saved to" << filePath;
             emit saveCompleted(pixmapToSave, filePath);
-        } else {
+        }
+        else {
             qDebug() << "PinWindow: Failed to auto-save to" << filePath;
             emit saveFailed(filePath, tr("Failed to save screenshot"));
         }
@@ -766,7 +774,8 @@ void PinWindow::saveToFile()
         if (pixmapToSave.save(filePath)) {
             qDebug() << "PinWindow: Saved to" << filePath;
             emit saveRequested(pixmapToSave);
-        } else {
+        }
+        else {
             qDebug() << "PinWindow: Failed to save to" << filePath;
         }
     }
@@ -805,16 +814,17 @@ void PinWindow::performOCR()
 
     QPointer<PinWindow> safeThis = this;
     m_ocrManager->recognizeText(m_originalPixmap,
-        [safeThis](bool success, const QString &text, const QString &error) {
+        [safeThis](bool success, const QString& text, const QString& error) {
             if (safeThis) {
                 safeThis->onOCRComplete(success, text, error);
-            } else {
+            }
+            else {
                 qDebug() << "PinWindow: OCR completed but window was destroyed, ignoring result";
             }
         });
 }
 
-void PinWindow::onOCRComplete(bool success, const QString &text, const QString &error)
+void PinWindow::onOCRComplete(bool success, const QString& text, const QString& error)
 {
     m_ocrInProgress = false;
     m_loadingSpinner->stop();
@@ -824,16 +834,16 @@ void PinWindow::onOCRComplete(bool success, const QString &text, const QString &
         QGuiApplication::clipboard()->setText(text);
         qDebug() << "PinWindow: OCR complete, copied" << text.length() << "characters to clipboard";
         msg = tr("Copied %1 characters").arg(text.length());
-    } else {
+    }
+    else {
         msg = error.isEmpty() ? tr("No text found") : error;
         qDebug() << "PinWindow: OCR failed:" << msg;
     }
 
     m_uiIndicators->showOCRToast(success && !text.isEmpty(), msg);
-    emit ocrCompleted(success && !text.isEmpty(), msg);
 }
 
-void PinWindow::updateOcrLanguages(const QStringList &languages)
+void PinWindow::updateOcrLanguages(const QStringList& languages)
 {
     if (m_ocrManager) {
         m_ocrManager->setRecognitionLanguages(languages);
@@ -895,10 +905,11 @@ void PinWindow::saveToCacheAsync()
 
         if (pixmapToSave.save(filePath)) {
             qDebug() << "PinWindow: Saved to cache:" << filePath;
-        } else {
+        }
+        else {
             qWarning() << "PinWindow: Failed to save to cache:" << filePath;
         }
-    });
+        });
 }
 
 void PinWindow::applyClickThroughState(bool enabled)
@@ -942,7 +953,8 @@ void PinWindow::setClickThrough(bool enabled)
             m_clickThroughHoverTimer->start();
         }
         updateClickThroughForCursor();
-    } else {
+    }
+    else {
         if (m_clickThroughHoverTimer) {
             m_clickThroughHoverTimer->stop();
         }
@@ -972,7 +984,7 @@ void PinWindow::setShowBorder(bool enabled)
     }
 }
 
-void PinWindow::paintEvent(QPaintEvent *)
+void PinWindow::paintEvent(QPaintEvent*)
 {
     QPainter painter(this);
     painter.setRenderHint(QPainter::SmoothPixmapTransform);
@@ -1007,10 +1019,12 @@ void PinWindow::paintEvent(QPaintEvent *)
             if (m_rotationAngle == 90) {
                 transform.translate(pixmapRect.width(), 0);
                 transform.rotate(90);
-            } else if (m_rotationAngle == 180) {
+            }
+            else if (m_rotationAngle == 180) {
                 transform.translate(pixmapRect.width(), pixmapRect.height());
                 transform.rotate(180);
-            } else if (m_rotationAngle == 270) {
+            }
+            else if (m_rotationAngle == 270) {
                 transform.translate(0, pixmapRect.height());
                 transform.rotate(270);
             }
@@ -1049,10 +1063,12 @@ void PinWindow::paintEvent(QPaintEvent *)
             if (m_rotationAngle == 90) {
                 transform.translate(pixmapRect.width(), 0);
                 transform.rotate(90);
-            } else if (m_rotationAngle == 180) {
+            }
+            else if (m_rotationAngle == 180) {
                 transform.translate(pixmapRect.width(), pixmapRect.height());
                 transform.rotate(180);
-            } else if (m_rotationAngle == 270) {
+            }
+            else if (m_rotationAngle == 270) {
                 transform.translate(0, pixmapRect.height());
                 transform.rotate(270);
             }
@@ -1079,17 +1095,20 @@ void PinWindow::paintEvent(QPaintEvent *)
         if (m_clickThrough) {
             // Dashed indigo border for click-through mode
             painter.setPen(QPen(Color::kBorderIndigo, 2, Qt::DashLine));
-        } else if (m_annotationMode) {
+        }
+        else if (m_annotationMode) {
             // Green border for annotation mode
             painter.setPen(QPen(Color::kBorderGreen, 2));
-        } else {
+        }
+        else {
             // Blue border
             painter.setPen(QPen(Color::kBorderBlue, 1.5));
         }
         painter.setBrush(Qt::NoBrush);
         if (cornerRadius > 0) {
             painter.drawRoundedRect(pixmapRect.adjusted(1, 1, -1, -1), cornerRadius, cornerRadius);
-        } else {
+        }
+        else {
             painter.drawRect(pixmapRect.adjusted(1, 1, -1, -1));
         }
     }
@@ -1117,7 +1136,7 @@ void PinWindow::paintEvent(QPaintEvent *)
         QColor dotColor = m_livePaused
             ? Color::kLivePaused.darker(kPausedDarkerPercent)
             : QColor(Color::kLiveActive.red(), Color::kLiveActive.green(),
-                     Color::kLiveActive.blue(), kMinAlpha + static_cast<int>(pulse * kAlphaRange));
+                Color::kLiveActive.blue(), kMinAlpha + static_cast<int>(pulse * kAlphaRange));
 
         painter.setPen(Qt::NoPen);
         painter.setBrush(dotColor);
@@ -1127,7 +1146,7 @@ void PinWindow::paintEvent(QPaintEvent *)
     }
 }
 
-void PinWindow::enterEvent(QEnterEvent *event)
+void PinWindow::enterEvent(QEnterEvent* event)
 {
     if (m_annotationMode) {
         updateCursorForTool();
@@ -1135,7 +1154,7 @@ void PinWindow::enterEvent(QEnterEvent *event)
     QWidget::enterEvent(event);
 }
 
-void PinWindow::mousePressEvent(QMouseEvent *event)
+void PinWindow::mousePressEvent(QMouseEvent* event)
 {
     if (event->button() == Qt::LeftButton) {
         // 1. First handle inline text editing (finish/cancel when clicking outside)
@@ -1185,7 +1204,8 @@ void PinWindow::mousePressEvent(QMouseEvent *event)
             // Start resizing
             m_isResizing = true;
             m_resizeHandler->startResize(edge, event->globalPosition().toPoint(), size(), pos());
-        } else {
+        }
+        else {
             // Start dragging
             m_isDragging = true;
             m_dragStartPos = event->globalPosition().toPoint() - frameGeometry().topLeft();
@@ -1194,7 +1214,7 @@ void PinWindow::mousePressEvent(QMouseEvent *event)
     }
 }
 
-void PinWindow::mouseMoveEvent(QMouseEvent *event)
+void PinWindow::mouseMoveEvent(QMouseEvent* event)
 {
     // Handle confirm mode text dragging
     if (m_textEditor && m_textEditor->isConfirmMode() && m_textEditor->isDragging()) {
@@ -1242,8 +1262,8 @@ void PinWindow::mouseMoveEvent(QMouseEvent *event)
         // High-quality scaling will be done after resize is complete
         QSize newDeviceSize = newSize * m_transformedCache.devicePixelRatio();
         m_displayPixmap = m_transformedCache.scaled(newDeviceSize,
-                                                    Qt::KeepAspectRatio,
-                                                    Qt::FastTransformation);
+            Qt::KeepAspectRatio,
+            Qt::FastTransformation);
         m_displayPixmap.setDevicePixelRatio(m_transformedCache.devicePixelRatio());
 
         // Schedule high-quality update after resize ends
@@ -1257,9 +1277,11 @@ void PinWindow::mouseMoveEvent(QMouseEvent *event)
 
         m_uiIndicators->showZoomIndicator(m_zoomLevel);
 
-    } else if (m_isDragging) {
+    }
+    else if (m_isDragging) {
         move(event->globalPosition().toPoint() - m_dragStartPos);
-    } else {
+    }
+    else {
         // Only update resize cursor when NOT in annotation mode
         // In annotation mode, keep the tool cursor (set by updateCursorForTool)
         if (!m_annotationMode) {
@@ -1269,7 +1291,7 @@ void PinWindow::mouseMoveEvent(QMouseEvent *event)
     }
 }
 
-void PinWindow::mouseReleaseEvent(QMouseEvent *event)
+void PinWindow::mouseReleaseEvent(QMouseEvent* event)
 {
     if (event->button() == Qt::LeftButton) {
         // Handle confirm mode text dragging end
@@ -1300,7 +1322,7 @@ void PinWindow::mouseReleaseEvent(QMouseEvent *event)
             // For drawing tools: only route if actively drawing
             // For single-click tools (Emoji, StepBadge): always route release
             bool isSingleClickTool = (m_currentToolId == ToolId::EmojiSticker ||
-                                      m_currentToolId == ToolId::StepBadge);
+                m_currentToolId == ToolId::StepBadge);
 
             if (m_toolManager->isDrawing() || isSingleClickTool) {
                 m_toolManager->handleMouseRelease(mapToOriginalCoords(event->pos()));
@@ -1319,7 +1341,8 @@ void PinWindow::mouseReleaseEvent(QMouseEvent *event)
             // Only set Arrow cursor if not in annotation mode
             if (!m_annotationMode) {
                 setCursor(Qt::ArrowCursor);
-            } else {
+            }
+            else {
                 // Restore tool cursor after drag
                 updateCursorForTool();
             }
@@ -1330,7 +1353,7 @@ void PinWindow::mouseReleaseEvent(QMouseEvent *event)
     }
 }
 
-void PinWindow::mouseDoubleClickEvent(QMouseEvent *event)
+void PinWindow::mouseDoubleClickEvent(QMouseEvent* event)
 {
     if (event->button() == Qt::LeftButton) {
         // In annotation mode with active drawing, forward to tool handler
@@ -1357,15 +1380,15 @@ void PinWindow::mouseDoubleClickEvent(QMouseEvent *event)
     }
 }
 
-void PinWindow::wheelEvent(QWheelEvent *event)
+void PinWindow::wheelEvent(QWheelEvent* event)
 {
     // Ctrl+Wheel = Opacity adjustment
     if (event->modifiers() & Qt::ControlModifier) {
         const qreal opacityStep = PinWindowSettingsManager::instance().loadOpacityStep();
         qreal oldOpacity = m_opacity;
         qreal newOpacity = (event->angleDelta().y() > 0)
-                           ? m_opacity + opacityStep
-                           : m_opacity - opacityStep;
+            ? m_opacity + opacityStep
+            : m_opacity - opacityStep;
         newOpacity = qBound(Bounds::kMinOpacity, newOpacity, Bounds::kMaxOpacity);
 
         if (qFuzzyCompare(oldOpacity, newOpacity)) {
@@ -1383,8 +1406,8 @@ void PinWindow::wheelEvent(QWheelEvent *event)
     const qreal zoomStep = PinWindowSettingsManager::instance().loadZoomStep();
     qreal oldZoom = m_zoomLevel;
     qreal newZoom = (event->angleDelta().y() > 0)
-                    ? m_zoomLevel + zoomStep
-                    : m_zoomLevel - zoomStep;
+        ? m_zoomLevel + zoomStep
+        : m_zoomLevel - zoomStep;
     newZoom = qBound(Bounds::kMinZoom, newZoom, Bounds::kMaxZoom);
 
     if (qFuzzyCompare(oldZoom, newZoom)) {
@@ -1399,7 +1422,7 @@ void PinWindow::wheelEvent(QWheelEvent *event)
     event->accept();
 }
 
-void PinWindow::contextMenuEvent(QContextMenuEvent *event)
+void PinWindow::contextMenuEvent(QContextMenuEvent* event)
 {
     // Lazy-create context menu on first right-click to improve initial window creation performance
     if (!m_contextMenu) {
@@ -1425,7 +1448,7 @@ void PinWindow::contextMenuEvent(QContextMenuEvent *event)
         // Use menuAction() to control visibility - direct setVisible on QMenu causes positioning issues
         m_fpsMenu->menuAction()->setVisible(m_isLiveMode);
         // Update checked state for current frame rate
-        for (QAction *action : m_fpsMenu->actions()) {
+        for (QAction* action : m_fpsMenu->actions()) {
             action->setChecked(action->data().toInt() == m_captureFrameRate);
         }
     }
@@ -1436,13 +1459,13 @@ void PinWindow::contextMenuEvent(QContextMenuEvent *event)
     m_contextMenu->popup(event->globalPos());
 }
 
-void PinWindow::keyPressEvent(QKeyEvent *event)
+void PinWindow::keyPressEvent(QKeyEvent* event)
 {
     qDebug() << "PinWindow::keyPressEvent - key:" << event->key()
-             << "modifiers:" << event->modifiers()
-             << "isEditing:" << (m_textEditor ? m_textEditor->isEditing() : false)
-             << "isConfirmMode:" << (m_textEditor ? m_textEditor->isConfirmMode() : false)
-             << "hasFocus:" << hasFocus();
+        << "modifiers:" << event->modifiers()
+        << "isEditing:" << (m_textEditor ? m_textEditor->isEditing() : false)
+        << "isConfirmMode:" << (m_textEditor ? m_textEditor->isConfirmMode() : false)
+        << "hasFocus:" << hasFocus();
 
     // Handle text editor state first (like RegionSelector)
     if (m_textEditor && m_textEditor->isEditing()) {
@@ -1456,7 +1479,8 @@ void PinWindow::keyPressEvent(QKeyEvent *event)
                 m_textEditor->finishEditing();  // Emits editingFinished signal
                 return;
             }
-        } else {
+        }
+        else {
             // In typing mode: Ctrl+Enter or Shift+Enter enters confirm mode
             if ((event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) &&
                 (event->modifiers() & (Qt::ControlModifier | Qt::ShiftModifier))) {
@@ -1507,7 +1531,8 @@ void PinWindow::keyPressEvent(QKeyEvent *event)
     if (event->key() == Qt::Key_L && !m_sourceRegion.isEmpty()) {
         if (m_isLiveMode) {
             stopLiveCapture();
-        } else {
+        }
+        else {
             startLiveCapture();
         }
         event->accept();
@@ -1518,7 +1543,8 @@ void PinWindow::keyPressEvent(QKeyEvent *event)
     if (event->key() == Qt::Key_P && m_isLiveMode) {
         if (m_livePaused) {
             resumeLiveCapture();
-        } else {
+        }
+        else {
             pauseLiveCapture();
         }
         event->accept();
@@ -1528,28 +1554,34 @@ void PinWindow::keyPressEvent(QKeyEvent *event)
     // Rotation and flip shortcuts
     if (event->key() == Qt::Key_1) {
         rotateRight();
-    } else if (event->key() == Qt::Key_2) {
+    }
+    else if (event->key() == Qt::Key_2) {
         rotateLeft();
-    } else if (event->key() == Qt::Key_3) {
+    }
+    else if (event->key() == Qt::Key_3) {
         flipHorizontal();
-    } else if (event->key() == Qt::Key_4) {
+    }
+    else if (event->key() == Qt::Key_4) {
         flipVertical();
-    } else if (event->matches(QKeySequence::Save)) {
+    }
+    else if (event->matches(QKeySequence::Save)) {
         saveToFile();
-    } else if (event->matches(QKeySequence::Copy)) {
+    }
+    else if (event->matches(QKeySequence::Copy)) {
         copyToClipboard();
-    } else {
+    }
+    else {
         QWidget::keyPressEvent(event);
     }
 }
 
-void PinWindow::closeEvent(QCloseEvent *event)
+void PinWindow::closeEvent(QCloseEvent* event)
 {
     emit closed(this);
     event->accept();
 }
 
-void PinWindow::moveEvent(QMoveEvent *event)
+void PinWindow::moveEvent(QMoveEvent* event)
 {
     QWidget::moveEvent(event);
     updateToolbarPosition();
@@ -1564,7 +1596,7 @@ void PinWindow::initializeAnnotationComponents()
     // Initialize annotation layer
     m_annotationLayer = new AnnotationLayer(this);
     connect(m_annotationLayer, &AnnotationLayer::changed,
-            this, QOverload<>::of(&QWidget::update));
+        this, QOverload<>::of(&QWidget::update));
 
     // Initialize tool manager
     m_toolManager = new ToolManager(this);
@@ -1584,7 +1616,7 @@ void PinWindow::initializeAnnotationComponents()
 
     // Connect tool manager signals
     connect(m_toolManager, &ToolManager::needsRepaint,
-            this, QOverload<>::of(&QWidget::update));
+        this, QOverload<>::of(&QWidget::update));
 
     // Initialize cursor manager for centralized cursor handling (like RegionSelector)
     auto& cursorManager = CursorManager::instance();
@@ -1600,16 +1632,16 @@ void PinWindow::initializeAnnotationComponents()
 
     // Connect text editor signals
     connect(m_textEditor, &InlineTextEditor::editingFinished,
-            this, [this](const QString& text, const QPoint& position) {
-                m_textAnnotationEditor->finishEditing(text, position, m_annotationColor);
-                updateUndoRedoState();
-                update();
-            });
+        this, [this](const QString& text, const QPoint& position) {
+            m_textAnnotationEditor->finishEditing(text, position, m_annotationColor);
+            updateUndoRedoState();
+            update();
+        });
     connect(m_textEditor, &InlineTextEditor::editingCancelled,
-            this, [this]() {
-                m_textAnnotationEditor->cancelEditing();
-                update();
-            });
+        this, [this]() {
+            m_textAnnotationEditor->cancelEditing();
+            update();
+        });
 
     // Initialize toolbar (not parented - separate floating window)
     m_toolbar = new PinWindowToolbar(nullptr);
@@ -1617,50 +1649,50 @@ void PinWindow::initializeAnnotationComponents()
 
     // Connect toolbar signals
     connect(m_toolbar, &PinWindowToolbar::toolSelected,
-            this, &PinWindow::handleToolbarToolSelected);
+        this, &PinWindow::handleToolbarToolSelected);
     connect(m_toolbar, &PinWindowToolbar::undoClicked,
-            this, &PinWindow::handleToolbarUndo);
+        this, &PinWindow::handleToolbarUndo);
     connect(m_toolbar, &PinWindowToolbar::redoClicked,
-            this, &PinWindow::handleToolbarRedo);
+        this, &PinWindow::handleToolbarRedo);
     connect(m_toolbar, &PinWindowToolbar::ocrClicked,
-            this, &PinWindow::performOCR);
+        this, &PinWindow::performOCR);
     connect(m_toolbar, &PinWindowToolbar::copyClicked,
-            this, &PinWindow::copyToClipboard);
+        this, &PinWindow::copyToClipboard);
     connect(m_toolbar, &PinWindowToolbar::saveClicked,
-            this, &PinWindow::saveToFile);
+        this, &PinWindow::saveToFile);
     connect(m_toolbar, &PinWindowToolbar::doneClicked,
-            this, &PinWindow::hideToolbar);
+        this, &PinWindow::hideToolbar);
     connect(m_toolbar, &PinWindowToolbar::cursorRestoreRequested,
-            this, &PinWindow::updateCursorForTool);
+        this, &PinWindow::updateCursorForTool);
 
     // Initialize sub-toolbar (not parented - separate floating window)
     m_subToolbar = new PinWindowSubToolbar(nullptr);
 
     // Connect sub-toolbar signals
     connect(m_subToolbar, &PinWindowSubToolbar::colorSelected,
-            this, &PinWindow::onColorSelected);
+        this, &PinWindow::onColorSelected);
     connect(m_subToolbar, &PinWindowSubToolbar::widthChanged,
-            this, &PinWindow::onWidthChanged);
+        this, &PinWindow::onWidthChanged);
     connect(m_subToolbar, &PinWindowSubToolbar::emojiSelected,
-            this, &PinWindow::onEmojiSelected);
+        this, &PinWindow::onEmojiSelected);
     connect(m_subToolbar, &PinWindowSubToolbar::stepBadgeSizeChanged,
-            this, &PinWindow::onStepBadgeSizeChanged);
+        this, &PinWindow::onStepBadgeSizeChanged);
     connect(m_subToolbar, &PinWindowSubToolbar::shapeTypeChanged,
-            this, &PinWindow::onShapeTypeChanged);
+        this, &PinWindow::onShapeTypeChanged);
     connect(m_subToolbar, &PinWindowSubToolbar::shapeFillModeChanged,
-            this, &PinWindow::onShapeFillModeChanged);
+        this, &PinWindow::onShapeFillModeChanged);
     connect(m_subToolbar, &PinWindowSubToolbar::arrowStyleChanged,
-            this, &PinWindow::onArrowStyleChanged);
+        this, &PinWindow::onArrowStyleChanged);
     connect(m_subToolbar, &PinWindowSubToolbar::lineStyleChanged,
-            this, &PinWindow::onLineStyleChanged);
+        this, &PinWindow::onLineStyleChanged);
     connect(m_subToolbar, &PinWindowSubToolbar::fontSizeDropdownRequested,
-            this, &PinWindow::onFontSizeDropdownRequested);
+        this, &PinWindow::onFontSizeDropdownRequested);
     connect(m_subToolbar, &PinWindowSubToolbar::fontFamilyDropdownRequested,
-            this, &PinWindow::onFontFamilyDropdownRequested);
+        this, &PinWindow::onFontFamilyDropdownRequested);
     connect(m_subToolbar, &PinWindowSubToolbar::autoBlurRequested,
-            this, &PinWindow::onAutoBlurRequested);
+        this, &PinWindow::onAutoBlurRequested);
     connect(m_subToolbar, &PinWindowSubToolbar::cursorRestoreRequested,
-            this, &PinWindow::updateCursorForTool);
+        this, &PinWindow::updateCursorForTool);
 
     // Connect TextAnnotationEditor to ColorAndWidthWidget (must be after sub-toolbar creation)
     m_textAnnotationEditor->setColorAndWidthWidget(m_subToolbar->colorAndWidthWidget());
@@ -1676,7 +1708,8 @@ void PinWindow::toggleToolbar()
 {
     if (m_toolbarVisible) {
         hideToolbar();
-    } else {
+    }
+    else {
         showToolbar();
     }
 }
@@ -1693,7 +1726,7 @@ void PinWindow::showToolbar()
 
     // Connect close request signal
     connect(m_toolbar, &PinWindowToolbar::closeRequested,
-            this, &PinWindow::hideToolbar, Qt::UniqueConnection);
+        this, &PinWindow::hideToolbar, Qt::UniqueConnection);
 
     m_toolbarVisible = true;
     updateUndoRedoState();
@@ -1721,7 +1754,7 @@ void PinWindow::updateToolbarPosition()
 {
     if (m_toolbar && m_toolbarVisible) {
         qDebug() << "PinWindow::updateToolbarPosition - frameGeometry():" << frameGeometry()
-                 << "geometry():" << geometry() << "pos():" << pos();
+            << "geometry():" << geometry() << "pos():" << pos();
         m_toolbar->positionNear(frameGeometry());
         // Also update sub-toolbar position if visible
         updateSubToolbarPosition();
@@ -1774,7 +1807,8 @@ void PinWindow::updateCursorForTool()
         if (currentTool == ToolId::Mosaic) {
             int mosaicWidth = m_toolManager->width() * 2;
             toolCursor = CursorManager::createMosaicCursor(mosaicWidth);
-        } else {
+        }
+        else {
             // Use handler's cursor() method
             IToolHandler* handler = m_toolManager->currentHandler();
             if (handler) {
@@ -1905,7 +1939,8 @@ void PinWindow::handleToolbarToolSelected(int toolId)
             m_subToolbar->showForTool(toolId);
             updateSubToolbarPosition();
         }
-    } else {
+    }
+    else {
         exitAnnotationMode();
         hideSubToolbar();
     }
@@ -1981,7 +2016,7 @@ void PinWindow::updateSubToolbarPosition()
     if (m_subToolbar && m_subToolbar->isVisible() && m_toolbar) {
         QRect toolbarGeom = m_toolbar->frameGeometry();
         qDebug() << "PinWindow::updateSubToolbarPosition - toolbar frameGeometry=" << toolbarGeom
-                 << "subToolbar size=" << m_subToolbar->size();
+            << "subToolbar size=" << m_subToolbar->size();
         m_subToolbar->positionBelow(toolbarGeom);
     }
 }
@@ -1993,7 +2028,7 @@ void PinWindow::hideSubToolbar()
     }
 }
 
-void PinWindow::onColorSelected(const QColor &color)
+void PinWindow::onColorSelected(const QColor& color)
 {
     m_annotationColor = color;
     if (m_toolManager) {
@@ -2019,7 +2054,7 @@ void PinWindow::onWidthChanged(int width)
     qDebug() << "PinWindow: Width changed:" << width;
 }
 
-void PinWindow::onEmojiSelected(const QString &emoji)
+void PinWindow::onEmojiSelected(const QString& emoji)
 {
     qDebug() << "PinWindow: Emoji selected:" << emoji;
     // Set emoji in handler - user clicks canvas to place it (like RegionSelector)
@@ -2077,39 +2112,39 @@ void PinWindow::onLineStyleChanged(LineStyle style)
     qDebug() << "PinWindow: Line style changed:" << static_cast<int>(style);
 }
 
-void PinWindow::onFontSizeDropdownRequested(const QPoint &pos)
+void PinWindow::onFontSizeDropdownRequested(const QPoint& pos)
 {
     if (!m_subToolbar) return;
 
     QMenu menu;
-    QVector<int> sizes = {8, 10, 12, 14, 16, 18, 20, 24, 28, 32, 36, 48, 72};
+    QVector<int> sizes = { 8, 10, 12, 14, 16, 18, 20, 24, 28, 32, 36, 48, 72 };
     for (int size : sizes) {
-        QAction *action = menu.addAction(QString::number(size));
+        QAction* action = menu.addAction(QString::number(size));
         connect(action, &QAction::triggered, this, [this, size]() {
             if (m_subToolbar) {
                 m_subToolbar->colorAndWidthWidget()->setFontSize(size);
             }
             qDebug() << "PinWindow: Font size changed:" << size;
-        });
+            });
     }
     menu.exec(m_subToolbar->mapToGlobal(pos));
 }
 
-void PinWindow::onFontFamilyDropdownRequested(const QPoint &pos)
+void PinWindow::onFontFamilyDropdownRequested(const QPoint& pos)
 {
     if (!m_subToolbar) return;
 
     QMenu menu;
-    QStringList families = {"Arial", "Helvetica", "Times New Roman", "Georgia",
-                            "Courier New", "Verdana", "Tahoma"};
-    for (const QString &family : families) {
-        QAction *action = menu.addAction(family);
+    QStringList families = { "Arial", "Helvetica", "Times New Roman", "Georgia",
+                            "Courier New", "Verdana", "Tahoma" };
+    for (const QString& family : families) {
+        QAction* action = menu.addAction(family);
         connect(action, &QAction::triggered, this, [this, family]() {
             if (m_subToolbar) {
                 m_subToolbar->colorAndWidthWidget()->setFontFamily(family);
             }
             qDebug() << "PinWindow: Font family changed:" << family;
-        });
+            });
     }
     menu.exec(m_subToolbar->mapToGlobal(pos));
 }
@@ -2137,7 +2172,7 @@ void PinWindow::onAutoBlurRequested()
     auto sharedDisplayPixmap = std::make_shared<const QPixmap>(m_displayPixmap);
 
     // Create mosaic annotations for each detected face
-    for (const QRect &faceRect : result.faceRegions) {
+    for (const QRect& faceRect : result.faceRegions) {
         // Convert from device pixels to logical pixels
         QRect logicalRect = CoordinateHelper::toLogical(faceRect, dpr);
 
@@ -2186,7 +2221,8 @@ bool PinWindow::handleTextEditorPress(const QPoint& pos)
     if (!m_textEditor->contains(pos)) {
         if (!m_textEditor->textEdit()->toPlainText().trimmed().isEmpty()) {
             m_textEditor->finishEditing();
-        } else {
+        }
+        else {
             m_textEditor->cancelEditing();
         }
         return false;
@@ -2218,7 +2254,8 @@ bool PinWindow::handleTextAnnotationPress(const QPoint& pos)
         GizmoHandle handle = TransformationGizmo::hitTest(textItem, pos);
         if (handle == GizmoHandle::Body || handle == GizmoHandle::None) {
             m_textAnnotationEditor->startDragging(pos);
-        } else {
+        }
+        else {
             m_textAnnotationEditor->startTransformation(pos, handle);
         }
     }
@@ -2245,7 +2282,8 @@ bool PinWindow::handleGizmoPress(const QPoint& pos)
         }
         m_textAnnotationEditor->recordClick(pos, now);
         m_textAnnotationEditor->startDragging(pos);
-    } else {
+    }
+    else {
         m_textAnnotationEditor->startTransformation(pos, handle);
     }
 
@@ -2285,7 +2323,7 @@ void PinWindow::startLiveCapture()
 
     // Exclude self from capture to avoid infinite recursion
 #ifdef Q_OS_MACOS
-    m_captureEngine->setExcludedWindows({winId()});
+    m_captureEngine->setExcludedWindows({ winId() });
 #endif
     setWindowExcludedFromCapture(this, true);
 
