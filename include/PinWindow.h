@@ -200,6 +200,9 @@ private:
     bool handlePolylineAnnotationRelease(const QPoint& pos);
     PolylineAnnotation* getSelectedPolylineAnnotation();
 
+    // Cursor update helper
+    void updateAnnotationCursor(const QPoint& pos);
+
     // Coordinate transformation for rotated/flipped state
     QPoint mapToOriginalCoords(const QPoint& displayPos) const;
 

@@ -909,8 +909,24 @@ void ScreenCanvas::mouseMoveEvent(QMouseEvent* event)
             cursorManager.pushCursor(CursorContext::Hover, Qt::OpenHandCursor);
         }
         else {
-            // Not hovering on any UI element - pop hover cursor to show tool cursor
-            cursorManager.popCursor(CursorContext::Hover);
+            // Check annotation cursors
+            updateAnnotationCursor(event->pos());
+            
+            // If updateAnnotationCursor didn't push a cursor (how do we know?), we should pop.
+            // Actually, CursorManager stacks. If we push check, it's on top.
+            // But if we DON'T hit annotation, we need to POP any previous hover cursor.
+            // The logic in ScreenCanvas seems to rely on "if not UI, pop".
+            
+            // Let's refine:
+            bool annotationHit = false;
+            if (getSelectedArrowAnnotation() && TransformationGizmo::hitTest(getSelectedArrowAnnotation(), event->pos()) != GizmoHandle::None) annotationHit = true;
+            else if (m_annotationLayer->hitTestArrow(event->pos()) >= 0) annotationHit = true;
+            else if (getSelectedPolylineAnnotation() && TransformationGizmo::hitTestVertex(getSelectedPolylineAnnotation(), event->pos()) != -2) annotationHit = true;
+            else if (m_annotationLayer->hitTestPolyline(event->pos()) >= 0) annotationHit = true;
+            
+            if (!annotationHit) {
+                 cursorManager.popCursor(CursorContext::Hover);
+            }
         }
 
         if (needsUpdate) {
@@ -1253,7 +1269,12 @@ bool ScreenCanvas::handleArrowAnnotationMove(const QPoint& pos)
             } else if (m_arrowDragHandle == GizmoHandle::ArrowEnd) {
                 arrowItem->setEnd(pos);
             } else if (m_arrowDragHandle == GizmoHandle::ArrowControl) {
-                arrowItem->setControlPoint(pos);
+                // User drags the curve midpoint (t=0.5), calculate actual Bézier control point
+                // P1 = 2*Mid - 0.5*(Start + End)
+                QPointF start = arrowItem->start();
+                QPointF end = arrowItem->end();
+                QPointF newControl = 2.0 * QPointF(pos) - 0.5 * (start + end);
+                arrowItem->setControlPoint(newControl.toPoint());
             }
             m_annotationLayer->invalidateCache();
             update();
@@ -1366,4 +1387,51 @@ bool ScreenCanvas::handlePolylineAnnotationRelease(const QPoint& pos)
         return true;
     }
     return false;
+}
+
+void ScreenCanvas::updateAnnotationCursor(const QPoint& pos)
+{
+    // Helper lambda to map CursorShape to CursorContext
+    auto updateCursor = [&](Qt::CursorShape shape) {
+        CursorManager::instance().pushCursor(CursorContext::Hover, shape);
+    };
+
+    // Check Arrow handles
+    if (auto* arrowItem = getSelectedArrowAnnotation()) {
+        GizmoHandle handle = TransformationGizmo::hitTest(arrowItem, pos);
+        if (handle != GizmoHandle::None) {
+            updateCursor(Qt::PointingHandCursor); // Or specific cursor for handles
+            return;
+        }
+    } else {
+        // Check hover on unselected arrow
+        int hitIndex = m_annotationLayer->hitTestArrow(pos);
+        if (hitIndex >= 0) {
+            updateCursor(Qt::SizeAllCursor); // Indicate it can be selected/moved
+            return;
+        }
+    }
+
+    // Check Polyline handles
+    if (auto* polylineItem = getSelectedPolylineAnnotation()) {
+        int vertexIndex = TransformationGizmo::hitTestVertex(polylineItem, pos);
+        if (vertexIndex >= 0) {
+            updateCursor(Qt::CrossCursor); // Vertex drag
+            return;
+        } else if (vertexIndex == -1) {
+            updateCursor(Qt::SizeAllCursor); // Body drag
+            return;
+        }
+    } else {
+        // Check hover on unselected polyline
+        int hitIndex = m_annotationLayer->hitTestPolyline(pos);
+        if (hitIndex >= 0) {
+            updateCursor(Qt::SizeAllCursor);
+            return;
+        }
+    }
+
+    // Default: pop hover cursor if no annotation hit
+    // This is handled in mouseMoveEvent by checking if we updated it here? 
+    // Actually mouseMoveEvent logic pops if nothing is hit.
 }

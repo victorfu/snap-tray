@@ -207,6 +207,11 @@ private:
     bool handlePolylineAnnotationMove(const QPoint& pos);
     bool handlePolylineAnnotationRelease(const QPoint& pos);
     PolylineAnnotation* getSelectedPolylineAnnotation();
+    
+    // Cursor update helper
+    void updateAnnotationCursor(const QPoint& pos);
+
+    // Text editing components
 
     // Text editing components
     InlineTextEditor *m_textEditor;
