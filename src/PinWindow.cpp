@@ -1826,13 +1826,7 @@ void PinWindow::exitAnnotationMode()
 
     m_annotationMode = false;
     m_currentToolId = ToolId::Selection;
-
-    // Reset cursor state with transaction to prevent flicker
-    auto& cm = CursorManager::instance();
-    cm.beginTransaction();
-    cm.resetState();
-    cm.clearAll();
-    cm.commitTransaction();
+    CursorManager::instance().clearAll();
 
     if (m_toolbar) {
         m_toolbar->setActiveButton(-1);

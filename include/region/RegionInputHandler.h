@@ -138,6 +138,7 @@ private:
 
     // Cursor helpers
     Qt::CursorShape getCursorForGizmoHandle(GizmoHandle handle) const;
+    void updateCursorForHandle(SelectionStateManager::ResizeHandle handle);
     void emitCursorChangeIfNeeded(Qt::CursorShape cursor);
 
     // Selection helpers

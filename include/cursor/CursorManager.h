@@ -49,8 +49,7 @@ enum class HoverTarget {
     GizmoHandle,    // Hovering over gizmo rotation/scale handle
     Annotation,     // Hovering over annotation
     ColorPalette,   // Hovering over color palette
-    Widget,         // Hovering over generic interactive widget
-    SelectionBody   // Hovering inside selection region (move cursor)
+    Widget          // Hovering over generic interactive widget
 };
 
 /**
@@ -145,30 +144,6 @@ public:
      * Useful for clearing multiple related contexts without resetting tool cursor.
      */
     void clearContexts(std::initializer_list<CursorContext> contexts);
-
-    // ========================================================================
-    // Transaction Support
-    // ========================================================================
-
-    /**
-     * @brief Begin a cursor transaction.
-     *
-     * During a transaction, cursor updates are deferred until commitTransaction().
-     * Supports nesting - only the outermost commit will apply the cursor.
-     */
-    void beginTransaction();
-
-    /**
-     * @brief Commit the cursor transaction and apply pending cursor.
-     *
-     * For nested transactions, only commits when depth reaches zero.
-     */
-    void commitTransaction();
-
-    /**
-     * @brief Check if currently in a transaction.
-     */
-    bool inTransaction() const;
 
     // ========================================================================
     // Per-Widget Cursor Management
@@ -294,17 +269,6 @@ public:
      */
     static Qt::CursorShape cursorForEdge(ResizeHandler::Edge edge);
 
-    // ========================================================================
-    // Diagnostics (Debug only)
-    // ========================================================================
-
-#ifdef QT_DEBUG
-    /**
-     * @brief Dump current cursor manager state for debugging.
-     */
-    void dumpState() const;
-#endif
-
 signals:
     /**
      * @brief Emitted when the effective cursor changes.
@@ -357,80 +321,6 @@ private:
     HoverTarget m_hoverTarget = HoverTarget::None;
     DragState m_dragState = DragState::None;
     int m_hoverHandleIndex = -1;
-
-    // Transaction support
-    int m_transactionDepth = 0;
-};
-
-// ============================================================================
-// CursorGuard - RAII cursor management
-// ============================================================================
-
-/**
- * @brief RAII guard for automatic cursor context cleanup.
- *
- * Automatically pops the cursor context when the guard goes out of scope.
- * Supports both global (target widget) and per-widget cursor management.
- *
- * Usage:
- * @code
- * // Global cursor (target widget)
- * {
- *     CursorGuard guard(CursorContext::Drag, Qt::ClosedHandCursor);
- *     // ... drag operation ...
- * }  // cursor automatically popped
- *
- * // Per-widget cursor
- * {
- *     CursorGuard guard(myToolbar, CursorContext::Hover, Qt::PointingHandCursor);
- *     // ... hover handling ...
- * }  // cursor automatically popped from myToolbar
- * @endcode
- */
-class CursorGuard {
-public:
-    /**
-     * @brief Construct a guard for global cursor stack (target widget).
-     */
-    CursorGuard(CursorContext context, Qt::CursorShape cursor);
-
-    /**
-     * @brief Construct a guard for per-widget cursor stack.
-     */
-    CursorGuard(QWidget* widget, CursorContext context, Qt::CursorShape cursor);
-
-    /**
-     * @brief Default constructor (no-op guard).
-     */
-    CursorGuard() = default;
-
-    /**
-     * @brief Destructor - automatically pops the cursor if not released.
-     */
-    ~CursorGuard();
-
-    // Non-copyable
-    CursorGuard(const CursorGuard&) = delete;
-    CursorGuard& operator=(const CursorGuard&) = delete;
-
-    // Movable
-    CursorGuard(CursorGuard&& other) noexcept;
-    CursorGuard& operator=(CursorGuard&& other) noexcept;
-
-    /**
-     * @brief Release the guard without popping the cursor.
-     */
-    void release();
-
-    /**
-     * @brief Check if the guard is active.
-     */
-    bool isActive() const { return m_active; }
-
-private:
-    QWidget* m_widget = nullptr;
-    CursorContext m_context = CursorContext::Tool;
-    bool m_active = false;
 };
 
 #endif // CURSORMANAGER_H

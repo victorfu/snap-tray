@@ -2,7 +2,6 @@
 
 #include <QPainter>
 #include <QPixmap>
-#include <QDebug>
 #include <algorithm>
 
 #include "tools/ToolManager.h"
@@ -23,19 +22,10 @@ CursorManager& CursorManager::instance()
 
 void CursorManager::setTargetWidget(QWidget* widget)
 {
-    if (m_targetWidget == widget) {
-        return;
-    }
-
-    // Clean up previous widget
+    // Disconnect from previous widget if any
     if (m_targetWidget) {
-        m_targetWidget->unsetCursor();
         disconnect(m_targetWidget, &QObject::destroyed, this, nullptr);
     }
-
-    // Reset state and cursor stack when switching target widgets
-    resetState();
-    m_cursorStack.clear();
 
     m_targetWidget = widget;
 
@@ -44,7 +34,11 @@ void CursorManager::setTargetWidget(QWidget* widget)
         connect(m_targetWidget, &QObject::destroyed, this, [this]() {
             m_targetWidget = nullptr;
             m_cursorStack.clear();
-            resetState();
+            // Reset state without triggering cursor update (no widget to update)
+            m_inputState = InputState::Idle;
+            m_hoverTarget = HoverTarget::None;
+            m_dragState = DragState::None;
+            m_hoverHandleIndex = -1;
         });
     }
 }
@@ -130,30 +124,6 @@ void CursorManager::clearContexts(std::initializer_list<CursorContext> contexts)
         m_cursorStack.erase(it, m_cursorStack.end());
     }
     applyCursor();
-}
-
-// ============================================================================
-// Transaction Support
-// ============================================================================
-
-void CursorManager::beginTransaction()
-{
-    m_transactionDepth++;
-}
-
-void CursorManager::commitTransaction()
-{
-    if (m_transactionDepth > 0) {
-        m_transactionDepth--;
-    }
-    if (m_transactionDepth == 0) {
-        applyCursor();
-    }
-}
-
-bool CursorManager::inTransaction() const
-{
-    return m_transactionDepth > 0;
 }
 
 // ============================================================================
@@ -379,11 +349,6 @@ Qt::CursorShape CursorManager::cursorForEdge(ResizeHandler::Edge edge)
 
 void CursorManager::applyCursor()
 {
-    // Skip if in transaction - cursor will be applied on commit
-    if (m_transactionDepth > 0) {
-        return;
-    }
-
     if (!m_targetWidget) {
         return;
     }
@@ -488,8 +453,7 @@ void CursorManager::updateCursorFromState()
             hoverCursor = Qt::PointingHandCursor;
             break;
         case HoverTarget::Annotation:
-        case HoverTarget::SelectionBody:
-            hoverCursor = Qt::SizeAllCursor;  // Draggable cursor for annotations/selection
+            hoverCursor = Qt::SizeAllCursor;  // Draggable cursor for annotations
             break;
         case HoverTarget::ResizeHandle:
             if (m_hoverHandleIndex >= 0) {
@@ -559,95 +523,4 @@ void CursorManager::updateCursorFromState()
 
     // 4. Fall back to tool cursor (already managed separately)
     // Tool cursor is set via updateToolCursor() and persists in the stack
-}
-
-// ============================================================================
-// Diagnostics (Debug only)
-// ============================================================================
-
-#ifdef QT_DEBUG
-void CursorManager::dumpState() const
-{
-    qDebug() << "=== CursorManager State ===";
-    qDebug() << "Target widget:" << (m_targetWidget ? m_targetWidget->objectName() : "none");
-    qDebug() << "InputState:" << static_cast<int>(m_inputState);
-    qDebug() << "HoverTarget:" << static_cast<int>(m_hoverTarget);
-    qDebug() << "DragState:" << static_cast<int>(m_dragState);
-    qDebug() << "HoverHandleIndex:" << m_hoverHandleIndex;
-    qDebug() << "TransactionDepth:" << m_transactionDepth;
-    qDebug() << "Global stack size:" << m_cursorStack.size();
-    for (const auto& entry : m_cursorStack) {
-        qDebug() << "  Context:" << static_cast<int>(entry.context)
-                 << "Shape:" << entry.cursor.shape();
-    }
-    qDebug() << "Per-widget stacks:" << m_widgetCursorStacks.keys().size();
-    for (auto it = m_widgetCursorStacks.begin(); it != m_widgetCursorStacks.end(); ++it) {
-        qDebug() << "  Widget:" << (it.key() ? it.key()->objectName() : "null")
-                 << "Stack size:" << it.value().size();
-    }
-}
-#endif
-
-// ============================================================================
-// CursorGuard Implementation
-// ============================================================================
-
-CursorGuard::CursorGuard(CursorContext context, Qt::CursorShape cursor)
-    : m_widget(nullptr)
-    , m_context(context)
-    , m_active(true)
-{
-    CursorManager::instance().pushCursor(context, cursor);
-}
-
-CursorGuard::CursorGuard(QWidget* widget, CursorContext context, Qt::CursorShape cursor)
-    : m_widget(widget)
-    , m_context(context)
-    , m_active(true)
-{
-    CursorManager::instance().pushCursorForWidget(widget, context, cursor);
-}
-
-CursorGuard::~CursorGuard()
-{
-    if (m_active) {
-        if (m_widget) {
-            CursorManager::instance().popCursorForWidget(m_widget, m_context);
-        } else {
-            CursorManager::instance().popCursor(m_context);
-        }
-    }
-}
-
-CursorGuard::CursorGuard(CursorGuard&& other) noexcept
-    : m_widget(other.m_widget)
-    , m_context(other.m_context)
-    , m_active(other.m_active)
-{
-    other.m_active = false;
-}
-
-CursorGuard& CursorGuard::operator=(CursorGuard&& other) noexcept
-{
-    if (this != &other) {
-        // Pop existing cursor if active
-        if (m_active) {
-            if (m_widget) {
-                CursorManager::instance().popCursorForWidget(m_widget, m_context);
-            } else {
-                CursorManager::instance().popCursor(m_context);
-            }
-        }
-
-        m_widget = other.m_widget;
-        m_context = other.m_context;
-        m_active = other.m_active;
-        other.m_active = false;
-    }
-    return *this;
-}
-
-void CursorGuard::release()
-{
-    m_active = false;
 }
