@@ -59,6 +59,14 @@ public:
     void invalidateCache();
 
     /**
+     * @brief Pre-warm the magnifier cache for the initial cursor position.
+     * Call this after initialization to eliminate first-frame delay.
+     * @param cursorPos The initial cursor position (logical coordinates)
+     * @param backgroundPixmap The background pixmap to magnify
+     */
+    void preWarmCache(const QPoint& cursorPos, const QPixmap& backgroundPixmap);
+
+    /**
      * @brief Check if enough time has passed for an update.
      * @return true if update should proceed, false to skip
      */
@@ -89,6 +97,7 @@ private:
     QPixmap m_magnifierPixmapCache;
     QPoint m_cachedDevicePosition;
     bool m_cacheValid = false;
+    QImage m_backgroundImageCache;  // Cached QImage to avoid toImage() every frame
 
     // Current state
     QColor m_currentColor;

@@ -59,6 +59,18 @@ void MagnifierPanel::initializeGridCache()
 void MagnifierPanel::invalidateCache()
 {
     m_cacheValid = false;
+    m_backgroundImageCache = QImage();  // Clear cached image to force re-conversion
+}
+
+void MagnifierPanel::preWarmCache(const QPoint& cursorPos, const QPixmap& backgroundPixmap)
+{
+    // Pre-convert the background pixmap to QImage (this is the expensive operation)
+    if (m_backgroundImageCache.isNull()) {
+        m_backgroundImageCache = backgroundPixmap.toImage();
+    }
+
+    // Pre-compute the magnifier cache for the initial position
+    updateMagnifierCache(cursorPos, backgroundPixmap);
 }
 
 bool MagnifierPanel::shouldUpdate() const
@@ -89,12 +101,18 @@ QString MagnifierPanel::colorString() const
 
 void MagnifierPanel::updateMagnifierCache(const QPoint& cursorPos, const QPixmap& backgroundPixmap)
 {
+    // 1. Check position cache FIRST to avoid unnecessary work
     int deviceX = static_cast<int>(cursorPos.x() * m_devicePixelRatio);
     int deviceY = static_cast<int>(cursorPos.y() * m_devicePixelRatio);
 
     QPoint currentDevicePos(deviceX, deviceY);
     if (m_cacheValid && m_cachedDevicePosition == currentDevicePos) {
-        return;  // Cache still valid
+        return;  // Cache still valid, skip all work
+    }
+
+    // 2. Only convert to QImage when background has changed (cache invalidated)
+    if (m_backgroundImageCache.isNull()) {
+        m_backgroundImageCache = backgroundPixmap.toImage();
     }
 
     int deviceGridCountX = static_cast<int>(kGridCountX * m_devicePixelRatio);
@@ -102,8 +120,8 @@ void MagnifierPanel::updateMagnifierCache(const QPoint& cursorPos, const QPixmap
     int sampleX = deviceX - deviceGridCountX / 2;
     int sampleY = deviceY - deviceGridCountY / 2;
 
-    // Convert pixmap to QImage for pixel access
-    QImage backgroundImage = backgroundPixmap.toImage();
+    // Use cached QImage for pixel access
+    const QImage& backgroundImage = m_backgroundImageCache;
 
     // Create sample image with SAME format as background to avoid conversion issues
     QImage sampleImage(deviceGridCountX, deviceGridCountY, backgroundImage.format());

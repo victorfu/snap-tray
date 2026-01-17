@@ -133,6 +133,8 @@ private:
 
     // Lazy component creation
     EmojiPicker* ensureEmojiPicker();
+    OCRManager* ensureOCRManager();
+    LoadingSpinnerRenderer* ensureLoadingSpinner();
 
     // Step Badge size handling
     void onStepBadgeSizeChanged(StepBadgeSize size);
@@ -243,7 +245,7 @@ private:
     // OCR state
     OCRManager *m_ocrManager;
     bool m_ocrInProgress;
-    LoadingSpinnerRenderer *m_loadingSpinner;
+    LoadingSpinnerRenderer *m_loadingSpinner = nullptr;
     class QLabel *m_ocrToastLabel;
     class QTimer *m_ocrToastTimer;
 

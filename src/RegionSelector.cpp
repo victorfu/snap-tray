@@ -163,11 +163,7 @@ RegionSelector::RegionSelector(QWidget* parent)
     cursorManager.setTargetWidget(this);
     cursorManager.setToolManager(m_toolManager);
 
-    // Initialize OCR manager if available on this platform
-    m_ocrManager = PlatformFeatures::instance().createOCRManager(this);
-    if (m_ocrManager) {
-        m_ocrManager->setRecognitionLanguages(OCRSettingsManager::instance().languages());
-    }
+    // OCR manager is lazy-initialized via ensureOCRManager() when first needed
 
     // Initialize auto-blur manager (lazy initialization - cascade loaded on first use)
     m_autoBlurManager = new AutoBlurManager(this);
@@ -258,11 +254,7 @@ RegionSelector::RegionSelector(QWidget* parent)
         this, &RegionSelector::performAutoBlur);
 
     // EmojiPicker is lazy-initialized via ensureEmojiPicker() when first needed
-
-    // Initialize loading spinner for OCR
-    m_loadingSpinner = new LoadingSpinnerRenderer(this);
-    connect(m_loadingSpinner, &LoadingSpinnerRenderer::needsRepaint,
-        this, QOverload<>::of(&QWidget::update));
+    // LoadingSpinner is lazy-initialized via ensureLoadingSpinner() when first needed
 
     // OCR toast label (shows success/failure message)
     m_ocrToastLabel = new QLabel(this);
@@ -478,7 +470,7 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_toolbarHandler->setAnnotationLayer(m_annotationLayer);
     m_toolbarHandler->setColorAndWidthWidget(m_colorAndWidthWidget);
     m_toolbarHandler->setSelectionManager(m_selectionManager);
-    m_toolbarHandler->setOCRManager(m_ocrManager);
+    // OCRManager is set lazily via ensureOCRManager() when first needed
     m_toolbarHandler->setParentWidget(this);
 
     // Connect toolbar handler signals
@@ -694,6 +686,29 @@ EmojiPicker* RegionSelector::ensureEmojiPicker()
     return m_emojiPicker;
 }
 
+OCRManager* RegionSelector::ensureOCRManager()
+{
+    if (!m_ocrManager) {
+        m_ocrManager = PlatformFeatures::instance().createOCRManager(this);
+        if (m_ocrManager) {
+            m_ocrManager->setRecognitionLanguages(OCRSettingsManager::instance().languages());
+        }
+        // Update toolbar handler reference
+        m_toolbarHandler->setOCRManager(m_ocrManager);
+    }
+    return m_ocrManager;
+}
+
+LoadingSpinnerRenderer* RegionSelector::ensureLoadingSpinner()
+{
+    if (!m_loadingSpinner) {
+        m_loadingSpinner = new LoadingSpinnerRenderer(this);
+        connect(m_loadingSpinner, &LoadingSpinnerRenderer::needsRepaint,
+            this, QOverload<>::of(&QWidget::update));
+    }
+    return m_loadingSpinner;
+}
+
 int RegionSelector::effectiveCornerRadius() const
 {
     QRect sel = m_selectionManager->selectionRect();
@@ -795,6 +810,9 @@ void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapt
     // Configure magnifier panel with device pixel ratio
     m_magnifierPanel->setDevicePixelRatio(m_devicePixelRatio);
     m_magnifierPanel->invalidateCache();
+
+    // Pre-warm magnifier cache to eliminate first-frame delay
+    m_magnifierPanel->preWarmCache(m_currentPoint, m_backgroundPixmap);
 
     // Initialize cursor via CursorManager
     CursorManager::instance().pushCursor(CursorContext::Selection, Qt::CrossCursor);
@@ -1007,8 +1025,8 @@ void RegionSelector::paintEvent(QPaintEvent* event)
 
             m_toolbar->drawTooltip(painter);
 
-            // Draw loading spinner when OCR is in progress
-            if (m_ocrInProgress) {
+            // Draw loading spinner when OCR or auto-blur is in progress
+            if ((m_ocrInProgress || m_autoBlurInProgress) && m_loadingSpinner) {
                 QPoint center = selectionRect.center();
                 m_loadingSpinner->draw(painter, center);
             }
@@ -1589,15 +1607,16 @@ void RegionSelector::startTextReEditing(int annotationIndex)
 
 void RegionSelector::performOCR()
 {
-    if (!m_ocrManager || m_ocrInProgress || !m_selectionManager->isComplete()) {
-        if (!m_ocrManager) {
+    OCRManager* ocrMgr = ensureOCRManager();
+    if (!ocrMgr || m_ocrInProgress || !m_selectionManager->isComplete()) {
+        if (!ocrMgr) {
             qDebug() << "RegionSelector: OCR not available on this platform";
         }
         return;
     }
 
     m_ocrInProgress = true;
-    m_loadingSpinner->start();
+    ensureLoadingSpinner()->start();
     update();
 
     qDebug() << "RegionSelector: Starting OCR recognition...";
@@ -1613,7 +1632,7 @@ void RegionSelector::performOCR()
     selectedRegion.setDevicePixelRatio(m_devicePixelRatio);
 
     QPointer<RegionSelector> safeThis = this;
-    m_ocrManager->recognizeText(selectedRegion,
+    ocrMgr->recognizeText(selectedRegion,
         [safeThis](bool success, const QString& text, const QString& error) {
             if (safeThis) {
                 safeThis->onOCRComplete(success, text, error);
@@ -1627,7 +1646,9 @@ void RegionSelector::performOCR()
 void RegionSelector::onOCRComplete(bool success, const QString& text, const QString& error)
 {
     m_ocrInProgress = false;
-    m_loadingSpinner->stop();
+    if (m_loadingSpinner) {
+        m_loadingSpinner->stop();
+    }
 
     QString msg;
     QString bgColor;
@@ -1685,7 +1706,7 @@ void RegionSelector::performAutoBlur()
 
     m_autoBlurInProgress = true;
     m_colorAndWidthWidget->setAutoBlurProcessing(true);
-    m_loadingSpinner->start();
+    ensureLoadingSpinner()->start();
     update();
 
     // Get the selected region as QImage
@@ -1758,7 +1779,9 @@ void RegionSelector::onAutoBlurComplete(bool success, int faceCount, int /*textC
 {
     m_autoBlurInProgress = false;
     m_colorAndWidthWidget->setAutoBlurProcessing(false);
-    m_loadingSpinner->stop();
+    if (m_loadingSpinner) {
+        m_loadingSpinner->stop();
+    }
 
     QString msg;
     QString bgColor;
