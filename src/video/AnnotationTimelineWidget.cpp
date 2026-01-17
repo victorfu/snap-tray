@@ -1,5 +1,6 @@
 #include "video/AnnotationTimelineWidget.h"
 #include "video/AnnotationTrack.h"
+#include "cursor/CursorManager.h"
 #include <QContextMenuEvent>
 #include <QMouseEvent>
 #include <QPainter>
@@ -338,12 +339,13 @@ void AnnotationTimelineWidget::mouseMoveEvent(QMouseEvent *event)
             update();
 
             // Update cursor
+            auto& cm = CursorManager::instance();
             if (hit.area == HitArea::LeftHandle || hit.area == HitArea::RightHandle) {
-                setCursor(Qt::SizeHorCursor);
+                cm.pushCursorForWidget(this, CursorContext::Hover, Qt::SizeHorCursor);
             } else if (hit.area == HitArea::Body) {
-                setCursor(Qt::OpenHandCursor);
+                cm.pushCursorForWidget(this, CursorContext::Hover, Qt::OpenHandCursor);
             } else {
-                setCursor(Qt::ArrowCursor);
+                cm.popCursorForWidget(this, CursorContext::Hover);
             }
         }
     }

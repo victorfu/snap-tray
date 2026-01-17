@@ -19,11 +19,6 @@ public:
     using ResizeHandle = SelectionStateManager::ResizeHandle;
 
     /**
-     * @brief Get the appropriate cursor shape for a resize handle.
-     */
-    static Qt::CursorShape cursorForHandle(ResizeHandle handle);
-
-    /**
      * @brief Hit test resize handles for an arbitrary selection rect.
      *
      * @param selectionRect The selection rectangle to test against

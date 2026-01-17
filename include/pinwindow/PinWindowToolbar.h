@@ -4,7 +4,6 @@
 #include <QWidget>
 #include <QVector>
 #include <QRect>
-#include <QCursor>
 #include <QElapsedTimer>
 #include "toolbar/ToolbarButtonConfig.h"
 
@@ -55,10 +54,6 @@ public:
 
     // Associated widgets for click-outside detection
     void setAssociatedWidgets(QWidget *window, QWidget *subToolbar);
-
-    // Annotation cursor - used to override toolbar cursor when in annotation mode
-    void setAnnotationCursor(const QCursor& cursor);
-    void clearAnnotationCursor();
 
 signals:
     // Close request from click-outside detection
@@ -117,10 +112,6 @@ private:
     QElapsedTimer m_showTime;
     QWidget *m_associatedWindow = nullptr;
     QWidget *m_subToolbar = nullptr;
-
-    // Annotation cursor override
-    QCursor m_annotationCursor;
-    bool m_hasAnnotationCursor = false;
 
     // Match RegionSelector's ToolbarWidget dimensions
     static constexpr int TOOLBAR_HEIGHT = 32;

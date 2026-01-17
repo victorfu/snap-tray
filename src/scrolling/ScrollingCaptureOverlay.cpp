@@ -331,8 +331,9 @@ void ScrollingCaptureOverlay::mousePressEvent(QMouseEvent *event)
             m_isConstrainedMoving = true;
             m_constrainedMoveStart = pos;
             m_constrainedMoveOriginalRect = m_selectionManager->selectionRect();
-            setCursor(m_captureDirection == CaptureDirection::Vertical ?
-                      Qt::SizeVerCursor : Qt::SizeHorCursor);
+            CursorManager::instance().pushCursorForWidget(this, CursorContext::Drag,
+                m_captureDirection == CaptureDirection::Vertical ?
+                Qt::SizeVerCursor : Qt::SizeHorCursor);
             return;
         }
     }
@@ -420,25 +421,28 @@ void ScrollingCaptureOverlay::mouseMoveEvent(QMouseEvent *event)
     default:
         // Update cursor for handle hover
         if (m_borderState == BorderState::Adjusting) {
+            auto& cm = CursorManager::instance();
             SelectionStateManager::ResizeHandle handle = m_selectionManager->hitTestHandle(pos);
             if (handle != SelectionStateManager::ResizeHandle::None) {
                 // Use centralized cursor mapping from CursorManager
-                Qt::CursorShape cursorShape = CursorManager::cursorForResizeHandle(static_cast<int>(handle));
-                setCursor(cursorShape);
+                Qt::CursorShape cursorShape = CursorManager::cursorForHandle(handle);
+                cm.pushCursorForWidget(this, CursorContext::Hover, cursorShape);
             } else if (m_selectionManager->selectionRect().contains(pos)) {
-                setCursor(Qt::SizeAllCursor);
+                cm.pushCursorForWidget(this, CursorContext::Hover, Qt::SizeAllCursor);
             } else {
-                setCursor(Qt::CrossCursor);
+                cm.popCursorForWidget(this, CursorContext::Hover);
             }
         } else if ((m_borderState == BorderState::Capturing || m_borderState == BorderState::MatchFailed) &&
                    m_allowMoveWhileCapturing) {
+            auto& cm = CursorManager::instance();
             // Show constrained move cursor during capture when hovering over selection
             if (m_selectionManager->hasSelection() &&
                 m_selectionManager->selectionRect().contains(pos)) {
-                setCursor(m_captureDirection == CaptureDirection::Vertical ?
-                          Qt::SizeVerCursor : Qt::SizeHorCursor);
+                cm.pushCursorForWidget(this, CursorContext::Hover,
+                    m_captureDirection == CaptureDirection::Vertical ?
+                    Qt::SizeVerCursor : Qt::SizeHorCursor);
             } else {
-                setCursor(Qt::ArrowCursor);
+                cm.popCursorForWidget(this, CursorContext::Hover);
             }
         }
         break;
@@ -457,7 +461,7 @@ void ScrollingCaptureOverlay::mouseReleaseEvent(QMouseEvent *event)
     // Handle end of constrained move during capture
     if (m_isConstrainedMoving) {
         m_isConstrainedMoving = false;
-        setCursor(Qt::ArrowCursor);
+        CursorManager::instance().popCursorForWidget(this, CursorContext::Drag);
         emit regionChanged(captureRegion());
         update();
         return;

@@ -3,6 +3,7 @@
 #include "video/IVideoPlayer.h"
 #include "video/TrimTimeline.h"
 #include "video/VideoPlaybackWidget.h"
+#include "cursor/CursorManager.h"
 #include "encoding/EncoderFactory.h"
 #include "encoding/NativeGifEncoder.h"
 #include "encoding/WebPAnimEncoder.h"
@@ -673,8 +674,12 @@ void VideoAnnotationEditor::handleCanvasMouseMove(const QPoint &pos)
     if (m_textEditor && m_textEditor->isEditing() && m_textEditor->isConfirmMode()) {
         m_textEditor->handleMouseMove(pos);
         if (m_annotationCanvas) {
-            m_annotationCanvas->setCursor(m_textEditor->contains(pos) ? Qt::SizeAllCursor
-                                                                      : Qt::ArrowCursor);
+            auto& cm = CursorManager::instance();
+            if (m_textEditor->contains(pos)) {
+                cm.pushCursorForWidget(m_annotationCanvas, CursorContext::Hover, Qt::SizeAllCursor);
+            } else {
+                cm.popCursorForWidget(m_annotationCanvas, CursorContext::Hover);
+            }
         }
         return;
     }

@@ -1,26 +1,5 @@
 #include "region/SelectionResizeHelper.h"
 
-Qt::CursorShape SelectionResizeHelper::cursorForHandle(ResizeHandle handle)
-{
-    switch (handle) {
-    case ResizeHandle::TopLeft:
-    case ResizeHandle::BottomRight:
-        return Qt::SizeFDiagCursor;
-    case ResizeHandle::TopRight:
-    case ResizeHandle::BottomLeft:
-        return Qt::SizeBDiagCursor;
-    case ResizeHandle::Top:
-    case ResizeHandle::Bottom:
-        return Qt::SizeVerCursor;
-    case ResizeHandle::Left:
-    case ResizeHandle::Right:
-        return Qt::SizeHorCursor;
-    case ResizeHandle::None:
-    default:
-        return Qt::ArrowCursor;
-    }
-}
-
 SelectionResizeHelper::ResizeHandle SelectionResizeHelper::hitTestHandle(
     const QRect& selectionRect, const QPoint& pos, int handleSize)
 {

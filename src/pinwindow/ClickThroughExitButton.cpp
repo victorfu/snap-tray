@@ -1,5 +1,6 @@
 #include "pinwindow/ClickThroughExitButton.h"
 #include "platform/WindowLevel.h"
+#include "cursor/CursorManager.h"
 #include <QMouseEvent>
 #include <QVBoxLayout>
 #include <QShowEvent>
@@ -119,7 +120,7 @@ void ClickThroughExitButton::enterEvent(QEnterEvent* event)
         "  font-weight: bold;"
         "}"
     );
-    setCursor(Qt::PointingHandCursor);
+    CursorManager::instance().pushCursorForWidget(this, CursorContext::Hover, Qt::PointingHandCursor);
     QWidget::enterEvent(event);
 }
 
@@ -135,7 +136,7 @@ void ClickThroughExitButton::leaveEvent(QEvent* event)
         "  font-weight: bold;"
         "}"
     );
-    setCursor(Qt::ArrowCursor);
+    CursorManager::instance().clearAllForWidget(this);
     QWidget::leaveEvent(event);
 }
 

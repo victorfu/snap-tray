@@ -33,26 +33,6 @@ ResizeHandler::Edge ResizeHandler::getEdgeAt(const QPoint& pos, const QSize& win
     return Edge::None;
 }
 
-Qt::CursorShape ResizeHandler::cursorForEdge(Edge edge)
-{
-    switch (edge) {
-        case Edge::Left:
-        case Edge::Right:
-            return Qt::SizeHorCursor;
-        case Edge::Top:
-        case Edge::Bottom:
-            return Qt::SizeVerCursor;
-        case Edge::TopLeft:
-        case Edge::BottomRight:
-            return Qt::SizeFDiagCursor;
-        case Edge::TopRight:
-        case Edge::BottomLeft:
-            return Qt::SizeBDiagCursor;
-        default:
-            return Qt::ArrowCursor;
-    }
-}
-
 void ResizeHandler::startResize(Edge edge, const QPoint& globalPos, const QSize& windowSize, const QPoint& windowPos)
 {
     m_isResizing = true;

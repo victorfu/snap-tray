@@ -3,6 +3,7 @@
 #include "GlassRenderer.h"
 #include "ToolbarStyle.h"
 #include "IconRenderer.h"
+#include "cursor/CursorManager.h"
 
 #include <QLabel>
 #include <QHBoxLayout>
@@ -879,7 +880,7 @@ void RecordingControlBar::mousePressEvent(QMouseEvent *event)
         m_isDragging = true;
         m_dragStartPos = event->globalPosition().toPoint();
         m_dragStartWidgetPos = pos();
-        setCursor(Qt::ClosedHandCursor);
+        CursorManager::instance().pushCursorForWidget(this, CursorContext::Drag, Qt::ClosedHandCursor);
     }
     QWidget::mousePressEvent(event);
 }
@@ -916,10 +917,11 @@ void RecordingControlBar::mouseMoveEvent(QMouseEvent *event)
         int newHovered = buttonAtPosition(event->pos());
         if (newHovered != m_hoveredButton) {
             m_hoveredButton = newHovered;
+            auto& cm = CursorManager::instance();
             if (m_hoveredButton != ButtonNone) {
-                setCursor(Qt::PointingHandCursor);
+                cm.pushCursorForWidget(this, CursorContext::Hover, Qt::PointingHandCursor);
             } else {
-                setCursor(Qt::ArrowCursor);
+                cm.popCursorForWidget(this, CursorContext::Hover);
             }
             update();
         }
@@ -945,11 +947,13 @@ void RecordingControlBar::mouseReleaseEvent(QMouseEvent *event)
 
         if (m_isDragging) {
             m_isDragging = false;
+            CursorManager::instance().popCursorForWidget(this, CursorContext::Drag);
             int button = buttonAtPosition(event->pos());
+            auto& cm = CursorManager::instance();
             if (button != ButtonNone) {
-                setCursor(Qt::PointingHandCursor);
+                cm.pushCursorForWidget(this, CursorContext::Hover, Qt::PointingHandCursor);
             } else {
-                setCursor(Qt::ArrowCursor);
+                cm.popCursorForWidget(this, CursorContext::Hover);
             }
         }
     }
@@ -960,7 +964,7 @@ void RecordingControlBar::leaveEvent(QEvent *event)
 {
     if (m_hoveredButton != ButtonNone) {
         m_hoveredButton = ButtonNone;
-        setCursor(Qt::ArrowCursor);
+        CursorManager::instance().clearAllForWidget(this);
         hideTooltip();
         update();
     }

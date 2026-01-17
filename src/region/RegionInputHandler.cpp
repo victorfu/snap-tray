@@ -1197,7 +1197,7 @@ void RegionInputHandler::updateCursorForHandle(SelectionStateManager::ResizeHand
     using ResizeHandle = SelectionStateManager::ResizeHandle;
 
     if (handle != ResizeHandle::None) {
-        emitCursorChangeIfNeeded(SelectionResizeHelper::cursorForHandle(handle));
+        emitCursorChangeIfNeeded(CursorManager::cursorForHandle(handle));
         return;
     }
 
@@ -1209,7 +1209,7 @@ void RegionInputHandler::updateCursorForHandle(SelectionStateManager::ResizeHand
         QRect sel = m_selectionManager->selectionRect();
         ResizeHandle outsideHandle = SelectionResizeHelper::determineHandleFromOutsideClick(
             m_currentPoint, sel);
-        emitCursorChangeIfNeeded(SelectionResizeHelper::cursorForHandle(outsideHandle));
+        emitCursorChangeIfNeeded(CursorManager::cursorForHandle(outsideHandle));
     }
 }
 

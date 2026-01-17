@@ -28,7 +28,6 @@ public:
 
     // Hit testing
     Edge getEdgeAt(const QPoint& pos, const QSize& windowSize) const;
-    static Qt::CursorShape cursorForEdge(Edge edge);
 
     // Resize operations
     void startResize(Edge edge, const QPoint& globalPos, const QSize& windowSize, const QPoint& windowPos);

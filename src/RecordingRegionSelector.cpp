@@ -4,6 +4,7 @@
 #include "GlassRenderer.h"
 #include "ToolbarStyle.h"
 #include "ToolbarWidget.h"
+#include "cursor/CursorManager.h"
 
 #include <QScreen>
 #include <QPainter>
@@ -25,7 +26,7 @@ RecordingRegionSelector::RecordingRegionSelector(QWidget *parent)
     , m_toolbar(nullptr)
 {
     setMouseTracking(true);
-    setCursor(Qt::CrossCursor);
+    CursorManager::instance().pushCursorForWidget(this, CursorContext::Selection, Qt::CrossCursor);
     setAttribute(Qt::WA_DeleteOnClose);
     setAttribute(Qt::WA_TranslucentBackground);
     setupIcons();
@@ -114,7 +115,7 @@ void RecordingRegionSelector::initializeWithRegion(QScreen *screen, const QRect 
     // Set selection as complete (skip the selection step)
     m_selectionComplete = true;
     m_isSelecting = false;
-    setCursor(Qt::ArrowCursor);
+    CursorManager::instance().popCursorForWidget(this, CursorContext::Selection);
 
     qDebug() << "=== RecordingRegionSelector::initializeWithRegion ===";
     qDebug() << "Screen name:" << screen->name();
@@ -407,12 +408,11 @@ void RecordingRegionSelector::mouseMoveEvent(QMouseEvent *event)
         // Update hover state for toolbar buttons
         bool hoverChanged = m_toolbar->updateHoveredButton(event->pos());
         if (hoverChanged) {
+            auto& cm = CursorManager::instance();
             if (m_toolbar->hoveredButton() >= 0) {
-                setCursor(Qt::PointingHandCursor);
-            } else if (!m_selectionRect.contains(event->pos())) {
-                setCursor(Qt::CrossCursor);
+                cm.pushCursorForWidget(this, CursorContext::Hover, Qt::PointingHandCursor);
             } else {
-                setCursor(Qt::ArrowCursor);
+                cm.popCursorForWidget(this, CursorContext::Hover);
             }
             update();
         }
@@ -437,7 +437,7 @@ void RecordingRegionSelector::mouseReleaseEvent(QMouseEvent *event)
             // Ensure minimum size
             if (m_selectionRect.width() >= 10 && m_selectionRect.height() >= 10) {
                 m_selectionComplete = true;
-                setCursor(Qt::ArrowCursor);
+                CursorManager::instance().popCursorForWidget(this, CursorContext::Selection);
             } else {
                 // Too small, reset
                 m_selectionRect = QRect();
@@ -453,6 +453,7 @@ void RecordingRegionSelector::leaveEvent(QEvent *event)
     // Clear hover state when leaving the widget
     if (m_toolbar->hoveredButton() >= 0) {
         m_toolbar->updateHoveredButton(QPoint(-1, -1));
+        CursorManager::instance().popCursorForWidget(this, CursorContext::Hover);
         update();
     }
     QWidget::leaveEvent(event);

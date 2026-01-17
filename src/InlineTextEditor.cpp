@@ -1,4 +1,5 @@
 #include "InlineTextEditor.h"
+#include "cursor/CursorManager.h"
 
 #include <QTextEdit>
 #include <QTextDocument>
@@ -81,7 +82,7 @@ void InlineTextEditor::startEditingInternal(const QPoint& pos, const QRect& boun
     m_isConfirmMode = false;
     m_isDragging = false;
     m_textEdit->setReadOnly(false);
-    m_textEdit->setCursor(Qt::IBeamCursor);
+    CursorManager::instance().pushCursorForWidget(m_textEdit, CursorContext::Tool, Qt::IBeamCursor);
     m_textEdit->setAttribute(Qt::WA_TransparentForMouseEvents, false);
 
     // Update style and font
@@ -162,7 +163,7 @@ void InlineTextEditor::enterConfirmMode()
     m_textEdit->setAttribute(Qt::WA_TransparentForMouseEvents, true);
 
     // Change cursor to indicate draggable
-    m_textEdit->setCursor(Qt::SizeAllCursor);
+    CursorManager::instance().pushCursorForWidget(m_textEdit, CursorContext::Drag, Qt::SizeAllCursor);
 }
 
 void InlineTextEditor::cancelEditing()

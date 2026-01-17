@@ -108,10 +108,137 @@ bool CursorManager::hasContext(CursorContext context) const
 void CursorManager::clearAll()
 {
     m_cursorStack.clear();
-    if (m_targetWidget) {
+    if (m_targetWidget && !m_inTransaction) {
         m_targetWidget->setCursor(Qt::ArrowCursor);
         m_lastAppliedCursor = QCursor(Qt::ArrowCursor);
     }
+}
+
+void CursorManager::clearContexts(std::initializer_list<CursorContext> contexts)
+{
+    for (CursorContext context : contexts) {
+        auto it = std::remove_if(m_cursorStack.begin(), m_cursorStack.end(),
+                                  [context](const CursorEntry& entry) {
+                                      return entry.context == context;
+                                  });
+        m_cursorStack.erase(it, m_cursorStack.end());
+    }
+    applyCursor();
+}
+
+// ============================================================================
+// Transaction Support
+// ============================================================================
+
+void CursorManager::beginTransaction()
+{
+    m_inTransaction = true;
+}
+
+void CursorManager::commitTransaction()
+{
+    m_inTransaction = false;
+    applyCursor();
+}
+
+// ============================================================================
+// Per-Widget Cursor Management
+// ============================================================================
+
+void CursorManager::pushCursorForWidget(QWidget* widget, CursorContext context, const QCursor& cursor)
+{
+    if (!widget) {
+        return;
+    }
+
+    // Connect to widget's destroyed signal if not already connected
+    if (!m_widgetCursorStacks.contains(widget)) {
+        connect(widget, &QObject::destroyed, this, [this, widget]() {
+            m_widgetCursorStacks.remove(widget);
+        });
+    }
+
+    // Get or create the cursor stack for this widget
+    QVector<CursorEntry>& stack = m_widgetCursorStacks[widget];
+
+    // Remove existing entry for this context
+    auto it = std::remove_if(stack.begin(), stack.end(),
+                              [context](const CursorEntry& entry) {
+                                  return entry.context == context;
+                              });
+    stack.erase(it, stack.end());
+
+    // Add new entry
+    stack.append({context, cursor});
+
+    // Sort by priority (highest last)
+    std::sort(stack.begin(), stack.end());
+
+    applyCursorForWidget(widget);
+}
+
+void CursorManager::pushCursorForWidget(QWidget* widget, CursorContext context, Qt::CursorShape shape)
+{
+    pushCursorForWidget(widget, context, QCursor(shape));
+}
+
+void CursorManager::popCursorForWidget(QWidget* widget, CursorContext context)
+{
+    if (!widget || !m_widgetCursorStacks.contains(widget)) {
+        return;
+    }
+
+    QVector<CursorEntry>& stack = m_widgetCursorStacks[widget];
+    auto it = std::remove_if(stack.begin(), stack.end(),
+                              [context](const CursorEntry& entry) {
+                                  return entry.context == context;
+                              });
+
+    if (it != stack.end()) {
+        stack.erase(it, stack.end());
+        applyCursorForWidget(widget);
+    }
+}
+
+void CursorManager::clearAllForWidget(QWidget* widget)
+{
+    if (!widget) {
+        return;
+    }
+
+    m_widgetCursorStacks.remove(widget);
+    widget->setCursor(Qt::ArrowCursor);
+}
+
+void CursorManager::applyCursorForWidget(QWidget* widget)
+{
+    if (!widget) {
+        return;
+    }
+
+    QCursor newCursor = effectiveCursorForWidget(widget);
+    QCursor currentCursor = widget->cursor();
+
+    // Only apply if changed
+    if (newCursor.shape() != currentCursor.shape() ||
+        newCursor.pixmap().cacheKey() != currentCursor.pixmap().cacheKey()) {
+        widget->setCursor(newCursor);
+    }
+}
+
+QCursor CursorManager::effectiveCursorForWidget(QWidget* widget) const
+{
+    if (!widget || !m_widgetCursorStacks.contains(widget)) {
+        return QCursor(Qt::ArrowCursor);
+    }
+
+    const QVector<CursorEntry>& stack = m_widgetCursorStacks[widget];
+    if (stack.isEmpty()) {
+        return QCursor(Qt::ArrowCursor);
+    }
+
+    // Return the highest priority cursor (last in sorted list)
+    return stack.last().cursor;
 }
 
 // ============================================================================
@@ -187,49 +314,45 @@ QCursor CursorManager::createMosaicCursor(int size)
     return QCursor(pixmap, hotspot, hotspot);
 }
 
-Qt::CursorShape CursorManager::cursorForResizeHandle(int handle)
+Qt::CursorShape CursorManager::cursorForHandle(SelectionStateManager::ResizeHandle handle)
 {
-    // Handle values match SelectionStateManager::ResizeHandle enum:
-    // None=0, TopLeft=1, Top=2, TopRight=3, Left=4, Right=5,
-    // BottomLeft=6, Bottom=7, BottomRight=8
-
+    using RH = SelectionStateManager::ResizeHandle;
     switch (handle) {
-    case 1: // TopLeft
-    case 8: // BottomRight
+    case RH::TopLeft:
+    case RH::BottomRight:
         return Qt::SizeFDiagCursor;
-    case 3: // TopRight
-    case 6: // BottomLeft
+    case RH::TopRight:
+    case RH::BottomLeft:
         return Qt::SizeBDiagCursor;
-    case 2: // Top
-    case 7: // Bottom
+    case RH::Top:
+    case RH::Bottom:
         return Qt::SizeVerCursor;
-    case 4: // Left
-    case 5: // Right
+    case RH::Left:
+    case RH::Right:
         return Qt::SizeHorCursor;
+    case RH::None:
     default:
         return Qt::ArrowCursor;
     }
 }
 
-Qt::CursorShape CursorManager::cursorForEdge(int edge)
+Qt::CursorShape CursorManager::cursorForEdge(ResizeHandler::Edge edge)
 {
-    // Edge values match ResizeHandler::Edge enum:
-    // None=0, Left=1, Right=2, Top=3, Bottom=4,
-    // TopLeft=5, TopRight=6, BottomLeft=7, BottomRight=8
-
+    using Edge = ResizeHandler::Edge;
     switch (edge) {
-    case 1: // Left
-    case 2: // Right
+    case Edge::Left:
+    case Edge::Right:
         return Qt::SizeHorCursor;
-    case 3: // Top
-    case 4: // Bottom
+    case Edge::Top:
+    case Edge::Bottom:
         return Qt::SizeVerCursor;
-    case 5: // TopLeft
-    case 8: // BottomRight
+    case Edge::TopLeft:
+    case Edge::BottomRight:
         return Qt::SizeFDiagCursor;
-    case 6: // TopRight
-    case 7: // BottomLeft
+    case Edge::TopRight:
+    case Edge::BottomLeft:
         return Qt::SizeBDiagCursor;
+    case Edge::None:
     default:
         return Qt::ArrowCursor;
     }
@@ -241,7 +364,7 @@ Qt::CursorShape CursorManager::cursorForEdge(int edge)
 
 void CursorManager::applyCursor()
 {
-    if (!m_targetWidget) {
+    if (!m_targetWidget || m_inTransaction) {
         return;
     }
 
@@ -349,7 +472,8 @@ void CursorManager::updateCursorFromState()
             break;
         case HoverTarget::ResizeHandle:
             if (m_hoverHandleIndex >= 0) {
-                hoverCursor = cursorForResizeHandle(m_hoverHandleIndex);
+                auto handle = static_cast<SelectionStateManager::ResizeHandle>(m_hoverHandleIndex);
+                hoverCursor = cursorForHandle(handle);
             }
             break;
         case HoverTarget::GizmoHandle:

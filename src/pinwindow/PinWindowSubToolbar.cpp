@@ -2,6 +2,7 @@
 #include "ColorAndWidthWidget.h"
 #include "EmojiPicker.h"
 #include "pinwindow/PinWindowToolbar.h"
+#include "cursor/CursorManager.h"
 
 #include <QPainter>
 #include <QMouseEvent>
@@ -325,15 +326,8 @@ void PinWindowSubToolbar::mousePressEvent(QMouseEvent *event)
 
 void PinWindowSubToolbar::enterEvent(QEnterEvent *event)
 {
-    // If in annotation mode, use the annotation cursor
-    if (m_hasAnnotationCursor) {
-        setCursor(m_annotationCursor);
-        QWidget::enterEvent(event);
-        return;
-    }
-
-    // Set cursor immediately when mouse enters (mouseMoveEvent requires movement)
-    setCursor(Qt::PointingHandCursor);
+    // Set cursor immediately when mouse enters
+    CursorManager::instance().pushCursorForWidget(this, CursorContext::Hover, Qt::PointingHandCursor);
     QWidget::enterEvent(event);
 }
 
@@ -341,11 +335,8 @@ void PinWindowSubToolbar::mouseMoveEvent(QMouseEvent *event)
 {
     bool pressed = event->buttons() & Qt::LeftButton;
 
-    // Don't change cursor when in annotation mode
-    if (!m_hasAnnotationCursor) {
-        // Keep pointing hand cursor for interactive elements
-        setCursor(Qt::PointingHandCursor);
-    }
+    // Keep pointing hand cursor for interactive elements
+    CursorManager::instance().pushCursorForWidget(this, CursorContext::Hover, Qt::PointingHandCursor);
 
     if (m_showingEmojiPicker) {
         // Convert window coords to widget coords (reverse of paint translation)
@@ -400,23 +391,8 @@ void PinWindowSubToolbar::leaveEvent(QEvent *event)
     } else {
         m_colorAndWidthWidget->updateHovered(QPoint(-1, -1));
     }
-    if (!m_hasAnnotationCursor) {
-        setCursor(Qt::ArrowCursor);
-    }
+    CursorManager::instance().clearAllForWidget(this);
     emit cursorRestoreRequested();
     update();
     QWidget::leaveEvent(event);
-}
-
-void PinWindowSubToolbar::setAnnotationCursor(const QCursor& cursor)
-{
-    m_annotationCursor = cursor;
-    m_hasAnnotationCursor = true;
-    setCursor(cursor);
-}
-
-void PinWindowSubToolbar::clearAnnotationCursor()
-{
-    m_hasAnnotationCursor = false;
-    setCursor(Qt::PointingHandCursor);
 }

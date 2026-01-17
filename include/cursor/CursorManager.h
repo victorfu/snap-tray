@@ -5,6 +5,11 @@
 #include <QObject>
 #include <QWidget>
 #include <QVector>
+#include <QHash>
+#include <initializer_list>
+
+#include "region/SelectionStateManager.h"
+#include "pinwindow/ResizeHandler.h"
 
 class ToolManager;
 
@@ -133,6 +138,60 @@ public:
      */
     void clearAll();
 
+    /**
+     * @brief Clear specific cursor contexts.
+     *
+     * Useful for clearing multiple related contexts without resetting tool cursor.
+     */
+    void clearContexts(std::initializer_list<CursorContext> contexts);
+
+    // ========================================================================
+    // Transaction Support
+    // ========================================================================
+
+    /**
+     * @brief Begin a cursor transaction.
+     *
+     * During a transaction, cursor updates are deferred until commitTransaction().
+     * This prevents cursor flickering during complex state changes like mode transitions.
+     */
+    void beginTransaction();
+
+    /**
+     * @brief Commit the cursor transaction and apply pending cursor.
+     *
+     * Applies the final cursor state after all operations in the transaction.
+     */
+    void commitTransaction();
+
+    // ========================================================================
+    // Per-Widget Cursor Management
+    // ========================================================================
+
+    /**
+     * @brief Push a cursor for a specific widget.
+     *
+     * Each widget maintains its own cursor stack. This allows independent
+     * windows (toolbars, floating panels) to manage cursors through
+     * CursorManager while maintaining proper priority handling.
+     *
+     * @param widget The widget to set the cursor on
+     * @param context The cursor context (priority level)
+     * @param cursor The cursor to apply
+     */
+    void pushCursorForWidget(QWidget* widget, CursorContext context, const QCursor& cursor);
+    void pushCursorForWidget(QWidget* widget, CursorContext context, Qt::CursorShape shape);
+
+    /**
+     * @brief Pop a cursor from a specific widget's stack.
+     */
+    void popCursorForWidget(QWidget* widget, CursorContext context);
+
+    /**
+     * @brief Clear all cursor contexts for a specific widget.
+     */
+    void clearAllForWidget(QWidget* widget);
+
     // ========================================================================
     // Tool Cursor Integration
     // ========================================================================
@@ -214,20 +273,20 @@ public:
     static QCursor createMosaicCursor(int size);
 
     /**
-     * @brief Get cursor shape for resize handle.
+     * @brief Get cursor shape for resize handle (strongly-typed).
      *
-     * @param handle The resize handle value (cast from ResizeHandle enum)
+     * @param handle The resize handle enum value
      * @return Appropriate cursor shape for the handle
      */
-    static Qt::CursorShape cursorForResizeHandle(int handle);
+    static Qt::CursorShape cursorForHandle(SelectionStateManager::ResizeHandle handle);
 
     /**
-     * @brief Get cursor shape for window edge.
+     * @brief Get cursor shape for window edge (strongly-typed).
      *
-     * @param edge The edge value (cast from Edge enum)
+     * @param edge The edge enum value
      * @return Appropriate cursor shape for the edge
      */
-    static Qt::CursorShape cursorForEdge(int edge);
+    static Qt::CursorShape cursorForEdge(ResizeHandler::Edge edge);
 
 signals:
     /**
@@ -258,16 +317,32 @@ private:
         }
     };
 
+    /**
+     * @brief Apply cursor to a specific widget based on its stack.
+     */
+    void applyCursorForWidget(QWidget* widget);
+
+    /**
+     * @brief Get effective cursor for a widget.
+     */
+    QCursor effectiveCursorForWidget(QWidget* widget) const;
+
     QVector<CursorEntry> m_cursorStack;
     QWidget* m_targetWidget = nullptr;
     ToolManager* m_toolManager = nullptr;
     QCursor m_lastAppliedCursor;
+
+    // Per-widget cursor stacks for independent windows
+    QHash<QWidget*, QVector<CursorEntry>> m_widgetCursorStacks;
 
     // State-driven cursor management
     InputState m_inputState = InputState::Idle;
     HoverTarget m_hoverTarget = HoverTarget::None;
     DragState m_dragState = DragState::None;
     int m_hoverHandleIndex = -1;
+
+    // Transaction support
+    bool m_inTransaction = false;
 };
 
 #endif // CURSORMANAGER_H

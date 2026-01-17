@@ -1209,7 +1209,7 @@ void PinWindow::mousePressEvent(QMouseEvent* event)
             // Start dragging
             m_isDragging = true;
             m_dragStartPos = event->globalPosition().toPoint() - frameGeometry().topLeft();
-            setCursor(Qt::ClosedHandCursor);
+            CursorManager::instance().pushCursor(CursorContext::Drag, Qt::ClosedHandCursor);
         }
     }
 }
@@ -1286,7 +1286,12 @@ void PinWindow::mouseMoveEvent(QMouseEvent* event)
         // In annotation mode, keep the tool cursor (set by updateCursorForTool)
         if (!m_annotationMode) {
             ResizeHandler::Edge edge = m_resizeHandler->getEdgeAt(event->pos(), size());
-            setCursor(CursorManager::cursorForEdge(static_cast<int>(edge)));
+            auto& cm = CursorManager::instance();
+            if (edge != ResizeHandler::Edge::None) {
+                cm.pushCursor(CursorContext::Hover, CursorManager::cursorForEdge(edge));
+            } else {
+                cm.popCursor(CursorContext::Hover);
+            }
         }
     }
 }
@@ -1338,12 +1343,9 @@ void PinWindow::mouseReleaseEvent(QMouseEvent* event)
         }
         if (m_isDragging) {
             m_isDragging = false;
-            // Only set Arrow cursor if not in annotation mode
-            if (!m_annotationMode) {
-                setCursor(Qt::ArrowCursor);
-            }
-            else {
-                // Restore tool cursor after drag
+            CursorManager::instance().popCursor(CursorContext::Drag);
+            if (m_annotationMode) {
+                // Refresh tool cursor after drag ends
                 updateCursorForTool();
             }
         }
@@ -1780,15 +1782,7 @@ void PinWindow::updateCursorForTool()
     auto& cursorManager = CursorManager::instance();
 
     if (!m_annotationMode) {
-        // Clear annotation cursor from toolbars
-        if (m_toolbar) {
-            m_toolbar->clearAnnotationCursor();
-        }
-        if (m_subToolbar) {
-            m_subToolbar->clearAnnotationCursor();
-        }
-        cursorManager.popCursor(CursorContext::Tool);
-        setCursor(Qt::ArrowCursor);
+        cursorManager.clearAll();
         return;
     }
 
@@ -1819,16 +1813,6 @@ void PinWindow::updateCursorForTool()
 
     // Use CursorManager so the tool cursor persists across hover/drag contexts
     cursorManager.pushCursor(CursorContext::Tool, toolCursor);
-    // Fallback for platforms where the target widget cursor doesn't update immediately
-    setCursor(toolCursor);
-
-    // Also set on toolbars for when mouse is over them
-    if (m_toolbar) {
-        m_toolbar->setAnnotationCursor(toolCursor);
-    }
-    if (m_subToolbar) {
-        m_subToolbar->setAnnotationCursor(toolCursor);
-    }
 }
 
 void PinWindow::exitAnnotationMode()
@@ -1839,20 +1823,15 @@ void PinWindow::exitAnnotationMode()
 
     m_annotationMode = false;
     m_currentToolId = ToolId::Selection;
-    CursorManager::instance().popCursor(CursorContext::Tool);
+    CursorManager::instance().clearAll();
 
     if (m_toolbar) {
         m_toolbar->setActiveButton(-1);
-        m_toolbar->clearAnnotationCursor();
     }
 
     // Hide sub-toolbar when exiting annotation mode
     hideSubToolbar();
-    if (m_subToolbar) {
-        m_subToolbar->clearAnnotationCursor();
-    }
 
-    setCursor(Qt::ArrowCursor);
     update();
 }
 
