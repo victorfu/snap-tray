@@ -17,7 +17,15 @@ enum class LineEndStyle {
 };
 
 /**
- * @brief Arrow annotation (line with optional arrowhead)
+ * @brief Arrow annotation (line with optional arrowhead) - supports Quadratic Bézier curves.
+ *
+ * The arrow is defined by three points:
+ * - Start point (m_start)
+ * - End point (m_end)
+ * - Control point (m_controlPoint) - determines the curvature
+ *
+ * When the control point is at the midpoint of start/end, the arrow appears straight.
+ * Moving the control point creates a smooth curve.
  */
 class ArrowAnnotation : public AnnotationItem
 {
@@ -30,22 +38,58 @@ public:
     QRect boundingRect() const override;
     std::unique_ptr<AnnotationItem> clone() const override;
 
+    // Point accessors
+    void setStart(const QPoint &start);
     void setEnd(const QPoint &end);
+    void setControlPoint(const QPoint &p);
+
     QPoint start() const { return m_start; }
     QPoint end() const { return m_end; }
+    QPoint controlPoint() const { return m_controlPoint; }
+
+    // Line end style
     void setLineEndStyle(LineEndStyle style) { m_lineEndStyle = style; }
     LineEndStyle lineEndStyle() const { return m_lineEndStyle; }
 
+    /**
+     * @brief Check if a point lies on or near the curve.
+     * Uses QPainterPathStroker for accurate hit testing on the Bézier curve.
+     * @param pos The point to test
+     * @return true if the point is within hit tolerance of the curve
+     */
+    bool containsPoint(const QPoint &pos) const;
+
+    /**
+     * @brief Check if the curve is actually curved (control point is off the straight line).
+     * @return true if control point deviates from the line segment by more than tolerance
+     */
+    bool isCurved() const;
+
+    /**
+     * @brief Move all points by the given delta.
+     * Used for moving the entire annotation.
+     */
+    void moveBy(const QPoint &delta);
+
 private:
-    void drawArrowhead(QPainter &painter, const QPoint &start, const QPoint &end, bool filled) const;
-    void drawArrowheadLine(QPainter &painter, const QPoint &start, const QPoint &end) const;
+    // Arrowhead drawing helpers
+    void drawArrowheadAtAngle(QPainter &painter, const QPoint &tip, double angle, bool filled) const;
+    void drawArrowheadLineAtAngle(QPainter &painter, const QPoint &tip, double angle) const;
+
+    // Tangent angle calculations for Bézier curve
+    double endTangentAngle() const;
+    double startTangentAngle() const;
 
     QPoint m_start;
     QPoint m_end;
+    QPoint m_controlPoint;
     QColor m_color;
     int m_width;
     LineEndStyle m_lineEndStyle;
     LineStyle m_lineStyle;
+
+    // Hit testing tolerance
+    static constexpr int kHitTolerance = 10;
 };
 
 #endif // ARROWANNOTATION_H

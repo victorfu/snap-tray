@@ -15,6 +15,7 @@
 // Forward declarations
 class TextBoxAnnotation;
 class EmojiStickerAnnotation;
+class ArrowAnnotation;
 
 // Annotation layer that manages all annotations with undo/redo
 class AnnotationLayer : public QObject
@@ -52,6 +53,7 @@ public:
     // Selection support for text/emoji annotations
     int hitTestText(const QPoint &pos) const;
     int hitTestEmojiSticker(const QPoint &pos) const;
+    int hitTestArrow(const QPoint &pos) const;
     void setSelectedIndex(int index) { m_selectedIndex = index; }
     int selectedIndex() const { return m_selectedIndex; }
     AnnotationItem* selectedItem();

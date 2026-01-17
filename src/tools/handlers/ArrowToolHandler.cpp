@@ -2,6 +2,7 @@
 #include "tools/ToolContext.h"
 
 #include <QPainter>
+#include <QDebug>
 
 void ArrowToolHandler::onActivate(ToolContext* ctx) {
     Q_UNUSED(ctx);
@@ -84,15 +85,18 @@ void ArrowToolHandler::onMouseRelease(ToolContext* ctx, const QPoint& pos) {
     }
 
     if (!m_isDrawing) {
+        qDebug() << "ArrowToolHandler::onMouseRelease: not drawing, returning";
         return;
     }
 
     if (m_hasDragged) {
         // This was a drag - finalize the arrow
         QPoint diff = pos - m_startPoint;
+        qDebug() << "ArrowToolHandler::onMouseRelease: hasDragged, diff.manhattanLength:" << diff.manhattanLength();
         if (diff.manhattanLength() > 5) {
             if (m_currentArrow) {
                 m_currentArrow->setEnd(pos);
+                qDebug() << "ArrowToolHandler: ADDING ARROW to layer! start:" << m_startPoint << "end:" << pos;
                 ctx->addItem(std::move(m_currentArrow));
             }
         }

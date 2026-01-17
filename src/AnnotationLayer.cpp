@@ -5,6 +5,7 @@
 #include "annotations/MosaicStroke.h"
 #include "annotations/StepBadgeAnnotation.h"
 #include "annotations/EmojiStickerAnnotation.h"
+#include "annotations/ArrowAnnotation.h"
 #include "annotations/ErasedItemsGroup.h"
 #include <QImage>
 #include <QPixmap>
@@ -268,6 +269,22 @@ int AnnotationLayer::hitTestEmojiSticker(const QPoint &pos) const
     for (int i = static_cast<int>(m_items.size()) - 1; i >= 0; --i) {
         if (auto* emojiItem = dynamic_cast<EmojiStickerAnnotation*>(m_items[i].get())) {
             if (emojiItem->containsPoint(pos)) {
+                return i;
+            }
+        }
+    }
+    return -1;
+}
+
+int AnnotationLayer::hitTestArrow(const QPoint &pos) const
+{
+    qDebug() << "hitTestArrow: checking" << m_items.size() << "items for pos:" << pos;
+    // Iterate in reverse order (top-most items first)
+    for (int i = static_cast<int>(m_items.size()) - 1; i >= 0; --i) {
+        qDebug() << "  item" << i << "type:" << typeid(*m_items[i]).name();
+        if (auto* arrowItem = dynamic_cast<ArrowAnnotation*>(m_items[i].get())) {
+            qDebug() << "    is ArrowAnnotation, calling containsPoint";
+            if (arrowItem->containsPoint(pos)) {
                 return i;
             }
         }

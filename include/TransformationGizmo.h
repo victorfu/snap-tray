@@ -9,6 +9,7 @@
 
 class TextBoxAnnotation;
 class EmojiStickerAnnotation;
+class ArrowAnnotation;
 
 // Handle types for hit-testing transformation gizmo
 enum class GizmoHandle {
@@ -18,7 +19,12 @@ enum class GizmoHandle {
     TopRight,
     BottomLeft,
     BottomRight,
-    Rotation     // Rotation handle (lollipop)
+    Rotation,    // Rotation handle (lollipop)
+
+    // Arrow-specific handles
+    ArrowStart,   // Start point of arrow
+    ArrowEnd,     // End point of arrow
+    ArrowControl  // Control point for Bézier curve
 };
 
 /**
@@ -28,6 +34,11 @@ enum class GizmoHandle {
  * - A dashed border around the selected text
  * - Four corner handles for scaling
  * - A rotation handle (lollipop style) extending from top-center
+ *
+ * For arrows:
+ * - Start/End handles (circles) for endpoint manipulation
+ * - Control handle (diamond) for curve adjustment
+ * - Dashed lines showing the Bézier control hull
  */
 class TransformationGizmo
 {
@@ -37,6 +48,10 @@ public:
     static constexpr int kRotationHandleDistance = 30;
     static constexpr int kRotationHandleRadius = 6;
     static constexpr int kHitTolerance = 8;
+
+    // Arrow-specific constants
+    static constexpr int kArrowHandleRadius = 6;
+    static constexpr int kControlHandleRadius = 5;
 
     /**
      * @brief Draw the transformation gizmo for a text annotation.
@@ -72,10 +87,31 @@ public:
     static GizmoHandle hitTest(const EmojiStickerAnnotation *annotation, const QPoint &point);
     static QVector<QPointF> cornerHandlePositions(const EmojiStickerAnnotation *annotation);
 
+    // ArrowAnnotation overloads
+    /**
+     * @brief Draw the transformation gizmo for an arrow annotation.
+     *
+     * Draws:
+     * - Circles at start and end points
+     * - A distinct diamond/circle at the control point
+     * - Dashed lines from start->control and control->end (Bézier hull)
+     */
+    static void draw(QPainter &painter, const ArrowAnnotation *annotation);
+
+    /**
+     * @brief Hit-test the arrow gizmo handles.
+     * @return ArrowStart, ArrowEnd, ArrowControl, Body, or None
+     */
+    static GizmoHandle hitTest(const ArrowAnnotation *annotation, const QPoint &point);
+
 private:
     static void drawDashedBorder(QPainter &painter, const QPolygonF &polygon);
     static void drawCornerHandles(QPainter &painter, const QVector<QPointF> &corners);
     static void drawRotationHandle(QPainter &painter, const QPointF &topCenter, const QPointF &handlePos);
+
+    // Arrow-specific drawing helpers
+    static void drawArrowHandle(QPainter &painter, const QPointF &pos, bool isControlPoint = false);
+    static void drawBezierHull(QPainter &painter, const QPointF &start, const QPointF &control, const QPointF &end);
 };
 
 #endif // TRANSFORMATIONGIZMO_H

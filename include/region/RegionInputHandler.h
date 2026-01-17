@@ -22,6 +22,7 @@ class RegionControlWidget;
 class UpdateThrottler;
 class TextBoxAnnotation;
 class EmojiStickerAnnotation;
+class ArrowAnnotation;
 class MultiRegionManager;
 
 /**
@@ -104,6 +105,7 @@ private:
     bool handleGizmoPress(const QPoint& pos);
     bool handleTextAnnotationPress(const QPoint& pos);
     bool handleEmojiStickerAnnotationPress(const QPoint& pos);
+    bool handleArrowAnnotationPress(const QPoint& pos);
     bool handleAnnotationToolPress(const QPoint& pos);
     bool handleSelectionToolPress(const QPoint& pos);
     void handleNewSelectionPress(const QPoint& pos);
@@ -113,6 +115,7 @@ private:
     bool handleTextEditorMove(const QPoint& pos);
     bool handleTextAnnotationMove(const QPoint& pos);
     bool handleEmojiStickerMove(const QPoint& pos);
+    bool handleArrowAnnotationMove(const QPoint& pos);
     void handleWindowDetectionMove(const QPoint& pos);
     void handleSelectionMove(const QPoint& pos);
     void handleAnnotationMove(const QPoint& pos);
@@ -123,6 +126,7 @@ private:
     bool handleTextEditorRelease(const QPoint& pos);
     bool handleTextAnnotationRelease();
     bool handleEmojiStickerRelease();
+    bool handleArrowAnnotationRelease();
     bool handleRegionControlWidgetRelease(const QPoint& pos);
     void handleSelectionRelease(const QPoint& pos);
     void handleAnnotationRelease();
@@ -144,6 +148,7 @@ private:
     // Utility
     TextBoxAnnotation* getSelectedTextAnnotation() const;
     EmojiStickerAnnotation* getSelectedEmojiStickerAnnotation() const;
+    ArrowAnnotation* getSelectedArrowAnnotation() const;
     bool shouldShowColorAndWidthWidget() const;
     bool isAnnotationTool(ToolId tool) const;
 
@@ -190,6 +195,11 @@ private:
     qreal m_emojiStartScale = 1.0;
     qreal m_emojiStartDistance = 0.0;
     QPointF m_emojiStartCenter;
+
+    // Arrow annotation transformation state
+    bool m_isArrowDragging = false;
+    GizmoHandle m_activeArrowHandle = GizmoHandle::None;
+    QPoint m_arrowDragStart;
 
     // Cursor batching - avoid redundant cursor change signals
     Qt::CursorShape m_lastEmittedCursor = Qt::ArrowCursor;

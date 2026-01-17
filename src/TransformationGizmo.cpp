@@ -1,6 +1,7 @@
 #include "TransformationGizmo.h"
 #include "annotations/TextBoxAnnotation.h"
 #include "annotations/EmojiStickerAnnotation.h"
+#include "annotations/ArrowAnnotation.h"
 #include <QtMath>
 #include <QLineF>
 
@@ -209,6 +210,113 @@ GizmoHandle TransformationGizmo::hitTest(const EmojiStickerAnnotation *annotatio
     }
 
     // 2. Check if inside the emoji body (for moving)
+    if (annotation->containsPoint(point)) {
+        return GizmoHandle::Body;
+    }
+
+    return GizmoHandle::None;
+}
+
+// ============================================================================
+// ArrowAnnotation overloads
+// ============================================================================
+
+void TransformationGizmo::drawArrowHandle(QPainter &painter, const QPointF &pos, bool isControlPoint)
+{
+    painter.save();
+    painter.setRenderHint(QPainter::Antialiasing, true);
+
+    if (isControlPoint) {
+        // Control point: yellow diamond shape
+        painter.setPen(QPen(Qt::white, 1.5));
+        painter.setBrush(QColor(255, 200, 0));  // Yellow/gold for control point
+
+        // Draw diamond (rotated square)
+        QPolygonF diamond;
+        diamond << QPointF(pos.x(), pos.y() - kControlHandleRadius)
+                << QPointF(pos.x() + kControlHandleRadius, pos.y())
+                << QPointF(pos.x(), pos.y() + kControlHandleRadius)
+                << QPointF(pos.x() - kControlHandleRadius, pos.y());
+        painter.drawPolygon(diamond);
+    } else {
+        // Start/End point: blue circle (same style as corner handles)
+        painter.setPen(QPen(Qt::white, 1.5));
+        painter.setBrush(QColor(0, 174, 255));  // Blue accent color
+        painter.drawEllipse(pos, kArrowHandleRadius, kArrowHandleRadius);
+    }
+
+    painter.restore();
+}
+
+void TransformationGizmo::drawBezierHull(QPainter &painter, const QPointF &start, const QPointF &control, const QPointF &end)
+{
+    painter.save();
+
+    // Draw dashed lines from start->control and control->end
+    QPen hullPen(QColor(128, 128, 128, 180), 1.0, Qt::DashLine);
+    hullPen.setDashPattern({4, 4});
+    painter.setPen(hullPen);
+    painter.drawLine(start, control);
+    painter.drawLine(control, end);
+
+    painter.restore();
+}
+
+void TransformationGizmo::draw(QPainter &painter, const ArrowAnnotation *annotation)
+{
+    if (!annotation) return;
+
+    painter.save();
+    painter.setRenderHint(QPainter::Antialiasing, true);
+
+    QPointF start = annotation->start();
+    QPointF end = annotation->end();
+    QPointF control = annotation->controlPoint();
+
+    // Calculate the point ON the curve at t=0.5 (midpoint)
+    // B(0.5) = 0.25*P0 + 0.5*P1 + 0.25*P2
+    QPointF curveMidpoint = 0.25 * start + 0.5 * control + 0.25 * end;
+
+    // Draw handles at start, end, and curve midpoint (not Bézier control point)
+    drawArrowHandle(painter, start, false);         // Start: blue circle
+    drawArrowHandle(painter, end, false);           // End: blue circle
+    drawArrowHandle(painter, curveMidpoint, true);  // Curve midpoint: yellow diamond
+
+    painter.restore();
+}
+
+GizmoHandle TransformationGizmo::hitTest(const ArrowAnnotation *annotation, const QPoint &point)
+{
+    if (!annotation) return GizmoHandle::None;
+
+    QPointF p(point);
+    QPointF start = annotation->start();
+    QPointF end = annotation->end();
+    QPointF control = annotation->controlPoint();
+
+    // Calculate the point ON the curve at t=0.5 (midpoint)
+    // This is where the control handle is displayed
+    QPointF curveMidpoint = 0.25 * start + 0.5 * control + 0.25 * end;
+
+    // 1. Check control handle first (at curve midpoint)
+    qreal distToMidpoint = QLineF(p, curveMidpoint).length();
+    if (distToMidpoint <= kControlHandleRadius + kHitTolerance) {
+        return GizmoHandle::ArrowControl;
+    }
+
+    // 2. Check start handle
+    qreal distToStart = QLineF(p, start).length();
+    if (distToStart <= kArrowHandleRadius + kHitTolerance) {
+        return GizmoHandle::ArrowStart;
+    }
+
+    // 3. Check end handle
+    qreal distToEnd = QLineF(p, end).length();
+    if (distToEnd <= kArrowHandleRadius + kHitTolerance) {
+        return GizmoHandle::ArrowEnd;
+    }
+
+    // 4. Check if on the arrow body (for moving entire arrow)
     if (annotation->containsPoint(point)) {
         return GizmoHandle::Body;
     }

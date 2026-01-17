@@ -9,6 +9,7 @@
 #include "annotations/AnnotationLayer.h"
 #include "annotations/TextBoxAnnotation.h"
 #include "annotations/EmojiStickerAnnotation.h"
+#include "annotations/ArrowAnnotation.h"
 #include "cursor/CursorManager.h"
 #include "tools/ToolManager.h"
 #include "ToolbarWidget.h"
@@ -194,6 +195,11 @@ void RegionInputHandler::handleMousePress(QMouseEvent* event)
                 return;
             }
 
+            // Check arrow annotations
+            if (handleArrowAnnotationPress(event->pos())) {
+                return;
+            }
+
             // Clear selection if clicking elsewhere
             if (m_annotationLayer->selectedIndex() >= 0) {
                 m_annotationLayer->clearSelection();
@@ -258,6 +264,11 @@ void RegionInputHandler::handleMouseMove(QMouseEvent* event)
         return;
     }
 
+    // Handle arrow annotation dragging/handle manipulation
+    if (handleArrowAnnotationMove(event->pos())) {
+        return;
+    }
+
     // Window detection during hover
     handleWindowDetectionMove(event->pos());
 
@@ -298,6 +309,11 @@ void RegionInputHandler::handleMouseRelease(QMouseEvent* event)
 
         // Handle emoji sticker drag/scale release
         if (handleEmojiStickerRelease()) {
+            return;
+        }
+
+        // Handle arrow annotation drag/handle release
+        if (handleArrowAnnotationRelease()) {
             return;
         }
 
@@ -1276,4 +1292,134 @@ bool RegionInputHandler::isAnnotationTool(ToolId tool) const
     default:
         return false;
     }
+}
+
+// ============================================================================
+// Arrow Annotation Handlers
+// ============================================================================
+
+ArrowAnnotation* RegionInputHandler::getSelectedArrowAnnotation() const
+{
+    if (!m_annotationLayer) return nullptr;
+    if (m_annotationLayer->selectedIndex() >= 0) {
+        return dynamic_cast<ArrowAnnotation*>(m_annotationLayer->selectedItem());
+    }
+    return nullptr;
+}
+
+bool RegionInputHandler::handleArrowAnnotationPress(const QPoint& pos)
+{
+    // First check if we're clicking on a gizmo handle of an already-selected arrow
+    if (auto* arrowItem = getSelectedArrowAnnotation()) {
+        GizmoHandle handle = TransformationGizmo::hitTest(arrowItem, pos);
+        if (handle != GizmoHandle::None) {
+            m_isArrowDragging = true;
+            m_activeArrowHandle = handle;
+            m_arrowDragStart = pos;
+
+            if (handle == GizmoHandle::Body) {
+                emitCursorChangeIfNeeded(Qt::SizeAllCursor);
+            } else {
+                emitCursorChangeIfNeeded(Qt::CrossCursor);
+            }
+
+            if (m_parentWidget) {
+                m_parentWidget->setFocus();
+            }
+            emit updateRequested();
+            return true;
+        }
+    }
+
+    // Check if clicking on a different arrow annotation
+    int hitIndex = m_annotationLayer->hitTestArrow(pos);
+    qDebug() << "handleArrowAnnotationPress: hitTestArrow returned" << hitIndex;
+    if (hitIndex < 0) {
+        return false;
+    }
+
+    // Select this arrow annotation
+    m_annotationLayer->setSelectedIndex(hitIndex);
+    qDebug() << "handleArrowAnnotationPress: setSelectedIndex to" << hitIndex;
+
+    // Start dragging by default when clicking on the arrow body
+    if (auto* arrowItem = getSelectedArrowAnnotation()) {
+        qDebug() << "handleArrowAnnotationPress: got arrow item, testing gizmo hit";
+        GizmoHandle handle = TransformationGizmo::hitTest(arrowItem, pos);
+        m_isArrowDragging = true;
+        m_activeArrowHandle = (handle != GizmoHandle::None) ? handle : GizmoHandle::Body;
+        m_arrowDragStart = pos;
+        emitCursorChangeIfNeeded(Qt::SizeAllCursor);
+    } else {
+        qDebug() << "handleArrowAnnotationPress: getSelectedArrowAnnotation returned nullptr!";
+    }
+
+    if (m_parentWidget) {
+        m_parentWidget->setFocus();
+    }
+    emit updateRequested();
+    return true;
+}
+
+bool RegionInputHandler::handleArrowAnnotationMove(const QPoint& pos)
+{
+    if (!m_isArrowDragging || m_annotationLayer->selectedIndex() < 0) {
+        return false;
+    }
+
+    auto* arrowItem = getSelectedArrowAnnotation();
+    if (!arrowItem) {
+        return false;
+    }
+
+    QPoint delta = pos - m_arrowDragStart;
+
+    switch (m_activeArrowHandle) {
+    case GizmoHandle::ArrowStart:
+        // Move start point directly
+        arrowItem->setStart(arrowItem->start() + delta);
+        break;
+
+    case GizmoHandle::ArrowEnd:
+        // Move end point directly
+        arrowItem->setEnd(arrowItem->end() + delta);
+        break;
+
+    case GizmoHandle::ArrowControl:
+        // User drags the curve midpoint (t=0.5), calculate actual Bézier control point
+        // If B(0.5) = 0.25*P0 + 0.5*P1 + 0.25*P2, then:
+        // P1 = 2*B(0.5) - 0.5*(P0 + P2) = 2*pos - 0.5*(start + end)
+        {
+            QPointF start = arrowItem->start();
+            QPointF end = arrowItem->end();
+            QPointF newControl = 2.0 * QPointF(pos) - 0.5 * (start + end);
+            arrowItem->setControlPoint(newControl.toPoint());
+        }
+        break;
+
+    case GizmoHandle::Body:
+        // Move entire arrow
+        arrowItem->moveBy(delta);
+        break;
+
+    default:
+        return false;
+    }
+
+    m_arrowDragStart = pos;
+    m_annotationLayer->invalidateCache();
+    emit updateRequested();
+    return true;
+}
+
+bool RegionInputHandler::handleArrowAnnotationRelease()
+{
+    if (!m_isArrowDragging) {
+        return false;
+    }
+
+    m_isArrowDragging = false;
+    m_activeArrowHandle = GizmoHandle::None;
+    emitCursorChangeIfNeeded(Qt::ArrowCursor);
+    return true;
 }

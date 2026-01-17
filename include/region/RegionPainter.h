@@ -18,6 +18,7 @@ class ToolbarWidget;
 class RegionControlWidget;
 class TextBoxAnnotation;
 class EmojiStickerAnnotation;
+class ArrowAnnotation;
 class MultiRegionManager;
 
 /**
@@ -92,6 +93,7 @@ private:
     int effectiveCornerRadius() const;
     TextBoxAnnotation* getSelectedTextAnnotation() const;
     EmojiStickerAnnotation* getSelectedEmojiStickerAnnotation() const;
+    ArrowAnnotation* getSelectedArrowAnnotation() const;
 
     // Dependencies (non-owning pointers)
     SelectionStateManager* m_selectionManager = nullptr;
