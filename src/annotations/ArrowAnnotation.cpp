@@ -32,11 +32,15 @@ void ArrowAnnotation::draw(QPainter &painter) const
         break;
     }
 
-    QPen pen(m_color, m_width, qtStyle, Qt::RoundCap, Qt::RoundJoin);
+    QPen pen(m_color, m_width, qtStyle, Qt::FlatCap, Qt::RoundJoin);
     painter.setPen(pen);
     painter.setRenderHint(QPainter::Antialiasing, true);
 
     double arrowLength = qMax(10.0, m_width * 3.0);
+    double arrowAngle = M_PI / 6.0;  // 30 degrees - same as in drawArrowhead
+    // Distance from tip to triangle base along the line direction
+    // Subtract 1 pixel to ensure line extends slightly into the triangle (prevents anti-aliasing gaps)
+    double baseDistance = arrowLength * qCos(arrowAngle) - 1.0;
 
     // Calculate line endpoints (adjust if arrowheads are present)
     QPointF lineStart = m_start;
@@ -55,8 +59,8 @@ void ArrowAnnotation::draw(QPainter &painter) const
                         m_lineEndStyle == LineEndStyle::BothArrowOutline)) {
         double angle = qAtan2(m_end.y() - m_start.y(), m_end.x() - m_start.x());
         lineEnd = QPointF(
-            m_end.x() - arrowLength * qCos(angle),
-            m_end.y() - arrowLength * qSin(angle)
+            m_end.x() - baseDistance * qCos(angle),
+            m_end.y() - baseDistance * qSin(angle)
         );
     }
 
@@ -64,13 +68,13 @@ void ArrowAnnotation::draw(QPainter &painter) const
     if (hasStartArrow) {
         double angle = qAtan2(m_start.y() - m_end.y(), m_start.x() - m_end.x());
         lineStart = QPointF(
-            m_start.x() - arrowLength * qCos(angle),
-            m_start.y() - arrowLength * qSin(angle)
+            m_start.x() - baseDistance * qCos(angle),
+            m_start.y() - baseDistance * qSin(angle)
         );
     }
 
     // Draw the line (to correct endpoints)
-    painter.drawLine(lineStart.toPoint(), lineEnd.toPoint());
+    painter.drawLine(lineStart, lineEnd);
 
     // Draw arrowhead(s) based on line end style
     switch (m_lineEndStyle) {
