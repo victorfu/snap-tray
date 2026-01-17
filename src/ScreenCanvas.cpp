@@ -112,8 +112,7 @@ ScreenCanvas::ScreenCanvas(QWidget* parent)
     connect(m_colorAndWidthWidget, &ColorAndWidthWidget::stepBadgeSizeChanged,
         this, [this](StepBadgeSize size) {
             m_stepBadgeSize = size;
-            int radius = StepBadgeAnnotation::radiusForSize(size);
-            m_toolManager->setWidth(radius);
+            AnnotationSettingsManager::instance().saveStepBadgeSize(size);
         });
 
     // Initialize emoji picker
@@ -587,8 +586,7 @@ void ScreenCanvas::handleToolbarClick(CanvasButton button)
             // Different tool - select it and show sub-toolbar
             m_currentToolId = toolId;
             m_toolManager->setCurrentTool(toolId);
-            // Set width to badge radius (StepBadgeToolHandler uses ctx->width for radius)
-            m_toolManager->setWidth(StepBadgeAnnotation::radiusForSize(m_stepBadgeSize));
+            // StepBadgeToolHandler reads size from AnnotationSettingsManager, no setWidth needed
             m_showSubToolbar = true;
         }
         qDebug() << "ScreenCanvas: StepBadge selected, showSubToolbar:" << m_showSubToolbar;

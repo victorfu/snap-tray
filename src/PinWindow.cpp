@@ -1867,13 +1867,7 @@ void PinWindow::handleToolbarToolSelected(int toolId)
         break;
     case PinWindowToolbar::ButtonStepBadge:
         tool = ToolId::StepBadge;
-        // Apply step badge radius when tool is selected
-        {
-            int radius = StepBadgeAnnotation::radiusForSize(m_stepBadgeSize);
-            if (m_toolManager) {
-                m_toolManager->setWidth(radius);
-            }
-        }
+        // StepBadgeToolHandler reads size from AnnotationSettingsManager, no setWidth needed
         break;
     case PinWindowToolbar::ButtonEmoji:
         tool = ToolId::EmojiSticker;
@@ -2052,14 +2046,9 @@ void PinWindow::onEmojiSelected(const QString& emoji)
 void PinWindow::onStepBadgeSizeChanged(StepBadgeSize size)
 {
     m_stepBadgeSize = size;
-    // Save to settings
+    // Save to settings - StepBadgeToolHandler reads from AnnotationSettingsManager
     AnnotationSettingsManager::instance().saveStepBadgeSize(size);
-    // Convert size to radius and apply to ToolManager (StepBadgeToolHandler reads from ctx->width)
-    int radius = StepBadgeAnnotation::radiusForSize(size);
-    if (m_toolManager) {
-        m_toolManager->setWidth(radius);
-    }
-    qDebug() << "PinWindow: Step badge size changed:" << static_cast<int>(size) << "radius:" << radius;
+    qDebug() << "PinWindow: Step badge size changed:" << static_cast<int>(size);
 }
 
 void PinWindow::onShapeTypeChanged(ShapeType type)

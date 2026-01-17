@@ -658,9 +658,8 @@ void RegionSelector::onLineWidthChanged(int width)
 void RegionSelector::onStepBadgeSizeChanged(StepBadgeSize size)
 {
     m_stepBadgeSize = size;
+    // Save to settings - StepBadgeToolHandler reads from AnnotationSettingsManager
     AnnotationSettingsManager::instance().saveStepBadgeSize(size);
-    int radius = StepBadgeAnnotation::radiusForSize(size);
-    m_toolManager->setWidth(radius);
     update();
 }
 

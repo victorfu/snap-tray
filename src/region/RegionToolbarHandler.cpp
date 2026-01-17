@@ -306,10 +306,7 @@ void RegionToolbarHandler::handleStepBadgeTool()
     emit showSizeSectionRequested(true);
     emit showWidthSectionRequested(false);
     emit stepBadgeSizeRequested(m_stepBadgeSize);
-    // Set width to radius for tool context
-    if (m_toolManager) {
-        m_toolManager->setWidth(StepBadgeAnnotation::radiusForSize(m_stepBadgeSize));
-    }
+    // StepBadgeToolHandler reads size from AnnotationSettingsManager, no setWidth needed
     qDebug() << "StepBadge tool selected, showSubToolbar:" << m_showSubToolbar;
     emit toolChanged(m_currentTool, m_showSubToolbar);
     emit updateRequested();

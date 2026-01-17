@@ -1,5 +1,6 @@
 #include "tools/handlers/StepBadgeToolHandler.h"
 #include "tools/ToolContext.h"
+#include "settings/AnnotationSettingsManager.h"
 
 #include <QCursor>
 
@@ -17,12 +18,9 @@ void StepBadgeToolHandler::onMouseRelease(ToolContext* ctx, const QPoint& pos) {
     // Get the next badge number
     int nextNumber = ctx->annotationLayer->countStepBadges() + 1;
 
-    // Get radius from context width (repurposed for step badge size)
-    // Default to medium if not set
-    int radius = ctx->width;
-    if (radius <= 0) {
-        radius = StepBadgeAnnotation::kBadgeRadiusMedium;
-    }
+    // Get radius from settings (not ctx->width to avoid affecting brush width)
+    StepBadgeSize size = AnnotationSettingsManager::instance().loadStepBadgeSize();
+    int radius = StepBadgeAnnotation::radiusForSize(size);
 
     // Create and add the step badge with custom radius
     auto badge = std::make_unique<StepBadgeAnnotation>(
