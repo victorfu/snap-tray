@@ -18,6 +18,7 @@
 #include "region/RegionSettingsHelper.h"
 #include "tools/ToolId.h"
 #include "ToolbarStyle.h"
+#include "TransformationGizmo.h"
 
 class QScreen;
 class AnnotationLayer;
@@ -27,6 +28,8 @@ class EmojiPicker;
 class ColorAndWidthWidget;
 class LaserPointerRenderer;
 class ToolbarWidget;
+class ArrowAnnotation;
+class PolylineAnnotation;
 
 // Canvas background mode
 enum class CanvasBackgroundMode {
@@ -186,6 +189,24 @@ private:
 
     // StepBadge tool state
     StepBadgeSize m_stepBadgeSize = StepBadgeSize::Medium;
+
+    // Arrow and Polyline editing state
+    bool m_isArrowDragging = false;
+    GizmoHandle m_arrowDragHandle = GizmoHandle::None;
+    bool m_isPolylineDragging = false;
+    int m_activePolylineVertexIndex = -1;
+    QPoint m_dragStartPos;
+
+    // Arrow and Polyline helpers
+    bool handleArrowAnnotationPress(const QPoint& pos);
+    bool handleArrowAnnotationMove(const QPoint& pos);
+    bool handleArrowAnnotationRelease(const QPoint& pos);
+    ArrowAnnotation* getSelectedArrowAnnotation();
+
+    bool handlePolylineAnnotationPress(const QPoint& pos);
+    bool handlePolylineAnnotationMove(const QPoint& pos);
+    bool handlePolylineAnnotationRelease(const QPoint& pos);
+    PolylineAnnotation* getSelectedPolylineAnnotation();
 
     // Text editing components
     InlineTextEditor *m_textEditor;

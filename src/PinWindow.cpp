@@ -27,6 +27,10 @@
 #include "ColorAndWidthWidget.h"
 #include "annotations/TextBoxAnnotation.h"
 #include "TransformationGizmo.h"
+#include "annotations/TextBoxAnnotation.h"
+#include "TransformationGizmo.h"
+#include "annotations/ArrowAnnotation.h"
+#include "annotations/PolylineAnnotation.h"
 #include "utils/CoordinateHelper.h"
 
 using namespace SnapTray;
@@ -1051,6 +1055,16 @@ void PinWindow::paintEvent(QPaintEvent*)
             TransformationGizmo::draw(painter, textItem);
         }
 
+        // Draw transformation gizmo for selected Arrow (in transformed space)
+        if (auto* arrowItem = getSelectedArrowAnnotation()) {
+            TransformationGizmo::draw(painter, arrowItem);
+        }
+
+        // Draw transformation gizmo for selected Polyline (in transformed space)
+        if (auto* polylineItem = getSelectedPolylineAnnotation()) {
+            TransformationGizmo::draw(painter, polylineItem);
+        }
+
         painter.restore();
     }
 
@@ -1190,6 +1204,16 @@ void PinWindow::mousePressEvent(QMouseEvent* event)
                 return;
             }
 
+            // Check for Arrow annotation interaction (original coords handled inside)
+            if (handleArrowAnnotationPress(event->pos())) {
+                return;
+            }
+
+            // Check for Polyline annotation interaction (original coords handled inside)
+            if (handlePolylineAnnotationPress(event->pos())) {
+                return;
+            }
+
             // Other annotation tools route to ToolManager
             if (m_toolManager) {
                 // Transform display coordinates to original image coordinates
@@ -1237,6 +1261,18 @@ void PinWindow::mouseMoveEvent(QMouseEvent* event)
     if (m_textAnnotationEditor && m_textAnnotationEditor->isDragging()) {
         m_textAnnotationEditor->updateDragging(event->pos());
         update();
+        return;
+    }
+
+    // Handle Arrow dragging
+    if (m_isArrowDragging) {
+        handleArrowAnnotationMove(event->pos());
+        return;
+    }
+
+    // Handle Polyline dragging
+    if (m_isPolylineDragging) {
+        handlePolylineAnnotationMove(event->pos());
         return;
     }
 
@@ -1323,6 +1359,16 @@ void PinWindow::mouseReleaseEvent(QMouseEvent* event)
                 update();
                 return;
             }
+        }
+
+        // Handle Arrow release
+        if (handleArrowAnnotationRelease(event->pos())) {
+            return;
+        }
+
+        // Handle Polyline release
+        if (handlePolylineAnnotationRelease(event->pos())) {
+            return;
         }
 
         // In annotation mode, route to ToolManager
@@ -2414,4 +2460,191 @@ void PinWindow::updateLiveFrame()
         // Update display
         updateSize();
     }
+}
+
+// ============================================================================
+// Arrow and Polyline Handling
+// ============================================================================
+
+ArrowAnnotation* PinWindow::getSelectedArrowAnnotation()
+{
+    if (!m_annotationLayer) return nullptr;
+    int index = m_annotationLayer->selectedIndex();
+    if (index >= 0) {
+        return dynamic_cast<ArrowAnnotation*>(m_annotationLayer->itemAt(index));
+    }
+    return nullptr;
+}
+
+bool PinWindow::handleArrowAnnotationPress(const QPoint& pos)
+{
+    // Use mapped position (Original Coords)
+    QPoint mappedPos = mapToOriginalCoords(pos);
+
+    if (auto* arrowItem = getSelectedArrowAnnotation()) {
+        GizmoHandle handle = TransformationGizmo::hitTest(arrowItem, mappedPos);
+        if (handle != GizmoHandle::None) {
+             m_isArrowDragging = true;
+             m_arrowDragHandle = handle;
+             m_annotationDragStartPos = mappedPos;
+             // Set appropriate cursor based on handle if needed
+             update(); 
+             return true;
+        }
+    }
+
+    // Check hit test for unselected items
+    int hitIndex = m_annotationLayer->hitTestArrow(mappedPos);
+    if (hitIndex >= 0) {
+        m_annotationLayer->setSelectedIndex(hitIndex);
+        m_isArrowDragging = true;
+        m_arrowDragHandle = GizmoHandle::Body; // Default to body drag on selection
+        m_annotationDragStartPos = mappedPos;
+        
+        // Refine potential handle hit
+        if (auto* arrowItem = getSelectedArrowAnnotation()) {
+             GizmoHandle handle = TransformationGizmo::hitTest(arrowItem, mappedPos);
+             if (handle != GizmoHandle::None) {
+                 m_arrowDragHandle = handle;
+             }
+        }
+        
+        update();
+        return true;
+    }
+    return false;
+}
+
+bool PinWindow::handleArrowAnnotationMove(const QPoint& pos)
+{
+    // Use mapped position (Original Coords)
+    QPoint mappedPos = mapToOriginalCoords(pos);
+
+    if (m_isArrowDragging && m_annotationLayer->selectedIndex() >= 0) {
+        auto* arrowItem = getSelectedArrowAnnotation();
+        if (arrowItem) {
+            if (m_arrowDragHandle == GizmoHandle::Body) {
+                QPoint delta = mappedPos - m_annotationDragStartPos;
+                arrowItem->moveBy(delta);
+                m_annotationDragStartPos = mappedPos;
+            } else if (m_arrowDragHandle == GizmoHandle::ArrowStart) {
+                arrowItem->setStart(mappedPos);
+            } else if (m_arrowDragHandle == GizmoHandle::ArrowEnd) {
+                arrowItem->setEnd(mappedPos);
+            } else if (m_arrowDragHandle == GizmoHandle::ArrowControl) {
+                arrowItem->setControlPoint(mappedPos);
+            }
+            m_annotationLayer->invalidateCache();
+            update();
+            return true;
+        }
+    }
+    return false;
+}
+
+bool PinWindow::handleArrowAnnotationRelease(const QPoint& pos)
+{
+    Q_UNUSED(pos);
+    if (m_isArrowDragging) {
+        m_isArrowDragging = false;
+        m_arrowDragHandle = GizmoHandle::None;
+        updateCursorForTool(); // Restore tool cursor
+        update();
+        return true;
+    }
+    return false;
+}
+
+PolylineAnnotation* PinWindow::getSelectedPolylineAnnotation()
+{
+    if (!m_annotationLayer) return nullptr;
+    int index = m_annotationLayer->selectedIndex();
+    if (index >= 0) {
+        return dynamic_cast<PolylineAnnotation*>(m_annotationLayer->itemAt(index));
+    }
+    return nullptr;
+}
+
+bool PinWindow::handlePolylineAnnotationPress(const QPoint& pos)
+{
+    // Use mapped position (Original Coords)
+    QPoint mappedPos = mapToOriginalCoords(pos);
+
+    if (auto* polylineItem = getSelectedPolylineAnnotation()) {
+        int vertexIndex = TransformationGizmo::hitTestVertex(polylineItem, mappedPos);
+        if (vertexIndex >= 0) {
+            // Vertex hit
+            m_isPolylineDragging = true;
+            m_activePolylineVertexIndex = vertexIndex;
+            m_annotationDragStartPos = mappedPos;
+            update();
+            return true;
+        } else if (vertexIndex == -1) {
+             // Body hit
+             m_isPolylineDragging = true;
+             m_activePolylineVertexIndex = -1;
+             m_annotationDragStartPos = mappedPos;
+             update();
+             return true;
+        }
+    }
+
+    // Check hit test for unselected items
+    int hitIndex = m_annotationLayer->hitTestPolyline(mappedPos);
+    if (hitIndex >= 0) {
+        m_annotationLayer->setSelectedIndex(hitIndex);
+        m_isPolylineDragging = true;
+        m_activePolylineVertexIndex = -1; // Default to body drag
+        m_annotationDragStartPos = mappedPos;
+
+        // Check if we actually hit a vertex though
+        if (auto* polylineItem = getSelectedPolylineAnnotation()) {
+             int vertexIndex = TransformationGizmo::hitTestVertex(polylineItem, mappedPos);
+             if (vertexIndex >= 0) {
+                 m_activePolylineVertexIndex = vertexIndex;
+             }
+        }
+        
+        update();
+        return true;
+    }
+    return false;
+}
+
+bool PinWindow::handlePolylineAnnotationMove(const QPoint& pos)
+{
+    // Use mapped position (Original Coords)
+    QPoint mappedPos = mapToOriginalCoords(pos);
+
+    if (m_isPolylineDragging && m_annotationLayer->selectedIndex() >= 0) {
+        auto* polylineItem = getSelectedPolylineAnnotation();
+        if (polylineItem) {
+             if (m_activePolylineVertexIndex >= 0) {
+                 // Move specific vertex
+                 polylineItem->setPoint(m_activePolylineVertexIndex, mappedPos);
+             } else {
+                 // Move entire polyline
+                 QPoint delta = mappedPos - m_annotationDragStartPos;
+                 polylineItem->moveBy(delta);
+                 m_annotationDragStartPos = mappedPos;
+             }
+             m_annotationLayer->invalidateCache();
+             update();
+             return true;
+        }
+    }
+    return false;
+}
+
+bool PinWindow::handlePolylineAnnotationRelease(const QPoint& pos)
+{
+    Q_UNUSED(pos);
+    if (m_isPolylineDragging) {
+        m_isPolylineDragging = false;
+        m_activePolylineVertexIndex = -1;
+        updateCursorForTool();
+        update();
+        return true;
+    }
+    return false;
 }

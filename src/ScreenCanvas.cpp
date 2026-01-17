@@ -12,6 +12,9 @@
 #include "settings/AnnotationSettingsManager.h"
 #include "settings/Settings.h"
 #include "tools/handlers/EmojiStickerToolHandler.h"
+#include "annotations/ArrowAnnotation.h"
+#include "annotations/PolylineAnnotation.h"
+#include "TransformationGizmo.h"
 
 #include <QPainter>
 #include <QMouseEvent>
@@ -537,6 +540,16 @@ void ScreenCanvas::paintEvent(QPaintEvent*)
 void ScreenCanvas::drawAnnotations(QPainter& painter)
 {
     m_annotationLayer->drawCached(painter, size(), devicePixelRatioF());
+    
+    // Draw transformation gizmo for selected Arrow
+    if (auto* arrowItem = getSelectedArrowAnnotation()) {
+        TransformationGizmo::draw(painter, arrowItem);
+    }
+    
+    // Draw transformation gizmo for selected Polyline
+    if (auto* polylineItem = getSelectedPolylineAnnotation()) {
+        TransformationGizmo::draw(painter, polylineItem);
+    }
 }
 
 void ScreenCanvas::drawCurrentAnnotation(QPainter& painter)
@@ -781,6 +794,16 @@ void ScreenCanvas::mousePressEvent(QMouseEvent* event)
             return;
         }
 
+        // Check for Arrow annotation interaction
+        if (handleArrowAnnotationPress(event->pos())) {
+            return;
+        }
+
+        // Check for Polyline annotation interaction
+        if (handlePolylineAnnotationPress(event->pos())) {
+            return;
+        }
+
         // Start annotation drawing
         if (isDrawingTool(m_currentToolId)) {
             m_toolManager->handleMousePress(event->pos());
@@ -821,6 +844,18 @@ void ScreenCanvas::mouseMoveEvent(QMouseEvent* event)
     if (m_currentToolId == ToolId::LaserPointer && m_laserRenderer->isDrawing()) {
         m_laserRenderer->updateDrawing(event->pos());
         update();
+        return;
+    }
+    
+    // Handle Arrow dragging
+    if (m_isArrowDragging) {
+        handleArrowAnnotationMove(event->pos());
+        return;
+    }
+
+    // Handle Polyline dragging
+    if (m_isPolylineDragging) {
+        handlePolylineAnnotationMove(event->pos());
         return;
     }
 
@@ -920,6 +955,16 @@ void ScreenCanvas::mouseReleaseEvent(QMouseEvent* event)
         if (m_currentToolId == ToolId::LaserPointer && m_laserRenderer->isDrawing()) {
             m_laserRenderer->stopDrawing();
             update();
+            return;
+        }
+        
+        // Handle Arrow release
+        if (handleArrowAnnotationRelease(event->pos())) {
+            return;
+        }
+
+        // Handle Polyline release
+        if (handlePolylineAnnotationRelease(event->pos())) {
             return;
         }
 
@@ -1142,4 +1187,183 @@ QPixmap ScreenCanvas::createSolidBackgroundPixmap(const QColor& color) const
     pixmap.setDevicePixelRatio(m_devicePixelRatio);
     pixmap.fill(color);
     return pixmap;
+}
+
+// ============================================================================
+// Arrow and Polyline Handling
+// ============================================================================
+
+ArrowAnnotation* ScreenCanvas::getSelectedArrowAnnotation()
+{
+    if (!m_annotationLayer) return nullptr;
+    int index = m_annotationLayer->selectedIndex();
+    if (index >= 0) {
+        return dynamic_cast<ArrowAnnotation*>(m_annotationLayer->itemAt(index));
+    }
+    return nullptr;
+}
+
+bool ScreenCanvas::handleArrowAnnotationPress(const QPoint& pos)
+{
+    if (auto* arrowItem = getSelectedArrowAnnotation()) {
+        GizmoHandle handle = TransformationGizmo::hitTest(arrowItem, pos);
+        if (handle != GizmoHandle::None) {
+             m_isArrowDragging = true;
+             m_arrowDragHandle = handle;
+             m_dragStartPos = pos;
+             // Set appropriate cursor based on handle
+             update(); 
+             return true;
+        }
+    }
+
+    // Check hit test for unselected items
+    int hitIndex = m_annotationLayer->hitTestArrow(pos);
+    if (hitIndex >= 0) {
+        m_annotationLayer->setSelectedIndex(hitIndex);
+        m_isArrowDragging = true;
+        m_arrowDragHandle = GizmoHandle::Body; // Default to body drag on selection
+        m_dragStartPos = pos;
+        
+        // Refine potential handle hit
+        if (auto* arrowItem = getSelectedArrowAnnotation()) {
+             GizmoHandle handle = TransformationGizmo::hitTest(arrowItem, pos);
+             if (handle != GizmoHandle::None) {
+                 m_arrowDragHandle = handle;
+             }
+        }
+        
+        update();
+        return true;
+    }
+    return false;
+}
+
+bool ScreenCanvas::handleArrowAnnotationMove(const QPoint& pos)
+{
+    if (m_isArrowDragging && m_annotationLayer->selectedIndex() >= 0) {
+        auto* arrowItem = getSelectedArrowAnnotation();
+        if (arrowItem) {
+            if (m_arrowDragHandle == GizmoHandle::Body) {
+                QPoint delta = pos - m_dragStartPos;
+                arrowItem->moveBy(delta);
+                m_dragStartPos = pos;
+            } else if (m_arrowDragHandle == GizmoHandle::ArrowStart) {
+                arrowItem->setStart(pos);
+            } else if (m_arrowDragHandle == GizmoHandle::ArrowEnd) {
+                arrowItem->setEnd(pos);
+            } else if (m_arrowDragHandle == GizmoHandle::ArrowControl) {
+                arrowItem->setControlPoint(pos);
+            }
+            m_annotationLayer->invalidateCache();
+            update();
+            return true;
+        }
+    }
+    return false;
+}
+
+bool ScreenCanvas::handleArrowAnnotationRelease(const QPoint& pos)
+{
+    Q_UNUSED(pos);
+    if (m_isArrowDragging) {
+        m_isArrowDragging = false;
+        m_arrowDragHandle = GizmoHandle::None;
+        setToolCursor(); // Restore tool cursor
+        update();
+        return true;
+    }
+    return false;
+}
+
+PolylineAnnotation* ScreenCanvas::getSelectedPolylineAnnotation()
+{
+    if (!m_annotationLayer) return nullptr;
+    int index = m_annotationLayer->selectedIndex();
+    if (index >= 0) {
+        return dynamic_cast<PolylineAnnotation*>(m_annotationLayer->itemAt(index));
+    }
+    return nullptr;
+}
+
+bool ScreenCanvas::handlePolylineAnnotationPress(const QPoint& pos)
+{
+    if (auto* polylineItem = getSelectedPolylineAnnotation()) {
+        int vertexIndex = TransformationGizmo::hitTestVertex(polylineItem, pos);
+        if (vertexIndex >= 0) {
+            // Vertex hit
+            m_isPolylineDragging = true;
+            m_activePolylineVertexIndex = vertexIndex;
+            m_dragStartPos = pos;
+            update();
+            return true;
+        } else if (vertexIndex == -1) {
+             // Body hit
+             m_isPolylineDragging = true;
+             m_activePolylineVertexIndex = -1;
+             m_dragStartPos = pos;
+             update();
+             return true;
+        }
+    }
+
+    // Check hit test for unselected items
+    int hitIndex = m_annotationLayer->hitTestPolyline(pos);
+    if (hitIndex >= 0) {
+        m_annotationLayer->setSelectedIndex(hitIndex);
+        m_isPolylineDragging = true;
+        m_activePolylineVertexIndex = -1; // Default to body drag
+        m_dragStartPos = pos;
+
+        // Check if we actually hit a vertex though
+        if (auto* polylineItem = getSelectedPolylineAnnotation()) {
+             int vertexIndex = TransformationGizmo::hitTestVertex(polylineItem, pos);
+             if (vertexIndex >= 0) {
+                 m_activePolylineVertexIndex = vertexIndex;
+             }
+        }
+        
+        update();
+        return true;
+    }
+    return false;
+}
+
+bool ScreenCanvas::handlePolylineAnnotationMove(const QPoint& pos)
+{
+    if (m_isPolylineDragging && m_annotationLayer->selectedIndex() >= 0) {
+        auto* polylineItem = getSelectedPolylineAnnotation();
+        if (polylineItem) {
+             if (m_activePolylineVertexIndex >= 0) {
+                 // Move specific vertex
+                 QPoint delta = pos - m_dragStartPos; // Actually, for vertex we set directly
+                 // Wait, setPoint is absolute.
+                 polylineItem->setPoint(m_activePolylineVertexIndex, pos);
+                 // Note: m_dragStartPos isn't strictly needed for vertex move if we use pos directly, 
+                 // but good for offsets if we wanted relative. setPoint(pos) is fine.
+             } else {
+                 // Move entire polyline
+                 QPoint delta = pos - m_dragStartPos;
+                 polylineItem->moveBy(delta);
+                 m_dragStartPos = pos;
+             }
+             m_annotationLayer->invalidateCache();
+             update();
+             return true;
+        }
+    }
+    return false;
+}
+
+bool ScreenCanvas::handlePolylineAnnotationRelease(const QPoint& pos)
+{
+    Q_UNUSED(pos);
+    if (m_isPolylineDragging) {
+        m_isPolylineDragging = false;
+        m_activePolylineVertexIndex = -1;
+        setToolCursor();
+        update();
+        return true;
+    }
+    return false;
 }

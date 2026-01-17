@@ -19,6 +19,7 @@ using SharedPixmap = std::shared_ptr<const QPixmap>;
 #include "annotations/ShapeAnnotation.h"
 #include "annotations/ArrowAnnotation.h"
 #include "annotations/LineStyle.h"
+#include "TransformationGizmo.h"
 
 class QMenu;
 class QLabel;
@@ -35,7 +36,10 @@ class ToolManager;
 class InlineTextEditor;
 class TextAnnotationEditor;
 class AutoBlurManager;
+class AutoBlurManager;
 class TextBoxAnnotation;
+class ArrowAnnotation;
+class PolylineAnnotation;
 
 class PinWindow : public QWidget
 {
@@ -176,6 +180,25 @@ private:
     bool handleTextAnnotationPress(const QPoint& pos);
     bool handleGizmoPress(const QPoint& pos);
     TextBoxAnnotation* getSelectedTextAnnotation();
+
+    // Arrow and Polyline editing state
+    bool m_isArrowDragging = false;
+    GizmoHandle m_arrowDragHandle = GizmoHandle::None;
+    bool m_isPolylineDragging = false;
+    int m_activePolylineVertexIndex = -1;
+    // Note: m_dragStartPos is used for window dragging (global coords)
+    QPoint m_annotationDragStartPos; // For annotation dragging (original coords)
+
+    // Arrow and Polyline helpers
+    bool handleArrowAnnotationPress(const QPoint& pos);
+    bool handleArrowAnnotationMove(const QPoint& pos);
+    bool handleArrowAnnotationRelease(const QPoint& pos);
+    ArrowAnnotation* getSelectedArrowAnnotation();
+
+    bool handlePolylineAnnotationPress(const QPoint& pos);
+    bool handlePolylineAnnotationMove(const QPoint& pos);
+    bool handlePolylineAnnotationRelease(const QPoint& pos);
+    PolylineAnnotation* getSelectedPolylineAnnotation();
 
     // Coordinate transformation for rotated/flipped state
     QPoint mapToOriginalCoords(const QPoint& displayPos) const;
