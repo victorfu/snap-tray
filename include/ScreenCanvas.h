@@ -15,6 +15,7 @@
 #include "annotations/StepBadgeAnnotation.h"
 #include "InlineTextEditor.h"
 #include "region/TextAnnotationEditor.h"
+#include "region/RegionSettingsHelper.h"
 #include "tools/ToolId.h"
 #include "ToolbarStyle.h"
 
@@ -138,6 +139,12 @@ private:
     // Text editing handlers
     void onTextEditingFinished(const QString &text, const QPoint &position);
 
+    // Font dropdown handlers
+    void onFontSizeDropdownRequested(const QPoint &pos);
+    void onFontFamilyDropdownRequested(const QPoint &pos);
+    void onFontSizeSelected(int size);
+    void onFontFamilySelected(const QString &family);
+
     // Background pixmap (used for Whiteboard/Blackboard modes)
     QPixmap m_backgroundPixmap;
     QPointer<QScreen> m_currentScreen;
@@ -183,6 +190,7 @@ private:
     // Text editing components
     InlineTextEditor *m_textEditor;
     TextAnnotationEditor *m_textAnnotationEditor;
+    RegionSettingsHelper *m_settingsHelper;
 
     // Background mode
     CanvasBackgroundMode m_bgMode = CanvasBackgroundMode::Screen;

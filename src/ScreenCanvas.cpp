@@ -16,6 +16,7 @@
 #include <QPainter>
 #include <QMouseEvent>
 #include <QKeyEvent>
+#include <QTextEdit>
 #include <QWheelEvent>
 #include <QCloseEvent>
 #include <QGuiApplication>
@@ -159,6 +160,22 @@ ScreenCanvas::ScreenCanvas(QWidget* parent)
         m_textAnnotationEditor, &TextAnnotationEditor::setItalic);
     connect(m_colorAndWidthWidget, &ColorAndWidthWidget::underlineToggled,
         m_textAnnotationEditor, &TextAnnotationEditor::setUnderline);
+
+    // Initialize settings helper for font dropdowns
+    m_settingsHelper = new RegionSettingsHelper(this);
+    m_settingsHelper->setParentWidget(this);
+
+    // Connect font dropdown signals
+    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::fontSizeDropdownRequested,
+        this, &ScreenCanvas::onFontSizeDropdownRequested);
+    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::fontFamilyDropdownRequested,
+        this, &ScreenCanvas::onFontFamilyDropdownRequested);
+
+    // Connect font selection signals
+    connect(m_settingsHelper, &RegionSettingsHelper::fontSizeSelected,
+        this, &ScreenCanvas::onFontSizeSelected);
+    connect(m_settingsHelper, &RegionSettingsHelper::fontFamilySelected,
+        this, &ScreenCanvas::onFontFamilySelected);
 
     // Initialize laser pointer renderer
     m_laserRenderer = new LaserPointerRenderer(this);
@@ -687,6 +704,22 @@ void ScreenCanvas::setToolCursor()
 void ScreenCanvas::mousePressEvent(QMouseEvent* event)
 {
     if (event->button() == Qt::LeftButton) {
+        // Handle active text editor first - click outside to finish
+        if (m_textEditor && m_textEditor->isEditing()) {
+            if (!m_textEditor->contains(event->pos())) {
+                // Clicking outside the text editor
+                if (!m_textEditor->textEdit()->toPlainText().trimmed().isEmpty()) {
+                    m_textEditor->finishEditing();  // Save non-empty text
+                } else {
+                    m_textEditor->cancelEditing();  // Discard empty text
+                }
+                // Don't return - allow the click to be processed (e.g., start new text)
+            } else {
+                // Clicking inside - let the editor handle it
+                return;
+            }
+        }
+
         // Finalize polyline when clicking on UI elements (toolbar, widgets)
         // ArrowToolHandler's onDoubleClick returns early if not in polyline mode
         auto finalizePolylineForUiClick = [&](const QPoint& pos) {
@@ -935,9 +968,13 @@ void ScreenCanvas::wheelEvent(QWheelEvent* event)
 
 void ScreenCanvas::keyPressEvent(QKeyEvent* event)
 {
-    // Don't intercept letter keys during text editing
+    // Handle inline text editing keys first
     if (m_textEditor && m_textEditor->isEditing()) {
-        event->ignore();
+        if (event->key() == Qt::Key_Escape) {
+            m_textEditor->cancelEditing();
+            return;
+        }
+        // Let QTextEdit handle other keys (Enter for newlines, etc.)
         return;
     }
 
@@ -1034,6 +1071,32 @@ void ScreenCanvas::onLineStyleChanged(LineStyle style)
 void ScreenCanvas::onTextEditingFinished(const QString& text, const QPoint& position)
 {
     m_textAnnotationEditor->finishEditing(text, position, m_toolManager->color());
+}
+
+// Font dropdown handlers
+
+void ScreenCanvas::onFontSizeDropdownRequested(const QPoint& pos)
+{
+    TextFormattingState formatting = m_textAnnotationEditor->formatting();
+    m_settingsHelper->showFontSizeDropdown(pos, formatting.fontSize);
+}
+
+void ScreenCanvas::onFontFamilyDropdownRequested(const QPoint& pos)
+{
+    TextFormattingState formatting = m_textAnnotationEditor->formatting();
+    m_settingsHelper->showFontFamilyDropdown(pos, formatting.fontFamily);
+}
+
+void ScreenCanvas::onFontSizeSelected(int size)
+{
+    m_textAnnotationEditor->setFontSize(size);
+    m_colorAndWidthWidget->setFontSize(size);
+}
+
+void ScreenCanvas::onFontFamilySelected(const QString& family)
+{
+    m_textAnnotationEditor->setFontFamily(family);
+    m_colorAndWidthWidget->setFontFamily(family);
 }
 
 // Background mode helper methods
