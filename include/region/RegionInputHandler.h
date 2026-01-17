@@ -23,6 +23,7 @@ class UpdateThrottler;
 class TextBoxAnnotation;
 class EmojiStickerAnnotation;
 class ArrowAnnotation;
+class PolylineAnnotation;
 class MultiRegionManager;
 
 /**
@@ -201,6 +202,17 @@ private:
     bool m_isArrowDragging = false;
     GizmoHandle m_activeArrowHandle = GizmoHandle::None;
     QPoint m_arrowDragStart;
+
+    // Polyline annotation transformation state
+    bool m_isPolylineDragging = false;
+    int m_activePolylineVertexIndex = -1; // -1 for body move, >= 0 for vertex move
+    QPoint m_polylineDragStart;
+
+    // Utility
+    PolylineAnnotation* getSelectedPolylineAnnotation() const;
+    bool handlePolylineAnnotationPress(const QPoint& pos);
+    bool handlePolylineAnnotationMove(const QPoint& pos);
+    bool handlePolylineAnnotationRelease();
 
     // Cursor batching - avoid redundant cursor change signals
     Qt::CursorShape m_lastEmittedCursor = Qt::ArrowCursor;

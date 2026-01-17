@@ -2,6 +2,7 @@
 #include "annotations/TextBoxAnnotation.h"
 #include "annotations/EmojiStickerAnnotation.h"
 #include "annotations/ArrowAnnotation.h"
+#include "annotations/PolylineAnnotation.h"
 #include <QtMath>
 #include <QLineF>
 
@@ -322,4 +323,46 @@ GizmoHandle TransformationGizmo::hitTest(const ArrowAnnotation *annotation, cons
     }
 
     return GizmoHandle::None;
+}
+
+// ============================================================================
+// PolylineAnnotation overloads
+// ============================================================================
+
+void TransformationGizmo::draw(QPainter &painter, const PolylineAnnotation *annotation)
+{
+    if (!annotation) return;
+
+    painter.save();
+    painter.setRenderHint(QPainter::Antialiasing, true);
+
+    QVector<QPoint> points = annotation->points();
+    for (const QPoint& pt : points) {
+        drawArrowHandle(painter, pt, false); // Reuse arrow handle style (blue circle)
+    }
+
+    painter.restore();
+}
+
+int TransformationGizmo::hitTestVertex(const PolylineAnnotation *annotation, const QPoint &point)
+{
+    if (!annotation) return -2; // Nothing hit
+
+    QPointF p(point);
+    QVector<QPoint> points = annotation->points();
+
+    // 1. Check vertices (highest priority)
+    for (int i = 0; i < points.size(); ++i) {
+        qreal dist = QLineF(p, points[i]).length();
+        if (dist <= kArrowHandleRadius + kHitTolerance) {
+            return i; // Return index of hit vertex
+        }
+    }
+
+    // 2. Check body
+    if (annotation->containsPoint(point)) {
+        return -1; // Body hit
+    }
+
+    return -2; // Nothing hit
 }

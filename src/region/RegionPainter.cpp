@@ -6,6 +6,7 @@
 #include "annotations/TextBoxAnnotation.h"
 #include "annotations/EmojiStickerAnnotation.h"
 #include "annotations/ArrowAnnotation.h"
+#include "annotations/PolylineAnnotation.h"
 #include "tools/ToolManager.h"
 #include "ToolbarWidget.h"
 #include "GlassRenderer.h"
@@ -570,6 +571,11 @@ void RegionPainter::drawAnnotations(QPainter& painter)
     if (auto* arrowItem = getSelectedArrowAnnotation()) {
         TransformationGizmo::draw(painter, arrowItem);
     }
+
+    // Draw transformation gizmo for selected polyline annotation
+    if (auto* polylineItem = getSelectedPolylineAnnotation()) {
+        TransformationGizmo::draw(painter, polylineItem);
+    }
 }
 
 void RegionPainter::drawCurrentAnnotation(QPainter& painter)
@@ -626,6 +632,17 @@ ArrowAnnotation* RegionPainter::getSelectedArrowAnnotation() const
     }
     if (m_annotationLayer->selectedIndex() >= 0) {
         return dynamic_cast<ArrowAnnotation*>(m_annotationLayer->selectedItem());
+    }
+    return nullptr;
+}
+
+PolylineAnnotation* RegionPainter::getSelectedPolylineAnnotation() const
+{
+    if (!m_annotationLayer) {
+        return nullptr;
+    }
+    if (m_annotationLayer->selectedIndex() >= 0) {
+        return dynamic_cast<PolylineAnnotation*>(m_annotationLayer->selectedItem());
     }
     return nullptr;
 }

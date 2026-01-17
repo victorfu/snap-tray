@@ -53,7 +53,7 @@ void PolylineAnnotation::draw(QPainter& painter) const
     double arrowLength = qMax(10.0, m_width * 3.0);
     int lastIdx = m_points.size() - 1;
 
-    // Check if we have arrowheads that need line adjustment
+    // Check if we have arrowheads
     bool hasEndArrow = (m_lineEndStyle != LineEndStyle::None);
     bool hasStartArrow = (m_lineEndStyle == LineEndStyle::BothArrow ||
                           m_lineEndStyle == LineEndStyle::BothArrowOutline);
@@ -62,6 +62,17 @@ void PolylineAnnotation::draw(QPainter& painter) const
                            m_lineEndStyle == LineEndStyle::BothArrow ||
                            m_lineEndStyle == LineEndStyle::BothArrowOutline);
     bool needsStartAdjust = hasStartArrow;
+
+    // Determine where to draw the end arrow
+    // To avoid jitter at inflection points, keep arrow at previous vertex
+    // until the new segment is long enough.
+    int arrowTipIdx = lastIdx;
+    if (m_points.size() > 2) {
+        double lastSegmentLen = QLineF(m_points[lastIdx-1], m_points[lastIdx]).length();
+        if (lastSegmentLen < arrowLength) {
+            arrowTipIdx = lastIdx - 1;
+        }
+    }
 
     // Build the path for all segments
     QPainterPath path;
@@ -78,25 +89,21 @@ void PolylineAnnotation::draw(QPainter& painter) const
     }
     path.moveTo(startPoint);
 
-    // Draw middle segments
-    for (int i = 1; i < lastIdx; ++i) {
-        path.lineTo(m_points[i]);
-    }
-
-    // Handle the last segment specially for arrowhead
-    if (needsEndAdjust && m_points.size() >= 2) {
-        // Move line end back to arrowhead base so line doesn't protrude through arrow
-        const QPoint& secondLast = m_points[lastIdx - 1];
-        const QPoint& last = m_points[lastIdx];
-
-        double angle = qAtan2(last.y() - secondLast.y(), last.x() - secondLast.x());
-        QPointF lineEnd(
-            last.x() - arrowLength * qCos(angle),
-            last.y() - arrowLength * qSin(angle)
-        );
-        path.lineTo(lineEnd);
-    } else {
-        path.lineTo(m_points[lastIdx]);
+    // Draw segments
+    for (int i = 1; i <= lastIdx; ++i) {
+        QPointF target = m_points[i];
+        
+        // Check if this vertex needs adjustment for the end arrow
+        if (needsEndAdjust && i == arrowTipIdx) {
+             const QPoint& prev = m_points[i - 1];
+             double angle = qAtan2(target.y() - prev.y(), target.x() - prev.x());
+             target = QPointF(
+                target.x() - arrowLength * qCos(angle),
+                target.y() - arrowLength * qSin(angle)
+             );
+        }
+        
+        path.lineTo(target);
     }
 
     painter.drawPath(path);
@@ -106,20 +113,20 @@ void PolylineAnnotation::draw(QPainter& painter) const
     case LineEndStyle::None:
         break;
     case LineEndStyle::EndArrow:
-        drawArrowhead(painter, m_points[lastIdx - 1], m_points[lastIdx], true);
+        drawArrowhead(painter, m_points[arrowTipIdx - 1], m_points[arrowTipIdx], true);
         break;
     case LineEndStyle::EndArrowOutline:
-        drawArrowhead(painter, m_points[lastIdx - 1], m_points[lastIdx], false);
+        drawArrowhead(painter, m_points[arrowTipIdx - 1], m_points[arrowTipIdx], false);
         break;
     case LineEndStyle::EndArrowLine:
-        drawArrowheadLine(painter, m_points[lastIdx - 1], m_points[lastIdx]);
+        drawArrowheadLine(painter, m_points[arrowTipIdx - 1], m_points[arrowTipIdx]);
         break;
     case LineEndStyle::BothArrow:
-        drawArrowhead(painter, m_points[lastIdx - 1], m_points[lastIdx], true);
+        drawArrowhead(painter, m_points[arrowTipIdx - 1], m_points[arrowTipIdx], true);
         drawArrowhead(painter, m_points[1], m_points[0], true);
         break;
     case LineEndStyle::BothArrowOutline:
-        drawArrowhead(painter, m_points[lastIdx - 1], m_points[lastIdx], false);
+        drawArrowhead(painter, m_points[arrowTipIdx - 1], m_points[arrowTipIdx], false);
         drawArrowhead(painter, m_points[1], m_points[0], false);
         break;
     }
@@ -233,9 +240,46 @@ void PolylineAnnotation::updateLastPoint(const QPoint& point)
     }
 }
 
+void PolylineAnnotation::setPoint(int index, const QPoint& point)
+{
+    if (index >= 0 && index < m_points.size()) {
+        m_points[index] = point;
+    }
+}
+
 void PolylineAnnotation::removeLastPoint()
 {
     if (!m_points.isEmpty()) {
         m_points.removeLast();
+    }
+}
+
+bool PolylineAnnotation::containsPoint(const QPoint& pos) const
+{
+    if (m_points.size() < 2) {
+        return false;
+    }
+
+    // Create a path from the points
+    QPainterPath path;
+    path.moveTo(m_points[0]);
+    for (int i = 1; i < m_points.size(); ++i) {
+        path.lineTo(m_points[i]);
+    }
+
+    // Use QPainterPathStroker to create a widened path for hit testing
+    QPainterPathStroker stroker;
+    stroker.setWidth(qMax(10, m_width + 6));  // At least 10px tolerance
+    stroker.setCapStyle(Qt::RoundCap);
+    stroker.setJoinStyle(Qt::RoundJoin);
+
+    QPainterPath strokedPath = stroker.createStroke(path);
+    return strokedPath.contains(pos);
+}
+
+void PolylineAnnotation::moveBy(const QPoint& delta)
+{
+    for (QPoint& point : m_points) {
+        point += delta;
     }
 }

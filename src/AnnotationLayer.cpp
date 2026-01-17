@@ -6,6 +6,7 @@
 #include "annotations/StepBadgeAnnotation.h"
 #include "annotations/EmojiStickerAnnotation.h"
 #include "annotations/ArrowAnnotation.h"
+#include "annotations/PolylineAnnotation.h"
 #include "annotations/ErasedItemsGroup.h"
 #include <QImage>
 #include <QPixmap>
@@ -282,6 +283,21 @@ int AnnotationLayer::hitTestArrow(const QPoint &pos) const
     for (int i = static_cast<int>(m_items.size()) - 1; i >= 0; --i) {
         if (auto* arrowItem = dynamic_cast<ArrowAnnotation*>(m_items[i].get())) {
             if (arrowItem->containsPoint(pos)) {
+                return i;
+            }
+        }
+    }
+    return -1;
+}
+
+int AnnotationLayer::hitTestPolyline(const QPoint &pos) const
+{
+    // Iterate in reverse order (top-most items first)
+    for (int i = static_cast<int>(m_items.size()) - 1; i >= 0; --i) {
+        if (auto* polylineItem = dynamic_cast<PolylineAnnotation*>(m_items[i].get())) {
+            // PolylineAnnotation doesn't have containsPoint yet, we need to add it!
+            // But we can cast and call it if we add it to PolylineAnnotation
+            if (polylineItem->containsPoint(pos)) {
                 return i;
             }
         }

@@ -54,6 +54,7 @@ public:
     int hitTestText(const QPoint &pos) const;
     int hitTestEmojiSticker(const QPoint &pos) const;
     int hitTestArrow(const QPoint &pos) const;
+    int hitTestPolyline(const QPoint &pos) const;
     void setSelectedIndex(int index) { m_selectedIndex = index; }
     int selectedIndex() const { return m_selectedIndex; }
     AnnotationItem* selectedItem();

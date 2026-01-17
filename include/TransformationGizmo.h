@@ -10,6 +10,7 @@
 class TextBoxAnnotation;
 class EmojiStickerAnnotation;
 class ArrowAnnotation;
+class PolylineAnnotation;
 
 // Handle types for hit-testing transformation gizmo
 enum class GizmoHandle {
@@ -103,6 +104,16 @@ public:
      * @return ArrowStart, ArrowEnd, ArrowControl, Body, or None
      */
     static GizmoHandle hitTest(const ArrowAnnotation *annotation, const QPoint &point);
+
+    // PolylineAnnotation overloads
+    static void draw(QPainter &painter, const PolylineAnnotation *annotation);
+    
+    /**
+     * @brief Hit-test polyline vertices.
+     * @return Index of the vertex (0..N) or -1 if body is hit, -2 if nothing hit.
+     * Note: This returns an int index, not GizmoHandle, because polylines have dynamic vertices.
+     */
+    static int hitTestVertex(const PolylineAnnotation *annotation, const QPoint &point);
 
 private:
     static void drawDashedBorder(QPainter &painter, const QPolygonF &polygon);

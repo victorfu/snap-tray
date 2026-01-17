@@ -19,6 +19,7 @@ class RegionControlWidget;
 class TextBoxAnnotation;
 class EmojiStickerAnnotation;
 class ArrowAnnotation;
+class PolylineAnnotation;
 class MultiRegionManager;
 
 /**
@@ -94,6 +95,7 @@ private:
     TextBoxAnnotation* getSelectedTextAnnotation() const;
     EmojiStickerAnnotation* getSelectedEmojiStickerAnnotation() const;
     ArrowAnnotation* getSelectedArrowAnnotation() const;
+    PolylineAnnotation* getSelectedPolylineAnnotation() const;
 
     // Dependencies (non-owning pointers)
     SelectionStateManager* m_selectionManager = nullptr;

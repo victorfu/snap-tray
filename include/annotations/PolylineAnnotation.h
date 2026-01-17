@@ -29,11 +29,14 @@ public:
     void draw(QPainter& painter) const override;
     QRect boundingRect() const override;
     std::unique_ptr<AnnotationItem> clone() const override;
+    bool containsPoint(const QPoint& point) const;
 
     // Point management
     void addPoint(const QPoint& point);
     void updateLastPoint(const QPoint& point);
+    void setPoint(int index, const QPoint& point);
     void removeLastPoint();
+    void moveBy(const QPoint& delta);
     int pointCount() const { return m_points.size(); }
     QVector<QPoint> points() const { return m_points; }
 

@@ -10,6 +10,7 @@
 #include "annotations/TextBoxAnnotation.h"
 #include "annotations/EmojiStickerAnnotation.h"
 #include "annotations/ArrowAnnotation.h"
+#include "annotations/PolylineAnnotation.h"
 #include "cursor/CursorManager.h"
 #include "tools/ToolManager.h"
 #include "ToolbarWidget.h"
@@ -200,6 +201,11 @@ void RegionInputHandler::handleMousePress(QMouseEvent* event)
                 return;
             }
 
+            // Check polyline annotations
+            if (handlePolylineAnnotationPress(event->pos())) {
+                return;
+            }
+
             // Clear selection if clicking elsewhere
             if (m_annotationLayer->selectedIndex() >= 0) {
                 m_annotationLayer->clearSelection();
@@ -269,6 +275,11 @@ void RegionInputHandler::handleMouseMove(QMouseEvent* event)
         return;
     }
 
+    // Handle polyline annotation dragging/vertex manipulation
+    if (handlePolylineAnnotationMove(event->pos())) {
+        return;
+    }
+
     // Window detection during hover
     handleWindowDetectionMove(event->pos());
 
@@ -314,6 +325,11 @@ void RegionInputHandler::handleMouseRelease(QMouseEvent* event)
 
         // Handle arrow annotation drag/handle release
         if (handleArrowAnnotationRelease()) {
+            return;
+        }
+
+        // Handle polyline annotation drag/vertex release
+        if (handlePolylineAnnotationRelease()) {
             return;
         }
 
@@ -1432,4 +1448,100 @@ bool RegionInputHandler::handleArrowAnnotationRelease()
     m_activeArrowHandle = GizmoHandle::None;
     emitCursorChangeIfNeeded(Qt::ArrowCursor);
     return true;
+}
+
+// ============================================================================
+// Polyline Annotation Handlers
+// ============================================================================
+
+PolylineAnnotation* RegionInputHandler::getSelectedPolylineAnnotation() const {
+    if (m_annotationLayer->selectedIndex() < 0) return nullptr;
+    return dynamic_cast<PolylineAnnotation*>(m_annotationLayer->selectedItem());
+}
+
+bool RegionInputHandler::handlePolylineAnnotationPress(const QPoint& pos) {
+    if (auto* polylineItem = getSelectedPolylineAnnotation()) {
+        int vertexIndex = TransformationGizmo::hitTestVertex(polylineItem, pos);
+        if (vertexIndex >= 0) {
+            // Vertex hit
+            m_isPolylineDragging = true;
+            m_activePolylineVertexIndex = vertexIndex;
+            m_polylineDragStart = pos;
+            emitCursorChangeIfNeeded(Qt::CrossCursor); 
+            if (m_parentWidget) m_parentWidget->setFocus();
+            emit updateRequested();
+            return true;
+        } else if (vertexIndex == -1) {
+             // Body hit
+             m_isPolylineDragging = true;
+             m_activePolylineVertexIndex = -1;
+             m_polylineDragStart = pos;
+             emitCursorChangeIfNeeded(Qt::SizeAllCursor);
+             if (m_parentWidget) m_parentWidget->setFocus();
+             emit updateRequested();
+             return true;
+        }
+    }
+
+    // Check hit test for unselected items
+    int hitIndex = m_annotationLayer->hitTestPolyline(pos);
+    if (hitIndex >= 0) {
+        m_annotationLayer->setSelectedIndex(hitIndex);
+        
+        // Default to dragging body on initial selection
+        m_isPolylineDragging = true;
+        m_activePolylineVertexIndex = -1;  // Start with body drag
+        m_polylineDragStart = pos;
+        
+        // Check if we actually hit a vertex though, to be precise
+        if (auto* polylineItem = getSelectedPolylineAnnotation()) {
+             int vertexIndex = TransformationGizmo::hitTestVertex(polylineItem, pos);
+             if (vertexIndex >= 0) {
+                 m_activePolylineVertexIndex = vertexIndex;
+                 emitCursorChangeIfNeeded(Qt::CrossCursor);
+             } else {
+                 emitCursorChangeIfNeeded(Qt::SizeAllCursor);
+             }
+        }
+        
+        if (m_parentWidget) m_parentWidget->setFocus();
+        emit updateRequested();
+        return true;
+    }
+    return false;
+}
+
+bool RegionInputHandler::handlePolylineAnnotationMove(const QPoint& pos) {
+    if (m_isPolylineDragging && m_annotationLayer->selectedIndex() >= 0) {
+        auto* polylineItem = getSelectedPolylineAnnotation();
+        if (polylineItem) {
+             QPoint delta = pos - m_polylineDragStart;
+             
+             if (m_activePolylineVertexIndex >= 0) {
+                 // Move specific vertex
+                 QPoint currentPos = polylineItem->points()[m_activePolylineVertexIndex];
+                 polylineItem->setPoint(m_activePolylineVertexIndex, currentPos + delta);
+             } else {
+                 // Move entire polyline
+                 polylineItem->moveBy(delta);
+             }
+             
+             m_polylineDragStart = pos;
+             m_annotationLayer->invalidateCache();
+             emit updateRequested();
+             return true;
+        }
+    }
+    return false;
+}
+
+bool RegionInputHandler::handlePolylineAnnotationRelease() {
+    if (m_isPolylineDragging) {
+        m_isPolylineDragging = false;
+        m_activePolylineVertexIndex = -1;
+        emitCursorChangeIfNeeded(Qt::ArrowCursor);
+        emit updateRequested();
+        return true;
+    }
+    return false;
 }
