@@ -1348,25 +1348,20 @@ bool RegionInputHandler::handleArrowAnnotationPress(const QPoint& pos)
 
     // Check if clicking on a different arrow annotation
     int hitIndex = m_annotationLayer->hitTestArrow(pos);
-    qDebug() << "handleArrowAnnotationPress: hitTestArrow returned" << hitIndex;
     if (hitIndex < 0) {
         return false;
     }
 
     // Select this arrow annotation
     m_annotationLayer->setSelectedIndex(hitIndex);
-    qDebug() << "handleArrowAnnotationPress: setSelectedIndex to" << hitIndex;
 
     // Start dragging by default when clicking on the arrow body
     if (auto* arrowItem = getSelectedArrowAnnotation()) {
-        qDebug() << "handleArrowAnnotationPress: got arrow item, testing gizmo hit";
         GizmoHandle handle = TransformationGizmo::hitTest(arrowItem, pos);
         m_isArrowDragging = true;
         m_activeArrowHandle = (handle != GizmoHandle::None) ? handle : GizmoHandle::Body;
         m_arrowDragStart = pos;
         emitCursorChangeIfNeeded(Qt::SizeAllCursor);
-    } else {
-        qDebug() << "handleArrowAnnotationPress: getSelectedArrowAnnotation returned nullptr!";
     }
 
     if (m_parentWidget) {

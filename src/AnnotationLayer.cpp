@@ -278,12 +278,9 @@ int AnnotationLayer::hitTestEmojiSticker(const QPoint &pos) const
 
 int AnnotationLayer::hitTestArrow(const QPoint &pos) const
 {
-    qDebug() << "hitTestArrow: checking" << m_items.size() << "items for pos:" << pos;
     // Iterate in reverse order (top-most items first)
     for (int i = static_cast<int>(m_items.size()) - 1; i >= 0; --i) {
-        qDebug() << "  item" << i << "type:" << typeid(*m_items[i]).name();
         if (auto* arrowItem = dynamic_cast<ArrowAnnotation*>(m_items[i].get())) {
-            qDebug() << "    is ArrowAnnotation, calling containsPoint";
             if (arrowItem->containsPoint(pos)) {
                 return i;
             }

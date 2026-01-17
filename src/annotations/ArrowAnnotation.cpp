@@ -226,10 +226,6 @@ QRect ArrowAnnotation::boundingRect() const
 
 bool ArrowAnnotation::containsPoint(const QPoint &pos) const
 {
-    qDebug() << "ArrowAnnotation::containsPoint checking pos:" << pos
-             << "against start:" << m_start << "end:" << m_end
-             << "control:" << m_controlPoint << "width:" << m_width;
-
     // Create the Bézier curve path
     QPainterPath curvePath;
     curvePath.moveTo(m_start);
@@ -242,9 +238,7 @@ bool ArrowAnnotation::containsPoint(const QPoint &pos) const
     stroker.setJoinStyle(Qt::RoundJoin);
 
     QPainterPath strokedPath = stroker.createStroke(curvePath);
-    bool result = strokedPath.contains(pos);
-    qDebug() << "  containsPoint result:" << result << "bounding:" << strokedPath.boundingRect();
-    return result;
+    return strokedPath.contains(pos);
 }
 
 bool ArrowAnnotation::isCurved() const

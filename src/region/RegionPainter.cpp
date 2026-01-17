@@ -568,7 +568,6 @@ void RegionPainter::drawAnnotations(QPainter& painter)
 
     // Draw transformation gizmo for selected arrow annotation
     if (auto* arrowItem = getSelectedArrowAnnotation()) {
-        qDebug() << "RegionPainter::drawAnnotations: drawing arrow gizmo for selected arrow";
         TransformationGizmo::draw(painter, arrowItem);
     }
 }
