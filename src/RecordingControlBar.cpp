@@ -138,6 +138,9 @@ RecordingControlBar::RecordingControlBar(QWidget *parent)
 
 RecordingControlBar::~RecordingControlBar()
 {
+    // Clean up per-widget cursor state before destruction (ensures Drag context is cleared)
+    CursorManager::instance().clearAllForWidget(this);
+
     if (m_tooltip) {
         m_tooltip->deleteLater();
         m_tooltip = nullptr;

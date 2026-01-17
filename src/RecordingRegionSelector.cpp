@@ -45,6 +45,8 @@ RecordingRegionSelector::RecordingRegionSelector(QWidget *parent)
 
 RecordingRegionSelector::~RecordingRegionSelector()
 {
+    // Clean up per-widget cursor state before destruction
+    CursorManager::instance().clearAllForWidget(this);
 }
 
 void RecordingRegionSelector::setupIcons()

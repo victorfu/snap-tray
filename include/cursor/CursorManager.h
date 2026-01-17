@@ -146,25 +146,6 @@ public:
     void clearContexts(std::initializer_list<CursorContext> contexts);
 
     // ========================================================================
-    // Transaction Support
-    // ========================================================================
-
-    /**
-     * @brief Begin a cursor transaction.
-     *
-     * During a transaction, cursor updates are deferred until commitTransaction().
-     * This prevents cursor flickering during complex state changes like mode transitions.
-     */
-    void beginTransaction();
-
-    /**
-     * @brief Commit the cursor transaction and apply pending cursor.
-     *
-     * Applies the final cursor state after all operations in the transaction.
-     */
-    void commitTransaction();
-
-    // ========================================================================
     // Per-Widget Cursor Management
     // ========================================================================
 
@@ -340,9 +321,6 @@ private:
     HoverTarget m_hoverTarget = HoverTarget::None;
     DragState m_dragState = DragState::None;
     int m_hoverHandleIndex = -1;
-
-    // Transaction support
-    bool m_inTransaction = false;
 };
 
 #endif // CURSORMANAGER_H

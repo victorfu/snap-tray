@@ -200,6 +200,9 @@ PinWindow::PinWindow(const QPixmap& screenshot, const QPoint& position, QWidget*
 
 PinWindow::~PinWindow()
 {
+    // Clean up cursor state before destruction (ensures Drag context is cleared)
+    CursorManager::instance().clearAll();
+
     // Stop live capture if active
     if (m_isLiveMode) {
         stopLiveCapture();

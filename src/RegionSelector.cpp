@@ -562,6 +562,9 @@ RegionSelector::RegionSelector(QWidget* parent)
 
 RegionSelector::~RegionSelector()
 {
+    // Clean up cursor state before destruction
+    CursorManager::instance().clearAll();
+
     // Clean up color picker dialog
     if (m_colorPickerDialog) {
         delete m_colorPickerDialog;

@@ -202,6 +202,9 @@ ScreenCanvas::ScreenCanvas(QWidget* parent)
 
 ScreenCanvas::~ScreenCanvas()
 {
+    // Clean up cursor state before destruction
+    CursorManager::instance().clearAll();
+
     delete m_colorPickerDialog;
     qDebug() << "ScreenCanvas: Destroyed";
 }

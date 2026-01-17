@@ -108,7 +108,7 @@ bool CursorManager::hasContext(CursorContext context) const
 void CursorManager::clearAll()
 {
     m_cursorStack.clear();
-    if (m_targetWidget && !m_inTransaction) {
+    if (m_targetWidget) {
         m_targetWidget->setCursor(Qt::ArrowCursor);
         m_lastAppliedCursor = QCursor(Qt::ArrowCursor);
     }
@@ -123,21 +123,6 @@ void CursorManager::clearContexts(std::initializer_list<CursorContext> contexts)
                                   });
         m_cursorStack.erase(it, m_cursorStack.end());
     }
-    applyCursor();
-}
-
-// ============================================================================
-// Transaction Support
-// ============================================================================
-
-void CursorManager::beginTransaction()
-{
-    m_inTransaction = true;
-}
-
-void CursorManager::commitTransaction()
-{
-    m_inTransaction = false;
     applyCursor();
 }
 
@@ -364,7 +349,7 @@ Qt::CursorShape CursorManager::cursorForEdge(ResizeHandler::Edge edge)
 
 void CursorManager::applyCursor()
 {
-    if (!m_targetWidget || m_inTransaction) {
+    if (!m_targetWidget) {
         return;
     }
 
