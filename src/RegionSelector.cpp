@@ -1498,6 +1498,14 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
 void RegionSelector::closeEvent(QCloseEvent* event)
 {
     m_isClosing = true;
+
+    // Complete cursor cleanup - matches PinWindow::exitAnnotationMode() pattern
+    auto& cm = CursorManager::instance();
+    cm.beginTransaction();
+    cm.resetState();
+    cm.clearAll();
+    cm.commitTransaction();
+
     QWidget::closeEvent(event);
 }
 

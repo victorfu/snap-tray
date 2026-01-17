@@ -911,11 +911,17 @@ void RegionInputHandler::handleHoverMove(const QPoint& pos, Qt::MouseButtons but
             cm.setHoverTarget(HoverTarget::ResizeHandle, static_cast<int>(handle));
             return;
         }
+
+        // Check if inside selection region (show move cursor)
+        if (m_selectionManager->isComplete() && m_selectionManager->hitTestMove(pos)) {
+            cm.setHoverTarget(HoverTarget::SelectionBody);
+            return;
+        }
     }
 
-    // No special hover target - reset and let tool cursor show
+    // No special hover target - reset and let input state control cursor
     cm.setHoverTarget(HoverTarget::None);
-    emit toolCursorRequested();
+    cm.setInputState(InputState::Selecting);
 
     // Handle eraser tool mouse move for hover highlighting
     if (m_currentTool == ToolId::Eraser && m_toolManager) {
@@ -1189,27 +1195,6 @@ Qt::CursorShape RegionInputHandler::getCursorForGizmoHandle(GizmoHandle handle) 
         return Qt::SizeAllCursor;
     default:
         return Qt::ArrowCursor;
-    }
-}
-
-void RegionInputHandler::updateCursorForHandle(SelectionStateManager::ResizeHandle handle)
-{
-    using ResizeHandle = SelectionStateManager::ResizeHandle;
-
-    if (handle != ResizeHandle::None) {
-        emitCursorChangeIfNeeded(CursorManager::cursorForHandle(handle));
-        return;
-    }
-
-    // Handle::None - check for move or outside click
-    if (m_selectionManager->hitTestMove(m_currentPoint)) {
-        emitCursorChangeIfNeeded(Qt::SizeAllCursor);
-    }
-    else {
-        QRect sel = m_selectionManager->selectionRect();
-        ResizeHandle outsideHandle = SelectionResizeHelper::determineHandleFromOutsideClick(
-            m_currentPoint, sel);
-        emitCursorChangeIfNeeded(CursorManager::cursorForHandle(outsideHandle));
     }
 }
 
