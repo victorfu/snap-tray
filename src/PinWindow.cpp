@@ -152,7 +152,7 @@ PinWindow::PinWindow(const QPixmap& screenshot, const QPoint& position, QWidget*
     }
 
     // Load watermark settings (used by context menu when created lazily)
-    m_watermarkSettings = WatermarkRenderer::loadSettings();
+    m_watermarkSettings = WatermarkSettingsManager::instance().load();
 
     // Context menu is now created lazily in contextMenuEvent() to improve initial performance
 

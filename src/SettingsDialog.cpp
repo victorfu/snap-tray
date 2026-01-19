@@ -5,6 +5,7 @@
 #include "OCRManager.h"
 #include "capture/IAudioCaptureEngine.h"
 #include "settings/Settings.h"
+#include "settings/AutoBlurSettingsManager.h"
 #include "settings/FileSettingsManager.h"
 #include "settings/PinWindowSettingsManager.h"
 #include "settings/OCRSettingsManager.h"
@@ -197,7 +198,7 @@ void SettingsDialog::setupGeneralTab(QWidget* tab)
     layout->addWidget(autoBlurLabel);
 
     // Load current settings
-    auto blurOptions = AutoBlurManager::loadSettings();
+    auto blurOptions = AutoBlurSettingsManager::instance().load();
 
     // Blur intensity slider
     QHBoxLayout* intensityLayout = new QHBoxLayout();
@@ -505,7 +506,7 @@ void SettingsDialog::setupWatermarkTab(QWidget* tab)
     mainLayout->addStretch();
 
     // Load current settings
-    WatermarkRenderer::Settings settings = WatermarkRenderer::loadSettings();
+    WatermarkRenderer::Settings settings = WatermarkSettingsManager::instance().load();
     m_watermarkEnabledCheckbox->setChecked(settings.enabled);
     m_watermarkApplyToRecordingCheckbox->setChecked(settings.applyToRecording);
     m_watermarkImagePathEdit->setText(settings.imagePath);
@@ -940,7 +941,7 @@ void SettingsDialog::onSave()
         m_watermarkPositionCombo->currentData().toInt());
     watermarkSettings.imageScale = m_watermarkImageScaleSlider->value();
     watermarkSettings.margin = m_watermarkMarginSlider->value();
-    WatermarkRenderer::saveSettings(watermarkSettings);
+    WatermarkSettingsManager::instance().save(watermarkSettings);
 
 #ifdef SNAPTRAY_ENABLE_DEV_FEATURES
     // Save recording settings
@@ -978,12 +979,12 @@ void SettingsDialog::onSave()
 #endif
 
     // Save auto-blur settings
-    AutoBlurManager::Options blurOptions;
+    AutoBlurSettingsManager::Options blurOptions;
     blurOptions.blurIntensity = m_blurIntensitySlider->value();
     blurOptions.blurType = m_blurTypeCombo->currentIndex() == 1
-        ? AutoBlurManager::BlurType::Gaussian
-        : AutoBlurManager::BlurType::Pixelate;
-    AutoBlurManager::saveSettings(blurOptions);
+        ? AutoBlurSettingsManager::BlurType::Gaussian
+        : AutoBlurSettingsManager::BlurType::Pixelate;
+    AutoBlurSettingsManager::instance().save(blurOptions);
 
     // Save Pin Window settings
     auto& pinSettings = PinWindowSettingsManager::instance();

@@ -1,25 +1,17 @@
 #include "detection/AutoBlurManager.h"
 #include "detection/FaceDetector.h"
-#include "settings/Settings.h"
+#include "settings/AutoBlurSettingsManager.h"
 
 #include <QDebug>
 #include <QPainter>
-#include <QSettings>
 
 #include <opencv2/imgproc.hpp>
-
-// QSettings keys
-static const char* kSettingsGroup = "detection";
-static const char* kAutoBlurEnabled = "autoBlurEnabled";
-static const char* kDetectFaces = "detectFaces";
-static const char* kBlurIntensity = "blurIntensity";
-static const char* kBlurType = "blurType";
 
 AutoBlurManager::AutoBlurManager(QObject* parent)
     : QObject(parent)
     , m_faceDetector(std::make_unique<FaceDetector>())
 {
-    m_options = loadSettings();
+    m_options = AutoBlurSettingsManager::instance().load();
 }
 
 AutoBlurManager::~AutoBlurManager() = default;
@@ -179,38 +171,4 @@ void AutoBlurManager::applyPixelate(QImage& image, const QRect& region, int inte
     // Paint back to original image
     QPainter painter(&image);
     painter.drawImage(region.topLeft(), pixelated);
-}
-
-AutoBlurManager::Options AutoBlurManager::loadSettings()
-{
-    Options options;
-
-    QSettings settings = SnapTray::getSettings();
-    settings.beginGroup(kSettingsGroup);
-
-    options.enabled = settings.value(kAutoBlurEnabled, true).toBool();
-    options.detectFaces = settings.value(kDetectFaces, true).toBool();
-    options.blurIntensity = settings.value(kBlurIntensity, 50).toInt();
-
-    QString blurTypeStr = settings.value(kBlurType, "pixelate").toString();
-    options.blurType = (blurTypeStr == "gaussian")
-                           ? BlurType::Gaussian
-                           : BlurType::Pixelate;
-
-    settings.endGroup();
-
-    return options;
-}
-
-void AutoBlurManager::saveSettings(const Options& options)
-{
-    QSettings settings = SnapTray::getSettings();
-    settings.beginGroup(kSettingsGroup);
-
-    settings.setValue(kAutoBlurEnabled, options.enabled);
-    settings.setValue(kDetectFaces, options.detectFaces);
-    settings.setValue(kBlurIntensity, options.blurIntensity);
-    settings.setValue(kBlurType, options.blurType == BlurType::Gaussian ? "gaussian" : "pixelate");
-
-    settings.endGroup();
 }

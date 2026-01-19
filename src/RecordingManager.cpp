@@ -746,7 +746,7 @@ void RecordingManager::startRecordingAfterCountdown()
     }
 
     // Load watermark settings for recording
-    m_watermarkSettings = WatermarkRenderer::loadSettings();
+    m_watermarkSettings = WatermarkSettingsManager::instance().load();
     if (m_watermarkSettings.applyToRecording && !m_watermarkSettings.imagePath.isEmpty()) {
         m_watermarkSettings.enabled = true;  // Enable for render() to work
         m_cachedWatermark = QPixmap(m_watermarkSettings.imagePath);

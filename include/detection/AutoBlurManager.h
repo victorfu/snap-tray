@@ -1,6 +1,8 @@
 #ifndef AUTOBLURMANAGER_H
 #define AUTOBLURMANAGER_H
 
+#include "settings/AutoBlurSettingsManager.h"
+
 #include <QImage>
 #include <QObject>
 #include <QRect>
@@ -12,31 +14,16 @@ class FaceDetector;
 /**
  * @brief Manages auto-detection and blurring of sensitive content.
  *
- * Orchestrates face detection, applies blur effects,
- * and manages settings persistence via QSettings.
+ * Orchestrates face detection and applies blur effects.
+ * Settings are managed via AutoBlurSettingsManager.
  */
 class AutoBlurManager : public QObject
 {
     Q_OBJECT
 
 public:
-    /**
-     * @brief Blur effect type.
-     */
-    enum class BlurType {
-        Gaussian,
-        Pixelate
-    };
-
-    /**
-     * @brief Detection options loaded from settings.
-     */
-    struct Options {
-        bool enabled = true;
-        bool detectFaces = true;
-        int blurIntensity = 50;         ///< 1-100
-        BlurType blurType = BlurType::Pixelate;
-    };
+    using BlurType = AutoBlurSettingsManager::BlurType;
+    using Options = AutoBlurSettingsManager::Options;
 
     /**
      * @brief Detection result.
@@ -84,10 +71,6 @@ public:
      * @return Detection result
      */
     DetectionResult detectAndBlur(QImage& image);
-
-    // Settings management
-    static Options loadSettings();
-    static void saveSettings(const Options& options);
 
     /**
      * @brief Get current options.

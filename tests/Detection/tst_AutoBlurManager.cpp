@@ -1,5 +1,6 @@
 #include <QtTest>
 #include "detection/AutoBlurManager.h"
+#include "settings/AutoBlurSettingsManager.h"
 #include "settings/Settings.h"
 #include <QImage>
 #include <QPainter>
@@ -171,20 +172,20 @@ void tst_AutoBlurManager::testSaveAndLoadSettings()
 {
     clearTestSettings();
 
-    AutoBlurManager::Options opts;
+    AutoBlurSettingsManager::Options opts;
     opts.enabled = true;
     opts.detectFaces = false;
     opts.blurIntensity = 80;
-    opts.blurType = AutoBlurManager::BlurType::Gaussian;
+    opts.blurType = AutoBlurSettingsManager::BlurType::Gaussian;
 
-    AutoBlurManager::saveSettings(opts);
+    AutoBlurSettingsManager::instance().save(opts);
 
     // Load settings from storage
-    AutoBlurManager::Options loaded = AutoBlurManager::loadSettings();
+    AutoBlurSettingsManager::Options loaded = AutoBlurSettingsManager::instance().load();
     QVERIFY(loaded.enabled);
     QVERIFY(!loaded.detectFaces);
     QCOMPARE(loaded.blurIntensity, 80);
-    QCOMPARE(loaded.blurType, AutoBlurManager::BlurType::Gaussian);
+    QCOMPARE(loaded.blurType, AutoBlurSettingsManager::BlurType::Gaussian);
 }
 
 void tst_AutoBlurManager::testSettingsDefaults()
@@ -192,11 +193,11 @@ void tst_AutoBlurManager::testSettingsDefaults()
     clearTestSettings();
 
     // Load settings when none exist - should use defaults
-    AutoBlurManager::Options opts = AutoBlurManager::loadSettings();
+    AutoBlurSettingsManager::Options opts = AutoBlurSettingsManager::instance().load();
     QVERIFY(opts.enabled);
     QVERIFY(opts.detectFaces);
     QCOMPARE(opts.blurIntensity, 50);
-    QCOMPARE(opts.blurType, AutoBlurManager::BlurType::Pixelate);
+    QCOMPARE(opts.blurType, AutoBlurSettingsManager::BlurType::Pixelate);
 }
 
 void tst_AutoBlurManager::testDetect_EmptyImage()

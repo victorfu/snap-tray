@@ -1,16 +1,7 @@
 #include "WatermarkRenderer.h"
-#include "settings/Settings.h"
 #include "utils/CoordinateHelper.h"
-#include <QSettings>
-#include <QSizeF>
 
-static const char* SETTINGS_KEY_WATERMARK_ENABLED = "watermarkEnabled";
-static const char* SETTINGS_KEY_WATERMARK_IMAGE_PATH = "watermarkImagePath";
-static const char* SETTINGS_KEY_WATERMARK_OPACITY = "watermarkOpacity";
-static const char* SETTINGS_KEY_WATERMARK_POSITION = "watermarkPosition";
-static const char* SETTINGS_KEY_WATERMARK_IMAGE_SCALE = "watermarkImageScale";
-static const char* SETTINGS_KEY_WATERMARK_MARGIN = "watermarkMargin";
-static const char* SETTINGS_KEY_WATERMARK_APPLY_TO_RECORDING = "watermarkApplyToRecording";
+#include <QSizeF>
 
 void WatermarkRenderer::render(QPainter &painter, const QRect &targetRect, const Settings &settings)
 {
@@ -108,35 +99,6 @@ QPixmap WatermarkRenderer::applyToPixmap(const QPixmap &source, const Settings &
     painter.end();
 
     return result;
-}
-
-WatermarkRenderer::Settings WatermarkRenderer::loadSettings()
-{
-    QSettings qsettings = SnapTray::getSettings();
-    Settings settings;
-
-    settings.enabled = qsettings.value(SETTINGS_KEY_WATERMARK_ENABLED, false).toBool();
-    settings.imagePath = qsettings.value(SETTINGS_KEY_WATERMARK_IMAGE_PATH, QString()).toString();
-    settings.opacity = qsettings.value(SETTINGS_KEY_WATERMARK_OPACITY, 0.5).toDouble();
-    settings.position = static_cast<Position>(qsettings.value(SETTINGS_KEY_WATERMARK_POSITION, static_cast<int>(BottomRight)).toInt());
-    settings.imageScale = qsettings.value(SETTINGS_KEY_WATERMARK_IMAGE_SCALE, 100).toInt();
-    settings.margin = qsettings.value(SETTINGS_KEY_WATERMARK_MARGIN, 12).toInt();
-    settings.applyToRecording = qsettings.value(SETTINGS_KEY_WATERMARK_APPLY_TO_RECORDING, false).toBool();
-
-    return settings;
-}
-
-void WatermarkRenderer::saveSettings(const Settings &settings)
-{
-    QSettings qsettings = SnapTray::getSettings();
-
-    qsettings.setValue(SETTINGS_KEY_WATERMARK_ENABLED, settings.enabled);
-    qsettings.setValue(SETTINGS_KEY_WATERMARK_IMAGE_PATH, settings.imagePath);
-    qsettings.setValue(SETTINGS_KEY_WATERMARK_OPACITY, settings.opacity);
-    qsettings.setValue(SETTINGS_KEY_WATERMARK_POSITION, static_cast<int>(settings.position));
-    qsettings.setValue(SETTINGS_KEY_WATERMARK_IMAGE_SCALE, settings.imageScale);
-    qsettings.setValue(SETTINGS_KEY_WATERMARK_MARGIN, settings.margin);
-    qsettings.setValue(SETTINGS_KEY_WATERMARK_APPLY_TO_RECORDING, settings.applyToRecording);
 }
 
 QRect WatermarkRenderer::calculateWatermarkRect(const QRect &targetRect, const QSize &size, Position position, int margin)
