@@ -453,6 +453,10 @@ void ScrollingCaptureManager::setCaptureDirection(CaptureDirection direction)
 
     m_captureDirection = direction;
 
+    // Reset recovery estimate variables to prevent cross-direction contamination
+    m_estimatedScrollPerFrame = 0;
+    m_hasScrollEstimate = false;
+
     // Update toolbar direction display
     if (m_toolbar) {
         m_toolbar->setDirection(direction == CaptureDirection::Vertical

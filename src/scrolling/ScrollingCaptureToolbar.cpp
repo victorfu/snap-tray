@@ -49,7 +49,6 @@ void ScrollingCaptureToolbar::setupUi()
 {
     // Configure buttons using Toolbar::ButtonConfig builder pattern
     // Direction button icon will be updated dynamically based on m_direction
-    // AutoScroll button icon will be updated dynamically based on m_scrollMode
     m_buttons = {
         ButtonConfig(ButtonDirection, "arrow-vertical", "Scroll Direction: Vertical ↕ (Click to toggle)"),
         ButtonConfig(ButtonStart, "play", "Start Capture (Enter/Space)").action(),

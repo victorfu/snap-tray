@@ -80,7 +80,6 @@ signals:
     void stateChanged(State state);
     void directionChanged(CaptureDirection direction);
     void matchStatusChanged(bool matched, double confidence, int lastSuccessfulPos);
-    void scrollModeChanged(ScrollMode mode);
     void autoScrollError(const QString &message);
 
 private slots:
