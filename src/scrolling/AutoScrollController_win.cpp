@@ -59,18 +59,6 @@ bool injectScrollEvent(int deltaPixels, AutoScrollController::ScrollDirection di
         // Positive = scroll up (content moves down)
         input.mi.mouseData = static_cast<DWORD>(wheelDelta);
         break;
-
-    case AutoScrollController::ScrollDirection::Right:
-        input.mi.dwFlags = MOUSEEVENTF_HWHEEL;
-        // Positive = scroll right
-        input.mi.mouseData = static_cast<DWORD>(wheelDelta);
-        break;
-
-    case AutoScrollController::ScrollDirection::Left:
-        input.mi.dwFlags = MOUSEEVENTF_HWHEEL;
-        // Negative = scroll left
-        input.mi.mouseData = static_cast<DWORD>(-wheelDelta);
-        break;
     }
 
     UINT sent = SendInput(1, &input, sizeof(INPUT));
