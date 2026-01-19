@@ -527,7 +527,7 @@ bool RegionInputHandler::handleEmojiStickerAnnotationPress(const QPoint& pos)
                 m_emojiStartScale = emojiItem->scale();
                 QPointF delta = QPointF(pos) - m_emojiStartCenter;
                 m_emojiStartDistance = qSqrt(delta.x() * delta.x() + delta.y() * delta.y());
-                emitCursorChangeIfNeeded(getCursorForGizmoHandle(handle));
+                emitCursorChangeIfNeeded(CursorManager::cursorForGizmoHandle(handle));
             }
             if (m_parentWidget) {
                 m_parentWidget->setFocus();
@@ -562,7 +562,7 @@ bool RegionInputHandler::handleEmojiStickerAnnotationPress(const QPoint& pos)
             m_emojiStartScale = emojiItem->scale();
             QPointF delta = QPointF(pos) - m_emojiStartCenter;
             m_emojiStartDistance = qSqrt(delta.x() * delta.x() + delta.y() * delta.y());
-            emitCursorChangeIfNeeded(getCursorForGizmoHandle(handle));
+            emitCursorChangeIfNeeded(CursorManager::cursorForGizmoHandle(handle));
         }
     }
 
@@ -1240,24 +1240,6 @@ void RegionInputHandler::finishAnnotation()
 // ============================================================================
 // Cursor Helpers
 // ============================================================================
-
-Qt::CursorShape RegionInputHandler::getCursorForGizmoHandle(GizmoHandle handle) const
-{
-    switch (handle) {
-    case GizmoHandle::Rotation:
-        return Qt::CrossCursor;
-    case GizmoHandle::TopLeft:
-    case GizmoHandle::BottomRight:
-        return Qt::SizeFDiagCursor;
-    case GizmoHandle::TopRight:
-    case GizmoHandle::BottomLeft:
-        return Qt::SizeBDiagCursor;
-    case GizmoHandle::Body:
-        return Qt::SizeAllCursor;
-    default:
-        return Qt::ArrowCursor;
-    }
-}
 
 void RegionInputHandler::updateCursorForHandle(SelectionStateManager::ResizeHandle handle)
 {

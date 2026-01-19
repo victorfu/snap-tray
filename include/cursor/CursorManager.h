@@ -12,6 +12,7 @@
 #include "pinwindow/ResizeHandler.h"
 
 class ToolManager;
+enum class GizmoHandle;
 
 /**
  * @brief Cursor context priority levels.
@@ -268,6 +269,14 @@ public:
      * @return Appropriate cursor shape for the edge
      */
     static Qt::CursorShape cursorForEdge(ResizeHandler::Edge edge);
+
+    /**
+     * @brief Get cursor shape for gizmo handle (strongly-typed).
+     *
+     * @param handle The gizmo handle enum value
+     * @return Appropriate cursor shape for the handle
+     */
+    static Qt::CursorShape cursorForGizmoHandle(GizmoHandle handle);
 
 signals:
     /**

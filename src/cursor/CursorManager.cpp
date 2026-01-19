@@ -343,6 +343,30 @@ Qt::CursorShape CursorManager::cursorForEdge(ResizeHandler::Edge edge)
     }
 }
 
+Qt::CursorShape CursorManager::cursorForGizmoHandle(GizmoHandle handle)
+{
+    switch (handle) {
+    case GizmoHandle::Body:
+        return Qt::SizeAllCursor;
+    case GizmoHandle::Rotation:
+        return Qt::PointingHandCursor;
+    case GizmoHandle::TopLeft:
+    case GizmoHandle::BottomRight:
+        return Qt::SizeFDiagCursor;
+    case GizmoHandle::TopRight:
+    case GizmoHandle::BottomLeft:
+        return Qt::SizeBDiagCursor;
+    case GizmoHandle::ArrowStart:
+    case GizmoHandle::ArrowEnd:
+        return Qt::CrossCursor;
+    case GizmoHandle::ArrowControl:
+        return Qt::PointingHandCursor;
+    case GizmoHandle::None:
+    default:
+        return Qt::ArrowCursor;
+    }
+}
+
 // ============================================================================
 // Private Methods
 // ============================================================================
