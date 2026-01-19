@@ -1,5 +1,4 @@
 #include "RecordingManager.h"
-#include "Constants.h"
 #include "RecordingRegionSelector.h"
 #include "RecordingControlBar.h"
 #include "RecordingBoundaryOverlay.h"
@@ -20,7 +19,7 @@
 #include "settings/Settings.h"
 #include "settings/FileSettingsManager.h"
 
-using namespace SnapTray;
+
 
 #include <QGuiApplication>
 #include <QScreen>
@@ -44,8 +43,13 @@ using namespace SnapTray;
 #include <fcntl.h>
 #endif
 
-// Use Timer::kOverlayRenderDelay from Constants.h for the delay before starting
-// frame capture to allow overlay to render fully
+// Local constants for recording (moved from Constants.h)
+namespace {
+constexpr int kDefaultFrameRate = 30;
+constexpr int kMaxFrameRate = 120;
+constexpr int kOverlayRenderDelay = 100;  // ms, delay before capture to allow overlay render
+constexpr int kDurationUpdate = 100;      // ms, recording duration UI update interval
+}
 
 static void syncFile(const QString &path)
 {
@@ -78,7 +82,7 @@ RecordingManager::RecordingManager(QObject *parent)
     , m_clickHighlightEnabled(false)
     , m_targetScreen(nullptr)
     , m_state(State::Idle)
-    , m_frameRate(FrameRate::kDefault)
+    , m_frameRate(kDefaultFrameRate)
     , m_frameCount(0)
     , m_pausedDuration(0)
     , m_pauseStartTime(0)
@@ -240,12 +244,12 @@ void RecordingManager::startFullScreenRecording()
 
     // Load frame rate from settings with validation
     auto settings = SnapTray::getSettings();
-    m_frameRate = settings.value("recording/framerate", FrameRate::kDefault).toInt();
-    if (m_frameRate <= 0 || m_frameRate > FrameRate::kMax) {
+    m_frameRate = settings.value("recording/framerate", kDefaultFrameRate).toInt();
+    if (m_frameRate <= 0 || m_frameRate > kMaxFrameRate) {
         int invalidRate = m_frameRate;
-        m_frameRate = FrameRate::kDefault;
-        qDebug() << "RecordingManager: Invalid frame rate" << invalidRate << ", using default" << FrameRate::kDefault;
-        emit recordingWarning(tr("Invalid frame rate %1, using default %2 FPS.").arg(invalidRate).arg(FrameRate::kDefault));
+        m_frameRate = kDefaultFrameRate;
+        qDebug() << "RecordingManager: Invalid frame rate" << invalidRate << ", using default" << kDefaultFrameRate;
+        emit recordingWarning(tr("Invalid frame rate %1, using default %2 FPS.").arg(invalidRate).arg(kDefaultFrameRate));
     }
 
     // Reset pause tracking
@@ -265,12 +269,12 @@ void RecordingManager::onRegionSelected(const QRect &region, QScreen *screen)
 
     // Load frame rate from settings with validation
     auto settings = SnapTray::getSettings();
-    m_frameRate = settings.value("recording/framerate", FrameRate::kDefault).toInt();
-    if (m_frameRate <= 0 || m_frameRate > FrameRate::kMax) {
+    m_frameRate = settings.value("recording/framerate", kDefaultFrameRate).toInt();
+    if (m_frameRate <= 0 || m_frameRate > kMaxFrameRate) {
         int invalidRate = m_frameRate;
-        m_frameRate = FrameRate::kDefault;
-        qDebug() << "RecordingManager: Invalid frame rate" << invalidRate << ", using default" << FrameRate::kDefault;
-        emit recordingWarning(tr("Invalid frame rate %1, using default %2 FPS.").arg(invalidRate).arg(FrameRate::kDefault));
+        m_frameRate = kDefaultFrameRate;
+        qDebug() << "RecordingManager: Invalid frame rate" << invalidRate << ", using default" << kDefaultFrameRate;
+        emit recordingWarning(tr("Invalid frame rate %1, using default %2 FPS.").arg(invalidRate).arg(kDefaultFrameRate));
     }
 
     // Reset pause tracking
@@ -756,7 +760,7 @@ void RecordingManager::startRecordingAfterCountdown()
 
     // Delay frame capture start to allow boundary overlay to render fully
     qDebug() << "RecordingManager: Delaying capture start for overlay rendering...";
-    QTimer::singleShot(Timer::kOverlayRenderDelay, this, [this]() {
+    QTimer::singleShot(kOverlayRenderDelay, this, [this]() {
         startCaptureTimers();
     });
 
@@ -809,7 +813,7 @@ void RecordingManager::startCaptureTimers()
     // No parent, managed by unique_ptr
     m_durationTimer = std::make_unique<QTimer>(nullptr);
     connect(m_durationTimer.get(), &QTimer::timeout, this, &RecordingManager::updateDuration);
-    m_durationTimer->start(Timer::kDurationUpdate);
+    m_durationTimer->start(kDurationUpdate);
     qDebug() << "RecordingManager: Duration timer started";
 }
 

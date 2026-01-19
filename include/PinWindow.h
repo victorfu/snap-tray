@@ -7,7 +7,7 @@
 #include <QRect>
 #include <QElapsedTimer>
 #include <memory>
-#include "Constants.h"
+
 
 // Shared pixmap type for explicit memory sharing across mosaic annotations
 using SharedPixmap = std::shared_ptr<const QPixmap>;
@@ -299,8 +299,33 @@ private:
     ICaptureEngine* m_captureEngine = nullptr;
     QTimer* m_captureTimer = nullptr;
     QTimer* m_liveIndicatorTimer = nullptr;
-    int m_captureFrameRate = SnapTray::FrameRate::kLivePreview;
+    int m_captureFrameRate = kLivePreviewFps;
     bool m_livePaused = false;
+
+    // ========================================================================
+    // Local constants (previously in Constants.h but only used by PinWindow)
+    // ========================================================================
+
+    // Frame rate for live preview capture
+    static constexpr int kLivePreviewFps = 15;
+
+    // Pin window UI dimensions
+    static constexpr int kMinPinSize = 50;
+    static constexpr int kLiveIndicatorRadius = 6;
+    static constexpr int kLiveIndicatorMargin = 8;
+
+    // Live indicator animation parameters
+    static constexpr double kPulseBase = 0.5;
+    static constexpr double kPulseAmplitude = 0.5;
+    static constexpr double kPulsePeriodMs = 500.0;
+    static constexpr int kMinAlpha = 150;
+    static constexpr int kAlphaRange = 100;
+    static constexpr int kPausedDarkerPercent = 80;
+
+    // Misc PinWindow-specific constants
+    static constexpr int kFullOpacity = 255;
+    static constexpr int kMaxFileCollisionRetries = 100;
+    static constexpr int kMosaicBlockSize = 12;
 
     void updateLiveFrame();
 };

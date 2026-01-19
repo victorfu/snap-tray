@@ -8,7 +8,6 @@
 #include "settings/Settings.h"
 #include "ui/GlobalToast.h"
 #include "video/RecordingPreviewWindow.h"
-#include "Constants.h"
 
 #include <QFile>
 #include <QPointer>
@@ -28,6 +27,18 @@
 #include <QPainter>
 #include <QFont>
 #include <QFontMetrics>
+
+namespace {
+// Text pixmap rendering constants (for paste-as-text feature)
+constexpr int kMaxTextPixmapWidth = 800;
+constexpr int kMaxTextPixmapHeight = 600;
+constexpr int kTextPixmapPadding = 16;
+const QColor kStickyNoteBackground{255, 255, 240};  // Light yellow
+const QColor kTextAnnotationForeground{40, 40, 40}; // Dark gray text
+
+// Toast timeout
+constexpr int kUIToastTimeout = 2000;
+}
 
 // Helper to check if a hotkey string is a native keycode format (e.g., "Native:0x2C")
 static bool isNativeKeyCode(const QString& hotkeyStr, quint32& outKeyCode)
@@ -71,7 +82,7 @@ void MainApplication::activate()
             QStringLiteral("SnapTray"),
             tr("SnapTray is already running"),
             QSystemTrayIcon::Information,
-            SnapTray::Timer::kUIToastTimeout);
+            kUIToastTimeout);
     }
 }
 
@@ -721,23 +732,23 @@ QPixmap MainApplication::renderTextToPixmap(const QString &text)
     int totalHeight = lines.count() * fm.lineSpacing();
 
     // Limit maximum size
-    maxWidth = qMin(maxWidth, SnapTray::UI::TextAnnotation::kMaxPixmapWidth);
-    totalHeight = qMin(totalHeight, SnapTray::UI::TextAnnotation::kMaxPixmapHeight);
+    maxWidth = qMin(maxWidth, kMaxTextPixmapWidth);
+    totalHeight = qMin(totalHeight, kMaxTextPixmapHeight);
 
     // Create pixmap with padding
-    const int padding = SnapTray::UI::Layout::kSpacingLarge;
+    const int padding = kTextPixmapPadding;
     qreal dpr = qApp->devicePixelRatio();
     QSize pixmapSize(maxWidth + 2 * padding, totalHeight + 2 * padding);
 
     QPixmap pixmap(pixmapSize * dpr);
     pixmap.setDevicePixelRatio(dpr);
-    pixmap.fill(SnapTray::Color::kStickyNoteBackground);
+    pixmap.fill(kStickyNoteBackground);
 
     // Draw text
     QPainter painter(&pixmap);
     painter.setRenderHint(QPainter::TextAntialiasing, true);
     painter.setFont(font);
-    painter.setPen(SnapTray::Color::kTextAnnotationForeground);
+    painter.setPen(kTextAnnotationForeground);
 
     int y = padding + fm.ascent();
     for (const QString &line : lines) {

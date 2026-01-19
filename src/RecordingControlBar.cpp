@@ -1,5 +1,4 @@
 #include "RecordingControlBar.h"
-#include "Constants.h"
 #include "GlassRenderer.h"
 #include "ToolbarStyle.h"
 #include "IconRenderer.h"
@@ -27,11 +26,12 @@ QColor dimmedColor(const QColor &color)
     return dimmed;
 }
 
-using SnapTray::UI::RecordingControl::kEffectsToolbarGap;
-using SnapTray::UI::RecordingControl::kEffectsButtonPaddingX;
-using SnapTray::UI::RecordingControl::kEffectsButtonSpacing;
-using SnapTray::UI::RecordingControl::kEffectsToolbarPaddingX;
-using SnapTray::UI::RecordingControl::kEffectsToolbarPaddingY;
+// Recording control bar layout constants
+constexpr int kEffectsToolbarGap = 6;
+constexpr int kEffectsButtonPaddingX = 8;
+constexpr int kEffectsButtonSpacing = 4;
+constexpr int kEffectsToolbarPaddingX = 4;
+constexpr int kEffectsToolbarPaddingY = 2;
 }
 
 class GlassTooltipWidget : public QWidget
