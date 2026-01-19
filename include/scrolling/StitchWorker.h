@@ -53,19 +53,6 @@ public:
     };
 
     /**
-     * @brief Capture mode for scrolling direction
-     */
-    enum class CaptureMode {
-        Vertical,
-        Horizontal
-    };
-
-    /**
-     * @brief Set the capture mode (vertical or horizontal scrolling)
-     */
-    void setCaptureMode(CaptureMode mode);
-
-    /**
      * @brief Set stitch configuration
      */
     void setStitchConfig(double confidenceThreshold, bool detectStaticRegions);
@@ -198,7 +185,6 @@ private:
     static constexpr qint64 MAX_PENDING_MEMORY_BYTES = 300 * 1024 * 1024;  // 300MB
 
     // Configuration
-    CaptureMode m_captureMode = CaptureMode::Vertical;
     bool m_detectStaticRegions = true;
 };
 

@@ -28,17 +28,6 @@ StitchWorker::~StitchWorker()
     delete m_fixedDetector;
 }
 
-void StitchWorker::setCaptureMode(CaptureMode mode)
-{
-    m_captureMode = mode;
-    m_stitcher->setCaptureMode(mode == CaptureMode::Vertical
-        ? ImageStitcher::CaptureMode::Vertical
-        : ImageStitcher::CaptureMode::Horizontal);
-    m_fixedDetector->setCaptureMode(mode == CaptureMode::Vertical
-        ? FixedElementDetector::CaptureMode::Vertical
-        : FixedElementDetector::CaptureMode::Horizontal);
-}
-
 void StitchWorker::setStitchConfig(double confidenceThreshold, bool detectStaticRegions)
 {
     m_detectStaticRegions = detectStaticRegions;
@@ -197,12 +186,13 @@ void StitchWorker::requestFinish()
     m_acceptingFrames = false;
     m_finishRequested = true;
 
-    // If not currently processing, emit result immediately
-    if (!m_isProcessing.load()) {
-        m_finishRequested = false;
-        emit finishCompleted(m_stitcher->getStitchedImage().copy());
+    // Always ensure the processing loop runs to handle the finish request
+    // This allows the heavy image copy/crop to happen on the worker thread
+    if (!m_isProcessing.exchange(true)) {
+        m_processingFuture = QtConcurrent::run([this]() {
+            processNextFrame();
+        });
     }
-    // Otherwise, processNextFrame() will emit finishCompleted when queue empties
 }
 
 void StitchWorker::processNextFrame()
@@ -340,9 +330,7 @@ void StitchWorker::doProcessFrame(const QImage &frame)
                             result.frameSize = cropped.size();
                             result.currentSize = m_stitcher->getCurrentSize();
                             if (stitchResult.success) {
-                                QRect viewport = m_stitcher->currentViewportRect();
-                                result.lastSuccessfulPosition = (m_captureMode == CaptureMode::Vertical)
-                                    ? viewport.bottom() : viewport.right();
+                                result.frameCount = m_stitcher->frameCount();
                             }
                         }
                     }
@@ -361,31 +349,39 @@ void StitchWorker::doProcessFrame(const QImage &frame)
             }
         }
     }
-
+    
     // 3. Regular Stitching (if not just restitched)
     if (!justRestitched) {
         QImage frameToStitch = rawFrame;
         if (m_fixedDetected) {
-            QImage cropped = m_fixedDetector->cropFixedRegions(rawFrame);
-            if (!cropped.isNull()) {
-                frameToStitch = cropped;
-            }
+            frameToStitch = m_fixedDetector->cropFixedRegions(rawFrame);
         }
-
+        
         ImageStitcher::StitchResult stitchResult = m_stitcher->addFrame(frameToStitch);
-
+        
         result.success = stitchResult.success;
+        result.failureCode = stitchResult.failureCode;
         result.confidence = stitchResult.confidence;
         result.failureReason = stitchResult.failureReason;
-        result.failureCode = stitchResult.failureCode;
         result.overlapPixels = stitchResult.overlapPixels;
         result.frameSize = frameToStitch.size();
         result.currentSize = m_stitcher->getCurrentSize();
-        if (stitchResult.success) {
-            QRect viewport = m_stitcher->currentViewportRect();
-            result.lastSuccessfulPosition = (m_captureMode == CaptureMode::Vertical)
-                ? viewport.bottom() : viewport.right();
+        
+        if (result.success) {
+            result.frameCount = m_stitcher->frameCount();
         }
+    }
+    
+    // Update last successful position (Y)
+    if (result.success) {
+        // Calculate cumulative scroll position
+        // This is an approximation - ideal would be tracking total pixels scraped
+        static int cumulativeY = 0;
+        if (m_stitcher->frameCount() == 1) {
+            cumulativeY = 0;
+        }
+        cumulativeY += (result.frameSize.height() - result.overlapPixels);
+        result.lastSuccessfulPosition = cumulativeY;
     }
 
     result.frameCount = m_stitcher->frameCount();

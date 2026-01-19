@@ -50,7 +50,6 @@ void ScrollingCaptureToolbar::setupUi()
     // Configure buttons using Toolbar::ButtonConfig builder pattern
     // Direction button icon will be updated dynamically based on m_direction
     m_buttons = {
-        ButtonConfig(ButtonDirection, "arrow-vertical", "Scroll Direction: Vertical ↕ (Click to toggle)"),
         ButtonConfig(ButtonStart, "play", "Start Capture (Enter/Space)").action(),
         ButtonConfig(ButtonStop, "stop", "Stop Capture (Enter/Space)").action(),
         ButtonConfig(ButtonPin, "pin", "Pin to Screen").action(),
@@ -92,7 +91,7 @@ void ScrollingCaptureToolbar::updateButtonLayout()
 
         switch (m_mode) {
         case Mode::Adjusting:
-            visible = (id == ButtonDirection || id == ButtonStart || id == ButtonCancel);
+            visible = (id == ButtonStart || id == ButtonCancel);
             break;
         case Mode::Capturing:
             visible = (id == ButtonStop || id == ButtonCancel);
@@ -200,30 +199,6 @@ void ScrollingCaptureToolbar::setMatchStatus(bool matched, double confidence)
         QString("QLabel { background-color: %1; border-radius: 6px; }").arg(color));
 }
 
-void ScrollingCaptureToolbar::setDirection(Direction direction)
-{
-    if (m_direction == direction) {
-        return;
-    }
-
-    m_direction = direction;
-
-    // Update direction button icon and tooltip
-    for (int i = 0; i < m_buttons.size(); ++i) {
-        if (m_buttons[i].id == ButtonDirection) {
-            if (direction == Direction::Vertical) {
-                m_buttons[i].iconKey = "arrow-vertical";
-                m_buttons[i].tooltip = "Scroll Direction: Vertical ↕ (Click to toggle)";
-            } else {
-                m_buttons[i].iconKey = "arrow-horizontal";
-                m_buttons[i].tooltip = "Scroll Direction: Horizontal ↔ (Click to toggle)";
-            }
-            break;
-        }
-    }
-
-    update();
-}
 
 
 void ScrollingCaptureToolbar::paintEvent(QPaintEvent *event)
@@ -339,7 +314,6 @@ void ScrollingCaptureToolbar::mousePressEvent(QMouseEvent *event)
         if (btnIndex >= 0) {
             // Handle button click
             switch (m_buttons[btnIndex].id) {
-            case ButtonDirection:  emit directionToggled(); break;
             case ButtonStart:      emit startClicked(); break;
             case ButtonStop:       emit stopClicked(); break;
             case ButtonPin:        emit pinClicked(); break;

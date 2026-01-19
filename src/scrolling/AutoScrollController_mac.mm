@@ -41,45 +41,33 @@ bool injectScrollEvent(int deltaPixels, AutoScrollController::ScrollDirection di
     // Create scroll wheel event
     CGEventRef scrollEvent = nullptr;
 
+    // For macOS, we primarily use pixel-based scrolling for smoother control
+    // if using trackpad emulation, or line-based for mouse wheel.
+    // CGEventCreateScrollWheelEvent uses units.
+    
+    int64_t wheelCount = 1;
+    int32_t delta = 0;
+    int32_t horizontalDelta = 0;
+    
+    // CGScrollEventUnitPixel ensures we scroll by pixels, not lines
+    // Scrolling down requires negative delta for pixel units typically (or positive based on natural scrolling)
+    // Actually, for CGEventCreateScrollWheelEvent:
+    // "A positive value indicates scrolling up (or left), and a negative value indicates scrolling down (or right)."
+    
     switch (dir) {
     case AutoScrollController::ScrollDirection::Down:
-        // Scroll down = negative delta (content moves up)
-        scrollEvent = CGEventCreateScrollWheelEvent(
-            eventSource,
-            kCGScrollEventUnitPixel,
-            1, // wheelCount
-            -deltaPixels);
+        delta = -deltaPixels;
         break;
-
     case AutoScrollController::ScrollDirection::Up:
-        // Scroll up = positive delta (content moves down)
-        scrollEvent = CGEventCreateScrollWheelEvent(
-            eventSource,
-            kCGScrollEventUnitPixel,
-            1,
-            deltaPixels);
-        break;
-
-    case AutoScrollController::ScrollDirection::Right:
-        // Scroll right = negative horizontal delta
-        scrollEvent = CGEventCreateScrollWheelEvent(
-            eventSource,
-            kCGScrollEventUnitPixel,
-            2, // wheelCount (vertical + horizontal)
-            0, // vertical
-            -deltaPixels); // horizontal
-        break;
-
-    case AutoScrollController::ScrollDirection::Left:
-        // Scroll left = positive horizontal delta
-        scrollEvent = CGEventCreateScrollWheelEvent(
-            eventSource,
-            kCGScrollEventUnitPixel,
-            2,
-            0,
-            deltaPixels);
+        delta = deltaPixels;
         break;
     }
+
+    scrollEvent = CGEventCreateScrollWheelEvent(
+        eventSource,
+        kCGScrollEventUnitPixel,
+        wheelCount,
+        delta);
 
     if (!scrollEvent) {
         qWarning() << "AutoScrollController: Failed to create scroll event";

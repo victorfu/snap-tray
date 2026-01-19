@@ -28,9 +28,7 @@ class AutoScrollController : public QObject
 public:
     enum class ScrollDirection {
         Down,
-        Up,
-        Left,
-        Right
+        Up
     };
     Q_ENUM(ScrollDirection)
 

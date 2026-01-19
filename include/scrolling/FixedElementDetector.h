@@ -31,9 +31,6 @@ public:
     void setEnabled(bool enabled);
     bool isEnabled() const { return m_enabled; }
 
-    void setCaptureMode(CaptureMode mode);
-    CaptureMode captureMode() const { return m_captureMode; }
-
     // Reset for new capture session
     void reset();
 
@@ -60,7 +57,6 @@ private:
     void analyzeTrailingRegion();
 
     bool m_enabled = true;
-    CaptureMode m_captureMode = CaptureMode::Vertical;
     bool m_detected = false;
     int m_frameCount = 0;
     int m_regionWriteIndex = 0;  // Circular buffer write index

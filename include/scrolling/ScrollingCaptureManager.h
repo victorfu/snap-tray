@@ -35,38 +35,19 @@ public:
     };
     Q_ENUM(State)
 
-    enum class CaptureDirection {
-        Vertical,
-        Horizontal
-    };
-    Q_ENUM(CaptureDirection)
-
-    enum class ScrollMode {
-        Manual,     // User scrolls manually
-        Auto        // AutoScrollController injects scroll events
-    };
-    Q_ENUM(ScrollMode)
-
     explicit ScrollingCaptureManager(PinWindowManager *pinManager, QObject *parent = nullptr);
     ~ScrollingCaptureManager();
 
     bool isActive() const;
-    State state() const { return m_state; }
 
-    CaptureDirection captureDirection() const { return m_captureDirection; }
-    void setCaptureDirection(CaptureDirection direction);
-
-    // Scroll mode (manual vs auto-scroll)
-    ScrollMode scrollMode() const { return m_scrollMode; }
+    // Recovery info for match failure UX
+    int lastSuccessfulPosition() const { return m_lastSuccessfulPosition; }
+    bool isMatchFailed() const { return m_state == State::MatchFailed; }
 
     // Auto-scroll support
     static bool isAutoScrollSupported();
     static bool hasAutoScrollPermission();
     static void requestAutoScrollPermission();
-
-    // Recovery info for match failure UX
-    int lastSuccessfulPosition() const { return m_lastSuccessfulPosition; }
-    bool isMatchFailed() const { return m_state == State::MatchFailed; }
 
 public slots:
     void start();
@@ -78,7 +59,6 @@ signals:
     void captureCompleted(const QPixmap &result);
     void captureCancelled();
     void stateChanged(State state);
-    void directionChanged(CaptureDirection direction);
     void matchStatusChanged(bool matched, double confidence, int lastSuccessfulPos);
     void autoScrollError(const QString &message);
 
@@ -98,7 +78,6 @@ private slots:
     void onCopyClicked();
     void onCloseClicked();
     void onCancelClicked();
-    void onDirectionToggled();
 
     // Frame capture
     void captureFrame();
@@ -132,9 +111,7 @@ private:
 
     PinWindowManager *m_pinManager;
     State m_state = State::Idle;
-    CaptureDirection m_captureDirection = CaptureDirection::Vertical;
-    ScrollMode m_scrollMode = ScrollMode::Manual;
-    int m_lastSuccessfulPosition = 0;  // Y for vertical, X for horizontal
+    int m_lastSuccessfulPosition = 0;  // Y position of last successful stitch
 
     // UI Components
     QPointer<ScrollingCaptureOverlay> m_overlay;

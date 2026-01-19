@@ -54,15 +54,9 @@ double subPixelRefine1D(const cv::Mat &matchResult, int bestPos, bool isVertical
     }
 
     double y0, y1, y2;
-    if (isVertical) {
-        y0 = matchResult.at<float>(bestPos - 1, 0);
-        y1 = matchResult.at<float>(bestPos, 0);
-        y2 = matchResult.at<float>(bestPos + 1, 0);
-    } else {
-        y0 = matchResult.at<float>(0, bestPos - 1);
-        y1 = matchResult.at<float>(0, bestPos);
-        y2 = matchResult.at<float>(0, bestPos + 1);
-    }
+    y0 = matchResult.at<float>(bestPos - 1, 0);
+    y1 = matchResult.at<float>(bestPos, 0);
+    y2 = matchResult.at<float>(bestPos + 1, 0);
 
     // Parabolic interpolation: find vertex of parabola through (bestPos-1, y0), (bestPos, y1), (bestPos+1, y2)
     double denominator = y0 - 2.0 * y1 + y2;
@@ -118,42 +112,25 @@ cv::Point2d subPixelRefine2D(const cv::Mat &matchResult, const cv::Point &bestLo
 // Returns the normalized difference at the seam (lower is better)
 double verifySeamAtOverlap(const cv::Mat &lastGray, const cv::Mat &newGray,
                            ImageStitcher::ScrollDirection direction,
-                           bool isHorizontal, int overlap)
+                           int overlap)
 {
     if (overlap <= 0 || lastGray.empty() || newGray.empty()) {
         return 1.0;
     }
 
     cv::Mat lastOverlap, newOverlap;
+    int width = std::min(lastGray.cols, newGray.cols);
+    int height = std::min({overlap, lastGray.rows, newGray.rows});
+    if (width <= 0 || height <= 0) {
+        return 1.0;
+    }
 
-    if (isHorizontal) {
-        int height = std::min(lastGray.rows, newGray.rows);
-        int width = std::min({overlap, lastGray.cols, newGray.cols});
-        if (width <= 0 || height <= 0) {
-            return 1.0;
-        }
-
-        if (direction == ImageStitcher::ScrollDirection::Right) {
-            lastOverlap = lastGray(cv::Rect(lastGray.cols - width, 0, width, height));
-            newOverlap = newGray(cv::Rect(0, 0, width, height));
-        } else {
-            lastOverlap = lastGray(cv::Rect(0, 0, width, height));
-            newOverlap = newGray(cv::Rect(newGray.cols - width, 0, width, height));
-        }
+    if (direction == ImageStitcher::ScrollDirection::Down) {
+        lastOverlap = lastGray(cv::Rect(0, lastGray.rows - height, width, height));
+        newOverlap = newGray(cv::Rect(0, 0, width, height));
     } else {
-        int width = std::min(lastGray.cols, newGray.cols);
-        int height = std::min({overlap, lastGray.rows, newGray.rows});
-        if (width <= 0 || height <= 0) {
-            return 1.0;
-        }
-
-        if (direction == ImageStitcher::ScrollDirection::Down) {
-            lastOverlap = lastGray(cv::Rect(0, lastGray.rows - height, width, height));
-            newOverlap = newGray(cv::Rect(0, 0, width, height));
-        } else {
-            lastOverlap = lastGray(cv::Rect(0, 0, width, height));
-            newOverlap = newGray(cv::Rect(0, newGray.rows - height, width, height));
-        }
+        lastOverlap = lastGray(cv::Rect(0, 0, width, height));
+        newOverlap = newGray(cv::Rect(0, newGray.rows - height, width, height));
     }
 
     cv::Mat diff;
@@ -166,15 +143,15 @@ double verifySeamAtOverlap(const cv::Mat &lastGray, const cv::Mat &newGray,
 // Returns the best overlap value (may be original, +1, or -1)
 int refinedOverlapWithFallback(const cv::Mat &lastGray, const cv::Mat &newGray,
                                 ImageStitcher::ScrollDirection direction,
-                                bool isHorizontal, int detectedOverlap,
+                                int detectedOverlap,
                                 int minOverlap, int maxOverlap)
 {
-    double bestDiff = verifySeamAtOverlap(lastGray, newGray, direction, isHorizontal, detectedOverlap);
+    double bestDiff = verifySeamAtOverlap(lastGray, newGray, direction, detectedOverlap);
     int bestOverlap = detectedOverlap;
 
     // Try -1 pixel
     if (detectedOverlap - 1 >= minOverlap) {
-        double diffMinus1 = verifySeamAtOverlap(lastGray, newGray, direction, isHorizontal, detectedOverlap - 1);
+        double diffMinus1 = verifySeamAtOverlap(lastGray, newGray, direction, detectedOverlap - 1);
         if (diffMinus1 < bestDiff) {
             bestDiff = diffMinus1;
             bestOverlap = detectedOverlap - 1;
@@ -183,7 +160,7 @@ int refinedOverlapWithFallback(const cv::Mat &lastGray, const cv::Mat &newGray,
 
     // Try +1 pixel
     if (detectedOverlap + 1 <= maxOverlap) {
-        double diffPlus1 = verifySeamAtOverlap(lastGray, newGray, direction, isHorizontal, detectedOverlap + 1);
+        double diffPlus1 = verifySeamAtOverlap(lastGray, newGray, direction, detectedOverlap + 1);
         if (diffPlus1 < bestDiff) {
             bestDiff = diffPlus1;
             bestOverlap = detectedOverlap + 1;
@@ -330,14 +307,14 @@ int searchRadiusForFrame(int frameDimension)
     return qBound(16, radius, 160);
 }
 
-std::vector<double> gradientProfile(const cv::Mat &gray, bool isHorizontal)
+std::vector<double> gradientProfile(const cv::Mat &gray)
 {
     if (gray.empty()) {
         return {};
     }
 
-    int dx = isHorizontal ? 1 : 0;
-    int dy = isHorizontal ? 0 : 1;
+    int dx = 0;
+    int dy = 1;
     cv::Mat grad;
     cv::Sobel(gray, grad, CV_32F, dx, dy, 3);
 
@@ -345,21 +322,12 @@ std::vector<double> gradientProfile(const cv::Mat &gray, bool isHorizontal)
     cv::absdiff(grad, cv::Scalar::all(0), absGrad);
 
     cv::Mat profile;
-    if (isHorizontal) {
-        cv::reduce(absGrad, profile, 0, cv::REDUCE_SUM, CV_64F);
-    } else {
-        cv::reduce(absGrad, profile, 1, cv::REDUCE_SUM, CV_64F);
-    }
+    cv::reduce(absGrad, profile, 1, cv::REDUCE_SUM, CV_64F);
 
     std::vector<double> vec;
-    if (isHorizontal) {
-        vec.assign(profile.ptr<double>(0),
-                   profile.ptr<double>(0) + profile.cols);
-    } else {
-        vec.reserve(static_cast<size_t>(profile.rows));
-        for (int i = 0; i < profile.rows; ++i) {
-            vec.push_back(profile.at<double>(i, 0));
-        }
+    vec.reserve(static_cast<size_t>(profile.rows));
+    for (int i = 0; i < profile.rows; ++i) {
+        vec.push_back(profile.at<double>(i, 0));
     }
     return vec;
 }
@@ -367,7 +335,6 @@ std::vector<double> gradientProfile(const cv::Mat &gray, bool isHorizontal)
 InPlaceMatch findInPlaceMatch(const QImage &stitched,
                               const QRect &lastViewport,
                               const QImage &frame,
-                              bool isHorizontal,
                               int overlapPixels,
                               ImageStitcher::ScrollDirection direction,
                               int validWidth,
@@ -386,28 +353,25 @@ InPlaceMatch findInPlaceMatch(const QImage &stitched,
         return best;
     }
 
-    int maxPos = isHorizontal ? (bounds.width() - frameWidth) : (bounds.height() - frameHeight);
+    int maxPos = bounds.height() - frameHeight;
     if (maxPos < 0) {
         return best;
     }
 
-    bool isForward = (direction == ImageStitcher::ScrollDirection::Down ||
-                      direction == ImageStitcher::ScrollDirection::Right);
-    int lastPos = isHorizontal ? lastViewport.x() : lastViewport.y();
-    int delta = (isHorizontal ? frameWidth : frameHeight) - overlapPixels;
+    bool isForward = (direction == ImageStitcher::ScrollDirection::Down);
+    int lastPos = lastViewport.y();
+    int delta = frameHeight - overlapPixels;
     if (delta < 1) {
         delta = 1;
     }
 
     int predictedPos = lastPos + (isForward ? delta : -delta);
     int minPos = 0;
-    int searchRadius = searchRadiusForFrame(isHorizontal ? frameWidth : frameHeight);
+    int searchRadius = searchRadiusForFrame(frameHeight);
     int step = (searchRadius > 80) ? 2 : 1;
 
     auto tryPosition = [&](int pos) {
-        QRect rect = isHorizontal
-            ? QRect(pos, 0, frameWidth, frameHeight)
-            : QRect(0, pos, frameWidth, frameHeight);
+        QRect rect(0, pos, frameWidth, frameHeight);
         if (!bounds.contains(rect)) {
             return;
         }
@@ -455,8 +419,7 @@ InPlaceMatch findInPlaceMatch(const QImage &stitched,
 InPlaceMatch findGlobalInPlaceMatch(const QImage &stitched,
                                     int validWidth,
                                     int validHeight,
-                                    const QImage &frame,
-                                    bool isHorizontal)
+                                    const QImage &frame)
 {
     InPlaceMatch match;
     if (stitched.isNull() || frame.isNull()) {
@@ -492,8 +455,8 @@ InPlaceMatch findGlobalInPlaceMatch(const QImage &stitched,
     }
 
     cv::Mat stitchedCrop = stitchedGray(validRect);
-    std::vector<double> stitchedProfile = gradientProfile(stitchedCrop, isHorizontal);
-    std::vector<double> frameProfile = gradientProfile(frameGray, isHorizontal);
+    std::vector<double> stitchedProfile = gradientProfile(stitchedCrop);
+    std::vector<double> frameProfile = gradientProfile(frameGray);
 
     if (stitchedProfile.empty() || frameProfile.empty()) {
         return match;
@@ -543,9 +506,7 @@ InPlaceMatch findGlobalInPlaceMatch(const QImage &stitched,
         return match;
     }
 
-    QRect rect = isHorizontal
-        ? QRect(bestPos, 0, frameWidth, frameHeight)
-        : QRect(0, bestPos, frameWidth, frameHeight);
+    QRect rect(0, bestPos, frameWidth, frameHeight);
     if (!QRect(0, 0, validWidth, validHeight).contains(rect)) {
         return match;
     }
@@ -583,10 +544,10 @@ cv::Mat downsampleForDiff(const cv::Mat &src, int maxDim)
     return resized;
 }
 
+// Returns the normalized difference (0.0 - 1.0)
 double normalizedOverlapDifference(const cv::Mat &lastGray,
                                    const cv::Mat &newGray,
                                    ImageStitcher::ScrollDirection direction,
-                                   bool isHorizontal,
                                    int overlap)
 {
     if (overlap <= 0 || lastGray.empty() || newGray.empty()) {
@@ -596,34 +557,18 @@ double normalizedOverlapDifference(const cv::Mat &lastGray,
     cv::Rect lastRect;
     cv::Rect newRect;
 
-    if (isHorizontal) {
-        int height = std::min(lastGray.rows, newGray.rows);
-        int width = std::min({overlap, lastGray.cols, newGray.cols});
-        if (width <= 0 || height <= 0) {
-            return 1.0;
-        }
+    int width = std::min(lastGray.cols, newGray.cols);
+    int height = std::min({overlap, lastGray.rows, newGray.rows});
+    if (width <= 0 || height <= 0) {
+        return 1.0;
+    }
 
-        if (direction == ImageStitcher::ScrollDirection::Right) {
-            lastRect = cv::Rect(lastGray.cols - width, 0, width, height);
-            newRect = cv::Rect(0, 0, width, height);
-        } else {
-            lastRect = cv::Rect(0, 0, width, height);
-            newRect = cv::Rect(newGray.cols - width, 0, width, height);
-        }
+    if (direction == ImageStitcher::ScrollDirection::Down) {
+        lastRect = cv::Rect(0, lastGray.rows - height, width, height);
+        newRect = cv::Rect(0, 0, width, height);
     } else {
-        int width = std::min(lastGray.cols, newGray.cols);
-        int height = std::min({overlap, lastGray.rows, newGray.rows});
-        if (width <= 0 || height <= 0) {
-            return 1.0;
-        }
-
-        if (direction == ImageStitcher::ScrollDirection::Down) {
-            lastRect = cv::Rect(0, lastGray.rows - height, width, height);
-            newRect = cv::Rect(0, 0, width, height);
-        } else {
-            lastRect = cv::Rect(0, 0, width, height);
-            newRect = cv::Rect(0, newGray.rows - height, width, height);
-        }
+        lastRect = cv::Rect(0, 0, width, height);
+        newRect = cv::Rect(0, newGray.rows - height, width, height);
     }
 
     cv::Mat lastPatch = lastGray(lastRect);
@@ -652,7 +597,6 @@ constexpr double kMultiBlockMaxDiff = 0.15;
 double verifyMultiBlockSeam(const cv::Mat &lastGray,
                             const cv::Mat &newGray,
                             ImageStitcher::ScrollDirection direction,
-                            bool isHorizontal,
                             int overlap)
 {
     if (overlap <= 0 || lastGray.empty() || newGray.empty()) {
@@ -660,7 +604,7 @@ double verifyMultiBlockSeam(const cv::Mat &lastGray,
     }
 
     // Determine the cross-axis dimension to split into blocks
-    int crossDim = isHorizontal ? lastGray.rows : lastGray.cols;
+    int crossDim = lastGray.cols;
     int blockSize = crossDim / kMultiBlockCount;
 
     if (blockSize < 20) {
@@ -678,30 +622,16 @@ double verifyMultiBlockSeam(const cv::Mat &lastGray,
         cv::Mat lastBlock, newBlock;
         cv::Rect lastRect, newRect;
 
-        if (isHorizontal) {
-            // Horizontal scroll: blocks are horizontal strips
-            int width = std::min({overlap, lastGray.cols, newGray.cols});
-            if (width <= 0) continue;
+        // Vertical scroll: blocks are vertical strips
+        int height = std::min({overlap, lastGray.rows, newGray.rows});
+        if (height <= 0) continue;
 
-            if (direction == ImageStitcher::ScrollDirection::Right) {
-                lastRect = cv::Rect(lastGray.cols - width, blockStart, width, actualBlockSize);
-                newRect = cv::Rect(0, blockStart, width, actualBlockSize);
-            } else {
-                lastRect = cv::Rect(0, blockStart, width, actualBlockSize);
-                newRect = cv::Rect(newGray.cols - width, blockStart, width, actualBlockSize);
-            }
+        if (direction == ImageStitcher::ScrollDirection::Down) {
+            lastRect = cv::Rect(blockStart, lastGray.rows - height, actualBlockSize, height);
+            newRect = cv::Rect(blockStart, 0, actualBlockSize, height);
         } else {
-            // Vertical scroll: blocks are vertical strips
-            int height = std::min({overlap, lastGray.rows, newGray.rows});
-            if (height <= 0) continue;
-
-            if (direction == ImageStitcher::ScrollDirection::Down) {
-                lastRect = cv::Rect(blockStart, lastGray.rows - height, actualBlockSize, height);
-                newRect = cv::Rect(blockStart, 0, actualBlockSize, height);
-            } else {
-                lastRect = cv::Rect(blockStart, 0, actualBlockSize, height);
-                newRect = cv::Rect(blockStart, newGray.rows - height, actualBlockSize, height);
-            }
+            lastRect = cv::Rect(blockStart, 0, actualBlockSize, height);
+            newRect = cv::Rect(blockStart, newGray.rows - height, actualBlockSize, height);
         }
 
         // Bounds check
@@ -736,15 +666,9 @@ double verifyMultiBlockSeam(const cv::Mat &lastGray,
 
 ImageStitcher::StitchResult ImageStitcher::tryTemplateMatch(const QImage &newFrame)
 {
-    // Choose directions based on capture mode
-    ScrollDirection primaryDir, secondaryDir;
-    if (m_captureMode == CaptureMode::Horizontal) {
-        primaryDir = ScrollDirection::Right;
-        secondaryDir = ScrollDirection::Left;
-    } else {
-        primaryDir = ScrollDirection::Down;
-        secondaryDir = ScrollDirection::Up;
-    }
+    // Vertical-only: Down is primary, Up is secondary
+    ScrollDirection primaryDir = ScrollDirection::Down;
+    ScrollDirection secondaryDir = ScrollDirection::Up;
 
     auto primaryCandidate = computeTemplateMatchCandidate(newFrame, primaryDir);
     auto secondaryCandidate = computeTemplateMatchCandidate(newFrame, secondaryDir);
@@ -789,7 +713,7 @@ ImageStitcher::StitchResult ImageStitcher::tryTemplateMatch(const QImage &newFra
     if (result.failureCode == FailureCode::None) {
         result.failureCode = FailureCode::NoAlgorithmSucceeded;
     }
-    QString dirNames = (m_captureMode == CaptureMode::Horizontal) ? "Right: %1; Left: %2" : "Down: %1; Up: %2";
+    QString dirNames = "Down: %1; Up: %2";
     result.failureReason = dirNames
         .arg(primaryCandidate.failureReason.isEmpty() ? "No match" : primaryCandidate.failureReason,
              secondaryCandidate.failureReason.isEmpty() ? "No match" : secondaryCandidate.failureReason);
@@ -819,8 +743,7 @@ ImageStitcher::MatchCandidate ImageStitcher::computeTemplateMatchCandidate(const
         return candidate;
     }
 
-    bool isHorizontal = (direction == ScrollDirection::Left || direction == ScrollDirection::Right);
-    int frameDimension = isHorizontal ? lastGray.cols : lastGray.rows;
+    int frameDimension = lastGray.rows;
     double overlapRatio = maxOverlapRatioForFrame(frameDimension);
     int maxOverlap = maxOverlapForFrame(frameDimension, MIN_OVERLAP, overlapRatio);
     if (maxOverlap == 0) {
@@ -838,186 +761,88 @@ ImageStitcher::MatchCandidate ImageStitcher::computeTemplateMatchCandidate(const
     std::vector<TemplateResult> results;
     bool foundAmbiguous = false;
 
-    if (isHorizontal) {
-        // Horizontal mode: use template widths instead of heights
-        const int baseTemplateWidth = std::min(180, lastGray.cols / 2);
-        std::vector<int> templateWidths = {
-            baseTemplateWidth,
-            std::max(24, baseTemplateWidth / 2),
-            std::max(24, static_cast<int>(baseTemplateWidth * 0.75))
-        };
+    // Vertical mode: original height-based logic
+    const int baseTemplateHeight = std::min(180, lastGray.rows / 2);
+    std::vector<int> templateHeights = {
+        baseTemplateHeight,
+        std::max(24, baseTemplateHeight / 2),
+        std::max(24, static_cast<int>(baseTemplateHeight * 0.75))
+    };
 
-        for (int templateWidth : templateWidths) {
-            if (templateWidth < 10 || templateWidth > lastGray.cols) {
-                continue;
-            }
-
-            int searchMaxExtent = std::min(maxOverlap + templateWidth, newGray.cols);
-            if (searchMaxExtent <= templateWidth) {
-                continue;
-            }
-
-            cv::Mat templateImg;
-            cv::Mat searchRegion;
-            int templateLeft = 0;
-            int searchLeft = 0;
-
-            if (direction == ScrollDirection::Right) {
-                templateLeft = lastGray.cols - templateWidth;
-                templateImg = lastGray(cv::Rect(templateLeft, 0, templateWidth, lastGray.rows));
-                searchRegion = newGray(cv::Rect(0, 0, searchMaxExtent, newGray.rows));
-                searchLeft = 0;
-            } else {
-                templateLeft = 0;
-                templateImg = lastGray(cv::Rect(0, 0, templateWidth, lastGray.rows));
-                searchLeft = newGray.cols - searchMaxExtent;
-                searchRegion = newGray(cv::Rect(searchLeft, 0, searchMaxExtent, newGray.rows));
-            }
-
-            double varianceScore = normalizedVariance(templateImg);
-            if (varianceScore < 0.002) {
-                continue;
-            }
-
-            if (templateImg.cols > searchRegion.cols || templateImg.rows > searchRegion.rows) {
-                continue;
-            }
-
-            cv::Mat matchResult;
-            cv::matchTemplate(searchRegion, templateImg, matchResult, cv::TM_CCOEFF_NORMED);
-
-            double minVal, maxVal;
-            cv::Point minLoc, maxLoc;
-            cv::minMaxLoc(matchResult, &minVal, &maxVal, &minLoc, &maxLoc);
-
-            // Ambiguity check
-            cv::Mat suppressed = matchResult.clone();
-            int suppressRadius = 10;
-
-            if (isHorizontal) {
-                int x0 = std::max(0, maxLoc.x - suppressRadius);
-                int x1 = std::min(matchResult.cols, maxLoc.x + suppressRadius + 1);
-                suppressed.colRange(x0, x1).setTo(-1.0);
-            } else {
-                int y0 = std::max(0, maxLoc.y - suppressRadius);
-                int y1 = std::min(matchResult.rows, maxLoc.y + suppressRadius + 1);
-                suppressed.rowRange(y0, y1).setTo(-1.0);
-            }
-
-            double secondMaxVal;
-            cv::minMaxLoc(suppressed, nullptr, &secondMaxVal, nullptr, nullptr);
-
-            if (maxVal - secondMaxVal < m_stitchConfig.ambiguityThreshold) {
-                if (maxVal > 0.4) {
-                    foundAmbiguous = true;
-                }
-                continue;
-            }
-
-            // Apply sub-pixel refinement for more accurate positioning
-            cv::Point2d refinedLoc = subPixelRefine2D(matchResult, maxLoc);
-
-            double fullOffset = templateLeft - (searchLeft + refinedLoc.x);
-
-            if (direction == ScrollDirection::Right && fullOffset <= 0.0) {
-                continue;
-            }
-            if (direction == ScrollDirection::Left && fullOffset >= 0.0) {
-                continue;
-            }
-
-            results.push_back({maxVal, fullOffset, varianceScore});
+    for (int templateHeight : templateHeights) {
+        if (templateHeight < 10 || templateHeight > lastGray.rows) {
+            continue;
         }
-    } else {
-        // Vertical mode: original height-based logic
-        const int baseTemplateHeight = std::min(180, lastGray.rows / 2);
-        std::vector<int> templateHeights = {
-            baseTemplateHeight,
-            std::max(24, baseTemplateHeight / 2),
-            std::max(24, static_cast<int>(baseTemplateHeight * 0.75))
-        };
 
-        for (int templateHeight : templateHeights) {
-            if (templateHeight < 10 || templateHeight > lastGray.rows) {
-                continue;
-            }
-
-            int searchMaxExtent = std::min(maxOverlap + templateHeight, newGray.rows);
-            if (searchMaxExtent <= templateHeight) {
-                continue;
-            }
-
-            cv::Mat templateImg;
-            cv::Mat searchRegion;
-            int templateTop = 0;
-            int searchTop = 0;
-
-            if (direction == ScrollDirection::Down) {
-                templateTop = lastGray.rows - templateHeight;
-                templateImg = lastGray(cv::Rect(0, templateTop, lastGray.cols, templateHeight));
-                searchRegion = newGray(cv::Rect(0, 0, newGray.cols, searchMaxExtent));
-                searchTop = 0;
-            } else {
-                templateTop = 0;
-                templateImg = lastGray(cv::Rect(0, 0, lastGray.cols, templateHeight));
-                searchTop = newGray.rows - searchMaxExtent;
-                searchRegion = newGray(cv::Rect(0, searchTop, newGray.cols, searchMaxExtent));
-            }
-
-            double varianceScore = normalizedVariance(templateImg);
-            if (varianceScore < 0.002) {
-                continue;
-            }
-
-            if (templateImg.cols > searchRegion.cols || templateImg.rows > searchRegion.rows) {
-                continue;
-            }
-
-            cv::Mat matchResult;
-            cv::matchTemplate(searchRegion, templateImg, matchResult, cv::TM_CCOEFF_NORMED);
-
-            double minVal, maxVal;
-            cv::Point minLoc, maxLoc;
-            cv::minMaxLoc(matchResult, &minVal, &maxVal, &minLoc, &maxLoc);
-
-            // Ambiguity check
-            cv::Mat suppressed = matchResult.clone();
-            int suppressRadius = 10;
-
-            if (isHorizontal) {
-                int x0 = std::max(0, maxLoc.x - suppressRadius);
-                int x1 = std::min(matchResult.cols, maxLoc.x + suppressRadius + 1);
-                suppressed.colRange(x0, x1).setTo(-1.0);
-            } else {
-                int y0 = std::max(0, maxLoc.y - suppressRadius);
-                int y1 = std::min(matchResult.rows, maxLoc.y + suppressRadius + 1);
-                suppressed.rowRange(y0, y1).setTo(-1.0);
-            }
-
-            double secondMaxVal;
-            cv::minMaxLoc(suppressed, nullptr, &secondMaxVal, nullptr, nullptr);
-
-            if (maxVal - secondMaxVal < m_stitchConfig.ambiguityThreshold) {
-                if (maxVal > 0.4) {
-                    foundAmbiguous = true;
-                }
-                continue;
-            }
-
-            // Apply sub-pixel refinement for more accurate positioning
-            cv::Point2d refinedLoc = subPixelRefine2D(matchResult, maxLoc);
-
-            double fullOffset = templateTop - (searchTop + refinedLoc.y);
-
-            if (direction == ScrollDirection::Down && fullOffset <= 0.0) {
-                continue;
-            }
-            if (direction == ScrollDirection::Up && fullOffset >= 0.0) {
-                continue;
-            }
-
-            results.push_back({maxVal, fullOffset, varianceScore});
+        int searchMaxExtent = std::min(maxOverlap + templateHeight, newGray.rows);
+        if (searchMaxExtent <= templateHeight) {
+            continue;
         }
+
+        cv::Mat templateImg;
+        cv::Mat searchRegion;
+        int templateTop = 0;
+        int searchTop = 0;
+
+        if (direction == ScrollDirection::Down) {
+            templateTop = lastGray.rows - templateHeight;
+            templateImg = lastGray(cv::Rect(0, templateTop, lastGray.cols, templateHeight));
+            searchRegion = newGray(cv::Rect(0, 0, newGray.cols, searchMaxExtent));
+            searchTop = 0;
+        } else {
+            templateTop = 0;
+            templateImg = lastGray(cv::Rect(0, 0, lastGray.cols, templateHeight));
+            searchTop = newGray.rows - searchMaxExtent;
+            searchRegion = newGray(cv::Rect(0, searchTop, newGray.cols, searchMaxExtent));
+        }
+
+        double varianceScore = normalizedVariance(templateImg);
+        if (varianceScore < 0.002) {
+            continue;
+        }
+
+        if (templateImg.cols > searchRegion.cols || templateImg.rows > searchRegion.rows) {
+            continue;
+        }
+
+        cv::Mat matchResult;
+        cv::matchTemplate(searchRegion, templateImg, matchResult, cv::TM_CCOEFF_NORMED);
+
+        double minVal, maxVal;
+        cv::Point minLoc, maxLoc;
+        cv::minMaxLoc(matchResult, &minVal, &maxVal, &minLoc, &maxLoc);
+
+        // Ambiguity check
+        cv::Mat suppressed = matchResult.clone();
+        int suppressRadius = 10;
+
+        int y0 = std::max(0, maxLoc.y - suppressRadius);
+        int y1 = std::min(matchResult.rows, maxLoc.y + suppressRadius + 1);
+        suppressed.rowRange(y0, y1).setTo(-1.0);
+
+        double secondMaxVal;
+        cv::minMaxLoc(suppressed, nullptr, &secondMaxVal, nullptr, nullptr);
+
+        if (maxVal - secondMaxVal < m_stitchConfig.ambiguityThreshold) {
+            if (maxVal > 0.4) {
+                foundAmbiguous = true;
+            }
+            continue;
+        }
+
+        // Apply sub-pixel refinement for more accurate positioning
+        cv::Point2d refinedLoc = subPixelRefine2D(matchResult, maxLoc);
+
+        double fullOffset = templateTop - (searchTop + refinedLoc.y);
+
+        if (direction == ScrollDirection::Down && fullOffset <= 0.0) {
+            continue;
+        }
+        if (direction == ScrollDirection::Up && fullOffset >= 0.0) {
+            continue;
+        }
+
+        results.push_back({maxVal, fullOffset, varianceScore});
     }
 
     if (results.empty()) {
@@ -1088,10 +913,10 @@ ImageStitcher::MatchCandidate ImageStitcher::computeTemplateMatchCandidate(const
 
     // Apply ±1 pixel seam verification to find the best alignment
     int refinedOverlap = refinedOverlapWithFallback(
-        lastGray, newGray, direction, isHorizontal,
+        lastGray, newGray, direction,
         overlap, MIN_OVERLAP, maxReasonableOverlap);
 
-    double overlapDiff = normalizedOverlapDifference(lastGray, newGray, direction, isHorizontal, refinedOverlap);
+    double overlapDiff = normalizedOverlapDifference(lastGray, newGray, direction, refinedOverlap);
     if (overlapDiff > kMaxOverlapDiff) {
         candidate.confidence = 0.2;
         candidate.failureReason = QString("Overlap mismatch: %1").arg(overlapDiff, 0, 'f', 3);
@@ -1100,7 +925,7 @@ ImageStitcher::MatchCandidate ImageStitcher::computeTemplateMatchCandidate(const
     }
 
     // Multi-block verification to detect repetitive content misalignment
-    double multiBlockDiff = verifyMultiBlockSeam(lastGray, newGray, direction, isHorizontal, refinedOverlap);
+    double multiBlockDiff = verifyMultiBlockSeam(lastGray, newGray, direction, refinedOverlap);
     if (multiBlockDiff > kMultiBlockMaxDiff) {
         candidate.confidence *= 0.5;  // Penalize inconsistent matches
         if (candidate.confidence < m_stitchConfig.confidenceThreshold) {
@@ -1151,8 +976,6 @@ bool ImageStitcher::wouldCreateDuplicate(const QImage &newFrame, int overlapPixe
         return false;
     }
 
-    bool isVertical = (direction == ScrollDirection::Down || direction == ScrollDirection::Up);
-
     // Calculate window size first (before any conversion)
     int windowSize = std::max({
         overlapPixels * 2,
@@ -1167,19 +990,10 @@ bool ImageStitcher::wouldCreateDuplicate(const QImage &newFrame, int overlapPixe
         int h = m_stitchedResult.height() - y;
         if (h <= 0) return false;
         windowImage = m_stitchedResult.copy(0, y, m_stitchedResult.width(), h);
-    } else if (direction == ScrollDirection::Up) {
+    } else {
         int h = std::min(m_stitchedResult.height(), windowSize);
         if (h <= 0) return false;
         windowImage = m_stitchedResult.copy(0, 0, m_stitchedResult.width(), h);
-    } else if (direction == ScrollDirection::Right) {
-        int x = std::max(0, m_stitchedResult.width() - windowSize);
-        int w = m_stitchedResult.width() - x;
-        if (w <= 0) return false;
-        windowImage = m_stitchedResult.copy(x, 0, w, m_stitchedResult.height());
-    } else { // Left
-        int w = std::min(m_stitchedResult.width(), windowSize);
-        if (w <= 0) return false;
-        windowImage = m_stitchedResult.copy(0, 0, w, m_stitchedResult.height());
     }
 
     // Convert only the window and new frame (not the entire stitched result)
@@ -1195,27 +1009,17 @@ bool ImageStitcher::wouldCreateDuplicate(const QImage &newFrame, int overlapPixe
     cv::cvtColor(newMat, newGray, cv::COLOR_BGR2GRAY);
 
     // Extract the new content (non-overlap portion) to check for duplicates
-    int newContentSize = isVertical
-        ? (newGray.rows - overlapPixels)
-        : (newGray.cols - overlapPixels);
+    int newContentSize = newGray.rows - overlapPixels;
 
     if (newContentSize < 20) {
         return false;
     }
 
     cv::Mat newContent;
-    if (isVertical) {
-        if (direction == ScrollDirection::Down) {
-            newContent = newGray.rowRange(overlapPixels, newGray.rows);
-        } else {
-            newContent = newGray.rowRange(0, newContentSize);
-        }
+    if (direction == ScrollDirection::Down) {
+        newContent = newGray.rowRange(overlapPixels, newGray.rows);
     } else {
-        if (direction == ScrollDirection::Right) {
-            newContent = newGray.colRange(overlapPixels, newGray.cols);
-        } else {
-            newContent = newGray.colRange(0, newContentSize);
-        }
+        newContent = newGray.rowRange(0, newContentSize);
     }
 
     if (searchRegion.rows < newContent.rows || searchRegion.cols < newContent.cols) {
@@ -1252,298 +1056,79 @@ ImageStitcher::StitchResult ImageStitcher::performStitch(const QImage &newFrame,
 
     QImage newFrameRgb = newFrame.convertToFormat(QImage::Format_RGB32);
 
-    bool isHorizontal = (direction == ScrollDirection::Left || direction == ScrollDirection::Right);
+    int currentHeight = m_validHeight > 0 ? m_validHeight : m_stitchedResult.height();
 
-    if (isHorizontal) {
-        // Horizontal stitching
-        int currentWidth = m_validWidth > 0 ? m_validWidth : m_stitchedResult.width();
+    if (currentHeight <= 0 || m_stitchedResult.isNull()) {
+        result.failureReason = "Invalid stitcher state";
+        result.failureCode = FailureCode::InvalidState;
+        return result;
+    }
 
-        if (currentWidth <= 0 || m_stitchedResult.isNull()) {
-            result.failureReason = "Invalid stitcher state";
-            result.failureCode = FailureCode::InvalidState;
+    int maxOverlap = qMin(currentHeight, newFrameRgb.height()) - 1;
+    if (maxOverlap < MIN_OVERLAP) {
+        result.failureReason = QString("Overlap range too small (max %1 < min %2)").arg(maxOverlap).arg(MIN_OVERLAP);
+        result.failureCode = FailureCode::OverlapTooSmall;
+        return result;
+    }
+    overlapPixels = qBound(MIN_OVERLAP, overlapPixels, maxOverlap);
+
+    if (!m_currentViewportRect.isNull()) {
+        int predictedY = (direction == ScrollDirection::Down)
+            ? m_currentViewportRect.y() + m_currentViewportRect.height() - overlapPixels
+            : m_currentViewportRect.y() - (newFrameRgb.height() - overlapPixels);
+        QRect predictedRect(0, predictedY, newFrameRgb.width(), newFrameRgb.height());
+        QRect bounds(0, 0, m_stitchedResult.width(), currentHeight);
+        InPlaceMatch inPlace = findInPlaceMatch(
+            m_stitchedResult,
+            m_currentViewportRect,
+            newFrameRgb,
+            overlapPixels,
+            direction,
+            m_stitchedResult.width(),
+            currentHeight);
+        if (inPlace.found) {
+            m_currentViewportRect = inPlace.rect;
+            result.offset = inPlace.rect.topLeft();
+            result.success = true;
             return result;
         }
-
-        int maxOverlap = qMin(currentWidth, newFrameRgb.width()) - 1;
-        if (maxOverlap < MIN_OVERLAP) {
-            result.failureReason = QString("Overlap range too small (max %1 < min %2)").arg(maxOverlap).arg(MIN_OVERLAP);
-            result.failureCode = FailureCode::OverlapTooSmall;
-            return result;
-        }
-        overlapPixels = qBound(MIN_OVERLAP, overlapPixels, maxOverlap);
-
-        if (!m_currentViewportRect.isNull()) {
-            int predictedX = (direction == ScrollDirection::Right)
-                ? m_currentViewportRect.x() + m_currentViewportRect.width() - overlapPixels
-                : m_currentViewportRect.x() - (newFrameRgb.width() - overlapPixels);
-            QRect predictedRect(predictedX, 0, newFrameRgb.width(), newFrameRgb.height());
-            QRect bounds(0, 0, currentWidth, m_stitchedResult.height());
-            InPlaceMatch inPlace = findInPlaceMatch(
+        if (direction != m_lastSuccessfulDirection) {
+            InPlaceMatch global = findGlobalInPlaceMatch(
                 m_stitchedResult,
-                m_currentViewportRect,
-                newFrameRgb,
-                true,
-                overlapPixels,
-                direction,
-                currentWidth,
-                m_stitchedResult.height());
-            if (inPlace.found) {
-                m_currentViewportRect = inPlace.rect;
-                result.offset = inPlace.rect.topLeft();
-                result.success = true;
-                return result;
-            }
-            if (direction != m_lastSuccessfulDirection) {
-                InPlaceMatch global = findGlobalInPlaceMatch(
-                    m_stitchedResult,
-                    currentWidth,
-                    m_stitchedResult.height(),
-                    newFrameRgb,
-                    true);
-                if (global.found) {
-                    m_currentViewportRect = global.rect;
-                    result.offset = global.rect.topLeft();
-                    result.success = true;
-                    return result;
-                }
-            }
-            if (bounds.contains(predictedRect)) {
-                result.failureReason = "Viewport mismatch";
-                result.failureCode = FailureCode::ViewportMismatch;
-                return result;
-            }
-        }
-
-        if (direction == ScrollDirection::Right) {
-            // Append new frame to the right
-            int drawX = currentWidth - overlapPixels;
-            int newWidth = drawX + newFrameRgb.width();
-
-            if (newWidth > MAX_STITCHED_WIDTH) {
-                result.failureReason = QString("Maximum width reached (%1 pixels)").arg(MAX_STITCHED_WIDTH);
-                result.failureCode = FailureCode::MaxSizeReached;
-                return result;
-            }
-
-            if (newWidth > m_stitchedResult.width()) {
-                int newCapacity = std::max(newWidth, static_cast<int>(m_stitchedResult.width() * 1.5));
-                newCapacity = std::max(newCapacity, newWidth + 4096);
-                newCapacity = std::min(newCapacity, MAX_STITCHED_WIDTH + 4096);
-
-                QImage newStitched(newCapacity, m_stitchedResult.height(), QImage::Format_RGB32);
-                if (newStitched.isNull()) {
-                    result.failureReason = "Failed to allocate memory for stitched image";
-                    result.failureCode = FailureCode::InvalidState;
-                    return result;
-                }
-                newStitched.fill(Qt::black);
-
-                QPainter painter(&newStitched);
-                if (!painter.isActive()) {
-                    result.failureReason = "Failed to create painter for stitching";
-                    result.failureCode = FailureCode::InvalidState;
-                    return result;
-                }
-                // Disable smoothing to prevent seam artifacts
-                painter.setRenderHint(QPainter::SmoothPixmapTransform, false);
-                painter.setRenderHint(QPainter::Antialiasing, false);
-                painter.drawImage(0, 0, m_stitchedResult, 0, 0, currentWidth, m_stitchedResult.height());
-                painter.drawImage(drawX, 0, newFrameRgb);
-                if (!painter.end()) {
-                    qDebug() << "ImageStitcher: QPainter::end() failed for horizontal right stitch (expand)";
-                }
-
-                m_stitchedResult = newStitched;
-            } else {
-                QPainter painter(&m_stitchedResult);
-                if (!painter.isActive()) {
-                    result.failureReason = "Failed to create painter for stitching";
-                    result.failureCode = FailureCode::InvalidState;
-                    return result;
-                }
-                // Disable smoothing to prevent seam artifacts
-                painter.setRenderHint(QPainter::SmoothPixmapTransform, false);
-                painter.setRenderHint(QPainter::Antialiasing, false);
-                painter.drawImage(drawX, 0, newFrameRgb);
-                if (!painter.end()) {
-                    qDebug() << "ImageStitcher: QPainter::end() failed for horizontal right stitch (in-place)";
-                }
-            }
-
-            m_currentViewportRect = QRect(drawX, 0, newFrameRgb.width(), newFrameRgb.height());
-            m_validWidth = newWidth;
-            result.offset = QPoint(drawX, 0);
-        } else {
-            // Prepend new frame to the left
-            int drawX = newFrameRgb.width() - overlapPixels;
-            int newWidth = drawX + currentWidth;
-
-            if (newWidth > MAX_STITCHED_WIDTH) {
-                result.failureReason = QString("Maximum width reached (%1 pixels)").arg(MAX_STITCHED_WIDTH);
-                result.failureCode = FailureCode::MaxSizeReached;
-                return result;
-            }
-
-            QImage newStitched(newWidth, m_stitchedResult.height(), QImage::Format_RGB32);
-            if (newStitched.isNull()) {
-                result.failureReason = "Failed to allocate memory for stitched image";
-                result.failureCode = FailureCode::InvalidState;
-                return result;
-            }
-            newStitched.fill(Qt::black);
-
-            QPainter painter(&newStitched);
-            if (!painter.isActive()) {
-                result.failureReason = "Failed to create painter for stitching";
-                result.failureCode = FailureCode::InvalidState;
-                return result;
-            }
-            // Disable smoothing to prevent seam artifacts
-            painter.setRenderHint(QPainter::SmoothPixmapTransform, false);
-            painter.setRenderHint(QPainter::Antialiasing, false);
-            painter.drawImage(0, 0, newFrameRgb);
-            painter.drawImage(drawX, 0, m_stitchedResult, 0, 0, currentWidth, m_stitchedResult.height());
-            if (!painter.end()) {
-                qDebug() << "ImageStitcher: QPainter::end() failed for horizontal left stitch";
-            }
-
-            m_stitchedResult = newStitched;
-            m_validWidth = newWidth;
-
-            m_currentViewportRect = QRect(0, 0, newFrameRgb.width(), newFrameRgb.height());
-            result.offset = QPoint(0, 0);
-        }
-    } else {
-        // Vertical stitching
-        int currentHeight = m_validHeight > 0 ? m_validHeight : m_stitchedResult.height();
-
-        if (currentHeight <= 0 || m_stitchedResult.isNull()) {
-            result.failureReason = "Invalid stitcher state";
-            result.failureCode = FailureCode::InvalidState;
-            return result;
-        }
-
-        int maxOverlap = qMin(currentHeight, newFrameRgb.height()) - 1;
-        if (maxOverlap < MIN_OVERLAP) {
-            result.failureReason = QString("Overlap range too small (max %1 < min %2)").arg(maxOverlap).arg(MIN_OVERLAP);
-            result.failureCode = FailureCode::OverlapTooSmall;
-            return result;
-        }
-        overlapPixels = qBound(MIN_OVERLAP, overlapPixels, maxOverlap);
-
-        if (!m_currentViewportRect.isNull()) {
-            int predictedY = (direction == ScrollDirection::Down)
-                ? m_currentViewportRect.y() + m_currentViewportRect.height() - overlapPixels
-                : m_currentViewportRect.y() - (newFrameRgb.height() - overlapPixels);
-            QRect predictedRect(0, predictedY, newFrameRgb.width(), newFrameRgb.height());
-            QRect bounds(0, 0, m_stitchedResult.width(), currentHeight);
-            InPlaceMatch inPlace = findInPlaceMatch(
-                m_stitchedResult,
-                m_currentViewportRect,
-                newFrameRgb,
-                false,
-                overlapPixels,
-                direction,
                 m_stitchedResult.width(),
-                currentHeight);
-            if (inPlace.found) {
-                m_currentViewportRect = inPlace.rect;
-                result.offset = inPlace.rect.topLeft();
+                currentHeight,
+                newFrameRgb);
+            if (global.found) {
+                m_currentViewportRect = global.rect;
+                result.offset = global.rect.topLeft();
                 result.success = true;
                 return result;
             }
-            if (direction != m_lastSuccessfulDirection) {
-                InPlaceMatch global = findGlobalInPlaceMatch(
-                    m_stitchedResult,
-                    m_stitchedResult.width(),
-                    currentHeight,
-                    newFrameRgb,
-                    false);
-                if (global.found) {
-                    m_currentViewportRect = global.rect;
-                    result.offset = global.rect.topLeft();
-                    result.success = true;
-                    return result;
-                }
-            }
-            if (bounds.contains(predictedRect)) {
-                result.failureReason = "Viewport mismatch";
-                result.failureCode = FailureCode::ViewportMismatch;
-                return result;
-            }
+        }
+        if (bounds.contains(predictedRect)) {
+            result.failureReason = "Viewport mismatch";
+            result.failureCode = FailureCode::ViewportMismatch;
+            return result;
+        }
+    }
+
+    if (direction == ScrollDirection::Down) {
+        // Append new frame below
+        int drawY = currentHeight - overlapPixels;
+        int newHeight = drawY + newFrameRgb.height();
+
+        if (newHeight > MAX_STITCHED_HEIGHT) {
+            result.failureReason = QString("Maximum height reached (%1 pixels)").arg(MAX_STITCHED_HEIGHT);
+            result.failureCode = FailureCode::MaxSizeReached;
+            return result;
         }
 
-        if (direction == ScrollDirection::Down) {
-            // Append new frame below
-            int drawY = currentHeight - overlapPixels;
-            int newHeight = drawY + newFrameRgb.height();
+        if (newHeight > m_stitchedResult.height()) {
+            int newCapacity = std::max(newHeight, static_cast<int>(m_stitchedResult.height() * 1.5));
+            newCapacity = std::max(newCapacity, newHeight + 4096);
+            newCapacity = std::min(newCapacity, MAX_STITCHED_HEIGHT + 4096);
 
-            if (newHeight > MAX_STITCHED_HEIGHT) {
-                result.failureReason = QString("Maximum height reached (%1 pixels)").arg(MAX_STITCHED_HEIGHT);
-                result.failureCode = FailureCode::MaxSizeReached;
-                return result;
-            }
-
-            if (newHeight > m_stitchedResult.height()) {
-                int newCapacity = std::max(newHeight, static_cast<int>(m_stitchedResult.height() * 1.5));
-                newCapacity = std::max(newCapacity, newHeight + 4096);
-                newCapacity = std::min(newCapacity, MAX_STITCHED_HEIGHT + 4096);
-
-                QImage newStitched(m_stitchedResult.width(), newCapacity, QImage::Format_RGB32);
-                if (newStitched.isNull()) {
-                    result.failureReason = "Failed to allocate memory for stitched image";
-                    result.failureCode = FailureCode::InvalidState;
-                    return result;
-                }
-                newStitched.fill(Qt::black);
-
-                QPainter painter(&newStitched);
-                if (!painter.isActive()) {
-                    result.failureReason = "Failed to create painter for stitching";
-                    result.failureCode = FailureCode::InvalidState;
-                    return result;
-                }
-                // Disable smoothing to prevent seam artifacts
-                painter.setRenderHint(QPainter::SmoothPixmapTransform, false);
-                painter.setRenderHint(QPainter::Antialiasing, false);
-                painter.drawImage(0, 0, m_stitchedResult, 0, 0, m_stitchedResult.width(), currentHeight);
-                painter.drawImage(0, drawY, newFrameRgb);
-                if (!painter.end()) {
-                    qDebug() << "ImageStitcher: QPainter::end() failed for vertical down stitch (expand)";
-                }
-
-                m_stitchedResult = newStitched;
-            } else {
-                QPainter painter(&m_stitchedResult);
-                if (!painter.isActive()) {
-                    result.failureReason = "Failed to create painter for stitching";
-                    result.failureCode = FailureCode::InvalidState;
-                    return result;
-                }
-                // Disable smoothing to prevent seam artifacts
-                painter.setRenderHint(QPainter::SmoothPixmapTransform, false);
-                painter.setRenderHint(QPainter::Antialiasing, false);
-                painter.drawImage(0, drawY, newFrameRgb);
-                if (!painter.end()) {
-                    qDebug() << "ImageStitcher: QPainter::end() failed for vertical down stitch (in-place)";
-                }
-            }
-
-            m_currentViewportRect = QRect(0, drawY, newFrameRgb.width(), newFrameRgb.height());
-            m_validHeight = newHeight;
-            result.offset = QPoint(0, drawY);
-        } else {
-            // Prepend new frame above
-            int drawY = newFrameRgb.height() - overlapPixels;
-            int newHeight = drawY + currentHeight;
-
-            if (newHeight > MAX_STITCHED_HEIGHT) {
-                result.failureReason = QString("Maximum height reached (%1 pixels)").arg(MAX_STITCHED_HEIGHT);
-                result.failureCode = FailureCode::MaxSizeReached;
-                return result;
-            }
-
-            QImage newStitched(m_stitchedResult.width(), newHeight, QImage::Format_RGB32);
+            QImage newStitched(m_stitchedResult.width(), newCapacity, QImage::Format_RGB32);
             if (newStitched.isNull()) {
                 result.failureReason = "Failed to allocate memory for stitched image";
                 result.failureCode = FailureCode::InvalidState;
@@ -1560,18 +1145,71 @@ ImageStitcher::StitchResult ImageStitcher::performStitch(const QImage &newFrame,
             // Disable smoothing to prevent seam artifacts
             painter.setRenderHint(QPainter::SmoothPixmapTransform, false);
             painter.setRenderHint(QPainter::Antialiasing, false);
-            painter.drawImage(0, 0, newFrameRgb);
-            painter.drawImage(0, drawY, m_stitchedResult, 0, 0, m_stitchedResult.width(), currentHeight);
+            painter.drawImage(0, 0, m_stitchedResult, 0, 0, m_stitchedResult.width(), currentHeight);
+            painter.drawImage(0, drawY, newFrameRgb);
             if (!painter.end()) {
-                qDebug() << "ImageStitcher: QPainter::end() failed for vertical up stitch";
+                qDebug() << "ImageStitcher: QPainter::end() failed for vertical down stitch (expand)";
             }
 
             m_stitchedResult = newStitched;
-            m_validHeight = newHeight;
-
-            m_currentViewportRect = QRect(0, 0, newFrameRgb.width(), newFrameRgb.height());
-            result.offset = QPoint(0, 0);
+        } else {
+            QPainter painter(&m_stitchedResult);
+            if (!painter.isActive()) {
+                result.failureReason = "Failed to create painter for stitching";
+                result.failureCode = FailureCode::InvalidState;
+                return result;
+            }
+            // Disable smoothing to prevent seam artifacts
+            painter.setRenderHint(QPainter::SmoothPixmapTransform, false);
+            painter.setRenderHint(QPainter::Antialiasing, false);
+            painter.drawImage(0, drawY, newFrameRgb);
+            if (!painter.end()) {
+                qDebug() << "ImageStitcher: QPainter::end() failed for vertical down stitch (in-place)";
+            }
         }
+
+        m_currentViewportRect = QRect(0, drawY, newFrameRgb.width(), newFrameRgb.height());
+        m_validHeight = newHeight;
+        result.offset = QPoint(0, drawY);
+    } else {
+        // Prepend new frame above
+        int drawY = newFrameRgb.height() - overlapPixels;
+        int newHeight = drawY + currentHeight;
+
+        if (newHeight > MAX_STITCHED_HEIGHT) {
+            result.failureReason = QString("Maximum height reached (%1 pixels)").arg(MAX_STITCHED_HEIGHT);
+            result.failureCode = FailureCode::MaxSizeReached;
+            return result;
+        }
+
+        QImage newStitched(m_stitchedResult.width(), newHeight, QImage::Format_RGB32);
+        if (newStitched.isNull()) {
+            result.failureReason = "Failed to allocate memory for stitched image";
+            result.failureCode = FailureCode::InvalidState;
+            return result;
+        }
+        newStitched.fill(Qt::black);
+
+        QPainter painter(&newStitched);
+        if (!painter.isActive()) {
+            result.failureReason = "Failed to create painter for stitching";
+            result.failureCode = FailureCode::InvalidState;
+            return result;
+        }
+        // Disable smoothing to prevent seam artifacts
+        painter.setRenderHint(QPainter::SmoothPixmapTransform, false);
+        painter.setRenderHint(QPainter::Antialiasing, false);
+        painter.drawImage(0, 0, newFrameRgb);
+        painter.drawImage(0, drawY, m_stitchedResult, 0, 0, m_stitchedResult.width(), currentHeight);
+        if (!painter.end()) {
+            qDebug() << "ImageStitcher: QPainter::end() failed for vertical up stitch";
+        }
+
+        m_stitchedResult = newStitched;
+        m_validHeight = newHeight;
+
+        m_currentViewportRect = QRect(0, 0, newFrameRgb.width(), newFrameRgb.height());
+        result.offset = QPoint(0, 0);
     }
 
     result.success = true;
@@ -1631,14 +1269,9 @@ cv::Mat ImageStitcher::qImageToCvMat(const QImage &image) const
 // to find the offset. It's extremely fast (1D signal processing) and robust for repetitive patterns.
 ImageStitcher::StitchResult ImageStitcher::tryRowProjectionMatch(const QImage &newFrame)
 {
-    ScrollDirection primaryDir, secondaryDir;
-    if (m_captureMode == CaptureMode::Horizontal) {
-        primaryDir = ScrollDirection::Right;
-        secondaryDir = ScrollDirection::Left;
-    } else {
-        primaryDir = ScrollDirection::Down;
-        secondaryDir = ScrollDirection::Up;
-    }
+    // Vertical-only: Down is primary, Up is secondary
+    ScrollDirection primaryDir = ScrollDirection::Down;
+    ScrollDirection secondaryDir = ScrollDirection::Up;
 
     auto primaryCandidate = computeRowProjectionCandidate(newFrame, primaryDir);
     auto secondaryCandidate = computeRowProjectionCandidate(newFrame, secondaryDir);
@@ -1683,9 +1316,7 @@ ImageStitcher::StitchResult ImageStitcher::tryRowProjectionMatch(const QImage &n
     if (result.failureCode == FailureCode::None) {
         result.failureCode = FailureCode::NoAlgorithmSucceeded;
     }
-    QString dirNames = (m_captureMode == CaptureMode::Horizontal)
-        ? "Right: %1; Left: %2"
-        : "Down: %1; Up: %2";
+    QString dirNames = "Down: %1; Up: %2";
     result.failureReason = dirNames
         .arg(primaryCandidate.failureReason.isEmpty() ? "No match" : primaryCandidate.failureReason,
              secondaryCandidate.failureReason.isEmpty() ? "No match" : secondaryCandidate.failureReason);
@@ -1727,14 +1358,7 @@ ImageStitcher::StitchResult ImageStitcher::tryPhaseCorrelation(const QImage &new
     cv::Sobel(grayCurr, sobelY, CV_32F, 0, 1);
     cv::magnitude(sobelX, sobelY, gradCurr);
 
-    ScrollDirection candidates[2];
-    if (m_captureMode == CaptureMode::Horizontal) {
-        candidates[0] = ScrollDirection::Right;
-        candidates[1] = ScrollDirection::Left;
-    } else {
-        candidates[0] = ScrollDirection::Down;
-        candidates[1] = ScrollDirection::Up;
-    }
+    ScrollDirection candidates[2] = { ScrollDirection::Down, ScrollDirection::Up };
     
     // Prioritize last successful direction
     if (candidates[1] == m_lastSuccessfulDirection) {
@@ -1742,8 +1366,7 @@ ImageStitcher::StitchResult ImageStitcher::tryPhaseCorrelation(const QImage &new
     }
 
     for (ScrollDirection dir : candidates) {
-        bool isVertical = (dir == ScrollDirection::Down || dir == ScrollDirection::Up);
-        int frameDim = isVertical ? grayPrev.rows : grayPrev.cols;
+        int frameDim = grayPrev.rows;
         
         int roiSize = std::min({
             frameDim / 2,
@@ -1755,15 +1378,9 @@ ImageStitcher::StitchResult ImageStitcher::tryPhaseCorrelation(const QImage &new
         if (dir == ScrollDirection::Down) {
             roiPrev = gradPrev.rowRange(gradPrev.rows - roiSize, gradPrev.rows);
             roiCurr = gradCurr.rowRange(0, roiSize);
-        } else if (dir == ScrollDirection::Up) {
+        } else {
             roiPrev = gradPrev.rowRange(0, roiSize);
             roiCurr = gradCurr.rowRange(gradCurr.rows - roiSize, gradCurr.rows);
-        } else if (dir == ScrollDirection::Right) {
-            roiPrev = gradPrev.colRange(gradPrev.cols - roiSize, gradPrev.cols);
-            roiCurr = gradCurr.colRange(0, roiSize);
-        } else {
-            roiPrev = gradPrev.colRange(0, roiSize);
-            roiCurr = gradCurr.colRange(grayCurr.cols - roiSize, grayCurr.cols);
         }
         
         // Apply Hanning window to reduce edge effects
@@ -1779,8 +1396,8 @@ ImageStitcher::StitchResult ImageStitcher::tryPhaseCorrelation(const QImage &new
             continue;
         }
         
-        double crossAxisShift = isVertical ? std::abs(shift.x) : std::abs(shift.y);
-        double mainAxisShift = isVertical ? std::abs(shift.y) : std::abs(shift.x);
+        double crossAxisShift = std::abs(shift.x);
+        double mainAxisShift = std::abs(shift.y);
         
         if (crossAxisShift > m_stitchConfig.phaseMaxCrossAxisShift) {
             continue;
@@ -1801,7 +1418,7 @@ ImageStitcher::StitchResult ImageStitcher::tryPhaseCorrelation(const QImage &new
         
         // Wait, 'mainAxisShift' is absolute.
         // We need signed shift.
-        double signedShift = isVertical ? shift.y : shift.x;
+        double signedShift = shift.y;
         
         // If we scroll Down:
         // We expect curr to be "below" prev bottom? No.
@@ -1912,10 +1529,9 @@ ImageStitcher::MatchCandidate ImageStitcher::computeRowProjectionCandidate(
         return candidate;
     }
 
-    bool isHorizontal = (direction == ScrollDirection::Left || direction == ScrollDirection::Right);
-
-    int dx = isHorizontal ? 1 : 0;
-    int dy = isHorizontal ? 0 : 1;
+    // Vertical-only: always use vertical gradient
+    int dx = 0;
+    int dy = 1;
     cv::Mat lastGrad, newGrad;
     cv::Sobel(lastGray, lastGrad, CV_32F, dx, dy, 3);
     cv::Sobel(newGray, newGrad, CV_32F, dx, dy, 3);
@@ -1925,30 +1541,20 @@ ImageStitcher::MatchCandidate ImageStitcher::computeRowProjectionCandidate(
     cv::absdiff(newGrad, cv::Scalar::all(0), newAbs);
 
     cv::Mat lastProfile, newProfile;
-    if (isHorizontal) {
-        cv::reduce(lastAbs, lastProfile, 0, cv::REDUCE_SUM, CV_64F);
-        cv::reduce(newAbs, newProfile, 0, cv::REDUCE_SUM, CV_64F);
-    } else {
-        cv::reduce(lastAbs, lastProfile, 1, cv::REDUCE_SUM, CV_64F);
-        cv::reduce(newAbs, newProfile, 1, cv::REDUCE_SUM, CV_64F);
-    }
+    // Vertical-only: reduce rows (axis 1)
+    cv::reduce(lastAbs, lastProfile, 1, cv::REDUCE_SUM, CV_64F);
+    cv::reduce(newAbs, newProfile, 1, cv::REDUCE_SUM, CV_64F);
 
     std::vector<double> lastVec;
     std::vector<double> newVec;
-    if (isHorizontal) {
-        lastVec.assign(lastProfile.ptr<double>(0),
-                       lastProfile.ptr<double>(0) + lastProfile.cols);
-        newVec.assign(newProfile.ptr<double>(0),
-                      newProfile.ptr<double>(0) + newProfile.cols);
-    } else {
-        lastVec.reserve(static_cast<size_t>(lastProfile.rows));
-        newVec.reserve(static_cast<size_t>(newProfile.rows));
-        for (int i = 0; i < lastProfile.rows; ++i) {
-            lastVec.push_back(lastProfile.at<double>(i, 0));
-        }
-        for (int i = 0; i < newProfile.rows; ++i) {
-            newVec.push_back(newProfile.at<double>(i, 0));
-        }
+    // Vertical-only: extract from row profile
+    lastVec.reserve(static_cast<size_t>(lastProfile.rows));
+    newVec.reserve(static_cast<size_t>(newProfile.rows));
+    for (int i = 0; i < lastProfile.rows; ++i) {
+        lastVec.push_back(lastProfile.at<double>(i, 0));
+    }
+    for (int i = 0; i < newProfile.rows; ++i) {
+        newVec.push_back(newProfile.at<double>(i, 0));
     }
 
     if (lastVec.size() != newVec.size() ||
@@ -1965,7 +1571,7 @@ ImageStitcher::MatchCandidate ImageStitcher::computeRowProjectionCandidate(
         return candidate;
     }
 
-    bool isForward = (direction == ScrollDirection::Down || direction == ScrollDirection::Right);
+    bool isForward = (direction == ScrollDirection::Down);
 
     double bestCorr = -1.0;
     double secondBestCorr = -1.0;
@@ -2023,10 +1629,10 @@ ImageStitcher::MatchCandidate ImageStitcher::computeRowProjectionCandidate(
 
     // Apply ±1 pixel seam verification to find the best alignment
     int refinedOverlap = refinedOverlapWithFallback(
-        lastGray, newGray, direction, isHorizontal,
+        lastGray, newGray, direction,
         bestOverlap, MIN_OVERLAP, maxOverlap);
 
-    double overlapDiff = normalizedOverlapDifference(lastGray, newGray, direction, isHorizontal, refinedOverlap);
+    double overlapDiff = normalizedOverlapDifference(lastGray, newGray, direction, refinedOverlap);
     if (overlapDiff > kMaxOverlapDiff) {
         candidate.confidence = 0.2;
         candidate.failureReason = QString("Overlap mismatch: %1").arg(overlapDiff, 0, 'f', 3);
@@ -2034,7 +1640,7 @@ ImageStitcher::MatchCandidate ImageStitcher::computeRowProjectionCandidate(
     }
 
     // Multi-block verification to detect repetitive content misalignment
-    double multiBlockDiff = verifyMultiBlockSeam(lastGray, newGray, direction, isHorizontal, refinedOverlap);
+    double multiBlockDiff = verifyMultiBlockSeam(lastGray, newGray, direction, refinedOverlap);
 
     double baseConfidence = std::clamp(bestCorr, 0.0, 1.0);
     double uniqueness = 1.0;

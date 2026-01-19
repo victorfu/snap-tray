@@ -230,7 +230,6 @@ void ScrollingCaptureManager::createComponents(const QRect* presetRegion)
     connect(m_toolbar, &ScrollingCaptureToolbar::copyClicked, this, &ScrollingCaptureManager::onCopyClicked);
     connect(m_toolbar, &ScrollingCaptureToolbar::closeClicked, this, &ScrollingCaptureManager::onCloseClicked);
     connect(m_toolbar, &ScrollingCaptureToolbar::cancelClicked, this, &ScrollingCaptureManager::onCancelClicked);
-    connect(m_toolbar, &ScrollingCaptureToolbar::directionToggled, this, &ScrollingCaptureManager::onDirectionToggled);
     m_toolbar->hide();
 
     // Create thumbnail
@@ -435,51 +434,6 @@ void ScrollingCaptureManager::onCancelClicked()
     });
 }
 
-void ScrollingCaptureManager::onDirectionToggled()
-{
-    // Toggle between vertical and horizontal
-    if (m_captureDirection == CaptureDirection::Vertical) {
-        setCaptureDirection(CaptureDirection::Horizontal);
-    } else {
-        setCaptureDirection(CaptureDirection::Vertical);
-    }
-}
-
-void ScrollingCaptureManager::setCaptureDirection(CaptureDirection direction)
-{
-    if (m_captureDirection == direction) {
-        return;
-    }
-
-    m_captureDirection = direction;
-
-    // Reset recovery estimate variables to prevent cross-direction contamination
-    m_estimatedScrollPerFrame = 0;
-    m_hasScrollEstimate = false;
-
-    // Update toolbar direction display
-    if (m_toolbar) {
-        m_toolbar->setDirection(direction == CaptureDirection::Vertical
-            ? ScrollingCaptureToolbar::Direction::Vertical
-            : ScrollingCaptureToolbar::Direction::Horizontal);
-    }
-
-    // Update thumbnail direction
-    if (m_thumbnail) {
-        m_thumbnail->setDirection(direction == CaptureDirection::Vertical
-            ? ScrollingCaptureThumbnail::Direction::Vertical
-            : ScrollingCaptureThumbnail::Direction::Horizontal);
-    }
-
-    // Update overlay direction for constrained move during capture
-    if (m_overlay) {
-        m_overlay->setCaptureDirection(direction == CaptureDirection::Vertical
-            ? ScrollingCaptureOverlay::CaptureDirection::Vertical
-            : ScrollingCaptureOverlay::CaptureDirection::Horizontal);
-    }
-
-    emit directionChanged(direction);
-}
 
 bool ScrollingCaptureManager::isAutoScrollSupported()
 {
@@ -545,41 +499,7 @@ void ScrollingCaptureManager::startFrameCapture()
 
     // Initialize StitchWorker
     m_stitchWorker->reset();
-    m_stitchWorker->setCaptureMode(m_captureDirection == CaptureDirection::Vertical
-        ? StitchWorker::CaptureMode::Vertical
-        : StitchWorker::CaptureMode::Horizontal);
     m_stitchWorker->setStitchConfig(0.85, true);  // confidence threshold, detect static regions
-
-    // Configure auto-scroll mode
-    if (m_scrollMode == ScrollMode::Auto) {
-        AutoScrollController::Config config;
-        // Scroll 65% of frame height to achieve ~35% overlap
-        int scrollDelta = (m_captureDirection == CaptureDirection::Vertical)
-            ? static_cast<int>(m_captureRegion.height() * 0.65)
-            : static_cast<int>(m_captureRegion.width() * 0.65);
-        config.scrollDeltaPixels = scrollDelta;
-        config.stabilizationDelayMs = 50;
-        config.targetOverlapRatio = 0.35;
-
-        m_autoScrollController->setConfig(config);
-        m_autoScrollController->setCaptureRegion(m_captureRegion);
-        m_autoScrollController->setDirection(
-            m_captureDirection == CaptureDirection::Vertical
-                ? AutoScrollController::ScrollDirection::Down
-                : AutoScrollController::ScrollDirection::Right);
-
-        // Stop the capture timer - auto-scroll will drive capture via readyForCapture signal
-        m_captureTimer->stop();
-
-        // Start auto-scroll controller
-        if (!m_autoScrollController->start()) {
-            qWarning() << "ScrollingCaptureManager: AutoScroll failed to start, falling back to manual";
-            m_scrollMode = ScrollMode::Manual;
-            m_captureTimer->start(m_captureIntervalMs);
-        } else {
-            qDebug() << "ScrollingCaptureManager: Auto-scroll started with delta" << scrollDelta << "px";
-        }
-    }
 }
 
 void ScrollingCaptureManager::stopFrameCapture()
@@ -773,9 +693,9 @@ void ScrollingCaptureManager::updateRecoveryEstimate(const StitchWorker::Result 
         return;
     }
     
+    
     // Calculate actual scroll delta
-    bool isVertical = (m_captureDirection == CaptureDirection::Vertical);
-    int frameDim = isVertical ? result.frameSize.height() : result.frameSize.width();
+    int frameDim = result.frameSize.height();
     int deltaPx = frameDim - result.overlapPixels;
     
     if (deltaPx <= 0) return;  // Invalid
@@ -915,10 +835,8 @@ void ScrollingCaptureManager::handleSuccess(const StitchWorker::Result &result)
         m_thumbnail->setStatus(m_currentStatus);
         m_thumbnail->clearError();
 
-        // Update scroll speed indicator based on overlap ratio
-        int frameHeight = (m_captureDirection == CaptureDirection::Vertical)
-            ? result.frameSize.height()
-            : result.frameSize.width();
+        // Update scroll speed indicator based on overlap ratio (vertical capture only)
+        int frameHeight = result.frameSize.height();
         if (frameHeight > 0 && result.overlapPixels > 0) {
             double overlapRatio = static_cast<double>(result.overlapPixels) / frameHeight;
             m_thumbnail->setOverlapRatio(overlapRatio);
@@ -931,15 +849,6 @@ void ScrollingCaptureManager::handleSuccess(const StitchWorker::Result &result)
         if (m_overlay) {
             m_overlay->clearMatchFailedMessage();
         }
-    }
-
-    // In auto-scroll mode, trigger the next scroll after successful frame processing
-    if (m_scrollMode == ScrollMode::Auto && m_autoScrollController) {
-        // Compute frame hash for end-of-content detection
-        QImage lastFrame = grabCaptureRegion();
-        uint64_t frameHash = computeFrameHash(lastFrame);
-        m_autoScrollController->notifyFrameCaptured(frameHash);
-        m_autoScrollController->triggerNextScroll();
     }
 
     emit matchStatusChanged(true, result.confidence, m_lastSuccessfulPosition);
@@ -969,9 +878,7 @@ void ScrollingCaptureManager::handleFailure(const StitchWorker::Result &result)
         m_thumbnail->setErrorInfo(result.failureCode, result.failureReason, recoveryPx);
     }
     if (m_overlay && status == CStatus::Failed) {
-        QString hint = (m_captureDirection == CaptureDirection::Vertical)
-            ? tr("Match failed - scroll back up slowly")
-            : tr("Match failed - scroll back left slowly");
+        QString hint = tr("Match failed - scroll back up slowly");
         m_overlay->setMatchFailedMessage(hint);
     }
 
@@ -1043,7 +950,7 @@ void ScrollingCaptureManager::onStitchError(const QString &message)
 
 void ScrollingCaptureManager::onAutoScrollReadyForCapture()
 {
-    if (m_state != State::Capturing || m_scrollMode != ScrollMode::Auto) {
+    if (m_state != State::Capturing) {
         return;
     }
 
@@ -1062,19 +969,14 @@ void ScrollingCaptureManager::onAutoScrollStateChanged(AutoScrollController::Sta
     qDebug() << "ScrollingCaptureManager: AutoScroll state changed to" << static_cast<int>(state);
 
     if (state == AutoScrollController::State::Error) {
-        // Fall back to manual mode
-        qWarning() << "ScrollingCaptureManager: AutoScroll error, falling back to manual mode";
-        m_scrollMode = ScrollMode::Manual;
-        m_captureTimer->start(m_captureIntervalMs);
-        emit autoScrollError(tr("Auto-scroll error, switched to manual mode"));
+        qWarning() << "ScrollingCaptureManager: AutoScroll error";
+        emit autoScrollError(tr("Auto-scroll error"));
     }
 }
 
 void ScrollingCaptureManager::onAutoScrollError(const QString &message)
 {
     qWarning() << "ScrollingCaptureManager: AutoScroll error -" << message;
-    m_scrollMode = ScrollMode::Manual;
-    m_captureTimer->start(m_captureIntervalMs);
     emit autoScrollError(message);
 }
 

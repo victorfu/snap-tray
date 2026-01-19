@@ -45,17 +45,9 @@ public:
 
     enum class ScrollDirection {
         Down,
-        Up,
-        Left,
-        Right
+        Up
     };
     Q_ENUM(ScrollDirection)
-
-    enum class CaptureMode {
-        Vertical,
-        Horizontal
-    };
-    Q_ENUM(CaptureMode)
 
     enum class FailureCode {
         None,                   // Success
@@ -90,9 +82,6 @@ public:
     ~ImageStitcher();
 
     // Configuration
-    void setCaptureMode(CaptureMode mode);
-    CaptureMode captureMode() const { return m_captureMode; }
-
     void setStitchConfig(const StitchConfig &config);
     StitchConfig stitchConfig() const { return m_stitchConfig; }
 
@@ -153,7 +142,6 @@ private:
     bool wouldCreateDuplicate(const QImage &newFrame, int overlapPixels, ScrollDirection direction) const;
 
     Algorithm m_algorithm = Algorithm::Auto;
-    CaptureMode m_captureMode = CaptureMode::Vertical;
     StitchConfig m_stitchConfig;
 
     QImage m_stitchedResult;

@@ -21,10 +21,6 @@ void FixedElementDetector::setEnabled(bool enabled)
     m_enabled = enabled;
 }
 
-void FixedElementDetector::setCaptureMode(CaptureMode mode)
-{
-    m_captureMode = mode;
-}
 
 void FixedElementDetector::reset()
 {
@@ -48,42 +44,9 @@ void FixedElementDetector::addFrame(const QImage &frame)
     QImage leadingRegion;
     QImage trailingRegion;
 
-    if (m_captureMode == CaptureMode::Vertical) {
-        // Calculate region height with bounds validation
-        int regionHeight = std::min(ANALYSIS_REGION_SIZE, frame.height() / 3);
-        if (regionHeight < MIN_ANALYSIS_REGION_SIZE) {
-            qDebug() << "FixedElementDetector: Frame too small for analysis";
-            return;
-        }
-
-        // Validate region bounds before extraction
-        int trailingY = frame.height() - regionHeight;
-        if (trailingY < 0) {
-            trailingY = 0;
-            regionHeight = frame.height();
-        }
-
-        // Extract leading (top) and trailing (bottom) regions for vertical scrolling
-        leadingRegion = frame.copy(0, 0, frame.width(), regionHeight);
-        trailingRegion = frame.copy(0, trailingY, frame.width(), regionHeight);
-    } else {
-        // Horizontal mode: extract left and right regions
-        int regionWidth = std::min(ANALYSIS_REGION_SIZE, frame.width() / 3);
-        if (regionWidth < MIN_ANALYSIS_REGION_SIZE) {
-            qDebug() << "FixedElementDetector: Frame too small for horizontal analysis";
-            return;
-        }
-
-        int trailingX = frame.width() - regionWidth;
-        if (trailingX < 0) {
-            trailingX = 0;
-            regionWidth = frame.width();
-        }
-
-        // Extract leading (left) and trailing (right) regions for horizontal scrolling
-        leadingRegion = frame.copy(0, 0, regionWidth, frame.height());
-        trailingRegion = frame.copy(trailingX, 0, regionWidth, frame.height());
-    }
+    // Calculate region height with bounds validation    int regionHeight = std::min(ANALYSIS_REGION_SIZE, frame.height() / 3);    if (regionHeight < MIN_ANALYSIS_REGION_SIZE) {        qDebug() << "FixedElementDetector: Frame too small for analysis";        return;    }
+    // Validate region bounds before extraction    int trailingY = frame.height() - regionHeight;    if (trailingY < 0) {        trailingY = 0;        regionHeight = frame.height();    }
+    // Extract leading (top) and trailing (bottom) regions for vertical scrolling    leadingRegion = frame.copy(0, 0, frame.width(), regionHeight);    trailingRegion = frame.copy(0, trailingY, frame.width(), regionHeight);
 
     if (leadingRegion.isNull() || trailingRegion.isNull()) {
         qDebug() << "FixedElementDetector: Failed to extract regions";
@@ -172,43 +135,23 @@ void FixedElementDetector::analyzeLeadingRegion()
         return;
     }
 
-    if (m_captureMode == CaptureMode::Vertical) {
-        // Vertical mode: check rows from top
-        int consistentRows = 0;
-        for (int y = 0; y < height; ++y) {
-            bool rowIsFixed = true;
-            for (size_t i = 1; i < m_leadingRegions.size(); ++i) {
-                if (!compareRows(m_leadingRegions[i-1], m_leadingRegions[i], y)) {
-                    rowIsFixed = false;
-                    break;
-                }
-            }
-            if (rowIsFixed) {
-                consistentRows++;
-            } else {
+    // Vertical mode: check rows from top
+    int consistentRows = 0;
+    for (int y = 0; y < height; ++y) {
+        bool rowIsFixed = true;
+        for (size_t i = 1; i < m_leadingRegions.size(); ++i) {
+            if (!compareRows(m_leadingRegions[i-1], m_leadingRegions[i], y)) {
+                rowIsFixed = false;
                 break;
             }
         }
-        m_leadingCropSize = consistentRows;
-    } else {
-        // Horizontal mode: check columns from left
-        int consistentCols = 0;
-        for (int x = 0; x < width; ++x) {
-            bool colIsFixed = true;
-            for (size_t i = 1; i < m_leadingRegions.size(); ++i) {
-                if (!compareColumns(m_leadingRegions[i-1], m_leadingRegions[i], x)) {
-                    colIsFixed = false;
-                    break;
-                }
-            }
-            if (colIsFixed) {
-                consistentCols++;
-            } else {
-                break;
-            }
+        if (rowIsFixed) {
+            consistentRows++;
+        } else {
+            break;
         }
-        m_leadingCropSize = consistentCols;
     }
+    m_leadingCropSize = consistentRows;
 }
 
 void FixedElementDetector::analyzeTrailingRegion()
@@ -235,43 +178,23 @@ void FixedElementDetector::analyzeTrailingRegion()
         return;
     }
 
-    if (m_captureMode == CaptureMode::Vertical) {
-        // Vertical mode: check rows from bottom
-        int consistentRows = 0;
-        for (int y = height - 1; y >= 0; --y) {
-            bool rowIsFixed = true;
-            for (size_t i = 1; i < m_trailingRegions.size(); ++i) {
-                if (!compareRows(m_trailingRegions[i-1], m_trailingRegions[i], y)) {
-                    rowIsFixed = false;
-                    break;
-                }
-            }
-            if (rowIsFixed) {
-                consistentRows++;
-            } else {
+    // Vertical mode: check rows from bottom
+    int consistentRows = 0;
+    for (int y = height - 1; y >= 0; --y) {
+        bool rowIsFixed = true;
+        for (size_t i = 1; i < m_trailingRegions.size(); ++i) {
+            if (!compareRows(m_trailingRegions[i-1], m_trailingRegions[i], y)) {
+                rowIsFixed = false;
                 break;
             }
         }
-        m_trailingCropSize = consistentRows;
-    } else {
-        // Horizontal mode: check columns from right
-        int consistentCols = 0;
-        for (int x = width - 1; x >= 0; --x) {
-            bool colIsFixed = true;
-            for (size_t i = 1; i < m_trailingRegions.size(); ++i) {
-                if (!compareColumns(m_trailingRegions[i-1], m_trailingRegions[i], x)) {
-                    colIsFixed = false;
-                    break;
-                }
-            }
-            if (colIsFixed) {
-                consistentCols++;
-            } else {
-                break;
-            }
+        if (rowIsFixed) {
+            consistentRows++;
+        } else {
+            break;
         }
-        m_trailingCropSize = consistentCols;
     }
+    m_trailingCropSize = consistentRows;
 }
 
 bool FixedElementDetector::compareRows(const QImage &img1, const QImage &img2, int y) const
@@ -341,19 +264,10 @@ QImage FixedElementDetector::cropFixedRegions(const QImage &frame) const
         return frame;
     }
 
-    if (m_captureMode == CaptureMode::Vertical) {
-        // Vertical scrolling: crop top (leading) and bottom (trailing) fixed regions
-        int newHeight = frame.height() - m_leadingCropSize - m_trailingCropSize;
-        if (newHeight <= 0) {
-            return frame;
-        }
-        return frame.copy(0, m_leadingCropSize, frame.width(), newHeight);
-    } else {
-        // Horizontal scrolling: crop left (leading) and right (trailing) fixed regions
-        int newWidth = frame.width() - m_leadingCropSize - m_trailingCropSize;
-        if (newWidth <= 0) {
-            return frame;
-        }
-        return frame.copy(m_leadingCropSize, 0, newWidth, frame.height());
+    // Vertical scrolling: crop top (leading) and bottom (trailing) fixed regions
+    int newHeight = frame.height() - m_leadingCropSize - m_trailingCropSize;
+    if (newHeight <= 0) {
+        return frame;
     }
+    return frame.copy(0, m_leadingCropSize, frame.width(), newHeight);
 }
