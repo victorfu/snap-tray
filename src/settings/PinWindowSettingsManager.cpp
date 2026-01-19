@@ -67,3 +67,18 @@ void PinWindowSettingsManager::saveShadowEnabled(bool enabled)
     auto settings = SnapTray::getSettings();
     settings.setValue(kSettingsKeyShadowEnabled, enabled);
 }
+
+int PinWindowSettingsManager::loadMaxCacheFiles() const
+{
+    auto settings = SnapTray::getSettings();
+    int maxFiles = settings.value(kSettingsKeyMaxCacheFiles, kDefaultMaxCacheFiles).toInt();
+    if (maxFiles < 5) maxFiles = 5;
+    if (maxFiles > 200) maxFiles = 200;
+    return maxFiles;
+}
+
+void PinWindowSettingsManager::saveMaxCacheFiles(int maxFiles)
+{
+    auto settings = SnapTray::getSettings();
+    settings.setValue(kSettingsKeyMaxCacheFiles, maxFiles);
+}

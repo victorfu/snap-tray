@@ -30,11 +30,16 @@ public:
     bool loadShadowEnabled() const;
     void saveShadowEnabled(bool enabled);
 
+    // Max cache files (5 - 200)
+    int loadMaxCacheFiles() const;
+    void saveMaxCacheFiles(int maxFiles);
+
     // Default values
     static constexpr qreal kDefaultOpacity = 1.0;
     static constexpr qreal kDefaultOpacityStep = 0.05;
     static constexpr qreal kDefaultZoomStep = 0.05;
     static constexpr bool kDefaultShadowEnabled = true;
+    static constexpr int kDefaultMaxCacheFiles = 20;
 
 private:
     PinWindowSettingsManager() = default;
@@ -45,6 +50,7 @@ private:
     static constexpr const char* kSettingsKeyOpacityStep = "pinWindow/opacityStep";
     static constexpr const char* kSettingsKeyZoomStep = "pinWindow/zoomStep";
     static constexpr const char* kSettingsKeyShadowEnabled = "pinWindow/shadowEnabled";
+    static constexpr const char* kSettingsKeyMaxCacheFiles = "pinWindow/maxCacheFiles";
 };
 
 #endif // PINWINDOWSETTINGSMANAGER_H

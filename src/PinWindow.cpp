@@ -897,8 +897,9 @@ void PinWindow::openCacheFolder()
 void PinWindow::saveToCacheAsync()
 {
     QPixmap pixmapToSave = m_originalPixmap;
+    int maxCacheFiles = PinWindowSettingsManager::instance().loadMaxCacheFiles();
 
-    QThreadPool::globalInstance()->start([pixmapToSave]() {
+    QThreadPool::globalInstance()->start([pixmapToSave, maxCacheFiles]() {
         QString path = cacheFolderPath();
         QDir dir(path);
         if (!dir.exists()) {
@@ -914,11 +915,24 @@ void PinWindow::saveToCacheAsync()
 
         if (pixmapToSave.save(filePath)) {
             qDebug() << "PinWindow: Saved to cache:" << filePath;
+
+            // Clean up old cache files exceeding the limit
+            QStringList filters;
+            filters << "cache_*.png";
+            QFileInfoList files = dir.entryInfoList(filters, QDir::Files, QDir::Time);
+
+            // QDir::Time sorts by modification time, newest first
+            while (files.size() > maxCacheFiles) {
+                const QFileInfo& oldest = files.takeLast();
+                if (QFile::remove(oldest.filePath())) {
+                    qDebug() << "PinWindow: Removed old cache file:" << oldest.fileName();
+                }
+            }
         }
         else {
             qWarning() << "PinWindow: Failed to save to cache:" << filePath;
         }
-        });
+    });
 }
 
 void PinWindow::applyClickThroughState(bool enabled)
@@ -2681,7 +2695,16 @@ void PinWindow::updateAnnotationCursor(const QPoint& pos)
     QPoint mappedPos = mapToOriginalCoords(pos);
     auto& cursorManager = CursorManager::instance();
 
-    // Use unified hit testing from CursorManager
+    // Check selected text annotation's gizmo handles first (highest priority)
+    if (auto* textItem = getSelectedTextAnnotation()) {
+        GizmoHandle handle = TransformationGizmo::hitTest(textItem, mappedPos);
+        if (handle != GizmoHandle::None) {
+            cursorManager.setHoverTarget(HoverTarget::GizmoHandle, static_cast<int>(handle));
+            return;
+        }
+    }
+
+    // Use unified hit testing from CursorManager for other annotations
     auto result = CursorManager::hitTestAnnotations(
         mappedPos,
         m_annotationLayer,

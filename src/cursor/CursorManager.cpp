@@ -577,7 +577,17 @@ CursorManager::AnnotationHitResult CursorManager::hitTestAnnotations(
         }
     }
 
-    // 2. Check selected polyline's vertex handles
+    // 2. Check text annotation hover
+    int textHitIndex = layer->hitTestText(pos);
+    if (textHitIndex >= 0) {
+        result.hit = true;
+        result.target = HoverTarget::Annotation;
+        result.handleIndex = textHitIndex;
+        result.cursor = Qt::SizeAllCursor;
+        return result;
+    }
+
+    // 3. Check selected polyline's vertex handles
     if (selectedPolyline) {
         int vertexIndex = TransformationGizmo::hitTestVertex(selectedPolyline, pos);
         if (vertexIndex >= 0) {

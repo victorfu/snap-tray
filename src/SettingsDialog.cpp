@@ -292,6 +292,24 @@ void SettingsDialog::setupGeneralTab(QWidget* tab)
     zoomStepLayout->addWidget(m_pinWindowZoomStepLabel);
     layout->addLayout(zoomStepLayout);
 
+    // Max cache files slider
+    QHBoxLayout* cacheFilesLayout = new QHBoxLayout();
+    QLabel* cacheFilesLabel = new QLabel("Max cache files:", tab);
+    cacheFilesLabel->setFixedWidth(120);
+    m_pinWindowMaxCacheFilesSlider = new QSlider(Qt::Horizontal, tab);
+    m_pinWindowMaxCacheFilesSlider->setRange(5, 200);
+    int currentMaxCacheFiles = pinSettings.loadMaxCacheFiles();
+    m_pinWindowMaxCacheFilesSlider->setValue(currentMaxCacheFiles);
+    m_pinWindowMaxCacheFilesLabel = new QLabel(QString::number(currentMaxCacheFiles), tab);
+    m_pinWindowMaxCacheFilesLabel->setFixedWidth(40);
+    connect(m_pinWindowMaxCacheFilesSlider, &QSlider::valueChanged, this, [this](int value) {
+        m_pinWindowMaxCacheFilesLabel->setText(QString::number(value));
+    });
+    cacheFilesLayout->addWidget(cacheFilesLabel);
+    cacheFilesLayout->addWidget(m_pinWindowMaxCacheFilesSlider);
+    cacheFilesLayout->addWidget(m_pinWindowMaxCacheFilesLabel);
+    layout->addLayout(cacheFilesLayout);
+
     layout->addStretch();
 }
 
@@ -991,6 +1009,7 @@ void SettingsDialog::onSave()
     pinSettings.saveDefaultOpacity(m_pinWindowOpacitySlider->value() / 100.0);
     pinSettings.saveOpacityStep(m_pinWindowOpacityStepSlider->value() / 100.0);
     pinSettings.saveZoomStep(m_pinWindowZoomStepSlider->value() / 100.0);
+    pinSettings.saveMaxCacheFiles(m_pinWindowMaxCacheFilesSlider->value());
 
     // Save file settings
     auto& fileSettings = FileSettingsManager::instance();

@@ -158,6 +158,8 @@ private:
     QLabel *m_pinWindowOpacityStepLabel;
     QSlider *m_pinWindowZoomStepSlider;
     QLabel *m_pinWindowZoomStepLabel;
+    QSlider *m_pinWindowMaxCacheFilesSlider;
+    QLabel *m_pinWindowMaxCacheFilesLabel;
 
     // Files tab
     void setupFilesTab(QWidget *tab);
