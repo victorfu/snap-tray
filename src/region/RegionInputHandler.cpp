@@ -1106,21 +1106,12 @@ bool RegionInputHandler::handleTextAnnotationRelease()
 
 bool RegionInputHandler::handleEmojiStickerRelease()
 {
-    if (m_isEmojiDragging) {
+    if (m_isEmojiDragging || m_isEmojiScaling) {
         m_isEmojiDragging = false;
-        // Restore cross cursor for EmojiSticker tool
-        if (m_currentTool == ToolId::EmojiSticker) {
-            emitCursorChangeIfNeeded(Qt::CrossCursor);
-        }
-        return true;
-    }
-    if (m_isEmojiScaling) {
         m_isEmojiScaling = false;
         m_activeEmojiHandle = GizmoHandle::None;
-        // Restore cross cursor for EmojiSticker tool
-        if (m_currentTool == ToolId::EmojiSticker) {
-            emitCursorChangeIfNeeded(Qt::CrossCursor);
-        }
+        // Pop selection cursor to let hover logic take over (consistent with arrow/polyline)
+        CursorManager::instance().popCursor(CursorContext::Selection);
         return true;
     }
     return false;

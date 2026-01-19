@@ -486,35 +486,8 @@ void CursorManager::updateCursorFromState()
             }
             break;
         case HoverTarget::GizmoHandle:
-            // Use appropriate cursor based on gizmo handle type
             if (m_hoverHandleIndex >= 0) {
-                GizmoHandle handle = static_cast<GizmoHandle>(m_hoverHandleIndex);
-                switch (handle) {
-                case GizmoHandle::Body:
-                    hoverCursor = Qt::SizeAllCursor;
-                    break;
-                case GizmoHandle::Rotation:
-                    hoverCursor = Qt::PointingHandCursor;
-                    break;
-                case GizmoHandle::TopLeft:
-                case GizmoHandle::BottomRight:
-                    hoverCursor = Qt::SizeFDiagCursor;
-                    break;
-                case GizmoHandle::TopRight:
-                case GizmoHandle::BottomLeft:
-                    hoverCursor = Qt::SizeBDiagCursor;
-                    break;
-                case GizmoHandle::ArrowStart:
-                case GizmoHandle::ArrowEnd:
-                    hoverCursor = Qt::CrossCursor;
-                    break;
-                case GizmoHandle::ArrowControl:
-                    hoverCursor = Qt::PointingHandCursor;
-                    break;
-                default:
-                    hoverCursor = Qt::ArrowCursor;
-                    break;
-                }
+                hoverCursor = cursorForGizmoHandle(static_cast<GizmoHandle>(m_hoverHandleIndex));
             }
             break;
         default:
