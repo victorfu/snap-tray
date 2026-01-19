@@ -70,7 +70,8 @@ IToolHandler* ToolManager::handler(ToolId id) {
     return nullptr;
 }
 
-void ToolManager::handleMousePress(const QPoint& pos) {
+void ToolManager::handleMousePress(const QPoint& pos, Qt::KeyboardModifiers modifiers) {
+    m_context->shiftPressed = modifiers & Qt::ShiftModifier;
     if (auto* h = currentHandler()) {
         m_wasDrawing = h->isDrawing();
         h->onMousePress(m_context.get(), pos);
@@ -80,13 +81,15 @@ void ToolManager::handleMousePress(const QPoint& pos) {
     }
 }
 
-void ToolManager::handleMouseMove(const QPoint& pos) {
+void ToolManager::handleMouseMove(const QPoint& pos, Qt::KeyboardModifiers modifiers) {
+    m_context->shiftPressed = modifiers & Qt::ShiftModifier;
     if (auto* h = currentHandler()) {
         h->onMouseMove(m_context.get(), pos);
     }
 }
 
-void ToolManager::handleMouseRelease(const QPoint& pos) {
+void ToolManager::handleMouseRelease(const QPoint& pos, Qt::KeyboardModifiers modifiers) {
+    m_context->shiftPressed = modifiers & Qt::ShiftModifier;
     if (auto* h = currentHandler()) {
         bool wasDrawing = h->isDrawing();
         h->onMouseRelease(m_context.get(), pos);

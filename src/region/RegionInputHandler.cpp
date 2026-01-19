@@ -148,6 +148,8 @@ void RegionInputHandler::setShapeFillMode(int mode)
 
 void RegionInputHandler::handleMousePress(QMouseEvent* event)
 {
+    m_currentModifiers = event->modifiers();
+
     if (event->button() == Qt::LeftButton) {
         if (m_selectionManager->isComplete()) {
             // Handle inline text editing
@@ -243,6 +245,7 @@ void RegionInputHandler::handleMousePress(QMouseEvent* event)
 
 void RegionInputHandler::handleMouseMove(QMouseEvent* event)
 {
+    m_currentModifiers = event->modifiers();
     m_currentPoint = event->pos();
 
     // Race condition recovery: mouse button was already pressed when window appeared
@@ -307,6 +310,8 @@ void RegionInputHandler::handleMouseMove(QMouseEvent* event)
 
 void RegionInputHandler::handleMouseRelease(QMouseEvent* event)
 {
+    m_currentModifiers = event->modifiers();
+
     if (event->button() == Qt::LeftButton) {
         // Handle text editor drag release
         if (handleTextEditorRelease(event->pos())) {
@@ -992,7 +997,7 @@ void RegionInputHandler::handleHoverMove(const QPoint& pos, Qt::MouseButtons but
 
     // Handle eraser tool mouse move for hover highlighting
     if (m_currentTool == ToolId::Eraser && m_toolManager) {
-        m_toolManager->handleMouseMove(pos);
+        m_toolManager->handleMouseMove(pos, m_currentModifiers);
     }
 }
 
@@ -1198,7 +1203,7 @@ void RegionInputHandler::startAnnotation(const QPoint& pos)
         m_toolManager->setShapeFillMode(m_shapeFillMode);
 
         m_toolManager->setCurrentTool(m_currentTool);
-        m_toolManager->handleMousePress(pos);
+        m_toolManager->handleMousePress(pos, m_currentModifiers);
         m_isDrawing = m_toolManager->isDrawing();
 
         if (!m_isDrawing && (m_currentTool == ToolId::StepBadge ||
@@ -1213,14 +1218,14 @@ void RegionInputHandler::startAnnotation(const QPoint& pos)
 void RegionInputHandler::updateAnnotation(const QPoint& pos)
 {
     if (isToolManagerHandledTool(m_currentTool)) {
-        m_toolManager->handleMouseMove(pos);
+        m_toolManager->handleMouseMove(pos, m_currentModifiers);
     }
 }
 
 void RegionInputHandler::finishAnnotation()
 {
     if (isToolManagerHandledTool(m_currentTool)) {
-        m_toolManager->handleMouseRelease(m_currentPoint);
+        m_toolManager->handleMouseRelease(m_currentPoint, m_currentModifiers);
         m_isDrawing = m_toolManager->isDrawing();
     }
     else {

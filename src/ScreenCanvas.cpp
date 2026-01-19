@@ -806,7 +806,7 @@ void ScreenCanvas::mousePressEvent(QMouseEvent* event)
 
         // Start annotation drawing
         if (isDrawingTool(m_currentToolId)) {
-            m_toolManager->handleMousePress(event->pos());
+            m_toolManager->handleMousePress(event->pos(), event->modifiers());
             update();
         }
     }
@@ -860,7 +860,7 @@ void ScreenCanvas::mouseMoveEvent(QMouseEvent* event)
     }
 
     if (m_toolManager->isDrawing()) {
-        m_toolManager->handleMouseMove(event->pos());
+        m_toolManager->handleMouseMove(event->pos(), event->modifiers());
         update();
     }
     else {
@@ -981,7 +981,7 @@ void ScreenCanvas::mouseReleaseEvent(QMouseEvent* event)
         // StepBadge/EmojiSticker place on release but isDrawing() returns false, so handle them specially
         if (m_toolManager->isDrawing() || m_currentToolId == ToolId::StepBadge ||
             m_currentToolId == ToolId::EmojiSticker) {
-            m_toolManager->handleMouseRelease(event->pos());
+            m_toolManager->handleMouseRelease(event->pos(), event->modifiers());
             update();
         }
     }

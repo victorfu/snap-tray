@@ -53,6 +53,9 @@ public:
     bool isDrawing = false;
     QPoint drawStartPoint;
 
+    // Keyboard modifier state for constrained drawing
+    bool shiftPressed = false;
+
     // Callbacks
     std::function<void()> requestRepaint;
     std::function<void(std::unique_ptr<AnnotationItem>)> addAnnotation;

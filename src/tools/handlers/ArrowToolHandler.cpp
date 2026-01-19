@@ -1,5 +1,6 @@
 #include "tools/handlers/ArrowToolHandler.h"
 #include "tools/ToolContext.h"
+#include "utils/AngleSnap.h"
 
 #include <QPainter>
 #include <QDebug>
@@ -27,14 +28,26 @@ void ArrowToolHandler::onMousePress(ToolContext* ctx, const QPoint& pos) {
         // Already in polyline mode - check for double-click to finish
         if (m_clickTimer.isValid() && m_clickTimer.elapsed() < DOUBLE_CLICK_INTERVAL) {
             // Double-click detected - finish the polyline
-            m_currentPolyline->updateLastPoint(pos);
+            // Apply angle snapping if Shift is held
+            QPoint snappedPos = pos;
+            if (ctx->shiftPressed && m_currentPolyline->pointCount() >= 2) {
+                QPoint lastConfirmed = m_currentPolyline->points().at(m_currentPolyline->pointCount() - 2);
+                snappedPos = AngleSnap::snapTo45Degrees(lastConfirmed, pos);
+            }
+            m_currentPolyline->updateLastPoint(snappedPos);
             finishPolyline(ctx);
             return;
         }
 
         // Add a new point (confirm the preview point and add new preview)
-        m_currentPolyline->updateLastPoint(pos);  // Confirm current preview position
-        m_currentPolyline->addPoint(pos);  // Add new preview point
+        // Apply angle snapping if Shift is held
+        QPoint snappedPos = pos;
+        if (ctx->shiftPressed && m_currentPolyline->pointCount() >= 2) {
+            QPoint lastConfirmed = m_currentPolyline->points().at(m_currentPolyline->pointCount() - 2);
+            snappedPos = AngleSnap::snapTo45Degrees(lastConfirmed, pos);
+        }
+        m_currentPolyline->updateLastPoint(snappedPos);  // Confirm current preview position
+        m_currentPolyline->addPoint(snappedPos);  // Add new preview point
         m_clickTimer.restart();
         ctx->repaint();
     } else {
@@ -51,7 +64,13 @@ void ArrowToolHandler::onMouseMove(ToolContext* ctx, const QPoint& pos) {
     if (m_isPolylineMode) {
         // Update the preview point to follow cursor
         if (m_currentPolyline) {
-            m_currentPolyline->updateLastPoint(pos);
+            QPoint snappedPos = pos;
+            if (ctx->shiftPressed && m_currentPolyline->pointCount() >= 2) {
+                // Snap to 45-degree angles from the last confirmed point
+                QPoint lastConfirmed = m_currentPolyline->points().at(m_currentPolyline->pointCount() - 2);
+                snappedPos = AngleSnap::snapTo45Degrees(lastConfirmed, pos);
+            }
+            m_currentPolyline->updateLastPoint(snappedPos);
             ctx->repaint();
         }
         return;
@@ -66,13 +85,18 @@ void ArrowToolHandler::onMouseMove(ToolContext* ctx, const QPoint& pos) {
     if (diff.manhattanLength() > 3) {
         m_hasDragged = true;
 
+        // Apply angle snapping if Shift is held
+        QPoint endPos = ctx->shiftPressed
+            ? AngleSnap::snapTo45Degrees(m_startPoint, pos)
+            : pos;
+
         // Create or update straight arrow
         if (!m_currentArrow) {
             m_currentArrow = std::make_unique<ArrowAnnotation>(
-                m_startPoint, pos, ctx->color, ctx->width, ctx->arrowStyle, ctx->lineStyle
+                m_startPoint, endPos, ctx->color, ctx->width, ctx->arrowStyle, ctx->lineStyle
             );
         } else {
-            m_currentArrow->setEnd(pos);
+            m_currentArrow->setEnd(endPos);
         }
         ctx->repaint();
     }
@@ -93,7 +117,11 @@ void ArrowToolHandler::onMouseRelease(ToolContext* ctx, const QPoint& pos) {
         QPoint diff = pos - m_startPoint;
         if (diff.manhattanLength() > 5) {
             if (m_currentArrow) {
-                m_currentArrow->setEnd(pos);
+                // Apply angle snapping if Shift is held
+                QPoint endPos = ctx->shiftPressed
+                    ? AngleSnap::snapTo45Degrees(m_startPoint, pos)
+                    : pos;
+                m_currentArrow->setEnd(endPos);
                 ctx->addItem(std::move(m_currentArrow));
             }
         }
@@ -126,7 +154,13 @@ void ArrowToolHandler::onDoubleClick(ToolContext* ctx, const QPoint& pos) {
     }
 
     // Update the last point to the double-click position
-    m_currentPolyline->updateLastPoint(pos);
+    // Apply angle snapping if Shift is held
+    QPoint snappedPos = pos;
+    if (ctx->shiftPressed && m_currentPolyline->pointCount() >= 2) {
+        QPoint lastConfirmed = m_currentPolyline->points().at(m_currentPolyline->pointCount() - 2);
+        snappedPos = AngleSnap::snapTo45Degrees(lastConfirmed, pos);
+    }
+    m_currentPolyline->updateLastPoint(snappedPos);
     finishPolyline(ctx);
 }
 

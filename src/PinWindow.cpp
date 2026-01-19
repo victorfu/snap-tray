@@ -1219,7 +1219,7 @@ void PinWindow::mousePressEvent(QMouseEvent* event)
                 // Transform display coordinates to original image coordinates
                 // This is needed because annotations are stored in original space
                 // but rendered with rotation/flip transforms applied
-                m_toolManager->handleMousePress(mapToOriginalCoords(event->pos()));
+                m_toolManager->handleMousePress(mapToOriginalCoords(event->pos()), event->modifiers());
                 update();
                 return;
             }
@@ -1278,7 +1278,7 @@ void PinWindow::mouseMoveEvent(QMouseEvent* event)
 
     // In annotation mode with active drawing, route to ToolManager
     if (m_annotationMode && m_toolManager && m_toolManager->isDrawing()) {
-        m_toolManager->handleMouseMove(mapToOriginalCoords(event->pos()));
+        m_toolManager->handleMouseMove(mapToOriginalCoords(event->pos()), event->modifiers());
         update();
         return;
     }
@@ -1383,7 +1383,7 @@ void PinWindow::mouseReleaseEvent(QMouseEvent* event)
                 m_currentToolId == ToolId::StepBadge);
 
             if (m_toolManager->isDrawing() || isSingleClickTool) {
-                m_toolManager->handleMouseRelease(mapToOriginalCoords(event->pos()));
+                m_toolManager->handleMouseRelease(mapToOriginalCoords(event->pos()), event->modifiers());
                 updateUndoRedoState();
                 update();
                 return;

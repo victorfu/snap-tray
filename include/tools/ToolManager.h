@@ -62,9 +62,9 @@ public:
     IToolHandler* handler(ToolId id);
 
     // Event dispatch methods
-    void handleMousePress(const QPoint& pos);
-    void handleMouseMove(const QPoint& pos);
-    void handleMouseRelease(const QPoint& pos);
+    void handleMousePress(const QPoint& pos, Qt::KeyboardModifiers modifiers = Qt::NoModifier);
+    void handleMouseMove(const QPoint& pos, Qt::KeyboardModifiers modifiers = Qt::NoModifier);
+    void handleMouseRelease(const QPoint& pos, Qt::KeyboardModifiers modifiers = Qt::NoModifier);
     void handleDoubleClick(const QPoint& pos);
 
     /**

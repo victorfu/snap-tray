@@ -216,6 +216,9 @@ private:
     // Cursor batching - avoid redundant cursor change signals
     Qt::CursorShape m_lastEmittedCursor = Qt::ArrowCursor;
 
+    // Keyboard modifiers from current event (for angle snapping)
+    Qt::KeyboardModifiers m_currentModifiers = Qt::NoModifier;
+
     // Constants
     static constexpr int WINDOW_DETECTION_MIN_DISTANCE_SQ = 64;  // 8px threshold squared (improved for high-DPI)
 };
