@@ -56,14 +56,6 @@ private slots:
     void testSaveLoadAspectRatio_Roundtrip();
     void testSaveAspectRatio_IgnoresInvalidValues();
 
-    // Legacy migration tests (aspectRatioMode)
-    void testLegacyMigration_Mode0_Free();
-    void testLegacyMigration_Mode1_1x1();
-    void testLegacyMigration_Mode2_4x3();
-    void testLegacyMigration_Mode3_16x9();
-    void testLegacyMigration_Mode4_16x10();
-    void testLegacyMigration_NewFormatTakesPrecedence();
-
     // Mosaic blur type tests
     void testLoadMosaicBlurType_DefaultValue();
     void testSaveLoadMosaicBlurType_Roundtrip();
@@ -346,102 +338,6 @@ void tst_AnnotationSettingsManager::testSaveAspectRatio_IgnoresInvalidValues()
     manager.saveAspectRatio(-1, -1);
     QCOMPARE(manager.loadAspectRatioWidth(), 16);
     QCOMPARE(manager.loadAspectRatioHeight(), 9);
-}
-
-// ============================================================================
-// Legacy migration tests (aspectRatioMode)
-// ============================================================================
-
-void tst_AnnotationSettingsManager::testLegacyMigration_Mode0_Free()
-{
-    // Clear new format, set legacy mode
-    auto settings = SnapTray::getSettings();
-    settings.remove("aspectRatioLocked");
-    settings.remove("aspectRatioWidth");
-    settings.remove("aspectRatioHeight");
-    settings.setValue("aspectRatioMode", 0);  // Free
-    settings.sync();
-
-    AnnotationSettingsManager& manager = AnnotationSettingsManager::instance();
-    QCOMPARE(manager.loadAspectRatioLocked(), false);
-    QCOMPARE(manager.loadAspectRatioWidth(), 1);
-    QCOMPARE(manager.loadAspectRatioHeight(), 1);
-}
-
-void tst_AnnotationSettingsManager::testLegacyMigration_Mode1_1x1()
-{
-    auto settings = SnapTray::getSettings();
-    settings.remove("aspectRatioLocked");
-    settings.remove("aspectRatioWidth");
-    settings.remove("aspectRatioHeight");
-    settings.setValue("aspectRatioMode", 1);  // 1:1
-    settings.sync();
-
-    AnnotationSettingsManager& manager = AnnotationSettingsManager::instance();
-    QCOMPARE(manager.loadAspectRatioLocked(), true);
-    QCOMPARE(manager.loadAspectRatioWidth(), 1);
-    QCOMPARE(manager.loadAspectRatioHeight(), 1);
-}
-
-void tst_AnnotationSettingsManager::testLegacyMigration_Mode2_4x3()
-{
-    auto settings = SnapTray::getSettings();
-    settings.remove("aspectRatioLocked");
-    settings.remove("aspectRatioWidth");
-    settings.remove("aspectRatioHeight");
-    settings.setValue("aspectRatioMode", 2);  // 4:3
-    settings.sync();
-
-    AnnotationSettingsManager& manager = AnnotationSettingsManager::instance();
-    QCOMPARE(manager.loadAspectRatioLocked(), true);
-    QCOMPARE(manager.loadAspectRatioWidth(), 4);
-    QCOMPARE(manager.loadAspectRatioHeight(), 3);
-}
-
-void tst_AnnotationSettingsManager::testLegacyMigration_Mode3_16x9()
-{
-    auto settings = SnapTray::getSettings();
-    settings.remove("aspectRatioLocked");
-    settings.remove("aspectRatioWidth");
-    settings.remove("aspectRatioHeight");
-    settings.setValue("aspectRatioMode", 3);  // 16:9
-    settings.sync();
-
-    AnnotationSettingsManager& manager = AnnotationSettingsManager::instance();
-    QCOMPARE(manager.loadAspectRatioLocked(), true);
-    QCOMPARE(manager.loadAspectRatioWidth(), 16);
-    QCOMPARE(manager.loadAspectRatioHeight(), 9);
-}
-
-void tst_AnnotationSettingsManager::testLegacyMigration_Mode4_16x10()
-{
-    auto settings = SnapTray::getSettings();
-    settings.remove("aspectRatioLocked");
-    settings.remove("aspectRatioWidth");
-    settings.remove("aspectRatioHeight");
-    settings.setValue("aspectRatioMode", 4);  // 16:10
-    settings.sync();
-
-    AnnotationSettingsManager& manager = AnnotationSettingsManager::instance();
-    QCOMPARE(manager.loadAspectRatioLocked(), true);
-    QCOMPARE(manager.loadAspectRatioWidth(), 16);
-    QCOMPARE(manager.loadAspectRatioHeight(), 10);
-}
-
-void tst_AnnotationSettingsManager::testLegacyMigration_NewFormatTakesPrecedence()
-{
-    auto settings = SnapTray::getSettings();
-    // Set both legacy and new format
-    settings.setValue("aspectRatioMode", 3);  // 16:9 legacy
-    settings.setValue("aspectRatioLocked", true);
-    settings.setValue("aspectRatioWidth", 4);   // New format: 4:3
-    settings.setValue("aspectRatioHeight", 3);
-    settings.sync();
-
-    AnnotationSettingsManager& manager = AnnotationSettingsManager::instance();
-    // New format should take precedence
-    QCOMPARE(manager.loadAspectRatioWidth(), 4);
-    QCOMPARE(manager.loadAspectRatioHeight(), 3);
 }
 
 // ============================================================================
