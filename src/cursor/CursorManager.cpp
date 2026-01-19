@@ -196,6 +196,13 @@ void CursorManager::clearAllForWidget(QWidget* widget)
     widget->setCursor(Qt::ArrowCursor);
 }
 
+void CursorManager::setButtonCursor(QWidget* button)
+{
+    if (button) {
+        instance().pushCursorForWidget(button, CursorContext::Hover, Qt::PointingHandCursor);
+    }
+}
+
 void CursorManager::applyCursorForWidget(QWidget* widget)
 {
     if (!widget) {

@@ -174,6 +174,16 @@ public:
      */
     void clearAllForWidget(QWidget* widget);
 
+    /**
+     * @brief Set a pointing hand cursor for a button widget.
+     *
+     * Convenience method for buttons that need hover cursor feedback.
+     * Uses the per-widget cursor system with Hover context.
+     *
+     * @param button The button widget to set cursor on
+     */
+    static void setButtonCursor(QWidget* button);
+
     // ========================================================================
     // Tool Cursor Integration
     // ========================================================================

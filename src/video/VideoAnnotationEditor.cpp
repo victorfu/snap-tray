@@ -177,7 +177,7 @@ public:
         , m_hovered(false)
         , m_cornerRadius(6)
     {
-        setCursor(Qt::PointingHandCursor);
+        CursorManager::setButtonCursor(this);
         setFocusPolicy(Qt::NoFocus);
         setCheckable(true);
     }
@@ -235,7 +235,7 @@ public:
         , m_hovered(false)
         , m_cornerRadius(6)
     {
-        setCursor(Qt::PointingHandCursor);
+        CursorManager::setButtonCursor(this);
         setFocusPolicy(Qt::NoFocus);
     }
 

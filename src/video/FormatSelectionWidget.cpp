@@ -1,4 +1,5 @@
 #include "video/FormatSelectionWidget.h"
+#include "cursor/CursorManager.h"
 #include "ToolbarStyle.h"
 
 #include <QButtonGroup>
@@ -26,7 +27,7 @@ void FormatSelectionWidget::setupUI()
     m_mp4Btn->setFixedSize(kButtonWidth, kButtonHeight);
     m_mp4Btn->setCheckable(true);
     m_mp4Btn->setChecked(true);
-    m_mp4Btn->setCursor(Qt::PointingHandCursor);
+    CursorManager::setButtonCursor(m_mp4Btn);
     m_mp4Btn->setToolTip(tr("Best quality, widely compatible"));
     m_buttonGroup->addButton(m_mp4Btn, static_cast<int>(Format::MP4));
     layout->addWidget(m_mp4Btn);
@@ -34,7 +35,7 @@ void FormatSelectionWidget::setupUI()
     m_gifBtn = new QPushButton("GIF", this);
     m_gifBtn->setFixedSize(kButtonWidth, kButtonHeight);
     m_gifBtn->setCheckable(true);
-    m_gifBtn->setCursor(Qt::PointingHandCursor);
+    CursorManager::setButtonCursor(m_gifBtn);
     m_gifBtn->setToolTip(tr("Universal support, larger file size"));
     m_buttonGroup->addButton(m_gifBtn, static_cast<int>(Format::GIF));
     layout->addWidget(m_gifBtn);
@@ -42,7 +43,7 @@ void FormatSelectionWidget::setupUI()
     m_webpBtn = new QPushButton("WebP", this);
     m_webpBtn->setFixedSize(kButtonWidth, kButtonHeight);
     m_webpBtn->setCheckable(true);
-    m_webpBtn->setCursor(Qt::PointingHandCursor);
+    CursorManager::setButtonCursor(m_webpBtn);
     m_webpBtn->setToolTip(tr("Small file size, modern browsers only"));
     m_buttonGroup->addButton(m_webpBtn, static_cast<int>(Format::WebP));
     layout->addWidget(m_webpBtn);

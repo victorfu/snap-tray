@@ -6,6 +6,7 @@
 #include "video/VideoAnnotationEditor.h"
 #include "video/AnnotationTrack.h"
 #include "video/VideoAnnotationRenderer.h"
+#include "cursor/CursorManager.h"
 #include "encoding/EncoderFactory.h"
 #include "encoding/NativeGifEncoder.h"
 #include "encoding/WebPAnimEncoder.h"
@@ -106,7 +107,7 @@ public:
         , m_useCustomIconColor(false)
         , m_cornerRadius(6)
     {
-        setCursor(Qt::PointingHandCursor);
+        CursorManager::setButtonCursor(this);
         setFocusPolicy(Qt::NoFocus);
     }
 
@@ -189,7 +190,7 @@ public:
         , m_muted(false)
         , m_hovered(false)
     {
-        setCursor(Qt::PointingHandCursor);
+        CursorManager::setButtonCursor(this);
         setFocusPolicy(Qt::NoFocus);
     }
 
@@ -279,7 +280,7 @@ public:
         , m_useAccentColor(false)
     {
         setText(text);
-        setCursor(Qt::PointingHandCursor);
+        CursorManager::setButtonCursor(this);
         setFocusPolicy(Qt::NoFocus);
         setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
     }
