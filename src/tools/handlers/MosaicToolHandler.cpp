@@ -1,5 +1,6 @@
 #include "tools/handlers/MosaicToolHandler.h"
 #include "tools/ToolContext.h"
+#include "cursor/CursorManager.h"
 
 #include <QPainter>
 
@@ -70,4 +71,18 @@ void MosaicToolHandler::cancelDrawing() {
     m_isDrawing = false;
     m_currentPath.clear();
     m_currentStroke.reset();
+}
+
+QCursor MosaicToolHandler::cursor() const {
+    // Use 2x width for cursor (UI shows half the actual drawing size)
+    int effectiveWidth = m_brushWidth * 2;
+    if (m_cachedCursorWidth != effectiveWidth || m_cachedCursor.pixmap().isNull()) {
+        m_cachedCursor = CursorManager::createMosaicCursor(effectiveWidth);
+        m_cachedCursorWidth = effectiveWidth;
+    }
+    return m_cachedCursor;
+}
+
+void MosaicToolHandler::setWidth(int width) {
+    m_brushWidth = width > 0 ? width : kDefaultBrushWidth;
 }

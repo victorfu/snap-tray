@@ -7,6 +7,7 @@
 
 #include <QVector>
 #include <QPoint>
+#include <QCursor>
 #include <memory>
 
 /**
@@ -33,10 +34,26 @@ public:
     bool supportsColor() const override { return false; }
     bool supportsWidth() const override { return true; }
 
+    QCursor cursor() const override;
+
+    /**
+     * @brief Set the brush width for cursor display.
+     *
+     * This should be called before cursor() to ensure the correct
+     * cursor size is returned. The width is automatically doubled
+     * for display (UI shows half the actual drawing size).
+     */
+    void setWidth(int width);
+
 private:
     bool m_isDrawing = false;
     QVector<QPoint> m_currentPath;
     std::unique_ptr<MosaicStroke> m_currentStroke;
+
+    // Cursor caching (same pattern as EraserToolHandler)
+    mutable QCursor m_cachedCursor;
+    mutable int m_cachedCursorWidth = 0;
+    int m_brushWidth = kDefaultBrushWidth;
 };
 
 #endif // MOSAICTOOLHANDLER_H

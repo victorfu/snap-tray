@@ -7,6 +7,7 @@
 #include "tools/ToolManager.h"
 #include "tools/IToolHandler.h"
 #include "tools/ToolId.h"
+#include "tools/handlers/MosaicToolHandler.h"
 #include "TransformationGizmo.h"  // For GizmoHandle enum
 
 CursorManager::CursorManager()
@@ -239,12 +240,11 @@ void CursorManager::updateToolCursor()
     ToolId currentTool = m_toolManager->currentTool();
     IToolHandler* handler = m_toolManager->currentHandler();
 
-    // Special handling for mosaic tool - needs dynamic size
-    // Use 2x width for mosaic cursor (UI shows half the actual drawing size)
+    // For Mosaic tool, update the handler's width before getting cursor
     if (currentTool == ToolId::Mosaic) {
-        int mosaicWidth = m_toolManager->width() * 2;
-        pushCursor(CursorContext::Tool, createMosaicCursor(mosaicWidth));
-        return;
+        if (auto* mosaicHandler = dynamic_cast<MosaicToolHandler*>(handler)) {
+            mosaicHandler->setWidth(m_toolManager->width());
+        }
     }
 
     // Use handler's cursor() method

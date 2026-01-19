@@ -909,24 +909,9 @@ void ScreenCanvas::mouseMoveEvent(QMouseEvent* event)
             cursorManager.pushCursor(CursorContext::Hover, Qt::OpenHandCursor);
         }
         else {
-            // Check annotation cursors
+            // Check annotation cursors - updateAnnotationCursor handles both
+            // pushing cursors for hits and popping for non-hits
             updateAnnotationCursor(event->pos());
-            
-            // If updateAnnotationCursor didn't push a cursor (how do we know?), we should pop.
-            // Actually, CursorManager stacks. If we push check, it's on top.
-            // But if we DON'T hit annotation, we need to POP any previous hover cursor.
-            // The logic in ScreenCanvas seems to rely on "if not UI, pop".
-            
-            // Let's refine:
-            bool annotationHit = false;
-            if (getSelectedArrowAnnotation() && TransformationGizmo::hitTest(getSelectedArrowAnnotation(), event->pos()) != GizmoHandle::None) annotationHit = true;
-            else if (m_annotationLayer->hitTestArrow(event->pos()) >= 0) annotationHit = true;
-            else if (getSelectedPolylineAnnotation() && TransformationGizmo::hitTestVertex(getSelectedPolylineAnnotation(), event->pos()) != -2) annotationHit = true;
-            else if (m_annotationLayer->hitTestPolyline(event->pos()) >= 0) annotationHit = true;
-            
-            if (!annotationHit) {
-                 cursorManager.popCursor(CursorContext::Hover);
-            }
         }
 
         if (needsUpdate) {
