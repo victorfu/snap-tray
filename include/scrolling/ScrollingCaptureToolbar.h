@@ -28,12 +28,6 @@ public:
     };
     Q_ENUM(Direction)
 
-    enum class ScrollMode {
-        Manual,
-        Auto
-    };
-    Q_ENUM(ScrollMode)
-
     explicit ScrollingCaptureToolbar(QWidget *parent = nullptr);
     ~ScrollingCaptureToolbar();
 
@@ -42,10 +36,6 @@ public:
 
     void setDirection(Direction direction);
     Direction direction() const { return m_direction; }
-
-    void setScrollMode(ScrollMode mode);
-    ScrollMode scrollMode() const { return m_scrollMode; }
-    void setAutoScrollAvailable(bool available);
 
     void positionNear(const QRect &region);
     void updateSize(int width, int height);
@@ -60,7 +50,6 @@ signals:
     void closeClicked();
     void cancelClicked();
     void directionToggled();
-    void scrollModeToggled();
 
 protected:
     void paintEvent(QPaintEvent *event) override;
@@ -73,7 +62,6 @@ private:
     // Button IDs specific to ScrollingCaptureToolbar
     enum ButtonId {
         ButtonDirection = 0,  // Toggle vertical/horizontal
-        ButtonAutoScroll,     // Toggle auto/manual scroll mode
         ButtonStart,
         ButtonStop,
         ButtonPin,
@@ -95,8 +83,6 @@ private:
 
     Mode m_mode = Mode::Adjusting;
     Direction m_direction = Direction::Vertical;
-    ScrollMode m_scrollMode = ScrollMode::Manual;
-    bool m_autoScrollAvailable = false;
 
     // Labels
     QLabel *m_sizeLabel;

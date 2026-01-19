@@ -231,10 +231,6 @@ void ScrollingCaptureManager::createComponents(const QRect* presetRegion)
     connect(m_toolbar, &ScrollingCaptureToolbar::closeClicked, this, &ScrollingCaptureManager::onCloseClicked);
     connect(m_toolbar, &ScrollingCaptureToolbar::cancelClicked, this, &ScrollingCaptureManager::onCancelClicked);
     connect(m_toolbar, &ScrollingCaptureToolbar::directionToggled, this, &ScrollingCaptureManager::onDirectionToggled);
-    connect(m_toolbar, &ScrollingCaptureToolbar::scrollModeToggled, this, &ScrollingCaptureManager::onScrollModeToggled);
-
-    // Set auto-scroll availability based on platform support and permissions
-    m_toolbar->setAutoScrollAvailable(isAutoScrollSupported() && hasAutoScrollPermission());
     m_toolbar->hide();
 
     // Create thumbnail
@@ -481,32 +477,6 @@ void ScrollingCaptureManager::setCaptureDirection(CaptureDirection direction)
     emit directionChanged(direction);
 }
 
-void ScrollingCaptureManager::setScrollMode(ScrollMode mode)
-{
-    if (mode == ScrollMode::Auto) {
-        if (!isAutoScrollSupported()) {
-            emit autoScrollError(tr("Auto-scroll not supported on this platform"));
-            return;
-        }
-
-        if (!hasAutoScrollPermission()) {
-            requestAutoScrollPermission();
-            emit autoScrollError(tr("Please grant accessibility permission in System Settings"));
-            return;
-        }
-    }
-
-    if (m_scrollMode != mode) {
-        m_scrollMode = mode;
-        if (m_toolbar) {
-            m_toolbar->setScrollMode(mode == ScrollMode::Auto
-                ? ScrollingCaptureToolbar::ScrollMode::Auto
-                : ScrollingCaptureToolbar::ScrollMode::Manual);
-        }
-        emit scrollModeChanged(mode);
-    }
-}
-
 bool ScrollingCaptureManager::isAutoScrollSupported()
 {
     return AutoScrollController::isSupported();
@@ -600,7 +570,7 @@ void ScrollingCaptureManager::startFrameCapture()
         // Start auto-scroll controller
         if (!m_autoScrollController->start()) {
             qWarning() << "ScrollingCaptureManager: AutoScroll failed to start, falling back to manual";
-            setScrollMode(ScrollMode::Manual);
+            m_scrollMode = ScrollMode::Manual;
             m_captureTimer->start(m_captureIntervalMs);
         } else {
             qDebug() << "ScrollingCaptureManager: Auto-scroll started with delta" << scrollDelta << "px";
@@ -1090,7 +1060,7 @@ void ScrollingCaptureManager::onAutoScrollStateChanged(AutoScrollController::Sta
     if (state == AutoScrollController::State::Error) {
         // Fall back to manual mode
         qWarning() << "ScrollingCaptureManager: AutoScroll error, falling back to manual mode";
-        setScrollMode(ScrollMode::Manual);
+        m_scrollMode = ScrollMode::Manual;
         m_captureTimer->start(m_captureIntervalMs);
         emit autoScrollError(tr("Auto-scroll error, switched to manual mode"));
     }
@@ -1099,18 +1069,9 @@ void ScrollingCaptureManager::onAutoScrollStateChanged(AutoScrollController::Sta
 void ScrollingCaptureManager::onAutoScrollError(const QString &message)
 {
     qWarning() << "ScrollingCaptureManager: AutoScroll error -" << message;
-    setScrollMode(ScrollMode::Manual);
+    m_scrollMode = ScrollMode::Manual;
     m_captureTimer->start(m_captureIntervalMs);
     emit autoScrollError(message);
-}
-
-void ScrollingCaptureManager::onScrollModeToggled()
-{
-    if (m_scrollMode == ScrollMode::Manual) {
-        setScrollMode(ScrollMode::Auto);
-    } else {
-        setScrollMode(ScrollMode::Manual);
-    }
 }
 
 uint64_t ScrollingCaptureManager::computeFrameHash(const QImage &frame) const

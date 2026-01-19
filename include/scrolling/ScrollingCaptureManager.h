@@ -58,7 +58,6 @@ public:
 
     // Scroll mode (manual vs auto-scroll)
     ScrollMode scrollMode() const { return m_scrollMode; }
-    void setScrollMode(ScrollMode mode);
 
     // Auto-scroll support
     static bool isAutoScrollSupported();
@@ -101,7 +100,6 @@ private slots:
     void onCloseClicked();
     void onCancelClicked();
     void onDirectionToggled();
-    void onScrollModeToggled();
 
     // Frame capture
     void captureFrame();
