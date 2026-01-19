@@ -978,6 +978,12 @@ void RegionInputHandler::handleHoverMove(const QPoint& pos, Qt::MouseButtons but
             cm.setHoverTarget(HoverTarget::ResizeHandle, static_cast<int>(handle));
             return;
         }
+
+        // Check if hovering inside selection for move (displays SizeAllCursor)
+        if (m_selectionManager->hitTestMove(pos)) {
+            cm.setHoverTarget(HoverTarget::Annotation);
+            return;
+        }
     }
 
     // No special hover target - reset and let tool cursor show

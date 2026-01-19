@@ -121,6 +121,6 @@ QCursor SelectionToolHandler::cursor() const
         return Qt::ClosedHandCursor;
     }
 
-    // Could extend to show different cursors based on hover state
-    return Qt::ArrowCursor;
+    // Default to cross cursor for selection tool to indicate selection capability
+    return Qt::CrossCursor;
 }
