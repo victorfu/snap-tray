@@ -1139,13 +1139,11 @@ void RegionInputHandler::handleSelectionRelease(const QPoint& pos)
     if (m_multiRegionMode) {
         if (sel.width() > 5 && sel.height() > 5) {
             m_selectionManager->finishSelection();
-            emitCursorChangeIfNeeded(Qt::ArrowCursor);
             emit selectionFinished();
             qDebug() << "RegionInputHandler: Multi-region selection complete via drag";
         }
         else if (m_hasDetectedWindow && m_highlightedWindowRect.isValid()) {
             m_selectionManager->setFromDetectedWindow(m_highlightedWindowRect);
-            emitCursorChangeIfNeeded(Qt::ArrowCursor);
             emit selectionFinished();
             qDebug() << "RegionInputHandler: Multi-region selection via detected window";
 
@@ -1158,13 +1156,11 @@ void RegionInputHandler::handleSelectionRelease(const QPoint& pos)
 
     if (sel.width() > 5 && sel.height() > 5) {
         m_selectionManager->finishSelection();
-        emitCursorChangeIfNeeded(Qt::ArrowCursor);
         emit selectionFinished();
         qDebug() << "RegionInputHandler: Selection complete via drag";
     }
     else if (m_hasDetectedWindow && m_highlightedWindowRect.isValid()) {
         m_selectionManager->setFromDetectedWindow(m_highlightedWindowRect);
-        emitCursorChangeIfNeeded(Qt::ArrowCursor);
         emit selectionFinished();
         qDebug() << "RegionInputHandler: Selection complete via detected window";
 
@@ -1174,7 +1170,6 @@ void RegionInputHandler::handleSelectionRelease(const QPoint& pos)
     }
     else {
         emit fullScreenSelectionRequested();
-        emitCursorChangeIfNeeded(Qt::ArrowCursor);
         emit selectionFinished();
         qDebug() << "RegionInputHandler: Click without drag - selecting full screen";
     }
@@ -1269,8 +1264,10 @@ void RegionInputHandler::emitCursorChangeIfNeeded(Qt::CursorShape cursor)
             CursorManager::instance().setInputState(InputState::Selecting);
         } else if (cursor == Qt::SizeAllCursor) {
             CursorManager::instance().setInputState(InputState::Moving);
+        } else if (cursor == Qt::ArrowCursor) {
+            CursorManager::instance().setInputState(InputState::Idle);
         } else {
-            // For resize cursors, use hover target instead
+            // For resize cursors (SizeFDiag, SizeVer, etc.), use Resizing state
             CursorManager::instance().setInputState(InputState::Resizing);
         }
     }
