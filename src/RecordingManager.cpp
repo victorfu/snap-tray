@@ -306,9 +306,7 @@ void RecordingManager::startFrameCapture()
                    this, &RecordingManager::onEncodingFinished);
         disconnect(m_gifEncoder.get(), &NativeGifEncoder::error,
                    this, &RecordingManager::onEncodingError);
-        // Release ownership and delete later to be safe with signals
-        auto* ptr = m_gifEncoder.release();
-        ptr->deleteLater();
+        m_gifEncoder.reset();  // Custom deleter handles abort() + deleteLater()
     }
     if (m_nativeEncoder) {
         qDebug() << "RecordingManager: Previous native encoder still exists, cleaning up";
@@ -316,9 +314,7 @@ void RecordingManager::startFrameCapture()
                    this, &RecordingManager::onEncodingFinished);
         disconnect(m_nativeEncoder.get(), &IVideoEncoder::error,
                    this, &RecordingManager::onEncodingError);
-        // Release ownership and delete later to be safe with signals
-        auto* ptr = m_nativeEncoder.release();
-        ptr->deleteLater();
+        m_nativeEncoder.reset();  // Custom deleter handles abort() + deleteLater()
     }
     m_usingNativeEncoder = false;
 
@@ -615,8 +611,8 @@ void RecordingManager::onInitializationComplete()
     // Audio engine was NOT created in worker thread due to thread affinity requirements
     if (m_audioEnabled) {
         qDebug() << "RecordingManager: Creating audio engine on main thread...";
-        // Pass nullptr as parent since we use unique_ptr
-        m_audioEngine = std::unique_ptr<IAudioCaptureEngine>(IAudioCaptureEngine::createBestEngine(nullptr));
+        // Pass nullptr as parent since we use custom deleter with unique_ptr
+        m_audioEngine.reset(IAudioCaptureEngine::createBestEngine(nullptr));
         if (m_audioEngine) {
             // Set audio source
             IAudioCaptureEngine::AudioSource source;
@@ -1027,19 +1023,9 @@ void RecordingManager::cancelRecording()
     stopFrameCapture();
 
     // Abort encoding and remove output file
-    // Use deleteLater to avoid use-after-free when called from signal handler
-    // Set pointer to null BEFORE calling abort() to prevent double-delete
-    // if abort() synchronously emits an error signal that triggers onEncodingError()
-    if (m_nativeEncoder) {
-        auto *encoder = m_nativeEncoder.release();
-        encoder->abort();
-        encoder->deleteLater();
-    }
-    if (m_gifEncoder) {
-        auto *encoder = m_gifEncoder.release();
-        encoder->abort();
-        encoder->deleteLater();
-    }
+    // Custom deleters handle abort() + deleteLater() safely
+    m_nativeEncoder.reset();
+    m_gifEncoder.reset();
     m_usingNativeEncoder = false;
 
     setState(State::Idle);
@@ -1072,11 +1058,10 @@ void RecordingManager::stopFrameCapture()
     if (finalDuration < 0) finalDuration = 0;
 
     // Stop audio capture and finalize audio file
-    // Disconnect BEFORE stopping to prevent new signals from being queued during shutdown
+    // Custom deleter handles disconnect + stop() + deleteLater()
     qDebug() << "RecordingManager: Stopping audio engine, m_audioEngine=" << (m_audioEngine ? "exists" : "null");
     if (m_audioEngine) {
-        auto* ptr = m_audioEngine.release();
-        ResourceCleanupHelper::stopAndDelete(ptr);
+        m_audioEngine.reset();
         qDebug() << "RecordingManager: Audio engine stopped and scheduled for deletion";
     }
 
@@ -1090,12 +1075,9 @@ void RecordingManager::stopFrameCapture()
     qDebug() << "RecordingManager: Audio writer finished";
 
     // Stop capture engine
-    // Use deleteLater to avoid use-after-free when called from signal handler
+    // Custom deleter handles disconnect + stop() + deleteLater()
     qDebug() << "RecordingManager: Stopping capture engine...";
-    if (m_captureEngine) {
-        auto* ptr = m_captureEngine.release();
-        ResourceCleanupHelper::stopAndDelete(ptr);
-    }
+    m_captureEngine.reset();
     qDebug() << "RecordingManager: Capture engine stopped";
 
     // Close UI overlays
@@ -1124,18 +1106,10 @@ void RecordingManager::cleanupRecording()
     // Clear watermark cache
     m_cachedWatermark = QPixmap();
 
-    // Use deleteLater() consistently to avoid double-delete if deleteLater()
-    // was already called from cancelRecording() or onEncodingError()
-    if (m_nativeEncoder) {
-        auto* ptr = m_nativeEncoder.release();
-        ptr->abort();
-        ptr->deleteLater();
-    }
-    if (m_gifEncoder) {
-        auto* ptr = m_gifEncoder.release();
-        ptr->abort();
-        ptr->deleteLater();
-    }
+    // Custom deleters handle abort() + deleteLater() safely
+    // Safe to call reset() even if already null
+    m_nativeEncoder.reset();
+    m_gifEncoder.reset();
     m_usingNativeEncoder = false;
 
     // Clean up temp audio file
@@ -1148,10 +1122,8 @@ void RecordingManager::cleanupRecording()
 
 void RecordingManager::cleanupAudio()
 {
-    if (m_audioEngine) {
-        auto* ptr = m_audioEngine.release();
-        ResourceCleanupHelper::stopAndDelete(ptr);
-    }
+    // Custom deleter handles disconnect + stop() + deleteLater()
+    m_audioEngine.reset();
     m_audioWriter.reset();
     ResourceCleanupHelper::removeTempFile(m_tempAudioPath);
 }
@@ -1173,15 +1145,10 @@ void RecordingManager::onEncodingFinished(bool success, const QString &outputPat
         }
     }
 
-    // Use deleteLater to avoid deleting during signal emission
-    if (m_nativeEncoder) {
-        auto* ptr = m_nativeEncoder.release();
-        ptr->deleteLater();
-    }
-    if (m_gifEncoder) {
-        auto* ptr = m_gifEncoder.release();
-        ptr->deleteLater();
-    }
+    // Custom deleters handle abort() + deleteLater() safely
+    // (abort() is safe to call on finished encoder)
+    m_nativeEncoder.reset();
+    m_gifEncoder.reset();
     m_usingNativeEncoder = false;
 
     if (success) {
@@ -1361,18 +1328,13 @@ void RecordingManager::onEncodingError(const QString &error)
     QString outputPath;
     if (m_usingNativeEncoder && m_nativeEncoder) {
         outputPath = m_nativeEncoder->outputPath();
-        // Release ownership and delete later to handle safe deletion during signal
-        auto* ptr = m_nativeEncoder.release();
-        ptr->deleteLater();
     }
-    if (m_gifEncoder) {
-        if (outputPath.isEmpty()) {
-            outputPath = m_gifEncoder->outputPath();
-        }
-        // Release ownership and delete later
-        auto* ptr = m_gifEncoder.release();
-        ptr->deleteLater();
+    if (m_gifEncoder && outputPath.isEmpty()) {
+        outputPath = m_gifEncoder->outputPath();
     }
+    // Custom deleters handle abort() + deleteLater() safely
+    m_nativeEncoder.reset();
+    m_gifEncoder.reset();
     m_usingNativeEncoder = false;
 
     // Clean up temp file on error

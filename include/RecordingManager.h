@@ -12,6 +12,7 @@
 #include <memory>
 
 #include "WatermarkRenderer.h"
+#include "utils/ResourceCleanupHelper.h"
 
 class RecordingRegionSelector;
 class RecordingControlBar;
@@ -142,10 +143,10 @@ private:
     QPointer<RecordingAnnotationOverlay> m_annotationOverlay;
     QPointer<InPlacePreviewOverlay> m_previewOverlay;
     QString m_tempVideoPath;
-    std::unique_ptr<NativeGifEncoder> m_gifEncoder;     // Used for GIF format
-    std::unique_ptr<IVideoEncoder> m_nativeEncoder;     // Native platform encoder for MP4
+    GifEncoderPtr m_gifEncoder;         // Used for GIF format (abort + deleteLater)
+    VideoEncoderPtr m_nativeEncoder;    // Native platform encoder for MP4 (abort + deleteLater)
     bool m_usingNativeEncoder;          // True if using native encoder
-    std::unique_ptr<ICaptureEngine> m_captureEngine;
+    CaptureEnginePtr m_captureEngine;   // Screen capture engine (stop + disconnect + deleteLater)
     bool m_clickHighlightEnabled;        // True if click highlight is enabled
 
     // Capture state
@@ -164,7 +165,7 @@ private:
     mutable QMutex m_durationMutex;  // Protects pause duration variables
 
     // Audio capture
-    std::unique_ptr<IAudioCaptureEngine> m_audioEngine;
+    AudioEnginePtr m_audioEngine;       // Audio capture engine (stop + disconnect + deleteLater)
     std::unique_ptr<AudioFileWriter> m_audioWriter;
     bool m_audioEnabled;
     int m_audioSource;  // 0=Microphone, 1=SystemAudio, 2=Both
