@@ -383,9 +383,15 @@ void PinWindowToolbar::mousePressEvent(QMouseEvent *event)
 
 void PinWindowToolbar::enterEvent(QEnterEvent *event)
 {
-    // Set initial cursor when mouse enters
+    // Set initial cursor and hover state when mouse enters
     auto& cm = CursorManager::instance();
     int hovered = buttonAtPosition(event->position().toPoint());
+
+    if (hovered != m_hoveredButton) {
+        m_hoveredButton = hovered;
+        update();
+    }
+
     if (hovered >= 0) {
         cm.pushCursorForWidget(this, CursorContext::Hover, Qt::PointingHandCursor);
     } else {

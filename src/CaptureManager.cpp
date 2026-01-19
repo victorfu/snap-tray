@@ -49,7 +49,7 @@ void CaptureManager::triggerFinishSelection()
 
 void CaptureManager::startRegionCapture()
 {
-    // 如果已經在 capture mode 中，不要重複進入
+    // Skip if already in capture mode
     if (m_regionSelector && m_regionSelector->isVisible()) {
         qDebug() << "CaptureManager: Already in capture mode, ignoring";
         return;
@@ -64,7 +64,7 @@ void CaptureManager::startRegionCapture()
 
     emit captureStarted();
 
-    // 1. 先檢測目標螢幕 (cursor 所在的螢幕)
+    // 1. Determine target screen (the screen where cursor is located)
     QScreen *targetScreen = QGuiApplication::screenAt(QCursor::pos());
     if (!targetScreen) {
         targetScreen = QGuiApplication::primaryScreen();
@@ -107,7 +107,7 @@ void CaptureManager::startRegionCapture()
 
 void CaptureManager::startQuickPinCapture()
 {
-    // 如果已經在 capture mode 中，不要重複進入
+    // Skip if already in capture mode
     if (m_regionSelector && m_regionSelector->isVisible()) {
         qDebug() << "CaptureManager: Already in capture mode, ignoring";
         return;
@@ -122,7 +122,7 @@ void CaptureManager::startQuickPinCapture()
 
     emit captureStarted();
 
-    // 1. 先檢測目標螢幕 (cursor 所在的螢幕)
+    // 1. Determine target screen (the screen where cursor is located)
     QScreen *targetScreen = QGuiApplication::screenAt(QCursor::pos());
     if (!targetScreen) {
         targetScreen = QGuiApplication::primaryScreen();
@@ -164,7 +164,7 @@ void CaptureManager::onRegionSelected(const QPixmap &screenshot, const QPoint &g
     qDebug() << "CaptureManager: Region selected at global position:" << globalPosition;
     // m_regionSelector will auto-null via QPointer when WA_DeleteOnClose triggers
 
-    // 直接使用 RegionSelector 計算好的全局座標
+    // Use the global coordinates computed by RegionSelector
     if (m_pinManager) {
         QScreen *targetScreen = m_regionSelector ? m_regionSelector->screen() : nullptr;
         PinWindow *window = m_pinManager->createPinWindow(screenshot, globalPosition);
