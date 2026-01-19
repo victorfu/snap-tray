@@ -562,6 +562,8 @@ RegionSelector::RegionSelector(QWidget* parent)
 
 RegionSelector::~RegionSelector()
 {
+    releaseMouse();
+
     // Clean up cursor state before destruction
     CursorManager::instance().clearAll();
 
@@ -818,6 +820,12 @@ void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapt
 
     // Initialize cursor via CursorManager
     CursorManager::instance().pushCursor(CursorContext::Selection, Qt::CrossCursor);
+    
+    // Fix for macOS cursor persistence:
+    // 1. Explicitly grab mouse to ensure this window owns all mouse events immediately
+    this->grabMouse();
+    // 2. Force OS to re-evaluate cursor shape by "moving" it to its current position
+    QCursor::setPos(globalCursor);
 
     // Initial window detection at cursor position
     if (m_windowDetector && m_windowDetector->isEnabled()) {
@@ -863,6 +871,9 @@ void RegionSelector::initializeWithRegion(QScreen* screen, const QRect& region)
     // Set cursor position
     QPoint globalCursor = QCursor::pos();
     m_currentPoint = globalCursor - screenGeom.topLeft();
+    
+    // Explicitly grab mouse input
+    this->grabMouse();
 
     // Trigger repaint to show toolbar (toolbar is drawn in paintEvent when m_selectionComplete is true)
     QTimer::singleShot(0, this, [this]() {
