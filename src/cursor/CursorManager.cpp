@@ -480,6 +480,13 @@ void CursorManager::updateCursorFromState()
                 case GizmoHandle::BottomLeft:
                     hoverCursor = Qt::SizeBDiagCursor;
                     break;
+                case GizmoHandle::ArrowStart:
+                case GizmoHandle::ArrowEnd:
+                    hoverCursor = Qt::CrossCursor;
+                    break;
+                case GizmoHandle::ArrowControl:
+                    hoverCursor = Qt::PointingHandCursor;
+                    break;
                 default:
                     hoverCursor = Qt::ArrowCursor;
                     break;

@@ -887,6 +887,41 @@ void RegionInputHandler::handleHoverMove(const QPoint& pos, Qt::MouseButtons but
         }
     }
 
+    // Check Arrow gizmo handles (for selected arrows)
+    if (auto* arrowItem = getSelectedArrowAnnotation()) {
+        GizmoHandle handle = TransformationGizmo::hitTest(arrowItem, pos);
+        if (handle != GizmoHandle::None) {
+            cm.setHoverTarget(HoverTarget::GizmoHandle, static_cast<int>(handle));
+            return;
+        }
+    } else {
+        // Check hover on unselected arrow (show move cursor)
+        if (m_annotationLayer->hitTestArrow(pos) >= 0) {
+            cm.setHoverTarget(HoverTarget::Annotation);
+            return;
+        }
+    }
+
+    // Check Polyline gizmo handles (for selected polylines)
+    if (auto* polylineItem = getSelectedPolylineAnnotation()) {
+        int vertexIndex = TransformationGizmo::hitTestVertex(polylineItem, pos);
+        if (vertexIndex >= 0) {
+            // Vertex handle - use GizmoHandle type (will show CrossCursor via CursorManager)
+            cm.setHoverTarget(HoverTarget::GizmoHandle, static_cast<int>(GizmoHandle::ArrowStart));
+            return;
+        } else if (vertexIndex == -1) {
+            // Body hit - show move cursor
+            cm.setHoverTarget(HoverTarget::Annotation);
+            return;
+        }
+    } else {
+        // Check hover on unselected polyline
+        if (m_annotationLayer->hitTestPolyline(pos) >= 0) {
+            cm.setHoverTarget(HoverTarget::Annotation);
+            return;
+        }
+    }
+
     // Update region control widget (radius + aspect ratio)
     if (m_regionControlWidget && m_regionControlWidget->isVisible()) {
         if (m_regionControlWidget->handleMouseMove(pos, buttons & Qt::LeftButton)) {
@@ -1350,6 +1385,8 @@ bool RegionInputHandler::handleArrowAnnotationPress(const QPoint& pos)
 
             if (handle == GizmoHandle::Body) {
                 emitCursorChangeIfNeeded(Qt::SizeAllCursor);
+            } else if (handle == GizmoHandle::ArrowControl) {
+                emitCursorChangeIfNeeded(Qt::PointingHandCursor);
             } else {
                 emitCursorChangeIfNeeded(Qt::CrossCursor);
             }
@@ -1446,7 +1483,8 @@ bool RegionInputHandler::handleArrowAnnotationRelease()
 
     m_isArrowDragging = false;
     m_activeArrowHandle = GizmoHandle::None;
-    emitCursorChangeIfNeeded(Qt::ArrowCursor);
+    // Pop selection cursor to let hover logic take over
+    CursorManager::instance().popCursor(CursorContext::Selection);
     return true;
 }
 
@@ -1539,7 +1577,8 @@ bool RegionInputHandler::handlePolylineAnnotationRelease() {
     if (m_isPolylineDragging) {
         m_isPolylineDragging = false;
         m_activePolylineVertexIndex = -1;
-        emitCursorChangeIfNeeded(Qt::ArrowCursor);
+        // Pop selection cursor to let hover logic take over
+        CursorManager::instance().popCursor(CursorContext::Selection);
         emit updateRequested();
         return true;
     }

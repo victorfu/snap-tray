@@ -2711,16 +2711,6 @@ void PinWindow::updateAnnotationCursor(const QPoint& pos)
         }
     }
     
-    // Check text handles (existing logic in PinWindow might cover this, but integrating here is good)
-    if (auto* textItem = getSelectedTextAnnotation()) {
-         GizmoHandle handle = TransformationGizmo::hitTest(textItem, pos); // Text uses global coords in PinWindow? 
-         // Wait, handleTextAnnotationPress uses event->pos(). hitTest uses pos.
-         // Let's verify PinWindow::handleTextAnnotationPress
-         // It uses event->pos() directly. Text annotations might be in screen space?
-         // No, they are usually in image space.
-         // Let's check handleTextAnnotationPress logic in PinWindow.cpp
-         // It calls m_annotationLayer->hitTestText(pos).
-         // It seems text annotations are handled in screen coordinates in PinWindow currently?
-         // Or maybe not. Let's assume standard behavior for now.
-    }
+    // No annotation hit - pop hover cursor to let tool cursor show
+    cursorManager.popCursor(CursorContext::Hover);
 }

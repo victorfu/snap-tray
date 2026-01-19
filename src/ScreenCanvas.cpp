@@ -1431,7 +1431,6 @@ void ScreenCanvas::updateAnnotationCursor(const QPoint& pos)
         }
     }
 
-    // Default: pop hover cursor if no annotation hit
-    // This is handled in mouseMoveEvent by checking if we updated it here? 
-    // Actually mouseMoveEvent logic pops if nothing is hit.
+    // No annotation hit - pop hover cursor to let tool cursor show
+    CursorManager::instance().popCursor(CursorContext::Hover);
 }
