@@ -691,12 +691,14 @@ add_library(snaptray_ui STATIC
     src/RecordingBoundaryOverlay.cpp
     src/RecordingAnnotationOverlay.cpp
     src/RecordingInitTask.cpp
+    src/encoding/EncodingWorker.cpp
     include/RecordingManager.h
     include/RecordingRegionSelector.h
     include/RecordingControlBar.h
     include/RecordingBoundaryOverlay.h
     include/RecordingAnnotationOverlay.h
     include/RecordingInitTask.h
+    include/encoding/EncodingWorker.h
 )
 
 target_include_directories(snaptray_ui

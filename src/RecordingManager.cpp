@@ -8,6 +8,7 @@
 #include "video/CountdownOverlay.h"
 #include "video/IVideoPlayer.h"
 #include "encoding/NativeGifEncoder.h"
+#include "encoding/EncodingWorker.h"
 #include "IVideoEncoder.h"
 #include "encoding/EncoderFactory.h"
 #include "capture/ICaptureEngine.h"
@@ -303,22 +304,15 @@ void RecordingManager::startFrameCapture()
 {
     qDebug() << "RecordingManager::startFrameCapture() - BEGIN";
 
-    // Safety check: clean up any existing encoders
-    if (m_gifEncoder) {
-        qDebug() << "RecordingManager: Previous GIF encoder still exists, cleaning up";
-        disconnect(m_gifEncoder.get(), &NativeGifEncoder::finished,
+    // Safety check: clean up any existing encoding worker
+    if (m_encodingWorker) {
+        qDebug() << "RecordingManager: Previous encoding worker still exists, cleaning up";
+        disconnect(m_encodingWorker.get(), &EncodingWorker::finished,
                    this, &RecordingManager::onEncodingFinished);
-        disconnect(m_gifEncoder.get(), &NativeGifEncoder::error,
+        disconnect(m_encodingWorker.get(), &EncodingWorker::error,
                    this, &RecordingManager::onEncodingError);
-        m_gifEncoder.reset();  // Custom deleter handles abort() + deleteLater()
-    }
-    if (m_nativeEncoder) {
-        qDebug() << "RecordingManager: Previous native encoder still exists, cleaning up";
-        disconnect(m_nativeEncoder.get(), &IVideoEncoder::finished,
-                   this, &RecordingManager::onEncodingFinished);
-        disconnect(m_nativeEncoder.get(), &IVideoEncoder::error,
-                   this, &RecordingManager::onEncodingError);
-        m_nativeEncoder.reset();  // Custom deleter handles abort() + deleteLater()
+        m_encodingWorker->stop();
+        m_encodingWorker.reset();
     }
     m_usingNativeEncoder = false;
 
@@ -593,22 +587,42 @@ void RecordingManager::onInitializationComplete()
     }
 
     m_usingNativeEncoder = result.usingNativeEncoder;
-    m_nativeEncoder.reset(result.nativeEncoder);
-    m_gifEncoder.reset(result.gifEncoder);
 
-    if (m_nativeEncoder) {
-        // IMPORTANT: Do NOT set parent to this, as we use std::unique_ptr for ownership
-        connect(m_nativeEncoder.get(), &IVideoEncoder::finished,
-                this, &RecordingManager::onEncodingFinished);
-        connect(m_nativeEncoder.get(), &IVideoEncoder::error,
-                this, &RecordingManager::onEncodingError);
+    // Create encoding worker to offload encoding from main thread
+    m_encodingWorker = std::make_unique<EncodingWorker>(nullptr);
+
+    // Transfer encoder ownership to worker
+    if (result.nativeEncoder) {
+        m_encodingWorker->setVideoEncoder(result.nativeEncoder);
+        m_encodingWorker->setEncoderType(EncodingWorker::EncoderType::Video);
     }
-    if (m_gifEncoder) {
-        // IMPORTANT: Do NOT set parent to this, as we use std::unique_ptr for ownership
-        connect(m_gifEncoder.get(), &NativeGifEncoder::finished,
-                this, &RecordingManager::onEncodingFinished);
-        connect(m_gifEncoder.get(), &NativeGifEncoder::error,
-                this, &RecordingManager::onEncodingError);
+    if (result.gifEncoder) {
+        m_encodingWorker->setGifEncoder(result.gifEncoder);
+        if (!result.nativeEncoder) {
+            m_encodingWorker->setEncoderType(EncodingWorker::EncoderType::Gif);
+        }
+    }
+
+    // Configure worker frame size
+    m_encodingWorker->setFrameSize(m_recordingRegion.size());
+
+    // Connect worker signals
+    connect(m_encodingWorker.get(), &EncodingWorker::finished,
+            this, &RecordingManager::onEncodingFinished);
+    connect(m_encodingWorker.get(), &EncodingWorker::error,
+            this, &RecordingManager::onEncodingError);
+    connect(m_encodingWorker.get(), &EncodingWorker::queuePressure,
+            this, [this](int depth, int max) {
+        qDebug() << "RecordingManager: Encoder queue pressure:" << depth << "/" << max;
+    });
+
+    // Start the encoding worker
+    if (!m_encodingWorker->start()) {
+        qWarning() << "RecordingManager: Failed to start encoding worker";
+        emit recordingError(tr("Failed to start encoding worker"));
+        m_encodingWorker.reset();
+        setState(State::Idle);
+        return;
     }
 
     // Create audio engine on main thread (macOS audio APIs require main thread)
@@ -648,20 +662,20 @@ void RecordingManager::onInitializationComplete()
         }
     }
 
-    // Connect audio capture to encoder/writer
-    if (m_audioEngine) {
-        bool useNativeAudio = m_usingNativeEncoder && m_nativeEncoder && m_nativeEncoder->isAudioSupported();
+    // Connect audio capture to encoding worker
+    if (m_audioEngine && m_encodingWorker) {
+        bool useNativeAudio = m_usingNativeEncoder;
 
         if (useNativeAudio) {
-            // Connect audio data directly to native encoder
+            // Connect audio data to encoding worker (which forwards to encoder)
             connect(m_audioEngine.get(), &IAudioCaptureEngine::audioDataReady,
                     this, [this](const QByteArray &data, qint64 timestamp) {
-                if (m_nativeEncoder) {
-                    m_nativeEncoder->writeAudioSamples(data, timestamp);
+                if (m_encodingWorker) {
+                    m_encodingWorker->writeAudioSamples(data, timestamp);
                 }
             }, Qt::QueuedConnection);
-            qDebug() << "RecordingManager: Audio connected to native encoder";
-            // NOTE: Audio capture is started in startRecordingAfterCountdown() 
+            qDebug() << "RecordingManager: Audio connected to encoding worker";
+            // NOTE: Audio capture is started in startRecordingAfterCountdown()
             // to synchronize timestamps with video
         } else {
             // GIF format does not support audio - this shouldn't happen as
@@ -669,14 +683,6 @@ void RecordingManager::onInitializationComplete()
             qWarning() << "RecordingManager: Audio not supported for current format";
             emit recordingWarning("Audio is not supported for GIF format.");
             cleanupAudio();
-        }
-    }
-
-    // Check if encoder's audio was silently disabled (e.g., audio stream config failed)
-    if (m_audioEnabled && m_usingNativeEncoder && m_nativeEncoder) {
-        if (!m_nativeEncoder->isAudioEnabled()) {
-            emit recordingWarning(tr("Audio configuration failed. Recording without audio."));
-            m_audioEnabled = false;
         }
     }
 
@@ -749,13 +755,13 @@ void RecordingManager::startRecordingAfterCountdown()
         }
     }
 
-    // Load watermark settings for recording
+    // Load watermark settings for recording and configure worker
     m_watermarkSettings = WatermarkSettingsManager::instance().load();
     if (m_watermarkSettings.applyToRecording && !m_watermarkSettings.imagePath.isEmpty()) {
         m_watermarkSettings.enabled = true;  // Enable for render() to work
-        m_cachedWatermark = QPixmap(m_watermarkSettings.imagePath);
-    } else {
-        m_cachedWatermark = QPixmap();
+        if (m_encodingWorker) {
+            m_encodingWorker->setWatermarkSettings(m_watermarkSettings);
+        }
     }
 
     // Delay frame capture start to allow boundary overlay to render fully
@@ -823,31 +829,21 @@ void RecordingManager::captureFrame()
         return;
     }
 
-    // Store local copies (raw pointers) to avoid race conditions 
+    // Store local copies (raw pointers) to avoid race conditions
     // where unique_ptrs might be reset during execution
     ICaptureEngine *captureEngine = m_captureEngine.get();
-    IVideoEncoder *nativeEncoder = m_nativeEncoder.get();
-    NativeGifEncoder *gifEncoder = m_gifEncoder.get();
+    EncodingWorker *encodingWorker = m_encodingWorker.get();
     RecordingAnnotationOverlay *annotationOverlay = m_annotationOverlay;
-    bool usingNative = m_usingNativeEncoder;
 
-    if (!captureEngine) {
+    if (!captureEngine || !encodingWorker) {
         return;
     }
 
-    // Check that we have an encoder available using local copies
-    if (!usingNative && !gifEncoder) {
-        return;
-    }
-    if (usingNative && !nativeEncoder) {
-        return;
-    }
-
-    // Capture frame using the capture engine
+    // Capture frame using the capture engine (fast - returns cached frame)
     QImage frame = captureEngine->captureFrame();
 
     if (!frame.isNull()) {
-        // Use real elapsed time for timestamps to keep playback speed aligned with recording time
+        // Calculate timestamp (keep on main thread for accuracy)
         qint64 elapsedMs = 0;
         {
             QMutexLocker locker(&m_durationMutex);
@@ -858,27 +854,20 @@ void RecordingManager::captureFrame()
             elapsedMs = 0;
         }
 
-        // Composite visual effects onto frame if overlay is active
-        // Use local copies for thread safety
+        // Composite cursor effects on main thread (fast, needs live cursor state)
         if (annotationOverlay) {
             qreal scale = CoordinateHelper::getDevicePixelRatio(m_targetScreen);
             annotationOverlay->compositeOntoFrame(frame, scale);
         }
 
-        // Apply watermark if enabled for recordings
-        if (m_watermarkSettings.applyToRecording && !m_cachedWatermark.isNull()) {
-            QPainter painter(&frame);
-            painter.setRenderHint(QPainter::Antialiasing);
-            WatermarkRenderer::render(painter, frame.rect(), m_watermarkSettings);
+        // Enqueue frame for encoding (non-blocking)
+        // Watermark is applied by the worker thread
+        EncodingWorker::FrameData frameData{frame, elapsedMs};
+        if (!encodingWorker->enqueueFrame(frameData)) {
+            // Queue full - frame dropped (logged by worker)
+            qDebug() << "RecordingManager: Encoder queue full, dropping frame";
         }
 
-        // Pass QImage to the appropriate encoder with elapsed timestamp
-        // Use local copies for thread safety
-        if (usingNative && nativeEncoder) {
-            nativeEncoder->writeFrame(frame, elapsedMs);
-        } else if (gifEncoder) {
-            gifEncoder->writeFrame(frame, elapsedMs);
-        }
         m_frameCount++;
     }
 }
@@ -993,11 +982,10 @@ void RecordingManager::stopRecording()
     stopFrameCapture();
     setState(State::Encoding);
 
-    // Finish encoding
-    if (m_usingNativeEncoder && m_nativeEncoder) {
-        m_nativeEncoder->finish();
-    } else if (m_gifEncoder) {
-        m_gifEncoder->finish();
+    // Request encoding worker to finish (processes remaining queue then finishes encoder)
+    if (m_encodingWorker) {
+        m_encodingWorker->requestFinish();
+        // Worker will emit finished() when encoding is complete
     }
 }
 
@@ -1026,10 +1014,11 @@ void RecordingManager::cancelRecording()
 
     stopFrameCapture();
 
-    // Abort encoding and remove output file
-    // Custom deleters handle abort() + deleteLater() safely
-    m_nativeEncoder.reset();
-    m_gifEncoder.reset();
+    // Stop encoding worker (aborts encoding)
+    if (m_encodingWorker) {
+        m_encodingWorker->stop();
+        m_encodingWorker.reset();
+    }
     m_usingNativeEncoder = false;
 
     setState(State::Idle);
@@ -1107,13 +1096,11 @@ void RecordingManager::cleanupRecording()
 {
     stopFrameCapture();
 
-    // Clear watermark cache
-    m_cachedWatermark = QPixmap();
-
-    // Custom deleters handle abort() + deleteLater() safely
-    // Safe to call reset() even if already null
-    m_nativeEncoder.reset();
-    m_gifEncoder.reset();
+    // Stop and clean up encoding worker
+    if (m_encodingWorker) {
+        m_encodingWorker->stop();
+        m_encodingWorker.reset();
+    }
     m_usingNativeEncoder = false;
 
     // Clean up temp audio file
@@ -1136,23 +1123,14 @@ void RecordingManager::onEncodingFinished(bool success, const QString &outputPat
 {
     qDebug() << "RecordingManager: Encoding finished, success:" << success << "path:" << outputPath;
 
-    // Get error message before deleting encoder
+    // Get error message if encoding failed
     QString errorMsg;
     if (!success) {
-        if (m_usingNativeEncoder && m_nativeEncoder) {
-            errorMsg = m_nativeEncoder->lastError();
-        } else if (m_gifEncoder) {
-            errorMsg = m_gifEncoder->lastError();
-        }
-        if (errorMsg.isEmpty()) {
-            errorMsg = "Failed to encode video";
-        }
+        errorMsg = "Failed to encode video";
     }
 
-    // Custom deleters handle abort() + deleteLater() safely
-    // (abort() is safe to call on finished encoder)
-    m_nativeEncoder.reset();
-    m_gifEncoder.reset();
+    // Clean up encoding worker
+    m_encodingWorker.reset();
     m_usingNativeEncoder = false;
 
     if (success) {
@@ -1328,27 +1306,12 @@ void RecordingManager::onEncodingError(const QString &error)
     // This is needed when error occurs during recording (not just during finish/encoding)
     stopFrameCapture();
 
-    // Get output path for cleanup before deleting encoder
-    QString outputPath;
-    if (m_usingNativeEncoder && m_nativeEncoder) {
-        outputPath = m_nativeEncoder->outputPath();
+    // Clean up encoding worker
+    if (m_encodingWorker) {
+        m_encodingWorker->stop();
+        m_encodingWorker.reset();
     }
-    if (m_gifEncoder && outputPath.isEmpty()) {
-        outputPath = m_gifEncoder->outputPath();
-    }
-    // Custom deleters handle abort() + deleteLater() safely
-    m_nativeEncoder.reset();
-    m_gifEncoder.reset();
     m_usingNativeEncoder = false;
-
-    // Clean up temp file on error
-    if (!outputPath.isEmpty() && QFile::exists(outputPath)) {
-        if (QFile::remove(outputPath)) {
-            qDebug() << "RecordingManager: Removed temp file after error:" << outputPath;
-        } else {
-            qWarning() << "RecordingManager: Failed to remove temp file:" << outputPath;
-        }
-    }
 
     setState(State::Idle);
     emit recordingError(error);

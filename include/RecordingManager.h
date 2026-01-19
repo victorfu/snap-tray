@@ -26,6 +26,7 @@ class IVideoEncoder;
 class ICaptureEngine;
 class IAudioCaptureEngine;
 class AudioFileWriter;
+class EncodingWorker;
 class QScreen;
 
 class RecordingManager : public QObject
@@ -143,9 +144,8 @@ private:
     QPointer<RecordingAnnotationOverlay> m_annotationOverlay;
     QPointer<InPlacePreviewOverlay> m_previewOverlay;
     QString m_tempVideoPath;
-    GifEncoderPtr m_gifEncoder;         // Used for GIF format (abort + deleteLater)
-    VideoEncoderPtr m_nativeEncoder;    // Native platform encoder for MP4 (abort + deleteLater)
-    bool m_usingNativeEncoder;          // True if using native encoder
+    std::unique_ptr<EncodingWorker> m_encodingWorker;  // Offloads encoding to worker thread
+    bool m_usingNativeEncoder;          // True if using native encoder (vs GIF)
     CaptureEnginePtr m_captureEngine;   // Screen capture engine (stop + disconnect + deleteLater)
     bool m_clickHighlightEnabled;        // True if click highlight is enabled
 
@@ -181,9 +181,8 @@ private:
     bool m_countdownEnabled;
     int m_countdownSeconds;
 
-    // Watermark for recording
+    // Watermark for recording (settings stored, rendering done by EncodingWorker)
     WatermarkRenderer::Settings m_watermarkSettings;
-    QPixmap m_cachedWatermark;
 };
 
 #endif // RECORDINGMANAGER_H
