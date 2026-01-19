@@ -68,7 +68,6 @@ private:
     static constexpr const char* kSettingsKeyCornerRadius = "cornerRadius";
     static constexpr const char* kSettingsKeyCornerRadiusEnabled = "cornerRadiusEnabled";
     static constexpr const char* kSettingsKeyAspectRatioLocked = "aspectRatioLocked";
-    static constexpr const char* kSettingsKeyAspectRatioMode = "aspectRatioMode";
     static constexpr const char* kSettingsKeyAspectRatioWidth = "aspectRatioWidth";
     static constexpr const char* kSettingsKeyAspectRatioHeight = "aspectRatioHeight";
     static constexpr const char* kSettingsKeyMosaicBlurType = "mosaicBlurType";

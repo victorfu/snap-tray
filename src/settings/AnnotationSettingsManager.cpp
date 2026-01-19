@@ -76,16 +76,7 @@ void AnnotationSettingsManager::saveCornerRadiusEnabled(bool enabled)
 bool AnnotationSettingsManager::loadAspectRatioLocked() const
 {
     auto settings = SnapTray::getSettings();
-    if (settings.contains(kSettingsKeyAspectRatioLocked)) {
-        return settings.value(kSettingsKeyAspectRatioLocked, kDefaultAspectRatioLocked).toBool();
-    }
-
-    if (settings.contains(kSettingsKeyAspectRatioMode)) {
-        int mode = settings.value(kSettingsKeyAspectRatioMode).toInt();
-        return mode != 0;
-    }
-
-    return kDefaultAspectRatioLocked;
+    return settings.value(kSettingsKeyAspectRatioLocked, kDefaultAspectRatioLocked).toBool();
 }
 
 void AnnotationSettingsManager::saveAspectRatioLocked(bool locked)
@@ -97,37 +88,15 @@ void AnnotationSettingsManager::saveAspectRatioLocked(bool locked)
 int AnnotationSettingsManager::loadAspectRatioWidth() const
 {
     auto settings = SnapTray::getSettings();
-    if (settings.contains(kSettingsKeyAspectRatioWidth)) {
-        int width = settings.value(kSettingsKeyAspectRatioWidth, kDefaultAspectRatioWidth).toInt();
-        return width > 0 ? width : kDefaultAspectRatioWidth;
-    }
-
-    int mode = settings.value(kSettingsKeyAspectRatioMode, 0).toInt();
-    switch (mode) {
-    case 1: return 1;
-    case 2: return 4;
-    case 3: return 16;
-    case 4: return 16;
-    default: return kDefaultAspectRatioWidth;
-    }
+    int width = settings.value(kSettingsKeyAspectRatioWidth, kDefaultAspectRatioWidth).toInt();
+    return width > 0 ? width : kDefaultAspectRatioWidth;
 }
 
 int AnnotationSettingsManager::loadAspectRatioHeight() const
 {
     auto settings = SnapTray::getSettings();
-    if (settings.contains(kSettingsKeyAspectRatioHeight)) {
-        int height = settings.value(kSettingsKeyAspectRatioHeight, kDefaultAspectRatioHeight).toInt();
-        return height > 0 ? height : kDefaultAspectRatioHeight;
-    }
-
-    int mode = settings.value(kSettingsKeyAspectRatioMode, 0).toInt();
-    switch (mode) {
-    case 1: return 1;
-    case 2: return 3;
-    case 3: return 9;
-    case 4: return 10;
-    default: return kDefaultAspectRatioHeight;
-    }
+    int height = settings.value(kSettingsKeyAspectRatioHeight, kDefaultAspectRatioHeight).toInt();
+    return height > 0 ? height : kDefaultAspectRatioHeight;
 }
 
 void AnnotationSettingsManager::saveAspectRatio(int width, int height)

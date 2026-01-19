@@ -26,8 +26,6 @@
 #include "ColorAndWidthWidget.h"
 #include "annotations/TextBoxAnnotation.h"
 #include "TransformationGizmo.h"
-#include "annotations/TextBoxAnnotation.h"
-#include "TransformationGizmo.h"
 #include "annotations/ArrowAnnotation.h"
 #include "annotations/PolylineAnnotation.h"
 #include "utils/CoordinateHelper.h"
