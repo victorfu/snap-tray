@@ -1110,8 +1110,8 @@ bool RegionInputHandler::handleEmojiStickerRelease()
         m_isEmojiDragging = false;
         m_isEmojiScaling = false;
         m_activeEmojiHandle = GizmoHandle::None;
-        // Pop selection cursor to let hover logic take over (consistent with arrow/polyline)
-        CursorManager::instance().popCursor(CursorContext::Selection);
+        // Reset input state to let hover logic take over (consistent with arrow/polyline)
+        CursorManager::instance().setInputState(InputState::Idle);
         return true;
     }
     return false;
@@ -1257,8 +1257,16 @@ void RegionInputHandler::emitCursorChangeIfNeeded(Qt::CursorShape cursor)
 {
     if (cursor != m_lastEmittedCursor) {
         m_lastEmittedCursor = cursor;
-        // Use CursorManager instead of signal for unified cursor management
-        CursorManager::instance().pushCursor(CursorContext::Selection, cursor);
+        // Use CursorManager state-driven API for unified cursor management
+        // Map cursor shape to appropriate state
+        if (cursor == Qt::CrossCursor) {
+            CursorManager::instance().setInputState(InputState::Selecting);
+        } else if (cursor == Qt::SizeAllCursor) {
+            CursorManager::instance().setInputState(InputState::Moving);
+        } else {
+            // For resize cursors, use hover target instead
+            CursorManager::instance().setInputState(InputState::Resizing);
+        }
     }
 }
 
@@ -1456,8 +1464,8 @@ bool RegionInputHandler::handleArrowAnnotationRelease()
 
     m_isArrowDragging = false;
     m_activeArrowHandle = GizmoHandle::None;
-    // Pop selection cursor to let hover logic take over
-    CursorManager::instance().popCursor(CursorContext::Selection);
+    // Reset input state to let hover logic take over
+    CursorManager::instance().setInputState(InputState::Idle);
     return true;
 }
 
@@ -1550,8 +1558,8 @@ bool RegionInputHandler::handlePolylineAnnotationRelease() {
     if (m_isPolylineDragging) {
         m_isPolylineDragging = false;
         m_activePolylineVertexIndex = -1;
-        // Pop selection cursor to let hover logic take over
-        CursorManager::instance().popCursor(CursorContext::Selection);
+        // Reset input state to let hover logic take over
+        CursorManager::instance().setInputState(InputState::Idle);
         emit updateRequested();
         return true;
     }

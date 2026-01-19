@@ -12,6 +12,9 @@
 #include "pinwindow/ResizeHandler.h"
 
 class ToolManager;
+class AnnotationLayer;
+class ArrowAnnotation;
+class PolylineAnnotation;
 enum class GizmoHandle;
 
 /**
@@ -287,6 +290,39 @@ public:
      * @return Appropriate cursor shape for the handle
      */
     static Qt::CursorShape cursorForGizmoHandle(GizmoHandle handle);
+
+    // ========================================================================
+    // Annotation Hit Testing (Unified Logic)
+    // ========================================================================
+
+    /**
+     * @brief Result of annotation hit testing.
+     */
+    struct AnnotationHitResult {
+        bool hit = false;                           // Whether any annotation was hit
+        HoverTarget target = HoverTarget::None;     // Type of hover target
+        int handleIndex = -1;                       // Handle/vertex index for gizmo targets
+        Qt::CursorShape cursor = Qt::ArrowCursor;   // Recommended cursor shape
+    };
+
+    /**
+     * @brief Unified annotation hit testing for cursor updates.
+     *
+     * Tests arrows and polylines for hit, returning appropriate cursor information.
+     * This eliminates duplicated logic in ScreenCanvas and PinWindow.
+     *
+     * @param pos The point to test (in annotation coordinates)
+     * @param layer The annotation layer to test against
+     * @param selectedArrow Currently selected arrow annotation (for gizmo handles), or nullptr
+     * @param selectedPolyline Currently selected polyline annotation (for vertex handles), or nullptr
+     * @return AnnotationHitResult with hit status, target type, and recommended cursor
+     */
+    static AnnotationHitResult hitTestAnnotations(
+        const QPoint& pos,
+        AnnotationLayer* layer,
+        ArrowAnnotation* selectedArrow = nullptr,
+        PolylineAnnotation* selectedPolyline = nullptr
+    );
 
 signals:
     /**

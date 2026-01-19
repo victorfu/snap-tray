@@ -757,7 +757,7 @@ void ScreenCanvas::mousePressEvent(QMouseEvent* event)
                 // Start toolbar drag (clicked on toolbar but not on a button)
                 m_isDraggingToolbar = true;
                 m_toolbarDragOffset = event->pos() - m_toolbar->boundingRect().topLeft();
-                CursorManager::instance().pushCursor(CursorContext::Drag, Qt::ClosedHandCursor);
+                CursorManager::instance().setDragState(DragState::ToolbarDrag);
             }
             return;
         }
@@ -872,7 +872,7 @@ void ScreenCanvas::mouseMoveEvent(QMouseEvent* event)
         if (shouldShowColorAndWidthWidget()) {
             if (m_colorAndWidthWidget->handleMouseMove(event->pos(), event->buttons() & Qt::LeftButton)) {
                 if (m_colorAndWidthWidget->contains(event->pos())) {
-                    cursorManager.pushCursor(CursorContext::Hover, Qt::PointingHandCursor);
+                    cursorManager.setHoverTarget(HoverTarget::Widget);
                 }
                 update();
                 return;
@@ -900,17 +900,16 @@ void ScreenCanvas::mouseMoveEvent(QMouseEvent* event)
             needsUpdate = true;
         }
 
-        // Update cursor based on current hover state using CursorManager
+        // Update cursor based on current hover state using state-driven API
         if (m_toolbar->hoveredButton() >= 0 || widgetHovered) {
-            cursorManager.pushCursor(CursorContext::Hover, Qt::PointingHandCursor);
+            cursorManager.setHoverTarget(HoverTarget::ToolbarButton);
         }
         else if (m_toolbar->contains(event->pos())) {
             // Hovering over toolbar but not on a button - show drag cursor
-            cursorManager.pushCursor(CursorContext::Hover, Qt::OpenHandCursor);
+            cursorManager.setHoverTarget(HoverTarget::Toolbar);
         }
         else {
-            // Check annotation cursors - updateAnnotationCursor handles both
-            // pushing cursors for hits and popping for non-hits
+            // Check annotation cursors - updateAnnotationCursor uses state-driven API
             updateAnnotationCursor(event->pos());
         }
 
@@ -937,11 +936,11 @@ void ScreenCanvas::mouseReleaseEvent(QMouseEvent* event)
         if (m_isDraggingToolbar) {
             m_isDraggingToolbar = false;
             m_toolbarManuallyPositioned = true;
-            // Pop drag cursor - cursor will revert to hover or tool cursor
+            // Clear drag state - cursor will revert based on hover target
             auto& cursorManager = CursorManager::instance();
-            cursorManager.popCursor(CursorContext::Drag);
+            cursorManager.setDragState(DragState::None);
             if (m_toolbar->contains(event->pos())) {
-                cursorManager.pushCursor(CursorContext::Hover, Qt::OpenHandCursor);
+                cursorManager.setHoverTarget(HoverTarget::Toolbar);
             }
             return;
         }
@@ -1376,46 +1375,20 @@ bool ScreenCanvas::handlePolylineAnnotationRelease(const QPoint& pos)
 
 void ScreenCanvas::updateAnnotationCursor(const QPoint& pos)
 {
-    // Helper lambda to map CursorShape to CursorContext
-    auto updateCursor = [&](Qt::CursorShape shape) {
-        CursorManager::instance().pushCursor(CursorContext::Hover, shape);
-    };
+    auto& cursorManager = CursorManager::instance();
 
-    // Check Arrow handles
-    if (auto* arrowItem = getSelectedArrowAnnotation()) {
-        GizmoHandle handle = TransformationGizmo::hitTest(arrowItem, pos);
-        if (handle != GizmoHandle::None) {
-            updateCursor(Qt::PointingHandCursor); // Or specific cursor for handles
-            return;
-        }
+    // Use unified hit testing from CursorManager
+    auto result = CursorManager::hitTestAnnotations(
+        pos,
+        m_annotationLayer,
+        getSelectedArrowAnnotation(),
+        getSelectedPolylineAnnotation()
+    );
+
+    if (result.hit) {
+        cursorManager.setHoverTarget(result.target, result.handleIndex);
     } else {
-        // Check hover on unselected arrow
-        int hitIndex = m_annotationLayer->hitTestArrow(pos);
-        if (hitIndex >= 0) {
-            updateCursor(Qt::SizeAllCursor); // Indicate it can be selected/moved
-            return;
-        }
+        // No annotation hit - clear hover target to let tool cursor show
+        cursorManager.setHoverTarget(HoverTarget::None);
     }
-
-    // Check Polyline handles
-    if (auto* polylineItem = getSelectedPolylineAnnotation()) {
-        int vertexIndex = TransformationGizmo::hitTestVertex(polylineItem, pos);
-        if (vertexIndex >= 0) {
-            updateCursor(Qt::CrossCursor); // Vertex drag
-            return;
-        } else if (vertexIndex == -1) {
-            updateCursor(Qt::SizeAllCursor); // Body drag
-            return;
-        }
-    } else {
-        // Check hover on unselected polyline
-        int hitIndex = m_annotationLayer->hitTestPolyline(pos);
-        if (hitIndex >= 0) {
-            updateCursor(Qt::SizeAllCursor);
-            return;
-        }
-    }
-
-    // No annotation hit - pop hover cursor to let tool cursor show
-    CursorManager::instance().popCursor(CursorContext::Hover);
 }

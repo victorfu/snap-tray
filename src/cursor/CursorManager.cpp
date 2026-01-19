@@ -9,6 +9,9 @@
 #include "tools/ToolId.h"
 #include "tools/handlers/MosaicToolHandler.h"
 #include "TransformationGizmo.h"  // For GizmoHandle enum
+#include "annotations/AnnotationLayer.h"
+#include "annotations/ArrowAnnotation.h"
+#include "annotations/PolylineAnnotation.h"
 
 CursorManager::CursorManager()
     : QObject(nullptr)
@@ -534,4 +537,76 @@ void CursorManager::updateCursorFromState()
 
     // 4. Fall back to tool cursor (already managed separately)
     // Tool cursor is set via updateToolCursor() and persists in the stack
+}
+
+// ============================================================================
+// Annotation Hit Testing (Unified Logic)
+// ============================================================================
+
+CursorManager::AnnotationHitResult CursorManager::hitTestAnnotations(
+    const QPoint& pos,
+    AnnotationLayer* layer,
+    ArrowAnnotation* selectedArrow,
+    PolylineAnnotation* selectedPolyline)
+{
+    AnnotationHitResult result;
+
+    if (!layer) {
+        return result;
+    }
+
+    // 1. Check selected arrow's gizmo handles first (highest priority)
+    if (selectedArrow) {
+        GizmoHandle handle = TransformationGizmo::hitTest(selectedArrow, pos);
+        if (handle != GizmoHandle::None) {
+            result.hit = true;
+            result.target = HoverTarget::GizmoHandle;
+            result.handleIndex = static_cast<int>(handle);
+            result.cursor = Qt::PointingHandCursor;
+            return result;
+        }
+    } else {
+        // Check hover on unselected arrows
+        int hitIndex = layer->hitTestArrow(pos);
+        if (hitIndex >= 0) {
+            result.hit = true;
+            result.target = HoverTarget::Annotation;
+            result.handleIndex = hitIndex;
+            result.cursor = Qt::SizeAllCursor;
+            return result;
+        }
+    }
+
+    // 2. Check selected polyline's vertex handles
+    if (selectedPolyline) {
+        int vertexIndex = TransformationGizmo::hitTestVertex(selectedPolyline, pos);
+        if (vertexIndex >= 0) {
+            // Hit a vertex - can drag to reshape
+            result.hit = true;
+            result.target = HoverTarget::GizmoHandle;
+            result.handleIndex = vertexIndex;
+            result.cursor = Qt::CrossCursor;
+            return result;
+        } else if (vertexIndex == -1) {
+            // Hit the body - can drag to move
+            result.hit = true;
+            result.target = HoverTarget::Annotation;
+            result.handleIndex = -1;
+            result.cursor = Qt::SizeAllCursor;
+            return result;
+        }
+    } else {
+        // Check hover on unselected polylines
+        int hitIndex = layer->hitTestPolyline(pos);
+        if (hitIndex >= 0) {
+            result.hit = true;
+            result.target = HoverTarget::Annotation;
+            result.handleIndex = hitIndex;
+            result.cursor = Qt::SizeAllCursor;
+            return result;
+        }
+    }
+
+    // No hit
+    return result;
 }

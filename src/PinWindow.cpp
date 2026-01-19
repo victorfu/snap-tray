@@ -1236,7 +1236,7 @@ void PinWindow::mousePressEvent(QMouseEvent* event)
             // Start dragging
             m_isDragging = true;
             m_dragStartPos = event->globalPosition().toPoint() - frameGeometry().topLeft();
-            CursorManager::instance().pushCursor(CursorContext::Drag, Qt::ClosedHandCursor);
+            CursorManager::instance().setDragState(DragState::WidgetDrag);
         }
     }
 }
@@ -1321,32 +1321,20 @@ void PinWindow::mouseMoveEvent(QMouseEvent* event)
         move(event->globalPosition().toPoint() - m_dragStartPos);
     }
     else {
+        auto& cm = CursorManager::instance();
         // Only update resize cursor when NOT in annotation mode
         // In annotation mode, keep the tool cursor (set by updateCursorForTool)
         if (!m_annotationMode) {
             ResizeHandler::Edge edge = m_resizeHandler->getEdgeAt(event->pos(), size());
-            auto& cm = CursorManager::instance();
             if (edge != ResizeHandler::Edge::None) {
-                cm.pushCursor(CursorContext::Hover, CursorManager::cursorForEdge(edge));
+                cm.setHoverTarget(HoverTarget::ResizeHandle, static_cast<int>(edge));
             } else {
-                cm.popCursor(CursorContext::Hover);
+                cm.setHoverTarget(HoverTarget::None);
             }
         } else {
             // In annotation mode, check for annotation hovers
-            // But we need to be careful not to override tool cursor if we are just drawing
+            // updateAnnotationCursor uses state-driven API and handles cursor automatically
             updateAnnotationCursor(event->pos());
-            
-            // If no annotation hit, ensure we don't have a hover cursor stuck
-             bool annotationHit = false;
-             QPoint mappedPos = mapToOriginalCoords(event->pos());
-            if (getSelectedArrowAnnotation() && TransformationGizmo::hitTest(getSelectedArrowAnnotation(), mappedPos) != GizmoHandle::None) annotationHit = true;
-            else if (m_annotationLayer->hitTestArrow(mappedPos) >= 0) annotationHit = true;
-            else if (getSelectedPolylineAnnotation() && TransformationGizmo::hitTestVertex(getSelectedPolylineAnnotation(), mappedPos) != -2) annotationHit = true;
-            else if (m_annotationLayer->hitTestPolyline(mappedPos) >= 0) annotationHit = true;
-            
-            if (!annotationHit) {
-                 CursorManager::instance().popCursor(CursorContext::Hover);
-            }
         }
     }
 }
@@ -1408,7 +1396,7 @@ void PinWindow::mouseReleaseEvent(QMouseEvent* event)
         }
         if (m_isDragging) {
             m_isDragging = false;
-            CursorManager::instance().popCursor(CursorContext::Drag);
+            CursorManager::instance().setDragState(DragState::None);
             if (m_annotationMode) {
                 // Refresh tool cursor after drag ends
                 updateCursorForTool();
@@ -2676,41 +2664,18 @@ void PinWindow::updateAnnotationCursor(const QPoint& pos)
     QPoint mappedPos = mapToOriginalCoords(pos);
     auto& cursorManager = CursorManager::instance();
 
-    // Check Arrow handles
-    if (auto* arrowItem = getSelectedArrowAnnotation()) {
-        GizmoHandle handle = TransformationGizmo::hitTest(arrowItem, mappedPos);
-        if (handle != GizmoHandle::None) {
-            cursorManager.pushCursor(CursorContext::Hover, Qt::PointingHandCursor);
-            return;
-        }
-    } else {
-        // Check hover on unselected arrow
-        int hitIndex = m_annotationLayer->hitTestArrow(mappedPos);
-        if (hitIndex >= 0) {
-            cursorManager.pushCursor(CursorContext::Hover, Qt::SizeAllCursor);
-            return;
-        }
-    }
+    // Use unified hit testing from CursorManager
+    auto result = CursorManager::hitTestAnnotations(
+        mappedPos,
+        m_annotationLayer,
+        getSelectedArrowAnnotation(),
+        getSelectedPolylineAnnotation()
+    );
 
-    // Check Polyline handles
-    if (auto* polylineItem = getSelectedPolylineAnnotation()) {
-        int vertexIndex = TransformationGizmo::hitTestVertex(polylineItem, mappedPos);
-        if (vertexIndex >= 0) {
-            cursorManager.pushCursor(CursorContext::Hover, Qt::CrossCursor);
-            return;
-        } else if (vertexIndex == -1) {
-            cursorManager.pushCursor(CursorContext::Hover, Qt::SizeAllCursor);
-            return;
-        }
+    if (result.hit) {
+        cursorManager.setHoverTarget(result.target, result.handleIndex);
     } else {
-        // Check hover on unselected polyline
-        int hitIndex = m_annotationLayer->hitTestPolyline(mappedPos);
-        if (hitIndex >= 0) {
-            cursorManager.pushCursor(CursorContext::Hover, Qt::SizeAllCursor);
-            return;
-        }
+        // No annotation hit - clear hover target to let tool cursor show
+        cursorManager.setHoverTarget(HoverTarget::None);
     }
-    
-    // No annotation hit - pop hover cursor to let tool cursor show
-    cursorManager.popCursor(CursorContext::Hover);
 }
