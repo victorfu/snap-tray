@@ -73,9 +73,23 @@ void setWindowShadow(QWidget *widget, bool enabled)
     }
 }
 
-void setWindowExcludedFromCapture(QWidget *, bool)
+void setWindowExcludedFromCapture(QWidget *widget, bool excluded)
 {
-    // No-op on macOS - use ScreenCaptureKit's excludingWindows parameter instead
+    if (!widget) {
+        return;
+    }
+    NSView *view = reinterpret_cast<NSView *>(widget->winId());
+    if (view) {
+        NSWindow *window = [view window];
+        if (window) {
+            // NSWindowSharingNone excludes window from CGWindowListCreateImage
+            // and other CoreGraphics capture APIs (used by Qt's grabWindow).
+            // This works on macOS 10.5+.
+            // Note: On macOS 15+, ScreenCaptureKit ignores this flag, but SCK has
+            // its own exclusion mechanism via SCContentFilter's excludingWindows.
+            [window setSharingType:excluded ? NSWindowSharingNone : NSWindowSharingReadOnly];
+        }
+    }
 }
 
 void setWindowVisibleOnAllWorkspaces(QWidget *widget, bool enabled)

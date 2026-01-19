@@ -552,12 +552,13 @@ void ScrollingCaptureManager::startFrameCapture()
 
 #ifdef Q_OS_MACOS
         m_captureEngine->setExcludedWindows(excludedWindows);
-#else
-        // Windows: use SetWindowDisplayAffinity to exclude from capture
+#endif
+        // Exclude windows from capture at system level
+        // Windows: SetWindowDisplayAffinity makes windows invisible to all capture APIs
+        // macOS: NSWindowSharingNone makes windows invisible to grabWindow fallback
         if (m_overlay) setWindowExcludedFromCapture(m_overlay, true);
         if (m_toolbar) setWindowExcludedFromCapture(m_toolbar, true);
         if (m_thumbnail) setWindowExcludedFromCapture(m_thumbnail, true);
-#endif
 
         if (!m_captureEngine->start()) {
             qWarning() << "ScrollingCaptureManager: Capture engine failed to start, using grabWindow fallback";
@@ -625,12 +626,10 @@ void ScrollingCaptureManager::stopFrameCapture()
         m_captureEngine = nullptr;
     }
 
-#ifndef Q_OS_MACOS
-    // Windows: restore window capture visibility
+    // Restore window capture visibility (both Windows and macOS)
     if (m_overlay) setWindowExcludedFromCapture(m_overlay, false);
     if (m_toolbar) setWindowExcludedFromCapture(m_toolbar, false);
     if (m_thumbnail) setWindowExcludedFromCapture(m_thumbnail, false);
-#endif
 
     // Note: Do NOT reset worker here - finishCapture() needs to retrieve the stitched result first.
     // The worker will be reset when a new capture starts or when stop() is called.

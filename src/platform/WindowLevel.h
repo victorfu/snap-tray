@@ -25,7 +25,10 @@ void setWindowShadow(QWidget *widget, bool enabled);
 
 // Excludes a window from screen capture
 // On Windows: Uses SetWindowDisplayAffinity with WDA_EXCLUDEFROMCAPTURE (Windows 10 2004+)
-// On macOS: No-op (use ScreenCaptureKit's excludingWindows instead)
+// On macOS: Uses NSWindow.sharingType = NSWindowSharingNone
+//   - Works with QScreen::grabWindow() and legacy CGWindowList APIs (macOS 10.5+)
+//   - Does NOT affect ScreenCaptureKit on macOS 15+ (use SCContentFilter's
+//     excludingWindows parameter for SCK exclusion)
 void setWindowExcludedFromCapture(QWidget *widget, bool excluded);
 
 // Sets window to be visible on all virtual desktops/workspaces
