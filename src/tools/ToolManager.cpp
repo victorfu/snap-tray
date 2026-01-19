@@ -127,6 +127,13 @@ void ToolManager::cancelDrawing() {
     }
 }
 
+bool ToolManager::handleEscape() {
+    if (auto* h = currentHandler()) {
+        return h->handleEscape(m_context.get());
+    }
+    return false;
+}
+
 void ToolManager::setAnnotationLayer(AnnotationLayer* layer) {
     m_context->annotationLayer = layer;
 }

@@ -82,6 +82,12 @@ public:
      */
     void cancelDrawing();
 
+    /**
+     * @brief Handle Escape key press.
+     * @return true if handled, false otherwise.
+     */
+    bool handleEscape();
+
     // Context management
     ToolContext* context() { return m_context.get(); }
 

@@ -167,3 +167,16 @@ void ArrowToolHandler::cancelDrawing() {
     m_currentArrow.reset();
     m_currentPolyline.reset();
 }
+
+bool ArrowToolHandler::handleEscape(ToolContext* ctx) {
+    if (m_isPolylineMode) {
+        finishPolyline(ctx);
+        return true;
+    }
+    if (m_isDrawing) {
+        cancelDrawing();
+        ctx->repaint();
+        return true;
+    }
+    return false;
+}

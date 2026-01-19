@@ -1558,6 +1558,12 @@ void PinWindow::keyPressEvent(QKeyEvent* event)
 
     // Escape handling
     if (event->key() == Qt::Key_Escape) {
+        // Try to handle escape in tool first (e.g. finish polyline)
+        if (m_toolManager && m_toolManager->handleEscape()) {
+            event->accept();
+            return;
+        }
+
         if (m_toolbarVisible) {
             hideToolbar();
             event->accept();

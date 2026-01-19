@@ -1363,6 +1363,12 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
     }
 
     if (event->key() == Qt::Key_Escape) {
+        // Try to handle escape in tool first (e.g. finish polyline)
+        if (m_toolManager && m_toolManager->handleEscape()) {
+            event->accept();
+            return;
+        }
+
         // ESC 直接離開 capture mode
         qDebug() << "RegionSelector: Cancelled via Escape";
         if (m_multiRegionMode) {
@@ -1527,6 +1533,13 @@ bool RegionSelector::eventFilter(QObject* obj, QEvent* event)
             if (m_textEditor->isEditing()) {
                 return false;
             }
+
+            // Try to handle escape in tool first (e.g. finish polyline)
+            // Note: eventFilter sees keys before keyPressEvent
+            if (m_toolManager && m_toolManager->handleEscape()) {
+                return true; // Event handled, don't close
+            }
+
             qDebug() << "RegionSelector: Cancelled via Escape (event filter)";
             emit selectionCancelled();
             close();

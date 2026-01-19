@@ -84,6 +84,15 @@ public:
     virtual void cancelDrawing() {}
 
     /**
+     * @brief Handle Escape key press.
+     * @return true if the event was handled (should not close app), false otherwise.
+     */
+    virtual bool handleEscape(ToolContext* ctx) { 
+        Q_UNUSED(ctx);
+        return false; 
+    }
+
+    /**
      * @brief Check if this tool supports color selection.
      */
     virtual bool supportsColor() const { return false; }

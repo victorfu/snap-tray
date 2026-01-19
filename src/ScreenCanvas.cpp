@@ -1025,6 +1025,10 @@ void ScreenCanvas::keyPressEvent(QKeyEvent* event)
     }
 
     if (event->key() == Qt::Key_Escape) {
+        if (m_toolManager->handleEscape()) {
+            qDebug() << "ScreenCanvas: Escape handled by tool";
+            return;
+        }
         qDebug() << "ScreenCanvas: Closed via Escape";
         close();
     }

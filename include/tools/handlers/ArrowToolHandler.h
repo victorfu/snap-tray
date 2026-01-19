@@ -37,6 +37,7 @@ public:
     void drawPreview(QPainter& painter) const override;
     bool isDrawing() const override { return m_isDrawing || m_isPolylineMode; }
     void cancelDrawing() override;
+    bool handleEscape(ToolContext* ctx) override;
 
     bool supportsColor() const override { return true; }
     bool supportsWidth() const override { return true; }

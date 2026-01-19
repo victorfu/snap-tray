@@ -113,3 +113,12 @@ void PolylineToolHandler::cancelDrawing()
     m_isDrawing = false;
     m_currentPolyline.reset();
 }
+
+bool PolylineToolHandler::handleEscape(ToolContext* ctx)
+{
+    if (m_isDrawing) {
+        finishPolyline(ctx);
+        return true;
+    }
+    return false;
+}
