@@ -25,7 +25,8 @@ void setWindowClickThrough(QWidget *widget, bool enabled)
         if (enabled) {
             exStyle |= WS_EX_TRANSPARENT | WS_EX_LAYERED;
         } else {
-            exStyle &= ~(WS_EX_TRANSPARENT | WS_EX_LAYERED);
+            // Only remove WS_EX_TRANSPARENT, keep WS_EX_LAYERED for transparency support
+            exStyle &= ~WS_EX_TRANSPARENT;
         }
         SetWindowLongPtr(hwnd, GWL_EXSTYLE, exStyle);
     }
