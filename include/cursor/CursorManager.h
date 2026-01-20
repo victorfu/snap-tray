@@ -302,7 +302,7 @@ public:
         bool hit = false;                           // Whether any annotation was hit
         HoverTarget target = HoverTarget::None;     // Type of hover target
         int handleIndex = -1;                       // Handle/vertex index for gizmo targets
-        Qt::CursorShape cursor = Qt::ArrowCursor;   // Recommended cursor shape
+        Qt::CursorShape cursor = Qt::CrossCursor;   // Recommended cursor shape
     };
 
     /**

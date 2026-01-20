@@ -139,7 +139,6 @@ private:
 
     // Cursor helpers
     void updateCursorForHandle(SelectionStateManager::ResizeHandle handle);
-    void emitCursorChangeIfNeeded(Qt::CursorShape cursor);
 
     // Selection helpers
     SelectionStateManager::ResizeHandle determineHandleFromOutsideClick(
@@ -212,9 +211,6 @@ private:
     bool handlePolylineAnnotationPress(const QPoint& pos);
     bool handlePolylineAnnotationMove(const QPoint& pos);
     bool handlePolylineAnnotationRelease();
-
-    // Cursor batching - avoid redundant cursor change signals
-    Qt::CursorShape m_lastEmittedCursor = Qt::ArrowCursor;
 
     // Keyboard modifiers from current event (for angle snapping)
     Qt::KeyboardModifiers m_currentModifiers = Qt::NoModifier;

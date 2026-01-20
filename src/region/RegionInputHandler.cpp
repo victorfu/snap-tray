@@ -522,7 +522,7 @@ bool RegionInputHandler::handleEmojiStickerAnnotationPress(const QPoint& pos)
                 // Start dragging
                 m_isEmojiDragging = true;
                 m_emojiDragStart = pos;
-                emitCursorChangeIfNeeded(Qt::SizeAllCursor);
+                CursorManager::instance().setInputState(InputState::Moving);
             }
             else {
                 // Start scaling (corner handles)
@@ -532,7 +532,7 @@ bool RegionInputHandler::handleEmojiStickerAnnotationPress(const QPoint& pos)
                 m_emojiStartScale = emojiItem->scale();
                 QPointF delta = QPointF(pos) - m_emojiStartCenter;
                 m_emojiStartDistance = qSqrt(delta.x() * delta.x() + delta.y() * delta.y());
-                emitCursorChangeIfNeeded(CursorManager::cursorForGizmoHandle(handle));
+                CursorManager::instance().setHoverTarget(HoverTarget::GizmoHandle, static_cast<int>(handle));
             }
             if (m_parentWidget) {
                 m_parentWidget->setFocus();
@@ -557,7 +557,7 @@ bool RegionInputHandler::handleEmojiStickerAnnotationPress(const QPoint& pos)
         if (handle == GizmoHandle::Body || handle == GizmoHandle::None) {
             m_isEmojiDragging = true;
             m_emojiDragStart = pos;
-            emitCursorChangeIfNeeded(Qt::SizeAllCursor);
+            CursorManager::instance().setInputState(InputState::Moving);
         }
         else {
             // Corner handle - start scaling
@@ -567,7 +567,7 @@ bool RegionInputHandler::handleEmojiStickerAnnotationPress(const QPoint& pos)
             m_emojiStartScale = emojiItem->scale();
             QPointF delta = QPointF(pos) - m_emojiStartCenter;
             m_emojiStartDistance = qSqrt(delta.x() * delta.x() + delta.y() * delta.y());
-            emitCursorChangeIfNeeded(CursorManager::cursorForGizmoHandle(handle));
+            CursorManager::instance().setHoverTarget(HoverTarget::GizmoHandle, static_cast<int>(handle));
         }
     }
 
@@ -716,7 +716,7 @@ void RegionInputHandler::handleRightButtonPress(const QPoint& pos)
         }
         m_selectionManager->clearSelection();
         m_annotationLayer->clear();
-        emitCursorChangeIfNeeded(Qt::CrossCursor);
+        CursorManager::instance().setInputState(InputState::Selecting);
         emit updateRequested();
     }
 }
@@ -730,10 +730,10 @@ bool RegionInputHandler::handleTextEditorMove(const QPoint& pos)
     if (m_textEditor->isEditing() && m_textEditor->isConfirmMode()) {
         m_textEditor->handleMouseMove(pos);
         if (m_textEditor->contains(pos)) {
-            emitCursorChangeIfNeeded(Qt::SizeAllCursor);
+            CursorManager::instance().setInputState(InputState::Moving);
         }
         else {
-            emitCursorChangeIfNeeded(Qt::ArrowCursor);
+            CursorManager::instance().setInputState(InputState::Idle);
         }
         emit updateRequested();
         return true;
@@ -1241,40 +1241,22 @@ void RegionInputHandler::finishAnnotation()
 void RegionInputHandler::updateCursorForHandle(SelectionStateManager::ResizeHandle handle)
 {
     using ResizeHandle = SelectionStateManager::ResizeHandle;
+    auto& cm = CursorManager::instance();
 
     if (handle != ResizeHandle::None) {
-        emitCursorChangeIfNeeded(CursorManager::cursorForHandle(handle));
+        cm.setHoverTarget(HoverTarget::ResizeHandle, static_cast<int>(handle));
         return;
     }
 
     // Handle::None - check for move or outside click
     if (m_selectionManager->hitTestMove(m_currentPoint)) {
-        emitCursorChangeIfNeeded(Qt::SizeAllCursor);
+        cm.setInputState(InputState::Moving);
     }
     else {
         QRect sel = m_selectionManager->selectionRect();
         ResizeHandle outsideHandle = SelectionResizeHelper::determineHandleFromOutsideClick(
             m_currentPoint, sel);
-        emitCursorChangeIfNeeded(CursorManager::cursorForHandle(outsideHandle));
-    }
-}
-
-void RegionInputHandler::emitCursorChangeIfNeeded(Qt::CursorShape cursor)
-{
-    if (cursor != m_lastEmittedCursor) {
-        m_lastEmittedCursor = cursor;
-        // Use CursorManager state-driven API for unified cursor management
-        // Map cursor shape to appropriate state
-        if (cursor == Qt::CrossCursor) {
-            CursorManager::instance().setInputState(InputState::Selecting);
-        } else if (cursor == Qt::SizeAllCursor) {
-            CursorManager::instance().setInputState(InputState::Moving);
-        } else if (cursor == Qt::ArrowCursor) {
-            CursorManager::instance().setInputState(InputState::Idle);
-        } else {
-            // For resize cursors (SizeFDiag, SizeVer, etc.), use Resizing state
-            CursorManager::instance().setInputState(InputState::Resizing);
-        }
+        cm.setHoverTarget(HoverTarget::ResizeHandle, static_cast<int>(outsideHandle));
     }
 }
 
@@ -1372,12 +1354,13 @@ bool RegionInputHandler::handleArrowAnnotationPress(const QPoint& pos)
             m_activeArrowHandle = handle;
             m_arrowDragStart = pos;
 
+            auto& cm = CursorManager::instance();
             if (handle == GizmoHandle::Body) {
-                emitCursorChangeIfNeeded(Qt::SizeAllCursor);
+                cm.setInputState(InputState::Moving);
             } else if (handle == GizmoHandle::ArrowControl) {
-                emitCursorChangeIfNeeded(Qt::PointingHandCursor);
+                cm.pushCursor(CursorContext::Selection, Qt::PointingHandCursor);
             } else {
-                emitCursorChangeIfNeeded(Qt::CrossCursor);
+                cm.setInputState(InputState::Selecting);
             }
 
             if (m_parentWidget) {
@@ -1403,7 +1386,7 @@ bool RegionInputHandler::handleArrowAnnotationPress(const QPoint& pos)
         m_isArrowDragging = true;
         m_activeArrowHandle = (handle != GizmoHandle::None) ? handle : GizmoHandle::Body;
         m_arrowDragStart = pos;
-        emitCursorChangeIfNeeded(Qt::SizeAllCursor);
+        CursorManager::instance().setInputState(InputState::Moving);
     }
 
     if (m_parentWidget) {
@@ -1487,6 +1470,8 @@ PolylineAnnotation* RegionInputHandler::getSelectedPolylineAnnotation() const {
 }
 
 bool RegionInputHandler::handlePolylineAnnotationPress(const QPoint& pos) {
+    auto& cm = CursorManager::instance();
+
     if (auto* polylineItem = getSelectedPolylineAnnotation()) {
         int vertexIndex = TransformationGizmo::hitTestVertex(polylineItem, pos);
         if (vertexIndex >= 0) {
@@ -1494,7 +1479,7 @@ bool RegionInputHandler::handlePolylineAnnotationPress(const QPoint& pos) {
             m_isPolylineDragging = true;
             m_activePolylineVertexIndex = vertexIndex;
             m_polylineDragStart = pos;
-            emitCursorChangeIfNeeded(Qt::CrossCursor); 
+            cm.setInputState(InputState::Selecting);
             if (m_parentWidget) m_parentWidget->setFocus();
             emit updateRequested();
             return true;
@@ -1503,7 +1488,7 @@ bool RegionInputHandler::handlePolylineAnnotationPress(const QPoint& pos) {
              m_isPolylineDragging = true;
              m_activePolylineVertexIndex = -1;
              m_polylineDragStart = pos;
-             emitCursorChangeIfNeeded(Qt::SizeAllCursor);
+             cm.setInputState(InputState::Moving);
              if (m_parentWidget) m_parentWidget->setFocus();
              emit updateRequested();
              return true;
@@ -1514,23 +1499,23 @@ bool RegionInputHandler::handlePolylineAnnotationPress(const QPoint& pos) {
     int hitIndex = m_annotationLayer->hitTestPolyline(pos);
     if (hitIndex >= 0) {
         m_annotationLayer->setSelectedIndex(hitIndex);
-        
+
         // Default to dragging body on initial selection
         m_isPolylineDragging = true;
         m_activePolylineVertexIndex = -1;  // Start with body drag
         m_polylineDragStart = pos;
-        
+
         // Check if we actually hit a vertex though, to be precise
         if (auto* polylineItem = getSelectedPolylineAnnotation()) {
              int vertexIndex = TransformationGizmo::hitTestVertex(polylineItem, pos);
              if (vertexIndex >= 0) {
                  m_activePolylineVertexIndex = vertexIndex;
-                 emitCursorChangeIfNeeded(Qt::CrossCursor);
+                 cm.setInputState(InputState::Selecting);
              } else {
-                 emitCursorChangeIfNeeded(Qt::SizeAllCursor);
+                 cm.setInputState(InputState::Moving);
              }
         }
-        
+
         if (m_parentWidget) m_parentWidget->setFocus();
         emit updateRequested();
         return true;
