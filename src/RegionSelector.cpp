@@ -1212,7 +1212,6 @@ void RegionSelector::mousePressEvent(QMouseEvent* event)
     m_inputHandler->handleMousePress(event);
 
     // Sync state back from handler
-    m_startPoint = m_inputHandler->startPoint();
     m_currentPoint = m_inputHandler->currentPoint();
     m_isDrawing = m_inputHandler->isDrawing();
     m_lastMagnifierRect = m_inputHandler->lastMagnifierRect();

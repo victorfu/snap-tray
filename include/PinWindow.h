@@ -36,7 +36,6 @@ class ToolManager;
 class InlineTextEditor;
 class TextAnnotationEditor;
 class AutoBlurManager;
-class AutoBlurManager;
 class TextBoxAnnotation;
 class ArrowAnnotation;
 class PolylineAnnotation;
@@ -46,7 +45,7 @@ class PinWindow : public QWidget
     Q_OBJECT
 
 public:
-    explicit PinWindow(const QPixmap &screenshot, const QPoint &position, QWidget *parent = nullptr);
+    explicit PinWindow(const QPixmap& screenshot, const QPoint& position, QWidget* parent = nullptr);
     ~PinWindow();
 
     void setZoomLevel(qreal zoom);
@@ -61,11 +60,11 @@ public:
     void flipVertical();    // Flip vertically (mirror top-bottom)
 
     // Watermark settings
-    void setWatermarkSettings(const WatermarkRenderer::Settings &settings);
+    void setWatermarkSettings(const WatermarkRenderer::Settings& settings);
     WatermarkRenderer::Settings watermarkSettings() const { return m_watermarkSettings; }
 
     // Pin window manager
-    void setPinWindowManager(PinWindowManager *manager);
+    void setPinWindowManager(PinWindowManager* manager);
 
     // Click-through mode
     void setClickThrough(bool enabled);
@@ -93,27 +92,27 @@ public:
     void setLiveFrameRate(int fps);
 
     // OCR language settings
-    void updateOcrLanguages(const QStringList &languages);
+    void updateOcrLanguages(const QStringList& languages);
 
 signals:
-    void closed(PinWindow *window);
-    void saveRequested(const QPixmap &pixmap);
-    void saveCompleted(const QPixmap &pixmap, const QString &filePath);
-    void saveFailed(const QString &filePath, const QString &error);
-    void ocrCompleted(bool success, const QString &message);
+    void closed(PinWindow* window);
+    void saveRequested(const QPixmap& pixmap);
+    void saveCompleted(const QPixmap& pixmap, const QString& filePath);
+    void saveFailed(const QString& filePath, const QString& error);
+    void ocrCompleted(bool success, const QString& message);
 
 protected:
-    void paintEvent(QPaintEvent *event) override;
-    void enterEvent(QEnterEvent *event) override;
-    void mousePressEvent(QMouseEvent *event) override;
-    void mouseMoveEvent(QMouseEvent *event) override;
-    void mouseReleaseEvent(QMouseEvent *event) override;
-    void mouseDoubleClickEvent(QMouseEvent *event) override;
-    void wheelEvent(QWheelEvent *event) override;
-    void contextMenuEvent(QContextMenuEvent *event) override;
-    void keyPressEvent(QKeyEvent *event) override;
-    void closeEvent(QCloseEvent *event) override;
-    void moveEvent(QMoveEvent *event) override;
+    void paintEvent(QPaintEvent* event) override;
+    void enterEvent(QEnterEvent* event) override;
+    void mousePressEvent(QMouseEvent* event) override;
+    void mouseMoveEvent(QMouseEvent* event) override;
+    void mouseReleaseEvent(QMouseEvent* event) override;
+    void mouseDoubleClickEvent(QMouseEvent* event) override;
+    void wheelEvent(QWheelEvent* event) override;
+    void contextMenuEvent(QContextMenuEvent* event) override;
+    void keyPressEvent(QKeyEvent* event) override;
+    void closeEvent(QCloseEvent* event) override;
+    void moveEvent(QMoveEvent* event) override;
 
 private:
 
@@ -129,7 +128,7 @@ private:
     void onResizeFinished();
 
     // Rounded corner handling
-    int effectiveCornerRadius(const QSize &contentSize) const;
+    int effectiveCornerRadius(const QSize& contentSize) const;
 
     // Click-through handling
     void applyClickThroughState(bool enabled);
@@ -137,7 +136,7 @@ private:
 
     // OCR methods
     void performOCR();
-    void onOCRComplete(bool success, const QString &text, const QString &error);
+    void onOCRComplete(bool success, const QString& text, const QString& error);
 
     // Info methods
     void copyAllInfo();
@@ -163,16 +162,16 @@ private:
     QPixmap getExportPixmapWithAnnotations() const;
     void updateSubToolbarPosition();
     void hideSubToolbar();
-    void onColorSelected(const QColor &color);
+    void onColorSelected(const QColor& color);
     void onWidthChanged(int width);
-    void onEmojiSelected(const QString &emoji);
+    void onEmojiSelected(const QString& emoji);
     void onStepBadgeSizeChanged(StepBadgeSize size);
     void onShapeTypeChanged(ShapeType type);
     void onShapeFillModeChanged(ShapeFillMode mode);
     void onArrowStyleChanged(LineEndStyle style);
     void onLineStyleChanged(LineStyle style);
-    void onFontSizeDropdownRequested(const QPoint &pos);
-    void onFontFamilyDropdownRequested(const QPoint &pos);
+    void onFontSizeDropdownRequested(const QPoint& pos);
+    void onFontFamilyDropdownRequested(const QPoint& pos);
     void onAutoBlurRequested();
 
     // Text annotation helper methods
@@ -213,18 +212,18 @@ private:
     qreal m_zoomLevel;
     QPoint m_dragStartPos;
     bool m_isDragging;
-    QMenu *m_contextMenu;
-    QAction *m_showToolbarAction = nullptr;
-    QAction *m_clickThroughAction = nullptr;
-    QAction *m_showBorderAction = nullptr;
+    QMenu* m_contextMenu;
+    QAction* m_showToolbarAction = nullptr;
+    QAction* m_clickThroughAction = nullptr;
+    QAction* m_showBorderAction = nullptr;
 
     // Live capture context menu items
-    QAction *m_startLiveAction = nullptr;
-    QAction *m_pauseLiveAction = nullptr;
-    QMenu *m_fpsMenu = nullptr;
+    QAction* m_startLiveAction = nullptr;
+    QAction* m_pauseLiveAction = nullptr;
+    QMenu* m_fpsMenu = nullptr;
 
     // Zoom menu members
-    QAction *m_currentZoomAction;
+    QAction* m_currentZoomAction;
     bool m_smoothing;
 
     // Components
@@ -240,7 +239,7 @@ private:
     // Click-through mode
     bool m_clickThrough;
     bool m_clickThroughApplied = false;
-    QTimer *m_clickThroughHoverTimer = nullptr;
+    QTimer* m_clickThroughHoverTimer = nullptr;
 
     // Border visibility
     bool m_showBorder = true;
@@ -253,15 +252,15 @@ private:
     bool m_flipVertical;
 
     // OCR members
-    OCRManager *m_ocrManager;
+    OCRManager* m_ocrManager;
     bool m_ocrInProgress;
-    LoadingSpinnerRenderer *m_loadingSpinner;
+    LoadingSpinnerRenderer* m_loadingSpinner;
 
     // Watermark members
     WatermarkRenderer::Settings m_watermarkSettings;
 
     // Pin window manager
-    PinWindowManager *m_pinWindowManager = nullptr;
+    PinWindowManager* m_pinWindowManager = nullptr;
 
     // Performance optimization: transform cache
     mutable QPixmap m_transformedCache;
@@ -270,18 +269,18 @@ private:
     mutable bool m_cachedFlipV = false;
 
     // Resize optimization
-    QTimer *m_resizeFinishTimer = nullptr;
+    QTimer* m_resizeFinishTimer = nullptr;
     bool m_pendingHighQualityUpdate = false;
 
     int m_baseCornerRadius = 0;
 
     // Toolbar and annotation members
-    PinWindowToolbar *m_toolbar = nullptr;
-    PinWindowSubToolbar *m_subToolbar = nullptr;
-    AnnotationLayer *m_annotationLayer = nullptr;
-    ToolManager *m_toolManager = nullptr;
-    InlineTextEditor *m_textEditor = nullptr;
-    TextAnnotationEditor *m_textAnnotationEditor = nullptr;
+    PinWindowToolbar* m_toolbar = nullptr;
+    PinWindowSubToolbar* m_subToolbar = nullptr;
+    AnnotationLayer* m_annotationLayer = nullptr;
+    ToolManager* m_toolManager = nullptr;
+    InlineTextEditor* m_textEditor = nullptr;
+    TextAnnotationEditor* m_textAnnotationEditor = nullptr;
     bool m_toolbarVisible = false;
     bool m_annotationMode = false;
     ToolId m_currentToolId = ToolId::Selection;
@@ -290,7 +289,7 @@ private:
     StepBadgeSize m_stepBadgeSize = StepBadgeSize::Medium;
 
     // AutoBlur
-    AutoBlurManager *m_autoBlurManager = nullptr;
+    AutoBlurManager* m_autoBlurManager = nullptr;
 
     // Live capture mode
     QRect m_sourceRegion;

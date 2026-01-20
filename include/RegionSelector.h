@@ -191,7 +191,6 @@ private:
     QPixmap m_backgroundPixmap;
     SharedPixmap m_sharedSourcePixmap;  // Shared for mosaic tool memory efficiency
 
-    QPoint m_startPoint;
     QPoint m_currentPoint;
     QPointer<QScreen> m_currentScreen;
 
@@ -239,8 +238,6 @@ private:
     WindowDetector *m_windowDetector;
     std::optional<DetectedElement> m_detectedWindow;
     QRect m_highlightedWindowRect;
-    QPoint m_lastWindowDetectionPos;  // For throttling window detection
-    static constexpr int WINDOW_DETECTION_MIN_DISTANCE_SQ = 25;  // 5px threshold squared
 
     // OCR state
     OCRManager *m_ocrManager;
