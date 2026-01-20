@@ -36,4 +36,15 @@ void setWindowExcludedFromCapture(QWidget *widget, bool excluded);
 // On Windows: Uses WS_EX_TOOLWINDOW style
 void setWindowVisibleOnAllWorkspaces(QWidget *widget, bool enabled);
 
+// Forces the native crosshair cursor at the OS level
+// On macOS: Sets NSCursor directly to bypass Qt-macOS sync issues
+// On Windows: No-op (Windows doesn't have this issue)
+void forceNativeCrosshairCursor(QWidget *widget = nullptr);
+
+// Disables automatic cursor rect management for the window
+// On macOS: Calls [NSWindow disableCursorRects] to prevent macOS from
+//           automatically resetting cursor to arrow during window activation
+// On Windows: No-op
+void disableWindowCursorRects(QWidget *widget);
+
 #endif // WINDOWLEVEL_H

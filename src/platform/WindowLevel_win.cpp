@@ -104,3 +104,13 @@ void setWindowVisibleOnAllWorkspaces(QWidget *widget, bool enabled)
     Q_UNUSED(enabled)
 #endif
 }
+
+void forceNativeCrosshairCursor(QWidget *)
+{
+    // Windows doesn't have the Qt-OS cursor sync issue that macOS has
+}
+
+void disableWindowCursorRects(QWidget *)
+{
+    // Windows doesn't have the cursor rect issue that macOS has
+}

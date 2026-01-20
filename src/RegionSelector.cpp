@@ -1,4 +1,5 @@
 #include "RegionSelector.h"
+#include "platform/WindowLevel.h"
 #include "region/RegionPainter.h"
 #include "region/RegionInputHandler.h"
 #include "region/RegionToolbarHandler.h"
@@ -29,6 +30,7 @@
 #include <QMouseEvent>
 #include <QKeyEvent>
 #include <QCloseEvent>
+#include <QShowEvent>
 #include <QGuiApplication>
 #include <QScreen>
 #include <QDebug>
@@ -1504,6 +1506,19 @@ void RegionSelector::closeEvent(QCloseEvent* event)
 {
     m_isClosing = true;
     QWidget::closeEvent(event);
+}
+
+void RegionSelector::showEvent(QShowEvent* event)
+{
+    QWidget::showEvent(event);
+
+    // Disable macOS cursor rect management to prevent automatic cursor reset
+    disableWindowCursorRects(this);
+
+    // Delay cursor setting to ensure macOS has finished window activation.
+    QTimer::singleShot(100, this, [this]() {
+        forceNativeCrosshairCursor(this);
+    });
 }
 
 bool RegionSelector::eventFilter(QObject* obj, QEvent* event)
