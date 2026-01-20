@@ -4,14 +4,100 @@
 #include <QtMath>
 
 // ============================================================================
+// Helper: Ramer-Douglas-Peucker path simplification algorithm
+// Reduces the number of points while preserving the overall shape
+// ============================================================================
+
+static qreal perpendicularDistance(const QPointF& point, const QPointF& lineStart, const QPointF& lineEnd)
+{
+    qreal dx = lineEnd.x() - lineStart.x();
+    qreal dy = lineEnd.y() - lineStart.y();
+
+    qreal lineLengthSq = dx * dx + dy * dy;
+    if (lineLengthSq < 1e-10) {
+        // Line start and end are the same point
+        qreal pdx = point.x() - lineStart.x();
+        qreal pdy = point.y() - lineStart.y();
+        return qSqrt(pdx * pdx + pdy * pdy);
+    }
+
+    // Calculate perpendicular distance using cross product
+    qreal t = ((point.x() - lineStart.x()) * dx + (point.y() - lineStart.y()) * dy) / lineLengthSq;
+    t = qBound(0.0, t, 1.0);
+
+    qreal projX = lineStart.x() + t * dx;
+    qreal projY = lineStart.y() + t * dy;
+
+    qreal distX = point.x() - projX;
+    qreal distY = point.y() - projY;
+
+    return qSqrt(distX * distX + distY * distY);
+}
+
+static void rdpSimplify(const QVector<QPointF>& points, int start, int end,
+                        qreal epsilon, QVector<bool>& keep)
+{
+    if (end <= start + 1) {
+        return;
+    }
+
+    qreal maxDist = 0.0;
+    int maxIndex = start;
+
+    for (int i = start + 1; i < end; ++i) {
+        qreal dist = perpendicularDistance(points[i], points[start], points[end]);
+        if (dist > maxDist) {
+            maxDist = dist;
+            maxIndex = i;
+        }
+    }
+
+    if (maxDist > epsilon) {
+        keep[maxIndex] = true;
+        rdpSimplify(points, start, maxIndex, epsilon, keep);
+        rdpSimplify(points, maxIndex, end, epsilon, keep);
+    }
+}
+
+static QVector<QPointF> simplifyPath(const QVector<QPointF>& points, qreal epsilon)
+{
+    if (points.size() < 3) {
+        return points;
+    }
+
+    QVector<bool> keep(points.size(), false);
+    keep[0] = true;
+    keep[points.size() - 1] = true;
+
+    rdpSimplify(points, 0, points.size() - 1, epsilon, keep);
+
+    QVector<QPointF> result;
+    result.reserve(points.size());
+    for (int i = 0; i < points.size(); ++i) {
+        if (keep[i]) {
+            result.append(points[i]);
+        }
+    }
+
+    return result;
+}
+
+// ============================================================================
 // Helper: Build smooth path using Catmull-Rom splines converted to cubic Bezier
 // Catmull-Rom guarantees C1 continuity (smooth tangents at all control points)
 // and interpolates through the original points.
 // ============================================================================
 
-static QPainterPath buildSmoothPath(const QVector<QPointF> &points)
+static QPainterPath buildSmoothPath(const QVector<QPointF> &inputPoints)
 {
     QPainterPath path;
+
+    if (inputPoints.size() < 2) {
+        return path;
+    }
+
+    // Simplify path to remove redundant points (epsilon = 1.0 pixel)
+    QVector<QPointF> points = simplifyPath(inputPoints, 1.0);
 
     if (points.size() < 2) {
         return path;
