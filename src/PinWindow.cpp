@@ -430,10 +430,6 @@ void PinWindow::updateSize()
 
     setFixedSize(newLogicalSize);
     update();
-
-    qDebug() << "PinWindow: Zoom level" << m_zoomLevel << "rotation" << m_rotationAngle
-        << "flipH" << m_flipHorizontal << "flipV" << m_flipVertical
-        << "logical size" << newLogicalSize;
 }
 
 QPixmap PinWindow::getTransformedPixmap() const
