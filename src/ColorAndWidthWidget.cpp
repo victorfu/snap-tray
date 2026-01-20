@@ -10,7 +10,6 @@
 #include "ui/sections/AutoBlurSection.h"
 
 #include <QPainter>
-#include <QDebug>
 #include <QtGlobal>
 
 ColorAndWidthWidget::ColorAndWidthWidget(QObject* parent)
@@ -36,31 +35,16 @@ ColorAndWidthWidget::~ColorAndWidthWidget()
 void ColorAndWidthWidget::connectSectionSignals()
 {
     // Forward ColorSection signals
-    connect(m_colorSection, &ColorSection::colorSelected, this, [this](const QColor& color) {
-        emit colorSelected(color);
-        qDebug() << "ColorAndWidthWidget: Color selected:" << color.name();
-    });
+    connect(m_colorSection, &ColorSection::colorSelected, this, &ColorAndWidthWidget::colorSelected);
     connect(m_colorSection, &ColorSection::customColorPickerRequested, this, &ColorAndWidthWidget::customColorPickerRequested);
 
     // Forward WidthSection signals
-    connect(m_widthSection, &WidthSection::widthChanged, this, [this](int width) {
-        emit widthChanged(width);
-        qDebug() << "ColorAndWidthWidget: Width changed to" << width << "(scroll)";
-    });
+    connect(m_widthSection, &WidthSection::widthChanged, this, &ColorAndWidthWidget::widthChanged);
 
     // Forward TextSection signals
-    connect(m_textSection, &TextSection::boldToggled, this, [this](bool enabled) {
-        emit boldToggled(enabled);
-        qDebug() << "ColorAndWidthWidget: Bold toggled:" << enabled;
-    });
-    connect(m_textSection, &TextSection::italicToggled, this, [this](bool enabled) {
-        emit italicToggled(enabled);
-        qDebug() << "ColorAndWidthWidget: Italic toggled:" << enabled;
-    });
-    connect(m_textSection, &TextSection::underlineToggled, this, [this](bool enabled) {
-        emit underlineToggled(enabled);
-        qDebug() << "ColorAndWidthWidget: Underline toggled:" << enabled;
-    });
+    connect(m_textSection, &TextSection::boldToggled, this, &ColorAndWidthWidget::boldToggled);
+    connect(m_textSection, &TextSection::italicToggled, this, &ColorAndWidthWidget::italicToggled);
+    connect(m_textSection, &TextSection::underlineToggled, this, &ColorAndWidthWidget::underlineToggled);
     connect(m_textSection, &TextSection::fontSizeChanged, this, &ColorAndWidthWidget::fontSizeChanged);
     connect(m_textSection, &TextSection::fontFamilyChanged, this, &ColorAndWidthWidget::fontFamilyChanged);
     connect(m_textSection, &TextSection::fontSizeDropdownRequested, this, &ColorAndWidthWidget::fontSizeDropdownRequested);
@@ -73,26 +57,14 @@ void ColorAndWidthWidget::connectSectionSignals()
     connect(m_lineStyleSection, &LineStyleSection::lineStyleChanged, this, &ColorAndWidthWidget::lineStyleChanged);
 
     // Forward ShapeSection signals
-    connect(m_shapeSection, &ShapeSection::shapeTypeChanged, this, [this](ShapeType type) {
-        emit shapeTypeChanged(type);
-        qDebug() << "ColorAndWidthWidget: Shape type changed to" << static_cast<int>(type);
-    });
-    connect(m_shapeSection, &ShapeSection::shapeFillModeChanged, this, [this](ShapeFillMode mode) {
-        emit shapeFillModeChanged(mode);
-        qDebug() << "ColorAndWidthWidget: Shape fill mode toggled to" << static_cast<int>(mode);
-    });
+    connect(m_shapeSection, &ShapeSection::shapeTypeChanged, this, &ColorAndWidthWidget::shapeTypeChanged);
+    connect(m_shapeSection, &ShapeSection::shapeFillModeChanged, this, &ColorAndWidthWidget::shapeFillModeChanged);
 
     // Forward SizeSection signals
-    connect(m_sizeSection, &SizeSection::sizeChanged, this, [this](StepBadgeSize size) {
-        emit stepBadgeSizeChanged(size);
-        qDebug() << "ColorAndWidthWidget: Step badge size changed to" << static_cast<int>(size);
-    });
+    connect(m_sizeSection, &SizeSection::sizeChanged, this, &ColorAndWidthWidget::stepBadgeSizeChanged);
 
     // Forward AutoBlurSection signals
-    connect(m_autoBlurSection, &AutoBlurSection::autoBlurRequested, this, [this]() {
-        emit autoBlurRequested();
-        qDebug() << "ColorAndWidthWidget: Auto blur requested";
-    });
+    connect(m_autoBlurSection, &AutoBlurSection::autoBlurRequested, this, &ColorAndWidthWidget::autoBlurRequested);
 }
 
 // =============================================================================
@@ -611,20 +583,12 @@ bool ColorAndWidthWidget::handleClick(const QPoint& pos)
     }
 
     // Width section: consume click but don't trigger color picker
-    qDebug() << "ColorAndWidthWidget::handleClick checking width section:"
-             << "showWidthSection=" << m_showWidthSection
-             << "widthSectionHidden=" << m_widthSectionHidden
-             << "contains=" << m_widthSection->contains(pos)
-             << "pos=" << pos
-             << "widthRect=" << m_widthSection->boundingRect();
     if (m_showWidthSection && !m_widthSectionHidden && m_widthSection->contains(pos)) {
-        qDebug() << "WidthSection click CONSUMED - should NOT open color picker";
         return true;
     }
 
     // Color section
     if (m_showColorSection && m_colorSection->contains(pos)) {
-        qDebug() << "ColorSection handleClick called - pos=" << pos;
         return m_colorSection->handleClick(pos);
     }
 
