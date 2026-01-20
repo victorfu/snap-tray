@@ -53,17 +53,16 @@ packaging\windows\package.bat msix      # MSIX package only
 
 ```
 src/
-├── annotations/     # 13 annotation types (Pencil, Arrow, Shape, Mosaic, etc.)
+├── annotations/     # Annotation types (Pencil, Arrow, Shape, Mosaic, etc.)
 ├── capture/         # Screen capture (DXGICaptureEngine, SCKCaptureEngine)
+├── cursor/          # Cursor state management (CursorManager)
 ├── detection/       # Face/text detection, auto-blur
 ├── encoding/        # GIF/WebP encoders
 ├── pinwindow/       # Pin window components
 ├── platform/        # Platform abstraction (WindowLevel, PlatformFeatures)
 ├── recording/       # Recording effects (Spotlight, CursorHighlight)
 ├── region/          # Region selection UI
-├── scrolling/       # Scrolling capture and image stitching
 ├── settings/        # Settings managers
-├── stitching/       # Feature matching, optical flow
 ├── toolbar/         # Toolbar rendering
 ├── tools/           # Tool handlers and registry
 ├── ui/sections/     # Tool option panels

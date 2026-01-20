@@ -31,7 +31,6 @@ SnapTray 是一個在系統托盤常駐的截圖與錄影小工具，提供區�
   - `OCR` 文字辨識（macOS/Windows，支援繁體中文、簡體中文、英文）
   - `Auto Blur` 自動偵測並模糊臉孔/文字
   - `Record` 螢幕錄影（`R`）使用選取區域
-  - `Scroll Capture` 長頁面/捲動截圖，擷取延伸內容（僅 Debug 建置）
   - 顏色/線寬控制（支援的工具）
   - 文字工具格式控制（字型/大小、粗體/斜體/底線）
 - **螢幕畫布**：
@@ -410,15 +409,18 @@ snap-tray/
 |   |-- PinWindow.h
 |   |-- RecordingManager.h
 |   |-- WatermarkRenderer.h
+|   |-- capture/
+|   |   |-- ICaptureEngine.h
+|   |   |-- QtCaptureEngine.h
+|   |   |-- SCKCaptureEngine.h
+|   |   `-- DXGICaptureEngine.h
+|   |-- cursor/
+|   |   |-- CursorManager.h
+|   |   `-- CursorScope.h
 |   |-- encoding/
 |   |   |-- EncoderFactory.h
 |   |   `-- NativeGifEncoder.h
-|   |-- ...
-|   `-- capture/
-|       |-- ICaptureEngine.h
-|       |-- QtCaptureEngine.h
-|       |-- SCKCaptureEngine.h
-|       `-- DXGICaptureEngine.h
+|   `-- ...
 |-- src/
 |   |-- main.cpp
 |   |-- MainApplication.cpp
@@ -429,15 +431,17 @@ snap-tray/
 |   |-- PinWindow.cpp
 |   |-- RecordingManager.cpp
 |   |-- WatermarkRenderer.cpp
-|   |-- encoding/
-|   |   |-- EncoderFactory.cpp
-|   |   `-- NativeGifEncoder.cpp
-|   |-- ...
 |   |-- capture/
 |   |   |-- ICaptureEngine.cpp
 |   |   |-- QtCaptureEngine.cpp
 |   |   |-- SCKCaptureEngine_mac.mm
 |   |   `-- DXGICaptureEngine_win.cpp
+|   |-- cursor/
+|   |   `-- CursorManager.cpp
+|   |-- encoding/
+|   |   |-- EncoderFactory.cpp
+|   |   `-- NativeGifEncoder.cpp
+|   |-- ...
 |   `-- platform/
 |       |-- WindowLevel_mac.mm
 |       |-- WindowLevel_win.cpp
@@ -473,6 +477,7 @@ snap-tray/
 
 | 組件                        | 位置               | 職責                       |
 | --------------------------- | ------------------ | -------------------------- |
+| `CursorManager`             | `src/cursor/`      | 集中式游標狀態管理         |
 | `MagnifierPanel`            | `src/region/`      | 放大鏡繪製與快取管理       |
 | `UpdateThrottler`           | `src/region/`      | 事件節流邏輯               |
 | `TextAnnotationEditor`      | `src/region/`      | 文字註釋編輯/變換/格式化   |

@@ -31,7 +31,6 @@ SnapTray is a lightweight tray utility for region screenshots, on-screen annotat
   - `OCR` text recognition (macOS/Windows, supports Traditional Chinese, Simplified Chinese, English)
   - `Auto Blur` auto-detect and blur faces/text in the selection
   - `Record` screen recording (R) for the selected region
-  - `Scroll Capture` long page/scrolling capture for extended content (Debug build only)
   - Color + line width controls for supported tools
   - Text formatting controls for Text tool (font family/size, bold/italic/underline)
 - **Screen Canvas**:
@@ -410,15 +409,18 @@ snap-tray/
 |   |-- PinWindow.h
 |   |-- RecordingManager.h
 |   |-- WatermarkRenderer.h
+|   |-- capture/
+|   |   |-- ICaptureEngine.h
+|   |   |-- QtCaptureEngine.h
+|   |   |-- SCKCaptureEngine.h
+|   |   `-- DXGICaptureEngine.h
+|   |-- cursor/
+|   |   |-- CursorManager.h
+|   |   `-- CursorScope.h
 |   |-- encoding/
 |   |   |-- EncoderFactory.h
 |   |   `-- NativeGifEncoder.h
-|   |-- ...
-|   `-- capture/
-|       |-- ICaptureEngine.h
-|       |-- QtCaptureEngine.h
-|       |-- SCKCaptureEngine.h
-|       `-- DXGICaptureEngine.h
+|   `-- ...
 |-- src/
 |   |-- main.cpp
 |   |-- MainApplication.cpp
@@ -429,15 +431,17 @@ snap-tray/
 |   |-- PinWindow.cpp
 |   |-- RecordingManager.cpp
 |   |-- WatermarkRenderer.cpp
-|   |-- encoding/
-|   |   |-- EncoderFactory.cpp
-|   |   `-- NativeGifEncoder.cpp
-|   |-- ...
 |   |-- capture/
 |   |   |-- ICaptureEngine.cpp
 |   |   |-- QtCaptureEngine.cpp
 |   |   |-- SCKCaptureEngine_mac.mm
 |   |   `-- DXGICaptureEngine_win.cpp
+|   |-- cursor/
+|   |   `-- CursorManager.cpp
+|   |-- encoding/
+|   |   |-- EncoderFactory.cpp
+|   |   `-- NativeGifEncoder.cpp
+|   |-- ...
 |   `-- platform/
 |       |-- WindowLevel_mac.mm
 |       |-- WindowLevel_win.cpp
@@ -473,6 +477,7 @@ The codebase follows a modular architecture with extracted components for mainta
 
 | Component                   | Location           | Responsibility                         |
 | --------------------------- | ------------------ | -------------------------------------- |
+| `CursorManager`             | `src/cursor/`      | Centralized cursor state management    |
 | `MagnifierPanel`            | `src/region/`      | Magnifier rendering and caching        |
 | `UpdateThrottler`           | `src/region/`      | Event throttling logic                 |
 | `TextAnnotationEditor`      | `src/region/`      | Text annotation editing/transformation |
