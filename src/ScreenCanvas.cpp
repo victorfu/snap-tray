@@ -75,8 +75,7 @@ ScreenCanvas::ScreenCanvas(QWidget* parent)
 
     // Initialize cursor manager
     auto& cursorManager = CursorManager::instance();
-    cursorManager.setTargetWidget(this);
-    cursorManager.setToolManager(m_toolManager);
+    cursorManager.registerWidget(this, m_toolManager);
 
     // Initialize SVG icons
     initializeIcons();
@@ -205,7 +204,7 @@ ScreenCanvas::ScreenCanvas(QWidget* parent)
 ScreenCanvas::~ScreenCanvas()
 {
     // Clean up cursor state before destruction
-    CursorManager::instance().clearAll();
+    CursorManager::instance().clearAllForWidget(this);
 
     delete m_colorPickerDialog;
     qDebug() << "ScreenCanvas: Destroyed";
@@ -712,7 +711,7 @@ bool ScreenCanvas::isDrawingTool(ToolId toolId) const
 
 void ScreenCanvas::setToolCursor()
 {
-    CursorManager::instance().updateToolCursor();
+    CursorManager::instance().updateToolCursorForWidget(this);
 }
 
 void ScreenCanvas::mousePressEvent(QMouseEvent* event)
@@ -757,7 +756,7 @@ void ScreenCanvas::mousePressEvent(QMouseEvent* event)
                 // Start toolbar drag (clicked on toolbar but not on a button)
                 m_isDraggingToolbar = true;
                 m_toolbarDragOffset = event->pos() - m_toolbar->boundingRect().topLeft();
-                CursorManager::instance().setDragState(DragState::ToolbarDrag);
+                CursorManager::instance().setDragStateForWidget(this, DragState::ToolbarDrag);
             }
             return;
         }
@@ -872,7 +871,7 @@ void ScreenCanvas::mouseMoveEvent(QMouseEvent* event)
         if (shouldShowColorAndWidthWidget()) {
             if (m_colorAndWidthWidget->handleMouseMove(event->pos(), event->buttons() & Qt::LeftButton)) {
                 if (m_colorAndWidthWidget->contains(event->pos())) {
-                    cursorManager.setHoverTarget(HoverTarget::Widget);
+                    cursorManager.setHoverTargetForWidget(this, HoverTarget::Widget);
                 }
                 update();
                 return;
@@ -902,11 +901,11 @@ void ScreenCanvas::mouseMoveEvent(QMouseEvent* event)
 
         // Update cursor based on current hover state using state-driven API
         if (m_toolbar->hoveredButton() >= 0 || widgetHovered) {
-            cursorManager.setHoverTarget(HoverTarget::ToolbarButton);
+            cursorManager.setHoverTargetForWidget(this, HoverTarget::ToolbarButton);
         }
         else if (m_toolbar->contains(event->pos())) {
             // Hovering over toolbar but not on a button - show drag cursor
-            cursorManager.setHoverTarget(HoverTarget::Toolbar);
+            cursorManager.setHoverTargetForWidget(this, HoverTarget::Toolbar);
         }
         else {
             // Check annotation cursors - updateAnnotationCursor uses state-driven API
@@ -938,9 +937,9 @@ void ScreenCanvas::mouseReleaseEvent(QMouseEvent* event)
             m_toolbarManuallyPositioned = true;
             // Clear drag state - cursor will revert based on hover target
             auto& cursorManager = CursorManager::instance();
-            cursorManager.setDragState(DragState::None);
+            cursorManager.setDragStateForWidget(this, DragState::None);
             if (m_toolbar->contains(event->pos())) {
-                cursorManager.setHoverTarget(HoverTarget::Toolbar);
+                cursorManager.setHoverTargetForWidget(this, HoverTarget::Toolbar);
             }
             return;
         }
@@ -1390,9 +1389,9 @@ void ScreenCanvas::updateAnnotationCursor(const QPoint& pos)
     );
 
     if (result.hit) {
-        cursorManager.setHoverTarget(result.target, result.handleIndex);
+        cursorManager.setHoverTargetForWidget(this, result.target, result.handleIndex);
     } else {
         // No annotation hit - clear hover target to let tool cursor show
-        cursorManager.setHoverTarget(HoverTarget::None);
+        cursorManager.setHoverTargetForWidget(this, HoverTarget::None);
     }
 }

@@ -68,18 +68,19 @@ enum class DragState {
 };
 
 /**
- * @brief Global cursor manager for unified cursor handling.
+ * @brief Per-widget cursor manager for unified cursor handling.
  *
  * Provides centralized cursor management with priority-based context stack.
- * Integrates with ToolManager to automatically use IToolHandler::cursor().
+ * Each widget maintains its own cursor stack and state, allowing multiple
+ * windows to coexist without cursor conflicts.
  *
  * Usage:
  * @code
  * auto& cm = CursorManager::instance();
- * cm.setTargetWidget(myWidget);
- * cm.pushCursor(CursorContext::Selection, Qt::SizeFDiagCursor);
+ * cm.registerWidget(myWidget, toolManager);
+ * cm.pushCursorForWidget(myWidget, CursorContext::Selection, Qt::SizeFDiagCursor);
  * // ... later
- * cm.popCursor(CursorContext::Selection);
+ * cm.popCursorForWidget(myWidget, CursorContext::Selection);
  * @endcode
  */
 class CursorManager : public QObject {
@@ -92,66 +93,33 @@ public:
     CursorManager(const CursorManager&) = delete;
     CursorManager& operator=(const CursorManager&) = delete;
 
-    /**
-     * @brief Set the target widget for cursor changes.
-     */
-    void setTargetWidget(QWidget* widget);
-
-    /**
-     * @brief Get the current target widget.
-     */
-    QWidget* targetWidget() const { return m_targetWidget; }
-
-    /**
-     * @brief Set the tool manager for tool cursor integration.
-     */
-    void setToolManager(ToolManager* manager);
-
-    // ========================================================================
-    // Cursor Stack Operations
-    // ========================================================================
-
-    /**
-     * @brief Push a cursor onto the context stack.
-     *
-     * If a cursor already exists for this context, it will be replaced.
-     * The highest priority cursor in the stack will be applied.
-     */
-    void pushCursor(CursorContext context, const QCursor& cursor);
-
-    /**
-     * @brief Push a cursor with a standard Qt cursor shape.
-     */
-    void pushCursor(CursorContext context, Qt::CursorShape shape);
-
-    /**
-     * @brief Pop a cursor from the context stack.
-     *
-     * Removes the cursor for the specified context.
-     * The next highest priority cursor will be applied.
-     */
-    void popCursor(CursorContext context);
-
-    /**
-     * @brief Check if a context has an active cursor.
-     */
-    bool hasContext(CursorContext context) const;
-
-    /**
-     * @brief Clear all cursor contexts and reset to default.
-     */
-    void clearAll();
-
-    /**
-     * @brief Clear specific cursor contexts.
-     *
-     * Useful for clearing multiple related contexts without resetting tool cursor.
-     */
-    void clearContexts(std::initializer_list<CursorContext> contexts);
-
     // ========================================================================
     // Per-Widget Cursor Management
     // ========================================================================
+
+    /**
+     * @brief Register a widget for cursor management.
+     *
+     * Each widget maintains its own cursor stack and state. This allows
+     * multiple windows to coexist without cursor conflicts.
+     *
+     * @param widget The widget to register
+     * @param toolManager Optional tool manager for tool cursor integration
+     */
+    void registerWidget(QWidget* widget, ToolManager* toolManager = nullptr);
+
+    /**
+     * @brief Unregister a widget from cursor management.
+     *
+     * Clears all cursor state for the widget. Automatically called when
+     * widget is destroyed.
+     */
+    void unregisterWidget(QWidget* widget);
+
+    /**
+     * @brief Set the tool manager for a specific widget.
+     */
+    void setToolManagerForWidget(QWidget* widget, ToolManager* manager);
 
     /**
      * @brief Push a cursor for a specific widget.
@@ -188,73 +156,53 @@ public:
     static void setButtonCursor(QWidget* button);
 
     // ========================================================================
-    // Tool Cursor Integration
+    // Per-Widget State-Driven Cursor Management
     // ========================================================================
 
     /**
-     * @brief Update cursor based on current tool.
-     *
-     * Automatically gets cursor from IToolHandler::cursor().
-     * Special handling for Mosaic tool (dynamic size).
+     * @brief Set the input state for a specific widget.
      */
-    void updateToolCursor();
+    void setInputStateForWidget(QWidget* widget, InputState state);
 
     /**
-     * @brief Update mosaic cursor with specific size.
+     * @brief Get the input state for a specific widget.
      */
-    void updateMosaicCursor(int size);
-
-    // ========================================================================
-    // State-Driven Cursor Management
-    // ========================================================================
+    InputState inputStateForWidget(QWidget* widget) const;
 
     /**
-     * @brief Set the current input state.
-     *
-     * Input state represents the current operation mode (idle, selecting, etc.)
+     * @brief Set the hover target for a specific widget.
      */
-    void setInputState(InputState state);
+    void setHoverTargetForWidget(QWidget* widget, HoverTarget target, int handleIndex = -1);
 
     /**
-     * @brief Get the current input state.
+     * @brief Get the hover target for a specific widget.
      */
-    InputState inputState() const { return m_inputState; }
+    HoverTarget hoverTargetForWidget(QWidget* widget) const;
 
     /**
-     * @brief Set the current hover target.
-     *
-     * @param target The element being hovered over
-     * @param handleIndex Optional index for handle-based targets (resize, gizmo)
+     * @brief Set the drag state for a specific widget.
      */
-    void setHoverTarget(HoverTarget target, int handleIndex = -1);
+    void setDragStateForWidget(QWidget* widget, DragState state);
 
     /**
-     * @brief Get the current hover target.
+     * @brief Get the drag state for a specific widget.
      */
-    HoverTarget hoverTarget() const { return m_hoverTarget; }
+    DragState dragStateForWidget(QWidget* widget) const;
 
     /**
-     * @brief Set the current drag state.
+     * @brief Update cursor based on current state for a specific widget.
      */
-    void setDragState(DragState state);
+    void updateCursorFromStateForWidget(QWidget* widget);
 
     /**
-     * @brief Get the current drag state.
+     * @brief Reset all states to default for a specific widget.
      */
-    DragState dragState() const { return m_dragState; }
+    void resetStateForWidget(QWidget* widget);
 
     /**
-     * @brief Update cursor based on current state.
-     *
-     * Computes the appropriate cursor from InputState, HoverTarget, and DragState,
-     * then applies it using the priority system.
+     * @brief Update tool cursor for a specific widget.
      */
-    void updateCursorFromState();
-
-    /**
-     * @brief Reset all states to default (Idle, None, None).
-     */
-    void resetState();
+    void updateToolCursorForWidget(QWidget* widget);
 
     // ========================================================================
     // Static Cursor Factories
@@ -334,16 +282,6 @@ private:
     CursorManager();
     ~CursorManager() override = default;
 
-    /**
-     * @brief Apply the highest priority cursor to the target widget.
-     */
-    void applyCursor();
-
-    /**
-     * @brief Get the current effective cursor.
-     */
-    QCursor effectiveCursor() const;
-
     struct CursorEntry {
         CursorContext context;
         QCursor cursor;
@@ -363,19 +301,18 @@ private:
      */
     QCursor effectiveCursorForWidget(QWidget* widget) const;
 
-    QVector<CursorEntry> m_cursorStack;
-    QWidget* m_targetWidget = nullptr;
-    ToolManager* m_toolManager = nullptr;
-    QCursor m_lastAppliedCursor;
-
     // Per-widget cursor stacks for independent windows
     QHash<QWidget*, QVector<CursorEntry>> m_widgetCursorStacks;
 
-    // State-driven cursor management
-    InputState m_inputState = InputState::Idle;
-    HoverTarget m_hoverTarget = HoverTarget::None;
-    DragState m_dragState = DragState::None;
-    int m_hoverHandleIndex = -1;
+    // Per-widget state management
+    struct WidgetCursorState {
+        InputState inputState = InputState::Idle;
+        HoverTarget hoverTarget = HoverTarget::None;
+        DragState dragState = DragState::None;
+        int hoverHandleIndex = -1;
+    };
+    QHash<QWidget*, WidgetCursorState> m_widgetStates;
+    QHash<QWidget*, ToolManager*> m_widgetToolManagers;
 };
 
 #endif // CURSORMANAGER_H

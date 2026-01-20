@@ -11,12 +11,12 @@
  *
  * Note: For operations that span multiple events (like drag operations
  * from mousePressEvent to mouseReleaseEvent), this class cannot be used
- * directly. Instead, ensure the widget destructor calls clearAll() or
- * clearAllForWidget() to clean up any residual cursor state.
+ * directly. Instead, ensure the widget destructor calls clearAllForWidget()
+ * to clean up any residual cursor state.
  *
  * Usage:
  *   void someFunction() {
- *       CursorScope scope(CursorContext::Override, Qt::WaitCursor);
+ *       CursorScope scope(myWidget, CursorContext::Override, Qt::WaitCursor);
  *       // ... do work ...
  *       // cursor automatically restored when scope exits
  *   }
@@ -24,32 +24,34 @@
 class CursorScope
 {
 public:
-    explicit CursorScope(CursorContext context, Qt::CursorShape shape)
-        : m_context(context)
+    explicit CursorScope(QWidget* widget, CursorContext context, Qt::CursorShape shape)
+        : m_widget(widget)
+        , m_context(context)
         , m_active(true)
     {
-        CursorManager::instance().pushCursor(context, shape);
+        CursorManager::instance().pushCursorForWidget(widget, context, shape);
     }
 
-    explicit CursorScope(CursorContext context, const QCursor& cursor)
-        : m_context(context)
+    explicit CursorScope(QWidget* widget, CursorContext context, const QCursor& cursor)
+        : m_widget(widget)
+        , m_context(context)
         , m_active(true)
     {
-        CursorManager::instance().pushCursor(context, cursor);
+        CursorManager::instance().pushCursorForWidget(widget, context, cursor);
     }
 
     ~CursorScope()
     {
-        if (m_active) {
-            CursorManager::instance().popCursor(m_context);
+        if (m_active && m_widget) {
+            CursorManager::instance().popCursorForWidget(m_widget, m_context);
         }
     }
 
     // Release the cursor early (before scope exit)
     void release()
     {
-        if (m_active) {
-            CursorManager::instance().popCursor(m_context);
+        if (m_active && m_widget) {
+            CursorManager::instance().popCursorForWidget(m_widget, m_context);
             m_active = false;
         }
     }
@@ -63,7 +65,8 @@ public:
 
     // Allow move (transfers ownership)
     CursorScope(CursorScope&& other) noexcept
-        : m_context(other.m_context)
+        : m_widget(other.m_widget)
+        , m_context(other.m_context)
         , m_active(other.m_active)
     {
         other.m_active = false;
@@ -72,9 +75,10 @@ public:
     CursorScope& operator=(CursorScope&& other) noexcept
     {
         if (this != &other) {
-            if (m_active) {
-                CursorManager::instance().popCursor(m_context);
+            if (m_active && m_widget) {
+                CursorManager::instance().popCursorForWidget(m_widget, m_context);
             }
+            m_widget = other.m_widget;
             m_context = other.m_context;
             m_active = other.m_active;
             other.m_active = false;
@@ -83,6 +87,7 @@ public:
     }
 
 private:
+    QWidget* m_widget;
     CursorContext m_context;
     bool m_active;
 };

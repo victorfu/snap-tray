@@ -105,13 +105,13 @@ RegionSelector::RegionSelector(QWidget* parent)
             auto& cm = CursorManager::instance();
             if (newState == SelectionStateManager::State::None ||
                 newState == SelectionStateManager::State::Selecting) {
-                cm.pushCursor(CursorContext::Selection, Qt::CrossCursor);
+                cm.pushCursorForWidget(this, CursorContext::Selection, Qt::CrossCursor);
             }
             else if (newState == SelectionStateManager::State::Moving) {
-                cm.pushCursor(CursorContext::Selection, Qt::SizeAllCursor);
+                cm.pushCursorForWidget(this, CursorContext::Selection, Qt::SizeAllCursor);
             }
             else {
-                cm.popCursor(CursorContext::Selection);
+                cm.popCursorForWidget(this, CursorContext::Selection);
             }
         });
 
@@ -160,8 +160,7 @@ RegionSelector::RegionSelector(QWidget* parent)
 
     // Initialize cursor manager for centralized cursor handling
     auto& cursorManager = CursorManager::instance();
-    cursorManager.setTargetWidget(this);
-    cursorManager.setToolManager(m_toolManager);
+    cursorManager.registerWidget(this, m_toolManager);
 
     // OCR manager is lazy-initialized via ensureOCRManager() when first needed
 
@@ -412,7 +411,7 @@ RegionSelector::RegionSelector(QWidget* parent)
         this, [this]() {
             m_selectionManager->finishSelection();
             if (!m_multiRegionMode) {
-                CursorManager::instance().popCursor(CursorContext::Selection);
+                CursorManager::instance().popCursorForWidget(this, CursorContext::Selection);
             }
             if (m_multiRegionMode && m_multiRegionManager) {
                 QRect sel = m_selectionManager->selectionRect();
@@ -435,7 +434,7 @@ RegionSelector::RegionSelector(QWidget* parent)
             QRect fullScreenRect = QRect(0, 0, screenGeom.width(), screenGeom.height());
             m_selectionManager->setFromDetectedWindow(fullScreenRect);
             if (!m_multiRegionMode) {
-                CursorManager::instance().popCursor(CursorContext::Selection);
+                CursorManager::instance().popCursorForWidget(this, CursorContext::Selection);
             }
 
             // Add full-screen region in multi-region mode
@@ -563,7 +562,7 @@ RegionSelector::RegionSelector(QWidget* parent)
 RegionSelector::~RegionSelector()
 {
     // Clean up cursor state before destruction
-    CursorManager::instance().clearAll();
+    CursorManager::instance().clearAllForWidget(this);
 
     // Clean up color picker dialog
     if (m_colorPickerDialog) {
@@ -817,7 +816,7 @@ void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapt
     m_magnifierPanel->preWarmCache(m_currentPoint, m_backgroundPixmap);
 
     // Initialize cursor via CursorManager
-    CursorManager::instance().pushCursor(CursorContext::Selection, Qt::CrossCursor);
+    CursorManager::instance().pushCursorForWidget(this, CursorContext::Selection, Qt::CrossCursor);
 
     // Initial window detection at cursor position
     if (m_windowDetector && m_windowDetector->isEnabled()) {
@@ -1096,7 +1095,7 @@ void RegionSelector::setToolCursor()
 
     // Use CursorManager's unified tool cursor update
     // This delegates to IToolHandler::cursor() for proper cursor behavior
-    cursorManager.updateToolCursor();
+    cursorManager.updateToolCursorForWidget(this);
 }
 
 void RegionSelector::handleToolbarClick(ToolId tool)

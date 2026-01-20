@@ -205,7 +205,7 @@ PinWindow::PinWindow(const QPixmap& screenshot, const QPoint& position, QWidget*
 PinWindow::~PinWindow()
 {
     // Clean up cursor state before destruction (ensures Drag context is cleared)
-    CursorManager::instance().clearAll();
+    CursorManager::instance().clearAllForWidget(this);
 
     // Stop live capture if active
     if (m_isLiveMode) {
@@ -1259,7 +1259,7 @@ void PinWindow::mousePressEvent(QMouseEvent* event)
             // Start dragging
             m_isDragging = true;
             m_dragStartPos = event->globalPosition().toPoint() - frameGeometry().topLeft();
-            CursorManager::instance().setDragState(DragState::WidgetDrag);
+            CursorManager::instance().setDragStateForWidget(this, DragState::WidgetDrag);
         }
     }
 }
@@ -1350,9 +1350,9 @@ void PinWindow::mouseMoveEvent(QMouseEvent* event)
         if (!m_annotationMode) {
             ResizeHandler::Edge edge = m_resizeHandler->getEdgeAt(event->pos(), size());
             if (edge != ResizeHandler::Edge::None) {
-                cm.setHoverTarget(HoverTarget::ResizeHandle, static_cast<int>(edge));
+                cm.setHoverTargetForWidget(this, HoverTarget::ResizeHandle, static_cast<int>(edge));
             } else {
-                cm.setHoverTarget(HoverTarget::None);
+                cm.setHoverTargetForWidget(this, HoverTarget::None);
             }
         } else {
             // In annotation mode, check for annotation hovers
@@ -1419,7 +1419,7 @@ void PinWindow::mouseReleaseEvent(QMouseEvent* event)
         }
         if (m_isDragging) {
             m_isDragging = false;
-            CursorManager::instance().setDragState(DragState::None);
+            CursorManager::instance().setDragStateForWidget(this, DragState::None);
             if (m_annotationMode) {
                 // Refresh tool cursor after drag ends
                 updateCursorForTool();
@@ -1704,8 +1704,7 @@ void PinWindow::initializeAnnotationComponents()
 
     // Initialize cursor manager for centralized cursor handling (like RegionSelector)
     auto& cursorManager = CursorManager::instance();
-    cursorManager.setTargetWidget(this);
-    cursorManager.setToolManager(m_toolManager);
+    cursorManager.registerWidget(this, m_toolManager);
 
     // Initialize text annotation editor components
     m_textEditor = new InlineTextEditor(this);
@@ -1852,7 +1851,7 @@ void PinWindow::enterAnnotationMode()
     }
 
     m_annotationMode = true;
-    CursorManager::instance().clearAll();
+    CursorManager::instance().clearAllForWidget(this);
     updateCursorForTool();
     update();
 
@@ -1864,12 +1863,8 @@ void PinWindow::updateCursorForTool()
     auto& cursorManager = CursorManager::instance();
 
     if (!m_annotationMode) {
-        cursorManager.clearAll();
+        cursorManager.clearAllForWidget(this);
         return;
-    }
-
-    if (cursorManager.targetWidget() != this) {
-        cursorManager.setTargetWidget(this);
     }
 
     // Determine the appropriate cursor for the current tool
@@ -1894,7 +1889,7 @@ void PinWindow::updateCursorForTool()
     }
 
     // Use CursorManager so the tool cursor persists across hover/drag contexts
-    cursorManager.pushCursor(CursorContext::Tool, toolCursor);
+    cursorManager.pushCursorForWidget(this, CursorContext::Tool, toolCursor);
 }
 
 void PinWindow::exitAnnotationMode()
@@ -1905,7 +1900,7 @@ void PinWindow::exitAnnotationMode()
 
     m_annotationMode = false;
     m_currentToolId = ToolId::Selection;
-    CursorManager::instance().clearAll();
+    CursorManager::instance().clearAllForWidget(this);
 
     if (m_toolbar) {
         m_toolbar->setActiveButton(-1);
@@ -2697,7 +2692,7 @@ void PinWindow::updateAnnotationCursor(const QPoint& pos)
     if (auto* textItem = getSelectedTextAnnotation()) {
         GizmoHandle handle = TransformationGizmo::hitTest(textItem, mappedPos);
         if (handle != GizmoHandle::None) {
-            cursorManager.setHoverTarget(HoverTarget::GizmoHandle, static_cast<int>(handle));
+            cursorManager.setHoverTargetForWidget(this, HoverTarget::GizmoHandle, static_cast<int>(handle));
             return;
         }
     }
@@ -2711,9 +2706,9 @@ void PinWindow::updateAnnotationCursor(const QPoint& pos)
     );
 
     if (result.hit) {
-        cursorManager.setHoverTarget(result.target, result.handleIndex);
+        cursorManager.setHoverTargetForWidget(this, result.target, result.handleIndex);
     } else {
         // No annotation hit - clear hover target to let tool cursor show
-        cursorManager.setHoverTarget(HoverTarget::None);
+        cursorManager.setHoverTargetForWidget(this, HoverTarget::None);
     }
 }

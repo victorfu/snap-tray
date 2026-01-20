@@ -24,112 +24,6 @@ CursorManager& CursorManager::instance()
     return instance;
 }
 
-void CursorManager::setTargetWidget(QWidget* widget)
-{
-    // Disconnect from previous widget if any
-    if (m_targetWidget) {
-        disconnect(m_targetWidget, &QObject::destroyed, this, nullptr);
-    }
-
-    m_targetWidget = widget;
-
-    // Connect to widget's destroyed signal to clean up
-    if (m_targetWidget) {
-        connect(m_targetWidget, &QObject::destroyed, this, [this]() {
-            m_targetWidget = nullptr;
-            m_cursorStack.clear();
-            // Reset state without triggering cursor update (no widget to update)
-            m_inputState = InputState::Idle;
-            m_hoverTarget = HoverTarget::None;
-            m_dragState = DragState::None;
-            m_hoverHandleIndex = -1;
-        });
-    }
-}
-
-void CursorManager::setToolManager(ToolManager* manager)
-{
-    if (m_toolManager) {
-        disconnect(m_toolManager, nullptr, this, nullptr);
-    }
-
-    m_toolManager = manager;
-
-    if (m_toolManager) {
-        connect(m_toolManager, &ToolManager::toolChanged,
-                this, &CursorManager::updateToolCursor);
-        // Clean up when tool manager is destroyed
-        connect(m_toolManager, &QObject::destroyed, this, [this]() {
-            m_toolManager = nullptr;
-        });
-    }
-}
-
-// ============================================================================
-// Cursor Stack Operations
-// ============================================================================
-
-void CursorManager::pushCursor(CursorContext context, const QCursor& cursor)
-{
-    // Remove existing entry for this context
-    popCursor(context);
-
-    // Add new entry
-    m_cursorStack.append({context, cursor});
-
-    // Sort by priority (highest last)
-    std::sort(m_cursorStack.begin(), m_cursorStack.end());
-
-    applyCursor();
-}
-
-void CursorManager::pushCursor(CursorContext context, Qt::CursorShape shape)
-{
-    pushCursor(context, QCursor(shape));
-}
-
-void CursorManager::popCursor(CursorContext context)
-{
-    auto it = std::remove_if(m_cursorStack.begin(), m_cursorStack.end(),
-                             [context](const CursorEntry& entry) {
-                                 return entry.context == context;
-                             });
-
-    if (it != m_cursorStack.end()) {
-        m_cursorStack.erase(it, m_cursorStack.end());
-        applyCursor();
-    }
-}
-
-bool CursorManager::hasContext(CursorContext context) const
-{
-    return std::any_of(m_cursorStack.begin(), m_cursorStack.end(),
-                       [context](const CursorEntry& entry) {
-                           return entry.context == context;
-                       });
-}
-
-void CursorManager::clearAll()
-{
-    m_cursorStack.clear();
-    if (m_targetWidget) {
-        m_targetWidget->setCursor(Qt::CrossCursor);
-        m_lastAppliedCursor = QCursor(Qt::CrossCursor);
-    }
-}
-
-void CursorManager::clearContexts(std::initializer_list<CursorContext> contexts)
-{
-    for (CursorContext context : contexts) {
-        auto it = std::remove_if(m_cursorStack.begin(), m_cursorStack.end(),
-                                  [context](const CursorEntry& entry) {
-                                      return entry.context == context;
-                                  });
-        m_cursorStack.erase(it, m_cursorStack.end());
-    }
-    applyCursor();
-}
-
 // ============================================================================
 // Per-Widget Cursor Management
 // ============================================================================
@@ -206,6 +100,279 @@ void CursorManager::setButtonCursor(QWidget* button)
     }
 }
 
+// ============================================================================
+// Per-Widget Registration and State Management
+// ============================================================================
+
+void CursorManager::registerWidget(QWidget* widget, ToolManager* toolManager)
+{
+    if (!widget) {
+        return;
+    }
+
+    // Initialize cursor stack if not already present
+    if (!m_widgetCursorStacks.contains(widget)) {
+        m_widgetCursorStacks[widget] = QVector<CursorEntry>();
+        connect(widget, &QObject::destroyed, this, [this, widget]() {
+            unregisterWidget(widget);
+        });
+    }
+
+    // Initialize state
+    m_widgetStates[widget] = WidgetCursorState();
+
+    // Set tool manager if provided
+    if (toolManager) {
+        setToolManagerForWidget(widget, toolManager);
+    }
+}
+
+void CursorManager::unregisterWidget(QWidget* widget)
+{
+    if (!widget) {
+        return;
+    }
+
+    m_widgetCursorStacks.remove(widget);
+    m_widgetStates.remove(widget);
+
+    // Disconnect from tool manager for this widget
+    if (m_widgetToolManagers.contains(widget)) {
+        ToolManager* tm = m_widgetToolManagers[widget];
+        if (tm) {
+            disconnect(tm, nullptr, this, nullptr);
+        }
+        m_widgetToolManagers.remove(widget);
+    }
+}
+
+void CursorManager::setToolManagerForWidget(QWidget* widget, ToolManager* manager)
+{
+    if (!widget) {
+        return;
+    }
+
+    // Disconnect from previous tool manager
+    if (m_widgetToolManagers.contains(widget) && m_widgetToolManagers[widget]) {
+        disconnect(m_widgetToolManagers[widget], nullptr, this, nullptr);
+    }
+
+    m_widgetToolManagers[widget] = manager;
+
+    if (manager) {
+        // Connect to tool changes - capture widget pointer
+        connect(manager, &ToolManager::toolChanged, this, [this, widget]() {
+            updateToolCursorForWidget(widget);
+        });
+        // Clean up when tool manager is destroyed
+        connect(manager, &QObject::destroyed, this, [this, widget]() {
+            if (m_widgetToolManagers.contains(widget)) {
+                m_widgetToolManagers[widget] = nullptr;
+            }
+        });
+    }
+}
+
+void CursorManager::setInputStateForWidget(QWidget* widget, InputState state)
+{
+    if (!widget || !m_widgetStates.contains(widget)) {
+        return;
+    }
+
+    WidgetCursorState& widgetState = m_widgetStates[widget];
+    if (widgetState.inputState != state) {
+        widgetState.inputState = state;
+        updateCursorFromStateForWidget(widget);
+    }
+}
+
+InputState CursorManager::inputStateForWidget(QWidget* widget) const
+{
+    if (!widget || !m_widgetStates.contains(widget)) {
+        return InputState::Idle;
+    }
+    return m_widgetStates[widget].inputState;
+}
+
+void CursorManager::setHoverTargetForWidget(QWidget* widget, HoverTarget target, int handleIndex)
+{
+    if (!widget || !m_widgetStates.contains(widget)) {
+        return;
+    }
+
+    WidgetCursorState& widgetState = m_widgetStates[widget];
+    if (widgetState.hoverTarget != target || widgetState.hoverHandleIndex != handleIndex) {
+        widgetState.hoverTarget = target;
+        widgetState.hoverHandleIndex = handleIndex;
+        updateCursorFromStateForWidget(widget);
+    }
+}
+
+HoverTarget CursorManager::hoverTargetForWidget(QWidget* widget) const
+{
+    if (!widget || !m_widgetStates.contains(widget)) {
+        return HoverTarget::None;
+    }
+    return m_widgetStates[widget].hoverTarget;
+}
+
+void CursorManager::setDragStateForWidget(QWidget* widget, DragState state)
+{
+    if (!widget || !m_widgetStates.contains(widget)) {
+        return;
+    }
+
+    WidgetCursorState& widgetState = m_widgetStates[widget];
+    if (widgetState.dragState != state) {
+        widgetState.dragState = state;
+        updateCursorFromStateForWidget(widget);
+    }
+}
+
+DragState CursorManager::dragStateForWidget(QWidget* widget) const
+{
+    if (!widget || !m_widgetStates.contains(widget)) {
+        return DragState::None;
+    }
+    return m_widgetStates[widget].dragState;
+}
+
+void CursorManager::resetStateForWidget(QWidget* widget)
+{
+    if (!widget || !m_widgetStates.contains(widget)) {
+        return;
+    }
+
+    m_widgetStates[widget] = WidgetCursorState();
+    updateCursorFromStateForWidget(widget);
+}
+
+void CursorManager::updateToolCursorForWidget(QWidget* widget)
+{
+    if (!widget || !m_widgetToolManagers.contains(widget)) {
+        return;
+    }
+
+    ToolManager* toolManager = m_widgetToolManagers[widget];
+    if (!toolManager) {
+        return;
+    }
+
+    ToolId currentTool = toolManager->currentTool();
+    IToolHandler* handler = toolManager->currentHandler();
+
+    // For Mosaic tool, update the handler's width before getting cursor
+    if (currentTool == ToolId::Mosaic) {
+        if (auto* mosaicHandler = dynamic_cast<MosaicToolHandler*>(handler)) {
+            mosaicHandler->setWidth(toolManager->width());
+        }
+    }
+
+    // Use handler's cursor() method
+    if (handler) {
+        pushCursorForWidget(widget, CursorContext::Tool, handler->cursor());
+    } else {
+        // Fallback to cross cursor for drawing tools
+        pushCursorForWidget(widget, CursorContext::Tool, Qt::CrossCursor);
+    }
+}
+
+void CursorManager::updateCursorFromStateForWidget(QWidget* widget)
+{
+    if (!widget || !m_widgetStates.contains(widget)) {
+        return;
+    }
+
+    const WidgetCursorState& state = m_widgetStates[widget];
+
+    // Priority: DragState > HoverTarget > InputState > Tool
+
+    // 1. Drag state has highest priority
+    if (state.dragState != DragState::None) {
+        Qt::CursorShape dragCursor = Qt::CrossCursor;
+        switch (state.dragState) {
+        case DragState::ToolbarDrag:
+            dragCursor = Qt::ClosedHandCursor;
+            break;
+        case DragState::AnnotationDrag:
+        case DragState::SelectionDrag:
+            dragCursor = Qt::SizeAllCursor;
+            break;
+        case DragState::WidgetDrag:
+            dragCursor = Qt::ClosedHandCursor;
+            break;
+        default:
+            break;
+        }
+        pushCursorForWidget(widget, CursorContext::Drag, dragCursor);
+        return;
+    } else {
+        popCursorForWidget(widget, CursorContext::Drag);
+    }
+
+    // 2. Hover target
+    if (state.hoverTarget != HoverTarget::None) {
+        Qt::CursorShape hoverCursor = Qt::CrossCursor;
+        switch (state.hoverTarget) {
+        case HoverTarget::Toolbar:
+            hoverCursor = Qt::OpenHandCursor;
+            break;
+        case HoverTarget::ToolbarButton:
+        case HoverTarget::ColorPalette:
+        case HoverTarget::Widget:
+            hoverCursor = Qt::PointingHandCursor;
+            break;
+        case HoverTarget::Annotation:
+            hoverCursor = Qt::SizeAllCursor;
+            break;
+        case HoverTarget::ResizeHandle:
+            if (state.hoverHandleIndex >= 0) {
+                auto handle = static_cast<SelectionStateManager::ResizeHandle>(state.hoverHandleIndex);
+                hoverCursor = cursorForHandle(handle);
+            }
+            break;
+        case HoverTarget::GizmoHandle:
+            if (state.hoverHandleIndex >= 0) {
+                hoverCursor = cursorForGizmoHandle(static_cast<GizmoHandle>(state.hoverHandleIndex));
+            }
+            break;
+        default:
+            break;
+        }
+        pushCursorForWidget(widget, CursorContext::Hover, hoverCursor);
+        return;
+    } else {
+        popCursorForWidget(widget, CursorContext::Hover);
+    }
+
+    // 3. Input state
+    if (state.inputState != InputState::Idle) {
+        Qt::CursorShape inputCursor = Qt::CrossCursor;
+        switch (state.inputState) {
+        case InputState::Selecting:
+            inputCursor = Qt::CrossCursor;
+            break;
+        case InputState::Moving:
+            inputCursor = Qt::SizeAllCursor;
+            break;
+        case InputState::Resizing:
+            inputCursor = Qt::SizeAllCursor;
+            break;
+        case InputState::Drawing:
+            // Tool cursor should already be set
+            return;
+        default:
+            break;
+        }
+        pushCursorForWidget(widget, CursorContext::Selection, inputCursor);
+        return;
+    } else {
+        popCursorForWidget(widget, CursorContext::Selection);
+    }
+
+    // 4. Fall back to tool cursor (already managed separately)
+}
+
 void CursorManager::applyCursorForWidget(QWidget* widget)
 {
     if (!widget) {
@@ -235,40 +402,6 @@ QCursor CursorManager::effectiveCursorForWidget(QWidget* widget) const
 
     // Return the highest priority cursor (last in sorted list)
     return stack.last().cursor;
-}
-
-// ============================================================================
-// Tool Cursor Integration
-// ============================================================================
-
-void CursorManager::updateToolCursor()
-{
-    if (!m_toolManager) {
-        return;
-    }
-
-    ToolId currentTool = m_toolManager->currentTool();
-    IToolHandler* handler = m_toolManager->currentHandler();
-
-    // For Mosaic tool, update the handler's width before getting cursor
-    if (currentTool == ToolId::Mosaic) {
-        if (auto* mosaicHandler = dynamic_cast<MosaicToolHandler*>(handler)) {
-            mosaicHandler->setWidth(m_toolManager->width());
-        }
-    }
-
-    // Use handler's cursor() method
-    if (handler) {
-        pushCursor(CursorContext::Tool, handler->cursor());
-    } else {
-        // Fallback to cross cursor for drawing tools
-        pushCursor(CursorContext::Tool, Qt::CrossCursor);
-    }
-}
-
-void CursorManager::updateMosaicCursor(int size)
-{
-    pushCursor(CursorContext::Tool, createMosaicCursor(size));
 }
 
 // ============================================================================
@@ -375,168 +508,6 @@ Qt::CursorShape CursorManager::cursorForGizmoHandle(GizmoHandle handle)
     default:
         return Qt::CrossCursor;
     }
-}
-
-// ============================================================================
-// Private Methods
-// ============================================================================
-
-void CursorManager::applyCursor()
-{
-    if (!m_targetWidget) {
-        return;
-    }
-
-    QCursor newCursor = effectiveCursor();
-    QCursor currentCursor = m_targetWidget->cursor();
-
-    // Only apply if changed (compare by shape for standard cursors)
-    if (newCursor.shape() != currentCursor.shape() ||
-        newCursor.pixmap().cacheKey() != currentCursor.pixmap().cacheKey()) {
-        m_targetWidget->setCursor(newCursor);
-        emit cursorChanged(newCursor);
-    }
-    m_lastAppliedCursor = newCursor;
-}
-
-QCursor CursorManager::effectiveCursor() const
-{
-    if (m_cursorStack.isEmpty()) {
-        return QCursor(Qt::CrossCursor);
-    }
-
-    // Return the highest priority cursor (last in sorted list)
-    return m_cursorStack.last().cursor;
-}
-
-// ============================================================================
-// State-Driven Cursor Management
-// ============================================================================
-
-void CursorManager::setInputState(InputState state)
-{
-    if (m_inputState != state) {
-        m_inputState = state;
-        updateCursorFromState();
-    }
-}
-
-void CursorManager::setHoverTarget(HoverTarget target, int handleIndex)
-{
-    if (m_hoverTarget != target || m_hoverHandleIndex != handleIndex) {
-        m_hoverTarget = target;
-        m_hoverHandleIndex = handleIndex;
-        updateCursorFromState();
-    }
-}
-
-void CursorManager::setDragState(DragState state)
-{
-    if (m_dragState != state) {
-        m_dragState = state;
-        updateCursorFromState();
-    }
-}
-
-void CursorManager::resetState()
-{
-    m_inputState = InputState::Idle;
-    m_hoverTarget = HoverTarget::None;
-    m_dragState = DragState::None;
-    m_hoverHandleIndex = -1;
-    updateCursorFromState();
-}
-
-void CursorManager::updateCursorFromState()
-{
-    // Priority: DragState > HoverTarget > InputState > Tool
-
-    // 1. Drag state has highest priority
-    if (m_dragState != DragState::None) {
-        Qt::CursorShape dragCursor = Qt::CrossCursor;
-        switch (m_dragState) {
-        case DragState::ToolbarDrag:
-            dragCursor = Qt::ClosedHandCursor;
-            break;
-        case DragState::AnnotationDrag:
-        case DragState::SelectionDrag:
-            dragCursor = Qt::SizeAllCursor;
-            break;
-        case DragState::WidgetDrag:
-            dragCursor = Qt::ClosedHandCursor;
-            break;
-        default:
-            break;
-        }
-        pushCursor(CursorContext::Drag, dragCursor);
-        return;
-    } else {
-        popCursor(CursorContext::Drag);
-    }
-
-    // 2. Hover target
-    if (m_hoverTarget != HoverTarget::None) {
-        Qt::CursorShape hoverCursor = Qt::CrossCursor;
-        switch (m_hoverTarget) {
-        case HoverTarget::Toolbar:
-            hoverCursor = Qt::OpenHandCursor;
-            break;
-        case HoverTarget::ToolbarButton:
-        case HoverTarget::ColorPalette:
-        case HoverTarget::Widget:
-            hoverCursor = Qt::PointingHandCursor;
-            break;
-        case HoverTarget::Annotation:
-            hoverCursor = Qt::SizeAllCursor;  // Draggable cursor for annotations
-            break;
-        case HoverTarget::ResizeHandle:
-            if (m_hoverHandleIndex >= 0) {
-                auto handle = static_cast<SelectionStateManager::ResizeHandle>(m_hoverHandleIndex);
-                hoverCursor = cursorForHandle(handle);
-            }
-            break;
-        case HoverTarget::GizmoHandle:
-            if (m_hoverHandleIndex >= 0) {
-                hoverCursor = cursorForGizmoHandle(static_cast<GizmoHandle>(m_hoverHandleIndex));
-            }
-            break;
-        default:
-            break;
-        }
-        pushCursor(CursorContext::Hover, hoverCursor);
-        return;
-    } else {
-        popCursor(CursorContext::Hover);
-    }
-
-    // 3. Input state
-    if (m_inputState != InputState::Idle) {
-        Qt::CursorShape inputCursor = Qt::CrossCursor;
-        switch (m_inputState) {
-        case InputState::Selecting:
-            inputCursor = Qt::CrossCursor;
-            break;
-        case InputState::Moving:
-            inputCursor = Qt::SizeAllCursor;
-            break;
-        case InputState::Resizing:
-            // Resizing cursor should already be set by hover target
-            inputCursor = Qt::SizeAllCursor;
-            break;
-        case InputState::Drawing:
-            // Tool cursor should already be set
-            return;
-        default:
-            break;
-        }
-        pushCursor(CursorContext::Selection, inputCursor);
-        return;
-    } else {
-        popCursor(CursorContext::Selection);
-    }
-
-    // 4. Fall back to tool cursor (already managed separately)
-    // Tool cursor is set via updateToolCursor() and persists in the stack
 }
 
 // ============================================================================
