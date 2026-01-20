@@ -611,9 +611,6 @@ void RecordingManager::onInitializationComplete()
         }
     }
 
-    // Configure worker frame size
-    m_encodingWorker->setFrameSize(m_recordingRegion.size());
-
     // Connect worker signals
     connect(m_encodingWorker.get(), &EncodingWorker::finished,
             this, &RecordingManager::onEncodingFinished);
@@ -1049,14 +1046,6 @@ void RecordingManager::stopFrameCapture()
         m_durationTimer.reset();
     }
     qDebug() << "RecordingManager: Timers stopped";
-
-    // Calculate final recording duration
-    qint64 finalDuration = 0;
-    {
-        QMutexLocker locker(&m_durationMutex);
-        finalDuration = m_elapsedTimer.elapsed() - m_pausedDuration;
-    }
-    if (finalDuration < 0) finalDuration = 0;
 
     // Stop audio capture and finalize audio file
     // Custom deleter handles disconnect + stop() + deleteLater()

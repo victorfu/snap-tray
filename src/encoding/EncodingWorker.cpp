@@ -42,11 +42,6 @@ void EncodingWorker::setWatermarkSettings(const WatermarkRenderer::Settings& set
     m_cachedWatermark = QPixmap();  // Clear cache, will be regenerated
 }
 
-void EncodingWorker::setFrameSize(const QSize& size)
-{
-    m_frameSize = size;
-}
-
 bool EncodingWorker::start()
 {
     if (m_running.load()) {

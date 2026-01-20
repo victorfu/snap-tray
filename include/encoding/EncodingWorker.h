@@ -80,11 +80,6 @@ public:
      */
     void setWatermarkSettings(const WatermarkRenderer::Settings& settings);
 
-    /**
-     * @brief Set frame size for encoding
-     */
-    void setFrameSize(const QSize& size);
-
     // ========== Lifecycle ==========
 
     /**
@@ -184,7 +179,6 @@ private:
 
     // Configuration
     WatermarkRenderer::Settings m_watermarkSettings;
-    QSize m_frameSize;
     QPixmap m_cachedWatermark;
 
     // Queue thresholds
