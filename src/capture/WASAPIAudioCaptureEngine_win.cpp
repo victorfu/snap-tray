@@ -16,6 +16,9 @@
 #include <propvarutil.h>
 #include <ks.h>
 #include <ksmedia.h>
+#include <wrl/client.h>
+
+using Microsoft::WRL::ComPtr;
 
 // WASAPI buffer size in 100-nanosecond units (10ms)
 static const REFERENCE_TIME BUFFER_DURATION = 100000;  // 10ms
@@ -136,13 +139,13 @@ QList<IAudioCaptureEngine::AudioDevice> WASAPIAudioCaptureEngine::availableInput
     HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
     bool needsUninit = SUCCEEDED(hr);
 
-    IMMDeviceEnumerator *enumerator = nullptr;
+    ComPtr<IMMDeviceEnumerator> enumerator;
     hr = CoCreateInstance(
         __uuidof(MMDeviceEnumerator),
         nullptr,
         CLSCTX_ALL,
         __uuidof(IMMDeviceEnumerator),
-        (void**)&enumerator
+        &enumerator
     );
 
     if (FAILED(hr) || !enumerator) {
@@ -150,32 +153,30 @@ QList<IAudioCaptureEngine::AudioDevice> WASAPIAudioCaptureEngine::availableInput
         return devices;
     }
 
-    IMMDeviceCollection *collection = nullptr;
+    ComPtr<IMMDeviceCollection> collection;
     hr = enumerator->EnumAudioEndpoints(eCapture, DEVICE_STATE_ACTIVE, &collection);
 
     if (FAILED(hr) || !collection) {
-        enumerator->Release();
         if (needsUninit) CoUninitialize();
         return devices;
     }
 
     // Get default device ID
     QString defaultId;
-    IMMDevice *defaultDevice = nullptr;
+    ComPtr<IMMDevice> defaultDevice;
     if (SUCCEEDED(enumerator->GetDefaultAudioEndpoint(eCapture, eConsole, &defaultDevice)) && defaultDevice) {
         LPWSTR devId = nullptr;
         if (SUCCEEDED(defaultDevice->GetId(&devId))) {
             defaultId = QString::fromWCharArray(devId);
             CoTaskMemFree(devId);
         }
-        defaultDevice->Release();
     }
 
     UINT count = 0;
     collection->GetCount(&count);
 
     for (UINT i = 0; i < count; i++) {
-        IMMDevice *device = nullptr;
+        ComPtr<IMMDevice> device;
         if (SUCCEEDED(collection->Item(i, &device))) {
             AudioDevice info;
 
@@ -185,7 +186,7 @@ QList<IAudioCaptureEngine::AudioDevice> WASAPIAudioCaptureEngine::availableInput
                 CoTaskMemFree(deviceId);
             }
 
-            IPropertyStore *props = nullptr;
+            ComPtr<IPropertyStore> props;
             if (SUCCEEDED(device->OpenPropertyStore(STGM_READ, &props))) {
                 PROPVARIANT varName;
                 PropVariantInit(&varName);
@@ -193,17 +194,13 @@ QList<IAudioCaptureEngine::AudioDevice> WASAPIAudioCaptureEngine::availableInput
                     info.name = QString::fromWCharArray(varName.pwszVal);
                     PropVariantClear(&varName);
                 }
-                props->Release();
             }
 
             info.isDefault = (info.id == defaultId);
             devices.append(info);
-            device->Release();
         }
     }
 
-    collection->Release();
-    enumerator->Release();
     if (needsUninit) CoUninitialize();
 
     return devices;
@@ -216,26 +213,24 @@ QString WASAPIAudioCaptureEngine::defaultInputDevice() const
     HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
     bool needsUninit = SUCCEEDED(hr);
 
-    IMMDeviceEnumerator *enumerator = nullptr;
+    ComPtr<IMMDeviceEnumerator> enumerator;
     hr = CoCreateInstance(
         __uuidof(MMDeviceEnumerator),
         nullptr,
         CLSCTX_ALL,
         __uuidof(IMMDeviceEnumerator),
-        (void**)&enumerator
+        &enumerator
     );
 
     if (SUCCEEDED(hr) && enumerator) {
-        IMMDevice *device = nullptr;
+        ComPtr<IMMDevice> device;
         if (SUCCEEDED(enumerator->GetDefaultAudioEndpoint(eCapture, eConsole, &device)) && device) {
             LPWSTR deviceId = nullptr;
             if (SUCCEEDED(device->GetId(&deviceId))) {
                 id = QString::fromWCharArray(deviceId);
                 CoTaskMemFree(deviceId);
             }
-            device->Release();
         }
-        enumerator->Release();
     }
 
     if (needsUninit) CoUninitialize();
@@ -416,13 +411,13 @@ bool WASAPIAudioCaptureEngine::probeFormat(bool forLoopback, const QString &devi
     HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
     bool needsUninit = SUCCEEDED(hr);
 
-    IMMDeviceEnumerator *enumerator = nullptr;
+    ComPtr<IMMDeviceEnumerator> enumerator;
     hr = CoCreateInstance(
         __uuidof(MMDeviceEnumerator),
         nullptr,
         CLSCTX_ALL,
         __uuidof(IMMDeviceEnumerator),
-        (void**)&enumerator
+        &enumerator
     );
 
     if (FAILED(hr) || !enumerator) {
@@ -430,7 +425,7 @@ bool WASAPIAudioCaptureEngine::probeFormat(bool forLoopback, const QString &devi
         return false;
     }
 
-    IMMDevice *device = nullptr;
+    ComPtr<IMMDevice> device;
     if (forLoopback) {
         hr = enumerator->GetDefaultAudioEndpoint(eRender, eConsole, &device);
     } else if (!deviceId.isEmpty()) {
@@ -440,22 +435,19 @@ bool WASAPIAudioCaptureEngine::probeFormat(bool forLoopback, const QString &devi
     }
 
     if (FAILED(hr) || !device) {
-        enumerator->Release();
         if (needsUninit) CoUninitialize();
         return false;
     }
 
-    IAudioClient *audioClient = nullptr;
+    ComPtr<IAudioClient> audioClient;
     hr = device->Activate(
         __uuidof(IAudioClient),
         CLSCTX_ALL,
         nullptr,
-        (void**)&audioClient
+        &audioClient
     );
 
     if (FAILED(hr) || !audioClient) {
-        device->Release();
-        enumerator->Release();
         if (needsUninit) CoUninitialize();
         return false;
     }
@@ -468,9 +460,6 @@ bool WASAPIAudioCaptureEngine::probeFormat(bool forLoopback, const QString &devi
         CoTaskMemFree(mixFormat);
     }
 
-    audioClient->Release();
-    device->Release();
-    enumerator->Release();
     if (needsUninit) CoUninitialize();
     return ok;
 }

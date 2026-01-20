@@ -263,8 +263,6 @@ void EncodingWorker::applyWatermark(QImage& frame)
 
 void EncodingWorker::finishEncoder()
 {
-    m_running = false;
-
     QString outputPath;
     bool success = false;
 
@@ -276,6 +274,7 @@ void EncodingWorker::finishEncoder()
         *conn = connect(m_videoEncoder.get(), &IVideoEncoder::finished,
                         this, [this, conn](bool s, const QString& path) {
             QObject::disconnect(*conn);
+            m_running = false;
             emit finished(s, path);
         });
 
@@ -289,12 +288,14 @@ void EncodingWorker::finishEncoder()
         *conn = connect(m_gifEncoder.get(), &NativeGifEncoder::finished,
                         this, [this, conn](bool s, const QString& path) {
             QObject::disconnect(*conn);
+            m_running = false;
             emit finished(s, path);
         });
 
         m_gifEncoder->finish();
     } else {
         // No encoder, emit failure
+        m_running = false;
         emit finished(false, QString());
     }
 }

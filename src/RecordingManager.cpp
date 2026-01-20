@@ -65,14 +65,22 @@ static void syncFile(const QString &path)
         NULL
     );
     if (hFile != INVALID_HANDLE_VALUE) {
-        FlushFileBuffers(hFile);
-        CloseHandle(hFile);
+        if (!FlushFileBuffers(hFile)) {
+            qWarning() << "Failed to flush file buffers for" << path;
+        }
+        if (!CloseHandle(hFile)) {
+            qWarning() << "Failed to close file handle for" << path;
+        }
     }
 #else
     int fd = open(path.toLocal8Bit().constData(), O_RDONLY);
     if (fd >= 0) {
-        fsync(fd);
-        close(fd);
+        if (fsync(fd) == -1) {
+            qWarning() << "Failed to sync file" << path;
+        }
+        if (close(fd) == -1) {
+            qWarning() << "Failed to close file" << path;
+        }
     }
 #endif
 }

@@ -818,6 +818,19 @@ ImageStitcher::MatchCandidate ImageStitcher::computeTemplateMatchCandidate(const
 
         int y0 = std::max(0, maxLoc.y - suppressRadius);
         int y1 = std::min(matchResult.rows, maxLoc.y + suppressRadius + 1);
+
+        // Compensate for asymmetry at edges to maintain consistent suppression window
+        int expectedSize = 2 * suppressRadius + 1;
+        int actualSize = y1 - y0;
+        if (actualSize < expectedSize) {
+            int deficit = expectedSize - actualSize;
+            if (y0 == 0) {
+                y1 = std::min(matchResult.rows, y1 + deficit);
+            } else if (y1 == matchResult.rows) {
+                y0 = std::max(0, y0 - deficit);
+            }
+        }
+
         suppressed.rowRange(y0, y1).setTo(-1.0);
 
         double secondMaxVal;
@@ -869,7 +882,10 @@ ImageStitcher::MatchCandidate ImageStitcher::computeTemplateMatchCandidate(const
 
     std::vector<double> sortedOffsets = offsets;
     std::sort(sortedOffsets.begin(), sortedOffsets.end());
-    double medianOffset = sortedOffsets[sortedOffsets.size() / 2];
+    size_t n = sortedOffsets.size();
+    double medianOffset = (n % 2 == 1)
+        ? sortedOffsets[n / 2]
+        : (sortedOffsets[n / 2 - 1] + sortedOffsets[n / 2]) / 2.0;
     double minOffset = sortedOffsets.front();
     double maxOffset = sortedOffsets.back();
 
@@ -1148,7 +1164,10 @@ ImageStitcher::StitchResult ImageStitcher::performStitch(const QImage &newFrame,
             painter.drawImage(0, 0, m_stitchedResult, 0, 0, m_stitchedResult.width(), currentHeight);
             painter.drawImage(0, drawY, newFrameRgb);
             if (!painter.end()) {
-                qDebug() << "ImageStitcher: QPainter::end() failed for vertical down stitch (expand)";
+                qWarning() << "ImageStitcher: QPainter::end() failed for vertical down stitch (expand)";
+                result.failureReason = "QPainter::end() failed for vertical down stitch";
+                result.failureCode = FailureCode::InvalidState;
+                return result;
             }
 
             m_stitchedResult = newStitched;
@@ -1164,7 +1183,10 @@ ImageStitcher::StitchResult ImageStitcher::performStitch(const QImage &newFrame,
             painter.setRenderHint(QPainter::Antialiasing, false);
             painter.drawImage(0, drawY, newFrameRgb);
             if (!painter.end()) {
-                qDebug() << "ImageStitcher: QPainter::end() failed for vertical down stitch (in-place)";
+                qWarning() << "ImageStitcher: QPainter::end() failed for vertical down stitch (in-place)";
+                result.failureReason = "QPainter::end() failed for vertical down stitch";
+                result.failureCode = FailureCode::InvalidState;
+                return result;
             }
         }
 
@@ -1202,7 +1224,10 @@ ImageStitcher::StitchResult ImageStitcher::performStitch(const QImage &newFrame,
         painter.drawImage(0, 0, newFrameRgb);
         painter.drawImage(0, drawY, m_stitchedResult, 0, 0, m_stitchedResult.width(), currentHeight);
         if (!painter.end()) {
-            qDebug() << "ImageStitcher: QPainter::end() failed for vertical up stitch";
+            qWarning() << "ImageStitcher: QPainter::end() failed for vertical up stitch";
+            result.failureReason = "QPainter::end() failed for vertical up stitch";
+            result.failureCode = FailureCode::InvalidState;
+            return result;
         }
 
         m_stitchedResult = newStitched;
@@ -1372,9 +1397,14 @@ ImageStitcher::StitchResult ImageStitcher::tryPhaseCorrelation(const QImage &new
             frameDim / 2,
             300
         });
-        
+
+        // Validate ROI size against actual frame dimensions
+        if (roiSize > gradPrev.rows || roiSize > gradCurr.rows) {
+            continue;  // Frame too small for phase correlation
+        }
+
         cv::Mat roiPrev, roiCurr;
-        
+
         if (dir == ScrollDirection::Down) {
             roiPrev = gradPrev.rowRange(gradPrev.rows - roiSize, gradPrev.rows);
             roiCurr = gradCurr.rowRange(0, roiSize);

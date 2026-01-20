@@ -10,8 +10,8 @@
 
 StitchWorker::StitchWorker(QObject *parent)
     : QObject(parent)
-    , m_stitcher(new ImageStitcher(nullptr))  // No parent - managed manually
-    , m_fixedDetector(new FixedElementDetector(nullptr))
+    , m_stitcher(std::make_unique<ImageStitcher>(nullptr))
+    , m_fixedDetector(std::make_unique<FixedElementDetector>(nullptr))
 {
     // Note: These objects will be accessed from worker thread
     // They have no parent to avoid Qt's thread affinity issues
@@ -23,9 +23,7 @@ StitchWorker::~StitchWorker()
     if (m_processingFuture.isRunning()) {
         m_processingFuture.waitForFinished();
     }
-
-    delete m_stitcher;
-    delete m_fixedDetector;
+    // unique_ptr automatically handles cleanup
 }
 
 void StitchWorker::setStitchConfig(double confidenceThreshold, bool detectStaticRegions)

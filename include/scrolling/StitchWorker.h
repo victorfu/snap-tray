@@ -7,6 +7,7 @@
 #include <QQueue>
 #include <QFuture>
 #include <atomic>
+#include <memory>
 #include "scrolling/ImageStitcher.h"
 
 class FixedElementDetector;
@@ -158,8 +159,8 @@ private:
     void doResetCleanup();
 
     // Processing components (owned, accessed only by worker)
-    ImageStitcher *m_stitcher;
-    FixedElementDetector *m_fixedDetector;
+    std::unique_ptr<ImageStitcher> m_stitcher;
+    std::unique_ptr<FixedElementDetector> m_fixedDetector;
 
     // Frame queue (thread-safe)
     mutable QMutex m_queueMutex;

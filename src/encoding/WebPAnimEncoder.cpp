@@ -178,6 +178,7 @@ void WebPAnimationEncoder::writeFrame(const QImage &frame, qint64 timestampMs)
     // Allocate picture buffer
     if (!WebPPictureAlloc(&pic)) {
         qWarning() << "WebPAnimationEncoder: Failed to allocate WebPPicture";
+        WebPPictureFree(&pic);
         return;
     }
 
@@ -205,7 +206,8 @@ void WebPAnimationEncoder::writeFrame(const QImage &frame, qint64 timestampMs)
         qint64 nextTs = timestampMs + frameDurationMs;
         m_data->timestampMs = nextTs > INT_MAX ? INT_MAX : static_cast<int>(nextTs);
     } else {
-        m_data->timestampMs += frameDurationMs;
+        qint64 nextTs = static_cast<qint64>(m_data->timestampMs) + frameDurationMs;
+        m_data->timestampMs = nextTs > INT_MAX ? INT_MAX : static_cast<int>(nextTs);
     }
 
     m_framesWritten++;
