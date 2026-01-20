@@ -174,7 +174,7 @@ QColor RegionToolbarHandler::getToolbarIconColor(int buttonId, bool isActive, bo
     ToolId btn = static_cast<ToolId>(buttonId);
 
     // Show gray for unavailable features
-    if (btn == ToolId::OCR && !m_ocrManager) {
+    if (btn == ToolId::OCR && !PlatformFeatures::instance().isOCRAvailable()) {
         return QColor(128, 128, 128);
     }
 
