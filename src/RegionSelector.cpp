@@ -1493,9 +1493,6 @@ void RegionSelector::showEvent(QShowEvent* event)
 {
     QWidget::showEvent(event);
 
-    // Disable macOS cursor rect management to prevent automatic cursor reset
-    disableWindowCursorRects(this);
-
     // Delay cursor setting to ensure macOS has finished window activation.
     QTimer::singleShot(100, this, [this]() {
         forceNativeCrosshairCursor(this);
