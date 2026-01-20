@@ -44,7 +44,6 @@ enum class ToolId {
     // Region-specific tools
     MultiRegion,        // Multi-region capture mode
     MultiRegionDone,    // Complete multi-region capture
-    ScrollCapture,      // Scrolling capture feature
 
     Count
 };

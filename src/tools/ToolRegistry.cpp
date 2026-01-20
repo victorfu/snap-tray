@@ -306,17 +306,6 @@ void ToolRegistry::registerTools() {
         false, false, false,  // UI visibility: none
         false, QColor()
     });
-
-    registerTool({
-        ToolId::ScrollCapture,
-        "scroll-capture",
-        "Scrolling Capture",
-        "",
-        ToolCategory::Action,
-        false, false, false, false, false, false,
-        false, false, false,  // UI visibility: none
-        false, QColor()
-    });
 }
 
 void ToolRegistry::registerTool(const ToolDefinition& def) {

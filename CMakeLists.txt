@@ -110,7 +110,7 @@ set(CMAKE_AUTORCC OFF)
 set(CMAKE_AUTOUIC OFF)
 
 # ============================================================================
-# OpenCV for Scrolling Capture (static build) - Optimized Configuration
+# OpenCV for Detection (static build) - Optimized Configuration
 # ============================================================================
 # Required modules:
 #   - core: Mat operations, basic data structures
@@ -140,7 +140,7 @@ set(BUILD_opencv_ml OFF CACHE BOOL "" FORCE)
 set(BUILD_opencv_objdetect ON CACHE BOOL "" FORCE)  # Required for face detection (Haar Cascade)
 set(BUILD_opencv_photo OFF CACHE BOOL "" FORCE)
 set(BUILD_opencv_stitching OFF CACHE BOOL "" FORCE)
-set(BUILD_opencv_video ON CACHE BOOL "" FORCE)  # Required for optical flow (calcOpticalFlowPyrLK)
+set(BUILD_opencv_video OFF CACHE BOOL "" FORCE)
 set(BUILD_opencv_videoio OFF CACHE BOOL "" FORCE)
 set(BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(BUILD_PERF_TESTS OFF CACHE BOOL "" FORCE)
@@ -291,7 +291,7 @@ target_compile_definitions(snaptray_core PRIVATE
 )
 
 # ----------------------------------------------------------------------------
-# snaptray_algorithms: Detection and stitching algorithms (OpenCV dependency)
+# snaptray_algorithms: Detection algorithms (OpenCV dependency)
 # ----------------------------------------------------------------------------
 add_library(snaptray_algorithms STATIC
     # Mosaic annotations (require OpenCV for blur)
@@ -300,17 +300,9 @@ add_library(snaptray_algorithms STATIC
     # Detection
     src/detection/FaceDetector.cpp
     src/detection/AutoBlurManager.cpp
-    # Scrolling/Stitching
-    src/scrolling/ImageStitcher.cpp
-    src/scrolling/ImageStitcherAlgorithms.cpp
-    src/scrolling/FixedElementDetector.cpp
-    src/scrolling/StitchWorker.cpp
     # Headers with Q_OBJECT for MOC processing
     include/detection/FaceDetector.h
     include/detection/AutoBlurManager.h
-    include/scrolling/ImageStitcher.h
-    include/scrolling/FixedElementDetector.h
-    include/scrolling/StitchWorker.h
 )
 
 target_include_directories(snaptray_algorithms
@@ -326,7 +318,6 @@ target_include_directories(snaptray_algorithms
         ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/flann/include
         ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/objdetect/include
         ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/calib3d/include
-        ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/video/include
 )
 
 target_link_libraries(snaptray_algorithms
@@ -339,7 +330,6 @@ target_link_libraries(snaptray_algorithms
         opencv_flann
         opencv_calib3d
         opencv_objdetect
-        opencv_video
 )
 
 target_compile_definitions(snaptray_algorithms PRIVATE
@@ -359,9 +349,7 @@ add_library(snaptray_platform STATIC
     src/encoding/WebPAnimEncoder.cpp
     src/video/IVideoPlayer.cpp
     src/VideoEncoderFactory.cpp
-    src/scrolling/AutoScrollController.cpp
     # Headers with Q_OBJECT for MOC processing
-    include/scrolling/AutoScrollController.h
     include/IVideoEncoder.h
     include/encoding/NativeGifEncoder.h
     include/encoding/WebPAnimEncoder.h
@@ -382,7 +370,6 @@ add_library(snaptray_platform STATIC
         src/AVFoundationEncoder.mm
         src/video/AVFoundationPlayer_mac.mm
         src/input/MouseClickTracker_mac.mm
-        src/scrolling/AutoScrollController_mac.mm
         src/ColorPickerDialog.mm
     >
     # macOS headers with Q_OBJECT
@@ -410,7 +397,6 @@ add_library(snaptray_platform STATIC
         src/MediaFoundationEncoder.cpp
         src/video/MediaFoundationPlayer_win.cpp
         src/input/MouseClickTracker_win.cpp
-        src/scrolling/AutoScrollController_win.cpp
         src/ColorPickerDialog_win.cpp
     >
     # Windows headers with Q_OBJECT
@@ -588,13 +574,6 @@ add_library(snaptray_ui STATIC
     src/video/InPlacePreviewOverlay.cpp
     src/video/CountdownOverlay.cpp
 
-    # Scrolling capture UI
-    src/scrolling/ScrollingCaptureManager.cpp
-    src/scrolling/ScrollingCaptureOverlay.cpp
-    src/scrolling/ScrollingCaptureThumbnail.cpp
-    src/scrolling/ScrollingCaptureOnboarding.cpp
-    src/scrolling/ScrollingCaptureToolbar.cpp
-
     # Dialogs and overlays
     src/SettingsDialog.cpp
 
@@ -663,11 +642,6 @@ add_library(snaptray_ui STATIC
     include/video/FormatSelectionWidget.h
     include/video/InPlacePreviewOverlay.h
     include/video/CountdownOverlay.h
-    include/scrolling/ScrollingCaptureManager.h
-    include/scrolling/ScrollingCaptureOverlay.h
-    include/scrolling/ScrollingCaptureThumbnail.h
-    include/scrolling/ScrollingCaptureOnboarding.h
-    include/scrolling/ScrollingCaptureToolbar.h
     include/SettingsDialog.h
     $<$<PLATFORM_ID:Darwin>:
         include/WindowDetectionOverlay.h

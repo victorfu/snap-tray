@@ -11,7 +11,6 @@ class RegionSelector;
 class QScreen;
 class PinWindowManager;
 class WindowDetector;
-class ScrollingCaptureManager;
 
 class CaptureManager : public QObject
 {
@@ -29,15 +28,12 @@ public slots:
     void startRegionCapture();
     void startQuickPinCapture();
     void startRegionCaptureWithPreset(const QRect &region, QScreen *screen);
-    void startScrollingCapture();
-    void startScrollingCaptureWithRegion(const QRect &region, QScreen *screen);
 
 signals:
     void captureStarted();
     void captureCompleted(const QPixmap &screenshot);
     void captureCancelled();
     void recordingRequested(const QRect &region, QScreen *screen);
-    void scrollingCaptureRequested(const QRect &region, QScreen *screen);
     void saveCompleted(const QPixmap &screenshot, const QString &filePath);
     void saveFailed(const QString &filePath, const QString &error);
 
@@ -53,7 +49,6 @@ private:
     QPointer<RegionSelector> m_regionSelector;
     PinWindowManager *m_pinManager;
     WindowDetector *m_windowDetector;
-    ScrollingCaptureManager *m_scrollingManager;
 };
 
 #endif // CAPTUREMANAGER_H

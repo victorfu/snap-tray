@@ -5,7 +5,6 @@
 #include "platform/WindowLevel.h"
 #include "WindowDetector.h"
 #include "PlatformFeatures.h"
-#include "scrolling/ScrollingCaptureManager.h"
 
 #include <QDebug>
 #include <QGuiApplication>
@@ -19,7 +18,6 @@ CaptureManager::CaptureManager(PinWindowManager *pinManager, QObject *parent)
     , m_regionSelector(nullptr)
     , m_pinManager(pinManager)
     , m_windowDetector(PlatformFeatures::instance().createWindowDetector(this))
-    , m_scrollingManager(new ScrollingCaptureManager(pinManager, this))
 {
 }
 
@@ -29,8 +27,7 @@ CaptureManager::~CaptureManager()
 
 bool CaptureManager::isActive() const
 {
-    return (m_regionSelector && m_regionSelector->isVisible()) ||
-           (m_scrollingManager && m_scrollingManager->isActive());
+    return m_regionSelector && m_regionSelector->isVisible();
 }
 
 bool CaptureManager::hasCompleteSelection() const
@@ -221,8 +218,6 @@ void CaptureManager::startRegionCaptureWithPreset(const QRect &region, QScreen *
             this, &CaptureManager::onSelectionCancelled);
     connect(m_regionSelector, &RegionSelector::recordingRequested,
             this, &CaptureManager::recordingRequested);
-    connect(m_regionSelector, &RegionSelector::scrollingCaptureRequested,
-            this, &CaptureManager::scrollingCaptureRequested);
     connect(m_regionSelector, &RegionSelector::saveCompleted,
             this, &CaptureManager::saveCompleted);
     connect(m_regionSelector, &RegionSelector::saveFailed,
@@ -234,31 +229,6 @@ void CaptureManager::startRegionCaptureWithPreset(const QRect &region, QScreen *
 
     m_regionSelector->activateWindow();
     m_regionSelector->raise();
-}
-
-void CaptureManager::startScrollingCapture()
-{
-    // Don't start if already active
-    if (isActive()) {
-        qDebug() << "CaptureManager: Already in capture mode, ignoring scrolling capture";
-        return;
-    }
-
-    qDebug() << "CaptureManager: Starting scrolling capture";
-    m_scrollingManager->start();
-}
-
-void CaptureManager::startScrollingCaptureWithRegion(const QRect &region, QScreen *screen)
-{
-    // Don't check isActive() here - we're transitioning from RegionSelector which will close
-    // Only check if scrolling capture is already running
-    if (m_scrollingManager && m_scrollingManager->isActive()) {
-        qDebug() << "CaptureManager: Scrolling capture already active, ignoring";
-        return;
-    }
-
-    qDebug() << "CaptureManager: Starting scrolling capture with region:" << region;
-    m_scrollingManager->startWithRegion(region, screen);
 }
 
 void CaptureManager::initializeRegionSelector(QScreen *targetScreen,
@@ -287,8 +257,6 @@ void CaptureManager::initializeRegionSelector(QScreen *targetScreen,
     if (!quickPinMode) {
         connect(m_regionSelector, &RegionSelector::recordingRequested,
                 this, &CaptureManager::recordingRequested);
-        connect(m_regionSelector, &RegionSelector::scrollingCaptureRequested,
-                this, &CaptureManager::scrollingCaptureRequested);
         connect(m_regionSelector, &RegionSelector::saveCompleted,
                 this, &CaptureManager::saveCompleted);
         connect(m_regionSelector, &RegionSelector::saveFailed,

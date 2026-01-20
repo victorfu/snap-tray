@@ -98,7 +98,6 @@ signals:
     void saveFailed(const QString &filePath, const QString &error);
     void copyRequested(const QPixmap &screenshot);
     void recordingRequested(const QRect &region, QScreen *screen);
-    void scrollingCaptureRequested(const QRect &region, QScreen *screen);
 
 protected:
     void paintEvent(QPaintEvent *event) override;

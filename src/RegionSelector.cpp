@@ -504,17 +504,6 @@ RegionSelector::RegionSelector(QWidget* parent)
             emit recordingRequested(localToGlobal(m_selectionManager->selectionRect()), m_currentScreen.data());
             close();
         });
-    connect(m_toolbarHandler, &RegionToolbarHandler::scrollCaptureRequested,
-        this, [this]() {
-            if (!isScreenValid()) {
-                qWarning() << "RegionSelector: Screen invalid, cannot start scrolling capture";
-                emit selectionCancelled();
-                close();
-                return;
-            }
-            emit scrollingCaptureRequested(localToGlobal(m_selectionManager->selectionRect()), m_currentScreen.data());
-            close();
-        });
     connect(m_toolbarHandler, &RegionToolbarHandler::saveRequested,
         this, &RegionSelector::saveToFile);
     connect(m_toolbarHandler, &RegionToolbarHandler::copyRequested,
@@ -1395,13 +1384,6 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
             handleToolbarClick(ToolId::Record);
         }
     }
-#ifdef SNAPTRAY_ENABLE_DEV_FEATURES
-    else if (event->key() == Qt::Key_S && !event->modifiers()) {
-        if (m_selectionManager->isComplete()) {
-            handleToolbarClick(ToolId::ScrollCapture);
-        }
-    }
-#endif
     else if (event->key() == Qt::Key_Shift && !m_selectionManager->isComplete()) {
         // Switch RGB/HEX color format display (only when magnifier is shown)
         m_magnifierPanel->toggleColorFormat();

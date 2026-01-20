@@ -78,7 +78,6 @@ signals:
     void cancelRequested();
     void pinRequested();
     void recordRequested();
-    void scrollCaptureRequested();
     void saveRequested();
     void copyRequested();
     void ocrRequested();

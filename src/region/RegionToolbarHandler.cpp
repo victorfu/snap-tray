@@ -134,9 +134,6 @@ void RegionToolbarHandler::setupToolbarButtons()
     }
     buttons.append({ static_cast<int>(ToolId::Record), "record", "Screen Recording (R)", false });
     buttons.append({ static_cast<int>(ToolId::MultiRegion), "multi-region", "Multi-Region Capture (M)", false });
-#ifdef SNAPTRAY_ENABLE_DEV_FEATURES
-    buttons.append({ static_cast<int>(ToolId::ScrollCapture), "scroll-capture", "Scrolling Capture (S)", false });
-#endif
     buttons.append({ static_cast<int>(ToolId::Pin), "pin", "Pin to Screen (Enter)", false });
     buttons.append({ static_cast<int>(ToolId::Save), "save", "Save (Ctrl+S)", false });
     buttons.append({ static_cast<int>(ToolId::Copy), "copy", "Copy (Ctrl+C)", false });
@@ -241,7 +238,6 @@ void RegionToolbarHandler::handleToolbarClick(ToolId button)
     case ToolId::OCR:
     case ToolId::Pin:
     case ToolId::Record:
-    case ToolId::ScrollCapture:
     case ToolId::Save:
     case ToolId::Copy:
         handleActionButton(button);
@@ -380,10 +376,6 @@ void RegionToolbarHandler::handleActionButton(ToolId button)
 
     case ToolId::Record:
         emit recordRequested();
-        break;
-
-    case ToolId::ScrollCapture:
-        emit scrollCaptureRequested();
         break;
 
     case ToolId::Save:
