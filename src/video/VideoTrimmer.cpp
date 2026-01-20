@@ -199,13 +199,17 @@ void VideoTrimmer::onFrameReady(const QImage &frame)
     // This ensures correct timestamps since m_seekPosition hasn't been incremented yet
     qint64 adjustedTime = m_seekPosition - m_trimStart;
 
-    // Write frame to encoder
-    if (m_videoEncoder) {
-        m_videoEncoder->writeFrame(frame, adjustedTime);
-    } else if (m_gifEncoder) {
-        m_gifEncoder->writeFrame(frame, adjustedTime);
-    } else if (m_webpEncoder) {
-        m_webpEncoder->writeFrame(frame, adjustedTime);
+    // Write frame to encoder (only if valid)
+    if (!frame.isNull()) {
+        if (m_videoEncoder) {
+            m_videoEncoder->writeFrame(frame, adjustedTime);
+        } else if (m_gifEncoder) {
+            m_gifEncoder->writeFrame(frame, adjustedTime);
+        } else if (m_webpEncoder) {
+            m_webpEncoder->writeFrame(frame, adjustedTime);
+        }
+    } else {
+        qWarning() << "VideoTrimmer: Received null frame at" << adjustedTime;
     }
 
     m_frameCount++;

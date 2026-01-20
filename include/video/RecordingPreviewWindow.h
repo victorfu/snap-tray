@@ -8,9 +8,6 @@
 class VideoPlaybackWidget;
 class TrimTimeline;
 class VideoTrimmer;
-class VideoAnnotationEditor;
-class AnnotationTrack;
-class PreviewAnnotationOverlay;
 class PreviewIconButton;
 class PreviewPillButton;
 class PreviewVolumeButton;
@@ -19,26 +16,17 @@ class QSlider;
 class QLabel;
 class QComboBox;
 class QProgressDialog;
-class QStackedWidget;
 
 class RecordingPreviewWindow : public QWidget
 {
     Q_OBJECT
 
 public:
-    enum class Mode { Preview, Annotate };
-    Q_ENUM(Mode)
-
     explicit RecordingPreviewWindow(const QString &videoPath,
                                     QWidget *parent = nullptr);
     ~RecordingPreviewWindow() override;
 
     QString videoPath() const { return m_videoPath; }
-
-    // Mode switching
-    Mode currentMode() const { return m_currentMode; }
-    void switchToAnnotateMode();
-    void switchToPreviewMode();
 
 signals:
     void saveRequested(const QString &videoPath);
@@ -128,23 +116,6 @@ private:
     bool m_wasPlayingBeforeScrub;
     bool m_trimPreviewEnabled;
     qint64 m_duration;
-
-    // Mode switching
-    Mode m_currentMode = Mode::Preview;
-    QStackedWidget *m_stackedWidget = nullptr;
-    QWidget *m_previewModeWidget = nullptr;
-    VideoAnnotationEditor *m_annotationEditor = nullptr;
-    PreviewPillButton *m_annotateBtn = nullptr;
-    PreviewPillButton *m_doneEditingBtn = nullptr;
-
-    // Annotation overlay (for main preview mode)
-    AnnotationTrack *m_annotationTrack = nullptr;
-    PreviewAnnotationOverlay *m_annotationOverlay = nullptr;
-
-    // Annotation persistence helpers
-    void saveAnnotations();
-    void loadAnnotations();
-    QString annotationFilePath() const;
 
     // Speed options
     static constexpr float kSpeedOptions[] = {0.25f, 0.5f, 0.75f, 1.0f, 1.25f, 1.5f, 2.0f};

@@ -177,10 +177,10 @@ private:
     }
 
     CMTime currentTime = self.avPlayer.currentItem.currentTime;
-    if (![self.videoOutput hasNewPixelBufferForItemTime:currentTime]) {
-        return QImage();
-    }
-
+    
+    // Note: We intentionally DO NOT check hasNewPixelBufferForItemTime here
+    // because that only works during playback. For seeking/frame extraction,
+    // we want to get the frame directly at the current time.
     CVPixelBufferRef pixelBuffer = [self.videoOutput copyPixelBufferForItemTime:currentTime
                                                              itemTimeForDisplay:nil];
     if (!pixelBuffer) {
@@ -321,9 +321,10 @@ void AVFoundationPlayer::seek(qint64 positionMs)
                 AVFoundationPlayerHelper *strongHelper = weakHelper;
                 if (strongHelper) {
                     QImage frame = [strongHelper currentFrame];
-                    if (!frame.isNull()) {
-                        emit player->frameReady(frame);
-                    }
+                    // Always emit frameReady so downstream consumers (like VideoTrimmer)
+                    // don't hang waiting for a signal that never comes.
+                    // Consumers should handle null frames appropriately.
+                    emit player->frameReady(frame);
                 }
             });
         }

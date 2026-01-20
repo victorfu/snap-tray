@@ -3,9 +3,6 @@
 #include "video/TrimTimeline.h"
 #include "video/VideoTrimmer.h"
 #include "video/FormatSelectionWidget.h"
-#include "video/VideoAnnotationEditor.h"
-#include "video/AnnotationTrack.h"
-#include "video/VideoAnnotationRenderer.h"
 #include "cursor/CursorManager.h"
 #include "encoding/EncoderFactory.h"
 #include "encoding/NativeGifEncoder.h"
@@ -33,6 +30,7 @@
 #include <QGuiApplication>
 #include <QHBoxLayout>
 #include <QKeyEvent>
+#include <QMouseEvent>
 #include <QLabel>
 #include <QLinearGradient>
 #include <QMessageBox>
@@ -50,12 +48,7 @@ QString rgbaString(const QColor &color)
         .arg(color.blue())
         .arg(color.alpha());
 }
-
-bool isAnnotateEnabled()
-{
-    return true;
-}
-}
+} // namespace
 
 class GlassPanel : public QWidget
 {
@@ -384,65 +377,6 @@ private:
     bool m_useAccentColor;
 };
 
-// Annotation overlay for main preview mode
-class PreviewAnnotationOverlay : public QWidget
-{
-public:
-    explicit PreviewAnnotationOverlay(QWidget *parent = nullptr)
-        : QWidget(parent)
-    {
-        setAttribute(Qt::WA_TranslucentBackground);
-        setAutoFillBackground(false);
-        setAttribute(Qt::WA_TransparentForMouseEvents);
-    }
-
-    void setTrack(AnnotationTrack *track)
-    {
-        m_track = track;
-        update();
-    }
-
-    void setCurrentTime(qint64 timeMs)
-    {
-        if (m_currentTimeMs != timeMs) {
-            m_currentTimeMs = timeMs;
-            update();
-        }
-    }
-
-    void setDuration(qint64 durationMs)
-    {
-        m_durationMs = durationMs;
-    }
-
-    void setVideoSize(const QSize &size)
-    {
-        m_videoSize = size;
-    }
-
-protected:
-    void paintEvent(QPaintEvent *event) override
-    {
-        Q_UNUSED(event);
-        if (!m_track || m_track->isEmpty() || m_videoSize.isEmpty()) {
-            return;
-        }
-
-        QPainter painter(this);
-        painter.setRenderHint(QPainter::Antialiasing);
-
-        m_renderer.renderToWidget(painter, m_track, m_currentTimeMs, m_durationMs,
-                                  rect(), m_videoSize);
-    }
-
-private:
-    AnnotationTrack *m_track = nullptr;
-    VideoAnnotationRenderer m_renderer;
-    qint64 m_currentTimeMs = 0;
-    qint64 m_durationMs = 0;
-    QSize m_videoSize;
-};
-
 constexpr float RecordingPreviewWindow::kSpeedOptions[];
 
 RecordingPreviewWindow::RecordingPreviewWindow(const QString &videoPath,
@@ -499,28 +433,17 @@ void RecordingPreviewWindow::setupUI()
     mainLayout->setContentsMargins(16, 16, 16, 16);
     mainLayout->setSpacing(12);
 
-    m_stackedWidget = new QStackedWidget(this);
-    mainLayout->addWidget(m_stackedWidget);
-
-    m_previewModeWidget = new QWidget(m_stackedWidget);
-    QVBoxLayout *previewLayout = new QVBoxLayout(m_previewModeWidget);
-    previewLayout->setContentsMargins(0, 0, 0, 0);
-    previewLayout->setSpacing(12);
-    m_stackedWidget->addWidget(m_previewModeWidget);
-    m_stackedWidget->setCurrentWidget(m_previewModeWidget);
+    // Video widget container (no QStackedWidget needed anymore)
+    QWidget *videoContainer = new QWidget(this);
+    QVBoxLayout *videoLayout = new QVBoxLayout(videoContainer);
+    videoLayout->setContentsMargins(0, 0, 0, 0);
+    videoLayout->setSpacing(0);
 
     // Video widget
-    m_videoWidget = new VideoPlaybackWidget(m_previewModeWidget);
+    m_videoWidget = new VideoPlaybackWidget(videoContainer);
     m_videoWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    previewLayout->addWidget(m_videoWidget, 1);
-
-    // Create annotation track (shared between preview and editor)
-    m_annotationTrack = new AnnotationTrack(this);
-
-    // Create annotation overlay on top of video widget
-    m_annotationOverlay = new PreviewAnnotationOverlay(m_videoWidget);
-    m_annotationOverlay->setTrack(m_annotationTrack);
-    m_annotationOverlay->setGeometry(m_videoWidget->rect());
+    videoLayout->addWidget(m_videoWidget);
+    mainLayout->addWidget(videoContainer, 1);
 
     // Install event filter to handle video widget resize
     m_videoWidget->installEventFilter(this);
@@ -538,7 +461,7 @@ void RecordingPreviewWindow::setupUI()
             this, &RecordingPreviewWindow::onVideoError);
 
     // Timeline panel with trim handles
-    GlassPanel *timelinePanel = new GlassPanel(m_previewModeWidget);
+    GlassPanel *timelinePanel = new GlassPanel(this);
     timelinePanel->setCornerRadius(12);
     timelinePanel->setMinimumHeight(44);
     QHBoxLayout *timelineLayout = new QHBoxLayout(timelinePanel);
@@ -547,7 +470,7 @@ void RecordingPreviewWindow::setupUI()
 
     m_timeline = new TrimTimeline(timelinePanel);
     timelineLayout->addWidget(m_timeline, 1);
-    previewLayout->addWidget(timelinePanel);
+    mainLayout->addWidget(timelinePanel);
 
     // Connect timeline signals
     connect(m_timeline, &TrimTimeline::seekRequested,
@@ -573,7 +496,7 @@ void RecordingPreviewWindow::setupUI()
     timelineLayout->addWidget(m_trimPreviewToggle);
 
     // Row 1: Playback controls (glass panel)
-    GlassPanel *row1Panel = new GlassPanel(m_previewModeWidget);
+    GlassPanel *row1Panel = new GlassPanel(this);
     row1Panel->setCornerRadius(12);
     row1Panel->setMinimumHeight(44);
     QHBoxLayout *row1Layout = new QHBoxLayout(row1Panel);
@@ -629,10 +552,10 @@ void RecordingPreviewWindow::setupUI()
             this, &RecordingPreviewWindow::onVolumeChanged);
     row1Layout->addWidget(m_volumeSlider);
 
-    previewLayout->addWidget(row1Panel);
+    mainLayout->addWidget(row1Panel);
 
     // Row 2: Action controls (glass panel)
-    GlassPanel *row2Panel = new GlassPanel(m_previewModeWidget);
+    GlassPanel *row2Panel = new GlassPanel(this);
     row2Panel->setCornerRadius(12);
     row2Panel->setMinimumHeight(44);
     QHBoxLayout *row2Layout = new QHBoxLayout(row2Panel);
@@ -641,16 +564,6 @@ void RecordingPreviewWindow::setupUI()
 
     m_formatWidget = new FormatSelectionWidget(row2Panel);
     row2Layout->addWidget(m_formatWidget);
-
-    m_annotateBtn = new PreviewPillButton(tr("Annotate"), row2Panel);
-    m_annotateBtn->setIconKey("pencil");
-    m_annotateBtn->setFixedHeight(28);
-    m_annotateBtn->setToolTip(tr("Add annotations to the video"));
-    connect(m_annotateBtn, &QAbstractButton::clicked, this, &RecordingPreviewWindow::switchToAnnotateMode);
-    const bool annotateEnabled = isAnnotateEnabled();
-    m_annotateBtn->setEnabled(annotateEnabled);
-    m_annotateBtn->setVisible(annotateEnabled);
-    row2Layout->addWidget(m_annotateBtn);
 
     row2Layout->addStretch();
 
@@ -669,7 +582,7 @@ void RecordingPreviewWindow::setupUI()
             this, &RecordingPreviewWindow::onSaveClicked);
     row2Layout->addWidget(m_saveBtn);
 
-    previewLayout->addWidget(row2Panel);
+    mainLayout->addWidget(row2Panel);
 
     ToolbarStyleConfig config = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
     m_timeLabel->setStyleSheet(QString("color: %1;").arg(rgbaString(config.textColor)));
@@ -782,12 +695,8 @@ void RecordingPreviewWindow::paintEvent(QPaintEvent *event)
 
 bool RecordingPreviewWindow::eventFilter(QObject *watched, QEvent *event)
 {
-    if (watched == m_videoWidget && event->type() == QEvent::Resize) {
-        if (m_annotationOverlay) {
-            m_annotationOverlay->setGeometry(m_videoWidget->rect());
-            m_annotationOverlay->raise();
-        }
-    }
+    Q_UNUSED(watched);
+    Q_UNUSED(event);
     return QWidget::eventFilter(watched, event);
 }
 
@@ -803,11 +712,6 @@ void RecordingPreviewWindow::onPositionChanged(qint64 positionMs)
         m_timeline->setPosition(positionMs);
     }
     updateTimeLabel();
-
-    // Update annotation overlay
-    if (m_annotationOverlay) {
-        m_annotationOverlay->setCurrentTime(positionMs);
-    }
 }
 
 void RecordingPreviewWindow::onDurationChanged(qint64 durationMs)
@@ -815,11 +719,6 @@ void RecordingPreviewWindow::onDurationChanged(qint64 durationMs)
     m_duration = durationMs;
     m_timeline->setDuration(durationMs);
     updateTimeLabel();
-
-    // Update annotation overlay
-    if (m_annotationOverlay) {
-        m_annotationOverlay->setDuration(durationMs);
-    }
 }
 
 void RecordingPreviewWindow::onVideoLoaded()
@@ -832,21 +731,11 @@ void RecordingPreviewWindow::onVideoLoaded()
         qDebug() << "RecordingPreviewWindow: GIF detected, looping enabled";
     }
 
-    // Update annotation overlay with video size
-    if (m_annotationOverlay) {
-        m_annotationOverlay->setVideoSize(m_videoWidget->videoSize());
-        m_annotationOverlay->setGeometry(m_videoWidget->rect());
-        m_annotationOverlay->raise();
-    }
-
     // Auto-play on load
     m_videoWidget->play();
     updatePlayPauseButton();
     m_muteBtn->setMuted(m_videoWidget->isMuted());
     m_volumeSlider->setValue(static_cast<int>(m_videoWidget->volume() * 100));
-
-    // Load any existing annotations
-    loadAnnotations();
 }
 
 void RecordingPreviewWindow::onVideoError(const QString &message)
@@ -866,9 +755,6 @@ void RecordingPreviewWindow::onSaveClicked()
 {
     qDebug() << "RecordingPreviewWindow: Save clicked";
     m_videoWidget->stop();
-
-    // Save annotations to sidecar file
-    saveAnnotations();
 
     auto format = m_formatWidget->selectedFormat();
 
@@ -1364,146 +1250,3 @@ void RecordingPreviewWindow::performTrim()
     m_trimmer->startTrim();
 }
 
-// ============================================================================
-// Mode switching implementations
-// ============================================================================
-
-void RecordingPreviewWindow::switchToAnnotateMode()
-{
-    if (!isAnnotateEnabled()) {
-        qInfo() << "RecordingPreviewWindow: Annotate mode disabled in non-debug builds";
-        return;
-    }
-    if (m_currentMode == Mode::Annotate) {
-        return;
-    }
-
-    qDebug() << "RecordingPreviewWindow: Switching to annotate mode";
-    m_currentMode = Mode::Annotate;
-
-    // Pause video playback
-    m_videoWidget->pause();
-
-    // Create annotation editor if not already created
-    if (!m_annotationEditor) {
-        m_annotationEditor = new VideoAnnotationEditor(m_stackedWidget);
-        // Set track BEFORE video path to avoid race condition during async video loading
-        m_annotationEditor->setTrack(m_annotationTrack);
-        m_annotationEditor->setVideoPath(m_videoPath);
-
-        // Create done editing button
-        m_doneEditingBtn = new PreviewPillButton(tr("Done Editing"), m_annotationEditor);
-        m_doneEditingBtn->setFixedHeight(28);
-        m_doneEditingBtn->setToolTip(tr("Back to preview"));
-        connect(m_doneEditingBtn, &QAbstractButton::clicked, this, &RecordingPreviewWindow::switchToPreviewMode);
-
-        // Add button to annotation editor layout
-        if (QVBoxLayout *layout = qobject_cast<QVBoxLayout *>(m_annotationEditor->layout())) {
-            QHBoxLayout *buttonLayout = new QHBoxLayout();
-            buttonLayout->addStretch();
-            buttonLayout->addWidget(m_doneEditingBtn);
-            layout->addLayout(buttonLayout);
-        }
-    }
-
-    if (m_stackedWidget) {
-        if (m_stackedWidget->indexOf(m_annotationEditor) == -1) {
-            m_stackedWidget->addWidget(m_annotationEditor);
-        }
-        m_stackedWidget->setCurrentWidget(m_annotationEditor);
-        m_annotationEditor->setFocus(Qt::OtherFocusReason);
-    } else {
-        m_annotationEditor->show();
-    }
-
-    setWindowTitle("Recording Preview - Annotation Editor");
-}
-
-void RecordingPreviewWindow::switchToPreviewMode()
-{
-    if (m_currentMode == Mode::Preview) {
-        return;
-    }
-
-    qDebug() << "RecordingPreviewWindow: Switching to preview mode";
-    m_currentMode = Mode::Preview;
-
-    if (m_stackedWidget && m_previewModeWidget) {
-        m_stackedWidget->setCurrentWidget(m_previewModeWidget);
-    } else if (m_annotationEditor) {
-        m_annotationEditor->hide();
-    }
-
-    // Update annotation overlay with current video size and position
-    if (m_annotationOverlay) {
-        m_annotationOverlay->setVideoSize(m_videoWidget->videoSize());
-        m_annotationOverlay->setGeometry(m_videoWidget->rect());
-        m_annotationOverlay->raise();
-        m_annotationOverlay->update();
-    }
-
-    setWindowTitle("Recording Preview");
-}
-
-// ============================================================================
-// Annotation persistence
-// ============================================================================
-
-QString RecordingPreviewWindow::annotationFilePath() const
-{
-    return m_videoPath + ".annotations.json";
-}
-
-void RecordingPreviewWindow::saveAnnotations()
-{
-    if (!m_annotationTrack || m_annotationTrack->isEmpty()) {
-        return;
-    }
-
-    QString path = annotationFilePath();
-    QJsonObject root;
-    root["version"] = 1;
-    root["videoPath"] = QFileInfo(m_videoPath).fileName();
-    root["annotations"] = m_annotationTrack->toJson();
-
-    QJsonDocument doc(root);
-    QFile file(path);
-    if (file.open(QIODevice::WriteOnly)) {
-        file.write(doc.toJson(QJsonDocument::Indented));
-        qDebug() << "RecordingPreviewWindow: Saved annotations to" << path;
-    } else {
-        qWarning() << "RecordingPreviewWindow: Failed to save annotations to" << path;
-    }
-}
-
-void RecordingPreviewWindow::loadAnnotations()
-{
-    QString path = annotationFilePath();
-    if (!QFile::exists(path)) {
-        return;
-    }
-
-    QFile file(path);
-    if (!file.open(QIODevice::ReadOnly)) {
-        qWarning() << "RecordingPreviewWindow: Failed to open annotations file" << path;
-        return;
-    }
-
-    QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
-    if (doc.isNull() || !doc.isObject()) {
-        qWarning() << "RecordingPreviewWindow: Invalid annotations file format";
-        return;
-    }
-
-    QJsonObject root = doc.object();
-    if (root.contains("annotations") && m_annotationTrack) {
-        m_annotationTrack->fromJson(root["annotations"].toObject());
-        qDebug() << "RecordingPreviewWindow: Loaded annotations from" << path
-                 << "count:" << m_annotationTrack->allAnnotations().size();
-
-        // Update overlay
-        if (m_annotationOverlay) {
-            m_annotationOverlay->update();
-        }
-    }
-}

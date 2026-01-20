@@ -587,11 +587,6 @@ add_library(snaptray_ui STATIC
     src/video/FormatSelectionWidget.cpp
     src/video/InPlacePreviewOverlay.cpp
     src/video/CountdownOverlay.cpp
-    src/video/VideoAnnotation.cpp
-    src/video/AnnotationTrack.cpp
-    src/video/VideoAnnotationRenderer.cpp
-    src/video/AnnotationTimelineWidget.cpp
-    src/video/VideoAnnotationEditor.cpp
 
     # Scrolling capture UI
     src/scrolling/ScrollingCaptureManager.cpp
@@ -668,11 +663,6 @@ add_library(snaptray_ui STATIC
     include/video/FormatSelectionWidget.h
     include/video/InPlacePreviewOverlay.h
     include/video/CountdownOverlay.h
-    include/video/VideoAnnotation.h
-    include/video/AnnotationTrack.h
-    include/video/VideoAnnotationRenderer.h
-    include/video/AnnotationTimelineWidget.h
-    include/video/VideoAnnotationEditor.h
     include/scrolling/ScrollingCaptureManager.h
     include/scrolling/ScrollingCaptureOverlay.h
     include/scrolling/ScrollingCaptureThumbnail.h
