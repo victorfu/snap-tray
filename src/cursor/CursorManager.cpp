@@ -113,8 +113,8 @@ void CursorManager::clearAll()
 {
     m_cursorStack.clear();
     if (m_targetWidget) {
-        m_targetWidget->setCursor(Qt::ArrowCursor);
-        m_lastAppliedCursor = QCursor(Qt::ArrowCursor);
+        m_targetWidget->setCursor(Qt::CrossCursor);
+        m_lastAppliedCursor = QCursor(Qt::CrossCursor);
     }
 }
 
@@ -196,7 +196,7 @@ void CursorManager::clearAllForWidget(QWidget* widget)
     }
 
     m_widgetCursorStacks.remove(widget);
-    widget->setCursor(Qt::ArrowCursor);
+    widget->setCursor(Qt::CrossCursor);
 }
 
 void CursorManager::setButtonCursor(QWidget* button)
@@ -225,12 +225,12 @@ void CursorManager::applyCursorForWidget(QWidget* widget)
 QCursor CursorManager::effectiveCursorForWidget(QWidget* widget) const
 {
     if (!widget || !m_widgetCursorStacks.contains(widget)) {
-        return QCursor(Qt::ArrowCursor);
+        return QCursor(Qt::CrossCursor);
     }
 
     const QVector<CursorEntry>& stack = m_widgetCursorStacks[widget];
     if (stack.isEmpty()) {
-        return QCursor(Qt::ArrowCursor);
+        return QCursor(Qt::CrossCursor);
     }
 
     // Return the highest priority cursor (last in sorted list)
@@ -327,7 +327,7 @@ Qt::CursorShape CursorManager::cursorForHandle(SelectionStateManager::ResizeHand
         return Qt::SizeHorCursor;
     case RH::None:
     default:
-        return Qt::ArrowCursor;
+        return Qt::CrossCursor;
     }
 }
 
@@ -349,7 +349,7 @@ Qt::CursorShape CursorManager::cursorForEdge(ResizeHandler::Edge edge)
         return Qt::SizeBDiagCursor;
     case Edge::None:
     default:
-        return Qt::ArrowCursor;
+        return Qt::CrossCursor;
     }
 }
 
@@ -373,7 +373,7 @@ Qt::CursorShape CursorManager::cursorForGizmoHandle(GizmoHandle handle)
         return Qt::PointingHandCursor;
     case GizmoHandle::None:
     default:
-        return Qt::ArrowCursor;
+        return Qt::CrossCursor;
     }
 }
 
@@ -402,7 +402,7 @@ void CursorManager::applyCursor()
 QCursor CursorManager::effectiveCursor() const
 {
     if (m_cursorStack.isEmpty()) {
-        return QCursor(Qt::ArrowCursor);
+        return QCursor(Qt::CrossCursor);
     }
 
     // Return the highest priority cursor (last in sorted list)
@@ -453,7 +453,7 @@ void CursorManager::updateCursorFromState()
 
     // 1. Drag state has highest priority
     if (m_dragState != DragState::None) {
-        Qt::CursorShape dragCursor = Qt::ArrowCursor;
+        Qt::CursorShape dragCursor = Qt::CrossCursor;
         switch (m_dragState) {
         case DragState::ToolbarDrag:
             dragCursor = Qt::ClosedHandCursor;
@@ -476,7 +476,7 @@ void CursorManager::updateCursorFromState()
 
     // 2. Hover target
     if (m_hoverTarget != HoverTarget::None) {
-        Qt::CursorShape hoverCursor = Qt::ArrowCursor;
+        Qt::CursorShape hoverCursor = Qt::CrossCursor;
         switch (m_hoverTarget) {
         case HoverTarget::Toolbar:
             hoverCursor = Qt::OpenHandCursor;
@@ -511,7 +511,7 @@ void CursorManager::updateCursorFromState()
 
     // 3. Input state
     if (m_inputState != InputState::Idle) {
-        Qt::CursorShape inputCursor = Qt::ArrowCursor;
+        Qt::CursorShape inputCursor = Qt::CrossCursor;
         switch (m_inputState) {
         case InputState::Selecting:
             inputCursor = Qt::CrossCursor;
