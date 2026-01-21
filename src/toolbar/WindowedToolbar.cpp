@@ -25,7 +25,6 @@ WindowedToolbar::WindowedToolbar(QWidget *parent)
 #endif
     setMouseTracking(true);
     setFixedHeight(TOOLBAR_HEIGHT);
-    setCursor(Qt::ArrowCursor);
 
     loadIcons();
     setupUi();

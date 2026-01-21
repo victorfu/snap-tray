@@ -8,10 +8,8 @@
 
 #include <QPainter>
 #include <QMouseEvent>
-#include <QShowEvent>
 #include <QEnterEvent>
 #include <QCursor>
-#include <QTimer>
 #include <QDebug>
 
 RecordingAnnotationOverlay::RecordingAnnotationOverlay(QWidget *parent)
@@ -104,17 +102,6 @@ void RecordingAnnotationOverlay::setRegion(const QRect &region)
 
     // Ensure window receives mouse events (not click-through)
     setWindowClickThrough(this, false);
-}
-
-void RecordingAnnotationOverlay::showEvent(QShowEvent *event)
-{
-    QWidget::showEvent(event);
-
-    // Delay cursor setting to ensure macOS has finished window activation
-    QTimer::singleShot(100, this, [this]() {
-        setCursor(Qt::CrossCursor);
-        forceNativeCrosshairCursor(this);
-    });
 }
 
 void RecordingAnnotationOverlay::enterEvent(QEnterEvent *event)

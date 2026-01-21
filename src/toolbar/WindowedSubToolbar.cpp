@@ -47,7 +47,6 @@ WindowedSubToolbar::WindowedSubToolbar(QWidget *parent)
     setAttribute(Qt::WA_MacAlwaysShowToolWindow);
 #endif
     setMouseTracking(true);
-    setCursor(Qt::ArrowCursor);
 
     // Create the color and width widget
     // Let ToolOptionsPanel draw its own glass panel background (like RegionSelector)

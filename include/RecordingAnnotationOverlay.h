@@ -109,7 +109,6 @@ public:
     void setSpotlightDimOpacity(qreal opacity);
 
 protected:
-    void showEvent(QShowEvent *event) override;
     void enterEvent(QEnterEvent *event) override;
     void paintEvent(QPaintEvent *event) override;
     void mousePressEvent(QMouseEvent *event) override;
