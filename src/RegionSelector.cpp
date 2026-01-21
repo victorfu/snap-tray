@@ -1374,10 +1374,19 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
             handleToolbarClick(ToolId::Record);
         }
     }
-    else if (event->key() == Qt::Key_Shift && !m_selectionManager->isComplete()) {
+    else if (event->key() == Qt::Key_Shift) {
         // Switch RGB/HEX color format display (only when magnifier is shown)
-        m_magnifierPanel->toggleColorFormat();
-        update();
+        bool magnifierVisible = !m_isDrawing && !isAnnotationTool(m_currentTool);
+        if (m_selectionManager->isComplete()) {
+            QRect selectionRect = m_selectionManager->selectionRect();
+            magnifierVisible = magnifierVisible &&
+                selectionRect.contains(m_currentPoint) &&
+                !m_toolbar->contains(m_currentPoint);
+        }
+        if (magnifierVisible) {
+            m_magnifierPanel->toggleColorFormat();
+            update();
+        }
     }
     else if (event->key() == Qt::Key_C && !m_selectionManager->isComplete()) {
         // Copy color to clipboard (only when selection not complete)
