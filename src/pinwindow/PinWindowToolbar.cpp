@@ -498,6 +498,7 @@ bool PinWindowToolbar::eventFilter(QObject *obj, QEvent *event)
 
         // Click is outside - request close
         emit closeRequested();
+        return true;
     }
 
     return QWidget::eventFilter(obj, event);

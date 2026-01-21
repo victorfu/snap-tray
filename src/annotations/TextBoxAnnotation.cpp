@@ -264,9 +264,11 @@ void TextBoxAnnotation::setColor(const QColor &color)
 void TextBoxAnnotation::setRotation(qreal degrees)
 {
     m_rotation = degrees;
+    invalidateCache();
 }
 
 void TextBoxAnnotation::setScale(qreal scale)
 {
     m_scale = scale;
+    invalidateCache();
 }

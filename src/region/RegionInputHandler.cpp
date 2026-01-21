@@ -1465,6 +1465,7 @@ bool RegionInputHandler::handleArrowAnnotationRelease()
 // ============================================================================
 
 PolylineAnnotation* RegionInputHandler::getSelectedPolylineAnnotation() const {
+    if (!m_annotationLayer) return nullptr;
     if (m_annotationLayer->selectedIndex() < 0) return nullptr;
     return dynamic_cast<PolylineAnnotation*>(m_annotationLayer->selectedItem());
 }
