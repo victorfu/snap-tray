@@ -62,7 +62,7 @@ bool NativeGifEncoder::start(const QString &outputPath, const QSize &frameSize, 
         (frameSize.width() + 1) & ~1,
         (frameSize.height() + 1) & ~1
     );
-    m_frameRate = frameRate;
+    m_frameRate = qBound(1, frameRate, 240);
     m_framesWritten = 0;
     m_consecutiveFailures = 0;
     m_lastTimestampMs = 0;
@@ -176,7 +176,8 @@ int NativeGifEncoder::calculateCentiseconds(qint64 timestampMs)
     if (timestampMs < 0 || m_framesWritten == 0) {
         // First frame or no timestamp provided, use base frame rate
         // Default to 10 centiseconds (100ms) if frameRate is invalid
-        return (m_frameRate > 0) ? (100 / m_frameRate) : 10;
+        // Use qMax(1, ...) to ensure minimum 1 centisecond (10ms) for high fps
+        return (m_frameRate > 0) ? qMax(1, 100 / m_frameRate) : 10;
     }
 
     // Calculate time delta from previous frame

@@ -59,7 +59,7 @@ bool WebPAnimationEncoder::start(const QString &outputPath, const QSize &frameSi
 
     m_outputPath = outputPath;
     m_frameSize = frameSize;
-    m_frameRate = frameRate;
+    m_frameRate = qBound(1, frameRate, 240);
     m_framesWritten = 0;
     m_lastTimestampMs = 0;
     m_lastError.clear();
@@ -91,9 +91,10 @@ bool WebPAnimationEncoder::start(const QString &outputPath, const QSize &frameSi
         return false;
     }
 
-    // Set quality
+    // Set quality and speed
     m_data->config.quality = static_cast<float>(m_quality);
-    m_data->config.method = 2;  // 0-6, higher = slower but better compression
+    m_data->config.method = 0;  // 0-6, 0 = fastest encoding
+    m_data->config.thread_level = 1;  // Enable multi-threaded encoding
     m_data->config.lossless = 0;  // Use lossy encoding for smaller files
 
     // Validate config
@@ -164,6 +165,12 @@ void WebPAnimationEncoder::writeFrame(const QImage &frame, qint64 timestampMs)
         currentTimestampMs = m_data->timestampMs;
     }
 
+    // Ensure monotonically increasing (at least 1ms gap)
+    if (m_framesWritten > 0 && currentTimestampMs <= m_lastTimestampMs) {
+        currentTimestampMs = static_cast<int>(qMin(m_lastTimestampMs + 1,
+                                                   static_cast<qint64>(INT_MAX)));
+    }
+
     // Create WebPPicture for this frame
     WebPPicture pic;
     if (!WebPPictureInit(&pic)) {
@@ -201,6 +208,9 @@ void WebPAnimationEncoder::writeFrame(const QImage &frame, qint64 timestampMs)
     }
 
     // Update timestamp for next frame
+    if (m_frameRate <= 0) {
+        m_frameRate = 30;  // Defensive fallback
+    }
     int frameDurationMs = 1000 / m_frameRate;
     if (timestampMs >= 0 && m_framesWritten > 0) {
         qint64 nextTs = timestampMs + frameDurationMs;
@@ -211,7 +221,7 @@ void WebPAnimationEncoder::writeFrame(const QImage &frame, qint64 timestampMs)
     }
 
     m_framesWritten++;
-    m_lastTimestampMs = timestampMs;
+    m_lastTimestampMs = currentTimestampMs;
 
     // Emit progress every 30 frames
     if (m_framesWritten % 30 == 0) {

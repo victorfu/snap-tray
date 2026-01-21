@@ -933,6 +933,9 @@ QString RecordingPreviewWindow::convertToFormat(FormatSelectionWidget::Format fo
     // Get video properties
     QSize videoSize = m_videoWidget->videoSize();
     int frameRate = static_cast<int>(m_videoWidget->frameRate());
+    if (frameRate <= 0) {
+        frameRate = 30;  // Fallback to 30fps
+    }
     qint64 duration = m_videoWidget->duration();
 
     if (duration <= 0 || videoSize.isEmpty()) {

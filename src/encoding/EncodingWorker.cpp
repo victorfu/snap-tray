@@ -39,7 +39,7 @@ void EncodingWorker::setEncoderType(EncoderType type)
 void EncodingWorker::setWatermarkSettings(const WatermarkRenderer::Settings& settings)
 {
     m_watermarkSettings = settings;
-    m_cachedWatermark = QPixmap();  // Clear cache, will be regenerated
+    m_cachedWatermarkImage = QImage();  // Clear cache, will be regenerated
 }
 
 bool EncodingWorker::start()
@@ -85,17 +85,19 @@ void EncodingWorker::stop()
         m_frameQueue.clear();
     }
 
-    // Abort encoders
+    // Wait for processing to finish BEFORE aborting encoders
+    // This prevents race condition where abort() is called while
+    // worker thread is in writeFrame()
+    if (m_processingFuture.isRunning()) {
+        m_processingFuture.waitForFinished();
+    }
+
+    // Now safe to abort encoders (no concurrent access)
     if (m_videoEncoder) {
         m_videoEncoder->abort();
     }
     if (m_gifEncoder) {
         m_gifEncoder->abort();
-    }
-
-    // Wait for processing to finish
-    if (m_processingFuture.isRunning()) {
-        m_processingFuture.waitForFinished();
     }
 }
 
@@ -241,19 +243,22 @@ void EncodingWorker::applyWatermark(QImage& frame)
         return;
     }
 
-    // Create watermark pixmap if not cached (only happens once per recording)
-    if (m_cachedWatermark.isNull() && !m_watermarkSettings.imagePath.isEmpty()) {
-        m_cachedWatermark = QPixmap(m_watermarkSettings.imagePath);
-        if (!m_cachedWatermark.isNull() && m_watermarkSettings.imageScale != 100) {
-            QSize newSize = m_cachedWatermark.size() * m_watermarkSettings.imageScale / 100;
-            m_cachedWatermark = m_cachedWatermark.scaled(newSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    // Create watermark image if not cached (only happens once per recording)
+    // Use QImage instead of QPixmap for thread safety (QPixmap is not thread-safe)
+    if (m_cachedWatermarkImage.isNull() && !m_watermarkSettings.imagePath.isEmpty()) {
+        m_cachedWatermarkImage = QImage(m_watermarkSettings.imagePath);
+        if (!m_cachedWatermarkImage.isNull() && m_watermarkSettings.imageScale != 100) {
+            QSize newSize = m_cachedWatermarkImage.size() * m_watermarkSettings.imageScale / 100;
+            m_cachedWatermarkImage = m_cachedWatermarkImage.scaled(newSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
         }
     }
 
-    // Use cached version to avoid repeated file I/O and scaling
-    QPixmap pixmap = QPixmap::fromImage(frame);
-    pixmap = WatermarkRenderer::applyToPixmapWithCache(pixmap, m_cachedWatermark, m_watermarkSettings);
-    frame = pixmap.toImage();
+    if (m_cachedWatermarkImage.isNull()) {
+        return;
+    }
+
+    // Use thread-safe QImage-based rendering
+    frame = WatermarkRenderer::applyToImageWithCache(frame, m_cachedWatermarkImage, m_watermarkSettings);
 }
 
 void EncodingWorker::finishEncoder()

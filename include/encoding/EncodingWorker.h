@@ -179,7 +179,7 @@ private:
 
     // Configuration
     WatermarkRenderer::Settings m_watermarkSettings;
-    QPixmap m_cachedWatermark;
+    QImage m_cachedWatermarkImage;  // Use QImage for thread safety (QPixmap is not thread-safe)
 
     // Queue thresholds
     static constexpr int QUEUE_NEAR_FULL_THRESHOLD = 24;  // 80% of max

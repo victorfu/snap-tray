@@ -41,7 +41,7 @@ public:
     bool mfInitialized = false;
 
     LONGLONG frameDuration100ns() const {
-        return 10000000LL / frameRate;
+        return frameRate > 0 ? 10000000LL / frameRate : 10000000LL / 30;
     }
 
     UINT32 calculateBitrate() const {
@@ -260,7 +260,7 @@ bool MediaFoundationEncoder::start(const QString &outputPath, const QSize &frame
 
     d->outputPath = outputPath;
     d->frameSize = adjustedSize;
-    d->frameRate = frameRate;
+    d->frameRate = qBound(1, frameRate, 240);
     d->framesWritten = 0;
     d->frameNumber = 0;
 

@@ -3,6 +3,7 @@
 
 #include "settings/WatermarkSettingsManager.h"
 
+#include <QImage>
 #include <QPixmap>
 #include <QPainter>
 #include <QRect>
@@ -35,6 +36,11 @@ public:
     static QPixmap applyToPixmapWithCache(const QPixmap &source,
                                           const QPixmap &cachedWatermark,
                                           const Settings &settings);
+
+    // Apply using a pre-cached QImage (thread-safe, for background encoding)
+    static QImage applyToImageWithCache(const QImage &source,
+                                        const QImage &cachedWatermark,
+                                        const Settings &settings);
 
 private:
     static QRect calculateWatermarkRect(const QRect &targetRect, const QSize &size, Position position, int margin);

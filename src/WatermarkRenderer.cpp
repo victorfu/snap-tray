@@ -179,6 +179,33 @@ QPixmap WatermarkRenderer::applyToPixmapWithCache(const QPixmap &source,
     return result;
 }
 
+QImage WatermarkRenderer::applyToImageWithCache(const QImage &source,
+                                                  const QImage &cachedWatermark,
+                                                  const Settings &settings)
+{
+    if (!settings.enabled || cachedWatermark.isNull()) {
+        return source;
+    }
+
+    QImage result = source.copy();
+    QPainter painter(&result);
+
+    if (!painter.isActive()) {
+        return source;
+    }
+
+    painter.setRenderHint(QPainter::Antialiasing);
+
+    QRect targetRect(QPoint(0, 0), result.size());
+    QRect imageRect = calculateWatermarkRect(targetRect, cachedWatermark.size(), settings.position, settings.margin);
+
+    painter.setOpacity(settings.opacity);
+    painter.drawImage(imageRect.topLeft(), cachedWatermark);
+    painter.end();
+
+    return result;
+}
+
 QRect WatermarkRenderer::calculateWatermarkRect(const QRect &targetRect, const QSize &size, Position position, int margin)
 {
     int x, y;
