@@ -54,6 +54,7 @@ void PencilToolHandler::onMouseRelease(ToolContext* ctx, const QPoint& pos) {
 
     // Add to annotation layer if we have a valid stroke
     if (m_currentStroke && m_currentPath.size() >= 2) {
+        m_currentStroke->finalize();
         ctx->addItem(std::move(m_currentStroke));
     }
 

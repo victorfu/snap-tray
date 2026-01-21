@@ -6,8 +6,7 @@
 #include <QVector>
 #include <QPointF>
 #include <QColor>
-
-class QPainterPath;
+#include <QPainterPath>
 
 /**
  * @brief Freehand pencil stroke annotation
@@ -23,6 +22,7 @@ public:
     std::unique_ptr<AnnotationItem> clone() const override;
 
     void addPoint(const QPointF &point);
+    void finalize();
 
     // Collision detection for eraser (path-based intersection)
     bool intersectsCircle(const QPoint &center, int radius) const;
@@ -33,6 +33,10 @@ private:
     QColor m_color;
     int m_width;
     LineStyle m_lineStyle;
+
+    // Incremental Catmull-Rom spline caching
+    mutable QPainterPath m_cachedPath;       // Locked segments that won't change
+    mutable int m_cachedSegmentCount = 0;    // Number of segments in cached path
 
     // Performance optimization: cached bounding rect
     mutable QRect m_boundingRectCache;

@@ -4,141 +4,19 @@
 #include <QtMath>
 
 // ============================================================================
-// Helper: Ramer-Douglas-Peucker path simplification algorithm
-// Reduces the number of points while preserving the overall shape
-// ============================================================================
-
-static qreal perpendicularDistance(const QPointF& point, const QPointF& lineStart, const QPointF& lineEnd)
-{
-    qreal dx = lineEnd.x() - lineStart.x();
-    qreal dy = lineEnd.y() - lineStart.y();
-
-    qreal lineLengthSq = dx * dx + dy * dy;
-    if (lineLengthSq < 1e-10) {
-        // Line start and end are the same point
-        qreal pdx = point.x() - lineStart.x();
-        qreal pdy = point.y() - lineStart.y();
-        return qSqrt(pdx * pdx + pdy * pdy);
-    }
-
-    // Calculate perpendicular distance using cross product
-    qreal t = ((point.x() - lineStart.x()) * dx + (point.y() - lineStart.y()) * dy) / lineLengthSq;
-    t = qBound(0.0, t, 1.0);
-
-    qreal projX = lineStart.x() + t * dx;
-    qreal projY = lineStart.y() + t * dy;
-
-    qreal distX = point.x() - projX;
-    qreal distY = point.y() - projY;
-
-    return qSqrt(distX * distX + distY * distY);
-}
-
-static void rdpSimplify(const QVector<QPointF>& points, int start, int end,
-                        qreal epsilon, QVector<bool>& keep)
-{
-    if (end <= start + 1) {
-        return;
-    }
-
-    qreal maxDist = 0.0;
-    int maxIndex = start;
-
-    for (int i = start + 1; i < end; ++i) {
-        qreal dist = perpendicularDistance(points[i], points[start], points[end]);
-        if (dist > maxDist) {
-            maxDist = dist;
-            maxIndex = i;
-        }
-    }
-
-    if (maxDist > epsilon) {
-        keep[maxIndex] = true;
-        rdpSimplify(points, start, maxIndex, epsilon, keep);
-        rdpSimplify(points, maxIndex, end, epsilon, keep);
-    }
-}
-
-static QVector<QPointF> simplifyPath(const QVector<QPointF>& points, qreal epsilon)
-{
-    if (points.size() < 3) {
-        return points;
-    }
-
-    QVector<bool> keep(points.size(), false);
-    keep[0] = true;
-    keep[points.size() - 1] = true;
-
-    rdpSimplify(points, 0, points.size() - 1, epsilon, keep);
-
-    QVector<QPointF> result;
-    result.reserve(points.size());
-    for (int i = 0; i < points.size(); ++i) {
-        if (keep[i]) {
-            result.append(points[i]);
-        }
-    }
-
-    return result;
-}
-
-// ============================================================================
-// Helper: Build smooth path using Catmull-Rom splines converted to cubic Bezier
+// Helper: Append a single Catmull-Rom segment as cubic Bezier
 // Catmull-Rom guarantees C1 continuity (smooth tangents at all control points)
-// and interpolates through the original points.
 // ============================================================================
 
-static QPainterPath buildSmoothPath(const QVector<QPointF> &inputPoints)
+static void appendCatmullRomSegment(QPainterPath &path,
+    const QPointF &p0, const QPointF &p1,
+    const QPointF &p2, const QPointF &p3)
 {
-    QPainterPath path;
-
-    if (inputPoints.size() < 2) {
-        return path;
-    }
-
-    // Simplify path to remove redundant points (epsilon = 1.0 pixel)
-    QVector<QPointF> points = simplifyPath(inputPoints, 1.0);
-
-    if (points.size() < 2) {
-        return path;
-    }
-
-    if (points.size() == 2) {
-        path.moveTo(points[0]);
-        path.lineTo(points[1]);
-        return path;
-    }
-
-    if (points.size() == 3) {
-        path.moveTo(points[0]);
-        path.quadTo(points[1], points[2]);
-        return path;
-    }
-
-    path.moveTo(points[0]);
-
     // Catmull-Rom to Bezier conversion factor (tension = 1.0)
     constexpr qreal alpha = 1.0 / 6.0;
-
-    for (int i = 0; i < points.size() - 1; ++i) {
-        // Get four points for Catmull-Rom segment, using reflection at boundaries
-        const QPointF p0 = (i == 0)
-            ? points[0] * 2.0 - points[1]
-            : points[i - 1];
-        const QPointF& p1 = points[i];
-        const QPointF& p2 = points[i + 1];
-        const QPointF p3 = (i == points.size() - 2)
-            ? points[i + 1] * 2.0 - points[i]
-            : points[i + 2];
-
-        // Convert to cubic Bezier control points
-        QPointF c1 = p1 + alpha * (p2 - p0);
-        QPointF c2 = p2 - alpha * (p3 - p1);
-
-        path.cubicTo(c1, c2, p2);
-    }
-
-    return path;
+    QPointF c1 = p1 + alpha * (p2 - p0);
+    QPointF c2 = p2 - alpha * (p3 - p1);
+    path.cubicTo(c1, c2, p2);
 }
 
 // ============================================================================
@@ -179,8 +57,40 @@ void PencilStroke::draw(QPainter &painter) const
     painter.setBrush(Qt::NoBrush);
     painter.setRenderHint(QPainter::Antialiasing, true);
 
-    QPainterPath path = buildSmoothPath(m_points);
-    painter.drawPath(path);
+    // Draw cached (locked) segments
+    if (!m_cachedPath.isEmpty()) {
+        painter.drawPath(m_cachedPath);
+    }
+
+    // Build and draw tail (unlocked segments that may still change)
+    int tailStart = m_cachedSegmentCount;
+    int pointCount = m_points.size();
+
+    if (tailStart < pointCount - 1) {
+        QPainterPath tailPath;
+
+        // MoveTo: connect to cached path endpoint or start fresh
+        if (tailStart == 0) {
+            tailPath.moveTo(m_points[0]);
+        } else {
+            tailPath.moveTo(m_points[tailStart]);
+        }
+
+        for (int i = tailStart; i < pointCount - 1; ++i) {
+            const QPointF p0 = (i == 0)
+                ? m_points[0] * 2.0 - m_points[1]
+                : m_points[i - 1];
+            const QPointF &p1 = m_points[i];
+            const QPointF &p2 = m_points[i + 1];
+            const QPointF p3 = (i == pointCount - 2)
+                ? m_points[i + 1] * 2.0 - m_points[i]  // Reflect for last segment
+                : m_points[i + 2];
+
+            appendCatmullRomSegment(tailPath, p0, p1, p2, p3);
+        }
+
+        painter.drawPath(tailPath);
+    }
 
     painter.restore();
 }
@@ -219,6 +129,32 @@ void PencilStroke::addPoint(const QPointF &point)
 {
     m_points.append(point);
 
+    // Incrementally lock segments that now have all 4 control points known
+    // Segment i depends on points[i-1], points[i], points[i+1], points[i+2]
+    // So segment i is locked when we have points[i+2]
+    int pointCount = m_points.size();
+    int lockableSegments = std::max(0, pointCount - 3);
+
+    while (m_cachedSegmentCount < lockableSegments) {
+        int i = m_cachedSegmentCount;
+
+        // First segment: start the path
+        if (i == 0) {
+            m_cachedPath.moveTo(m_points[0]);
+        }
+
+        // Build segment i using 4 control points
+        const QPointF p0 = (i == 0)
+            ? m_points[0] * 2.0 - m_points[1]  // Reflect for first segment
+            : m_points[i - 1];
+        const QPointF &p1 = m_points[i];
+        const QPointF &p2 = m_points[i + 1];
+        const QPointF &p3 = m_points[i + 2];  // Guaranteed to exist
+
+        appendCatmullRomSegment(m_cachedPath, p0, p1, p2, p3);
+        m_cachedSegmentCount++;
+    }
+
     // Incrementally update bounding rect cache
     int margin = m_width / 2 + 1;
     QRect pointRect(static_cast<int>(point.x()) - margin, static_cast<int>(point.y()) - margin,
@@ -230,6 +166,11 @@ void PencilStroke::addPoint(const QPointF &point)
     } else {
         m_boundingRectCache = m_boundingRectCache.united(pointRect);
     }
+}
+
+void PencilStroke::finalize()
+{
+    // No longer needed - path is stable due to incremental segment locking
 }
 
 QPainterPath PencilStroke::strokePath() const
