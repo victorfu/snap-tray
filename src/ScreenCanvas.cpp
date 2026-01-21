@@ -22,6 +22,7 @@
 #include <QTextEdit>
 #include <QWheelEvent>
 #include <QCloseEvent>
+#include <QShowEvent>
 #include <QGuiApplication>
 #include <QScreen>
 #include <QDebug>
@@ -29,6 +30,7 @@
 #include <QTimer>
 #include "tools/ToolRegistry.h"
 #include "tools/ToolSectionConfig.h"
+#include "platform/WindowLevel.h"
 
 ScreenCanvas::ScreenCanvas(QWidget* parent)
     : QWidget(parent)
@@ -1037,6 +1039,16 @@ void ScreenCanvas::closeEvent(QCloseEvent* event)
 {
     emit closed();
     QWidget::closeEvent(event);
+}
+
+void ScreenCanvas::showEvent(QShowEvent* event)
+{
+    QWidget::showEvent(event);
+
+    // Delay cursor setting to ensure macOS has finished window activation.
+    QTimer::singleShot(100, this, [this]() {
+        forceNativeCrosshairCursor(this);
+    });
 }
 
 LineEndStyle ScreenCanvas::loadArrowStyle() const
