@@ -41,10 +41,4 @@ void setWindowVisibleOnAllWorkspaces(QWidget *widget, bool enabled);
 // On Windows: No-op (Windows doesn't have this issue)
 void forceNativeCrosshairCursor(QWidget *widget = nullptr);
 
-// Disables automatic cursor rect management for the window
-// On macOS: Calls [NSWindow disableCursorRects] to prevent macOS from
-//           automatically resetting cursor to arrow during window activation
-// On Windows: No-op
-void disableWindowCursorRects(QWidget *widget);
-
 #endif // WINDOWLEVEL_H
