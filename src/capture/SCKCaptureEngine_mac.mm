@@ -91,41 +91,23 @@ API_AVAILABLE(macos(12.3))
 - (void)stream:(SCStream *)stream didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
         ofType:(SCStreamOutputType)type
 {
-    // Enter group to mark callback is active (for cleanup synchronization)
     dispatch_group_enter(_processingGroup);
 
-    // Use @try/@finally to ensure dispatch_group_leave is always called
     @try {
-        static int frameCount = 0;
-        frameCount++;
-
-        // Atomically read engine pointer to local variable
         SCKCaptureEngine::Private *localEngine = self.engine;
 
-        // Log every 30 frames (once per second at 30fps)
-        if (frameCount % 30 == 1) {
-            qDebug() << "SCKStreamDelegate::didOutputSampleBuffer - frame:" << frameCount
-                     << "invalidated:" << (_invalidated ? "YES" : "NO")
-                     << "engine:" << (localEngine ? "valid" : "nil");
-        }
-
-        // Check invalidated FIRST - use local engine copy for consistency
         if (_invalidated || type != SCStreamOutputTypeScreen || !localEngine) {
-            if (frameCount <= 5) {
-                qDebug() << "SCKStreamDelegate::didOutputSampleBuffer - SKIPPED (invalidated or wrong type)";
-            }
-            return;  // @finally will execute dispatch_group_leave
+            return;
         }
 
         CVImageBufferRef imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer);
         if (!imageBuffer) {
-            qDebug() << "SCKStreamDelegate::didOutputSampleBuffer - imageBuffer is NULL";
             return;
         }
 
         CVReturn lockResult = CVPixelBufferLockBaseAddress(imageBuffer, kCVPixelBufferLock_ReadOnly);
         if (lockResult != kCVReturnSuccess) {
-            qDebug() << "SCKStreamDelegate::didOutputSampleBuffer - Failed to lock pixel buffer:" << lockResult;
+            qWarning() << "SCKStreamDelegate: Failed to lock pixel buffer:" << lockResult;
             return;
         }
 
@@ -134,21 +116,12 @@ API_AVAILABLE(macos(12.3))
         size_t height = CVPixelBufferGetHeight(imageBuffer);
         size_t bytesPerRow = CVPixelBufferGetBytesPerRow(imageBuffer);
 
-        if (frameCount <= 5) {
-            qDebug() << "SCKStreamDelegate::didOutputSampleBuffer - buffer info:"
-                     << "baseAddress:" << baseAddress
-                     << "width:" << width
-                     << "height:" << height
-                     << "bytesPerRow:" << bytesPerRow;
-        }
-
         if (!baseAddress || width == 0 || height == 0) {
-            qDebug() << "SCKStreamDelegate::didOutputSampleBuffer - Invalid buffer data";
+            qWarning() << "SCKStreamDelegate: Invalid buffer data";
             CVPixelBufferUnlockBaseAddress(imageBuffer, kCVPixelBufferLock_ReadOnly);
             return;
         }
 
-        // Create QImage from pixel buffer (BGRA format)
         QImage fullImage(
             static_cast<uchar *>(baseAddress),
             static_cast<int>(width),
@@ -157,18 +130,12 @@ API_AVAILABLE(macos(12.3))
             QImage::Format_ARGB32
         );
 
-        // Double-check engine is still valid before calling (defense in depth)
         if (!_invalidated && localEngine) {
             localEngine->setLatestFrame(fullImage.copy());
         }
 
         CVPixelBufferUnlockBaseAddress(imageBuffer, kCVPixelBufferLock_ReadOnly);
-
-        if (frameCount <= 5) {
-            qDebug() << "SCKStreamDelegate::didOutputSampleBuffer - Frame processed successfully";
-        }
     } @finally {
-        // Always executed - mark callback as complete
         dispatch_group_leave(_processingGroup);
     }
 }
