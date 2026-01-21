@@ -409,18 +409,22 @@ snap-tray/
 |   |-- PinWindow.h
 |   |-- RecordingManager.h
 |   |-- WatermarkRenderer.h
-|   |-- capture/
-|   |   |-- ICaptureEngine.h
-|   |   |-- QtCaptureEngine.h
-|   |   |-- SCKCaptureEngine.h
-|   |   `-- DXGICaptureEngine.h
-|   |-- cursor/
-|   |   |-- CursorManager.h
-|   |   `-- CursorScope.h
-|   |-- encoding/
-|   |   |-- EncoderFactory.h
-|   |   `-- NativeGifEncoder.h
-|   `-- ...
+|   |-- annotations/       # 標註類型（Arrow、Shape、Text 等）
+|   |-- capture/           # 螢幕/音訊擷取引擎
+|   |-- cursor/            # 游標狀態管理
+|   |-- detection/         # 臉部/文字偵測
+|   |-- encoding/          # GIF/WebP 編碼器
+|   |-- input/             # 滑鼠點擊追蹤
+|   |-- pinwindow/         # 釘選視窗元件
+|   |-- recording/         # 錄影特效（Spotlight、CursorHighlight）
+|   |-- region/            # 區域選取元件
+|   |-- settings/          # 設定管理器
+|   |-- toolbar/           # 工具列繪製
+|   |-- tools/             # 工具處理器與註冊
+|   |-- ui/sections/       # 工具選項面板
+|   |-- utils/             # 工具輔助函式
+|   |-- video/             # 影片播放與錄影 UI
+|   `-- widgets/           # 自訂 Widget
 |-- src/
 |   |-- main.cpp
 |   |-- MainApplication.cpp
@@ -431,22 +435,23 @@ snap-tray/
 |   |-- PinWindow.cpp
 |   |-- RecordingManager.cpp
 |   |-- WatermarkRenderer.cpp
-|   |-- capture/
-|   |   |-- ICaptureEngine.cpp
-|   |   |-- QtCaptureEngine.cpp
-|   |   |-- SCKCaptureEngine_mac.mm
-|   |   `-- DXGICaptureEngine_win.cpp
-|   |-- cursor/
-|   |   `-- CursorManager.cpp
-|   |-- encoding/
-|   |   |-- EncoderFactory.cpp
-|   |   `-- NativeGifEncoder.cpp
-|   |-- ...
-|   `-- platform/
-|       |-- WindowLevel_mac.mm
-|       |-- WindowLevel_win.cpp
-|       |-- PlatformFeatures_mac.mm
-|       `-- PlatformFeatures_win.cpp
+|   |-- annotations/       # 標註實作
+|   |-- capture/           # 擷取引擎實作
+|   |-- cursor/            # CursorManager 實作
+|   |-- detection/         # 偵測實作
+|   |-- encoding/          # 編碼器實作
+|   |-- input/             # 輸入追蹤（平台特定）
+|   |-- pinwindow/         # 釘選視窗元件實作
+|   |-- platform/          # 平台抽象層（macOS/Windows）
+|   |-- recording/         # 錄影特效實作
+|   |-- region/            # 區域選取實作
+|   |-- settings/          # 設定管理器實作
+|   |-- toolbar/           # 工具列實作
+|   |-- tools/             # 工具系統實作
+|   |-- ui/sections/       # UI 區段實作
+|   |-- utils/             # 工具函式實作
+|   |-- video/             # 影片元件實作
+|   `-- widgets/           # Widget 實作
 |-- resources/
 |   |-- resources.qrc
 |   `-- icons/
@@ -454,6 +459,23 @@ snap-tray/
 |       |-- snaptray.png
 |       |-- snaptray.icns
 |       `-- snaptray.ico
+|-- scripts/
+|   |-- build.sh / build.bat
+|   |-- build-release.sh / build-release.bat
+|   |-- build-and-run.sh / build-and-run.bat
+|   |-- build-and-run-release.sh / build-and-run-release.bat
+|   `-- run-tests.sh / run-tests.bat
+|-- tests/
+|   |-- Audio/
+|   |-- Detection/
+|   |-- Encoding/
+|   |-- PinWindow/
+|   |-- RecordingManager/
+|   |-- RegionSelector/
+|   |-- Settings/
+|   |-- ToolOptionsPanel/
+|   |-- Utils/
+|   `-- mocks/
 `-- packaging/
     |-- macos/
     |   |-- package.sh
@@ -482,33 +504,38 @@ snap-tray/
 | `UpdateThrottler`           | `src/region/`      | 事件節流邏輯               |
 | `TextAnnotationEditor`      | `src/region/`      | 文字註釋編輯/變換/格式化   |
 | `SelectionStateManager`     | `src/region/`      | 選取狀態與操作管理         |
-| `RadiusSliderWidget`        | `src/region/`      | 工具半徑滑桿控制           |
+| `RegionExportManager`       | `src/region/`      | 區域匯出（複製/儲存）處理  |
+| `RegionInputHandler`        | `src/region/`      | 區域選取輸入事件處理       |
+| `RegionPainter`             | `src/region/`      | 區域繪製邏輯               |
 | `AnnotationSettingsManager` | `src/settings/`    | 集中式註釋設定管理         |
 | `FileSettingsManager`       | `src/settings/`    | 檔案路徑設定               |
 | `PinWindowSettingsManager`  | `src/settings/`    | 釘選視窗設定               |
+| `AutoBlurSettingsManager`   | `src/settings/`    | 自動模糊功能設定           |
+| `WatermarkSettingsManager`  | `src/settings/`    | 浮水印設定                 |
 | `ImageTransformer`          | `src/pinwindow/`   | 圖片旋轉/翻轉/縮放         |
 | `ResizeHandler`             | `src/pinwindow/`   | 視窗邊緣調整大小           |
 | `UIIndicators`              | `src/pinwindow/`   | 縮放/透明度/穿透指示器     |
 | `ClickThroughExitButton`    | `src/pinwindow/`   | 穿透模式離開按鈕           |
-| `PinWindowToolbar`          | `src/pinwindow/`   | 釘選視窗標註工具列         |
-| `PinWindowSubToolbar`       | `src/pinwindow/`   | Shape/Arrow 選項子工具列   |
-| Section 類別                | `src/ui/sections/` | ColorAndWidthWidget 子組件 |
+| `SpotlightEffect`           | `src/recording/`   | 錄影時聚光燈效果           |
+| `CursorHighlightEffect`     | `src/recording/`   | 錄影時游標高亮效果         |
+| `FaceDetector`              | `src/detection/`   | 自動模糊臉部偵測           |
+| `AutoBlurManager`           | `src/detection/`   | 自動模糊協調管理           |
+| Section 類別                | `src/ui/sections/` | 工具選項面板組件           |
 
 ### 測試覆蓋率
 
-| 組件                | 測試數量 |
-| ------------------- | -------- |
-| ColorAndWidthWidget | 113      |
-| RegionSelector      | 108      |
-| RecordingManager    | 58       |
-| Encoding            | 43       |
-| Detection           | 42       |
-| PinWindow           | 24       |
-| Audio               | 23       |
-| Utils               | 23       |
-| Settings            | 14       |
-| Other               | 34       |
-| **總計**            | **482**  |
+| 組件             | 測試數量 |
+| ---------------- | -------- |
+| ToolOptionsPanel | 91       |
+| PinWindow        | 91       |
+| RegionSelector   | 85       |
+| RecordingManager | 74       |
+| Encoding         | 51       |
+| Utils            | 51       |
+| Detection        | 38       |
+| Audio            | 27       |
+| Settings         | 27       |
+| **總計**         | **535**  |
 
 ## 自訂應用程式圖示
 

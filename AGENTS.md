@@ -58,6 +58,7 @@ src/
 ├── cursor/          # Cursor state management (CursorManager)
 ├── detection/       # Face/text detection, auto-blur
 ├── encoding/        # GIF/WebP encoders
+├── input/           # Mouse click tracking (platform-specific)
 ├── pinwindow/       # Pin window components
 ├── platform/        # Platform abstraction (WindowLevel, PlatformFeatures)
 ├── recording/       # Recording effects (Spotlight, CursorHighlight)
@@ -66,7 +67,9 @@ src/
 ├── toolbar/         # Toolbar rendering
 ├── tools/           # Tool handlers and registry
 ├── ui/sections/     # Tool option panels
-└── video/           # Video playback and recording UI
+├── utils/           # Utility helpers
+├── video/           # Video playback and recording UI
+└── widgets/         # Custom widgets (HotkeyEdit, etc.)
 ```
 
 ## Architecture Patterns

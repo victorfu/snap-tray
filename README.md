@@ -409,18 +409,22 @@ snap-tray/
 |   |-- PinWindow.h
 |   |-- RecordingManager.h
 |   |-- WatermarkRenderer.h
-|   |-- capture/
-|   |   |-- ICaptureEngine.h
-|   |   |-- QtCaptureEngine.h
-|   |   |-- SCKCaptureEngine.h
-|   |   `-- DXGICaptureEngine.h
-|   |-- cursor/
-|   |   |-- CursorManager.h
-|   |   `-- CursorScope.h
-|   |-- encoding/
-|   |   |-- EncoderFactory.h
-|   |   `-- NativeGifEncoder.h
-|   `-- ...
+|   |-- annotations/       # Annotation types (Arrow, Shape, Text, etc.)
+|   |-- capture/           # Screen/audio capture engines
+|   |-- cursor/            # Cursor state management
+|   |-- detection/         # Face/text detection
+|   |-- encoding/          # GIF/WebP encoders
+|   |-- input/             # Mouse click tracking
+|   |-- pinwindow/         # Pin window components
+|   |-- recording/         # Recording effects (Spotlight, CursorHighlight)
+|   |-- region/            # Region selection components
+|   |-- settings/          # Settings managers
+|   |-- toolbar/           # Toolbar rendering
+|   |-- tools/             # Tool handlers and registry
+|   |-- ui/sections/       # Tool option panels
+|   |-- utils/             # Utility helpers
+|   |-- video/             # Video playback and recording UI
+|   `-- widgets/           # Custom widgets
 |-- src/
 |   |-- main.cpp
 |   |-- MainApplication.cpp
@@ -431,22 +435,23 @@ snap-tray/
 |   |-- PinWindow.cpp
 |   |-- RecordingManager.cpp
 |   |-- WatermarkRenderer.cpp
-|   |-- capture/
-|   |   |-- ICaptureEngine.cpp
-|   |   |-- QtCaptureEngine.cpp
-|   |   |-- SCKCaptureEngine_mac.mm
-|   |   `-- DXGICaptureEngine_win.cpp
-|   |-- cursor/
-|   |   `-- CursorManager.cpp
-|   |-- encoding/
-|   |   |-- EncoderFactory.cpp
-|   |   `-- NativeGifEncoder.cpp
-|   |-- ...
-|   `-- platform/
-|       |-- WindowLevel_mac.mm
-|       |-- WindowLevel_win.cpp
-|       |-- PlatformFeatures_mac.mm
-|       `-- PlatformFeatures_win.cpp
+|   |-- annotations/       # Annotation implementations
+|   |-- capture/           # Capture engine implementations
+|   |-- cursor/            # CursorManager implementation
+|   |-- detection/         # Detection implementations
+|   |-- encoding/          # Encoder implementations
+|   |-- input/             # Input tracking (platform-specific)
+|   |-- pinwindow/         # Pin window component implementations
+|   |-- platform/          # Platform abstraction (macOS/Windows)
+|   |-- recording/         # Recording effect implementations
+|   |-- region/            # Region selection implementations
+|   |-- settings/          # Settings manager implementations
+|   |-- toolbar/           # Toolbar implementations
+|   |-- tools/             # Tool system implementations
+|   |-- ui/sections/       # UI section implementations
+|   |-- utils/             # Utility implementations
+|   |-- video/             # Video component implementations
+|   `-- widgets/           # Widget implementations
 |-- resources/
 |   |-- resources.qrc
 |   `-- icons/
@@ -454,6 +459,23 @@ snap-tray/
 |       |-- snaptray.png
 |       |-- snaptray.icns
 |       `-- snaptray.ico
+|-- scripts/
+|   |-- build.sh / build.bat
+|   |-- build-release.sh / build-release.bat
+|   |-- build-and-run.sh / build-and-run.bat
+|   |-- build-and-run-release.sh / build-and-run-release.bat
+|   `-- run-tests.sh / run-tests.bat
+|-- tests/
+|   |-- Audio/
+|   |-- Detection/
+|   |-- Encoding/
+|   |-- PinWindow/
+|   |-- RecordingManager/
+|   |-- RegionSelector/
+|   |-- Settings/
+|   |-- ToolOptionsPanel/
+|   |-- Utils/
+|   `-- mocks/
 `-- packaging/
     |-- macos/
     |   |-- package.sh
@@ -475,40 +497,45 @@ The codebase follows a modular architecture with extracted components for mainta
 
 ### Extracted Components
 
-| Component                   | Location           | Responsibility                         |
-| --------------------------- | ------------------ | -------------------------------------- |
-| `CursorManager`             | `src/cursor/`      | Centralized cursor state management    |
-| `MagnifierPanel`            | `src/region/`      | Magnifier rendering and caching        |
-| `UpdateThrottler`           | `src/region/`      | Event throttling logic                 |
-| `TextAnnotationEditor`      | `src/region/`      | Text annotation editing/transformation |
-| `SelectionStateManager`     | `src/region/`      | Selection state and operations         |
-| `RadiusSliderWidget`        | `src/region/`      | Radius slider control for tools        |
-| `AnnotationSettingsManager` | `src/settings/`    | Centralized annotation settings        |
-| `FileSettingsManager`       | `src/settings/`    | File path settings                     |
-| `PinWindowSettingsManager`  | `src/settings/`    | Pin window settings                    |
-| `ImageTransformer`          | `src/pinwindow/`   | Image rotation/flip/scale              |
-| `ResizeHandler`             | `src/pinwindow/`   | Window edge resize                     |
-| `UIIndicators`              | `src/pinwindow/`   | Scale/opacity/click-through indicators |
-| `ClickThroughExitButton`    | `src/pinwindow/`   | Exit button for click-through mode     |
-| `PinWindowToolbar`          | `src/pinwindow/`   | Annotation toolbar for pin windows     |
-| `PinWindowSubToolbar`       | `src/pinwindow/`   | Sub-toolbar for shape/arrow options    |
-| Section classes             | `src/ui/sections/` | ColorAndWidthWidget sub-components     |
+| Component                   | Location           | Responsibility                            |
+| --------------------------- | ------------------ | ----------------------------------------- |
+| `CursorManager`             | `src/cursor/`      | Centralized cursor state management       |
+| `MagnifierPanel`            | `src/region/`      | Magnifier rendering and caching           |
+| `UpdateThrottler`           | `src/region/`      | Event throttling logic                    |
+| `TextAnnotationEditor`      | `src/region/`      | Text annotation editing/transformation    |
+| `SelectionStateManager`     | `src/region/`      | Selection state and operations            |
+| `RegionExportManager`       | `src/region/`      | Region export (copy/save) handling        |
+| `RegionInputHandler`        | `src/region/`      | Input event handling for region selection |
+| `RegionPainter`             | `src/region/`      | Region rendering logic                    |
+| `AnnotationSettingsManager` | `src/settings/`    | Centralized annotation settings           |
+| `FileSettingsManager`       | `src/settings/`    | File path settings                        |
+| `PinWindowSettingsManager`  | `src/settings/`    | Pin window settings                       |
+| `AutoBlurSettingsManager`   | `src/settings/`    | Auto blur feature settings                |
+| `WatermarkSettingsManager`  | `src/settings/`    | Watermark settings                        |
+| `ImageTransformer`          | `src/pinwindow/`   | Image rotation/flip/scale                 |
+| `ResizeHandler`             | `src/pinwindow/`   | Window edge resize                        |
+| `UIIndicators`              | `src/pinwindow/`   | Scale/opacity/click-through indicators    |
+| `ClickThroughExitButton`    | `src/pinwindow/`   | Exit button for click-through mode        |
+| `SpotlightEffect`           | `src/recording/`   | Spotlight effect during recording         |
+| `CursorHighlightEffect`     | `src/recording/`   | Cursor highlight effect during recording  |
+| `FaceDetector`              | `src/detection/`   | Face detection for auto-blur              |
+| `AutoBlurManager`           | `src/detection/`   | Auto-blur orchestration                   |
+| Section classes             | `src/ui/sections/` | Tool option panel components              |
 
 ### Test Coverage
 
-| Component           | Test Count |
-| ------------------- | ---------- |
-| ColorAndWidthWidget | 113        |
-| RegionSelector      | 108        |
-| RecordingManager    | 58         |
-| Encoding            | 43         |
-| Detection           | 42         |
-| PinWindow           | 24         |
-| Audio               | 23         |
-| Utils               | 23         |
-| Settings            | 14         |
-| Other               | 34         |
-| **Total**           | **482**    |
+| Component        | Test Count |
+| ---------------- | ---------- |
+| ToolOptionsPanel | 91         |
+| PinWindow        | 91         |
+| RegionSelector   | 85         |
+| RecordingManager | 74         |
+| Encoding         | 51         |
+| Utils            | 51         |
+| Detection        | 38         |
+| Audio            | 27         |
+| Settings         | 27         |
+| **Total**        | **535**    |
 
 ## Custom App Icon
 
