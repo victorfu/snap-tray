@@ -18,7 +18,7 @@
 #include "annotations/ShapeAnnotation.h"
 #include "annotations/LineStyle.h"
 #include "annotations/StepBadgeAnnotation.h"
-#include "ToolbarWidget.h"
+#include "toolbar/ToolbarCore.h"
 #include "InlineTextEditor.h"
 #include "WindowDetector.h"
 #include "LoadingSpinnerRenderer.h"
@@ -35,7 +35,7 @@
 #include "ui/sections/MosaicBlurTypeSection.h"
 
 class QScreen;
-class ColorAndWidthWidget;
+class ToolOptionsPanel;
 class EmojiPicker;
 class ColorPickerDialog;
 class QCloseEvent;
@@ -199,10 +199,10 @@ private:
     qreal m_devicePixelRatio;
 
     // Toolbar
-    ToolbarWidget *m_toolbar;
+    ToolbarCore *m_toolbar;
 
     // Unified color and width widget
-    ColorAndWidthWidget *m_colorAndWidthWidget;
+    ToolOptionsPanel *m_colorAndWidthWidget;
 
     // Emoji picker
     EmojiPicker *m_emojiPicker;

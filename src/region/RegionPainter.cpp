@@ -8,7 +8,7 @@
 #include "annotations/ArrowAnnotation.h"
 #include "annotations/PolylineAnnotation.h"
 #include "tools/ToolManager.h"
-#include "ToolbarWidget.h"
+#include "toolbar/ToolbarCore.h"
 #include "GlassRenderer.h"
 #include "ToolbarStyle.h"
 #include "TransformationGizmo.h"
@@ -40,7 +40,7 @@ void RegionPainter::setToolManager(ToolManager* manager)
     m_toolManager = manager;
 }
 
-void RegionPainter::setToolbar(ToolbarWidget* toolbar)
+void RegionPainter::setToolbar(ToolbarCore* toolbar)
 {
     m_toolbar = toolbar;
 }

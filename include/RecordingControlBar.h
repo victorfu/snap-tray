@@ -245,7 +245,7 @@ private:
     QShortcut *m_escShortcut;
     GlassTooltipWidget *m_tooltip;
 
-    // Layout constants (matching ToolbarWidget)
+    // Layout constants (matching ToolbarCore)
     static const int TOOLBAR_HEIGHT = 32;
     static const int BUTTON_WIDTH = 28;
     static const int BUTTON_SPACING = 2;

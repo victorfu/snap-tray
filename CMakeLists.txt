@@ -483,7 +483,7 @@ add_library(snaptray_ui STATIC
     src/GlassRenderer.cpp
     src/IconRenderer.cpp
     src/ToolbarStyle.cpp
-    src/ToolbarWidget.cpp
+    src/toolbar/ToolbarCore.cpp
     src/toolbar/ToolbarButtonConfig.cpp
     src/toolbar/ToolbarRenderer.cpp
 
@@ -496,6 +496,7 @@ add_library(snaptray_ui STATIC
     # Tool system
     src/tools/ToolRegistry.cpp
     src/tools/ToolManager.cpp
+    src/tools/ToolSectionConfig.cpp
     src/tools/handlers/PencilToolHandler.cpp
     src/tools/handlers/MarkerToolHandler.cpp
     src/tools/handlers/ArrowToolHandler.cpp
@@ -509,7 +510,7 @@ add_library(snaptray_ui STATIC
     src/tools/handlers/LaserPointerToolHandler.cpp
 
     # Widgets
-    src/ColorAndWidthWidget.cpp
+    src/toolbar/ToolOptionsPanel.cpp
     src/EmojiPicker.cpp
     src/widgets/HotkeyEdit.cpp
     include/widgets/HotkeyEdit.h
@@ -544,8 +545,8 @@ add_library(snaptray_ui STATIC
     src/PinWindow.cpp
     src/PinWindowManager.cpp
     src/pinwindow/ImageTransformer.cpp
-    src/pinwindow/PinWindowToolbar.cpp
-    src/pinwindow/PinWindowSubToolbar.cpp
+    src/toolbar/WindowedToolbar.cpp
+    src/toolbar/WindowedSubToolbar.cpp
     src/pinwindow/ResizeHandler.cpp
     src/pinwindow/UIIndicators.cpp
     src/pinwindow/ClickThroughExitButton.cpp
@@ -588,14 +589,14 @@ add_library(snaptray_ui STATIC
     >
 
     # Headers with Q_OBJECT for MOC processing
-    include/ToolbarWidget.h
+    include/toolbar/ToolbarCore.h
     include/annotations/AnnotationLayer.h
     include/AnnotationController.h
     include/InlineTextEditor.h
     include/TransformationGizmo.h
     include/tools/ToolRegistry.h
     include/tools/ToolManager.h
-    include/ColorAndWidthWidget.h
+    include/toolbar/ToolOptionsPanel.h
     include/EmojiPicker.h
     include/ui/sections/ColorSection.h
     include/ui/sections/WidthSection.h
@@ -621,8 +622,8 @@ add_library(snaptray_ui STATIC
     include/PinWindow.h
     include/PinWindowManager.h
     include/pinwindow/ImageTransformer.h
-    include/pinwindow/PinWindowToolbar.h
-    include/pinwindow/PinWindowSubToolbar.h
+    include/toolbar/WindowedToolbar.h
+    include/toolbar/WindowedSubToolbar.h
     include/pinwindow/ResizeHandler.h
     include/pinwindow/UIIndicators.h
     include/pinwindow/ClickThroughExitButton.h

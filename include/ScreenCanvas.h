@@ -25,9 +25,9 @@ class AnnotationLayer;
 class ToolManager;
 class ColorPickerDialog;
 class EmojiPicker;
-class ColorAndWidthWidget;
+class ToolOptionsPanel;
 class LaserPointerRenderer;
-class ToolbarWidget;
+class ToolbarCore;
 class ArrowAnnotation;
 class PolylineAnnotation;
 
@@ -158,15 +158,15 @@ private:
     ToolManager *m_toolManager;
     ToolId m_currentToolId;
 
-    // Toolbar using ToolbarWidget
-    ToolbarWidget *m_toolbar;
+    // Toolbar using ToolbarCore
+    ToolbarCore *m_toolbar;
     bool m_isDraggingToolbar;
     bool m_toolbarManuallyPositioned;
     QPoint m_toolbarDragOffset;
     bool m_showSubToolbar;
 
     // Unified color and width widget
-    ColorAndWidthWidget *m_colorAndWidthWidget;
+    ToolOptionsPanel *m_colorAndWidthWidget;
 
     // Emoji picker
     EmojiPicker *m_emojiPicker;

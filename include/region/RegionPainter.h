@@ -14,7 +14,7 @@ class QWidget;
 class SelectionStateManager;
 class AnnotationLayer;
 class ToolManager;
-class ToolbarWidget;
+class ToolbarCore;
 class RegionControlWidget;
 class TextBoxAnnotation;
 class EmojiStickerAnnotation;
@@ -41,7 +41,7 @@ public:
     void setSelectionManager(SelectionStateManager* manager);
     void setAnnotationLayer(AnnotationLayer* layer);
     void setToolManager(ToolManager* manager);
-    void setToolbar(ToolbarWidget* toolbar);
+    void setToolbar(ToolbarCore* toolbar);
     void setRegionControlWidget(RegionControlWidget* widget);
     void setParentWidget(QWidget* widget);
     void setMultiRegionManager(MultiRegionManager* manager);
@@ -101,7 +101,7 @@ private:
     SelectionStateManager* m_selectionManager = nullptr;
     AnnotationLayer* m_annotationLayer = nullptr;
     ToolManager* m_toolManager = nullptr;
-    ToolbarWidget* m_toolbar = nullptr;
+    ToolbarCore* m_toolbar = nullptr;
     RegionControlWidget* m_regionControlWidget = nullptr;
     QWidget* m_parentWidget = nullptr;
     MultiRegionManager* m_multiRegionManager = nullptr;

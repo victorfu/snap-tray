@@ -1,6 +1,6 @@
 #include <QtTest/QtTest>
 #include <QSignalSpy>
-#include "ColorAndWidthWidget.h"
+#include "toolbar/ToolOptionsPanel.h"
 
 namespace {
 constexpr int kWidthSectionSize = 28;
@@ -12,7 +12,7 @@ constexpr int kColorPadding = 4;
 constexpr int kStandardColorCount = 6; // 6 standard colors + 1 custom swatch
 }
 
-class TestColorAndWidthWidgetSignals : public QObject
+class TestToolOptionsPanelSignals : public QObject
 {
     Q_OBJECT
 
@@ -50,15 +50,15 @@ private slots:
     void testShapeFillModeChangedNoSignalWhenSameValue();
 
 private:
-    ColorAndWidthWidget* m_widget = nullptr;
+    ToolOptionsPanel* m_widget = nullptr;
 };
 
-void TestColorAndWidthWidgetSignals::init()
+void TestToolOptionsPanelSignals::init()
 {
-    m_widget = new ColorAndWidthWidget();
+    m_widget = new ToolOptionsPanel();
 }
 
-void TestColorAndWidthWidgetSignals::cleanup()
+void TestToolOptionsPanelSignals::cleanup()
 {
     delete m_widget;
     m_widget = nullptr;
@@ -68,9 +68,9 @@ void TestColorAndWidthWidgetSignals::cleanup()
 // Color Signals
 // ============================================================================
 
-void TestColorAndWidthWidgetSignals::testColorSelectedSignal()
+void TestToolOptionsPanelSignals::testColorSelectedSignal()
 {
-    QSignalSpy spy(m_widget, &ColorAndWidthWidget::colorSelected);
+    QSignalSpy spy(m_widget, &ToolOptionsPanel::colorSelected);
     QVERIFY(spy.isValid());
 
     // Set up the widget position to enable hit testing
@@ -100,9 +100,9 @@ void TestColorAndWidthWidgetSignals::testColorSelectedSignal()
     QCOMPARE(selectedColor, QColor(220, 53, 69));  // First standard color (Red)
 }
 
-void TestColorAndWidthWidgetSignals::testCustomColorPickerRequestedSignal()
+void TestToolOptionsPanelSignals::testCustomColorPickerRequestedSignal()
 {
-    QSignalSpy spy(m_widget, &ColorAndWidthWidget::customColorPickerRequested);
+    QSignalSpy spy(m_widget, &ToolOptionsPanel::customColorPickerRequested);
     QVERIFY(spy.isValid());
 
     // Set up the widget
@@ -131,9 +131,9 @@ void TestColorAndWidthWidgetSignals::testCustomColorPickerRequestedSignal()
 // Width Signals
 // ============================================================================
 
-void TestColorAndWidthWidgetSignals::testWidthChangedSignal()
+void TestToolOptionsPanelSignals::testWidthChangedSignal()
 {
-    QSignalSpy spy(m_widget, &ColorAndWidthWidget::widthChanged);
+    QSignalSpy spy(m_widget, &ToolOptionsPanel::widthChanged);
     QVERIFY(spy.isValid());
 
     m_widget->setShowWidthSection(true);
@@ -154,9 +154,9 @@ void TestColorAndWidthWidgetSignals::testWidthChangedSignal()
 // Text Formatting Signals
 // ============================================================================
 
-void TestColorAndWidthWidgetSignals::testBoldToggledSignal()
+void TestToolOptionsPanelSignals::testBoldToggledSignal()
 {
-    QSignalSpy spy(m_widget, &ColorAndWidthWidget::boldToggled);
+    QSignalSpy spy(m_widget, &ToolOptionsPanel::boldToggled);
     QVERIFY(spy.isValid());
 
     // Default is true, toggle to false
@@ -167,9 +167,9 @@ void TestColorAndWidthWidgetSignals::testBoldToggledSignal()
     QCOMPARE(arguments.at(0).toBool(), false);
 }
 
-void TestColorAndWidthWidgetSignals::testBoldToggledNoSignalWhenSameValue()
+void TestToolOptionsPanelSignals::testBoldToggledNoSignalWhenSameValue()
 {
-    QSignalSpy spy(m_widget, &ColorAndWidthWidget::boldToggled);
+    QSignalSpy spy(m_widget, &ToolOptionsPanel::boldToggled);
     QVERIFY(spy.isValid());
 
     // Default is true, set to true again
@@ -177,9 +177,9 @@ void TestColorAndWidthWidgetSignals::testBoldToggledNoSignalWhenSameValue()
     QCOMPARE(spy.count(), 0);  // No signal should be emitted
 }
 
-void TestColorAndWidthWidgetSignals::testItalicToggledSignal()
+void TestToolOptionsPanelSignals::testItalicToggledSignal()
 {
-    QSignalSpy spy(m_widget, &ColorAndWidthWidget::italicToggled);
+    QSignalSpy spy(m_widget, &ToolOptionsPanel::italicToggled);
     QVERIFY(spy.isValid());
 
     m_widget->setItalic(true);
@@ -189,9 +189,9 @@ void TestColorAndWidthWidgetSignals::testItalicToggledSignal()
     QCOMPARE(arguments.at(0).toBool(), true);
 }
 
-void TestColorAndWidthWidgetSignals::testItalicToggledNoSignalWhenSameValue()
+void TestToolOptionsPanelSignals::testItalicToggledNoSignalWhenSameValue()
 {
-    QSignalSpy spy(m_widget, &ColorAndWidthWidget::italicToggled);
+    QSignalSpy spy(m_widget, &ToolOptionsPanel::italicToggled);
     QVERIFY(spy.isValid());
 
     // Default is false, set to false again
@@ -199,9 +199,9 @@ void TestColorAndWidthWidgetSignals::testItalicToggledNoSignalWhenSameValue()
     QCOMPARE(spy.count(), 0);
 }
 
-void TestColorAndWidthWidgetSignals::testUnderlineToggledSignal()
+void TestToolOptionsPanelSignals::testUnderlineToggledSignal()
 {
-    QSignalSpy spy(m_widget, &ColorAndWidthWidget::underlineToggled);
+    QSignalSpy spy(m_widget, &ToolOptionsPanel::underlineToggled);
     QVERIFY(spy.isValid());
 
     m_widget->setUnderline(true);
@@ -211,9 +211,9 @@ void TestColorAndWidthWidgetSignals::testUnderlineToggledSignal()
     QCOMPARE(arguments.at(0).toBool(), true);
 }
 
-void TestColorAndWidthWidgetSignals::testUnderlineToggledNoSignalWhenSameValue()
+void TestToolOptionsPanelSignals::testUnderlineToggledNoSignalWhenSameValue()
 {
-    QSignalSpy spy(m_widget, &ColorAndWidthWidget::underlineToggled);
+    QSignalSpy spy(m_widget, &ToolOptionsPanel::underlineToggled);
     QVERIFY(spy.isValid());
 
     // Default is false
@@ -221,9 +221,9 @@ void TestColorAndWidthWidgetSignals::testUnderlineToggledNoSignalWhenSameValue()
     QCOMPARE(spy.count(), 0);
 }
 
-void TestColorAndWidthWidgetSignals::testFontSizeChangedSignal()
+void TestToolOptionsPanelSignals::testFontSizeChangedSignal()
 {
-    QSignalSpy spy(m_widget, &ColorAndWidthWidget::fontSizeChanged);
+    QSignalSpy spy(m_widget, &ToolOptionsPanel::fontSizeChanged);
     QVERIFY(spy.isValid());
 
     m_widget->setFontSize(24);
@@ -233,9 +233,9 @@ void TestColorAndWidthWidgetSignals::testFontSizeChangedSignal()
     QCOMPARE(arguments.at(0).toInt(), 24);
 }
 
-void TestColorAndWidthWidgetSignals::testFontSizeChangedNoSignalWhenSameValue()
+void TestToolOptionsPanelSignals::testFontSizeChangedNoSignalWhenSameValue()
 {
-    QSignalSpy spy(m_widget, &ColorAndWidthWidget::fontSizeChanged);
+    QSignalSpy spy(m_widget, &ToolOptionsPanel::fontSizeChanged);
     QVERIFY(spy.isValid());
 
     // Default is 16
@@ -243,9 +243,9 @@ void TestColorAndWidthWidgetSignals::testFontSizeChangedNoSignalWhenSameValue()
     QCOMPARE(spy.count(), 0);
 }
 
-void TestColorAndWidthWidgetSignals::testFontFamilyChangedSignal()
+void TestToolOptionsPanelSignals::testFontFamilyChangedSignal()
 {
-    QSignalSpy spy(m_widget, &ColorAndWidthWidget::fontFamilyChanged);
+    QSignalSpy spy(m_widget, &ToolOptionsPanel::fontFamilyChanged);
     QVERIFY(spy.isValid());
 
     m_widget->setFontFamily("Arial");
@@ -255,9 +255,9 @@ void TestColorAndWidthWidgetSignals::testFontFamilyChangedSignal()
     QCOMPARE(arguments.at(0).toString(), QString("Arial"));
 }
 
-void TestColorAndWidthWidgetSignals::testFontFamilyChangedNoSignalWhenSameValue()
+void TestToolOptionsPanelSignals::testFontFamilyChangedNoSignalWhenSameValue()
 {
-    QSignalSpy spy(m_widget, &ColorAndWidthWidget::fontFamilyChanged);
+    QSignalSpy spy(m_widget, &ToolOptionsPanel::fontFamilyChanged);
     QVERIFY(spy.isValid());
 
     m_widget->setFontFamily("Helvetica");
@@ -272,9 +272,9 @@ void TestColorAndWidthWidgetSignals::testFontFamilyChangedNoSignalWhenSameValue(
 // Arrow Style Signals
 // ============================================================================
 
-void TestColorAndWidthWidgetSignals::testArrowStyleChangedSignal()
+void TestToolOptionsPanelSignals::testArrowStyleChangedSignal()
 {
-    QSignalSpy spy(m_widget, &ColorAndWidthWidget::arrowStyleChanged);
+    QSignalSpy spy(m_widget, &ToolOptionsPanel::arrowStyleChanged);
     QVERIFY(spy.isValid());
 
     m_widget->setArrowStyle(LineEndStyle::None);
@@ -284,9 +284,9 @@ void TestColorAndWidthWidgetSignals::testArrowStyleChangedSignal()
     QCOMPARE(arguments.at(0).value<LineEndStyle>(), LineEndStyle::None);
 }
 
-void TestColorAndWidthWidgetSignals::testArrowStyleChangedNoSignalWhenSameValue()
+void TestToolOptionsPanelSignals::testArrowStyleChangedNoSignalWhenSameValue()
 {
-    QSignalSpy spy(m_widget, &ColorAndWidthWidget::arrowStyleChanged);
+    QSignalSpy spy(m_widget, &ToolOptionsPanel::arrowStyleChanged);
     QVERIFY(spy.isValid());
 
     // Default is EndArrow
@@ -298,9 +298,9 @@ void TestColorAndWidthWidgetSignals::testArrowStyleChangedNoSignalWhenSameValue(
 // Shape Signals
 // ============================================================================
 
-void TestColorAndWidthWidgetSignals::testShapeTypeChangedSignal()
+void TestToolOptionsPanelSignals::testShapeTypeChangedSignal()
 {
-    QSignalSpy spy(m_widget, &ColorAndWidthWidget::shapeTypeChanged);
+    QSignalSpy spy(m_widget, &ToolOptionsPanel::shapeTypeChanged);
     QVERIFY(spy.isValid());
 
     m_widget->setShapeType(ShapeType::Ellipse);
@@ -310,9 +310,9 @@ void TestColorAndWidthWidgetSignals::testShapeTypeChangedSignal()
     QCOMPARE(arguments.at(0).value<ShapeType>(), ShapeType::Ellipse);
 }
 
-void TestColorAndWidthWidgetSignals::testShapeTypeChangedNoSignalWhenSameValue()
+void TestToolOptionsPanelSignals::testShapeTypeChangedNoSignalWhenSameValue()
 {
-    QSignalSpy spy(m_widget, &ColorAndWidthWidget::shapeTypeChanged);
+    QSignalSpy spy(m_widget, &ToolOptionsPanel::shapeTypeChanged);
     QVERIFY(spy.isValid());
 
     // Default is Rectangle
@@ -320,9 +320,9 @@ void TestColorAndWidthWidgetSignals::testShapeTypeChangedNoSignalWhenSameValue()
     QCOMPARE(spy.count(), 0);
 }
 
-void TestColorAndWidthWidgetSignals::testShapeFillModeChangedSignal()
+void TestToolOptionsPanelSignals::testShapeFillModeChangedSignal()
 {
-    QSignalSpy spy(m_widget, &ColorAndWidthWidget::shapeFillModeChanged);
+    QSignalSpy spy(m_widget, &ToolOptionsPanel::shapeFillModeChanged);
     QVERIFY(spy.isValid());
 
     m_widget->setShapeFillMode(ShapeFillMode::Filled);
@@ -332,9 +332,9 @@ void TestColorAndWidthWidgetSignals::testShapeFillModeChangedSignal()
     QCOMPARE(arguments.at(0).value<ShapeFillMode>(), ShapeFillMode::Filled);
 }
 
-void TestColorAndWidthWidgetSignals::testShapeFillModeChangedNoSignalWhenSameValue()
+void TestToolOptionsPanelSignals::testShapeFillModeChangedNoSignalWhenSameValue()
 {
-    QSignalSpy spy(m_widget, &ColorAndWidthWidget::shapeFillModeChanged);
+    QSignalSpy spy(m_widget, &ToolOptionsPanel::shapeFillModeChanged);
     QVERIFY(spy.isValid());
 
     // Default is Outline
@@ -342,5 +342,5 @@ void TestColorAndWidthWidgetSignals::testShapeFillModeChangedNoSignalWhenSameVal
     QCOMPARE(spy.count(), 0);
 }
 
-QTEST_MAIN(TestColorAndWidthWidgetSignals)
+QTEST_MAIN(TestToolOptionsPanelSignals)
 #include "tst_Signals.moc"

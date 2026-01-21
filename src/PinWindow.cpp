@@ -8,8 +8,8 @@
 #include "capture/ICaptureEngine.h"
 #include "pinwindow/ResizeHandler.h"
 #include "pinwindow/UIIndicators.h"
-#include "pinwindow/PinWindowToolbar.h"
-#include "pinwindow/PinWindowSubToolbar.h"
+#include "toolbar/WindowedToolbar.h"
+#include "toolbar/WindowedSubToolbar.h"
 #include "annotations/AnnotationLayer.h"
 #include "annotations/EmojiStickerAnnotation.h"
 #include "annotations/MosaicRectAnnotation.h"
@@ -23,7 +23,7 @@
 #include "settings/OCRSettingsManager.h"
 #include "InlineTextEditor.h"
 #include "region/TextAnnotationEditor.h"
-#include "ColorAndWidthWidget.h"
+#include "toolbar/ToolOptionsPanel.h"
 #include "annotations/TextBoxAnnotation.h"
 #include "TransformationGizmo.h"
 #include "annotations/ArrowAnnotation.h"
@@ -1723,57 +1723,57 @@ void PinWindow::initializeAnnotationComponents()
         });
 
     // Initialize toolbar (not parented - separate floating window)
-    m_toolbar = new PinWindowToolbar(nullptr);
+    m_toolbar = new WindowedToolbar(nullptr);
     m_toolbar->setOCRAvailable(PlatformFeatures::instance().isOCRAvailable());
 
     // Connect toolbar signals
-    connect(m_toolbar, &PinWindowToolbar::toolSelected,
+    connect(m_toolbar, &WindowedToolbar::toolSelected,
         this, &PinWindow::handleToolbarToolSelected);
-    connect(m_toolbar, &PinWindowToolbar::undoClicked,
+    connect(m_toolbar, &WindowedToolbar::undoClicked,
         this, &PinWindow::handleToolbarUndo);
-    connect(m_toolbar, &PinWindowToolbar::redoClicked,
+    connect(m_toolbar, &WindowedToolbar::redoClicked,
         this, &PinWindow::handleToolbarRedo);
-    connect(m_toolbar, &PinWindowToolbar::ocrClicked,
+    connect(m_toolbar, &WindowedToolbar::ocrClicked,
         this, &PinWindow::performOCR);
-    connect(m_toolbar, &PinWindowToolbar::copyClicked,
+    connect(m_toolbar, &WindowedToolbar::copyClicked,
         this, &PinWindow::copyToClipboard);
-    connect(m_toolbar, &PinWindowToolbar::saveClicked,
+    connect(m_toolbar, &WindowedToolbar::saveClicked,
         this, &PinWindow::saveToFile);
-    connect(m_toolbar, &PinWindowToolbar::doneClicked,
+    connect(m_toolbar, &WindowedToolbar::doneClicked,
         this, &PinWindow::hideToolbar);
-    connect(m_toolbar, &PinWindowToolbar::cursorRestoreRequested,
+    connect(m_toolbar, &WindowedToolbar::cursorRestoreRequested,
         this, &PinWindow::updateCursorForTool);
 
     // Initialize sub-toolbar (not parented - separate floating window)
-    m_subToolbar = new PinWindowSubToolbar(nullptr);
+    m_subToolbar = new WindowedSubToolbar(nullptr);
 
     // Connect sub-toolbar signals
-    connect(m_subToolbar, &PinWindowSubToolbar::colorSelected,
+    connect(m_subToolbar, &WindowedSubToolbar::colorSelected,
         this, &PinWindow::onColorSelected);
-    connect(m_subToolbar, &PinWindowSubToolbar::widthChanged,
+    connect(m_subToolbar, &WindowedSubToolbar::widthChanged,
         this, &PinWindow::onWidthChanged);
-    connect(m_subToolbar, &PinWindowSubToolbar::emojiSelected,
+    connect(m_subToolbar, &WindowedSubToolbar::emojiSelected,
         this, &PinWindow::onEmojiSelected);
-    connect(m_subToolbar, &PinWindowSubToolbar::stepBadgeSizeChanged,
+    connect(m_subToolbar, &WindowedSubToolbar::stepBadgeSizeChanged,
         this, &PinWindow::onStepBadgeSizeChanged);
-    connect(m_subToolbar, &PinWindowSubToolbar::shapeTypeChanged,
+    connect(m_subToolbar, &WindowedSubToolbar::shapeTypeChanged,
         this, &PinWindow::onShapeTypeChanged);
-    connect(m_subToolbar, &PinWindowSubToolbar::shapeFillModeChanged,
+    connect(m_subToolbar, &WindowedSubToolbar::shapeFillModeChanged,
         this, &PinWindow::onShapeFillModeChanged);
-    connect(m_subToolbar, &PinWindowSubToolbar::arrowStyleChanged,
+    connect(m_subToolbar, &WindowedSubToolbar::arrowStyleChanged,
         this, &PinWindow::onArrowStyleChanged);
-    connect(m_subToolbar, &PinWindowSubToolbar::lineStyleChanged,
+    connect(m_subToolbar, &WindowedSubToolbar::lineStyleChanged,
         this, &PinWindow::onLineStyleChanged);
-    connect(m_subToolbar, &PinWindowSubToolbar::fontSizeDropdownRequested,
+    connect(m_subToolbar, &WindowedSubToolbar::fontSizeDropdownRequested,
         this, &PinWindow::onFontSizeDropdownRequested);
-    connect(m_subToolbar, &PinWindowSubToolbar::fontFamilyDropdownRequested,
+    connect(m_subToolbar, &WindowedSubToolbar::fontFamilyDropdownRequested,
         this, &PinWindow::onFontFamilyDropdownRequested);
-    connect(m_subToolbar, &PinWindowSubToolbar::autoBlurRequested,
+    connect(m_subToolbar, &WindowedSubToolbar::autoBlurRequested,
         this, &PinWindow::onAutoBlurRequested);
-    connect(m_subToolbar, &PinWindowSubToolbar::cursorRestoreRequested,
+    connect(m_subToolbar, &WindowedSubToolbar::cursorRestoreRequested,
         this, &PinWindow::updateCursorForTool);
 
-    // Connect TextAnnotationEditor to ColorAndWidthWidget (must be after sub-toolbar creation)
+    // Connect TextAnnotationEditor to ToolOptionsPanel (must be after sub-toolbar creation)
     m_textAnnotationEditor->setColorAndWidthWidget(m_subToolbar->colorAndWidthWidget());
 
     // Sync initial width and color to sub-toolbar UI
@@ -1804,7 +1804,7 @@ void PinWindow::showToolbar()
     m_toolbar->setAssociatedWidgets(this, m_subToolbar);
 
     // Connect close request signal
-    connect(m_toolbar, &PinWindowToolbar::closeRequested,
+    connect(m_toolbar, &WindowedToolbar::closeRequested,
         this, &PinWindow::hideToolbar, Qt::UniqueConnection);
 
     m_toolbarVisible = true;
@@ -1914,32 +1914,32 @@ void PinWindow::handleToolbarToolSelected(int toolId)
     ToolId tool = ToolId::Selection;
 
     switch (toolId) {
-    case PinWindowToolbar::ButtonPencil:
+    case WindowedToolbar::ButtonPencil:
         tool = ToolId::Pencil;
         break;
-    case PinWindowToolbar::ButtonMarker:
+    case WindowedToolbar::ButtonMarker:
         tool = ToolId::Marker;
         break;
-    case PinWindowToolbar::ButtonArrow:
+    case WindowedToolbar::ButtonArrow:
         tool = ToolId::Arrow;
         break;
-    case PinWindowToolbar::ButtonShape:
+    case WindowedToolbar::ButtonShape:
         tool = ToolId::Shape;
         break;
-    case PinWindowToolbar::ButtonText:
+    case WindowedToolbar::ButtonText:
         tool = ToolId::Text;
         break;
-    case PinWindowToolbar::ButtonMosaic:
+    case WindowedToolbar::ButtonMosaic:
         tool = ToolId::Mosaic;
         break;
-    case PinWindowToolbar::ButtonEraser:
+    case WindowedToolbar::ButtonEraser:
         tool = ToolId::Eraser;
         break;
-    case PinWindowToolbar::ButtonStepBadge:
+    case WindowedToolbar::ButtonStepBadge:
         tool = ToolId::StepBadge;
         // StepBadgeToolHandler reads size from AnnotationSettingsManager, no setWidth needed
         break;
-    case PinWindowToolbar::ButtonEmoji:
+    case WindowedToolbar::ButtonEmoji:
         tool = ToolId::EmojiSticker;
         break;
     default:

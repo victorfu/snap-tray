@@ -8,7 +8,7 @@
  * @brief Standalone test class for TextAnnotationEditor logic.
  *
  * Since TextAnnotationEditor depends on AnnotationLayer, InlineTextEditor,
- * and ColorAndWidthWidget, we test the core logic directly here without
+ * and ToolOptionsPanel, we test the core logic directly here without
  * needing those dependencies.
  */
 class tst_TextAnnotationEditor : public QObject

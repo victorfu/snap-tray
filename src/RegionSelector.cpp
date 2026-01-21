@@ -10,7 +10,7 @@
 #include "GlassRenderer.h"
 #include "ToolbarStyle.h"
 #include "IconRenderer.h"
-#include "ColorAndWidthWidget.h"
+#include "toolbar/ToolOptionsPanel.h"
 #include "ColorPickerDialog.h"
 #include "EmojiPicker.h"
 #include "OCRManager.h"
@@ -21,6 +21,7 @@
 #include "settings/OCRSettingsManager.h"
 #include "tools/handlers/MosaicToolHandler.h"
 #include "tools/handlers/EmojiStickerToolHandler.h"
+#include "tools/ToolSectionConfig.h"
 #include <QTextEdit>
 
 #include <cstring>
@@ -170,8 +171,8 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_autoBlurManager = new AutoBlurManager(this);
 
     // Initialize toolbar widget
-    m_toolbar = new ToolbarWidget(this);
-    connect(m_toolbar, &ToolbarWidget::buttonClicked, this, [this](int buttonId) {
+    m_toolbar = new ToolbarCore(this);
+    connect(m_toolbar, &ToolbarCore::buttonClicked, this, [this](int buttonId) {
         handleToolbarClick(static_cast<ToolId>(buttonId));
         });
 
@@ -193,19 +194,19 @@ RegionSelector::RegionSelector(QWidget* parent)
         this, QOverload<>::of(&QWidget::update));
 
     // Initialize unified color and width widget
-    m_colorAndWidthWidget = new ColorAndWidthWidget(this);
+    m_colorAndWidthWidget = new ToolOptionsPanel(this);
     m_colorAndWidthWidget->setCurrentColor(m_annotationColor);
     m_colorAndWidthWidget->setCurrentWidth(m_annotationWidth);
     m_colorAndWidthWidget->setWidthRange(1, 20);
-    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::colorSelected,
+    connect(m_colorAndWidthWidget, &ToolOptionsPanel::colorSelected,
         this, &RegionSelector::onColorSelected);
-    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::customColorPickerRequested,
+    connect(m_colorAndWidthWidget, &ToolOptionsPanel::customColorPickerRequested,
         this, &RegionSelector::onMoreColorsRequested);
-    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::widthChanged,
+    connect(m_colorAndWidthWidget, &ToolOptionsPanel::widthChanged,
         this, &RegionSelector::onLineWidthChanged);
     // Mosaic now uses widthChanged signal like other tools (no separate mosaicWidthChanged)
 
-    // Configure text annotation editor with ColorAndWidthWidget
+    // Configure text annotation editor with ToolOptionsPanel
     m_textAnnotationEditor->setColorAndWidthWidget(m_colorAndWidthWidget);
 
     // Load text formatting settings from TextAnnotationEditor
@@ -217,41 +218,41 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_colorAndWidthWidget->setFontFamily(textFormatting.fontFamily);
 
     // Connect text formatting signals to TextAnnotationEditor
-    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::boldToggled,
+    connect(m_colorAndWidthWidget, &ToolOptionsPanel::boldToggled,
         m_textAnnotationEditor, &TextAnnotationEditor::setBold);
-    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::italicToggled,
+    connect(m_colorAndWidthWidget, &ToolOptionsPanel::italicToggled,
         m_textAnnotationEditor, &TextAnnotationEditor::setItalic);
-    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::underlineToggled,
+    connect(m_colorAndWidthWidget, &ToolOptionsPanel::underlineToggled,
         m_textAnnotationEditor, &TextAnnotationEditor::setUnderline);
-    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::fontSizeDropdownRequested,
+    connect(m_colorAndWidthWidget, &ToolOptionsPanel::fontSizeDropdownRequested,
         this, &RegionSelector::onFontSizeDropdownRequested);
-    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::fontFamilyDropdownRequested,
+    connect(m_colorAndWidthWidget, &ToolOptionsPanel::fontFamilyDropdownRequested,
         this, &RegionSelector::onFontFamilyDropdownRequested);
 
     // Connect arrow style signal
     m_colorAndWidthWidget->setArrowStyle(m_arrowStyle);
-    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::arrowStyleChanged,
+    connect(m_colorAndWidthWidget, &ToolOptionsPanel::arrowStyleChanged,
         this, &RegionSelector::onArrowStyleChanged);
 
     // Connect line style signal
     m_colorAndWidthWidget->setLineStyle(m_lineStyle);
-    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::lineStyleChanged,
+    connect(m_colorAndWidthWidget, &ToolOptionsPanel::lineStyleChanged,
         this, &RegionSelector::onLineStyleChanged);
 
     // Connect shape section signals
-    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::shapeTypeChanged,
+    connect(m_colorAndWidthWidget, &ToolOptionsPanel::shapeTypeChanged,
         this, [this](ShapeType type) {
             m_shapeType = type;
             m_toolManager->setShapeType(static_cast<int>(type));
         });
-    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::shapeFillModeChanged,
+    connect(m_colorAndWidthWidget, &ToolOptionsPanel::shapeFillModeChanged,
         this, [this](ShapeFillMode mode) {
             m_shapeFillMode = mode;
             m_toolManager->setShapeFillMode(static_cast<int>(mode));
         });
-    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::stepBadgeSizeChanged,
+    connect(m_colorAndWidthWidget, &ToolOptionsPanel::stepBadgeSizeChanged,
         this, &RegionSelector::onStepBadgeSizeChanged);
-    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::autoBlurRequested,
+    connect(m_colorAndWidthWidget, &ToolOptionsPanel::autoBlurRequested,
         this, &RegionSelector::performAutoBlur);
 
     // EmojiPicker is lazy-initialized via ensureEmojiPicker() when first needed
@@ -517,21 +518,21 @@ RegionSelector::RegionSelector(QWidget* parent)
     connect(m_toolbarHandler, &RegionToolbarHandler::multiRegionCancelRequested,
         this, &RegionSelector::cancelMultiRegionCapture);
 
-    // Connect ColorAndWidthWidget configuration signals
+    // Connect ToolOptionsPanel configuration signals
     connect(m_toolbarHandler, &RegionToolbarHandler::showSizeSectionRequested,
-        m_colorAndWidthWidget, &ColorAndWidthWidget::setShowSizeSection);
+        m_colorAndWidthWidget, &ToolOptionsPanel::setShowSizeSection);
     connect(m_toolbarHandler, &RegionToolbarHandler::showWidthSectionRequested,
-        m_colorAndWidthWidget, &ColorAndWidthWidget::setShowWidthSection);
+        m_colorAndWidthWidget, &ToolOptionsPanel::setShowWidthSection);
     connect(m_toolbarHandler, &RegionToolbarHandler::widthSectionHiddenRequested,
-        m_colorAndWidthWidget, &ColorAndWidthWidget::setWidthSectionHidden);
+        m_colorAndWidthWidget, &ToolOptionsPanel::setWidthSectionHidden);
     connect(m_toolbarHandler, &RegionToolbarHandler::showColorSectionRequested,
-        m_colorAndWidthWidget, &ColorAndWidthWidget::setShowColorSection);
+        m_colorAndWidthWidget, &ToolOptionsPanel::setShowColorSection);
     connect(m_toolbarHandler, &RegionToolbarHandler::widthRangeRequested,
-        m_colorAndWidthWidget, &ColorAndWidthWidget::setWidthRange);
+        m_colorAndWidthWidget, &ToolOptionsPanel::setWidthRange);
     connect(m_toolbarHandler, &RegionToolbarHandler::currentWidthRequested,
-        m_colorAndWidthWidget, &ColorAndWidthWidget::setCurrentWidth);
+        m_colorAndWidthWidget, &ToolOptionsPanel::setCurrentWidth);
     connect(m_toolbarHandler, &RegionToolbarHandler::stepBadgeSizeRequested,
-        m_colorAndWidthWidget, &ColorAndWidthWidget::setStepBadgeSize);
+        m_colorAndWidthWidget, &ToolOptionsPanel::setStepBadgeSize);
 
     // Setup toolbar buttons via handler
     m_toolbarHandler->setupToolbarButtons();
@@ -973,28 +974,14 @@ void RegionSelector::paintEvent(QPaintEvent* event)
                 painter.drawText(countRect, Qt::AlignCenter, countText);
             }
 
-            // Use unified color and width widget
+            // Use unified color and width widget with data-driven configuration
             if (shouldShowColorAndWidthWidget()) {
                 m_colorAndWidthWidget->setVisible(true);
-                m_colorAndWidthWidget->setShowColorSection(shouldShowColorPalette());
-                bool isMosaicTool = (m_currentTool == ToolId::Mosaic);
-                // All width-enabled tools use shared WidthSection (including Mosaic)
-                m_colorAndWidthWidget->setShowWidthSection(shouldShowWidthControl());
+                // Apply tool-specific section configuration
+                ToolSectionConfig::forTool(m_currentTool).applyTo(m_colorAndWidthWidget);
                 m_colorAndWidthWidget->setWidthSectionHidden(false);
-                // Show arrow style section only for Arrow tool
-                m_colorAndWidthWidget->setShowArrowStyleSection(m_currentTool == ToolId::Arrow);
-                // Show line style section for Pencil and Arrow tools
-                bool showLineStyle = (m_currentTool == ToolId::Pencil ||
-                    m_currentTool == ToolId::Arrow);
-                m_colorAndWidthWidget->setShowLineStyleSection(showLineStyle);
-                // Show text section only for Text tool
-                m_colorAndWidthWidget->setShowTextSection(m_currentTool == ToolId::Text);
-                // Show shape section only for Shape tool
-                m_colorAndWidthWidget->setShowShapeSection(m_currentTool == ToolId::Shape);
-                // Show auto blur section only for Mosaic tool
-                m_colorAndWidthWidget->setShowAutoBlurSection(isMosaicTool);
-                if (isMosaicTool) {
-                    // Always enable - lazy initialization happens in performAutoBlur()
+                // Runtime-dependent setting for Mosaic auto blur
+                if (m_currentTool == ToolId::Mosaic) {
                     m_colorAndWidthWidget->setAutoBlurEnabled(m_autoBlurManager != nullptr);
                 }
                 m_colorAndWidthWidget->updatePosition(m_toolbar->boundingRect(), false, width());

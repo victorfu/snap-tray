@@ -120,7 +120,7 @@ void ClickThroughExitButton::enterEvent(QEnterEvent* event)
         "  font-weight: bold;"
         "}"
     );
-    CursorManager::instance().pushCursorForWidget(this, CursorContext::Hover, Qt::PointingHandCursor);
+    CursorManager::instance().pushCursorForWidget(this, CursorContext::Hover, Qt::ArrowCursor);
     QWidget::enterEvent(event);
 }
 

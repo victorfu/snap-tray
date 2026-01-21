@@ -142,8 +142,10 @@ public:
 
     /**
      * @brief Clear all cursor contexts for a specific widget.
+     * @param widget The widget to clear cursors for
+     * @param defaultCursor The cursor to reset to (default: CrossCursor for canvas widgets)
      */
-    void clearAllForWidget(QWidget* widget);
+    void clearAllForWidget(QWidget* widget, Qt::CursorShape defaultCursor = Qt::CrossCursor);
 
     /**
      * @brief Set a pointing hand cursor for a button widget.

@@ -1,5 +1,5 @@
-#ifndef COLORANDWIDTHWIDGET_H
-#define COLORANDWIDTHWIDGET_H
+#ifndef TOOLOPTIONSPANEL_H
+#define TOOLOPTIONSPANEL_H
 
 #include <QObject>
 #include <QVector>
@@ -35,13 +35,13 @@ class AutoBlurSection;
  *
  * The public API remains unchanged for backward compatibility.
  */
-class ColorAndWidthWidget : public QObject
+class ToolOptionsPanel : public QObject
 {
     Q_OBJECT
 
 public:
-    explicit ColorAndWidthWidget(QObject* parent = nullptr);
-    ~ColorAndWidthWidget();
+    explicit ToolOptionsPanel(QObject* parent = nullptr);
+    ~ToolOptionsPanel();
 
     // =========================================================================
     // Color Methods
@@ -242,4 +242,4 @@ private:
     static constexpr int WIDGET_RIGHT_MARGIN = 6;
 };
 
-#endif // COLORANDWIDTHWIDGET_H
+#endif // TOOLOPTIONSPANEL_H

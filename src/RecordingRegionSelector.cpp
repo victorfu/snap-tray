@@ -3,7 +3,7 @@
 #include "IconRenderer.h"
 #include "GlassRenderer.h"
 #include "ToolbarStyle.h"
-#include "ToolbarWidget.h"
+#include "toolbar/ToolbarCore.h"
 #include "cursor/CursorManager.h"
 
 #include <QScreen>
@@ -58,12 +58,12 @@ void RecordingRegionSelector::setupIcons()
 
 void RecordingRegionSelector::setupToolbar()
 {
-    m_toolbar = new ToolbarWidget(this);
+    m_toolbar = new ToolbarCore(this);
 
     // Configure buttons using Toolbar::ButtonConfig with builder pattern
-    QVector<ToolbarWidget::ButtonConfig> buttons = {
-        ToolbarWidget::ButtonConfig(ButtonStart, "record", tr("Start Recording (Enter)")).record(),
-        ToolbarWidget::ButtonConfig(ButtonCancel, "cancel", tr("Cancel (Esc)")).cancel()
+    QVector<ToolbarCore::ButtonConfig> buttons = {
+        ToolbarCore::ButtonConfig(ButtonStart, "record", tr("Start Recording (Enter)")).record(),
+        ToolbarCore::ButtonConfig(ButtonCancel, "cancel", tr("Cancel (Esc)")).cancel()
     };
     m_toolbar->setButtons(buttons);
 
@@ -412,7 +412,7 @@ void RecordingRegionSelector::mouseMoveEvent(QMouseEvent *event)
         if (hoverChanged) {
             auto& cm = CursorManager::instance();
             if (m_toolbar->hoveredButton() >= 0) {
-                cm.pushCursorForWidget(this, CursorContext::Hover, Qt::PointingHandCursor);
+                cm.pushCursorForWidget(this, CursorContext::Hover, Qt::ArrowCursor);
             } else {
                 cm.popCursorForWidget(this, CursorContext::Hover);
             }

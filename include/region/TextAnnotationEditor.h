@@ -12,7 +12,7 @@
 
 class AnnotationLayer;
 class InlineTextEditor;
-class ColorAndWidthWidget;
+class ToolOptionsPanel;
 class QWidget;
 
 /**
@@ -40,7 +40,7 @@ public:
     // Initialization
     void setAnnotationLayer(AnnotationLayer* layer);
     void setTextEditor(InlineTextEditor* editor);
-    void setColorAndWidthWidget(ColorAndWidthWidget* widget);
+    void setColorAndWidthWidget(ToolOptionsPanel* widget);
     void setParentWidget(QWidget* widget);
 
     // Editing operations
@@ -92,7 +92,7 @@ private:
     // Dependencies
     AnnotationLayer* m_annotationLayer = nullptr;
     InlineTextEditor* m_textEditor = nullptr;
-    ColorAndWidthWidget* m_colorAndWidthWidget = nullptr;
+    ToolOptionsPanel* m_colorAndWidthWidget = nullptr;
     QWidget* m_parentWidget = nullptr;
 
     // Transformation state

@@ -1,11 +1,11 @@
-#include "pinwindow/PinWindowToolbar.h"
+#include "toolbar/WindowedToolbar.h"
 #include "ToolbarStyle.h"
 #include "IconRenderer.h"
 #include "toolbar/ToolbarRenderer.h"
+#include "GlassRenderer.h"
 #include "cursor/CursorManager.h"
 
 #include <QPainter>
-#include <QLinearGradient>
 #include <QMouseEvent>
 #include <QScreen>
 #include <QGuiApplication>
@@ -13,7 +13,7 @@
 #include <QShowEvent>
 #include <QHideEvent>
 
-PinWindowToolbar::PinWindowToolbar(QWidget *parent)
+WindowedToolbar::WindowedToolbar(QWidget *parent)
     : QWidget(parent)
 {
     setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
@@ -25,17 +25,18 @@ PinWindowToolbar::PinWindowToolbar(QWidget *parent)
 #endif
     setMouseTracking(true);
     setFixedHeight(TOOLBAR_HEIGHT);
+    setCursor(Qt::ArrowCursor);
 
     loadIcons();
     setupUi();
     updateButtonLayout();
 }
 
-PinWindowToolbar::~PinWindowToolbar()
+WindowedToolbar::~WindowedToolbar()
 {
 }
 
-void PinWindowToolbar::loadIcons()
+void WindowedToolbar::loadIcons()
 {
     auto& renderer = IconRenderer::instance();
     // Drawing tools
@@ -62,7 +63,7 @@ void PinWindowToolbar::loadIcons()
     renderer.loadIcon("done", ":/icons/icons/done.svg");
 }
 
-void PinWindowToolbar::setupUi()
+void WindowedToolbar::setupUi()
 {
     // Configure buttons using Toolbar::ButtonConfig builder pattern
     // Order matches RegionSelector: Shape → Arrow → Pencil → Marker → Text → ...
@@ -94,7 +95,7 @@ void PinWindowToolbar::setupUi()
     m_buttonRects.resize(m_buttons.size());
 }
 
-void PinWindowToolbar::updateButtonLayout()
+void WindowedToolbar::updateButtonLayout()
 {
     int x = MARGIN;
     int buttonY = (TOOLBAR_HEIGHT - BUTTON_HEIGHT) / 2;
@@ -122,9 +123,9 @@ void PinWindowToolbar::updateButtonLayout()
     setFixedWidth(totalWidth);
 }
 
-void PinWindowToolbar::positionNear(const QRect &pinWindowRect)
+void WindowedToolbar::positionNear(const QRect &pinWindowRect)
 {
-    qDebug() << "PinWindowToolbar::positionNear - pinWindowRect:" << pinWindowRect
+    qDebug() << "WindowedToolbar::positionNear - pinWindowRect:" << pinWindowRect
              << "toolbar size:" << size();
 
     QScreen *screen = QGuiApplication::screenAt(pinWindowRect.center());
@@ -133,12 +134,12 @@ void PinWindowToolbar::positionNear(const QRect &pinWindowRect)
     }
 
     QRect screenGeom = screen->geometry();
-    qDebug() << "PinWindowToolbar: screenGeom:" << screenGeom;
+    qDebug() << "WindowedToolbar: screenGeom:" << screenGeom;
 
     // Position below the pin window, right-aligned (same as RegionSelector toolbar)
     int x = pinWindowRect.right() - width() + 1;
     int y = pinWindowRect.bottom() + MARGIN;
-    qDebug() << "PinWindowToolbar: calculated x:" << x << "y:" << y;
+    qDebug() << "WindowedToolbar: calculated x:" << x << "y:" << y;
 
     // If toolbar would go off bottom, position above
     if (y + height() > screenGeom.bottom() - 10) {
@@ -156,25 +157,25 @@ void PinWindowToolbar::positionNear(const QRect &pinWindowRect)
     move(x, y);
 }
 
-void PinWindowToolbar::setActiveButton(int buttonId)
+void WindowedToolbar::setActiveButton(int buttonId)
 {
     m_activeButton = buttonId;
     update();
 }
 
-void PinWindowToolbar::setCanUndo(bool canUndo)
+void WindowedToolbar::setCanUndo(bool canUndo)
 {
     m_canUndo = canUndo;
     update();
 }
 
-void PinWindowToolbar::setCanRedo(bool canRedo)
+void WindowedToolbar::setCanRedo(bool canRedo)
 {
     m_canRedo = canRedo;
     update();
 }
 
-void PinWindowToolbar::setOCRAvailable(bool available)
+void WindowedToolbar::setOCRAvailable(bool available)
 {
     if (m_ocrAvailable != available) {
         m_ocrAvailable = available;
@@ -183,39 +184,29 @@ void PinWindowToolbar::setOCRAvailable(bool available)
     }
 }
 
-bool PinWindowToolbar::isDrawingTool(int buttonId) const
+bool WindowedToolbar::isDrawingTool(int buttonId) const
 {
     return buttonId >= ButtonPencil && buttonId <= ButtonEmoji;
 }
 
-void PinWindowToolbar::paintEvent(QPaintEvent *event)
+void WindowedToolbar::paintEvent(QPaintEvent *event)
 {
     Q_UNUSED(event)
 
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
 
-    ToolbarStyleConfig styleConfig = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
+    const ToolbarStyleConfig& styleConfig = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
 
-    QRect bgRect = rect();
+    // Draw background using shared renderer for consistent glass effect
+    Toolbar::ToolbarRenderer::drawToolbarBackground(painter, rect(), styleConfig, 8);
 
-    // Draw background with gradient
-    QLinearGradient gradient(bgRect.topLeft(), bgRect.bottomLeft());
-    gradient.setColorAt(0, styleConfig.backgroundColorTop);
-    gradient.setColorAt(1, styleConfig.backgroundColorBottom);
-
-    painter.setBrush(gradient);
-    painter.setPen(QPen(styleConfig.borderColor, 1));
-    painter.drawRoundedRect(bgRect, 8, 8);
-
-    // Draw separators
-    painter.setPen(QPen(styleConfig.separatorColor, 1));
+    // Draw separators using shared renderer
     for (int i = 0; i < m_buttons.size(); ++i) {
         if (m_buttons[i].separatorBefore && !m_buttonRects[i].isNull() && i > 0) {
             int sepX = m_buttonRects[i].left() - SEPARATOR_WIDTH / 2 - BUTTON_SPACING / 2;
-            int sepY1 = (TOOLBAR_HEIGHT - 16) / 2;
-            int sepY2 = sepY1 + 16;
-            painter.drawLine(sepX, sepY1, sepX, sepY2);
+            int sepY = (TOOLBAR_HEIGHT - 16) / 2;
+            Toolbar::ToolbarRenderer::drawSeparator(painter, sepX, sepY, 16, styleConfig);
         }
     }
 
@@ -232,9 +223,9 @@ void PinWindowToolbar::paintEvent(QPaintEvent *event)
     }
 }
 
-void PinWindowToolbar::drawButton(QPainter &painter, int index)
+void WindowedToolbar::drawButton(QPainter &painter, int index)
 {
-    ToolbarStyleConfig styleConfig = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
+    const ToolbarStyleConfig& styleConfig = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
     const ButtonConfig &config = m_buttons[index];
     QRect btnRect = m_buttonRects[index];
     bool isHovered = (index == m_hoveredButton);
@@ -248,15 +239,9 @@ void PinWindowToolbar::drawButton(QPainter &painter, int index)
         isDisabled = true;
     }
 
-    // Draw active/hover background
-    if (isActive) {
-        painter.setPen(Qt::NoPen);
-        painter.setBrush(styleConfig.activeBackgroundColor);
-        painter.drawRoundedRect(btnRect.adjusted(2, 2, -2, -2), 4, 4);
-    } else if (isHovered && !isDisabled) {
-        painter.setPen(Qt::NoPen);
-        painter.setBrush(styleConfig.hoverBackgroundColor);
-        painter.drawRoundedRect(btnRect.adjusted(2, 2, -2, -2), 4, 4);
+    // Draw active/hover background using shared renderer
+    if (!isDisabled) {
+        Toolbar::ToolbarRenderer::drawButtonBackground(painter, btnRect, isActive, isHovered, styleConfig);
     }
 
     // Determine icon color
@@ -270,11 +255,11 @@ void PinWindowToolbar::drawButton(QPainter &painter, int index)
         iconColor = Toolbar::ToolbarRenderer::getIconColor(config, false, isHovered, styleConfig);
     }
 
-    // Render icon (padding 8 matches RegionSelector's ToolbarWidget)
+    // Render icon (padding 8 matches RegionSelector's ToolbarCore)
     IconRenderer::instance().renderIcon(painter, btnRect, config.iconKey, iconColor, 8);
 }
 
-void PinWindowToolbar::drawTooltip(QPainter &painter)
+void WindowedToolbar::drawTooltip(QPainter &painter)
 {
     ToolbarStyleConfig styleConfig = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
     QString tooltip = m_buttons[m_hoveredButton].tooltip;
@@ -316,7 +301,7 @@ void PinWindowToolbar::drawTooltip(QPainter &painter)
     painter.drawText(textRect, Qt::AlignCenter, tooltip);
 }
 
-int PinWindowToolbar::buttonAtPosition(const QPoint &pos) const
+int WindowedToolbar::buttonAtPosition(const QPoint &pos) const
 {
     for (int i = 0; i < m_buttonRects.size(); ++i) {
         if (!m_buttonRects[i].isNull() && m_buttonRects[i].contains(pos)) {
@@ -326,7 +311,7 @@ int PinWindowToolbar::buttonAtPosition(const QPoint &pos) const
     return -1;
 }
 
-void PinWindowToolbar::mousePressEvent(QMouseEvent *event)
+void WindowedToolbar::mousePressEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton) {
         int btnIndex = buttonAtPosition(event->pos());
@@ -377,13 +362,15 @@ void PinWindowToolbar::mousePressEvent(QMouseEvent *event)
         m_isDragging = true;
         m_dragStartPos = event->globalPosition().toPoint();
         m_dragStartWidgetPos = pos();
+        // Push drag cursor
+        CursorManager::instance().pushCursorForWidget(this, CursorContext::Drag, Qt::ClosedHandCursor);
     }
     QWidget::mousePressEvent(event);
 }
 
-void PinWindowToolbar::enterEvent(QEnterEvent *event)
+void WindowedToolbar::enterEvent(QEnterEvent *event)
 {
-    // Set initial cursor and hover state when mouse enters
+    // Update hover state when mouse enters
     auto& cm = CursorManager::instance();
     int hovered = buttonAtPosition(event->position().toPoint());
 
@@ -392,22 +379,17 @@ void PinWindowToolbar::enterEvent(QEnterEvent *event)
         update();
     }
 
-    if (hovered >= 0) {
-        cm.pushCursorForWidget(this, CursorContext::Hover, Qt::PointingHandCursor);
-    } else {
-        cm.pushCursorForWidget(this, CursorContext::Hover, Qt::OpenHandCursor);
-    }
+    // Use ArrowCursor for toolbar hover
+    cm.pushCursorForWidget(this, CursorContext::Hover, Qt::ArrowCursor);
     QWidget::enterEvent(event);
 }
 
-void PinWindowToolbar::mouseMoveEvent(QMouseEvent *event)
+void WindowedToolbar::mouseMoveEvent(QMouseEvent *event)
 {
-    auto& cm = CursorManager::instance();
-
     if (m_isDragging) {
         QPoint delta = event->globalPosition().toPoint() - m_dragStartPos;
         move(m_dragStartWidgetPos + delta);
-        cm.pushCursorForWidget(this, CursorContext::Drag, Qt::ClosedHandCursor);
+        // Drag cursor is already pushed in mousePressEvent
         QWidget::mouseMoveEvent(event);
         return;
     }
@@ -419,57 +401,55 @@ void PinWindowToolbar::mouseMoveEvent(QMouseEvent *event)
         update();
     }
 
-    // Pop drag cursor if we're not dragging
-    cm.popCursorForWidget(this, CursorContext::Drag);
-
-    // Set hover cursor
-    if (newHovered >= 0) {
-        cm.pushCursorForWidget(this, CursorContext::Hover, Qt::PointingHandCursor);
-    } else {
-        cm.pushCursorForWidget(this, CursorContext::Hover, Qt::OpenHandCursor);
-    }
+    // Cursor is already set in enterEvent, no need to push on every move
     QWidget::mouseMoveEvent(event);
 }
 
-void PinWindowToolbar::mouseReleaseEvent(QMouseEvent *event)
+void WindowedToolbar::mouseReleaseEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton) {
-        m_isDragging = false;
+        if (m_isDragging) {
+            m_isDragging = false;
+            // Pop drag cursor and restore hover cursor
+            auto& cm = CursorManager::instance();
+            cm.popCursorForWidget(this, CursorContext::Drag);
+        }
     }
     QWidget::mouseReleaseEvent(event);
 }
 
-void PinWindowToolbar::leaveEvent(QEvent *event)
+void WindowedToolbar::leaveEvent(QEvent *event)
 {
     if (m_hoveredButton >= 0) {
         m_hoveredButton = -1;
         update();
     }
-    CursorManager::instance().clearAllForWidget(this);
+    // Pop hover cursor instead of clearing entire stack
+    CursorManager::instance().popCursorForWidget(this, CursorContext::Hover);
     emit cursorRestoreRequested();
     QWidget::leaveEvent(event);
 }
 
-void PinWindowToolbar::setAssociatedWidgets(QWidget *window, QWidget *subToolbar)
+void WindowedToolbar::setAssociatedWidgets(QWidget *window, QWidget *subToolbar)
 {
     m_associatedWindow = window;
     m_subToolbar = subToolbar;
 }
 
-void PinWindowToolbar::showEvent(QShowEvent *event)
+void WindowedToolbar::showEvent(QShowEvent *event)
 {
     QWidget::showEvent(event);
     qApp->installEventFilter(this);
     m_showTime.start();
 }
 
-void PinWindowToolbar::hideEvent(QHideEvent *event)
+void WindowedToolbar::hideEvent(QHideEvent *event)
 {
     qApp->removeEventFilter(this);
     QWidget::hideEvent(event);
 }
 
-bool PinWindowToolbar::eventFilter(QObject *obj, QEvent *event)
+bool WindowedToolbar::eventFilter(QObject *obj, QEvent *event)
 {
     // Ignore during first 300ms to prevent accidental close
     if (m_showTime.isValid() && m_showTime.elapsed() < 300) {
@@ -498,7 +478,7 @@ bool PinWindowToolbar::eventFilter(QObject *obj, QEvent *event)
 
         // Click is outside - request close
         emit closeRequested();
-        return true;
+        return false;  // Let the event propagate to its actual target
     }
 
     return QWidget::eventFilter(obj, event);

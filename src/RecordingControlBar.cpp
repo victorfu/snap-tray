@@ -963,7 +963,7 @@ void RecordingControlBar::mouseMoveEvent(QMouseEvent *event)
             m_hoveredButton = newHovered;
             auto& cm = CursorManager::instance();
             if (m_hoveredButton != ButtonNone) {
-                cm.pushCursorForWidget(this, CursorContext::Hover, Qt::PointingHandCursor);
+                cm.pushCursorForWidget(this, CursorContext::Hover, Qt::ArrowCursor);
             } else {
                 cm.popCursorForWidget(this, CursorContext::Hover);
             }
@@ -995,7 +995,7 @@ void RecordingControlBar::mouseReleaseEvent(QMouseEvent *event)
             int button = buttonAtPosition(event->pos());
             auto& cm = CursorManager::instance();
             if (button != ButtonNone) {
-                cm.pushCursorForWidget(this, CursorContext::Hover, Qt::PointingHandCursor);
+                cm.pushCursorForWidget(this, CursorContext::Hover, Qt::ArrowCursor);
             } else {
                 cm.popCursorForWidget(this, CursorContext::Hover);
             }

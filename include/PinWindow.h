@@ -29,8 +29,8 @@ class ICaptureEngine;
 class OCRManager;
 class PinWindowManager;
 class UIIndicators;
-class PinWindowToolbar;
-class PinWindowSubToolbar;
+class WindowedToolbar;
+class WindowedSubToolbar;
 class AnnotationLayer;
 class ToolManager;
 class InlineTextEditor;
@@ -275,8 +275,8 @@ private:
     int m_baseCornerRadius = 0;
 
     // Toolbar and annotation members
-    PinWindowToolbar* m_toolbar = nullptr;
-    PinWindowSubToolbar* m_subToolbar = nullptr;
+    WindowedToolbar* m_toolbar = nullptr;
+    WindowedSubToolbar* m_subToolbar = nullptr;
     AnnotationLayer* m_annotationLayer = nullptr;
     ToolManager* m_toolManager = nullptr;
     InlineTextEditor* m_textEditor = nullptr;

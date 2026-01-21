@@ -1,5 +1,5 @@
-#ifndef TOOLBARWIDGET_H
-#define TOOLBARWIDGET_H
+#ifndef TOOLBARCORE_H
+#define TOOLBARCORE_H
 
 #include <QObject>
 #include <QVector>
@@ -19,7 +19,7 @@ class QPainter;
  * Provides toolbar background rendering with gradient/shadow, button management,
  * hover states, hit-testing, and tooltip display.
  */
-class ToolbarWidget : public QObject
+class ToolbarCore : public QObject
 {
     Q_OBJECT
 
@@ -36,7 +36,7 @@ public:
      */
     using IconColorProvider = std::function<QColor(int buttonId, bool isActive, bool isHovered)>;
 
-    explicit ToolbarWidget(QObject* parent = nullptr);
+    explicit ToolbarCore(QObject* parent = nullptr);
 
     /**
      * @brief Set the button configurations.
@@ -171,4 +171,4 @@ private:
     static const int SEPARATOR_WIDTH = 4;
 };
 
-#endif // TOOLBARWIDGET_H
+#endif // TOOLBARCORE_H

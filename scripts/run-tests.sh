@@ -17,7 +17,7 @@ fi
 
 # Build test targets
 echo "Building tests..."
-cmake --build build --target ColorAndWidthWidget_State ColorAndWidthWidget_Signals ColorAndWidthWidget_HitTest ColorAndWidthWidget_Events
+cmake --build build --target ToolOptionsPanel_State ToolOptionsPanel_Signals ToolOptionsPanel_HitTest ToolOptionsPanel_Events
 
 # Run tests
 echo ""

@@ -7,7 +7,7 @@
 #include <QPointer>
 
 class QScreen;
-class ToolbarWidget;
+class ToolbarCore;
 
 class RecordingRegionSelector : public QWidget
 {
@@ -61,8 +61,8 @@ private:
     bool m_isSelecting;
     bool m_selectionComplete;
 
-    // Toolbar using ToolbarWidget
-    ToolbarWidget *m_toolbar;
+    // Toolbar using ToolbarCore
+    ToolbarCore *m_toolbar;
 };
 
 #endif // RECORDINGREGIONSELECTOR_H

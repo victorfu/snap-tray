@@ -1,7 +1,9 @@
-#include "pinwindow/PinWindowSubToolbar.h"
-#include "ColorAndWidthWidget.h"
+#include "toolbar/WindowedSubToolbar.h"
+#include "toolbar/ToolOptionsPanel.h"
 #include "EmojiPicker.h"
-#include "pinwindow/PinWindowToolbar.h"
+#include "toolbar/WindowedToolbar.h"
+#include "tools/ToolSectionConfig.h"
+#include "tools/ToolId.h"
 #include "cursor/CursorManager.h"
 
 #include <QPainter>
@@ -13,7 +15,28 @@
 // Reserve space above content for tooltips (AutoBlurSection draws tooltip above button)
 static constexpr int TOOLTIP_HEIGHT = 28;
 
-PinWindowSubToolbar::PinWindowSubToolbar(QWidget *parent)
+namespace {
+
+// Map WindowedToolbar::ButtonId to ToolId for section configuration
+ToolId buttonIdToToolId(int buttonId)
+{
+    using ButtonId = WindowedToolbar::ButtonId;
+    switch (buttonId) {
+        case ButtonId::ButtonPencil:    return ToolId::Pencil;
+        case ButtonId::ButtonMarker:    return ToolId::Marker;
+        case ButtonId::ButtonArrow:     return ToolId::Arrow;
+        case ButtonId::ButtonShape:     return ToolId::Shape;
+        case ButtonId::ButtonText:      return ToolId::Text;
+        case ButtonId::ButtonMosaic:    return ToolId::Mosaic;
+        case ButtonId::ButtonStepBadge: return ToolId::StepBadge;
+        case ButtonId::ButtonEmoji:     return ToolId::EmojiSticker;
+        default:                        return ToolId::Selection; // No sub-toolbar
+    }
+}
+
+} // anonymous namespace
+
+WindowedSubToolbar::WindowedSubToolbar(QWidget *parent)
     : QWidget(parent)
 {
     setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
@@ -24,10 +47,11 @@ PinWindowSubToolbar::PinWindowSubToolbar(QWidget *parent)
     setAttribute(Qt::WA_MacAlwaysShowToolWindow);
 #endif
     setMouseTracking(true);
+    setCursor(Qt::ArrowCursor);
 
     // Create the color and width widget
-    // Let ColorAndWidthWidget draw its own glass panel background (like RegionSelector)
-    m_colorAndWidthWidget = new ColorAndWidthWidget(this);
+    // Let ToolOptionsPanel draw its own glass panel background (like RegionSelector)
+    m_colorAndWidthWidget = new ToolOptionsPanel(this);
 
     // Create emoji picker
     m_emojiPicker = new EmojiPicker(this);
@@ -38,64 +62,64 @@ PinWindowSubToolbar::PinWindowSubToolbar(QWidget *parent)
     QWidget::hide();
 }
 
-PinWindowSubToolbar::~PinWindowSubToolbar()
+WindowedSubToolbar::~WindowedSubToolbar()
 {
 }
 
-void PinWindowSubToolbar::setupConnections()
+void WindowedSubToolbar::setupConnections()
 {
     // Color/width signals
-    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::colorSelected,
-            this, &PinWindowSubToolbar::colorSelected);
-    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::customColorPickerRequested,
-            this, &PinWindowSubToolbar::customColorPickerRequested);
-    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::widthChanged,
-            this, &PinWindowSubToolbar::widthChanged);
+    connect(m_colorAndWidthWidget, &ToolOptionsPanel::colorSelected,
+            this, &WindowedSubToolbar::colorSelected);
+    connect(m_colorAndWidthWidget, &ToolOptionsPanel::customColorPickerRequested,
+            this, &WindowedSubToolbar::customColorPickerRequested);
+    connect(m_colorAndWidthWidget, &ToolOptionsPanel::widthChanged,
+            this, &WindowedSubToolbar::widthChanged);
 
     // Shape signals
-    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::shapeTypeChanged,
-            this, &PinWindowSubToolbar::shapeTypeChanged);
-    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::shapeFillModeChanged,
-            this, &PinWindowSubToolbar::shapeFillModeChanged);
+    connect(m_colorAndWidthWidget, &ToolOptionsPanel::shapeTypeChanged,
+            this, &WindowedSubToolbar::shapeTypeChanged);
+    connect(m_colorAndWidthWidget, &ToolOptionsPanel::shapeFillModeChanged,
+            this, &WindowedSubToolbar::shapeFillModeChanged);
 
     // Arrow signals
-    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::arrowStyleChanged,
-            this, &PinWindowSubToolbar::arrowStyleChanged);
-    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::lineStyleChanged,
-            this, &PinWindowSubToolbar::lineStyleChanged);
+    connect(m_colorAndWidthWidget, &ToolOptionsPanel::arrowStyleChanged,
+            this, &WindowedSubToolbar::arrowStyleChanged);
+    connect(m_colorAndWidthWidget, &ToolOptionsPanel::lineStyleChanged,
+            this, &WindowedSubToolbar::lineStyleChanged);
 
     // Step badge signals
-    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::stepBadgeSizeChanged,
-            this, &PinWindowSubToolbar::stepBadgeSizeChanged);
+    connect(m_colorAndWidthWidget, &ToolOptionsPanel::stepBadgeSizeChanged,
+            this, &WindowedSubToolbar::stepBadgeSizeChanged);
 
     // Text signals
-    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::boldToggled,
-            this, &PinWindowSubToolbar::boldToggled);
-    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::italicToggled,
-            this, &PinWindowSubToolbar::italicToggled);
-    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::underlineToggled,
-            this, &PinWindowSubToolbar::underlineToggled);
-    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::fontSizeDropdownRequested,
-            this, &PinWindowSubToolbar::fontSizeDropdownRequested);
-    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::fontFamilyDropdownRequested,
-            this, &PinWindowSubToolbar::fontFamilyDropdownRequested);
+    connect(m_colorAndWidthWidget, &ToolOptionsPanel::boldToggled,
+            this, &WindowedSubToolbar::boldToggled);
+    connect(m_colorAndWidthWidget, &ToolOptionsPanel::italicToggled,
+            this, &WindowedSubToolbar::italicToggled);
+    connect(m_colorAndWidthWidget, &ToolOptionsPanel::underlineToggled,
+            this, &WindowedSubToolbar::underlineToggled);
+    connect(m_colorAndWidthWidget, &ToolOptionsPanel::fontSizeDropdownRequested,
+            this, &WindowedSubToolbar::fontSizeDropdownRequested);
+    connect(m_colorAndWidthWidget, &ToolOptionsPanel::fontFamilyDropdownRequested,
+            this, &WindowedSubToolbar::fontFamilyDropdownRequested);
 
     // Emoji signals
     connect(m_emojiPicker, &EmojiPicker::emojiSelected,
-            this, &PinWindowSubToolbar::emojiSelected);
+            this, &WindowedSubToolbar::emojiSelected);
 
     // Auto blur signal
-    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::autoBlurRequested,
-            this, &PinWindowSubToolbar::autoBlurRequested);
+    connect(m_colorAndWidthWidget, &ToolOptionsPanel::autoBlurRequested,
+            this, &WindowedSubToolbar::autoBlurRequested);
 
     // Dropdown state changes - resize window to accommodate dropdown
-    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::dropdownStateChanged,
-            this, &PinWindowSubToolbar::onDropdownStateChanged);
+    connect(m_colorAndWidthWidget, &ToolOptionsPanel::dropdownStateChanged,
+            this, &WindowedSubToolbar::onDropdownStateChanged);
 }
 
-void PinWindowSubToolbar::positionBelow(const QRect &toolbarRect)
+void WindowedSubToolbar::positionBelow(const QRect &toolbarRect)
 {
-    qDebug() << "PinWindowSubToolbar::positionBelow - toolbarRect=" << toolbarRect;
+    qDebug() << "WindowedSubToolbar::positionBelow - toolbarRect=" << toolbarRect;
 
     QScreen *screen = QGuiApplication::screenAt(toolbarRect.center());
     if (!screen) {
@@ -103,7 +127,7 @@ void PinWindowSubToolbar::positionBelow(const QRect &toolbarRect)
     }
 
     QRect screenGeom = screen->geometry();
-    qDebug() << "PinWindowSubToolbar: screenGeom=" << screenGeom << "mySize=" << size();
+    qDebug() << "WindowedSubToolbar: screenGeom=" << screenGeom << "mySize=" << size();
 
     // Calculate tooltip space - if AutoBlur section is visible, we reserved space above content
     int tooltipSpace = (m_colorAndWidthWidget && m_colorAndWidthWidget->showAutoBlurSection())
@@ -122,97 +146,50 @@ void PinWindowSubToolbar::positionBelow(const QRect &toolbarRect)
     // Keep on screen horizontally
     x = qBound(screenGeom.left() + 10, x, screenGeom.right() - width() - 10);
 
-    qDebug() << "PinWindowSubToolbar: moving to x=" << x << "y=" << y << "tooltipSpace=" << tooltipSpace;
+    qDebug() << "WindowedSubToolbar: moving to x=" << x << "y=" << y << "tooltipSpace=" << tooltipSpace;
     move(x, y);
 }
 
-void PinWindowSubToolbar::showForTool(int toolId)
+void WindowedSubToolbar::showForTool(int buttonId)
 {
-    qDebug() << "PinWindowSubToolbar::showForTool - toolId:" << toolId;
+    qDebug() << "WindowedSubToolbar::showForTool - buttonId:" << buttonId;
 
-    using ButtonId = PinWindowToolbar::ButtonId;
+    using ButtonId = WindowedToolbar::ButtonId;
 
-    // Reset ALL sections first
-    m_colorAndWidthWidget->setShowColorSection(false);
-    m_colorAndWidthWidget->setShowWidthSection(false);
-    m_colorAndWidthWidget->setShowTextSection(false);
-    m_colorAndWidthWidget->setShowArrowStyleSection(false);
-    m_colorAndWidthWidget->setShowLineStyleSection(false);
-    m_colorAndWidthWidget->setShowShapeSection(false);
-    m_colorAndWidthWidget->setShowSizeSection(false);
-    m_colorAndWidthWidget->setShowAutoBlurSection(false);
+    // Reset emoji picker state
     m_showingEmojiPicker = false;
     m_emojiPicker->setVisible(false);
 
-    bool showWidget = false;
-
-    switch (toolId) {
-    case ButtonId::ButtonPencil:
-        m_colorAndWidthWidget->setShowColorSection(true);
-        m_colorAndWidthWidget->setShowWidthSection(true);
-        m_colorAndWidthWidget->setShowLineStyleSection(true);
-        showWidget = true;
-        break;
-
-    case ButtonId::ButtonMarker:
-        // Marker only needs color, no width (matches RegionSelector kToolCapabilities)
-        m_colorAndWidthWidget->setShowColorSection(true);
-        showWidget = true;
-        break;
-
-    case ButtonId::ButtonArrow:
-        m_colorAndWidthWidget->setShowColorSection(true);
-        m_colorAndWidthWidget->setShowWidthSection(true);
-        m_colorAndWidthWidget->setShowArrowStyleSection(true);
-        m_colorAndWidthWidget->setShowLineStyleSection(true);
-        showWidget = true;
-        break;
-
-    case ButtonId::ButtonShape:
-        m_colorAndWidthWidget->setShowColorSection(true);
-        m_colorAndWidthWidget->setShowWidthSection(true);
-        m_colorAndWidthWidget->setShowShapeSection(true);
-        showWidget = true;
-        break;
-
-    case ButtonId::ButtonText:
-        m_colorAndWidthWidget->setShowColorSection(true);
-        m_colorAndWidthWidget->setShowTextSection(true);
-        showWidget = true;
-        break;
-
-    case ButtonId::ButtonMosaic:
-        // Use regular width section (same as Arrow/Shape), not slider
-        m_colorAndWidthWidget->setShowWidthSection(true);
-        m_colorAndWidthWidget->setShowAutoBlurSection(true);
-        showWidget = true;
-        break;
-
-    case ButtonId::ButtonStepBadge:
-        m_colorAndWidthWidget->setShowColorSection(true);
-        m_colorAndWidthWidget->setShowSizeSection(true);
-        showWidget = true;
-        break;
-
-    case ButtonId::ButtonEmoji:
+    // Handle special cases first
+    if (buttonId == ButtonId::ButtonEmoji) {
         m_showingEmojiPicker = true;
         m_emojiPicker->setVisible(true);
-        showWidget = true;
-        break;
-
-    case ButtonId::ButtonEraser:
-        // Eraser has no sub-toolbar in RegionSelector (uses dynamic cursor only)
-        qDebug() << "PinWindowSubToolbar: Eraser has no sub-toolbar, hiding";
-        QWidget::hide();
-        return;
-
-    default:
-        qDebug() << "PinWindowSubToolbar: unknown toolId, hiding";
+        // Apply empty config to hide ToolOptionsPanel sections
+        ToolSectionConfig{}.applyTo(m_colorAndWidthWidget);
+    }
+    else if (buttonId == ButtonId::ButtonEraser) {
+        // Eraser has no sub-toolbar (uses dynamic cursor only)
+        qDebug() << "WindowedSubToolbar: Eraser has no sub-toolbar, hiding";
         QWidget::hide();
         return;
     }
+    else {
+        // Map ButtonId to ToolId and apply data-driven configuration
+        ToolId toolId = buttonIdToToolId(buttonId);
+        ToolSectionConfig config = ToolSectionConfig::forTool(toolId);
 
-    qDebug() << "PinWindowSubToolbar: showWidget=" << showWidget;
+        if (!config.hasAnySectionEnabled()) {
+            // Tool has no sub-toolbar sections
+            qDebug() << "WindowedSubToolbar: tool has no sections, hiding";
+            QWidget::hide();
+            return;
+        }
+
+        config.applyTo(m_colorAndWidthWidget);
+    }
+
+    bool showWidget = m_showingEmojiPicker || ToolSectionConfig::forTool(buttonIdToToolId(buttonId)).hasAnySectionEnabled();
+    qDebug() << "WindowedSubToolbar: showWidget=" << showWidget;
 
     if (showWidget) {
         // Force widgets to recalculate their size
@@ -225,34 +202,34 @@ void PinWindowSubToolbar::showForTool(int toolId)
             m_colorAndWidthWidget->updatePosition(QRect(0, 0, 0, 0), false, 0);
         }
 
-        qDebug() << "PinWindowSubToolbar: calling updateSize()";
+        qDebug() << "WindowedSubToolbar: calling updateSize()";
         updateSize();
-        qDebug() << "PinWindowSubToolbar: size after updateSize=" << size();
+        qDebug() << "WindowedSubToolbar: size after updateSize=" << size();
         QWidget::show();
         raise();
-        qDebug() << "PinWindowSubToolbar: shown, isVisible=" << isVisible()
+        qDebug() << "WindowedSubToolbar: shown, isVisible=" << isVisible()
                  << "geometry=" << geometry()
                  << "frameGeometry=" << frameGeometry();
     }
 }
 
-void PinWindowSubToolbar::hide()
+void WindowedSubToolbar::hide()
 {
     m_emojiPicker->setVisible(false);
     m_showingEmojiPicker = false;
     QWidget::hide();
 }
 
-void PinWindowSubToolbar::updateSize()
+void WindowedSubToolbar::updateSize()
 {
-    qDebug() << "PinWindowSubToolbar::updateSize - showingEmojiPicker=" << m_showingEmojiPicker;
+    qDebug() << "WindowedSubToolbar::updateSize - showingEmojiPicker=" << m_showingEmojiPicker;
     if (m_showingEmojiPicker) {
         // EmojiPicker has its own padding, no extra margin needed
         QRect emojiRect = m_emojiPicker->boundingRect();
-        qDebug() << "PinWindowSubToolbar: emojiRect=" << emojiRect;
+        qDebug() << "WindowedSubToolbar: emojiRect=" << emojiRect;
         setFixedSize(emojiRect.width(), emojiRect.height());
     } else {
-        // ColorAndWidthWidget has its own padding, no extra margin needed (like RegionSelector)
+        // ToolOptionsPanel has its own padding, no extra margin needed (like RegionSelector)
         QRect widgetRect = m_colorAndWidthWidget->boundingRect();
         // Dropdowns expand DOWNWARD, include dropdown height at bottom of window
         int dropdownHeight = m_colorAndWidthWidget->activeDropdownHeight();
@@ -261,23 +238,23 @@ void PinWindowSubToolbar::updateSize()
         // Reserve extra width for tooltip text ("Auto Blur Faces" is ~120px)
         int minWidth = m_colorAndWidthWidget->showAutoBlurSection() ? 130 : 0;
         int finalWidth = qMax(widgetRect.width(), minWidth);
-        qDebug() << "PinWindowSubToolbar: colorAndWidthWidget boundingRect=" << widgetRect
+        qDebug() << "WindowedSubToolbar: colorAndWidthWidget boundingRect=" << widgetRect
                  << "dropdownHeight=" << dropdownHeight
                  << "tooltipSpace=" << tooltipSpace
                  << "finalWidth=" << finalWidth;
         setFixedSize(finalWidth, widgetRect.height() + dropdownHeight + tooltipSpace);
     }
-    qDebug() << "PinWindowSubToolbar: final size=" << size();
+    qDebug() << "WindowedSubToolbar: final size=" << size();
 }
 
-void PinWindowSubToolbar::onDropdownStateChanged()
+void WindowedSubToolbar::onDropdownStateChanged()
 {
     // Dropdowns expand downward - just resize, no position change needed
     updateSize();
     update();
 }
 
-void PinWindowSubToolbar::paintEvent(QPaintEvent *event)
+void WindowedSubToolbar::paintEvent(QPaintEvent *event)
 {
     Q_UNUSED(event);
 
@@ -291,7 +268,7 @@ void PinWindowSubToolbar::paintEvent(QPaintEvent *event)
         painter.translate(-emojiRect.x(), -emojiRect.y());
         m_emojiPicker->draw(painter);
     } else {
-        // ColorAndWidthWidget draws its own glass panel background (like RegionSelector)
+        // ToolOptionsPanel draws its own glass panel background (like RegionSelector)
         // Reserve space for tooltip ABOVE content
         int tooltipSpace = m_colorAndWidthWidget->showAutoBlurSection() ? TOOLTIP_HEIGHT : 0;
         // Translate to compensate for boundingRect position and add tooltip space
@@ -301,7 +278,7 @@ void PinWindowSubToolbar::paintEvent(QPaintEvent *event)
     }
 }
 
-void PinWindowSubToolbar::mousePressEvent(QMouseEvent *event)
+void WindowedSubToolbar::mousePressEvent(QMouseEvent *event)
 {
     if (m_showingEmojiPicker) {
         // Convert window coords to widget coords (reverse of paint translation)
@@ -324,19 +301,18 @@ void PinWindowSubToolbar::mousePressEvent(QMouseEvent *event)
     QWidget::mousePressEvent(event);
 }
 
-void PinWindowSubToolbar::enterEvent(QEnterEvent *event)
+void WindowedSubToolbar::enterEvent(QEnterEvent *event)
 {
-    // Set cursor immediately when mouse enters
-    CursorManager::instance().pushCursorForWidget(this, CursorContext::Hover, Qt::PointingHandCursor);
+    // Use ArrowCursor for toolbar hover
+    CursorManager::instance().pushCursorForWidget(this, CursorContext::Hover, Qt::ArrowCursor);
     QWidget::enterEvent(event);
 }
 
-void PinWindowSubToolbar::mouseMoveEvent(QMouseEvent *event)
+void WindowedSubToolbar::mouseMoveEvent(QMouseEvent *event)
 {
     bool pressed = event->buttons() & Qt::LeftButton;
 
-    // Keep pointing hand cursor for interactive elements
-    CursorManager::instance().pushCursorForWidget(this, CursorContext::Hover, Qt::PointingHandCursor);
+    // Cursor is already set in enterEvent, no need to push on every move
 
     if (m_showingEmojiPicker) {
         // Convert window coords to widget coords (reverse of paint translation)
@@ -357,7 +333,7 @@ void PinWindowSubToolbar::mouseMoveEvent(QMouseEvent *event)
     QWidget::mouseMoveEvent(event);
 }
 
-void PinWindowSubToolbar::mouseReleaseEvent(QMouseEvent *event)
+void WindowedSubToolbar::mouseReleaseEvent(QMouseEvent *event)
 {
     if (!m_showingEmojiPicker) {
         // Convert window coords to widget coords (reverse of paint translation)
@@ -372,7 +348,7 @@ void PinWindowSubToolbar::mouseReleaseEvent(QMouseEvent *event)
     QWidget::mouseReleaseEvent(event);
 }
 
-void PinWindowSubToolbar::wheelEvent(QWheelEvent *event)
+void WindowedSubToolbar::wheelEvent(QWheelEvent *event)
 {
     if (!m_showingEmojiPicker) {
         int delta = event->angleDelta().y();
@@ -384,14 +360,15 @@ void PinWindowSubToolbar::wheelEvent(QWheelEvent *event)
     QWidget::wheelEvent(event);
 }
 
-void PinWindowSubToolbar::leaveEvent(QEvent *event)
+void WindowedSubToolbar::leaveEvent(QEvent *event)
 {
     if (m_showingEmojiPicker) {
         m_emojiPicker->updateHoveredEmoji(QPoint(-1, -1));
     } else {
         m_colorAndWidthWidget->updateHovered(QPoint(-1, -1));
     }
-    CursorManager::instance().clearAllForWidget(this);
+    // Pop hover cursor instead of clearing entire stack
+    CursorManager::instance().popCursorForWidget(this, CursorContext::Hover);
     emit cursorRestoreRequested();
     update();
     QWidget::leaveEvent(event);

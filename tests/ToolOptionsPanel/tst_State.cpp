@@ -1,7 +1,7 @@
 #include <QtTest/QtTest>
-#include "ColorAndWidthWidget.h"
+#include "toolbar/ToolOptionsPanel.h"
 
-class TestColorAndWidthWidgetState : public QObject
+class TestToolOptionsPanelState : public QObject
 {
     Q_OBJECT
 
@@ -52,23 +52,23 @@ private slots:
     void testSetVisible();
 
 private:
-    ColorAndWidthWidget* m_widget = nullptr;
+    ToolOptionsPanel* m_widget = nullptr;
 };
 
-void TestColorAndWidthWidgetState::initTestCase()
+void TestToolOptionsPanelState::initTestCase()
 {
 }
 
-void TestColorAndWidthWidgetState::cleanupTestCase()
+void TestToolOptionsPanelState::cleanupTestCase()
 {
 }
 
-void TestColorAndWidthWidgetState::init()
+void TestToolOptionsPanelState::init()
 {
-    m_widget = new ColorAndWidthWidget();
+    m_widget = new ToolOptionsPanel();
 }
 
-void TestColorAndWidthWidgetState::cleanup()
+void TestToolOptionsPanelState::cleanup()
 {
     delete m_widget;
     m_widget = nullptr;
@@ -78,27 +78,27 @@ void TestColorAndWidthWidgetState::cleanup()
 // Default State Tests
 // ============================================================================
 
-void TestColorAndWidthWidgetState::testDefaultConstructorState()
+void TestToolOptionsPanelState::testDefaultConstructorState()
 {
     QVERIFY(m_widget != nullptr);
 }
 
-void TestColorAndWidthWidgetState::testDefaultColor()
+void TestToolOptionsPanelState::testDefaultColor()
 {
     QCOMPARE(m_widget->currentColor(), QColor(Qt::red));
 }
 
-void TestColorAndWidthWidgetState::testDefaultWidth()
+void TestToolOptionsPanelState::testDefaultWidth()
 {
     QCOMPARE(m_widget->currentWidth(), 3);
 }
 
-void TestColorAndWidthWidgetState::testDefaultVisibility()
+void TestToolOptionsPanelState::testDefaultVisibility()
 {
     QCOMPARE(m_widget->isVisible(), false);
 }
 
-void TestColorAndWidthWidgetState::testDefaultTextFormatting()
+void TestToolOptionsPanelState::testDefaultTextFormatting()
 {
     // Bold defaults to true (as per implementation)
     QCOMPARE(m_widget->isBold(), true);
@@ -107,13 +107,13 @@ void TestColorAndWidthWidgetState::testDefaultTextFormatting()
     QCOMPARE(m_widget->fontSize(), 16);
 }
 
-void TestColorAndWidthWidgetState::testDefaultArrowStyle()
+void TestToolOptionsPanelState::testDefaultArrowStyle()
 {
     QCOMPARE(m_widget->arrowStyle(), LineEndStyle::EndArrow);
     QCOMPARE(m_widget->showArrowStyleSection(), false);
 }
 
-void TestColorAndWidthWidgetState::testDefaultShapeSettings()
+void TestToolOptionsPanelState::testDefaultShapeSettings()
 {
     QCOMPARE(m_widget->shapeType(), ShapeType::Rectangle);
     QCOMPARE(m_widget->shapeFillMode(), ShapeFillMode::Outline);
@@ -124,14 +124,14 @@ void TestColorAndWidthWidgetState::testDefaultShapeSettings()
 // Color Tests
 // ============================================================================
 
-void TestColorAndWidthWidgetState::testSetCurrentColor()
+void TestToolOptionsPanelState::testSetCurrentColor()
 {
     QColor testColor(Qt::blue);
     m_widget->setCurrentColor(testColor);
     QCOMPARE(m_widget->currentColor(), testColor);
 }
 
-void TestColorAndWidthWidgetState::testSetColors()
+void TestToolOptionsPanelState::testSetColors()
 {
     QVector<QColor> colors = { Qt::red, Qt::green, Qt::blue };
     m_widget->setColors(colors);
@@ -144,13 +144,13 @@ void TestColorAndWidthWidgetState::testSetColors()
 // Width Tests
 // ============================================================================
 
-void TestColorAndWidthWidgetState::testSetCurrentWidth()
+void TestToolOptionsPanelState::testSetCurrentWidth()
 {
     m_widget->setCurrentWidth(10);
     QCOMPARE(m_widget->currentWidth(), 10);
 }
 
-void TestColorAndWidthWidgetState::testSetCurrentWidthClamping()
+void TestToolOptionsPanelState::testSetCurrentWidthClamping()
 {
     // Default range is 1-20
     m_widget->setCurrentWidth(0);  // Below minimum
@@ -160,7 +160,7 @@ void TestColorAndWidthWidgetState::testSetCurrentWidthClamping()
     QCOMPARE(m_widget->currentWidth(), 20);
 }
 
-void TestColorAndWidthWidgetState::testSetWidthRange()
+void TestToolOptionsPanelState::testSetWidthRange()
 {
     m_widget->setWidthRange(5, 50);
     m_widget->setCurrentWidth(25);
@@ -174,7 +174,7 @@ void TestColorAndWidthWidgetState::testSetWidthRange()
     QCOMPARE(m_widget->currentWidth(), 50);
 }
 
-void TestColorAndWidthWidgetState::testSetWidthRangeAdjustsCurrentWidth()
+void TestToolOptionsPanelState::testSetWidthRangeAdjustsCurrentWidth()
 {
     m_widget->setCurrentWidth(15);
     QCOMPARE(m_widget->currentWidth(), 15);
@@ -188,7 +188,7 @@ void TestColorAndWidthWidgetState::testSetWidthRangeAdjustsCurrentWidth()
 // Text Formatting Tests
 // ============================================================================
 
-void TestColorAndWidthWidgetState::testSetBold()
+void TestToolOptionsPanelState::testSetBold()
 {
     m_widget->setBold(false);
     QCOMPARE(m_widget->isBold(), false);
@@ -197,7 +197,7 @@ void TestColorAndWidthWidgetState::testSetBold()
     QCOMPARE(m_widget->isBold(), true);
 }
 
-void TestColorAndWidthWidgetState::testSetItalic()
+void TestToolOptionsPanelState::testSetItalic()
 {
     m_widget->setItalic(true);
     QCOMPARE(m_widget->isItalic(), true);
@@ -206,7 +206,7 @@ void TestColorAndWidthWidgetState::testSetItalic()
     QCOMPARE(m_widget->isItalic(), false);
 }
 
-void TestColorAndWidthWidgetState::testSetUnderline()
+void TestToolOptionsPanelState::testSetUnderline()
 {
     m_widget->setUnderline(true);
     QCOMPARE(m_widget->isUnderline(), true);
@@ -215,13 +215,13 @@ void TestColorAndWidthWidgetState::testSetUnderline()
     QCOMPARE(m_widget->isUnderline(), false);
 }
 
-void TestColorAndWidthWidgetState::testSetFontSize()
+void TestToolOptionsPanelState::testSetFontSize()
 {
     m_widget->setFontSize(24);
     QCOMPARE(m_widget->fontSize(), 24);
 }
 
-void TestColorAndWidthWidgetState::testSetFontFamily()
+void TestToolOptionsPanelState::testSetFontFamily()
 {
     m_widget->setFontFamily("Helvetica");
     QCOMPARE(m_widget->fontFamily(), QString("Helvetica"));
@@ -231,7 +231,7 @@ void TestColorAndWidthWidgetState::testSetFontFamily()
 // Arrow Style Tests
 // ============================================================================
 
-void TestColorAndWidthWidgetState::testSetArrowStyle()
+void TestToolOptionsPanelState::testSetArrowStyle()
 {
     m_widget->setArrowStyle(LineEndStyle::None);
     QCOMPARE(m_widget->arrowStyle(), LineEndStyle::None);
@@ -240,7 +240,7 @@ void TestColorAndWidthWidgetState::testSetArrowStyle()
     QCOMPARE(m_widget->arrowStyle(), LineEndStyle::EndArrow);
 }
 
-void TestColorAndWidthWidgetState::testSetShowArrowStyleSection()
+void TestToolOptionsPanelState::testSetShowArrowStyleSection()
 {
     m_widget->setShowArrowStyleSection(true);
     QCOMPARE(m_widget->showArrowStyleSection(), true);
@@ -253,7 +253,7 @@ void TestColorAndWidthWidgetState::testSetShowArrowStyleSection()
 // Shape Tests
 // ============================================================================
 
-void TestColorAndWidthWidgetState::testSetShapeType()
+void TestToolOptionsPanelState::testSetShapeType()
 {
     m_widget->setShapeType(ShapeType::Ellipse);
     QCOMPARE(m_widget->shapeType(), ShapeType::Ellipse);
@@ -262,7 +262,7 @@ void TestColorAndWidthWidgetState::testSetShapeType()
     QCOMPARE(m_widget->shapeType(), ShapeType::Rectangle);
 }
 
-void TestColorAndWidthWidgetState::testSetShapeFillMode()
+void TestToolOptionsPanelState::testSetShapeFillMode()
 {
     m_widget->setShapeFillMode(ShapeFillMode::Filled);
     QCOMPARE(m_widget->shapeFillMode(), ShapeFillMode::Filled);
@@ -271,7 +271,7 @@ void TestColorAndWidthWidgetState::testSetShapeFillMode()
     QCOMPARE(m_widget->shapeFillMode(), ShapeFillMode::Outline);
 }
 
-void TestColorAndWidthWidgetState::testSetShowShapeSection()
+void TestToolOptionsPanelState::testSetShowShapeSection()
 {
     m_widget->setShowShapeSection(true);
     QCOMPARE(m_widget->showShapeSection(), true);
@@ -284,7 +284,7 @@ void TestColorAndWidthWidgetState::testSetShowShapeSection()
 // Section Visibility Tests
 // ============================================================================
 
-void TestColorAndWidthWidgetState::testSetShowWidthSection()
+void TestToolOptionsPanelState::testSetShowWidthSection()
 {
     // Default is true
     QCOMPARE(m_widget->showWidthSection(), true);
@@ -296,7 +296,7 @@ void TestColorAndWidthWidgetState::testSetShowWidthSection()
     QCOMPARE(m_widget->showWidthSection(), true);
 }
 
-void TestColorAndWidthWidgetState::testSetShowTextSection()
+void TestToolOptionsPanelState::testSetShowTextSection()
 {
     // Default is false
     QCOMPARE(m_widget->showTextSection(), false);
@@ -308,7 +308,7 @@ void TestColorAndWidthWidgetState::testSetShowTextSection()
     QCOMPARE(m_widget->showTextSection(), false);
 }
 
-void TestColorAndWidthWidgetState::testSetVisible()
+void TestToolOptionsPanelState::testSetVisible()
 {
     m_widget->setVisible(true);
     QCOMPARE(m_widget->isVisible(), true);
@@ -317,5 +317,5 @@ void TestColorAndWidthWidgetState::testSetVisible()
     QCOMPARE(m_widget->isVisible(), false);
 }
 
-QTEST_MAIN(TestColorAndWidthWidgetState)
+QTEST_MAIN(TestToolOptionsPanelState)
 #include "tst_State.moc"

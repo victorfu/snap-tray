@@ -83,20 +83,20 @@ void CursorManager::popCursorForWidget(QWidget* widget, CursorContext context)
     }
 }
 
-void CursorManager::clearAllForWidget(QWidget* widget)
+void CursorManager::clearAllForWidget(QWidget* widget, Qt::CursorShape defaultCursor)
 {
     if (!widget) {
         return;
     }
 
     m_widgetCursorStacks.remove(widget);
-    widget->setCursor(Qt::CrossCursor);
+    widget->setCursor(defaultCursor);
 }
 
 void CursorManager::setButtonCursor(QWidget* button)
 {
     if (button) {
-        instance().pushCursorForWidget(button, CursorContext::Hover, Qt::PointingHandCursor);
+        instance().pushCursorForWidget(button, CursorContext::Hover, Qt::ArrowCursor);
     }
 }
 
@@ -315,12 +315,10 @@ void CursorManager::updateCursorFromStateForWidget(QWidget* widget)
         Qt::CursorShape hoverCursor = Qt::CrossCursor;
         switch (state.hoverTarget) {
         case HoverTarget::Toolbar:
-            hoverCursor = Qt::OpenHandCursor;
-            break;
         case HoverTarget::ToolbarButton:
         case HoverTarget::ColorPalette:
         case HoverTarget::Widget:
-            hoverCursor = Qt::PointingHandCursor;
+            hoverCursor = Qt::ArrowCursor;
             break;
         case HoverTarget::Annotation:
             hoverCursor = Qt::SizeAllCursor;

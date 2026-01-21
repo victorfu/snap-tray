@@ -1,5 +1,5 @@
 #include <QtTest/QtTest>
-#include "ColorAndWidthWidget.h"
+#include "toolbar/ToolOptionsPanel.h"
 
 namespace {
 constexpr int kWidthSectionSize = 28;
@@ -21,7 +21,7 @@ constexpr int kVerticalPadding = 4;
 constexpr int kWidgetHeight = 28 + 2 * kVerticalPadding;
 }
 
-class TestColorAndWidthWidgetHitTest : public QObject
+class TestToolOptionsPanelHitTest : public QObject
 {
     Q_OBJECT
 
@@ -46,24 +46,24 @@ private slots:
     void testBoundingRectWithAllSections();
 
 private:
-    ColorAndWidthWidget* m_widget = nullptr;
+    ToolOptionsPanel* m_widget = nullptr;
 
     // Helper to set up widget at a standard position
     void setupWidgetAtPosition();
 };
 
-void TestColorAndWidthWidgetHitTest::init()
+void TestToolOptionsPanelHitTest::init()
 {
-    m_widget = new ColorAndWidthWidget();
+    m_widget = new ToolOptionsPanel();
 }
 
-void TestColorAndWidthWidgetHitTest::cleanup()
+void TestToolOptionsPanelHitTest::cleanup()
 {
     delete m_widget;
     m_widget = nullptr;
 }
 
-void TestColorAndWidthWidgetHitTest::setupWidgetAtPosition()
+void TestToolOptionsPanelHitTest::setupWidgetAtPosition()
 {
     m_widget->setVisible(true);
     m_widget->updatePosition(QRect(100, 100, 200, 40), false, 1920);
@@ -73,7 +73,7 @@ void TestColorAndWidthWidgetHitTest::setupWidgetAtPosition()
 // Widget Contains Tests
 // ============================================================================
 
-void TestColorAndWidthWidgetHitTest::testContainsInMainWidget()
+void TestToolOptionsPanelHitTest::testContainsInMainWidget()
 {
     setupWidgetAtPosition();
 
@@ -83,7 +83,7 @@ void TestColorAndWidthWidgetHitTest::testContainsInMainWidget()
     QVERIFY(m_widget->contains(center));
 }
 
-void TestColorAndWidthWidgetHitTest::testContainsOutsideWidget()
+void TestToolOptionsPanelHitTest::testContainsOutsideWidget()
 {
     setupWidgetAtPosition();
 
@@ -95,7 +95,7 @@ void TestColorAndWidthWidgetHitTest::testContainsOutsideWidget()
     QVERIFY(!m_widget->contains(outside));
 }
 
-void TestColorAndWidthWidgetHitTest::testContainsInDropdownWhenOpen()
+void TestToolOptionsPanelHitTest::testContainsInDropdownWhenOpen()
 {
     m_widget->setShowArrowStyleSection(true);
     m_widget->setVisible(true);
@@ -126,7 +126,7 @@ void TestColorAndWidthWidgetHitTest::testContainsInDropdownWhenOpen()
 // Layout Position Tests
 // ============================================================================
 
-void TestColorAndWidthWidgetHitTest::testUpdatePositionBelow()
+void TestToolOptionsPanelHitTest::testUpdatePositionBelow()
 {
     m_widget->setVisible(true);
     QRect anchorRect(100, 100, 200, 40);
@@ -139,7 +139,7 @@ void TestColorAndWidthWidgetHitTest::testUpdatePositionBelow()
     QCOMPARE(widgetRect.top(), anchorRect.bottom() + 4);
 }
 
-void TestColorAndWidthWidgetHitTest::testUpdatePositionAbove()
+void TestToolOptionsPanelHitTest::testUpdatePositionAbove()
 {
     m_widget->setVisible(true);
     QRect anchorRect(100, 200, 200, 40);  // Anchor lower on screen
@@ -152,7 +152,7 @@ void TestColorAndWidthWidgetHitTest::testUpdatePositionAbove()
     QCOMPARE(widgetRect.bottom(), anchorRect.top() - 4 - 1);  // -1 for bottom() vs height
 }
 
-void TestColorAndWidthWidgetHitTest::testUpdatePositionLeftBoundary()
+void TestToolOptionsPanelHitTest::testUpdatePositionLeftBoundary()
 {
     m_widget->setVisible(true);
     // Anchor near left edge
@@ -165,7 +165,7 @@ void TestColorAndWidthWidgetHitTest::testUpdatePositionLeftBoundary()
     QVERIFY(widgetRect.left() >= 5);
 }
 
-void TestColorAndWidthWidgetHitTest::testUpdatePositionRightBoundary()
+void TestToolOptionsPanelHitTest::testUpdatePositionRightBoundary()
 {
     m_widget->setVisible(true);
     // Anchor near right edge of a narrow screen
@@ -182,7 +182,7 @@ void TestColorAndWidthWidgetHitTest::testUpdatePositionRightBoundary()
 // Bounding Rect Tests
 // ============================================================================
 
-void TestColorAndWidthWidgetHitTest::testBoundingRectWithColorOnly()
+void TestToolOptionsPanelHitTest::testBoundingRectWithColorOnly()
 {
     m_widget->setShowWidthSection(false);
     m_widget->setShowTextSection(false);
@@ -201,7 +201,7 @@ void TestColorAndWidthWidgetHitTest::testBoundingRectWithColorOnly()
     QCOMPARE(widgetRect.width(), kColorSectionWidth + kWidgetRightMargin);
 }
 
-void TestColorAndWidthWidgetHitTest::testBoundingRectWithColorAndWidth()
+void TestToolOptionsPanelHitTest::testBoundingRectWithColorAndWidth()
 {
     m_widget->setShowWidthSection(true);
     m_widget->setShowTextSection(false);
@@ -222,7 +222,7 @@ void TestColorAndWidthWidgetHitTest::testBoundingRectWithColorAndWidth()
     QCOMPARE(widgetRect.width(), expectedWidth);
 }
 
-void TestColorAndWidthWidgetHitTest::testBoundingRectWithAllSections()
+void TestToolOptionsPanelHitTest::testBoundingRectWithAllSections()
 {
     m_widget->setShowWidthSection(true);
     m_widget->setShowTextSection(true);
@@ -242,5 +242,5 @@ void TestColorAndWidthWidgetHitTest::testBoundingRectWithAllSections()
     QCOMPARE(widgetRect.height(), kWidgetHeight);
 }
 
-QTEST_MAIN(TestColorAndWidthWidgetHitTest)
+QTEST_MAIN(TestToolOptionsPanelHitTest)
 #include "tst_HitTest.moc"

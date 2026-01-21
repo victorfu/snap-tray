@@ -43,7 +43,7 @@ struct ToolbarStyleConfig {
     QColor tooltipBorder;
     QColor tooltipText;
 
-    // Secondary UI elements (ColorAndWidthWidget, dropdowns, etc.)
+    // Secondary UI elements (ToolOptionsPanel, dropdowns, etc.)
     QColor buttonActiveColor;       // Active button background in sub-widgets
     QColor buttonHoverColor;        // Hover button background in sub-widgets
     QColor buttonInactiveColor;     // Inactive button background

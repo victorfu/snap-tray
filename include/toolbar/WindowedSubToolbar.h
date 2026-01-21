@@ -1,5 +1,5 @@
-#ifndef PINWINDOWSUBTOOLBAR_H
-#define PINWINDOWSUBTOOLBAR_H
+#ifndef WINDOWEDSUBTOOLBAR_H
+#define WINDOWEDSUBTOOLBAR_H
 
 #include <QWidget>
 #include <QRect>
@@ -8,23 +8,23 @@
 #include "annotations/ArrowAnnotation.h"      // For LineEndStyle
 #include "annotations/LineStyle.h"            // For LineStyle
 
-class ColorAndWidthWidget;
+class ToolOptionsPanel;
 class EmojiPicker;
 
 /**
  * @brief Floating sub-toolbar for PinWindow annotation tools.
  *
- * Wraps ColorAndWidthWidget and EmojiPicker in a floating frameless window,
- * similar to PinWindowToolbar. This provides tool-specific options like
+ * Wraps ToolOptionsPanel and EmojiPicker in a floating frameless window,
+ * similar to WindowedToolbar. This provides tool-specific options like
  * color selection, line width, shape type, step badge size, etc.
  */
-class PinWindowSubToolbar : public QWidget
+class WindowedSubToolbar : public QWidget
 {
     Q_OBJECT
 
 public:
-    explicit PinWindowSubToolbar(QWidget *parent = nullptr);
-    ~PinWindowSubToolbar();
+    explicit WindowedSubToolbar(QWidget *parent = nullptr);
+    ~WindowedSubToolbar();
 
     // Position the sub-toolbar relative to the main toolbar
     void positionBelow(const QRect &toolbarRect);
@@ -34,7 +34,7 @@ public:
     void hide();
 
     // Color and width access
-    ColorAndWidthWidget* colorAndWidthWidget() const { return m_colorAndWidthWidget; }
+    ToolOptionsPanel* colorAndWidthWidget() const { return m_colorAndWidthWidget; }
     EmojiPicker* emojiPicker() const { return m_emojiPicker; }
 
     // Mode: sub-toolbar or emoji picker
@@ -89,7 +89,7 @@ private:
     void setupConnections();
     void updateSize();
 
-    ColorAndWidthWidget *m_colorAndWidthWidget;
+    ToolOptionsPanel *m_colorAndWidthWidget;
     EmojiPicker *m_emojiPicker;
     bool m_showingEmojiPicker = false;
 
@@ -97,4 +97,4 @@ private:
     static constexpr int MARGIN = 4;
 };
 
-#endif // PINWINDOWSUBTOOLBAR_H
+#endif // WINDOWEDSUBTOOLBAR_H

@@ -13,9 +13,9 @@
 #include "annotations/PolylineAnnotation.h"
 #include "cursor/CursorManager.h"
 #include "tools/ToolManager.h"
-#include "ToolbarWidget.h"
+#include "toolbar/ToolbarCore.h"
 #include "InlineTextEditor.h"
-#include "ColorAndWidthWidget.h"
+#include "toolbar/ToolOptionsPanel.h"
 #include "EmojiPicker.h"
 #include "TransformationGizmo.h"
 #include "RegionSelector.h"  // For isToolManagerHandledTool
@@ -47,7 +47,7 @@ void RegionInputHandler::setToolManager(ToolManager* manager)
     m_toolManager = manager;
 }
 
-void RegionInputHandler::setToolbar(ToolbarWidget* toolbar)
+void RegionInputHandler::setToolbar(ToolbarCore* toolbar)
 {
     m_toolbar = toolbar;
 }
@@ -62,7 +62,7 @@ void RegionInputHandler::setTextAnnotationEditor(TextAnnotationEditor* editor)
     m_textAnnotationEditor = editor;
 }
 
-void RegionInputHandler::setColorAndWidthWidget(ColorAndWidthWidget* widget)
+void RegionInputHandler::setColorAndWidthWidget(ToolOptionsPanel* widget)
 {
     m_colorAndWidthWidget = widget;
 }

@@ -5,10 +5,10 @@
 #include "IconRenderer.h"
 #include "GlassRenderer.h"
 #include "ColorPickerDialog.h"
-#include "ColorAndWidthWidget.h"
+#include "toolbar/ToolOptionsPanel.h"
 #include "EmojiPicker.h"
 #include "LaserPointerRenderer.h"
-#include "ToolbarWidget.h"
+#include "toolbar/ToolbarCore.h"
 #include "settings/AnnotationSettingsManager.h"
 #include "settings/Settings.h"
 #include "tools/handlers/EmojiStickerToolHandler.h"
@@ -28,6 +28,7 @@
 #include <QSettings>
 #include <QTimer>
 #include "tools/ToolRegistry.h"
+#include "tools/ToolSectionConfig.h"
 
 ScreenCanvas::ScreenCanvas(QWidget* parent)
     : QWidget(parent)
@@ -84,34 +85,34 @@ ScreenCanvas::ScreenCanvas(QWidget* parent)
     setupToolbar();
 
     // Initialize unified color and width widget
-    m_colorAndWidthWidget = new ColorAndWidthWidget(this);
+    m_colorAndWidthWidget = new ToolOptionsPanel(this);
     m_colorAndWidthWidget->setCurrentColor(savedColor);
     m_colorAndWidthWidget->setCurrentWidth(savedWidth);
     m_colorAndWidthWidget->setWidthRange(1, 20);
     m_colorAndWidthWidget->setArrowStyle(savedArrowStyle);
     m_colorAndWidthWidget->setLineStyle(savedLineStyle);
     m_colorAndWidthWidget->setStepBadgeSize(m_stepBadgeSize);
-    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::colorSelected,
+    connect(m_colorAndWidthWidget, &ToolOptionsPanel::colorSelected,
         this, &ScreenCanvas::onColorSelected);
-    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::customColorPickerRequested,
+    connect(m_colorAndWidthWidget, &ToolOptionsPanel::customColorPickerRequested,
         this, &ScreenCanvas::onMoreColorsRequested);
-    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::widthChanged,
+    connect(m_colorAndWidthWidget, &ToolOptionsPanel::widthChanged,
         this, &ScreenCanvas::onLineWidthChanged);
-    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::arrowStyleChanged,
+    connect(m_colorAndWidthWidget, &ToolOptionsPanel::arrowStyleChanged,
         this, &ScreenCanvas::onArrowStyleChanged);
-    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::lineStyleChanged,
+    connect(m_colorAndWidthWidget, &ToolOptionsPanel::lineStyleChanged,
         this, &ScreenCanvas::onLineStyleChanged);
-    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::shapeTypeChanged,
+    connect(m_colorAndWidthWidget, &ToolOptionsPanel::shapeTypeChanged,
         this, [this](ShapeType type) {
             m_shapeType = type;
             m_toolManager->setShapeType(static_cast<int>(type));
         });
-    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::shapeFillModeChanged,
+    connect(m_colorAndWidthWidget, &ToolOptionsPanel::shapeFillModeChanged,
         this, [this](ShapeFillMode mode) {
             m_shapeFillMode = mode;
             m_toolManager->setShapeFillMode(static_cast<int>(mode));
         });
-    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::stepBadgeSizeChanged,
+    connect(m_colorAndWidthWidget, &ToolOptionsPanel::stepBadgeSizeChanged,
         this, [this](StepBadgeSize size) {
             m_stepBadgeSize = size;
             AnnotationSettingsManager::instance().saveStepBadgeSize(size);
@@ -155,11 +156,11 @@ ScreenCanvas::ScreenCanvas(QWidget* parent)
     m_colorAndWidthWidget->setFontFamily(textFormatting.fontFamily);
 
     // Connect text formatting signals
-    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::boldToggled,
+    connect(m_colorAndWidthWidget, &ToolOptionsPanel::boldToggled,
         m_textAnnotationEditor, &TextAnnotationEditor::setBold);
-    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::italicToggled,
+    connect(m_colorAndWidthWidget, &ToolOptionsPanel::italicToggled,
         m_textAnnotationEditor, &TextAnnotationEditor::setItalic);
-    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::underlineToggled,
+    connect(m_colorAndWidthWidget, &ToolOptionsPanel::underlineToggled,
         m_textAnnotationEditor, &TextAnnotationEditor::setUnderline);
 
     // Initialize settings helper for font dropdowns
@@ -167,9 +168,9 @@ ScreenCanvas::ScreenCanvas(QWidget* parent)
     m_settingsHelper->setParentWidget(this);
 
     // Connect font dropdown signals
-    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::fontSizeDropdownRequested,
+    connect(m_colorAndWidthWidget, &ToolOptionsPanel::fontSizeDropdownRequested,
         this, &ScreenCanvas::onFontSizeDropdownRequested);
-    connect(m_colorAndWidthWidget, &ColorAndWidthWidget::fontFamilyDropdownRequested,
+    connect(m_colorAndWidthWidget, &ToolOptionsPanel::fontFamilyDropdownRequested,
         this, &ScreenCanvas::onFontFamilyDropdownRequested);
 
     // Connect font selection signals
@@ -231,7 +232,7 @@ void ScreenCanvas::initializeIcons()
     iconRenderer.loadIcon("undo", ":/icons/icons/undo.svg");
     iconRenderer.loadIcon("redo", ":/icons/icons/redo.svg");
     iconRenderer.loadIcon("cancel", ":/icons/icons/cancel.svg");
-    // Shape and arrow style icons for ColorAndWidthWidget sections
+    // Shape and arrow style icons for ToolOptionsPanel sections
     iconRenderer.loadIcon("shape-filled", ":/icons/icons/shape-filled.svg");
     iconRenderer.loadIcon("shape-outline", ":/icons/icons/shape-outline.svg");
     iconRenderer.loadIcon("arrow-none", ":/icons/icons/arrow-none.svg");
@@ -247,10 +248,10 @@ void ScreenCanvas::initializeIcons()
 
 void ScreenCanvas::setupToolbar()
 {
-    m_toolbar = new ToolbarWidget(this);
+    m_toolbar = new ToolbarCore(this);
 
     // Configure buttons with separators at appropriate positions
-    QVector<ToolbarWidget::ButtonConfig> buttons = {
+    QVector<ToolbarCore::ButtonConfig> buttons = {
         {static_cast<int>(CanvasButton::Shape), "shape", "Shape"},
         {static_cast<int>(CanvasButton::Arrow), "arrow", "Arrow"},
         {static_cast<int>(CanvasButton::Pencil), "pencil", "Pencil"},
@@ -259,12 +260,12 @@ void ScreenCanvas::setupToolbar()
         {static_cast<int>(CanvasButton::StepBadge), "step-badge", "Step Badge"},
         {static_cast<int>(CanvasButton::EmojiSticker), "emoji", "Emoji Sticker"},
         {static_cast<int>(CanvasButton::LaserPointer), "laser-pointer", "Laser Pointer"},
-        ToolbarWidget::ButtonConfig(static_cast<int>(CanvasButton::Whiteboard), "whiteboard", "Whiteboard (W)").separator(),
+        ToolbarCore::ButtonConfig(static_cast<int>(CanvasButton::Whiteboard), "whiteboard", "Whiteboard (W)").separator(),
         {static_cast<int>(CanvasButton::Blackboard), "blackboard", "Blackboard (B)"},
-        ToolbarWidget::ButtonConfig(static_cast<int>(CanvasButton::Undo), "undo", "Undo (Ctrl+Z)").separator(),
+        ToolbarCore::ButtonConfig(static_cast<int>(CanvasButton::Undo), "undo", "Undo (Ctrl+Z)").separator(),
         {static_cast<int>(CanvasButton::Redo), "redo", "Redo (Ctrl+Y)"},
         {static_cast<int>(CanvasButton::Clear), "cancel", "Clear All"},
-        ToolbarWidget::ButtonConfig(static_cast<int>(CanvasButton::Exit), "cancel", "Exit (Esc)").separator().cancel()
+        ToolbarCore::ButtonConfig(static_cast<int>(CanvasButton::Exit), "cancel", "Exit (Esc)").separator().cancel()
     };
     m_toolbar->setButtons(buttons);
 
@@ -494,24 +495,12 @@ void ScreenCanvas::paintEvent(QPaintEvent*)
     m_toolbar->setActiveButton(activeButtonId);
     m_toolbar->draw(painter);
 
-    // Use unified color and width widget
+    // Use unified color and width widget with data-driven configuration
     QRect toolbarRect = m_toolbar->boundingRect();
     if (shouldShowColorAndWidthWidget()) {
         m_colorAndWidthWidget->setVisible(true);
-        m_colorAndWidthWidget->setShowWidthSection(shouldShowWidthControl());
-        // Show arrow style section only for Arrow tool
-        m_colorAndWidthWidget->setShowArrowStyleSection(m_currentToolId == ToolId::Arrow);
-        // Show line style section for Pencil and Arrow tools
-        bool showLineStyle = (m_currentToolId == ToolId::Pencil ||
-                              m_currentToolId == ToolId::Arrow);
-        m_colorAndWidthWidget->setShowLineStyleSection(showLineStyle);
-        // Show shape section for Shape tool
-        m_colorAndWidthWidget->setShowShapeSection(m_currentToolId == ToolId::Shape);
-        m_colorAndWidthWidget->setShowColorSection(true);
-        // Show size section for StepBadge (replaces width section)
-        m_colorAndWidthWidget->setShowSizeSection(m_currentToolId == ToolId::StepBadge);
-        // Show text section for Text tool
-        m_colorAndWidthWidget->setShowTextSection(m_currentToolId == ToolId::Text);
+        // Apply tool-specific section configuration
+        ToolSectionConfig::forTool(m_currentToolId).applyTo(m_colorAndWidthWidget);
         m_colorAndWidthWidget->updatePosition(toolbarRect, true, width());
         m_colorAndWidthWidget->draw(painter);
     }
@@ -894,7 +883,7 @@ void ScreenCanvas::mouseMoveEvent(QMouseEvent* event)
             }
         }
 
-        // Update hovered button via ToolbarWidget
+        // Update hovered button via ToolbarCore
         if (m_toolbar->updateHoveredButton(event->pos())) {
             needsUpdate = true;
         }

@@ -1,4 +1,4 @@
-#include "ColorAndWidthWidget.h"
+#include "toolbar/ToolOptionsPanel.h"
 #include "GlassRenderer.h"
 #include "ui/sections/ColorSection.h"
 #include "ui/sections/WidthSection.h"
@@ -12,7 +12,7 @@
 #include <QPainter>
 #include <QtGlobal>
 
-ColorAndWidthWidget::ColorAndWidthWidget(QObject* parent)
+ToolOptionsPanel::ToolOptionsPanel(QObject* parent)
     : QObject(parent)
     , m_colorSection(new ColorSection(this))
     , m_widthSection(new WidthSection(this))
@@ -27,66 +27,66 @@ ColorAndWidthWidget::ColorAndWidthWidget(QObject* parent)
     connectSectionSignals();
 }
 
-ColorAndWidthWidget::~ColorAndWidthWidget()
+ToolOptionsPanel::~ToolOptionsPanel()
 {
     // Sections are QObject children, automatically deleted
 }
 
-void ColorAndWidthWidget::connectSectionSignals()
+void ToolOptionsPanel::connectSectionSignals()
 {
     // Forward ColorSection signals
-    connect(m_colorSection, &ColorSection::colorSelected, this, &ColorAndWidthWidget::colorSelected);
-    connect(m_colorSection, &ColorSection::customColorPickerRequested, this, &ColorAndWidthWidget::customColorPickerRequested);
+    connect(m_colorSection, &ColorSection::colorSelected, this, &ToolOptionsPanel::colorSelected);
+    connect(m_colorSection, &ColorSection::customColorPickerRequested, this, &ToolOptionsPanel::customColorPickerRequested);
 
     // Forward WidthSection signals
-    connect(m_widthSection, &WidthSection::widthChanged, this, &ColorAndWidthWidget::widthChanged);
+    connect(m_widthSection, &WidthSection::widthChanged, this, &ToolOptionsPanel::widthChanged);
 
     // Forward TextSection signals
-    connect(m_textSection, &TextSection::boldToggled, this, &ColorAndWidthWidget::boldToggled);
-    connect(m_textSection, &TextSection::italicToggled, this, &ColorAndWidthWidget::italicToggled);
-    connect(m_textSection, &TextSection::underlineToggled, this, &ColorAndWidthWidget::underlineToggled);
-    connect(m_textSection, &TextSection::fontSizeChanged, this, &ColorAndWidthWidget::fontSizeChanged);
-    connect(m_textSection, &TextSection::fontFamilyChanged, this, &ColorAndWidthWidget::fontFamilyChanged);
-    connect(m_textSection, &TextSection::fontSizeDropdownRequested, this, &ColorAndWidthWidget::fontSizeDropdownRequested);
-    connect(m_textSection, &TextSection::fontFamilyDropdownRequested, this, &ColorAndWidthWidget::fontFamilyDropdownRequested);
+    connect(m_textSection, &TextSection::boldToggled, this, &ToolOptionsPanel::boldToggled);
+    connect(m_textSection, &TextSection::italicToggled, this, &ToolOptionsPanel::italicToggled);
+    connect(m_textSection, &TextSection::underlineToggled, this, &ToolOptionsPanel::underlineToggled);
+    connect(m_textSection, &TextSection::fontSizeChanged, this, &ToolOptionsPanel::fontSizeChanged);
+    connect(m_textSection, &TextSection::fontFamilyChanged, this, &ToolOptionsPanel::fontFamilyChanged);
+    connect(m_textSection, &TextSection::fontSizeDropdownRequested, this, &ToolOptionsPanel::fontSizeDropdownRequested);
+    connect(m_textSection, &TextSection::fontFamilyDropdownRequested, this, &ToolOptionsPanel::fontFamilyDropdownRequested);
 
     // Forward ArrowStyleSection signals
-    connect(m_arrowStyleSection, &ArrowStyleSection::arrowStyleChanged, this, &ColorAndWidthWidget::arrowStyleChanged);
+    connect(m_arrowStyleSection, &ArrowStyleSection::arrowStyleChanged, this, &ToolOptionsPanel::arrowStyleChanged);
 
     // Forward LineStyleSection signals
-    connect(m_lineStyleSection, &LineStyleSection::lineStyleChanged, this, &ColorAndWidthWidget::lineStyleChanged);
+    connect(m_lineStyleSection, &LineStyleSection::lineStyleChanged, this, &ToolOptionsPanel::lineStyleChanged);
 
     // Forward ShapeSection signals
-    connect(m_shapeSection, &ShapeSection::shapeTypeChanged, this, &ColorAndWidthWidget::shapeTypeChanged);
-    connect(m_shapeSection, &ShapeSection::shapeFillModeChanged, this, &ColorAndWidthWidget::shapeFillModeChanged);
+    connect(m_shapeSection, &ShapeSection::shapeTypeChanged, this, &ToolOptionsPanel::shapeTypeChanged);
+    connect(m_shapeSection, &ShapeSection::shapeFillModeChanged, this, &ToolOptionsPanel::shapeFillModeChanged);
 
     // Forward SizeSection signals
-    connect(m_sizeSection, &SizeSection::sizeChanged, this, &ColorAndWidthWidget::stepBadgeSizeChanged);
+    connect(m_sizeSection, &SizeSection::sizeChanged, this, &ToolOptionsPanel::stepBadgeSizeChanged);
 
     // Forward AutoBlurSection signals
-    connect(m_autoBlurSection, &AutoBlurSection::autoBlurRequested, this, &ColorAndWidthWidget::autoBlurRequested);
+    connect(m_autoBlurSection, &AutoBlurSection::autoBlurRequested, this, &ToolOptionsPanel::autoBlurRequested);
 }
 
 // =============================================================================
 // Color Methods
 // =============================================================================
 
-void ColorAndWidthWidget::setColors(const QVector<QColor>& colors)
+void ToolOptionsPanel::setColors(const QVector<QColor>& colors)
 {
     m_colorSection->setColors(colors);
 }
 
-void ColorAndWidthWidget::setCurrentColor(const QColor& color)
+void ToolOptionsPanel::setCurrentColor(const QColor& color)
 {
     m_colorSection->setCurrentColor(color);
 }
 
-QColor ColorAndWidthWidget::currentColor() const
+QColor ToolOptionsPanel::currentColor() const
 {
     return m_colorSection->currentColor();
 }
 
-void ColorAndWidthWidget::setShowColorSection(bool show)
+void ToolOptionsPanel::setShowColorSection(bool show)
 {
     m_showColorSection = show;
 }
@@ -95,27 +95,27 @@ void ColorAndWidthWidget::setShowColorSection(bool show)
 // Width Methods
 // =============================================================================
 
-void ColorAndWidthWidget::setShowWidthSection(bool show)
+void ToolOptionsPanel::setShowWidthSection(bool show)
 {
     m_showWidthSection = show;
 }
 
-void ColorAndWidthWidget::setWidthSectionHidden(bool hidden)
+void ToolOptionsPanel::setWidthSectionHidden(bool hidden)
 {
     m_widthSectionHidden = hidden;
 }
 
-void ColorAndWidthWidget::setWidthRange(int min, int max)
+void ToolOptionsPanel::setWidthRange(int min, int max)
 {
     m_widthSection->setWidthRange(min, max);
 }
 
-void ColorAndWidthWidget::setCurrentWidth(int width)
+void ToolOptionsPanel::setCurrentWidth(int width)
 {
     m_widthSection->setCurrentWidth(width);
 }
 
-int ColorAndWidthWidget::currentWidth() const
+int ToolOptionsPanel::currentWidth() const
 {
     return m_widthSection->currentWidth();
 }
@@ -124,57 +124,57 @@ int ColorAndWidthWidget::currentWidth() const
 // Text Formatting Methods
 // =============================================================================
 
-void ColorAndWidthWidget::setShowTextSection(bool show)
+void ToolOptionsPanel::setShowTextSection(bool show)
 {
     m_showTextSection = show;
 }
 
-void ColorAndWidthWidget::setBold(bool enabled)
+void ToolOptionsPanel::setBold(bool enabled)
 {
     m_textSection->setBold(enabled);
 }
 
-bool ColorAndWidthWidget::isBold() const
+bool ToolOptionsPanel::isBold() const
 {
     return m_textSection->isBold();
 }
 
-void ColorAndWidthWidget::setItalic(bool enabled)
+void ToolOptionsPanel::setItalic(bool enabled)
 {
     m_textSection->setItalic(enabled);
 }
 
-bool ColorAndWidthWidget::isItalic() const
+bool ToolOptionsPanel::isItalic() const
 {
     return m_textSection->isItalic();
 }
 
-void ColorAndWidthWidget::setUnderline(bool enabled)
+void ToolOptionsPanel::setUnderline(bool enabled)
 {
     m_textSection->setUnderline(enabled);
 }
 
-bool ColorAndWidthWidget::isUnderline() const
+bool ToolOptionsPanel::isUnderline() const
 {
     return m_textSection->isUnderline();
 }
 
-void ColorAndWidthWidget::setFontSize(int size)
+void ToolOptionsPanel::setFontSize(int size)
 {
     m_textSection->setFontSize(size);
 }
 
-int ColorAndWidthWidget::fontSize() const
+int ToolOptionsPanel::fontSize() const
 {
     return m_textSection->fontSize();
 }
 
-void ColorAndWidthWidget::setFontFamily(const QString& family)
+void ToolOptionsPanel::setFontFamily(const QString& family)
 {
     m_textSection->setFontFamily(family);
 }
 
-QString ColorAndWidthWidget::fontFamily() const
+QString ToolOptionsPanel::fontFamily() const
 {
     return m_textSection->fontFamily();
 }
@@ -183,17 +183,17 @@ QString ColorAndWidthWidget::fontFamily() const
 // Arrow Style Methods
 // =============================================================================
 
-void ColorAndWidthWidget::setShowArrowStyleSection(bool show)
+void ToolOptionsPanel::setShowArrowStyleSection(bool show)
 {
     m_showArrowStyleSection = show;
 }
 
-void ColorAndWidthWidget::setArrowStyle(LineEndStyle style)
+void ToolOptionsPanel::setArrowStyle(LineEndStyle style)
 {
     m_arrowStyleSection->setArrowStyle(style);
 }
 
-LineEndStyle ColorAndWidthWidget::arrowStyle() const
+LineEndStyle ToolOptionsPanel::arrowStyle() const
 {
     return m_arrowStyleSection->arrowStyle();
 }
@@ -202,17 +202,17 @@ LineEndStyle ColorAndWidthWidget::arrowStyle() const
 // Line Style Methods
 // =============================================================================
 
-void ColorAndWidthWidget::setShowLineStyleSection(bool show)
+void ToolOptionsPanel::setShowLineStyleSection(bool show)
 {
     m_showLineStyleSection = show;
 }
 
-void ColorAndWidthWidget::setLineStyle(LineStyle style)
+void ToolOptionsPanel::setLineStyle(LineStyle style)
 {
     m_lineStyleSection->setLineStyle(style);
 }
 
-LineStyle ColorAndWidthWidget::lineStyle() const
+LineStyle ToolOptionsPanel::lineStyle() const
 {
     return m_lineStyleSection->lineStyle();
 }
@@ -221,27 +221,27 @@ LineStyle ColorAndWidthWidget::lineStyle() const
 // Shape Methods
 // =============================================================================
 
-void ColorAndWidthWidget::setShowShapeSection(bool show)
+void ToolOptionsPanel::setShowShapeSection(bool show)
 {
     m_showShapeSection = show;
 }
 
-void ColorAndWidthWidget::setShapeType(ShapeType type)
+void ToolOptionsPanel::setShapeType(ShapeType type)
 {
     m_shapeSection->setShapeType(type);
 }
 
-ShapeType ColorAndWidthWidget::shapeType() const
+ShapeType ToolOptionsPanel::shapeType() const
 {
     return m_shapeSection->shapeType();
 }
 
-void ColorAndWidthWidget::setShapeFillMode(ShapeFillMode mode)
+void ToolOptionsPanel::setShapeFillMode(ShapeFillMode mode)
 {
     m_shapeSection->setShapeFillMode(mode);
 }
 
-ShapeFillMode ColorAndWidthWidget::shapeFillMode() const
+ShapeFillMode ToolOptionsPanel::shapeFillMode() const
 {
     return m_shapeSection->shapeFillMode();
 }
@@ -250,17 +250,17 @@ ShapeFillMode ColorAndWidthWidget::shapeFillMode() const
 // Size Methods (Step Badge)
 // =============================================================================
 
-void ColorAndWidthWidget::setShowSizeSection(bool show)
+void ToolOptionsPanel::setShowSizeSection(bool show)
 {
     m_showSizeSection = show;
 }
 
-void ColorAndWidthWidget::setStepBadgeSize(StepBadgeSize size)
+void ToolOptionsPanel::setStepBadgeSize(StepBadgeSize size)
 {
     m_sizeSection->setSize(size);
 }
 
-StepBadgeSize ColorAndWidthWidget::stepBadgeSize() const
+StepBadgeSize ToolOptionsPanel::stepBadgeSize() const
 {
     return m_sizeSection->size();
 }
@@ -269,17 +269,17 @@ StepBadgeSize ColorAndWidthWidget::stepBadgeSize() const
 // Auto Blur Methods
 // =============================================================================
 
-void ColorAndWidthWidget::setShowAutoBlurSection(bool show)
+void ToolOptionsPanel::setShowAutoBlurSection(bool show)
 {
     m_showAutoBlurSection = show;
 }
 
-void ColorAndWidthWidget::setAutoBlurEnabled(bool enabled)
+void ToolOptionsPanel::setAutoBlurEnabled(bool enabled)
 {
     m_autoBlurSection->setEnabled(enabled);
 }
 
-void ColorAndWidthWidget::setAutoBlurProcessing(bool processing)
+void ToolOptionsPanel::setAutoBlurProcessing(bool processing)
 {
     m_autoBlurSection->setProcessing(processing);
 }
@@ -288,7 +288,7 @@ void ColorAndWidthWidget::setAutoBlurProcessing(bool processing)
 // Positioning
 // =============================================================================
 
-void ColorAndWidthWidget::updatePosition(const QRect& anchorRect, bool above, int screenWidth)
+void ToolOptionsPanel::updatePosition(const QRect& anchorRect, bool above, int screenWidth)
 {
     // Calculate total width based on visible sections
     int totalWidth = 0;
@@ -384,7 +384,7 @@ void ColorAndWidthWidget::updatePosition(const QRect& anchorRect, bool above, in
     updateLayout();
 }
 
-void ColorAndWidthWidget::updateLayout()
+void ToolOptionsPanel::updateLayout()
 {
     int containerTop = m_widgetRect.top() + VERTICAL_PADDING;
     int containerHeight = m_widgetRect.height() - 2 * VERTICAL_PADDING;
@@ -462,7 +462,7 @@ void ColorAndWidthWidget::updateLayout()
 // Rendering
 // =============================================================================
 
-void ColorAndWidthWidget::draw(QPainter& painter)
+void ToolOptionsPanel::draw(QPainter& painter)
 {
     if (!m_visible) return;
 
@@ -511,7 +511,7 @@ void ColorAndWidthWidget::draw(QPainter& painter)
 // Event Handling
 // =============================================================================
 
-bool ColorAndWidthWidget::contains(const QPoint& pos) const
+bool ToolOptionsPanel::contains(const QPoint& pos) const
 {
     if (!m_visible) {
         return false;
@@ -530,7 +530,7 @@ bool ColorAndWidthWidget::contains(const QPoint& pos) const
     return false;
 }
 
-bool ColorAndWidthWidget::handleClick(const QPoint& pos)
+bool ToolOptionsPanel::handleClick(const QPoint& pos)
 {
     // Track dropdown state before handling click
     bool wasArrowOpen = m_showArrowStyleSection && m_arrowStyleSection->isDropdownOpen();
@@ -595,25 +595,25 @@ bool ColorAndWidthWidget::handleClick(const QPoint& pos)
     return false;
 }
 
-bool ColorAndWidthWidget::handleMousePress(const QPoint& pos)
+bool ToolOptionsPanel::handleMousePress(const QPoint& pos)
 {
     return handleClick(pos);
 }
 
-bool ColorAndWidthWidget::handleMouseMove(const QPoint& pos, bool pressed)
+bool ToolOptionsPanel::handleMouseMove(const QPoint& pos, bool pressed)
 {
     Q_UNUSED(pressed);
     if (!m_visible) return false;
     return updateHovered(pos);
 }
 
-bool ColorAndWidthWidget::handleMouseRelease(const QPoint& pos)
+bool ToolOptionsPanel::handleMouseRelease(const QPoint& pos)
 {
     Q_UNUSED(pos);
     return false;
 }
 
-bool ColorAndWidthWidget::updateHovered(const QPoint& pos)
+bool ToolOptionsPanel::updateHovered(const QPoint& pos)
 {
     bool changed = false;
 
@@ -652,7 +652,7 @@ bool ColorAndWidthWidget::updateHovered(const QPoint& pos)
     return changed;
 }
 
-bool ColorAndWidthWidget::handleWheel(int delta)
+bool ToolOptionsPanel::handleWheel(int delta)
 {
     if (!m_showWidthSection) {
         return false;
@@ -660,7 +660,7 @@ bool ColorAndWidthWidget::handleWheel(int delta)
     return m_widthSection->handleWheel(delta);
 }
 
-int ColorAndWidthWidget::activeDropdownHeight() const
+int ToolOptionsPanel::activeDropdownHeight() const
 {
     int dropdownHeight = 0;
 

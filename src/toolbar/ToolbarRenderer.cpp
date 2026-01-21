@@ -164,4 +164,36 @@ QColor ToolbarRenderer::getIconColor(const ButtonConfig& config, bool isActive,
     return style.iconNormalColor;
 }
 
+void ToolbarRenderer::drawToolbarBackground(QPainter& painter, const QRect& rect,
+                                            const ToolbarStyleConfig& style,
+                                            int radiusOverride)
+{
+    // Use GlassRenderer for consistent glass panel appearance
+    int radius = (radiusOverride >= 0) ? radiusOverride : style.cornerRadius;
+    GlassRenderer::drawGlassPanel(painter, rect, style, radius);
+}
+
+void ToolbarRenderer::drawButtonBackground(QPainter& painter, const QRect& btnRect,
+                                           bool isActive, bool isHovered,
+                                           const ToolbarStyleConfig& style)
+{
+    if (!isActive && !isHovered) {
+        return;
+    }
+
+    painter.save();
+    painter.setPen(Qt::NoPen);
+
+    QRect adjustedRect = btnRect.adjusted(2, 2, -2, -2);
+
+    if (isActive) {
+        painter.setBrush(style.activeBackgroundColor);
+    } else if (isHovered) {
+        painter.setBrush(style.hoverBackgroundColor);
+    }
+
+    painter.drawRoundedRect(adjustedRect, 4, 4);
+    painter.restore();
+}
+
 } // namespace Toolbar

@@ -1,4 +1,4 @@
-#include "ToolbarWidget.h"
+#include "toolbar/ToolbarCore.h"
 #include "IconRenderer.h"
 #include "GlassRenderer.h"
 #include "toolbar/ToolbarRenderer.h"
@@ -7,7 +7,7 @@
 #include <QLinearGradient>
 #include <QDebug>
 
-ToolbarWidget::ToolbarWidget(QObject* parent)
+ToolbarCore::ToolbarCore(QObject* parent)
     : QObject(parent)
     , m_activeButton(-1)
     , m_hoveredButton(-1)
@@ -25,30 +25,30 @@ ToolbarWidget::ToolbarWidget(QObject* parent)
     };
 }
 
-void ToolbarWidget::setButtons(const QVector<ButtonConfig>& buttons)
+void ToolbarCore::setButtons(const QVector<ButtonConfig>& buttons)
 {
     m_buttons = buttons;
     updateButtonRects();
 }
 
-void ToolbarWidget::setActiveButton(int buttonId)
+void ToolbarCore::setActiveButton(int buttonId)
 {
     m_activeButton = buttonId;
 }
 
-void ToolbarWidget::setIconColorProvider(const IconColorProvider& provider)
+void ToolbarCore::setIconColorProvider(const IconColorProvider& provider)
 {
     m_iconColorProvider = provider;
 }
 
-void ToolbarWidget::setPosition(int centerX, int bottomY)
+void ToolbarCore::setPosition(int centerX, int bottomY)
 {
     int toolbarWidth = Toolbar::ToolbarRenderer::calculateWidth(m_buttons);
     m_toolbarRect = Toolbar::ToolbarRenderer::positionAtBottom(centerX, bottomY, toolbarWidth);
     updateButtonRects();
 }
 
-void ToolbarWidget::setPositionForSelection(const QRect& referenceRect, int viewportHeight)
+void ToolbarCore::setPositionForSelection(const QRect& referenceRect, int viewportHeight)
 {
     int toolbarWidth = Toolbar::ToolbarRenderer::calculateWidth(m_buttons);
     m_toolbarRect = Toolbar::ToolbarRenderer::positionBelow(referenceRect, toolbarWidth,
@@ -56,12 +56,12 @@ void ToolbarWidget::setPositionForSelection(const QRect& referenceRect, int view
     updateButtonRects();
 }
 
-void ToolbarWidget::updateButtonRects()
+void ToolbarCore::updateButtonRects()
 {
     m_buttonRects = Toolbar::ToolbarRenderer::calculateButtonRects(m_toolbarRect, m_buttons);
 }
 
-void ToolbarWidget::draw(QPainter& painter)
+void ToolbarCore::draw(QPainter& painter)
 {
     // Draw glass panel (background, border, highlight; no shadow)
     ToolbarStyleConfig panelConfig = m_styleConfig;
@@ -115,7 +115,7 @@ void ToolbarWidget::draw(QPainter& painter)
     }
 }
 
-void ToolbarWidget::drawTooltip(QPainter& painter)
+void ToolbarCore::drawTooltip(QPainter& painter)
 {
     if (m_hoveredButton < 0 || m_hoveredButton >= m_buttons.size()) return;
 
@@ -155,12 +155,12 @@ void ToolbarWidget::drawTooltip(QPainter& painter)
     painter.drawText(textRect, Qt::AlignCenter, tooltip);
 }
 
-int ToolbarWidget::buttonAtPosition(const QPoint& pos) const
+int ToolbarCore::buttonAtPosition(const QPoint& pos) const
 {
     return Toolbar::ToolbarRenderer::buttonAtPosition(pos, m_buttonRects);
 }
 
-bool ToolbarWidget::updateHoveredButton(const QPoint& pos)
+bool ToolbarCore::updateHoveredButton(const QPoint& pos)
 {
     int newHovered = buttonAtPosition(pos);
     if (newHovered != m_hoveredButton) {
@@ -170,12 +170,12 @@ bool ToolbarWidget::updateHoveredButton(const QPoint& pos)
     return false;
 }
 
-bool ToolbarWidget::contains(const QPoint& pos) const
+bool ToolbarCore::contains(const QPoint& pos) const
 {
     return m_toolbarRect.contains(pos);
 }
 
-QColor ToolbarWidget::getIconColor(int buttonId, bool isActive, bool isHovered) const
+QColor ToolbarCore::getIconColor(int buttonId, bool isActive, bool isHovered) const
 {
     if (m_iconColorProvider) {
         return m_iconColorProvider(buttonId, isActive, isHovered);
@@ -183,7 +183,7 @@ QColor ToolbarWidget::getIconColor(int buttonId, bool isActive, bool isHovered) 
     return isActive ? Qt::white : QColor(220, 220, 220);
 }
 
-int ToolbarWidget::buttonIdAt(int index) const
+int ToolbarCore::buttonIdAt(int index) const
 {
     if (index >= 0 && index < m_buttons.size()) {
         return m_buttons[index].id;
@@ -191,12 +191,12 @@ int ToolbarWidget::buttonIdAt(int index) const
     return -1;
 }
 
-void ToolbarWidget::setStyle(ToolbarStyleType type)
+void ToolbarCore::setStyle(ToolbarStyleType type)
 {
     m_styleConfig = ToolbarStyleConfig::getStyle(type);
 }
 
-void ToolbarWidget::setStyleConfig(const ToolbarStyleConfig& config)
+void ToolbarCore::setStyleConfig(const ToolbarStyleConfig& config)
 {
     m_styleConfig = config;
 }

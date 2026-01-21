@@ -1,5 +1,5 @@
-#ifndef PINWINDOWTOOLBAR_H
-#define PINWINDOWTOOLBAR_H
+#ifndef WINDOWEDTOOLBAR_H
+#define WINDOWEDTOOLBAR_H
 
 #include <QWidget>
 #include <QVector>
@@ -7,12 +7,12 @@
 #include <QElapsedTimer>
 #include "toolbar/ToolbarButtonConfig.h"
 
-class PinWindowToolbar : public QWidget
+class WindowedToolbar : public QWidget
 {
     Q_OBJECT
 
 public:
-    // Button IDs for PinWindowToolbar
+    // Button IDs for WindowedToolbar
     enum ButtonId {
         // Drawing tools (aligned with ToolId values for easy mapping)
         ButtonPencil = 0,
@@ -38,8 +38,8 @@ public:
         ButtonDone
     };
 
-    explicit PinWindowToolbar(QWidget *parent = nullptr);
-    ~PinWindowToolbar();
+    explicit WindowedToolbar(QWidget *parent = nullptr);
+    ~WindowedToolbar();
 
     void positionNear(const QRect &pinWindowRect);
     void setActiveButton(int buttonId);
@@ -113,7 +113,7 @@ private:
     QWidget *m_associatedWindow = nullptr;
     QWidget *m_subToolbar = nullptr;
 
-    // Match RegionSelector's ToolbarWidget dimensions
+    // Match RegionSelector's ToolbarCore dimensions
     static constexpr int TOOLBAR_HEIGHT = 32;
     static constexpr int BUTTON_WIDTH = 28;
     static constexpr int BUTTON_HEIGHT = 24;
@@ -122,4 +122,4 @@ private:
     static constexpr int MARGIN = 8;
 };
 
-#endif // PINWINDOWTOOLBAR_H
+#endif // WINDOWEDTOOLBAR_H

@@ -20,7 +20,7 @@ namespace Toolbar {
  */
 class ToolbarRenderer {
 public:
-    // Layout constants (matching ToolbarWidget values)
+    // Layout constants (matching ToolbarCore values)
     static constexpr int TOOLBAR_HEIGHT = 32;
     static constexpr int BUTTON_WIDTH = 28;
     static constexpr int BUTTON_SPACING = 2;
@@ -95,6 +95,29 @@ public:
      */
     static QColor getIconColor(const ButtonConfig& config, bool isActive,
                                bool isHovered, const ToolbarStyleConfig& style);
+
+    /**
+     * @brief Draw toolbar background using GlassRenderer.
+     * @param painter The QPainter
+     * @param rect The toolbar rectangle
+     * @param style The style configuration
+     * @param radiusOverride Optional corner radius override (-1 to use default)
+     */
+    static void drawToolbarBackground(QPainter& painter, const QRect& rect,
+                                      const ToolbarStyleConfig& style,
+                                      int radiusOverride = -1);
+
+    /**
+     * @brief Draw button background for active/hover states.
+     * @param painter The QPainter
+     * @param btnRect The button rectangle
+     * @param isActive Whether the button is active (selected)
+     * @param isHovered Whether the button is being hovered
+     * @param style The style configuration
+     */
+    static void drawButtonBackground(QPainter& painter, const QRect& btnRect,
+                                     bool isActive, bool isHovered,
+                                     const ToolbarStyleConfig& style);
 };
 
 } // namespace Toolbar

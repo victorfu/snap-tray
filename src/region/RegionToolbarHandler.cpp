@@ -4,8 +4,8 @@
 #include "annotations/StepBadgeAnnotation.h"
 #include "tools/ToolManager.h"
 #include "tools/ToolId.h"
-#include "ToolbarWidget.h"
-#include "ColorAndWidthWidget.h"
+#include "toolbar/ToolbarCore.h"
+#include "toolbar/ToolOptionsPanel.h"
 #include "IconRenderer.h"
 #include "OCRManager.h"
 #include "PlatformFeatures.h"
@@ -20,7 +20,7 @@ RegionToolbarHandler::RegionToolbarHandler(QObject* parent)
 {
 }
 
-void RegionToolbarHandler::setToolbar(ToolbarWidget* toolbar)
+void RegionToolbarHandler::setToolbar(ToolbarCore* toolbar)
 {
     m_toolbar = toolbar;
 }
@@ -35,7 +35,7 @@ void RegionToolbarHandler::setAnnotationLayer(AnnotationLayer* layer)
     m_annotationLayer = layer;
 }
 
-void RegionToolbarHandler::setColorAndWidthWidget(ColorAndWidthWidget* widget)
+void RegionToolbarHandler::setColorAndWidthWidget(ToolOptionsPanel* widget)
 {
     m_colorAndWidthWidget = widget;
 }
@@ -93,7 +93,7 @@ void RegionToolbarHandler::setupToolbarButtons()
     iconRenderer.loadIcon("copy", ":/icons/icons/copy.svg");
     iconRenderer.loadIcon("multi-region", ":/icons/icons/multi-region.svg");
     iconRenderer.loadIcon("done", ":/icons/icons/done.svg");
-    // Shape and arrow style icons for ColorAndWidthWidget sections
+    // Shape and arrow style icons for ToolOptionsPanel sections
     iconRenderer.loadIcon("shape-filled", ":/icons/icons/shape-filled.svg");
     iconRenderer.loadIcon("shape-outline", ":/icons/icons/shape-outline.svg");
     iconRenderer.loadIcon("arrow-none", ":/icons/icons/arrow-none.svg");
@@ -104,7 +104,7 @@ void RegionToolbarHandler::setupToolbarButtons()
     iconRenderer.loadIcon("arrow-both-outline", ":/icons/icons/arrow-both-outline.svg");
 
     // Configure buttons
-    QVector<ToolbarWidget::ButtonConfig> buttons;
+    QVector<Toolbar::ButtonConfig> buttons;
     if (m_multiRegionMode) {
         buttons.append({ static_cast<int>(ToolId::MultiRegionDone), "done", "Done", false });
         buttons.append({ static_cast<int>(ToolId::Cancel), "cancel", "Cancel (Esc)", true });

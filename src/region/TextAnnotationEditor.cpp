@@ -2,7 +2,7 @@
 #include "annotations/AnnotationLayer.h"
 #include "annotations/TextBoxAnnotation.h"
 #include "InlineTextEditor.h"
-#include "ColorAndWidthWidget.h"
+#include "toolbar/ToolOptionsPanel.h"
 #include "settings/Settings.h"
 #include <QWidget>
 #include <QSettings>
@@ -33,7 +33,7 @@ void TextAnnotationEditor::setTextEditor(InlineTextEditor* editor)
     m_textEditor = editor;
 }
 
-void TextAnnotationEditor::setColorAndWidthWidget(ColorAndWidthWidget* widget)
+void TextAnnotationEditor::setColorAndWidthWidget(ToolOptionsPanel* widget)
 {
     m_colorAndWidthWidget = widget;
 }

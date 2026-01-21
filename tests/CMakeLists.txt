@@ -12,28 +12,28 @@ find_package(Qt6 REQUIRED COMPONENTS Test)
 set(CMAKE_AUTOMOC ON)
 
 # ============================================================================
-# ColorAndWidthWidget Tests (link snaptray_ui)
+# ToolOptionsPanel Tests (link snaptray_ui)
 # ============================================================================
 
-add_executable(ColorAndWidthWidget_State ColorAndWidthWidget/tst_State.cpp)
-target_link_libraries(ColorAndWidthWidget_State PRIVATE snaptray_ui Qt6::Test)
-add_test(NAME ColorAndWidthWidget_State COMMAND ColorAndWidthWidget_State)
-set_tests_properties(ColorAndWidthWidget_State PROPERTIES TIMEOUT 60 LABELS "unit")
+add_executable(ToolOptionsPanel_State ToolOptionsPanel/tst_State.cpp)
+target_link_libraries(ToolOptionsPanel_State PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME ToolOptionsPanel_State COMMAND ToolOptionsPanel_State)
+set_tests_properties(ToolOptionsPanel_State PROPERTIES TIMEOUT 60 LABELS "unit")
 
-add_executable(ColorAndWidthWidget_Signals ColorAndWidthWidget/tst_Signals.cpp)
-target_link_libraries(ColorAndWidthWidget_Signals PRIVATE snaptray_ui Qt6::Test)
-add_test(NAME ColorAndWidthWidget_Signals COMMAND ColorAndWidthWidget_Signals)
-set_tests_properties(ColorAndWidthWidget_Signals PROPERTIES TIMEOUT 60 LABELS "unit")
+add_executable(ToolOptionsPanel_Signals ToolOptionsPanel/tst_Signals.cpp)
+target_link_libraries(ToolOptionsPanel_Signals PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME ToolOptionsPanel_Signals COMMAND ToolOptionsPanel_Signals)
+set_tests_properties(ToolOptionsPanel_Signals PROPERTIES TIMEOUT 60 LABELS "unit")
 
-add_executable(ColorAndWidthWidget_HitTest ColorAndWidthWidget/tst_HitTest.cpp)
-target_link_libraries(ColorAndWidthWidget_HitTest PRIVATE snaptray_ui Qt6::Test)
-add_test(NAME ColorAndWidthWidget_HitTest COMMAND ColorAndWidthWidget_HitTest)
-set_tests_properties(ColorAndWidthWidget_HitTest PROPERTIES TIMEOUT 60 LABELS "unit")
+add_executable(ToolOptionsPanel_HitTest ToolOptionsPanel/tst_HitTest.cpp)
+target_link_libraries(ToolOptionsPanel_HitTest PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME ToolOptionsPanel_HitTest COMMAND ToolOptionsPanel_HitTest)
+set_tests_properties(ToolOptionsPanel_HitTest PROPERTIES TIMEOUT 60 LABELS "unit")
 
-add_executable(ColorAndWidthWidget_Events ColorAndWidthWidget/tst_Events.cpp)
-target_link_libraries(ColorAndWidthWidget_Events PRIVATE snaptray_ui Qt6::Test)
-add_test(NAME ColorAndWidthWidget_Events COMMAND ColorAndWidthWidget_Events)
-set_tests_properties(ColorAndWidthWidget_Events PROPERTIES TIMEOUT 60 LABELS "unit")
+add_executable(ToolOptionsPanel_Events ToolOptionsPanel/tst_Events.cpp)
+target_link_libraries(ToolOptionsPanel_Events PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME ToolOptionsPanel_Events COMMAND ToolOptionsPanel_Events)
+set_tests_properties(ToolOptionsPanel_Events PROPERTIES TIMEOUT 60 LABELS "unit")
 
 # ============================================================================
 # PinWindow Tests (link snaptray_ui which includes snaptray_platform)

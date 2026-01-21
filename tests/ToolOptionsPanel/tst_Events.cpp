@@ -1,6 +1,6 @@
 #include <QtTest/QtTest>
 #include <QSignalSpy>
-#include "ColorAndWidthWidget.h"
+#include "toolbar/ToolOptionsPanel.h"
 
 namespace {
 constexpr int kWidthSectionSize = 28;
@@ -17,7 +17,7 @@ constexpr int kColorSectionWidth =
 constexpr int kArrowSectionWidth = 52;
 }
 
-class TestColorAndWidthWidgetEvents : public QObject
+class TestToolOptionsPanelEvents : public QObject
 {
     Q_OBJECT
 
@@ -64,7 +64,7 @@ private slots:
     void testHandleMouseReleaseReturnsFalse();
 
 private:
-    ColorAndWidthWidget* m_widget = nullptr;
+    ToolOptionsPanel* m_widget = nullptr;
 
     void setupWidgetWithAllSections();
     QPoint getColorSwatchCenter(int index);
@@ -73,18 +73,18 @@ private:
     QPoint getShapeButtonCenter(int buttonIndex);
 };
 
-void TestColorAndWidthWidgetEvents::init()
+void TestToolOptionsPanelEvents::init()
 {
-    m_widget = new ColorAndWidthWidget();
+    m_widget = new ToolOptionsPanel();
 }
 
-void TestColorAndWidthWidgetEvents::cleanup()
+void TestToolOptionsPanelEvents::cleanup()
 {
     delete m_widget;
     m_widget = nullptr;
 }
 
-void TestColorAndWidthWidgetEvents::setupWidgetWithAllSections()
+void TestToolOptionsPanelEvents::setupWidgetWithAllSections()
 {
     m_widget->setShowWidthSection(true);
     m_widget->setShowTextSection(true);
@@ -94,7 +94,7 @@ void TestColorAndWidthWidgetEvents::setupWidgetWithAllSections()
     m_widget->updatePosition(QRect(100, 100, 200, 40), false, 1920);
 }
 
-QPoint TestColorAndWidthWidgetEvents::getColorSwatchCenter(int index)
+QPoint TestToolOptionsPanelEvents::getColorSwatchCenter(int index)
 {
     QRect widgetRect = m_widget->boundingRect();
 
@@ -122,7 +122,7 @@ QPoint TestColorAndWidthWidgetEvents::getColorSwatchCenter(int index)
     return QPoint(x, y);
 }
 
-QPoint TestColorAndWidthWidgetEvents::getPreviewCenter()
+QPoint TestToolOptionsPanelEvents::getPreviewCenter()
 {
     QRect widgetRect = m_widget->boundingRect();
 
@@ -140,7 +140,7 @@ QPoint TestColorAndWidthWidgetEvents::getPreviewCenter()
     return QPoint(previewCenterX, previewCenterY);
 }
 
-QPoint TestColorAndWidthWidgetEvents::getTextButtonCenter(int buttonIndex)
+QPoint TestToolOptionsPanelEvents::getTextButtonCenter(int buttonIndex)
 {
     // Layout order: WidthSection -> ColorSection -> ArrowStyleSection -> TextSection
     QRect widgetRect = m_widget->boundingRect();
@@ -161,7 +161,7 @@ QPoint TestColorAndWidthWidgetEvents::getTextButtonCenter(int buttonIndex)
     return QPoint(x, y);
 }
 
-QPoint TestColorAndWidthWidgetEvents::getShapeButtonCenter(int buttonIndex)
+QPoint TestToolOptionsPanelEvents::getShapeButtonCenter(int buttonIndex)
 {
     // Layout order: WidthSection -> ColorSection -> ArrowStyleSection -> TextSection -> ShapeSection
     QRect widgetRect = m_widget->boundingRect();
@@ -193,10 +193,10 @@ QPoint TestColorAndWidthWidgetEvents::getShapeButtonCenter(int buttonIndex)
 // Click Handling Tests
 // ============================================================================
 
-void TestColorAndWidthWidgetEvents::testHandleClickOnColorSwatch()
+void TestToolOptionsPanelEvents::testHandleClickOnColorSwatch()
 {
     setupWidgetWithAllSections();
-    QSignalSpy spy(m_widget, &ColorAndWidthWidget::colorSelected);
+    QSignalSpy spy(m_widget, &ToolOptionsPanel::colorSelected);
 
     // Click on first standard color swatch (index 0 = Red)
     QPoint firstSwatchCenter = getColorSwatchCenter(0);
@@ -207,10 +207,10 @@ void TestColorAndWidthWidgetEvents::testHandleClickOnColorSwatch()
     QCOMPARE(m_widget->currentColor(), QColor(220, 53, 69));  // First standard color (Red)
 }
 
-void TestColorAndWidthWidgetEvents::testHandleClickOnSecondColorSwatch()
+void TestToolOptionsPanelEvents::testHandleClickOnSecondColorSwatch()
 {
     setupWidgetWithAllSections();
-    QSignalSpy spy(m_widget, &ColorAndWidthWidget::colorSelected);
+    QSignalSpy spy(m_widget, &ToolOptionsPanel::colorSelected);
 
     // Second standard swatch (index 1 = Yellow amber)
     QPoint secondSwatchCenter = getColorSwatchCenter(1);
@@ -221,10 +221,10 @@ void TestColorAndWidthWidgetEvents::testHandleClickOnSecondColorSwatch()
     QCOMPARE(m_widget->currentColor(), QColor(255, 240, 120));  // Second standard color (Yellow brighter)
 }
 
-void TestColorAndWidthWidgetEvents::testHandleClickOnPreviewOpensColorPicker()
+void TestToolOptionsPanelEvents::testHandleClickOnPreviewOpensColorPicker()
 {
     setupWidgetWithAllSections();
-    QSignalSpy spy(m_widget, &ColorAndWidthWidget::customColorPickerRequested);
+    QSignalSpy spy(m_widget, &ToolOptionsPanel::customColorPickerRequested);
 
     QPoint previewCenter = getPreviewCenter();
     bool handled = m_widget->handleClick(previewCenter);
@@ -233,7 +233,7 @@ void TestColorAndWidthWidgetEvents::testHandleClickOnPreviewOpensColorPicker()
     QCOMPARE(spy.count(), 1);
 }
 
-void TestColorAndWidthWidgetEvents::testHandleClickOutsideWidget()
+void TestToolOptionsPanelEvents::testHandleClickOutsideWidget()
 {
     setupWidgetWithAllSections();
 
@@ -248,10 +248,10 @@ void TestColorAndWidthWidgetEvents::testHandleClickOutsideWidget()
 // Text Section Click Tests
 // ============================================================================
 
-void TestColorAndWidthWidgetEvents::testHandleClickOnBoldButton()
+void TestToolOptionsPanelEvents::testHandleClickOnBoldButton()
 {
     setupWidgetWithAllSections();
-    QSignalSpy spy(m_widget, &ColorAndWidthWidget::boldToggled);
+    QSignalSpy spy(m_widget, &ToolOptionsPanel::boldToggled);
 
     // Bold is initially true, clicking should toggle it to false
     QPoint boldButtonCenter = getTextButtonCenter(0);
@@ -262,10 +262,10 @@ void TestColorAndWidthWidgetEvents::testHandleClickOnBoldButton()
     QCOMPARE(m_widget->isBold(), false);
 }
 
-void TestColorAndWidthWidgetEvents::testHandleClickOnItalicButton()
+void TestToolOptionsPanelEvents::testHandleClickOnItalicButton()
 {
     setupWidgetWithAllSections();
-    QSignalSpy spy(m_widget, &ColorAndWidthWidget::italicToggled);
+    QSignalSpy spy(m_widget, &ToolOptionsPanel::italicToggled);
 
     // Italic is initially false
     QPoint italicButtonCenter = getTextButtonCenter(1);
@@ -276,10 +276,10 @@ void TestColorAndWidthWidgetEvents::testHandleClickOnItalicButton()
     QCOMPARE(m_widget->isItalic(), true);
 }
 
-void TestColorAndWidthWidgetEvents::testHandleClickOnUnderlineButton()
+void TestToolOptionsPanelEvents::testHandleClickOnUnderlineButton()
 {
     setupWidgetWithAllSections();
-    QSignalSpy spy(m_widget, &ColorAndWidthWidget::underlineToggled);
+    QSignalSpy spy(m_widget, &ToolOptionsPanel::underlineToggled);
 
     QPoint underlineButtonCenter = getTextButtonCenter(2);
     bool handled = m_widget->handleClick(underlineButtonCenter);
@@ -289,10 +289,10 @@ void TestColorAndWidthWidgetEvents::testHandleClickOnUnderlineButton()
     QCOMPARE(m_widget->isUnderline(), true);
 }
 
-void TestColorAndWidthWidgetEvents::testHandleClickOnFontSizeDropdown()
+void TestToolOptionsPanelEvents::testHandleClickOnFontSizeDropdown()
 {
     setupWidgetWithAllSections();
-    QSignalSpy spy(m_widget, &ColorAndWidthWidget::fontSizeDropdownRequested);
+    QSignalSpy spy(m_widget, &ToolOptionsPanel::fontSizeDropdownRequested);
 
     // Font size dropdown is button index 3 area (after B/I/U)
     QPoint fontSizeCenter = getTextButtonCenter(3);
@@ -305,10 +305,10 @@ void TestColorAndWidthWidgetEvents::testHandleClickOnFontSizeDropdown()
     QCOMPARE(spy.count(), 1);
 }
 
-void TestColorAndWidthWidgetEvents::testHandleClickOnFontFamilyDropdown()
+void TestToolOptionsPanelEvents::testHandleClickOnFontFamilyDropdown()
 {
     setupWidgetWithAllSections();
-    QSignalSpy spy(m_widget, &ColorAndWidthWidget::fontFamilyDropdownRequested);
+    QSignalSpy spy(m_widget, &ToolOptionsPanel::fontFamilyDropdownRequested);
 
     // Font family dropdown is after font size
     QPoint fontFamilyCenter = getTextButtonCenter(4);
@@ -325,14 +325,14 @@ void TestColorAndWidthWidgetEvents::testHandleClickOnFontFamilyDropdown()
 // Shape Section Click Tests
 // ============================================================================
 
-void TestColorAndWidthWidgetEvents::testHandleClickOnRectangleButton()
+void TestToolOptionsPanelEvents::testHandleClickOnRectangleButton()
 {
     setupWidgetWithAllSections();
 
     // First set to ellipse so we can test changing to rectangle
     m_widget->setShapeType(ShapeType::Ellipse);
 
-    QSignalSpy spy(m_widget, &ColorAndWidthWidget::shapeTypeChanged);
+    QSignalSpy spy(m_widget, &ToolOptionsPanel::shapeTypeChanged);
 
     QPoint rectButtonCenter = getShapeButtonCenter(0);
     bool handled = m_widget->handleClick(rectButtonCenter);
@@ -342,10 +342,10 @@ void TestColorAndWidthWidgetEvents::testHandleClickOnRectangleButton()
     QCOMPARE(m_widget->shapeType(), ShapeType::Rectangle);
 }
 
-void TestColorAndWidthWidgetEvents::testHandleClickOnEllipseButton()
+void TestToolOptionsPanelEvents::testHandleClickOnEllipseButton()
 {
     setupWidgetWithAllSections();
-    QSignalSpy spy(m_widget, &ColorAndWidthWidget::shapeTypeChanged);
+    QSignalSpy spy(m_widget, &ToolOptionsPanel::shapeTypeChanged);
 
     QPoint ellipseButtonCenter = getShapeButtonCenter(1);
     bool handled = m_widget->handleClick(ellipseButtonCenter);
@@ -355,10 +355,10 @@ void TestColorAndWidthWidgetEvents::testHandleClickOnEllipseButton()
     QCOMPARE(m_widget->shapeType(), ShapeType::Ellipse);
 }
 
-void TestColorAndWidthWidgetEvents::testHandleClickOnFillModeButton()
+void TestToolOptionsPanelEvents::testHandleClickOnFillModeButton()
 {
     setupWidgetWithAllSections();
-    QSignalSpy spy(m_widget, &ColorAndWidthWidget::shapeFillModeChanged);
+    QSignalSpy spy(m_widget, &ToolOptionsPanel::shapeFillModeChanged);
 
     // Default is Outline, clicking should change to Filled
     QPoint fillButtonCenter = getShapeButtonCenter(2);
@@ -373,7 +373,7 @@ void TestColorAndWidthWidgetEvents::testHandleClickOnFillModeButton()
 // Arrow Style Click Tests
 // ============================================================================
 
-void TestColorAndWidthWidgetEvents::testHandleClickOnArrowStyleButtonOpensDropdown()
+void TestToolOptionsPanelEvents::testHandleClickOnArrowStyleButtonOpensDropdown()
 {
     m_widget->setShowArrowStyleSection(true);
     m_widget->setVisible(true);
@@ -392,13 +392,13 @@ void TestColorAndWidthWidgetEvents::testHandleClickOnArrowStyleButtonOpensDropdo
     // After clicking, the dropdown should be open - clicking again should close it
 }
 
-void TestColorAndWidthWidgetEvents::testHandleClickOnArrowStyleOption()
+void TestToolOptionsPanelEvents::testHandleClickOnArrowStyleOption()
 {
     m_widget->setShowArrowStyleSection(true);
     m_widget->setVisible(true);
     m_widget->updatePosition(QRect(100, 100, 200, 40), false, 1920);
 
-    QSignalSpy spy(m_widget, &ColorAndWidthWidget::arrowStyleChanged);
+    QSignalSpy spy(m_widget, &ToolOptionsPanel::arrowStyleChanged);
 
     QRect widgetRect = m_widget->boundingRect();
     // Layout order: WidthSection -> ColorSection -> ArrowStyleSection
@@ -417,7 +417,7 @@ void TestColorAndWidthWidgetEvents::testHandleClickOnArrowStyleOption()
     QCOMPARE(m_widget->arrowStyle(), LineEndStyle::None);
 }
 
-void TestColorAndWidthWidgetEvents::testHandleClickOutsideClosesDropdown()
+void TestToolOptionsPanelEvents::testHandleClickOutsideClosesDropdown()
 {
     m_widget->setShowArrowStyleSection(true);
     m_widget->setVisible(true);
@@ -445,7 +445,7 @@ void TestColorAndWidthWidgetEvents::testHandleClickOutsideClosesDropdown()
 // Wheel Event Tests
 // ============================================================================
 
-void TestColorAndWidthWidgetEvents::testHandleWheelScrollUp()
+void TestToolOptionsPanelEvents::testHandleWheelScrollUp()
 {
     m_widget->setShowWidthSection(true);
     m_widget->setCurrentWidth(5);
@@ -456,7 +456,7 @@ void TestColorAndWidthWidgetEvents::testHandleWheelScrollUp()
     QCOMPARE(m_widget->currentWidth(), 6);
 }
 
-void TestColorAndWidthWidgetEvents::testHandleWheelScrollDown()
+void TestToolOptionsPanelEvents::testHandleWheelScrollDown()
 {
     m_widget->setShowWidthSection(true);
     m_widget->setCurrentWidth(5);
@@ -467,7 +467,7 @@ void TestColorAndWidthWidgetEvents::testHandleWheelScrollDown()
     QCOMPARE(m_widget->currentWidth(), 4);
 }
 
-void TestColorAndWidthWidgetEvents::testHandleWheelAtMaxWidth()
+void TestToolOptionsPanelEvents::testHandleWheelAtMaxWidth()
 {
     m_widget->setShowWidthSection(true);
     m_widget->setCurrentWidth(20);  // Max width
@@ -479,7 +479,7 @@ void TestColorAndWidthWidgetEvents::testHandleWheelAtMaxWidth()
     QCOMPARE(m_widget->currentWidth(), 20);
 }
 
-void TestColorAndWidthWidgetEvents::testHandleWheelAtMinWidth()
+void TestToolOptionsPanelEvents::testHandleWheelAtMinWidth()
 {
     m_widget->setShowWidthSection(true);
     m_widget->setCurrentWidth(1);  // Min width
@@ -490,7 +490,7 @@ void TestColorAndWidthWidgetEvents::testHandleWheelAtMinWidth()
     QCOMPARE(m_widget->currentWidth(), 1);
 }
 
-void TestColorAndWidthWidgetEvents::testHandleWheelWithWidthSectionHidden()
+void TestToolOptionsPanelEvents::testHandleWheelWithWidthSectionHidden()
 {
     m_widget->setShowWidthSection(false);
     m_widget->setCurrentWidth(5);
@@ -505,7 +505,7 @@ void TestColorAndWidthWidgetEvents::testHandleWheelWithWidthSectionHidden()
 // Hover Update Tests
 // ============================================================================
 
-void TestColorAndWidthWidgetEvents::testUpdateHoveredOnColorSwatch()
+void TestToolOptionsPanelEvents::testUpdateHoveredOnColorSwatch()
 {
     setupWidgetWithAllSections();
 
@@ -515,7 +515,7 @@ void TestColorAndWidthWidgetEvents::testUpdateHoveredOnColorSwatch()
     QVERIFY(changed);
 }
 
-void TestColorAndWidthWidgetEvents::testUpdateHoveredOutsideWidget()
+void TestToolOptionsPanelEvents::testUpdateHoveredOutsideWidget()
 {
     setupWidgetWithAllSections();
 
@@ -537,10 +537,10 @@ void TestColorAndWidthWidgetEvents::testUpdateHoveredOutsideWidget()
 // Mouse Press/Release Tests
 // ============================================================================
 
-void TestColorAndWidthWidgetEvents::testHandleMousePressDelegates()
+void TestToolOptionsPanelEvents::testHandleMousePressDelegates()
 {
     setupWidgetWithAllSections();
-    QSignalSpy spy(m_widget, &ColorAndWidthWidget::colorSelected);
+    QSignalSpy spy(m_widget, &ToolOptionsPanel::colorSelected);
 
     QPoint firstSwatchCenter = getColorSwatchCenter(0);
     bool handled = m_widget->handleMousePress(firstSwatchCenter);
@@ -550,7 +550,7 @@ void TestColorAndWidthWidgetEvents::testHandleMousePressDelegates()
     QCOMPARE(spy.count(), 1);
 }
 
-void TestColorAndWidthWidgetEvents::testHandleMouseReleaseReturnsFalse()
+void TestToolOptionsPanelEvents::testHandleMouseReleaseReturnsFalse()
 {
     setupWidgetWithAllSections();
 
@@ -561,5 +561,5 @@ void TestColorAndWidthWidgetEvents::testHandleMouseReleaseReturnsFalse()
     QVERIFY(!handled);
 }
 
-QTEST_MAIN(TestColorAndWidthWidgetEvents)
+QTEST_MAIN(TestToolOptionsPanelEvents)
 #include "tst_Events.moc"
