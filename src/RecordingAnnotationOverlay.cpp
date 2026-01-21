@@ -5,6 +5,7 @@
 #include "LaserPointerRenderer.h"
 #include "recording/CursorHighlightEffect.h"
 #include "recording/SpotlightEffect.h"
+#include "cursor/CursorManager.h"
 
 #include <QPainter>
 #include <QMouseEvent>
@@ -109,8 +110,14 @@ void RecordingAnnotationOverlay::enterEvent(QEnterEvent *event)
     QWidget::enterEvent(event);
     // Set cross cursor every time mouse enters the overlay
     // macOS resets cursor when mouse enters a window, so we need to set it here
-    setCursor(Qt::CrossCursor);
+    CursorManager::instance().pushCursorForWidget(this, CursorContext::Tool, Qt::CrossCursor);
     forceNativeCrosshairCursor(this);
+}
+
+void RecordingAnnotationOverlay::leaveEvent(QEvent *event)
+{
+    CursorManager::instance().popCursorForWidget(this, CursorContext::Tool);
+    QWidget::leaveEvent(event);
 }
 
 void RecordingAnnotationOverlay::compositeOntoFrame(QImage &frame, qreal scale) const
