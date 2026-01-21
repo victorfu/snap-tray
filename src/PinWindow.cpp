@@ -2392,7 +2392,9 @@ void PinWindow::updateLiveFrame()
 
         // Update shared pixmap for mosaic tool to use latest frame
         m_sharedSourcePixmap = std::make_shared<const QPixmap>(m_originalPixmap);
-        m_toolManager->setSourcePixmap(m_sharedSourcePixmap);
+        if (m_toolManager) {
+            m_toolManager->setSourcePixmap(m_sharedSourcePixmap);
+        }
 
         // Invalidate transform cache
         m_cachedRotation = -1;
