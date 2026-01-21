@@ -294,17 +294,9 @@ void HotkeyEdit::focusOutEvent(QFocusEvent *event)
 QString HotkeyEdit::modifiersToString(Qt::KeyboardModifiers modifiers) const
 {
     QString result;
-#ifdef Q_OS_MAC
-    // macOS uses different modifier order and symbols
     if (modifiers & Qt::ControlModifier) result += "Ctrl+";
     if (modifiers & Qt::AltModifier) result += "Alt+";
     if (modifiers & Qt::ShiftModifier) result += "Shift+";
     if (modifiers & Qt::MetaModifier) result += "Meta+";
-#else
-    if (modifiers & Qt::ControlModifier) result += "Ctrl+";
-    if (modifiers & Qt::AltModifier) result += "Alt+";
-    if (modifiers & Qt::ShiftModifier) result += "Shift+";
-    if (modifiers & Qt::MetaModifier) result += "Meta+";
-#endif
     return result;
 }
