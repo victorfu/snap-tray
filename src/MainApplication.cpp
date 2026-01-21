@@ -209,7 +209,6 @@ void MainApplication::initialize()
     // Connect OCR completion signal (must be after m_trayIcon is created)
     connect(m_pinWindowManager, &PinWindowManager::ocrCompleted,
         this, [](bool success, const QString& message) {
-            qDebug() << "MainApplication: OCR completed, success=" << success << ", message=" << message;
             GlobalToast::instance().showToast(
                 success ? GlobalToast::Success : GlobalToast::Error,
                 success ? MainApplication::tr("OCR Success") : MainApplication::tr("OCR Failed"),
@@ -218,26 +217,21 @@ void MainApplication::initialize()
 
     // Setup global hotkeys
     setupHotkey();
-
-    qDebug() << "SnapTray initialized and running in system tray";
 }
 
 void MainApplication::onRegionCapture()
 {
     // Don't trigger if screen canvas is active
     if (m_screenCanvasManager->isActive()) {
-        qDebug() << "Region capture blocked: Screen canvas is active";
         return;
     }
 
     // Don't trigger if recording is active
     if (m_recordingManager->isActive()) {
-        qDebug() << "Region capture blocked: Recording is active";
         return;
     }
 
     // Note: Don't close popup menus - allow capturing them (like Snipaste)
-    qDebug() << "Region capture triggered";
     m_captureManager->startRegionCapture();
 }
 
@@ -245,18 +239,15 @@ void MainApplication::onQuickPin()
 {
     // Don't trigger if screen canvas is active
     if (m_screenCanvasManager->isActive()) {
-        qDebug() << "Quick pin blocked: Screen canvas is active";
         return;
     }
 
     // Don't trigger if recording is active
     if (m_recordingManager->isActive()) {
-        qDebug() << "Quick pin blocked: Recording is active";
         return;
     }
 
     // Note: Don't close popup menus - allow capturing them (like Snipaste)
-    qDebug() << "Quick pin triggered";
     m_captureManager->startQuickPinCapture();
 }
 
@@ -264,13 +255,11 @@ void MainApplication::onScreenCanvas()
 {
     // Don't trigger if capture is active
     if (m_captureManager->isActive()) {
-        qDebug() << "Screen canvas blocked: Capture is active";
         return;
     }
 
     // Don't trigger if recording is active
     if (m_recordingManager->isActive()) {
-        qDebug() << "Screen canvas blocked: Recording is active";
         return;
     }
 
@@ -279,7 +268,6 @@ void MainApplication::onScreenCanvas()
         popup->close();
     }
 
-    qDebug() << "Screen canvas triggered";
     m_screenCanvasManager->toggle();
 }
 
@@ -287,19 +275,16 @@ void MainApplication::onFullScreenRecording()
 {
     // Don't trigger if screen canvas is active
     if (m_screenCanvasManager->isActive()) {
-        qDebug() << "Full-screen recording blocked: Screen canvas is active";
         return;
     }
 
     // Don't trigger if already recording
     if (m_recordingManager->isActive()) {
-        qDebug() << "Full-screen recording blocked: Recording is already active";
         return;
     }
 
     // Don't trigger if capture is active
     if (m_captureManager->isActive()) {
-        qDebug() << "Full-screen recording blocked: Capture is active";
         return;
     }
 
@@ -308,20 +293,16 @@ void MainApplication::onFullScreenRecording()
         popup->close();
     }
 
-    qDebug() << "Full-screen recording triggered";
     m_recordingManager->startFullScreenRecording();
 }
 
 void MainApplication::onCloseAllPins()
 {
-    qDebug() << "Closing all pin windows";
     m_pinWindowManager->closeAllWindows();
 }
 
 void MainApplication::onSettings()
 {
-    qDebug() << "Settings triggered";
-
     // If dialog already open, bring it to front
     if (m_settingsDialog) {
         m_settingsDialog->raise();
@@ -420,11 +401,7 @@ void MainApplication::setupHotkey()
         m_regionHotkey = new QHotkey(QKeySequence(regionKeySequence), true, this);
     }
 
-    if (m_regionHotkey->isRegistered()) {
-        qDebug() << "Region hotkey registered:" << regionKeySequence;
-    }
-    else {
-        qDebug() << "Failed to register region hotkey:" << regionKeySequence;
+    if (!m_regionHotkey->isRegistered()) {
         failedHotkeys << QString("Region Capture (%1)").arg(regionKeySequence);
     }
 
@@ -439,11 +416,7 @@ void MainApplication::setupHotkey()
         m_quickPinHotkey = new QHotkey(QKeySequence(quickPinKeySequence), true, this);
     }
 
-    if (m_quickPinHotkey->isRegistered()) {
-        qDebug() << "Quick Pin hotkey registered:" << quickPinKeySequence;
-    }
-    else {
-        qDebug() << "Failed to register Quick Pin hotkey:" << quickPinKeySequence;
+    if (!m_quickPinHotkey->isRegistered()) {
         failedHotkeys << QString("Quick Pin (%1)").arg(quickPinKeySequence);
     }
 
@@ -457,11 +430,7 @@ void MainApplication::setupHotkey()
         m_screenCanvasHotkey = new QHotkey(QKeySequence(screenCanvasKeySequence), true, this);
     }
 
-    if (m_screenCanvasHotkey->isRegistered()) {
-        qDebug() << "Screen canvas hotkey registered:" << screenCanvasKeySequence;
-    }
-    else {
-        qDebug() << "Failed to register screen canvas hotkey:" << screenCanvasKeySequence;
+    if (!m_screenCanvasHotkey->isRegistered()) {
         failedHotkeys << QString("Screen Canvas (%1)").arg(screenCanvasKeySequence);
     }
 
@@ -475,11 +444,7 @@ void MainApplication::setupHotkey()
         m_pasteHotkey = new QHotkey(QKeySequence(pasteKeySequence), true, this);
     }
 
-    if (m_pasteHotkey->isRegistered()) {
-        qDebug() << "Paste hotkey registered:" << pasteKeySequence;
-    }
-    else {
-        qDebug() << "Failed to register paste hotkey:" << pasteKeySequence;
+    if (!m_pasteHotkey->isRegistered()) {
         failedHotkeys << QString("Paste (%1)").arg(pasteKeySequence);
     }
 
@@ -499,8 +464,6 @@ void MainApplication::setupHotkey()
 
 bool MainApplication::updateHotkey(const QString& newHotkey)
 {
-    qDebug() << "Updating hotkey to:" << newHotkey;
-
     // Save old hotkey string for reverting
     auto settings = SnapTray::getSettings();
     QString oldHotkey = settings.value(SnapTray::kSettingsKeyHotkey, SnapTray::kDefaultHotkey).toString();
@@ -520,14 +483,11 @@ bool MainApplication::updateHotkey(const QString& newHotkey)
     m_regionHotkey->setRegistered(true);
 
     if (m_regionHotkey->isRegistered()) {
-        qDebug() << "Hotkey updated and registered:" << newHotkey;
         updateTrayMenuHotkeyText(newHotkey);
         settings.setValue(SnapTray::kSettingsKeyHotkey, newHotkey);
         return true;
     }
     else {
-        qDebug() << "Failed to register new hotkey:" << newHotkey << ", reverting...";
-
         // Revert using saved string
         if (isNativeKeyCode(oldHotkey, nativeKey)) {
             m_regionHotkey->setNativeShortcut(QHotkey::NativeShortcut(nativeKey, 0));
@@ -535,22 +495,12 @@ bool MainApplication::updateHotkey(const QString& newHotkey)
             m_regionHotkey->setShortcut(QKeySequence(oldHotkey));
         }
         m_regionHotkey->setRegistered(true);
-
-        if (m_regionHotkey->isRegistered()) {
-            qDebug() << "Reverted to old hotkey:" << oldHotkey;
-        }
-        else {
-            qDebug() << "Critical: Failed to restore old hotkey!";
-        }
-
         return false;
     }
 }
 
 bool MainApplication::updateScreenCanvasHotkey(const QString& newHotkey)
 {
-    qDebug() << "Updating screen canvas hotkey to:" << newHotkey;
-
     // Save old hotkey string for reverting
     auto settings = SnapTray::getSettings();
     QString oldHotkey = settings.value(SnapTray::kSettingsKeyScreenCanvasHotkey, SnapTray::kDefaultScreenCanvasHotkey).toString();
@@ -570,8 +520,6 @@ bool MainApplication::updateScreenCanvasHotkey(const QString& newHotkey)
     m_screenCanvasHotkey->setRegistered(true);
 
     if (m_screenCanvasHotkey->isRegistered()) {
-        qDebug() << "Screen canvas hotkey updated and registered:" << newHotkey;
-
         // Update tray menu
         if (m_screenCanvasAction) {
             m_screenCanvasAction->setText(QString("Screen Canvas (%1)").arg(newHotkey));
@@ -583,8 +531,6 @@ bool MainApplication::updateScreenCanvasHotkey(const QString& newHotkey)
         return true;
     }
     else {
-        qDebug() << "Failed to register new screen canvas hotkey:" << newHotkey << ", reverting...";
-
         // Revert using saved string
         if (isNativeKeyCode(oldHotkey, nativeKey)) {
             m_screenCanvasHotkey->setNativeShortcut(QHotkey::NativeShortcut(nativeKey, 0));
@@ -592,22 +538,12 @@ bool MainApplication::updateScreenCanvasHotkey(const QString& newHotkey)
             m_screenCanvasHotkey->setShortcut(QKeySequence(oldHotkey));
         }
         m_screenCanvasHotkey->setRegistered(true);
-
-        if (m_screenCanvasHotkey->isRegistered()) {
-            qDebug() << "Reverted to old screen canvas hotkey:" << oldHotkey;
-        }
-        else {
-            qDebug() << "Critical: Failed to restore old screen canvas hotkey!";
-        }
-
         return false;
     }
 }
 
 bool MainApplication::updatePasteHotkey(const QString& newHotkey)
 {
-    qDebug() << "Updating paste hotkey to:" << newHotkey;
-
     // Save old hotkey string for reverting
     auto settings = SnapTray::getSettings();
     QString oldHotkey = settings.value(SnapTray::kSettingsKeyPasteHotkey, SnapTray::kDefaultPasteHotkey).toString();
@@ -627,16 +563,11 @@ bool MainApplication::updatePasteHotkey(const QString& newHotkey)
     m_pasteHotkey->setRegistered(true);
 
     if (m_pasteHotkey->isRegistered()) {
-        qDebug() << "Paste hotkey updated and registered:" << newHotkey;
-
         // Save only after successful registration
         settings.setValue(SnapTray::kSettingsKeyPasteHotkey, newHotkey);
-
         return true;
     }
     else {
-        qDebug() << "Failed to register new paste hotkey:" << newHotkey << ", reverting...";
-
         // Revert using saved string
         if (isNativeKeyCode(oldHotkey, nativeKey)) {
             m_pasteHotkey->setNativeShortcut(QHotkey::NativeShortcut(nativeKey, 0));
@@ -644,22 +575,12 @@ bool MainApplication::updatePasteHotkey(const QString& newHotkey)
             m_pasteHotkey->setShortcut(QKeySequence(oldHotkey));
         }
         m_pasteHotkey->setRegistered(true);
-
-        if (m_pasteHotkey->isRegistered()) {
-            qDebug() << "Reverted to old paste hotkey:" << oldHotkey;
-        }
-        else {
-            qDebug() << "Critical: Failed to restore old paste hotkey!";
-        }
-
         return false;
     }
 }
 
 bool MainApplication::updateQuickPinHotkey(const QString& newHotkey)
 {
-    qDebug() << "Updating Quick Pin hotkey to:" << newHotkey;
-
     // Save old hotkey string for reverting
     auto settings = SnapTray::getSettings();
     QString oldHotkey = settings.value(SnapTray::kSettingsKeyQuickPinHotkey, SnapTray::kDefaultQuickPinHotkey).toString();
@@ -679,16 +600,11 @@ bool MainApplication::updateQuickPinHotkey(const QString& newHotkey)
     m_quickPinHotkey->setRegistered(true);
 
     if (m_quickPinHotkey->isRegistered()) {
-        qDebug() << "Quick Pin hotkey updated and registered:" << newHotkey;
-
         // Save only after successful registration
         settings.setValue(SnapTray::kSettingsKeyQuickPinHotkey, newHotkey);
-
         return true;
     }
     else {
-        qDebug() << "Failed to register new Quick Pin hotkey:" << newHotkey << ", reverting...";
-
         // Revert using saved string
         if (isNativeKeyCode(oldHotkey, nativeKey)) {
             m_quickPinHotkey->setNativeShortcut(QHotkey::NativeShortcut(nativeKey, 0));
@@ -696,14 +612,6 @@ bool MainApplication::updateQuickPinHotkey(const QString& newHotkey)
             m_quickPinHotkey->setShortcut(QKeySequence(oldHotkey));
         }
         m_quickPinHotkey->setRegistered(true);
-
-        if (m_quickPinHotkey->isRegistered()) {
-            qDebug() << "Reverted to old Quick Pin hotkey:" << oldHotkey;
-        }
-        else {
-            qDebug() << "Critical: Failed to restore old Quick Pin hotkey!";
-        }
-
         return false;
     }
 }
@@ -756,11 +664,8 @@ QPixmap MainApplication::renderTextToPixmap(const QString &text)
 
 void MainApplication::onPasteFromClipboard()
 {
-    qDebug() << "Paste hotkey activated";
-
     // If region selection is active with complete selection, trigger pin (same as Enter)
     if (m_captureManager && m_captureManager->hasCompleteSelection()) {
-        qDebug() << "Region selection active, triggering pin instead of paste";
         m_captureManager->triggerFinishSelection();
         return;
     }
@@ -800,14 +705,11 @@ void MainApplication::onPasteFromClipboard()
         QPoint position = screenGeometry.center() - QPoint(logicalSize.width() / 2, logicalSize.height() / 2);
 
         m_pinWindowManager->createPinWindow(pixmap, position);
-        qDebug() << "Created pin window from clipboard at screen center" << position;
     }
 }
 
 void MainApplication::showRecordingPreview(const QString& videoPath)
 {
-    qDebug() << "MainApplication: Showing recording preview for:" << videoPath;
-
     // Prevent multiple preview windows
     if (m_previewWindow) {
         m_previewWindow->raise();
@@ -835,8 +737,6 @@ void MainApplication::showRecordingPreview(const QString& videoPath)
 
 void MainApplication::onPreviewSaveRequested(const QString& videoPath)
 {
-    qDebug() << "MainApplication: Preview save requested for:" << videoPath;
-
     // Trigger the save dialog on RecordingManager
     // Note: The preview window closes itself via close() after emitting saveRequested,
     // and the closed signal handler already sets m_previewWindow = nullptr
@@ -845,8 +745,6 @@ void MainApplication::onPreviewSaveRequested(const QString& videoPath)
 
 void MainApplication::onPreviewDiscardRequested()
 {
-    qDebug() << "MainApplication: Preview discard requested";
-
     // Get the video path before closing window
     QString videoPath;
     if (m_previewWindow) {
@@ -855,10 +753,7 @@ void MainApplication::onPreviewDiscardRequested()
 
     // Delete temp file
     if (!videoPath.isEmpty() && QFile::exists(videoPath)) {
-        if (QFile::remove(videoPath)) {
-            qDebug() << "MainApplication: Deleted temp file:" << videoPath;
-        }
-        else {
+        if (!QFile::remove(videoPath)) {
             qWarning() << "MainApplication: Failed to delete temp file:" << videoPath;
         }
     }

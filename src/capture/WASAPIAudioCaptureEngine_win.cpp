@@ -41,10 +41,7 @@ public:
 
 protected:
     void run() override {
-        qDebug() << "CaptureThread::run() START";
-
         // Initialize COM for this thread (use MTA for audio capture)
-        qDebug() << "CaptureThread: Initializing COM...";
         HRESULT hr = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
         if (FAILED(hr) && hr != RPC_E_CHANGED_MODE) {
             qWarning() << "CaptureThread: Failed to initialize COM:" << hr;
@@ -52,29 +49,19 @@ protected:
             m_engine->m_initDone = true;
             return;
         }
-        qDebug() << "CaptureThread: COM initialized";
 
         // ALL COM initialization happens here in the thread
-        qDebug() << "CaptureThread: Calling initializeInThread...";
         bool initOk = m_engine->initializeInThread();
-        qDebug() << "CaptureThread: initializeInThread returned" << initOk;
         m_engine->m_initSuccess = initOk;
         m_engine->m_initDone = true;
 
         if (initOk) {
-            qDebug() << "CaptureThread: Entering captureLoop...";
             m_engine->captureLoop();
-            qDebug() << "CaptureThread: captureLoop returned";
         }
 
         // Cleanup ALL COM objects in the same thread they were created
-        qDebug() << "CaptureThread: Calling cleanupInThread...";
         m_engine->cleanupInThread();
-        qDebug() << "CaptureThread: cleanupInThread returned";
-
-        qDebug() << "CaptureThread: Uninitializing COM...";
         CoUninitialize();
-        qDebug() << "CaptureThread::run() END";
     }
 
 private:
@@ -112,7 +99,6 @@ bool WASAPIAudioCaptureEngine::isAvailable() const
 bool WASAPIAudioCaptureEngine::setAudioSource(AudioSource source)
 {
     if (m_running) {
-        qDebug() << "WASAPIAudioCaptureEngine: Cannot change source while running";
         return false;
     }
     m_source = source;
@@ -123,7 +109,6 @@ bool WASAPIAudioCaptureEngine::setAudioSource(AudioSource source)
 bool WASAPIAudioCaptureEngine::setDevice(const QString &deviceId)
 {
     if (m_running) {
-        qDebug() << "WASAPIAudioCaptureEngine: Cannot change device while running";
         return false;
     }
     m_deviceId = deviceId;
@@ -378,13 +363,9 @@ bool WASAPIAudioCaptureEngine::updateFormatFromWaveFormat(const void *wfxPtr,
         const WAVEFORMATEXTENSIBLE *wfxExt = reinterpret_cast<const WAVEFORMATEXTENSIBLE*>(wfx);
         if (IsEqualGUID(wfxExt->SubFormat, KSDATAFORMAT_SUBTYPE_IEEE_FLOAT)) {
             nativeFormat.isFloat = true;
-            qDebug() << "WASAPIAudioCaptureEngine: Native format is IEEE float";
-        } else if (IsEqualGUID(wfxExt->SubFormat, KSDATAFORMAT_SUBTYPE_PCM)) {
-            qDebug() << "WASAPIAudioCaptureEngine: Native format is PCM";
         }
     } else if (wfx->wFormatTag == WAVE_FORMAT_IEEE_FLOAT) {
         nativeFormat.isFloat = true;
-        qDebug() << "WASAPIAudioCaptureEngine: Native format is IEEE float (legacy tag)";
     }
 
     // Store native sample rate, but we will output 16-bit PCM
@@ -392,15 +373,6 @@ bool WASAPIAudioCaptureEngine::updateFormatFromWaveFormat(const void *wfxPtr,
     outputFormat.channels = wfx->nChannels;
     outputFormat.bitsPerSample = 16;  // Always output 16-bit PCM
 
-    qDebug() << "WASAPIAudioCaptureEngine: Native format -"
-             << wfx->nSamplesPerSec << "Hz,"
-             << wfx->nChannels << "ch,"
-             << nativeFormat.bitsPerSample << "bit"
-             << (nativeFormat.isFloat ? "(float)" : "(int)");
-    qDebug() << "WASAPIAudioCaptureEngine: Output format -"
-             << outputFormat.sampleRate << "Hz,"
-             << outputFormat.channels << "ch,"
-             << outputFormat.bitsPerSample << "bit (PCM)";
     return true;
 }
 
@@ -485,9 +457,6 @@ void WASAPIAudioCaptureEngine::refreshProbedFormat()
             m_micFormat.channels == m_loopbackFormat.channels) {
             m_format = m_micFormat;
         } else {
-            qDebug() << "WASAPIAudioCaptureEngine: Mismatched mic/loopback formats during probe -"
-                     << "mic:" << m_micFormat.sampleRate << "Hz," << m_micFormat.channels << "ch"
-                     << "loopback:" << m_loopbackFormat.sampleRate << "Hz," << m_loopbackFormat.channels << "ch";
             m_format = m_micFormat;
         }
         return;
@@ -503,8 +472,6 @@ void WASAPIAudioCaptureEngine::refreshProbedFormat()
 // Called from capture thread to initialize COM objects
 bool WASAPIAudioCaptureEngine::initializeInThread()
 {
-    qDebug() << "WASAPIAudioCaptureEngine: Initializing in thread";
-
     // Create device enumerator
     HRESULT hr = CoCreateInstance(
         __uuidof(MMDeviceEnumerator),
@@ -540,9 +507,6 @@ bool WASAPIAudioCaptureEngine::initializeInThread()
     if (m_micCaptureClient && m_loopbackCaptureClient) {
         if (m_micFormat.sampleRate != m_loopbackFormat.sampleRate ||
             m_micFormat.channels != m_loopbackFormat.channels) {
-            qDebug() << "WASAPIAudioCaptureEngine: Mic/loopback formats differ, disabling loopback."
-                     << "mic:" << m_micFormat.sampleRate << "Hz," << m_micFormat.channels << "ch"
-                     << "loopback:" << m_loopbackFormat.sampleRate << "Hz," << m_loopbackFormat.channels << "ch";
             emit warning("Mic and system audio formats differ; system audio disabled.");
             safeRelease(m_loopbackCaptureClient);
             safeRelease(m_loopbackAudioClient);
@@ -574,35 +538,26 @@ bool WASAPIAudioCaptureEngine::initializeInThread()
         }
     }
 
-    qDebug() << "WASAPIAudioCaptureEngine: Initialized successfully in thread";
     return true;
 }
 
 // Called from capture thread to clean up COM objects
 void WASAPIAudioCaptureEngine::cleanupInThread()
 {
-    qDebug() << "WASAPIAudioCaptureEngine::cleanupInThread() START";
-
-    qDebug() << "WASAPIAudioCaptureEngine: Stopping mic audio client...";
     if (m_micAudioClient) {
         m_micAudioClient->Stop();
     }
-    qDebug() << "WASAPIAudioCaptureEngine: Stopping loopback audio client...";
     if (m_loopbackAudioClient) {
         m_loopbackAudioClient->Stop();
     }
 
-    qDebug() << "WASAPIAudioCaptureEngine: Cleaning up audio clients...";
     cleanupAudioClient();
-    qDebug() << "WASAPIAudioCaptureEngine: Releasing device enumerator...";
     safeRelease(m_deviceEnumerator);
-    qDebug() << "WASAPIAudioCaptureEngine::cleanupInThread() END";
 }
 
 bool WASAPIAudioCaptureEngine::start()
 {
     if (m_running) {
-        qDebug() << "WASAPIAudioCaptureEngine: Already running";
         return false;
     }
 
@@ -648,28 +603,20 @@ bool WASAPIAudioCaptureEngine::start()
         return false;
     }
 
-    qDebug() << "WASAPIAudioCaptureEngine: Started with source" << static_cast<int>(m_source);
     return true;
 }
 
 void WASAPIAudioCaptureEngine::stop()
 {
-    qDebug() << "WASAPIAudioCaptureEngine::stop() called, m_running=" << m_running.load();
-
     if (!m_running) {
-        qDebug() << "WASAPIAudioCaptureEngine::stop() - not running, returning early";
         return;
     }
 
-    qDebug() << "WASAPIAudioCaptureEngine: Setting stop flags...";
     m_stopRequested = true;
     m_running = false;
     m_paused = false;
 
-    qDebug() << "WASAPIAudioCaptureEngine: Checking capture thread...";
     if (m_captureThread) {
-        qDebug() << "WASAPIAudioCaptureEngine: Thread exists, isRunning=" << m_captureThread->isRunning();
-
         // Use QThread::wait() with timeout - this is the proper way to wait for a thread
         // Don't use processEvents() as it can cause re-entrancy issues with queued signals
         if (!m_captureThread->wait(2000)) {
@@ -678,15 +625,9 @@ void WASAPIAudioCaptureEngine::stop()
             m_captureThread->wait(500);
         }
 
-        qDebug() << "WASAPIAudioCaptureEngine: Deleting thread...";
         delete m_captureThread;
         m_captureThread = nullptr;
-        qDebug() << "WASAPIAudioCaptureEngine: Thread deleted";
-    } else {
-        qDebug() << "WASAPIAudioCaptureEngine: No capture thread to stop";
     }
-
-    qDebug() << "WASAPIAudioCaptureEngine: Stopped successfully";
 }
 
 void WASAPIAudioCaptureEngine::pause()
@@ -697,8 +638,6 @@ void WASAPIAudioCaptureEngine::pause()
     m_pauseStartTime = std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::steady_clock::now().time_since_epoch()).count();
     m_paused = true;
-
-    qDebug() << "WASAPIAudioCaptureEngine: Paused";
 }
 
 void WASAPIAudioCaptureEngine::resume()
@@ -710,8 +649,6 @@ void WASAPIAudioCaptureEngine::resume()
         std::chrono::steady_clock::now().time_since_epoch()).count();
     m_pausedDuration += (now - m_pauseStartTime);
     m_paused = false;
-
-    qDebug() << "WASAPIAudioCaptureEngine: Resumed";
 }
 
 QByteArray WASAPIAudioCaptureEngine::convertToInt16PCM(const unsigned char *data, int numFrames,
@@ -775,14 +712,7 @@ QByteArray WASAPIAudioCaptureEngine::convertToInt16PCM(const unsigned char *data
 
 void WASAPIAudioCaptureEngine::captureLoop()
 {
-    qDebug() << "WASAPIAudioCaptureEngine::captureLoop() START";
-
-    int loopIterations = 0;
     while (!m_stopRequested) {
-        loopIterations++;
-        if (loopIterations % 100 == 0) {
-            qDebug() << "WASAPIAudioCaptureEngine: captureLoop iteration" << loopIterations << ", m_stopRequested=" << m_stopRequested.load();
-        }
         // If paused, just sleep and continue
         if (m_paused) {
             QThread::msleep(10);
@@ -921,8 +851,6 @@ void WASAPIAudioCaptureEngine::captureLoop()
             QThread::msleep(5);
         }
     }
-
-    qDebug() << "WASAPIAudioCaptureEngine::captureLoop() END, total iterations=" << loopIterations << ", m_stopRequested=" << m_stopRequested.load();
 }
 
 #endif // Q_OS_WIN

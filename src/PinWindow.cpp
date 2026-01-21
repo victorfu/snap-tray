@@ -736,7 +736,6 @@ void PinWindow::saveToFile()
         }
 
         if (pixmapToSave.save(filePath)) {
-            qDebug() << "PinWindow: Auto-saved to" << filePath;
             emit saveCompleted(pixmapToSave, filePath);
         }
         else {
@@ -876,8 +875,6 @@ void PinWindow::saveToCacheAsync()
         QString filePath = dir.filePath(filename);
 
         if (pixmapToSave.save(filePath)) {
-            qDebug() << "PinWindow: Saved to cache:" << filePath;
-
             // Clean up old cache files exceeding the limit
             QStringList filters;
             filters << "cache_*.png";
@@ -1739,8 +1736,6 @@ void PinWindow::initializeAnnotationComponents()
     // Sync initial width and color to sub-toolbar UI
     m_subToolbar->colorAndWidthWidget()->setCurrentWidth(m_annotationWidth);
     m_subToolbar->colorAndWidthWidget()->setCurrentColor(m_annotationColor);
-
-    qDebug() << "PinWindow: Annotation components initialized";
 }
 
 void PinWindow::toggleToolbar()
@@ -1774,8 +1769,6 @@ void PinWindow::showToolbar()
 
     // Position AFTER show to ensure correct geometry on macOS
     updateToolbarPosition();
-
-    qDebug() << "PinWindow: Toolbar shown at" << m_toolbar->geometry();
 }
 
 void PinWindow::hideToolbar()
@@ -1785,15 +1778,11 @@ void PinWindow::hideToolbar()
     }
     m_toolbarVisible = false;
     exitAnnotationMode();
-
-    qDebug() << "PinWindow: Toolbar hidden";
 }
 
 void PinWindow::updateToolbarPosition()
 {
     if (m_toolbar && m_toolbarVisible) {
-        qDebug() << "PinWindow::updateToolbarPosition - frameGeometry():" << frameGeometry()
-            << "geometry():" << geometry() << "pos():" << pos();
         m_toolbar->positionNear(frameGeometry());
         // Also update sub-toolbar position if visible
         updateSubToolbarPosition();
@@ -1810,8 +1799,6 @@ void PinWindow::enterAnnotationMode()
     CursorManager::instance().clearAllForWidget(this);
     updateCursorForTool();
     update();
-
-    qDebug() << "PinWindow: Entered annotation mode";
 }
 
 void PinWindow::updateCursorForTool()
@@ -1929,7 +1916,6 @@ void PinWindow::handleToolbarToolSelected(int toolId)
         }
         if (sameToolClicked && m_subToolbar && m_subToolbar->isVisible()) {
             // Same tool clicked while sub-toolbar visible - exit annotation mode entirely
-            qDebug() << "PinWindow: Same tool clicked, exiting annotation mode";
             exitAnnotationMode();
             return;
         }
@@ -1941,7 +1927,6 @@ void PinWindow::handleToolbarToolSelected(int toolId)
 
         // Show sub-toolbar for the selected tool
         if (m_subToolbar) {
-            qDebug() << "PinWindow: Showing sub-toolbar for toolId:" << toolId;
             m_subToolbar->showForTool(toolId);
             updateSubToolbarPosition();
         }
@@ -1950,8 +1935,6 @@ void PinWindow::handleToolbarToolSelected(int toolId)
         exitAnnotationMode();
         hideSubToolbar();
     }
-
-    qDebug() << "PinWindow: Tool selected:" << static_cast<int>(tool);
 }
 
 void PinWindow::handleToolbarUndo()
@@ -1960,7 +1943,6 @@ void PinWindow::handleToolbarUndo()
         m_annotationLayer->undo();
         updateUndoRedoState();
         update();
-        qDebug() << "PinWindow: Undo";
     }
 }
 
@@ -1970,7 +1952,6 @@ void PinWindow::handleToolbarRedo()
         m_annotationLayer->redo();
         updateUndoRedoState();
         update();
-        qDebug() << "PinWindow: Redo";
     }
 }
 
@@ -2010,7 +1991,6 @@ QPixmap PinWindow::getExportPixmapWithAnnotations() const
         painter.setRenderHint(QPainter::Antialiasing);
         m_annotationLayer->draw(painter);
         painter.end();
-        qDebug() << "PinWindow: Export includes annotations";
     }
 
     return result;
@@ -2021,8 +2001,6 @@ void PinWindow::updateSubToolbarPosition()
     // Only position if sub-toolbar is visible
     if (m_subToolbar && m_subToolbar->isVisible() && m_toolbar) {
         QRect toolbarGeom = m_toolbar->frameGeometry();
-        qDebug() << "PinWindow::updateSubToolbarPosition - toolbar frameGeometry=" << toolbarGeom
-            << "subToolbar size=" << m_subToolbar->size();
         m_subToolbar->positionBelow(toolbarGeom);
     }
 }
@@ -2042,7 +2020,6 @@ void PinWindow::onColorSelected(const QColor& color)
     }
     // Save to settings
     AnnotationSettingsManager::instance().saveColor(color);
-    qDebug() << "PinWindow: Color selected:" << color.name();
 }
 
 void PinWindow::onWidthChanged(int width)
@@ -2057,12 +2034,10 @@ void PinWindow::onWidthChanged(int width)
     }
     // Save to settings
     AnnotationSettingsManager::instance().saveWidth(width);
-    qDebug() << "PinWindow: Width changed:" << width;
 }
 
 void PinWindow::onEmojiSelected(const QString& emoji)
 {
-    qDebug() << "PinWindow: Emoji selected:" << emoji;
     // Set emoji in handler - user clicks canvas to place it (like RegionSelector)
     if (m_toolManager) {
         auto* handler = dynamic_cast<EmojiStickerToolHandler*>(
@@ -2078,7 +2053,6 @@ void PinWindow::onStepBadgeSizeChanged(StepBadgeSize size)
     m_stepBadgeSize = size;
     // Save to settings - StepBadgeToolHandler reads from AnnotationSettingsManager
     AnnotationSettingsManager::instance().saveStepBadgeSize(size);
-    qDebug() << "PinWindow: Step badge size changed:" << static_cast<int>(size);
 }
 
 void PinWindow::onShapeTypeChanged(ShapeType type)
@@ -2086,7 +2060,6 @@ void PinWindow::onShapeTypeChanged(ShapeType type)
     if (m_toolManager) {
         m_toolManager->setShapeType(static_cast<int>(type));
     }
-    qDebug() << "PinWindow: Shape type changed:" << static_cast<int>(type);
 }
 
 void PinWindow::onShapeFillModeChanged(ShapeFillMode mode)
@@ -2094,7 +2067,6 @@ void PinWindow::onShapeFillModeChanged(ShapeFillMode mode)
     if (m_toolManager) {
         m_toolManager->setShapeFillMode(static_cast<int>(mode));
     }
-    qDebug() << "PinWindow: Shape fill mode changed:" << static_cast<int>(mode);
 }
 
 void PinWindow::onArrowStyleChanged(LineEndStyle style)
@@ -2102,7 +2074,6 @@ void PinWindow::onArrowStyleChanged(LineEndStyle style)
     if (m_toolManager) {
         m_toolManager->setArrowStyle(style);
     }
-    qDebug() << "PinWindow: Arrow style changed:" << static_cast<int>(style);
 }
 
 void PinWindow::onLineStyleChanged(LineStyle style)
@@ -2110,7 +2081,6 @@ void PinWindow::onLineStyleChanged(LineStyle style)
     if (m_toolManager) {
         m_toolManager->setLineStyle(style);
     }
-    qDebug() << "PinWindow: Line style changed:" << static_cast<int>(style);
 }
 
 void PinWindow::onFontSizeDropdownRequested(const QPoint& pos)
@@ -2125,7 +2095,6 @@ void PinWindow::onFontSizeDropdownRequested(const QPoint& pos)
             if (m_subToolbar) {
                 m_subToolbar->colorAndWidthWidget()->setFontSize(size);
             }
-            qDebug() << "PinWindow: Font size changed:" << size;
             });
     }
     menu.exec(m_subToolbar->mapToGlobal(pos));
@@ -2144,7 +2113,6 @@ void PinWindow::onFontFamilyDropdownRequested(const QPoint& pos)
             if (m_subToolbar) {
                 m_subToolbar->colorAndWidthWidget()->setFontFamily(family);
             }
-            qDebug() << "PinWindow: Font family changed:" << family;
             });
     }
     menu.exec(m_subToolbar->mapToGlobal(pos));
@@ -2165,7 +2133,6 @@ void PinWindow::onAutoBlurRequested()
     auto result = m_autoBlurManager->detect(image);
 
     if (!result.success || result.faceRegions.isEmpty()) {
-        qDebug() << "PinWindow: AutoBlur - no faces detected";
         return;
     }
 
@@ -2188,7 +2155,6 @@ void PinWindow::onAutoBlurRequested()
 
     updateUndoRedoState();
     update();
-    qDebug() << "PinWindow: AutoBlur - added" << result.faceRegions.size() << "mosaic regions";
 }
 
 // ============================================================================
@@ -2343,8 +2309,6 @@ void PinWindow::startLiveCapture()
     m_liveIndicatorTimer = new QTimer(this);
     connect(m_liveIndicatorTimer, &QTimer::timeout, this, QOverload<>::of(&QWidget::update));
     m_liveIndicatorTimer->start(50);  // ~20fps for indicator animation
-
-    qDebug() << "Live capture started at" << m_captureFrameRate << "FPS";
     update();
 }
 
@@ -2371,8 +2335,6 @@ void PinWindow::stopLiveCapture()
     setWindowExcludedFromCapture(this, false);
     m_isLiveMode = false;
     m_livePaused = false;
-
-    qDebug() << "Live capture stopped";
     update();
 }
 
@@ -2384,8 +2346,6 @@ void PinWindow::pauseLiveCapture()
     if (m_captureTimer) {
         m_captureTimer->stop();
     }
-
-    qDebug() << "Live capture paused";
     update();
 }
 
@@ -2397,8 +2357,6 @@ void PinWindow::resumeLiveCapture()
     if (m_captureTimer) {
         m_captureTimer->start(1000 / m_captureFrameRate);
     }
-
-    qDebug() << "Live capture resumed";
     update();
 }
 
@@ -2413,8 +2371,6 @@ void PinWindow::setLiveFrameRate(int fps)
     if (m_captureTimer && m_captureTimer->isActive()) {
         m_captureTimer->setInterval(1000 / m_captureFrameRate);
     }
-
-    qDebug() << "Live capture frame rate set to" << m_captureFrameRate << "FPS";
 }
 
 void PinWindow::updateLiveFrame()

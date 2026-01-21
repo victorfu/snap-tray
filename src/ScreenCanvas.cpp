@@ -198,8 +198,6 @@ ScreenCanvas::ScreenCanvas(QWidget* parent)
                     close();
                 }
             });
-
-    qDebug() << "ScreenCanvas: Created";
 }
 
 ScreenCanvas::~ScreenCanvas()
@@ -208,7 +206,6 @@ ScreenCanvas::~ScreenCanvas()
     CursorManager::instance().clearAllForWidget(this);
 
     delete m_colorPickerDialog;
-    qDebug() << "ScreenCanvas: Destroyed";
 }
 
 void ScreenCanvas::initializeIcons()
@@ -389,7 +386,6 @@ void ScreenCanvas::onMoreColorsRequested()
             this, [this](const QColor& color) {
                 m_toolManager->setColor(color);
                 m_colorAndWidthWidget->setCurrentColor(color);
-                qDebug() << "ScreenCanvas: Custom color selected:" << color.name();
                 update();
             });
     }
@@ -422,10 +418,6 @@ void ScreenCanvas::initializeForScreen(QScreen* screen)
 
     m_devicePixelRatio = m_currentScreen->devicePixelRatio();
     m_toolManager->setDevicePixelRatio(m_devicePixelRatio);
-
-    qDebug() << "ScreenCanvas: Initialized for screen" << m_currentScreen->name()
-        << "logical size:" << m_currentScreen->geometry().size()
-        << "devicePixelRatio:" << m_devicePixelRatio;
 
     // Lock window size
     setFixedSize(m_currentScreen->geometry().size());
@@ -574,7 +566,6 @@ void ScreenCanvas::handleToolbarClick(CanvasButton button)
             m_toolManager->setCurrentTool(toolId);
             m_showSubToolbar = true;
         }
-        qDebug() << "ScreenCanvas: Tool selected:" << static_cast<int>(toolId) << "showSubToolbar:" << m_showSubToolbar;
         setToolCursor();
         update();
         break;
@@ -590,7 +581,6 @@ void ScreenCanvas::handleToolbarClick(CanvasButton button)
             // StepBadgeToolHandler reads size from AnnotationSettingsManager, no setWidth needed
             m_showSubToolbar = true;
         }
-        qDebug() << "ScreenCanvas: StepBadge selected, showSubToolbar:" << m_showSubToolbar;
         setToolCursor();
         update();
         break;
@@ -603,7 +593,6 @@ void ScreenCanvas::handleToolbarClick(CanvasButton button)
             m_toolManager->setCurrentTool(toolId);
             m_showSubToolbar = true;
         }
-        qDebug() << "ScreenCanvas: EmojiSticker selected, showSubToolbar:" << m_showSubToolbar;
         setToolCursor();
         update();
         break;
@@ -621,31 +610,24 @@ void ScreenCanvas::handleToolbarClick(CanvasButton button)
             m_laserRenderer->setWidth(m_toolManager->width());
             m_showSubToolbar = true;
         }
-        qDebug() << "ScreenCanvas: Laser Pointer selected, showSubToolbar:" << m_showSubToolbar;
         setToolCursor();
         update();
         break;
 
     case CanvasButton::Whiteboard:
         // Toggle whiteboard mode
-        qDebug() << "ScreenCanvas: Whiteboard clicked, current m_bgMode:" << static_cast<int>(m_bgMode);
         if (m_bgMode == CanvasBackgroundMode::Whiteboard) {
-            qDebug() << "ScreenCanvas: Toggling from Whiteboard to Screen";
             setBackgroundMode(CanvasBackgroundMode::Screen);
         } else {
-            qDebug() << "ScreenCanvas: Switching to Whiteboard";
             setBackgroundMode(CanvasBackgroundMode::Whiteboard);
         }
         break;
 
     case CanvasButton::Blackboard:
         // Toggle blackboard mode
-        qDebug() << "ScreenCanvas: Blackboard clicked, current m_bgMode:" << static_cast<int>(m_bgMode);
         if (m_bgMode == CanvasBackgroundMode::Blackboard) {
-            qDebug() << "ScreenCanvas: Toggling from Blackboard to Screen";
             setBackgroundMode(CanvasBackgroundMode::Screen);
         } else {
-            qDebug() << "ScreenCanvas: Switching to Blackboard";
             setBackgroundMode(CanvasBackgroundMode::Blackboard);
         }
         break;
@@ -653,7 +635,6 @@ void ScreenCanvas::handleToolbarClick(CanvasButton button)
     case CanvasButton::Undo:
         if (m_annotationLayer->canUndo()) {
             m_annotationLayer->undo();
-            qDebug() << "ScreenCanvas: Undo";
             update();
         }
         break;
@@ -661,14 +642,12 @@ void ScreenCanvas::handleToolbarClick(CanvasButton button)
     case CanvasButton::Redo:
         if (m_annotationLayer->canRedo()) {
             m_annotationLayer->redo();
-            qDebug() << "ScreenCanvas: Redo";
             update();
         }
         break;
 
     case CanvasButton::Clear:
         m_annotationLayer->clear();
-        qDebug() << "ScreenCanvas: Clear all annotations";
         update();
         break;
 
@@ -733,13 +712,9 @@ void ScreenCanvas::mousePressEvent(QMouseEvent* event)
         // Check if clicked on toolbar FIRST (before widgets that may overlap)
         if (m_toolbar->contains(event->pos())) {
             int buttonIdx = m_toolbar->buttonAtPosition(event->pos());
-            qDebug() << "ScreenCanvas: Toolbar click at" << event->pos() << "buttonIdx:" << buttonIdx;
             if (buttonIdx >= 0) {
                 finalizePolylineForUiClick(event->pos());
                 int buttonId = m_toolbar->buttonIdAt(buttonIdx);
-                qDebug() << "ScreenCanvas: Button ID:" << buttonId
-                         << "Whiteboard:" << static_cast<int>(CanvasButton::Whiteboard)
-                         << "Blackboard:" << static_cast<int>(CanvasButton::Blackboard);
                 handleToolbarClick(static_cast<CanvasButton>(buttonId));
             } else {
                 // Start toolbar drag (clicked on toolbar but not on a button)
@@ -1014,10 +989,8 @@ void ScreenCanvas::keyPressEvent(QKeyEvent* event)
 
     if (event->key() == Qt::Key_Escape) {
         if (m_toolManager->handleEscape()) {
-            qDebug() << "ScreenCanvas: Escape handled by tool";
             return;
         }
-        qDebug() << "ScreenCanvas: Closed via Escape";
         close();
     }
     else if (event->key() == Qt::Key_W) {
@@ -1155,15 +1128,12 @@ void ScreenCanvas::setBackgroundMode(CanvasBackgroundMode mode)
     case CanvasBackgroundMode::Screen:
         // Transparent background - clear pixmap
         m_backgroundPixmap = QPixmap();
-        qDebug() << "ScreenCanvas: Switched to Screen mode (transparent)";
         break;
     case CanvasBackgroundMode::Whiteboard:
         m_backgroundPixmap = createSolidBackgroundPixmap(Qt::white);
-        qDebug() << "ScreenCanvas: Switched to Whiteboard mode";
         break;
     case CanvasBackgroundMode::Blackboard:
         m_backgroundPixmap = createSolidBackgroundPixmap(Qt::black);
-        qDebug() << "ScreenCanvas: Switched to Blackboard mode";
         break;
     }
 
