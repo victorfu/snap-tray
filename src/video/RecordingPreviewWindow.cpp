@@ -975,7 +975,6 @@ QString RecordingPreviewWindow::convertToFormat(FormatSelectionWidget::Format fo
 
     // Calculate frame interval (33ms for 30fps)
     qint64 frameInterval = 1000 / frameRate;
-    qint64 totalFrames = duration / frameInterval;
     qint64 framesWritten = 0;
     bool cancelled = false;
 
