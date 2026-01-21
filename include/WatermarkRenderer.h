@@ -25,6 +25,17 @@ public:
     // Apply watermark to a pixmap and return a new pixmap (for save/copy)
     static QPixmap applyToPixmap(const QPixmap &source, const Settings &settings);
 
+    // Render using a pre-cached and pre-scaled watermark pixmap (for encoding)
+    static void renderWithCache(QPainter &painter,
+                                const QRect &targetRect,
+                                const QPixmap &cachedWatermark,
+                                const Settings &settings);
+
+    // Apply using a pre-cached and pre-scaled watermark pixmap (for encoding)
+    static QPixmap applyToPixmapWithCache(const QPixmap &source,
+                                          const QPixmap &cachedWatermark,
+                                          const Settings &settings);
+
 private:
     static QRect calculateWatermarkRect(const QRect &targetRect, const QSize &size, Position position, int margin);
     static void renderImage(QPainter &painter, const QRect &targetRect, const Settings &settings);

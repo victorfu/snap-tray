@@ -241,7 +241,7 @@ void EncodingWorker::applyWatermark(QImage& frame)
         return;
     }
 
-    // Create watermark pixmap if not cached
+    // Create watermark pixmap if not cached (only happens once per recording)
     if (m_cachedWatermark.isNull() && !m_watermarkSettings.imagePath.isEmpty()) {
         m_cachedWatermark = QPixmap(m_watermarkSettings.imagePath);
         if (!m_cachedWatermark.isNull() && m_watermarkSettings.imageScale != 100) {
@@ -250,9 +250,9 @@ void EncodingWorker::applyWatermark(QImage& frame)
         }
     }
 
-    // Use WatermarkRenderer to apply
+    // Use cached version to avoid repeated file I/O and scaling
     QPixmap pixmap = QPixmap::fromImage(frame);
-    pixmap = WatermarkRenderer::applyToPixmap(pixmap, m_watermarkSettings);
+    pixmap = WatermarkRenderer::applyToPixmapWithCache(pixmap, m_cachedWatermark, m_watermarkSettings);
     frame = pixmap.toImage();
 }
 
