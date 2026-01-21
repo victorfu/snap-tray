@@ -68,17 +68,17 @@ struct ToolbarStyleConfig {
     /**
      * @brief Get the dark style configuration.
      */
-    static ToolbarStyleConfig getDarkStyle();
+    static const ToolbarStyleConfig& getDarkStyle();
 
     /**
      * @brief Get the light style configuration.
      */
-    static ToolbarStyleConfig getLightStyle();
+    static const ToolbarStyleConfig& getLightStyle();
 
     /**
      * @brief Get style configuration by type.
      */
-    static ToolbarStyleConfig getStyle(ToolbarStyleType type);
+    static const ToolbarStyleConfig& getStyle(ToolbarStyleType type);
 
     /**
      * @brief Load the saved style from QSettings.
