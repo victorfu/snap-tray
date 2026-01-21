@@ -38,6 +38,7 @@
 #include <QScreen>
 #include <QSlider>
 #include <QVBoxLayout>
+#include <memory>
 
 namespace {
 QString rgbaString(const QColor &color)
@@ -948,15 +949,15 @@ QString RecordingPreviewWindow::convertToFormat(FormatSelectionWidget::Format fo
 
     // Create encoder
     bool encoderStarted = false;
-    NativeGifEncoder *gifEncoder = nullptr;
-    WebPAnimationEncoder *webpEncoder = nullptr;
+    std::unique_ptr<NativeGifEncoder> gifEncoder;
+    std::unique_ptr<WebPAnimationEncoder> webpEncoder;
 
     if (format == FormatSelectionWidget::Format::GIF) {
-        gifEncoder = new NativeGifEncoder(this);
+        gifEncoder = std::make_unique<NativeGifEncoder>(nullptr);
         gifEncoder->setMaxBitDepth(16);
         encoderStarted = gifEncoder->start(outputPath, videoSize, frameRate);
     } else {
-        webpEncoder = new WebPAnimationEncoder(this);
+        webpEncoder = std::make_unique<WebPAnimationEncoder>(nullptr);
         webpEncoder->setQuality(80);
         webpEncoder->setLooping(true);
         encoderStarted = webpEncoder->start(outputPath, videoSize, frameRate);
@@ -966,8 +967,6 @@ QString RecordingPreviewWindow::convertToFormat(FormatSelectionWidget::Format fo
         QString error = gifEncoder ? gifEncoder->lastError() : webpEncoder->lastError();
         QMessageBox::warning(this, tr("Conversion Error"),
                             tr("Failed to start encoder: %1").arg(error));
-        delete gifEncoder;
-        delete webpEncoder;
         return QString();
     }
 
@@ -1041,8 +1040,6 @@ QString RecordingPreviewWindow::convertToFormat(FormatSelectionWidget::Format fo
     if (cancelled) {
         if (gifEncoder) gifEncoder->abort();
         if (webpEncoder) webpEncoder->abort();
-        delete gifEncoder;
-        delete webpEncoder;
         return QString();
     }
 
@@ -1059,9 +1056,6 @@ QString RecordingPreviewWindow::convertToFormat(FormatSelectionWidget::Format fo
 
     // Clean up original MP4 file
     QFile::remove(m_videoPath);
-
-    delete gifEncoder;
-    delete webpEncoder;
 
     return outputPath;
 }
