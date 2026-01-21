@@ -256,13 +256,45 @@ void RecordingControlBar::updateButtonRects()
     x -= buttonSize + BUTTON_SPACING;
     m_pauseRect = QRect(x, y, buttonSize, buttonSize);
 
-    // Effects button removed - FX effects are now applied in Preview mode only
-    // Cursor metadata is automatically recorded and effects can be applied during preview/export
-    m_effectsButtonRect = QRect();
+    // Effects button (FX) - to the left of pause button
+    x -= buttonSize + BUTTON_SPACING;
+    m_effectsButtonRect = QRect(x, y, buttonSize, buttonSize);
 
-    m_effectsToolbarItems.clear();
-    m_effectsToolbarRect = QRect();
-    m_effectsToolbarVisible = false;
+    // Effects toolbar (appears to the left of the FX button when visible)
+    if (m_effectsToolbarVisible) {
+        QFont font = effectsToolbarFont();
+        QFontMetrics metrics(font);
+
+        // Calculate toolbar items
+        m_effectsToolbarItems.clear();
+        const auto &items = effectsToolbarItems();
+        int toolbarWidth = effectsToolbarButtonsWidth(metrics) + 16;  // padding
+        int toolbarHeight = buttonSize;  // Same height as buttons
+
+        // Position to the left of the effects button
+        int toolbarX = m_effectsButtonRect.left() - toolbarWidth - BUTTON_SPACING;
+        int toolbarY = y;
+
+        // Keep toolbar within widget bounds
+        int bgLeft = backgroundRect().left();
+        if (toolbarX < bgLeft + 4) {
+            toolbarX = bgLeft + 4;
+        }
+
+        m_effectsToolbarRect = QRect(toolbarX, toolbarY, toolbarWidth, toolbarHeight);
+
+        // Calculate individual button rects within toolbar
+        int itemX = toolbarX + 8;
+        int itemY = toolbarY + (toolbarHeight - 20) / 2;
+        for (const auto &item : items) {
+            int itemWidth = effectsToolbarButtonWidth(item, metrics);
+            m_effectsToolbarItems.append({QRect(itemX, itemY, itemWidth, 20), item});
+            itemX += itemWidth + 4;
+        }
+    } else {
+        m_effectsToolbarItems.clear();
+        m_effectsToolbarRect = QRect();
+    }
 }
 
 QRect RecordingControlBar::backgroundRect() const
@@ -358,13 +390,19 @@ void RecordingControlBar::updateButtonSpacerWidth()
         return;
     }
 
-    // Base: 3 control buttons
+    // Base: 3 control buttons (pause, stop, cancel)
     int baseButtonsWidth = 3 * BUTTON_WIDTH + 2 * BUTTON_SPACING + 4;
 
-    // Effects button removed - FX effects are now in Preview mode only
-    int effectsWidth = 0;
+    // Effects button (FX)
+    int effectsWidth = BUTTON_WIDTH + BUTTON_SPACING;
 
-    int totalWidth = baseButtonsWidth + effectsWidth;
+    // Effects toolbar (when visible)
+    int toolbarWidth = 0;
+    if (m_effectsToolbarVisible) {
+        toolbarWidth = effectsToolbarWidth() + BUTTON_SPACING;
+    }
+
+    int totalWidth = baseButtonsWidth + effectsWidth + toolbarWidth;
     m_buttonSpacer->setFixedWidth(totalWidth);
 }
 

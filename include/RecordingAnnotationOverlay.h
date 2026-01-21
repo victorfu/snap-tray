@@ -6,8 +6,6 @@
 #include <QColor>
 #include <QPoint>
 
-class AnnotationLayer;
-class AnnotationController;
 class ClickRippleRenderer;
 class MouseClickTracker;
 class LaserPointerRenderer;
@@ -15,11 +13,12 @@ class CursorHighlightEffect;
 class SpotlightEffect;
 
 /**
- * @brief Transparent overlay for drawing annotations during recording.
+ * @brief Transparent overlay for cursor effects during recording.
  *
- * This widget sits on top of the recording region and allows users
- * to draw annotations in real-time. The annotations are composited
- * onto captured frames before encoding.
+ * This widget sits on top of the recording region and displays
+ * cursor-following effects (spotlight, cursor highlight, laser pointer,
+ * click ripples). These effects are composited onto captured frames
+ * before encoding.
  */
 class RecordingAnnotationOverlay : public QWidget
 {
@@ -35,70 +34,15 @@ public:
     void setRegion(const QRect &region);
 
     /**
-     * @brief Get the annotation layer for direct access.
-     */
-    AnnotationLayer* annotationLayer() { return m_annotationLayer; }
-
-    /**
-     * @brief Set the current annotation tool.
-     */
-    void setCurrentTool(int tool);
-
-    /**
-     * @brief Get the current tool.
-     */
-    int currentTool() const;
-
-    /**
-     * @brief Set the annotation color.
-     */
-    void setColor(const QColor &color);
-
-    /**
-     * @brief Get the current color.
-     */
-    QColor color() const;
-
-    /**
-     * @brief Set the annotation stroke width.
-     */
-    void setWidth(int width);
-
-    /**
-     * @brief Get the current stroke width.
-     */
-    int width() const;
-
-    /**
-     * @brief Composite annotations onto a captured frame.
+     * @brief Composite cursor effects onto a captured frame.
      *
      * This is called from RecordingManager::captureFrame() to
-     * overlay annotations onto the captured screen content.
+     * overlay cursor effects onto the captured screen content.
      *
      * @param frame The captured frame to composite onto (modified in place)
      * @param scale Device pixel ratio for coordinate scaling
      */
     void compositeOntoFrame(QImage &frame, qreal scale) const;
-
-    /**
-     * @brief Clear all annotations.
-     */
-    void clear();
-
-    /**
-     * @brief Check if there are any annotations.
-     */
-    bool hasAnnotations() const;
-
-    /**
-     * @brief Undo the last annotation.
-     */
-    void undo();
-
-    /**
-     * @brief Redo the last undone annotation.
-     */
-    void redo();
 
     /**
      * @brief Enable or disable click highlight effect.
@@ -164,18 +108,11 @@ public:
      */
     void setSpotlightDimOpacity(qreal opacity);
 
-signals:
-    /**
-     * @brief Emitted when annotations change.
-     */
-    void annotationChanged();
-
 protected:
     void paintEvent(QPaintEvent *event) override;
     void mousePressEvent(QMouseEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
     void mouseReleaseEvent(QMouseEvent *event) override;
-    void keyPressEvent(QKeyEvent *event) override;
 
 private slots:
     void onMouseClicked(QPoint globalPos);
@@ -188,11 +125,9 @@ private:
     void updateCursorEffects(const QPoint &localPos);
 
     QRect m_region;
-    AnnotationLayer *m_annotationLayer;
-    AnnotationController *m_annotationController;
 
-    // Annotation cache for efficient frame compositing
-    mutable QImage m_annotationCache;
+    // Click ripple cache for efficient frame compositing
+    mutable QImage m_rippleCache;
     mutable bool m_cacheInvalid;
     mutable QSize m_cacheSize;
 
