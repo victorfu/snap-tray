@@ -460,7 +460,6 @@ RegionSelector::RegionSelector(QWidget* parent)
         });
     connect(m_inputHandler, &RegionInputHandler::selectionCancelledByRightClick,
         this, [this]() {
-            qDebug() << "RegionSelector: Cancelled via right-click";
             emit selectionCancelled();
             close();
         });
@@ -564,8 +563,6 @@ RegionSelector::~RegionSelector()
 
     // Remove event filter
     qApp->removeEventFilter(this);
-
-    qDebug() << "RegionSelector: Destroyed";
 }
 
 void RegionSelector::onScreenRemoved(QScreen* screen)
@@ -615,7 +612,6 @@ void RegionSelector::onMoreColorsRequested()
         connect(m_colorPickerDialog, &ColorPickerDialog::colorSelected,
             this, [this](const QColor& color) {
                 syncColorToAllWidgets(color);
-                qDebug() << "Custom color selected:" << color.name();
             });
     }
 
@@ -763,11 +759,9 @@ void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapt
     // Pre-capture allows including popup menus in the screenshot (like Snipaste)
     if (!preCapture.isNull()) {
         m_backgroundPixmap = preCapture;
-        qDebug() << "RegionSelector: Using pre-captured screenshot, size:" << preCapture.size();
     }
     else {
         m_backgroundPixmap = m_currentScreen->grabWindow(0);
-        qDebug() << "RegionSelector: Captured screenshot now, size:" << m_backgroundPixmap.size();
     }
 
     // Create shared pixmap for mosaic tool (explicit sharing to avoid memory duplication)
@@ -780,11 +774,6 @@ void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapt
     // Update export manager with background pixmap and DPR
     m_exportManager->setBackgroundPixmap(m_backgroundPixmap);
     m_exportManager->setDevicePixelRatio(m_devicePixelRatio);
-
-    qDebug() << "RegionSelector: Initialized for screen" << m_currentScreen->name()
-        << "logical size:" << m_currentScreen->geometry().size()
-        << "pixmap size:" << m_backgroundPixmap.size()
-        << "devicePixelRatio:" << m_devicePixelRatio;
 
     // 不預設選取整個螢幕，等待用戶操作
     m_selectionManager->clearSelection();
@@ -839,9 +828,6 @@ void RegionSelector::initializeWithRegion(QScreen* screen, const QRect& region)
     // Update export manager with background pixmap and DPR
     m_exportManager->setBackgroundPixmap(m_backgroundPixmap);
     m_exportManager->setDevicePixelRatio(m_devicePixelRatio);
-
-    qDebug() << "RegionSelector: Initialized with region" << region
-        << "on screen" << m_currentScreen->name();
 
     // Convert global region to local coordinates
     QRect screenGeom = m_currentScreen->geometry();
@@ -1194,9 +1180,6 @@ void RegionSelector::finishSelection()
     QRect sel = m_selectionManager->selectionRect();
     QPixmap selectedRegion = m_exportManager->getSelectedRegion(sel, effectiveCornerRadius());
 
-    qDebug() << "finishSelection: selectionRect=" << sel
-        << "globalPos=" << localToGlobal(sel.topLeft());
-
     QRect globalRect(localToGlobal(sel.topLeft()), sel.size());
     emit regionSelected(selectedRegion, localToGlobal(sel.topLeft()), globalRect);
     close();
@@ -1357,7 +1340,6 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
         }
 
         // ESC 直接離開 capture mode
-        qDebug() << "RegionSelector: Cancelled via Escape";
         if (m_multiRegionMode) {
             cancelMultiRegionCapture();
         }
@@ -1410,7 +1392,6 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
                 .arg(c.blue());
         }
         QGuiApplication::clipboard()->setText(colorText);
-        qDebug() << "RegionSelector: Copied color to clipboard:" << colorText;
     }
     else if (event->matches(QKeySequence::Undo)) {
         if (m_multiRegionMode && m_multiRegionManager) {
@@ -1530,7 +1511,6 @@ bool RegionSelector::eventFilter(QObject* obj, QEvent* event)
                 return true; // Event handled, don't close
             }
 
-            qDebug() << "RegionSelector: Cancelled via Escape (event filter)";
             emit selectionCancelled();
             close();
             return true;  // Event handled
@@ -1548,8 +1528,6 @@ bool RegionSelector::eventFilter(QObject* obj, QEvent* event)
         // This prevents false cancellation when popup menus close during startup or
         // when window manager focus changes are still settling
         if (m_activationCount == 0) {
-            qDebug() << "RegionSelector: Ignoring premature deactivation (activation count: 0)";
-
             // Restore focus to re-enable mouse event delivery
             // Without this, Qt stops delivering mouse events to deactivated windows
             QTimer::singleShot(0, this, [this]() {
@@ -1559,7 +1537,6 @@ bool RegionSelector::eventFilter(QObject* obj, QEvent* event)
 
             return false;
         }
-        qDebug() << "RegionSelector: Cancelled due to app deactivation";
         emit selectionCancelled();
         close();
         return false;
@@ -1625,17 +1602,12 @@ void RegionSelector::performOCR()
 {
     OCRManager* ocrMgr = ensureOCRManager();
     if (!ocrMgr || m_ocrInProgress || !m_selectionManager->isComplete()) {
-        if (!ocrMgr) {
-            qDebug() << "RegionSelector: OCR not available on this platform";
-        }
         return;
     }
 
     m_ocrInProgress = true;
     ensureLoadingSpinner()->start();
     update();
-
-    qDebug() << "RegionSelector: Starting OCR recognition...";
 
     // Get the selected region (without annotations for OCR)
     QRect sel = m_selectionManager->selectionRect();
@@ -1653,9 +1625,6 @@ void RegionSelector::performOCR()
             if (safeThis) {
                 safeThis->onOCRComplete(success, text, error);
             }
-            else {
-                qDebug() << "RegionSelector: OCR completed but widget was destroyed, ignoring result";
-            }
         });
 }
 
@@ -1670,13 +1639,11 @@ void RegionSelector::onOCRComplete(bool success, const QString& text, const QStr
     QString bgColor;
     if (success && !text.isEmpty()) {
         QGuiApplication::clipboard()->setText(text);
-        qDebug() << "RegionSelector: OCR complete, copied" << text.length() << "characters to clipboard";
         msg = tr("Copied %1 characters").arg(text.length());
         bgColor = "rgba(34, 139, 34, 220)";  // Green for success
     }
     else {
         msg = error.isEmpty() ? tr("No text found") : error;
-        qDebug() << "RegionSelector: OCR failed:" << msg;
         bgColor = "rgba(200, 60, 60, 220)";  // Red for failure
     }
 
@@ -1713,9 +1680,7 @@ void RegionSelector::performAutoBlur()
 
     // Lazy initialization: load cascade classifier on first use
     if (!m_autoBlurManager->isInitialized()) {
-        qDebug() << "RegionSelector: Lazy-initializing AutoBlurManager...";
         if (!m_autoBlurManager->initialize()) {
-            qDebug() << "RegionSelector: Auto-blur initialization failed";
             return;
         }
     }
@@ -1728,12 +1693,6 @@ void RegionSelector::performAutoBlur()
     // Get the selected region as QImage
     QRect sel = m_selectionManager->selectionRect();
 
-    qDebug() << "RegionSelector: Starting auto-blur detection..."
-        << "selection=" << sel
-        << "dpr=" << m_devicePixelRatio
-        << "bgPixmap size=" << m_backgroundPixmap.size()
-        << "bgPixmap dpr=" << m_backgroundPixmap.devicePixelRatio();
-
     QPixmap selectedPixmap = m_backgroundPixmap.copy(
         static_cast<int>(sel.x() * m_devicePixelRatio),
         static_cast<int>(sel.y() * m_devicePixelRatio),
@@ -1741,9 +1700,6 @@ void RegionSelector::performAutoBlur()
         static_cast<int>(sel.height() * m_devicePixelRatio)
     );
     QImage selectedImage = selectedPixmap.toImage();
-
-    qDebug() << "RegionSelector: Cropped image for detection:"
-        << "size=" << selectedImage.size();
 
     // Run detection
     auto result = m_autoBlurManager->detect(selectedImage);
@@ -1758,9 +1714,6 @@ void RegionSelector::performAutoBlur()
             for (int i = 0; i < result.faceRegions.size(); ++i) {
                 const QRect& r = result.faceRegions[i];
 
-                qDebug() << "RegionSelector: Face" << i
-                    << "detection rect (device px, relative to crop)=" << r;
-
                 // Convert from device pixels to logical coordinates
                 QRect logicalRect(
                     sel.x() + static_cast<int>(r.x() / m_devicePixelRatio),
@@ -1768,9 +1721,6 @@ void RegionSelector::performAutoBlur()
                     static_cast<int>(r.width() / m_devicePixelRatio),
                     static_cast<int>(r.height() / m_devicePixelRatio)
                 );
-
-                qDebug() << "RegionSelector: Face" << i
-                    << "logical rect (for annotation)=" << logicalRect;
 
                 // Create mosaic annotation for this face region
                 // Use blur type from settings
@@ -1802,18 +1752,15 @@ void RegionSelector::onAutoBlurComplete(bool success, int faceCount, int /*textC
     QString msg;
     QString bgColor;
     if (success && faceCount > 0) {
-        qDebug() << "RegionSelector: Auto-blur complete, blurred" << faceCount << "faces";
         msg = tr("Blurred %1 face(s)").arg(faceCount);
         bgColor = "rgba(34, 139, 34, 220)";  // Green for success
     }
     else if (success) {
         msg = tr("No faces detected");
-        qDebug() << "RegionSelector: Auto-blur found nothing to blur";
         bgColor = "rgba(100, 100, 100, 220)";  // Gray for nothing found
     }
     else {
         msg = error.isEmpty() ? tr("Detection failed") : error;
-        qDebug() << "RegionSelector: Auto-blur failed:" << msg;
         bgColor = "rgba(200, 60, 60, 220)";  // Red for failure
     }
 

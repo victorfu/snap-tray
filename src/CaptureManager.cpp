@@ -48,11 +48,8 @@ void CaptureManager::startRegionCapture()
 {
     // Skip if already in capture mode
     if (m_regionSelector && m_regionSelector->isVisible()) {
-        qDebug() << "CaptureManager: Already in capture mode, ignoring";
         return;
     }
-
-    qDebug() << "CaptureManager: Starting region capture";
 
     // Clean up any existing selector (QPointer auto-nulls when deleted)
     if (m_regionSelector) {
@@ -72,10 +69,6 @@ void CaptureManager::startRegionCapture()
         return;
     }
 
-    qDebug() << "CaptureManager: Target screen:" << targetScreen->name()
-             << "geometry:" << targetScreen->geometry()
-             << "cursor pos:" << QCursor::pos();
-
     // 2. Start window detection FIRST (async, runs in parallel with grabWindow)
     // This allows window list to be ready by the time RegionSelector is shown
     if (m_windowDetector) {
@@ -88,14 +81,11 @@ void CaptureManager::startRegionCapture()
     // NOTE: grabWindow() is blocking (50-200ms on 4K). Qt doesn't guarantee thread safety
     // for grabWindow(), so async capture via QtConcurrent is risky without platform testing.
     QWidget *popup = QApplication::activePopupWidget();
-    qDebug() << "CaptureManager: Pre-capture screenshot, popup active:" << (popup != nullptr);
 
     QPixmap preCapture = targetScreen->grabWindow(0);
-    qDebug() << "CaptureManager: Screenshot captured, size:" << preCapture.size();
 
     // 4. Close popup AFTER screenshot to avoid event loop conflict with RegionSelector
     if (popup) {
-        qDebug() << "CaptureManager: Closing popup to avoid event loop conflict";
         popup->close();
     }
 
@@ -106,11 +96,8 @@ void CaptureManager::startQuickPinCapture()
 {
     // Skip if already in capture mode
     if (m_regionSelector && m_regionSelector->isVisible()) {
-        qDebug() << "CaptureManager: Already in capture mode, ignoring";
         return;
     }
-
-    qDebug() << "CaptureManager: Starting quick pin capture";
 
     // Clean up any existing selector (QPointer auto-nulls when deleted)
     if (m_regionSelector) {
@@ -130,10 +117,6 @@ void CaptureManager::startQuickPinCapture()
         return;
     }
 
-    qDebug() << "CaptureManager: Target screen:" << targetScreen->name()
-             << "geometry:" << targetScreen->geometry()
-             << "cursor pos:" << QCursor::pos();
-
     // 2. Start window detection FIRST (async, runs in parallel with grabWindow)
     if (m_windowDetector) {
         m_windowDetector->setScreen(targetScreen);
@@ -142,14 +125,11 @@ void CaptureManager::startQuickPinCapture()
 
     // 3. Capture screenshot while popup is still visible
     QWidget *popup = QApplication::activePopupWidget();
-    qDebug() << "CaptureManager: Pre-capture screenshot, popup active:" << (popup != nullptr);
 
     QPixmap preCapture = targetScreen->grabWindow(0);
-    qDebug() << "CaptureManager: Screenshot captured, size:" << preCapture.size();
 
     // 4. Close popup AFTER screenshot
     if (popup) {
-        qDebug() << "CaptureManager: Closing popup to avoid event loop conflict";
         popup->close();
     }
 
@@ -158,7 +138,6 @@ void CaptureManager::startQuickPinCapture()
 
 void CaptureManager::onRegionSelected(const QPixmap &screenshot, const QPoint &globalPosition, const QRect &globalRect)
 {
-    qDebug() << "CaptureManager: Region selected at global position:" << globalPosition;
     // m_regionSelector will auto-null via QPointer when WA_DeleteOnClose triggers
 
     // Use the global coordinates computed by RegionSelector
@@ -175,7 +154,6 @@ void CaptureManager::onRegionSelected(const QPixmap &screenshot, const QPoint &g
 
 void CaptureManager::onSelectionCancelled()
 {
-    qDebug() << "CaptureManager: Selection cancelled";
     // m_regionSelector will auto-null via QPointer when WA_DeleteOnClose triggers
 
     emit captureCancelled();
@@ -185,11 +163,8 @@ void CaptureManager::startRegionCaptureWithPreset(const QRect &region, QScreen *
 {
     // If already in capture mode, ignore
     if (m_regionSelector && m_regionSelector->isVisible()) {
-        qDebug() << "CaptureManager: Already in capture mode, ignoring";
         return;
     }
-
-    qDebug() << "CaptureManager: Starting region capture with preset region:" << region;
 
     // Clean up any existing selector
     if (m_regionSelector) {

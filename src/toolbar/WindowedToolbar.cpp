@@ -124,21 +124,16 @@ void WindowedToolbar::updateButtonLayout()
 
 void WindowedToolbar::positionNear(const QRect &pinWindowRect)
 {
-    qDebug() << "WindowedToolbar::positionNear - pinWindowRect:" << pinWindowRect
-             << "toolbar size:" << size();
-
     QScreen *screen = QGuiApplication::screenAt(pinWindowRect.center());
     if (!screen) {
         screen = QGuiApplication::primaryScreen();
     }
 
     QRect screenGeom = screen->geometry();
-    qDebug() << "WindowedToolbar: screenGeom:" << screenGeom;
 
     // Position below the pin window, right-aligned (same as RegionSelector toolbar)
     int x = pinWindowRect.right() - width() + 1;
     int y = pinWindowRect.bottom() + MARGIN;
-    qDebug() << "WindowedToolbar: calculated x:" << x << "y:" << y;
 
     // If toolbar would go off bottom, position above
     if (y + height() > screenGeom.bottom() - 10) {

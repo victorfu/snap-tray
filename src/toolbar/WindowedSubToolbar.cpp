@@ -118,15 +118,12 @@ void WindowedSubToolbar::setupConnections()
 
 void WindowedSubToolbar::positionBelow(const QRect &toolbarRect)
 {
-    qDebug() << "WindowedSubToolbar::positionBelow - toolbarRect=" << toolbarRect;
-
     QScreen *screen = QGuiApplication::screenAt(toolbarRect.center());
     if (!screen) {
         screen = QGuiApplication::primaryScreen();
     }
 
     QRect screenGeom = screen->geometry();
-    qDebug() << "WindowedSubToolbar: screenGeom=" << screenGeom << "mySize=" << size();
 
     // Calculate tooltip space - if AutoBlur section is visible, we reserved space above content
     int tooltipSpace = (m_colorAndWidthWidget && m_colorAndWidthWidget->showAutoBlurSection())
@@ -145,14 +142,11 @@ void WindowedSubToolbar::positionBelow(const QRect &toolbarRect)
     // Keep on screen horizontally
     x = qBound(screenGeom.left() + 10, x, screenGeom.right() - width() - 10);
 
-    qDebug() << "WindowedSubToolbar: moving to x=" << x << "y=" << y << "tooltipSpace=" << tooltipSpace;
     move(x, y);
 }
 
 void WindowedSubToolbar::showForTool(int buttonId)
 {
-    qDebug() << "WindowedSubToolbar::showForTool - buttonId:" << buttonId;
-
     using ButtonId = WindowedToolbar::ButtonId;
 
     // Reset emoji picker state
@@ -168,7 +162,6 @@ void WindowedSubToolbar::showForTool(int buttonId)
     }
     else if (buttonId == ButtonId::ButtonEraser) {
         // Eraser has no sub-toolbar (uses dynamic cursor only)
-        qDebug() << "WindowedSubToolbar: Eraser has no sub-toolbar, hiding";
         QWidget::hide();
         return;
     }
@@ -179,7 +172,6 @@ void WindowedSubToolbar::showForTool(int buttonId)
 
         if (!config.hasAnySectionEnabled()) {
             // Tool has no sub-toolbar sections
-            qDebug() << "WindowedSubToolbar: tool has no sections, hiding";
             QWidget::hide();
             return;
         }
@@ -188,7 +180,6 @@ void WindowedSubToolbar::showForTool(int buttonId)
     }
 
     bool showWidget = m_showingEmojiPicker || ToolSectionConfig::forTool(buttonIdToToolId(buttonId)).hasAnySectionEnabled();
-    qDebug() << "WindowedSubToolbar: showWidget=" << showWidget;
 
     if (showWidget) {
         // Force widgets to recalculate their size
@@ -201,14 +192,9 @@ void WindowedSubToolbar::showForTool(int buttonId)
             m_colorAndWidthWidget->updatePosition(QRect(0, 0, 0, 0), false, 0);
         }
 
-        qDebug() << "WindowedSubToolbar: calling updateSize()";
         updateSize();
-        qDebug() << "WindowedSubToolbar: size after updateSize=" << size();
         QWidget::show();
         raise();
-        qDebug() << "WindowedSubToolbar: shown, isVisible=" << isVisible()
-                 << "geometry=" << geometry()
-                 << "frameGeometry=" << frameGeometry();
     }
 }
 
@@ -221,11 +207,9 @@ void WindowedSubToolbar::hide()
 
 void WindowedSubToolbar::updateSize()
 {
-    qDebug() << "WindowedSubToolbar::updateSize - showingEmojiPicker=" << m_showingEmojiPicker;
     if (m_showingEmojiPicker) {
         // EmojiPicker has its own padding, no extra margin needed
         QRect emojiRect = m_emojiPicker->boundingRect();
-        qDebug() << "WindowedSubToolbar: emojiRect=" << emojiRect;
         setFixedSize(emojiRect.width(), emojiRect.height());
     } else {
         // ToolOptionsPanel has its own padding, no extra margin needed (like RegionSelector)
@@ -237,13 +221,8 @@ void WindowedSubToolbar::updateSize()
         // Reserve extra width for tooltip text ("Auto Blur Faces" is ~120px)
         int minWidth = m_colorAndWidthWidget->showAutoBlurSection() ? 130 : 0;
         int finalWidth = qMax(widgetRect.width(), minWidth);
-        qDebug() << "WindowedSubToolbar: colorAndWidthWidget boundingRect=" << widgetRect
-                 << "dropdownHeight=" << dropdownHeight
-                 << "tooltipSpace=" << tooltipSpace
-                 << "finalWidth=" << finalWidth;
         setFixedSize(finalWidth, widgetRect.height() + dropdownHeight + tooltipSpace);
     }
-    qDebug() << "WindowedSubToolbar: final size=" << size();
 }
 
 void WindowedSubToolbar::onDropdownStateChanged()
