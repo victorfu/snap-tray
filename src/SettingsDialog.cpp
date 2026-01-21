@@ -128,12 +128,12 @@ void SettingsDialog::setupUi()
     setupRecordingTab(recordingTab);
     m_tabWidget->addTab(recordingTab, "Recording");
 
-    // Tab 5: Files
+    // Tab 6: Files
     QWidget* filesTab = new QWidget();
     setupFilesTab(filesTab);
     m_tabWidget->addTab(filesTab, "Files");
 
-    // Tab 6: About
+    // Tab 7: About
     QWidget* aboutTab = new QWidget();
     setupAboutTab(aboutTab);
     m_tabWidget->addTab(aboutTab, "About");
