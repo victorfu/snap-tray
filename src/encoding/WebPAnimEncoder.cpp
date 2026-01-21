@@ -93,7 +93,7 @@ bool WebPAnimationEncoder::start(const QString &outputPath, const QSize &frameSi
 
     // Set quality
     m_data->config.quality = static_cast<float>(m_quality);
-    m_data->config.method = 4;  // 0-6, higher = slower but better compression
+    m_data->config.method = 2;  // 0-6, higher = slower but better compression
     m_data->config.lossless = 0;  // Use lossy encoding for smaller files
 
     // Validate config
