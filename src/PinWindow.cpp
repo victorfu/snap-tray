@@ -196,10 +196,6 @@ PinWindow::PinWindow(const QPixmap& screenshot, const QPoint& position, QWidget*
     m_clickThroughHoverTimer = new QTimer(this);
     m_clickThroughHoverTimer->setInterval(50);  // Click-through hover check
     connect(m_clickThroughHoverTimer, &QTimer::timeout, this, &PinWindow::updateClickThroughForCursor);
-
-    qDebug() << "PinWindow: Created with size" << m_displayPixmap.size()
-        << "requested position" << position
-        << "actual position" << pos();
 }
 
 PinWindow::~PinWindow()
@@ -224,7 +220,6 @@ PinWindow::~PinWindow()
         m_subToolbar = nullptr;
     }
     // InlineTextEditor, TextAnnotationEditor are QObjects parented to this
-    qDebug() << "PinWindow: Destroyed";
 }
 
 void PinWindow::setPinWindowManager(PinWindowManager* manager)
@@ -251,28 +246,24 @@ void PinWindow::rotateRight()
 {
     m_rotationAngle = (m_rotationAngle + 90) % 360;
     updateSize();
-    qDebug() << "PinWindow: Rotated right, angle now" << m_rotationAngle;
 }
 
 void PinWindow::rotateLeft()
 {
     m_rotationAngle = (m_rotationAngle + 270) % 360;  // +270 is same as -90
     updateSize();
-    qDebug() << "PinWindow: Rotated left, angle now" << m_rotationAngle;
 }
 
 void PinWindow::flipHorizontal()
 {
     m_flipHorizontal = !m_flipHorizontal;
     updateSize();
-    qDebug() << "PinWindow: Flipped horizontal, now" << m_flipHorizontal;
 }
 
 void PinWindow::flipVertical()
 {
     m_flipVertical = !m_flipVertical;
     updateSize();
-    qDebug() << "PinWindow: Flipped vertical, now" << m_flipVertical;
 }
 
 QPoint PinWindow::mapToOriginalCoords(const QPoint& displayPos) const
@@ -457,17 +448,11 @@ QPixmap PinWindow::getTransformedPixmap() const
 
 QPixmap PinWindow::getExportPixmap() const
 {
-    qDebug() << "PinWindow::getExportPixmap called";
-    qDebug() << "  m_watermarkSettings.enabled:" << m_watermarkSettings.enabled;
-    qDebug() << "  m_watermarkSettings.imagePath:" << m_watermarkSettings.imagePath;
-
     // 1. Get current display size (includes zoom)
     QSize exportSize = m_displayPixmap.size();
-    qDebug() << "  exportSize:" << exportSize;
 
     // 2. Get transformed pixmap (rotation/flip) and scale to current size
     QPixmap basePixmap = getTransformedPixmap();
-    qDebug() << "  basePixmap size:" << basePixmap.size();
 
     QPixmap scaledPixmap = basePixmap.scaled(
         exportSize,
@@ -475,11 +460,9 @@ QPixmap PinWindow::getExportPixmap() const
         Qt::SmoothTransformation
     );
     scaledPixmap.setDevicePixelRatio(basePixmap.devicePixelRatio());
-    qDebug() << "  scaledPixmap size:" << scaledPixmap.size();
 
     // 3. If opacity is adjusted, paint with opacity
     if (m_opacity < 1.0) {
-        qDebug() << "  Applying opacity:" << m_opacity;
         QPixmap resultPixmap(scaledPixmap.size());
         resultPixmap.setDevicePixelRatio(scaledPixmap.devicePixelRatio());
         resultPixmap.fill(Qt::transparent);
@@ -493,7 +476,6 @@ QPixmap PinWindow::getExportPixmap() const
     }
 
     // 4. Apply watermark
-    qDebug() << "  Calling WatermarkRenderer::applyToPixmap";
     return WatermarkRenderer::applyToPixmap(scaledPixmap, m_watermarkSettings);
 }
 
@@ -758,7 +740,6 @@ void PinWindow::saveToFile()
             emit saveCompleted(pixmapToSave, filePath);
         }
         else {
-            qDebug() << "PinWindow: Failed to auto-save to" << filePath;
             emit saveFailed(filePath, tr("Failed to save screenshot"));
         }
         return;
@@ -775,11 +756,7 @@ void PinWindow::saveToFile()
 
     if (!filePath.isEmpty()) {
         if (pixmapToSave.save(filePath)) {
-            qDebug() << "PinWindow: Saved to" << filePath;
             emit saveRequested(pixmapToSave);
-        }
-        else {
-            qDebug() << "PinWindow: Failed to save to" << filePath;
         }
     }
 }
@@ -788,7 +765,6 @@ void PinWindow::copyToClipboard()
 {
     QPixmap pixmapToCopy = getExportPixmapWithAnnotations();
     QGuiApplication::clipboard()->setPixmap(pixmapToCopy);
-    qDebug() << "PinWindow: Copied to clipboard";
 }
 
 void PinWindow::performOCR()
@@ -806,23 +782,18 @@ void PinWindow::performOCR()
     }
 
     if (!m_ocrManager) {
-        qDebug() << "PinWindow: OCR not available on this platform";
         return;
     }
 
     m_ocrInProgress = true;
     m_loadingSpinner->start();
     update();
-    qDebug() << "PinWindow: Starting OCR recognition...";
 
     QPointer<PinWindow> safeThis = this;
     m_ocrManager->recognizeText(m_originalPixmap,
         [safeThis](bool success, const QString& text, const QString& error) {
             if (safeThis) {
                 safeThis->onOCRComplete(success, text, error);
-            }
-            else {
-                qDebug() << "PinWindow: OCR completed but window was destroyed, ignoring result";
             }
         });
 }
@@ -835,12 +806,10 @@ void PinWindow::onOCRComplete(bool success, const QString& text, const QString& 
     QString msg;
     if (success && !text.isEmpty()) {
         QGuiApplication::clipboard()->setText(text);
-        qDebug() << "PinWindow: OCR complete, copied" << text.length() << "characters to clipboard";
         msg = tr("Copied %1 characters").arg(text.length());
     }
     else {
         msg = error.isEmpty() ? tr("No text found") : error;
-        qDebug() << "PinWindow: OCR failed:" << msg;
     }
 
     m_uiIndicators->showOCRToast(success && !text.isEmpty(), msg);
@@ -850,7 +819,6 @@ void PinWindow::updateOcrLanguages(const QStringList& languages)
 {
     if (m_ocrManager) {
         m_ocrManager->setRecognitionLanguages(languages);
-        qDebug() << "PinWindow: Updated OCR languages to:" << languages;
     }
 }
 
@@ -918,9 +886,7 @@ void PinWindow::saveToCacheAsync()
             // QDir::Time sorts by modification time, newest first
             while (files.size() > maxCacheFiles) {
                 const QFileInfo& oldest = files.takeLast();
-                if (QFile::remove(oldest.filePath())) {
-                    qDebug() << "PinWindow: Removed old cache file:" << oldest.fileName();
-                }
+                QFile::remove(oldest.filePath());
             }
         }
         else {
@@ -1535,12 +1501,6 @@ void PinWindow::contextMenuEvent(QContextMenuEvent* event)
 
 void PinWindow::keyPressEvent(QKeyEvent* event)
 {
-    qDebug() << "PinWindow::keyPressEvent - key:" << event->key()
-        << "modifiers:" << event->modifiers()
-        << "isEditing:" << (m_textEditor ? m_textEditor->isEditing() : false)
-        << "isConfirmMode:" << (m_textEditor ? m_textEditor->isConfirmMode() : false)
-        << "hasFocus:" << hasFocus();
-
     // Handle text editor state first (like RegionSelector)
     if (m_textEditor && m_textEditor->isEditing()) {
         if (event->key() == Qt::Key_Escape) {
