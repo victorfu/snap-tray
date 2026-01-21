@@ -899,16 +899,38 @@ void RegionSelector::updateWindowDetection(const QPoint& localPos)
         QRect localBounds = globalToLocal(detected->bounds).intersected(rect());
 
         if (localBounds != m_highlightedWindowRect) {
+            // Calculate old visual rect for partial update
+            QString oldTitle;
+            if (m_detectedWindow.has_value()) {
+                oldTitle = QString("%1x%2").arg(m_detectedWindow->bounds.width()).arg(m_detectedWindow->bounds.height());
+            }
+            QRect oldVisualRect = m_painter->getWindowHighlightVisualRect(m_highlightedWindowRect, oldTitle);
+
             m_highlightedWindowRect = localBounds;
             m_detectedWindow = detected;
-            update();
+
+            // Calculate new visual rect
+            QString newTitle = QString("%1x%2").arg(detected->bounds.width()).arg(detected->bounds.height());
+            QRect newVisualRect = m_painter->getWindowHighlightVisualRect(m_highlightedWindowRect, newTitle);
+
+            // Update only changed regions
+            if (!oldVisualRect.isNull()) update(oldVisualRect);
+            if (!newVisualRect.isNull()) update(newVisualRect);
         }
     }
     else {
         if (!m_highlightedWindowRect.isNull()) {
+            // Calculate old visual rect for partial update
+            QString oldTitle;
+            if (m_detectedWindow.has_value()) {
+                oldTitle = QString("%1x%2").arg(m_detectedWindow->bounds.width()).arg(m_detectedWindow->bounds.height());
+            }
+            QRect oldVisualRect = m_painter->getWindowHighlightVisualRect(m_highlightedWindowRect, oldTitle);
+
             m_highlightedWindowRect = QRect();
             m_detectedWindow.reset();
-            update();
+            
+            if (!oldVisualRect.isNull()) update(oldVisualRect);
         }
     }
 }

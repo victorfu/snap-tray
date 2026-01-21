@@ -68,6 +68,11 @@ public:
     void setMultiRegionMode(bool enabled) { m_multiRegionMode = enabled; }
 
     /**
+     * @brief Calculate the visual bounding rect of a window highlight (including the hint label).
+     */
+    QRect getWindowHighlightVisualRect(const QRect& windowRect, const QString& title) const;
+
+    /**
      * @brief Invalidate caches when selection changes.
      * Call this when the selection rect is modified.
      */

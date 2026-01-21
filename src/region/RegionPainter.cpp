@@ -594,6 +594,75 @@ void RegionPainter::drawCurrentAnnotation(QPainter& painter)
     // Text tool is handled by InlineTextEditor, no preview needed here
 }
 
+QRect RegionPainter::getWindowHighlightVisualRect(const QRect& windowRect, const QString& title) const
+{
+    if (!m_parentWidget || windowRect.isNull()) {
+        return QRect();
+    }
+
+    // Start with the window rect itself (this covers the highlight border)
+    // Add a small margin for the border (2px width + potential antialiasing)
+    QRect visualRect = windowRect.adjusted(-2, -2, 2, 2);
+
+    if (title.isEmpty()) {
+        return visualRect;
+    }
+
+    // Logic duplicating drawWindowHint to determine hint position
+    QFont font; 
+    font.setPointSize(11);
+    
+    QFontMetrics fm(font);
+    QString displayTitle = fm.elidedText(title, Qt::ElideRight, 200);
+    QRect textRect = fm.boundingRect(displayTitle);
+    textRect.adjust(-8, -4, 8, 4);
+
+    int w = m_parentWidget->width();
+    int h = m_parentWidget->height();
+
+    bool isSmallElement = windowRect.width() < 60 || windowRect.height() < 60;
+
+    int hintX, hintY;
+
+    if (isSmallElement) {
+        hintX = windowRect.right() + 4;
+        hintY = windowRect.top();
+
+        if (hintX + textRect.width() > w - 5) {
+            hintX = windowRect.left() - textRect.width() - 4;
+        }
+        if (hintX < 5) {
+            hintX = windowRect.left();
+            hintY = windowRect.bottom() + 4;
+        }
+    }
+    else {
+        hintX = windowRect.left();
+        hintY = windowRect.bottom() + 4;
+
+        if (hintY + textRect.height() > h - 5) {
+            hintY = windowRect.top() - textRect.height() - 4;
+        }
+    }
+
+    textRect.moveTo(hintX, hintY);
+
+    if (textRect.right() > w - 5) {
+        textRect.moveRight(w - 5);
+    }
+    if (textRect.left() < 5) {
+        textRect.moveLeft(5);
+    }
+    if (textRect.bottom() > h - 5) {
+        textRect.moveBottom(h - 5);
+    }
+    if (textRect.top() < 5) {
+        textRect.moveTop(5);
+    }
+
+    return visualRect.united(textRect);
+}
+
 int RegionPainter::effectiveCornerRadius() const
 {
     QRect sel = m_selectionManager->selectionRect();
