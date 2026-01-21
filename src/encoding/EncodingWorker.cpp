@@ -258,12 +258,7 @@ void EncodingWorker::applyWatermark(QImage& frame)
 
 void EncodingWorker::finishEncoder()
 {
-    QString outputPath;
-    bool success = false;
-
     if (m_encoderType == EncoderType::Video && m_videoEncoder) {
-        outputPath = m_videoEncoder->outputPath();
-
         // Connect to encoder's finished signal before calling finish()
         auto conn = std::make_shared<QMetaObject::Connection>();
         *conn = connect(m_videoEncoder.get(), &IVideoEncoder::finished,
@@ -276,8 +271,6 @@ void EncodingWorker::finishEncoder()
         m_videoEncoder->finish();
 
     } else if (m_encoderType == EncoderType::Gif && m_gifEncoder) {
-        outputPath = m_gifEncoder->outputPath();
-
         // Connect to encoder's finished signal before calling finish()
         auto conn = std::make_shared<QMetaObject::Connection>();
         *conn = connect(m_gifEncoder.get(), &NativeGifEncoder::finished,
