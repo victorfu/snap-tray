@@ -81,13 +81,14 @@ void MarkerStroke::draw(QPainter &painter) const
     qreal dpr = painter.device()->devicePixelRatio();
 
     // Check if cache is valid
-    bool cacheValid = !m_cachedPixmap.isNull()
+    bool cacheValid = !m_cachedImage.isNull()
         && m_cachedDpr == dpr
         && m_cachedPointCount == m_points.size();
 
     if (!cacheValid) {
         // Regenerate cache
-        QPixmap offscreen(bounds.size() * dpr);
+        // Use QImage to avoid QPixmap halo/blending artifacts on transparent backgrounds
+        QImage offscreen(bounds.size() * dpr, QImage::Format_ARGB32_Premultiplied);
         offscreen.setDevicePixelRatio(dpr);
         offscreen.fill(Qt::transparent);
 
@@ -105,15 +106,15 @@ void MarkerStroke::draw(QPainter &painter) const
         }
 
         // Update cache
-        m_cachedPixmap = offscreen;
+        m_cachedImage = offscreen;
         m_cachedOrigin = bounds.topLeft();
         m_cachedDpr = dpr;
         m_cachedPointCount = m_points.size();
     }
 
-    // Use cached pixmap
+    // Use cached image
     painter.setOpacity(0.4);
-    painter.drawPixmap(m_cachedOrigin, m_cachedPixmap);
+    painter.drawImage(m_cachedOrigin, m_cachedImage);
 
     painter.restore();
 }

@@ -5,7 +5,7 @@
 #include <QVector>
 #include <QPointF>
 #include <QColor>
-#include <QPixmap>
+#include <QImage>
 
 class QPainterPath;
 
@@ -32,8 +32,8 @@ private:
     QColor m_color;
     int m_width;
 
-    // Pixmap cache for draw() optimization
-    mutable QPixmap m_cachedPixmap;
+    // Image cache for draw() optimization (QImage used to avoid artifacts on some platforms)
+    mutable QImage m_cachedImage;
     mutable QPoint m_cachedOrigin;
     mutable qreal m_cachedDpr = 0.0;
     mutable int m_cachedPointCount = 0;
