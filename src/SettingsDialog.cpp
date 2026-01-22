@@ -1251,6 +1251,8 @@ void SettingsDialog::loadOcrLanguages()
     QVBoxLayout* availableLayout = new QVBoxLayout();
     QLabel* availableLabel = new QLabel(tr("Available Languages"), m_ocrContentWidget);
     availableLabel->setStyleSheet("font-weight: bold;");
+    availableLabel->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
+    availableLabel->setMinimumWidth(0);
     availableLayout->addWidget(availableLabel);
 
     m_ocrAvailableList = new QListWidget(m_ocrContentWidget);
@@ -1259,8 +1261,9 @@ void SettingsDialog::loadOcrLanguages()
     m_ocrAvailableList->setLineWidth(1);
     m_ocrAvailableList->setSelectionMode(QAbstractItemView::ExtendedSelection);
     m_ocrAvailableList->setSortingEnabled(true);
+    m_ocrAvailableList->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     availableLayout->addWidget(m_ocrAvailableList);
-    listsLayout->addLayout(availableLayout);
+    listsLayout->addLayout(availableLayout, 1);
 
     // Middle: Add/Remove buttons
     QVBoxLayout* btnLayout = new QVBoxLayout();
@@ -1275,12 +1278,14 @@ void SettingsDialog::loadOcrLanguages()
     btnLayout->addSpacing(8);
     btnLayout->addWidget(m_ocrRemoveBtn);
     btnLayout->addStretch();
-    listsLayout->addLayout(btnLayout);
+    listsLayout->addLayout(btnLayout, 0);
 
     // Right: Selected languages (with drag-drop reorder)
     QVBoxLayout* selectedLayout = new QVBoxLayout();
     QLabel* selectedLabel = new QLabel(tr("Selected Languages (priority order)"), m_ocrContentWidget);
     selectedLabel->setStyleSheet("font-weight: bold;");
+    selectedLabel->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
+    selectedLabel->setMinimumWidth(0);
     selectedLayout->addWidget(selectedLabel);
 
     m_ocrSelectedList = new QListWidget(m_ocrContentWidget);
@@ -1290,8 +1295,9 @@ void SettingsDialog::loadOcrLanguages()
     m_ocrSelectedList->setSelectionMode(QAbstractItemView::SingleSelection);
     m_ocrSelectedList->setDragDropMode(QAbstractItemView::InternalMove);
     m_ocrSelectedList->setDefaultDropAction(Qt::MoveAction);
+    m_ocrSelectedList->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     selectedLayout->addWidget(m_ocrSelectedList);
-    listsLayout->addLayout(selectedLayout);
+    listsLayout->addLayout(selectedLayout, 1);
 
     contentLayout->addLayout(listsLayout);
 
