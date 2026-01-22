@@ -21,6 +21,7 @@
 #include "settings/FileSettingsManager.h"
 #include "settings/OCRSettingsManager.h"
 #include "OCRResultDialog.h"
+#include "QRCodeResultDialog.h"
 #include "ui/GlobalToast.h"
 #include "tools/handlers/MosaicToolHandler.h"
 #include "tools/handlers/EmojiStickerToolHandler.h"
@@ -1771,53 +1772,69 @@ void RegionSelector::performQRCodeScan()
 
     QPointer<RegionSelector> safeThis = this;
     qrMgr->decode(selectedRegion,
-        [safeThis](const QRDecodeResult& result) {
+        [safeThis, selectedRegion](const QRDecodeResult& result) {
             if (safeThis) {
-                safeThis->onQRCodeComplete(result.success, result.text, result.format, result.error);
+                safeThis->onQRCodeComplete(result.success, result.text, result.format, result.error, selectedRegion);
             }
         });
 }
 
-void RegionSelector::onQRCodeComplete(bool success, const QString& text, const QString& format, const QString& error)
+void RegionSelector::onQRCodeComplete(bool success, const QString& text, const QString& format, const QString& error, const QPixmap &sourceImage)
 {
     m_qrCodeInProgress = false;
     if (m_loadingSpinner) {
         m_loadingSpinner->stop();
     }
 
-    QString msg;
-    QString bgColor;
     if (success && !text.isEmpty()) {
-        QGuiApplication::clipboard()->setText(text);
-        msg = tr("QR Code: Copied %1 characters (%2)").arg(text.length()).arg(format);
-        bgColor = "rgba(34, 139, 34, 220)";  // Green for success
+        // Show result dialog
+        auto *dialog = new QRCodeResultDialog(this);
+        dialog->setResult(text, format, sourceImage);
+
+        // Connect signals
+        connect(dialog, &QRCodeResultDialog::textCopied, this, [this](const QString &copiedText) {
+            qDebug() << "QR Code text copied:" << copiedText.length() << "characters";
+        });
+
+        connect(dialog, &QRCodeResultDialog::urlOpened, this, [](const QString &url) {
+            qDebug() << "URL opened:" << url;
+        });
+
+        connect(dialog, &QRCodeResultDialog::dialogClosed, this, [this]() {
+            // Close the region selector after dialog closes
+            close();
+        });
+
+        // Show dialog centered on screen
+        dialog->showAt();
     }
     else {
-        msg = error.isEmpty() ? tr("No QR code found") : error;
-        bgColor = "rgba(200, 60, 60, 220)";  // Red for failure
+        // Show error toast for failures
+        QString msg = error.isEmpty() ? tr("No QR code found") : error;
+        QString bgColor = "rgba(200, 60, 60, 220)";  // Red for failure
+
+        m_ocrToastLabel->setStyleSheet(QString(
+            "QLabel {"
+            "  background-color: %1;"
+            "  color: white;"
+            "  padding: 8px 16px;"
+            "  border-radius: 6px;"
+            "  font-size: 13px;"
+            "  font-weight: bold;"
+            "}"
+        ).arg(bgColor));
+
+        // Display the toast centered at top of selection area
+        m_ocrToastLabel->setText(msg);
+        m_ocrToastLabel->adjustSize();
+        QRect sel = m_selectionManager->selectionRect();
+        int x = sel.center().x() - m_ocrToastLabel->width() / 2;
+        int y = sel.top() + 12;
+        m_ocrToastLabel->move(x, y);
+        m_ocrToastLabel->show();
+        m_ocrToastLabel->raise();
+        m_ocrToastTimer->start(2500);
     }
-
-    m_ocrToastLabel->setStyleSheet(QString(
-        "QLabel {"
-        "  background-color: %1;"
-        "  color: white;"
-        "  padding: 8px 16px;"
-        "  border-radius: 6px;"
-        "  font-size: 13px;"
-        "  font-weight: bold;"
-        "}"
-    ).arg(bgColor));
-
-    // Display the toast centered at top of selection area
-    m_ocrToastLabel->setText(msg);
-    m_ocrToastLabel->adjustSize();
-    QRect sel = m_selectionManager->selectionRect();
-    int x = sel.center().x() - m_ocrToastLabel->width() / 2;
-    int y = sel.top() + 12;
-    m_ocrToastLabel->move(x, y);
-    m_ocrToastLabel->show();
-    m_ocrToastLabel->raise();
-    m_ocrToastTimer->start(2500);
 
     update();
 }

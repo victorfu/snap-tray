@@ -376,6 +376,7 @@ add_library(snaptray_platform STATIC
     src/video/IVideoPlayer.cpp
     src/VideoEncoderFactory.cpp
     src/QRCodeManager.cpp
+    src/QRCodeResultDialog.cpp
     # Headers with Q_OBJECT for MOC processing
     include/IVideoEncoder.h
     include/encoding/NativeGifEncoder.h
@@ -385,6 +386,7 @@ add_library(snaptray_platform STATIC
     include/capture/QtCaptureEngine.h
     include/video/IVideoPlayer.h
     include/QRCodeManager.h
+    include/QRCodeResultDialog.h
 
     # macOS sources
     $<$<PLATFORM_ID:Darwin>:

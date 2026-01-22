@@ -257,7 +257,7 @@ private:
     bool m_qrCodeInProgress;
 
     void performQRCodeScan();
-    void onQRCodeComplete(bool success, const QString &text, const QString &format, const QString &error);
+    void onQRCodeComplete(bool success, const QString &text, const QString &format, const QString &error, const QPixmap &sourceImage);
 
     // Auto-blur detection
     AutoBlurManager *m_autoBlurManager;
