@@ -101,7 +101,7 @@ RegionSelector::RegionSelector(QWidget* parent)
                     m_multiRegionManager->updateRegion(activeIndex, rect);
                 }
             }
-            update();
+            // Removed update() - repaints now handled by RegionInputHandler's throttled path
         });
     connect(m_selectionManager, &SelectionStateManager::stateChanged,
         this, [this](SelectionStateManager::State newState) {
@@ -127,11 +127,17 @@ RegionSelector::RegionSelector(QWidget* parent)
     // Initialize multi-region manager
     m_multiRegionManager = new MultiRegionManager(this);
     connect(m_multiRegionManager, &MultiRegionManager::regionAdded,
-        this, [this](int) { update(); });
+        this, [this](int) {
+            m_painter->invalidateOverlayCache();
+        });
     connect(m_multiRegionManager, &MultiRegionManager::regionRemoved,
-        this, [this](int) { update(); });
+        this, [this](int) {
+            m_painter->invalidateOverlayCache();
+        });
     connect(m_multiRegionManager, &MultiRegionManager::regionUpdated,
-        this, [this](int) { update(); });
+        this, [this](int) {
+            m_painter->invalidateOverlayCache();
+        });
     connect(m_multiRegionManager, &MultiRegionManager::activeIndexChanged,
         this, [this](int index) {
             if (!m_multiRegionMode) return;
@@ -141,7 +147,7 @@ RegionSelector::RegionSelector(QWidget* parent)
             else if (!m_selectionManager->isSelecting()) {
                 m_selectionManager->clearSelection();
             }
-            update();
+            // Removed update() - setSelectionRect triggers selectionChanged which flows through throttled path
         });
 
     // Initialize annotation layer
