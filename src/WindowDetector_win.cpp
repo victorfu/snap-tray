@@ -6,6 +6,8 @@
 #include <QtConcurrent>
 #include <QMutexLocker>
 
+#include <unordered_set>
+
 #include <windows.h>
 #include <dwmapi.h>
 #include <psapi.h>
@@ -21,6 +23,9 @@ struct EnumWindowsContext {
     qreal devicePixelRatio;
     DetectionFlags detectionFlags;
 };
+
+// Forward declaration
+BOOL CALLBACK enumChildWindowsProc(HWND hwnd, LPARAM lParam);
 
 // Check if element type should be included based on detection flags
 bool shouldIncludeElementType(ElementType type, DetectionFlags flags)
@@ -51,9 +56,9 @@ int getMinimumSize(ElementType type)
     case ElementType::ContextMenu:
     case ElementType::PopupMenu:
     case ElementType::StatusBarItem:
-        return 20;
+        return 10;  // Reduced from 20 for compact UI elements
     case ElementType::Dialog:
-        return 30;
+        return 20;  // Reduced from 30 for small dialogs
     case ElementType::Unknown:
         return 50;
     }
@@ -108,6 +113,16 @@ BOOL CALLBACK enumWindowsProc(HWND hwnd, LPARAM lParam)
     LONG_PTR exStyle = GetWindowLongPtrW(hwnd, GWL_EXSTYLE);
     LONG_PTR style = GetWindowLongPtrW(hwnd, GWL_STYLE);
 
+    // Skip fully transparent layered windows (invisible overlays)
+    if (exStyle & WS_EX_LAYERED) {
+        BYTE alpha = 255;
+        if (GetLayeredWindowAttributes(hwnd, nullptr, &alpha, nullptr)) {
+            if (alpha < 10) {  // Effectively invisible
+                return TRUE;
+            }
+        }
+    }
+
     // Determine element type based on window characteristics
     ElementType elementType = ElementType::Window;
 
@@ -123,17 +138,37 @@ BOOL CALLBACK enumWindowsProc(HWND hwnd, LPARAM lParam)
     else if (wcscmp(className, L"#32770") == 0) {
         elementType = ElementType::Dialog;
     }
+    // Modern UI elements (IME, tooltips) - only if ModernUI flag is set
+    else if (context->detectionFlags.testFlag(DetectionFlag::ModernUI)) {
+        // IME candidate windows
+        if (wcscmp(className, L"IME") == 0 ||
+            wcsstr(className, L"MSCTFIME") != nullptr) {
+            elementType = ElementType::PopupMenu;
+        }
+        // Tooltips
+        else if (wcscmp(className, L"tooltips_class32") == 0) {
+            elementType = ElementType::PopupMenu;
+        }
+    }
     // Check for tool windows (tooltips, floating toolbars, menus)
     else if (exStyle & WS_EX_TOOLWINDOW) {
         // Tool windows with topmost flag near taskbar might be tray popups
         if (exStyle & WS_EX_TOPMOST) {
             RECT rect;
             if (GetWindowRect(hwnd, &rect)) {
-                int screenHeight = GetSystemMetrics(SM_CYSCREEN);
-                // If near bottom of screen, likely a system tray popup
-                if (rect.bottom >= screenHeight - 100) {
-                    elementType = ElementType::StatusBarItem;
+                // Use per-monitor metrics instead of primary monitor only
+                HMONITOR hMonitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+                MONITORINFO mi = { sizeof(MONITORINFO) };
+                if (GetMonitorInfo(hMonitor, &mi)) {
+                    int monitorBottom = mi.rcMonitor.bottom;
+                    // If near bottom of monitor, likely a system tray popup
+                    if (rect.bottom >= monitorBottom - 100) {
+                        elementType = ElementType::StatusBarItem;
+                    } else {
+                        elementType = ElementType::PopupMenu;
+                    }
                 } else {
+                    // Fallback to popup menu if monitor info unavailable
                     elementType = ElementType::PopupMenu;
                 }
             } else {
@@ -187,7 +222,13 @@ BOOL CALLBACK enumWindowsProc(HWND hwnd, LPARAM lParam)
         return TRUE;
     }
 
-    // Skip windows positioned off-screen (minimized or hidden)
+    // Skip minimized windows using proper Windows API
+    if (IsIconic(hwnd)) {
+        return TRUE;
+    }
+
+    // Additional safety: skip windows with extreme off-screen coordinates
+    // (handles edge cases where IsIconic may not catch everything)
     if (rect.left <= -32000 || rect.top <= -32000) {
         return TRUE;
     }
@@ -199,7 +240,9 @@ BOOL CALLBACK enumWindowsProc(HWND hwnd, LPARAM lParam)
     QString ownerApp;     // Empty - not needed for detection
 
     // Convert physical pixels to logical pixels for Qt coordinate system
-    qreal dpr = context->devicePixelRatio;
+    // Use per-window DPI for accurate multi-monitor mixed-DPI support
+    UINT windowDpi = GetDpiForWindow(hwnd);
+    qreal dpr = windowDpi > 0 ? windowDpi / 96.0 : context->devicePixelRatio;
     QRect physicalBounds(rect.left, rect.top, width, height);
     QRect logicalBounds = CoordinateHelper::toLogical(physicalBounds, dpr);
 
@@ -214,7 +257,90 @@ BOOL CALLBACK enumWindowsProc(HWND hwnd, LPARAM lParam)
 
     context->windowCache->push_back(element);
 
+    // If ChildControls flag is set, enumerate child controls within this window
+    if (context->detectionFlags.testFlag(DetectionFlag::ChildControls)) {
+        EnumChildWindows(hwnd, enumChildWindowsProc, lParam);
+    }
+
     return TRUE;
+}
+
+// Callback for enumerating child controls within a window
+BOOL CALLBACK enumChildWindowsProc(HWND hwnd, LPARAM lParam)
+{
+    auto *context = reinterpret_cast<EnumWindowsContext *>(lParam);
+
+    // Skip invisible controls
+    if (!IsWindowVisible(hwnd)) {
+        return TRUE;
+    }
+
+    // Get control bounds
+    RECT rect;
+    if (!GetWindowRect(hwnd, &rect)) {
+        return TRUE;
+    }
+
+    int width = rect.right - rect.left;
+    int height = rect.bottom - rect.top;
+
+    // Filter out tiny controls (noise) and giant containers
+    const int MIN_CONTROL_SIZE = 5;
+    const int MAX_REASONABLE_SIZE = 10000;
+    if (width < MIN_CONTROL_SIZE || height < MIN_CONTROL_SIZE ||
+        width > MAX_REASONABLE_SIZE || height > MAX_REASONABLE_SIZE) {
+        return TRUE;
+    }
+
+    // Get control class name to identify type
+    WCHAR className[256] = {0};
+    GetClassNameW(hwnd, className, 256);
+
+    // Skip certain control types that aren't useful for selection
+    if (wcscmp(className, L"msctls_statusbar32") == 0) {
+        return TRUE;  // Skip status bars
+    }
+
+    // Classify control type based on class name
+    ElementType elementType = ElementType::Window;  // Default
+
+    // Common Win32 control classes
+    if (wcscmp(className, L"Button") == 0) {
+        elementType = ElementType::PopupMenu;  // Reuse for buttons
+    }
+    else if (wcscmp(className, L"Edit") == 0 ||
+             wcscmp(className, L"RichEdit20W") == 0 ||
+             wcscmp(className, L"RichEdit20A") == 0) {
+        elementType = ElementType::PopupMenu;  // Reuse for text boxes
+    }
+    else if (wcscmp(className, L"Static") == 0) {
+        elementType = ElementType::PopupMenu;  // Labels
+    }
+    else if (wcsstr(className, L"Pane") != nullptr ||
+             wcsstr(className, L"Panel") != nullptr) {
+        elementType = ElementType::Dialog;  // Panels/containers
+    }
+
+    // Per-window DPI for accurate coordinates
+    UINT windowDpi = GetDpiForWindow(hwnd);
+    qreal dpr = windowDpi > 0 ? windowDpi / 96.0 : context->devicePixelRatio;
+
+    // Convert to logical coordinates
+    QRect physicalBounds(rect.left, rect.top, width, height);
+    QRect logicalBounds = CoordinateHelper::toLogical(physicalBounds, dpr);
+
+    // Create element for this control
+    DetectedElement element;
+    element.bounds = logicalBounds;
+    element.windowTitle = QString();  // Skip for performance
+    element.ownerApp = QString();
+    element.windowLayer = 1;  // Child elements have layer 1 (vs 0 for windows)
+    element.windowId = reinterpret_cast<uintptr_t>(hwnd) & 0xFFFFFFFF;
+    element.elementType = elementType;
+
+    context->windowCache->push_back(element);
+
+    return TRUE;  // Continue enumeration
 }
 
 } // anonymous namespace
@@ -325,6 +451,13 @@ void WindowDetector::enumerateWindows()
     // Additionally enumerate menu windows directly if detecting context menus
     // Menu windows sometimes don't appear in EnumWindows
     if (m_detectionFlags.testFlag(DetectionFlag::ContextMenus)) {
+        // Build hash set of existing window IDs for O(1) duplicate checking
+        std::unordered_set<uint32_t> existingIds;
+        existingIds.reserve(m_windowCache.size());
+        for (const auto &elem : m_windowCache) {
+            existingIds.insert(elem.windowId);
+        }
+
         HWND menuWnd = FindWindowExW(nullptr, nullptr, L"#32768", nullptr);
         while (menuWnd) {
             if (IsWindowVisible(menuWnd)) {
@@ -335,17 +468,9 @@ void WindowDetector::enumerateWindows()
                     int minSize = getMinimumSize(ElementType::ContextMenu);
 
                     if (width >= minSize && height >= minSize) {
-                        // Check if not already in cache
+                        // Check if not already in cache using hash set
                         uint32_t windowId = reinterpret_cast<uintptr_t>(menuWnd) & 0xFFFFFFFF;
-                        bool alreadyExists = false;
-                        for (const auto &elem : m_windowCache) {
-                            if (elem.windowId == windowId) {
-                                alreadyExists = true;
-                                break;
-                            }
-                        }
-
-                        if (!alreadyExists) {
+                        if (existingIds.find(windowId) == existingIds.end()) {
                             qreal dpr = context.devicePixelRatio;
                             QRect physicalBounds(rect.left, rect.top, width, height);
                             DetectedElement element;
@@ -358,6 +483,7 @@ void WindowDetector::enumerateWindows()
 
                             // Insert at beginning since menus are typically topmost
                             m_windowCache.insert(m_windowCache.begin(), element);
+                            existingIds.insert(windowId);  // Update hash set
                         }
                     }
                 }
@@ -382,6 +508,13 @@ void WindowDetector::enumerateWindowsInternal(std::vector<DetectedElement>& cach
 
     // Additionally enumerate menu windows directly if detecting context menus
     if (flags.testFlag(DetectionFlag::ContextMenus)) {
+        // Build hash set of existing window IDs for O(1) duplicate checking
+        std::unordered_set<uint32_t> existingIds;
+        existingIds.reserve(cache.size());
+        for (const auto &elem : cache) {
+            existingIds.insert(elem.windowId);
+        }
+
         HWND menuWnd = FindWindowExW(nullptr, nullptr, L"#32768", nullptr);
         while (menuWnd) {
             if (IsWindowVisible(menuWnd)) {
@@ -393,15 +526,7 @@ void WindowDetector::enumerateWindowsInternal(std::vector<DetectedElement>& cach
 
                     if (width >= minSize && height >= minSize) {
                         uint32_t windowId = reinterpret_cast<uintptr_t>(menuWnd) & 0xFFFFFFFF;
-                        bool alreadyExists = false;
-                        for (const auto &elem : cache) {
-                            if (elem.windowId == windowId) {
-                                alreadyExists = true;
-                                break;
-                            }
-                        }
-
-                        if (!alreadyExists) {
+                        if (existingIds.find(windowId) == existingIds.end()) {
                             QRect physicalBounds(rect.left, rect.top, width, height);
                             DetectedElement element;
                             element.bounds = CoordinateHelper::toLogical(physicalBounds, dpr);
@@ -411,6 +536,7 @@ void WindowDetector::enumerateWindowsInternal(std::vector<DetectedElement>& cach
                             element.windowId = windowId;
                             element.elementType = ElementType::ContextMenu;
                             cache.insert(cache.begin(), element);
+                            existingIds.insert(windowId);  // Update hash set
                         }
                     }
                 }

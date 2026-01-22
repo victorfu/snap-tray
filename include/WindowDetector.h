@@ -32,7 +32,9 @@ enum class DetectionFlag {
     PopupMenus     = 1 << 2,   // Application menu dropdowns
     Dialogs        = 1 << 3,   // Dialog/modal windows
     StatusBarItems = 1 << 4,   // Menu bar popups (macOS) / System tray popups (Windows)
-    AllSystemUI    = ContextMenus | PopupMenus | Dialogs | StatusBarItems,
+    ModernUI       = 1 << 5,   // Modern UI elements (IME, tooltips, notifications)
+    ChildControls  = 1 << 6,   // Child controls within windows (buttons, text boxes, panels)
+    AllSystemUI    = ContextMenus | PopupMenus | Dialogs | StatusBarItems | ModernUI,
     All            = Windows | AllSystemUI
 };
 Q_DECLARE_FLAGS(DetectionFlags, DetectionFlag)
