@@ -11,10 +11,28 @@ set "EXE_PATH=%BIN_DIR%\SnapTray-Debug.exe"
 
 cd /d "%PROJECT_DIR%"
 
+REM Detect Qt installation path
+if not defined QT_PATH (
+    REM Try common Qt installation paths
+    if exist "C:\Qt\6.10.1\msvc2022_64" set "QT_PATH=C:\Qt\6.10.1\msvc2022_64"
+    if exist "C:\Qt\6.8.0\msvc2022_64" set "QT_PATH=C:\Qt\6.8.0\msvc2022_64"
+    if exist "C:\Qt\6.7.0\msvc2022_64" set "QT_PATH=C:\Qt\6.7.0\msvc2022_64"
+)
+
+if not defined QT_PATH (
+    echo Error: Qt installation not found.
+    echo Please set QT_PATH environment variable or install Qt to a standard location.
+    echo Example: set QT_PATH=C:\Qt\6.10.1\msvc2022_64
+    exit /b 1
+)
+
+echo Using Qt from: %QT_PATH%
+echo.
+
 REM Configure if needed
 if not exist "%BUILD_DIR%\CMakeCache.txt" (
     echo Configuring project...
-    cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug
+    cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH="%QT_PATH%"
 )
 
 REM Build all targets (including tests)
