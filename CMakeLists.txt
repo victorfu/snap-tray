@@ -577,6 +577,7 @@ add_library(snaptray_ui STATIC
 
     # Dialogs and overlays
     src/SettingsDialog.cpp
+    src/OCRResultDialog.cpp
 
     # Global UI components
     src/ui/GlobalToast.cpp
@@ -644,6 +645,7 @@ add_library(snaptray_ui STATIC
     include/video/InPlacePreviewOverlay.h
     include/video/CountdownOverlay.h
     include/SettingsDialog.h
+    include/OCRResultDialog.h
     $<$<PLATFORM_ID:Darwin>:
         include/WindowDetectionOverlay.h
         include/OCRController.h

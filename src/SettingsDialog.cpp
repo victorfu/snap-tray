@@ -25,6 +25,8 @@
 #include <QSlider>
 #include <QComboBox>
 #include <QListWidget>
+#include <QRadioButton>
+#include <QGroupBox>
 #include <QFileDialog>
 #include <QFrame>
 #include <QStandardPaths>
@@ -84,6 +86,8 @@ SettingsDialog::SettingsDialog(QWidget* parent)
     , m_ocrContentWidget(nullptr)
     , m_ocrTabInitialized(false)
     , m_ocrTabIndex(-1)
+    , m_ocrDirectCopyRadio(nullptr)
+    , m_ocrShowEditorRadio(nullptr)
 {
     setWindowTitle(QString("%1 Settings").arg(SNAPTRAY_APP_NAME));
     setMinimumSize(520, 480);
@@ -1020,6 +1024,14 @@ void SettingsDialog::onSave()
         }
         auto& ocrSettings = OCRSettingsManager::instance();
         ocrSettings.setLanguages(ocrLanguages);
+
+        // Save OCR behavior setting
+        if (m_ocrShowEditorRadio && m_ocrShowEditorRadio->isChecked()) {
+            ocrSettings.setBehavior(OCRBehavior::ShowEditor);
+        } else {
+            ocrSettings.setBehavior(OCRBehavior::DirectCopy);
+        }
+
         ocrSettings.save();
         emit ocrLanguagesChanged(ocrLanguages);
     }
@@ -1343,6 +1355,34 @@ void SettingsDialog::loadOcrLanguages()
                 onRemoveOcrLanguage();
             }
         });
+
+    // === OCR Behavior Section ===
+    contentLayout->addSpacing(16);
+    QGroupBox* behaviorGroup = new QGroupBox(tr("After OCR Recognition"), m_ocrContentWidget);
+    QVBoxLayout* behaviorLayout = new QVBoxLayout(behaviorGroup);
+
+    m_ocrDirectCopyRadio = new QRadioButton(
+        tr("Copy text directly to clipboard"), behaviorGroup);
+    m_ocrShowEditorRadio = new QRadioButton(
+        tr("Show editor to review and edit text"), behaviorGroup);
+
+    // Set tooltips for clarity
+    m_ocrDirectCopyRadio->setToolTip(
+        tr("Recognized text is immediately copied to clipboard"));
+    m_ocrShowEditorRadio->setToolTip(
+        tr("Opens a dialog where you can review and edit the text before copying"));
+
+    behaviorLayout->addWidget(m_ocrDirectCopyRadio);
+    behaviorLayout->addWidget(m_ocrShowEditorRadio);
+
+    // Load current setting
+    if (OCRSettingsManager::instance().behavior() == OCRBehavior::ShowEditor) {
+        m_ocrShowEditorRadio->setChecked(true);
+    } else {
+        m_ocrDirectCopyRadio->setChecked(true);
+    }
+
+    contentLayout->addWidget(behaviorGroup);
 
     contentLayout->addStretch();
 

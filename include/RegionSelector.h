@@ -248,6 +248,7 @@ private:
 
     void performOCR();
     void onOCRComplete(bool success, const QString &text, const QString &error);
+    void showOCRResultDialog(const QString &text);
 
     // Auto-blur detection
     AutoBlurManager *m_autoBlurManager;

@@ -137,6 +137,7 @@ private:
     // OCR methods
     void performOCR();
     void onOCRComplete(bool success, const QString& text, const QString& error);
+    void showOCRResultDialog(const QString& text);
 
     // Info methods
     void copyAllInfo();

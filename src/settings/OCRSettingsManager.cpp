@@ -34,12 +34,16 @@ void OCRSettingsManager::save()
 {
     auto settings = SnapTray::getSettings();
     settings.setValue(SETTINGS_KEY, m_languages);
-    qDebug() << "OCRSettingsManager: Saved languages:" << m_languages;
+    settings.setValue(BEHAVIOR_KEY, static_cast<int>(m_behavior));
+    qDebug() << "OCRSettingsManager: Saved languages:" << m_languages
+             << "behavior:" << static_cast<int>(m_behavior);
 }
 
 void OCRSettingsManager::load()
 {
     auto settings = SnapTray::getSettings();
+
+    // Load languages
     QStringList defaultList = {DEFAULT_LANGUAGE};
     m_languages = settings.value(SETTINGS_KEY, defaultList).toStringList();
     m_languages.removeDuplicates();
@@ -49,5 +53,20 @@ void OCRSettingsManager::load()
         m_languages.append(DEFAULT_LANGUAGE);
     }
 
-    qDebug() << "OCRSettingsManager: Loaded languages:" << m_languages;
+    // Load behavior
+    int behaviorValue = settings.value(BEHAVIOR_KEY, static_cast<int>(OCRBehavior::DirectCopy)).toInt();
+    m_behavior = static_cast<OCRBehavior>(behaviorValue);
+
+    qDebug() << "OCRSettingsManager: Loaded languages:" << m_languages
+             << "behavior:" << static_cast<int>(m_behavior);
+}
+
+OCRBehavior OCRSettingsManager::behavior() const
+{
+    return m_behavior;
+}
+
+void OCRSettingsManager::setBehavior(OCRBehavior behavior)
+{
+    m_behavior = behavior;
 }

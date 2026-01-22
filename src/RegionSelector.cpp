@@ -19,6 +19,8 @@
 #include "settings/AnnotationSettingsManager.h"
 #include "settings/FileSettingsManager.h"
 #include "settings/OCRSettingsManager.h"
+#include "OCRResultDialog.h"
+#include "ui/GlobalToast.h"
 #include "tools/handlers/MosaicToolHandler.h"
 #include "tools/handlers/EmojiStickerToolHandler.h"
 #include "tools/ToolSectionConfig.h"
@@ -1644,41 +1646,89 @@ void RegionSelector::onOCRComplete(bool success, const QString& text, const QStr
         m_loadingSpinner->stop();
     }
 
-    QString msg;
-    QString bgColor;
     if (success && !text.isEmpty()) {
+        // Check settings to determine behavior
+        if (OCRSettingsManager::instance().behavior() == OCRBehavior::ShowEditor) {
+            showOCRResultDialog(text);
+            return;  // Dialog will handle the rest
+        }
+
+        // Default behavior: direct copy
         QGuiApplication::clipboard()->setText(text);
-        msg = tr("Copied %1 characters").arg(text.length());
-        bgColor = "rgba(34, 139, 34, 220)";  // Green for success
+        QString msg = tr("Copied %1 characters").arg(text.length());
+        QString bgColor = "rgba(34, 139, 34, 220)";  // Green for success
+
+        m_ocrToastLabel->setStyleSheet(QString(
+            "QLabel {"
+            "  background-color: %1;"
+            "  color: white;"
+            "  padding: 8px 16px;"
+            "  border-radius: 6px;"
+            "  font-size: 13px;"
+            "  font-weight: bold;"
+            "}"
+        ).arg(bgColor));
+
+        m_ocrToastLabel->setText(msg);
+        m_ocrToastLabel->adjustSize();
+        QRect sel = m_selectionManager->selectionRect();
+        int x = sel.center().x() - m_ocrToastLabel->width() / 2;
+        int y = sel.top() + 12;
+        m_ocrToastLabel->move(x, y);
+        m_ocrToastLabel->show();
+        m_ocrToastLabel->raise();
+        m_ocrToastTimer->start(2500);
     }
     else {
-        msg = error.isEmpty() ? tr("No text found") : error;
-        bgColor = "rgba(200, 60, 60, 220)";  // Red for failure
+        QString msg = error.isEmpty() ? tr("No text found") : error;
+        QString bgColor = "rgba(200, 60, 60, 220)";  // Red for failure
+
+        m_ocrToastLabel->setStyleSheet(QString(
+            "QLabel {"
+            "  background-color: %1;"
+            "  color: white;"
+            "  padding: 8px 16px;"
+            "  border-radius: 6px;"
+            "  font-size: 13px;"
+            "  font-weight: bold;"
+            "}"
+        ).arg(bgColor));
+
+        m_ocrToastLabel->setText(msg);
+        m_ocrToastLabel->adjustSize();
+        QRect sel = m_selectionManager->selectionRect();
+        int x = sel.center().x() - m_ocrToastLabel->width() / 2;
+        int y = sel.top() + 12;
+        m_ocrToastLabel->move(x, y);
+        m_ocrToastLabel->show();
+        m_ocrToastLabel->raise();
+        m_ocrToastTimer->start(2500);
     }
 
-    m_ocrToastLabel->setStyleSheet(QString(
-        "QLabel {"
-        "  background-color: %1;"
-        "  color: white;"
-        "  padding: 8px 16px;"
-        "  border-radius: 6px;"
-        "  font-size: 13px;"
-        "  font-weight: bold;"
-        "}"
-    ).arg(bgColor));
-
-    // Display the toast centered at top of selection area
-    m_ocrToastLabel->setText(msg);
-    m_ocrToastLabel->adjustSize();
-    QRect sel = m_selectionManager->selectionRect();
-    int x = sel.center().x() - m_ocrToastLabel->width() / 2;
-    int y = sel.top() + 12;
-    m_ocrToastLabel->move(x, y);
-    m_ocrToastLabel->show();
-    m_ocrToastLabel->raise();
-    m_ocrToastTimer->start(2500);
-
     update();
+}
+
+void RegionSelector::showOCRResultDialog(const QString& text)
+{
+    // Hide the region selector to show the dialog
+    hide();
+
+    OCRResultDialog dialog;
+    dialog.setResultText(text);
+
+    connect(&dialog, &OCRResultDialog::copyRequested, [](const QString& editedText) {
+        QGuiApplication::clipboard()->setText(editedText);
+        GlobalToast::instance().showToast(
+            GlobalToast::Success,
+            QObject::tr("OCR"),
+            QObject::tr("Copied %1 characters").arg(editedText.length())
+        );
+    });
+
+    dialog.exec();
+
+    // Close the region selector after dialog closes
+    close();
 }
 
 void RegionSelector::performAutoBlur()

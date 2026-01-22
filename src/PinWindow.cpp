@@ -21,6 +21,7 @@
 #include "settings/FileSettingsManager.h"
 #include "settings/PinWindowSettingsManager.h"
 #include "settings/OCRSettingsManager.h"
+#include "OCRResultDialog.h"
 #include "InlineTextEditor.h"
 #include "region/TextAnnotationEditor.h"
 #include "toolbar/ToolOptionsPanel.h"
@@ -802,16 +803,43 @@ void PinWindow::onOCRComplete(bool success, const QString& text, const QString& 
     m_ocrInProgress = false;
     m_loadingSpinner->stop();
 
-    QString msg;
     if (success && !text.isEmpty()) {
+        // Check settings to determine behavior
+        if (OCRSettingsManager::instance().behavior() == OCRBehavior::ShowEditor) {
+            showOCRResultDialog(text);
+            return;
+        }
+
+        // Default behavior: direct copy
         QGuiApplication::clipboard()->setText(text);
-        msg = tr("Copied %1 characters").arg(text.length());
+        QString msg = tr("Copied %1 characters").arg(text.length());
+        m_uiIndicators->showOCRToast(true, msg);
     }
     else {
-        msg = error.isEmpty() ? tr("No text found") : error;
+        QString msg = error.isEmpty() ? tr("No text found") : error;
+        m_uiIndicators->showOCRToast(false, msg);
     }
 
-    m_uiIndicators->showOCRToast(success && !text.isEmpty(), msg);
+    emit ocrCompleted(success && !text.isEmpty(),
+                      success ? tr("Text copied") : error);
+}
+
+void PinWindow::showOCRResultDialog(const QString& text)
+{
+    OCRResultDialog dialog(this);
+    dialog.setResultText(text);
+
+    connect(&dialog, &OCRResultDialog::copyRequested, [this](const QString& editedText) {
+        QGuiApplication::clipboard()->setText(editedText);
+        m_uiIndicators->showOCRToast(true, tr("Copied %1 characters").arg(editedText.length()));
+        emit ocrCompleted(true, tr("Text copied"));
+    });
+
+    connect(&dialog, &QDialog::rejected, [this]() {
+        m_uiIndicators->showOCRToast(false, tr("Cancelled"));
+    });
+
+    dialog.exec();
 }
 
 void PinWindow::updateOcrLanguages(const QStringList& languages)

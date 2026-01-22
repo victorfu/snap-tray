@@ -13,6 +13,8 @@ class QLineEdit;
 class QSlider;
 class QComboBox;
 class QListWidget;
+class QRadioButton;
+class QGroupBox;
 class HotkeyEdit;
 
 class SettingsDialog : public QDialog
@@ -184,6 +186,10 @@ private:
     QWidget *m_ocrContentWidget;
     bool m_ocrTabInitialized;
     int m_ocrTabIndex;
+
+    // OCR behavior settings
+    QRadioButton *m_ocrDirectCopyRadio;
+    QRadioButton *m_ocrShowEditorRadio;
 };
 
 #endif // SETTINGSDIALOG_H
