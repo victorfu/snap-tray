@@ -40,6 +40,7 @@ class EmojiPicker;
 class ColorPickerDialog;
 class QCloseEvent;
 class OCRManager;
+class QRCodeManager;
 class AutoBlurManager;
 class RegionPainter;
 class RegionInputHandler;
@@ -134,6 +135,7 @@ private:
     // Lazy component creation
     EmojiPicker* ensureEmojiPicker();
     OCRManager* ensureOCRManager();
+    QRCodeManager* ensureQRCodeManager();
     LoadingSpinnerRenderer* ensureLoadingSpinner();
 
     // Step Badge size handling
@@ -249,6 +251,13 @@ private:
     void performOCR();
     void onOCRComplete(bool success, const QString &text, const QString &error);
     void showOCRResultDialog(const QString &text);
+
+    // QR Code state
+    QRCodeManager *m_qrCodeManager;
+    bool m_qrCodeInProgress;
+
+    void performQRCodeScan();
+    void onQRCodeComplete(bool success, const QString &text, const QString &format, const QString &error);
 
     // Auto-blur detection
     AutoBlurManager *m_autoBlurManager;

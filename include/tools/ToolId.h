@@ -34,6 +34,7 @@ enum class ToolId {
     Clear,
     Cancel,
     OCR,
+    QRCode,     // QR Code scan/generate
     AutoBlur,   // Auto-detect and blur faces/text
     Pin,
     Record,

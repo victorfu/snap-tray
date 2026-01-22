@@ -14,6 +14,7 @@
 #include "ColorPickerDialog.h"
 #include "EmojiPicker.h"
 #include "OCRManager.h"
+#include "QRCodeManager.h"
 #include "PlatformFeatures.h"
 #include "detection/AutoBlurManager.h"
 #include "settings/AnnotationSettingsManager.h"
@@ -76,6 +77,8 @@ RegionSelector::RegionSelector(QWidget* parent)
     , m_windowDetector(nullptr)
     , m_ocrManager(nullptr)
     , m_ocrInProgress(false)
+    , m_qrCodeManager(nullptr)
+    , m_qrCodeInProgress(false)
     , m_autoBlurManager(nullptr)
     , m_autoBlurInProgress(false)
     , m_emojiPicker(nullptr)
@@ -512,6 +515,8 @@ RegionSelector::RegionSelector(QWidget* parent)
         this, &RegionSelector::copyToClipboard);
     connect(m_toolbarHandler, &RegionToolbarHandler::ocrRequested,
         this, &RegionSelector::performOCR);
+    connect(m_toolbarHandler, &RegionToolbarHandler::qrCodeRequested,
+        this, &RegionSelector::performQRCodeScan);
     connect(m_toolbarHandler, &RegionToolbarHandler::multiRegionToggled,
         this, &RegionSelector::setMultiRegionMode);
     connect(m_toolbarHandler, &RegionToolbarHandler::multiRegionDoneRequested,
@@ -688,6 +693,14 @@ OCRManager* RegionSelector::ensureOCRManager()
         m_toolbarHandler->setOCRManager(m_ocrManager);
     }
     return m_ocrManager;
+}
+
+QRCodeManager* RegionSelector::ensureQRCodeManager()
+{
+    if (!m_qrCodeManager) {
+        m_qrCodeManager = new QRCodeManager(this);
+    }
+    return m_qrCodeManager;
 }
 
 LoadingSpinnerRenderer* RegionSelector::ensureLoadingSpinner()
@@ -1733,6 +1746,80 @@ void RegionSelector::showOCRResultDialog(const QString& text)
 
     // Close the region selector after dialog closes
     close();
+}
+
+void RegionSelector::performQRCodeScan()
+{
+    QRCodeManager* qrMgr = ensureQRCodeManager();
+    if (!qrMgr || m_qrCodeInProgress || !m_selectionManager->isComplete()) {
+        return;
+    }
+
+    m_qrCodeInProgress = true;
+    ensureLoadingSpinner()->start();
+    update();
+
+    // Get the selected region (without annotations)
+    QRect sel = m_selectionManager->selectionRect();
+    QPixmap selectedRegion = m_backgroundPixmap.copy(
+        static_cast<int>(sel.x() * m_devicePixelRatio),
+        static_cast<int>(sel.y() * m_devicePixelRatio),
+        static_cast<int>(sel.width() * m_devicePixelRatio),
+        static_cast<int>(sel.height() * m_devicePixelRatio)
+    );
+    selectedRegion.setDevicePixelRatio(m_devicePixelRatio);
+
+    QPointer<RegionSelector> safeThis = this;
+    qrMgr->decode(selectedRegion,
+        [safeThis](const QRDecodeResult& result) {
+            if (safeThis) {
+                safeThis->onQRCodeComplete(result.success, result.text, result.format, result.error);
+            }
+        });
+}
+
+void RegionSelector::onQRCodeComplete(bool success, const QString& text, const QString& format, const QString& error)
+{
+    m_qrCodeInProgress = false;
+    if (m_loadingSpinner) {
+        m_loadingSpinner->stop();
+    }
+
+    QString msg;
+    QString bgColor;
+    if (success && !text.isEmpty()) {
+        QGuiApplication::clipboard()->setText(text);
+        msg = tr("QR Code: Copied %1 characters (%2)").arg(text.length()).arg(format);
+        bgColor = "rgba(34, 139, 34, 220)";  // Green for success
+    }
+    else {
+        msg = error.isEmpty() ? tr("No QR code found") : error;
+        bgColor = "rgba(200, 60, 60, 220)";  // Red for failure
+    }
+
+    m_ocrToastLabel->setStyleSheet(QString(
+        "QLabel {"
+        "  background-color: %1;"
+        "  color: white;"
+        "  padding: 8px 16px;"
+        "  border-radius: 6px;"
+        "  font-size: 13px;"
+        "  font-weight: bold;"
+        "}"
+    ).arg(bgColor));
+
+    // Display the toast centered at top of selection area
+    m_ocrToastLabel->setText(msg);
+    m_ocrToastLabel->adjustSize();
+    QRect sel = m_selectionManager->selectionRect();
+    int x = sel.center().x() - m_ocrToastLabel->width() / 2;
+    int y = sel.top() + 12;
+    m_ocrToastLabel->move(x, y);
+    m_ocrToastLabel->show();
+    m_ocrToastLabel->raise();
+    m_ocrToastTimer->start(2500);
+
+    update();
 }
 
 void RegionSelector::performAutoBlur()

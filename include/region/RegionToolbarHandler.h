@@ -81,6 +81,7 @@ signals:
     void saveRequested();
     void copyRequested();
     void ocrRequested();
+    void qrCodeRequested();
     void multiRegionToggled(bool enabled);
     void multiRegionDoneRequested();
     void multiRegionCancelRequested();

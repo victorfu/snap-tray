@@ -85,6 +85,7 @@ void RegionToolbarHandler::setupToolbarButtons()
     if (PlatformFeatures::instance().isOCRAvailable()) {
         iconRenderer.loadIcon("ocr", ":/icons/icons/ocr.svg");
     }
+    iconRenderer.loadIcon("qrcode", ":/icons/icons/qrcode.svg");
     iconRenderer.loadIcon("auto-blur", ":/icons/icons/auto-blur.svg");
     iconRenderer.loadIcon("pin", ":/icons/icons/pin.svg");
     iconRenderer.loadIcon("record", ":/icons/icons/record.svg");
@@ -132,6 +133,7 @@ void RegionToolbarHandler::setupToolbarButtons()
     if (PlatformFeatures::instance().isOCRAvailable()) {
         buttons.append({ static_cast<int>(ToolId::OCR), "ocr", "OCR Text Recognition", false });
     }
+    buttons.append({ static_cast<int>(ToolId::QRCode), "qrcode", "QR Code Scan", false });
     buttons.append({ static_cast<int>(ToolId::Record), "record", "Screen Recording (R)", false });
     buttons.append({ static_cast<int>(ToolId::MultiRegion), "multi-region", "Multi-Region Capture (M)", false });
     buttons.append({ static_cast<int>(ToolId::Pin), "pin", "Pin to Screen (Enter)", false });
@@ -236,6 +238,7 @@ void RegionToolbarHandler::handleToolbarClick(ToolId button)
     case ToolId::Redo:
     case ToolId::Cancel:
     case ToolId::OCR:
+    case ToolId::QRCode:
     case ToolId::Pin:
     case ToolId::Record:
     case ToolId::Save:
@@ -368,6 +371,10 @@ void RegionToolbarHandler::handleActionButton(ToolId button)
 
     case ToolId::OCR:
         emit ocrRequested();
+        break;
+
+    case ToolId::QRCode:
+        emit qrCodeRequested();
         break;
 
     case ToolId::Pin:

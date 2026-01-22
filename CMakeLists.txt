@@ -103,6 +103,32 @@ FetchContent_Declare(
 set(QHOTKEY_INSTALL OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(QHotkey)
 
+# ============================================================================
+# ZXing-CPP for QR Code / Barcode processing
+# ============================================================================
+FetchContent_Declare(
+    ZXing
+    GIT_REPOSITORY https://github.com/zxing-cpp/zxing-cpp.git
+    GIT_TAG        v2.2.1
+    GIT_SHALLOW    TRUE
+)
+
+# Minimal build options for ZXing
+set(ZXING_READERS ON CACHE BOOL "" FORCE)   # Enable decoding
+set(ZXING_WRITERS ON CACHE BOOL "" FORCE)   # Enable encoding
+set(ZXING_USE_BUNDLED_ZINT OFF CACHE BOOL "" FORCE)
+set(ZXING_UNIT_TESTS OFF CACHE BOOL "" FORCE)
+set(ZXING_BLACKBOX_TESTS OFF CACHE BOOL "" FORCE)
+set(ZXING_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(ZXING_BUILD_PYTHON_MODULE OFF CACHE BOOL "" FORCE)
+
+FetchContent_MakeAvailable(ZXing)
+
+# Fix MSVC UTF-8 encoding issues for ZXing
+if(MSVC)
+    target_compile_options(ZXing PRIVATE /utf-8)
+endif()
+
 # Disable AUTOMOC/AUTOUIC/AUTORCC while fetching OpenCV and libwebp to avoid
 # race conditions with generated headers (e.g., OpenCV's opencl_kernels_*.hpp)
 set(CMAKE_AUTOMOC OFF)
@@ -349,6 +375,7 @@ add_library(snaptray_platform STATIC
     src/encoding/WebPAnimEncoder.cpp
     src/video/IVideoPlayer.cpp
     src/VideoEncoderFactory.cpp
+    src/QRCodeManager.cpp
     # Headers with Q_OBJECT for MOC processing
     include/IVideoEncoder.h
     include/encoding/NativeGifEncoder.h
@@ -357,6 +384,7 @@ add_library(snaptray_platform STATIC
     include/capture/IAudioCaptureEngine.h
     include/capture/QtCaptureEngine.h
     include/video/IVideoPlayer.h
+    include/QRCodeManager.h
 
     # macOS sources
     $<$<PLATFORM_ID:Darwin>:
@@ -423,6 +451,8 @@ target_include_directories(snaptray_platform
         ${CMAKE_BINARY_DIR}/generated
         ${CMAKE_BINARY_DIR}
         ${CMAKE_BINARY_DIR}/_deps/libwebp-src/src
+        ${CMAKE_BINARY_DIR}/_deps/zxing-src/core/src
+        ${CMAKE_BINARY_DIR}/_deps/zxing-build/core
 )
 
 target_link_libraries(snaptray_platform
@@ -433,6 +463,7 @@ target_link_libraries(snaptray_platform
         Qt6::Concurrent
         webp
         libwebpmux
+        ZXing::ZXing
     PRIVATE
         $<$<PLATFORM_ID:Darwin>:
             "-framework CoreGraphics"
