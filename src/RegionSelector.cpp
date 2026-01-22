@@ -1600,22 +1600,6 @@ bool RegionSelector::isAnnotationTool(ToolId tool) const
     }
 }
 
-void RegionSelector::showTextInputDialog(const QPoint& pos)
-{
-    bool ok;
-    QString text = QInputDialog::getText(this, "Add Text", "Enter text:",
-        QLineEdit::Normal, QString(), &ok);
-    if (ok && !text.isEmpty()) {
-        QFont font;
-        font.setPointSize(16);
-        font.setBold(true);
-
-        auto textAnnotation = std::make_unique<TextBoxAnnotation>(QPointF(pos), text, font, m_annotationColor);
-        m_annotationLayer->addItem(std::move(textAnnotation));
-        update();
-    }
-}
-
 void RegionSelector::onTextEditingFinished(const QString& text, const QPoint& position)
 {
     m_textAnnotationEditor->finishEditing(text, position, m_annotationColor);

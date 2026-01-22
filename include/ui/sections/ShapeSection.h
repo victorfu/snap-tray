@@ -40,7 +40,6 @@ public:
     bool contains(const QPoint& pos) const override;
     bool handleClick(const QPoint& pos) override;
     bool updateHovered(const QPoint& pos) override;
-    void resetHoverState() override;
 
 signals:
     void shapeTypeChanged(ShapeType type);

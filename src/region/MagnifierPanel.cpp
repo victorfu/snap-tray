@@ -73,17 +73,6 @@ void MagnifierPanel::preWarmCache(const QPoint& cursorPos, const QPixmap& backgr
     updateMagnifierCache(cursorPos, backgroundPixmap);
 }
 
-bool MagnifierPanel::shouldUpdate() const
-{
-    qint64 now = QDateTime::currentMSecsSinceEpoch();
-    return (now - m_lastUpdateTime) >= kMinUpdateMs;
-}
-
-void MagnifierPanel::markUpdated()
-{
-    m_lastUpdateTime = QDateTime::currentMSecsSinceEpoch();
-}
-
 QString MagnifierPanel::colorString() const
 {
     if (m_showHexColor) {

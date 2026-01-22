@@ -42,13 +42,10 @@ public:
 
     // Text formatting
     static TextFormattingState loadTextFormatting();
-    static void saveTextFormatting(const TextFormattingState& state);
 
     // Shape settings
     static ShapeType loadShapeType();
-    static void saveShapeType(ShapeType type);
     static ShapeFillMode loadShapeFillMode();
-    static void saveShapeFillMode(ShapeFillMode mode);
 
     // ========== Dropdown Menus ==========
 

@@ -5,7 +5,7 @@
  * @brief Unified tool identifier enum.
  *
  * Single source of truth for all tools across the application.
- * Replaces ToolbarButton, CanvasTool, and AnnotationController::Tool.
+ * Replaces ToolbarButton, and CanvasTool.
  */
 enum class ToolId {
     // Selection tool

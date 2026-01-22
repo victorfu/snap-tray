@@ -66,17 +66,6 @@ public:
      */
     void preWarmCache(const QPoint& cursorPos, const QPixmap& backgroundPixmap);
 
-    /**
-     * @brief Check if enough time has passed for an update.
-     * @return true if update should proceed, false to skip
-     */
-    bool shouldUpdate() const;
-
-    /**
-     * @brief Reset the update timer after an update.
-     */
-    void markUpdated();
-
     // Layout constants
     static constexpr int kWidth = 180;
     static constexpr int kHeight = 120;
@@ -102,9 +91,6 @@ private:
     // Current state
     QColor m_currentColor;
     QPoint m_currentCursorPos;
-
-    // Update throttling
-    mutable qint64 m_lastUpdateTime = 0;
 };
 
 #endif // MAGNIFIERPANEL_H

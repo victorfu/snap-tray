@@ -227,14 +227,6 @@ void TextBoxAnnotation::setText(const QString &text)
     invalidateCache();
 }
 
-void TextBoxAnnotation::setBox(const QRectF &box)
-{
-    // Enforce minimum size
-    m_box.setWidth(qMax(box.width(), static_cast<qreal>(kMinWidth)));
-    m_box.setHeight(qMax(box.height(), static_cast<qreal>(kMinHeight)));
-    invalidateCache();
-}
-
 void TextBoxAnnotation::setPosition(const QPointF &position)
 {
     m_position = position;

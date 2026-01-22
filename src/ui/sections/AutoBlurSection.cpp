@@ -122,8 +122,3 @@ bool AutoBlurSection::updateHovered(const QPoint& pos)
     }
     return false;
 }
-
-void AutoBlurSection::resetHoverState()
-{
-    m_hovered = false;
-}

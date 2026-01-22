@@ -84,15 +84,6 @@ add_test(NAME RegionSelector_SelectionStateManager COMMAND RegionSelector_Select
 set_tests_properties(RegionSelector_SelectionStateManager PROPERTIES TIMEOUT 60 LABELS "unit")
 
 # ============================================================================
-# Audio Tests (link snaptray_platform for full audio dependencies)
-# ============================================================================
-
-add_executable(Audio_AudioFileWriter Audio/tst_AudioFileWriter.cpp)
-target_link_libraries(Audio_AudioFileWriter PRIVATE snaptray_platform Qt6::Test)
-add_test(NAME Audio_AudioFileWriter COMMAND Audio_AudioFileWriter)
-set_tests_properties(Audio_AudioFileWriter PROPERTIES TIMEOUT 60 LABELS "unit")
-
-# ============================================================================
 # Encoding Tests (link snaptray_platform)
 # ============================================================================
 

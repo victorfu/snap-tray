@@ -219,8 +219,3 @@ bool TextSection::updateHovered(const QPoint& pos)
     }
     return false;
 }
-
-void TextSection::resetHoverState()
-{
-    m_hoveredControl = -1;
-}

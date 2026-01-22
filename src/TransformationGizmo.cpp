@@ -249,20 +249,6 @@ void TransformationGizmo::drawArrowHandle(QPainter &painter, const QPointF &pos,
     painter.restore();
 }
 
-void TransformationGizmo::drawBezierHull(QPainter &painter, const QPointF &start, const QPointF &control, const QPointF &end)
-{
-    painter.save();
-
-    // Draw dashed lines from start->control and control->end
-    QPen hullPen(QColor(128, 128, 128, 180), 1.0, Qt::DashLine);
-    hullPen.setDashPattern({4, 4});
-    painter.setPen(hullPen);
-    painter.drawLine(start, control);
-    painter.drawLine(control, end);
-
-    painter.restore();
-}
-
 void TransformationGizmo::draw(QPainter &painter, const ArrowAnnotation *annotation)
 {
     if (!annotation) return;

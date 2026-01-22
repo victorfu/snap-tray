@@ -285,9 +285,7 @@ add_library(snaptray_core STATIC
     src/settings/WatermarkSettingsManager.cpp
     src/cursor/CursorManager.cpp
     src/utils/CoordinateHelper.cpp
-    src/AudioFileWriter.cpp
     # Headers with Q_OBJECT for MOC processing
-    include/AudioFileWriter.h
     include/settings/AnnotationSettingsManager.h
     include/settings/FileSettingsManager.h
     include/settings/PinWindowSettingsManager.h
@@ -617,7 +615,6 @@ add_library(snaptray_ui STATIC
 
     # macOS-only UI
     $<$<PLATFORM_ID:Darwin>:
-        src/WindowDetectionOverlay.cpp
         src/OCRController.cpp
     >
 
@@ -678,7 +675,6 @@ add_library(snaptray_ui STATIC
     include/SettingsDialog.h
     include/OCRResultDialog.h
     $<$<PLATFORM_ID:Darwin>:
-        include/WindowDetectionOverlay.h
         include/OCRController.h
     >
 

@@ -40,7 +40,6 @@ public:
     // Radius Methods
     // =========================================================================
 
-    void setRadiusRange(int min, int max);
     void setCurrentRadius(int radius);
     int currentRadius() const { return m_currentRadius; }
 
@@ -51,7 +50,6 @@ public:
     // Aspect Ratio Methods
     // =========================================================================
 
-    void setLocked(bool locked);
     bool isLocked() const { return m_ratioLocked; }
     void setLockedRatio(int width, int height);
 

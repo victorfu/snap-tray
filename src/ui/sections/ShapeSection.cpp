@@ -145,8 +145,3 @@ bool ShapeSection::updateHovered(const QPoint& pos)
     }
     return false;
 }
-
-void ShapeSection::resetHoverState()
-{
-    m_hoveredButton = -1;
-}

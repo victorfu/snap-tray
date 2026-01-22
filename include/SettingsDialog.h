@@ -28,7 +28,6 @@ public:
     // Hotkey settings
     static QString defaultHotkey();
     static QString loadHotkey();
-    static void saveHotkey(const QString &keySequence);
 
     // Screen Canvas hotkey settings
     static QString defaultScreenCanvasHotkey();

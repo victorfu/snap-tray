@@ -9,14 +9,6 @@ MosaicBlurTypeSection::MosaicBlurTypeSection(QObject* parent)
 {
 }
 
-void MosaicBlurTypeSection::setBlurType(BlurType type)
-{
-    if (type != m_blurType) {
-        m_blurType = type;
-        emit blurTypeChanged(m_blurType);
-    }
-}
-
 int MosaicBlurTypeSection::preferredWidth() const
 {
     return BUTTON_WIDTH;
@@ -193,9 +185,4 @@ bool MosaicBlurTypeSection::updateHovered(const QPoint& pos)
         return true;
     }
     return false;
-}
-
-void MosaicBlurTypeSection::resetHoverState()
-{
-    m_hoveredOption = -1;
 }

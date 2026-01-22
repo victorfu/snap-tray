@@ -26,11 +26,6 @@ void SelectionStateManager::setSelectionRect(const QRect& rect)
     }
 }
 
-void SelectionStateManager::invalidateHandleCache()
-{
-    m_handleCacheValid = false;
-}
-
 void SelectionStateManager::setBounds(const QRect& bounds)
 {
     m_bounds = bounds;

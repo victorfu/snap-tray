@@ -1235,32 +1235,6 @@ void RegionInputHandler::finishAnnotation()
 }
 
 // ============================================================================
-// Cursor Helpers
-// ============================================================================
-
-void RegionInputHandler::updateCursorForHandle(SelectionStateManager::ResizeHandle handle)
-{
-    using ResizeHandle = SelectionStateManager::ResizeHandle;
-    auto& cm = CursorManager::instance();
-
-    if (handle != ResizeHandle::None) {
-        cm.setHoverTargetForWidget(m_parentWidget,HoverTarget::ResizeHandle, static_cast<int>(handle));
-        return;
-    }
-
-    // Handle::None - check for move or outside click
-    if (m_selectionManager->hitTestMove(m_currentPoint)) {
-        cm.setInputStateForWidget(m_parentWidget,InputState::Moving);
-    }
-    else {
-        QRect sel = m_selectionManager->selectionRect();
-        ResizeHandle outsideHandle = SelectionResizeHelper::determineHandleFromOutsideClick(
-            m_currentPoint, sel);
-        cm.setHoverTargetForWidget(m_parentWidget,HoverTarget::ResizeHandle, static_cast<int>(outsideHandle));
-    }
-}
-
-// ============================================================================
 // Selection Helpers
 // ============================================================================
 

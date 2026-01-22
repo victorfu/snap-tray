@@ -127,13 +127,6 @@ bool WindowDetector::hasAccessibilityPermission()
     return AXIsProcessTrustedWithOptions((__bridge CFDictionaryRef)options);
 }
 
-void WindowDetector::requestAccessibilityPermission()
-{
-    // Prompt user to grant accessibility permissions
-    NSDictionary *options = @{(__bridge NSString *)kAXTrustedCheckOptionPrompt: @YES};
-    AXIsProcessTrustedWithOptions((__bridge CFDictionaryRef)options);
-}
-
 void WindowDetector::setScreen(QScreen *screen)
 {
     m_currentScreen = screen;
@@ -147,11 +140,6 @@ void WindowDetector::setEnabled(bool enabled)
 bool WindowDetector::isEnabled() const
 {
     return m_enabled;
-}
-
-void WindowDetector::setDetectionFlags(DetectionFlags flags)
-{
-    m_detectionFlags = flags;
 }
 
 DetectionFlags WindowDetector::detectionFlags() const

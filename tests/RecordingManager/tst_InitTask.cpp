@@ -202,7 +202,6 @@ void TestRecordingInitTask::testResultDefaultValues()
     QVERIFY(result.nativeEncoder == nullptr);
     QVERIFY(result.gifEncoder == nullptr);
     QVERIFY(result.audioEngine == nullptr);
-    QVERIFY(result.audioWriter == nullptr);
     QVERIFY(!result.usingNativeEncoder);
     QVERIFY(result.tempAudioPath.isEmpty());
     QVERIFY(!result.captureEngineStarted);
@@ -219,7 +218,6 @@ void TestRecordingInitTask::testResultCleanupNullPointers()
     QVERIFY(result.nativeEncoder == nullptr);
     QVERIFY(result.gifEncoder == nullptr);
     QVERIFY(result.audioEngine == nullptr);
-    QVERIFY(result.audioWriter == nullptr);
 }
 
 void TestRecordingInitTask::testResultCleanupWithResources()

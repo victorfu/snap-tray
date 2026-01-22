@@ -48,7 +48,6 @@ public:
     QString text() const { return m_text; }
 
     // Box manipulation (for resize operations)
-    void setBox(const QRectF &box);
     QRectF box() const { return m_box; }
 
     // Position (top-left of box in world coordinates)

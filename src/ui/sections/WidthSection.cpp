@@ -103,8 +103,3 @@ bool WidthSection::updateHovered(const QPoint& pos)
     }
     return false;
 }
-
-void WidthSection::resetHoverState()
-{
-    m_hovered = false;
-}

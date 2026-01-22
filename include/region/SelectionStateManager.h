@@ -80,9 +80,6 @@ public:
     void updateResize(const QPoint& pos);
     void finishResize();
 
-    // Cache invalidation
-    void invalidateHandleCache();
-
     // Move operations
     bool hitTestMove(const QPoint& pos) const;
     void startMove(const QPoint& pos);

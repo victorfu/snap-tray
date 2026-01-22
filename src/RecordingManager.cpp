@@ -179,27 +179,6 @@ RecordingRegionSelector* RecordingManager::createRegionSelector()
     return m_regionSelector;
 }
 
-void RecordingManager::startRegionSelection()
-{
-    auto* selector = createRegionSelector();
-    if (!selector) {
-        return;
-    }
-
-    // Determine target screen (cursor location)
-    QScreen *targetScreen = QGuiApplication::screenAt(QCursor::pos());
-    if (!targetScreen) {
-        targetScreen = QGuiApplication::primaryScreen();
-    }
-
-    selector->setGeometry(targetScreen->geometry());
-    selector->initializeForScreen(targetScreen);
-    selector->show();
-    raiseWindowAboveMenuBar(selector);
-    selector->activateWindow();
-    selector->raise();
-}
-
 void RecordingManager::startRegionSelectionWithPreset(const QRect &region, QScreen *screen)
 {
     auto* selector = createRegionSelector();
@@ -957,11 +936,6 @@ void RecordingManager::stopFrameCapture()
         m_audioEngine.reset();
     }
 
-    if (m_audioWriter) {
-        m_audioWriter->finish();
-        m_audioWriter.reset();
-    }
-
     // Stop capture engine
     // Custom deleter handles disconnect + stop() + deleteLater()
     m_captureEngine.reset();
@@ -1006,7 +980,6 @@ void RecordingManager::cleanupAudio()
 {
     // Custom deleter handles disconnect + stop() + deleteLater()
     m_audioEngine.reset();
-    m_audioWriter.reset();
     ResourceCleanupHelper::removeTempFile(m_tempAudioPath);
 }
 
@@ -1242,78 +1215,6 @@ void RecordingManager::cleanupStaleTempFiles()
 // ============================================================================
 // In-Place Preview Mode Implementation
 // ============================================================================
-
-void RecordingManager::transitionToPreviewMode(const QString &videoPath)
-{
-    m_tempVideoPath = videoPath;
-    setState(State::Previewing);
-
-    // Hide annotation overlay
-    if (m_annotationOverlay) {
-        m_annotationOverlay->hide();
-        m_annotationOverlay->deleteLater();
-        m_annotationOverlay = nullptr;
-    }
-
-    // 1. Keep boundary overlay but change to Paused mode and show it
-    if (m_boundaryOverlay) {
-        m_boundaryOverlay->setBorderMode(RecordingBoundaryOverlay::BorderMode::Paused);
-        m_boundaryOverlay->show();
-    }
-
-    // 2. Switch control bar to Preview mode
-    if (m_controlBar) {
-        m_controlBar->setMode(RecordingControlBar::Mode::Preview);
-        connectPreviewSignals();
-
-        // Reposition after width change (320px -> 480px) and ensure visibility
-        m_controlBar->show();
-        raiseWindowAboveMenuBar(m_controlBar);
-        // Position after show() to avoid Qt/macOS adjusting the position
-        m_controlBar->positionNear(m_recordingRegion);
-    }
-
-    // 3. Create and show preview overlay
-    m_previewOverlay = new InPlacePreviewOverlay();
-    m_previewOverlay->setAttribute(Qt::WA_DeleteOnClose);
-    m_previewOverlay->setRegion(m_recordingRegion, m_targetScreen);
-
-    // Connect preview overlay signals
-    connect(m_previewOverlay, &InPlacePreviewOverlay::positionChanged,
-            this, &RecordingManager::onPreviewPositionChanged);
-    connect(m_previewOverlay, &InPlacePreviewOverlay::durationChanged,
-            this, &RecordingManager::onPreviewDurationChanged);
-    connect(m_previewOverlay, &InPlacePreviewOverlay::stateChanged,
-            this, [this](IVideoPlayer::State state) {
-                onPreviewStateChanged(static_cast<int>(state));
-            });
-    connect(m_previewOverlay, &InPlacePreviewOverlay::errorOccurred,
-            this, [this](const QString &msg) {
-                qWarning() << "Preview error:" << msg;
-                emit recordingError("Preview error: " + msg);
-            });
-
-    if (m_previewOverlay->loadVideo(m_tempVideoPath)) {
-        m_previewOverlay->show();
-        raiseWindowAboveMenuBar(m_previewOverlay);
-
-        // Raise control bar again to ensure it's above the preview overlay
-        if (m_controlBar) {
-            raiseWindowAboveMenuBar(m_controlBar);
-        }
-
-        // Enable looping for preview
-        m_previewOverlay->setLooping(true);
-
-        // Start playback automatically
-        m_previewOverlay->play();
-    } else {
-        qWarning() << "RecordingManager: Failed to load video for preview";
-        emit recordingError("Failed to load video preview");
-        cleanupPreviewMode();
-        setState(State::Idle);
-    }
-}
 
 void RecordingManager::cleanupPreviewMode()
 {

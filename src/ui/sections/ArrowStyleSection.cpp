@@ -223,8 +223,3 @@ bool ArrowStyleSection::updateHovered(const QPoint& pos)
     }
     return false;
 }
-
-void ArrowStyleSection::resetHoverState()
-{
-    m_hoveredOption = -1;
-}

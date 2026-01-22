@@ -81,11 +81,6 @@ public:
      * @return true if the hover state changed (requiring repaint)
      */
     virtual bool updateHovered(const QPoint& pos) = 0;
-
-    /**
-     * @brief Reset all hover state.
-     */
-    virtual void resetHoverState() = 0;
 };
 
 #endif // IWIDGETSECTION_H

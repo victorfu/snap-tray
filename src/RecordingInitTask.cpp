@@ -3,7 +3,6 @@
 #include "capture/IAudioCaptureEngine.h"
 #include "IVideoEncoder.h"
 #include "encoding/NativeGifEncoder.h"
-#include "AudioFileWriter.h"
 #include "encoding/EncoderFactory.h"
 
 #include <QDebug>
@@ -38,10 +37,6 @@ void RecordingInitTask::Result::cleanup()
         audioEngine->stop();
         delete audioEngine;
         audioEngine = nullptr;
-    }
-    if (audioWriter) {
-        delete audioWriter;
-        audioWriter = nullptr;
     }
 }
 

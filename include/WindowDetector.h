@@ -60,7 +60,6 @@ public:
 
     // Permission management
     static bool hasAccessibilityPermission();
-    static void requestAccessibilityPermission();
 
     // Detection control
     void setScreen(QScreen *screen);
@@ -80,7 +79,6 @@ public:
     std::optional<DetectedElement> detectWindowAt(const QPoint &screenPos) const;
 
     // Detection mode control
-    void setDetectionFlags(DetectionFlags flags);
     DetectionFlags detectionFlags() const;
 
 signals:

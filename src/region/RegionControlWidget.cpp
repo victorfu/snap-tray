@@ -18,14 +18,6 @@ RegionControlWidget::RegionControlWidget(QObject* parent)
 // Radius Methods
 // =============================================================================
 
-void RegionControlWidget::setRadiusRange(int min, int max)
-{
-    m_minRadius = min;
-    m_maxRadius = max;
-    if (m_currentRadius < m_minRadius) m_currentRadius = m_minRadius;
-    if (m_currentRadius > m_maxRadius) m_currentRadius = m_maxRadius;
-}
-
 void RegionControlWidget::setCurrentRadius(int radius)
 {
     m_currentRadius = qBound(m_minRadius, radius, m_maxRadius);
@@ -50,11 +42,6 @@ void RegionControlWidget::setRadiusEnabled(bool enabled)
 // =============================================================================
 // Aspect Ratio Methods
 // =============================================================================
-
-void RegionControlWidget::setLocked(bool locked)
-{
-    m_ratioLocked = locked;
-}
 
 void RegionControlWidget::setLockedRatio(int width, int height)
 {

@@ -849,13 +849,6 @@ QString SettingsDialog::loadHotkey()
     return settings.value(SnapTray::kSettingsKeyHotkey, SnapTray::kDefaultHotkey).toString();
 }
 
-void SettingsDialog::saveHotkey(const QString& keySequence)
-{
-    auto settings = SnapTray::getSettings();
-    settings.setValue(SnapTray::kSettingsKeyHotkey, keySequence);
-    qDebug() << "Hotkey saved:" << keySequence;
-}
-
 QString SettingsDialog::defaultScreenCanvasHotkey()
 {
     return QString(SnapTray::kDefaultScreenCanvasHotkey);

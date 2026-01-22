@@ -215,8 +215,3 @@ bool LineStyleSection::updateHovered(const QPoint& pos)
     }
     return false;
 }
-
-void LineStyleSection::resetHoverState()
-{
-    m_hoveredOption = -1;
-}

@@ -229,8 +229,3 @@ bool ColorSection::updateHovered(const QPoint& pos)
     }
     return false;
 }
-
-void ColorSection::resetHoverState()
-{
-    m_hoveredSwatch = -2;  // -2 = nothing hovered
-}

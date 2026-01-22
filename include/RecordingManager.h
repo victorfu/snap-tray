@@ -25,7 +25,6 @@ class NativeGifEncoder;
 class IVideoEncoder;
 class ICaptureEngine;
 class IAudioCaptureEngine;
-class AudioFileWriter;
 class EncodingWorker;
 class QScreen;
 
@@ -61,7 +60,6 @@ public:
     State state() const { return m_state; }
 
 public slots:
-    void startRegionSelection();    // Begin region selection flow
     void startRegionSelectionWithPreset(const QRect &region, QScreen *screen);  // Use preset region
     void startFullScreenRecording();  // Record entire screen at cursor position
     void stopRecording();           // Stop and save recording
@@ -117,7 +115,6 @@ private:
     void onCountdownCancelled();              // Handle countdown cancellation
 
     // In-place preview methods
-    void transitionToPreviewMode(const QString &videoPath);
     void cleanupPreviewMode();
     void connectPreviewSignals();
 
@@ -166,7 +163,6 @@ private:
 
     // Audio capture
     AudioEnginePtr m_audioEngine;       // Audio capture engine (stop + disconnect + deleteLater)
-    std::unique_ptr<AudioFileWriter> m_audioWriter;
     bool m_audioEnabled;
     int m_audioSource;  // 0=Microphone, 1=SystemAudio, 2=Both
     QString m_audioDevice;

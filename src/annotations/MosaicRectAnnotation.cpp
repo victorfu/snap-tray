@@ -290,10 +290,3 @@ std::unique_ptr<AnnotationItem> MosaicRectAnnotation::clone() const
     return std::make_unique<MosaicRectAnnotation>(m_rect, m_sourcePixmap, m_blockSize, m_blurType);
 }
 
-void MosaicRectAnnotation::setBlurType(BlurType type)
-{
-    if (m_blurType != type) {
-        m_blurType = type;
-        m_renderedCache = QPixmap();  // Clear cache to regenerate with new blur type
-    }
-}

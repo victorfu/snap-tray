@@ -31,7 +31,6 @@ public:
     QRect boundingRect() const override;
     std::unique_ptr<AnnotationItem> clone() const override;
 
-    void setBlurType(BlurType type);
     BlurType blurType() const { return m_blurType; }
 
 private:

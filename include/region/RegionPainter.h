@@ -126,9 +126,6 @@ private:
     QRect m_cachedSelectionRect;
     QRect m_cachedHighlightRect;
     bool m_overlayCacheValid = false;
-
-    // Helper methods for caching
-    void updateOverlayCache(const QPixmap& background);
 };
 
 #endif // REGIONPAINTER_H

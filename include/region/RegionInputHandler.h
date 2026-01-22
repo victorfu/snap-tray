@@ -137,9 +137,6 @@ private:
     void updateAnnotation(const QPoint& pos);
     void finishAnnotation();
 
-    // Cursor helpers
-    void updateCursorForHandle(SelectionStateManager::ResizeHandle handle);
-
     // Selection helpers
     SelectionStateManager::ResizeHandle determineHandleFromOutsideClick(
         const QPoint& pos, const QRect& sel) const;

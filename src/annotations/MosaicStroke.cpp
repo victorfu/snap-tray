@@ -373,20 +373,6 @@ void MosaicStroke::addPoint(const QPoint &point)
     m_points.append(point);
 }
 
-void MosaicStroke::updateSource(SharedPixmap sourcePixmap)
-{
-    m_sourcePixmap = std::move(sourcePixmap);
-    m_devicePixelRatio = m_sourcePixmap ? m_sourcePixmap->devicePixelRatio() : 1.0;
-}
-
-void MosaicStroke::setBlurType(BlurType type)
-{
-    if (m_blurType != type) {
-        m_blurType = type;
-        m_renderedCache = QPixmap();  // Clear cache to regenerate with new blur type
-    }
-}
-
 bool MosaicStroke::intersectsCircle(const QPoint &center, int radius) const
 {
     if (m_points.size() < 2) {

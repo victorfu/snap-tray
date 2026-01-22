@@ -30,8 +30,6 @@ public:
     std::unique_ptr<AnnotationItem> clone() const override;
 
     void addPoint(const QPoint &point);
-    void updateSource(SharedPixmap sourcePixmap);
-    void setBlurType(BlurType type);
     BlurType blurType() const { return m_blurType; }
 
     // Collision detection for eraser (path-based intersection)

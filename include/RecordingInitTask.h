@@ -14,7 +14,6 @@ class ICaptureEngine;
 class IVideoEncoder;
 class NativeGifEncoder;
 class IAudioCaptureEngine;
-class AudioFileWriter;
 
 /**
  * @brief Handles async initialization of recording components
@@ -60,7 +59,6 @@ public:
         IVideoEncoder *nativeEncoder = nullptr;
         NativeGifEncoder *gifEncoder = nullptr;
         IAudioCaptureEngine *audioEngine = nullptr;
-        AudioFileWriter *audioWriter = nullptr;
 
         bool usingNativeEncoder = false;
         QString tempAudioPath;

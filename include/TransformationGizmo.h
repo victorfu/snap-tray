@@ -122,7 +122,6 @@ private:
 
     // Arrow-specific drawing helpers
     static void drawArrowHandle(QPainter &painter, const QPointF &pos, bool isControlPoint = false);
-    static void drawBezierHull(QPainter &painter, const QPointF &start, const QPointF &control, const QPointF &end);
 };
 
 #endif // TRANSFORMATIONGIZMO_H

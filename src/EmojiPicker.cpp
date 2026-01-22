@@ -34,12 +34,6 @@ EmojiPicker::EmojiPicker(QObject* parent)
     }
 }
 
-void EmojiPicker::setEmojis(const QVector<QString>& emojis)
-{
-    m_emojis = emojis;
-    updateEmojiRects();
-}
-
 void EmojiPicker::setCurrentEmoji(const QString& emoji)
 {
     m_currentEmoji = emoji;

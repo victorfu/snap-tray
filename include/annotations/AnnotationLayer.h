@@ -40,9 +40,6 @@ public:
     // Access item by index (for re-editing)
     AnnotationItem* itemAt(int index);
 
-    // For rendering annotations onto the final image
-    void drawOntoPixmap(QPixmap &pixmap) const;
-
     // Step badge helpers
     int countStepBadges() const;
 

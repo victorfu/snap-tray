@@ -17,7 +17,6 @@ class EmojiPicker : public QObject
 public:
     explicit EmojiPicker(QObject* parent = nullptr);
 
-    void setEmojis(const QVector<QString>& emojis);
     void setCurrentEmoji(const QString& emoji);
     QString currentEmoji() const { return m_currentEmoji; }
 

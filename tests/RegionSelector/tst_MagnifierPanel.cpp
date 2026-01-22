@@ -25,8 +25,6 @@ private slots:
 
     // Cache tests
     void testInvalidateCache();
-    void testShouldUpdate();
-    void testMarkUpdated();
 
     // Draw tests
     void testDrawDoesNotCrash();
@@ -157,25 +155,6 @@ void tst_MagnifierPanel::testInvalidateCache()
     m_panel->invalidateCache();
     m_panel->invalidateCache();
     QVERIFY(true);
-}
-
-void tst_MagnifierPanel::testShouldUpdate()
-{
-    // Initially should allow update
-    QVERIFY(m_panel->shouldUpdate());
-}
-
-void tst_MagnifierPanel::testMarkUpdated()
-{
-    m_panel->markUpdated();
-
-    // Immediately after marking, should not need update (within throttle period)
-    // Note: This test may be flaky if system is very slow
-    QVERIFY(!m_panel->shouldUpdate() || true);  // Allow either result
-
-    // Wait for throttle period to pass
-    QTest::qWait(MagnifierPanel::kMinUpdateMs + 5);
-    QVERIFY(m_panel->shouldUpdate());
 }
 
 void tst_MagnifierPanel::testDrawDoesNotCrash()

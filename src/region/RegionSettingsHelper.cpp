@@ -80,16 +80,6 @@ TextFormattingState RegionSettingsHelper::loadTextFormatting()
     return state;
 }
 
-void RegionSettingsHelper::saveTextFormatting(const TextFormattingState& state)
-{
-    QSettings settings = getSettings();
-    settings.setValue(SETTINGS_KEY_TEXT_BOLD, state.bold);
-    settings.setValue(SETTINGS_KEY_TEXT_ITALIC, state.italic);
-    settings.setValue(SETTINGS_KEY_TEXT_UNDERLINE, state.underline);
-    settings.setValue(SETTINGS_KEY_TEXT_SIZE, state.fontSize);
-    settings.setValue(SETTINGS_KEY_TEXT_FAMILY, state.fontFamily);
-}
-
 // ========== Shape Settings ==========
 
 ShapeType RegionSettingsHelper::loadShapeType()
@@ -99,21 +89,11 @@ ShapeType RegionSettingsHelper::loadShapeType()
     return static_cast<ShapeType>(type);
 }
 
-void RegionSettingsHelper::saveShapeType(ShapeType type)
-{
-    getSettings().setValue(SETTINGS_KEY_SHAPE_TYPE, static_cast<int>(type));
-}
-
 ShapeFillMode RegionSettingsHelper::loadShapeFillMode()
 {
     int mode = getSettings().value(SETTINGS_KEY_SHAPE_FILL_MODE,
                                    static_cast<int>(ShapeFillMode::Outline)).toInt();
     return static_cast<ShapeFillMode>(mode);
-}
-
-void RegionSettingsHelper::saveShapeFillMode(ShapeFillMode mode)
-{
-    getSettings().setValue(SETTINGS_KEY_SHAPE_FILL_MODE, static_cast<int>(mode));
 }
 
 // ========== Dropdown Menus ==========

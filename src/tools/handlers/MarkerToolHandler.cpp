@@ -3,7 +3,7 @@
 
 #include <QPainter>
 
-// Marker uses fixed width (same as original AnnotationController)
+// Marker uses fixed width
 static constexpr int kMarkerWidth = 20;
 
 void MarkerToolHandler::onMousePress(ToolContext* ctx, const QPoint& pos) {

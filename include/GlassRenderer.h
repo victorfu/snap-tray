@@ -39,14 +39,6 @@ public:
 
 private:
     /**
-     * @brief Draw multi-layer soft shadow for macOS floating look.
-     */
-    static void drawGlassShadow(QPainter& painter,
-                                const QRect& rect,
-                                const ToolbarStyleConfig& config,
-                                int radius);
-
-    /**
      * @brief Draw hairline border with low opacity.
      */
     static void drawHairlineBorder(QPainter& painter,

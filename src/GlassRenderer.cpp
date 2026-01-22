@@ -26,27 +26,6 @@ void GlassRenderer::drawGlassPanel(QPainter& painter,
     painter.restore();
 }
 
-void GlassRenderer::drawGlassShadow(QPainter& painter,
-                                    const QRect& rect,
-                                    const ToolbarStyleConfig& config,
-                                    int radius)
-{
-    painter.setPen(Qt::NoPen);
-
-    // Multi-layer shadow for soft macOS look
-    // Each layer is progressively larger and more transparent
-    for (int i = 4; i >= 1; --i) {
-        QColor shadowColor = config.shadowColor;
-        shadowColor.setAlpha(shadowColor.alpha() / i);
-
-        // Shadow extends downward more than sideways (macOS floating style)
-        QRect shadowRect = rect.adjusted(-i, config.shadowOffsetY, i, config.shadowOffsetY + i * 2);
-
-        painter.setBrush(shadowColor);
-        painter.drawRoundedRect(shadowRect, radius + i, radius + i);
-    }
-}
-
 void GlassRenderer::drawGlassBackground(QPainter& painter,
                                         const QRect& rect,
                                         const ToolbarStyleConfig& config,

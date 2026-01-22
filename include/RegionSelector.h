@@ -171,7 +171,6 @@ private:
     bool isScreenValid() const;
 
     // Annotation helpers
-    void showTextInputDialog(const QPoint &pos);
     bool isAnnotationTool(ToolId tool) const;
 
     // Inline text editing handlers

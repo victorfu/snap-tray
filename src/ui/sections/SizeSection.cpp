@@ -124,8 +124,3 @@ bool SizeSection::updateHovered(const QPoint& pos)
     }
     return false;
 }
-
-void SizeSection::resetHoverState()
-{
-    m_hoveredButton = -1;
-}

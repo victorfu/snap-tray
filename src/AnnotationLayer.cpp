@@ -170,14 +170,6 @@ bool AnnotationLayer::isEmpty() const
     return m_items.empty();
 }
 
-void AnnotationLayer::drawOntoPixmap(QPixmap &pixmap) const
-{
-    if (isEmpty()) return;
-
-    QPainter painter(&pixmap);
-    draw(painter);
-}
-
 int AnnotationLayer::countStepBadges() const
 {
     int count = 0;
