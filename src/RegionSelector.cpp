@@ -1716,16 +1716,20 @@ void RegionSelector::showOCRResultDialog(const QString& text)
     OCRResultDialog dialog;
     dialog.setResultText(text);
 
-    connect(&dialog, &OCRResultDialog::copyRequested, [](const QString& editedText) {
-        QGuiApplication::clipboard()->setText(editedText);
-        GlobalToast::instance().showToast(
-            GlobalToast::Success,
-            QObject::tr("OCR"),
-            QObject::tr("Copied %1 characters").arg(editedText.length())
-        );
-    });
+    int result = dialog.exec();
 
-    dialog.exec();
+    // Handle result after dialog closes (safer than signal handlers)
+    if (result == QDialog::Accepted) {
+        QString editedText = dialog.resultText();
+        if (!editedText.isEmpty()) {
+            QGuiApplication::clipboard()->setText(editedText);
+            GlobalToast::instance().showToast(
+                GlobalToast::Success,
+                tr("OCR"),
+                tr("Copied %1 characters").arg(editedText.length())
+            );
+        }
+    }
 
     // Close the region selector after dialog closes
     close();
