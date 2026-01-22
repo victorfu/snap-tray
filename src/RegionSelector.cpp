@@ -1724,29 +1724,29 @@ void RegionSelector::onOCRComplete(bool success, const QString& text, const QStr
 
 void RegionSelector::showOCRResultDialog(const QString& text)
 {
-    // Hide the region selector to show the dialog
-    hide();
+    // Create non-modal dialog
+    auto *dialog = new OCRResultDialog(this);
+    dialog->setResultText(text);
 
-    OCRResultDialog dialog;
-    dialog.setResultText(text);
+    // Connect signals
+    connect(dialog, &OCRResultDialog::textCopied, this, [this](const QString &copiedText) {
+        qDebug() << "OCR text copied:" << copiedText.length() << "characters";
 
-    int result = dialog.exec();
+        // Show success toast using GlobalToast
+        GlobalToast::instance().showToast(
+            GlobalToast::Success,
+            tr("OCR"),
+            tr("Copied %1 characters").arg(copiedText.length())
+        );
+    });
 
-    // Handle result after dialog closes (safer than signal handlers)
-    if (result == QDialog::Accepted) {
-        QString editedText = dialog.resultText();
-        if (!editedText.isEmpty()) {
-            QGuiApplication::clipboard()->setText(editedText);
-            GlobalToast::instance().showToast(
-                GlobalToast::Success,
-                tr("OCR"),
-                tr("Copied %1 characters").arg(editedText.length())
-            );
-        }
-    }
+    connect(dialog, &OCRResultDialog::dialogClosed, this, [this]() {
+        // Close the region selector after dialog closes
+        close();
+    });
 
-    // Close the region selector after dialog closes
-    close();
+    // Show dialog centered on screen
+    dialog->showAt();
 }
 
 void RegionSelector::performQRCodeScan()

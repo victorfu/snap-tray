@@ -1,48 +1,66 @@
 #ifndef OCRRESULTDIALOG_H
 #define OCRRESULTDIALOG_H
 
-#include <QDialog>
+#include <QWidget>
+#include <QString>
+#include <QPoint>
 
 class QTextEdit;
 class QPushButton;
 class QLabel;
 
 /**
- * @brief Dialog for displaying and editing OCR recognition results.
+ * @brief Dialog displaying OCR recognition results with interactive features.
  *
- * Allows users to review, edit, and copy OCR-recognized text
- * before it goes to the clipboard.
+ * Features:
+ * - Editable text area showing recognized text
+ * - Copy button with visual feedback ("✓ Copied!")
+ * - Character count with "(edited)" indicator
+ * - Dark theme UI matching SnapTray style
+ * - Draggable title bar
+ * - Keyboard shortcuts: Escape, Ctrl+C, Ctrl+Enter
  */
-class OCRResultDialog : public QDialog
+class OCRResultDialog : public QWidget
 {
     Q_OBJECT
 
 public:
-    explicit OCRResultDialog(QWidget* parent = nullptr);
-    ~OCRResultDialog() override = default;
+    explicit OCRResultDialog(QWidget *parent = nullptr);
+    ~OCRResultDialog() override;
 
     /**
-     * @brief Set the OCR result text to display.
+     * @brief Set the OCR result text to display
      * @param text The recognized text from OCR
      */
-    void setResultText(const QString& text);
+    void setResultText(const QString &text);
 
     /**
-     * @brief Get the current text (possibly edited by user).
-     * @return The text currently in the editor
+     * @brief Get the current text (may be edited by user)
      */
     QString resultText() const;
 
+    /**
+     * @brief Show dialog at specified position
+     * @param pos Screen position, centers on screen if not specified
+     */
+    void showAt(const QPoint &pos = QPoint());
+
 signals:
     /**
-     * @brief Emitted when user clicks Copy button.
-     * @param text The final text to copy to clipboard
+     * @brief Emitted when text is copied to clipboard
      */
-    void copyRequested(const QString& text);
+    void textCopied(const QString &text);
+
+    /**
+     * @brief Emitted when dialog is closed
+     */
+    void dialogClosed();
 
 protected:
-    void showEvent(QShowEvent* event) override;
-    void keyPressEvent(QKeyEvent* event) override;
+    void mousePressEvent(QMouseEvent *event) override;
+    void mouseMoveEvent(QMouseEvent *event) override;
+    void keyPressEvent(QKeyEvent *event) override;
+    void closeEvent(QCloseEvent *event) override;
 
 private slots:
     void onCopyClicked();
@@ -50,12 +68,22 @@ private slots:
 
 private:
     void setupUi();
+    void applyDarkTheme();
     void updateCharacterCount();
+    void showCopyFeedback();
 
-    QTextEdit* m_textEdit;
-    QPushButton* m_copyBtn;
-    QPushButton* m_cancelBtn;
-    QLabel* m_charCountLabel;
+    // UI Components
+    QLabel *m_iconLabel;
+    QLabel *m_titleLabel;
+    QLabel *m_charCountLabel;
+    QTextEdit *m_textEdit;
+    QPushButton *m_copyButton;
+
+    // State
+    QString m_originalText;
+    QPoint m_dragPosition;
+    bool m_isDragging;
+    bool m_isTextEdited;
 };
 
 #endif // OCRRESULTDIALOG_H

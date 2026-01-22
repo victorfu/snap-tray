@@ -826,22 +826,23 @@ void PinWindow::onOCRComplete(bool success, const QString& text, const QString& 
 
 void PinWindow::showOCRResultDialog(const QString& text)
 {
-    OCRResultDialog dialog(this);
-    dialog.setResultText(text);
+    // Create non-modal dialog
+    auto *dialog = new OCRResultDialog(this);
+    dialog->setResultText(text);
 
-    int result = dialog.exec();
+    // Connect signals
+    connect(dialog, &OCRResultDialog::textCopied, this, [this](const QString &copiedText) {
+        qDebug() << "OCR text copied:" << copiedText.length() << "characters";
 
-    // Handle result after dialog closes (safer than signal handlers)
-    if (result == QDialog::Accepted) {
-        QString editedText = dialog.resultText();
-        if (!editedText.isEmpty()) {
-            QGuiApplication::clipboard()->setText(editedText);
-            m_uiIndicators->showOCRToast(true, tr("Copied %1 characters").arg(editedText.length()));
-            emit ocrCompleted(true, tr("Text copied"));
-        }
-    } else {
-        m_uiIndicators->showOCRToast(false, tr("Cancelled"));
-    }
+        // Show success toast
+        m_uiIndicators->showOCRToast(true, tr("Copied %1 characters").arg(copiedText.length()));
+        emit ocrCompleted(true, tr("Text copied"));
+    });
+
+    // Note: PinWindow stays open after dialog closes (no close() call)
+
+    // Show dialog centered on screen
+    dialog->showAt();
 }
 
 void PinWindow::updateOcrLanguages(const QStringList& languages)
