@@ -40,6 +40,7 @@ class AutoBlurManager;
 class TextBoxAnnotation;
 class ArrowAnnotation;
 class PolylineAnnotation;
+class ColorPickerDialog;
 
 class PinWindow : public QWidget
 {
@@ -179,6 +180,7 @@ private:
     void onFontSizeDropdownRequested(const QPoint& pos);
     void onFontFamilyDropdownRequested(const QPoint& pos);
     void onAutoBlurRequested();
+    void onMoreColorsRequested();
 
     // Text annotation helper methods
     bool handleTextEditorPress(const QPoint& pos);
@@ -300,6 +302,9 @@ private:
 
     // AutoBlur
     AutoBlurManager* m_autoBlurManager = nullptr;
+
+    // Color picker dialog
+    ColorPickerDialog* m_colorPickerDialog = nullptr;
 
     // Live capture mode
     QRect m_sourceRegion;

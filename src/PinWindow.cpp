@@ -32,6 +32,7 @@
 #include "annotations/ArrowAnnotation.h"
 #include "annotations/PolylineAnnotation.h"
 #include "utils/CoordinateHelper.h"
+#include "ColorPickerDialog.h"
 
 
 
@@ -223,6 +224,11 @@ PinWindow::~PinWindow()
         m_subToolbar->close();
         delete m_subToolbar;
         m_subToolbar = nullptr;
+    }
+    if (m_colorPickerDialog) {
+        m_colorPickerDialog->close();
+        delete m_colorPickerDialog;
+        m_colorPickerDialog = nullptr;
     }
     // InlineTextEditor, TextAnnotationEditor are QObjects parented to this
 }
@@ -1830,6 +1836,8 @@ void PinWindow::initializeAnnotationComponents()
         this, &PinWindow::onFontFamilyDropdownRequested);
     connect(m_subToolbar, &WindowedSubToolbar::autoBlurRequested,
         this, &PinWindow::onAutoBlurRequested);
+    connect(m_subToolbar, &WindowedSubToolbar::customColorPickerRequested,
+        this, &PinWindow::onMoreColorsRequested);
     connect(m_subToolbar, &WindowedSubToolbar::cursorRestoreRequested,
         this, &PinWindow::updateCursorForTool);
 
@@ -2258,6 +2266,31 @@ void PinWindow::onAutoBlurRequested()
 
     updateUndoRedoState();
     update();
+}
+
+void PinWindow::onMoreColorsRequested()
+{
+    if (!m_colorPickerDialog) {
+        m_colorPickerDialog = new ColorPickerDialog();
+        connect(m_colorPickerDialog, &QObject::destroyed, this, [this]() {
+            m_colorPickerDialog = nullptr;
+        });
+        connect(m_colorPickerDialog, &ColorPickerDialog::colorSelected,
+            this, [this](const QColor& color) {
+                onColorSelected(color);
+                m_subToolbar->colorAndWidthWidget()->setCurrentColor(color);
+            });
+    }
+
+    m_colorPickerDialog->setCurrentColor(m_annotationColor);
+    m_subToolbar->colorAndWidthWidget()->setCurrentColor(m_annotationColor);
+
+    // Position at center of pin window
+    QPoint center = frameGeometry().center();
+    m_colorPickerDialog->move(center.x() - 170, center.y() - 210);
+    m_colorPickerDialog->show();
+    m_colorPickerDialog->raise();
+    m_colorPickerDialog->activateWindow();
 }
 
 // ============================================================================
