@@ -125,14 +125,9 @@ void WindowedSubToolbar::positionBelow(const QRect &toolbarRect)
 
     QRect screenGeom = screen->geometry();
 
-    // Calculate tooltip space - if AutoBlur section is visible, we reserved space above content
-    int tooltipSpace = (m_colorAndWidthWidget && m_colorAndWidthWidget->showAutoBlurSection())
-                       ? TOOLTIP_HEIGHT : 0;
-
     // Position below the toolbar with MARGIN gap, left-aligned with toolbar
-    // Offset upward by tooltipSpace so the glass panel (content area) appears at the right position
     int x = toolbarRect.left();
-    int y = toolbarRect.bottom() + MARGIN - tooltipSpace;
+    int y = toolbarRect.bottom() + MARGIN;
 
     // If would go off bottom, position above toolbar
     if (y + height() > screenGeom.bottom() - 10) {

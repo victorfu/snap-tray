@@ -1683,17 +1683,26 @@ void PinWindow::keyPressEvent(QKeyEvent* event)
     // Rotation and flip shortcuts
     if (event->key() == Qt::Key_1) {
         rotateRight();
+        event->accept();
+        return;
     }
     else if (event->key() == Qt::Key_2) {
         rotateLeft();
+        event->accept();
+        return;
     }
     else if (event->key() == Qt::Key_3) {
         flipHorizontal();
+        event->accept();
+        return;
     }
     else if (event->key() == Qt::Key_4) {
         flipVertical();
+        event->accept();
+        return;
     }
-    else if (event->matches(QKeySequence::Save)) {
+
+    if (event->matches(QKeySequence::Save)) {
         saveToFile();
     }
     else if (event->matches(QKeySequence::Copy)) {
@@ -2410,13 +2419,13 @@ void PinWindow::stopLiveCapture()
 {
     if (m_captureTimer) {
         m_captureTimer->stop();
-        delete m_captureTimer;
+        m_captureTimer->deleteLater();
         m_captureTimer = nullptr;
     }
 
     if (m_liveIndicatorTimer) {
         m_liveIndicatorTimer->stop();
-        delete m_liveIndicatorTimer;
+        m_liveIndicatorTimer->deleteLater();
         m_liveIndicatorTimer = nullptr;
     }
 
