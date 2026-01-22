@@ -29,6 +29,13 @@ API_AVAILABLE(macos(12.3))
 @property (nonatomic, strong) dispatch_group_t processingGroup;  // Track active callbacks
 - (instancetype)init;
 @end
+
+static void releasePixelBuffer(void *info)
+{
+    CVImageBufferRef imageBuffer = static_cast<CVImageBufferRef>(info);
+    CVPixelBufferUnlockBaseAddress(imageBuffer, kCVPixelBufferLock_ReadOnly);
+    CFRelease(imageBuffer);
+}
 #endif
 
 class SCKCaptureEngine::Private
@@ -122,19 +129,34 @@ API_AVAILABLE(macos(12.3))
             return;
         }
 
-        QImage fullImage(
+        // Zero-copy optimization: Wrap the CVPixelBuffer in QImage
+        // Retain the buffer so it stays valid until QImage releases it
+        CVPixelBufferRetain(imageBuffer);
+
+        QImage wrappedImage(
             static_cast<uchar *>(baseAddress),
             static_cast<int>(width),
             static_cast<int>(height),
             static_cast<int>(bytesPerRow),
-            QImage::Format_ARGB32
+            QImage::Format_ARGB32,
+            releasePixelBuffer,
+            imageBuffer
         );
 
         if (!_invalidated && localEngine) {
-            localEngine->setLatestFrame(fullImage.copy());
+            localEngine->setLatestFrame(wrappedImage);
+        } else {
+            // If invalidated or no engine, we must release the buffer ourselves
+            // because wrappedImage destructor will not run properly or we want to release immediately
+            // But wrappedImage destructor WILL run when it goes out of scope here.
+            // So we don't need manual release here. QImage handles it.
+            // Wait, if setLatestFrame is not called, wrappedImage dies here.
+            // Its cleanup function runs -> Unlocks and Releases. Correct.
         }
 
-        CVPixelBufferUnlockBaseAddress(imageBuffer, kCVPixelBufferLock_ReadOnly);
+        // NOTE: Do NOT call CVPixelBufferUnlockBaseAddress here.
+        // The releasePixelBuffer callback handles it when QImage is destroyed.
+
     } @finally {
         dispatch_group_leave(_processingGroup);
     }
