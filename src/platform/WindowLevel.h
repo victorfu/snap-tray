@@ -41,4 +41,9 @@ void setWindowVisibleOnAllWorkspaces(QWidget *widget, bool enabled);
 // On Windows: No-op (Windows doesn't have this issue)
 void forceNativeCrosshairCursor(QWidget *widget = nullptr);
 
+// Raises window above overlay windows (RegionSelector, ScreenCanvas)
+// On macOS: Sets NSWindow level to kCGScreenSaverWindowLevel + 1
+// On Windows: No-op (Qt::WindowStaysOnTopHint is sufficient)
+void raiseWindowAboveOverlays(QWidget *widget);
+
 #endif // WINDOWLEVEL_H

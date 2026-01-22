@@ -1,4 +1,5 @@
 #include "QRCodeResultDialog.h"
+#include "platform/WindowLevel.h"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -12,12 +13,13 @@
 #include <QMouseEvent>
 #include <QKeyEvent>
 #include <QCloseEvent>
+#include <QShowEvent>
 #include <QScreen>
 #include <QTimer>
 #include <QRegularExpression>
 
 QRCodeResultDialog::QRCodeResultDialog(QWidget *parent)
-    : QWidget(parent, Qt::Window | Qt::FramelessWindowHint)
+    : QWidget(parent, Qt::Window | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint)
     , m_thumbnailLabel(nullptr)
     , m_formatLabel(nullptr)
     , m_characterCountLabel(nullptr)
@@ -310,6 +312,13 @@ void QRCodeResultDialog::closeEvent(QCloseEvent *event)
 {
     emit dialogClosed();
     QWidget::closeEvent(event);
+}
+
+void QRCodeResultDialog::showEvent(QShowEvent *event)
+{
+    QWidget::showEvent(event);
+    // Ensure dialog appears above RegionSelector/ScreenCanvas on macOS
+    raiseWindowAboveOverlays(this);
 }
 
 void QRCodeResultDialog::onCopyClicked()

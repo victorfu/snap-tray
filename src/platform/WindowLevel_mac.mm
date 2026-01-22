@@ -115,3 +115,16 @@ void forceNativeCrosshairCursor(QWidget *)
 {
     [[NSCursor crosshairCursor] set];
 }
+
+void raiseWindowAboveOverlays(QWidget *widget)
+{
+    if (!widget) {
+        return;
+    }
+    NSView *view = reinterpret_cast<NSView *>(widget->winId());
+    if (view) {
+        NSWindow *window = [view window];
+        // Set level above RegionSelector/ScreenCanvas (which use kCGScreenSaverWindowLevel)
+        [window setLevel:kCGScreenSaverWindowLevel + 1];
+    }
+}

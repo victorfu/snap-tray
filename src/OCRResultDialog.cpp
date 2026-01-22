@@ -1,4 +1,5 @@
 #include "OCRResultDialog.h"
+#include "platform/WindowLevel.h"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -12,9 +13,10 @@
 #include <QMouseEvent>
 #include <QKeyEvent>
 #include <QCloseEvent>
+#include <QShowEvent>
 
 OCRResultDialog::OCRResultDialog(QWidget *parent)
-    : QWidget(parent, Qt::Window | Qt::FramelessWindowHint)
+    : QWidget(parent, Qt::Window | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint)
     , m_iconLabel(nullptr)
     , m_titleLabel(nullptr)
     , m_charCountLabel(nullptr)
@@ -282,6 +284,13 @@ void OCRResultDialog::closeEvent(QCloseEvent *event)
 {
     emit dialogClosed();
     QWidget::closeEvent(event);
+}
+
+void OCRResultDialog::showEvent(QShowEvent *event)
+{
+    QWidget::showEvent(event);
+    // Ensure dialog appears above RegionSelector/ScreenCanvas on macOS
+    raiseWindowAboveOverlays(this);
 }
 
 void OCRResultDialog::onCopyClicked()
