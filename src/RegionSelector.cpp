@@ -623,6 +623,9 @@ void RegionSelector::onMoreColorsRequested()
 {
     if (!m_colorPickerDialog) {
         m_colorPickerDialog = new ColorPickerDialog();
+        connect(m_colorPickerDialog, &QObject::destroyed, this, [this]() {
+            m_colorPickerDialog = nullptr;
+        });
         connect(m_colorPickerDialog, &ColorPickerDialog::colorSelected,
             this, [this](const QColor& color) {
                 syncColorToAllWidgets(color);

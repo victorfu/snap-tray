@@ -459,6 +459,9 @@ void RecordingControlBar::showTooltip(const QString &text, const QRect &anchorRe
         m_tooltip = new GlassTooltipWidget(nullptr);
         // Exclude tooltip from screen capture to prevent it from appearing in recordings
         setWindowExcludedFromCapture(m_tooltip, true);
+        connect(m_tooltip, &QObject::destroyed, this, [this]() {
+            m_tooltip = nullptr;
+        });
     }
 
     ToolbarStyleConfig style = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
