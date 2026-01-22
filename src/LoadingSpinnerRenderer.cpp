@@ -72,7 +72,7 @@ void LoadingSpinnerRenderer::draw(QPainter &painter, const QPoint &center) const
         qreal normalizedAngle = std::fmod(angle + rotationOffset + 2.0 * M_PI, 2.0 * M_PI);
         qreal opacity = 1.0 - (normalizedAngle / (2.0 * M_PI)) * 0.8;  // Range: 0.2 to 1.0
 
-        QColor dotColor(255, 255, 255);  // White
+        QColor dotColor(59, 130, 246);  // Bright blue (#3b82f6) - visible on both dark and light backgrounds
         dotColor.setAlphaF(opacity);
 
         painter.setPen(Qt::NoPen);
