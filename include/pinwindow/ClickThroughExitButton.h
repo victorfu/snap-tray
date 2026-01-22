@@ -14,7 +14,6 @@ public:
     ~ClickThroughExitButton() override = default;
 
     void attachTo(QWidget* targetWindow);
-    void detach();
     void updatePosition();
 
 signals:

@@ -58,15 +58,6 @@ void ClickThroughExitButton::attachTo(QWidget* targetWindow)
     }
 }
 
-void ClickThroughExitButton::detach()
-{
-    if (m_targetWindow) {
-        m_targetWindow->removeEventFilter(this);
-        m_targetWindow = nullptr;
-    }
-    hide();
-}
-
 void ClickThroughExitButton::updatePosition()
 {
     if (!m_targetWindow)

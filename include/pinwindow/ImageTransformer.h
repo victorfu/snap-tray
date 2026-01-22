@@ -13,8 +13,6 @@ public:
     explicit ImageTransformer(QObject* parent = nullptr);
     ~ImageTransformer() override = default;
 
-    // Set the original pixmap to transform
-    void setOriginalPixmap(const QPixmap& pixmap);
     QPixmap originalPixmap() const { return m_originalPixmap; }
 
     // Rotation operations (90 degree increments)
@@ -32,8 +30,6 @@ public:
     void setZoomLevel(qreal zoom);
     qreal zoomLevel() const { return m_zoomLevel; }
 
-    // Smoothing mode for scaling
-    void setSmoothing(bool enabled);
     bool smoothing() const { return m_smoothing; }
 
     // Get the fully transformed pixmap (rotation + flip + zoom)
@@ -47,9 +43,6 @@ public:
 
     // Get the display size (after zoom)
     QSize displaySize() const;
-
-    // Force low-quality scaling (for resize performance)
-    void setFastScaling(bool fast);
 
     // Invalidate the cache to force rebuild
     void invalidateCache();

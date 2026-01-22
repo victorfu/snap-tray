@@ -37,16 +37,6 @@ bool TrimTimeline::hasTrim() const
     return m_trimStart > 0 || (m_trimEnd >= 0 && m_trimEnd < duration());
 }
 
-void TrimTimeline::resetTrim()
-{
-    if (m_trimStart != 0 || m_trimEnd != -1) {
-        m_trimStart = 0;
-        m_trimEnd = -1;
-        update();
-        emit trimRangeChanged(0, duration());
-    }
-}
-
 QRect TrimTimeline::startHandleRect() const
 {
     int x = xFromPosition(m_trimStart);

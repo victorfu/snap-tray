@@ -176,7 +176,3 @@ void ToolManager::setShapeFillMode(int mode) {
 void ToolManager::setMosaicBlurType(MosaicStroke::BlurType type) {
     m_context->mosaicBlurType = type;
 }
-
-void ToolManager::setRepaintCallback(std::function<void()> callback) {
-    m_context->requestRepaint = callback;
-}

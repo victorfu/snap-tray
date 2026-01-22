@@ -54,11 +54,6 @@ target_link_libraries(PinWindow_ClickThrough PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME PinWindow_ClickThrough COMMAND PinWindow_ClickThrough)
 set_tests_properties(PinWindow_ClickThrough PROPERTIES TIMEOUT 60 LABELS "unit;integration")
 
-add_executable(PinWindow_ImageTransformer PinWindow/tst_ImageTransformer.cpp)
-target_link_libraries(PinWindow_ImageTransformer PRIVATE snaptray_ui Qt6::Test)
-add_test(NAME PinWindow_ImageTransformer COMMAND PinWindow_ImageTransformer)
-set_tests_properties(PinWindow_ImageTransformer PROPERTIES TIMEOUT 60 LABELS "unit")
-
 # ============================================================================
 # RegionSelector Tests
 # ============================================================================

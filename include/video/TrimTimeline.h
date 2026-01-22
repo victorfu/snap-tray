@@ -46,11 +46,6 @@ public:
      */
     bool hasTrim() const;
 
-    /**
-     * @brief Reset trim to full video (no trimming).
-     */
-    void resetTrim();
-
 signals:
     /**
      * @brief Emitted when the trim range changes.

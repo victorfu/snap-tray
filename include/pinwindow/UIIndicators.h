@@ -24,11 +24,8 @@ public:
     void showOpacityIndicator(qreal opacity);
     void showClickThroughIndicator(bool enabled);
 
-    // Update positions (call after window resize)
-    void updatePositions(const QSize& windowSize);
-
-    // OCR toast
-    void showOCRToast(bool success, const QString& message);
+    // Toast notification
+    void showToast(bool success, const QString& message);
 
 signals:
     void exitClickThroughRequested();
@@ -36,7 +33,7 @@ signals:
 private:
     void ensureZoomLabelCreated();
     void ensureOpacityLabelCreated();
-    void ensureOCRToastLabelCreated();
+    void ensureToastLabelCreated();
     void ensureClickThroughExitButtonCreated();
 
     QWidget* m_parentWidget = nullptr;
@@ -53,9 +50,9 @@ private:
     // Click-through exit button (independent floating window)
     ClickThroughExitButton* m_clickThroughExitButton = nullptr;
 
-    // OCR toast
-    QLabel* m_ocrToastLabel = nullptr;
-    QTimer* m_ocrToastTimer = nullptr;
+    // Toast notification
+    QLabel* m_toastLabel = nullptr;
+    QTimer* m_toastTimer = nullptr;
 };
 
 #endif // UIINDICATORS_H

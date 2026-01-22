@@ -774,7 +774,12 @@ void PinWindow::saveToFile()
 void PinWindow::copyToClipboard()
 {
     QPixmap pixmapToCopy = getExportPixmapWithAnnotations();
+    if (pixmapToCopy.isNull()) {
+        m_uiIndicators->showToast(false, tr("Copy failed"));
+        return;
+    }
     QGuiApplication::clipboard()->setPixmap(pixmapToCopy);
+    m_uiIndicators->showToast(true, tr("Copied to clipboard"));
 }
 
 void PinWindow::performOCR()
@@ -823,11 +828,11 @@ void PinWindow::onOCRComplete(bool success, const QString& text, const QString& 
         // Default behavior: direct copy
         QGuiApplication::clipboard()->setText(text);
         QString msg = tr("Copied %1 characters").arg(text.length());
-        m_uiIndicators->showOCRToast(true, msg);
+        m_uiIndicators->showToast(true, msg);
     }
     else {
         QString msg = error.isEmpty() ? tr("No text found") : error;
-        m_uiIndicators->showOCRToast(false, msg);
+        m_uiIndicators->showToast(false, msg);
     }
 
     emit ocrCompleted(success && !text.isEmpty(),
@@ -845,7 +850,7 @@ void PinWindow::showOCRResultDialog(const QString& text)
         qDebug() << "OCR text copied:" << copiedText.length() << "characters";
 
         // Show success toast
-        m_uiIndicators->showOCRToast(true, tr("Copied %1 characters").arg(copiedText.length()));
+        m_uiIndicators->showToast(true, tr("Copied %1 characters").arg(copiedText.length()));
         emit ocrCompleted(true, tr("Text copied"));
     });
 
@@ -899,7 +904,7 @@ void PinWindow::onQRCodeComplete(bool success, const QString& text, const QStrin
 
             // Show success toast
             QString msg = tr("Copied %1 characters").arg(copiedText.length());
-            m_uiIndicators->showOCRToast(true, msg);
+            m_uiIndicators->showToast(true, msg);
         });
 
         // Show dialog centered on screen
@@ -908,7 +913,7 @@ void PinWindow::onQRCodeComplete(bool success, const QString& text, const QStrin
     else {
         // Show error toast
         QString msg = error.isEmpty() ? tr("No QR code found") : error;
-        m_uiIndicators->showOCRToast(false, msg);
+        m_uiIndicators->showToast(false, msg);
     }
 }
 

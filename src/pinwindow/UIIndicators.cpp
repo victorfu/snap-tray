@@ -51,16 +51,16 @@ void UIIndicators::ensureOpacityLabelCreated()
     connect(m_opacityLabelTimer, &QTimer::timeout, m_opacityLabel, &QLabel::hide);
 }
 
-void UIIndicators::ensureOCRToastLabelCreated()
+void UIIndicators::ensureToastLabelCreated()
 {
-    if (m_ocrToastLabel) return;
+    if (m_toastLabel) return;
 
-    m_ocrToastLabel = new QLabel(m_parentWidget);
-    m_ocrToastLabel->hide();
+    m_toastLabel = new QLabel(m_parentWidget);
+    m_toastLabel->hide();
 
-    m_ocrToastTimer = new QTimer(this);
-    m_ocrToastTimer->setSingleShot(true);
-    connect(m_ocrToastTimer, &QTimer::timeout, m_ocrToastLabel, &QLabel::hide);
+    m_toastTimer = new QTimer(this);
+    m_toastTimer->setSingleShot(true);
+    connect(m_toastTimer, &QTimer::timeout, m_toastLabel, &QLabel::hide);
 }
 
 void UIIndicators::ensureClickThroughExitButtonCreated()
@@ -110,20 +110,11 @@ void UIIndicators::showClickThroughIndicator(bool enabled)
     }
 }
 
-void UIIndicators::updatePositions(const QSize& windowSize)
+void UIIndicators::showToast(bool success, const QString& message)
 {
-    Q_UNUSED(windowSize);
-    // Update click-through exit button position if visible
-    if (m_clickThroughExitButton && m_clickThroughExitButton->isVisible()) {
-        m_clickThroughExitButton->updatePosition();
-    }
-}
-
-void UIIndicators::showOCRToast(bool success, const QString& message)
-{
-    ensureOCRToastLabelCreated();
+    ensureToastLabelCreated();
     if (success) {
-        m_ocrToastLabel->setStyleSheet(
+        m_toastLabel->setStyleSheet(
             "QLabel {"
             "  background-color: rgba(34, 139, 34, 220);"
             "  color: white;"
@@ -134,7 +125,7 @@ void UIIndicators::showOCRToast(bool success, const QString& message)
             "}"
         );
     } else {
-        m_ocrToastLabel->setStyleSheet(
+        m_toastLabel->setStyleSheet(
             "QLabel {"
             "  background-color: rgba(200, 60, 60, 220);"
             "  color: white;"
@@ -146,12 +137,12 @@ void UIIndicators::showOCRToast(bool success, const QString& message)
         );
     }
 
-    m_ocrToastLabel->setText(message);
-    m_ocrToastLabel->adjustSize();
-    int x = (m_parentWidget->width() - m_ocrToastLabel->width()) / 2;
+    m_toastLabel->setText(message);
+    m_toastLabel->adjustSize();
+    int x = (m_parentWidget->width() - m_toastLabel->width()) / 2;
     int y = m_shadowMargin + 12;
-    m_ocrToastLabel->move(x, y);
-    m_ocrToastLabel->show();
-    m_ocrToastLabel->raise();
-    m_ocrToastTimer->start(2500);
+    m_toastLabel->move(x, y);
+    m_toastLabel->show();
+    m_toastLabel->raise();
+    m_toastTimer->start(2500);
 }

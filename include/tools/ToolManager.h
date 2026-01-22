@@ -117,9 +117,6 @@ public:
     void setMosaicBlurType(MosaicStroke::BlurType type);
     MosaicStroke::BlurType mosaicBlurType() const { return m_context->mosaicBlurType; }
 
-    // Callback setup
-    void setRepaintCallback(std::function<void()> callback);
-
 signals:
     /**
      * @brief Emitted when the current tool changes.

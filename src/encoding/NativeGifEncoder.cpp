@@ -17,7 +17,7 @@ NativeGifEncoder::NativeGifEncoder(QObject *parent)
     , m_maxBitDepth(16)
     , m_framesWritten(0)
     , m_consecutiveFailures(0)
-    , m_maxConsecutiveFailures(DEFAULT_MAX_CONSECUTIVE_FAILURES)
+    , m_maxConsecutiveFailures(5)
     , m_lastTimestampMs(0)
     , m_running(false)
     , m_aborted(false)
@@ -34,11 +34,6 @@ NativeGifEncoder::~NativeGifEncoder()
 void NativeGifEncoder::setMaxBitDepth(int depth)
 {
     m_maxBitDepth = qBound(1, depth, 16);
-}
-
-void NativeGifEncoder::setMaxConsecutiveFailures(int max)
-{
-    m_maxConsecutiveFailures = qMax(1, max);
 }
 
 bool NativeGifEncoder::start(const QString &outputPath, const QSize &frameSize, int frameRate)

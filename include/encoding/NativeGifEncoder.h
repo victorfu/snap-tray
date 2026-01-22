@@ -65,16 +65,6 @@ public:
     void setMaxBitDepth(int depth);
     int maxBitDepth() const { return m_maxBitDepth; }
 
-    /**
-     * @brief Set maximum consecutive frame failures before stopping
-     * @param max Maximum failures (default: 10)
-     */
-    void setMaxConsecutiveFailures(int max);
-    int maxConsecutiveFailures() const { return m_maxConsecutiveFailures; }
-
-    /// Default value for maximum consecutive failures
-    static constexpr int DEFAULT_MAX_CONSECUTIVE_FAILURES = 10;
-
 signals:
     void finished(bool success, const QString &outputPath);
     void error(const QString &message);
