@@ -323,6 +323,11 @@ void QRCodeResultDialog::onCopyClicked()
     emit textCopied(text);
 
     showCopyFeedback();
+
+    // Close dialog after brief delay to show feedback
+    QTimer::singleShot(500, this, [this]() {
+        close();
+    });
 }
 
 void QRCodeResultDialog::onOpenUrlClicked()
@@ -334,6 +339,11 @@ void QRCodeResultDialog::onOpenUrlClicked()
 
     QDesktopServices::openUrl(QUrl(url));
     emit urlOpened(url);
+
+    // Close dialog after opening URL
+    QTimer::singleShot(200, this, [this]() {
+        close();
+    });
 }
 
 void QRCodeResultDialog::onCloseClicked()

@@ -295,6 +295,11 @@ void OCRResultDialog::onCopyClicked()
     emit textCopied(text);
 
     showCopyFeedback();
+
+    // Close dialog after brief delay to show feedback
+    QTimer::singleShot(500, this, [this]() {
+        close();
+    });
 }
 
 void OCRResultDialog::onCloseClicked()
