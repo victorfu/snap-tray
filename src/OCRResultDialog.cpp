@@ -154,7 +154,7 @@ void OCRResultDialog::applyDarkTheme()
             padding: 8px;
             font-family: 'Consolas', 'Courier New', monospace;
             font-size: 13px;
-            selection-background-color: #264f78;
+            selection-background-color: #66b3ff;
         }
 
         #buttonBar {
