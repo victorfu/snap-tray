@@ -22,6 +22,7 @@ QRCodeResultDialog::QRCodeResultDialog(QWidget *parent)
     , m_formatLabel(nullptr)
     , m_characterCountLabel(nullptr)
     , m_textEdit(nullptr)
+    , m_closeButton(nullptr)
     , m_copyButton(nullptr)
     , m_openUrlButton(nullptr)
     , m_isDragging(false)
@@ -96,6 +97,12 @@ void QRCodeResultDialog::setupUi()
     auto *buttonLayout = new QHBoxLayout(buttonBar);
     buttonLayout->setContentsMargins(12, 8, 12, 8);
     buttonLayout->setSpacing(8);
+
+    m_closeButton = new QPushButton("Close", buttonBar);
+    m_closeButton->setObjectName("closeButton");
+    m_closeButton->setFixedHeight(40);
+    connect(m_closeButton, &QPushButton::clicked, this, &QRCodeResultDialog::onCloseClicked);
+    buttonLayout->addWidget(m_closeButton, 1);
 
     m_copyButton = new QPushButton("Copy", buttonBar);
     m_copyButton->setObjectName("copyButton");
@@ -329,6 +336,11 @@ void QRCodeResultDialog::onOpenUrlClicked()
     emit urlOpened(url);
 }
 
+void QRCodeResultDialog::onCloseClicked()
+{
+    close();
+}
+
 void QRCodeResultDialog::onTextChanged()
 {
     QString currentText = m_textEdit->toPlainText();
@@ -380,10 +392,40 @@ QString QRCodeResultDialog::detectUrl(const QString &text) const
 
     auto match = urlRegex.match(text);
     if (match.hasMatch()) {
-        return match.captured(0);
+        QString url = match.captured(0);
+        // Validate that it's a proper URL
+        if (isValidUrl(url)) {
+            return url;
+        }
     }
 
     return QString();
+}
+
+bool QRCodeResultDialog::isValidUrl(const QString &urlString) const
+{
+    if (urlString.isEmpty()) {
+        return false;
+    }
+
+    QUrl url(urlString);
+
+    // Check if URL is valid and has http/https scheme
+    if (!url.isValid()) {
+        return false;
+    }
+
+    QString scheme = url.scheme().toLower();
+    if (scheme != "http" && scheme != "https") {
+        return false;
+    }
+
+    // Check if URL has a valid host
+    if (url.host().isEmpty()) {
+        return false;
+    }
+
+    return true;
 }
 
 QString QRCodeResultDialog::getFormatDisplayName(const QString &format) const

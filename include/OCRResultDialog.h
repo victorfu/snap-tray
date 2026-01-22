@@ -64,6 +64,7 @@ protected:
 
 private slots:
     void onCopyClicked();
+    void onCloseClicked();
     void onTextChanged();
 
 private:
@@ -77,6 +78,7 @@ private:
     QLabel *m_titleLabel;
     QLabel *m_charCountLabel;
     QTextEdit *m_textEdit;
+    QPushButton *m_closeButton;
     QPushButton *m_copyButton;
 
     // State

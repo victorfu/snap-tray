@@ -31,6 +31,7 @@ public:
 
         // Export
         ButtonOCR,
+        ButtonQRCode,
         ButtonCopy,
         ButtonSave,
 
@@ -65,6 +66,7 @@ signals:
     void undoClicked();
     void redoClicked();
     void ocrClicked();
+    void qrCodeClicked();
     void copyClicked();
     void saveClicked();
     void doneClicked();

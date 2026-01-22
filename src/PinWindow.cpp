@@ -1,6 +1,8 @@
 #include "PinWindow.h"
 #include "PinWindowManager.h"
 #include "OCRManager.h"
+#include "QRCodeManager.h"
+#include "QRCodeResultDialog.h"
 #include "PlatformFeatures.h"
 #include "WatermarkRenderer.h"
 #include "cursor/CursorManager.h"
@@ -118,6 +120,8 @@ PinWindow::PinWindow(const QPixmap& screenshot, const QPoint& position, QWidget*
     , m_flipVertical(false)
     , m_ocrManager(nullptr)
     , m_ocrInProgress(false)
+    , m_qrCodeManager(nullptr)
+    , m_qrCodeInProgress(false)
     , m_opacity(PinWindowSettingsManager::instance().loadDefaultOpacity())
     , m_currentZoomAction(nullptr)
     , m_smoothing(true)
@@ -845,6 +849,63 @@ void PinWindow::showOCRResultDialog(const QString& text)
     dialog->showAt();
 }
 
+void PinWindow::performQRCodeScan()
+{
+    if (m_qrCodeInProgress) {
+        return;
+    }
+
+    // Lazy-create QR Code manager on first use
+    if (!m_qrCodeManager) {
+        m_qrCodeManager = new QRCodeManager(this);
+    }
+
+    if (!m_qrCodeManager) {
+        return;
+    }
+
+    m_qrCodeInProgress = true;
+    m_loadingSpinner->start();
+    update();
+
+    QPointer<PinWindow> safeThis = this;
+    m_qrCodeManager->decode(m_originalPixmap,
+        [safeThis](const QRDecodeResult& result) {
+            if (safeThis) {
+                safeThis->onQRCodeComplete(result.success, result.text, result.format, result.error);
+            }
+        });
+}
+
+void PinWindow::onQRCodeComplete(bool success, const QString& text, const QString& format, const QString& error)
+{
+    m_qrCodeInProgress = false;
+    m_loadingSpinner->stop();
+
+    if (success && !text.isEmpty()) {
+        // Show result dialog
+        auto *dialog = new QRCodeResultDialog(this);
+        dialog->setResult(text, format, m_originalPixmap);
+
+        // Connect signals
+        connect(dialog, &QRCodeResultDialog::textCopied, this, [this](const QString &copiedText) {
+            qDebug() << "QR Code text copied:" << copiedText.length() << "characters";
+
+            // Show success toast
+            QString msg = tr("Copied %1 characters").arg(copiedText.length());
+            m_uiIndicators->showOCRToast(true, msg);
+        });
+
+        // Show dialog centered on screen
+        dialog->showAt();
+    }
+    else {
+        // Show error toast
+        QString msg = error.isEmpty() ? tr("No QR code found") : error;
+        m_uiIndicators->showOCRToast(false, msg);
+    }
+}
+
 void PinWindow::updateOcrLanguages(const QStringList& languages)
 {
     if (m_ocrManager) {
@@ -1142,8 +1203,8 @@ void PinWindow::paintEvent(QPaintEvent*)
     // Draw watermark
     WatermarkRenderer::render(painter, pixmapRect, m_watermarkSettings);
 
-    // Draw loading spinner when OCR is in progress
-    if (m_ocrInProgress) {
+    // Draw loading spinner when OCR or QR Code scan is in progress
+    if (m_ocrInProgress || m_qrCodeInProgress) {
         QPoint center = pixmapRect.center();
         m_loadingSpinner->draw(painter, center);
     }
@@ -1723,6 +1784,8 @@ void PinWindow::initializeAnnotationComponents()
         this, &PinWindow::handleToolbarRedo);
     connect(m_toolbar, &WindowedToolbar::ocrClicked,
         this, &PinWindow::performOCR);
+    connect(m_toolbar, &WindowedToolbar::qrCodeClicked,
+        this, &PinWindow::performQRCodeScan);
     connect(m_toolbar, &WindowedToolbar::copyClicked,
         this, &PinWindow::copyToClipboard);
     connect(m_toolbar, &WindowedToolbar::saveClicked,

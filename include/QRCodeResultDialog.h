@@ -74,12 +74,14 @@ protected:
 private slots:
     void onCopyClicked();
     void onOpenUrlClicked();
+    void onCloseClicked();
     void onTextChanged();
 
 private:
     void setupUi();
     void applyDarkTheme();
     QString detectUrl(const QString &text) const;
+    bool isValidUrl(const QString &urlString) const;
     QString getFormatDisplayName(const QString &format) const;
     void updateCharacterCount();
     void showCopyFeedback();
@@ -89,6 +91,7 @@ private:
     QLabel *m_formatLabel;
     QLabel *m_characterCountLabel;
     QTextEdit *m_textEdit;
+    QPushButton *m_closeButton;
     QPushButton *m_copyButton;
     QPushButton *m_openUrlButton;
 

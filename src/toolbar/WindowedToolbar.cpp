@@ -84,6 +84,7 @@ void WindowedToolbar::setupUi()
 
         // Export (with separator)
         ButtonConfig(ButtonOCR, "ocr", "OCR Text Recognition").separator(),
+        ButtonConfig(ButtonQRCode, "qrcode", "QR Code Scan"),
         ButtonConfig(ButtonSave, "save", "Save (Ctrl+S)"),
         ButtonConfig(ButtonCopy, "copy", "Copy (Ctrl+C)"),
 
@@ -341,6 +342,7 @@ void WindowedToolbar::mousePressEvent(QMouseEvent *event)
 
             // Export
             case ButtonOCR: emit ocrClicked(); break;
+            case ButtonQRCode: emit qrCodeClicked(); break;
             case ButtonCopy: emit copyClicked(); break;
             case ButtonSave: emit saveClicked(); break;
 

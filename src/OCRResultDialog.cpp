@@ -19,6 +19,7 @@ OCRResultDialog::OCRResultDialog(QWidget *parent)
     , m_titleLabel(nullptr)
     , m_charCountLabel(nullptr)
     , m_textEdit(nullptr)
+    , m_closeButton(nullptr)
     , m_copyButton(nullptr)
     , m_isDragging(false)
     , m_isTextEdited(false)
@@ -91,6 +92,12 @@ void OCRResultDialog::setupUi()
     auto *buttonLayout = new QHBoxLayout(buttonBar);
     buttonLayout->setContentsMargins(12, 8, 12, 8);
     buttonLayout->setSpacing(8);
+
+    m_closeButton = new QPushButton("Close", buttonBar);
+    m_closeButton->setObjectName("closeButton");
+    m_closeButton->setFixedHeight(40);
+    connect(m_closeButton, &QPushButton::clicked, this, &OCRResultDialog::onCloseClicked);
+    buttonLayout->addWidget(m_closeButton, 1);
 
     m_copyButton = new QPushButton("Copy", buttonBar);
     m_copyButton->setObjectName("copyButton");
@@ -288,6 +295,11 @@ void OCRResultDialog::onCopyClicked()
     emit textCopied(text);
 
     showCopyFeedback();
+}
+
+void OCRResultDialog::onCloseClicked()
+{
+    close();
 }
 
 void OCRResultDialog::onTextChanged()

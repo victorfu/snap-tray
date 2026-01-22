@@ -1028,8 +1028,8 @@ void RegionSelector::paintEvent(QPaintEvent* event)
 
             m_toolbar->drawTooltip(painter);
 
-            // Draw loading spinner when OCR or auto-blur is in progress
-            if ((m_ocrInProgress || m_autoBlurInProgress) && m_loadingSpinner) {
+            // Draw loading spinner when OCR, QR Code scan, or auto-blur is in progress
+            if ((m_ocrInProgress || m_qrCodeInProgress || m_autoBlurInProgress) && m_loadingSpinner) {
                 QPoint center = selectionRect.center();
                 m_loadingSpinner->draw(painter, center);
             }

@@ -27,6 +27,7 @@ class QTimer;
 class QScreen;
 class ICaptureEngine;
 class OCRManager;
+class QRCodeManager;
 class PinWindowManager;
 class UIIndicators;
 class WindowedToolbar;
@@ -138,6 +139,10 @@ private:
     void performOCR();
     void onOCRComplete(bool success, const QString& text, const QString& error);
     void showOCRResultDialog(const QString& text);
+
+    // QR Code methods
+    void performQRCodeScan();
+    void onQRCodeComplete(bool success, const QString& text, const QString& format, const QString& error);
 
     // Info methods
     void copyAllInfo();
@@ -256,6 +261,10 @@ private:
     OCRManager* m_ocrManager;
     bool m_ocrInProgress;
     LoadingSpinnerRenderer* m_loadingSpinner;
+
+    // QR Code members
+    QRCodeManager* m_qrCodeManager;
+    bool m_qrCodeInProgress;
 
     // Watermark members
     WatermarkRenderer::Settings m_watermarkSettings;
