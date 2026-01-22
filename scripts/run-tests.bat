@@ -37,7 +37,8 @@ REM Build all targets (including tests)
 echo Building...
 cmake --build build
 
-REM Run tests
+REM Run tests (add Qt bin to PATH for DLL loading)
 echo.
 echo Running tests...
+set "PATH=%QT_PATH%\bin;%PATH%"
 cd /d "%BUILD_DIR%" && ctest --output-on-failure
