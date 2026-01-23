@@ -135,15 +135,16 @@ ScreenCanvas::ScreenCanvas(QWidget* parent)
 
     // Initialize inline text editor
     m_textEditor = new InlineTextEditor(this);
+
+    // Initialize text annotation editor component (must be before editingCancelled connection)
+    m_textAnnotationEditor = new TextAnnotationEditor(this);
+
     connect(m_textEditor, &InlineTextEditor::editingFinished,
         this, &ScreenCanvas::onTextEditingFinished);
     connect(m_textEditor, &InlineTextEditor::editingCancelled,
         this, [this]() {
             m_textAnnotationEditor->cancelEditing();
         });
-
-    // Initialize text annotation editor component
-    m_textAnnotationEditor = new TextAnnotationEditor(this);
     m_textAnnotationEditor->setAnnotationLayer(m_annotationLayer);
     m_textAnnotationEditor->setTextEditor(m_textEditor);
     m_textAnnotationEditor->setColorAndWidthWidget(m_colorAndWidthWidget);
