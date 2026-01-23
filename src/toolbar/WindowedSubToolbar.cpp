@@ -12,8 +12,8 @@
 #include <QScreen>
 #include <QGuiApplication>
 
-// Reserve space above content for tooltips (AutoBlurSection draws tooltip above button)
-static constexpr int TOOLTIP_HEIGHT = 28;
+// Note: Tooltip above AutoBlurSection button will be clipped by window boundary
+// This is acceptable - the icon is self-explanatory
 
 namespace {
 
@@ -129,11 +129,6 @@ void WindowedSubToolbar::positionBelow(const QRect &toolbarRect)
     int x = toolbarRect.left();
     int y = toolbarRect.bottom() + MARGIN;
 
-    // Adjust for tooltip space when showing AutoBlurSection (Mosaic tool)
-    // This ensures the glass panel appears at the same distance from the toolbar as other tools
-    int tooltipSpace = m_colorAndWidthWidget->showAutoBlurSection() ? TOOLTIP_HEIGHT : 0;
-    y -= tooltipSpace;
-
     // If would go off bottom, position above toolbar
     if (y + height() > screenGeom.bottom() - 10) {
         y = toolbarRect.top() - height() - MARGIN;
@@ -216,12 +211,7 @@ void WindowedSubToolbar::updateSize()
         QRect widgetRect = m_colorAndWidthWidget->boundingRect();
         // Dropdowns expand DOWNWARD, include dropdown height at bottom of window
         int dropdownHeight = m_colorAndWidthWidget->activeDropdownHeight();
-        // Reserve space ABOVE content for tooltips (AutoBlurSection)
-        int tooltipSpace = m_colorAndWidthWidget->showAutoBlurSection() ? TOOLTIP_HEIGHT : 0;
-        // Reserve extra width for tooltip text ("Auto Blur Faces" is ~120px)
-        int minWidth = m_colorAndWidthWidget->showAutoBlurSection() ? 130 : 0;
-        int finalWidth = qMax(widgetRect.width(), minWidth);
-        setFixedSize(finalWidth, widgetRect.height() + dropdownHeight + tooltipSpace);
+        setFixedSize(widgetRect.width(), widgetRect.height() + dropdownHeight);
     }
 }
 
@@ -247,11 +237,9 @@ void WindowedSubToolbar::paintEvent(QPaintEvent *event)
         m_emojiPicker->draw(painter);
     } else {
         // ToolOptionsPanel draws its own glass panel background (like RegionSelector)
-        // Reserve space for tooltip ABOVE content
-        int tooltipSpace = m_colorAndWidthWidget->showAutoBlurSection() ? TOOLTIP_HEIGHT : 0;
-        // Translate to compensate for boundingRect position and add tooltip space
+        // Translate to compensate for boundingRect position
         QRect widgetRect = m_colorAndWidthWidget->boundingRect();
-        painter.translate(-widgetRect.x(), -widgetRect.y() + tooltipSpace);
+        painter.translate(-widgetRect.x(), -widgetRect.y());
         m_colorAndWidthWidget->draw(painter);
     }
 }
@@ -268,9 +256,8 @@ void WindowedSubToolbar::mousePressEvent(QMouseEvent *event)
         }
     } else {
         // Convert window coords to widget coords (reverse of paint translation)
-        int tooltipSpace = m_colorAndWidthWidget->showAutoBlurSection() ? TOOLTIP_HEIGHT : 0;
         QRect widgetRect = m_colorAndWidthWidget->boundingRect();
-        QPoint localPos = event->pos() + QPoint(widgetRect.x(), widgetRect.y() - tooltipSpace);
+        QPoint localPos = event->pos() + QPoint(widgetRect.x(), widgetRect.y());
         if (m_colorAndWidthWidget->handleMousePress(localPos)) {
             update();
             return;
@@ -301,9 +288,8 @@ void WindowedSubToolbar::mouseMoveEvent(QMouseEvent *event)
         }
     } else {
         // Convert window coords to widget coords (reverse of paint translation)
-        int tooltipSpace = m_colorAndWidthWidget->showAutoBlurSection() ? TOOLTIP_HEIGHT : 0;
         QRect widgetRect = m_colorAndWidthWidget->boundingRect();
-        QPoint localPos = event->pos() + QPoint(widgetRect.x(), widgetRect.y() - tooltipSpace);
+        QPoint localPos = event->pos() + QPoint(widgetRect.x(), widgetRect.y());
         if (m_colorAndWidthWidget->handleMouseMove(localPos, pressed)) {
             update();
         }
@@ -315,9 +301,8 @@ void WindowedSubToolbar::mouseReleaseEvent(QMouseEvent *event)
 {
     if (!m_showingEmojiPicker) {
         // Convert window coords to widget coords (reverse of paint translation)
-        int tooltipSpace = m_colorAndWidthWidget->showAutoBlurSection() ? TOOLTIP_HEIGHT : 0;
         QRect widgetRect = m_colorAndWidthWidget->boundingRect();
-        QPoint localPos = event->pos() + QPoint(widgetRect.x(), widgetRect.y() - tooltipSpace);
+        QPoint localPos = event->pos() + QPoint(widgetRect.x(), widgetRect.y());
         if (m_colorAndWidthWidget->handleMouseRelease(localPos)) {
             update();
             return;

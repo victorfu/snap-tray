@@ -337,7 +337,11 @@ void ToolOptionsPanel::updatePosition(const QRect& anchorRect, bool above, int s
         hasFirstSection = true;
     }
     if (m_showAutoBlurSection) {
-        if (hasFirstSection) totalWidth += SECTION_SPACING;
+        if (widthSectionVisible && !m_showColorSection) {
+            totalWidth += WIDTH_TO_AUTOBLUR_SPACING;  // Smaller spacing between width and auto blur
+        } else if (hasFirstSection) {
+            totalWidth += SECTION_SPACING;
+        }
         totalWidth += m_autoBlurSection->preferredWidth();
         hasFirstSection = true;
     }
@@ -452,7 +456,11 @@ void ToolOptionsPanel::updateLayout()
     }
 
     if (m_showAutoBlurSection) {
-        if (hasFirstSection) xOffset += SECTION_SPACING;
+        if (widthSectionVisible && !m_showColorSection) {
+            xOffset += WIDTH_TO_AUTOBLUR_SPACING;  // Smaller spacing between width and auto blur
+        } else if (hasFirstSection) {
+            xOffset += SECTION_SPACING;
+        }
         m_autoBlurSection->updateLayout(containerTop, containerHeight, xOffset);
         xOffset += m_autoBlurSection->preferredWidth();
     }
