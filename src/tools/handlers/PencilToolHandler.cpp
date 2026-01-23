@@ -20,18 +20,9 @@ void PencilToolHandler::onMouseMove(ToolContext* ctx, const QPoint& pos) {
         return;
     }
 
-    // Filter out points that are too close together (improves smoothness on high DPI)
-    if (!m_currentPath.isEmpty()) {
-        QPointF lastPoint = m_currentPath.last();
-        qreal dx = pos.x() - lastPoint.x();
-        qreal dy = pos.y() - lastPoint.y();
-        qreal distSq = dx * dx + dy * dy;
-
-        // Minimum distance threshold scaled by device pixel ratio
-        qreal minDist = 2.0 * ctx->devicePixelRatio;
-        if (distSq < minDist * minDist) {
-            return;  // Too close, skip this point
-        }
+    // Skip duplicate points only (no distance filtering - let Catmull-Rom handle smoothing)
+    if (!m_currentPath.isEmpty() && m_currentPath.last() == QPointF(pos)) {
+        return;
     }
 
     m_currentPath.append(QPointF(pos));
