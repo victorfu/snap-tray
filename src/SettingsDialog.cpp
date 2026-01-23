@@ -685,25 +685,25 @@ void SettingsDialog::setupRecordingTab(QWidget* tab)
 
     // ========== Countdown settings ==========
     layout->addSpacing(16);
-    QLabel* countdownHeader = new QLabel("Countdown", tab);
+    QLabel* countdownHeader = new QLabel(tr("Countdown"), tab);
     QFont headerFont = countdownHeader->font();
     headerFont.setBold(true);
     countdownHeader->setFont(headerFont);
     layout->addWidget(countdownHeader);
 
-    m_countdownEnabledCheckbox = new QCheckBox("Show countdown before recording", tab);
-    m_countdownEnabledCheckbox->setToolTip("Display a 3-2-1 countdown before recording starts");
+    m_countdownEnabledCheckbox = new QCheckBox(tr("Show countdown before recording"), tab);
+    m_countdownEnabledCheckbox->setToolTip(tr("Display a 3-2-1 countdown before recording starts"));
     layout->addWidget(m_countdownEnabledCheckbox);
 
     QHBoxLayout* countdownSecondsLayout = new QHBoxLayout();
     countdownSecondsLayout->setContentsMargins(20, 0, 0, 0);  // Indent under checkbox
-    QLabel* countdownSecondsLabel = new QLabel("Countdown duration:", tab);
+    QLabel* countdownSecondsLabel = new QLabel(tr("Countdown duration:"), tab);
     m_countdownSecondsCombo = new QComboBox(tab);
-    m_countdownSecondsCombo->addItem("1 second", 1);
-    m_countdownSecondsCombo->addItem("2 seconds", 2);
-    m_countdownSecondsCombo->addItem("3 seconds", 3);
-    m_countdownSecondsCombo->addItem("4 seconds", 4);
-    m_countdownSecondsCombo->addItem("5 seconds", 5);
+    m_countdownSecondsCombo->addItem(tr("1 second"), 1);
+    m_countdownSecondsCombo->addItem(tr("2 seconds"), 2);
+    m_countdownSecondsCombo->addItem(tr("3 seconds"), 3);
+    m_countdownSecondsCombo->addItem(tr("4 seconds"), 4);
+    m_countdownSecondsCombo->addItem(tr("5 seconds"), 5);
     m_countdownSecondsCombo->setCurrentIndex(2);  // Default: 3 seconds
     countdownSecondsLayout->addWidget(countdownSecondsLabel);
     countdownSecondsLayout->addWidget(m_countdownSecondsCombo);
@@ -715,12 +715,12 @@ void SettingsDialog::setupRecordingTab(QWidget* tab)
 
     // ========== Click highlight settings ==========
     layout->addSpacing(16);
-    QLabel* clickHighlightHeader = new QLabel("Mouse Clicks", tab);
+    QLabel* clickHighlightHeader = new QLabel(tr("Mouse Clicks"), tab);
     clickHighlightHeader->setFont(headerFont);
     layout->addWidget(clickHighlightHeader);
 
-    m_clickHighlightEnabledCheckbox = new QCheckBox("Show mouse click effects", tab);
-    m_clickHighlightEnabledCheckbox->setToolTip("Display a ripple animation at mouse click locations during recording");
+    m_clickHighlightEnabledCheckbox = new QCheckBox(tr("Show mouse click effects"), tab);
+    m_clickHighlightEnabledCheckbox->setToolTip(tr("Display a ripple animation at mouse click locations during recording"));
     layout->addWidget(m_clickHighlightEnabledCheckbox);
 
     layout->addStretch();
