@@ -49,6 +49,8 @@ public:
     bool updateScreenCanvasHotkey(const QString &newHotkey);
     bool updatePasteHotkey(const QString &newHotkey);
     bool updateQuickPinHotkey(const QString &newHotkey);
+    bool updatePinFromImageHotkey(const QString &newHotkey);
+    bool updateRecordFullScreenHotkey(const QString &newHotkey);
 
 private:
     void setupHotkey();
@@ -61,12 +63,15 @@ private:
     QHotkey *m_quickPinHotkey;
     QHotkey *m_screenCanvasHotkey;
     QHotkey *m_pasteHotkey;
+    QHotkey *m_pinFromImageHotkey;
+    QHotkey *m_recordFullScreenHotkey;
     CaptureManager *m_captureManager;
     PinWindowManager *m_pinWindowManager;
     ScreenCanvasManager *m_screenCanvasManager;
     RecordingManager *m_recordingManager;
     QAction *m_regionCaptureAction;
     QAction *m_screenCanvasAction;
+    QAction *m_pinFromImageAction;
     QAction *m_fullScreenRecordingAction;
     SettingsDialog *m_settingsDialog;
     QPointer<RecordingPreviewWindow> m_previewWindow;

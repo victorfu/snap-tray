@@ -64,12 +64,15 @@ MainApplication::MainApplication(QObject* parent)
     , m_quickPinHotkey(nullptr)
     , m_screenCanvasHotkey(nullptr)
     , m_pasteHotkey(nullptr)
+    , m_pinFromImageHotkey(nullptr)
+    , m_recordFullScreenHotkey(nullptr)
     , m_captureManager(nullptr)
     , m_pinWindowManager(nullptr)
     , m_screenCanvasManager(nullptr)
     , m_recordingManager(nullptr)
     , m_regionCaptureAction(nullptr)
     , m_screenCanvasAction(nullptr)
+    , m_pinFromImageAction(nullptr)
     , m_fullScreenRecordingAction(nullptr)
     , m_settingsDialog(nullptr)
 {
@@ -186,8 +189,8 @@ void MainApplication::initialize()
     m_screenCanvasAction = m_trayMenu->addAction("Screen Canvas");
     connect(m_screenCanvasAction, &QAction::triggered, this, &MainApplication::onScreenCanvas);
 
-    QAction* pinFromImageAction = m_trayMenu->addAction("Pin from Image...");
-    connect(pinFromImageAction, &QAction::triggered, this, &MainApplication::onPinFromImage);
+    m_pinFromImageAction = m_trayMenu->addAction("Pin from Image...");
+    connect(m_pinFromImageAction, &QAction::triggered, this, &MainApplication::onPinFromImage);
 
     QAction* closeAllPinsAction = m_trayMenu->addAction("Close All Pins");
     connect(closeAllPinsAction, &QAction::triggered, this, &MainApplication::onCloseAllPins);
@@ -408,6 +411,8 @@ void MainApplication::onSettings()
     m_settingsDialog->updateScreenCanvasHotkeyStatus(m_screenCanvasHotkey->isRegistered());
     m_settingsDialog->updatePasteHotkeyStatus(m_pasteHotkey->isRegistered());
     m_settingsDialog->updateQuickPinHotkeyStatus(m_quickPinHotkey->isRegistered());
+    m_settingsDialog->updatePinFromImageHotkeyStatus(!m_pinFromImageHotkey || m_pinFromImageHotkey->isRegistered());
+    m_settingsDialog->updateRecordFullScreenHotkeyStatus(!m_recordFullScreenHotkey || m_recordFullScreenHotkey->isRegistered());
 
     // Connect hotkey change signal
     connect(m_settingsDialog, &SettingsDialog::hotkeyChangeRequested,
@@ -457,6 +462,32 @@ void MainApplication::onSettings()
                 if (!success) {
                     m_settingsDialog->showHotkeyError(
                         "Failed to register Quick Pin hotkey. It may be in use by another application.");
+                }
+            }
+        });
+
+    // Connect Pin from Image hotkey change signal
+    connect(m_settingsDialog, &SettingsDialog::pinFromImageHotkeyChangeRequested,
+        this, [this](const QString& newHotkey) {
+            bool success = updatePinFromImageHotkey(newHotkey);
+            if (m_settingsDialog) {
+                m_settingsDialog->updatePinFromImageHotkeyStatus(success);
+                if (!success && !newHotkey.isEmpty()) {
+                    m_settingsDialog->showHotkeyError(
+                        "Failed to register Pin from Image hotkey. It may be in use by another application.");
+                }
+            }
+        });
+
+    // Connect Record Full Screen hotkey change signal
+    connect(m_settingsDialog, &SettingsDialog::recordFullScreenHotkeyChangeRequested,
+        this, [this](const QString& newHotkey) {
+            bool success = updateRecordFullScreenHotkey(newHotkey);
+            if (m_settingsDialog) {
+                m_settingsDialog->updateRecordFullScreenHotkeyStatus(success);
+                if (!success && !newHotkey.isEmpty()) {
+                    m_settingsDialog->showHotkeyError(
+                        "Failed to register Record Full Screen hotkey. It may be in use by another application.");
                 }
             }
         });
@@ -538,6 +569,38 @@ void MainApplication::setupHotkey()
     }
 
     connect(m_pasteHotkey, &QHotkey::activated, this, &MainApplication::onPasteFromClipboard);
+
+    // Load Pin from Image hotkey from settings (no default)
+    QString pinFromImageKeySequence = SettingsDialog::loadPinFromImageHotkey();
+    if (!pinFromImageKeySequence.isEmpty()) {
+        if (isNativeKeyCode(pinFromImageKeySequence, nativeKey)) {
+            m_pinFromImageHotkey = new QHotkey(QHotkey::NativeShortcut(nativeKey, 0), true, this);
+        } else {
+            m_pinFromImageHotkey = new QHotkey(QKeySequence(pinFromImageKeySequence), true, this);
+        }
+
+        if (!m_pinFromImageHotkey->isRegistered()) {
+            failedHotkeys << QString("Pin from Image (%1)").arg(pinFromImageKeySequence);
+        }
+
+        connect(m_pinFromImageHotkey, &QHotkey::activated, this, &MainApplication::onPinFromImage);
+    }
+
+    // Load Record Full Screen hotkey from settings (no default)
+    QString recordFullScreenKeySequence = SettingsDialog::loadRecordFullScreenHotkey();
+    if (!recordFullScreenKeySequence.isEmpty()) {
+        if (isNativeKeyCode(recordFullScreenKeySequence, nativeKey)) {
+            m_recordFullScreenHotkey = new QHotkey(QHotkey::NativeShortcut(nativeKey, 0), true, this);
+        } else {
+            m_recordFullScreenHotkey = new QHotkey(QKeySequence(recordFullScreenKeySequence), true, this);
+        }
+
+        if (!m_recordFullScreenHotkey->isRegistered()) {
+            failedHotkeys << QString("Record Full Screen (%1)").arg(recordFullScreenKeySequence);
+        }
+
+        connect(m_recordFullScreenHotkey, &QHotkey::activated, this, &MainApplication::onFullScreenRecording);
+    }
 
     // Update tray menu text with current hotkey
     updateTrayMenuHotkeyText(regionKeySequence);
@@ -705,6 +768,158 @@ bool MainApplication::updateQuickPinHotkey(const QString& newHotkey)
     }
 }
 
+bool MainApplication::updatePinFromImageHotkey(const QString& newHotkey)
+{
+    auto settings = SnapTray::getSettings();
+    QString oldHotkey = settings.value(SnapTray::kSettingsKeyPinFromImageHotkey, SnapTray::kDefaultPinFromImageHotkey).toString();
+
+    // If new hotkey is empty, unregister and clean up
+    if (newHotkey.isEmpty()) {
+        if (m_pinFromImageHotkey) {
+            m_pinFromImageHotkey->setRegistered(false);
+            delete m_pinFromImageHotkey;
+            m_pinFromImageHotkey = nullptr;
+        }
+        settings.setValue(SnapTray::kSettingsKeyPinFromImageHotkey, newHotkey);
+        if (m_pinFromImageAction) {
+            m_pinFromImageAction->setText("Pin from Image...");
+        }
+        return true;
+    }
+
+    // Create hotkey if it doesn't exist
+    if (!m_pinFromImageHotkey) {
+        quint32 nativeKey;
+        if (isNativeKeyCode(newHotkey, nativeKey)) {
+            m_pinFromImageHotkey = new QHotkey(QHotkey::NativeShortcut(nativeKey, 0), true, this);
+        } else {
+            m_pinFromImageHotkey = new QHotkey(QKeySequence(newHotkey), true, this);
+        }
+        connect(m_pinFromImageHotkey, &QHotkey::activated, this, &MainApplication::onPinFromImage);
+
+        if (m_pinFromImageHotkey->isRegistered()) {
+            settings.setValue(SnapTray::kSettingsKeyPinFromImageHotkey, newHotkey);
+            if (m_pinFromImageAction) {
+                QString displayHotkey = QKeySequence(newHotkey).toString(QKeySequence::NativeText);
+                m_pinFromImageAction->setText(QString("Pin from Image... (%1)").arg(displayHotkey));
+            }
+            return true;
+        } else {
+            delete m_pinFromImageHotkey;
+            m_pinFromImageHotkey = nullptr;
+            return false;
+        }
+    }
+
+    // Update existing hotkey
+    m_pinFromImageHotkey->setRegistered(false);
+
+    quint32 nativeKey;
+    if (isNativeKeyCode(newHotkey, nativeKey)) {
+        m_pinFromImageHotkey->setNativeShortcut(QHotkey::NativeShortcut(nativeKey, 0));
+    } else {
+        m_pinFromImageHotkey->setShortcut(QKeySequence(newHotkey));
+    }
+
+    m_pinFromImageHotkey->setRegistered(true);
+
+    if (m_pinFromImageHotkey->isRegistered()) {
+        settings.setValue(SnapTray::kSettingsKeyPinFromImageHotkey, newHotkey);
+        if (m_pinFromImageAction) {
+            QString displayHotkey = QKeySequence(newHotkey).toString(QKeySequence::NativeText);
+            m_pinFromImageAction->setText(QString("Pin from Image... (%1)").arg(displayHotkey));
+        }
+        return true;
+    } else {
+        // Revert
+        if (!oldHotkey.isEmpty()) {
+            if (isNativeKeyCode(oldHotkey, nativeKey)) {
+                m_pinFromImageHotkey->setNativeShortcut(QHotkey::NativeShortcut(nativeKey, 0));
+            } else {
+                m_pinFromImageHotkey->setShortcut(QKeySequence(oldHotkey));
+            }
+            m_pinFromImageHotkey->setRegistered(true);
+        }
+        return false;
+    }
+}
+
+bool MainApplication::updateRecordFullScreenHotkey(const QString& newHotkey)
+{
+    auto settings = SnapTray::getSettings();
+    QString oldHotkey = settings.value(SnapTray::kSettingsKeyRecordFullScreenHotkey, SnapTray::kDefaultRecordFullScreenHotkey).toString();
+
+    // If new hotkey is empty, unregister and clean up
+    if (newHotkey.isEmpty()) {
+        if (m_recordFullScreenHotkey) {
+            m_recordFullScreenHotkey->setRegistered(false);
+            delete m_recordFullScreenHotkey;
+            m_recordFullScreenHotkey = nullptr;
+        }
+        settings.setValue(SnapTray::kSettingsKeyRecordFullScreenHotkey, newHotkey);
+        if (m_fullScreenRecordingAction) {
+            m_fullScreenRecordingAction->setText("Record Full Screen");
+        }
+        return true;
+    }
+
+    // Create hotkey if it doesn't exist
+    if (!m_recordFullScreenHotkey) {
+        quint32 nativeKey;
+        if (isNativeKeyCode(newHotkey, nativeKey)) {
+            m_recordFullScreenHotkey = new QHotkey(QHotkey::NativeShortcut(nativeKey, 0), true, this);
+        } else {
+            m_recordFullScreenHotkey = new QHotkey(QKeySequence(newHotkey), true, this);
+        }
+        connect(m_recordFullScreenHotkey, &QHotkey::activated, this, &MainApplication::onFullScreenRecording);
+
+        if (m_recordFullScreenHotkey->isRegistered()) {
+            settings.setValue(SnapTray::kSettingsKeyRecordFullScreenHotkey, newHotkey);
+            if (m_fullScreenRecordingAction) {
+                QString displayHotkey = QKeySequence(newHotkey).toString(QKeySequence::NativeText);
+                m_fullScreenRecordingAction->setText(QString("Record Full Screen (%1)").arg(displayHotkey));
+            }
+            return true;
+        } else {
+            delete m_recordFullScreenHotkey;
+            m_recordFullScreenHotkey = nullptr;
+            return false;
+        }
+    }
+
+    // Update existing hotkey
+    m_recordFullScreenHotkey->setRegistered(false);
+
+    quint32 nativeKey;
+    if (isNativeKeyCode(newHotkey, nativeKey)) {
+        m_recordFullScreenHotkey->setNativeShortcut(QHotkey::NativeShortcut(nativeKey, 0));
+    } else {
+        m_recordFullScreenHotkey->setShortcut(QKeySequence(newHotkey));
+    }
+
+    m_recordFullScreenHotkey->setRegistered(true);
+
+    if (m_recordFullScreenHotkey->isRegistered()) {
+        settings.setValue(SnapTray::kSettingsKeyRecordFullScreenHotkey, newHotkey);
+        if (m_fullScreenRecordingAction) {
+            QString displayHotkey = QKeySequence(newHotkey).toString(QKeySequence::NativeText);
+            m_fullScreenRecordingAction->setText(QString("Record Full Screen (%1)").arg(displayHotkey));
+        }
+        return true;
+    } else {
+        // Revert
+        if (!oldHotkey.isEmpty()) {
+            if (isNativeKeyCode(oldHotkey, nativeKey)) {
+                m_recordFullScreenHotkey->setNativeShortcut(QHotkey::NativeShortcut(nativeKey, 0));
+            } else {
+                m_recordFullScreenHotkey->setShortcut(QKeySequence(oldHotkey));
+            }
+            m_recordFullScreenHotkey->setRegistered(true);
+        }
+        return false;
+    }
+}
+
 QPixmap MainApplication::renderTextToPixmap(const QString &text)
 {
     // Set up font
@@ -861,5 +1076,23 @@ void MainApplication::updateTrayMenuHotkeyText(const QString& hotkey)
         QString screenCanvasHotkey = SettingsDialog::loadScreenCanvasHotkey();
         QString displayHotkey = QKeySequence(screenCanvasHotkey).toString(QKeySequence::NativeText);
         m_screenCanvasAction->setText(QString("Screen Canvas (%1)").arg(displayHotkey));
+    }
+    if (m_pinFromImageAction) {
+        QString pinFromImageHotkey = SettingsDialog::loadPinFromImageHotkey();
+        if (!pinFromImageHotkey.isEmpty()) {
+            QString displayHotkey = QKeySequence(pinFromImageHotkey).toString(QKeySequence::NativeText);
+            m_pinFromImageAction->setText(QString("Pin from Image... (%1)").arg(displayHotkey));
+        } else {
+            m_pinFromImageAction->setText("Pin from Image...");
+        }
+    }
+    if (m_fullScreenRecordingAction) {
+        QString recordFullScreenHotkey = SettingsDialog::loadRecordFullScreenHotkey();
+        if (!recordFullScreenHotkey.isEmpty()) {
+            QString displayHotkey = QKeySequence(recordFullScreenHotkey).toString(QKeySequence::NativeText);
+            m_fullScreenRecordingAction->setText(QString("Record Full Screen (%1)").arg(displayHotkey));
+        } else {
+            m_fullScreenRecordingAction->setText("Record Full Screen");
+        }
     }
 }

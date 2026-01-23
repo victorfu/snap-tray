@@ -41,18 +41,30 @@ public:
     static QString defaultQuickPinHotkey();
     static QString loadQuickPinHotkey();
 
+    // Pin from Image hotkey settings
+    static QString defaultPinFromImageHotkey();
+    static QString loadPinFromImageHotkey();
+
+    // Record Full Screen hotkey settings
+    static QString defaultRecordFullScreenHotkey();
+    static QString loadRecordFullScreenHotkey();
+
     // Status display
     void showHotkeyError(const QString &message);
     void updateCaptureHotkeyStatus(bool isRegistered);
     void updateScreenCanvasHotkeyStatus(bool isRegistered);
     void updatePasteHotkeyStatus(bool isRegistered);
     void updateQuickPinHotkeyStatus(bool isRegistered);
+    void updatePinFromImageHotkeyStatus(bool isRegistered);
+    void updateRecordFullScreenHotkeyStatus(bool isRegistered);
 
 signals:
     void hotkeyChangeRequested(const QString &newHotkey);
     void screenCanvasHotkeyChangeRequested(const QString &newHotkey);
     void pasteHotkeyChangeRequested(const QString &newHotkey);
     void quickPinHotkeyChangeRequested(const QString &newHotkey);
+    void pinFromImageHotkeyChangeRequested(const QString &newHotkey);
+    void recordFullScreenHotkeyChangeRequested(const QString &newHotkey);
     void startOnLoginChanged(bool enabled);
     void toolbarStyleChanged(ToolbarStyleType style);
     void ocrLanguagesChanged(const QStringList &languages);
@@ -88,6 +100,10 @@ private:
     QLabel *m_pasteHotkeyStatus;
     HotkeyEdit *m_quickPinHotkeyEdit;
     QLabel *m_quickPinHotkeyStatus;
+    HotkeyEdit *m_pinFromImageHotkeyEdit;
+    QLabel *m_pinFromImageHotkeyStatus;
+    HotkeyEdit *m_recordFullScreenHotkeyEdit;
+    QLabel *m_recordFullScreenHotkeyStatus;
     QPushButton *m_restoreDefaultsBtn;
 
     // Watermark UI elements

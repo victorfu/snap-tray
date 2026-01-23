@@ -88,6 +88,10 @@ SettingsDialog::SettingsDialog(QWidget* parent)
     , m_ocrTabIndex(-1)
     , m_ocrDirectCopyRadio(nullptr)
     , m_ocrShowEditorRadio(nullptr)
+    , m_pinFromImageHotkeyEdit(nullptr)
+    , m_pinFromImageHotkeyStatus(nullptr)
+    , m_recordFullScreenHotkeyEdit(nullptr)
+    , m_recordFullScreenHotkeyStatus(nullptr)
 {
     setWindowTitle(QString("%1 Settings").arg(SNAPTRAY_APP_NAME));
     setMinimumSize(520, 480);
@@ -372,6 +376,34 @@ void SettingsDialog::setupHotkeysTab(QWidget* tab)
     quickPinLayout->addWidget(m_quickPinHotkeyEdit);
     quickPinLayout->addWidget(m_quickPinHotkeyStatus);
     layout->addLayout(quickPinLayout);
+
+    // Pin from Image hotkey row (optional - can be empty)
+    QHBoxLayout* pinFromImageLayout = new QHBoxLayout();
+    QLabel* pinFromImageLabel = new QLabel("Pin from Image:", tab);
+    pinFromImageLabel->setFixedWidth(120);
+    m_pinFromImageHotkeyEdit = new HotkeyEdit(tab);
+    m_pinFromImageHotkeyEdit->setKeySequence(loadPinFromImageHotkey());
+    m_pinFromImageHotkeyStatus = new QLabel(tab);
+    m_pinFromImageHotkeyStatus->setFixedSize(24, 24);
+    m_pinFromImageHotkeyStatus->setAlignment(Qt::AlignCenter);
+    pinFromImageLayout->addWidget(pinFromImageLabel);
+    pinFromImageLayout->addWidget(m_pinFromImageHotkeyEdit);
+    pinFromImageLayout->addWidget(m_pinFromImageHotkeyStatus);
+    layout->addLayout(pinFromImageLayout);
+
+    // Record Full Screen hotkey row (optional - can be empty)
+    QHBoxLayout* recordFullScreenLayout = new QHBoxLayout();
+    QLabel* recordFullScreenLabel = new QLabel("Record Screen:", tab);
+    recordFullScreenLabel->setFixedWidth(120);
+    m_recordFullScreenHotkeyEdit = new HotkeyEdit(tab);
+    m_recordFullScreenHotkeyEdit->setKeySequence(loadRecordFullScreenHotkey());
+    m_recordFullScreenHotkeyStatus = new QLabel(tab);
+    m_recordFullScreenHotkeyStatus->setFixedSize(24, 24);
+    m_recordFullScreenHotkeyStatus->setAlignment(Qt::AlignCenter);
+    recordFullScreenLayout->addWidget(recordFullScreenLabel);
+    recordFullScreenLayout->addWidget(m_recordFullScreenHotkeyEdit);
+    recordFullScreenLayout->addWidget(m_recordFullScreenHotkeyStatus);
+    layout->addLayout(recordFullScreenLayout);
 
     layout->addStretch();
 
@@ -836,6 +868,8 @@ void SettingsDialog::onRestoreDefaults()
     m_screenCanvasHotkeyEdit->setKeySequence(QString(SnapTray::kDefaultScreenCanvasHotkey));
     m_pasteHotkeyEdit->setKeySequence(QString(SnapTray::kDefaultPasteHotkey));
     m_quickPinHotkeyEdit->setKeySequence(QString(SnapTray::kDefaultQuickPinHotkey));
+    m_pinFromImageHotkeyEdit->setKeySequence(QString(SnapTray::kDefaultPinFromImageHotkey));
+    m_recordFullScreenHotkeyEdit->setKeySequence(QString(SnapTray::kDefaultRecordFullScreenHotkey));
 }
 
 QString SettingsDialog::defaultHotkey()
@@ -897,14 +931,60 @@ void SettingsDialog::updateQuickPinHotkeyStatus(bool isRegistered)
     updateHotkeyStatus(m_quickPinHotkeyStatus, isRegistered);
 }
 
+QString SettingsDialog::defaultPinFromImageHotkey()
+{
+    return QString(SnapTray::kDefaultPinFromImageHotkey);
+}
+
+QString SettingsDialog::loadPinFromImageHotkey()
+{
+    auto settings = SnapTray::getSettings();
+    return settings.value(SnapTray::kSettingsKeyPinFromImageHotkey, SnapTray::kDefaultPinFromImageHotkey).toString();
+}
+
+void SettingsDialog::updatePinFromImageHotkeyStatus(bool isRegistered)
+{
+    // For optional hotkeys, show neutral indicator when not configured
+    if (m_pinFromImageHotkeyEdit && m_pinFromImageHotkeyEdit->keySequence().isEmpty()) {
+        m_pinFromImageHotkeyStatus->setText("—");
+        m_pinFromImageHotkeyStatus->setStyleSheet("color: gray; font-weight: bold; font-size: 16px;");
+    } else {
+        updateHotkeyStatus(m_pinFromImageHotkeyStatus, isRegistered);
+    }
+}
+
+QString SettingsDialog::defaultRecordFullScreenHotkey()
+{
+    return QString(SnapTray::kDefaultRecordFullScreenHotkey);
+}
+
+QString SettingsDialog::loadRecordFullScreenHotkey()
+{
+    auto settings = SnapTray::getSettings();
+    return settings.value(SnapTray::kSettingsKeyRecordFullScreenHotkey, SnapTray::kDefaultRecordFullScreenHotkey).toString();
+}
+
+void SettingsDialog::updateRecordFullScreenHotkeyStatus(bool isRegistered)
+{
+    // For optional hotkeys, show neutral indicator when not configured
+    if (m_recordFullScreenHotkeyEdit && m_recordFullScreenHotkeyEdit->keySequence().isEmpty()) {
+        m_recordFullScreenHotkeyStatus->setText("—");
+        m_recordFullScreenHotkeyStatus->setStyleSheet("color: gray; font-weight: bold; font-size: 16px;");
+    } else {
+        updateHotkeyStatus(m_recordFullScreenHotkeyStatus, isRegistered);
+    }
+}
+
 void SettingsDialog::onSave()
 {
     QString newHotkey = m_hotkeyEdit->keySequence();
     QString newScreenCanvasHotkey = m_screenCanvasHotkeyEdit->keySequence();
     QString newPasteHotkey = m_pasteHotkeyEdit->keySequence();
     QString newQuickPinHotkey = m_quickPinHotkeyEdit->keySequence();
+    QString newPinFromImageHotkey = m_pinFromImageHotkeyEdit->keySequence();
+    QString newRecordFullScreenHotkey = m_recordFullScreenHotkeyEdit->keySequence();
 
-    // Validate hotkeys are not empty
+    // Validate hotkeys are not empty (Pin from Image and Record Full Screen are optional)
     if (newHotkey.isEmpty()) {
         QMessageBox::warning(this, "Invalid Hotkey",
             "Capture hotkey cannot be empty. Please set a valid key combination.");
@@ -1040,6 +1120,8 @@ void SettingsDialog::onSave()
     emit screenCanvasHotkeyChangeRequested(newScreenCanvasHotkey);
     emit pasteHotkeyChangeRequested(newPasteHotkey);
     emit quickPinHotkeyChangeRequested(newQuickPinHotkey);
+    emit pinFromImageHotkeyChangeRequested(newPinFromImageHotkey);
+    emit recordFullScreenHotkeyChangeRequested(newRecordFullScreenHotkey);
 
     // Close dialog (non-modal mode)
     accept();
