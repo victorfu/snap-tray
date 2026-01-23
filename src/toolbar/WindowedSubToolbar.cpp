@@ -129,6 +129,11 @@ void WindowedSubToolbar::positionBelow(const QRect &toolbarRect)
     int x = toolbarRect.left();
     int y = toolbarRect.bottom() + MARGIN;
 
+    // Adjust for tooltip space when showing AutoBlurSection (Mosaic tool)
+    // This ensures the glass panel appears at the same distance from the toolbar as other tools
+    int tooltipSpace = m_colorAndWidthWidget->showAutoBlurSection() ? TOOLTIP_HEIGHT : 0;
+    y -= tooltipSpace;
+
     // If would go off bottom, position above toolbar
     if (y + height() > screenGeom.bottom() - 10) {
         y = toolbarRect.top() - height() - MARGIN;

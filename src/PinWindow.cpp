@@ -2243,6 +2243,13 @@ void PinWindow::onAutoBlurRequested()
         m_autoBlurManager = new AutoBlurManager(this);
     }
 
+    // Initialize face detector (lazy load Haar cascade)
+    if (!m_autoBlurManager->isInitialized()) {
+        if (!m_autoBlurManager->initialize()) {
+            return;  // Failed to initialize (cascade file not found)
+        }
+    }
+
     // Get current display image
     QImage image = m_displayPixmap.toImage();
     qreal dpr = m_displayPixmap.devicePixelRatio();
