@@ -1,6 +1,6 @@
 # SnapTray Project
 
-A Qt6-based screenshot and screen recording application for Windows and macOS.
+A Qt6-based screenshot and screen recording application for Windows and macOS. Provides region capture, on-screen annotations, screen canvas mode, and high-quality video recording with optional audio capture.
 
 ## Build Instructions
 
@@ -43,34 +43,96 @@ packaging\windows\package.bat msix      # MSIX package only
 
 ### Prerequisites
 
-- Qt 6.10.1 (Widgets, Gui, Svg, Concurrent)
+- Qt 6.10.1 (Widgets, Gui, Svg, Concurrent, Network)
 - CMake 3.16+
 - Ninja build system
 - Windows: Visual Studio 2022 Build Tools, Windows SDK (DXGI, Media Foundation, WASAPI)
 - macOS: Xcode Command Line Tools
 
+### External Dependencies (auto-fetched via CMake)
+
+- **QHotkey**: Global hotkey support
+- **OpenCV 4.10.0**: Face detection (static, minimal build)
+- **libwebp 1.3.2**: WebP animation encoding
+- **ZXing-CPP v2.2.1**: QR code processing
+
 ## Project Structure
 
 ```
-src/
-├── annotations/     # Annotation types (Pencil, Arrow, Shape, Mosaic, etc.)
-├── capture/         # Screen capture (DXGICaptureEngine, SCKCaptureEngine)
-├── cursor/          # Cursor state management (CursorManager)
-├── detection/       # Face/text detection, auto-blur
-├── encoding/        # GIF/WebP encoders
-├── input/           # Mouse click tracking (platform-specific)
-├── pinwindow/       # Pin window components
-├── platform/        # Platform abstraction (WindowLevel, PlatformFeatures)
-├── recording/       # Recording effects (Spotlight, CursorHighlight)
-├── region/          # Region selection UI
-├── settings/        # Settings managers
-├── toolbar/         # Toolbar rendering
-├── tools/           # Tool handlers and registry
-├── ui/sections/     # Tool option panels
-├── utils/           # Utility helpers
-├── video/           # Video playback and recording UI
-└── widgets/         # Custom widgets (HotkeyEdit, etc.)
+snap-tray/
+├── include/                    # Public headers
+│   ├── annotations/           # Annotation types and classes
+│   ├── capture/               # Capture engine interfaces
+│   ├── cursor/                # Cursor management
+│   ├── detection/             # Face/text detection
+│   ├── encoding/              # Video/GIF/WebP encoders
+│   ├── input/                 # Mouse tracking (platform-specific)
+│   ├── pinwindow/             # Pin window components
+│   ├── platform/              # Platform abstraction
+│   ├── recording/             # Recording effects
+│   ├── region/                # Region selection UI
+│   ├── settings/              # Settings managers
+│   ├── toolbar/               # Toolbar rendering
+│   ├── tools/                 # Tool system (ToolId, IToolHandler)
+│   │   └── handlers/          # Tool handler interfaces
+│   ├── ui/sections/           # Tool option panels
+│   ├── utils/                 # Utility helpers
+│   ├── video/                 # Video playback UI
+│   └── widgets/               # Custom widgets
+│
+├── src/                       # Implementation files
+│   ├── annotations/           # Annotation implementations
+│   ├── capture/               # Capture engine implementations
+│   ├── cursor/                # Cursor manager
+│   ├── detection/             # Detection algorithms
+│   ├── encoding/              # Encoder implementations
+│   ├── input/                 # Mouse tracking implementations
+│   ├── pinwindow/             # Pin window logic
+│   ├── platform/              # Platform-specific code
+│   ├── recording/             # Recording effects
+│   ├── region/                # Region selection implementation
+│   ├── settings/              # Settings management
+│   ├── toolbar/               # Toolbar rendering
+│   ├── tools/handlers/        # Tool handler implementations
+│   ├── ui/sections/           # UI sections implementation
+│   ├── utils/                 # Utility implementations
+│   ├── video/                 # Video components
+│   └── widgets/               # Custom widgets
+│
+├── tests/                     # Test suite (Qt Test Framework)
+│   ├── Detection/             # FaceDetector, AutoBlurManager tests
+│   ├── Encoding/              # NativeGifEncoder, EncoderFactory tests
+│   ├── PinWindow/             # Transform, Resize, ClickThrough tests
+│   ├── RecordingManager/      # StateMachine, Lifecycle, Audio tests
+│   ├── RegionSelector/        # MagnifierPanel, Throttler tests
+│   ├── Settings/              # SettingsManager tests
+│   ├── ToolOptionsPanel/      # State, Signals, HitTest tests
+│   ├── Utils/                 # CoordinateHelper tests
+│   └── mocks/                 # Mock implementations
+│
+├── packaging/                 # Application packaging
+│   ├── windows/               # NSIS and MSIX packaging
+│   └── macos/                 # DMG packaging
+│
+├── resources/                 # Application resources
+│   ├── resources.qrc          # Qt resource file
+│   ├── icons/                 # Icon files
+│   └── cascades/              # OpenCV Haar cascade files
+│
+├── scripts/                   # Build and test scripts
+├── cmake/                     # CMake templates (version.h, Info.plist)
+└── CMakeLists.txt             # Main CMake configuration
 ```
+
+## Library Architecture
+
+The project uses a modular static library architecture:
+
+1. **snaptray_core**: Annotations, settings, cursor management, utilities
+2. **snaptray_algorithms**: Detection algorithms (face detection, auto-blur) - depends on OpenCV
+3. **snaptray_platform**: Platform-specific capture, encoding, video playback
+4. **snaptray_ui**: UI components, toolbar, region selector, pin windows, tool system
+5. **SnapTray**: Main executable linking all libraries
 
 ## Architecture Patterns
 
@@ -90,6 +152,15 @@ FileSettingsManager::instance();
 // Pin window settings (opacity, zoom)
 PinWindowSettingsManager::instance();
 
+// Auto-blur settings
+AutoBlurSettingsManager::instance();
+
+// OCR settings (language, region)
+OCRSettingsManager::instance();
+
+// Watermark configuration
+WatermarkSettingsManager::instance();
+
 // Other settings
 QSettings settings = getSettings();  // From include/settings/Settings.h
 ```
@@ -100,12 +171,25 @@ Tools use `ToolId` enum and are registered in `ToolRegistry`. Tool handlers impl
 
 ```cpp
 // Tool definitions in include/tools/
-ToolId.h          // Unified enum for all tools
+ToolId.h          // Unified enum (Selection, Pencil, Marker, Arrow, Shape, Text, Mosaic, etc.)
 ToolDefinition.h  // Tool metadata
-IToolHandler.h    // Handler interface
+IToolHandler.h    // Handler interface (onMousePress, onMouseMove, drawPreview, etc.)
 ToolRegistry.h    // Tool registration
 ToolManager.h     // Active tool management
 ```
+
+### Annotation System
+
+Base class: `AnnotationItem` (pure virtual: `draw()`, `boundingRect()`, `clone()`)
+
+Annotation types:
+- `PencilStroke`, `MarkerStroke`: Freehand drawing
+- `ArrowAnnotation`, `PolylineAnnotation`: Lines and arrows
+- `ShapeAnnotation`: Rectangles/ellipses
+- `TextBoxAnnotation`: Text with formatting
+- `MosaicStroke`, `MosaicRectAnnotation`: Blur/pixelate regions
+- `StepBadgeAnnotation`: Numbered badges
+- `EmojiStickerAnnotation`: Emoji overlays
 
 ### Data-Driven Patterns
 
@@ -134,15 +218,65 @@ void MyWidget::paintEvent(QPaintEvent*) {
 }
 ```
 
+### Platform Abstraction
+
+Use `PlatformFeatures` singleton for capability detection:
+
+```cpp
+if (PlatformFeatures::instance().isOCRAvailable()) {
+    auto mgr = PlatformFeatures::instance().createOCRManager();
+}
+```
+
 ## Platform-Specific Code
 
 | Feature | Windows | macOS |
 |---------|---------|-------|
-| Screen Capture | `DXGICaptureEngine` | `SCKCaptureEngine` |
-| Video Encoding | `MediaFoundationEncoder` | `AVFoundationEncoder` |
-| Audio Capture | `WASAPIAudioCaptureEngine` | `CoreAudioCaptureEngine` |
+| Screen Capture | `DXGICaptureEngine_win.cpp` | `SCKCaptureEngine_mac.mm` |
+| Video Encoding | `MediaFoundationEncoder.cpp` | `AVFoundationEncoder.mm` |
+| Audio Capture | `WASAPIAudioCaptureEngine_win.cpp` | `CoreAudioCaptureEngine_mac.mm` |
+| Video Playback | `MediaFoundationPlayer_win.cpp` | `AVFoundationPlayer_mac.mm` |
 | Window Detection | `WindowDetector_win.cpp` | `WindowDetector.mm` |
 | OCR | `OCRManager_win.cpp` | `OCRManager.mm` |
+| Color Picker | `ColorPickerDialog_win.cpp` | `ColorPickerDialog.mm` |
+| Mouse Tracking | `MouseClickTracker_win.cpp` | `MouseClickTracker_mac.mm` |
+| Window Level | `WindowLevel_win.cpp` | `WindowLevel_mac.mm` |
+| Platform Features | `PlatformFeatures_win.cpp` | `PlatformFeatures_mac.mm` |
+| Auto-launch | `AutoLaunchManager_win.cpp` | `AutoLaunchManager_mac.mm` |
+
+## Key Components
+
+### Core Managers (in MainApplication)
+
+- `CaptureManager`: Orchestrates region capture workflow
+- `PinWindowManager`: Manages floating pin windows
+- `ScreenCanvasManager`: Full-screen annotation mode
+- `RecordingManager`: Screen recording state machine
+- `SingleInstanceGuard`: Prevents multiple instances
+
+### Region Selector (`src/RegionSelector.cpp`)
+
+Sub-components in `src/region/`:
+- `SelectionStateManager`: Selection state tracking
+- `MagnifierPanel`: Pixel-level magnification with RGB/HEX preview
+- `UpdateThrottler`: Render throttling
+- `TextAnnotationEditor`: Inline text editing
+- `RegionExportManager`: Export/save functionality
+
+### Pin Window (`src/PinWindow.cpp`)
+
+Sub-components in `src/pinwindow/`:
+- `ImageTransformer`: Rotation/flip operations
+- `ResizeHandler`: Edge dragging
+- `UIIndicators`: Scale/opacity display
+- `WindowedToolbar`: Pin window toolbar
+
+### Recording (`src/RecordingManager.cpp`)
+
+- `RecordingRegionSelector`: Region selection for recording
+- `RecordingControlBar`: Floating control UI
+- `RecordingBoundaryOverlay`: Visual boundary
+- `RecordingAnnotationOverlay`: Live annotation display
 
 ## Development Guidelines
 
@@ -165,7 +299,8 @@ void MyWidget::paintEvent(QPaintEvent*) {
 
 - Test files: `tests/<ComponentName>/tst_<TestName>.cpp`
 - Qt Test framework (`QCOMPARE`, `QVERIFY`)
-- Run `scripts\run-tests.bat` after changes
+- Mock classes in `tests/mocks/` (MockCaptureEngine, MockVideoEncoder, MockAudioCaptureEngine)
+- Run `scripts/run-tests.bat` (Windows) or `scripts/run-tests.sh` (macOS) after changes
 
 ### Common Patterns to Avoid
 
