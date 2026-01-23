@@ -186,18 +186,14 @@ void MainApplication::initialize()
     m_screenCanvasAction = m_trayMenu->addAction("Screen Canvas");
     connect(m_screenCanvasAction, &QAction::triggered, this, &MainApplication::onScreenCanvas);
 
-    m_trayMenu->addSeparator();
-
-    m_fullScreenRecordingAction = m_trayMenu->addAction("Record Full Screen");
-    connect(m_fullScreenRecordingAction, &QAction::triggered, this, &MainApplication::onFullScreenRecording);
-
-    m_trayMenu->addSeparator();
-
     QAction* pinFromImageAction = m_trayMenu->addAction("Pin from Image...");
     connect(pinFromImageAction, &QAction::triggered, this, &MainApplication::onPinFromImage);
 
     QAction* closeAllPinsAction = m_trayMenu->addAction("Close All Pins");
     connect(closeAllPinsAction, &QAction::triggered, this, &MainApplication::onCloseAllPins);
+
+    m_fullScreenRecordingAction = m_trayMenu->addAction("Record Full Screen");
+    connect(m_fullScreenRecordingAction, &QAction::triggered, this, &MainApplication::onFullScreenRecording);
 
     m_trayMenu->addSeparator();
 
