@@ -71,7 +71,6 @@ public:
     void setFontSize(int size);
     void setFontFamily(const QString& family);
     TextFormattingState formatting() const { return m_formatting; }
-    void setFormatting(const TextFormattingState& formatting);
 
     // Settings persistence
     void loadSettings();

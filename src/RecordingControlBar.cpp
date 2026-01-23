@@ -1358,51 +1358,6 @@ void RecordingControlBar::drawEffectsToolbar(QPainter &painter)
 // Preview Mode Implementation
 // ============================================================================
 
-void RecordingControlBar::setMode(Mode mode)
-{
-    if (m_mode == mode) {
-        return;
-    }
-
-    m_mode = mode;
-    m_hoveredButton = ButtonNone;
-    hideTooltip();
-
-    if (mode == Mode::Preview) {
-        // Hide ALL QLabel widgets - we draw everything custom in preview mode
-        if (m_sizeLabel) m_sizeLabel->hide();
-        if (m_fpsLabel) m_fpsLabel->hide();
-        if (m_audioIndicator) m_audioIndicator->hide();
-        if (m_separator1) m_separator1->hide();
-        if (m_separator2) m_separator2->hide();
-        if (m_durationLabel) m_durationLabel->hide();
-        if (m_recordingIndicator) m_recordingIndicator->hide();
-        if (m_buttonSpacer) m_buttonSpacer->hide();
-
-        // Reset preview state
-        m_isPlaying = false;
-        m_previewPosition = 0;
-        m_selectedFormat = OutputFormat::MP4;
-        m_isMuted = false;
-        m_effectsToolbarVisible = false;
-        m_effectsToolbarItems.clear();
-        m_effectsToolbarRect = QRect();
-    } else {
-        // Show recording-specific widgets
-        if (m_sizeLabel) m_sizeLabel->show();
-        if (m_fpsLabel) m_fpsLabel->show();
-        if (m_separator1) m_separator1->show();
-        if (m_separator2) m_separator2->show();
-        if (m_durationLabel) m_durationLabel->show();
-        if (m_recordingIndicator) m_recordingIndicator->show();
-        if (m_buttonSpacer) m_buttonSpacer->show();
-    }
-
-    updateButtonSpacerWidth();
-    updateFixedWidth();
-    update();
-}
-
 void RecordingControlBar::updatePreviewButtonRects()
 {
     const QRect bgRect = backgroundRect();

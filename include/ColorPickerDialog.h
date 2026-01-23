@@ -46,7 +46,6 @@ private slots:
 
 private:
     void updateFromHSV();
-    void updateFromRGB();
     void updateInputs();
     void updateSpectrumImage();
     void updateHueBarImage();

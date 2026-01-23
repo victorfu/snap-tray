@@ -326,11 +326,6 @@ void TextAnnotationEditor::setFontFamily(const QString& family)
     emit updateRequested();
 }
 
-void TextAnnotationEditor::setFormatting(const TextFormattingState& formatting)
-{
-    m_formatting = formatting;
-}
-
 void TextAnnotationEditor::loadSettings()
 {
     auto settings = SnapTray::getSettings();

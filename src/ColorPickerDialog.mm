@@ -505,22 +505,6 @@ void ColorPickerDialog::updateFromHSV()
     update();
 }
 
-void ColorPickerDialog::updateFromRGB()
-{
-    m_hue = m_currentColor.hsvHue();
-    if (m_hue < 0) m_hue = 0;
-    m_saturation = m_currentColor.hsvSaturation();
-    m_value = m_currentColor.value();
-
-    m_spectrumPos = QPoint(
-        m_saturation * SPECTRUM_SIZE / 255,
-        (255 - m_value) * SPECTRUM_SIZE / 255
-    );
-
-    updateSpectrumImage();
-    update();
-}
-
 void ColorPickerDialog::updateInputs()
 {
     m_updatingInputs = true;

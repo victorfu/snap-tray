@@ -61,7 +61,6 @@ public:
     bool isClickHighlightEnabled() const { return m_clickHighlightEnabled; }
 
     // Mode support
-    void setMode(Mode mode);
     Mode mode() const { return m_mode; }
 
     // Preview mode updates
