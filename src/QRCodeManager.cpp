@@ -149,7 +149,8 @@ void QRCodeManager::decode(const QPixmap &pixmap, const QRDecodeCallback &callba
     ZXing::ReaderOptions options = d->options;
 
     // Capture shared pointer by value to extend image lifetime
-    QtConcurrent::run([imagePtr, options, callback, weakThis]() {
+    // Explicitly discard QFuture - we use callback for result delivery
+    (void)QtConcurrent::run([imagePtr, options, callback, weakThis]() {
         QRDecodeResult result;
 
         qDebug() << "QRCodeManager: Thread started, creating ImageView...";
