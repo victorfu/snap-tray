@@ -83,6 +83,8 @@ private:
         using VideoTimeline::formatTime;
         using VideoTimeline::trackRect;
         using VideoTimeline::playheadRect;
+        using VideoTimeline::sizeHint;
+        using VideoTimeline::minimumSizeHint;
     };
 
     TestableTimeline* testable() { return static_cast<TestableTimeline*>(m_timeline); }
@@ -325,7 +327,7 @@ void TestVideoTimeline::testScrubbing_StateChanges()
 
 void TestVideoTimeline::testSizeHint_ReturnsValid()
 {
-    QSize hint = m_timeline->sizeHint();
+    QSize hint = testable()->sizeHint();
     QVERIFY(hint.width() > 0);
     QVERIFY(hint.height() > 0);
     QCOMPARE(hint.height(), 24);  // kHeight
@@ -333,10 +335,10 @@ void TestVideoTimeline::testSizeHint_ReturnsValid()
 
 void TestVideoTimeline::testMinimumSizeHint_ReturnsValid()
 {
-    QSize minHint = m_timeline->minimumSizeHint();
+    QSize minHint = testable()->minimumSizeHint();
     QVERIFY(minHint.width() > 0);
     QVERIFY(minHint.height() > 0);
-    QVERIFY(minHint.width() <= m_timeline->sizeHint().width());
+    QVERIFY(minHint.width() <= testable()->sizeHint().width());
 }
 
 // ============================================================================

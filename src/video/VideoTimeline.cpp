@@ -59,10 +59,10 @@ qint64 VideoTimeline::positionFromX(int x) const
     if (m_duration <= 0) return 0;
 
     QRect track = trackRect();
-    if (track.width() <= 0) return 0;  // Prevent division by zero
+    if (track.width() <= 1) return 0;  // Prevent division by zero
 
     int clampedX = qBound(track.left(), x, track.right());
-    double ratio = double(clampedX - track.left()) / track.width();
+    double ratio = double(clampedX - track.left()) / (track.width() - 1);
     return qint64(ratio * m_duration);
 }
 
