@@ -127,6 +127,43 @@ target_link_libraries(Settings_AnnotationSettingsManager PRIVATE snaptray_ui Qt6
 add_test(NAME Settings_AnnotationSettingsManager COMMAND Settings_AnnotationSettingsManager)
 set_tests_properties(Settings_AnnotationSettingsManager PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Settings_PinWindowSettingsManager Settings/tst_PinWindowSettingsManager.cpp)
+target_link_libraries(Settings_PinWindowSettingsManager PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME Settings_PinWindowSettingsManager COMMAND Settings_PinWindowSettingsManager)
+set_tests_properties(Settings_PinWindowSettingsManager PROPERTIES TIMEOUT 60 LABELS "unit")
+
+# ============================================================================
+# Annotations Tests (link snaptray_core for annotation classes)
+# ============================================================================
+
+add_executable(Annotations_PencilStroke Annotations/tst_PencilStroke.cpp)
+target_link_libraries(Annotations_PencilStroke PRIVATE snaptray_core Qt6::Widgets Qt6::Test)
+add_test(NAME Annotations_PencilStroke COMMAND Annotations_PencilStroke)
+set_tests_properties(Annotations_PencilStroke PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(Annotations_ShapeAnnotation Annotations/tst_ShapeAnnotation.cpp)
+target_link_libraries(Annotations_ShapeAnnotation PRIVATE snaptray_core Qt6::Widgets Qt6::Test)
+add_test(NAME Annotations_ShapeAnnotation COMMAND Annotations_ShapeAnnotation)
+set_tests_properties(Annotations_ShapeAnnotation PROPERTIES TIMEOUT 60 LABELS "unit")
+
+# ============================================================================
+# Tools Tests (link snaptray_ui for tool system)
+# ============================================================================
+
+add_executable(Tools_ToolRegistry Tools/tst_ToolRegistry.cpp)
+target_link_libraries(Tools_ToolRegistry PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME Tools_ToolRegistry COMMAND Tools_ToolRegistry)
+set_tests_properties(Tools_ToolRegistry PROPERTIES TIMEOUT 60 LABELS "unit")
+
+# ============================================================================
+# Video Tests (link snaptray_ui for video components)
+# ============================================================================
+
+add_executable(Video_VideoTimeline Video/tst_VideoTimeline.cpp)
+target_link_libraries(Video_VideoTimeline PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME Video_VideoTimeline COMMAND Video_VideoTimeline)
+set_tests_properties(Video_VideoTimeline PROPERTIES TIMEOUT 60 LABELS "unit")
+
 # ============================================================================
 # RecordingManager Tests
 # ============================================================================
