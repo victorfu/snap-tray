@@ -2,6 +2,7 @@
 #include "SettingsDialog.h"
 #include "CaptureManager.h"
 #include "PinWindowManager.h"
+#include "PinWindow.h"
 #include "ScreenCanvasManager.h"
 #include "RecordingManager.h"
 #include "PlatformFeatures.h"
@@ -24,9 +25,13 @@
 #include <QDebug>
 #include <QClipboard>
 #include <QMimeData>
+#include <QFileDialog>
+#include <QStandardPaths>
+#include <QFileInfo>
 #include <QPainter>
 #include <QFont>
 #include <QFontMetrics>
+#include <QtConcurrent>
 
 namespace {
 // Text pixmap rendering constants (for paste-as-text feature)
@@ -188,6 +193,9 @@ void MainApplication::initialize()
 
     m_trayMenu->addSeparator();
 
+    QAction* pinFromImageAction = m_trayMenu->addAction("Pin from Image...");
+    connect(pinFromImageAction, &QAction::triggered, this, &MainApplication::onPinFromImage);
+
     QAction* closeAllPinsAction = m_trayMenu->addAction("Close All Pins");
     connect(closeAllPinsAction, &QAction::triggered, this, &MainApplication::onCloseAllPins);
 
@@ -299,6 +307,91 @@ void MainApplication::onFullScreenRecording()
 void MainApplication::onCloseAllPins()
 {
     m_pinWindowManager->closeAllWindows();
+}
+
+void MainApplication::onPinFromImage()
+{
+    QString defaultDir = QStandardPaths::writableLocation(QStandardPaths::PicturesLocation);
+
+    QString filePath = QFileDialog::getOpenFileName(
+        nullptr,
+        tr("Select Image to Pin"),
+        defaultDir,
+        tr("Images (*.png *.jpg *.jpeg *.gif *.bmp *.webp *.tiff *.tif);;All Files (*)")
+    );
+
+    if (filePath.isEmpty()) {
+        return;
+    }
+
+    // Show loading toast
+    GlobalToast::instance().showToast(
+        GlobalToast::Info,
+        tr("Loading Image"),
+        QFileInfo(filePath).fileName()
+    );
+
+    // Load image asynchronously (QImage is thread-safe, QPixmap is not)
+    QPointer<MainApplication> guard(this);
+    (void)QtConcurrent::run([filePath, guard]() {
+        QImage image(filePath);
+
+        // Call back to UI thread
+        if (guard) {
+            QMetaObject::invokeMethod(guard, "onImageLoaded",
+                Qt::QueuedConnection,
+                Q_ARG(QString, filePath),
+                Q_ARG(QImage, image));
+        }
+    });
+}
+
+void MainApplication::onImageLoaded(const QString &filePath, const QImage &image)
+{
+    if (image.isNull()) {
+        QFileInfo fileInfo(filePath);
+        GlobalToast::instance().showToast(
+            GlobalToast::Error,
+            tr("Failed to Load Image"),
+            fileInfo.fileName()
+        );
+        return;
+    }
+
+    // Convert QImage to QPixmap (must be on UI thread)
+    QPixmap pixmap = QPixmap::fromImage(image);
+
+    // Get screen geometry
+    QScreen *screen = QGuiApplication::primaryScreen();
+    QRect screenGeometry = screen->availableGeometry();
+
+    // Calculate logical image size (HiDPI support)
+    QSize logicalSize = pixmap.size() / pixmap.devicePixelRatio();
+
+    // Calculate zoom level to fit screen (with margin)
+    constexpr qreal kScreenMargin = 0.9;
+    qreal zoomLevel = 1.0;
+
+    if (logicalSize.width() > screenGeometry.width() * kScreenMargin ||
+        logicalSize.height() > screenGeometry.height() * kScreenMargin) {
+        qreal scaleX = (screenGeometry.width() * kScreenMargin) / logicalSize.width();
+        qreal scaleY = (screenGeometry.height() * kScreenMargin) / logicalSize.height();
+        zoomLevel = qMin(scaleX, scaleY);
+        zoomLevel = qMax(zoomLevel, 0.1);
+    }
+
+    // Calculate display size and center position
+    QSize displaySize = logicalSize * zoomLevel;
+    QPoint position(
+        screenGeometry.center().x() - displaySize.width() / 2,
+        screenGeometry.center().y() - displaySize.height() / 2
+    );
+
+    // Create pin window and apply zoom if needed
+    PinWindow *pinWindow = m_pinWindowManager->createPinWindow(pixmap, position);
+    if (pinWindow && zoomLevel < 1.0) {
+        pinWindow->setZoomLevel(zoomLevel);
+    }
 }
 
 void MainApplication::onSettings()

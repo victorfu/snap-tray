@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QPointer>
 #include <QPixmap>
+#include <QImage>
 
 class QSystemTrayIcon;
 class QMenu;
@@ -36,6 +37,8 @@ private slots:
     void onPasteFromClipboard();
     void onFullScreenRecording();
     void onCloseAllPins();
+    void onPinFromImage();
+    void onImageLoaded(const QString &filePath, const QImage &image);
     void onSettings();
     void showRecordingPreview(const QString &videoPath);
     void onPreviewSaveRequested(const QString &videoPath);
