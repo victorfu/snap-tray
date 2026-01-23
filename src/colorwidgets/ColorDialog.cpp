@@ -159,16 +159,14 @@ void ColorDialog::setupUi()
 
     bottomLayout->addStretch();
 
-    // Buttons: Reset, OK, Apply, Cancel
+    // Buttons: Reset, OK, Cancel
     m_resetButton = new QPushButton(tr("Reset"), this);
     m_okButton = new QPushButton(tr("OK"), this);
     m_okButton->setDefault(true);
-    m_applyButton = new QPushButton(tr("Apply"), this);
     m_cancelButton = new QPushButton(tr("Cancel"), this);
 
     bottomLayout->addWidget(m_resetButton);
     bottomLayout->addWidget(m_okButton);
-    bottomLayout->addWidget(m_applyButton);
     bottomLayout->addWidget(m_cancelButton);
 
     mainLayout->addLayout(bottomLayout);
@@ -239,7 +237,6 @@ void ColorDialog::connectSignals()
     // Buttons
     connect(m_resetButton, &QPushButton::clicked, this, &ColorDialog::onResetClicked);
     connect(m_okButton, &QPushButton::clicked, this, &ColorDialog::onOkClicked);
-    connect(m_applyButton, &QPushButton::clicked, this, &ColorDialog::onApplyClicked);
     connect(m_cancelButton, &QPushButton::clicked, this, &ColorDialog::onCancelClicked);
 }
 
@@ -363,11 +360,6 @@ void ColorDialog::onRgbSpinChanged()
 void ColorDialog::onResetClicked()
 {
     setColor(m_originalColor);
-}
-
-void ColorDialog::onApplyClicked()
-{
-    emit colorApplied(m_color);
 }
 
 void ColorDialog::onOkClicked()
@@ -569,9 +561,6 @@ void ColorDialog::setShowButtons(bool show)
         }
         if (m_okButton) {
             m_okButton->setVisible(show);
-        }
-        if (m_applyButton) {
-            m_applyButton->setVisible(show);
         }
         if (m_cancelButton) {
             m_cancelButton->setVisible(show);

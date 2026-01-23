@@ -238,7 +238,6 @@ if (PlatformFeatures::instance().isOCRAvailable()) {
 | Video Playback | `MediaFoundationPlayer_win.cpp` | `AVFoundationPlayer_mac.mm` |
 | Window Detection | `WindowDetector_win.cpp` | `WindowDetector.mm` |
 | OCR | `OCRManager_win.cpp` | `OCRManager.mm` |
-| Color Picker | `ColorPickerDialog_win.cpp` | `ColorPickerDialog.mm` |
 | Mouse Tracking | `MouseClickTracker_win.cpp` | `MouseClickTracker_mac.mm` |
 | Window Level | `WindowLevel_win.cpp` | `WindowLevel_mac.mm` |
 | Platform Features | `PlatformFeatures_win.cpp` | `PlatformFeatures_mac.mm` |

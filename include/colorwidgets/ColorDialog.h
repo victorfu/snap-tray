@@ -42,7 +42,6 @@ public slots:
 signals:
     void colorChanged(const QColor& color);
     void colorSelected(const QColor& color);  // Emitted when OK is pressed
-    void colorApplied(const QColor& color);   // Emitted when Apply is pressed
 
 protected:
     void showEvent(QShowEvent* event) override;
@@ -63,7 +62,6 @@ private:
     void onHsvSpinChanged();
     void onRgbSpinChanged();
     void onResetClicked();
-    void onApplyClicked();
     void onOkClicked();
     void onCancelClicked();
     void updateSliderGradients();
@@ -96,7 +94,6 @@ private:
     // Buttons
     QPushButton* m_resetButton = nullptr;
     QPushButton* m_okButton = nullptr;
-    QPushButton* m_applyButton = nullptr;
     QPushButton* m_cancelButton = nullptr;
 
     // State

@@ -444,14 +444,12 @@ add_library(snaptray_platform STATIC
         src/AVFoundationEncoder.mm
         src/video/AVFoundationPlayer_mac.mm
         src/input/MouseClickTracker_mac.mm
-        src/ColorPickerDialog.mm
     >
     # macOS headers with Q_OBJECT
     $<$<PLATFORM_ID:Darwin>:
         include/AVFoundationEncoder.h
         include/capture/SCKCaptureEngine.h
         include/capture/CoreAudioCaptureEngine.h
-        include/ColorPickerDialog.h
         include/input/MouseClickTracker.h
     >
 
@@ -471,14 +469,12 @@ add_library(snaptray_platform STATIC
         src/MediaFoundationEncoder.cpp
         src/video/MediaFoundationPlayer_win.cpp
         src/input/MouseClickTracker_win.cpp
-        src/ColorPickerDialog_win.cpp
     >
     # Windows headers with Q_OBJECT
     $<$<PLATFORM_ID:Windows>:
         include/MediaFoundationEncoder.h
         include/capture/DXGICaptureEngine.h
         include/capture/WASAPIAudioCaptureEngine.h
-        include/ColorPickerDialog.h
         include/input/MouseClickTracker.h
     >
 )
