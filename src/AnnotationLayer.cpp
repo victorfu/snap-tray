@@ -365,3 +365,98 @@ void AnnotationLayer::drawCached(QPainter &painter, const QSize &canvasSize, qre
 
     painter.drawPixmap(0, 0, m_annotationCache);
 }
+
+void AnnotationLayer::markDirtyRect(const QRect& rect)
+{
+    if (m_hasDirtyRect) {
+        m_dirtyRect = m_dirtyRect.united(rect);
+    } else {
+        m_dirtyRect = rect;
+        m_hasDirtyRect = true;
+    }
+}
+
+void AnnotationLayer::clearDirtyRect()
+{
+    m_dirtyRect = QRect();
+    m_hasDirtyRect = false;
+}
+
+void AnnotationLayer::drawWithDirtyRegion(QPainter &painter, const QSize &canvasSize,
+                                          qreal devicePixelRatio, int excludeIndex) const
+{
+    if (m_items.empty()) return;
+
+    const QSize physicalSize = canvasSize * devicePixelRatio;
+
+    // Ensure cache exists (but don't rebuild if invalid - we'll handle dirty region separately)
+    if (m_annotationCache.isNull() || m_annotationCache.size() != physicalSize) {
+        // Need to build initial cache
+        m_annotationCache = QPixmap(physicalSize);
+        m_annotationCache.setDevicePixelRatio(devicePixelRatio);
+        m_annotationCache.fill(Qt::transparent);
+
+        QPainter cachePainter(&m_annotationCache);
+        cachePainter.setRenderHint(QPainter::Antialiasing);
+        cachePainter.setRenderHint(QPainter::SmoothPixmapTransform);
+
+        for (int i = 0; i < static_cast<int>(m_items.size()); ++i) {
+            if (i != excludeIndex && m_items[i]->isVisible()) {
+                m_items[i]->draw(cachePainter);
+            }
+        }
+        m_cacheValid = true;
+    }
+
+    // Draw the cached background (all items except the one being dragged)
+    painter.drawPixmap(0, 0, m_annotationCache);
+
+    // Draw the excluded item (being dragged) on top, directly to painter
+    if (excludeIndex >= 0 && excludeIndex < static_cast<int>(m_items.size())) {
+        if (m_items[excludeIndex]->isVisible()) {
+            m_items[excludeIndex]->draw(painter);
+        }
+    }
+}
+
+void AnnotationLayer::commitDirtyRegion(const QSize &canvasSize, qreal devicePixelRatio)
+{
+    if (!m_hasDirtyRect) return;
+
+    const QSize physicalSize = canvasSize * devicePixelRatio;
+
+    // Ensure cache exists
+    if (m_annotationCache.isNull() || m_annotationCache.size() != physicalSize) {
+        // Full rebuild needed
+        invalidateCache();
+        clearDirtyRect();
+        return;
+    }
+
+    // Expand dirty rect slightly for anti-aliasing edges
+    QRect expandedDirty = m_dirtyRect.adjusted(-2, -2, 2, 2);
+    expandedDirty = expandedDirty.intersected(QRect(QPoint(0, 0), canvasSize));
+
+    if (expandedDirty.isEmpty()) {
+        clearDirtyRect();
+        return;
+    }
+
+    // Clear the dirty region in cache
+    QPainter cachePainter(&m_annotationCache);
+    cachePainter.setRenderHint(QPainter::Antialiasing);
+    cachePainter.setRenderHint(QPainter::SmoothPixmapTransform);
+    cachePainter.setCompositionMode(QPainter::CompositionMode_Clear);
+    cachePainter.fillRect(expandedDirty, Qt::transparent);
+    cachePainter.setCompositionMode(QPainter::CompositionMode_SourceOver);
+
+    // Redraw only items that intersect with the dirty region
+    for (const auto &item : m_items) {
+        if (item->isVisible() && item->boundingRect().intersects(expandedDirty)) {
+            item->draw(cachePainter);
+        }
+    }
+
+    m_cacheValid = true;
+    clearDirtyRect();
+}

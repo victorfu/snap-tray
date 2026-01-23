@@ -526,13 +526,20 @@ void ScreenCanvas::paintEvent(QPaintEvent*)
 
 void ScreenCanvas::drawAnnotations(QPainter& painter)
 {
-    m_annotationLayer->drawCached(painter, size(), devicePixelRatioF());
-    
+    // Use dirty region optimization during drag operations
+    if (m_isArrowDragging || m_isPolylineDragging) {
+        // Draw cached content for non-dragged items, then draw dragged item on top
+        m_annotationLayer->drawWithDirtyRegion(painter, size(), devicePixelRatioF(),
+                                                m_annotationLayer->selectedIndex());
+    } else {
+        m_annotationLayer->drawCached(painter, size(), devicePixelRatioF());
+    }
+
     // Draw transformation gizmo for selected Arrow
     if (auto* arrowItem = getSelectedArrowAnnotation()) {
         TransformationGizmo::draw(painter, arrowItem);
     }
-    
+
     // Draw transformation gizmo for selected Polyline
     if (auto* polylineItem = getSelectedPolylineAnnotation()) {
         TransformationGizmo::draw(painter, polylineItem);
@@ -1223,6 +1230,9 @@ bool ScreenCanvas::handleArrowAnnotationMove(const QPoint& pos)
     if (m_isArrowDragging && m_annotationLayer->selectedIndex() >= 0) {
         auto* arrowItem = getSelectedArrowAnnotation();
         if (arrowItem) {
+            // Get old bounding rect before modification (with margin for gizmo handles)
+            QRect oldRect = arrowItem->boundingRect().adjusted(-20, -20, 20, 20);
+
             if (m_arrowDragHandle == GizmoHandle::Body) {
                 QPoint delta = pos - m_dragStartPos;
                 arrowItem->moveBy(delta);
@@ -1239,7 +1249,12 @@ bool ScreenCanvas::handleArrowAnnotationMove(const QPoint& pos)
                 QPointF newControl = 2.0 * QPointF(pos) - 0.5 * (start + end);
                 arrowItem->setControlPoint(newControl.toPoint());
             }
-            m_annotationLayer->invalidateCache();
+
+            // Get new bounding rect after modification
+            QRect newRect = arrowItem->boundingRect().adjusted(-20, -20, 20, 20);
+
+            // Mark dirty region instead of invalidating entire cache
+            m_annotationLayer->markDirtyRect(oldRect.united(newRect));
             update();
             return true;
         }
@@ -1251,6 +1266,9 @@ bool ScreenCanvas::handleArrowAnnotationRelease(const QPoint& pos)
 {
     Q_UNUSED(pos);
     if (m_isArrowDragging) {
+        // Commit dirty region changes to cache
+        m_annotationLayer->commitDirtyRegion(size(), devicePixelRatioF());
+
         m_isArrowDragging = false;
         m_arrowDragHandle = GizmoHandle::None;
         setToolCursor(); // Restore tool cursor
@@ -1318,22 +1336,26 @@ bool ScreenCanvas::handlePolylineAnnotationMove(const QPoint& pos)
     if (m_isPolylineDragging && m_annotationLayer->selectedIndex() >= 0) {
         auto* polylineItem = getSelectedPolylineAnnotation();
         if (polylineItem) {
-             if (m_activePolylineVertexIndex >= 0) {
-                 // Move specific vertex
-                 QPoint delta = pos - m_dragStartPos; // Actually, for vertex we set directly
-                 // Wait, setPoint is absolute.
-                 polylineItem->setPoint(m_activePolylineVertexIndex, pos);
-                 // Note: m_dragStartPos isn't strictly needed for vertex move if we use pos directly, 
-                 // but good for offsets if we wanted relative. setPoint(pos) is fine.
-             } else {
-                 // Move entire polyline
-                 QPoint delta = pos - m_dragStartPos;
-                 polylineItem->moveBy(delta);
-                 m_dragStartPos = pos;
-             }
-             m_annotationLayer->invalidateCache();
-             update();
-             return true;
+            // Get old bounding rect before modification (with margin for gizmo handles)
+            QRect oldRect = polylineItem->boundingRect().adjusted(-20, -20, 20, 20);
+
+            if (m_activePolylineVertexIndex >= 0) {
+                // Move specific vertex
+                polylineItem->setPoint(m_activePolylineVertexIndex, pos);
+            } else {
+                // Move entire polyline
+                QPoint delta = pos - m_dragStartPos;
+                polylineItem->moveBy(delta);
+                m_dragStartPos = pos;
+            }
+
+            // Get new bounding rect after modification
+            QRect newRect = polylineItem->boundingRect().adjusted(-20, -20, 20, 20);
+
+            // Mark dirty region instead of invalidating entire cache
+            m_annotationLayer->markDirtyRect(oldRect.united(newRect));
+            update();
+            return true;
         }
     }
     return false;
@@ -1343,6 +1365,9 @@ bool ScreenCanvas::handlePolylineAnnotationRelease(const QPoint& pos)
 {
     Q_UNUSED(pos);
     if (m_isPolylineDragging) {
+        // Commit dirty region changes to cache
+        m_annotationLayer->commitDirtyRegion(size(), devicePixelRatioF());
+
         m_isPolylineDragging = false;
         m_activePolylineVertexIndex = -1;
         setToolCursor();

@@ -62,6 +62,20 @@ public:
     void invalidateCache();
     void drawCached(QPainter &painter, const QSize &canvasSize, qreal devicePixelRatio = 1.0) const;
 
+    // Dirty region optimization for dragging operations
+    // Instead of invalidating the entire cache during drag, mark only affected regions
+    void markDirtyRect(const QRect& rect);
+    void clearDirtyRect();
+    bool hasDirtyRect() const { return m_hasDirtyRect; }
+
+    // Draw with dirty region optimization - used during drag operations
+    // Draws cached content for non-dirty areas, redraws only dirty region
+    void drawWithDirtyRegion(QPainter &painter, const QSize &canvasSize,
+                             qreal devicePixelRatio, int excludeIndex = -1) const;
+
+    // Commit dirty region changes to cache after drag completes
+    void commitDirtyRegion(const QSize &canvasSize, qreal devicePixelRatio);
+
 signals:
     void changed();
 
@@ -78,6 +92,10 @@ private:
     // Completed annotations cache for rendering optimization
     mutable QPixmap m_annotationCache;
     mutable bool m_cacheValid = false;
+
+    // Dirty region tracking for drag optimization
+    mutable QRect m_dirtyRect;
+    mutable bool m_hasDirtyRect = false;
 };
 
 #endif // ANNOTATIONLAYER_H
