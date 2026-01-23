@@ -23,7 +23,11 @@
 class QScreen;
 class AnnotationLayer;
 class ToolManager;
-class ColorPickerDialog;
+namespace snaptray {
+namespace colorwidgets {
+class ColorPickerDialogCompat;
+}
+}
 class EmojiPicker;
 class ToolOptionsPanel;
 class LaserPointerRenderer;
@@ -173,7 +177,7 @@ private:
     EmojiPicker *m_emojiPicker;
 
     // Color picker dialog
-    ColorPickerDialog *m_colorPickerDialog;
+    snaptray::colorwidgets::ColorPickerDialogCompat *m_colorPickerDialog;
 
     // Laser pointer renderer
     LaserPointerRenderer *m_laserRenderer;

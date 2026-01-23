@@ -4,7 +4,9 @@
 #include "cursor/CursorManager.h"
 #include "IconRenderer.h"
 #include "GlassRenderer.h"
-#include "ColorPickerDialog.h"
+#include "colorwidgets/ColorPickerDialogCompat.h"
+
+using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include "toolbar/ToolOptionsPanel.h"
 #include "EmojiPicker.h"
 #include "LaserPointerRenderer.h"
@@ -383,11 +385,11 @@ bool ScreenCanvas::shouldShowWidthControl() const
 void ScreenCanvas::onMoreColorsRequested()
 {
     if (!m_colorPickerDialog) {
-        m_colorPickerDialog = new ColorPickerDialog();
+        m_colorPickerDialog = new ColorPickerDialogCompat();
         connect(m_colorPickerDialog, &QObject::destroyed, this, [this]() {
             m_colorPickerDialog = nullptr;
         });
-        connect(m_colorPickerDialog, &ColorPickerDialog::colorSelected,
+        connect(m_colorPickerDialog, &ColorPickerDialogCompat::colorSelected,
             this, [this](const QColor& color) {
                 m_toolManager->setColor(color);
                 m_colorAndWidthWidget->setCurrentColor(color);

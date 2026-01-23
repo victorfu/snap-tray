@@ -315,6 +315,52 @@ target_compile_definitions(snaptray_core PRIVATE
 )
 
 # ----------------------------------------------------------------------------
+# snaptray_colorwidgets: Color picker widgets library
+# ----------------------------------------------------------------------------
+add_library(snaptray_colorwidgets STATIC
+    src/colorwidgets/ColorUtils.cpp
+    src/colorwidgets/ColorWheel.cpp
+    src/colorwidgets/GradientSlider.cpp
+    src/colorwidgets/HueSlider.cpp
+    src/colorwidgets/ColorPreview.cpp
+    src/colorwidgets/ColorLineEdit.cpp
+    src/colorwidgets/ColorDialog.cpp
+    src/colorwidgets/StyledColorDialog.cpp
+    src/colorwidgets/ColorPickerDialogCompat.cpp
+    # Headers with Q_OBJECT for MOC processing
+    include/colorwidgets/ColorWheel.h
+    include/colorwidgets/GradientSlider.h
+    include/colorwidgets/HueSlider.h
+    include/colorwidgets/ColorPreview.h
+    include/colorwidgets/ColorLineEdit.h
+    include/colorwidgets/ColorDialog.h
+    include/colorwidgets/StyledColorDialog.h
+    include/colorwidgets/ColorPickerDialogCompat.h
+)
+
+target_include_directories(snaptray_colorwidgets
+    PUBLIC
+        ${CMAKE_SOURCE_DIR}/include
+    PRIVATE
+        ${CMAKE_SOURCE_DIR}/src
+        ${CMAKE_BINARY_DIR}/generated
+        ${CMAKE_BINARY_DIR}
+)
+
+target_link_libraries(snaptray_colorwidgets
+    PUBLIC
+        Qt6::Core
+        Qt6::Gui
+        Qt6::Widgets
+    PRIVATE
+        snaptray_platform
+)
+
+target_compile_definitions(snaptray_colorwidgets PRIVATE
+    $<$<NOT:$<CONFIG:Debug>>:QT_NO_DEBUG_OUTPUT>
+)
+
+# ----------------------------------------------------------------------------
 # snaptray_algorithms: Detection algorithms (OpenCV dependency)
 # ----------------------------------------------------------------------------
 add_library(snaptray_algorithms STATIC
@@ -709,6 +755,7 @@ target_link_libraries(snaptray_ui
         snaptray_core
         snaptray_algorithms
         snaptray_platform
+        snaptray_colorwidgets
         Qt6::Widgets
         Qt6::Gui
         Qt6::Svg

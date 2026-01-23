@@ -11,7 +11,9 @@
 #include "ToolbarStyle.h"
 #include "IconRenderer.h"
 #include "toolbar/ToolOptionsPanel.h"
-#include "ColorPickerDialog.h"
+#include "colorwidgets/ColorPickerDialogCompat.h"
+
+using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include "EmojiPicker.h"
 #include "OCRManager.h"
 #include "QRCodeManager.h"
@@ -622,11 +624,11 @@ void RegionSelector::onColorSelected(const QColor& color)
 void RegionSelector::onMoreColorsRequested()
 {
     if (!m_colorPickerDialog) {
-        m_colorPickerDialog = new ColorPickerDialog();
+        m_colorPickerDialog = new ColorPickerDialogCompat();
         connect(m_colorPickerDialog, &QObject::destroyed, this, [this]() {
             m_colorPickerDialog = nullptr;
         });
-        connect(m_colorPickerDialog, &ColorPickerDialog::colorSelected,
+        connect(m_colorPickerDialog, &ColorPickerDialogCompat::colorSelected,
             this, [this](const QColor& color) {
                 syncColorToAllWidgets(color);
             });

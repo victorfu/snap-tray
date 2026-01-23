@@ -32,7 +32,9 @@
 #include "annotations/ArrowAnnotation.h"
 #include "annotations/PolylineAnnotation.h"
 #include "utils/CoordinateHelper.h"
-#include "ColorPickerDialog.h"
+#include "colorwidgets/ColorPickerDialogCompat.h"
+
+using snaptray::colorwidgets::ColorPickerDialogCompat;
 
 
 
@@ -2276,11 +2278,11 @@ void PinWindow::onAutoBlurRequested()
 void PinWindow::onMoreColorsRequested()
 {
     if (!m_colorPickerDialog) {
-        m_colorPickerDialog = new ColorPickerDialog();
+        m_colorPickerDialog = new ColorPickerDialogCompat();
         connect(m_colorPickerDialog, &QObject::destroyed, this, [this]() {
             m_colorPickerDialog = nullptr;
         });
-        connect(m_colorPickerDialog, &ColorPickerDialog::colorSelected,
+        connect(m_colorPickerDialog, &ColorPickerDialogCompat::colorSelected,
             this, [this](const QColor& color) {
                 onColorSelected(color);
                 m_subToolbar->colorAndWidthWidget()->setCurrentColor(color);

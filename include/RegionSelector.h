@@ -37,7 +37,12 @@
 class QScreen;
 class ToolOptionsPanel;
 class EmojiPicker;
-class ColorPickerDialog;
+
+namespace snaptray {
+namespace colorwidgets {
+class ColorPickerDialogCompat;
+}
+}
 class QCloseEvent;
 class OCRManager;
 class QRCodeManager;
@@ -272,7 +277,7 @@ private:
     TextAnnotationEditor *m_textAnnotationEditor;
 
     // Color picker dialog
-    ColorPickerDialog *m_colorPickerDialog;
+    snaptray::colorwidgets::ColorPickerDialogCompat *m_colorPickerDialog;
 
     // Startup protection - track window activation for robust deactivate handling
     int m_activationCount = 0;

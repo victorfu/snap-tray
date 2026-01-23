@@ -40,7 +40,12 @@ class AutoBlurManager;
 class TextBoxAnnotation;
 class ArrowAnnotation;
 class PolylineAnnotation;
-class ColorPickerDialog;
+
+namespace snaptray {
+namespace colorwidgets {
+class ColorPickerDialogCompat;
+}
+}
 
 class PinWindow : public QWidget
 {
@@ -304,7 +309,7 @@ private:
     AutoBlurManager* m_autoBlurManager = nullptr;
 
     // Color picker dialog
-    ColorPickerDialog* m_colorPickerDialog = nullptr;
+    snaptray::colorwidgets::ColorPickerDialogCompat* m_colorPickerDialog = nullptr;
 
     // Live capture mode
     QRect m_sourceRegion;
