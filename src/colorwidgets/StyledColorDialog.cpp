@@ -6,6 +6,7 @@
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPushButton>
+#include <QTimer>
 #include <QVBoxLayout>
 
 namespace snaptray {
@@ -152,6 +153,13 @@ void StyledColorDialog::showEvent(QShowEvent* event)
 
     // Set window level above RegionSelector/ScreenCanvas overlays
     raiseWindowAboveOverlays(this);
+
+#ifdef Q_OS_WIN
+    // On Windows, delay the raise call to ensure HWND is fully initialized
+    QTimer::singleShot(0, this, [this]() {
+        raiseWindowAboveOverlays(this);
+    });
+#endif
 }
 
 void StyledColorDialog::paintEvent(QPaintEvent* event)
