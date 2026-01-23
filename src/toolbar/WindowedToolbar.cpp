@@ -10,6 +10,7 @@
 #include <QScreen>
 #include <QGuiApplication>
 #include <QApplication>
+#include <QDialog>
 #include <QShowEvent>
 #include <QHideEvent>
 
@@ -470,6 +471,14 @@ bool WindowedToolbar::eventFilter(QObject *obj, QEvent *event)
         // Check if click is inside associated PinWindow
         if (m_associatedWindow && m_associatedWindow->frameGeometry().contains(globalPos)) {
             return QWidget::eventFilter(obj, event);
+        }
+
+        // Check if click is inside any visible dialog (e.g., color picker)
+        for (QWidget *widget : QApplication::topLevelWidgets()) {
+            if (qobject_cast<QDialog*>(widget) && widget->isVisible() &&
+                widget->frameGeometry().contains(globalPos)) {
+                return QWidget::eventFilter(obj, event);
+            }
         }
 
         // Click is outside - request close
