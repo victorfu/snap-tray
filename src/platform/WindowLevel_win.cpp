@@ -111,22 +111,8 @@ void forceNativeCrosshairCursor(QWidget *)
     // Windows doesn't have the Qt-OS cursor sync issue that macOS has
 }
 
-void raiseWindowAboveOverlays(QWidget *widget)
+void raiseWindowAboveOverlays(QWidget *)
 {
-#ifdef Q_OS_WIN
-    if (!widget) {
-        return;
-    }
-    HWND hwnd = reinterpret_cast<HWND>(widget->winId());
-    if (hwnd) {
-        // Force the window to the top of the Z-order, above other topmost windows
-        SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0,
-                     SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
-        // Bring window to foreground and give it focus
-        SetForegroundWindow(hwnd);
-        BringWindowToTop(hwnd);
-    }
-#else
-    Q_UNUSED(widget)
-#endif
+    // Windows doesn't need special handling when dialogs are properly managed
+    // (dialogs are destroyed on hide and recreated on show to avoid z-order corruption)
 }

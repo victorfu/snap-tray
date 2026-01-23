@@ -59,7 +59,13 @@ void ColorPickerDialogCompat::showEvent(QShowEvent* event)
 {
     QWidget::showEvent(event);
 
+    // Recreate dialog if it was destroyed (fixes Windows z-order corruption)
+    if (!m_dialog) {
+        setupInternalDialog();
+    }
+
     if (m_dialog) {
+        m_dialog->setColor(m_currentColor);  // Restore last color
         positionDialog();
         m_dialog->show();
         m_dialog->raise();
@@ -71,8 +77,10 @@ void ColorPickerDialogCompat::hideEvent(QHideEvent* event)
 {
     QWidget::hideEvent(event);
 
+    // Destroy dialog instead of hiding to avoid Windows HWND_TOPMOST z-order corruption
     if (m_dialog) {
-        m_dialog->hide();
+        m_dialog->deleteLater();
+        m_dialog = nullptr;
     }
 }
 
