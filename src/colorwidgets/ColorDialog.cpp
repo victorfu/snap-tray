@@ -2,7 +2,6 @@
 
 #include "colorwidgets/ColorLineEdit.h"
 #include "colorwidgets/ColorPreview.h"
-#include "colorwidgets/ColorUtils.h"
 #include "colorwidgets/ColorWheel.h"
 #include "colorwidgets/GradientSlider.h"
 
@@ -160,16 +159,14 @@ void ColorDialog::setupUi()
 
     bottomLayout->addStretch();
 
-    // Buttons: Reset, Pick, OK, Apply, Cancel
+    // Buttons: Reset, OK, Apply, Cancel
     m_resetButton = new QPushButton(tr("Reset"), this);
-    m_screenPickerButton = new QPushButton(tr("Pick"), this);
     m_okButton = new QPushButton(tr("OK"), this);
     m_okButton->setDefault(true);
     m_applyButton = new QPushButton(tr("Apply"), this);
     m_cancelButton = new QPushButton(tr("Cancel"), this);
 
     bottomLayout->addWidget(m_resetButton);
-    bottomLayout->addWidget(m_screenPickerButton);
     bottomLayout->addWidget(m_okButton);
     bottomLayout->addWidget(m_applyButton);
     bottomLayout->addWidget(m_cancelButton);
@@ -241,7 +238,6 @@ void ColorDialog::connectSignals()
 
     // Buttons
     connect(m_resetButton, &QPushButton::clicked, this, &ColorDialog::onResetClicked);
-    connect(m_screenPickerButton, &QPushButton::clicked, this, &ColorDialog::onScreenPickerClicked);
     connect(m_okButton, &QPushButton::clicked, this, &ColorDialog::onOkClicked);
     connect(m_applyButton, &QPushButton::clicked, this, &ColorDialog::onApplyClicked);
     connect(m_cancelButton, &QPushButton::clicked, this, &ColorDialog::onCancelClicked);
@@ -267,6 +263,8 @@ void ColorDialog::onAlphaChanged(int alpha)
 {
     if (m_updating)
         return;
+    if (!m_alphaSpin)
+        return;
 
     m_updating = true;
     m_color.setAlpha(alpha);
@@ -280,6 +278,8 @@ void ColorDialog::onAlphaChanged(int alpha)
 void ColorDialog::onHsvSliderChanged()
 {
     if (m_updating)
+        return;
+    if (!m_hueSlider || !m_satSlider || !m_valSlider || !m_wheel)
         return;
 
     m_updating = true;
@@ -298,6 +298,8 @@ void ColorDialog::onRgbSliderChanged()
 {
     if (m_updating)
         return;
+    if (!m_redSlider || !m_greenSlider || !m_blueSlider || !m_wheel)
+        return;
 
     m_updating = true;
     m_color.setRgb(m_redSlider->value(), m_greenSlider->value(), m_blueSlider->value(),
@@ -314,6 +316,9 @@ void ColorDialog::onRgbSliderChanged()
 void ColorDialog::onHsvSpinChanged()
 {
     if (m_updating)
+        return;
+    if (!m_hueSpin || !m_satSpin || !m_valSpin || !m_wheel ||
+        !m_redSpin || !m_greenSpin || !m_blueSpin)
         return;
 
     m_updating = true;
@@ -336,6 +341,9 @@ void ColorDialog::onRgbSpinChanged()
 {
     if (m_updating)
         return;
+    if (!m_redSpin || !m_greenSpin || !m_blueSpin || !m_wheel ||
+        !m_hueSpin || !m_satSpin || !m_valSpin)
+        return;
 
     m_updating = true;
     m_color.setRgb(m_redSpin->value(), m_greenSpin->value(), m_blueSpin->value(), m_color.alpha());
@@ -350,22 +358,6 @@ void ColorDialog::onRgbSpinChanged()
     m_valSpin->setValue(m_color.value());
     emit colorChanged(m_color);
     m_updating = false;
-}
-
-void ColorDialog::onHexEdited()
-{
-    // Handled by lambda in connectSignals
-}
-
-void ColorDialog::onScreenPickerClicked()
-{
-    hide();
-    QColor picked = ColorUtils::getScreenColor(this);
-    show();
-
-    if (picked.isValid()) {
-        setColor(picked);
-    }
 }
 
 void ColorDialog::onResetClicked()
@@ -392,6 +384,11 @@ void ColorDialog::onCancelClicked()
 
 void ColorDialog::updateSliders()
 {
+    if (!m_hueSlider || !m_satSlider || !m_valSlider ||
+        !m_redSlider || !m_greenSlider || !m_blueSlider || !m_alphaSlider) {
+        return;
+    }
+
     // Update HSV sliders
     int hue = m_color.hsvHue();
     if (hue < 0)
@@ -411,6 +408,11 @@ void ColorDialog::updateSliders()
 
 void ColorDialog::updateSliderGradients()
 {
+    if (!m_hueSlider || !m_satSlider || !m_valSlider ||
+        !m_redSlider || !m_greenSlider || !m_blueSlider || !m_alphaSlider) {
+        return;
+    }
+
     QGradientStops stops;
 
     // Hue slider: rainbow gradient
@@ -470,6 +472,11 @@ void ColorDialog::updateSliderGradients()
 
 void ColorDialog::updateSpinBoxes()
 {
+    if (!m_hueSpin || !m_satSpin || !m_valSpin ||
+        !m_redSpin || !m_greenSpin || !m_blueSpin || !m_alphaSpin) {
+        return;
+    }
+
     // HSV spinboxes
     int hue = m_color.hsvHue();
     if (hue < 0)
@@ -489,12 +496,18 @@ void ColorDialog::updateSpinBoxes()
 
 void ColorDialog::updateHexEdit()
 {
+    if (!m_hexEdit) {
+        return;
+    }
     m_hexEdit->setColor(m_color);
     m_hexEdit->setShowAlpha(m_showAlpha);
 }
 
 void ColorDialog::updatePreview()
 {
+    if (!m_preview) {
+        return;
+    }
     m_preview->setColor(m_color);
     m_preview->setComparisonColor(m_originalColor);
 }
@@ -510,7 +523,9 @@ void ColorDialog::setColor(const QColor& color)
     if (m_color != color) {
         m_updating = true;
         m_color = color;
-        m_wheel->setColor(color);
+        if (m_wheel) {
+            m_wheel->setColor(color);
+        }
         updateSliders();
         updateSliderGradients();
         updateSpinBoxes();
@@ -530,8 +545,12 @@ void ColorDialog::setShowAlpha(bool show)
 {
     if (m_showAlpha != show) {
         m_showAlpha = show;
-        m_alphaSlider->setVisible(show);
-        m_alphaSpin->setVisible(show);
+        if (m_alphaSlider) {
+            m_alphaSlider->setVisible(show);
+        }
+        if (m_alphaSpin) {
+            m_alphaSpin->setVisible(show);
+        }
         updateHexEdit();
     }
 }
@@ -545,11 +564,18 @@ void ColorDialog::setShowButtons(bool show)
 {
     if (m_showButtons != show) {
         m_showButtons = show;
-        m_resetButton->setVisible(show);
-        m_screenPickerButton->setVisible(show);
-        m_okButton->setVisible(show);
-        m_applyButton->setVisible(show);
-        m_cancelButton->setVisible(show);
+        if (m_resetButton) {
+            m_resetButton->setVisible(show);
+        }
+        if (m_okButton) {
+            m_okButton->setVisible(show);
+        }
+        if (m_applyButton) {
+            m_applyButton->setVisible(show);
+        }
+        if (m_cancelButton) {
+            m_cancelButton->setVisible(show);
+        }
     }
 }
 

@@ -4,6 +4,7 @@
 
 #include <QMouseEvent>
 #include <QPainter>
+#include <QPainterPath>
 #include <QStyleOptionSlider>
 
 namespace snaptray {
@@ -66,7 +67,11 @@ void GradientSlider::drawCheckerboard(QPainter& painter, const QRect& rect)
     static const QColor CHECKER_DARK(150, 150, 150);
 
     painter.save();
-    painter.setClipRect(rect);
+
+    // Use rounded rect clip path to match the groove shape
+    QPainterPath clipPath;
+    clipPath.addRoundedRect(rect, 4, 4);
+    painter.setClipPath(clipPath);
 
     for (int y = rect.top(); y < rect.bottom(); y += CHECKER_SIZE) {
         for (int x = rect.left(); x < rect.right(); x += CHECKER_SIZE) {

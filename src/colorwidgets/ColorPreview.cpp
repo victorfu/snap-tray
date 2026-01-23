@@ -4,6 +4,7 @@
 #include <QMimeData>
 #include <QMouseEvent>
 #include <QPainter>
+#include <QPainterPath>
 
 namespace snaptray {
 namespace colorwidgets {
@@ -29,39 +30,62 @@ void ColorPreview::paintEvent(QPaintEvent*)
 
     switch (m_displayMode) {
         case NoAlpha:
-            painter.fillRect(r, m_color.rgb());  // Ignore alpha
+            painter.setPen(Qt::NoPen);
+            painter.setBrush(m_color.rgb());
+            painter.drawRoundedRect(r, 4, 4);
             break;
 
-        case AllAlpha:
+        case AllAlpha: {
+            // Create rounded clip for checkerboard and color
+            QPainterPath clipPath;
+            clipPath.addRoundedRect(r, 4, 4);
+            painter.setClipPath(clipPath);
             drawCheckerboard(painter, r);
             painter.fillRect(r, m_color);
+            painter.setClipping(false);
             break;
+        }
 
         case SplitAlpha: {
             QRect left(r.left(), r.top(), r.width() / 2, r.height());
             QRect right(r.left() + r.width() / 2, r.top(), r.width() / 2, r.height());
 
+            QPainterPath clipPath;
+            clipPath.addRoundedRect(r, 4, 4);
+            painter.setClipPath(clipPath);
             painter.fillRect(left, m_color.rgb());  // Opaque
             drawCheckerboard(painter, right);
             painter.fillRect(right, m_color);  // With transparency
+            painter.setClipping(false);
             break;
         }
 
         case SplitColor: {
+            // Draw two halves with rounded corners on the outer edges
+            QPainterPath clipPath;
+            clipPath.addRoundedRect(r, 4, 4);
+            painter.setClipPath(clipPath);
+
             QRect left(r.left(), r.top(), r.width() / 2, r.height());
             QRect right(r.left() + r.width() / 2, r.top(), r.width() / 2, r.height());
 
             painter.fillRect(left, m_color);
             painter.fillRect(right, m_comparisonColor);
+            painter.setClipping(false);
             break;
         }
 
         case SplitColorReverse: {
+            QPainterPath clipPath;
+            clipPath.addRoundedRect(r, 4, 4);
+            painter.setClipPath(clipPath);
+
             QRect left(r.left(), r.top(), r.width() / 2, r.height());
             QRect right(r.left() + r.width() / 2, r.top(), r.width() / 2, r.height());
 
             painter.fillRect(left, m_comparisonColor);
             painter.fillRect(right, m_color);
+            painter.setClipping(false);
             break;
         }
     }
@@ -76,7 +100,11 @@ void ColorPreview::drawCheckerboard(QPainter& painter, const QRect& rect)
 {
     static const int SIZE = 8;
     painter.save();
-    painter.setClipRect(rect);
+
+    // Use rounded rect clip path to match the border shape
+    QPainterPath clipPath;
+    clipPath.addRoundedRect(rect, 4, 4);
+    painter.setClipPath(clipPath);
 
     for (int y = rect.top(); y < rect.bottom(); y += SIZE) {
         for (int x = rect.left(); x < rect.right(); x += SIZE) {

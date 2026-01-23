@@ -50,3 +50,5 @@ packaging/windows/version.nsh
 
 # clangd cache
 .cache
+
+example/

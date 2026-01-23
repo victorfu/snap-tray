@@ -2,6 +2,8 @@
 #define SNAPTRAY_COLOR_WHEEL_H
 
 #include <QImage>
+#include <QLineF>
+#include <QPixmap>
 #include <QWidget>
 
 namespace snaptray {
@@ -75,26 +77,29 @@ protected:
 private:
     enum DragMode { DragNone, DragHue, DragSquare };
 
+    // Rendering
     void renderWheel();
     void renderSquare();
     void renderTriangle();
 
-    QPointF hueIndicatorPos() const;
-    QPointF selectorIndicatorPos() const;
-
-    bool isInHueRing(const QPointF& pos) const;
-    bool isInSelector(const QPointF& pos) const;
-
-    void setColorFromPos(const QPointF& pos);
-    void setHueFromPos(const QPointF& pos);
-
     // Geometry calculations
-    QPointF wheelCenter() const;
     qreal outerRadius() const;
     qreal innerRadius() const;
-    qreal selectorRadius() const;
+    qreal squareSize() const;
+    qreal triangleHeight() const;
+    qreal triangleSide() const;
+    QSizeF selectorSize() const;
+    QPointF selectorImageOffset() const;
+    qreal selectorImageAngle() const;
 
-    // Triangle vertices
+    // Input handling
+    QLineF lineToPoint(const QPoint& p) const;
+
+    // Deprecated but kept for compatibility
+    QPointF wheelCenter() const;
+    qreal selectorRadius() const;
+    QPointF hueIndicatorPos() const;
+    QPointF selectorIndicatorPos() const;
     QPolygonF triangleVertices() const;
 
     // Data members
@@ -108,7 +113,7 @@ private:
 
     DragMode m_dragMode = DragNone;
 
-    QImage m_wheelImage;
+    QPixmap m_wheelImage;
     QImage m_selectorImage;
     bool m_wheelDirty = true;
     bool m_selectorDirty = true;

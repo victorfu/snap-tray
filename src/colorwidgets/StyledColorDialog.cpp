@@ -33,26 +33,30 @@ StyledColorDialog::~StyledColorDialog() = default;
 void StyledColorDialog::applySnapTrayStyle()
 {
     // Apply SnapTray dark theme
+    // Note: Use border-radius: 0 for widgets that don't clip properly
     setStyleSheet(R"(
         StyledColorDialog {
-            background-color: rgb(40, 40, 40);
-            border: 1px solid rgb(70, 70, 70);
-            border-radius: 8px;
+            background-color: transparent;
+        }
+        QWidget {
+            background-color: transparent;
         }
         QLabel {
             color: white;
             font-size: 12px;
+            background-color: transparent;
         }
         QSpinBox {
             background-color: rgb(55, 55, 55);
             border: 1px solid rgb(70, 70, 70);
-            border-radius: 4px;
+            border-radius: 0px;
             color: white;
             padding: 4px;
         }
         QSpinBox::up-button, QSpinBox::down-button {
             background-color: rgb(60, 60, 60);
             border: none;
+            width: 16px;
         }
         QSpinBox::up-button:hover, QSpinBox::down-button:hover {
             background-color: rgb(80, 80, 80);
@@ -60,14 +64,14 @@ void StyledColorDialog::applySnapTrayStyle()
         QLineEdit {
             background-color: rgb(55, 55, 55);
             border: 1px solid rgb(70, 70, 70);
-            border-radius: 4px;
+            border-radius: 0px;
             color: white;
             padding: 4px 8px;
         }
         QPushButton {
             background-color: rgb(60, 60, 60);
             border: 1px solid rgb(70, 70, 70);
-            border-radius: 4px;
+            border-radius: 0px;
             color: white;
             padding: 6px 16px;
             min-width: 60px;

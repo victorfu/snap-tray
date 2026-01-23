@@ -3,6 +3,7 @@
 #include "colorwidgets/ColorUtils.h"
 
 #include <QDrag>
+#include <QLineF>
 #include <QMimeData>
 #include <QMouseEvent>
 #include <QPainter>
@@ -105,18 +106,27 @@ void ColorWheel::paintEvent(QPaintEvent*)
 {
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
+    painter.translate(width() / 2.0, height() / 2.0);
 
-    QPointF center = wheelCenter();
-
-    // 1. Render wheel ring (if needs rebuild)
+    // 1. Render and draw wheel ring
     if (m_wheelDirty || m_wheelImage.isNull()) {
         renderWheel();
     }
+    qreal outer = outerRadius();
+    painter.drawPixmap(QRectF(-outer, -outer, outer * 2.0, outer * 2.0), m_wheelImage,
+                       m_wheelImage.rect());
 
-    // Draw wheel
-    painter.drawImage(QPointF(0, 0), m_wheelImage);
+    // 2. Draw hue indicator (line from inner to outer radius)
+    painter.setPen(QPen(Qt::black, 3));
+    painter.setBrush(Qt::NoBrush);
+    QLineF ray(0, 0, outer, 0);
+    ray.setAngle(m_hue);  // QLineF uses counter-clockwise from east
+    QPointF h1 = ray.p2();
+    ray.setLength(innerRadius());
+    QPointF h2 = ray.p2();
+    painter.drawLine(h1, h2);
 
-    // 2. Render selector
+    // 3. Render and draw selector
     if (m_selectorDirty || m_selectorImage.isNull()) {
         if (m_shape == ShapeSquare) {
             renderSquare();
@@ -125,76 +135,90 @@ void ColorWheel::paintEvent(QPaintEvent*)
         }
     }
 
-    // Draw selector
-    if (m_shape == ShapeTriangle && m_rotating) {
-        // Rotate triangle
-        painter.save();
-        painter.translate(center);
-        painter.rotate(m_hue);
-        painter.translate(-center);
-        painter.drawImage(QPointF(0, 0), m_selectorImage);
-        painter.restore();
+    // Apply rotation for selector
+    if (m_rotating) {
+        painter.rotate(selectorImageAngle());
+    }
+    painter.translate(selectorImageOffset());
+
+    // Draw selector with clipping for triangle
+    QPointF selectorPosition;
+    if (m_shape == ShapeSquare) {
+        qreal side = squareSize();
+        selectorPosition = QPointF((m_saturation / 255.0) * side, (m_value / 255.0) * side);
     } else {
-        painter.drawImage(QPointF(0, 0), m_selectorImage);
+        qreal side = triangleSide();
+        qreal height = triangleHeight();
+        qreal val = m_value / 255.0;
+        qreal sat = m_saturation / 255.0;
+        qreal sliceH = side * val;
+        qreal ymin = side / 2 - sliceH / 2;
+
+        selectorPosition = QPointF(val * height, ymin + sat * sliceH);
+
+        // Clip to triangle
+        QPolygonF triangle;
+        triangle.append(QPointF(0, side / 2));
+        triangle.append(QPointF(height, 0));
+        triangle.append(QPointF(height, side));
+        QPainterPath clip;
+        clip.addPolygon(triangle);
+        painter.setClipPath(clip);
     }
 
-    // 3. Draw hue indicator (small circle on wheel)
-    QPointF huePos = hueIndicatorPos();
-    painter.setPen(QPen(Qt::white, 2));
-    painter.setBrush(Qt::NoBrush);
-    painter.drawEllipse(huePos, 6, 6);
-    painter.setPen(QPen(Qt::black, 1));
-    painter.drawEllipse(huePos, 7, 7);
+    painter.drawImage(QRectF(QPointF(0, 0), selectorSize()), m_selectorImage);
+    painter.setClipping(false);
 
-    // 4. Draw selector indicator (small circle on inner selector)
-    QPointF selPos = selectorIndicatorPos();
-    QColor indicatorColor = (ColorUtils::colorLumaF(color()) > 0.5) ? Qt::black : Qt::white;
-    painter.setPen(QPen(indicatorColor, 2));
-    painter.drawEllipse(selPos, 5, 5);
+    // 4. Draw selector indicator
+    QColor indicatorColor = (m_value < 166 || m_saturation > 110) ? Qt::white : Qt::black;
+    painter.setPen(QPen(indicatorColor, 3));
+    painter.setBrush(Qt::NoBrush);
+    painter.drawEllipse(selectorPosition, 6, 6);
 }
 
 void ColorWheel::renderWheel()
 {
     qreal dpr = devicePixelRatioF();
-    int size = qMin(width(), height());
+    qreal outer = outerRadius();
+    int size = qRound(outer * 2 * dpr);
 
-    m_wheelImage = QImage(QSize(size, size) * dpr, QImage::Format_ARGB32_Premultiplied);
+    m_wheelImage = QPixmap(size, size);
     m_wheelImage.setDevicePixelRatio(dpr);
     m_wheelImage.fill(Qt::transparent);
 
-    QPainter p(&m_wheelImage);
-    p.setRenderHint(QPainter::Antialiasing);
+    QPainter painter(&m_wheelImage);
+    painter.setRenderHint(QPainter::Antialiasing);
+    painter.translate(outer, outer);
 
-    QPointF center = wheelCenter();
-    qreal outer = outerRadius();
-    qreal inner = innerRadius();
-
-    // Draw wheel ring (using conical gradient)
-    QConicalGradient gradient(center, 0);
-    for (int i = 0; i <= 360; i += 1) {
+    // Hue gradient
+    QConicalGradient gradient(0, 0, 0);
+    const int hueStops = 24;
+    for (int i = 0; i < hueStops; ++i) {
+        double a = double(i) / (hueStops - 1);
         QColor c;
         switch (m_colorSpace) {
             case ColorHSV:
-                c = QColor::fromHsv(i % 360, 255, 255);
+                c = QColor::fromHsv(qRound(a * 359), 255, 255);
                 break;
             case ColorHSL:
-                c = QColor::fromHsl(i % 360, 255, 128);
+                c = QColor::fromHsl(qRound(a * 359), 255, 128);
                 break;
             case ColorLCH:
-                c = ColorUtils::fromLch(65, 100, i % 360);  // Fixed L=65, C=100
+                c = ColorUtils::fromLch(65, 100, qRound(a * 359));
                 break;
         }
-        gradient.setColorAt(i / 360.0, c);
+        gradient.setColorAt(a, c);
     }
+    gradient.setColorAt(1.0, QColor::fromHsv(0, 255, 255));
 
-    p.setPen(Qt::NoPen);
-    p.setBrush(gradient);
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(gradient);
+    painter.drawEllipse(QPointF(0, 0), outer, outer);
 
-    // Draw ring
-    QPainterPath path;
-    path.addEllipse(center, outer, outer);
-    path.addEllipse(center, inner, inner);
-    p.drawPath(path);
+    // Cut out inner circle
+    painter.setBrush(Qt::transparent);
+    painter.setCompositionMode(QPainter::CompositionMode_Clear);
+    painter.drawEllipse(QPointF(0, 0), innerRadius(), innerRadius());
 
     m_wheelDirty = false;
 }
@@ -202,47 +226,32 @@ void ColorWheel::renderWheel()
 void ColorWheel::renderSquare()
 {
     qreal dpr = devicePixelRatioF();
-    int size = qMin(width(), height());
+    int size = qRound(squareSize() * dpr);
+    size = qMin(size, 128);
 
-    m_selectorImage = QImage(QSize(size, size) * dpr, QImage::Format_ARGB32_Premultiplied);
+    m_selectorImage = QImage(size, size, QImage::Format_RGB32);
     m_selectorImage.setDevicePixelRatio(dpr);
-    m_selectorImage.fill(Qt::transparent);
 
-    QPointF center = wheelCenter();
-    qreal selRadius = selectorRadius();
-
-    // Square's top-left and size
-    qreal side = selRadius * std::sqrt(2);
-    QRectF squareRect(center.x() - side / 2, center.y() - side / 2, side, side);
-
-    // Create S-V gradient image
-    int sqSize = qRound(side * dpr);
-    QImage sqImage(sqSize, sqSize, QImage::Format_ARGB32);
-
-    for (int y = 0; y < sqSize; ++y) {
-        int v = 255 - y * 255 / (sqSize - 1);  // Top to bottom: 255 → 0
-        QRgb* line = reinterpret_cast<QRgb*>(sqImage.scanLine(y));
-        for (int x = 0; x < sqSize; ++x) {
-            int s = x * 255 / (sqSize - 1);  // Left to right: 0 → 255
+    for (int y = 0; y < size; ++y) {
+        QRgb* line = reinterpret_cast<QRgb*>(m_selectorImage.scanLine(y));
+        for (int x = 0; x < size; ++x) {
+            qreal sat = double(x) / size;
+            qreal val = double(y) / size;
             QColor c;
             switch (m_colorSpace) {
                 case ColorHSV:
-                    c = QColor::fromHsv(m_hue, s, v);
+                    c = QColor::fromHsvF(m_hue / 359.0, sat, val);
                     break;
                 case ColorHSL:
-                    c = QColor::fromHsl(m_hue, s, v);
+                    c = QColor::fromHslF(m_hue / 359.0, sat, val);
                     break;
                 case ColorLCH:
-                    c = ColorUtils::fromLch(v * 100.0 / 255.0, s * 150.0 / 255.0, m_hue);
+                    c = ColorUtils::fromLch(val * 100, sat * 150, m_hue);
                     break;
             }
-            line[x] = c.rgba();
+            line[x] = c.rgb();
         }
     }
-
-    QPainter p(&m_selectorImage);
-    p.setRenderHint(QPainter::SmoothPixmapTransform);
-    p.drawImage(squareRect, sqImage);
 
     m_selectorDirty = false;
 }
@@ -250,78 +259,99 @@ void ColorWheel::renderSquare()
 void ColorWheel::renderTriangle()
 {
     qreal dpr = devicePixelRatioF();
-    int size = qMin(width(), height());
+    QSizeF size = selectorSize();
+    if (size.height() > 128) {
+        size *= 128.0 / size.height();
+    }
+    size *= dpr;
 
-    m_selectorImage = QImage(QSize(size, size) * dpr, QImage::Format_ARGB32_Premultiplied);
+    qreal ycenter = size.height() / 2;
+    QSize isize = size.toSize();
+
+    m_selectorImage = QImage(isize, QImage::Format_RGB32);
     m_selectorImage.setDevicePixelRatio(dpr);
-    m_selectorImage.fill(Qt::transparent);
 
-    QPointF center = wheelCenter();
-    qreal radius = selectorRadius();
-
-    // Triangle vertices (pointing right, will be rotated based on hue)
-    // Vertex A: Pure color (S=255, V=255)
-    // Vertex B: White (S=0, V=255)
-    // Vertex C: Black (S=0, V=0)
-    qreal angle = m_rotating ? 0 : (m_hue * M_PI / 180.0);
-
-    QPointF pA(center.x() + radius * std::cos(angle), center.y() + radius * std::sin(angle));
-    QPointF pB(center.x() + radius * std::cos(angle + 2 * M_PI / 3),
-               center.y() + radius * std::sin(angle + 2 * M_PI / 3));
-    QPointF pC(center.x() + radius * std::cos(angle + 4 * M_PI / 3),
-               center.y() + radius * std::sin(angle + 4 * M_PI / 3));
-
-    // Calculate triangle's bounding box
-    qreal minX = std::min({pA.x(), pB.x(), pC.x()});
-    qreal maxX = std::max({pA.x(), pB.x(), pC.x()});
-    qreal minY = std::min({pA.y(), pB.y(), pC.y()});
-    qreal maxY = std::max({pA.y(), pB.y(), pC.y()});
-
-    // Calculate color for each pixel
-    QPainter p(&m_selectorImage);
-    p.setRenderHint(QPainter::Antialiasing);
-
-    for (int y = qFloor(minY * dpr); y <= qCeil(maxY * dpr); ++y) {
-        for (int x = qFloor(minX * dpr); x <= qCeil(maxX * dpr); ++x) {
-            QPointF pt(x / dpr, y / dpr);
-
-            // Calculate barycentric coordinates
-            qreal denom =
-                (pB.y() - pC.y()) * (pA.x() - pC.x()) + (pC.x() - pB.x()) * (pA.y() - pC.y());
-            qreal wA =
-                ((pB.y() - pC.y()) * (pt.x() - pC.x()) + (pC.x() - pB.x()) * (pt.y() - pC.y())) /
-                denom;
-            qreal wB =
-                ((pC.y() - pA.y()) * (pt.x() - pC.x()) + (pA.x() - pC.x()) * (pt.y() - pC.y())) /
-                denom;
-            qreal wC = 1 - wA - wB;
-
-            // Check if inside triangle
-            if (wA >= 0 && wB >= 0 && wC >= 0) {
-                // A: S=255, V=255; B: S=0, V=255; C: S=0, V=0
-                int s = qRound(wA * 255);
-                int v = qRound((wA + wB) * 255);
-
-                QColor c;
-                switch (m_colorSpace) {
-                    case ColorHSV:
-                        c = QColor::fromHsv(m_hue, s, v);
-                        break;
-                    case ColorHSL:
-                        c = QColor::fromHsl(m_hue, s, v);
-                        break;
-                    case ColorLCH:
-                        c = ColorUtils::fromLch(v * 100.0 / 255.0, s * 150.0 / 255.0, m_hue);
-                        break;
-                }
-
-                p.setPen(c);
-                p.drawPoint(pt);
+    for (int x = 0; x < isize.width(); ++x) {
+        qreal pval = double(x) / size.height();
+        qreal sliceH = size.height() * pval;
+        for (int y = 0; y < isize.height(); ++y) {
+            qreal ymin = ycenter - sliceH / 2;
+            qreal psat = qBound(0.0, (y - ymin) / sliceH, 1.0);
+            QColor c;
+            switch (m_colorSpace) {
+                case ColorHSV:
+                    c = QColor::fromHsvF(m_hue / 359.0, psat, pval);
+                    break;
+                case ColorHSL:
+                    c = QColor::fromHslF(m_hue / 359.0, psat, pval);
+                    break;
+                case ColorLCH:
+                    c = ColorUtils::fromLch(pval * 100, psat * 150, m_hue);
+                    break;
             }
+            m_selectorImage.setPixel(x, y, c.rgb());
         }
     }
 
     m_selectorDirty = false;
+}
+
+// ========== Geometry ==========
+
+qreal ColorWheel::outerRadius() const
+{
+    return qMin(width(), height()) / 2.0;
+}
+
+qreal ColorWheel::innerRadius() const
+{
+    return outerRadius() - WHEEL_THICKNESS;
+}
+
+qreal ColorWheel::squareSize() const
+{
+    return innerRadius() * std::sqrt(2.0);
+}
+
+qreal ColorWheel::triangleHeight() const
+{
+    return innerRadius() * 3.0 / 2.0;
+}
+
+qreal ColorWheel::triangleSide() const
+{
+    return innerRadius() * std::sqrt(3.0);
+}
+
+QSizeF ColorWheel::selectorSize() const
+{
+    if (m_shape == ShapeTriangle) {
+        return QSizeF(triangleHeight(), triangleSide());
+    }
+    return QSizeF(squareSize(), squareSize());
+}
+
+QPointF ColorWheel::selectorImageOffset() const
+{
+    if (m_shape == ShapeTriangle) {
+        return QPointF(-innerRadius(), -triangleSide() / 2);
+    }
+    return QPointF(-squareSize() / 2, -squareSize() / 2);
+}
+
+qreal ColorWheel::selectorImageAngle() const
+{
+    if (m_shape == ShapeTriangle) {
+        if (m_rotating) {
+            return -m_hue - 60;
+        }
+        return -150;
+    } else {
+        if (m_rotating) {
+            return -m_hue - 45;
+        }
+        return 180;
+    }
 }
 
 // ========== Mouse Interaction ==========
@@ -331,30 +361,55 @@ void ColorWheel::mousePressEvent(QMouseEvent* event)
     if (event->button() != Qt::LeftButton)
         return;
 
-    QPointF pos = event->position();
-
-    if (isInHueRing(pos)) {
-        m_dragMode = DragHue;
-        setHueFromPos(pos);
-    } else if (isInSelector(pos)) {
+    QLineF ray = lineToPoint(event->pos());
+    if (ray.length() <= innerRadius()) {
         m_dragMode = DragSquare;
-        setColorFromPos(pos);
+    } else if (ray.length() <= outerRadius()) {
+        m_dragMode = DragHue;
     }
+
+    mouseMoveEvent(event);
 }
 
 void ColorWheel::mouseMoveEvent(QMouseEvent* event)
 {
-    QPointF pos = event->position();
+    if (m_dragMode == DragHue) {
+        QLineF ray = lineToPoint(event->pos());
+        int h = qRound(ray.angle());
+        if (h < 0)
+            h += 360;
+        if (h >= 360)
+            h -= 360;
+        setHue(h);
+    } else if (m_dragMode == DragSquare) {
+        QLineF globMouseLn = lineToPoint(event->pos());
+        QLineF centerMouseLn(QPointF(0, 0),
+                             QPointF(globMouseLn.x2() - globMouseLn.x1(),
+                                     globMouseLn.y2() - globMouseLn.y1()));
 
-    switch (m_dragMode) {
-        case DragHue:
-            setHueFromPos(pos);
-            break;
-        case DragSquare:
-            setColorFromPos(pos);
-            break;
-        default:
-            break;
+        centerMouseLn.setAngle(centerMouseLn.angle() + selectorImageAngle());
+        centerMouseLn.setP2(centerMouseLn.p2() - selectorImageOffset());
+
+        if (m_shape == ShapeSquare) {
+            qreal side = squareSize();
+            int s = qRound(qBound(0.0, centerMouseLn.x2() / side, 1.0) * 255);
+            int v = qRound(qBound(0.0, centerMouseLn.y2() / side, 1.0) * 255);
+            setSaturation(s);
+            setValue(v);
+        } else {
+            QPointF pt = centerMouseLn.p2();
+            qreal side = triangleSide();
+            qreal val = qBound(0.0, pt.x() / triangleHeight(), 1.0);
+            qreal sliceH = side * val;
+            qreal ycenter = side / 2;
+            qreal ymin = ycenter - sliceH / 2;
+            qreal sat = 0;
+            if (sliceH > 0) {
+                sat = qBound(0.0, (pt.y() - ymin) / sliceH, 1.0);
+            }
+            setSaturation(qRound(sat * 255));
+            setValue(qRound(val * 255));
+        }
     }
 }
 
@@ -366,202 +421,9 @@ void ColorWheel::mouseReleaseEvent(QMouseEvent*)
     }
 }
 
-bool ColorWheel::isInHueRing(const QPointF& pos) const
+QLineF ColorWheel::lineToPoint(const QPoint& p) const
 {
-    QPointF center = wheelCenter();
-    qreal dist = std::hypot(pos.x() - center.x(), pos.y() - center.y());
-    return dist >= innerRadius() && dist <= outerRadius();
-}
-
-bool ColorWheel::isInSelector(const QPointF& pos) const
-{
-    QPointF center = wheelCenter();
-    qreal dist = std::hypot(pos.x() - center.x(), pos.y() - center.y());
-    return dist < innerRadius() - SELECTOR_MARGIN;
-}
-
-void ColorWheel::setHueFromPos(const QPointF& pos)
-{
-    QPointF center = wheelCenter();
-    qreal angle = std::atan2(pos.y() - center.y(), pos.x() - center.x());
-    int h = qRound(angle * 180.0 / M_PI);
-    if (h < 0)
-        h += 360;
-
-    setHue(h);
-}
-
-void ColorWheel::setColorFromPos(const QPointF& pos)
-{
-    QPointF center = wheelCenter();
-    qreal radius = selectorRadius();
-
-    if (m_shape == ShapeSquare) {
-        qreal side = radius * std::sqrt(2);
-        qreal left = center.x() - side / 2;
-        qreal top = center.y() - side / 2;
-
-        qreal x = qBound(0.0, (pos.x() - left) / side, 1.0);
-        qreal y = qBound(0.0, (pos.y() - top) / side, 1.0);
-
-        int s = qRound(x * 255);
-        int v = qRound((1 - y) * 255);
-
-        setSaturation(s);
-        setValue(v);
-    } else {
-        // Triangle selector - calculate barycentric coordinates
-        qreal angle = m_rotating ? 0 : (m_hue * M_PI / 180.0);
-
-        QPointF pA(center.x() + radius * std::cos(angle), center.y() + radius * std::sin(angle));
-        QPointF pB(center.x() + radius * std::cos(angle + 2 * M_PI / 3),
-                   center.y() + radius * std::sin(angle + 2 * M_PI / 3));
-        QPointF pC(center.x() + radius * std::cos(angle + 4 * M_PI / 3),
-                   center.y() + radius * std::sin(angle + 4 * M_PI / 3));
-
-        // For rotating triangle, we need to account for rotation
-        QPointF adjustedPos = pos;
-        if (m_rotating) {
-            // Rotate the position backwards by hue degrees
-            qreal hueRad = -m_hue * M_PI / 180.0;
-            qreal dx = pos.x() - center.x();
-            qreal dy = pos.y() - center.y();
-            adjustedPos = QPointF(center.x() + dx * std::cos(hueRad) - dy * std::sin(hueRad),
-                                  center.y() + dx * std::sin(hueRad) + dy * std::cos(hueRad));
-        }
-
-        // Calculate barycentric coordinates
-        qreal denom =
-            (pB.y() - pC.y()) * (pA.x() - pC.x()) + (pC.x() - pB.x()) * (pA.y() - pC.y());
-
-        if (qAbs(denom) < 0.001)
-            return;  // Avoid division by zero
-
-        qreal wA = ((pB.y() - pC.y()) * (adjustedPos.x() - pC.x()) +
-                    (pC.x() - pB.x()) * (adjustedPos.y() - pC.y())) /
-                   denom;
-        qreal wB = ((pC.y() - pA.y()) * (adjustedPos.x() - pC.x()) +
-                    (pA.x() - pC.x()) * (adjustedPos.y() - pC.y())) /
-                   denom;
-        qreal wC = 1 - wA - wB;
-
-        // Constrain to triangle
-        wA = qBound(0.0, wA, 1.0);
-        wB = qBound(0.0, wB, 1.0);
-        wC = qBound(0.0, wC, 1.0);
-
-        // Renormalize
-        qreal sum = wA + wB + wC;
-        if (sum > 0) {
-            wA /= sum;
-            wB /= sum;
-            wC /= sum;
-        }
-
-        // Calculate S, V from barycentric coordinates
-        // V = wA + wB (non-black weight)
-        // S = wA / V (pure color ratio in non-black)
-        qreal v = wA + wB;
-        qreal s = (v > 0.001) ? wA / v : 0;
-
-        setSaturation(qRound(s * 255));
-        setValue(qRound(v * 255));
-    }
-}
-
-// ========== Geometry Calculations ==========
-
-QPointF ColorWheel::wheelCenter() const
-{
-    return QPointF(width() / 2.0, height() / 2.0);
-}
-
-qreal ColorWheel::outerRadius() const
-{
-    return qMin(width(), height()) / 2.0 - 2;
-}
-
-qreal ColorWheel::innerRadius() const
-{
-    return outerRadius() - WHEEL_THICKNESS;
-}
-
-qreal ColorWheel::selectorRadius() const
-{
-    return innerRadius() - SELECTOR_MARGIN;
-}
-
-QPointF ColorWheel::hueIndicatorPos() const
-{
-    QPointF center = wheelCenter();
-    qreal r = (outerRadius() + innerRadius()) / 2;
-    qreal angle = m_hue * M_PI / 180.0;
-    return QPointF(center.x() + r * std::cos(angle), center.y() + r * std::sin(angle));
-}
-
-QPointF ColorWheel::selectorIndicatorPos() const
-{
-    QPointF center = wheelCenter();
-    qreal radius = selectorRadius();
-
-    if (m_shape == ShapeSquare) {
-        qreal side = radius * std::sqrt(2);
-        qreal left = center.x() - side / 2;
-        qreal top = center.y() - side / 2;
-
-        qreal x = left + m_saturation / 255.0 * side;
-        qreal y = top + (1 - m_value / 255.0) * side;
-
-        return QPointF(x, y);
-    } else {
-        // Triangle selector
-        // Triangle vertices: A=pure color, B=white, C=black
-        qreal angle = m_rotating ? 0 : (m_hue * M_PI / 180.0);
-
-        QPointF pA(center.x() + radius * std::cos(angle), center.y() + radius * std::sin(angle));
-        QPointF pB(center.x() + radius * std::cos(angle + 2 * M_PI / 3),
-                   center.y() + radius * std::sin(angle + 2 * M_PI / 3));
-        QPointF pC(center.x() + radius * std::cos(angle + 4 * M_PI / 3),
-                   center.y() + radius * std::sin(angle + 4 * M_PI / 3));
-
-        // Calculate barycentric coordinates from S, V
-        qreal s = m_saturation / 255.0;
-        qreal v = m_value / 255.0;
-
-        qreal wA = s * v;
-        qreal wB = (1 - s) * v;
-        qreal wC = 1 - v;
-
-        QPointF result(wA * pA.x() + wB * pB.x() + wC * pC.x(),
-                       wA * pA.y() + wB * pB.y() + wC * pC.y());
-
-        // For rotating triangle, rotate the result
-        if (m_rotating) {
-            qreal hueRad = m_hue * M_PI / 180.0;
-            qreal dx = result.x() - center.x();
-            qreal dy = result.y() - center.y();
-            result = QPointF(center.x() + dx * std::cos(hueRad) - dy * std::sin(hueRad),
-                             center.y() + dx * std::sin(hueRad) + dy * std::cos(hueRad));
-        }
-
-        return result;
-    }
-}
-
-QPolygonF ColorWheel::triangleVertices() const
-{
-    QPointF center = wheelCenter();
-    qreal radius = selectorRadius();
-    qreal angle = m_rotating ? 0 : (m_hue * M_PI / 180.0);
-
-    QPolygonF vertices;
-    vertices << QPointF(center.x() + radius * std::cos(angle),
-                        center.y() + radius * std::sin(angle));
-    vertices << QPointF(center.x() + radius * std::cos(angle + 2 * M_PI / 3),
-                        center.y() + radius * std::sin(angle + 2 * M_PI / 3));
-    vertices << QPointF(center.x() + radius * std::cos(angle + 4 * M_PI / 3),
-                        center.y() + radius * std::sin(angle + 4 * M_PI / 3));
-    return vertices;
+    return QLineF(width() / 2.0, height() / 2.0, p.x(), p.y());
 }
 
 // ========== Getter/Setter Methods ==========
@@ -682,6 +544,39 @@ void ColorWheel::dropEvent(QDropEvent* event)
         emit colorSelected(c);
         event->acceptProposedAction();
     }
+}
+
+// ========== Deprecated methods kept for compatibility ==========
+
+QPointF ColorWheel::wheelCenter() const
+{
+    return QPointF(width() / 2.0, height() / 2.0);
+}
+
+qreal ColorWheel::selectorRadius() const
+{
+    return innerRadius() - SELECTOR_MARGIN;
+}
+
+QPointF ColorWheel::hueIndicatorPos() const
+{
+    QPointF center = wheelCenter();
+    qreal r = (outerRadius() + innerRadius()) / 2;
+    QLineF ray(0, 0, r, 0);
+    ray.setAngle(m_hue);
+    return center + ray.p2();
+}
+
+QPointF ColorWheel::selectorIndicatorPos() const
+{
+    // This is now handled internally in paintEvent
+    return QPointF();
+}
+
+QPolygonF ColorWheel::triangleVertices() const
+{
+    // This is now handled internally in paintEvent
+    return QPolygonF();
 }
 
 }  // namespace colorwidgets

@@ -62,8 +62,6 @@ private:
     void onRgbSliderChanged();
     void onHsvSpinChanged();
     void onRgbSpinChanged();
-    void onHexEdited();
-    void onScreenPickerClicked();
     void onResetClicked();
     void onApplyClicked();
     void onOkClicked();
@@ -97,7 +95,6 @@ private:
 
     // Buttons
     QPushButton* m_resetButton = nullptr;
-    QPushButton* m_screenPickerButton = nullptr;
     QPushButton* m_okButton = nullptr;
     QPushButton* m_applyButton = nullptr;
     QPushButton* m_cancelButton = nullptr;

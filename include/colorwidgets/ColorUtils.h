@@ -3,7 +3,6 @@
 
 #include <QColor>
 #include <QString>
-#include <QWidget>
 
 namespace snaptray {
 namespace colorwidgets {
@@ -50,12 +49,6 @@ public:
 
     // Lightness (0.0 - 1.0)
     static qreal colorLightnessF(const QColor& color);
-
-    // ========== Screen Color Picker ==========
-
-    // Open full-screen color picker, returns selected color
-    // Returns invalid color if cancelled
-    static QColor getScreenColor(QWidget* parent = nullptr);
 
 private:
     // Lab intermediate conversion

@@ -1,14 +1,6 @@
 #include "colorwidgets/ColorUtils.h"
 
-#include <QApplication>
-#include <QCursor>
-#include <QEventLoop>
-#include <QKeyEvent>
-#include <QMouseEvent>
-#include <QPainter>
-#include <QPixmap>
 #include <QRegularExpression>
-#include <QScreen>
 
 #include <cmath>
 
@@ -216,117 +208,6 @@ qreal ColorUtils::colorChromaF(const QColor& color)
 qreal ColorUtils::colorLightnessF(const QColor& color)
 {
     return color.lightnessF();
-}
-
-// ========== Screen Color Picker Implementation ==========
-
-class ScreenColorPicker : public QWidget
-{
-public:
-    ScreenColorPicker() : m_color(Qt::white)
-    {
-        setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::Tool);
-        setAttribute(Qt::WA_TranslucentBackground);
-        setCursor(Qt::CrossCursor);
-        setMouseTracking(true);
-
-        // Capture entire screen
-        QScreen* screen = QGuiApplication::primaryScreen();
-        m_screenshot = screen->grabWindow(0);
-        setGeometry(screen->geometry());
-
-        show();
-        grabMouse();
-        grabKeyboard();
-    }
-
-    QColor color() const { return m_color; }
-    bool accepted() const { return m_accepted; }
-
-protected:
-    void paintEvent(QPaintEvent*) override
-    {
-        QPainter p(this);
-        p.drawPixmap(0, 0, m_screenshot);
-
-        // Draw magnifier
-        QPoint pos = mapFromGlobal(QCursor::pos());
-        int magSize = 120;
-        int magZoom = 8;
-        int srcSize = magSize / magZoom;
-
-        QRect srcRect(pos.x() - srcSize / 2, pos.y() - srcSize / 2, srcSize, srcSize);
-        QRect dstRect(pos.x() + 20, pos.y() + 20, magSize, magSize);
-
-        // Ensure magnifier doesn't exceed screen bounds
-        if (dstRect.right() > width())
-            dstRect.moveLeft(pos.x() - magSize - 20);
-        if (dstRect.bottom() > height())
-            dstRect.moveTop(pos.y() - magSize - 20);
-
-        // Draw magnifier background
-        p.setPen(QPen(Qt::white, 2));
-        p.setBrush(Qt::black);
-        p.drawRect(dstRect.adjusted(-2, -2, 2, 2));
-
-        // Draw magnified image
-        p.drawPixmap(dstRect, m_screenshot, srcRect);
-
-        // Draw crosshair
-        int cx = dstRect.center().x();
-        int cy = dstRect.center().y();
-        p.setPen(QPen(Qt::white, 1));
-        p.drawLine(cx - 10, cy, cx + 10, cy);
-        p.drawLine(cx, cy - 10, cx, cy + 10);
-
-        // Show color value
-        p.setPen(Qt::white);
-        p.drawText(dstRect.adjusted(4, 4, -4, -4), Qt::AlignBottom | Qt::AlignHCenter,
-                   m_color.name().toUpper());
-    }
-
-    void mouseMoveEvent(QMouseEvent* event) override
-    {
-        QPoint pos = event->pos();
-        QImage img = m_screenshot.toImage();
-        if (img.valid(pos)) {
-            m_color = img.pixelColor(pos);
-        }
-        update();
-    }
-
-    void mousePressEvent(QMouseEvent* event) override
-    {
-        if (event->button() == Qt::LeftButton) {
-            m_accepted = true;
-            close();
-        }
-    }
-
-    void keyPressEvent(QKeyEvent* event) override
-    {
-        if (event->key() == Qt::Key_Escape) {
-            m_accepted = false;
-            close();
-        }
-    }
-
-private:
-    QPixmap m_screenshot;
-    QColor m_color;
-    bool m_accepted = false;
-};
-
-QColor ColorUtils::getScreenColor(QWidget*)
-{
-    ScreenColorPicker picker;
-
-    // Enter event loop until closed
-    while (picker.isVisible()) {
-        QApplication::processEvents();
-    }
-
-    return picker.accepted() ? picker.color() : QColor();
 }
 
 }  // namespace colorwidgets
