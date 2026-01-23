@@ -15,9 +15,20 @@ if [ ! -f "$BUILD_DIR/CMakeCache.txt" ]; then
     cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH="$(brew --prefix qt)"
 fi
 
-# Build test targets
+# Build all test targets
 echo "Building tests..."
-cmake --build build --target ToolOptionsPanel_State ToolOptionsPanel_Signals ToolOptionsPanel_HitTest ToolOptionsPanel_Events
+cmake --build build --target \
+    ToolOptionsPanel_State ToolOptionsPanel_Signals ToolOptionsPanel_HitTest ToolOptionsPanel_Events \
+    PinWindow_Transform PinWindow_Resize PinWindow_ClickThrough \
+    RegionSelector_MagnifierPanel RegionSelector_UpdateThrottler RegionSelector_TextAnnotationEditor RegionSelector_SelectionStateManager \
+    Encoding_NativeGifEncoder Encoding_EncoderFactory \
+    Detection_FaceDetector Detection_AutoBlurManager \
+    Utils_CoordinateHelper \
+    Settings_AnnotationSettingsManager Settings_PinWindowSettingsManager \
+    Annotations_PencilStroke Annotations_ShapeAnnotation \
+    Tools_ToolRegistry \
+    Video_VideoTimeline \
+    RecordingManager_StateMachine RecordingManager_Lifecycle RecordingManager_AudioIntegration RecordingManager_InitTask
 
 # Run tests
 echo ""
