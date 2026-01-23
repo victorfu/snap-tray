@@ -9,15 +9,15 @@ BUILD_DIR="$PROJECT_DIR/build"
 
 cd "$PROJECT_DIR"
 
-# Configure if needed
-if [ ! -f "$BUILD_DIR/CMakeCache.txt" ]; then
+# Configure if needed (check for Makefile which indicates successful configuration)
+if [ ! -f "$BUILD_DIR/Makefile" ]; then
     echo "Configuring project..."
     cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH="$(brew --prefix qt)"
 fi
 
-# Build test targets
-echo "Building tests..."
-cmake --build build --target ToolOptionsPanel_State ToolOptionsPanel_Signals ToolOptionsPanel_HitTest ToolOptionsPanel_Events
+# Build all targets (including tests)
+echo "Building..."
+cmake --build build
 
 # Run tests
 echo ""
