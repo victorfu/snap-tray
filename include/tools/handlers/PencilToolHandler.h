@@ -10,7 +10,10 @@
 #include <memory>
 
 /**
- * @brief Tool handler for freehand pencil drawing.
+ * @brief Tool handler for freehand pencil drawing with real-time smoothing.
+ *
+ * Uses exponential moving average (EMA) for input smoothing while maintaining
+ * zero visual latency by drawing directly to the current cursor position.
  */
 class PencilToolHandler : public IToolHandler {
 public:
@@ -35,6 +38,24 @@ private:
     bool m_isDrawing = false;
     QVector<QPointF> m_currentPath;
     std::unique_ptr<PencilStroke> m_currentStroke;
+
+    // Smoothing state
+    QPointF m_smoothedPoint;      // EMA-smoothed position
+    QPointF m_smoothedVelocity;   // EMA-smoothed velocity for direction stability
+    QPointF m_lastRawPoint;       // Previous raw input for velocity calculation
+    bool m_hasSmoothedPoint = false;
+
+    // Minimum distance threshold to add a new point
+    static constexpr qreal kMinPointDistance = 2.0;
+
+    // Smoothing parameters
+    // Base smoothing factor (0 = max smooth, 1 = no smooth)
+    static constexpr qreal kBaseSmoothing = 0.3;
+    // Velocity smoothing factor
+    static constexpr qreal kVelocitySmoothing = 0.4;
+    // Speed threshold for adaptive smoothing (pixels per event)
+    static constexpr qreal kSpeedThresholdLow = 3.0;
+    static constexpr qreal kSpeedThresholdHigh = 15.0;
 };
 
 #endif // PENCILTOOLHANDLER_H
