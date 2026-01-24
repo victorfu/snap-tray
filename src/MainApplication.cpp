@@ -214,18 +214,6 @@ void MainApplication::initialize()
 
 void MainApplication::onRegionCapture()
 {
-    // Close any active modal dialog (QMessageBox, etc.) to prevent freeze
-    if (QWidget* modal = QApplication::activeModalWidget()) {
-        if (QDialog* dialog = qobject_cast<QDialog*>(modal)) {
-            dialog->reject();
-        } else {
-            modal->close();
-        }
-        // Small delay to let the modal close properly before starting capture
-        QTimer::singleShot(50, this, &MainApplication::onRegionCapture);
-        return;
-    }
-
     // Don't trigger if screen canvas is active
     if (m_screenCanvasManager->isActive()) {
         return;
@@ -237,22 +225,12 @@ void MainApplication::onRegionCapture()
     }
 
     // Note: Don't close popup menus - allow capturing them (like Snipaste)
+    // Modal dialogs (QMessageBox) are handled by CaptureManager
     m_captureManager->startRegionCapture();
 }
 
 void MainApplication::onQuickPin()
 {
-    // Close any active modal dialog (QMessageBox, etc.) to prevent freeze
-    if (QWidget* modal = QApplication::activeModalWidget()) {
-        if (QDialog* dialog = qobject_cast<QDialog*>(modal)) {
-            dialog->reject();
-        } else {
-            modal->close();
-        }
-        QTimer::singleShot(50, this, &MainApplication::onQuickPin);
-        return;
-    }
-
     // Don't trigger if screen canvas is active
     if (m_screenCanvasManager->isActive()) {
         return;
@@ -264,22 +242,12 @@ void MainApplication::onQuickPin()
     }
 
     // Note: Don't close popup menus - allow capturing them (like Snipaste)
+    // Modal dialogs (QMessageBox) are handled by CaptureManager
     m_captureManager->startQuickPinCapture();
 }
 
 void MainApplication::onScreenCanvas()
 {
-    // Close any active modal dialog (QMessageBox, etc.) to prevent freeze
-    if (QWidget* modal = QApplication::activeModalWidget()) {
-        if (QDialog* dialog = qobject_cast<QDialog*>(modal)) {
-            dialog->reject();
-        } else {
-            modal->close();
-        }
-        QTimer::singleShot(50, this, &MainApplication::onScreenCanvas);
-        return;
-    }
-
     // Don't trigger if capture is active
     if (m_captureManager->isActive()) {
         return;
@@ -300,17 +268,6 @@ void MainApplication::onScreenCanvas()
 
 void MainApplication::onFullScreenRecording()
 {
-    // Close any active modal dialog (QMessageBox, etc.) to prevent freeze
-    if (QWidget* modal = QApplication::activeModalWidget()) {
-        if (QDialog* dialog = qobject_cast<QDialog*>(modal)) {
-            dialog->reject();
-        } else {
-            modal->close();
-        }
-        QTimer::singleShot(50, this, &MainApplication::onFullScreenRecording);
-        return;
-    }
-
     // Don't trigger if screen canvas is active
     if (m_screenCanvasManager->isActive()) {
         return;
@@ -341,17 +298,6 @@ void MainApplication::onCloseAllPins()
 
 void MainApplication::onPinFromImage()
 {
-    // Close any active modal dialog (QMessageBox, etc.) to prevent freeze
-    if (QWidget* modal = QApplication::activeModalWidget()) {
-        if (QDialog* dialog = qobject_cast<QDialog*>(modal)) {
-            dialog->reject();
-        } else {
-            modal->close();
-        }
-        QTimer::singleShot(50, this, &MainApplication::onPinFromImage);
-        return;
-    }
-
     QString defaultDir = QStandardPaths::writableLocation(QStandardPaths::PicturesLocation);
 
     QString filePath = QFileDialog::getOpenFileName(
@@ -546,17 +492,6 @@ QPixmap MainApplication::renderTextToPixmap(const QString &text)
 
 void MainApplication::onPasteFromClipboard()
 {
-    // Close any active modal dialog (QMessageBox, etc.) to prevent freeze
-    if (QWidget* modal = QApplication::activeModalWidget()) {
-        if (QDialog* dialog = qobject_cast<QDialog*>(modal)) {
-            dialog->reject();
-        } else {
-            modal->close();
-        }
-        QTimer::singleShot(50, this, &MainApplication::onPasteFromClipboard);
-        return;
-    }
-
     // If region selection is active with complete selection, trigger pin (same as Enter)
     if (m_captureManager && m_captureManager->hasCompleteSelection()) {
         m_captureManager->triggerFinishSelection();
