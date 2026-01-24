@@ -10,7 +10,7 @@
 #include "settings/PinWindowSettingsManager.h"
 #include "settings/OCRSettingsManager.h"
 #include "detection/AutoBlurManager.h"
-#include "widgets/HotkeyEdit.h"
+#include "widgets/HotkeySettingsTab.h"
 #include <QDir>
 #include <QSettings>
 #include <QPushButton>
@@ -41,13 +41,7 @@ SettingsDialog::SettingsDialog(QWidget* parent)
     , m_tabWidget(nullptr)
     , m_startOnLoginCheckbox(nullptr)
     , m_toolbarStyleCombo(nullptr)
-    , m_hotkeyEdit(nullptr)
-    , m_captureHotkeyStatus(nullptr)
-    , m_screenCanvasHotkeyEdit(nullptr)
-    , m_screenCanvasHotkeyStatus(nullptr)
-    , m_pasteHotkeyEdit(nullptr)
-    , m_pasteHotkeyStatus(nullptr)
-    , m_restoreDefaultsBtn(nullptr)
+    , m_hotkeySettingsTab(nullptr)
     , m_watermarkEnabledCheckbox(nullptr)
     , m_watermarkImagePathEdit(nullptr)
     , m_watermarkBrowseBtn(nullptr)
@@ -88,10 +82,6 @@ SettingsDialog::SettingsDialog(QWidget* parent)
     , m_ocrTabIndex(-1)
     , m_ocrDirectCopyRadio(nullptr)
     , m_ocrShowEditorRadio(nullptr)
-    , m_pinFromImageHotkeyEdit(nullptr)
-    , m_pinFromImageHotkeyStatus(nullptr)
-    , m_recordFullScreenHotkeyEdit(nullptr)
-    , m_recordFullScreenHotkeyStatus(nullptr)
 {
     setWindowTitle(QString("%1 Settings").arg(SNAPTRAY_APP_NAME));
     setMinimumSize(520, 480);
@@ -320,101 +310,10 @@ void SettingsDialog::setupGeneralTab(QWidget* tab)
 void SettingsDialog::setupHotkeysTab(QWidget* tab)
 {
     QVBoxLayout* layout = new QVBoxLayout(tab);
+    layout->setContentsMargins(0, 0, 0, 0);
 
-    // Region Capture hotkey row
-    QHBoxLayout* captureLayout = new QHBoxLayout();
-    QLabel* captureLabel = new QLabel("Region Capture:", tab);
-    captureLabel->setFixedWidth(120);
-    m_hotkeyEdit = new HotkeyEdit(tab);
-    m_hotkeyEdit->setKeySequence(loadHotkey());
-    m_captureHotkeyStatus = new QLabel(tab);
-    m_captureHotkeyStatus->setFixedSize(24, 24);
-    m_captureHotkeyStatus->setAlignment(Qt::AlignCenter);
-    captureLayout->addWidget(captureLabel);
-    captureLayout->addWidget(m_hotkeyEdit);
-    captureLayout->addWidget(m_captureHotkeyStatus);
-    layout->addLayout(captureLayout);
-
-    // Screen Canvas hotkey row
-    QHBoxLayout* canvasLayout = new QHBoxLayout();
-    QLabel* canvasLabel = new QLabel("Screen Canvas:", tab);
-    canvasLabel->setFixedWidth(120);
-    m_screenCanvasHotkeyEdit = new HotkeyEdit(tab);
-    m_screenCanvasHotkeyEdit->setKeySequence(loadScreenCanvasHotkey());
-    m_screenCanvasHotkeyStatus = new QLabel(tab);
-    m_screenCanvasHotkeyStatus->setFixedSize(24, 24);
-    m_screenCanvasHotkeyStatus->setAlignment(Qt::AlignCenter);
-    canvasLayout->addWidget(canvasLabel);
-    canvasLayout->addWidget(m_screenCanvasHotkeyEdit);
-    canvasLayout->addWidget(m_screenCanvasHotkeyStatus);
-    layout->addLayout(canvasLayout);
-
-    // Paste (Pin from Clipboard) hotkey row
-    QHBoxLayout* pasteLayout = new QHBoxLayout();
-    QLabel* pasteLabel = new QLabel("Paste:", tab);
-    pasteLabel->setFixedWidth(120);
-    m_pasteHotkeyEdit = new HotkeyEdit(tab);
-    m_pasteHotkeyEdit->setKeySequence(loadPasteHotkey());
-    m_pasteHotkeyStatus = new QLabel(tab);
-    m_pasteHotkeyStatus->setFixedSize(24, 24);
-    m_pasteHotkeyStatus->setAlignment(Qt::AlignCenter);
-    pasteLayout->addWidget(pasteLabel);
-    pasteLayout->addWidget(m_pasteHotkeyEdit);
-    pasteLayout->addWidget(m_pasteHotkeyStatus);
-    layout->addLayout(pasteLayout);
-
-    // Quick Pin hotkey row
-    QHBoxLayout* quickPinLayout = new QHBoxLayout();
-    QLabel* quickPinLabel = new QLabel("Quick Pin:", tab);
-    quickPinLabel->setFixedWidth(120);
-    m_quickPinHotkeyEdit = new HotkeyEdit(tab);
-    m_quickPinHotkeyEdit->setKeySequence(loadQuickPinHotkey());
-    m_quickPinHotkeyStatus = new QLabel(tab);
-    m_quickPinHotkeyStatus->setFixedSize(24, 24);
-    m_quickPinHotkeyStatus->setAlignment(Qt::AlignCenter);
-    quickPinLayout->addWidget(quickPinLabel);
-    quickPinLayout->addWidget(m_quickPinHotkeyEdit);
-    quickPinLayout->addWidget(m_quickPinHotkeyStatus);
-    layout->addLayout(quickPinLayout);
-
-    // Pin from Image hotkey row (optional - can be empty)
-    QHBoxLayout* pinFromImageLayout = new QHBoxLayout();
-    QLabel* pinFromImageLabel = new QLabel("Pin from Image:", tab);
-    pinFromImageLabel->setFixedWidth(120);
-    m_pinFromImageHotkeyEdit = new HotkeyEdit(tab);
-    m_pinFromImageHotkeyEdit->setKeySequence(loadPinFromImageHotkey());
-    m_pinFromImageHotkeyStatus = new QLabel(tab);
-    m_pinFromImageHotkeyStatus->setFixedSize(24, 24);
-    m_pinFromImageHotkeyStatus->setAlignment(Qt::AlignCenter);
-    pinFromImageLayout->addWidget(pinFromImageLabel);
-    pinFromImageLayout->addWidget(m_pinFromImageHotkeyEdit);
-    pinFromImageLayout->addWidget(m_pinFromImageHotkeyStatus);
-    layout->addLayout(pinFromImageLayout);
-
-    // Record Full Screen hotkey row (optional - can be empty)
-    QHBoxLayout* recordFullScreenLayout = new QHBoxLayout();
-    QLabel* recordFullScreenLabel = new QLabel("Record Screen:", tab);
-    recordFullScreenLabel->setFixedWidth(120);
-    m_recordFullScreenHotkeyEdit = new HotkeyEdit(tab);
-    m_recordFullScreenHotkeyEdit->setKeySequence(loadRecordFullScreenHotkey());
-    m_recordFullScreenHotkeyStatus = new QLabel(tab);
-    m_recordFullScreenHotkeyStatus->setFixedSize(24, 24);
-    m_recordFullScreenHotkeyStatus->setAlignment(Qt::AlignCenter);
-    recordFullScreenLayout->addWidget(recordFullScreenLabel);
-    recordFullScreenLayout->addWidget(m_recordFullScreenHotkeyEdit);
-    recordFullScreenLayout->addWidget(m_recordFullScreenHotkeyStatus);
-    layout->addLayout(recordFullScreenLayout);
-
-    layout->addStretch();
-
-    // Restore Defaults button
-    QHBoxLayout* defaultsLayout = new QHBoxLayout();
-    defaultsLayout->addStretch();
-    m_restoreDefaultsBtn = new QPushButton("Restore Defaults", tab);
-    connect(m_restoreDefaultsBtn, &QPushButton::clicked,
-        this, &SettingsDialog::onRestoreDefaults);
-    defaultsLayout->addWidget(m_restoreDefaultsBtn);
-    layout->addLayout(defaultsLayout);
+    m_hotkeySettingsTab = new SnapTray::HotkeySettingsTab(tab);
+    layout->addWidget(m_hotkeySettingsTab);
 }
 
 void SettingsDialog::setupWatermarkTab(QWidget* tab)
@@ -845,171 +744,9 @@ void SettingsDialog::onOutputFormatChanged(int index)
     m_gifSettingsWidget->setVisible(isGif);
 }
 
-void SettingsDialog::updateHotkeyStatus(QLabel* statusLabel, bool isRegistered)
-{
-    if (isRegistered) {
-        statusLabel->setText("✓");
-        statusLabel->setStyleSheet("color: green; font-weight: bold; font-size: 16px;");
-    }
-    else {
-        statusLabel->setText("✗");
-        statusLabel->setStyleSheet("color: red; font-weight: bold; font-size: 16px;");
-    }
-}
-
-void SettingsDialog::updateCaptureHotkeyStatus(bool isRegistered)
-{
-    updateHotkeyStatus(m_captureHotkeyStatus, isRegistered);
-}
-
-void SettingsDialog::onRestoreDefaults()
-{
-    m_hotkeyEdit->setKeySequence(QString(SnapTray::kDefaultHotkey));
-    m_screenCanvasHotkeyEdit->setKeySequence(QString(SnapTray::kDefaultScreenCanvasHotkey));
-    m_pasteHotkeyEdit->setKeySequence(QString(SnapTray::kDefaultPasteHotkey));
-    m_quickPinHotkeyEdit->setKeySequence(QString(SnapTray::kDefaultQuickPinHotkey));
-    m_pinFromImageHotkeyEdit->setKeySequence(QString(SnapTray::kDefaultPinFromImageHotkey));
-    m_recordFullScreenHotkeyEdit->setKeySequence(QString(SnapTray::kDefaultRecordFullScreenHotkey));
-}
-
-QString SettingsDialog::defaultHotkey()
-{
-    return QString(SnapTray::kDefaultHotkey);
-}
-
-QString SettingsDialog::loadHotkey()
-{
-    auto settings = SnapTray::getSettings();
-    return settings.value(SnapTray::kSettingsKeyHotkey, SnapTray::kDefaultHotkey).toString();
-}
-
-QString SettingsDialog::defaultScreenCanvasHotkey()
-{
-    return QString(SnapTray::kDefaultScreenCanvasHotkey);
-}
-
-QString SettingsDialog::loadScreenCanvasHotkey()
-{
-    auto settings = SnapTray::getSettings();
-    return settings.value(SnapTray::kSettingsKeyScreenCanvasHotkey, SnapTray::kDefaultScreenCanvasHotkey).toString();
-}
-
-void SettingsDialog::updateScreenCanvasHotkeyStatus(bool isRegistered)
-{
-    updateHotkeyStatus(m_screenCanvasHotkeyStatus, isRegistered);
-}
-
-QString SettingsDialog::defaultPasteHotkey()
-{
-    return QString(SnapTray::kDefaultPasteHotkey);
-}
-
-QString SettingsDialog::loadPasteHotkey()
-{
-    auto settings = SnapTray::getSettings();
-    return settings.value(SnapTray::kSettingsKeyPasteHotkey, SnapTray::kDefaultPasteHotkey).toString();
-}
-
-void SettingsDialog::updatePasteHotkeyStatus(bool isRegistered)
-{
-    updateHotkeyStatus(m_pasteHotkeyStatus, isRegistered);
-}
-
-QString SettingsDialog::defaultQuickPinHotkey()
-{
-    return QString(SnapTray::kDefaultQuickPinHotkey);
-}
-
-QString SettingsDialog::loadQuickPinHotkey()
-{
-    auto settings = SnapTray::getSettings();
-    return settings.value(SnapTray::kSettingsKeyQuickPinHotkey, SnapTray::kDefaultQuickPinHotkey).toString();
-}
-
-void SettingsDialog::updateQuickPinHotkeyStatus(bool isRegistered)
-{
-    updateHotkeyStatus(m_quickPinHotkeyStatus, isRegistered);
-}
-
-QString SettingsDialog::defaultPinFromImageHotkey()
-{
-    return QString(SnapTray::kDefaultPinFromImageHotkey);
-}
-
-QString SettingsDialog::loadPinFromImageHotkey()
-{
-    auto settings = SnapTray::getSettings();
-    return settings.value(SnapTray::kSettingsKeyPinFromImageHotkey, SnapTray::kDefaultPinFromImageHotkey).toString();
-}
-
-void SettingsDialog::updatePinFromImageHotkeyStatus(bool isRegistered)
-{
-    // For optional hotkeys, show neutral indicator when not configured
-    if (m_pinFromImageHotkeyEdit && m_pinFromImageHotkeyEdit->keySequence().isEmpty()) {
-        m_pinFromImageHotkeyStatus->setText("—");
-        m_pinFromImageHotkeyStatus->setStyleSheet("color: gray; font-weight: bold; font-size: 16px;");
-    } else {
-        updateHotkeyStatus(m_pinFromImageHotkeyStatus, isRegistered);
-    }
-}
-
-QString SettingsDialog::defaultRecordFullScreenHotkey()
-{
-    return QString(SnapTray::kDefaultRecordFullScreenHotkey);
-}
-
-QString SettingsDialog::loadRecordFullScreenHotkey()
-{
-    auto settings = SnapTray::getSettings();
-    return settings.value(SnapTray::kSettingsKeyRecordFullScreenHotkey, SnapTray::kDefaultRecordFullScreenHotkey).toString();
-}
-
-void SettingsDialog::updateRecordFullScreenHotkeyStatus(bool isRegistered)
-{
-    // For optional hotkeys, show neutral indicator when not configured
-    if (m_recordFullScreenHotkeyEdit && m_recordFullScreenHotkeyEdit->keySequence().isEmpty()) {
-        m_recordFullScreenHotkeyStatus->setText("—");
-        m_recordFullScreenHotkeyStatus->setStyleSheet("color: gray; font-weight: bold; font-size: 16px;");
-    } else {
-        updateHotkeyStatus(m_recordFullScreenHotkeyStatus, isRegistered);
-    }
-}
-
 void SettingsDialog::onSave()
 {
-    QString newHotkey = m_hotkeyEdit->keySequence();
-    QString newScreenCanvasHotkey = m_screenCanvasHotkeyEdit->keySequence();
-    QString newPasteHotkey = m_pasteHotkeyEdit->keySequence();
-    QString newQuickPinHotkey = m_quickPinHotkeyEdit->keySequence();
-    QString newPinFromImageHotkey = m_pinFromImageHotkeyEdit->keySequence();
-    QString newRecordFullScreenHotkey = m_recordFullScreenHotkeyEdit->keySequence();
-
-    // Validate hotkeys are not empty (Pin from Image and Record Full Screen are optional)
-    if (newHotkey.isEmpty()) {
-        QMessageBox::warning(this, "Invalid Hotkey",
-            "Capture hotkey cannot be empty. Please set a valid key combination.");
-        return;
-    }
-
-    if (newScreenCanvasHotkey.isEmpty()) {
-        QMessageBox::warning(this, "Invalid Hotkey",
-            "Screen Canvas hotkey cannot be empty. Please set a valid key combination.");
-        return;
-    }
-
-    if (newPasteHotkey.isEmpty()) {
-        QMessageBox::warning(this, "Invalid Hotkey",
-            "Paste hotkey cannot be empty. Please set a valid key combination.");
-        return;
-    }
-
-    if (newQuickPinHotkey.isEmpty()) {
-        QMessageBox::warning(this, "Invalid Hotkey",
-            "Quick Pin hotkey cannot be empty. Please set a valid key combination.");
-        return;
-    }
-
-    // Apply start-on-login setting immediately (independent of hotkey registration)
+    // Apply start-on-login setting immediately
     bool desiredStartOnLogin = m_startOnLoginCheckbox->isChecked();
     bool currentState = AutoLaunchManager::isEnabled();
     if (desiredStartOnLogin != currentState) {
@@ -1115,21 +852,8 @@ void SettingsDialog::onSave()
     ToolbarStyleConfig::saveStyle(newStyle);
     emit toolbarStyleChanged(newStyle);
 
-    // Request hotkey change (MainApplication handles registration)
-    emit hotkeyChangeRequested(newHotkey);
-    emit screenCanvasHotkeyChangeRequested(newScreenCanvasHotkey);
-    emit pasteHotkeyChangeRequested(newPasteHotkey);
-    emit quickPinHotkeyChangeRequested(newQuickPinHotkey);
-    emit pinFromImageHotkeyChangeRequested(newPinFromImageHotkey);
-    emit recordFullScreenHotkeyChangeRequested(newRecordFullScreenHotkey);
-
     // Close dialog (non-modal mode)
     accept();
-}
-
-void SettingsDialog::showHotkeyError(const QString& message)
-{
-    QMessageBox::warning(this, "Hotkey Registration Failed", message);
 }
 
 void SettingsDialog::onAccepted()

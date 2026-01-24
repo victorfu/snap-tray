@@ -12,6 +12,7 @@
 #include <QScreen>
 #include <QCursor>
 #include <QKeyEvent>
+#include <QDialog>
 
 CaptureManager::CaptureManager(PinWindowManager *pinManager, QObject *parent)
     : QObject(parent)
@@ -76,17 +77,25 @@ void CaptureManager::startRegionCapture()
         m_windowDetector->refreshWindowListAsync();
     }
 
-    // 3. Capture screenshot while popup is still visible
-    // This allows capturing context menus (like Snipaste)
+    // 3. Capture screenshot while popup/modal is still visible
+    // This allows capturing context menus AND dialogs (like Snipaste)
     // NOTE: grabWindow() is blocking (50-200ms on 4K). Qt doesn't guarantee thread safety
     // for grabWindow(), so async capture via QtConcurrent is risky without platform testing.
     QWidget *popup = QApplication::activePopupWidget();
+    QWidget *modal = QApplication::activeModalWidget();
 
     QPixmap preCapture = targetScreen->grabWindow(0);
 
-    // 4. Close popup AFTER screenshot to avoid event loop conflict with RegionSelector
+    // 4. Close popup/modal AFTER screenshot to avoid event loop conflict with RegionSelector
     if (popup) {
         popup->close();
+    }
+    if (modal) {
+        if (QDialog* dialog = qobject_cast<QDialog*>(modal)) {
+            dialog->reject();
+        } else {
+            modal->close();
+        }
     }
 
     initializeRegionSelector(targetScreen, preCapture, /*quickPinMode=*/false);
@@ -123,14 +132,22 @@ void CaptureManager::startQuickPinCapture()
         m_windowDetector->refreshWindowListAsync();
     }
 
-    // 3. Capture screenshot while popup is still visible
+    // 3. Capture screenshot while popup/modal is still visible
     QWidget *popup = QApplication::activePopupWidget();
+    QWidget *modal = QApplication::activeModalWidget();
 
     QPixmap preCapture = targetScreen->grabWindow(0);
 
-    // 4. Close popup AFTER screenshot
+    // 4. Close popup/modal AFTER screenshot
     if (popup) {
         popup->close();
+    }
+    if (modal) {
+        if (QDialog* dialog = qobject_cast<QDialog*>(modal)) {
+            dialog->reject();
+        } else {
+            modal->close();
+        }
     }
 
     initializeRegionSelector(targetScreen, preCapture, /*quickPinMode=*/true);

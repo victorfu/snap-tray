@@ -587,6 +587,14 @@ add_library(snaptray_ui STATIC
     src/widgets/HotkeyEdit.cpp
     include/widgets/HotkeyEdit.h
 
+    # Hotkey management system
+    src/hotkey/HotkeyManager.cpp
+    src/widgets/TypeHotkeyDialog.cpp
+    src/widgets/HotkeySettingsTab.cpp
+    include/hotkey/HotkeyManager.h
+    include/widgets/TypeHotkeyDialog.h
+    include/widgets/HotkeySettingsTab.h
+
     # UI sections
     src/ui/sections/ColorSection.cpp
     src/ui/sections/WidthSection.cpp

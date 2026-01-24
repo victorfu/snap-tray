@@ -1,6 +1,7 @@
 #ifndef MAINAPPLICATION_H
 #define MAINAPPLICATION_H
 
+#include "hotkey/HotkeyTypes.h"
 #include <QObject>
 #include <QPointer>
 #include <QPixmap>
@@ -9,7 +10,6 @@
 class QSystemTrayIcon;
 class QMenu;
 class QAction;
-class QHotkey;
 class CaptureManager;
 class PinWindowManager;
 class ScreenCanvasManager;
@@ -43,28 +43,14 @@ private slots:
     void showRecordingPreview(const QString &videoPath);
     void onPreviewSaveRequested(const QString &videoPath);
     void onPreviewDiscardRequested();
-
-public:
-    bool updateHotkey(const QString &newHotkey);
-    bool updateScreenCanvasHotkey(const QString &newHotkey);
-    bool updatePasteHotkey(const QString &newHotkey);
-    bool updateQuickPinHotkey(const QString &newHotkey);
-    bool updatePinFromImageHotkey(const QString &newHotkey);
-    bool updateRecordFullScreenHotkey(const QString &newHotkey);
+    void onHotkeyAction(SnapTray::HotkeyAction action);
 
 private:
-    void setupHotkey();
-    void updateTrayMenuHotkeyText(const QString &hotkey);
+    void updateTrayMenuHotkeyText();
     QPixmap renderTextToPixmap(const QString &text);
 
     QSystemTrayIcon *m_trayIcon;
     QMenu *m_trayMenu;
-    QHotkey *m_regionHotkey;
-    QHotkey *m_quickPinHotkey;
-    QHotkey *m_screenCanvasHotkey;
-    QHotkey *m_pasteHotkey;
-    QHotkey *m_pinFromImageHotkey;
-    QHotkey *m_recordFullScreenHotkey;
     CaptureManager *m_captureManager;
     PinWindowManager *m_pinWindowManager;
     ScreenCanvasManager *m_screenCanvasManager;

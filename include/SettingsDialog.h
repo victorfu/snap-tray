@@ -15,7 +15,10 @@ class QComboBox;
 class QListWidget;
 class QRadioButton;
 class QGroupBox;
-class HotkeyEdit;
+
+namespace SnapTray {
+class HotkeySettingsTab;
+}
 
 class SettingsDialog : public QDialog
 {
@@ -25,46 +28,7 @@ public:
     explicit SettingsDialog(QWidget *parent = nullptr);
     ~SettingsDialog();
 
-    // Hotkey settings
-    static QString defaultHotkey();
-    static QString loadHotkey();
-
-    // Screen Canvas hotkey settings
-    static QString defaultScreenCanvasHotkey();
-    static QString loadScreenCanvasHotkey();
-
-    // Paste hotkey settings
-    static QString defaultPasteHotkey();
-    static QString loadPasteHotkey();
-
-    // Quick Pin hotkey settings
-    static QString defaultQuickPinHotkey();
-    static QString loadQuickPinHotkey();
-
-    // Pin from Image hotkey settings
-    static QString defaultPinFromImageHotkey();
-    static QString loadPinFromImageHotkey();
-
-    // Record Full Screen hotkey settings
-    static QString defaultRecordFullScreenHotkey();
-    static QString loadRecordFullScreenHotkey();
-
-    // Status display
-    void showHotkeyError(const QString &message);
-    void updateCaptureHotkeyStatus(bool isRegistered);
-    void updateScreenCanvasHotkeyStatus(bool isRegistered);
-    void updatePasteHotkeyStatus(bool isRegistered);
-    void updateQuickPinHotkeyStatus(bool isRegistered);
-    void updatePinFromImageHotkeyStatus(bool isRegistered);
-    void updateRecordFullScreenHotkeyStatus(bool isRegistered);
-
 signals:
-    void hotkeyChangeRequested(const QString &newHotkey);
-    void screenCanvasHotkeyChangeRequested(const QString &newHotkey);
-    void pasteHotkeyChangeRequested(const QString &newHotkey);
-    void quickPinHotkeyChangeRequested(const QString &newHotkey);
-    void pinFromImageHotkeyChangeRequested(const QString &newHotkey);
-    void recordFullScreenHotkeyChangeRequested(const QString &newHotkey);
     void startOnLoginChanged(bool enabled);
     void toolbarStyleChanged(ToolbarStyleType style);
     void ocrLanguagesChanged(const QStringList &languages);
@@ -72,7 +36,6 @@ signals:
 private slots:
     void onSave();
     void onCancel();
-    void onRestoreDefaults();
     void onAccepted();
     void onAddOcrLanguage();
     void onRemoveOcrLanguage();
@@ -86,25 +49,12 @@ private:
     void setupWatermarkTab(QWidget *tab);
     void setupOcrTab(QWidget *tab);
     void setupRecordingTab(QWidget *tab);
-    void updateHotkeyStatus(QLabel *statusLabel, bool isRegistered);
 
     // UI elements
     QTabWidget *m_tabWidget;
     QCheckBox *m_startOnLoginCheckbox;
     QComboBox *m_toolbarStyleCombo;
-    HotkeyEdit *m_hotkeyEdit;
-    QLabel *m_captureHotkeyStatus;
-    HotkeyEdit *m_screenCanvasHotkeyEdit;
-    QLabel *m_screenCanvasHotkeyStatus;
-    HotkeyEdit *m_pasteHotkeyEdit;
-    QLabel *m_pasteHotkeyStatus;
-    HotkeyEdit *m_quickPinHotkeyEdit;
-    QLabel *m_quickPinHotkeyStatus;
-    HotkeyEdit *m_pinFromImageHotkeyEdit;
-    QLabel *m_pinFromImageHotkeyStatus;
-    HotkeyEdit *m_recordFullScreenHotkeyEdit;
-    QLabel *m_recordFullScreenHotkeyStatus;
-    QPushButton *m_restoreDefaultsBtn;
+    SnapTray::HotkeySettingsTab *m_hotkeySettingsTab;
 
     // Watermark UI elements
     QCheckBox *m_watermarkEnabledCheckbox;

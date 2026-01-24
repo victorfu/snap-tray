@@ -133,6 +133,15 @@ add_test(NAME Settings_PinWindowSettingsManager COMMAND Settings_PinWindowSettin
 set_tests_properties(Settings_PinWindowSettingsManager PROPERTIES TIMEOUT 60 LABELS "unit")
 
 # ============================================================================
+# Hotkey Tests (link snaptray_ui for HotkeyManager)
+# ============================================================================
+
+add_executable(Hotkey_HotkeyManager Hotkey/tst_HotkeyManager.cpp)
+target_link_libraries(Hotkey_HotkeyManager PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME Hotkey_HotkeyManager COMMAND Hotkey_HotkeyManager)
+set_tests_properties(Hotkey_HotkeyManager PROPERTIES TIMEOUT 60 LABELS "unit")
+
+# ============================================================================
 # Annotations Tests (link snaptray_core for annotation classes)
 # ============================================================================
 
