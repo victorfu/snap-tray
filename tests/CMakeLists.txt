@@ -155,6 +155,31 @@ target_link_libraries(Annotations_ShapeAnnotation PRIVATE snaptray_core Qt6::Wid
 add_test(NAME Annotations_ShapeAnnotation COMMAND Annotations_ShapeAnnotation)
 set_tests_properties(Annotations_ShapeAnnotation PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Annotations_ArrowAnnotation Annotations/tst_ArrowAnnotation.cpp)
+target_link_libraries(Annotations_ArrowAnnotation PRIVATE snaptray_core Qt6::Widgets Qt6::Test)
+add_test(NAME Annotations_ArrowAnnotation COMMAND Annotations_ArrowAnnotation)
+set_tests_properties(Annotations_ArrowAnnotation PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(Annotations_MarkerStroke Annotations/tst_MarkerStroke.cpp)
+target_link_libraries(Annotations_MarkerStroke PRIVATE snaptray_core Qt6::Widgets Qt6::Test)
+add_test(NAME Annotations_MarkerStroke COMMAND Annotations_MarkerStroke)
+set_tests_properties(Annotations_MarkerStroke PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(Annotations_PolylineAnnotation Annotations/tst_PolylineAnnotation.cpp)
+target_link_libraries(Annotations_PolylineAnnotation PRIVATE snaptray_core Qt6::Widgets Qt6::Test)
+add_test(NAME Annotations_PolylineAnnotation COMMAND Annotations_PolylineAnnotation)
+set_tests_properties(Annotations_PolylineAnnotation PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(Annotations_TextBoxAnnotation Annotations/tst_TextBoxAnnotation.cpp)
+target_link_libraries(Annotations_TextBoxAnnotation PRIVATE snaptray_core Qt6::Widgets Qt6::Test)
+add_test(NAME Annotations_TextBoxAnnotation COMMAND Annotations_TextBoxAnnotation)
+set_tests_properties(Annotations_TextBoxAnnotation PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(Annotations_StepBadgeAnnotation Annotations/tst_StepBadgeAnnotation.cpp)
+target_link_libraries(Annotations_StepBadgeAnnotation PRIVATE snaptray_core Qt6::Widgets Qt6::Test)
+add_test(NAME Annotations_StepBadgeAnnotation COMMAND Annotations_StepBadgeAnnotation)
+set_tests_properties(Annotations_StepBadgeAnnotation PROPERTIES TIMEOUT 60 LABELS "unit")
+
 # ============================================================================
 # Tools Tests (link snaptray_ui for tool system)
 # ============================================================================
@@ -163,6 +188,59 @@ add_executable(Tools_ToolRegistry Tools/tst_ToolRegistry.cpp)
 target_link_libraries(Tools_ToolRegistry PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Tools_ToolRegistry COMMAND Tools_ToolRegistry)
 set_tests_properties(Tools_ToolRegistry PROPERTIES TIMEOUT 60 LABELS "unit")
+
+# ============================================================================
+# Tool Handler Tests (link snaptray_ui for tool handlers)
+# ============================================================================
+
+add_executable(Tools_PencilToolHandler Tools/handlers/tst_PencilToolHandler.cpp)
+target_link_libraries(Tools_PencilToolHandler PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME Tools_PencilToolHandler COMMAND Tools_PencilToolHandler)
+set_tests_properties(Tools_PencilToolHandler PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(Tools_ArrowToolHandler Tools/handlers/tst_ArrowToolHandler.cpp)
+target_link_libraries(Tools_ArrowToolHandler PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME Tools_ArrowToolHandler COMMAND Tools_ArrowToolHandler)
+set_tests_properties(Tools_ArrowToolHandler PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(Tools_ShapeToolHandler Tools/handlers/tst_ShapeToolHandler.cpp)
+target_link_libraries(Tools_ShapeToolHandler PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME Tools_ShapeToolHandler COMMAND Tools_ShapeToolHandler)
+set_tests_properties(Tools_ShapeToolHandler PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(Tools_EraserToolHandler Tools/handlers/tst_EraserToolHandler.cpp)
+target_link_libraries(Tools_EraserToolHandler PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME Tools_EraserToolHandler COMMAND Tools_EraserToolHandler)
+set_tests_properties(Tools_EraserToolHandler PROPERTIES TIMEOUT 60 LABELS "unit")
+
+# ============================================================================
+# UI Section Tests (link snaptray_ui for UI components)
+# ============================================================================
+
+add_executable(UISections_ColorSection UISections/tst_ColorSection.cpp)
+target_link_libraries(UISections_ColorSection PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME UISections_ColorSection COMMAND UISections_ColorSection)
+set_tests_properties(UISections_ColorSection PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(UISections_WidthSection UISections/tst_WidthSection.cpp)
+target_link_libraries(UISections_WidthSection PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME UISections_WidthSection COMMAND UISections_WidthSection)
+set_tests_properties(UISections_WidthSection PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(UISections_ShapeSection UISections/tst_ShapeSection.cpp)
+target_link_libraries(UISections_ShapeSection PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME UISections_ShapeSection COMMAND UISections_ShapeSection)
+set_tests_properties(UISections_ShapeSection PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(UISections_ArrowStyleSection UISections/tst_ArrowStyleSection.cpp)
+target_link_libraries(UISections_ArrowStyleSection PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME UISections_ArrowStyleSection COMMAND UISections_ArrowStyleSection)
+set_tests_properties(UISections_ArrowStyleSection PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(UISections_SizeSection UISections/tst_SizeSection.cpp)
+target_link_libraries(UISections_SizeSection PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME UISections_SizeSection COMMAND UISections_SizeSection)
+set_tests_properties(UISections_SizeSection PROPERTIES TIMEOUT 60 LABELS "unit")
 
 # ============================================================================
 # Video Tests (link snaptray_ui for video components)

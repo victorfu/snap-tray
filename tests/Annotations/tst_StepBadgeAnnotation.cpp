@@ -1,0 +1,404 @@
+#include <QtTest/QtTest>
+#include <QPainter>
+#include <QImage>
+#include "annotations/StepBadgeAnnotation.h"
+
+/**
+ * @brief Tests for StepBadgeAnnotation class
+ *
+ * Covers:
+ * - Construction with various parameters
+ * - Number manipulation
+ * - Radius accessors
+ * - Size calculations
+ * - Bounding rectangle calculations
+ * - Clone functionality
+ * - Drawing tests
+ */
+class TestStepBadgeAnnotation : public QObject
+{
+    Q_OBJECT
+
+private slots:
+    // Construction tests
+    void testConstruction_Default();
+    void testConstruction_WithNumber();
+    void testConstruction_WithColor();
+    void testConstruction_WithRadius();
+    void testConstruction_AllSizes();
+
+    // Number tests
+    void testSetNumber();
+    void testNumber_SingleDigit();
+    void testNumber_MultiDigit();
+    void testNumber_LargeNumber();
+
+    // Radius tests
+    void testRadius_Small();
+    void testRadius_Medium();
+    void testRadius_Large();
+    void testRadiusForSize();
+
+    // Bounding rect tests
+    void testBoundingRect_Small();
+    void testBoundingRect_Medium();
+    void testBoundingRect_Large();
+    void testBoundingRect_ContainsPosition();
+
+    // Clone tests
+    void testClone_CreatesNewInstance();
+    void testClone_PreservesPosition();
+    void testClone_PreservesNumber();
+    void testClone_PreservesColor();
+    void testClone_PreservesRadius();
+
+    // Drawing tests
+    void testDraw_Basic();
+    void testDraw_AllSizes();
+    void testDraw_DifferentNumbers();
+    void testDraw_LargeNumber();
+    void testDraw_VerifyCircle();
+
+    // Constants tests
+    void testConstants();
+};
+
+// ============================================================================
+// Construction Tests
+// ============================================================================
+
+void TestStepBadgeAnnotation::testConstruction_Default()
+{
+    StepBadgeAnnotation badge(QPoint(100, 100), Qt::red);
+
+    QCOMPARE(badge.number(), 1);
+    QCOMPARE(badge.radius(), StepBadgeAnnotation::kBadgeRadiusMedium);
+    QVERIFY(!badge.boundingRect().isEmpty());
+}
+
+void TestStepBadgeAnnotation::testConstruction_WithNumber()
+{
+    StepBadgeAnnotation badge(QPoint(100, 100), Qt::red, 5);
+
+    QCOMPARE(badge.number(), 5);
+}
+
+void TestStepBadgeAnnotation::testConstruction_WithColor()
+{
+    StepBadgeAnnotation badge(QPoint(50, 50), Qt::blue, 1);
+
+    // Verify by drawing - image must be large enough to contain the badge
+    QImage image(100, 100, QImage::Format_ARGB32);
+    image.fill(Qt::white);
+    QPainter painter(&image);
+    badge.draw(painter);
+    painter.end();
+
+    // Should have some blue pixels (the badge circle fill)
+    bool hasBlue = false;
+    for (int y = 0; y < image.height() && !hasBlue; ++y) {
+        for (int x = 0; x < image.width() && !hasBlue; ++x) {
+            QColor pixel = image.pixelColor(x, y);
+            if (pixel.blue() > 200 && pixel.red() < 100 && pixel.green() < 100) {
+                hasBlue = true;
+            }
+        }
+    }
+    QVERIFY(hasBlue);
+}
+
+void TestStepBadgeAnnotation::testConstruction_WithRadius()
+{
+    StepBadgeAnnotation badgeSmall(QPoint(100, 100), Qt::red, 1, StepBadgeAnnotation::kBadgeRadiusSmall);
+    StepBadgeAnnotation badgeLarge(QPoint(100, 100), Qt::red, 1, StepBadgeAnnotation::kBadgeRadiusLarge);
+
+    QCOMPARE(badgeSmall.radius(), StepBadgeAnnotation::kBadgeRadiusSmall);
+    QCOMPARE(badgeLarge.radius(), StepBadgeAnnotation::kBadgeRadiusLarge);
+}
+
+void TestStepBadgeAnnotation::testConstruction_AllSizes()
+{
+    StepBadgeAnnotation badgeSmall(QPoint(100, 100), Qt::red, 1, StepBadgeAnnotation::kBadgeRadiusSmall);
+    StepBadgeAnnotation badgeMedium(QPoint(100, 100), Qt::red, 1, StepBadgeAnnotation::kBadgeRadiusMedium);
+    StepBadgeAnnotation badgeLarge(QPoint(100, 100), Qt::red, 1, StepBadgeAnnotation::kBadgeRadiusLarge);
+
+    QVERIFY(badgeSmall.boundingRect().width() < badgeMedium.boundingRect().width());
+    QVERIFY(badgeMedium.boundingRect().width() < badgeLarge.boundingRect().width());
+}
+
+// ============================================================================
+// Number Tests
+// ============================================================================
+
+void TestStepBadgeAnnotation::testSetNumber()
+{
+    StepBadgeAnnotation badge(QPoint(100, 100), Qt::red, 1);
+
+    badge.setNumber(10);
+    QCOMPARE(badge.number(), 10);
+}
+
+void TestStepBadgeAnnotation::testNumber_SingleDigit()
+{
+    StepBadgeAnnotation badge(QPoint(100, 100), Qt::red, 7);
+    QCOMPARE(badge.number(), 7);
+}
+
+void TestStepBadgeAnnotation::testNumber_MultiDigit()
+{
+    StepBadgeAnnotation badge(QPoint(100, 100), Qt::red, 42);
+    QCOMPARE(badge.number(), 42);
+}
+
+void TestStepBadgeAnnotation::testNumber_LargeNumber()
+{
+    StepBadgeAnnotation badge(QPoint(100, 100), Qt::red, 999);
+    QCOMPARE(badge.number(), 999);
+}
+
+// ============================================================================
+// Radius Tests
+// ============================================================================
+
+void TestStepBadgeAnnotation::testRadius_Small()
+{
+    StepBadgeAnnotation badge(QPoint(100, 100), Qt::red, 1, StepBadgeAnnotation::kBadgeRadiusSmall);
+    QCOMPARE(badge.radius(), StepBadgeAnnotation::kBadgeRadiusSmall);
+}
+
+void TestStepBadgeAnnotation::testRadius_Medium()
+{
+    StepBadgeAnnotation badge(QPoint(100, 100), Qt::red, 1, StepBadgeAnnotation::kBadgeRadiusMedium);
+    QCOMPARE(badge.radius(), StepBadgeAnnotation::kBadgeRadiusMedium);
+}
+
+void TestStepBadgeAnnotation::testRadius_Large()
+{
+    StepBadgeAnnotation badge(QPoint(100, 100), Qt::red, 1, StepBadgeAnnotation::kBadgeRadiusLarge);
+    QCOMPARE(badge.radius(), StepBadgeAnnotation::kBadgeRadiusLarge);
+}
+
+void TestStepBadgeAnnotation::testRadiusForSize()
+{
+    QCOMPARE(StepBadgeAnnotation::radiusForSize(StepBadgeSize::Small), StepBadgeAnnotation::kBadgeRadiusSmall);
+    QCOMPARE(StepBadgeAnnotation::radiusForSize(StepBadgeSize::Medium), StepBadgeAnnotation::kBadgeRadiusMedium);
+    QCOMPARE(StepBadgeAnnotation::radiusForSize(StepBadgeSize::Large), StepBadgeAnnotation::kBadgeRadiusLarge);
+}
+
+// ============================================================================
+// Bounding Rect Tests
+// ============================================================================
+
+void TestStepBadgeAnnotation::testBoundingRect_Small()
+{
+    StepBadgeAnnotation badge(QPoint(100, 100), Qt::red, 1, StepBadgeAnnotation::kBadgeRadiusSmall);
+
+    QRect rect = badge.boundingRect();
+    QVERIFY(!rect.isEmpty());
+    // Should be approximately 2 * radius
+    QVERIFY(rect.width() >= 2 * StepBadgeAnnotation::kBadgeRadiusSmall);
+    QVERIFY(rect.height() >= 2 * StepBadgeAnnotation::kBadgeRadiusSmall);
+}
+
+void TestStepBadgeAnnotation::testBoundingRect_Medium()
+{
+    StepBadgeAnnotation badge(QPoint(100, 100), Qt::red, 1, StepBadgeAnnotation::kBadgeRadiusMedium);
+
+    QRect rect = badge.boundingRect();
+    QVERIFY(!rect.isEmpty());
+    QVERIFY(rect.width() >= 2 * StepBadgeAnnotation::kBadgeRadiusMedium);
+}
+
+void TestStepBadgeAnnotation::testBoundingRect_Large()
+{
+    StepBadgeAnnotation badge(QPoint(100, 100), Qt::red, 1, StepBadgeAnnotation::kBadgeRadiusLarge);
+
+    QRect rect = badge.boundingRect();
+    QVERIFY(!rect.isEmpty());
+    QVERIFY(rect.width() >= 2 * StepBadgeAnnotation::kBadgeRadiusLarge);
+}
+
+void TestStepBadgeAnnotation::testBoundingRect_ContainsPosition()
+{
+    StepBadgeAnnotation badge(QPoint(100, 100), Qt::red, 1);
+
+    QRect rect = badge.boundingRect();
+    QVERIFY(rect.contains(QPoint(100, 100)));
+}
+
+// ============================================================================
+// Clone Tests
+// ============================================================================
+
+void TestStepBadgeAnnotation::testClone_CreatesNewInstance()
+{
+    StepBadgeAnnotation badge(QPoint(100, 100), Qt::red, 5);
+
+    auto cloned = badge.clone();
+    QVERIFY(cloned != nullptr);
+    QVERIFY(cloned.get() != &badge);
+}
+
+void TestStepBadgeAnnotation::testClone_PreservesPosition()
+{
+    StepBadgeAnnotation badge(QPoint(150, 200), Qt::red, 1);
+
+    auto cloned = badge.clone();
+    QCOMPARE(cloned->boundingRect().center(), badge.boundingRect().center());
+}
+
+void TestStepBadgeAnnotation::testClone_PreservesNumber()
+{
+    StepBadgeAnnotation badge(QPoint(100, 100), Qt::red, 42);
+
+    auto cloned = badge.clone();
+    auto* clonedBadge = dynamic_cast<StepBadgeAnnotation*>(cloned.get());
+
+    QVERIFY(clonedBadge != nullptr);
+    QCOMPARE(clonedBadge->number(), 42);
+}
+
+void TestStepBadgeAnnotation::testClone_PreservesColor()
+{
+    StepBadgeAnnotation badge(QPoint(100, 100), Qt::green, 1);
+
+    auto cloned = badge.clone();
+
+    // Draw both and compare
+    QImage img1(50, 50, QImage::Format_ARGB32);
+    QImage img2(50, 50, QImage::Format_ARGB32);
+    img1.fill(Qt::white);
+    img2.fill(Qt::white);
+
+    QPainter p1(&img1);
+    QPainter p2(&img2);
+    badge.draw(p1);
+    cloned->draw(p2);
+
+    QCOMPARE(img1, img2);
+}
+
+void TestStepBadgeAnnotation::testClone_PreservesRadius()
+{
+    StepBadgeAnnotation badge(QPoint(100, 100), Qt::red, 1, StepBadgeAnnotation::kBadgeRadiusLarge);
+
+    auto cloned = badge.clone();
+    auto* clonedBadge = dynamic_cast<StepBadgeAnnotation*>(cloned.get());
+
+    QVERIFY(clonedBadge != nullptr);
+    QCOMPARE(clonedBadge->radius(), StepBadgeAnnotation::kBadgeRadiusLarge);
+}
+
+// ============================================================================
+// Drawing Tests
+// ============================================================================
+
+void TestStepBadgeAnnotation::testDraw_Basic()
+{
+    StepBadgeAnnotation badge(QPoint(25, 25), Qt::red, 1);
+
+    QImage image(50, 50, QImage::Format_ARGB32);
+    image.fill(Qt::white);
+    QPainter painter(&image);
+
+    badge.draw(painter);
+    painter.end();
+
+    // Verify something was drawn
+    bool hasColor = false;
+    for (int y = 0; y < image.height() && !hasColor; ++y) {
+        for (int x = 0; x < image.width() && !hasColor; ++x) {
+            if (image.pixel(x, y) != qRgb(255, 255, 255)) {
+                hasColor = true;
+            }
+        }
+    }
+    QVERIFY(hasColor);
+}
+
+void TestStepBadgeAnnotation::testDraw_AllSizes()
+{
+    QList<int> radii = {
+        StepBadgeAnnotation::kBadgeRadiusSmall,
+        StepBadgeAnnotation::kBadgeRadiusMedium,
+        StepBadgeAnnotation::kBadgeRadiusLarge
+    };
+
+    for (int radius : radii) {
+        StepBadgeAnnotation badge(QPoint(50, 50), Qt::red, 1, radius);
+
+        QImage image(100, 100, QImage::Format_ARGB32);
+        image.fill(Qt::white);
+        QPainter painter(&image);
+
+        badge.draw(painter);
+        QVERIFY(true);  // No crash
+    }
+}
+
+void TestStepBadgeAnnotation::testDraw_DifferentNumbers()
+{
+    QList<int> numbers = { 1, 5, 9, 10, 50, 99 };
+
+    for (int num : numbers) {
+        StepBadgeAnnotation badge(QPoint(50, 50), Qt::red, num);
+
+        QImage image(100, 100, QImage::Format_ARGB32);
+        image.fill(Qt::white);
+        QPainter painter(&image);
+
+        badge.draw(painter);
+        QVERIFY(true);  // No crash
+    }
+}
+
+void TestStepBadgeAnnotation::testDraw_LargeNumber()
+{
+    StepBadgeAnnotation badge(QPoint(50, 50), Qt::red, 999);
+
+    QImage image(100, 100, QImage::Format_ARGB32);
+    image.fill(Qt::white);
+    QPainter painter(&image);
+
+    // Should not crash even with large numbers
+    badge.draw(painter);
+    QVERIFY(true);
+}
+
+void TestStepBadgeAnnotation::testDraw_VerifyCircle()
+{
+    StepBadgeAnnotation badge(QPoint(50, 50), Qt::red, 1, StepBadgeAnnotation::kBadgeRadiusLarge);
+
+    QImage image(100, 100, QImage::Format_ARGB32);
+    image.fill(Qt::white);
+    QPainter painter(&image);
+
+    badge.draw(painter);
+    painter.end();
+
+    // Check for red pixels in the center area (the circle)
+    bool hasRedInCenter = false;
+    for (int y = 40; y < 60 && !hasRedInCenter; ++y) {
+        for (int x = 40; x < 60 && !hasRedInCenter; ++x) {
+            QColor pixel = image.pixelColor(x, y);
+            if (pixel.red() > 200 && pixel.green() < 100 && pixel.blue() < 100) {
+                hasRedInCenter = true;
+            }
+        }
+    }
+    QVERIFY(hasRedInCenter);
+}
+
+// ============================================================================
+// Constants Tests
+// ============================================================================
+
+void TestStepBadgeAnnotation::testConstants()
+{
+    QVERIFY(StepBadgeAnnotation::kBadgeRadiusSmall > 0);
+    QVERIFY(StepBadgeAnnotation::kBadgeRadiusMedium > StepBadgeAnnotation::kBadgeRadiusSmall);
+    QVERIFY(StepBadgeAnnotation::kBadgeRadiusLarge > StepBadgeAnnotation::kBadgeRadiusMedium);
+}
+
+QTEST_MAIN(TestStepBadgeAnnotation)
+#include "tst_StepBadgeAnnotation.moc"
