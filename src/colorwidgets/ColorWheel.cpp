@@ -546,38 +546,5 @@ void ColorWheel::dropEvent(QDropEvent* event)
     }
 }
 
-// ========== Deprecated methods kept for compatibility ==========
-
-QPointF ColorWheel::wheelCenter() const
-{
-    return QPointF(width() / 2.0, height() / 2.0);
-}
-
-qreal ColorWheel::selectorRadius() const
-{
-    return innerRadius() - SELECTOR_MARGIN;
-}
-
-QPointF ColorWheel::hueIndicatorPos() const
-{
-    QPointF center = wheelCenter();
-    qreal r = (outerRadius() + innerRadius()) / 2;
-    QLineF ray(0, 0, r, 0);
-    ray.setAngle(m_hue);
-    return center + ray.p2();
-}
-
-QPointF ColorWheel::selectorIndicatorPos() const
-{
-    // This is now handled internally in paintEvent
-    return QPointF();
-}
-
-QPolygonF ColorWheel::triangleVertices() const
-{
-    // This is now handled internally in paintEvent
-    return QPolygonF();
-}
-
 }  // namespace colorwidgets
 }  // namespace snaptray

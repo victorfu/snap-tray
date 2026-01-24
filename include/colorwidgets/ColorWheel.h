@@ -95,13 +95,6 @@ private:
     // Input handling
     QLineF lineToPoint(const QPoint& p) const;
 
-    // Deprecated but kept for compatibility
-    QPointF wheelCenter() const;
-    qreal selectorRadius() const;
-    QPointF hueIndicatorPos() const;
-    QPointF selectorIndicatorPos() const;
-    QPolygonF triangleVertices() const;
-
     // Data members
     int m_hue = 0;           // 0-359
     int m_saturation = 255;  // 0-255
