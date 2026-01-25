@@ -61,6 +61,9 @@ MainApplication::MainApplication(QObject* parent)
 
 MainApplication::~MainApplication()
 {
+    // Shutdown hotkey manager to unregister all hotkeys before destruction
+    SnapTray::HotkeyManager::instance().shutdown();
+
     delete m_trayMenu;
 }
 
