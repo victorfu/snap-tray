@@ -79,6 +79,17 @@ void WindowedToolbar::setupUi()
         ButtonConfig(ButtonStepBadge, "step-badge", "Step Badge"),
         ButtonConfig(ButtonEmoji, "emoji", "Emoji"),
 
+#ifdef Q_OS_MACOS
+        // History (with separator)
+        ButtonConfig(ButtonUndo, "undo", "Undo (Cmd+Z)").separator(),
+        ButtonConfig(ButtonRedo, "redo", "Redo (Cmd+Shift+Z)"),
+
+        // Export (with separator)
+        ButtonConfig(ButtonOCR, "ocr", "OCR Text Recognition").separator(),
+        ButtonConfig(ButtonQRCode, "qrcode", "QR Code Scan"),
+        ButtonConfig(ButtonSave, "save", "Save (Cmd+S)"),
+        ButtonConfig(ButtonCopy, "copy", "Copy (Cmd+C)"),
+#else
         // History (with separator)
         ButtonConfig(ButtonUndo, "undo", "Undo (Ctrl+Z)").separator(),
         ButtonConfig(ButtonRedo, "redo", "Redo (Ctrl+Y)"),
@@ -88,6 +99,7 @@ void WindowedToolbar::setupUi()
         ButtonConfig(ButtonQRCode, "qrcode", "QR Code Scan"),
         ButtonConfig(ButtonSave, "save", "Save (Ctrl+S)"),
         ButtonConfig(ButtonCopy, "copy", "Copy (Ctrl+C)"),
+#endif
 
         // Close (with separator)
         ButtonConfig(ButtonDone, "done", "Done (Space/Esc)").separator()

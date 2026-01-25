@@ -137,8 +137,13 @@ void RegionToolbarHandler::setupToolbarButtons()
     buttons.append({ static_cast<int>(ToolId::Record), "record", "Screen Recording (R)", false });
     buttons.append({ static_cast<int>(ToolId::MultiRegion), "multi-region", "Multi-Region Capture (M)", false });
     buttons.append({ static_cast<int>(ToolId::Pin), "pin", "Pin to Screen (Enter)", false });
+#ifdef Q_OS_MACOS
+    buttons.append({ static_cast<int>(ToolId::Save), "save", "Save (Cmd+S)", false });
+    buttons.append({ static_cast<int>(ToolId::Copy), "copy", "Copy (Cmd+C)", false });
+#else
     buttons.append({ static_cast<int>(ToolId::Save), "save", "Save (Ctrl+S)", false });
     buttons.append({ static_cast<int>(ToolId::Copy), "copy", "Copy (Ctrl+C)", false });
+#endif
 
     m_toolbar->setButtons(buttons);
 

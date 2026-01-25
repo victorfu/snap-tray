@@ -251,6 +251,29 @@ void ToolRegistry::registerTools() {
         false, QColor(255, 80, 80)  // red icon
     });
 
+#ifdef Q_OS_MACOS
+    registerTool({
+        ToolId::Save,
+        "save",
+        "Save",
+        "Cmd+S",
+        ToolCategory::Action,
+        false, false, false, false, false, false,
+        false, false, false,  // UI visibility: none
+        true, QColor()
+    });
+
+    registerTool({
+        ToolId::Copy,
+        "copy",
+        "Copy to Clipboard",
+        "Cmd+C",
+        ToolCategory::Action,
+        false, false, false, false, false, false,
+        false, false, false,  // UI visibility: none
+        false, QColor()
+    });
+#else
     registerTool({
         ToolId::Save,
         "save",
@@ -272,6 +295,7 @@ void ToolRegistry::registerTools() {
         false, false, false,  // UI visibility: none
         false, QColor()
     });
+#endif
 
     registerTool({
         ToolId::Exit,
