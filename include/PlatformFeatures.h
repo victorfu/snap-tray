@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QString>
 #include <QIcon>
+#include <QImage>
 
 class OCRManager;
 class WindowDetector;
@@ -21,6 +22,15 @@ public:
 
     QString platformName() const;
     QIcon createTrayIcon() const;
+
+    // Copy image to clipboard using native APIs (for CLI mode where Qt clipboard may not persist)
+    bool copyImageToClipboard(const QImage& image) const;
+
+    // CLI installation
+    bool isCLIInstalled() const;
+    bool installCLI() const;
+    bool uninstallCLI() const;
+    QString getAppExecutablePath() const;
 
 private:
     PlatformFeatures();

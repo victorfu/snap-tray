@@ -227,6 +227,7 @@ echo ""
 echo "To install:"
 echo "  1. Open the DMG"
 echo "  2. Drag SnapTray to Applications"
+echo "  3. (Optional) Enable CLI from Settings > General"
 echo ""
 if [ -z "$CODESIGN_IDENTITY" ]; then
     echo -e "${YELLOW}Note: This build uses ad-hoc signing (no Apple Developer ID).${NC}"

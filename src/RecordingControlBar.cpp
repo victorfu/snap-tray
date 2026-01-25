@@ -27,11 +27,6 @@ QColor dimmedColor(const QColor &color)
 }
 
 // Recording control bar layout constants
-constexpr int kEffectsToolbarGap = 6;
-constexpr int kEffectsButtonPaddingX = 8;
-constexpr int kEffectsButtonSpacing = 4;
-constexpr int kEffectsToolbarPaddingX = 4;
-constexpr int kEffectsToolbarPaddingY = 2;
 }
 
 class GlassTooltipWidget : public QWidget
@@ -234,9 +229,6 @@ void RecordingControlBar::updateButtonRects()
         m_pauseRect = QRect();
         m_stopRect = QRect();
         m_cancelRect = QRect();
-        m_effectsButtonRect = QRect();
-        m_effectsToolbarRect = QRect();
-        m_effectsToolbarItems.clear();
         return;
     }
 
@@ -255,46 +247,6 @@ void RecordingControlBar::updateButtonRects()
 
     x -= buttonSize + BUTTON_SPACING;
     m_pauseRect = QRect(x, y, buttonSize, buttonSize);
-
-    // Effects button (FX) - to the left of pause button
-    x -= buttonSize + BUTTON_SPACING;
-    m_effectsButtonRect = QRect(x, y, buttonSize, buttonSize);
-
-    // Effects toolbar (appears to the left of the FX button when visible)
-    if (m_effectsToolbarVisible) {
-        QFont font = effectsToolbarFont();
-        QFontMetrics metrics(font);
-
-        // Calculate toolbar items
-        m_effectsToolbarItems.clear();
-        const auto &items = effectsToolbarItems();
-        int toolbarWidth = effectsToolbarButtonsWidth(metrics) + 16;  // padding
-        int toolbarHeight = buttonSize;  // Same height as buttons
-
-        // Position to the left of the effects button
-        int toolbarX = m_effectsButtonRect.left() - toolbarWidth - BUTTON_SPACING;
-        int toolbarY = y;
-
-        // Keep toolbar within widget bounds
-        int bgLeft = backgroundRect().left();
-        if (toolbarX < bgLeft + 4) {
-            toolbarX = bgLeft + 4;
-        }
-
-        m_effectsToolbarRect = QRect(toolbarX, toolbarY, toolbarWidth, toolbarHeight);
-
-        // Calculate individual button rects within toolbar
-        int itemX = toolbarX + 8;
-        int itemY = toolbarY + (toolbarHeight - 20) / 2;
-        for (const auto &item : items) {
-            int itemWidth = effectsToolbarButtonWidth(item, metrics);
-            m_effectsToolbarItems.append({QRect(itemX, itemY, itemWidth, 20), item});
-            itemX += itemWidth + 4;
-        }
-    } else {
-        m_effectsToolbarItems.clear();
-        m_effectsToolbarRect = QRect();
-    }
 }
 
 QRect RecordingControlBar::backgroundRect() const
@@ -334,7 +286,9 @@ int RecordingControlBar::previewWidth() const
 
 int RecordingControlBar::annotateButtonWidth() const
 {
-    QFont font = effectsToolbarFont();
+    QFont font = this->font();
+    font.setPointSize(9);
+    font.setWeight(QFont::Medium);
     QFontMetrics metrics(font);
     return metrics.horizontalAdvance(tr("Annotate")) + 16;
 }
@@ -393,36 +347,15 @@ void RecordingControlBar::updateButtonSpacerWidth()
     // Base: 3 control buttons (pause, stop, cancel)
     int baseButtonsWidth = 3 * BUTTON_WIDTH + 2 * BUTTON_SPACING + 4;
 
-    // Effects button (FX)
-    int effectsWidth = BUTTON_WIDTH + BUTTON_SPACING;
-
-    // Effects toolbar (when visible)
-    int toolbarWidth = 0;
-    if (m_effectsToolbarVisible) {
-        toolbarWidth = effectsToolbarWidth() + BUTTON_SPACING;
-    }
-
-    int totalWidth = baseButtonsWidth + effectsWidth + toolbarWidth;
-    m_buttonSpacer->setFixedWidth(totalWidth);
+    m_buttonSpacer->setFixedWidth(baseButtonsWidth);
 }
 
 QRect RecordingControlBar::anchorRectForButton(int button) const
 {
-    if (button == ButtonEffectLaser || button == ButtonEffectCursorHighlight ||
-        button == ButtonEffectSpotlight || button == ButtonEffectClickRipple ||
-        button == ButtonEffectComposite) {
-        for (const auto &entry : m_effectsToolbarItems) {
-            if (effectsToolbarButtonId(entry.second) == button) {
-                return entry.first;
-            }
-        }
-    }
-
     switch (button) {
     case ButtonPause: return m_pauseRect;
     case ButtonStop: return m_stopRect;
     case ButtonCancel: return m_cancelRect;
-    case ButtonEffects: return m_effectsButtonRect;
     case ButtonPlayPause: return m_playPauseRect;
     case ButtonVolume: return m_volumeRect;
     case ButtonFormatMP4: return m_formatMP4Rect;
@@ -633,12 +566,6 @@ void RecordingControlBar::paintEvent(QPaintEvent *event)
     } else {
         updateButtonRects();
         drawButtons(painter);
-
-        // Draw effects button (always visible in recording mode)
-        drawEffectsButton(painter);
-
-        // Draw effects sub-toolbar if visible
-        drawEffectsToolbar(painter);
     }
 
 }
@@ -702,18 +629,6 @@ QString RecordingControlBar::tooltipForButton(int button) const
         return tr("Stop Recording");
     case ButtonCancel:
         return tr("Cancel Recording (Esc)");
-    case ButtonEffects:
-        return tr("Visual Effects");
-    case ButtonEffectLaser:
-        return effectsToolbarTooltip(EffectsMenuItem::LaserPointer);
-    case ButtonEffectCursorHighlight:
-        return effectsToolbarTooltip(EffectsMenuItem::CursorHighlight);
-    case ButtonEffectSpotlight:
-        return effectsToolbarTooltip(EffectsMenuItem::Spotlight);
-    case ButtonEffectClickRipple:
-        return effectsToolbarTooltip(EffectsMenuItem::ClickRipple);
-    case ButtonEffectComposite:
-        return effectsToolbarTooltip(EffectsMenuItem::CompositeToVideo);
     // Preview mode buttons
     case ButtonPlayPause:
         return m_isPlaying ? tr("Pause (Space)") : tr("Play (Space)");
@@ -765,17 +680,6 @@ int RecordingControlBar::buttonAtPosition(const QPoint &pos) const
     if (!m_isPreparing && m_pauseRect.contains(pos)) return ButtonPause;
     if (!m_isPreparing && m_stopRect.contains(pos)) return ButtonStop;
     if (m_cancelRect.contains(pos)) return ButtonCancel;
-
-    if (m_effectsToolbarVisible && !m_isPreparing) {
-        for (const auto &entry : m_effectsToolbarItems) {
-            if (entry.first.contains(pos)) {
-                return effectsToolbarButtonId(entry.second);
-            }
-        }
-    }
-
-    // Effects button
-    if (!m_isPreparing && m_effectsButtonRect.contains(pos)) return ButtonEffects;
 
     return ButtonNone;
 }
@@ -899,24 +803,6 @@ void RecordingControlBar::mousePressEvent(QMouseEvent *event)
                     break;
                 case ButtonCancel:
                     emit cancelRequested();
-                    break;
-                case ButtonEffects:
-                    toggleEffectsToolbar();
-                    break;
-                case ButtonEffectLaser:
-                    setLaserPointerEnabled(!m_laserEnabled);
-                    break;
-                case ButtonEffectCursorHighlight:
-                    setCursorHighlightEnabled(!m_cursorHighlightEnabled);
-                    break;
-                case ButtonEffectSpotlight:
-                    setSpotlightEnabled(!m_spotlightEnabled);
-                    break;
-                case ButtonEffectClickRipple:
-                    setClickHighlightEnabled(!m_clickHighlightEnabled);
-                    break;
-                case ButtonEffectComposite:
-                    setCompositeIndicatorsEnabled(!m_compositeIndicators);
                     break;
                 }
                 return;
@@ -1096,263 +982,7 @@ void RecordingControlBar::setAudioEnabled(bool enabled)
     updateFixedWidth();
 }
 
-const QVector<RecordingControlBar::EffectsMenuItem> &RecordingControlBar::effectsToolbarItems() const
-{
-    static const QVector<EffectsMenuItem> kItems = {
-        EffectsMenuItem::LaserPointer,
-        EffectsMenuItem::CursorHighlight,
-        EffectsMenuItem::Spotlight,
-        EffectsMenuItem::ClickRipple,
-        EffectsMenuItem::CompositeToVideo
-    };
-    return kItems;
-}
 
-QString RecordingControlBar::effectsToolbarLabel(EffectsMenuItem item) const
-{
-    switch (item) {
-    case EffectsMenuItem::LaserPointer:
-        return tr("Laser");
-    case EffectsMenuItem::CursorHighlight:
-        return tr("Cursor");
-    case EffectsMenuItem::Spotlight:
-        return tr("Spot");
-    case EffectsMenuItem::ClickRipple:
-        return tr("Click");
-    case EffectsMenuItem::CompositeToVideo:
-        return tr("Embed");
-    }
-    return QString();
-}
-
-QString RecordingControlBar::effectsToolbarTooltip(EffectsMenuItem item) const
-{
-    switch (item) {
-    case EffectsMenuItem::LaserPointer:
-        return tr("Laser Pointer");
-    case EffectsMenuItem::CursorHighlight:
-        return tr("Cursor Highlight");
-    case EffectsMenuItem::Spotlight:
-        return tr("Spotlight");
-    case EffectsMenuItem::ClickRipple:
-        return tr("Click Ripple");
-    case EffectsMenuItem::CompositeToVideo:
-        return tr("Embed in Video");
-    }
-    return QString();
-}
-
-int RecordingControlBar::effectsToolbarButtonId(EffectsMenuItem item) const
-{
-    switch (item) {
-    case EffectsMenuItem::LaserPointer:
-        return ButtonEffectLaser;
-    case EffectsMenuItem::CursorHighlight:
-        return ButtonEffectCursorHighlight;
-    case EffectsMenuItem::Spotlight:
-        return ButtonEffectSpotlight;
-    case EffectsMenuItem::ClickRipple:
-        return ButtonEffectClickRipple;
-    case EffectsMenuItem::CompositeToVideo:
-        return ButtonEffectComposite;
-    }
-    return ButtonNone;
-}
-
-QFont RecordingControlBar::effectsToolbarFont() const
-{
-    QFont font = this->font();
-    font.setPointSize(9);
-    font.setWeight(QFont::Medium);
-    return font;
-}
-
-int RecordingControlBar::effectsToolbarButtonWidth(EffectsMenuItem item, const QFontMetrics &metrics) const
-{
-    return metrics.horizontalAdvance(effectsToolbarLabel(item)) + kEffectsButtonPaddingX * 2;
-}
-
-int RecordingControlBar::effectsToolbarButtonsWidth(const QFontMetrics &metrics) const
-{
-    const auto &items = effectsToolbarItems();
-    if (items.isEmpty()) {
-        return 0;
-    }
-
-    int total = 0;
-    for (EffectsMenuItem item : items) {
-        total += effectsToolbarButtonWidth(item, metrics);
-    }
-    total += kEffectsButtonSpacing * (items.size() - 1);
-    return total;
-}
-
-int RecordingControlBar::effectsToolbarWidth() const
-{
-    if (!m_effectsToolbarVisible) {
-        return 0;
-    }
-
-    QFontMetrics metrics(effectsToolbarFont());
-    int buttonsWidth = effectsToolbarButtonsWidth(metrics);
-    return buttonsWidth > 0 ? (kEffectsToolbarGap + buttonsWidth) : 0;
-}
-
-bool RecordingControlBar::isEffectEnabled(EffectsMenuItem item) const
-{
-    switch (item) {
-    case EffectsMenuItem::LaserPointer:
-        return m_laserEnabled;
-    case EffectsMenuItem::CursorHighlight:
-        return m_cursorHighlightEnabled;
-    case EffectsMenuItem::Spotlight:
-        return m_spotlightEnabled;
-    case EffectsMenuItem::ClickRipple:
-        return m_clickHighlightEnabled;
-    case EffectsMenuItem::CompositeToVideo:
-        return m_compositeIndicators;
-    }
-    return false;
-}
-
-// ============================================================================
-// Visual Effects Implementation
-// ============================================================================
-
-void RecordingControlBar::setLaserPointerEnabled(bool enabled)
-{
-    if (m_laserEnabled != enabled) {
-        m_laserEnabled = enabled;
-        update();
-        emit laserPointerToggled(enabled);
-    }
-}
-
-void RecordingControlBar::setCursorHighlightEnabled(bool enabled)
-{
-    if (m_cursorHighlightEnabled != enabled) {
-        m_cursorHighlightEnabled = enabled;
-        update();
-        emit cursorHighlightToggled(enabled);
-    }
-}
-
-void RecordingControlBar::setSpotlightEnabled(bool enabled)
-{
-    if (m_spotlightEnabled != enabled) {
-        m_spotlightEnabled = enabled;
-        update();
-        emit spotlightToggled(enabled);
-    }
-}
-
-void RecordingControlBar::setCompositeIndicatorsEnabled(bool enabled)
-{
-    if (m_compositeIndicators != enabled) {
-        m_compositeIndicators = enabled;
-        update();
-        emit compositeIndicatorsToggled(enabled);
-    }
-}
-
-void RecordingControlBar::setClickHighlightEnabled(bool enabled)
-{
-    if (m_clickHighlightEnabled != enabled) {
-        m_clickHighlightEnabled = enabled;
-        update();
-        // Note: Click highlight is handled through setClickHighlightEnabled on overlay
-    }
-}
-
-void RecordingControlBar::toggleEffectsToolbar()
-{
-    m_effectsToolbarVisible = !m_effectsToolbarVisible;
-    if (!m_effectsToolbarVisible &&
-        (m_hoveredButton == ButtonEffectLaser ||
-         m_hoveredButton == ButtonEffectCursorHighlight ||
-         m_hoveredButton == ButtonEffectSpotlight ||
-         m_hoveredButton == ButtonEffectClickRipple ||
-         m_hoveredButton == ButtonEffectComposite)) {
-        m_hoveredButton = ButtonNone;
-        hideTooltip();
-    }
-
-    updateButtonSpacerWidth();
-    updateFixedWidth();
-    update();
-}
-
-void RecordingControlBar::drawEffectsButton(QPainter &painter)
-{
-    if (m_effectsButtonRect.isNull()) return;
-
-    ToolbarStyleConfig config = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
-    const bool enabled = !m_isPreparing;
-
-    bool isHovered = enabled && (m_hoveredButton == ButtonEffects);
-    bool hasActiveEffect = m_laserEnabled || m_cursorHighlightEnabled ||
-                          m_spotlightEnabled || m_clickHighlightEnabled ||
-                          m_compositeIndicators;
-
-    // Draw background
-    if (enabled && (hasActiveEffect || isHovered || m_effectsToolbarVisible)) {
-        QColor bgColor = hasActiveEffect || m_effectsToolbarVisible
-                       ? QColor(0, 122, 255, 60)
-                       : config.hoverBackgroundColor;
-        painter.setPen(Qt::NoPen);
-        painter.setBrush(bgColor);
-        painter.drawRoundedRect(m_effectsButtonRect.adjusted(2, 2, -2, -2), 6, 6);
-    }
-
-    // Draw icon (using a simple "fx" text or effect icon)
-    QColor iconColor = enabled ? (hasActiveEffect ? QColor(0, 122, 255) : config.iconNormalColor)
-                               : dimmedColor(config.iconNormalColor);
-
-    painter.setPen(iconColor);
-    QFont smallFont = painter.font();
-    smallFont.setPointSize(9);
-    smallFont.setBold(true);
-    painter.setFont(smallFont);
-    painter.drawText(m_effectsButtonRect, Qt::AlignCenter, "FX");
-}
-
-void RecordingControlBar::drawEffectsToolbar(QPainter &painter)
-{
-    if (!m_effectsToolbarVisible || m_effectsToolbarItems.isEmpty()) {
-        return;
-    }
-
-    ToolbarStyleConfig config = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
-    if (!m_effectsToolbarRect.isNull()) {
-        GlassRenderer::drawGlassPanel(painter, m_effectsToolbarRect, config, 6);
-    }
-
-    QFont font = effectsToolbarFont();
-    painter.setFont(font);
-
-    const bool enabled = !m_isPreparing;
-    for (const auto &entry : m_effectsToolbarItems) {
-        const QRect &rect = entry.first;
-        EffectsMenuItem item = entry.second;
-
-        int buttonId = effectsToolbarButtonId(item);
-        bool isHovered = enabled && (m_hoveredButton == buttonId);
-        bool isActive = enabled && isEffectEnabled(item);
-
-        if (isActive || isHovered) {
-            painter.setPen(Qt::NoPen);
-            painter.setBrush(isActive ? config.buttonActiveColor : config.hoverBackgroundColor);
-            painter.drawRoundedRect(rect, 4, 4);
-        }
-
-        QColor textColor = isActive ? config.textActiveColor : config.textColor;
-        if (!enabled) {
-            textColor = dimmedColor(textColor);
-        }
-        painter.setPen(textColor);
-        painter.drawText(rect, Qt::AlignCenter, effectsToolbarLabel(item));
-    }
-}
 
 // ============================================================================
 // Preview Mode Implementation

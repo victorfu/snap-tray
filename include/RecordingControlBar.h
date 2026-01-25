@@ -48,18 +48,6 @@ public:
     void updateFps(double fps);
     void setAudioEnabled(bool enabled);
 
-    // Visual effect support
-    void setLaserPointerEnabled(bool enabled);
-    bool isLaserPointerEnabled() const { return m_laserEnabled; }
-    void setCursorHighlightEnabled(bool enabled);
-    bool isCursorHighlightEnabled() const { return m_cursorHighlightEnabled; }
-    void setSpotlightEnabled(bool enabled);
-    bool isSpotlightEnabled() const { return m_spotlightEnabled; }
-    void setCompositeIndicatorsEnabled(bool enabled);
-    bool isCompositeIndicatorsEnabled() const { return m_compositeIndicators; }
-    void setClickHighlightEnabled(bool enabled);
-    bool isClickHighlightEnabled() const { return m_clickHighlightEnabled; }
-
     // Mode support
     Mode mode() const { return m_mode; }
 
@@ -78,12 +66,6 @@ signals:
     void cancelRequested();
     void pauseRequested();
     void resumeRequested();
-
-    // Visual effect signals
-    void laserPointerToggled(bool enabled);
-    void cursorHighlightToggled(bool enabled);
-    void spotlightToggled(bool enabled);
-    void compositeIndicatorsToggled(bool enabled);
 
     // Preview mode signals
     void playRequested();
@@ -109,13 +91,6 @@ private:
         ButtonPause = 0,
         ButtonStop = 1,
         ButtonCancel = 2,
-        // Visual effect buttons
-        ButtonEffects = 25,
-        ButtonEffectLaser = 26,
-        ButtonEffectCursorHighlight = 27,
-        ButtonEffectSpotlight = 28,
-        ButtonEffectClickRipple = 29,
-        ButtonEffectComposite = 30,
         // Preview mode buttons
         ButtonPlayPause = 40,
         ButtonVolume = 41,
@@ -129,15 +104,6 @@ private:
         AreaTimeline = 60
     };
 
-    // Effects toolbar items
-    enum class EffectsMenuItem {
-        LaserPointer,
-        CursorHighlight,
-        Spotlight,
-        ClickRipple,
-        CompositeToVideo
-    };
-
     void setupUi();
     QString formatDuration(qint64 ms) const;
     QString formatPreviewTime(qint64 ms) const;
@@ -146,19 +112,7 @@ private:
     void updatePreviewButtonRects();
     int buttonAtPosition(const QPoint &pos) const;
     void drawButtons(QPainter &painter);
-    void drawEffectsButton(QPainter &painter);
-    void drawEffectsToolbar(QPainter &painter);
-    void toggleEffectsToolbar();
     void updateButtonSpacerWidth();
-    int effectsToolbarWidth() const;
-    int effectsToolbarButtonsWidth(const QFontMetrics &metrics) const;
-    int effectsToolbarButtonWidth(EffectsMenuItem item, const QFontMetrics &metrics) const;
-    const QVector<EffectsMenuItem> &effectsToolbarItems() const;
-    QString effectsToolbarLabel(EffectsMenuItem item) const;
-    QString effectsToolbarTooltip(EffectsMenuItem item) const;
-    int effectsToolbarButtonId(EffectsMenuItem item) const;
-    QFont effectsToolbarFont() const;
-    bool isEffectEnabled(EffectsMenuItem item) const;
     void drawPreviewModeUI(QPainter &painter);
     void drawTimeline(QPainter &painter);
     void drawFormatButtons(QPainter &painter);
@@ -193,15 +147,7 @@ private:
     int m_hoveredButton;
 
     // Visual effects state
-    bool m_laserEnabled = false;
-    bool m_cursorHighlightEnabled = false;
-    bool m_spotlightEnabled = false;
-    bool m_clickHighlightEnabled = true;  // Default on
-    bool m_compositeIndicators = false;
-    QRect m_effectsButtonRect;
-    bool m_effectsToolbarVisible = false;
-    QRect m_effectsToolbarRect;
-    QVector<QPair<QRect, EffectsMenuItem>> m_effectsToolbarItems;
+    // (Removed)
 
     // Mode state
     Mode m_mode;

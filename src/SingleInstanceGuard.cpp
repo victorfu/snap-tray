@@ -1,7 +1,11 @@
 #include "SingleInstanceGuard.h"
+
+#include <QCryptographicHash>
+#include <QDataStream>
 #include <QLocalServer>
 #include <QLocalSocket>
-#include <QCryptographicHash>
+
+#include <memory>
 
 SingleInstanceGuard::SingleInstanceGuard(const QString &appId, QObject *parent)
     : QObject(parent)
@@ -16,6 +20,7 @@ SingleInstanceGuard::~SingleInstanceGuard()
 {
     if (m_server) {
         m_server->close();
+        QLocalServer::removeServer(m_serverName);
     }
 }
 
@@ -58,14 +63,62 @@ void SingleInstanceGuard::sendActivateMessage()
 
 void SingleInstanceGuard::onNewConnection()
 {
-    QLocalSocket *client = m_server->nextPendingConnection();
-    if (client) {
-        connect(client, &QLocalSocket::readyRead, this, [this, client]() {
-            client->readAll();  // Read message (currently only "activate")
+    QLocalSocket* client = m_server->nextPendingConnection();
+    if (!client) {
+        return;
+    }
+
+    // Use shared flag to prevent double-processing
+    auto processed = std::make_shared<bool>(false);
+
+    // Lambda to process received data (only once)
+    auto processData = [this, client, processed]() {
+        // Prevent double-processing
+        if (*processed) {
+            return;
+        }
+        *processed = true;
+
+        QByteArray data = client->readAll();
+
+        // Always schedule client for deletion (fixes cleanup on early return)
+        client->deleteLater();
+
+        if (data.isEmpty()) {
+            return;
+        }
+
+        // Check if it's a simple "activate" message (backward compat)
+        if (data == "activate") {
             emit activateRequested();
+        }
+        // Check for length-prefixed JSON message
+        else if (data.size() >= static_cast<int>(sizeof(quint32))) {
+            QDataStream stream(data);
+            quint32 messageSize;
+            stream >> messageSize;
+
+            // Read the JSON message
+            QByteArray jsonData = data.mid(sizeof(quint32), messageSize);
+
+            // If we have the complete message
+            if (jsonData.size() >= static_cast<int>(messageSize)) {
+                emit commandReceived(jsonData);
+            }
+        }
+    };
+
+    connect(client, &QLocalSocket::readyRead, this, processData);
+    // Handle disconnection - cleanup if processData hasn't run yet
+    connect(client, &QLocalSocket::disconnected, this, [processed, client]() {
+        if (!*processed) {
+            *processed = true;
             client->deleteLater();
-        });
-        connect(client, &QLocalSocket::disconnected,
-                client, &QLocalSocket::deleteLater);
+        }
+    });
+
+    // Check if data is already available (race condition fix)
+    if (client->bytesAvailable() > 0) {
+        processData();
     }
 }

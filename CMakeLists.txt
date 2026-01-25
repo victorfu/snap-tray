@@ -285,6 +285,17 @@ add_library(snaptray_core STATIC
     src/settings/WatermarkSettingsManager.cpp
     src/cursor/CursorManager.cpp
     src/utils/CoordinateHelper.cpp
+    # CLI sources
+    src/cli/CLIHandler.cpp
+    src/cli/IPCProtocol.cpp
+    src/cli/commands/GuiCommand.cpp
+    src/cli/commands/FullCommand.cpp
+    src/cli/commands/ScreenCommand.cpp
+    src/cli/commands/RegionCommand.cpp
+    src/cli/commands/CanvasCommand.cpp
+    src/cli/commands/RecordCommand.cpp
+    src/cli/commands/PinCommand.cpp
+    src/cli/commands/ConfigCommand.cpp
     # Headers with Q_OBJECT for MOC processing
     include/settings/AnnotationSettingsManager.h
     include/settings/FileSettingsManager.h
@@ -307,6 +318,7 @@ target_link_libraries(snaptray_core
         Qt6::Gui
         Qt6::Widgets
         Qt6::Concurrent
+        Qt6::Network
 )
 
 # Disable qDebug() output in Release builds for core library
@@ -637,13 +649,8 @@ add_library(snaptray_ui STATIC
 
     # Renderers
     src/LaserPointerRenderer.cpp
-    src/ClickRippleRenderer.cpp
     src/WatermarkRenderer.cpp
     src/LoadingSpinnerRenderer.cpp
-
-    # Recording effects
-    src/recording/CursorHighlightEffect.cpp
-    src/recording/SpotlightEffect.cpp
 
     # Video UI
     src/video/VideoPlaybackWidget.cpp
@@ -709,11 +716,8 @@ add_library(snaptray_ui STATIC
     include/ScreenCanvas.h
     include/ScreenCanvasManager.h
     include/LaserPointerRenderer.h
-    include/ClickRippleRenderer.h
     include/WatermarkRenderer.h
     include/LoadingSpinnerRenderer.h
-    include/recording/CursorHighlightEffect.h
-    include/recording/SpotlightEffect.h
     include/video/VideoPlaybackWidget.h
     include/video/VideoTimeline.h
     include/video/TrimTimeline.h
@@ -733,14 +737,12 @@ add_library(snaptray_ui STATIC
     src/RecordingRegionSelector.cpp
     src/RecordingControlBar.cpp
     src/RecordingBoundaryOverlay.cpp
-    src/RecordingAnnotationOverlay.cpp
     src/RecordingInitTask.cpp
     src/encoding/EncodingWorker.cpp
     include/RecordingManager.h
     include/RecordingRegionSelector.h
     include/RecordingControlBar.h
     include/RecordingBoundaryOverlay.h
-    include/RecordingAnnotationOverlay.h
     include/RecordingInitTask.h
     include/encoding/EncodingWorker.h
 )

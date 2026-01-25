@@ -23,6 +23,7 @@ public:
     bool isActive() const;
     bool hasCompleteSelection() const;
     void triggerFinishSelection();
+    void cancelCapture();
 
 public slots:
     void startRegionCapture();

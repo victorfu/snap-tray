@@ -1,9 +1,17 @@
 #include "PlatformFeatures.h"
 #include "OCRManager.h"
 #include "WindowDetector.h"
+#include <QBuffer>
+#include <QClipboard>
+#include <QCoreApplication>
+#include <QGuiApplication>
+#include <QMimeData>
 #include <QPainter>
 #include <QPainterPath>
 #include <QPixmap>
+#include <QSettings>
+
+#include <windows.h>
 
 PlatformFeatures& PlatformFeatures::instance()
 {
@@ -81,4 +89,75 @@ QIcon PlatformFeatures::createTrayIcon() const
     painter.drawPath(lightningPath);
 
     return QIcon(pixmap);
+}
+
+bool PlatformFeatures::copyImageToClipboard(const QImage& image) const
+{
+    if (image.isNull()) {
+        return false;
+    }
+
+    // On Windows, use Qt clipboard with QMimeData
+    auto* mimeData = new QMimeData();
+
+    // Add PNG data
+    QByteArray pngData;
+    QBuffer buffer(&pngData);
+    buffer.open(QIODevice::WriteOnly);
+    image.save(&buffer, "PNG");
+    mimeData->setData("image/png", pngData);
+    mimeData->setImageData(image);
+
+    QGuiApplication::clipboard()->setMimeData(mimeData);
+    return true;
+}
+
+QString PlatformFeatures::getAppExecutablePath() const
+{
+    return QCoreApplication::applicationDirPath();
+}
+
+bool PlatformFeatures::isCLIInstalled() const
+{
+    QSettings env("HKEY_CURRENT_USER\\Environment", QSettings::NativeFormat);
+    QString path = env.value("Path").toString();
+    QString appDir = getAppExecutablePath();
+    return path.contains(appDir, Qt::CaseInsensitive);
+}
+
+bool PlatformFeatures::installCLI() const
+{
+    QSettings env("HKEY_CURRENT_USER\\Environment", QSettings::NativeFormat);
+    QString path = env.value("Path").toString();
+    QString appDir = getAppExecutablePath();
+
+    if (!path.contains(appDir, Qt::CaseInsensitive)) {
+        if (!path.isEmpty() && !path.endsWith(';')) {
+            path += ";";
+        }
+        path += appDir;
+        env.setValue("Path", path);
+
+        // Broadcast environment change
+        SendMessageTimeoutW(HWND_BROADCAST, WM_SETTINGCHANGE, 0,
+            reinterpret_cast<LPARAM>(L"Environment"), SMTO_ABORTIFHUNG, 5000, nullptr);
+    }
+    return true;
+}
+
+bool PlatformFeatures::uninstallCLI() const
+{
+    QSettings env("HKEY_CURRENT_USER\\Environment", QSettings::NativeFormat);
+    QString path = env.value("Path").toString();
+    QString appDir = getAppExecutablePath();
+
+    // Remove app dir from PATH
+    QStringList paths = path.split(';', Qt::SkipEmptyParts);
+    paths.removeAll(appDir);
+    env.setValue("Path", paths.join(';'));
+
+    // Broadcast environment change
+    SendMessageTimeoutW(HWND_BROADCAST, WM_SETTINGCHANGE, 0,
+        reinterpret_cast<LPARAM>(L"Environment"), SMTO_ABORTIFHUNG, 5000, nullptr);
+    return true;
 }

@@ -352,6 +352,83 @@ CMake automatically detects and uses the compiler cache when available. No addit
    - Double-click or `Esc` to close
    - Click pencil icon to open annotation toolbar for drawing on pinned images
 
+## Command Line Interface (CLI)
+
+SnapTray provides a CLI for scripting and automation.
+
+### CLI Setup (Post-Installation)
+
+**macOS (DMG):**
+After installing, run the included `install-cli.command` script to create a system-wide `snaptray` command:
+```bash
+# Or manually create the symlink:
+sudo ln -sf /Applications/SnapTray.app/Contents/MacOS/SnapTray /usr/local/bin/snaptray
+```
+
+**Windows (NSIS Installer):**
+The installer automatically adds SnapTray to your system PATH. Open a new terminal after installation.
+
+**Windows (MSIX/MS Store):**
+The `snaptray` command is available immediately after installation via App Execution Alias.
+
+### CLI Commands
+
+| Command | Description | Requires Main Instance |
+|---------|-------------|----------------------|
+| `full` | Capture full screen | No |
+| `screen` | Capture specified screen | No |
+| `region` | Capture specified region | No |
+| `gui` | Open region capture GUI | Yes |
+| `canvas` | Toggle Screen Canvas | Yes |
+| `record` | Start/stop recording | Yes |
+| `pin` | Pin image to screen | Yes |
+| `config` | View/modify settings | Partial |
+
+### CLI Examples
+
+```bash
+# Help and version
+snaptray --help
+snaptray --version
+snaptray full --help
+
+# Local capture commands (no main instance needed)
+snaptray full -c                      # Full screen to clipboard
+snaptray full -o screenshot.png       # Full screen to file
+snaptray screen --list                # List available screens
+snaptray screen 0 -c                  # Capture screen 0 to clipboard
+snaptray screen 1 -o screen1.png      # Capture screen 1 to file
+snaptray region -r 0,0,800,600 -c     # Capture region to clipboard
+snaptray region -r 100,100,400,300 -o region.png
+
+# IPC commands (requires main instance running)
+snaptray gui                          # Open region capture selector
+snaptray gui -d 2000                  # Open with 2 second delay
+snaptray canvas                       # Toggle Screen Canvas mode
+snaptray record start                 # Start recording
+snaptray record stop                  # Stop recording
+snaptray pin -f image.png             # Pin image file to screen
+
+# Options
+-c, --clipboard    Copy to clipboard
+-o, --output       Save to file
+-d, --delay        Delay before capture (milliseconds)
+-r, --region       Region coordinates (x,y,width,height)
+--raw              Output raw PNG to stdout
+--cursor           Include mouse cursor
+```
+
+### Return Codes
+
+| Code | Meaning |
+|------|---------|
+| 0 | Success |
+| 1 | General error |
+| 2 | Invalid arguments |
+| 3 | File error |
+| 4 | Instance error (main app not running) |
+| 5 | Recording error |
+
 ## Troubleshooting
 
 ### macOS: "SnapTray" cannot be opened because Apple cannot verify it

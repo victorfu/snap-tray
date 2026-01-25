@@ -352,6 +352,83 @@ CMake 會自動偵測並使用編譯器快取，無需額外設定。
    - 雙擊或 `Esc` 關閉
    - 點擊鉛筆圖示開啟標註工具列，可在釘選圖片上繪圖
 
+## 命令列介面 (CLI)
+
+SnapTray 提供 CLI 介面，可用於腳本自動化。
+
+### CLI 安裝設定（安裝後）
+
+**macOS (DMG)：**
+安裝後，執行 DMG 中的 `install-cli.command` 腳本以建立系統級的 `snaptray` 指令：
+```bash
+# 或手動建立符號連結：
+sudo ln -sf /Applications/SnapTray.app/Contents/MacOS/SnapTray /usr/local/bin/snaptray
+```
+
+**Windows (NSIS 安裝程式)：**
+安裝程式會自動將 SnapTray 加入系統 PATH。安裝後請開啟新的終端機視窗。
+
+**Windows (MSIX/MS Store)：**
+透過 App Execution Alias，`snaptray` 指令在安裝後立即可用。
+
+### CLI 指令
+
+| 指令 | 說明 | 需要主程式運行 |
+|------|------|--------------|
+| `full` | 擷取全螢幕 | 否 |
+| `screen` | 擷取指定螢幕 | 否 |
+| `region` | 擷取指定區域 | 否 |
+| `gui` | 開啟區域截圖 GUI | 是 |
+| `canvas` | 切換螢幕畫布 | 是 |
+| `record` | 開始/停止錄影 | 是 |
+| `pin` | 釘選圖片 | 是 |
+| `config` | 檢視/修改設定 | 部分 |
+
+### CLI 範例
+
+```bash
+# 說明與版本
+snaptray --help
+snaptray --version
+snaptray full --help
+
+# 本地擷取指令（不需要主程式運行）
+snaptray full -c                      # 全螢幕到剪貼簿
+snaptray full -o screenshot.png       # 全螢幕到檔案
+snaptray screen --list                # 列出可用螢幕
+snaptray screen 0 -c                  # 擷取螢幕 0 到剪貼簿
+snaptray screen 1 -o screen1.png      # 擷取螢幕 1 到檔案
+snaptray region -r 0,0,800,600 -c     # 擷取區域到剪貼簿
+snaptray region -r 100,100,400,300 -o region.png
+
+# IPC 指令（需要主程式運行）
+snaptray gui                          # 開啟區域截圖選擇器
+snaptray gui -d 2000                  # 延遲 2 秒後開啟
+snaptray canvas                       # 切換螢幕畫布模式
+snaptray record start                 # 開始錄影
+snaptray record stop                  # 停止錄影
+snaptray pin -f image.png             # 釘選圖片檔案
+
+# 選項
+-c, --clipboard    複製到剪貼簿
+-o, --output       儲存到檔案
+-d, --delay        擷取前延遲（毫秒）
+-r, --region       區域座標 (x,y,寬度,高度)
+--raw              輸出原始 PNG 到 stdout
+--cursor           包含滑鼠游標
+```
+
+### 回傳碼
+
+| 代碼 | 意義 |
+|------|------|
+| 0 | 成功 |
+| 1 | 一般錯誤 |
+| 2 | 無效參數 |
+| 3 | 檔案錯誤 |
+| 4 | 實例錯誤（主程式未運行） |
+| 5 | 錄影錯誤 |
+
 ## 疑難排解
 
 ### macOS：「SnapTray」無法打開，因為 Apple 無法驗證

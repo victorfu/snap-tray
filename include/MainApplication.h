@@ -2,10 +2,12 @@
 #define MAINAPPLICATION_H
 
 #include "hotkey/HotkeyTypes.h"
-#include <QObject>
-#include <QPointer>
-#include <QPixmap>
+
+#include <QByteArray>
 #include <QImage>
+#include <QObject>
+#include <QPixmap>
+#include <QPointer>
 
 class QSystemTrayIcon;
 class QMenu;
@@ -29,6 +31,7 @@ public:
 
 public slots:
     void activate();
+    void handleCLICommand(const QByteArray& commandData);
 
 private slots:
     void onRegionCapture();

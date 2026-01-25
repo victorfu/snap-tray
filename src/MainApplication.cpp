@@ -1,16 +1,20 @@
 #include "MainApplication.h"
-#include "SettingsDialog.h"
+
 #include "CaptureManager.h"
-#include "PinWindowManager.h"
 #include "PinWindow.h"
-#include "ScreenCanvasManager.h"
-#include "RecordingManager.h"
+#include "PinWindowManager.h"
 #include "PlatformFeatures.h"
+#include "RecordingManager.h"
+#include "ScreenCanvasManager.h"
+#include "SettingsDialog.h"
+#include "cli/IPCProtocol.h"
 #include "hotkey/HotkeyManager.h"
 #include "ui/GlobalToast.h"
 #include "video/RecordingPreviewWindow.h"
 
 #include <QFile>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QPointer>
 #include <QSystemTrayIcon>
 #include <QMenu>
@@ -75,6 +79,97 @@ void MainApplication::activate()
             tr("SnapTray is already running"),
             QSystemTrayIcon::Information,
             kUIToastTimeout);
+    }
+}
+
+void MainApplication::handleCLICommand(const QByteArray& commandData)
+{
+    using namespace SnapTray::CLI;
+
+    IPCMessage msg = IPCMessage::fromJson(commandData);
+    qDebug() << "CLI command received:" << msg.command;
+    qDebug() << "  captureManager->isActive():" << m_captureManager->isActive();
+    qDebug() << "  screenCanvasManager->isActive():" << m_screenCanvasManager->isActive();
+    qDebug() << "  recordingManager->isActive():" << m_recordingManager->isActive();
+
+    // CLI commands should preempt existing capture mode
+    // This ensures CLI commands work reliably even if RegionSelector is stuck
+    if (msg.command != "gui" && m_captureManager->isActive()) {
+        qDebug() << "CLI: Cancelling active capture to process new command";
+        m_captureManager->cancelCapture();
+    }
+
+    if (msg.command == "gui") {
+        int delay = msg.options["delay"].toInt();
+        if (delay > 0) {
+            QTimer::singleShot(delay, this, &MainApplication::onRegionCapture);
+        }
+        else {
+            onRegionCapture();
+        }
+    }
+    else if (msg.command == "canvas") {
+        onScreenCanvas();
+    }
+    else if (msg.command == "record") {
+        QString action = msg.options["action"].toString().toLower();
+
+        if (action == "start") {
+            if (!m_recordingManager->isActive()) {
+                onFullScreenRecording();
+            }
+        }
+        else if (action == "stop") {
+            if (m_recordingManager->isActive()) {
+                m_recordingManager->stopRecording();
+            }
+        }
+        else {
+            // Default: toggle (backwards compatible)
+            onFullScreenRecording();
+        }
+    }
+    else if (msg.command == "pin") {
+        if (msg.options["clipboard"].toBool()) {
+            onPasteFromClipboard();
+        }
+        else if (msg.options.contains("file")) {
+            QString filePath = msg.options["file"].toString();
+            QImage image(filePath);
+            if (!image.isNull()) {
+                QPixmap pixmap = QPixmap::fromImage(image);
+
+                // Get positioning options
+                bool hasX = msg.options.contains("x");
+                bool hasY = msg.options.contains("y");
+                bool center = msg.options["center"].toBool();
+
+                // Calculate position
+                QScreen* screen = QGuiApplication::primaryScreen();
+                QRect screenGeo = screen->availableGeometry();
+                QSize logicalSize = pixmap.size() / pixmap.devicePixelRatio();
+                QPoint position;
+
+                if (hasX && hasY) {
+                    position = QPoint(msg.options["x"].toInt(), msg.options["y"].toInt());
+                }
+                else if (center) {
+                    position = screenGeo.center() - QPoint(logicalSize.width() / 2, logicalSize.height() / 2);
+                }
+                else {
+                    // Default: center on screen (same as onImageLoaded)
+                    position = screenGeo.center() - QPoint(logicalSize.width() / 2, logicalSize.height() / 2);
+                }
+
+                m_pinWindowManager->createPinWindow(pixmap, position);
+            }
+        }
+    }
+    else if (msg.command == "config") {
+        onSettings();
+    }
+    else {
+        qWarning() << "Unknown CLI command:" << msg.command;
     }
 }
 
@@ -219,11 +314,13 @@ void MainApplication::onRegionCapture()
 {
     // Don't trigger if screen canvas is active
     if (m_screenCanvasManager->isActive()) {
+        qDebug() << "onRegionCapture: blocked by screenCanvasManager";
         return;
     }
 
     // Don't trigger if recording is active
     if (m_recordingManager->isActive()) {
+        qDebug() << "onRegionCapture: blocked by recordingManager";
         return;
     }
 
@@ -253,11 +350,13 @@ void MainApplication::onScreenCanvas()
 {
     // Don't trigger if capture is active
     if (m_captureManager->isActive()) {
+        qDebug() << "onScreenCanvas: blocked by captureManager";
         return;
     }
 
     // Don't trigger if recording is active
     if (m_recordingManager->isActive()) {
+        qDebug() << "onScreenCanvas: blocked by recordingManager";
         return;
     }
 

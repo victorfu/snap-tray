@@ -1,6 +1,7 @@
 #ifndef SINGLEINSTANCEGUARD_H
 #define SINGLEINSTANCEGUARD_H
 
+#include <QByteArray>
 #include <QObject>
 
 class QLocalServer;
@@ -17,6 +18,7 @@ public:
 
 signals:
     void activateRequested();
+    void commandReceived(const QByteArray& commandData);
 
 private slots:
     void onNewConnection();

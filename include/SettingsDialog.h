@@ -155,6 +155,12 @@ private:
     // OCR behavior settings
     QRadioButton *m_ocrDirectCopyRadio;
     QRadioButton *m_ocrShowEditorRadio;
+
+    // CLI Installation
+    QLabel *m_cliStatusLabel;
+    QPushButton *m_cliInstallButton;
+    void updateCLIStatus();
+    void onCLIButtonClicked();
 };
 
 #endif // SETTINGSDIALOG_H

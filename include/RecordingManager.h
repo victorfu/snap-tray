@@ -17,7 +17,6 @@
 class RecordingRegionSelector;
 class RecordingControlBar;
 class RecordingBoundaryOverlay;
-class RecordingAnnotationOverlay;
 class RecordingInitTask;
 class InPlacePreviewOverlay;
 class CountdownOverlay;
@@ -138,13 +137,11 @@ private:
     // Recording state
     QPointer<RecordingControlBar> m_controlBar;
     QPointer<RecordingBoundaryOverlay> m_boundaryOverlay;
-    QPointer<RecordingAnnotationOverlay> m_annotationOverlay;
     QPointer<InPlacePreviewOverlay> m_previewOverlay;
     QString m_tempVideoPath;
     std::unique_ptr<EncodingWorker> m_encodingWorker;  // Offloads encoding to worker thread
     bool m_usingNativeEncoder;          // True if using native encoder (vs GIF)
     CaptureEnginePtr m_captureEngine;   // Screen capture engine (stop + disconnect + deleteLater)
-    bool m_clickHighlightEnabled;        // True if click highlight is enabled
 
     // Capture state
     std::unique_ptr<QTimer> m_captureTimer;

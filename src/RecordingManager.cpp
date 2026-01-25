@@ -2,7 +2,6 @@
 #include "RecordingRegionSelector.h"
 #include "RecordingControlBar.h"
 #include "RecordingBoundaryOverlay.h"
-#include "RecordingAnnotationOverlay.h"
 #include "RecordingInitTask.h"
 #include "video/InPlacePreviewOverlay.h"
 #include "video/CountdownOverlay.h"
@@ -17,6 +16,7 @@
 #include "platform/WindowLevel.h"
 #include "utils/ResourceCleanupHelper.h"
 #include "utils/CoordinateHelper.h"
+#include "platform/WindowLevel.h"
 #include "settings/Settings.h"
 #include "settings/FileSettingsManager.h"
 
@@ -88,7 +88,6 @@ static void syncFile(const QString &path)
 RecordingManager::RecordingManager(QObject *parent)
     : QObject(parent)
     , m_usingNativeEncoder(false)
-    , m_clickHighlightEnabled(false)
     , m_targetScreen(nullptr)
     , m_state(State::Idle)
     , m_frameRate(kDefaultFrameRate)
@@ -294,6 +293,7 @@ void RecordingManager::startFrameCapture()
     m_boundaryOverlay->setRegion(m_recordingRegion);
     m_boundaryOverlay->show();
     raiseWindowAboveMenuBar(m_boundaryOverlay);
+    setWindowClickThrough(m_boundaryOverlay, true);
 
     // Show control bar in preparing state
     // Clean up any existing control bar first to prevent resource leak
@@ -317,62 +317,6 @@ void RecordingManager::startFrameCapture()
     // Set initial region size
     m_controlBar->updateRegionSize(m_recordingRegion.width(), m_recordingRegion.height());
     m_controlBar->updateFps(m_frameRate);
-
-    // Load click highlight settings
-    auto settings = SnapTray::getSettings();
-    m_clickHighlightEnabled = settings.value("recording/clickHighlightEnabled", false).toBool();
-
-    // Create effects overlay if click highlight or visual effects are enabled
-    // Clean up any existing annotation overlay
-    if (m_annotationOverlay) {
-        m_annotationOverlay->close();
-    }
-
-    m_annotationOverlay = new RecordingAnnotationOverlay();
-    m_annotationOverlay->setAttribute(Qt::WA_DeleteOnClose);
-    m_annotationOverlay->setRegion(m_recordingRegion);
-
-    // Enable click highlight if configured
-    if (m_clickHighlightEnabled) {
-        bool started = m_annotationOverlay->setClickHighlightEnabled(true);
-        if (!started) {
-            qWarning() << "RecordingManager: Click highlight requires Accessibility permission. "
-                       << "Grant permission in System Preferences > Security & Privacy > Privacy > Accessibility";
-            // Continue recording without click highlight - don't block the user
-        }
-    }
-
-    // Connect visual effect signals from control bar
-    connect(m_controlBar, &RecordingControlBar::laserPointerToggled,
-            this, [this](bool enabled) {
-        if (m_annotationOverlay) {
-            m_annotationOverlay->setLaserPointerEnabled(enabled);
-        }
-    });
-
-    connect(m_controlBar, &RecordingControlBar::cursorHighlightToggled,
-            this, [this](bool enabled) {
-        if (m_annotationOverlay) {
-            m_annotationOverlay->setCursorHighlightEnabled(enabled);
-        }
-    });
-
-    connect(m_controlBar, &RecordingControlBar::spotlightToggled,
-            this, [this](bool enabled) {
-        if (m_annotationOverlay) {
-            m_annotationOverlay->setSpotlightEnabled(enabled);
-        }
-    });
-
-    connect(m_controlBar, &RecordingControlBar::compositeIndicatorsToggled,
-            this, [this](bool enabled) {
-        if (m_annotationOverlay) {
-            m_annotationOverlay->setCompositeIndicatorsToVideo(enabled);
-        }
-    });
-
-    // Sync control bar state with click highlight
-    m_controlBar->setClickHighlightEnabled(m_clickHighlightEnabled);
 
     // Show in preparing state (buttons disabled until ready)
     m_controlBar->setPreparing(true);
@@ -424,10 +368,6 @@ void RecordingManager::beginAsyncInitialization()
     if (m_controlBar) {
         config.excludedWindowIds.append(m_controlBar->winId());
         setWindowExcludedFromCapture(m_controlBar, true);
-    }
-    if (m_annotationOverlay) {
-        config.excludedWindowIds.append(m_annotationOverlay->winId());
-        setWindowExcludedFromCapture(m_annotationOverlay, true);
     }
 
     // Create the init task
@@ -736,7 +676,6 @@ void RecordingManager::captureFrame()
     // where unique_ptrs might be reset during execution
     ICaptureEngine *captureEngine = m_captureEngine.get();
     EncodingWorker *encodingWorker = m_encodingWorker.get();
-    RecordingAnnotationOverlay *annotationOverlay = m_annotationOverlay;
 
     if (!captureEngine || !encodingWorker) {
         return;
@@ -755,12 +694,6 @@ void RecordingManager::captureFrame()
         }
         if (elapsedMs < 0) {
             elapsedMs = 0;
-        }
-
-        // Composite cursor effects on main thread (fast, needs live cursor state)
-        if (annotationOverlay) {
-            qreal scale = CoordinateHelper::getDevicePixelRatio(m_targetScreen);
-            annotationOverlay->compositeOntoFrame(frame, scale);
         }
 
         // Enqueue frame for encoding (non-blocking)
@@ -944,11 +877,6 @@ void RecordingManager::stopFrameCapture()
     if (m_boundaryOverlay) {
         m_boundaryOverlay->close();
         m_boundaryOverlay = nullptr;
-    }
-
-    if (m_annotationOverlay) {
-        m_annotationOverlay->close();
-        m_annotationOverlay = nullptr;  // Clear pointer since WA_DeleteOnClose will delete it
     }
 
     if (m_controlBar) {

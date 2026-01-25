@@ -1,6 +1,7 @@
 #include "SettingsDialog.h"
 #include "version.h"
 #include "AutoLaunchManager.h"
+#include "PlatformFeatures.h"
 #include "WatermarkRenderer.h"
 #include "OCRManager.h"
 #include "capture/IAudioCaptureEngine.h"
@@ -303,6 +304,25 @@ void SettingsDialog::setupGeneralTab(QWidget* tab)
     cacheFilesLayout->addWidget(m_pinWindowMaxCacheFilesSlider);
     cacheFilesLayout->addWidget(m_pinWindowMaxCacheFilesLabel);
     layout->addLayout(cacheFilesLayout);
+
+    // ========== CLI Installation Section ==========
+    layout->addSpacing(16);
+    QLabel* cliLabel = new QLabel(tr("Command Line Interface"), tab);
+    cliLabel->setStyleSheet("font-weight: bold; font-size: 12px;");
+    layout->addWidget(cliLabel);
+
+    QHBoxLayout* cliLayout = new QHBoxLayout();
+    m_cliStatusLabel = new QLabel(tab);
+    m_cliInstallButton = new QPushButton(tab);
+
+    updateCLIStatus();
+
+    connect(m_cliInstallButton, &QPushButton::clicked, this, &SettingsDialog::onCLIButtonClicked);
+
+    cliLayout->addWidget(m_cliStatusLabel);
+    cliLayout->addStretch();
+    cliLayout->addWidget(m_cliInstallButton);
+    layout->addLayout(cliLayout);
 
     layout->addStretch();
 }
@@ -1436,4 +1456,28 @@ void SettingsDialog::setupAboutTab(QWidget* tab)
     layout->addWidget(websiteLabel);
 
     layout->addStretch();
+}
+
+void SettingsDialog::updateCLIStatus()
+{
+    bool installed = PlatformFeatures::instance().isCLIInstalled();
+    if (installed) {
+        m_cliStatusLabel->setText(tr("'snaptray' command is available in terminal"));
+        m_cliInstallButton->setText(tr("Uninstall CLI"));
+    } else {
+        m_cliStatusLabel->setText(tr("'snaptray' command is not installed"));
+        m_cliInstallButton->setText(tr("Install CLI"));
+    }
+}
+
+void SettingsDialog::onCLIButtonClicked()
+{
+    bool installed = PlatformFeatures::instance().isCLIInstalled();
+    bool success = installed
+        ? PlatformFeatures::instance().uninstallCLI()
+        : PlatformFeatures::instance().installCLI();
+
+    if (success) {
+        updateCLIStatus();
+    }
 }

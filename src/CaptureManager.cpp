@@ -45,6 +45,14 @@ void CaptureManager::triggerFinishSelection()
     }
 }
 
+void CaptureManager::cancelCapture()
+{
+    if (m_regionSelector && m_regionSelector->isVisible()) {
+        qDebug() << "CaptureManager: Cancelling active capture via CLI";
+        m_regionSelector->close();
+    }
+}
+
 void CaptureManager::startRegionCapture()
 {
     // Skip if already in capture mode
