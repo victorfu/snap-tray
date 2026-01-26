@@ -194,6 +194,7 @@ void NativeGifEncoder::finish()
 
     if (!m_running || !m_gifState) {
         qDebug() << "NativeGifEncoder::finish() - Early return, not running or no state";
+        emit finished(false, QString());
         return;
     }
 
