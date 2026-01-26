@@ -282,6 +282,19 @@ bool isTextRole(const QString& role)
     return role == "text";
 }
 
+bool isDecorativeRole(const QString& role)
+{
+    static const QSet<QString> decorativeRoles = {
+        "scrollbar",
+        "splitter",
+        "splitgroup",
+        "separator",
+        "thumb",
+        "growarea",
+    };
+    return decorativeRoles.contains(role.toLower());
+}
+
 bool isWebContext(AXUIElementRef element)
 {
     if (!element) {

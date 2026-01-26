@@ -974,6 +974,16 @@ void RegionSelector::updateWindowDetection(const QPoint& localPos)
                     normalized == "browser";
             };
 
+            auto isDecorativeRole = [](const QString& role) {
+                const QString normalized = role.toLower();
+                return normalized == "scrollbar" ||
+                       normalized == "splitter" ||
+                       normalized == "splitgroup" ||
+                       normalized == "separator" ||
+                       normalized == "thumb" ||
+                       normalized == "growarea";
+            };
+
             const bool uiIsLargeContainer = isContainerRole(detected->role) &&
                 windowArea > 0 &&
                 uiArea * 100 >= windowArea * 85;
@@ -994,8 +1004,9 @@ void RegionSelector::updateWindowDetection(const QPoint& localPos)
                 -kWindowEdgeSnapPx, -kWindowEdgeSnapPx);
             const bool nearWindowEdge = !innerWindow.isValid() || !innerWindow.contains(globalPos);
 
-            // Prefer window when UI element is essentially a full-window container.
-            if (uiIsLargeContainer || windowArea < uiArea || uiTooSmall || nearWindowEdge) {
+            // Prefer window when UI element is decorative or essentially a full-window container.
+            const bool uiIsDecorative = isDecorativeRole(detected->role);
+            if (uiIsLargeContainer || windowArea < uiArea || uiTooSmall || nearWindowEdge || uiIsDecorative) {
                 detected = windowElement;
             }
         }
