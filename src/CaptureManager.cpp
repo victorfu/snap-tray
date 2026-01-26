@@ -207,6 +207,26 @@ void CaptureManager::startRegionCaptureWithPreset(const QRect &region, QScreen *
         m_windowDetector->setScreen(screen);
         m_windowDetector->refreshWindowListAsync();
         m_regionSelector->setWindowDetector(m_windowDetector);
+
+        // Trigger initial window highlight once the async window list is ready.
+        if (m_windowDetector->isEnabled()) {
+            const auto regionSelector = m_regionSelector;
+            const auto triggerDetection = [regionSelector]() {
+                if (!regionSelector) {
+                    return;
+                }
+                regionSelector->refreshWindowDetectionAtCursor();
+            };
+
+            if (m_windowDetector->isRefreshComplete()) {
+                triggerDetection();
+            } else {
+                connect(m_windowDetector, &WindowDetector::windowListReady,
+                        m_regionSelector, [triggerDetection]() {
+                            triggerDetection();
+                        });
+            }
+        }
     }
 
     // Initialize with preset region
