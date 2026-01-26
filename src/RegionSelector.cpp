@@ -888,6 +888,14 @@ bool RegionSelector::isSelectionComplete() const
 void RegionSelector::setWindowDetector(WindowDetector* detector)
 {
     m_windowDetector = detector;
+
+#ifdef Q_OS_MAC
+    // Request accessibility permission if UI element detection is enabled but permission not granted
+    if (m_windowDetector && m_windowDetector->isUIElementDetectionEnabled() &&
+        !WindowDetector::hasAccessibilityPermission()) {
+        WindowDetector::requestAccessibilityPermission();
+    }
+#endif
 }
 
 void RegionSelector::refreshWindowDetectionAtCursor()

@@ -32,6 +32,14 @@ public:
     bool uninstallCLI() const;
     QString getAppExecutablePath() const;
 
+#ifdef Q_OS_MAC
+    // macOS permission management
+    static bool hasScreenRecordingPermission();
+    static bool hasAccessibilityPermission();
+    static void openScreenRecordingSettings();
+    static void openAccessibilitySettings();
+#endif
+
 private:
     PlatformFeatures();
     ~PlatformFeatures();

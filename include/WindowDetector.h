@@ -64,6 +64,9 @@ public:
 
     // Permission management
     static bool hasAccessibilityPermission();
+#ifdef Q_OS_MAC
+    static void requestAccessibilityPermission();
+#endif
 
     // Detection control
     void setScreen(QScreen *screen);

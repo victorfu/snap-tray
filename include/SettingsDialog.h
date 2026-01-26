@@ -161,6 +161,15 @@ private:
     QPushButton *m_cliInstallButton;
     void updateCLIStatus();
     void onCLIButtonClicked();
+
+#ifdef Q_OS_MAC
+    // Permissions (macOS only)
+    QLabel *m_screenRecordingStatusLabel;
+    QPushButton *m_screenRecordingSettingsBtn;
+    QLabel *m_accessibilityStatusLabel;
+    QPushButton *m_accessibilitySettingsBtn;
+    void updatePermissionStatus();
+#endif
 };
 
 #endif // SETTINGSDIALOG_H

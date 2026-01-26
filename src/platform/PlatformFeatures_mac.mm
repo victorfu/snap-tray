@@ -12,6 +12,13 @@
 #include <QProcess>
 
 #import <AppKit/AppKit.h>
+#import <ApplicationServices/ApplicationServices.h>
+
+// ScreenCaptureKit availability check
+#if __MAC_OS_X_VERSION_MAX_ALLOWED >= 120300
+#define HAS_SCREENCAPTUREKIT 1
+#import <ScreenCaptureKit/ScreenCaptureKit.h>
+#endif
 
 PlatformFeatures& PlatformFeatures::instance()
 {
@@ -174,4 +181,49 @@ bool PlatformFeatures::uninstallCLI() const
     process.start("osascript", {"-e", script});
     process.waitForFinished(-1);
     return process.exitCode() == 0;
+}
+
+// macOS permission management
+
+bool PlatformFeatures::hasScreenRecordingPermission()
+{
+#if HAS_SCREENCAPTUREKIT
+    if (@available(macOS 12.3, *)) {
+        __block BOOL hasPermission = NO;
+        dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
+
+        [SCShareableContent getShareableContentWithCompletionHandler:^(
+            SCShareableContent *content, NSError *error) {
+            hasPermission = (content != nil && error == nil);
+            dispatch_semaphore_signal(semaphore);
+        }];
+
+        dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, 3 * NSEC_PER_SEC));
+        return hasPermission;
+    }
+#endif
+    // For older macOS versions, assume permission granted
+    return true;
+}
+
+bool PlatformFeatures::hasAccessibilityPermission()
+{
+    NSDictionary *options = @{(__bridge NSString *)kAXTrustedCheckOptionPrompt: @NO};
+    return AXIsProcessTrustedWithOptions((__bridge CFDictionaryRef)options);
+}
+
+void PlatformFeatures::openScreenRecordingSettings()
+{
+    @autoreleasepool {
+        NSURL *url = [NSURL URLWithString:@"x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture"];
+        [[NSWorkspace sharedWorkspace] openURL:url];
+    }
+}
+
+void PlatformFeatures::openAccessibilitySettings()
+{
+    @autoreleasepool {
+        NSURL *url = [NSURL URLWithString:@"x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"];
+        [[NSWorkspace sharedWorkspace] openURL:url];
+    }
 }

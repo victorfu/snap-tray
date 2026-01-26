@@ -305,6 +305,49 @@ void SettingsDialog::setupGeneralTab(QWidget* tab)
     cacheFilesLayout->addWidget(m_pinWindowMaxCacheFilesLabel);
     layout->addLayout(cacheFilesLayout);
 
+#ifdef Q_OS_MAC
+    // ========== Permissions Section (macOS only) ==========
+    layout->addSpacing(16);
+    QLabel* permissionsLabel = new QLabel(tr("Permissions"), tab);
+    permissionsLabel->setStyleSheet("font-weight: bold; font-size: 12px;");
+    layout->addWidget(permissionsLabel);
+
+    // Screen Recording row
+    QHBoxLayout* screenRecordingLayout = new QHBoxLayout();
+    QLabel* screenRecordingLabel = new QLabel(tr("Screen Recording:"), tab);
+    screenRecordingLabel->setFixedWidth(120);
+    m_screenRecordingStatusLabel = new QLabel(tab);
+    m_screenRecordingSettingsBtn = new QPushButton(tr("Open Settings"), tab);
+    m_screenRecordingSettingsBtn->setFixedWidth(100);
+    connect(m_screenRecordingSettingsBtn, &QPushButton::clicked, this, []() {
+        PlatformFeatures::openScreenRecordingSettings();
+    });
+    screenRecordingLayout->addWidget(screenRecordingLabel);
+    screenRecordingLayout->addWidget(m_screenRecordingStatusLabel);
+    screenRecordingLayout->addStretch();
+    screenRecordingLayout->addWidget(m_screenRecordingSettingsBtn);
+    layout->addLayout(screenRecordingLayout);
+
+    // Accessibility row
+    QHBoxLayout* accessibilityLayout = new QHBoxLayout();
+    QLabel* accessibilityLabel = new QLabel(tr("Accessibility:"), tab);
+    accessibilityLabel->setFixedWidth(120);
+    m_accessibilityStatusLabel = new QLabel(tab);
+    m_accessibilitySettingsBtn = new QPushButton(tr("Open Settings"), tab);
+    m_accessibilitySettingsBtn->setFixedWidth(100);
+    connect(m_accessibilitySettingsBtn, &QPushButton::clicked, this, []() {
+        PlatformFeatures::openAccessibilitySettings();
+    });
+    accessibilityLayout->addWidget(accessibilityLabel);
+    accessibilityLayout->addWidget(m_accessibilityStatusLabel);
+    accessibilityLayout->addStretch();
+    accessibilityLayout->addWidget(m_accessibilitySettingsBtn);
+    layout->addLayout(accessibilityLayout);
+
+    // Update permission status
+    updatePermissionStatus();
+#endif
+
     // ========== CLI Installation Section ==========
     layout->addSpacing(16);
     QLabel* cliLabel = new QLabel(tr("Command Line Interface"), tab);
@@ -1469,6 +1512,31 @@ void SettingsDialog::updateCLIStatus()
         m_cliInstallButton->setText(tr("Install CLI"));
     }
 }
+
+#ifdef Q_OS_MAC
+void SettingsDialog::updatePermissionStatus()
+{
+    // Screen Recording permission
+    bool hasScreenRecording = PlatformFeatures::hasScreenRecordingPermission();
+    if (hasScreenRecording) {
+        m_screenRecordingStatusLabel->setText(tr("Granted"));
+        m_screenRecordingStatusLabel->setStyleSheet("color: green;");
+    } else {
+        m_screenRecordingStatusLabel->setText(tr("Not Granted"));
+        m_screenRecordingStatusLabel->setStyleSheet("color: red;");
+    }
+
+    // Accessibility permission
+    bool hasAccessibility = PlatformFeatures::hasAccessibilityPermission();
+    if (hasAccessibility) {
+        m_accessibilityStatusLabel->setText(tr("Granted"));
+        m_accessibilityStatusLabel->setStyleSheet("color: green;");
+    } else {
+        m_accessibilityStatusLabel->setText(tr("Not Granted"));
+        m_accessibilityStatusLabel->setStyleSheet("color: red;");
+    }
+}
+#endif
 
 void SettingsDialog::onCLIButtonClicked()
 {
