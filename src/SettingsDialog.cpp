@@ -318,7 +318,6 @@ void SettingsDialog::setupGeneralTab(QWidget* tab)
     screenRecordingLabel->setFixedWidth(120);
     m_screenRecordingStatusLabel = new QLabel(tab);
     m_screenRecordingSettingsBtn = new QPushButton(tr("Open Settings"), tab);
-    m_screenRecordingSettingsBtn->setFixedWidth(100);
     connect(m_screenRecordingSettingsBtn, &QPushButton::clicked, this, []() {
         PlatformFeatures::openScreenRecordingSettings();
     });
@@ -334,7 +333,6 @@ void SettingsDialog::setupGeneralTab(QWidget* tab)
     accessibilityLabel->setFixedWidth(120);
     m_accessibilityStatusLabel = new QLabel(tab);
     m_accessibilitySettingsBtn = new QPushButton(tr("Open Settings"), tab);
-    m_accessibilitySettingsBtn->setFixedWidth(100);
     connect(m_accessibilitySettingsBtn, &QPushButton::clicked, this, []() {
         PlatformFeatures::openAccessibilitySettings();
     });
