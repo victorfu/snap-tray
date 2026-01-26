@@ -16,7 +16,6 @@
 #include "platform/WindowLevel.h"
 #include "utils/ResourceCleanupHelper.h"
 #include "utils/CoordinateHelper.h"
-#include "platform/WindowLevel.h"
 #include "settings/Settings.h"
 #include "settings/FileSettingsManager.h"
 
