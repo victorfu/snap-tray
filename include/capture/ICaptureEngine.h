@@ -11,7 +11,10 @@ class QScreen;
 /**
  * @brief Abstract interface for screen capture engines
  *
- * Provides a platform-agnostic interface for capturing screen regions.
+ * Provides a platform-agnostic interface for capturing screen regions
+ * using a polling-based model. Consumers call captureFrame() at their
+ * desired frame rate (typically via QTimer).
+ *
  * Implementations include:
  * - QtCaptureEngine: Cross-platform fallback using QScreen::grabWindow()
  * - SCKCaptureEngine: macOS ScreenCaptureKit (12.3+)
@@ -89,13 +92,6 @@ public:
     static bool isNativeEngineAvailable();
 
 signals:
-    /**
-     * @brief Emitted when a frame is captured asynchronously
-     * @param frame The captured frame
-     * @param timestamp Capture timestamp in milliseconds
-     */
-    void frameReady(const QImage &frame, qint64 timestamp);
-
     /**
      * @brief Emitted when a capture error occurs
      * @param message Error description
