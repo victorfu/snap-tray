@@ -79,6 +79,7 @@ public:
     std::optional<DetectedElement> detectWindowAt(const QPoint &screenPos) const;
 
     // Detection mode control
+    void setDetectionFlags(DetectionFlags flags);
     DetectionFlags detectionFlags() const;
 
 signals:
