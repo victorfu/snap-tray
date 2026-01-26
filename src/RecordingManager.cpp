@@ -530,13 +530,11 @@ void RecordingManager::onInitializationComplete()
         bool useNativeAudio = m_usingNativeEncoder;
 
         if (useNativeAudio) {
-            // Connect audio data to encoding worker (which forwards to encoder)
+            // Connect audio data directly to encoding worker (bypasses Main Thread)
+            // EncodingWorker::writeAudioSamples is thread-safe (uses internal queue)
             connect(m_audioEngine.get(), &IAudioCaptureEngine::audioDataReady,
-                    this, [this](const QByteArray &data, qint64 timestamp) {
-                if (m_encodingWorker) {
-                    m_encodingWorker->writeAudioSamples(data, timestamp);
-                }
-            }, Qt::QueuedConnection);
+                    m_encodingWorker.get(), &EncodingWorker::writeAudioSamples,
+                    Qt::DirectConnection);
             // NOTE: Audio capture is started in startRecordingAfterCountdown()
             // to synchronize timestamps with video
         } else {

@@ -46,6 +46,14 @@ public:
     };
 
     /**
+     * @brief Audio data passed to the encoding queue
+     */
+    struct AudioData {
+        QByteArray data;
+        qint64 timestampMs;
+    };
+
+    /**
      * @brief Encoder type selection
      */
     enum class EncoderType {
@@ -114,8 +122,8 @@ public:
      * @param data PCM audio data
      * @param timestampMs Timestamp in milliseconds
      *
-     * Audio passes through directly to the encoder which handles backpressure.
-     * This is thread-safe as AVAssetWriter handles concurrent access.
+     * Thread-safe: Audio is queued and processed by the worker thread.
+     * Can be called from any thread (e.g., audio capture thread via DirectConnection).
      */
     void writeAudioSamples(const QByteArray& data, qint64 timestampMs);
 
@@ -167,6 +175,10 @@ private:
     mutable QMutex m_queueMutex;
     QQueue<FrameData> m_frameQueue;
     static constexpr int MAX_QUEUE_SIZE = 30;  // ~1 second at 30fps
+
+    // Audio queue (thread-safe, shared mutex with frame queue)
+    QQueue<AudioData> m_audioQueue;
+    static constexpr int MAX_AUDIO_QUEUE_SIZE = 100;  // ~1 second buffer
 
     // Processing state
     std::atomic<bool> m_running{false};

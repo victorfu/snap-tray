@@ -64,10 +64,11 @@ bool EncodingWorker::start()
     m_framesWritten = 0;
     m_wasNearFull = false;
 
-    // Clear any stale frames from previous session
+    // Clear any stale data from previous session
     {
         QMutexLocker locker(&m_queueMutex);
         m_frameQueue.clear();
+        m_audioQueue.clear();
     }
 
     return true;
@@ -79,10 +80,11 @@ void EncodingWorker::stop()
     m_finishRequested = false;
     m_running = false;
 
-    // Clear queue
+    // Clear queues
     {
         QMutexLocker locker(&m_queueMutex);
         m_frameQueue.clear();
+        m_audioQueue.clear();
     }
 
     // Wait for processing to finish BEFORE aborting encoders
@@ -154,10 +156,27 @@ bool EncodingWorker::enqueueFrame(const FrameData& frame)
 
 void EncodingWorker::writeAudioSamples(const QByteArray& data, qint64 timestampMs)
 {
-    // Audio passes through directly to encoder
-    // AVAssetWriter handles thread safety and backpressure
-    if (m_running.load() && m_encoderType == EncoderType::Video && m_videoEncoder) {
-        m_videoEncoder->writeAudioSamples(data, timestampMs);
+    if (!m_acceptingFrames.load() || !m_running.load()) {
+        return;
+    }
+
+    if (m_encoderType != EncoderType::Video || !m_videoEncoder) {
+        return;  // Audio only supported for video encoding
+    }
+
+    {
+        QMutexLocker locker(&m_queueMutex);
+        if (m_audioQueue.size() >= MAX_AUDIO_QUEUE_SIZE) {
+            return;  // Drop audio if queue full (prevents blocking capture thread)
+        }
+        m_audioQueue.enqueue({data, timestampMs});
+    }
+
+    // Kick off processing if not already running
+    if (!m_isProcessing.exchange(true)) {
+        m_processingFuture = QtConcurrent::run([this]() {
+            processNextFrame();
+        });
     }
 }
 
@@ -176,12 +195,23 @@ void EncodingWorker::processNextFrame()
 {
     while (true) {
         FrameData frameData;
-        int depth;
+        AudioData audioData;
+        bool hasFrame = false;
+        bool hasAudio = false;
+        int frameDepth = 0;
 
-        // Get next frame from queue
+        // Get next item from queues (prioritize audio to prevent buffer buildup)
         {
             QMutexLocker locker(&m_queueMutex);
-            if (m_frameQueue.isEmpty()) {
+
+            if (!m_audioQueue.isEmpty()) {
+                audioData = m_audioQueue.dequeue();
+                hasAudio = true;
+            } else if (!m_frameQueue.isEmpty()) {
+                frameData = m_frameQueue.dequeue();
+                frameDepth = m_frameQueue.size();
+                hasFrame = true;
+            } else {
                 m_isProcessing = false;
 
                 // Check if finish was requested
@@ -192,20 +222,25 @@ void EncodingWorker::processNextFrame()
                 }
                 return;
             }
-            frameData = m_frameQueue.dequeue();
-            depth = m_frameQueue.size();
         }
 
-        // Emit queue low signal outside lock
-        if (depth <= QUEUE_LOW_THRESHOLD && m_wasNearFull) {
-            QMetaObject::invokeMethod(this, [this, depth]() {
-                emit queueLow(depth, MAX_QUEUE_SIZE);
-            }, Qt::QueuedConnection);
-            m_wasNearFull = false;
-        }
+        if (hasAudio) {
+            // Write audio directly to encoder (we're on worker thread)
+            if (m_videoEncoder) {
+                m_videoEncoder->writeAudioSamples(audioData.data, audioData.timestampMs);
+            }
+        } else if (hasFrame) {
+            // Emit queue low signal outside lock
+            if (frameDepth <= QUEUE_LOW_THRESHOLD && m_wasNearFull) {
+                QMetaObject::invokeMethod(this, [this, frameDepth]() {
+                    emit queueLow(frameDepth, MAX_QUEUE_SIZE);
+                }, Qt::QueuedConnection);
+                m_wasNearFull = false;
+            }
 
-        // Process the frame (heavy work)
-        doProcessFrame(frameData);
+            // Process the frame (heavy work)
+            doProcessFrame(frameData);
+        }
     }
 }
 
