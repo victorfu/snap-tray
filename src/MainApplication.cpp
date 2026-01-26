@@ -116,7 +116,24 @@ void MainApplication::handleCLICommand(const QByteArray& commandData)
 
         if (action == "start") {
             if (!m_recordingManager->isActive()) {
-                onFullScreenRecording();
+                // Check if a specific screen is requested
+                if (msg.options.contains("screen")) {
+                    int screenNum = msg.options["screen"].toInt();
+                    auto screens = QGuiApplication::screens();
+                    if (screenNum >= 0 && screenNum < screens.size()) {
+                        QScreen* screen = screens.at(screenNum);
+                        // Use the full screen geometry of the specified screen
+                        QRect region = screen->geometry();
+                        m_recordingManager->startRegionSelectionWithPreset(region, screen);
+                    }
+                    else {
+                        qWarning() << "Invalid screen number:" << screenNum;
+                        onFullScreenRecording();
+                    }
+                }
+                else {
+                    onFullScreenRecording();
+                }
             }
         }
         else if (action == "stop") {
@@ -126,7 +143,12 @@ void MainApplication::handleCLICommand(const QByteArray& commandData)
         }
         else {
             // Default: toggle (backwards compatible)
-            onFullScreenRecording();
+            if (m_recordingManager->isActive()) {
+                m_recordingManager->stopRecording();
+            }
+            else {
+                onFullScreenRecording();
+            }
         }
     }
     else if (msg.command == "pin") {
