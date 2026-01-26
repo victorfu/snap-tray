@@ -193,7 +193,7 @@ void RecordingManager::startRegionSelectionWithPreset(const QRect &region, QScre
     selector->raise();
 }
 
-void RecordingManager::startFullScreenRecording()
+void RecordingManager::startFullScreenRecording(QScreen* screen)
 {
     // Check if already active
     if (m_state == State::Recording || m_state == State::Paused || m_state == State::Encoding) {
@@ -204,8 +204,11 @@ void RecordingManager::startFullScreenRecording()
         return;
     }
 
-    // Determine target screen based on cursor position
-    QScreen *targetScreen = QGuiApplication::screenAt(QCursor::pos());
+    // Use provided screen or determine from cursor position
+    QScreen *targetScreen = screen;
+    if (!targetScreen) {
+        targetScreen = QGuiApplication::screenAt(QCursor::pos());
+    }
     if (!targetScreen) {
         targetScreen = QGuiApplication::primaryScreen();
     }

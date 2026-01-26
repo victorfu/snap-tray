@@ -60,7 +60,7 @@ public:
 
 public slots:
     void startRegionSelectionWithPreset(const QRect &region, QScreen *screen);  // Use preset region
-    void startFullScreenRecording();  // Record entire screen at cursor position
+    void startFullScreenRecording(QScreen* screen = nullptr);  // Record entire screen (cursor position or specified)
     void stopRecording();           // Stop and save recording
     void cancelRecording();         // Cancel without saving
     void pauseRecording();          // Pause recording

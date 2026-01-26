@@ -122,9 +122,7 @@ void MainApplication::handleCLICommand(const QByteArray& commandData)
                     auto screens = QGuiApplication::screens();
                     if (screenNum >= 0 && screenNum < screens.size()) {
                         QScreen* screen = screens.at(screenNum);
-                        // Use the full screen geometry of the specified screen
-                        QRect region = screen->geometry();
-                        m_recordingManager->startRegionSelectionWithPreset(region, screen);
+                        m_recordingManager->startFullScreenRecording(screen);
                     }
                     else {
                         qWarning() << "Invalid screen number:" << screenNum;
