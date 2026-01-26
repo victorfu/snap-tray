@@ -9,7 +9,6 @@
 #include <QMutex>
 #include <QFuture>
 #include <QPointer>
-#include <QElapsedTimer>
 #include <vector>
 #include <optional>
 
@@ -22,7 +21,6 @@ enum class ElementType {
     PopupMenu,      // Application menu dropdown
     Dialog,         // Dialog/modal window
     StatusBarItem,  // Menu bar popup (macOS) / System tray popup (Windows)
-    UIElement,      // UI element (button, table, image, text, etc.)
     Unknown
 };
 
@@ -36,7 +34,6 @@ enum class DetectionFlag {
     StatusBarItems = 1 << 4,   // Menu bar popups (macOS) / System tray popups (Windows)
     ModernUI       = 1 << 5,   // Modern UI elements (IME, tooltips, notifications)
     ChildControls  = 1 << 6,   // Child controls within windows (buttons, text boxes, panels)
-    UIElements     = 1 << 7,   // UI elements via accessibility APIs (tables, images, buttons, etc.)
     AllSystemUI    = ContextMenus | PopupMenus | Dialogs | StatusBarItems | ModernUI,
     All            = Windows | AllSystemUI
 };
@@ -51,8 +48,6 @@ struct DetectedElement {
     int windowLayer;        // Window layer/level for z-ordering
     uint32_t windowId;      // Window ID for identification
     ElementType elementType = ElementType::Window;  // Type of detected element
-    QString role;           // Accessibility role (e.g., "button", "table", "image")
-    QString description;    // Accessibility description or label
 };
 
 class WindowDetector : public QObject
@@ -65,9 +60,6 @@ public:
 
     // Permission management
     static bool hasAccessibilityPermission();
-#ifdef Q_OS_MAC
-    static void requestAccessibilityPermission();
-#endif
 
     // Detection control
     void setScreen(QScreen *screen);
@@ -86,18 +78,8 @@ public:
     // Find window at point (screen coordinates)
     std::optional<DetectedElement> detectWindowAt(const QPoint &screenPos) const;
 
-    // Find UI element at point using accessibility APIs (screen coordinates)
-    // Returns the most specific (smallest) element at the given position
-    // Requires accessibility permissions on macOS
-    std::optional<DetectedElement> detectUIElementAt(const QPoint &screenPos) const;
-
-    // Enable/disable UI element detection (accessibility-based)
-    void setUIElementDetectionEnabled(bool enabled);
-    bool isUIElementDetectionEnabled() const;
-
     // Detection mode control
     DetectionFlags detectionFlags() const;
-    void setDetectionFlags(DetectionFlags flags);
 
 signals:
     void windowListReady();
@@ -110,17 +92,10 @@ private:
     mutable QMutex m_cacheMutex;
     QPointer<QScreen> m_currentScreen;
     bool m_enabled;
-    bool m_uiElementDetectionEnabled = true;
-    DetectionFlags m_detectionFlags = DetectionFlag::All | DetectionFlag::UIElements;
+    DetectionFlags m_detectionFlags = DetectionFlag::All;
     QFuture<void> m_refreshFuture;
     std::atomic<bool> m_refreshComplete{true};
     std::atomic<uint64_t> m_refreshRequestId{0};
-
-    // UIElement detection cache for performance
-    mutable std::optional<DetectedElement> m_uiElementCache;
-    mutable QPoint m_uiElementCachePos;
-    mutable QElapsedTimer m_uiElementCacheTimer;
-    static constexpr int kUiElementCacheTtlMs = 50;
 };
 
 #endif // WINDOWDETECTOR_H

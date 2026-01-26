@@ -213,7 +213,7 @@ private:
     Qt::KeyboardModifiers m_currentModifiers = Qt::NoModifier;
 
     // Constants
-    static constexpr int WINDOW_DETECTION_MIN_DISTANCE_SQ = 36;  // 6px threshold squared for faster response
+    static constexpr int WINDOW_DETECTION_MIN_DISTANCE_SQ = 64;  // 8px threshold squared (improved for high-DPI)
 };
 
 #endif // REGIONINPUTHANDLER_H

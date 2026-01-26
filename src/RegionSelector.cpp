@@ -888,14 +888,6 @@ bool RegionSelector::isSelectionComplete() const
 void RegionSelector::setWindowDetector(WindowDetector* detector)
 {
     m_windowDetector = detector;
-
-#ifdef Q_OS_MAC
-    // Request accessibility permission if UI element detection is enabled but permission not granted
-    if (m_windowDetector && m_windowDetector->isUIElementDetectionEnabled() &&
-        !WindowDetector::hasAccessibilityPermission()) {
-        WindowDetector::requestAccessibilityPermission();
-    }
-#endif
 }
 
 void RegionSelector::refreshWindowDetectionAtCursor()
@@ -915,102 +907,7 @@ void RegionSelector::updateWindowDetection(const QPoint& localPos)
         return;
     }
 
-    const QPoint globalPos = localToGlobal(localPos);
-
-    // First, try to detect a UI element (more specific, accessibility-based)
-    std::optional<DetectedElement> detected;
-
-    const bool uiEnabled = m_windowDetector->isUIElementDetectionEnabled();
-    qDebug() << "updateWindowDetection: UI element detection enabled=" << uiEnabled;
-
-    auto elementArea = [](const QRect& bounds) -> qint64 {
-        return static_cast<qint64>(bounds.width()) * bounds.height();
-    };
-
-    std::optional<DetectedElement> stickyUiElement;
-    if (uiEnabled && m_detectedWindow.has_value() &&
-        m_detectedWindow->elementType == ElementType::UIElement &&
-        m_detectedWindow->bounds.contains(globalPos)) {
-        stickyUiElement = m_detectedWindow;
-    }
-
-    if (uiEnabled) {
-        auto uiElement = m_windowDetector->detectUIElementAt(globalPos);
-        if (uiElement.has_value()) {
-            if (stickyUiElement.has_value()) {
-                const qint64 stickyArea = elementArea(stickyUiElement->bounds);
-                const qint64 uiArea = elementArea(uiElement->bounds);
-                detected = (uiArea <= stickyArea) ? uiElement : stickyUiElement;
-            } else {
-                detected = uiElement;
-            }
-            qDebug() << "updateWindowDetection: UI element found!";
-        } else if (stickyUiElement.has_value()) {
-            detected = stickyUiElement;
-            qDebug() << "updateWindowDetection: UI element not found, keeping previous element";
-        } else {
-            qDebug() << "updateWindowDetection: UI element NOT found, falling back to window detection";
-        }
-    }
-
-    // If no UI element found, fall back to window detection
-    if (!detected.has_value()) {
-        detected = m_windowDetector->detectWindowAt(globalPos);
-    } else {
-        // Compare with window detection and avoid tiny UI elements when selecting windows.
-        auto windowElement = m_windowDetector->detectWindowAt(globalPos);
-        if (windowElement.has_value()) {
-            const qint64 uiArea = elementArea(detected->bounds);
-            const qint64 windowArea = elementArea(windowElement->bounds);
-
-            auto isContainerRole = [](const QString& role) {
-                const QString normalized = role.toLower();
-                return normalized.isEmpty() ||
-                    normalized == "webpage" ||
-                    normalized == "document" ||
-                    normalized == "scrollarea" ||
-                    normalized == "pane" ||
-                    normalized == "group" ||
-                    normalized == "browser";
-            };
-
-            auto isDecorativeRole = [](const QString& role) {
-                const QString normalized = role.toLower();
-                return normalized == "scrollbar" ||
-                       normalized == "splitter" ||
-                       normalized == "splitgroup" ||
-                       normalized == "separator" ||
-                       normalized == "thumb" ||
-                       normalized == "growarea";
-            };
-
-            const bool uiIsLargeContainer = isContainerRole(detected->role) &&
-                windowArea > 0 &&
-                uiArea * 100 >= windowArea * 85;
-
-            // Prefer window for tiny UI elements or when the cursor is near window edges.
-            const int kMinUiElementPx = 12;
-            const int kMinUiAreaDivisor = 300;  // 0.33% of window area
-            const qint64 minUiArea = qMax(
-                static_cast<qint64>(kMinUiElementPx) * kMinUiElementPx,
-                windowArea / kMinUiAreaDivisor);
-            const bool uiTooSmall = detected->bounds.width() < kMinUiElementPx ||
-                detected->bounds.height() < kMinUiElementPx ||
-                uiArea < minUiArea;
-
-            const int kWindowEdgeSnapPx = 6;
-            const QRect innerWindow = windowElement->bounds.adjusted(
-                kWindowEdgeSnapPx, kWindowEdgeSnapPx,
-                -kWindowEdgeSnapPx, -kWindowEdgeSnapPx);
-            const bool nearWindowEdge = !innerWindow.isValid() || !innerWindow.contains(globalPos);
-
-            // Prefer window when UI element is decorative or essentially a full-window container.
-            const bool uiIsDecorative = isDecorativeRole(detected->role);
-            if (uiIsLargeContainer || windowArea < uiArea || uiTooSmall || nearWindowEdge || uiIsDecorative) {
-                detected = windowElement;
-            }
-        }
-    }
+    auto detected = m_windowDetector->detectWindowAt(localToGlobal(localPos));
 
     if (detected.has_value()) {
         QRect localBounds = globalToLocal(detected->bounds).intersected(rect());
@@ -1046,7 +943,7 @@ void RegionSelector::updateWindowDetection(const QPoint& localPos)
 
             m_highlightedWindowRect = QRect();
             m_detectedWindow.reset();
-
+            
             if (!oldVisualRect.isNull()) update(oldVisualRect);
         }
     }
