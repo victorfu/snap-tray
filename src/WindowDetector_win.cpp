@@ -10,6 +10,9 @@
 #include <map>
 #include <limits>
 
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
 #include <windows.h>
 #include <dwmapi.h>
 #include <psapi.h>
