@@ -9,6 +9,7 @@
 #include <QMutex>
 #include <QFuture>
 #include <QPointer>
+#include <QElapsedTimer>
 #include <vector>
 #include <optional>
 
@@ -114,6 +115,12 @@ private:
     QFuture<void> m_refreshFuture;
     std::atomic<bool> m_refreshComplete{true};
     std::atomic<uint64_t> m_refreshRequestId{0};
+
+    // UIElement detection cache for performance
+    mutable std::optional<DetectedElement> m_uiElementCache;
+    mutable QPoint m_uiElementCachePos;
+    mutable QElapsedTimer m_uiElementCacheTimer;
+    static constexpr int kUiElementCacheTtlMs = 50;
 };
 
 #endif // WINDOWDETECTOR_H

@@ -402,8 +402,8 @@ AXUIElementRef findSmallestElementAtPoint(AXUIElementRef parent,
                                           int minSize,
                                           bool skipText)
 {
-    // Limit recursion depth to prevent stack overflow
-    if (!parent || depth > 20) return nullptr;
+    // Limit recursion depth to prevent traversing micro-components
+    if (!parent || depth > 10) return nullptr;
 
     // Check children
     CFArrayRef children = copyChildElements(parent);
@@ -890,6 +890,15 @@ std::optional<DetectedElement> WindowDetector::detectUIElementAt(const QPoint &s
 
     qDebug() << "detectUIElementAt: all checks passed, calling AX API...";
 
+    // Return cached result if still valid and cursor at exact same position
+    if (m_uiElementCache.has_value() &&
+        m_uiElementCacheTimer.isValid() &&
+        m_uiElementCacheTimer.elapsed() < kUiElementCacheTtlMs &&
+        m_uiElementCachePos == screenPos) {
+        qDebug() << "detectUIElementAt: returning cached result";
+        return m_uiElementCache;
+    }
+
     @autoreleasepool {
         const int kMinUiElementSize = 12;
         const int kMinWebElementSize = 24;
@@ -1035,6 +1044,11 @@ std::optional<DetectedElement> WindowDetector::detectUIElementAt(const QPoint &s
                  << "bounds=" << element.bounds
                  << "role=" << element.role
                  << "title=" << element.windowTitle;
+
+        // Cache the result for subsequent calls at exact position
+        m_uiElementCache = element;
+        m_uiElementCachePos = screenPos;
+        m_uiElementCacheTimer.restart();
 
         return element;
     }
