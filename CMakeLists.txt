@@ -383,9 +383,13 @@ add_library(snaptray_algorithms STATIC
     # Detection
     src/detection/FaceDetector.cpp
     src/detection/AutoBlurManager.cpp
+    # Scrolling capture algorithm
+    src/scrolling/ImageCombiner.cpp
     # Headers with Q_OBJECT for MOC processing
     include/detection/FaceDetector.h
     include/detection/AutoBlurManager.h
+    include/scrolling/ImageCombiner.h
+    include/scrolling/ScrollingCaptureOptions.h
 )
 
 target_include_directories(snaptray_algorithms
@@ -763,6 +767,20 @@ add_library(snaptray_ui STATIC
     include/RecordingBoundaryOverlay.h
     include/RecordingInitTask.h
     include/encoding/EncodingWorker.h
+
+    # Scrolling capture UI and orchestration
+    src/scrolling/ScrollingCaptureManager.cpp
+    src/scrolling/WindowHighlighter.cpp
+    src/scrolling/AutoScroller.cpp
+    src/settings/ScrollingCaptureSettingsManager.cpp
+    include/scrolling/ScrollingCaptureManager.h
+    include/scrolling/WindowHighlighter.h
+    include/scrolling/AutoScroller.h
+    include/scrolling/ScrollSender.h
+    include/settings/ScrollingCaptureSettingsManager.h
+    # Platform-specific scroll sender
+    $<$<PLATFORM_ID:Darwin>:src/scrolling/ScrollSender_mac.mm>
+    $<$<PLATFORM_ID:Windows>:src/scrolling/ScrollSender_win.cpp>
 )
 
 target_include_directories(snaptray_ui

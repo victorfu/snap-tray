@@ -8,6 +8,9 @@
 #include "ScreenCanvasManager.h"
 #include "SettingsDialog.h"
 #include "cli/IPCProtocol.h"
+#include "RecordingManager.h"
+#include "scrolling/ScrollingCaptureManager.h"
+#include "PlatformFeatures.h"
 #include "hotkey/HotkeyManager.h"
 #include "ui/GlobalToast.h"
 #include "video/RecordingPreviewWindow.h"
@@ -58,8 +61,10 @@ MainApplication::MainApplication(QObject* parent)
     , m_pinWindowManager(nullptr)
     , m_screenCanvasManager(nullptr)
     , m_recordingManager(nullptr)
+    , m_scrollingCaptureManager(nullptr)
     , m_regionCaptureAction(nullptr)
     , m_screenCanvasAction(nullptr)
+    , m_scrollingCaptureAction(nullptr)
     , m_pinFromImageAction(nullptr)
     , m_fullScreenRecordingAction(nullptr)
     , m_settingsDialog(nullptr)
@@ -215,6 +220,18 @@ void MainApplication::initialize()
     // Create recording manager
     m_recordingManager = new RecordingManager(this);
 
+    // Create scrolling capture manager
+    m_scrollingCaptureManager = new ScrollingCaptureManager(this);
+
+    // Connect scrolling capture signals
+    connect(m_scrollingCaptureManager, &ScrollingCaptureManager::captureCompleted,
+        this, [this](const QImage& image, CaptureStatus status) {
+            Q_UNUSED(status);
+            // Create pin window with the result
+            QPixmap pixmap = QPixmap::fromImage(image);
+            m_pinWindowManager->createPinWindow(pixmap, QCursor::pos());
+        });
+
     // Connect recording signals
     connect(m_recordingManager, &RecordingManager::recordingStopped,
         this, [](const QString& path) {
@@ -292,6 +309,9 @@ void MainApplication::initialize()
 
     m_regionCaptureAction = m_trayMenu->addAction("Region Capture");
     connect(m_regionCaptureAction, &QAction::triggered, this, &MainApplication::onRegionCapture);
+
+    m_scrollingCaptureAction = m_trayMenu->addAction("Scrolling Capture");
+    connect(m_scrollingCaptureAction, &QAction::triggered, this, &MainApplication::onScrollingCapture);
 
     m_screenCanvasAction = m_trayMenu->addAction("Screen Canvas");
     connect(m_screenCanvasAction, &QAction::triggered, this, &MainApplication::onScreenCanvas);
@@ -400,6 +420,36 @@ void MainApplication::onScreenCanvas()
     }
 
     m_screenCanvasManager->toggle();
+}
+
+void MainApplication::onScrollingCapture()
+{
+    // Don't trigger if screen canvas is active
+    if (m_screenCanvasManager->isActive()) {
+        return;
+    }
+
+    // Don't trigger if recording is active
+    if (m_recordingManager->isActive()) {
+        return;
+    }
+
+    // Don't trigger if capture is active
+    if (m_captureManager->isActive()) {
+        return;
+    }
+
+    // Don't trigger if scrolling capture is already active
+    if (m_scrollingCaptureManager->isActive()) {
+        return;
+    }
+
+    // Close any open popup menus to prevent focus conflicts
+    if (QWidget* popup = QApplication::activePopupWidget()) {
+        popup->close();
+    }
+
+    m_scrollingCaptureManager->startWindowSelection();
 }
 
 void MainApplication::onFullScreenRecording()

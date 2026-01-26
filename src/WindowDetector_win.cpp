@@ -375,6 +375,11 @@ bool WindowDetector::isEnabled() const
     return m_enabled;
 }
 
+void WindowDetector::setDetectionFlags(DetectionFlags flags)
+{
+    m_detectionFlags = flags;
+}
+
 DetectionFlags WindowDetector::detectionFlags() const
 {
     return m_detectionFlags;

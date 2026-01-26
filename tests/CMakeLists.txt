@@ -110,6 +110,15 @@ add_test(NAME Detection_AutoBlurManager COMMAND Detection_AutoBlurManager)
 set_tests_properties(Detection_AutoBlurManager PROPERTIES TIMEOUT 60 LABELS "unit")
 
 # ============================================================================
+# ScrollingCapture Tests (link snaptray_algorithms for ImageCombiner)
+# ============================================================================
+
+add_executable(ScrollingCapture_ImageCombiner ScrollingCapture/tst_ImageCombiner.cpp)
+target_link_libraries(ScrollingCapture_ImageCombiner PRIVATE snaptray_algorithms Qt6::Widgets Qt6::Test)
+add_test(NAME ScrollingCapture_ImageCombiner COMMAND ScrollingCapture_ImageCombiner)
+set_tests_properties(ScrollingCapture_ImageCombiner PROPERTIES TIMEOUT 60 LABELS "unit")
+
+# ============================================================================
 # Utils Tests (link snaptray_core)
 # ============================================================================
 
