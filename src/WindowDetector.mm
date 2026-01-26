@@ -77,6 +77,8 @@ bool shouldIncludeElementType(ElementType type, DetectionFlags flags)
         return flags.testFlag(DetectionFlag::Dialogs);
     case ElementType::StatusBarItem:
         return flags.testFlag(DetectionFlag::StatusBarItems);
+    case ElementType::UIElement:
+        return flags.testFlag(DetectionFlag::UIElements);
     case ElementType::Unknown:
         return false;
     }
@@ -95,10 +97,417 @@ int getMinimumSize(ElementType type)
         return 20;
     case ElementType::Dialog:
         return 30;
+    case ElementType::UIElement:
+        return 5;   // UI elements can be small (buttons, icons)
     case ElementType::Unknown:
         return 50;
     }
     return 50;
+}
+
+// Map AX role string to simplified role name
+QString axRoleToSimplifiedRole(NSString* role)
+{
+    if (!role) return "element";
+
+    NSDictionary* roleMap = @{
+        NSAccessibilityButtonRole: @"button",
+        NSAccessibilityCheckBoxRole: @"checkbox",
+        NSAccessibilityRadioButtonRole: @"radiobutton",
+        NSAccessibilityTextFieldRole: @"textfield",
+        NSAccessibilityTextAreaRole: @"textarea",
+        NSAccessibilityStaticTextRole: @"text",
+        NSAccessibilityImageRole: @"image",
+        NSAccessibilityLinkRole: @"link",
+        NSAccessibilityListRole: @"list",
+        NSAccessibilityTableRole: @"table",
+        NSAccessibilityRowRole: @"row",
+        NSAccessibilityCellRole: @"cell",
+        NSAccessibilityColumnRole: @"column",
+        NSAccessibilityMenuRole: @"menu",
+        NSAccessibilityMenuItemRole: @"menuitem",
+        NSAccessibilityMenuBarRole: @"menubar",
+        NSAccessibilityToolbarRole: @"toolbar",
+        NSAccessibilityGroupRole: @"group",
+        NSAccessibilitySliderRole: @"slider",
+        NSAccessibilityProgressIndicatorRole: @"progressbar",
+        NSAccessibilityComboBoxRole: @"combobox",
+        NSAccessibilityPopUpButtonRole: @"popupbutton",
+        NSAccessibilityTabGroupRole: @"tablist",
+        NSAccessibilityScrollAreaRole: @"scrollarea",
+        NSAccessibilityScrollBarRole: @"scrollbar",
+        NSAccessibilitySplitGroupRole: @"splitgroup",
+        NSAccessibilityOutlineRole: @"tree",
+        NSAccessibilityBrowserRole: @"browser",
+        NSAccessibilityWindowRole: @"window",
+        @"AXWebArea": @"webpage",
+        @"AXHeading": @"heading",
+        @"AXSection": @"section",
+        @"AXArticle": @"article",
+        @"AXBlockquote": @"blockquote",
+        @"AXLandmarkMain": @"main",
+        @"AXLandmarkNavigation": @"navigation",
+    };
+
+    NSString* simplified = roleMap[role];
+    if (simplified) {
+        return QString::fromNSString(simplified);
+    }
+
+    // Return role without AX prefix
+    QString qRole = QString::fromNSString(role);
+    if (qRole.startsWith("AX")) {
+        qRole = qRole.mid(2).toLower();
+    }
+    return qRole;
+}
+
+// Get element bounds from AXUIElement
+bool getElementBounds(AXUIElementRef element, QRect& outBounds)
+{
+    if (!element) return false;
+
+    AXValueRef posValue = nullptr;
+    AXValueRef sizeValue = nullptr;
+
+    AXError error = AXUIElementCopyAttributeValue(element, kAXPositionAttribute, (CFTypeRef*)&posValue);
+    if (error != kAXErrorSuccess || !posValue) {
+        return false;
+    }
+
+    error = AXUIElementCopyAttributeValue(element, kAXSizeAttribute, (CFTypeRef*)&sizeValue);
+    if (error != kAXErrorSuccess || !sizeValue) {
+        CFRelease(posValue);
+        return false;
+    }
+
+    CGPoint position;
+    CGSize size;
+
+    bool success = AXValueGetValue(posValue, kAXValueTypeCGPoint, &position) &&
+                   AXValueGetValue(sizeValue, kAXValueTypeCGSize, &size);
+
+    CFRelease(posValue);
+    CFRelease(sizeValue);
+
+    if (success) {
+        outBounds = QRect(
+            static_cast<int>(position.x),
+            static_cast<int>(position.y),
+            static_cast<int>(size.width),
+            static_cast<int>(size.height)
+        );
+    }
+
+    return success;
+}
+
+// Get element role from AXUIElement
+QString getElementRole(AXUIElementRef element)
+{
+    if (!element) return QString();
+
+    CFTypeRef roleRef = nullptr;
+    AXError error = AXUIElementCopyAttributeValue(element, kAXRoleAttribute, &roleRef);
+    if (error != kAXErrorSuccess || !roleRef) {
+        return QString();
+    }
+
+    QString role;
+    if (CFGetTypeID(roleRef) == CFStringGetTypeID()) {
+        role = axRoleToSimplifiedRole((__bridge NSString*)roleRef);
+    }
+    CFRelease(roleRef);
+    return role;
+}
+
+// Get element title/description from AXUIElement
+QString getElementTitle(AXUIElementRef element)
+{
+    if (!element) return QString();
+
+    // Try title first
+    CFTypeRef valueRef = nullptr;
+    AXError error = AXUIElementCopyAttributeValue(element, kAXTitleAttribute, &valueRef);
+
+    if (error != kAXErrorSuccess || !valueRef) {
+        // Try description
+        error = AXUIElementCopyAttributeValue(element, kAXDescriptionAttribute, &valueRef);
+    }
+
+    if (error != kAXErrorSuccess || !valueRef) {
+        // Try value (for text fields, etc.)
+        error = AXUIElementCopyAttributeValue(element, kAXValueAttribute, &valueRef);
+    }
+
+    if (error == kAXErrorSuccess && valueRef) {
+        QString result;
+        if (CFGetTypeID(valueRef) == CFStringGetTypeID()) {
+            result = QString::fromNSString((__bridge NSString*)valueRef);
+        }
+        CFRelease(valueRef);
+        return result;
+    }
+
+    return QString();
+}
+
+// Get accessibility description
+QString getElementDescription(AXUIElementRef element)
+{
+    if (!element) return QString();
+
+    CFTypeRef valueRef = nullptr;
+    AXError error = AXUIElementCopyAttributeValue(element, kAXHelpAttribute, &valueRef);
+
+    if (error == kAXErrorSuccess && valueRef) {
+        QString result;
+        if (CFGetTypeID(valueRef) == CFStringGetTypeID()) {
+            result = QString::fromNSString((__bridge NSString*)valueRef);
+        }
+        CFRelease(valueRef);
+        return result;
+    }
+
+    return QString();
+}
+
+bool isWebContainerRole(const QString& role)
+{
+    return role == "webpage" || role == "document" || role == "browser";
+}
+
+bool isTextRole(const QString& role)
+{
+    return role == "text";
+}
+
+bool isWebContext(AXUIElementRef element)
+{
+    if (!element) {
+        return false;
+    }
+
+    AXUIElementRef current = element;
+    AXUIElementRef owned = nullptr;
+
+    for (int i = 0; i < 10 && current; ++i) {
+        if (isWebContainerRole(getElementRole(current))) {
+            if (owned) {
+                CFRelease(owned);
+            }
+            return true;
+        }
+
+        AXUIElementRef parent = nullptr;
+        AXError error = AXUIElementCopyAttributeValue(current, kAXParentAttribute, (CFTypeRef*)&parent);
+        if (owned) {
+            CFRelease(owned);
+            owned = nullptr;
+        }
+        if (error != kAXErrorSuccess || !parent) {
+            break;
+        }
+        owned = parent;
+        current = parent;
+    }
+
+    if (owned) {
+        CFRelease(owned);
+    }
+
+    return false;
+}
+
+CFArrayRef copyChildElements(AXUIElementRef element)
+{
+    if (!element) {
+        return nullptr;
+    }
+
+    CFTypeRef childrenRef = nullptr;
+    AXError error = AXUIElementCopyAttributeValue(element, kAXChildrenAttribute, &childrenRef);
+    if (error == kAXErrorSuccess && childrenRef &&
+        CFGetTypeID(childrenRef) == CFArrayGetTypeID() &&
+        CFArrayGetCount((CFArrayRef)childrenRef) > 0) {
+        return (CFArrayRef)childrenRef;
+    }
+    if (childrenRef) {
+        CFRelease(childrenRef);
+    }
+
+    childrenRef = nullptr;
+    static CFStringRef kChildrenInNavigationOrderAttribute = CFSTR("AXChildrenInNavigationOrder");
+    error = AXUIElementCopyAttributeValue(element, kChildrenInNavigationOrderAttribute, &childrenRef);
+    if (error == kAXErrorSuccess && childrenRef &&
+        CFGetTypeID(childrenRef) == CFArrayGetTypeID()) {
+        return (CFArrayRef)childrenRef;
+    }
+
+    if (childrenRef) {
+        CFRelease(childrenRef);
+    }
+
+    return nullptr;
+}
+
+std::optional<pid_t> getWindowOwnerPid(uint32_t windowId)
+{
+    if (windowId == 0) {
+        return std::nullopt;
+    }
+
+    CFArrayRef windowInfoList = CGWindowListCopyWindowInfo(kCGWindowListOptionIncludingWindow, windowId);
+    if (!windowInfoList) {
+        return std::nullopt;
+    }
+
+    pid_t pid = 0;
+    if (CFArrayGetCount(windowInfoList) > 0) {
+        CFDictionaryRef windowInfo = (CFDictionaryRef)CFArrayGetValueAtIndex(windowInfoList, 0);
+        CFNumberRef pidRef = (CFNumberRef)CFDictionaryGetValue(windowInfo, kCGWindowOwnerPID);
+        if (pidRef) {
+            CFNumberGetValue(pidRef, kCFNumberIntType, &pid);
+        }
+    }
+
+    CFRelease(windowInfoList);
+
+    if (pid == 0) {
+        return std::nullopt;
+    }
+
+    return pid;
+}
+
+// Find the smallest element at a given point by traversing the accessibility tree
+// Returns nullptr if no suitable element found, otherwise returns a retained element
+AXUIElementRef findSmallestElementAtPoint(AXUIElementRef parent,
+                                          CGPoint point,
+                                          QRect& bestBounds,
+                                          int depth,
+                                          int minSize,
+                                          bool skipText)
+{
+    // Limit recursion depth to prevent stack overflow
+    if (!parent || depth > 20) return nullptr;
+
+    // Check children
+    CFArrayRef children = copyChildElements(parent);
+    if (!children) {
+        return nullptr;
+    }
+
+    AXUIElementRef smallestElement = nullptr;
+    int smallestArea = INT_MAX;
+    const int minArea = minSize * minSize;
+
+    CFIndex count = CFArrayGetCount(children);
+    for (CFIndex i = 0; i < count; i++) {
+        AXUIElementRef child = (AXUIElementRef)CFArrayGetValueAtIndex(children, i);
+        if (!child) continue;
+
+        QRect childBounds;
+        if (!getElementBounds(child, childBounds)) continue;
+
+        // Skip elements that are too small or too large
+        if (childBounds.width() < minSize || childBounds.height() < minSize) continue;
+        if (childBounds.width() > 10000 || childBounds.height() > 10000) continue;
+
+        // Check if point is within bounds
+        if (childBounds.contains(QPoint(static_cast<int>(point.x), static_cast<int>(point.y)))) {
+            // Recursively check children for even smaller elements
+            QRect deeperBounds;
+            AXUIElementRef deeperElement = findSmallestElementAtPoint(
+                child, point, deeperBounds, depth + 1, minSize, skipText);
+            if (deeperElement) {
+                int deeperArea = deeperBounds.width() * deeperBounds.height();
+                if (deeperArea >= minArea && deeperArea < smallestArea) {
+                    if (smallestElement) {
+                        CFRelease(smallestElement);
+                    }
+                    smallestArea = deeperArea;
+                    smallestElement = deeperElement;
+                    bestBounds = deeperBounds;
+                } else {
+                    CFRelease(deeperElement);
+                }
+            }
+
+            if (skipText && isTextRole(getElementRole(child))) {
+                continue;
+            }
+
+            int area = childBounds.width() * childBounds.height();
+            if (area >= minArea && area < smallestArea) {
+                // Release previous smallest if we had one
+                if (smallestElement) {
+                    CFRelease(smallestElement);
+                }
+                smallestArea = area;
+                smallestElement = child;
+                CFRetain(smallestElement);
+                bestBounds = childBounds;
+            }
+        }
+    }
+
+    CFRelease(children);
+    return smallestElement;
+}
+
+AXUIElementRef promoteElementAtPoint(AXUIElementRef element,
+                                     int minSize,
+                                     bool skipText,
+                                     QRect& outBounds,
+                                     QString& outRole)
+{
+    if (!element) {
+        return nullptr;
+    }
+
+    AXUIElementRef current = element;
+    AXUIElementRef owned = nullptr;
+
+    for (int i = 0; i < 6 && current; ++i) {
+        QRect bounds;
+        if (getElementBounds(current, bounds)) {
+            QString role = getElementRole(current);
+            bool isText = skipText && isTextRole(role);
+            bool tooSmall = bounds.width() < minSize || bounds.height() < minSize;
+            if (!isText && !tooSmall) {
+                outBounds = bounds;
+                outRole = role;
+                if (current == element) {
+                    CFRetain(current);
+                } else {
+                    owned = nullptr;
+                }
+                if (owned) {
+                    CFRelease(owned);
+                }
+                return current;
+            }
+        }
+
+        AXUIElementRef parent = nullptr;
+        AXError error = AXUIElementCopyAttributeValue(current, kAXParentAttribute, (CFTypeRef*)&parent);
+        if (owned) {
+            CFRelease(owned);
+            owned = nullptr;
+        }
+        if (error != kAXErrorSuccess || !parent) {
+            break;
+        }
+        owned = parent;
+        current = parent;
+    }
+
+    if (owned) {
+        CFRelease(owned);
+    }
+
+    return nullptr;
 }
 
 } // anonymous namespace
@@ -107,7 +516,8 @@ WindowDetector::WindowDetector(QObject *parent)
     : QObject(parent)
     , m_currentScreen(nullptr)
     , m_enabled(true)
-    , m_detectionFlags(DetectionFlag::All)
+    , m_uiElementDetectionEnabled(true)
+    , m_detectionFlags(DetectionFlag::All | DetectionFlag::UIElements)
 {
 }
 
@@ -435,4 +845,192 @@ void WindowDetector::refreshWindowListAsync()
 bool WindowDetector::isRefreshComplete() const
 {
     return m_refreshComplete.load();
+}
+
+std::optional<DetectedElement> WindowDetector::detectUIElementAt(const QPoint &screenPos) const
+{
+    qDebug() << "detectUIElementAt: called at" << screenPos;
+
+    if (!m_enabled || !m_uiElementDetectionEnabled) {
+        qDebug() << "detectUIElementAt: DISABLED (enabled=" << m_enabled
+                 << ", uiElementEnabled=" << m_uiElementDetectionEnabled << ")";
+        return std::nullopt;
+    }
+
+    if (!m_detectionFlags.testFlag(DetectionFlag::UIElements)) {
+        qDebug() << "detectUIElementAt: UIElements flag NOT SET in detectionFlags";
+        return std::nullopt;
+    }
+
+    // Check accessibility permission
+    if (!hasAccessibilityPermission()) {
+        qDebug() << "detectUIElementAt: NO ACCESSIBILITY PERMISSION";
+        return std::nullopt;
+    }
+
+    qDebug() << "detectUIElementAt: all checks passed, calling AX API...";
+
+    @autoreleasepool {
+        const int kMinUiElementSize = 8;
+        const int kMinWebElementSize = 24;
+
+        // Get the system-wide accessibility element
+        AXUIElementRef systemWide = AXUIElementCreateSystemWide();
+        if (!systemWide) {
+            return std::nullopt;
+        }
+
+        CGPoint cgPoint = CGPointMake(screenPos.x(), screenPos.y());
+
+        // Get element at point
+        AXUIElementRef elementAtPoint = nullptr;
+        AXError error = AXUIElementCopyElementAtPosition(systemWide, cgPoint.x, cgPoint.y, &elementAtPoint);
+        CFRelease(systemWide);
+
+        if (error != kAXErrorSuccess || !elementAtPoint) {
+            qDebug() << "detectUIElementAt: AX API failed, error=" << error;
+            return std::nullopt;
+        }
+
+        // Check if element belongs to our own process - skip if so
+        // This avoids detecting our own overlay window instead of the content underneath
+        pid_t elementPid = 0;
+        AXUIElementGetPid(elementAtPoint, &elementPid);
+        pid_t myPid = [[NSProcessInfo processInfo] processIdentifier];
+        if (elementPid == myPid) {
+            qDebug() << "detectUIElementAt: element belongs to our own process, trying underlying window";
+            auto windowElement = detectWindowAt(screenPos);
+            if (!windowElement.has_value()) {
+                CFRelease(elementAtPoint);
+                return std::nullopt;
+            }
+
+            auto targetPid = getWindowOwnerPid(windowElement->windowId);
+            if (!targetPid.has_value() || targetPid.value() == myPid) {
+                CFRelease(elementAtPoint);
+                return std::nullopt;
+            }
+
+            AXUIElementRef appElement = AXUIElementCreateApplication(targetPid.value());
+            if (!appElement) {
+                CFRelease(elementAtPoint);
+                return std::nullopt;
+            }
+
+            QRect fallbackBounds;
+            AXUIElementRef fallbackElement = findSmallestElementAtPoint(
+                appElement, cgPoint, fallbackBounds, 0, kMinUiElementSize, false);
+            CFRelease(appElement);
+
+            if (!fallbackElement) {
+                CFRelease(elementAtPoint);
+                return std::nullopt;
+            }
+
+            CFRelease(elementAtPoint);
+            elementAtPoint = fallbackElement;
+        }
+
+        const bool isWeb = isWebContext(elementAtPoint);
+        const bool skipText = isWeb;
+        const int minElementSize = isWeb ? kMinWebElementSize : kMinUiElementSize;
+
+        // Get element bounds
+        QRect elementBounds;
+        if (!getElementBounds(elementAtPoint, elementBounds)) {
+            qDebug() << "detectUIElementAt: getElementBounds failed";
+            CFRelease(elementAtPoint);
+            return std::nullopt;
+        }
+
+        qDebug() << "detectUIElementAt: initial bounds=" << elementBounds;
+
+        // Get the role
+        QString role = getElementRole(elementAtPoint);
+        qDebug() << "detectUIElementAt: initial role=" << role;
+
+        const bool needsPromotion =
+            (skipText && isTextRole(role)) ||
+            elementBounds.width() < minElementSize ||
+            elementBounds.height() < minElementSize;
+        if (needsPromotion) {
+            QRect promotedBounds;
+            QString promotedRole;
+            AXUIElementRef promoted = promoteElementAtPoint(
+                elementAtPoint, minElementSize, skipText, promotedBounds, promotedRole);
+            if (!promoted) {
+                CFRelease(elementAtPoint);
+                return std::nullopt;
+            }
+            CFRelease(elementAtPoint);
+            elementAtPoint = promoted;
+            elementBounds = promotedBounds;
+            role = promotedRole;
+        }
+
+        const int kChildSearchMinSize = minElementSize;
+        if (elementBounds.width() > kChildSearchMinSize || elementBounds.height() > kChildSearchMinSize) {
+            QRect smallerBounds;
+            AXUIElementRef smallerElement = findSmallestElementAtPoint(
+                elementAtPoint, cgPoint, smallerBounds, 0, minElementSize, skipText);
+            if (smallerElement) {
+                // Verify the child is actually smaller
+                qint64 originalArea = static_cast<qint64>(elementBounds.width()) * elementBounds.height();
+                qint64 smallerArea = static_cast<qint64>(smallerBounds.width()) * smallerBounds.height();
+                if (smallerArea < originalArea) {
+                    CFRelease(elementAtPoint);
+                    elementAtPoint = smallerElement;
+                    elementBounds = smallerBounds;
+                    role = getElementRole(elementAtPoint);
+                } else {
+                    CFRelease(smallerElement);
+                }
+            }
+        }
+
+        // Final size check
+        if (elementBounds.width() < minElementSize || elementBounds.height() < minElementSize) {
+            CFRelease(elementAtPoint);
+            return std::nullopt;
+        }
+
+        // Get element title and description
+        QString title = getElementTitle(elementAtPoint);
+        QString description = getElementDescription(elementAtPoint);
+
+        CFRelease(elementAtPoint);
+
+        // Create detected element
+        DetectedElement element;
+        element.bounds = elementBounds;
+        element.windowTitle = title;
+        element.ownerApp = QString();
+        element.windowLayer = 1;
+        element.windowId = 0;
+        element.elementType = ElementType::UIElement;
+        element.role = role;
+        element.description = description;
+
+        qDebug() << "detectUIElementAt: SUCCESS - returning element"
+                 << "bounds=" << element.bounds
+                 << "role=" << element.role
+                 << "title=" << element.windowTitle;
+
+        return element;
+    }
+}
+
+void WindowDetector::setUIElementDetectionEnabled(bool enabled)
+{
+    m_uiElementDetectionEnabled = enabled;
+}
+
+bool WindowDetector::isUIElementDetectionEnabled() const
+{
+    return m_uiElementDetectionEnabled;
+}
+
+void WindowDetector::setDetectionFlags(DetectionFlags flags)
+{
+    m_detectionFlags = flags;
 }
