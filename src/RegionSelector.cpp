@@ -128,18 +128,7 @@ RegionSelector::RegionSelector(QWidget* parent)
 
     // Initialize multi-region manager
     m_multiRegionManager = new MultiRegionManager(this);
-    connect(m_multiRegionManager, &MultiRegionManager::regionAdded,
-        this, [this](int) {
-            m_painter->invalidateOverlayCache();
-        });
-    connect(m_multiRegionManager, &MultiRegionManager::regionRemoved,
-        this, [this](int) {
-            m_painter->invalidateOverlayCache();
-        });
-    connect(m_multiRegionManager, &MultiRegionManager::regionUpdated,
-        this, [this](int) {
-            m_painter->invalidateOverlayCache();
-        });
+    // Note: regionAdded/Removed/Updated connections moved after m_painter initialization
     connect(m_multiRegionManager, &MultiRegionManager::activeIndexChanged,
         this, [this](int index) {
             if (!m_multiRegionMode) return;
@@ -356,6 +345,20 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_painter->setRegionControlWidget(m_regionControlWidget);
     m_painter->setMultiRegionManager(m_multiRegionManager);
     m_painter->setParentWidget(this);
+
+    // Connect multi-region signals that depend on m_painter (must be after m_painter init)
+    connect(m_multiRegionManager, &MultiRegionManager::regionAdded,
+        this, [this](int) {
+            m_painter->invalidateOverlayCache();
+        });
+    connect(m_multiRegionManager, &MultiRegionManager::regionRemoved,
+        this, [this](int) {
+            m_painter->invalidateOverlayCache();
+        });
+    connect(m_multiRegionManager, &MultiRegionManager::regionUpdated,
+        this, [this](int) {
+            m_painter->invalidateOverlayCache();
+        });
 
     // Initialize export manager component
     m_exportManager = new RegionExportManager(this);

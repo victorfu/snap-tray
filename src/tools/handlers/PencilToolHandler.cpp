@@ -83,6 +83,7 @@ void PencilToolHandler::onMouseRelease(ToolContext* ctx, const QPoint& pos) {
     // Add final point (use raw position for accurate endpoint)
     QPointF finalPoint(pos);
     if (m_currentPath.isEmpty() || m_currentPath.last() != finalPoint) {
+        m_currentPath.append(finalPoint);
         if (m_currentStroke) {
             m_currentStroke->addPoint(finalPoint);
         }
