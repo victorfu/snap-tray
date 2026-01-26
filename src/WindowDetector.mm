@@ -878,7 +878,7 @@ std::optional<DetectedElement> WindowDetector::detectUIElementAt(const QPoint &s
     qDebug() << "detectUIElementAt: all checks passed, calling AX API...";
 
     @autoreleasepool {
-        const int kMinUiElementSize = 8;
+        const int kMinUiElementSize = 12;
         const int kMinWebElementSize = 24;
 
         // Get the system-wide accessibility element

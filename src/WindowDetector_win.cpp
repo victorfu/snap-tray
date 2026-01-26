@@ -926,7 +926,7 @@ std::optional<DetectedElement> WindowDetector::detectUIElementAt(const QPoint &s
         return std::nullopt;
     }
 
-    const int kMinUiElementSize = 8;
+    const int kMinUiElementSize = 12;
     const int kMinWebElementSize = 24;
     const int kMaxElementSize = 10000;
     const int kMaxDepth = 20;

@@ -957,7 +957,7 @@ void RegionSelector::updateWindowDetection(const QPoint& localPos)
     if (!detected.has_value()) {
         detected = m_windowDetector->detectWindowAt(globalPos);
     } else {
-        // Compare with window detection - prefer smaller (more specific) element
+        // Compare with window detection and avoid tiny UI elements when selecting windows.
         auto windowElement = m_windowDetector->detectWindowAt(globalPos);
         if (windowElement.has_value()) {
             const qint64 uiArea = elementArea(detected->bounds);
@@ -978,8 +978,24 @@ void RegionSelector::updateWindowDetection(const QPoint& localPos)
                 windowArea > 0 &&
                 uiArea * 100 >= windowArea * 85;
 
-            // Prefer window when UI element is essentially a full-window container
-            if (uiIsLargeContainer || windowArea < uiArea) {
+            // Prefer window for tiny UI elements or when the cursor is near window edges.
+            const int kMinUiElementPx = 12;
+            const int kMinUiAreaDivisor = 300;  // 0.33% of window area
+            const qint64 minUiArea = qMax(
+                static_cast<qint64>(kMinUiElementPx) * kMinUiElementPx,
+                windowArea / kMinUiAreaDivisor);
+            const bool uiTooSmall = detected->bounds.width() < kMinUiElementPx ||
+                detected->bounds.height() < kMinUiElementPx ||
+                uiArea < minUiArea;
+
+            const int kWindowEdgeSnapPx = 6;
+            const QRect innerWindow = windowElement->bounds.adjusted(
+                kWindowEdgeSnapPx, kWindowEdgeSnapPx,
+                -kWindowEdgeSnapPx, -kWindowEdgeSnapPx);
+            const bool nearWindowEdge = !innerWindow.isValid() || !innerWindow.contains(globalPos);
+
+            // Prefer window when UI element is essentially a full-window container.
+            if (uiIsLargeContainer || windowArea < uiArea || uiTooSmall || nearWindowEdge) {
                 detected = windowElement;
             }
         }
