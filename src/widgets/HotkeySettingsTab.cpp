@@ -27,7 +27,6 @@ HotkeySettingsTab::HotkeySettingsTab(QWidget* parent)
     , m_restoreAllBtn(nullptr)
     , m_statusLabel(nullptr)
     , m_hasUnsavedChanges(false)
-    , m_updatingFromManager(false)
 {
     setupUi();
     setupConnections();
@@ -45,14 +44,12 @@ void HotkeySettingsTab::setupUi()
     // Tree widget
     m_treeWidget = new QTreeWidget(this);
     m_treeWidget->setHeaderLabels({
-        QString(),       // Enabled checkbox
         tr("Action"),
         tr("Hotkey"),
         tr("Status")
     });
 
-    m_treeWidget->setColumnWidth(kColumnEnabled, 32);
-    m_treeWidget->setColumnWidth(kColumnName, 180);
+    m_treeWidget->setColumnWidth(kColumnName, 200);
     m_treeWidget->setColumnWidth(kColumnHotkey, 140);
     m_treeWidget->setColumnWidth(kColumnStatus, 90);
 
@@ -129,9 +126,6 @@ void HotkeySettingsTab::setupConnections()
 {
     connect(m_treeWidget, &QTreeWidget::itemDoubleClicked,
             this, &HotkeySettingsTab::onItemDoubleClicked);
-
-    connect(m_treeWidget, &QTreeWidget::itemChanged,
-            this, &HotkeySettingsTab::onItemChanged);
 
     connect(m_treeWidget, &QTreeWidget::itemSelectionChanged,
             this, &HotkeySettingsTab::onSelectionChanged);
@@ -210,10 +204,6 @@ QTreeWidgetItem* HotkeySettingsTab::createHotkeyItem(const HotkeyConfig& config)
     item->setData(0, kActionRole, static_cast<int>(config.action));
     item->setData(0, kIsCategoryRole, false);
 
-    // Enable checkbox
-    item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
-    item->setCheckState(kColumnEnabled, config.enabled ? Qt::Checked : Qt::Unchecked);
-
     updateItemDisplay(item, config);
     return item;
 }
@@ -239,9 +229,6 @@ void HotkeySettingsTab::updateItemDisplay(QTreeWidgetItem* item, const HotkeyCon
 
     // Status
     updateStatusIndicator(item, config.status);
-
-    // Enabled state
-    item->setCheckState(kColumnEnabled, config.enabled ? Qt::Checked : Qt::Unchecked);
 }
 
 void HotkeySettingsTab::updateStatusIndicator(QTreeWidgetItem* item, HotkeyStatus status)
@@ -298,8 +285,6 @@ bool HotkeySettingsTab::isHotkeyItem(QTreeWidgetItem* item) const
 
 void HotkeySettingsTab::refreshFromManager()
 {
-    m_updatingFromManager = true;
-
     QList<HotkeyConfig> configs = HotkeyManager::instance().getAllConfigs();
     for (const HotkeyConfig& config : configs) {
         QTreeWidgetItem* item = findItemByAction(config.action);
@@ -307,8 +292,6 @@ void HotkeySettingsTab::refreshFromManager()
             updateItemDisplay(item, config);
         }
     }
-
-    m_updatingFromManager = false;
 }
 
 void HotkeySettingsTab::onItemDoubleClicked(QTreeWidgetItem* item, int column)
@@ -323,28 +306,6 @@ void HotkeySettingsTab::onItemDoubleClicked(QTreeWidgetItem* item, int column)
     if (action != HotkeyAction::None) {
         showEditDialog(action);
     }
-}
-
-void HotkeySettingsTab::onItemChanged(QTreeWidgetItem* item, int column)
-{
-    if (m_updatingFromManager) {
-        return;
-    }
-
-    if (column != kColumnEnabled || !isHotkeyItem(item)) {
-        return;
-    }
-
-    HotkeyAction action = getActionFromItem(item);
-    if (action == HotkeyAction::None) {
-        return;
-    }
-
-    bool enabled = (item->checkState(kColumnEnabled) == Qt::Checked);
-    HotkeyManager::instance().setHotkeyEnabled(action, enabled);
-
-    m_hasUnsavedChanges = true;
-    emit settingsChanged();
 }
 
 void HotkeySettingsTab::onSelectionChanged()
@@ -442,9 +403,7 @@ void HotkeySettingsTab::onHotkeyManagerChanged(HotkeyAction action, const Hotkey
 {
     QTreeWidgetItem* item = findItemByAction(action);
     if (item) {
-        m_updatingFromManager = true;
         updateItemDisplay(item, config);
-        m_updatingFromManager = false;
     }
 }
 

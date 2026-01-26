@@ -4,7 +4,6 @@
  *
  * Features:
  * - QTreeWidget with category grouping
- * - Enable/disable checkbox per hotkey
  * - Status indicator (green/red/gray)
  * - Double-click opens TypeHotkeyDialog
  * - Clear, Reset, and Restore All buttons
@@ -20,7 +19,6 @@ class QTreeWidget;
 class QTreeWidgetItem;
 class QPushButton;
 class QLabel;
-class QCheckBox;
 
 namespace SnapTray {
 
@@ -56,7 +54,6 @@ signals:
 
 private slots:
     void onItemDoubleClicked(QTreeWidgetItem* item, int column);
-    void onItemChanged(QTreeWidgetItem* item, int column);
     void onEditClicked();
     void onClearClicked();
     void onResetClicked();
@@ -93,13 +90,11 @@ private:
     QMap<HotkeyCategory, QTreeWidgetItem*> m_categoryItems;
     QMap<QTreeWidgetItem*, HotkeyAction> m_itemToAction;
     bool m_hasUnsavedChanges;
-    bool m_updatingFromManager;  // Prevent recursive updates
 
     // Column indices
-    static constexpr int kColumnEnabled = 0;
-    static constexpr int kColumnName = 1;
-    static constexpr int kColumnHotkey = 2;
-    static constexpr int kColumnStatus = 3;
+    static constexpr int kColumnName = 0;
+    static constexpr int kColumnHotkey = 1;
+    static constexpr int kColumnStatus = 2;
 
     // Item data roles
     static constexpr int kActionRole = Qt::UserRole + 1;
