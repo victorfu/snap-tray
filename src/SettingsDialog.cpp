@@ -299,7 +299,7 @@ void SettingsDialog::setupGeneralTab(QWidget* tab)
     m_pinWindowMaxCacheFilesLabel->setFixedWidth(40);
     connect(m_pinWindowMaxCacheFilesSlider, &QSlider::valueChanged, this, [this](int value) {
         m_pinWindowMaxCacheFilesLabel->setText(QString::number(value));
-    });
+        });
     cacheFilesLayout->addWidget(cacheFilesLabel);
     cacheFilesLayout->addWidget(m_pinWindowMaxCacheFilesSlider);
     cacheFilesLayout->addWidget(m_pinWindowMaxCacheFilesLabel);
@@ -320,7 +320,7 @@ void SettingsDialog::setupGeneralTab(QWidget* tab)
     m_screenRecordingSettingsBtn = new QPushButton(tr("Open Settings"), tab);
     connect(m_screenRecordingSettingsBtn, &QPushButton::clicked, this, []() {
         PlatformFeatures::openScreenRecordingSettings();
-    });
+        });
     screenRecordingLayout->addWidget(screenRecordingLabel);
     screenRecordingLayout->addWidget(m_screenRecordingStatusLabel);
     screenRecordingLayout->addStretch();
@@ -335,7 +335,7 @@ void SettingsDialog::setupGeneralTab(QWidget* tab)
     m_accessibilitySettingsBtn = new QPushButton(tr("Open Settings"), tab);
     connect(m_accessibilitySettingsBtn, &QPushButton::clicked, this, []() {
         PlatformFeatures::openAccessibilitySettings();
-    });
+        });
     accessibilityLayout->addWidget(accessibilityLabel);
     accessibilityLayout->addWidget(m_accessibilityStatusLabel);
     accessibilityLayout->addStretch();
@@ -899,7 +899,8 @@ void SettingsDialog::onSave()
         // Save OCR behavior setting
         if (m_ocrShowEditorRadio && m_ocrShowEditorRadio->isChecked()) {
             ocrSettings.setBehavior(OCRBehavior::ShowEditor);
-        } else {
+        }
+        else {
             ocrSettings.setBehavior(OCRBehavior::DirectCopy);
         }
 
@@ -1186,7 +1187,7 @@ void SettingsDialog::loadOcrLanguages()
         m_ocrAvailableList->addItem(item);
     }
 
-    // Populate selected languages (priority order)
+    // Populate selected languages
     for (const QString& code : selectedCodes) {
         QString displayText = code;
         if (code == "en-US") {
@@ -1244,7 +1245,8 @@ void SettingsDialog::loadOcrLanguages()
     // Load current setting
     if (OCRSettingsManager::instance().behavior() == OCRBehavior::ShowEditor) {
         m_ocrShowEditorRadio->setChecked(true);
-    } else {
+    }
+    else {
         m_ocrDirectCopyRadio->setChecked(true);
     }
 
@@ -1505,7 +1507,8 @@ void SettingsDialog::updateCLIStatus()
     if (installed) {
         m_cliStatusLabel->setText(tr("'snaptray' command is available in terminal"));
         m_cliInstallButton->setText(tr("Uninstall CLI"));
-    } else {
+    }
+    else {
         m_cliStatusLabel->setText(tr("'snaptray' command is not installed"));
         m_cliInstallButton->setText(tr("Install CLI"));
     }
@@ -1519,7 +1522,8 @@ void SettingsDialog::updatePermissionStatus()
     if (hasScreenRecording) {
         m_screenRecordingStatusLabel->setText(tr("Granted"));
         m_screenRecordingStatusLabel->setStyleSheet("color: green;");
-    } else {
+    }
+    else {
         m_screenRecordingStatusLabel->setText(tr("Not Granted"));
         m_screenRecordingStatusLabel->setStyleSheet("color: red;");
     }
@@ -1529,7 +1533,8 @@ void SettingsDialog::updatePermissionStatus()
     if (hasAccessibility) {
         m_accessibilityStatusLabel->setText(tr("Granted"));
         m_accessibilityStatusLabel->setStyleSheet("color: green;");
-    } else {
+    }
+    else {
         m_accessibilityStatusLabel->setText(tr("Not Granted"));
         m_accessibilityStatusLabel->setStyleSheet("color: red;");
     }
