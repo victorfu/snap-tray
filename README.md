@@ -356,14 +356,10 @@ CMake automatically detects and uses the compiler cache when available. No addit
 
 SnapTray provides a CLI for scripting and automation.
 
-### CLI Setup (Post-Installation)
+### CLI Setup
 
-**macOS (DMG):**
-After installing, run the included `install-cli.command` script to create a system-wide `snaptray` command:
-```bash
-# Or manually create the symlink:
-sudo ln -sf /Applications/SnapTray.app/Contents/MacOS/SnapTray /usr/local/bin/snaptray
-```
+**macOS:**
+Open Settings → General → Install CLI to create the system-wide `snaptray` command. This requires administrator privileges.
 
 **Windows (NSIS Installer):**
 The installer automatically adds SnapTray to your system PATH. Open a new terminal after installation.

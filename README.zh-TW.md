@@ -356,14 +356,10 @@ CMake 會自動偵測並使用編譯器快取，無需額外設定。
 
 SnapTray 提供 CLI 介面，可用於腳本自動化。
 
-### CLI 安裝設定（安裝後）
+### CLI 安裝設定
 
-**macOS (DMG)：**
-安裝後，執行 DMG 中的 `install-cli.command` 腳本以建立系統級的 `snaptray` 指令：
-```bash
-# 或手動建立符號連結：
-sudo ln -sf /Applications/SnapTray.app/Contents/MacOS/SnapTray /usr/local/bin/snaptray
-```
+**macOS：**
+開啟 Settings → General → Install CLI 以建立系統級的 `snaptray` 指令。此操作需要管理員權限。
 
 **Windows (NSIS 安裝程式)：**
 安裝程式會自動將 SnapTray 加入系統 PATH。安裝後請開啟新的終端機視窗。
