@@ -30,6 +30,7 @@
 #include <QGroupBox>
 #include <QFileDialog>
 #include <QFrame>
+#include <QScrollArea>
 #include <QStandardPaths>
 #include <QFile>
 #include <QTimer>
@@ -159,22 +160,32 @@ void SettingsDialog::setupUi()
 
 void SettingsDialog::setupGeneralTab(QWidget* tab)
 {
-    QVBoxLayout* layout = new QVBoxLayout(tab);
+    QVBoxLayout* tabLayout = new QVBoxLayout(tab);
+    tabLayout->setContentsMargins(0, 0, 0, 0);
 
-    m_startOnLoginCheckbox = new QCheckBox("Start on login", tab);
+    // Create scroll area for content
+    QScrollArea* scrollArea = new QScrollArea(tab);
+    scrollArea->setWidgetResizable(true);
+    scrollArea->setFrameShape(QFrame::NoFrame);
+
+    // Content widget inside scroll area
+    QWidget* contentWidget = new QWidget();
+    QVBoxLayout* layout = new QVBoxLayout(contentWidget);
+
+    m_startOnLoginCheckbox = new QCheckBox("Start on login", contentWidget);
     m_startOnLoginCheckbox->setChecked(AutoLaunchManager::isEnabled());
     layout->addWidget(m_startOnLoginCheckbox);
 
     // ========== Appearance Section ==========
     layout->addSpacing(16);
-    QLabel* appearanceLabel = new QLabel("Appearance", tab);
+    QLabel* appearanceLabel = new QLabel("Appearance", contentWidget);
     appearanceLabel->setStyleSheet("font-weight: bold; font-size: 12px;");
     layout->addWidget(appearanceLabel);
 
     QHBoxLayout* styleLayout = new QHBoxLayout();
-    QLabel* styleLabel = new QLabel("Toolbar Style:", tab);
+    QLabel* styleLabel = new QLabel("Toolbar Style:", contentWidget);
     styleLabel->setFixedWidth(120);
-    m_toolbarStyleCombo = new QComboBox(tab);
+    m_toolbarStyleCombo = new QComboBox(contentWidget);
     m_toolbarStyleCombo->addItem("Dark", static_cast<int>(ToolbarStyleType::Dark));
     m_toolbarStyleCombo->addItem("Light", static_cast<int>(ToolbarStyleType::Light));
     styleLayout->addWidget(styleLabel);
@@ -188,7 +199,7 @@ void SettingsDialog::setupGeneralTab(QWidget* tab)
 
     // ========== Blur Section ==========
     layout->addSpacing(16);
-    QLabel* autoBlurLabel = new QLabel("Blur", tab);
+    QLabel* autoBlurLabel = new QLabel("Blur", contentWidget);
     autoBlurLabel->setStyleSheet("font-weight: bold; font-size: 12px;");
     layout->addWidget(autoBlurLabel);
 
@@ -197,12 +208,12 @@ void SettingsDialog::setupGeneralTab(QWidget* tab)
 
     // Blur intensity slider
     QHBoxLayout* intensityLayout = new QHBoxLayout();
-    QLabel* intensityLabel = new QLabel("Blur intensity:", tab);
+    QLabel* intensityLabel = new QLabel("Blur intensity:", contentWidget);
     intensityLabel->setFixedWidth(120);
-    m_blurIntensitySlider = new QSlider(Qt::Horizontal, tab);
+    m_blurIntensitySlider = new QSlider(Qt::Horizontal, contentWidget);
     m_blurIntensitySlider->setRange(1, 100);
     m_blurIntensitySlider->setValue(blurOptions.blurIntensity);
-    m_blurIntensityLabel = new QLabel(QString::number(blurOptions.blurIntensity), tab);
+    m_blurIntensityLabel = new QLabel(QString::number(blurOptions.blurIntensity), contentWidget);
     m_blurIntensityLabel->setFixedWidth(30);
     connect(m_blurIntensitySlider, &QSlider::valueChanged, this, [this](int value) {
         m_blurIntensityLabel->setText(QString::number(value));
@@ -214,9 +225,9 @@ void SettingsDialog::setupGeneralTab(QWidget* tab)
 
     // Blur type combo
     QHBoxLayout* typeLayout = new QHBoxLayout();
-    QLabel* typeLabel = new QLabel("Blur type:", tab);
+    QLabel* typeLabel = new QLabel("Blur type:", contentWidget);
     typeLabel->setFixedWidth(120);
-    m_blurTypeCombo = new QComboBox(tab);
+    m_blurTypeCombo = new QComboBox(contentWidget);
     m_blurTypeCombo->addItem("Pixelate", "pixelate");
     m_blurTypeCombo->addItem("Gaussian", "gaussian");
     m_blurTypeCombo->setCurrentIndex(blurOptions.blurType == AutoBlurManager::BlurType::Gaussian ? 1 : 0);
@@ -227,7 +238,7 @@ void SettingsDialog::setupGeneralTab(QWidget* tab)
 
     // ========== Pin Window Section ==========
     layout->addSpacing(16);
-    QLabel* pinWindowLabel = new QLabel("Pin Window", tab);
+    QLabel* pinWindowLabel = new QLabel("Pin Window", contentWidget);
     pinWindowLabel->setStyleSheet("font-weight: bold; font-size: 12px;");
     layout->addWidget(pinWindowLabel);
 
@@ -235,13 +246,13 @@ void SettingsDialog::setupGeneralTab(QWidget* tab)
 
     // Default opacity slider
     QHBoxLayout* opacityLayout = new QHBoxLayout();
-    QLabel* opacityLabel = new QLabel("Default opacity:", tab);
+    QLabel* opacityLabel = new QLabel("Default opacity:", contentWidget);
     opacityLabel->setFixedWidth(120);
-    m_pinWindowOpacitySlider = new QSlider(Qt::Horizontal, tab);
+    m_pinWindowOpacitySlider = new QSlider(Qt::Horizontal, contentWidget);
     m_pinWindowOpacitySlider->setRange(10, 100);
     int currentOpacity = static_cast<int>(pinSettings.loadDefaultOpacity() * 100);
     m_pinWindowOpacitySlider->setValue(currentOpacity);
-    m_pinWindowOpacityLabel = new QLabel(QString("%1%").arg(currentOpacity), tab);
+    m_pinWindowOpacityLabel = new QLabel(QString("%1%").arg(currentOpacity), contentWidget);
     m_pinWindowOpacityLabel->setFixedWidth(40);
     connect(m_pinWindowOpacitySlider, &QSlider::valueChanged, this, [this](int value) {
         m_pinWindowOpacityLabel->setText(QString("%1%").arg(value));
@@ -253,13 +264,13 @@ void SettingsDialog::setupGeneralTab(QWidget* tab)
 
     // Opacity step slider
     QHBoxLayout* opacityStepLayout = new QHBoxLayout();
-    QLabel* opacityStepLabel = new QLabel("Opacity step:", tab);
+    QLabel* opacityStepLabel = new QLabel("Opacity step:", contentWidget);
     opacityStepLabel->setFixedWidth(120);
-    m_pinWindowOpacityStepSlider = new QSlider(Qt::Horizontal, tab);
+    m_pinWindowOpacityStepSlider = new QSlider(Qt::Horizontal, contentWidget);
     m_pinWindowOpacityStepSlider->setRange(1, 20);
     int currentOpacityStep = static_cast<int>(pinSettings.loadOpacityStep() * 100);
     m_pinWindowOpacityStepSlider->setValue(currentOpacityStep);
-    m_pinWindowOpacityStepLabel = new QLabel(QString("%1%").arg(currentOpacityStep), tab);
+    m_pinWindowOpacityStepLabel = new QLabel(QString("%1%").arg(currentOpacityStep), contentWidget);
     m_pinWindowOpacityStepLabel->setFixedWidth(40);
     connect(m_pinWindowOpacityStepSlider, &QSlider::valueChanged, this, [this](int value) {
         m_pinWindowOpacityStepLabel->setText(QString("%1%").arg(value));
@@ -271,13 +282,13 @@ void SettingsDialog::setupGeneralTab(QWidget* tab)
 
     // Zoom step slider
     QHBoxLayout* zoomStepLayout = new QHBoxLayout();
-    QLabel* zoomStepLabel = new QLabel("Zoom step:", tab);
+    QLabel* zoomStepLabel = new QLabel("Zoom step:", contentWidget);
     zoomStepLabel->setFixedWidth(120);
-    m_pinWindowZoomStepSlider = new QSlider(Qt::Horizontal, tab);
+    m_pinWindowZoomStepSlider = new QSlider(Qt::Horizontal, contentWidget);
     m_pinWindowZoomStepSlider->setRange(1, 20);
     int currentZoomStep = static_cast<int>(pinSettings.loadZoomStep() * 100);
     m_pinWindowZoomStepSlider->setValue(currentZoomStep);
-    m_pinWindowZoomStepLabel = new QLabel(QString("%1%").arg(currentZoomStep), tab);
+    m_pinWindowZoomStepLabel = new QLabel(QString("%1%").arg(currentZoomStep), contentWidget);
     m_pinWindowZoomStepLabel->setFixedWidth(40);
     connect(m_pinWindowZoomStepSlider, &QSlider::valueChanged, this, [this](int value) {
         m_pinWindowZoomStepLabel->setText(QString("%1%").arg(value));
@@ -289,13 +300,13 @@ void SettingsDialog::setupGeneralTab(QWidget* tab)
 
     // Max cache files slider
     QHBoxLayout* cacheFilesLayout = new QHBoxLayout();
-    QLabel* cacheFilesLabel = new QLabel("Max cache files:", tab);
+    QLabel* cacheFilesLabel = new QLabel("Max cache files:", contentWidget);
     cacheFilesLabel->setFixedWidth(120);
-    m_pinWindowMaxCacheFilesSlider = new QSlider(Qt::Horizontal, tab);
+    m_pinWindowMaxCacheFilesSlider = new QSlider(Qt::Horizontal, contentWidget);
     m_pinWindowMaxCacheFilesSlider->setRange(5, 200);
     int currentMaxCacheFiles = pinSettings.loadMaxCacheFiles();
     m_pinWindowMaxCacheFilesSlider->setValue(currentMaxCacheFiles);
-    m_pinWindowMaxCacheFilesLabel = new QLabel(QString::number(currentMaxCacheFiles), tab);
+    m_pinWindowMaxCacheFilesLabel = new QLabel(QString::number(currentMaxCacheFiles), contentWidget);
     m_pinWindowMaxCacheFilesLabel->setFixedWidth(40);
     connect(m_pinWindowMaxCacheFilesSlider, &QSlider::valueChanged, this, [this](int value) {
         m_pinWindowMaxCacheFilesLabel->setText(QString::number(value));
@@ -308,16 +319,16 @@ void SettingsDialog::setupGeneralTab(QWidget* tab)
 #ifdef Q_OS_MAC
     // ========== Permissions Section (macOS only) ==========
     layout->addSpacing(16);
-    QLabel* permissionsLabel = new QLabel(tr("Permissions"), tab);
+    QLabel* permissionsLabel = new QLabel(tr("Permissions"), contentWidget);
     permissionsLabel->setStyleSheet("font-weight: bold; font-size: 12px;");
     layout->addWidget(permissionsLabel);
 
     // Screen Recording row
     QHBoxLayout* screenRecordingLayout = new QHBoxLayout();
-    QLabel* screenRecordingLabel = new QLabel(tr("Screen Recording:"), tab);
+    QLabel* screenRecordingLabel = new QLabel(tr("Screen Recording:"), contentWidget);
     screenRecordingLabel->setFixedWidth(120);
-    m_screenRecordingStatusLabel = new QLabel(tab);
-    m_screenRecordingSettingsBtn = new QPushButton(tr("Open Settings"), tab);
+    m_screenRecordingStatusLabel = new QLabel(contentWidget);
+    m_screenRecordingSettingsBtn = new QPushButton(tr("Open Settings"), contentWidget);
     connect(m_screenRecordingSettingsBtn, &QPushButton::clicked, this, []() {
         PlatformFeatures::openScreenRecordingSettings();
         });
@@ -329,10 +340,10 @@ void SettingsDialog::setupGeneralTab(QWidget* tab)
 
     // Accessibility row
     QHBoxLayout* accessibilityLayout = new QHBoxLayout();
-    QLabel* accessibilityLabel = new QLabel(tr("Accessibility:"), tab);
+    QLabel* accessibilityLabel = new QLabel(tr("Accessibility:"), contentWidget);
     accessibilityLabel->setFixedWidth(120);
-    m_accessibilityStatusLabel = new QLabel(tab);
-    m_accessibilitySettingsBtn = new QPushButton(tr("Open Settings"), tab);
+    m_accessibilityStatusLabel = new QLabel(contentWidget);
+    m_accessibilitySettingsBtn = new QPushButton(tr("Open Settings"), contentWidget);
     connect(m_accessibilitySettingsBtn, &QPushButton::clicked, this, []() {
         PlatformFeatures::openAccessibilitySettings();
         });
@@ -348,13 +359,13 @@ void SettingsDialog::setupGeneralTab(QWidget* tab)
 
     // ========== CLI Installation Section ==========
     layout->addSpacing(16);
-    QLabel* cliLabel = new QLabel(tr("Command Line Interface"), tab);
+    QLabel* cliLabel = new QLabel(tr("Command Line Interface"), contentWidget);
     cliLabel->setStyleSheet("font-weight: bold; font-size: 12px;");
     layout->addWidget(cliLabel);
 
     QHBoxLayout* cliLayout = new QHBoxLayout();
-    m_cliStatusLabel = new QLabel(tab);
-    m_cliInstallButton = new QPushButton(tab);
+    m_cliStatusLabel = new QLabel(contentWidget);
+    m_cliInstallButton = new QPushButton(contentWidget);
 
     updateCLIStatus();
 
@@ -366,6 +377,9 @@ void SettingsDialog::setupGeneralTab(QWidget* tab)
     layout->addLayout(cliLayout);
 
     layout->addStretch();
+
+    scrollArea->setWidget(contentWidget);
+    tabLayout->addWidget(scrollArea);
 }
 
 void SettingsDialog::setupHotkeysTab(QWidget* tab)
