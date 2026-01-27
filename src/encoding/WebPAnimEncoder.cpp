@@ -232,6 +232,7 @@ void WebPAnimationEncoder::writeFrame(const QImage &frame, qint64 timestampMs)
 void WebPAnimationEncoder::finish()
 {
     if (!m_running || !m_data || !m_data->encoder) {
+        emit finished(false, QString());
         return;
     }
 

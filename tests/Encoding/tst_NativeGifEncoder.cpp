@@ -356,8 +356,10 @@ void TestNativeGifEncoder::testFinishNotRunning()
 
     m_encoder->finish();
 
-    // Should do nothing when not running
-    QCOMPARE(finishedSpy.count(), 0);
+    // Should emit finished(false) when not running to notify callers
+    QCOMPARE(finishedSpy.count(), 1);
+    QCOMPARE(finishedSpy.first().at(0).toBool(), false);
+    QVERIFY(finishedSpy.first().at(1).toString().isEmpty());
 }
 
 // ============================================================================
