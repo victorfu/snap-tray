@@ -6,6 +6,7 @@
 #include "widgets/HotkeySettingsTab.h"
 #include "widgets/TypeHotkeyDialog.h"
 #include "hotkey/HotkeyManager.h"
+#include "settings/SettingsTheme.h"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -61,9 +62,16 @@ void HotkeySettingsTab::setupUi()
     m_treeWidget->setEditTriggers(QAbstractItemView::NoEditTriggers);
     m_treeWidget->header()->setStretchLastSection(true);
 
+    const bool dark = SettingsTheme::isDark();
+    const QString borderColor = dark ? QStringLiteral("#404040") : QStringLiteral("#E0E0E0");
+    const QString headerBg = dark ? QStringLiteral("#2D2D2D") : QStringLiteral("#FAFAFA");
+    const QString selectionBg = dark ? QStringLiteral("#1E3A5F") : QStringLiteral("#E3F2FD");
+    const QString selectionText = dark ? QStringLiteral("#64B5F6") : QStringLiteral("#1976D2");
+    const QString hoverBg = dark ? QStringLiteral("#3A3A3A") : QStringLiteral("#F5F5F5");
+
     m_treeWidget->setStyleSheet(QStringLiteral(
         "QTreeWidget {"
-        "  border: 1px solid #E0E0E0;"
+        "  border: 1px solid %1;"
         "  border-radius: 4px;"
         "}"
         "QTreeWidget::item {"
@@ -71,26 +79,27 @@ void HotkeySettingsTab::setupUi()
         "  min-height: 28px;"
         "}"
         "QTreeWidget::item:selected {"
-        "  background-color: #E3F2FD;"
-        "  color: #1976D2;"
+        "  background-color: %2;"
+        "  color: %3;"
         "}"
         "QTreeWidget::item:hover {"
-        "  background-color: #F5F5F5;"
+        "  background-color: %4;"
         "}"
         "QHeaderView::section {"
-        "  background-color: #FAFAFA;"
+        "  background-color: %5;"
         "  padding: 6px;"
         "  border: none;"
-        "  border-bottom: 1px solid #E0E0E0;"
+        "  border-bottom: 1px solid %1;"
         "  font-weight: 500;"
-        "}"));
+        "}").arg(borderColor, selectionBg, selectionText, hoverBg, headerBg));
 
     mainLayout->addWidget(m_treeWidget, 1);
 
     // Hint label
     auto* hintLabel = new QLabel(
         tr("Double-click a hotkey to edit, or select and press Enter"), this);
-    hintLabel->setStyleSheet(QStringLiteral("color: #757575; font-size: 11px;"));
+    const QString hintColor = dark ? QStringLiteral("#909090") : QStringLiteral("#757575");
+    hintLabel->setStyleSheet(QStringLiteral("color: %1; font-size: 11px;").arg(hintColor));
     mainLayout->addWidget(hintLabel);
 
     // Button row
@@ -118,7 +127,7 @@ void HotkeySettingsTab::setupUi()
 
     // Status label
     m_statusLabel = new QLabel(this);
-    m_statusLabel->setStyleSheet(QStringLiteral("color: #757575; font-size: 11px;"));
+    m_statusLabel->setStyleSheet(QStringLiteral("color: %1; font-size: 11px;").arg(hintColor));
     mainLayout->addWidget(m_statusLabel);
 }
 
@@ -220,11 +229,14 @@ void HotkeySettingsTab::updateItemDisplay(QTreeWidgetItem* item, const HotkeyCon
         : HotkeyManager::formatKeySequence(config.keySequence);
     item->setText(kColumnHotkey, hotkeyText);
 
-    // Style based on state
+    // Style based on state (theme-aware colors)
+    const bool dark = SettingsTheme::isDark();
     if (config.keySequence.isEmpty()) {
-        item->setForeground(kColumnHotkey, QColor(0x9E, 0x9E, 0x9E));  // Gray
+        // Gray for empty/optional - lighter in dark mode for visibility
+        item->setForeground(kColumnHotkey, dark ? QColor(0x80, 0x80, 0x80) : QColor(0x9E, 0x9E, 0x9E));
     } else {
-        item->setForeground(kColumnHotkey, QColor(0x21, 0x21, 0x21));  // Dark
+        // Normal text - light in dark mode, dark in light mode
+        item->setForeground(kColumnHotkey, dark ? QColor(0xE0, 0xE0, 0xE0) : QColor(0x21, 0x21, 0x21));
     }
 
     // Status
@@ -235,6 +247,7 @@ void HotkeySettingsTab::updateStatusIndicator(QTreeWidgetItem* item, HotkeyStatu
 {
     QString statusText;
     QColor statusColor;
+    const bool dark = SettingsTheme::isDark();
 
     switch (status) {
     case HotkeyStatus::Registered:
@@ -247,12 +260,14 @@ void HotkeySettingsTab::updateStatusIndicator(QTreeWidgetItem* item, HotkeyStatu
         break;
     case HotkeyStatus::Disabled:
         statusText = tr("Disabled");
-        statusColor = QColor(0x9E, 0x9E, 0x9E);  // Gray
+        // Gray - brighter in dark mode for visibility
+        statusColor = dark ? QColor(0xA0, 0xA0, 0xA0) : QColor(0x9E, 0x9E, 0x9E);
         break;
     case HotkeyStatus::Unset:
     default:
         statusText = tr("Not Set");
-        statusColor = QColor(0xBD, 0xBD, 0xBD);  // Light gray
+        // Light gray - brighter in dark mode for visibility
+        statusColor = dark ? QColor(0x80, 0x80, 0x80) : QColor(0xBD, 0xBD, 0xBD);
         break;
     }
 

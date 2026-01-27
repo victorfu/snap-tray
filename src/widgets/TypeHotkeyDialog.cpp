@@ -4,6 +4,7 @@
  */
 
 #include "widgets/TypeHotkeyDialog.h"
+#include "settings/SettingsTheme.h"
 
 #include <QApplication>
 #include <QEvent>
@@ -50,14 +51,15 @@ void TypeHotkeyDialog::setupUi()
     m_titleLabel = new QLabel(this);
     m_titleLabel->setAlignment(Qt::AlignCenter);
     m_titleLabel->setStyleSheet(QStringLiteral(
-        "QLabel { font-size: 15px; font-weight: 600; color: #333; }"));
+        "QLabel { font-size: 15px; font-weight: 600; color: %1; }")
+        .arg(SettingsTheme::primaryText()));
     mainLayout->addWidget(m_titleLabel);
 
     // Instruction
     m_instructionLabel = new QLabel(tr("Press a key combination..."), this);
     m_instructionLabel->setAlignment(Qt::AlignCenter);
     m_instructionLabel->setStyleSheet(QStringLiteral(
-        "QLabel { font-size: 13px; color: #666; }"));
+        "QLabel { font-size: 13px; color: %1; }").arg(SettingsTheme::secondaryText()));
     mainLayout->addWidget(m_instructionLabel);
 
     mainLayout->addSpacing(8);
@@ -71,12 +73,12 @@ void TypeHotkeyDialog::setupUi()
         "  font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;"
         "  font-size: 20px;"
         "  font-weight: 600;"
-        "  color: #1976D2;"
-        "  background-color: #E3F2FD;"
-        "  border: 2px solid #90CAF9;"
+        "  color: %1;"
+        "  background-color: %2;"
+        "  border: 2px solid %3;"
         "  border-radius: 8px;"
         "  padding: 10px 20px;"
-        "}"));
+        "}").arg(SettingsTheme::selectionText(), SettingsTheme::inputFocusBg(), SettingsTheme::inputFocusBorder()));
     mainLayout->addWidget(m_keyDisplayLabel);
 
     // Hint label
@@ -84,7 +86,7 @@ void TypeHotkeyDialog::setupUi()
     m_hintLabel->setAlignment(Qt::AlignCenter);
     m_hintLabel->setWordWrap(true);
     m_hintLabel->setStyleSheet(QStringLiteral(
-        "QLabel { font-size: 11px; color: #888; }"));
+        "QLabel { font-size: 11px; color: %1; }").arg(SettingsTheme::secondaryText()));
     mainLayout->addWidget(m_hintLabel);
 
     mainLayout->addStretch();
@@ -97,26 +99,27 @@ void TypeHotkeyDialog::setupUi()
     m_cancelBtn->setFixedHeight(32);
     m_cancelBtn->setStyleSheet(QStringLiteral(
         "QPushButton {"
-        "  background-color: #E0E0E0;"
+        "  background-color: %1;"
         "  border: none;"
         "  border-radius: 6px;"
         "  padding: 0 20px;"
         "  font-size: 13px;"
-        "  color: #333;"
+        "  color: %2;"
         "}"
         "QPushButton:hover {"
-        "  background-color: #D0D0D0;"
+        "  background-color: %3;"
         "}"
         "QPushButton:pressed {"
-        "  background-color: #C0C0C0;"
-        "}"));
+        "  background-color: %4;"
+        "}").arg(SettingsTheme::buttonBg(), SettingsTheme::buttonText(),
+                 SettingsTheme::buttonHoverBg(), SettingsTheme::buttonPressedBg()));
 
     m_okBtn = new QPushButton(tr("OK"), this);
     m_okBtn->setFixedHeight(32);
     m_okBtn->setEnabled(false);  // Disabled until key is captured
     m_okBtn->setStyleSheet(QStringLiteral(
         "QPushButton {"
-        "  background-color: #1976D2;"
+        "  background-color: %1;"
         "  border: none;"
         "  border-radius: 6px;"
         "  padding: 0 20px;"
@@ -124,15 +127,17 @@ void TypeHotkeyDialog::setupUi()
         "  color: white;"
         "}"
         "QPushButton:hover {"
-        "  background-color: #1565C0;"
+        "  background-color: %2;"
         "}"
         "QPushButton:pressed {"
-        "  background-color: #0D47A1;"
+        "  background-color: %3;"
         "}"
         "QPushButton:disabled {"
-        "  background-color: #B0BEC5;"
-        "  color: #78909C;"
-        "}"));
+        "  background-color: %4;"
+        "  color: %5;"
+        "}").arg(SettingsTheme::primaryButtonBg(), SettingsTheme::primaryButtonHoverBg(),
+                 SettingsTheme::primaryButtonPressedBg(), SettingsTheme::disabledButtonBg(),
+                 SettingsTheme::disabledButtonText()));
 
     buttonLayout->addStretch();
     buttonLayout->addWidget(m_cancelBtn);
@@ -157,14 +162,16 @@ void TypeHotkeyDialog::paintEvent(QPaintEvent* event)
     QRectF dialogRect = rect().adjusted(8, 8, -8, -8);
     path.addRoundedRect(dialogRect, 12, 12);
 
+    const bool dark = SettingsTheme::isDark();
+
     // Shadow effect (simple offset)
-    painter.fillPath(path.translated(2, 2), QColor(0, 0, 0, 30));
+    painter.fillPath(path.translated(2, 2), QColor(0, 0, 0, dark ? 60 : 30));
 
     // Background
-    painter.fillPath(path, QColor(255, 255, 255));
+    painter.fillPath(path, QColor(SettingsTheme::dialogBackground()));
 
     // Border
-    painter.setPen(QPen(QColor(220, 220, 220), 1));
+    painter.setPen(QPen(QColor(SettingsTheme::borderColor()), 1));
     painter.drawPath(path);
 }
 
@@ -286,12 +293,12 @@ void TypeHotkeyDialog::updateDisplay()
             "  font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;"
             "  font-size: 20px;"
             "  font-weight: 600;"
-            "  color: #1976D2;"
-            "  background-color: #E3F2FD;"
-            "  border: 2px solid #1976D2;"
+            "  color: %1;"
+            "  background-color: %2;"
+            "  border: 2px solid %1;"
             "  border-radius: 8px;"
             "  padding: 10px 20px;"
-            "}"));
+            "}").arg(SettingsTheme::selectionText(), SettingsTheme::inputFocusBg()));
         m_okBtn->setEnabled(true);
     } else if (m_currentModifiers != Qt::NoModifier) {
         // Use display-friendly format for modifier preview
@@ -301,12 +308,12 @@ void TypeHotkeyDialog::updateDisplay()
             "  font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;"
             "  font-size: 20px;"
             "  font-weight: 600;"
-            "  color: #666;"
-            "  background-color: #F5F5F5;"
-            "  border: 2px dashed #BDBDBD;"
+            "  color: %1;"
+            "  background-color: %2;"
+            "  border: 2px dashed %3;"
             "  border-radius: 8px;"
             "  padding: 10px 20px;"
-            "}"));
+            "}").arg(SettingsTheme::secondaryText(), SettingsTheme::hoverBackground(), SettingsTheme::mutedText()));
         m_okBtn->setEnabled(false);
     } else {
         displayText = tr("(Press keys)");
@@ -315,12 +322,12 @@ void TypeHotkeyDialog::updateDisplay()
             "  font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;"
             "  font-size: 20px;"
             "  font-weight: 600;"
-            "  color: #9E9E9E;"
-            "  background-color: #FAFAFA;"
-            "  border: 2px solid #E0E0E0;"
+            "  color: %1;"
+            "  background-color: %2;"
+            "  border: 2px solid %3;"
             "  border-radius: 8px;"
             "  padding: 10px 20px;"
-            "}"));
+            "}").arg(SettingsTheme::mutedText(), SettingsTheme::panelBackground(), SettingsTheme::borderColor()));
         m_okBtn->setEnabled(false);
     }
 

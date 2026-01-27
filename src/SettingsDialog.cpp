@@ -10,6 +10,7 @@
 #include "settings/FileSettingsManager.h"
 #include "settings/PinWindowSettingsManager.h"
 #include "settings/OCRSettingsManager.h"
+#include "settings/SettingsTheme.h"
 #include "detection/AutoBlurManager.h"
 #include "widgets/HotkeySettingsTab.h"
 #include <QDir>
@@ -513,7 +514,8 @@ void SettingsDialog::setupWatermarkTab(QWidget* tab)
     m_watermarkImagePreview->setFixedSize(120, 120);
     m_watermarkImagePreview->setAlignment(Qt::AlignCenter);
     m_watermarkImagePreview->setStyleSheet(
-        "QLabel { border: 1px solid #ccc; background-color: #f5f5f5; border-radius: 4px; }");
+        QStringLiteral("QLabel { border: 1px solid %1; background-color: %2; border-radius: 4px; }")
+        .arg(SnapTray::SettingsTheme::borderColor(), SnapTray::SettingsTheme::panelBackground()));
     m_watermarkImagePreview->setText("No image");
 
     m_watermarkImageSizeLabel = new QLabel(tab);
@@ -620,8 +622,9 @@ void SettingsDialog::setupRecordingTab(QWidget* tab)
     m_gifInfoLabel->setWordWrap(true);
     m_gifInfoLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
     m_gifInfoLabel->setStyleSheet(
-        "QLabel { background-color: #e3f2fd; color: #1565c0; "
-        "padding: 10px; border-radius: 4px; }");
+        QStringLiteral("QLabel { background-color: %1; color: %2; "
+            "padding: 10px; border-radius: 4px; }")
+        .arg(SnapTray::SettingsTheme::infoPanelBg(), SnapTray::SettingsTheme::infoPanelText()));
     gifLayout->addWidget(m_gifInfoLabel);
 
     layout->addWidget(m_gifSettingsWidget);
@@ -665,8 +668,9 @@ void SettingsDialog::setupRecordingTab(QWidget* tab)
     m_systemAudioWarningLabel->setWordWrap(true);
     m_systemAudioWarningLabel->setMinimumHeight(50);
     m_systemAudioWarningLabel->setStyleSheet(
-        "QLabel { background-color: #fff3cd; color: #856404; "
-        "padding: 8px; border-radius: 4px; font-size: 11px; }");
+        QStringLiteral("QLabel { background-color: %1; color: %2; "
+            "padding: 8px; border-radius: 4px; font-size: 11px; }")
+        .arg(SnapTray::SettingsTheme::warningPanelBg(), SnapTray::SettingsTheme::warningPanelText()));
     m_systemAudioWarningLabel->hide();
     layout->addWidget(m_systemAudioWarningLabel);
 
@@ -1157,7 +1161,7 @@ void SettingsDialog::loadOcrLanguages()
 
     // Right: Selected languages (with drag-drop reorder)
     QVBoxLayout* selectedLayout = new QVBoxLayout();
-    QLabel* selectedLabel = new QLabel(tr("Selected Languages (priority order)"), m_ocrContentWidget);
+    QLabel* selectedLabel = new QLabel(tr("Selected Languages"), m_ocrContentWidget);
     selectedLabel->setStyleSheet("font-weight: bold;");
     selectedLabel->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
     selectedLabel->setMinimumWidth(0);
@@ -1421,7 +1425,9 @@ void SettingsDialog::setupFilesTab(QWidget* tab)
 
     // Preview label
     m_filenamePreviewLabel = new QLabel(tab);
-    m_filenamePreviewLabel->setStyleSheet("color: gray; font-size: 11px; padding: 8px 0;");
+    m_filenamePreviewLabel->setStyleSheet(
+        QStringLiteral("color: %1; font-size: 11px; padding: 8px 0;")
+        .arg(SnapTray::SettingsTheme::secondaryText()));
     layout->addWidget(m_filenamePreviewLabel);
 
     updateFilenamePreview();
@@ -1484,7 +1490,8 @@ void SettingsDialog::setupAboutTab(QWidget* tab)
 
     // Version
     QLabel* versionLabel = new QLabel(QString("Version %1").arg(SNAPTRAY_VERSION), tab);
-    versionLabel->setStyleSheet("font-size: 12px; color: gray;");
+    versionLabel->setStyleSheet(
+        QStringLiteral("font-size: 12px; color: %1;").arg(SnapTray::SettingsTheme::secondaryText()));
     versionLabel->setAlignment(Qt::AlignCenter);
     layout->addWidget(versionLabel);
 
@@ -1506,7 +1513,8 @@ void SettingsDialog::setupAboutTab(QWidget* tab)
 
     // Website link
     QLabel* websiteLabel = new QLabel(
-        "<a href=\"https://victorfu.github.io/snap-tray/\" style=\"color: #0066cc;\">https://victorfu.github.io/snap-tray/</a>", tab);
+        QStringLiteral("<a href=\"https://victorfu.github.io/snap-tray/\" style=\"color: %1;\">https://victorfu.github.io/snap-tray/</a>")
+        .arg(SnapTray::SettingsTheme::linkColor()), tab);
     websiteLabel->setStyleSheet("font-size: 11px;");
     websiteLabel->setAlignment(Qt::AlignCenter);
     websiteLabel->setOpenExternalLinks(true);
@@ -1535,22 +1543,26 @@ void SettingsDialog::updatePermissionStatus()
     bool hasScreenRecording = PlatformFeatures::hasScreenRecordingPermission();
     if (hasScreenRecording) {
         m_screenRecordingStatusLabel->setText(tr("Granted"));
-        m_screenRecordingStatusLabel->setStyleSheet("color: green;");
+        m_screenRecordingStatusLabel->setStyleSheet(
+            QStringLiteral("color: %1;").arg(SnapTray::SettingsTheme::successColor()));
     }
     else {
         m_screenRecordingStatusLabel->setText(tr("Not Granted"));
-        m_screenRecordingStatusLabel->setStyleSheet("color: red;");
+        m_screenRecordingStatusLabel->setStyleSheet(
+            QStringLiteral("color: %1;").arg(SnapTray::SettingsTheme::errorColor()));
     }
 
     // Accessibility permission
     bool hasAccessibility = PlatformFeatures::hasAccessibilityPermission();
     if (hasAccessibility) {
         m_accessibilityStatusLabel->setText(tr("Granted"));
-        m_accessibilityStatusLabel->setStyleSheet("color: green;");
+        m_accessibilityStatusLabel->setStyleSheet(
+            QStringLiteral("color: %1;").arg(SnapTray::SettingsTheme::successColor()));
     }
     else {
         m_accessibilityStatusLabel->setText(tr("Not Granted"));
-        m_accessibilityStatusLabel->setStyleSheet("color: red;");
+        m_accessibilityStatusLabel->setStyleSheet(
+            QStringLiteral("color: %1;").arg(SnapTray::SettingsTheme::errorColor()));
     }
 }
 #endif

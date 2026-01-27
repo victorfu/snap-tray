@@ -1,4 +1,5 @@
 #include "widgets/HotkeyEdit.h"
+#include "settings/SettingsTheme.h"
 
 #include <QHBoxLayout>
 #include <QLineEdit>
@@ -272,7 +273,7 @@ void HotkeyEdit::focusInEvent(QFocusEvent *event)
 
     // Use QPalette for reliable background color on macOS (stylesheets can be overridden by native styling)
     QPalette pal = m_lineEdit->palette();
-    pal.setColor(QPalette::Base, QColor("#ffffcc"));
+    pal.setColor(QPalette::Base, QColor(SnapTray::SettingsTheme::focusHighlight()));
     m_lineEdit->setAutoFillBackground(true);
     m_lineEdit->setPalette(pal);
 
