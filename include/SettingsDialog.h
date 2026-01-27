@@ -15,6 +15,9 @@ class QComboBox;
 class QListWidget;
 class QRadioButton;
 class QGroupBox;
+class QVBoxLayout;
+class UpdateChecker;
+struct ReleaseInfo;
 
 namespace SnapTray {
 class HotkeySettingsTab;
@@ -41,6 +44,10 @@ private slots:
     void onRemoveOcrLanguage();
     void onTabChanged(int index);
     void loadOcrLanguages();
+    void onCheckForUpdates();
+    void onUpdateAvailable(const ReleaseInfo& release);
+    void onNoUpdateAvailable();
+    void onUpdateCheckFailed(const QString& error);
 
 private:
     void setupUi();
@@ -49,6 +56,8 @@ private:
     void setupWatermarkTab(QWidget *tab);
     void setupOcrTab(QWidget *tab);
     void setupRecordingTab(QWidget *tab);
+    void setupUpdatesTab(QWidget *tab);
+    void updateCheckNowButtonState(bool checking);
 
     // UI elements
     QTabWidget *m_tabWidget;
@@ -155,6 +164,18 @@ private:
     // OCR behavior settings
     QRadioButton *m_ocrDirectCopyRadio;
     QRadioButton *m_ocrShowEditorRadio;
+
+    // Updates tab
+    void setupUpdatesTabForDirectDownload(QVBoxLayout* layout, QWidget* tab);
+    void setupUpdatesTabForStore(QVBoxLayout* layout, QWidget* tab);
+    QCheckBox *m_autoCheckUpdatesCheckbox;
+    QComboBox *m_checkFrequencyCombo;
+    QCheckBox *m_includePrereleaseCheckbox;
+    QLabel *m_lastCheckedLabel;
+    QPushButton *m_checkNowButton;
+    QLabel *m_installSourceLabel;
+    QLabel *m_currentVersionLabel;
+    UpdateChecker *m_updateChecker;
 
     // CLI Installation
     QLabel *m_cliStatusLabel;

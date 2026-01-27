@@ -18,6 +18,8 @@ class ScreenCanvasManager;
 class RecordingManager;
 class SettingsDialog;
 class RecordingPreviewWindow;
+class UpdateChecker;
+struct ReleaseInfo;
 
 class MainApplication : public QObject
 {
@@ -47,6 +49,7 @@ private slots:
     void onPreviewSaveRequested(const QString &videoPath);
     void onPreviewDiscardRequested();
     void onHotkeyAction(SnapTray::HotkeyAction action);
+    void onUpdateAvailable(const ReleaseInfo& release);
 
 private:
     void updateTrayMenuHotkeyText();
@@ -64,6 +67,7 @@ private:
     QAction *m_fullScreenRecordingAction;
     SettingsDialog *m_settingsDialog;
     QPointer<RecordingPreviewWindow> m_previewWindow;
+    UpdateChecker *m_updateChecker;
 };
 
 #endif // MAINAPPLICATION_H

@@ -13,6 +13,10 @@
 #include "settings/SettingsTheme.h"
 #include "detection/AutoBlurManager.h"
 #include "widgets/HotkeySettingsTab.h"
+#include "update/UpdateChecker.h"
+#include "update/UpdateDialog.h"
+#include "update/UpdateSettingsManager.h"
+#include "update/InstallSourceDetector.h"
 #include <QDir>
 #include <QSettings>
 #include <QPushButton>
@@ -35,6 +39,8 @@
 #include <QStandardPaths>
 #include <QFile>
 #include <QTimer>
+#include <QDesktopServices>
+#include <QUrl>
 #include <memory>
 
 // Hotkey constants are defined in settings/Settings.h
@@ -85,6 +91,14 @@ SettingsDialog::SettingsDialog(QWidget* parent)
     , m_ocrTabIndex(-1)
     , m_ocrDirectCopyRadio(nullptr)
     , m_ocrShowEditorRadio(nullptr)
+    , m_autoCheckUpdatesCheckbox(nullptr)
+    , m_checkFrequencyCombo(nullptr)
+    , m_includePrereleaseCheckbox(nullptr)
+    , m_lastCheckedLabel(nullptr)
+    , m_checkNowButton(nullptr)
+    , m_installSourceLabel(nullptr)
+    , m_currentVersionLabel(nullptr)
+    , m_updateChecker(nullptr)
 {
     setWindowTitle(QString("%1 Settings").arg(SNAPTRAY_APP_NAME));
     setMinimumSize(520, 480);
@@ -134,7 +148,12 @@ void SettingsDialog::setupUi()
     setupFilesTab(filesTab);
     m_tabWidget->addTab(filesTab, "Files");
 
-    // Tab 7: About
+    // Tab 7: Updates
+    QWidget* updatesTab = new QWidget();
+    setupUpdatesTab(updatesTab);
+    m_tabWidget->addTab(updatesTab, "Updates");
+
+    // Tab 8: About
     QWidget* aboutTab = new QWidget();
     setupAboutTab(aboutTab);
     m_tabWidget->addTab(aboutTab, "About");
@@ -932,6 +951,18 @@ void SettingsDialog::onSave()
     ToolbarStyleConfig::saveStyle(newStyle);
     emit toolbarStyleChanged(newStyle);
 
+    // Save update settings (only if Direct Download mode)
+    if (m_autoCheckUpdatesCheckbox) {
+        auto& updateSettings = UpdateSettingsManager::instance();
+        updateSettings.setAutoCheckEnabled(m_autoCheckUpdatesCheckbox->isChecked());
+        if (m_checkFrequencyCombo) {
+            updateSettings.setCheckIntervalHours(m_checkFrequencyCombo->currentData().toInt());
+        }
+        if (m_includePrereleaseCheckbox) {
+            updateSettings.setIncludePrerelease(m_includePrereleaseCheckbox->isChecked());
+        }
+    }
+
     // Close dialog (non-modal mode)
     accept();
 }
@@ -1464,6 +1495,261 @@ void SettingsDialog::updateFilenamePreview()
     }
 
     m_filenamePreviewLabel->setText(QString("Preview: %1").arg(filename));
+}
+
+void SettingsDialog::setupUpdatesTab(QWidget* tab)
+{
+    QVBoxLayout* layout = new QVBoxLayout(tab);
+
+    // ========== Version Information Section ==========
+    QLabel* versionInfoLabel = new QLabel(tr("Version Information"), tab);
+    versionInfoLabel->setStyleSheet("font-weight: bold; font-size: 12px;");
+    layout->addWidget(versionInfoLabel);
+
+    // Current version row
+    QHBoxLayout* currentVersionLayout = new QHBoxLayout();
+    QLabel* currentVersionTextLabel = new QLabel(tr("Current Version"), tab);
+    currentVersionTextLabel->setFixedWidth(150);
+    m_currentVersionLabel = new QLabel(UpdateChecker::currentVersion(), tab);
+    currentVersionLayout->addWidget(currentVersionTextLabel);
+    currentVersionLayout->addWidget(m_currentVersionLabel);
+    currentVersionLayout->addStretch();
+    layout->addLayout(currentVersionLayout);
+
+    // Install source row
+    QHBoxLayout* installSourceLayout = new QHBoxLayout();
+    QLabel* installSourceTextLabel = new QLabel(tr("Install Source"), tab);
+    installSourceTextLabel->setFixedWidth(150);
+    InstallSource source = InstallSourceDetector::detect();
+    m_installSourceLabel = new QLabel(InstallSourceDetector::getSourceDisplayName(source), tab);
+    installSourceLayout->addWidget(installSourceTextLabel);
+    installSourceLayout->addWidget(m_installSourceLabel);
+    installSourceLayout->addStretch();
+    layout->addLayout(installSourceLayout);
+
+    layout->addSpacing(16);
+
+    // Different UI based on install source
+    if (source == InstallSource::MicrosoftStore || source == InstallSource::MacAppStore) {
+        setupUpdatesTabForStore(layout, tab);
+    } else {
+        setupUpdatesTabForDirectDownload(layout, tab);
+    }
+}
+
+void SettingsDialog::setupUpdatesTabForDirectDownload(QVBoxLayout* layout, QWidget* tab)
+{
+    // ========== Automatic Updates Section ==========
+    QLabel* autoUpdateLabel = new QLabel(tr("Automatic Updates"), tab);
+    autoUpdateLabel->setStyleSheet("font-weight: bold; font-size: 12px;");
+    layout->addWidget(autoUpdateLabel);
+
+    auto& updateSettings = UpdateSettingsManager::instance();
+
+    // Auto-check checkbox
+    m_autoCheckUpdatesCheckbox = new QCheckBox(tr("Check for updates automatically"), tab);
+    m_autoCheckUpdatesCheckbox->setChecked(updateSettings.isAutoCheckEnabled());
+    layout->addWidget(m_autoCheckUpdatesCheckbox);
+
+    // Check frequency row (indented)
+    QHBoxLayout* frequencyLayout = new QHBoxLayout();
+    frequencyLayout->setContentsMargins(20, 0, 0, 0);
+    QLabel* frequencyLabel = new QLabel(tr("Check frequency"), tab);
+    frequencyLabel->setFixedWidth(130);
+    m_checkFrequencyCombo = new QComboBox(tab);
+    m_checkFrequencyCombo->setMinimumWidth(150);
+    m_checkFrequencyCombo->addItem(tr("Every day"), 24);
+    m_checkFrequencyCombo->addItem(tr("Every 3 days"), 72);
+    m_checkFrequencyCombo->addItem(tr("Every week"), 168);
+    m_checkFrequencyCombo->addItem(tr("Every 2 weeks"), 336);
+    m_checkFrequencyCombo->addItem(tr("Every month"), 720);
+
+    int currentInterval = updateSettings.checkIntervalHours();
+    int freqIndex = m_checkFrequencyCombo->findData(currentInterval);
+    if (freqIndex >= 0) {
+        m_checkFrequencyCombo->setCurrentIndex(freqIndex);
+    }
+
+    frequencyLayout->addWidget(frequencyLabel);
+    frequencyLayout->addWidget(m_checkFrequencyCombo);
+    frequencyLayout->addStretch();
+    layout->addLayout(frequencyLayout);
+
+    // Pre-release checkbox
+    m_includePrereleaseCheckbox = new QCheckBox(tr("Include pre-release versions"), tab);
+    m_includePrereleaseCheckbox->setChecked(updateSettings.includePrerelease());
+    layout->addWidget(m_includePrereleaseCheckbox);
+
+    // Connect auto-check to enable/disable frequency combo
+    connect(m_autoCheckUpdatesCheckbox, &QCheckBox::toggled,
+            m_checkFrequencyCombo, &QWidget::setEnabled);
+    m_checkFrequencyCombo->setEnabled(m_autoCheckUpdatesCheckbox->isChecked());
+
+    layout->addSpacing(16);
+
+    // Separator line
+    QFrame* line = new QFrame(tab);
+    line->setFrameShape(QFrame::HLine);
+    line->setFrameShadow(QFrame::Sunken);
+    layout->addWidget(line);
+
+    layout->addSpacing(8);
+
+    // Last checked label
+    QDateTime lastCheck = updateSettings.lastCheckTime();
+    QString lastCheckText;
+    if (lastCheck.isValid()) {
+        lastCheckText = tr("Last checked: %1")
+                            .arg(lastCheck.toString("MMMM d, yyyy 'at' h:mm AP"));
+    } else {
+        lastCheckText = tr("Last checked: Never");
+    }
+    m_lastCheckedLabel = new QLabel(lastCheckText, tab);
+    m_lastCheckedLabel->setStyleSheet("font-size: 12px; color: gray;");
+    m_lastCheckedLabel->setAlignment(Qt::AlignCenter);
+    layout->addWidget(m_lastCheckedLabel);
+
+    layout->addSpacing(12);
+
+    // Check Now button (centered)
+    QHBoxLayout* checkNowLayout = new QHBoxLayout();
+    checkNowLayout->addStretch();
+    m_checkNowButton = new QPushButton(tr("Check Now"), tab);
+    m_checkNowButton->setMinimumWidth(120);
+    connect(m_checkNowButton, &QPushButton::clicked, this, &SettingsDialog::onCheckForUpdates);
+    checkNowLayout->addWidget(m_checkNowButton);
+    checkNowLayout->addStretch();
+    layout->addLayout(checkNowLayout);
+
+    layout->addStretch();
+
+    // Create update checker for manual checks
+    m_updateChecker = new UpdateChecker(this);
+    connect(m_updateChecker, &UpdateChecker::updateAvailable,
+            this, &SettingsDialog::onUpdateAvailable);
+    connect(m_updateChecker, &UpdateChecker::noUpdateAvailable,
+            this, &SettingsDialog::onNoUpdateAvailable);
+    connect(m_updateChecker, &UpdateChecker::checkFailed,
+            this, &SettingsDialog::onUpdateCheckFailed);
+    connect(m_updateChecker, &UpdateChecker::checkStarted, this, [this]() {
+        updateCheckNowButtonState(true);
+    });
+}
+
+void SettingsDialog::setupUpdatesTabForStore(QVBoxLayout* layout, QWidget* tab)
+{
+    QString storeName = InstallSourceDetector::getStoreName();
+
+    // Info box
+    QLabel* infoBox = new QLabel(tab);
+    infoBox->setWordWrap(true);
+    infoBox->setText(
+        QString("<p style='margin: 0;'>"
+                "<span style='color: #007AFF; font-size: 16px;'>%1</span> "
+                "%2</p>"
+                "<p style='margin-top: 8px; color: #666;'>%3</p>")
+            .arg(QString::fromUtf8("\xE2\x84\xB9\xEF\xB8\x8F"))  // ℹ️
+            .arg(tr("Updates are managed automatically by %1.").arg(storeName))
+            .arg(tr("To check for updates or manage auto-update settings, "
+                    "please open the %1 app.").arg(storeName)));
+    infoBox->setStyleSheet(
+        "QLabel { "
+        "  background-color: rgba(0, 122, 255, 0.08); "
+        "  border: 1px solid rgba(0, 122, 255, 0.2); "
+        "  border-radius: 8px; "
+        "  padding: 16px; "
+        "}");
+    layout->addWidget(infoBox);
+
+    layout->addSpacing(24);
+
+    // Open Store button (centered)
+    QHBoxLayout* buttonLayout = new QHBoxLayout();
+    buttonLayout->addStretch();
+    m_checkNowButton = new QPushButton(tr("Open %1").arg(storeName), tab);
+    m_checkNowButton->setMinimumWidth(180);
+    m_checkNowButton->setStyleSheet(
+        "QPushButton { "
+        "  background-color: #007AFF; "
+        "  color: white; "
+        "  border: none; "
+        "  border-radius: 8px; "
+        "  padding: 8px 20px; "
+        "  font-size: 14px; "
+        "} "
+        "QPushButton:hover { "
+        "  background-color: #0066DD; "
+        "}");
+    connect(m_checkNowButton, &QPushButton::clicked, this, [this]() {
+        QString storeUrl = InstallSourceDetector::getStoreUrl();
+        if (!storeUrl.isEmpty()) {
+            QDesktopServices::openUrl(QUrl(storeUrl));
+        }
+    });
+    buttonLayout->addWidget(m_checkNowButton);
+    buttonLayout->addStretch();
+    layout->addLayout(buttonLayout);
+
+    layout->addStretch();
+}
+
+void SettingsDialog::updateCheckNowButtonState(bool checking)
+{
+    if (m_checkNowButton) {
+        m_checkNowButton->setEnabled(!checking);
+        if (checking) {
+            m_checkNowButton->setText(tr("Checking..."));
+        } else {
+            m_checkNowButton->setText(tr("Check Now"));
+        }
+    }
+}
+
+void SettingsDialog::onCheckForUpdates()
+{
+    if (m_updateChecker) {
+        m_updateChecker->checkForUpdates(false);  // Non-silent check
+    }
+}
+
+void SettingsDialog::onUpdateAvailable(const ReleaseInfo& release)
+{
+    updateCheckNowButtonState(false);
+
+    // Update last checked label
+    m_lastCheckedLabel->setText(
+        tr("Last checked: %1")
+            .arg(QDateTime::currentDateTime().toString("MMMM d, yyyy 'at' h:mm AP")));
+
+    // Show update dialog
+    UpdateDialog* dialog = new UpdateDialog(release,
+                                            InstallSourceDetector::detect(),
+                                            this);
+    dialog->exec();
+}
+
+void SettingsDialog::onNoUpdateAvailable()
+{
+    updateCheckNowButtonState(false);
+
+    // Update last checked label
+    m_lastCheckedLabel->setText(
+        tr("Last checked: %1")
+            .arg(QDateTime::currentDateTime().toString("MMMM d, yyyy 'at' h:mm AP")));
+
+    // Show up-to-date dialog
+    UpdateDialog* dialog = UpdateDialog::createUpToDateDialog(this);
+    dialog->exec();
+}
+
+void SettingsDialog::onUpdateCheckFailed(const QString& error)
+{
+    updateCheckNowButtonState(false);
+
+    // Show error dialog
+    UpdateDialog* dialog = UpdateDialog::createErrorDialog(error, this);
+    connect(dialog, &UpdateDialog::retryRequested, this, &SettingsDialog::onCheckForUpdates);
+    dialog->exec();
 }
 
 void SettingsDialog::setupAboutTab(QWidget* tab)

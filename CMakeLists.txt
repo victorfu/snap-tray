@@ -283,6 +283,7 @@ add_library(snaptray_core STATIC
     src/settings/OCRSettingsManager.cpp
     src/settings/PinWindowSettingsManager.cpp
     src/settings/WatermarkSettingsManager.cpp
+    src/update/UpdateSettingsManager.cpp
     src/cursor/CursorManager.cpp
     src/utils/CoordinateHelper.cpp
     # CLI sources
@@ -669,6 +670,23 @@ add_library(snaptray_ui STATIC
     # Global UI components
     src/ui/GlobalToast.cpp
     include/ui/GlobalToast.h
+
+    # Update system
+    src/update/InstallSourceDetector.cpp
+    src/update/UpdateChecker.cpp
+    src/update/UpdateDialog.cpp
+    include/update/InstallSourceDetector.h
+    include/update/UpdateChecker.h
+    include/update/UpdateDialog.h
+    include/update/UpdateSettingsManager.h
+
+    # Platform-specific update sources
+    $<$<PLATFORM_ID:Darwin>:
+        src/update/InstallSourceDetector_mac.mm
+    >
+    $<$<PLATFORM_ID:Windows>:
+        src/update/InstallSourceDetector_win.cpp
+    >
 
     # macOS-only UI
     $<$<PLATFORM_ID:Darwin>:

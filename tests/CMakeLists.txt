@@ -282,6 +282,25 @@ set_tests_properties(RecordingManager_InitTask PROPERTIES TIMEOUT 60 LABELS "int
 endif()  # End of temporarily disabled RecordingManager tests
 
 # ============================================================================
+# Update Tests (link snaptray_ui for update components)
+# ============================================================================
+
+add_executable(Update_UpdateSettingsManager Update/tst_UpdateSettingsManager.cpp)
+target_link_libraries(Update_UpdateSettingsManager PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME Update_UpdateSettingsManager COMMAND Update_UpdateSettingsManager)
+set_tests_properties(Update_UpdateSettingsManager PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(Update_UpdateChecker Update/tst_UpdateChecker.cpp)
+target_link_libraries(Update_UpdateChecker PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME Update_UpdateChecker COMMAND Update_UpdateChecker)
+set_tests_properties(Update_UpdateChecker PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(Update_InstallSourceDetector Update/tst_InstallSourceDetector.cpp)
+target_link_libraries(Update_InstallSourceDetector PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME Update_InstallSourceDetector COMMAND Update_InstallSourceDetector)
+set_tests_properties(Update_InstallSourceDetector PROPERTIES TIMEOUT 60 LABELS "unit")
+
+# ============================================================================
 # CTest Label Summary
 # ============================================================================
 # Labels:

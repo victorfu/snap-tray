@@ -11,6 +11,9 @@
 #include "hotkey/HotkeyManager.h"
 #include "ui/GlobalToast.h"
 #include "video/RecordingPreviewWindow.h"
+#include "update/UpdateChecker.h"
+#include "update/UpdateDialog.h"
+#include "update/InstallSourceDetector.h"
 
 #include <QFile>
 #include <QJsonDocument>
@@ -60,6 +63,7 @@ MainApplication::MainApplication(QObject* parent)
     , m_pinFromImageAction(nullptr)
     , m_fullScreenRecordingAction(nullptr)
     , m_settingsDialog(nullptr)
+    , m_updateChecker(nullptr)
 {
 }
 
@@ -328,6 +332,12 @@ void MainApplication::initialize()
 
     // Update tray menu with current hotkey text
     updateTrayMenuHotkeyText();
+
+    // Initialize update checker for automatic update checks
+    m_updateChecker = new UpdateChecker(this);
+    connect(m_updateChecker, &UpdateChecker::updateAvailable,
+            this, &MainApplication::onUpdateAvailable);
+    m_updateChecker->startPeriodicCheck();
 }
 
 void MainApplication::onRegionCapture()
@@ -755,4 +765,18 @@ void MainApplication::updateTrayMenuHotkeyText()
             m_fullScreenRecordingAction->setText(QStringLiteral("Record Full Screen"));
         }
     }
+}
+
+void MainApplication::onUpdateAvailable(const ReleaseInfo& release)
+{
+    qDebug() << "MainApplication: Update available -" << release.version;
+
+    // Show update dialog
+    UpdateDialog* dialog = new UpdateDialog(release,
+                                            InstallSourceDetector::detect(),
+                                            nullptr);
+    dialog->setAttribute(Qt::WA_DeleteOnClose);
+    dialog->show();
+    dialog->raise();
+    dialog->activateWindow();
 }
