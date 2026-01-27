@@ -5,6 +5,10 @@
 #include <QRect>
 #include <QSize>
 
+#ifdef Q_OS_WIN
+#include <windows.h>
+#endif
+
 class QScreen;
 
 /**
@@ -38,6 +42,12 @@ public:
 
     // Calculate physical size with even dimensions (required by H.264/H.265 encoders)
     static QSize toEvenPhysicalSize(const QSize& logical, qreal dpr);
+
+#ifdef Q_OS_WIN
+    // Convert physical (Windows API) coordinates to Qt logical coordinates
+    // Handles multi-monitor setups with different DPIs correctly
+    static QRect physicalToQtLogical(const QRect& physicalBounds, HWND hwnd = nullptr);
+#endif
 };
 
 #endif // COORDINATEHELPER_H

@@ -240,11 +240,9 @@ BOOL CALLBACK enumWindowsProc(HWND hwnd, LPARAM lParam)
     QString ownerApp;     // Empty - not needed for detection
 
     // Convert physical pixels to logical pixels for Qt coordinate system
-    // Use per-window DPI for accurate multi-monitor mixed-DPI support
-    UINT windowDpi = GetDpiForWindow(hwnd);
-    qreal dpr = windowDpi > 0 ? windowDpi / 96.0 : context->devicePixelRatio;
+    // Use monitor-aware conversion for accurate multi-monitor mixed-DPI support
     QRect physicalBounds(rect.left, rect.top, width, height);
-    QRect logicalBounds = CoordinateHelper::toLogical(physicalBounds, dpr);
+    QRect logicalBounds = CoordinateHelper::physicalToQtLogical(physicalBounds, hwnd);
 
     // Create DetectedElement
     DetectedElement element;
@@ -321,13 +319,9 @@ BOOL CALLBACK enumChildWindowsProc(HWND hwnd, LPARAM lParam)
         elementType = ElementType::Dialog;  // Panels/containers
     }
 
-    // Per-window DPI for accurate coordinates
-    UINT windowDpi = GetDpiForWindow(hwnd);
-    qreal dpr = windowDpi > 0 ? windowDpi / 96.0 : context->devicePixelRatio;
-
-    // Convert to logical coordinates
+    // Convert to logical coordinates using monitor-aware conversion
     QRect physicalBounds(rect.left, rect.top, width, height);
-    QRect logicalBounds = CoordinateHelper::toLogical(physicalBounds, dpr);
+    QRect logicalBounds = CoordinateHelper::physicalToQtLogical(physicalBounds, hwnd);
 
     // Create element for this control
     DetectedElement element;
@@ -461,10 +455,9 @@ void WindowDetector::enumerateWindows()
                         // Check if not already in cache using hash set
                         uint32_t windowId = reinterpret_cast<uintptr_t>(menuWnd) & 0xFFFFFFFF;
                         if (existingIds.find(windowId) == existingIds.end()) {
-                            qreal dpr = context.devicePixelRatio;
                             QRect physicalBounds(rect.left, rect.top, width, height);
                             DetectedElement element;
-                            element.bounds = CoordinateHelper::toLogical(physicalBounds, dpr);
+                            element.bounds = CoordinateHelper::physicalToQtLogical(physicalBounds, menuWnd);
                             element.windowTitle = QString();
                             element.ownerApp = QString();
                             element.windowLayer = 0;
@@ -519,7 +512,7 @@ void WindowDetector::enumerateWindowsInternal(std::vector<DetectedElement>& cach
                         if (existingIds.find(windowId) == existingIds.end()) {
                             QRect physicalBounds(rect.left, rect.top, width, height);
                             DetectedElement element;
-                            element.bounds = CoordinateHelper::toLogical(physicalBounds, dpr);
+                            element.bounds = CoordinateHelper::physicalToQtLogical(physicalBounds, menuWnd);
                             element.windowTitle = QString();
                             element.ownerApp = QString();
                             element.windowLayer = 0;
