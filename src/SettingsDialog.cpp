@@ -128,7 +128,12 @@ void SettingsDialog::setupUi()
     setupHotkeysTab(hotkeysTab);
     m_tabWidget->addTab(hotkeysTab, "Hotkeys");
 
-    // Tab 3: Watermark
+    // Tab 3: Advanced
+    QWidget* advancedTab = new QWidget();
+    setupAdvancedTab(advancedTab);
+    m_tabWidget->addTab(advancedTab, "Advanced");
+
+    // Tab 4: Watermark
     QWidget* watermarkTab = new QWidget();
     setupWatermarkTab(watermarkTab);
     m_tabWidget->addTab(watermarkTab, "Watermark");
@@ -217,125 +222,6 @@ void SettingsDialog::setupGeneralTab(QWidget* tab)
     int currentStyle = static_cast<int>(ToolbarStyleConfig::loadStyle());
     m_toolbarStyleCombo->setCurrentIndex(currentStyle);
 
-    // ========== Blur Section ==========
-    layout->addSpacing(16);
-    QLabel* autoBlurLabel = new QLabel("Blur", contentWidget);
-    autoBlurLabel->setStyleSheet("font-weight: bold; font-size: 12px;");
-    layout->addWidget(autoBlurLabel);
-
-    // Load current settings
-    auto blurOptions = AutoBlurSettingsManager::instance().load();
-
-    // Blur intensity slider
-    QHBoxLayout* intensityLayout = new QHBoxLayout();
-    QLabel* intensityLabel = new QLabel("Blur intensity:", contentWidget);
-    intensityLabel->setFixedWidth(120);
-    m_blurIntensitySlider = new QSlider(Qt::Horizontal, contentWidget);
-    m_blurIntensitySlider->setRange(1, 100);
-    m_blurIntensitySlider->setValue(blurOptions.blurIntensity);
-    m_blurIntensityLabel = new QLabel(QString::number(blurOptions.blurIntensity), contentWidget);
-    m_blurIntensityLabel->setFixedWidth(30);
-    connect(m_blurIntensitySlider, &QSlider::valueChanged, this, [this](int value) {
-        m_blurIntensityLabel->setText(QString::number(value));
-        });
-    intensityLayout->addWidget(intensityLabel);
-    intensityLayout->addWidget(m_blurIntensitySlider);
-    intensityLayout->addWidget(m_blurIntensityLabel);
-    layout->addLayout(intensityLayout);
-
-    // Blur type combo
-    QHBoxLayout* typeLayout = new QHBoxLayout();
-    QLabel* typeLabel = new QLabel("Blur type:", contentWidget);
-    typeLabel->setFixedWidth(120);
-    m_blurTypeCombo = new QComboBox(contentWidget);
-    m_blurTypeCombo->addItem("Pixelate", "pixelate");
-    m_blurTypeCombo->addItem("Gaussian", "gaussian");
-    m_blurTypeCombo->setCurrentIndex(blurOptions.blurType == AutoBlurManager::BlurType::Gaussian ? 1 : 0);
-    typeLayout->addWidget(typeLabel);
-    typeLayout->addWidget(m_blurTypeCombo);
-    typeLayout->addStretch();
-    layout->addLayout(typeLayout);
-
-    // ========== Pin Window Section ==========
-    layout->addSpacing(16);
-    QLabel* pinWindowLabel = new QLabel("Pin Window", contentWidget);
-    pinWindowLabel->setStyleSheet("font-weight: bold; font-size: 12px;");
-    layout->addWidget(pinWindowLabel);
-
-    auto& pinSettings = PinWindowSettingsManager::instance();
-
-    // Default opacity slider
-    QHBoxLayout* opacityLayout = new QHBoxLayout();
-    QLabel* opacityLabel = new QLabel("Default opacity:", contentWidget);
-    opacityLabel->setFixedWidth(120);
-    m_pinWindowOpacitySlider = new QSlider(Qt::Horizontal, contentWidget);
-    m_pinWindowOpacitySlider->setRange(10, 100);
-    int currentOpacity = static_cast<int>(pinSettings.loadDefaultOpacity() * 100);
-    m_pinWindowOpacitySlider->setValue(currentOpacity);
-    m_pinWindowOpacityLabel = new QLabel(QString("%1%").arg(currentOpacity), contentWidget);
-    m_pinWindowOpacityLabel->setFixedWidth(40);
-    connect(m_pinWindowOpacitySlider, &QSlider::valueChanged, this, [this](int value) {
-        m_pinWindowOpacityLabel->setText(QString("%1%").arg(value));
-        });
-    opacityLayout->addWidget(opacityLabel);
-    opacityLayout->addWidget(m_pinWindowOpacitySlider);
-    opacityLayout->addWidget(m_pinWindowOpacityLabel);
-    layout->addLayout(opacityLayout);
-
-    // Opacity step slider
-    QHBoxLayout* opacityStepLayout = new QHBoxLayout();
-    QLabel* opacityStepLabel = new QLabel("Opacity step:", contentWidget);
-    opacityStepLabel->setFixedWidth(120);
-    m_pinWindowOpacityStepSlider = new QSlider(Qt::Horizontal, contentWidget);
-    m_pinWindowOpacityStepSlider->setRange(1, 20);
-    int currentOpacityStep = static_cast<int>(pinSettings.loadOpacityStep() * 100);
-    m_pinWindowOpacityStepSlider->setValue(currentOpacityStep);
-    m_pinWindowOpacityStepLabel = new QLabel(QString("%1%").arg(currentOpacityStep), contentWidget);
-    m_pinWindowOpacityStepLabel->setFixedWidth(40);
-    connect(m_pinWindowOpacityStepSlider, &QSlider::valueChanged, this, [this](int value) {
-        m_pinWindowOpacityStepLabel->setText(QString("%1%").arg(value));
-        });
-    opacityStepLayout->addWidget(opacityStepLabel);
-    opacityStepLayout->addWidget(m_pinWindowOpacityStepSlider);
-    opacityStepLayout->addWidget(m_pinWindowOpacityStepLabel);
-    layout->addLayout(opacityStepLayout);
-
-    // Zoom step slider
-    QHBoxLayout* zoomStepLayout = new QHBoxLayout();
-    QLabel* zoomStepLabel = new QLabel("Zoom step:", contentWidget);
-    zoomStepLabel->setFixedWidth(120);
-    m_pinWindowZoomStepSlider = new QSlider(Qt::Horizontal, contentWidget);
-    m_pinWindowZoomStepSlider->setRange(1, 20);
-    int currentZoomStep = static_cast<int>(pinSettings.loadZoomStep() * 100);
-    m_pinWindowZoomStepSlider->setValue(currentZoomStep);
-    m_pinWindowZoomStepLabel = new QLabel(QString("%1%").arg(currentZoomStep), contentWidget);
-    m_pinWindowZoomStepLabel->setFixedWidth(40);
-    connect(m_pinWindowZoomStepSlider, &QSlider::valueChanged, this, [this](int value) {
-        m_pinWindowZoomStepLabel->setText(QString("%1%").arg(value));
-        });
-    zoomStepLayout->addWidget(zoomStepLabel);
-    zoomStepLayout->addWidget(m_pinWindowZoomStepSlider);
-    zoomStepLayout->addWidget(m_pinWindowZoomStepLabel);
-    layout->addLayout(zoomStepLayout);
-
-    // Max cache files slider
-    QHBoxLayout* cacheFilesLayout = new QHBoxLayout();
-    QLabel* cacheFilesLabel = new QLabel("Max cache files:", contentWidget);
-    cacheFilesLabel->setFixedWidth(120);
-    m_pinWindowMaxCacheFilesSlider = new QSlider(Qt::Horizontal, contentWidget);
-    m_pinWindowMaxCacheFilesSlider->setRange(5, 200);
-    int currentMaxCacheFiles = pinSettings.loadMaxCacheFiles();
-    m_pinWindowMaxCacheFilesSlider->setValue(currentMaxCacheFiles);
-    m_pinWindowMaxCacheFilesLabel = new QLabel(QString::number(currentMaxCacheFiles), contentWidget);
-    m_pinWindowMaxCacheFilesLabel->setFixedWidth(40);
-    connect(m_pinWindowMaxCacheFilesSlider, &QSlider::valueChanged, this, [this](int value) {
-        m_pinWindowMaxCacheFilesLabel->setText(QString::number(value));
-        });
-    cacheFilesLayout->addWidget(cacheFilesLabel);
-    cacheFilesLayout->addWidget(m_pinWindowMaxCacheFilesSlider);
-    cacheFilesLayout->addWidget(m_pinWindowMaxCacheFilesLabel);
-    layout->addLayout(cacheFilesLayout);
-
 #ifdef Q_OS_MAC
     // ========== Permissions Section (macOS only) ==========
     layout->addSpacing(16);
@@ -409,6 +295,131 @@ void SettingsDialog::setupHotkeysTab(QWidget* tab)
 
     m_hotkeySettingsTab = new SnapTray::HotkeySettingsTab(tab);
     layout->addWidget(m_hotkeySettingsTab);
+}
+
+void SettingsDialog::setupAdvancedTab(QWidget* tab)
+{
+    QVBoxLayout* layout = new QVBoxLayout(tab);
+
+    // ========== Blur Section ==========
+    QLabel* autoBlurLabel = new QLabel("Blur", tab);
+    autoBlurLabel->setStyleSheet("font-weight: bold; font-size: 12px;");
+    layout->addWidget(autoBlurLabel);
+
+    // Load current settings
+    auto blurOptions = AutoBlurSettingsManager::instance().load();
+
+    // Blur intensity slider
+    QHBoxLayout* intensityLayout = new QHBoxLayout();
+    QLabel* intensityLabel = new QLabel("Blur intensity:", tab);
+    intensityLabel->setFixedWidth(120);
+    m_blurIntensitySlider = new QSlider(Qt::Horizontal, tab);
+    m_blurIntensitySlider->setRange(1, 100);
+    m_blurIntensitySlider->setValue(blurOptions.blurIntensity);
+    m_blurIntensityLabel = new QLabel(QString::number(blurOptions.blurIntensity), tab);
+    m_blurIntensityLabel->setFixedWidth(30);
+    connect(m_blurIntensitySlider, &QSlider::valueChanged, this, [this](int value) {
+        m_blurIntensityLabel->setText(QString::number(value));
+    });
+    intensityLayout->addWidget(intensityLabel);
+    intensityLayout->addWidget(m_blurIntensitySlider);
+    intensityLayout->addWidget(m_blurIntensityLabel);
+    layout->addLayout(intensityLayout);
+
+    // Blur type combo
+    QHBoxLayout* typeLayout = new QHBoxLayout();
+    QLabel* typeLabel = new QLabel("Blur type:", tab);
+    typeLabel->setFixedWidth(120);
+    m_blurTypeCombo = new QComboBox(tab);
+    m_blurTypeCombo->addItem("Pixelate", "pixelate");
+    m_blurTypeCombo->addItem("Gaussian", "gaussian");
+    m_blurTypeCombo->setCurrentIndex(blurOptions.blurType == AutoBlurManager::BlurType::Gaussian ? 1 : 0);
+    typeLayout->addWidget(typeLabel);
+    typeLayout->addWidget(m_blurTypeCombo);
+    typeLayout->addStretch();
+    layout->addLayout(typeLayout);
+
+    // ========== Pin Window Section ==========
+    layout->addSpacing(16);
+    QLabel* pinWindowLabel = new QLabel("Pin Window", tab);
+    pinWindowLabel->setStyleSheet("font-weight: bold; font-size: 12px;");
+    layout->addWidget(pinWindowLabel);
+
+    auto& pinSettings = PinWindowSettingsManager::instance();
+
+    // Default opacity slider
+    QHBoxLayout* opacityLayout = new QHBoxLayout();
+    QLabel* opacityLabel = new QLabel("Default opacity:", tab);
+    opacityLabel->setFixedWidth(120);
+    m_pinWindowOpacitySlider = new QSlider(Qt::Horizontal, tab);
+    m_pinWindowOpacitySlider->setRange(10, 100);
+    int currentOpacity = static_cast<int>(pinSettings.loadDefaultOpacity() * 100);
+    m_pinWindowOpacitySlider->setValue(currentOpacity);
+    m_pinWindowOpacityLabel = new QLabel(QString("%1%").arg(currentOpacity), tab);
+    m_pinWindowOpacityLabel->setFixedWidth(40);
+    connect(m_pinWindowOpacitySlider, &QSlider::valueChanged, this, [this](int value) {
+        m_pinWindowOpacityLabel->setText(QString("%1%").arg(value));
+    });
+    opacityLayout->addWidget(opacityLabel);
+    opacityLayout->addWidget(m_pinWindowOpacitySlider);
+    opacityLayout->addWidget(m_pinWindowOpacityLabel);
+    layout->addLayout(opacityLayout);
+
+    // Opacity step slider
+    QHBoxLayout* opacityStepLayout = new QHBoxLayout();
+    QLabel* opacityStepLabel = new QLabel("Opacity step:", tab);
+    opacityStepLabel->setFixedWidth(120);
+    m_pinWindowOpacityStepSlider = new QSlider(Qt::Horizontal, tab);
+    m_pinWindowOpacityStepSlider->setRange(1, 20);
+    int currentOpacityStep = static_cast<int>(pinSettings.loadOpacityStep() * 100);
+    m_pinWindowOpacityStepSlider->setValue(currentOpacityStep);
+    m_pinWindowOpacityStepLabel = new QLabel(QString("%1%").arg(currentOpacityStep), tab);
+    m_pinWindowOpacityStepLabel->setFixedWidth(40);
+    connect(m_pinWindowOpacityStepSlider, &QSlider::valueChanged, this, [this](int value) {
+        m_pinWindowOpacityStepLabel->setText(QString("%1%").arg(value));
+    });
+    opacityStepLayout->addWidget(opacityStepLabel);
+    opacityStepLayout->addWidget(m_pinWindowOpacityStepSlider);
+    opacityStepLayout->addWidget(m_pinWindowOpacityStepLabel);
+    layout->addLayout(opacityStepLayout);
+
+    // Zoom step slider
+    QHBoxLayout* zoomStepLayout = new QHBoxLayout();
+    QLabel* zoomStepLabel = new QLabel("Zoom step:", tab);
+    zoomStepLabel->setFixedWidth(120);
+    m_pinWindowZoomStepSlider = new QSlider(Qt::Horizontal, tab);
+    m_pinWindowZoomStepSlider->setRange(1, 20);
+    int currentZoomStep = static_cast<int>(pinSettings.loadZoomStep() * 100);
+    m_pinWindowZoomStepSlider->setValue(currentZoomStep);
+    m_pinWindowZoomStepLabel = new QLabel(QString("%1%").arg(currentZoomStep), tab);
+    m_pinWindowZoomStepLabel->setFixedWidth(40);
+    connect(m_pinWindowZoomStepSlider, &QSlider::valueChanged, this, [this](int value) {
+        m_pinWindowZoomStepLabel->setText(QString("%1%").arg(value));
+    });
+    zoomStepLayout->addWidget(zoomStepLabel);
+    zoomStepLayout->addWidget(m_pinWindowZoomStepSlider);
+    zoomStepLayout->addWidget(m_pinWindowZoomStepLabel);
+    layout->addLayout(zoomStepLayout);
+
+    // Max cache files slider
+    QHBoxLayout* cacheFilesLayout = new QHBoxLayout();
+    QLabel* cacheFilesLabel = new QLabel("Max cache files:", tab);
+    cacheFilesLabel->setFixedWidth(120);
+    m_pinWindowMaxCacheFilesSlider = new QSlider(Qt::Horizontal, tab);
+    m_pinWindowMaxCacheFilesSlider->setRange(5, 200);
+    int currentMaxCacheFiles = pinSettings.loadMaxCacheFiles();
+    m_pinWindowMaxCacheFilesSlider->setValue(currentMaxCacheFiles);
+    m_pinWindowMaxCacheFilesLabel = new QLabel(QString::number(currentMaxCacheFiles), tab);
+    m_pinWindowMaxCacheFilesLabel->setFixedWidth(40);
+    connect(m_pinWindowMaxCacheFilesSlider, &QSlider::valueChanged, this, [this](int value) {
+        m_pinWindowMaxCacheFilesLabel->setText(QString::number(value));
+    });
+    cacheFilesLayout->addWidget(cacheFilesLabel);
+    cacheFilesLayout->addWidget(m_pinWindowMaxCacheFilesSlider);
+    cacheFilesLayout->addWidget(m_pinWindowMaxCacheFilesLabel);
+    layout->addLayout(cacheFilesLayout);
+
+    layout->addStretch();
 }
 
 void SettingsDialog::setupWatermarkTab(QWidget* tab)

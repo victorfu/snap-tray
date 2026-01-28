@@ -53,6 +53,7 @@ private:
     void setupUi();
     void setupGeneralTab(QWidget *tab);
     void setupHotkeysTab(QWidget *tab);
+    void setupAdvancedTab(QWidget *tab);
     void setupWatermarkTab(QWidget *tab);
     void setupOcrTab(QWidget *tab);
     void setupRecordingTab(QWidget *tab);
