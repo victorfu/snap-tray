@@ -170,6 +170,10 @@ void MainApplication::handleCLICommand(const QByteArray& commandData)
 
                 // Calculate position
                 QScreen* screen = QGuiApplication::primaryScreen();
+                if (!screen) {
+                    qCritical() << "MainApplication: No valid screen available for pin window";
+                    return;
+                }
                 QRect screenGeo = screen->availableGeometry();
                 QSize logicalSize = pixmap.size() / pixmap.devicePixelRatio();
                 QPoint position;
@@ -482,6 +486,10 @@ void MainApplication::onImageLoaded(const QString &filePath, const QImage &image
 
     // Get screen geometry
     QScreen *screen = QGuiApplication::primaryScreen();
+    if (!screen) {
+        qCritical() << "MainApplication: No valid screen available for pin window";
+        return;
+    }
     QRect screenGeometry = screen->availableGeometry();
 
     // Calculate logical image size (HiDPI support)
@@ -657,6 +665,10 @@ void MainApplication::onPasteFromClipboard()
         QScreen *screen = QGuiApplication::screenAt(QCursor::pos());
         if (!screen) {
             screen = QGuiApplication::primaryScreen();
+        }
+        if (!screen) {
+            qCritical() << "MainApplication: No valid screen available for paste";
+            return;
         }
         QRect screenGeometry = screen->geometry();
 
