@@ -38,6 +38,8 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include <QKeyEvent>
 #include <QCloseEvent>
 #include <QShowEvent>
+#include <QEnterEvent>
+#include <QFocusEvent>
 #include <QGuiApplication>
 #include <QScreen>
 #include <QDebug>
@@ -1523,10 +1525,39 @@ void RegionSelector::showEvent(QShowEvent* event)
 {
     QWidget::showEvent(event);
 
-    // Delay cursor setting to ensure macOS has finished window activation.
-    QTimer::singleShot(100, this, [this]() {
-        forceNativeCrosshairCursor(this);
-    });
+    // Set cursor immediately on show (replaces unreliable 100ms timer)
+    ensureCrossCursor();
+}
+
+void RegionSelector::enterEvent(QEnterEvent* event)
+{
+    QWidget::enterEvent(event);
+
+    // macOS resets cursor when mouse enters a window, so we need to set it here
+    // Only set if not in selection/drawing mode (those have their own cursor logic)
+    if (!m_selectionManager->hasSelection() && !m_isDrawing) {
+        ensureCrossCursor();
+    }
+}
+
+void RegionSelector::focusInEvent(QFocusEvent* event)
+{
+    QWidget::focusInEvent(event);
+
+    // Ensure cursor is correct when window regains focus
+    if (!m_selectionManager->hasSelection() && !m_isDrawing) {
+        ensureCrossCursor();
+    }
+}
+
+void RegionSelector::ensureCrossCursor()
+{
+    // Use Tool context instead of Selection - Tool context is NOT managed by
+    // updateCursorFromStateForWidget(), so it won't be popped during mouse move
+    // race conditions when F2 + mouse movement happen simultaneously
+    CursorManager::instance().pushCursorForWidget(
+        this, CursorContext::Tool, Qt::CrossCursor);
+    forceNativeCrosshairCursor(this);
 }
 
 bool RegionSelector::eventFilter(QObject* obj, QEvent* event)

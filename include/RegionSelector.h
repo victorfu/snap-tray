@@ -96,6 +96,9 @@ public:
     void setWindowDetector(WindowDetector *detector);
     void refreshWindowDetectionAtCursor();
 
+    // Ensure cursor is set to CrossCursor (called after show and on focus/enter events)
+    void ensureCrossCursor();
+
 signals:
     void regionSelected(const QPixmap &screenshot, const QPoint &globalPosition, const QRect &globalRect);
     void selectionCancelled();
@@ -115,6 +118,8 @@ protected:
     void keyPressEvent(QKeyEvent *event) override;
     void closeEvent(QCloseEvent *event) override;
     void showEvent(QShowEvent *event) override;
+    void enterEvent(QEnterEvent *event) override;
+    void focusInEvent(QFocusEvent *event) override;
     bool eventFilter(QObject *obj, QEvent *event) override;
 
 private:

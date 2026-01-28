@@ -309,4 +309,8 @@ void CaptureManager::initializeRegionSelector(QScreen *targetScreen,
 
     m_regionSelector->activateWindow();
     m_regionSelector->raise();
+
+    // Ensure cursor is set AFTER show/activate to fix race condition where
+    // cursor was set before widget visibility, then Qt reset it to ArrowCursor
+    m_regionSelector->ensureCrossCursor();
 }
