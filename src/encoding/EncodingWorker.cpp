@@ -4,6 +4,7 @@
 
 #include <QDebug>
 #include <QPainter>
+#include <QPointer>
 #include <QtConcurrent>
 #include <QMetaObject>
 
@@ -216,8 +217,11 @@ void EncodingWorker::processNextFrame()
 
                 // Check if finish was requested
                 if (m_finishRequested.exchange(false)) {
-                    QMetaObject::invokeMethod(this, [this]() {
-                        finishEncoder();
+                    QPointer<EncodingWorker> guard(this);
+                    QMetaObject::invokeMethod(this, [guard]() {
+                        if (guard) {
+                            guard->finishEncoder();
+                        }
                     }, Qt::QueuedConnection);
                 }
                 return;
@@ -232,8 +236,11 @@ void EncodingWorker::processNextFrame()
         } else if (hasFrame) {
             // Emit queue low signal outside lock
             if (frameDepth <= QUEUE_LOW_THRESHOLD && m_wasNearFull) {
-                QMetaObject::invokeMethod(this, [this, frameDepth]() {
-                    emit queueLow(frameDepth, MAX_QUEUE_SIZE);
+                QPointer<EncodingWorker> guard(this);
+                QMetaObject::invokeMethod(this, [guard, frameDepth]() {
+                    if (guard) {
+                        emit guard->queueLow(frameDepth, MAX_QUEUE_SIZE);
+                    }
                 }, Qt::QueuedConnection);
                 m_wasNearFull = false;
             }
@@ -266,8 +273,11 @@ void EncodingWorker::doProcessFrame(const FrameData& frameData)
 
     // Emit progress periodically (every 30 frames = ~1 second at 30fps)
     if (count % 30 == 0) {
-        QMetaObject::invokeMethod(this, [this, count]() {
-            emit progress(count);
+        QPointer<EncodingWorker> guard(this);
+        QMetaObject::invokeMethod(this, [guard, count]() {
+            if (guard) {
+                emit guard->progress(count);
+            }
         }, Qt::QueuedConnection);
     }
 }
