@@ -643,6 +643,8 @@ add_library(snaptray_ui STATIC
     src/pinwindow/ResizeHandler.cpp
     src/pinwindow/UIIndicators.cpp
     src/pinwindow/ClickThroughExitButton.cpp
+    src/pinwindow/RegionLayoutManager.cpp
+    src/pinwindow/RegionLayoutRenderer.cpp
 
     # Screen canvas
     src/ScreenCanvas.cpp
@@ -731,6 +733,7 @@ add_library(snaptray_ui STATIC
     include/pinwindow/ResizeHandler.h
     include/pinwindow/UIIndicators.h
     include/pinwindow/ClickThroughExitButton.h
+    include/pinwindow/RegionLayoutManager.h
     include/ScreenCanvas.h
     include/ScreenCanvasManager.h
     include/LaserPointerRenderer.h

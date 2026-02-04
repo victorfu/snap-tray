@@ -6,6 +6,7 @@
 #include <QPoint>
 #include <QRect>
 #include <QElapsedTimer>
+#include <QVector>
 #include <memory>
 
 
@@ -40,6 +41,8 @@ class AutoBlurManager;
 class TextBoxAnnotation;
 class ArrowAnnotation;
 class PolylineAnnotation;
+class RegionLayoutManager;
+struct LayoutRegion;
 
 namespace snaptray {
 namespace colorwidgets {
@@ -100,6 +103,13 @@ public:
 
     // OCR language settings
     void updateOcrLanguages(const QStringList& languages);
+
+    // Region Layout Mode (for multi-region captures)
+    void setMultiRegionData(const QVector<LayoutRegion>& regions);
+    bool hasMultiRegionData() const { return m_hasMultiRegionData; }
+    void enterRegionLayoutMode();
+    void exitRegionLayoutMode(bool apply);
+    bool isRegionLayoutMode() const;
 
 signals:
     void closed(PinWindow* window);
@@ -310,6 +320,12 @@ private:
 
     // Color picker dialog
     snaptray::colorwidgets::ColorPickerDialogCompat* m_colorPickerDialog = nullptr;
+
+    // Region Layout Mode
+    RegionLayoutManager* m_regionLayoutManager = nullptr;
+    QVector<LayoutRegion> m_storedRegions;
+    bool m_hasMultiRegionData = false;
+    QPoint m_layoutModeMousePos;  // For hover effects in layout mode
 
     // Live capture mode
     QRect m_sourceRegion;

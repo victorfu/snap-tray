@@ -10,6 +10,8 @@
 #include "capture/ICaptureEngine.h"
 #include "pinwindow/ResizeHandler.h"
 #include "pinwindow/UIIndicators.h"
+#include "pinwindow/RegionLayoutManager.h"
+#include "pinwindow/RegionLayoutRenderer.h"
 #include "toolbar/WindowedToolbar.h"
 #include "toolbar/WindowedSubToolbar.h"
 #include "annotations/AnnotationLayer.h"
@@ -508,6 +510,12 @@ void PinWindow::createContextMenu()
     m_showBorderAction->setChecked(m_showBorder);
     connect(m_showBorderAction, &QAction::toggled, this, &PinWindow::setShowBorder);
 
+    // Adjust Region Layout option (only for multi-region captures)
+    if (m_hasMultiRegionData && !m_isLiveMode) {
+        QAction* layoutAction = m_contextMenu->addAction(tr("Adjust Region Layout"));
+        connect(layoutAction, &QAction::triggered, this, &PinWindow::enterRegionLayoutMode);
+    }
+
     m_contextMenu->addSeparator();
 
     QAction* copyAction = m_contextMenu->addAction("Copy to Clipboard");
@@ -965,7 +973,13 @@ void PinWindow::saveToCacheAsync()
     QPixmap pixmapToSave = m_originalPixmap;
     int maxCacheFiles = PinWindowSettingsManager::instance().loadMaxCacheFiles();
 
-    QThreadPool::globalInstance()->start([pixmapToSave, maxCacheFiles]() {
+    // Prepare region metadata if multi-region data exists
+    QByteArray regionMetadata;
+    if (m_hasMultiRegionData && !m_storedRegions.isEmpty()) {
+        regionMetadata = RegionLayoutManager::serializeRegions(m_storedRegions);
+    }
+
+    QThreadPool::globalInstance()->start([pixmapToSave, maxCacheFiles, regionMetadata]() {
         QString path = cacheFolderPath();
         QDir dir(path);
         if (!dir.exists()) {
@@ -980,6 +994,17 @@ void PinWindow::saveToCacheAsync()
         QString filePath = dir.filePath(filename);
 
         if (pixmapToSave.save(filePath)) {
+            // Save region metadata sidecar file if available
+            if (!regionMetadata.isEmpty()) {
+                QString metadataPath = filePath;
+                metadataPath.replace(".png", ".snpr");
+                QFile metaFile(metadataPath);
+                if (metaFile.open(QIODevice::WriteOnly)) {
+                    metaFile.write(regionMetadata);
+                    metaFile.close();
+                }
+            }
+
             // Clean up old cache files exceeding the limit
             QStringList filters;
             filters << "cache_*.png";
@@ -989,6 +1014,10 @@ void PinWindow::saveToCacheAsync()
             while (files.size() > maxCacheFiles) {
                 const QFileInfo& oldest = files.takeLast();
                 QFile::remove(oldest.filePath());
+                // Also remove associated metadata file
+                QString metaPath = oldest.filePath();
+                metaPath.replace(".png", ".snpr");
+                QFile::remove(metaPath);
             }
         }
         else {
@@ -1077,8 +1106,13 @@ void PinWindow::paintEvent(QPaintEvent*)
 
     QRect pixmapRect = rect();
 
-    // Draw the screenshot
-    painter.drawPixmap(pixmapRect, m_displayPixmap);
+    // Draw the screenshot (skip in layout mode - regions are drawn separately)
+    if (!isRegionLayoutMode()) {
+        painter.drawPixmap(pixmapRect, m_displayPixmap);
+    } else {
+        // Draw solid background for layout mode
+        painter.fillRect(pixmapRect, QColor(40, 40, 40));
+    }
 
     // Draw annotations with the same rotation/flip transform as the pixmap
     if (m_annotationLayer && !m_annotationLayer->isEmpty()) {
@@ -1248,6 +1282,39 @@ void PinWindow::paintEvent(QPaintEvent*)
 
         painter.restore();
     }
+
+    // Draw region layout mode overlay
+    if (isRegionLayoutMode()) {
+        qreal dpr = m_originalPixmap.devicePixelRatio();
+        const auto& regions = m_regionLayoutManager->regions();
+        int selectedIdx = m_regionLayoutManager->selectedIndex();
+        int hoveredIdx = m_regionLayoutManager->hoveredIndex();
+
+        // Draw region images at their current positions
+        for (const auto& region : regions) {
+            QRect targetRect = region.rect;
+            if (region.rect.size() != region.originalRect.size()) {
+                // Scale the image if region was resized
+                QImage scaled = region.image.scaled(
+                    region.rect.size() * dpr,
+                    Qt::IgnoreAspectRatio,
+                    Qt::SmoothTransformation);
+                scaled.setDevicePixelRatio(dpr);
+                painter.drawImage(targetRect.topLeft(), scaled);
+            } else {
+                QImage img = region.image;
+                img.setDevicePixelRatio(dpr);
+                painter.drawImage(targetRect.topLeft(), img);
+            }
+        }
+
+        // Draw region borders, handles, and badges
+        RegionLayoutRenderer::drawRegions(painter, regions, selectedIdx, hoveredIdx, dpr);
+
+        // Draw confirm/cancel buttons
+        QRect canvasBounds = m_regionLayoutManager->canvasBounds();
+        RegionLayoutRenderer::drawConfirmCancelButtons(painter, canvasBounds, m_layoutModeMousePos);
+    }
 }
 
 void PinWindow::enterEvent(QEnterEvent* event)
@@ -1261,6 +1328,41 @@ void PinWindow::enterEvent(QEnterEvent* event)
 void PinWindow::mousePressEvent(QMouseEvent* event)
 {
     if (event->button() == Qt::LeftButton) {
+        // 0. Handle Region Layout Mode interactions
+        if (isRegionLayoutMode()) {
+            QPoint pos = event->pos();
+            QRect canvasBounds = m_regionLayoutManager->canvasBounds();
+
+            // Check confirm/cancel button clicks
+            if (RegionLayoutRenderer::confirmButtonRect(canvasBounds).contains(pos)) {
+                exitRegionLayoutMode(true);
+                return;
+            }
+            if (RegionLayoutRenderer::cancelButtonRect(canvasBounds).contains(pos)) {
+                exitRegionLayoutMode(false);
+                return;
+            }
+
+            // Check for resize handle hit on selected region
+            ResizeHandler::Edge handle = m_regionLayoutManager->hitTestHandle(pos);
+            if (handle != ResizeHandler::Edge::None) {
+                m_regionLayoutManager->startResize(handle, pos);
+                return;
+            }
+
+            // Check for region hit
+            int regionIdx = m_regionLayoutManager->hitTestRegion(pos);
+            if (regionIdx >= 0) {
+                m_regionLayoutManager->selectRegion(regionIdx);
+                m_regionLayoutManager->startDrag(pos);
+                return;
+            }
+
+            // Click on empty space - deselect
+            m_regionLayoutManager->selectRegion(-1);
+            return;
+        }
+
         // 1. First handle inline text editing (finish/cancel when clicking outside)
         if (handleTextEditorPress(event->pos())) {
             return;
@@ -1330,6 +1432,61 @@ void PinWindow::mousePressEvent(QMouseEvent* event)
 
 void PinWindow::mouseMoveEvent(QMouseEvent* event)
 {
+    // Handle Region Layout Mode
+    if (isRegionLayoutMode()) {
+        QPoint pos = event->pos();
+        m_layoutModeMousePos = pos;  // Store for hover effects
+
+        if (m_regionLayoutManager->isDragging()) {
+            m_regionLayoutManager->updateDrag(pos);
+            return;
+        }
+
+        if (m_regionLayoutManager->isResizing()) {
+            bool shiftHeld = event->modifiers() & Qt::ShiftModifier;
+            m_regionLayoutManager->updateResize(pos, shiftHeld);
+            return;
+        }
+
+        // Update hover state
+        int hoveredRegion = m_regionLayoutManager->hitTestRegion(pos);
+        m_regionLayoutManager->setHoveredIndex(hoveredRegion);
+
+        // Update cursor based on what's under the mouse
+        ResizeHandler::Edge handle = m_regionLayoutManager->hitTestHandle(pos);
+        if (handle != ResizeHandler::Edge::None) {
+            // Set resize cursor based on edge
+            switch (handle) {
+                case ResizeHandler::Edge::Left:
+                case ResizeHandler::Edge::Right:
+                    setCursor(Qt::SizeHorCursor);
+                    break;
+                case ResizeHandler::Edge::Top:
+                case ResizeHandler::Edge::Bottom:
+                    setCursor(Qt::SizeVerCursor);
+                    break;
+                case ResizeHandler::Edge::TopLeft:
+                case ResizeHandler::Edge::BottomRight:
+                    setCursor(Qt::SizeFDiagCursor);
+                    break;
+                case ResizeHandler::Edge::TopRight:
+                case ResizeHandler::Edge::BottomLeft:
+                    setCursor(Qt::SizeBDiagCursor);
+                    break;
+                default:
+                    setCursor(Qt::ArrowCursor);
+                    break;
+            }
+        } else if (hoveredRegion >= 0) {
+            setCursor(Qt::SizeAllCursor);
+        } else {
+            setCursor(Qt::ArrowCursor);
+        }
+
+        update();
+        return;
+    }
+
     // Handle confirm mode text dragging
     if (m_textEditor && m_textEditor->isConfirmMode() && m_textEditor->isDragging()) {
         m_textEditor->handleMouseMove(event->pos());
@@ -1429,6 +1586,17 @@ void PinWindow::mouseMoveEvent(QMouseEvent* event)
 void PinWindow::mouseReleaseEvent(QMouseEvent* event)
 {
     if (event->button() == Qt::LeftButton) {
+        // Handle Region Layout Mode
+        if (isRegionLayoutMode()) {
+            if (m_regionLayoutManager->isDragging()) {
+                m_regionLayoutManager->finishDrag();
+            }
+            if (m_regionLayoutManager->isResizing()) {
+                m_regionLayoutManager->finishResize();
+            }
+            return;
+        }
+
         // Handle confirm mode text dragging end
         if (m_textEditor && m_textEditor->isDragging()) {
             m_textEditor->handleMouseRelease(event->pos());
@@ -1627,6 +1795,22 @@ void PinWindow::keyPressEvent(QKeyEvent* event)
             }
         }
         // Let other keys pass through to text editor
+        return;
+    }
+
+    // Handle Region Layout Mode
+    if (isRegionLayoutMode()) {
+        if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) {
+            exitRegionLayoutMode(true);  // Confirm
+            event->accept();
+            return;
+        }
+        if (event->key() == Qt::Key_Escape) {
+            exitRegionLayoutMode(false);  // Cancel
+            event->accept();
+            return;
+        }
+        // Ignore other keys in layout mode
         return;
     }
 
@@ -2775,4 +2959,126 @@ void PinWindow::updateAnnotationCursor(const QPoint& pos)
         // No annotation hit - clear hover target to let tool cursor show
         cursorManager.setHoverTargetForWidget(this, HoverTarget::None);
     }
+}
+
+// ============================================================================
+// Region Layout Mode
+// ============================================================================
+
+void PinWindow::setMultiRegionData(const QVector<LayoutRegion>& regions)
+{
+    m_storedRegions = regions;
+    m_hasMultiRegionData = !regions.isEmpty() && regions.size() <= LayoutModeConstants::kMaxRegionCount;
+}
+
+void PinWindow::enterRegionLayoutMode()
+{
+    if (!m_hasMultiRegionData || m_isLiveMode) {
+        return;
+    }
+
+    // Exit annotation mode if active
+    if (m_annotationMode) {
+        exitAnnotationMode();
+    }
+
+    // Hide toolbar if visible
+    if (m_toolbarVisible) {
+        hideToolbar();
+    }
+
+    // Create layout manager if needed
+    if (!m_regionLayoutManager) {
+        m_regionLayoutManager = new RegionLayoutManager(this);
+
+        // Connect signals
+        connect(m_regionLayoutManager, &RegionLayoutManager::layoutChanged,
+                this, QOverload<>::of(&QWidget::update));
+        connect(m_regionLayoutManager, &RegionLayoutManager::canvasSizeChanged,
+                this, [this](const QSize& newSize) {
+                    QSize logicalSize = newSize;
+                    setFixedSize(logicalSize);
+                });
+    }
+
+    // Enter layout mode with stored regions
+    QSize canvasSize = m_originalPixmap.size() / m_originalPixmap.devicePixelRatio();
+    m_regionLayoutManager->enterLayoutMode(m_storedRegions, canvasSize);
+
+    // Bind annotations if annotation layer exists
+    if (m_annotationLayer) {
+        m_regionLayoutManager->bindAnnotations(m_annotationLayer);
+    }
+
+    update();
+}
+
+void PinWindow::exitRegionLayoutMode(bool apply)
+{
+    if (!m_regionLayoutManager || !m_regionLayoutManager->isActive()) {
+        return;
+    }
+
+    if (apply) {
+        // Update annotation positions before recomposing
+        if (m_annotationLayer) {
+            m_regionLayoutManager->updateAnnotationPositions();
+        }
+
+        // Recompose the image
+        qreal dpr = m_originalPixmap.devicePixelRatio();
+        QPixmap newPixmap = m_regionLayoutManager->recomposeImage(dpr);
+
+        if (!newPixmap.isNull()) {
+            // Calculate the bounds offset used in recomposition
+            QRect bounds;
+            for (const auto& region : m_regionLayoutManager->regions()) {
+                if (bounds.isNull()) {
+                    bounds = region.rect;
+                } else {
+                    bounds = bounds.united(region.rect);
+                }
+            }
+
+            // Store regions with normalized coordinates (relative to new canvas origin)
+            m_storedRegions = m_regionLayoutManager->regions();
+            for (auto& region : m_storedRegions) {
+                region.rect.translate(-bounds.topLeft());
+                region.originalRect = region.rect;  // Reset original to match current
+            }
+
+            m_originalPixmap = newPixmap;
+            m_displayPixmap = newPixmap;
+
+            // Invalidate transform cache
+            m_cachedRotation = -1;
+            m_cachedFlipH = false;
+            m_cachedFlipV = false;
+
+            // Update window size
+            QSize logicalSize = m_displayPixmap.size() / m_displayPixmap.devicePixelRatio();
+            setFixedSize(logicalSize);
+
+            // Invalidate annotation layer cache
+            if (m_annotationLayer) {
+                m_annotationLayer->invalidateCache();
+            }
+
+            // Save to cache
+            saveToCacheAsync();
+        }
+    } else {
+        // Cancel - restore annotations
+        if (m_annotationLayer) {
+            m_regionLayoutManager->restoreAnnotations(m_annotationLayer);
+        }
+    }
+
+    m_regionLayoutManager->exitLayoutMode(apply);
+    update();
+}
+
+bool PinWindow::isRegionLayoutMode() const
+{
+    return m_regionLayoutManager && m_regionLayoutManager->isActive();
 }

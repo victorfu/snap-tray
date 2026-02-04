@@ -5,6 +5,8 @@
 #include "platform/WindowLevel.h"
 #include "WindowDetector.h"
 #include "PlatformFeatures.h"
+#include "region/MultiRegionManager.h"
+#include "pinwindow/RegionLayoutManager.h"
 
 #include <QDebug>
 #include <QGuiApplication>
@@ -171,6 +173,33 @@ void CaptureManager::onRegionSelected(const QPixmap &screenshot, const QPoint &g
         PinWindow *window = m_pinManager->createPinWindow(screenshot, globalPosition);
         if (window && targetScreen) {
             window->setSourceRegion(globalRect, targetScreen);
+        }
+
+        // Pass multi-region data if this was a multi-region capture
+        if (window && m_regionSelector && m_regionSelector->isMultiRegionCapture()) {
+            MultiRegionManager* mrm = m_regionSelector->multiRegionManager();
+            if (mrm && mrm->count() > 1) {
+                qreal dpr = screenshot.devicePixelRatio();
+                QVector<QImage> images = mrm->separateImages(
+                    m_regionSelector->backgroundPixmap(), dpr);
+                auto regions = mrm->regions();
+                QRect bounds = mrm->boundingBox();
+
+                QVector<LayoutRegion> layoutRegions;
+                for (int i = 0; i < regions.size() && i < images.size(); ++i) {
+                    LayoutRegion lr;
+                    // Convert region rect to be relative to bounding box
+                    lr.rect = regions[i].rect.translated(-bounds.topLeft());
+                    lr.originalRect = lr.rect;
+                    lr.image = images[i];
+                    lr.color = regions[i].color;
+                    lr.index = regions[i].index;
+                    lr.isSelected = false;
+                    layoutRegions.append(lr);
+                }
+
+                window->setMultiRegionData(layoutRegions);
+            }
         }
     }
 

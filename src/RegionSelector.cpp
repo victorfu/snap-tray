@@ -1193,6 +1193,11 @@ void RegionSelector::cancelMultiRegionCapture()
     setMultiRegionMode(false);
 }
 
+bool RegionSelector::isMultiRegionCapture() const
+{
+    return m_multiRegionMode && m_multiRegionManager && m_multiRegionManager->count() > 1;
+}
+
 void RegionSelector::copyToClipboard()
 {
     m_exportManager->copyToClipboard(

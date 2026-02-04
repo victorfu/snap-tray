@@ -99,6 +99,11 @@ public:
     // Ensure cursor is set to CrossCursor (called after show and on focus/enter events)
     void ensureCrossCursor();
 
+    // Multi-region capture access (for CaptureManager)
+    bool isMultiRegionCapture() const;
+    MultiRegionManager* multiRegionManager() const { return m_multiRegionManager; }
+    const QPixmap& backgroundPixmap() const { return m_backgroundPixmap; }
+
 signals:
     void regionSelected(const QPixmap &screenshot, const QPoint &globalPosition, const QRect &globalRect);
     void selectionCancelled();

@@ -54,6 +54,16 @@ target_link_libraries(PinWindow_ClickThrough PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME PinWindow_ClickThrough COMMAND PinWindow_ClickThrough)
 set_tests_properties(PinWindow_ClickThrough PROPERTIES TIMEOUT 60 LABELS "unit;integration")
 
+add_executable(PinWindow_RegionLayoutManager PinWindow/tst_RegionLayoutManager.cpp)
+target_link_libraries(PinWindow_RegionLayoutManager PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME PinWindow_RegionLayoutManager COMMAND PinWindow_RegionLayoutManager)
+set_tests_properties(PinWindow_RegionLayoutManager PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(PinWindow_RegionLayoutRenderer PinWindow/tst_RegionLayoutRenderer.cpp)
+target_link_libraries(PinWindow_RegionLayoutRenderer PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME PinWindow_RegionLayoutRenderer COMMAND PinWindow_RegionLayoutRenderer)
+set_tests_properties(PinWindow_RegionLayoutRenderer PROPERTIES TIMEOUT 60 LABELS "unit")
+
 # ============================================================================
 # RegionSelector Tests
 # ============================================================================
