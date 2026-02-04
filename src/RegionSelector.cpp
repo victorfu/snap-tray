@@ -829,8 +829,10 @@ void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapt
     // Pre-warm magnifier cache to eliminate first-frame delay
     m_magnifierPanel->preWarmCache(m_currentPoint, m_backgroundPixmap);
 
-    // Initialize cursor via CursorManager
-    CursorManager::instance().pushCursorForWidget(this, CursorContext::Selection, Qt::CrossCursor);
+    // Note: Cursor initialization is handled by ensureCrossCursor() called from
+    // CaptureManager::initializeRegionSelector() AFTER show/activate. This avoids
+    // a race condition where Selection context set here would be popped by
+    // updateCursorFromStateForWidget() when mouse moves during initialization.
 
     // Initial window detection at cursor position
     if (m_windowDetector && m_windowDetector->isEnabled()) {
@@ -1557,12 +1559,25 @@ void RegionSelector::focusInEvent(QFocusEvent* event)
 
 void RegionSelector::ensureCrossCursor()
 {
-    // Use Tool context instead of Selection - Tool context is NOT managed by
-    // updateCursorFromStateForWidget(), so it won't be popped during mouse move
-    // race conditions when F2 + mouse movement happen simultaneously
+    // Use Override context (highest priority 500) to guarantee cross cursor
+    // during initialization. This prevents race conditions where:
+    // 1. Mouse movement triggers updateCursorFromStateForWidget()
+    // 2. inputState == Idle causes Selection context to be popped
+    // 3. Hover context (150) overrides Tool context (100) with ArrowCursor
+    // Override context beats all other contexts, ensuring cross cursor is shown.
     CursorManager::instance().pushCursorForWidget(
-        this, CursorContext::Tool, Qt::CrossCursor);
+        this, CursorContext::Override, Qt::CrossCursor);
     forceNativeCrosshairCursor(this);
+
+    // After initialization stabilizes, transition to normal Tool context.
+    // This allows normal state-driven cursor updates to work properly.
+    QTimer::singleShot(100, this, [this]() {
+        if (!m_isClosing) {
+            CursorManager::instance().popCursorForWidget(this, CursorContext::Override);
+            CursorManager::instance().pushCursorForWidget(
+                this, CursorContext::Tool, Qt::CrossCursor);
+        }
+    });
 }
 
 bool RegionSelector::eventFilter(QObject* obj, QEvent* event)

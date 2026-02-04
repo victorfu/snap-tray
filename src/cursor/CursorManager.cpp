@@ -4,6 +4,7 @@
 #include <QPixmap>
 #include <algorithm>
 
+#include "platform/WindowLevel.h"  // for forceNativeCrosshairCursor
 #include "tools/ToolManager.h"
 #include "tools/IToolHandler.h"
 #include "tools/ToolId.h"
@@ -385,6 +386,17 @@ void CursorManager::applyCursorForWidget(QWidget* widget)
         newCursor.pixmap().cacheKey() != currentCursor.pixmap().cacheKey()) {
         widget->setCursor(newCursor);
     }
+
+    // On macOS, always reinforce CrossCursor via native API.
+    // Qt's cursor() returns a cached value that can desync from the actual
+    // native macOS cursor (e.g., when mouse moves over text selection in other
+    // apps, macOS sets IBeam but Qt doesn't know). By calling the native API
+    // on every cursor application, we ensure the native cursor stays correct.
+#ifdef Q_OS_MAC
+    if (newCursor.shape() == Qt::CrossCursor) {
+        forceNativeCrosshairCursor(widget);
+    }
+#endif
 }
 
 QCursor CursorManager::effectiveCursorForWidget(QWidget* widget) const
