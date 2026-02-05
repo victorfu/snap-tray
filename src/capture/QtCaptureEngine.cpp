@@ -1,5 +1,4 @@
 #include "capture/QtCaptureEngine.h"
-#include "utils/CoordinateHelper.h"
 
 #include <QScreen>
 #include <QPixmap>
@@ -63,24 +62,19 @@ QImage QtCaptureEngine::captureFrame()
         return QImage();
     }
 
-    // Get devicePixelRatio for HiDPI support
-    qreal scale = m_targetScreen->devicePixelRatio();
-
-    // Calculate region relative to screen geometry
+    // Calculate region relative to screen geometry (logical coordinates)
     QRect screenGeom = m_targetScreen->geometry();
     int relativeX = m_captureRegion.x() - screenGeom.x();
     int relativeY = m_captureRegion.y() - screenGeom.y();
 
-    // Use physical pixel dimensions for HiDPI displays
-    QSize physSize = CoordinateHelper::toPhysical(m_captureRegion.size(), scale);
-
-    // Capture the region using Qt's screen grab
+    // grabWindow() takes all parameters in device-independent pixels (logical coordinates)
+    // Qt handles DPI scaling internally; returned pixmap may be larger on HiDPI displays
     QPixmap pixmap = m_targetScreen->grabWindow(
         0,  // Window ID 0 = entire screen
         relativeX,
         relativeY,
-        physSize.width(),
-        physSize.height()
+        m_captureRegion.width(),
+        m_captureRegion.height()
     );
 
     if (pixmap.isNull()) {
