@@ -62,6 +62,7 @@ bool EncodingWorker::start()
     m_running = true;
     m_acceptingFrames = true;
     m_finishRequested = false;
+    m_finishCalled = false;
     m_framesWritten = 0;
     m_wasNearFull = false;
 
@@ -308,6 +309,11 @@ void EncodingWorker::applyWatermark(QImage& frame)
 
 void EncodingWorker::finishEncoder()
 {
+    // Ensure finishEncoder() only executes once (race condition guard)
+    if (m_finishCalled.exchange(true)) {
+        return;
+    }
+
     if (m_encoderType == EncoderType::Video && m_videoEncoder) {
         // Connect to encoder's finished signal before calling finish()
         auto conn = std::make_shared<QMetaObject::Connection>();
