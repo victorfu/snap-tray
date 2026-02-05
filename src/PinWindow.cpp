@@ -269,6 +269,21 @@ void PinWindow::setOpacity(qreal opacity)
     setWindowOpacity(m_opacity);
 }
 
+void PinWindow::adjustOpacityByStep(int direction)
+{
+    const qreal opacityStep = PinWindowSettingsManager::instance().loadOpacityStep();
+    qreal oldOpacity = m_opacity;
+    qreal newOpacity = m_opacity + (direction >= 0 ? opacityStep : -opacityStep);
+    newOpacity = qBound(0.1, newOpacity, 1.0);
+
+    if (qFuzzyCompare(oldOpacity, newOpacity)) {
+        return;
+    }
+
+    setOpacity(newOpacity);
+    m_uiIndicators->showOpacityIndicator(m_opacity);
+}
+
 void PinWindow::rotateRight()
 {
     m_rotationAngle = (m_rotationAngle + 90) % 360;
@@ -647,6 +662,22 @@ void PinWindow::createContextMenu()
 
     QAction* verticalFlipAction = imageProcessingMenu->addAction("Vertical flip");
     connect(verticalFlipAction, &QAction::triggered, this, &PinWindow::flipVertical);
+
+    QMenu* opacityMenu = imageProcessingMenu->addMenu("Opacity");
+    const int opacityStepPercent = qRound(PinWindowSettingsManager::instance().loadOpacityStep() * 100);
+    QAction* increaseOpacityAction = opacityMenu->addAction(
+        QString("Increase by %1%").arg(opacityStepPercent));
+    increaseOpacityAction->setShortcut(QKeySequence(Qt::Key_BracketRight));
+    connect(increaseOpacityAction, &QAction::triggered, this, [this]() {
+        adjustOpacityByStep(1);
+        });
+
+    QAction* decreaseOpacityAction = opacityMenu->addAction(
+        QString("Decrease by %1%").arg(opacityStepPercent));
+    decreaseOpacityAction->setShortcut(QKeySequence(Qt::Key_BracketLeft));
+    connect(decreaseOpacityAction, &QAction::triggered, this, [this]() {
+        adjustOpacityByStep(-1);
+        });
 
     // Info submenu - displays image properties
     QSize logicalSize = logicalSizeFromPixmap(m_originalPixmap);
@@ -1708,20 +1739,7 @@ void PinWindow::wheelEvent(QWheelEvent* event)
 {
     // Ctrl+Wheel = Opacity adjustment
     if (event->modifiers() & Qt::ControlModifier) {
-        const qreal opacityStep = PinWindowSettingsManager::instance().loadOpacityStep();
-        qreal oldOpacity = m_opacity;
-        qreal newOpacity = (event->angleDelta().y() > 0)
-            ? m_opacity + opacityStep
-            : m_opacity - opacityStep;
-        newOpacity = qBound(0.1, newOpacity, 1.0);
-
-        if (qFuzzyCompare(oldOpacity, newOpacity)) {
-            event->accept();
-            return;
-        }
-
-        setOpacity(newOpacity);
-        m_uiIndicators->showOpacityIndicator(m_opacity);
+        adjustOpacityByStep(event->angleDelta().y() > 0 ? 1 : -1);
         event->accept();
         return;
     }
@@ -1909,6 +1927,16 @@ void PinWindow::keyPressEvent(QKeyEvent* event)
     }
     else if (event->key() == Qt::Key_4) {
         flipVertical();
+        event->accept();
+        return;
+    }
+    else if (event->key() == Qt::Key_BracketRight) {
+        adjustOpacityByStep(1);
+        event->accept();
+        return;
+    }
+    else if (event->key() == Qt::Key_BracketLeft) {
+        adjustOpacityByStep(-1);
         event->accept();
         return;
     }

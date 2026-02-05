@@ -135,6 +135,7 @@ private:
 
     void updateSize();
     void createContextMenu();
+    void adjustOpacityByStep(int direction);
     void saveToFile();
     void copyToClipboard();
     QPixmap getTransformedPixmap() const;
