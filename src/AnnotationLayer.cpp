@@ -94,6 +94,7 @@ void AnnotationLayer::undo()
 
     renumberStepBadges();
     invalidateCache();
+    clearSelection();
     emit changed();
 }
 
@@ -133,11 +134,13 @@ void AnnotationLayer::redo()
 
     renumberStepBadges();
     invalidateCache();
+    clearSelection();
     emit changed();
 }
 
 void AnnotationLayer::clear()
 {
+    clearSelection();
     m_items.clear();
     m_redoStack.clear();
     invalidateCache();
@@ -236,6 +239,7 @@ std::vector<ErasedItemsGroup::IndexedItem> AnnotationLayer::removeItemsIntersect
         m_redoStack.clear();  // Clear redo stack when items are erased
         renumberStepBadges();
         invalidateCache();
+        clearSelection();
         emit changed();
     }
 
