@@ -138,17 +138,17 @@ QRect WatermarkRenderer::calculateWatermarkRect(const QRect &targetRect, const Q
         y = targetRect.top() + margin;
         break;
     case TopRight:
-        x = targetRect.right() - size.width() - margin;
+        x = targetRect.right() - size.width() + 1 - margin;
         y = targetRect.top() + margin;
         break;
     case BottomLeft:
         x = targetRect.left() + margin;
-        y = targetRect.bottom() - size.height() - margin;
+        y = targetRect.bottom() - size.height() + 1 - margin;
         break;
     case BottomRight:
     default:
-        x = targetRect.right() - size.width() - margin;
-        y = targetRect.bottom() - size.height() - margin;
+        x = targetRect.right() - size.width() + 1 - margin;
+        y = targetRect.bottom() - size.height() + 1 - margin;
         break;
     }
 
