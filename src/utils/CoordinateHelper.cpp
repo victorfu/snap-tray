@@ -2,6 +2,7 @@
 #include <QScreen>
 #include <QGuiApplication>
 #include <QtMath>
+#include <algorithm>
 
 #ifdef Q_OS_WIN
 #include <ShellScalingApi.h>
@@ -164,29 +165,41 @@ QRect CoordinateHelper::physicalToQtLogical(const QRect& physicalBounds, HWND hw
     int monitorPhysicalW = mi.rcMonitor.right - mi.rcMonitor.left;
     int monitorPhysicalH = mi.rcMonitor.bottom - mi.rcMonitor.top;
 
-    // 5. Find the corresponding QScreen by matching physical SIZE (not origin!)
-    // Qt and Windows have different virtual screen coordinate systems,
-    // so we can't match by origin. But physical size is consistent.
+    // 5. Find the corresponding QScreen by matching physical POSITION
+    // This handles identical-spec multi-monitor setups correctly
     QScreen* matchedScreen = nullptr;
     const auto screens = QGuiApplication::screens();
-    for (QScreen* screen : screens) {
-        QSize logicalSize = screen->geometry().size();
-        qreal screenDpr = screen->devicePixelRatio();
+    int targetPhysX = mi.rcMonitor.left;
+    int targetPhysY = mi.rcMonitor.top;
 
-        // Calculate this screen's physical size
+    // Build screen list sorted by logical x position (for physical origin calculation)
+    QList<QScreen*> sortedScreens = screens;
+    std::sort(sortedScreens.begin(), sortedScreens.end(), [](QScreen* a, QScreen* b) {
+        return a->geometry().x() < b->geometry().x();
+    });
+
+    // Compute expected physical origin for each screen and find match
+    int cumulativePhysX = 0;
+    for (QScreen* screen : sortedScreens) {
+        qreal screenDpr = screen->devicePixelRatio();
+        QSize logicalSize = screen->geometry().size();
         int physicalW = qRound(logicalSize.width() * screenDpr);
         int physicalH = qRound(logicalSize.height() * screenDpr);
 
-        // Match by physical size AND DPR (handles screens with same resolution but different DPI)
-        if (qAbs(physicalW - monitorPhysicalW) <= 5 &&
-            qAbs(physicalH - monitorPhysicalH) <= 5 &&
-            qAbs(screenDpr - dpr) < 0.05) {
+        // Match by physical origin position AND size for validation
+        bool positionMatch = qAbs(cumulativePhysX - targetPhysX) <= 10;
+        bool sizeMatch = qAbs(physicalW - monitorPhysicalW) <= 5 &&
+                         qAbs(physicalH - monitorPhysicalH) <= 5;
+
+        if (positionMatch && sizeMatch) {
             matchedScreen = screen;
             break;
         }
+
+        cumulativePhysX += physicalW;
     }
 
-    // If no match with DPR, try matching by size only (fallback)
+    // Fallback: If position matching failed, try size+DPR match (for unusual layouts)
     if (!matchedScreen) {
         for (QScreen* screen : screens) {
             QSize logicalSize = screen->geometry().size();
@@ -195,7 +208,8 @@ QRect CoordinateHelper::physicalToQtLogical(const QRect& physicalBounds, HWND hw
             int physicalH = qRound(logicalSize.height() * screenDpr);
 
             if (qAbs(physicalW - monitorPhysicalW) <= 5 &&
-                qAbs(physicalH - monitorPhysicalH) <= 5) {
+                qAbs(physicalH - monitorPhysicalH) <= 5 &&
+                qAbs(screenDpr - dpr) < 0.05) {
                 matchedScreen = screen;
                 break;
             }
