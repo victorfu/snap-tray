@@ -77,6 +77,18 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 namespace {
     // Full opacity constant for pixel alpha check
     constexpr int kPixelFullOpacity = 255;
+
+    QSize logicalSizeFromPixmap(const QPixmap& pixmap)
+    {
+        if (pixmap.isNull()) {
+            return QSize();
+        }
+        qreal dpr = pixmap.devicePixelRatio();
+        if (dpr <= 0.0) {
+            dpr = 1.0;
+        }
+        return pixmap.size() / dpr;
+    }
     
     // Optimized: Only copy 4 single-pixel regions instead of the entire image.
     // On high-DPI displays (e.g., 4K at 200% scaling), the original toImage()
@@ -637,8 +649,9 @@ void PinWindow::createContextMenu()
     connect(verticalFlipAction, &QAction::triggered, this, &PinWindow::flipVertical);
 
     // Info submenu - displays image properties
+    QSize logicalSize = logicalSizeFromPixmap(m_originalPixmap);
     QMenu* infoMenu = m_contextMenu->addMenu(
-        QString("%1 × %2").arg(m_originalPixmap.width()).arg(m_originalPixmap.height()));
+        QString("%1 × %2").arg(logicalSize.width()).arg(logicalSize.height()));
 
     // Copy all info action
     QAction* copyAllInfoAction = infoMenu->addAction("Copy All");
@@ -654,7 +667,7 @@ void PinWindow::createContextMenu()
             });
         };
 
-    addInfoItem("Size", QString("%1 × %2").arg(m_originalPixmap.width()).arg(m_originalPixmap.height()));
+    addInfoItem("Size", QString("%1 × %2").arg(logicalSize.width()).arg(logicalSize.height()));
     addInfoItem("Zoom", QString("%1%").arg(qRound(m_zoomLevel * 100)));
     addInfoItem("Rotation", QString::fromUtf8("%1°").arg(m_rotationAngle));
     addInfoItem("Opacity", QString("%1%").arg(qRound(m_opacity * 100)));
@@ -936,8 +949,9 @@ void PinWindow::updateOcrLanguages(const QStringList& languages)
 
 void PinWindow::copyAllInfo()
 {
+    QSize logicalSize = logicalSizeFromPixmap(m_originalPixmap);
     QStringList info;
-    info << QString("Size: %1 × %2").arg(m_originalPixmap.width()).arg(m_originalPixmap.height());
+    info << QString("Size: %1 × %2").arg(logicalSize.width()).arg(logicalSize.height());
     info << QString("Zoom: %1%").arg(qRound(m_zoomLevel * 100));
     info << QString::fromUtf8("Rotation: %1°").arg(m_rotationAngle);
     info << QString("Opacity: %1%").arg(qRound(m_opacity * 100));
