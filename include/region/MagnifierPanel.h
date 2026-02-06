@@ -5,6 +5,7 @@
 #include <QPixmap>
 #include <QImage>
 #include <QPoint>
+#include <QRect>
 #include <QColor>
 
 class QPainter;
@@ -41,6 +42,14 @@ public:
      */
     void draw(QPainter& painter, const QPoint& cursorPos,
               const QSize& viewportSize, const QPixmap& backgroundPixmap);
+
+    /**
+     * @brief Calculate the panel rect for the current cursor position.
+     * @param cursorPos The current cursor position (logical coordinates)
+     * @param viewportSize The size of the viewport (for boundary checking)
+     * @return Panel rect including magnifier and info panel.
+     */
+    static QRect panelRectForCursor(const QPoint& cursorPos, const QSize& viewportSize);
 
     /**
      * @brief Get the color at the current cursor position.

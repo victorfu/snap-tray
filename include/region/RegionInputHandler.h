@@ -146,6 +146,14 @@ private:
     TextBoxAnnotation* getSelectedTextAnnotation() const;
     EmojiStickerAnnotation* getSelectedEmojiStickerAnnotation() const;
     ArrowAnnotation* getSelectedArrowAnnotation() const;
+    QRect calculateDimensionInfoRect(const QRect& selectionRect) const;
+    QRect calculateToolbarRect(const QRect& selectionRect) const;
+    QRect calculateToolOptionsRect(const QRect& toolbarRect) const;
+    QRect calculateEmojiPickerRect(const QRect& toolbarRect) const;
+    QRect calculateRegionControlRect(const QRect& dimensionInfoRect) const;
+    QRect calculateMultiRegionCountRect(const QRect& toolbarRect) const;
+    QRect calculateMagnifierRect() const;
+    bool shouldShowMagnifier() const;
     bool shouldShowColorAndWidthWidget() const;
     bool isAnnotationTool(ToolId tool) const;
 
@@ -169,6 +177,12 @@ private:
     QPoint m_lastWindowDetectionPos;
     QRect m_lastSelectionRect;
     QRect m_lastMagnifierRect;
+    QRect m_lastToolbarRect;
+    QRect m_lastToolOptionsRect;
+    QRect m_lastEmojiPickerRect;
+    QRect m_lastRegionControlRect;
+    QRect m_lastDimensionInfoRect;
+    QRect m_lastMultiRegionCountRect;
     QRect m_highlightedWindowRect;
     bool m_hasDetectedWindow = false;
     ToolId m_currentTool;

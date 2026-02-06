@@ -161,25 +161,11 @@ void MagnifierPanel::draw(QPainter& painter, const QPoint& cursorPos,
 {
     m_currentCursorPos = cursorPos;
 
-    // Calculate panel position (cursor at top-left corner, like Snipaste/PixPin)
-    int panelWidth = kWidth;
-    int offset = 20;  // Small offset from cursor
-    int panelX = cursorPos.x() + offset;
-    int panelY = cursorPos.y() + offset;
-
-    // Calculate total panel height (magnifier + coordinates + color + hotkey instructions)
-    int totalHeight = kHeight + 85;  // magnifier + coords + color + 2 lines of hotkey hints
-
-    // Boundary checking - flip to other side if near edges
-    if (panelX + panelWidth + 10 > viewportSize.width()) {
-        panelX = cursorPos.x() - panelWidth - offset;  // Place to left of cursor
-    }
-    if (panelY + totalHeight + 10 > viewportSize.height()) {
-        panelY = cursorPos.y() - totalHeight - offset;  // Place above cursor
-    }
-    // Ensure minimum margins
-    panelX = qMax(10, panelX);
-    panelY = qMax(10, panelY);
+    const QRect panelRect = panelRectForCursor(cursorPos, viewportSize);
+    const int panelWidth = panelRect.width();
+    const int totalHeight = panelRect.height();
+    const int panelX = panelRect.x();
+    const int panelY = panelRect.y();
 
     // Calculate magnifier display area
     int magX = panelX;
@@ -234,6 +220,31 @@ void MagnifierPanel::draw(QPainter& painter, const QPoint& cursorPos,
 
     // Draw info panel
     drawInfoPanel(painter, panelX, magY + kHeight + 6, panelWidth);
+}
+
+QRect MagnifierPanel::panelRectForCursor(const QPoint& cursorPos, const QSize& viewportSize)
+{
+    // Calculate panel position (cursor at top-left corner, like Snipaste/PixPin)
+    const int panelWidth = kWidth;
+    const int offset = 20;  // Small offset from cursor
+    int panelX = cursorPos.x() + offset;
+    int panelY = cursorPos.y() + offset;
+
+    // Calculate total panel height (magnifier + coordinates + color + hotkey instructions)
+    const int totalHeight = kHeight + 85;  // magnifier + coords + color + 2 lines of hotkey hints
+
+    // Boundary checking - flip to other side if near edges
+    if (panelX + panelWidth + 10 > viewportSize.width()) {
+        panelX = cursorPos.x() - panelWidth - offset;  // Place to left of cursor
+    }
+    if (panelY + totalHeight + 10 > viewportSize.height()) {
+        panelY = cursorPos.y() - totalHeight - offset;  // Place above cursor
+    }
+    // Ensure minimum margins
+    panelX = qMax(10, panelX);
+    panelY = qMax(10, panelY);
+
+    return QRect(panelX, panelY, panelWidth, totalHeight);
 }
 
 void MagnifierPanel::drawInfoPanel(QPainter& painter, int panelX, int infoY, int panelWidth)

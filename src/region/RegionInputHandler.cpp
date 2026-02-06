@@ -24,6 +24,7 @@
 #include <QWidget>
 #include <QDateTime>
 #include <QDebug>
+#include <QFontMetrics>
 #include <QTextEdit>
 
 RegionInputHandler::RegionInputHandler(QObject* parent)
@@ -1022,32 +1023,61 @@ void RegionInputHandler::handleThrottledUpdate()
 
             QRect dirtyRect = expandedCurrent.united(expandedLast);
 
-            // Include dimension info panel area (above selection)
-            const int dimInfoHeight = 40;
-            const int dimInfoWidth = 180;
-            QRect dimInfoRect(currentSelRect.left(), currentSelRect.top() - dimInfoHeight - 10,
-                              dimInfoWidth, dimInfoHeight);
-            QRect lastDimInfoRect(m_lastSelectionRect.left(), m_lastSelectionRect.top() - dimInfoHeight - 10,
-                                  dimInfoWidth, dimInfoHeight);
-            dirtyRect = dirtyRect.united(dimInfoRect).united(lastDimInfoRect);
+            QRect dimensionInfoRect;
+            if (currentSelRect.isValid()) {
+                dimensionInfoRect = calculateDimensionInfoRect(currentSelRect);
+                dirtyRect = dirtyRect.united(dimensionInfoRect);
+            }
+            if (m_lastSelectionRect.isValid()) {
+                QRect lastDimensionInfoRect = calculateDimensionInfoRect(m_lastSelectionRect);
+                dirtyRect = dirtyRect.united(lastDimensionInfoRect);
+            }
 
-            // Include crosshair lines (full width/height thin strips)
-            dirtyRect = dirtyRect.united(QRect(0, m_currentPoint.y() - 2, m_parentWidget->width(), 4));
-            dirtyRect = dirtyRect.united(QRect(m_currentPoint.x() - 2, 0, 4, m_parentWidget->height()));
+            QRect currentRegionControlRect;
+            if (!dimensionInfoRect.isNull()) {
+                currentRegionControlRect = calculateRegionControlRect(dimensionInfoRect);
+                dirtyRect = dirtyRect.united(currentRegionControlRect);
+            }
 
-            // Include magnifier panel area
-            const int panelWidth = MagnifierPanel::kWidth;
-            const int totalHeight = MagnifierPanel::kHeight + 85;
-            int panelX = m_currentPoint.x() - panelWidth / 2;
-            panelX = qMax(10, qMin(panelX, m_parentWidget->width() - panelWidth - 10));
-            int panelYBelow = m_currentPoint.y() + 25;
-            int panelYAbove = m_currentPoint.y() - totalHeight - 25;
-            QRect magRect(panelX - 5, qMin(panelYAbove, panelYBelow) - 5,
-                          panelWidth + 10, totalHeight + qAbs(panelYBelow - panelYAbove) + 10);
-            dirtyRect = dirtyRect.united(magRect).united(m_lastMagnifierRect);
+            QRect currentToolbarRect;
+            QRect currentToolOptionsRect;
+            QRect currentEmojiPickerRect;
+            QRect currentCountRect;
+            if (m_selectionManager->hasSelection() && currentSelRect.isValid()) {
+                currentToolbarRect = calculateToolbarRect(currentSelRect);
+                dirtyRect = dirtyRect.united(currentToolbarRect);
+
+                currentToolOptionsRect = calculateToolOptionsRect(currentToolbarRect);
+                dirtyRect = dirtyRect.united(currentToolOptionsRect);
+
+                currentEmojiPickerRect = calculateEmojiPickerRect(currentToolbarRect);
+                dirtyRect = dirtyRect.united(currentEmojiPickerRect);
+
+                currentCountRect = calculateMultiRegionCountRect(currentToolbarRect);
+                dirtyRect = dirtyRect.united(currentCountRect);
+            }
+
+            QRect uiDirtyRect = m_lastToolbarRect.united(m_lastToolOptionsRect)
+                .united(m_lastEmojiPickerRect)
+                .united(m_lastRegionControlRect)
+                .united(m_lastDimensionInfoRect)
+                .united(m_lastMultiRegionCountRect);
+            dirtyRect = dirtyRect.united(uiDirtyRect);
+
+            QRect currentMagnifierRect;
+            if (shouldShowMagnifier()) {
+                currentMagnifierRect = calculateMagnifierRect();
+            }
+            dirtyRect = dirtyRect.united(m_lastMagnifierRect).united(currentMagnifierRect);
 
             m_lastSelectionRect = currentSelRect;
-            m_lastMagnifierRect = magRect;
+            m_lastMagnifierRect = currentMagnifierRect;
+            m_lastToolbarRect = currentToolbarRect;
+            m_lastToolOptionsRect = currentToolOptionsRect;
+            m_lastEmojiPickerRect = currentEmojiPickerRect;
+            m_lastRegionControlRect = currentRegionControlRect;
+            m_lastDimensionInfoRect = dimensionInfoRect;
+            m_lastMultiRegionCountRect = currentCountRect;
 
             emit updateRequested(dirtyRect);
         }
@@ -1068,23 +1098,16 @@ void RegionInputHandler::handleThrottledUpdate()
         if (m_updateThrottler->shouldUpdate(UpdateThrottler::ThrottleType::Magnifier)) {
             m_updateThrottler->reset(UpdateThrottler::ThrottleType::Magnifier);
 
-            const int panelWidth = MagnifierPanel::kWidth;
-            const int totalHeight = MagnifierPanel::kHeight + 85;
-            int panelX = m_currentPoint.x() - panelWidth / 2;
-            panelX = qMax(10, qMin(panelX, m_parentWidget->width() - panelWidth - 10));
+            QRect currentMagnifierRect;
+            if (shouldShowMagnifier()) {
+                currentMagnifierRect = calculateMagnifierRect();
+            }
 
-            int panelYBelow = m_currentPoint.y() + 25;
-            int panelYAbove = m_currentPoint.y() - totalHeight - 25;
-            QRect belowRect(panelX - 5, panelYBelow - 5, panelWidth + 10, totalHeight + 10);
-            QRect aboveRect(panelX - 5, panelYAbove - 5, panelWidth + 10, totalHeight + 10);
-            QRect currentMagRect = belowRect.united(aboveRect);
-
-            QRect dirtyRect = m_lastMagnifierRect.united(currentMagRect);
-            dirtyRect = dirtyRect.united(QRect(0, m_currentPoint.y() - 3, m_parentWidget->width(), 6));
-            dirtyRect = dirtyRect.united(QRect(m_currentPoint.x() - 3, 0, 6, m_parentWidget->height()));
-
-            m_lastMagnifierRect = currentMagRect;
-            emit updateRequested(dirtyRect);
+            QRect dirtyRect = m_lastMagnifierRect.united(currentMagnifierRect);
+            m_lastMagnifierRect = currentMagnifierRect;
+            if (!dirtyRect.isNull()) {
+                emit updateRequested(dirtyRect);
+            }
         }
     }
 }
@@ -1279,6 +1302,133 @@ EmojiStickerAnnotation* RegionInputHandler::getSelectedEmojiStickerAnnotation() 
         return dynamic_cast<EmojiStickerAnnotation*>(m_annotationLayer->selectedItem());
     }
     return nullptr;
+}
+
+QRect RegionInputHandler::calculateDimensionInfoRect(const QRect& selectionRect) const
+{
+    if (!selectionRect.isValid() || !m_parentWidget) {
+        return QRect();
+    }
+
+    QFont font = m_parentWidget->font();
+    font.setPointSize(12);
+    QFontMetrics fm(font);
+
+    const QString label = QString("%1 x %2  pt").arg(selectionRect.width()).arg(selectionRect.height());
+    const QString maxWidthText = "9999 x 9999  pt";
+    const int fixedWidth = fm.horizontalAdvance(maxWidthText) + 24;
+    const int actualWidth = fm.horizontalAdvance(label) + 24;
+    const int width = qMax(fixedWidth, actualWidth);
+
+    static constexpr int kPanelHeight = 28;
+    int textX = selectionRect.left();
+    int textY = selectionRect.top() - kPanelHeight - 8;
+    if (textY < 5) {
+        textY = selectionRect.top() + 5;
+        textX = selectionRect.left() + 5;
+    }
+
+    return QRect(textX, textY, width, kPanelHeight);
+}
+
+QRect RegionInputHandler::calculateToolbarRect(const QRect& selectionRect) const
+{
+    if (!m_toolbar || !m_parentWidget || !selectionRect.isValid()) {
+        return QRect();
+    }
+
+    m_toolbar->setViewportWidth(m_parentWidget->width());
+    m_toolbar->setPositionForSelection(selectionRect, m_parentWidget->height());
+    return m_toolbar->boundingRect();
+}
+
+QRect RegionInputHandler::calculateToolOptionsRect(const QRect& toolbarRect) const
+{
+    if (!m_colorAndWidthWidget || !m_parentWidget || toolbarRect.isNull() ||
+        !shouldShowColorAndWidthWidget()) {
+        return QRect();
+    }
+
+    m_colorAndWidthWidget->updatePosition(toolbarRect, false, m_parentWidget->width());
+    return m_colorAndWidthWidget->boundingRect();
+}
+
+QRect RegionInputHandler::calculateEmojiPickerRect(const QRect& toolbarRect) const
+{
+    if (!m_emojiPicker || toolbarRect.isNull() || m_currentTool != ToolId::EmojiSticker) {
+        return QRect();
+    }
+
+    m_emojiPicker->updatePosition(toolbarRect, false);
+    return m_emojiPicker->boundingRect();
+}
+
+QRect RegionInputHandler::calculateRegionControlRect(const QRect& dimensionInfoRect) const
+{
+    if (!m_regionControlWidget || !m_parentWidget || dimensionInfoRect.isNull() ||
+        !m_selectionManager || !m_selectionManager->hasSelection()) {
+        return QRect();
+    }
+
+    m_regionControlWidget->updatePosition(dimensionInfoRect,
+                                          m_parentWidget->width(),
+                                          m_parentWidget->height());
+    return m_regionControlWidget->boundingRect();
+}
+
+QRect RegionInputHandler::calculateMultiRegionCountRect(const QRect& toolbarRect) const
+{
+    if (!m_parentWidget || !m_multiRegionMode || !m_multiRegionManager ||
+        m_multiRegionManager->count() <= 0 || toolbarRect.isNull()) {
+        return QRect();
+    }
+
+    const QString countText = QString("%1 regions").arg(m_multiRegionManager->count());
+    QFont font = m_parentWidget->font();
+    font.setPointSize(11);
+    QFontMetrics fm(font);
+    QRect countRect = fm.boundingRect(countText);
+    countRect.adjust(-8, -4, 8, 4);
+
+    int countX = toolbarRect.right() - countRect.width();
+    int countY = toolbarRect.top() - countRect.height() - 6;
+    if (countY < 5) {
+        countY = toolbarRect.bottom() + 6;
+    }
+    countRect.moveTo(countX, countY);
+
+    return countRect;
+}
+
+QRect RegionInputHandler::calculateMagnifierRect() const
+{
+    if (!m_parentWidget) {
+        return QRect();
+    }
+
+    QRect panelRect = MagnifierPanel::panelRectForCursor(m_currentPoint, m_parentWidget->size());
+    return panelRect.adjusted(-2, -2, 2, 2);
+}
+
+bool RegionInputHandler::shouldShowMagnifier() const
+{
+    if (m_isDrawing || isAnnotationTool(m_currentTool)) {
+        return false;
+    }
+
+    if (m_selectionManager && m_selectionManager->isComplete()) {
+        QRect selectionRect = m_selectionManager->selectionRect();
+        if (!selectionRect.contains(m_currentPoint)) {
+            return false;
+        }
+
+        QRect toolbarRect = calculateToolbarRect(selectionRect);
+        if (!toolbarRect.isNull() && toolbarRect.contains(m_currentPoint)) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 bool RegionInputHandler::shouldShowColorAndWidthWidget() const

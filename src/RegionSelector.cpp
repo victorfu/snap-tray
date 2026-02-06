@@ -475,6 +475,17 @@ RegionSelector::RegionSelector(QWidget* parent)
         this, [this](bool isDrawing) { m_isDrawing = isDrawing; });
     connect(m_inputHandler, &RegionInputHandler::detectionCleared,
         this, [this]() {
+            if (!m_highlightedWindowRect.isNull()) {
+                QString oldTitle;
+                if (m_detectedWindow.has_value()) {
+                    oldTitle = QString("%1x%2").arg(m_detectedWindow->bounds.width())
+                        .arg(m_detectedWindow->bounds.height());
+                }
+                QRect oldVisualRect = m_painter->getWindowHighlightVisualRect(m_highlightedWindowRect, oldTitle);
+                if (!oldVisualRect.isNull()) {
+                    update(oldVisualRect);
+                }
+            }
             m_highlightedWindowRect = QRect();
             m_detectedWindow.reset();
         });
@@ -961,8 +972,9 @@ void RegionSelector::paintEvent(QPaintEvent* event)
     QPainter painter(this);
 
     // Use the dirty rect for clipping to avoid full repaint
-    const QRect dirtyRect = event->rect();
-    painter.setClipRect(dirtyRect);
+    const QRegion dirtyRegion = event->region();
+    const QRect dirtyRect = dirtyRegion.boundingRect();
+    painter.setClipRegion(dirtyRegion);
 
     painter.setRenderHint(QPainter::SmoothPixmapTransform);
     painter.setRenderHint(QPainter::Antialiasing);
