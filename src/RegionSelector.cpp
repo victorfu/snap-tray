@@ -928,16 +928,16 @@ void RegionSelector::updateWindowDetection(const QPoint& localPos)
         if (localBounds != m_highlightedWindowRect) {
             // Calculate old visual rect for partial update
             QString oldTitle;
-            if (m_detectedWindow.has_value()) {
-                oldTitle = QString("%1x%2").arg(m_detectedWindow->bounds.width()).arg(m_detectedWindow->bounds.height());
+            if (!m_highlightedWindowRect.isNull()) {
+                oldTitle = QString("%1x%2").arg(m_highlightedWindowRect.width()).arg(m_highlightedWindowRect.height());
             }
             QRect oldVisualRect = m_painter->getWindowHighlightVisualRect(m_highlightedWindowRect, oldTitle);
 
             m_highlightedWindowRect = localBounds;
             m_detectedWindow = detected;
 
-            // Calculate new visual rect
-            QString newTitle = QString("%1x%2").arg(detected->bounds.width()).arg(detected->bounds.height());
+            // Calculate new visual rect (use clipped local bounds, not global bounds)
+            QString newTitle = QString("%1x%2").arg(localBounds.width()).arg(localBounds.height());
             QRect newVisualRect = m_painter->getWindowHighlightVisualRect(m_highlightedWindowRect, newTitle);
 
             // Update only changed regions
@@ -947,10 +947,10 @@ void RegionSelector::updateWindowDetection(const QPoint& localPos)
     }
     else {
         if (!m_highlightedWindowRect.isNull()) {
-            // Calculate old visual rect for partial update
+            // Calculate old visual rect for partial update (use clipped local bounds)
             QString oldTitle;
-            if (m_detectedWindow.has_value()) {
-                oldTitle = QString("%1x%2").arg(m_detectedWindow->bounds.width()).arg(m_detectedWindow->bounds.height());
+            if (!m_highlightedWindowRect.isNull()) {
+                oldTitle = QString("%1x%2").arg(m_highlightedWindowRect.width()).arg(m_highlightedWindowRect.height());
             }
             QRect oldVisualRect = m_painter->getWindowHighlightVisualRect(m_highlightedWindowRect, oldTitle);
 
@@ -976,8 +976,8 @@ void RegionSelector::paintEvent(QPaintEvent* event)
     // Update painter state before painting
     m_painter->setHighlightedWindowRect(m_highlightedWindowRect);
     m_painter->setDetectedWindowTitle(
-        m_detectedWindow.has_value()
-        ? QString("%1x%2").arg(m_detectedWindow->bounds.width()).arg(m_detectedWindow->bounds.height())
+        !m_highlightedWindowRect.isNull()
+        ? QString("%1x%2").arg(m_highlightedWindowRect.width()).arg(m_highlightedWindowRect.height())
         : QString());
     m_painter->setCornerRadius(m_cornerRadius);
     m_painter->setShowSubToolbar(m_showSubToolbar);

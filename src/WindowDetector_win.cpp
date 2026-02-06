@@ -130,6 +130,12 @@ BOOL CALLBACK enumWindowsProc(HWND hwnd, LPARAM lParam)
     WCHAR className[256] = {0};
     GetClassNameW(hwnd, className, 256);
 
+    // Skip desktop shell windows — they span the entire virtual desktop
+    // and are never useful detection targets on multi-monitor setups
+    if (wcscmp(className, L"Progman") == 0 || wcscmp(className, L"WorkerW") == 0) {
+        return TRUE;
+    }
+
     // Menu windows have class "#32768"
     if (wcscmp(className, L"#32768") == 0) {
         elementType = ElementType::ContextMenu;
@@ -294,9 +300,10 @@ BOOL CALLBACK enumChildWindowsProc(HWND hwnd, LPARAM lParam)
     WCHAR className[256] = {0};
     GetClassNameW(hwnd, className, 256);
 
-    // Skip certain control types that aren't useful for selection
-    if (wcscmp(className, L"msctls_statusbar32") == 0) {
-        return TRUE;  // Skip status bars
+    // Skip desktop shell child windows and control types that aren't useful for selection
+    if (wcscmp(className, L"WorkerW") == 0 ||
+        wcscmp(className, L"msctls_statusbar32") == 0) {
+        return TRUE;
     }
 
     // Classify control type based on class name
@@ -551,10 +558,13 @@ std::optional<DetectedElement> WindowDetector::detectWindowAt(const QPoint &scre
     // Iterate through cached windows in z-order (topmost first)
     for (const auto &element : m_windowCache) {
         if (element.bounds.contains(screenPos)) {
-            // Optionally filter to current screen
+            // Filter to current screen: only return windows whose on-screen
+            // portion actually contains the cursor. This prevents cross-monitor
+            // false positives from windows that span the virtual desktop.
             if (m_currentScreen) {
                 QRect screenGeometry = m_currentScreen->geometry();
-                if (!element.bounds.intersects(screenGeometry)) {
+                QRect clipped = element.bounds.intersected(screenGeometry);
+                if (!clipped.contains(screenPos)) {
                     continue;
                 }
             }

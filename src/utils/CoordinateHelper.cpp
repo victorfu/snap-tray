@@ -2,7 +2,6 @@
 #include <QScreen>
 #include <QGuiApplication>
 #include <QtMath>
-#include <algorithm>
 
 #ifdef Q_OS_WIN
 #include <ShellScalingApi.h>
@@ -147,9 +146,9 @@ QRect CoordinateHelper::physicalToQtLogical(const QRect& physicalBounds, HWND hw
         hMonitor = MonitorFromPoint(pt, MONITOR_DEFAULTTONEAREST);
     }
 
-    // 2. Get the monitor's physical bounds
-    MONITORINFO mi = { sizeof(MONITORINFO) };
-    if (!GetMonitorInfo(hMonitor, &mi)) {
+    // 2. Get the monitor's physical bounds AND device name for reliable QScreen matching
+    MONITORINFOEXW miex = { sizeof(MONITORINFOEXW) };
+    if (!GetMonitorInfoW(hMonitor, reinterpret_cast<LPMONITORINFO>(&miex))) {
         // Fallback: assume DPR 1.0
         return physicalBounds;
     }
@@ -161,78 +160,40 @@ QRect CoordinateHelper::physicalToQtLogical(const QRect& physicalBounds, HWND hw
     }
     qreal dpr = dpiX / 96.0;
 
-    // 4. Calculate the monitor's physical size for matching
-    int monitorPhysicalW = mi.rcMonitor.right - mi.rcMonitor.left;
-    int monitorPhysicalH = mi.rcMonitor.bottom - mi.rcMonitor.top;
-
-    // 5. Find the corresponding QScreen by matching physical POSITION
-    // This handles identical-spec multi-monitor setups correctly
+    // 4. Find the corresponding QScreen by matching device name
+    //    MONITORINFOEXW::szDevice (e.g. "\\\\.\\DISPLAY1") matches QScreen::name() on Windows.
+    //    This is reliable for all monitor arrangements (vertical, primary-on-right, etc.)
+    //    unlike the previous cumulative-position approach which assumed left-to-right from x=0.
     QScreen* matchedScreen = nullptr;
     const auto screens = QGuiApplication::screens();
-    int targetPhysX = mi.rcMonitor.left;
-    int targetPhysY = mi.rcMonitor.top;
-
-    // Build screen list sorted by logical x position (for physical origin calculation)
-    QList<QScreen*> sortedScreens = screens;
-    std::sort(sortedScreens.begin(), sortedScreens.end(), [](QScreen* a, QScreen* b) {
-        return a->geometry().x() < b->geometry().x();
-    });
-
-    // Compute expected physical origin for each screen and find match
-    int cumulativePhysX = 0;
-    for (QScreen* screen : sortedScreens) {
-        qreal screenDpr = screen->devicePixelRatio();
-        QSize logicalSize = screen->geometry().size();
-        int physicalW = qRound(logicalSize.width() * screenDpr);
-        int physicalH = qRound(logicalSize.height() * screenDpr);
-
-        // Match by physical origin position AND size for validation
-        bool positionMatch = qAbs(cumulativePhysX - targetPhysX) <= 10;
-        bool sizeMatch = qAbs(physicalW - monitorPhysicalW) <= 5 &&
-                         qAbs(physicalH - monitorPhysicalH) <= 5;
-
-        if (positionMatch && sizeMatch) {
+    QString deviceName = QString::fromWCharArray(miex.szDevice);
+    for (QScreen* screen : screens) {
+        if (screen->name() == deviceName) {
             matchedScreen = screen;
             break;
         }
-
-        cumulativePhysX += physicalW;
     }
 
-    // Fallback: If position matching failed, try size+DPR match (for unusual layouts)
+    // Fallback: primary screen (shouldn't happen in normal cases)
     if (!matchedScreen) {
-        for (QScreen* screen : screens) {
-            QSize logicalSize = screen->geometry().size();
-            qreal screenDpr = screen->devicePixelRatio();
-            int physicalW = qRound(logicalSize.width() * screenDpr);
-            int physicalH = qRound(logicalSize.height() * screenDpr);
-
-            if (qAbs(physicalW - monitorPhysicalW) <= 5 &&
-                qAbs(physicalH - monitorPhysicalH) <= 5 &&
-                qAbs(screenDpr - dpr) < 0.05) {
-                matchedScreen = screen;
-                break;
-            }
-        }
+        matchedScreen = QGuiApplication::primaryScreen();
     }
 
-    // 6. Calculate window position relative to monitor's physical origin
-    int relX = physicalBounds.x() - mi.rcMonitor.left;
-    int relY = physicalBounds.y() - mi.rcMonitor.top;
+    // 5. Calculate window position relative to monitor's physical origin
+    int relX = physicalBounds.x() - miex.rcMonitor.left;
+    int relY = physicalBounds.y() - miex.rcMonitor.top;
 
-    // 7. Convert relative position to logical
+    // 6. Convert relative position to logical
     int logicalRelX = qRound(relX / dpr);
     int logicalRelY = qRound(relY / dpr);
 
-    // 8. Get the monitor's logical origin from Qt's QScreen
+    // 7. Get the monitor's logical origin from Qt's QScreen
     QPoint logicalScreenOrigin(0, 0);
     if (matchedScreen) {
         logicalScreenOrigin = matchedScreen->geometry().topLeft();
     }
-    // Note: If no match, fallback to (0,0) which may be incorrect,
-    // but better than crashing. This shouldn't happen in normal cases.
 
-    // 9. Combine to get final logical coordinates
+    // 8. Combine to get final logical coordinates
     int logicalX = logicalScreenOrigin.x() + logicalRelX;
     int logicalY = logicalScreenOrigin.y() + logicalRelY;
     int logicalW = qRound(physicalBounds.width() / dpr);
