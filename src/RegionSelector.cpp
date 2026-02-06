@@ -826,6 +826,9 @@ void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapt
     m_magnifierPanel->setDevicePixelRatio(m_devicePixelRatio);
     m_magnifierPanel->invalidateCache();
 
+    // Pre-compose dimmed background cache for fast painting on high-DPI screens
+    m_painter->buildDimmedCache(m_backgroundPixmap);
+
     // Pre-warm magnifier cache to eliminate first-frame delay
     m_magnifierPanel->preWarmCache(m_currentPoint, m_backgroundPixmap);
 
@@ -863,6 +866,9 @@ void RegionSelector::initializeWithRegion(QScreen* screen, const QRect& region)
     // Update export manager with background pixmap and DPR
     m_exportManager->setBackgroundPixmap(m_backgroundPixmap);
     m_exportManager->setDevicePixelRatio(m_devicePixelRatio);
+
+    // Pre-compose dimmed background cache for fast painting on high-DPI screens
+    m_painter->buildDimmedCache(m_backgroundPixmap);
 
     // Convert global region to local coordinates
     QRect screenGeom = m_currentScreen->geometry();

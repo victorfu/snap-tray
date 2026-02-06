@@ -805,7 +805,7 @@ void RegionInputHandler::handleSelectionMove(const QPoint& pos)
     m_highlightedWindowRect = QRect();
     m_hasDetectedWindow = false;
     emit detectionCleared();
-    m_selectionManager->updateSelection(m_currentPoint);
+    m_selectionManager->updateSelection(pos);
 }
 
 void RegionInputHandler::handleAnnotationMove(const QPoint& pos)
@@ -1008,49 +1008,46 @@ void RegionInputHandler::handleThrottledUpdate()
     }
 
     if (m_selectionManager->isSelecting() || m_selectionManager->isResizing() || m_selectionManager->isMoving()) {
-        if (m_updateThrottler->shouldUpdate(UpdateThrottler::ThrottleType::Selection)) {
-            m_updateThrottler->reset(UpdateThrottler::ThrottleType::Selection);
+        // No throttle — repaint on every mouse move for instant feedback
+        // Calculate dirty rect for selection changes
+        // Include both old and new selection rects, plus dimension info area
+        QRect currentSelRect = m_selectionManager->selectionRect().normalized();
 
-            // Calculate dirty rect for selection changes
-            // Include both old and new selection rects, plus dimension info area
-            QRect currentSelRect = m_selectionManager->selectionRect().normalized();
+        // Expand to include selection border and handles (8px handles + 2px border)
+        const int handleMargin = 12;
+        QRect expandedCurrent = currentSelRect.adjusted(-handleMargin, -handleMargin, handleMargin, handleMargin);
+        QRect expandedLast = m_lastSelectionRect.adjusted(-handleMargin, -handleMargin, handleMargin, handleMargin);
 
-            // Expand to include selection border and handles (8px handles + 2px border)
-            const int handleMargin = 12;
-            QRect expandedCurrent = currentSelRect.adjusted(-handleMargin, -handleMargin, handleMargin, handleMargin);
-            QRect expandedLast = m_lastSelectionRect.adjusted(-handleMargin, -handleMargin, handleMargin, handleMargin);
+        QRect dirtyRect = expandedCurrent.united(expandedLast);
 
-            QRect dirtyRect = expandedCurrent.united(expandedLast);
-
-            // Include dimension info panel area (above selection)
-            const int dimInfoHeight = 40;
-            const int dimInfoWidth = 180;
-            QRect dimInfoRect(currentSelRect.left(), currentSelRect.top() - dimInfoHeight - 10,
+        // Include dimension info panel area (above selection)
+        const int dimInfoHeight = 40;
+        const int dimInfoWidth = 180;
+        QRect dimInfoRect(currentSelRect.left(), currentSelRect.top() - dimInfoHeight - 10,
+                          dimInfoWidth, dimInfoHeight);
+        QRect lastDimInfoRect(m_lastSelectionRect.left(), m_lastSelectionRect.top() - dimInfoHeight - 10,
                               dimInfoWidth, dimInfoHeight);
-            QRect lastDimInfoRect(m_lastSelectionRect.left(), m_lastSelectionRect.top() - dimInfoHeight - 10,
-                                  dimInfoWidth, dimInfoHeight);
-            dirtyRect = dirtyRect.united(dimInfoRect).united(lastDimInfoRect);
+        dirtyRect = dirtyRect.united(dimInfoRect).united(lastDimInfoRect);
 
-            // Include crosshair lines (full width/height thin strips)
-            dirtyRect = dirtyRect.united(QRect(0, m_currentPoint.y() - 2, m_parentWidget->width(), 4));
-            dirtyRect = dirtyRect.united(QRect(m_currentPoint.x() - 2, 0, 4, m_parentWidget->height()));
+        // Include crosshair lines (full width/height thin strips)
+        dirtyRect = dirtyRect.united(QRect(0, m_currentPoint.y() - 2, m_parentWidget->width(), 4));
+        dirtyRect = dirtyRect.united(QRect(m_currentPoint.x() - 2, 0, 4, m_parentWidget->height()));
 
-            // Include magnifier panel area
-            const int panelWidth = MagnifierPanel::kWidth;
-            const int totalHeight = MagnifierPanel::kHeight + 85;
-            int panelX = m_currentPoint.x() - panelWidth / 2;
-            panelX = qMax(10, qMin(panelX, m_parentWidget->width() - panelWidth - 10));
-            int panelYBelow = m_currentPoint.y() + 25;
-            int panelYAbove = m_currentPoint.y() - totalHeight - 25;
-            QRect magRect(panelX - 5, qMin(panelYAbove, panelYBelow) - 5,
-                          panelWidth + 10, totalHeight + qAbs(panelYBelow - panelYAbove) + 10);
-            dirtyRect = dirtyRect.united(magRect).united(m_lastMagnifierRect);
+        // Include magnifier panel area
+        const int panelWidth = MagnifierPanel::kWidth;
+        const int totalHeight = MagnifierPanel::kHeight + 85;
+        int panelX = m_currentPoint.x() - panelWidth / 2;
+        panelX = qMax(10, qMin(panelX, m_parentWidget->width() - panelWidth - 10));
+        int panelYBelow = m_currentPoint.y() + 25;
+        int panelYAbove = m_currentPoint.y() - totalHeight - 25;
+        QRect magRect(panelX - 5, qMin(panelYAbove, panelYBelow) - 5,
+                      panelWidth + 10, totalHeight + qAbs(panelYBelow - panelYAbove) + 10);
+        dirtyRect = dirtyRect.united(magRect).united(m_lastMagnifierRect);
 
-            m_lastSelectionRect = currentSelRect;
-            m_lastMagnifierRect = magRect;
+        m_lastSelectionRect = currentSelRect;
+        m_lastMagnifierRect = magRect;
 
-            emit updateRequested(dirtyRect);
-        }
+        m_parentWidget->repaint(dirtyRect);
     }
     else if (m_isDrawing) {
         if (m_updateThrottler->shouldUpdate(UpdateThrottler::ThrottleType::Annotation)) {
@@ -1065,27 +1062,25 @@ void RegionInputHandler::handleThrottledUpdate()
         }
     }
     else {
-        if (m_updateThrottler->shouldUpdate(UpdateThrottler::ThrottleType::Magnifier)) {
-            m_updateThrottler->reset(UpdateThrottler::ThrottleType::Magnifier);
+        // No throttle — repaint on every mouse move for instant magnifier feedback
+        const int panelWidth = MagnifierPanel::kWidth;
+        const int totalHeight = MagnifierPanel::kHeight + 85;
+        int panelX = m_currentPoint.x() - panelWidth / 2;
+        panelX = qMax(10, qMin(panelX, m_parentWidget->width() - panelWidth - 10));
 
-            const int panelWidth = MagnifierPanel::kWidth;
-            const int totalHeight = MagnifierPanel::kHeight + 85;
-            int panelX = m_currentPoint.x() - panelWidth / 2;
-            panelX = qMax(10, qMin(panelX, m_parentWidget->width() - panelWidth - 10));
+        int panelYBelow = m_currentPoint.y() + 25;
+        int panelYAbove = m_currentPoint.y() - totalHeight - 25;
+        QRect belowRect(panelX - 5, panelYBelow - 5, panelWidth + 10, totalHeight + 10);
+        QRect aboveRect(panelX - 5, panelYAbove - 5, panelWidth + 10, totalHeight + 10);
+        QRect currentMagRect = belowRect.united(aboveRect);
 
-            int panelYBelow = m_currentPoint.y() + 25;
-            int panelYAbove = m_currentPoint.y() - totalHeight - 25;
-            QRect belowRect(panelX - 5, panelYBelow - 5, panelWidth + 10, totalHeight + 10);
-            QRect aboveRect(panelX - 5, panelYAbove - 5, panelWidth + 10, totalHeight + 10);
-            QRect currentMagRect = belowRect.united(aboveRect);
+        QRect dirtyRect = m_lastMagnifierRect.united(currentMagRect);
+        dirtyRect = dirtyRect.united(QRect(0, m_currentPoint.y() - 3, m_parentWidget->width(), 6));
+        dirtyRect = dirtyRect.united(QRect(m_currentPoint.x() - 3, 0, 6, m_parentWidget->height()));
 
-            QRect dirtyRect = m_lastMagnifierRect.united(currentMagRect);
-            dirtyRect = dirtyRect.united(QRect(0, m_currentPoint.y() - 3, m_parentWidget->width(), 6));
-            dirtyRect = dirtyRect.united(QRect(m_currentPoint.x() - 3, 0, 6, m_parentWidget->height()));
-
-            m_lastMagnifierRect = currentMagRect;
-            emit updateRequested(dirtyRect);
-        }
+        m_lastMagnifierRect = currentMagRect;
+		
+        m_parentWidget->repaint(dirtyRect);
     }
 }
 

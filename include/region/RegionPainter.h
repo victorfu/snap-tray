@@ -78,6 +78,8 @@ public:
      */
     void invalidateOverlayCache();
 
+    void buildDimmedCache(const QPixmap& background);
+    const QPixmap& dimmedCache() const { return m_dimmedCache; }
 
 private:
     // Drawing methods (extracted from RegionSelector)
@@ -126,6 +128,9 @@ private:
     QRect m_cachedSelectionRect;
     QRect m_cachedHighlightRect;
     bool m_overlayCacheValid = false;
+
+    QPixmap m_dimmedCache;
+    bool m_dimmedCacheReady = false;
 };
 
 #endif // REGIONPAINTER_H
