@@ -117,9 +117,7 @@ void RegionPainter::paint(QPainter& painter, const QPixmap& background, const QR
     const QRect updateRect = dirtyRect.isEmpty() ? m_parentWidget->rect() : dirtyRect;
 
     // Draw only the dirty portion of the background
-    // This is much faster than drawing the entire background on high-DPI screens
     if (!background.isNull()) {
-        // Calculate source rect in pixmap coordinates (accounting for device pixel ratio)
         const qreal dpr = background.devicePixelRatio();
         const QRect sourceRect = CoordinateHelper::toPhysical(updateRect, dpr);
         painter.drawPixmap(updateRect, background, sourceRect);

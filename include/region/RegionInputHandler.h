@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QPoint>
 #include <QRect>
+#include <QRegion>
 #include <QCursor>
 #include "TransformationGizmo.h"
 #include "region/SelectionStateManager.h"
@@ -53,6 +54,9 @@ public:
     void setMultiRegionManager(MultiRegionManager* manager);
     void setUpdateThrottler(UpdateThrottler* throttler);
     void setParentWidget(QWidget* widget);
+
+    // Reset dirty tracking state (call when starting a new capture)
+    void resetDirtyTracking();
 
     // Event handlers (called from RegionSelector)
     void handleMousePress(QMouseEvent* event);
@@ -167,6 +171,7 @@ private:
     QPoint m_currentPoint;
     QPoint m_startPoint;
     QPoint m_lastWindowDetectionPos;
+    QPoint m_lastCrosshairPoint;  // Previous crosshair position for dirty region erasure
     QRect m_lastSelectionRect;
     QRect m_lastMagnifierRect;
     QRect m_highlightedWindowRect;

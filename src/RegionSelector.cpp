@@ -826,6 +826,9 @@ void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapt
     m_magnifierPanel->setDevicePixelRatio(m_devicePixelRatio);
     m_magnifierPanel->invalidateCache();
 
+    // Reset dirty tracking for optimized QRegion-based updates
+    m_inputHandler->resetDirtyTracking();
+
     // Pre-compose dimmed background cache for fast painting on high-DPI screens
     m_painter->buildDimmedCache(m_backgroundPixmap);
 
@@ -966,11 +969,17 @@ void RegionSelector::paintEvent(QPaintEvent* event)
 {
     QPainter painter(this);
 
-    // Use the dirty rect for clipping to avoid full repaint
-    const QRect dirtyRect = event->rect();
-    painter.setClipRect(dirtyRect);
+    // Use QRegion-based clipping for efficient partial repainting.
+    // When update(QRegion) is used, QPaintEvent::region() contains the individual rects
+    // rather than inflating to a bounding box. This dramatically reduces repaint area
+    // for crosshair strips on high-DPI screens.
+    const QRegion dirtyRegion = event->region();
+    const QRect dirtyRect = dirtyRegion.boundingRect();
+    painter.setClipRegion(dirtyRegion);
 
-    painter.setRenderHint(QPainter::SmoothPixmapTransform);
+    // Disable SmoothPixmapTransform for background blit — the background pixmap
+    // is at native device pixel ratio, so smooth scaling adds CPU cost with no visual benefit.
+    // Antialiasing is enabled for selection handles, borders, and UI elements drawn after.
     painter.setRenderHint(QPainter::Antialiasing);
 
     // Update painter state before painting
