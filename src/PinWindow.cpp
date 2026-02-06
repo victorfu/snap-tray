@@ -561,6 +561,12 @@ void PinWindow::createContextMenu()
         connect(ocrAction, &QAction::triggered, this, &PinWindow::performOCR);
     }
 
+    // Click-through option
+    m_clickThroughAction = m_contextMenu->addAction("Click-through");
+    m_clickThroughAction->setCheckable(true);
+    m_clickThroughAction->setChecked(m_clickThrough);
+    connect(m_clickThroughAction, &QAction::toggled, this, &PinWindow::setClickThrough);
+
     m_contextMenu->addSeparator();
 
     // Watermark submenu
@@ -704,12 +710,6 @@ void PinWindow::createContextMenu()
     addInfoItem("Opacity", QString("%1%").arg(qRound(m_opacity * 100)));
     addInfoItem("X-mirror", m_flipHorizontal ? "Yes" : "No");
     addInfoItem("Y-mirror", m_flipVertical ? "Yes" : "No");
-
-    // Click-through option
-    m_clickThroughAction = m_contextMenu->addAction("Click-through");
-    m_clickThroughAction->setCheckable(true);
-    m_clickThroughAction->setChecked(m_clickThrough);
-    connect(m_clickThroughAction, &QAction::toggled, this, &PinWindow::setClickThrough);
 
     // Live capture section - actions are updated dynamically in contextMenuEvent
     m_contextMenu->addSeparator();
