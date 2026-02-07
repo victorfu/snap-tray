@@ -93,6 +93,11 @@ public:
     void cancel();
 
     /**
+     * @brief Discard any initialized resources when result is no longer needed
+     */
+    void discardResult();
+
+    /**
      * @brief Check if initialization was cancelled
      */
     bool isCancelled() const { return m_cancelled.loadAcquire() != 0; }

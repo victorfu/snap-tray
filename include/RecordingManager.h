@@ -9,6 +9,7 @@
 #include <QElapsedTimer>
 #include <QMutex>
 #include <QFuture>
+#include <QSharedPointer>
 #include <memory>
 
 #include "WatermarkRenderer.h"
@@ -97,7 +98,8 @@ private slots:
 private:
     void startFrameCapture();
     void beginAsyncInitialization();   // Start async initialization
-    void onInitializationComplete();   // Handle async init completion
+    void onInitializationComplete(const QSharedPointer<RecordingInitTask> &task,
+                                  quint64 generation);   // Handle async init completion
     void startCaptureTimers();         // Start capture and duration timers
     void stopFrameCapture();
     void cleanupRecording();
@@ -166,8 +168,9 @@ private:
     QString m_tempAudioPath;
 
     // Async initialization
-    std::unique_ptr<RecordingInitTask> m_initTask;
+    QSharedPointer<RecordingInitTask> m_initTask;
     QFuture<void> m_initFuture;
+    quint64 m_initGeneration = 0;
 
     // Countdown
     QPointer<CountdownOverlay> m_countdownOverlay;

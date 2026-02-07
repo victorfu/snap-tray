@@ -110,6 +110,10 @@ RecordingManager::~RecordingManager()
     if (m_initFuture.isRunning()) {
         m_initFuture.waitForFinished();
     }
+    if (m_initTask) {
+        m_initTask->discardResult();
+        m_initTask.clear();
+    }
     cleanupRecording();
 }
 
@@ -124,7 +128,8 @@ void RecordingManager::setState(State newState)
 bool RecordingManager::isActive() const
 {
     return isSelectingRegion() || isRecording() || isPaused() || isPreviewing() ||
-           (m_state == State::Preparing) || (m_state == State::Encoding);
+           (m_state == State::Preparing) || (m_state == State::Encoding) ||
+           m_initFuture.isRunning();
 }
 
 bool RecordingManager::isRecording() const
@@ -153,7 +158,9 @@ RecordingRegionSelector* RecordingManager::createRegionSelector()
         return nullptr;
     }
 
-    if (m_state == State::Recording || m_state == State::Paused || m_state == State::Encoding) {
+    if (m_state == State::Recording || m_state == State::Paused ||
+        m_state == State::Encoding || m_state == State::Preparing ||
+        m_initFuture.isRunning()) {
         return nullptr;
     }
 
@@ -195,7 +202,9 @@ void RecordingManager::startRegionSelectionWithPreset(const QRect &region, QScre
 void RecordingManager::startFullScreenRecording(QScreen* screen)
 {
     // Check if already active
-    if (m_state == State::Recording || m_state == State::Paused || m_state == State::Encoding) {
+    if (m_state == State::Recording || m_state == State::Paused ||
+        m_state == State::Encoding || m_state == State::Preparing ||
+        m_state == State::Countdown || m_initFuture.isRunning()) {
         return;
     }
 
@@ -268,6 +277,12 @@ void RecordingManager::onRegionCancelled()
 
 void RecordingManager::startFrameCapture()
 {
+    if (m_initFuture.isRunning()) {
+        qWarning() << "RecordingManager: Initialization already in progress";
+        emit recordingWarning(tr("Previous initialization is still shutting down. Please try again."));
+        return;
+    }
+
     // Safety check: clean up any existing encoding worker
     if (m_encodingWorker) {
         disconnect(m_encodingWorker.get(), &EncodingWorker::finished,
@@ -334,6 +349,11 @@ void RecordingManager::startFrameCapture()
 
 void RecordingManager::beginAsyncInitialization()
 {
+    if (m_initFuture.isRunning()) {
+        qWarning() << "RecordingManager: beginAsyncInitialization called while future is still running";
+        return;
+    }
+
     // Load settings for initialization config
     auto settings = SnapTray::getSettings();
     int formatInt = settings.value("recording/outputFormat", 0).toInt();
@@ -381,12 +401,23 @@ void RecordingManager::beginAsyncInitialization()
         setWindowExcludedFromCapture(m_controlBar, true);
     }
 
+    const quint64 generation = ++m_initGeneration;
+
     // Create the init task
-    m_initTask = std::make_unique<RecordingInitTask>(config, nullptr);
+    auto taskDeleter = [](RecordingInitTask *task) {
+        if (task) {
+            task->deleteLater();
+        }
+    };
+    m_initTask = QSharedPointer<RecordingInitTask>(new RecordingInitTask(config, nullptr), taskDeleter);
 
     // Connect progress signal for UI feedback
-    connect(m_initTask.get(), &RecordingInitTask::progress,
-            this, [this](const QString &step) {
+    connect(m_initTask.data(), &RecordingInitTask::progress,
+            this, [this, generation](const QString &step) {
+        if (generation != m_initGeneration || m_state != State::Preparing) {
+            return;
+        }
+
         emit preparationProgress(step);
         if (m_controlBar) {
             m_controlBar->setPreparingStatus(step);
@@ -397,15 +428,17 @@ void RecordingManager::beginAsyncInitialization()
     // Use QPointer to guard against this being deleted while task runs
     QPointer<RecordingManager> guard(this);
     QFutureWatcher<void> *watcher = new QFutureWatcher<void>(this);
-    connect(watcher, &QFutureWatcher<void>::finished, this, [guard, watcher]() {
+    connect(watcher, &QFutureWatcher<void>::finished, this, [guard, watcher, task = m_initTask, generation]() {
         if (guard) {
-            guard->onInitializationComplete();
+            guard->onInitializationComplete(task, generation);
+        } else if (task) {
+            task->discardResult();
         }
         watcher->deleteLater();
     });
 
-    // Capture task pointer to avoid accessing this in background thread
-    RecordingInitTask *task = m_initTask.get();
+    // Capture task shared pointer to ensure lifetime is valid in background thread.
+    auto task = m_initTask;
     m_initFuture = QtConcurrent::run([task]() {
         if (task) {
             task->run();
@@ -414,11 +447,36 @@ void RecordingManager::beginAsyncInitialization()
     watcher->setFuture(m_initFuture);
 }
 
-void RecordingManager::onInitializationComplete()
+void RecordingManager::onInitializationComplete(const QSharedPointer<RecordingInitTask> &task,
+                                                quint64 generation)
 {
+    if (!task) {
+        return;
+    }
+
+    const bool isCurrentTask = m_initTask && (m_initTask.data() == task.data());
+
+    // Ignore stale completion callbacks from cancelled/superseded generations.
+    if (generation != m_initGeneration) {
+        task->discardResult();
+        if (isCurrentTask) {
+            m_initTask.clear();
+        }
+        return;
+    }
+
     // Safety check: ensure we're still in Preparing state
     if (m_state != State::Preparing) {
-        m_initTask.reset();
+        task->discardResult();
+        if (isCurrentTask) {
+            m_initTask.clear();
+        }
+        return;
+    }
+
+    // Safety check: ensure the completion callback is for the active task
+    if (!isCurrentTask) {
+        task->discardResult();
         return;
     }
 
@@ -431,7 +489,7 @@ void RecordingManager::onInitializationComplete()
     }
 
     // Get the result from the init task
-    const RecordingInitTask::Result &result = m_initTask->result();
+    const RecordingInitTask::Result &result = task->result();
 
     if (!result.success) {
         qWarning() << "RecordingManager: Initialization failed:" << result.error;
@@ -445,7 +503,7 @@ void RecordingManager::onInitializationComplete()
             m_controlBar->close();
         }
 
-        m_initTask.reset();
+        m_initTask.clear();
 
         setState(State::Idle);
         return;
@@ -502,6 +560,7 @@ void RecordingManager::onInitializationComplete()
         qWarning() << "RecordingManager: Failed to start encoding worker";
         emit recordingError(tr("Failed to start encoding worker"));
         m_encodingWorker.reset();
+        m_initTask.clear();
         setState(State::Idle);
         return;
     }
@@ -568,7 +627,7 @@ void RecordingManager::onInitializationComplete()
     }
 
     // Clean up init task
-    m_initTask.reset();
+    m_initTask.clear();
 
     // Load countdown settings
     auto settings = SnapTray::getSettings();
@@ -846,10 +905,11 @@ void RecordingManager::cancelRecording()
     }
 
     // Cancel any pending initialization
+    if (m_initTask || m_initFuture.isRunning()) {
+        ++m_initGeneration;
+    }
     if (m_initTask) {
         m_initTask->cancel();
-        // Note: The init task will be cleaned up when onInitializationComplete() runs
-        // and sees that state has changed
     }
 
     stopFrameCapture();

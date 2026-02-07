@@ -35,6 +35,7 @@ private slots:
     void testCancelBeforeRun();
     void testCancelDuringRun();
     void testIsCancelledInitiallyFalse();
+    void testDiscardResultIsSafeToCallRepeatedly();
 
     // Result tests
     void testResultDefaultValues();
@@ -186,6 +187,17 @@ void TestRecordingInitTask::testIsCancelledInitiallyFalse()
     RecordingInitTask task(config);
 
     QVERIFY(!task.isCancelled());
+}
+
+void TestRecordingInitTask::testDiscardResultIsSafeToCallRepeatedly()
+{
+    RecordingInitTask::Config config = createTestConfig();
+    RecordingInitTask task(config);
+
+    task.discardResult();
+    task.discardResult();
+
+    QVERIFY(!task.result().success);
 }
 
 // ============================================================================

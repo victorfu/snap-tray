@@ -66,6 +66,12 @@ void RecordingInitTask::cancel()
     m_cancelled.storeRelease(1);
 }
 
+void RecordingInitTask::discardResult()
+{
+    m_result.cleanup();
+    m_result.success = false;
+}
+
 void RecordingInitTask::run()
 {
     qDebug() << "RecordingInitTask::run() - BEGIN";
