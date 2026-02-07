@@ -214,7 +214,7 @@ namespace {
         };
 
         bool found = false;
-        int bestCost = std::numeric_limits<int>::max();
+        int bestCost = (std::numeric_limits<int>::max)();
         TextCompensation best;
 
         for (const Candidate& candidate : kCandidates) {

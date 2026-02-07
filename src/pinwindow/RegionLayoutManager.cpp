@@ -473,7 +473,7 @@ void RegionLayoutManager::bindAnnotations(AnnotationLayer* layer)
 
         // If not in any region, bind to closest region
         if (binding.regionIndex < 0 && !m_state.regions.isEmpty()) {
-            qreal minDist = std::numeric_limits<qreal>::max();
+            qreal minDist = (std::numeric_limits<qreal>::max)();
             for (int i = 0; i < m_state.regions.size(); ++i) {
                 QPointF regionCenter = m_state.regions[i].rect.center();
                 qreal dist = QLineF(center, regionCenter).length();
