@@ -1,5 +1,6 @@
 #include "OCRResultDialog.h"
 #include "platform/WindowLevel.h"
+#include "utils/DialogThemeUtils.h"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -30,7 +31,7 @@ OCRResultDialog::OCRResultDialog(QWidget *parent)
     setAttribute(Qt::WA_TranslucentBackground, false);
 
     setupUi();
-    applyDarkTheme();
+    applyTheme();
 
     setFixedWidth(420);
     setMinimumHeight(260);
@@ -110,63 +111,65 @@ void OCRResultDialog::setupUi()
     mainLayout->addWidget(buttonBar);
 }
 
-void OCRResultDialog::applyDarkTheme()
+void OCRResultDialog::applyTheme()
 {
-    setStyleSheet(R"(
+    const SnapTray::DialogTheme::Palette palette = SnapTray::DialogTheme::paletteForToolbarStyle();
+
+    setStyleSheet(QStringLiteral(R"(
         OCRResultDialog {
-            background-color: #2b2b2b;
-            border: 1px solid #3d3d3d;
+            background-color: %1;
+            border: 1px solid %2;
             border-radius: 12px;
         }
 
         #titleBar {
-            background-color: #2b2b2b;
+            background-color: %3;
             border-top-left-radius: 12px;
             border-top-right-radius: 12px;
-            border-bottom: 1px solid #3d3d3d;
+            border-bottom: 1px solid %2;
         }
 
         #iconLabel {
-            background-color: #3a3a3a;
-            border: 1px solid #4a4a4a;
+            background-color: %4;
+            border: 1px solid %5;
             border-radius: 4px;
-            color: #9e9e9e;
+            color: %6;
             font-size: 18px;
             font-weight: bold;
         }
 
         #titleLabel {
-            color: #e0e0e0;
+            color: %7;
             font-size: 14px;
             font-weight: bold;
         }
 
         #charCountLabel {
-            color: #9e9e9e;
+            color: %6;
             font-size: 12px;
         }
 
         #textEdit {
-            background-color: #1e1e1e;
-            color: #e0e0e0;
-            border: 1px solid #3d3d3d;
+            background-color: %8;
+            color: %7;
+            border: 1px solid %9;
             border-radius: 6px;
             padding: 8px;
             font-family: 'Consolas', 'Courier New', monospace;
             font-size: 13px;
-            selection-background-color: #66b3ff;
+            selection-background-color: %10;
         }
 
         #buttonBar {
-            background-color: #2b2b2b;
+            background-color: %3;
             border-bottom-left-radius: 12px;
             border-bottom-right-radius: 12px;
         }
 
         QPushButton {
-            background-color: #3a3a3a;
-            color: #e0e0e0;
-            border: 1px solid #4a4a4a;
+            background-color: %11;
+            color: %12;
+            border: 1px solid %5;
             border-radius: 6px;
             font-size: 13px;
             font-weight: 500;
@@ -174,20 +177,37 @@ void OCRResultDialog::applyDarkTheme()
         }
 
         QPushButton:hover {
-            background-color: #4a4a4a;
-            border-color: #5a5a5a;
+            background-color: %13;
+            border-color: %2;
         }
 
         QPushButton:pressed {
-            background-color: #333333;
+            background-color: %14;
         }
 
         QPushButton:disabled {
-            background-color: #2a2a2a;
-            color: #666666;
-            border-color: #3a3a3a;
+            background-color: %15;
+            color: %16;
+            border-color: %17;
         }
-    )");
+    )")
+        .arg(SnapTray::DialogTheme::toCssColor(palette.windowBackground))
+        .arg(SnapTray::DialogTheme::toCssColor(palette.border))
+        .arg(SnapTray::DialogTheme::toCssColor(palette.titleBarBackground))
+        .arg(SnapTray::DialogTheme::toCssColor(palette.panelBackground))
+        .arg(SnapTray::DialogTheme::toCssColor(palette.controlBorder))
+        .arg(SnapTray::DialogTheme::toCssColor(palette.textSecondary))
+        .arg(SnapTray::DialogTheme::toCssColor(palette.textPrimary))
+        .arg(SnapTray::DialogTheme::toCssColor(palette.inputBackground))
+        .arg(SnapTray::DialogTheme::toCssColor(palette.inputBorder))
+        .arg(SnapTray::DialogTheme::toCssColor(palette.selectionBackground))
+        .arg(SnapTray::DialogTheme::toCssColor(palette.buttonBackground))
+        .arg(SnapTray::DialogTheme::toCssColor(palette.buttonText))
+        .arg(SnapTray::DialogTheme::toCssColor(palette.buttonHoverBackground))
+        .arg(SnapTray::DialogTheme::toCssColor(palette.buttonPressedBackground))
+        .arg(SnapTray::DialogTheme::toCssColor(palette.buttonDisabledBackground))
+        .arg(SnapTray::DialogTheme::toCssColor(palette.buttonDisabledText))
+        .arg(SnapTray::DialogTheme::toCssColor(palette.buttonDisabledBorder)));
 }
 
 void OCRResultDialog::setResultText(const QString &text)
@@ -337,11 +357,14 @@ void OCRResultDialog::updateCharacterCount()
 
 void OCRResultDialog::showCopyFeedback()
 {
+    const SnapTray::DialogTheme::Palette palette = SnapTray::DialogTheme::paletteForToolbarStyle();
     QString originalText = m_copyButton->text();
     m_copyButton->setText("✓ Copied!");
-    m_copyButton->setStyleSheet(
-        "QPushButton { background-color: #4caf50; border-color: #66bb6a; }"
-    );
+    m_copyButton->setStyleSheet(QStringLiteral(
+        "QPushButton { background-color: %1; border-color: %2; color: %3; }")
+        .arg(SnapTray::DialogTheme::toCssColor(palette.successBackground))
+        .arg(SnapTray::DialogTheme::toCssColor(palette.successBorder))
+        .arg(SnapTray::DialogTheme::toCssColor(palette.successText)));
 
     // Reset after 1.5 seconds
     QTimer::singleShot(1500, this, [this, originalText]() {

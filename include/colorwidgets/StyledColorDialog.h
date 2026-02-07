@@ -11,14 +11,14 @@ namespace colorwidgets {
 /**
  * @brief StyledColorDialog - A SnapTray-themed color dialog
  *
- * This dialog applies the SnapTray dark theme styling to the ColorDialog,
+ * This dialog applies SnapTray toolbar-style-aware theming to ColorDialog,
  * matching the aesthetic of other SnapTray UI components.
  *
  * Features:
- * - Dark theme with consistent styling
+ * - Theme-aware styling for dark/light toolbar modes
  * - Custom title bar with drag support
  * - Rounded corners and glass-effect background
- * - Integration with ToolbarStyleConfig
+ * - Integration with toolbar style setting
  */
 class StyledColorDialog : public ColorDialog
 {

@@ -1,6 +1,7 @@
 #include "colorwidgets/StyledColorDialog.h"
 
 #include "platform/WindowLevel.h"
+#include "utils/DialogThemeUtils.h"
 
 #include <QLabel>
 #include <QMouseEvent>
@@ -32,9 +33,10 @@ StyledColorDialog::~StyledColorDialog() = default;
 
 void StyledColorDialog::applySnapTrayStyle()
 {
-    // Apply SnapTray dark theme
-    // Note: Use border-radius: 0 for widgets that don't clip properly
-    setStyleSheet(R"(
+    const SnapTray::DialogTheme::Palette palette = SnapTray::DialogTheme::paletteForToolbarStyle();
+
+    // Note: Use border-radius: 0 for widgets that don't clip properly.
+    setStyleSheet(QStringLiteral(R"(
         StyledColorDialog {
             background-color: transparent;
         }
@@ -42,57 +44,83 @@ void StyledColorDialog::applySnapTrayStyle()
             background-color: transparent;
         }
         QLabel {
-            color: white;
+            color: %1;
             font-size: 12px;
             background-color: transparent;
         }
         QSpinBox {
-            background-color: rgb(55, 55, 55);
-            border: 1px solid rgb(70, 70, 70);
+            background-color: %2;
+            border: 1px solid %3;
             border-radius: 0px;
-            color: white;
+            color: %4;
             padding: 4px;
         }
         QSpinBox::up-button, QSpinBox::down-button {
-            background-color: rgb(60, 60, 60);
+            background-color: %5;
             border: none;
             width: 16px;
         }
         QSpinBox::up-button:hover, QSpinBox::down-button:hover {
-            background-color: rgb(80, 80, 80);
+            background-color: %6;
         }
         QLineEdit {
-            background-color: rgb(55, 55, 55);
-            border: 1px solid rgb(70, 70, 70);
+            background-color: %2;
+            border: 1px solid %3;
             border-radius: 0px;
-            color: white;
+            color: %4;
             padding: 4px 8px;
         }
         QPushButton {
-            background-color: rgb(60, 60, 60);
-            border: 1px solid rgb(70, 70, 70);
+            background-color: %7;
+            border: 1px solid %8;
             border-radius: 0px;
-            color: white;
+            color: %9;
             padding: 6px 16px;
             min-width: 60px;
         }
         QPushButton:hover {
-            background-color: rgb(80, 80, 80);
+            background-color: %10;
         }
         QPushButton:pressed {
-            background-color: rgb(50, 50, 50);
+            background-color: %11;
+        }
+        QPushButton:disabled {
+            background-color: %12;
+            border-color: %13;
+            color: %14;
         }
         QPushButton#okButton {
-            background-color: rgb(0, 120, 200);
-            border: none;
+            background-color: %15;
+            border: 1px solid %15;
+            color: %16;
         }
         QPushButton#okButton:hover {
-            background-color: rgb(0, 140, 220);
+            background-color: %17;
+            border-color: %17;
         }
         QPushButton#okButton:pressed {
-            background-color: rgb(0, 100, 180);
+            background-color: %18;
+            border-color: %18;
         }
-    )");
+    )")
+        .arg(SnapTray::DialogTheme::toCssColor(palette.textPrimary))
+        .arg(SnapTray::DialogTheme::toCssColor(palette.inputBackground))
+        .arg(SnapTray::DialogTheme::toCssColor(palette.inputBorder))
+        .arg(SnapTray::DialogTheme::toCssColor(palette.textPrimary))
+        .arg(SnapTray::DialogTheme::toCssColor(palette.buttonBackground))
+        .arg(SnapTray::DialogTheme::toCssColor(palette.buttonHoverBackground))
+        .arg(SnapTray::DialogTheme::toCssColor(palette.buttonBackground))
+        .arg(SnapTray::DialogTheme::toCssColor(palette.controlBorder))
+        .arg(SnapTray::DialogTheme::toCssColor(palette.buttonText))
+        .arg(SnapTray::DialogTheme::toCssColor(palette.buttonHoverBackground))
+        .arg(SnapTray::DialogTheme::toCssColor(palette.buttonPressedBackground))
+        .arg(SnapTray::DialogTheme::toCssColor(palette.buttonDisabledBackground))
+        .arg(SnapTray::DialogTheme::toCssColor(palette.buttonDisabledBorder))
+        .arg(SnapTray::DialogTheme::toCssColor(palette.buttonDisabledText))
+        .arg(SnapTray::DialogTheme::toCssColor(palette.accentBackground))
+        .arg(SnapTray::DialogTheme::toCssColor(palette.successText))
+        .arg(SnapTray::DialogTheme::toCssColor(palette.accentHoverBackground))
+        .arg(SnapTray::DialogTheme::toCssColor(palette.accentPressedBackground)));
 
     // Make frameless if using custom title bar, and stay on top
     if (m_customTitleBar) {
@@ -103,37 +131,42 @@ void StyledColorDialog::applySnapTrayStyle()
 
 void StyledColorDialog::setupCustomTitleBar()
 {
+    const SnapTray::DialogTheme::Palette palette = SnapTray::DialogTheme::paletteForToolbarStyle();
+
     // Create a custom title bar widget
     auto* titleBar = new QWidget(this);
     titleBar->setFixedHeight(32);
-    titleBar->setStyleSheet(
-        "background-color: rgb(35, 35, 35); border-top-left-radius: 8px; "
-        "border-top-right-radius: 8px;");
+    titleBar->setStyleSheet(QStringLiteral(
+        "background-color: %1; border-top-left-radius: 8px; border-top-right-radius: 8px;")
+        .arg(SnapTray::DialogTheme::toCssColor(palette.titleBarBackground)));
 
     auto* titleLayout = new QHBoxLayout(titleBar);
     titleLayout->setContentsMargins(12, 0, 8, 0);
     titleLayout->setSpacing(0);
 
     m_titleLabel = new QLabel(windowTitle(), titleBar);
-    m_titleLabel->setStyleSheet("color: white; font-weight: bold;");
+    m_titleLabel->setStyleSheet(QStringLiteral("color: %1; font-weight: bold;")
+        .arg(SnapTray::DialogTheme::toCssColor(palette.textPrimary)));
     titleLayout->addWidget(m_titleLabel);
 
     titleLayout->addStretch();
 
     m_closeButton = new QPushButton(titleBar);
     m_closeButton->setFixedSize(20, 20);
-    m_closeButton->setStyleSheet(R"(
+    m_closeButton->setStyleSheet(QStringLiteral(R"(
         QPushButton {
             background-color: transparent;
             border: none;
             border-radius: 10px;
-            color: white;
+            color: %1;
             font-weight: bold;
         }
         QPushButton:hover {
-            background-color: rgb(200, 60, 60);
+            background-color: %2;
         }
-    )");
+    )")
+        .arg(SnapTray::DialogTheme::toCssColor(palette.textPrimary))
+        .arg(SnapTray::DialogTheme::toCssColor(palette.closeButtonHoverBackground)));
     m_closeButton->setText("\u2715");  // Unicode X
     titleLayout->addWidget(m_closeButton);
 
@@ -156,12 +189,14 @@ void StyledColorDialog::showEvent(QShowEvent* event)
 
 void StyledColorDialog::paintEvent(QPaintEvent* event)
 {
+    const SnapTray::DialogTheme::Palette palette = SnapTray::DialogTheme::paletteForToolbarStyle();
+
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
 
     // Draw rounded rectangle background
-    painter.setPen(QPen(QColor(70, 70, 70), 1));
-    painter.setBrush(QColor(40, 40, 40));
+    painter.setPen(QPen(palette.border, 1));
+    painter.setBrush(palette.windowBackground);
     painter.drawRoundedRect(rect().adjusted(0, 0, -1, -1), 8, 8);
 
     // Don't call base class - we're fully custom painting

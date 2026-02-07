@@ -164,6 +164,9 @@ void ColorDialog::setupUi()
     m_okButton = new QPushButton(tr("OK"), this);
     m_okButton->setDefault(true);
     m_cancelButton = new QPushButton(tr("Cancel"), this);
+    m_resetButton->setObjectName("resetButton");
+    m_okButton->setObjectName("okButton");
+    m_cancelButton->setObjectName("cancelButton");
 
     bottomLayout->addWidget(m_resetButton);
     bottomLayout->addWidget(m_okButton);

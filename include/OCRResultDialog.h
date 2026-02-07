@@ -16,7 +16,7 @@ class QLabel;
  * - Editable text area showing recognized text
  * - Copy button with visual feedback ("✓ Copied!")
  * - Character count with "(edited)" indicator
- * - Dark theme UI matching SnapTray style
+ * - Theme-aware UI matching SnapTray style (light/dark)
  * - Draggable title bar
  * - Keyboard shortcuts: Escape, Ctrl+C, Ctrl+Enter
  */
@@ -70,7 +70,7 @@ private slots:
 
 private:
     void setupUi();
-    void applyDarkTheme();
+    void applyTheme();
     void updateCharacterCount();
     void showCopyFeedback();
 
