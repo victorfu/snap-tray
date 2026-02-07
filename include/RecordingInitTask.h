@@ -42,6 +42,10 @@ public:
         bool audioEnabled = false;
         int audioSource = 0;  // 0=Microphone, 1=SystemAudio, 2=Both
         QString audioDevice;
+        // Audio format for encoder configuration (must match captured PCM format).
+        int audioSampleRate = 48000;
+        int audioChannels = 2;
+        int audioBitsPerSample = 16;
         QString outputPath;
         bool useNativeEncoder = true;
         EncoderFactory::Format outputFormat = EncoderFactory::Format::MP4;

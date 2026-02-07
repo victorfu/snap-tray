@@ -208,13 +208,13 @@ bool RecordingInitTask::initializeEncoder()
     encoderConfig.outputPath = m_config.outputPath;
     encoderConfig.quality = m_config.quality;
 
-    // Configure audio settings for native encoder using default format
-    // (Audio engine is created on main thread, so we use standard defaults here)
+    // Configure audio settings for native encoder.
+    // Format must match captured PCM data to avoid speed/channel distortion.
     if (m_config.audioEnabled && m_config.outputFormat == EncoderFactory::Format::MP4) {
         encoderConfig.enableAudio = true;
-        encoderConfig.audioSampleRate = 48000;   // Standard sample rate
-        encoderConfig.audioChannels = 2;          // Stereo
-        encoderConfig.audioBitsPerSample = 16;    // 16-bit PCM
+        encoderConfig.audioSampleRate = m_config.audioSampleRate;
+        encoderConfig.audioChannels = m_config.audioChannels;
+        encoderConfig.audioBitsPerSample = m_config.audioBitsPerSample;
     }
 
     // Create encoder (pass nullptr parent - will be reparented on main thread)

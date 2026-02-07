@@ -48,6 +48,9 @@
 namespace {
 constexpr int kDefaultFrameRate = 30;
 constexpr int kMaxFrameRate = 120;
+constexpr int kDefaultAudioSampleRate = 48000;
+constexpr int kDefaultAudioChannels = 2;
+constexpr int kDefaultAudioBitsPerSample = 16;
 constexpr int kOverlayRenderDelay = 100;  // ms, delay before capture to allow overlay render
 constexpr int kDurationUpdate = 100;      // ms, recording duration UI update interval
 
@@ -62,6 +65,15 @@ QScreen* resolveTargetScreen(QScreen* preferred)
         targetScreen = QGuiApplication::primaryScreen();
     }
     return targetScreen;
+}
+
+IAudioCaptureEngine::AudioSource resolveAudioSource(int audioSourceSetting)
+{
+    switch (audioSourceSetting) {
+    case 1: return IAudioCaptureEngine::AudioSource::SystemAudio;
+    case 2: return IAudioCaptureEngine::AudioSource::Both;
+    default: return IAudioCaptureEngine::AudioSource::Microphone;
+    }
 }
 }
 
@@ -391,6 +403,45 @@ void RecordingManager::beginAsyncInitialization()
     m_audioSource = settings.value("recording/audioSource", 0).toInt();
     m_audioDevice = settings.value("recording/audioDevice").toString();
 
+    // Probe actual input format so encoder format matches captured PCM data.
+    int audioSampleRate = kDefaultAudioSampleRate;
+    int audioChannels = kDefaultAudioChannels;
+    int audioBitsPerSample = kDefaultAudioBitsPerSample;
+    const bool shouldConfigureAudio = m_audioEnabled && (recordingFormat == EncoderFactory::Format::MP4);
+    if (shouldConfigureAudio) {
+        std::unique_ptr<IAudioCaptureEngine> probeEngine(IAudioCaptureEngine::createBestEngine(nullptr));
+        if (!probeEngine) {
+            emit recordingWarning(
+                tr("Failed to probe audio format. Using default %1Hz, %2 channels, %3-bit.")
+                    .arg(kDefaultAudioSampleRate)
+                    .arg(kDefaultAudioChannels)
+                    .arg(kDefaultAudioBitsPerSample));
+        } else {
+            const auto source = resolveAudioSource(m_audioSource);
+            if (!probeEngine->setAudioSource(source)) {
+                emit recordingWarning(tr("Failed to apply configured audio source for format probing."));
+            }
+            if (!m_audioDevice.isEmpty() && !probeEngine->setDevice(m_audioDevice)) {
+                emit recordingWarning(tr("Failed to apply configured audio device for format probing."));
+            }
+
+            const auto probedFormat = probeEngine->audioFormat();
+            if (probedFormat.sampleRate > 0
+                && probedFormat.channels > 0
+                && probedFormat.bitsPerSample > 0) {
+                audioSampleRate = probedFormat.sampleRate;
+                audioChannels = probedFormat.channels;
+                audioBitsPerSample = probedFormat.bitsPerSample;
+            } else {
+                emit recordingWarning(
+                    tr("Audio format probe returned invalid values. Using default %1Hz, %2 channels, %3-bit.")
+                        .arg(kDefaultAudioSampleRate)
+                        .arg(kDefaultAudioChannels)
+                        .arg(kDefaultAudioBitsPerSample));
+            }
+        }
+    }
+
     // Use physical pixel size for Retina/HiDPI displays
     qreal scale = CoordinateHelper::getDevicePixelRatio(m_targetScreen);
     QSize physicalSize = CoordinateHelper::toEvenPhysicalSize(m_recordingRegion.size(), scale);
@@ -400,9 +451,12 @@ void RecordingManager::beginAsyncInitialization()
     config.region = m_recordingRegion;
     config.screen = m_targetScreen;
     config.frameRate = m_frameRate;
-    config.audioEnabled = m_audioEnabled && (recordingFormat == EncoderFactory::Format::MP4);
+    config.audioEnabled = shouldConfigureAudio;
     config.audioSource = m_audioSource;
     config.audioDevice = m_audioDevice;
+    config.audioSampleRate = audioSampleRate;
+    config.audioChannels = audioChannels;
+    config.audioBitsPerSample = audioBitsPerSample;
     config.outputPath = generateOutputPath();
     config.useNativeEncoder = true;
     config.outputFormat = recordingFormat;
@@ -591,12 +645,7 @@ void RecordingManager::onInitializationComplete(const QSharedPointer<RecordingIn
         m_audioEngine.reset(IAudioCaptureEngine::createBestEngine(nullptr));
         if (m_audioEngine) {
             // Set audio source
-            IAudioCaptureEngine::AudioSource source;
-            switch (m_audioSource) {
-                case 1: source = IAudioCaptureEngine::AudioSource::SystemAudio; break;
-                case 2: source = IAudioCaptureEngine::AudioSource::Both; break;
-                default: source = IAudioCaptureEngine::AudioSource::Microphone; break;
-            }
+            const auto source = resolveAudioSource(m_audioSource);
             m_audioEngine->setAudioSource(source);
 
             if (!m_audioDevice.isEmpty()) {
