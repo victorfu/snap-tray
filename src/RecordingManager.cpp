@@ -22,6 +22,7 @@
 
 
 #include <QGuiApplication>
+#include <QCursor>
 #include <QScreen>
 #include <QSettings>
 #include <QStandardPaths>
@@ -49,6 +50,19 @@ constexpr int kDefaultFrameRate = 30;
 constexpr int kMaxFrameRate = 120;
 constexpr int kOverlayRenderDelay = 100;  // ms, delay before capture to allow overlay render
 constexpr int kDurationUpdate = 100;      // ms, recording duration UI update interval
+
+QScreen* resolveTargetScreen(QScreen* preferred)
+{
+    if (preferred) {
+        return preferred;
+    }
+
+    QScreen* targetScreen = QGuiApplication::screenAt(QCursor::pos());
+    if (!targetScreen) {
+        targetScreen = QGuiApplication::primaryScreen();
+    }
+    return targetScreen;
+}
 }
 
 static void syncFile(const QString &path)
@@ -186,13 +200,19 @@ RecordingRegionSelector* RecordingManager::createRegionSelector()
 
 void RecordingManager::startRegionSelectionWithPreset(const QRect &region, QScreen *screen)
 {
+    QScreen* targetScreen = resolveTargetScreen(screen);
+    if (!targetScreen) {
+        emit recordingError(tr("No screen available for region selection."));
+        return;
+    }
+
     auto* selector = createRegionSelector();
     if (!selector) {
         return;
     }
 
-    selector->setGeometry(screen->geometry());
-    selector->initializeWithRegion(screen, region);
+    selector->setGeometry(targetScreen->geometry());
+    selector->initializeWithRegion(targetScreen, region);
     selector->show();
     raiseWindowAboveMenuBar(selector);
     selector->activateWindow();
@@ -212,13 +232,12 @@ void RecordingManager::startFullScreenRecording(QScreen* screen)
         return;
     }
 
-    // Use provided screen or determine from cursor position
-    QScreen *targetScreen = screen;
+    // Use provided screen or determine from cursor position.
+    QScreen* targetScreen = resolveTargetScreen(screen);
     if (!targetScreen) {
-        targetScreen = QGuiApplication::screenAt(QCursor::pos());
-    }
-    if (!targetScreen) {
-        targetScreen = QGuiApplication::primaryScreen();
+        emit recordingError(tr("No screen available for recording."));
+        setState(State::Idle);
+        return;
     }
 
     // Use the entire screen as the recording region
