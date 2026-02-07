@@ -128,7 +128,6 @@ protected:
     bool eventFilter(QObject *obj, QEvent *event) override;
 
 private:
-    void drawCrosshair(QPainter &painter);
     void drawMagnifier(QPainter &painter);
 
     // Corner radius helpers

@@ -1085,23 +1085,6 @@ void RegionSelector::paintEvent(QPaintEvent* event)
     }
 }
 
-void RegionSelector::drawCrosshair(QPainter& painter)
-{
-    // 深藍色實線
-    QPen pen(QColor(65, 105, 225), 1, Qt::SolidLine);
-    painter.setPen(pen);
-
-    // 水平線和垂直線延伸到邊緣
-    painter.drawLine(0, m_currentPoint.y(), width(), m_currentPoint.y());
-    painter.drawLine(m_currentPoint.x(), 0, m_currentPoint.x(), height());
-
-    // 中心小方框 (8x8 像素)
-    int boxSize = 8;
-    QRect centerBox(m_currentPoint.x() - boxSize / 2, m_currentPoint.y() - boxSize / 2, boxSize, boxSize);
-    painter.setBrush(Qt::NoBrush);
-    painter.drawRect(centerBox);
-}
-
 void RegionSelector::drawMagnifier(QPainter& painter)
 {
     // Delegate to MagnifierPanel component
