@@ -137,10 +137,16 @@ public:
 protected:
     void run() override
     {
+        if (isInterruptionRequested()) {
+            return;
+        }
+
         // Initialize WinRT for this thread
         // Handle case where apartment is already initialized in a different mode
+        bool apartmentInitialized = false;
         try {
             winrt::init_apartment(winrt::apartment_type::multi_threaded);
+            apartmentInitialized = true;
         } catch (const winrt::hresult_error& ex) {
             // RPC_E_CHANGED_MODE (0x80010106) means apartment already initialized
             // in different mode - this is OK, we can still use WinRT APIs
@@ -155,13 +161,21 @@ protected:
             if (!engine) {
                 m_error = QStringLiteral("Failed to create OCR engine. "
                     "Please install OCR language packs in Windows Settings.");
-                return;
+                goto cleanup;
+            }
+
+            if (isInterruptionRequested()) {
+                goto cleanup;
             }
 
             qDebug() << "OCRManager: Starting text recognition with languages:" << m_languages;
 
             SoftwareBitmap bitmap = qImageToSoftwareBitmap(m_image);
             OcrResult result = engine.RecognizeAsync(bitmap).get();
+
+            if (isInterruptionRequested()) {
+                goto cleanup;
+            }
 
             QStringList lines;
             for (const auto& line : result.Lines()) {
@@ -179,7 +193,10 @@ protected:
             m_error = QStringLiteral("Unknown error during OCR processing");
         }
 
-        winrt::uninit_apartment();
+cleanup:
+        if (apartmentInitialized) {
+            winrt::uninit_apartment();
+        }
     }
 
 private:
@@ -199,6 +216,39 @@ OCRManager::OCRManager(QObject *parent)
 
 OCRManager::~OCRManager()
 {
+    beginShutdown();
+}
+
+void OCRManager::beginShutdown()
+{
+    m_shuttingDown = true;
+
+    const auto workers = m_activeWorkers.values();
+    for (QThread* worker : workers) {
+        if (!worker) {
+            continue;
+        }
+        worker->requestInterruption();
+    }
+
+    for (QThread* worker : workers) {
+        if (!worker) {
+            continue;
+        }
+
+        if (worker->isRunning()) {
+            if (!worker->wait(kWorkerShutdownTimeoutMs)) {
+                qWarning() << "OCRManager: Worker thread did not stop within timeout";
+                QObject::disconnect(worker, nullptr, this, nullptr);
+                continue;
+            }
+        }
+
+        m_activeWorkers.remove(worker);
+        delete worker;
+    }
+
+    m_activeWorkers.clear();
 }
 
 bool OCRManager::isAvailable()
@@ -226,6 +276,13 @@ bool OCRManager::isAvailable()
 
 void OCRManager::recognizeText(const QPixmap &pixmap, const OCRCallback &callback)
 {
+    if (m_shuttingDown) {
+        if (callback) {
+            callback(false, QString(), QStringLiteral("OCR manager is shutting down"));
+        }
+        return;
+    }
+
     if (pixmap.isNull()) {
         QString errorMsg = QStringLiteral("Invalid pixmap provided for OCR");
         if (callback) {
@@ -236,19 +293,24 @@ void OCRManager::recognizeText(const QPixmap &pixmap, const OCRCallback &callbac
     }
 
     QImage image = pixmap.toImage();
-    OcrWorker *worker = new OcrWorker(image, m_languages, this);
+    OcrWorker *worker = new OcrWorker(image, m_languages, nullptr);
+    m_activeWorkers.insert(worker);
+
+    connect(worker, &QThread::finished, worker, &QObject::deleteLater);
 
     connect(worker, &QThread::finished, this, [this, worker, callback]() {
+        m_activeWorkers.remove(worker);
+
         bool success = worker->success();
         QString text = worker->text();
         QString error = worker->error();
 
-        if (callback) {
-            callback(success, text, error);
+        if (!m_shuttingDown) {
+            if (callback) {
+                callback(success, text, error);
+            }
+            emit recognitionComplete(success, text, error);
         }
-        emit recognitionComplete(success, text, error);
-
-        worker->deleteLater();
     });
 
     worker->start();

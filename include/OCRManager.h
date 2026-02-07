@@ -4,9 +4,12 @@
 #include <QList>
 #include <QObject>
 #include <QPixmap>
+#include <QSet>
 #include <QString>
 #include <QStringList>
 #include <functional>
+
+class QThread;
 
 // Callback type for async OCR results
 using OCRCallback = std::function<void(bool success, const QString &text, const QString &error)>;
@@ -63,7 +66,12 @@ signals:
     void recognitionComplete(bool success, const QString &text, const QString &error);
 
 private:
+    void beginShutdown();
+
     QStringList m_languages{"en-US"};
+    QSet<QThread*> m_activeWorkers;
+    bool m_shuttingDown = false;
+    static constexpr int kWorkerShutdownTimeoutMs = 1500;
 };
 
 #endif // OCRMANAGER_H
