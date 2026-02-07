@@ -17,6 +17,8 @@ constexpr int kActivationConnectTimeoutMs = 200;
 constexpr int kActivationSendTimeoutMs = 1000;
 constexpr int kActivationRetryDelayMs = 100;
 constexpr int kActivationMaxAttempts = 5;
+constexpr int kServerListenRetryDelayMs = 50;
+constexpr int kServerListenMaxAttempts = 3;
 }
 
 SingleInstanceGuard::SingleInstanceGuard(const QString &appId, QObject *parent)
@@ -52,12 +54,19 @@ bool SingleInstanceGuard::acquireInstanceLock()
     // This lock is expected to outlive 30 seconds (default stale timeout).
     m_instanceLock->setStaleLockTime(0);
 
-    if (!m_instanceLock->tryLock(0)) {
-        m_instanceLock.reset();
-        return false;
+    if (m_instanceLock->tryLock(0)) {
+        return true;
     }
 
-    return true;
+    // A stale lock file can survive a crash/forced kill. Recover once before failing.
+    if (m_instanceLock->error() == QLockFile::LockFailedError
+        && m_instanceLock->removeStaleLockFile()
+        && m_instanceLock->tryLock(0)) {
+        return true;
+    }
+
+    m_instanceLock.reset();
+    return false;
 }
 
 void SingleInstanceGuard::releaseInstanceLock()
@@ -78,21 +87,27 @@ bool SingleInstanceGuard::startServerWithSafeRecovery()
         return false;
     }
 
-    if (m_server->listen(m_serverName)) {
-        return true;
+    for (int attempt = 0; attempt < kServerListenMaxAttempts; ++attempt) {
+        if (m_server->listen(m_serverName)) {
+            return true;
+        }
+
+        // If another server is connectable, treat this process as secondary.
+        QLocalSocket probeSocket;
+        probeSocket.connectToServer(m_serverName);
+        if (probeSocket.waitForConnected(kConnectionCheckTimeoutMs)) {
+            probeSocket.disconnectFromServer();
+            return false;
+        }
+
+        // No active listener found; attempt stale endpoint cleanup and retry.
+        QLocalServer::removeServer(m_serverName);
+        if (attempt + 1 < kServerListenMaxAttempts) {
+            QThread::msleep(kServerListenRetryDelayMs);
+        }
     }
 
-    // If another server is connectable, treat this process as secondary.
-    QLocalSocket probeSocket;
-    probeSocket.connectToServer(m_serverName);
-    if (probeSocket.waitForConnected(kConnectionCheckTimeoutMs)) {
-        probeSocket.disconnectFromServer();
-        return false;
-    }
-
-    // No active listener found; attempt stale endpoint cleanup once.
-    QLocalServer::removeServer(m_serverName);
-    return m_server->listen(m_serverName);
+    return false;
 }
 
 bool SingleInstanceGuard::tryLock()
