@@ -68,57 +68,94 @@ void SingleInstanceGuard::onNewConnection()
         return;
     }
 
-    // Use shared flag to prevent double-processing
-    auto processed = std::make_shared<bool>(false);
+    struct ClientMessageState {
+        QByteArray buffer;
+        bool processed = false;
+    };
 
-    // Lambda to process received data (only once)
-    auto processData = [this, client, processed]() {
-        // Prevent double-processing
-        if (*processed) {
-            return;
+    enum class ParseResult {
+        Incomplete,
+        Processed,
+        Invalid
+    };
+
+    static constexpr quint32 kMaxIpcMessageSize = 1024 * 1024; // 1 MB safety limit
+    const QByteArray kActivateMessage = "activate";
+    auto state = std::make_shared<ClientMessageState>();
+
+    auto parseBuffer = [this, state, kActivateMessage]() -> ParseResult {
+        if (state->processed) {
+            return ParseResult::Processed;
         }
-        *processed = true;
 
-        QByteArray data = client->readAll();
-
-        // Always schedule client for deletion (fixes cleanup on early return)
-        client->deleteLater();
-
-        if (data.isEmpty()) {
-            return;
+        if (state->buffer.isEmpty()) {
+            return ParseResult::Incomplete;
         }
 
-        // Check if it's a simple "activate" message (backward compat)
-        if (data == "activate") {
+        // Backward-compatible plain-text activation message.
+        if (state->buffer == kActivateMessage) {
+            state->processed = true;
             emit activateRequested();
+            return ParseResult::Processed;
         }
-        // Check for length-prefixed JSON message
-        else if (data.size() >= static_cast<int>(sizeof(quint32))) {
-            QDataStream stream(data);
-            quint32 messageSize;
-            stream >> messageSize;
 
-            // Read the JSON message
-            QByteArray jsonData = data.mid(sizeof(quint32), messageSize);
+        // Keep waiting while "activate" is still arriving in chunks.
+        if (kActivateMessage.startsWith(state->buffer)) {
+            return ParseResult::Incomplete;
+        }
 
-            // If we have the complete message
-            if (jsonData.size() >= static_cast<int>(messageSize)) {
-                emit commandReceived(jsonData);
-            }
+        if (state->buffer.size() < static_cast<int>(sizeof(quint32))) {
+            return ParseResult::Incomplete;
+        }
+
+        QDataStream stream(state->buffer);
+        quint32 messageSize = 0;
+        stream >> messageSize;
+
+        if (messageSize == 0 || messageSize > kMaxIpcMessageSize) {
+            return ParseResult::Invalid;
+        }
+
+        const qint64 totalSize = static_cast<qint64>(sizeof(quint32)) + messageSize;
+        if (state->buffer.size() < totalSize) {
+            return ParseResult::Incomplete;
+        }
+
+        QByteArray jsonData = state->buffer.mid(sizeof(quint32), messageSize);
+        state->processed = true;
+        emit commandReceived(jsonData);
+        return ParseResult::Processed;
+    };
+
+    auto cleanupClient = [client]() {
+        client->deleteLater();
+    };
+
+    auto processPendingData = [client, state, parseBuffer, cleanupClient]() {
+        if (state->processed) {
+            cleanupClient();
+            return;
+        }
+
+        state->buffer.append(client->readAll());
+
+        ParseResult result = parseBuffer();
+        if (result == ParseResult::Processed || result == ParseResult::Invalid) {
+            cleanupClient();
         }
     };
 
-    connect(client, &QLocalSocket::readyRead, this, processData);
-    // Handle disconnection - cleanup if processData hasn't run yet
-    connect(client, &QLocalSocket::disconnected, this, [processed, client]() {
-        if (!*processed) {
-            *processed = true;
-            client->deleteLater();
+    connect(client, &QLocalSocket::readyRead, this, processPendingData);
+    connect(client, &QLocalSocket::disconnected, this, [client, state, parseBuffer, cleanupClient]() {
+        if (!state->processed) {
+            state->buffer.append(client->readAll());
+            parseBuffer();
         }
+        cleanupClient();
     });
 
-    // Check if data is already available (race condition fix)
+    // Process immediately if bytes arrived before signal connection completed.
     if (client->bytesAvailable() > 0) {
-        processData();
+        processPendingData();
     }
 }
