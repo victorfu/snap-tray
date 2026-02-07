@@ -144,6 +144,15 @@ add_test(NAME Utils_CoordinateHelper COMMAND Utils_CoordinateHelper)
 set_tests_properties(Utils_CoordinateHelper PROPERTIES TIMEOUT 60 LABELS "unit")
 
 # ============================================================================
+# CLI Tests (link snaptray_platform for PlatformFeatures symbols)
+# ============================================================================
+
+add_executable(CLI_NumericArgumentValidation CLI/tst_NumericArgumentValidation.cpp)
+target_link_libraries(CLI_NumericArgumentValidation PRIVATE snaptray_platform Qt6::Test)
+add_test(NAME CLI_NumericArgumentValidation COMMAND CLI_NumericArgumentValidation)
+set_tests_properties(CLI_NumericArgumentValidation PROPERTIES TIMEOUT 60 LABELS "unit")
+
+# ============================================================================
 # IPC Tests
 # ============================================================================
 

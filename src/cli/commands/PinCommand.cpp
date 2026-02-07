@@ -43,6 +43,28 @@ CLIResult PinCommand::execute(const QCommandLineParser& parser)
         }
     }
 
+    if (parser.isSet("pos-x")) {
+        const QString xValue = parser.value("pos-x");
+        bool ok = false;
+        xValue.toInt(&ok);
+        if (!ok) {
+            return CLIResult::error(
+                CLIResult::Code::InvalidArguments,
+                QString("Invalid x position: %1").arg(xValue));
+        }
+    }
+
+    if (parser.isSet("pos-y")) {
+        const QString yValue = parser.value("pos-y");
+        bool ok = false;
+        yValue.toInt(&ok);
+        if (!ok) {
+            return CLIResult::error(
+                CLIResult::Code::InvalidArguments,
+                QString("Invalid y position: %1").arg(yValue));
+        }
+    }
+
     // This command is executed via IPC
     return CLIResult::success("Pin window created");
 }
@@ -61,10 +83,18 @@ QJsonObject PinCommand::buildIPCMessage(const QCommandLineParser& parser) const
         options["clipboard"] = true;
     }
     if (parser.isSet("pos-x")) {
-        options["x"] = parser.value("pos-x").toInt();
+        bool ok = false;
+        int xPos = parser.value("pos-x").toInt(&ok);
+        if (ok) {
+            options["x"] = xPos;
+        }
     }
     if (parser.isSet("pos-y")) {
-        options["y"] = parser.value("pos-y").toInt();
+        bool ok = false;
+        int yPos = parser.value("pos-y").toInt(&ok);
+        if (ok) {
+            options["y"] = yPos;
+        }
     }
     if (parser.isSet("center")) {
         options["center"] = true;

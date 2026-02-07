@@ -39,6 +39,9 @@
 #include <QFontMetrics>
 #include <QtConcurrent>
 
+#include <cmath>
+#include <limits>
+
 namespace {
 // Text pixmap rendering constants (for paste-as-text feature)
 constexpr int kMaxTextPixmapWidth = 800;
@@ -49,6 +52,40 @@ const QColor kTextAnnotationForeground{40, 40, 40}; // Dark gray text
 
 // Toast timeout
 constexpr int kUIToastTimeout = 2000;
+
+bool tryReadJsonInt(const QJsonObject& options, const QString& key, int* value)
+{
+    if (!value || !options.contains(key)) {
+        return false;
+    }
+
+    const QJsonValue optionValue = options.value(key);
+    if (optionValue.isDouble()) {
+        const double number = optionValue.toDouble();
+        if (!std::isfinite(number)
+            || number < static_cast<double>(std::numeric_limits<int>::min())
+            || number > static_cast<double>(std::numeric_limits<int>::max())
+            || std::floor(number) != number) {
+            return false;
+        }
+
+        *value = static_cast<int>(number);
+        return true;
+    }
+
+    if (optionValue.isString()) {
+        bool ok = false;
+        const int parsedValue = optionValue.toString().toInt(&ok);
+        if (!ok) {
+            return false;
+        }
+
+        *value = parsedValue;
+        return true;
+    }
+
+    return false;
+}
 }
 
 MainApplication::MainApplication(QObject* parent)
@@ -124,14 +161,20 @@ void MainApplication::handleCLICommand(const QByteArray& commandData)
             if (!m_recordingManager->isActive()) {
                 // Check if a specific screen is requested
                 if (msg.options.contains("screen")) {
-                    int screenNum = msg.options["screen"].toInt();
-                    auto screens = QGuiApplication::screens();
-                    if (screenNum >= 0 && screenNum < screens.size()) {
-                        QScreen* screen = screens.at(screenNum);
-                        m_recordingManager->startFullScreenRecording(screen);
+                    int screenNum = -1;
+                    if (tryReadJsonInt(msg.options, "screen", &screenNum)) {
+                        auto screens = QGuiApplication::screens();
+                        if (screenNum >= 0 && screenNum < screens.size()) {
+                            QScreen* screen = screens.at(screenNum);
+                            m_recordingManager->startFullScreenRecording(screen);
+                        }
+                        else {
+                            qWarning() << "Invalid screen number:" << screenNum;
+                            onFullScreenRecording();
+                        }
                     }
                     else {
-                        qWarning() << "Invalid screen number:" << screenNum;
+                        qWarning() << "Invalid screen option value:" << msg.options.value("screen");
                         onFullScreenRecording();
                     }
                 }

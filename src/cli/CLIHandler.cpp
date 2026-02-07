@@ -86,6 +86,13 @@ CLIResult CLIHandler::process(const QStringList& arguments)
 
     // GUI commands execute via IPC
     if (command->requiresGUI(parser)) {
+        // Reuse execute() as a pre-flight validation step for GUI commands.
+        // It should only validate arguments and must not perform side effects.
+        CLIResult validationResult = command->execute(parser);
+        if (!validationResult.isSuccess()) {
+            return validationResult;
+        }
+
         IPCProtocol ipc;
         if (!ipc.isMainInstanceRunning()) {
             return CLIResult::error(

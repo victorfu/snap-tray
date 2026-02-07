@@ -13,8 +13,19 @@ void RecordCommand::setupOptions(QCommandLineParser& parser)
     parser.addOption({{"n", "screen"}, "Screen number", "num"});
 }
 
-CLIResult RecordCommand::execute(const QCommandLineParser& /*parser*/)
+CLIResult RecordCommand::execute(const QCommandLineParser& parser)
 {
+    if (parser.isSet("screen")) {
+        const QString screenValue = parser.value("screen");
+        bool ok = false;
+        int screenNum = screenValue.toInt(&ok);
+        if (!ok || screenNum < 0) {
+            return CLIResult::error(
+                CLIResult::Code::InvalidArguments,
+                QString("Invalid screen number: %1").arg(screenValue));
+        }
+    }
+
     // This command is executed via IPC, not locally
     return CLIResult::success("Recording started");
 }
@@ -29,7 +40,11 @@ QJsonObject RecordCommand::buildIPCMessage(const QCommandLineParser& parser) con
     }
 
     if (parser.isSet("screen")) {
-        options["screen"] = parser.value("screen").toInt();
+        bool ok = false;
+        int screenNum = parser.value("screen").toInt(&ok);
+        if (ok) {
+            options["screen"] = screenNum;
+        }
     }
 
     return options;

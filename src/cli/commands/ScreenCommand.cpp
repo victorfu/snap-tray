@@ -65,28 +65,42 @@ CLIResult ScreenCommand::execute(const QCommandLineParser& parser)
     // Screen number is required for capture
     // Support both: "screen 0" (positional) and "screen -n 0" (option)
     int screenNum = -1;
+    bool hasScreenNumber = false;
     if (parser.isSet("screen")) {
-        screenNum = parser.value("screen").toInt();
+        hasScreenNumber = true;
+        const QString screenValue = parser.value("screen");
+        bool ok = false;
+        screenNum = screenValue.toInt(&ok);
+        if (!ok) {
+            return CLIResult::error(
+                CLIResult::Code::InvalidArguments,
+                QString("Invalid screen number: %1").arg(screenValue));
+        }
     }
     else {
         QStringList positionalArgs = parser.positionalArguments();
         // After command name is removed, positionalArgs[0] would be the screen number
         if (!positionalArgs.isEmpty()) {
-            bool ok;
-            screenNum = positionalArgs.at(0).toInt(&ok);
+            hasScreenNumber = true;
+            const QString screenValue = positionalArgs.at(0);
+            bool ok = false;
+            screenNum = screenValue.toInt(&ok);
             if (!ok) {
-                screenNum = -1;
+                return CLIResult::error(
+                    CLIResult::Code::InvalidArguments,
+                    QString("Invalid screen number: %1").arg(screenValue));
             }
         }
     }
 
+    if (!hasScreenNumber) {
+        return CLIResult::error(
+            CLIResult::Code::InvalidArguments,
+            "Screen number required. Use --list to see available screens.\n"
+            "Usage: snaptray screen <number> [options] or snaptray screen -n <number> [options]");
+    }
+
     if (screenNum < 0 || screenNum >= screens.size()) {
-        if (screenNum < 0) {
-            return CLIResult::error(
-                CLIResult::Code::InvalidArguments,
-                "Screen number required. Use --list to see available screens.\n"
-                "Usage: snaptray screen <number> [options] or snaptray screen -n <number> [options]");
-        }
         return CLIResult::error(
             CLIResult::Code::InvalidArguments,
             QString("Invalid screen number: %1 (available: 0-%2)")
@@ -95,7 +109,14 @@ CLIResult ScreenCommand::execute(const QCommandLineParser& parser)
     }
 
     // Parse other arguments
-    int delay = parser.value("delay").toInt();
+    const QString delayValue = parser.value("delay");
+    bool delayOk = false;
+    int delay = delayValue.toInt(&delayOk);
+    if (!delayOk) {
+        return CLIResult::error(
+            CLIResult::Code::InvalidArguments,
+            QString("Invalid delay value: %1").arg(delayValue));
+    }
     QString savePath = parser.value("path");
     QString outputFile = parser.value("output");
     bool toClipboard = parser.isSet("clipboard");

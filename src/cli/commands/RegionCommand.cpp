@@ -73,8 +73,23 @@ CLIResult RegionCommand::execute(const QCommandLineParser& parser)
     QRect region(x, y, width, height);
 
     // Parse other arguments
-    int screenNum = parser.value("screen").toInt();
-    int delay = parser.value("delay").toInt();
+    const QString screenValue = parser.value("screen");
+    bool screenOk = false;
+    int screenNum = screenValue.toInt(&screenOk);
+    if (!screenOk) {
+        return CLIResult::error(
+            CLIResult::Code::InvalidArguments,
+            QString("Invalid screen number: %1").arg(screenValue));
+    }
+
+    const QString delayValue = parser.value("delay");
+    bool delayOk = false;
+    int delay = delayValue.toInt(&delayOk);
+    if (!delayOk) {
+        return CLIResult::error(
+            CLIResult::Code::InvalidArguments,
+            QString("Invalid delay value: %1").arg(delayValue));
+    }
     QString savePath = parser.value("path");
     QString outputFile = parser.value("output");
     bool toClipboard = parser.isSet("clipboard");
