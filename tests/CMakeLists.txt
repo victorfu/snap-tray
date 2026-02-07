@@ -142,6 +142,23 @@ target_link_libraries(IPC_SingleInstanceGuard PRIVATE Qt6::Core Qt6::Network Qt6
 add_test(NAME IPC_SingleInstanceGuard COMMAND IPC_SingleInstanceGuard)
 set_tests_properties(IPC_SingleInstanceGuard PROPERTIES TIMEOUT 60 LABELS "unit;integration")
 
+add_executable(IPC_SingleInstanceGuardProbe
+    IPC/SingleInstanceGuardProbe.cpp
+    ${CMAKE_SOURCE_DIR}/src/SingleInstanceGuard.cpp
+    ${CMAKE_SOURCE_DIR}/include/SingleInstanceGuard.h
+)
+target_include_directories(IPC_SingleInstanceGuardProbe PRIVATE ${CMAKE_SOURCE_DIR}/include)
+target_link_libraries(IPC_SingleInstanceGuardProbe PRIVATE Qt6::Core Qt6::Network)
+
+add_executable(IPC_SingleInstanceGuardRace
+    IPC/tst_SingleInstanceGuardRace.cpp
+)
+add_dependencies(IPC_SingleInstanceGuardRace IPC_SingleInstanceGuardProbe)
+target_include_directories(IPC_SingleInstanceGuardRace PRIVATE ${CMAKE_SOURCE_DIR}/include)
+target_link_libraries(IPC_SingleInstanceGuardRace PRIVATE Qt6::Core Qt6::Network Qt6::Test)
+add_test(NAME IPC_SingleInstanceGuardRace COMMAND IPC_SingleInstanceGuardRace)
+set_tests_properties(IPC_SingleInstanceGuardRace PROPERTIES TIMEOUT 60 LABELS "integration")
+
 # ============================================================================
 # Settings Tests (link snaptray_ui for full settings dependencies)
 # ============================================================================

@@ -2,10 +2,22 @@
 
 #include <QCryptographicHash>
 #include <QDataStream>
+#include <QDir>
+#include <QLockFile>
 #include <QLocalServer>
 #include <QLocalSocket>
+#include <QStandardPaths>
+#include <QThread>
 
 #include <memory>
+
+namespace {
+constexpr int kConnectionCheckTimeoutMs = 200;
+constexpr int kActivationConnectTimeoutMs = 200;
+constexpr int kActivationSendTimeoutMs = 1000;
+constexpr int kActivationRetryDelayMs = 100;
+constexpr int kActivationMaxAttempts = 5;
+}
 
 SingleInstanceGuard::SingleInstanceGuard(const QString &appId, QObject *parent)
     : QObject(parent)
@@ -14,34 +26,91 @@ SingleInstanceGuard::SingleInstanceGuard(const QString &appId, QObject *parent)
     m_serverName = QString("snaptray-%1")
         .arg(QString(QCryptographicHash::hash(appId.toUtf8(),
              QCryptographicHash::Md5).toHex()));
+
+    const QString tempDirPath = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
+    const QString baseDir = tempDirPath.isEmpty() ? QDir::tempPath() : tempDirPath;
+    m_lockFilePath = QDir(baseDir).filePath(m_serverName + ".lock");
 }
 
 SingleInstanceGuard::~SingleInstanceGuard()
 {
-    if (m_server) {
+    if (m_server && m_server->isListening()) {
         m_server->close();
         QLocalServer::removeServer(m_serverName);
     }
+
+    releaseInstanceLock();
+}
+
+bool SingleInstanceGuard::acquireInstanceLock()
+{
+    if (m_instanceLock && m_instanceLock->isLocked()) {
+        return true;
+    }
+
+    m_instanceLock = std::make_unique<QLockFile>(m_lockFilePath);
+    // This lock is expected to outlive 30 seconds (default stale timeout).
+    m_instanceLock->setStaleLockTime(0);
+
+    if (!m_instanceLock->tryLock(0)) {
+        m_instanceLock.reset();
+        return false;
+    }
+
+    return true;
+}
+
+void SingleInstanceGuard::releaseInstanceLock()
+{
+    if (!m_instanceLock) {
+        return;
+    }
+
+    if (m_instanceLock->isLocked()) {
+        m_instanceLock->unlock();
+    }
+    m_instanceLock.reset();
+}
+
+bool SingleInstanceGuard::startServerWithSafeRecovery()
+{
+    if (!m_server) {
+        return false;
+    }
+
+    if (m_server->listen(m_serverName)) {
+        return true;
+    }
+
+    // If another server is connectable, treat this process as secondary.
+    QLocalSocket probeSocket;
+    probeSocket.connectToServer(m_serverName);
+    if (probeSocket.waitForConnected(kConnectionCheckTimeoutMs)) {
+        probeSocket.disconnectFromServer();
+        return false;
+    }
+
+    // No active listener found; attempt stale endpoint cleanup once.
+    QLocalServer::removeServer(m_serverName);
+    return m_server->listen(m_serverName);
 }
 
 bool SingleInstanceGuard::tryLock()
 {
-    // Try to connect to existing server (check if another instance is running)
-    QLocalSocket socket;
-    socket.connectToServer(m_serverName);
-    if (socket.waitForConnected(500)) {
-        // Another instance is already running
-        socket.disconnectFromServer();
+    if (m_server && m_server->isListening()) {
+        return true;
+    }
+
+    if (!acquireInstanceLock()) {
         return false;
     }
 
-    // Create server
     m_server = new QLocalServer(this);
 
-    // Remove any stale socket file (Linux/macOS)
-    QLocalServer::removeServer(m_serverName);
-
-    if (!m_server->listen(m_serverName)) {
+    if (!startServerWithSafeRecovery()) {
+        delete m_server;
+        m_server = nullptr;
+        releaseInstanceLock();
         return false;
     }
 
@@ -52,12 +121,20 @@ bool SingleInstanceGuard::tryLock()
 
 void SingleInstanceGuard::sendActivateMessage()
 {
-    QLocalSocket socket;
-    socket.connectToServer(m_serverName);
-    if (socket.waitForConnected(1000)) {
-        socket.write("activate");
-        socket.waitForBytesWritten(1000);
-        socket.disconnectFromServer();
+    for (int attempt = 0; attempt < kActivationMaxAttempts; ++attempt) {
+        QLocalSocket socket;
+        socket.connectToServer(m_serverName);
+        if (socket.waitForConnected(kActivationConnectTimeoutMs)) {
+            socket.write("activate");
+            if (socket.waitForBytesWritten(kActivationSendTimeoutMs)) {
+                socket.disconnectFromServer();
+                return;
+            }
+        }
+
+        if (attempt + 1 < kActivationMaxAttempts) {
+            QThread::msleep(kActivationRetryDelayMs);
+        }
     }
 }
 

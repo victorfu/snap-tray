@@ -3,8 +3,10 @@
 
 #include <QByteArray>
 #include <QObject>
+#include <memory>
 
 class QLocalServer;
+class QLockFile;
 
 class SingleInstanceGuard : public QObject
 {
@@ -24,8 +26,14 @@ private slots:
     void onNewConnection();
 
 private:
+    bool acquireInstanceLock();
+    void releaseInstanceLock();
+    bool startServerWithSafeRecovery();
+
     QString m_serverName;
+    QString m_lockFilePath;
     QLocalServer *m_server = nullptr;
+    std::unique_ptr<QLockFile> m_instanceLock;
 };
 
 #endif // SINGLEINSTANCEGUARD_H
