@@ -2,6 +2,7 @@
 
 #include <QCryptographicHash>
 #include <QDataStream>
+#include <QElapsedTimer>
 #include <QLocalSocket>
 #include <QSignalSpy>
 
@@ -20,7 +21,8 @@ private slots:
 private:
     static QString serverNameForAppId(const QString& appId);
     static QByteArray buildLengthPrefixedPacket(const QByteArray& payload);
-    static bool sendChunks(const QString& serverName, const QList<QByteArray>& chunks);
+    static bool sendChunks(
+        const QString& serverName, const QList<QByteArray>& chunks, QString* errorDetails = nullptr);
     static QString testAppId(const QString& testSuffix);
 };
 
@@ -39,19 +41,77 @@ QByteArray tst_SingleInstanceGuard::buildLengthPrefixedPacket(const QByteArray& 
     return packet;
 }
 
-bool tst_SingleInstanceGuard::sendChunks(const QString& serverName, const QList<QByteArray>& chunks)
+bool tst_SingleInstanceGuard::sendChunks(
+    const QString& serverName, const QList<QByteArray>& chunks, QString* errorDetails)
 {
+    auto fail = [&](const QString& message) {
+        if (errorDetails) {
+            *errorDetails = message;
+        }
+        return false;
+    };
+
     QLocalSocket socket;
     socket.connectToServer(serverName);
-    if (!socket.waitForConnected(1000)) {
-        return false;
+
+    constexpr int kConnectTimeoutMs = 1000;
+    constexpr int kWriteTimeoutMs = 1000;
+
+    QElapsedTimer connectTimer;
+    connectTimer.start();
+    while (socket.state() != QLocalSocket::ConnectedState
+           && connectTimer.elapsed() < kConnectTimeoutMs) {
+        if (socket.state() == QLocalSocket::UnconnectedState
+            && socket.error() != QLocalSocket::UnknownSocketError) {
+            break;
+        }
+        // Keep the local server's event loop moving while waiting for connection.
+        QTest::qWait(10);
+    }
+
+    if (socket.state() != QLocalSocket::ConnectedState) {
+        return fail(QString("Connect failed: server=%1 state=%2 error=%3")
+                        .arg(serverName)
+                        .arg(static_cast<int>(socket.state()))
+                        .arg(socket.errorString()));
     }
 
     for (int i = 0; i < chunks.size(); ++i) {
-        socket.write(chunks[i]);
-        if (!socket.waitForBytesWritten(1000)) {
-            return false;
+        const qint64 queuedBytes = socket.write(chunks[i]);
+        if (queuedBytes != chunks[i].size()) {
+            return fail(QString("Write queue failed on chunk %1/%2: queued=%3 expected=%4 state=%5 error=%6")
+                            .arg(i + 1)
+                            .arg(chunks.size())
+                            .arg(queuedBytes)
+                            .arg(chunks[i].size())
+                            .arg(static_cast<int>(socket.state()))
+                            .arg(socket.errorString()));
         }
+
+        QElapsedTimer writeTimer;
+        writeTimer.start();
+        while (socket.bytesToWrite() > 0 && writeTimer.elapsed() < kWriteTimeoutMs) {
+            socket.flush();
+            QTest::qWait(5);
+        }
+
+        if (socket.bytesToWrite() > 0) {
+            return fail(QString("Write timeout on chunk %1/%2: pending=%3 state=%4 error=%5")
+                            .arg(i + 1)
+                            .arg(chunks.size())
+                            .arg(socket.bytesToWrite())
+                            .arg(static_cast<int>(socket.state()))
+                            .arg(socket.errorString()));
+        }
+
+        if (socket.state() != QLocalSocket::ConnectedState && i + 1 < chunks.size()) {
+            return fail(QString("Socket disconnected early on chunk %1/%2: state=%3 error=%4")
+                            .arg(i + 1)
+                            .arg(chunks.size())
+                            .arg(static_cast<int>(socket.state()))
+                            .arg(socket.errorString()));
+        }
+
         if (i + 1 < chunks.size()) {
             QTest::qWait(20);
         }
@@ -85,7 +145,8 @@ void tst_SingleInstanceGuard::testLengthPrefixedCommand_HeaderSplit()
     const QByteArray packet = buildLengthPrefixedPacket(payload);
 
     const QList<QByteArray> chunks = {packet.left(2), packet.mid(2)};
-    QVERIFY(sendChunks(serverName, chunks));
+    QString sendError;
+    QVERIFY2(sendChunks(serverName, chunks, &sendError), qPrintable(sendError));
 
     QTRY_COMPARE(commandSpy.count(), 1);
     QCOMPARE(activateSpy.count(), 0);
@@ -109,7 +170,8 @@ void tst_SingleInstanceGuard::testLengthPrefixedCommand_BodySplit()
 
     const int splitPos = static_cast<int>(sizeof(quint32)) + 3;
     const QList<QByteArray> chunks = {packet.left(splitPos), packet.mid(splitPos)};
-    QVERIFY(sendChunks(serverName, chunks));
+    QString sendError;
+    QVERIFY2(sendChunks(serverName, chunks, &sendError), qPrintable(sendError));
 
     QTRY_COMPARE(commandSpy.count(), 1);
     QCOMPARE(activateSpy.count(), 0);
@@ -129,7 +191,8 @@ void tst_SingleInstanceGuard::testActivateMessage_SplitAcrossWrites()
     QVERIFY(commandSpy.isValid());
 
     const QList<QByteArray> chunks = {"act", "ivate"};
-    QVERIFY(sendChunks(serverName, chunks));
+    QString sendError;
+    QVERIFY2(sendChunks(serverName, chunks, &sendError), qPrintable(sendError));
 
     QTRY_COMPARE(activateSpy.count(), 1);
     QCOMPARE(commandSpy.count(), 0);
@@ -150,7 +213,8 @@ void tst_SingleInstanceGuard::testIncompletePacket_DisconnectDoesNotEmit()
     const QByteArray payload = R"({"command":"pin"})";
     const QByteArray packet = buildLengthPrefixedPacket(payload);
     const QList<QByteArray> chunks = {packet.left(static_cast<int>(sizeof(quint32)) + 2)};
-    QVERIFY(sendChunks(serverName, chunks));
+    QString sendError;
+    QVERIFY2(sendChunks(serverName, chunks, &sendError), qPrintable(sendError));
 
     QTest::qWait(100);
     QCOMPARE(activateSpy.count(), 0);
