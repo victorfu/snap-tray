@@ -7,6 +7,7 @@
 #include <QRect>
 #include <QRectF>
 #include <QColor>
+#include <functional>
 #include "TextFormattingState.h"
 #include "TransformationGizmo.h"
 
@@ -42,11 +43,13 @@ public:
     void setTextEditor(InlineTextEditor* editor);
     void setColorAndWidthWidget(ToolOptionsPanel* widget);
     void setParentWidget(QWidget* widget);
+    void setCoordinateMappers(const std::function<QPointF(const QPointF&)>& displayToAnnotation,
+                              const std::function<QPointF(const QPointF&)>& annotationToDisplay);
 
     // Editing operations
     void startEditing(const QPoint& pos, const QRect& selectionRect, const QColor& color);
     void startReEditing(int annotationIndex, const QColor& color);
-    void finishEditing(const QString& text, const QPoint& position, const QColor& color);
+    bool finishEditing(const QString& text, const QPoint& position, const QColor& color);
     void cancelEditing();
     bool isEditing() const;
     int editingIndex() const { return m_editingIndex; }
@@ -114,6 +117,10 @@ private:
     // Double-click detection
     QPoint m_lastClickPos;
     qint64 m_lastClickTime = 0;
+
+    // Coordinate mapping between editor display coordinates and annotation coordinates.
+    std::function<QPointF(const QPointF&)> m_displayToAnnotationMapper;
+    std::function<QPointF(const QPointF&)> m_annotationToDisplayMapper;
 };
 
 #endif // TEXTANNOTATIONEDITOR_H

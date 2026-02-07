@@ -15,10 +15,23 @@ namespace {
     const char* SETTINGS_KEY_TEXT_UNDERLINE = "annotation/text_underline";
     const char* SETTINGS_KEY_TEXT_SIZE = "annotation/text_size";
     const char* SETTINGS_KEY_TEXT_FAMILY = "annotation/text_family";
+
+    QPoint toRoundedPoint(const QPointF& point)
+    {
+        return QPoint(qRound(point.x()), qRound(point.y()));
+    }
+
+    QPointF baselineLocalOffset(const QFont& font)
+    {
+        QFontMetrics fm(font);
+        return QPointF(TextBoxAnnotation::kPadding, fm.ascent() + TextBoxAnnotation::kPadding);
+    }
 }
 
 TextAnnotationEditor::TextAnnotationEditor(QObject* parent)
     : QObject(parent)
+    , m_displayToAnnotationMapper([](const QPointF& p) { return p; })
+    , m_annotationToDisplayMapper([](const QPointF& p) { return p; })
 {
     loadSettings();
 }
@@ -41,6 +54,18 @@ void TextAnnotationEditor::setColorAndWidthWidget(ToolOptionsPanel* widget)
 void TextAnnotationEditor::setParentWidget(QWidget* widget)
 {
     m_parentWidget = widget;
+}
+
+void TextAnnotationEditor::setCoordinateMappers(
+    const std::function<QPointF(const QPointF&)>& displayToAnnotation,
+    const std::function<QPointF(const QPointF&)>& annotationToDisplay)
+{
+    m_displayToAnnotationMapper = displayToAnnotation
+        ? displayToAnnotation
+        : [](const QPointF& p) { return p; };
+    m_annotationToDisplayMapper = annotationToDisplay
+        ? annotationToDisplay
+        : [](const QPointF& p) { return p; };
 }
 
 void TextAnnotationEditor::startEditing(const QPoint& pos, const QRect& selectionRect, const QColor& color)
@@ -85,11 +110,9 @@ void TextAnnotationEditor::startReEditing(int annotationIndex, const QColor& col
         selectionRect = m_parentWidget->rect();
     }
 
-    // Convert position to QPoint for InlineTextEditor (baseline position)
-    // TextBoxAnnotation position is top-left, need to add font ascent for baseline
-    QFontMetrics fm(textItem->font());
-    QPoint baselinePos = textItem->position().toPoint() + QPoint(TextBoxAnnotation::kPadding, fm.ascent() + TextBoxAnnotation::kPadding);
-    m_textEditor->startEditingExisting(baselinePos, selectionRect, textItem->text());
+    QPointF baselineAnnotation = textItem->mapLocalPointToTransformed(baselineLocalOffset(textItem->font()));
+    QPoint baselineDisplay = toRoundedPoint(m_annotationToDisplayMapper(baselineAnnotation));
+    m_textEditor->startEditingExisting(baselineDisplay, selectionRect, textItem->text());
 
     // Hide the original annotation while editing (prevent duplicate display)
     textItem->setVisible(false);
@@ -99,11 +122,14 @@ void TextAnnotationEditor::startReEditing(int annotationIndex, const QColor& col
     emit updateRequested();
 }
 
-void TextAnnotationEditor::finishEditing(const QString& text, const QPoint& position, const QColor& color)
+bool TextAnnotationEditor::finishEditing(const QString& text, const QPoint& position, const QColor& color)
 {
-    if (!m_annotationLayer) return;
+    if (!m_annotationLayer) return false;
 
     QFont font = m_formatting.toQFont();
+    QPointF baselineAnnotation = m_displayToAnnotationMapper(QPointF(position));
+    QPointF localBaseline = baselineLocalOffset(font);
+    bool createdNew = false;
 
     if (m_editingIndex >= 0) {
         // Re-editing: restore visibility first
@@ -111,13 +137,19 @@ void TextAnnotationEditor::finishEditing(const QString& text, const QPoint& posi
         if (textItem) {
             textItem->setVisible(true);  // Restore visibility
             if (!text.isEmpty()) {
+                const qreal originalRotation = textItem->rotation();
+                const qreal originalScale = textItem->scale();
+                const bool originalMirrorX = textItem->mirrorX();
+                const bool originalMirrorY = textItem->mirrorY();
+
                 textItem->setText(text);
                 textItem->setFont(font);
                 textItem->setColor(color);
-                // Convert baseline position back to top-left for TextBoxAnnotation
-                QFontMetrics fm(font);
-                QPointF topLeft(position.x() - TextBoxAnnotation::kPadding,
-                               position.y() - fm.ascent() - TextBoxAnnotation::kPadding);
+                textItem->setRotation(originalRotation);
+                textItem->setScale(originalScale);
+                textItem->setMirror(originalMirrorX, originalMirrorY);
+
+                QPointF topLeft = textItem->topLeftFromTransformedLocalPoint(baselineAnnotation, localBaseline);
                 textItem->setPosition(topLeft);
             }
         }
@@ -126,20 +158,20 @@ void TextAnnotationEditor::finishEditing(const QString& text, const QPoint& posi
     }
     else if (!text.isEmpty()) {
         // Create new TextBoxAnnotation
-        // Convert baseline position to top-left position
-        QFontMetrics fm(font);
-        QPointF topLeft(position.x() - TextBoxAnnotation::kPadding,
-                       position.y() - fm.ascent() - TextBoxAnnotation::kPadding);
-        auto textAnnotation = std::make_unique<TextBoxAnnotation>(topLeft, text, font, color);
+        auto textAnnotation = std::make_unique<TextBoxAnnotation>(QPointF(0, 0), text, font, color);
+        QPointF topLeft = textAnnotation->topLeftFromTransformedLocalPoint(baselineAnnotation, localBaseline);
+        textAnnotation->setPosition(topLeft);
         m_annotationLayer->addItem(std::move(textAnnotation));
 
         // Auto-select the newly created text annotation to show the gizmo
         int newIndex = static_cast<int>(m_annotationLayer->itemCount()) - 1;
         m_annotationLayer->setSelectedIndex(newIndex);
+        createdNew = true;
     }
 
     emit editingFinished();
     emit updateRequested();
+    return createdNew;
 }
 
 void TextAnnotationEditor::cancelEditing()

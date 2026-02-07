@@ -68,15 +68,25 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include <QTimer>
 #include <QPointer>
 #include <QTransform>
+#include <QFontMetrics>
 #include <QDebug>
 #include <QActionGroup>
 #include <QDesktopServices>
 #include <QUrl>
 #include <QThreadPool>
+#include <limits>
 
 namespace {
     // Full opacity constant for pixel alpha check
     constexpr int kPixelFullOpacity = 255;
+    constexpr qreal kTransformEpsilon = 1e-6;
+
+    struct TextCompensation
+    {
+        qreal rotation = 0.0;
+        bool mirrorX = false;
+        bool mirrorY = false;
+    };
 
     QSize logicalSizeFromPixmap(const QPixmap& pixmap)
     {
@@ -122,6 +132,111 @@ namespace {
             }
         }
         return false;
+    }
+
+    QTransform buildPinWindowTransform(const QRectF& pixmapRect, int rotationAngle, bool flipHorizontal, bool flipVertical)
+    {
+        QTransform transform;
+
+        if (rotationAngle == 90) {
+            transform.translate(pixmapRect.width(), 0);
+            transform.rotate(90);
+        }
+        else if (rotationAngle == 180) {
+            transform.translate(pixmapRect.width(), pixmapRect.height());
+            transform.rotate(180);
+        }
+        else if (rotationAngle == 270) {
+            transform.translate(0, pixmapRect.height());
+            transform.rotate(270);
+        }
+
+        if (flipHorizontal || flipVertical) {
+            QPointF center(pixmapRect.width() / 2.0, pixmapRect.height() / 2.0);
+            transform.translate(center.x(), center.y());
+            if (flipHorizontal) transform.scale(-1, 1);
+            if (flipVertical) transform.scale(1, -1);
+            transform.translate(-center.x(), -center.y());
+        }
+
+        return transform;
+    }
+
+    QTransform buildOrientationLinearTransform(int rotationAngle, bool flipHorizontal, bool flipVertical)
+    {
+        QTransform transform;
+        if (rotationAngle != 0) {
+            transform.rotate(rotationAngle);
+        }
+        if (flipHorizontal || flipVertical) {
+            transform.scale(flipHorizontal ? -1.0 : 1.0, flipVertical ? -1.0 : 1.0);
+        }
+        return transform;
+    }
+
+    bool sameLinearTransform(const QTransform& lhs, const QTransform& rhs)
+    {
+        return qAbs(lhs.m11() - rhs.m11()) <= kTransformEpsilon &&
+               qAbs(lhs.m12() - rhs.m12()) <= kTransformEpsilon &&
+               qAbs(lhs.m21() - rhs.m21()) <= kTransformEpsilon &&
+               qAbs(lhs.m22() - rhs.m22()) <= kTransformEpsilon;
+    }
+
+    TextCompensation computeTextCompensation(int rotationAngle, bool flipHorizontal, bool flipVertical)
+    {
+        const QTransform windowOrientation = buildOrientationLinearTransform(rotationAngle, flipHorizontal, flipVertical);
+        const QTransform target = windowOrientation.inverted();
+
+        struct Candidate
+        {
+            qreal rotation;
+            bool mirrorX;
+            bool mirrorY;
+        };
+
+        static const Candidate kCandidates[] = {
+            {0.0, false, false},
+            {90.0, false, false},
+            {180.0, false, false},
+            {270.0, false, false},
+            {0.0, true, false},
+            {0.0, false, true},
+            {90.0, true, false},
+            {90.0, false, true},
+            {180.0, true, false},
+            {180.0, false, true},
+            {270.0, true, false},
+            {270.0, false, true},
+            {0.0, true, true},
+            {90.0, true, true},
+            {180.0, true, true},
+            {270.0, true, true}
+        };
+
+        bool found = false;
+        int bestCost = std::numeric_limits<int>::max();
+        TextCompensation best;
+
+        for (const Candidate& candidate : kCandidates) {
+            QTransform candidateTransform = buildOrientationLinearTransform(
+                static_cast<int>(candidate.rotation), candidate.mirrorX, candidate.mirrorY);
+            if (!sameLinearTransform(candidateTransform, target)) {
+                continue;
+            }
+
+            const int flipCost = (candidate.mirrorX ? 1 : 0) + (candidate.mirrorY ? 1 : 0);
+            const int rotationCost = (qFuzzyIsNull(candidate.rotation) ? 0 : 1);
+            const int cost = flipCost * 10 + rotationCost;
+            if (!found || cost < bestCost) {
+                found = true;
+                bestCost = cost;
+                best.rotation = candidate.rotation;
+                best.mirrorX = candidate.mirrorX;
+                best.mirrorY = candidate.mirrorY;
+            }
+        }
+
+        return found ? best : TextCompensation{};
     }
 }  // namespace
 
@@ -310,43 +425,49 @@ void PinWindow::flipVertical()
 
 QPoint PinWindow::mapToOriginalCoords(const QPoint& displayPos) const
 {
-    // No transformation needed if no rotation or flip applied
+    return mapToOriginalCoords(QPointF(displayPos)).toPoint();
+}
+
+QPoint PinWindow::mapFromOriginalCoords(const QPoint& originalPos) const
+{
+    return mapFromOriginalCoords(QPointF(originalPos)).toPoint();
+}
+
+QPointF PinWindow::mapToOriginalCoords(const QPointF& displayPos) const
+{
     if (m_rotationAngle == 0 && !m_flipHorizontal && !m_flipVertical) {
         return displayPos;
     }
 
-    // Build the same forward transform used in paintEvent for annotations
-    // Then invert it to map display coordinates back to original coordinates
-    QRectF pixmapRect = rect();
-
-    QTransform transform;
-
-    // Step 1: Apply rotation with proper translation (same as paintEvent)
-    if (m_rotationAngle == 90) {
-        transform.translate(pixmapRect.width(), 0);
-        transform.rotate(90);
-    }
-    else if (m_rotationAngle == 180) {
-        transform.translate(pixmapRect.width(), pixmapRect.height());
-        transform.rotate(180);
-    }
-    else if (m_rotationAngle == 270) {
-        transform.translate(0, pixmapRect.height());
-        transform.rotate(270);
-    }
-
-    // Step 2: Apply flip around the center (same as paintEvent)
-    if (m_flipHorizontal || m_flipVertical) {
-        QPointF center(pixmapRect.width() / 2.0, pixmapRect.height() / 2.0);
-        transform.translate(center.x(), center.y());
-        if (m_flipHorizontal) transform.scale(-1, 1);
-        if (m_flipVertical) transform.scale(1, -1);
-        transform.translate(-center.x(), -center.y());
-    }
-
-    // Invert the transform to map from display coords to original coords
-    QTransform inverse = transform.inverted();
+    QTransform inverse = buildPinWindowTransform(rect(), m_rotationAngle, m_flipHorizontal, m_flipVertical).inverted();
     return inverse.map(displayPos);
+}
+
+QPointF PinWindow::mapFromOriginalCoords(const QPointF& originalPos) const
+{
+    if (m_rotationAngle == 0 && !m_flipHorizontal && !m_flipVertical) {
+        return originalPos;
+    }
+
+    QTransform transform = buildPinWindowTransform(rect(), m_rotationAngle, m_flipHorizontal, m_flipVertical);
+    return transform.map(originalPos);
+}
+
+void PinWindow::applyTextOrientationCompensation(TextBoxAnnotation* textItem,
+                                                 const QPointF& baselineOriginal) const
+{
+    if (!textItem) {
+        return;
+    }
+
+    const TextCompensation compensation = computeTextCompensation(
+        m_rotationAngle, m_flipHorizontal, m_flipVertical);
+    textItem->setRotation(compensation.rotation);
+    textItem->setMirror(compensation.mirrorX, compensation.mirrorY);
+
+    QFontMetrics fm(textItem->font());
+    QPointF localBaseline(TextBoxAnnotation::kPadding, fm.ascent() + TextBoxAnnotation::kPadding);
+    textItem->setPosition(textItem->topLeftFromTransformedLocalPoint(baselineOriginal, localBaseline));
 }
 
 void PinWindow::setWatermarkSettings(const WatermarkRenderer::Settings& settings)
@@ -1167,41 +1288,8 @@ void PinWindow::paintEvent(QPaintEvent*)
         // QPixmap::transformed() with rotate() rotates around origin (0,0),
         // so we need to match that transformation exactly
         if (m_rotationAngle != 0 || m_flipHorizontal || m_flipVertical) {
-            // Get original (unrotated) dimensions - annotations are stored in this space
-            qreal origW = pixmapRect.width();
-            qreal origH = pixmapRect.height();
-            if (m_rotationAngle == 90 || m_rotationAngle == 270) {
-                // Current dimensions are swapped, so swap back to get original
-                std::swap(origW, origH);
-            }
-
-            // Build transform matching QPixmap::transformed() behavior
-            // The transform order is: rotate first, then flip (matching ensureTransformCacheValid)
-            QTransform transform;
-
-            // Step 1: Apply rotation with proper translation to keep in positive coords
-            if (m_rotationAngle == 90) {
-                transform.translate(pixmapRect.width(), 0);
-                transform.rotate(90);
-            }
-            else if (m_rotationAngle == 180) {
-                transform.translate(pixmapRect.width(), pixmapRect.height());
-                transform.rotate(180);
-            }
-            else if (m_rotationAngle == 270) {
-                transform.translate(0, pixmapRect.height());
-                transform.rotate(270);
-            }
-
-            // Step 2: Apply flip around the center of current (post-rotation) rect
-            if (m_flipHorizontal || m_flipVertical) {
-                QPointF center(pixmapRect.width() / 2.0, pixmapRect.height() / 2.0);
-                transform.translate(center.x(), center.y());
-                if (m_flipHorizontal) transform.scale(-1, 1);
-                if (m_flipVertical) transform.scale(1, -1);
-                transform.translate(-center.x(), -center.y());
-            }
-
+            QTransform transform = buildPinWindowTransform(
+                pixmapRect, m_rotationAngle, m_flipHorizontal, m_flipVertical);
             painter.setTransform(transform, true);
         }
 
@@ -1231,31 +1319,8 @@ void PinWindow::paintEvent(QPaintEvent*)
 
         // Apply the same transform to preview (matching annotation layer transform above)
         if (m_rotationAngle != 0 || m_flipHorizontal || m_flipVertical) {
-            QTransform transform;
-
-            // Step 1: Apply rotation with proper translation to keep in positive coords
-            if (m_rotationAngle == 90) {
-                transform.translate(pixmapRect.width(), 0);
-                transform.rotate(90);
-            }
-            else if (m_rotationAngle == 180) {
-                transform.translate(pixmapRect.width(), pixmapRect.height());
-                transform.rotate(180);
-            }
-            else if (m_rotationAngle == 270) {
-                transform.translate(0, pixmapRect.height());
-                transform.rotate(270);
-            }
-
-            // Step 2: Apply flip around the center of current (post-rotation) rect
-            if (m_flipHorizontal || m_flipVertical) {
-                QPointF center(pixmapRect.width() / 2.0, pixmapRect.height() / 2.0);
-                transform.translate(center.x(), center.y());
-                if (m_flipHorizontal) transform.scale(-1, 1);
-                if (m_flipVertical) transform.scale(1, -1);
-                transform.translate(-center.x(), -center.y());
-            }
-
+            QTransform transform = buildPinWindowTransform(
+                pixmapRect, m_rotationAngle, m_flipHorizontal, m_flipVertical);
             painter.setTransform(transform, true);
         }
 
@@ -1541,14 +1606,14 @@ void PinWindow::mouseMoveEvent(QMouseEvent* event)
 
     // Handle TextAnnotationEditor transformation (rotate/scale)
     if (m_textAnnotationEditor && m_textAnnotationEditor->isTransforming()) {
-        m_textAnnotationEditor->updateTransformation(event->pos());
+        m_textAnnotationEditor->updateTransformation(mapToOriginalCoords(event->pos()));
         update();
         return;
     }
 
     // Handle TextAnnotationEditor dragging
     if (m_textAnnotationEditor && m_textAnnotationEditor->isDragging()) {
-        m_textAnnotationEditor->updateDragging(event->pos());
+        m_textAnnotationEditor->updateDragging(mapToOriginalCoords(event->pos()));
         update();
         return;
     }
@@ -1721,7 +1786,7 @@ void PinWindow::mouseDoubleClickEvent(QMouseEvent* event)
 
         // Check if double-click is on a text annotation (for re-editing)
         if (m_annotationMode && m_annotationLayer) {
-            int hitIndex = m_annotationLayer->hitTestText(event->pos());
+            int hitIndex = m_annotationLayer->hitTestText(mapToOriginalCoords(event->pos()));
             if (hitIndex >= 0) {
                 m_annotationLayer->setSelectedIndex(hitIndex);
                 m_textAnnotationEditor->startReEditing(hitIndex, m_annotationColor);
@@ -2005,11 +2070,19 @@ void PinWindow::initializeAnnotationComponents()
     m_textAnnotationEditor->setAnnotationLayer(m_annotationLayer);
     m_textAnnotationEditor->setTextEditor(m_textEditor);
     m_textAnnotationEditor->setParentWidget(this);
+    m_textAnnotationEditor->setCoordinateMappers(
+        [this](const QPointF& displayPos) { return mapToOriginalCoords(displayPos); },
+        [this](const QPointF& originalPos) { return mapFromOriginalCoords(originalPos); });
 
     // Connect text editor signals
     connect(m_textEditor, &InlineTextEditor::editingFinished,
         this, [this](const QString& text, const QPoint& position) {
-            m_textAnnotationEditor->finishEditing(text, position, m_annotationColor);
+            bool createdNew = m_textAnnotationEditor->finishEditing(text, position, m_annotationColor);
+            if (createdNew) {
+                applyTextOrientationCompensation(
+                    getSelectedTextAnnotation(),
+                    mapToOriginalCoords(QPointF(position)));
+            }
             updateUndoRedoState();
             update();
         });
@@ -2578,28 +2651,29 @@ bool PinWindow::handleTextAnnotationPress(const QPoint& pos)
 {
     if (!m_annotationLayer) return false;
 
-    int hitIndex = m_annotationLayer->hitTestText(pos);
+    QPoint mappedPos = mapToOriginalCoords(pos);
+    int hitIndex = m_annotationLayer->hitTestText(mappedPos);
     if (hitIndex < 0) return false;
 
     qint64 now = QDateTime::currentMSecsSinceEpoch();
     // Double-click on ANY text annotation triggers re-edit (no need to be pre-selected)
-    if (m_textAnnotationEditor->isDoubleClick(pos, now)) {
+    if (m_textAnnotationEditor->isDoubleClick(mappedPos, now)) {
         m_annotationLayer->setSelectedIndex(hitIndex);
         m_textAnnotationEditor->startReEditing(hitIndex, m_annotationColor);
         m_textAnnotationEditor->recordClick(QPoint(), 0);
         return true;
     }
-    m_textAnnotationEditor->recordClick(pos, now);
+    m_textAnnotationEditor->recordClick(mappedPos, now);
 
     // Single click: select and start dragging
     m_annotationLayer->setSelectedIndex(hitIndex);
     if (auto* textItem = getSelectedTextAnnotation()) {
-        GizmoHandle handle = TransformationGizmo::hitTest(textItem, pos);
+        GizmoHandle handle = TransformationGizmo::hitTest(textItem, mappedPos);
         if (handle == GizmoHandle::Body || handle == GizmoHandle::None) {
-            m_textAnnotationEditor->startDragging(pos);
+            m_textAnnotationEditor->startDragging(mappedPos);
         }
         else {
-            m_textAnnotationEditor->startTransformation(pos, handle);
+            m_textAnnotationEditor->startTransformation(mappedPos, handle);
         }
     }
 
@@ -2612,22 +2686,23 @@ bool PinWindow::handleGizmoPress(const QPoint& pos)
     auto* textItem = getSelectedTextAnnotation();
     if (!textItem) return false;
 
-    GizmoHandle handle = TransformationGizmo::hitTest(textItem, pos);
+    QPoint mappedPos = mapToOriginalCoords(pos);
+    GizmoHandle handle = TransformationGizmo::hitTest(textItem, mappedPos);
     if (handle == GizmoHandle::None) return false;
 
     if (handle == GizmoHandle::Body) {
         qint64 now = QDateTime::currentMSecsSinceEpoch();
-        if (m_textAnnotationEditor->isDoubleClick(pos, now)) {
+        if (m_textAnnotationEditor->isDoubleClick(mappedPos, now)) {
             m_textAnnotationEditor->startReEditing(
                 m_annotationLayer->selectedIndex(), m_annotationColor);
             m_textAnnotationEditor->recordClick(QPoint(), 0);
             return true;
         }
-        m_textAnnotationEditor->recordClick(pos, now);
-        m_textAnnotationEditor->startDragging(pos);
+        m_textAnnotationEditor->recordClick(mappedPos, now);
+        m_textAnnotationEditor->startDragging(mappedPos);
     }
     else {
-        m_textAnnotationEditor->startTransformation(pos, handle);
+        m_textAnnotationEditor->startTransformation(mappedPos, handle);
     }
 
     update();

@@ -93,18 +93,36 @@ QPointF TextBoxAnnotation::center() const
     return m_position + QPointF(m_box.width() / 2.0, m_box.height() / 2.0);
 }
 
+QTransform TextBoxAnnotation::localLinearTransform() const
+{
+    QTransform t;
+
+    if (!qFuzzyIsNull(m_rotation)) {
+        t.rotate(m_rotation);
+    }
+
+    if (m_mirrorX || m_mirrorY) {
+        t.scale(m_mirrorX ? -1.0 : 1.0, m_mirrorY ? -1.0 : 1.0);
+    }
+
+    if (!qFuzzyCompare(m_scale, 1.0)) {
+        t.scale(m_scale, m_scale);
+    }
+
+    return t;
+}
+
 QPolygonF TextBoxAnnotation::transformedBoundingPolygon() const
 {
     // Build untransformed bounding rect with margin for easier click detection
     QRectF worldBox(m_position.x(), m_position.y(), m_box.width(), m_box.height());
     worldBox.adjust(-kHitMargin, -kHitMargin, kHitMargin, kHitMargin);
 
-    // Build transformation matrix around center (rotate + scale)
+    // Build transformation matrix around center (rotate + mirror + scale)
     QPointF c = center();
     QTransform t;
     t.translate(c.x(), c.y());
-    t.rotate(m_rotation);
-    t.scale(m_scale, m_scale);
+    t *= localLinearTransform();
     t.translate(-c.x(), -c.y());
 
     // Transform corners
@@ -192,11 +210,10 @@ void TextBoxAnnotation::draw(QPainter &painter) const
 
     painter.save();
 
-    // Apply rotation and scale around center
+    // Apply rotation, mirror and scale around center
     QPointF c = center();
     painter.translate(c);
-    painter.rotate(m_rotation);
-    painter.scale(m_scale, m_scale);
+    painter.setTransform(localLinearTransform(), true);
     painter.translate(-c);
 
     // Draw cached pixmap at position
@@ -216,6 +233,8 @@ std::unique_ptr<AnnotationItem> TextBoxAnnotation::clone() const
     cloned->m_box = m_box;
     cloned->m_rotation = m_rotation;
     cloned->m_scale = m_scale;
+    cloned->m_mirrorX = m_mirrorX;
+    cloned->m_mirrorY = m_mirrorY;
     return cloned;
 }
 
@@ -263,4 +282,26 @@ void TextBoxAnnotation::setScale(qreal scale)
 {
     m_scale = scale;
     invalidateCache();
+}
+
+void TextBoxAnnotation::setMirror(bool mirrorX, bool mirrorY)
+{
+    m_mirrorX = mirrorX;
+    m_mirrorY = mirrorY;
+    invalidateCache();
+}
+
+QPointF TextBoxAnnotation::mapLocalPointToTransformed(const QPointF& localPoint) const
+{
+    QPointF halfSize(m_box.width() / 2.0, m_box.height() / 2.0);
+    QPointF transformedOffset = localLinearTransform().map(localPoint - halfSize);
+    return m_position + halfSize + transformedOffset;
+}
+
+QPointF TextBoxAnnotation::topLeftFromTransformedLocalPoint(const QPointF& transformedPoint,
+                                                            const QPointF& localPoint) const
+{
+    QPointF halfSize(m_box.width() / 2.0, m_box.height() / 2.0);
+    QPointF transformedOffset = localLinearTransform().map(localPoint - halfSize);
+    return transformedPoint - halfSize - transformedOffset;
 }

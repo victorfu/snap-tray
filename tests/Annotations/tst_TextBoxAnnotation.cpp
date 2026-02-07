@@ -61,6 +61,10 @@ private slots:
     void testSetScale();
     void testScale_Default();
 
+    // Mirror tests
+    void testSetMirror();
+    void testMirror_Default();
+
     // Bounding rect tests
     void testBoundingRect_Basic();
     void testBoundingRect_WithRotation();
@@ -70,6 +74,9 @@ private slots:
     void testTransformedBoundingPolygon();
     void testContainsPoint_Inside();
     void testContainsPoint_Outside();
+    void testMapLocalPointToTransformed_NoTransform();
+    void testMapLocalPointToTransformed_WithTransform();
+    void testTopLeftFromTransformedLocalPoint_RoundTrip();
 
     // Clone tests
     void testClone_CreatesNewInstance();
@@ -78,6 +85,7 @@ private slots:
     void testClone_PreservesFont();
     void testClone_PreservesColor();
     void testClone_PreservesTransform();
+    void testClone_PreservesMirror();
 
     // Drawing tests
     void testDraw_Basic();
@@ -323,6 +331,33 @@ void TestTextBoxAnnotation::testScale_Default()
 }
 
 // ============================================================================
+// Mirror Tests
+// ============================================================================
+
+void TestTextBoxAnnotation::testSetMirror()
+{
+    QFont font("Arial", 14);
+    TextBoxAnnotation textBox(QPointF(100, 100), "Test", font, Qt::red);
+
+    textBox.setMirror(true, false);
+    QCOMPARE(textBox.mirrorX(), true);
+    QCOMPARE(textBox.mirrorY(), false);
+
+    textBox.setMirror(false, true);
+    QCOMPARE(textBox.mirrorX(), false);
+    QCOMPARE(textBox.mirrorY(), true);
+}
+
+void TestTextBoxAnnotation::testMirror_Default()
+{
+    QFont font("Arial", 14);
+    TextBoxAnnotation textBox(QPointF(100, 100), "Test", font, Qt::red);
+
+    QCOMPARE(textBox.mirrorX(), false);
+    QCOMPARE(textBox.mirrorY(), false);
+}
+
+// ============================================================================
 // Bounding Rect Tests
 // ============================================================================
 
@@ -394,6 +429,45 @@ void TestTextBoxAnnotation::testContainsPoint_Outside()
 
     // Point far outside the text box
     QVERIFY(!textBox.containsPoint(QPoint(500, 500)));
+}
+
+void TestTextBoxAnnotation::testMapLocalPointToTransformed_NoTransform()
+{
+    QFont font("Arial", 14);
+    TextBoxAnnotation textBox(QPointF(100, 100), "Test", font, Qt::red);
+
+    QPointF localPoint(12.0, 20.0);
+    QPointF mapped = textBox.mapLocalPointToTransformed(localPoint);
+    QCOMPARE(mapped, QPointF(112.0, 120.0));
+}
+
+void TestTextBoxAnnotation::testMapLocalPointToTransformed_WithTransform()
+{
+    QFont font("Arial", 14);
+    TextBoxAnnotation textBox(QPointF(100, 100), "Test", font, Qt::red);
+    textBox.setRotation(90.0);
+
+    QPointF localPoint(12.0, 20.0);
+    QPointF mapped = textBox.mapLocalPointToTransformed(localPoint);
+
+    // A pure 90-degree rotation around center must move the point.
+    QVERIFY(!qFuzzyCompare(mapped.x(), 112.0) || !qFuzzyCompare(mapped.y(), 120.0));
+}
+
+void TestTextBoxAnnotation::testTopLeftFromTransformedLocalPoint_RoundTrip()
+{
+    QFont font("Arial", 14);
+    TextBoxAnnotation textBox(QPointF(130, 160), "Round trip", font, Qt::red);
+    textBox.setRotation(270.0);
+    textBox.setScale(1.5);
+    textBox.setMirror(true, false);
+
+    QPointF localPoint(18.0, 24.0);
+    QPointF transformed = textBox.mapLocalPointToTransformed(localPoint);
+
+    QPointF recoveredTopLeft = textBox.topLeftFromTransformedLocalPoint(transformed, localPoint);
+    QVERIFY(qAbs(recoveredTopLeft.x() - textBox.position().x()) < 0.01);
+    QVERIFY(qAbs(recoveredTopLeft.y() - textBox.position().y()) < 0.01);
 }
 
 // ============================================================================
@@ -472,6 +546,20 @@ void TestTextBoxAnnotation::testClone_PreservesTransform()
     QVERIFY(clonedTextBox != nullptr);
     QCOMPARE(clonedTextBox->rotation(), 30.0);
     QCOMPARE(clonedTextBox->scale(), 1.5);
+}
+
+void TestTextBoxAnnotation::testClone_PreservesMirror()
+{
+    QFont font("Arial", 14);
+    TextBoxAnnotation textBox(QPointF(100, 100), "Test", font, Qt::red);
+    textBox.setMirror(true, true);
+
+    auto cloned = textBox.clone();
+    auto* clonedTextBox = dynamic_cast<TextBoxAnnotation*>(cloned.get());
+
+    QVERIFY(clonedTextBox != nullptr);
+    QCOMPARE(clonedTextBox->mirrorX(), true);
+    QCOMPARE(clonedTextBox->mirrorY(), true);
 }
 
 // ============================================================================

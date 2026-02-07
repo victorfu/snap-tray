@@ -228,6 +228,13 @@ private:
 
     // Coordinate transformation for rotated/flipped state
     QPoint mapToOriginalCoords(const QPoint& displayPos) const;
+    QPoint mapFromOriginalCoords(const QPoint& originalPos) const;
+    QPointF mapToOriginalCoords(const QPointF& displayPos) const;
+    QPointF mapFromOriginalCoords(const QPointF& originalPos) const;
+
+    // Keep text result aligned with inline editor orientation at creation time.
+    void applyTextOrientationCompensation(TextBoxAnnotation* textItem,
+                                          const QPointF& baselineOriginal) const;
 
     // Original members
     QPixmap m_originalPixmap;

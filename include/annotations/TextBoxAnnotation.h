@@ -9,6 +9,7 @@
 #include <QColor>
 #include <QPolygonF>
 #include <QPixmap>
+#include <QTransform>
 #include <memory>
 
 /**
@@ -72,10 +73,21 @@ public:
     void setScale(qreal scale);
     qreal scale() const { return m_scale; }
 
+    // Mirror (around box center)
+    void setMirror(bool mirrorX, bool mirrorY);
+    bool mirrorX() const { return m_mirrorX; }
+    bool mirrorY() const { return m_mirrorY; }
+
     // Geometry helpers for hit-testing and gizmo
     QPointF center() const;
     QPolygonF transformedBoundingPolygon() const;
     bool containsPoint(const QPoint &point) const;
+
+    // Coordinate conversion helpers in annotation space.
+    // localPoint is relative to the untransformed top-left of the text box.
+    QPointF mapLocalPointToTransformed(const QPointF& localPoint) const;
+    QPointF topLeftFromTransformedLocalPoint(const QPointF& transformedPoint,
+                                             const QPointF& localPoint) const;
 
 private:
     QPointF m_position;      // Top-left anchor in world coordinates
@@ -85,6 +97,8 @@ private:
     QColor m_color;
     qreal m_rotation = 0.0;  // Degrees, clockwise
     qreal m_scale = 1.0;     // Uniform scale factor
+    bool m_mirrorX = false;
+    bool m_mirrorY = false;
 
     // Pixmap cache (DPR-aware)
     mutable QPixmap m_cachedPixmap;
@@ -104,6 +118,9 @@ private:
 
     // Calculate initial box size based on text
     void calculateInitialBox();
+
+    // Local linear transform (rotation + mirror + scale).
+    QTransform localLinearTransform() const;
 };
 
 #endif // TEXTBOXANNOTATION_H
