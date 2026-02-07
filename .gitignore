@@ -44,11 +44,16 @@ qrc_*.cpp
 # Dependencies fetched by CMake
 _deps/
 
-.claude/
-
-packaging/windows/version.nsh
-
 # clangd cache
 .cache
 
+# packaging
+packaging/windows/version.nsh
+
+# Misc.
 example/
+
+# coding agents
+.claude/
+.spec-workflow/
+audit.log

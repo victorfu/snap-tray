@@ -269,11 +269,9 @@ QString UpdateChecker::extractVersionFromTag(const QString& tagName)
 {
     QString version = tagName;
 
-    // Remove common prefixes like "v" or "ver"
+    // Remove "v" prefix (e.g. "v1.2.3" -> "1.2.3")
     if (version.startsWith("v", Qt::CaseInsensitive)) {
         version = version.mid(1);
-    } else if (version.startsWith("ver", Qt::CaseInsensitive)) {
-        version = version.mid(3);
     }
 
     return version.trimmed();
