@@ -45,7 +45,7 @@ private slots:
     void onPinFromImage();
     void onImageLoaded(const QString &filePath, const QImage &image);
     void onSettings();
-    void showRecordingPreview(const QString &videoPath);
+    void showRecordingPreview(const QString &videoPath, int preferredFormat);
     void onPreviewSaveRequested(const QString &videoPath);
     void onPreviewDiscardRequested();
     void onHotkeyAction(SnapTray::HotkeyAction action);

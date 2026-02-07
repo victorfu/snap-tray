@@ -3,6 +3,7 @@
 #include "capture/IAudioCaptureEngine.h"
 #include "IVideoEncoder.h"
 #include "encoding/NativeGifEncoder.h"
+#include "encoding/WebPAnimEncoder.h"
 #include "encoding/EncoderFactory.h"
 
 #include <QDebug>
@@ -32,6 +33,11 @@ void RecordingInitTask::Result::cleanup()
         gifEncoder->abort();
         delete gifEncoder;
         gifEncoder = nullptr;
+    }
+    if (webpEncoder) {
+        webpEncoder->abort();
+        delete webpEncoder;
+        webpEncoder = nullptr;
     }
     if (audioEngine) {
         audioEngine->stop();
@@ -85,8 +91,8 @@ void RecordingInitTask::run()
         return;
     }
 
-    // Step 2: Initialize audio engine (if enabled)
-    if (m_config.audioEnabled && !m_config.useGif) {
+    // Step 2: Initialize audio engine (if enabled, only for MP4)
+    if (m_config.audioEnabled && m_config.outputFormat == EncoderFactory::Format::MP4) {
         emit progress(tr("Setting up audio capture..."));
         initializeAudioEngine();  // Actual creation happens on main thread
     }
@@ -124,6 +130,9 @@ void RecordingInitTask::run()
     }
     if (m_result.gifEncoder) {
         m_result.gifEncoder->moveToThread(mainThread);
+    }
+    if (m_result.webpEncoder) {
+        m_result.webpEncoder->moveToThread(mainThread);
     }
 
     emit progress(tr("Ready"));
@@ -186,7 +195,7 @@ bool RecordingInitTask::initializeEncoder()
 
     // Configure encoder
     EncoderFactory::EncoderConfig encoderConfig;
-    encoderConfig.format = m_config.useGif ? EncoderFactory::Format::GIF : EncoderFactory::Format::MP4;
+    encoderConfig.format = m_config.outputFormat;
     encoderConfig.priority = EncoderFactory::Priority::NativeFirst;
     encoderConfig.frameSize = m_config.frameSize;
     encoderConfig.frameRate = m_config.frameRate;
@@ -195,7 +204,7 @@ bool RecordingInitTask::initializeEncoder()
 
     // Configure audio settings for native encoder using default format
     // (Audio engine is created on main thread, so we use standard defaults here)
-    if (m_config.audioEnabled && !m_config.useGif) {
+    if (m_config.audioEnabled && m_config.outputFormat == EncoderFactory::Format::MP4) {
         encoderConfig.enableAudio = true;
         encoderConfig.audioSampleRate = 48000;   // Standard sample rate
         encoderConfig.audioChannels = 2;          // Stereo
@@ -213,6 +222,7 @@ bool RecordingInitTask::initializeEncoder()
     m_result.usingNativeEncoder = encoderResult.isNative;
     m_result.nativeEncoder = encoderResult.nativeEncoder;
     m_result.gifEncoder = encoderResult.gifEncoder;
+    m_result.webpEncoder = encoderResult.webpEncoder;
 
     // Note: Audio writer will be created on main thread if needed
     // (after audio engine is created there)

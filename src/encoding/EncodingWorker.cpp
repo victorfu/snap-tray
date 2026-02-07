@@ -1,6 +1,7 @@
 #include "encoding/EncodingWorker.h"
 #include "IVideoEncoder.h"
 #include "encoding/NativeGifEncoder.h"
+#include "encoding/WebPAnimEncoder.h"
 
 #include <QDebug>
 #include <QPainter>
@@ -32,6 +33,11 @@ void EncodingWorker::setGifEncoder(NativeGifEncoder* encoder)
     m_gifEncoder.reset(encoder);
 }
 
+void EncodingWorker::setWebPEncoder(WebPAnimationEncoder* encoder)
+{
+    m_webpEncoder.reset(encoder);
+}
+
 void EncodingWorker::setEncoderType(EncoderType type)
 {
     m_encoderType = type;
@@ -56,6 +62,10 @@ bool EncodingWorker::start()
     }
     if (m_encoderType == EncoderType::Gif && !m_gifEncoder) {
         qWarning() << "EncodingWorker: No GIF encoder set";
+        return false;
+    }
+    if (m_encoderType == EncoderType::WebP && !m_webpEncoder) {
+        qWarning() << "EncodingWorker: No WebP encoder set";
         return false;
     }
 
@@ -102,6 +112,9 @@ void EncodingWorker::stop()
     }
     if (m_gifEncoder) {
         m_gifEncoder->abort();
+    }
+    if (m_webpEncoder) {
+        m_webpEncoder->abort();
     }
 }
 
@@ -267,6 +280,8 @@ void EncodingWorker::doProcessFrame(const FrameData& frameData)
         m_videoEncoder->writeFrame(frame, frameData.timestampMs);
     } else if (m_encoderType == EncoderType::Gif && m_gifEncoder) {
         m_gifEncoder->writeFrame(frame, frameData.timestampMs);
+    } else if (m_encoderType == EncoderType::WebP && m_webpEncoder) {
+        m_webpEncoder->writeFrame(frame, frameData.timestampMs);
     }
 
     // Update frame count
@@ -337,6 +352,18 @@ void EncodingWorker::finishEncoder()
         });
 
         m_gifEncoder->finish();
+
+    } else if (m_encoderType == EncoderType::WebP && m_webpEncoder) {
+        // Connect to encoder's finished signal before calling finish()
+        auto conn = std::make_shared<QMetaObject::Connection>();
+        *conn = connect(m_webpEncoder.get(), &WebPAnimationEncoder::finished,
+                        this, [this, conn](bool s, const QString& path) {
+            QObject::disconnect(*conn);
+            m_running = false;
+            emit finished(s, path);
+        });
+
+        m_webpEncoder->finish();
     } else {
         // No encoder, emit failure
         m_running = false;

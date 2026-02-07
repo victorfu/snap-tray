@@ -337,7 +337,16 @@ void RecordingManager::beginAsyncInitialization()
     // Load settings for initialization config
     auto settings = SnapTray::getSettings();
     int formatInt = settings.value("recording/outputFormat", 0).toInt();
-    bool useGif = (formatInt == 1);
+    bool showPreview = settings.value("recording/showPreview", true).toBool();
+
+    auto outputFormat = EncoderFactory::Format::MP4;
+    if (formatInt == 1) outputFormat = EncoderFactory::Format::GIF;
+    else if (formatInt == 2) outputFormat = EncoderFactory::Format::WebP;
+
+    // When preview is enabled, always record as MP4 (preview player only supports MP4).
+    // The user's preferred format is pre-selected in the preview's format widget.
+    auto recordingFormat = showPreview ? EncoderFactory::Format::MP4 : outputFormat;
+    m_preferredFormat = formatInt;
 
     m_audioEnabled = settings.value("recording/audioEnabled", false).toBool();
     m_audioSource = settings.value("recording/audioSource", 0).toInt();
@@ -352,12 +361,12 @@ void RecordingManager::beginAsyncInitialization()
     config.region = m_recordingRegion;
     config.screen = m_targetScreen;
     config.frameRate = m_frameRate;
-    config.audioEnabled = m_audioEnabled && !useGif;  // GIF doesn't support audio
+    config.audioEnabled = m_audioEnabled && (recordingFormat == EncoderFactory::Format::MP4);
     config.audioSource = m_audioSource;
     config.audioDevice = m_audioDevice;
     config.outputPath = generateOutputPath();
     config.useNativeEncoder = true;
-    config.useGif = useGif;
+    config.outputFormat = recordingFormat;
     config.frameSize = physicalSize;
     config.quality = settings.value("recording/quality", 55).toInt();
 
@@ -473,6 +482,12 @@ void RecordingManager::onInitializationComplete()
         m_encodingWorker->setGifEncoder(result.gifEncoder);
         if (!result.nativeEncoder) {
             m_encodingWorker->setEncoderType(EncodingWorker::EncoderType::Gif);
+        }
+    }
+    if (result.webpEncoder) {
+        m_encodingWorker->setWebPEncoder(result.webpEncoder);
+        if (!result.nativeEncoder) {
+            m_encodingWorker->setEncoderType(EncodingWorker::EncoderType::WebP);
         }
     }
 
@@ -929,10 +944,11 @@ void RecordingManager::onEncodingFinished(bool success, const QString &outputPat
 
         if (showPreview) {
             QString tempPath = outputPath;
-            QMetaObject::invokeMethod(this, [this, tempPath]() {
+            int preferredFormat = m_preferredFormat;
+            QMetaObject::invokeMethod(this, [this, tempPath, preferredFormat]() {
                 m_tempVideoPath = tempPath;
                 setState(State::Previewing);
-                emit previewRequested(tempPath);
+                emit previewRequested(tempPath, preferredFormat);
             }, Qt::QueuedConnection);
         } else {
             // Existing flow: go directly to save dialog
@@ -1030,7 +1046,10 @@ void RecordingManager::showSaveDialog(const QString &tempOutputPath)
     }
 
     // Show save dialog
-    QString filter = (extension == "gif") ? "GIF Files (*.gif)" : "MP4 Files (*.mp4)";
+    QString filter;
+    if (extension == "gif") filter = "GIF Files (*.gif)";
+    else if (extension == "webp") filter = "WebP Files (*.webp)";
+    else filter = "MP4 Files (*.mp4)";
     QString defaultFileName = QDir(outputDir).filePath(fileInfo.fileName());
 
     QString savePath = QFileDialog::getSaveFileName(
@@ -1102,7 +1121,19 @@ QString RecordingManager::generateOutputPath() const
     // Get output format from settings
     auto settings = SnapTray::getSettings();
     int formatInt = settings.value("recording/outputFormat", 0).toInt();
-    QString extension = (formatInt == 1) ? "gif" : "mp4";
+    bool showPreview = settings.value("recording/showPreview", true).toBool();
+
+    // When preview is enabled, always record as MP4 (preview player only supports MP4)
+    QString extension;
+    if (showPreview) {
+        extension = "mp4";
+    } else if (formatInt == 1) {
+        extension = "gif";
+    } else if (formatInt == 2) {
+        extension = "webp";
+    } else {
+        extension = "mp4";
+    }
 
     // Generate filename with timestamp + UUID for guaranteed uniqueness
     // This prevents file collisions when a new recording starts while save dialog is open
@@ -1123,7 +1154,7 @@ void RecordingManager::cleanupStaleTempFiles()
 
     // Clean up SnapTray recording temp files older than 24 hours
     QStringList filters;
-    filters << "SnapTray_Recording_*.mp4" << "SnapTray_Recording_*.gif";
+    filters << "SnapTray_Recording_*.mp4" << "SnapTray_Recording_*.gif" << "SnapTray_Recording_*.webp";
 
     QFileInfoList files = dir.entryInfoList(filters, QDir::Files);
     QDateTime threshold = QDateTime::currentDateTime().addDays(-1);

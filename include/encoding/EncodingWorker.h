@@ -14,6 +14,7 @@
 
 class IVideoEncoder;
 class NativeGifEncoder;
+class WebPAnimationEncoder;
 
 /**
  * @brief Worker class for offloading heavy encoding operations from UI thread
@@ -58,7 +59,8 @@ public:
      */
     enum class EncoderType {
         Video,  // IVideoEncoder (MP4)
-        Gif     // NativeGifEncoder
+        Gif,    // NativeGifEncoder
+        WebP    // WebPAnimationEncoder
     };
 
     explicit EncodingWorker(QObject *parent = nullptr);
@@ -77,6 +79,12 @@ public:
      * @param encoder Takes ownership
      */
     void setGifEncoder(NativeGifEncoder* encoder);
+
+    /**
+     * @brief Set the WebP encoder
+     * @param encoder Takes ownership
+     */
+    void setWebPEncoder(WebPAnimationEncoder* encoder);
 
     /**
      * @brief Set active encoder type
@@ -169,6 +177,7 @@ private:
     // Encoders (owned, accessed only by worker thread)
     std::unique_ptr<IVideoEncoder> m_videoEncoder;
     std::unique_ptr<NativeGifEncoder> m_gifEncoder;
+    std::unique_ptr<WebPAnimationEncoder> m_webpEncoder;
     EncoderType m_encoderType = EncoderType::Video;
 
     // Frame queue (thread-safe)

@@ -421,6 +421,17 @@ RecordingPreviewWindow::~RecordingPreviewWindow()
     qDebug() << "RecordingPreviewWindow: Destroyed";
 }
 
+void RecordingPreviewWindow::setPreferredFormat(int formatInt)
+{
+    FormatSelectionWidget::Format format;
+    switch (formatInt) {
+    case 1:  format = FormatSelectionWidget::Format::GIF;  break;
+    case 2:  format = FormatSelectionWidget::Format::WebP;  break;
+    default: format = FormatSelectionWidget::Format::MP4;   break;
+    }
+    m_formatWidget->setSelectedFormat(format);
+}
+
 void RecordingPreviewWindow::setupUI()
 {
     IconRenderer& iconRenderer = IconRenderer::instance();

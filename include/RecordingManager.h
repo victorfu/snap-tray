@@ -82,7 +82,7 @@ signals:
     void recordingResumed();
     void stateChanged(State state);
     void selectionCancelledWithRegion(const QRect &region, QScreen *screen);
-    void previewRequested(const QString &tempVideoPath);
+    void previewRequested(const QString &tempVideoPath, int preferredFormat);
     void annotatePreviewRequested(const QString &tempVideoPath);
 
 private slots:
@@ -173,6 +173,9 @@ private:
     QPointer<CountdownOverlay> m_countdownOverlay;
     bool m_countdownEnabled;
     int m_countdownSeconds;
+
+    // Output format
+    int m_preferredFormat = 0;  // User's chosen format (0=MP4, 1=GIF, 2=WebP)
 
     // Watermark for recording (settings stored, rendering done by EncodingWorker)
     WatermarkRenderer::Settings m_watermarkSettings;

@@ -9,7 +9,7 @@ QString RecordCommand::description() const { return "Record screen"; }
 
 void RecordCommand::setupOptions(QCommandLineParser& parser)
 {
-    parser.addPositionalArgument("action", "Action: start, stop, toggle, status", "[action]");
+    parser.addPositionalArgument("action", "Action: start, stop, toggle", "[action]");
     parser.addOption({{"r", "region"}, "Recording region (x,y,width,height)", "rect"});
     parser.addOption({{"n", "screen"}, "Screen number", "num"});
     parser.addOption({{"p", "path"}, "Save directory", "dir"});
@@ -31,7 +31,7 @@ QJsonObject RecordCommand::buildIPCMessage(const QCommandLineParser& parser) con
 {
     QJsonObject options;
 
-    // Capture action (start/stop/toggle/status)
+    // Capture action (start/stop/toggle)
     QStringList positional = parser.positionalArguments();
     if (!positional.isEmpty()) {
         options["action"] = positional.first();

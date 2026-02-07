@@ -27,6 +27,7 @@ public:
     ~RecordingPreviewWindow() override;
 
     QString videoPath() const { return m_videoPath; }
+    void setPreferredFormat(int formatInt);
 
 signals:
     void saveRequested(const QString &videoPath);

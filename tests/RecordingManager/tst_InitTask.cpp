@@ -81,7 +81,7 @@ RecordingInitTask::Config TestRecordingInitTask::createTestConfig()
     config.audioSource = 0;
     config.outputPath = m_tempDir->filePath("test_output.mp4");
     config.useNativeEncoder = true;
-    config.useGif = false;
+    config.outputFormat = EncoderFactory::Format::MP4;
     config.frameSize = QSize(800, 600);
     config.quality = 55;
     return config;
@@ -99,7 +99,7 @@ void TestRecordingInitTask::testDefaultConfig()
     QVERIFY(!config.audioEnabled);
     QCOMPARE(config.audioSource, 0);
     QVERIFY(config.useNativeEncoder);
-    QVERIFY(!config.useGif);
+    QCOMPARE(config.outputFormat, EncoderFactory::Format::MP4);
     QCOMPARE(config.quality, 55);
 }
 
@@ -130,7 +130,7 @@ void TestRecordingInitTask::testConfigWithAudio()
 void TestRecordingInitTask::testConfigWithGif()
 {
     RecordingInitTask::Config config = createTestConfig();
-    config.useGif = true;
+    config.outputFormat = EncoderFactory::Format::GIF;
     config.outputPath = m_tempDir->filePath("test.gif");
 
     RecordingInitTask task(config);
@@ -141,7 +141,7 @@ void TestRecordingInitTask::testConfigWithNativeEncoder()
 {
     RecordingInitTask::Config config = createTestConfig();
     config.useNativeEncoder = true;
-    config.useGif = false;
+    config.outputFormat = EncoderFactory::Format::MP4;
 
     RecordingInitTask task(config);
     QVERIFY(!task.isCancelled());

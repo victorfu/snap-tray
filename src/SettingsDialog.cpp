@@ -847,10 +847,34 @@ void SettingsDialog::setupRecordingTab(QWidget* tab)
 
 void SettingsDialog::onOutputFormatChanged(int index)
 {
+    bool isMp4 = (index == 0);
     bool isGif = (index == 1);
+    bool isWebP = (index == 2);
 
-    m_mp4SettingsWidget->setVisible(!isGif);
-    m_gifSettingsWidget->setVisible(isGif);
+    m_mp4SettingsWidget->setVisible(isMp4);
+    m_gifSettingsWidget->setVisible(isGif || isWebP);
+
+    // Update info label text for the selected format
+    if (isWebP) {
+        m_gifInfoLabel->setText(
+            "WebP format creates smaller files than GIF with better quality.\n"
+            "Best for short clips and sharing on web.\n"
+            "Audio is not supported for WebP recordings.");
+    } else {
+        m_gifInfoLabel->setText(
+            "GIF format creates larger files than MP4.\n"
+            "Best for short clips and sharing on web.\n"
+            "Audio is not supported for GIF recordings.");
+    }
+
+    // Audio is only supported for MP4
+    bool supportsAudio = isMp4;
+    m_audioEnabledCheckbox->setEnabled(supportsAudio);
+    m_audioSourceCombo->setEnabled(supportsAudio && m_audioEnabledCheckbox->isChecked());
+    m_audioDeviceCombo->setEnabled(supportsAudio && m_audioEnabledCheckbox->isChecked());
+    if (!supportsAudio) {
+        m_systemAudioWarningLabel->hide();
+    }
 }
 
 void SettingsDialog::onSave()

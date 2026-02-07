@@ -143,14 +143,17 @@ void MainApplication::handleCLICommand(const QByteArray& commandData)
                 m_recordingManager->stopRecording();
             }
         }
-        else {
-            // Default: toggle (backwards compatible)
+        else if (action.isEmpty() || action == "toggle") {
+            // Default action (no explicit action provided): toggle
             if (m_recordingManager->isActive()) {
                 m_recordingManager->stopRecording();
             }
             else {
                 onFullScreenRecording();
             }
+        }
+        else {
+            qWarning() << "Unknown record action:" << action;
         }
     }
     else if (msg.command == "pin") {
@@ -680,7 +683,7 @@ void MainApplication::onPasteFromClipboard()
     }
 }
 
-void MainApplication::showRecordingPreview(const QString& videoPath)
+void MainApplication::showRecordingPreview(const QString& videoPath, int preferredFormat)
 {
     // Prevent multiple preview windows
     if (m_previewWindow) {
@@ -690,6 +693,7 @@ void MainApplication::showRecordingPreview(const QString& videoPath)
     }
 
     m_previewWindow = new RecordingPreviewWindow(videoPath);
+    m_previewWindow->setPreferredFormat(preferredFormat);
 
     // Connect save/discard signals
     connect(m_previewWindow, &RecordingPreviewWindow::saveRequested,

@@ -9,10 +9,13 @@
 #include <QList>
 #include <qwindowdefs.h>
 
+#include "encoding/EncoderFactory.h"
+
 class QScreen;
 class ICaptureEngine;
 class IVideoEncoder;
 class NativeGifEncoder;
+class WebPAnimationEncoder;
 class IAudioCaptureEngine;
 
 /**
@@ -41,7 +44,7 @@ public:
         QString audioDevice;
         QString outputPath;
         bool useNativeEncoder = true;
-        bool useGif = false;
+        EncoderFactory::Format outputFormat = EncoderFactory::Format::MP4;
         QSize frameSize;
         int quality = 55;
         QList<WId> excludedWindowIds;  // Windows to exclude from capture (e.g., recording UI)
@@ -58,6 +61,7 @@ public:
         ICaptureEngine *captureEngine = nullptr;
         IVideoEncoder *nativeEncoder = nullptr;
         NativeGifEncoder *gifEncoder = nullptr;
+        WebPAnimationEncoder *webpEncoder = nullptr;
         IAudioCaptureEngine *audioEngine = nullptr;
 
         bool usingNativeEncoder = false;
