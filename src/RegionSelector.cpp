@@ -31,6 +31,7 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include <QTextEdit>
 
 #include <cstring>
+#include <algorithm>
 #include <map>
 #include <QPainter>
 #include <QPainterPath>
@@ -420,6 +421,10 @@ RegionSelector::RegionSelector(QWidget* parent)
     // Connect input handler signals
     connect(m_inputHandler, &RegionInputHandler::toolCursorRequested,
         this, &RegionSelector::setToolCursor);
+    connect(m_inputHandler, &RegionInputHandler::currentPointUpdated,
+        this, [this](const QPoint& point) {
+            m_currentPoint = point;
+        });
     connect(m_inputHandler, qOverload<>(&RegionInputHandler::updateRequested),
         this, qOverload<>(&QWidget::update));
     connect(m_inputHandler, qOverload<const QRect&>(&RegionInputHandler::updateRequested),
@@ -1083,6 +1088,7 @@ void RegionSelector::paintEvent(QPaintEvent* event)
     if (shouldShowCrosshair) {
         drawMagnifier(painter);
     }
+
 }
 
 void RegionSelector::drawMagnifier(QPainter& painter)

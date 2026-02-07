@@ -6,8 +6,10 @@
 #include <QRect>
 #include <QRegion>
 #include <QCursor>
+#include <QTimer>
 #include "TransformationGizmo.h"
 #include "region/SelectionStateManager.h"
+#include "region/SelectionDirtyRegionPlanner.h"
 #include "tools/ToolId.h"
 
 class QMouseEvent;
@@ -84,6 +86,7 @@ public:
 
 signals:
     void toolCursorRequested();
+    void currentPointUpdated(const QPoint& point);
 
     // Repaint requests
     void updateRequested();
@@ -126,6 +129,9 @@ private:
     void handleAnnotationMove(const QPoint& pos);
     void handleHoverMove(const QPoint& pos, Qt::MouseButtons buttons);
     void handleThrottledUpdate();
+    void updateDragFramePump();
+    void onDragFrameTick();
+    QPoint currentCursorLocalPos() const;
 
     // Mouse release helpers
     bool handleTextEditorRelease(const QPoint& pos);
@@ -171,9 +177,11 @@ private:
     QPoint m_currentPoint;
     QPoint m_startPoint;
     QPoint m_lastWindowDetectionPos;
-    QPoint m_lastCrosshairPoint;  // Previous crosshair position for dirty region erasure
+    QPoint m_lastCrosshairPoint;  // Previous pointer position (retained for repaint tracking state)
     QRect m_lastSelectionRect;
     QRect m_lastMagnifierRect;
+    QRect m_lastToolbarRect;
+    QRect m_lastRegionControlRect;
     QRect m_highlightedWindowRect;
     bool m_hasDetectedWindow = false;
     ToolId m_currentTool;
@@ -219,6 +227,10 @@ private:
 
     // Constants
     static constexpr int WINDOW_DETECTION_MIN_DISTANCE_SQ = 64;  // 8px threshold squared (improved for high-DPI)
+
+    // Drag smoothing / repaint planning
+    SelectionDirtyRegionPlanner m_dirtyRegionPlanner;
+    QTimer m_dragFrameTimer;
 };
 
 #endif // REGIONINPUTHANDLER_H

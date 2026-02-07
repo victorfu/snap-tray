@@ -5,7 +5,6 @@
 #include "region/RegionControlWidget.h"
 #include "region/MultiRegionManager.h"
 #include "region/UpdateThrottler.h"
-#include "region/MagnifierPanel.h"
 #include "annotations/AnnotationLayer.h"
 #include "annotations/TextBoxAnnotation.h"
 #include "annotations/EmojiStickerAnnotation.h"
@@ -25,11 +24,15 @@
 #include <QDateTime>
 #include <QDebug>
 #include <QTextEdit>
+#include <QCursor>
 
 RegionInputHandler::RegionInputHandler(QObject* parent)
     : QObject(parent)
     , m_currentTool(ToolId::Selection)
 {
+    m_dragFrameTimer.setTimerType(Qt::PreciseTimer);
+    m_dragFrameTimer.setInterval(SelectionDirtyRegionPlanner::kDragFrameIntervalMs);
+    connect(&m_dragFrameTimer, &QTimer::timeout, this, &RegionInputHandler::onDragFrameTick);
 }
 
 void RegionInputHandler::setSelectionManager(SelectionStateManager* manager)
@@ -147,6 +150,9 @@ void RegionInputHandler::resetDirtyTracking()
     m_lastMagnifierRect = QRect();
     m_lastCrosshairPoint = QPoint();
     m_lastSelectionRect = QRect();
+    m_lastToolbarRect = QRect();
+    m_lastRegionControlRect = QRect();
+    m_dragFrameTimer.stop();
 }
 
 // ============================================================================
@@ -1010,9 +1016,11 @@ void RegionInputHandler::handleHoverMove(const QPoint& pos, Qt::MouseButtons but
 
 void RegionInputHandler::handleThrottledUpdate()
 {
-    if (!m_updateThrottler || !m_parentWidget) {
+    if (!m_updateThrottler || !m_parentWidget || !m_selectionManager) {
         return;
     }
+
+    updateDragFramePump();
 
     // First frame after initialization: the initial show() painted magnifier + crosshair
     // at the initial cursor position, but m_lastMagnifierRect is still null (unset).
@@ -1020,90 +1028,74 @@ void RegionInputHandler::handleThrottledUpdate()
     if (m_lastMagnifierRect.isNull()) {
         m_lastCrosshairPoint = m_currentPoint;
         m_lastSelectionRect = m_selectionManager->selectionRect().normalized();
-
-        // Compute initial magnifier rect matching MagnifierPanel::draw() position
-        const int pw = MagnifierPanel::kWidth;
-        const int th = MagnifierPanel::kHeight + 85;
-        const int off = 20;
-        int mx = m_currentPoint.x() + off;
-        int my = m_currentPoint.y() + off;
-        if (mx + pw + 10 > m_parentWidget->width())
-            mx = m_currentPoint.x() - pw - off;
-        if (my + th + 10 > m_parentWidget->height())
-            my = m_currentPoint.y() - th - off;
-        mx = qMax(10, mx);
-        my = qMax(10, my);
-        m_lastMagnifierRect = QRect(mx - 5, my - 5, pw + 10, th + 10);
+        m_lastMagnifierRect = m_dirtyRegionPlanner.magnifierRectForCursor(
+            m_currentPoint, m_parentWidget->size());
+        const bool hasRenderableSelection =
+            m_selectionManager->hasSelection() && m_lastSelectionRect.isValid();
+        if (hasRenderableSelection && m_toolbar) {
+            m_toolbar->setViewportWidth(m_parentWidget->width());
+            m_toolbar->setPositionForSelection(m_lastSelectionRect, m_parentWidget->height());
+            m_lastToolbarRect = m_toolbar->boundingRect();
+        }
+        else {
+            m_lastToolbarRect = QRect();
+        }
+        if (hasRenderableSelection && m_regionControlWidget) {
+            const QRect dimensionInfoRect =
+                m_dirtyRegionPlanner.dimensionInfoRectForSelection(m_lastSelectionRect);
+            m_regionControlWidget->updatePosition(
+                dimensionInfoRect, m_parentWidget->width(), m_parentWidget->height());
+            m_lastRegionControlRect = m_regionControlWidget->boundingRect();
+        }
+        else {
+            m_lastRegionControlRect = QRect();
+        }
 
         m_parentWidget->update();  // Full repaint for first frame
         return;
     }
 
     if (m_selectionManager->isSelecting() || m_selectionManager->isResizing() || m_selectionManager->isMoving()) {
-        // Strategy: build a "cluster rect" (union of all localized UI elements), then add
-        // crosshair strips separately in a QRegion. The crosshair is the ONLY element that
-        // spans the full screen — everything else is localized near the selection area.
-        // This avoids the old QRect::united() producing a full-screen bounding box.
-        QRect currentSelRect = m_selectionManager->selectionRect().normalized();
+        const QRect currentSelectionRect = m_selectionManager->selectionRect().normalized();
+        const QRect currentMagnifierRect = m_dirtyRegionPlanner.magnifierRectForCursor(
+            m_currentPoint, m_parentWidget->size());
+        QRect currentToolbarRect;
+        QRect currentRegionControlRect;
+        const bool hasRenderableSelection = m_selectionManager->hasSelection() && currentSelectionRect.isValid();
 
-        // 1. Selection area (old + new, expanded for handles/border)
-        const int handleMargin = 12;
-        QRect clusterRect = currentSelRect.adjusted(-handleMargin, -handleMargin, handleMargin, handleMargin);
-        clusterRect = clusterRect.united(
-            m_lastSelectionRect.adjusted(-handleMargin, -handleMargin, handleMargin, handleMargin));
-
-        // 2. Dimension info panel (old + new)
-        const int dimInfoHeight = 40;
-        const int dimInfoWidth = 180;
-        clusterRect = clusterRect.united(
-            QRect(currentSelRect.left(), currentSelRect.top() - dimInfoHeight - 10, dimInfoWidth, dimInfoHeight));
-        clusterRect = clusterRect.united(
-            QRect(m_lastSelectionRect.left(), m_lastSelectionRect.top() - dimInfoHeight - 10, dimInfoWidth, dimInfoHeight));
-
-        // 3. Magnifier panel (matching MagnifierPanel::draw position logic exactly)
-        const int w = m_parentWidget->width();
-        const int h = m_parentWidget->height();
-        const int panelWidth = MagnifierPanel::kWidth;
-        const int totalHeight = MagnifierPanel::kHeight + 85;
-        const int magOffset = 20;
-        int magX = m_currentPoint.x() + magOffset;
-        int magY = m_currentPoint.y() + magOffset;
-        if (magX + panelWidth + 10 > w)
-            magX = m_currentPoint.x() - panelWidth - magOffset;
-        if (magY + totalHeight + 10 > h)
-            magY = m_currentPoint.y() - totalHeight - magOffset;
-        magX = qMax(10, magX);
-        magY = qMax(10, magY);
-        QRect magRect(magX - 5, magY - 5, panelWidth + 10, totalHeight + 10);
-        clusterRect = clusterRect.united(magRect).united(m_lastMagnifierRect);
-
-        // 4. Toolbar area (old position from last paint)
-        if (m_toolbar) {
-            QRect toolbarRect = m_toolbar->boundingRect();
-            if (!toolbarRect.isEmpty()) {
-                clusterRect = clusterRect.united(toolbarRect.adjusted(-5, -5, 5, 5));
-            }
-        }
-        // Generous bottom padding for toolbar repositioning
-        clusterRect = clusterRect.adjusted(0, 0, 0, 60);
-
-        // 5. RegionControlWidget (corner-radius / multi-region buttons next to dim info)
-        if (m_regionControlWidget) {
-            QRect rcwRect = m_regionControlWidget->boundingRect();
-            if (!rcwRect.isEmpty()) {
-                clusterRect = clusterRect.united(rcwRect.adjusted(-5, -5, 5, 5));
-            }
+        if (hasRenderableSelection && m_toolbar) {
+            // Predict next toolbar placement from the latest selection rect instead of reusing stale paint geometry.
+            m_toolbar->setViewportWidth(m_parentWidget->width());
+            m_toolbar->setPositionForSelection(currentSelectionRect, m_parentWidget->height());
+            currentToolbarRect = m_toolbar->boundingRect();
         }
 
-        // Build QRegion: cluster + separate crosshair strips
-        QRegion dirtyRegion(clusterRect);
-        dirtyRegion += QRect(0, m_currentPoint.y() - 2, w, 4);       // New H-strip
-        dirtyRegion += QRect(m_currentPoint.x() - 2, 0, 4, h);       // New V-strip
-        dirtyRegion += QRect(0, m_lastCrosshairPoint.y() - 2, w, 4); // Old H-strip
-        dirtyRegion += QRect(m_lastCrosshairPoint.x() - 2, 0, 4, h); // Old V-strip
+        if (hasRenderableSelection && m_regionControlWidget) {
+            // RegionControlWidget is positioned from the dimension panel anchor during paint;
+            // mirror that anchor here so dirty-region planning includes next-frame placement.
+            const QRect currentDimensionInfoRect =
+                m_dirtyRegionPlanner.dimensionInfoRectForSelection(currentSelectionRect);
+            m_regionControlWidget->updatePosition(
+                currentDimensionInfoRect, m_parentWidget->width(), m_parentWidget->height());
+            currentRegionControlRect = m_regionControlWidget->boundingRect();
+        }
 
-        m_lastSelectionRect = currentSelRect;
-        m_lastMagnifierRect = magRect;
+        SelectionDirtyRegionPlanner::SelectionDragParams params;
+        params.currentSelectionRect = currentSelectionRect;
+        params.lastSelectionRect = m_lastSelectionRect;
+        params.currentToolbarRect = currentToolbarRect;
+        params.lastToolbarRect = m_lastToolbarRect;
+        params.currentRegionControlRect = currentRegionControlRect;
+        params.lastRegionControlRect = m_lastRegionControlRect;
+        params.currentMagnifierRect = currentMagnifierRect;
+        params.lastMagnifierRect = m_lastMagnifierRect;
+        params.viewportSize = m_parentWidget->size();
+        const QRegion dirtyRegion = m_dirtyRegionPlanner.planSelectionDragRegion(params);
+
+        m_lastSelectionRect = currentSelectionRect;
+        m_lastMagnifierRect = currentMagnifierRect;
+        m_lastToolbarRect = currentToolbarRect;
+        m_lastRegionControlRect = currentRegionControlRect;
         m_lastCrosshairPoint = m_currentPoint;
 
         m_parentWidget->update(dirtyRegion);
@@ -1122,38 +1114,90 @@ void RegionInputHandler::handleThrottledUpdate()
     }
     else {
         // No throttle — update on every mouse move for instant magnifier feedback
-        // Cluster rect for magnifier + separate crosshair strips
-        const int w = m_parentWidget->width();
-        const int h = m_parentWidget->height();
-        const int panelWidth = MagnifierPanel::kWidth;
-        const int totalHeight = MagnifierPanel::kHeight + 85;
+        const QRect currentMagnifierRect = m_dirtyRegionPlanner.magnifierRectForCursor(
+            m_currentPoint, m_parentWidget->size());
 
-        // Magnifier position matching MagnifierPanel::draw() exactly
-        const int magOffset = 20;
-        int magX = m_currentPoint.x() + magOffset;
-        int magY = m_currentPoint.y() + magOffset;
-        if (magX + panelWidth + 10 > w)
-            magX = m_currentPoint.x() - panelWidth - magOffset;
-        if (magY + totalHeight + 10 > h)
-            magY = m_currentPoint.y() - totalHeight - magOffset;
-        magX = qMax(10, magX);
-        magY = qMax(10, magY);
-        QRect magRect(magX - 5, magY - 5, panelWidth + 10, totalHeight + 10);
+        SelectionDirtyRegionPlanner::HoverParams params;
+        params.currentMagnifierRect = currentMagnifierRect;
+        params.lastMagnifierRect = m_lastMagnifierRect;
+        params.viewportSize = m_parentWidget->size();
+        const QRegion dirtyRegion = m_dirtyRegionPlanner.planHoverRegion(params);
 
-        // Cluster: current magnifier + previous magnifier
-        QRegion dirtyRegion(magRect.united(m_lastMagnifierRect));
-
-        // Crosshair strips (old + new, kept as thin rects — not united into cluster)
-        dirtyRegion += QRect(0, m_currentPoint.y() - 3, w, 6);
-        dirtyRegion += QRect(m_currentPoint.x() - 3, 0, 6, h);
-        dirtyRegion += QRect(0, m_lastCrosshairPoint.y() - 3, w, 6);
-        dirtyRegion += QRect(m_lastCrosshairPoint.x() - 3, 0, 6, h);
-
-        m_lastMagnifierRect = magRect;
+        m_lastMagnifierRect = currentMagnifierRect;
         m_lastCrosshairPoint = m_currentPoint;
 
         m_parentWidget->update(dirtyRegion);
     }
+}
+
+void RegionInputHandler::updateDragFramePump()
+{
+    if (!m_selectionManager || !m_parentWidget) {
+        m_dragFrameTimer.stop();
+        return;
+    }
+
+    const bool shouldRun = m_selectionManager->isSelecting() ||
+                           m_selectionManager->isResizing() ||
+                           m_selectionManager->isMoving();
+    if (shouldRun) {
+        if (!m_dragFrameTimer.isActive()) {
+            m_dragFrameTimer.start();
+        }
+        return;
+    }
+
+    if (m_dragFrameTimer.isActive()) {
+        m_dragFrameTimer.stop();
+    }
+}
+
+void RegionInputHandler::onDragFrameTick()
+{
+    if (!m_parentWidget || !m_selectionManager) {
+        m_dragFrameTimer.stop();
+        return;
+    }
+
+    if (!m_selectionManager->isSelecting() &&
+        !m_selectionManager->isResizing() &&
+        !m_selectionManager->isMoving()) {
+        m_dragFrameTimer.stop();
+        return;
+    }
+
+    const QPoint localPos = currentCursorLocalPos();
+    if (localPos == m_currentPoint) {
+        return;
+    }
+
+    m_currentPoint = localPos;
+    emit currentPointUpdated(localPos);
+    if (m_selectionManager->isSelecting()) {
+        handleSelectionMove(localPos);
+    }
+    else if (m_selectionManager->isResizing()) {
+        m_selectionManager->updateResize(localPos);
+    }
+    else if (m_selectionManager->isMoving()) {
+        m_selectionManager->updateMove(localPos);
+    }
+
+    handleThrottledUpdate();
+}
+
+QPoint RegionInputHandler::currentCursorLocalPos() const
+{
+    if (!m_parentWidget) {
+        return QPoint();
+    }
+
+    QPoint localPos = m_parentWidget->mapFromGlobal(QCursor::pos());
+    const int maxX = qMax(0, m_parentWidget->width() - 1);
+    const int maxY = qMax(0, m_parentWidget->height() - 1);
+    localPos.setX(qBound(0, localPos.x(), maxX));
+    localPos.setY(qBound(0, localPos.y(), maxY));
+    return localPos;
 }
 
 // ============================================================================

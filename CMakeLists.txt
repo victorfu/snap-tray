@@ -629,6 +629,7 @@ add_library(snaptray_ui STATIC
     src/region/MultiRegionManager.cpp
     src/region/RegionPainter.cpp
     src/region/RegionInputHandler.cpp
+    src/region/SelectionDirtyRegionPlanner.cpp
     src/region/RegionToolbarHandler.cpp
     src/region/RegionSettingsHelper.cpp
     src/region/SelectionResizeHelper.cpp
@@ -722,6 +723,7 @@ add_library(snaptray_ui STATIC
     include/region/MultiRegionManager.h
     include/region/RegionPainter.h
     include/region/RegionInputHandler.h
+    include/region/SelectionDirtyRegionPlanner.h
     include/region/RegionToolbarHandler.h
     include/region/RegionSettingsHelper.h
     include/region/RegionExportManager.h

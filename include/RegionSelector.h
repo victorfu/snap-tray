@@ -6,9 +6,7 @@
 #include <QPoint>
 #include <QPointF>
 #include <QRect>
-#include <QVector>
 #include <QColor>
-#include <QElapsedTimer>
 #include <QSettings>
 #include <QPointer>
 #include <memory>

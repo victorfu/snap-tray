@@ -88,6 +88,11 @@ target_link_libraries(RegionSelector_SelectionStateManager PRIVATE snaptray_ui Q
 add_test(NAME RegionSelector_SelectionStateManager COMMAND RegionSelector_SelectionStateManager)
 set_tests_properties(RegionSelector_SelectionStateManager PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(RegionSelector_SelectionDirtyRegionPlanner RegionSelector/tst_SelectionDirtyRegionPlanner.cpp)
+target_link_libraries(RegionSelector_SelectionDirtyRegionPlanner PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME RegionSelector_SelectionDirtyRegionPlanner COMMAND RegionSelector_SelectionDirtyRegionPlanner)
+set_tests_properties(RegionSelector_SelectionDirtyRegionPlanner PROPERTIES TIMEOUT 60 LABELS "unit")
+
 # ============================================================================
 # Encoding Tests (link snaptray_platform)
 # ============================================================================
