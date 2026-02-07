@@ -19,6 +19,7 @@ class RecordingManager;
 class SettingsDialog;
 class RecordingPreviewWindow;
 class UpdateChecker;
+class PinHistoryWindow;
 struct ReleaseInfo;
 
 class MainApplication : public QObject
@@ -43,6 +44,7 @@ private slots:
     void onFullScreenRecording();
     void onCloseAllPins();
     void onPinFromImage();
+    void onPinHistory();
     void onImageLoaded(const QString &filePath, const QImage &image);
     void onSettings();
     void showRecordingPreview(const QString &videoPath, int preferredFormat);
@@ -64,8 +66,10 @@ private:
     QAction *m_regionCaptureAction;
     QAction *m_screenCanvasAction;
     QAction *m_pinFromImageAction;
+    QAction *m_pinHistoryAction;
     QAction *m_fullScreenRecordingAction;
     SettingsDialog *m_settingsDialog;
+    QPointer<PinHistoryWindow> m_pinHistoryWindow;
     QPointer<RecordingPreviewWindow> m_previewWindow;
     UpdateChecker *m_updateChecker;
 };

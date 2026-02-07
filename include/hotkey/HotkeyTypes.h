@@ -40,6 +40,7 @@ enum class HotkeyAction {
     // Pin actions (400-499)
     QuickPin = 400,
     PinFromImage = 401,
+    PinHistory = 402,
 
     // Recording actions (500-599)
     RecordFullScreen = 500,
@@ -143,6 +144,14 @@ inline constexpr HotkeyMetadata kDefaultHotkeys[] = {
         "Pin an image from file",
         "pinFromImageHotkey",  // kSettingsKeyPinFromImageHotkey
         ""                     // Optional, no default
+    },
+    {
+        HotkeyAction::PinHistory,
+        HotkeyCategory::Pin,
+        "Pin History",
+        "Open pin history window",
+        "pinHistoryHotkey",  // kSettingsKeyPinHistoryHotkey
+        ""                   // Optional, no default
     },
     {
         HotkeyAction::RecordFullScreen,

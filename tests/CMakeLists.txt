@@ -64,6 +64,16 @@ target_link_libraries(PinWindow_RegionLayoutRenderer PRIVATE snaptray_ui Qt6::Te
 add_test(NAME PinWindow_RegionLayoutRenderer COMMAND PinWindow_RegionLayoutRenderer)
 set_tests_properties(PinWindow_RegionLayoutRenderer PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(PinWindow_PinHistoryStore PinWindow/tst_PinHistoryStore.cpp)
+target_link_libraries(PinWindow_PinHistoryStore PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME PinWindow_PinHistoryStore COMMAND PinWindow_PinHistoryStore)
+set_tests_properties(PinWindow_PinHistoryStore PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(PinWindow_PinHistoryWindow PinWindow/tst_PinHistoryWindow.cpp)
+target_link_libraries(PinWindow_PinHistoryWindow PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME PinWindow_PinHistoryWindow COMMAND PinWindow_PinHistoryWindow)
+set_tests_properties(PinWindow_PinHistoryWindow PROPERTIES TIMEOUT 60 LABELS "unit;integration")
+
 # ============================================================================
 # RegionSelector Tests
 # ============================================================================

@@ -12,6 +12,7 @@
 #include "pinwindow/UIIndicators.h"
 #include "pinwindow/RegionLayoutManager.h"
 #include "pinwindow/RegionLayoutRenderer.h"
+#include "pinwindow/PinHistoryStore.h"
 #include "toolbar/WindowedToolbar.h"
 #include "toolbar/WindowedSubToolbar.h"
 #include "annotations/AnnotationLayer.h"
@@ -60,7 +61,6 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include <QCursor>
 #include <QScreen>
 #include <QtMath>
-#include <QStandardPaths>
 #include <QDateTime>
 #include <QToolTip>
 #include <QTextEdit>
@@ -1115,8 +1115,7 @@ void PinWindow::copyAllInfo()
 
 QString PinWindow::cacheFolderPath()
 {
-    QString basePath = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
-    return QDir(basePath).filePath("pinwindow_history");
+    return PinHistoryStore::historyFolderPath();
 }
 
 void PinWindow::openCacheFolder()
@@ -1138,6 +1137,9 @@ void PinWindow::saveToCacheAsync()
 {
     QPixmap pixmapToSave = m_originalPixmap;
     int maxCacheFiles = PinWindowSettingsManager::instance().loadMaxCacheFiles();
+    const qreal sourceDpr = (pixmapToSave.devicePixelRatio() > 0.0)
+        ? pixmapToSave.devicePixelRatio()
+        : 1.0;
 
     // Prepare region metadata if multi-region data exists
     QByteArray regionMetadata;
@@ -1145,7 +1147,7 @@ void PinWindow::saveToCacheAsync()
         regionMetadata = RegionLayoutManager::serializeRegions(m_storedRegions);
     }
 
-    QThreadPool::globalInstance()->start([pixmapToSave, maxCacheFiles, regionMetadata]() {
+    QThreadPool::globalInstance()->start([pixmapToSave, maxCacheFiles, regionMetadata, sourceDpr]() {
         QString path = cacheFolderPath();
         QDir dir(path);
         if (!dir.exists()) {
@@ -1160,10 +1162,18 @@ void PinWindow::saveToCacheAsync()
         QString filePath = dir.filePath(filename);
 
         if (pixmapToSave.save(filePath)) {
+            // Persist DPR sidecar so history re-pin restores logical sizing on HiDPI displays.
+            const QString dprMetadataPath = PinHistoryStore::dprMetadataPathForImage(filePath);
+            QFile dprFile(dprMetadataPath);
+            if (dprFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+                const QByteArray dprText = QByteArray::number(sourceDpr, 'f', 4);
+                dprFile.write(dprText);
+                dprFile.close();
+            }
+
             // Save region metadata sidecar file if available
             if (!regionMetadata.isEmpty()) {
-                QString metadataPath = filePath;
-                metadataPath.replace(".png", ".snpr");
+                const QString metadataPath = PinHistoryStore::regionMetadataPathForImage(filePath);
                 QFile metaFile(metadataPath);
                 if (metaFile.open(QIODevice::WriteOnly)) {
                     metaFile.write(regionMetadata);
@@ -1181,9 +1191,8 @@ void PinWindow::saveToCacheAsync()
                 const QFileInfo& oldest = files.takeLast();
                 QFile::remove(oldest.filePath());
                 // Also remove associated metadata file
-                QString metaPath = oldest.filePath();
-                metaPath.replace(".png", ".snpr");
-                QFile::remove(metaPath);
+                QFile::remove(PinHistoryStore::regionMetadataPathForImage(oldest.filePath()));
+                QFile::remove(PinHistoryStore::dprMetadataPathForImage(oldest.filePath()));
             }
         }
         else {

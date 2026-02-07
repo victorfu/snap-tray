@@ -638,6 +638,8 @@ add_library(snaptray_ui STATIC
     # PinWindow
     src/PinWindow.cpp
     src/PinWindowManager.cpp
+    src/pinwindow/PinHistoryStore.cpp
+    src/pinwindow/PinHistoryWindow.cpp
     src/pinwindow/ImageTransformer.cpp
     src/toolbar/WindowedToolbar.cpp
     src/toolbar/WindowedSubToolbar.cpp
@@ -729,6 +731,8 @@ add_library(snaptray_ui STATIC
     include/region/RegionExportManager.h
     include/PinWindow.h
     include/PinWindowManager.h
+    include/pinwindow/PinHistoryStore.h
+    include/pinwindow/PinHistoryWindow.h
     include/pinwindow/ImageTransformer.h
     include/toolbar/WindowedToolbar.h
     include/toolbar/WindowedSubToolbar.h

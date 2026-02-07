@@ -7,6 +7,7 @@
 #include "RecordingManager.h"
 #include "ScreenCanvasManager.h"
 #include "SettingsDialog.h"
+#include "pinwindow/PinHistoryWindow.h"
 #include "cli/IPCProtocol.h"
 #include "hotkey/HotkeyManager.h"
 #include "ui/GlobalToast.h"
@@ -61,6 +62,7 @@ MainApplication::MainApplication(QObject* parent)
     , m_regionCaptureAction(nullptr)
     , m_screenCanvasAction(nullptr)
     , m_pinFromImageAction(nullptr)
+    , m_pinHistoryAction(nullptr)
     , m_fullScreenRecordingAction(nullptr)
     , m_settingsDialog(nullptr)
     , m_updateChecker(nullptr)
@@ -302,6 +304,9 @@ void MainApplication::initialize()
     m_pinFromImageAction = m_trayMenu->addAction("Pin from Image...");
     connect(m_pinFromImageAction, &QAction::triggered, this, &MainApplication::onPinFromImage);
 
+    m_pinHistoryAction = m_trayMenu->addAction("Pin History");
+    connect(m_pinHistoryAction, &QAction::triggered, this, &MainApplication::onPinHistory);
+
     QAction* closeAllPinsAction = m_trayMenu->addAction("Close All Pins");
     connect(closeAllPinsAction, &QAction::triggered, this, &MainApplication::onCloseAllPins);
 
@@ -472,6 +477,26 @@ void MainApplication::onPinFromImage()
     });
 }
 
+void MainApplication::onPinHistory()
+{
+    if (m_pinHistoryWindow) {
+        if (m_pinHistoryWindow->isMinimized()) {
+            m_pinHistoryWindow->showNormal();
+        }
+        else if (!m_pinHistoryWindow->isVisible()) {
+            m_pinHistoryWindow->show();
+        }
+        m_pinHistoryWindow->raise();
+        m_pinHistoryWindow->activateWindow();
+        return;
+    }
+
+    m_pinHistoryWindow = new PinHistoryWindow(m_pinWindowManager);
+    m_pinHistoryWindow->show();
+    m_pinHistoryWindow->raise();
+    m_pinHistoryWindow->activateWindow();
+}
+
 void MainApplication::onImageLoaded(const QString &filePath, const QImage &image)
 {
     if (image.isNull()) {
@@ -578,6 +603,9 @@ void MainApplication::onHotkeyAction(SnapTray::HotkeyAction action)
         break;
     case HotkeyAction::PinFromImage:
         onPinFromImage();
+        break;
+    case HotkeyAction::PinHistory:
+        onPinHistory();
         break;
     case HotkeyAction::RecordFullScreen:
         onFullScreenRecording();
@@ -769,6 +797,16 @@ void MainApplication::updateTrayMenuHotkeyText()
             m_pinFromImageAction->setText(QString("Pin from Image... (%1)").arg(displayHotkey));
         } else {
             m_pinFromImageAction->setText(QStringLiteral("Pin from Image..."));
+        }
+    }
+
+    if (m_pinHistoryAction) {
+        auto config = mgr.getConfig(HotkeyAction::PinHistory);
+        QString displayHotkey = HotkeyManager::formatKeySequence(config.keySequence);
+        if (!displayHotkey.isEmpty()) {
+            m_pinHistoryAction->setText(QString("Pin History (%1)").arg(displayHotkey));
+        } else {
+            m_pinHistoryAction->setText(QStringLiteral("Pin History"));
         }
     }
 
