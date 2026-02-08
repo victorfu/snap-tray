@@ -6,7 +6,7 @@ SnapTray is a lightweight tray utility for region screenshots, on-screen annotat
 
 ## Features
 
-- **System Tray Menu**: `Region Capture` (shows current hotkey), `Screen Canvas` (shows current hotkey), `Record Full Screen`, `Close All Pins`, `Exit Click-through`, `Settings`, `Exit`
+- **System Tray Menu**: `Region Capture` (shows current hotkey), `Screen Canvas` (shows current hotkey), `Pin from Image...`, `Pin History`, `Close All Pins`, `Record Full Screen`, `Settings`, `Exit`
 - **Global Hotkeys**: Customizable in settings with live hotkey registration
   - Region Capture: Default `F2`
   - Screen Canvas: Default `Ctrl+F2`
@@ -16,32 +16,35 @@ SnapTray is a lightweight tray utility for region screenshots, on-screen annotat
   - Dimension display
   - Selection handles (Snipaste-style)
   - Aspect ratio lock (hold Shift to constrain proportions)
-  - Multi-region selection (Debug build only; capture multiple areas, merge or save separately)
+  - Multi-region selection (capture multiple areas, merge or save separately)
   - Include cursor option in screenshots
   - Window detection (macOS/Windows): Auto-detect window under cursor, single-click to select
   - Right-click to cancel selection
 - **Capture Toolbar**:
   - `Selection` tool (adjust selection area)
-  - Annotation tools: `Arrow` / `Pencil` / `Marker` / `Shape` (Rectangle/Ellipse, outline/filled) / `Text` / `Mosaic` / `StepBadge` / `Eraser`
+  - Annotation tools: `Arrow` / `Pencil` / `Marker` / `Shape` (Rectangle/Ellipse, outline/filled) / `Text` / `Mosaic` / `StepBadge` / `EmojiSticker` / `Eraser`
   - `Undo` / `Redo`
   - `Pin` to screen (Enter)
   - `Save` to file (Ctrl+S / Cmd+S on macOS)
   - `Copy` to clipboard (Ctrl+C / Cmd+C on macOS)
   - `Cancel` (Esc)
   - `OCR` text recognition (macOS/Windows, supports Traditional Chinese, Simplified Chinese, English)
+  - `QR Code Scan` (scan QR/barcodes from the selected region)
   - `Auto Blur` auto-detect and blur faces/text in the selection
   - `Record` screen recording (R) for the selected region
+  - `Multi-Region` capture toggle (`M`)
   - Color + line width controls for supported tools
   - Text formatting controls for Text tool (font family/size, bold/italic/underline)
 - **Screen Canvas**:
   - Full-screen annotation mode, draw directly on screen
-  - Drawing tools: `Pencil` / `Marker` / `Arrow` / `Shape` (Rectangle) / `StepBadge` / `Text` / `EmojiSticker` / `Eraser`
-  - Presentation tools: `Laser Pointer` / `Cursor Highlight` (click ripple) / `Spotlight` (focus attention)
+  - Drawing tools: `Pencil` / `Marker` / `Arrow` / `Shape` / `StepBadge` / `Text` / `EmojiSticker`
+  - Presentation tool: `Laser Pointer`
+  - Background modes: `Whiteboard` / `Blackboard`
   - Color + line width controls
   - Undo/Redo/Clear support
   - `Esc` to exit
 - **Screen Recording**:
-  - Start from capture toolbar (`Record` or `R`)
+  - Start from capture toolbar (`Record` or `R`) or tray menu (`Record Full Screen`)
   - Adjustable region with Start/Cancel
   - Floating control bar with Pause/Resume/Stop/Cancel
   - MP4 (H.264) via native encoder (Media Foundation/AVFoundation); GIF and WebP via built-in encoders
@@ -56,26 +59,34 @@ SnapTray is a lightweight tray utility for region screenshots, on-screen annotat
   - Edge drag to resize
   - Rotation/flip via keyboard: `1` rotate CW, `2` rotate CCW, `3` flip horizontal, `4` flip vertical
   - Double-click or Esc to close
-  - Context menu: Copy/Save/OCR/Watermark/Click-through/Close
+  - Context menu: Copy/Save/Open Cache Folder/OCR/QR Code Scan/Watermark/Click-through/Live Update/Close
   - **Annotation Toolbar**: Click the pencil icon to open annotation tools
     - Drawing tools: `Pencil` / `Marker` / `Arrow` / `Shape` / `Text` / `Mosaic` / `StepBadge` / `EmojiSticker` / `Eraser`
     - `Undo` / `Redo` support
     - `OCR` / `Copy` / `Save` quick actions
 - **Settings Dialog**:
-  - General tab: Launch at startup, toolbar style (Dark/Light), pin window opacity/zoom settings
+  - General tab: Launch at startup, toolbar style (Dark/Light), pin window opacity/zoom/cache settings, CLI install/uninstall
   - Hotkeys tab: Separate hotkeys for Region Capture and Screen Canvas
+  - Advanced tab: Auto blur configuration
   - Watermark tab: Image watermark, opacity, position, and scale
+  - OCR tab: OCR language selection and post-recognition behavior
   - Recording tab: Frame rate, output format (MP4/GIF/WebP), quality, countdown, click highlight, cursor visibility, spotlight, audio (enable/source/device)
   - Files tab: Screenshot/recording save paths, filename format
+  - Updates tab: Auto-check, check frequency, pre-release channel, manual check now
   - About tab: Version information
+  - Automatic update checks run in the background
   - Settings stored via QSettings
 
 ## Tech Stack
 
 - **Language**: C++17
-- **Framework**: Qt 6 (Widgets/Gui/Svg)
-- **Build System**: CMake 3.16+
-- **Dependencies**: [QHotkey](https://github.com/Skycoder42/QHotkey) (auto-fetched via FetchContent)
+- **Framework**: Qt 6 (Widgets/Gui/Svg/Concurrent/Network)
+- **Build System**: CMake 3.16+ + Ninja
+- **Dependencies** (auto-fetched via FetchContent):
+  - [QHotkey](https://github.com/Skycoder42/QHotkey) (global hotkeys)
+  - [OpenCV 4.10.0](https://github.com/opencv/opencv) (face/text detection pipeline)
+  - [libwebp 1.3.2](https://github.com/webmproject/libwebp) (WebP animation encoding)
+  - [ZXing-CPP v2.2.1](https://github.com/zxing-cpp/zxing-cpp) (QR/barcode processing)
 - **macOS Frameworks**:
   - CoreGraphics / ApplicationServices (window detection)
   - AppKit (system integration)
@@ -96,19 +107,19 @@ SnapTray currently supports macOS and Windows only.
 
 ### macOS
 
-- macOS 10.15+ (ScreenCaptureKit recording uses 12.3+ when available)
-- Qt 6 (recommend installing via Homebrew)
+- macOS 14.0+
+- Qt 6.10.1 (Widgets/Gui/Svg/Concurrent/Network; Homebrew install recommended)
 - Xcode Command Line Tools
-- CMake 3.16+
-- Git (for FetchContent to fetch QHotkey)
+- CMake 3.16+ and Ninja
+- Git (for FetchContent dependencies)
 
 ### Windows
 
 - Windows 10+
-- Qt 6
-- Visual Studio 2019+ or MinGW
-- CMake 3.16+
-- Git (for FetchContent to fetch QHotkey)
+- Qt 6.10.1 (MSVC 2022 x64)
+- Visual Studio 2022 Build Tools + Windows SDK
+- CMake 3.16+ and Ninja
+- Git (for FetchContent dependencies)
 
 **PowerShell with MSVC**: If using PowerShell, load the Visual Studio environment first:
 
@@ -119,69 +130,64 @@ Enter-VsDevShell -VsInstallPath "C:\Program Files (x86)\Microsoft Visual Studio\
 
 ## Build & Run
 
-### Debug Build (Development)
+### Recommended Scripts
 
-Use Debug build during development for better debugging experience.
+Use the scripts in `scripts/` for day-to-day development and CI-style verification.
 
 **macOS:**
 
 ```bash
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH="$(brew --prefix qt)"
-cmake --build build --parallel
-open build/SnapTray.app
+./scripts/build.sh                  # Debug build
+./scripts/build-release.sh          # Release build
+./scripts/run-tests.sh              # Build + run tests
+./scripts/build-and-run.sh          # Debug build + run app
+./scripts/build-and-run-release.sh  # Release build + run app
 ```
 
-**Windows:**
+**Windows (cmd.exe or PowerShell with MSVC environment loaded):**
 
 ```batch
-# Step 1: Configure (replace with your Qt path)
+scripts\build.bat                   REM Debug build
+scripts\build-release.bat           REM Release build
+scripts\run-tests.bat               REM Build + run tests
+scripts\build-and-run.bat           REM Debug build + run app
+scripts\build-and-run-release.bat   REM Release build + run app
+```
+
+### Manual CMake (Advanced)
+
+Use this only if you need custom configure flags.
+
+**macOS (Debug):**
+
+```bash
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH="$(brew --prefix qt)"
+cmake --build build --parallel
+# Output: build/bin/SnapTray-Debug.app
+```
+
+**macOS (Release):**
+
+```bash
+cmake -S . -B release -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$(brew --prefix qt)"
+cmake --build release --parallel
+# Output: release/bin/SnapTray.app
+```
+
+**Windows (Debug):**
+
+```batch
 cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH=C:/Qt/6.10.1/msvc2022_64
-
-# Step 2: Build
 cmake --build build --parallel
-
-# Step 3: Deploy Qt dependencies (required to run the executable)
-C:\Qt\6.10.1\msvc2022_64\bin\windeployqt.exe build\bin\SnapTray.exe
-
-# Step 4: Run
-build\bin\SnapTray.exe
+C:\Qt\6.10.1\msvc2022_64\bin\windeployqt.exe build\bin\SnapTray-Debug.exe
 ```
 
-**Note:** Windows development builds require running `windeployqt` to copy Qt runtime DLLs (Qt6Core.dll, qwindows.dll platform plugin, etc.) alongside the executable. This step is automated in the packaging script for release builds.
-
-### Release Build (Production Testing)
-
-Use Release build to test production behavior before packaging.
-
-**macOS:**
-
-```bash
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$(brew --prefix qt)"
-cmake --build build --parallel
-# Output: build/SnapTray.app
-```
-
-**Windows:**
+**Windows (Release):**
 
 ```batch
-cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=C:/Qt/6.10.1/msvc2022_64
-cmake --build build --parallel
-
-# Deploy Qt dependencies
-C:\Qt\6.10.1\msvc2022_64\bin\windeployqt.exe --release build\bin\SnapTray.exe
-
-# Output: build\bin\SnapTray.exe
-```
-
-**Note:** For distribution, use the packaging scripts (see below) which automate the deployment process.
-
-### Running Tests
-
-```bash
-# Build and run all tests
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH="$(brew --prefix qt)"
-cmake --build build --parallel
-cd build && ctest --output-on-failure
+cmake -S . -B release -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=C:/Qt/6.10.1/msvc2022_64
+cmake --build release --parallel
+C:\Qt\6.10.1\msvc2022_64\bin\windeployqt.exe --release release\bin\SnapTray.exe
 ```
 
 ### Packaging
@@ -314,7 +320,7 @@ CMake automatically detects and uses the compiler cache when available. No addit
 
 ## Usage
 
-1. After launch, a green square icon appears in the system tray.
+1. After launch, the SnapTray icon appears in the system tray.
 2. Press the region capture hotkey (default `F2`) to enter capture mode; or press the screen canvas hotkey (default `Ctrl+F2`) for Screen Canvas mode.
 3. **Capture Mode**:
    - Drag mouse to select a region
@@ -328,6 +334,8 @@ CMake automatically detects and uses the compiler cache when available. No addit
    - `Ctrl+S` (Windows) / `Cmd+S` (macOS) or `Save`: Save to file
    - `R` or `Record`: Start screen recording (adjust region, then press Start Recording / Enter)
    - `OCR` (macOS/Windows): Recognize text in selection and copy to clipboard
+   - `QR Code Scan`: Detect and decode QR/barcodes in the selected region
+   - `M` or `Multi-Region`: Toggle multi-region capture mode
    - `Undo/Redo`: `Ctrl+Z` / `Ctrl+Shift+Z` (macOS: `Cmd+Z` / `Cmd+Shift+Z`)
    - Annotations: Select a tool and drag within selection area
      - `Text`: Click to enter text
@@ -337,7 +345,8 @@ CMake automatically detects and uses the compiler cache when available. No addit
 5. **Screen Recording**:
    - Use the control bar to Pause/Resume/Stop/Cancel
 6. **Screen Canvas Mode**:
-   - Toolbar provides drawing and presentation tools
+   - Toolbar provides drawing tools and laser pointer
+   - Use `Whiteboard` / `Blackboard` buttons to switch canvas background mode
    - Click color/width controls to adjust
    - `Undo` / `Redo`: Undo/redo annotations
    - `Clear`: Clear all annotations
@@ -348,7 +357,7 @@ CMake automatically detects and uses the compiler cache when available. No addit
    - Ctrl + mouse wheel to adjust opacity
    - Edge drag to resize
    - `1` rotate CW, `2` rotate CCW, `3` flip horizontal, `4` flip vertical
-   - Context menu (Copy/Save/OCR/Watermark/Close)
+   - Context menu (Copy/Save/Open Cache Folder/OCR/QR Code Scan/Watermark/Click-through/Live Update/Close)
    - Double-click or `Esc` to close
    - Click pencil icon to open annotation toolbar for drawing on pinned images
 
@@ -376,7 +385,7 @@ The `snaptray` command is available immediately after installation via App Execu
 | `region` | Capture specified region | No |
 | `gui` | Open region capture GUI | Yes |
 | `canvas` | Toggle Screen Canvas | Yes |
-| `record` | Start/stop recording | Yes |
+| `record` | Start/stop/toggle recording | Yes |
 | `pin` | Pin image to screen | Yes |
 | `config` | View/modify settings | Partial |
 
@@ -390,11 +399,14 @@ snaptray full --help
 
 # Local capture commands (no main instance needed)
 snaptray full -c                      # Full screen to clipboard
+snaptray full -d 1000 -o shot.png     # Delay 1s, then save
 snaptray full -o screenshot.png       # Full screen to file
 snaptray screen --list                # List available screens
-snaptray screen 0 -c                  # Capture screen 0 to clipboard
+snaptray screen 0 -c                  # Capture screen 0 (positional syntax)
+snaptray screen -n 1 -o screen1.png   # Capture screen 1 (option syntax)
 snaptray screen 1 -o screen1.png      # Capture screen 1 to file
-snaptray region -r 0,0,800,600 -c     # Capture region to clipboard
+snaptray region -r 0,0,800,600 -c     # Capture region on screen 0 to clipboard
+snaptray region -n 1 -r 100,100,400,300 -o region.png
 snaptray region -r 100,100,400,300 -o region.png
 
 # IPC commands (requires main instance running)
@@ -403,15 +415,41 @@ snaptray gui -d 2000                  # Open with 2 second delay
 snaptray canvas                       # Toggle Screen Canvas mode
 snaptray record start                 # Start recording
 snaptray record stop                  # Stop recording
-snaptray pin -f image.png             # Pin image file to screen
+snaptray record                       # Toggle recording
+snaptray record start -n 1            # Start full-screen recording on screen 1
+snaptray pin -f image.png             # Pin image file
+snaptray pin -c --center              # Pin from clipboard, centered
+snaptray pin -f image.png -x 200 -y 120
+
+# Config commands
+snaptray config --list
+snaptray config --get hotkeys/region_capture
+snaptray config --set files/filename_prefix SnapTray
+snaptray config --reset
 
 # Options
--c, --clipboard    Copy to clipboard
--o, --output       Save to file
--d, --delay        Delay before capture (milliseconds)
--r, --region       Region coordinates (x,y,width,height)
---raw              Output raw PNG to stdout
---cursor           Include mouse cursor
+full/screen/region:
+  -c, --clipboard    Copy to clipboard
+  -o, --output       Save to file
+  -p, --path         Save directory
+  -d, --delay        Delay before capture (milliseconds)
+  -n, --screen       Screen index
+  -r, --region       Region coordinates (region only: x,y,width,height)
+  --raw              Output raw PNG to stdout
+  --cursor           Include mouse cursor
+
+screen only:
+  --list             List available screens
+
+record:
+  [action]           start | stop | toggle (default: toggle)
+
+pin:
+  -f, --file         Image file path
+  -c, --clipboard    Pin from clipboard
+  -x, --pos-x        Window X position
+  -y, --pos-y        Window Y position
+  --center           Center window on screen
 ```
 
 ### Return Codes
@@ -451,16 +489,16 @@ If you see errors like:
 **Solution:** Run windeployqt to deploy Qt dependencies:
 
 ```batch
-C:\Qt\6.10.1\msvc2022_64\bin\windeployqt.exe build\SnapTray.exe
+C:\Qt\6.10.1\msvc2022_64\bin\windeployqt.exe build\bin\SnapTray-Debug.exe
 ```
 
 Replace `C:\Qt\6.10.1\msvc2022_64` with your actual Qt installation path (should match the CMAKE_PREFIX_PATH you used during configuration).
 
 ## macOS Permissions
 
-On first capture or recording, the system will request "Screen Recording" permission: `System Preferences -> Privacy & Security -> Screen Recording` and enable SnapTray. Restart the app if necessary.
+On first capture or recording, the system will request "Screen Recording" permission: `System Settings -> Privacy & Security -> Screen Recording` and enable SnapTray. Restart the app if necessary.
 
-For window detection, "Accessibility" permission is required: `System Preferences -> Privacy & Security -> Accessibility` and enable SnapTray.
+For window detection, "Accessibility" permission is required: `System Settings -> Privacy & Security -> Accessibility` and enable SnapTray.
 
 ## Project Structure
 
@@ -539,16 +577,22 @@ snap-tray/
 |   |-- build-and-run-release.sh / build-and-run-release.bat
 |   `-- run-tests.sh / run-tests.bat
 |-- tests/
-|   |-- Audio/
+|   |-- Annotations/
+|   |-- CLI/
 |   |-- Detection/
 |   |-- Encoding/
+|   |-- Hotkey/
+|   |-- IPC/
 |   |-- PinWindow/
 |   |-- RecordingManager/
 |   |-- RegionSelector/
 |   |-- Settings/
 |   |-- ToolOptionsPanel/
+|   |-- Tools/
+|   |-- UISections/
+|   |-- Update/
 |   |-- Utils/
-|   `-- mocks/
+|   `-- Video/
 `-- packaging/
     |-- macos/
     |   |-- package.sh
@@ -595,20 +639,17 @@ The codebase follows a modular architecture with extracted components for mainta
 | `AutoBlurManager`           | `src/detection/`   | Auto-blur orchestration                   |
 | Section classes             | `src/ui/sections/` | Tool option panel components              |
 
-### Test Coverage
+### Test Suite
 
-| Component        | Test Count |
-| ---------------- | ---------- |
-| ToolOptionsPanel | 91         |
-| PinWindow        | 91         |
-| RegionSelector   | 85         |
-| RecordingManager | 74         |
-| Encoding         | 51         |
-| Utils            | 51         |
-| Detection        | 38         |
-| Audio            | 27         |
-| Settings         | 27         |
-| **Total**        | **535**    |
+The Qt Test suite currently covers:
+
+- Tool options and UI sections
+- Region selector and pin window behaviors
+- Recording lifecycle and integration paths
+- Encoding and detection modules
+- CLI/IPC flows
+- Settings, hotkeys, update components, and utilities
+- Video timeline components
 
 ## Custom App Icon
 

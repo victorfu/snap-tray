@@ -6,7 +6,7 @@ SnapTray 是一個在系統托盤常駐的截圖與錄影小工具，提供區�
 
 ## 功能特色
 
-- **系統托盤選單**：`Region Capture` (顯示當前熱鍵)、`Screen Canvas` (顯示當前熱鍵)、`Record Full Screen`、`Close All Pins`、`Exit Click-through`、`Settings`、`Exit`
+- **系統托盤選單**：`Region Capture` (顯示當前熱鍵)、`Screen Canvas` (顯示當前熱鍵)、`Pin from Image...`、`Pin History`、`Close All Pins`、`Record Full Screen`、`Settings`、`Exit`
 - **全域快捷鍵**：可於設定中自定義，支援即時更新熱鍵註冊。
   - 區域截圖：預設 `F2`
   - 螢幕畫布：預設 `Ctrl+F2`
@@ -16,32 +16,35 @@ SnapTray 是一個在系統托盤常駐的截圖與錄影小工具，提供區�
   - 尺寸標示
   - 選取框控制點（類 Snipaste 風格）
   - 比例鎖定（按住 Shift 限制比例）
-  - 多區域選取（僅 Debug 建置，可擷取多個區域並合併或分開儲存）
+  - 多區域選取（可擷取多個區域並合併或分開儲存）
   - 截圖包含游標選項
   - 視窗偵測（macOS/Windows）：自動偵測游標下的視窗，單擊快速選取
   - 右鍵取消選取
 - **截圖工具列**：
   - `Selection` 選取工具（調整選取區域）
-  - 標註工具：`Arrow` / `Pencil` / `Marker` / `Shape`（Rectangle/Ellipse，外框/填滿）/ `Text` / `Mosaic` / `StepBadge` / `Eraser`
+  - 標註工具：`Arrow` / `Pencil` / `Marker` / `Shape`（Rectangle/Ellipse，外框/填滿）/ `Text` / `Mosaic` / `StepBadge` / `EmojiSticker` / `Eraser`
   - `Undo` / `Redo`
   - `Pin` 釘選到畫面 (Enter)
   - `Save` 存檔 (Ctrl+S / macOS 為 Cmd+S)
   - `Copy` 複製 (Ctrl+C / macOS 為 Cmd+C)
   - `Cancel` 取消 (Esc)
   - `OCR` 文字辨識（macOS/Windows，支援繁體中文、簡體中文、英文）
+  - `QR Code Scan`（掃描選取區域中的 QR/條碼）
   - `Auto Blur` 自動偵測並模糊臉孔/文字
   - `Record` 螢幕錄影（`R`）使用選取區域
+  - `Multi-Region` 多區域擷取切換（`M`）
   - 顏色/線寬控制（支援的工具）
   - 文字工具格式控制（字型/大小、粗體/斜體/底線）
 - **螢幕畫布**：
   - 全螢幕標註模式，直接在螢幕上繪圖
-  - 繪圖工具：`Pencil` / `Marker` / `Arrow` / `Shape`（Rectangle）/ `StepBadge` / `Text` / `EmojiSticker` / `Eraser`
-  - 簡報工具：`Laser Pointer` / `Cursor Highlight`（點擊波紋）/ `Spotlight`（聚光燈聚焦）
+  - 繪圖工具：`Pencil` / `Marker` / `Arrow` / `Shape` / `StepBadge` / `Text` / `EmojiSticker`
+  - 簡報工具：`Laser Pointer`
+  - 背景模式：`Whiteboard` / `Blackboard`
   - 顏色/線寬控制
   - 支援 Undo/Redo/Clear
   - `Esc` 離開
 - **螢幕錄影**：
-  - 從截圖工具列啟動（`Record` 或 `R`）
+  - 從截圖工具列（`Record` 或 `R`）或托盤選單（`Record Full Screen`）啟動
   - 可調整錄影區域，Start/Cancel 開始或取消
   - 浮動控制列：Pause/Resume/Stop/Cancel
   - MP4 (H.264) 由原生編碼器（Media Foundation/AVFoundation）產生；GIF 與 WebP 由內建編碼器產生
@@ -56,26 +59,34 @@ SnapTray 是一個在系統托盤常駐的截圖與錄影小工具，提供區�
   - 邊緣拖曳調整大小
   - 鍵盤旋轉/翻轉：`1` 順時針旋轉、`2` 逆時針旋轉、`3` 水平翻轉、`4` 垂直翻轉
   - 雙擊或 Esc 關閉
-  - 右鍵選單：複製/存檔/OCR/浮水印/Click-through/關閉
+  - 右鍵選單：複製/存檔/開啟快取資料夾/OCR/QR Code Scan/浮水印/Click-through/Live Update/關閉
   - **標註工具列**：點擊鉛筆圖示開啟標註工具
     - 繪圖工具：`Pencil` / `Marker` / `Arrow` / `Shape` / `Text` / `Mosaic` / `StepBadge` / `EmojiSticker` / `Eraser`
     - 支援 `Undo` / `Redo`
     - `OCR` / `Copy` / `Save` 快捷操作
 - **設定對話框**：
-  - General 分頁：開機自動啟動、工具列樣式（深色/淺色）、釘選視窗透明度/縮放設定
+  - General 分頁：開機自動啟動、工具列樣式（深色/淺色）、釘選視窗透明度/縮放/快取設定、CLI 安裝/移除
   - Hotkeys 分頁：區域截圖與螢幕畫布分別設定熱鍵
+  - Advanced 分頁：Auto Blur 進階設定
   - Watermark 分頁：圖片浮水印、透明度、位置、縮放
+  - OCR 分頁：OCR 語言與辨識後行為設定
   - Recording 分頁：幀率、輸出格式（MP4/GIF/WebP）、品質、倒數計時、點擊高亮、游標顯示、聚光燈、音訊（啟用/來源/裝置）
   - Files 分頁：截圖/錄影儲存路徑、檔名格式
+  - Updates 分頁：自動檢查、檢查頻率、預覽版通道、立即檢查
   - About 分頁：版本資訊
+  - 背景會定期自動檢查更新
   - 設定儲存於系統設定 (QSettings)
 
 ## 技術棧
 
 - **語言**: C++17
-- **框架**: Qt 6（Widgets/Gui/Svg）
-- **建置系統**: CMake 3.16+
-- **相依套件**: [QHotkey](https://github.com/Skycoder42/QHotkey)（FetchContent 自動取得）
+- **框架**: Qt 6（Widgets/Gui/Svg/Concurrent/Network）
+- **建置系統**: CMake 3.16+ + Ninja
+- **相依套件**（以 FetchContent 自動取得）:
+  - [QHotkey](https://github.com/Skycoder42/QHotkey)（全域熱鍵）
+  - [OpenCV 4.10.0](https://github.com/opencv/opencv)（臉部/文字偵測管線）
+  - [libwebp 1.3.2](https://github.com/webmproject/libwebp)（WebP 動畫編碼）
+  - [ZXing-CPP v2.2.1](https://github.com/zxing-cpp/zxing-cpp)（QR/條碼處理）
 - **macOS 原生框架**:
   - CoreGraphics / ApplicationServices（視窗偵測）
   - AppKit（系統整合）
@@ -96,19 +107,19 @@ SnapTray 是一個在系統托盤常駐的截圖與錄影小工具，提供區�
 
 ### macOS
 
-- macOS 10.15+（ScreenCaptureKit 錄影需 12.3+）
-- Qt 6（建議以 Homebrew 安裝）
+- macOS 14.0+
+- Qt 6.10.1（Widgets/Gui/Svg/Concurrent/Network，建議以 Homebrew 安裝）
 - Xcode Command Line Tools
-- CMake 3.16+
-- Git（用於 FetchContent 取得 QHotkey）
+- CMake 3.16+ 與 Ninja
+- Git（用於 FetchContent 相依套件）
 
 ### Windows
 
 - Windows 10+
-- Qt 6
-- Visual Studio 2019+ 或 MinGW
-- CMake 3.16+
-- Git（用於 FetchContent 取得 QHotkey）
+- Qt 6.10.1（MSVC 2022 x64）
+- Visual Studio 2022 Build Tools + Windows SDK
+- CMake 3.16+ 與 Ninja
+- Git（用於 FetchContent 相依套件）
 
 **PowerShell 使用 MSVC**：若使用 PowerShell，需先載入 Visual Studio 環境：
 
@@ -119,69 +130,64 @@ Enter-VsDevShell -VsInstallPath "C:\Program Files (x86)\Microsoft Visual Studio\
 
 ## 建置與執行
 
-### Debug 建置（開發用）
+### 建議使用腳本
 
-開發時使用 Debug 建置以獲得更好的除錯體驗。
+日常開發與驗證建議直接使用 `scripts/` 內建腳本。
 
 **macOS：**
 
 ```bash
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH="$(brew --prefix qt)"
-cmake --build build --parallel
-open build/SnapTray.app
+./scripts/build.sh                  # Debug 建置
+./scripts/build-release.sh          # Release 建置
+./scripts/run-tests.sh              # 建置並執行測試
+./scripts/build-and-run.sh          # Debug 建置 + 執行
+./scripts/build-and-run-release.sh  # Release 建置 + 執行
 ```
 
-**Windows：**
+**Windows（cmd.exe 或已載入 MSVC 環境的 PowerShell）：**
 
 ```batch
-# 步驟 1：設定（請替換為你的 Qt 路徑）
+scripts\build.bat                   REM Debug 建置
+scripts\build-release.bat           REM Release 建置
+scripts\run-tests.bat               REM 建置並執行測試
+scripts\build-and-run.bat           REM Debug 建置 + 執行
+scripts\build-and-run-release.bat   REM Release 建置 + 執行
+```
+
+### 手動 CMake（進階）
+
+僅在需要自訂 configure 參數時使用。
+
+**macOS（Debug）：**
+
+```bash
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH="$(brew --prefix qt)"
+cmake --build build --parallel
+# 產物：build/bin/SnapTray-Debug.app
+```
+
+**macOS（Release）：**
+
+```bash
+cmake -S . -B release -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$(brew --prefix qt)"
+cmake --build release --parallel
+# 產物：release/bin/SnapTray.app
+```
+
+**Windows（Debug）：**
+
+```batch
 cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH=C:/Qt/6.10.1/msvc2022_64
-
-# 步驟 2：建置
 cmake --build build --parallel
-
-# 步驟 3：部署 Qt 相依套件（執行程式所需）
-C:\Qt\6.10.1\msvc2022_64\bin\windeployqt.exe build\bin\SnapTray.exe
-
-# 步驟 4：執行
-build\bin\SnapTray.exe
+C:\Qt\6.10.1\msvc2022_64\bin\windeployqt.exe build\bin\SnapTray-Debug.exe
 ```
 
-**注意：** Windows 開發版本需要執行 `windeployqt` 來複製 Qt 執行時期 DLL 檔案（Qt6Core.dll、qwindows.dll 平台外掛等）到執行檔旁。此步驟在打包腳本中已針對正式版本自動化。
-
-### Release 建置（正式環境測試）
-
-在打包前使用 Release 建置測試正式環境行為。
-
-**macOS：**
-
-```bash
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$(brew --prefix qt)"
-cmake --build build --parallel
-# 產物：build/SnapTray.app
-```
-
-**Windows：**
+**Windows（Release）：**
 
 ```batch
-cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=C:/Qt/6.10.1/msvc2022_64
-cmake --build build --parallel
-
-# 部署 Qt 相依套件
-C:\Qt\6.10.1\msvc2022_64\bin\windeployqt.exe --release build\bin\SnapTray.exe
-
-# 產物：build\bin\SnapTray.exe
-```
-
-**注意：** 若要發佈，請使用打包腳本（見下方），其已自動化部署流程。
-
-### 執行測試
-
-```bash
-# 建置並執行所有測試
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH="$(brew --prefix qt)"
-cmake --build build --parallel
-cd build && ctest --output-on-failure
+cmake -S . -B release -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=C:/Qt/6.10.1/msvc2022_64
+cmake --build release --parallel
+C:\Qt\6.10.1\msvc2022_64\bin\windeployqt.exe --release release\bin\SnapTray.exe
 ```
 
 ### 打包安裝檔
@@ -314,7 +320,7 @@ CMake 會自動偵測並使用編譯器快取，無需額外設定。
 
 ## 使用方式
 
-1. 啟動後托盤會出現綠色方塊圖示。
+1. 啟動後托盤會出現 SnapTray 圖示。
 2. 按下區域截圖熱鍵（預設 `F2`）進入截圖模式；或按下螢幕畫布熱鍵（預設 `Ctrl+F2`）進入螢幕畫布模式。
 3. **截圖模式操作**：
    - 拖曳滑鼠選取區域
@@ -328,6 +334,8 @@ CMake 會自動偵測並使用編譯器快取，無需額外設定。
    - `Ctrl+S` (Windows) / `Cmd+S` (macOS) 或 `Save`：儲存成檔案
    - `R` 或 `Record`：開始錄影（可調整區域後按 Start Recording / Enter）
    - `OCR`（macOS/Windows）：辨識選取區內的文字並複製到剪貼簿
+   - `QR Code Scan`：偵測並解碼選取區中的 QR/條碼
+   - `M` 或 `Multi-Region`：切換多區域擷取模式
    - `Undo/Redo`：`Ctrl+Z` / `Ctrl+Shift+Z`（macOS 通常為 `Cmd+Z` / `Cmd+Shift+Z`）
    - 標註：選擇工具後在選取區內拖曳繪製
      - `Text`：點擊後輸入文字
@@ -337,7 +345,8 @@ CMake 會自動偵測並使用編譯器快取，無需額外設定。
 5. **螢幕錄影**：
    - 使用控制列進行 Pause/Resume/Stop/Cancel
 6. **螢幕畫布模式操作**：
-   - 工具列提供繪圖與簡報工具
+   - 工具列提供繪圖工具與雷射筆
+   - 使用 `Whiteboard` / `Blackboard` 按鈕切換畫布背景模式
    - 點擊顏色/線寬控制調整
    - `Undo` / `Redo`：復原/重做標註
    - `Clear`：清除所有標註
@@ -348,7 +357,7 @@ CMake 會自動偵測並使用編譯器快取，無需額外設定。
    - Ctrl + 滾輪調整透明度
    - 邊緣拖曳調整大小
    - `1` 順時針旋轉、`2` 逆時針旋轉、`3` 水平翻轉、`4` 垂直翻轉
-   - 右鍵選單（複製/存檔/OCR/浮水印/關閉）
+   - 右鍵選單（複製/存檔/開啟快取資料夾/OCR/QR Code Scan/浮水印/Click-through/Live Update/關閉）
    - 雙擊或 `Esc` 關閉
    - 點擊鉛筆圖示開啟標註工具列，可在釘選圖片上繪圖
 
@@ -376,7 +385,7 @@ SnapTray 提供 CLI 介面，可用於腳本自動化。
 | `region` | 擷取指定區域 | 否 |
 | `gui` | 開啟區域截圖 GUI | 是 |
 | `canvas` | 切換螢幕畫布 | 是 |
-| `record` | 開始/停止錄影 | 是 |
+| `record` | 開始/停止/切換錄影 | 是 |
 | `pin` | 釘選圖片 | 是 |
 | `config` | 檢視/修改設定 | 部分 |
 
@@ -390,11 +399,14 @@ snaptray full --help
 
 # 本地擷取指令（不需要主程式運行）
 snaptray full -c                      # 全螢幕到剪貼簿
+snaptray full -d 1000 -o shot.png     # 延遲 1 秒後儲存
 snaptray full -o screenshot.png       # 全螢幕到檔案
 snaptray screen --list                # 列出可用螢幕
-snaptray screen 0 -c                  # 擷取螢幕 0 到剪貼簿
+snaptray screen 0 -c                  # 擷取螢幕 0（位置參數寫法）
+snaptray screen -n 1 -o screen1.png   # 擷取螢幕 1（選項寫法）
 snaptray screen 1 -o screen1.png      # 擷取螢幕 1 到檔案
-snaptray region -r 0,0,800,600 -c     # 擷取區域到剪貼簿
+snaptray region -r 0,0,800,600 -c     # 在螢幕 0 擷取區域到剪貼簿
+snaptray region -n 1 -r 100,100,400,300 -o region.png
 snaptray region -r 100,100,400,300 -o region.png
 
 # IPC 指令（需要主程式運行）
@@ -403,15 +415,41 @@ snaptray gui -d 2000                  # 延遲 2 秒後開啟
 snaptray canvas                       # 切換螢幕畫布模式
 snaptray record start                 # 開始錄影
 snaptray record stop                  # 停止錄影
+snaptray record                       # 切換錄影
+snaptray record start -n 1            # 在螢幕 1 開始全螢幕錄影
 snaptray pin -f image.png             # 釘選圖片檔案
+snaptray pin -c --center              # 從剪貼簿釘選並置中
+snaptray pin -f image.png -x 200 -y 120
+
+# 設定指令
+snaptray config --list
+snaptray config --get hotkeys/region_capture
+snaptray config --set files/filename_prefix SnapTray
+snaptray config --reset
 
 # 選項
--c, --clipboard    複製到剪貼簿
--o, --output       儲存到檔案
--d, --delay        擷取前延遲（毫秒）
--r, --region       區域座標 (x,y,寬度,高度)
---raw              輸出原始 PNG 到 stdout
---cursor           包含滑鼠游標
+full/screen/region:
+  -c, --clipboard    複製到剪貼簿
+  -o, --output       儲存到檔案
+  -p, --path         儲存目錄
+  -d, --delay        擷取前延遲（毫秒）
+  -n, --screen       螢幕編號
+  -r, --region       區域座標（僅 region：x,y,寬,高）
+  --raw              輸出原始 PNG 到 stdout
+  --cursor           包含滑鼠游標
+
+screen 專屬:
+  --list             列出可用螢幕
+
+record:
+  [action]           start | stop | toggle（預設：toggle）
+
+pin:
+  -f, --file         圖片檔路徑
+  -c, --clipboard    從剪貼簿釘選
+  -x, --pos-x        視窗 X 座標
+  -y, --pos-y        視窗 Y 座標
+  --center           視窗置中
 ```
 
 ### 回傳碼
@@ -451,16 +489,16 @@ xattr -cr /Applications/SnapTray.app
 **解決方法：** 執行 windeployqt 來部署 Qt 相依套件：
 
 ```batch
-C:\Qt\6.10.1\msvc2022_64\bin\windeployqt.exe build\SnapTray.exe
+C:\Qt\6.10.1\msvc2022_64\bin\windeployqt.exe build\bin\SnapTray-Debug.exe
 ```
 
 請將 `C:\Qt\6.10.1\msvc2022_64` 替換為你實際的 Qt 安裝路徑（應與設定時使用的 CMAKE_PREFIX_PATH 相同）。
 
 ## macOS 權限
 
-首次截圖或錄影時系統會要求「螢幕錄製」權限：`系統偏好設定 → 隱私權與安全性 → 螢幕錄製` 勾選 SnapTray，必要時重啟 App。
+首次截圖或錄影時系統會要求「螢幕錄製」權限：`系統設定 → 隱私權與安全性 → 螢幕錄製` 勾選 SnapTray，必要時重啟 App。
 
-若要使用視窗偵測功能，需要「輔助使用」權限：`系統偏好設定 → 隱私權與安全性 → 輔助使用` 勾選 SnapTray。
+若要使用視窗偵測功能，需要「輔助使用」權限：`系統設定 → 隱私權與安全性 → 輔助使用` 勾選 SnapTray。
 
 ## 專案結構
 
@@ -539,16 +577,22 @@ snap-tray/
 |   |-- build-and-run-release.sh / build-and-run-release.bat
 |   `-- run-tests.sh / run-tests.bat
 |-- tests/
-|   |-- Audio/
+|   |-- Annotations/
+|   |-- CLI/
 |   |-- Detection/
 |   |-- Encoding/
+|   |-- Hotkey/
+|   |-- IPC/
 |   |-- PinWindow/
 |   |-- RecordingManager/
 |   |-- RegionSelector/
 |   |-- Settings/
 |   |-- ToolOptionsPanel/
+|   |-- Tools/
+|   |-- UISections/
+|   |-- Update/
 |   |-- Utils/
-|   `-- mocks/
+|   `-- Video/
 `-- packaging/
     |-- macos/
     |   |-- package.sh
@@ -595,20 +639,17 @@ snap-tray/
 | `AutoBlurManager`           | `src/detection/`   | 自動模糊協調管理           |
 | Section 類別                | `src/ui/sections/` | 工具選項面板組件           |
 
-### 測試覆蓋率
+### 測試套件
 
-| 組件             | 測試數量 |
-| ---------------- | -------- |
-| ToolOptionsPanel | 91       |
-| PinWindow        | 91       |
-| RegionSelector   | 85       |
-| RecordingManager | 74       |
-| Encoding         | 51       |
-| Utils            | 51       |
-| Detection        | 38       |
-| Audio            | 27       |
-| Settings         | 27       |
-| **總計**         | **535**  |
+目前 Qt Test 測試涵蓋：
+
+- Tool options 與 UI sections
+- Region selector 與 Pin window 行為
+- Recording lifecycle 與整合流程
+- Encoding 與 Detection 模組
+- CLI/IPC 流程
+- Settings、Hotkeys、Update 元件與工具函式
+- Video timeline 元件
 
 ## 自訂應用程式圖示
 
