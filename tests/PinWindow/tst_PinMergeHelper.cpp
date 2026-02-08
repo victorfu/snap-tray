@@ -147,7 +147,7 @@ private slots:
     {
         const int maxSize = LayoutModeConstants::kMaxCanvasSize;
         PinWindow first(createTestPixmap(maxSize / 2 + 100, 200), QPoint(0, 0), nullptr, false);
-        PinWindow second(createTestPixmap(maxSize / 2 + 100, 200), QPoint(120, 0), nullptr, false);
+        PinWindow second(createTestPixmap(200, maxSize + 1), QPoint(120, 0), nullptr, false);
 
         QVector<LayoutRegion> regions;
         LayoutRegion region1;
@@ -174,6 +174,7 @@ private slots:
 
         const PinMergeResult result = PinMergeHelper::merge(QList<PinWindow*>{&first, &second}, 8);
         QVERIFY(!result.success);
+        QVERIFY(result.errorMessage.contains(QString::number(maxSize)));
         QVERIFY(first.isRegionLayoutMode());
     }
 
