@@ -13,6 +13,7 @@ class QLabel;
 class QHBoxLayout;
 class QFont;
 class QFontMetrics;
+class QEnterEvent;
 class GlassTooltipWidget;
 class RecordingControlBar : public QWidget
 {
@@ -78,6 +79,7 @@ signals:
 
 protected:
     void paintEvent(QPaintEvent *event) override;
+    void enterEvent(QEnterEvent *event) override;
     void mousePressEvent(QMouseEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
     void mouseReleaseEvent(QMouseEvent *event) override;

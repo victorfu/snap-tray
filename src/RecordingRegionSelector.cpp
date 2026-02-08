@@ -384,6 +384,8 @@ void RecordingRegionSelector::mousePressEvent(QMouseEvent *event)
                 m_currentPoint = event->pos();
                 m_isSelecting = true;
                 m_selectionRect = QRect();
+                m_toolbar->updateHoveredButton(QPoint(-1, -1));
+                CursorManager::instance().popCursorForWidget(this, CursorContext::Hover);
             }
         } else {
             m_startPoint = event->pos();
@@ -409,13 +411,14 @@ void RecordingRegionSelector::mouseMoveEvent(QMouseEvent *event)
     } else if (m_selectionComplete) {
         // Update hover state for toolbar buttons
         bool hoverChanged = m_toolbar->updateHoveredButton(event->pos());
+        auto& cm = CursorManager::instance();
+        if (m_toolbar->contains(event->pos())) {
+            cm.pushCursorForWidget(this, CursorContext::Hover, Qt::ArrowCursor);
+        } else {
+            cm.popCursorForWidget(this, CursorContext::Hover);
+        }
+
         if (hoverChanged) {
-            auto& cm = CursorManager::instance();
-            if (m_toolbar->hoveredButton() >= 0) {
-                cm.pushCursorForWidget(this, CursorContext::Hover, Qt::ArrowCursor);
-            } else {
-                cm.popCursorForWidget(this, CursorContext::Hover);
-            }
             update();
         }
     } else {
@@ -453,9 +456,9 @@ void RecordingRegionSelector::mouseReleaseEvent(QMouseEvent *event)
 void RecordingRegionSelector::leaveEvent(QEvent *event)
 {
     // Clear hover state when leaving the widget
-    if (m_toolbar->hoveredButton() >= 0) {
-        m_toolbar->updateHoveredButton(QPoint(-1, -1));
-        CursorManager::instance().popCursorForWidget(this, CursorContext::Hover);
+    bool hoverChanged = m_toolbar->updateHoveredButton(QPoint(-1, -1));
+    CursorManager::instance().popCursorForWidget(this, CursorContext::Hover);
+    if (hoverChanged) {
         update();
     }
     QWidget::leaveEvent(event);

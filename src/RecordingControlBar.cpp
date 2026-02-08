@@ -11,6 +11,7 @@
 #include <QFontMetrics>
 #include <QPainter>
 #include <QMouseEvent>
+#include <QEnterEvent>
 #include <QKeyEvent>
 #include <QScreen>
 #include <QGuiApplication>
@@ -744,6 +745,8 @@ void RecordingControlBar::mousePressEvent(QMouseEvent *event)
         hideTooltip();
         int button = buttonAtPosition(event->pos());
         if (button != ButtonNone) {
+            // Keep toolbar cursor behavior consistent: all interactive toolbar areas use ArrowCursor.
+            CursorManager::instance().pushCursorForWidget(this, CursorContext::Hover, Qt::ArrowCursor);
             if (m_mode == Mode::Preview) {
                 // Preview mode button handling
                 switch (button) {
@@ -818,6 +821,23 @@ void RecordingControlBar::mousePressEvent(QMouseEvent *event)
     QWidget::mousePressEvent(event);
 }
 
+void RecordingControlBar::enterEvent(QEnterEvent *event)
+{
+    if (!m_isDragging) {
+        m_hoveredButton = buttonAtPosition(event->position().toPoint());
+        CursorManager::instance().pushCursorForWidget(this, CursorContext::Hover, Qt::ArrowCursor);
+
+        if (m_hoveredButton != ButtonNone) {
+            showTooltipForButton(m_hoveredButton);
+        } else {
+            hideTooltip();
+        }
+        update();
+    }
+
+    QWidget::enterEvent(event);
+}
+
 void RecordingControlBar::mouseMoveEvent(QMouseEvent *event)
 {
     // Handle timeline scrubbing
@@ -847,15 +867,13 @@ void RecordingControlBar::mouseMoveEvent(QMouseEvent *event)
         move(newPos);
         hideTooltip();
     } else {
+        // Keep ArrowCursor for the whole toolbar surface (not just icon hitboxes).
+        auto& cm = CursorManager::instance();
+        cm.pushCursorForWidget(this, CursorContext::Hover, Qt::ArrowCursor);
+
         int newHovered = buttonAtPosition(event->pos());
         if (newHovered != m_hoveredButton) {
             m_hoveredButton = newHovered;
-            auto& cm = CursorManager::instance();
-            if (m_hoveredButton != ButtonNone) {
-                cm.pushCursorForWidget(this, CursorContext::Hover, Qt::ArrowCursor);
-            } else {
-                cm.popCursorForWidget(this, CursorContext::Hover);
-            }
             update();
         }
         if (m_hoveredButton != ButtonNone) {
@@ -881,9 +899,9 @@ void RecordingControlBar::mouseReleaseEvent(QMouseEvent *event)
         if (m_isDragging) {
             m_isDragging = false;
             CursorManager::instance().popCursorForWidget(this, CursorContext::Drag);
-            int button = buttonAtPosition(event->pos());
+
             auto& cm = CursorManager::instance();
-            if (button != ButtonNone) {
+            if (rect().contains(event->pos())) {
                 cm.pushCursorForWidget(this, CursorContext::Hover, Qt::ArrowCursor);
             } else {
                 cm.popCursorForWidget(this, CursorContext::Hover);
@@ -897,10 +915,10 @@ void RecordingControlBar::leaveEvent(QEvent *event)
 {
     if (m_hoveredButton != ButtonNone) {
         m_hoveredButton = ButtonNone;
-        CursorManager::instance().clearAllForWidget(this);
-        hideTooltip();
         update();
     }
+    CursorManager::instance().popCursorForWidget(this, CursorContext::Hover);
+    hideTooltip();
     QWidget::leaveEvent(event);
 }
 
