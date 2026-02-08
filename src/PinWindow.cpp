@@ -12,6 +12,7 @@
 #include "pinwindow/UIIndicators.h"
 #include "pinwindow/RegionLayoutManager.h"
 #include "pinwindow/RegionLayoutRenderer.h"
+#include "pinwindow/PinMergeHelper.h"
 #include "pinwindow/PinHistoryStore.h"
 #include "toolbar/WindowedToolbar.h"
 #include "toolbar/WindowedSubToolbar.h"
@@ -26,6 +27,7 @@
 #include "settings/FileSettingsManager.h"
 #include "settings/PinWindowSettingsManager.h"
 #include "settings/OCRSettingsManager.h"
+#include "ui/GlobalToast.h"
 #include "OCRResultDialog.h"
 #include "InlineTextEditor.h"
 #include "region/TextAnnotationEditor.h"
@@ -240,7 +242,10 @@ namespace {
     }
 }  // namespace
 
-PinWindow::PinWindow(const QPixmap& screenshot, const QPoint& position, QWidget* parent)
+PinWindow::PinWindow(const QPixmap& screenshot,
+                     const QPoint& position,
+                     QWidget* parent,
+                     bool autoSaveToCache)
     : QWidget(parent)
     , m_originalPixmap(screenshot)
     , m_zoomLevel(1.0)
@@ -293,8 +298,10 @@ PinWindow::PinWindow(const QPixmap& screenshot, const QPoint& position, QWidget*
 
     // Context menu is now created lazily in contextMenuEvent() to improve initial performance
 
-    // Auto-save to cache folder asynchronously
-    saveToCacheAsync();
+    // Auto-save to cache folder asynchronously (can be deferred by caller).
+    if (autoSaveToCache) {
+        saveToCacheAsync();
+    }
 
     // OCR manager is now created lazily in performOCR() to improve initial performance
 
@@ -609,7 +616,7 @@ QPixmap PinWindow::getTransformedPixmap() const
     return transformed;
 }
 
-QPixmap PinWindow::getExportPixmap() const
+QPixmap PinWindow::getExportPixmapCore(bool includeDisplayEffects) const
 {
     // 1. Get current display size (includes zoom)
     QSize exportSize = m_displayPixmap.size();
@@ -624,22 +631,48 @@ QPixmap PinWindow::getExportPixmap() const
     );
     scaledPixmap.setDevicePixelRatio(basePixmap.devicePixelRatio());
 
-    // 3. If opacity is adjusted, paint with opacity
-    if (m_opacity < 1.0) {
-        QPixmap resultPixmap(scaledPixmap.size());
-        resultPixmap.setDevicePixelRatio(scaledPixmap.devicePixelRatio());
-        resultPixmap.fill(Qt::transparent);
+    if (includeDisplayEffects) {
+        // 3. If opacity is adjusted, paint with opacity
+        if (m_opacity < 1.0) {
+            QPixmap resultPixmap(scaledPixmap.size());
+            resultPixmap.setDevicePixelRatio(scaledPixmap.devicePixelRatio());
+            resultPixmap.fill(Qt::transparent);
 
-        QPainter painter(&resultPixmap);
-        painter.setOpacity(m_opacity);
-        painter.drawPixmap(0, 0, scaledPixmap);
-        painter.end();
+            QPainter painter(&resultPixmap);
+            painter.setOpacity(m_opacity);
+            painter.drawPixmap(0, 0, scaledPixmap);
+            painter.end();
 
-        scaledPixmap = resultPixmap;
+            scaledPixmap = resultPixmap;
+        }
+
+        // 4. Apply watermark
+        return WatermarkRenderer::applyToPixmap(scaledPixmap, m_watermarkSettings);
     }
 
-    // 4. Apply watermark
-    return WatermarkRenderer::applyToPixmap(scaledPixmap, m_watermarkSettings);
+    return scaledPixmap;
+}
+
+QPixmap PinWindow::getExportPixmap() const
+{
+    return getExportPixmapCore(true);
+}
+
+void PinWindow::drawAnnotationsForExport(QPainter& painter, const QSize& logicalSize) const
+{
+    if (!m_annotationLayer || m_annotationLayer->isEmpty() || logicalSize.isEmpty()) {
+        return;
+    }
+
+    painter.save();
+    if (m_rotationAngle != 0 || m_flipHorizontal || m_flipVertical) {
+        const QRectF pixmapRect(QPointF(0, 0), QSizeF(logicalSize));
+        QTransform transform = buildPinWindowTransform(
+            pixmapRect, m_rotationAngle, m_flipHorizontal, m_flipVertical);
+        painter.setTransform(transform, true);
+    }
+    m_annotationLayer->draw(painter);
+    painter.restore();
 }
 
 void PinWindow::createContextMenu()
@@ -658,11 +691,8 @@ void PinWindow::createContextMenu()
     m_showBorderAction->setChecked(m_showBorder);
     connect(m_showBorderAction, &QAction::toggled, this, &PinWindow::setShowBorder);
 
-    // Adjust Region Layout option (only for multi-region captures)
-    if (m_hasMultiRegionData && !m_isLiveMode) {
-        QAction* layoutAction = m_contextMenu->addAction(tr("Adjust Region Layout"));
-        connect(layoutAction, &QAction::triggered, this, &PinWindow::enterRegionLayoutMode);
-    }
+    m_adjustRegionLayoutAction = m_contextMenu->addAction(tr("Adjust Region Layout"));
+    connect(m_adjustRegionLayoutAction, &QAction::triggered, this, &PinWindow::enterRegionLayoutMode);
 
     m_contextMenu->addSeparator();
 
@@ -687,6 +717,9 @@ void PinWindow::createContextMenu()
     m_clickThroughAction->setCheckable(true);
     m_clickThroughAction->setChecked(m_clickThrough);
     connect(m_clickThroughAction, &QAction::toggled, this, &PinWindow::setClickThrough);
+
+    m_mergePinsAction = m_contextMenu->addAction(tr("Merge Pins"));
+    connect(m_mergePinsAction, &QAction::triggered, this, &PinWindow::mergePinsFromContextMenu);
 
     m_contextMenu->addSeparator();
 
@@ -885,6 +918,90 @@ void PinWindow::createContextMenu()
             m_pinWindowManager->closeAllWindows();
         }
         });
+}
+
+int PinWindow::eligibleMergePinCount() const
+{
+    if (!m_pinWindowManager) {
+        return 0;
+    }
+
+    int count = 0;
+    for (PinWindow* window : m_pinWindowManager->windows()) {
+        if (window && window->isVisible() && !window->isLiveMode()) {
+            ++count;
+        }
+    }
+    return count;
+}
+
+void PinWindow::mergePinsFromContextMenu()
+{
+    if (!m_pinWindowManager) {
+        return;
+    }
+
+    QList<PinWindow*> mergeCandidates;
+    mergeCandidates.reserve(m_pinWindowManager->windows().size());
+    for (PinWindow* window : m_pinWindowManager->windows()) {
+        if (!window || !window->isVisible() || window->isLiveMode()) {
+            continue;
+        }
+        mergeCandidates.append(window);
+    }
+
+    if (mergeCandidates.size() > LayoutModeConstants::kMaxRegionCount) {
+        GlobalToast::instance().showToast(GlobalToast::Info,
+                                          tr("Merge Pins"),
+                                          tr("Cannot merge more than %1 pins at once")
+                                              .arg(LayoutModeConstants::kMaxRegionCount));
+        return;
+    }
+
+    if (mergeCandidates.size() < 2) {
+        GlobalToast::instance().showToast(GlobalToast::Info,
+                                          tr("Merge Pins"),
+                                          tr("Need at least 2 pins to merge"));
+        return;
+    }
+
+    const PinMergeResult result = PinMergeHelper::merge(mergeCandidates);
+    if (!result.success) {
+        GlobalToast::instance().showToast(GlobalToast::Info,
+                                          tr("Merge Pins"),
+                                          result.errorMessage);
+        return;
+    }
+
+    QScreen* screen = QGuiApplication::primaryScreen();
+    if (!screen) {
+        GlobalToast::instance().showToast(GlobalToast::Error,
+                                          tr("Merge Pins"),
+                                          tr("No primary screen available"));
+        return;
+    }
+
+    const QRect screenGeometry = screen->availableGeometry();
+    qreal dpr = result.composedPixmap.devicePixelRatio();
+    if (dpr <= 0.0) {
+        dpr = 1.0;
+    }
+    const QSize logicalSize = result.composedPixmap.size() / dpr;
+    const QPoint position = screenGeometry.center() - QPoint(logicalSize.width() / 2, logicalSize.height() / 2);
+
+    // Defer cache save until multi-region metadata is attached, otherwise the
+    // initial cache snapshot misses the .snpr sidecar.
+    PinWindow* mergedWindow = m_pinWindowManager->createPinWindow(result.composedPixmap, position, false);
+    if (!mergedWindow) {
+        GlobalToast::instance().showToast(GlobalToast::Error,
+                                          tr("Merge Pins"),
+                                          tr("Failed to create merged pin"));
+        return;
+    }
+
+    mergedWindow->setMultiRegionData(result.regions);
+    mergedWindow->saveToCacheAsync();
+    m_pinWindowManager->closeWindows(result.mergedWindows);
 }
 
 void PinWindow::saveToFile()
@@ -1850,6 +1967,16 @@ void PinWindow::contextMenuEvent(QContextMenuEvent* event)
         m_showToolbarAction->setChecked(m_toolbarVisible);
     }
 
+    if (m_adjustRegionLayoutAction) {
+        const bool canAdjustLayout = m_hasMultiRegionData && !m_isLiveMode;
+        m_adjustRegionLayoutAction->setVisible(canAdjustLayout);
+        m_adjustRegionLayoutAction->setEnabled(canAdjustLayout);
+    }
+
+    if (m_mergePinsAction) {
+        m_mergePinsAction->setEnabled(eligibleMergePinCount() >= 2);
+    }
+
     // Update live mode menu items based on current state
     if (m_startLiveAction) {
         bool canStartLive = !m_sourceRegion.isEmpty() && m_sourceScreen;
@@ -2410,14 +2537,42 @@ bool PinWindow::isAnnotationTool(ToolId toolId) const
 QPixmap PinWindow::getExportPixmapWithAnnotations() const
 {
     QPixmap result = getExportPixmap();
+    if (result.isNull()) {
+        return result;
+    }
 
     // Draw annotations onto the exported pixmap
-    if (m_annotationLayer && !m_annotationLayer->isEmpty()) {
-        QPainter painter(&result);
-        painter.setRenderHint(QPainter::Antialiasing);
-        m_annotationLayer->draw(painter);
-        painter.end();
+    QPainter painter(&result);
+    painter.setRenderHint(QPainter::Antialiasing);
+    drawAnnotationsForExport(painter, logicalSizeFromPixmap(result));
+    painter.end();
+
+    return result;
+}
+
+QPixmap PinWindow::exportPixmapForMerge() const
+{
+    // Merge output is reopened in a PinWindow, so avoid baking display effects
+    // (opacity/watermark) that the destination window can apply again.
+    QPixmap result;
+    if (isRegionLayoutMode() && m_regionLayoutManager) {
+        qreal dpr = m_displayPixmap.devicePixelRatio();
+        if (dpr <= 0.0) {
+            dpr = 1.0;
+        }
+        result = m_regionLayoutManager->recomposeImage(dpr);
     }
+    if (result.isNull()) {
+        result = getExportPixmapCore(false);
+    }
+    if (result.isNull()) {
+        return result;
+    }
+
+    QPainter painter(&result);
+    painter.setRenderHint(QPainter::Antialiasing);
+    drawAnnotationsForExport(painter, logicalSizeFromPixmap(result));
+    painter.end();
 
     return result;
 }
@@ -3097,6 +3252,17 @@ void PinWindow::setMultiRegionData(const QVector<LayoutRegion>& regions)
     m_hasMultiRegionData = !regions.isEmpty() && regions.size() <= LayoutModeConstants::kMaxRegionCount;
 }
 
+void PinWindow::prepareForMerge()
+{
+    if (isRegionLayoutMode()) {
+        exitRegionLayoutMode(false);
+    }
+
+    if (m_annotationMode) {
+        exitAnnotationMode();
+    }
+}
+
 void PinWindow::enterRegionLayoutMode()
 {
     if (!m_hasMultiRegionData || m_isLiveMode) {
@@ -3197,6 +3363,13 @@ void PinWindow::exitRegionLayoutMode(bool apply)
         // Cancel - restore annotations
         if (m_annotationLayer) {
             m_regionLayoutManager->restoreAnnotations(m_annotationLayer);
+        }
+
+        // Layout mode can temporarily resize the window via canvasSizeChanged.
+        // On cancel, restore the pre-layout display size.
+        const QSize restoredSize = logicalSizeFromPixmap(m_displayPixmap);
+        if (restoredSize.isValid() && !restoredSize.isEmpty()) {
+            setFixedSize(restoredSize);
         }
     }
 

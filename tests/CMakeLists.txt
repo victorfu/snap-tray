@@ -74,6 +74,11 @@ target_link_libraries(PinWindow_PinHistoryWindow PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME PinWindow_PinHistoryWindow COMMAND PinWindow_PinHistoryWindow)
 set_tests_properties(PinWindow_PinHistoryWindow PROPERTIES TIMEOUT 60 LABELS "unit;integration")
 
+add_executable(PinWindow_PinMergeHelper PinWindow/tst_PinMergeHelper.cpp)
+target_link_libraries(PinWindow_PinMergeHelper PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME PinWindow_PinMergeHelper COMMAND PinWindow_PinMergeHelper)
+set_tests_properties(PinWindow_PinMergeHelper PROPERTIES TIMEOUT 60 LABELS "integration")
+
 # ============================================================================
 # RegionSelector Tests
 # ============================================================================

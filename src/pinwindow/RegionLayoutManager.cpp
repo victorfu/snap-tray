@@ -197,12 +197,26 @@ void RegionLayoutManager::updateDrag(const QPoint& pos)
     QPoint delta = pos - m_state.dragStartPos;
     QRect newRect = m_state.dragStartRect.translated(delta);
 
+    // Keep regions inside the non-negative layout canvas.
+    if (newRect.left() < 0) {
+        newRect.moveLeft(0);
+    }
+    if (newRect.top() < 0) {
+        newRect.moveTop(0);
+    }
+
     // Clamp to maximum canvas size
     if (newRect.right() > LayoutModeConstants::kMaxCanvasSize) {
         newRect.moveRight(LayoutModeConstants::kMaxCanvasSize);
+        if (newRect.left() < 0) {
+            newRect.moveLeft(0);
+        }
     }
     if (newRect.bottom() > LayoutModeConstants::kMaxCanvasSize) {
         newRect.moveBottom(LayoutModeConstants::kMaxCanvasSize);
+        if (newRect.top() < 0) {
+            newRect.moveTop(0);
+        }
     }
 
     m_state.regions[m_state.selectedIndex].rect = newRect;
@@ -343,6 +357,57 @@ void RegionLayoutManager::updateResize(const QPoint& pos, bool maintainAspectRat
     }
 
     // Clamp to maximum canvas size
+    const bool resizeFromLeft = (m_state.resizeEdge == ResizeHandler::Edge::Left
+        || m_state.resizeEdge == ResizeHandler::Edge::TopLeft
+        || m_state.resizeEdge == ResizeHandler::Edge::BottomLeft);
+    const bool resizeFromTop = (m_state.resizeEdge == ResizeHandler::Edge::Top
+        || m_state.resizeEdge == ResizeHandler::Edge::TopLeft
+        || m_state.resizeEdge == ResizeHandler::Edge::TopRight);
+    const bool resizeFromRight = (m_state.resizeEdge == ResizeHandler::Edge::Right
+        || m_state.resizeEdge == ResizeHandler::Edge::TopRight
+        || m_state.resizeEdge == ResizeHandler::Edge::BottomRight);
+    const bool resizeFromBottom = (m_state.resizeEdge == ResizeHandler::Edge::Bottom
+        || m_state.resizeEdge == ResizeHandler::Edge::BottomLeft
+        || m_state.resizeEdge == ResizeHandler::Edge::BottomRight);
+
+    if (newRect.left() < 0) {
+        if (resizeFromLeft) {
+            newRect.setLeft(0);
+        } else {
+            newRect.moveLeft(0);
+        }
+    }
+    if (newRect.top() < 0) {
+        if (resizeFromTop) {
+            newRect.setTop(0);
+        } else {
+            newRect.moveTop(0);
+        }
+    }
+
+    if (newRect.right() > LayoutModeConstants::kMaxCanvasSize) {
+        if (resizeFromRight) {
+            newRect.setRight(LayoutModeConstants::kMaxCanvasSize);
+        } else {
+            newRect.moveRight(LayoutModeConstants::kMaxCanvasSize);
+        }
+    }
+    if (newRect.bottom() > LayoutModeConstants::kMaxCanvasSize) {
+        if (resizeFromBottom) {
+            newRect.setBottom(LayoutModeConstants::kMaxCanvasSize);
+        } else {
+            newRect.moveBottom(LayoutModeConstants::kMaxCanvasSize);
+        }
+    }
+
+    // Final safety clamp: moveRight/moveBottom can shift left/top negative when the
+    // rect is larger than the canvas. Keep the final rect fully within bounds.
+    if (newRect.left() < 0) {
+        newRect.setLeft(0);
+    }
+    if (newRect.top() < 0) {
+        newRect.setTop(0);
+    }
     if (newRect.right() > LayoutModeConstants::kMaxCanvasSize) {
         newRect.setRight(LayoutModeConstants::kMaxCanvasSize);
     }
@@ -620,18 +685,9 @@ void RegionLayoutManager::recalculateBounds()
         }
     }
 
-    // Normalize to origin (0,0) if regions have moved to negative coordinates
-    if (bounds.left() < 0 || bounds.top() < 0) {
-        QPoint offset(-std::min(0, bounds.left()), -std::min(0, bounds.top()));
-        for (auto& region : m_state.regions) {
-            region.rect.translate(offset);
-        }
-        bounds.translate(offset);
-    }
-
     // Canvas size must contain all regions from origin (0,0)
     // bounds.size() only gives the bounding box size, not the extent from origin
-    QSize newSize(bounds.right() + 1, bounds.bottom() + 1);
+    QSize newSize(qMax(1, bounds.right() + 1), qMax(1, bounds.bottom() + 1));
     if (newSize != m_state.canvasSize) {
         m_state.canvasSize = newSize;
         emit canvasSizeChanged(newSize);

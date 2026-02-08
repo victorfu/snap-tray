@@ -226,6 +226,33 @@ private slots:
         QVERIFY(finalRect.height() >= LayoutModeConstants::kMinRegionSize);
     }
 
+    void testResizeClampKeepsRegionInsideCanvasAfterMoveRight() {
+        RegionLayoutManager manager;
+
+        LayoutRegion region;
+        region.rect = QRect(1000, 0, 100, 100);
+        region.originalRect = region.rect;
+        region.image = QImage(100, 100, QImage::Format_ARGB32);
+        region.color = Qt::blue;
+        region.index = 1;
+
+        QVector<LayoutRegion> regions;
+        regions.append(region);
+
+        manager.enterLayoutMode(regions, QSize(1100, 100));
+        manager.selectRegion(0);
+
+        manager.startResize(ResizeHandler::Edge::Top, QPoint(1050, 0));
+        manager.updateResize(QPoint(1050, -10000), true);
+        manager.finishResize();
+
+        const QRect finalRect = manager.regions()[0].rect;
+        QVERIFY(finalRect.left() >= 0);
+        QVERIFY(finalRect.top() >= 0);
+        QVERIFY(finalRect.right() <= LayoutModeConstants::kMaxCanvasSize);
+        QVERIFY(finalRect.bottom() <= LayoutModeConstants::kMaxCanvasSize);
+    }
+
     // =========================================================================
     // Canvas Bounds Tests
     // =========================================================================

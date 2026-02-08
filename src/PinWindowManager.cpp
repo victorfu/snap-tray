@@ -13,9 +13,11 @@ PinWindowManager::~PinWindowManager()
     closeAllWindows();
 }
 
-PinWindow* PinWindowManager::createPinWindow(const QPixmap &screenshot, const QPoint &position)
+PinWindow* PinWindowManager::createPinWindow(const QPixmap &screenshot,
+                                             const QPoint &position,
+                                             bool autoSaveToCache)
 {
-    PinWindow *window = new PinWindow(screenshot, position);
+    PinWindow *window = new PinWindow(screenshot, position, nullptr, autoSaveToCache);
     window->setPinWindowManager(this);
 
     connect(window, &PinWindow::closed, this, &PinWindowManager::onWindowClosed);
@@ -32,10 +34,17 @@ PinWindow* PinWindowManager::createPinWindow(const QPixmap &screenshot, const QP
 
 void PinWindowManager::closeAllWindows()
 {
-    // Make a copy of the list since closing will modify it via onWindowClosed
-    QList<PinWindow*> windowsCopy = m_windows;
-    for (PinWindow *window : windowsCopy) {
-        window->close();
+    // Make a copy since window close events mutate m_windows.
+    const QList<PinWindow*> windowsCopy = m_windows;
+    closeWindows(windowsCopy);
+}
+
+void PinWindowManager::closeWindows(const QList<PinWindow*>& windows)
+{
+    for (PinWindow* window : windows) {
+        if (window && m_windows.contains(window)) {
+            window->close();
+        }
     }
 }
 

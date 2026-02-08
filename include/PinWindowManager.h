@@ -16,8 +16,12 @@ public:
     explicit PinWindowManager(QObject *parent = nullptr);
     ~PinWindowManager();
 
-    PinWindow* createPinWindow(const QPixmap &screenshot, const QPoint &position);
+    PinWindow* createPinWindow(const QPixmap &screenshot,
+                               const QPoint &position,
+                               bool autoSaveToCache = true);
     void closeAllWindows();
+    void closeWindows(const QList<PinWindow*>& windows);
+    QList<PinWindow*> windows() const { return m_windows; }
     int windowCount() const { return m_windows.count(); }
     void updateOcrLanguages(const QStringList &languages);
 

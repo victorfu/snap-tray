@@ -26,6 +26,7 @@ class QMenu;
 class QLabel;
 class QTimer;
 class QScreen;
+class QPainter;
 class ICaptureEngine;
 class OCRManager;
 class QRCodeManager;
@@ -55,7 +56,10 @@ class PinWindow : public QWidget
     Q_OBJECT
 
 public:
-    explicit PinWindow(const QPixmap& screenshot, const QPoint& position, QWidget* parent = nullptr);
+    explicit PinWindow(const QPixmap& screenshot,
+                       const QPoint& position,
+                       QWidget* parent = nullptr,
+                       bool autoSaveToCache = true);
     ~PinWindow();
 
     void setZoomLevel(qreal zoom);
@@ -110,6 +114,8 @@ public:
     void enterRegionLayoutMode();
     void exitRegionLayoutMode(bool apply);
     bool isRegionLayoutMode() const;
+    void prepareForMerge();
+    QPixmap exportPixmapForMerge() const;
 
 signals:
     void closed(PinWindow* window);
@@ -135,10 +141,14 @@ private:
 
     void updateSize();
     void createContextMenu();
+    void mergePinsFromContextMenu();
+    int eligibleMergePinCount() const;
     void adjustOpacityByStep(int direction);
     void saveToFile();
     void copyToClipboard();
     QPixmap getTransformedPixmap() const;
+    QPixmap getExportPixmapCore(bool includeDisplayEffects) const;
+    void drawAnnotationsForExport(QPainter& painter, const QSize& logicalSize) const;
     QPixmap getExportPixmap() const;
 
     // Performance optimization: ensure transform cache is valid
@@ -247,6 +257,8 @@ private:
     QAction* m_showToolbarAction = nullptr;
     QAction* m_clickThroughAction = nullptr;
     QAction* m_showBorderAction = nullptr;
+    QAction* m_adjustRegionLayoutAction = nullptr;
+    QAction* m_mergePinsAction = nullptr;
 
     // Live capture context menu items
     QAction* m_startLiveAction = nullptr;
