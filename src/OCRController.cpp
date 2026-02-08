@@ -37,15 +37,15 @@ void OCRController::performOCR(const QPixmap& region)
 
     QPointer<OCRController> self = this;
 
-    m_ocrManager->recognizeText(region, [self](bool success, const QString& text, const QString& error) {
+    m_ocrManager->recognizeText(region, [self](const OCRResult& result) {
         if (!self) return;
 
         self->m_inProgress = false;
 
-        if (success && !text.isEmpty()) {
-            emit self->ocrCompleted(text);
+        if (result.success && !result.text.isEmpty()) {
+            emit self->ocrCompleted(result.text);
         } else {
-            QString errorMsg = error.isEmpty() ? "OCR failed" : error;
+            QString errorMsg = result.error.isEmpty() ? "OCR failed" : result.error;
             emit self->ocrFailed(errorMsg);
         }
     });

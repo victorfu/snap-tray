@@ -139,6 +139,11 @@ target_sources(Detection_AutoBlurManager PRIVATE ${CMAKE_SOURCE_DIR}/resources/r
 add_test(NAME Detection_AutoBlurManager COMMAND Detection_AutoBlurManager)
 set_tests_properties(Detection_AutoBlurManager PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Detection_TableDetector Detection/tst_TableDetector.cpp)
+target_link_libraries(Detection_TableDetector PRIVATE snaptray_algorithms Qt6::Test)
+add_test(NAME Detection_TableDetector COMMAND Detection_TableDetector)
+set_tests_properties(Detection_TableDetector PROPERTIES TIMEOUT 60 LABELS "unit")
+
 # ============================================================================
 # Utils Tests (link snaptray_core)
 # ============================================================================

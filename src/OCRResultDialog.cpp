@@ -1,4 +1,5 @@
 #include "OCRResultDialog.h"
+#include "detection/TableDetector.h"
 #include "platform/WindowLevel.h"
 #include "utils/DialogThemeUtils.h"
 
@@ -15,6 +16,7 @@
 #include <QKeyEvent>
 #include <QCloseEvent>
 #include <QShowEvent>
+#include <QPointer>
 
 OCRResultDialog::OCRResultDialog(QWidget *parent)
     : QWidget(parent, Qt::Window | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint)
@@ -24,6 +26,7 @@ OCRResultDialog::OCRResultDialog(QWidget *parent)
     , m_textEdit(nullptr)
     , m_closeButton(nullptr)
     , m_copyButton(nullptr)
+    , m_copyAsTsvButton(nullptr)
     , m_isDragging(false)
     , m_isTextEdited(false)
 {
@@ -107,6 +110,13 @@ void OCRResultDialog::setupUi()
     m_copyButton->setFixedHeight(40);
     connect(m_copyButton, &QPushButton::clicked, this, &OCRResultDialog::onCopyClicked);
     buttonLayout->addWidget(m_copyButton, 1);
+
+    m_copyAsTsvButton = new QPushButton("Copy as TSV", buttonBar);
+    m_copyAsTsvButton->setObjectName("copyAsTsvButton");
+    m_copyAsTsvButton->setFixedHeight(40);
+    m_copyAsTsvButton->setVisible(false);
+    connect(m_copyAsTsvButton, &QPushButton::clicked, this, &OCRResultDialog::onCopyAsTsvClicked);
+    buttonLayout->addWidget(m_copyAsTsvButton, 1);
 
     mainLayout->addWidget(buttonBar);
 }
@@ -213,14 +223,33 @@ void OCRResultDialog::applyTheme()
 void OCRResultDialog::setResultText(const QString &text)
 {
     m_originalText = text;
+    m_detectedTsv.clear();
     m_isTextEdited = false;
 
     m_textEdit->setPlainText(text);
     updateCharacterCount();
 
+    if (m_copyAsTsvButton) {
+        m_copyAsTsvButton->setVisible(false);
+    }
+
     // Select all for easy editing
     m_textEdit->selectAll();
     m_textEdit->setFocus();
+}
+
+void OCRResultDialog::setOCRResult(const OCRResult &result)
+{
+    setResultText(result.text);
+
+    const TableDetectionResult detection = TableDetector::detect(result.blocks);
+    m_detectedTsv = detection.tsv;
+
+    if (m_copyAsTsvButton) {
+        const bool showTsvButton = detection.isTable && !m_detectedTsv.isEmpty();
+        m_copyAsTsvButton->setVisible(showTsvButton);
+        m_copyAsTsvButton->setEnabled(showTsvButton);
+    }
 }
 
 QString OCRResultDialog::resultText() const
@@ -323,9 +352,25 @@ void OCRResultDialog::onCopyClicked()
     QApplication::clipboard()->setText(text);
     emit textCopied(text);
 
-    showCopyFeedback();
+    showCopyFeedback(m_copyButton, "✓ Copied!");
 
     // Close dialog after brief delay to show feedback
+    QTimer::singleShot(500, this, [this]() {
+        close();
+    });
+}
+
+void OCRResultDialog::onCopyAsTsvClicked()
+{
+    if (m_detectedTsv.isEmpty()) {
+        return;
+    }
+
+    QApplication::clipboard()->setText(m_detectedTsv);
+    emit textCopied(m_detectedTsv);
+
+    showCopyFeedback(m_copyAsTsvButton, "✓ Copied TSV!");
+
     QTimer::singleShot(500, this, [this]() {
         close();
     });
@@ -355,22 +400,27 @@ void OCRResultDialog::updateCharacterCount()
     m_charCountLabel->setText(countText);
 }
 
-void OCRResultDialog::showCopyFeedback()
+void OCRResultDialog::showCopyFeedback(QPushButton *button, const QString &feedbackText)
 {
+    if (!button) {
+        return;
+    }
+
     const SnapTray::DialogTheme::Palette palette = SnapTray::DialogTheme::paletteForToolbarStyle();
-    QString originalText = m_copyButton->text();
-    m_copyButton->setText("✓ Copied!");
-    m_copyButton->setStyleSheet(QStringLiteral(
+    const QString originalText = button->text();
+    QPointer<QPushButton> safeButton = button;
+    safeButton->setText(feedbackText);
+    safeButton->setStyleSheet(QStringLiteral(
         "QPushButton { background-color: %1; border-color: %2; color: %3; }")
         .arg(SnapTray::DialogTheme::toCssColor(palette.successBackground))
         .arg(SnapTray::DialogTheme::toCssColor(palette.successBorder))
         .arg(SnapTray::DialogTheme::toCssColor(palette.successText)));
 
     // Reset after 1.5 seconds
-    QTimer::singleShot(1500, this, [this, originalText]() {
-        if (m_copyButton) {
-            m_copyButton->setText(originalText);
-            m_copyButton->setStyleSheet("");
+    QTimer::singleShot(1500, this, [safeButton, originalText]() {
+        if (safeButton) {
+            safeButton->setText(originalText);
+            safeButton->setStyleSheet("");
         }
     });
 }

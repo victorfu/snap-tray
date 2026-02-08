@@ -1700,30 +1700,30 @@ void RegionSelector::performOCR()
 
     QPointer<RegionSelector> safeThis = this;
     ocrMgr->recognizeText(selectedRegion,
-        [safeThis](bool success, const QString& text, const QString& error) {
+        [safeThis](const OCRResult& result) {
             if (safeThis) {
-                safeThis->onOCRComplete(success, text, error);
+                safeThis->onOCRComplete(result);
             }
         });
 }
 
-void RegionSelector::onOCRComplete(bool success, const QString& text, const QString& error)
+void RegionSelector::onOCRComplete(const OCRResult& result)
 {
     m_ocrInProgress = false;
     if (m_loadingSpinner) {
         m_loadingSpinner->stop();
     }
 
-    if (success && !text.isEmpty()) {
+    if (result.success && !result.text.isEmpty()) {
         // Check settings to determine behavior
         if (OCRSettingsManager::instance().behavior() == OCRBehavior::ShowEditor) {
-            showOCRResultDialog(text);
+            showOCRResultDialog(result);
             return;  // Dialog will handle the rest
         }
 
         // Default behavior: direct copy
-        QGuiApplication::clipboard()->setText(text);
-        QString msg = tr("Copied %1 characters").arg(text.length());
+        QGuiApplication::clipboard()->setText(result.text);
+        QString msg = tr("Copied %1 characters").arg(result.text.length());
         QString bgColor = "rgba(34, 139, 34, 220)";  // Green for success
 
         m_ocrToastLabel->setStyleSheet(QString(
@@ -1748,7 +1748,7 @@ void RegionSelector::onOCRComplete(bool success, const QString& text, const QStr
         m_ocrToastTimer->start(2500);
     }
     else {
-        QString msg = error.isEmpty() ? tr("No text found") : error;
+        QString msg = result.error.isEmpty() ? tr("No text found") : result.error;
         QString bgColor = "rgba(200, 60, 60, 220)";  // Red for failure
 
         m_ocrToastLabel->setStyleSheet(QString(
@@ -1776,11 +1776,11 @@ void RegionSelector::onOCRComplete(bool success, const QString& text, const QStr
     update();
 }
 
-void RegionSelector::showOCRResultDialog(const QString& text)
+void RegionSelector::showOCRResultDialog(const OCRResult& result)
 {
     // Create non-modal dialog
     auto *dialog = new OCRResultDialog(this);
-    dialog->setResultText(text);
+    dialog->setOCRResult(result);
 
     // Connect signals
     connect(dialog, &OCRResultDialog::textCopied, this, [this](const QString &copiedText) {

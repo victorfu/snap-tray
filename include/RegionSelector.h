@@ -43,6 +43,7 @@ class ColorPickerDialogCompat;
 }
 class QCloseEvent;
 class OCRManager;
+struct OCRResult;
 class QRCodeManager;
 class AutoBlurManager;
 class RegionPainter;
@@ -260,8 +261,8 @@ private:
     class QTimer *m_ocrToastTimer;
 
     void performOCR();
-    void onOCRComplete(bool success, const QString &text, const QString &error);
-    void showOCRResultDialog(const QString &text);
+    void onOCRComplete(const OCRResult &result);
+    void showOCRResultDialog(const OCRResult &result);
 
     // QR Code state
     QRCodeManager *m_qrCodeManager;

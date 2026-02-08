@@ -8,6 +8,7 @@
 class QTextEdit;
 class QPushButton;
 class QLabel;
+struct OCRResult;
 
 /**
  * @brief Dialog displaying OCR recognition results with interactive features.
@@ -15,6 +16,7 @@ class QLabel;
  * Features:
  * - Editable text area showing recognized text
  * - Copy button with visual feedback ("✓ Copied!")
+ * - Optional "Copy as TSV" button when table structure is detected
  * - Character count with "(edited)" indicator
  * - Theme-aware UI matching SnapTray style (light/dark)
  * - Draggable title bar
@@ -33,6 +35,7 @@ public:
      * @param text The recognized text from OCR
      */
     void setResultText(const QString &text);
+    void setOCRResult(const OCRResult &result);
 
     /**
      * @brief Get the current text (may be edited by user)
@@ -65,6 +68,7 @@ protected:
 
 private slots:
     void onCopyClicked();
+    void onCopyAsTsvClicked();
     void onCloseClicked();
     void onTextChanged();
 
@@ -72,7 +76,7 @@ private:
     void setupUi();
     void applyTheme();
     void updateCharacterCount();
-    void showCopyFeedback();
+    void showCopyFeedback(QPushButton *button, const QString &feedbackText);
 
     // UI Components
     QLabel *m_iconLabel;
@@ -81,9 +85,11 @@ private:
     QTextEdit *m_textEdit;
     QPushButton *m_closeButton;
     QPushButton *m_copyButton;
+    QPushButton *m_copyAsTsvButton;
 
     // State
     QString m_originalText;
+    QString m_detectedTsv;
     QPoint m_dragPosition;
     bool m_isDragging;
     bool m_isTextEdited;

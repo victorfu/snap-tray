@@ -3,6 +3,7 @@
 #include <QImage>
 #include <QCoreApplication>
 #include <QThread>
+#include <utility>
 
 #include <unknwn.h>
 #include <winrt/Windows.Foundation.h>
@@ -126,13 +127,10 @@ public:
         : QThread(parent)
         , m_image(image)
         , m_languages(languages)
-        , m_success(false)
     {
     }
 
-    bool success() const { return m_success; }
-    QString text() const { return m_text; }
-    QString error() const { return m_error; }
+    OCRResult result() const { return m_result; }
 
 protected:
     void run() override
@@ -151,7 +149,8 @@ protected:
             // RPC_E_CHANGED_MODE (0x80010106) means apartment already initialized
             // in different mode - this is OK, we can still use WinRT APIs
             if (ex.code() != HRESULT(0x80010106)) {
-                m_error = QString::fromStdWString(std::wstring(ex.message()));
+                m_result.success = false;
+                m_result.error = QString::fromStdWString(std::wstring(ex.message()));
                 return;
             }
         }
@@ -159,7 +158,8 @@ protected:
         try {
             OcrEngine engine = tryCreateOcrEngine(m_languages);
             if (!engine) {
-                m_error = QStringLiteral("Failed to create OCR engine. "
+                m_result.success = false;
+                m_result.error = QStringLiteral("Failed to create OCR engine. "
                     "Please install OCR language packs in Windows Settings.");
                 goto cleanup;
             }
@@ -178,19 +178,49 @@ protected:
             }
 
             QStringList lines;
+            QVector<OCRTextBlock> blocks;
+            const qreal imageWidth = static_cast<qreal>(m_image.width());
+            const qreal imageHeight = static_cast<qreal>(m_image.height());
+
             for (const auto& line : result.Lines()) {
                 lines.append(QString::fromStdWString(std::wstring(line.Text())));
+
+                for (const auto& word : line.Words()) {
+                    const QString wordText = QString::fromStdWString(std::wstring(word.Text())).trimmed();
+                    if (wordText.isEmpty()) {
+                        continue;
+                    }
+
+                    const Windows::Foundation::Rect winRect = word.BoundingRect();
+                    const qreal x = imageWidth > 0.0 ? static_cast<qreal>(winRect.X) / imageWidth : 0.0;
+                    const qreal y = imageHeight > 0.0 ? static_cast<qreal>(winRect.Y) / imageHeight : 0.0;
+                    const qreal width = imageWidth > 0.0 ? static_cast<qreal>(winRect.Width) / imageWidth : 0.0;
+                    const qreal height = imageHeight > 0.0 ? static_cast<qreal>(winRect.Height) / imageHeight : 0.0;
+
+                    OCRTextBlock block;
+                    block.text = wordText;
+                    block.boundingRect = QRectF(x, y, width, height).normalized();
+                    block.confidence = -1.0f;
+                    blocks.push_back(block);
+                }
             }
 
-            m_text = lines.join(QStringLiteral("\n")).trimmed();
-            m_success = true;
+            m_result.text = lines.join(QStringLiteral("\n")).trimmed();
+            m_result.blocks = std::move(blocks);
+            m_result.success = !m_result.text.isEmpty();
+            if (!m_result.success) {
+                m_result.error = QStringLiteral("No text detected");
+            }
 
         } catch (const winrt::hresult_error& ex) {
-            m_error = QString::fromStdWString(std::wstring(ex.message()));
+            m_result.success = false;
+            m_result.error = QString::fromStdWString(std::wstring(ex.message()));
         } catch (const std::exception& ex) {
-            m_error = QString::fromUtf8(ex.what());
+            m_result.success = false;
+            m_result.error = QString::fromUtf8(ex.what());
         } catch (...) {
-            m_error = QStringLiteral("Unknown error during OCR processing");
+            m_result.success = false;
+            m_result.error = QStringLiteral("Unknown error during OCR processing");
         }
 
 cleanup:
@@ -202,9 +232,7 @@ cleanup:
 private:
     QImage m_image;
     QStringList m_languages;
-    bool m_success;
-    QString m_text;
-    QString m_error;
+    OCRResult m_result;
 };
 
 } // anonymous namespace
@@ -212,6 +240,7 @@ private:
 OCRManager::OCRManager(QObject *parent)
     : QObject(parent)
 {
+    qRegisterMetaType<OCRResult>("OCRResult");
 }
 
 OCRManager::~OCRManager()
@@ -278,17 +307,22 @@ void OCRManager::recognizeText(const QPixmap &pixmap, const OCRCallback &callbac
 {
     if (m_shuttingDown) {
         if (callback) {
-            callback(false, QString(), QStringLiteral("OCR manager is shutting down"));
+            OCRResult result;
+            result.success = false;
+            result.error = QStringLiteral("OCR manager is shutting down");
+            callback(result);
         }
         return;
     }
 
     if (pixmap.isNull()) {
-        QString errorMsg = QStringLiteral("Invalid pixmap provided for OCR");
+        OCRResult result;
+        result.success = false;
+        result.error = QStringLiteral("Invalid pixmap provided for OCR");
         if (callback) {
-            callback(false, QString(), errorMsg);
+            callback(result);
         }
-        emit recognitionComplete(false, QString(), errorMsg);
+        emit recognitionComplete(result);
         return;
     }
 
@@ -301,15 +335,13 @@ void OCRManager::recognizeText(const QPixmap &pixmap, const OCRCallback &callbac
     connect(worker, &QThread::finished, this, [this, worker, callback]() {
         m_activeWorkers.remove(worker);
 
-        bool success = worker->success();
-        QString text = worker->text();
-        QString error = worker->error();
+        const OCRResult result = worker->result();
 
         if (!m_shuttingDown) {
             if (callback) {
-                callback(success, text, error);
+                callback(result);
             }
-            emit recognitionComplete(success, text, error);
+            emit recognitionComplete(result);
         }
     });
 

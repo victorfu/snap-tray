@@ -3,6 +3,7 @@
 #include <QDebug>
 #include <QImage>
 #include <QPointer>
+#include <utility>
 
 #import <Foundation/Foundation.h>
 #import <Vision/Vision.h>
@@ -106,11 +107,22 @@ CGImageRef createCGImageFromPixmap(const QPixmap &pixmap)
     return cgImage;  // Caller must release
 }
 
+QRectF convertVisionBoundingBox(const CGRect &visionRect)
+{
+    const qreal x = static_cast<qreal>(visionRect.origin.x);
+    const qreal width = static_cast<qreal>(visionRect.size.width);
+    const qreal height = static_cast<qreal>(visionRect.size.height);
+    // Vision uses a bottom-left origin. Convert to top-left to match Qt/UI usage.
+    const qreal y = 1.0 - static_cast<qreal>(visionRect.origin.y) - height;
+    return QRectF(x, y, width, height).normalized();
+}
+
 } // anonymous namespace
 
 OCRManager::OCRManager(QObject *parent)
     : QObject(parent)
 {
+    qRegisterMetaType<OCRResult>("OCRResult");
 }
 
 OCRManager::~OCRManager()
@@ -129,7 +141,10 @@ void OCRManager::recognizeText(const QPixmap &pixmap, const OCRCallback &callbac
 {
     if (pixmap.isNull()) {
         if (callback) {
-            callback(false, QString(), QStringLiteral("Invalid pixmap"));
+            OCRResult result;
+            result.success = false;
+            result.error = QStringLiteral("Invalid pixmap");
+            callback(result);
         }
         return;
     }
@@ -139,7 +154,10 @@ void OCRManager::recognizeText(const QPixmap &pixmap, const OCRCallback &callbac
         CGImageRef cgImage = createCGImageFromPixmap(pixmap);
         if (!cgImage) {
             if (callback) {
-                callback(false, QString(), QStringLiteral("Failed to create CGImage"));
+                OCRResult result;
+                result.success = false;
+                result.error = QStringLiteral("Failed to create CGImage");
+                callback(result);
             }
             return;
         }
@@ -161,32 +179,44 @@ void OCRManager::recognizeText(const QPixmap &pixmap, const OCRCallback &callbac
         // Create text recognition request
         VNRecognizeTextRequest *request = [[VNRecognizeTextRequest alloc]
             initWithCompletionHandler:^(VNRequest * _Nonnull request, NSError * _Nullable error) {
-                QString resultText;
-                QString errorMsg;
-                bool success = false;
+                OCRResult result;
 
                 if (error) {
-                    errorMsg = QString::fromNSString([error localizedDescription]);
-                    qDebug() << "OCRManager: Recognition failed:" << errorMsg;
+                    result.error = QString::fromNSString([error localizedDescription]);
+                    qDebug() << "OCRManager: Recognition failed:" << result.error;
                 } else {
                     NSArray<VNRecognizedTextObservation *> *observations = request.results;
                     NSMutableString *fullText = [NSMutableString string];
+                    QVector<OCRTextBlock> blocks;
+                    blocks.reserve(observations.count);
 
                     for (VNRecognizedTextObservation *observation in observations) {
                         VNRecognizedText *topCandidate = [[observation topCandidates:1] firstObject];
                         if (topCandidate) {
+                            const QString candidateText = QString::fromNSString(topCandidate.string).trimmed();
+                            if (candidateText.isEmpty()) {
+                                continue;
+                            }
+
                             if ([fullText length] > 0) {
                                 [fullText appendString:@"\n"];
                             }
                             [fullText appendString:topCandidate.string];
+
+                            OCRTextBlock block;
+                            block.text = candidateText;
+                            block.boundingRect = convertVisionBoundingBox(observation.boundingBox);
+                            block.confidence = topCandidate.confidence;
+                            blocks.push_back(block);
                         }
                     }
 
-                    resultText = QString::fromNSString(fullText).trimmed();
-                    success = !resultText.isEmpty();
+                    result.text = QString::fromNSString(fullText).trimmed();
+                    result.blocks = std::move(blocks);
+                    result.success = !result.text.isEmpty();
 
-                    if (!success) {
-                        errorMsg = QStringLiteral("No text detected");
+                    if (!result.success) {
+                        result.error = QStringLiteral("No text detected");
                     }
 
                     qDebug() << "OCRManager: Recognition complete, found"
@@ -196,10 +226,10 @@ void OCRManager::recognizeText(const QPixmap &pixmap, const OCRCallback &callbac
                 // Dispatch result to main thread
                 dispatch_async(dispatch_get_main_queue(), ^{
                     if (callbackCopy) {
-                        callbackCopy(success, resultText, errorMsg);
+                        callbackCopy(result);
                     }
                     if (weakThis) {
-                        emit weakThis->recognitionComplete(success, resultText, errorMsg);
+                        emit weakThis->recognitionComplete(result);
                     }
                 });
             }];
@@ -225,18 +255,26 @@ void OCRManager::recognizeText(const QPixmap &pixmap, const OCRCallback &callbac
             BOOL performed = [handler performRequests:@[request] error:&performError];
 
             if (!performed && performError) {
-                QString errorMsg = QString::fromNSString([performError localizedDescription]);
-                qDebug() << "OCRManager: Failed to perform request:" << errorMsg;
+                OCRResult result;
+                result.success = false;
+                result.error = QString::fromNSString([performError localizedDescription]);
+                qDebug() << "OCRManager: Failed to perform request:" << result.error;
                 dispatch_async(dispatch_get_main_queue(), ^{
                     if (callbackCopy) {
-                        callbackCopy(false, QString(), errorMsg);
+                        callbackCopy(result);
+                    }
+                    if (weakThis) {
+                        emit weakThis->recognitionComplete(result);
                     }
                 });
             }
         });
     } else {
         if (callback) {
-            callback(false, QString(), QStringLiteral("Vision Framework not available (requires macOS 10.15+)"));
+            OCRResult result;
+            result.success = false;
+            result.error = QStringLiteral("Vision Framework not available (requires macOS 10.15+)");
+            callback(result);
         }
     }
 }

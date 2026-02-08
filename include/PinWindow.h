@@ -29,6 +29,7 @@ class QScreen;
 class QPainter;
 class ICaptureEngine;
 class OCRManager;
+struct OCRResult;
 class QRCodeManager;
 class PinWindowManager;
 class UIIndicators;
@@ -164,8 +165,8 @@ private:
 
     // OCR methods
     void performOCR();
-    void onOCRComplete(bool success, const QString& text, const QString& error);
-    void showOCRResultDialog(const QString& text);
+    void onOCRComplete(const OCRResult& result);
+    void showOCRResultDialog(const OCRResult& result);
 
     // QR Code methods
     void performQRCodeScan();

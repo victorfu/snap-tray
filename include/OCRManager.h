@@ -9,10 +9,12 @@
 #include <QStringList>
 #include <functional>
 
+#include "detection/OCRTypes.h"
+
 class QThread;
 
-// Callback type for async OCR results
-using OCRCallback = std::function<void(bool success, const QString &text, const QString &error)>;
+// Callback type for async OCR results with structured blocks
+using OCRCallback = std::function<void(const OCRResult &result)>;
 
 /**
  * @brief Information about an available OCR language.
@@ -52,7 +54,7 @@ public:
     /**
      * @brief Perform OCR on the given pixmap.
      * @param pixmap The image to recognize text from.
-     * @param callback Callback for async result delivery.
+     * @param callback Callback for async structured result delivery.
      */
     void recognizeText(const QPixmap &pixmap, const OCRCallback &callback);
 
@@ -63,7 +65,7 @@ public:
     static bool isAvailable();
 
 signals:
-    void recognitionComplete(bool success, const QString &text, const QString &error);
+    void recognitionComplete(const OCRResult &result);
 
 private:
     void beginShutdown();

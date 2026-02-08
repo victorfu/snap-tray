@@ -1100,44 +1100,44 @@ void PinWindow::performOCR()
 
     QPointer<PinWindow> safeThis = this;
     m_ocrManager->recognizeText(m_originalPixmap,
-        [safeThis](bool success, const QString& text, const QString& error) {
+        [safeThis](const OCRResult& result) {
             if (safeThis) {
-                safeThis->onOCRComplete(success, text, error);
+                safeThis->onOCRComplete(result);
             }
         });
 }
 
-void PinWindow::onOCRComplete(bool success, const QString& text, const QString& error)
+void PinWindow::onOCRComplete(const OCRResult& result)
 {
     m_ocrInProgress = false;
     m_loadingSpinner->stop();
 
-    if (success && !text.isEmpty()) {
+    if (result.success && !result.text.isEmpty()) {
         // Check settings to determine behavior
         if (OCRSettingsManager::instance().behavior() == OCRBehavior::ShowEditor) {
-            showOCRResultDialog(text);
+            showOCRResultDialog(result);
             return;
         }
 
         // Default behavior: direct copy
-        QGuiApplication::clipboard()->setText(text);
-        QString msg = tr("Copied %1 characters").arg(text.length());
+        QGuiApplication::clipboard()->setText(result.text);
+        QString msg = tr("Copied %1 characters").arg(result.text.length());
         m_uiIndicators->showToast(true, msg);
     }
     else {
-        QString msg = error.isEmpty() ? tr("No text found") : error;
+        QString msg = result.error.isEmpty() ? tr("No text found") : result.error;
         m_uiIndicators->showToast(false, msg);
     }
 
-    emit ocrCompleted(success && !text.isEmpty(),
-                      success ? tr("Text copied") : error);
+    emit ocrCompleted(result.success && !result.text.isEmpty(),
+                      result.success ? tr("Text copied") : result.error);
 }
 
-void PinWindow::showOCRResultDialog(const QString& text)
+void PinWindow::showOCRResultDialog(const OCRResult& result)
 {
     // Create non-modal dialog
     auto *dialog = new OCRResultDialog(this);
-    dialog->setResultText(text);
+    dialog->setOCRResult(result);
 
     // Connect signals
     connect(dialog, &OCRResultDialog::textCopied, this, [this](const QString &copiedText) {
