@@ -344,6 +344,8 @@ PinWindow::PinWindow(const QPixmap& screenshot,
 
 PinWindow::~PinWindow()
 {
+    m_isDestructing = true;
+
     // Clean up cursor state before destruction (ensures Drag context is cleared)
     CursorManager::instance().clearAllForWidget(this);
 
@@ -2931,19 +2933,26 @@ void PinWindow::stopLiveCapture()
 {
     if (m_captureTimer) {
         m_captureTimer->stop();
-        m_captureTimer->deleteLater();
+        if (!m_isDestructing) {
+            m_captureTimer->deleteLater();
+        }
         m_captureTimer = nullptr;
     }
 
     if (m_liveIndicatorTimer) {
         m_liveIndicatorTimer->stop();
-        m_liveIndicatorTimer->deleteLater();
+        if (!m_isDestructing) {
+            m_liveIndicatorTimer->deleteLater();
+        }
         m_liveIndicatorTimer = nullptr;
     }
 
     if (m_captureEngine) {
         m_captureEngine->stop();
-        m_captureEngine->deleteLater();
+        // During PinWindow destruction, QObject parent-child cleanup will delete this.
+        if (!m_isDestructing) {
+            m_captureEngine->deleteLater();
+        }
         m_captureEngine = nullptr;
     }
 

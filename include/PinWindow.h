@@ -350,6 +350,7 @@ private:
     // Live capture mode
     QRect m_sourceRegion;
     QScreen* m_sourceScreen = nullptr;
+    bool m_isDestructing = false;
     bool m_isLiveMode = false;
     ICaptureEngine* m_captureEngine = nullptr;
     QTimer* m_captureTimer = nullptr;
