@@ -61,31 +61,42 @@ packaging\windows\package.bat msix      # MSIX package only
 ```
 snap-tray/
 ├── include/                    # Public headers
+│   ├── annotation/            # AnnotationContext, AnnotationHostAdapter
 │   ├── annotations/           # Annotation types and classes
 │   ├── capture/               # Capture engine interfaces
+│   ├── cli/                   # CLI handler, commands, IPC protocol
+│   │   └── commands/          # Individual CLI command classes
+│   ├── colorwidgets/          # Custom color picker widgets
 │   ├── cursor/                # Cursor management
 │   ├── detection/             # Face/text detection
 │   ├── encoding/              # Video/GIF/WebP encoders
+│   ├── external/              # Third-party headers (msf_gif)
+│   ├── hotkey/                # HotkeyManager, HotkeyTypes
 │   ├── input/                 # Mouse tracking (platform-specific)
 │   ├── pinwindow/             # Pin window components
-│   ├── platform/              # Platform abstraction
 │   ├── recording/             # Recording effects
 │   ├── region/                # Region selection UI
 │   ├── settings/              # Settings managers
 │   ├── toolbar/               # Toolbar rendering
 │   ├── tools/                 # Tool system (ToolId, IToolHandler)
 │   │   └── handlers/          # Tool handler interfaces
-│   ├── ui/sections/           # Tool option panels
+│   ├── ui/                    # GlobalToast, IWidgetSection
+│   │   └── sections/          # Tool option panels
+│   ├── update/                # UpdateChecker, UpdateDialog, UpdateSettingsManager
 │   ├── utils/                 # Utility helpers
 │   ├── video/                 # Video playback UI
-│   └── widgets/               # Custom widgets
+│   └── widgets/               # Custom widgets (hotkey edit, dialogs)
 │
 ├── src/                       # Implementation files
+│   ├── annotation/            # AnnotationContext implementation
 │   ├── annotations/           # Annotation implementations
 │   ├── capture/               # Capture engine implementations
+│   ├── cli/                   # CLI command implementations
+│   ├── colorwidgets/          # Color widget implementations
 │   ├── cursor/                # Cursor manager
 │   ├── detection/             # Detection algorithms
 │   ├── encoding/              # Encoder implementations
+│   ├── hotkey/                # HotkeyManager implementation
 │   ├── input/                 # Mouse tracking implementations
 │   ├── pinwindow/             # Pin window logic
 │   ├── platform/              # Platform-specific code
@@ -95,20 +106,28 @@ snap-tray/
 │   ├── toolbar/               # Toolbar rendering
 │   ├── tools/handlers/        # Tool handler implementations
 │   ├── ui/sections/           # UI sections implementation
+│   ├── update/                # Auto-update implementations
 │   ├── utils/                 # Utility implementations
 │   ├── video/                 # Video components
 │   └── widgets/               # Custom widgets
 │
 ├── tests/                     # Test suite (Qt Test Framework)
+│   ├── Annotations/           # Annotation type tests
+│   ├── CLI/                   # CLI command tests
 │   ├── Detection/             # FaceDetector, AutoBlurManager tests
 │   ├── Encoding/              # NativeGifEncoder, EncoderFactory tests
+│   ├── Hotkey/                # HotkeyManager tests
+│   ├── IPC/                   # SingleInstanceGuard tests
 │   ├── PinWindow/             # Transform, Resize, ClickThrough tests
 │   ├── RecordingManager/      # StateMachine, Lifecycle, Audio tests
 │   ├── RegionSelector/        # MagnifierPanel, Throttler tests
 │   ├── Settings/              # SettingsManager tests
 │   ├── ToolOptionsPanel/      # State, Signals, HitTest tests
+│   ├── Tools/                 # ToolRegistry, ToolHandler tests
+│   ├── UISections/            # UI section tests
+│   ├── Update/                # UpdateChecker, InstallSourceDetector tests
 │   ├── Utils/                 # CoordinateHelper tests
-│   └── mocks/                 # Mock implementations
+│   └── Video/                 # Video timeline tests
 │
 ├── packaging/                 # Application packaging
 │   ├── windows/               # NSIS and MSIX packaging
@@ -129,10 +148,11 @@ snap-tray/
 The project uses a modular static library architecture:
 
 1. **snaptray_core**: Annotations, settings, cursor management, utilities
-2. **snaptray_algorithms**: Detection algorithms (face detection, auto-blur) - depends on OpenCV
-3. **snaptray_platform**: Platform-specific capture, encoding, video playback
-4. **snaptray_ui**: UI components, toolbar, region selector, pin windows, tool system
-5. **SnapTray**: Main executable linking all libraries
+2. **snaptray_colorwidgets**: Custom color picker dialog and components
+3. **snaptray_algorithms**: Detection algorithms (face detection, auto-blur) - depends on OpenCV
+4. **snaptray_platform**: Platform-specific capture, encoding, video playback
+5. **snaptray_ui**: UI components, toolbar, region selector, pin windows, tool system
+6. **SnapTray**: Main executable linking all libraries
 
 ## Architecture Patterns
 
@@ -160,6 +180,9 @@ OCRSettingsManager::instance();
 
 // Watermark configuration
 WatermarkSettingsManager::instance();
+
+// Update preferences (auto-check, intervals, pre-release channel)
+UpdateSettingsManager::instance();  // From include/update/UpdateSettingsManager.h
 
 // Other settings
 QSettings settings = getSettings();  // From include/settings/Settings.h
@@ -242,6 +265,7 @@ if (PlatformFeatures::instance().isOCRAvailable()) {
 | Window Level | `WindowLevel_win.cpp` | `WindowLevel_mac.mm` |
 | Platform Features | `PlatformFeatures_win.cpp` | `PlatformFeatures_mac.mm` |
 | Auto-launch | `AutoLaunchManager_win.cpp` | `AutoLaunchManager_mac.mm` |
+| Install Source | `InstallSourceDetector_win.cpp` | `InstallSourceDetector_mac.mm` |
 
 ## Key Components
 
@@ -252,6 +276,9 @@ if (PlatformFeatures::instance().isOCRAvailable()) {
 - `ScreenCanvasManager`: Full-screen annotation mode
 - `RecordingManager`: Screen recording state machine
 - `SingleInstanceGuard`: Prevents multiple instances
+- `HotkeyManager`: Centralized hotkey registration and management
+- `CLIHandler`: CLI command parsing and IPC dispatch
+- `UpdateChecker`: Auto-update version checking
 
 ### Region Selector (`src/RegionSelector.cpp`)
 
@@ -261,6 +288,9 @@ Sub-components in `src/region/`:
 - `UpdateThrottler`: Render throttling
 - `TextAnnotationEditor`: Inline text editing
 - `RegionExportManager`: Export/save functionality
+- `RegionInputHandler`: Input event handling
+- `RegionPainter`: Region rendering logic
+- `MultiRegionManager`: Multi-region capture coordination
 
 ### Pin Window (`src/PinWindow.cpp`)
 
@@ -269,6 +299,8 @@ Sub-components in `src/pinwindow/`:
 - `ResizeHandler`: Edge dragging
 - `UIIndicators`: Scale/opacity display
 - `WindowedToolbar`: Pin window toolbar
+- `PinHistoryStore`: Pin history persistence
+- `PinHistoryWindow`: Pin history UI
 
 ### Recording (`src/RecordingManager.cpp`)
 
@@ -276,6 +308,13 @@ Sub-components in `src/pinwindow/`:
 - `RecordingControlBar`: Floating control UI
 - `RecordingBoundaryOverlay`: Visual boundary
 - `RecordingAnnotationOverlay`: Live annotation display
+
+### CLI System (`src/cli/`)
+
+Commands in `include/cli/commands/`:
+- `FullCommand`, `ScreenCommand`, `RegionCommand`: Local capture commands
+- `GuiCommand`, `CanvasCommand`, `RecordCommand`, `PinCommand`: IPC commands
+- `ConfigCommand`: Settings management
 
 ## Development Guidelines
 

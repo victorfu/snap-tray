@@ -520,11 +520,16 @@ snap-tray/
 |   |-- PinWindow.h
 |   |-- RecordingManager.h
 |   |-- WatermarkRenderer.h
+|   |-- annotation/        # Annotation context and host adapter
 |   |-- annotations/       # Annotation types (Arrow, Shape, Text, etc.)
 |   |-- capture/           # Screen/audio capture engines
+|   |-- cli/               # CLI handler, commands, IPC protocol
+|   |-- colorwidgets/      # Custom color picker widgets
 |   |-- cursor/            # Cursor state management
 |   |-- detection/         # Face/text detection
 |   |-- encoding/          # GIF/WebP encoders
+|   |-- external/          # Third-party headers (msf_gif)
+|   |-- hotkey/            # Hotkey manager and types
 |   |-- input/             # Mouse click tracking
 |   |-- pinwindow/         # Pin window components
 |   |-- recording/         # Recording effects (Spotlight, CursorHighlight)
@@ -532,10 +537,12 @@ snap-tray/
 |   |-- settings/          # Settings managers
 |   |-- toolbar/           # Toolbar rendering
 |   |-- tools/             # Tool handlers and registry
-|   |-- ui/sections/       # Tool option panels
+|   |-- ui/                # GlobalToast, IWidgetSection
+|   |   `-- sections/      # Tool option panels
+|   |-- update/            # Auto-update system
 |   |-- utils/             # Utility helpers
 |   |-- video/             # Video playback and recording UI
-|   `-- widgets/           # Custom widgets
+|   `-- widgets/           # Custom widgets (hotkey edit, dialogs)
 |-- src/
 |   |-- main.cpp
 |   |-- MainApplication.cpp
@@ -546,11 +553,15 @@ snap-tray/
 |   |-- PinWindow.cpp
 |   |-- RecordingManager.cpp
 |   |-- WatermarkRenderer.cpp
+|   |-- annotation/        # AnnotationContext implementation
 |   |-- annotations/       # Annotation implementations
 |   |-- capture/           # Capture engine implementations
+|   |-- cli/               # CLI command implementations
+|   |-- colorwidgets/      # Color widget implementations
 |   |-- cursor/            # CursorManager implementation
 |   |-- detection/         # Detection implementations
 |   |-- encoding/          # Encoder implementations
+|   |-- hotkey/            # HotkeyManager implementation
 |   |-- input/             # Input tracking (platform-specific)
 |   |-- pinwindow/         # Pin window component implementations
 |   |-- platform/          # Platform abstraction (macOS/Windows)
@@ -560,16 +571,18 @@ snap-tray/
 |   |-- toolbar/           # Toolbar implementations
 |   |-- tools/             # Tool system implementations
 |   |-- ui/sections/       # UI section implementations
+|   |-- update/            # Auto-update implementations
 |   |-- utils/             # Utility implementations
 |   |-- video/             # Video component implementations
 |   `-- widgets/           # Widget implementations
 |-- resources/
 |   |-- resources.qrc
-|   `-- icons/
-|       |-- snaptray.svg
-|       |-- snaptray.png
-|       |-- snaptray.icns
-|       `-- snaptray.ico
+|   |-- icons/
+|   |   |-- snaptray.svg
+|   |   |-- snaptray.png
+|   |   |-- snaptray.icns
+|   |   `-- snaptray.ico
+|   `-- cascades/          # OpenCV Haar cascade files
 |-- scripts/
 |   |-- build.sh / build.bat
 |   |-- build-release.sh / build-release.bat
@@ -624,6 +637,7 @@ The codebase follows a modular architecture with extracted components for mainta
 | `RegionExportManager`       | `src/region/`      | Region export (copy/save) handling        |
 | `RegionInputHandler`        | `src/region/`      | Input event handling for region selection |
 | `RegionPainter`             | `src/region/`      | Region rendering logic                    |
+| `MultiRegionManager`        | `src/region/`      | Multi-region capture coordination         |
 | `AnnotationSettingsManager` | `src/settings/`    | Centralized annotation settings           |
 | `FileSettingsManager`       | `src/settings/`    | File path settings                        |
 | `PinWindowSettingsManager`  | `src/settings/`    | Pin window settings                       |
@@ -633,10 +647,18 @@ The codebase follows a modular architecture with extracted components for mainta
 | `ResizeHandler`             | `src/pinwindow/`   | Window edge resize                        |
 | `UIIndicators`              | `src/pinwindow/`   | Scale/opacity/click-through indicators    |
 | `ClickThroughExitButton`    | `src/pinwindow/`   | Exit button for click-through mode        |
+| `PinHistoryStore`           | `src/pinwindow/`   | Pin history persistence                   |
+| `PinHistoryWindow`          | `src/pinwindow/`   | Pin history UI                            |
 | `SpotlightEffect`           | `src/recording/`   | Spotlight effect during recording         |
 | `CursorHighlightEffect`     | `src/recording/`   | Cursor highlight effect during recording  |
 | `FaceDetector`              | `src/detection/`   | Face detection for auto-blur              |
 | `AutoBlurManager`           | `src/detection/`   | Auto-blur orchestration                   |
+| `HotkeyManager`             | `src/hotkey/`      | Centralized hotkey registration           |
+| `CLIHandler`                | `src/cli/`         | CLI command parsing and dispatch          |
+| `UpdateChecker`             | `src/update/`      | Auto-update version checking              |
+| `UpdateSettingsManager`     | `src/update/`      | Update preferences and scheduling         |
+| `AnnotationContext`         | `src/annotation/`  | Shared annotation execution context       |
+| Color widgets               | `src/colorwidgets/`| Custom color picker dialog and components |
 | Section classes             | `src/ui/sections/` | Tool option panel components              |
 
 ### Test Suite

@@ -520,11 +520,16 @@ snap-tray/
 |   |-- PinWindow.h
 |   |-- RecordingManager.h
 |   |-- WatermarkRenderer.h
+|   |-- annotation/        # 標註上下文與主機介面
 |   |-- annotations/       # 標註類型（Arrow、Shape、Text 等）
 |   |-- capture/           # 螢幕/音訊擷取引擎
+|   |-- cli/               # CLI 處理器、指令、IPC 協定
+|   |-- colorwidgets/      # 自訂色彩選擇器元件
 |   |-- cursor/            # 游標狀態管理
 |   |-- detection/         # 臉部/文字偵測
 |   |-- encoding/          # GIF/WebP 編碼器
+|   |-- external/          # 第三方標頭檔（msf_gif）
+|   |-- hotkey/            # 熱鍵管理器與型別定義
 |   |-- input/             # 滑鼠點擊追蹤
 |   |-- pinwindow/         # 釘選視窗元件
 |   |-- recording/         # 錄影特效（Spotlight、CursorHighlight）
@@ -532,10 +537,12 @@ snap-tray/
 |   |-- settings/          # 設定管理器
 |   |-- toolbar/           # 工具列繪製
 |   |-- tools/             # 工具處理器與註冊
-|   |-- ui/sections/       # 工具選項面板
+|   |-- ui/                # GlobalToast、IWidgetSection
+|   |   `-- sections/      # 工具選項面板
+|   |-- update/            # 自動更新系統
 |   |-- utils/             # 工具輔助函式
 |   |-- video/             # 影片播放與錄影 UI
-|   `-- widgets/           # 自訂 Widget
+|   `-- widgets/           # 自訂 Widget（熱鍵編輯、對話框）
 |-- src/
 |   |-- main.cpp
 |   |-- MainApplication.cpp
@@ -546,11 +553,15 @@ snap-tray/
 |   |-- PinWindow.cpp
 |   |-- RecordingManager.cpp
 |   |-- WatermarkRenderer.cpp
+|   |-- annotation/        # AnnotationContext 實作
 |   |-- annotations/       # 標註實作
 |   |-- capture/           # 擷取引擎實作
+|   |-- cli/               # CLI 指令實作
+|   |-- colorwidgets/      # 色彩元件實作
 |   |-- cursor/            # CursorManager 實作
 |   |-- detection/         # 偵測實作
 |   |-- encoding/          # 編碼器實作
+|   |-- hotkey/            # HotkeyManager 實作
 |   |-- input/             # 輸入追蹤（平台特定）
 |   |-- pinwindow/         # 釘選視窗元件實作
 |   |-- platform/          # 平台抽象層（macOS/Windows）
@@ -560,16 +571,18 @@ snap-tray/
 |   |-- toolbar/           # 工具列實作
 |   |-- tools/             # 工具系統實作
 |   |-- ui/sections/       # UI 區段實作
+|   |-- update/            # 自動更新實作
 |   |-- utils/             # 工具函式實作
 |   |-- video/             # 影片元件實作
 |   `-- widgets/           # Widget 實作
 |-- resources/
 |   |-- resources.qrc
-|   `-- icons/
-|       |-- snaptray.svg
-|       |-- snaptray.png
-|       |-- snaptray.icns
-|       `-- snaptray.ico
+|   |-- icons/
+|   |   |-- snaptray.svg
+|   |   |-- snaptray.png
+|   |   |-- snaptray.icns
+|   |   `-- snaptray.ico
+|   `-- cascades/          # OpenCV Haar cascade 檔案
 |-- scripts/
 |   |-- build.sh / build.bat
 |   |-- build-release.sh / build-release.bat
@@ -624,6 +637,7 @@ snap-tray/
 | `RegionExportManager`       | `src/region/`      | 區域匯出（複製/儲存）處理  |
 | `RegionInputHandler`        | `src/region/`      | 區域選取輸入事件處理       |
 | `RegionPainter`             | `src/region/`      | 區域繪製邏輯               |
+| `MultiRegionManager`        | `src/region/`      | 多區域擷取協調管理         |
 | `AnnotationSettingsManager` | `src/settings/`    | 集中式註釋設定管理         |
 | `FileSettingsManager`       | `src/settings/`    | 檔案路徑設定               |
 | `PinWindowSettingsManager`  | `src/settings/`    | 釘選視窗設定               |
@@ -633,10 +647,18 @@ snap-tray/
 | `ResizeHandler`             | `src/pinwindow/`   | 視窗邊緣調整大小           |
 | `UIIndicators`              | `src/pinwindow/`   | 縮放/透明度/穿透指示器     |
 | `ClickThroughExitButton`    | `src/pinwindow/`   | 穿透模式離開按鈕           |
+| `PinHistoryStore`           | `src/pinwindow/`   | 釘選歷史紀錄持久化         |
+| `PinHistoryWindow`          | `src/pinwindow/`   | 釘選歷史紀錄 UI            |
 | `SpotlightEffect`           | `src/recording/`   | 錄影時聚光燈效果           |
 | `CursorHighlightEffect`     | `src/recording/`   | 錄影時游標高亮效果         |
 | `FaceDetector`              | `src/detection/`   | 自動模糊臉部偵測           |
 | `AutoBlurManager`           | `src/detection/`   | 自動模糊協調管理           |
+| `HotkeyManager`             | `src/hotkey/`      | 集中式熱鍵註冊管理         |
+| `CLIHandler`                | `src/cli/`         | CLI 指令解析與分派         |
+| `UpdateChecker`             | `src/update/`      | 自動更新版本檢查           |
+| `UpdateSettingsManager`     | `src/update/`      | 更新偏好設定與排程         |
+| `AnnotationContext`         | `src/annotation/`  | 共享標註執行上下文         |
+| Color widgets               | `src/colorwidgets/`| 自訂色彩選擇器對話框與元件 |
 | Section 類別                | `src/ui/sections/` | 工具選項面板組件           |
 
 ### 測試套件
