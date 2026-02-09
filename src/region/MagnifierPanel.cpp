@@ -1,7 +1,13 @@
 #include "region/MagnifierPanel.h"
 #include <QPainter>
-#include <QDateTime>
+#include <QElapsedTimer>
+#include <QDebug>
 #include <cstring>
+
+namespace {
+constexpr qint64 kSlowToImageWarningThresholdMs = 8;
+constexpr qreal kBytesPerMiB = 1024.0 * 1024.0;
+}
 
 MagnifierPanel::MagnifierPanel(QObject* parent)
     : QObject(parent)
@@ -58,16 +64,57 @@ void MagnifierPanel::initializeGridCache()
 
 void MagnifierPanel::invalidateCache()
 {
+    // Only invalidate when the captured background snapshot changes.
+    // A null cache forces a full QPixmap::toImage conversion on next draw/update.
     m_cacheValid = false;
     m_backgroundImageCache = QImage();  // Clear cached image to force re-conversion
 }
 
+void MagnifierPanel::ensureBackgroundImageCache(const QPixmap& backgroundPixmap,
+                                                bool logIfSlow,
+                                                const char* context)
+{
+    if (!m_backgroundImageCache.isNull()) {
+        return;
+    }
+
+    QElapsedTimer timer;
+    if (logIfSlow) {
+        timer.start();
+    }
+
+    m_backgroundImageCache = backgroundPixmap.toImage();
+
+    if (!logIfSlow) {
+        return;
+    }
+
+    const qint64 elapsedMs = timer.elapsed();
+    if (elapsedMs < kSlowToImageWarningThresholdMs) {
+        return;
+    }
+
+    const qint64 bytesPerPixel = backgroundPixmap.depth() / 8;
+    const qint64 estimatedBytes =
+        static_cast<qint64>(backgroundPixmap.width()) *
+        static_cast<qint64>(backgroundPixmap.height()) *
+        bytesPerPixel;
+    const qreal estimatedMiB = static_cast<qreal>(estimatedBytes) / kBytesPerMiB;
+
+    qWarning().nospace()
+        << "MagnifierPanel: slow QPixmap::toImage"
+        << " context=" << (context ? context : "unknown")
+        << " elapsedMs=" << elapsedMs
+        << " size=" << backgroundPixmap.width() << "x" << backgroundPixmap.height()
+        << " dpr=" << backgroundPixmap.devicePixelRatio()
+        << " estimatedCopyMiB=" << QString::number(estimatedMiB, 'f', 1);
+}
+
 void MagnifierPanel::preWarmCache(const QPoint& cursorPos, const QPixmap& backgroundPixmap)
 {
-    // Pre-convert the background pixmap to QImage (this is the expensive operation)
-    if (m_backgroundImageCache.isNull()) {
-        m_backgroundImageCache = backgroundPixmap.toImage();
-    }
+    // Pre-convert the background pixmap to QImage.
+    // Keep startup quiet: skip slow-path warning here.
+    ensureBackgroundImageCache(backgroundPixmap, false, "preWarmCache");
 
     // Pre-compute the magnifier cache for the initial position
     updateMagnifierCache(cursorPos, backgroundPixmap);
@@ -100,9 +147,8 @@ void MagnifierPanel::updateMagnifierCache(const QPoint& cursorPos, const QPixmap
     }
 
     // 2. Only convert to QImage when background has changed (cache invalidated)
-    if (m_backgroundImageCache.isNull()) {
-        m_backgroundImageCache = backgroundPixmap.toImage();
-    }
+    // Draw path logs if conversion unexpectedly becomes expensive.
+    ensureBackgroundImageCache(backgroundPixmap, true, "updateMagnifierCache");
 
     int deviceGridCountX = static_cast<int>(kGridCountX * m_devicePixelRatio);
     int deviceGridCountY = static_cast<int>(kGridCountY * m_devicePixelRatio);

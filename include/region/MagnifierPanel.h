@@ -75,6 +75,7 @@ public:
 
 private:
     void initializeGridCache();
+    void ensureBackgroundImageCache(const QPixmap& backgroundPixmap, bool logIfSlow, const char* context);
     void updateMagnifierCache(const QPoint& cursorPos, const QPixmap& backgroundPixmap);
     void drawInfoPanel(QPainter& painter, int panelX, int infoY, int panelWidth);
 
