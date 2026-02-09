@@ -245,6 +245,11 @@ target_link_libraries(Annotations_PolylineAnnotation PRIVATE snaptray_core Qt6::
 add_test(NAME Annotations_PolylineAnnotation COMMAND Annotations_PolylineAnnotation)
 set_tests_properties(Annotations_PolylineAnnotation PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Annotations_AnnotationLayer Annotations/tst_AnnotationLayer.cpp)
+target_link_libraries(Annotations_AnnotationLayer PRIVATE snaptray_ui Qt6::Widgets Qt6::Test)
+add_test(NAME Annotations_AnnotationLayer COMMAND Annotations_AnnotationLayer)
+set_tests_properties(Annotations_AnnotationLayer PROPERTIES TIMEOUT 60 LABELS "unit")
+
 add_executable(Annotations_TextBoxAnnotation Annotations/tst_TextBoxAnnotation.cpp)
 target_link_libraries(Annotations_TextBoxAnnotation PRIVATE snaptray_core Qt6::Widgets Qt6::Test)
 add_test(NAME Annotations_TextBoxAnnotation COMMAND Annotations_TextBoxAnnotation)

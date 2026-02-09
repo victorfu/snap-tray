@@ -1,6 +1,10 @@
 #include <QtTest>
+#include <QWidget>
 #include "TextFormattingState.h"
 #include "TransformationGizmo.h"
+#include "annotations/AnnotationLayer.h"
+#include "region/TextAnnotationEditor.h"
+#include "InlineTextEditor.h"
 #include <QPoint>
 #include <QPointF>
 
@@ -43,6 +47,10 @@ private slots:
     // Dragging logic tests
     void testDraggingDeltaCalculation();
     void testDraggingMultipleUpdates();
+
+    // Edit session guard tests
+    void testFinishEditing_DuplicateCommitIgnored();
+    void testCancelEditing_DisarmsSession();
 
 private:
     // Double-click detection helper (mimics TextAnnotationEditor logic)
@@ -308,6 +316,45 @@ void tst_TextAnnotationEditor::testDraggingMultipleUpdates()
     position += delta3;
 
     QCOMPARE(position, QPoint(20, 0));  // 30-10=20, 10-10=0
+}
+
+void tst_TextAnnotationEditor::testFinishEditing_DuplicateCommitIgnored()
+{
+    QWidget parent;
+    AnnotationLayer layer;
+    InlineTextEditor inlineEditor(&parent);
+    TextAnnotationEditor editor;
+    editor.setAnnotationLayer(&layer);
+    editor.setTextEditor(&inlineEditor);
+    editor.setParentWidget(&parent);
+
+    editor.startEditing(QPoint(120, 140), QRect(0, 0, 800, 600), QColor(Qt::red));
+
+    const bool firstCommit = editor.finishEditing("dedupe", QPoint(120, 140), QColor(Qt::red));
+    const bool secondCommit = editor.finishEditing("dedupe", QPoint(120, 140), QColor(Qt::red));
+
+    QVERIFY(firstCommit);
+    QVERIFY(!secondCommit);
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(1));
+}
+
+void tst_TextAnnotationEditor::testCancelEditing_DisarmsSession()
+{
+    QWidget parent;
+    AnnotationLayer layer;
+    InlineTextEditor inlineEditor(&parent);
+    TextAnnotationEditor editor;
+    editor.setAnnotationLayer(&layer);
+    editor.setTextEditor(&inlineEditor);
+    editor.setParentWidget(&parent);
+
+    editor.startEditing(QPoint(80, 90), QRect(0, 0, 800, 600), QColor(Qt::red));
+    editor.cancelEditing();
+
+    const bool committedAfterCancel =
+        editor.finishEditing("should-not-commit", QPoint(80, 90), QColor(Qt::red));
+    QVERIFY(!committedAfterCancel);
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(0));
 }
 
 QTEST_MAIN(tst_TextAnnotationEditor)

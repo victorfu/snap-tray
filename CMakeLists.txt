@@ -579,6 +579,7 @@ add_library(snaptray_ui STATIC
     src/AnnotationLayer.cpp
     src/InlineTextEditor.cpp
     src/TransformationGizmo.cpp
+    src/annotation/AnnotationContext.cpp
 
     # Tool system
     src/tools/ToolRegistry.cpp

@@ -1,4 +1,5 @@
 #include "PinWindow.h"
+#include "annotation/AnnotationContext.h"
 #include "PinWindowManager.h"
 #include "OCRManager.h"
 #include "QRCodeManager.h"
@@ -38,6 +39,7 @@
 #include "annotations/PolylineAnnotation.h"
 #include "utils/CoordinateHelper.h"
 #include "colorwidgets/ColorPickerDialogCompat.h"
+#include "tools/ToolTraits.h"
 
 using snaptray::colorwidgets::ColorPickerDialogCompat;
 
@@ -2205,30 +2207,13 @@ void PinWindow::initializeAnnotationComponents()
     // Initialize text annotation editor components
     m_textEditor = new InlineTextEditor(this);
     m_textAnnotationEditor = new TextAnnotationEditor(this);
-    m_textAnnotationEditor->setAnnotationLayer(m_annotationLayer);
-    m_textAnnotationEditor->setTextEditor(m_textEditor);
-    m_textAnnotationEditor->setParentWidget(this);
     m_textAnnotationEditor->setCoordinateMappers(
         [this](const QPointF& displayPos) { return mapToOriginalCoords(displayPos); },
         [this](const QPointF& originalPos) { return mapFromOriginalCoords(originalPos); });
 
-    // Connect text editor signals
-    connect(m_textEditor, &InlineTextEditor::editingFinished,
-        this, [this](const QString& text, const QPoint& position) {
-            bool createdNew = m_textAnnotationEditor->finishEditing(text, position, m_annotationColor);
-            if (createdNew) {
-                applyTextOrientationCompensation(
-                    getSelectedTextAnnotation(),
-                    mapToOriginalCoords(QPointF(position)));
-            }
-            updateUndoRedoState();
-            update();
-        });
-    connect(m_textEditor, &InlineTextEditor::editingCancelled,
-        this, [this]() {
-            m_textAnnotationEditor->cancelEditing();
-            update();
-        });
+    m_annotationContext = std::make_unique<AnnotationContext>(*this);
+    m_annotationContext->setupTextAnnotationEditor(false, false);
+    m_annotationContext->connectTextEditorSignals();
 
     // Initialize toolbar (not parented - separate floating window)
     m_toolbar = new WindowedToolbar(nullptr);
@@ -2258,10 +2243,6 @@ void PinWindow::initializeAnnotationComponents()
     m_subToolbar = new WindowedSubToolbar(nullptr);
 
     // Connect sub-toolbar signals
-    connect(m_subToolbar, &WindowedSubToolbar::colorSelected,
-        this, &PinWindow::onColorSelected);
-    connect(m_subToolbar, &WindowedSubToolbar::widthChanged,
-        this, &PinWindow::onWidthChanged);
     connect(m_subToolbar, &WindowedSubToolbar::emojiSelected,
         this, &PinWindow::onEmojiSelected);
     connect(m_subToolbar, &WindowedSubToolbar::stepBadgeSizeChanged,
@@ -2270,23 +2251,16 @@ void PinWindow::initializeAnnotationComponents()
         this, &PinWindow::onShapeTypeChanged);
     connect(m_subToolbar, &WindowedSubToolbar::shapeFillModeChanged,
         this, &PinWindow::onShapeFillModeChanged);
-    connect(m_subToolbar, &WindowedSubToolbar::arrowStyleChanged,
-        this, &PinWindow::onArrowStyleChanged);
-    connect(m_subToolbar, &WindowedSubToolbar::lineStyleChanged,
-        this, &PinWindow::onLineStyleChanged);
-    connect(m_subToolbar, &WindowedSubToolbar::fontSizeDropdownRequested,
-        this, &PinWindow::onFontSizeDropdownRequested);
-    connect(m_subToolbar, &WindowedSubToolbar::fontFamilyDropdownRequested,
-        this, &PinWindow::onFontFamilyDropdownRequested);
     connect(m_subToolbar, &WindowedSubToolbar::autoBlurRequested,
         this, &PinWindow::onAutoBlurRequested);
-    connect(m_subToolbar, &WindowedSubToolbar::customColorPickerRequested,
-        this, &PinWindow::onMoreColorsRequested);
     connect(m_subToolbar, &WindowedSubToolbar::cursorRestoreRequested,
         this, &PinWindow::updateCursorForTool);
 
     // Connect TextAnnotationEditor to ToolOptionsPanel (must be after sub-toolbar creation)
     m_textAnnotationEditor->setColorAndWidthWidget(m_subToolbar->colorAndWidthWidget());
+
+    // Centralized common ToolOptionsPanel signal wiring
+    m_annotationContext->connectToolOptionsSignals();
 
     // Sync initial width and color to sub-toolbar UI
     m_subToolbar->colorAndWidthWidget()->setCurrentWidth(m_annotationWidth);
@@ -2520,20 +2494,7 @@ void PinWindow::updateUndoRedoState()
 
 bool PinWindow::isAnnotationTool(ToolId toolId) const
 {
-    switch (toolId) {
-    case ToolId::Pencil:
-    case ToolId::Marker:
-    case ToolId::Arrow:
-    case ToolId::Shape:
-    case ToolId::Text:
-    case ToolId::Mosaic:
-    case ToolId::Eraser:
-    case ToolId::StepBadge:
-    case ToolId::EmojiSticker:
-        return true;
-    default:
-        return false;
-    }
+    return ToolTraits::isAnnotationTool(toolId);
 }
 
 QPixmap PinWindow::getExportPixmapWithAnnotations() const
@@ -2593,6 +2554,86 @@ void PinWindow::hideSubToolbar()
     if (m_subToolbar) {
         m_subToolbar->hide();
     }
+}
+
+QWidget* PinWindow::annotationHostWidget() const
+{
+    return const_cast<PinWindow*>(this);
+}
+
+AnnotationLayer* PinWindow::annotationLayerForContext() const
+{
+    return m_annotationLayer;
+}
+
+ToolOptionsPanel* PinWindow::toolOptionsPanelForContext() const
+{
+    return m_subToolbar ? m_subToolbar->colorAndWidthWidget() : nullptr;
+}
+
+InlineTextEditor* PinWindow::inlineTextEditorForContext() const
+{
+    return m_textEditor;
+}
+
+TextAnnotationEditor* PinWindow::textAnnotationEditorForContext() const
+{
+    return m_textAnnotationEditor;
+}
+
+void PinWindow::onContextColorSelected(const QColor& color)
+{
+    onColorSelected(color);
+}
+
+void PinWindow::onContextMoreColorsRequested()
+{
+    onMoreColorsRequested();
+}
+
+void PinWindow::onContextLineWidthChanged(int width)
+{
+    onWidthChanged(width);
+}
+
+void PinWindow::onContextArrowStyleChanged(LineEndStyle style)
+{
+    onArrowStyleChanged(style);
+}
+
+void PinWindow::onContextLineStyleChanged(LineStyle style)
+{
+    onLineStyleChanged(style);
+}
+
+void PinWindow::onContextFontSizeDropdownRequested(const QPoint& pos)
+{
+    onFontSizeDropdownRequested(pos);
+}
+
+void PinWindow::onContextFontFamilyDropdownRequested(const QPoint& pos)
+{
+    onFontFamilyDropdownRequested(pos);
+}
+
+void PinWindow::onContextTextEditingFinished(const QString& text, const QPoint& position)
+{
+    bool createdNew = m_textAnnotationEditor->finishEditing(text, position, m_annotationColor);
+    if (createdNew) {
+        applyTextOrientationCompensation(
+            getSelectedTextAnnotation(),
+            mapToOriginalCoords(QPointF(position)));
+    }
+    updateUndoRedoState();
+    update();
+}
+
+void PinWindow::onContextTextEditingCancelled()
+{
+    if (m_textAnnotationEditor) {
+        m_textAnnotationEditor->cancelEditing();
+    }
+    update();
 }
 
 void PinWindow::onColorSelected(const QColor& color)
@@ -2749,27 +2790,19 @@ void PinWindow::onAutoBlurRequested()
 
 void PinWindow::onMoreColorsRequested()
 {
-    if (!m_colorPickerDialog) {
-        m_colorPickerDialog = new ColorPickerDialogCompat();
-        connect(m_colorPickerDialog, &QObject::destroyed, this, [this]() {
-            m_colorPickerDialog = nullptr;
-        });
-        connect(m_colorPickerDialog, &ColorPickerDialogCompat::colorSelected,
-            this, [this](const QColor& color) {
-                onColorSelected(color);
-                m_subToolbar->colorAndWidthWidget()->setCurrentColor(color);
-            });
-    }
-
-    m_colorPickerDialog->setCurrentColor(m_annotationColor);
     m_subToolbar->colorAndWidthWidget()->setCurrentColor(m_annotationColor);
 
-    // Position at center of pin window
-    QPoint center = frameGeometry().center();
-    m_colorPickerDialog->move(center.x() - 170, center.y() - 210);
-    m_colorPickerDialog->show();
-    m_colorPickerDialog->raise();
-    m_colorPickerDialog->activateWindow();
+    AnnotationContext::showColorPickerDialog(
+        this,
+        m_colorPickerDialog,
+        m_annotationColor,
+        frameGeometry().center(),
+        [this](const QColor& color) {
+            onColorSelected(color);
+            if (m_subToolbar) {
+                m_subToolbar->colorAndWidthWidget()->setCurrentColor(color);
+            }
+        });
 }
 
 // ============================================================================

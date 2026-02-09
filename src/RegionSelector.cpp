@@ -1,4 +1,5 @@
 #include "RegionSelector.h"
+#include "annotation/AnnotationContext.h"
 #include "platform/WindowLevel.h"
 #include "region/RegionPainter.h"
 #include "region/RegionInputHandler.h"
@@ -28,6 +29,7 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include "tools/handlers/MosaicToolHandler.h"
 #include "tools/handlers/EmojiStickerToolHandler.h"
 #include "tools/ToolSectionConfig.h"
+#include "tools/ToolTraits.h"
 #include <QTextEdit>
 
 #include <cstring>
@@ -185,66 +187,26 @@ RegionSelector::RegionSelector(QWidget* parent)
     // Initialize inline text editor
     m_textEditor = new InlineTextEditor(this);
 
-    // Initialize text annotation editor component (must be before editingCancelled connection)
+    // Initialize text annotation editor component
     m_textAnnotationEditor = new TextAnnotationEditor(this);
-
-    connect(m_textEditor, &InlineTextEditor::editingFinished,
-        this, &RegionSelector::onTextEditingFinished);
-    connect(m_textEditor, &InlineTextEditor::editingCancelled,
-        this, [this]() {
-            m_textAnnotationEditor->cancelEditing();
-        });
-    m_textAnnotationEditor->setAnnotationLayer(m_annotationLayer);
-    m_textAnnotationEditor->setTextEditor(m_textEditor);
-    m_textAnnotationEditor->setParentWidget(this);
-    connect(m_textAnnotationEditor, &TextAnnotationEditor::updateRequested,
-        this, QOverload<>::of(&QWidget::update));
 
     // Initialize unified color and width widget
     m_colorAndWidthWidget = new ToolOptionsPanel(this);
     m_colorAndWidthWidget->setCurrentColor(m_annotationColor);
     m_colorAndWidthWidget->setCurrentWidth(m_annotationWidth);
     m_colorAndWidthWidget->setWidthRange(1, 20);
-    connect(m_colorAndWidthWidget, &ToolOptionsPanel::colorSelected,
-        this, &RegionSelector::onColorSelected);
-    connect(m_colorAndWidthWidget, &ToolOptionsPanel::customColorPickerRequested,
-        this, &RegionSelector::onMoreColorsRequested);
-    connect(m_colorAndWidthWidget, &ToolOptionsPanel::widthChanged,
-        this, &RegionSelector::onLineWidthChanged);
-    // Mosaic now uses widthChanged signal like other tools (no separate mosaicWidthChanged)
 
-    // Configure text annotation editor with ToolOptionsPanel
-    m_textAnnotationEditor->setColorAndWidthWidget(m_colorAndWidthWidget);
-
-    // Load text formatting settings from TextAnnotationEditor
-    TextFormattingState textFormatting = m_textAnnotationEditor->formatting();
-    m_colorAndWidthWidget->setBold(textFormatting.bold);
-    m_colorAndWidthWidget->setItalic(textFormatting.italic);
-    m_colorAndWidthWidget->setUnderline(textFormatting.underline);
-    m_colorAndWidthWidget->setFontSize(textFormatting.fontSize);
-    m_colorAndWidthWidget->setFontFamily(textFormatting.fontFamily);
-
-    // Connect text formatting signals to TextAnnotationEditor
-    connect(m_colorAndWidthWidget, &ToolOptionsPanel::boldToggled,
-        m_textAnnotationEditor, &TextAnnotationEditor::setBold);
-    connect(m_colorAndWidthWidget, &ToolOptionsPanel::italicToggled,
-        m_textAnnotationEditor, &TextAnnotationEditor::setItalic);
-    connect(m_colorAndWidthWidget, &ToolOptionsPanel::underlineToggled,
-        m_textAnnotationEditor, &TextAnnotationEditor::setUnderline);
-    connect(m_colorAndWidthWidget, &ToolOptionsPanel::fontSizeDropdownRequested,
-        this, &RegionSelector::onFontSizeDropdownRequested);
-    connect(m_colorAndWidthWidget, &ToolOptionsPanel::fontFamilyDropdownRequested,
-        this, &RegionSelector::onFontFamilyDropdownRequested);
-
-    // Connect arrow style signal
+    // Set persisted annotation style controls
     m_colorAndWidthWidget->setArrowStyle(m_arrowStyle);
-    connect(m_colorAndWidthWidget, &ToolOptionsPanel::arrowStyleChanged,
-        this, &RegionSelector::onArrowStyleChanged);
-
-    // Connect line style signal
     m_colorAndWidthWidget->setLineStyle(m_lineStyle);
-    connect(m_colorAndWidthWidget, &ToolOptionsPanel::lineStyleChanged,
-        this, &RegionSelector::onLineStyleChanged);
+
+    // Centralized annotation/text setup and common signal wiring
+    m_annotationContext = std::make_unique<AnnotationContext>(*this);
+    m_annotationContext->setupTextAnnotationEditor(true, true);
+    m_annotationContext->connectTextEditorSignals();
+    m_annotationContext->connectToolOptionsSignals();
+    m_annotationContext->connectTextFormattingSignals();
+    m_annotationContext->syncTextFormattingControls();
 
     // Connect shape section signals
     connect(m_colorAndWidthWidget, &ToolOptionsPanel::shapeTypeChanged,
@@ -615,6 +577,78 @@ bool RegionSelector::shouldShowColorPalette() const
     return ToolRegistry::instance().showColorPalette(m_currentTool);
 }
 
+QWidget* RegionSelector::annotationHostWidget() const
+{
+    return const_cast<RegionSelector*>(this);
+}
+
+AnnotationLayer* RegionSelector::annotationLayerForContext() const
+{
+    return m_annotationLayer;
+}
+
+ToolOptionsPanel* RegionSelector::toolOptionsPanelForContext() const
+{
+    return m_colorAndWidthWidget;
+}
+
+InlineTextEditor* RegionSelector::inlineTextEditorForContext() const
+{
+    return m_textEditor;
+}
+
+TextAnnotationEditor* RegionSelector::textAnnotationEditorForContext() const
+{
+    return m_textAnnotationEditor;
+}
+
+void RegionSelector::onContextColorSelected(const QColor& color)
+{
+    onColorSelected(color);
+}
+
+void RegionSelector::onContextMoreColorsRequested()
+{
+    onMoreColorsRequested();
+}
+
+void RegionSelector::onContextLineWidthChanged(int width)
+{
+    onLineWidthChanged(width);
+}
+
+void RegionSelector::onContextArrowStyleChanged(LineEndStyle style)
+{
+    onArrowStyleChanged(style);
+}
+
+void RegionSelector::onContextLineStyleChanged(LineStyle style)
+{
+    onLineStyleChanged(style);
+}
+
+void RegionSelector::onContextFontSizeDropdownRequested(const QPoint& pos)
+{
+    onFontSizeDropdownRequested(pos);
+}
+
+void RegionSelector::onContextFontFamilyDropdownRequested(const QPoint& pos)
+{
+    onFontFamilyDropdownRequested(pos);
+}
+
+void RegionSelector::onContextTextEditingFinished(const QString& text, const QPoint& position)
+{
+    onTextEditingFinished(text, position);
+}
+
+void RegionSelector::onContextTextEditingCancelled()
+{
+    if (m_textAnnotationEditor) {
+        m_textAnnotationEditor->cancelEditing();
+    }
+}
+
 void RegionSelector::syncColorToAllWidgets(const QColor& color)
 {
     m_annotationColor = color;
@@ -634,26 +668,16 @@ void RegionSelector::onColorSelected(const QColor& color)
 
 void RegionSelector::onMoreColorsRequested()
 {
-    if (!m_colorPickerDialog) {
-        m_colorPickerDialog = new ColorPickerDialogCompat();
-        connect(m_colorPickerDialog, &QObject::destroyed, this, [this]() {
-            m_colorPickerDialog = nullptr;
-        });
-        connect(m_colorPickerDialog, &ColorPickerDialogCompat::colorSelected,
-            this, [this](const QColor& color) {
-                syncColorToAllWidgets(color);
-            });
-    }
-
-    m_colorPickerDialog->setCurrentColor(m_annotationColor);
     m_colorAndWidthWidget->setCurrentColor(m_annotationColor);
 
-    // Position at center of screen
-    QPoint center = geometry().center();
-    m_colorPickerDialog->move(center.x() - 170, center.y() - 210);
-    m_colorPickerDialog->show();
-    m_colorPickerDialog->raise();
-    m_colorPickerDialog->activateWindow();
+    AnnotationContext::showColorPickerDialog(
+        this,
+        m_colorPickerDialog,
+        m_annotationColor,
+        geometry().center(),
+        [this](const QColor& color) {
+            syncColorToAllWidgets(color);
+        });
 }
 
 void RegionSelector::onLineWidthChanged(int width)
@@ -1645,20 +1669,7 @@ bool RegionSelector::eventFilter(QObject* obj, QEvent* event)
 
 bool RegionSelector::isAnnotationTool(ToolId tool) const
 {
-    switch (tool) {
-    case ToolId::Pencil:
-    case ToolId::Marker:
-    case ToolId::Arrow:
-    case ToolId::Shape:
-    case ToolId::Text:
-    case ToolId::Mosaic:
-    case ToolId::Eraser:
-    case ToolId::StepBadge:
-    case ToolId::EmojiSticker:
-        return true;
-    default:
-        return false;
-    }
+    return ToolTraits::isAnnotationTool(tool);
 }
 
 void RegionSelector::onTextEditingFinished(const QString& text, const QPoint& position)

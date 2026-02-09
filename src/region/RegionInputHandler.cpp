@@ -17,7 +17,7 @@
 #include "toolbar/ToolOptionsPanel.h"
 #include "EmojiPicker.h"
 #include "TransformationGizmo.h"
-#include "RegionSelector.h"  // For isToolManagerHandledTool
+#include "tools/ToolTraits.h"
 
 #include <QMouseEvent>
 #include <QWidget>
@@ -1302,7 +1302,7 @@ void RegionInputHandler::handleAnnotationRelease()
 
 void RegionInputHandler::startAnnotation(const QPoint& pos)
 {
-    if (isToolManagerHandledTool(m_currentTool)) {
+    if (ToolTraits::isToolManagerHandledTool(m_currentTool)) {
         m_toolManager->setColor(m_annotationColor);
         // Don't overwrite width for StepBadge - it uses a separate radius setting
         if (m_currentTool != ToolId::StepBadge) {
@@ -1328,14 +1328,14 @@ void RegionInputHandler::startAnnotation(const QPoint& pos)
 
 void RegionInputHandler::updateAnnotation(const QPoint& pos)
 {
-    if (isToolManagerHandledTool(m_currentTool)) {
+    if (ToolTraits::isToolManagerHandledTool(m_currentTool)) {
         m_toolManager->handleMouseMove(pos, m_currentModifiers);
     }
 }
 
 void RegionInputHandler::finishAnnotation()
 {
-    if (isToolManagerHandledTool(m_currentTool)) {
+    if (ToolTraits::isToolManagerHandledTool(m_currentTool)) {
         m_toolManager->handleMouseRelease(m_currentPoint, m_currentModifiers);
         m_isDrawing = m_toolManager->isDrawing();
     }
@@ -1400,20 +1400,7 @@ bool RegionInputHandler::shouldShowColorAndWidthWidget() const
 
 bool RegionInputHandler::isAnnotationTool(ToolId tool) const
 {
-    switch (tool) {
-    case ToolId::Pencil:
-    case ToolId::Marker:
-    case ToolId::Arrow:
-    case ToolId::Shape:
-    case ToolId::Text:
-    case ToolId::Mosaic:
-    case ToolId::Eraser:
-    case ToolId::StepBadge:
-    case ToolId::EmojiSticker:
-        return true;
-    default:
-        return false;
-    }
+    return ToolTraits::isAnnotationTool(tool);
 }
 
 // ============================================================================

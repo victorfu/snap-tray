@@ -12,7 +12,7 @@
 #include "GlassRenderer.h"
 #include "ToolbarStyle.h"
 #include "TransformationGizmo.h"
-#include "RegionSelector.h"  // For isToolManagerHandledTool
+#include "tools/ToolTraits.h"
 #include "utils/CoordinateHelper.h"
 
 #include <QPainter>
@@ -523,7 +523,7 @@ void RegionPainter::drawCurrentAnnotation(QPainter& painter)
 
     // Use ToolManager for tools it handles
     ToolId tool = static_cast<ToolId>(m_currentTool);
-    if (isToolManagerHandledTool(tool)) {
+    if (ToolTraits::isToolManagerHandledTool(tool)) {
         m_toolManager->drawCurrentPreview(painter);
         return;
     }

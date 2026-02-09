@@ -8,11 +8,13 @@
 #include <QVector>
 #include <QColor>
 #include <QPointer>
+#include <memory>
 #include "annotations/AnnotationLayer.h"
 #include "annotations/ArrowAnnotation.h"
 #include "annotations/LineStyle.h"
 #include "annotations/ShapeAnnotation.h"
 #include "annotations/StepBadgeAnnotation.h"
+#include "annotation/AnnotationHostAdapter.h"
 #include "InlineTextEditor.h"
 #include "region/TextAnnotationEditor.h"
 #include "region/RegionSettingsHelper.h"
@@ -34,6 +36,7 @@ class LaserPointerRenderer;
 class ToolbarCore;
 class ArrowAnnotation;
 class PolylineAnnotation;
+class AnnotationContext;
 
 // Canvas background mode
 enum class CanvasBackgroundMode {
@@ -83,7 +86,7 @@ inline ToolId canvasButtonToToolId(CanvasButton btn) {
     }
 }
 
-class ScreenCanvas : public QWidget
+class ScreenCanvas : public QWidget, public AnnotationHostAdapter
 {
     Q_OBJECT
 
@@ -108,6 +111,22 @@ protected:
     void showEvent(QShowEvent *event) override;
 
 private:
+    // AnnotationHostAdapter implementation
+    QWidget* annotationHostWidget() const override;
+    AnnotationLayer* annotationLayerForContext() const override;
+    ToolOptionsPanel* toolOptionsPanelForContext() const override;
+    InlineTextEditor* inlineTextEditorForContext() const override;
+    TextAnnotationEditor* textAnnotationEditorForContext() const override;
+    void onContextColorSelected(const QColor& color) override;
+    void onContextMoreColorsRequested() override;
+    void onContextLineWidthChanged(int width) override;
+    void onContextArrowStyleChanged(LineEndStyle style) override;
+    void onContextLineStyleChanged(LineStyle style) override;
+    void onContextFontSizeDropdownRequested(const QPoint& pos) override;
+    void onContextFontFamilyDropdownRequested(const QPoint& pos) override;
+    void onContextTextEditingFinished(const QString& text, const QPoint& position) override;
+    void onContextTextEditingCancelled() override;
+
     // Painting helpers
     void drawAnnotations(QPainter &painter);
     void drawCurrentAnnotation(QPainter &painter);
@@ -225,6 +244,9 @@ private:
 
     // Background mode
     CanvasBackgroundMode m_bgMode = CanvasBackgroundMode::Screen;
+
+    // Shared annotation setup/signals helper
+    std::unique_ptr<AnnotationContext> m_annotationContext;
 
     // Background mode helpers
     void setBackgroundMode(CanvasBackgroundMode mode);

@@ -72,6 +72,7 @@ void TextAnnotationEditor::startEditing(const QPoint& pos, const QRect& selectio
 {
     if (!m_textEditor) return;
 
+    m_editSessionActive = true;
     m_editingIndex = -1;  // Creating new annotation
     m_textEditor->setColor(color);
     m_textEditor->setFont(m_formatting.toQFont());
@@ -80,11 +81,18 @@ void TextAnnotationEditor::startEditing(const QPoint& pos, const QRect& selectio
 
 void TextAnnotationEditor::startReEditing(int annotationIndex, const QColor& color)
 {
-    if (!m_annotationLayer || !m_textEditor) return;
+    if (!m_annotationLayer || !m_textEditor) {
+        m_editSessionActive = false;
+        return;
+    }
 
     auto* textItem = dynamic_cast<TextBoxAnnotation*>(m_annotationLayer->itemAt(annotationIndex));
-    if (!textItem) return;
+    if (!textItem) {
+        m_editSessionActive = false;
+        return;
+    }
 
+    m_editSessionActive = true;
     m_editingIndex = annotationIndex;
 
     // Extract formatting from existing annotation
@@ -125,6 +133,10 @@ void TextAnnotationEditor::startReEditing(int annotationIndex, const QColor& col
 bool TextAnnotationEditor::finishEditing(const QString& text, const QPoint& position, const QColor& color)
 {
     if (!m_annotationLayer) return false;
+    if (!m_editSessionActive) return false;
+
+    // Ignore duplicate finish callbacks for the same edit session.
+    m_editSessionActive = false;
 
     QFont font = m_formatting.toQFont();
     QPointF baselineAnnotation = m_displayToAnnotationMapper(QPointF(position));
@@ -176,6 +188,8 @@ bool TextAnnotationEditor::finishEditing(const QString& text, const QPoint& posi
 
 void TextAnnotationEditor::cancelEditing()
 {
+    m_editSessionActive = false;
+
     if (m_editingIndex >= 0 && m_annotationLayer) {
         // Restore visibility of the original annotation
         auto* textItem = dynamic_cast<TextBoxAnnotation*>(m_annotationLayer->itemAt(m_editingIndex));

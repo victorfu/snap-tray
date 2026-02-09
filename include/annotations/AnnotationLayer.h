@@ -52,7 +52,7 @@ public:
     int hitTestEmojiSticker(const QPoint &pos) const;
     int hitTestArrow(const QPoint &pos) const;
     int hitTestPolyline(const QPoint &pos) const;
-    void setSelectedIndex(int index) { m_selectedIndex = index; }
+    void setSelectedIndex(int index);
     int selectedIndex() const { return m_selectedIndex; }
     AnnotationItem* selectedItem();
     void clearSelection() { m_selectedIndex = -1; }
@@ -92,6 +92,8 @@ private:
     // Completed annotations cache for rendering optimization
     mutable QPixmap m_annotationCache;
     mutable bool m_cacheValid = false;
+    // Cache mode: -1 means full cache, >=0 means cache built excluding that item index.
+    mutable int m_cacheExcludeIndex = -1;
 
     // Dirty region tracking for drag optimization
     mutable QRect m_dirtyRect;

@@ -16,6 +16,7 @@ using SharedPixmap = std::shared_ptr<const QPixmap>;
 #include "LoadingSpinnerRenderer.h"
 #include "pinwindow/ResizeHandler.h"
 #include "tools/ToolId.h"
+#include "annotation/AnnotationHostAdapter.h"
 #include "annotations/StepBadgeAnnotation.h"
 #include "annotations/ShapeAnnotation.h"
 #include "annotations/ArrowAnnotation.h"
@@ -37,6 +38,7 @@ class WindowedToolbar;
 class WindowedSubToolbar;
 class AnnotationLayer;
 class ToolManager;
+class ToolOptionsPanel;
 class InlineTextEditor;
 class TextAnnotationEditor;
 class AutoBlurManager;
@@ -45,6 +47,7 @@ class ArrowAnnotation;
 class PolylineAnnotation;
 class RegionLayoutManager;
 struct LayoutRegion;
+class AnnotationContext;
 
 namespace snaptray {
 namespace colorwidgets {
@@ -52,7 +55,7 @@ class ColorPickerDialogCompat;
 }
 }
 
-class PinWindow : public QWidget
+class PinWindow : public QWidget, public AnnotationHostAdapter
 {
     Q_OBJECT
 
@@ -139,6 +142,22 @@ protected:
     void moveEvent(QMoveEvent* event) override;
 
 private:
+    // AnnotationHostAdapter implementation
+    QWidget* annotationHostWidget() const override;
+    AnnotationLayer* annotationLayerForContext() const override;
+    ToolOptionsPanel* toolOptionsPanelForContext() const override;
+    InlineTextEditor* inlineTextEditorForContext() const override;
+    TextAnnotationEditor* textAnnotationEditorForContext() const override;
+    void onContextColorSelected(const QColor& color) override;
+    void onContextMoreColorsRequested() override;
+    void onContextLineWidthChanged(int width) override;
+    void onContextArrowStyleChanged(LineEndStyle style) override;
+    void onContextLineStyleChanged(LineStyle style) override;
+    void onContextFontSizeDropdownRequested(const QPoint& pos) override;
+    void onContextFontFamilyDropdownRequested(const QPoint& pos) override;
+    void onContextTextEditingFinished(const QString& text, const QPoint& position) override;
+    void onContextTextEditingCancelled() override;
+
 
     void updateSize();
     void createContextMenu();
@@ -341,6 +360,9 @@ private:
 
     // Color picker dialog
     snaptray::colorwidgets::ColorPickerDialogCompat* m_colorPickerDialog = nullptr;
+
+    // Shared annotation setup/signals helper
+    std::unique_ptr<AnnotationContext> m_annotationContext;
 
     // Region Layout Mode
     RegionLayoutManager* m_regionLayoutManager = nullptr;

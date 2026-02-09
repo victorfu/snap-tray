@@ -1,4 +1,5 @@
 #include "ScreenCanvas.h"
+#include "annotation/AnnotationContext.h"
 #include "annotations/AnnotationLayer.h"
 #include "tools/ToolManager.h"
 #include "cursor/CursorManager.h"
@@ -32,6 +33,7 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include <QTimer>
 #include "tools/ToolRegistry.h"
 #include "tools/ToolSectionConfig.h"
+#include "tools/ToolTraits.h"
 #include "platform/WindowLevel.h"
 
 ScreenCanvas::ScreenCanvas(QWidget* parent)
@@ -96,16 +98,6 @@ ScreenCanvas::ScreenCanvas(QWidget* parent)
     m_colorAndWidthWidget->setArrowStyle(savedArrowStyle);
     m_colorAndWidthWidget->setLineStyle(savedLineStyle);
     m_colorAndWidthWidget->setStepBadgeSize(m_stepBadgeSize);
-    connect(m_colorAndWidthWidget, &ToolOptionsPanel::colorSelected,
-        this, &ScreenCanvas::onColorSelected);
-    connect(m_colorAndWidthWidget, &ToolOptionsPanel::customColorPickerRequested,
-        this, &ScreenCanvas::onMoreColorsRequested);
-    connect(m_colorAndWidthWidget, &ToolOptionsPanel::widthChanged,
-        this, &ScreenCanvas::onLineWidthChanged);
-    connect(m_colorAndWidthWidget, &ToolOptionsPanel::arrowStyleChanged,
-        this, &ScreenCanvas::onArrowStyleChanged);
-    connect(m_colorAndWidthWidget, &ToolOptionsPanel::lineStyleChanged,
-        this, &ScreenCanvas::onLineStyleChanged);
     connect(m_colorAndWidthWidget, &ToolOptionsPanel::shapeTypeChanged,
         this, [this](ShapeType type) {
             m_shapeType = type;
@@ -136,53 +128,26 @@ ScreenCanvas::ScreenCanvas(QWidget* parent)
     // Initialize inline text editor
     m_textEditor = new InlineTextEditor(this);
 
-    // Initialize text annotation editor component (must be before editingCancelled connection)
+    // Initialize text annotation editor component
     m_textAnnotationEditor = new TextAnnotationEditor(this);
-
-    connect(m_textEditor, &InlineTextEditor::editingFinished,
-        this, &ScreenCanvas::onTextEditingFinished);
-    connect(m_textEditor, &InlineTextEditor::editingCancelled,
-        this, [this]() {
-            m_textAnnotationEditor->cancelEditing();
-        });
-    m_textAnnotationEditor->setAnnotationLayer(m_annotationLayer);
-    m_textAnnotationEditor->setTextEditor(m_textEditor);
-    m_textAnnotationEditor->setColorAndWidthWidget(m_colorAndWidthWidget);
-    m_textAnnotationEditor->setParentWidget(this);
-    connect(m_textAnnotationEditor, &TextAnnotationEditor::updateRequested,
-        this, QOverload<>::of(&QWidget::update));
-
-    // Load text formatting settings from TextAnnotationEditor
-    TextFormattingState textFormatting = m_textAnnotationEditor->formatting();
-    m_colorAndWidthWidget->setBold(textFormatting.bold);
-    m_colorAndWidthWidget->setItalic(textFormatting.italic);
-    m_colorAndWidthWidget->setUnderline(textFormatting.underline);
-    m_colorAndWidthWidget->setFontSize(textFormatting.fontSize);
-    m_colorAndWidthWidget->setFontFamily(textFormatting.fontFamily);
-
-    // Connect text formatting signals
-    connect(m_colorAndWidthWidget, &ToolOptionsPanel::boldToggled,
-        m_textAnnotationEditor, &TextAnnotationEditor::setBold);
-    connect(m_colorAndWidthWidget, &ToolOptionsPanel::italicToggled,
-        m_textAnnotationEditor, &TextAnnotationEditor::setItalic);
-    connect(m_colorAndWidthWidget, &ToolOptionsPanel::underlineToggled,
-        m_textAnnotationEditor, &TextAnnotationEditor::setUnderline);
 
     // Initialize settings helper for font dropdowns
     m_settingsHelper = new RegionSettingsHelper(this);
     m_settingsHelper->setParentWidget(this);
-
-    // Connect font dropdown signals
-    connect(m_colorAndWidthWidget, &ToolOptionsPanel::fontSizeDropdownRequested,
-        this, &ScreenCanvas::onFontSizeDropdownRequested);
-    connect(m_colorAndWidthWidget, &ToolOptionsPanel::fontFamilyDropdownRequested,
-        this, &ScreenCanvas::onFontFamilyDropdownRequested);
 
     // Connect font selection signals
     connect(m_settingsHelper, &RegionSettingsHelper::fontSizeSelected,
         this, &ScreenCanvas::onFontSizeSelected);
     connect(m_settingsHelper, &RegionSettingsHelper::fontFamilySelected,
         this, &ScreenCanvas::onFontFamilySelected);
+
+    // Centralized annotation/text setup and common signal wiring
+    m_annotationContext = std::make_unique<AnnotationContext>(*this);
+    m_annotationContext->setupTextAnnotationEditor(true, true);
+    m_annotationContext->connectTextEditorSignals();
+    m_annotationContext->connectToolOptionsSignals();
+    m_annotationContext->connectTextFormattingSignals();
+    m_annotationContext->syncTextFormattingControls();
 
     // Initialize laser pointer renderer
     m_laserRenderer = new LaserPointerRenderer(this);
@@ -355,6 +320,78 @@ bool ScreenCanvas::shouldShowColorPalette() const
     return ToolRegistry::instance().showColorPalette(m_currentToolId);
 }
 
+QWidget* ScreenCanvas::annotationHostWidget() const
+{
+    return const_cast<ScreenCanvas*>(this);
+}
+
+AnnotationLayer* ScreenCanvas::annotationLayerForContext() const
+{
+    return m_annotationLayer;
+}
+
+ToolOptionsPanel* ScreenCanvas::toolOptionsPanelForContext() const
+{
+    return m_colorAndWidthWidget;
+}
+
+InlineTextEditor* ScreenCanvas::inlineTextEditorForContext() const
+{
+    return m_textEditor;
+}
+
+TextAnnotationEditor* ScreenCanvas::textAnnotationEditorForContext() const
+{
+    return m_textAnnotationEditor;
+}
+
+void ScreenCanvas::onContextColorSelected(const QColor& color)
+{
+    onColorSelected(color);
+}
+
+void ScreenCanvas::onContextMoreColorsRequested()
+{
+    onMoreColorsRequested();
+}
+
+void ScreenCanvas::onContextLineWidthChanged(int width)
+{
+    onLineWidthChanged(width);
+}
+
+void ScreenCanvas::onContextArrowStyleChanged(LineEndStyle style)
+{
+    onArrowStyleChanged(style);
+}
+
+void ScreenCanvas::onContextLineStyleChanged(LineStyle style)
+{
+    onLineStyleChanged(style);
+}
+
+void ScreenCanvas::onContextFontSizeDropdownRequested(const QPoint& pos)
+{
+    onFontSizeDropdownRequested(pos);
+}
+
+void ScreenCanvas::onContextFontFamilyDropdownRequested(const QPoint& pos)
+{
+    onFontFamilyDropdownRequested(pos);
+}
+
+void ScreenCanvas::onContextTextEditingFinished(const QString& text, const QPoint& position)
+{
+    onTextEditingFinished(text, position);
+}
+
+void ScreenCanvas::onContextTextEditingCancelled()
+{
+    if (m_textAnnotationEditor) {
+        m_textAnnotationEditor->cancelEditing();
+    }
+}
+
 void ScreenCanvas::onColorSelected(const QColor& color)
 {
     m_toolManager->setColor(color);
@@ -385,30 +422,20 @@ bool ScreenCanvas::shouldShowWidthControl() const
 
 void ScreenCanvas::onMoreColorsRequested()
 {
-    if (!m_colorPickerDialog) {
-        m_colorPickerDialog = new ColorPickerDialogCompat();
-        connect(m_colorPickerDialog, &QObject::destroyed, this, [this]() {
-            m_colorPickerDialog = nullptr;
-        });
-        connect(m_colorPickerDialog, &ColorPickerDialogCompat::colorSelected,
-            this, [this](const QColor& color) {
-                m_toolManager->setColor(color);
-                m_colorAndWidthWidget->setCurrentColor(color);
-                update();
-            });
-    }
-
-    m_colorPickerDialog->setCurrentColor(m_toolManager->color());
-
     // Ensure unified color/width widget is in sync with the tool manager color before showing the dialog
     m_colorAndWidthWidget->setCurrentColor(m_toolManager->color());
 
-    // Position at center of screen
-    QPoint center = geometry().center();
-    m_colorPickerDialog->move(center.x() - 170, center.y() - 210);
-    m_colorPickerDialog->show();
-    m_colorPickerDialog->raise();
-    m_colorPickerDialog->activateWindow();
+    AnnotationContext::showColorPickerDialog(
+        this,
+        m_colorPickerDialog,
+        m_toolManager->color(),
+        geometry().center(),
+        [this](const QColor& color) {
+            // Preserve existing behavior: custom-color selection does not persist settings.
+            m_toolManager->setColor(color);
+            m_colorAndWidthWidget->setCurrentColor(color);
+            update();
+        });
 }
 
 void ScreenCanvas::initializeForScreen(QScreen* screen)
@@ -677,19 +704,8 @@ void ScreenCanvas::handleToolbarClick(CanvasButton button)
 
 bool ScreenCanvas::isDrawingTool(ToolId toolId) const
 {
-    switch (toolId) {
-    case ToolId::Pencil:
-    case ToolId::Marker:
-    case ToolId::Arrow:
-    case ToolId::Shape:
-    case ToolId::LaserPointer:
-    case ToolId::StepBadge:
-    case ToolId::EmojiSticker:
-    case ToolId::Text:
-        return true;
-    default:
-        return false;
-    }
+    // Canvas treats laser pointer as a drawing-mode tool for toolbar/sub-toolbar UX.
+    return ToolTraits::isDrawingTool(toolId) || toolId == ToolId::LaserPointer;
 }
 
 void ScreenCanvas::setToolCursor()

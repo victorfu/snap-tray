@@ -113,6 +113,8 @@ private:
     // Editing state
     TextFormattingState m_formatting;
     int m_editingIndex = -1;
+    // Guard to ensure each edit session commits/cancels at most once.
+    bool m_editSessionActive = false;
 
     // Double-click detection
     QPoint m_lastClickPos;

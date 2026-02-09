@@ -252,7 +252,7 @@ int AnnotationLayer::hitTestText(const QPoint &pos) const
     for (int i = static_cast<int>(m_items.size()) - 1; i >= 0; --i) {
         // Hit-test TextBoxAnnotation items (new resizable text boxes)
         if (auto* textItem = dynamic_cast<TextBoxAnnotation*>(m_items[i].get())) {
-            if (textItem->containsPoint(pos)) {
+            if (textItem->isVisible() && textItem->containsPoint(pos)) {
                 return i;
             }
         }
@@ -265,7 +265,7 @@ int AnnotationLayer::hitTestEmojiSticker(const QPoint &pos) const
     // Iterate in reverse order (top-most items first)
     for (int i = static_cast<int>(m_items.size()) - 1; i >= 0; --i) {
         if (auto* emojiItem = dynamic_cast<EmojiStickerAnnotation*>(m_items[i].get())) {
-            if (emojiItem->containsPoint(pos)) {
+            if (emojiItem->isVisible() && emojiItem->containsPoint(pos)) {
                 return i;
             }
         }
@@ -278,7 +278,7 @@ int AnnotationLayer::hitTestArrow(const QPoint &pos) const
     // Iterate in reverse order (top-most items first)
     for (int i = static_cast<int>(m_items.size()) - 1; i >= 0; --i) {
         if (auto* arrowItem = dynamic_cast<ArrowAnnotation*>(m_items[i].get())) {
-            if (arrowItem->containsPoint(pos)) {
+            if (arrowItem->isVisible() && arrowItem->containsPoint(pos)) {
                 return i;
             }
         }
@@ -291,7 +291,7 @@ int AnnotationLayer::hitTestPolyline(const QPoint &pos) const
     // Iterate in reverse order (top-most items first)
     for (int i = static_cast<int>(m_items.size()) - 1; i >= 0; --i) {
         if (auto* polylineItem = dynamic_cast<PolylineAnnotation*>(m_items[i].get())) {
-            if (polylineItem->containsPoint(pos)) {
+            if (polylineItem->isVisible() && polylineItem->containsPoint(pos)) {
                 return i;
             }
         }
@@ -299,10 +299,24 @@ int AnnotationLayer::hitTestPolyline(const QPoint &pos) const
     return -1;
 }
 
+void AnnotationLayer::setSelectedIndex(int index)
+{
+    if (index < 0 || index >= static_cast<int>(m_items.size())) {
+        m_selectedIndex = -1;
+        return;
+    }
+
+    AnnotationItem* candidate = m_items[index].get();
+    m_selectedIndex = (candidate && candidate->isVisible()) ? index : -1;
+}
+
 AnnotationItem* AnnotationLayer::selectedItem()
 {
     if (m_selectedIndex >= 0 && m_selectedIndex < static_cast<int>(m_items.size())) {
-        return m_items[m_selectedIndex].get();
+        AnnotationItem* item = m_items[m_selectedIndex].get();
+        if (item && item->isVisible()) {
+            return item;
+        }
     }
     return nullptr;
 }
@@ -340,6 +354,7 @@ bool AnnotationLayer::removeSelectedItem()
 void AnnotationLayer::invalidateCache()
 {
     m_cacheValid = false;
+    m_cacheExcludeIndex = -1;
 }
 
 void AnnotationLayer::drawCached(QPainter &painter, const QSize &canvasSize, qreal devicePixelRatio) const
@@ -348,8 +363,10 @@ void AnnotationLayer::drawCached(QPainter &painter, const QSize &canvasSize, qre
 
     const QSize physicalSize = canvasSize * devicePixelRatio;
 
+    // drawCached requires a full cache (no excluded dragged item).
     if (!m_cacheValid || m_annotationCache.isNull() ||
-        m_annotationCache.size() != physicalSize) {
+        m_annotationCache.size() != physicalSize ||
+        m_cacheExcludeIndex != -1) {
 
         m_annotationCache = QPixmap(physicalSize);
         m_annotationCache.setDevicePixelRatio(devicePixelRatio);
@@ -365,6 +382,7 @@ void AnnotationLayer::drawCached(QPainter &painter, const QSize &canvasSize, qre
             }
         }
         m_cacheValid = true;
+        m_cacheExcludeIndex = -1;
     }
 
     painter.drawPixmap(0, 0, m_annotationCache);
@@ -392,10 +410,13 @@ void AnnotationLayer::drawWithDirtyRegion(QPainter &painter, const QSize &canvas
     if (m_items.empty()) return;
 
     const QSize physicalSize = canvasSize * devicePixelRatio;
+    const int normalizedExcludeIndex =
+        (excludeIndex >= 0 && excludeIndex < static_cast<int>(m_items.size())) ? excludeIndex : -1;
 
-    // Ensure cache exists (but don't rebuild if invalid - we'll handle dirty region separately)
-    if (m_annotationCache.isNull() || m_annotationCache.size() != physicalSize) {
-        // Need to build initial cache
+    // Keep cache mode in sync with current drag target to avoid ghosting stale positions.
+    if (!m_cacheValid || m_annotationCache.isNull() ||
+        m_annotationCache.size() != physicalSize ||
+        m_cacheExcludeIndex != normalizedExcludeIndex) {
         m_annotationCache = QPixmap(physicalSize);
         m_annotationCache.setDevicePixelRatio(devicePixelRatio);
         m_annotationCache.fill(Qt::transparent);
@@ -405,20 +426,21 @@ void AnnotationLayer::drawWithDirtyRegion(QPainter &painter, const QSize &canvas
         cachePainter.setRenderHint(QPainter::SmoothPixmapTransform);
 
         for (int i = 0; i < static_cast<int>(m_items.size()); ++i) {
-            if (i != excludeIndex && m_items[i]->isVisible()) {
+            if (i != normalizedExcludeIndex && m_items[i]->isVisible()) {
                 m_items[i]->draw(cachePainter);
             }
         }
         m_cacheValid = true;
+        m_cacheExcludeIndex = normalizedExcludeIndex;
     }
 
     // Draw the cached background (all items except the one being dragged)
     painter.drawPixmap(0, 0, m_annotationCache);
 
     // Draw the excluded item (being dragged) on top, directly to painter
-    if (excludeIndex >= 0 && excludeIndex < static_cast<int>(m_items.size())) {
-        if (m_items[excludeIndex]->isVisible()) {
-            m_items[excludeIndex]->draw(painter);
+    if (normalizedExcludeIndex >= 0) {
+        if (m_items[normalizedExcludeIndex]->isVisible()) {
+            m_items[normalizedExcludeIndex]->draw(painter);
         }
     }
 }
@@ -462,5 +484,6 @@ void AnnotationLayer::commitDirtyRegion(const QSize &canvasSize, qreal devicePix
     }
 
     m_cacheValid = true;
+    m_cacheExcludeIndex = -1;
     clearDirtyRect();
 }

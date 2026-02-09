@@ -9,6 +9,7 @@
 #include "IconRenderer.h"
 #include "OCRManager.h"
 #include "PlatformFeatures.h"
+#include "tools/ToolTraits.h"
 
 #include <QWidget>
 #include <QDebug>
@@ -405,18 +406,5 @@ void RegionToolbarHandler::handleActionButton(ToolId button)
 
 bool RegionToolbarHandler::isAnnotationTool(ToolId tool) const
 {
-    switch (tool) {
-    case ToolId::Pencil:
-    case ToolId::Marker:
-    case ToolId::Arrow:
-    case ToolId::Shape:
-    case ToolId::Text:
-    case ToolId::Mosaic:
-    case ToolId::Eraser:
-    case ToolId::StepBadge:
-    case ToolId::EmojiSticker:
-        return true;
-    default:
-        return false;
-    }
+    return ToolTraits::isAnnotationTool(tool);
 }

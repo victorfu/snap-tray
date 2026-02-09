@@ -80,8 +80,9 @@ IAudioCaptureEngine::AudioSource resolveAudioSource(int audioSourceSetting)
 static void syncFile(const QString &path)
 {
 #ifdef Q_OS_WIN
+    const std::wstring widePath = path.toStdWString();
     HANDLE hFile = CreateFileW(
-        reinterpret_cast<LPCWSTR>(path.utf16()),
+        widePath.c_str(),
         GENERIC_WRITE,
         FILE_SHARE_READ | FILE_SHARE_WRITE,
         NULL,

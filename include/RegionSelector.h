@@ -22,7 +22,9 @@
 #include "LoadingSpinnerRenderer.h"
 #include "TransformationGizmo.h"
 #include "TextFormattingState.h"
+#include "annotation/AnnotationHostAdapter.h"
 #include "tools/ToolId.h"
+#include "tools/ToolTraits.h"
 #include "tools/ToolManager.h"
 #include "region/SelectionStateManager.h"
 #include "region/MagnifierPanel.h"
@@ -51,28 +53,17 @@ class RegionInputHandler;
 class RegionToolbarHandler;
 class RegionSettingsHelper;
 class RegionExportManager;
+class AnnotationContext;
 
 // ShapeType and ShapeFillMode are defined in annotations/ShapeAnnotation.h
 
 // Helper to check if a tool is handled by ToolManager
 // (vs. custom handling like Text which has special UI needs)
 inline bool isToolManagerHandledTool(ToolId id) {
-    switch (id) {
-    case ToolId::Pencil:
-    case ToolId::Marker:
-    case ToolId::Arrow:
-    case ToolId::Shape:
-    case ToolId::Mosaic:
-    case ToolId::Eraser:
-    case ToolId::StepBadge:
-    case ToolId::EmojiSticker:
-        return true;
-    default:
-        return false;
-    }
+    return ToolTraits::isToolManagerHandledTool(id);
 }
 
-class RegionSelector : public QWidget
+class RegionSelector : public QWidget, public AnnotationHostAdapter
 {
     Q_OBJECT
 
@@ -127,6 +118,22 @@ protected:
     bool eventFilter(QObject *obj, QEvent *event) override;
 
 private:
+    // AnnotationHostAdapter implementation
+    QWidget* annotationHostWidget() const override;
+    AnnotationLayer* annotationLayerForContext() const override;
+    ToolOptionsPanel* toolOptionsPanelForContext() const override;
+    InlineTextEditor* inlineTextEditorForContext() const override;
+    TextAnnotationEditor* textAnnotationEditorForContext() const override;
+    void onContextColorSelected(const QColor& color) override;
+    void onContextMoreColorsRequested() override;
+    void onContextLineWidthChanged(int width) override;
+    void onContextArrowStyleChanged(LineEndStyle style) override;
+    void onContextLineStyleChanged(LineStyle style) override;
+    void onContextFontSizeDropdownRequested(const QPoint& pos) override;
+    void onContextFontFamilyDropdownRequested(const QPoint& pos) override;
+    void onContextTextEditingFinished(const QString& text, const QPoint& position) override;
+    void onContextTextEditingCancelled() override;
+
     void drawMagnifier(QPainter &painter);
 
     // Corner radius helpers
@@ -325,6 +332,9 @@ private:
 
     // Export manager component
     RegionExportManager* m_exportManager;
+
+    // Shared annotation setup/signals helper
+    std::unique_ptr<AnnotationContext> m_annotationContext;
 };
 
 #endif // REGIONSELECTOR_H
