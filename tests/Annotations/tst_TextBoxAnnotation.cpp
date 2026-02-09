@@ -72,6 +72,7 @@ private slots:
 
     // Geometry tests
     void testTransformedBoundingPolygon();
+    void testTransformedBoundingPolygon_WithRotationScale_MatchesMappedCorners();
     void testContainsPoint_Inside();
     void testContainsPoint_Outside();
     void testMapLocalPointToTransformed_NoTransform();
@@ -91,12 +92,41 @@ private slots:
     void testDraw_Basic();
     void testDraw_WithRotation();
     void testDraw_WithScale();
+    void testBoundingRect_WithRotationScale_ContainsDrawnPixels();
     void testDraw_EmptyText();
     void testDraw_MultilineText();
 
     // Constants tests
     void testConstants();
 };
+
+namespace {
+QRect alphaBounds(const QImage& image)
+{
+    int minX = image.width();
+    int minY = image.height();
+    int maxX = -1;
+    int maxY = -1;
+
+    for (int y = 0; y < image.height(); ++y) {
+        const QRgb* row = reinterpret_cast<const QRgb*>(image.constScanLine(y));
+        for (int x = 0; x < image.width(); ++x) {
+            if (qAlpha(row[x]) > 0) {
+                minX = qMin(minX, x);
+                minY = qMin(minY, y);
+                maxX = qMax(maxX, x);
+                maxY = qMax(maxY, y);
+            }
+        }
+    }
+
+    if (maxX < 0 || maxY < 0) {
+        return QRect();
+    }
+
+    return QRect(QPoint(minX, minY), QPoint(maxX, maxY));
+}
+} // namespace
 
 // ============================================================================
 // Construction Tests
@@ -413,6 +443,35 @@ void TestTextBoxAnnotation::testTransformedBoundingPolygon()
     QCOMPARE(polygon.size(), 4);  // Rectangle has 4 corners
 }
 
+void TestTextBoxAnnotation::testTransformedBoundingPolygon_WithRotationScale_MatchesMappedCorners()
+{
+    QFont font("Arial", 16);
+    font.setBold(true);
+    TextBoxAnnotation textBox(QPointF(300, 300), "213123", font, Qt::red);
+    textBox.setRotation(12.0);
+    textBox.setScale(1.4);
+
+    const QRectF box = textBox.box();
+    const QPolygonF polygon = textBox.transformedBoundingPolygon();
+    QCOMPARE(polygon.size(), 4);
+
+    const QPointF expectedTopLeft =
+        textBox.mapLocalPointToTransformed(QPointF(-TextBoxAnnotation::kHitMargin, -TextBoxAnnotation::kHitMargin));
+    const QPointF expectedTopRight =
+        textBox.mapLocalPointToTransformed(QPointF(box.width() + TextBoxAnnotation::kHitMargin, -TextBoxAnnotation::kHitMargin));
+    const QPointF expectedBottomRight =
+        textBox.mapLocalPointToTransformed(QPointF(box.width() + TextBoxAnnotation::kHitMargin,
+                                                   box.height() + TextBoxAnnotation::kHitMargin));
+    const QPointF expectedBottomLeft =
+        textBox.mapLocalPointToTransformed(QPointF(-TextBoxAnnotation::kHitMargin,
+                                                   box.height() + TextBoxAnnotation::kHitMargin));
+
+    QVERIFY(QLineF(polygon.at(0), expectedTopLeft).length() < 0.01);
+    QVERIFY(QLineF(polygon.at(1), expectedTopRight).length() < 0.01);
+    QVERIFY(QLineF(polygon.at(2), expectedBottomRight).length() < 0.01);
+    QVERIFY(QLineF(polygon.at(3), expectedBottomLeft).length() < 0.01);
+}
+
 void TestTextBoxAnnotation::testContainsPoint_Inside()
 {
     QFont font("Arial", 14);
@@ -616,6 +675,29 @@ void TestTextBoxAnnotation::testDraw_WithScale()
 
     textBox.draw(painter);
     QVERIFY(true);  // No crash
+}
+
+void TestTextBoxAnnotation::testBoundingRect_WithRotationScale_ContainsDrawnPixels()
+{
+    QFont font("Arial", 16);
+    font.setBold(true);
+    TextBoxAnnotation textBox(QPointF(300, 300), "213123", font, Qt::red);
+    textBox.setRotation(12.0);
+    textBox.setScale(1.4);
+
+    QImage image(800, 600, QImage::Format_ARGB32_Premultiplied);
+    image.fill(Qt::transparent);
+
+    QPainter painter(&image);
+    textBox.draw(painter);
+    painter.end();
+
+    const QRect drawnBounds = alphaBounds(image);
+    QVERIFY(!drawnBounds.isNull());
+
+    // A small tolerance keeps this stable under minor rasterization differences.
+    const QRect tolerantBounds = textBox.boundingRect().adjusted(-1, -1, 1, 1);
+    QVERIFY(tolerantBounds.contains(drawnBounds));
 }
 
 void TestTextBoxAnnotation::testDraw_EmptyText()

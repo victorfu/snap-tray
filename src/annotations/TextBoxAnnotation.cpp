@@ -118,19 +118,19 @@ QPolygonF TextBoxAnnotation::transformedBoundingPolygon() const
     QRectF worldBox(m_position.x(), m_position.y(), m_box.width(), m_box.height());
     worldBox.adjust(-kHitMargin, -kHitMargin, kHitMargin, kHitMargin);
 
-    // Build transformation matrix around center (rotate + mirror + scale)
-    QPointF c = center();
-    QTransform t;
-    t.translate(c.x(), c.y());
-    t *= localLinearTransform();
-    t.translate(-c.x(), -c.y());
+    const QPointF c = center();
+    const QTransform linear = localLinearTransform();
+
+    auto mapAroundCenter = [&c, &linear](const QPointF& point) {
+        return c + linear.map(point - c);
+    };
 
     // Transform corners
     QPolygonF poly;
-    poly << t.map(worldBox.topLeft())
-         << t.map(worldBox.topRight())
-         << t.map(worldBox.bottomRight())
-         << t.map(worldBox.bottomLeft());
+    poly << mapAroundCenter(worldBox.topLeft())
+         << mapAroundCenter(worldBox.topRight())
+         << mapAroundCenter(worldBox.bottomRight())
+         << mapAroundCenter(worldBox.bottomLeft());
 
     return poly;
 }
