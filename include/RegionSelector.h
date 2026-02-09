@@ -59,8 +59,7 @@ class AnnotationContext;
 
 // ShapeType and ShapeFillMode are defined in annotations/ShapeAnnotation.h
 
-// Helper to check if a tool is handled by ToolManager
-// (vs. custom handling like Text which has special UI needs)
+// Helper to check if a tool is handled by ToolManager.
 inline bool isToolManagerHandledTool(ToolId id) {
     return ToolTraits::isToolManagerHandledTool(id);
 }
@@ -149,6 +148,7 @@ private:
     bool shouldShowColorPalette() const;
     void onColorSelected(const QColor &color);
     void onMoreColorsRequested();
+    void syncColorToRuntimeState(const QColor& color);
     void syncColorToAllWidgets(const QColor &color);
 
     // Line width callback
@@ -197,7 +197,6 @@ private:
 
     // Inline text editing handlers
     void onTextEditingFinished(const QString &text, const QPoint &position);
-    void startTextReEditing(int annotationIndex);
 
     // Text formatting signal handlers
     void onFontSizeDropdownRequested(const QPoint& pos);

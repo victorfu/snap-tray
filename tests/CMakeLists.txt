@@ -293,6 +293,11 @@ target_link_libraries(Tools_EraserToolHandler PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Tools_EraserToolHandler COMMAND Tools_EraserToolHandler)
 set_tests_properties(Tools_EraserToolHandler PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Tools_TextToolHandler Tools/handlers/tst_TextToolHandler.cpp)
+target_link_libraries(Tools_TextToolHandler PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME Tools_TextToolHandler COMMAND Tools_TextToolHandler)
+set_tests_properties(Tools_TextToolHandler PROPERTIES TIMEOUT 60 LABELS "unit")
+
 # ============================================================================
 # UI Section Tests (link snaptray_ui for UI components)
 # ============================================================================

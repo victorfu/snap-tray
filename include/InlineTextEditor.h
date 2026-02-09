@@ -156,7 +156,10 @@ private slots:
     void onContentsChanged();
 
 private:
-    void startEditingInternal(const QPoint& pos, const QRect& bounds, const QString& existingText);
+    void startEditingInternal(const QPoint& pos,
+                              const QRect& bounds,
+                              const QString& existingText,
+                              bool preserveBaselineOnClamp);
     void updateStyle();
     void adjustSize();
 

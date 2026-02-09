@@ -32,15 +32,19 @@ InlineTextEditor::~InlineTextEditor()
 
 void InlineTextEditor::startEditing(const QPoint& pos, const QRect& bounds)
 {
-    startEditingInternal(pos, bounds, QString());
+    startEditingInternal(pos, bounds, QString(), false);
 }
 
 void InlineTextEditor::startEditingExisting(const QPoint& pos, const QRect& bounds, const QString& existingText)
 {
-    startEditingInternal(pos, bounds, existingText);
+    // Preserve the original annotation baseline when re-editing existing text.
+    startEditingInternal(pos, bounds, existingText, true);
 }
 
-void InlineTextEditor::startEditingInternal(const QPoint& pos, const QRect& bounds, const QString& existingText)
+void InlineTextEditor::startEditingInternal(const QPoint& pos,
+                                            const QRect& bounds,
+                                            const QString& existingText,
+                                            bool preserveBaselineOnClamp)
 {
     // Create QTextEdit lazily
     if (!m_textEdit) {
@@ -75,8 +79,14 @@ void InlineTextEditor::startEditingInternal(const QPoint& pos, const QRect& boun
     boxX = qMax(bounds.left(), boxX);
     boxY = qMax(bounds.top(), boxY);
 
-    // Store the baseline position (text position)
-    m_textPosition = pos;
+    // Store baseline position used when committing text.
+    // For new text, keep it aligned with the clamped editor geometry so the
+    // committed annotation appears where the user actually typed.
+    if (preserveBaselineOnClamp) {
+        m_textPosition = pos;
+    } else {
+        m_textPosition = QPoint(boxX + PADDING, boxY + fm.ascent() + PADDING);
+    }
 
     // Reset states from previous editing session
     m_isConfirmMode = false;
@@ -307,6 +317,10 @@ void InlineTextEditor::handleMouseMove(const QPoint& pos)
     }
 
     m_textEdit->move(boxX, boxY);
+
+    // Keep baseline position consistent with the actual on-screen editor
+    // geometry after clamping to bounds.
+    m_textPosition = QPoint(boxX + PADDING, boxY + fm.ascent() + PADDING);
 }
 
 void InlineTextEditor::handleMouseRelease(const QPoint& pos)

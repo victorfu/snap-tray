@@ -22,7 +22,6 @@
 
 #include <QMouseEvent>
 #include <QWidget>
-#include <QDateTime>
 #include <QDebug>
 #include <QTextEdit>
 #include <QCursor>
@@ -169,13 +168,10 @@ void RegionInputHandler::handleMousePress(QMouseEvent* event)
                 return;
             }
 
-            // Check gizmo handles
-            if (handleGizmoPress(event->pos())) {
-                return;
-            }
-
-            // Check text annotations
-            if (handleTextAnnotationPress(event->pos())) {
+            // Text interaction is centralized in TextToolHandler and stays active
+            // globally (not only when Text is the current tool).
+            if (m_toolManager &&
+                m_toolManager->handleTextInteractionPress(event->pos(), event->modifiers())) {
                 return;
             }
 
@@ -198,14 +194,6 @@ void RegionInputHandler::handleMousePress(QMouseEvent* event)
             if (m_annotationLayer->selectedIndex() >= 0) {
                 m_annotationLayer->clearSelection();
                 emit updateRequested();
-            }
-
-            // Handle Text tool
-            QRect sel = m_selectionManager->selectionRect();
-            if (state().currentTool == ToolId::Text) {
-                m_textAnnotationEditor->startEditing(event->pos(),
-                    m_parentWidget ? m_parentWidget->rect() : QRect(), state().annotationColor);
-                return;
             }
 
             // Handle annotation tool inside selection
@@ -266,8 +254,8 @@ void RegionInputHandler::handleMouseMove(QMouseEvent* event)
         return;
     }
 
-    // Handle text annotation transformation/dragging
-    if (handleTextAnnotationMove(event->pos())) {
+    if (m_toolManager &&
+        m_toolManager->handleTextInteractionMove(event->pos(), event->modifiers())) {
         return;
     }
 
@@ -326,8 +314,8 @@ void RegionInputHandler::handleMouseRelease(QMouseEvent* event)
             return;
         }
 
-        // Handle text annotation transformation/drag release
-        if (handleTextAnnotationRelease()) {
+        if (m_toolManager &&
+            m_toolManager->handleTextInteractionRelease(event->pos(), event->modifiers())) {
             return;
         }
 
@@ -451,74 +439,6 @@ bool RegionInputHandler::handleColorWidgetPress(const QPoint& pos)
     return false;
 }
 
-bool RegionInputHandler::handleGizmoPress(const QPoint& pos)
-{
-    auto* textItem = getSelectedTextAnnotation();
-    if (!textItem) {
-        return false;
-    }
-
-    GizmoHandle handle = TransformationGizmo::hitTest(textItem, pos);
-    if (handle == GizmoHandle::None) {
-        return false;
-    }
-
-    if (handle == GizmoHandle::Body) {
-        qint64 now = QDateTime::currentMSecsSinceEpoch();
-        if (m_textAnnotationEditor->isDoubleClick(pos, now)) {
-            emit textReEditingRequested(m_annotationLayer->selectedIndex());
-            m_textAnnotationEditor->recordClick(QPoint(), 0);
-            return true;
-        }
-        m_textAnnotationEditor->recordClick(pos, now);
-        m_textAnnotationEditor->startDragging(pos);
-    }
-    else {
-        m_textAnnotationEditor->startTransformation(pos, handle);
-    }
-
-    if (m_parentWidget) {
-        m_parentWidget->setFocus();
-    }
-    emit updateRequested();
-    return true;
-}
-
-bool RegionInputHandler::handleTextAnnotationPress(const QPoint& pos)
-{
-    int hitIndex = m_annotationLayer->hitTestText(pos);
-    if (hitIndex < 0) {
-        return false;
-    }
-
-    qint64 now = QDateTime::currentMSecsSinceEpoch();
-    // Double-click on ANY text annotation triggers re-edit (no need to be pre-selected)
-    if (m_textAnnotationEditor->isDoubleClick(pos, now)) {
-        m_annotationLayer->setSelectedIndex(hitIndex);
-        emit textReEditingRequested(hitIndex);
-        m_textAnnotationEditor->recordClick(QPoint(), 0);
-        return true;
-    }
-    m_textAnnotationEditor->recordClick(pos, now);
-
-    // Single click: select and start dragging
-    m_annotationLayer->setSelectedIndex(hitIndex);
-    if (auto* textItem = getSelectedTextAnnotation()) {
-        GizmoHandle handle = TransformationGizmo::hitTest(textItem, pos);
-        if (handle == GizmoHandle::Body || handle == GizmoHandle::None) {
-            m_textAnnotationEditor->startDragging(pos);
-        }
-        else {
-            m_textAnnotationEditor->startTransformation(pos, handle);
-        }
-    }
-
-    if (m_parentWidget) {
-        m_parentWidget->setFocus();
-    }
-    emit updateRequested();
-    return true;
-}
 
 bool RegionInputHandler::handleEmojiStickerAnnotationPress(const QPoint& pos)
 {
@@ -589,9 +509,11 @@ bool RegionInputHandler::handleEmojiStickerAnnotationPress(const QPoint& pos)
 bool RegionInputHandler::handleAnnotationToolPress(const QPoint& pos)
 {
     QRect sel = m_selectionManager->selectionRect();
+    const bool requiresSelectionContainment = (state().currentTool != ToolId::Text);
+    const bool insideSelection = sel.contains(pos);
     if (isAnnotationTool(state().currentTool) &&
         state().currentTool != ToolId::Selection &&
-        sel.contains(pos)) {
+        (!requiresSelectionContainment || insideSelection)) {
         qDebug() << "Starting annotation with tool:" << static_cast<int>(state().currentTool) << "at pos:" << pos;
         startAnnotation(pos);
         return true;
@@ -749,22 +671,6 @@ bool RegionInputHandler::handleTextEditorMove(const QPoint& pos)
     return false;
 }
 
-bool RegionInputHandler::handleTextAnnotationMove(const QPoint& pos)
-{
-    if (m_textAnnotationEditor->isTransforming() && m_annotationLayer->selectedIndex() >= 0) {
-        m_textAnnotationEditor->updateTransformation(pos);
-        emit updateRequested();
-        return true;
-    }
-
-    if (m_textAnnotationEditor->isDragging() && m_annotationLayer->selectedIndex() >= 0) {
-        m_textAnnotationEditor->updateDragging(pos);
-        emit updateRequested();
-        return true;
-    }
-
-    return false;
-}
 
 bool RegionInputHandler::handleEmojiStickerMove(const QPoint& pos)
 {
@@ -1203,19 +1109,6 @@ bool RegionInputHandler::handleTextEditorRelease(const QPoint& pos)
 {
     if (m_textEditor->isEditing() && m_textEditor->isConfirmMode()) {
         m_textEditor->handleMouseRelease(pos);
-        return true;
-    }
-    return false;
-}
-
-bool RegionInputHandler::handleTextAnnotationRelease()
-{
-    if (m_textAnnotationEditor->isTransforming()) {
-        m_textAnnotationEditor->finishTransformation();
-        return true;
-    }
-    if (m_textAnnotationEditor->isDragging()) {
-        m_textAnnotationEditor->finishDragging();
         return true;
     }
     return false;

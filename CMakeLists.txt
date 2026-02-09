@@ -594,6 +594,7 @@ add_library(snaptray_ui STATIC
     src/tools/handlers/EraserToolHandler.cpp
     src/tools/handlers/StepBadgeToolHandler.cpp
     src/tools/handlers/EmojiStickerToolHandler.cpp
+    src/tools/handlers/TextToolHandler.cpp
     src/tools/handlers/SelectionToolHandler.cpp
     src/tools/handlers/LaserPointerToolHandler.cpp
 

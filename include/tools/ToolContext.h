@@ -4,6 +4,7 @@
 #include <QColor>
 #include <QPixmap>
 #include <QPoint>
+#include <QRect>
 #include <functional>
 #include <memory>
 
@@ -17,6 +18,8 @@
 using SharedPixmap = std::shared_ptr<const QPixmap>;
 
 class AnnotationItem;
+class InlineTextEditor;
+class TextAnnotationEditor;
 
 /**
  * @brief Shared context passed to tool handlers.
@@ -56,9 +59,17 @@ public:
     // Keyboard modifier state for constrained drawing
     bool shiftPressed = false;
 
+    // Text tool shared dependencies
+    InlineTextEditor* inlineTextEditor = nullptr;
+    TextAnnotationEditor* textAnnotationEditor = nullptr;
+    QRect textEditingBounds;
+
     // Callbacks
     std::function<void()> requestRepaint;
     std::function<void(std::unique_ptr<AnnotationItem>)> addAnnotation;
+    std::function<void(const QColor&)> syncColorToHost;
+    std::function<void()> requestHostFocus;
+    std::function<void()> notifyTextReEditStarted;
 
     /**
      * @brief Add an annotation to the layer.

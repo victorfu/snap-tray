@@ -1,5 +1,6 @@
 #include <QtTest>
 #include <QWidget>
+#include <QTextEdit>
 #include "TextFormattingState.h"
 #include "TransformationGizmo.h"
 #include "annotations/AnnotationLayer.h"
@@ -51,6 +52,8 @@ private slots:
     // Edit session guard tests
     void testFinishEditing_DuplicateCommitIgnored();
     void testCancelEditing_DisarmsSession();
+    void testInlineTextEditor_ClampedNewTextBaseline();
+    void testInlineTextEditor_PreserveExistingTextBaseline();
 
 private:
     // Double-click detection helper (mimics TextAnnotationEditor logic)
@@ -355,6 +358,49 @@ void tst_TextAnnotationEditor::testCancelEditing_DisarmsSession()
         editor.finishEditing("should-not-commit", QPoint(80, 90), QColor(Qt::red));
     QVERIFY(!committedAfterCancel);
     QCOMPARE(layer.itemCount(), static_cast<size_t>(0));
+}
+
+void tst_TextAnnotationEditor::testInlineTextEditor_ClampedNewTextBaseline()
+{
+    QWidget parent;
+    InlineTextEditor inlineEditor(&parent);
+    QSignalSpy finishedSpy(&inlineEditor, &InlineTextEditor::editingFinished);
+
+    const QRect bounds(0, 0, 200, 120);
+    const QPoint requestedBaseline(195, 110);
+    inlineEditor.startEditing(requestedBaseline, bounds);
+    inlineEditor.textEdit()->setPlainText("edge");
+    inlineEditor.finishEditing();
+
+    QCOMPARE(finishedSpy.count(), 1);
+    const QList<QVariant> args = finishedSpy.takeFirst();
+    QCOMPARE(args.size(), 2);
+    const QPoint committedBaseline = args.at(1).toPoint();
+
+    // New text should commit at the clamped on-screen input location.
+    QVERIFY(committedBaseline.x() < requestedBaseline.x());
+    QVERIFY(committedBaseline != requestedBaseline);
+}
+
+void tst_TextAnnotationEditor::testInlineTextEditor_PreserveExistingTextBaseline()
+{
+    QWidget parent;
+    InlineTextEditor inlineEditor(&parent);
+    QSignalSpy finishedSpy(&inlineEditor, &InlineTextEditor::editingFinished);
+
+    const QRect bounds(0, 0, 200, 120);
+    const QPoint existingBaseline(195, 110);
+    inlineEditor.startEditingExisting(existingBaseline, bounds, "old");
+    inlineEditor.textEdit()->setPlainText("updated");
+    inlineEditor.finishEditing();
+
+    QCOMPARE(finishedSpy.count(), 1);
+    const QList<QVariant> args = finishedSpy.takeFirst();
+    QCOMPARE(args.size(), 2);
+    const QPoint committedBaseline = args.at(1).toPoint();
+
+    // Re-edit should keep the original annotation baseline unless user drags.
+    QCOMPARE(committedBaseline, existingBaseline);
 }
 
 QTEST_MAIN(tst_TextAnnotationEditor)

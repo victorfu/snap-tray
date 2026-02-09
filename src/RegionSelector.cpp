@@ -188,6 +188,19 @@ RegionSelector::RegionSelector(QWidget* parent)
     // Initialize text annotation editor component
     m_textAnnotationEditor = new TextAnnotationEditor(this);
 
+    // Provide text dependencies to ToolManager (TextToolHandler).
+    m_toolManager->setInlineTextEditor(m_textEditor);
+    m_toolManager->setTextAnnotationEditor(m_textAnnotationEditor);
+    m_toolManager->setTextEditingBounds(rect());
+    m_toolManager->setTextColorSyncCallback([this](const QColor& color) {
+        // Re-edit initialization should update runtime/UI state only.
+        // Persisting here would rewrite default color without explicit user change.
+        syncColorToRuntimeState(color);
+    });
+    m_toolManager->setHostFocusCallback([this]() {
+        setFocus(Qt::OtherFocusReason);
+    });
+
     // Initialize unified color and width widget
     m_colorAndWidthWidget = new ToolOptionsPanel(this);
     m_colorAndWidthWidget->setCurrentColor(m_inputState.annotationColor);
@@ -389,8 +402,6 @@ RegionSelector::RegionSelector(QWidget* parent)
         this, [this](int buttonId) { handleToolbarClick(static_cast<ToolId>(buttonId)); });
     connect(m_inputHandler, &RegionInputHandler::windowDetectionRequested,
         this, &RegionSelector::updateWindowDetection);
-    connect(m_inputHandler, &RegionInputHandler::textReEditingRequested,
-        this, &RegionSelector::startTextReEditing);
     connect(m_inputHandler, &RegionInputHandler::selectionFinished,
         this, [this]() {
             m_selectionManager->finishSelection();
@@ -648,8 +659,13 @@ void RegionSelector::onContextTextEditingCancelled()
 
 void RegionSelector::syncColorToAllWidgets(const QColor& color)
 {
-    m_inputState.annotationColor = color;
+    syncColorToRuntimeState(color);
     AnnotationSettingsManager::instance().saveColor(color);
+}
+
+void RegionSelector::syncColorToRuntimeState(const QColor& color)
+{
+    m_inputState.annotationColor = color;
     m_toolManager->setColor(color);
     m_colorAndWidthWidget->setCurrentColor(color);
     if (m_textEditor->isEditing()) {
@@ -802,6 +818,7 @@ void RegionSelector::setupScreenGeometry(QScreen* screen)
     QRect screenGeom = m_currentScreen->geometry();
     setFixedSize(screenGeom.size());
     m_selectionManager->setBounds(QRect(0, 0, screenGeom.width(), screenGeom.height()));
+    m_toolManager->setTextEditingBounds(rect());
 }
 
 void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapture)
@@ -1278,15 +1295,10 @@ void RegionSelector::mouseDoubleClickEvent(QMouseEvent* event)
         return;
     }
 
-    // Check if double-click is on a text annotation (for re-editing)
-    if (m_annotationLayer) {
-        int hitIndex = m_annotationLayer->hitTestText(event->pos());
-        if (hitIndex >= 0) {
-            m_annotationLayer->setSelectedIndex(hitIndex);
-            m_textAnnotationEditor->startReEditing(hitIndex, m_inputState.annotationColor);
-            update();
-            return;
-        }
+    if (m_toolManager &&
+        m_toolManager->handleTextInteractionDoubleClick(event->pos())) {
+        update();
+        return;
     }
 
     // Forward other double-clicks to tool manager
@@ -1631,17 +1643,6 @@ bool RegionSelector::isAnnotationTool(ToolId tool) const
 void RegionSelector::onTextEditingFinished(const QString& text, const QPoint& position)
 {
     m_textAnnotationEditor->finishEditing(text, position, m_inputState.annotationColor);
-}
-
-void RegionSelector::startTextReEditing(int annotationIndex)
-{
-    m_textAnnotationEditor->startReEditing(annotationIndex, m_inputState.annotationColor);
-    // Update local annotation color from the text item
-    auto* textItem = dynamic_cast<TextBoxAnnotation*>(m_annotationLayer->itemAt(annotationIndex));
-    if (textItem) {
-        m_inputState.annotationColor = textItem->color();
-        m_colorAndWidthWidget->setCurrentColor(m_inputState.annotationColor);
-    }
 }
 
 void RegionSelector::performOCR()

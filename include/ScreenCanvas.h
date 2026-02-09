@@ -156,7 +156,6 @@ private:
     bool shouldShowColorAndWidthWidget() const;
     bool shouldShowWidthControl() const;
     void syncColorToAllWidgets(const QColor& color);
-    void syncTextReEditColor(int annotationIndex);
 
     // Annotation settings persistence
     void onArrowStyleChanged(LineEndStyle style);
@@ -223,10 +222,6 @@ private:
 
     // Arrow and Polyline helpers
     TextBoxAnnotation* getSelectedTextAnnotation();
-    bool handleTextGizmoPress(const QPoint& pos);
-    bool handleTextAnnotationPress(const QPoint& pos);
-    bool handleTextAnnotationMove(const QPoint& pos);
-    bool handleTextAnnotationRelease();
 
     bool handleArrowAnnotationPress(const QPoint& pos);
     bool handleArrowAnnotationMove(const QPoint& pos);

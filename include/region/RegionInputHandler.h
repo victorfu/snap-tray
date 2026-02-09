@@ -84,7 +84,6 @@ signals:
     // Action requests (need RegionSelector context)
     void toolbarClickRequested(int buttonId);
     void windowDetectionRequested(const QPoint& pos);
-    void textReEditingRequested(int annotationIndex);
     void selectionFinished();
     void fullScreenSelectionRequested();
 
@@ -99,8 +98,6 @@ private:
     bool handleToolbarPress(const QPoint& pos);
     bool handleRegionControlWidgetPress(const QPoint& pos);
     bool handleColorWidgetPress(const QPoint& pos);
-    bool handleGizmoPress(const QPoint& pos);
-    bool handleTextAnnotationPress(const QPoint& pos);
     bool handleEmojiStickerAnnotationPress(const QPoint& pos);
     bool handleArrowAnnotationPress(const QPoint& pos);
     bool handleAnnotationToolPress(const QPoint& pos);
@@ -110,7 +107,6 @@ private:
 
     // Mouse move helpers
     bool handleTextEditorMove(const QPoint& pos);
-    bool handleTextAnnotationMove(const QPoint& pos);
     bool handleEmojiStickerMove(const QPoint& pos);
     bool handleArrowAnnotationMove(const QPoint& pos);
     void handleWindowDetectionMove(const QPoint& pos);
@@ -124,7 +120,6 @@ private:
 
     // Mouse release helpers
     bool handleTextEditorRelease(const QPoint& pos);
-    bool handleTextAnnotationRelease();
     bool handleEmojiStickerRelease();
     bool handleArrowAnnotationRelease();
     bool handleRegionControlWidgetRelease(const QPoint& pos);

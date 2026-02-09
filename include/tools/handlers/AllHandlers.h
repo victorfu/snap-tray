@@ -11,6 +11,7 @@
 #include "EraserToolHandler.h"
 #include "StepBadgeToolHandler.h"
 #include "EmojiStickerToolHandler.h"
+#include "TextToolHandler.h"
 #include "SelectionToolHandler.h"
 #include "LaserPointerToolHandler.h"
 

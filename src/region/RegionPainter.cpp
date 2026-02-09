@@ -521,14 +521,11 @@ void RegionPainter::drawCurrentAnnotation(QPainter& painter)
         return;
     }
 
-    // Use ToolManager for tools it handles
+    // Use ToolManager for tools it handles.
     ToolId tool = static_cast<ToolId>(m_currentTool);
     if (ToolTraits::isToolManagerHandledTool(tool)) {
         m_toolManager->drawCurrentPreview(painter);
-        return;
     }
-
-    // Text tool is handled by InlineTextEditor, no preview needed here
 }
 
 QRect RegionPainter::getWindowHighlightVisualRect(const QRect& windowRect, const QString& title) const

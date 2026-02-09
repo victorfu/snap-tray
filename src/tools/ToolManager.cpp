@@ -3,6 +3,7 @@
 #include "tools/handlers/AllHandlers.h"
 
 #include <QPainter>
+#include <utility>
 
 ToolManager::ToolManager(QObject* parent)
     : QObject(parent)
@@ -35,6 +36,7 @@ void ToolManager::registerDefaultHandlers() {
     registerHandler(std::make_unique<EraserToolHandler>());
     registerHandler(std::make_unique<StepBadgeToolHandler>());
     registerHandler(std::make_unique<EmojiStickerToolHandler>());
+    registerHandler(std::make_unique<TextToolHandler>());
     registerHandler(std::make_unique<LaserPointerToolHandler>());
 }
 
@@ -109,6 +111,69 @@ void ToolManager::handleDoubleClick(const QPoint& pos) {
     }
 }
 
+bool ToolManager::handleTextInteractionPress(const QPoint& pos, Qt::KeyboardModifiers modifiers)
+{
+    m_context->shiftPressed = modifiers & Qt::ShiftModifier;
+    auto it = m_handlers.find(ToolId::Text);
+    if (it == m_handlers.end()) {
+        return false;
+    }
+
+    auto* textHandler = dynamic_cast<TextToolHandler*>(it->second.get());
+    if (!textHandler) {
+        return false;
+    }
+
+    return textHandler->handleInteractionPress(m_context.get(), pos, false);
+}
+
+bool ToolManager::handleTextInteractionMove(const QPoint& pos, Qt::KeyboardModifiers modifiers)
+{
+    m_context->shiftPressed = modifiers & Qt::ShiftModifier;
+    auto it = m_handlers.find(ToolId::Text);
+    if (it == m_handlers.end()) {
+        return false;
+    }
+
+    auto* textHandler = dynamic_cast<TextToolHandler*>(it->second.get());
+    if (!textHandler) {
+        return false;
+    }
+
+    return textHandler->handleInteractionMove(m_context.get(), pos);
+}
+
+bool ToolManager::handleTextInteractionRelease(const QPoint& pos, Qt::KeyboardModifiers modifiers)
+{
+    m_context->shiftPressed = modifiers & Qt::ShiftModifier;
+    auto it = m_handlers.find(ToolId::Text);
+    if (it == m_handlers.end()) {
+        return false;
+    }
+
+    auto* textHandler = dynamic_cast<TextToolHandler*>(it->second.get());
+    if (!textHandler) {
+        return false;
+    }
+
+    return textHandler->handleInteractionRelease(m_context.get(), pos);
+}
+
+bool ToolManager::handleTextInteractionDoubleClick(const QPoint& pos)
+{
+    auto it = m_handlers.find(ToolId::Text);
+    if (it == m_handlers.end()) {
+        return false;
+    }
+
+    auto* textHandler = dynamic_cast<TextToolHandler*>(it->second.get());
+    if (!textHandler) {
+        return false;
+    }
+
+    return textHandler->handleInteractionDoubleClick(m_context.get(), pos);
+}
+
 void ToolManager::drawCurrentPreview(QPainter& painter) const {
     auto it = m_handlers.find(m_currentToolId);
     if (it != m_handlers.end()) {
@@ -147,6 +212,36 @@ void ToolManager::setSourcePixmap(SharedPixmap pixmap) {
 
 void ToolManager::setDevicePixelRatio(qreal dpr) {
     m_context->devicePixelRatio = dpr;
+}
+
+void ToolManager::setInlineTextEditor(InlineTextEditor* editor)
+{
+    m_context->inlineTextEditor = editor;
+}
+
+void ToolManager::setTextAnnotationEditor(TextAnnotationEditor* editor)
+{
+    m_context->textAnnotationEditor = editor;
+}
+
+void ToolManager::setTextEditingBounds(const QRect& bounds)
+{
+    m_context->textEditingBounds = bounds;
+}
+
+void ToolManager::setTextColorSyncCallback(std::function<void(const QColor&)> callback)
+{
+    m_context->syncColorToHost = std::move(callback);
+}
+
+void ToolManager::setHostFocusCallback(std::function<void()> callback)
+{
+    m_context->requestHostFocus = std::move(callback);
+}
+
+void ToolManager::setTextReEditStartedCallback(std::function<void()> callback)
+{
+    m_context->notifyTextReEditStarted = std::move(callback);
 }
 
 void ToolManager::setColor(const QColor& color) {

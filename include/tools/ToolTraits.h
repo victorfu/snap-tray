@@ -18,7 +18,8 @@ inline bool isAnnotationTool(ToolId id)
 
 inline bool isToolManagerHandledTool(ToolId id)
 {
-    return isAnnotationTool(id) && id != ToolId::Text;
+    // All annotation tools (including Text) are handled by ToolManager.
+    return isAnnotationTool(id);
 }
 
 } // namespace ToolTraits

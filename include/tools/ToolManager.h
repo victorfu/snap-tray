@@ -3,8 +3,10 @@
 
 #include <QObject>
 #include <QPoint>
+#include <QRect>
 #include <memory>
 #include <map>
+#include <functional>
 
 #include "ToolId.h"
 #include "ToolContext.h"
@@ -12,6 +14,8 @@
 
 class QPainter;
 class AnnotationLayer;
+class InlineTextEditor;
+class TextAnnotationEditor;
 
 /**
  * @brief Central manager for tool handling.
@@ -67,6 +71,12 @@ public:
     void handleMouseRelease(const QPoint& pos, Qt::KeyboardModifiers modifiers = Qt::NoModifier);
     void handleDoubleClick(const QPoint& pos);
 
+    // Global text interaction dispatch (works regardless of current tool)
+    bool handleTextInteractionPress(const QPoint& pos, Qt::KeyboardModifiers modifiers = Qt::NoModifier);
+    bool handleTextInteractionMove(const QPoint& pos, Qt::KeyboardModifiers modifiers = Qt::NoModifier);
+    bool handleTextInteractionRelease(const QPoint& pos, Qt::KeyboardModifiers modifiers = Qt::NoModifier);
+    bool handleTextInteractionDoubleClick(const QPoint& pos);
+
     /**
      * @brief Draw the current tool preview.
      */
@@ -94,6 +104,12 @@ public:
     void setAnnotationLayer(AnnotationLayer* layer);
     void setSourcePixmap(SharedPixmap pixmap);
     void setDevicePixelRatio(qreal dpr);
+    void setInlineTextEditor(InlineTextEditor* editor);
+    void setTextAnnotationEditor(TextAnnotationEditor* editor);
+    void setTextEditingBounds(const QRect& bounds);
+    void setTextColorSyncCallback(std::function<void(const QColor&)> callback);
+    void setHostFocusCallback(std::function<void()> callback);
+    void setTextReEditStartedCallback(std::function<void()> callback);
 
     // Drawing settings
     void setColor(const QColor& color);
