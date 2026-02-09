@@ -25,6 +25,7 @@
 #include "tools/IToolHandler.h"
 #include "tools/handlers/EmojiStickerToolHandler.h"
 #include "settings/AnnotationSettingsManager.h"
+#include "settings/AutoBlurSettingsManager.h"
 #include "settings/FileSettingsManager.h"
 #include "settings/PinWindowSettingsManager.h"
 #include "settings/OCRSettingsManager.h"
@@ -78,6 +79,8 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include <QDesktopServices>
 #include <QUrl>
 #include <QThreadPool>
+#include <QFutureWatcher>
+#include <QtConcurrent/QtConcurrentRun>
 #include <limits>
 
 namespace {
@@ -347,6 +350,10 @@ PinWindow::PinWindow(const QPixmap& screenshot,
 PinWindow::~PinWindow()
 {
     m_isDestructing = true;
+
+    if (m_autoBlurWatcher) {
+        m_autoBlurWatcher->waitForFinished();
+    }
 
     // Clean up cursor state before destruction (ensures Drag context is cleared)
     CursorManager::instance().clearAllForWidget(this);
@@ -2731,6 +2738,10 @@ void PinWindow::onFontFamilyDropdownRequested(const QPoint& pos)
 
 void PinWindow::onAutoBlurRequested()
 {
+    if (m_autoBlurInProgress) {
+        return;
+    }
+
     // Lazy initialize AutoBlurManager
     if (!m_autoBlurManager) {
         m_autoBlurManager = new AutoBlurManager(this);
@@ -2743,36 +2754,62 @@ void PinWindow::onAutoBlurRequested()
         }
     }
 
-    // Get current display image
-    QImage image = m_displayPixmap.toImage();
-    qreal dpr = m_displayPixmap.devicePixelRatio();
+    m_autoBlurInProgress = true;
 
-    // Detect faces
-    auto result = m_autoBlurManager->detect(image);
+    // Reload latest settings before detection
+    m_autoBlurManager->setOptions(AutoBlurSettingsManager::instance().load());
 
-    if (!result.success || result.faceRegions.isEmpty()) {
-        return;
-    }
+    // Capture the exact source snapshot used for detection.
+    // Annotation source and coordinate conversion must use the same snapshot.
+    QPixmap detectionPixmap = m_displayPixmap;
+    QImage image = detectionPixmap.toImage();
+    qreal dpr = detectionPixmap.devicePixelRatio();
 
-    // Create shared pixmap for all face annotations (explicit sharing to avoid memory duplication)
-    auto sharedDisplayPixmap = std::make_shared<const QPixmap>(m_displayPixmap);
+    // Run detection asynchronously to avoid blocking UI thread
+    auto* watcher = new QFutureWatcher<AutoBlurManager::DetectionResult>(this);
+    m_autoBlurWatcher = watcher;
+    connect(watcher, &QFutureWatcher<AutoBlurManager::DetectionResult>::finished,
+            this, [this, watcher, detectionPixmap, dpr]() {
+        auto result = watcher->result();
+        m_autoBlurWatcher = nullptr;
+        watcher->deleteLater();
+        m_autoBlurInProgress = false;
 
-    // Create mosaic annotations for each detected face
-    for (const QRect& faceRect : result.faceRegions) {
-        // Convert from device pixels to logical pixels
-        QRect logicalRect = CoordinateHelper::toLogical(faceRect, dpr);
+        if (!result.success || result.faceRegions.isEmpty()) {
+            return;
+        }
 
-        auto mosaic = std::make_unique<MosaicRectAnnotation>(
-            logicalRect,
-            sharedDisplayPixmap,
-            kMosaicBlockSize,
-            MosaicRectAnnotation::BlurType::Pixelate
-        );
-        m_annotationLayer->addItem(std::move(mosaic));
-    }
+        // Use unified settings from AutoBlurSettingsManager
+        const auto opts = m_autoBlurManager->options();
+        int blockSize = AutoBlurManager::intensityToBlockSize(opts.blurIntensity);
 
-    updateUndoRedoState();
-    update();
+        auto blurType = (opts.blurType == AutoBlurSettingsManager::BlurType::Gaussian)
+            ? MosaicRectAnnotation::BlurType::Gaussian
+            : MosaicRectAnnotation::BlurType::Pixelate;
+
+        // Create shared pixmap for all face annotations using the same snapshot
+        // that was analyzed by face detection.
+        auto sharedDisplayPixmap = std::make_shared<const QPixmap>(detectionPixmap);
+
+        for (const QRect& faceRect : result.faceRegions) {
+            QRect logicalRect = CoordinateHelper::toLogical(faceRect, dpr);
+
+            auto mosaic = std::make_unique<MosaicRectAnnotation>(
+                logicalRect, sharedDisplayPixmap, blockSize, blurType
+            );
+            m_annotationLayer->addItem(std::move(mosaic));
+        }
+
+        updateUndoRedoState();
+        update();
+    });
+
+    // detect() is thread-safe: FaceDetector::detect() only reads the image,
+    // and cv::CascadeClassifier::detectMultiScale is const after initialization.
+    AutoBlurManager* mgr = m_autoBlurManager;
+    watcher->setFuture(QtConcurrent::run([mgr, image]() {
+        return mgr->detect(image);
+    }));
 }
 
 void PinWindow::onMoreColorsRequested()

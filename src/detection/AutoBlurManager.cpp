@@ -4,6 +4,7 @@
 
 #include <QDebug>
 #include <QPainter>
+#include <QtGlobal>
 
 #include <opencv2/imgproc.hpp>
 
@@ -171,4 +172,14 @@ void AutoBlurManager::applyPixelate(QImage& image, const QRect& region, int inte
     // Paint back to original image
     QPainter painter(&image);
     painter.drawImage(region.topLeft(), pixelated);
+}
+
+int AutoBlurManager::intensityToBlockSize(int intensity)
+{
+    // Clamp to valid range
+    int clamped = qBound(1, intensity, 100);
+    // Map intensity 1-100 -> blockSize 4-24
+    // Higher intensity = larger blocks = stronger blur
+    // Default intensity 50 -> blockSize 14 (close to legacy hardcoded 12)
+    return 4 + (clamped * 20) / 100;
 }

@@ -31,6 +31,7 @@ private slots:
     void testDefaultOptions();
     void testSetOptions();
     void testOptionsBlurIntensityClamp();
+    void testIntensityToBlockSizeMapping();
 
     // Settings persistence tests
     void testSaveAndLoadSettings();
@@ -166,6 +167,19 @@ void tst_AutoBlurManager::testOptionsBlurIntensityClamp()
     opts.blurIntensity = 50;
     m_manager->setOptions(opts);
     QCOMPARE(m_manager->options().blurIntensity, 50);
+}
+
+void tst_AutoBlurManager::testIntensityToBlockSizeMapping()
+{
+    QCOMPARE(AutoBlurManager::intensityToBlockSize(1), 4);
+    QCOMPARE(AutoBlurManager::intensityToBlockSize(25), 9);
+    QCOMPARE(AutoBlurManager::intensityToBlockSize(50), 14);
+    QCOMPARE(AutoBlurManager::intensityToBlockSize(75), 19);
+    QCOMPARE(AutoBlurManager::intensityToBlockSize(100), 24);
+
+    // Clamp out-of-range values.
+    QCOMPARE(AutoBlurManager::intensityToBlockSize(0), 4);
+    QCOMPARE(AutoBlurManager::intensityToBlockSize(101), 24);
 }
 
 void tst_AutoBlurManager::testSaveAndLoadSettings()

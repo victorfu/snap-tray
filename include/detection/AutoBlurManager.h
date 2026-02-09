@@ -82,6 +82,18 @@ public:
      */
     void setOptions(const Options& options) { m_options = options; }
 
+    /**
+     * @brief Convert blur intensity (1-100) to mosaic block size.
+     *
+     * Maps the abstract intensity setting to a concrete pixel block size
+     * for MosaicRectAnnotation. Both RegionSelector and PinWindow should
+     * use this to ensure consistent auto-blur appearance.
+     *
+     * @param intensity Blur intensity from AutoBlurSettingsManager (1-100)
+     * @return Block size in pixels (4-24)
+     */
+    static int intensityToBlockSize(int intensity);
+
 signals:
     void detectionStarted();
     void detectionProgress(int percent);

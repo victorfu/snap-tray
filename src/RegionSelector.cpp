@@ -21,6 +21,7 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include "PlatformFeatures.h"
 #include "detection/AutoBlurManager.h"
 #include "settings/AnnotationSettingsManager.h"
+#include "settings/AutoBlurSettingsManager.h"
 #include "settings/FileSettingsManager.h"
 #include "settings/OCRSettingsManager.h"
 #include "OCRResultDialog.h"
@@ -66,6 +67,8 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include <QtMath>
 #include <QMenu>
 #include <QFontDatabase>
+#include <QFutureWatcher>
+#include <QtConcurrent/QtConcurrentRun>
 #include "tools/ToolRegistry.h"
 
 RegionSelector::RegionSelector(QWidget* parent)
@@ -531,6 +534,10 @@ RegionSelector::RegionSelector(QWidget* parent)
 
 RegionSelector::~RegionSelector()
 {
+    if (m_autoBlurWatcher) {
+        m_autoBlurWatcher->waitForFinished();
+    }
+
     // Clean up cursor state before destruction
     CursorManager::instance().clearAllForWidget(this);
 
@@ -1804,6 +1811,9 @@ void RegionSelector::performAutoBlur()
     ensureLoadingSpinner()->start();
     update();
 
+    // Reload latest settings before detection
+    m_autoBlurManager->setOptions(AutoBlurSettingsManager::instance().load());
+
     // Get the selected region as QImage
     QRect sel = m_selectionManager->selectionRect();
 
@@ -1815,44 +1825,58 @@ void RegionSelector::performAutoBlur()
     );
     QImage selectedImage = selectedPixmap.toImage();
 
-    // Run detection
-    auto result = m_autoBlurManager->detect(selectedImage);
+    // Run detection asynchronously to avoid blocking UI thread
+    auto* watcher = new QFutureWatcher<AutoBlurManager::DetectionResult>(this);
+    m_autoBlurWatcher = watcher;
+    connect(watcher, &QFutureWatcher<AutoBlurManager::DetectionResult>::finished,
+            this, [this, watcher, sel]() {
+        auto result = watcher->result();
+        m_autoBlurWatcher = nullptr;
+        watcher->deleteLater();
 
-    if (result.success) {
-        int faceCount = result.faceRegions.size();
+        if (result.success) {
+            int faceCount = result.faceRegions.size();
 
-        // Create mosaic annotations for detected faces (skip text regions)
-        if (faceCount > 0) {
-            // Detection coordinates are in device pixels (relative to the cropped region).
-            // Convert to logical coordinates for annotations.
-            for (int i = 0; i < result.faceRegions.size(); ++i) {
-                const QRect& r = result.faceRegions[i];
+            if (faceCount > 0) {
+                // Use unified settings from AutoBlurSettingsManager
+                const auto opts = m_autoBlurManager->options();
+                int blockSize = AutoBlurManager::intensityToBlockSize(opts.blurIntensity);
 
-                // Convert from device pixels to logical coordinates
-                QRect logicalRect(
-                    sel.x() + static_cast<int>(r.x() / m_devicePixelRatio),
-                    sel.y() + static_cast<int>(r.y() / m_devicePixelRatio),
-                    static_cast<int>(r.width() / m_devicePixelRatio),
-                    static_cast<int>(r.height() / m_devicePixelRatio)
-                );
+                auto blurType = (opts.blurType == AutoBlurSettingsManager::BlurType::Gaussian)
+                    ? MosaicRectAnnotation::BlurType::Gaussian
+                    : MosaicRectAnnotation::BlurType::Pixelate;
 
-                // Create mosaic annotation for this face region
-                // Use blur type from settings
-                auto blurType = static_cast<MosaicRectAnnotation::BlurType>(
-                    static_cast<int>(m_mosaicBlurType)
+                // Detection coordinates are in device pixels (relative to the cropped region).
+                // Convert to logical coordinates for annotations.
+                for (int i = 0; i < result.faceRegions.size(); ++i) {
+                    const QRect& r = result.faceRegions[i];
+
+                    QRect logicalRect(
+                        sel.x() + static_cast<int>(r.x() / m_devicePixelRatio),
+                        sel.y() + static_cast<int>(r.y() / m_devicePixelRatio),
+                        static_cast<int>(r.width() / m_devicePixelRatio),
+                        static_cast<int>(r.height() / m_devicePixelRatio)
                     );
-                auto mosaic = std::make_unique<MosaicRectAnnotation>(
-                    logicalRect, m_sharedSourcePixmap, 12, blurType
-                );
-                m_annotationLayer->addItem(std::move(mosaic));
-            }
-        }
 
-        onAutoBlurComplete(true, faceCount, 0, QString());
-    }
-    else {
-        onAutoBlurComplete(false, 0, 0, result.errorMessage);
-    }
+                    auto mosaic = std::make_unique<MosaicRectAnnotation>(
+                        logicalRect, m_sharedSourcePixmap, blockSize, blurType
+                    );
+                    m_annotationLayer->addItem(std::move(mosaic));
+                }
+            }
+
+            onAutoBlurComplete(true, faceCount, 0, QString());
+        } else {
+            onAutoBlurComplete(false, 0, 0, result.errorMessage);
+        }
+    });
+
+    // detect() is thread-safe: FaceDetector::detect() only reads the image,
+    // and cv::CascadeClassifier::detectMultiScale is const after initialization.
+    AutoBlurManager* mgr = m_autoBlurManager;
+    watcher->setFuture(QtConcurrent::run([mgr, selectedImage]() {
+        return mgr->detect(selectedImage);
+    }));
 }
 
 void RegionSelector::onAutoBlurComplete(bool success, int faceCount, int /*textCount*/, const QString& error)

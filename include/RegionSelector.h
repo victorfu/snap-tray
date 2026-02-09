@@ -45,6 +45,7 @@ class ColorPickerDialogCompat;
 }
 }
 class QCloseEvent;
+class QFutureWatcherBase;
 class OCRManager;
 struct OCRResult;
 class QRCodeManager;
@@ -268,6 +269,7 @@ private:
     // Auto-blur detection
     AutoBlurManager *m_autoBlurManager;
     bool m_autoBlurInProgress;
+    QPointer<QFutureWatcherBase> m_autoBlurWatcher;
 
     void performAutoBlur();
     void onAutoBlurComplete(bool success, int faceCount, int textCount, const QString &error);

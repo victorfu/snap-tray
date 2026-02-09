@@ -27,6 +27,7 @@ using SharedPixmap = std::shared_ptr<const QPixmap>;
 class QMenu;
 class QLabel;
 class QTimer;
+class QFutureWatcherBase;
 class QScreen;
 class QPainter;
 class ICaptureEngine;
@@ -358,6 +359,8 @@ private:
 
     // AutoBlur
     AutoBlurManager* m_autoBlurManager = nullptr;
+    bool m_autoBlurInProgress = false;
+    QPointer<QFutureWatcherBase> m_autoBlurWatcher;
 
     // Color picker dialog
     snaptray::colorwidgets::ColorPickerDialogCompat* m_colorPickerDialog = nullptr;
