@@ -124,6 +124,7 @@ void TextAnnotationEditor::startReEditing(int annotationIndex, const QColor& col
 
     // Hide the original annotation while editing (prevent duplicate display)
     textItem->setVisible(false);
+    m_annotationLayer->invalidateCache();
 
     // Clear selection to hide gizmo while editing
     m_annotationLayer->clearSelection();
@@ -167,6 +168,7 @@ bool TextAnnotationEditor::finishEditing(const QString& text, const QPoint& posi
         }
         m_annotationLayer->setSelectedIndex(m_editingIndex);
         m_editingIndex = -1;
+        m_annotationLayer->invalidateCache();
     }
     else if (!text.isEmpty()) {
         // Create new TextBoxAnnotation
@@ -197,6 +199,7 @@ void TextAnnotationEditor::cancelEditing()
             textItem->setVisible(true);
         }
         m_editingIndex = -1;
+        m_annotationLayer->invalidateCache();
     }
     emit editingCancelled();
     emit updateRequested();

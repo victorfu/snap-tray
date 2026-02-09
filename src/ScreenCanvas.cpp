@@ -15,6 +15,7 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include "settings/AnnotationSettingsManager.h"
 #include "tools/handlers/EmojiStickerToolHandler.h"
 #include "annotations/ArrowAnnotation.h"
+#include "annotations/TextBoxAnnotation.h"
 #include "annotations/PolylineAnnotation.h"
 #include "TransformationGizmo.h"
 
@@ -28,6 +29,7 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include <QGuiApplication>
 #include <QScreen>
 #include <QDebug>
+#include <QDateTime>
 #include <QTimer>
 #include "tools/ToolRegistry.h"
 #include "tools/ToolSectionConfig.h"
@@ -403,11 +405,33 @@ void ScreenCanvas::onContextTextEditingCancelled()
     }
 }
 
-void ScreenCanvas::onColorSelected(const QColor& color)
+void ScreenCanvas::syncColorToAllWidgets(const QColor& color)
 {
     m_toolManager->setColor(color);
     m_laserRenderer->setColor(color);
     m_colorAndWidthWidget->setCurrentColor(color);
+    if (m_textEditor) {
+        m_textEditor->setColor(color);
+    }
+}
+
+void ScreenCanvas::syncTextReEditColor(int annotationIndex)
+{
+    if (!m_annotationLayer || annotationIndex < 0) {
+        return;
+    }
+
+    auto* textItem = dynamic_cast<TextBoxAnnotation*>(m_annotationLayer->itemAt(annotationIndex));
+    if (!textItem) {
+        return;
+    }
+
+    syncColorToAllWidgets(textItem->color());
+}
+
+void ScreenCanvas::onColorSelected(const QColor& color)
+{
+    syncColorToAllWidgets(color);
     AnnotationSettingsManager::instance().saveColor(color);
     update();
 }
@@ -560,6 +584,11 @@ void ScreenCanvas::drawAnnotations(QPainter& painter)
                                                 m_annotationLayer->selectedIndex());
     } else {
         m_annotationLayer->drawCached(painter, size(), devicePixelRatioF());
+    }
+
+    // Draw transformation gizmo for selected text annotation
+    if (auto* textItem = getSelectedTextAnnotation()) {
+        TransformationGizmo::draw(painter, textItem);
     }
 
     // Draw transformation gizmo for selected Arrow
@@ -715,6 +744,8 @@ void ScreenCanvas::setToolCursor()
 void ScreenCanvas::mousePressEvent(QMouseEvent* event)
 {
     if (event->button() == Qt::LeftButton) {
+        m_consumeNextToolRelease = false;
+
         // Handle active text editor first - click outside to finish
         if (m_textEditor && m_textEditor->isEditing()) {
             if (!m_textEditor->contains(event->pos())) {
@@ -781,9 +812,15 @@ void ScreenCanvas::mousePressEvent(QMouseEvent* event)
             return;
         }
 
-        // Handle text tool - start text editing
-        if (m_currentToolId == ToolId::Text) {
-            m_textAnnotationEditor->startEditing(event->pos(), rect(), m_toolManager->color());
+        // Active drawing interactions (e.g., Arrow polyline mode) own press events.
+        if (m_toolManager && m_toolManager->isDrawing()) {
+            m_toolManager->handleMousePress(event->pos(), event->modifiers());
+            update();
+            return;
+        }
+
+        // Handle selected text gizmo interaction (drag/scale/rotate)
+        if (handleTextGizmoPress(event->pos())) {
             return;
         }
 
@@ -792,8 +829,25 @@ void ScreenCanvas::mousePressEvent(QMouseEvent* event)
             return;
         }
 
+        // Check for Text annotation interaction
+        if (handleTextAnnotationPress(event->pos())) {
+            return;
+        }
+
         // Check for Polyline annotation interaction
         if (handlePolylineAnnotationPress(event->pos())) {
+            return;
+        }
+
+        // Clicked elsewhere: clear active annotation selection (match RegionSelector behavior)
+        if (m_annotationLayer->selectedIndex() >= 0) {
+            m_annotationLayer->clearSelection();
+            update();
+        }
+
+        // Handle text tool - start text editing
+        if (m_currentToolId == ToolId::Text) {
+            m_textAnnotationEditor->startEditing(event->pos(), rect(), m_toolManager->color());
             return;
         }
 
@@ -837,6 +891,11 @@ void ScreenCanvas::mouseMoveEvent(QMouseEvent* event)
     if (m_currentToolId == ToolId::LaserPointer && m_laserRenderer->isDrawing()) {
         m_laserRenderer->updateDrawing(event->pos());
         update();
+        return;
+    }
+
+    // Handle text annotation transformation/dragging
+    if (handleTextAnnotationMove(event->pos())) {
         return;
     }
     
@@ -950,6 +1009,19 @@ void ScreenCanvas::mouseReleaseEvent(QMouseEvent* event)
             update();
             return;
         }
+
+        // Handle text annotation transformation/dragging release
+        if (handleTextAnnotationRelease()) {
+            update();
+            return;
+        }
+
+        // Text re-edit was entered on this click sequence, so consume this release
+        // to avoid triggering release-based tools (StepBadge/EmojiSticker).
+        if (m_consumeNextToolRelease) {
+            m_consumeNextToolRelease = false;
+            return;
+        }
         
         // Handle Arrow release
         if (handleArrowAnnotationRelease(event->pos())) {
@@ -984,6 +1056,27 @@ void ScreenCanvas::mouseDoubleClickEvent(QMouseEvent* event)
 {
     if (event->button() != Qt::LeftButton) {
         return;
+    }
+
+    // Active drawing interactions (e.g., Arrow polyline mode) own double-click.
+    if (m_toolManager && m_toolManager->isDrawing()) {
+        m_toolManager->handleDoubleClick(event->pos());
+        update();
+        return;
+    }
+
+    // Double-click on text annotation enters re-edit mode (priority over tool manager)
+    if (m_annotationLayer) {
+        int hitIndex = m_annotationLayer->hitTestText(event->pos());
+        if (hitIndex >= 0) {
+            m_consumeNextToolRelease = true;
+            m_annotationLayer->setSelectedIndex(hitIndex);
+            syncTextReEditColor(hitIndex);
+            m_annotationLayer->invalidateCache();
+            m_textAnnotationEditor->startReEditing(hitIndex, m_toolManager->color());
+            update();
+            return;
+        }
     }
 
     // Forward double-click to tool manager
@@ -1166,8 +1259,118 @@ QPixmap ScreenCanvas::createSolidBackgroundPixmap(const QColor& color) const
 }
 
 // ============================================================================
-// Arrow and Polyline Handling
+// Text, Arrow and Polyline Handling
 // ============================================================================
+
+TextBoxAnnotation* ScreenCanvas::getSelectedTextAnnotation()
+{
+    if (!m_annotationLayer) return nullptr;
+    int index = m_annotationLayer->selectedIndex();
+    if (index >= 0) {
+        return dynamic_cast<TextBoxAnnotation*>(m_annotationLayer->itemAt(index));
+    }
+    return nullptr;
+}
+
+bool ScreenCanvas::handleTextGizmoPress(const QPoint& pos)
+{
+    auto* textItem = getSelectedTextAnnotation();
+    if (!textItem) {
+        return false;
+    }
+
+    GizmoHandle handle = TransformationGizmo::hitTest(textItem, pos);
+    if (handle == GizmoHandle::None) {
+        return false;
+    }
+
+    if (handle == GizmoHandle::Body) {
+        qint64 now = QDateTime::currentMSecsSinceEpoch();
+        if (m_textAnnotationEditor->isDoubleClick(pos, now)) {
+            m_consumeNextToolRelease = true;
+            syncTextReEditColor(m_annotationLayer->selectedIndex());
+            m_annotationLayer->invalidateCache();
+            m_textAnnotationEditor->startReEditing(m_annotationLayer->selectedIndex(), m_toolManager->color());
+            m_textAnnotationEditor->recordClick(QPoint(), 0);
+            return true;
+        }
+        m_textAnnotationEditor->recordClick(pos, now);
+        m_textAnnotationEditor->startDragging(pos);
+    } else {
+        m_textAnnotationEditor->startTransformation(pos, handle);
+    }
+
+    setFocus(Qt::OtherFocusReason);
+    update();
+    return true;
+}
+
+bool ScreenCanvas::handleTextAnnotationPress(const QPoint& pos)
+{
+    int hitIndex = m_annotationLayer->hitTestText(pos);
+    if (hitIndex < 0) {
+        return false;
+    }
+
+    qint64 now = QDateTime::currentMSecsSinceEpoch();
+    if (m_textAnnotationEditor->isDoubleClick(pos, now)) {
+        m_consumeNextToolRelease = true;
+        m_annotationLayer->setSelectedIndex(hitIndex);
+        syncTextReEditColor(hitIndex);
+        m_annotationLayer->invalidateCache();
+        m_textAnnotationEditor->startReEditing(hitIndex, m_toolManager->color());
+        m_textAnnotationEditor->recordClick(QPoint(), 0);
+        update();
+        return true;
+    }
+    m_textAnnotationEditor->recordClick(pos, now);
+
+    m_annotationLayer->setSelectedIndex(hitIndex);
+    if (auto* textItem = getSelectedTextAnnotation()) {
+        GizmoHandle handle = TransformationGizmo::hitTest(textItem, pos);
+        if (handle == GizmoHandle::Body || handle == GizmoHandle::None) {
+            m_textAnnotationEditor->startDragging(pos);
+        } else {
+            m_textAnnotationEditor->startTransformation(pos, handle);
+        }
+    }
+
+    setFocus(Qt::OtherFocusReason);
+    update();
+    return true;
+}
+
+bool ScreenCanvas::handleTextAnnotationMove(const QPoint& pos)
+{
+    if (m_textAnnotationEditor->isTransforming() && m_annotationLayer->selectedIndex() >= 0) {
+        m_textAnnotationEditor->updateTransformation(pos);
+        m_annotationLayer->invalidateCache();
+        update();
+        return true;
+    }
+
+    if (m_textAnnotationEditor->isDragging() && m_annotationLayer->selectedIndex() >= 0) {
+        m_textAnnotationEditor->updateDragging(pos);
+        m_annotationLayer->invalidateCache();
+        update();
+        return true;
+    }
+
+    return false;
+}
+
+bool ScreenCanvas::handleTextAnnotationRelease()
+{
+    if (m_textAnnotationEditor->isTransforming()) {
+        m_textAnnotationEditor->finishTransformation();
+        return true;
+    }
+    if (m_textAnnotationEditor->isDragging()) {
+        m_textAnnotationEditor->finishDragging();
+        return true;
+    }
+    return false;
+}
 
 ArrowAnnotation* ScreenCanvas::getSelectedArrowAnnotation()
 {
@@ -1370,6 +1573,15 @@ bool ScreenCanvas::handlePolylineAnnotationRelease(const QPoint& pos)
 void ScreenCanvas::updateAnnotationCursor(const QPoint& pos)
 {
     auto& cursorManager = CursorManager::instance();
+
+    // Selected text gizmo handles have highest hover priority.
+    if (auto* textItem = getSelectedTextAnnotation()) {
+        GizmoHandle handle = TransformationGizmo::hitTest(textItem, pos);
+        if (handle != GizmoHandle::None) {
+            cursorManager.setHoverTargetForWidget(this, HoverTarget::GizmoHandle, static_cast<int>(handle));
+            return;
+        }
+    }
 
     // Use unified hit testing from CursorManager
     auto result = CursorManager::hitTestAnnotations(

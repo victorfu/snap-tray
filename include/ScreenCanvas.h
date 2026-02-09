@@ -36,6 +36,7 @@ class LaserPointerRenderer;
 class ToolbarCore;
 class ArrowAnnotation;
 class PolylineAnnotation;
+class TextBoxAnnotation;
 class AnnotationContext;
 
 // Canvas background mode
@@ -154,6 +155,8 @@ private:
     // Unified color and width widget helpers
     bool shouldShowColorAndWidthWidget() const;
     bool shouldShowWidthControl() const;
+    void syncColorToAllWidgets(const QColor& color);
+    void syncTextReEditColor(int annotationIndex);
 
     // Annotation settings persistence
     void onArrowStyleChanged(LineEndStyle style);
@@ -216,8 +219,15 @@ private:
     bool m_isPolylineDragging = false;
     int m_activePolylineVertexIndex = -1;
     QPoint m_dragStartPos;
+    bool m_consumeNextToolRelease = false;
 
     // Arrow and Polyline helpers
+    TextBoxAnnotation* getSelectedTextAnnotation();
+    bool handleTextGizmoPress(const QPoint& pos);
+    bool handleTextAnnotationPress(const QPoint& pos);
+    bool handleTextAnnotationMove(const QPoint& pos);
+    bool handleTextAnnotationRelease();
+
     bool handleArrowAnnotationPress(const QPoint& pos);
     bool handleArrowAnnotationMove(const QPoint& pos);
     bool handleArrowAnnotationRelease(const QPoint& pos);
