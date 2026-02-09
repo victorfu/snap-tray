@@ -32,17 +32,12 @@ public:
     void setSkippedVersion(const QString& version);
     void clearSkippedVersion();
 
-    // Pre-release channel
-    bool includePrerelease() const;
-    void setIncludePrerelease(bool include);
-
     // Check if it's time to check for updates
     bool shouldCheckForUpdates() const;
 
     // Default values
     static constexpr bool kDefaultAutoCheck = true;
     static constexpr int kDefaultCheckIntervalHours = 24;
-    static constexpr bool kDefaultIncludePrerelease = false;
 
 private:
     UpdateSettingsManager() = default;
@@ -53,7 +48,6 @@ private:
     static constexpr const char* kSettingsKeyCheckIntervalHours = "update/checkIntervalHours";
     static constexpr const char* kSettingsKeyLastCheckTime = "update/lastCheckTime";
     static constexpr const char* kSettingsKeySkippedVersion = "update/skippedVersion";
-    static constexpr const char* kSettingsKeyIncludePrerelease = "update/includePrerelease";
 };
 
 #endif // UPDATESETTINGSMANAGER_H

@@ -171,7 +171,6 @@ private:
     void setupUpdatesTabForStore(QVBoxLayout* layout, QWidget* tab);
     QCheckBox *m_autoCheckUpdatesCheckbox;
     QComboBox *m_checkFrequencyCombo;
-    QCheckBox *m_includePrereleaseCheckbox;
     QLabel *m_lastCheckedLabel;
     QPushButton *m_checkNowButton;
     QLabel *m_installSourceLabel;

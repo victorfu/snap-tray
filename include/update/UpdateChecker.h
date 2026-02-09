@@ -21,7 +21,6 @@ struct ReleaseInfo {
     QString downloadUrlMac;    // macOS download link (.dmg)
     QString htmlUrl;           // GitHub Release page URL
     QDateTime publishedAt;
-    bool isPrerelease = false;
 
     bool isValid() const { return !version.isEmpty(); }
 };

@@ -93,7 +93,6 @@ SettingsDialog::SettingsDialog(QWidget* parent)
     , m_ocrShowEditorRadio(nullptr)
     , m_autoCheckUpdatesCheckbox(nullptr)
     , m_checkFrequencyCombo(nullptr)
-    , m_includePrereleaseCheckbox(nullptr)
     , m_lastCheckedLabel(nullptr)
     , m_checkNowButton(nullptr)
     , m_installSourceLabel(nullptr)
@@ -993,9 +992,6 @@ void SettingsDialog::onSave()
         if (m_checkFrequencyCombo) {
             updateSettings.setCheckIntervalHours(m_checkFrequencyCombo->currentData().toInt());
         }
-        if (m_includePrereleaseCheckbox) {
-            updateSettings.setIncludePrerelease(m_includePrereleaseCheckbox->isChecked());
-        }
     }
 
     // Close dialog (non-modal mode)
@@ -1609,11 +1605,6 @@ void SettingsDialog::setupUpdatesTabForDirectDownload(QVBoxLayout* layout, QWidg
     frequencyLayout->addWidget(m_checkFrequencyCombo);
     frequencyLayout->addStretch();
     layout->addLayout(frequencyLayout);
-
-    // Pre-release checkbox
-    m_includePrereleaseCheckbox = new QCheckBox(tr("Include pre-release versions"), tab);
-    m_includePrereleaseCheckbox->setChecked(updateSettings.includePrerelease());
-    layout->addWidget(m_includePrereleaseCheckbox);
 
     // Connect auto-check to enable/disable frequency combo
     connect(m_autoCheckUpdatesCheckbox, &QCheckBox::toggled,

@@ -61,7 +61,7 @@ void UpdateChecker::checkForUpdates(bool silent)
     m_silentCheck = silent;
     emit checkStarted();
 
-    // Build GitHub API URL
+    // Use GitHub latest release endpoint (stable channel only).
     QString apiUrl = QString("https://api.github.com/repos/%1/%2/releases/latest")
                          .arg(kGitHubOwner, kGitHubRepo);
 
@@ -201,15 +201,6 @@ void UpdateChecker::parseReleaseResponse(const QByteArray& data)
         return;
     }
 
-    // Check if prerelease and user doesn't want prereleases
-    if (release.isPrerelease && !UpdateSettingsManager::instance().includePrerelease()) {
-        qDebug() << "UpdateChecker: Skipping prerelease" << release.version;
-        if (!m_silentCheck) {
-            emit noUpdateAvailable();
-        }
-        return;
-    }
-
     // Check if this version is skipped
     QString skippedVersion = UpdateSettingsManager::instance().skippedVersion();
     if (!skippedVersion.isEmpty() && release.version == skippedVersion) {
@@ -243,8 +234,6 @@ ReleaseInfo UpdateChecker::parseReleaseJson(const QJsonObject& json)
     release.version = extractVersionFromTag(release.tagName);
     release.releaseNotes = json["body"].toString();
     release.htmlUrl = json["html_url"].toString();
-    release.isPrerelease = json["prerelease"].toBool();
-
     QString publishedAtStr = json["published_at"].toString();
     release.publishedAt = QDateTime::fromString(publishedAtStr, Qt::ISODate);
 

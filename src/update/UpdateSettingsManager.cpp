@@ -63,18 +63,6 @@ void UpdateSettingsManager::clearSkippedVersion()
     settings.remove(kSettingsKeySkippedVersion);
 }
 
-bool UpdateSettingsManager::includePrerelease() const
-{
-    auto settings = SnapTray::getSettings();
-    return settings.value(kSettingsKeyIncludePrerelease, kDefaultIncludePrerelease).toBool();
-}
-
-void UpdateSettingsManager::setIncludePrerelease(bool include)
-{
-    auto settings = SnapTray::getSettings();
-    settings.setValue(kSettingsKeyIncludePrerelease, include);
-}
-
 bool UpdateSettingsManager::shouldCheckForUpdates() const
 {
     if (!isAutoCheckEnabled()) {

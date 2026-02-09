@@ -11,7 +11,6 @@
  * - Auto-check enabled/disabled
  * - Check interval hours
  * - Skipped version
- * - Pre-release preference
  * - Last check time
  * - Should check logic
  */
@@ -44,10 +43,6 @@ private slots:
     void testSetSkippedVersion_Roundtrip();
     void testClearSkippedVersion();
 
-    // Pre-release tests
-    void testIncludePrerelease_DefaultValue();
-    void testSetIncludePrerelease_Roundtrip();
-
     // Should check logic tests
     void testShouldCheckForUpdates_AutoCheckDisabled();
     void testShouldCheckForUpdates_NeverChecked();
@@ -75,7 +70,6 @@ void tst_UpdateSettingsManager::clearAllTestSettings()
     settings.remove("update/checkIntervalHours");
     settings.remove("update/lastCheckTime");
     settings.remove("update/skippedVersion");
-    settings.remove("update/includePrerelease");
     settings.sync();
 }
 
@@ -204,28 +198,6 @@ void tst_UpdateSettingsManager::testClearSkippedVersion()
 
     manager.clearSkippedVersion();
     QVERIFY(manager.skippedVersion().isEmpty());
-}
-
-// ============================================================================
-// Pre-release tests
-// ============================================================================
-
-void tst_UpdateSettingsManager::testIncludePrerelease_DefaultValue()
-{
-    bool include = UpdateSettingsManager::instance().includePrerelease();
-    QCOMPARE(include, UpdateSettingsManager::kDefaultIncludePrerelease);
-    QCOMPARE(include, false);
-}
-
-void tst_UpdateSettingsManager::testSetIncludePrerelease_Roundtrip()
-{
-    UpdateSettingsManager& manager = UpdateSettingsManager::instance();
-
-    manager.setIncludePrerelease(true);
-    QCOMPARE(manager.includePrerelease(), true);
-
-    manager.setIncludePrerelease(false);
-    QCOMPARE(manager.includePrerelease(), false);
 }
 
 // ============================================================================
