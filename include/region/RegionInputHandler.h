@@ -8,6 +8,7 @@
 #include <QCursor>
 #include <QTimer>
 #include "TransformationGizmo.h"
+#include "region/RegionInputState.h"
 #include "region/SelectionStateManager.h"
 #include "region/SelectionDirtyRegionPlanner.h"
 #include "tools/ToolId.h"
@@ -56,6 +57,7 @@ public:
     void setMultiRegionManager(MultiRegionManager* manager);
     void setUpdateThrottler(UpdateThrottler* throttler);
     void setParentWidget(QWidget* widget);
+    void setSharedState(RegionInputState* state);
 
     // Reset dirty tracking state (call when starting a new capture)
     void resetDirtyTracking();
@@ -66,23 +68,10 @@ public:
     void handleMouseRelease(QMouseEvent* event);
 
     // State accessors
-    QPoint currentPoint() const { return m_currentPoint; }
+    QPoint currentPoint() const { return m_state ? m_state->currentPoint : QPoint(); }
     QPoint startPoint() const { return m_startPoint; }
-    bool isDrawing() const { return m_isDrawing; }
+    bool isDrawing() const { return m_state && m_state->isDrawing; }
     QRect lastMagnifierRect() const { return m_lastMagnifierRect; }
-
-    // Configuration setters (call before event handling)
-    void setCurrentTool(ToolId tool);
-    void setShowSubToolbar(bool show);
-    void setHighlightedWindowRect(const QRect& rect);
-    void setDetectedWindow(bool hasWindow);
-    void setAnnotationColor(const QColor& color);
-    void setAnnotationWidth(int width);
-    void setArrowStyle(int style);
-    void setLineStyle(int style);
-    void setShapeType(int type);
-    void setShapeFillMode(int mode);
-    void setMultiRegionMode(bool enabled) { m_multiRegionMode = enabled; }
 
 signals:
     void toolCursorRequested();
@@ -158,6 +147,8 @@ private:
     ArrowAnnotation* getSelectedArrowAnnotation() const;
     bool shouldShowColorAndWidthWidget() const;
     bool isAnnotationTool(ToolId tool) const;
+    RegionInputState& state();
+    const RegionInputState& state() const;
 
     // Dependencies (non-owning pointers)
     SelectionStateManager* m_selectionManager = nullptr;
@@ -172,9 +163,9 @@ private:
     MultiRegionManager* m_multiRegionManager = nullptr;
     UpdateThrottler* m_updateThrottler = nullptr;
     QWidget* m_parentWidget = nullptr;
+    RegionInputState* m_state = nullptr;
 
     // State
-    QPoint m_currentPoint;
     QPoint m_startPoint;
     QPoint m_lastWindowDetectionPos;
     QPoint m_lastCrosshairPoint;  // Previous pointer position (retained for repaint tracking state)
@@ -182,20 +173,6 @@ private:
     QRect m_lastMagnifierRect;
     QRect m_lastToolbarRect;
     QRect m_lastRegionControlRect;
-    QRect m_highlightedWindowRect;
-    bool m_hasDetectedWindow = false;
-    ToolId m_currentTool;
-    bool m_isDrawing = false;
-    bool m_showSubToolbar = true;
-
-    // Annotation settings (synced from RegionSelector)
-    QColor m_annotationColor;
-    int m_annotationWidth = 3;
-    int m_arrowStyle = 0;
-    int m_lineStyle = 0;
-    int m_shapeType = 0;
-    int m_shapeFillMode = 0;
-    bool m_multiRegionMode = false;
 
     // Emoji sticker transformation state
     bool m_isEmojiDragging = false;

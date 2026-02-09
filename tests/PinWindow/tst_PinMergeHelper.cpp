@@ -213,6 +213,24 @@ private slots:
         QVERIFY(image.pixelColor(10, 50) == QColor(Qt::red));
         QVERIFY(image.pixelColor(90, 50) == QColor(Qt::green));
     }
+
+    void testExportPixmapForMergeIsStableAcrossRepeatedCallsWithTransform()
+    {
+        PinWindow window(createTestPixmap(120, 80, Qt::yellow), QPoint(0, 0), nullptr, false);
+        window.rotateRight();
+        window.flipHorizontal();
+
+        const QPixmap firstExport = window.exportPixmapForMerge();
+        const QPixmap secondExport = window.exportPixmapForMerge();
+
+        QVERIFY(!firstExport.isNull());
+        QVERIFY(!secondExport.isNull());
+        QCOMPARE(logicalSize(firstExport), QSize(80, 120));
+        QCOMPARE(logicalSize(secondExport), QSize(80, 120));
+        QCOMPARE(firstExport.devicePixelRatio(), secondExport.devicePixelRatio());
+        QCOMPARE(firstExport.toImage().convertToFormat(QImage::Format_ARGB32),
+                 secondExport.toImage().convertToFormat(QImage::Format_ARGB32));
+    }
 };
 
 QTEST_MAIN(TestPinMergeHelper)

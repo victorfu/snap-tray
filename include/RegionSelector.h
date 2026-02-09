@@ -32,6 +32,7 @@
 #include "region/TextAnnotationEditor.h"
 #include "region/RegionControlWidget.h"
 #include "region/MultiRegionManager.h"
+#include "region/RegionInputState.h"
 #include "ui/sections/MosaicBlurTypeSection.h"
 
 class QScreen;
@@ -212,7 +213,7 @@ private:
     QPixmap m_backgroundPixmap;
     SharedPixmap m_sharedSourcePixmap;  // Shared for mosaic tool memory efficiency
 
-    QPoint m_currentPoint;
+    RegionInputState m_inputState;
     QPointer<QScreen> m_currentScreen;
 
     // Selection state manager
@@ -231,25 +232,12 @@ private:
     // Annotation layer and tool manager
     AnnotationLayer *m_annotationLayer;
     ToolManager *m_toolManager;
-    ToolId m_currentTool;
-    bool m_showSubToolbar;
-    QColor m_annotationColor;
-    int m_annotationWidth;
-    LineEndStyle m_arrowStyle;
-    LineStyle m_lineStyle = LineStyle::Solid;
     StepBadgeSize m_stepBadgeSize = StepBadgeSize::Medium;
     MosaicBlurTypeSection::BlurType m_mosaicBlurType = MosaicBlurTypeSection::BlurType::Pixelate;
 
     // Mosaic cursor cache (avoid recreating on every mouse move)
     QCursor m_mosaicCursorCache;
     int m_mosaicCursorCacheWidth = -1;
-
-    // Shape tool state
-    ShapeType m_shapeType = ShapeType::Rectangle;
-    ShapeFillMode m_shapeFillMode = ShapeFillMode::Outline;
-
-    // In-progress annotation state (managed by ToolManager, m_isDrawing tracks overall state)
-    bool m_isDrawing;
 
     // Selection state flags
     bool m_isClosing;
@@ -258,7 +246,6 @@ private:
     // Window detection state
     WindowDetector *m_windowDetector;
     std::optional<DetectedElement> m_detectedWindow;
-    QRect m_highlightedWindowRect;
 
     // OCR state
     OCRManager *m_ocrManager;
@@ -313,7 +300,6 @@ private:
 
     // Multi-region capture
     MultiRegionManager* m_multiRegionManager = nullptr;
-    bool m_multiRegionMode = false;
 
     // Quick Pin mode (select region and pin immediately, skip toolbar)
     bool m_quickPinMode = false;

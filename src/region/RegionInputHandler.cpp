@@ -25,10 +25,10 @@
 #include <QDebug>
 #include <QTextEdit>
 #include <QCursor>
+#include <QtGlobal>
 
 RegionInputHandler::RegionInputHandler(QObject* parent)
     : QObject(parent)
-    , m_currentTool(ToolId::Selection)
 {
     m_dragFrameTimer.setTimerType(Qt::PreciseTimer);
     m_dragFrameTimer.setInterval(SelectionDirtyRegionPlanner::kDragFrameIntervalMs);
@@ -95,54 +95,21 @@ void RegionInputHandler::setParentWidget(QWidget* widget)
     m_parentWidget = widget;
 }
 
-void RegionInputHandler::setCurrentTool(ToolId tool)
+void RegionInputHandler::setSharedState(RegionInputState* state)
 {
-    m_currentTool = tool;
+    m_state = state;
 }
 
-void RegionInputHandler::setShowSubToolbar(bool show)
+RegionInputState& RegionInputHandler::state()
 {
-    m_showSubToolbar = show;
+    Q_ASSERT(m_state != nullptr);
+    return *m_state;
 }
 
-void RegionInputHandler::setHighlightedWindowRect(const QRect& rect)
+const RegionInputState& RegionInputHandler::state() const
 {
-    m_highlightedWindowRect = rect;
-}
-
-void RegionInputHandler::setDetectedWindow(bool hasWindow)
-{
-    m_hasDetectedWindow = hasWindow;
-}
-
-void RegionInputHandler::setAnnotationColor(const QColor& color)
-{
-    m_annotationColor = color;
-}
-
-void RegionInputHandler::setAnnotationWidth(int width)
-{
-    m_annotationWidth = width;
-}
-
-void RegionInputHandler::setArrowStyle(int style)
-{
-    m_arrowStyle = style;
-}
-
-void RegionInputHandler::setLineStyle(int style)
-{
-    m_lineStyle = style;
-}
-
-void RegionInputHandler::setShapeType(int type)
-{
-    m_shapeType = type;
-}
-
-void RegionInputHandler::setShapeFillMode(int mode)
-{
-    m_shapeFillMode = mode;
+    Q_ASSERT(m_state != nullptr);
+    return *m_state;
 }
 
 void RegionInputHandler::resetDirtyTracking()
@@ -161,6 +128,11 @@ void RegionInputHandler::resetDirtyTracking()
 
 void RegionInputHandler::handleMousePress(QMouseEvent* event)
 {
+    if (!m_state) {
+        qWarning() << "RegionInputHandler: Shared input state not set";
+        return;
+    }
+
     m_currentModifiers = event->modifiers();
 
     if (event->button() == Qt::LeftButton) {
@@ -172,10 +144,10 @@ void RegionInputHandler::handleMousePress(QMouseEvent* event)
 
             // Finalize polyline when clicking on UI elements
             auto finalizePolylineForUiClick = [&](const QPoint& pos) {
-                if (m_currentTool == ToolId::Arrow && m_toolManager->isDrawing()) {
+                if (state().currentTool == ToolId::Arrow && m_toolManager->isDrawing()) {
                     m_toolManager->handleDoubleClick(pos);
-                    m_isDrawing = m_toolManager->isDrawing();
-                    emit drawingStateChanged(m_isDrawing);
+                    state().isDrawing = m_toolManager->isDrawing();
+                    emit drawingStateChanged(state().isDrawing);
                 }
                 };
 
@@ -229,9 +201,9 @@ void RegionInputHandler::handleMousePress(QMouseEvent* event)
 
             // Handle Text tool
             QRect sel = m_selectionManager->selectionRect();
-            if (m_currentTool == ToolId::Text) {
+            if (state().currentTool == ToolId::Text) {
                 m_textAnnotationEditor->startEditing(event->pos(),
-                    m_parentWidget ? m_parentWidget->rect() : QRect(), m_annotationColor);
+                    m_parentWidget ? m_parentWidget->rect() : QRect(), state().annotationColor);
                 return;
             }
 
@@ -258,8 +230,13 @@ void RegionInputHandler::handleMousePress(QMouseEvent* event)
 
 void RegionInputHandler::handleMouseMove(QMouseEvent* event)
 {
+    if (!m_state) {
+        qWarning() << "RegionInputHandler: Shared input state not set";
+        return;
+    }
+
     m_currentModifiers = event->modifiers();
-    m_currentPoint = event->pos();
+    state().currentPoint = event->pos();
 
     // Race condition recovery: mouse button was already pressed when window appeared
     // Qt doesn't fire mousePressEvent for already-pressed buttons, so we detect
@@ -309,11 +286,11 @@ void RegionInputHandler::handleMouseMove(QMouseEvent* event)
     else if (m_selectionManager->isMoving()) {
         m_selectionManager->updateMove(event->pos());
     }
-    else if (m_isDrawing) {
+    else if (state().isDrawing) {
         handleAnnotationMove(event->pos());
     }
     else if (m_selectionManager->isComplete() ||
-        (m_multiRegionMode && m_multiRegionManager && m_multiRegionManager->count() > 0)) {
+        (state().multiRegionMode && m_multiRegionManager && m_multiRegionManager->count() > 0)) {
         handleHoverMove(event->pos(), event->buttons());
     }
 
@@ -323,6 +300,11 @@ void RegionInputHandler::handleMouseMove(QMouseEvent* event)
 
 void RegionInputHandler::handleMouseRelease(QMouseEvent* event)
 {
+    if (!m_state) {
+        qWarning() << "RegionInputHandler: Shared input state not set";
+        return;
+    }
+
     m_currentModifiers = event->modifiers();
 
     if (event->button() == Qt::LeftButton) {
@@ -369,7 +351,7 @@ void RegionInputHandler::handleMouseRelease(QMouseEvent* event)
             m_selectionManager->finishMove();
             emit updateRequested();
         }
-        else if (m_isDrawing) {
+        else if (state().isDrawing) {
             handleAnnotationRelease();
             emit updateRequested();
         }
@@ -594,10 +576,10 @@ bool RegionInputHandler::handleEmojiStickerAnnotationPress(const QPoint& pos)
 bool RegionInputHandler::handleAnnotationToolPress(const QPoint& pos)
 {
     QRect sel = m_selectionManager->selectionRect();
-    if (isAnnotationTool(m_currentTool) &&
-        m_currentTool != ToolId::Selection &&
+    if (isAnnotationTool(state().currentTool) &&
+        state().currentTool != ToolId::Selection &&
         sel.contains(pos)) {
-        qDebug() << "Starting annotation with tool:" << static_cast<int>(m_currentTool) << "at pos:" << pos;
+        qDebug() << "Starting annotation with tool:" << static_cast<int>(state().currentTool) << "at pos:" << pos;
         startAnnotation(pos);
         return true;
     }
@@ -606,11 +588,11 @@ bool RegionInputHandler::handleAnnotationToolPress(const QPoint& pos)
 
 bool RegionInputHandler::handleSelectionToolPress(const QPoint& pos)
 {
-    if (m_currentTool != ToolId::Selection) {
+    if (state().currentTool != ToolId::Selection) {
         return false;
     }
 
-    if (m_multiRegionMode && m_multiRegionManager) {
+    if (state().multiRegionMode && m_multiRegionManager) {
         int hitIndex = m_multiRegionManager->hitTest(pos);
         if (hitIndex >= 0) {
             m_multiRegionManager->setActiveIndex(hitIndex);
@@ -684,13 +666,13 @@ void RegionInputHandler::handleNewSelectionPress(const QPoint& pos)
 {
     m_selectionManager->startSelection(pos);
     m_startPoint = pos;
-    m_currentPoint = pos;
+    state().currentPoint = pos;
     m_lastSelectionRect = QRect();
 }
 
 void RegionInputHandler::handleRightButtonPress(const QPoint& pos)
 {
-    if (m_multiRegionMode && m_multiRegionManager) {
+    if (state().multiRegionMode && m_multiRegionManager) {
         int hitIndex = m_multiRegionManager->hitTest(pos);
         if (hitIndex >= 0) {
             m_multiRegionManager->removeRegion(hitIndex);
@@ -715,8 +697,8 @@ void RegionInputHandler::handleRightButtonPress(const QPoint& pos)
     }
 
     if (m_selectionManager->isComplete()) {
-        if (m_isDrawing) {
-            m_isDrawing = false;
+        if (state().isDrawing) {
+            state().isDrawing = false;
             emit drawingStateChanged(false);
             m_toolManager->cancelDrawing();
             emit updateRequested();
@@ -815,8 +797,8 @@ void RegionInputHandler::handleWindowDetectionMove(const QPoint& pos)
 
 void RegionInputHandler::handleSelectionMove(const QPoint& pos)
 {
-    m_highlightedWindowRect = QRect();
-    m_hasDetectedWindow = false;
+    state().highlightedWindowRect = QRect();
+    state().hasDetectedWindow = false;
     emit detectionCleared();
     m_selectionManager->updateSelection(pos);
 }
@@ -825,7 +807,7 @@ void RegionInputHandler::handleAnnotationMove(const QPoint& pos)
 {
     updateAnnotation(pos);
 
-    if (m_currentTool == ToolId::Mosaic) {
+    if (state().currentTool == ToolId::Mosaic) {
         emit toolCursorRequested();
     }
 }
@@ -835,7 +817,7 @@ void RegionInputHandler::handleHoverMove(const QPoint& pos, Qt::MouseButtons but
     auto& cm = CursorManager::instance();
 
     // Multi-region mode cursor handling - MUST be checked FIRST and return early
-    if (m_multiRegionMode && m_multiRegionManager && m_parentWidget) {
+    if (state().multiRegionMode && m_multiRegionManager && m_parentWidget) {
         // Update toolbar hover first (toolbar always takes priority)
         m_toolbar->updateHoveredButton(pos);
         int hoveredButton = m_toolbar->hoveredButton();
@@ -895,7 +877,7 @@ void RegionInputHandler::handleHoverMove(const QPoint& pos, Qt::MouseButtons but
     }
 
     // Check emoji sticker gizmo handles (only for selected emoji)
-    if (m_currentTool != ToolId::EmojiSticker) {
+    if (state().currentTool != ToolId::EmojiSticker) {
         if (auto* emojiItem = getSelectedEmojiStickerAnnotation()) {
             GizmoHandle handle = TransformationGizmo::hitTest(emojiItem, pos);
             if (handle != GizmoHandle::None) {
@@ -990,7 +972,7 @@ void RegionInputHandler::handleHoverMove(const QPoint& pos, Qt::MouseButtons but
     }
 
     // Check resize handles for selection tool
-    if (m_currentTool == ToolId::Selection) {
+    if (state().currentTool == ToolId::Selection) {
         auto handle = m_selectionManager->hitTestHandle(pos);
         if (handle != SelectionStateManager::ResizeHandle::None) {
             cm.setHoverTargetForWidget(m_parentWidget,HoverTarget::ResizeHandle, static_cast<int>(handle));
@@ -1009,7 +991,7 @@ void RegionInputHandler::handleHoverMove(const QPoint& pos, Qt::MouseButtons but
     emit toolCursorRequested();
 
     // Handle eraser tool mouse move for hover highlighting
-    if (m_currentTool == ToolId::Eraser && m_toolManager) {
+    if (state().currentTool == ToolId::Eraser && m_toolManager) {
         m_toolManager->handleMouseMove(pos, m_currentModifiers);
     }
 }
@@ -1026,10 +1008,10 @@ void RegionInputHandler::handleThrottledUpdate()
     // at the initial cursor position, but m_lastMagnifierRect is still null (unset).
     // Do a full widget repaint to clear the initial content, then initialize tracking state.
     if (m_lastMagnifierRect.isNull()) {
-        m_lastCrosshairPoint = m_currentPoint;
+        m_lastCrosshairPoint = state().currentPoint;
         m_lastSelectionRect = m_selectionManager->selectionRect().normalized();
         m_lastMagnifierRect = m_dirtyRegionPlanner.magnifierRectForCursor(
-            m_currentPoint, m_parentWidget->size());
+            state().currentPoint, m_parentWidget->size());
         const bool hasRenderableSelection =
             m_selectionManager->hasSelection() && m_lastSelectionRect.isValid();
         if (hasRenderableSelection && m_toolbar) {
@@ -1058,7 +1040,7 @@ void RegionInputHandler::handleThrottledUpdate()
     if (m_selectionManager->isSelecting() || m_selectionManager->isResizing() || m_selectionManager->isMoving()) {
         const QRect currentSelectionRect = m_selectionManager->selectionRect().normalized();
         const QRect currentMagnifierRect = m_dirtyRegionPlanner.magnifierRectForCursor(
-            m_currentPoint, m_parentWidget->size());
+            state().currentPoint, m_parentWidget->size());
         QRect currentToolbarRect;
         QRect currentRegionControlRect;
         const bool hasRenderableSelection = m_selectionManager->hasSelection() && currentSelectionRect.isValid();
@@ -1096,11 +1078,11 @@ void RegionInputHandler::handleThrottledUpdate()
         m_lastMagnifierRect = currentMagnifierRect;
         m_lastToolbarRect = currentToolbarRect;
         m_lastRegionControlRect = currentRegionControlRect;
-        m_lastCrosshairPoint = m_currentPoint;
+        m_lastCrosshairPoint = state().currentPoint;
 
         m_parentWidget->update(dirtyRegion);
     }
-    else if (m_isDrawing) {
+    else if (state().isDrawing) {
         if (m_updateThrottler->shouldUpdate(UpdateThrottler::ThrottleType::Annotation)) {
             m_updateThrottler->reset(UpdateThrottler::ThrottleType::Annotation);
             emit updateRequested();
@@ -1115,7 +1097,7 @@ void RegionInputHandler::handleThrottledUpdate()
     else {
         // No throttle — update on every mouse move for instant magnifier feedback
         const QRect currentMagnifierRect = m_dirtyRegionPlanner.magnifierRectForCursor(
-            m_currentPoint, m_parentWidget->size());
+            state().currentPoint, m_parentWidget->size());
 
         SelectionDirtyRegionPlanner::HoverParams params;
         params.currentMagnifierRect = currentMagnifierRect;
@@ -1124,7 +1106,7 @@ void RegionInputHandler::handleThrottledUpdate()
         const QRegion dirtyRegion = m_dirtyRegionPlanner.planHoverRegion(params);
 
         m_lastMagnifierRect = currentMagnifierRect;
-        m_lastCrosshairPoint = m_currentPoint;
+        m_lastCrosshairPoint = state().currentPoint;
 
         m_parentWidget->update(dirtyRegion);
     }
@@ -1154,7 +1136,7 @@ void RegionInputHandler::updateDragFramePump()
 
 void RegionInputHandler::onDragFrameTick()
 {
-    if (!m_parentWidget || !m_selectionManager) {
+    if (!m_parentWidget || !m_selectionManager || !m_state) {
         m_dragFrameTimer.stop();
         return;
     }
@@ -1167,11 +1149,11 @@ void RegionInputHandler::onDragFrameTick()
     }
 
     const QPoint localPos = currentCursorLocalPos();
-    if (localPos == m_currentPoint) {
+    if (localPos == state().currentPoint) {
         return;
     }
 
-    m_currentPoint = localPos;
+    state().currentPoint = localPos;
     emit currentPointUpdated(localPos);
     if (m_selectionManager->isSelecting()) {
         handleSelectionMove(localPos);
@@ -1252,19 +1234,19 @@ bool RegionInputHandler::handleRegionControlWidgetRelease(const QPoint& pos)
 void RegionInputHandler::handleSelectionRelease(const QPoint& pos)
 {
     QRect sel = m_selectionManager->selectionRect();
-    if (m_multiRegionMode) {
+    if (state().multiRegionMode) {
         if (sel.width() > 5 && sel.height() > 5) {
             m_selectionManager->finishSelection();
             emit selectionFinished();
             qDebug() << "RegionInputHandler: Multi-region selection complete via drag";
         }
-        else if (m_hasDetectedWindow && m_highlightedWindowRect.isValid()) {
-            m_selectionManager->setFromDetectedWindow(m_highlightedWindowRect);
+        else if (state().hasDetectedWindow && state().highlightedWindowRect.isValid()) {
+            m_selectionManager->setFromDetectedWindow(state().highlightedWindowRect);
             emit selectionFinished();
             qDebug() << "RegionInputHandler: Multi-region selection via detected window";
 
-            m_highlightedWindowRect = QRect();
-            m_hasDetectedWindow = false;
+            state().highlightedWindowRect = QRect();
+            state().hasDetectedWindow = false;
             emit detectionCleared();
         }
         return;
@@ -1275,13 +1257,13 @@ void RegionInputHandler::handleSelectionRelease(const QPoint& pos)
         emit selectionFinished();
         qDebug() << "RegionInputHandler: Selection complete via drag";
     }
-    else if (m_hasDetectedWindow && m_highlightedWindowRect.isValid()) {
-        m_selectionManager->setFromDetectedWindow(m_highlightedWindowRect);
+    else if (state().hasDetectedWindow && state().highlightedWindowRect.isValid()) {
+        m_selectionManager->setFromDetectedWindow(state().highlightedWindowRect);
         emit selectionFinished();
         qDebug() << "RegionInputHandler: Selection complete via detected window";
 
-        m_highlightedWindowRect = QRect();
-        m_hasDetectedWindow = false;
+        state().highlightedWindowRect = QRect();
+        state().hasDetectedWindow = false;
         emit detectionCleared();
     }
     else {
@@ -1302,47 +1284,47 @@ void RegionInputHandler::handleAnnotationRelease()
 
 void RegionInputHandler::startAnnotation(const QPoint& pos)
 {
-    if (ToolTraits::isToolManagerHandledTool(m_currentTool)) {
-        m_toolManager->setColor(m_annotationColor);
+    if (ToolTraits::isToolManagerHandledTool(state().currentTool)) {
+        m_toolManager->setColor(state().annotationColor);
         // Don't overwrite width for StepBadge - it uses a separate radius setting
-        if (m_currentTool != ToolId::StepBadge) {
-            m_toolManager->setWidth(m_annotationWidth);
+        if (state().currentTool != ToolId::StepBadge) {
+            m_toolManager->setWidth(state().annotationWidth);
         }
-        m_toolManager->setArrowStyle(static_cast<LineEndStyle>(m_arrowStyle));
-        m_toolManager->setLineStyle(static_cast<LineStyle>(m_lineStyle));
-        m_toolManager->setShapeType(m_shapeType);
-        m_toolManager->setShapeFillMode(m_shapeFillMode);
+        m_toolManager->setArrowStyle(static_cast<LineEndStyle>(state().arrowStyle));
+        m_toolManager->setLineStyle(static_cast<LineStyle>(state().lineStyle));
+        m_toolManager->setShapeType(static_cast<int>(state().shapeType));
+        m_toolManager->setShapeFillMode(static_cast<int>(state().shapeFillMode));
 
-        m_toolManager->setCurrentTool(m_currentTool);
+        m_toolManager->setCurrentTool(state().currentTool);
         m_toolManager->handleMousePress(pos, m_currentModifiers);
-        m_isDrawing = m_toolManager->isDrawing();
+        state().isDrawing = m_toolManager->isDrawing();
 
-        if (!m_isDrawing && (m_currentTool == ToolId::StepBadge ||
-            m_currentTool == ToolId::EmojiSticker)) {
-            m_isDrawing = true;
+        if (!state().isDrawing && (state().currentTool == ToolId::StepBadge ||
+            state().currentTool == ToolId::EmojiSticker)) {
+            state().isDrawing = true;
         }
-        emit drawingStateChanged(m_isDrawing);
+        emit drawingStateChanged(state().isDrawing);
         return;
     }
 }
 
 void RegionInputHandler::updateAnnotation(const QPoint& pos)
 {
-    if (ToolTraits::isToolManagerHandledTool(m_currentTool)) {
+    if (ToolTraits::isToolManagerHandledTool(state().currentTool)) {
         m_toolManager->handleMouseMove(pos, m_currentModifiers);
     }
 }
 
 void RegionInputHandler::finishAnnotation()
 {
-    if (ToolTraits::isToolManagerHandledTool(m_currentTool)) {
-        m_toolManager->handleMouseRelease(m_currentPoint, m_currentModifiers);
-        m_isDrawing = m_toolManager->isDrawing();
+    if (ToolTraits::isToolManagerHandledTool(state().currentTool)) {
+        m_toolManager->handleMouseRelease(state().currentPoint, m_currentModifiers);
+        state().isDrawing = m_toolManager->isDrawing();
     }
     else {
-        m_isDrawing = false;
+        state().isDrawing = false;
     }
-    emit drawingStateChanged(m_isDrawing);
+    emit drawingStateChanged(state().isDrawing);
 }
 
 // ============================================================================

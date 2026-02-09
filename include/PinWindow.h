@@ -172,7 +172,7 @@ private:
     QPixmap getExportPixmap() const;
 
     // Performance optimization: ensure transform cache is valid
-    void ensureTransformCacheValid();
+    void ensureTransformCacheValid() const;
     void onResizeFinished();
 
     // Rounded corner handling

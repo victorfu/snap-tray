@@ -487,7 +487,7 @@ void PinWindow::setWatermarkSettings(const WatermarkRenderer::Settings& settings
     update();
 }
 
-void PinWindow::ensureTransformCacheValid()
+void PinWindow::ensureTransformCacheValid() const
 {
     // Check if cache needs to be rebuilt
     if (m_cachedRotation == m_rotationAngle &&
@@ -599,25 +599,12 @@ void PinWindow::updateSize()
 
 QPixmap PinWindow::getTransformedPixmap() const
 {
-    if (m_rotationAngle == 0 && !m_flipHorizontal && !m_flipVertical) {
+    ensureTransformCacheValid();
+
+    if (m_transformedCache.isNull()) {
         return m_originalPixmap;
     }
-
-    QTransform transform;
-
-    if (m_rotationAngle != 0) {
-        transform.rotate(m_rotationAngle);
-    }
-
-    if (m_flipHorizontal || m_flipVertical) {
-        qreal scaleX = m_flipHorizontal ? -1.0 : 1.0;
-        qreal scaleY = m_flipVertical ? -1.0 : 1.0;
-        transform.scale(scaleX, scaleY);
-    }
-
-    QPixmap transformed = m_originalPixmap.transformed(transform, Qt::SmoothTransformation);
-    transformed.setDevicePixelRatio(m_originalPixmap.devicePixelRatio());
-    return transformed;
+    return m_transformedCache;
 }
 
 QPixmap PinWindow::getExportPixmapCore(bool includeDisplayEffects) const

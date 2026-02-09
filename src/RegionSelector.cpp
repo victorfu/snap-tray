@@ -75,11 +75,6 @@ RegionSelector::RegionSelector(QWidget* parent)
     , m_devicePixelRatio(1.0)
     , m_toolbar(nullptr)
     , m_annotationLayer(nullptr)
-    , m_currentTool(ToolId::Selection)
-    , m_showSubToolbar(true)
-    , m_annotationColor(Qt::red)  // Will be overwritten by loadAnnotationColor()
-    , m_annotationWidth(3)        // Will be overwritten by loadAnnotationWidth()
-    , m_isDrawing(false)
     , m_isClosing(false)
     , m_isDialogOpen(false)
     , m_windowDetector(nullptr)
@@ -102,7 +97,7 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_selectionManager = new SelectionStateManager(this);
     connect(m_selectionManager, &SelectionStateManager::selectionChanged,
         this, [this](const QRect& rect) {
-            if (m_multiRegionMode && m_multiRegionManager) {
+            if (m_inputState.multiRegionMode && m_multiRegionManager) {
                 int activeIndex = m_multiRegionManager->activeIndex();
                 if (activeIndex >= 0) {
                     m_multiRegionManager->updateRegion(activeIndex, rect);
@@ -114,7 +109,7 @@ RegionSelector::RegionSelector(QWidget* parent)
         this, [this](SelectionStateManager::State newState) {
             // Skip automatic cursor updates in multi-region mode
             // (multi-region mode handles its own cursor logic)
-            if (m_multiRegionMode) {
+            if (m_inputState.multiRegionMode) {
                 return;
             }
             // Update cursor based on state (single-region mode only)
@@ -136,7 +131,7 @@ RegionSelector::RegionSelector(QWidget* parent)
     // Note: regionAdded/Removed/Updated connections moved after m_painter initialization
     connect(m_multiRegionManager, &MultiRegionManager::activeIndexChanged,
         this, [this](int index) {
-            if (!m_multiRegionMode) return;
+            if (!m_inputState.multiRegionMode) return;
             if (index >= 0) {
                 m_selectionManager->setSelectionRect(m_multiRegionManager->regionRect(index));
             }
@@ -151,10 +146,10 @@ RegionSelector::RegionSelector(QWidget* parent)
 
     // Load saved annotation settings (or defaults)
     auto& settings = AnnotationSettingsManager::instance();
-    m_annotationColor = settings.loadColor();
-    m_annotationWidth = settings.loadWidth();
-    m_arrowStyle = RegionSettingsHelper::loadArrowStyle();
-    m_lineStyle = RegionSettingsHelper::loadLineStyle();
+    m_inputState.annotationColor = settings.loadColor();
+    m_inputState.annotationWidth = settings.loadWidth();
+    m_inputState.arrowStyle = RegionSettingsHelper::loadArrowStyle();
+    m_inputState.lineStyle = RegionSettingsHelper::loadLineStyle();
     m_stepBadgeSize = settings.loadStepBadgeSize();
     m_mosaicBlurType = settings.loadMosaicBlurType();
 
@@ -162,10 +157,10 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_toolManager = new ToolManager(this);
     m_toolManager->registerDefaultHandlers();
     m_toolManager->setAnnotationLayer(m_annotationLayer);
-    m_toolManager->setColor(m_annotationColor);
-    m_toolManager->setWidth(m_annotationWidth);
-    m_toolManager->setArrowStyle(m_arrowStyle);
-    m_toolManager->setLineStyle(m_lineStyle);
+    m_toolManager->setColor(m_inputState.annotationColor);
+    m_toolManager->setWidth(m_inputState.annotationWidth);
+    m_toolManager->setArrowStyle(m_inputState.arrowStyle);
+    m_toolManager->setLineStyle(m_inputState.lineStyle);
     m_toolManager->setMosaicBlurType(static_cast<MosaicStroke::BlurType>(m_mosaicBlurType));
     connect(m_toolManager, &ToolManager::needsRepaint, this, QOverload<>::of(&QWidget::update));
 
@@ -192,13 +187,12 @@ RegionSelector::RegionSelector(QWidget* parent)
 
     // Initialize unified color and width widget
     m_colorAndWidthWidget = new ToolOptionsPanel(this);
-    m_colorAndWidthWidget->setCurrentColor(m_annotationColor);
-    m_colorAndWidthWidget->setCurrentWidth(m_annotationWidth);
+    m_colorAndWidthWidget->setCurrentColor(m_inputState.annotationColor);
+    m_colorAndWidthWidget->setCurrentWidth(m_inputState.annotationWidth);
     m_colorAndWidthWidget->setWidthRange(1, 20);
-
     // Set persisted annotation style controls
-    m_colorAndWidthWidget->setArrowStyle(m_arrowStyle);
-    m_colorAndWidthWidget->setLineStyle(m_lineStyle);
+    m_colorAndWidthWidget->setArrowStyle(m_inputState.arrowStyle);
+    m_colorAndWidthWidget->setLineStyle(m_inputState.lineStyle);
 
     // Centralized annotation/text setup and common signal wiring
     m_annotationContext = std::make_unique<AnnotationContext>(*this);
@@ -211,12 +205,12 @@ RegionSelector::RegionSelector(QWidget* parent)
     // Connect shape section signals
     connect(m_colorAndWidthWidget, &ToolOptionsPanel::shapeTypeChanged,
         this, [this](ShapeType type) {
-            m_shapeType = type;
+            m_inputState.shapeType = type;
             m_toolManager->setShapeType(static_cast<int>(type));
         });
     connect(m_colorAndWidthWidget, &ToolOptionsPanel::shapeFillModeChanged,
         this, [this](ShapeFillMode mode) {
-            m_shapeFillMode = mode;
+            m_inputState.shapeFillMode = mode;
             m_toolManager->setShapeFillMode(static_cast<int>(mode));
         });
     connect(m_colorAndWidthWidget, &ToolOptionsPanel::stepBadgeSizeChanged,
@@ -379,14 +373,11 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_inputHandler->setMultiRegionManager(m_multiRegionManager);
     m_inputHandler->setUpdateThrottler(&m_updateThrottler);
     m_inputHandler->setParentWidget(this);
+    m_inputHandler->setSharedState(&m_inputState);
 
     // Connect input handler signals
     connect(m_inputHandler, &RegionInputHandler::toolCursorRequested,
         this, &RegionSelector::setToolCursor);
-    connect(m_inputHandler, &RegionInputHandler::currentPointUpdated,
-        this, [this](const QPoint& point) {
-            m_currentPoint = point;
-        });
     connect(m_inputHandler, qOverload<>(&RegionInputHandler::updateRequested),
         this, qOverload<>(&QWidget::update));
     connect(m_inputHandler, qOverload<const QRect&>(&RegionInputHandler::updateRequested),
@@ -400,10 +391,10 @@ RegionSelector::RegionSelector(QWidget* parent)
     connect(m_inputHandler, &RegionInputHandler::selectionFinished,
         this, [this]() {
             m_selectionManager->finishSelection();
-            if (!m_multiRegionMode) {
+            if (!m_inputState.multiRegionMode) {
                 CursorManager::instance().popCursorForWidget(this, CursorContext::Selection);
             }
-            if (m_multiRegionMode && m_multiRegionManager) {
+            if (m_inputState.multiRegionMode && m_multiRegionManager) {
                 QRect sel = m_selectionManager->selectionRect();
                 if (sel.isValid() && sel.width() > 5 && sel.height() > 5 &&
                     m_multiRegionManager->activeIndex() < 0) {
@@ -411,7 +402,7 @@ RegionSelector::RegionSelector(QWidget* parent)
                 }
             }
             // Quick Pin mode: directly pin without showing toolbar
-            if (m_quickPinMode && !m_multiRegionMode) {
+            if (m_quickPinMode && !m_inputState.multiRegionMode) {
                 finishSelection();
             }
         });
@@ -423,26 +414,25 @@ RegionSelector::RegionSelector(QWidget* parent)
             QRect screenGeom = m_currentScreen->geometry();
             QRect fullScreenRect = QRect(0, 0, screenGeom.width(), screenGeom.height());
             m_selectionManager->setFromDetectedWindow(fullScreenRect);
-            if (!m_multiRegionMode) {
+            if (!m_inputState.multiRegionMode) {
                 CursorManager::instance().popCursorForWidget(this, CursorContext::Selection);
             }
 
             // Add full-screen region in multi-region mode
-            if (m_multiRegionMode && m_multiRegionManager &&
+            if (m_inputState.multiRegionMode && m_multiRegionManager &&
                 m_multiRegionManager->activeIndex() < 0) {
                 m_multiRegionManager->addRegion(fullScreenRect);
             }
 
             // Quick Pin mode: directly pin without showing toolbar
-            if (m_quickPinMode && !m_multiRegionMode) {
+            if (m_quickPinMode && !m_inputState.multiRegionMode) {
                 finishSelection();
             }
         });
-    connect(m_inputHandler, &RegionInputHandler::drawingStateChanged,
-        this, [this](bool isDrawing) { m_isDrawing = isDrawing; });
     connect(m_inputHandler, &RegionInputHandler::detectionCleared,
         this, [this]() {
-            m_highlightedWindowRect = QRect();
+            m_inputState.highlightedWindowRect = QRect();
+            m_inputState.hasDetectedWindow = false;
             m_detectedWindow.reset();
         });
     connect(m_inputHandler, &RegionInputHandler::selectionCancelledByRightClick,
@@ -464,8 +454,8 @@ RegionSelector::RegionSelector(QWidget* parent)
     // Connect toolbar handler signals
     connect(m_toolbarHandler, &RegionToolbarHandler::toolChanged,
         this, [this](ToolId tool, bool showSubToolbar) {
-            m_currentTool = tool;
-            m_showSubToolbar = showSubToolbar;
+            m_inputState.currentTool = tool;
+            m_inputState.showSubToolbar = showSubToolbar;
         });
     connect(m_toolbarHandler, &RegionToolbarHandler::updateRequested,
         this, qOverload<>(&QWidget::update));
@@ -571,10 +561,10 @@ bool RegionSelector::isScreenValid() const
 
 bool RegionSelector::shouldShowColorPalette() const
 {
-    if (m_multiRegionMode) return false;
+    if (m_inputState.multiRegionMode) return false;
     if (!m_selectionManager->isComplete()) return false;
-    if (!m_showSubToolbar) return false;
-    return ToolRegistry::instance().showColorPalette(m_currentTool);
+    if (!m_inputState.showSubToolbar) return false;
+    return ToolRegistry::instance().showColorPalette(m_inputState.currentTool);
 }
 
 QWidget* RegionSelector::annotationHostWidget() const
@@ -651,7 +641,7 @@ void RegionSelector::onContextTextEditingCancelled()
 
 void RegionSelector::syncColorToAllWidgets(const QColor& color)
 {
-    m_annotationColor = color;
+    m_inputState.annotationColor = color;
     AnnotationSettingsManager::instance().saveColor(color);
     m_toolManager->setColor(color);
     m_colorAndWidthWidget->setCurrentColor(color);
@@ -668,12 +658,12 @@ void RegionSelector::onColorSelected(const QColor& color)
 
 void RegionSelector::onMoreColorsRequested()
 {
-    m_colorAndWidthWidget->setCurrentColor(m_annotationColor);
+    m_colorAndWidthWidget->setCurrentColor(m_inputState.annotationColor);
 
     AnnotationContext::showColorPickerDialog(
         this,
         m_colorPickerDialog,
-        m_annotationColor,
+        m_inputState.annotationColor,
         geometry().center(),
         [this](const QColor& color) {
             syncColorToAllWidgets(color);
@@ -682,14 +672,14 @@ void RegionSelector::onMoreColorsRequested()
 
 void RegionSelector::onLineWidthChanged(int width)
 {
-    if (m_currentTool == ToolId::Mosaic) {
-        m_annotationWidth = width;
+    if (m_inputState.currentTool == ToolId::Mosaic) {
+        m_inputState.annotationWidth = width;
         // Update cursor to reflect new width
         setToolCursor();
         AnnotationSettingsManager::instance().saveWidth(width);
     }
     else {
-        m_annotationWidth = width;
+        m_inputState.annotationWidth = width;
         AnnotationSettingsManager::instance().saveWidth(width);
     }
     m_toolManager->setWidth(width);
@@ -771,25 +761,25 @@ int RegionSelector::effectiveCornerRadius() const
 
 bool RegionSelector::shouldShowColorAndWidthWidget() const
 {
-    if (m_multiRegionMode) return false;
+    if (m_inputState.multiRegionMode) return false;
     if (!m_selectionManager->isComplete()) return false;
-    if (!m_showSubToolbar) return false;
-    return ToolRegistry::instance().showColorWidthWidget(m_currentTool);
+    if (!m_inputState.showSubToolbar) return false;
+    return ToolRegistry::instance().showColorWidthWidget(m_inputState.currentTool);
 }
 
 bool RegionSelector::shouldShowWidthControl() const
 {
-    if (m_multiRegionMode) return false;
-    return ToolRegistry::instance().showWidthControl(m_currentTool);
+    if (m_inputState.multiRegionMode) return false;
+    return ToolRegistry::instance().showWidthControl(m_inputState.currentTool);
 }
 
 int RegionSelector::toolWidthForCurrentTool() const
 {
-    if (m_currentTool == ToolId::StepBadge) {
+    if (m_inputState.currentTool == ToolId::StepBadge) {
         return StepBadgeAnnotation::radiusForSize(m_stepBadgeSize);
     }
-    // Mosaic now uses m_annotationWidth (synced with other tools)
-    return m_annotationWidth;
+    // Mosaic now uses m_inputState.annotationWidth (synced with other tools)
+    return m_inputState.annotationWidth;
 }
 
 
@@ -843,7 +833,7 @@ void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapt
     // 將 cursor 全域座標轉換為 widget 本地座標，用於 crosshair/magnifier 初始位置
     QRect screenGeom = m_currentScreen->geometry();
     QPoint globalCursor = QCursor::pos();
-    m_currentPoint = globalCursor - screenGeom.topLeft();
+    m_inputState.currentPoint = globalCursor - screenGeom.topLeft();
 
     // 鎖定視窗大小，防止 macOS 原生 resize 行為
     setFixedSize(screenGeom.size());
@@ -862,7 +852,7 @@ void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapt
     m_painter->buildDimmedCache(m_backgroundPixmap);
 
     // Pre-warm magnifier cache to eliminate first-frame delay
-    m_magnifierPanel->preWarmCache(m_currentPoint, m_backgroundPixmap);
+    m_magnifierPanel->preWarmCache(m_inputState.currentPoint, m_backgroundPixmap);
 
     // Note: Cursor initialization is handled by ensureCrossCursor() called from
     // CaptureManager::initializeRegionSelector() AFTER show/activate. This avoids
@@ -871,7 +861,7 @@ void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapt
 
     // Initial window detection at cursor position
     if (m_windowDetector && m_windowDetector->isEnabled()) {
-        updateWindowDetection(m_currentPoint);
+        updateWindowDetection(m_inputState.currentPoint);
     }
 }
 
@@ -912,7 +902,7 @@ void RegionSelector::initializeWithRegion(QScreen* screen, const QRect& region)
 
     // Set cursor position
     QPoint globalCursor = QCursor::pos();
-    m_currentPoint = globalCursor - screenGeom.topLeft();
+    m_inputState.currentPoint = globalCursor - screenGeom.topLeft();
 
     // Trigger repaint to show toolbar (toolbar is drawn in paintEvent when m_selectionComplete is true)
     QTimer::singleShot(0, this, [this]() {
@@ -955,22 +945,23 @@ void RegionSelector::updateWindowDetection(const QPoint& localPos)
     auto detected = m_windowDetector->detectWindowAt(localToGlobal(localPos));
 
     if (detected.has_value()) {
+        m_inputState.hasDetectedWindow = true;
         QRect localBounds = globalToLocal(detected->bounds).intersected(rect());
 
-        if (localBounds != m_highlightedWindowRect) {
+        if (localBounds != m_inputState.highlightedWindowRect) {
             // Calculate old visual rect for partial update
             QString oldTitle;
-            if (!m_highlightedWindowRect.isNull()) {
-                oldTitle = QString("%1x%2").arg(m_highlightedWindowRect.width()).arg(m_highlightedWindowRect.height());
+            if (!m_inputState.highlightedWindowRect.isNull()) {
+                oldTitle = QString("%1x%2").arg(m_inputState.highlightedWindowRect.width()).arg(m_inputState.highlightedWindowRect.height());
             }
-            QRect oldVisualRect = m_painter->getWindowHighlightVisualRect(m_highlightedWindowRect, oldTitle);
+            QRect oldVisualRect = m_painter->getWindowHighlightVisualRect(m_inputState.highlightedWindowRect, oldTitle);
 
-            m_highlightedWindowRect = localBounds;
+            m_inputState.highlightedWindowRect = localBounds;
             m_detectedWindow = detected;
 
             // Calculate new visual rect (use clipped local bounds, not global bounds)
             QString newTitle = QString("%1x%2").arg(localBounds.width()).arg(localBounds.height());
-            QRect newVisualRect = m_painter->getWindowHighlightVisualRect(m_highlightedWindowRect, newTitle);
+            QRect newVisualRect = m_painter->getWindowHighlightVisualRect(m_inputState.highlightedWindowRect, newTitle);
 
             // Update only changed regions
             if (!oldVisualRect.isNull()) update(oldVisualRect);
@@ -978,15 +969,16 @@ void RegionSelector::updateWindowDetection(const QPoint& localPos)
         }
     }
     else {
-        if (!m_highlightedWindowRect.isNull()) {
+        m_inputState.hasDetectedWindow = false;
+        if (!m_inputState.highlightedWindowRect.isNull()) {
             // Calculate old visual rect for partial update (use clipped local bounds)
             QString oldTitle;
-            if (!m_highlightedWindowRect.isNull()) {
-                oldTitle = QString("%1x%2").arg(m_highlightedWindowRect.width()).arg(m_highlightedWindowRect.height());
+            if (!m_inputState.highlightedWindowRect.isNull()) {
+                oldTitle = QString("%1x%2").arg(m_inputState.highlightedWindowRect.width()).arg(m_inputState.highlightedWindowRect.height());
             }
-            QRect oldVisualRect = m_painter->getWindowHighlightVisualRect(m_highlightedWindowRect, oldTitle);
+            QRect oldVisualRect = m_painter->getWindowHighlightVisualRect(m_inputState.highlightedWindowRect, oldTitle);
 
-            m_highlightedWindowRect = QRect();
+            m_inputState.highlightedWindowRect = QRect();
             m_detectedWindow.reset();
             
             if (!oldVisualRect.isNull()) update(oldVisualRect);
@@ -1012,16 +1004,16 @@ void RegionSelector::paintEvent(QPaintEvent* event)
     painter.setRenderHint(QPainter::Antialiasing);
 
     // Update painter state before painting
-    m_painter->setHighlightedWindowRect(m_highlightedWindowRect);
+    m_painter->setHighlightedWindowRect(m_inputState.highlightedWindowRect);
     m_painter->setDetectedWindowTitle(
-        !m_highlightedWindowRect.isNull()
-        ? QString("%1x%2").arg(m_highlightedWindowRect.width()).arg(m_highlightedWindowRect.height())
+        !m_inputState.highlightedWindowRect.isNull()
+        ? QString("%1x%2").arg(m_inputState.highlightedWindowRect.width()).arg(m_inputState.highlightedWindowRect.height())
         : QString());
     m_painter->setCornerRadius(m_cornerRadius);
-    m_painter->setShowSubToolbar(m_showSubToolbar);
-    m_painter->setCurrentTool(static_cast<int>(m_currentTool));
+    m_painter->setShowSubToolbar(m_inputState.showSubToolbar);
+    m_painter->setCurrentTool(static_cast<int>(m_inputState.currentTool));
     m_painter->setDevicePixelRatio(m_devicePixelRatio);
-    m_painter->setMultiRegionMode(m_multiRegionMode);
+    m_painter->setMultiRegionMode(m_inputState.multiRegionMode);
 
     // Delegate core painting (background, overlay, selection, annotations)
     m_painter->paint(painter, m_backgroundPixmap, dirtyRect);
@@ -1032,12 +1024,12 @@ void RegionSelector::paintEvent(QPaintEvent* event)
         if (m_selectionManager->hasSelection()) {
             // Update toolbar position and draw
             // Only show active indicator when sub-toolbar is visible
-            m_toolbar->setActiveButton(m_showSubToolbar ? static_cast<int>(m_currentTool) : -1);
+            m_toolbar->setActiveButton(m_inputState.showSubToolbar ? static_cast<int>(m_inputState.currentTool) : -1);
             m_toolbar->setViewportWidth(width());
             m_toolbar->setPositionForSelection(selectionRect, height());
             m_toolbar->draw(painter);
 
-            if (m_multiRegionMode && m_multiRegionManager && m_multiRegionManager->count() > 0) {
+            if (m_inputState.multiRegionMode && m_multiRegionManager && m_multiRegionManager->count() > 0) {
                 QString countText = QString("%1 regions").arg(m_multiRegionManager->count());
                 QFont countFont = painter.font();
                 countFont.setPointSize(11);
@@ -1065,10 +1057,10 @@ void RegionSelector::paintEvent(QPaintEvent* event)
             if (shouldShowColorAndWidthWidget()) {
                 m_colorAndWidthWidget->setVisible(true);
                 // Apply tool-specific section configuration
-                ToolSectionConfig::forTool(m_currentTool).applyTo(m_colorAndWidthWidget);
+                ToolSectionConfig::forTool(m_inputState.currentTool).applyTo(m_colorAndWidthWidget);
                 m_colorAndWidthWidget->setWidthSectionHidden(false);
                 // Runtime-dependent setting for Mosaic auto blur
-                if (m_currentTool == ToolId::Mosaic) {
+                if (m_inputState.currentTool == ToolId::Mosaic) {
                     m_colorAndWidthWidget->setAutoBlurEnabled(m_autoBlurManager != nullptr);
                 }
                 m_colorAndWidthWidget->updatePosition(m_toolbar->boundingRect(), false, width());
@@ -1079,7 +1071,7 @@ void RegionSelector::paintEvent(QPaintEvent* event)
             }
 
             // Draw emoji picker when EmojiSticker tool is selected (lazy creation)
-            if (m_currentTool == ToolId::EmojiSticker) {
+            if (m_inputState.currentTool == ToolId::EmojiSticker) {
                 EmojiPicker* picker = ensureEmojiPicker();
                 picker->setVisible(true);
                 picker->updatePosition(m_toolbar->boundingRect(), false);
@@ -1101,12 +1093,12 @@ void RegionSelector::paintEvent(QPaintEvent* event)
 
     // Draw crosshair at cursor - show during selection process and inside selection when complete
     // Hide magnifier when any annotation tool is selected or when drawing
-    bool shouldShowCrosshair = !m_isDrawing && !isAnnotationTool(m_currentTool);
+    bool shouldShowCrosshair = !m_inputState.isDrawing && !isAnnotationTool(m_inputState.currentTool);
     if (m_selectionManager->isComplete()) {
         // Only show crosshair inside selection area, not on toolbar
         shouldShowCrosshair = shouldShowCrosshair &&
-            selectionRect.contains(m_currentPoint) &&
-            !m_toolbar->contains(m_currentPoint);
+            selectionRect.contains(m_inputState.currentPoint) &&
+            !m_toolbar->contains(m_inputState.currentPoint);
     }
 
     if (shouldShowCrosshair) {
@@ -1118,7 +1110,7 @@ void RegionSelector::paintEvent(QPaintEvent* event)
 void RegionSelector::drawMagnifier(QPainter& painter)
 {
     // Delegate to MagnifierPanel component
-    m_magnifierPanel->draw(painter, m_currentPoint, size(), m_backgroundPixmap);
+    m_magnifierPanel->draw(painter, m_inputState.currentPoint, size(), m_backgroundPixmap);
 }
 
 QCursor RegionSelector::getMosaicCursor(int width)
@@ -1138,7 +1130,7 @@ void RegionSelector::setToolCursor()
     auto& cursorManager = CursorManager::instance();
 
     // Special handling for text tool during editing
-    if (m_currentTool == ToolId::Text && m_textEditor->isEditing()) {
+    if (m_inputState.currentTool == ToolId::Text && m_textEditor->isEditing()) {
         return;
     }
 
@@ -1150,13 +1142,13 @@ void RegionSelector::setToolCursor()
 void RegionSelector::handleToolbarClick(ToolId tool)
 {
     // Sync current state to handler
-    m_toolbarHandler->setCurrentTool(m_currentTool);
-    m_toolbarHandler->setShowSubToolbar(m_showSubToolbar);
-    m_toolbarHandler->setAnnotationWidth(m_annotationWidth);
-    m_toolbarHandler->setAnnotationColor(m_annotationColor);
+    m_toolbarHandler->setCurrentTool(m_inputState.currentTool);
+    m_toolbarHandler->setShowSubToolbar(m_inputState.showSubToolbar);
+    m_toolbarHandler->setAnnotationWidth(m_inputState.annotationWidth);
+    m_toolbarHandler->setAnnotationColor(m_inputState.annotationColor);
     m_toolbarHandler->setStepBadgeSize(m_stepBadgeSize);
     m_toolbarHandler->setOCRInProgress(m_ocrInProgress);
-    m_toolbarHandler->setMultiRegionMode(m_multiRegionMode);
+    m_toolbarHandler->setMultiRegionMode(m_inputState.multiRegionMode);
 
     // Delegate to handler
     m_toolbarHandler->handleToolbarClick(tool);
@@ -1164,12 +1156,11 @@ void RegionSelector::handleToolbarClick(ToolId tool)
 
 void RegionSelector::setMultiRegionMode(bool enabled)
 {
-    if (m_multiRegionMode == enabled) {
+    if (m_inputState.multiRegionMode == enabled) {
         return;
     }
 
-    m_multiRegionMode = enabled;
-    m_inputHandler->setMultiRegionMode(enabled);
+    m_inputState.multiRegionMode = enabled;
     m_painter->setMultiRegionMode(enabled);
     m_toolbarHandler->setMultiRegionMode(enabled);
     m_toolbarHandler->setupToolbarButtons();
@@ -1185,13 +1176,13 @@ void RegionSelector::setMultiRegionMode(bool enabled)
             m_selectionManager->clearSelection();
         }
         m_annotationLayer->clear();
-        m_currentTool = ToolId::Selection;
-        m_showSubToolbar = false;
+        m_inputState.currentTool = ToolId::Selection;
+        m_inputState.showSubToolbar = false;
     }
     else {
         m_multiRegionManager->clear();
         m_selectionManager->clearSelection();
-        m_showSubToolbar = true;
+        m_inputState.showSubToolbar = true;
     }
 
     update();
@@ -1199,7 +1190,7 @@ void RegionSelector::setMultiRegionMode(bool enabled)
 
 void RegionSelector::completeMultiRegionCapture()
 {
-    if (!m_multiRegionMode || !m_multiRegionManager || m_multiRegionManager->count() == 0) {
+    if (!m_inputState.multiRegionMode || !m_multiRegionManager || m_multiRegionManager->count() == 0) {
         return;
     }
 
@@ -1225,7 +1216,7 @@ void RegionSelector::cancelMultiRegionCapture()
 
 bool RegionSelector::isMultiRegionCapture() const
 {
-    return m_multiRegionMode && m_multiRegionManager && m_multiRegionManager->count() > 1;
+    return m_inputState.multiRegionMode && m_multiRegionManager && m_multiRegionManager->count() > 1;
 }
 
 void RegionSelector::copyToClipboard()
@@ -1255,61 +1246,19 @@ void RegionSelector::finishSelection()
 
 void RegionSelector::mousePressEvent(QMouseEvent* event)
 {
-    // Sync state to input handler
-    m_inputHandler->setCurrentTool(m_currentTool);
-    m_inputHandler->setShowSubToolbar(m_showSubToolbar);
-    m_inputHandler->setHighlightedWindowRect(m_highlightedWindowRect);
-    m_inputHandler->setDetectedWindow(m_detectedWindow.has_value());
-    m_inputHandler->setAnnotationColor(m_annotationColor);
-    m_inputHandler->setAnnotationWidth(m_annotationWidth);
-    m_inputHandler->setArrowStyle(static_cast<int>(m_arrowStyle));
-    m_inputHandler->setLineStyle(static_cast<int>(m_lineStyle));
-    m_inputHandler->setShapeType(static_cast<int>(m_shapeType));
-    m_inputHandler->setShapeFillMode(static_cast<int>(m_shapeFillMode));
-    m_inputHandler->setMultiRegionMode(m_multiRegionMode);
-
-    // Delegate to input handler
     m_inputHandler->handleMousePress(event);
-
-    // Sync state back from handler
-    m_currentPoint = m_inputHandler->currentPoint();
-    m_isDrawing = m_inputHandler->isDrawing();
     m_lastMagnifierRect = m_inputHandler->lastMagnifierRect();
 }
 
 void RegionSelector::mouseMoveEvent(QMouseEvent* event)
 {
-    // Sync state to input handler
-    m_inputHandler->setCurrentTool(m_currentTool);
-    m_inputHandler->setShowSubToolbar(m_showSubToolbar);
-    m_inputHandler->setHighlightedWindowRect(m_highlightedWindowRect);
-    m_inputHandler->setDetectedWindow(m_detectedWindow.has_value());
-    m_inputHandler->setMultiRegionMode(m_multiRegionMode);
-
-    // Delegate to input handler
     m_inputHandler->handleMouseMove(event);
-
-    // Sync state back from handler
-    m_currentPoint = m_inputHandler->currentPoint();
-    m_isDrawing = m_inputHandler->isDrawing();
     m_lastMagnifierRect = m_inputHandler->lastMagnifierRect();
 }
 
 void RegionSelector::mouseReleaseEvent(QMouseEvent* event)
 {
-    // Sync state to input handler
-    m_inputHandler->setCurrentTool(m_currentTool);
-    m_inputHandler->setShowSubToolbar(m_showSubToolbar);
-    m_inputHandler->setHighlightedWindowRect(m_highlightedWindowRect);
-    m_inputHandler->setDetectedWindow(m_detectedWindow.has_value());
-    m_inputHandler->setMultiRegionMode(m_multiRegionMode);
-
-    // Delegate to input handler
     m_inputHandler->handleMouseRelease(event);
-
-    // Sync state back from handler
-    m_currentPoint = m_inputHandler->currentPoint();
-    m_isDrawing = m_inputHandler->isDrawing();
 }
 
 void RegionSelector::mouseDoubleClickEvent(QMouseEvent* event)
@@ -1327,7 +1276,7 @@ void RegionSelector::mouseDoubleClickEvent(QMouseEvent* event)
         int hitIndex = m_annotationLayer->hitTestText(event->pos());
         if (hitIndex >= 0) {
             m_annotationLayer->setSelectedIndex(hitIndex);
-            m_textAnnotationEditor->startReEditing(hitIndex, m_annotationColor);
+            m_textAnnotationEditor->startReEditing(hitIndex, m_inputState.annotationColor);
             update();
             return;
         }
@@ -1341,7 +1290,7 @@ void RegionSelector::mouseDoubleClickEvent(QMouseEvent* event)
 void RegionSelector::wheelEvent(QWheelEvent* event)
 {
     // Handle scroll wheel for StepBadge size adjustment
-    if (m_currentTool == ToolId::StepBadge) {
+    if (m_inputState.currentTool == ToolId::StepBadge) {
         int delta = event->angleDelta().y();
         if (delta != 0) {
             // Cycle through sizes: Small -> Medium -> Large -> Small
@@ -1408,7 +1357,7 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
         }
 
         // ESC 直接離開 capture mode
-        if (m_multiRegionMode) {
+        if (m_inputState.multiRegionMode) {
             cancelMultiRegionCapture();
         }
         else {
@@ -1417,7 +1366,7 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
         }
     }
     else if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) {
-        if (m_multiRegionMode) {
+        if (m_inputState.multiRegionMode) {
             completeMultiRegionCapture();
         }
         else if (m_selectionManager->isComplete()) {
@@ -1425,17 +1374,17 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
         }
     }
     else if (event->matches(QKeySequence::Copy)) {
-        if (!m_multiRegionMode && m_selectionManager->isComplete()) {
+        if (!m_inputState.multiRegionMode && m_selectionManager->isComplete()) {
             copyToClipboard();
         }
     }
     else if (event->matches(QKeySequence::Save)) {
-        if (!m_multiRegionMode && m_selectionManager->isComplete()) {
+        if (!m_inputState.multiRegionMode && m_selectionManager->isComplete()) {
             saveToFile();
         }
     }
     else if (event->key() == Qt::Key_M) {
-        setMultiRegionMode(!m_multiRegionMode);
+        setMultiRegionMode(!m_inputState.multiRegionMode);
     }
     else if (event->key() == Qt::Key_R && !event->modifiers()) {
         if (m_selectionManager->isComplete()) {
@@ -1444,12 +1393,12 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
     }
     else if (event->key() == Qt::Key_Shift) {
         // Switch RGB/HEX color format display (only when magnifier is shown)
-        bool magnifierVisible = !m_isDrawing && !isAnnotationTool(m_currentTool);
+        bool magnifierVisible = !m_inputState.isDrawing && !isAnnotationTool(m_inputState.currentTool);
         if (m_selectionManager->isComplete()) {
             QRect selectionRect = m_selectionManager->selectionRect();
             magnifierVisible = magnifierVisible &&
-                selectionRect.contains(m_currentPoint) &&
-                !m_toolbar->contains(m_currentPoint);
+                selectionRect.contains(m_inputState.currentPoint) &&
+                !m_toolbar->contains(m_inputState.currentPoint);
         }
         if (magnifierVisible) {
             m_magnifierPanel->toggleColorFormat();
@@ -1471,7 +1420,7 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
         QGuiApplication::clipboard()->setText(colorText);
     }
     else if (event->matches(QKeySequence::Undo)) {
-        if (m_multiRegionMode && m_multiRegionManager) {
+        if (m_inputState.multiRegionMode && m_multiRegionManager) {
             if (m_multiRegionManager->count() > 0) {
                 m_multiRegionManager->removeRegion(m_multiRegionManager->count() - 1);
             }
@@ -1488,7 +1437,7 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
         }
     }
     else if (event->key() == Qt::Key_Delete || event->key() == Qt::Key_Backspace) {
-        if (m_multiRegionMode && m_multiRegionManager) {
+        if (m_inputState.multiRegionMode && m_multiRegionManager) {
             int activeIndex = m_multiRegionManager->activeIndex();
             if (activeIndex >= 0) {
                 m_multiRegionManager->removeRegion(activeIndex);
@@ -1570,7 +1519,7 @@ void RegionSelector::enterEvent(QEnterEvent* event)
 
     // macOS resets cursor when mouse enters a window, so we need to set it here
     // Only set if not in selection/drawing mode (those have their own cursor logic)
-    if (!m_selectionManager->hasSelection() && !m_isDrawing) {
+    if (!m_selectionManager->hasSelection() && !m_inputState.isDrawing) {
         ensureCrossCursor();
     }
 }
@@ -1580,7 +1529,7 @@ void RegionSelector::focusInEvent(QFocusEvent* event)
     QWidget::focusInEvent(event);
 
     // Ensure cursor is correct when window regains focus
-    if (!m_selectionManager->hasSelection() && !m_isDrawing) {
+    if (!m_selectionManager->hasSelection() && !m_inputState.isDrawing) {
         ensureCrossCursor();
     }
 }
@@ -1674,17 +1623,17 @@ bool RegionSelector::isAnnotationTool(ToolId tool) const
 
 void RegionSelector::onTextEditingFinished(const QString& text, const QPoint& position)
 {
-    m_textAnnotationEditor->finishEditing(text, position, m_annotationColor);
+    m_textAnnotationEditor->finishEditing(text, position, m_inputState.annotationColor);
 }
 
 void RegionSelector::startTextReEditing(int annotationIndex)
 {
-    m_textAnnotationEditor->startReEditing(annotationIndex, m_annotationColor);
+    m_textAnnotationEditor->startReEditing(annotationIndex, m_inputState.annotationColor);
     // Update local annotation color from the text item
     auto* textItem = dynamic_cast<TextBoxAnnotation*>(m_annotationLayer->itemAt(annotationIndex));
     if (textItem) {
-        m_annotationColor = textItem->color();
-        m_colorAndWidthWidget->setCurrentColor(m_annotationColor);
+        m_inputState.annotationColor = textItem->color();
+        m_colorAndWidthWidget->setCurrentColor(m_inputState.annotationColor);
     }
 }
 
@@ -2059,7 +2008,7 @@ QRect RegionSelector::globalToLocal(const QRect& globalRect) const
 
 void RegionSelector::onArrowStyleChanged(LineEndStyle style)
 {
-    m_arrowStyle = style;
+    m_inputState.arrowStyle = style;
     m_toolManager->setArrowStyle(style);
     RegionSettingsHelper::saveArrowStyle(style);
     update();
@@ -2067,7 +2016,7 @@ void RegionSelector::onArrowStyleChanged(LineEndStyle style)
 
 void RegionSelector::onLineStyleChanged(LineStyle style)
 {
-    m_lineStyle = style;
+    m_inputState.lineStyle = style;
     m_toolManager->setLineStyle(style);
     RegionSettingsHelper::saveLineStyle(style);
     update();
