@@ -30,7 +30,7 @@ SnapTray 是一個在系統托盤常駐的截圖與錄影小工具，提供區�
   - `Cancel` 取消 (Esc)
   - `OCR` 文字辨識（macOS/Windows，支援繁體中文、簡體中文、英文）
   - `QR Code Scan`（掃描選取區域中的 QR/條碼）
-  - `Auto Blur` 自動偵測並模糊臉孔/文字
+  - `Auto Blur` 自動偵測並模糊臉孔
   - `Record` 螢幕錄影（`R`）使用選取區域
   - `Multi-Region` 多區域擷取切換（`M`）
   - 顏色/線寬控制（支援的工具）

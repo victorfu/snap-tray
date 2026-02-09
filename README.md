@@ -30,7 +30,7 @@ SnapTray is a lightweight tray utility for region screenshots, on-screen annotat
   - `Cancel` (Esc)
   - `OCR` text recognition (macOS/Windows, supports Traditional Chinese, Simplified Chinese, English)
   - `QR Code Scan` (scan QR/barcodes from the selected region)
-  - `Auto Blur` auto-detect and blur faces/text in the selection
+  - `Auto Blur` auto-detect and blur faces in the selection
   - `Record` screen recording (R) for the selected region
   - `Multi-Region` capture toggle (`M`)
   - Color + line width controls for supported tools
