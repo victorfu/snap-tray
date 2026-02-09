@@ -18,6 +18,7 @@
 #include "EmojiPicker.h"
 #include "TransformationGizmo.h"
 #include "tools/ToolTraits.h"
+#include "platform/WindowLevel.h"
 
 #include <QMouseEvent>
 #include <QWidget>
@@ -246,6 +247,18 @@ void RegionInputHandler::handleMouseMove(QMouseEvent* event)
         qDebug() << "RegionInputHandler: Recovering from race condition - "
                  << "starting selection from mouseMoveEvent";
         handleNewSelectionPress(event->pos());
+    }
+
+    // Keep crosshair sticky during pre-selection idle.
+    // System hot zones (Dock/Taskbar) may temporarily force Arrow cursor;
+    // by re-applying Tool/Cross on every move in this state we restore it.
+    if (!m_selectionManager->hasActiveSelection() && !state().isDrawing && m_parentWidget) {
+        auto& cm = CursorManager::instance();
+        cm.setHoverTargetForWidget(m_parentWidget, HoverTarget::None);
+        cm.pushCursorForWidget(m_parentWidget, CursorContext::Tool, Qt::CrossCursor);
+#ifdef Q_OS_MAC
+        forceNativeCrosshairCursor(m_parentWidget);
+#endif
     }
 
     // Handle text editor in confirm mode
