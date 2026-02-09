@@ -272,6 +272,9 @@ private:
     void performAutoBlur();
     void onAutoBlurComplete(bool success, int faceCount, int textCount, const QString &error);
 
+    // Shared toast display for OCR, QR code, and auto-blur results
+    void showSelectionToast(const QString &message, const QString &bgColor);
+
     // Inline text editing
     InlineTextEditor *m_textEditor;
 
