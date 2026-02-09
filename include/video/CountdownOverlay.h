@@ -4,6 +4,7 @@
 #include <QWidget>
 #include <QTimer>
 #include <QPropertyAnimation>
+#include <QPointer>
 
 class QScreen;
 
@@ -79,7 +80,7 @@ private:
     void setupWindow();
 
     QRect m_region;
-    QScreen *m_screen = nullptr;
+    QPointer<QScreen> m_screen;
 
     int m_totalSeconds = 3;
     int m_currentSecond = 3;

@@ -2,6 +2,8 @@
 #define ANNOTATIONSETTINGSMANAGER_H
 
 #include <QColor>
+#include "annotations/ArrowAnnotation.h"
+#include "annotations/LineStyle.h"
 #include "annotations/StepBadgeAnnotation.h"
 #include "ui/sections/MosaicBlurTypeSection.h"
 
@@ -24,6 +26,12 @@ public:
     // Width settings
     int loadWidth() const;
     void saveWidth(int width);
+
+    // Arrow and line style settings
+    LineEndStyle loadArrowStyle() const;
+    void saveArrowStyle(LineEndStyle style);
+    LineStyle loadLineStyle() const;
+    void saveLineStyle(LineStyle style);
 
     // Step Badge size settings
     StepBadgeSize loadStepBadgeSize() const;
@@ -49,6 +57,8 @@ public:
     // Default values
     static constexpr int kDefaultWidth = 3;
     static QColor defaultColor() { return Qt::red; }
+    static constexpr LineEndStyle kDefaultArrowStyle = LineEndStyle::EndArrow;
+    static constexpr LineStyle kDefaultLineStyle = LineStyle::Solid;
     static constexpr StepBadgeSize kDefaultStepBadgeSize = StepBadgeSize::Medium;
     static constexpr int kDefaultCornerRadius = 0;
     static constexpr bool kDefaultCornerRadiusEnabled = false;
@@ -64,6 +74,8 @@ private:
 
     static constexpr const char* kSettingsKeyColor = "annotationColor";
     static constexpr const char* kSettingsKeyWidth = "annotationWidth";
+    static constexpr const char* kSettingsKeyArrowStyle = "annotation/arrowStyle";
+    static constexpr const char* kSettingsKeyLineStyle = "annotation/lineStyle";
     static constexpr const char* kSettingsKeyStepBadgeSize = "stepBadgeSize";
     static constexpr const char* kSettingsKeyCornerRadius = "cornerRadius";
     static constexpr const char* kSettingsKeyCornerRadiusEnabled = "cornerRadiusEnabled";

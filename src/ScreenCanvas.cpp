@@ -13,7 +13,6 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include "LaserPointerRenderer.h"
 #include "toolbar/ToolbarCore.h"
 #include "settings/AnnotationSettingsManager.h"
-#include "settings/Settings.h"
 #include "tools/handlers/EmojiStickerToolHandler.h"
 #include "annotations/ArrowAnnotation.h"
 #include "annotations/PolylineAnnotation.h"
@@ -29,7 +28,6 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include <QGuiApplication>
 #include <QScreen>
 #include <QDebug>
-#include <QSettings>
 #include <QTimer>
 #include "tools/ToolRegistry.h"
 #include "tools/ToolSectionConfig.h"
@@ -82,8 +80,8 @@ ScreenCanvas::ScreenCanvas(QWidget* parent)
     auto& annotationSettings = AnnotationSettingsManager::instance();
     QColor savedColor = annotationSettings.loadColor();
     int savedWidth = annotationSettings.loadWidth();
-    LineEndStyle savedArrowStyle = loadArrowStyle();
-    LineStyle savedLineStyle = loadLineStyle();
+    LineEndStyle savedArrowStyle = annotationSettings.loadArrowStyle();
+    LineStyle savedLineStyle = annotationSettings.loadLineStyle();
     m_stepBadgeSize = annotationSettings.loadStepBadgeSize();
     m_toolManager->setColor(savedColor);
     m_toolManager->setWidth(savedWidth);
@@ -1081,43 +1079,17 @@ void ScreenCanvas::showEvent(QShowEvent* event)
     });
 }
 
-LineEndStyle ScreenCanvas::loadArrowStyle() const
-{
-    auto settings = SnapTray::getSettings();
-    int style = settings.value("annotation/arrowStyle", static_cast<int>(LineEndStyle::EndArrow)).toInt();
-    return static_cast<LineEndStyle>(style);
-}
-
-void ScreenCanvas::saveArrowStyle(LineEndStyle style)
-{
-    auto settings = SnapTray::getSettings();
-    settings.setValue("annotation/arrowStyle", static_cast<int>(style));
-}
-
 void ScreenCanvas::onArrowStyleChanged(LineEndStyle style)
 {
     m_toolManager->setArrowStyle(style);
-    saveArrowStyle(style);
+    AnnotationSettingsManager::instance().saveArrowStyle(style);
     update();
-}
-
-LineStyle ScreenCanvas::loadLineStyle() const
-{
-    auto settings = SnapTray::getSettings();
-    int style = settings.value("annotation/lineStyle", static_cast<int>(LineStyle::Solid)).toInt();
-    return static_cast<LineStyle>(style);
-}
-
-void ScreenCanvas::saveLineStyle(LineStyle style)
-{
-    auto settings = SnapTray::getSettings();
-    settings.setValue("annotation/lineStyle", static_cast<int>(style));
 }
 
 void ScreenCanvas::onLineStyleChanged(LineStyle style)
 {
     m_toolManager->setLineStyle(style);
-    saveLineStyle(style);
+    AnnotationSettingsManager::instance().saveLineStyle(style);
     update();
 }
 

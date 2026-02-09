@@ -6,6 +6,7 @@
 #include <QPoint>
 #include <QRect>
 #include <QElapsedTimer>
+#include <QPointer>
 #include <QVector>
 #include <memory>
 
@@ -372,7 +373,7 @@ private:
 
     // Live capture mode
     QRect m_sourceRegion;
-    QScreen* m_sourceScreen = nullptr;
+    QPointer<QScreen> m_sourceScreen;
     bool m_isDestructing = false;
     bool m_isLiveMode = false;
     ICaptureEngine* m_captureEngine = nullptr;

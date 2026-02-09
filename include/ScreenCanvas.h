@@ -156,11 +156,7 @@ private:
     bool shouldShowWidthControl() const;
 
     // Annotation settings persistence
-    LineEndStyle loadArrowStyle() const;
-    void saveArrowStyle(LineEndStyle style);
     void onArrowStyleChanged(LineEndStyle style);
-    LineStyle loadLineStyle() const;
-    void saveLineStyle(LineStyle style);
     void onLineStyleChanged(LineStyle style);
 
     // Text editing handlers

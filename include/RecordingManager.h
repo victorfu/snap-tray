@@ -152,7 +152,7 @@ private:
     std::unique_ptr<QTimer> m_durationTimer;
     QElapsedTimer m_elapsedTimer;
     QRect m_recordingRegion;
-    QScreen *m_targetScreen;
+    QPointer<QScreen> m_targetScreen;
     State m_state;
     int m_frameRate;
     qint64 m_frameCount;

@@ -1,6 +1,8 @@
 #include <QtTest>
 #include <QSettings>
 #include <QColor>
+#include "annotations/ArrowAnnotation.h"
+#include "annotations/LineStyle.h"
 #include "settings/AnnotationSettingsManager.h"
 #include "settings/Settings.h"
 
@@ -35,6 +37,18 @@ private slots:
     void testLoadWidth_DefaultValue();
     void testSaveLoadWidth_Roundtrip();
     void testSaveLoadWidth_BoundaryValues();
+
+    // Arrow style settings tests
+    void testLoadArrowStyle_DefaultValue();
+    void testSaveLoadArrowStyle_Roundtrip();
+    void testSaveLoadArrowStyle_AllValues();
+    void testLoadArrowStyle_InvalidValue();
+
+    // Line style settings tests
+    void testLoadLineStyle_DefaultValue();
+    void testSaveLoadLineStyle_Roundtrip();
+    void testSaveLoadLineStyle_AllValues();
+    void testLoadLineStyle_InvalidValue();
 
     // Step badge size tests
     void testLoadStepBadgeSize_DefaultValue();
@@ -82,6 +96,8 @@ void tst_AnnotationSettingsManager::clearAllTestSettings()
     auto settings = SnapTray::getSettings();
     settings.remove("annotationColor");
     settings.remove("annotationWidth");
+    settings.remove("annotation/arrowStyle");
+    settings.remove("annotation/lineStyle");
     settings.remove("stepBadgeSize");
     settings.remove("polylineMode");
     settings.remove("cornerRadius");
@@ -194,6 +210,103 @@ void tst_AnnotationSettingsManager::testSaveLoadWidth_BoundaryValues()
     // Test large value
     manager.saveWidth(100);
     QCOMPARE(manager.loadWidth(), 100);
+}
+
+// ============================================================================
+// Arrow style settings tests
+// ============================================================================
+
+void tst_AnnotationSettingsManager::testLoadArrowStyle_DefaultValue()
+{
+    LineEndStyle style = AnnotationSettingsManager::instance().loadArrowStyle();
+    QCOMPARE(style, AnnotationSettingsManager::kDefaultArrowStyle);
+    QCOMPARE(style, LineEndStyle::EndArrow);
+}
+
+void tst_AnnotationSettingsManager::testSaveLoadArrowStyle_Roundtrip()
+{
+    AnnotationSettingsManager& manager = AnnotationSettingsManager::instance();
+
+    manager.saveArrowStyle(LineEndStyle::BothArrow);
+    QCOMPARE(manager.loadArrowStyle(), LineEndStyle::BothArrow);
+
+    manager.saveArrowStyle(LineEndStyle::EndArrowLine);
+    QCOMPARE(manager.loadArrowStyle(), LineEndStyle::EndArrowLine);
+}
+
+void tst_AnnotationSettingsManager::testSaveLoadArrowStyle_AllValues()
+{
+    AnnotationSettingsManager& manager = AnnotationSettingsManager::instance();
+    const QList<LineEndStyle> styles = {
+        LineEndStyle::None,
+        LineEndStyle::EndArrow,
+        LineEndStyle::EndArrowOutline,
+        LineEndStyle::EndArrowLine,
+        LineEndStyle::BothArrow,
+        LineEndStyle::BothArrowOutline
+    };
+
+    for (LineEndStyle style : styles) {
+        manager.saveArrowStyle(style);
+        QCOMPARE(manager.loadArrowStyle(), style);
+    }
+}
+
+void tst_AnnotationSettingsManager::testLoadArrowStyle_InvalidValue()
+{
+    auto settings = SnapTray::getSettings();
+    settings.setValue("annotation/arrowStyle", 99);  // Invalid value
+    settings.sync();
+
+    LineEndStyle style = AnnotationSettingsManager::instance().loadArrowStyle();
+    QCOMPARE(style, AnnotationSettingsManager::kDefaultArrowStyle);
+}
+
+// ============================================================================
+// Line style settings tests
+// ============================================================================
+
+void tst_AnnotationSettingsManager::testLoadLineStyle_DefaultValue()
+{
+    LineStyle style = AnnotationSettingsManager::instance().loadLineStyle();
+    QCOMPARE(style, AnnotationSettingsManager::kDefaultLineStyle);
+    QCOMPARE(style, LineStyle::Solid);
+}
+
+void tst_AnnotationSettingsManager::testSaveLoadLineStyle_Roundtrip()
+{
+    AnnotationSettingsManager& manager = AnnotationSettingsManager::instance();
+
+    manager.saveLineStyle(LineStyle::Dashed);
+    QCOMPARE(manager.loadLineStyle(), LineStyle::Dashed);
+
+    manager.saveLineStyle(LineStyle::Dotted);
+    QCOMPARE(manager.loadLineStyle(), LineStyle::Dotted);
+}
+
+void tst_AnnotationSettingsManager::testSaveLoadLineStyle_AllValues()
+{
+    AnnotationSettingsManager& manager = AnnotationSettingsManager::instance();
+    const QList<LineStyle> styles = {
+        LineStyle::Solid,
+        LineStyle::Dashed,
+        LineStyle::Dotted
+    };
+
+    for (LineStyle style : styles) {
+        manager.saveLineStyle(style);
+        QCOMPARE(manager.loadLineStyle(), style);
+    }
+}
+
+void tst_AnnotationSettingsManager::testLoadLineStyle_InvalidValue()
+{
+    auto settings = SnapTray::getSettings();
+    settings.setValue("annotation/lineStyle", 99);  // Invalid value
+    settings.sync();
+
+    LineStyle style = AnnotationSettingsManager::instance().loadLineStyle();
+    QCOMPARE(style, AnnotationSettingsManager::kDefaultLineStyle);
 }
 
 // ============================================================================

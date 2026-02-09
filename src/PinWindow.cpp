@@ -2907,13 +2907,14 @@ void PinWindow::setSourceRegion(const QRect& region, QScreen* screen)
 
 void PinWindow::startLiveCapture()
 {
-    if (m_isLiveMode || m_sourceRegion.isEmpty() || !m_sourceScreen) {
+    QScreen* sourceScreen = m_sourceScreen.data();
+    if (m_isLiveMode || m_sourceRegion.isEmpty() || !sourceScreen) {
         qWarning() << "Cannot start live capture: invalid state or no source region";
         return;
     }
 
     // Validate screen still exists
-    if (!QGuiApplication::screens().contains(m_sourceScreen)) {
+    if (!QGuiApplication::screens().contains(sourceScreen)) {
         qWarning() << "Source screen no longer available";
         return;
     }
@@ -2922,7 +2923,7 @@ void PinWindow::startLiveCapture()
 
     // Create capture engine
     m_captureEngine = ICaptureEngine::createBestEngine(this);
-    m_captureEngine->setRegion(m_sourceRegion, m_sourceScreen);
+    m_captureEngine->setRegion(m_sourceRegion, sourceScreen);
     m_captureEngine->setFrameRate(m_captureFrameRate);
 
     // Exclude self from capture to avoid infinite recursion
@@ -3023,7 +3024,8 @@ void PinWindow::updateLiveFrame()
         return;
     }
 
-    if (!m_sourceScreen || !QGuiApplication::screens().contains(m_sourceScreen)) {
+    QScreen* sourceScreen = m_sourceScreen.data();
+    if (!sourceScreen || !QGuiApplication::screens().contains(sourceScreen)) {
         qWarning() << "Source screen disconnected during live capture";
         stopLiveCapture();
         return;
@@ -3032,7 +3034,7 @@ void PinWindow::updateLiveFrame()
     QImage frame = m_captureEngine->captureFrame();
     if (!frame.isNull()) {
         m_originalPixmap = QPixmap::fromImage(frame);
-        m_originalPixmap.setDevicePixelRatio(m_sourceScreen->devicePixelRatio());
+        m_originalPixmap.setDevicePixelRatio(sourceScreen->devicePixelRatio());
 
         // Update shared pixmap for mosaic tool to use latest frame
         m_sharedSourcePixmap = std::make_shared<const QPixmap>(m_originalPixmap);

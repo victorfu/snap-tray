@@ -43,6 +43,12 @@ private slots:
     void onSelectionCancelled();
 
 private:
+    enum class CaptureEntryMode {
+        Region,
+        QuickPin
+    };
+
+    void startCaptureInternal(CaptureEntryMode mode);
     void initializeRegionSelector(QScreen *targetScreen,
                                   const QPixmap &preCapture,
                                   bool quickPinMode);

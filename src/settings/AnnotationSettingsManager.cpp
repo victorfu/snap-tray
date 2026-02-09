@@ -32,6 +32,42 @@ void AnnotationSettingsManager::saveWidth(int width)
     settings.setValue(kSettingsKeyWidth, width);
 }
 
+LineEndStyle AnnotationSettingsManager::loadArrowStyle() const
+{
+    auto settings = SnapTray::getSettings();
+    int value = settings.value(kSettingsKeyArrowStyle,
+                               static_cast<int>(kDefaultArrowStyle)).toInt();
+    if (value >= static_cast<int>(LineEndStyle::None)
+        && value <= static_cast<int>(LineEndStyle::BothArrowOutline)) {
+        return static_cast<LineEndStyle>(value);
+    }
+    return kDefaultArrowStyle;
+}
+
+void AnnotationSettingsManager::saveArrowStyle(LineEndStyle style)
+{
+    auto settings = SnapTray::getSettings();
+    settings.setValue(kSettingsKeyArrowStyle, static_cast<int>(style));
+}
+
+LineStyle AnnotationSettingsManager::loadLineStyle() const
+{
+    auto settings = SnapTray::getSettings();
+    int value = settings.value(kSettingsKeyLineStyle,
+                               static_cast<int>(kDefaultLineStyle)).toInt();
+    if (value >= static_cast<int>(LineStyle::Solid)
+        && value <= static_cast<int>(LineStyle::Dotted)) {
+        return static_cast<LineStyle>(value);
+    }
+    return kDefaultLineStyle;
+}
+
+void AnnotationSettingsManager::saveLineStyle(LineStyle style)
+{
+    auto settings = SnapTray::getSettings();
+    settings.setValue(kSettingsKeyLineStyle, static_cast<int>(style));
+}
+
 StepBadgeSize AnnotationSettingsManager::loadStepBadgeSize() const
 {
     auto settings = SnapTray::getSettings();

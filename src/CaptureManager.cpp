@@ -57,61 +57,15 @@ void CaptureManager::cancelCapture()
 
 void CaptureManager::startRegionCapture()
 {
-    // Skip if already in capture mode
-    if (m_regionSelector && m_regionSelector->isVisible()) {
-        return;
-    }
-
-    // Clean up any existing selector (QPointer auto-nulls when deleted)
-    if (m_regionSelector) {
-        m_regionSelector->close();
-    }
-
-    emit captureStarted();
-
-    // 1. Determine target screen (the screen where cursor is located)
-    QScreen *targetScreen = QGuiApplication::screenAt(QCursor::pos());
-    if (!targetScreen) {
-        targetScreen = QGuiApplication::primaryScreen();
-    }
-
-    if (!targetScreen) {
-        qCritical() << "CaptureManager: No valid screen available for region capture";
-        return;
-    }
-
-    // 2. Start window detection FIRST (async, runs in parallel with grabWindow)
-    // This allows window list to be ready by the time RegionSelector is shown
-    if (m_windowDetector) {
-        m_windowDetector->setScreen(targetScreen);
-        m_windowDetector->refreshWindowListAsync();
-    }
-
-    // 3. Capture screenshot while popup/modal is still visible
-    // This allows capturing context menus AND dialogs (like Snipaste)
-    // NOTE: grabWindow() is blocking (50-200ms on 4K). Qt doesn't guarantee thread safety
-    // for grabWindow(), so async capture via QtConcurrent is risky without platform testing.
-    QWidget *popup = QApplication::activePopupWidget();
-    QWidget *modal = QApplication::activeModalWidget();
-
-    QPixmap preCapture = targetScreen->grabWindow(0);
-
-    // 4. Close popup/modal AFTER screenshot to avoid event loop conflict with RegionSelector
-    if (popup) {
-        popup->close();
-    }
-    if (modal) {
-        if (QDialog* dialog = qobject_cast<QDialog*>(modal)) {
-            dialog->reject();
-        } else {
-            modal->close();
-        }
-    }
-
-    initializeRegionSelector(targetScreen, preCapture, /*quickPinMode=*/false);
+    startCaptureInternal(CaptureEntryMode::Region);
 }
 
 void CaptureManager::startQuickPinCapture()
+{
+    startCaptureInternal(CaptureEntryMode::QuickPin);
+}
+
+void CaptureManager::startCaptureInternal(CaptureEntryMode mode)
 {
     // Skip if already in capture mode
     if (m_regionSelector && m_regionSelector->isVisible()) {
@@ -132,7 +86,11 @@ void CaptureManager::startQuickPinCapture()
     }
 
     if (!targetScreen) {
-        qCritical() << "CaptureManager: No valid screen available for quick pin capture";
+        if (mode == CaptureEntryMode::QuickPin) {
+            qCritical() << "CaptureManager: No valid screen available for quick pin capture";
+        } else {
+            qCritical() << "CaptureManager: No valid screen available for region capture";
+        }
         return;
     }
 
@@ -160,7 +118,8 @@ void CaptureManager::startQuickPinCapture()
         }
     }
 
-    initializeRegionSelector(targetScreen, preCapture, /*quickPinMode=*/true);
+    const bool quickPinMode = (mode == CaptureEntryMode::QuickPin);
+    initializeRegionSelector(targetScreen, preCapture, quickPinMode);
 }
 
 void CaptureManager::onRegionSelected(const QPixmap &screenshot, const QPoint &globalPosition, const QRect &globalRect)

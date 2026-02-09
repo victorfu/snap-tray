@@ -67,6 +67,11 @@ QScreen* resolveTargetScreen(QScreen* preferred)
     return targetScreen;
 }
 
+bool isScreenAvailable(QScreen* screen)
+{
+    return screen && QGuiApplication::screens().contains(screen);
+}
+
 IAudioCaptureEngine::AudioSource resolveAudioSource(int audioSourceSetting)
 {
     switch (audioSourceSetting) {
@@ -312,6 +317,13 @@ void RecordingManager::startFrameCapture()
         return;
     }
 
+    if (!isScreenAvailable(m_targetScreen.data())) {
+        m_targetScreen = nullptr;
+        setState(State::Idle);
+        emit recordingError(tr("Recording screen is no longer available."));
+        return;
+    }
+
     // Safety check: clean up any existing encoding worker
     if (m_encodingWorker) {
         disconnect(m_encodingWorker.get(), &EncodingWorker::finished,
@@ -383,6 +395,16 @@ void RecordingManager::beginAsyncInitialization()
         return;
     }
 
+    QScreen* targetScreen = m_targetScreen.data();
+    if (!isScreenAvailable(targetScreen)) {
+        qWarning() << "RecordingManager: Target screen is no longer available before initialization";
+        m_targetScreen = nullptr;
+        stopFrameCapture();
+        setState(State::Idle);
+        emit recordingError(tr("Recording screen is no longer available."));
+        return;
+    }
+
     // Load settings for initialization config
     auto settings = SnapTray::getSettings();
     int formatInt = settings.value("recording/outputFormat", 0).toInt();
@@ -441,13 +463,13 @@ void RecordingManager::beginAsyncInitialization()
     }
 
     // Use physical pixel size for Retina/HiDPI displays
-    qreal scale = CoordinateHelper::getDevicePixelRatio(m_targetScreen);
+    qreal scale = CoordinateHelper::getDevicePixelRatio(targetScreen);
     QSize physicalSize = CoordinateHelper::toEvenPhysicalSize(m_recordingRegion.size(), scale);
 
     // Create initialization config
     RecordingInitTask::Config config;
     config.region = m_recordingRegion;
-    config.screen = m_targetScreen;
+    config.screen = targetScreen;
     config.frameRate = m_frameRate;
     config.audioEnabled = shouldConfigureAudio;
     config.audioSource = m_audioSource;
@@ -714,11 +736,19 @@ void RecordingManager::onInitializationComplete(const QSharedPointer<RecordingIn
 
 void RecordingManager::startCountdown()
 {
+    if (!isScreenAvailable(m_targetScreen.data())) {
+        qWarning() << "RecordingManager: Target screen unavailable before countdown";
+        m_targetScreen = nullptr;
+        emit recordingError(tr("Recording screen is no longer available."));
+        cancelRecording();
+        return;
+    }
+
     setState(State::Countdown);
 
     m_countdownOverlay = new CountdownOverlay();
     m_countdownOverlay->setAttribute(Qt::WA_DeleteOnClose);
-    m_countdownOverlay->setRegion(m_recordingRegion, m_targetScreen);
+    m_countdownOverlay->setRegion(m_recordingRegion, m_targetScreen.data());
     m_countdownOverlay->setCountdownSeconds(m_countdownSeconds);
 
     connect(m_countdownOverlay, &CountdownOverlay::countdownFinished,
@@ -737,6 +767,14 @@ void RecordingManager::startRecordingAfterCountdown()
     if (m_countdownOverlay) {
         m_countdownOverlay->close();
         m_countdownOverlay = nullptr;
+    }
+
+    if (!isScreenAvailable(m_targetScreen.data())) {
+        qWarning() << "RecordingManager: Target screen unavailable after countdown";
+        m_targetScreen = nullptr;
+        emit recordingError(tr("Recording screen is no longer available."));
+        cancelRecording();
+        return;
     }
 
     // Initialize state and counters
@@ -813,6 +851,14 @@ void RecordingManager::startCaptureTimers()
 void RecordingManager::captureFrame()
 {
     if (m_state != State::Recording) {
+        return;
+    }
+
+    if (!isScreenAvailable(m_targetScreen.data())) {
+        qWarning() << "RecordingManager: Target screen disconnected during capture";
+        m_targetScreen = nullptr;
+        emit recordingError(tr("Recording screen disconnected during capture."));
+        cancelRecording();
         return;
     }
 

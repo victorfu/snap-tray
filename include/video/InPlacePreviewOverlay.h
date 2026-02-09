@@ -4,6 +4,7 @@
 #include "video/IVideoPlayer.h"
 #include <QWidget>
 #include <QRect>
+#include <QPointer>
 
 class VideoPlaybackWidget;
 class QScreen;
@@ -79,7 +80,7 @@ protected:
 private:
     VideoPlaybackWidget *m_videoWidget;
     QRect m_region;
-    QScreen *m_targetScreen;
+    QPointer<QScreen> m_targetScreen;
 };
 
 #endif // INPLACEPREVIEWOVERLAY_H

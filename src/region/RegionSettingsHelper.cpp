@@ -2,6 +2,7 @@
 #include "annotations/ArrowAnnotation.h"
 #include "annotations/LineStyle.h"
 #include "annotations/ShapeAnnotation.h"
+#include "settings/AnnotationSettingsManager.h"
 #include "settings/Settings.h"
 #include "TextFormattingState.h"
 
@@ -12,8 +13,6 @@
 #include <QFontDatabase>
 
 // Settings keys
-static const char* SETTINGS_KEY_ARROW_STYLE = "annotation/arrowStyle";
-static const char* SETTINGS_KEY_LINE_STYLE = "annotation/lineStyle";
 static const char* SETTINGS_KEY_SHAPE_TYPE = "annotation/shapeType";
 static const char* SETTINGS_KEY_SHAPE_FILL_MODE = "annotation/shapeFillMode";
 static const char* SETTINGS_KEY_TEXT_BOLD = "textBold";
@@ -42,28 +41,24 @@ void RegionSettingsHelper::setParentWidget(QWidget* widget)
 
 LineEndStyle RegionSettingsHelper::loadArrowStyle()
 {
-    int style = getSettings().value(SETTINGS_KEY_ARROW_STYLE,
-                                    static_cast<int>(LineEndStyle::EndArrow)).toInt();
-    return static_cast<LineEndStyle>(style);
+    return AnnotationSettingsManager::instance().loadArrowStyle();
 }
 
 void RegionSettingsHelper::saveArrowStyle(LineEndStyle style)
 {
-    getSettings().setValue(SETTINGS_KEY_ARROW_STYLE, static_cast<int>(style));
+    AnnotationSettingsManager::instance().saveArrowStyle(style);
 }
 
 // ========== Line Style ==========
 
 LineStyle RegionSettingsHelper::loadLineStyle()
 {
-    int style = getSettings().value(SETTINGS_KEY_LINE_STYLE,
-                                    static_cast<int>(LineStyle::Solid)).toInt();
-    return static_cast<LineStyle>(style);
+    return AnnotationSettingsManager::instance().loadLineStyle();
 }
 
 void RegionSettingsHelper::saveLineStyle(LineStyle style)
 {
-    getSettings().setValue(SETTINGS_KEY_LINE_STYLE, static_cast<int>(style));
+    AnnotationSettingsManager::instance().saveLineStyle(style);
 }
 
 // ========== Text Formatting ==========

@@ -148,8 +148,8 @@ RegionSelector::RegionSelector(QWidget* parent)
     auto& settings = AnnotationSettingsManager::instance();
     m_inputState.annotationColor = settings.loadColor();
     m_inputState.annotationWidth = settings.loadWidth();
-    m_inputState.arrowStyle = RegionSettingsHelper::loadArrowStyle();
-    m_inputState.lineStyle = RegionSettingsHelper::loadLineStyle();
+    m_inputState.arrowStyle = settings.loadArrowStyle();
+    m_inputState.lineStyle = settings.loadLineStyle();
     m_stepBadgeSize = settings.loadStepBadgeSize();
     m_mosaicBlurType = settings.loadMosaicBlurType();
 
@@ -1946,7 +1946,7 @@ void RegionSelector::onArrowStyleChanged(LineEndStyle style)
 {
     m_inputState.arrowStyle = style;
     m_toolManager->setArrowStyle(style);
-    RegionSettingsHelper::saveArrowStyle(style);
+    AnnotationSettingsManager::instance().saveArrowStyle(style);
     update();
 }
 
@@ -1954,7 +1954,7 @@ void RegionSelector::onLineStyleChanged(LineStyle style)
 {
     m_inputState.lineStyle = style;
     m_toolManager->setLineStyle(style);
-    RegionSettingsHelper::saveLineStyle(style);
+    AnnotationSettingsManager::instance().saveLineStyle(style);
     update();
 }
 
