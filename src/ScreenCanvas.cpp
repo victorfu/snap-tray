@@ -36,6 +36,19 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include "tools/ToolTraits.h"
 #include "platform/WindowLevel.h"
 
+namespace {
+int toolIdToCanvasButtonId(ToolId toolId)
+{
+    for (int buttonId = 0; buttonId < static_cast<int>(CanvasButton::Count); ++buttonId) {
+        const auto button = static_cast<CanvasButton>(buttonId);
+        if (canvasButtonToToolId(button) == toolId) {
+            return buttonId;
+        }
+    }
+    return -1;
+}
+}
+
 ScreenCanvas::ScreenCanvas(QWidget* parent)
     : QWidget(parent)
     , m_currentScreen(nullptr)
@@ -498,19 +511,7 @@ void ScreenCanvas::paintEvent(QPaintEvent*)
     // Update active button based on current tool state
     int activeButtonId = -1;
     if (m_showSubToolbar && isDrawingTool(m_currentToolId)) {
-        activeButtonId = static_cast<int>(m_currentToolId);  // ToolId maps to CanvasButton
-        // Map ToolId to CanvasButton
-        switch (m_currentToolId) {
-        case ToolId::Pencil: activeButtonId = static_cast<int>(CanvasButton::Pencil); break;
-        case ToolId::Marker: activeButtonId = static_cast<int>(CanvasButton::Marker); break;
-        case ToolId::Arrow: activeButtonId = static_cast<int>(CanvasButton::Arrow); break;
-        case ToolId::Shape: activeButtonId = static_cast<int>(CanvasButton::Shape); break;
-        case ToolId::StepBadge: activeButtonId = static_cast<int>(CanvasButton::StepBadge); break;
-        case ToolId::Text: activeButtonId = static_cast<int>(CanvasButton::Text); break;
-        case ToolId::EmojiSticker: activeButtonId = static_cast<int>(CanvasButton::EmojiSticker); break;
-        case ToolId::LaserPointer: activeButtonId = static_cast<int>(CanvasButton::LaserPointer); break;
-        default: activeButtonId = -1; break;
-        }
+        activeButtonId = toolIdToCanvasButtonId(m_currentToolId);
     }
     // Handle Whiteboard/Blackboard background mode
     if (m_bgMode == CanvasBackgroundMode::Whiteboard) {

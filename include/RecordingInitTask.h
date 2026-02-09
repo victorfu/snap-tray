@@ -8,6 +8,7 @@
 #include <QAtomicInt>
 #include <QList>
 #include <qwindowdefs.h>
+#include <memory>
 
 #include "encoding/EncoderFactory.h"
 
@@ -62,11 +63,11 @@ public:
         QString error;
 
         // Created components (ownership transfers to caller on success)
-        ICaptureEngine *captureEngine = nullptr;
-        IVideoEncoder *nativeEncoder = nullptr;
-        NativeGifEncoder *gifEncoder = nullptr;
-        WebPAnimationEncoder *webpEncoder = nullptr;
-        IAudioCaptureEngine *audioEngine = nullptr;
+        std::unique_ptr<ICaptureEngine> captureEngine;
+        std::unique_ptr<IVideoEncoder> nativeEncoder;
+        std::unique_ptr<NativeGifEncoder> gifEncoder;
+        std::unique_ptr<WebPAnimationEncoder> webpEncoder;
+        std::unique_ptr<IAudioCaptureEngine> audioEngine;
 
         bool usingNativeEncoder = false;
         QString tempAudioPath;
@@ -74,8 +75,23 @@ public:
         // Track started state for safe cleanup
         bool captureEngineStarted = false;
 
+        Result();
+        ~Result();
+
+        Result(Result&&) = default;
+        Result& operator=(Result&&) = default;
+        Result(const Result&) = delete;
+        Result& operator=(const Result&) = delete;
+
         // Cleanup on failure
         void cleanup();
+
+        // Transfer ownership of initialized resources
+        ICaptureEngine* releaseCaptureEngine() { return captureEngine.release(); }
+        IVideoEncoder* releaseNativeEncoder() { return nativeEncoder.release(); }
+        NativeGifEncoder* releaseGifEncoder() { return gifEncoder.release(); }
+        WebPAnimationEncoder* releaseWebpEncoder() { return webpEncoder.release(); }
+        IAudioCaptureEngine* releaseAudioEngine() { return audioEngine.release(); }
     };
 
     explicit RecordingInitTask(const Config &config, QObject *parent = nullptr);
@@ -89,6 +105,7 @@ public:
     /**
      * @brief Get the result after run() completes
      */
+    Result &result() { return m_result; }
     const Result &result() const { return m_result; }
 
     /**

@@ -14,35 +14,34 @@
 #include <QUuid>
 #include <QCoreApplication>
 
+RecordingInitTask::Result::Result() = default;
+
+RecordingInitTask::Result::~Result() = default;
+
 void RecordingInitTask::Result::cleanup()
 {
     if (captureEngine) {
         if (captureEngineStarted) {
             captureEngine->stop();
         }
-        delete captureEngine;
-        captureEngine = nullptr;
+        captureEngine.reset();
         captureEngineStarted = false;
     }
     if (nativeEncoder) {
         nativeEncoder->abort();
-        delete nativeEncoder;
-        nativeEncoder = nullptr;
+        nativeEncoder.reset();
     }
     if (gifEncoder) {
         gifEncoder->abort();
-        delete gifEncoder;
-        gifEncoder = nullptr;
+        gifEncoder.reset();
     }
     if (webpEncoder) {
         webpEncoder->abort();
-        delete webpEncoder;
-        webpEncoder = nullptr;
+        webpEncoder.reset();
     }
     if (audioEngine) {
         audioEngine->stop();
-        delete audioEngine;
-        audioEngine = nullptr;
+        audioEngine.reset();
     }
 }
 
@@ -129,16 +128,16 @@ void RecordingInitTask::run()
     // This must be done from the worker thread (which currently owns the objects)
     QThread* mainThread = QCoreApplication::instance()->thread();
     if (m_result.captureEngine) {
-        m_result.captureEngine->moveToThread(mainThread);
+        m_result.captureEngine.get()->moveToThread(mainThread);
     }
     if (m_result.nativeEncoder) {
-        m_result.nativeEncoder->moveToThread(mainThread);
+        m_result.nativeEncoder.get()->moveToThread(mainThread);
     }
     if (m_result.gifEncoder) {
-        m_result.gifEncoder->moveToThread(mainThread);
+        m_result.gifEncoder.get()->moveToThread(mainThread);
     }
     if (m_result.webpEncoder) {
-        m_result.webpEncoder->moveToThread(mainThread);
+        m_result.webpEncoder.get()->moveToThread(mainThread);
     }
 
     emit progress(tr("Ready"));
@@ -152,7 +151,7 @@ bool RecordingInitTask::initializeCaptureEngine()
     qDebug() << "RecordingInitTask: Creating capture engine...";
 
     // Create capture engine with nullptr parent (will be reparented on main thread)
-    m_result.captureEngine = ICaptureEngine::createBestEngine(nullptr);
+    m_result.captureEngine.reset(ICaptureEngine::createBestEngine(nullptr));
     if (!m_result.captureEngine) {
         m_result.error = "Failed to create capture engine";
         return false;
@@ -226,9 +225,9 @@ bool RecordingInitTask::initializeEncoder()
     }
 
     m_result.usingNativeEncoder = encoderResult.isNative;
-    m_result.nativeEncoder = encoderResult.nativeEncoder;
-    m_result.gifEncoder = encoderResult.gifEncoder;
-    m_result.webpEncoder = encoderResult.webpEncoder;
+    m_result.nativeEncoder.reset(encoderResult.nativeEncoder);
+    m_result.gifEncoder.reset(encoderResult.gifEncoder);
+    m_result.webpEncoder.reset(encoderResult.webpEncoder);
 
     // Note: Audio writer will be created on main thread if needed
     // (after audio engine is created there)

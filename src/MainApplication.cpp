@@ -808,60 +808,41 @@ void MainApplication::onPreviewDiscardRequested()
     // Close will happen via RecordingPreviewWindow::onDiscardClicked()
 }
 
+void MainApplication::updateActionHotkeyText(QAction* action,
+                                             SnapTray::HotkeyAction hotkeyAction,
+                                             const QString& baseName)
+{
+    if (!action) {
+        return;
+    }
+
+    auto& mgr = SnapTray::HotkeyManager::instance();
+    auto config = mgr.getConfig(hotkeyAction);
+    QString displayHotkey = SnapTray::HotkeyManager::formatKeySequence(config.keySequence);
+    if (!displayHotkey.isEmpty()) {
+        action->setText(QString("%1 (%2)").arg(baseName, displayHotkey));
+    } else {
+        action->setText(baseName);
+    }
+}
+
 void MainApplication::updateTrayMenuHotkeyText()
 {
-    using namespace SnapTray;
-    auto& mgr = HotkeyManager::instance();
-
-    if (m_regionCaptureAction) {
-        auto config = mgr.getConfig(HotkeyAction::RegionCapture);
-        QString displayHotkey = HotkeyManager::formatKeySequence(config.keySequence);
-        if (!displayHotkey.isEmpty()) {
-            m_regionCaptureAction->setText(QString("Region Capture (%1)").arg(displayHotkey));
-        } else {
-            m_regionCaptureAction->setText(QStringLiteral("Region Capture"));
-        }
-    }
-
-    if (m_screenCanvasAction) {
-        auto config = mgr.getConfig(HotkeyAction::ScreenCanvas);
-        QString displayHotkey = HotkeyManager::formatKeySequence(config.keySequence);
-        if (!displayHotkey.isEmpty()) {
-            m_screenCanvasAction->setText(QString("Screen Canvas (%1)").arg(displayHotkey));
-        } else {
-            m_screenCanvasAction->setText(QStringLiteral("Screen Canvas"));
-        }
-    }
-
-    if (m_pinFromImageAction) {
-        auto config = mgr.getConfig(HotkeyAction::PinFromImage);
-        QString displayHotkey = HotkeyManager::formatKeySequence(config.keySequence);
-        if (!displayHotkey.isEmpty()) {
-            m_pinFromImageAction->setText(QString("Pin from Image... (%1)").arg(displayHotkey));
-        } else {
-            m_pinFromImageAction->setText(QStringLiteral("Pin from Image..."));
-        }
-    }
-
-    if (m_pinHistoryAction) {
-        auto config = mgr.getConfig(HotkeyAction::PinHistory);
-        QString displayHotkey = HotkeyManager::formatKeySequence(config.keySequence);
-        if (!displayHotkey.isEmpty()) {
-            m_pinHistoryAction->setText(QString("Pin History (%1)").arg(displayHotkey));
-        } else {
-            m_pinHistoryAction->setText(QStringLiteral("Pin History"));
-        }
-    }
-
-    if (m_fullScreenRecordingAction) {
-        auto config = mgr.getConfig(HotkeyAction::RecordFullScreen);
-        QString displayHotkey = HotkeyManager::formatKeySequence(config.keySequence);
-        if (!displayHotkey.isEmpty()) {
-            m_fullScreenRecordingAction->setText(QString("Record Full Screen (%1)").arg(displayHotkey));
-        } else {
-            m_fullScreenRecordingAction->setText(QStringLiteral("Record Full Screen"));
-        }
-    }
+    updateActionHotkeyText(m_regionCaptureAction,
+                           SnapTray::HotkeyAction::RegionCapture,
+                           QStringLiteral("Region Capture"));
+    updateActionHotkeyText(m_screenCanvasAction,
+                           SnapTray::HotkeyAction::ScreenCanvas,
+                           QStringLiteral("Screen Canvas"));
+    updateActionHotkeyText(m_pinFromImageAction,
+                           SnapTray::HotkeyAction::PinFromImage,
+                           QStringLiteral("Pin from Image..."));
+    updateActionHotkeyText(m_pinHistoryAction,
+                           SnapTray::HotkeyAction::PinHistory,
+                           QStringLiteral("Pin History"));
+    updateActionHotkeyText(m_fullScreenRecordingAction,
+                           SnapTray::HotkeyAction::RecordFullScreen,
+                           QStringLiteral("Record Full Screen"));
 }
 
 void MainApplication::onUpdateAvailable(const ReleaseInfo& release)

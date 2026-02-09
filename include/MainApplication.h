@@ -55,6 +55,9 @@ private slots:
 
 private:
     void updateTrayMenuHotkeyText();
+    void updateActionHotkeyText(QAction* action,
+                                SnapTray::HotkeyAction hotkeyAction,
+                                const QString& baseName);
     QPixmap renderTextToPixmap(const QString &text);
 
     QSystemTrayIcon *m_trayIcon;

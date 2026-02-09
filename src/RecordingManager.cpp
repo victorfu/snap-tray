@@ -211,6 +211,23 @@ RecordingRegionSelector* RecordingManager::createRegionSelector()
     return m_regionSelector;
 }
 
+void RecordingManager::loadAndValidateFrameRate()
+{
+    auto settings = SnapTray::getSettings();
+    m_frameRate = settings.value("recording/framerate", kDefaultFrameRate).toInt();
+    if (m_frameRate <= 0 || m_frameRate > kMaxFrameRate) {
+        int invalidRate = m_frameRate;
+        m_frameRate = kDefaultFrameRate;
+        emit recordingWarning(tr("Invalid frame rate %1, using default %2 FPS.").arg(invalidRate).arg(kDefaultFrameRate));
+    }
+}
+
+void RecordingManager::resetPauseTracking()
+{
+    m_pausedDuration = 0;
+    m_pauseStartTime = 0;
+}
+
 void RecordingManager::startRegionSelectionWithPreset(const QRect &region, QScreen *screen)
 {
     QScreen* targetScreen = resolveTargetScreen(screen);
@@ -257,18 +274,8 @@ void RecordingManager::startFullScreenRecording(QScreen* screen)
     m_recordingRegion = targetScreen->geometry();
     m_targetScreen = targetScreen;
 
-    // Load frame rate from settings with validation
-    auto settings = SnapTray::getSettings();
-    m_frameRate = settings.value("recording/framerate", kDefaultFrameRate).toInt();
-    if (m_frameRate <= 0 || m_frameRate > kMaxFrameRate) {
-        int invalidRate = m_frameRate;
-        m_frameRate = kDefaultFrameRate;
-        emit recordingWarning(tr("Invalid frame rate %1, using default %2 FPS.").arg(invalidRate).arg(kDefaultFrameRate));
-    }
-
-    // Reset pause tracking
-    m_pausedDuration = 0;
-    m_pauseStartTime = 0;
+    loadAndValidateFrameRate();
+    resetPauseTracking();
 
     // Skip region selection and start recording directly
     startFrameCapture();
@@ -279,18 +286,8 @@ void RecordingManager::onRegionSelected(const QRect &region, QScreen *screen)
     m_recordingRegion = region;
     m_targetScreen = screen;
 
-    // Load frame rate from settings with validation
-    auto settings = SnapTray::getSettings();
-    m_frameRate = settings.value("recording/framerate", kDefaultFrameRate).toInt();
-    if (m_frameRate <= 0 || m_frameRate > kMaxFrameRate) {
-        int invalidRate = m_frameRate;
-        m_frameRate = kDefaultFrameRate;
-        emit recordingWarning(tr("Invalid frame rate %1, using default %2 FPS.").arg(invalidRate).arg(kDefaultFrameRate));
-    }
-
-    // Reset pause tracking
-    m_pausedDuration = 0;
-    m_pauseStartTime = 0;
+    loadAndValidateFrameRate();
+    resetPauseTracking();
 
     // Start recording immediately after selection
     startFrameCapture();
@@ -563,7 +560,7 @@ void RecordingManager::onInitializationComplete(const QSharedPointer<RecordingIn
     }
 
     // Get the result from the init task
-    const RecordingInitTask::Result &result = task->result();
+    RecordingInitTask::Result &result = task->result();
 
     if (!result.success) {
         qWarning() << "RecordingManager: Initialization failed:" << result.error;
@@ -584,7 +581,7 @@ void RecordingManager::onInitializationComplete(const QSharedPointer<RecordingIn
     }
 
     // Take ownership of created resources (already moved to main thread in worker)
-    m_captureEngine.reset(result.captureEngine);
+    m_captureEngine.reset(result.releaseCaptureEngine());
     if (m_captureEngine) {
         // IMPORTANT: Do NOT set parent to this, as we use std::unique_ptr for ownership
         
@@ -606,19 +603,23 @@ void RecordingManager::onInitializationComplete(const QSharedPointer<RecordingIn
     m_encodingWorker = std::make_unique<EncodingWorker>(nullptr);
 
     // Transfer encoder ownership to worker
-    if (result.nativeEncoder) {
-        m_encodingWorker->setVideoEncoder(result.nativeEncoder);
+    const bool hasNativeEncoder = (result.nativeEncoder != nullptr);
+    const bool hasGifEncoder = (result.gifEncoder != nullptr);
+    const bool hasWebPEncoder = (result.webpEncoder != nullptr);
+
+    if (hasNativeEncoder) {
+        m_encodingWorker->setVideoEncoder(result.releaseNativeEncoder());
         m_encodingWorker->setEncoderType(EncodingWorker::EncoderType::Video);
     }
-    if (result.gifEncoder) {
-        m_encodingWorker->setGifEncoder(result.gifEncoder);
-        if (!result.nativeEncoder) {
+    if (hasGifEncoder) {
+        m_encodingWorker->setGifEncoder(result.releaseGifEncoder());
+        if (!hasNativeEncoder) {
             m_encodingWorker->setEncoderType(EncodingWorker::EncoderType::Gif);
         }
     }
-    if (result.webpEncoder) {
-        m_encodingWorker->setWebPEncoder(result.webpEncoder);
-        if (!result.nativeEncoder) {
+    if (hasWebPEncoder) {
+        m_encodingWorker->setWebPEncoder(result.releaseWebpEncoder());
+        if (!hasNativeEncoder) {
             m_encodingWorker->setEncoderType(EncodingWorker::EncoderType::WebP);
         }
     }

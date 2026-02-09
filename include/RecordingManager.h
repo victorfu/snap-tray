@@ -109,6 +109,8 @@ private:
     void setState(State newState);
     void showSaveDialog(const QString &tempOutputPath);
     RecordingRegionSelector* createRegionSelector();
+    void loadAndValidateFrameRate();
+    void resetPauseTracking();
 
     // Countdown methods
     void startCountdown();                    // Begin countdown overlay
