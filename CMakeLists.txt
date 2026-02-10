@@ -377,6 +377,8 @@ target_compile_definitions(snaptray_colorwidgets PRIVATE
 # snaptray_algorithms: Detection algorithms (OpenCV dependency)
 # ----------------------------------------------------------------------------
 add_library(snaptray_algorithms STATIC
+    # QImage ↔ cv::Mat conversion utility
+    src/utils/MatConverter.cpp
     # Mosaic annotations (require OpenCV for blur)
     src/annotations/MosaicStroke.cpp
     src/annotations/MosaicRectAnnotation.cpp

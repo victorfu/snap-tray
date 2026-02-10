@@ -1,4 +1,5 @@
 #include "annotations/MosaicStroke.h"
+#include "utils/MatConverter.h"
 #include <QPainter>
 #include <QPainterPath>
 #include <QPainterPathStroker>
@@ -199,10 +200,7 @@ QImage MosaicStroke::applyGaussianBlur(const QRect &strokeBounds) const
         sigma = 1.0;
     }
 
-    // Wrap QImage data in cv::Mat and apply blur in-place
-    cv::Mat mat(rgb.height(), rgb.width(), CV_8UC4,
-                const_cast<uchar*>(rgb.bits()),
-                static_cast<size_t>(rgb.bytesPerLine()));
+    cv::Mat mat = MatConverter::toMat(rgb);
     cv::GaussianBlur(mat, mat, cv::Size(0, 0), sigma);
 
     // Copy blurred result (detaches from original buffer)

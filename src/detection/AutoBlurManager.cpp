@@ -1,6 +1,7 @@
 #include "detection/AutoBlurManager.h"
 #include "detection/FaceDetector.h"
 #include "settings/AutoBlurSettingsManager.h"
+#include "utils/MatConverter.h"
 
 #include <QDebug>
 #include <QPainter>
@@ -116,10 +117,7 @@ void AutoBlurManager::applyGaussianBlur(QImage& image, const QRect& region, int 
     QImage regionImage = image.copy(region);
     QImage rgb = regionImage.convertToFormat(QImage::Format_RGB32);
 
-    // Wrap QImage data in cv::Mat and apply blur in-place
-    cv::Mat mat(rgb.height(), rgb.width(), CV_8UC4,
-                const_cast<uchar*>(rgb.bits()),
-                static_cast<size_t>(rgb.bytesPerLine()));
+    cv::Mat mat = MatConverter::toMat(rgb);
     cv::GaussianBlur(mat, mat, cv::Size(0, 0), sigma);
 
     // Paint blurred region back to original image
@@ -136,10 +134,7 @@ void AutoBlurManager::applyPixelate(QImage& image, const QRect& region, int inte
     QImage regionImage = image.copy(region);
     QImage rgb = regionImage.convertToFormat(QImage::Format_RGB32);
 
-    // Wrap QImage data in cv::Mat
-    cv::Mat mat(rgb.height(), rgb.width(), CV_8UC4,
-                const_cast<uchar*>(rgb.bits()),
-                static_cast<size_t>(rgb.bytesPerLine()));
+    cv::Mat mat = MatConverter::toMat(rgb);
 
     // Pixelate: downscale then upscale with nearest neighbor
     int smallWidth = std::max(1, mat.cols / blockSize);
@@ -147,7 +142,9 @@ void AutoBlurManager::applyPixelate(QImage& image, const QRect& region, int inte
 
     cv::Mat small;
     cv::resize(mat, small, cv::Size(smallWidth, smallHeight), 0, 0, cv::INTER_LINEAR);
-    cv::resize(small, mat, cv::Size(rgb.width(), rgb.height()), 0, 0, cv::INTER_NEAREST);
+    cv::Mat result;
+    cv::resize(small, result, cv::Size(rgb.width(), rgb.height()), 0, 0, cv::INTER_NEAREST);
+    result.copyTo(mat);
 
     // Paint pixelated region back to original image
     QPainter painter(&image);

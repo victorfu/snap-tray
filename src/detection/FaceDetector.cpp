@@ -1,5 +1,7 @@
 #include "detection/FaceDetector.h"
 
+#include "utils/MatConverter.h"
+
 #include <QDebug>
 #include <QFile>
 #include <QTemporaryFile>
@@ -76,15 +78,8 @@ QVector<QRect> FaceDetector::detect(const QImage& image)
         return results;
     }
 
-    // Convert QImage to cv::Mat (grayscale for cascade)
-    QImage rgb = image.convertToFormat(QImage::Format_RGB32);
-
-    cv::Mat mat(rgb.height(), rgb.width(), CV_8UC4,
-                const_cast<uchar*>(rgb.bits()),
-                static_cast<size_t>(rgb.bytesPerLine()));
-
-    cv::Mat gray;
-    cv::cvtColor(mat, gray, cv::COLOR_BGRA2GRAY);
+    // Convert QImage to grayscale cv::Mat for cascade
+    cv::Mat gray = MatConverter::toGray(image);
 
     // Enhance contrast for better detection
     cv::equalizeHist(gray, gray);
