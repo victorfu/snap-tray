@@ -444,10 +444,22 @@ RegionSelector::RegionSelector(QWidget* parent)
             }
         });
     connect(m_inputHandler, &RegionInputHandler::detectionCleared,
-        this, [this]() {
+        this, [this](const QRect& previousHighlightRect) {
+            QRect oldVisualRect;
+            if (!previousHighlightRect.isNull()) {
+                const QString oldTitle = QString("%1x%2")
+                    .arg(previousHighlightRect.width())
+                    .arg(previousHighlightRect.height());
+                oldVisualRect = m_painter->getWindowHighlightVisualRect(previousHighlightRect, oldTitle);
+            }
+
             m_inputState.highlightedWindowRect = QRect();
             m_inputState.hasDetectedWindow = false;
             m_detectedWindow.reset();
+
+            if (!oldVisualRect.isNull()) {
+                update(oldVisualRect);
+            }
         });
     connect(m_inputHandler, &RegionInputHandler::selectionCancelledByRightClick,
         this, [this]() {

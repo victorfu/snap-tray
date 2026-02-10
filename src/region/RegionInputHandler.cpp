@@ -714,11 +714,25 @@ void RegionInputHandler::handleWindowDetectionMove(const QPoint& pos)
     }
 }
 
-void RegionInputHandler::handleSelectionMove(const QPoint& pos)
+void RegionInputHandler::clearDetectionAndNotify()
 {
+    if (!m_state) {
+        return;
+    }
+
+    if (!state().hasDetectedWindow && state().highlightedWindowRect.isNull()) {
+        return;
+    }
+
+    const QRect previousHighlightRect = state().highlightedWindowRect;
     state().highlightedWindowRect = QRect();
     state().hasDetectedWindow = false;
-    emit detectionCleared();
+    emit detectionCleared(previousHighlightRect);
+}
+
+void RegionInputHandler::handleSelectionMove(const QPoint& pos)
+{
+    clearDetectionAndNotify();
     m_selectionManager->updateSelection(pos);
 }
 
@@ -991,15 +1005,19 @@ void RegionInputHandler::handleThrottledUpdate()
         params.currentMagnifierRect = currentMagnifierRect;
         params.lastMagnifierRect = m_lastMagnifierRect;
         params.viewportSize = m_parentWidget->size();
-        const QRegion dirtyRegion = m_dirtyRegionPlanner.planSelectionDragRegion(params);
-
         m_lastSelectionRect = currentSelectionRect;
         m_lastMagnifierRect = currentMagnifierRect;
         m_lastToolbarRect = currentToolbarRect;
         m_lastRegionControlRect = currentRegionControlRect;
         m_lastCrosshairPoint = state().currentPoint;
-
+#if defined(Q_OS_WIN)
+        // Windows compositor can leave magnifier trails with clipped partial updates
+        // on top-level frameless tool windows. Force a full repaint to avoid ghosting.
+        m_parentWidget->update();
+#else
+        const QRegion dirtyRegion = m_dirtyRegionPlanner.planSelectionDragRegion(params);
         m_parentWidget->update(dirtyRegion);
+#endif
     }
     else if (state().isDrawing) {
         if (m_updateThrottler->shouldUpdate(UpdateThrottler::ThrottleType::Annotation)) {
@@ -1022,12 +1040,15 @@ void RegionInputHandler::handleThrottledUpdate()
         params.currentMagnifierRect = currentMagnifierRect;
         params.lastMagnifierRect = m_lastMagnifierRect;
         params.viewportSize = m_parentWidget->size();
-        const QRegion dirtyRegion = m_dirtyRegionPlanner.planHoverRegion(params);
-
         m_lastMagnifierRect = currentMagnifierRect;
         m_lastCrosshairPoint = state().currentPoint;
-
+#if defined(Q_OS_WIN)
+        // Same as drag path: full repaint prevents lingering magnifier artifacts on Windows.
+        m_parentWidget->update();
+#else
+        const QRegion dirtyRegion = m_dirtyRegionPlanner.planHoverRegion(params);
         m_parentWidget->update(dirtyRegion);
+#endif
     }
 }
 
@@ -1151,9 +1172,7 @@ void RegionInputHandler::handleSelectionRelease(const QPoint& pos)
             emit selectionFinished();
             qDebug() << "RegionInputHandler: Multi-region selection via detected window";
 
-            state().highlightedWindowRect = QRect();
-            state().hasDetectedWindow = false;
-            emit detectionCleared();
+            clearDetectionAndNotify();
         }
         return;
     }
@@ -1168,9 +1187,7 @@ void RegionInputHandler::handleSelectionRelease(const QPoint& pos)
         emit selectionFinished();
         qDebug() << "RegionInputHandler: Selection complete via detected window";
 
-        state().highlightedWindowRect = QRect();
-        state().hasDetectedWindow = false;
-        emit detectionCleared();
+        clearDetectionAndNotify();
     }
     else {
         emit fullScreenSelectionRequested();

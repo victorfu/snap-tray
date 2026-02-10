@@ -89,7 +89,7 @@ signals:
 
     // State change notifications
     void drawingStateChanged(bool isDrawing);
-    void detectionCleared();
+    void detectionCleared(const QRect& previousHighlightRect);
     void selectionCancelledByRightClick();
 
 private:
@@ -110,6 +110,7 @@ private:
     bool handleEmojiStickerMove(const QPoint& pos);
     bool handleArrowAnnotationMove(const QPoint& pos);
     void handleWindowDetectionMove(const QPoint& pos);
+    void clearDetectionAndNotify();
     void handleSelectionMove(const QPoint& pos);
     void handleAnnotationMove(const QPoint& pos);
     void handleHoverMove(const QPoint& pos, Qt::MouseButtons buttons);
