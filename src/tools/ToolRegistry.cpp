@@ -162,6 +162,28 @@ void ToolRegistry::registerTools() {
         false, QColor()
     });
 
+    registerTool({
+        ToolId::CanvasWhiteboard,
+        "whiteboard",
+        "Whiteboard",
+        "W",
+        ToolCategory::Toggle,
+        false, false, false, false, false, false,
+        false, false, false,  // UI visibility: none
+        true, QColor()
+    });
+
+    registerTool({
+        ToolId::CanvasBlackboard,
+        "blackboard",
+        "Blackboard",
+        "B",
+        ToolCategory::Toggle,
+        false, false, false, false, false, false,
+        false, false, false,  // UI visibility: none
+        false, QColor()
+    });
+
     // Action tools
 #ifdef Q_OS_MACOS
     const QString undoShortcut = "Cmd+Z";
@@ -406,6 +428,8 @@ QVector<ToolId> ToolRegistry::getToolsForToolbar(ToolbarType type) const {
             ToolId::StepBadge,
             ToolId::EmojiSticker,
             ToolId::LaserPointer,
+            ToolId::CanvasWhiteboard,
+            ToolId::CanvasBlackboard,
             ToolId::Undo,
             ToolId::Redo,
             ToolId::Clear,

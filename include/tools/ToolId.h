@@ -27,6 +27,8 @@ enum class ToolId {
     LaserPointer,
     CursorHighlight,
     Spotlight,
+    CanvasWhiteboard,   // ScreenCanvas whiteboard background mode toggle
+    CanvasBlackboard,   // ScreenCanvas blackboard background mode toggle
 
     // Actions (one-shot operations)
     Undo,

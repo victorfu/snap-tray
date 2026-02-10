@@ -110,6 +110,7 @@ void TestToolRegistry::testGet_AllRegisteredTools()
         ToolId::Text, ToolId::Mosaic, ToolId::Eraser,
         ToolId::StepBadge, ToolId::EmojiSticker,
         ToolId::LaserPointer, ToolId::CursorHighlight,
+        ToolId::CanvasWhiteboard, ToolId::CanvasBlackboard,
         ToolId::Undo, ToolId::Redo, ToolId::Clear,
         ToolId::Cancel, ToolId::OCR, ToolId::QRCode, ToolId::AutoBlur,
         ToolId::Pin, ToolId::Record, ToolId::Save,
@@ -148,7 +149,8 @@ void TestToolRegistry::testIsDrawingTool_NonDrawingTools()
     QList<ToolId> nonDrawingTools = {
         ToolId::Selection, ToolId::Undo, ToolId::Redo,
         ToolId::Save, ToolId::Copy, ToolId::Cancel,
-        ToolId::LaserPointer, ToolId::CursorHighlight
+        ToolId::LaserPointer, ToolId::CursorHighlight,
+        ToolId::CanvasWhiteboard, ToolId::CanvasBlackboard
     };
 
     for (ToolId id : nonDrawingTools) {
@@ -177,7 +179,8 @@ void TestToolRegistry::testIsActionTool_NonActionTools()
 {
     QList<ToolId> nonActionTools = {
         ToolId::Selection, ToolId::Pencil, ToolId::Marker,
-        ToolId::LaserPointer, ToolId::CursorHighlight
+        ToolId::LaserPointer, ToolId::CursorHighlight,
+        ToolId::CanvasWhiteboard, ToolId::CanvasBlackboard
     };
 
     for (ToolId id : nonActionTools) {
@@ -189,7 +192,8 @@ void TestToolRegistry::testIsActionTool_NonActionTools()
 void TestToolRegistry::testIsToggleTool_ToggleTools()
 {
     QList<ToolId> toggleTools = {
-        ToolId::LaserPointer, ToolId::CursorHighlight
+        ToolId::LaserPointer, ToolId::CursorHighlight,
+        ToolId::CanvasWhiteboard, ToolId::CanvasBlackboard
     };
 
     for (ToolId id : toggleTools) {
@@ -264,6 +268,8 @@ void TestToolRegistry::testGetToolsForToolbar_ScreenCanvas()
     QVERIFY(tools.contains(ToolId::Text));
     QVERIFY(tools.contains(ToolId::StepBadge));
     QVERIFY(tools.contains(ToolId::LaserPointer));
+    QVERIFY(tools.contains(ToolId::CanvasWhiteboard));
+    QVERIFY(tools.contains(ToolId::CanvasBlackboard));
     QVERIFY(tools.contains(ToolId::Clear));
     QVERIFY(tools.contains(ToolId::Exit));
 
@@ -321,6 +327,8 @@ void TestToolRegistry::testGetToolsForToolbar_ScreenCanvasHasToggleTools()
     QVector<ToolId> tools = registry().getToolsForToolbar(ToolbarType::ScreenCanvas);
 
     QVERIFY(tools.contains(ToolId::LaserPointer));
+    QVERIFY(tools.contains(ToolId::CanvasWhiteboard));
+    QVERIFY(tools.contains(ToolId::CanvasBlackboard));
     QVERIFY(!tools.contains(ToolId::CursorHighlight));
 }
 
@@ -337,6 +345,8 @@ void TestToolRegistry::testGetIconKey_ValidTool()
     QCOMPARE(registry().getIconKey(ToolId::Mosaic), QString("mosaic"));
     QCOMPARE(registry().getIconKey(ToolId::StepBadge), QString("step-badge"));
     QCOMPARE(registry().getIconKey(ToolId::LaserPointer), QString("laser-pointer"));
+    QCOMPARE(registry().getIconKey(ToolId::CanvasWhiteboard), QString("whiteboard"));
+    QCOMPARE(registry().getIconKey(ToolId::CanvasBlackboard), QString("blackboard"));
 }
 
 void TestToolRegistry::testGetIconKey_AllToolsHaveIcons()
@@ -355,6 +365,8 @@ void TestToolRegistry::testGetTooltip_ValidTool()
     QCOMPARE(registry().getTooltip(ToolId::Pencil), QString("Pencil"));
     QCOMPARE(registry().getTooltip(ToolId::Arrow), QString("Arrow"));
     QCOMPARE(registry().getTooltip(ToolId::Selection), QString("Selection"));
+    QCOMPARE(registry().getTooltip(ToolId::CanvasWhiteboard), QString("Whiteboard"));
+    QCOMPARE(registry().getTooltip(ToolId::CanvasBlackboard), QString("Blackboard"));
 }
 
 void TestToolRegistry::testGetTooltip_AllToolsHaveTooltips()
@@ -377,6 +389,8 @@ void TestToolRegistry::testGetTooltipWithShortcut_PlatformSpecificUndoRedo()
     QCOMPARE(registry().getTooltipWithShortcut(ToolId::Undo), QString("Undo (Ctrl+Z)"));
     QCOMPARE(registry().getTooltipWithShortcut(ToolId::Redo), QString("Redo (Ctrl+Y)"));
 #endif
+    QCOMPARE(registry().getTooltipWithShortcut(ToolId::CanvasWhiteboard), QString("Whiteboard (W)"));
+    QCOMPARE(registry().getTooltipWithShortcut(ToolId::CanvasBlackboard), QString("Blackboard (B)"));
 }
 
 // ============================================================================
@@ -431,6 +445,8 @@ void TestToolRegistry::testToolDefinition_HasCorrectCategory()
     QCOMPARE(registry().get(ToolId::Selection).category, ToolCategory::Selection);
     QCOMPARE(registry().get(ToolId::Pencil).category, ToolCategory::Drawing);
     QCOMPARE(registry().get(ToolId::LaserPointer).category, ToolCategory::Toggle);
+    QCOMPARE(registry().get(ToolId::CanvasWhiteboard).category, ToolCategory::Toggle);
+    QCOMPARE(registry().get(ToolId::CanvasBlackboard).category, ToolCategory::Toggle);
     QCOMPARE(registry().get(ToolId::Undo).category, ToolCategory::Action);
 }
 

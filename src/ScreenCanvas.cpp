@@ -36,9 +36,6 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include "platform/WindowLevel.h"
 
 namespace {
-constexpr int kCanvasActionWhiteboard = 10001;
-constexpr int kCanvasActionBlackboard = 10002;
-
 bool isToolButtonId(int buttonId)
 {
     return buttonId >= 0 && buttonId < static_cast<int>(ToolId::Count);
@@ -225,9 +222,7 @@ void ScreenCanvas::initializeIcons()
         "arrow-end-line",
         "arrow-both",
         "arrow-both-outline",
-        "auto-blur",
-        "whiteboard",
-        "blackboard"
+        "auto-blur"
     });
 }
 
@@ -251,16 +246,8 @@ void ScreenCanvas::setupToolbar()
         }
         buttons.append(config);
 
-        if (isDrawingTool(toolId)) {
+        if (isDrawingTool(toolId) || def.category == ToolCategory::Toggle) {
             activeButtonIds.append(static_cast<int>(toolId));
-        }
-
-        if (toolId == ToolId::LaserPointer) {
-            buttons.append(
-                ToolbarCore::ButtonConfig(kCanvasActionWhiteboard, "whiteboard", "Whiteboard (W)").separator());
-            buttons.append({kCanvasActionBlackboard, "blackboard", "Blackboard (B)"});
-            activeButtonIds.append(kCanvasActionWhiteboard);
-            activeButtonIds.append(kCanvasActionBlackboard);
         }
     }
     m_toolbar->setButtons(buttons);
@@ -287,8 +274,8 @@ QColor ScreenCanvas::getButtonIconColor(int buttonId) const
         isDrawingTool(buttonToolId) &&
         m_showSubToolbar;
     const bool isBgModeActive =
-        (buttonId == kCanvasActionWhiteboard && m_bgMode == CanvasBackgroundMode::Whiteboard) ||
-        (buttonId == kCanvasActionBlackboard && m_bgMode == CanvasBackgroundMode::Blackboard);
+        (isToolButton && buttonToolId == ToolId::CanvasWhiteboard && m_bgMode == CanvasBackgroundMode::Whiteboard) ||
+        (isToolButton && buttonToolId == ToolId::CanvasBlackboard && m_bgMode == CanvasBackgroundMode::Blackboard);
 
     if (buttonId == static_cast<int>(ToolId::Exit)) {
         return m_toolbarStyleConfig.iconCancelColor;
@@ -505,10 +492,10 @@ void ScreenCanvas::paintEvent(QPaintEvent*)
     }
     // Handle Whiteboard/Blackboard background mode
     if (m_bgMode == CanvasBackgroundMode::Whiteboard) {
-        activeButtonId = kCanvasActionWhiteboard;
+        activeButtonId = static_cast<int>(ToolId::CanvasWhiteboard);
     }
     if (m_bgMode == CanvasBackgroundMode::Blackboard) {
-        activeButtonId = kCanvasActionBlackboard;
+        activeButtonId = static_cast<int>(ToolId::CanvasBlackboard);
     }
     m_toolbar->setActiveButton(activeButtonId);
     m_toolbar->draw(painter);
@@ -587,24 +574,6 @@ void ScreenCanvas::updateToolbarPosition()
 
 void ScreenCanvas::handleToolbarClick(int buttonId)
 {
-    if (buttonId == kCanvasActionWhiteboard) {
-        if (m_bgMode == CanvasBackgroundMode::Whiteboard) {
-            setBackgroundMode(CanvasBackgroundMode::Screen);
-        } else {
-            setBackgroundMode(CanvasBackgroundMode::Whiteboard);
-        }
-        return;
-    }
-
-    if (buttonId == kCanvasActionBlackboard) {
-        if (m_bgMode == CanvasBackgroundMode::Blackboard) {
-            setBackgroundMode(CanvasBackgroundMode::Screen);
-        } else {
-            setBackgroundMode(CanvasBackgroundMode::Blackboard);
-        }
-        return;
-    }
-
     if (!isToolButtonId(buttonId)) {
         return;
     }
@@ -634,6 +603,22 @@ void ScreenCanvas::handleToolbarClick(int buttonId)
         }
         setToolCursor();
         update();
+        break;
+
+    case ToolId::CanvasWhiteboard:
+        if (m_bgMode == CanvasBackgroundMode::Whiteboard) {
+            setBackgroundMode(CanvasBackgroundMode::Screen);
+        } else {
+            setBackgroundMode(CanvasBackgroundMode::Whiteboard);
+        }
+        break;
+
+    case ToolId::CanvasBlackboard:
+        if (m_bgMode == CanvasBackgroundMode::Blackboard) {
+            setBackgroundMode(CanvasBackgroundMode::Screen);
+        } else {
+            setBackgroundMode(CanvasBackgroundMode::Blackboard);
+        }
         break;
 
     case ToolId::Undo:
