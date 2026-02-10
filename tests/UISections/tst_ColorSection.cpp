@@ -47,14 +47,6 @@ private slots:
     void testHandleClick_Outside();
     void testHandleClick_CustomSwatch();
 
-    // Hover tests
-    void testUpdateHovered_OnSwatch();
-    void testUpdateHovered_OffSwatch();
-
-    // Signal tests
-    void testColorSelectedSignal();
-    void testCustomColorPickerRequestedSignal();
-
     // Drawing tests
     void testDraw_Basic();
     void testDraw_WithSelection();
@@ -90,10 +82,8 @@ void TestColorSection::testSetColors()
 
 void TestColorSection::testColors_Default()
 {
-    // Default colors depend on implementation
     QVector<QColor> colors = m_section->colors();
-    // Just verify it returns something
-    QVERIFY(true);
+    QVERIFY(!colors.isEmpty());
 }
 
 void TestColorSection::testSetCurrentColor()
@@ -187,12 +177,18 @@ void TestColorSection::testHandleClick_ColorSwatch()
 
     QSignalSpy spy(m_section, &ColorSection::colorSelected);
 
-    QRect rect = m_section->boundingRect();
-    // Click somewhere in the section
-    m_section->handleClick(rect.center());
+    // Click the first standard swatch (after preview swatch).
+    const QRect rect = m_section->boundingRect();
+    const int swatchSize = 20;
+    const int swatchSpacing = 3;
+    const int sectionPadding = 4;
+    const int swatchY = rect.top() + (rect.height() - swatchSize) / 2 + swatchSize / 2;
+    const int firstStandardX = rect.left() + sectionPadding + swatchSize + swatchSpacing + swatchSize / 2;
+    const bool handled = m_section->handleClick(QPoint(firstStandardX, swatchY));
 
-    // May or may not emit signal depending on exact click location
-    QVERIFY(true);
+    QVERIFY(handled);
+    QCOMPARE(spy.count(), 1);
+    QCOMPARE(m_section->currentColor(), colors.first());
 }
 
 void TestColorSection::testHandleClick_Outside()
@@ -213,60 +209,16 @@ void TestColorSection::testHandleClick_CustomSwatch()
 
     QSignalSpy spy(m_section, &ColorSection::customColorPickerRequested);
 
-    // Click on custom swatch area (implementation-dependent location)
-    // This test is to ensure no crash
-    m_section->handleClick(m_section->boundingRect().topLeft());
+    // Click the preview swatch to open color picker.
+    const QRect rect = m_section->boundingRect();
+    const int swatchSize = 20;
+    const int sectionPadding = 4;
+    const int swatchY = rect.top() + (rect.height() - swatchSize) / 2 + swatchSize / 2;
+    const int previewX = rect.left() + sectionPadding + swatchSize / 2;
+    const bool handled = m_section->handleClick(QPoint(previewX, swatchY));
 
-    QVERIFY(true);
-}
-
-// ============================================================================
-// Hover Tests
-// ============================================================================
-
-void TestColorSection::testUpdateHovered_OnSwatch()
-{
-    QVector<QColor> colors = { Qt::red, Qt::green, Qt::blue };
-    m_section->setColors(colors);
-    m_section->updateLayout(0, 50, 0);
-
-    bool updated = m_section->updateHovered(m_section->boundingRect().center());
-
-    // updateHovered returns true if hover state changed
-    QVERIFY(true);  // Just verify no crash
-}
-
-void TestColorSection::testUpdateHovered_OffSwatch()
-{
-    m_section->updateLayout(0, 50, 0);
-
-    bool updated = m_section->updateHovered(QPoint(-100, -100));
-
-    QVERIFY(true);  // Just verify no crash
-}
-
-// ============================================================================
-// Signal Tests
-// ============================================================================
-
-void TestColorSection::testColorSelectedSignal()
-{
-    QVector<QColor> colors = { Qt::red, Qt::green, Qt::blue };
-    m_section->setColors(colors);
-    m_section->updateLayout(0, 50, 0);
-
-    QSignalSpy spy(m_section, &ColorSection::colorSelected);
-
-    // Signal should be emitted when color is clicked
-    // Exact behavior depends on layout and swatch positions
-    QVERIFY(spy.isValid());
-}
-
-void TestColorSection::testCustomColorPickerRequestedSignal()
-{
-    QSignalSpy spy(m_section, &ColorSection::customColorPickerRequested);
-
-    QVERIFY(spy.isValid());
+    QVERIFY(handled);
+    QCOMPARE(spy.count(), 1);
 }
 
 // ============================================================================
@@ -315,7 +267,15 @@ void TestColorSection::testDraw_WithSelection()
     const ToolbarStyleConfig& config = ToolbarStyleConfig::getStyle(ToolbarStyleType::Light);
     m_section->draw(painter, config);
 
-    QVERIFY(true);  // No crash
+    bool hasColor = false;
+    for (int y = 0; y < image.height() && !hasColor; ++y) {
+        for (int x = 0; x < image.width() && !hasColor; ++x) {
+            if (image.pixelColor(x, y) != Qt::white) {
+                hasColor = true;
+            }
+        }
+    }
+    QVERIFY(hasColor);
 }
 
 QTEST_MAIN(TestColorSection)

@@ -182,14 +182,15 @@ void TestShapeSection::testHandleClick_RectangleButton()
 
     QSignalSpy spy(m_section, &ShapeSection::shapeTypeChanged);
 
-    // Click on rectangle button area (first button)
+    // Click rectangle button (first button).
     QRect rect = m_section->boundingRect();
-    QPoint rectButtonPos(rect.left() + 11, rect.center().y());
+    QPoint rectButtonPos(rect.left() + 14, rect.center().y());
 
-    m_section->handleClick(rectButtonPos);
+    QVERIFY(m_section->handleClick(rectButtonPos));
 
-    // Behavior depends on button positions
-    QVERIFY(true);  // No crash
+    QCOMPARE(m_section->shapeType(), ShapeType::Rectangle);
+    QCOMPARE(spy.count(), 1);
+    QCOMPARE(spy.takeFirst().at(0).value<ShapeType>(), ShapeType::Rectangle);
 }
 
 void TestShapeSection::testHandleClick_EllipseButton()
@@ -199,13 +200,15 @@ void TestShapeSection::testHandleClick_EllipseButton()
 
     QSignalSpy spy(m_section, &ShapeSection::shapeTypeChanged);
 
-    // Click on ellipse button area (second button)
+    // Click ellipse button (second button).
     QRect rect = m_section->boundingRect();
-    QPoint ellipseButtonPos(rect.left() + 35, rect.center().y());
+    QPoint ellipseButtonPos(rect.left() + 38, rect.center().y());
 
-    m_section->handleClick(ellipseButtonPos);
+    QVERIFY(m_section->handleClick(ellipseButtonPos));
 
-    QVERIFY(true);  // No crash
+    QCOMPARE(m_section->shapeType(), ShapeType::Ellipse);
+    QCOMPARE(spy.count(), 1);
+    QCOMPARE(spy.takeFirst().at(0).value<ShapeType>(), ShapeType::Ellipse);
 }
 
 void TestShapeSection::testHandleClick_FillModeButton()
@@ -215,13 +218,15 @@ void TestShapeSection::testHandleClick_FillModeButton()
 
     QSignalSpy spy(m_section, &ShapeSection::shapeFillModeChanged);
 
-    // Click on fill mode button area (third button)
+    // Click fill mode button (third button).
     QRect rect = m_section->boundingRect();
-    QPoint fillButtonPos(rect.right() - 11, rect.center().y());
+    QPoint fillButtonPos(rect.left() + 62, rect.center().y());
 
-    m_section->handleClick(fillButtonPos);
+    QVERIFY(m_section->handleClick(fillButtonPos));
 
-    QVERIFY(true);  // No crash
+    QCOMPARE(m_section->shapeFillMode(), ShapeFillMode::Filled);
+    QCOMPARE(spy.count(), 1);
+    QCOMPARE(spy.takeFirst().at(0).value<ShapeFillMode>(), ShapeFillMode::Filled);
 }
 
 void TestShapeSection::testHandleClick_Outside()
@@ -242,18 +247,23 @@ void TestShapeSection::testUpdateHovered_OnButton()
     m_section->updateLayout(0, 50, 0);
 
     QRect rect = m_section->boundingRect();
-    bool updated = m_section->updateHovered(rect.center());
-
-    QVERIFY(true);  // Just verify no crash
+    QPoint ellipseButtonPos(rect.left() + 38, rect.center().y());
+    bool updated = m_section->updateHovered(ellipseButtonPos);
+    QVERIFY(updated);
+    QVERIFY(!m_section->updateHovered(ellipseButtonPos));
 }
 
 void TestShapeSection::testUpdateHovered_OffButton()
 {
     m_section->updateLayout(0, 50, 0);
 
-    bool updated = m_section->updateHovered(QPoint(-100, -100));
+    QRect rect = m_section->boundingRect();
+    QPoint ellipseButtonPos(rect.left() + 38, rect.center().y());
+    QVERIFY(m_section->updateHovered(ellipseButtonPos));
 
-    QVERIFY(true);  // Just verify no crash
+    bool updated = m_section->updateHovered(QPoint(-100, -100));
+    QVERIFY(updated);
+    QVERIFY(!m_section->updateHovered(QPoint(-100, -100)));
 }
 
 // ============================================================================
@@ -263,24 +273,23 @@ void TestShapeSection::testUpdateHovered_OffButton()
 void TestShapeSection::testShapeTypeChangedSignal()
 {
     QSignalSpy spy(m_section, &ShapeSection::shapeTypeChanged);
-    QVERIFY(spy.isValid());
-
-    // Direct signal emission is not available, but we can test the spy
-    emit m_section->shapeTypeChanged(ShapeType::Ellipse);
+    m_section->setShapeType(ShapeType::Ellipse);
 
     QCOMPARE(spy.count(), 1);
     QCOMPARE(spy.takeFirst().at(0).value<ShapeType>(), ShapeType::Ellipse);
+    m_section->setShapeType(ShapeType::Ellipse);
+    QCOMPARE(spy.count(), 0);
 }
 
 void TestShapeSection::testShapeFillModeChangedSignal()
 {
     QSignalSpy spy(m_section, &ShapeSection::shapeFillModeChanged);
-    QVERIFY(spy.isValid());
-
-    emit m_section->shapeFillModeChanged(ShapeFillMode::Filled);
+    m_section->setShapeFillMode(ShapeFillMode::Filled);
 
     QCOMPARE(spy.count(), 1);
     QCOMPARE(spy.takeFirst().at(0).value<ShapeFillMode>(), ShapeFillMode::Filled);
+    m_section->setShapeFillMode(ShapeFillMode::Filled);
+    QCOMPARE(spy.count(), 0);
 }
 
 // ============================================================================
@@ -325,8 +334,17 @@ void TestShapeSection::testDraw_Ellipse()
 
     const ToolbarStyleConfig& config = ToolbarStyleConfig::getStyle(ToolbarStyleType::Light);
     m_section->draw(painter, config);
+    painter.end();
 
-    QVERIFY(true);  // No crash
+    bool hasColor = false;
+    for (int y = 0; y < image.height() && !hasColor; ++y) {
+        for (int x = 0; x < image.width() && !hasColor; ++x) {
+            if (image.pixelColor(x, y) != Qt::white) {
+                hasColor = true;
+            }
+        }
+    }
+    QVERIFY(hasColor);
 }
 
 void TestShapeSection::testDraw_AllCombinations()
@@ -348,8 +366,17 @@ void TestShapeSection::testDraw_AllCombinations()
             QPainter painter(&image);
 
             m_section->draw(painter, config);
+            painter.end();
 
-            QVERIFY(true);  // No crash
+            bool hasColor = false;
+            for (int y = 0; y < image.height() && !hasColor; ++y) {
+                for (int x = 0; x < image.width() && !hasColor; ++x) {
+                    if (image.pixelColor(x, y) != Qt::white) {
+                        hasColor = true;
+                    }
+                }
+            }
+            QVERIFY(hasColor);
         }
     }
 }

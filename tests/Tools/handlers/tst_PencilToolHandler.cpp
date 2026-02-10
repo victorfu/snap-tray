@@ -45,7 +45,6 @@ private slots:
     void testOnMouseRelease_SinglePoint();
 
     // Preview tests
-    void testDrawPreview_NotDrawing();
     void testDrawPreview_WhileDrawing();
 
     // Cancellation tests
@@ -54,7 +53,6 @@ private slots:
 
     // Integration tests
     void testCompleteStroke_AddsToLayer();
-    void testMinimumPointDistance();
 
 private:
     PencilToolHandler* m_handler = nullptr;
@@ -203,17 +201,6 @@ void TestPencilToolHandler::testOnMouseRelease_SinglePoint()
 // Preview Tests
 // ============================================================================
 
-void TestPencilToolHandler::testDrawPreview_NotDrawing()
-{
-    QImage image(200, 200, QImage::Format_ARGB32);
-    image.fill(Qt::white);
-    QPainter painter(&image);
-
-    // Should not crash when not drawing
-    m_handler->drawPreview(painter);
-    QVERIFY(true);
-}
-
 void TestPencilToolHandler::testDrawPreview_WhileDrawing()
 {
     m_handler->onMousePress(m_context, QPoint(50, 50));
@@ -284,22 +271,6 @@ void TestPencilToolHandler::testCompleteStroke_AddsToLayer()
     m_handler->onMouseRelease(m_context, QPoint(180, 180));
 
     QCOMPARE(m_layer->itemCount(), initialItemCount + 1);
-}
-
-void TestPencilToolHandler::testMinimumPointDistance()
-{
-    m_handler->onMousePress(m_context, QPoint(100, 100));
-
-    // Move very small distances - should not trigger many repaints
-    int repaintAfterPress = m_repaintCount;
-
-    m_handler->onMouseMove(m_context, QPoint(100, 100));  // Same point
-    m_handler->onMouseMove(m_context, QPoint(101, 100));  // 1 pixel move
-    m_handler->onMouseMove(m_context, QPoint(101, 101));  // 1 pixel move
-
-    // Minimal movement should result in few or no additional repaints
-    // (depends on kMinPointDistance implementation)
-    QVERIFY(true);  // Just verify no crash
 }
 
 QTEST_MAIN(TestPencilToolHandler)

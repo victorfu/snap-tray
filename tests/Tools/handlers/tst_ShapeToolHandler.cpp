@@ -50,19 +50,11 @@ private slots:
     void testRectangleShape();
     void testEllipseShape();
 
-    // Fill mode tests
-    void testOutlineMode();
-    void testFilledMode();
-
     // Preview tests
-    void testDrawPreview_NotDrawing();
     void testDrawPreview_WhileDrawing();
 
     // Cancellation tests
     void testCancelDrawing();
-
-    // Constraint tests
-    void testShiftKey_ConstrainsSquare();
 
 private:
     ShapeToolHandler* m_handler = nullptr;
@@ -242,53 +234,8 @@ void TestShapeToolHandler::testEllipseShape()
 }
 
 // ============================================================================
-// Fill Mode Tests
-// ============================================================================
-
-void TestShapeToolHandler::testOutlineMode()
-{
-    m_context->shapeFillMode = 0;  // Outline
-
-    m_handler->onMousePress(m_context, QPoint(100, 100));
-    m_handler->onMouseMove(m_context, QPoint(200, 200));
-
-    QImage image(300, 300, QImage::Format_ARGB32);
-    image.fill(Qt::white);
-    QPainter painter(&image);
-
-    m_handler->drawPreview(painter);
-    QVERIFY(true);  // No crash
-}
-
-void TestShapeToolHandler::testFilledMode()
-{
-    m_context->shapeFillMode = 1;  // Filled
-
-    m_handler->onMousePress(m_context, QPoint(100, 100));
-    m_handler->onMouseMove(m_context, QPoint(200, 200));
-
-    QImage image(300, 300, QImage::Format_ARGB32);
-    image.fill(Qt::white);
-    QPainter painter(&image);
-
-    m_handler->drawPreview(painter);
-    QVERIFY(true);  // No crash
-}
-
-// ============================================================================
 // Preview Tests
 // ============================================================================
-
-void TestShapeToolHandler::testDrawPreview_NotDrawing()
-{
-    QImage image(200, 200, QImage::Format_ARGB32);
-    image.fill(Qt::white);
-    QPainter painter(&image);
-
-    // Should not crash when not drawing
-    m_handler->drawPreview(painter);
-    QVERIFY(true);
-}
 
 void TestShapeToolHandler::testDrawPreview_WhileDrawing()
 {
@@ -328,26 +275,6 @@ void TestShapeToolHandler::testCancelDrawing()
     m_handler->cancelDrawing();
 
     QVERIFY(!m_handler->isDrawing());
-}
-
-// ============================================================================
-// Constraint Tests
-// ============================================================================
-
-void TestShapeToolHandler::testShiftKey_ConstrainsSquare()
-{
-    m_context->shiftPressed = true;
-
-    m_handler->onMousePress(m_context, QPoint(100, 100));
-    m_handler->onMouseMove(m_context, QPoint(200, 150));  // Not square
-
-    // With shift, the shape should be constrained to square
-    QImage image(300, 300, QImage::Format_ARGB32);
-    image.fill(Qt::white);
-    QPainter painter(&image);
-
-    m_handler->drawPreview(painter);
-    QVERIFY(true);  // No crash
 }
 
 QTEST_MAIN(TestShapeToolHandler)

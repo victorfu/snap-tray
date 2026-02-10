@@ -236,11 +236,9 @@ void TestWidthSection::testHandleClick()
 {
     m_section->updateLayout(0, 50, 0);
 
-    QRect rect = m_section->boundingRect();
-    bool handled = m_section->handleClick(rect.center());
-
-    // Width section may or may not handle clicks
-    QVERIFY(true);  // Just verify no crash
+    const QRect rect = m_section->boundingRect();
+    QVERIFY(m_section->handleClick(rect.center()));
+    QVERIFY(!m_section->handleClick(QPoint(-100, -100)));
 }
 
 // ============================================================================
@@ -251,9 +249,12 @@ void TestWidthSection::testUpdateHovered()
 {
     m_section->updateLayout(0, 50, 0);
 
-    bool updated = m_section->updateHovered(m_section->boundingRect().center());
+    const QPoint inside = m_section->boundingRect().center();
+    const QPoint outside(-100, -100);
 
-    QVERIFY(true);  // Just verify no crash
+    QVERIFY(m_section->updateHovered(inside));
+    QVERIFY(!m_section->updateHovered(inside));
+    QVERIFY(m_section->updateHovered(outside));
 }
 
 // ============================================================================
@@ -266,7 +267,6 @@ void TestWidthSection::testWidthChangedSignal()
     m_section->setCurrentWidth(10);
 
     QSignalSpy spy(m_section, &WidthSection::widthChanged);
-    QVERIFY(spy.isValid());
 
     m_section->handleWheel(120);
 
@@ -326,8 +326,17 @@ void TestWidthSection::testDraw_DifferentWidths()
         QPainter painter(&image);
 
         m_section->draw(painter, config);
+        painter.end();
 
-        QVERIFY(true);  // No crash
+        bool hasColor = false;
+        for (int y = 0; y < image.height() && !hasColor; ++y) {
+            for (int x = 0; x < image.width() && !hasColor; ++x) {
+                if (image.pixelColor(x, y) != Qt::white) {
+                    hasColor = true;
+                }
+            }
+        }
+        QVERIFY(hasColor);
     }
 }
 

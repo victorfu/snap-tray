@@ -26,19 +26,6 @@ private slots:
     void testDestructorCleansUp();
     void testMultipleInstances();
 
-    // Signal availability tests
-    void testPreparationStartedSignal();
-    void testPreparationProgressSignal();
-    void testRecordingStartedSignal();
-    void testRecordingStoppedSignal();
-    void testRecordingCancelledSignal();
-    void testRecordingErrorSignal();
-    void testRecordingWarningSignal();
-    void testDurationChangedSignal();
-    void testRecordingPausedSignal();
-    void testRecordingResumedSignal();
-    void testStateChangedSignal();
-
     // Bug #2 prevention: Null pointer checks
     void testOnInitializationComplete_InitTaskNull_Prevention();
     void testNullPointerSafety();
@@ -107,76 +94,6 @@ void TestRecordingManagerLifecycle::testMultipleInstances()
 
     QCOMPARE(manager1.state(), RecordingManager::State::Idle);
     QCOMPARE(manager2.state(), RecordingManager::State::Idle);
-}
-
-// ============================================================================
-// Signal Availability Tests
-// ============================================================================
-
-void TestRecordingManagerLifecycle::testPreparationStartedSignal()
-{
-    QSignalSpy spy(m_manager, &RecordingManager::preparationStarted);
-    QVERIFY(spy.isValid());
-}
-
-void TestRecordingManagerLifecycle::testPreparationProgressSignal()
-{
-    QSignalSpy spy(m_manager, &RecordingManager::preparationProgress);
-    QVERIFY(spy.isValid());
-}
-
-void TestRecordingManagerLifecycle::testRecordingStartedSignal()
-{
-    QSignalSpy spy(m_manager, &RecordingManager::recordingStarted);
-    QVERIFY(spy.isValid());
-}
-
-void TestRecordingManagerLifecycle::testRecordingStoppedSignal()
-{
-    QSignalSpy spy(m_manager, &RecordingManager::recordingStopped);
-    QVERIFY(spy.isValid());
-}
-
-void TestRecordingManagerLifecycle::testRecordingCancelledSignal()
-{
-    QSignalSpy spy(m_manager, &RecordingManager::recordingCancelled);
-    QVERIFY(spy.isValid());
-}
-
-void TestRecordingManagerLifecycle::testRecordingErrorSignal()
-{
-    QSignalSpy spy(m_manager, &RecordingManager::recordingError);
-    QVERIFY(spy.isValid());
-}
-
-void TestRecordingManagerLifecycle::testRecordingWarningSignal()
-{
-    QSignalSpy spy(m_manager, &RecordingManager::recordingWarning);
-    QVERIFY(spy.isValid());
-}
-
-void TestRecordingManagerLifecycle::testDurationChangedSignal()
-{
-    QSignalSpy spy(m_manager, &RecordingManager::durationChanged);
-    QVERIFY(spy.isValid());
-}
-
-void TestRecordingManagerLifecycle::testRecordingPausedSignal()
-{
-    QSignalSpy spy(m_manager, &RecordingManager::recordingPaused);
-    QVERIFY(spy.isValid());
-}
-
-void TestRecordingManagerLifecycle::testRecordingResumedSignal()
-{
-    QSignalSpy spy(m_manager, &RecordingManager::recordingResumed);
-    QVERIFY(spy.isValid());
-}
-
-void TestRecordingManagerLifecycle::testStateChangedSignal()
-{
-    QSignalSpy spy(m_manager, &RecordingManager::stateChanged);
-    QVERIFY(spy.isValid());
 }
 
 // ============================================================================

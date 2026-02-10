@@ -47,15 +47,11 @@ private slots:
     void testDragMode_StartsOnPress();
     void testDragMode_UpdatesOnMove();
     void testDragMode_CreatesArrowOnRelease();
-    void testDragMode_MinimumDragDistance();
 
     // Click mode tests (polyline)
-    void testClickMode_EntersOnClick();
     void testClickMode_AddsPointsOnClick();
-    void testClickMode_FinishesOnDoubleClick();
 
     // Preview tests
-    void testDrawPreview_NotDrawing();
     void testDrawPreview_DragMode();
     void testDrawPreview_ClickMode();
 
@@ -63,11 +59,7 @@ private slots:
     void testCancelDrawing_DragMode();
     void testCancelDrawing_ClickMode();
     void testHandleEscape_DragMode();
-    void testHandleEscape_ClickMode();
     void testHandleEscape_NotDrawing();
-
-    // Shift key tests
-    void testShiftKey_SnapsAngle();
 
 private:
     ArrowToolHandler* m_handler = nullptr;
@@ -223,35 +215,9 @@ void TestArrowToolHandler::testDragMode_CreatesArrowOnRelease()
     QVERIFY(!m_handler->isDrawing());
 }
 
-void TestArrowToolHandler::testDragMode_MinimumDragDistance()
-{
-    size_t initialItemCount = m_layer->itemCount();
-
-    // Very small drag - should not create arrow
-    m_handler->onMousePress(m_context, QPoint(100, 100));
-    m_handler->onMouseMove(m_context, QPoint(102, 102));  // Only 2 pixels
-    m_handler->onMouseRelease(m_context, QPoint(102, 102));
-
-    // Small drag enters click mode instead
-    // The arrow is not added with minimal movement
-    QVERIFY(true);  // Implementation-dependent
-}
-
 // ============================================================================
 // Click Mode Tests (Polyline)
 // ============================================================================
-
-void TestArrowToolHandler::testClickMode_EntersOnClick()
-{
-    // Click without drag should enter polyline mode
-    m_handler->onMousePress(m_context, QPoint(100, 100));
-    m_handler->onMouseRelease(m_context, QPoint(100, 100));
-
-    // In polyline mode, isDrawing should return true for the mode
-    // Note: Polyline mode is tracked separately from m_isDrawing
-    // The exact state depends on implementation details
-    QVERIFY(true);  // Just verify no crash - polyline mode behavior is implementation-specific
-}
 
 void TestArrowToolHandler::testClickMode_AddsPointsOnClick()
 {
@@ -267,36 +233,9 @@ void TestArrowToolHandler::testClickMode_AddsPointsOnClick()
     QVERIFY(m_repaintCount > repaintAfterFirstClick);
 }
 
-void TestArrowToolHandler::testClickMode_FinishesOnDoubleClick()
-{
-    // Enter click mode and add points
-    m_handler->onMousePress(m_context, QPoint(100, 100));
-    m_handler->onMouseRelease(m_context, QPoint(100, 100));
-
-    m_handler->onMousePress(m_context, QPoint(150, 150));
-    m_handler->onMouseRelease(m_context, QPoint(150, 150));
-
-    // Double-click to finish - behavior depends on polyline mode entry
-    m_handler->onDoubleClick(m_context, QPoint(200, 200));
-
-    // Just verify no crash - actual item creation depends on implementation details
-    QVERIFY(true);
-}
-
 // ============================================================================
 // Preview Tests
 // ============================================================================
-
-void TestArrowToolHandler::testDrawPreview_NotDrawing()
-{
-    QImage image(200, 200, QImage::Format_ARGB32);
-    image.fill(Qt::white);
-    QPainter painter(&image);
-
-    // Should not crash when not drawing
-    m_handler->drawPreview(painter);
-    QVERIFY(true);
-}
 
 void TestArrowToolHandler::testDrawPreview_DragMode()
 {
@@ -388,49 +327,11 @@ void TestArrowToolHandler::testHandleEscape_DragMode()
     QVERIFY(!m_handler->isDrawing());
 }
 
-void TestArrowToolHandler::testHandleEscape_ClickMode()
-{
-    // Enter click mode - click without significant drag
-    m_handler->onMousePress(m_context, QPoint(100, 100));
-    m_handler->onMouseRelease(m_context, QPoint(100, 100));
-
-    // Add a point
-    m_handler->onMousePress(m_context, QPoint(150, 150));
-    m_handler->onMouseRelease(m_context, QPoint(150, 150));
-
-    // Escape handling depends on whether polyline mode was entered
-    bool handled = m_handler->handleEscape(m_context);
-
-    // Just verify no crash - polyline mode entry depends on drag threshold
-    QVERIFY(true);
-}
-
 void TestArrowToolHandler::testHandleEscape_NotDrawing()
 {
     bool handled = m_handler->handleEscape(m_context);
 
     QVERIFY(!handled);
-}
-
-// ============================================================================
-// Shift Key Tests
-// ============================================================================
-
-void TestArrowToolHandler::testShiftKey_SnapsAngle()
-{
-    m_context->shiftPressed = true;
-
-    m_handler->onMousePress(m_context, QPoint(100, 100));
-    m_handler->onMouseMove(m_context, QPoint(150, 120));  // Not 45 degrees
-
-    // With shift, the angle should snap to 45 degrees
-    // This is tested indirectly by verifying no crash and drawing works
-    QImage image(200, 200, QImage::Format_ARGB32);
-    image.fill(Qt::white);
-    QPainter painter(&image);
-
-    m_handler->drawPreview(painter);
-    QVERIFY(true);  // No crash
 }
 
 QTEST_MAIN(TestArrowToolHandler)

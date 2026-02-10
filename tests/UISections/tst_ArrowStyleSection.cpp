@@ -120,12 +120,27 @@ void TestArrowStyleSection::testIsDropdownOpen_Default()
 
 void TestArrowStyleSection::testSetDropdownExpandsUpward()
 {
-    m_section->setDropdownExpandsUpward(true);
-    // No direct getter, but should not crash
-    QVERIFY(true);
+    m_section->updateLayout(0, 100, 0);
+    QPoint buttonPos = m_section->boundingRect().center();
 
-    m_section->setDropdownExpandsUpward(false);
-    QVERIFY(true);
+    // Default: dropdown opens downward.
+    QVERIFY(m_section->handleClick(buttonPos));
+    QVERIFY(m_section->isDropdownOpen());
+    QRect downwardRect = m_section->dropdownRect();
+    QVERIFY(downwardRect.top() > buttonPos.y());
+
+    // Close and switch to upward expansion.
+    QVERIFY(m_section->handleClick(buttonPos));
+    QVERIFY(!m_section->isDropdownOpen());
+
+    m_section->setDropdownExpandsUpward(true);
+    m_section->updateLayout(0, 100, 0);
+    buttonPos = m_section->boundingRect().center();
+
+    QVERIFY(m_section->handleClick(buttonPos));
+    QVERIFY(m_section->isDropdownOpen());
+    QRect upwardRect = m_section->dropdownRect();
+    QVERIFY(upwardRect.bottom() < buttonPos.y());
 }
 
 // ============================================================================
@@ -213,19 +228,21 @@ void TestArrowStyleSection::testHandleClick_DropdownOption()
 
     // First open the dropdown
     QRect buttonRect = m_section->boundingRect();
-    m_section->handleClick(buttonRect.center());
+    QVERIFY(m_section->handleClick(buttonRect.center()));
     QVERIFY(m_section->isDropdownOpen());
 
     QSignalSpy spy(m_section, &ArrowStyleSection::arrowStyleChanged);
 
-    // Click on a dropdown option
+    // Click on the first dropdown option (LineEndStyle::None).
     QRect dropdownRect = m_section->dropdownRect();
-    if (!dropdownRect.isEmpty()) {
-        m_section->handleClick(dropdownRect.center());
-    }
+    QVERIFY(!dropdownRect.isEmpty());
+    QPoint firstOptionPos(dropdownRect.left() + dropdownRect.width() / 2, dropdownRect.top() + 14);
+    QVERIFY(m_section->handleClick(firstOptionPos));
 
-    // Dropdown should close after selection
-    QVERIFY(true);  // Behavior depends on implementation
+    QVERIFY(!m_section->isDropdownOpen());
+    QCOMPARE(m_section->arrowStyle(), LineEndStyle::None);
+    QCOMPARE(spy.count(), 1);
+    QCOMPARE(spy.takeFirst().at(0).value<LineEndStyle>(), LineEndStyle::None);
 }
 
 void TestArrowStyleSection::testHandleClick_Outside()
@@ -247,8 +264,8 @@ void TestArrowStyleSection::testUpdateHovered_OnButton()
 
     QRect rect = m_section->boundingRect();
     bool updated = m_section->updateHovered(rect.center());
-
-    QVERIFY(true);  // Just verify no crash
+    QVERIFY(updated);
+    QVERIFY(!m_section->updateHovered(rect.center()));
 }
 
 void TestArrowStyleSection::testUpdateHovered_OnDropdown()
@@ -261,19 +278,22 @@ void TestArrowStyleSection::testUpdateHovered_OnDropdown()
 
     if (m_section->isDropdownOpen()) {
         QRect dropdownRect = m_section->dropdownRect();
-        m_section->updateHovered(dropdownRect.center());
+        QVERIFY(!dropdownRect.isEmpty());
+        QVERIFY(m_section->updateHovered(dropdownRect.center()));
+        QVERIFY(!m_section->updateHovered(dropdownRect.center()));
     }
-
-    QVERIFY(true);  // Just verify no crash
 }
 
 void TestArrowStyleSection::testUpdateHovered_Outside()
 {
     m_section->updateLayout(0, 50, 0);
 
-    bool updated = m_section->updateHovered(QPoint(-100, -100));
+    QRect rect = m_section->boundingRect();
+    QVERIFY(m_section->updateHovered(rect.center()));
 
-    QVERIFY(true);  // Just verify no crash
+    bool updated = m_section->updateHovered(QPoint(-100, -100));
+    QVERIFY(updated);
+    QVERIFY(!m_section->updateHovered(QPoint(-100, -100)));
 }
 
 // ============================================================================
@@ -283,12 +303,12 @@ void TestArrowStyleSection::testUpdateHovered_Outside()
 void TestArrowStyleSection::testArrowStyleChangedSignal()
 {
     QSignalSpy spy(m_section, &ArrowStyleSection::arrowStyleChanged);
-    QVERIFY(spy.isValid());
-
-    emit m_section->arrowStyleChanged(LineEndStyle::BothArrow);
+    m_section->setArrowStyle(LineEndStyle::BothArrow);
 
     QCOMPARE(spy.count(), 1);
     QCOMPARE(spy.takeFirst().at(0).value<LineEndStyle>(), LineEndStyle::BothArrow);
+    m_section->setArrowStyle(LineEndStyle::BothArrow);
+    QCOMPARE(spy.count(), 0);
 }
 
 // ============================================================================
@@ -345,8 +365,17 @@ void TestArrowStyleSection::testDraw_AllStyles()
         QPainter painter(&image);
 
         m_section->draw(painter, config);
+        painter.end();
 
-        QVERIFY(true);  // No crash
+        bool hasColor = false;
+        for (int y = 0; y < image.height() && !hasColor; ++y) {
+            for (int x = 0; x < image.width() && !hasColor; ++x) {
+                if (image.pixelColor(x, y) != Qt::white) {
+                    hasColor = true;
+                }
+            }
+        }
+        QVERIFY(hasColor);
     }
 }
 

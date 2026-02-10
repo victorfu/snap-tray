@@ -1,9 +1,8 @@
 #include <QtTest/QtTest>
-#include <QPainter>
-#include <QImage>
 #include "tools/handlers/EraserToolHandler.h"
 #include "tools/ToolContext.h"
 #include "annotations/AnnotationLayer.h"
+#include "annotations/ErasedItemsGroup.h"
 #include "annotations/PencilStroke.h"
 
 /**
@@ -42,10 +41,6 @@ private slots:
     void testOnMousePress_StartsErasing();
     void testOnMouseMove_ContinuesErasing();
     void testOnMouseRelease_StopsErasing();
-
-    // Preview tests
-    void testDrawPreview_NotErasing();
-    void testDrawPreview_WhileErasing();
 
     // Cancellation tests
     void testCancelDrawing();
@@ -180,34 +175,6 @@ void TestEraserToolHandler::testOnMouseRelease_StopsErasing()
 }
 
 // ============================================================================
-// Preview Tests
-// ============================================================================
-
-void TestEraserToolHandler::testDrawPreview_NotErasing()
-{
-    QImage image(200, 200, QImage::Format_ARGB32);
-    image.fill(Qt::white);
-    QPainter painter(&image);
-
-    // Should not crash when not erasing
-    m_handler->drawPreview(painter);
-    QVERIFY(true);
-}
-
-void TestEraserToolHandler::testDrawPreview_WhileErasing()
-{
-    m_handler->onMousePress(m_context, QPoint(100, 100));
-
-    QImage image(200, 200, QImage::Format_ARGB32);
-    image.fill(Qt::white);
-    QPainter painter(&image);
-
-    // Should draw eraser cursor/preview
-    m_handler->drawPreview(painter);
-    QVERIFY(true);  // No crash
-}
-
-// ============================================================================
 // Cancellation Tests
 // ============================================================================
 
@@ -236,14 +203,13 @@ void TestEraserToolHandler::testErasesIntersectingItems()
     QCOMPARE(m_layer->itemCount(), 1);
 
     // Erase over the stroke
-    m_context->width = 30;  // Large eraser
     m_handler->onMousePress(m_context, QPoint(150, 100));
     m_handler->onMouseMove(m_context, QPoint(150, 100));
     m_handler->onMouseRelease(m_context, QPoint(150, 100));
 
-    // The stroke should be removed (or partially erased depending on implementation)
-    // Exact behavior depends on implementation
-    QVERIFY(true);  // At minimum, no crash
+    // Eraser stores removed items in an ErasedItemsGroup for undo/redo support.
+    QCOMPARE(m_layer->itemCount(), 1);
+    QVERIFY(dynamic_cast<ErasedItemsGroup*>(m_layer->itemAt(0)) != nullptr);
 }
 
 void TestEraserToolHandler::testDoesNotEraseNonIntersecting()

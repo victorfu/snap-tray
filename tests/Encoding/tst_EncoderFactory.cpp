@@ -25,15 +25,6 @@ private slots:
 
     // Config tests
     void testDefaultConfig();
-    void testConfigFormats();
-    void testConfigPriorities();
-    void testConfigAudioSettings();
-
-    // Result tests
-    void testResultDefaultValues();
-    void testResultHasEncoderNative();
-    void testResultHasEncoderGif();
-    void testResultHasEncoderNone();
 
     // Factory creation tests - GIF
     void testCreateGifEncoder();
@@ -111,80 +102,6 @@ void TestEncoderFactory::testDefaultConfig()
     QCOMPARE(config.audioSampleRate, 48000);
     QCOMPARE(config.audioChannels, 2);
     QCOMPARE(config.audioBitsPerSample, 16);
-}
-
-void TestEncoderFactory::testConfigFormats()
-{
-    EncoderFactory::EncoderConfig mp4Config;
-    mp4Config.format = EncoderFactory::Format::MP4;
-    QCOMPARE(mp4Config.format, EncoderFactory::Format::MP4);
-
-    EncoderFactory::EncoderConfig gifConfig;
-    gifConfig.format = EncoderFactory::Format::GIF;
-    QCOMPARE(gifConfig.format, EncoderFactory::Format::GIF);
-}
-
-void TestEncoderFactory::testConfigPriorities()
-{
-    EncoderFactory::EncoderConfig config1;
-    config1.priority = EncoderFactory::Priority::NativeFirst;
-    QCOMPARE(config1.priority, EncoderFactory::Priority::NativeFirst);
-
-    EncoderFactory::EncoderConfig config2;
-    config2.priority = EncoderFactory::Priority::NativeOnly;
-    QCOMPARE(config2.priority, EncoderFactory::Priority::NativeOnly);
-}
-
-void TestEncoderFactory::testConfigAudioSettings()
-{
-    EncoderFactory::EncoderConfig config;
-    config.enableAudio = true;
-    config.audioSampleRate = 44100;
-    config.audioChannels = 1;
-    config.audioBitsPerSample = 24;
-
-    QVERIFY(config.enableAudio);
-    QCOMPARE(config.audioSampleRate, 44100);
-    QCOMPARE(config.audioChannels, 1);
-    QCOMPARE(config.audioBitsPerSample, 24);
-}
-
-// ============================================================================
-// Result Tests
-// ============================================================================
-
-void TestEncoderFactory::testResultDefaultValues()
-{
-    EncoderFactory::EncoderResult result;
-
-    QVERIFY(result.nativeEncoder == nullptr);
-    QVERIFY(result.gifEncoder == nullptr);
-    QVERIFY(!result.success);
-    QVERIFY(!result.isNative);
-    QVERIFY(result.errorMessage.isEmpty());
-    QVERIFY(!result.hasEncoder());
-}
-
-void TestEncoderFactory::testResultHasEncoderNative()
-{
-    EncoderFactory::EncoderResult result;
-    // Simulate native encoder being set
-    // Note: Can't actually set it without creating real encoder
-    // This documents the expected behavior
-    QVERIFY(!result.hasEncoder());
-}
-
-void TestEncoderFactory::testResultHasEncoderGif()
-{
-    EncoderFactory::EncoderResult result;
-    // Simulate gif encoder being set
-    QVERIFY(!result.hasEncoder());
-}
-
-void TestEncoderFactory::testResultHasEncoderNone()
-{
-    EncoderFactory::EncoderResult result;
-    QVERIFY(!result.hasEncoder());
 }
 
 // ============================================================================

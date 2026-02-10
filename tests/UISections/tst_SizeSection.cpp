@@ -164,9 +164,10 @@ void TestSizeSection::testHandleClick_SmallButton()
     // First button (Small)
     QPoint smallButtonPos(rect.left() + 11, rect.center().y());
 
-    m_section->handleClick(smallButtonPos);
-
-    QVERIFY(true);  // Just verify no crash
+    QVERIFY(m_section->handleClick(smallButtonPos));
+    QCOMPARE(m_section->size(), StepBadgeSize::Small);
+    QCOMPARE(spy.count(), 1);
+    QCOMPARE(spy.takeFirst().at(0).value<StepBadgeSize>(), StepBadgeSize::Small);
 }
 
 void TestSizeSection::testHandleClick_MediumButton()
@@ -180,9 +181,10 @@ void TestSizeSection::testHandleClick_MediumButton()
     // Second button (Medium)
     QPoint mediumButtonPos(rect.center().x(), rect.center().y());
 
-    m_section->handleClick(mediumButtonPos);
-
-    QVERIFY(true);  // Just verify no crash
+    QVERIFY(m_section->handleClick(mediumButtonPos));
+    QCOMPARE(m_section->size(), StepBadgeSize::Medium);
+    QCOMPARE(spy.count(), 1);
+    QCOMPARE(spy.takeFirst().at(0).value<StepBadgeSize>(), StepBadgeSize::Medium);
 }
 
 void TestSizeSection::testHandleClick_LargeButton()
@@ -196,9 +198,10 @@ void TestSizeSection::testHandleClick_LargeButton()
     // Third button (Large)
     QPoint largeButtonPos(rect.right() - 11, rect.center().y());
 
-    m_section->handleClick(largeButtonPos);
-
-    QVERIFY(true);  // Just verify no crash
+    QVERIFY(m_section->handleClick(largeButtonPos));
+    QCOMPARE(m_section->size(), StepBadgeSize::Large);
+    QCOMPARE(spy.count(), 1);
+    QCOMPARE(spy.takeFirst().at(0).value<StepBadgeSize>(), StepBadgeSize::Large);
 }
 
 void TestSizeSection::testHandleClick_Outside()
@@ -218,19 +221,19 @@ void TestSizeSection::testUpdateHovered_OnButton()
 {
     m_section->updateLayout(0, 50, 0);
 
-    QRect rect = m_section->boundingRect();
-    bool updated = m_section->updateHovered(rect.center());
-
-    QVERIFY(true);  // Just verify no crash
+    const QPoint inside = m_section->boundingRect().center();
+    QVERIFY(m_section->updateHovered(inside));
+    QVERIFY(!m_section->updateHovered(inside));
 }
 
 void TestSizeSection::testUpdateHovered_OffButton()
 {
     m_section->updateLayout(0, 50, 0);
 
-    bool updated = m_section->updateHovered(QPoint(-100, -100));
-
-    QVERIFY(true);  // Just verify no crash
+    const QPoint inside = m_section->boundingRect().center();
+    const QPoint outside(-100, -100);
+    QVERIFY(m_section->updateHovered(inside));
+    QVERIFY(m_section->updateHovered(outside));
 }
 
 // ============================================================================
@@ -240,9 +243,7 @@ void TestSizeSection::testUpdateHovered_OffButton()
 void TestSizeSection::testSizeChangedSignal()
 {
     QSignalSpy spy(m_section, &SizeSection::sizeChanged);
-    QVERIFY(spy.isValid());
-
-    emit m_section->sizeChanged(StepBadgeSize::Large);
+    m_section->setSize(StepBadgeSize::Large);
 
     QCOMPARE(spy.count(), 1);
     QCOMPARE(spy.takeFirst().at(0).value<StepBadgeSize>(), StepBadgeSize::Large);
@@ -300,7 +301,15 @@ void TestSizeSection::testDraw_AllSizes()
 
         m_section->draw(painter, config);
 
-        QVERIFY(true);  // No crash
+        bool hasColor = false;
+        for (int y = 0; y < image.height() && !hasColor; ++y) {
+            for (int x = 0; x < image.width() && !hasColor; ++x) {
+                if (image.pixelColor(x, y) != Qt::white) {
+                    hasColor = true;
+                }
+            }
+        }
+        QVERIFY(hasColor);
     }
 }
 
