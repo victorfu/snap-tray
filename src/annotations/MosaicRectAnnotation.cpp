@@ -203,27 +203,20 @@ QImage MosaicRectAnnotation::applyGaussianBlur(qreal dpr) const
     QImage regionImage = m_sourcePixmap->copy(clampedRect).toImage();
     QImage rgb = regionImage.convertToFormat(QImage::Format_RGB32);
 
+    // Calculate sigma based on block size (larger block = more blur)
+    double sigma = static_cast<double>(m_blockSize) * sourceDpr / 2.0;
+    if (sigma < 1.0) {
+        sigma = 1.0;
+    }
+
+    // Wrap QImage data in cv::Mat and apply blur in-place
     cv::Mat mat(rgb.height(), rgb.width(), CV_8UC4,
                 const_cast<uchar*>(rgb.bits()),
                 static_cast<size_t>(rgb.bytesPerLine()));
+    cv::GaussianBlur(mat, mat, cv::Size(0, 0), sigma);
 
-    cv::Mat bgr;
-    cv::cvtColor(mat, bgr, cv::COLOR_BGRA2BGR);
-
-    // Calculate sigma based on block size (larger block = more blur)
-    double sigma = static_cast<double>(m_blockSize) * sourceDpr / 2.0;
-    if (sigma < 1.0) sigma = 1.0;
-
-    // Apply Gaussian blur
-    cv::GaussianBlur(bgr, bgr, cv::Size(0, 0), sigma);
-
-    // Convert back to QImage
-    cv::Mat bgra;
-    cv::cvtColor(bgr, bgra, cv::COLOR_BGR2BGRA);
-
-    QImage blurred(bgra.data, bgra.cols, bgra.rows,
-                   static_cast<int>(bgra.step), QImage::Format_RGB32);
-    blurred = blurred.copy();  // Deep copy
+    // Copy blurred result (detaches from original buffer)
+    QImage blurred = rgb.copy();
 
     // Create result image with proper offset
     QImage resultImage(deviceRect.size(), QImage::Format_ARGB32);

@@ -108,33 +108,23 @@ void AutoBlurManager::applyGaussianBlur(QImage& image, const QRect& region, int 
 {
     // Convert intensity (1-100) to sigma (1-50)
     double sigma = static_cast<double>(intensity) / 2.0;
-    if (sigma < 1.0) sigma = 1.0;
+    if (sigma < 1.0) {
+        sigma = 1.0;
+    }
 
-    // Extract the region
+    // Extract and convert region to RGB32 for OpenCV processing
     QImage regionImage = image.copy(region);
     QImage rgb = regionImage.convertToFormat(QImage::Format_RGB32);
 
+    // Wrap QImage data in cv::Mat and apply blur in-place
     cv::Mat mat(rgb.height(), rgb.width(), CV_8UC4,
                 const_cast<uchar*>(rgb.bits()),
                 static_cast<size_t>(rgb.bytesPerLine()));
+    cv::GaussianBlur(mat, mat, cv::Size(0, 0), sigma);
 
-    cv::Mat bgr;
-    cv::cvtColor(mat, bgr, cv::COLOR_BGRA2BGR);
-
-    // Apply Gaussian blur
-    cv::GaussianBlur(bgr, bgr, cv::Size(0, 0), sigma);
-
-    // Convert back to QImage
-    cv::Mat bgra;
-    cv::cvtColor(bgr, bgra, cv::COLOR_BGR2BGRA);
-
-    QImage blurred(bgra.data, bgra.cols, bgra.rows,
-                   static_cast<int>(bgra.step), QImage::Format_RGB32);
-    blurred = blurred.copy();  // Deep copy
-
-    // Paint back to original image
+    // Paint blurred region back to original image
     QPainter painter(&image);
-    painter.drawImage(region.topLeft(), blurred);
+    painter.drawImage(region.topLeft(), rgb);
 }
 
 void AutoBlurManager::applyPixelate(QImage& image, const QRect& region, int intensity)
@@ -142,36 +132,26 @@ void AutoBlurManager::applyPixelate(QImage& image, const QRect& region, int inte
     // Convert intensity (1-100) to block size (2-32)
     int blockSize = 2 + (intensity * 30) / 100;
 
-    // Extract the region
+    // Extract and convert region to RGB32 for OpenCV processing
     QImage regionImage = image.copy(region);
     QImage rgb = regionImage.convertToFormat(QImage::Format_RGB32);
 
+    // Wrap QImage data in cv::Mat
     cv::Mat mat(rgb.height(), rgb.width(), CV_8UC4,
                 const_cast<uchar*>(rgb.bits()),
                 static_cast<size_t>(rgb.bytesPerLine()));
 
-    cv::Mat bgr;
-    cv::cvtColor(mat, bgr, cv::COLOR_BGRA2BGR);
-
     // Pixelate: downscale then upscale with nearest neighbor
-    int smallWidth = std::max(1, bgr.cols / blockSize);
-    int smallHeight = std::max(1, bgr.rows / blockSize);
+    int smallWidth = std::max(1, mat.cols / blockSize);
+    int smallHeight = std::max(1, mat.rows / blockSize);
 
     cv::Mat small;
-    cv::resize(bgr, small, cv::Size(smallWidth, smallHeight), 0, 0, cv::INTER_LINEAR);
-    cv::resize(small, bgr, cv::Size(rgb.width(), rgb.height()), 0, 0, cv::INTER_NEAREST);
+    cv::resize(mat, small, cv::Size(smallWidth, smallHeight), 0, 0, cv::INTER_LINEAR);
+    cv::resize(small, mat, cv::Size(rgb.width(), rgb.height()), 0, 0, cv::INTER_NEAREST);
 
-    // Convert back to QImage
-    cv::Mat bgra;
-    cv::cvtColor(bgr, bgra, cv::COLOR_BGR2BGRA);
-
-    QImage pixelated(bgra.data, bgra.cols, bgra.rows,
-                     static_cast<int>(bgra.step), QImage::Format_RGB32);
-    pixelated = pixelated.copy();  // Deep copy
-
-    // Paint back to original image
+    // Paint pixelated region back to original image
     QPainter painter(&image);
-    painter.drawImage(region.topLeft(), pixelated);
+    painter.drawImage(region.topLeft(), rgb);
 }
 
 int AutoBlurManager::intensityToBlockSize(int intensity)
