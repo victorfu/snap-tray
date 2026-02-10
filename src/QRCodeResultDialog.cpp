@@ -1,4 +1,5 @@
 #include "QRCodeResultDialog.h"
+#include "QRCodeManager.h"
 #include "platform/WindowLevel.h"
 #include "utils/DialogThemeUtils.h"
 
@@ -18,16 +19,20 @@
 #include <QScreen>
 #include <QTimer>
 #include <QRegularExpression>
+#include <QImage>
 
 QRCodeResultDialog::QRCodeResultDialog(QWidget *parent)
     : QWidget(parent, Qt::Window | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint)
     , m_thumbnailLabel(nullptr)
     , m_formatLabel(nullptr)
     , m_characterCountLabel(nullptr)
+    , m_generatedPreviewLabel(nullptr)
     , m_textEdit(nullptr)
     , m_closeButton(nullptr)
     , m_copyButton(nullptr)
     , m_openUrlButton(nullptr)
+    , m_generateButton(nullptr)
+    , m_pinButton(nullptr)
     , m_isDragging(false)
     , m_isTextEdited(false)
 {
@@ -38,8 +43,8 @@ QRCodeResultDialog::QRCodeResultDialog(QWidget *parent)
     applyTheme();
 
     setFixedWidth(420);
-    setMinimumHeight(260);
-    setMaximumHeight(480);
+    setMinimumHeight(360);
+    setMaximumHeight(640);
 }
 
 QRCodeResultDialog::~QRCodeResultDialog() = default;
@@ -92,6 +97,14 @@ void QRCodeResultDialog::setupUi()
     connect(m_textEdit, &QTextEdit::textChanged, this, &QRCodeResultDialog::onTextChanged);
     mainLayout->addWidget(m_textEdit, 1);
 
+    // Generated QR preview
+    m_generatedPreviewLabel = new QLabel(this);
+    m_generatedPreviewLabel->setObjectName("generatedPreview");
+    m_generatedPreviewLabel->setFixedHeight(176);
+    m_generatedPreviewLabel->setAlignment(Qt::AlignCenter);
+    m_generatedPreviewLabel->setText(tr("Generate QR to preview"));
+    mainLayout->addWidget(m_generatedPreviewLabel);
+
     // Button bar
     auto *buttonBar = new QWidget(this);
     buttonBar->setFixedHeight(56);
@@ -119,6 +132,19 @@ void QRCodeResultDialog::setupUi()
     m_openUrlButton->setVisible(false);
     connect(m_openUrlButton, &QPushButton::clicked, this, &QRCodeResultDialog::onOpenUrlClicked);
     buttonLayout->addWidget(m_openUrlButton, 1);
+
+    m_generateButton = new QPushButton("Generate QR", buttonBar);
+    m_generateButton->setObjectName("generateButton");
+    m_generateButton->setFixedHeight(40);
+    connect(m_generateButton, &QPushButton::clicked, this, &QRCodeResultDialog::onGenerateClicked);
+    buttonLayout->addWidget(m_generateButton, 1);
+
+    m_pinButton = new QPushButton("Pin QR", buttonBar);
+    m_pinButton->setObjectName("pinButton");
+    m_pinButton->setFixedHeight(40);
+    m_pinButton->setEnabled(false);
+    connect(m_pinButton, &QPushButton::clicked, this, &QRCodeResultDialog::onPinClicked);
+    buttonLayout->addWidget(m_pinButton, 1);
 
     mainLayout->addWidget(buttonBar);
 }
@@ -170,6 +196,16 @@ void QRCodeResultDialog::applyTheme()
             font-family: 'Consolas', 'Courier New', monospace;
             font-size: 13px;
             selection-background-color: %10;
+        }
+
+        #generatedPreview {
+            background-color: %8;
+            color: %6;
+            border-left: 1px solid %9;
+            border-right: 1px solid %9;
+            border-top: 1px solid %9;
+            border-bottom: 1px solid %9;
+            font-size: 12px;
         }
 
         #buttonBar {
@@ -250,6 +286,8 @@ void QRCodeResultDialog::setResult(const QString &text, const QString &format, c
     // Check for URL
     QString url = detectUrl(text);
     m_openUrlButton->setVisible(!url.isEmpty());
+
+    updateGenerateButtons();
 }
 
 QString QRCodeResultDialog::currentText() const
@@ -383,6 +421,41 @@ void QRCodeResultDialog::onCloseClicked()
     close();
 }
 
+void QRCodeResultDialog::onGenerateClicked()
+{
+    const QString text = currentText().trimmed();
+    if (!QRCodeManager::canEncode(text)) {
+        return;
+    }
+
+    QRCodeManager manager;
+    QREncodeOptions options;
+    options.width = 320;
+    options.height = 320;
+    options.margin = 2;
+    options.eccLevel = 1;
+
+    const QImage image = manager.encode(text, options);
+    if (image.isNull()) {
+        return;
+    }
+
+    m_generatedQrImage = image;
+    setGeneratedPreview(image);
+    m_pinButton->setEnabled(true);
+    emit qrCodeGenerated(image, text);
+}
+
+void QRCodeResultDialog::onPinClicked()
+{
+    if (m_generatedQrImage.isNull()) {
+        return;
+    }
+
+    emit pinGeneratedRequested(QPixmap::fromImage(m_generatedQrImage));
+    close();
+}
+
 void QRCodeResultDialog::onTextChanged()
 {
     QString currentText = m_textEdit->toPlainText();
@@ -393,6 +466,9 @@ void QRCodeResultDialog::onTextChanged()
     // Update URL button visibility
     QString url = detectUrl(currentText);
     m_openUrlButton->setVisible(!url.isEmpty());
+
+    m_pinButton->setEnabled(false);
+    updateGenerateButtons();
 }
 
 void QRCodeResultDialog::updateCharacterCount()
@@ -425,6 +501,32 @@ void QRCodeResultDialog::showCopyFeedback()
             m_copyButton->setStyleSheet("");
         }
     });
+}
+
+void QRCodeResultDialog::updateGenerateButtons()
+{
+    const QString text = currentText().trimmed();
+    const bool canGenerate = QRCodeManager::canEncode(text);
+    m_generateButton->setEnabled(canGenerate);
+
+    if (!canGenerate) {
+        m_generatedQrImage = QImage();
+        m_generatedPreviewLabel->setPixmap(QPixmap());
+        if (text.isEmpty()) {
+            m_generatedPreviewLabel->setText(tr("Generate QR to preview"));
+        } else {
+            m_generatedPreviewLabel->setText(
+                tr("Content too long (max %1 bytes)").arg(QRCodeManager::maxEncodableLength()));
+        }
+    }
+}
+
+void QRCodeResultDialog::setGeneratedPreview(const QImage &image)
+{
+    m_generatedPreviewLabel->setText(QString());
+    const QPixmap preview = QPixmap::fromImage(image).scaled(
+        160, 160, Qt::KeepAspectRatio, Qt::FastTransformation);
+    m_generatedPreviewLabel->setPixmap(preview);
 }
 
 QString QRCodeResultDialog::detectUrl(const QString &text) const

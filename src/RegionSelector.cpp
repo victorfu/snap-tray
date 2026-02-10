@@ -1790,6 +1790,19 @@ void RegionSelector::onQRCodeComplete(bool success, const QString& text, const Q
             qDebug() << "URL opened:" << url;
         });
 
+        connect(dialog, &QRCodeResultDialog::qrCodeGenerated, this,
+            [](const QImage &image, const QString &encodedText) {
+                qDebug() << "QR Code generated:" << image.size() << "for" << encodedText.length() << "characters";
+            });
+
+        connect(dialog, &QRCodeResultDialog::pinGeneratedRequested, this,
+            [this, dialog](const QPixmap &pixmap) {
+                const QPoint globalTopLeft = dialog->mapToGlobal(QPoint(0, 0));
+                const QRect globalRect(globalTopLeft, pixmap.size());
+                emit regionSelected(pixmap, globalTopLeft, globalRect);
+                close();
+            });
+
         connect(dialog, &QRCodeResultDialog::dialogClosed, this, [this]() {
             // Close the region selector after dialog closes
             close();
