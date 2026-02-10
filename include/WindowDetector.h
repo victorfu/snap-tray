@@ -9,6 +9,7 @@
 #include <QMutex>
 #include <QFuture>
 #include <QPointer>
+#include <QElapsedTimer>
 #include <vector>
 #include <optional>
 
@@ -35,7 +36,7 @@ enum class DetectionFlag {
     ModernUI       = 1 << 5,   // Modern UI elements (IME, tooltips, notifications)
     ChildControls  = 1 << 6,   // Child controls within windows (buttons, text boxes, panels)
     AllSystemUI    = ContextMenus | PopupMenus | Dialogs | StatusBarItems | ModernUI,
-    All            = Windows | AllSystemUI
+    All            = Windows | AllSystemUI | ChildControls
 };
 Q_DECLARE_FLAGS(DetectionFlags, DetectionFlag)
 Q_DECLARE_OPERATORS_FOR_FLAGS(DetectionFlags)
@@ -48,6 +49,7 @@ struct DetectedElement {
     int windowLayer;        // Window layer/level for z-ordering
     uint32_t windowId;      // Window ID for identification
     ElementType elementType = ElementType::Window;  // Type of detected element
+    qint64 ownerPid = 0;   // Process ID of owning application
 };
 
 class WindowDetector : public QObject
@@ -96,6 +98,13 @@ private:
     QFuture<void> m_refreshFuture;
     std::atomic<bool> m_refreshComplete{true};
     std::atomic<uint64_t> m_refreshRequestId{0};
+
+#ifdef Q_OS_MACOS
+    std::optional<DetectedElement> detectChildElementAt(const QPoint &screenPos, qint64 targetPid, const QRect &windowBounds) const;
+    mutable DetectedElement m_axCache;
+    mutable bool m_axCacheValid{false};
+    mutable QElapsedTimer m_axCacheTimer;
+#endif
 };
 
 #endif // WINDOWDETECTOR_H

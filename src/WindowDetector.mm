@@ -101,6 +101,63 @@ int getMinimumSize(ElementType type)
     return 50;
 }
 
+// Get element frame (position + size) from an AXUIElement
+bool getAXElementFrame(AXUIElementRef element, CGRect &outFrame)
+{
+    CFTypeRef posRef = nullptr;
+    CFTypeRef sizeRef = nullptr;
+
+    AXError err = AXUIElementCopyAttributeValue(element, kAXPositionAttribute, &posRef);
+    if (err != kAXErrorSuccess || !posRef) return false;
+
+    if (CFGetTypeID(posRef) != AXValueGetTypeID()) {
+        CFRelease(posRef);
+        return false;
+    }
+
+    err = AXUIElementCopyAttributeValue(element, kAXSizeAttribute, &sizeRef);
+    if (err != kAXErrorSuccess || !sizeRef) {
+        CFRelease(posRef);
+        return false;
+    }
+
+    if (CFGetTypeID(sizeRef) != AXValueGetTypeID()) {
+        CFRelease(posRef);
+        CFRelease(sizeRef);
+        return false;
+    }
+
+    CGPoint origin;
+    CGSize size;
+    Boolean gotPos = AXValueGetValue((AXValueRef)posRef, (AXValueType)kAXValueCGPointType, &origin);
+    Boolean gotSize = AXValueGetValue((AXValueRef)sizeRef, (AXValueType)kAXValueCGSizeType, &size);
+
+    CFRelease(posRef);
+    CFRelease(sizeRef);
+
+    if (!gotPos || !gotSize) return false;
+
+    outFrame = CGRectMake(origin.x, origin.y, size.width, size.height);
+    return true;
+}
+
+// Get the accessibility role string from an AXUIElement
+QString getAXElementRole(AXUIElementRef element)
+{
+    CFTypeRef roleRef = nullptr;
+    AXError err = AXUIElementCopyAttributeValue(element, kAXRoleAttribute, &roleRef);
+    if (err != kAXErrorSuccess || !roleRef) return QString();
+
+    if (CFGetTypeID(roleRef) != CFStringGetTypeID()) {
+        CFRelease(roleRef);
+        return QString();
+    }
+
+    QString role = QString::fromCFString((CFStringRef)roleRef);
+    CFRelease(roleRef);
+    return role;
+}
+
 } // anonymous namespace
 
 WindowDetector::WindowDetector(QObject *parent)
@@ -268,6 +325,7 @@ void WindowDetector::enumerateWindows()
         element.windowLayer = windowLayer;
         element.windowId = windowId;
         element.elementType = elementType;
+        element.ownerPid = windowPid;
 
         m_windowCache.push_back(element);
     }
@@ -275,34 +333,172 @@ void WindowDetector::enumerateWindows()
     CFRelease(windowList);
 }
 
-std::optional<DetectedElement> WindowDetector::detectWindowAt(const QPoint &screenPos) const
+std::optional<DetectedElement> WindowDetector::detectChildElementAt(
+    const QPoint &screenPos, qint64 targetPid, const QRect &windowBounds) const
 {
-    // Lock mutex for thread-safe cache access (matches Windows implementation)
-    QMutexLocker locker(&m_cacheMutex);
-
-    if (!m_enabled || m_windowCache.empty()) {
+    if (!hasAccessibilityPermission()) {
         return std::nullopt;
     }
 
-    // Filter to current screen if set
-    QRect screenRect;
-    if (m_currentScreen) {
-        screenRect = m_currentScreen->geometry();
+    // Return cached result if cursor is still within bounds and cache is fresh (<200ms)
+    if (m_axCacheValid &&
+        m_axCache.bounds.contains(screenPos) &&
+        m_axCacheTimer.elapsed() < 200) {
+        return m_axCache;
     }
 
-    // Windows are already in z-order (topmost first) from CGWindowList
-    for (const auto &window : m_windowCache) {
-        // If filtering by screen, check if window intersects current screen
-        if (!screenRect.isNull() && !window.bounds.intersects(screenRect)) {
-            continue;
+    // Create application-scoped element for targeted hit-testing.
+    // Using AXUIElementCreateApplication(pid) instead of system-wide avoids
+    // hitting SnapTray's own full-screen overlay during region capture.
+    AXUIElementRef appElement = AXUIElementCreateApplication(static_cast<pid_t>(targetPid));
+    AXUIElementSetMessagingTimeout(appElement, 0.05); // 50ms timeout
+
+    AXUIElementRef hitElement = nullptr;
+    AXError err = AXUIElementCopyElementAtPosition(
+        appElement, static_cast<float>(screenPos.x()), static_cast<float>(screenPos.y()), &hitElement);
+    CFRelease(appElement);
+
+    if (err != kAXErrorSuccess || !hitElement) {
+        m_axCacheValid = false;
+        return std::nullopt;
+    }
+
+    // Look up owning application name
+    QString ownerApp;
+    NSRunningApplication *app = [NSRunningApplication runningApplicationWithProcessIdentifier:static_cast<pid_t>(targetPid)];
+    if (app.localizedName) {
+        ownerApp = QString::fromNSString(app.localizedName);
+    }
+
+    // Set timeout on the hit element for subsequent attribute queries during walk-up
+    AXUIElementSetMessagingTimeout(hitElement, 0.05);
+
+    // Use window bounds from CGWindowList cache as the containing window frame.
+    // This avoids an extra AX round-trip to query kAXWindowAttribute.
+    const CGRect containingWindowFrame = CGRectMake(
+        windowBounds.x(), windowBounds.y(),
+        windowBounds.width(), windowBounds.height());
+
+    // Walk up from the deepest element to find the best-fit element for selection.
+    // The hit-test returns the most deeply nested element (could be a single text node),
+    // so we look for the first ancestor with reasonable bounds.
+    // Transfer ownership of hitElement into current (no extra retain needed).
+    AXUIElementRef current = hitElement;
+    hitElement = nullptr;
+
+    constexpr int kMaxWalkDepth = 12;
+    constexpr CGFloat kMinElementSize = 10.0;
+    constexpr CGFloat kMaxWindowAreaRatio = 0.90;
+
+    std::optional<DetectedElement> result;
+
+    for (int depth = 0; depth < kMaxWalkDepth && current; ++depth) {
+        // Stop at window/application level -- those are handled by CGWindowList
+        QString role = getAXElementRole(current);
+        if (role == "AXWindow" || role == "AXApplication" || role == "AXSystemWide") {
+            break;
         }
 
-        if (window.bounds.contains(screenPos)) {
-            return window;
+        // Check if this element has usable bounds
+        CGRect frame;
+        bool hasUsableBounds = getAXElementFrame(current, frame) &&
+            frame.size.width >= kMinElementSize &&
+            frame.size.height >= kMinElementSize;
+
+        if (hasUsableBounds) {
+            // Skip elements that are nearly as large as the containing window
+            const CGFloat windowArea = containingWindowFrame.size.width * containingWindowFrame.size.height;
+            const CGFloat elementArea = frame.size.width * frame.size.height;
+            const bool tooLarge = windowArea > 0 && (elementArea / windowArea) >= kMaxWindowAreaRatio;
+
+            if (!tooLarge) {
+                DetectedElement element;
+                element.bounds = QRect(
+                    static_cast<int>(frame.origin.x),
+                    static_cast<int>(frame.origin.y),
+                    static_cast<int>(frame.size.width),
+                    static_cast<int>(frame.size.height));
+                element.windowTitle = role;
+                element.ownerApp = ownerApp;
+                element.windowLayer = 1;
+                element.windowId = 0;
+                element.elementType = ElementType::Window;
+                element.ownerPid = targetPid;
+
+                result = element;
+                break;
+            }
+        }
+
+        // Walk up to parent
+        AXUIElementRef parent = nullptr;
+        AXUIElementCopyAttributeValue(current, kAXParentAttribute, (CFTypeRef *)&parent);
+        CFRelease(current);
+        current = parent;
+    }
+
+    if (current) {
+        CFRelease(current);
+    }
+
+    // Update cache
+    m_axCacheValid = result.has_value();
+    if (m_axCacheValid) {
+        m_axCache = *result;
+        m_axCacheTimer.start();
+    }
+
+    return result;
+}
+
+std::optional<DetectedElement> WindowDetector::detectWindowAt(const QPoint &screenPos) const
+{
+    if (!m_enabled) {
+        return std::nullopt;
+    }
+
+    // Step 1: Find the top-level window from CGWindowList cache.
+    // This cache already excludes our own process windows.
+    std::optional<DetectedElement> topWindow;
+    {
+        QMutexLocker locker(&m_cacheMutex);
+
+        if (m_windowCache.empty()) {
+            return std::nullopt;
+        }
+
+        QRect screenRect;
+        if (m_currentScreen) {
+            screenRect = m_currentScreen->geometry();
+        }
+
+        for (const auto &window : m_windowCache) {
+            if (!screenRect.isNull() && !window.bounds.intersects(screenRect)) {
+                continue;
+            }
+            if (window.bounds.contains(screenPos)) {
+                topWindow = window;
+                break;
+            }
+        }
+    }
+    // Mutex released here — AX IPC below must not hold it
+
+    if (!topWindow.has_value()) {
+        return std::nullopt;
+    }
+
+    // Step 2: Try child element detection using the window's PID.
+    // AXUIElementCreateApplication(pid) scopes the hit-test to the target app,
+    // bypassing our own overlay which blocks system-wide AX queries.
+    if (m_detectionFlags.testFlag(DetectionFlag::ChildControls) && topWindow->ownerPid > 0) {
+        auto childElement = detectChildElementAt(screenPos, topWindow->ownerPid, topWindow->bounds);
+        if (childElement.has_value()) {
+            return childElement;
         }
     }
 
-    return std::nullopt;
+    return topWindow;
 }
 
 void WindowDetector::refreshWindowListAsync()
@@ -411,6 +607,7 @@ void WindowDetector::refreshWindowListAsync()
             element.windowLayer = windowLayer;
             element.windowId = windowId;
             element.elementType = elementType;
+            element.ownerPid = windowPid;
 
             newCache.push_back(element);
         }

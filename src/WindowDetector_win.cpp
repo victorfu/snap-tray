@@ -6,6 +6,7 @@
 #include <QtConcurrent>
 #include <QMutexLocker>
 
+#include <limits>
 #include <unordered_set>
 
 #include <windows.h>
@@ -22,6 +23,7 @@ struct EnumWindowsContext {
     DWORD currentProcessId;
     qreal devicePixelRatio;
     DetectionFlags detectionFlags;
+    DWORD parentProcessId;  // Set per top-level window before EnumChildWindows
 };
 
 // Forward declaration
@@ -258,11 +260,13 @@ BOOL CALLBACK enumWindowsProc(HWND hwnd, LPARAM lParam)
     element.windowLayer = 0;  // Windows doesn't have explicit layers like macOS
     element.windowId = reinterpret_cast<uintptr_t>(hwnd) & 0xFFFFFFFF;
     element.elementType = elementType;
+    element.ownerPid = static_cast<qint64>(windowProcessId);
 
     context->windowCache->push_back(element);
 
     // If ChildControls flag is set, enumerate child controls within this window
     if (context->detectionFlags.testFlag(DetectionFlag::ChildControls)) {
+        context->parentProcessId = windowProcessId;
         EnumChildWindows(hwnd, enumChildWindowsProc, lParam);
     }
 
@@ -330,14 +334,12 @@ BOOL CALLBACK enumChildWindowsProc(HWND hwnd, LPARAM lParam)
     QRect physicalBounds(rect.left, rect.top, width, height);
     QRect logicalBounds = CoordinateHelper::physicalToQtLogical(physicalBounds, hwnd);
 
-    // Create element for this control
     DetectedElement element;
     element.bounds = logicalBounds;
-    element.windowTitle = QString();  // Skip for performance
-    element.ownerApp = QString();
     element.windowLayer = 1;  // Child elements have layer 1 (vs 0 for windows)
     element.windowId = reinterpret_cast<uintptr_t>(hwnd) & 0xFFFFFFFF;
     element.elementType = elementType;
+    element.ownerPid = static_cast<qint64>(context->parentProcessId);
 
     context->windowCache->push_back(element);
 
@@ -470,6 +472,9 @@ void WindowDetector::enumerateWindows()
                             element.windowLayer = 0;
                             element.windowId = windowId;
                             element.elementType = ElementType::ContextMenu;
+                            DWORD menuPid = 0;
+                            GetWindowThreadProcessId(menuWnd, &menuPid);
+                            element.ownerPid = static_cast<qint64>(menuPid);
 
                             // Insert at beginning since menus are typically topmost
                             m_windowCache.insert(m_windowCache.begin(), element);
@@ -525,6 +530,9 @@ void WindowDetector::enumerateWindowsInternal(std::vector<DetectedElement>& cach
                             element.windowLayer = 0;
                             element.windowId = windowId;
                             element.elementType = ElementType::ContextMenu;
+                            DWORD menuPid = 0;
+                            GetWindowThreadProcessId(menuWnd, &menuPid);
+                            element.ownerPid = static_cast<qint64>(menuPid);
                             cache.insert(cache.begin(), element);
                             existingIds.insert(windowId);  // Update hash set
                         }
@@ -544,32 +552,85 @@ std::optional<DetectedElement> WindowDetector::detectWindowAt(const QPoint &scre
         return std::nullopt;
     }
 
-    // If a screen is set, check if the point is within that screen
-    if (m_currentScreen) {
-        QRect screenGeometry = m_currentScreen->geometry();
-        if (!screenGeometry.contains(screenPos)) {
-            return std::nullopt;
-        }
+    // Cache screen geometry once for both the early bail-out and per-element clipping
+    const QRect screenGeometry = m_currentScreen ? m_currentScreen->geometry() : QRect();
+
+    if (!screenGeometry.isNull() && !screenGeometry.contains(screenPos)) {
+        return std::nullopt;
     }
 
     // Lock mutex for thread-safe cache access
     QMutexLocker locker(&m_cacheMutex);
 
-    // Iterate through cached windows in z-order (topmost first)
-    for (const auto &element : m_windowCache) {
-        if (element.bounds.contains(screenPos)) {
-            // Filter to current screen: only return windows whose on-screen
-            // portion actually contains the cursor. This prevents cross-monitor
-            // false positives from windows that span the virtual desktop.
-            if (m_currentScreen) {
-                QRect screenGeometry = m_currentScreen->geometry();
-                QRect clipped = element.bounds.intersected(screenGeometry);
-                if (!clipped.contains(screenPos)) {
+    const bool detectChildren = m_detectionFlags.testFlag(DetectionFlag::ChildControls);
+
+    // Iterate through cached elements in z-order (topmost first).
+    // Layout: [Window A, Child A1, Child A2, Window B, Child B1, ...]
+    // Child elements (windowLayer == 1) always follow their parent window
+    // (windowLayer == 0) because EnumChildWindows runs inside enumWindowsProc.
+    for (size_t i = 0; i < m_windowCache.size(); ++i) {
+        const auto &element = m_windowCache[i];
+
+        // Skip child elements at the top of the iteration -- they belong to a
+        // window that didn't match the cursor. We only process children after
+        // finding a matching parent window below.
+        if (element.windowLayer == 1) {
+            continue;
+        }
+
+        if (!element.bounds.contains(screenPos)) {
+            continue;
+        }
+
+        // Filter to current screen: only return windows whose on-screen
+        // portion actually contains the cursor. This prevents cross-monitor
+        // false positives from windows that span the virtual desktop.
+        if (!screenGeometry.isNull()) {
+            QRect clipped = element.bounds.intersected(screenGeometry);
+            if (!clipped.contains(screenPos)) {
+                continue;
+            }
+        }
+
+        // Found the topmost window containing the cursor.
+        // If child detection is enabled, scan its child elements for a better match.
+        if (detectChildren) {
+            std::optional<DetectedElement> bestChild;
+            qint64 bestChildArea = std::numeric_limits<qint64>::max();
+            const qint64 windowArea = static_cast<qint64>(element.bounds.width()) * element.bounds.height();
+
+            for (size_t j = i + 1; j < m_windowCache.size(); ++j) {
+                const auto &child = m_windowCache[j];
+
+                // Stop when we reach the next top-level window
+                if (child.windowLayer == 0) {
+                    break;
+                }
+
+                if (!child.bounds.contains(screenPos)) {
                     continue;
                 }
+
+                // Skip child elements that cover >= 90% of the parent window area
+                // (they provide no additional precision over whole-window detection)
+                const qint64 childArea = static_cast<qint64>(child.bounds.width()) * child.bounds.height();
+                if (windowArea > 0 && childArea * 100 / windowArea >= 90) {
+                    continue;
+                }
+
+                if (childArea < bestChildArea) {
+                    bestChildArea = childArea;
+                    bestChild = child;
+                }
             }
-            return element;
+
+            if (bestChild.has_value()) {
+                return bestChild;
+            }
         }
+
+        // No suitable child found; return the window itself.
+        return element;
     }
 
     return std::nullopt;
