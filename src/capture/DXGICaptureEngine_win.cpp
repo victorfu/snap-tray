@@ -238,7 +238,7 @@ void DXGICaptureEngine::Private::cleanupThread()
 
     if (captureTimer) {
         // Stop timer from worker thread context
-        QMetaObject::invokeMethod(captureTimer, "stop", Qt::QueuedConnection);
+        QMetaObject::invokeMethod(captureTimer, &QTimer::stop, Qt::QueuedConnection);
         captureTimer->deleteLater();
         captureTimer = nullptr;
     }

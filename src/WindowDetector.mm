@@ -525,7 +525,9 @@ void WindowDetector::refreshWindowListAsync()
         if (!windowList) {
             if (m_refreshRequestId.load() == requestId) {
                 m_refreshComplete = true;
-                QMetaObject::invokeMethod(this, "windowListReady", Qt::QueuedConnection);
+                QMetaObject::invokeMethod(this, [this]() {
+                    emit windowListReady();
+                }, Qt::QueuedConnection);
             }
             return;
         }
@@ -625,7 +627,9 @@ void WindowDetector::refreshWindowListAsync()
         }
 
         m_refreshComplete = true;
-        QMetaObject::invokeMethod(this, "windowListReady", Qt::QueuedConnection);
+        QMetaObject::invokeMethod(this, [this]() {
+            emit windowListReady();
+        }, Qt::QueuedConnection);
     });
 }
 

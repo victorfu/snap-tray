@@ -512,10 +512,11 @@ void MainApplication::onPinFromImage()
 
         // Call back to UI thread
         if (guard) {
-            QMetaObject::invokeMethod(guard, "onImageLoaded",
-                Qt::QueuedConnection,
-                Q_ARG(QString, filePath),
-                Q_ARG(QImage, image));
+            QMetaObject::invokeMethod(guard, [guard, filePath, image]() {
+                if (guard) {
+                    guard->onImageLoaded(filePath, image);
+                }
+            }, Qt::QueuedConnection);
         }
     });
 }

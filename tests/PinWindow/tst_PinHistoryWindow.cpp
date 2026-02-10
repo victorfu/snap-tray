@@ -137,6 +137,8 @@ private slots:
         QCOMPARE(listWidget->count(), 2);
 
         listWidget->setCurrentRow(0);
+        // Intentional string-based invoke: target is a private slot and we avoid
+        // changing PinHistoryWindow's test surface just for this assertion path.
         QVERIFY(QMetaObject::invokeMethod(window.data(), "deleteSelectedEntry", Qt::DirectConnection));
 
         QVERIFY(window);
