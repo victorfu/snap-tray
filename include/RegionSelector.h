@@ -70,6 +70,11 @@ class RegionSelector : public QWidget, public AnnotationHostAdapter
     Q_OBJECT
 
 public:
+    enum class InteractionMode {
+        RegionSelection,
+        ScrollWindowPick
+    };
+
     explicit RegionSelector(QWidget *parent = nullptr);
     ~RegionSelector();
 
@@ -90,6 +95,8 @@ public:
 
     void setWindowDetector(WindowDetector *detector);
     void refreshWindowDetectionAtCursor();
+    void setInteractionMode(InteractionMode mode);
+    InteractionMode interactionMode() const { return m_interactionMode; }
 
     // Ensure cursor is set to CrossCursor (called after show and on focus/enter events)
     void ensureCrossCursor();
@@ -101,6 +108,7 @@ public:
 
 signals:
     void regionSelected(const QPixmap &screenshot, const QPoint &globalPosition, const QRect &globalRect);
+    void windowChosen(const DetectedElement &element);
     void selectionCancelled();
     void saveRequested(const QPixmap &screenshot);
     void saveCompleted(const QPixmap &screenshot, const QString &filePath);
@@ -324,6 +332,7 @@ private:
 
     // Quick Pin mode (select region and pin immediately, skip toolbar)
     bool m_quickPinMode = false;
+    InteractionMode m_interactionMode = InteractionMode::RegionSelection;
 
     // Painting component
     RegionPainter* m_painter;

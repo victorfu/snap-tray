@@ -48,9 +48,11 @@ struct DetectedElement {
     QString ownerApp;       // Owning application name
     int windowLayer;        // Window layer/level for z-ordering
     uint32_t windowId;      // Window ID for identification
+    quintptr nativeHandle = 0; // Native handle (HWND on Windows, CGWindowID on macOS)
     ElementType elementType = ElementType::Window;  // Type of detected element
     qint64 ownerPid = 0;   // Process ID of owning application
 };
+Q_DECLARE_METATYPE(DetectedElement)
 
 class WindowDetector : public QObject
 {

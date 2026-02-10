@@ -678,6 +678,15 @@ add_library(snaptray_ui STATIC
     # Dialogs and overlays
     src/SettingsDialog.cpp
     src/OCRResultDialog.cpp
+    src/ScrollCaptureControlBar.cpp
+
+    # Scroll capture
+    src/scrollcapture/ScrollCaptureManager.cpp
+    src/scrollcapture/ScrollCaptureSession.cpp
+    src/scrollcapture/AutoScroller.cpp
+    src/scrollcapture/ContentRegionDetector.cpp
+    src/scrollcapture/FrameStabilityDetector.cpp
+    src/scrollcapture/ScrollStitcher.cpp
 
     # Global UI components
     src/ui/GlobalToast.cpp
@@ -763,6 +772,14 @@ add_library(snaptray_ui STATIC
     include/video/CountdownOverlay.h
     include/SettingsDialog.h
     include/OCRResultDialog.h
+    include/ScrollCaptureControlBar.h
+    include/scrollcapture/ScrollCaptureTypes.h
+    include/scrollcapture/ScrollCaptureManager.h
+    include/scrollcapture/ScrollCaptureSession.h
+    include/scrollcapture/AutoScroller.h
+    include/scrollcapture/ContentRegionDetector.h
+    include/scrollcapture/FrameStabilityDetector.h
+    include/scrollcapture/ScrollStitcher.h
     $<$<PLATFORM_ID:Darwin>:
         include/OCRController.h
     >
@@ -789,6 +806,8 @@ target_include_directories(snaptray_ui
         ${CMAKE_SOURCE_DIR}/src
         ${CMAKE_BINARY_DIR}/generated
         ${CMAKE_BINARY_DIR}
+        ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/core/include
+        ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/imgproc/include
 )
 
 target_link_libraries(snaptray_ui
@@ -801,6 +820,14 @@ target_link_libraries(snaptray_ui
         Qt6::Gui
         Qt6::Svg
         QHotkey::QHotkey
+    PRIVATE
+        opencv_core
+        opencv_imgproc
+        $<$<PLATFORM_ID:Windows>:user32>
+        $<$<PLATFORM_ID:Darwin>:
+            "-framework CoreGraphics"
+            "-framework ApplicationServices"
+        >
 )
 
 target_compile_definitions(snaptray_ui PRIVATE

@@ -109,6 +109,20 @@ add_test(NAME RegionSelector_SelectionDirtyRegionPlanner COMMAND RegionSelector_
 set_tests_properties(RegionSelector_SelectionDirtyRegionPlanner PROPERTIES TIMEOUT 60 LABELS "unit")
 
 # ============================================================================
+# ScrollCapture Tests
+# ============================================================================
+
+add_executable(ScrollCapture_ScrollStitcher ScrollCapture/tst_ScrollStitcher.cpp)
+target_link_libraries(ScrollCapture_ScrollStitcher PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME ScrollCapture_ScrollStitcher COMMAND ScrollCapture_ScrollStitcher)
+set_tests_properties(ScrollCapture_ScrollStitcher PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(ScrollCapture_ContentRegionDetector ScrollCapture/tst_ContentRegionDetector.cpp)
+target_link_libraries(ScrollCapture_ContentRegionDetector PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME ScrollCapture_ContentRegionDetector COMMAND ScrollCapture_ContentRegionDetector)
+set_tests_properties(ScrollCapture_ContentRegionDetector PROPERTIES TIMEOUT 60 LABELS "unit")
+
+# ============================================================================
 # Encoding Tests (link snaptray_platform)
 # ============================================================================
 

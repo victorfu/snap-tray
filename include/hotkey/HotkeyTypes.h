@@ -30,6 +30,7 @@ enum class HotkeyAction {
 
     // Capture actions (100-199)
     RegionCapture = 100,
+    ScrollCapture = 101,
 
     // Canvas actions (200-299)
     ScreenCanvas = 200,
@@ -112,6 +113,14 @@ inline constexpr HotkeyMetadata kDefaultHotkeys[] = {
         "Capture a selected region of the screen",
         "hotkey",  // kSettingsKeyHotkey
         "F2"       // kDefaultHotkey
+    },
+    {
+        HotkeyAction::ScrollCapture,
+        HotkeyCategory::Capture,
+        "Scroll Capture",
+        "Capture a scrolling window automatically",
+        "scrollCaptureHotkey",
+        ""
     },
     {
         HotkeyAction::ScreenCanvas,

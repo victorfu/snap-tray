@@ -5,6 +5,7 @@
 #include "PinWindowManager.h"
 #include "PlatformFeatures.h"
 #include "RecordingManager.h"
+#include "scrollcapture/ScrollCaptureManager.h"
 #include "ScreenCanvasManager.h"
 #include "SettingsDialog.h"
 #include "pinwindow/PinHistoryWindow.h"
@@ -96,7 +97,9 @@ MainApplication::MainApplication(QObject* parent)
     , m_pinWindowManager(nullptr)
     , m_screenCanvasManager(nullptr)
     , m_recordingManager(nullptr)
+    , m_scrollCaptureManager(nullptr)
     , m_regionCaptureAction(nullptr)
+    , m_scrollCaptureAction(nullptr)
     , m_screenCanvasAction(nullptr)
     , m_pinFromImageAction(nullptr)
     , m_pinHistoryAction(nullptr)
@@ -263,6 +266,9 @@ void MainApplication::initialize()
     // Create recording manager
     m_recordingManager = new RecordingManager(this);
 
+    // Create scroll capture manager
+    m_scrollCaptureManager = new ScrollCaptureManager(m_pinWindowManager, this);
+
     // Connect recording signals
     connect(m_recordingManager, &RecordingManager::recordingStopped,
         this, [](const QString& path) {
@@ -341,6 +347,9 @@ void MainApplication::initialize()
     m_regionCaptureAction = m_trayMenu->addAction("Region Capture");
     connect(m_regionCaptureAction, &QAction::triggered, this, &MainApplication::onRegionCapture);
 
+    m_scrollCaptureAction = m_trayMenu->addAction("Scroll Capture...");
+    connect(m_scrollCaptureAction, &QAction::triggered, this, &MainApplication::onScrollCapture);
+
     m_screenCanvasAction = m_trayMenu->addAction("Screen Canvas");
     connect(m_screenCanvasAction, &QAction::triggered, this, &MainApplication::onScreenCanvas);
 
@@ -397,6 +406,11 @@ void MainApplication::initialize()
 
 void MainApplication::onRegionCapture()
 {
+    if (m_scrollCaptureManager && m_scrollCaptureManager->isActive()) {
+        qDebug() << "onRegionCapture: blocked by scrollCaptureManager";
+        return;
+    }
+
     // Don't trigger if screen canvas is active
     if (m_screenCanvasManager->isActive()) {
         qDebug() << "onRegionCapture: blocked by screenCanvasManager";
@@ -414,8 +428,26 @@ void MainApplication::onRegionCapture()
     m_captureManager->startRegionCapture();
 }
 
+void MainApplication::onScrollCapture()
+{
+    if (!m_scrollCaptureManager) {
+        return;
+    }
+
+    if (m_captureManager->isActive() || m_screenCanvasManager->isActive() || m_recordingManager->isActive()) {
+        qDebug() << "onScrollCapture: blocked by active mode";
+        return;
+    }
+
+    m_scrollCaptureManager->beginWindowPick();
+}
+
 void MainApplication::onQuickPin()
 {
+    if (m_scrollCaptureManager && m_scrollCaptureManager->isActive()) {
+        return;
+    }
+
     // Don't trigger if screen canvas is active
     if (m_screenCanvasManager->isActive()) {
         return;
@@ -433,6 +465,11 @@ void MainApplication::onQuickPin()
 
 void MainApplication::onScreenCanvas()
 {
+    if (m_scrollCaptureManager && m_scrollCaptureManager->isActive()) {
+        qDebug() << "onScreenCanvas: blocked by scrollCaptureManager";
+        return;
+    }
+
     // Don't trigger if capture is active
     if (m_captureManager->isActive()) {
         qDebug() << "onScreenCanvas: blocked by captureManager";
@@ -455,6 +492,10 @@ void MainApplication::onScreenCanvas()
 
 void MainApplication::onFullScreenRecording()
 {
+    if (m_scrollCaptureManager && m_scrollCaptureManager->isActive()) {
+        return;
+    }
+
     // Don't trigger if screen canvas is active
     if (m_screenCanvasManager->isActive()) {
         return;
@@ -639,6 +680,9 @@ void MainApplication::onHotkeyAction(SnapTray::HotkeyAction action)
         } else {
             onRegionCapture();
         }
+        break;
+    case HotkeyAction::ScrollCapture:
+        onScrollCapture();
         break;
     case HotkeyAction::ScreenCanvas:
         onScreenCanvas();
@@ -836,6 +880,9 @@ void MainApplication::updateTrayMenuHotkeyText()
     updateActionHotkeyText(m_regionCaptureAction,
                            SnapTray::HotkeyAction::RegionCapture,
                            QStringLiteral("Region Capture"));
+    updateActionHotkeyText(m_scrollCaptureAction,
+                           SnapTray::HotkeyAction::ScrollCapture,
+                           QStringLiteral("Scroll Capture..."));
     updateActionHotkeyText(m_screenCanvasAction,
                            SnapTray::HotkeyAction::ScreenCanvas,
                            QStringLiteral("Screen Canvas"));

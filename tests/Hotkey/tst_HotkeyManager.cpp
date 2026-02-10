@@ -89,6 +89,7 @@ void tst_HotkeyManager::cleanupTestCase()
 void tst_HotkeyManager::clearAllTestSettings()
 {
     clearSetting(SnapTray::kSettingsKeyHotkey);
+    clearSetting(SnapTray::kSettingsKeyScrollCaptureHotkey);
     clearSetting(SnapTray::kSettingsKeyScreenCanvasHotkey);
     clearSetting(SnapTray::kSettingsKeyPasteHotkey);
     clearSetting(SnapTray::kSettingsKeyQuickPinHotkey);
@@ -126,6 +127,7 @@ void tst_HotkeyManager::testGetConfig_AllActionsExist()
 
     // Verify all expected actions have configs
     QVERIFY(!manager().getConfig(HotkeyAction::RegionCapture).displayName.isEmpty());
+    QVERIFY(!manager().getConfig(HotkeyAction::ScrollCapture).displayName.isEmpty());
     QVERIFY(!manager().getConfig(HotkeyAction::ScreenCanvas).displayName.isEmpty());
     QVERIFY(!manager().getConfig(HotkeyAction::PasteFromClipboard).displayName.isEmpty());
     QVERIFY(!manager().getConfig(HotkeyAction::QuickPin).displayName.isEmpty());
@@ -141,6 +143,9 @@ void tst_HotkeyManager::testGetConfig_HasCorrectDefaults()
     auto regionCaptureConfig = manager().getConfig(HotkeyAction::RegionCapture);
     QCOMPARE(regionCaptureConfig.defaultKeySequence, QString(kDefaultHotkey));
 
+    auto scrollCaptureConfig = manager().getConfig(HotkeyAction::ScrollCapture);
+    QCOMPARE(scrollCaptureConfig.defaultKeySequence, QString(kDefaultScrollCaptureHotkey));
+
     auto screenCanvasConfig = manager().getConfig(HotkeyAction::ScreenCanvas);
     QCOMPARE(screenCanvasConfig.defaultKeySequence, QString(kDefaultScreenCanvasHotkey));
 }
@@ -150,6 +155,7 @@ void tst_HotkeyManager::testGetConfig_CategoryAssignment()
     using namespace SnapTray;
 
     QCOMPARE(manager().getConfig(HotkeyAction::RegionCapture).category, HotkeyCategory::Capture);
+    QCOMPARE(manager().getConfig(HotkeyAction::ScrollCapture).category, HotkeyCategory::Capture);
     QCOMPARE(manager().getConfig(HotkeyAction::ScreenCanvas).category, HotkeyCategory::Canvas);
     QCOMPARE(manager().getConfig(HotkeyAction::PasteFromClipboard).category, HotkeyCategory::Clipboard);
     QCOMPARE(manager().getConfig(HotkeyAction::QuickPin).category, HotkeyCategory::Pin);
@@ -173,8 +179,11 @@ void tst_HotkeyManager::testGetConfigsByCategory_FilterCorrectly()
     using namespace SnapTray;
 
     auto captureConfigs = manager().getConfigsByCategory(HotkeyCategory::Capture);
-    QCOMPARE(captureConfigs.size(), 1);
-    QCOMPARE(captureConfigs.first().action, HotkeyAction::RegionCapture);
+    QCOMPARE(captureConfigs.size(), 2);
+    QVERIFY(captureConfigs[0].action == HotkeyAction::RegionCapture
+            || captureConfigs[1].action == HotkeyAction::RegionCapture);
+    QVERIFY(captureConfigs[0].action == HotkeyAction::ScrollCapture
+            || captureConfigs[1].action == HotkeyAction::ScrollCapture);
 
     auto pinConfigs = manager().getConfigsByCategory(HotkeyCategory::Pin);
     QCOMPARE(pinConfigs.size(), 3);  // QuickPin, PinFromImage, PinHistory
