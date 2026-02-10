@@ -80,6 +80,9 @@ QVector<QRect> FaceDetector::detect(const QImage& image)
 
     // Convert QImage to grayscale cv::Mat for cascade
     cv::Mat gray = MatConverter::toGray(image);
+    if (gray.empty()) {
+        return results;
+    }
 
     // Enhance contrast for better detection
     cv::equalizeHist(gray, gray);

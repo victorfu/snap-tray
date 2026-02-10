@@ -118,6 +118,9 @@ void AutoBlurManager::applyGaussianBlur(QImage& image, const QRect& region, int 
     QImage rgb = regionImage.convertToFormat(QImage::Format_RGB32);
 
     cv::Mat mat = MatConverter::toMat(rgb);
+    if (mat.empty()) {
+        return;
+    }
     cv::GaussianBlur(mat, mat, cv::Size(0, 0), sigma);
 
     // Paint blurred region back to original image
@@ -135,6 +138,9 @@ void AutoBlurManager::applyPixelate(QImage& image, const QRect& region, int inte
     QImage rgb = regionImage.convertToFormat(QImage::Format_RGB32);
 
     cv::Mat mat = MatConverter::toMat(rgb);
+    if (mat.empty()) {
+        return;
+    }
 
     // Pixelate: downscale then upscale with nearest neighbor
     int smallWidth = std::max(1, mat.cols / blockSize);

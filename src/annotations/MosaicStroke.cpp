@@ -201,6 +201,9 @@ QImage MosaicStroke::applyGaussianBlur(const QRect &strokeBounds) const
     }
 
     cv::Mat mat = MatConverter::toMat(rgb);
+    if (mat.empty()) {
+        return {};
+    }
     cv::GaussianBlur(mat, mat, cv::Size(0, 0), sigma);
 
     // Copy blurred result (detaches from original buffer)

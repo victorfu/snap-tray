@@ -20,9 +20,13 @@ cv::Mat toMat(QImage& image)
 
 cv::Mat toMatCopy(const QImage& image)
 {
+    if (image.isNull()) {
+        qWarning() << "MatConverter::toMatCopy: received null QImage";
+        return {};
+    }
     QImage rgb = image.convertToFormat(QImage::Format_RGB32);
     cv::Mat mat(rgb.height(), rgb.width(), CV_8UC4,
-                const_cast<uchar*>(rgb.bits()),
+                rgb.bits(),
                 static_cast<size_t>(rgb.bytesPerLine()));
     return mat.clone();
 }
@@ -35,7 +39,7 @@ cv::Mat toGray(const QImage& image)
     }
     QImage rgb = image.convertToFormat(QImage::Format_RGB32);
     cv::Mat mat(rgb.height(), rgb.width(), CV_8UC4,
-                const_cast<uchar*>(rgb.bits()),
+                rgb.bits(),
                 static_cast<size_t>(rgb.bytesPerLine()));
     cv::Mat gray;
     cv::cvtColor(mat, gray, cv::COLOR_BGRA2GRAY);
@@ -44,6 +48,10 @@ cv::Mat toGray(const QImage& image)
 
 QImage toQImage(const cv::Mat& mat)
 {
+    if (mat.empty()) {
+        qWarning() << "MatConverter::toQImage: received empty Mat";
+        return {};
+    }
     if (mat.type() == CV_8UC4) {
         return QImage(mat.data, mat.cols, mat.rows,
                       static_cast<int>(mat.step),
