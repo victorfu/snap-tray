@@ -2,11 +2,13 @@
 
 #include <QDir>
 #include <QFile>
+#include <QGuiApplication>
 #include <QImage>
 #include <QLabel>
 #include <QListWidget>
 #include <QPointer>
 #include <QPushButton>
+#include <QScreen>
 #include <QSignalSpy>
 #include <QTemporaryDir>
 
@@ -94,6 +96,7 @@ private slots:
 
         const QString imagePath = QDir(tempDir.path()).filePath("cache_20260101_120001_000.png");
         QVERIFY(createImageFile(imagePath, QSize(320, 180), Qt::green));
+        QCOMPARE(countCachedImages(tempDir.path()), 1);
 
         PinWindowManager manager;
         QSignalSpy createdSpy(&manager, &PinWindowManager::windowCreated);
@@ -112,6 +115,7 @@ private slots:
         QTest::mouseClick(listWidget->viewport(), Qt::LeftButton, Qt::NoModifier, clickPos);
 
         QTRY_COMPARE(createdSpy.count(), 1);
+        QCOMPARE(countCachedImages(tempDir.path()), 1);
         QTRY_VERIFY(window.isNull());
         manager.closeAllWindows();
     }
@@ -162,6 +166,7 @@ private slots:
         const QString dprPath = basePath + ".snpd";
 
         QVERIFY(createImageFile(imagePath, QSize(320, 180), Qt::green));
+        QCOMPARE(countCachedImages(tempDir.path()), 1);
 
         LayoutRegion region;
         region.rect = QRect(0, 0, 100, 80);
@@ -204,6 +209,57 @@ private slots:
         QTRY_VERIFY(createdWindow != nullptr);
         QCOMPARE(createdWindow->size(), QSize(160, 90));
         QVERIFY(createdWindow->hasMultiRegionData());
+        QCOMPARE(countCachedImages(tempDir.path()), 1);
+        QTRY_VERIFY(historyWindow.isNull());
+
+        manager.closeAllWindows();
+    }
+
+    void testRepinLargeImageIsAutoScaledToScreen()
+    {
+        QScreen* screen = QGuiApplication::primaryScreen();
+        if (!screen) {
+            QSKIP("No primary screen available");
+        }
+
+        QTemporaryDir tempDir;
+        QVERIFY(tempDir.isValid());
+        setHistoryPath(tempDir.path());
+
+        const QRect available = screen->availableGeometry();
+        const QSize originalSize(
+            qMax(available.width() * 2, available.width() + 500),
+            qMax(available.height() * 2, available.height() + 500));
+
+        const QString imagePath = QDir(tempDir.path()).filePath("cache_20260101_120002_000.png");
+        QVERIFY(createImageFile(imagePath, originalSize, Qt::yellow));
+
+        PinWindowManager manager;
+        PinWindow* createdWindow = nullptr;
+        connect(&manager, &PinWindowManager::windowCreated, this, [&createdWindow](PinWindow* window) {
+            createdWindow = window;
+        });
+
+        QPointer<PinHistoryWindow> historyWindow = new PinHistoryWindow(&manager);
+        historyWindow->show();
+        QCoreApplication::processEvents();
+
+        auto* listWidget = historyWindow->findChild<QListWidget*>("pinHistoryListWidget");
+        QVERIFY(listWidget);
+        QCOMPARE(listWidget->count(), 1);
+
+        QListWidgetItem* firstItem = listWidget->item(0);
+        QVERIFY(firstItem);
+        const QPoint clickPos = listWidget->visualItemRect(firstItem).center();
+        QTest::mouseClick(listWidget->viewport(), Qt::LeftButton, Qt::NoModifier, clickPos);
+
+        QTRY_VERIFY(createdWindow != nullptr);
+        const QSize pinnedSize = createdWindow->size();
+        const int maxAllowedWidth = static_cast<int>(available.width() * 0.9);
+        const int maxAllowedHeight = static_cast<int>(available.height() * 0.9);
+        QVERIFY(pinnedSize.width() <= maxAllowedWidth + 1);
+        QVERIFY(pinnedSize.height() <= maxAllowedHeight + 1);
+        QVERIFY(pinnedSize.width() < originalSize.width() || pinnedSize.height() < originalSize.height());
         QTRY_VERIFY(historyWindow.isNull());
 
         manager.closeAllWindows();

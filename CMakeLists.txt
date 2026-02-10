@@ -438,6 +438,9 @@ add_library(snaptray_platform STATIC
     src/VideoEncoderFactory.cpp
     src/QRCodeManager.cpp
     src/QRCodeResultDialog.cpp
+    $<$<NOT:$<PLATFORM_ID:Darwin>>:
+        src/ImageColorSpaceHelper.cpp
+    >
     # Headers with Q_OBJECT for MOC processing
     include/IVideoEncoder.h
     include/encoding/NativeGifEncoder.h
@@ -448,9 +451,11 @@ add_library(snaptray_platform STATIC
     include/video/IVideoPlayer.h
     include/QRCodeManager.h
     include/QRCodeResultDialog.h
+    include/ImageColorSpaceHelper.h
 
     # macOS sources
     $<$<PLATFORM_ID:Darwin>:
+        src/ImageColorSpaceHelper_mac.mm
         src/platform/WindowLevel_mac.mm
         src/platform/PlatformFeatures_mac.mm
         src/WindowDetector.mm
@@ -646,6 +651,7 @@ add_library(snaptray_ui STATIC
     src/PinWindowManager.cpp
     src/pinwindow/PinHistoryStore.cpp
     src/pinwindow/PinHistoryWindow.cpp
+    src/pinwindow/PinWindowPlacement.cpp
     src/pinwindow/ImageTransformer.cpp
     src/toolbar/WindowedToolbar.cpp
     src/toolbar/WindowedSubToolbar.cpp
@@ -749,6 +755,7 @@ add_library(snaptray_ui STATIC
     include/PinWindowManager.h
     include/pinwindow/PinHistoryStore.h
     include/pinwindow/PinHistoryWindow.h
+    include/pinwindow/PinWindowPlacement.h
     include/pinwindow/ImageTransformer.h
     include/toolbar/WindowedToolbar.h
     include/toolbar/WindowedSubToolbar.h

@@ -37,7 +37,6 @@ private:
     void saveEntryAs(const PinHistoryEntry& entry);
     PinHistoryEntry entryFromItem(const QListWidgetItem* item) const;
     bool loadPixmap(const PinHistoryEntry& entry, QPixmap* pixmapOut) const;
-    QPoint centeredPositionFor(const QPixmap& pixmap) const;
     QString tooltipTextFor(const PinHistoryEntry& entry) const;
     void addEntryItem(const PinHistoryEntry& entry);
     void updateEmptyState();

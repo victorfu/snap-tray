@@ -3,6 +3,7 @@
 #include "PinWindow.h"
 #include "PinWindowManager.h"
 #include "pinwindow/RegionLayoutManager.h"
+#include "pinwindow/PinWindowPlacement.h"
 #include "settings/FileSettingsManager.h"
 
 #include <QClipboard>
@@ -209,7 +210,15 @@ void PinHistoryWindow::pinEntry(const PinHistoryEntry& entry)
         return;
     }
 
-    PinWindow* pinWindow = m_pinWindowManager->createPinWindow(pixmap, centeredPositionFor(pixmap));
+    QScreen* screen = QGuiApplication::primaryScreen();
+    const PinWindowPlacement placement = computeInitialPinWindowPlacement(
+        pixmap,
+        screen ? screen->availableGeometry() : QRect());
+    PinWindow* pinWindow = m_pinWindowManager->createPinWindow(pixmap, placement.position, false);
+    if (pinWindow && placement.zoomLevel < 1.0) {
+        pinWindow->setZoomLevel(placement.zoomLevel);
+    }
+
     if (pinWindow && !entry.metadataPath.isEmpty() && QFile::exists(entry.metadataPath)) {
         QFile metadataFile(entry.metadataPath);
         if (metadataFile.open(QIODevice::ReadOnly)) {
@@ -303,22 +312,6 @@ bool PinHistoryWindow::loadPixmap(const PinHistoryEntry& entry, QPixmap* pixmapO
 
     *pixmapOut = restored;
     return true;
-}
-
-QPoint PinHistoryWindow::centeredPositionFor(const QPixmap& pixmap) const
-{
-    QScreen* screen = QGuiApplication::primaryScreen();
-    if (!screen) {
-        return QPoint(50, 50);
-    }
-
-    const QRect screenGeometry = screen->availableGeometry();
-    qreal dpr = pixmap.devicePixelRatio();
-    if (dpr <= 0.0) {
-        dpr = 1.0;
-    }
-    const QSize logicalSize = pixmap.size() / dpr;
-    return screenGeometry.center() - QPoint(logicalSize.width() / 2, logicalSize.height() / 2);
 }
 
 QString PinHistoryWindow::tooltipTextFor(const PinHistoryEntry& entry) const

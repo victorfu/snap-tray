@@ -9,6 +9,8 @@
 #include "ScreenCanvasManager.h"
 #include "SettingsDialog.h"
 #include "pinwindow/PinHistoryWindow.h"
+#include "pinwindow/PinWindowPlacement.h"
+#include "ImageColorSpaceHelper.h"
 #include "cli/IPCProtocol.h"
 #include "hotkey/HotkeyManager.h"
 #include "ui/GlobalToast.h"
@@ -35,6 +37,7 @@
 #include <QFileDialog>
 #include <QStandardPaths>
 #include <QFileInfo>
+#include <QImageReader>
 #include <QPainter>
 #include <QFont>
 #include <QFontMetrics>
@@ -549,11 +552,13 @@ void MainApplication::onPinFromImage()
     // Load image asynchronously (QImage is thread-safe, QPixmap is not)
     QPointer<MainApplication> guard(this);
     (void)QtConcurrent::run([filePath, guard]() {
-        QImage image(filePath);
+        QImageReader reader(filePath);
+        reader.setAutoTransform(true);
+        QImage image = reader.read();
 
         // Call back to UI thread
         if (guard) {
-            QMetaObject::invokeMethod(guard, [guard, filePath, image]() {
+            QMetaObject::invokeMethod(guard, [guard, filePath, image = std::move(image)]() {
                 if (guard) {
                     guard->onImageLoaded(filePath, image);
                 }
@@ -594,43 +599,33 @@ void MainApplication::onImageLoaded(const QString &filePath, const QImage &image
         return;
     }
 
-    // Convert QImage to QPixmap (must be on UI thread)
-    QPixmap pixmap = QPixmap::fromImage(image);
-
     // Get screen geometry
     QScreen *screen = QGuiApplication::primaryScreen();
     if (!screen) {
         qCritical() << "MainApplication: No valid screen available for pin window";
         return;
     }
-    QRect screenGeometry = screen->availableGeometry();
 
-    // Calculate logical image size (HiDPI support)
-    QSize logicalSize = pixmap.size() / pixmap.devicePixelRatio();
-
-    // Calculate zoom level to fit screen (with margin)
-    constexpr qreal kScreenMargin = 0.9;
-    qreal zoomLevel = 1.0;
-
-    if (logicalSize.width() > screenGeometry.width() * kScreenMargin ||
-        logicalSize.height() > screenGeometry.height() * kScreenMargin) {
-        qreal scaleX = (screenGeometry.width() * kScreenMargin) / logicalSize.width();
-        qreal scaleY = (screenGeometry.height() * kScreenMargin) / logicalSize.height();
-        zoomLevel = qMin(scaleX, scaleY);
-        zoomLevel = qMax(zoomLevel, 0.1);
+    const QImage displayImage = convertImageForDisplay(image);
+    const QPixmap pixmap = QPixmap::fromImage(displayImage);
+    if (pixmap.isNull()) {
+        QFileInfo fileInfo(filePath);
+        GlobalToast::instance().showToast(
+            GlobalToast::Error,
+            tr("Failed to Load Image"),
+            fileInfo.fileName()
+        );
+        return;
     }
 
-    // Calculate display size and center position
-    QSize displaySize = logicalSize * zoomLevel;
-    QPoint position(
-        screenGeometry.center().x() - displaySize.width() / 2,
-        screenGeometry.center().y() - displaySize.height() / 2
-    );
+    const PinWindowPlacement placement = computeInitialPinWindowPlacement(
+        pixmap,
+        screen->availableGeometry());
 
     // Create pin window and apply zoom if needed
-    PinWindow *pinWindow = m_pinWindowManager->createPinWindow(pixmap, position);
-    if (pinWindow && zoomLevel < 1.0) {
-        pinWindow->setZoomLevel(zoomLevel);
+    PinWindow *pinWindow = m_pinWindowManager->createPinWindow(pixmap, placement.position);
+    if (pinWindow && placement.zoomLevel < 1.0) {
+        pinWindow->setZoomLevel(placement.zoomLevel);
     }
 }
 
