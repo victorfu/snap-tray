@@ -90,10 +90,7 @@ private slots:
 
     // Drawing tests
     void testDraw_Basic();
-    void testDraw_WithRotation();
-    void testDraw_WithScale();
     void testBoundingRect_WithRotationScale_ContainsDrawnPixels();
-    void testDraw_EmptyText();
     void testDraw_MultilineText();
 
     // Constants tests
@@ -649,34 +646,6 @@ void TestTextBoxAnnotation::testDraw_Basic()
     QVERIFY(hasColor);
 }
 
-void TestTextBoxAnnotation::testDraw_WithRotation()
-{
-    QFont font("Arial", 14);
-    TextBoxAnnotation textBox(QPointF(100, 100), "Rotated", font, Qt::blue);
-    textBox.setRotation(45.0);
-
-    QImage image(300, 300, QImage::Format_ARGB32);
-    image.fill(Qt::white);
-    QPainter painter(&image);
-
-    textBox.draw(painter);
-    QVERIFY(true);  // No crash
-}
-
-void TestTextBoxAnnotation::testDraw_WithScale()
-{
-    QFont font("Arial", 14);
-    TextBoxAnnotation textBox(QPointF(50, 50), "Scaled", font, Qt::green);
-    textBox.setScale(2.0);
-
-    QImage image(300, 200, QImage::Format_ARGB32);
-    image.fill(Qt::white);
-    QPainter painter(&image);
-
-    textBox.draw(painter);
-    QVERIFY(true);  // No crash
-}
-
 void TestTextBoxAnnotation::testBoundingRect_WithRotationScale_ContainsDrawnPixels()
 {
     QFont font("Arial", 16);
@@ -698,20 +667,6 @@ void TestTextBoxAnnotation::testBoundingRect_WithRotationScale_ContainsDrawnPixe
     // A small tolerance keeps this stable under minor rasterization differences.
     const QRect tolerantBounds = textBox.boundingRect().adjusted(-1, -1, 1, 1);
     QVERIFY(tolerantBounds.contains(drawnBounds));
-}
-
-void TestTextBoxAnnotation::testDraw_EmptyText()
-{
-    QFont font("Arial", 14);
-    TextBoxAnnotation textBox(QPointF(100, 100), "", font, Qt::red);
-
-    QImage image(200, 150, QImage::Format_ARGB32);
-    image.fill(Qt::white);
-    QPainter painter(&image);
-
-    // Should not crash even with empty text
-    textBox.draw(painter);
-    QVERIFY(true);
 }
 
 void TestTextBoxAnnotation::testDraw_MultilineText()

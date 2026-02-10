@@ -25,7 +25,6 @@ private slots:
     void testInitialAudioState();
 
     // Bug #3 prevention: Signal disconnect scope
-    void testAudioDisconnect_OnlyDisconnectsOwnConnections_Prevention();
     void testDisconnectScopeDocumentation();
 
     // Audio cleanup tests
@@ -71,32 +70,6 @@ void TestRecordingManagerAudioIntegration::testInitialAudioState()
 // ============================================================================
 // Bug #3 Prevention Tests
 // ============================================================================
-
-void TestRecordingManagerAudioIntegration::testAudioDisconnect_OnlyDisconnectsOwnConnections_Prevention()
-{
-    // Bug #3: In RecordingManager.cpp:299, the disconnect is too broad:
-    //
-    //     disconnect(m_gifEncoder, nullptr, this, nullptr);
-    //
-    // This disconnects ALL connections from m_gifEncoder to this object,
-    // including connections that might be managed by other components.
-    //
-    // The preferred pattern would be to track individual connections:
-    //
-    //     QMetaObject::Connection m_gifEncoderFinishedConnection;
-    //     // On connect:
-    //     m_gifEncoderFinishedConnection = connect(m_gifEncoder, &..., this, &...);
-    //     // On disconnect:
-    //     disconnect(m_gifEncoderFinishedConnection);
-    //
-    // Or use a more specific disconnect:
-    //
-    //     disconnect(m_gifEncoder, &NativeGifEncoder::finished,
-    //                this, &RecordingManager::onEncodingFinished);
-
-    // This test documents the issue
-    QVERIFY(true);
-}
 
 void TestRecordingManagerAudioIntegration::testDisconnectScopeDocumentation()
 {

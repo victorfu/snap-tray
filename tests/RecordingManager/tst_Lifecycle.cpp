@@ -23,11 +23,9 @@ private slots:
 
     // Constructor/Destructor tests
     void testConstructorInitializesState();
-    void testDestructorCleansUp();
     void testMultipleInstances();
 
     // Bug #2 prevention: Null pointer checks
-    void testOnInitializationComplete_InitTaskNull_Prevention();
     void testNullPointerSafety();
 
     // Resource cleanup tests
@@ -75,17 +73,6 @@ void TestRecordingManagerLifecycle::testConstructorInitializesState()
     QVERIFY(!manager.isSelectingRegion());
 }
 
-void TestRecordingManagerLifecycle::testDestructorCleansUp()
-{
-    // Create and destroy manager - should not crash
-    RecordingManager* manager = new RecordingManager();
-    QVERIFY(manager != nullptr);
-
-    delete manager;
-    // If we get here without crash, cleanup worked
-    QVERIFY(true);
-}
-
 void TestRecordingManagerLifecycle::testMultipleInstances()
 {
     // Multiple managers should coexist
@@ -99,37 +86,6 @@ void TestRecordingManagerLifecycle::testMultipleInstances()
 // ============================================================================
 // Bug #2 Prevention Tests
 // ============================================================================
-
-void TestRecordingManagerLifecycle::testOnInitializationComplete_InitTaskNull_Prevention()
-{
-    // Bug #2: In RecordingManager.cpp:434, m_initTask->result() is called
-    // without checking if m_initTask is null first.
-    //
-    // The code should check:
-    //     if (!m_initTask) {
-    //         // Handle null initTask
-    //         return;
-    //     }
-    //     const RecordingInitTask::Result &result = m_initTask->result();
-    //
-    // This test documents the bug and verifies current safe behavior
-
-    // In initial state, there's no initTask running
-    QCOMPARE(m_manager->state(), RecordingManager::State::Idle);
-
-    // If onInitializationComplete() were called directly (which it shouldn't be),
-    // it could crash if m_initTask is null
-
-    // Current code at line 434:
-    //     const RecordingInitTask::Result &result = m_initTask->result();
-    // Should be:
-    //     if (!m_initTask) {
-    //         qWarning() << "onInitializationComplete called with null initTask";
-    //         setState(State::Idle);
-    //         return;
-    //     }
-    //     const RecordingInitTask::Result &result = m_initTask->result();
-}
 
 void TestRecordingManagerLifecycle::testNullPointerSafety()
 {

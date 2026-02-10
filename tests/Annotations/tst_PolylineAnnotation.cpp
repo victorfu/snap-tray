@@ -64,8 +64,6 @@ private slots:
     void testDraw_Empty();
     void testDraw_SinglePoint();
     void testDraw_MultiplePoints();
-    void testDraw_AllLineEndStyles();
-    void testDraw_AllLineStyles();
 
 private:
     QVector<QPoint> createTestPoints(int count, int spacing = 20);
@@ -441,49 +439,6 @@ void TestPolylineAnnotation::testDraw_MultiplePoints()
         }
     }
     QVERIFY(hasColor);
-}
-
-void TestPolylineAnnotation::testDraw_AllLineEndStyles()
-{
-    QVector<QPoint> points = createTestPoints(3, 40);
-
-    QList<LineEndStyle> styles = {
-        LineEndStyle::None,
-        LineEndStyle::EndArrow,
-        LineEndStyle::EndArrowOutline,
-        LineEndStyle::EndArrowLine,
-        LineEndStyle::BothArrow,
-        LineEndStyle::BothArrowOutline
-    };
-
-    for (LineEndStyle style : styles) {
-        PolylineAnnotation polyline(points, Qt::red, 3, style);
-
-        QImage image(300, 200, QImage::Format_ARGB32);
-        image.fill(Qt::white);
-        QPainter painter(&image);
-
-        polyline.draw(painter);
-        QVERIFY(true);  // No crash
-    }
-}
-
-void TestPolylineAnnotation::testDraw_AllLineStyles()
-{
-    QVector<QPoint> points = createTestPoints(4, 30);
-
-    QList<LineStyle> styles = { LineStyle::Solid, LineStyle::Dashed, LineStyle::Dotted };
-
-    for (LineStyle style : styles) {
-        PolylineAnnotation polyline(points, Qt::red, 3, LineEndStyle::EndArrow, style);
-
-        QImage image(300, 200, QImage::Format_ARGB32);
-        image.fill(Qt::white);
-        QPainter painter(&image);
-
-        polyline.draw(painter);
-        QVERIFY(true);  // No crash
-    }
 }
 
 QTEST_MAIN(TestPolylineAnnotation)

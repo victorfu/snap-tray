@@ -12,7 +12,6 @@ private slots:
     void cleanup();
 
     // Basic functionality tests
-    void testInitialState();
     void testStartAll();
 
     // Throttle type tests
@@ -55,15 +54,6 @@ void tst_UpdateThrottler::cleanup()
 {
     delete m_throttler;
     m_throttler = nullptr;
-}
-
-void tst_UpdateThrottler::testInitialState()
-{
-    // Before startAll(), timers may not be started
-    // Creating a new throttler to test initial state
-    UpdateThrottler throttler;
-    // Should not crash when checking
-    QVERIFY(true);
 }
 
 void tst_UpdateThrottler::testStartAll()

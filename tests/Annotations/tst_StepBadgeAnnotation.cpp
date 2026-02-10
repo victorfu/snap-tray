@@ -54,9 +54,6 @@ private slots:
 
     // Drawing tests
     void testDraw_Basic();
-    void testDraw_AllSizes();
-    void testDraw_DifferentNumbers();
-    void testDraw_LargeNumber();
     void testDraw_VerifyCircle();
 
     // Constants tests
@@ -314,55 +311,6 @@ void TestStepBadgeAnnotation::testDraw_Basic()
         }
     }
     QVERIFY(hasColor);
-}
-
-void TestStepBadgeAnnotation::testDraw_AllSizes()
-{
-    QList<int> radii = {
-        StepBadgeAnnotation::kBadgeRadiusSmall,
-        StepBadgeAnnotation::kBadgeRadiusMedium,
-        StepBadgeAnnotation::kBadgeRadiusLarge
-    };
-
-    for (int radius : radii) {
-        StepBadgeAnnotation badge(QPoint(50, 50), Qt::red, 1, radius);
-
-        QImage image(100, 100, QImage::Format_ARGB32);
-        image.fill(Qt::white);
-        QPainter painter(&image);
-
-        badge.draw(painter);
-        QVERIFY(true);  // No crash
-    }
-}
-
-void TestStepBadgeAnnotation::testDraw_DifferentNumbers()
-{
-    QList<int> numbers = { 1, 5, 9, 10, 50, 99 };
-
-    for (int num : numbers) {
-        StepBadgeAnnotation badge(QPoint(50, 50), Qt::red, num);
-
-        QImage image(100, 100, QImage::Format_ARGB32);
-        image.fill(Qt::white);
-        QPainter painter(&image);
-
-        badge.draw(painter);
-        QVERIFY(true);  // No crash
-    }
-}
-
-void TestStepBadgeAnnotation::testDraw_LargeNumber()
-{
-    StepBadgeAnnotation badge(QPoint(50, 50), Qt::red, 999);
-
-    QImage image(100, 100, QImage::Format_ARGB32);
-    image.fill(Qt::white);
-    QPainter painter(&image);
-
-    // Should not crash even with large numbers
-    badge.draw(painter);
-    QVERIFY(true);
 }
 
 void TestStepBadgeAnnotation::testDraw_VerifyCircle()

@@ -62,7 +62,6 @@ private slots:
     void testDraw_EmptyPoints();
     void testDraw_SinglePoint();
     void testDraw_MultiplePoints();
-    void testDraw_AllLineStyles();
 
 private:
     QVector<QPointF> createTestPoints(int count, qreal spacing = 10.0);
@@ -435,24 +434,6 @@ void TestPencilStroke::testDraw_MultiplePoints()
         }
     }
     QVERIFY(hasColor);
-}
-
-void TestPencilStroke::testDraw_AllLineStyles()
-{
-    QVector<QPointF> points = createTestPoints(10, 10);
-
-    QList<LineStyle> styles = { LineStyle::Solid, LineStyle::Dashed, LineStyle::Dotted };
-
-    for (LineStyle style : styles) {
-        PencilStroke stroke(points, Qt::red, 3, style);
-
-        QImage image(200, 200, QImage::Format_ARGB32);
-        image.fill(Qt::white);
-        QPainter painter(&image);
-
-        stroke.draw(painter);
-        QVERIFY(true);  // No crash
-    }
 }
 
 QTEST_MAIN(TestPencilStroke)

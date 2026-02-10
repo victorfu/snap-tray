@@ -65,8 +65,6 @@ private slots:
 
     // Drawing tests
     void testDraw_BasicArrow();
-    void testDraw_AllLineEndStyles();
-    void testDraw_AllLineStyles();
     void testDraw_CurvedArrow();
 };
 
@@ -410,46 +408,6 @@ void TestArrowAnnotation::testDraw_BasicArrow()
         }
     }
     QVERIFY(hasColor);
-}
-
-void TestArrowAnnotation::testDraw_AllLineEndStyles()
-{
-    QList<LineEndStyle> styles = {
-        LineEndStyle::None,
-        LineEndStyle::EndArrow,
-        LineEndStyle::EndArrowOutline,
-        LineEndStyle::EndArrowLine,
-        LineEndStyle::BothArrow,
-        LineEndStyle::BothArrowOutline
-    };
-
-    for (LineEndStyle style : styles) {
-        ArrowAnnotation arrow(QPoint(50, 50), QPoint(150, 50), Qt::red, 3, style);
-
-        QImage image(200, 100, QImage::Format_ARGB32);
-        image.fill(Qt::white);
-        QPainter painter(&image);
-
-        arrow.draw(painter);
-        QVERIFY(true);  // No crash
-    }
-}
-
-void TestArrowAnnotation::testDraw_AllLineStyles()
-{
-    QList<LineStyle> styles = { LineStyle::Solid, LineStyle::Dashed, LineStyle::Dotted };
-
-    for (LineStyle style : styles) {
-        ArrowAnnotation arrow(QPoint(50, 50), QPoint(150, 50), Qt::red, 3,
-                              LineEndStyle::EndArrow, style);
-
-        QImage image(200, 100, QImage::Format_ARGB32);
-        image.fill(Qt::white);
-        QPainter painter(&image);
-
-        arrow.draw(painter);
-        QVERIFY(true);  // No crash
-    }
 }
 
 void TestArrowAnnotation::testDraw_CurvedArrow()

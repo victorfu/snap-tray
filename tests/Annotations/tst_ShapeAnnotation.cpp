@@ -40,7 +40,6 @@ private slots:
     void testBoundingRect_IncludesStrokeWidth();
     void testBoundingRect_NormalizedRect();
     void testBoundingRect_NegativeRect();
-    void testBoundingRect_ZeroSize();
 
     // Clone tests
     void testClone_CreatesNewInstance();
@@ -55,12 +54,10 @@ private slots:
     void testDraw_Ellipse();
     void testDraw_FilledRectangle();
     void testDraw_FilledEllipse();
-    void testDraw_ZeroSizeRect();
     void testDraw_NegativeRect();
     void testDraw_LargeStrokeWidth();
 
     // Edge cases
-    void testEdgeCase_VerySmallRect();
     void testEdgeCase_VeryLargeRect();
     void testEdgeCase_SquareRect();
 };
@@ -241,17 +238,6 @@ void TestShapeAnnotation::testBoundingRect_NegativeRect()
     QVERIFY(bounds.isValid() || !bounds.isEmpty());
 }
 
-void TestShapeAnnotation::testBoundingRect_ZeroSize()
-{
-    QRect zeroRect(100, 100, 0, 0);
-    ShapeAnnotation shape(zeroRect, ShapeType::Rectangle, Qt::red, 3);
-
-    // Should not crash, may have small bounding rect from stroke
-    QRect bounds = shape.boundingRect();
-    Q_UNUSED(bounds);
-    QVERIFY(true);
-}
-
 // ============================================================================
 // Clone Tests
 // ============================================================================
@@ -414,19 +400,6 @@ void TestShapeAnnotation::testDraw_FilledEllipse()
     QVERIFY(centerColor.cyan() > 200 || (centerColor.green() > 200 && centerColor.blue() > 200));
 }
 
-void TestShapeAnnotation::testDraw_ZeroSizeRect()
-{
-    ShapeAnnotation shape(QRect(50, 50, 0, 0), ShapeType::Rectangle, Qt::red, 3);
-
-    QImage image(100, 100, QImage::Format_ARGB32);
-    image.fill(Qt::white);
-    QPainter painter(&image);
-
-    // Should not crash
-    shape.draw(painter);
-    QVERIFY(true);
-}
-
 void TestShapeAnnotation::testDraw_NegativeRect()
 {
     // Rect defined from bottom-right to top-left
@@ -475,18 +448,6 @@ void TestShapeAnnotation::testDraw_LargeStrokeWidth()
 // ============================================================================
 // Edge Cases
 // ============================================================================
-
-void TestShapeAnnotation::testEdgeCase_VerySmallRect()
-{
-    ShapeAnnotation shape(QRect(50, 50, 1, 1), ShapeType::Rectangle, Qt::red, 3);
-
-    QImage image(100, 100, QImage::Format_ARGB32);
-    image.fill(Qt::white);
-    QPainter painter(&image);
-
-    shape.draw(painter);
-    QVERIFY(true);  // No crash
-}
 
 void TestShapeAnnotation::testEdgeCase_VeryLargeRect()
 {

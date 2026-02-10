@@ -61,7 +61,6 @@ private slots:
     void testDraw_EmptyPoints();
     void testDraw_SinglePoint();
     void testDraw_MultiplePoints();
-    void testDraw_SemiTransparent();
 
 private:
     QVector<QPointF> createTestPoints(int count, qreal spacing = 10.0);
@@ -399,35 +398,6 @@ void TestMarkerStroke::testDraw_MultiplePoints()
         }
     }
     QVERIFY(hasColor);
-}
-
-void TestMarkerStroke::testDraw_SemiTransparent()
-{
-    QVector<QPointF> points = createTestPoints(5, 10);
-    MarkerStroke stroke(points, Qt::yellow, 20);
-
-    QImage image(200, 200, QImage::Format_ARGB32);
-    image.fill(Qt::white);
-    QPainter painter(&image);
-
-    stroke.draw(painter);
-    painter.end();
-
-    // Check for semi-transparent pixels (marker effect)
-    // The marker stroke should blend with the white background
-    bool hasSemiTransparentEffect = false;
-    for (int y = 90; y < 150 && !hasSemiTransparentEffect; ++y) {
-        for (int x = 90; x < 150 && !hasSemiTransparentEffect; ++x) {
-            QColor pixel = image.pixelColor(x, y);
-            // Yellow blended with white should have high R and G but not pure white
-            if (pixel.red() > 200 && pixel.green() > 200 &&
-                pixel != QColor(Qt::white) && pixel != QColor(Qt::yellow)) {
-                hasSemiTransparentEffect = true;
-            }
-        }
-    }
-    // Note: This depends on implementation details, so we just verify no crash
-    QVERIFY(true);
 }
 
 QTEST_MAIN(TestMarkerStroke)

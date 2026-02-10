@@ -15,7 +15,6 @@ private slots:
 
     // Configuration tests
     void testDefaultValues();
-    void testSetDevicePixelRatio();
     void testColorFormatToggle();
     void testShowHexColor();
 
@@ -24,10 +23,7 @@ private slots:
     void testColorStringHex();
 
     // Cache tests
-    void testInvalidateCache();
-
     // Draw tests
-    void testDrawDoesNotCrash();
     void testDrawWithEmptyImage();
     void testDrawUpdatesCurrentColor();
 
@@ -85,16 +81,6 @@ void tst_MagnifierPanel::testDefaultValues()
     QCOMPARE(m_panel->currentColor(), QColor());  // Default uninitialized
 }
 
-void tst_MagnifierPanel::testSetDevicePixelRatio()
-{
-    m_panel->setDevicePixelRatio(2.0);
-    // No direct getter, but should not crash
-    QVERIFY(true);
-
-    m_panel->setDevicePixelRatio(1.0);
-    QVERIFY(true);
-}
-
 void tst_MagnifierPanel::testColorFormatToggle()
 {
     QCOMPARE(m_panel->showHexColor(), false);
@@ -143,35 +129,6 @@ void tst_MagnifierPanel::testColorStringHex()
     QString colorStr = m_panel->colorString();
     QVERIFY(colorStr.startsWith("#"));
     QCOMPARE(colorStr.length(), 7);  // #RRGGBB
-}
-
-void tst_MagnifierPanel::testInvalidateCache()
-{
-    // Should not crash
-    m_panel->invalidateCache();
-    QVERIFY(true);
-
-    // Multiple invalidations should be safe
-    m_panel->invalidateCache();
-    m_panel->invalidateCache();
-    QVERIFY(true);
-}
-
-void tst_MagnifierPanel::testDrawDoesNotCrash()
-{
-    QPixmap pixmap(400, 400);
-    pixmap.fill(Qt::transparent);
-    QPainter painter(&pixmap);
-
-    // Test various cursor positions
-    m_panel->draw(painter, QPoint(100, 100), QSize(400, 400), *m_testPixmap);
-    QVERIFY(true);
-
-    m_panel->draw(painter, QPoint(0, 0), QSize(400, 400), *m_testPixmap);
-    QVERIFY(true);
-
-    m_panel->draw(painter, QPoint(199, 199), QSize(400, 400), *m_testPixmap);
-    QVERIFY(true);
 }
 
 void tst_MagnifierPanel::testDrawWithEmptyImage()

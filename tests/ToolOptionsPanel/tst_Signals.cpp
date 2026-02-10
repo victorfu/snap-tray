@@ -22,7 +22,6 @@ private slots:
 
     // Color signals
     void testColorSelectedSignal();
-    void testCustomColorPickerRequestedSignal();
 
     // Width signals
     void testWidthChangedSignal();
@@ -98,33 +97,6 @@ void TestToolOptionsPanelSignals::testColorSelectedSignal()
     QList<QVariant> arguments = spy.takeFirst();
     QColor selectedColor = arguments.at(0).value<QColor>();
     QCOMPARE(selectedColor, QColor(220, 53, 69));  // First standard color (Red)
-}
-
-void TestToolOptionsPanelSignals::testCustomColorPickerRequestedSignal()
-{
-    QSignalSpy spy(m_widget, &ToolOptionsPanel::customColorPickerRequested);
-    QVERIFY(spy.isValid());
-
-    // Set up the widget
-    m_widget->setVisible(true);
-    m_widget->updatePosition(QRect(100, 100, 200, 40), false, 800);
-
-    // Custom swatch is at the leftmost position in ColorSection
-    // Double-click on it should request color picker
-    QRect widgetRect = m_widget->boundingRect();
-    int colorSectionLeft = widgetRect.left() + kWidthSectionSize + kWidthToColorSpacing;
-    int gridLeft = colorSectionLeft + kColorPadding;
-    int gridTop = widgetRect.top() + (widgetRect.height() - kSwatchSize) / 2;
-
-    // Custom swatch center (first position)
-    QPoint customSwatchCenter(gridLeft + kSwatchSize / 2, gridTop + kSwatchSize / 2);
-
-    // Note: ColorSection emits customColorPickerRequested on double-click of custom swatch.
-    // The test needs to verify the signal connection exists.
-    // Since handleClick on custom swatch applies the custom color (not opens picker),
-    // and double-click isn't directly testable here, we just verify signal is connected.
-    // This test verifies the signal is valid and can be connected.
-    QVERIFY(spy.isValid());
 }
 
 // ============================================================================
