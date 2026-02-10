@@ -8,6 +8,7 @@
 #include <QVector>
 #include <QColor>
 #include <QPointer>
+#include <map>
 #include <memory>
 #include "annotations/AnnotationLayer.h"
 #include "annotations/ArrowAnnotation.h"
@@ -97,9 +98,20 @@ private:
     void setupToolbar();
     void updateToolbarPosition();
     void handleToolbarClick(int buttonId);
+    void handlePersistentToolClick(ToolId toolId);
+    void handleCanvasModeToggle(ToolId toolId);
+    void handleActionToolClick(ToolId toolId);
+    void handleUndoAction(ToolId toolId);
+    void handleRedoAction(ToolId toolId);
+    void handleClearAction(ToolId toolId);
+    void handleExitAction(ToolId toolId);
     bool isDrawingTool(ToolId toolId) const;
     QColor getButtonIconColor(int buttonId) const;
     void setToolCursor();
+
+    using ToolbarClickHandler = void (ScreenCanvas::*)(ToolId);
+    static const std::map<ToolId, ToolbarClickHandler>& toolbarDispatchTable();
+    static const std::map<ToolId, ToolbarClickHandler>& actionDispatchTable();
 
     // Color palette helpers (legacy)
     bool shouldShowColorPalette() const;

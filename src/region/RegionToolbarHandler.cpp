@@ -22,6 +22,50 @@ RegionToolbarHandler::RegionToolbarHandler(QObject* parent)
 {
 }
 
+const std::map<ToolId, RegionToolbarHandler::ToolDispatchEntry>& RegionToolbarHandler::toolDispatchTable()
+{
+    static const std::map<ToolId, ToolDispatchEntry> kDispatch = {
+        {ToolId::Selection, {&RegionToolbarHandler::handleSelectionTool, ToolbarButtonRole::Default, true}},
+        {ToolId::Arrow, {&RegionToolbarHandler::handleAnnotationTool, ToolbarButtonRole::Default, true}},
+        {ToolId::Pencil, {&RegionToolbarHandler::handleAnnotationTool, ToolbarButtonRole::Default, true}},
+        {ToolId::Marker, {&RegionToolbarHandler::handleAnnotationTool, ToolbarButtonRole::Default, true}},
+        {ToolId::Shape, {&RegionToolbarHandler::handleAnnotationTool, ToolbarButtonRole::Default, true}},
+        {ToolId::Text, {&RegionToolbarHandler::handleAnnotationTool, ToolbarButtonRole::Default, true}},
+        {ToolId::Eraser, {&RegionToolbarHandler::handleAnnotationTool, ToolbarButtonRole::Default, true}},
+        {ToolId::EmojiSticker, {&RegionToolbarHandler::handleAnnotationTool, ToolbarButtonRole::Default, true}},
+        {ToolId::StepBadge, {&RegionToolbarHandler::handleStepBadgeTool, ToolbarButtonRole::Default, true}},
+        {ToolId::Mosaic, {&RegionToolbarHandler::handleMosaicTool, ToolbarButtonRole::Default, true}},
+        {ToolId::Undo, {&RegionToolbarHandler::handleActionButton, ToolbarButtonRole::Default, false}},
+        {ToolId::Redo, {&RegionToolbarHandler::handleActionButton, ToolbarButtonRole::Default, false}},
+        {ToolId::Cancel, {&RegionToolbarHandler::handleActionButton, ToolbarButtonRole::Cancel, false}},
+        {ToolId::OCR, {&RegionToolbarHandler::handleActionButton, ToolbarButtonRole::Default, false}},
+        {ToolId::QRCode, {&RegionToolbarHandler::handleActionButton, ToolbarButtonRole::Default, false}},
+        {ToolId::Pin, {&RegionToolbarHandler::handleActionButton, ToolbarButtonRole::Action, false}},
+        {ToolId::Record, {&RegionToolbarHandler::handleActionButton, ToolbarButtonRole::Record, false}},
+        {ToolId::Save, {&RegionToolbarHandler::handleActionButton, ToolbarButtonRole::Action, false}},
+        {ToolId::Copy, {&RegionToolbarHandler::handleActionButton, ToolbarButtonRole::Action, false}},
+        {ToolId::MultiRegion, {&RegionToolbarHandler::handleMultiRegionToggle, ToolbarButtonRole::Default, false}},
+        {ToolId::MultiRegionDone, {&RegionToolbarHandler::handleMultiRegionDone, ToolbarButtonRole::Default, false}},
+    };
+    return kDispatch;
+}
+
+const std::map<ToolId, RegionToolbarHandler::ClickHandler>& RegionToolbarHandler::actionDispatchTable()
+{
+    static const std::map<ToolId, ClickHandler> kActionDispatch = {
+        {ToolId::Undo, &RegionToolbarHandler::handleUndoAction},
+        {ToolId::Redo, &RegionToolbarHandler::handleRedoAction},
+        {ToolId::Cancel, &RegionToolbarHandler::handleCancelAction},
+        {ToolId::OCR, &RegionToolbarHandler::handleOcrAction},
+        {ToolId::QRCode, &RegionToolbarHandler::handleQrCodeAction},
+        {ToolId::Pin, &RegionToolbarHandler::handlePinAction},
+        {ToolId::Record, &RegionToolbarHandler::handleRecordAction},
+        {ToolId::Save, &RegionToolbarHandler::handleSaveAction},
+        {ToolId::Copy, &RegionToolbarHandler::handleCopyAction},
+    };
+    return kActionDispatch;
+}
+
 void RegionToolbarHandler::setToolbar(ToolbarCore* toolbar)
 {
     m_toolbar = toolbar;
@@ -102,6 +146,7 @@ void RegionToolbarHandler::setupToolbarButtons()
     // Configure buttons
     QVector<Toolbar::ButtonConfig> buttons;
     if (m_multiRegionMode) {
+        const auto& dispatch = toolDispatchTable();
         const auto& doneDef = registry.get(ToolId::MultiRegionDone);
         buttons.append({
             static_cast<int>(ToolId::MultiRegionDone),
@@ -116,7 +161,11 @@ void RegionToolbarHandler::setupToolbarButtons()
             cancelDef.iconKey,
             registry.getTooltipWithShortcut(ToolId::Cancel),
             cancelDef.showSeparatorBefore);
-        cancelBtn.cancel();
+        auto cancelDispatchIt = dispatch.find(ToolId::Cancel);
+        if (cancelDispatchIt != dispatch.end() &&
+            cancelDispatchIt->second.buttonRole == ToolbarButtonRole::Cancel) {
+            cancelBtn.cancel();
+        }
         buttons.append(cancelBtn);
 
         m_toolbar->setButtons(buttons);
@@ -128,6 +177,7 @@ void RegionToolbarHandler::setupToolbarButtons()
     }
 
     const QVector<ToolId> toolbarTools = registry.getToolsForToolbar(ToolbarType::RegionSelector);
+    const auto& dispatch = toolDispatchTable();
     QVector<int> activeButtonIds;
     for (ToolId toolId : toolbarTools) {
         if (toolId == ToolId::OCR && !PlatformFeatures::instance().isOCRAvailable()) {
@@ -140,20 +190,33 @@ void RegionToolbarHandler::setupToolbarButtons()
             def.iconKey,
             registry.getTooltipWithShortcut(toolId),
             def.showSeparatorBefore);
-
-        if (toolId == ToolId::Cancel) {
+        const auto dispatchIt = dispatch.find(toolId);
+        const ToolbarButtonRole role = dispatchIt != dispatch.end()
+            ? dispatchIt->second.buttonRole
+            : (def.category == ToolCategory::Toggle ? ToolbarButtonRole::Toggle : ToolbarButtonRole::Default);
+        switch (role) {
+        case ToolbarButtonRole::Cancel:
             config.cancel();
-        } else if (toolId == ToolId::Record) {
+            break;
+        case ToolbarButtonRole::Record:
             config.record();
-        } else if (toolId == ToolId::Pin || toolId == ToolId::Save || toolId == ToolId::Copy) {
+            break;
+        case ToolbarButtonRole::Action:
             config.action();
-        } else if (def.category == ToolCategory::Toggle) {
+            break;
+        case ToolbarButtonRole::Toggle:
             config.toggle();
+            break;
+        case ToolbarButtonRole::Default:
+            break;
         }
 
         buttons.append(config);
 
-        if (toolId == ToolId::Selection || isAnnotationTool(toolId)) {
+        const bool supportsActiveState = dispatchIt != dispatch.end()
+            ? dispatchIt->second.supportsActiveState
+            : (toolId == ToolId::Selection || isAnnotationTool(toolId));
+        if (supportsActiveState) {
             activeButtonIds.append(static_cast<int>(toolId));
         }
     }
@@ -209,58 +272,23 @@ QColor RegionToolbarHandler::getToolbarIconColor(int buttonId, bool isActive, bo
 
 void RegionToolbarHandler::handleToolbarClick(ToolId button)
 {
-    switch (button) {
-    case ToolId::Selection:
-        // Selection has no sub-toolbar, just switch tool
-        m_currentTool = button;
-        m_showSubToolbar = true;
-        emit showSizeSectionRequested(false);
-        qDebug() << "Tool selected:" << static_cast<int>(button);
-        emit toolChanged(m_currentTool, m_showSubToolbar);
-        emit updateRequested();
-        break;
-
-    case ToolId::Arrow:
-    case ToolId::Pencil:
-    case ToolId::Marker:
-    case ToolId::Shape:
-    case ToolId::Text:
-    case ToolId::Eraser:
-    case ToolId::EmojiSticker:
-        handleAnnotationTool(button);
-        break;
-
-    case ToolId::StepBadge:
-        handleStepBadgeTool();
-        break;
-
-    case ToolId::Mosaic:
-        handleMosaicTool();
-        break;
-
-    case ToolId::Undo:
-    case ToolId::Redo:
-    case ToolId::Cancel:
-    case ToolId::OCR:
-    case ToolId::QRCode:
-    case ToolId::Pin:
-    case ToolId::Record:
-    case ToolId::Save:
-    case ToolId::Copy:
-        handleActionButton(button);
-        break;
-
-    case ToolId::MultiRegion:
-        emit multiRegionToggled(!m_multiRegionMode);
-        break;
-
-    case ToolId::MultiRegionDone:
-        emit multiRegionDoneRequested();
-        break;
-
-    default:
-        break;
+    const auto& dispatch = toolDispatchTable();
+    auto it = dispatch.find(button);
+    if (it == dispatch.end() || !it->second.handler) {
+        return;
     }
+    (this->*(it->second.handler))(button);
+}
+
+void RegionToolbarHandler::handleSelectionTool(ToolId button)
+{
+    // Selection has no sub-toolbar, just switch tool
+    m_currentTool = button;
+    m_showSubToolbar = true;
+    emit showSizeSectionRequested(false);
+    qDebug() << "Tool selected:" << static_cast<int>(button);
+    emit toolChanged(m_currentTool, m_showSubToolbar);
+    emit updateRequested();
 }
 
 void RegionToolbarHandler::handleAnnotationTool(ToolId button)
@@ -285,9 +313,9 @@ void RegionToolbarHandler::handleAnnotationTool(ToolId button)
     emit updateRequested();
 }
 
-void RegionToolbarHandler::handleStepBadgeTool()
+void RegionToolbarHandler::handleStepBadgeTool(ToolId button)
 {
-    if (m_currentTool == ToolId::StepBadge) {
+    if (m_currentTool == button) {
         // Same tool clicked - switch to Selection tool
         m_currentTool = ToolId::Selection;
         m_showSubToolbar = true;
@@ -297,9 +325,9 @@ void RegionToolbarHandler::handleStepBadgeTool()
         return;
     } else {
         // Different tool - select it and show sub-toolbar
-        m_currentTool = ToolId::StepBadge;
+        m_currentTool = button;
         if (m_toolManager) {
-            m_toolManager->setCurrentTool(ToolId::StepBadge);
+            m_toolManager->setCurrentTool(button);
         }
         m_showSubToolbar = true;
     }
@@ -313,9 +341,9 @@ void RegionToolbarHandler::handleStepBadgeTool()
     emit updateRequested();
 }
 
-void RegionToolbarHandler::handleMosaicTool()
+void RegionToolbarHandler::handleMosaicTool(ToolId button)
 {
-    if (m_currentTool == ToolId::Mosaic) {
+    if (m_currentTool == button) {
         // Same tool clicked - switch to Selection tool
         m_currentTool = ToolId::Selection;
         m_showSubToolbar = true;
@@ -325,9 +353,9 @@ void RegionToolbarHandler::handleMosaicTool()
         return;
     } else {
         // Different tool - select it and show sub-toolbar
-        m_currentTool = ToolId::Mosaic;
+        m_currentTool = button;
         if (m_toolManager) {
-            m_toolManager->setCurrentTool(ToolId::Mosaic);
+            m_toolManager->setCurrentTool(button);
         }
         m_showSubToolbar = true;
     }
@@ -348,58 +376,79 @@ void RegionToolbarHandler::handleMosaicTool()
 
 void RegionToolbarHandler::handleActionButton(ToolId button)
 {
-    switch (button) {
-    case ToolId::Undo:
-        if (m_annotationLayer && m_annotationLayer->canUndo()) {
-            emit undoRequested();
-            qDebug() << "Undo";
-            emit updateRequested();
-        }
-        break;
-
-    case ToolId::Redo:
-        if (m_annotationLayer && m_annotationLayer->canRedo()) {
-            emit redoRequested();
-            qDebug() << "Redo";
-            emit updateRequested();
-        }
-        break;
-
-    case ToolId::Cancel:
-        if (m_multiRegionMode) {
-            emit multiRegionCancelRequested();
-        } else {
-            emit cancelRequested();
-        }
-        break;
-
-    case ToolId::OCR:
-        emit ocrRequested();
-        break;
-
-    case ToolId::QRCode:
-        emit qrCodeRequested();
-        break;
-
-    case ToolId::Pin:
-        emit pinRequested();
-        break;
-
-    case ToolId::Record:
-        emit recordRequested();
-        break;
-
-    case ToolId::Save:
-        emit saveRequested();
-        break;
-
-    case ToolId::Copy:
-        emit copyRequested();
-        break;
-
-    default:
-        break;
+    const auto& actions = actionDispatchTable();
+    auto it = actions.find(button);
+    if (it == actions.end() || !it->second) {
+        return;
     }
+    (this->*(it->second))(button);
+}
+
+void RegionToolbarHandler::handleUndoAction(ToolId)
+{
+    if (m_annotationLayer && m_annotationLayer->canUndo()) {
+        emit undoRequested();
+        qDebug() << "Undo";
+        emit updateRequested();
+    }
+}
+
+void RegionToolbarHandler::handleRedoAction(ToolId)
+{
+    if (m_annotationLayer && m_annotationLayer->canRedo()) {
+        emit redoRequested();
+        qDebug() << "Redo";
+        emit updateRequested();
+    }
+}
+
+void RegionToolbarHandler::handleCancelAction(ToolId)
+{
+    if (m_multiRegionMode) {
+        emit multiRegionCancelRequested();
+        return;
+    }
+    emit cancelRequested();
+}
+
+void RegionToolbarHandler::handleOcrAction(ToolId)
+{
+    emit ocrRequested();
+}
+
+void RegionToolbarHandler::handleQrCodeAction(ToolId)
+{
+    emit qrCodeRequested();
+}
+
+void RegionToolbarHandler::handlePinAction(ToolId)
+{
+    emit pinRequested();
+}
+
+void RegionToolbarHandler::handleRecordAction(ToolId)
+{
+    emit recordRequested();
+}
+
+void RegionToolbarHandler::handleSaveAction(ToolId)
+{
+    emit saveRequested();
+}
+
+void RegionToolbarHandler::handleCopyAction(ToolId)
+{
+    emit copyRequested();
+}
+
+void RegionToolbarHandler::handleMultiRegionToggle(ToolId)
+{
+    emit multiRegionToggled(!m_multiRegionMode);
+}
+
+void RegionToolbarHandler::handleMultiRegionDone(ToolId)
+{
+    emit multiRegionDoneRequested();
 }
 
 bool RegionToolbarHandler::isAnnotationTool(ToolId tool) const

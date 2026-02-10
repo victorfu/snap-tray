@@ -4,7 +4,7 @@
 #include <QObject>
 #include <QColor>
 #include <QCursor>
-#include <functional>
+#include <map>
 #include "tools/ToolId.h"
 
 class QWidget;
@@ -96,11 +96,43 @@ signals:
     void stepBadgeSizeRequested(StepBadgeSize size);
 
 private:
+    enum class ToolbarButtonRole {
+        Default,
+        Toggle,
+        Action,
+        Record,
+        Cancel
+    };
+
+    using ClickHandler = void (RegionToolbarHandler::*)(ToolId);
+
+    struct ToolDispatchEntry {
+        ClickHandler handler = nullptr;
+        ToolbarButtonRole buttonRole = ToolbarButtonRole::Default;
+        bool supportsActiveState = false;
+    };
+
+    static const std::map<ToolId, ToolDispatchEntry>& toolDispatchTable();
+    static const std::map<ToolId, ClickHandler>& actionDispatchTable();
+
+    // Click handlers
+    void handleSelectionTool(ToolId button);
     // Tool switching helpers
     void handleAnnotationTool(ToolId button);
-    void handleStepBadgeTool();
-    void handleMosaicTool();
+    void handleStepBadgeTool(ToolId button);
+    void handleMosaicTool(ToolId button);
     void handleActionButton(ToolId button);
+    void handleUndoAction(ToolId button);
+    void handleRedoAction(ToolId button);
+    void handleCancelAction(ToolId button);
+    void handleOcrAction(ToolId button);
+    void handleQrCodeAction(ToolId button);
+    void handlePinAction(ToolId button);
+    void handleRecordAction(ToolId button);
+    void handleSaveAction(ToolId button);
+    void handleCopyAction(ToolId button);
+    void handleMultiRegionToggle(ToolId button);
+    void handleMultiRegionDone(ToolId button);
 
     // Tool state helpers
     bool isAnnotationTool(ToolId tool) const;

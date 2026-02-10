@@ -260,17 +260,6 @@ void ToolRegistry::registerTools() {
     });
 
     registerTool({
-        ToolId::AutoBlur,
-        "auto-blur",
-        "Auto Blur (Detect Faces/Text)",
-        "",
-        ToolCategory::Action,
-        false, false, false, false, false, false,
-        false, false, false,  // UI visibility: none
-        false, QColor()
-    });
-
-    registerTool({
         ToolId::Pin,
         "pin",
         "Pin to Desktop",

@@ -42,6 +42,38 @@ bool isToolButtonId(int buttonId)
 }
 }
 
+const std::map<ToolId, ScreenCanvas::ToolbarClickHandler>& ScreenCanvas::toolbarDispatchTable()
+{
+    static const std::map<ToolId, ToolbarClickHandler> kDispatch = {
+        {ToolId::Pencil, &ScreenCanvas::handlePersistentToolClick},
+        {ToolId::Marker, &ScreenCanvas::handlePersistentToolClick},
+        {ToolId::Arrow, &ScreenCanvas::handlePersistentToolClick},
+        {ToolId::Shape, &ScreenCanvas::handlePersistentToolClick},
+        {ToolId::Text, &ScreenCanvas::handlePersistentToolClick},
+        {ToolId::StepBadge, &ScreenCanvas::handlePersistentToolClick},
+        {ToolId::EmojiSticker, &ScreenCanvas::handlePersistentToolClick},
+        {ToolId::LaserPointer, &ScreenCanvas::handlePersistentToolClick},
+        {ToolId::CanvasWhiteboard, &ScreenCanvas::handleCanvasModeToggle},
+        {ToolId::CanvasBlackboard, &ScreenCanvas::handleCanvasModeToggle},
+        {ToolId::Undo, &ScreenCanvas::handleActionToolClick},
+        {ToolId::Redo, &ScreenCanvas::handleActionToolClick},
+        {ToolId::Clear, &ScreenCanvas::handleActionToolClick},
+        {ToolId::Exit, &ScreenCanvas::handleActionToolClick},
+    };
+    return kDispatch;
+}
+
+const std::map<ToolId, ScreenCanvas::ToolbarClickHandler>& ScreenCanvas::actionDispatchTable()
+{
+    static const std::map<ToolId, ToolbarClickHandler> kActionDispatch = {
+        {ToolId::Undo, &ScreenCanvas::handleUndoAction},
+        {ToolId::Redo, &ScreenCanvas::handleRedoAction},
+        {ToolId::Clear, &ScreenCanvas::handleClearAction},
+        {ToolId::Exit, &ScreenCanvas::handleExitAction},
+    };
+    return kActionDispatch;
+}
+
 ScreenCanvas::ScreenCanvas(QWidget* parent)
     : QWidget(parent)
     , m_currentScreen(nullptr)
@@ -230,6 +262,7 @@ void ScreenCanvas::setupToolbar()
 {
     m_toolbar = new ToolbarCore(this);
     auto& registry = ToolRegistry::instance();
+    const auto& dispatch = toolbarDispatchTable();
     const QVector<ToolId> toolbarTools = registry.getToolsForToolbar(ToolbarType::ScreenCanvas);
 
     QVector<ToolbarCore::ButtonConfig> buttons;
@@ -246,7 +279,11 @@ void ScreenCanvas::setupToolbar()
         }
         buttons.append(config);
 
-        if (isDrawingTool(toolId) || def.category == ToolCategory::Toggle) {
+        const auto dispatchIt = dispatch.find(toolId);
+        const bool supportsActiveState = dispatchIt != dispatch.end() &&
+            (dispatchIt->second == &ScreenCanvas::handlePersistentToolClick ||
+             dispatchIt->second == &ScreenCanvas::handleCanvasModeToggle);
+        if (supportsActiveState) {
             activeButtonIds.append(static_cast<int>(toolId));
         }
     }
@@ -579,74 +616,87 @@ void ScreenCanvas::handleToolbarClick(int buttonId)
     }
 
     const ToolId toolId = static_cast<ToolId>(buttonId);
+    const auto& dispatch = toolbarDispatchTable();
+    auto it = dispatch.find(toolId);
+    if (it == dispatch.end() || !it->second) {
+        return;
+    }
+    (this->*(it->second))(toolId);
+}
 
-    switch (toolId) {
-    case ToolId::Pencil:
-    case ToolId::Marker:
-    case ToolId::Arrow:
-    case ToolId::Shape:
-    case ToolId::Text:
-    case ToolId::StepBadge:
-    case ToolId::EmojiSticker:
-    case ToolId::LaserPointer:
-        if (m_currentToolId == toolId) {
-            // Same tool clicked - toggle sub-toolbar visibility
-            m_showSubToolbar = !m_showSubToolbar;
-        } else {
-            // Different tool - select it and show sub-toolbar
-            m_currentToolId = toolId;
-            m_toolManager->setCurrentTool(toolId);
-            // Sync laser pointer with current color and width settings
-            m_laserRenderer->setColor(m_toolManager->color());
-            m_laserRenderer->setWidth(m_toolManager->width());
-            m_showSubToolbar = true;
-        }
-        setToolCursor();
-        update();
-        break;
+void ScreenCanvas::handlePersistentToolClick(ToolId toolId)
+{
+    if (m_currentToolId == toolId) {
+        // Same tool clicked - toggle sub-toolbar visibility
+        m_showSubToolbar = !m_showSubToolbar;
+    } else {
+        // Different tool - select it and show sub-toolbar
+        m_currentToolId = toolId;
+        m_toolManager->setCurrentTool(toolId);
+        // Sync laser pointer with current color and width settings
+        m_laserRenderer->setColor(m_toolManager->color());
+        m_laserRenderer->setWidth(m_toolManager->width());
+        m_showSubToolbar = true;
+    }
+    setToolCursor();
+    update();
+}
 
-    case ToolId::CanvasWhiteboard:
+void ScreenCanvas::handleCanvasModeToggle(ToolId toolId)
+{
+    if (toolId == ToolId::CanvasWhiteboard) {
         if (m_bgMode == CanvasBackgroundMode::Whiteboard) {
             setBackgroundMode(CanvasBackgroundMode::Screen);
         } else {
             setBackgroundMode(CanvasBackgroundMode::Whiteboard);
         }
-        break;
+        return;
+    }
 
-    case ToolId::CanvasBlackboard:
+    if (toolId == ToolId::CanvasBlackboard) {
         if (m_bgMode == CanvasBackgroundMode::Blackboard) {
             setBackgroundMode(CanvasBackgroundMode::Screen);
         } else {
             setBackgroundMode(CanvasBackgroundMode::Blackboard);
         }
-        break;
-
-    case ToolId::Undo:
-        if (m_annotationLayer->canUndo()) {
-            m_annotationLayer->undo();
-            update();
-        }
-        break;
-
-    case ToolId::Redo:
-        if (m_annotationLayer->canRedo()) {
-            m_annotationLayer->redo();
-            update();
-        }
-        break;
-
-    case ToolId::Clear:
-        m_annotationLayer->clear();
-        update();
-        break;
-
-    case ToolId::Exit:
-        close();
-        break;
-
-    default:
-        break;
     }
+}
+
+void ScreenCanvas::handleActionToolClick(ToolId toolId)
+{
+    const auto& dispatch = actionDispatchTable();
+    auto it = dispatch.find(toolId);
+    if (it == dispatch.end() || !it->second) {
+        return;
+    }
+    (this->*(it->second))(toolId);
+}
+
+void ScreenCanvas::handleUndoAction(ToolId)
+{
+    if (m_annotationLayer->canUndo()) {
+        m_annotationLayer->undo();
+        update();
+    }
+}
+
+void ScreenCanvas::handleRedoAction(ToolId)
+{
+    if (m_annotationLayer->canRedo()) {
+        m_annotationLayer->redo();
+        update();
+    }
+}
+
+void ScreenCanvas::handleClearAction(ToolId)
+{
+    m_annotationLayer->clear();
+    update();
+}
+
+void ScreenCanvas::handleExitAction(ToolId)
+{
+    close();
 }
 
 bool ScreenCanvas::isDrawingTool(ToolId toolId) const

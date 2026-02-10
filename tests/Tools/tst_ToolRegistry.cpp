@@ -112,7 +112,7 @@ void TestToolRegistry::testGet_AllRegisteredTools()
         ToolId::LaserPointer, ToolId::CursorHighlight,
         ToolId::CanvasWhiteboard, ToolId::CanvasBlackboard,
         ToolId::Undo, ToolId::Redo, ToolId::Clear,
-        ToolId::Cancel, ToolId::OCR, ToolId::QRCode, ToolId::AutoBlur,
+        ToolId::Cancel, ToolId::OCR, ToolId::QRCode,
         ToolId::Pin, ToolId::Record, ToolId::Save,
         ToolId::Copy, ToolId::Exit,
         ToolId::MultiRegion, ToolId::MultiRegionDone
@@ -163,7 +163,7 @@ void TestToolRegistry::testIsActionTool_ActionTools()
 {
     QList<ToolId> actionTools = {
         ToolId::Undo, ToolId::Redo, ToolId::Clear,
-        ToolId::Cancel, ToolId::OCR, ToolId::QRCode, ToolId::AutoBlur,
+        ToolId::Cancel, ToolId::OCR, ToolId::QRCode,
         ToolId::Pin, ToolId::Record, ToolId::Save,
         ToolId::Copy, ToolId::Exit,
         ToolId::MultiRegion, ToolId::MultiRegionDone
@@ -254,7 +254,6 @@ void TestToolRegistry::testGetToolsForToolbar_RegionSelector()
     QVERIFY(tools.contains(ToolId::MultiRegion));
     QVERIFY(tools.contains(ToolId::Save));
     QVERIFY(tools.contains(ToolId::Copy));
-    QVERIFY(!tools.contains(ToolId::AutoBlur));
 }
 
 void TestToolRegistry::testGetToolsForToolbar_ScreenCanvas()
@@ -305,7 +304,6 @@ void TestToolRegistry::testGetToolsForToolbar_PinWindow()
     QVERIFY(!tools.contains(ToolId::Cancel));
     QVERIFY(!tools.contains(ToolId::Record));
     QVERIFY(!tools.contains(ToolId::MultiRegion));
-    QVERIFY(!tools.contains(ToolId::AutoBlur));
 }
 
 void TestToolRegistry::testGetToolsForToolbar_RegionSelectorHasDrawingTools()

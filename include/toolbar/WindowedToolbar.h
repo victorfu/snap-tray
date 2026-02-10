@@ -13,7 +13,7 @@ class WindowedToolbar : public QWidget
     Q_OBJECT
 
 public:
-    // Button IDs for WindowedToolbar
+    // Compatibility aliases; actual toolbar items come from ToolRegistry.
     enum ButtonId {
         // Tool buttons use ToolId values directly.
         ButtonPencil = static_cast<int>(ToolId::Pencil),
