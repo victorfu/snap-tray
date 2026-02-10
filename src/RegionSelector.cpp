@@ -245,6 +245,11 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_ocrToastTimer->setSingleShot(true);
     connect(m_ocrToastTimer, &QTimer::timeout, m_ocrToastLabel, &QLabel::hide);
 
+    m_screenSwitchTimer = new QTimer(this);
+    m_screenSwitchTimer->setInterval(50);
+    connect(m_screenSwitchTimer, &QTimer::timeout,
+            this, &RegionSelector::handleCursorScreenSwitch);
+
     // Install application-level event filter to capture ESC even when window loses focus
     qApp->installEventFilter(this);
 
@@ -835,6 +840,8 @@ void RegionSelector::setupScreenGeometry(QScreen* screen)
 
 void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapture)
 {
+    clearPreservedSelection();
+
     setupScreenGeometry(screen);
     if (!isScreenValid()) {
         qWarning() << "RegionSelector: Cannot initialize, no valid screen";
@@ -899,10 +906,16 @@ void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapt
     if (m_windowDetector && m_windowDetector->isEnabled()) {
         updateWindowDetection(m_inputState.currentPoint);
     }
+
+    if (m_screenSwitchTimer && !m_screenSwitchTimer->isActive()) {
+        m_screenSwitchTimer->start();
+    }
 }
 
 void RegionSelector::initializeWithRegion(QScreen* screen, const QRect& region)
 {
+    clearPreservedSelection();
+
     setupScreenGeometry(screen);
     if (!isScreenValid()) {
         qWarning() << "RegionSelector: Cannot initialize with region, no valid screen";
@@ -944,6 +957,10 @@ void RegionSelector::initializeWithRegion(QScreen* screen, const QRect& region)
     QTimer::singleShot(0, this, [this]() {
         update();
         });
+
+    if (m_screenSwitchTimer && !m_screenSwitchTimer->isActive()) {
+        m_screenSwitchTimer->start();
+    }
 }
 
 void RegionSelector::setQuickPinMode(bool enabled)
@@ -959,6 +976,172 @@ bool RegionSelector::isSelectionComplete() const
 void RegionSelector::setWindowDetector(WindowDetector* detector)
 {
     m_windowDetector = detector;
+}
+
+void RegionSelector::switchToScreen(QScreen* screen, bool preserveCompletedSelection)
+{
+    QScreen* targetScreen = screen ? screen : QGuiApplication::primaryScreen();
+    if (!targetScreen) {
+        return;
+    }
+    if (m_currentScreen == targetScreen) {
+        return;
+    }
+
+    if (!m_inputState.multiRegionMode &&
+        preserveCompletedSelection &&
+        m_selectionManager->isComplete()) {
+        preserveCompletedSelectionSnapshot();
+    }
+
+    // Grab the target screen before moving this top-level overlay window.
+    QPixmap targetCapture = targetScreen->grabWindow(0);
+
+    setupScreenGeometry(targetScreen);
+    if (!isScreenValid()) {
+        return;
+    }
+
+    const QRect targetGeometry = m_currentScreen->geometry();
+    setGeometry(targetGeometry);
+
+    m_backgroundPixmap = targetCapture.isNull() ? m_currentScreen->grabWindow(0) : targetCapture;
+    m_sharedSourcePixmap = std::make_shared<const QPixmap>(m_backgroundPixmap);
+    m_toolManager->setSourcePixmap(m_sharedSourcePixmap);
+    m_toolManager->setDevicePixelRatio(m_devicePixelRatio);
+
+    m_exportManager->setBackgroundPixmap(m_backgroundPixmap);
+    m_exportManager->setDevicePixelRatio(m_devicePixelRatio);
+
+    m_painter->buildDimmedCache(m_backgroundPixmap);
+    m_magnifierPanel->setDevicePixelRatio(m_devicePixelRatio);
+    m_magnifierPanel->invalidateCache();
+
+    if (m_multiRegionManager) {
+        m_multiRegionManager->clear();
+    }
+    if (m_inputState.multiRegionMode) {
+        clearPreservedSelection();
+    }
+    m_annotationLayer->clear();
+    m_selectionManager->clearSelection();
+
+    m_inputState.highlightedWindowRect = QRect();
+    m_inputState.hasDetectedWindow = false;
+    m_detectedWindow.reset();
+
+    QPoint localCursor = QCursor::pos() - targetGeometry.topLeft();
+    localCursor.setX(qBound(0, localCursor.x(), qMax(0, targetGeometry.width() - 1)));
+    localCursor.setY(qBound(0, localCursor.y(), qMax(0, targetGeometry.height() - 1)));
+    m_inputState.currentPoint = localCursor;
+
+    m_magnifierPanel->preWarmCache(m_inputState.currentPoint, m_backgroundPixmap);
+    m_inputHandler->resetDirtyTracking();
+
+    refreshWindowDetectorForCurrentScreen();
+    raiseWindowAboveMenuBar(this);
+    activateWindow();
+    raise();
+    ensureCrossCursor();
+    update();
+}
+
+void RegionSelector::handleCursorScreenSwitch()
+{
+    if (m_isClosing || !isVisible() || !isScreenValid()) {
+        return;
+    }
+    if (m_isDialogOpen) {
+        return;
+    }
+    if (m_textEditor->isEditing() ||
+        (m_textAnnotationEditor && m_textAnnotationEditor->isEditing())) {
+        return;
+    }
+    if (m_selectionManager->isSelecting() ||
+        m_selectionManager->isResizing() ||
+        m_selectionManager->isMoving() ||
+        m_inputState.isDrawing) {
+        return;
+    }
+
+    QScreen* cursorScreen = QGuiApplication::screenAt(QCursor::pos());
+    if (!cursorScreen) {
+        cursorScreen = QGuiApplication::primaryScreen();
+    }
+    if (!cursorScreen || m_currentScreen == cursorScreen) {
+        return;
+    }
+
+    const bool preserveSingleSelection =
+        !m_inputState.multiRegionMode && m_selectionManager->isComplete();
+    switchToScreen(cursorScreen, preserveSingleSelection);
+}
+
+void RegionSelector::preserveCompletedSelectionSnapshot()
+{
+    if (!m_selectionManager->isComplete()) {
+        return;
+    }
+
+    const QRect selectionRect = m_selectionManager->selectionRect();
+    if (!selectionRect.isValid() || selectionRect.isEmpty()) {
+        return;
+    }
+
+    const QPixmap selectedRegion = m_exportManager->getSelectedRegion(
+        selectionRect, effectiveCornerRadius());
+    if (selectedRegion.isNull()) {
+        return;
+    }
+
+    m_preservedGlobalSelectionRect = QRect(
+        localToGlobal(selectionRect.topLeft()),
+        selectionRect.size());
+    m_preservedSelectionPixmap = selectedRegion;
+    m_hasPreservedSelection = m_preservedGlobalSelectionRect.isValid() &&
+                              !m_preservedGlobalSelectionRect.isEmpty();
+}
+
+void RegionSelector::clearPreservedSelection()
+{
+    m_hasPreservedSelection = false;
+    m_preservedGlobalSelectionRect = QRect();
+    m_preservedSelectionPixmap = QPixmap();
+}
+
+void RegionSelector::finishPreservedSelection()
+{
+    if (!m_hasPreservedSelection ||
+        m_preservedSelectionPixmap.isNull() ||
+        !m_preservedGlobalSelectionRect.isValid() ||
+        m_preservedGlobalSelectionRect.isEmpty()) {
+        return;
+    }
+
+    emit regionSelected(m_preservedSelectionPixmap,
+                        m_preservedGlobalSelectionRect.topLeft(),
+                        m_preservedGlobalSelectionRect);
+    close();
+}
+
+void RegionSelector::refreshWindowDetectorForCurrentScreen()
+{
+    if (!m_windowDetector || !m_windowDetector->isEnabled() || m_currentScreen.isNull()) {
+        return;
+    }
+
+    m_windowDetector->setScreen(m_currentScreen.data());
+    m_windowDetector->refreshWindowListAsync();
+
+    if (m_windowDetector->isRefreshComplete()) {
+        refreshWindowDetectionAtCursor();
+    } else {
+        connect(m_windowDetector, &WindowDetector::windowListReady,
+                this, [this]() {
+                    refreshWindowDetectionAtCursor();
+                }, Qt::SingleShotConnection);
+    }
 }
 
 void RegionSelector::refreshWindowDetectionAtCursor()
@@ -1202,6 +1385,8 @@ void RegionSelector::setMultiRegionMode(bool enabled)
     m_toolbarHandler->setupToolbarButtons();
 
     if (enabled) {
+        clearPreservedSelection();
+
         m_multiRegionManager->clear();
         QRect existingSelection = m_selectionManager->selectionRect();
         if (m_selectionManager->hasSelection() && existingSelection.isValid()) {
@@ -1230,7 +1415,7 @@ void RegionSelector::completeMultiRegionCapture()
         return;
     }
 
-    // Directly merge regions without showing modal
+    // Merge regions from current screen only.
     QImage merged = m_multiRegionManager->mergeToSingleImage(m_backgroundPixmap, m_devicePixelRatio);
     if (merged.isNull()) {
         qWarning() << "RegionSelector: Failed to merge multi-region capture";
@@ -1282,6 +1467,17 @@ void RegionSelector::finishSelection()
 
 void RegionSelector::mousePressEvent(QMouseEvent* event)
 {
+    if (!m_inputState.multiRegionMode &&
+        m_hasPreservedSelection &&
+        event->button() == Qt::LeftButton) {
+        clearPreservedSelection();
+        m_selectionManager->clearSelection();
+        m_annotationLayer->clear();
+        if (m_multiRegionManager) {
+            m_multiRegionManager->clear();
+        }
+    }
+
     m_inputHandler->handleMousePress(event);
     m_lastMagnifierRect = m_inputHandler->lastMagnifierRect();
 }
@@ -1402,6 +1598,9 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
         }
         else if (m_selectionManager->isComplete()) {
             finishSelection();
+        }
+        else if (!m_inputState.multiRegionMode && m_hasPreservedSelection) {
+            finishPreservedSelection();
         }
     }
     else if (event->matches(QKeySequence::Copy)) {
@@ -1533,6 +1732,9 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
 void RegionSelector::closeEvent(QCloseEvent* event)
 {
     m_isClosing = true;
+    if (m_screenSwitchTimer) {
+        m_screenSwitchTimer->stop();
+    }
     QWidget::closeEvent(event);
 }
 
@@ -1779,6 +1981,7 @@ void RegionSelector::onQRCodeComplete(bool success, const QString& text, const Q
     if (success && !text.isEmpty()) {
         // Show result dialog
         auto *dialog = new QRCodeResultDialog(this);
+        dialog->setPinActionAvailable(true);
         dialog->setResult(text, format, sourceImage);
 
         // Connect signals
@@ -1789,6 +1992,21 @@ void RegionSelector::onQRCodeComplete(bool success, const QString& text, const Q
         connect(dialog, &QRCodeResultDialog::urlOpened, this, [](const QString &url) {
             qDebug() << "URL opened:" << url;
         });
+
+        connect(dialog, &QRCodeResultDialog::qrCodeGenerated, this,
+            [](const QImage &image, const QString &encodedText) {
+                qDebug() << "QR Code generated:" << image.size() << "for" << encodedText.length() << "characters";
+            });
+
+        connect(dialog, &QRCodeResultDialog::pinGeneratedRequested, this,
+            [this, dialog](const QPixmap &pixmap) {
+                const QPoint globalTopLeft = dialog->mapToGlobal(QPoint(0, 0));
+                // Generated QR content is synthetic and has no stable screen source region.
+                // Emit an empty source rect so live-update is not mapped to unrelated screen content.
+                const QRect globalRect;
+                emit regionSelected(pixmap, globalTopLeft, globalRect);
+                close();
+            });
 
         connect(dialog, &QRCodeResultDialog::dialogClosed, this, [this]() {
             // Close the region selector after dialog closes

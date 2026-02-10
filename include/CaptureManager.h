@@ -24,6 +24,7 @@ public:
     bool hasCompleteSelection() const;
     void triggerFinishSelection();
     void cancelCapture();
+    void cycleOrSwitchCaptureScreenByCursor();
 
 public slots:
     void startRegionCapture();

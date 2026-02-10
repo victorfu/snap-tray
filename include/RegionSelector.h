@@ -50,6 +50,7 @@ class OCRManager;
 struct OCRResult;
 class QRCodeManager;
 class AutoBlurManager;
+class QTimer;
 class RegionPainter;
 class RegionInputHandler;
 class RegionToolbarHandler;
@@ -80,6 +81,9 @@ public:
 
     // 設置 Quick Pin 模式 (選擇區域後直接 pin，不顯示 toolbar)
     void setQuickPinMode(bool enabled);
+
+    // Switch capture context to another screen while selector is active.
+    void switchToScreen(QScreen *screen, bool preserveCompletedSelection = true);
 
     // Check if selection is complete (for external queries)
     bool isSelectionComplete() const;
@@ -187,6 +191,11 @@ private:
 
     // Initialization helpers
     void setupScreenGeometry(QScreen* screen);
+    void handleCursorScreenSwitch();
+    void preserveCompletedSelectionSnapshot();
+    void clearPreservedSelection();
+    void finishPreservedSelection();
+    void refreshWindowDetectorForCurrentScreen();
 
     // Screen lifecycle management
     void onScreenRemoved(QScreen *screen);
@@ -297,6 +306,14 @@ private:
     // Dirty region tracking for partial updates
     QRect m_lastSelectionRect;  // Previous selection rect for dirty region calculation
     QRect m_lastMagnifierRect;  // Previous magnifier rect
+
+    // Screen switch monitoring
+    QTimer* m_screenSwitchTimer = nullptr;
+
+    // Preserve completed selection when cursor switches to another screen.
+    bool m_hasPreservedSelection = false;
+    QRect m_preservedGlobalSelectionRect;
+    QPixmap m_preservedSelectionPixmap;
 
     // Region control widget (radius + aspect ratio)
     RegionControlWidget* m_regionControlWidget = nullptr;

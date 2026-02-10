@@ -75,13 +75,16 @@ public:
 
     /**
      * @brief Check if text can be encoded as QR Code
+     * @param text Text to validate
+     * @param eccLevel Error correction level (0=L, 1=M, 2=Q, 3=H)
      */
-    static bool canEncode(const QString &text);
+    static bool canEncode(const QString &text, int eccLevel = 1);
 
     /**
      * @brief Get maximum encodable character count
+     * @param eccLevel Error correction level (0=L, 1=M, 2=Q, 3=H)
      */
-    static int maxEncodableLength();
+    static int maxEncodableLength(int eccLevel = 1);
 
     // ========== Utility ==========
 

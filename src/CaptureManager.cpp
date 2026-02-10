@@ -55,6 +55,27 @@ void CaptureManager::cancelCapture()
     }
 }
 
+void CaptureManager::cycleOrSwitchCaptureScreenByCursor()
+{
+    if (!m_regionSelector || !m_regionSelector->isVisible()) {
+        return;
+    }
+
+    QScreen* cursorScreen = QGuiApplication::screenAt(QCursor::pos());
+    if (!cursorScreen) {
+        cursorScreen = QGuiApplication::primaryScreen();
+    }
+    if (!cursorScreen) {
+        return;
+    }
+
+    if (m_regionSelector->screen() == cursorScreen) {
+        return;
+    }
+
+    m_regionSelector->switchToScreen(cursorScreen, true);
+}
+
 void CaptureManager::startRegionCapture()
 {
     startCaptureInternal(CaptureEntryMode::Region);
@@ -128,9 +149,19 @@ void CaptureManager::onRegionSelected(const QPixmap &screenshot, const QPoint &g
 
     // Use the global coordinates computed by RegionSelector
     if (m_pinManager) {
-        QScreen *targetScreen = m_regionSelector ? m_regionSelector->screen() : nullptr;
+        QScreen *targetScreen = nullptr;
+        if (!globalRect.isEmpty()) {
+            targetScreen = QGuiApplication::screenAt(globalRect.center());
+        }
+        if (!targetScreen) {
+            targetScreen = QGuiApplication::screenAt(globalPosition);
+        }
+        if (!targetScreen && m_regionSelector) {
+            targetScreen = m_regionSelector->screen();
+        }
+
         PinWindow *window = m_pinManager->createPinWindow(screenshot, globalPosition);
-        if (window && targetScreen) {
+        if (window && !globalRect.isEmpty() && targetScreen) {
             window->setSourceRegion(globalRect, targetScreen);
         }
 

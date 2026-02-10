@@ -75,6 +75,18 @@ int toZXingEccLevel(int level)
     }
 }
 
+int maxEncodableBytesForEccLevel(int eccLevel)
+{
+    // QR Code Version 40 maximum capacity in binary mode.
+    switch (eccLevel) {
+        case 0: return 2953; // L
+        case 1: return 2331; // M
+        case 2: return 1663; // Q
+        case 3: return 1273; // H
+        default: return 2331;
+    }
+}
+
 } // anonymous namespace
 
 class QRCodeManager::Private
@@ -308,15 +320,24 @@ QImage QRCodeManager::encode(const QString &text, const QREncodeOptions &options
     }
 }
 
-bool QRCodeManager::canEncode(const QString &text)
+bool QRCodeManager::canEncode(const QString &text, int eccLevel)
 {
-    // QR Code Version 40 maximum capacity (Error Level L)
-    // Numeric: 7,089, Alphanumeric: 4,296, Binary: 2,953, Kanji: 1,817
-    constexpr int maxBytes = 2953;
-    return !text.isEmpty() && text.toUtf8().size() <= maxBytes;
+    if (text.isEmpty()) {
+        return false;
+    }
+
+    try {
+        ZXing::MultiFormatWriter writer(ZXing::BarcodeFormat::QRCode);
+        writer.setMargin(0);
+        writer.setEccLevel(toZXingEccLevel(eccLevel));
+        (void)writer.encode(text.toStdString(), 0, 0);
+        return true;
+    } catch (const std::exception &) {
+        return false;
+    }
 }
 
-int QRCodeManager::maxEncodableLength()
+int QRCodeManager::maxEncodableLength(int eccLevel)
 {
-    return 2953;  // Binary mode maximum capacity
+    return maxEncodableBytesForEccLevel(eccLevel);
 }

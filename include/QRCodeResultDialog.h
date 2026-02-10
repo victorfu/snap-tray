@@ -8,6 +8,7 @@
 class QTextEdit;
 class QPushButton;
 class QLabel;
+class QImage;
 
 /**
  * @brief Dialog displaying QR Code decode results with interactive features.
@@ -49,6 +50,13 @@ public:
      */
     void showAt(const QPoint &pos = QPoint());
 
+    /**
+     * @brief Control whether generated QR pinning is available.
+     *
+     * When disabled, the Pin QR action is hidden to avoid no-op UI.
+     */
+    void setPinActionAvailable(bool available);
+
 signals:
     /**
      * @brief Emitted when text is copied to clipboard
@@ -59,6 +67,16 @@ signals:
      * @brief Emitted when URL is opened in browser
      */
     void urlOpened(const QString &url);
+
+    /**
+     * @brief Emitted when QR code is generated from edited text
+     */
+    void qrCodeGenerated(const QImage &image, const QString &text);
+
+    /**
+     * @brief Emitted when user requests pinning the generated QR image
+     */
+    void pinGeneratedRequested(const QPixmap &pixmap);
 
     /**
      * @brief Emitted when dialog is closed
@@ -75,6 +93,8 @@ protected:
 private slots:
     void onCopyClicked();
     void onOpenUrlClicked();
+    void onGenerateClicked();
+    void onPinClicked();
     void onCloseClicked();
     void onTextChanged();
 
@@ -86,20 +106,26 @@ private:
     QString getFormatDisplayName(const QString &format) const;
     void updateCharacterCount();
     void showCopyFeedback();
+    void updateGenerateButtons();
+    void setGeneratedPreview(const QImage &image);
 
     // UI Components
     QLabel *m_thumbnailLabel;
     QLabel *m_formatLabel;
     QLabel *m_characterCountLabel;
+    QLabel *m_generatedPreviewLabel;
     QTextEdit *m_textEdit;
     QPushButton *m_closeButton;
     QPushButton *m_copyButton;
     QPushButton *m_openUrlButton;
+    QPushButton *m_generateButton;
+    QPushButton *m_pinButton;
 
     // State
     QString m_originalText;
     QString m_format;
     QPixmap m_thumbnail;
+    QImage m_generatedQrImage;
     QPoint m_dragPosition;
     bool m_isDragging;
     bool m_isTextEdited;

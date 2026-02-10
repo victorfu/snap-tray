@@ -633,7 +633,11 @@ void MainApplication::onHotkeyAction(SnapTray::HotkeyAction action)
 
     switch (action) {
     case HotkeyAction::RegionCapture:
-        onRegionCapture();
+        if (m_captureManager && m_captureManager->isActive()) {
+            m_captureManager->cycleOrSwitchCaptureScreenByCursor();
+        } else {
+            onRegionCapture();
+        }
         break;
     case HotkeyAction::ScreenCanvas:
         onScreenCanvas();
