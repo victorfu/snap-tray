@@ -1144,11 +1144,6 @@ void RegionSelector::refreshWindowDetectorForCurrentScreen()
     }
 }
 
-void RegionSelector::setInteractionMode(InteractionMode mode)
-{
-    m_interactionMode = mode;
-}
-
 void RegionSelector::refreshWindowDetectionAtCursor()
 {
     if (!m_windowDetector || !m_windowDetector->isEnabled() || !m_currentScreen) {
@@ -1229,23 +1224,10 @@ void RegionSelector::paintEvent(QPaintEvent* event)
 
     // Update painter state before painting
     m_painter->setHighlightedWindowRect(m_inputState.highlightedWindowRect);
-    QString detectedWindowTitle;
-    if (!m_inputState.highlightedWindowRect.isNull()) {
-        if (m_detectedWindow.has_value()) {
-            if (!m_detectedWindow->windowTitle.isEmpty()) {
-                detectedWindowTitle = m_detectedWindow->windowTitle;
-            } else if (!m_detectedWindow->ownerApp.isEmpty()) {
-                detectedWindowTitle = m_detectedWindow->ownerApp;
-            }
-        }
-
-        if (detectedWindowTitle.isEmpty()) {
-            detectedWindowTitle = QString("%1x%2")
-                .arg(m_inputState.highlightedWindowRect.width())
-                .arg(m_inputState.highlightedWindowRect.height());
-        }
-    }
-    m_painter->setDetectedWindowTitle(detectedWindowTitle);
+    m_painter->setDetectedWindowTitle(
+        !m_inputState.highlightedWindowRect.isNull()
+        ? QString("%1x%2").arg(m_inputState.highlightedWindowRect.width()).arg(m_inputState.highlightedWindowRect.height())
+        : QString());
     m_painter->setCornerRadius(m_cornerRadius);
     m_painter->setShowSubToolbar(m_inputState.showSubToolbar);
     m_painter->setCurrentTool(static_cast<int>(m_inputState.currentTool));
@@ -1257,9 +1239,8 @@ void RegionSelector::paintEvent(QPaintEvent* event)
 
     // Draw toolbar and widgets (UI management stays in RegionSelector)
     QRect selectionRect = m_selectionManager->selectionRect();
-    const bool pickerMode = (m_interactionMode == InteractionMode::ScrollWindowPick);
     if (m_selectionManager->hasActiveSelection() && selectionRect.isValid()) {
-        if (!pickerMode && m_selectionManager->hasSelection()) {
+        if (m_selectionManager->hasSelection()) {
             // Update toolbar position and draw
             // Only show active indicator when sub-toolbar is visible
             m_toolbar->setActiveButton(m_inputState.showSubToolbar ? static_cast<int>(m_inputState.currentTool) : -1);
@@ -1331,7 +1312,7 @@ void RegionSelector::paintEvent(QPaintEvent* event)
 
     // Draw crosshair at cursor - show during selection process and inside selection when complete
     // Hide magnifier when any annotation tool is selected or when drawing
-    bool shouldShowCrosshair = !pickerMode && !m_inputState.isDrawing && !isAnnotationTool(m_inputState.currentTool);
+    bool shouldShowCrosshair = !m_inputState.isDrawing && !isAnnotationTool(m_inputState.currentTool);
     if (m_selectionManager->isComplete()) {
         // Only show crosshair inside selection area, not on toolbar
         shouldShowCrosshair = shouldShowCrosshair &&
@@ -1503,23 +1484,12 @@ void RegionSelector::mousePressEvent(QMouseEvent* event)
 
 void RegionSelector::mouseMoveEvent(QMouseEvent* event)
 {
-    if (m_interactionMode == InteractionMode::ScrollWindowPick) {
-        m_inputState.currentPoint = event->pos();
-        updateWindowDetection(event->pos());
-        return;
-    }
-
     m_inputHandler->handleMouseMove(event);
     m_lastMagnifierRect = m_inputHandler->lastMagnifierRect();
 }
 
 void RegionSelector::mouseReleaseEvent(QMouseEvent* event)
 {
-    if (m_interactionMode == InteractionMode::ScrollWindowPick) {
-        Q_UNUSED(event);
-        return;
-    }
-
     m_inputHandler->handleMouseRelease(event);
 }
 
@@ -1546,11 +1516,6 @@ void RegionSelector::mouseDoubleClickEvent(QMouseEvent* event)
 
 void RegionSelector::wheelEvent(QWheelEvent* event)
 {
-    if (m_interactionMode == InteractionMode::ScrollWindowPick) {
-        event->ignore();
-        return;
-    }
-
     // Handle scroll wheel for StepBadge size adjustment
     if (m_inputState.currentTool == ToolId::StepBadge) {
         int delta = event->angleDelta().y();
@@ -1584,21 +1549,6 @@ void RegionSelector::wheelEvent(QWheelEvent* event)
 
 void RegionSelector::keyPressEvent(QKeyEvent* event)
 {
-    if (m_interactionMode == InteractionMode::ScrollWindowPick) {
-        if (event->key() == Qt::Key_Escape) {
-            emit selectionCancelled();
-            close();
-            return;
-        }
-        if ((event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) &&
-            m_detectedWindow.has_value()) {
-            emit windowChosen(*m_detectedWindow);
-            close();
-            return;
-        }
-        return;
-    }
-
     // Handle inline text editing keys first
     if (m_textEditor->isEditing()) {
         if (event->key() == Qt::Key_Escape) {

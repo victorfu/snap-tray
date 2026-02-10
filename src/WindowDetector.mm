@@ -324,7 +324,6 @@ void WindowDetector::enumerateWindows()
         element.ownerApp = ownerApp;
         element.windowLayer = windowLayer;
         element.windowId = windowId;
-        element.nativeHandle = static_cast<quintptr>(windowId);
         element.elementType = elementType;
         element.ownerPid = windowPid;
 
@@ -609,7 +608,6 @@ void WindowDetector::refreshWindowListAsync()
             element.ownerApp = ownerApp;
             element.windowLayer = windowLayer;
             element.windowId = windowId;
-            element.nativeHandle = static_cast<quintptr>(windowId);
             element.elementType = elementType;
             element.ownerPid = windowPid;
 

@@ -16,7 +16,6 @@ class CaptureManager;
 class PinWindowManager;
 class ScreenCanvasManager;
 class RecordingManager;
-class ScrollCaptureManager;
 class SettingsDialog;
 class RecordingPreviewWindow;
 class UpdateChecker;
@@ -39,7 +38,6 @@ public slots:
 
 private slots:
     void onRegionCapture();
-    void onScrollCapture();
     void onQuickPin();
     void onScreenCanvas();
     void onPasteFromClipboard();
@@ -68,9 +66,7 @@ private:
     PinWindowManager *m_pinWindowManager;
     ScreenCanvasManager *m_screenCanvasManager;
     RecordingManager *m_recordingManager;
-    ScrollCaptureManager *m_scrollCaptureManager;
     QAction *m_regionCaptureAction;
-    QAction *m_scrollCaptureAction;
     QAction *m_screenCanvasAction;
     QAction *m_pinFromImageAction;
     QAction *m_pinHistoryAction;

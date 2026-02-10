@@ -259,7 +259,6 @@ BOOL CALLBACK enumWindowsProc(HWND hwnd, LPARAM lParam)
     element.ownerApp = ownerApp;
     element.windowLayer = 0;  // Windows doesn't have explicit layers like macOS
     element.windowId = reinterpret_cast<uintptr_t>(hwnd) & 0xFFFFFFFF;
-    element.nativeHandle = reinterpret_cast<quintptr>(hwnd);
     element.elementType = elementType;
     element.ownerPid = static_cast<qint64>(windowProcessId);
 
@@ -339,7 +338,6 @@ BOOL CALLBACK enumChildWindowsProc(HWND hwnd, LPARAM lParam)
     element.bounds = logicalBounds;
     element.windowLayer = 1;  // Child elements have layer 1 (vs 0 for windows)
     element.windowId = reinterpret_cast<uintptr_t>(hwnd) & 0xFFFFFFFF;
-    element.nativeHandle = reinterpret_cast<quintptr>(hwnd);
     element.elementType = elementType;
     element.ownerPid = static_cast<qint64>(context->parentProcessId);
 
@@ -475,7 +473,6 @@ void WindowDetector::enumerateWindows()
                             element.ownerApp = QString();
                             element.windowLayer = 0;
                             element.windowId = windowId;
-                            element.nativeHandle = reinterpret_cast<quintptr>(menuWnd);
                             element.elementType = ElementType::ContextMenu;
                             DWORD menuPid = 0;
                             GetWindowThreadProcessId(menuWnd, &menuPid);
@@ -534,7 +531,6 @@ void WindowDetector::enumerateWindowsInternal(std::vector<DetectedElement>& cach
                             element.ownerApp = QString();
                             element.windowLayer = 0;
                             element.windowId = windowId;
-                            element.nativeHandle = reinterpret_cast<quintptr>(menuWnd);
                             element.elementType = ElementType::ContextMenu;
                             DWORD menuPid = 0;
                             GetWindowThreadProcessId(menuWnd, &menuPid);
