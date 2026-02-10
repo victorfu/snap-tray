@@ -45,6 +45,20 @@ bool IconRenderer::loadIcon(const QString& key, const QString& resourcePath)
     }
 }
 
+bool IconRenderer::loadIconByKey(const QString& key)
+{
+    return loadIcon(key, QString(":/icons/icons/%1.svg").arg(key));
+}
+
+void IconRenderer::loadIconsByKey(const QStringList& keys)
+{
+    for (const QString& key : keys) {
+        if (!key.isEmpty()) {
+            loadIconByKey(key);
+        }
+    }
+}
+
 bool IconRenderer::hasIcon(const QString& key) const
 {
     return m_renderers.contains(key);

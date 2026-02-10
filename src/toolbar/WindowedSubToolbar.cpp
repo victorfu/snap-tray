@@ -1,10 +1,10 @@
 #include "toolbar/WindowedSubToolbar.h"
 #include "toolbar/ToolOptionsPanel.h"
 #include "EmojiPicker.h"
-#include "toolbar/WindowedToolbar.h"
 #include "tools/ToolSectionConfig.h"
 #include "tools/ToolId.h"
 #include "cursor/CursorManager.h"
+#include "IconRenderer.h"
 
 #include <QPainter>
 #include <QMouseEvent>
@@ -14,27 +14,6 @@
 
 // Note: Tooltip above AutoBlurSection button will be clipped by window boundary
 // This is acceptable - the icon is self-explanatory
-
-namespace {
-
-// Map WindowedToolbar::ButtonId to ToolId for section configuration
-ToolId buttonIdToToolId(int buttonId)
-{
-    using ButtonId = WindowedToolbar::ButtonId;
-    switch (buttonId) {
-        case ButtonId::ButtonPencil:    return ToolId::Pencil;
-        case ButtonId::ButtonMarker:    return ToolId::Marker;
-        case ButtonId::ButtonArrow:     return ToolId::Arrow;
-        case ButtonId::ButtonShape:     return ToolId::Shape;
-        case ButtonId::ButtonText:      return ToolId::Text;
-        case ButtonId::ButtonMosaic:    return ToolId::Mosaic;
-        case ButtonId::ButtonStepBadge: return ToolId::StepBadge;
-        case ButtonId::ButtonEmoji:     return ToolId::EmojiSticker;
-        default:                        return ToolId::Selection; // No sub-toolbar
-    }
-}
-
-} // anonymous namespace
 
 WindowedSubToolbar::WindowedSubToolbar(QWidget *parent)
     : QWidget(parent)
@@ -51,6 +30,21 @@ WindowedSubToolbar::WindowedSubToolbar(QWidget *parent)
     // Create the color and width widget
     // Let ToolOptionsPanel draw its own glass panel background (like RegionSelector)
     m_colorAndWidthWidget = new ToolOptionsPanel(this);
+
+    // Preload non-toolbar icons used by ToolOptionsPanel sections.
+    IconRenderer::instance().loadIconsByKey({
+        "rectangle",
+        "ellipse",
+        "shape-filled",
+        "shape-outline",
+        "arrow-none",
+        "arrow-end",
+        "arrow-end-outline",
+        "arrow-end-line",
+        "arrow-both",
+        "arrow-both-outline",
+        "auto-blur"
+    });
 
     // Create emoji picker
     m_emojiPicker = new EmojiPicker(this);
@@ -140,29 +134,31 @@ void WindowedSubToolbar::positionBelow(const QRect &toolbarRect)
     move(x, y);
 }
 
-void WindowedSubToolbar::showForTool(int buttonId)
+void WindowedSubToolbar::showForTool(int toolIdValue)
 {
-    using ButtonId = WindowedToolbar::ButtonId;
+    if (toolIdValue < 0 || toolIdValue >= static_cast<int>(ToolId::Count)) {
+        QWidget::hide();
+        return;
+    }
+    const ToolId toolId = static_cast<ToolId>(toolIdValue);
 
     // Reset emoji picker state
     m_showingEmojiPicker = false;
     m_emojiPicker->setVisible(false);
 
     // Handle special cases first
-    if (buttonId == ButtonId::ButtonEmoji) {
+    if (toolId == ToolId::EmojiSticker) {
         m_showingEmojiPicker = true;
         m_emojiPicker->setVisible(true);
         // Apply empty config to hide ToolOptionsPanel sections
         ToolSectionConfig{}.applyTo(m_colorAndWidthWidget);
     }
-    else if (buttonId == ButtonId::ButtonEraser) {
+    else if (toolId == ToolId::Eraser) {
         // Eraser has no sub-toolbar (uses dynamic cursor only)
         QWidget::hide();
         return;
     }
     else {
-        // Map ButtonId to ToolId and apply data-driven configuration
-        ToolId toolId = buttonIdToToolId(buttonId);
         ToolSectionConfig config = ToolSectionConfig::forTool(toolId);
 
         if (!config.hasAnySectionEnabled()) {
@@ -174,7 +170,7 @@ void WindowedSubToolbar::showForTool(int buttonId)
         config.applyTo(m_colorAndWidthWidget);
     }
 
-    bool showWidget = m_showingEmojiPicker || ToolSectionConfig::forTool(buttonIdToToolId(buttonId)).hasAnySectionEnabled();
+    bool showWidget = m_showingEmojiPicker || ToolSectionConfig::forTool(toolId).hasAnySectionEnabled();
 
     if (showWidget) {
         // Force widgets to recalculate their size

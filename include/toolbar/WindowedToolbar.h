@@ -6,6 +6,7 @@
 #include <QRect>
 #include <QElapsedTimer>
 #include "toolbar/ToolbarButtonConfig.h"
+#include "tools/ToolId.h"
 
 class WindowedToolbar : public QWidget
 {
@@ -14,29 +15,25 @@ class WindowedToolbar : public QWidget
 public:
     // Button IDs for WindowedToolbar
     enum ButtonId {
-        // Drawing tools (aligned with ToolId values for easy mapping)
-        ButtonPencil = 0,
-        ButtonMarker,
-        ButtonArrow,
-        ButtonShape,
-        ButtonText,
-        ButtonMosaic,
-        ButtonEraser,
-        ButtonStepBadge,
-        ButtonEmoji,
+        // Tool buttons use ToolId values directly.
+        ButtonPencil = static_cast<int>(ToolId::Pencil),
+        ButtonMarker = static_cast<int>(ToolId::Marker),
+        ButtonArrow = static_cast<int>(ToolId::Arrow),
+        ButtonShape = static_cast<int>(ToolId::Shape),
+        ButtonText = static_cast<int>(ToolId::Text),
+        ButtonMosaic = static_cast<int>(ToolId::Mosaic),
+        ButtonEraser = static_cast<int>(ToolId::Eraser),
+        ButtonStepBadge = static_cast<int>(ToolId::StepBadge),
+        ButtonEmoji = static_cast<int>(ToolId::EmojiSticker),
+        ButtonUndo = static_cast<int>(ToolId::Undo),
+        ButtonRedo = static_cast<int>(ToolId::Redo),
+        ButtonOCR = static_cast<int>(ToolId::OCR),
+        ButtonQRCode = static_cast<int>(ToolId::QRCode),
+        ButtonCopy = static_cast<int>(ToolId::Copy),
+        ButtonSave = static_cast<int>(ToolId::Save),
 
-        // History
-        ButtonUndo,
-        ButtonRedo,
-
-        // Export
-        ButtonOCR,
-        ButtonQRCode,
-        ButtonCopy,
-        ButtonSave,
-
-        // Close
-        ButtonDone
+        // Local toolbar-only action.
+        ButtonDone = 10001
     };
 
     explicit WindowedToolbar(QWidget *parent = nullptr);
@@ -95,6 +92,7 @@ private:
     void drawButton(QPainter &painter, int index);
     void drawTooltip(QPainter &painter);
     bool isDrawingTool(int buttonId) const;
+    bool dispatchActionButton(int buttonId);
 
     QVector<ButtonConfig> m_buttons;
     QVector<QRect> m_buttonRects;

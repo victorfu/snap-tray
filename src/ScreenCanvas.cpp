@@ -36,15 +36,12 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include "platform/WindowLevel.h"
 
 namespace {
-int toolIdToCanvasButtonId(ToolId toolId)
+constexpr int kCanvasActionWhiteboard = 10001;
+constexpr int kCanvasActionBlackboard = 10002;
+
+bool isToolButtonId(int buttonId)
 {
-    for (int buttonId = 0; buttonId < static_cast<int>(CanvasButton::Count); ++buttonId) {
-        const auto button = static_cast<CanvasButton>(buttonId);
-        if (canvasButtonToToolId(button) == toolId) {
-            return buttonId;
-        }
-    }
-    return -1;
+    return buttonId >= 0 && buttonId < static_cast<int>(ToolId::Count);
 }
 }
 
@@ -208,73 +205,65 @@ void ScreenCanvas::initializeIcons()
 {
     // Use shared IconRenderer for all icons
     IconRenderer& iconRenderer = IconRenderer::instance();
+    auto& registry = ToolRegistry::instance();
+    for (ToolId toolId : registry.getToolsForToolbar(ToolbarType::ScreenCanvas)) {
+        const QString iconKey = registry.getIconKey(toolId);
+        if (!iconKey.isEmpty()) {
+            iconRenderer.loadIconByKey(iconKey);
+        }
+    }
 
-    iconRenderer.loadIcon("pencil", ":/icons/icons/pencil.svg");
-    iconRenderer.loadIcon("marker", ":/icons/icons/marker.svg");
-    iconRenderer.loadIcon("arrow", ":/icons/icons/arrow.svg");
-    iconRenderer.loadIcon("polyline", ":/icons/icons/polyline.svg");
-    iconRenderer.loadIcon("rectangle", ":/icons/icons/rectangle.svg");
-    iconRenderer.loadIcon("ellipse", ":/icons/icons/ellipse.svg");
-    iconRenderer.loadIcon("shape", ":/icons/icons/shape.svg");
-    iconRenderer.loadIcon("mosaic", ":/icons/icons/mosaic.svg");
-    iconRenderer.loadIcon("eraser", ":/icons/icons/eraser.svg");
-    iconRenderer.loadIcon("step-badge", ":/icons/icons/step-badge.svg");
-    iconRenderer.loadIcon("emoji", ":/icons/icons/emoji.svg");
-    iconRenderer.loadIcon("text", ":/icons/icons/text.svg");
-    iconRenderer.loadIcon("laser-pointer", ":/icons/icons/laser-pointer.svg");
-    iconRenderer.loadIcon("undo", ":/icons/icons/undo.svg");
-    iconRenderer.loadIcon("redo", ":/icons/icons/redo.svg");
-    iconRenderer.loadIcon("cancel", ":/icons/icons/cancel.svg");
     // Shape and arrow style icons for ToolOptionsPanel sections
-    iconRenderer.loadIcon("shape-filled", ":/icons/icons/shape-filled.svg");
-    iconRenderer.loadIcon("shape-outline", ":/icons/icons/shape-outline.svg");
-    iconRenderer.loadIcon("arrow-none", ":/icons/icons/arrow-none.svg");
-    iconRenderer.loadIcon("arrow-end", ":/icons/icons/arrow-end.svg");
-    iconRenderer.loadIcon("arrow-end-outline", ":/icons/icons/arrow-end-outline.svg");
-    iconRenderer.loadIcon("arrow-end-line", ":/icons/icons/arrow-end-line.svg");
-    iconRenderer.loadIcon("arrow-both", ":/icons/icons/arrow-both.svg");
-    iconRenderer.loadIcon("arrow-both-outline", ":/icons/icons/arrow-both-outline.svg");
-    // Background mode icons
-    iconRenderer.loadIcon("whiteboard", ":/icons/icons/whiteboard.svg");
-    iconRenderer.loadIcon("blackboard", ":/icons/icons/blackboard.svg");
+    iconRenderer.loadIconsByKey({
+        "rectangle",
+        "ellipse",
+        "shape-filled",
+        "shape-outline",
+        "arrow-none",
+        "arrow-end",
+        "arrow-end-outline",
+        "arrow-end-line",
+        "arrow-both",
+        "arrow-both-outline",
+        "auto-blur",
+        "whiteboard",
+        "blackboard"
+    });
 }
 
 void ScreenCanvas::setupToolbar()
 {
     m_toolbar = new ToolbarCore(this);
+    auto& registry = ToolRegistry::instance();
+    const QVector<ToolId> toolbarTools = registry.getToolsForToolbar(ToolbarType::ScreenCanvas);
 
-    // Configure buttons with separators at appropriate positions
-    QVector<ToolbarCore::ButtonConfig> buttons = {
-        {static_cast<int>(CanvasButton::Shape), "shape", "Shape"},
-        {static_cast<int>(CanvasButton::Arrow), "arrow", "Arrow"},
-        {static_cast<int>(CanvasButton::Pencil), "pencil", "Pencil"},
-        {static_cast<int>(CanvasButton::Marker), "marker", "Marker"},
-        {static_cast<int>(CanvasButton::Text), "text", "Text"},
-        {static_cast<int>(CanvasButton::StepBadge), "step-badge", "Step Badge"},
-        {static_cast<int>(CanvasButton::EmojiSticker), "emoji", "Emoji Sticker"},
-        {static_cast<int>(CanvasButton::LaserPointer), "laser-pointer", "Laser Pointer"},
-        ToolbarCore::ButtonConfig(static_cast<int>(CanvasButton::Whiteboard), "whiteboard", "Whiteboard (W)").separator(),
-        {static_cast<int>(CanvasButton::Blackboard), "blackboard", "Blackboard (B)"},
-        ToolbarCore::ButtonConfig(static_cast<int>(CanvasButton::Undo), "undo", "Undo (Ctrl+Z)").separator(),
-        {static_cast<int>(CanvasButton::Redo), "redo", "Redo (Ctrl+Y)"},
-        {static_cast<int>(CanvasButton::Clear), "cancel", "Clear All"},
-        ToolbarCore::ButtonConfig(static_cast<int>(CanvasButton::Exit), "cancel", "Exit (Esc)").separator().cancel()
-    };
+    QVector<ToolbarCore::ButtonConfig> buttons;
+    QVector<int> activeButtonIds;
+    for (ToolId toolId : toolbarTools) {
+        const auto& def = registry.get(toolId);
+        ToolbarCore::ButtonConfig config(
+            static_cast<int>(toolId),
+            def.iconKey,
+            registry.getTooltipWithShortcut(toolId),
+            def.showSeparatorBefore);
+        if (toolId == ToolId::Exit) {
+            config.cancel();
+        }
+        buttons.append(config);
+
+        if (isDrawingTool(toolId)) {
+            activeButtonIds.append(static_cast<int>(toolId));
+        }
+
+        if (toolId == ToolId::LaserPointer) {
+            buttons.append(
+                ToolbarCore::ButtonConfig(kCanvasActionWhiteboard, "whiteboard", "Whiteboard (W)").separator());
+            buttons.append({kCanvasActionBlackboard, "blackboard", "Blackboard (B)"});
+            activeButtonIds.append(kCanvasActionWhiteboard);
+            activeButtonIds.append(kCanvasActionBlackboard);
+        }
+    }
     m_toolbar->setButtons(buttons);
-
-    // Set which buttons can be active (drawing tools and cursor highlight toggle)
-    QVector<int> activeButtonIds = {
-        static_cast<int>(CanvasButton::Shape),
-        static_cast<int>(CanvasButton::Arrow),
-        static_cast<int>(CanvasButton::Pencil),
-        static_cast<int>(CanvasButton::Marker),
-        static_cast<int>(CanvasButton::Text),
-        static_cast<int>(CanvasButton::StepBadge),
-        static_cast<int>(CanvasButton::EmojiSticker),
-        static_cast<int>(CanvasButton::LaserPointer),
-        static_cast<int>(CanvasButton::Whiteboard),
-        static_cast<int>(CanvasButton::Blackboard)
-    };
     m_toolbar->setActiveButtonIds(activeButtonIds);
 
     m_toolbar->setStyleConfig(m_toolbarStyleConfig);
@@ -288,56 +277,35 @@ void ScreenCanvas::setupToolbar()
 
 QColor ScreenCanvas::getButtonIconColor(int buttonId) const
 {
-    CanvasButton button = static_cast<CanvasButton>(buttonId);
-    ToolId buttonToolId = canvasButtonToToolId(button);
+    const bool isToolButton = isToolButtonId(buttonId);
+    const ToolId buttonToolId = isToolButton
+        ? static_cast<ToolId>(buttonId)
+        : ToolId::Selection;
 
-    bool isButtonActive = (buttonToolId == m_currentToolId) && isDrawingTool(buttonToolId) && m_showSubToolbar;
-    bool isBgModeActive = ((button == CanvasButton::Whiteboard) && m_bgMode == CanvasBackgroundMode::Whiteboard) ||
-                          ((button == CanvasButton::Blackboard) && m_bgMode == CanvasBackgroundMode::Blackboard);
+    const bool isButtonActive = isToolButton &&
+        (buttonToolId == m_currentToolId) &&
+        isDrawingTool(buttonToolId) &&
+        m_showSubToolbar;
+    const bool isBgModeActive =
+        (buttonId == kCanvasActionWhiteboard && m_bgMode == CanvasBackgroundMode::Whiteboard) ||
+        (buttonId == kCanvasActionBlackboard && m_bgMode == CanvasBackgroundMode::Blackboard);
 
-    if (button == CanvasButton::Exit) {
+    if (buttonId == static_cast<int>(ToolId::Exit)) {
         return m_toolbarStyleConfig.iconCancelColor;
     }
-    if (button == CanvasButton::Clear) {
+    if (buttonId == static_cast<int>(ToolId::Clear)) {
         return QColor(255, 180, 100);  // Orange for clear
     }
-    if (button == CanvasButton::Undo && !m_annotationLayer->canUndo()) {
+    if (buttonId == static_cast<int>(ToolId::Undo) && !m_annotationLayer->canUndo()) {
         return QColor(128, 128, 128);  // Gray for disabled undo
     }
-    if (button == CanvasButton::Redo && !m_annotationLayer->canRedo()) {
+    if (buttonId == static_cast<int>(ToolId::Redo) && !m_annotationLayer->canRedo()) {
         return QColor(128, 128, 128);  // Gray for disabled redo
     }
     if (isButtonActive || isBgModeActive) {
         return m_toolbarStyleConfig.iconActiveColor;
     }
     return m_toolbarStyleConfig.iconNormalColor;
-}
-
-QString ScreenCanvas::getIconKeyForButton(CanvasButton button) const
-{
-    switch (button) {
-    case CanvasButton::Pencil:          return "pencil";
-    case CanvasButton::Marker:          return "marker";
-    case CanvasButton::Arrow:           return "arrow";
-    case CanvasButton::Shape:           return "shape";
-    case CanvasButton::StepBadge:       return "step-badge";
-    case CanvasButton::EmojiSticker:    return "emoji";
-    case CanvasButton::Text:            return "text";
-    case CanvasButton::LaserPointer:    return "laser-pointer";
-    case CanvasButton::Whiteboard:      return "whiteboard";
-    case CanvasButton::Blackboard:      return "blackboard";
-    case CanvasButton::Undo:            return "undo";
-    case CanvasButton::Redo:            return "redo";
-    case CanvasButton::Clear:           return "cancel";
-    case CanvasButton::Exit:            return "cancel";
-    default:                            return QString();
-    }
-}
-
-void ScreenCanvas::renderIcon(QPainter& painter, const QRect& rect, CanvasButton button, const QColor& color)
-{
-    QString key = getIconKeyForButton(button);
-    IconRenderer::instance().renderIcon(painter, rect, key, color);
 }
 
 bool ScreenCanvas::shouldShowColorPalette() const
@@ -533,14 +501,14 @@ void ScreenCanvas::paintEvent(QPaintEvent*)
     // Update active button based on current tool state
     int activeButtonId = -1;
     if (m_showSubToolbar && isDrawingTool(m_currentToolId)) {
-        activeButtonId = toolIdToCanvasButtonId(m_currentToolId);
+        activeButtonId = static_cast<int>(m_currentToolId);
     }
     // Handle Whiteboard/Blackboard background mode
     if (m_bgMode == CanvasBackgroundMode::Whiteboard) {
-        activeButtonId = static_cast<int>(CanvasButton::Whiteboard);
+        activeButtonId = kCanvasActionWhiteboard;
     }
     if (m_bgMode == CanvasBackgroundMode::Blackboard) {
-        activeButtonId = static_cast<int>(CanvasButton::Blackboard);
+        activeButtonId = kCanvasActionBlackboard;
     }
     m_toolbar->setActiveButton(activeButtonId);
     m_toolbar->draw(painter);
@@ -617,57 +585,41 @@ void ScreenCanvas::updateToolbarPosition()
     m_toolbar->setViewportWidth(width());
 }
 
-void ScreenCanvas::handleToolbarClick(CanvasButton button)
+void ScreenCanvas::handleToolbarClick(int buttonId)
 {
-    ToolId toolId = canvasButtonToToolId(button);
-
-    switch (button) {
-    case CanvasButton::Pencil:
-    case CanvasButton::Marker:
-    case CanvasButton::Arrow:
-    case CanvasButton::Shape:
-    case CanvasButton::Text:
-        if (m_currentToolId == toolId) {
-            // Same tool clicked - toggle sub-toolbar visibility
-            m_showSubToolbar = !m_showSubToolbar;
+    if (buttonId == kCanvasActionWhiteboard) {
+        if (m_bgMode == CanvasBackgroundMode::Whiteboard) {
+            setBackgroundMode(CanvasBackgroundMode::Screen);
         } else {
-            // Different tool - select it and show sub-toolbar
-            m_currentToolId = toolId;
-            m_toolManager->setCurrentTool(toolId);
-            m_showSubToolbar = true;
+            setBackgroundMode(CanvasBackgroundMode::Whiteboard);
         }
-        setToolCursor();
-        update();
-        break;
+        return;
+    }
 
-    case CanvasButton::StepBadge:
-        if (m_currentToolId == toolId) {
-            // Same tool clicked - toggle sub-toolbar visibility
-            m_showSubToolbar = !m_showSubToolbar;
+    if (buttonId == kCanvasActionBlackboard) {
+        if (m_bgMode == CanvasBackgroundMode::Blackboard) {
+            setBackgroundMode(CanvasBackgroundMode::Screen);
         } else {
-            // Different tool - select it and show sub-toolbar
-            m_currentToolId = toolId;
-            m_toolManager->setCurrentTool(toolId);
-            // StepBadgeToolHandler reads size from AnnotationSettingsManager, no setWidth needed
-            m_showSubToolbar = true;
+            setBackgroundMode(CanvasBackgroundMode::Blackboard);
         }
-        setToolCursor();
-        update();
-        break;
+        return;
+    }
 
-    case CanvasButton::EmojiSticker:
-        if (m_currentToolId == toolId) {
-            m_showSubToolbar = !m_showSubToolbar;
-        } else {
-            m_currentToolId = toolId;
-            m_toolManager->setCurrentTool(toolId);
-            m_showSubToolbar = true;
-        }
-        setToolCursor();
-        update();
-        break;
+    if (!isToolButtonId(buttonId)) {
+        return;
+    }
 
-    case CanvasButton::LaserPointer:
+    const ToolId toolId = static_cast<ToolId>(buttonId);
+
+    switch (toolId) {
+    case ToolId::Pencil:
+    case ToolId::Marker:
+    case ToolId::Arrow:
+    case ToolId::Shape:
+    case ToolId::Text:
+    case ToolId::StepBadge:
+    case ToolId::EmojiSticker:
+    case ToolId::LaserPointer:
         if (m_currentToolId == toolId) {
             // Same tool clicked - toggle sub-toolbar visibility
             m_showSubToolbar = !m_showSubToolbar;
@@ -684,44 +636,26 @@ void ScreenCanvas::handleToolbarClick(CanvasButton button)
         update();
         break;
 
-    case CanvasButton::Whiteboard:
-        // Toggle whiteboard mode
-        if (m_bgMode == CanvasBackgroundMode::Whiteboard) {
-            setBackgroundMode(CanvasBackgroundMode::Screen);
-        } else {
-            setBackgroundMode(CanvasBackgroundMode::Whiteboard);
-        }
-        break;
-
-    case CanvasButton::Blackboard:
-        // Toggle blackboard mode
-        if (m_bgMode == CanvasBackgroundMode::Blackboard) {
-            setBackgroundMode(CanvasBackgroundMode::Screen);
-        } else {
-            setBackgroundMode(CanvasBackgroundMode::Blackboard);
-        }
-        break;
-
-    case CanvasButton::Undo:
+    case ToolId::Undo:
         if (m_annotationLayer->canUndo()) {
             m_annotationLayer->undo();
             update();
         }
         break;
 
-    case CanvasButton::Redo:
+    case ToolId::Redo:
         if (m_annotationLayer->canRedo()) {
             m_annotationLayer->redo();
             update();
         }
         break;
 
-    case CanvasButton::Clear:
+    case ToolId::Clear:
         m_annotationLayer->clear();
         update();
         break;
 
-    case CanvasButton::Exit:
+    case ToolId::Exit:
         close();
         break;
 
@@ -776,7 +710,7 @@ void ScreenCanvas::mousePressEvent(QMouseEvent* event)
             if (buttonIdx >= 0) {
                 finalizePolylineForUiClick(event->pos());
                 int buttonId = m_toolbar->buttonIdAt(buttonIdx);
-                handleToolbarClick(static_cast<CanvasButton>(buttonId));
+                handleToolbarClick(buttonId);
             } else {
                 // Start toolbar drag (clicked on toolbar but not on a button)
                 m_isDraggingToolbar = true;

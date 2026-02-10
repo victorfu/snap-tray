@@ -9,6 +9,7 @@
 #include "IconRenderer.h"
 #include "OCRManager.h"
 #include "PlatformFeatures.h"
+#include "tools/ToolRegistry.h"
 #include "tools/ToolTraits.h"
 
 #include <QWidget>
@@ -67,49 +68,57 @@ void RegionToolbarHandler::setupToolbarButtons()
 
     // Load icons
     IconRenderer& iconRenderer = IconRenderer::instance();
-    iconRenderer.loadIcon("selection", ":/icons/icons/selection.svg");
-    iconRenderer.loadIcon("arrow", ":/icons/icons/arrow.svg");
-    iconRenderer.loadIcon("polyline", ":/icons/icons/polyline.svg");
-    iconRenderer.loadIcon("pencil", ":/icons/icons/pencil.svg");
-    iconRenderer.loadIcon("marker", ":/icons/icons/marker.svg");
-    iconRenderer.loadIcon("rectangle", ":/icons/icons/rectangle.svg");
-    iconRenderer.loadIcon("ellipse", ":/icons/icons/ellipse.svg");
-    iconRenderer.loadIcon("shape", ":/icons/icons/shape.svg");
-    iconRenderer.loadIcon("text", ":/icons/icons/text.svg");
-    iconRenderer.loadIcon("mosaic", ":/icons/icons/mosaic.svg");
-    iconRenderer.loadIcon("eraser", ":/icons/icons/eraser.svg");
-    iconRenderer.loadIcon("step-badge", ":/icons/icons/step-badge.svg");
-    iconRenderer.loadIcon("emoji", ":/icons/icons/emoji.svg");
-    iconRenderer.loadIcon("undo", ":/icons/icons/undo.svg");
-    iconRenderer.loadIcon("redo", ":/icons/icons/redo.svg");
-    iconRenderer.loadIcon("cancel", ":/icons/icons/cancel.svg");
-    if (PlatformFeatures::instance().isOCRAvailable()) {
-        iconRenderer.loadIcon("ocr", ":/icons/icons/ocr.svg");
+    auto& registry = ToolRegistry::instance();
+    auto loadToolIcon = [&](ToolId toolId) {
+        const QString iconKey = registry.getIconKey(toolId);
+        if (!iconKey.isEmpty()) {
+            iconRenderer.loadIconByKey(iconKey);
+        }
+    };
+    for (ToolId toolId : registry.getToolsForToolbar(ToolbarType::RegionSelector)) {
+        // Keep OCR icon lazy with feature availability, same as prior behavior.
+        if (toolId == ToolId::OCR && !PlatformFeatures::instance().isOCRAvailable()) {
+            continue;
+        }
+        loadToolIcon(toolId);
     }
-    iconRenderer.loadIcon("qrcode", ":/icons/icons/qrcode.svg");
-    iconRenderer.loadIcon("auto-blur", ":/icons/icons/auto-blur.svg");
-    iconRenderer.loadIcon("pin", ":/icons/icons/pin.svg");
-    iconRenderer.loadIcon("record", ":/icons/icons/record.svg");
-    iconRenderer.loadIcon("scroll-capture", ":/icons/icons/scroll-capture.svg");
-    iconRenderer.loadIcon("save", ":/icons/icons/save.svg");
-    iconRenderer.loadIcon("copy", ":/icons/icons/copy.svg");
-    iconRenderer.loadIcon("multi-region", ":/icons/icons/multi-region.svg");
-    iconRenderer.loadIcon("done", ":/icons/icons/done.svg");
+    loadToolIcon(ToolId::MultiRegionDone);
+
     // Shape and arrow style icons for ToolOptionsPanel sections
-    iconRenderer.loadIcon("shape-filled", ":/icons/icons/shape-filled.svg");
-    iconRenderer.loadIcon("shape-outline", ":/icons/icons/shape-outline.svg");
-    iconRenderer.loadIcon("arrow-none", ":/icons/icons/arrow-none.svg");
-    iconRenderer.loadIcon("arrow-end", ":/icons/icons/arrow-end.svg");
-    iconRenderer.loadIcon("arrow-end-outline", ":/icons/icons/arrow-end-outline.svg");
-    iconRenderer.loadIcon("arrow-end-line", ":/icons/icons/arrow-end-line.svg");
-    iconRenderer.loadIcon("arrow-both", ":/icons/icons/arrow-both.svg");
-    iconRenderer.loadIcon("arrow-both-outline", ":/icons/icons/arrow-both-outline.svg");
+    iconRenderer.loadIconsByKey({
+        "rectangle",
+        "ellipse",
+        "shape-filled",
+        "shape-outline",
+        "arrow-none",
+        "arrow-end",
+        "arrow-end-outline",
+        "arrow-end-line",
+        "arrow-both",
+        "arrow-both-outline",
+        "auto-blur"
+    });
 
     // Configure buttons
     QVector<Toolbar::ButtonConfig> buttons;
     if (m_multiRegionMode) {
-        buttons.append({ static_cast<int>(ToolId::MultiRegionDone), "done", "Done", false });
-        buttons.append({ static_cast<int>(ToolId::Cancel), "cancel", "Cancel (Esc)", true });
+        const auto& doneDef = registry.get(ToolId::MultiRegionDone);
+        buttons.append({
+            static_cast<int>(ToolId::MultiRegionDone),
+            doneDef.iconKey,
+            registry.getTooltipWithShortcut(ToolId::MultiRegionDone),
+            doneDef.showSeparatorBefore
+        });
+
+        const auto& cancelDef = registry.get(ToolId::Cancel);
+        Toolbar::ButtonConfig cancelBtn(
+            static_cast<int>(ToolId::Cancel),
+            cancelDef.iconKey,
+            registry.getTooltipWithShortcut(ToolId::Cancel),
+            cancelDef.showSeparatorBefore);
+        cancelBtn.cancel();
+        buttons.append(cancelBtn);
+
         m_toolbar->setButtons(buttons);
         m_toolbar->setActiveButtonIds({});
         m_toolbar->setIconColorProvider([this](int buttonId, bool isActive, bool isHovered) {
@@ -118,49 +127,38 @@ void RegionToolbarHandler::setupToolbarButtons()
         return;
     }
 
-    buttons.append({ static_cast<int>(ToolId::Selection), "selection", "Selection", false });
-    buttons.append({ static_cast<int>(ToolId::Shape), "shape", "Shape", false });
-    buttons.append({ static_cast<int>(ToolId::Arrow), "arrow", "Arrow", false });
-    buttons.append({ static_cast<int>(ToolId::Pencil), "pencil", "Pencil", false });
-    buttons.append({ static_cast<int>(ToolId::Marker), "marker", "Marker", false });
-    buttons.append({ static_cast<int>(ToolId::Text), "text", "Text", false });
-    buttons.append({ static_cast<int>(ToolId::Mosaic), "mosaic", "Mosaic", false });
-    buttons.append({ static_cast<int>(ToolId::Eraser), "eraser", "Eraser", false });
-    buttons.append({ static_cast<int>(ToolId::StepBadge), "step-badge", "Step Badge", false });
-    buttons.append({ static_cast<int>(ToolId::EmojiSticker), "emoji", "Emoji Sticker", false });
-    buttons.append({ static_cast<int>(ToolId::Undo), "undo", "Undo", true });
-    buttons.append({ static_cast<int>(ToolId::Redo), "redo", "Redo", false });
-    buttons.append({ static_cast<int>(ToolId::Cancel), "cancel", "Cancel (Esc)", true });  // separator before
-    if (PlatformFeatures::instance().isOCRAvailable()) {
-        buttons.append({ static_cast<int>(ToolId::OCR), "ocr", "OCR Text Recognition", false });
+    const QVector<ToolId> toolbarTools = registry.getToolsForToolbar(ToolbarType::RegionSelector);
+    QVector<int> activeButtonIds;
+    for (ToolId toolId : toolbarTools) {
+        if (toolId == ToolId::OCR && !PlatformFeatures::instance().isOCRAvailable()) {
+            continue;
+        }
+
+        const auto& def = registry.get(toolId);
+        Toolbar::ButtonConfig config(
+            static_cast<int>(toolId),
+            def.iconKey,
+            registry.getTooltipWithShortcut(toolId),
+            def.showSeparatorBefore);
+
+        if (toolId == ToolId::Cancel) {
+            config.cancel();
+        } else if (toolId == ToolId::Record) {
+            config.record();
+        } else if (toolId == ToolId::Pin || toolId == ToolId::Save || toolId == ToolId::Copy) {
+            config.action();
+        } else if (def.category == ToolCategory::Toggle) {
+            config.toggle();
+        }
+
+        buttons.append(config);
+
+        if (toolId == ToolId::Selection || isAnnotationTool(toolId)) {
+            activeButtonIds.append(static_cast<int>(toolId));
+        }
     }
-    buttons.append({ static_cast<int>(ToolId::QRCode), "qrcode", "QR Code Scan", false });
-    buttons.append({ static_cast<int>(ToolId::Record), "record", "Screen Recording (R)", false });
-    buttons.append({ static_cast<int>(ToolId::MultiRegion), "multi-region", "Multi-Region Capture (M)", false });
-    buttons.append({ static_cast<int>(ToolId::Pin), "pin", "Pin to Screen (Enter)", false });
-#ifdef Q_OS_MACOS
-    buttons.append({ static_cast<int>(ToolId::Save), "save", "Save (Cmd+S)", false });
-    buttons.append({ static_cast<int>(ToolId::Copy), "copy", "Copy (Cmd+C)", false });
-#else
-    buttons.append({ static_cast<int>(ToolId::Save), "save", "Save (Ctrl+S)", false });
-    buttons.append({ static_cast<int>(ToolId::Copy), "copy", "Copy (Ctrl+C)", false });
-#endif
 
     m_toolbar->setButtons(buttons);
-
-    // Set which buttons are "active" type (annotation tools that stay highlighted)
-    QVector<int> activeButtonIds = {
-        static_cast<int>(ToolId::Selection),
-        static_cast<int>(ToolId::Arrow),
-        static_cast<int>(ToolId::Pencil),
-        static_cast<int>(ToolId::Marker),
-        static_cast<int>(ToolId::Shape),
-        static_cast<int>(ToolId::Text),
-        static_cast<int>(ToolId::Mosaic),
-        static_cast<int>(ToolId::Eraser),
-        static_cast<int>(ToolId::StepBadge),
-        static_cast<int>(ToolId::EmojiSticker)
-    };
     m_toolbar->setActiveButtonIds(activeButtonIds);
 
     // Set icon color provider

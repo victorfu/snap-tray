@@ -119,7 +119,7 @@ void ToolRegistry::registerTools() {
 
     registerTool({
         ToolId::StepBadge,
-        "step",
+        "step-badge",
         "Step Badge",
         "",
         ToolCategory::Drawing,
@@ -142,7 +142,7 @@ void ToolRegistry::registerTools() {
     // Toggle tools
     registerTool({
         ToolId::LaserPointer,
-        "laser",
+        "laser-pointer",
         "Laser Pointer",
         "",
         ToolCategory::Toggle,
@@ -163,11 +163,19 @@ void ToolRegistry::registerTools() {
     });
 
     // Action tools
+#ifdef Q_OS_MACOS
+    const QString undoShortcut = "Cmd+Z";
+    const QString redoShortcut = "Cmd+Shift+Z";
+#else
+    const QString undoShortcut = "Ctrl+Z";
+    const QString redoShortcut = "Ctrl+Y";
+#endif
+
     registerTool({
         ToolId::Undo,
         "undo",
         "Undo",
-        "Ctrl+Z",
+        undoShortcut,
         ToolCategory::Action,
         false, false, false, false, false, false,
         false, false, false,  // UI visibility: none
@@ -178,7 +186,7 @@ void ToolRegistry::registerTools() {
         ToolId::Redo,
         "redo",
         "Redo",
-        "Ctrl+Y",
+        redoShortcut,
         ToolCategory::Action,
         false, false, false, false, false, false,
         false, false, false,  // UI visibility: none
@@ -187,7 +195,7 @@ void ToolRegistry::registerTools() {
 
     registerTool({
         ToolId::Clear,
-        "clear",
+        "cancel",
         "Clear All",
         "",
         ToolCategory::Action,
@@ -211,6 +219,17 @@ void ToolRegistry::registerTools() {
         ToolId::OCR,
         "ocr",
         "OCR Text Recognition",
+        "",
+        ToolCategory::Action,
+        false, false, false, false, false, false,
+        false, false, false,  // UI visibility: none
+        false, QColor()
+    });
+
+    registerTool({
+        ToolId::QRCode,
+        "qrcode",
+        "QR Code Scan",
         "",
         ToolCategory::Action,
         false, false, false, false, false, false,
@@ -260,7 +279,7 @@ void ToolRegistry::registerTools() {
         ToolCategory::Action,
         false, false, false, false, false, false,
         false, false, false,  // UI visibility: none
-        true, QColor()
+        false, QColor()
     });
 
     registerTool({
@@ -282,7 +301,7 @@ void ToolRegistry::registerTools() {
         ToolCategory::Action,
         false, false, false, false, false, false,
         false, false, false,  // UI visibility: none
-        true, QColor()
+        false, QColor()
     });
 
     registerTool({
@@ -299,7 +318,7 @@ void ToolRegistry::registerTools() {
 
     registerTool({
         ToolId::Exit,
-        "exit",
+        "cancel",
         "Exit",
         "",
         ToolCategory::Action,
@@ -322,7 +341,7 @@ void ToolRegistry::registerTools() {
 
     registerTool({
         ToolId::MultiRegionDone,
-        "multi-region-done",
+        "done",
         "Complete Multi-Region",
         "",
         ToolCategory::Action,
@@ -353,10 +372,10 @@ QVector<ToolId> ToolRegistry::getToolsForToolbar(ToolbarType type) const {
         // Note: Polyline is accessed via Arrow tool's polyline mode toggle
         tools = {
             ToolId::Selection,
+            ToolId::Shape,
             ToolId::Arrow,
             ToolId::Pencil,
             ToolId::Marker,
-            ToolId::Shape,
             ToolId::Text,
             ToolId::Mosaic,
             ToolId::Eraser,
@@ -366,9 +385,10 @@ QVector<ToolId> ToolRegistry::getToolsForToolbar(ToolbarType type) const {
             ToolId::Redo,
             ToolId::Cancel,
             ToolId::OCR,
-            ToolId::AutoBlur,
-            ToolId::Pin,
+            ToolId::QRCode,
             ToolId::Record,
+            ToolId::MultiRegion,
+            ToolId::Pin,
             ToolId::Save,
             ToolId::Copy
         };
@@ -378,17 +398,39 @@ QVector<ToolId> ToolRegistry::getToolsForToolbar(ToolbarType type) const {
         // Simplified toolbar for canvas mode
         // Note: Polyline is accessed via Arrow tool's polyline mode toggle
         tools = {
+            ToolId::Shape,
+            ToolId::Arrow,
             ToolId::Pencil,
             ToolId::Marker,
-            ToolId::Arrow,
-            ToolId::Shape,
+            ToolId::Text,
+            ToolId::StepBadge,
             ToolId::EmojiSticker,
             ToolId::LaserPointer,
-            ToolId::CursorHighlight,
             ToolId::Undo,
             ToolId::Redo,
             ToolId::Clear,
             ToolId::Exit
+        };
+        break;
+
+    case ToolbarType::PinWindow:
+        // Pin window annotation toolbar (done/close is a local toolbar action).
+        tools = {
+            ToolId::Shape,
+            ToolId::Arrow,
+            ToolId::Pencil,
+            ToolId::Marker,
+            ToolId::Text,
+            ToolId::Mosaic,
+            ToolId::Eraser,
+            ToolId::StepBadge,
+            ToolId::EmojiSticker,
+            ToolId::Undo,
+            ToolId::Redo,
+            ToolId::OCR,
+            ToolId::QRCode,
+            ToolId::Save,
+            ToolId::Copy
         };
         break;
     }
@@ -421,6 +463,14 @@ QString ToolRegistry::getIconKey(ToolId id) const {
 
 QString ToolRegistry::getTooltip(ToolId id) const {
     return get(id).tooltip;
+}
+
+QString ToolRegistry::getTooltipWithShortcut(ToolId id) const {
+    const auto& def = get(id);
+    if (def.shortcut.isEmpty()) {
+        return def.tooltip;
+    }
+    return QString("%1 (%2)").arg(def.tooltip, def.shortcut);
 }
 
 bool ToolRegistry::showColorPalette(ToolId id) const {

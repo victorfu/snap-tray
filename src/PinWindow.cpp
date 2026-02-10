@@ -2380,41 +2380,10 @@ void PinWindow::exitAnnotationMode()
 
 void PinWindow::handleToolbarToolSelected(int toolId)
 {
-    // Map toolbar button ID to ToolId
-    ToolId tool = ToolId::Selection;
-
-    switch (toolId) {
-    case WindowedToolbar::ButtonPencil:
-        tool = ToolId::Pencil;
-        break;
-    case WindowedToolbar::ButtonMarker:
-        tool = ToolId::Marker;
-        break;
-    case WindowedToolbar::ButtonArrow:
-        tool = ToolId::Arrow;
-        break;
-    case WindowedToolbar::ButtonShape:
-        tool = ToolId::Shape;
-        break;
-    case WindowedToolbar::ButtonText:
-        tool = ToolId::Text;
-        break;
-    case WindowedToolbar::ButtonMosaic:
-        tool = ToolId::Mosaic;
-        break;
-    case WindowedToolbar::ButtonEraser:
-        tool = ToolId::Eraser;
-        break;
-    case WindowedToolbar::ButtonStepBadge:
-        tool = ToolId::StepBadge;
-        // StepBadgeToolHandler reads size from AnnotationSettingsManager, no setWidth needed
-        break;
-    case WindowedToolbar::ButtonEmoji:
-        tool = ToolId::EmojiSticker;
-        break;
-    default:
-        break;
+    if (toolId < 0 || toolId >= static_cast<int>(ToolId::Count)) {
+        return;
     }
+    ToolId tool = static_cast<ToolId>(toolId);
 
     // Check if same tool clicked - toggle sub-toolbar visibility (matches RegionSelector behavior)
     bool sameToolClicked = (m_currentToolId == tool && m_annotationMode);

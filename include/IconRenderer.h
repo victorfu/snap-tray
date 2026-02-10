@@ -3,6 +3,7 @@
 
 #include <QHash>
 #include <QString>
+#include <QStringList>
 #include <QRect>
 #include <QColor>
 #include <QPixmap>
@@ -32,6 +33,19 @@ public:
      * @return true if loaded successfully
      */
     bool loadIcon(const QString& key, const QString& resourcePath);
+
+    /**
+     * @brief Load an icon using the default icon resource convention.
+     * @param key Icon key and filename stem (e.g., "pencil" -> ":/icons/icons/pencil.svg")
+     * @return true if loaded successfully
+     */
+    bool loadIconByKey(const QString& key);
+
+    /**
+     * @brief Load multiple icons using the default icon resource convention.
+     * @param keys Icon keys/filename stems
+     */
+    void loadIconsByKey(const QStringList& keys);
 
     /**
      * @brief Check if an icon is loaded.

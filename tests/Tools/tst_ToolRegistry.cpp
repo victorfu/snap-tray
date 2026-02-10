@@ -39,6 +39,7 @@ private slots:
     // Toolbar context tests
     void testGetToolsForToolbar_RegionSelector();
     void testGetToolsForToolbar_ScreenCanvas();
+    void testGetToolsForToolbar_PinWindow();
     void testGetToolsForToolbar_RegionSelectorHasDrawingTools();
     void testGetToolsForToolbar_ScreenCanvasHasToggleTools();
 
@@ -47,6 +48,7 @@ private slots:
     void testGetIconKey_AllToolsHaveIcons();
     void testGetTooltip_ValidTool();
     void testGetTooltip_AllToolsHaveTooltips();
+    void testGetTooltipWithShortcut_PlatformSpecificUndoRedo();
 
     // UI visibility tests
     void testShowColorPalette_DrawingTools();
@@ -109,7 +111,7 @@ void TestToolRegistry::testGet_AllRegisteredTools()
         ToolId::StepBadge, ToolId::EmojiSticker,
         ToolId::LaserPointer, ToolId::CursorHighlight,
         ToolId::Undo, ToolId::Redo, ToolId::Clear,
-        ToolId::Cancel, ToolId::OCR, ToolId::AutoBlur,
+        ToolId::Cancel, ToolId::OCR, ToolId::QRCode, ToolId::AutoBlur,
         ToolId::Pin, ToolId::Record, ToolId::Save,
         ToolId::Copy, ToolId::Exit,
         ToolId::MultiRegion, ToolId::MultiRegionDone
@@ -159,7 +161,7 @@ void TestToolRegistry::testIsActionTool_ActionTools()
 {
     QList<ToolId> actionTools = {
         ToolId::Undo, ToolId::Redo, ToolId::Clear,
-        ToolId::Cancel, ToolId::OCR, ToolId::AutoBlur,
+        ToolId::Cancel, ToolId::OCR, ToolId::QRCode, ToolId::AutoBlur,
         ToolId::Pin, ToolId::Record, ToolId::Save,
         ToolId::Copy, ToolId::Exit,
         ToolId::MultiRegion, ToolId::MultiRegionDone
@@ -244,8 +246,11 @@ void TestToolRegistry::testGetToolsForToolbar_RegionSelector()
     QVERIFY(tools.contains(ToolId::Mosaic));
     QVERIFY(tools.contains(ToolId::Undo));
     QVERIFY(tools.contains(ToolId::Redo));
+    QVERIFY(tools.contains(ToolId::QRCode));
+    QVERIFY(tools.contains(ToolId::MultiRegion));
     QVERIFY(tools.contains(ToolId::Save));
     QVERIFY(tools.contains(ToolId::Copy));
+    QVERIFY(!tools.contains(ToolId::AutoBlur));
 }
 
 void TestToolRegistry::testGetToolsForToolbar_ScreenCanvas()
@@ -253,9 +258,12 @@ void TestToolRegistry::testGetToolsForToolbar_ScreenCanvas()
     QVector<ToolId> tools = registry().getToolsForToolbar(ToolbarType::ScreenCanvas);
 
     // Should include canvas-specific tools
+    QVERIFY(tools.contains(ToolId::Shape));
+    QVERIFY(tools.contains(ToolId::Arrow));
     QVERIFY(tools.contains(ToolId::Pencil));
+    QVERIFY(tools.contains(ToolId::Text));
+    QVERIFY(tools.contains(ToolId::StepBadge));
     QVERIFY(tools.contains(ToolId::LaserPointer));
-    QVERIFY(tools.contains(ToolId::CursorHighlight));
     QVERIFY(tools.contains(ToolId::Clear));
     QVERIFY(tools.contains(ToolId::Exit));
 
@@ -264,6 +272,34 @@ void TestToolRegistry::testGetToolsForToolbar_ScreenCanvas()
     QVERIFY(!tools.contains(ToolId::Copy));
     QVERIFY(!tools.contains(ToolId::Pin));
     QVERIFY(!tools.contains(ToolId::Record));
+}
+
+void TestToolRegistry::testGetToolsForToolbar_PinWindow()
+{
+    QVector<ToolId> tools = registry().getToolsForToolbar(ToolbarType::PinWindow);
+
+    QVERIFY(tools.contains(ToolId::Shape));
+    QVERIFY(tools.contains(ToolId::Arrow));
+    QVERIFY(tools.contains(ToolId::Pencil));
+    QVERIFY(tools.contains(ToolId::Marker));
+    QVERIFY(tools.contains(ToolId::Text));
+    QVERIFY(tools.contains(ToolId::Mosaic));
+    QVERIFY(tools.contains(ToolId::Eraser));
+    QVERIFY(tools.contains(ToolId::StepBadge));
+    QVERIFY(tools.contains(ToolId::EmojiSticker));
+    QVERIFY(tools.contains(ToolId::Undo));
+    QVERIFY(tools.contains(ToolId::Redo));
+    QVERIFY(tools.contains(ToolId::OCR));
+    QVERIFY(tools.contains(ToolId::QRCode));
+    QVERIFY(tools.contains(ToolId::Save));
+    QVERIFY(tools.contains(ToolId::Copy));
+
+    // PinWindow toolbar should not expose capture-only actions.
+    QVERIFY(!tools.contains(ToolId::Selection));
+    QVERIFY(!tools.contains(ToolId::Cancel));
+    QVERIFY(!tools.contains(ToolId::Record));
+    QVERIFY(!tools.contains(ToolId::MultiRegion));
+    QVERIFY(!tools.contains(ToolId::AutoBlur));
 }
 
 void TestToolRegistry::testGetToolsForToolbar_RegionSelectorHasDrawingTools()
@@ -284,10 +320,8 @@ void TestToolRegistry::testGetToolsForToolbar_ScreenCanvasHasToggleTools()
 {
     QVector<ToolId> tools = registry().getToolsForToolbar(ToolbarType::ScreenCanvas);
 
-    bool hasLaserPointer = tools.contains(ToolId::LaserPointer);
-    bool hasCursorHighlight = tools.contains(ToolId::CursorHighlight);
-
-    QVERIFY(hasLaserPointer || hasCursorHighlight);
+    QVERIFY(tools.contains(ToolId::LaserPointer));
+    QVERIFY(!tools.contains(ToolId::CursorHighlight));
 }
 
 // ============================================================================
@@ -301,6 +335,8 @@ void TestToolRegistry::testGetIconKey_ValidTool()
     QCOMPARE(registry().getIconKey(ToolId::Shape), QString("shape"));
     QCOMPARE(registry().getIconKey(ToolId::Text), QString("text"));
     QCOMPARE(registry().getIconKey(ToolId::Mosaic), QString("mosaic"));
+    QCOMPARE(registry().getIconKey(ToolId::StepBadge), QString("step-badge"));
+    QCOMPARE(registry().getIconKey(ToolId::LaserPointer), QString("laser-pointer"));
 }
 
 void TestToolRegistry::testGetIconKey_AllToolsHaveIcons()
@@ -330,6 +366,17 @@ void TestToolRegistry::testGetTooltip_AllToolsHaveTooltips()
         QVERIFY2(!tooltip.isEmpty(),
                  qPrintable(QString("Tool %1 should have a tooltip").arg(static_cast<int>(id))));
     }
+}
+
+void TestToolRegistry::testGetTooltipWithShortcut_PlatformSpecificUndoRedo()
+{
+#ifdef Q_OS_MACOS
+    QCOMPARE(registry().getTooltipWithShortcut(ToolId::Undo), QString("Undo (Cmd+Z)"));
+    QCOMPARE(registry().getTooltipWithShortcut(ToolId::Redo), QString("Redo (Cmd+Shift+Z)"));
+#else
+    QCOMPARE(registry().getTooltipWithShortcut(ToolId::Undo), QString("Undo (Ctrl+Z)"));
+    QCOMPARE(registry().getTooltipWithShortcut(ToolId::Redo), QString("Redo (Ctrl+Y)"));
+#endif
 }
 
 // ============================================================================

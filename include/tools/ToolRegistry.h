@@ -15,7 +15,8 @@
  */
 enum class ToolbarType {
     RegionSelector,  // Full toolbar for screenshot region selection
-    ScreenCanvas     // Simplified toolbar for screen canvas mode
+    ScreenCanvas,    // Simplified toolbar for screen canvas mode
+    PinWindow        // Floating toolbar for pin-window annotation
 };
 
 /**
@@ -70,6 +71,11 @@ public:
      * @brief Get the tooltip for a tool.
      */
     QString getTooltip(ToolId id) const;
+
+    /**
+     * @brief Get the tooltip including shortcut text when available.
+     */
+    QString getTooltipWithShortcut(ToolId id) const;
 
     /**
      * @brief Check if tool should show color palette in sub-toolbar.

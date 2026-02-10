@@ -4,6 +4,8 @@
 #include "toolbar/ToolbarRenderer.h"
 #include "GlassRenderer.h"
 #include "cursor/CursorManager.h"
+#include "tools/ToolRegistry.h"
+#include "tools/ToolTraits.h"
 
 #include <QPainter>
 #include <QMouseEvent>
@@ -13,6 +15,27 @@
 #include <QDialog>
 #include <QShowEvent>
 #include <QHideEvent>
+#include <array>
+#include <utility>
+
+namespace {
+bool isValidToolId(int buttonId)
+{
+    return buttonId >= 0 && buttonId < static_cast<int>(ToolId::Count);
+}
+
+using ActionSignal = void (WindowedToolbar::*)();
+
+constexpr std::array<std::pair<int, ActionSignal>, 7> kActionButtonSignals = {{
+    {static_cast<int>(ToolId::Undo), &WindowedToolbar::undoClicked},
+    {static_cast<int>(ToolId::Redo), &WindowedToolbar::redoClicked},
+    {static_cast<int>(ToolId::OCR), &WindowedToolbar::ocrClicked},
+    {static_cast<int>(ToolId::QRCode), &WindowedToolbar::qrCodeClicked},
+    {static_cast<int>(ToolId::Copy), &WindowedToolbar::copyClicked},
+    {static_cast<int>(ToolId::Save), &WindowedToolbar::saveClicked},
+    {WindowedToolbar::ButtonDone, &WindowedToolbar::doneClicked}
+}};
+}
 
 WindowedToolbar::WindowedToolbar(QWidget *parent)
     : QWidget(parent)
@@ -39,71 +62,41 @@ WindowedToolbar::~WindowedToolbar()
 void WindowedToolbar::loadIcons()
 {
     auto& renderer = IconRenderer::instance();
-    // Drawing tools
-    renderer.loadIcon("pencil", ":/icons/icons/pencil.svg");
-    renderer.loadIcon("marker", ":/icons/icons/marker.svg");
-    renderer.loadIcon("arrow", ":/icons/icons/arrow.svg");
-    renderer.loadIcon("shape", ":/icons/icons/shape.svg");
-    renderer.loadIcon("text", ":/icons/icons/text.svg");
-    renderer.loadIcon("mosaic", ":/icons/icons/mosaic.svg");
-    renderer.loadIcon("eraser", ":/icons/icons/eraser.svg");
-    renderer.loadIcon("step-badge", ":/icons/icons/step-badge.svg");
-    renderer.loadIcon("emoji", ":/icons/icons/emoji.svg");
+    const QVector<ToolId> tools = ToolRegistry::instance().getToolsForToolbar(ToolbarType::PinWindow);
+    for (ToolId toolId : tools) {
+        const QString iconKey = ToolRegistry::instance().getIconKey(toolId);
+        if (!iconKey.isEmpty()) {
+            renderer.loadIconByKey(iconKey);
+        }
+    }
 
-    // History
-    renderer.loadIcon("undo", ":/icons/icons/undo.svg");
-    renderer.loadIcon("redo", ":/icons/icons/redo.svg");
-
-    // Export
-    renderer.loadIcon("ocr", ":/icons/icons/ocr.svg");
-    renderer.loadIcon("copy", ":/icons/icons/copy.svg");
-    renderer.loadIcon("save", ":/icons/icons/save.svg");
-
-    // Close
-    renderer.loadIcon("done", ":/icons/icons/done.svg");
+    // Local toolbar-only action icon.
+    renderer.loadIconByKey("done");
 }
 
 void WindowedToolbar::setupUi()
 {
-    // Configure buttons using Toolbar::ButtonConfig builder pattern
-    // Order matches RegionSelector: Shape → Arrow → Pencil → Marker → Text → ...
-    m_buttons = {
-        // Drawing tools (order matches RegionSelector toolbar)
-        ButtonConfig(ButtonShape, "shape", "Shape"),
-        ButtonConfig(ButtonArrow, "arrow", "Arrow"),
-        ButtonConfig(ButtonPencil, "pencil", "Pencil"),
-        ButtonConfig(ButtonMarker, "marker", "Marker"),
-        ButtonConfig(ButtonText, "text", "Text"),
-        ButtonConfig(ButtonMosaic, "mosaic", "Mosaic"),
-        ButtonConfig(ButtonEraser, "eraser", "Eraser"),
-        ButtonConfig(ButtonStepBadge, "step-badge", "Step Badge"),
-        ButtonConfig(ButtonEmoji, "emoji", "Emoji"),
+    m_buttons.clear();
+    auto& registry = ToolRegistry::instance();
+    const QVector<ToolId> tools = registry.getToolsForToolbar(ToolbarType::PinWindow);
 
-#ifdef Q_OS_MACOS
-        // History (with separator)
-        ButtonConfig(ButtonUndo, "undo", "Undo (Cmd+Z)").separator(),
-        ButtonConfig(ButtonRedo, "redo", "Redo (Cmd+Shift+Z)"),
+    for (ToolId toolId : tools) {
+        const auto& def = registry.get(toolId);
+        ButtonConfig config(
+            static_cast<int>(toolId),
+            def.iconKey,
+            registry.getTooltipWithShortcut(toolId),
+            def.showSeparatorBefore);
 
-        // Export (with separator)
-        ButtonConfig(ButtonOCR, "ocr", "OCR Text Recognition").separator(),
-        ButtonConfig(ButtonQRCode, "qrcode", "QR Code Scan"),
-        ButtonConfig(ButtonSave, "save", "Save (Cmd+S)"),
-        ButtonConfig(ButtonCopy, "copy", "Copy (Cmd+C)"),
-#else
-        // History (with separator)
-        ButtonConfig(ButtonUndo, "undo", "Undo (Ctrl+Z)").separator(),
-        ButtonConfig(ButtonRedo, "redo", "Redo (Ctrl+Y)"),
+        if (toolId == ToolId::OCR) {
+            config.separator();
+        }
 
-        // Export (with separator)
-        ButtonConfig(ButtonOCR, "ocr", "OCR Text Recognition").separator(),
-        ButtonConfig(ButtonQRCode, "qrcode", "QR Code Scan"),
-        ButtonConfig(ButtonSave, "save", "Save (Ctrl+S)"),
-        ButtonConfig(ButtonCopy, "copy", "Copy (Ctrl+C)"),
-#endif
+        m_buttons.append(config);
+    }
 
-        // Close (with separator)
-        ButtonConfig(ButtonDone, "done", "Done (Space/Esc)").separator()
-    };
+    // Close annotation mode in pin window (local action).
+    m_buttons.append(ButtonConfig(ButtonDone, "done", "Done (Space/Esc)").separator());
 
     m_buttonRects.resize(m_buttons.size());
 }
@@ -117,7 +110,7 @@ void WindowedToolbar::updateButtonLayout()
         const ButtonConfig& config = m_buttons[i];
 
         // Skip OCR button if not available
-        if (config.id == ButtonOCR && !m_ocrAvailable) {
+        if (config.id == static_cast<int>(ToolId::OCR) && !m_ocrAvailable) {
             m_buttonRects[i] = QRect();
             continue;
         }
@@ -194,7 +187,21 @@ void WindowedToolbar::setOCRAvailable(bool available)
 
 bool WindowedToolbar::isDrawingTool(int buttonId) const
 {
-    return buttonId >= ButtonPencil && buttonId <= ButtonEmoji;
+    if (!isValidToolId(buttonId)) {
+        return false;
+    }
+    return ToolTraits::isAnnotationTool(static_cast<ToolId>(buttonId));
+}
+
+bool WindowedToolbar::dispatchActionButton(int buttonId)
+{
+    for (const auto& entry : kActionButtonSignals) {
+        if (entry.first == buttonId) {
+            (this->*entry.second)();
+            return true;
+        }
+    }
+    return false;
 }
 
 void WindowedToolbar::paintEvent(QPaintEvent *event)
@@ -241,9 +248,9 @@ void WindowedToolbar::drawButton(QPainter &painter, int index)
     bool isDisabled = false;
 
     // Check disabled state for undo/redo
-    if (config.id == ButtonUndo && !m_canUndo) {
+    if (config.id == static_cast<int>(ToolId::Undo) && !m_canUndo) {
         isDisabled = true;
-    } else if (config.id == ButtonRedo && !m_canRedo) {
+    } else if (config.id == static_cast<int>(ToolId::Redo) && !m_canRedo) {
         isDisabled = true;
     }
 
@@ -327,43 +334,19 @@ void WindowedToolbar::mousePressEvent(QMouseEvent *event)
             const ButtonConfig& config = m_buttons[btnIndex];
 
             // Check if button is disabled
-            if (config.id == ButtonUndo && !m_canUndo) {
+            if (config.id == static_cast<int>(ToolId::Undo) && !m_canUndo) {
                 return;
             }
-            if (config.id == ButtonRedo && !m_canRedo) {
+            if (config.id == static_cast<int>(ToolId::Redo) && !m_canRedo) {
                 return;
             }
 
-            // Handle button click
-            switch (config.id) {
-            // Drawing tools
-            case ButtonPencil:
-            case ButtonMarker:
-            case ButtonArrow:
-            case ButtonShape:
-            case ButtonText:
-            case ButtonMosaic:
-            case ButtonEraser:
-            case ButtonStepBadge:
-            case ButtonEmoji:
+            if (isDrawingTool(config.id)) {
                 emit toolSelected(config.id);
-                break;
-
-            // History
-            case ButtonUndo: emit undoClicked(); break;
-            case ButtonRedo: emit redoClicked(); break;
-
-            // Export
-            case ButtonOCR: emit ocrClicked(); break;
-            case ButtonQRCode: emit qrCodeClicked(); break;
-            case ButtonCopy: emit copyClicked(); break;
-            case ButtonSave: emit saveClicked(); break;
-
-            // Close
-            case ButtonDone: emit doneClicked(); break;
-
-            default: break;
+                return;
             }
+
+            dispatchActionButton(config.id);
             return;
         }
 
