@@ -608,8 +608,6 @@ add_library(snaptray_ui STATIC
     # Widgets
     src/toolbar/ToolOptionsPanel.cpp
     src/EmojiPicker.cpp
-    src/widgets/HotkeyEdit.cpp
-    include/widgets/HotkeyEdit.h
 
     # Hotkey management system
     src/hotkey/HotkeyManager.cpp
@@ -652,7 +650,6 @@ add_library(snaptray_ui STATIC
     src/pinwindow/PinHistoryStore.cpp
     src/pinwindow/PinHistoryWindow.cpp
     src/pinwindow/PinWindowPlacement.cpp
-    src/pinwindow/ImageTransformer.cpp
     src/toolbar/WindowedToolbar.cpp
     src/toolbar/WindowedSubToolbar.cpp
     src/pinwindow/ResizeHandler.cpp
@@ -707,9 +704,6 @@ add_library(snaptray_ui STATIC
     >
 
     # macOS-only UI
-    $<$<PLATFORM_ID:Darwin>:
-        src/OCRController.cpp
-    >
 
     # Headers with Q_OBJECT for MOC processing
     include/toolbar/ToolbarCore.h
@@ -747,7 +741,6 @@ add_library(snaptray_ui STATIC
     include/pinwindow/PinHistoryStore.h
     include/pinwindow/PinHistoryWindow.h
     include/pinwindow/PinWindowPlacement.h
-    include/pinwindow/ImageTransformer.h
     include/toolbar/WindowedToolbar.h
     include/toolbar/WindowedSubToolbar.h
     include/pinwindow/ResizeHandler.h
@@ -770,9 +763,6 @@ add_library(snaptray_ui STATIC
     include/video/CountdownOverlay.h
     include/SettingsDialog.h
     include/OCRResultDialog.h
-    $<$<PLATFORM_ID:Darwin>:
-        include/OCRController.h
-    >
 
     # Recording management (moved from APP_SOURCES for testability)
     src/RecordingManager.cpp
