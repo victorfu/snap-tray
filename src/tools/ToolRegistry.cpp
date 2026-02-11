@@ -141,28 +141,6 @@ void ToolRegistry::registerTools() {
 
     // Toggle tools
     registerTool({
-        ToolId::LaserPointer,
-        "laser-pointer",
-        "Laser Pointer",
-        "",
-        ToolCategory::Toggle,
-        false, false, false, false, false, false,
-        true, true, true,  // UI visibility (for ScreenCanvas)
-        false, QColor()
-    });
-
-    registerTool({
-        ToolId::CursorHighlight,
-        "cursor_highlight",
-        "Cursor Highlight",
-        "",
-        ToolCategory::Toggle,
-        false, false, false, false, false, false,
-        false, false, false,  // UI visibility: none
-        false, QColor()
-    });
-
-    registerTool({
         ToolId::CanvasWhiteboard,
         "whiteboard",
         "Whiteboard",
@@ -416,7 +394,6 @@ QVector<ToolId> ToolRegistry::getToolsForToolbar(ToolbarType type) const {
             ToolId::Text,
             ToolId::StepBadge,
             ToolId::EmojiSticker,
-            ToolId::LaserPointer,
             ToolId::CanvasWhiteboard,
             ToolId::CanvasBlackboard,
             ToolId::Undo,
@@ -465,8 +442,7 @@ bool ToolRegistry::isToggleTool(ToolId id) const {
 
 bool ToolRegistry::isAnnotationTool(ToolId id) const {
     const auto& def = get(id);
-    // Annotation tools are drawing tools that create persistent annotations
-    // (excludes toggle tools like laser pointer)
+    // Annotation tools are drawing tools that create persistent annotations.
     return def.category == ToolCategory::Drawing;
 }
 

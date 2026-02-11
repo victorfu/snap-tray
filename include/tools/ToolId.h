@@ -24,9 +24,6 @@ enum class ToolId {
     EmojiSticker,
 
     // Toggle tools (affect canvas behavior)
-    LaserPointer,
-    CursorHighlight,
-    Spotlight,
     CanvasWhiteboard,   // ScreenCanvas whiteboard background mode toggle
     CanvasBlackboard,   // ScreenCanvas blackboard background mode toggle
 

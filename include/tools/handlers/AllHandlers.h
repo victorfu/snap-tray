@@ -13,6 +13,5 @@
 #include "EmojiStickerToolHandler.h"
 #include "TextToolHandler.h"
 #include "SelectionToolHandler.h"
-#include "LaserPointerToolHandler.h"
 
 #endif // ALLHANDLERS_H

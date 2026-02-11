@@ -467,14 +467,12 @@ add_library(snaptray_platform STATIC
         src/capture/CoreAudioCaptureEngine_mac.mm
         src/AVFoundationEncoder.mm
         src/video/AVFoundationPlayer_mac.mm
-        src/input/MouseClickTracker_mac.mm
     >
     # macOS headers with Q_OBJECT
     $<$<PLATFORM_ID:Darwin>:
         include/AVFoundationEncoder.h
         include/capture/SCKCaptureEngine.h
         include/capture/CoreAudioCaptureEngine.h
-        include/input/MouseClickTracker.h
     >
 
     # Cross-platform headers with Q_OBJECT (need MOC on all platforms)
@@ -492,14 +490,12 @@ add_library(snaptray_platform STATIC
         src/capture/WASAPIAudioCaptureEngine_win.cpp
         src/MediaFoundationEncoder.cpp
         src/video/MediaFoundationPlayer_win.cpp
-        src/input/MouseClickTracker_win.cpp
     >
     # Windows headers with Q_OBJECT
     $<$<PLATFORM_ID:Windows>:
         include/MediaFoundationEncoder.h
         include/capture/DXGICaptureEngine.h
         include/capture/WASAPIAudioCaptureEngine.h
-        include/input/MouseClickTracker.h
     >
 )
 
@@ -605,7 +601,6 @@ add_library(snaptray_ui STATIC
     src/tools/handlers/EmojiStickerToolHandler.cpp
     src/tools/handlers/TextToolHandler.cpp
     src/tools/handlers/SelectionToolHandler.cpp
-    src/tools/handlers/LaserPointerToolHandler.cpp
 
     # Widgets
     src/toolbar/ToolOptionsPanel.cpp

@@ -50,8 +50,6 @@ SnapTray is a lightweight tray utility for region screenshots, on-screen annotat
   - Floating control bar with Pause/Resume/Stop/Cancel
   - MP4 (H.264) via native encoder (Media Foundation/AVFoundation); GIF and WebP via built-in encoders
   - Optional audio capture for MP4 (microphone/system audio/both; platform dependent)
-  - Mouse click highlight effect during recording
-  - Spotlight effect during recording (dim surroundings, highlight focus area)
 - **Pin Windows**:
   - Borderless, always on top
   - Drag to move
@@ -71,7 +69,7 @@ SnapTray is a lightweight tray utility for region screenshots, on-screen annotat
   - Advanced tab: Auto blur configuration
   - Watermark tab: Image watermark, opacity, position, and scale
   - OCR tab: OCR language selection and post-recognition behavior
-  - Recording tab: Frame rate, output format (MP4/GIF/WebP), quality, preview behavior, countdown, click highlight, audio (enable/source/device)
+  - Recording tab: Frame rate, output format (MP4/GIF/WebP), quality, preview behavior, countdown, audio (enable/source/device)
   - Files tab: Screenshot/recording save paths, filename format
   - Updates tab: Auto-check, check frequency, last-checked status, manual check now
   - About tab: Version information
@@ -532,9 +530,8 @@ snap-tray/
 |   |-- encoding/          # GIF/WebP encoders
 |   |-- external/          # Third-party headers (msf_gif)
 |   |-- hotkey/            # Hotkey manager and types
-|   |-- input/             # Mouse click tracking
+|   |-- input/             # Input abstractions (currently reserved)
 |   |-- pinwindow/         # Pin window components
-|   |-- recording/         # Recording effects (Spotlight, CursorHighlight)
 |   |-- region/            # Region selection components
 |   |-- settings/          # Settings managers
 |   |-- toolbar/           # Toolbar rendering
@@ -567,7 +564,6 @@ snap-tray/
 |   |-- input/             # Input tracking (platform-specific)
 |   |-- pinwindow/         # Pin window component implementations
 |   |-- platform/          # Platform abstraction (macOS/Windows)
-|   |-- recording/         # Recording effect implementations
 |   |-- region/            # Region selection implementations
 |   |-- settings/          # Settings manager implementations
 |   |-- toolbar/           # Toolbar implementations
@@ -651,8 +647,6 @@ The codebase follows a modular architecture with extracted components for mainta
 | `ClickThroughExitButton`    | `src/pinwindow/`   | Exit button for click-through mode        |
 | `PinHistoryStore`           | `src/pinwindow/`   | Pin history persistence                   |
 | `PinHistoryWindow`          | `src/pinwindow/`   | Pin history UI                            |
-| `SpotlightEffect`           | `src/recording/`   | Spotlight effect during recording         |
-| `CursorHighlightEffect`     | `src/recording/`   | Cursor highlight effect during recording  |
 | `FaceDetector`              | `src/detection/`   | Face detection for auto-blur              |
 | `AutoBlurManager`           | `src/detection/`   | Auto-blur orchestration                   |
 | `HotkeyManager`             | `src/hotkey/`      | Centralized hotkey registration           |

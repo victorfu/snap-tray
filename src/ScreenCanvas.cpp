@@ -36,9 +36,16 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include "platform/WindowLevel.h"
 
 namespace {
-bool isToolButtonId(int buttonId)
+constexpr int kLaserPointerButtonId = 10001;
+
+bool isManagedToolButtonId(int buttonId)
 {
     return buttonId >= 0 && buttonId < static_cast<int>(ToolId::Count);
+}
+
+bool isLaserPointerButtonId(int buttonId)
+{
+    return buttonId == kLaserPointerButtonId;
 }
 }
 
@@ -52,7 +59,6 @@ const std::map<ToolId, ScreenCanvas::ToolbarClickHandler>& ScreenCanvas::toolbar
         {ToolId::Text, &ScreenCanvas::handlePersistentToolClick},
         {ToolId::StepBadge, &ScreenCanvas::handlePersistentToolClick},
         {ToolId::EmojiSticker, &ScreenCanvas::handlePersistentToolClick},
-        {ToolId::LaserPointer, &ScreenCanvas::handlePersistentToolClick},
         {ToolId::CanvasWhiteboard, &ScreenCanvas::handleCanvasModeToggle},
         {ToolId::CanvasBlackboard, &ScreenCanvas::handleCanvasModeToggle},
         {ToolId::Undo, &ScreenCanvas::handleActionToolClick},
@@ -81,6 +87,7 @@ ScreenCanvas::ScreenCanvas(QWidget* parent)
     , m_annotationLayer(nullptr)
     , m_toolManager(nullptr)
     , m_currentToolId(ToolId::Pencil)
+    , m_laserPointerActive(false)
     , m_toolbar(nullptr)
     , m_isDraggingToolbar(false)
     , m_toolbarManuallyPositioned(false)
@@ -241,6 +248,7 @@ void ScreenCanvas::initializeIcons()
             iconRenderer.loadIconByKey(iconKey);
         }
     }
+    iconRenderer.loadIconByKey("laser-pointer");
 
     // Shape and arrow style icons for ToolOptionsPanel sections
     iconRenderer.loadIconsByKey({
@@ -267,7 +275,17 @@ void ScreenCanvas::setupToolbar()
 
     QVector<ToolbarCore::ButtonConfig> buttons;
     QVector<int> activeButtonIds;
+    bool laserInserted = false;
     for (ToolId toolId : toolbarTools) {
+        if (!laserInserted && toolId == ToolId::CanvasWhiteboard) {
+            buttons.append(ToolbarCore::ButtonConfig(
+                kLaserPointerButtonId,
+                "laser-pointer",
+                tr("Laser Pointer")));
+            activeButtonIds.append(kLaserPointerButtonId);
+            laserInserted = true;
+        }
+
         const auto& def = registry.get(toolId);
         ToolbarCore::ButtonConfig config(
             static_cast<int>(toolId),
@@ -287,6 +305,15 @@ void ScreenCanvas::setupToolbar()
             activeButtonIds.append(static_cast<int>(toolId));
         }
     }
+
+    if (!laserInserted) {
+        buttons.append(ToolbarCore::ButtonConfig(
+            kLaserPointerButtonId,
+            "laser-pointer",
+            tr("Laser Pointer")));
+        activeButtonIds.append(kLaserPointerButtonId);
+    }
+
     m_toolbar->setButtons(buttons);
     m_toolbar->setActiveButtonIds(activeButtonIds);
 
@@ -301,18 +328,21 @@ void ScreenCanvas::setupToolbar()
 
 QColor ScreenCanvas::getButtonIconColor(int buttonId) const
 {
-    const bool isToolButton = isToolButtonId(buttonId);
-    const ToolId buttonToolId = isToolButton
+    const bool isManagedToolButton = isManagedToolButtonId(buttonId);
+    const ToolId buttonToolId = isManagedToolButton
         ? static_cast<ToolId>(buttonId)
         : ToolId::Selection;
 
-    const bool isButtonActive = isToolButton &&
+    const bool isToolButtonActive = isManagedToolButton &&
+        !m_laserPointerActive &&
         (buttonToolId == m_currentToolId) &&
         isDrawingTool(buttonToolId) &&
         m_showSubToolbar;
+    const bool isLaserButtonActive =
+        isLaserPointerButtonId(buttonId) && m_laserPointerActive && m_showSubToolbar;
     const bool isBgModeActive =
-        (isToolButton && buttonToolId == ToolId::CanvasWhiteboard && m_bgMode == CanvasBackgroundMode::Whiteboard) ||
-        (isToolButton && buttonToolId == ToolId::CanvasBlackboard && m_bgMode == CanvasBackgroundMode::Blackboard);
+        (isManagedToolButton && buttonToolId == ToolId::CanvasWhiteboard && m_bgMode == CanvasBackgroundMode::Whiteboard) ||
+        (isManagedToolButton && buttonToolId == ToolId::CanvasBlackboard && m_bgMode == CanvasBackgroundMode::Blackboard);
 
     if (buttonId == static_cast<int>(ToolId::Exit)) {
         return m_toolbarStyleConfig.iconCancelColor;
@@ -326,7 +356,7 @@ QColor ScreenCanvas::getButtonIconColor(int buttonId) const
     if (buttonId == static_cast<int>(ToolId::Redo) && !m_annotationLayer->canRedo()) {
         return QColor(128, 128, 128);  // Gray for disabled redo
     }
-    if (isButtonActive || isBgModeActive) {
+    if (isToolButtonActive || isLaserButtonActive || isBgModeActive) {
         return m_toolbarStyleConfig.iconActiveColor;
     }
     return m_toolbarStyleConfig.iconNormalColor;
@@ -335,6 +365,7 @@ QColor ScreenCanvas::getButtonIconColor(int buttonId) const
 bool ScreenCanvas::shouldShowColorPalette() const
 {
     if (!m_showSubToolbar) return false;
+    if (m_laserPointerActive) return true;
     return ToolRegistry::instance().showColorPalette(m_currentToolId);
 }
 
@@ -438,11 +469,13 @@ void ScreenCanvas::onLineWidthChanged(int width)
 bool ScreenCanvas::shouldShowColorAndWidthWidget() const
 {
     if (!m_showSubToolbar) return false;
+    if (m_laserPointerActive) return true;
     return ToolRegistry::instance().showColorWidthWidget(m_currentToolId);
 }
 
 bool ScreenCanvas::shouldShowWidthControl() const
 {
+    if (m_laserPointerActive) return true;
     return ToolRegistry::instance().showWidthControl(m_currentToolId);
 }
 
@@ -524,8 +557,12 @@ void ScreenCanvas::paintEvent(QPaintEvent*)
     }
     // Update active button based on current tool state
     int activeButtonId = -1;
-    if (m_showSubToolbar && isDrawingTool(m_currentToolId)) {
-        activeButtonId = static_cast<int>(m_currentToolId);
+    if (m_showSubToolbar) {
+        if (m_laserPointerActive) {
+            activeButtonId = kLaserPointerButtonId;
+        } else if (isDrawingTool(m_currentToolId)) {
+            activeButtonId = static_cast<int>(m_currentToolId);
+        }
     }
     // Handle Whiteboard/Blackboard background mode
     if (m_bgMode == CanvasBackgroundMode::Whiteboard) {
@@ -541,8 +578,15 @@ void ScreenCanvas::paintEvent(QPaintEvent*)
     QRect toolbarRect = m_toolbar->boundingRect();
     if (shouldShowColorAndWidthWidget()) {
         m_colorAndWidthWidget->setVisible(true);
-        // Apply tool-specific section configuration
-        ToolSectionConfig::forTool(m_currentToolId).applyTo(m_colorAndWidthWidget);
+        // Laser pointer is ScreenCanvas-local and not part of ToolRegistry.
+        if (m_laserPointerActive) {
+            ToolSectionConfig laserConfig;
+            laserConfig.showColorSection = true;
+            laserConfig.showWidthSection = true;
+            laserConfig.applyTo(m_colorAndWidthWidget);
+        } else {
+            ToolSectionConfig::forTool(m_currentToolId).applyTo(m_colorAndWidthWidget);
+        }
         m_colorAndWidthWidget->updatePosition(toolbarRect, true, width());
         m_colorAndWidthWidget->draw(painter);
     }
@@ -551,7 +595,7 @@ void ScreenCanvas::paintEvent(QPaintEvent*)
     }
 
     // Draw emoji picker when EmojiSticker tool is selected
-    if (m_currentToolId == ToolId::EmojiSticker && m_showSubToolbar) {
+    if (!m_laserPointerActive && m_currentToolId == ToolId::EmojiSticker && m_showSubToolbar) {
         m_emojiPicker->setVisible(true);
         m_emojiPicker->updatePosition(toolbarRect, true);
         m_emojiPicker->draw(painter);
@@ -611,7 +655,12 @@ void ScreenCanvas::updateToolbarPosition()
 
 void ScreenCanvas::handleToolbarClick(int buttonId)
 {
-    if (!isToolButtonId(buttonId)) {
+    if (isLaserPointerButtonId(buttonId)) {
+        handleLaserPointerClick();
+        return;
+    }
+
+    if (!isManagedToolButtonId(buttonId)) {
         return;
     }
 
@@ -626,18 +675,41 @@ void ScreenCanvas::handleToolbarClick(int buttonId)
 
 void ScreenCanvas::handlePersistentToolClick(ToolId toolId)
 {
-    if (m_currentToolId == toolId) {
+    if (m_laserPointerActive) {
+        m_laserPointerActive = false;
+        if (m_currentToolId != toolId) {
+            m_currentToolId = toolId;
+            m_toolManager->setCurrentTool(toolId);
+        }
+        m_showSubToolbar = true;
+    } else if (m_currentToolId == toolId) {
         // Same tool clicked - toggle sub-toolbar visibility
         m_showSubToolbar = !m_showSubToolbar;
     } else {
         // Different tool - select it and show sub-toolbar
         m_currentToolId = toolId;
         m_toolManager->setCurrentTool(toolId);
-        // Sync laser pointer with current color and width settings
-        m_laserRenderer->setColor(m_toolManager->color());
-        m_laserRenderer->setWidth(m_toolManager->width());
         m_showSubToolbar = true;
     }
+    setToolCursor();
+    update();
+}
+
+void ScreenCanvas::handleLaserPointerClick()
+{
+    if (m_laserPointerActive) {
+        // Same tool clicked - toggle sub-toolbar visibility.
+        m_showSubToolbar = !m_showSubToolbar;
+    } else {
+        m_laserPointerActive = true;
+        m_showSubToolbar = true;
+        if (m_toolManager->isDrawing()) {
+            m_toolManager->cancelDrawing();
+        }
+        m_laserRenderer->setColor(m_toolManager->color());
+        m_laserRenderer->setWidth(m_toolManager->width());
+    }
+
     setToolCursor();
     update();
 }
@@ -701,13 +773,17 @@ void ScreenCanvas::handleExitAction(ToolId)
 
 bool ScreenCanvas::isDrawingTool(ToolId toolId) const
 {
-    // Canvas treats laser pointer as a drawing-mode tool for toolbar/sub-toolbar UX.
-    return ToolTraits::isDrawingTool(toolId) || toolId == ToolId::LaserPointer;
+    return ToolTraits::isDrawingTool(toolId);
 }
 
 void ScreenCanvas::setToolCursor()
 {
-    CursorManager::instance().updateToolCursorForWidget(this);
+    auto& cursorManager = CursorManager::instance();
+    if (m_laserPointerActive) {
+        cursorManager.pushCursorForWidget(this, CursorContext::Tool, Qt::CrossCursor);
+    } else {
+        cursorManager.updateToolCursorForWidget(this);
+    }
 }
 
 void ScreenCanvas::mousePressEvent(QMouseEvent* event)
@@ -775,7 +851,7 @@ void ScreenCanvas::mousePressEvent(QMouseEvent* event)
         }
 
         // Handle laser pointer drawing
-        if (m_currentToolId == ToolId::LaserPointer) {
+        if (m_laserPointerActive) {
             m_laserRenderer->startDrawing(event->pos());
             update();
             return;
@@ -814,7 +890,7 @@ void ScreenCanvas::mousePressEvent(QMouseEvent* event)
         }
 
         // Start annotation drawing
-        if (isDrawingTool(m_currentToolId)) {
+        if (!m_laserPointerActive && isDrawingTool(m_currentToolId)) {
             m_toolManager->handleMousePress(event->pos(), event->modifiers());
             update();
         }
@@ -850,7 +926,7 @@ void ScreenCanvas::mouseMoveEvent(QMouseEvent* event)
     }
 
     // Handle laser pointer drawing
-    if (m_currentToolId == ToolId::LaserPointer && m_laserRenderer->isDrawing()) {
+    if (m_laserPointerActive && m_laserRenderer->isDrawing()) {
         m_laserRenderer->updateDrawing(event->pos());
         update();
         return;
@@ -966,9 +1042,15 @@ void ScreenCanvas::mouseReleaseEvent(QMouseEvent* event)
         }
 
         // Handle laser pointer release
-        if (m_currentToolId == ToolId::LaserPointer && m_laserRenderer->isDrawing()) {
+        if (m_laserPointerActive && m_laserRenderer->isDrawing()) {
             m_laserRenderer->stopDrawing();
             update();
+            return;
+        }
+
+        // Laser pointer mode is ScreenCanvas-local and must not trigger
+        // release-driven annotation tools (e.g. StepBadge/EmojiSticker).
+        if (m_laserPointerActive) {
             return;
         }
 

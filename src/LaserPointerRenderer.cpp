@@ -2,6 +2,7 @@
 #include <QPainter>
 #include <QPainterPath>
 #include <QDateTime>
+#include <QtMath>
 #include <algorithm>
 
 LaserPointerRenderer::LaserPointerRenderer(QObject *parent)
@@ -42,8 +43,14 @@ void LaserPointerRenderer::startDrawing(const QPoint &pos)
     m_isDrawing = true;
     m_currentStroke.clear();
 
+    QPointF startPoint(pos);
+    m_smoothedPoint = startPoint;
+    m_smoothedVelocity = QPointF(0, 0);
+    m_lastRawPoint = startPoint;
+    m_hasSmoothedPoint = true;
+
     LaserPoint point;
-    point.position = pos;
+    point.position = startPoint;
     point.timestamp = QDateTime::currentMSecsSinceEpoch();
     m_currentStroke.append(point);
 
@@ -53,12 +60,45 @@ void LaserPointerRenderer::startDrawing(const QPoint &pos)
 
 void LaserPointerRenderer::updateDrawing(const QPoint &pos)
 {
-    if (!m_isDrawing) {
+    if (!m_isDrawing || !m_hasSmoothedPoint) {
         return;
     }
 
+    QPointF rawPoint(pos);
+    QPointF rawVelocity = rawPoint - m_lastRawPoint;
+    m_lastRawPoint = rawPoint;
+
+    // Smooth velocity first to stabilize direction changes.
+    m_smoothedVelocity = kVelocitySmoothing * rawVelocity
+                       + (1.0 - kVelocitySmoothing) * m_smoothedVelocity;
+
+    // Match Pencil adaptive smoothing behavior:
+    // - more smoothing at low speed
+    // - less smoothing at high speed
+    qreal speed = qSqrt(rawVelocity.x() * rawVelocity.x()
+                      + rawVelocity.y() * rawVelocity.y());
+    qreal adaptiveFactor;
+    if (speed <= kSpeedThresholdLow) {
+        adaptiveFactor = kBaseSmoothing;
+    } else if (speed >= kSpeedThresholdHigh) {
+        adaptiveFactor = 0.85;
+    } else {
+        qreal t = (speed - kSpeedThresholdLow) / (kSpeedThresholdHigh - kSpeedThresholdLow);
+        adaptiveFactor = kBaseSmoothing + t * (0.85 - kBaseSmoothing);
+    }
+
+    m_smoothedPoint = adaptiveFactor * rawPoint + (1.0 - adaptiveFactor) * m_smoothedPoint;
+
+    if (!m_currentStroke.isEmpty()) {
+        QPointF delta = m_smoothedPoint - m_currentStroke.last().position;
+        qreal distance = qSqrt(delta.x() * delta.x() + delta.y() * delta.y());
+        if (distance < kMinPointDistance) {
+            return;
+        }
+    }
+
     LaserPoint point;
-    point.position = pos;
+    point.position = m_smoothedPoint;
     point.timestamp = QDateTime::currentMSecsSinceEpoch();
     m_currentStroke.append(point);
 
@@ -68,6 +108,7 @@ void LaserPointerRenderer::updateDrawing(const QPoint &pos)
 void LaserPointerRenderer::stopDrawing()
 {
     m_isDrawing = false;
+    m_hasSmoothedPoint = false;
 
     // Move current stroke to completed strokes if it has points
     if (!m_currentStroke.isEmpty()) {
@@ -81,6 +122,16 @@ bool LaserPointerRenderer::isDrawing() const
     return m_isDrawing;
 }
 
+static void appendCatmullRomSegment(QPainterPath &path,
+                                    const QPointF &p0, const QPointF &p1,
+                                    const QPointF &p2, const QPointF &p3)
+{
+    constexpr qreal alpha = 1.0 / 6.0;
+    QPointF c1 = p1 + alpha * (p2 - p0);
+    QPointF c2 = p2 - alpha * (p3 - p1);
+    path.cubicTo(c1, c2, p2);
+}
+
 // Helper function to draw a single stroke
 static void drawStroke(QPainter &painter, const QVector<LaserPoint> &stroke,
                        const QColor &color, int width, qint64 now, int fadeDuration)
@@ -89,8 +140,8 @@ static void drawStroke(QPainter &painter, const QVector<LaserPoint> &stroke,
         return;
     }
 
-    QPainterPath path;
-    bool pathStarted = false;
+    QVector<QPointF> visiblePoints;
+    visiblePoints.reserve(stroke.size());
     qreal totalOpacity = 0.0;
     int visibleCount = 0;
 
@@ -100,19 +151,30 @@ static void drawStroke(QPainter &painter, const QVector<LaserPoint> &stroke,
         opacity = qBound(0.0, opacity, 1.0);
 
         if (opacity > 0.01) {
-            if (!pathStarted) {
-                path.moveTo(point.position);
-                pathStarted = true;
-            } else {
-                path.lineTo(point.position);
-            }
+            visiblePoints.append(point.position);
             totalOpacity += opacity;
             visibleCount++;
         }
     }
 
-    if (pathStarted && visibleCount > 0) {
+    if (visiblePoints.size() >= 2 && visibleCount > 0) {
         qreal avgOpacity = totalOpacity / visibleCount;
+
+        QPainterPath path;
+        path.moveTo(visiblePoints[0]);
+
+        for (int i = 0; i < visiblePoints.size() - 1; ++i) {
+            const QPointF p0 = (i == 0)
+                ? visiblePoints[0] * 2.0 - visiblePoints[1]
+                : visiblePoints[i - 1];
+            const QPointF &p1 = visiblePoints[i];
+            const QPointF &p2 = visiblePoints[i + 1];
+            const QPointF p3 = (i == visiblePoints.size() - 2)
+                ? visiblePoints[i + 1] * 2.0 - visiblePoints[i]
+                : visiblePoints[i + 2];
+
+            appendCatmullRomSegment(path, p0, p1, p2, p3);
+        }
 
         QColor pathColor = color;
         pathColor.setAlphaF(avgOpacity);

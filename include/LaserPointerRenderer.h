@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include <QPoint>
+#include <QPointF>
 #include <QColor>
 #include <QVector>
 #include <QTimer>
@@ -10,7 +11,7 @@
 class QPainter;
 
 struct LaserPoint {
-    QPoint position;
+    QPointF position;
     qint64 timestamp;  // ms since epoch
 };
 
@@ -52,6 +53,18 @@ private:
     QColor m_color;
     int m_width;
     bool m_isDrawing;
+
+    // Smoothing state (mirrors PencilTool behavior for consistent stroke feel)
+    QPointF m_smoothedPoint;
+    QPointF m_smoothedVelocity;
+    QPointF m_lastRawPoint;
+    bool m_hasSmoothedPoint = false;
+
+    static constexpr qreal kMinPointDistance = 2.0;
+    static constexpr qreal kBaseSmoothing = 0.3;
+    static constexpr qreal kVelocitySmoothing = 0.4;
+    static constexpr qreal kSpeedThresholdLow = 3.0;
+    static constexpr qreal kSpeedThresholdHigh = 15.0;
 
     static constexpr int FADE_DURATION_MS = 2000;
     static constexpr int TIMER_INTERVAL_MS = 16;  // ~60fps

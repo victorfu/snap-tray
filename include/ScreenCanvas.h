@@ -99,6 +99,7 @@ private:
     void updateToolbarPosition();
     void handleToolbarClick(int buttonId);
     void handlePersistentToolClick(ToolId toolId);
+    void handleLaserPointerClick();
     void handleCanvasModeToggle(ToolId toolId);
     void handleActionToolClick(ToolId toolId);
     void handleUndoAction(ToolId toolId);
@@ -148,6 +149,7 @@ private:
     AnnotationLayer *m_annotationLayer;
     ToolManager *m_toolManager;
     ToolId m_currentToolId;
+    bool m_laserPointerActive;
 
     // Toolbar using ToolbarCore
     ToolbarCore *m_toolbar;

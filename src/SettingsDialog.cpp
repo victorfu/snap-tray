@@ -752,16 +752,6 @@ void SettingsDialog::setupRecordingTab(QWidget* tab)
     // Connect countdown enabled to seconds combo
     connect(m_countdownEnabledCheckbox, &QCheckBox::toggled, m_countdownSecondsCombo, &QWidget::setEnabled);
 
-    // ========== Click highlight settings ==========
-    layout->addSpacing(16);
-    QLabel* clickHighlightHeader = new QLabel(tr("Mouse Clicks"), tab);
-    clickHighlightHeader->setFont(headerFont);
-    layout->addWidget(clickHighlightHeader);
-
-    m_clickHighlightEnabledCheckbox = new QCheckBox(tr("Show mouse click effects"), tab);
-    m_clickHighlightEnabledCheckbox->setToolTip(tr("Display a ripple animation at mouse click locations during recording"));
-    layout->addWidget(m_clickHighlightEnabledCheckbox);
-
     layout->addStretch();
 
     // ========== Connect format change to show/hide widgets ==========
@@ -802,10 +792,6 @@ void SettingsDialog::setupRecordingTab(QWidget* tab)
         m_countdownSecondsCombo->setCurrentIndex(countdownIndex);
     }
     m_countdownSecondsCombo->setEnabled(countdownEnabled);
-
-    // Load click highlight settings
-    m_clickHighlightEnabledCheckbox->setChecked(
-        settings.value("recording/clickHighlightEnabled", false).toBool());
 
     // Load audio settings
     bool audioEnabled = settings.value("recording/audioEnabled", false).toBool();
@@ -921,10 +907,6 @@ void SettingsDialog::onSave()
         m_countdownEnabledCheckbox->isChecked());
     recordingSettings.setValue("recording/countdownSeconds",
         m_countdownSecondsCombo->currentData().toInt());
-
-    // Save click highlight settings
-    recordingSettings.setValue("recording/clickHighlightEnabled",
-        m_clickHighlightEnabledCheckbox->isChecked());
 
     // Save audio settings
     recordingSettings.setValue("recording/audioEnabled",

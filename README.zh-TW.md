@@ -50,8 +50,6 @@ SnapTray 是一個在系統托盤常駐的截圖與錄影小工具，提供區�
   - 浮動控制列：Pause/Resume/Stop/Cancel
   - MP4 (H.264) 由原生編碼器（Media Foundation/AVFoundation）產生；GIF 與 WebP 由內建編碼器產生
   - MP4 可選音訊錄製（麥克風/系統音/混合，視平台支援）
-  - 錄影支援滑鼠點擊高亮效果
-  - 聚光燈效果（錄影時調暗周圍，突顯焦點區域）
 - **釘選視窗**：
   - 無邊框、永遠在最上層
   - 可拖曳移動
@@ -71,7 +69,7 @@ SnapTray 是一個在系統托盤常駐的截圖與錄影小工具，提供區�
   - Advanced 分頁：Auto Blur 進階設定
   - Watermark 分頁：圖片浮水印、透明度、位置、縮放
   - OCR 分頁：OCR 語言與辨識後行為設定
-  - Recording 分頁：幀率、輸出格式（MP4/GIF/WebP）、品質、預覽行為、倒數計時、點擊高亮、音訊（啟用/來源/裝置）
+  - Recording 分頁：幀率、輸出格式（MP4/GIF/WebP）、品質、預覽行為、倒數計時、音訊（啟用/來源/裝置）
   - Files 分頁：截圖/錄影儲存路徑、檔名格式
   - Updates 分頁：自動檢查、檢查頻率、上次檢查狀態、立即檢查
   - About 分頁：版本資訊
@@ -532,9 +530,8 @@ snap-tray/
 |   |-- encoding/          # GIF/WebP 編碼器
 |   |-- external/          # 第三方標頭檔（msf_gif）
 |   |-- hotkey/            # 熱鍵管理器與型別定義
-|   |-- input/             # 滑鼠點擊追蹤
+|   |-- input/             # 輸入抽象層（目前保留）
 |   |-- pinwindow/         # 釘選視窗元件
-|   |-- recording/         # 錄影特效（Spotlight、CursorHighlight）
 |   |-- region/            # 區域選取元件
 |   |-- settings/          # 設定管理器
 |   |-- toolbar/           # 工具列繪製
@@ -567,7 +564,6 @@ snap-tray/
 |   |-- input/             # 輸入追蹤（平台特定）
 |   |-- pinwindow/         # 釘選視窗元件實作
 |   |-- platform/          # 平台抽象層（macOS/Windows）
-|   |-- recording/         # 錄影特效實作
 |   |-- region/            # 區域選取實作
 |   |-- settings/          # 設定管理器實作
 |   |-- toolbar/           # 工具列實作
@@ -651,8 +647,6 @@ snap-tray/
 | `ClickThroughExitButton`    | `src/pinwindow/`   | 穿透模式離開按鈕           |
 | `PinHistoryStore`           | `src/pinwindow/`   | 釘選歷史紀錄持久化         |
 | `PinHistoryWindow`          | `src/pinwindow/`   | 釘選歷史紀錄 UI            |
-| `SpotlightEffect`           | `src/recording/`   | 錄影時聚光燈效果           |
-| `CursorHighlightEffect`     | `src/recording/`   | 錄影時游標高亮效果         |
 | `FaceDetector`              | `src/detection/`   | 自動模糊臉部偵測           |
 | `AutoBlurManager`           | `src/detection/`   | 自動模糊協調管理           |
 | `HotkeyManager`             | `src/hotkey/`      | 集中式熱鍵註冊管理         |
