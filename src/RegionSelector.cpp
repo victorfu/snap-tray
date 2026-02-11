@@ -67,7 +67,6 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include <QtMath>
 #include <QMenu>
 #include <QFontDatabase>
-#include <QScopeGuard>
 #include <QFutureWatcher>
 #include <QtConcurrent/QtConcurrentRun>
 #include "tools/ToolRegistry.h"
@@ -996,33 +995,50 @@ void RegionSelector::switchToScreen(QScreen* screen, bool preserveCompletedSelec
     }
 
     // Grab the target screen before moving this top-level overlay window.
-    QPixmap targetCapture = targetScreen->grabWindow(0);
+    QPixmap newBackground = targetScreen->grabWindow(0);
+    if (newBackground.isNull()) {
+        qWarning() << "RegionSelector: Failed to capture target screen";
+        return;
+    }
 
-    // Suppress intermediate repaints while geometry and state are being reconfigured.
-    // Uses scope guard to guarantee re-enable on all exit paths (including exceptions).
+    // --- Phase 1: Pre-compute expensive caches BEFORE moving the window ---
+    const QRect targetGeometry = targetScreen->geometry();
+    const qreal targetDpr = targetScreen->devicePixelRatio();
+
+    m_painter->buildDimmedCache(newBackground);
+
+    QPoint localCursor = QCursor::pos() - targetGeometry.topLeft();
+    localCursor.setX(qBound(0, localCursor.x(), qMax(0, targetGeometry.width() - 1)));
+    localCursor.setY(qBound(0, localCursor.y(), qMax(0, targetGeometry.height() - 1)));
+
+    m_magnifierPanel->setDevicePixelRatio(targetDpr);
+    m_magnifierPanel->invalidateCache();
+    m_magnifierPanel->preWarmCache(localCursor, newBackground);
+
+    // --- Phase 2: Hide window from DWM, reconfigure geometry + state ---
+    // setUpdatesEnabled(false) only suppresses Qt paint events — DWM still composites
+    // the old backing-store at the new position when setGeometry() moves the window.
+    // Making the window transparent prevents DWM from showing stale content.
+    setWindowOpacity(0.0);
     setUpdatesEnabled(false);
-    const auto reEnableUpdates = qScopeGuard([this] { setUpdatesEnabled(true); });
 
     setupScreenGeometry(targetScreen);
     if (!isScreenValid()) {
         qWarning() << "RegionSelector: Screen switch failed, no valid screen";
+        setUpdatesEnabled(true);
+        setWindowOpacity(1.0);
         return;
     }
 
-    const QRect targetGeometry = m_currentScreen->geometry();
     setGeometry(targetGeometry);
 
-    m_backgroundPixmap = targetCapture.isNull() ? m_currentScreen->grabWindow(0) : targetCapture;
+    m_backgroundPixmap = newBackground;
     m_sharedSourcePixmap = std::make_shared<const QPixmap>(m_backgroundPixmap);
     m_toolManager->setSourcePixmap(m_sharedSourcePixmap);
     m_toolManager->setDevicePixelRatio(m_devicePixelRatio);
 
     m_exportManager->setBackgroundPixmap(m_backgroundPixmap);
     m_exportManager->setDevicePixelRatio(m_devicePixelRatio);
-
-    m_painter->buildDimmedCache(m_backgroundPixmap);
-    m_magnifierPanel->setDevicePixelRatio(m_devicePixelRatio);
-    m_magnifierPanel->invalidateCache();
 
     if (m_multiRegionManager) {
         m_multiRegionManager->clear();
@@ -1036,21 +1052,19 @@ void RegionSelector::switchToScreen(QScreen* screen, bool preserveCompletedSelec
     m_inputState.highlightedWindowRect = QRect();
     m_inputState.hasDetectedWindow = false;
     m_detectedWindow.reset();
-
-    QPoint localCursor = QCursor::pos() - targetGeometry.topLeft();
-    localCursor.setX(qBound(0, localCursor.x(), qMax(0, targetGeometry.width() - 1)));
-    localCursor.setY(qBound(0, localCursor.y(), qMax(0, targetGeometry.height() - 1)));
     m_inputState.currentPoint = localCursor;
-
-    m_magnifierPanel->preWarmCache(m_inputState.currentPoint, m_backgroundPixmap);
     m_inputHandler->resetDirtyTracking();
+
+    // --- Phase 3: Paint correct content into backing store, then reveal ---
+    setUpdatesEnabled(true);
+    repaint();
+    setWindowOpacity(1.0);
 
     refreshWindowDetectorForCurrentScreen();
     raiseWindowAboveMenuBar(this);
     activateWindow();
     raise();
     ensureCrossCursor();
-    repaint();
 }
 
 void RegionSelector::handleCursorScreenSwitch()
