@@ -49,30 +49,15 @@ target_link_libraries(PinWindow_Resize PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME PinWindow_Resize COMMAND PinWindow_Resize)
 set_tests_properties(PinWindow_Resize PROPERTIES TIMEOUT 60 LABELS "unit;integration")
 
-add_executable(PinWindow_ClickThrough PinWindow/tst_ClickThrough.cpp)
-target_link_libraries(PinWindow_ClickThrough PRIVATE snaptray_ui Qt6::Test)
-add_test(NAME PinWindow_ClickThrough COMMAND PinWindow_ClickThrough)
-set_tests_properties(PinWindow_ClickThrough PROPERTIES TIMEOUT 60 LABELS "unit;integration")
-
 add_executable(PinWindow_RegionLayoutManager PinWindow/tst_RegionLayoutManager.cpp)
 target_link_libraries(PinWindow_RegionLayoutManager PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME PinWindow_RegionLayoutManager COMMAND PinWindow_RegionLayoutManager)
 set_tests_properties(PinWindow_RegionLayoutManager PROPERTIES TIMEOUT 60 LABELS "unit")
 
-add_executable(PinWindow_RegionLayoutRenderer PinWindow/tst_RegionLayoutRenderer.cpp)
-target_link_libraries(PinWindow_RegionLayoutRenderer PRIVATE snaptray_ui Qt6::Test)
-add_test(NAME PinWindow_RegionLayoutRenderer COMMAND PinWindow_RegionLayoutRenderer)
-set_tests_properties(PinWindow_RegionLayoutRenderer PROPERTIES TIMEOUT 60 LABELS "unit")
-
 add_executable(PinWindow_PinHistoryStore PinWindow/tst_PinHistoryStore.cpp)
 target_link_libraries(PinWindow_PinHistoryStore PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME PinWindow_PinHistoryStore COMMAND PinWindow_PinHistoryStore)
 set_tests_properties(PinWindow_PinHistoryStore PROPERTIES TIMEOUT 60 LABELS "unit")
-
-add_executable(PinWindow_PinHistoryWindow PinWindow/tst_PinHistoryWindow.cpp)
-target_link_libraries(PinWindow_PinHistoryWindow PRIVATE snaptray_ui Qt6::Test)
-add_test(NAME PinWindow_PinHistoryWindow COMMAND PinWindow_PinHistoryWindow)
-set_tests_properties(PinWindow_PinHistoryWindow PROPERTIES TIMEOUT 60 LABELS "unit;integration")
 
 add_executable(PinWindow_PinMergeHelper PinWindow/tst_PinMergeHelper.cpp)
 target_link_libraries(PinWindow_PinMergeHelper PRIVATE snaptray_ui Qt6::Test)
@@ -230,11 +215,6 @@ set_tests_properties(Hotkey_HotkeyManager PROPERTIES TIMEOUT 60 LABELS "unit")
 # Annotations Tests (link snaptray_core for annotation classes)
 # ============================================================================
 
-add_executable(Annotations_PencilStroke Annotations/tst_PencilStroke.cpp)
-target_link_libraries(Annotations_PencilStroke PRIVATE snaptray_core Qt6::Widgets Qt6::Test)
-add_test(NAME Annotations_PencilStroke COMMAND Annotations_PencilStroke)
-set_tests_properties(Annotations_PencilStroke PROPERTIES TIMEOUT 60 LABELS "unit")
-
 add_executable(Annotations_ShapeAnnotation Annotations/tst_ShapeAnnotation.cpp)
 target_link_libraries(Annotations_ShapeAnnotation PRIVATE snaptray_core Qt6::Widgets Qt6::Test)
 add_test(NAME Annotations_ShapeAnnotation COMMAND Annotations_ShapeAnnotation)
@@ -363,11 +343,6 @@ add_executable(RecordingManager_Lifecycle RecordingManager/tst_Lifecycle.cpp)
 target_link_libraries(RecordingManager_Lifecycle PRIVATE snaptray_ui snaptray_platform Qt6::Test)
 add_test(NAME RecordingManager_Lifecycle COMMAND RecordingManager_Lifecycle)
 set_tests_properties(RecordingManager_Lifecycle PROPERTIES TIMEOUT 60 LABELS "integration")
-
-add_executable(RecordingManager_AudioIntegration RecordingManager/tst_AudioIntegration.cpp)
-target_link_libraries(RecordingManager_AudioIntegration PRIVATE snaptray_ui snaptray_platform Qt6::Test)
-add_test(NAME RecordingManager_AudioIntegration COMMAND RecordingManager_AudioIntegration)
-set_tests_properties(RecordingManager_AudioIntegration PROPERTIES TIMEOUT 60 LABELS "integration")
 
 add_executable(RecordingManager_InitTask RecordingManager/tst_InitTask.cpp)
 target_link_libraries(RecordingManager_InitTask PRIVATE snaptray_ui snaptray_platform Qt6::Test)

@@ -118,11 +118,11 @@ snap-tray/
 │   ├── Encoding/              # NativeGifEncoder, EncoderFactory tests
 │   ├── Hotkey/                # HotkeyManager tests
 │   ├── IPC/                   # SingleInstanceGuard tests
-│   ├── PinWindow/             # Transform, Resize, ClickThrough tests
-│   ├── RecordingManager/      # StateMachine, Lifecycle, Audio, InitTask tests
+│   ├── PinWindow/             # Transform, Resize, PinHistory, PinMerge, RegionLayout tests
+│   ├── RecordingManager/      # StateMachine, Lifecycle, InitTask tests
 │   ├── RegionSelector/        # MagnifierPanel, Throttler tests
 │   ├── Settings/              # SettingsManager tests
-│   ├── ToolOptionsPanel/      # State, Signals, HitTest tests
+│   ├── ToolOptionsPanel/      # State, Signals, HitTest, Events tests
 │   ├── Tools/                 # ToolRegistry, ToolHandler tests
 │   ├── UISections/            # UI section tests
 │   ├── Update/                # UpdateChecker, InstallSourceDetector tests
