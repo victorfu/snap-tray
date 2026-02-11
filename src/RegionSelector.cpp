@@ -2254,22 +2254,28 @@ void RegionSelector::onLineStyleChanged(LineStyle style)
 
 void RegionSelector::onFontSizeDropdownRequested(const QPoint& pos)
 {
-    TextFormattingState formatting = m_textAnnotationEditor->formatting();
-    m_settingsHelper->showFontSizeDropdown(pos, formatting.fontSize);
+    if (m_annotationContext && m_settingsHelper) {
+        m_annotationContext->showTextFontSizeDropdown(*m_settingsHelper, pos);
+    }
 }
 
 void RegionSelector::onFontFamilyDropdownRequested(const QPoint& pos)
 {
-    TextFormattingState formatting = m_textAnnotationEditor->formatting();
-    m_settingsHelper->showFontFamilyDropdown(pos, formatting.fontFamily);
+    if (m_annotationContext && m_settingsHelper) {
+        m_annotationContext->showTextFontFamilyDropdown(*m_settingsHelper, pos);
+    }
 }
 
 void RegionSelector::onFontSizeSelected(int size)
 {
-    m_textAnnotationEditor->setFontSize(size);
+    if (m_annotationContext) {
+        m_annotationContext->applyTextFontSize(size);
+    }
 }
 
 void RegionSelector::onFontFamilySelected(const QString& family)
 {
-    m_textAnnotationEditor->setFontFamily(family);
+    if (m_annotationContext) {
+        m_annotationContext->applyTextFontFamily(family);
+    }
 }

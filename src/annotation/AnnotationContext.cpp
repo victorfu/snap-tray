@@ -5,6 +5,7 @@
 #include "toolbar/ToolOptionsPanel.h"
 #include "InlineTextEditor.h"
 #include "region/TextAnnotationEditor.h"
+#include "region/RegionSettingsHelper.h"
 #include "colorwidgets/ColorPickerDialogCompat.h"
 
 #include <QWidget>
@@ -157,6 +158,46 @@ void AnnotationContext::syncTextFormattingControls() const
     optionsPanel->setUnderline(textFormatting.underline);
     optionsPanel->setFontSize(textFormatting.fontSize);
     optionsPanel->setFontFamily(textFormatting.fontFamily);
+}
+
+void AnnotationContext::showTextFontSizeDropdown(RegionSettingsHelper& settingsHelper,
+                                                 const QPoint& pos) const
+{
+    auto* textAnnotationEditor = m_host.textAnnotationEditorForContext();
+    if (!textAnnotationEditor) {
+        return;
+    }
+    TextFormattingState textFormatting = textAnnotationEditor->formatting();
+    settingsHelper.showFontSizeDropdown(pos, textFormatting.fontSize);
+}
+
+void AnnotationContext::showTextFontFamilyDropdown(RegionSettingsHelper& settingsHelper,
+                                                   const QPoint& pos) const
+{
+    auto* textAnnotationEditor = m_host.textAnnotationEditorForContext();
+    if (!textAnnotationEditor) {
+        return;
+    }
+    TextFormattingState textFormatting = textAnnotationEditor->formatting();
+    settingsHelper.showFontFamilyDropdown(pos, textFormatting.fontFamily);
+}
+
+void AnnotationContext::applyTextFontSize(int size) const
+{
+    auto* textAnnotationEditor = m_host.textAnnotationEditorForContext();
+    if (!textAnnotationEditor) {
+        return;
+    }
+    textAnnotationEditor->setFontSize(size);
+}
+
+void AnnotationContext::applyTextFontFamily(const QString& family) const
+{
+    auto* textAnnotationEditor = m_host.textAnnotationEditorForContext();
+    if (!textAnnotationEditor) {
+        return;
+    }
+    textAnnotationEditor->setFontFamily(family);
 }
 
 void AnnotationContext::showColorPickerDialog(

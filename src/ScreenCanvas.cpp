@@ -1231,26 +1231,30 @@ void ScreenCanvas::onTextEditingFinished(const QString& text, const QPoint& posi
 
 void ScreenCanvas::onFontSizeDropdownRequested(const QPoint& pos)
 {
-    TextFormattingState formatting = m_textAnnotationEditor->formatting();
-    m_settingsHelper->showFontSizeDropdown(pos, formatting.fontSize);
+    if (m_annotationContext && m_settingsHelper) {
+        m_annotationContext->showTextFontSizeDropdown(*m_settingsHelper, pos);
+    }
 }
 
 void ScreenCanvas::onFontFamilyDropdownRequested(const QPoint& pos)
 {
-    TextFormattingState formatting = m_textAnnotationEditor->formatting();
-    m_settingsHelper->showFontFamilyDropdown(pos, formatting.fontFamily);
+    if (m_annotationContext && m_settingsHelper) {
+        m_annotationContext->showTextFontFamilyDropdown(*m_settingsHelper, pos);
+    }
 }
 
 void ScreenCanvas::onFontSizeSelected(int size)
 {
-    m_textAnnotationEditor->setFontSize(size);
-    m_colorAndWidthWidget->setFontSize(size);
+    if (m_annotationContext) {
+        m_annotationContext->applyTextFontSize(size);
+    }
 }
 
 void ScreenCanvas::onFontFamilySelected(const QString& family)
 {
-    m_textAnnotationEditor->setFontFamily(family);
-    m_colorAndWidthWidget->setFontFamily(family);
+    if (m_annotationContext) {
+        m_annotationContext->applyTextFontFamily(family);
+    }
 }
 
 // Background mode helper methods

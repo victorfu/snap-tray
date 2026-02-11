@@ -3,12 +3,14 @@
 
 #include <QColor>
 #include <QPoint>
+#include <QString>
 #include <functional>
 
 class QWidget;
 class TextAnnotationEditor;
 class ToolOptionsPanel;
 class AnnotationHostAdapter;
+class RegionSettingsHelper;
 
 namespace snaptray {
 namespace colorwidgets {
@@ -27,6 +29,10 @@ public:
     void connectToolOptionsSignals() const;
     void connectTextFormattingSignals() const;
     void syncTextFormattingControls() const;
+    void showTextFontSizeDropdown(RegionSettingsHelper& settingsHelper, const QPoint& pos) const;
+    void showTextFontFamilyDropdown(RegionSettingsHelper& settingsHelper, const QPoint& pos) const;
+    void applyTextFontSize(int size) const;
+    void applyTextFontFamily(const QString& family) const;
 
     static void showColorPickerDialog(
         QWidget* hostWidget,

@@ -1,6 +1,7 @@
 #include <QtTest/QtTest>
 #include <QAction>
 #include <QApplication>
+#include <QFontDatabase>
 #include <QGuiApplication>
 #include <QMenu>
 #include <QPixmap>
@@ -32,6 +33,29 @@ QStringList textSettingKeys()
         QString::fromLatin1(kTextSizeKey),
         QString::fromLatin1(kTextFamilyKey)
     };
+}
+
+QString pickAvailableCommonFont()
+{
+    const QStringList availableFamilies = QFontDatabase::families();
+    const QStringList preferredFamilies = {
+        QStringLiteral("Arial"),
+        QStringLiteral("Helvetica"),
+        QStringLiteral("Times New Roman"),
+        QStringLiteral("Courier New"),
+        QStringLiteral("Verdana"),
+        QStringLiteral("Georgia"),
+        QStringLiteral("Trebuchet MS"),
+        QStringLiteral("Impact")
+    };
+
+    for (const QString& family : preferredFamilies) {
+        if (availableFamilies.contains(family)) {
+            return family;
+        }
+    }
+
+    return QString();
 }
 
 void queueMenuActionSelection(const QString& actionText, bool* triggered, int retriesLeft = 30)
@@ -168,9 +192,10 @@ void TestPinWindowTextToolFormatting::testFontDropdownSelectionsPropagateToEdito
     QCOMPARE(editor->formatting().fontSize, 24);
     QCOMPARE(panel->fontSize(), 24);
 
-    const QString targetFamily = QStringLiteral("Courier New");
+    const QString targetFamily = pickAvailableCommonFont();
     bool familySelectionTriggered = false;
-    queueMenuActionSelection(targetFamily, &familySelectionTriggered);
+    queueMenuActionSelection(targetFamily.isEmpty() ? QStringLiteral("Default") : targetFamily,
+                             &familySelectionTriggered);
     host.onContextFontFamilyDropdownRequested(QPoint(8, 8));
 
     QVERIFY(familySelectionTriggered);

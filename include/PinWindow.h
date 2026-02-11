@@ -48,6 +48,7 @@ class TextBoxAnnotation;
 class ArrowAnnotation;
 class PolylineAnnotation;
 class RegionLayoutManager;
+class RegionSettingsHelper;
 struct LayoutRegion;
 class AnnotationContext;
 
@@ -227,6 +228,8 @@ private:
     void onLineStyleChanged(LineStyle style);
     void onFontSizeDropdownRequested(const QPoint& pos);
     void onFontFamilyDropdownRequested(const QPoint& pos);
+    void onFontSizeSelected(int size);
+    void onFontFamilySelected(const QString& family);
     void onAutoBlurRequested();
     void onMoreColorsRequested();
 
@@ -350,6 +353,7 @@ private:
     ToolManager* m_toolManager = nullptr;
     InlineTextEditor* m_textEditor = nullptr;
     TextAnnotationEditor* m_textAnnotationEditor = nullptr;
+    RegionSettingsHelper* m_settingsHelper = nullptr;
     bool m_toolbarVisible = false;
     bool m_annotationMode = false;
     ToolId m_currentToolId = ToolId::Selection;

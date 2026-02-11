@@ -1,4 +1,5 @@
 #include "toolbar/WindowedToolbar.h"
+#include "toolbar/WindowInteractionUtils.h"
 #include "ToolbarStyle.h"
 #include "IconRenderer.h"
 #include "toolbar/ToolbarRenderer.h"
@@ -12,8 +13,6 @@
 #include <QScreen>
 #include <QGuiApplication>
 #include <QApplication>
-#include <QDialog>
-#include <QMenu>
 #include <QShowEvent>
 #include <QHideEvent>
 #include <array>
@@ -453,39 +452,8 @@ bool WindowedToolbar::eventFilter(QObject *obj, QEvent *event)
         QMouseEvent *mouseEvent = static_cast<QMouseEvent*>(event);
         QPoint globalPos = mouseEvent->globalPosition().toPoint();
 
-        // Check if click is inside toolbar
-        if (frameGeometry().contains(globalPos)) {
+        if (Toolbar::shouldIgnoreOutsideClick(globalPos, this, m_subToolbar, m_associatedWindow)) {
             return QWidget::eventFilter(obj, event);
-        }
-
-        // Check if click is inside sub-toolbar
-        if (m_subToolbar && m_subToolbar->isVisible() &&
-            m_subToolbar->frameGeometry().contains(globalPos)) {
-            return QWidget::eventFilter(obj, event);
-        }
-
-        // Check if click is inside associated PinWindow
-        if (m_associatedWindow && m_associatedWindow->frameGeometry().contains(globalPos)) {
-            return QWidget::eventFilter(obj, event);
-        }
-
-        // Check if click is inside an active popup (e.g., dropdown menus)
-        if (QWidget* popup = QApplication::activePopupWidget();
-            popup && popup->isVisible() && popup->frameGeometry().contains(globalPos)) {
-            return QWidget::eventFilter(obj, event);
-        }
-
-        // Check if click is inside any visible dialog/popup (e.g., color picker)
-        for (QWidget *widget : QApplication::topLevelWidgets()) {
-            if (!widget || !widget->isVisible()) {
-                continue;
-            }
-            if ((qobject_cast<QDialog*>(widget) ||
-                 qobject_cast<QMenu*>(widget) ||
-                 widget->windowFlags().testFlag(Qt::Popup)) &&
-                widget->frameGeometry().contains(globalPos)) {
-                return QWidget::eventFilter(obj, event);
-            }
         }
 
         // Click is outside - request close

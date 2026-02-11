@@ -245,6 +245,11 @@ target_link_libraries(Annotations_AnnotationLayer PRIVATE snaptray_ui Qt6::Widge
 add_test(NAME Annotations_AnnotationLayer COMMAND Annotations_AnnotationLayer)
 set_tests_properties(Annotations_AnnotationLayer PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Annotations_AnnotationContext Annotations/tst_AnnotationContext.cpp)
+target_link_libraries(Annotations_AnnotationContext PRIVATE snaptray_ui Qt6::Widgets Qt6::Test)
+add_test(NAME Annotations_AnnotationContext COMMAND Annotations_AnnotationContext)
+set_tests_properties(Annotations_AnnotationContext PROPERTIES TIMEOUT 60 LABELS "unit")
+
 add_executable(Annotations_TextBoxAnnotation Annotations/tst_TextBoxAnnotation.cpp)
 target_link_libraries(Annotations_TextBoxAnnotation PRIVATE snaptray_core Qt6::Widgets Qt6::Test)
 add_test(NAME Annotations_TextBoxAnnotation COMMAND Annotations_TextBoxAnnotation)

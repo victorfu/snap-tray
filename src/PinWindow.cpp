@@ -34,6 +34,7 @@
 #include "OCRResultDialog.h"
 #include "InlineTextEditor.h"
 #include "region/TextAnnotationEditor.h"
+#include "region/RegionSettingsHelper.h"
 #include "toolbar/ToolOptionsPanel.h"
 #include "annotations/TextBoxAnnotation.h"
 #include "TransformationGizmo.h"
@@ -2264,6 +2265,14 @@ void PinWindow::initializeAnnotationComponents()
     connect(m_subToolbar, &WindowedSubToolbar::cursorRestoreRequested,
         this, &PinWindow::updateCursorForTool);
 
+    // Initialize settings helper for text font dropdowns
+    m_settingsHelper = new RegionSettingsHelper(this);
+    m_settingsHelper->setParentWidget(m_subToolbar);
+    connect(m_settingsHelper, &RegionSettingsHelper::fontSizeSelected,
+        this, &PinWindow::onFontSizeSelected);
+    connect(m_settingsHelper, &RegionSettingsHelper::fontFamilySelected,
+        this, &PinWindow::onFontFamilySelected);
+
     // Connect TextAnnotationEditor to ToolOptionsPanel (must be after sub-toolbar creation)
     m_textAnnotationEditor->setColorAndWidthWidget(m_subToolbar->colorAndWidthWidget());
 
@@ -2688,37 +2697,30 @@ void PinWindow::onLineStyleChanged(LineStyle style)
 
 void PinWindow::onFontSizeDropdownRequested(const QPoint& pos)
 {
-    if (!m_subToolbar) return;
-
-    QMenu menu;
-    QVector<int> sizes = { 8, 10, 12, 14, 16, 18, 20, 24, 28, 32, 36, 48, 72 };
-    for (int size : sizes) {
-        QAction* action = menu.addAction(QString::number(size));
-        connect(action, &QAction::triggered, this, [this, size]() {
-            if (m_textAnnotationEditor) {
-                m_textAnnotationEditor->setFontSize(size);
-            }
-            });
+    if (m_annotationContext && m_settingsHelper) {
+        m_annotationContext->showTextFontSizeDropdown(*m_settingsHelper, pos);
     }
-    menu.exec(m_subToolbar->mapToGlobal(pos));
 }
 
 void PinWindow::onFontFamilyDropdownRequested(const QPoint& pos)
 {
-    if (!m_subToolbar) return;
-
-    QMenu menu;
-    QStringList families = { "Arial", "Helvetica", "Times New Roman", "Georgia",
-                            "Courier New", "Verdana", "Tahoma" };
-    for (const QString& family : families) {
-        QAction* action = menu.addAction(family);
-        connect(action, &QAction::triggered, this, [this, family]() {
-            if (m_textAnnotationEditor) {
-                m_textAnnotationEditor->setFontFamily(family);
-            }
-            });
+    if (m_annotationContext && m_settingsHelper) {
+        m_annotationContext->showTextFontFamilyDropdown(*m_settingsHelper, pos);
     }
-    menu.exec(m_subToolbar->mapToGlobal(pos));
+}
+
+void PinWindow::onFontSizeSelected(int size)
+{
+    if (m_annotationContext) {
+        m_annotationContext->applyTextFontSize(size);
+    }
+}
+
+void PinWindow::onFontFamilySelected(const QString& family)
+{
+    if (m_annotationContext) {
+        m_annotationContext->applyTextFontFamily(family);
+    }
 }
 
 void PinWindow::onAutoBlurRequested()
