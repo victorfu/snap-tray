@@ -57,3 +57,5 @@ example/
 .claude/
 .spec-workflow/
 audit.log
+
+firebase-debug.log
