@@ -15,11 +15,11 @@
 // Settings keys
 static const char* SETTINGS_KEY_SHAPE_TYPE = "annotation/shapeType";
 static const char* SETTINGS_KEY_SHAPE_FILL_MODE = "annotation/shapeFillMode";
-static const char* SETTINGS_KEY_TEXT_BOLD = "textBold";
-static const char* SETTINGS_KEY_TEXT_ITALIC = "textItalic";
-static const char* SETTINGS_KEY_TEXT_UNDERLINE = "textUnderline";
-static const char* SETTINGS_KEY_TEXT_SIZE = "textFontSize";
-static const char* SETTINGS_KEY_TEXT_FAMILY = "textFontFamily";
+static const char* SETTINGS_KEY_TEXT_BOLD = "annotation/text_bold";
+static const char* SETTINGS_KEY_TEXT_ITALIC = "annotation/text_italic";
+static const char* SETTINGS_KEY_TEXT_UNDERLINE = "annotation/text_underline";
+static const char* SETTINGS_KEY_TEXT_SIZE = "annotation/text_size";
+static const char* SETTINGS_KEY_TEXT_FAMILY = "annotation/text_family";
 
 // Helper to get QSettings instance
 static QSettings getSettings()
