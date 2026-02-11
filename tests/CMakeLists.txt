@@ -64,6 +64,11 @@ target_link_libraries(PinWindow_PinMergeHelper PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME PinWindow_PinMergeHelper COMMAND PinWindow_PinMergeHelper)
 set_tests_properties(PinWindow_PinMergeHelper PROPERTIES TIMEOUT 60 LABELS "integration")
 
+add_executable(PinWindow_TextToolFormatting PinWindow/tst_TextToolFormatting.cpp)
+target_link_libraries(PinWindow_TextToolFormatting PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME PinWindow_TextToolFormatting COMMAND PinWindow_TextToolFormatting)
+set_tests_properties(PinWindow_TextToolFormatting PROPERTIES TIMEOUT 60 LABELS "unit;integration")
+
 # ============================================================================
 # RegionSelector Tests
 # ============================================================================

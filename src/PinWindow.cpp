@@ -2269,6 +2269,8 @@ void PinWindow::initializeAnnotationComponents()
 
     // Centralized common ToolOptionsPanel signal wiring
     m_annotationContext->connectToolOptionsSignals();
+    m_annotationContext->connectTextFormattingSignals();
+    m_annotationContext->syncTextFormattingControls();
 
     // Sync initial width and color to sub-toolbar UI
     m_subToolbar->colorAndWidthWidget()->setCurrentWidth(m_annotationWidth);
@@ -2693,8 +2695,8 @@ void PinWindow::onFontSizeDropdownRequested(const QPoint& pos)
     for (int size : sizes) {
         QAction* action = menu.addAction(QString::number(size));
         connect(action, &QAction::triggered, this, [this, size]() {
-            if (m_subToolbar) {
-                m_subToolbar->colorAndWidthWidget()->setFontSize(size);
+            if (m_textAnnotationEditor) {
+                m_textAnnotationEditor->setFontSize(size);
             }
             });
     }
@@ -2711,8 +2713,8 @@ void PinWindow::onFontFamilyDropdownRequested(const QPoint& pos)
     for (const QString& family : families) {
         QAction* action = menu.addAction(family);
         connect(action, &QAction::triggered, this, [this, family]() {
-            if (m_subToolbar) {
-                m_subToolbar->colorAndWidthWidget()->setFontFamily(family);
+            if (m_textAnnotationEditor) {
+                m_textAnnotationEditor->setFontFamily(family);
             }
             });
     }

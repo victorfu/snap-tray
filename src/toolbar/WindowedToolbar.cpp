@@ -13,6 +13,7 @@
 #include <QGuiApplication>
 #include <QApplication>
 #include <QDialog>
+#include <QMenu>
 #include <QShowEvent>
 #include <QHideEvent>
 #include <array>
@@ -468,9 +469,20 @@ bool WindowedToolbar::eventFilter(QObject *obj, QEvent *event)
             return QWidget::eventFilter(obj, event);
         }
 
-        // Check if click is inside any visible dialog (e.g., color picker)
+        // Check if click is inside an active popup (e.g., dropdown menus)
+        if (QWidget* popup = QApplication::activePopupWidget();
+            popup && popup->isVisible() && popup->frameGeometry().contains(globalPos)) {
+            return QWidget::eventFilter(obj, event);
+        }
+
+        // Check if click is inside any visible dialog/popup (e.g., color picker)
         for (QWidget *widget : QApplication::topLevelWidgets()) {
-            if (qobject_cast<QDialog*>(widget) && widget->isVisible() &&
+            if (!widget || !widget->isVisible()) {
+                continue;
+            }
+            if ((qobject_cast<QDialog*>(widget) ||
+                 qobject_cast<QMenu*>(widget) ||
+                 widget->windowFlags().testFlag(Qt::Popup)) &&
                 widget->frameGeometry().contains(globalPos)) {
                 return QWidget::eventFilter(obj, event);
             }
