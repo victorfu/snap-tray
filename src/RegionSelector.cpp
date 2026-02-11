@@ -67,6 +67,7 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include <QtMath>
 #include <QMenu>
 #include <QFontDatabase>
+#include <QScopeGuard>
 #include <QFutureWatcher>
 #include <QtConcurrent/QtConcurrentRun>
 #include "tools/ToolRegistry.h"
@@ -997,8 +998,14 @@ void RegionSelector::switchToScreen(QScreen* screen, bool preserveCompletedSelec
     // Grab the target screen before moving this top-level overlay window.
     QPixmap targetCapture = targetScreen->grabWindow(0);
 
+    // Suppress intermediate repaints while geometry and state are being reconfigured.
+    // Uses scope guard to guarantee re-enable on all exit paths (including exceptions).
+    setUpdatesEnabled(false);
+    const auto reEnableUpdates = qScopeGuard([this] { setUpdatesEnabled(true); });
+
     setupScreenGeometry(targetScreen);
     if (!isScreenValid()) {
+        qWarning() << "RegionSelector: Screen switch failed, no valid screen";
         return;
     }
 
@@ -1043,7 +1050,7 @@ void RegionSelector::switchToScreen(QScreen* screen, bool preserveCompletedSelec
     activateWindow();
     raise();
     ensureCrossCursor();
-    update();
+    repaint();
 }
 
 void RegionSelector::handleCursorScreenSwitch()
