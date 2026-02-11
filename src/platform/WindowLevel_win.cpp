@@ -56,11 +56,6 @@ void setWindowFloatingWithoutFocus(QWidget *widget)
 #endif
 }
 
-void setWindowShadow(QWidget *, bool)
-{
-    // Windows uses our custom-drawn shadow, not system shadow
-}
-
 void setWindowExcludedFromCapture(QWidget *widget, bool excluded)
 {
 #ifdef Q_OS_WIN

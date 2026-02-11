@@ -39,19 +39,6 @@ IAudioCaptureEngine* IAudioCaptureEngine::createBestEngine(QObject *parent)
     return nullptr;
 }
 
-bool IAudioCaptureEngine::isNativeEngineAvailable()
-{
-#ifdef Q_OS_WIN
-    return true;  // WASAPI available on Windows Vista+
-#endif
-
-#ifdef Q_OS_MAC
-    return true;  // CoreAudio always available on macOS
-#endif
-
-    return false;
-}
-
 IAudioCaptureEngine::MicrophonePermission IAudioCaptureEngine::checkMicrophonePermission()
 {
 #ifdef Q_OS_MAC

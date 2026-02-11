@@ -71,20 +71,16 @@ public slots:
     void triggerSaveDialog(const QString &videoPath);  // Show save dialog for video
 
 signals:
-    void preparationStarted();
-    void preparationProgress(const QString &step);
     void recordingStarted();
     void recordingStopped(const QString &outputPath);
     void recordingCancelled();
     void recordingError(const QString &error);
-    void recordingWarning(const QString &warning);
     void durationChanged(qint64 elapsedMs);
     void recordingPaused();
     void recordingResumed();
     void stateChanged(State state);
     void selectionCancelledWithRegion(const QRect &region, QScreen *screen);
     void previewRequested(const QString &tempVideoPath, int preferredFormat);
-    void annotatePreviewRequested(const QString &tempVideoPath);
 
 private slots:
     void onRegionSelected(const QRect &region, QScreen *screen);

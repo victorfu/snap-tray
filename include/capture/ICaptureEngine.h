@@ -86,11 +86,6 @@ public:
      */
     static ICaptureEngine *createBestEngine(QObject *parent = nullptr);
 
-    /**
-     * @brief Check if a native (non-Qt) capture engine is available
-     */
-    static bool isNativeEngineAvailable();
-
 signals:
     /**
      * @brief Emitted when a capture error occurs

@@ -34,12 +34,6 @@ public:
     static QRect toLogical(const QRect& physical, qreal dpr);
     static QSize toLogical(const QSize& physical, qreal dpr);
 
-    // Global to Screen-local coordinate conversions
-    static QPoint globalToScreen(const QPoint& global, QScreen* screen);
-    static QPoint screenToGlobal(const QPoint& local, QScreen* screen);
-    static QRect globalToScreen(const QRect& global, QScreen* screen);
-    static QRect screenToGlobal(const QRect& local, QScreen* screen);
-
     // Calculate physical size with even dimensions (required by H.264/H.265 encoders)
     static QSize toEvenPhysicalSize(const QSize& logical, qreal dpr);
 

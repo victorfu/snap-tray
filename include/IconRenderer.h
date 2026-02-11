@@ -48,12 +48,6 @@ public:
     void loadIconsByKey(const QStringList& keys);
 
     /**
-     * @brief Check if an icon is loaded.
-     * @param key Icon identifier
-     */
-    bool hasIcon(const QString& key) const;
-
-    /**
      * @brief Render an icon with color tinting.
      * @param painter The QPainter to render with
      * @param rect Target rectangle for the icon

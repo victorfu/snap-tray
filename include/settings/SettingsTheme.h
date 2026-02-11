@@ -83,11 +83,8 @@ inline QString disabledButtonText() { return isDark() ? QStringLiteral("#606060"
 // Input fields
 // ============================================================================
 
-inline QString inputBg() { return isDark() ? QStringLiteral("#3A3A3A") : QStringLiteral("#FFFFFF"); }
-inline QString inputBorder() { return isDark() ? QStringLiteral("#505050") : QStringLiteral("#E0E0E0"); }
 inline QString inputFocusBorder() { return isDark() ? QStringLiteral("#64B5F6") : QStringLiteral("#90CAF9"); }
 inline QString inputFocusBg() { return isDark() ? QStringLiteral("#1E3A5F") : QStringLiteral("#E3F2FD"); }
-inline QString focusHighlight() { return isDark() ? QStringLiteral("#3D3D1A") : QStringLiteral("#FFFFCC"); }
 
 }  // namespace SettingsTheme
 }  // namespace SnapTray

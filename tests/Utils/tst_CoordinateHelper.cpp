@@ -10,7 +10,6 @@
  * - Device pixel ratio handling
  * - Logical to Physical coordinate conversions
  * - Physical to Logical coordinate conversions
- * - Global to Screen-local conversions
  * - Even physical size calculation for video encoders
  */
 class tst_CoordinateHelper : public QObject
@@ -62,27 +61,7 @@ private slots:
     void testToLogicalSize_DPR2();
     void testToLogicalSize_DPR0_ReturnsOriginal();
 
-    // globalToScreen(QPoint) tests
-    void testGlobalToScreenPoint_NullScreen();
-    void testGlobalToScreenPoint_ScreenAtOrigin();
-    void testGlobalToScreenPoint_ScreenWithOffset();
-
-    // screenToGlobal(QPoint) tests
-    void testScreenToGlobalPoint_NullScreen();
-    void testScreenToGlobalPoint_ScreenAtOrigin();
-    void testScreenToGlobalPoint_ScreenWithOffset();
-
-    // globalToScreen(QRect) tests
-    void testGlobalToScreenRect_NullScreen();
-    void testGlobalToScreenRect_ScreenWithOffset();
-
-    // screenToGlobal(QRect) tests
-    void testScreenToGlobalRect_NullScreen();
-    void testScreenToGlobalRect_ScreenWithOffset();
-
     // Roundtrip tests
-    void testGlobalScreenRoundtrip_Point();
-    void testGlobalScreenRoundtrip_Rect();
     void testPhysicalLogicalRoundtrip_Point_DPR1();
     void testPhysicalLogicalRoundtrip_Point_DPR2();
 
@@ -338,158 +317,8 @@ void tst_CoordinateHelper::testToLogicalSize_DPR0_ReturnsOriginal()
 }
 
 // ============================================================================
-// globalToScreen(QPoint) tests
-// ============================================================================
-
-void tst_CoordinateHelper::testGlobalToScreenPoint_NullScreen()
-{
-    QPoint global(100, 200);
-    QPoint local = CoordinateHelper::globalToScreen(global, nullptr);
-    QCOMPARE(local, QPoint(100, 200));  // Returns unchanged
-}
-
-void tst_CoordinateHelper::testGlobalToScreenPoint_ScreenAtOrigin()
-{
-    QScreen* screen = QApplication::primaryScreen();
-    if (!screen) {
-        QSKIP("No screen available for testing");
-    }
-
-    QPoint screenTopLeft = screen->geometry().topLeft();
-    QPoint global(screenTopLeft.x() + 100, screenTopLeft.y() + 200);
-    QPoint local = CoordinateHelper::globalToScreen(global, screen);
-    QCOMPARE(local, QPoint(100, 200));
-}
-
-void tst_CoordinateHelper::testGlobalToScreenPoint_ScreenWithOffset()
-{
-    QScreen* screen = QApplication::primaryScreen();
-    if (!screen) {
-        QSKIP("No screen available for testing");
-    }
-
-    QPoint screenTopLeft = screen->geometry().topLeft();
-    // Point at screen origin should become (0, 0) in screen-local coords
-    QPoint globalAtScreenOrigin = screenTopLeft;
-    QPoint local = CoordinateHelper::globalToScreen(globalAtScreenOrigin, screen);
-    QCOMPARE(local, QPoint(0, 0));
-}
-
-// ============================================================================
-// screenToGlobal(QPoint) tests
-// ============================================================================
-
-void tst_CoordinateHelper::testScreenToGlobalPoint_NullScreen()
-{
-    QPoint local(100, 200);
-    QPoint global = CoordinateHelper::screenToGlobal(local, nullptr);
-    QCOMPARE(global, QPoint(100, 200));  // Returns unchanged
-}
-
-void tst_CoordinateHelper::testScreenToGlobalPoint_ScreenAtOrigin()
-{
-    QScreen* screen = QApplication::primaryScreen();
-    if (!screen) {
-        QSKIP("No screen available for testing");
-    }
-
-    QPoint screenTopLeft = screen->geometry().topLeft();
-    QPoint local(100, 200);
-    QPoint global = CoordinateHelper::screenToGlobal(local, screen);
-    QCOMPARE(global, QPoint(screenTopLeft.x() + 100, screenTopLeft.y() + 200));
-}
-
-void tst_CoordinateHelper::testScreenToGlobalPoint_ScreenWithOffset()
-{
-    QScreen* screen = QApplication::primaryScreen();
-    if (!screen) {
-        QSKIP("No screen available for testing");
-    }
-
-    QPoint screenTopLeft = screen->geometry().topLeft();
-    // Local origin should become screen's top-left in global coords
-    QPoint local(0, 0);
-    QPoint global = CoordinateHelper::screenToGlobal(local, screen);
-    QCOMPARE(global, screenTopLeft);
-}
-
-// ============================================================================
-// globalToScreen(QRect) tests
-// ============================================================================
-
-void tst_CoordinateHelper::testGlobalToScreenRect_NullScreen()
-{
-    QRect global(100, 200, 300, 400);
-    QRect local = CoordinateHelper::globalToScreen(global, nullptr);
-    QCOMPARE(local, QRect(100, 200, 300, 400));  // Returns unchanged
-}
-
-void tst_CoordinateHelper::testGlobalToScreenRect_ScreenWithOffset()
-{
-    QScreen* screen = QApplication::primaryScreen();
-    if (!screen) {
-        QSKIP("No screen available for testing");
-    }
-
-    QPoint screenTopLeft = screen->geometry().topLeft();
-    QRect global(screenTopLeft.x() + 100, screenTopLeft.y() + 200, 300, 400);
-    QRect local = CoordinateHelper::globalToScreen(global, screen);
-    QCOMPARE(local, QRect(100, 200, 300, 400));
-}
-
-// ============================================================================
-// screenToGlobal(QRect) tests
-// ============================================================================
-
-void tst_CoordinateHelper::testScreenToGlobalRect_NullScreen()
-{
-    QRect local(100, 200, 300, 400);
-    QRect global = CoordinateHelper::screenToGlobal(local, nullptr);
-    QCOMPARE(global, QRect(100, 200, 300, 400));  // Returns unchanged
-}
-
-void tst_CoordinateHelper::testScreenToGlobalRect_ScreenWithOffset()
-{
-    QScreen* screen = QApplication::primaryScreen();
-    if (!screen) {
-        QSKIP("No screen available for testing");
-    }
-
-    QPoint screenTopLeft = screen->geometry().topLeft();
-    QRect local(100, 200, 300, 400);
-    QRect global = CoordinateHelper::screenToGlobal(local, screen);
-    QCOMPARE(global, QRect(screenTopLeft.x() + 100, screenTopLeft.y() + 200, 300, 400));
-}
-
-// ============================================================================
 // Roundtrip tests
 // ============================================================================
-
-void tst_CoordinateHelper::testGlobalScreenRoundtrip_Point()
-{
-    QScreen* screen = QApplication::primaryScreen();
-    if (!screen) {
-        QSKIP("No screen available for testing");
-    }
-
-    QPoint original(500, 600);
-    QPoint local = CoordinateHelper::globalToScreen(original, screen);
-    QPoint roundtrip = CoordinateHelper::screenToGlobal(local, screen);
-    QCOMPARE(roundtrip, original);
-}
-
-void tst_CoordinateHelper::testGlobalScreenRoundtrip_Rect()
-{
-    QScreen* screen = QApplication::primaryScreen();
-    if (!screen) {
-        QSKIP("No screen available for testing");
-    }
-
-    QRect original(500, 600, 200, 150);
-    QRect local = CoordinateHelper::globalToScreen(original, screen);
-    QRect roundtrip = CoordinateHelper::screenToGlobal(local, screen);
-    QCOMPARE(roundtrip, original);
-}
 
 void tst_CoordinateHelper::testPhysicalLogicalRoundtrip_Point_DPR1()
 {

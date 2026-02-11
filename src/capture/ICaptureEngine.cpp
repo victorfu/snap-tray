@@ -32,16 +32,3 @@ ICaptureEngine *ICaptureEngine::createBestEngine(QObject *parent)
     qDebug() << "ICaptureEngine: Using Qt capture engine";
     return new QtCaptureEngine(parent);
 }
-
-bool ICaptureEngine::isNativeEngineAvailable()
-{
-#ifdef Q_OS_MAC
-    return SCKCaptureEngine::isAvailable();
-#endif
-
-#ifdef Q_OS_WIN
-    return DXGICaptureEngine::isAvailable();
-#endif
-
-    return false;
-}

@@ -59,11 +59,6 @@ void IconRenderer::loadIconsByKey(const QStringList& keys)
     }
 }
 
-bool IconRenderer::hasIcon(const QString& key) const
-{
-    return m_renderers.contains(key);
-}
-
 void IconRenderer::renderIcon(QPainter& painter, const QRect& rect,
                                const QString& key, const QColor& tintColor,
                                int padding)

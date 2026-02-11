@@ -82,8 +82,6 @@ struct HotkeyConfig {
     HotkeyStatus status = HotkeyStatus::Unset;
 
     bool isOptional() const { return defaultKeySequence.isEmpty(); }
-    bool isEmpty() const { return keySequence.isEmpty(); }
-    bool isModified() const { return keySequence != defaultKeySequence; }
 };
 
 /**
@@ -166,20 +164,6 @@ inline constexpr HotkeyMetadata kDefaultHotkeys[] = {
 inline constexpr size_t kDefaultHotkeyCount = sizeof(kDefaultHotkeys) / sizeof(kDefaultHotkeys[0]);
 
 /**
- * @brief Get the category for a given action.
- */
-inline HotkeyCategory getCategoryForAction(HotkeyAction action)
-{
-    int value = static_cast<int>(action);
-    if (value >= 100 && value < 200) return HotkeyCategory::Capture;
-    if (value >= 200 && value < 300) return HotkeyCategory::Canvas;
-    if (value >= 300 && value < 400) return HotkeyCategory::Clipboard;
-    if (value >= 400 && value < 500) return HotkeyCategory::Pin;
-    if (value >= 500 && value < 600) return HotkeyCategory::Recording;
-    return HotkeyCategory::Capture;  // Default fallback
-}
-
-/**
  * @brief Get the display name for a category.
  */
 inline QString getCategoryDisplayName(HotkeyCategory category)
@@ -205,20 +189,6 @@ inline QString getCategoryIcon(HotkeyCategory category)
     case HotkeyCategory::Clipboard: return QString::fromUtf8("\xF0\x9F\x93\x8B");  // Clipboard
     case HotkeyCategory::Pin:       return QString::fromUtf8("\xF0\x9F\x93\x8C");  // Pushpin
     case HotkeyCategory::Recording: return QString::fromUtf8("\xF0\x9F\x8E\xAC");  // Clapper
-    default: return QString();
-    }
-}
-
-/**
- * @brief Get the display name for a status.
- */
-inline QString getStatusDisplayName(HotkeyStatus status)
-{
-    switch (status) {
-    case HotkeyStatus::Unset:      return QObject::tr("Not Set");
-    case HotkeyStatus::Registered: return QObject::tr("Active");
-    case HotkeyStatus::Failed:     return QObject::tr("Conflict");
-    case HotkeyStatus::Disabled:   return QObject::tr("Disabled");
     default: return QString();
     }
 }

@@ -163,11 +163,6 @@ public:
     static IAudioCaptureEngine* createBestEngine(QObject *parent = nullptr);
 
     /**
-     * @brief Check if any native audio capture engine is available
-     */
-    static bool isNativeEngineAvailable();
-
-    /**
      * @brief Check current microphone permission status (macOS only)
      * @return Permission status, always Authorized on Windows
      */

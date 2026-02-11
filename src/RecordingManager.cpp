@@ -12,7 +12,6 @@
 #include "encoding/EncoderFactory.h"
 #include "capture/ICaptureEngine.h"
 #include "capture/IAudioCaptureEngine.h"
-#include "AudioFileWriter.h"
 #include "platform/WindowLevel.h"
 #include "utils/ResourceCleanupHelper.h"
 #include "utils/CoordinateHelper.h"
@@ -224,7 +223,7 @@ void RecordingManager::loadAndValidateFrameRate()
     if (m_frameRate <= 0 || m_frameRate > kMaxFrameRate) {
         int invalidRate = m_frameRate;
         m_frameRate = kDefaultFrameRate;
-        emit recordingWarning(tr("Invalid frame rate %1, using default %2 FPS.").arg(invalidRate).arg(kDefaultFrameRate));
+        qWarning() << "RecordingManager: Invalid frame rate" << invalidRate << ", using default" << kDefaultFrameRate << "FPS";
     }
 }
 
@@ -314,7 +313,6 @@ void RecordingManager::startFrameCapture()
 {
     if (m_initFuture.isRunning()) {
         qWarning() << "RecordingManager: Initialization already in progress";
-        emit recordingWarning(tr("Previous initialization is still shutting down. Please try again."));
         return;
     }
 
@@ -338,8 +336,6 @@ void RecordingManager::startFrameCapture()
 
     // Set state to Preparing and show UI immediately
     setState(State::Preparing);
-    emit preparationStarted();
-
     // Show boundary overlay immediately (UI stays responsive)
     // Clean up any existing overlay first to prevent resource leak
     if (m_boundaryOverlay) {
@@ -432,18 +428,14 @@ void RecordingManager::beginAsyncInitialization()
     if (shouldConfigureAudio) {
         std::unique_ptr<IAudioCaptureEngine> probeEngine(IAudioCaptureEngine::createBestEngine(nullptr));
         if (!probeEngine) {
-            emit recordingWarning(
-                tr("Failed to probe audio format. Using default %1Hz, %2 channels, %3-bit.")
-                    .arg(kDefaultAudioSampleRate)
-                    .arg(kDefaultAudioChannels)
-                    .arg(kDefaultAudioBitsPerSample));
+            qWarning() << "RecordingManager: Failed to probe audio format. Using defaults.";
         } else {
             const auto source = resolveAudioSource(m_audioSource);
             if (!probeEngine->setAudioSource(source)) {
-                emit recordingWarning(tr("Failed to apply configured audio source for format probing."));
+                qWarning() << "RecordingManager: Failed to apply configured audio source for format probing";
             }
             if (!m_audioDevice.isEmpty() && !probeEngine->setDevice(m_audioDevice)) {
-                emit recordingWarning(tr("Failed to apply configured audio device for format probing."));
+                qWarning() << "RecordingManager: Failed to apply configured audio device for format probing";
             }
 
             const auto probedFormat = probeEngine->audioFormat();
@@ -454,11 +446,7 @@ void RecordingManager::beginAsyncInitialization()
                 audioChannels = probedFormat.channels;
                 audioBitsPerSample = probedFormat.bitsPerSample;
             } else {
-                emit recordingWarning(
-                    tr("Audio format probe returned invalid values. Using default %1Hz, %2 channels, %3-bit.")
-                        .arg(kDefaultAudioSampleRate)
-                        .arg(kDefaultAudioChannels)
-                        .arg(kDefaultAudioBitsPerSample));
+                qWarning() << "RecordingManager: Audio format probe returned invalid values. Using defaults.";
             }
         }
     }
@@ -512,7 +500,6 @@ void RecordingManager::beginAsyncInitialization()
             return;
         }
 
-        emit preparationProgress(step);
         if (m_controlBar) {
             m_controlBar->setPreparingStatus(step);
         }
@@ -608,9 +595,11 @@ void RecordingManager::onInitializationComplete(const QSharedPointer<RecordingIn
     if (m_captureEngine) {
         // IMPORTANT: Do NOT set parent to this, as we use std::unique_ptr for ownership
         
-        // Forward capture engine warnings to UI
+        // Forward capture engine warnings to log
         connect(m_captureEngine.get(), &ICaptureEngine::warning,
-                this, &RecordingManager::recordingWarning);
+                this, [](const QString &msg) {
+            qWarning() << "RecordingManager: Capture engine warning:" << msg;
+        });
 
         // Connect capture engine error signal
         connect(m_captureEngine.get(), &ICaptureEngine::error,
@@ -681,14 +670,14 @@ void RecordingManager::onInitializationComplete(const QSharedPointer<RecordingIn
             connect(m_audioEngine.get(), &IAudioCaptureEngine::error,
                     this, [this](const QString &msg) {
                 qWarning() << "RecordingManager: Audio error:" << msg;
-                emit recordingWarning("Audio error: " + msg);
             });
             connect(m_audioEngine.get(), &IAudioCaptureEngine::warning,
-                    this, &RecordingManager::recordingWarning);
+                    this, [](const QString &msg) {
+                qWarning() << "RecordingManager: Audio warning:" << msg;
+            });
         } else {
             qWarning() << "RecordingManager: Failed to create audio engine";
             m_audioEnabled = false;
-            emit recordingWarning(tr("Failed to initialize audio capture. Recording without audio."));
         }
     }
 
@@ -708,7 +697,6 @@ void RecordingManager::onInitializationComplete(const QSharedPointer<RecordingIn
             // GIF format does not support audio - this shouldn't happen as
             // audio is disabled for GIF in beginAsyncInitialization()
             qWarning() << "RecordingManager: Audio not supported for current format";
-            emit recordingWarning("Audio is not supported for GIF format.");
             cleanupAudio();
         }
     }
@@ -787,7 +775,6 @@ void RecordingManager::startRecordingAfterCountdown()
     if (m_audioEngine) {
         if (!m_audioEngine->start()) {
             qWarning() << "RecordingManager: Failed to start audio capture";
-            emit recordingWarning("Failed to start audio capture. Recording without audio.");
             cleanupAudio();
         }
     }
@@ -1454,13 +1441,8 @@ void RecordingManager::onPreviewAnnotateRequested()
         return;
     }
 
-    QString tempPath = m_tempVideoPath;
     cleanupPreviewMode();
-    if (!tempPath.isEmpty()) {
-        emit annotatePreviewRequested(tempPath);
-    } else {
-        qWarning() << "RecordingManager: No preview video path for annotation";
-    }
+    setState(State::Idle);
 }
 
 void RecordingManager::onPreviewSaveRequested()

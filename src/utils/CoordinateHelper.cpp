@@ -78,42 +78,6 @@ QSize CoordinateHelper::toLogical(const QSize& physical, qreal dpr)
     );
 }
 
-// Global to Screen-local coordinate conversions
-
-QPoint CoordinateHelper::globalToScreen(const QPoint& global, QScreen* screen)
-{
-    if (!screen) {
-        return global;
-    }
-    return global - screen->geometry().topLeft();
-}
-
-QPoint CoordinateHelper::screenToGlobal(const QPoint& local, QScreen* screen)
-{
-    if (!screen) {
-        return local;
-    }
-    return local + screen->geometry().topLeft();
-}
-
-QRect CoordinateHelper::globalToScreen(const QRect& global, QScreen* screen)
-{
-    if (!screen) {
-        return global;
-    }
-    QPoint offset = screen->geometry().topLeft();
-    return global.translated(-offset);
-}
-
-QRect CoordinateHelper::screenToGlobal(const QRect& local, QScreen* screen)
-{
-    if (!screen) {
-        return local;
-    }
-    QPoint offset = screen->geometry().topLeft();
-    return local.translated(offset);
-}
-
 // Calculate physical size with even dimensions (required by H.264/H.265 encoders)
 
 QSize CoordinateHelper::toEvenPhysicalSize(const QSize& logical, qreal dpr)

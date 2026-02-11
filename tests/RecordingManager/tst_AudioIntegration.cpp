@@ -110,13 +110,11 @@ void TestRecordingManagerAudioIntegration::testAudioCleanupInIdleState()
 void TestRecordingManagerAudioIntegration::testNoAudioSignalsInIdle()
 {
     // Create spies for all signals
-    QSignalSpy warningSpy(m_manager, &RecordingManager::recordingWarning);
     QSignalSpy errorSpy(m_manager, &RecordingManager::recordingError);
 
     // In idle state, no audio-related signals should be emitted
     QTest::qWait(100);
 
-    QCOMPARE(warningSpy.count(), 0);
     QCOMPARE(errorSpy.count(), 0);
 }
 

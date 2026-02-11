@@ -15,12 +15,10 @@ public:
     static PlatformFeatures& instance();
 
     bool isOCRAvailable() const;
-    bool isWindowDetectionAvailable() const;
 
     OCRManager* createOCRManager(QObject* parent = nullptr) const;
     WindowDetector* createWindowDetector(QObject* parent = nullptr) const;
 
-    QString platformName() const;
     QIcon createTrayIcon() const;
 
     // Copy image to clipboard using native APIs (for CLI mode where Qt clipboard may not persist)

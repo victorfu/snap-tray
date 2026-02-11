@@ -39,11 +39,6 @@ bool PlatformFeatures::isOCRAvailable() const
     return m_ocrAvailable;
 }
 
-bool PlatformFeatures::isWindowDetectionAvailable() const
-{
-    return m_windowDetectionAvailable;
-}
-
 OCRManager* PlatformFeatures::createOCRManager(QObject* parent) const
 {
     if (!m_ocrAvailable) {
@@ -58,11 +53,6 @@ WindowDetector* PlatformFeatures::createWindowDetector(QObject* parent) const
         return nullptr;
     }
     return new WindowDetector(parent);
-}
-
-QString PlatformFeatures::platformName() const
-{
-    return QStringLiteral("macOS");
 }
 
 QIcon PlatformFeatures::createTrayIcon() const

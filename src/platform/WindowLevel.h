@@ -18,11 +18,6 @@ void setWindowClickThrough(QWidget *widget, bool enabled);
 // On Windows: Uses WS_EX_NOACTIVATE
 void setWindowFloatingWithoutFocus(QWidget *widget);
 
-// Sets or removes the system window shadow
-// On macOS: Uses NSWindow setHasShadow:
-// On Windows: No-op (Windows uses our custom-drawn shadow)
-void setWindowShadow(QWidget *widget, bool enabled);
-
 // Excludes a window from screen capture
 // On Windows: Uses SetWindowDisplayAffinity with WDA_EXCLUDEFROMCAPTURE (Windows 10 2004+)
 // On macOS: Uses NSWindow.sharingType = NSWindowSharingNone
