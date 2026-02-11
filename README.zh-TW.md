@@ -10,6 +10,7 @@ SnapTray 是一個在系統托盤常駐的截圖與錄影小工具，提供區�
 - **全域快捷鍵**：可於設定中自定義，支援即時更新熱鍵註冊。
   - 區域截圖：預設 `F2`
   - 螢幕畫布：預設 `Ctrl+F2`
+  - 其他可設定動作：`Paste`（預設 `F3`）、`Quick Pin`（預設 `Shift+F2`）、`Pin from Image`、`Pin History`、`Record Full Screen`
 - **區域截圖覆蓋層**：
   - 十字線＋放大鏡（支援像素級檢視）
   - RGB/HEX 顏色預覽（按 Shift 切換，按 C 複製顏色代碼）
@@ -28,7 +29,7 @@ SnapTray 是一個在系統托盤常駐的截圖與錄影小工具，提供區�
   - `Save` 存檔 (Ctrl+S / macOS 為 Cmd+S)
   - `Copy` 複製 (Ctrl+C / macOS 為 Cmd+C)
   - `Cancel` 取消 (Esc)
-  - `OCR` 文字辨識（macOS/Windows，支援繁體中文、簡體中文、英文）
+  - `OCR` 文字辨識（macOS/Windows；可用語言取決於系統已安裝的 OCR 語言套件）
   - `QR Code Scan`（掃描選取區域中的 QR/條碼）
   - `Auto Blur` 自動偵測並模糊臉孔
   - `Record` 螢幕錄影（`R`）使用選取區域
@@ -48,8 +49,8 @@ SnapTray 是一個在系統托盤常駐的截圖與錄影小工具，提供區�
   - 可調整錄影區域，Start/Cancel 開始或取消
   - 浮動控制列：Pause/Resume/Stop/Cancel
   - MP4 (H.264) 由原生編碼器（Media Foundation/AVFoundation）產生；GIF 與 WebP 由內建編碼器產生
-  - 可選音訊錄製（麥克風/系統音/混合，視平台支援）
-  - 錄影包含游標選項
+  - MP4 可選音訊錄製（麥克風/系統音/混合，視平台支援）
+  - 錄影支援滑鼠點擊高亮效果
   - 聚光燈效果（錄影時調暗周圍，突顯焦點區域）
 - **釘選視窗**：
   - 無邊框、永遠在最上層
@@ -66,13 +67,13 @@ SnapTray 是一個在系統托盤常駐的截圖與錄影小工具，提供區�
     - `OCR` / `Copy` / `Save` 快捷操作
 - **設定對話框**：
   - General 分頁：開機自動啟動、工具列樣式（深色/淺色）、釘選視窗透明度/縮放/快取設定、CLI 安裝/移除
-  - Hotkeys 分頁：區域截圖與螢幕畫布分別設定熱鍵
+  - Hotkeys 分頁：依分類管理熱鍵（Capture/Canvas/Clipboard/Pin/Recording）
   - Advanced 分頁：Auto Blur 進階設定
   - Watermark 分頁：圖片浮水印、透明度、位置、縮放
   - OCR 分頁：OCR 語言與辨識後行為設定
-  - Recording 分頁：幀率、輸出格式（MP4/GIF/WebP）、品質、倒數計時、點擊高亮、游標顯示、聚光燈、音訊（啟用/來源/裝置）
+  - Recording 分頁：幀率、輸出格式（MP4/GIF/WebP）、品質、預覽行為、倒數計時、點擊高亮、音訊（啟用/來源/裝置）
   - Files 分頁：截圖/錄影儲存路徑、檔名格式
-  - Updates 分頁：自動檢查、檢查頻率、預覽版通道、立即檢查
+  - Updates 分頁：自動檢查、檢查頻率、上次檢查狀態、立即檢查
   - About 分頁：版本資訊
   - 背景會定期自動檢查更新
   - 設定儲存於系統設定 (QSettings)
@@ -231,7 +232,7 @@ REM   dist\SnapTray-<version>.msixupload    (用於 Store 提交)
 在本地安裝未簽章的 MSIX 套件進行測試：
 
 ```powershell
-Add-AppPackage -Path "dist\SnapTray-1.0.7.msix" -AllowUnsigned
+Add-AppPackage -Path "dist\SnapTray-<version>.msix" -AllowUnsigned
 ```
 
 解除安裝：
@@ -333,7 +334,7 @@ CMake 會自動偵測並使用編譯器快取，無需額外設定。
    - `Ctrl+C` (Windows) / `Cmd+C` (macOS) 或 `Copy`：複製到剪貼簿
    - `Ctrl+S` (Windows) / `Cmd+S` (macOS) 或 `Save`：儲存成檔案
    - `R` 或 `Record`：開始錄影（可調整區域後按 Start Recording / Enter）
-   - `OCR`（macOS/Windows）：辨識選取區內的文字並複製到剪貼簿
+   - `OCR`（macOS/Windows）：辨識選取區文字（依 OCR 設定可直接複製或開啟編輯器）
    - `QR Code Scan`：偵測並解碼選取區中的 QR/條碼
    - `M` 或 `Multi-Region`：切換多區域擷取模式
    - `Undo/Redo`：`Ctrl+Z` / `Ctrl+Shift+Z`（macOS 通常為 `Cmd+Z` / `Cmd+Shift+Z`）
@@ -387,7 +388,7 @@ SnapTray 提供 CLI 介面，可用於腳本自動化。
 | `canvas` | 切換螢幕畫布 | 是 |
 | `record` | 開始/停止/切換錄影 | 是 |
 | `pin` | 釘選圖片 | 是 |
-| `config` | 檢視/修改設定 | 部分 |
+| `config` | 檢視/修改設定（無參數時開啟設定視窗） | 部分 |
 
 ### CLI 範例
 
@@ -420,11 +421,12 @@ snaptray record start -n 1            # 在螢幕 1 開始全螢幕錄影
 snaptray pin -f image.png             # 釘選圖片檔案
 snaptray pin -c --center              # 從剪貼簿釘選並置中
 snaptray pin -f image.png -x 200 -y 120
+snaptray config                        # 開啟設定視窗（IPC）
 
 # 設定指令
 snaptray config --list
-snaptray config --get hotkeys/region_capture
-snaptray config --set files/filename_prefix SnapTray
+snaptray config --get hotkey
+snaptray config --set files/filenamePrefix SnapTray
 snaptray config --reset
 
 # 選項

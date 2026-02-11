@@ -10,6 +10,7 @@ SnapTray is a lightweight tray utility for region screenshots, on-screen annotat
 - **Global Hotkeys**: Customizable in settings with live hotkey registration
   - Region Capture: Default `F2`
   - Screen Canvas: Default `Ctrl+F2`
+  - Additional configurable actions: `Paste` (default `F3`), `Quick Pin` (default `Shift+F2`), `Pin from Image`, `Pin History`, `Record Full Screen`
 - **Region Capture Overlay**:
   - Crosshair + magnifier (pixel-level precision)
   - RGB/HEX color preview (Shift to toggle, C to copy color code)
@@ -28,7 +29,7 @@ SnapTray is a lightweight tray utility for region screenshots, on-screen annotat
   - `Save` to file (Ctrl+S / Cmd+S on macOS)
   - `Copy` to clipboard (Ctrl+C / Cmd+C on macOS)
   - `Cancel` (Esc)
-  - `OCR` text recognition (macOS/Windows, supports Traditional Chinese, Simplified Chinese, English)
+  - `OCR` text recognition (macOS/Windows; available languages depend on installed system OCR language packs)
   - `QR Code Scan` (scan QR/barcodes from the selected region)
   - `Auto Blur` auto-detect and blur faces in the selection
   - `Record` screen recording (R) for the selected region
@@ -48,8 +49,8 @@ SnapTray is a lightweight tray utility for region screenshots, on-screen annotat
   - Adjustable region with Start/Cancel
   - Floating control bar with Pause/Resume/Stop/Cancel
   - MP4 (H.264) via native encoder (Media Foundation/AVFoundation); GIF and WebP via built-in encoders
-  - Optional audio capture (microphone/system audio/both; platform dependent)
-  - Include cursor option in recordings
+  - Optional audio capture for MP4 (microphone/system audio/both; platform dependent)
+  - Mouse click highlight effect during recording
   - Spotlight effect during recording (dim surroundings, highlight focus area)
 - **Pin Windows**:
   - Borderless, always on top
@@ -66,13 +67,13 @@ SnapTray is a lightweight tray utility for region screenshots, on-screen annotat
     - `OCR` / `Copy` / `Save` quick actions
 - **Settings Dialog**:
   - General tab: Launch at startup, toolbar style (Dark/Light), pin window opacity/zoom/cache settings, CLI install/uninstall
-  - Hotkeys tab: Separate hotkeys for Region Capture and Screen Canvas
+  - Hotkeys tab: Category-based hotkey management (Capture/Canvas/Clipboard/Pin/Recording)
   - Advanced tab: Auto blur configuration
   - Watermark tab: Image watermark, opacity, position, and scale
   - OCR tab: OCR language selection and post-recognition behavior
-  - Recording tab: Frame rate, output format (MP4/GIF/WebP), quality, countdown, click highlight, cursor visibility, spotlight, audio (enable/source/device)
+  - Recording tab: Frame rate, output format (MP4/GIF/WebP), quality, preview behavior, countdown, click highlight, audio (enable/source/device)
   - Files tab: Screenshot/recording save paths, filename format
-  - Updates tab: Auto-check, check frequency, pre-release channel, manual check now
+  - Updates tab: Auto-check, check frequency, last-checked status, manual check now
   - About tab: Version information
   - Automatic update checks run in the background
   - Settings stored via QSettings
@@ -231,7 +232,7 @@ REM   dist\SnapTray-<version>.msixupload    (for Store submission)
 Install the unsigned MSIX package locally for testing:
 
 ```powershell
-Add-AppPackage -Path "dist\SnapTray-1.0.7.msix" -AllowUnsigned
+Add-AppPackage -Path "dist\SnapTray-<version>.msix" -AllowUnsigned
 ```
 
 To uninstall:
@@ -333,7 +334,7 @@ CMake automatically detects and uses the compiler cache when available. No addit
    - `Ctrl+C` (Windows) / `Cmd+C` (macOS) or `Copy`: Copy to clipboard
    - `Ctrl+S` (Windows) / `Cmd+S` (macOS) or `Save`: Save to file
    - `R` or `Record`: Start screen recording (adjust region, then press Start Recording / Enter)
-   - `OCR` (macOS/Windows): Recognize text in selection and copy to clipboard
+   - `OCR` (macOS/Windows): Recognize text in selection (copy directly or open editor based on OCR settings)
    - `QR Code Scan`: Detect and decode QR/barcodes in the selected region
    - `M` or `Multi-Region`: Toggle multi-region capture mode
    - `Undo/Redo`: `Ctrl+Z` / `Ctrl+Shift+Z` (macOS: `Cmd+Z` / `Cmd+Shift+Z`)
@@ -387,7 +388,7 @@ The `snaptray` command is available immediately after installation via App Execu
 | `canvas` | Toggle Screen Canvas | Yes |
 | `record` | Start/stop/toggle recording | Yes |
 | `pin` | Pin image to screen | Yes |
-| `config` | View/modify settings | Partial |
+| `config` | View/modify settings (no options opens Settings dialog) | Partial |
 
 ### CLI Examples
 
@@ -420,11 +421,12 @@ snaptray record start -n 1            # Start full-screen recording on screen 1
 snaptray pin -f image.png             # Pin image file
 snaptray pin -c --center              # Pin from clipboard, centered
 snaptray pin -f image.png -x 200 -y 120
+snaptray config                        # Open Settings dialog (IPC)
 
 # Config commands
 snaptray config --list
-snaptray config --get hotkeys/region_capture
-snaptray config --set files/filename_prefix SnapTray
+snaptray config --get hotkey
+snaptray config --set files/filenamePrefix SnapTray
 snaptray config --reset
 
 # Options

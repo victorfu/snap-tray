@@ -114,12 +114,12 @@ snap-tray/
 ├── tests/                     # Test suite (Qt Test Framework)
 │   ├── Annotations/           # Annotation type tests
 │   ├── CLI/                   # CLI command tests
-│   ├── Detection/             # FaceDetector, AutoBlurManager tests
+│   ├── Detection/             # FaceDetector, AutoBlurManager, TableDetector tests
 │   ├── Encoding/              # NativeGifEncoder, EncoderFactory tests
 │   ├── Hotkey/                # HotkeyManager tests
 │   ├── IPC/                   # SingleInstanceGuard tests
 │   ├── PinWindow/             # Transform, Resize, ClickThrough tests
-│   ├── RecordingManager/      # StateMachine, Lifecycle, Audio tests
+│   ├── RecordingManager/      # StateMachine, Lifecycle, Audio, InitTask tests
 │   ├── RegionSelector/        # MagnifierPanel, Throttler tests
 │   ├── Settings/              # SettingsManager tests
 │   ├── ToolOptionsPanel/      # State, Signals, HitTest tests
@@ -181,12 +181,20 @@ OCRSettingsManager::instance();
 // Watermark configuration
 WatermarkSettingsManager::instance();
 
-// Update preferences (auto-check, intervals, pre-release channel)
+// Update preferences (auto-check, intervals, skipped version)
 UpdateSettingsManager::instance();  // From include/update/UpdateSettingsManager.h
 
 // Other settings
 QSettings settings = getSettings();  // From include/settings/Settings.h
 ```
+
+### Hotkey System
+
+Use `HotkeyManager` as the single entry point for global hotkeys.
+
+- Actions are grouped by category in `HotkeyAction` (`Capture`, `Canvas`, `Clipboard`, `Pin`, `Recording`)
+- Do not register `QHotkey` directly in feature code; update via `HotkeyManager`
+- Default keys include Region Capture (`F2`) and Screen Canvas (`Ctrl+F2`), with additional configurable actions such as Paste (`F3`) and Quick Pin (`Shift+F2`)
 
 ### Tool System
 
