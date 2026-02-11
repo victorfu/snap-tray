@@ -16,6 +16,7 @@
 #include "platform/WindowLevel.h"
 #include "utils/ResourceCleanupHelper.h"
 #include "utils/CoordinateHelper.h"
+#include "utils/FilenameTemplateEngine.h"
 #include "settings/Settings.h"
 #include "settings/FileSettingsManager.h"
 
@@ -1165,60 +1166,73 @@ void RecordingManager::showSaveDialog(const QString &tempOutputPath)
     // Check auto-save setting
     bool autoSave = fileSettings.loadAutoSaveRecordings();
     QString outputDir = fileSettings.loadRecordingPath();
-    QString dateFormat = fileSettings.loadDateFormat();
-    QString prefix = fileSettings.loadFilenamePrefix();
 
     // Get extension from current file
     QFileInfo fileInfo(tempOutputPath);
     QString extension = fileInfo.suffix();
 
+    int monitorIndex = -1;
+    if (m_targetScreen) {
+        monitorIndex = QGuiApplication::screens().indexOf(m_targetScreen.data());
+    }
+
+    FilenameTemplateEngine::Context context;
+    context.type = QStringLiteral("Recording");
+    context.prefix = fileSettings.loadFilenamePrefix();
+    context.width = m_recordingRegion.width();
+    context.height = m_recordingRegion.height();
+    context.monitor = monitorIndex >= 0 ? QString::number(monitorIndex) : QStringLiteral("unknown");
+    context.windowTitle = QString();
+    context.appName = QString();
+    context.regionIndex = -1;
+    context.ext = extension;
+    context.dateFormat = fileSettings.loadDateFormat();
+    context.outputDir = outputDir;
+    const QString templateValue = fileSettings.loadFilenameTemplate();
+
     if (autoSave) {
-        // Auto-save: generate filename and save directly without dialog
-        // Use atomic rename approach to avoid TOCTOU race condition
-        QString timestamp = QDateTime::currentDateTime().toString(dateFormat);
-        QString baseName;
-        if (prefix.isEmpty()) {
-            baseName = QString("Recording_%1").arg(timestamp);
-        } else {
-            baseName = QString("%1_Recording_%2").arg(prefix).arg(timestamp);
-        }
-        QString fileName = QString("%1.%2").arg(baseName).arg(extension);
-        QString savePath = QDir(outputDir).filePath(fileName);
+        QString renderError;
+        QString savePath = FilenameTemplateEngine::buildUniqueFilePath(
+            outputDir, templateValue, context, 100, &renderError);
 
-        // Try rename directly - if it fails due to existing file, add counter
-        int counter = 0;
+        // Try rename first. If path collides between render and rename, retry with a new unique path.
         const int maxAttempts = 100;
-        bool renamed = false;
-
-        while (!renamed && counter < maxAttempts) {
+        int attempt = 0;
+        while (attempt < maxAttempts) {
             if (QFile::rename(tempOutputPath, savePath)) {
-                renamed = true;
-            } else if (QFile::exists(savePath)) {
-                // File exists, try with counter
-                counter++;
-                fileName = QString("%1_%2.%3").arg(baseName).arg(counter).arg(extension);
-                savePath = QDir(outputDir).filePath(fileName);
-            } else {
-                // Rename failed for other reason, break and try copy
-                break;
-            }
-        }
-
-        if (renamed) {
-            syncFile(savePath);
-            emit recordingStopped(savePath);
-            return;
-        } else {
-            // Try copy + delete if rename fails (cross-filesystem)
-            if (QFile::copy(tempOutputPath, savePath)) {
-                QFile::remove(tempOutputPath);
                 syncFile(savePath);
                 emit recordingStopped(savePath);
                 return;
             }
-            // If auto-save fails, fall through to show dialog
-            qWarning() << "RecordingManager: Auto-save failed, showing save dialog";
+
+            if (QFile::exists(savePath)) {
+                savePath = FilenameTemplateEngine::buildUniqueFilePath(
+                    outputDir, templateValue, context, 100, &renderError);
+                ++attempt;
+                continue;
+            }
+
+            // Rename failed for non-collision reason.
+            break;
         }
+
+        // Try copy + delete if rename fails (cross-filesystem)
+        if (QFile::exists(savePath)) {
+            savePath = FilenameTemplateEngine::buildUniqueFilePath(
+                outputDir, templateValue, context, 100, &renderError);
+        }
+        if (QFile::copy(tempOutputPath, savePath)) {
+            QFile::remove(tempOutputPath);
+            syncFile(savePath);
+            emit recordingStopped(savePath);
+            return;
+        }
+
+        if (!renderError.isEmpty()) {
+            qWarning() << "RecordingManager: template warning:" << renderError;
+        }
+        // If auto-save fails, fall through to show dialog
+        qWarning() << "RecordingManager: Auto-save failed, showing save dialog";
     }
 
     // Show save dialog
@@ -1226,7 +1240,8 @@ void RecordingManager::showSaveDialog(const QString &tempOutputPath)
     if (extension == "gif") filter = "GIF Files (*.gif)";
     else if (extension == "webp") filter = "WebP Files (*.webp)";
     else filter = "MP4 Files (*.mp4)";
-    QString defaultFileName = QDir(outputDir).filePath(fileInfo.fileName());
+    const QString defaultFileName = FilenameTemplateEngine::buildUniqueFilePath(
+        outputDir, templateValue, context, 1);
 
     QString savePath = QFileDialog::getSaveFileName(
         nullptr,
@@ -1344,6 +1359,10 @@ void RecordingManager::cleanupStaleTempFiles()
                 qWarning() << "RecordingManager: Failed to clean up temp file:" << file.fileName();
             }
         }
+    }
+
+    if (cleanedCount > 0) {
+        qDebug() << "RecordingManager: Cleaned up" << cleanedCount << "stale temp files";
     }
 }
 

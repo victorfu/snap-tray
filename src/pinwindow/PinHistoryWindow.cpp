@@ -5,6 +5,7 @@
 #include "pinwindow/RegionLayoutManager.h"
 #include "pinwindow/PinWindowPlacement.h"
 #include "settings/FileSettingsManager.h"
+#include "utils/FilenameTemplateEngine.h"
 
 #include <QClipboard>
 #include <QDateTime>
@@ -257,10 +258,22 @@ void PinHistoryWindow::saveEntryAs(const PinHistoryEntry& entry)
 
     auto& fileSettings = FileSettingsManager::instance();
     const QString defaultDir = fileSettings.loadScreenshotPath();
-    const QString baseName = entry.capturedAt.isValid()
-        ? QString("Pinned_%1.png").arg(entry.capturedAt.toString("yyyyMMdd_HHmmss_zzz"))
-        : QString("Pinned_%1.png").arg(QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss_zzz"));
-    const QString defaultPath = defaultDir.isEmpty() ? baseName : QString("%1/%2").arg(defaultDir, baseName);
+    FilenameTemplateEngine::Context context;
+    context.timestamp = entry.capturedAt.isValid() ? entry.capturedAt : QDateTime::currentDateTime();
+    context.type = QStringLiteral("Pinned");
+    context.prefix = fileSettings.loadFilenamePrefix();
+    context.width = entry.imageSize.width();
+    context.height = entry.imageSize.height();
+    context.monitor = QStringLiteral("unknown");
+    context.windowTitle = QString();
+    context.appName = QString();
+    context.regionIndex = -1;
+    context.ext = QStringLiteral("png");
+    context.dateFormat = fileSettings.loadDateFormat();
+    context.outputDir = defaultDir;
+
+    const QString defaultPath = FilenameTemplateEngine::buildUniqueFilePath(
+        defaultDir, fileSettings.loadFilenameTemplate(), context, 1);
 
     const QString filePath = QFileDialog::getSaveFileName(
         this,

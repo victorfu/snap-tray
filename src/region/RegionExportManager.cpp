@@ -1,6 +1,7 @@
 #include "region/RegionExportManager.h"
 #include "annotations/AnnotationLayer.h"
 #include "settings/FileSettingsManager.h"
+#include "utils/FilenameTemplateEngine.h"
 
 #include <QClipboard>
 #include <QDateTime>
@@ -32,6 +33,22 @@ void RegionExportManager::setDevicePixelRatio(qreal ratio)
 void RegionExportManager::setAnnotationLayer(AnnotationLayer *layer)
 {
     m_annotationLayer = layer;
+}
+
+void RegionExportManager::setMonitorIdentifier(const QString& monitor)
+{
+    m_monitorIdentifier = monitor;
+}
+
+void RegionExportManager::setWindowMetadata(const QString& windowTitle, const QString& appName)
+{
+    m_windowTitle = windowTitle;
+    m_appName = appName;
+}
+
+void RegionExportManager::setRegionIndex(int regionIndex)
+{
+    m_regionIndex = regionIndex;
 }
 
 QPixmap RegionExportManager::getSelectedRegion(const QRect &selectionRect, int cornerRadius)
@@ -130,31 +147,25 @@ bool RegionExportManager::saveToFile(const QRect &selectionRect, int cornerRadiu
     // Get file settings
     auto &fileSettings = FileSettingsManager::instance();
     QString savePath = fileSettings.loadScreenshotPath();
-    QString dateFormat = fileSettings.loadDateFormat();
-    QString prefix = fileSettings.loadFilenamePrefix();
-    QString timestamp = QDateTime::currentDateTime().toString(dateFormat);
-
-    QString filename;
-    if (prefix.isEmpty()) {
-        filename = QString("Screenshot_%1.png").arg(timestamp);
-    } else {
-        filename = QString("%1_Screenshot_%2.png").arg(prefix).arg(timestamp);
-    }
+    FilenameTemplateEngine::Context context;
+    context.type = QStringLiteral("Screenshot");
+    context.prefix = fileSettings.loadFilenamePrefix();
+    context.width = selectionRect.width();
+    context.height = selectionRect.height();
+    context.monitor = m_monitorIdentifier;
+    context.windowTitle = m_windowTitle;
+    context.appName = m_appName;
+    context.regionIndex = m_regionIndex;
+    context.ext = QStringLiteral("png");
+    context.dateFormat = fileSettings.loadDateFormat();
+    context.outputDir = savePath;
+    const QString templateValue = fileSettings.loadFilenameTemplate();
 
     // Check auto-save setting
     if (fileSettings.loadAutoSaveScreenshots()) {
-        QString filePath = QDir(savePath).filePath(filename);
-
-        // Handle file collision (add counter if file exists)
-        if (QFile::exists(filePath)) {
-            QString baseName = QFileInfo(filePath).completeBaseName();
-            QString ext = QFileInfo(filePath).suffix();
-            int counter = 1;
-            while (QFile::exists(filePath) && counter < 100) {
-                filePath = QDir(savePath).filePath(QString("%1_%2.%3").arg(baseName).arg(counter).arg(ext));
-                counter++;
-            }
-        }
+        QString renderError;
+        QString filePath = FilenameTemplateEngine::buildUniqueFilePath(
+            savePath, templateValue, context, 100, &renderError);
 
         bool success = selectedRegion.save(filePath);
         if (success) {
@@ -162,13 +173,17 @@ bool RegionExportManager::saveToFile(const QRect &selectionRect, int cornerRadiu
             emit saveCompleted(selectedRegion, filePath);
         } else {
             qWarning() << "RegionExportManager: Failed to auto-save to" << filePath;
+            if (!renderError.isEmpty()) {
+                qWarning() << "RegionExportManager: template warning:" << renderError;
+            }
             emit saveFailed(filePath, tr("Failed to save screenshot"));
         }
         return success;
     }
 
     // Show save dialog
-    QString defaultName = QDir(savePath).filePath(filename);
+    const QString defaultName = FilenameTemplateEngine::buildUniqueFilePath(
+        savePath, templateValue, context, 1);
 
     // Notify parent before showing dialog
     emit saveDialogOpening();

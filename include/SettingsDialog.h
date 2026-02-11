@@ -142,8 +142,7 @@ private:
     QPushButton *m_screenshotPathBrowseBtn;
     QLineEdit *m_recordingPathEdit;
     QPushButton *m_recordingPathBrowseBtn;
-    QLineEdit *m_filenamePrefixEdit;
-    QComboBox *m_dateFormatCombo;
+    QLineEdit *m_filenameTemplateEdit;
     QLabel *m_filenamePreviewLabel;
     QCheckBox *m_autoSaveScreenshotsCheckbox;
     QCheckBox *m_autoSaveRecordingsCheckbox;

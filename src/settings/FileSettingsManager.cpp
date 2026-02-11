@@ -18,6 +18,11 @@ QString FileSettingsManager::defaultRecordingPath()
     return QStandardPaths::writableLocation(QStandardPaths::DownloadLocation);
 }
 
+QString FileSettingsManager::defaultFilenameTemplate()
+{
+    return QStringLiteral("{prefix}_{type}_{yyyyMMdd_HHmmss}_{w}x{h}_{monitor}_{windowTitle}.{ext}");
+}
+
 QString FileSettingsManager::loadScreenshotPath() const
 {
     auto settings = SnapTray::getSettings();
@@ -66,6 +71,31 @@ void FileSettingsManager::saveDateFormat(const QString& format)
 {
     auto settings = SnapTray::getSettings();
     settings.setValue(kSettingsKeyDateFormat, format);
+}
+
+QString FileSettingsManager::loadFilenameTemplate() const
+{
+    auto settings = SnapTray::getSettings();
+    QString templ = settings.value(kSettingsKeyFilenameTemplate).toString().trimmed();
+    if (!templ.isEmpty()) {
+        return templ;
+    }
+
+    QString dateFormat = loadDateFormat().trimmed();
+    if (dateFormat.isEmpty()) {
+        dateFormat = defaultDateFormat();
+    }
+
+    // Migrate legacy prefix+date behavior into template mode.
+    templ = QStringLiteral("{prefix}_{type}_{%1}.{ext}").arg(dateFormat);
+    settings.setValue(kSettingsKeyFilenameTemplate, templ);
+    return templ;
+}
+
+void FileSettingsManager::saveFilenameTemplate(const QString& templ)
+{
+    auto settings = SnapTray::getSettings();
+    settings.setValue(kSettingsKeyFilenameTemplate, templ.trimmed());
 }
 
 bool FileSettingsManager::loadAutoSaveScreenshots() const

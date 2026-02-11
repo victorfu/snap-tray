@@ -5,6 +5,7 @@
 #include <QPixmap>
 #include <QRect>
 #include <QPoint>
+#include <QString>
 
 class AnnotationLayer;
 
@@ -63,6 +64,10 @@ public:
      */
     bool saveToFile(const QRect &selectionRect, int cornerRadius = 0, QWidget *parentWidget = nullptr);
 
+    void setMonitorIdentifier(const QString& monitor);
+    void setWindowMetadata(const QString& windowTitle, const QString& appName = QString());
+    void setRegionIndex(int regionIndex);
+
 signals:
     /**
      * @brief Emitted when screenshot is copied to clipboard
@@ -99,6 +104,10 @@ private:
     QPixmap m_backgroundPixmap;
     qreal m_devicePixelRatio = 1.0;
     AnnotationLayer *m_annotationLayer = nullptr;
+    QString m_monitorIdentifier;
+    QString m_windowTitle;
+    QString m_appName;
+    int m_regionIndex = -1;
 };
 
 #endif // REGIONEXPORTMANAGER_H

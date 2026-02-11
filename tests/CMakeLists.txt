@@ -153,6 +153,11 @@ target_link_libraries(Utils_CoordinateHelper PRIVATE snaptray_core Qt6::Widgets 
 add_test(NAME Utils_CoordinateHelper COMMAND Utils_CoordinateHelper)
 set_tests_properties(Utils_CoordinateHelper PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Utils_FilenameTemplateEngine Utils/tst_FilenameTemplateEngine.cpp)
+target_link_libraries(Utils_FilenameTemplateEngine PRIVATE snaptray_core Qt6::Test)
+add_test(NAME Utils_FilenameTemplateEngine COMMAND Utils_FilenameTemplateEngine)
+set_tests_properties(Utils_FilenameTemplateEngine PROPERTIES TIMEOUT 60 LABELS "unit")
+
 # ============================================================================
 # CLI Tests (link snaptray_platform for PlatformFeatures symbols)
 # ============================================================================
@@ -206,6 +211,11 @@ add_executable(Settings_PinWindowSettingsManager Settings/tst_PinWindowSettingsM
 target_link_libraries(Settings_PinWindowSettingsManager PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Settings_PinWindowSettingsManager COMMAND Settings_PinWindowSettingsManager)
 set_tests_properties(Settings_PinWindowSettingsManager PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(Settings_FileSettingsManager Settings/tst_FileSettingsManager.cpp)
+target_link_libraries(Settings_FileSettingsManager PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME Settings_FileSettingsManager COMMAND Settings_FileSettingsManager)
+set_tests_properties(Settings_FileSettingsManager PROPERTIES TIMEOUT 60 LABELS "unit")
 
 # ============================================================================
 # Hotkey Tests (link snaptray_ui for HotkeyManager)

@@ -286,6 +286,7 @@ add_library(snaptray_core STATIC
     src/update/UpdateSettingsManager.cpp
     src/cursor/CursorManager.cpp
     src/utils/CoordinateHelper.cpp
+    src/utils/FilenameTemplateEngine.cpp
     # CLI sources
     src/cli/CLIHandler.cpp
     src/cli/IPCProtocol.cpp
@@ -302,6 +303,7 @@ add_library(snaptray_core STATIC
     include/settings/FileSettingsManager.h
     include/settings/PinWindowSettingsManager.h
     include/cursor/CursorManager.h
+    include/utils/FilenameTemplateEngine.h
 )
 
 target_include_directories(snaptray_core

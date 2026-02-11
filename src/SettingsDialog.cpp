@@ -11,6 +11,7 @@
 #include "settings/PinWindowSettingsManager.h"
 #include "settings/OCRSettingsManager.h"
 #include "settings/SettingsTheme.h"
+#include "utils/FilenameTemplateEngine.h"
 #include "detection/AutoBlurManager.h"
 #include "widgets/HotkeySettingsTab.h"
 #include "update/UpdateChecker.h"
@@ -76,8 +77,7 @@ SettingsDialog::SettingsDialog(QWidget* parent)
     , m_screenshotPathBrowseBtn(nullptr)
     , m_recordingPathEdit(nullptr)
     , m_recordingPathBrowseBtn(nullptr)
-    , m_filenamePrefixEdit(nullptr)
-    , m_dateFormatCombo(nullptr)
+    , m_filenameTemplateEdit(nullptr)
     , m_filenamePreviewLabel(nullptr)
     , m_ocrAvailableList(nullptr)
     , m_ocrSelectedList(nullptr)
@@ -953,8 +953,7 @@ void SettingsDialog::onSave()
     auto& fileSettings = FileSettingsManager::instance();
     fileSettings.saveScreenshotPath(m_screenshotPathEdit->text());
     fileSettings.saveRecordingPath(m_recordingPathEdit->text());
-    fileSettings.saveFilenamePrefix(m_filenamePrefixEdit->text());
-    fileSettings.saveDateFormat(m_dateFormatCombo->currentData().toString());
+    fileSettings.saveFilenameTemplate(m_filenameTemplateEdit->text());
     fileSettings.saveAutoSaveScreenshots(m_autoSaveScreenshotsCheckbox->isChecked());
     fileSettings.saveAutoSaveRecordings(m_autoSaveRecordingsCheckbox->isChecked());
 
@@ -1448,45 +1447,32 @@ void SettingsDialog::setupFilesTab(QWidget* tab)
     formatLabel->setStyleSheet("font-weight: bold; font-size: 12px;");
     layout->addWidget(formatLabel);
 
-    // Prefix row
-    QHBoxLayout* prefixLayout = new QHBoxLayout();
-    QLabel* prefixLabel = new QLabel("Prefix:", tab);
-    prefixLabel->setFixedWidth(90);
-    m_filenamePrefixEdit = new QLineEdit(tab);
-    m_filenamePrefixEdit->setPlaceholderText("Optional prefix...");
-    m_filenamePrefixEdit->setText(fileSettings.loadFilenamePrefix());
-    connect(m_filenamePrefixEdit, &QLineEdit::textChanged, this, [this]() {
+    QHBoxLayout* templateLayout = new QHBoxLayout();
+    QLabel* templateLabel = new QLabel("Template:", tab);
+    templateLabel->setFixedWidth(90);
+    m_filenameTemplateEdit = new QLineEdit(tab);
+    m_filenameTemplateEdit->setPlaceholderText("{prefix}_{type}_{yyyyMMdd_HHmmss}_{w}x{h}_{monitor}_{windowTitle}.{ext}");
+    m_filenameTemplateEdit->setText(fileSettings.loadFilenameTemplate());
+    connect(m_filenameTemplateEdit, &QLineEdit::textChanged, this, [this]() {
         updateFilenamePreview();
         });
-    prefixLayout->addWidget(prefixLabel);
-    prefixLayout->addWidget(m_filenamePrefixEdit);
-    layout->addLayout(prefixLayout);
+    templateLayout->addWidget(templateLabel);
+    templateLayout->addWidget(m_filenameTemplateEdit);
+    layout->addLayout(templateLayout);
 
-    // Date format row
-    QHBoxLayout* dateFormatLayout = new QHBoxLayout();
-    QLabel* dateFormatLabel = new QLabel("Date format:", tab);
-    dateFormatLabel->setFixedWidth(90);
-    m_dateFormatCombo = new QComboBox(tab);
-    m_dateFormatCombo->addItem("yyyyMMdd_HHmmss (20250101_120000)", "yyyyMMdd_HHmmss");
-    m_dateFormatCombo->addItem("yyyy-MM-dd_HH-mm-ss (2025-01-01_12-00-00)", "yyyy-MM-dd_HH-mm-ss");
-    m_dateFormatCombo->addItem("yyMMdd_HHmmss (250101_120000)", "yyMMdd_HHmmss");
-    m_dateFormatCombo->addItem("MMdd_HHmmss (0101_120000)", "MMdd_HHmmss");
-    connect(m_dateFormatCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
-        this, [this]() { updateFilenamePreview(); });
-    dateFormatLayout->addWidget(dateFormatLabel);
-    dateFormatLayout->addWidget(m_dateFormatCombo);
-    dateFormatLayout->addStretch();
-    layout->addLayout(dateFormatLayout);
-
-    // Set current date format
-    QString currentFormat = fileSettings.loadDateFormat();
-    int formatIndex = m_dateFormatCombo->findData(currentFormat);
-    if (formatIndex >= 0) {
-        m_dateFormatCombo->setCurrentIndex(formatIndex);
-    }
+    QLabel* tokensLabel = new QLabel(
+        "Tokens: {prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}\n"
+        "Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}",
+        tab);
+    tokensLabel->setStyleSheet(
+        QStringLiteral("color: %1; font-size: 11px;")
+        .arg(SnapTray::SettingsTheme::secondaryText()));
+    tokensLabel->setWordWrap(true);
+    layout->addWidget(tokensLabel);
 
     // Preview label
     m_filenamePreviewLabel = new QLabel(tab);
+    m_filenamePreviewLabel->setWordWrap(true);
     m_filenamePreviewLabel->setStyleSheet(
         QStringLiteral("color: %1; font-size: 11px; padding: 8px 0;")
         .arg(SnapTray::SettingsTheme::secondaryText()));
@@ -1513,19 +1499,31 @@ void SettingsDialog::setupFilesTab(QWidget* tab)
 
 void SettingsDialog::updateFilenamePreview()
 {
-    QString prefix = m_filenamePrefixEdit->text();
-    QString dateFormat = m_dateFormatCombo->currentData().toString();
-    QString timestamp = QDateTime::currentDateTime().toString(dateFormat);
-
-    QString filename;
-    if (prefix.isEmpty()) {
-        filename = QString("Screenshot_%1.png").arg(timestamp);
-    }
-    else {
-        filename = QString("%1_Screenshot_%2.png").arg(prefix).arg(timestamp);
+    if (!m_filenameTemplateEdit || !m_filenamePreviewLabel) {
+        return;
     }
 
-    m_filenamePreviewLabel->setText(QString("Preview: %1").arg(filename));
+    auto& fileSettings = FileSettingsManager::instance();
+    FilenameTemplateEngine::Context context;
+    context.type = QStringLiteral("Screenshot");
+    context.prefix = fileSettings.loadFilenamePrefix();
+    context.width = 1920;
+    context.height = 1080;
+    context.monitor = QStringLiteral("0");
+    context.windowTitle = QStringLiteral("unknown");
+    context.appName = QStringLiteral("unknown");
+    context.regionIndex = 1;
+    context.ext = QStringLiteral("png");
+    context.dateFormat = fileSettings.loadDateFormat();
+
+    const FilenameTemplateEngine::Result result =
+        FilenameTemplateEngine::renderFilename(m_filenameTemplateEdit->text(), context);
+
+    QString previewText = QString("Preview: %1").arg(result.filename);
+    if (result.usedFallback) {
+        previewText += QString("\nInvalid template, fallback applied: %1").arg(result.error);
+    }
+    m_filenamePreviewLabel->setText(previewText);
 }
 
 void SettingsDialog::setupUpdatesTab(QWidget* tab)

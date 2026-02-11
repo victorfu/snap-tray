@@ -836,6 +836,12 @@ void RegionSelector::setupScreenGeometry(QScreen* screen)
     setFixedSize(screenGeom.size());
     m_selectionManager->setBounds(QRect(0, 0, screenGeom.width(), screenGeom.height()));
     m_toolManager->setTextEditingBounds(rect());
+
+    if (m_exportManager) {
+        const int monitorIndex = QGuiApplication::screens().indexOf(m_currentScreen.data());
+        m_exportManager->setMonitorIdentifier(
+            monitorIndex >= 0 ? QString::number(monitorIndex) : QStringLiteral("unknown"));
+    }
 }
 
 void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapture)
@@ -1470,6 +1476,18 @@ void RegionSelector::copyToClipboard()
 
 void RegionSelector::saveToFile()
 {
+    if (m_exportManager) {
+        const int regionIndex = (m_inputState.multiRegionMode && m_multiRegionManager)
+            ? m_multiRegionManager->activeIndex()
+            : -1;
+        m_exportManager->setRegionIndex(regionIndex);
+        if (m_detectedWindow.has_value()) {
+            m_exportManager->setWindowMetadata(m_detectedWindow->windowTitle, m_detectedWindow->ownerApp);
+        } else {
+            m_exportManager->setWindowMetadata(QString(), QString());
+        }
+    }
+
     // Delegate to export manager - it will emit signals for UI coordination
     m_exportManager->saveToFile(
         m_selectionManager->selectionRect(), effectiveCornerRadius(), nullptr);

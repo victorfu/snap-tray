@@ -2,11 +2,11 @@
 
 #include "PlatformFeatures.h"
 #include "settings/FileSettingsManager.h"
+#include "utils/FilenameTemplateEngine.h"
 
 #include <QBuffer>
 #include <QColorSpace>
 #include <QCoreApplication>
-#include <QDateTime>
 #include <QDir>
 #include <QFileInfo>
 #include <QGuiApplication>
@@ -176,13 +176,26 @@ CLIResult ScreenCommand::execute(const QCommandLineParser& parser)
             savePath = FileSettingsManager::instance().loadScreenshotPath();
         }
 
-        QString prefix = FileSettingsManager::instance().loadFilenamePrefix();
-        QString dateFormat = FileSettingsManager::instance().loadDateFormat();
-        QString timestamp = QDateTime::currentDateTime().toString(dateFormat);
-        QString filename = prefix.isEmpty() ? QString("Screenshot_%1.png").arg(timestamp)
-                                            : QString("%1_%2.png").arg(prefix, timestamp);
+        const qreal dpr = screenshot.devicePixelRatio() > 0.0 ? screenshot.devicePixelRatio() : 1.0;
+        const QSize logicalSize = screenshot.size() / dpr;
+        const int monitorIndex = QGuiApplication::screens().indexOf(screen);
 
-        filePath = QDir(savePath).filePath(filename);
+        auto& fileSettings = FileSettingsManager::instance();
+        FilenameTemplateEngine::Context context;
+        context.type = QStringLiteral("Screenshot");
+        context.prefix = fileSettings.loadFilenamePrefix();
+        context.width = logicalSize.width();
+        context.height = logicalSize.height();
+        context.monitor = monitorIndex >= 0 ? QString::number(monitorIndex) : QStringLiteral("unknown");
+        context.windowTitle = QString();
+        context.appName = QString();
+        context.regionIndex = -1;
+        context.ext = QStringLiteral("png");
+        context.dateFormat = fileSettings.loadDateFormat();
+        context.outputDir = savePath;
+
+        filePath = FilenameTemplateEngine::buildUniqueFilePath(
+            savePath, fileSettings.loadFilenameTemplate(), context);
     }
 
     // Ensure directory exists

@@ -30,6 +30,7 @@
 #include "settings/PinWindowSettingsManager.h"
 #include "settings/OCRSettingsManager.h"
 #include "ui/GlobalToast.h"
+#include "utils/FilenameTemplateEngine.h"
 #include "OCRResultDialog.h"
 #include "InlineTextEditor.h"
 #include "region/TextAnnotationEditor.h"
@@ -1007,46 +1008,59 @@ void PinWindow::saveToFile()
     // Use FileSettingsManager for consistent path and filename format
     auto& fileSettings = FileSettingsManager::instance();
     QString savePath = fileSettings.loadScreenshotPath();
-    QString dateFormat = fileSettings.loadDateFormat();
-    QString prefix = fileSettings.loadFilenamePrefix();
-    QString timestamp = QDateTime::currentDateTime().toString(dateFormat);
-
-    QString filename;
-    if (prefix.isEmpty()) {
-        filename = QString("Screenshot_%1.png").arg(timestamp);
-    }
-    else {
-        filename = QString("%1_Screenshot_%2.png").arg(prefix).arg(timestamp);
-    }
-
     QPixmap pixmapToSave = getExportPixmapWithAnnotations();
+    const QSize logicalSize = logicalSizeFromPixmap(pixmapToSave);
+
+    QScreen* exportScreen = m_sourceScreen.data();
+    if (!exportScreen) {
+        exportScreen = screen();
+    }
+
+    int monitorIndex = -1;
+    if (exportScreen) {
+        monitorIndex = QGuiApplication::screens().indexOf(exportScreen);
+    }
+
+    int regionIndex = -1;
+    if (!m_storedRegions.isEmpty()) {
+        regionIndex = m_storedRegions.first().index;
+    }
+
+    FilenameTemplateEngine::Context context;
+    context.type = QStringLiteral("Screenshot");
+    context.prefix = fileSettings.loadFilenamePrefix();
+    context.width = logicalSize.width();
+    context.height = logicalSize.height();
+    context.monitor = monitorIndex >= 0 ? QString::number(monitorIndex) : QStringLiteral("unknown");
+    context.windowTitle = QString();
+    context.appName = QString();
+    context.regionIndex = regionIndex;
+    context.ext = QStringLiteral("png");
+    context.dateFormat = fileSettings.loadDateFormat();
+    context.outputDir = savePath;
+    const QString templateValue = fileSettings.loadFilenameTemplate();
 
     // Check auto-save setting
     if (fileSettings.loadAutoSaveScreenshots()) {
-        QString filePath = QDir(savePath).filePath(filename);
-
-        // Handle file collision (add counter if file exists)
-        if (QFile::exists(filePath)) {
-            QString baseName = QFileInfo(filePath).completeBaseName();
-            QString ext = QFileInfo(filePath).suffix();
-            int counter = 1;
-            while (QFile::exists(filePath) && counter < kMaxFileCollisionRetries) {
-                filePath = QDir(savePath).filePath(QString("%1_%2.%3").arg(baseName).arg(counter).arg(ext));
-                counter++;
-            }
-        }
+        QString renderError;
+        QString filePath = FilenameTemplateEngine::buildUniqueFilePath(
+            savePath, templateValue, context, kMaxFileCollisionRetries, &renderError);
 
         if (pixmapToSave.save(filePath)) {
             emit saveCompleted(pixmapToSave, filePath);
         }
         else {
+            if (!renderError.isEmpty()) {
+                qWarning() << "PinWindow: template warning:" << renderError;
+            }
             emit saveFailed(filePath, tr("Failed to save screenshot"));
         }
         return;
     }
 
     // Show save dialog
-    QString defaultName = QDir(savePath).filePath(filename);
+    QString defaultName = FilenameTemplateEngine::buildUniqueFilePath(
+        savePath, templateValue, context, 1);
     QString filePath = QFileDialog::getSaveFileName(
         this,
         "Save Screenshot",
