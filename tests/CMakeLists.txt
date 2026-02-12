@@ -285,6 +285,11 @@ target_link_libraries(Annotations_StepBadgeAnnotation PRIVATE snaptray_core Qt6:
 add_test(NAME Annotations_StepBadgeAnnotation COMMAND Annotations_StepBadgeAnnotation)
 set_tests_properties(Annotations_StepBadgeAnnotation PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Annotations_EmojiStickerAnnotation Annotations/tst_EmojiStickerAnnotation.cpp)
+target_link_libraries(Annotations_EmojiStickerAnnotation PRIVATE snaptray_core Qt6::Widgets Qt6::Test)
+add_test(NAME Annotations_EmojiStickerAnnotation COMMAND Annotations_EmojiStickerAnnotation)
+set_tests_properties(Annotations_EmojiStickerAnnotation PROPERTIES TIMEOUT 60 LABELS "unit")
+
 # ============================================================================
 # Tools Tests (link snaptray_ui for tool system)
 # ============================================================================

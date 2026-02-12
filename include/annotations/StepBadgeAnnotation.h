@@ -35,6 +35,11 @@ public:
     void setNumber(int number);
     int number() const { return m_number; }
     int radius() const { return m_radius; }
+    void setRotation(qreal degrees);
+    qreal rotation() const { return m_rotation; }
+    void setMirror(bool mirrorX, bool mirrorY);
+    bool mirrorX() const { return m_mirrorX; }
+    bool mirrorY() const { return m_mirrorY; }
 
     /**
      * @brief Get the radius value for a given size
@@ -46,6 +51,9 @@ private:
     QColor m_color;
     int m_number;
     int m_radius;
+    qreal m_rotation = 0.0;
+    bool m_mirrorX = false;
+    bool m_mirrorY = false;
 };
 
 #endif // STEPBADGEANNOTATION_H

@@ -1,6 +1,7 @@
 #include "annotations/StepBadgeAnnotation.h"
 #include <QPainter>
 #include <QFont>
+#include <cmath>
 
 // ============================================================================
 // StepBadgeAnnotation Implementation
@@ -27,10 +28,37 @@ StepBadgeAnnotation::StepBadgeAnnotation(const QPoint &position, const QColor &c
 {
 }
 
+void StepBadgeAnnotation::setRotation(qreal degrees)
+{
+    qreal normalized = std::fmod(degrees, 360.0);
+    if (normalized < 0.0) {
+        normalized += 360.0;
+    }
+    if (qFuzzyIsNull(normalized)) {
+        normalized = 0.0;
+    }
+    m_rotation = normalized;
+}
+
+void StepBadgeAnnotation::setMirror(bool mirrorX, bool mirrorY)
+{
+    m_mirrorX = mirrorX;
+    m_mirrorY = mirrorY;
+}
+
 void StepBadgeAnnotation::draw(QPainter &painter) const
 {
     painter.save();
     painter.setRenderHint(QPainter::Antialiasing, true);
+
+    painter.translate(m_position);
+    if (!qFuzzyIsNull(m_rotation)) {
+        painter.rotate(m_rotation);
+    }
+    if (m_mirrorX || m_mirrorY) {
+        painter.scale(m_mirrorX ? -1.0 : 1.0, m_mirrorY ? -1.0 : 1.0);
+    }
+    painter.translate(-m_position);
 
     // Draw filled circle with annotation color (rotates with canvas - OK since circle is symmetric)
     painter.setPen(Qt::NoPen);
@@ -62,7 +90,10 @@ QRect StepBadgeAnnotation::boundingRect() const
 
 std::unique_ptr<AnnotationItem> StepBadgeAnnotation::clone() const
 {
-    return std::make_unique<StepBadgeAnnotation>(m_position, m_color, m_number, m_radius);
+    auto cloned = std::make_unique<StepBadgeAnnotation>(m_position, m_color, m_number, m_radius);
+    cloned->setRotation(m_rotation);
+    cloned->setMirror(m_mirrorX, m_mirrorY);
+    return cloned;
 }
 
 void StepBadgeAnnotation::setNumber(int number)

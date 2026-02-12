@@ -490,6 +490,74 @@ void PinWindow::applyTextOrientationCompensation(TextBoxAnnotation* textItem,
     textItem->setPosition(textItem->topLeftFromTransformedLocalPoint(baselineOriginal, localBaseline));
 }
 
+void PinWindow::applyEmojiOrientationCompensation(EmojiStickerAnnotation* emojiItem) const
+{
+    if (!emojiItem) {
+        return;
+    }
+
+    const TextCompensation compensation = computeTextCompensation(
+        m_rotationAngle, m_flipHorizontal, m_flipVertical);
+    emojiItem->setRotation(compensation.rotation);
+    emojiItem->setMirror(compensation.mirrorX, compensation.mirrorY);
+}
+
+void PinWindow::compensateNewestEmojiIfNeeded(const AnnotationItem* previousLastItem) const
+{
+    if (!m_annotationLayer) {
+        return;
+    }
+
+    const size_t currentCount = m_annotationLayer->itemCount();
+    if (currentCount == 0) {
+        return;
+    }
+
+    auto* newestItem = m_annotationLayer->itemAt(static_cast<int>(currentCount - 1));
+    // AnnotationLayer may trim history at capacity, so count can stay unchanged
+    // even when a new item is added. Compare last-item pointer instead.
+    if (!newestItem || newestItem == previousLastItem) {
+        return;
+    }
+
+    auto* newestEmoji = dynamic_cast<EmojiStickerAnnotation*>(newestItem);
+    applyEmojiOrientationCompensation(newestEmoji);
+}
+
+void PinWindow::applyStepBadgeOrientationCompensation(StepBadgeAnnotation* badgeItem) const
+{
+    if (!badgeItem) {
+        return;
+    }
+
+    const TextCompensation compensation = computeTextCompensation(
+        m_rotationAngle, m_flipHorizontal, m_flipVertical);
+    badgeItem->setRotation(compensation.rotation);
+    badgeItem->setMirror(compensation.mirrorX, compensation.mirrorY);
+}
+
+void PinWindow::compensateNewestStepBadgeIfNeeded(const AnnotationItem* previousLastItem) const
+{
+    if (!m_annotationLayer) {
+        return;
+    }
+
+    const size_t currentCount = m_annotationLayer->itemCount();
+    if (currentCount == 0) {
+        return;
+    }
+
+    auto* newestItem = m_annotationLayer->itemAt(static_cast<int>(currentCount - 1));
+    // AnnotationLayer may trim history at capacity, so count can stay unchanged
+    // even when a new item is added. Compare last-item pointer instead.
+    if (!newestItem || newestItem == previousLastItem) {
+        return;
+    }
+
+    auto* newestBadge = dynamic_cast<StepBadgeAnnotation*>(newestItem);
+    applyStepBadgeOrientationCompensation(newestBadge);
+}
+
 void PinWindow::setWatermarkSettings(const WatermarkRenderer::Settings& settings)
 {
     m_watermarkSettings = settings;
@@ -1887,7 +1955,17 @@ void PinWindow::mouseReleaseEvent(QMouseEvent* event)
                 m_currentToolId == ToolId::StepBadge);
 
             if (m_toolManager->isDrawing() || isSingleClickTool) {
+                const AnnotationItem* previousLastItem = nullptr;
+                if (m_annotationLayer && m_annotationLayer->itemCount() > 0) {
+                    previousLastItem = m_annotationLayer->itemAt(
+                        static_cast<int>(m_annotationLayer->itemCount() - 1));
+                }
                 m_toolManager->handleMouseRelease(mapToOriginalCoords(event->pos()), event->modifiers());
+                if (m_currentToolId == ToolId::EmojiSticker) {
+                    compensateNewestEmojiIfNeeded(previousLastItem);
+                } else if (m_currentToolId == ToolId::StepBadge) {
+                    compensateNewestStepBadgeIfNeeded(previousLastItem);
+                }
                 updateUndoRedoState();
                 update();
                 return;

@@ -5,7 +5,9 @@
 #include <QPoint>
 #include <QPointF>
 #include <QPolygonF>
+#include <QRectF>
 #include <QString>
+#include <QTransform>
 
 class EmojiStickerAnnotation : public AnnotationItem
 {
@@ -27,10 +29,15 @@ public:
     QPoint position() const { return m_position; }
     QString emoji() const { return m_emoji; }
     qreal scale() const { return m_scale; }
+    qreal rotation() const { return m_rotation; }
+    bool mirrorX() const { return m_mirrorX; }
+    bool mirrorY() const { return m_mirrorY; }
 
     // Transformation
     void setPosition(const QPoint &position) { m_position = position; }
     void setScale(qreal scale);
+    void setRotation(qreal degrees);
+    void setMirror(bool mirrorX, bool mirrorY);
     void moveBy(const QPoint &delta) { m_position += delta; }
 
     // Geometry helpers for gizmo
@@ -41,8 +48,13 @@ private:
     QPoint m_position;
     QString m_emoji;
     qreal m_scale = 1.0;
+    qreal m_rotation = 0.0;
+    bool m_mirrorX = false;
+    bool m_mirrorY = false;
 
     QSize emojiSize() const;
+    QRectF glyphRect() const;
+    QTransform localLinearTransform() const;
 };
 
 #endif // EMOJISTICKERANNOTATION_H

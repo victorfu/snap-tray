@@ -8,6 +8,7 @@
 #include <QElapsedTimer>
 #include <QPointer>
 #include <QVector>
+#include <cstddef>
 #include <memory>
 
 
@@ -39,12 +40,14 @@ class UIIndicators;
 class WindowedToolbar;
 class WindowedSubToolbar;
 class AnnotationLayer;
+class AnnotationItem;
 class ToolManager;
 class ToolOptionsPanel;
 class InlineTextEditor;
 class TextAnnotationEditor;
 class AutoBlurManager;
 class TextBoxAnnotation;
+class EmojiStickerAnnotation;
 class ArrowAnnotation;
 class PolylineAnnotation;
 class RegionLayoutManager;
@@ -270,6 +273,10 @@ private:
     // Keep text result aligned with inline editor orientation at creation time.
     void applyTextOrientationCompensation(TextBoxAnnotation* textItem,
                                           const QPointF& baselineOriginal) const;
+    void applyEmojiOrientationCompensation(EmojiStickerAnnotation* emojiItem) const;
+    void compensateNewestEmojiIfNeeded(const AnnotationItem* previousLastItem) const;
+    void applyStepBadgeOrientationCompensation(StepBadgeAnnotation* badgeItem) const;
+    void compensateNewestStepBadgeIfNeeded(const AnnotationItem* previousLastItem) const;
 
     // Original members
     QPixmap m_originalPixmap;

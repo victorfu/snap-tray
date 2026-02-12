@@ -51,10 +51,17 @@ private slots:
     void testClone_PreservesNumber();
     void testClone_PreservesColor();
     void testClone_PreservesRadius();
+    void testClone_PreservesTransform();
+
+    // Transform tests
+    void testTransform_Default();
+    void testSetRotation_Normalizes();
+    void testSetMirror();
 
     // Drawing tests
     void testDraw_Basic();
     void testDraw_VerifyCircle();
+    void testDraw_WithTransform();
 
     // Constants tests
     void testConstants();
@@ -286,6 +293,58 @@ void TestStepBadgeAnnotation::testClone_PreservesRadius()
     QCOMPARE(clonedBadge->radius(), StepBadgeAnnotation::kBadgeRadiusLarge);
 }
 
+void TestStepBadgeAnnotation::testClone_PreservesTransform()
+{
+    StepBadgeAnnotation badge(QPoint(100, 100), Qt::red, 1);
+    badge.setRotation(270.0);
+    badge.setMirror(true, true);
+
+    auto cloned = badge.clone();
+    auto* clonedBadge = dynamic_cast<StepBadgeAnnotation*>(cloned.get());
+
+    QVERIFY(clonedBadge != nullptr);
+    QCOMPARE(clonedBadge->rotation(), 270.0);
+    QCOMPARE(clonedBadge->mirrorX(), true);
+    QCOMPARE(clonedBadge->mirrorY(), true);
+}
+
+// ============================================================================
+// Transform Tests
+// ============================================================================
+
+void TestStepBadgeAnnotation::testTransform_Default()
+{
+    StepBadgeAnnotation badge(QPoint(100, 100), Qt::red, 1);
+
+    QCOMPARE(badge.rotation(), 0.0);
+    QCOMPARE(badge.mirrorX(), false);
+    QCOMPARE(badge.mirrorY(), false);
+}
+
+void TestStepBadgeAnnotation::testSetRotation_Normalizes()
+{
+    StepBadgeAnnotation badge(QPoint(100, 100), Qt::red, 1);
+
+    badge.setRotation(450.0);
+    QCOMPARE(badge.rotation(), 90.0);
+
+    badge.setRotation(-90.0);
+    QCOMPARE(badge.rotation(), 270.0);
+}
+
+void TestStepBadgeAnnotation::testSetMirror()
+{
+    StepBadgeAnnotation badge(QPoint(100, 100), Qt::red, 1);
+
+    badge.setMirror(true, false);
+    QCOMPARE(badge.mirrorX(), true);
+    QCOMPARE(badge.mirrorY(), false);
+
+    badge.setMirror(false, true);
+    QCOMPARE(badge.mirrorX(), false);
+    QCOMPARE(badge.mirrorY(), true);
+}
+
 // ============================================================================
 // Drawing Tests
 // ============================================================================
@@ -335,6 +394,29 @@ void TestStepBadgeAnnotation::testDraw_VerifyCircle()
         }
     }
     QVERIFY(hasRedInCenter);
+}
+
+void TestStepBadgeAnnotation::testDraw_WithTransform()
+{
+    StepBadgeAnnotation badge(QPoint(50, 50), Qt::red, 12, StepBadgeAnnotation::kBadgeRadiusLarge);
+    badge.setRotation(90.0);
+    badge.setMirror(true, false);
+
+    QImage image(100, 100, QImage::Format_ARGB32);
+    image.fill(Qt::white);
+    QPainter painter(&image);
+    badge.draw(painter);
+    painter.end();
+
+    bool hasNonWhitePixel = false;
+    for (int y = 0; y < image.height() && !hasNonWhitePixel; ++y) {
+        for (int x = 0; x < image.width() && !hasNonWhitePixel; ++x) {
+            if (image.pixel(x, y) != qRgb(255, 255, 255)) {
+                hasNonWhitePixel = true;
+            }
+        }
+    }
+    QVERIFY(hasNonWhitePixel);
 }
 
 // ============================================================================
