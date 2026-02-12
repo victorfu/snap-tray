@@ -216,17 +216,21 @@ bool HotkeyManager::updateHotkey(HotkeyAction action, const QString& keySequence
         return true;
     }
 
-    // Registration failed - revert to old sequence
-    config.status = HotkeyStatus::Failed;
+    // Registration failed - revert to old sequence and restore runtime status.
     config.keySequence = oldSequence;
 
-    // Try to re-register the old hotkey
-    if (!oldSequence.isEmpty() && config.enabled) {
-        registerHotkey(action);
+    if (config.keySequence.isEmpty()) {
+        config.status = HotkeyStatus::Unset;
+    } else if (!config.enabled) {
+        config.status = HotkeyStatus::Disabled;
+    } else {
+        const bool restored = registerHotkey(action);
+        config.status = restored ? HotkeyStatus::Registered : HotkeyStatus::Failed;
     }
 
     emit hotkeyChanged(action, config);
     emit registrationStatusChanged(action, config.status);
+    // Requested update failed, even if rollback restored the previous hotkey.
     return false;
 }
 

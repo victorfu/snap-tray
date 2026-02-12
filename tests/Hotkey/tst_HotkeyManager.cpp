@@ -42,6 +42,7 @@ private slots:
     // Update tests
     void testUpdateHotkey_EmitsSignals();
     void testUpdateHotkey_ClearsHotkey();
+    void testUpdateHotkey_DisabledRollbackStatus();
 
     // Conflict detection tests
     void testHasConflict_NoConflict();
@@ -218,6 +219,47 @@ void tst_HotkeyManager::testUpdateHotkey_ClearsHotkey()
 
     // Restore
     manager().resetToDefault(HotkeyAction::PinFromImage);
+}
+
+void tst_HotkeyManager::testUpdateHotkey_DisabledRollbackStatus()
+{
+    using namespace SnapTray;
+
+    constexpr HotkeyAction action = HotkeyAction::RegionCapture;
+
+    QVERIFY(manager().setHotkeyEnabled(action, false));
+
+    const HotkeyConfig disabledConfig = manager().getConfig(action);
+    QCOMPARE(disabledConfig.status, HotkeyStatus::Disabled);
+    QVERIFY(!disabledConfig.keySequence.isEmpty());
+    const QString oldSequence = disabledConfig.keySequence;
+
+    QSignalSpy changedSpy(&manager(), &HotkeyManager::hotkeyChanged);
+    QSignalSpy statusSpy(&manager(), &HotkeyManager::registrationStatusChanged);
+    QVERIFY(changedSpy.isValid());
+    QVERIFY(statusSpy.isValid());
+
+    const bool result = manager().updateHotkey(action, "Ctrl+Shift+T");
+
+    QVERIFY(!result);
+
+    const HotkeyConfig config = manager().getConfig(action);
+    QCOMPARE(config.keySequence, oldSequence);
+    QCOMPARE(config.status, HotkeyStatus::Disabled);
+    QCOMPARE(config.enabled, false);
+
+    QVERIFY(changedSpy.count() >= 1);
+    QVERIFY(statusSpy.count() >= 1);
+
+    const QList<QVariant> changedArgs = changedSpy.last();
+    QCOMPARE(changedArgs.at(0).value<HotkeyAction>(), action);
+    const HotkeyConfig emittedConfig = changedArgs.at(1).value<HotkeyConfig>();
+    QCOMPARE(emittedConfig.keySequence, oldSequence);
+    QCOMPARE(emittedConfig.status, HotkeyStatus::Disabled);
+
+    const QList<QVariant> statusArgs = statusSpy.last();
+    QCOMPARE(statusArgs.at(0).value<HotkeyAction>(), action);
+    QCOMPARE(statusArgs.at(1).value<HotkeyStatus>(), HotkeyStatus::Disabled);
 }
 
 // ============================================================================
