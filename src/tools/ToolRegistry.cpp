@@ -218,7 +218,7 @@ void ToolRegistry::registerTools() {
     registerTool({
         ToolId::OCR,
         "ocr",
-        "OCR Text Recognition",
+        "Recognize Text",
         "",
         ToolCategory::Action,
         false, false, false, false, false, false,

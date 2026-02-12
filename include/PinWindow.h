@@ -54,6 +54,8 @@ class RegionLayoutManager;
 class RegionSettingsHelper;
 struct LayoutRegion;
 class AnnotationContext;
+class BeautifyPanel;
+struct BeautifySettings;
 
 namespace snaptray {
 namespace colorwidgets {
@@ -395,6 +397,12 @@ private:
     QTimer* m_liveIndicatorTimer = nullptr;
     int m_captureFrameRate = kLivePreviewFps;
     bool m_livePaused = false;
+
+    // Beautify
+    void showBeautifyPanel();
+    void onBeautifyCopy(const BeautifySettings& settings);
+    void onBeautifySave(const BeautifySettings& settings);
+    BeautifyPanel* m_beautifyPanel = nullptr;
 
     // ========================================================================
     // Local constants (previously in Constants.h but only used by PinWindow)

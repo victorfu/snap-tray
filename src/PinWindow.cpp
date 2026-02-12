@@ -28,6 +28,9 @@
 #include "settings/AutoBlurSettingsManager.h"
 #include "settings/FileSettingsManager.h"
 #include "settings/PinWindowSettingsManager.h"
+#include "settings/BeautifySettingsManager.h"
+#include "beautify/BeautifyPanel.h"
+#include "beautify/BeautifyRenderer.h"
 #include "settings/OCRSettingsManager.h"
 #include "ui/GlobalToast.h"
 #include "utils/FilenameTemplateEngine.h"
@@ -381,6 +384,8 @@ PinWindow::~PinWindow()
         delete m_colorPickerDialog;
         m_colorPickerDialog = nullptr;
     }
+    delete m_beautifyPanel;
+    m_beautifyPanel = nullptr;
     // InlineTextEditor, TextAnnotationEditor are QObjects parented to this
 }
 
@@ -775,8 +780,11 @@ void PinWindow::createContextMenu()
     QAction* openCacheFolderAction = m_contextMenu->addAction(tr("Open Cache Folder"));
     connect(openCacheFolderAction, &QAction::triggered, this, &PinWindow::openCacheFolder);
 
+    QAction* beautifyAction = m_contextMenu->addAction("Beautify");
+    connect(beautifyAction, &QAction::triggered, this, &PinWindow::showBeautifyPanel);
+
     if (PlatformFeatures::instance().isOCRAvailable()) {
-        QAction* ocrAction = m_contextMenu->addAction("OCR Text Recognition");
+        QAction* ocrAction = m_contextMenu->addAction("Recognize Text");
         connect(ocrAction, &QAction::triggered, this, &PinWindow::performOCR);
     }
 
@@ -3513,4 +3521,105 @@ void PinWindow::exitRegionLayoutMode(bool apply)
 bool PinWindow::isRegionLayoutMode() const
 {
     return m_regionLayoutManager && m_regionLayoutManager->isActive();
+}
+
+// ============================================================================
+// Beautify
+// ============================================================================
+
+void PinWindow::showBeautifyPanel()
+{
+    if (!m_beautifyPanel) {
+        m_beautifyPanel = new BeautifyPanel(nullptr);
+        m_beautifyPanel->setWindowFlags(Qt::Tool | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
+        m_beautifyPanel->setAttribute(Qt::WA_DeleteOnClose, false);
+
+        connect(m_beautifyPanel, &BeautifyPanel::copyRequested,
+                this, &PinWindow::onBeautifyCopy);
+        connect(m_beautifyPanel, &BeautifyPanel::saveRequested,
+                this, &PinWindow::onBeautifySave);
+        connect(m_beautifyPanel, &BeautifyPanel::closeRequested,
+                m_beautifyPanel, &QWidget::hide);
+    }
+
+    m_beautifyPanel->setSourcePixmap(getExportPixmapWithAnnotations());
+    m_beautifyPanel->setSettings(BeautifySettingsManager::instance().loadSettings());
+
+    // Position panel next to the pin window
+    QPoint panelPos = mapToGlobal(QPoint(width() + 8, 0));
+    m_beautifyPanel->move(panelPos);
+    m_beautifyPanel->show();
+    m_beautifyPanel->raise();
+}
+
+void PinWindow::onBeautifyCopy(const BeautifySettings& settings)
+{
+    BeautifySettingsManager::instance().saveSettings(settings);
+    QPixmap source = getExportPixmapWithAnnotations();
+    if (source.isNull()) {
+        m_uiIndicators->showToast(false, tr("Copy failed"));
+        return;
+    }
+    QPixmap result = BeautifyRenderer::applyToPixmap(source, settings);
+    if (result.isNull()) {
+        m_uiIndicators->showToast(false, tr("Beautify rendering failed"));
+        return;
+    }
+    QGuiApplication::clipboard()->setPixmap(result);
+    m_uiIndicators->showToast(true, tr("Beautified image copied"));
+}
+
+void PinWindow::onBeautifySave(const BeautifySettings& settings)
+{
+    BeautifySettingsManager::instance().saveSettings(settings);
+    QPixmap source = getExportPixmapWithAnnotations();
+    if (source.isNull()) {
+        emit saveFailed(QString(), tr("No image available to save"));
+        return;
+    }
+    QPixmap result = BeautifyRenderer::applyToPixmap(source, settings);
+    if (result.isNull()) {
+        emit saveFailed(QString(), tr("Beautify rendering failed"));
+        return;
+    }
+
+    auto& fileSettings = FileSettingsManager::instance();
+    QString savePath = fileSettings.loadScreenshotPath();
+
+    FilenameTemplateEngine::Context context;
+    context.type = QStringLiteral("Screenshot");
+    context.prefix = fileSettings.loadFilenamePrefix();
+    context.width = result.width();
+    context.height = result.height();
+    context.ext = QStringLiteral("png");
+    context.dateFormat = fileSettings.loadDateFormat();
+    context.outputDir = savePath;
+    const QString templateValue = fileSettings.loadFilenameTemplate();
+
+    if (fileSettings.loadAutoSaveScreenshots()) {
+        QString renderError;
+        QString filePath = FilenameTemplateEngine::buildUniqueFilePath(
+            savePath, templateValue, context, kMaxFileCollisionRetries, &renderError);
+        if (!renderError.isEmpty()) {
+            qWarning() << "PinWindow: beautify template warning:" << renderError;
+        }
+        if (result.save(filePath)) {
+            emit saveCompleted(result, filePath);
+        } else {
+            emit saveFailed(filePath, tr("Failed to save beautified screenshot"));
+        }
+    } else {
+        QString defaultName = FilenameTemplateEngine::buildUniqueFilePath(
+            savePath, templateValue, context, 1);
+        QString filePath = QFileDialog::getSaveFileName(
+            this, tr("Save Beautified Screenshot"), defaultName,
+            tr("PNG Image (*.png);;JPEG Image (*.jpg *.jpeg);;All Files (*)"));
+        if (!filePath.isEmpty()) {
+            if (result.save(filePath)) {
+                emit saveCompleted(result, filePath);
+            } else {
+                emit saveFailed(filePath, tr("Failed to save beautified screenshot"));
+            }
+        }
+    }
 }

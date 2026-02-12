@@ -283,6 +283,8 @@ add_library(snaptray_core STATIC
     src/settings/OCRSettingsManager.cpp
     src/settings/PinWindowSettingsManager.cpp
     src/settings/WatermarkSettingsManager.cpp
+    src/settings/BeautifySettingsManager.cpp
+    src/beautify/BeautifyRenderer.cpp
     src/update/UpdateSettingsManager.cpp
     src/cursor/CursorManager.cpp
     src/utils/CoordinateHelper.cpp
@@ -302,6 +304,7 @@ add_library(snaptray_core STATIC
     include/settings/AnnotationSettingsManager.h
     include/settings/FileSettingsManager.h
     include/settings/PinWindowSettingsManager.h
+    include/settings/SettingsTheme.h
     include/cursor/CursorManager.h
     include/utils/FilenameTemplateEngine.h
 )
@@ -666,6 +669,10 @@ add_library(snaptray_ui STATIC
     src/LaserPointerRenderer.cpp
     src/WatermarkRenderer.cpp
     src/LoadingSpinnerRenderer.cpp
+
+    # Beautify
+    src/beautify/BeautifyPanel.cpp
+    include/beautify/BeautifyPanel.h
 
     # Video UI
     src/video/VideoPlaybackWidget.cpp

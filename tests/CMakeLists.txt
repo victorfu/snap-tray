@@ -392,6 +392,20 @@ set_tests_properties(RecordingManager_InitTask PROPERTIES TIMEOUT 60 LABELS "int
 endif()  # End of temporarily disabled RecordingManager tests
 
 # ============================================================================
+# Beautify Tests (link snaptray_core - settings and renderer live in core)
+# ============================================================================
+
+add_executable(Beautify_Settings Beautify/tst_BeautifySettings.cpp)
+target_link_libraries(Beautify_Settings PRIVATE snaptray_core Qt6::Widgets Qt6::Test)
+add_test(NAME Beautify_Settings COMMAND Beautify_Settings)
+set_tests_properties(Beautify_Settings PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(Beautify_Renderer Beautify/tst_BeautifyRenderer.cpp)
+target_link_libraries(Beautify_Renderer PRIVATE snaptray_core Qt6::Widgets Qt6::Test)
+add_test(NAME Beautify_Renderer COMMAND Beautify_Renderer)
+set_tests_properties(Beautify_Renderer PROPERTIES TIMEOUT 60 LABELS "unit")
+
+# ============================================================================
 # Update Tests (link snaptray_ui for update components)
 # ============================================================================
 
