@@ -47,6 +47,9 @@ _deps/
 # clangd cache
 .cache
 
+# CTest artifacts
+Testing/Temporary/
+
 # packaging
 packaging/windows/version.nsh
 
