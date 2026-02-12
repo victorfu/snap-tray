@@ -1,8 +1,6 @@
 #include "annotations/EmojiStickerAnnotation.h"
 #include <QPainter>
 #include <QFontMetrics>
-#include <QTransform>
-#include <QtMath>
 
 EmojiStickerAnnotation::EmojiStickerAnnotation(const QPoint &position, const QString &emoji, qreal scale)
     : m_position(position)
@@ -73,14 +71,6 @@ void EmojiStickerAnnotation::draw(QPainter &painter) const
 
     painter.save();
     painter.setRenderHint(QPainter::Antialiasing, true);
-
-    // Counter-rotate to keep emoji upright regardless of canvas rotation
-    QTransform worldTransform = painter.worldTransform();
-    qreal rotationAngle = qRadiansToDegrees(qAtan2(worldTransform.m12(), worldTransform.m11()));
-
-    painter.translate(m_position);
-    painter.rotate(-rotationAngle);
-    painter.translate(-m_position);
 
     int fontSize = static_cast<int>(kBaseSize * m_scale);
     QFont font;
