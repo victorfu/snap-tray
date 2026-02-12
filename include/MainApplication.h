@@ -51,6 +51,7 @@ private slots:
     void onPreviewSaveRequested(const QString &videoPath);
     void onPreviewDiscardRequested();
     void onHotkeyAction(SnapTray::HotkeyAction action);
+    void onHotkeyChanged(SnapTray::HotkeyAction action, const SnapTray::HotkeyConfig& config);
     void onUpdateAvailable(const ReleaseInfo& release);
 
 private:

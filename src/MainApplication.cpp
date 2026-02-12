@@ -387,6 +387,8 @@ void MainApplication::initialize()
     SnapTray::HotkeyManager::instance().initialize();
     connect(&SnapTray::HotkeyManager::instance(), &SnapTray::HotkeyManager::actionTriggered,
             this, &MainApplication::onHotkeyAction);
+    connect(&SnapTray::HotkeyManager::instance(), &SnapTray::HotkeyManager::hotkeyChanged,
+            this, &MainApplication::onHotkeyChanged);
 
     // Update tray menu with current hotkey text
     updateTrayMenuHotkeyText();
@@ -605,12 +607,6 @@ void MainApplication::onSettings()
     connect(m_settingsDialog, &SettingsDialog::ocrLanguagesChanged,
         m_pinWindowManager, &PinWindowManager::updateOcrLanguages);
 
-    // Update tray menu when hotkeys change
-    connect(&SnapTray::HotkeyManager::instance(), &SnapTray::HotkeyManager::hotkeyChanged,
-        this, [this](SnapTray::HotkeyAction, const SnapTray::HotkeyConfig&) {
-            updateTrayMenuHotkeyText();
-        });
-
     // Clean up pointer when dialog is destroyed (WA_DeleteOnClose triggers this)
     connect(m_settingsDialog, &QDialog::destroyed,
         this, [this]() {
@@ -656,6 +652,11 @@ void MainApplication::onHotkeyAction(SnapTray::HotkeyAction action)
     default:
         break;
     }
+}
+
+void MainApplication::onHotkeyChanged(SnapTray::HotkeyAction, const SnapTray::HotkeyConfig&)
+{
+    updateTrayMenuHotkeyText();
 }
 
 QPixmap MainApplication::renderTextToPixmap(const QString &text)
