@@ -1,9 +1,11 @@
 #include "PlatformFeatures.h"
 #include "OCRManager.h"
 #include "WindowDetector.h"
+#include "platform/PathEnvUtils_win.h"
 #include <QBuffer>
 #include <QClipboard>
 #include <QCoreApplication>
+#include <QDir>
 #include <QGuiApplication>
 #include <QMimeData>
 #include <QPainter>
@@ -12,6 +14,16 @@
 #include <QSettings>
 
 #include <windows.h>
+
+namespace {
+
+void broadcastEnvironmentChange()
+{
+    SendMessageTimeoutW(HWND_BROADCAST, WM_SETTINGCHANGE, 0,
+        reinterpret_cast<LPARAM>(L"Environment"), SMTO_ABORTIFHUNG, 5000, nullptr);
+}
+
+} // namespace
 
 PlatformFeatures& PlatformFeatures::instance()
 {
@@ -110,27 +122,20 @@ QString PlatformFeatures::getAppExecutablePath() const
 bool PlatformFeatures::isCLIInstalled() const
 {
     QSettings env("HKEY_CURRENT_USER\\Environment", QSettings::NativeFormat);
-    QString path = env.value("Path").toString();
-    QString appDir = getAppExecutablePath();
-    return path.contains(appDir, Qt::CaseInsensitive);
+    const QStringList entries = PathEnvUtils::splitPathEntries(env.value("Path").toString());
+    return PathEnvUtils::containsPathEntry(entries, getAppExecutablePath());
 }
 
 bool PlatformFeatures::installCLI() const
 {
     QSettings env("HKEY_CURRENT_USER\\Environment", QSettings::NativeFormat);
-    QString path = env.value("Path").toString();
-    QString appDir = getAppExecutablePath();
+    const QString appDir = QDir::toNativeSeparators(getAppExecutablePath());
+    const QStringList currentEntries = PathEnvUtils::splitPathEntries(env.value("Path").toString());
+    const auto result = PathEnvUtils::installPathEntry(currentEntries, appDir);
 
-    if (!path.contains(appDir, Qt::CaseInsensitive)) {
-        if (!path.isEmpty() && !path.endsWith(';')) {
-            path += ";";
-        }
-        path += appDir;
-        env.setValue("Path", path);
-
-        // Broadcast environment change
-        SendMessageTimeoutW(HWND_BROADCAST, WM_SETTINGCHANGE, 0,
-            reinterpret_cast<LPARAM>(L"Environment"), SMTO_ABORTIFHUNG, 5000, nullptr);
+    if (result.changed) {
+        env.setValue("Path", result.entries.join(';'));
+        broadcastEnvironmentChange();
     }
     return true;
 }
@@ -138,16 +143,12 @@ bool PlatformFeatures::installCLI() const
 bool PlatformFeatures::uninstallCLI() const
 {
     QSettings env("HKEY_CURRENT_USER\\Environment", QSettings::NativeFormat);
-    QString path = env.value("Path").toString();
-    QString appDir = getAppExecutablePath();
+    const QStringList currentEntries = PathEnvUtils::splitPathEntries(env.value("Path").toString());
+    const auto result = PathEnvUtils::uninstallPathEntry(currentEntries, getAppExecutablePath());
 
-    // Remove app dir from PATH
-    QStringList paths = path.split(';', Qt::SkipEmptyParts);
-    paths.removeAll(appDir);
-    env.setValue("Path", paths.join(';'));
-
-    // Broadcast environment change
-    SendMessageTimeoutW(HWND_BROADCAST, WM_SETTINGCHANGE, 0,
-        reinterpret_cast<LPARAM>(L"Environment"), SMTO_ABORTIFHUNG, 5000, nullptr);
+    if (result.changed) {
+        env.setValue("Path", result.entries.join(';'));
+        broadcastEnvironmentChange();
+    }
     return true;
 }

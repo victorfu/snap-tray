@@ -7,7 +7,6 @@
 #include <QNetworkReply>
 #include <QJsonDocument>
 #include <QJsonObject>
-#include <QJsonArray>
 #include <QTimer>
 #include <QVersionNumber>
 #include <QDebug>
@@ -236,20 +235,6 @@ ReleaseInfo UpdateChecker::parseReleaseJson(const QJsonObject& json)
     release.htmlUrl = json["html_url"].toString();
     QString publishedAtStr = json["published_at"].toString();
     release.publishedAt = QDateTime::fromString(publishedAtStr, Qt::ISODate);
-
-    // Parse assets to find download URLs
-    QJsonArray assets = json["assets"].toArray();
-    for (const QJsonValue& assetVal : assets) {
-        QJsonObject asset = assetVal.toObject();
-        QString name = asset["name"].toString().toLower();
-        QString downloadUrl = asset["browser_download_url"].toString();
-
-        if (name.endsWith(".exe") || name.contains("windows")) {
-            release.downloadUrlWin = downloadUrl;
-        } else if (name.endsWith(".dmg") || name.contains("macos") || name.contains("mac")) {
-            release.downloadUrlMac = downloadUrl;
-        }
-    }
 
     return release;
 }

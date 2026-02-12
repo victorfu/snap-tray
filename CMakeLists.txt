@@ -485,6 +485,7 @@ add_library(snaptray_platform STATIC
     # Windows sources
     $<$<PLATFORM_ID:Windows>:
         src/platform/WindowLevel_win.cpp
+        src/platform/PathEnvUtils_win.cpp
         src/platform/PlatformFeatures_win.cpp
         src/WindowDetector_win.cpp
         src/OCRManager_win.cpp

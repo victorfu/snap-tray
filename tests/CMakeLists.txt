@@ -187,6 +187,17 @@ target_link_libraries(CLI_NumericArgumentValidation PRIVATE snaptray_platform Qt
 add_test(NAME CLI_NumericArgumentValidation COMMAND CLI_NumericArgumentValidation)
 set_tests_properties(CLI_NumericArgumentValidation PROPERTIES TIMEOUT 60 LABELS "unit")
 
+if(WIN32)
+    add_executable(CLI_WindowsPathEnv
+        CLI/tst_WindowsPathEnv.cpp
+        ${CMAKE_SOURCE_DIR}/src/platform/PathEnvUtils_win.cpp
+    )
+    target_include_directories(CLI_WindowsPathEnv PRIVATE ${CMAKE_SOURCE_DIR}/src)
+    target_link_libraries(CLI_WindowsPathEnv PRIVATE Qt6::Core Qt6::Test)
+    add_test(NAME CLI_WindowsPathEnv COMMAND CLI_WindowsPathEnv)
+    set_tests_properties(CLI_WindowsPathEnv PROPERTIES TIMEOUT 60 LABELS "unit")
+endif()
+
 # ============================================================================
 # IPC Tests
 # ============================================================================

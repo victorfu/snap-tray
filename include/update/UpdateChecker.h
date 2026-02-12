@@ -17,8 +17,6 @@ struct ReleaseInfo {
     QString version;           // "1.2.0"
     QString tagName;           // "v1.2.0"
     QString releaseNotes;      // Markdown format
-    QString downloadUrlWin;    // Windows download link (.exe)
-    QString downloadUrlMac;    // macOS download link (.dmg)
     QString htmlUrl;           // GitHub Release page URL
     QDateTime publishedAt;
 
