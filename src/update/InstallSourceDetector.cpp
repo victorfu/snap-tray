@@ -24,21 +24,6 @@ QString InstallSourceDetector::getStoreName()
     }
 }
 
-QString InstallSourceDetector::getStoreUrl()
-{
-    InstallSource source = detect();
-    switch (source) {
-    case InstallSource::MicrosoftStore:
-        // MS Store protocol URL - will be replaced with actual product ID
-        return QStringLiteral("ms-windows-store://pdp/?productid=9NBLGGH4Z1SP");
-    case InstallSource::MacAppStore:
-        // Mac App Store URL - will be replaced with actual app ID
-        return QStringLiteral("macappstore://itunes.apple.com/app/id123456789");
-    default:
-        return QString();
-    }
-}
-
 QString InstallSourceDetector::getSourceDisplayName(InstallSource source)
 {
     switch (source) {

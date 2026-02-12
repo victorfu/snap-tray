@@ -8,7 +8,7 @@
  * Tests installation source detection including:
  * - Source display names
  * - Store detection
- * - Store URLs and names
+ * - Store names
  * - Development build detection
  *
  * Note: The actual detect() method is platform-specific and
@@ -30,8 +30,6 @@ private slots:
     // Store detection helper tests
     void testGetStoreName_MicrosoftStore();
     void testGetStoreName_MacAppStore();
-    void testGetStoreUrl_MicrosoftStore();
-    void testGetStoreUrl_MacAppStore();
 
     // isStoreInstall tests (depends on current detection)
     void testIsStoreInstall_ReturnsConsistentResult();
@@ -85,7 +83,7 @@ void tst_InstallSourceDetector::testGetSourceDisplayName_Unknown()
 }
 
 // ============================================================================
-// Store name and URL tests
+// Store name tests
 // ============================================================================
 
 void tst_InstallSourceDetector::testGetStoreName_MicrosoftStore()
@@ -113,34 +111,6 @@ void tst_InstallSourceDetector::testGetStoreName_MacAppStore()
     // If it's a store install, name should not be empty
     // If it's not a store install, name should be empty
     QCOMPARE(!storeName.isEmpty(), isStore);
-}
-
-void tst_InstallSourceDetector::testGetStoreUrl_MicrosoftStore()
-{
-    QString storeUrl = InstallSourceDetector::getStoreUrl();
-    bool isStore = InstallSourceDetector::isStoreInstall();
-
-    if (isStore) {
-        QVERIFY(!storeUrl.isEmpty());
-        // URL should start with a valid protocol
-        QVERIFY(storeUrl.startsWith("ms-windows-store://") ||
-                storeUrl.startsWith("macappstore://"));
-    } else {
-        QVERIFY(storeUrl.isEmpty());
-    }
-}
-
-void tst_InstallSourceDetector::testGetStoreUrl_MacAppStore()
-{
-    // Combined with MicrosoftStore test - same logic
-    QString storeUrl = InstallSourceDetector::getStoreUrl();
-    InstallSource source = InstallSourceDetector::detect();
-
-    if (source == InstallSource::MacAppStore) {
-        QVERIFY(storeUrl.startsWith("macappstore://"));
-    } else if (source == InstallSource::MicrosoftStore) {
-        QVERIFY(storeUrl.startsWith("ms-windows-store://"));
-    }
 }
 
 // ============================================================================

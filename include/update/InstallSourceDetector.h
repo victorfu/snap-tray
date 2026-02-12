@@ -43,12 +43,6 @@ public:
     static QString getStoreName();
 
     /**
-     * @brief Get the URL to the store page for this application.
-     * @return The store URL, or empty string if not a store install.
-     */
-    static QString getStoreUrl();
-
-    /**
      * @brief Get a human-readable display name for the given install source.
      * @param source The InstallSource enum value.
      * @return A display-friendly string representation.

@@ -2,7 +2,6 @@
 #define UPDATEDIALOG_H
 
 #include "update/UpdateChecker.h"
-#include "update/InstallSourceDetector.h"
 #include <QDialog>
 
 class QLabel;
@@ -13,11 +12,10 @@ class QVBoxLayout;
 /**
  * @brief Dialog for displaying update information to the user.
  *
- * This dialog adapts its UI based on the installation source:
- * - DirectDownload: Shows release notes with Download/Remind/Skip options
- * - Store: Shows guidance to update via the store
- *
- * It also supports showing "up to date" and "error" states.
+ * This dialog supports:
+ * - update available state (release notes with Download/Remind/Skip actions)
+ * - up-to-date state
+ * - error state
  */
 class UpdateDialog : public QDialog
 {
@@ -28,23 +26,15 @@ public:
      * @brief Dialog mode for different scenarios.
      */
     enum class Mode {
-        UpdateAvailable,  // New version available (DirectDownload)
-        StoreGuidance,    // Installed from store, guide user there
+        UpdateAvailable,  // New version available
         UpToDate,         // No update available
         Error             // Check failed
     };
 
     /**
-     * @brief Create dialog for update available (DirectDownload mode).
+     * @brief Create dialog for update available state.
      */
     explicit UpdateDialog(const ReleaseInfo& release,
-                          InstallSource source,
-                          QWidget* parent = nullptr);
-
-    /**
-     * @brief Create dialog for store guidance mode.
-     */
-    explicit UpdateDialog(InstallSource source,
                           QWidget* parent = nullptr);
 
     /**
@@ -62,7 +52,6 @@ signals:
 
 private slots:
     void onDownload();
-    void onOpenStore();
     void onRemindLater();
     void onSkipVersion();
     void onRetry();
@@ -72,7 +61,6 @@ private:
     explicit UpdateDialog(Mode mode, QWidget* parent);
 
     void setupUpdateAvailableUI();
-    void setupStoreGuidanceUI();
     void setupUpToDateUI();
     void setupErrorUI(const QString& error);
 
@@ -83,7 +71,6 @@ private:
 
     Mode m_mode;
     ReleaseInfo m_release;
-    InstallSource m_source;
 
     // UI elements
     QLabel* m_iconLabel;

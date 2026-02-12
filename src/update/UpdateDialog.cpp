@@ -19,8 +19,6 @@ namespace {
 constexpr int kDialogWidthUpdate = 480;
 constexpr int kDialogMinHeightUpdate = 320;
 constexpr int kDialogMaxHeightUpdate = 500;
-constexpr int kDialogWidthStore = 400;
-constexpr int kDialogHeightStore = 340;
 constexpr int kDialogWidthSmall = 320;
 constexpr int kDialogHeightSmall = 220;
 
@@ -32,7 +30,6 @@ constexpr int kButtonSpacing = 12;
 
 // Icon sizes
 constexpr int kIconSize = 48;
-constexpr int kStoreIconContainerSize = 96;
 
 // Release notes
 constexpr int kReleaseNotesMinHeight = 120;
@@ -40,12 +37,10 @@ constexpr int kReleaseNotesMaxHeight = 200;
 }
 
 UpdateDialog::UpdateDialog(const ReleaseInfo& release,
-                           InstallSource source,
                            QWidget* parent)
     : QDialog(parent)
     , m_mode(Mode::UpdateAvailable)
     , m_release(release)
-    , m_source(source)
     , m_iconLabel(nullptr)
     , m_titleLabel(nullptr)
     , m_messageLabel(nullptr)
@@ -58,27 +53,10 @@ UpdateDialog::UpdateDialog(const ReleaseInfo& release,
     setupUpdateAvailableUI();
 }
 
-UpdateDialog::UpdateDialog(InstallSource source, QWidget* parent)
-    : QDialog(parent)
-    , m_mode(Mode::StoreGuidance)
-    , m_source(source)
-    , m_iconLabel(nullptr)
-    , m_titleLabel(nullptr)
-    , m_messageLabel(nullptr)
-    , m_releaseNotes(nullptr)
-    , m_primaryButton(nullptr)
-    , m_secondaryButton(nullptr)
-    , m_tertiaryButton(nullptr)
-{
-    setupCommonStyles();
-    setupStoreGuidanceUI();
-}
-
 // Private constructor for factory methods - no UI setup
 UpdateDialog::UpdateDialog(Mode mode, QWidget* parent)
     : QDialog(parent)
     , m_mode(mode)
-    , m_source(InstallSource::DirectDownload)
     , m_iconLabel(nullptr)
     , m_titleLabel(nullptr)
     , m_messageLabel(nullptr)
@@ -205,103 +183,6 @@ void UpdateDialog::setupUpdateAvailableUI()
     m_tertiaryButton = createTertiaryButton(tr("Skip Version"));
     connect(m_tertiaryButton, &QPushButton::clicked, this, &UpdateDialog::onSkipVersion);
     buttonLayout->addWidget(m_tertiaryButton);
-
-    buttonLayout->addStretch();
-    mainLayout->addLayout(buttonLayout);
-}
-
-void UpdateDialog::setupStoreGuidanceUI()
-{
-    QString storeName = InstallSourceDetector::getStoreName();
-    setWindowTitle(tr("Update Check"));
-    setFixedSize(kDialogWidthStore, kDialogHeightStore);
-
-    QVBoxLayout* mainLayout = new QVBoxLayout(this);
-    mainLayout->setContentsMargins(kDialogPadding, kDialogPadding,
-                                   kDialogPadding, kDialogPadding);
-    mainLayout->setSpacing(kSectionSpacing);
-    mainLayout->setAlignment(Qt::AlignCenter);
-
-    // Store icon container
-    QLabel* iconContainer = new QLabel(this);
-    iconContainer->setFixedSize(kStoreIconContainerSize, kStoreIconContainerSize);
-    iconContainer->setAlignment(Qt::AlignCenter);
-    iconContainer->setStyleSheet(
-        "QLabel { "
-        "  background-color: rgba(0, 0, 0, 0.05); "
-        "  border-radius: 16px; "
-        "}");
-
-    QVBoxLayout* iconLayout = new QVBoxLayout(iconContainer);
-    iconLayout->setAlignment(Qt::AlignCenter);
-
-    m_iconLabel = new QLabel(this);
-    m_iconLabel->setText(QString::fromUtf8("\xF0\x9F\x9B\x8D\xEF\xB8\x8F")); // 🛍️
-    QFont iconFont = m_iconLabel->font();
-    iconFont.setPointSize(32);
-    m_iconLabel->setFont(iconFont);
-    m_iconLabel->setAlignment(Qt::AlignCenter);
-    iconLayout->addWidget(m_iconLabel);
-
-    QLabel* storeLabel = new QLabel(storeName, this);
-    QFont storeFont = storeLabel->font();
-    storeFont.setPointSize(13);
-    storeFont.setWeight(QFont::Medium);
-    storeLabel->setFont(storeFont);
-    storeLabel->setAlignment(Qt::AlignCenter);
-    iconLayout->addWidget(storeLabel);
-
-    mainLayout->addWidget(iconContainer, 0, Qt::AlignCenter);
-    mainLayout->addSpacing(kSectionSpacing);
-
-    // Message
-    QString msg1 = tr("You installed %1 from").arg(SNAPTRAY_APP_NAME);
-    QString msg2 = storeName + ".";
-    QLabel* msgLabel1 = new QLabel(msg1, this);
-    QLabel* msgLabel2 = new QLabel(msg2, this);
-    msgLabel1->setAlignment(Qt::AlignCenter);
-    msgLabel2->setAlignment(Qt::AlignCenter);
-    QFont msgFont = msgLabel1->font();
-    msgFont.setPointSize(14);
-    msgLabel1->setFont(msgFont);
-    msgLabel2->setFont(msgFont);
-    mainLayout->addWidget(msgLabel1);
-    mainLayout->addWidget(msgLabel2);
-
-    QLabel* subMsgLabel = new QLabel(
-        tr("Updates are managed automatically by the Store."), this);
-    subMsgLabel->setAlignment(Qt::AlignCenter);
-    QPalette pal = subMsgLabel->palette();
-    pal.setColor(QPalette::WindowText, QColor(100, 100, 100));
-    subMsgLabel->setPalette(pal);
-    mainLayout->addWidget(subMsgLabel);
-
-    mainLayout->addSpacing(kElementSpacing);
-
-    // Current version
-    QLabel* versionLabel = new QLabel(
-        tr("Current version: %1").arg(UpdateChecker::currentVersion()), this);
-    versionLabel->setAlignment(Qt::AlignCenter);
-    QFont versionFont = versionLabel->font();
-    versionFont.setPointSize(12);
-    versionLabel->setFont(versionFont);
-    versionLabel->setPalette(pal);
-    mainLayout->addWidget(versionLabel);
-
-    mainLayout->addSpacing(kSectionSpacing);
-
-    // Buttons
-    QHBoxLayout* buttonLayout = new QHBoxLayout();
-    buttonLayout->setSpacing(kButtonSpacing);
-    buttonLayout->addStretch();
-
-    m_primaryButton = createPrimaryButton(tr("Open %1").arg(storeName));
-    connect(m_primaryButton, &QPushButton::clicked, this, &UpdateDialog::onOpenStore);
-    buttonLayout->addWidget(m_primaryButton);
-
-    m_secondaryButton = createSecondaryButton(tr("Close"));
-    connect(m_secondaryButton, &QPushButton::clicked, this, &QDialog::accept);
-    buttonLayout->addWidget(m_secondaryButton);
 
     buttonLayout->addStretch();
     mainLayout->addLayout(buttonLayout);
@@ -502,15 +383,6 @@ void UpdateDialog::onDownload()
                   .arg(UpdateChecker::kGitHubOwner, UpdateChecker::kGitHubRepo);
     }
     QDesktopServices::openUrl(QUrl(url));
-    accept();
-}
-
-void UpdateDialog::onOpenStore()
-{
-    QString storeUrl = InstallSourceDetector::getStoreUrl();
-    if (!storeUrl.isEmpty()) {
-        QDesktopServices::openUrl(QUrl(storeUrl));
-    }
     accept();
 }
 

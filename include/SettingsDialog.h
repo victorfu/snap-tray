@@ -164,12 +164,10 @@ private:
 
     // Updates tab
     void setupUpdatesTabForDirectDownload(QVBoxLayout* layout, QWidget* tab);
-    void setupUpdatesTabForStore(QVBoxLayout* layout, QWidget* tab);
     QCheckBox *m_autoCheckUpdatesCheckbox;
     QComboBox *m_checkFrequencyCombo;
     QLabel *m_lastCheckedLabel;
     QPushButton *m_checkNowButton;
-    QLabel *m_installSourceLabel;
     QLabel *m_currentVersionLabel;
     UpdateChecker *m_updateChecker;
 

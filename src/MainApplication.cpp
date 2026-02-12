@@ -16,7 +16,6 @@
 #include "video/RecordingPreviewWindow.h"
 #include "update/UpdateChecker.h"
 #include "update/UpdateDialog.h"
-#include "update/InstallSourceDetector.h"
 
 #include <QFile>
 #include <QJsonDocument>
@@ -851,9 +850,7 @@ void MainApplication::onUpdateAvailable(const ReleaseInfo& release)
     qDebug() << "MainApplication: Update available -" << release.version;
 
     // Show update dialog
-    UpdateDialog* dialog = new UpdateDialog(release,
-                                            InstallSourceDetector::detect(),
-                                            nullptr);
+    UpdateDialog* dialog = new UpdateDialog(release, nullptr);
     dialog->setAttribute(Qt::WA_DeleteOnClose);
     dialog->show();
     dialog->raise();

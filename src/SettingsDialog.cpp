@@ -17,7 +17,6 @@
 #include "update/UpdateChecker.h"
 #include "update/UpdateDialog.h"
 #include "update/UpdateSettingsManager.h"
-#include "update/InstallSourceDetector.h"
 #include <QDir>
 #include <QSettings>
 #include <QPushButton>
@@ -40,8 +39,6 @@
 #include <QStandardPaths>
 #include <QFile>
 #include <QTimer>
-#include <QDesktopServices>
-#include <QUrl>
 #include <memory>
 
 // Hotkey constants are defined in settings/Settings.h
@@ -95,7 +92,6 @@ SettingsDialog::SettingsDialog(QWidget* parent)
     , m_checkFrequencyCombo(nullptr)
     , m_lastCheckedLabel(nullptr)
     , m_checkNowButton(nullptr)
-    , m_installSourceLabel(nullptr)
     , m_currentVersionLabel(nullptr)
     , m_updateChecker(nullptr)
 {
@@ -1527,25 +1523,8 @@ void SettingsDialog::setupUpdatesTab(QWidget* tab)
     currentVersionLayout->addStretch();
     layout->addLayout(currentVersionLayout);
 
-    // Install source row
-    QHBoxLayout* installSourceLayout = new QHBoxLayout();
-    QLabel* installSourceTextLabel = new QLabel(tr("Install Source"), tab);
-    installSourceTextLabel->setFixedWidth(150);
-    InstallSource source = InstallSourceDetector::detect();
-    m_installSourceLabel = new QLabel(InstallSourceDetector::getSourceDisplayName(source), tab);
-    installSourceLayout->addWidget(installSourceTextLabel);
-    installSourceLayout->addWidget(m_installSourceLabel);
-    installSourceLayout->addStretch();
-    layout->addLayout(installSourceLayout);
-
     layout->addSpacing(16);
-
-    // Different UI based on install source
-    if (source == InstallSource::MicrosoftStore || source == InstallSource::MacAppStore) {
-        setupUpdatesTabForStore(layout, tab);
-    } else {
-        setupUpdatesTabForDirectDownload(layout, tab);
-    }
+    setupUpdatesTabForDirectDownload(layout, tab);
 }
 
 void SettingsDialog::setupUpdatesTabForDirectDownload(QVBoxLayout* layout, QWidget* tab)
@@ -1642,63 +1621,6 @@ void SettingsDialog::setupUpdatesTabForDirectDownload(QVBoxLayout* layout, QWidg
     });
 }
 
-void SettingsDialog::setupUpdatesTabForStore(QVBoxLayout* layout, QWidget* tab)
-{
-    QString storeName = InstallSourceDetector::getStoreName();
-
-    // Info box
-    QLabel* infoBox = new QLabel(tab);
-    infoBox->setWordWrap(true);
-    infoBox->setText(
-        QString("<p style='margin: 0;'>"
-                "<span style='color: #007AFF; font-size: 16px;'>%1</span> "
-                "%2</p>"
-                "<p style='margin-top: 8px; color: #666;'>%3</p>")
-            .arg(QString::fromUtf8("\xE2\x84\xB9\xEF\xB8\x8F"))  // ℹ️
-            .arg(tr("Updates are managed automatically by %1.").arg(storeName))
-            .arg(tr("To check for updates or manage auto-update settings, "
-                    "please open the %1 app.").arg(storeName)));
-    infoBox->setStyleSheet(
-        "QLabel { "
-        "  background-color: rgba(0, 122, 255, 0.08); "
-        "  border: 1px solid rgba(0, 122, 255, 0.2); "
-        "  border-radius: 8px; "
-        "  padding: 16px; "
-        "}");
-    layout->addWidget(infoBox);
-
-    layout->addSpacing(24);
-
-    // Open Store button (centered)
-    QHBoxLayout* buttonLayout = new QHBoxLayout();
-    buttonLayout->addStretch();
-    m_checkNowButton = new QPushButton(tr("Open %1").arg(storeName), tab);
-    m_checkNowButton->setMinimumWidth(180);
-    m_checkNowButton->setStyleSheet(
-        "QPushButton { "
-        "  background-color: #007AFF; "
-        "  color: white; "
-        "  border: none; "
-        "  border-radius: 8px; "
-        "  padding: 8px 20px; "
-        "  font-size: 14px; "
-        "} "
-        "QPushButton:hover { "
-        "  background-color: #0066DD; "
-        "}");
-    connect(m_checkNowButton, &QPushButton::clicked, this, [this]() {
-        QString storeUrl = InstallSourceDetector::getStoreUrl();
-        if (!storeUrl.isEmpty()) {
-            QDesktopServices::openUrl(QUrl(storeUrl));
-        }
-    });
-    buttonLayout->addWidget(m_checkNowButton);
-    buttonLayout->addStretch();
-    layout->addLayout(buttonLayout);
-
-    layout->addStretch();
-}
-
 void SettingsDialog::updateCheckNowButtonState(bool checking)
 {
     if (m_checkNowButton) {
@@ -1728,9 +1650,7 @@ void SettingsDialog::onUpdateAvailable(const ReleaseInfo& release)
             .arg(QDateTime::currentDateTime().toString("MMMM d, yyyy 'at' h:mm AP")));
 
     // Show update dialog
-    UpdateDialog* dialog = new UpdateDialog(release,
-                                            InstallSourceDetector::detect(),
-                                            this);
+    UpdateDialog* dialog = new UpdateDialog(release, this);
     dialog->exec();
 }
 
