@@ -1,4 +1,5 @@
 #include "cli/IPCProtocol.h"
+#include "version.h"
 
 #include <QCryptographicHash>
 #include <QDataStream>
@@ -62,7 +63,7 @@ IPCProtocol::~IPCProtocol() = default;
 QString IPCProtocol::getServerName()
 {
     // Must match SingleInstanceGuard server name generation
-    const QString appId = "com.victorfu.snaptray";
+    const QString appId = SNAPTRAY_APP_BUNDLE_ID;
     return QString("snaptray-%1")
         .arg(QString(QCryptographicHash::hash(appId.toUtf8(), QCryptographicHash::Md5).toHex()));
 }

@@ -1,11 +1,12 @@
 #pragma once
 
 #include <QSettings>
+#include "version.h"
 
 namespace SnapTray {
 
 inline constexpr const char* kOrganizationName = "Victor Fu";
-inline constexpr const char* kApplicationName = "SnapTray";
+inline constexpr const char* kApplicationName = SNAPTRAY_APP_NAME;
 
 // Hotkey settings keys
 inline constexpr const char* kSettingsKeyHotkey = "hotkey";

@@ -70,7 +70,7 @@ int main(int argc, char* argv[])
     app.setApplicationVersion(SNAPTRAY_VERSION);
 
     // Single instance check
-    SingleInstanceGuard guard("com.victorfu.snaptray");
+    SingleInstanceGuard guard(SNAPTRAY_APP_BUNDLE_ID);
     if (!guard.tryLock()) {
         // Another instance is already running, notify it and exit
         qDebug() << "Another instance of SnapTray is already running. Exiting.";

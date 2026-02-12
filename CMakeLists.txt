@@ -312,9 +312,9 @@ add_library(snaptray_core STATIC
 target_include_directories(snaptray_core
     PUBLIC
         ${CMAKE_SOURCE_DIR}/include
+        ${CMAKE_BINARY_DIR}/generated
     PRIVATE
         ${CMAKE_SOURCE_DIR}/src
-        ${CMAKE_BINARY_DIR}/generated
         ${CMAKE_BINARY_DIR}
 )
 
