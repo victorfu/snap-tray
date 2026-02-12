@@ -1,8 +1,6 @@
 #include <QtTest/QtTest>
 
-#define private public
 #include "tools/handlers/CropToolHandler.h"
-#undef private
 
 class TestCropToolHandler : public QObject
 {

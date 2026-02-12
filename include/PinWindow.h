@@ -56,6 +56,7 @@ struct LayoutRegion;
 class AnnotationContext;
 class BeautifyPanel;
 struct BeautifySettings;
+class TestPinWindowCropUndo;
 
 namespace snaptray {
 namespace colorwidgets {
@@ -150,6 +151,7 @@ protected:
     void moveEvent(QMoveEvent* event) override;
 
 private:
+    friend class TestPinWindowCropUndo;
     struct CropUndoEntry;
 
     // AnnotationHostAdapter implementation

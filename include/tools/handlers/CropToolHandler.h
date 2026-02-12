@@ -8,6 +8,8 @@
 #include <QSize>
 #include <functional>
 
+class TestCropToolHandler;
+
 class CropToolHandler : public IToolHandler {
 public:
     CropToolHandler() = default;
@@ -32,6 +34,7 @@ public:
     void setImageSize(const QSize& size);
 
 private:
+    friend class TestCropToolHandler;
     QRect makeRect(const QPoint& start, const QPoint& end) const;
     QRect clampToImage(const QRect& rect) const;
 

@@ -3,9 +3,7 @@
 #include <QImage>
 #include <QPainter>
 
-#define private public
 #include "PinWindow.h"
-#undef private
 
 #include "annotations/AnnotationLayer.h"
 #include "annotations/ErasedItemsGroup.h"
