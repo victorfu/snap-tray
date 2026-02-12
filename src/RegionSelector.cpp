@@ -6,6 +6,7 @@
 #include "region/RegionToolbarHandler.h"
 #include "region/RegionSettingsHelper.h"
 #include "region/RegionExportManager.h"
+#include "region/MultiRegionListPanel.h"
 #include "annotations/AllAnnotations.h"
 #include "cursor/CursorManager.h"
 #include "GlassRenderer.h"
@@ -41,6 +42,7 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include <QMouseEvent>
 #include <QKeyEvent>
 #include <QCloseEvent>
+#include <QResizeEvent>
 #include <QShowEvent>
 #include <QEnterEvent>
 #include <QFocusEvent>
@@ -100,7 +102,8 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_selectionManager = new SelectionStateManager(this);
     connect(m_selectionManager, &SelectionStateManager::selectionChanged,
         this, [this](const QRect& rect) {
-            if (m_inputState.multiRegionMode && m_multiRegionManager) {
+            if (m_inputState.multiRegionMode && m_multiRegionManager &&
+                m_inputState.replaceTargetIndex < 0) {
                 int activeIndex = m_multiRegionManager->activeIndex();
                 if (activeIndex >= 0) {
                     m_multiRegionManager->updateRegion(activeIndex, rect);
@@ -110,6 +113,13 @@ RegionSelector::RegionSelector(QWidget* parent)
         });
     connect(m_selectionManager, &SelectionStateManager::stateChanged,
         this, [this](SelectionStateManager::State newState) {
+            if (m_inputState.multiRegionMode &&
+                newState == SelectionStateManager::State::Complete &&
+                m_multiRegionListRefreshPending) {
+                m_multiRegionListRefreshPending = false;
+                refreshMultiRegionListPanel();
+            }
+
             // Skip automatic cursor updates in multi-region mode
             // (multi-region mode handles its own cursor logic)
             if (m_inputState.multiRegionMode) {
@@ -135,6 +145,9 @@ RegionSelector::RegionSelector(QWidget* parent)
     connect(m_multiRegionManager, &MultiRegionManager::activeIndexChanged,
         this, [this](int index) {
             if (!m_inputState.multiRegionMode) return;
+            if (m_multiRegionListPanel) {
+                m_multiRegionListPanel->setActiveIndex(index);
+            }
             if (index >= 0) {
                 m_selectionManager->setSelectionRect(m_multiRegionManager->regionRect(index));
             }
@@ -316,6 +329,61 @@ RegionSelector::RegionSelector(QWidget* parent)
     connect(m_regionControlWidget, &RegionControlWidget::radiusChanged,
         this, &RegionSelector::onCornerRadiusChanged);
 
+    // Multi-region list panel (left dock)
+    m_multiRegionListPanel = new MultiRegionListPanel(this);
+    m_multiRegionListPanel->hide();
+    connect(m_multiRegionListPanel, &MultiRegionListPanel::regionActivated,
+        this, [this](int index) {
+            if (!m_inputState.multiRegionMode || !m_multiRegionManager) {
+                return;
+            }
+            if (m_inputState.replaceTargetIndex >= 0 &&
+                m_inputState.replaceTargetIndex != index) {
+                beginMultiRegionReplace(index);
+                return;
+            }
+            m_multiRegionManager->setActiveIndex(index);
+            update();
+        });
+    connect(m_multiRegionListPanel, &MultiRegionListPanel::regionDeleteRequested,
+        this, [this](int index) {
+            if (!m_inputState.multiRegionMode || !m_multiRegionManager) {
+                return;
+            }
+            if (index < 0 || index >= m_multiRegionManager->count()) {
+                return;
+            }
+            if (m_inputState.replaceTargetIndex == index) {
+                cancelMultiRegionReplace(false);
+            }
+            m_multiRegionManager->removeRegion(index);
+            update();
+        });
+    connect(m_multiRegionListPanel, &MultiRegionListPanel::regionReplaceRequested,
+        this, &RegionSelector::beginMultiRegionReplace);
+    connect(m_multiRegionListPanel, &MultiRegionListPanel::regionMoveRequested,
+        this, [this](int fromIndex, int toIndex) {
+            if (!m_inputState.multiRegionMode || !m_multiRegionManager) {
+                return;
+            }
+            if (!m_multiRegionManager->moveRegion(fromIndex, toIndex)) {
+                return;
+            }
+
+            if (m_inputState.replaceTargetIndex == fromIndex) {
+                m_inputState.replaceTargetIndex = toIndex;
+            } else if (fromIndex < toIndex &&
+                       m_inputState.replaceTargetIndex > fromIndex &&
+                       m_inputState.replaceTargetIndex <= toIndex) {
+                m_inputState.replaceTargetIndex -= 1;
+            } else if (toIndex < fromIndex &&
+                       m_inputState.replaceTargetIndex >= toIndex &&
+                       m_inputState.replaceTargetIndex < fromIndex) {
+                m_inputState.replaceTargetIndex += 1;
+            }
+            update();
+        });
+
     // Initialize painting component
     m_painter = new RegionPainter(this);
     m_painter->setSelectionManager(m_selectionManager);
@@ -330,14 +398,40 @@ RegionSelector::RegionSelector(QWidget* parent)
     connect(m_multiRegionManager, &MultiRegionManager::regionAdded,
         this, [this](int) {
             m_painter->invalidateOverlayCache();
+            refreshMultiRegionListPanel();
         });
     connect(m_multiRegionManager, &MultiRegionManager::regionRemoved,
-        this, [this](int) {
+        this, [this](int removedIndex) {
             m_painter->invalidateOverlayCache();
+            if (m_inputState.replaceTargetIndex == removedIndex) {
+                cancelMultiRegionReplace(false);
+            } else if (m_inputState.replaceTargetIndex > removedIndex) {
+                m_inputState.replaceTargetIndex -= 1;
+            }
+            refreshMultiRegionListPanel();
         });
     connect(m_multiRegionManager, &MultiRegionManager::regionUpdated,
         this, [this](int) {
             m_painter->invalidateOverlayCache();
+            const bool isSelectionInteracting = m_selectionManager &&
+                (m_selectionManager->isSelecting() ||
+                 m_selectionManager->isResizing() ||
+                 m_selectionManager->isMoving());
+            if (isSelectionInteracting) {
+                m_multiRegionListRefreshPending = true;
+            } else {
+                refreshMultiRegionListPanel();
+            }
+        });
+    connect(m_multiRegionManager, &MultiRegionManager::regionsReordered,
+        this, [this]() {
+            m_painter->invalidateOverlayCache();
+            refreshMultiRegionListPanel();
+        });
+    connect(m_multiRegionManager, &MultiRegionManager::regionsCleared,
+        this, [this]() {
+            m_painter->invalidateOverlayCache();
+            refreshMultiRegionListPanel();
         });
 
     // Initialize export manager component
@@ -415,7 +509,17 @@ RegionSelector::RegionSelector(QWidget* parent)
             }
             if (m_inputState.multiRegionMode && m_multiRegionManager) {
                 QRect sel = m_selectionManager->selectionRect();
-                if (sel.isValid() && sel.width() > 5 && sel.height() > 5 &&
+                if (m_inputState.replaceTargetIndex >= 0) {
+                    const int replaceIndex = m_inputState.replaceTargetIndex;
+                    if (replaceIndex >= 0 && replaceIndex < m_multiRegionManager->count() &&
+                        sel.isValid() && sel.width() > 5 && sel.height() > 5) {
+                        m_multiRegionManager->updateRegion(replaceIndex, sel);
+                        m_multiRegionManager->setActiveIndex(replaceIndex);
+                    }
+                    m_inputState.replaceTargetIndex = -1;
+                    m_replaceOriginalRect = QRect();
+                }
+                else if (sel.isValid() && sel.width() > 5 && sel.height() > 5 &&
                     m_multiRegionManager->activeIndex() < 0) {
                     m_multiRegionManager->addRegion(sel);
                 }
@@ -470,6 +574,10 @@ RegionSelector::RegionSelector(QWidget* parent)
         this, [this]() {
             emit selectionCancelled();
             close();
+        });
+    connect(m_inputHandler, &RegionInputHandler::replaceSelectionCancelled,
+        this, [this]() {
+            cancelMultiRegionReplace(true);
         });
 
     // Initialize toolbar handler component
@@ -834,6 +942,9 @@ void RegionSelector::setupScreenGeometry(QScreen* screen)
 
     QRect screenGeom = m_currentScreen->geometry();
     setFixedSize(screenGeom.size());
+    if (m_multiRegionListPanel) {
+        m_multiRegionListPanel->updatePanelGeometry(size());
+    }
     m_selectionManager->setBounds(QRect(0, 0, screenGeom.width(), screenGeom.height()));
     m_toolManager->setTextEditingBounds(rect());
 
@@ -875,6 +986,9 @@ void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapt
     // Update export manager with background pixmap and DPR
     m_exportManager->setBackgroundPixmap(m_backgroundPixmap);
     m_exportManager->setDevicePixelRatio(m_devicePixelRatio);
+    if (m_multiRegionListPanel) {
+        m_multiRegionListPanel->setCaptureContext(m_backgroundPixmap, m_devicePixelRatio);
+    }
 
     // 不預設選取整個螢幕，等待用戶操作
     m_selectionManager->clearSelection();
@@ -943,6 +1057,9 @@ void RegionSelector::initializeWithRegion(QScreen* screen, const QRect& region)
     // Update export manager with background pixmap and DPR
     m_exportManager->setBackgroundPixmap(m_backgroundPixmap);
     m_exportManager->setDevicePixelRatio(m_devicePixelRatio);
+    if (m_multiRegionListPanel) {
+        m_multiRegionListPanel->setCaptureContext(m_backgroundPixmap, m_devicePixelRatio);
+    }
 
     // Pre-compose dimmed background cache for fast painting on high-DPI screens
     m_painter->buildDimmedCache(m_backgroundPixmap);
@@ -1051,6 +1168,8 @@ void RegionSelector::switchToScreen(QScreen* screen, bool preserveCompletedSelec
     }
     if (m_inputState.multiRegionMode) {
         clearPreservedSelection();
+        cancelMultiRegionReplace(false);
+        refreshMultiRegionListPanel();
     }
     m_annotationLayer->clear();
     m_selectionManager->clearSelection();
@@ -1171,6 +1290,65 @@ void RegionSelector::refreshWindowDetectorForCurrentScreen()
     }
 }
 
+void RegionSelector::refreshMultiRegionListPanel()
+{
+    if (!m_multiRegionListPanel || !m_multiRegionManager) {
+        return;
+    }
+
+    m_multiRegionListRefreshPending = false;
+    m_multiRegionListPanel->setCaptureContext(m_backgroundPixmap, m_devicePixelRatio);
+    m_multiRegionListPanel->setRegions(m_multiRegionManager->regions());
+    m_multiRegionListPanel->setActiveIndex(m_multiRegionManager->activeIndex());
+}
+
+void RegionSelector::beginMultiRegionReplace(int index)
+{
+    if (!m_inputState.multiRegionMode || !m_multiRegionManager) {
+        return;
+    }
+    if (index < 0 || index >= m_multiRegionManager->count()) {
+        return;
+    }
+    if (m_inputState.replaceTargetIndex >= 0 && m_inputState.replaceTargetIndex != index) {
+        cancelMultiRegionReplace(false);
+    }
+
+    m_inputState.currentTool = ToolId::Selection;
+    m_inputState.showSubToolbar = false;
+    m_inputState.replaceTargetIndex = index;
+    m_replaceOriginalRect = m_multiRegionManager->regionRect(index);
+
+    m_multiRegionManager->setActiveIndex(index);
+    m_selectionManager->clearSelection();
+    m_selectionManager->setSelectionRect(m_replaceOriginalRect);
+    update();
+}
+
+void RegionSelector::cancelMultiRegionReplace(bool restoreSelection)
+{
+    const int replaceIndex = m_inputState.replaceTargetIndex;
+    if (replaceIndex < 0) {
+        return;
+    }
+
+    if (restoreSelection && m_multiRegionManager &&
+        replaceIndex < m_multiRegionManager->count()) {
+        const QRect restoreRect = m_replaceOriginalRect.isValid()
+            ? m_replaceOriginalRect
+            : m_multiRegionManager->regionRect(replaceIndex);
+        m_multiRegionManager->setActiveIndex(replaceIndex);
+        m_selectionManager->clearSelection();
+        if (restoreRect.isValid() && !restoreRect.isEmpty()) {
+            m_selectionManager->setSelectionRect(restoreRect);
+        }
+    }
+
+    m_inputState.replaceTargetIndex = -1;
+    m_replaceOriginalRect = QRect();
+    update();
+}
+
 void RegionSelector::refreshWindowDetectionAtCursor()
 {
     if (!m_windowDetector || !m_windowDetector->isEnabled() || !m_currentScreen) {
@@ -1260,6 +1438,12 @@ void RegionSelector::paintEvent(QPaintEvent* event)
     m_painter->setCurrentTool(static_cast<int>(m_inputState.currentTool));
     m_painter->setDevicePixelRatio(m_devicePixelRatio);
     m_painter->setMultiRegionMode(m_inputState.multiRegionMode);
+    const bool showReplacePreview = m_inputState.multiRegionMode &&
+        m_inputState.replaceTargetIndex >= 0 &&
+        m_selectionManager->isSelecting();
+    m_painter->setReplacePreview(
+        showReplacePreview ? m_inputState.replaceTargetIndex : -1,
+        showReplacePreview ? m_selectionManager->selectionRect().normalized() : QRect());
 
     // Delegate core painting (background, overlay, selection, annotations)
     m_painter->paint(painter, m_backgroundPixmap, dirtyRect);
@@ -1406,6 +1590,7 @@ void RegionSelector::setMultiRegionMode(bool enabled)
         return;
     }
 
+    cancelMultiRegionReplace(false);
     m_inputState.multiRegionMode = enabled;
     m_painter->setMultiRegionMode(enabled);
     m_toolbarHandler->setMultiRegionMode(enabled);
@@ -1426,11 +1611,22 @@ void RegionSelector::setMultiRegionMode(bool enabled)
         m_annotationLayer->clear();
         m_inputState.currentTool = ToolId::Selection;
         m_inputState.showSubToolbar = false;
+        if (m_multiRegionListPanel) {
+            m_multiRegionListPanel->setCaptureContext(m_backgroundPixmap, m_devicePixelRatio);
+            m_multiRegionListPanel->updatePanelGeometry(size());
+            m_multiRegionListPanel->show();
+            m_multiRegionListPanel->raise();
+            refreshMultiRegionListPanel();
+        }
     }
     else {
         m_multiRegionManager->clear();
         m_selectionManager->clearSelection();
         m_inputState.showSubToolbar = true;
+        if (m_multiRegionListPanel) {
+            m_multiRegionListPanel->hide();
+            m_multiRegionListPanel->setRegions(QVector<MultiRegionManager::Region>());
+        }
     }
 
     update();
@@ -1624,7 +1820,11 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
 
         // ESC 直接離開 capture mode
         if (m_inputState.multiRegionMode) {
-            cancelMultiRegionCapture();
+            if (m_inputState.replaceTargetIndex >= 0) {
+                cancelMultiRegionReplace(true);
+            } else {
+                cancelMultiRegionCapture();
+            }
         }
         else {
             emit selectionCancelled();
@@ -1785,6 +1985,14 @@ void RegionSelector::showEvent(QShowEvent* event)
     ensureCrossCursor();
 }
 
+void RegionSelector::resizeEvent(QResizeEvent* event)
+{
+    QWidget::resizeEvent(event);
+    if (m_multiRegionListPanel) {
+        m_multiRegionListPanel->updatePanelGeometry(size());
+    }
+}
+
 void RegionSelector::enterEvent(QEnterEvent* event)
 {
     QWidget::enterEvent(event);
@@ -1849,6 +2057,15 @@ bool RegionSelector::eventFilter(QObject* obj, QEvent* event)
             // Note: eventFilter sees keys before keyPressEvent
             if (m_toolManager && m_toolManager->handleEscape()) {
                 return true; // Event handled, don't close
+            }
+
+            if (m_inputState.multiRegionMode) {
+                if (m_inputState.replaceTargetIndex >= 0) {
+                    cancelMultiRegionReplace(true);
+                } else {
+                    cancelMultiRegionCapture();
+                }
+                return true;
             }
 
             emit selectionCancelled();

@@ -90,6 +90,12 @@ void RegionPainter::setDevicePixelRatio(qreal ratio)
     m_devicePixelRatio = ratio;
 }
 
+void RegionPainter::setReplacePreview(int targetIndex, const QRect& previewRect)
+{
+    m_replaceTargetIndex = targetIndex;
+    m_replacePreviewRect = previewRect;
+}
+
 void RegionPainter::invalidateOverlayCache()
 {
     m_overlayCacheValid = false;
@@ -331,6 +337,15 @@ void RegionPainter::drawMultiSelection(QPainter& painter)
             painter.drawRect(sel);
             drawRegionBadge(painter, sel, previewColor, m_multiRegionManager->nextIndex(), true);
         }
+    }
+
+    if (m_replaceTargetIndex >= 0 && m_replaceTargetIndex < regions.size() &&
+        m_replacePreviewRect.isValid() && !m_replacePreviewRect.isEmpty()) {
+        const auto& targetRegion = regions[m_replaceTargetIndex];
+        painter.setPen(QPen(targetRegion.color, 2, Qt::DashLine));
+        painter.setBrush(Qt::NoBrush);
+        painter.drawRect(m_replacePreviewRect);
+        drawRegionBadge(painter, m_replacePreviewRect, targetRegion.color, targetRegion.index, true);
     }
 }
 

@@ -25,6 +25,7 @@ struct RegionInputState {
     ShapeFillMode shapeFillMode = ShapeFillMode::Outline;
 
     bool multiRegionMode = false;
+    int replaceTargetIndex = -1;
 
     QPoint currentPoint;
     bool isDrawing = false;

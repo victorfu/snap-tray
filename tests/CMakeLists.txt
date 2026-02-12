@@ -103,6 +103,26 @@ target_link_libraries(RegionSelector_SelectionDirtyRegionPlanner PRIVATE snaptra
 add_test(NAME RegionSelector_SelectionDirtyRegionPlanner COMMAND RegionSelector_SelectionDirtyRegionPlanner)
 set_tests_properties(RegionSelector_SelectionDirtyRegionPlanner PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(RegionSelector_MultiRegionManagerReorder RegionSelector/tst_MultiRegionManagerReorder.cpp)
+target_link_libraries(RegionSelector_MultiRegionManagerReorder PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME RegionSelector_MultiRegionManagerReorder COMMAND RegionSelector_MultiRegionManagerReorder)
+set_tests_properties(RegionSelector_MultiRegionManagerReorder PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(RegionSelector_MultiRegionManagerDeleteReindex RegionSelector/tst_MultiRegionManagerDeleteReindex.cpp)
+target_link_libraries(RegionSelector_MultiRegionManagerDeleteReindex PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME RegionSelector_MultiRegionManagerDeleteReindex COMMAND RegionSelector_MultiRegionManagerDeleteReindex)
+set_tests_properties(RegionSelector_MultiRegionManagerDeleteReindex PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(RegionSelector_MultiRegionListPanel RegionSelector/tst_MultiRegionListPanel.cpp)
+target_link_libraries(RegionSelector_MultiRegionListPanel PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME RegionSelector_MultiRegionListPanel COMMAND RegionSelector_MultiRegionListPanel)
+set_tests_properties(RegionSelector_MultiRegionListPanel PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(RegionSelector_MultiRegionReplaceFlow RegionSelector/tst_MultiRegionReplaceFlow.cpp)
+target_link_libraries(RegionSelector_MultiRegionReplaceFlow PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME RegionSelector_MultiRegionReplaceFlow COMMAND RegionSelector_MultiRegionReplaceFlow)
+set_tests_properties(RegionSelector_MultiRegionReplaceFlow PROPERTIES TIMEOUT 60 LABELS "unit")
+
 # ============================================================================
 # Encoding Tests (link snaptray_platform)
 # ============================================================================

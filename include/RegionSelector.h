@@ -45,6 +45,7 @@ class ColorPickerDialogCompat;
 }
 }
 class QCloseEvent;
+class QResizeEvent;
 class QFutureWatcherBase;
 class OCRManager;
 struct OCRResult;
@@ -56,6 +57,7 @@ class RegionInputHandler;
 class RegionToolbarHandler;
 class RegionSettingsHelper;
 class RegionExportManager;
+class MultiRegionListPanel;
 class AnnotationContext;
 
 // ShapeType and ShapeFillMode are defined in annotations/ShapeAnnotation.h
@@ -118,6 +120,7 @@ protected:
     void keyPressEvent(QKeyEvent *event) override;
     void closeEvent(QCloseEvent *event) override;
     void showEvent(QShowEvent *event) override;
+    void resizeEvent(QResizeEvent* event) override;
     void enterEvent(QEnterEvent *event) override;
     void focusInEvent(QFocusEvent *event) override;
     bool eventFilter(QObject *obj, QEvent *event) override;
@@ -196,6 +199,9 @@ private:
     void clearPreservedSelection();
     void finishPreservedSelection();
     void refreshWindowDetectorForCurrentScreen();
+    void refreshMultiRegionListPanel();
+    void beginMultiRegionReplace(int index);
+    void cancelMultiRegionReplace(bool restoreSelection);
 
     // Screen lifecycle management
     void onScreenRemoved(QScreen *screen);
@@ -321,6 +327,9 @@ private:
 
     // Multi-region capture
     MultiRegionManager* m_multiRegionManager = nullptr;
+    MultiRegionListPanel* m_multiRegionListPanel = nullptr;
+    QRect m_replaceOriginalRect;
+    bool m_multiRegionListRefreshPending = false;
 
     // Quick Pin mode (select region and pin immediately, skip toolbar)
     bool m_quickPinMode = false;

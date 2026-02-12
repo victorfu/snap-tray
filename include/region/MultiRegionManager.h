@@ -26,6 +26,7 @@ public:
     explicit MultiRegionManager(QObject* parent = nullptr);
 
     int addRegion(const QRect& rect);
+    bool moveRegion(int fromIndex, int toIndex);
     void removeRegion(int index);
     void updateRegion(int index, const QRect& rect);
     int hitTest(const QPoint& pos) const;
@@ -49,6 +50,7 @@ public:
 
 signals:
     void regionAdded(int index);
+    void regionsReordered();
     void regionRemoved(int index);
     void regionUpdated(int index);
     void activeIndexChanged(int index);

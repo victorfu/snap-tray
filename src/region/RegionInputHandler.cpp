@@ -369,6 +369,10 @@ void RegionInputHandler::handleMouseRelease(QMouseEvent* event)
 
 bool RegionInputHandler::handleTextEditorPress(const QPoint& pos)
 {
+    if (!m_textEditor) {
+        return false;
+    }
+
     if (!m_textEditor->isEditing()) {
         return false;
     }
@@ -528,6 +532,12 @@ bool RegionInputHandler::handleSelectionToolPress(const QPoint& pos)
     }
 
     if (state().multiRegionMode && m_multiRegionManager) {
+        if (state().replaceTargetIndex >= 0) {
+            handleNewSelectionPress(pos);
+            emit updateRequested();
+            return true;
+        }
+
         int hitIndex = m_multiRegionManager->hitTest(pos);
         if (hitIndex >= 0) {
             m_multiRegionManager->setActiveIndex(hitIndex);
@@ -657,6 +667,10 @@ void RegionInputHandler::handleRightButtonPress(const QPoint& pos)
 
 bool RegionInputHandler::handleTextEditorMove(const QPoint& pos)
 {
+    if (!m_textEditor) {
+        return false;
+    }
+
     if (m_textEditor->isEditing() && m_textEditor->isConfirmMode()) {
         m_textEditor->handleMouseMove(pos);
         if (m_textEditor->contains(pos)) {
@@ -1128,6 +1142,10 @@ QPoint RegionInputHandler::currentCursorLocalPos() const
 
 bool RegionInputHandler::handleTextEditorRelease(const QPoint& pos)
 {
+    if (!m_textEditor) {
+        return false;
+    }
+
     if (m_textEditor->isEditing() && m_textEditor->isConfirmMode()) {
         m_textEditor->handleMouseRelease(pos);
         return true;
@@ -1160,8 +1178,10 @@ bool RegionInputHandler::handleRegionControlWidgetRelease(const QPoint& pos)
 
 void RegionInputHandler::handleSelectionRelease(const QPoint& pos)
 {
+    Q_UNUSED(pos);
     QRect sel = m_selectionManager->selectionRect();
     if (state().multiRegionMode) {
+        const bool replacingRegion = (state().replaceTargetIndex >= 0);
         if (sel.width() > 5 && sel.height() > 5) {
             m_selectionManager->finishSelection();
             emit selectionFinished();
@@ -1173,6 +1193,11 @@ void RegionInputHandler::handleSelectionRelease(const QPoint& pos)
             qDebug() << "RegionInputHandler: Multi-region selection via detected window";
 
             clearDetectionAndNotify();
+        }
+        else if (replacingRegion) {
+            m_selectionManager->clearSelection();
+            emit replaceSelectionCancelled();
+            qDebug() << "RegionInputHandler: Multi-region replace cancelled due to invalid selection";
         }
         return;
     }

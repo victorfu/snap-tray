@@ -86,6 +86,7 @@ signals:
     void windowDetectionRequested(const QPoint& pos);
     void selectionFinished();
     void fullScreenSelectionRequested();
+    void replaceSelectionCancelled();
 
     // State change notifications
     void drawingStateChanged(bool isDrawing);

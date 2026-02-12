@@ -39,6 +39,38 @@ int MultiRegionManager::addRegion(const QRect& rect)
     return newIndex;
 }
 
+bool MultiRegionManager::moveRegion(int fromIndex, int toIndex)
+{
+    if (fromIndex < 0 || fromIndex >= m_regions.size() ||
+        toIndex < 0 || toIndex >= m_regions.size() ||
+        fromIndex == toIndex) {
+        return false;
+    }
+
+    const Region movedRegion = m_regions[fromIndex];
+    m_regions.removeAt(fromIndex);
+    m_regions.insert(toIndex, movedRegion);
+
+    const int oldActiveIndex = m_activeIndex;
+    if (oldActiveIndex == fromIndex) {
+        m_activeIndex = toIndex;
+    } else if (fromIndex < toIndex && oldActiveIndex > fromIndex && oldActiveIndex <= toIndex) {
+        m_activeIndex = oldActiveIndex - 1;
+    } else if (toIndex < fromIndex && oldActiveIndex >= toIndex && oldActiveIndex < fromIndex) {
+        m_activeIndex = oldActiveIndex + 1;
+    }
+
+    for (int i = 0; i < m_regions.size(); ++i) {
+        m_regions[i].isActive = (i == m_activeIndex);
+    }
+
+    if (m_activeIndex != oldActiveIndex) {
+        emit activeIndexChanged(m_activeIndex);
+    }
+    emit regionsReordered();
+    return true;
+}
+
 void MultiRegionManager::removeRegion(int index)
 {
     if (index < 0 || index >= m_regions.size()) {
