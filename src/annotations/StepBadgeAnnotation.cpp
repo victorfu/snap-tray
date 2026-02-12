@@ -3,6 +3,20 @@
 #include <QFont>
 #include <cmath>
 
+namespace {
+constexpr qreal kStepBadgeBrightFillLumaThreshold = 0.75;
+
+qreal rec709Luma(const QColor& color)
+{
+    return (0.2126 * color.redF()) + (0.7152 * color.greenF()) + (0.0722 * color.blueF());
+}
+
+QColor stepBadgeTextColorForFill(const QColor& fillColor)
+{
+    return rec709Luma(fillColor) >= kStepBadgeBrightFillLumaThreshold ? Qt::black : Qt::white;
+}
+} // namespace
+
 // ============================================================================
 // StepBadgeAnnotation Implementation
 // ============================================================================
@@ -65,9 +79,9 @@ void StepBadgeAnnotation::draw(QPainter &painter) const
     painter.setBrush(m_color);
     painter.drawEllipse(m_position, m_radius, m_radius);
 
-    // Draw white number in center
+    // Draw number in center with a contrast color based on badge fill.
     // Scale font proportionally: 8pt for small (r=10), 12pt for medium (r=14), 17pt for large (r=20)
-    painter.setPen(Qt::white);
+    painter.setPen(stepBadgeTextColorForFill(m_color));
     QFont font;
     int fontSize = (m_radius * 12) / kBadgeRadiusMedium;
     font.setPointSize(fontSize);

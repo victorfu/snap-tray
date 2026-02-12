@@ -3,6 +3,72 @@
 #include <QImage>
 #include "annotations/StepBadgeAnnotation.h"
 
+namespace {
+constexpr int kContrastProbeImageSize = 100;
+constexpr QPoint kContrastProbeCenter(50, 50);
+constexpr int kContrastProbeHalfSize = 8;
+constexpr int kDarkPixelChannelMax = 100;
+constexpr int kLightPixelChannelMin = 220;
+constexpr int kMinExpectedTextPixels = 12;
+
+QRect contrastProbeRect()
+{
+    return QRect(kContrastProbeCenter.x() - kContrastProbeHalfSize,
+                 kContrastProbeCenter.y() - kContrastProbeHalfSize,
+                 (kContrastProbeHalfSize * 2) + 1,
+                 (kContrastProbeHalfSize * 2) + 1);
+}
+
+QImage renderBadgeForTextContrastProbe(const QColor& fillColor)
+{
+    StepBadgeAnnotation badge(kContrastProbeCenter, fillColor, 8, StepBadgeAnnotation::kBadgeRadiusLarge);
+
+    QImage image(kContrastProbeImageSize, kContrastProbeImageSize, QImage::Format_ARGB32);
+    image.fill(Qt::transparent);
+
+    QPainter painter(&image);
+    badge.draw(painter);
+    painter.end();
+    return image;
+}
+
+int countDarkPixelsInProbe(const QImage& image)
+{
+    int count = 0;
+    const QRect probeRect = contrastProbeRect();
+    for (int y = probeRect.top(); y <= probeRect.bottom(); ++y) {
+        for (int x = probeRect.left(); x <= probeRect.right(); ++x) {
+            const QColor pixel = image.pixelColor(x, y);
+            if (pixel.alpha() > 0
+                && pixel.red() <= kDarkPixelChannelMax
+                && pixel.green() <= kDarkPixelChannelMax
+                && pixel.blue() <= kDarkPixelChannelMax) {
+                ++count;
+            }
+        }
+    }
+    return count;
+}
+
+int countLightPixelsInProbe(const QImage& image)
+{
+    int count = 0;
+    const QRect probeRect = contrastProbeRect();
+    for (int y = probeRect.top(); y <= probeRect.bottom(); ++y) {
+        for (int x = probeRect.left(); x <= probeRect.right(); ++x) {
+            const QColor pixel = image.pixelColor(x, y);
+            if (pixel.alpha() > 0
+                && pixel.red() >= kLightPixelChannelMin
+                && pixel.green() >= kLightPixelChannelMin
+                && pixel.blue() >= kLightPixelChannelMin) {
+                ++count;
+            }
+        }
+    }
+    return count;
+}
+} // namespace
+
 /**
  * @brief Tests for StepBadgeAnnotation class
  *
@@ -62,6 +128,8 @@ private slots:
     void testDraw_Basic();
     void testDraw_VerifyCircle();
     void testDraw_WithTransform();
+    void testDraw_TextColorContrast_data();
+    void testDraw_TextColorContrast();
 
     // Constants tests
     void testConstants();
@@ -417,6 +485,41 @@ void TestStepBadgeAnnotation::testDraw_WithTransform()
         }
     }
     QVERIFY(hasNonWhitePixel);
+}
+
+void TestStepBadgeAnnotation::testDraw_TextColorContrast_data()
+{
+    QTest::addColumn<QColor>("fillColor");
+    QTest::addColumn<bool>("expectDarkText");
+
+    QTest::newRow("yellow_fill_uses_dark_text") << QColor(255, 240, 120) << true;
+    QTest::newRow("white_fill_uses_dark_text") << QColor(Qt::white) << true;
+    QTest::newRow("red_fill_keeps_light_text") << QColor(Qt::red) << false;
+}
+
+void TestStepBadgeAnnotation::testDraw_TextColorContrast()
+{
+    QFETCH(QColor, fillColor);
+    QFETCH(bool, expectDarkText);
+
+    const QImage image = renderBadgeForTextContrastProbe(fillColor);
+    const int darkPixelCount = countDarkPixelsInProbe(image);
+    const int lightPixelCount = countLightPixelsInProbe(image);
+
+    if (expectDarkText) {
+        QVERIFY2(darkPixelCount >= kMinExpectedTextPixels,
+                 qPrintable(QString("Expected dark text pixels for fill %1, dark=%2, light=%3")
+                            .arg(fillColor.name())
+                            .arg(darkPixelCount)
+                            .arg(lightPixelCount)));
+        return;
+    }
+
+    QVERIFY2(lightPixelCount >= kMinExpectedTextPixels,
+             qPrintable(QString("Expected light text pixels for fill %1, dark=%2, light=%3")
+                        .arg(fillColor.name())
+                        .arg(darkPixelCount)
+                        .arg(lightPixelCount)));
 }
 
 // ============================================================================
