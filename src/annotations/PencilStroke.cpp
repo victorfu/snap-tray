@@ -125,6 +125,22 @@ std::unique_ptr<AnnotationItem> PencilStroke::clone() const
     return std::make_unique<PencilStroke>(m_points, m_color, m_width, m_lineStyle);
 }
 
+void PencilStroke::translate(const QPointF& delta)
+{
+    if (delta.isNull()) {
+        return;
+    }
+
+    for (QPointF& point : m_points) {
+        point += delta;
+    }
+
+    // Translation invalidates cached geometry derived from old coordinates.
+    m_boundingRectDirty = true;
+    m_cachedPath = QPainterPath();
+    m_cachedSegmentCount = 0;
+}
+
 void PencilStroke::addPoint(const QPointF &point)
 {
     m_points.append(point);

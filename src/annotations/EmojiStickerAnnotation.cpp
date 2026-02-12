@@ -159,3 +159,8 @@ std::unique_ptr<AnnotationItem> EmojiStickerAnnotation::clone() const
     cloned->setMirror(m_mirrorX, m_mirrorY);
     return cloned;
 }
+
+void EmojiStickerAnnotation::translate(const QPointF& delta)
+{
+    moveBy(delta.toPoint());
+}

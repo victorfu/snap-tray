@@ -37,6 +37,7 @@ void ToolManager::registerDefaultHandlers() {
     registerHandler(std::make_unique<StepBadgeToolHandler>());
     registerHandler(std::make_unique<EmojiStickerToolHandler>());
     registerHandler(std::make_unique<TextToolHandler>());
+    registerHandler(std::make_unique<CropToolHandler>());
 }
 
 void ToolManager::setCurrentTool(ToolId id) {

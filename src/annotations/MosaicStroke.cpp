@@ -367,6 +367,28 @@ void MosaicStroke::addPoint(const QPoint &point)
     m_points.append(point);
 }
 
+void MosaicStroke::translate(const QPointF& delta)
+{
+    QPoint d = delta.toPoint();
+    for (QPoint& point : m_points) {
+        point += d;
+    }
+}
+
+void MosaicStroke::setSourcePixmap(SharedPixmap pixmap)
+{
+    m_sourcePixmap = std::move(pixmap);
+    m_devicePixelRatio = m_sourcePixmap ? m_sourcePixmap->devicePixelRatio() : 1.0;
+    if (m_devicePixelRatio <= 0.0) {
+        m_devicePixelRatio = 1.0;
+    }
+
+    m_renderedCache = QPixmap();
+    m_cachedPointCount = 0;
+    m_cachedBounds = QRect();
+    m_cachedDpr = 0.0;
+}
+
 bool MosaicStroke::intersectsCircle(const QPoint &center, int radius) const
 {
     if (m_points.size() < 2) {

@@ -284,3 +284,20 @@ std::unique_ptr<AnnotationItem> MosaicRectAnnotation::clone() const
     return std::make_unique<MosaicRectAnnotation>(m_rect, m_sourcePixmap, m_blockSize, m_blurType);
 }
 
+void MosaicRectAnnotation::translate(const QPointF& delta)
+{
+    m_rect.translate(delta.toPoint());
+}
+
+void MosaicRectAnnotation::setSourcePixmap(SharedPixmap pixmap)
+{
+    m_sourcePixmap = std::move(pixmap);
+    m_devicePixelRatio = m_sourcePixmap ? m_sourcePixmap->devicePixelRatio() : 1.0;
+    if (m_devicePixelRatio <= 0.0) {
+        m_devicePixelRatio = 1.0;
+    }
+
+    m_renderedCache = QPixmap();
+    m_cachedRect = QRect();
+    m_cachedDpr = 0.0;
+}

@@ -292,6 +292,11 @@ void ArrowAnnotation::moveBy(const QPoint &delta)
     m_controlPoint += delta;
 }
 
+void ArrowAnnotation::translate(const QPointF& delta)
+{
+    moveBy(delta.toPoint());
+}
+
 std::unique_ptr<AnnotationItem> ArrowAnnotation::clone() const
 {
     auto cloned = std::make_unique<ArrowAnnotation>(m_start, m_end, m_color, m_width, m_lineEndStyle, m_lineStyle);

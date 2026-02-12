@@ -61,6 +61,8 @@ private slots:
     void testDraw_EmptyPoints();
     void testDraw_SinglePoint();
     void testDraw_MultiplePoints();
+    void testTranslate_UpdatesBoundingRectAfterCacheWarmup();
+    void testTranslate_RebuildsRenderedCacheAtNewPosition();
 
 private:
     QVector<QPointF> createTestPoints(int count, qreal spacing = 10.0);
@@ -73,6 +75,25 @@ QVector<QPointF> TestMarkerStroke::createTestPoints(int count, qreal spacing)
         points.append(QPointF(100 + i * spacing, 100 + i * spacing));
     }
     return points;
+}
+
+bool regionHasNonWhitePixel(const QImage& image, const QRect& region)
+{
+    const QRect clipped = region.intersected(image.rect());
+    if (clipped.isEmpty()) {
+        return false;
+    }
+
+    for (int y = clipped.top(); y <= clipped.bottom(); ++y) {
+        for (int x = clipped.left(); x <= clipped.right(); ++x) {
+            const QColor color = image.pixelColor(x, y);
+            if (color.red() != 255 || color.green() != 255 || color.blue() != 255 || color.alpha() != 255) {
+                return true;
+            }
+        }
+    }
+
+    return false;
 }
 
 // ============================================================================
@@ -398,6 +419,59 @@ void TestMarkerStroke::testDraw_MultiplePoints()
         }
     }
     QVERIFY(hasColor);
+}
+
+void TestMarkerStroke::testTranslate_UpdatesBoundingRectAfterCacheWarmup()
+{
+    QVector<QPointF> points = {
+        QPointF(40, 40),
+        QPointF(90, 65),
+        QPointF(140, 55)
+    };
+    MarkerStroke stroke(points, Qt::yellow, 20);
+
+    // Warm render cache before translation.
+    QImage warmup(260, 180, QImage::Format_ARGB32);
+    warmup.fill(Qt::white);
+    QPainter warmPainter(&warmup);
+    stroke.draw(warmPainter);
+
+    const QRect originalRect = stroke.boundingRect();
+    const QPointF delta(48.0, 26.0);
+    stroke.translate(delta);
+
+    const QRect translatedRect = stroke.boundingRect();
+    QCOMPARE(translatedRect.topLeft(), originalRect.topLeft() + QPoint(48, 26));
+    QCOMPARE(translatedRect.size(), originalRect.size());
+}
+
+void TestMarkerStroke::testTranslate_RebuildsRenderedCacheAtNewPosition()
+{
+    QVector<QPointF> points = {
+        QPointF(30, 30),
+        QPointF(60, 50),
+        QPointF(90, 35),
+        QPointF(120, 60)
+    };
+    MarkerStroke stroke(points, Qt::yellow, 18);
+
+    // Build initial cache.
+    QImage warmup(300, 220, QImage::Format_ARGB32);
+    warmup.fill(Qt::white);
+    QPainter warmPainter(&warmup);
+    stroke.draw(warmPainter);
+
+    const QRect oldRect = stroke.boundingRect();
+    stroke.translate(QPointF(120.0, 70.0));
+    const QRect newRect = stroke.boundingRect();
+
+    QImage translatedImage(300, 220, QImage::Format_ARGB32);
+    translatedImage.fill(Qt::white);
+    QPainter translatedPainter(&translatedImage);
+    stroke.draw(translatedPainter);
+
+    QVERIFY(regionHasNonWhitePixel(translatedImage, newRect.adjusted(-2, -2, 2, 2)));
+    QVERIFY(!regionHasNonWhitePixel(translatedImage, oldRect.adjusted(-2, -2, 2, 2)));
 }
 
 QTEST_MAIN(TestMarkerStroke)

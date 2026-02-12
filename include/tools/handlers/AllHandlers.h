@@ -13,5 +13,6 @@
 #include "EmojiStickerToolHandler.h"
 #include "TextToolHandler.h"
 #include "SelectionToolHandler.h"
+#include "CropToolHandler.h"
 
 #endif // ALLHANDLERS_H

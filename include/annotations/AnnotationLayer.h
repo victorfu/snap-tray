@@ -6,6 +6,8 @@
 #include <QPoint>
 #include <QRect>
 #include <QPixmap>
+#include <functional>
+#include <cstdint>
 #include <memory>
 #include <vector>
 
@@ -31,11 +33,15 @@ public:
     void redo();
     void clear();
     void draw(QPainter &painter) const;
+    void translateAll(const QPointF& delta);
+    void forEachItem(const std::function<void(AnnotationItem*)>& visitor,
+                     bool includeRedoStack = false);
 
     bool canUndo() const;
     bool canRedo() const;
     bool isEmpty() const;
     size_t itemCount() const { return m_items.size(); }
+    std::uint64_t revision() const { return m_revision; }
 
     // Access item by index (for re-editing)
     AnnotationItem* itemAt(int index);
@@ -94,6 +100,7 @@ private:
     mutable bool m_cacheValid = false;
     // Cache mode: -1 means full cache, >=0 means cache built excluding that item index.
     mutable int m_cacheExcludeIndex = -1;
+    std::uint64_t m_revision = 0;
 
     // Dirty region tracking for drag optimization
     mutable QRect m_dirtyRect;

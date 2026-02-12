@@ -29,6 +29,7 @@ public:
     void draw(QPainter &painter) const override;
     QRect boundingRect() const override;
     std::unique_ptr<AnnotationItem> clone() const override;
+    void translate(const QPointF& delta) override;
 
     void setRect(const QRect &rect);
     QRect rect() const { return m_rect; }

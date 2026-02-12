@@ -150,6 +150,8 @@ protected:
     void moveEvent(QMoveEvent* event) override;
 
 private:
+    struct CropUndoEntry;
+
     // AnnotationHostAdapter implementation
     QWidget* annotationHostWidget() const override;
     AnnotationLayer* annotationLayerForContext() const override;
@@ -218,11 +220,21 @@ private:
     void handleToolbarToolSelected(int toolId);
     void handleToolbarUndo();
     void handleToolbarRedo();
+    QSize cropToolImageSize() const;
+    void syncCropHandlerImageSize();
     void updateUndoRedoState();
     bool isAnnotationTool(ToolId toolId) const;
     QPixmap getExportPixmapWithAnnotations() const;
     void updateSubToolbarPosition();
     void hideSubToolbar();
+    void applyCrop(const QRect& cropRect);
+    void undoCrop();
+    void redoCrop();
+    bool canUndoCrop() const;
+    bool canRedoCrop() const;
+    void clearCropUndoHistory();
+    bool matchesCropAnnotationBoundary(const CropUndoEntry& entry) const;
+    void pruneInvalidCropRedoState();
     void onColorSelected(const QColor& color);
     void onWidthChanged(int width);
     void onEmojiSelected(const QString& emoji);
@@ -365,6 +377,25 @@ private:
     RegionSettingsHelper* m_settingsHelper = nullptr;
     bool m_toolbarVisible = false;
     bool m_annotationMode = false;
+    struct CropUndoEntry {
+        QPixmap pixmap;
+        int rotationAngle;
+        bool flipH;
+        bool flipV;
+        QVector<LayoutRegion> storedRegions;
+        bool hasMultiRegionData = false;
+        QPixmap croppedPixmap;
+        int croppedRotationAngle = 0;
+        bool croppedFlipH = false;
+        bool croppedFlipV = false;
+        QVector<LayoutRegion> croppedStoredRegions;
+        bool croppedHasMultiRegionData = false;
+        QPoint annotationOffsetDisplay;
+        const AnnotationItem* annotationTopItem = nullptr;
+    };
+    QVector<CropUndoEntry> m_cropUndoStack;
+    QVector<CropUndoEntry> m_cropRedoStack;
+    static constexpr int kMaxCropUndoSize = 10;
     ToolId m_currentToolId = ToolId::Selection;
     QColor m_annotationColor;
     int m_annotationWidth = 3;

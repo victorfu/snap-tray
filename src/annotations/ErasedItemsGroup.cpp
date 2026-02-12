@@ -30,6 +30,15 @@ std::unique_ptr<AnnotationItem> ErasedItemsGroup::clone() const
     return std::make_unique<ErasedItemsGroup>(std::move(clonedItems));
 }
 
+void ErasedItemsGroup::translate(const QPointF& delta)
+{
+    for (auto& indexed : m_erasedItems) {
+        if (indexed.item) {
+            indexed.item->translate(delta);
+        }
+    }
+}
+
 std::vector<ErasedItemsGroup::IndexedItem> ErasedItemsGroup::extractItems()
 {
     return std::move(m_erasedItems);
@@ -50,5 +59,16 @@ void ErasedItemsGroup::adjustIndicesForTrim(size_t trimCount)
         } else {
             m_originalIndices[i] = 0;
         }
+    }
+}
+
+void ErasedItemsGroup::forEachStoredItem(const std::function<void(AnnotationItem*)>& visitor)
+{
+    if (!visitor) {
+        return;
+    }
+
+    for (auto& indexed : m_erasedItems) {
+        visitor(indexed.item.get());
     }
 }

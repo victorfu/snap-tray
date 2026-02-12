@@ -21,6 +21,7 @@ public:
     void draw(QPainter &painter) const override;
     QRect boundingRect() const override;
     std::unique_ptr<AnnotationItem> clone() const override;
+    void translate(const QPointF& delta) override;
 
     // Selection support
     bool containsPoint(const QPoint &point) const;

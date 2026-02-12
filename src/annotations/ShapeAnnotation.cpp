@@ -58,6 +58,11 @@ std::unique_ptr<AnnotationItem> ShapeAnnotation::clone() const
     return std::make_unique<ShapeAnnotation>(m_rect, m_type, m_color, m_width, m_filled);
 }
 
+void ShapeAnnotation::translate(const QPointF& delta)
+{
+    m_rect.translate(delta.toPoint());
+}
+
 void ShapeAnnotation::setRect(const QRect &rect)
 {
     m_rect = rect;

@@ -605,6 +605,7 @@ add_library(snaptray_ui STATIC
     src/tools/handlers/EmojiStickerToolHandler.cpp
     src/tools/handlers/TextToolHandler.cpp
     src/tools/handlers/SelectionToolHandler.cpp
+    src/tools/handlers/CropToolHandler.cpp
 
     # Widgets
     src/toolbar/ToolOptionsPanel.cpp

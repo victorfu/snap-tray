@@ -283,3 +283,8 @@ void PolylineAnnotation::moveBy(const QPoint& delta)
         point += delta;
     }
 }
+
+void PolylineAnnotation::translate(const QPointF& delta)
+{
+    moveBy(delta.toPoint());
+}

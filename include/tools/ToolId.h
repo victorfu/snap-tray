@@ -22,6 +22,7 @@ enum class ToolId {
     Eraser,
     StepBadge,
     EmojiSticker,
+    Crop,       // Crop sub-region of pin window content
 
     // Toggle tools (affect canvas behavior)
     CanvasWhiteboard,   // ScreenCanvas whiteboard background mode toggle

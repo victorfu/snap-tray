@@ -147,6 +147,42 @@ void AnnotationLayer::clear()
     emit changed();
 }
 
+void AnnotationLayer::translateAll(const QPointF& delta)
+{
+    auto translateItems = [&delta](std::vector<std::unique_ptr<AnnotationItem>>& items) {
+        for (auto& item : items) {
+            if (item) {
+                item->translate(delta);
+            }
+        }
+    };
+
+    translateItems(m_items);
+    translateItems(m_redoStack);
+
+    invalidateCache();
+    emit changed();
+}
+
+void AnnotationLayer::forEachItem(const std::function<void(AnnotationItem*)>& visitor,
+                                  bool includeRedoStack)
+{
+    if (!visitor) {
+        return;
+    }
+
+    auto visitItems = [&visitor](std::vector<std::unique_ptr<AnnotationItem>>& items) {
+        for (auto& item : items) {
+            visitor(item.get());
+        }
+    };
+
+    visitItems(m_items);
+    if (includeRedoStack) {
+        visitItems(m_redoStack);
+    }
+}
+
 void AnnotationLayer::draw(QPainter &painter) const
 {
     if (m_items.empty()) return;
@@ -355,6 +391,7 @@ void AnnotationLayer::invalidateCache()
 {
     m_cacheValid = false;
     m_cacheExcludeIndex = -1;
+    ++m_revision;
 }
 
 void AnnotationLayer::drawCached(QPainter &painter, const QSize &canvasSize, qreal devicePixelRatio) const

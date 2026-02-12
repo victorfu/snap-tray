@@ -5,6 +5,7 @@
 #include <vector>
 #include <cstddef>
 #include <memory>
+#include <functional>
 
 /**
  * @brief Group of erased items (for undo support)
@@ -26,6 +27,7 @@ public:
     void draw(QPainter &painter) const override;  // Does nothing (invisible marker)
     QRect boundingRect() const override;          // Returns empty rect
     std::unique_ptr<AnnotationItem> clone() const override;
+    void translate(const QPointF& delta) override;
 
     // Check if this group contains any items
     bool hasItems() const { return !m_erasedItems.empty(); }
@@ -39,6 +41,9 @@ public:
 
     // Adjust stored indices when trimHistory() removes items from front
     void adjustIndicesForTrim(size_t trimCount);
+
+    // Visit items currently stored inside this erased-items group.
+    void forEachStoredItem(const std::function<void(AnnotationItem*)>& visitor);
 
 private:
     std::vector<IndexedItem> m_erasedItems;

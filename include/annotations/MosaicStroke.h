@@ -28,6 +28,8 @@ public:
     void draw(QPainter &painter) const override;
     QRect boundingRect() const override;
     std::unique_ptr<AnnotationItem> clone() const override;
+    void translate(const QPointF& delta) override;
+    void setSourcePixmap(SharedPixmap pixmap);
 
     void addPoint(const QPoint &point);
     BlurType blurType() const { return m_blurType; }

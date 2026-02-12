@@ -110,6 +110,11 @@ std::unique_ptr<AnnotationItem> StepBadgeAnnotation::clone() const
     return cloned;
 }
 
+void StepBadgeAnnotation::translate(const QPointF& delta)
+{
+    m_position += delta.toPoint();
+}
+
 void StepBadgeAnnotation::setNumber(int number)
 {
     m_number = number;

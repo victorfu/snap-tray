@@ -18,12 +18,15 @@
 #include "toolbar/WindowedToolbar.h"
 #include "toolbar/WindowedSubToolbar.h"
 #include "annotations/AnnotationLayer.h"
+#include "annotations/ErasedItemsGroup.h"
 #include "annotations/EmojiStickerAnnotation.h"
+#include "annotations/MosaicStroke.h"
 #include "annotations/MosaicRectAnnotation.h"
 #include "detection/AutoBlurManager.h"
 #include "tools/ToolManager.h"
 #include "tools/IToolHandler.h"
 #include "tools/handlers/EmojiStickerToolHandler.h"
+#include "tools/handlers/CropToolHandler.h"
 #include "settings/AnnotationSettingsManager.h"
 #include "settings/AutoBlurSettingsManager.h"
 #include "settings/FileSettingsManager.h"
@@ -250,6 +253,65 @@ namespace {
 
         return found ? best : TextCompensation{};
     }
+
+    void refreshMosaicSourceForItem(AnnotationItem* item, const SharedPixmap& sourcePixmap)
+    {
+        if (!item) {
+            return;
+        }
+
+        if (auto* mosaic = dynamic_cast<MosaicStroke*>(item)) {
+            mosaic->setSourcePixmap(sourcePixmap);
+            return;
+        }
+        if (auto* mosaicRect = dynamic_cast<MosaicRectAnnotation*>(item)) {
+            mosaicRect->setSourcePixmap(sourcePixmap);
+            return;
+        }
+        if (auto* erasedGroup = dynamic_cast<ErasedItemsGroup*>(item)) {
+            erasedGroup->forEachStoredItem([&sourcePixmap](AnnotationItem* storedItem) {
+                refreshMosaicSourceForItem(storedItem, sourcePixmap);
+            });
+        }
+    }
+
+    void refreshAllMosaicSources(AnnotationLayer* layer, const SharedPixmap& sourcePixmap)
+    {
+        if (!layer) {
+            return;
+        }
+
+        layer->forEachItem([&sourcePixmap](AnnotationItem* item) {
+            refreshMosaicSourceForItem(item, sourcePixmap);
+        }, true);
+    }
+
+    // Crop endpoints can land on the logical right/bottom boundary (x == width / y == height)
+    // after inverse-transform mapping. Clamp using an endpoint-inclusive box first, then
+    // convert back to pixel-index bounds so edge-aligned crops keep their final row/column.
+    QRect clampCropRectToImagePixels(const QRect& cropRect, const QSize& imageSize)
+    {
+        if (!imageSize.isValid() || imageSize.isEmpty() || cropRect.isEmpty()) {
+            return QRect();
+        }
+
+        const QRect endpointBounds(
+            QPoint(0, 0),
+            QSize(imageSize.width() + 1, imageSize.height() + 1));
+        QRect clamped = cropRect.intersected(endpointBounds);
+        if (clamped.isEmpty()) {
+            return QRect();
+        }
+
+        const int maxX = imageSize.width() - 1;
+        const int maxY = imageSize.height() - 1;
+        clamped.setLeft(qBound(0, clamped.left(), maxX));
+        clamped.setTop(qBound(0, clamped.top(), maxY));
+        clamped.setRight(qBound(0, clamped.right(), maxX));
+        clamped.setBottom(qBound(0, clamped.bottom(), maxY));
+
+        return clamped.isValid() ? clamped : QRect();
+    }
 }  // namespace
 
 PinWindow::PinWindow(const QPixmap& screenshot,
@@ -401,6 +463,7 @@ void PinWindow::setZoomLevel(qreal zoom)
         m_currentZoomAction->setText(QString("%1%").arg(qRound(m_zoomLevel * 100)));
     }
     updateSize();
+    syncCropHandlerImageSize();
 }
 
 void PinWindow::setOpacity(qreal opacity)
@@ -427,25 +490,33 @@ void PinWindow::adjustOpacityByStep(int direction)
 void PinWindow::rotateRight()
 {
     m_rotationAngle = (m_rotationAngle + 90) % 360;
+    clearCropUndoHistory();
     updateSize();
+    syncCropHandlerImageSize();
 }
 
 void PinWindow::rotateLeft()
 {
     m_rotationAngle = (m_rotationAngle + 270) % 360;  // +270 is same as -90
+    clearCropUndoHistory();
     updateSize();
+    syncCropHandlerImageSize();
 }
 
 void PinWindow::flipHorizontal()
 {
     m_flipHorizontal = !m_flipHorizontal;
+    clearCropUndoHistory();
     updateSize();
+    syncCropHandlerImageSize();
 }
 
 void PinWindow::flipVertical()
 {
     m_flipVertical = !m_flipVertical;
+    clearCropUndoHistory();
     updateSize();
+    syncCropHandlerImageSize();
 }
 
 QPoint PinWindow::mapToOriginalCoords(const QPoint& displayPos) const
@@ -898,6 +969,16 @@ void PinWindow::createContextMenu()
 
     QAction* verticalFlipAction = imageProcessingMenu->addAction("Vertical flip");
     connect(verticalFlipAction, &QAction::triggered, this, &PinWindow::flipVertical);
+
+    imageProcessingMenu->addSeparator();
+    QAction* cropAction = imageProcessingMenu->addAction("Crop");
+    connect(cropAction, &QAction::triggered, this, [this]() {
+        if (!m_toolbar) {
+            initializeAnnotationComponents();
+        }
+        showToolbar();
+        handleToolbarToolSelected(static_cast<int>(ToolId::Crop));
+    });
 
     QMenu* opacityMenu = imageProcessingMenu->addMenu("Opacity");
     const int opacityStepPercent = qRound(PinWindowSettingsManager::instance().loadOpacityStep() * 100);
@@ -1881,6 +1962,7 @@ void PinWindow::mouseMoveEvent(QMouseEvent* event)
         // Apply new size and position
         setFixedSize(newSize);
         move(newPos);
+        syncCropHandlerImageSize();
         update();
 
         m_uiIndicators->showZoomIndicator(m_zoomLevel);
@@ -2283,6 +2365,14 @@ void PinWindow::initializeAnnotationComponents()
     m_sharedSourcePixmap = std::make_shared<const QPixmap>(m_originalPixmap);
     m_toolManager->setSourcePixmap(m_sharedSourcePixmap);  // Required for Mosaic tool
 
+    // Set up crop tool callback
+    if (auto* cropHandler = dynamic_cast<CropToolHandler*>(m_toolManager->handler(ToolId::Crop))) {
+        cropHandler->setCropCallback([this](const QRect& rect) { applyCrop(rect); });
+        cropHandler->setImageSize(cropToolImageSize());
+    } else {
+        qWarning() << "PinWindow: Failed to get CropToolHandler. Crop tool will not function.";
+    }
+
     // Load saved annotation settings
     auto& annotationSettings = AnnotationSettingsManager::instance();
     m_annotationColor = annotationSettings.loadColor();
@@ -2542,15 +2632,41 @@ void PinWindow::handleToolbarToolSelected(int toolId)
 
 void PinWindow::handleToolbarUndo()
 {
-    if (m_annotationLayer && m_annotationLayer->canUndo()) {
+    const bool annotationCanUndo = m_annotationLayer && m_annotationLayer->canUndo();
+    const bool cropCanUndo = canUndoCrop();
+
+    if (annotationCanUndo && cropCanUndo) {
+        const CropUndoEntry& latestCrop = m_cropUndoStack.constLast();
+        const bool hasPostCropAnnotationUndo = !matchesCropAnnotationBoundary(latestCrop);
+
+        if (hasPostCropAnnotationUndo) {
+            m_annotationLayer->undo();
+            updateUndoRedoState();
+            update();
+        } else {
+            undoCrop();
+        }
+        return;
+    }
+
+    if (annotationCanUndo) {
         m_annotationLayer->undo();
         updateUndoRedoState();
         update();
+    } else if (cropCanUndo) {
+        undoCrop();
     }
 }
 
 void PinWindow::handleToolbarRedo()
 {
+    pruneInvalidCropRedoState();
+
+    if (canRedoCrop()) {
+        redoCrop();
+        return;
+    }
+
     if (m_annotationLayer && m_annotationLayer->canRedo()) {
         m_annotationLayer->redo();
         updateUndoRedoState();
@@ -2558,11 +2674,331 @@ void PinWindow::handleToolbarRedo()
     }
 }
 
+QSize PinWindow::cropToolImageSize() const
+{
+    const QSize displaySize = rect().size();
+    if (displaySize.isEmpty()) {
+        return QSize();
+    }
+
+    if (m_rotationAngle == 0 && !m_flipHorizontal && !m_flipVertical) {
+        return displaySize;
+    }
+
+    const QRectF displayRect(QPointF(0, 0), QSizeF(displaySize));
+    const QTransform inverse = buildPinWindowTransform(
+        displayRect, m_rotationAngle, m_flipHorizontal, m_flipVertical).inverted();
+    const QRectF mapped = inverse.mapRect(displayRect);
+
+    return QSize(qMax(1, qRound(mapped.width())), qMax(1, qRound(mapped.height())));
+}
+
+void PinWindow::syncCropHandlerImageSize()
+{
+    if (!m_toolManager) {
+        return;
+    }
+
+    if (auto* cropHandler = dynamic_cast<CropToolHandler*>(m_toolManager->handler(ToolId::Crop))) {
+        cropHandler->setImageSize(cropToolImageSize());
+    }
+}
+
+void PinWindow::applyCrop(const QRect& cropRect)
+{
+    if (cropRect.isEmpty()) return;
+
+    qreal dpr = m_originalPixmap.devicePixelRatio();
+    if (dpr <= 0.0) dpr = 1.0;
+
+    // Crop tool coordinates follow the same space used by annotation tools.
+    // This space tracks display size (including zoom) and orientation mapping.
+    const QSize toolImageSize = cropToolImageSize();
+    if (!toolImageSize.isValid() || toolImageSize.isEmpty()) {
+        qWarning() << "PinWindow::applyCrop: invalid crop tool image size:" << toolImageSize;
+        return;
+    }
+
+    const QRect clampedToolRect = clampCropRectToImagePixels(cropRect, toolImageSize);
+    if (clampedToolRect.isEmpty()) {
+        qWarning() << "PinWindow::applyCrop: crop rect does not intersect tool bounds."
+                   << "cropRect:" << cropRect << "toolImageSize:" << toolImageSize;
+        return;
+    }
+
+    const QSize sourceLogicalSize = logicalSizeFromPixmap(m_originalPixmap);
+    if (sourceLogicalSize.isEmpty()) {
+        qWarning() << "PinWindow::applyCrop: source logical size is empty.";
+        return;
+    }
+
+    const qreal xScale = static_cast<qreal>(sourceLogicalSize.width()) / toolImageSize.width();
+    const qreal yScale = static_cast<qreal>(sourceLogicalSize.height()) / toolImageSize.height();
+
+    const qreal srcLeftF = clampedToolRect.left() * xScale;
+    const qreal srcTopF = clampedToolRect.top() * yScale;
+    const qreal srcRightF = (clampedToolRect.left() + clampedToolRect.width()) * xScale;
+    const qreal srcBottomF = (clampedToolRect.top() + clampedToolRect.height()) * yScale;
+
+    QRect sourceLogicalRect(
+        qFloor(srcLeftF),
+        qFloor(srcTopF),
+        qCeil(srcRightF) - qFloor(srcLeftF),
+        qCeil(srcBottomF) - qFloor(srcTopF));
+
+    sourceLogicalRect = sourceLogicalRect.intersected(QRect(QPoint(0, 0), sourceLogicalSize));
+    if (sourceLogicalRect.isEmpty()) {
+        qWarning() << "PinWindow::applyCrop: source logical rect is empty after scaling."
+                   << "toolRect:" << clampedToolRect << "sourceLogicalSize:" << sourceLogicalSize;
+        return;
+    }
+    const QPoint sourceOffset = sourceLogicalRect.topLeft();
+    // Annotations are authored in tool/display space, so keep a matching offset for translation.
+    const QPoint annotationOffsetDisplay(
+        qRound(static_cast<qreal>(sourceOffset.x()) * toolImageSize.width() / sourceLogicalSize.width()),
+        qRound(static_cast<qreal>(sourceOffset.y()) * toolImageSize.height() / sourceLogicalSize.height()));
+
+    // Convert logical crop rect to device pixels for QPixmap::copy.
+    QRect deviceRect;
+    deviceRect.setLeft(qFloor(sourceLogicalRect.left() * dpr));
+    deviceRect.setTop(qFloor(sourceLogicalRect.top() * dpr));
+    deviceRect.setRight(qCeil((sourceLogicalRect.left() + sourceLogicalRect.width()) * dpr) - 1);
+    deviceRect.setBottom(qCeil((sourceLogicalRect.top() + sourceLogicalRect.height()) * dpr) - 1);
+
+    // Validate device rect against actual pixmap bounds
+    QRect pixmapBounds(0, 0, m_originalPixmap.width(), m_originalPixmap.height());
+    QRect clampedDeviceRect = deviceRect.intersected(pixmapBounds);
+    if (clampedDeviceRect.isEmpty()) {
+        qWarning() << "PinWindow::applyCrop: crop rect does not intersect pixmap bounds."
+                    << "deviceRect:" << deviceRect << "pixmapSize:" << m_originalPixmap.size();
+        return;
+    }
+
+    QPixmap cropped = m_originalPixmap.copy(clampedDeviceRect);
+    if (cropped.isNull()) {
+        qWarning() << "PinWindow::applyCrop: QPixmap::copy returned null for rect:" << clampedDeviceRect;
+        return;
+    }
+
+    // Save current state for undo AFTER validation succeeds
+    CropUndoEntry entry;
+    entry.pixmap = m_originalPixmap;
+    entry.rotationAngle = m_rotationAngle;
+    entry.flipH = m_flipHorizontal;
+    entry.flipV = m_flipVertical;
+    entry.storedRegions = m_storedRegions;
+    entry.hasMultiRegionData = m_hasMultiRegionData;
+    entry.annotationOffsetDisplay = annotationOffsetDisplay;
+
+    // Apply the cropped pixmap
+    m_originalPixmap = cropped;
+    m_originalPixmap.setDevicePixelRatio(dpr);
+
+    // Cropping changes the canvas bounds/origin, so stored multi-region layout
+    // metadata no longer matches the image.
+    m_storedRegions.clear();
+    m_hasMultiRegionData = false;
+    entry.croppedPixmap = m_originalPixmap;
+    entry.croppedRotationAngle = m_rotationAngle;
+    entry.croppedFlipH = m_flipHorizontal;
+    entry.croppedFlipV = m_flipVertical;
+    entry.croppedStoredRegions = m_storedRegions;
+    entry.croppedHasMultiRegionData = m_hasMultiRegionData;
+
+    // Update shared pixmap for mosaic tool
+    m_sharedSourcePixmap = std::make_shared<const QPixmap>(m_originalPixmap);
+    if (m_toolManager) {
+        m_toolManager->setSourcePixmap(m_sharedSourcePixmap);
+    }
+
+    // Invalidate transform cache
+    m_cachedRotation = -1;
+
+    // Translate annotations in display/tool coordinates (same space as tool input).
+    if (m_annotationLayer) {
+        const std::size_t annotationCount = m_annotationLayer->itemCount();
+        if (annotationCount > 0) {
+            entry.annotationTopItem =
+                m_annotationLayer->itemAt(static_cast<int>(annotationCount - 1));
+        }
+        m_annotationLayer->translateAll(QPointF(-annotationOffsetDisplay.x(), -annotationOffsetDisplay.y()));
+        refreshAllMosaicSources(m_annotationLayer, m_sharedSourcePixmap);
+    }
+
+    m_cropRedoStack.clear();
+    m_cropUndoStack.append(std::move(entry));
+    if (m_cropUndoStack.size() > kMaxCropUndoSize) {
+        m_cropUndoStack.removeFirst();
+    }
+
+    // Exit crop mode and switch to Selection
+    if (m_toolbar) {
+        m_toolbar->setActiveButton(static_cast<int>(ToolId::Selection));
+    }
+    m_currentToolId = ToolId::Selection;
+    if (m_toolManager) {
+        m_toolManager->setCurrentTool(ToolId::Selection);
+    }
+    exitAnnotationMode();
+
+    // Update display
+    updateSize();
+    updateToolbarPosition();
+    syncCropHandlerImageSize();
+    updateUndoRedoState();
+
+    // Save to cache
+    saveToCacheAsync();
+}
+
+void PinWindow::undoCrop()
+{
+    if (m_cropUndoStack.isEmpty()) return;
+
+    // Restore previous state
+    CropUndoEntry entry = m_cropUndoStack.takeLast();
+    m_originalPixmap = entry.pixmap;
+    m_rotationAngle = entry.rotationAngle;
+    m_flipHorizontal = entry.flipH;
+    m_flipVertical = entry.flipV;
+    m_storedRegions = entry.storedRegions;
+    m_hasMultiRegionData = entry.hasMultiRegionData;
+
+    // Update shared pixmap
+    m_sharedSourcePixmap = std::make_shared<const QPixmap>(m_originalPixmap);
+    if (m_toolManager) {
+        m_toolManager->setSourcePixmap(m_sharedSourcePixmap);
+    }
+    if (m_annotationLayer) {
+        m_annotationLayer->translateAll(QPointF(entry.annotationOffsetDisplay.x(),
+                                                entry.annotationOffsetDisplay.y()));
+        refreshAllMosaicSources(m_annotationLayer, m_sharedSourcePixmap);
+    }
+    m_cropRedoStack.append(entry);
+    if (m_cropRedoStack.size() > kMaxCropUndoSize) {
+        m_cropRedoStack.removeFirst();
+    }
+
+    // Invalidate transform cache
+    m_cachedRotation = -1;
+
+    // Update display
+    updateSize();
+    updateToolbarPosition();
+    syncCropHandlerImageSize();
+    updateUndoRedoState();
+
+    // Save to cache
+    saveToCacheAsync();
+}
+
+void PinWindow::redoCrop()
+{
+    if (m_cropRedoStack.isEmpty()) return;
+
+    CropUndoEntry entry = m_cropRedoStack.takeLast();
+    m_originalPixmap = entry.croppedPixmap;
+    m_rotationAngle = entry.croppedRotationAngle;
+    m_flipHorizontal = entry.croppedFlipH;
+    m_flipVertical = entry.croppedFlipV;
+    m_storedRegions = entry.croppedStoredRegions;
+    m_hasMultiRegionData = entry.croppedHasMultiRegionData;
+
+    m_sharedSourcePixmap = std::make_shared<const QPixmap>(m_originalPixmap);
+    if (m_toolManager) {
+        m_toolManager->setSourcePixmap(m_sharedSourcePixmap);
+    }
+    if (m_annotationLayer) {
+        m_annotationLayer->translateAll(QPointF(-entry.annotationOffsetDisplay.x(),
+                                                -entry.annotationOffsetDisplay.y()));
+        refreshAllMosaicSources(m_annotationLayer, m_sharedSourcePixmap);
+    }
+
+    m_cropUndoStack.append(entry);
+    if (m_cropUndoStack.size() > kMaxCropUndoSize) {
+        m_cropUndoStack.removeFirst();
+    }
+
+    m_cachedRotation = -1;
+
+    updateSize();
+    updateToolbarPosition();
+    syncCropHandlerImageSize();
+    updateUndoRedoState();
+
+    saveToCacheAsync();
+}
+
+bool PinWindow::canUndoCrop() const
+{
+    return !m_cropUndoStack.isEmpty();
+}
+
+bool PinWindow::canRedoCrop() const
+{
+    if (m_cropRedoStack.isEmpty()) {
+        return false;
+    }
+    if (!m_annotationLayer) {
+        return true;
+    }
+
+    return matchesCropAnnotationBoundary(m_cropRedoStack.constLast());
+}
+
+void PinWindow::clearCropUndoHistory()
+{
+    if (m_cropUndoStack.isEmpty() && m_cropRedoStack.isEmpty()) {
+        return;
+    }
+
+    m_cropUndoStack.clear();
+    m_cropRedoStack.clear();
+    updateUndoRedoState();
+}
+
+bool PinWindow::matchesCropAnnotationBoundary(const CropUndoEntry& entry) const
+{
+    if (!m_annotationLayer) {
+        return true;
+    }
+
+    const std::size_t currentCount = m_annotationLayer->itemCount();
+    const AnnotationItem* currentTopItem = (currentCount > 0)
+        ? m_annotationLayer->itemAt(static_cast<int>(currentCount - 1))
+        : nullptr;
+
+    return currentTopItem == entry.annotationTopItem;
+}
+
+void PinWindow::pruneInvalidCropRedoState()
+{
+    if (m_cropRedoStack.isEmpty() || !m_annotationLayer) {
+        return;
+    }
+
+    if (matchesCropAnnotationBoundary(m_cropRedoStack.constLast())) {
+        return;
+    }
+
+    // If no annotation redo steps can bring us back to the crop boundary,
+    // this crop redo branch has been invalidated by a new edit path.
+    if (!m_annotationLayer->canRedo()) {
+        m_cropRedoStack.clear();
+    }
+}
+
 void PinWindow::updateUndoRedoState()
 {
+    if (m_annotationLayer) {
+        pruneInvalidCropRedoState();
+    }
+
     if (m_toolbar && m_annotationLayer) {
-        m_toolbar->setCanUndo(m_annotationLayer->canUndo());
-        m_toolbar->setCanRedo(m_annotationLayer->canRedo());
+        bool canUndo = m_annotationLayer->canUndo() || canUndoCrop();
+        bool canRedo = m_annotationLayer->canRedo() || canRedoCrop();
+        m_toolbar->setCanUndo(canUndo);
+        m_toolbar->setCanRedo(canRedo);
     }
 }
 
@@ -3145,6 +3581,7 @@ void PinWindow::updateLiveFrame()
     if (!frame.isNull()) {
         m_originalPixmap = QPixmap::fromImage(frame);
         m_originalPixmap.setDevicePixelRatio(sourceScreen->devicePixelRatio());
+        clearCropUndoHistory();
 
         // Update shared pixmap for mosaic tool to use latest frame
         m_sharedSourcePixmap = std::make_shared<const QPixmap>(m_originalPixmap);
@@ -3482,6 +3919,7 @@ void PinWindow::exitRegionLayoutMode(bool apply)
 
             m_originalPixmap = newPixmap;
             m_displayPixmap = newPixmap;
+            clearCropUndoHistory();
 
             // Invalidate transform cache
             m_cachedRotation = -1;
@@ -3491,6 +3929,7 @@ void PinWindow::exitRegionLayoutMode(bool apply)
             // Update window size
             QSize logicalSize = m_displayPixmap.size() / m_displayPixmap.devicePixelRatio();
             setFixedSize(logicalSize);
+            syncCropHandlerImageSize();
 
             // Invalidate annotation layer cache
             if (m_annotationLayer) {

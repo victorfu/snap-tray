@@ -149,6 +149,24 @@ std::unique_ptr<AnnotationItem> MarkerStroke::clone() const
     return std::make_unique<MarkerStroke>(m_points, m_color, m_width);
 }
 
+void MarkerStroke::translate(const QPointF& delta)
+{
+    if (delta.isNull()) {
+        return;
+    }
+
+    for (QPointF& point : m_points) {
+        point += delta;
+    }
+
+    // Translation changes both geometry and rendered placement.
+    m_boundingRectDirty = true;
+    m_cachedImage = QImage();
+    m_cachedOrigin = QPoint();
+    m_cachedDpr = 0.0;
+    m_cachedPointCount = 0;
+}
+
 void MarkerStroke::addPoint(const QPointF &point)
 {
     m_points.append(point);

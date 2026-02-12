@@ -69,6 +69,11 @@ target_link_libraries(PinWindow_TextToolFormatting PRIVATE snaptray_ui Qt6::Test
 add_test(NAME PinWindow_TextToolFormatting COMMAND PinWindow_TextToolFormatting)
 set_tests_properties(PinWindow_TextToolFormatting PROPERTIES TIMEOUT 60 LABELS "unit;integration")
 
+add_executable(PinWindow_CropUndo PinWindow/tst_CropUndo.cpp)
+target_link_libraries(PinWindow_CropUndo PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME PinWindow_CropUndo COMMAND PinWindow_CropUndo)
+set_tests_properties(PinWindow_CropUndo PROPERTIES TIMEOUT 60 LABELS "unit;integration")
+
 # ============================================================================
 # RegionSelector Tests
 # ============================================================================
@@ -260,6 +265,11 @@ target_link_libraries(Annotations_MarkerStroke PRIVATE snaptray_core Qt6::Widget
 add_test(NAME Annotations_MarkerStroke COMMAND Annotations_MarkerStroke)
 set_tests_properties(Annotations_MarkerStroke PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Annotations_PencilStroke Annotations/tst_PencilStroke.cpp)
+target_link_libraries(Annotations_PencilStroke PRIVATE snaptray_core Qt6::Widgets Qt6::Test)
+add_test(NAME Annotations_PencilStroke COMMAND Annotations_PencilStroke)
+set_tests_properties(Annotations_PencilStroke PROPERTIES TIMEOUT 60 LABELS "unit")
+
 add_executable(Annotations_PolylineAnnotation Annotations/tst_PolylineAnnotation.cpp)
 target_link_libraries(Annotations_PolylineAnnotation PRIVATE snaptray_core Qt6::Widgets Qt6::Test)
 add_test(NAME Annotations_PolylineAnnotation COMMAND Annotations_PolylineAnnotation)
@@ -327,6 +337,11 @@ add_executable(Tools_TextToolHandler Tools/handlers/tst_TextToolHandler.cpp)
 target_link_libraries(Tools_TextToolHandler PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Tools_TextToolHandler COMMAND Tools_TextToolHandler)
 set_tests_properties(Tools_TextToolHandler PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(Tools_CropToolHandler Tools/handlers/tst_CropToolHandler.cpp)
+target_link_libraries(Tools_CropToolHandler PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME Tools_CropToolHandler COMMAND Tools_CropToolHandler)
+set_tests_properties(Tools_CropToolHandler PROPERTIES TIMEOUT 60 LABELS "unit")
 
 # ============================================================================
 # UI Section Tests (link snaptray_ui for UI components)

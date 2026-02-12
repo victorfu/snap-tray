@@ -16,6 +16,8 @@ private slots:
     void testDrawCached_RebuildsAfterExcludeCache();
     void testHitTestText_IgnoresHiddenItems();
     void testSetSelectedIndex_InvalidOrHiddenClearsSelection();
+    void testTranslateAll_AlsoTranslatesRedoStackItems();
+    void testTranslateAll_TranslatesErasedItemsGroupContents();
 
 private:
     static bool hasVisiblePixel(const QImage& image, const QRect& probe);
@@ -150,6 +152,61 @@ void TestAnnotationLayer::testSetSelectedIndex_InvalidOrHiddenClearsSelection()
     layer.setSelectedIndex(999);
     QCOMPARE(layer.selectedIndex(), -1);
     QVERIFY(layer.selectedItem() == nullptr);
+}
+
+void TestAnnotationLayer::testTranslateAll_AlsoTranslatesRedoStackItems()
+{
+    AnnotationLayer layer;
+
+    auto polyline = createPolyline(30);
+    const QVector<QPoint> originalPoints = polyline->points();
+    layer.addItem(std::move(polyline));
+
+    layer.undo();
+    QVERIFY(layer.canRedo());
+
+    layer.translateAll(QPointF(7.0, 11.0));
+    layer.redo();
+
+    auto* restored = dynamic_cast<PolylineAnnotation*>(layer.itemAt(0));
+    QVERIFY(restored != nullptr);
+    const QVector<QPoint> translatedPoints = restored->points();
+    QCOMPARE(translatedPoints.size(), originalPoints.size());
+    QCOMPARE(translatedPoints[0], originalPoints[0] + QPoint(7, 11));
+    QCOMPARE(translatedPoints[1], originalPoints[1] + QPoint(7, 11));
+}
+
+void TestAnnotationLayer::testTranslateAll_TranslatesErasedItemsGroupContents()
+{
+    AnnotationLayer layer;
+
+    QVector<QPoint> firstPoints = {
+        QPoint(20, 20),
+        QPoint(120, 20)
+    };
+    QVector<QPoint> secondPoints = {
+        QPoint(20, 60),
+        QPoint(120, 60)
+    };
+
+    layer.addItem(std::make_unique<PolylineAnnotation>(
+        firstPoints, QColor(Qt::red), 3, LineEndStyle::None, LineStyle::Solid));
+    layer.addItem(std::make_unique<PolylineAnnotation>(
+        secondPoints, QColor(Qt::blue), 3, LineEndStyle::None, LineStyle::Solid));
+
+    layer.setSelectedIndex(0);
+    QVERIFY(layer.removeSelectedItem());
+
+    layer.translateAll(QPointF(9.0, 5.0));
+    layer.undo();  // Restores erased item from ErasedItemsGroup
+
+    auto* restored = dynamic_cast<PolylineAnnotation*>(layer.itemAt(0));
+    QVERIFY(restored != nullptr);
+
+    const QVector<QPoint> restoredPoints = restored->points();
+    QCOMPARE(restoredPoints.size(), firstPoints.size());
+    QCOMPARE(restoredPoints[0], firstPoints[0] + QPoint(9, 5));
+    QCOMPARE(restoredPoints[1], firstPoints[1] + QPoint(9, 5));
 }
 
 QTEST_MAIN(TestAnnotationLayer)

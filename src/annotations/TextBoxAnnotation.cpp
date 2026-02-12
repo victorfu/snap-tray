@@ -258,6 +258,11 @@ void TextBoxAnnotation::moveBy(const QPointF &delta)
     invalidateCache();
 }
 
+void TextBoxAnnotation::translate(const QPointF& delta)
+{
+    moveBy(delta);
+}
+
 void TextBoxAnnotation::setFont(const QFont &font)
 {
     m_font = font;

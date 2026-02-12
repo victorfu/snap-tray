@@ -139,6 +139,17 @@ void ToolRegistry::registerTools() {
         false, QColor()
     });
 
+    registerTool({
+        ToolId::Crop,
+        "crop",
+        "Crop",
+        "",
+        ToolCategory::Drawing,
+        false, false, false, false, false, false,  // no capabilities
+        false, false, false,  // UI visibility: none
+        true, QColor()  // separator before, default color
+    });
+
     // Toggle tools
     registerTool({
         ToolId::CanvasWhiteboard,
@@ -415,6 +426,7 @@ QVector<ToolId> ToolRegistry::getToolsForToolbar(ToolbarType type) const {
             ToolId::Eraser,
             ToolId::StepBadge,
             ToolId::EmojiSticker,
+            ToolId::Crop,
             ToolId::Undo,
             ToolId::Redo,
             ToolId::OCR,
