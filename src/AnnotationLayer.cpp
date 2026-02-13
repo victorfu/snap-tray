@@ -106,26 +106,51 @@ void AnnotationLayer::redo()
     if (auto* erasedGroup = dynamic_cast<ErasedItemsGroup*>(m_redoStack.back().get())) {
         // Get the stored original indices
         auto indices = erasedGroup->originalIndices();
-        m_redoStack.pop_back();
-
         // Sort indices in descending order to remove from back to front
         // (prevents index shifting issues during removal)
         std::sort(indices.begin(), indices.end(), std::greater<size_t>());
+
+        // Reserve before ownership changes so allocation failures leave state intact.
+        m_items.reserve(m_items.size() + 1);
 
         // Remove items at the stored indices
         std::vector<ErasedItemsGroup::IndexedItem> itemsToErase;
         itemsToErase.reserve(indices.size());
 
-        for (size_t idx : indices) {
-            if (idx < m_items.size() && !dynamic_cast<ErasedItemsGroup*>(m_items[idx].get())) {
-                itemsToErase.push_back({idx, std::move(m_items[idx])});
-                m_items.erase(m_items.begin() + static_cast<ptrdiff_t>(idx));
-            }
-        }
+        // Keep ownership of redo item until all erase work succeeds.
+        auto redoItem = std::move(m_redoStack.back());
 
-        // Reverse to restore original order (we collected in descending index order)
-        std::reverse(itemsToErase.begin(), itemsToErase.end());
-        m_items.push_back(std::make_unique<ErasedItemsGroup>(std::move(itemsToErase)));
+        try {
+            for (size_t idx : indices) {
+                if (idx < m_items.size() && !dynamic_cast<ErasedItemsGroup*>(m_items[idx].get())) {
+                    itemsToErase.push_back({idx, std::move(m_items[idx])});
+                    m_items.erase(m_items.begin() + static_cast<ptrdiff_t>(idx));
+                }
+            }
+
+            // Reverse to restore original order (we collected in descending index order)
+            std::reverse(itemsToErase.begin(), itemsToErase.end());
+            m_items.push_back(std::make_unique<ErasedItemsGroup>(std::move(itemsToErase)));
+
+            // Commit only after redo operation succeeds.
+            m_redoStack.pop_back();
+        } catch (...) {
+            // Roll back removed items to keep undo/redo history consistent.
+            std::sort(itemsToErase.begin(), itemsToErase.end(),
+                      [](const ErasedItemsGroup::IndexedItem& a,
+                         const ErasedItemsGroup::IndexedItem& b) {
+                          return a.originalIndex < b.originalIndex;
+                      });
+
+            for (auto& indexed : itemsToErase) {
+                const size_t insertPos = std::min(indexed.originalIndex, m_items.size());
+                m_items.insert(m_items.begin() + static_cast<ptrdiff_t>(insertPos),
+                               std::move(indexed.item));
+            }
+
+            m_redoStack.back() = std::move(redoItem);
+            throw;
+        }
     } else {
         // Normal redo
         m_items.push_back(std::move(m_redoStack.back()));

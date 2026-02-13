@@ -7,6 +7,7 @@
 #include "annotations/PolylineAnnotation.h"
 #include "annotations/TextBoxAnnotation.h"
 #include "annotations/EmojiStickerAnnotation.h"
+#include "annotations/ErasedItemsGroup.h"
 
 class TestAnnotationLayer : public QObject
 {
@@ -21,6 +22,7 @@ private slots:
     void testSetSelectedIndex_InvalidOrHiddenClearsSelection();
     void testTranslateAll_AlsoTranslatesRedoStackItems();
     void testTranslateAll_TranslatesErasedItemsGroupContents();
+    void testRedo_ErasedItemsGroup_ReappliesDeletion();
 
 private:
     static bool hasVisiblePixel(const QImage& image, const QRect& probe);
@@ -247,6 +249,35 @@ void TestAnnotationLayer::testTranslateAll_TranslatesErasedItemsGroupContents()
     QCOMPARE(restoredPoints.size(), firstPoints.size());
     QCOMPARE(restoredPoints[0], firstPoints[0] + QPoint(9, 5));
     QCOMPARE(restoredPoints[1], firstPoints[1] + QPoint(9, 5));
+}
+
+void TestAnnotationLayer::testRedo_ErasedItemsGroup_ReappliesDeletion()
+{
+    AnnotationLayer layer;
+
+    auto first = createPolyline(20);
+    auto second = createPolyline(60);
+    const QVector<QPoint> secondPoints = second->points();
+
+    layer.addItem(std::move(first));
+    layer.addItem(std::move(second));
+
+    layer.setSelectedIndex(0);
+    QVERIFY(layer.removeSelectedItem());
+    QVERIFY(dynamic_cast<ErasedItemsGroup*>(layer.itemAt(1)) != nullptr);
+
+    layer.undo();
+    QVERIFY(layer.canRedo());
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(2));
+
+    layer.redo();
+
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(2));
+    QVERIFY(!layer.canRedo());
+    auto* remaining = dynamic_cast<PolylineAnnotation*>(layer.itemAt(0));
+    QVERIFY(remaining != nullptr);
+    QCOMPARE(remaining->points(), secondPoints);
+    QVERIFY(dynamic_cast<ErasedItemsGroup*>(layer.itemAt(1)) != nullptr);
 }
 
 QTEST_MAIN(TestAnnotationLayer)
