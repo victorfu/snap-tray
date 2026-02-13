@@ -109,6 +109,8 @@ void AnnotationLayer::redo()
         // Sort indices in descending order to remove from back to front
         // (prevents index shifting issues during removal)
         std::sort(indices.begin(), indices.end(), std::greater<size_t>());
+        // Defensive dedupe: malformed history can contain duplicate indices.
+        indices.erase(std::unique(indices.begin(), indices.end()), indices.end());
 
         // Reserve before ownership changes so allocation failures leave state intact.
         m_items.reserve(m_items.size() + 1);
@@ -289,7 +291,8 @@ std::vector<ErasedItemsGroup::IndexedItem> AnnotationLayer::removeItemsIntersect
             // Item intersects with eraser - remove it and record original index
             removedItems.push_back({currentIndex, std::move(*it)});
             it = m_items.erase(it);
-            // Don't increment currentIndex since we erased
+            // currentIndex tracks the original scan position, not post-erase offsets.
+            ++currentIndex;
         } else {
             ++it;
             ++currentIndex;

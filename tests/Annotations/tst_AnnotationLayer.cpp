@@ -4,6 +4,7 @@
 #include <QFont>
 
 #include "annotations/AnnotationLayer.h"
+#include "annotations/PencilStroke.h"
 #include "annotations/PolylineAnnotation.h"
 #include "annotations/TextBoxAnnotation.h"
 #include "annotations/EmojiStickerAnnotation.h"
@@ -23,10 +24,14 @@ private slots:
     void testTranslateAll_AlsoTranslatesRedoStackItems();
     void testTranslateAll_TranslatesErasedItemsGroupContents();
     void testRedo_ErasedItemsGroup_ReappliesDeletion();
+    void testRemoveItemsIntersecting_AdjacentRemovals_TrackOriginalIndices();
+    void testRedo_ErasedItemsGroup_AdjacentRemovals_PreservesOrder();
+    void testRedo_ErasedItemsGroup_DuplicateIndices_DoesNotOverDelete();
 
 private:
     static bool hasVisiblePixel(const QImage& image, const QRect& probe);
     static std::unique_ptr<PolylineAnnotation> createPolyline(int y);
+    static std::unique_ptr<PencilStroke> createPencil(int y);
     static std::unique_ptr<TextBoxAnnotation> createTextBox(const QPointF& pos, const QString& text);
 };
 
@@ -51,6 +56,15 @@ std::unique_ptr<PolylineAnnotation> TestAnnotationLayer::createPolyline(int y)
     };
     return std::make_unique<PolylineAnnotation>(
         points, QColor(Qt::red), 4, LineEndStyle::None, LineStyle::Solid);
+}
+
+std::unique_ptr<PencilStroke> TestAnnotationLayer::createPencil(int y)
+{
+    QVector<QPointF> points = {
+        QPointF(20.0, static_cast<qreal>(y)),
+        QPointF(140.0, static_cast<qreal>(y))
+    };
+    return std::make_unique<PencilStroke>(points, QColor(Qt::red), 2, LineStyle::Solid);
 }
 
 std::unique_ptr<TextBoxAnnotation> TestAnnotationLayer::createTextBox(const QPointF& pos,
@@ -278,6 +292,116 @@ void TestAnnotationLayer::testRedo_ErasedItemsGroup_ReappliesDeletion()
     QVERIFY(remaining != nullptr);
     QCOMPARE(remaining->points(), secondPoints);
     QVERIFY(dynamic_cast<ErasedItemsGroup*>(layer.itemAt(1)) != nullptr);
+}
+
+void TestAnnotationLayer::testRemoveItemsIntersecting_AdjacentRemovals_TrackOriginalIndices()
+{
+    AnnotationLayer layer;
+    layer.addItem(createPencil(20));
+    layer.addItem(createPencil(40));
+    layer.addItem(createPencil(60));
+    layer.addItem(createPencil(80));
+
+    auto removed = layer.removeItemsIntersecting(QPoint(80, 50), 24);
+
+    QCOMPARE(removed.size(), static_cast<size_t>(2));
+    QCOMPARE(removed[0].originalIndex, static_cast<size_t>(1));
+    QCOMPARE(removed[1].originalIndex, static_cast<size_t>(2));
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(2));
+
+    auto* firstRemaining = dynamic_cast<PencilStroke*>(layer.itemAt(0));
+    auto* secondRemaining = dynamic_cast<PencilStroke*>(layer.itemAt(1));
+    QVERIFY(firstRemaining != nullptr);
+    QVERIFY(secondRemaining != nullptr);
+    QVERIFY(firstRemaining->intersectsCircle(QPoint(80, 20), 1));
+    QVERIFY(secondRemaining->intersectsCircle(QPoint(80, 80), 1));
+}
+
+void TestAnnotationLayer::testRedo_ErasedItemsGroup_AdjacentRemovals_PreservesOrder()
+{
+    AnnotationLayer layer;
+    layer.addItem(createPencil(20));
+    layer.addItem(createPencil(40));
+    layer.addItem(createPencil(60));
+    layer.addItem(createPencil(80));
+
+    auto removed = layer.removeItemsIntersecting(QPoint(80, 50), 24);
+    QCOMPARE(removed.size(), static_cast<size_t>(2));
+    layer.addItem(std::make_unique<ErasedItemsGroup>(std::move(removed)));
+
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(3));
+    QVERIFY(dynamic_cast<ErasedItemsGroup*>(layer.itemAt(2)) != nullptr);
+
+    layer.undo();
+
+    QVERIFY(layer.canRedo());
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(4));
+    auto* restored0 = dynamic_cast<PencilStroke*>(layer.itemAt(0));
+    auto* restored1 = dynamic_cast<PencilStroke*>(layer.itemAt(1));
+    auto* restored2 = dynamic_cast<PencilStroke*>(layer.itemAt(2));
+    auto* restored3 = dynamic_cast<PencilStroke*>(layer.itemAt(3));
+    QVERIFY(restored0 != nullptr);
+    QVERIFY(restored1 != nullptr);
+    QVERIFY(restored2 != nullptr);
+    QVERIFY(restored3 != nullptr);
+    QVERIFY(restored0->intersectsCircle(QPoint(80, 20), 1));
+    QVERIFY(restored1->intersectsCircle(QPoint(80, 40), 1));
+    QVERIFY(restored2->intersectsCircle(QPoint(80, 60), 1));
+    QVERIFY(restored3->intersectsCircle(QPoint(80, 80), 1));
+
+    layer.redo();
+
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(3));
+    QVERIFY(!layer.canRedo());
+
+    auto* firstRemaining = dynamic_cast<PencilStroke*>(layer.itemAt(0));
+    auto* secondRemaining = dynamic_cast<PencilStroke*>(layer.itemAt(1));
+    QVERIFY(firstRemaining != nullptr);
+    QVERIFY(secondRemaining != nullptr);
+    QVERIFY(firstRemaining->intersectsCircle(QPoint(80, 20), 1));
+    QVERIFY(secondRemaining->intersectsCircle(QPoint(80, 80), 1));
+    QVERIFY(dynamic_cast<ErasedItemsGroup*>(layer.itemAt(2)) != nullptr);
+}
+
+void TestAnnotationLayer::testRedo_ErasedItemsGroup_DuplicateIndices_DoesNotOverDelete()
+{
+    AnnotationLayer layer;
+    layer.addItem(createPencil(20));
+    layer.addItem(createPencil(40));
+    layer.addItem(createPencil(60));
+    layer.addItem(createPencil(80));
+
+    auto removed = layer.removeItemsIntersecting(QPoint(80, 50), 24);
+    QCOMPARE(removed.size(), static_cast<size_t>(2));
+    layer.addItem(std::make_unique<ErasedItemsGroup>(std::move(removed)));
+
+    layer.undo();
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(4));
+    QVERIFY(layer.canRedo());
+
+    ErasedItemsGroup* redoGroup = nullptr;
+    layer.forEachItem([&redoGroup](AnnotationItem* item) {
+        if (auto* group = dynamic_cast<ErasedItemsGroup*>(item)) {
+            redoGroup = group;
+        }
+    }, true);
+
+    QVERIFY(redoGroup != nullptr);
+    redoGroup->setOriginalIndices({1, 1});
+
+    layer.redo();
+
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(4));
+    auto* firstRemaining = dynamic_cast<PencilStroke*>(layer.itemAt(0));
+    auto* secondRemaining = dynamic_cast<PencilStroke*>(layer.itemAt(1));
+    auto* thirdRemaining = dynamic_cast<PencilStroke*>(layer.itemAt(2));
+    QVERIFY(firstRemaining != nullptr);
+    QVERIFY(secondRemaining != nullptr);
+    QVERIFY(thirdRemaining != nullptr);
+    QVERIFY(firstRemaining->intersectsCircle(QPoint(80, 20), 1));
+    QVERIFY(secondRemaining->intersectsCircle(QPoint(80, 60), 1));
+    QVERIFY(thirdRemaining->intersectsCircle(QPoint(80, 80), 1));
+    QVERIFY(dynamic_cast<ErasedItemsGroup*>(layer.itemAt(3)) != nullptr);
 }
 
 QTEST_MAIN(TestAnnotationLayer)
