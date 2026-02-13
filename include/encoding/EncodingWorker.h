@@ -171,6 +171,7 @@ signals:
 private:
     void processNextFrame();
     void doProcessFrame(const FrameData& frameData);
+    void handleProcessingFailure(const QString& context, const QString& details);
     void applyWatermark(QImage& frame);
     void finishEncoder();
 

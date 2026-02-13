@@ -8,6 +8,7 @@
 #include <QPointer>
 #include <QtConcurrent>
 #include <QMetaObject>
+#include <exception>
 
 EncodingWorker::EncodingWorker(QObject *parent)
     : QObject(parent)
@@ -121,10 +122,22 @@ void EncodingWorker::stop()
 void EncodingWorker::requestFinish()
 {
     m_acceptingFrames = false;
+
+    // The worker is already in a terminal state (stopped or failed).
+    if (!m_running.load() || m_finishCalled.load()) {
+        m_finishRequested = false;
+        return;
+    }
+
     m_finishRequested = true;
 
     // If not currently processing, finish immediately
     if (!m_isProcessing.load()) {
+        // Re-check running state to avoid racing with a concurrent failure path.
+        if (!m_running.load() || m_finishCalled.load()) {
+            m_finishRequested = false;
+            return;
+        }
         finishEncoder();
     }
     // Otherwise, processNextFrame() will call finishEncoder() when queue empties
@@ -244,8 +257,18 @@ void EncodingWorker::processNextFrame()
 
         if (hasAudio) {
             // Write audio directly to encoder (we're on worker thread)
-            if (m_videoEncoder) {
-                m_videoEncoder->writeAudioSamples(audioData.data, audioData.timestampMs);
+            try {
+                if (m_videoEncoder) {
+                    m_videoEncoder->writeAudioSamples(audioData.data, audioData.timestampMs);
+                }
+            } catch (const std::exception& e) {
+                handleProcessingFailure(QStringLiteral("audio encoding"),
+                                        QString::fromLocal8Bit(e.what()));
+                return;
+            } catch (...) {
+                handleProcessingFailure(QStringLiteral("audio encoding"),
+                                        QStringLiteral("unknown exception"));
+                return;
             }
         } else if (hasFrame) {
             // Emit queue low signal outside lock
@@ -261,41 +284,85 @@ void EncodingWorker::processNextFrame()
 
             // Process the frame (heavy work)
             doProcessFrame(frameData);
+            if (!m_running.load()) {
+                m_isProcessing = false;
+                return;
+            }
         }
     }
 }
 
 void EncodingWorker::doProcessFrame(const FrameData& frameData)
 {
-    // Make a copy for modification (triggers COW only now)
-    QImage frame = frameData.frame;
+    try {
+        // Make a copy for modification (triggers COW only now)
+        QImage frame = frameData.frame;
 
-    // Apply watermark if enabled
-    if (m_watermarkSettings.enabled) {
-        applyWatermark(frame);
+        // Apply watermark if enabled
+        if (m_watermarkSettings.enabled) {
+            applyWatermark(frame);
+        }
+
+        // Write to encoder
+        if (m_encoderType == EncoderType::Video && m_videoEncoder) {
+            m_videoEncoder->writeFrame(frame, frameData.timestampMs);
+        } else if (m_encoderType == EncoderType::Gif && m_gifEncoder) {
+            m_gifEncoder->writeFrame(frame, frameData.timestampMs);
+        } else if (m_encoderType == EncoderType::WebP && m_webpEncoder) {
+            m_webpEncoder->writeFrame(frame, frameData.timestampMs);
+        }
+
+        // Update frame count
+        qint64 count = ++m_framesWritten;
+
+        // Emit progress periodically (every 30 frames = ~1 second at 30fps)
+        if (count % 30 == 0) {
+            QPointer<EncodingWorker> guard(this);
+            QMetaObject::invokeMethod(this, [guard, count]() {
+                if (guard) {
+                    emit guard->progress(count);
+                }
+            }, Qt::QueuedConnection);
+        }
+    } catch (const std::exception& e) {
+        handleProcessingFailure(QStringLiteral("frame encoding"),
+                                QString::fromLocal8Bit(e.what()));
+    } catch (...) {
+        handleProcessingFailure(QStringLiteral("frame encoding"),
+                                QStringLiteral("unknown exception"));
+    }
+}
+
+void EncodingWorker::handleProcessingFailure(const QString& context, const QString& details)
+{
+    const bool wasRunning = m_running.exchange(false);
+    m_acceptingFrames = false;
+    m_finishRequested = false;
+    m_finishCalled = true;
+    m_isProcessing = false;
+    m_wasNearFull = false;
+
+    {
+        QMutexLocker locker(&m_queueMutex);
+        m_frameQueue.clear();
+        m_audioQueue.clear();
     }
 
-    // Write to encoder
-    if (m_encoderType == EncoderType::Video && m_videoEncoder) {
-        m_videoEncoder->writeFrame(frame, frameData.timestampMs);
-    } else if (m_encoderType == EncoderType::Gif && m_gifEncoder) {
-        m_gifEncoder->writeFrame(frame, frameData.timestampMs);
-    } else if (m_encoderType == EncoderType::WebP && m_webpEncoder) {
-        m_webpEncoder->writeFrame(frame, frameData.timestampMs);
+    // Another path already stopped this worker; avoid duplicate error emissions.
+    if (!wasRunning) {
+        return;
     }
 
-    // Update frame count
-    qint64 count = ++m_framesWritten;
+    const QString message = QStringLiteral("Encoding worker %1 failed: %2")
+                                .arg(context, details);
+    qWarning() << "EncodingWorker:" << message;
 
-    // Emit progress periodically (every 30 frames = ~1 second at 30fps)
-    if (count % 30 == 0) {
-        QPointer<EncodingWorker> guard(this);
-        QMetaObject::invokeMethod(this, [guard, count]() {
-            if (guard) {
-                emit guard->progress(count);
-            }
-        }, Qt::QueuedConnection);
-    }
+    QPointer<EncodingWorker> guard(this);
+    QMetaObject::invokeMethod(this, [guard, message]() {
+        if (guard) {
+            emit guard->error(message);
+        }
+    }, Qt::QueuedConnection);
 }
 
 void EncodingWorker::applyWatermark(QImage& frame)

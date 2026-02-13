@@ -142,6 +142,11 @@ target_link_libraries(Encoding_EncoderFactory PRIVATE snaptray_platform Qt6::Tes
 add_test(NAME Encoding_EncoderFactory COMMAND Encoding_EncoderFactory)
 set_tests_properties(Encoding_EncoderFactory PROPERTIES TIMEOUT 120 LABELS "integration;slow")
 
+add_executable(Encoding_EncodingWorker Encoding/tst_EncodingWorker.cpp)
+target_link_libraries(Encoding_EncodingWorker PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME Encoding_EncodingWorker COMMAND Encoding_EncodingWorker)
+set_tests_properties(Encoding_EncodingWorker PROPERTIES TIMEOUT 60 LABELS "unit")
+
 # ============================================================================
 # Detection Tests (link snaptray_algorithms)
 # ============================================================================
