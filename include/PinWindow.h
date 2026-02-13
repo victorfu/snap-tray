@@ -4,6 +4,7 @@
 #include <QWidget>
 #include <QPixmap>
 #include <QPoint>
+#include <QPointF>
 #include <QRect>
 #include <QElapsedTimer>
 #include <QPointer>
@@ -257,6 +258,19 @@ private:
     bool handleTextAnnotationPress(const QPoint& pos);
     bool handleGizmoPress(const QPoint& pos);
     TextBoxAnnotation* getSelectedTextAnnotation();
+    EmojiStickerAnnotation* getSelectedEmojiStickerAnnotation();
+
+    bool handleEmojiStickerAnnotationPress(const QPoint& pos);
+    bool handleEmojiStickerAnnotationMove(const QPoint& pos);
+    bool handleEmojiStickerAnnotationRelease(const QPoint& pos);
+
+    bool m_isEmojiDragging = false;
+    bool m_isEmojiScaling = false;
+    GizmoHandle m_emojiDragHandle = GizmoHandle::None;
+    QPoint m_emojiStartPos;
+    qreal m_emojiStartScale = 1.0;
+    qreal m_emojiStartDistance = 0.0;
+    QPointF m_emojiStartCenter;
 
     // Arrow and Polyline editing state
     bool m_isArrowDragging = false;
@@ -265,6 +279,7 @@ private:
     int m_activePolylineVertexIndex = -1;
     // Note: m_dragStartPos is used for window dragging (global coords)
     QPoint m_annotationDragStartPos; // For annotation dragging (original coords)
+    bool m_consumeNextToolRelease = false;
 
     // Arrow and Polyline helpers
     bool handleArrowAnnotationPress(const QPoint& pos);

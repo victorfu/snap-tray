@@ -13,6 +13,7 @@
 
 class ToolManager;
 class AnnotationLayer;
+class EmojiStickerAnnotation;
 class ArrowAnnotation;
 class PolylineAnnotation;
 enum class GizmoHandle;
@@ -258,20 +259,24 @@ public:
     /**
      * @brief Unified annotation hit testing for cursor updates.
      *
-     * Tests arrows and polylines for hit, returning appropriate cursor information.
+     * Tests text/emoji/arrow/polyline annotations for hit, returning cursor info.
      * This eliminates duplicated logic in ScreenCanvas and PinWindow.
      *
      * @param pos The point to test (in annotation coordinates)
      * @param layer The annotation layer to test against
+     * @param selectedEmoji Currently selected emoji annotation (for gizmo handles), or nullptr
      * @param selectedArrow Currently selected arrow annotation (for gizmo handles), or nullptr
      * @param selectedPolyline Currently selected polyline annotation (for vertex handles), or nullptr
+     * @param enableEmojiGizmoHover Whether emoji gizmo hover should be reported
      * @return AnnotationHitResult with hit status, target type, and recommended cursor
      */
     static AnnotationHitResult hitTestAnnotations(
         const QPoint& pos,
         AnnotationLayer* layer,
+        EmojiStickerAnnotation* selectedEmoji = nullptr,
         ArrowAnnotation* selectedArrow = nullptr,
-        PolylineAnnotation* selectedPolyline = nullptr
+        PolylineAnnotation* selectedPolyline = nullptr,
+        bool enableEmojiGizmoHover = true
     );
 
 signals:

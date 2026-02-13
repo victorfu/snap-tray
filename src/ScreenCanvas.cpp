@@ -16,6 +16,7 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include "tools/handlers/EmojiStickerToolHandler.h"
 #include "annotations/ArrowAnnotation.h"
 #include "annotations/TextBoxAnnotation.h"
+#include "annotations/EmojiStickerAnnotation.h"
 #include "annotations/PolylineAnnotation.h"
 #include "TransformationGizmo.h"
 
@@ -30,6 +31,7 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include <QScreen>
 #include <QDebug>
 #include <QTimer>
+#include <QtMath>
 #include "tools/ToolRegistry.h"
 #include "tools/ToolSectionConfig.h"
 #include "tools/ToolTraits.h"
@@ -614,7 +616,7 @@ void ScreenCanvas::paintEvent(QPaintEvent*)
 void ScreenCanvas::drawAnnotations(QPainter& painter)
 {
     // Use dirty region optimization during drag operations
-    if (m_isArrowDragging || m_isPolylineDragging) {
+    if (m_isEmojiDragging || m_isEmojiScaling || m_isArrowDragging || m_isPolylineDragging) {
         // Draw cached content for non-dragged items, then draw dragged item on top
         m_annotationLayer->drawWithDirtyRegion(painter, size(), devicePixelRatioF(),
                                                 m_annotationLayer->selectedIndex());
@@ -625,6 +627,11 @@ void ScreenCanvas::drawAnnotations(QPainter& painter)
     // Draw transformation gizmo for selected text annotation
     if (auto* textItem = getSelectedTextAnnotation()) {
         TransformationGizmo::draw(painter, textItem);
+    }
+
+    // Draw transformation gizmo for selected EmojiSticker
+    if (auto* emojiItem = getSelectedEmojiStickerAnnotation()) {
+        TransformationGizmo::draw(painter, emojiItem);
     }
 
     // Draw transformation gizmo for selected Arrow
@@ -864,6 +871,11 @@ void ScreenCanvas::mousePressEvent(QMouseEvent* event)
             return;
         }
 
+        // Check for Emoji sticker annotation interaction
+        if (handleEmojiStickerAnnotationPress(event->pos())) {
+            return;
+        }
+
         // Check for Arrow annotation interaction
         if (handleArrowAnnotationPress(event->pos())) {
             return;
@@ -876,17 +888,27 @@ void ScreenCanvas::mousePressEvent(QMouseEvent* event)
 
         // Text interaction is centralized in TextToolHandler and remains
         // available globally (not only when Text is selected).
-        // Keep this after Arrow/Polyline hit tests so overlapping geometry
-        // preserves arrow/polyline manipulation precedence.
+        // Keep this after annotation hit tests so overlapping geometry keeps
+        // annotation manipulation precedence.
         if (m_toolManager &&
             m_toolManager->handleTextInteractionPress(event->pos(), event->modifiers())) {
             return;
         }
 
-        // Clicked elsewhere: clear active annotation selection (match RegionSelector behavior)
+        // Clicked elsewhere: clear active annotation selection.
         if (m_annotationLayer->selectedIndex() >= 0) {
+            bool clearedSelectedEmojiInEmojiTool = false;
+            if (m_currentToolId == ToolId::EmojiSticker) {
+                clearedSelectedEmojiInEmojiTool =
+                    dynamic_cast<EmojiStickerAnnotation*>(m_annotationLayer->selectedItem()) != nullptr;
+            }
             m_annotationLayer->clearSelection();
             update();
+            if (clearedSelectedEmojiInEmojiTool) {
+                // Keep this click for deselection only; do not place a new emoji on release.
+                m_consumeNextToolRelease = true;
+                return;
+            }
         }
 
         // Start annotation drawing
@@ -936,7 +958,13 @@ void ScreenCanvas::mouseMoveEvent(QMouseEvent* event)
         m_toolManager->handleTextInteractionMove(event->pos(), event->modifiers())) {
         return;
     }
-    
+
+    // Handle Emoji sticker dragging/scaling
+    if (m_isEmojiDragging || m_isEmojiScaling) {
+        handleEmojiStickerAnnotationMove(event->pos());
+        return;
+    }
+
     // Handle Arrow dragging
     if (m_isArrowDragging) {
         handleArrowAnnotationMove(event->pos());
@@ -1066,7 +1094,12 @@ void ScreenCanvas::mouseReleaseEvent(QMouseEvent* event)
             m_consumeNextToolRelease = false;
             return;
         }
-        
+
+        // Handle emoji sticker release
+        if (handleEmojiStickerAnnotationRelease(event->pos())) {
+            return;
+        }
+
         // Handle Arrow release
         if (handleArrowAnnotationRelease(event->pos())) {
             return;
@@ -1299,7 +1332,7 @@ QPixmap ScreenCanvas::createSolidBackgroundPixmap(const QColor& color) const
 }
 
 // ============================================================================
-// Text, Arrow and Polyline Handling
+// Text, Emoji, Arrow and Polyline Handling
 // ============================================================================
 
 TextBoxAnnotation* ScreenCanvas::getSelectedTextAnnotation()
@@ -1310,6 +1343,125 @@ TextBoxAnnotation* ScreenCanvas::getSelectedTextAnnotation()
         return dynamic_cast<TextBoxAnnotation*>(m_annotationLayer->itemAt(index));
     }
     return nullptr;
+}
+
+EmojiStickerAnnotation* ScreenCanvas::getSelectedEmojiStickerAnnotation()
+{
+    if (!m_annotationLayer) return nullptr;
+    int index = m_annotationLayer->selectedIndex();
+    if (index >= 0) {
+        return dynamic_cast<EmojiStickerAnnotation*>(m_annotationLayer->itemAt(index));
+    }
+    return nullptr;
+}
+
+bool ScreenCanvas::handleEmojiStickerAnnotationPress(const QPoint& pos)
+{
+    auto& cursorManager = CursorManager::instance();
+
+    // First check if we're clicking a gizmo handle/body of an already-selected emoji.
+    if (auto* emojiItem = getSelectedEmojiStickerAnnotation()) {
+        GizmoHandle handle = TransformationGizmo::hitTest(emojiItem, pos);
+        if (handle != GizmoHandle::None) {
+            if (handle == GizmoHandle::Body) {
+                m_isEmojiDragging = true;
+                m_emojiDragStart = pos;
+                cursorManager.setInputStateForWidget(this, InputState::Moving);
+            } else {
+                m_isEmojiScaling = true;
+                m_activeEmojiHandle = handle;
+                m_emojiStartCenter = emojiItem->center();
+                m_emojiStartScale = emojiItem->scale();
+                QPointF delta = QPointF(pos) - m_emojiStartCenter;
+                m_emojiStartDistance = qSqrt(delta.x() * delta.x() + delta.y() * delta.y());
+                cursorManager.setHoverTargetForWidget(
+                    this,
+                    HoverTarget::GizmoHandle,
+                    static_cast<int>(handle));
+            }
+            update();
+            return true;
+        }
+    }
+
+    // Check if clicking on an unselected emoji.
+    int hitIndex = m_annotationLayer->hitTestEmojiSticker(pos);
+    if (hitIndex < 0) {
+        return false;
+    }
+
+    m_annotationLayer->setSelectedIndex(hitIndex);
+    if (auto* emojiItem = getSelectedEmojiStickerAnnotation()) {
+        GizmoHandle handle = TransformationGizmo::hitTest(emojiItem, pos);
+        if (handle == GizmoHandle::Body || handle == GizmoHandle::None) {
+            m_isEmojiDragging = true;
+            m_emojiDragStart = pos;
+            cursorManager.setInputStateForWidget(this, InputState::Moving);
+        } else {
+            m_isEmojiScaling = true;
+            m_activeEmojiHandle = handle;
+            m_emojiStartCenter = emojiItem->center();
+            m_emojiStartScale = emojiItem->scale();
+            QPointF delta = QPointF(pos) - m_emojiStartCenter;
+            m_emojiStartDistance = qSqrt(delta.x() * delta.x() + delta.y() * delta.y());
+            cursorManager.setHoverTargetForWidget(
+                this,
+                HoverTarget::GizmoHandle,
+                static_cast<int>(handle));
+        }
+    }
+
+    update();
+    return true;
+}
+
+bool ScreenCanvas::handleEmojiStickerAnnotationMove(const QPoint& pos)
+{
+    if (m_annotationLayer->selectedIndex() < 0) {
+        return false;
+    }
+
+    auto* emojiItem = getSelectedEmojiStickerAnnotation();
+    if (!emojiItem) {
+        return false;
+    }
+
+    QRect oldRect = emojiItem->boundingRect().adjusted(-20, -20, 20, 20);
+
+    if (m_isEmojiDragging) {
+        QPoint delta = pos - m_emojiDragStart;
+        emojiItem->moveBy(delta);
+        m_emojiDragStart = pos;
+    } else if (m_isEmojiScaling && m_emojiStartDistance > 0.0) {
+        QPointF delta = QPointF(pos) - m_emojiStartCenter;
+        qreal currentDistance = qSqrt(delta.x() * delta.x() + delta.y() * delta.y());
+        qreal scaleFactor = currentDistance / m_emojiStartDistance;
+        emojiItem->setScale(m_emojiStartScale * scaleFactor);
+    } else {
+        return false;
+    }
+
+    QRect newRect = emojiItem->boundingRect().adjusted(-20, -20, 20, 20);
+    m_annotationLayer->markDirtyRect(oldRect.united(newRect));
+    update();
+    return true;
+}
+
+bool ScreenCanvas::handleEmojiStickerAnnotationRelease(const QPoint& pos)
+{
+    Q_UNUSED(pos);
+    if (!m_isEmojiDragging && !m_isEmojiScaling) {
+        return false;
+    }
+
+    m_annotationLayer->commitDirtyRegion(size(), devicePixelRatioF());
+    m_isEmojiDragging = false;
+    m_isEmojiScaling = false;
+    m_activeEmojiHandle = GizmoHandle::None;
+    m_emojiStartDistance = 0.0;
+    CursorManager::instance().setInputStateForWidget(this, InputState::Idle);
+    update();
+    return true;
 }
 
 ArrowAnnotation* ScreenCanvas::getSelectedArrowAnnotation()
@@ -1527,8 +1679,10 @@ void ScreenCanvas::updateAnnotationCursor(const QPoint& pos)
     auto result = CursorManager::hitTestAnnotations(
         pos,
         m_annotationLayer,
+        getSelectedEmojiStickerAnnotation(),
         getSelectedArrowAnnotation(),
-        getSelectedPolylineAnnotation()
+        getSelectedPolylineAnnotation(),
+        m_currentToolId != ToolId::EmojiSticker
     );
 
     if (result.hit) {

@@ -4,6 +4,7 @@
 #include <QWidget>
 #include <QPixmap>
 #include <QPoint>
+#include <QPointF>
 #include <QRect>
 #include <QVector>
 #include <QColor>
@@ -38,6 +39,7 @@ class ToolbarCore;
 class ArrowAnnotation;
 class PolylineAnnotation;
 class TextBoxAnnotation;
+class EmojiStickerAnnotation;
 class AnnotationContext;
 
 // Canvas background mode
@@ -183,7 +185,15 @@ private:
     // StepBadge tool state
     StepBadgeSize m_stepBadgeSize = StepBadgeSize::Medium;
 
-    // Arrow and Polyline editing state
+    // Emoji, Arrow and Polyline editing state
+    bool m_isEmojiDragging = false;
+    bool m_isEmojiScaling = false;
+    GizmoHandle m_activeEmojiHandle = GizmoHandle::None;
+    QPoint m_emojiDragStart;
+    qreal m_emojiStartScale = 1.0;
+    qreal m_emojiStartDistance = 0.0;
+    QPointF m_emojiStartCenter;
+
     bool m_isArrowDragging = false;
     GizmoHandle m_arrowDragHandle = GizmoHandle::None;
     bool m_isPolylineDragging = false;
@@ -191,8 +201,13 @@ private:
     QPoint m_dragStartPos;
     bool m_consumeNextToolRelease = false;
 
-    // Arrow and Polyline helpers
+    // Emoji, Arrow and Polyline helpers
     TextBoxAnnotation* getSelectedTextAnnotation();
+    EmojiStickerAnnotation* getSelectedEmojiStickerAnnotation();
+
+    bool handleEmojiStickerAnnotationPress(const QPoint& pos);
+    bool handleEmojiStickerAnnotationMove(const QPoint& pos);
+    bool handleEmojiStickerAnnotationRelease(const QPoint& pos);
 
     bool handleArrowAnnotationPress(const QPoint& pos);
     bool handleArrowAnnotationMove(const QPoint& pos);

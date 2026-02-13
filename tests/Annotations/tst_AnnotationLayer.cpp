@@ -6,6 +6,7 @@
 #include "annotations/AnnotationLayer.h"
 #include "annotations/PolylineAnnotation.h"
 #include "annotations/TextBoxAnnotation.h"
+#include "annotations/EmojiStickerAnnotation.h"
 
 class TestAnnotationLayer : public QObject
 {
@@ -15,6 +16,8 @@ private slots:
     void testDrawWithDirtyRegion_ExcludesDraggedItemFromFullCache();
     void testDrawCached_RebuildsAfterExcludeCache();
     void testHitTestText_IgnoresHiddenItems();
+    void testHitTestEmojiSticker_IgnoresHiddenItems();
+    void testHitTestEmojiSticker_ReturnsTopMostVisible();
     void testSetSelectedIndex_InvalidOrHiddenClearsSelection();
     void testTranslateAll_AlsoTranslatesRedoStackItems();
     void testTranslateAll_TranslatesErasedItemsGroupContents();
@@ -129,6 +132,43 @@ void TestAnnotationLayer::testHitTestText_IgnoresHiddenItems()
     layer.addItem(createTextBox(QPointF(40, 40), "visible"));
 
     const int hitIndex = layer.hitTestText(QPoint(60, 60));
+    QCOMPARE(hitIndex, 1);
+}
+
+void TestAnnotationLayer::testHitTestEmojiSticker_IgnoresHiddenItems()
+{
+    AnnotationLayer layer;
+
+    auto hiddenEmoji = std::make_unique<EmojiStickerAnnotation>(
+        QPoint(80, 80), QStringLiteral("WW"), 1.0);
+    hiddenEmoji->setVisible(false);
+    layer.addItem(std::move(hiddenEmoji));
+
+    layer.addItem(std::make_unique<EmojiStickerAnnotation>(
+        QPoint(80, 80), QStringLiteral("WW"), 1.0));
+
+    auto* visibleEmoji = dynamic_cast<EmojiStickerAnnotation*>(layer.itemAt(1));
+    QVERIFY(visibleEmoji != nullptr);
+    const QPoint probe = visibleEmoji->center().toPoint();
+
+    const int hitIndex = layer.hitTestEmojiSticker(probe);
+    QCOMPARE(hitIndex, 1);
+}
+
+void TestAnnotationLayer::testHitTestEmojiSticker_ReturnsTopMostVisible()
+{
+    AnnotationLayer layer;
+
+    layer.addItem(std::make_unique<EmojiStickerAnnotation>(
+        QPoint(100, 100), QStringLiteral("WW"), 1.0));
+    layer.addItem(std::make_unique<EmojiStickerAnnotation>(
+        QPoint(100, 100), QStringLiteral("WW"), 1.0));
+
+    auto* topEmoji = dynamic_cast<EmojiStickerAnnotation*>(layer.itemAt(1));
+    QVERIFY(topEmoji != nullptr);
+    const QPoint probe = topEmoji->center().toPoint();
+
+    const int hitIndex = layer.hitTestEmojiSticker(probe);
     QCOMPARE(hitIndex, 1);
 }
 

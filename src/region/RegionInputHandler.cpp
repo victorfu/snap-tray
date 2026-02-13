@@ -190,10 +190,19 @@ void RegionInputHandler::handleMousePress(QMouseEvent* event)
                 return;
             }
 
-            // Clear selection if clicking elsewhere
+            // Clear selection if clicking elsewhere.
             if (m_annotationLayer->selectedIndex() >= 0) {
+                bool clearedSelectedEmojiInEmojiTool = false;
+                if (state().currentTool == ToolId::EmojiSticker) {
+                    clearedSelectedEmojiInEmojiTool =
+                        dynamic_cast<EmojiStickerAnnotation*>(m_annotationLayer->selectedItem()) != nullptr;
+                }
                 m_annotationLayer->clearSelection();
                 emit updateRequested();
+                if (clearedSelectedEmojiInEmojiTool) {
+                    // Keep this click for deselection only; do not place a new emoji.
+                    return;
+                }
             }
 
             // Handle annotation tool inside selection

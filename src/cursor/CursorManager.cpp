@@ -11,6 +11,7 @@
 #include "tools/handlers/MosaicToolHandler.h"
 #include "TransformationGizmo.h"  // For GizmoHandle enum
 #include "annotations/AnnotationLayer.h"
+#include "annotations/EmojiStickerAnnotation.h"
 #include "annotations/ArrowAnnotation.h"
 #include "annotations/PolylineAnnotation.h"
 
@@ -527,8 +528,10 @@ Qt::CursorShape CursorManager::cursorForGizmoHandle(GizmoHandle handle)
 CursorManager::AnnotationHitResult CursorManager::hitTestAnnotations(
     const QPoint& pos,
     AnnotationLayer* layer,
+    EmojiStickerAnnotation* selectedEmoji,
     ArrowAnnotation* selectedArrow,
-    PolylineAnnotation* selectedPolyline)
+    PolylineAnnotation* selectedPolyline,
+    bool enableEmojiGizmoHover)
 {
     AnnotationHitResult result;
 
@@ -536,7 +539,21 @@ CursorManager::AnnotationHitResult CursorManager::hitTestAnnotations(
         return result;
     }
 
-    // 1. Check selected arrow's gizmo handles first (highest priority)
+    // 1. Check selected emoji sticker handles/body first.
+    // Press handling in ScreenCanvas/PinWindow gives selected emoji interaction
+    // precedence, so hover feedback must match that priority.
+    if (enableEmojiGizmoHover && selectedEmoji) {
+        GizmoHandle handle = TransformationGizmo::hitTest(selectedEmoji, pos);
+        if (handle != GizmoHandle::None) {
+            result.hit = true;
+            result.target = HoverTarget::GizmoHandle;
+            result.handleIndex = static_cast<int>(handle);
+            result.cursor = cursorForGizmoHandle(handle);
+            return result;
+        }
+    }
+
+    // 2. Check selected arrow's gizmo handles (or hover on unselected arrows).
     if (selectedArrow) {
         GizmoHandle handle = TransformationGizmo::hitTest(selectedArrow, pos);
         if (handle != GizmoHandle::None) {
@@ -558,7 +575,7 @@ CursorManager::AnnotationHitResult CursorManager::hitTestAnnotations(
         }
     }
 
-    // 2. Check text annotation hover
+    // 3. Check text annotation hover.
     int textHitIndex = layer->hitTestText(pos);
     if (textHitIndex >= 0) {
         result.hit = true;
@@ -568,7 +585,7 @@ CursorManager::AnnotationHitResult CursorManager::hitTestAnnotations(
         return result;
     }
 
-    // 3. Check selected polyline's vertex handles
+    // 4. Check selected polyline's vertex handles.
     if (selectedPolyline) {
         int vertexIndex = TransformationGizmo::hitTestVertex(selectedPolyline, pos);
         if (vertexIndex >= 0) {
@@ -598,6 +615,6 @@ CursorManager::AnnotationHitResult CursorManager::hitTestAnnotations(
         }
     }
 
-    // No hit
+    // No hit.
     return result;
 }
