@@ -19,7 +19,6 @@ class RecordingRegionSelector;
 class RecordingControlBar;
 class RecordingBoundaryOverlay;
 class RecordingInitTask;
-class InPlacePreviewOverlay;
 class CountdownOverlay;
 class NativeGifEncoder;
 class IVideoEncoder;
@@ -113,23 +112,6 @@ private:
     void startRecordingAfterCountdown();      // Called when countdown finishes
     void onCountdownCancelled();              // Handle countdown cancellation
 
-    // In-place preview methods
-    void cleanupPreviewMode();
-    void connectPreviewSignals();
-
-private slots:
-    // Preview mode handlers
-    void onPreviewPlayRequested();
-    void onPreviewPauseRequested();
-    void onPreviewSeekRequested(qint64 positionMs);
-    void onPreviewVolumeToggled();
-    void onPreviewAnnotateRequested();
-    void onPreviewSaveRequested();
-    void onPreviewDiscardRequested();
-    void onPreviewPositionChanged(qint64 positionMs);
-    void onPreviewDurationChanged(qint64 durationMs);
-    void onPreviewStateChanged(int state);
-
 private:
     // Region selection
     QPointer<RecordingRegionSelector> m_regionSelector;
@@ -137,7 +119,6 @@ private:
     // Recording state
     QPointer<RecordingControlBar> m_controlBar;
     QPointer<RecordingBoundaryOverlay> m_boundaryOverlay;
-    QPointer<InPlacePreviewOverlay> m_previewOverlay;
     QString m_tempVideoPath;
     std::unique_ptr<EncodingWorker> m_encodingWorker;  // Offloads encoding to worker thread
     bool m_usingNativeEncoder;          // True if using native encoder (vs GIF)

@@ -683,7 +683,6 @@ add_library(snaptray_ui STATIC
     src/video/VideoTrimmer.cpp
     src/video/RecordingPreviewWindow.cpp
     src/video/FormatSelectionWidget.cpp
-    src/video/InPlacePreviewOverlay.cpp
     src/video/CountdownOverlay.cpp
 
     # Dialogs and overlays
@@ -768,7 +767,6 @@ add_library(snaptray_ui STATIC
     include/video/VideoTrimmer.h
     include/video/RecordingPreviewWindow.h
     include/video/FormatSelectionWidget.h
-    include/video/InPlacePreviewOverlay.h
     include/video/CountdownOverlay.h
     include/SettingsDialog.h
     include/OCRResultDialog.h

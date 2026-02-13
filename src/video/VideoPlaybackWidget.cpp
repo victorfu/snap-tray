@@ -10,7 +10,7 @@ VideoPlaybackWidget::VideoPlaybackWidget(QWidget *parent)
     , m_videoLoaded(false)
 {
     // No minimum size - allow the widget to match the recording region exactly
-    // The parent (InPlacePreviewOverlay) sets the geometry based on recording region
+    // The parent preview container sets geometry based on recording content.
 
     // Black background
     setAutoFillBackground(true);
