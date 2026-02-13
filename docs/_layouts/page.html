@@ -2,6 +2,16 @@
 layout: default
 ---
 
-<div class="container">
-  {{ content }}
-</div>
+<section class="content-page">
+  <div class="container">
+    <article class="content-card">
+      <header class="content-header">
+        <p class="eyebrow">SnapTray Policy</p>
+        <h1>{{ page.title }}</h1>
+      </header>
+      <div class="content-prose">
+        {{ content }}
+      </div>
+    </article>
+  </div>
+</section>

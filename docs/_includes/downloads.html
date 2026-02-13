@@ -1,61 +1,74 @@
 <section id="download" class="downloads">
   <div class="container">
-    <h2>Download</h2>
+    <div class="section-heading" data-reveal>
+      <p class="eyebrow">Downloads</p>
+      <h2>Install the latest SnapTray build</h2>
+      <p>Get the newest stable release directly from GitHub assets or install from Microsoft Store.</p>
+    </div>
+
     <div class="download-cards">
-      <div class="download-card">
-        <div class="platform-icon">&#63743;</div>
-        <h3>macOS</h3>
+      <article class="download-card" data-reveal>
+        <p class="platform-label">macOS</p>
+        <h3>Desktop Installer</h3>
         <p class="requirements">macOS 14.0 (Sonoma) or later</p>
-        <a id="download-macos" href="#" class="btn btn-download" style="display: none;">
+
+        <a id="download-macos" href="#" class="btn btn-primary btn-download" hidden>
           Download .dmg <span class="version"></span>
         </a>
-        <p id="no-macos-release" class="requirements">No release available yet</p>
-      </div>
-      <div class="download-card">
-        <div class="platform-icon">&#8862;</div>
-        <h3>Windows</h3>
+        <p id="no-macos-release" class="status-text">No release available yet</p>
+      </article>
+
+      <article class="download-card" data-reveal>
+        <p class="platform-label">Windows</p>
+        <h3>Store + Installer</h3>
         <p class="requirements">Windows 10 or later</p>
-        <a href="https://apps.microsoft.com/detail/9p38m1hx9hvc" class="btn btn-ms-store" target="_blank"
-          rel="noopener">
-          <svg class="ms-logo" viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg">
+
+        <a href="https://apps.microsoft.com/detail/9p38m1hx9hvc" class="btn btn-store" target="_blank" rel="noopener">
+          <svg class="ms-logo" viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
             <rect x="1" y="1" width="9" height="9" fill="#f25022" />
             <rect x="11" y="1" width="9" height="9" fill="#7fba00" />
             <rect x="1" y="11" width="9" height="9" fill="#00a4ef" />
             <rect x="11" y="11" width="9" height="9" fill="#ffb900" />
           </svg>
-          <span class="ms-text">Get it on <strong>Microsoft Store</strong></span>
+          <span class="store-text">Get it on <strong>Microsoft Store</strong></span>
         </a>
-        <a id="download-windows" href="#" class="btn btn-alt" style="display: none; margin-top: 0.5rem;">
+
+        <a id="download-windows" href="#" class="btn btn-ghost btn-download-alt" hidden>
           Download .exe <span class="version"></span>
         </a>
-        <p id="no-windows-release" class="requirements" style="font-size: 0.75rem;">Or download from GitHub releases</p>
-      </div>
+        <p id="no-windows-release" class="status-text">Or download from GitHub releases</p>
+      </article>
     </div>
-    <p class="unsigned-note">
-      Note: macOS installer is not code-signed. Right-click and select "Open" to run.
-    </p>
+
+    <p class="unsigned-note" data-reveal>macOS installer is not code-signed. Right-click the app and choose "Open" for first launch.</p>
   </div>
 </section>
 
 <section class="requirements-section">
   <div class="container">
-    <h2>System Requirements</h2>
+    <div class="section-heading" data-reveal>
+      <p class="eyebrow">System Requirements</p>
+      <h2>Platform prerequisites</h2>
+    </div>
+
     <div class="requirements-grid">
-      <div class="requirement-card">
+      <article class="requirement-card" data-reveal>
         <h3>macOS</h3>
         <ul>
           <li>macOS 14.0 (Sonoma) or later</li>
           <li>Screen Recording permission required</li>
           <li>Accessibility permission for window detection</li>
         </ul>
-      </div>
-      <div class="requirement-card">
+      </article>
+
+      <article class="requirement-card" data-reveal>
         <h3>Windows</h3>
         <ul>
           <li>Windows 10 or later</li>
-          <li>No special permissions required</li>
+          <li>Full-trust capability for capture/encoding stack</li>
+          <li>Microphone permission only when recording audio</li>
         </ul>
-      </div>
+      </article>
     </div>
   </div>
 </section>

@@ -2,9 +2,10 @@
 layout: page
 title: Privacy Policy
 permalink: /privacy/
+description: SnapTray privacy policy. All capture and recording workflows stay on your local device.
 ---
 
-**Last Updated:** January 2026
+<p><strong>Last Updated:</strong> January 2026</p>
 
 ## Overview
 
@@ -37,23 +38,23 @@ All data generated or used by SnapTray is stored locally on your device:
 
 ## Permissions
 
-SnapTray requires certain system permissions to function. Here's why:
+SnapTray requires certain system permissions to function. Here is why:
 
 ### macOS
 
-| Permission | Why It's Needed |
-|------------|-----------------|
-| Screen Recording | Core functionality - capturing screenshots and recordings |
+| Permission | Why It Is Needed |
+|------------|------------------|
+| Screen Recording | Core functionality for screenshots and recordings |
 | Accessibility | Window detection for smart capture features |
 
 ### Windows
 
-| Permission | Why It's Needed |
-|------------|-----------------|
+| Permission | Why It Is Needed |
+|------------|------------------|
 | Full Trust | Required for screen capture (DXGI), audio capture (WASAPI), and OCR functionality |
 
 **Optional permissions:**
-- Microphone access is only requested if you choose to record audio with your screen recordings
+- Microphone access is requested only if you choose to record audio.
 
 ## Third-Party Services
 
@@ -76,11 +77,11 @@ SnapTray does not collect any personal information from anyone, including childr
 
 ## Changes to This Policy
 
-If we make changes to this privacy policy, we will update the "Last Updated" date at the top of this page. Since SnapTray has no network connectivity, you would need to check this page manually or review release notes for any updates.
+If we make changes to this privacy policy, we will update the "Last Updated" date at the top of this page. Since SnapTray has no network connectivity, you need to check this page manually or review release notes for updates.
 
 ## Contact
 
-If you have questions about this privacy policy or SnapTray's privacy practices, please open an issue on our [GitHub repository](https://github.com/vfxfu/snap-tray/issues).
+If you have questions about this privacy policy or SnapTray's privacy practices, open an issue on our [GitHub repository](https://github.com/vfxfu/snap-tray/issues).
 
 ---
 

@@ -1,15 +1,25 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="no-js">
 <head>
   {% include head.html %}
 </head>
 <body>
+  <a class="skip-link" href="#main-content">Skip to content</a>
+
+  <div class="site-background" aria-hidden="true">
+    <span class="bg-orb orb-a"></span>
+    <span class="bg-orb orb-b"></span>
+    <span class="bg-grid"></span>
+  </div>
+
   {% include header.html %}
 
-  <main>
+  <main id="main-content" class="site-main">
     {{ content }}
   </main>
 
   {% include footer.html %}
+
+  <script src="{{ '/assets/js/site.js' | relative_url }}"></script>
 </body>
 </html>

@@ -1,14 +1,22 @@
-<header class="site-header">
-  <div class="container">
-    <a href="{{ '/' | relative_url }}" class="site-logo">
-      <img src="{{ '/assets/images/logo.svg' | relative_url }}" alt="SnapTray">
+<header class="site-header" data-header>
+  <div class="container header-inner">
+    <a href="{{ '/' | relative_url }}" class="site-logo" aria-label="SnapTray home">
+      <img src="{{ '/assets/images/logo.svg' | relative_url }}" alt="" width="32" height="32">
       <span>SnapTray</span>
     </a>
-    <nav class="site-nav">
-      <a href="{{ '/' | relative_url }}">Home</a>
-      <a href="{{ '/releases/' | relative_url }}">Releases</a>
-      <a href="{{ '/privacy/' | relative_url }}">Privacy</a>
-      <a href="https://github.com/{{ site.github.repo_owner }}/{{ site.github.repo_name }}" target="_blank" rel="noopener">GitHub</a>
+
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="primary-nav" data-nav-toggle>
+      <span></span>
+      <span></span>
+      <span></span>
+      <span class="sr-only">Toggle navigation</span>
+    </button>
+
+    <nav id="primary-nav" class="site-nav" aria-label="Primary navigation" data-nav>
+      <a href="{{ '/' | relative_url }}" {% if page.url == '/' or page.url == '/index.html' %}class="is-active"{% endif %}>Home</a>
+      <a href="{{ '/releases/' | relative_url }}" {% if page.url contains '/releases' %}class="is-active"{% endif %}>Releases</a>
+      <a href="{{ '/privacy/' | relative_url }}" {% if page.url contains '/privacy' %}class="is-active"{% endif %}>Privacy</a>
+      <a class="nav-github" href="https://github.com/{{ site.github.repo_owner }}/{{ site.github.repo_name }}" target="_blank" rel="noopener">GitHub</a>
     </nav>
   </div>
 </header>

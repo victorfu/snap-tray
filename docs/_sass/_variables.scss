@@ -1,38 +1,43 @@
-// Colors
-$primary-color: #6366F1;
-$primary-dark: #4F46E5;
-$accent-color: #FBBF24;
-$text-color: #1F2937;
-$text-muted: #6B7280;
-$bg-light: #F9FAFB;
-$bg-white: #FFFFFF;
-$border-color: #E5E7EB;
+$font-display: "Space Grotesk", "Avenir Next", "Segoe UI", sans-serif;
+$font-body: "Manrope", "SF Pro Text", "Helvetica Neue", sans-serif;
 
-// Typography
-$font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-$font-size-base: 16px;
-$line-height-base: 1.6;
+$surface-0: #f3f7ff;
+$surface-1: #ffffff;
+$surface-2: #e8f0ff;
+$surface-dark: #0a1326;
+$surface-dark-alt: #10203b;
 
-// Spacing
-$spacing-xs: 0.5rem;
-$spacing-sm: 1rem;
-$spacing-md: 1.5rem;
-$spacing-lg: 2rem;
-$spacing-xl: 3rem;
-$spacing-xxl: 4rem;
+$text-primary: #0f1a2f;
+$text-secondary: #4f607a;
+$text-inverse: #eaf2ff;
+$text-muted-inverse: #a7b8d5;
 
-// Breakpoints
+$accent-primary: #26d1c8;
+$accent-primary-strong: #17bcb4;
+$accent-secondary: #58a6ff;
+$accent-warning: #ffb347;
+$accent-danger: #ff7070;
+
+$border-light: rgba(15, 26, 47, 0.12);
+$border-glass: rgba(190, 218, 255, 0.28);
+$shadow-soft: 0 18px 45px rgba(13, 32, 66, 0.14);
+$shadow-glow: 0 0 0 1px rgba(38, 209, 200, 0.16), 0 18px 50px rgba(30, 87, 171, 0.24);
+
+$radius-xs: 0.5rem;
+$radius-sm: 0.8rem;
+$radius-md: 1.1rem;
+$radius-lg: 1.5rem;
+$radius-xl: 2rem;
+
+$space-2xs: 0.375rem;
+$space-xs: 0.625rem;
+$space-sm: 0.9rem;
+$space-md: 1.25rem;
+$space-lg: 1.75rem;
+$space-xl: 2.5rem;
+$space-2xl: 3.5rem;
+$space-3xl: 5rem;
+
 $breakpoint-sm: 640px;
-$breakpoint-md: 768px;
-$breakpoint-lg: 1024px;
-
-// Border radius
-$radius-sm: 0.375rem;
-$radius-md: 0.5rem;
-$radius-lg: 1rem;
-$radius-xl: 1.5rem;
-
-// Shadows
-$shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-$shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-$shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+$breakpoint-md: 900px;
+$breakpoint-lg: 1200px;
