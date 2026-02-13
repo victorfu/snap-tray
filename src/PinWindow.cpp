@@ -1797,19 +1797,14 @@ void PinWindow::mousePressEvent(QMouseEvent* event)
         }
 
         // 4. Clear active annotation selection if clicking elsewhere.
+        bool clearedSelectedEmojiInEmojiTool = false;
         if (m_annotationMode && m_annotationLayer && m_annotationLayer->selectedIndex() >= 0) {
-            bool clearedSelectedEmojiInEmojiTool = false;
             if (m_currentToolId == ToolId::EmojiSticker) {
                 clearedSelectedEmojiInEmojiTool =
                     dynamic_cast<EmojiStickerAnnotation*>(m_annotationLayer->selectedItem()) != nullptr;
             }
             m_annotationLayer->clearSelection();
             update();
-            if (clearedSelectedEmojiInEmojiTool) {
-                // Keep this click for deselection only; do not place a new emoji on release.
-                m_consumeNextToolRelease = true;
-                return;
-            }
         }
 
         // 5. In annotation mode with a drawing tool
@@ -1833,6 +1828,10 @@ void PinWindow::mousePressEvent(QMouseEvent* event)
 
             // Other annotation tools route to ToolManager
             if (m_toolManager) {
+                if (clearedSelectedEmojiInEmojiTool) {
+                    // Keep this click for deselection only; do not place a new emoji on release.
+                    m_consumeNextToolRelease = true;
+                }
                 // Transform display coordinates to original image coordinates
                 // This is needed because annotations are stored in original space
                 // but rendered with rotation/flip transforms applied
