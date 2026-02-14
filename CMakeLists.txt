@@ -293,6 +293,7 @@ add_library(snaptray_core STATIC
     # CLI sources
     src/cli/CLIHandler.cpp
     src/cli/IPCProtocol.cpp
+    src/cli/CaptureOutputHelper.cpp
     src/cli/commands/GuiCommand.cpp
     src/cli/commands/FullCommand.cpp
     src/cli/commands/ScreenCommand.cpp

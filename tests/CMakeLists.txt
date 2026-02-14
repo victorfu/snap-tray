@@ -197,6 +197,11 @@ target_link_libraries(CLI_NumericArgumentValidation PRIVATE snaptray_platform Qt
 add_test(NAME CLI_NumericArgumentValidation COMMAND CLI_NumericArgumentValidation)
 set_tests_properties(CLI_NumericArgumentValidation PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(CLI_CaptureOutputHelper CLI/tst_CaptureOutputHelper.cpp)
+target_link_libraries(CLI_CaptureOutputHelper PRIVATE snaptray_platform Qt6::Test)
+add_test(NAME CLI_CaptureOutputHelper COMMAND CLI_CaptureOutputHelper)
+set_tests_properties(CLI_CaptureOutputHelper PROPERTIES TIMEOUT 60 LABELS "unit")
+
 if(WIN32)
     add_executable(CLI_WindowsPathEnv
         CLI/tst_WindowsPathEnv.cpp

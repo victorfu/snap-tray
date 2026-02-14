@@ -1,21 +1,11 @@
 #include "cli/commands/FullCommand.h"
 
-#include "PlatformFeatures.h"
-#include "settings/FileSettingsManager.h"
-#include "utils/FilenameTemplateEngine.h"
-#include "utils/ImageSaveUtils.h"
+#include "cli/CaptureOutputHelper.h"
 
-#include <QBuffer>
-#include <QColorSpace>
-#include <QCoreApplication>
 #include <QCursor>
-#include <QDir>
-#include <QFileInfo>
 #include <QGuiApplication>
-#include <QImage>
 #include <QPixmap>
 #include <QScreen>
-#include <QThread>
 
 namespace SnapTray {
 namespace CLI {
@@ -44,10 +34,8 @@ CLIResult FullCommand::execute(const QCommandLineParser& parser)
     bool toRaw = parser.isSet("raw");
     int screenNum = parser.isSet("screen") ? parser.value("screen").toInt() : -1;
 
-    // Delay
-    if (delay > 0) {
-        QThread::msleep(delay);
-    }
+    // Delay before selecting screen/capturing to preserve CLI behavior.
+    applyOptionalDelay(delay);
 
     // Get screen
     QList<QScreen*> screens = QGuiApplication::screens();
@@ -83,80 +71,16 @@ CLIResult FullCommand::execute(const QCommandLineParser& parser)
         return CLIResult::error(CLIResult::Code::GeneralError, "Failed to capture screen");
     }
 
-    // Output to stdout (raw PNG)
-    if (toRaw) {
-        QByteArray data;
-        QBuffer buffer(&data);
-        buffer.open(QIODevice::WriteOnly);
-        screenshot.save(&buffer, "PNG");
-        return CLIResult::withData(data);
-    }
+    CaptureOutputOptions options;
+    options.savePath = savePath;
+    options.outputFile = outputFile;
+    options.toClipboard = toClipboard;
+    options.toRaw = toRaw;
 
-    // Copy to clipboard
-    if (toClipboard) {
-        QImage image = screenshot.toImage().convertToFormat(QImage::Format_ARGB32);
-        image.setColorSpace(QColorSpace()); // Strip color profile to avoid libpng errors
+    CaptureMetadata metadata;
+    metadata.sourceScreen = screen;
 
-        // Use native clipboard API for reliable persistence in CLI mode
-        if (PlatformFeatures::instance().copyImageToClipboard(image)) {
-            return CLIResult::success("Screenshot copied to clipboard");
-        }
-        return CLIResult::error(CLIResult::Code::GeneralError, "Failed to copy to clipboard");
-    }
-
-    // Save to file
-    QString filePath;
-    if (!outputFile.isEmpty()) {
-        filePath = outputFile;
-    }
-    else {
-        if (savePath.isEmpty()) {
-            savePath = FileSettingsManager::instance().loadScreenshotPath();
-        }
-
-        const qreal dpr = screenshot.devicePixelRatio() > 0.0 ? screenshot.devicePixelRatio() : 1.0;
-        const QSize logicalSize = screenshot.size() / dpr;
-        const int monitorIndex = QGuiApplication::screens().indexOf(screen);
-
-        auto& fileSettings = FileSettingsManager::instance();
-        FilenameTemplateEngine::Context context;
-        context.type = QStringLiteral("Screenshot");
-        context.prefix = fileSettings.loadFilenamePrefix();
-        context.width = logicalSize.width();
-        context.height = logicalSize.height();
-        context.monitor = monitorIndex >= 0 ? QString::number(monitorIndex) : QStringLiteral("unknown");
-        context.windowTitle = QString();
-        context.appName = QString();
-        context.regionIndex = -1;
-        context.ext = QStringLiteral("png");
-        context.dateFormat = fileSettings.loadDateFormat();
-        context.outputDir = savePath;
-
-        filePath = FilenameTemplateEngine::buildUniqueFilePath(
-            savePath, fileSettings.loadFilenameTemplate(), context);
-    }
-
-    // Ensure directory exists
-    QDir().mkpath(QFileInfo(filePath).absolutePath());
-
-    // Convert to QImage and strip color profile (fixes libpng iCCP error on macOS)
-    QImage cleanImage = screenshot.toImage().convertToFormat(QImage::Format_RGB32);
-    cleanImage.setColorSpace(QColorSpace());
-
-    // Process pending events to ensure Qt subsystems are ready
-    QCoreApplication::processEvents();
-
-    ImageSaveUtils::Error saveError;
-    if (!ImageSaveUtils::saveImageAtomically(cleanImage, filePath, QByteArrayLiteral("PNG"), &saveError)) {
-        const QString detail = saveError.stage.isEmpty()
-            ? (saveError.message.isEmpty() ? QStringLiteral("Unknown error") : saveError.message)
-            : QStringLiteral("%1: %2").arg(saveError.stage, saveError.message);
-        return CLIResult::error(
-            CLIResult::Code::FileError,
-            QStringLiteral("Failed to save screenshot to: %1 (%2)").arg(filePath, detail));
-    }
-
-    return CLIResult::success(QString("Screenshot saved to: %1").arg(filePath));
+    return emitCaptureOutput(screenshot, options, metadata);
 }
 
 } // namespace CLI
