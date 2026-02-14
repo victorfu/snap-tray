@@ -30,7 +30,6 @@ void RegionCommand::setupOptions(QCommandLineParser& parser)
     parser.addOption({{"p", "path"}, "Save directory", "dir"});
     parser.addOption({{"o", "output"}, "Output file path", "file"});
     parser.addOption({{"c", "clipboard"}, "Copy to clipboard"});
-    parser.addOption({"cursor", "Include mouse cursor"});
     parser.addOption({"raw", "Output raw PNG to stdout"});
 }
 

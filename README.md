@@ -436,7 +436,6 @@ full/screen/region:
   -n, --screen       Screen index
   -r, --region       Region coordinates (region only: x,y,width,height)
   --raw              Output raw PNG to stdout
-  --cursor           Include mouse cursor
 
 screen only:
   --list             List available screens

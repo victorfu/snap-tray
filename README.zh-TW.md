@@ -436,7 +436,6 @@ full/screen/region:
   -n, --screen       螢幕編號
   -r, --region       區域座標（僅 region：x,y,寬,高）
   --raw              輸出原始 PNG 到 stdout
-  --cursor           包含滑鼠游標
 
 screen 專屬:
   --list             列出可用螢幕

@@ -31,7 +31,6 @@ void FullCommand::setupOptions(QCommandLineParser& parser)
     parser.addOption({{"o", "output"}, "Output file path", "file"});
     parser.addOption({{"c", "clipboard"}, "Copy to clipboard instead of saving"});
     parser.addOption({{"n", "screen"}, "Screen number (0 = primary)", "num"});
-    parser.addOption({"cursor", "Include mouse cursor"});
     parser.addOption({"raw", "Output raw PNG to stdout"});
 }
 
@@ -43,7 +42,6 @@ CLIResult FullCommand::execute(const QCommandLineParser& parser)
     QString outputFile = parser.value("output");
     bool toClipboard = parser.isSet("clipboard");
     bool toRaw = parser.isSet("raw");
-    // bool includeCursor = parser.isSet("cursor"); // TODO: implement cursor overlay
     int screenNum = parser.isSet("screen") ? parser.value("screen").toInt() : -1;
 
     // Delay

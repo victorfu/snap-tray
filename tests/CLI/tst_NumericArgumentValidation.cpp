@@ -26,6 +26,8 @@ private slots:
     void recordCommand_buildIPCMessage_skipsInvalidScreenValue();
     void pinCommand_buildIPCMessage_skipsInvalidPositionValues();
     void cliHandler_validatesGUICommandArgumentsBeforeIPC();
+    void captureCommands_rejectUnsupportedCursorOption_data();
+    void captureCommands_rejectUnsupportedCursorOption();
 };
 
 void tst_NumericArgumentValidation::screenCommand_rejectsNonNumericScreenOption()
@@ -128,6 +130,30 @@ void tst_NumericArgumentValidation::cliHandler_validatesGUICommandArgumentsBefor
     CLIResult pinResult = handler.process({"snaptray", "pin", "--clipboard", "--pos-y", "bad"});
     QCOMPARE(pinResult.code, CLIResult::Code::InvalidArguments);
     QVERIFY(pinResult.message.contains("Invalid y position: bad"));
+}
+
+void tst_NumericArgumentValidation::captureCommands_rejectUnsupportedCursorOption_data()
+{
+    QTest::addColumn<QString>("command");
+    QTest::addColumn<QStringList>("args");
+
+    QTest::newRow("full") << "full" << QStringList{"--cursor"};
+    QTest::newRow("screen") << "screen" << QStringList{"0", "--cursor"};
+    QTest::newRow("region") << "region" << QStringList{"--region", "0,0,100,100", "--cursor"};
+}
+
+void tst_NumericArgumentValidation::captureCommands_rejectUnsupportedCursorOption()
+{
+    QFETCH(QString, command);
+    QFETCH(QStringList, args);
+
+    CLIHandler handler;
+    QStringList cliArgs{"snaptray", command};
+    cliArgs.append(args);
+
+    const CLIResult result = handler.process(cliArgs);
+    QCOMPARE(result.code, CLIResult::Code::InvalidArguments);
+    QVERIFY(result.message.contains("cursor", Qt::CaseInsensitive));
 }
 
 QTEST_MAIN(tst_NumericArgumentValidation)
