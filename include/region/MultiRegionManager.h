@@ -59,7 +59,11 @@ signals:
 private:
     QColor colorForIndex(int index) const;
     void refreshIndices();
-    void applyActiveIndex(int index, bool forceSignal);
+    // Maintains the active-state invariant:
+    // m_regions[i].isActive == (i == m_activeIndex).
+    // Emits activeIndexChanged when the index changes, or when
+    // emitOnUnchangedIndex is true.
+    void applyActiveState(int index, bool emitOnUnchangedIndex);
 
     QVector<Region> m_regions;
     int m_activeIndex = -1;

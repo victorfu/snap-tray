@@ -11,6 +11,8 @@ private slots:
     void testDeleteActiveRegionEmitsAndReassignsWhenIndexMatches();
     void testDeleteLastActiveRegionEmitsAndMovesToPrevious();
     void testDeleteNonActiveRegionAfterActiveKeepsSelectionWithoutSignal();
+    void testClearFromNonEmptyResetsActiveAndEmits();
+    void testClearWithoutActiveDoesNotEmitActiveSignal();
 };
 
 void tst_MultiRegionManagerDeleteReindex::testDeleteCompactsIndicesAndColors()
@@ -113,6 +115,42 @@ void tst_MultiRegionManagerDeleteReindex::testDeleteNonActiveRegionAfterActiveKe
     QCOMPARE(after.size(), 2);
     QVERIFY(after[0].isActive);
     QVERIFY(!after[1].isActive);
+}
+
+void tst_MultiRegionManagerDeleteReindex::testClearFromNonEmptyResetsActiveAndEmits()
+{
+    MultiRegionManager manager;
+    manager.addRegion(QRect(10, 10, 100, 70));
+    manager.addRegion(QRect(130, 10, 110, 70));
+
+    QSignalSpy activeSpy(&manager, &MultiRegionManager::activeIndexChanged);
+    QSignalSpy clearedSpy(&manager, &MultiRegionManager::regionsCleared);
+
+    manager.clear();
+
+    QCOMPARE(clearedSpy.count(), 1);
+    QCOMPARE(activeSpy.count(), 1);
+    QCOMPARE(activeSpy.at(0).at(0).toInt(), -1);
+    QCOMPARE(manager.count(), 0);
+    QCOMPARE(manager.activeIndex(), -1);
+}
+
+void tst_MultiRegionManagerDeleteReindex::testClearWithoutActiveDoesNotEmitActiveSignal()
+{
+    MultiRegionManager manager;
+    manager.addRegion(QRect(10, 10, 100, 70));
+    manager.addRegion(QRect(130, 10, 110, 70));
+    manager.setActiveIndex(-1);
+
+    QSignalSpy activeSpy(&manager, &MultiRegionManager::activeIndexChanged);
+    QSignalSpy clearedSpy(&manager, &MultiRegionManager::regionsCleared);
+
+    manager.clear();
+
+    QCOMPARE(clearedSpy.count(), 1);
+    QCOMPARE(activeSpy.count(), 0);
+    QCOMPARE(manager.count(), 0);
+    QCOMPARE(manager.activeIndex(), -1);
 }
 
 QTEST_MAIN(tst_MultiRegionManagerDeleteReindex)

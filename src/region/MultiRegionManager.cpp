@@ -52,21 +52,16 @@ bool MultiRegionManager::moveRegion(int fromIndex, int toIndex)
     m_regions.insert(toIndex, movedRegion);
 
     const int oldActiveIndex = m_activeIndex;
+    int newActiveIndex = oldActiveIndex;
     if (oldActiveIndex == fromIndex) {
-        m_activeIndex = toIndex;
+        newActiveIndex = toIndex;
     } else if (fromIndex < toIndex && oldActiveIndex > fromIndex && oldActiveIndex <= toIndex) {
-        m_activeIndex = oldActiveIndex - 1;
+        newActiveIndex = oldActiveIndex - 1;
     } else if (toIndex < fromIndex && oldActiveIndex >= toIndex && oldActiveIndex < fromIndex) {
-        m_activeIndex = oldActiveIndex + 1;
+        newActiveIndex = oldActiveIndex + 1;
     }
 
-    for (int i = 0; i < m_regions.size(); ++i) {
-        m_regions[i].isActive = (i == m_activeIndex);
-    }
-
-    if (m_activeIndex != oldActiveIndex) {
-        emit activeIndexChanged(m_activeIndex);
-    }
+    applyActiveState(newActiveIndex, false);
     emit regionsReordered();
     return true;
 }
@@ -92,7 +87,7 @@ void MultiRegionManager::removeRegion(int index)
         newActiveIndex = oldActiveIndex - 1;
     }
 
-    applyActiveIndex(newActiveIndex, removedWasActive);
+    applyActiveState(newActiveIndex, removedWasActive);
     emit regionRemoved(index);
 }
 
@@ -131,25 +126,23 @@ QRect MultiRegionManager::regionRect(int index) const
 
 void MultiRegionManager::setActiveIndex(int index)
 {
-    applyActiveIndex(index, false);
+    applyActiveState(index, false);
 }
 
-void MultiRegionManager::applyActiveIndex(int index, bool forceSignal)
+void MultiRegionManager::applyActiveState(int index, bool emitOnUnchangedIndex)
 {
     if (index < -1 || index >= m_regions.size()) {
         index = -1;
     }
 
-    const bool unchanged = (m_activeIndex == index);
-    if (unchanged && !forceSignal) {
-        return;
-    }
-
+    const bool shouldEmit = (m_activeIndex != index) || emitOnUnchangedIndex;
     m_activeIndex = index;
     for (int i = 0; i < m_regions.size(); ++i) {
         m_regions[i].isActive = (i == m_activeIndex);
     }
-    emit activeIndexChanged(m_activeIndex);
+    if (shouldEmit) {
+        emit activeIndexChanged(m_activeIndex);
+    }
 }
 
 QColor MultiRegionManager::nextColor() const
@@ -160,11 +153,12 @@ QColor MultiRegionManager::nextColor() const
 void MultiRegionManager::clear()
 {
     if (m_regions.isEmpty()) {
-        m_activeIndex = -1;
+        applyActiveState(-1, false);
         return;
     }
+    const bool hadActive = (m_activeIndex != -1);
     m_regions.clear();
-    m_activeIndex = -1;
+    applyActiveState(-1, hadActive);
     emit regionsCleared();
 }
 

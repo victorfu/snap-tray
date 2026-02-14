@@ -9,6 +9,7 @@ class tst_MultiRegionManagerReorder : public QObject
 private slots:
     void testMoveRegionPreservesIdentity();
     void testMoveRegionNoOp();
+    void testMoveRegionKeepsActiveIndexWithoutSignal();
 };
 
 void tst_MultiRegionManagerReorder::testMoveRegionPreservesIdentity()
@@ -62,6 +63,29 @@ void tst_MultiRegionManagerReorder::testMoveRegionNoOp()
     QVERIFY(!manager.moveRegion(-1, 0));
     QVERIFY(!manager.moveRegion(0, 5));
     QCOMPARE(reorderedSpy.count(), 0);
+}
+
+void tst_MultiRegionManagerReorder::testMoveRegionKeepsActiveIndexWithoutSignal()
+{
+    MultiRegionManager manager;
+    manager.addRegion(QRect(0, 0, 100, 80));
+    manager.addRegion(QRect(120, 0, 90, 60));
+    manager.addRegion(QRect(240, 0, 80, 50));
+    manager.setActiveIndex(0);
+
+    QSignalSpy reorderedSpy(&manager, &MultiRegionManager::regionsReordered);
+    QSignalSpy activeSpy(&manager, &MultiRegionManager::activeIndexChanged);
+
+    QVERIFY(manager.moveRegion(1, 2));
+    QCOMPARE(reorderedSpy.count(), 1);
+    QCOMPARE(activeSpy.count(), 0);
+    QCOMPARE(manager.activeIndex(), 0);
+
+    const QVector<MultiRegionManager::Region> after = manager.regions();
+    QCOMPARE(after.size(), 3);
+    QVERIFY(after[0].isActive);
+    QVERIFY(!after[1].isActive);
+    QVERIFY(!after[2].isActive);
 }
 
 QTEST_MAIN(tst_MultiRegionManagerReorder)
