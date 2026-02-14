@@ -8,6 +8,7 @@
 #include <QObject>
 #include <QPixmap>
 #include <QPointer>
+#include <QStringList>
 
 class QSystemTrayIcon;
 class QMenu;
@@ -52,6 +53,7 @@ private slots:
     void onPreviewDiscardRequested();
     void onHotkeyAction(SnapTray::HotkeyAction action);
     void onHotkeyChanged(SnapTray::HotkeyAction action, const SnapTray::HotkeyConfig& config);
+    void onHotkeyInitializationCompleted(const QStringList& failedHotkeys);
     void onUpdateAvailable(const ReleaseInfo& release);
 
 private:

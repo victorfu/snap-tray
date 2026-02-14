@@ -11,6 +11,7 @@
 #include "HotkeyTypes.h"
 #include <QObject>
 #include <QMap>
+#include <QStringList>
 #include <optional>
 
 class QHotkey;
@@ -177,6 +178,13 @@ signals:
      * @brief Emitted when hotkey registration status changes.
      */
     void registrationStatusChanged(SnapTray::HotkeyAction action, SnapTray::HotkeyStatus status);
+
+    /**
+     * @brief Emitted once after initialize() completes.
+     *
+     * Carries display names of hotkeys that failed to register.
+     */
+    void initializationCompleted(const QStringList& failedHotkeys);
 
 private:
     HotkeyManager();

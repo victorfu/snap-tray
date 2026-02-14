@@ -382,12 +382,15 @@ void MainApplication::initialize()
                 message);
         });
 
-    // Initialize hotkey manager and connect action signal
-    SnapTray::HotkeyManager::instance().initialize();
-    connect(&SnapTray::HotkeyManager::instance(), &SnapTray::HotkeyManager::actionTriggered,
+    // Connect hotkey signals before initialization so startup events are not missed.
+    auto& hotkeyManager = SnapTray::HotkeyManager::instance();
+    connect(&hotkeyManager, &SnapTray::HotkeyManager::actionTriggered,
             this, &MainApplication::onHotkeyAction);
-    connect(&SnapTray::HotkeyManager::instance(), &SnapTray::HotkeyManager::hotkeyChanged,
+    connect(&hotkeyManager, &SnapTray::HotkeyManager::hotkeyChanged,
             this, &MainApplication::onHotkeyChanged);
+    connect(&hotkeyManager, &SnapTray::HotkeyManager::initializationCompleted,
+            this, &MainApplication::onHotkeyInitializationCompleted);
+    hotkeyManager.initialize();
 
     // Update tray menu with current hotkey text
     updateTrayMenuHotkeyText();
@@ -656,6 +659,19 @@ void MainApplication::onHotkeyAction(SnapTray::HotkeyAction action)
 void MainApplication::onHotkeyChanged(SnapTray::HotkeyAction, const SnapTray::HotkeyConfig&)
 {
     updateTrayMenuHotkeyText();
+}
+
+void MainApplication::onHotkeyInitializationCompleted(const QStringList& failedHotkeys)
+{
+    if (failedHotkeys.isEmpty()) {
+        return;
+    }
+
+    GlobalToast::instance().showToast(
+        GlobalToast::Error,
+        tr("Hotkey Registration Failed"),
+        failedHotkeys.join(QStringLiteral(", ")) + tr(" failed to register."),
+        5000);
 }
 
 QPixmap MainApplication::renderTextToPixmap(const QString &text)

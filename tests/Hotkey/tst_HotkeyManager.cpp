@@ -29,6 +29,7 @@ private slots:
 
     // Singleton tests
     void testSingletonInstance();
+    void testInitialize_EmitsInitializationCompleted();
 
     // Config retrieval tests
     void testGetConfig_AllActionsExist();
@@ -115,6 +116,25 @@ void tst_HotkeyManager::testSingletonInstance()
     auto& instance2 = SnapTray::HotkeyManager::instance();
 
     QCOMPARE(&instance1, &instance2);
+}
+
+void tst_HotkeyManager::testInitialize_EmitsInitializationCompleted()
+{
+    manager().shutdown();
+
+    QSignalSpy initializeSpy(&manager(), &SnapTray::HotkeyManager::initializationCompleted);
+    QVERIFY(initializeSpy.isValid());
+
+    manager().initialize();
+    QCOMPARE(initializeSpy.count(), 1);
+
+    const QList<QVariant> args = initializeSpy.takeFirst();
+    QCOMPARE(args.size(), 1);
+    QVERIFY(args.at(0).canConvert<QStringList>());
+
+    // initialize() is idempotent and should not emit again when already initialized.
+    manager().initialize();
+    QCOMPARE(initializeSpy.count(), 0);
 }
 
 // ============================================================================

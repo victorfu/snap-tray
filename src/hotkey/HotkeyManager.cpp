@@ -5,8 +5,8 @@
 
 #include "hotkey/HotkeyManager.h"
 #include "settings/Settings.h"
-#include "ui/GlobalToast.h"
 
+#include <QDebug>
 #include <QHotkey>
 #include <QKeySequence>
 #include <QSettings>
@@ -61,16 +61,13 @@ void HotkeyManager::initialize()
         }
     }
 
-    // Notify about failures
+    // Notify upper layer about initialization result.
     if (!failedHotkeys.isEmpty()) {
-        GlobalToast::instance().showToast(
-            GlobalToast::Error,
-            tr("Hotkey Registration Failed"),
-            failedHotkeys.join(QStringLiteral(", ")) + tr(" failed to register."),
-            5000);
+        qWarning() << "HotkeyManager: failed to register hotkeys:" << failedHotkeys;
     }
 
     m_initialized = true;
+    emit initializationCompleted(failedHotkeys);
 }
 
 void HotkeyManager::shutdown()
