@@ -230,6 +230,8 @@ void SettingsDialog::setupGeneralTab(QWidget* tab)
     screenRecordingLabel->setFixedWidth(120);
     m_screenRecordingStatusLabel = new QLabel(contentWidget);
     m_screenRecordingSettingsBtn = new QPushButton(tr("Open Settings"), contentWidget);
+    m_screenRecordingSettingsBtn->setDefault(false);
+    m_screenRecordingSettingsBtn->setAutoDefault(false);
     connect(m_screenRecordingSettingsBtn, &QPushButton::clicked, this, []() {
         PlatformFeatures::openScreenRecordingSettings();
         });
@@ -245,6 +247,8 @@ void SettingsDialog::setupGeneralTab(QWidget* tab)
     accessibilityLabel->setFixedWidth(120);
     m_accessibilityStatusLabel = new QLabel(contentWidget);
     m_accessibilitySettingsBtn = new QPushButton(tr("Open Settings"), contentWidget);
+    m_accessibilitySettingsBtn->setDefault(false);
+    m_accessibilitySettingsBtn->setAutoDefault(false);
     connect(m_accessibilitySettingsBtn, &QPushButton::clicked, this, []() {
         PlatformFeatures::openAccessibilitySettings();
         });
@@ -267,6 +271,8 @@ void SettingsDialog::setupGeneralTab(QWidget* tab)
     QHBoxLayout* cliLayout = new QHBoxLayout();
     m_cliStatusLabel = new QLabel(contentWidget);
     m_cliInstallButton = new QPushButton(contentWidget);
+    m_cliInstallButton->setDefault(false);
+    m_cliInstallButton->setAutoDefault(false);
 
     updateCLIStatus();
 
