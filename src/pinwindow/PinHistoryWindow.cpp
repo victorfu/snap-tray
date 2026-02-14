@@ -6,6 +6,7 @@
 #include "pinwindow/PinWindowPlacement.h"
 #include "settings/FileSettingsManager.h"
 #include "utils/FilenameTemplateEngine.h"
+#include "utils/ImageSaveUtils.h"
 
 #include <QClipboard>
 #include <QDateTime>
@@ -43,6 +44,17 @@ constexpr int kRoleDprMetadataPath = Qt::UserRole + 3;
 constexpr int kRoleCapturedAt = Qt::UserRole + 4;
 constexpr int kRoleImageSize = Qt::UserRole + 5;
 constexpr int kRoleDevicePixelRatio = Qt::UserRole + 6;
+
+QString saveErrorDetail(const ImageSaveUtils::Error& error)
+{
+    if (error.stage.isEmpty()) {
+        return error.message.isEmpty() ? QStringLiteral("Unknown error") : error.message;
+    }
+    if (error.message.isEmpty()) {
+        return error.stage;
+    }
+    return QStringLiteral("%1: %2").arg(error.stage, error.message);
+}
 }
 
 PinHistoryWindow::PinHistoryWindow(PinWindowManager* pinWindowManager, QWidget* parent)
@@ -281,8 +293,13 @@ void PinHistoryWindow::saveEntryAs(const PinHistoryEntry& entry)
         defaultPath,
         tr("PNG Image (*.png);;JPEG Image (*.jpg *.jpeg);;All Files (*)"));
 
-    if (!filePath.isEmpty() && !pixmap.save(filePath)) {
-        QMessageBox::warning(this, tr("Save Failed"), tr("Failed to save screenshot."));
+    if (!filePath.isEmpty()) {
+        ImageSaveUtils::Error saveError;
+        if (!ImageSaveUtils::savePixmapAtomically(pixmap, filePath, QByteArray(), &saveError)) {
+            QMessageBox::warning(this,
+                                 tr("Save Failed"),
+                                 tr("Failed to save screenshot: %1").arg(saveErrorDetail(saveError)));
+        }
     }
 
     close();

@@ -3,6 +3,7 @@
 #include "PlatformFeatures.h"
 #include "settings/FileSettingsManager.h"
 #include "utils/FilenameTemplateEngine.h"
+#include "utils/ImageSaveUtils.h"
 
 #include <QBuffer>
 #include <QColorSpace>
@@ -12,7 +13,6 @@
 #include <QFileInfo>
 #include <QGuiApplication>
 #include <QImage>
-#include <QImageWriter>
 #include <QPixmap>
 #include <QScreen>
 #include <QThread>
@@ -146,9 +146,14 @@ CLIResult FullCommand::execute(const QCommandLineParser& parser)
     // Process pending events to ensure Qt subsystems are ready
     QCoreApplication::processEvents();
 
-    if (!cleanImage.save(filePath, "PNG")) {
+    ImageSaveUtils::Error saveError;
+    if (!ImageSaveUtils::saveImageAtomically(cleanImage, filePath, QByteArrayLiteral("PNG"), &saveError)) {
+        const QString detail = saveError.stage.isEmpty()
+            ? (saveError.message.isEmpty() ? QStringLiteral("Unknown error") : saveError.message)
+            : QStringLiteral("%1: %2").arg(saveError.stage, saveError.message);
         return CLIResult::error(
-            CLIResult::Code::FileError, QString("Failed to save screenshot to: %1").arg(filePath));
+            CLIResult::Code::FileError,
+            QStringLiteral("Failed to save screenshot to: %1 (%2)").arg(filePath, detail));
     }
 
     return CLIResult::success(QString("Screenshot saved to: %1").arg(filePath));

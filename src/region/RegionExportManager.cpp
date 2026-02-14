@@ -2,6 +2,7 @@
 #include "annotations/AnnotationLayer.h"
 #include "settings/FileSettingsManager.h"
 #include "utils/FilenameTemplateEngine.h"
+#include "utils/ImageSaveUtils.h"
 
 #include <QClipboard>
 #include <QDateTime>
@@ -167,16 +168,23 @@ bool RegionExportManager::saveToFile(const QRect &selectionRect, int cornerRadiu
         QString filePath = FilenameTemplateEngine::buildUniqueFilePath(
             savePath, templateValue, context, 100, &renderError);
 
-        bool success = selectedRegion.save(filePath);
+        ImageSaveUtils::Error saveError;
+        bool success = ImageSaveUtils::savePixmapAtomically(selectedRegion, filePath, QByteArray(), &saveError);
         if (success) {
             qDebug() << "RegionExportManager: Auto-saved to" << filePath;
             emit saveCompleted(selectedRegion, filePath);
         } else {
             qWarning() << "RegionExportManager: Failed to auto-save to" << filePath;
+            if (!saveError.stage.isEmpty() || !saveError.message.isEmpty()) {
+                qWarning() << "RegionExportManager: save error:" << saveError.stage << saveError.message;
+            }
             if (!renderError.isEmpty()) {
                 qWarning() << "RegionExportManager: template warning:" << renderError;
             }
-            emit saveFailed(filePath, tr("Failed to save screenshot"));
+            const QString detail = saveError.stage.isEmpty()
+                ? (saveError.message.isEmpty() ? QStringLiteral("Unknown error") : saveError.message)
+                : QStringLiteral("%1: %2").arg(saveError.stage, saveError.message);
+            emit saveFailed(filePath, tr("Failed to save screenshot: %1").arg(detail));
         }
         return success;
     }
@@ -196,12 +204,16 @@ bool RegionExportManager::saveToFile(const QRect &selectionRect, int cornerRadiu
     );
 
     if (!filePath.isEmpty()) {
-        bool success = selectedRegion.save(filePath);
+        ImageSaveUtils::Error saveError;
+        bool success = ImageSaveUtils::savePixmapAtomically(selectedRegion, filePath, QByteArray(), &saveError);
         if (success) {
             qDebug() << "RegionExportManager: Saved to" << filePath;
             emit saveCompleted(selectedRegion, filePath);
         } else {
             qWarning() << "RegionExportManager: Failed to save to" << filePath;
+            if (!saveError.stage.isEmpty() || !saveError.message.isEmpty()) {
+                qWarning() << "RegionExportManager: save error:" << saveError.stage << saveError.message;
+            }
         }
         emit saveDialogClosed(true);
         return success;

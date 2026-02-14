@@ -183,6 +183,11 @@ target_link_libraries(Utils_FilenameTemplateEngine PRIVATE snaptray_core Qt6::Te
 add_test(NAME Utils_FilenameTemplateEngine COMMAND Utils_FilenameTemplateEngine)
 set_tests_properties(Utils_FilenameTemplateEngine PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Utils_ImageSaveUtils Utils/tst_ImageSaveUtils.cpp)
+target_link_libraries(Utils_ImageSaveUtils PRIVATE snaptray_core Qt6::Test)
+add_test(NAME Utils_ImageSaveUtils COMMAND Utils_ImageSaveUtils)
+set_tests_properties(Utils_ImageSaveUtils PROPERTIES TIMEOUT 60 LABELS "unit")
+
 # ============================================================================
 # CLI Tests (link snaptray_platform for PlatformFeatures symbols)
 # ============================================================================

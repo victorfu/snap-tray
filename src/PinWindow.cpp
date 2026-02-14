@@ -37,6 +37,7 @@
 #include "settings/OCRSettingsManager.h"
 #include "ui/GlobalToast.h"
 #include "utils/FilenameTemplateEngine.h"
+#include "utils/ImageSaveUtils.h"
 #include "OCRResultDialog.h"
 #include "InlineTextEditor.h"
 #include "region/TextAnnotationEditor.h"
@@ -113,6 +114,17 @@ namespace {
             dpr = 1.0;
         }
         return pixmap.size() / dpr;
+    }
+
+    QString saveErrorDetail(const ImageSaveUtils::Error& error)
+    {
+        if (error.stage.isEmpty()) {
+            return error.message.isEmpty() ? QStringLiteral("Unknown error") : error.message;
+        }
+        if (error.message.isEmpty()) {
+            return error.stage;
+        }
+        return QStringLiteral("%1: %2").arg(error.stage, error.message);
     }
     
     // Optimized: Only copy 4 single-pixel regions instead of the entire image.
@@ -1204,14 +1216,15 @@ void PinWindow::saveToFile()
         QString filePath = FilenameTemplateEngine::buildUniqueFilePath(
             savePath, templateValue, context, kMaxFileCollisionRetries, &renderError);
 
-        if (pixmapToSave.save(filePath)) {
+        ImageSaveUtils::Error saveError;
+        if (ImageSaveUtils::savePixmapAtomically(pixmapToSave, filePath, QByteArray(), &saveError)) {
             emit saveCompleted(pixmapToSave, filePath);
         }
         else {
             if (!renderError.isEmpty()) {
                 qWarning() << "PinWindow: template warning:" << renderError;
             }
-            emit saveFailed(filePath, tr("Failed to save screenshot"));
+            emit saveFailed(filePath, tr("Failed to save screenshot: %1").arg(saveErrorDetail(saveError)));
         }
         return;
     }
@@ -1227,8 +1240,11 @@ void PinWindow::saveToFile()
     );
 
     if (!filePath.isEmpty()) {
-        if (pixmapToSave.save(filePath)) {
+        ImageSaveUtils::Error saveError;
+        if (ImageSaveUtils::savePixmapAtomically(pixmapToSave, filePath, QByteArray(), &saveError)) {
             emit saveRequested(pixmapToSave);
+        } else {
+            emit saveFailed(filePath, tr("Failed to save screenshot: %1").arg(saveErrorDetail(saveError)));
         }
     }
 }
@@ -1448,7 +1464,9 @@ void PinWindow::saveToCacheAsync()
         QString filename = QString("cache_%1.png").arg(timestamp);
         QString filePath = dir.filePath(filename);
 
-        if (pixmapToSave.save(filePath)) {
+        ImageSaveUtils::Error saveError;
+        if (ImageSaveUtils::savePixmapAtomically(
+                pixmapToSave, filePath, QByteArrayLiteral("PNG"), &saveError)) {
             // Persist DPR sidecar so history re-pin restores logical sizing on HiDPI displays.
             const QString dprMetadataPath = PinHistoryStore::dprMetadataPathForImage(filePath);
             QFile dprFile(dprMetadataPath);
@@ -1483,7 +1501,7 @@ void PinWindow::saveToCacheAsync()
             }
         }
         else {
-            qWarning() << "PinWindow: Failed to save to cache:" << filePath;
+            qWarning() << "PinWindow: Failed to save to cache:" << filePath << saveErrorDetail(saveError);
         }
     });
 }
@@ -4199,10 +4217,13 @@ void PinWindow::onBeautifySave(const BeautifySettings& settings)
         if (!renderError.isEmpty()) {
             qWarning() << "PinWindow: beautify template warning:" << renderError;
         }
-        if (result.save(filePath)) {
+        ImageSaveUtils::Error saveError;
+        if (ImageSaveUtils::savePixmapAtomically(result, filePath, QByteArray(), &saveError)) {
             emit saveCompleted(result, filePath);
         } else {
-            emit saveFailed(filePath, tr("Failed to save beautified screenshot"));
+            emit saveFailed(
+                filePath,
+                tr("Failed to save beautified screenshot: %1").arg(saveErrorDetail(saveError)));
         }
     } else {
         QString defaultName = FilenameTemplateEngine::buildUniqueFilePath(
@@ -4211,10 +4232,13 @@ void PinWindow::onBeautifySave(const BeautifySettings& settings)
             this, tr("Save Beautified Screenshot"), defaultName,
             tr("PNG Image (*.png);;JPEG Image (*.jpg *.jpeg);;All Files (*)"));
         if (!filePath.isEmpty()) {
-            if (result.save(filePath)) {
+            ImageSaveUtils::Error saveError;
+            if (ImageSaveUtils::savePixmapAtomically(result, filePath, QByteArray(), &saveError)) {
                 emit saveCompleted(result, filePath);
             } else {
-                emit saveFailed(filePath, tr("Failed to save beautified screenshot"));
+                emit saveFailed(
+                    filePath,
+                    tr("Failed to save beautified screenshot: %1").arg(saveErrorDetail(saveError)));
             }
         }
     }

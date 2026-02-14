@@ -3,6 +3,7 @@
 #include "PlatformFeatures.h"
 #include "settings/FileSettingsManager.h"
 #include "utils/FilenameTemplateEngine.h"
+#include "utils/ImageSaveUtils.h"
 
 #include <QBuffer>
 #include <QColorSpace>
@@ -200,9 +201,14 @@ CLIResult ScreenCommand::execute(const QCommandLineParser& parser)
     // Ensure directory exists
     QDir().mkpath(QFileInfo(filePath).absolutePath());
 
-    if (!image.save(filePath, "PNG")) {
+    ImageSaveUtils::Error saveError;
+    if (!ImageSaveUtils::saveImageAtomically(image, filePath, QByteArrayLiteral("PNG"), &saveError)) {
+        const QString detail = saveError.stage.isEmpty()
+            ? (saveError.message.isEmpty() ? QStringLiteral("Unknown error") : saveError.message)
+            : QStringLiteral("%1: %2").arg(saveError.stage, saveError.message);
         return CLIResult::error(
-            CLIResult::Code::FileError, QString("Failed to save screenshot to: %1").arg(filePath));
+            CLIResult::Code::FileError,
+            QStringLiteral("Failed to save screenshot to: %1 (%2)").arg(filePath, detail));
     }
 
     return CLIResult::success(QString("Screenshot saved to: %1").arg(filePath));
