@@ -59,6 +59,7 @@ signals:
 private:
     QColor colorForIndex(int index) const;
     void refreshIndices();
+    void applyActiveIndex(int index, bool forceSignal);
 
     QVector<Region> m_regions;
     int m_activeIndex = -1;

@@ -77,18 +77,22 @@ void MultiRegionManager::removeRegion(int index)
         return;
     }
 
+    const int oldActiveIndex = m_activeIndex;
+    const bool removedWasActive = (oldActiveIndex == index);
+
     m_regions.removeAt(index);
     refreshIndices();
 
+    int newActiveIndex = oldActiveIndex;
     if (m_regions.isEmpty()) {
-        m_activeIndex = -1;
-    } else if (m_activeIndex == index) {
-        m_activeIndex = qMin(index, m_regions.size() - 1);
-    } else if (m_activeIndex > index) {
-        m_activeIndex -= 1;
+        newActiveIndex = -1;
+    } else if (oldActiveIndex == index) {
+        newActiveIndex = qMin(index, m_regions.size() - 1);
+    } else if (oldActiveIndex > index) {
+        newActiveIndex = oldActiveIndex - 1;
     }
 
-    setActiveIndex(m_activeIndex);
+    applyActiveIndex(newActiveIndex, removedWasActive);
     emit regionRemoved(index);
 }
 
@@ -127,11 +131,17 @@ QRect MultiRegionManager::regionRect(int index) const
 
 void MultiRegionManager::setActiveIndex(int index)
 {
+    applyActiveIndex(index, false);
+}
+
+void MultiRegionManager::applyActiveIndex(int index, bool forceSignal)
+{
     if (index < -1 || index >= m_regions.size()) {
         index = -1;
     }
 
-    if (m_activeIndex == index) {
+    const bool unchanged = (m_activeIndex == index);
+    if (unchanged && !forceSignal) {
         return;
     }
 
