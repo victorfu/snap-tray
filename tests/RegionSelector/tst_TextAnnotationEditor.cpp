@@ -1,6 +1,7 @@
 #include <QtTest>
 #include <QWidget>
 #include <QTextEdit>
+#include <QFontMetrics>
 #include "TextFormattingState.h"
 #include "TransformationGizmo.h"
 #include "annotations/AnnotationLayer.h"
@@ -54,6 +55,8 @@ private slots:
     void testCancelEditing_DisarmsSession();
     void testInlineTextEditor_ClampedNewTextBaseline();
     void testInlineTextEditor_PreserveExistingTextBaseline();
+    void testInlineTextEditor_CommittedBaselineMatchesRequestedBaseline();
+    void testInlineTextEditor_BaselineStableAcrossSessions();
 
 private:
     // Double-click detection helper (mimics TextAnnotationEditor logic)
@@ -401,6 +404,56 @@ void tst_TextAnnotationEditor::testInlineTextEditor_PreserveExistingTextBaseline
 
     // Re-edit should keep the original annotation baseline unless user drags.
     QCOMPARE(committedBaseline, existingBaseline);
+}
+
+void tst_TextAnnotationEditor::testInlineTextEditor_CommittedBaselineMatchesRequestedBaseline()
+{
+    QWidget parent;
+    InlineTextEditor inlineEditor(&parent);
+    QSignalSpy finishedSpy(&inlineEditor, &InlineTextEditor::editingFinished);
+
+    const QRect bounds(0, 0, 420, 260);
+    const QPoint requestedBaseline(140, 120);  // Keep away from edges (no clamp).
+    inlineEditor.startEditing(requestedBaseline, bounds);
+    QVERIFY(inlineEditor.textEdit() != nullptr);
+    const QFontMetrics fm(inlineEditor.font());
+    constexpr int kExpectedTextInset = 5;  // 1px border + 4px padding
+    QCOMPARE(inlineEditor.textEdit()->geometry().x(), requestedBaseline.x() - kExpectedTextInset);
+    QCOMPARE(inlineEditor.textEdit()->geometry().y(),
+             requestedBaseline.y() - (fm.ascent() + kExpectedTextInset));
+    inlineEditor.textEdit()->setPlainText("A");
+    inlineEditor.finishEditing();
+
+    QCOMPARE(finishedSpy.count(), 1);
+    const QList<QVariant> args = finishedSpy.takeFirst();
+    QCOMPARE(args.size(), 2);
+    const QPoint committedBaseline = args.at(1).toPoint();
+    QCOMPARE(committedBaseline, requestedBaseline);
+}
+
+void tst_TextAnnotationEditor::testInlineTextEditor_BaselineStableAcrossSessions()
+{
+    QWidget parent;
+    InlineTextEditor inlineEditor(&parent);
+    QSignalSpy finishedSpy(&inlineEditor, &InlineTextEditor::editingFinished);
+
+    const QRect bounds(0, 0, 500, 320);
+    const QPoint requestedBaseline(220, 160);  // Keep away from edges (no clamp).
+
+    inlineEditor.startEditing(requestedBaseline, bounds);
+    inlineEditor.textEdit()->setPlainText("first");
+    inlineEditor.finishEditing();
+
+    inlineEditor.startEditing(requestedBaseline, bounds);
+    inlineEditor.textEdit()->setPlainText("second");
+    inlineEditor.finishEditing();
+
+    QCOMPARE(finishedSpy.count(), 2);
+    const QPoint firstBaseline = finishedSpy.at(0).at(1).toPoint();
+    const QPoint secondBaseline = finishedSpy.at(1).at(1).toPoint();
+
+    QCOMPARE(firstBaseline, secondBaseline);
+    QCOMPARE(firstBaseline, requestedBaseline);
 }
 
 QTEST_MAIN(tst_TextAnnotationEditor)

@@ -12,6 +12,10 @@ const int InlineTextEditor::MIN_WIDTH;
 const int InlineTextEditor::MIN_HEIGHT;
 const int InlineTextEditor::PADDING;
 
+namespace {
+    constexpr int kEditorBorderPx = 1;
+}
+
 InlineTextEditor::InlineTextEditor(QWidget* parent)
     : QObject(parent)
     , m_parentWidget(parent)
@@ -53,6 +57,8 @@ void InlineTextEditor::startEditingInternal(const QPoint& pos,
         m_textEdit->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
         m_textEdit->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
         m_textEdit->setAcceptRichText(false);
+        m_textEdit->setContentsMargins(0, 0, 0, 0);
+        m_textEdit->document()->setDocumentMargin(0.0);
 
         // Connect for auto-resize
         connect(m_textEdit->document(), &QTextDocument::contentsChanged,
@@ -61,13 +67,25 @@ void InlineTextEditor::startEditingInternal(const QPoint& pos,
 
     m_bounds = bounds;
 
-    // pos is treated as the text baseline position (where text starts)
-    // Calculate input box top-left from baseline position
+    // Reset states from previous editing session
+    m_isConfirmMode = false;
+    m_isDragging = false;
+    m_textEdit->setReadOnly(false);
+    CursorManager::instance().pushCursorForWidget(m_textEdit, CursorContext::Tool, Qt::IBeamCursor);
+    m_textEdit->setAttribute(Qt::WA_TransparentForMouseEvents, false);
+
+    // Update style and font
+    updateStyle();
+    m_textEdit->setFont(m_font);
     QFontMetrics fm(m_font);
-    int boxX = pos.x() - PADDING;
-    int boxY = pos.y() - fm.ascent() - PADDING;
+
+    // pos is treated as the text baseline position (where text starts).
+    // Convert baseline to editor top-left using the actual QTextEdit cursor inset.
+    QPoint boxTopLeft = boxTopLeftFromBaseline(pos);
+    int boxX = boxTopLeft.x();
+    int boxY = boxTopLeft.y();
     int width = MIN_WIDTH;
-    int height = MIN_HEIGHT;
+    int height = qMax(MIN_HEIGHT, fm.lineSpacing() + 2 * PADDING + 2 * kEditorBorderPx);
 
     // Clamp to bounds
     if (boxX + width > bounds.right()) {
@@ -85,19 +103,8 @@ void InlineTextEditor::startEditingInternal(const QPoint& pos,
     if (preserveBaselineOnClamp) {
         m_textPosition = pos;
     } else {
-        m_textPosition = QPoint(boxX + PADDING, boxY + fm.ascent() + PADDING);
+        m_textPosition = baselineFromBoxTopLeft(QPoint(boxX, boxY));
     }
-
-    // Reset states from previous editing session
-    m_isConfirmMode = false;
-    m_isDragging = false;
-    m_textEdit->setReadOnly(false);
-    CursorManager::instance().pushCursorForWidget(m_textEdit, CursorContext::Tool, Qt::IBeamCursor);
-    m_textEdit->setAttribute(Qt::WA_TransparentForMouseEvents, false);
-
-    // Update style and font
-    updateStyle();
-    m_textEdit->setFont(m_font);
 
     // Set geometry and show
     m_textEdit->setGeometry(boxX, boxY, width, height);
@@ -281,6 +288,24 @@ bool InlineTextEditor::contains(const QPoint& pos) const
     return m_textEdit->geometry().contains(pos);
 }
 
+QPoint InlineTextEditor::baselineOffsetInEditor() const
+{
+    QFontMetrics fm(m_font);
+    // Keep baseline conversion invariant to editor scroll position.
+    return QPoint(kEditorBorderPx + PADDING,
+                  kEditorBorderPx + PADDING + fm.ascent());
+}
+
+QPoint InlineTextEditor::boxTopLeftFromBaseline(const QPoint& baseline) const
+{
+    return baseline - baselineOffsetInEditor();
+}
+
+QPoint InlineTextEditor::baselineFromBoxTopLeft(const QPoint& boxTopLeft) const
+{
+    return boxTopLeft + baselineOffsetInEditor();
+}
+
 void InlineTextEditor::handleMousePress(const QPoint& pos)
 {
     if (!m_isConfirmMode || !m_textEdit) return;
@@ -302,9 +327,9 @@ void InlineTextEditor::handleMouseMove(const QPoint& pos)
     m_textPosition = m_dragStartTextPos + delta;
 
     // Update input box position
-    QFontMetrics fm(m_font);
-    int boxX = m_textPosition.x() - PADDING;
-    int boxY = m_textPosition.y() - fm.ascent() - PADDING;
+    QPoint boxTopLeft = boxTopLeftFromBaseline(m_textPosition);
+    int boxX = boxTopLeft.x();
+    int boxY = boxTopLeft.y();
 
     // Clamp to bounds
     boxX = qMax(m_bounds.left(), boxX);
@@ -320,7 +345,7 @@ void InlineTextEditor::handleMouseMove(const QPoint& pos)
 
     // Keep baseline position consistent with the actual on-screen editor
     // geometry after clamping to bounds.
-    m_textPosition = QPoint(boxX + PADDING, boxY + fm.ascent() + PADDING);
+    m_textPosition = baselineFromBoxTopLeft(QPoint(boxX, boxY));
 }
 
 void InlineTextEditor::handleMouseRelease(const QPoint& pos)
@@ -386,12 +411,15 @@ void InlineTextEditor::adjustSize()
     }
 
     // Add padding for border and internal padding
-    int newWidth = qMax(MIN_WIDTH, maxLineWidth + 30);
-    int newHeight = qMax(MIN_HEIGHT, lines.count() * fm.lineSpacing() + 20);
+    const int horizontalChrome = 2 * PADDING + 2 * kEditorBorderPx;
+    const int verticalChrome = 2 * PADDING + 2 * kEditorBorderPx;
+    int newWidth = qMax(MIN_WIDTH, maxLineWidth + horizontalChrome + 4);
+    int newHeight = qMax(MIN_HEIGHT, lines.count() * fm.lineSpacing() + verticalChrome);
 
     // Calculate box position from baseline position (m_textPosition)
-    int boxX = m_textPosition.x() - PADDING;
-    int boxY = m_textPosition.y() - fm.ascent() - PADDING;
+    QPoint boxTopLeft = boxTopLeftFromBaseline(m_textPosition);
+    int boxX = boxTopLeft.x();
+    int boxY = boxTopLeft.y();
 
     // Clamp to bounds
     if (boxX + newWidth > m_bounds.right()) {

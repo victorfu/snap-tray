@@ -160,6 +160,9 @@ private:
                               const QRect& bounds,
                               const QString& existingText,
                               bool preserveBaselineOnClamp);
+    QPoint baselineOffsetInEditor() const;
+    QPoint boxTopLeftFromBaseline(const QPoint& baseline) const;
+    QPoint baselineFromBoxTopLeft(const QPoint& boxTopLeft) const;
     void updateStyle();
     void adjustSize();
 
@@ -176,8 +179,8 @@ private:
     QFont m_font;
 
     static const int MIN_WIDTH = 150;
-    static const int MIN_HEIGHT = 36;
-    static const int PADDING = 6;
+    static const int MIN_HEIGHT = 30;
+    static const int PADDING = 4;
 };
 
 #endif // INLINETEXTEDITOR_H
