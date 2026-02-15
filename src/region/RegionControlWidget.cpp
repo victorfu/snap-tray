@@ -81,6 +81,14 @@ void RegionControlWidget::updatePosition(const QRect& anchorRect, int screenWidt
     updateLayout();
 }
 
+QRect RegionControlWidget::boundingRect() const
+{
+    if (m_sliderPopupVisible && m_sliderPopupRect.isValid() && !m_sliderPopupRect.isEmpty()) {
+        return m_widgetRect.united(m_sliderPopupRect);
+    }
+    return m_widgetRect;
+}
+
 void RegionControlWidget::updateLayout()
 {
     int centerY = m_widgetRect.center().y();

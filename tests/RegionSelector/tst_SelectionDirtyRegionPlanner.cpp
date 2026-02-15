@@ -48,10 +48,13 @@ void tst_SelectionDirtyRegionPlanner::testSelectionDragIncludesExpandedSelection
     QVERIFY(dirty.contains(params.currentSelectionRect.adjusted(-margin, -margin, margin, margin)));
     QVERIFY(dirty.contains(params.lastSelectionRect.adjusted(-margin, -margin, margin, margin)));
 
+    const int dimPadding = SelectionDirtyRegionPlanner::kDimensionInfoPadding;
     const QRect currentDimInfo = planner.dimensionInfoRectForSelection(params.currentSelectionRect);
     const QRect lastDimInfo = planner.dimensionInfoRectForSelection(params.lastSelectionRect);
-    QVERIFY(dirty.contains(currentDimInfo));
-    QVERIFY(dirty.contains(lastDimInfo));
+    QVERIFY(dirty.contains(currentDimInfo.adjusted(
+        -dimPadding, -dimPadding, dimPadding, dimPadding)));
+    QVERIFY(dirty.contains(lastDimInfo.adjusted(
+        -dimPadding, -dimPadding, dimPadding, dimPadding)));
 }
 
 void tst_SelectionDirtyRegionPlanner::testSelectionDragIncludesToolbarAndRegionControlHistory()

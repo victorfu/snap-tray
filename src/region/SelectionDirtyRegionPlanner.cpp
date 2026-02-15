@@ -79,8 +79,16 @@ QRegion SelectionDirtyRegionPlanner::planSelectionDragRegion(const SelectionDrag
             kSelectionHandleMargin, kSelectionHandleMargin));
     }
 
-    addRect(dimensionInfoRectForSelection(params.currentSelectionRect));
-    addRect(dimensionInfoRectForSelection(params.lastSelectionRect));
+    auto addPaddedDimensionInfoRect = [this, &addRect](const QRect& selectionRect) {
+        const QRect infoRect = dimensionInfoRectForSelection(selectionRect);
+        if (!infoRect.isEmpty()) {
+            addRect(infoRect.adjusted(
+                -kDimensionInfoPadding, -kDimensionInfoPadding,
+                kDimensionInfoPadding, kDimensionInfoPadding));
+        }
+    };
+    addPaddedDimensionInfoRect(params.currentSelectionRect);
+    addPaddedDimensionInfoRect(params.lastSelectionRect);
 
     if (params.includeMagnifier) {
         addRect(params.currentMagnifierRect);

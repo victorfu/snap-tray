@@ -90,7 +90,9 @@ private:
     void updateButtonLayout();
     int buttonAtPosition(const QPoint &pos) const;
     void drawButton(QPainter &painter, int index);
-    void drawTooltip(QPainter &painter);
+    void updateHoverTooltip();
+    void hideHoverTooltip();
+    bool isButtonDisabled(const ButtonConfig& config) const;
     bool isDrawingTool(int buttonId) const;
     bool dispatchActionButton(int buttonId);
 
@@ -112,6 +114,7 @@ private:
     QElapsedTimer m_showTime;
     QWidget *m_associatedWindow = nullptr;
     QWidget *m_subToolbar = nullptr;
+    QWidget *m_hoverTooltip = nullptr;
 
     // Match RegionSelector's ToolbarCore dimensions
     static constexpr int TOOLBAR_HEIGHT = 32;

@@ -60,7 +60,7 @@ public:
     void setVisible(bool visible) { m_visible = visible; }
     bool isVisible() const { return m_visible; }
     void updatePosition(const QRect& anchorRect, int screenWidth, int screenHeight);
-    QRect boundingRect() const { return m_widgetRect; }
+    QRect boundingRect() const;
 
     // =========================================================================
     // Rendering

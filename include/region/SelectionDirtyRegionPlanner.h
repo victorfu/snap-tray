@@ -39,6 +39,7 @@ public:
     static constexpr int kSelectionHandleMargin = 12;
     static constexpr int kDimensionInfoHeight = 40;
     static constexpr int kDimensionInfoWidth = 180;
+    static constexpr int kDimensionInfoPadding = 6;
     static constexpr int kDimensionInfoTopOffset = 10;
     static constexpr int kWidgetPadding = 6;
     static constexpr int kDragFrameIntervalMs = 8;  // ~120Hz

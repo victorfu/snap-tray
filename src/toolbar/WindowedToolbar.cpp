@@ -15,6 +15,7 @@
 #include <QApplication>
 #include <QShowEvent>
 #include <QHideEvent>
+#include <QFontMetrics>
 #include <array>
 #include <utility>
 
@@ -35,6 +36,65 @@ constexpr std::array<std::pair<int, ActionSignal>, 7> kActionButtonSignals = {{
     {static_cast<int>(ToolId::Save), &WindowedToolbar::saveClicked},
     {WindowedToolbar::ButtonDone, &WindowedToolbar::doneClicked}
 }};
+
+class ToolbarGlassTooltipWidget : public QWidget
+{
+public:
+    explicit ToolbarGlassTooltipWidget(QWidget* parent = nullptr)
+        : QWidget(parent, Qt::ToolTip | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint)
+    {
+        setAttribute(Qt::WA_TranslucentBackground);
+        setAttribute(Qt::WA_ShowWithoutActivating);
+        setAttribute(Qt::WA_TransparentForMouseEvents);
+    }
+
+    void setTextAndStyle(const QString& text, const ToolbarStyleConfig& style)
+    {
+        m_text = text;
+        m_style = style;
+        QFont font = this->font();
+        font.setPointSize(11);
+        setFont(font);
+        updateGeometry();
+        update();
+    }
+
+    QSize sizeHint() const override
+    {
+        if (m_text.isEmpty()) {
+            return QSize(0, 0);
+        }
+        QFontMetrics fm(font());
+        QRect textRect = fm.boundingRect(m_text);
+        textRect.adjust(-8, -4, 8, 4);
+        return textRect.size();
+    }
+
+protected:
+    void paintEvent(QPaintEvent* event) override
+    {
+        Q_UNUSED(event);
+        if (m_text.isEmpty()) {
+            return;
+        }
+
+        QPainter painter(this);
+        painter.setRenderHint(QPainter::Antialiasing);
+
+        ToolbarStyleConfig tooltipConfig = m_style;
+        tooltipConfig.shadowColor.setAlpha(0);
+        tooltipConfig.shadowOffsetY = 0;
+        tooltipConfig.shadowBlurRadius = 0;
+        GlassRenderer::drawGlassPanel(painter, rect(), tooltipConfig, 6);
+
+        painter.setPen(m_style.tooltipText);
+        painter.drawText(rect(), Qt::AlignCenter, m_text);
+    }
+
+private:
+    QString m_text;
+    ToolbarStyleConfig m_style;
+};
 }
 
 WindowedToolbar::WindowedToolbar(QWidget *parent)
@@ -57,6 +117,10 @@ WindowedToolbar::WindowedToolbar(QWidget *parent)
 
 WindowedToolbar::~WindowedToolbar()
 {
+    if (m_hoverTooltip) {
+        m_hoverTooltip->deleteLater();
+        m_hoverTooltip = nullptr;
+    }
 }
 
 void WindowedToolbar::loadIcons()
@@ -167,12 +231,14 @@ void WindowedToolbar::setActiveButton(int buttonId)
 void WindowedToolbar::setCanUndo(bool canUndo)
 {
     m_canUndo = canUndo;
+    updateHoverTooltip();
     update();
 }
 
 void WindowedToolbar::setCanRedo(bool canRedo)
 {
     m_canRedo = canRedo;
+    updateHoverTooltip();
     update();
 }
 
@@ -181,6 +247,7 @@ void WindowedToolbar::setOCRAvailable(bool available)
     if (m_ocrAvailable != available) {
         m_ocrAvailable = available;
         updateButtonLayout();
+        updateHoverTooltip();
         update();
     }
 }
@@ -202,6 +269,76 @@ bool WindowedToolbar::dispatchActionButton(int buttonId)
         }
     }
     return false;
+}
+
+bool WindowedToolbar::isButtonDisabled(const ButtonConfig& config) const
+{
+    if (config.id == static_cast<int>(ToolId::Undo)) {
+        return !m_canUndo;
+    }
+    if (config.id == static_cast<int>(ToolId::Redo)) {
+        return !m_canRedo;
+    }
+    return false;
+}
+
+void WindowedToolbar::updateHoverTooltip()
+{
+    if (!isVisible() || m_isDragging || m_hoveredButton < 0 || m_hoveredButton >= m_buttons.size()) {
+        hideHoverTooltip();
+        return;
+    }
+
+    const ButtonConfig& config = m_buttons[m_hoveredButton];
+    if (config.tooltip.isEmpty()) {
+        hideHoverTooltip();
+        return;
+    }
+
+    const QRect btnRect = m_buttonRects[m_hoveredButton];
+    if (btnRect.isNull()) {
+        hideHoverTooltip();
+        return;
+    }
+
+    if (!m_hoverTooltip) {
+        auto* tooltipWidget = new ToolbarGlassTooltipWidget(nullptr);
+        m_hoverTooltip = tooltipWidget;
+        connect(tooltipWidget, &QObject::destroyed, this, [this]() {
+            m_hoverTooltip = nullptr;
+        });
+    }
+
+    auto* tooltipWidget = static_cast<ToolbarGlassTooltipWidget*>(m_hoverTooltip);
+    const ToolbarStyleConfig& styleConfig =
+        ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
+    tooltipWidget->setTextAndStyle(config.tooltip, styleConfig);
+
+    const QSize tooltipSize = tooltipWidget->sizeHint();
+    if (tooltipSize.isEmpty()) {
+        hideHoverTooltip();
+        return;
+    }
+    tooltipWidget->resize(tooltipSize);
+
+    const QPoint globalAnchorCenter = mapToGlobal(btnRect.center());
+    int tooltipX = globalAnchorCenter.x() - tooltipSize.width() / 2;
+    int tooltipY = mapToGlobal(btnRect.topLeft()).y() - tooltipSize.height() - 6;
+
+    if (QScreen* screen = QGuiApplication::screenAt(globalAnchorCenter)) {
+        const QRect bounds = screen->availableGeometry();
+        tooltipX = qBound(bounds.left() + 5, tooltipX, bounds.right() - tooltipSize.width() - 5);
+    }
+
+    tooltipWidget->move(tooltipX, tooltipY);
+    tooltipWidget->show();
+}
+
+void WindowedToolbar::hideHoverTooltip()
+{
+    if (m_hoverTooltip) {
+        m_hoverTooltip->hide();
+    }
 }
 
 void WindowedToolbar::paintEvent(QPaintEvent *event)
@@ -231,11 +368,6 @@ void WindowedToolbar::paintEvent(QPaintEvent *event)
             drawButton(painter, i);
         }
     }
-
-    // Draw tooltip if hovering
-    if (m_hoveredButton >= 0 && m_hoveredButton < m_buttons.size() && !m_buttonRects[m_hoveredButton].isNull()) {
-        drawTooltip(painter);
-    }
 }
 
 void WindowedToolbar::drawButton(QPainter &painter, int index)
@@ -245,14 +377,7 @@ void WindowedToolbar::drawButton(QPainter &painter, int index)
     QRect btnRect = m_buttonRects[index];
     bool isHovered = (index == m_hoveredButton);
     bool isActive = (config.id == m_activeButton);
-    bool isDisabled = false;
-
-    // Check disabled state for undo/redo
-    if (config.id == static_cast<int>(ToolId::Undo) && !m_canUndo) {
-        isDisabled = true;
-    } else if (config.id == static_cast<int>(ToolId::Redo) && !m_canRedo) {
-        isDisabled = true;
-    }
+    bool isDisabled = isButtonDisabled(config);
 
     // Draw active/hover background using shared renderer
     if (!isDisabled) {
@@ -274,48 +399,6 @@ void WindowedToolbar::drawButton(QPainter &painter, int index)
     IconRenderer::instance().renderIcon(painter, btnRect, config.iconKey, iconColor, 8);
 }
 
-void WindowedToolbar::drawTooltip(QPainter &painter)
-{
-    ToolbarStyleConfig styleConfig = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
-    QString tooltip = m_buttons[m_hoveredButton].tooltip;
-    if (tooltip.isEmpty()) return;
-
-    QFont font = painter.font();
-    font.setPointSize(11);
-    painter.setFont(font);
-
-    QFontMetrics fm(font);
-    QRect textRect = fm.boundingRect(tooltip);
-    textRect.adjust(-8, -4, 8, 4);
-
-    // Position tooltip above the button
-    QRect btnRect = m_buttonRects[m_hoveredButton];
-    int tooltipX = btnRect.center().x() - textRect.width() / 2;
-    int tooltipY = -textRect.height() - 6;
-
-    // Keep on screen horizontally
-    if (tooltipX < 5) tooltipX = 5;
-    if (tooltipX + textRect.width() > width() - 5) {
-        tooltipX = width() - textRect.width() - 5;
-    }
-
-    textRect.moveTo(tooltipX, tooltipY);
-
-    // Draw tooltip background
-    painter.setPen(Qt::NoPen);
-    painter.setBrush(styleConfig.tooltipBackground);
-    painter.drawRoundedRect(textRect, 4, 4);
-
-    // Draw tooltip border
-    painter.setPen(styleConfig.tooltipBorder);
-    painter.setBrush(Qt::NoBrush);
-    painter.drawRoundedRect(textRect, 4, 4);
-
-    // Draw tooltip text
-    painter.setPen(styleConfig.tooltipText);
-    painter.drawText(textRect, Qt::AlignCenter, tooltip);
-}
-
 int WindowedToolbar::buttonAtPosition(const QPoint &pos) const
 {
     for (int i = 0; i < m_buttonRects.size(); ++i) {
@@ -334,13 +417,11 @@ void WindowedToolbar::mousePressEvent(QMouseEvent *event)
             const ButtonConfig& config = m_buttons[btnIndex];
 
             // Check if button is disabled
-            if (config.id == static_cast<int>(ToolId::Undo) && !m_canUndo) {
-                return;
-            }
-            if (config.id == static_cast<int>(ToolId::Redo) && !m_canRedo) {
+            if (isButtonDisabled(config)) {
                 return;
             }
 
+            hideHoverTooltip();
             if (isDrawingTool(config.id)) {
                 emit toolSelected(config.id);
                 return;
@@ -351,6 +432,7 @@ void WindowedToolbar::mousePressEvent(QMouseEvent *event)
         }
 
         // Start dragging
+        hideHoverTooltip();
         m_isDragging = true;
         m_dragStartPos = event->globalPosition().toPoint();
         m_dragStartWidgetPos = pos();
@@ -368,7 +450,10 @@ void WindowedToolbar::enterEvent(QEnterEvent *event)
 
     if (hovered != m_hoveredButton) {
         m_hoveredButton = hovered;
+        updateHoverTooltip();
         update();
+    } else {
+        updateHoverTooltip();
     }
 
     // Use ArrowCursor for toolbar hover
@@ -381,6 +466,7 @@ void WindowedToolbar::mouseMoveEvent(QMouseEvent *event)
     if (m_isDragging) {
         QPoint delta = event->globalPosition().toPoint() - m_dragStartPos;
         move(m_dragStartWidgetPos + delta);
+        hideHoverTooltip();
         // Drag cursor is already pushed in mousePressEvent
         QWidget::mouseMoveEvent(event);
         return;
@@ -390,7 +476,10 @@ void WindowedToolbar::mouseMoveEvent(QMouseEvent *event)
     int newHovered = buttonAtPosition(event->pos());
     if (newHovered != m_hoveredButton) {
         m_hoveredButton = newHovered;
+        updateHoverTooltip();
         update();
+    } else {
+        updateHoverTooltip();
     }
 
     // Cursor is already set in enterEvent, no need to push on every move
@@ -405,6 +494,7 @@ void WindowedToolbar::mouseReleaseEvent(QMouseEvent *event)
             // Pop drag cursor and restore hover cursor
             auto& cm = CursorManager::instance();
             cm.popCursorForWidget(this, CursorContext::Drag);
+            updateHoverTooltip();
         }
     }
     QWidget::mouseReleaseEvent(event);
@@ -416,6 +506,7 @@ void WindowedToolbar::leaveEvent(QEvent *event)
         m_hoveredButton = -1;
         update();
     }
+    hideHoverTooltip();
     // Pop hover cursor instead of clearing entire stack
     CursorManager::instance().popCursorForWidget(this, CursorContext::Hover);
     emit cursorRestoreRequested();
@@ -437,6 +528,7 @@ void WindowedToolbar::showEvent(QShowEvent *event)
 
 void WindowedToolbar::hideEvent(QHideEvent *event)
 {
+    hideHoverTooltip();
     qApp->removeEventFilter(this);
     QWidget::hideEvent(event);
 }
@@ -457,6 +549,7 @@ bool WindowedToolbar::eventFilter(QObject *obj, QEvent *event)
         }
 
         // Click is outside - request close
+        hideHoverTooltip();
         emit closeRequested();
         return false;  // Let the event propagate to its actual target
     }
