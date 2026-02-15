@@ -1,4 +1,5 @@
 #include "pinwindow/PinWindowPlacement.h"
+#include "utils/CoordinateHelper.h"
 
 #include <QPixmap>
 
@@ -25,7 +26,7 @@ PinWindowPlacement computeInitialPinWindowPlacement(const QPixmap& pixmap,
         dpr = 1.0;
     }
 
-    placement.logicalSize = pixmap.size() / dpr;
+    placement.logicalSize = CoordinateHelper::toLogical(pixmap.size(), dpr);
     placement.zoomLevel = 1.0;
 
     if (availableGeometry.isValid() && screenMargin > 0.0) {

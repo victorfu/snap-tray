@@ -2,6 +2,7 @@
 
 #include "PlatformFeatures.h"
 #include "settings/FileSettingsManager.h"
+#include "utils/CoordinateHelper.h"
 #include "utils/FilenameTemplateEngine.h"
 #include "utils/ImageSaveUtils.h"
 
@@ -52,7 +53,7 @@ QString resolveOutputFilePath(
     }
 
     const qreal dpr = screenshot.devicePixelRatio() > 0.0 ? screenshot.devicePixelRatio() : 1.0;
-    const QSize logicalSize = screenshot.size() / dpr;
+    const QSize logicalSize = CoordinateHelper::toLogical(screenshot.size(), dpr);
     const int monitorIndex = metadata.sourceScreen
         ? QGuiApplication::screens().indexOf(metadata.sourceScreen)
         : -1;

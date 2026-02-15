@@ -15,6 +15,14 @@ qreal CoordinateHelper::getDevicePixelRatio(QScreen* screen)
 
 // Logical to Physical conversions
 
+QPoint CoordinateHelper::toPhysical(const QPointF& logical, qreal dpr)
+{
+    return QPoint(
+        qRound(logical.x() * dpr),
+        qRound(logical.y() * dpr)
+    );
+}
+
 QPoint CoordinateHelper::toPhysical(const QPoint& logical, qreal dpr)
 {
     return QPoint(
@@ -39,6 +47,17 @@ QSize CoordinateHelper::toPhysical(const QSize& logical, qreal dpr)
         qRound(logical.width() * dpr),
         qRound(logical.height() * dpr)
     );
+}
+
+QRect CoordinateHelper::toPhysicalCoveringRect(const QRect& logical, qreal dpr)
+{
+    const qreal effectiveDpr = dpr > 0.0 ? dpr : 1.0;
+    QRect physicalRect;
+    physicalRect.setLeft(qFloor(logical.left() * effectiveDpr));
+    physicalRect.setTop(qFloor(logical.top() * effectiveDpr));
+    physicalRect.setRight(qCeil((logical.left() + logical.width()) * effectiveDpr) - 1);
+    physicalRect.setBottom(qCeil((logical.top() + logical.height()) * effectiveDpr) - 1);
+    return physicalRect;
 }
 
 // Physical to Logical conversions

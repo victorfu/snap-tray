@@ -434,7 +434,7 @@ full/screen/region:
   -p, --path         Save directory
   -d, --delay        Delay before capture (milliseconds)
   -n, --screen       Screen index
-  -r, --region       Region coordinates (region only: x,y,width,height)
+  -r, --region       Region coordinates in logical pixels (region only: x,y,width,height)
   --raw              Output raw PNG to stdout
 
 screen only:

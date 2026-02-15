@@ -2,6 +2,7 @@
 #include "beautify/BeautifyRenderer.h"
 #include "GlassRenderer.h"
 #include "ToolbarStyle.h"
+#include "utils/CoordinateHelper.h"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -415,9 +416,10 @@ void BeautifyPanel::updatePreview()
 {
     if (m_sourcePixmap.isNull() || !m_previewLabel) return;
 
-    QSize previewSize = m_previewLabel->size();
-    QPixmap preview(previewSize * devicePixelRatioF());
-    preview.setDevicePixelRatio(devicePixelRatioF());
+    const QSize previewSize = m_previewLabel->size();
+    const qreal dpr = devicePixelRatioF();
+    QPixmap preview(CoordinateHelper::toPhysical(previewSize, dpr));
+    preview.setDevicePixelRatio(dpr);
     preview.fill(Qt::transparent);
 
     QPainter painter(&preview);

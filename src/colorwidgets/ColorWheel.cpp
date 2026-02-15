@@ -1,6 +1,7 @@
 #include "colorwidgets/ColorWheel.h"
 
 #include "colorwidgets/ColorUtils.h"
+#include "utils/CoordinateHelper.h"
 
 #include <QDrag>
 #include <QLineF>
@@ -178,11 +179,12 @@ void ColorWheel::paintEvent(QPaintEvent*)
 
 void ColorWheel::renderWheel()
 {
-    qreal dpr = devicePixelRatioF();
-    qreal outer = outerRadius();
-    int size = qRound(outer * 2 * dpr);
+    const qreal dpr = devicePixelRatioF();
+    const qreal outer = outerRadius();
+    const int logicalSize = qRound(outer * 2);
+    const QSize deviceSize = CoordinateHelper::toPhysical(QSize(logicalSize, logicalSize), dpr);
 
-    m_wheelImage = QPixmap(size, size);
+    m_wheelImage = QPixmap(deviceSize);
     m_wheelImage.setDevicePixelRatio(dpr);
     m_wheelImage.fill(Qt::transparent);
 
@@ -225,8 +227,9 @@ void ColorWheel::renderWheel()
 
 void ColorWheel::renderSquare()
 {
-    qreal dpr = devicePixelRatioF();
-    int size = qRound(squareSize() * dpr);
+    const qreal dpr = devicePixelRatioF();
+    const int logicalSize = qRound(squareSize());
+    int size = CoordinateHelper::toPhysical(QSize(logicalSize, logicalSize), dpr).width();
     size = qMin(size, 128);
 
     m_selectorImage = QImage(size, size, QImage::Format_RGB32);

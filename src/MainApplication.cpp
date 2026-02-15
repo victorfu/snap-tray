@@ -16,6 +16,7 @@
 #include "video/RecordingPreviewWindow.h"
 #include "update/UpdateChecker.h"
 #include "update/UpdateDialog.h"
+#include "utils/CoordinateHelper.h"
 
 #include <QFile>
 #include <QJsonDocument>
@@ -225,7 +226,8 @@ void MainApplication::handleCLICommand(const QByteArray& commandData)
                     return;
                 }
                 QRect screenGeo = screen->availableGeometry();
-                QSize logicalSize = pixmap.size() / pixmap.devicePixelRatio();
+                const qreal dpr = pixmap.devicePixelRatio() > 0.0 ? pixmap.devicePixelRatio() : 1.0;
+                QSize logicalSize = CoordinateHelper::toLogical(pixmap.size(), dpr);
                 QPoint position;
 
                 if (hasX && hasY) {
@@ -698,7 +700,7 @@ QPixmap MainApplication::renderTextToPixmap(const QString &text)
     qreal dpr = qApp->devicePixelRatio();
     QSize pixmapSize(maxWidth + 2 * padding, totalHeight + 2 * padding);
 
-    QPixmap pixmap(pixmapSize * dpr);
+    QPixmap pixmap(CoordinateHelper::toPhysical(pixmapSize, dpr));
     pixmap.setDevicePixelRatio(dpr);
     pixmap.fill(kStickyNoteBackground);
 
@@ -763,7 +765,8 @@ void MainApplication::onPasteFromClipboard()
         QRect screenGeometry = screen->geometry();
 
         // Use logical size for centering (HiDPI support)
-        QSize logicalSize = pixmap.size() / pixmap.devicePixelRatio();
+        const qreal dpr = pixmap.devicePixelRatio() > 0.0 ? pixmap.devicePixelRatio() : 1.0;
+        QSize logicalSize = CoordinateHelper::toLogical(pixmap.size(), dpr);
         QPoint position = screenGeometry.center() - QPoint(logicalSize.width() / 2, logicalSize.height() / 2);
 
         m_pinWindowManager->createPinWindow(pixmap, position);

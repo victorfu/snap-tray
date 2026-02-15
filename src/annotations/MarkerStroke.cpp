@@ -1,4 +1,5 @@
 #include "annotations/MarkerStroke.h"
+#include "utils/CoordinateHelper.h"
 #include <QPainter>
 #include <QPainterPath>
 #include <QtMath>
@@ -88,7 +89,7 @@ void MarkerStroke::draw(QPainter &painter) const
     if (!cacheValid) {
         // Regenerate cache
         // Use QImage to avoid QPixmap halo/blending artifacts on transparent backgrounds
-        QImage offscreen(bounds.size() * dpr, QImage::Format_ARGB32_Premultiplied);
+        QImage offscreen(CoordinateHelper::toPhysical(bounds.size(), dpr), QImage::Format_ARGB32_Premultiplied);
         offscreen.setDevicePixelRatio(dpr);
         offscreen.fill(Qt::transparent);
 

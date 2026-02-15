@@ -28,6 +28,7 @@ private slots:
     void testToPhysicalPoint_DPR1();
     void testToPhysicalPoint_DPR2();
     void testToPhysicalPoint_DPR1_5();
+    void testToPhysicalPointF_DPR1_25();
     void testToPhysicalPoint_NegativeCoordinates();
     void testToPhysicalPoint_ZeroCoordinates();
     void testToPhysicalPoint_LargeCoordinates();
@@ -36,6 +37,9 @@ private slots:
     void testToPhysicalRect_DPR1();
     void testToPhysicalRect_DPR2();
     void testToPhysicalRect_DPR1_5();
+    void testToPhysicalRect_DPR1_25();
+    void testToPhysicalCoveringRect_DPR1_5();
+    void testToPhysicalCoveringRect_RightEdgeFractionalDpr();
     void testToPhysicalRect_NegativePosition();
 
     // toPhysical(QSize) tests
@@ -54,6 +58,7 @@ private slots:
     // toLogical(QRect) tests
     void testToLogicalRect_DPR1();
     void testToLogicalRect_DPR2();
+    void testToLogicalRect_DPR1_25();
     void testToLogicalRect_DPR0_ReturnsOriginal();
 
     // toLogical(QSize) tests
@@ -137,6 +142,13 @@ void tst_CoordinateHelper::testToPhysicalPoint_DPR1_5()
     QCOMPARE(physical2, QPoint(152, 302));  // qRound(151.5)=152, qRound(301.5)=302
 }
 
+void tst_CoordinateHelper::testToPhysicalPointF_DPR1_25()
+{
+    QPointF logical(10.2, 20.6);
+    QPoint physical = CoordinateHelper::toPhysical(logical, 1.25);
+    QCOMPARE(physical, QPoint(13, 26));
+}
+
 void tst_CoordinateHelper::testToPhysicalPoint_NegativeCoordinates()
 {
     QPoint logical(-100, -200);
@@ -181,6 +193,35 @@ void tst_CoordinateHelper::testToPhysicalRect_DPR1_5()
     QRect logical(10, 20, 100, 200);
     QRect physical = CoordinateHelper::toPhysical(logical, 1.5);
     QCOMPARE(physical, QRect(15, 30, 150, 300));
+}
+
+void tst_CoordinateHelper::testToPhysicalRect_DPR1_25()
+{
+    QRect logical(3, 5, 7, 9);
+    QRect physical = CoordinateHelper::toPhysical(logical, 1.25);
+    QCOMPARE(physical, QRect(4, 6, 9, 11));
+}
+
+void tst_CoordinateHelper::testToPhysicalCoveringRect_DPR1_5()
+{
+    QRect logical(1, 1, 3, 3);
+    QRect covering = CoordinateHelper::toPhysicalCoveringRect(logical, 1.5);
+    QCOMPARE(covering, QRect(1, 1, 5, 5));
+}
+
+void tst_CoordinateHelper::testToPhysicalCoveringRect_RightEdgeFractionalDpr()
+{
+    const qreal dpr = 1.5;
+    const QSize logicalScreenSize(1920, 1080);
+    const QSize physicalScreenSize = CoordinateHelper::toPhysical(logicalScreenSize, dpr);
+    const QRect physicalScreenRect(QPoint(0, 0), physicalScreenSize);
+
+    // Right-most 1 logical pixel should remain inside the physical screen bounds.
+    const QRect logicalRegion(1919, 100, 1, 1);
+    const QRect covering = CoordinateHelper::toPhysicalCoveringRect(logicalRegion, dpr);
+
+    QCOMPARE(covering, QRect(2878, 150, 2, 2));
+    QVERIFY(physicalScreenRect.contains(covering));
 }
 
 void tst_CoordinateHelper::testToPhysicalRect_NegativePosition()
@@ -282,6 +323,13 @@ void tst_CoordinateHelper::testToLogicalRect_DPR2()
     QRect physical(20, 40, 200, 400);
     QRect logical = CoordinateHelper::toLogical(physical, 2.0);
     QCOMPARE(logical, QRect(10, 20, 100, 200));
+}
+
+void tst_CoordinateHelper::testToLogicalRect_DPR1_25()
+{
+    QRect physical(4, 6, 9, 11);
+    QRect logical = CoordinateHelper::toLogical(physical, 1.25);
+    QCOMPARE(logical, QRect(3, 5, 7, 9));
 }
 
 void tst_CoordinateHelper::testToLogicalRect_DPR0_ReturnsOriginal()

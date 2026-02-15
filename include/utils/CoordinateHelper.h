@@ -2,6 +2,7 @@
 #define COORDINATEHELPER_H
 
 #include <QPoint>
+#include <QPointF>
 #include <QRect>
 #include <QSize>
 
@@ -25,9 +26,13 @@ public:
     static qreal getDevicePixelRatio(QScreen* screen);
 
     // Logical to Physical conversions
+    static QPoint toPhysical(const QPointF& logical, qreal dpr);
     static QPoint toPhysical(const QPoint& logical, qreal dpr);
     static QRect toPhysical(const QRect& logical, qreal dpr);
     static QSize toPhysical(const QSize& logical, qreal dpr);
+    // Convert logical rect to a physical rect that fully covers it.
+    // Uses floor() for left/top and ceil() for right/bottom boundaries.
+    static QRect toPhysicalCoveringRect(const QRect& logical, qreal dpr);
 
     // Physical to Logical conversions
     static QPoint toLogical(const QPoint& physical, qreal dpr);

@@ -1,6 +1,7 @@
 #include "cli/commands/RegionCommand.h"
 
 #include "cli/CaptureOutputHelper.h"
+#include "utils/CoordinateHelper.h"
 
 #include <QGuiApplication>
 #include <QPixmap>
@@ -15,7 +16,7 @@ QString RegionCommand::description() const { return "Capture specified region"; 
 
 void RegionCommand::setupOptions(QCommandLineParser& parser)
 {
-    parser.addOption({{"r", "region"}, "Region definition (x,y,width,height)", "rect"});
+    parser.addOption({{"r", "region"}, "Region definition in logical pixels (x,y,width,height)", "rect"});
     parser.addOption({{"n", "screen"}, "Screen number (default: primary)", "num", "0"});
     parser.addOption({{"d", "delay"}, "Delay in milliseconds before capture", "ms", "0"});
     parser.addOption({{"p", "path"}, "Save directory", "dir"});
@@ -105,22 +106,30 @@ CLIResult RegionCommand::execute(const QCommandLineParser& parser)
         return CLIResult::error(CLIResult::Code::GeneralError, "Failed to capture screen");
     }
 
-    // Validate region against screen bounds
-    QRect screenRect(0, 0, fullScreenshot.width(), fullScreenshot.height());
-    if (!screenRect.contains(region)) {
+    // Region option uses logical coordinates. Validate against logical screen bounds.
+    const qreal dpr = fullScreenshot.devicePixelRatio() > 0.0 ? fullScreenshot.devicePixelRatio() : 1.0;
+    const QSize logicalScreenSize = CoordinateHelper::toLogical(fullScreenshot.size(), dpr);
+    const QRect logicalScreenRect(QPoint(0, 0), logicalScreenSize);
+    if (!logicalScreenRect.contains(region)) {
         return CLIResult::error(
             CLIResult::Code::InvalidArguments,
-            QString("Region (%1,%2,%3,%4) exceeds screen bounds (%5x%6)")
+            QString("Region (%1,%2,%3,%4) exceeds logical screen bounds (%5x%6)")
                 .arg(region.x())
                 .arg(region.y())
                 .arg(region.width())
                 .arg(region.height())
-                .arg(screenRect.width())
-                .arg(screenRect.height()));
+                .arg(logicalScreenRect.width())
+                .arg(logicalScreenRect.height()));
     }
 
-    // Crop to region
-    QPixmap screenshot = fullScreenshot.copy(region);
+    // Crop using edge-aligned physical coordinates derived from logical region.
+    const QRect physicalRegion = CoordinateHelper::toPhysicalCoveringRect(region, dpr);
+    const QRect clampedPhysicalRegion = physicalRegion.intersected(fullScreenshot.rect());
+    if (clampedPhysicalRegion.isEmpty()) {
+        return CLIResult::error(CLIResult::Code::GeneralError, "Failed to crop region");
+    }
+    QPixmap screenshot = fullScreenshot.copy(clampedPhysicalRegion);
+    screenshot.setDevicePixelRatio(dpr);
 
     if (screenshot.isNull()) {
         return CLIResult::error(CLIResult::Code::GeneralError, "Failed to crop region");

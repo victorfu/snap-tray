@@ -8,6 +8,7 @@
 #include "annotations/ArrowAnnotation.h"
 #include "annotations/PolylineAnnotation.h"
 #include "annotations/ErasedItemsGroup.h"
+#include "utils/CoordinateHelper.h"
 #include <QImage>
 #include <QPixmap>
 #include <QPainterPath>
@@ -426,7 +427,7 @@ void AnnotationLayer::drawCached(QPainter &painter, const QSize &canvasSize, qre
 {
     if (m_items.empty()) return;
 
-    const QSize physicalSize = canvasSize * devicePixelRatio;
+    const QSize physicalSize = CoordinateHelper::toPhysical(canvasSize, devicePixelRatio);
 
     // drawCached requires a full cache (no excluded dragged item).
     if (!m_cacheValid || m_annotationCache.isNull() ||
@@ -474,7 +475,7 @@ void AnnotationLayer::drawWithDirtyRegion(QPainter &painter, const QSize &canvas
 {
     if (m_items.empty()) return;
 
-    const QSize physicalSize = canvasSize * devicePixelRatio;
+    const QSize physicalSize = CoordinateHelper::toPhysical(canvasSize, devicePixelRatio);
     const int normalizedExcludeIndex =
         (excludeIndex >= 0 && excludeIndex < static_cast<int>(m_items.size())) ? excludeIndex : -1;
 
@@ -514,7 +515,7 @@ void AnnotationLayer::commitDirtyRegion(const QSize &canvasSize, qreal devicePix
 {
     if (!m_hasDirtyRect) return;
 
-    const QSize physicalSize = canvasSize * devicePixelRatio;
+    const QSize physicalSize = CoordinateHelper::toPhysical(canvasSize, devicePixelRatio);
 
     // Ensure cache exists
     if (m_annotationCache.isNull() || m_annotationCache.size() != physicalSize) {

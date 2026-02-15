@@ -1,4 +1,5 @@
 #include "region/MagnifierPanel.h"
+#include "utils/CoordinateHelper.h"
 #include <QPainter>
 #include <QElapsedTimer>
 #include <QDebug>
@@ -138,10 +139,9 @@ QString MagnifierPanel::colorString() const
 void MagnifierPanel::updateMagnifierCache(const QPoint& cursorPos, const QPixmap& backgroundPixmap)
 {
     // 1. Check position cache FIRST to avoid unnecessary work
-    int deviceX = static_cast<int>(cursorPos.x() * m_devicePixelRatio);
-    int deviceY = static_cast<int>(cursorPos.y() * m_devicePixelRatio);
-
-    QPoint currentDevicePos(deviceX, deviceY);
+    const QPoint currentDevicePos = CoordinateHelper::toPhysical(cursorPos, m_devicePixelRatio);
+    const int deviceX = currentDevicePos.x();
+    const int deviceY = currentDevicePos.y();
     if (m_cacheValid && m_cachedDevicePosition == currentDevicePos) {
         return;  // Cache still valid, skip all work
     }
@@ -150,8 +150,9 @@ void MagnifierPanel::updateMagnifierCache(const QPoint& cursorPos, const QPixmap
     // Draw path logs if conversion unexpectedly becomes expensive.
     ensureBackgroundImageCache(backgroundPixmap, true, "updateMagnifierCache");
 
-    int deviceGridCountX = static_cast<int>(kGridCountX * m_devicePixelRatio);
-    int deviceGridCountY = static_cast<int>(kGridCountY * m_devicePixelRatio);
+    const QSize deviceGridCount = CoordinateHelper::toPhysical(QSize(kGridCountX, kGridCountY), m_devicePixelRatio);
+    const int deviceGridCountX = qMax(1, deviceGridCount.width());
+    const int deviceGridCountY = qMax(1, deviceGridCount.height());
     int sampleX = deviceX - deviceGridCountX / 2;
     int sampleY = deviceY - deviceGridCountY / 2;
 

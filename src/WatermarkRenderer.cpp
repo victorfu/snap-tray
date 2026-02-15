@@ -43,7 +43,7 @@ void WatermarkRenderer::renderImage(QPainter &painter, const QRect &targetRect, 
         return;
     }
 
-    QSize deviceScaledSize = (logicalScaledSizeF * dpr).toSize();
+    QSize deviceScaledSize = CoordinateHelper::toPhysical(logicalScaledSize, dpr);
     if (deviceScaledSize.isEmpty()) {
         return;
     }

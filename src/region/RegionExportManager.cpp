@@ -1,6 +1,7 @@
 #include "region/RegionExportManager.h"
 #include "annotations/AnnotationLayer.h"
 #include "settings/FileSettingsManager.h"
+#include "utils/CoordinateHelper.h"
 #include "utils/FilenameTemplateEngine.h"
 #include "utils/ImageSaveUtils.h"
 
@@ -58,13 +59,13 @@ QPixmap RegionExportManager::getSelectedRegion(const QRect &selectionRect, int c
         return QPixmap();
     }
 
-    // Use device pixels coordinates for cropping
-    QPixmap selectedRegion = m_backgroundPixmap.copy(
-        static_cast<int>(selectionRect.x() * m_devicePixelRatio),
-        static_cast<int>(selectionRect.y() * m_devicePixelRatio),
-        static_cast<int>(selectionRect.width() * m_devicePixelRatio),
-        static_cast<int>(selectionRect.height() * m_devicePixelRatio)
-    );
+    // Use edge-aligned device-pixel coordinates for cropping.
+    const QRect physicalRect = CoordinateHelper::toPhysicalCoveringRect(selectionRect, m_devicePixelRatio);
+    const QRect clampedPhysicalRect = physicalRect.intersected(m_backgroundPixmap.rect());
+    if (clampedPhysicalRect.isEmpty()) {
+        return QPixmap();
+    }
+    QPixmap selectedRegion = m_backgroundPixmap.copy(clampedPhysicalRect);
 
     // Set DPR BEFORE painting so Qt handles scaling automatically
     // This ensures annotation sizes (radius, pen width, font) stay in logical units

@@ -1,4 +1,5 @@
 #include "annotations/MosaicStroke.h"
+#include "utils/CoordinateHelper.h"
 #include "utils/MatConverter.h"
 #include <QPainter>
 #include <QPainterPath>
@@ -20,6 +21,9 @@ MosaicStroke::MosaicStroke(const QVector<QPoint> &points, SharedPixmap sourcePix
     , m_blurType(blurType)
     , m_devicePixelRatio(m_sourcePixmap ? m_sourcePixmap->devicePixelRatio() : 1.0)
 {
+    if (m_devicePixelRatio <= 0.0) {
+        m_devicePixelRatio = 1.0;
+    }
 }
 
 QRgb MosaicStroke::calculateBlockAverageColor(const QImage &image, int x, int y,
@@ -66,15 +70,11 @@ QRgb MosaicStroke::calculateBlockAverageColor(const QImage &image, int x, int y,
 QImage MosaicStroke::applyPixelatedMosaic(const QRect &strokeBounds) const
 {
     // Calculate effective block size with DPI scaling
-    int effectiveBlockSize = qMax(8, static_cast<int>(m_blockSize * m_devicePixelRatio));
+    const int effectiveBlockSize = qMax(
+        8, CoordinateHelper::toPhysical(QSize(m_blockSize, m_blockSize), m_devicePixelRatio).width());
 
     // Convert stroke bounds to device pixels for sampling
-    QRect deviceStrokeBounds(
-        static_cast<int>(strokeBounds.x() * m_devicePixelRatio),
-        static_cast<int>(strokeBounds.y() * m_devicePixelRatio),
-        static_cast<int>(strokeBounds.width() * m_devicePixelRatio),
-        static_cast<int>(strokeBounds.height() * m_devicePixelRatio)
-    );
+    const QRect deviceStrokeBounds = CoordinateHelper::toPhysical(strokeBounds, m_devicePixelRatio);
 
     if (deviceStrokeBounds.isEmpty()) {
         return QImage();
@@ -168,12 +168,7 @@ QImage MosaicStroke::applyPixelatedMosaic(const QRect &strokeBounds) const
 QImage MosaicStroke::applyGaussianBlur(const QRect &strokeBounds) const
 {
     // Convert stroke bounds to device pixels
-    QRect deviceStrokeBounds(
-        static_cast<int>(strokeBounds.x() * m_devicePixelRatio),
-        static_cast<int>(strokeBounds.y() * m_devicePixelRatio),
-        static_cast<int>(strokeBounds.width() * m_devicePixelRatio),
-        static_cast<int>(strokeBounds.height() * m_devicePixelRatio)
-    );
+    const QRect deviceStrokeBounds = CoordinateHelper::toPhysical(strokeBounds, m_devicePixelRatio);
 
     if (deviceStrokeBounds.isEmpty()) {
         return QImage();
@@ -194,8 +189,10 @@ QImage MosaicStroke::applyGaussianBlur(const QRect &strokeBounds) const
     QImage regionImage = m_sourcePixmap->copy(clampedBounds).toImage();
     QImage rgb = regionImage.convertToFormat(QImage::Format_RGB32);
 
-    // Calculate sigma based on block size (larger block = more blur)
-    double sigma = static_cast<double>(m_blockSize) * m_devicePixelRatio / 2.0;
+    // Calculate sigma based on physical block size (larger block = more blur)
+    const int physicalBlockSize = CoordinateHelper::toPhysical(
+        QSize(m_blockSize, m_blockSize), m_devicePixelRatio).width();
+    double sigma = static_cast<double>(physicalBlockSize) / 2.0;
     if (sigma < 1.0) {
         sigma = 1.0;
     }
@@ -261,7 +258,7 @@ void MosaicStroke::draw(QPainter &painter) const
         }
 
         // === Step 2: Create mask from stroke path (square brush) ===
-        QImage maskImage(bounds.size() * dpr, QImage::Format_Grayscale8);
+        QImage maskImage(CoordinateHelper::toPhysical(bounds.size(), dpr), QImage::Format_Grayscale8);
         maskImage.fill(0);  // Start fully transparent
 
         QPainter maskPainter(&maskImage);
@@ -276,9 +273,10 @@ void MosaicStroke::draw(QPainter &painter) const
         for (int i = 0; i < m_points.size(); ++i) {
             QPoint pt = m_points[i];
             // Convert to mask coordinates (relative to bounds)
-            int mx = static_cast<int>((pt.x() - bounds.left()) * dpr);
-            int my = static_cast<int>((pt.y() - bounds.top()) * dpr);
-            int size = static_cast<int>(effectiveWidth * dpr);
+            const QPoint maskPos = CoordinateHelper::toPhysical(pt - bounds.topLeft(), dpr);
+            const int mx = maskPos.x();
+            const int my = maskPos.y();
+            const int size = CoordinateHelper::toPhysical(QSize(effectiveWidth, effectiveWidth), dpr).width();
 
             maskPainter.fillRect(mx - size / 2, my - size / 2, size, size, Qt::white);
 
@@ -295,8 +293,12 @@ void MosaicStroke::draw(QPainter &painter) const
 
                     for (int s = 1; s < steps; ++s) {
                         double t = static_cast<double>(s) / steps;
-                        int interpX = static_cast<int>((pt.x() + dx * t - bounds.left()) * dpr);
-                        int interpY = static_cast<int>((pt.y() + dy * t - bounds.top()) * dpr);
+                        const QPointF interpPoint(
+                            pt.x() + dx * t - bounds.left(),
+                            pt.y() + dy * t - bounds.top());
+                        const QPoint interpPos = CoordinateHelper::toPhysical(interpPoint, dpr);
+                        const int interpX = interpPos.x();
+                        const int interpY = interpPos.y();
                         maskPainter.fillRect(interpX - size / 2, interpY - size / 2, size, size, Qt::white);
                     }
                 }

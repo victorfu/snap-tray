@@ -2,6 +2,7 @@
 
 #include "PinWindow.h"
 #include "pinwindow/RegionLayoutManager.h"
+#include "utils/CoordinateHelper.h"
 
 #include <QColor>
 #include <QImage>
@@ -30,8 +31,7 @@ qreal normalizedDpr(const QPixmap& pixmap)
 QSize logicalSizeFromPixmap(const QPixmap& pixmap)
 {
     const qreal dpr = normalizedDpr(pixmap);
-    return QSize(qRound(static_cast<qreal>(pixmap.width()) / dpr),
-                 qRound(static_cast<qreal>(pixmap.height()) / dpr));
+    return CoordinateHelper::toLogical(pixmap.size(), dpr);
 }
 
 QPixmap normalizeToTargetDpr(const QPixmap& source, qreal targetDpr)
@@ -46,8 +46,9 @@ QPixmap normalizeToTargetDpr(const QPixmap& source, qreal targetDpr)
     }
 
     const QSize logicalSize = logicalSizeFromPixmap(source);
-    const QSize physicalTargetSize(qMax(1, qRound(logicalSize.width() * targetDpr)),
-                                   qMax(1, qRound(logicalSize.height() * targetDpr)));
+    const QSize physicalSize = CoordinateHelper::toPhysical(logicalSize, targetDpr);
+    const QSize physicalTargetSize(qMax(1, physicalSize.width()),
+                                   qMax(1, physicalSize.height()));
 
     QPixmap normalized = source.scaled(physicalTargetSize,
                                        Qt::IgnoreAspectRatio,
@@ -150,8 +151,10 @@ PinMergeResult PinMergeHelper::merge(const QList<PinWindow*>& windows, int gap)
         return result;
     }
 
-    const QSize composedPhysicalSize(qMax(1, qRound(static_cast<qreal>(composedWidth) * targetDpr)),
-                                     qMax(1, qRound(maxHeight * targetDpr)));
+    const QSize composedPhysical = CoordinateHelper::toPhysical(
+        QSize(static_cast<int>(composedWidth), maxHeight), targetDpr);
+    const QSize composedPhysicalSize(qMax(1, composedPhysical.width()),
+                                     qMax(1, composedPhysical.height()));
     QPixmap composed(composedPhysicalSize);
     composed.setDevicePixelRatio(targetDpr);
     composed.fill(Qt::transparent);

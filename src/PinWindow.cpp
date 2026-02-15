@@ -113,7 +113,7 @@ namespace {
         if (dpr <= 0.0) {
             dpr = 1.0;
         }
-        return pixmap.size() / dpr;
+        return CoordinateHelper::toLogical(pixmap.size(), dpr);
     }
 
     QString saveErrorDetail(const ImageSaveUtils::Error& error)
@@ -362,7 +362,7 @@ PinWindow::PinWindow(const QPixmap& screenshot,
 
     // Initial size matches screenshot (use logical size for HiDPI)
     m_displayPixmap = m_originalPixmap;
-    QSize logicalSize = m_displayPixmap.size() / m_displayPixmap.devicePixelRatio();
+    QSize logicalSize = logicalSizeFromPixmap(m_displayPixmap);
     setFixedSize(logicalSize);
 
     // Cache the base corner radius so pin window chrome matches rounded captures.
@@ -370,7 +370,7 @@ PinWindow::PinWindow(const QPixmap& screenshot,
     if (baseDpr <= 0.0) {
         baseDpr = 1.0;
     }
-    QSize baseLogicalSize = m_originalPixmap.size() / baseDpr;
+    QSize baseLogicalSize = logicalSizeFromPixmap(m_originalPixmap);
     int maxRadius = qMin(baseLogicalSize.width(), baseLogicalSize.height()) / 2;
     m_baseCornerRadius = qMin(AnnotationSettingsManager::instance().loadCornerRadius(), maxRadius);
     if (m_baseCornerRadius > 0 && !hasTransparentCornerPixels(m_originalPixmap)) {
@@ -694,12 +694,16 @@ void PinWindow::onResizeFinished()
         // Perform high-quality scaling after resize is complete
         ensureTransformCacheValid();
 
-        QSize newDeviceSize = size() * m_transformedCache.devicePixelRatio();
+        qreal dpr = m_transformedCache.devicePixelRatio();
+        if (dpr <= 0.0) {
+            dpr = 1.0;
+        }
+        QSize newDeviceSize = CoordinateHelper::toPhysical(size(), dpr);
 
         m_displayPixmap = m_transformedCache.scaled(newDeviceSize,
             Qt::KeepAspectRatio,
             Qt::SmoothTransformation);
-        m_displayPixmap.setDevicePixelRatio(m_transformedCache.devicePixelRatio());
+        m_displayPixmap.setDevicePixelRatio(dpr);
 
         m_pendingHighQualityUpdate = false;
         update();
@@ -714,18 +718,10 @@ int PinWindow::effectiveCornerRadius(const QSize& contentSize) const
 
     QSize baseLogicalSize;
     if (!m_transformedCache.isNull()) {
-        qreal dpr = m_transformedCache.devicePixelRatio();
-        if (dpr <= 0.0) {
-            dpr = 1.0;
-        }
-        baseLogicalSize = m_transformedCache.size() / dpr;
+        baseLogicalSize = logicalSizeFromPixmap(m_transformedCache);
     }
     else {
-        qreal dpr = m_originalPixmap.devicePixelRatio();
-        if (dpr <= 0.0) {
-            dpr = 1.0;
-        }
-        baseLogicalSize = m_originalPixmap.size() / dpr;
+        baseLogicalSize = logicalSizeFromPixmap(m_originalPixmap);
     }
 
     if (baseLogicalSize.isEmpty()) {
@@ -747,16 +743,19 @@ void PinWindow::updateSize()
     ensureTransformCacheValid();
 
     // For 90/270 degree rotations, swap width and height
-    QSize transformedLogicalSize = m_transformedCache.size() / m_transformedCache.devicePixelRatio();
+    const qreal dpr = m_transformedCache.devicePixelRatio() > 0.0
+        ? m_transformedCache.devicePixelRatio()
+        : 1.0;
+    QSize transformedLogicalSize = logicalSizeFromPixmap(m_transformedCache);
     QSize newLogicalSize = transformedLogicalSize * m_zoomLevel;
 
     // Scale to device pixels for the actual pixmap
-    QSize newDeviceSize = newLogicalSize * m_transformedCache.devicePixelRatio();
+    QSize newDeviceSize = CoordinateHelper::toPhysical(newLogicalSize, dpr);
     Qt::TransformationMode mode = m_smoothing ? Qt::SmoothTransformation : Qt::FastTransformation;
     m_displayPixmap = m_transformedCache.scaled(newDeviceSize,
         Qt::KeepAspectRatio,
         mode);
-    m_displayPixmap.setDevicePixelRatio(m_transformedCache.devicePixelRatio());
+    m_displayPixmap.setDevicePixelRatio(dpr);
 
     setFixedSize(newLogicalSize);
     update();
@@ -1151,11 +1150,7 @@ void PinWindow::mergePinsFromContextMenu()
     }
 
     const QRect screenGeometry = screen->availableGeometry();
-    qreal dpr = result.composedPixmap.devicePixelRatio();
-    if (dpr <= 0.0) {
-        dpr = 1.0;
-    }
-    const QSize logicalSize = result.composedPixmap.size() / dpr;
+    const QSize logicalSize = logicalSizeFromPixmap(result.composedPixmap);
     const QPoint position = screenGeometry.center() - QPoint(logicalSize.width() / 2, logicalSize.height() / 2);
 
     // Defer cache save until multi-region metadata is attached, otherwise the
@@ -1715,6 +1710,9 @@ void PinWindow::paintEvent(QPaintEvent*)
     // Draw region layout mode overlay
     if (isRegionLayoutMode()) {
         qreal dpr = m_originalPixmap.devicePixelRatio();
+        if (dpr <= 0.0) {
+            dpr = 1.0;
+        }
         const auto& regions = m_regionLayoutManager->regions();
         int selectedIdx = m_regionLayoutManager->selectedIndex();
         int hoveredIdx = m_regionLayoutManager->hoveredIndex();
@@ -1725,7 +1723,7 @@ void PinWindow::paintEvent(QPaintEvent*)
             if (region.rect.size() != region.originalRect.size()) {
                 // Scale the image if region was resized
                 QImage scaled = region.image.scaled(
-                    region.rect.size() * dpr,
+                    CoordinateHelper::toPhysical(region.rect.size(), dpr),
                     Qt::IgnoreAspectRatio,
                     Qt::SmoothTransformation);
                 scaled.setDevicePixelRatio(dpr);
@@ -1987,18 +1985,22 @@ void PinWindow::mouseMoveEvent(QMouseEvent* event)
         ensureTransformCacheValid();
 
         // Use transformed dimensions for zoom calculation
-        QSize transformedLogicalSize = m_transformedCache.size() / m_transformedCache.devicePixelRatio();
+        QSize transformedLogicalSize = logicalSizeFromPixmap(m_transformedCache);
         qreal scaleX = static_cast<qreal>(newSize.width()) / transformedLogicalSize.width();
         qreal scaleY = static_cast<qreal>(newSize.height()) / transformedLogicalSize.height();
         m_zoomLevel = qMin(scaleX, scaleY);
 
         // Use FastTransformation during resize for responsiveness
         // High-quality scaling will be done after resize is complete
-        QSize newDeviceSize = newSize * m_transformedCache.devicePixelRatio();
+        qreal dpr = m_transformedCache.devicePixelRatio();
+        if (dpr <= 0.0) {
+            dpr = 1.0;
+        }
+        QSize newDeviceSize = CoordinateHelper::toPhysical(newSize, dpr);
         m_displayPixmap = m_transformedCache.scaled(newDeviceSize,
             Qt::KeepAspectRatio,
             Qt::FastTransformation);
-        m_displayPixmap.setDevicePixelRatio(m_transformedCache.devicePixelRatio());
+        m_displayPixmap.setDevicePixelRatio(dpr);
 
         // Schedule high-quality update after resize ends
         m_pendingHighQualityUpdate = true;
@@ -2813,12 +2815,8 @@ void PinWindow::applyCrop(const QRect& cropRect)
         qRound(static_cast<qreal>(sourceOffset.x()) * toolImageSize.width() / sourceLogicalSize.width()),
         qRound(static_cast<qreal>(sourceOffset.y()) * toolImageSize.height() / sourceLogicalSize.height()));
 
-    // Convert logical crop rect to device pixels for QPixmap::copy.
-    QRect deviceRect;
-    deviceRect.setLeft(qFloor(sourceLogicalRect.left() * dpr));
-    deviceRect.setTop(qFloor(sourceLogicalRect.top() * dpr));
-    deviceRect.setRight(qCeil((sourceLogicalRect.left() + sourceLogicalRect.width()) * dpr) - 1);
-    deviceRect.setBottom(qCeil((sourceLogicalRect.top() + sourceLogicalRect.height()) * dpr) - 1);
+    // Convert logical crop rect to a covering device rect for QPixmap::copy.
+    const QRect deviceRect = CoordinateHelper::toPhysicalCoveringRect(sourceLogicalRect, dpr);
 
     // Validate device rect against actual pixmap bounds
     QRect pixmapBounds(0, 0, m_originalPixmap.width(), m_originalPixmap.height());
@@ -4047,7 +4045,7 @@ void PinWindow::enterRegionLayoutMode()
     }
 
     // Enter layout mode with stored regions
-    QSize canvasSize = m_originalPixmap.size() / m_originalPixmap.devicePixelRatio();
+    QSize canvasSize = logicalSizeFromPixmap(m_originalPixmap);
     m_regionLayoutManager->enterLayoutMode(m_storedRegions, canvasSize);
 
     // Bind annotations if annotation layer exists
@@ -4102,7 +4100,7 @@ void PinWindow::exitRegionLayoutMode(bool apply)
             m_cachedFlipV = false;
 
             // Update window size
-            QSize logicalSize = m_displayPixmap.size() / m_displayPixmap.devicePixelRatio();
+            QSize logicalSize = logicalSizeFromPixmap(m_displayPixmap);
             setFixedSize(logicalSize);
             syncCropHandlerImageSize();
 

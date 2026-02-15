@@ -434,7 +434,7 @@ full/screen/region:
   -p, --path         儲存目錄
   -d, --delay        擷取前延遲（毫秒）
   -n, --screen       螢幕編號
-  -r, --region       區域座標（僅 region：x,y,寬,高）
+  -r, --region       區域座標（logical 像素，僅 region：x,y,寬,高）
   --raw              輸出原始 PNG 到 stdout
 
 screen 專屬:

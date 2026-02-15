@@ -4,6 +4,7 @@
 
 #include "PinWindow.h"
 #include "pinwindow/PinMergeHelper.h"
+#include "utils/CoordinateHelper.h"
 
 class TestPinMergeHelper : public QObject
 {
@@ -15,8 +16,9 @@ private:
                                     const QColor& color = Qt::blue,
                                     qreal dpr = 1.0)
     {
-        const QSize physicalSize(qMax(1, qRound(logicalWidth * dpr)),
-                                 qMax(1, qRound(logicalHeight * dpr)));
+        const QSize physical = CoordinateHelper::toPhysical(QSize(logicalWidth, logicalHeight), dpr);
+        const QSize physicalSize(qMax(1, physical.width()),
+                                 qMax(1, physical.height()));
 
         QPixmap pixmap(physicalSize);
         pixmap.setDevicePixelRatio(dpr);
@@ -27,8 +29,7 @@ private:
     static QSize logicalSize(const QPixmap& pixmap)
     {
         const qreal dpr = pixmap.devicePixelRatio() > 0.0 ? pixmap.devicePixelRatio() : 1.0;
-        return QSize(qRound(static_cast<qreal>(pixmap.width()) / dpr),
-                     qRound(static_cast<qreal>(pixmap.height()) / dpr));
+        return CoordinateHelper::toLogical(pixmap.size(), dpr);
     }
 
 private slots:

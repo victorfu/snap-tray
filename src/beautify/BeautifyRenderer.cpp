@@ -1,4 +1,5 @@
 #include "beautify/BeautifyRenderer.h"
+#include "utils/CoordinateHelper.h"
 #include <QPainterPath>
 #include <QLinearGradient>
 #include <QRadialGradient>
@@ -10,10 +11,10 @@ QPixmap BeautifyRenderer::applyToPixmap(const QPixmap& source, const BeautifySet
 {
     if (source.isNull()) return {};
 
-    qreal dpr = source.devicePixelRatio();
-    QSize logicalSource(qRound(source.width() / dpr), qRound(source.height() / dpr));
+    const qreal dpr = source.devicePixelRatio() > 0.0 ? source.devicePixelRatio() : 1.0;
+    const QSize logicalSource = CoordinateHelper::toLogical(source.size(), dpr);
     QSize logicalOutput = calculateOutputSize(logicalSource, settings);
-    QSize deviceOutput(qRound(logicalOutput.width() * dpr), qRound(logicalOutput.height() * dpr));
+    const QSize deviceOutput = CoordinateHelper::toPhysical(logicalOutput, dpr);
 
     QPixmap result(deviceOutput);
     result.fill(Qt::transparent);
@@ -52,8 +53,8 @@ void BeautifyRenderer::render(QPainter& painter, const QRect& targetRect,
     painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
 
     // Use logical pixel dimensions (matches applyToPixmap behavior)
-    qreal dpr = source.devicePixelRatio();
-    QSize logicalSource(qRound(source.width() / dpr), qRound(source.height() / dpr));
+    const qreal dpr = source.devicePixelRatio() > 0.0 ? source.devicePixelRatio() : 1.0;
+    const QSize logicalSource = CoordinateHelper::toLogical(source.size(), dpr);
 
     // Calculate scaled dimensions to fit the target rect while preserving aspect ratio
     QSize outputSize = calculateOutputSize(logicalSource, settings);
@@ -176,8 +177,8 @@ void BeautifyRenderer::drawScreenshot(QPainter& painter, const QRect& insetRect,
 
     // Use CompositionMode_DestinationIn with alpha mask for high-quality anti-aliased corners
     // (matches RegionExportManager::applyRoundedCorners pattern)
-    qreal dpr = source.devicePixelRatio();
-    QSize deviceSize(qRound(insetRect.width() * dpr), qRound(insetRect.height() * dpr));
+    const qreal dpr = source.devicePixelRatio() > 0.0 ? source.devicePixelRatio() : 1.0;
+    const QSize deviceSize = CoordinateHelper::toPhysical(insetRect.size(), dpr);
 
     QImage screenshotImage(deviceSize, QImage::Format_ARGB32_Premultiplied);
     screenshotImage.setDevicePixelRatio(dpr);

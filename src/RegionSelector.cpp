@@ -32,6 +32,7 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include "tools/handlers/EmojiStickerToolHandler.h"
 #include "tools/ToolSectionConfig.h"
 #include "tools/ToolTraits.h"
+#include "utils/CoordinateHelper.h"
 #include <QTextEdit>
 
 #include <cstring>
@@ -2127,13 +2128,19 @@ void RegionSelector::performOCR()
     update();
 
     // Get the selected region (without annotations for OCR)
-    QRect sel = m_selectionManager->selectionRect();
-    QPixmap selectedRegion = m_backgroundPixmap.copy(
-        static_cast<int>(sel.x() * m_devicePixelRatio),
-        static_cast<int>(sel.y() * m_devicePixelRatio),
-        static_cast<int>(sel.width() * m_devicePixelRatio),
-        static_cast<int>(sel.height() * m_devicePixelRatio)
-    );
+    const QRect sel = m_selectionManager->selectionRect();
+    const QRect physicalRect = CoordinateHelper::toPhysicalCoveringRect(sel, m_devicePixelRatio);
+    const QRect clampedPhysicalRect = physicalRect.intersected(m_backgroundPixmap.rect());
+    if (clampedPhysicalRect.isEmpty()) {
+        m_ocrInProgress = false;
+        if (m_loadingSpinner) {
+            m_loadingSpinner->stop();
+        }
+        showSelectionToast(tr("Failed to process selected region"), "rgba(200, 60, 60, 220)");
+        update();
+        return;
+    }
+    QPixmap selectedRegion = m_backgroundPixmap.copy(clampedPhysicalRect);
     selectedRegion.setDevicePixelRatio(m_devicePixelRatio);
 
     QPointer<RegionSelector> safeThis = this;
@@ -2209,13 +2216,19 @@ void RegionSelector::performQRCodeScan()
     update();
 
     // Get the selected region (without annotations)
-    QRect sel = m_selectionManager->selectionRect();
-    QPixmap selectedRegion = m_backgroundPixmap.copy(
-        static_cast<int>(sel.x() * m_devicePixelRatio),
-        static_cast<int>(sel.y() * m_devicePixelRatio),
-        static_cast<int>(sel.width() * m_devicePixelRatio),
-        static_cast<int>(sel.height() * m_devicePixelRatio)
-    );
+    const QRect sel = m_selectionManager->selectionRect();
+    const QRect physicalRect = CoordinateHelper::toPhysicalCoveringRect(sel, m_devicePixelRatio);
+    const QRect clampedPhysicalRect = physicalRect.intersected(m_backgroundPixmap.rect());
+    if (clampedPhysicalRect.isEmpty()) {
+        m_qrCodeInProgress = false;
+        if (m_loadingSpinner) {
+            m_loadingSpinner->stop();
+        }
+        showSelectionToast(tr("Failed to process selected region"), "rgba(200, 60, 60, 220)");
+        update();
+        return;
+    }
+    QPixmap selectedRegion = m_backgroundPixmap.copy(clampedPhysicalRect);
     selectedRegion.setDevicePixelRatio(m_devicePixelRatio);
 
     QPointer<RegionSelector> safeThis = this;
@@ -2302,21 +2315,27 @@ void RegionSelector::performAutoBlur()
     m_autoBlurManager->setOptions(AutoBlurSettingsManager::instance().load());
 
     // Get the selected region as QImage
-    QRect sel = m_selectionManager->selectionRect();
-
-    QPixmap selectedPixmap = m_backgroundPixmap.copy(
-        static_cast<int>(sel.x() * m_devicePixelRatio),
-        static_cast<int>(sel.y() * m_devicePixelRatio),
-        static_cast<int>(sel.width() * m_devicePixelRatio),
-        static_cast<int>(sel.height() * m_devicePixelRatio)
-    );
+    const QRect sel = m_selectionManager->selectionRect();
+    const QRect physicalRect = CoordinateHelper::toPhysicalCoveringRect(sel, m_devicePixelRatio);
+    const QRect clampedPhysicalRect = physicalRect.intersected(m_backgroundPixmap.rect());
+    if (clampedPhysicalRect.isEmpty()) {
+        m_autoBlurInProgress = false;
+        m_colorAndWidthWidget->setAutoBlurProcessing(false);
+        if (m_loadingSpinner) {
+            m_loadingSpinner->stop();
+        }
+        showSelectionToast(tr("Failed to process selected region"), "rgba(200, 60, 60, 220)");
+        update();
+        return;
+    }
+    QPixmap selectedPixmap = m_backgroundPixmap.copy(clampedPhysicalRect);
     QImage selectedImage = selectedPixmap.toImage();
 
     // Run detection asynchronously to avoid blocking UI thread
     auto* watcher = new QFutureWatcher<AutoBlurManager::DetectionResult>(this);
     m_autoBlurWatcher = watcher;
     connect(watcher, &QFutureWatcher<AutoBlurManager::DetectionResult>::finished,
-            this, [this, watcher, sel]() {
+            this, [this, watcher, sel, clampedPhysicalRect]() {
         auto result = watcher->result();
         m_autoBlurWatcher = nullptr;
         watcher->deleteLater();
@@ -2337,13 +2356,13 @@ void RegionSelector::performAutoBlur()
                 // Convert to logical coordinates for annotations.
                 for (int i = 0; i < result.faceRegions.size(); ++i) {
                     const QRect& r = result.faceRegions[i];
-
-                    QRect logicalRect(
-                        sel.x() + static_cast<int>(r.x() / m_devicePixelRatio),
-                        sel.y() + static_cast<int>(r.y() / m_devicePixelRatio),
-                        static_cast<int>(r.width() / m_devicePixelRatio),
-                        static_cast<int>(r.height() / m_devicePixelRatio)
-                    );
+                    const QRect absolutePhysicalRect = r.translated(clampedPhysicalRect.topLeft());
+                    const QRect logicalRect =
+                        CoordinateHelper::toLogical(absolutePhysicalRect, m_devicePixelRatio)
+                            .intersected(sel);
+                    if (logicalRect.isEmpty()) {
+                        continue;
+                    }
 
                     auto mosaic = std::make_unique<MosaicRectAnnotation>(
                         logicalRect, m_sharedSourcePixmap, blockSize, blurType

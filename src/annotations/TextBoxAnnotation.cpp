@@ -1,4 +1,5 @@
 #include "annotations/TextBoxAnnotation.h"
+#include "utils/CoordinateHelper.h"
 #include <QPainter>
 #include <QPainterPath>
 #include <QFontMetrics>
@@ -160,7 +161,7 @@ void TextBoxAnnotation::regenerateCache(qreal dpr) const
 
     // Create pixmap for the box
     QSize pixmapSize(boxWidth, boxHeight);
-    m_cachedPixmap = QPixmap(pixmapSize * dpr);
+    m_cachedPixmap = QPixmap(CoordinateHelper::toPhysical(pixmapSize, dpr));
     m_cachedPixmap.setDevicePixelRatio(dpr);
     m_cachedPixmap.fill(Qt::transparent);
 

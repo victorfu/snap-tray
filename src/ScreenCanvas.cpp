@@ -19,6 +19,7 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include "annotations/EmojiStickerAnnotation.h"
 #include "annotations/PolylineAnnotation.h"
 #include "TransformationGizmo.h"
+#include "utils/CoordinateHelper.h"
 
 #include <QPainter>
 #include <QMouseEvent>
@@ -1324,7 +1325,7 @@ void ScreenCanvas::setBackgroundMode(CanvasBackgroundMode mode)
 QPixmap ScreenCanvas::createSolidBackgroundPixmap(const QColor& color) const
 {
     // Create pixmap at physical pixel size for HiDPI support
-    QSize physicalSize = size() * m_devicePixelRatio;
+    const QSize physicalSize = CoordinateHelper::toPhysical(size(), m_devicePixelRatio);
     QPixmap pixmap(physicalSize);
     pixmap.setDevicePixelRatio(m_devicePixelRatio);
     pixmap.fill(color);
