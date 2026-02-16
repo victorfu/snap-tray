@@ -28,6 +28,8 @@ public:
     void setRegions(const QVector<MultiRegionManager::Region>& regions);
     void setActiveIndex(int index);
     void updatePanelGeometry(const QSize& parentSize);
+    void setInteractionCursor(Qt::CursorShape shape);
+    void clearInteractionCursor();
 
 signals:
     void regionActivated(int index);
@@ -36,6 +38,9 @@ signals:
     void regionMoveRequested(int fromIndex, int toIndex);
 
 private:
+    Qt::CursorShape effectiveCursorShape() const;
+    void applyEffectiveCursor();
+    void applyCursorToDescendants(Qt::CursorShape shape);
     void rebuildList();
     QWidget* createItemWidget(const MultiRegionManager::Region& region);
     QPixmap thumbnailForRegion(const MultiRegionManager::Region& region) const;
@@ -47,6 +52,10 @@ private:
     qint64 m_backgroundCacheKey = 0;
     qreal m_devicePixelRatio = 1.0;
     bool m_updatingList = false;
+    bool m_hasInteractionCursorOverride = false;
+    Qt::CursorShape m_interactionCursorShape = Qt::ArrowCursor;
+    bool m_hasAppliedCursor = false;
+    Qt::CursorShape m_appliedCursorShape = Qt::ArrowCursor;
     mutable QHash<QString, QPixmap> m_thumbnailCache;
 
     static constexpr int kPanelWidth = 280;

@@ -1568,6 +1568,24 @@ void RegionSelector::setToolCursor()
     cursorManager.updateToolCursorForWidget(this);
 }
 
+void RegionSelector::syncMultiRegionListPanelCursor()
+{
+    if (!m_multiRegionListPanel || !m_inputState.multiRegionMode || !m_multiRegionListPanel->isVisible()) {
+        return;
+    }
+
+    const bool isDraggingRegion = m_selectionManager &&
+        (m_selectionManager->isSelecting() ||
+         m_selectionManager->isResizing() ||
+         m_selectionManager->isMoving());
+
+    if (isDraggingRegion) {
+        m_multiRegionListPanel->setInteractionCursor(cursor().shape());
+    } else {
+        m_multiRegionListPanel->clearInteractionCursor();
+    }
+}
+
 void RegionSelector::handleToolbarClick(ToolId tool)
 {
     // Sync current state to handler
@@ -1615,6 +1633,7 @@ void RegionSelector::setMultiRegionMode(bool enabled)
             m_multiRegionListPanel->updatePanelGeometry(size());
             m_multiRegionListPanel->show();
             m_multiRegionListPanel->raise();
+            m_multiRegionListPanel->clearInteractionCursor();
             refreshMultiRegionListPanel();
         }
     }
@@ -1623,6 +1642,7 @@ void RegionSelector::setMultiRegionMode(bool enabled)
         m_selectionManager->clearSelection();
         m_inputState.showSubToolbar = true;
         if (m_multiRegionListPanel) {
+            m_multiRegionListPanel->clearInteractionCursor();
             m_multiRegionListPanel->hide();
             m_multiRegionListPanel->setRegions(QVector<MultiRegionManager::Region>());
         }
@@ -1714,17 +1734,20 @@ void RegionSelector::mousePressEvent(QMouseEvent* event)
 
     m_inputHandler->handleMousePress(event);
     m_lastMagnifierRect = m_inputHandler->lastMagnifierRect();
+    syncMultiRegionListPanelCursor();
 }
 
 void RegionSelector::mouseMoveEvent(QMouseEvent* event)
 {
     m_inputHandler->handleMouseMove(event);
     m_lastMagnifierRect = m_inputHandler->lastMagnifierRect();
+    syncMultiRegionListPanelCursor();
 }
 
 void RegionSelector::mouseReleaseEvent(QMouseEvent* event)
 {
     m_inputHandler->handleMouseRelease(event);
+    syncMultiRegionListPanelCursor();
 }
 
 void RegionSelector::mouseDoubleClickEvent(QMouseEvent* event)

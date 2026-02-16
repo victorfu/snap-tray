@@ -1,7 +1,9 @@
 #include <QtTest>
 
+#include <QLabel>
 #include <QListWidget>
 #include <QPushButton>
+#include <QWidget>
 
 #include "region/MultiRegionListPanel.h"
 
@@ -12,6 +14,8 @@ class tst_MultiRegionListPanel : public QObject
 private slots:
     void testSignalsAndRenderingData();
     void testRowsMovedSignalMapping();
+    void testCursorOverridesParentCrosshair();
+    void testInteractionCursorOverrideAndRestore();
 };
 
 void tst_MultiRegionListPanel::testSignalsAndRenderingData()
@@ -92,6 +96,90 @@ void tst_MultiRegionListPanel::testRowsMovedSignalMapping()
     const QList<QVariant> args = moveSpy.takeFirst();
     QCOMPARE(args.at(0).toInt(), 0);
     QCOMPARE(args.at(1).toInt(), 2);
+}
+
+void tst_MultiRegionListPanel::testCursorOverridesParentCrosshair()
+{
+    QWidget parent;
+    parent.setCursor(Qt::CrossCursor);
+
+    MultiRegionListPanel panel(&parent);
+    panel.updatePanelGeometry(QSize(1200, 800));
+
+    MultiRegionManager::Region region;
+    region.rect = QRect(10, 10, 120, 80);
+    region.index = 1;
+    region.color = QColor(0, 174, 255);
+    panel.setRegions({region});
+
+    auto* list = panel.findChild<QListWidget*>("multiRegionListWidget");
+    QVERIFY(list != nullptr);
+    QVERIFY(list->count() == 1);
+    QVERIFY(list->viewport() != nullptr);
+
+    QCOMPARE(panel.cursor().shape(), Qt::ArrowCursor);
+    QCOMPARE(list->cursor().shape(), Qt::ArrowCursor);
+    QCOMPARE(list->viewport()->cursor().shape(), Qt::ArrowCursor);
+
+    QWidget* itemWidget = list->itemWidget(list->item(0));
+    QVERIFY(itemWidget != nullptr);
+    QCOMPARE(itemWidget->cursor().shape(), Qt::ArrowCursor);
+
+    const auto labels = itemWidget->findChildren<QLabel*>();
+    QVERIFY(!labels.isEmpty());
+    for (const auto* label : labels) {
+        QCOMPARE(label->cursor().shape(), Qt::ArrowCursor);
+    }
+
+    auto* replaceButton = itemWidget->findChild<QPushButton*>("replaceButton");
+    auto* deleteButton = itemWidget->findChild<QPushButton*>("deleteButton");
+    QVERIFY(replaceButton != nullptr);
+    QVERIFY(deleteButton != nullptr);
+    QCOMPARE(replaceButton->cursor().shape(), Qt::ArrowCursor);
+    QCOMPARE(deleteButton->cursor().shape(), Qt::ArrowCursor);
+}
+
+void tst_MultiRegionListPanel::testInteractionCursorOverrideAndRestore()
+{
+    QWidget parent;
+    parent.setCursor(Qt::CrossCursor);
+
+    MultiRegionListPanel panel(&parent);
+    panel.updatePanelGeometry(QSize(1200, 800));
+
+    MultiRegionManager::Region region;
+    region.rect = QRect(10, 10, 120, 80);
+    region.index = 1;
+    region.color = QColor(0, 174, 255);
+    panel.setRegions({region});
+
+    auto* list = panel.findChild<QListWidget*>("multiRegionListWidget");
+    QVERIFY(list != nullptr);
+    QVERIFY(list->count() == 1);
+    QVERIFY(list->viewport() != nullptr);
+
+    QWidget* itemWidget = list->itemWidget(list->item(0));
+    QVERIFY(itemWidget != nullptr);
+    auto* replaceButton = itemWidget->findChild<QPushButton*>("replaceButton");
+    auto* deleteButton = itemWidget->findChild<QPushButton*>("deleteButton");
+    QVERIFY(replaceButton != nullptr);
+    QVERIFY(deleteButton != nullptr);
+
+    panel.setInteractionCursor(Qt::SizeAllCursor);
+    QCOMPARE(panel.cursor().shape(), Qt::SizeAllCursor);
+    QCOMPARE(list->cursor().shape(), Qt::SizeAllCursor);
+    QCOMPARE(list->viewport()->cursor().shape(), Qt::SizeAllCursor);
+    QCOMPARE(itemWidget->cursor().shape(), Qt::SizeAllCursor);
+    QCOMPARE(replaceButton->cursor().shape(), Qt::SizeAllCursor);
+    QCOMPARE(deleteButton->cursor().shape(), Qt::SizeAllCursor);
+
+    panel.clearInteractionCursor();
+    QCOMPARE(panel.cursor().shape(), Qt::ArrowCursor);
+    QCOMPARE(list->cursor().shape(), Qt::ArrowCursor);
+    QCOMPARE(list->viewport()->cursor().shape(), Qt::ArrowCursor);
+    QCOMPARE(itemWidget->cursor().shape(), Qt::ArrowCursor);
+    QCOMPARE(replaceButton->cursor().shape(), Qt::ArrowCursor);
+    QCOMPARE(deleteButton->cursor().shape(), Qt::ArrowCursor);
 }
 
 QTEST_MAIN(tst_MultiRegionListPanel)

@@ -88,6 +88,62 @@ MultiRegionListPanel::MultiRegionListPanel(QWidget* parent)
                 }
                 emit regionMoveRequested(sourceStart, toIndex);
             });
+
+    applyEffectiveCursor();
+}
+
+void MultiRegionListPanel::setInteractionCursor(Qt::CursorShape shape)
+{
+    const bool changed = !m_hasInteractionCursorOverride || m_interactionCursorShape != shape;
+    m_hasInteractionCursorOverride = true;
+    m_interactionCursorShape = shape;
+    if (changed) {
+        applyEffectiveCursor();
+    }
+}
+
+void MultiRegionListPanel::clearInteractionCursor()
+{
+    if (!m_hasInteractionCursorOverride) {
+        return;
+    }
+    m_hasInteractionCursorOverride = false;
+    applyEffectiveCursor();
+}
+
+Qt::CursorShape MultiRegionListPanel::effectiveCursorShape() const
+{
+    return m_hasInteractionCursorOverride ? m_interactionCursorShape : Qt::ArrowCursor;
+}
+
+void MultiRegionListPanel::applyEffectiveCursor()
+{
+    applyCursorToDescendants(effectiveCursorShape());
+}
+
+void MultiRegionListPanel::applyCursorToDescendants(Qt::CursorShape shape)
+{
+    if (m_hasAppliedCursor && m_appliedCursorShape == shape) {
+        return;
+    }
+
+    m_hasAppliedCursor = true;
+    m_appliedCursorShape = shape;
+    setCursor(shape);
+
+    if (m_listWidget) {
+        m_listWidget->setCursor(shape);
+        if (m_listWidget->viewport()) {
+            m_listWidget->viewport()->setCursor(shape);
+        }
+    }
+
+    const auto descendants = findChildren<QWidget*>();
+    for (auto* child : descendants) {
+        if (child) {
+            child->setCursor(shape);
+        }
+    }
 }
 
 void MultiRegionListPanel::setCaptureContext(const QPixmap& background, qreal dpr)
@@ -150,8 +206,11 @@ void MultiRegionListPanel::rebuildList()
 
 QWidget* MultiRegionListPanel::createItemWidget(const MultiRegionManager::Region& region)
 {
+    const Qt::CursorShape cursorShape = effectiveCursorShape();
+
     auto* container = new QWidget(m_listWidget);
     container->setFocusPolicy(Qt::NoFocus);
+    container->setCursor(cursorShape);
 
     auto* layout = new QHBoxLayout(container);
     layout->setContentsMargins(6, 4, 6, 4);
@@ -160,6 +219,7 @@ QWidget* MultiRegionListPanel::createItemWidget(const MultiRegionManager::Region
     auto* thumbLabel = new QLabel(container);
     thumbLabel->setFixedSize(kThumbnailWidth, kThumbnailHeight);
     thumbLabel->setAlignment(Qt::AlignCenter);
+    thumbLabel->setCursor(cursorShape);
     thumbLabel->setStyleSheet("border: 1px solid rgba(255,255,255,40); border-radius: 4px;");
     const QPixmap thumbnail = thumbnailForRegion(region);
     if (!thumbnail.isNull()) {
@@ -175,12 +235,14 @@ QWidget* MultiRegionListPanel::createItemWidget(const MultiRegionManager::Region
     auto* titleLabel = new QLabel(tr("Region %1").arg(region.index), container);
     titleLabel->setStyleSheet("color: white; font-weight: 600;");
     titleLabel->setFocusPolicy(Qt::NoFocus);
+    titleLabel->setCursor(cursorShape);
     textLayout->addWidget(titleLabel);
 
     auto* sizeLabel = new QLabel(
         tr("%1 x %2").arg(region.rect.width()).arg(region.rect.height()), container);
     sizeLabel->setStyleSheet("color: rgba(255,255,255,180);");
     sizeLabel->setFocusPolicy(Qt::NoFocus);
+    sizeLabel->setCursor(cursorShape);
     textLayout->addWidget(sizeLabel);
     textLayout->addStretch();
     layout->addLayout(textLayout, 1);
@@ -193,12 +255,14 @@ QWidget* MultiRegionListPanel::createItemWidget(const MultiRegionManager::Region
     replaceButton->setObjectName(QStringLiteral("replaceButton"));
     replaceButton->setFocusPolicy(Qt::NoFocus);
     replaceButton->setFixedHeight(24);
+    replaceButton->setCursor(cursorShape);
     buttonsLayout->addWidget(replaceButton);
 
     auto* deleteButton = new QPushButton(tr("Delete"), container);
     deleteButton->setObjectName(QStringLiteral("deleteButton"));
     deleteButton->setFocusPolicy(Qt::NoFocus);
     deleteButton->setFixedHeight(24);
+    deleteButton->setCursor(cursorShape);
     buttonsLayout->addWidget(deleteButton);
     layout->addLayout(buttonsLayout);
 

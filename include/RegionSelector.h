@@ -191,6 +191,7 @@ private:
     // Cursor helpers
     QCursor getMosaicCursor(int width);
     void setToolCursor();
+    void syncMultiRegionListPanelCursor();
 
     // Initialization helpers
     void setupScreenGeometry(QScreen* screen);
