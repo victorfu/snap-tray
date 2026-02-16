@@ -84,7 +84,7 @@ void AnnotationLayer::undo()
 
         // Re-insert items at their original indices
         for (auto &indexed : restoredItems) {
-            size_t insertPos = std::min(indexed.originalIndex, m_items.size());
+            size_t insertPos = (std::min)(indexed.originalIndex, m_items.size());
             m_items.insert(m_items.begin() + static_cast<ptrdiff_t>(insertPos), std::move(indexed.item));
         }
     } else {
@@ -146,7 +146,7 @@ void AnnotationLayer::redo()
                       });
 
             for (auto& indexed : itemsToErase) {
-                const size_t insertPos = std::min(indexed.originalIndex, m_items.size());
+                const size_t insertPos = (std::min)(indexed.originalIndex, m_items.size());
                 m_items.insert(m_items.begin() + static_cast<ptrdiff_t>(insertPos),
                                std::move(indexed.item));
             }
