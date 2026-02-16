@@ -1436,6 +1436,8 @@ void PinWindow::openCacheFolder()
 void PinWindow::saveToCacheAsync()
 {
     QPixmap pixmapToSave = m_originalPixmap;
+    // QPixmap is GUI-thread bound on many platforms; convert before dispatching worker thread work.
+    const QImage imageToSave = pixmapToSave.toImage();
     int maxCacheFiles = PinWindowSettingsManager::instance().loadMaxCacheFiles();
     const qreal sourceDpr = (pixmapToSave.devicePixelRatio() > 0.0)
         ? pixmapToSave.devicePixelRatio()
@@ -1447,7 +1449,7 @@ void PinWindow::saveToCacheAsync()
         regionMetadata = RegionLayoutManager::serializeRegions(m_storedRegions);
     }
 
-    QThreadPool::globalInstance()->start([pixmapToSave, maxCacheFiles, regionMetadata, sourceDpr]() {
+    QThreadPool::globalInstance()->start([imageToSave, maxCacheFiles, regionMetadata, sourceDpr]() {
         QString path = cacheFolderPath();
         QDir dir(path);
         if (!dir.exists()) {
@@ -1462,8 +1464,8 @@ void PinWindow::saveToCacheAsync()
         QString filePath = dir.filePath(filename);
 
         ImageSaveUtils::Error saveError;
-        if (ImageSaveUtils::savePixmapAtomically(
-                pixmapToSave, filePath, QByteArrayLiteral("PNG"), &saveError)) {
+        if (ImageSaveUtils::saveImageAtomically(
+                imageToSave, filePath, QByteArrayLiteral("PNG"), &saveError)) {
             // Persist DPR sidecar so history re-pin restores logical sizing on HiDPI displays.
             const QString dprMetadataPath = PinHistoryStore::dprMetadataPathForImage(filePath);
             QFile dprFile(dprMetadataPath);
