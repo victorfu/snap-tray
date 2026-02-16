@@ -121,19 +121,46 @@ RegionSelector::RegionSelector(QWidget* parent)
                 refreshMultiRegionListPanel();
             }
 
-            // Skip automatic cursor updates in multi-region mode
-            // (multi-region mode handles its own cursor logic)
+            auto& cm = CursorManager::instance();
+
+            // Multi-region mode owns its cursor updates via hover/input-state handling.
+            // Only keep explicit selection cursor overrides for active drag operations.
             if (m_inputState.multiRegionMode) {
+                if (newState == SelectionStateManager::State::Moving) {
+                    cm.pushCursorForWidget(this, CursorContext::Selection, Qt::SizeAllCursor);
+                }
+                else if (newState == SelectionStateManager::State::ResizingHandle) {
+                    SelectionStateManager::ResizeHandle handle =
+                        m_selectionManager ? m_selectionManager->activeResizeHandle()
+                                           : SelectionStateManager::ResizeHandle::None;
+                    const Qt::CursorShape shape = handle != SelectionStateManager::ResizeHandle::None
+                        ? CursorManager::cursorForHandle(handle)
+                        : Qt::SizeAllCursor;
+                    cm.pushCursorForWidget(this, CursorContext::Selection, shape);
+                }
+                else {
+                    cm.popCursorForWidget(this, CursorContext::Selection);
+                }
+                syncMultiRegionListPanelCursor();
                 return;
             }
-            // Update cursor based on state (single-region mode only)
-            auto& cm = CursorManager::instance();
+
+            // Single-region mode: keep selection cursor fully aligned with state.
             if (newState == SelectionStateManager::State::None ||
                 newState == SelectionStateManager::State::Selecting) {
                 cm.pushCursorForWidget(this, CursorContext::Selection, Qt::CrossCursor);
             }
             else if (newState == SelectionStateManager::State::Moving) {
                 cm.pushCursorForWidget(this, CursorContext::Selection, Qt::SizeAllCursor);
+            }
+            else if (newState == SelectionStateManager::State::ResizingHandle) {
+                SelectionStateManager::ResizeHandle handle =
+                    m_selectionManager ? m_selectionManager->activeResizeHandle()
+                                       : SelectionStateManager::ResizeHandle::None;
+                const Qt::CursorShape shape = handle != SelectionStateManager::ResizeHandle::None
+                    ? CursorManager::cursorForHandle(handle)
+                    : Qt::SizeAllCursor;
+                cm.pushCursorForWidget(this, CursorContext::Selection, shape);
             }
             else {
                 cm.popCursorForWidget(this, CursorContext::Selection);
@@ -1577,13 +1604,25 @@ void RegionSelector::syncMultiRegionListPanelCursor()
         return;
     }
 
-    const bool isDraggingRegion = m_selectionManager &&
-        (m_selectionManager->isSelecting() ||
-         m_selectionManager->isResizing() ||
-         m_selectionManager->isMoving());
+    if (!m_selectionManager) {
+        return;
+    }
+
+    const bool isDraggingRegion = m_selectionManager->isSelecting() ||
+                                  m_selectionManager->isResizing() ||
+                                  m_selectionManager->isMoving();
 
     if (isDraggingRegion) {
-        m_multiRegionListPanel->setInteractionCursor(cursor().shape());
+        Qt::CursorShape interactionCursor = Qt::CrossCursor;
+        if (m_selectionManager->isMoving()) {
+            interactionCursor = Qt::SizeAllCursor;
+        } else if (m_selectionManager->isResizing()) {
+            const SelectionStateManager::ResizeHandle handle = m_selectionManager->activeResizeHandle();
+            interactionCursor = handle != SelectionStateManager::ResizeHandle::None
+                ? CursorManager::cursorForHandle(handle)
+                : Qt::SizeAllCursor;
+        }
+        m_multiRegionListPanel->setInteractionCursor(interactionCursor);
     } else {
         m_multiRegionListPanel->clearInteractionCursor();
     }

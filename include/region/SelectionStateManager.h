@@ -76,6 +76,7 @@ public:
 
     // Resize operations
     ResizeHandle hitTestHandle(const QPoint& pos, int handleSize = 16) const;
+    ResizeHandle activeResizeHandle() const { return m_activeHandle; }
     void startResize(const QPoint& pos, ResizeHandle handle);
     void updateResize(const QPoint& pos);
     void finishResize();
