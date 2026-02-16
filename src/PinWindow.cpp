@@ -392,6 +392,9 @@ PinWindow::PinWindow(const QPixmap& screenshot,
     // Enable mouse tracking for resize cursor
     setMouseTracking(true);
 
+    // Register immediately so drag/resize cursor states work before toolbar init.
+    CursorManager::instance().registerWidget(this);
+
     // Initialize components
     m_resizeHandler = new ResizeHandler(0, kMinPinSize, this);
     m_uiIndicators = new UIIndicators(this, this);
@@ -2441,9 +2444,9 @@ void PinWindow::initializeAnnotationComponents()
     connect(m_toolManager, &ToolManager::needsRepaint,
         this, QOverload<>::of(&QWidget::update));
 
-    // Initialize cursor manager for centralized cursor handling (like RegionSelector)
+    // Tool manager is created lazily; bind it to the already-registered widget now.
     auto& cursorManager = CursorManager::instance();
-    cursorManager.registerWidget(this, m_toolManager);
+    cursorManager.setToolManagerForWidget(this, m_toolManager);
 
     // Initialize text annotation editor components
     m_textEditor = new InlineTextEditor(this);
