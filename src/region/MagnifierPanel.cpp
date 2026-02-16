@@ -129,7 +129,7 @@ QString MagnifierPanel::colorString() const
             .arg(m_currentColor.green(), 2, 16, QChar('0'))
             .arg(m_currentColor.blue(), 2, 16, QChar('0'));
     } else {
-        return QString("RGB: %1,%2,%3")
+        return tr("RGB: %1,%2,%3")
             .arg(m_currentColor.red())
             .arg(m_currentColor.green())
             .arg(m_currentColor.blue());
@@ -325,10 +325,10 @@ void MagnifierPanel::drawInfoPanel(QPainter& painter, int panelX, int infoY, int
     painter.setFont(smallFont);
     painter.setPen(QColor(200, 200, 200));
 
-    QString instruction1 = QString("Shift: Switch color format");
+    QString instruction1 = tr("Shift: Switch color format");
     painter.drawText(panelX, infoY, panelWidth, 14, Qt::AlignCenter, instruction1);
 
     infoY += 14;
-    QString instruction2 = QString("C: Copy color value");
+    QString instruction2 = tr("C: Copy color value");
     painter.drawText(panelX, infoY, panelWidth, 14, Qt::AlignCenter, instruction2);
 }

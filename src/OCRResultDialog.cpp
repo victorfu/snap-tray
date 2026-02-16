@@ -59,7 +59,7 @@ void OCRResultDialog::setupUi()
     titleLayout->setSpacing(12);
 
     // Icon placeholder (56x56) - shows "OCR" text
-    m_iconLabel = new QLabel("OCR", titleBar);
+    m_iconLabel = new QLabel(tr("OCR"), titleBar);
     m_iconLabel->setFixedSize(56, 56);
     m_iconLabel->setAlignment(Qt::AlignCenter);
     m_iconLabel->setObjectName("iconLabel");
@@ -69,11 +69,11 @@ void OCRResultDialog::setupUi()
     auto *infoLayout = new QVBoxLayout();
     infoLayout->setSpacing(4);
 
-    m_titleLabel = new QLabel("OCR Result", titleBar);
+    m_titleLabel = new QLabel(tr("OCR Result"), titleBar);
     m_titleLabel->setObjectName("titleLabel");
     infoLayout->addWidget(m_titleLabel);
 
-    m_charCountLabel = new QLabel("0 characters", titleBar);
+    m_charCountLabel = new QLabel(tr("0 characters"), titleBar);
     m_charCountLabel->setObjectName("charCountLabel");
     infoLayout->addWidget(m_charCountLabel);
 
@@ -86,7 +86,7 @@ void OCRResultDialog::setupUi()
     m_textEdit = new QTextEdit(this);
     m_textEdit->setObjectName("textEdit");
     m_textEdit->setAcceptRichText(false);
-    m_textEdit->setPlaceholderText("No text recognized");
+    m_textEdit->setPlaceholderText(tr("No text recognized"));
     connect(m_textEdit, &QTextEdit::textChanged, this, &OCRResultDialog::onTextChanged);
     mainLayout->addWidget(m_textEdit, 1);
 
@@ -99,19 +99,19 @@ void OCRResultDialog::setupUi()
     buttonLayout->setContentsMargins(12, 8, 12, 8);
     buttonLayout->setSpacing(8);
 
-    m_closeButton = new QPushButton("Close", buttonBar);
+    m_closeButton = new QPushButton(tr("Close"), buttonBar);
     m_closeButton->setObjectName("closeButton");
     m_closeButton->setFixedHeight(40);
     connect(m_closeButton, &QPushButton::clicked, this, &OCRResultDialog::onCloseClicked);
     buttonLayout->addWidget(m_closeButton, 1);
 
-    m_copyButton = new QPushButton("Copy", buttonBar);
+    m_copyButton = new QPushButton(tr("Copy"), buttonBar);
     m_copyButton->setObjectName("copyButton");
     m_copyButton->setFixedHeight(40);
     connect(m_copyButton, &QPushButton::clicked, this, &OCRResultDialog::onCopyClicked);
     buttonLayout->addWidget(m_copyButton, 1);
 
-    m_copyAsTsvButton = new QPushButton("Copy as TSV", buttonBar);
+    m_copyAsTsvButton = new QPushButton(tr("Copy as TSV"), buttonBar);
     m_copyAsTsvButton->setObjectName("copyAsTsvButton");
     m_copyAsTsvButton->setFixedHeight(40);
     m_copyAsTsvButton->setVisible(false);
@@ -352,7 +352,7 @@ void OCRResultDialog::onCopyClicked()
     QApplication::clipboard()->setText(text);
     emit textCopied(text);
 
-    showCopyFeedback(m_copyButton, "✓ Copied!");
+    showCopyFeedback(m_copyButton, tr("✓ Copied!"));
 
     // Close dialog after brief delay to show feedback
     QTimer::singleShot(500, this, [this]() {
@@ -369,7 +369,7 @@ void OCRResultDialog::onCopyAsTsvClicked()
     QApplication::clipboard()->setText(m_detectedTsv);
     emit textCopied(m_detectedTsv);
 
-    showCopyFeedback(m_copyAsTsvButton, "✓ Copied TSV!");
+    showCopyFeedback(m_copyAsTsvButton, tr("✓ Copied TSV!"));
 
     QTimer::singleShot(500, this, [this]() {
         close();
@@ -390,11 +390,13 @@ void OCRResultDialog::onTextChanged()
 
 void OCRResultDialog::updateCharacterCount()
 {
-    int count = m_textEdit->toPlainText().length();
-    QString countText = QString("%1 character%2").arg(count).arg(count != 1 ? "s" : "");
+    const int count = m_textEdit->toPlainText().length();
+    QString countText = (count == 1)
+        ? tr("%1 character").arg(count)
+        : tr("%1 characters").arg(count);
 
     if (m_isTextEdited) {
-        countText += " (edited)";
+        countText = tr("%1 (edited)").arg(countText);
     }
 
     m_charCountLabel->setText(countText);

@@ -50,12 +50,23 @@ void BeautifyPanel::setupUI()
     auto* presetLayout = new QHBoxLayout();
     presetLayout->setSpacing(4);
     const auto presets = beautifyPresets();
+    const auto localizedPresetName = [this](const QString& name) -> QString {
+        if (name == QStringLiteral("Ocean")) return tr("Ocean");
+        if (name == QStringLiteral("Sunset")) return tr("Sunset");
+        if (name == QStringLiteral("Lavender")) return tr("Lavender");
+        if (name == QStringLiteral("Forest")) return tr("Forest");
+        if (name == QStringLiteral("Midnight")) return tr("Midnight");
+        if (name == QStringLiteral("Rose")) return tr("Rose");
+        if (name == QStringLiteral("Sky")) return tr("Sky");
+        if (name == QStringLiteral("Charcoal")) return tr("Charcoal");
+        return name;
+    };
     const bool isDarkPresetStyle = (ToolbarStyleConfig::loadStyle() == ToolbarStyleType::Dark);
     for (int i = 0; i < presets.size(); ++i) {
         auto* btn = new QPushButton(this);
         btn->setFixedSize(24, 24);
         btn->setCursor(Qt::PointingHandCursor);
-        btn->setToolTip(presets[i].name);
+        btn->setToolTip(localizedPresetName(presets[i].name));
 
         // Style as a colored circle — no border by default, subtle border on hover
         QColor c = presets[i].gradientStart;
@@ -77,17 +88,17 @@ void BeautifyPanel::setupUI()
 
     // Background type
     auto* bgLayout = new QHBoxLayout();
-    bgLayout->addWidget(new QLabel("Background:", this));
+    bgLayout->addWidget(new QLabel(tr("Background:"), this));
     m_backgroundTypeCombo = new QComboBox(this);
-    m_backgroundTypeCombo->addItem("Solid");
-    m_backgroundTypeCombo->addItem("Linear Gradient");
-    m_backgroundTypeCombo->addItem("Radial Gradient");
+    m_backgroundTypeCombo->addItem(tr("Solid"));
+    m_backgroundTypeCombo->addItem(tr("Linear Gradient"));
+    m_backgroundTypeCombo->addItem(tr("Radial Gradient"));
     bgLayout->addWidget(m_backgroundTypeCombo);
     mainLayout->addLayout(bgLayout);
 
     // Gradient colors
     auto* colorLayout = new QHBoxLayout();
-    colorLayout->addWidget(new QLabel("Colors:", this));
+    colorLayout->addWidget(new QLabel(tr("Colors:"), this));
     m_gradientStartBtn = new QPushButton(this);
     m_gradientStartBtn->setFixedSize(28, 28);
     m_gradientStartBtn->setCursor(Qt::PointingHandCursor);
@@ -101,7 +112,7 @@ void BeautifyPanel::setupUI()
 
     // Padding slider
     auto* paddingLayout = new QHBoxLayout();
-    paddingLayout->addWidget(new QLabel("Padding:", this));
+    paddingLayout->addWidget(new QLabel(tr("Padding:"), this));
     m_paddingSlider = new QSlider(Qt::Horizontal, this);
     m_paddingSlider->setRange(16, 200);
     paddingLayout->addWidget(m_paddingSlider);
@@ -112,7 +123,7 @@ void BeautifyPanel::setupUI()
 
     // Corner radius slider
     auto* cornerLayout = new QHBoxLayout();
-    cornerLayout->addWidget(new QLabel("Corners:", this));
+    cornerLayout->addWidget(new QLabel(tr("Corners:"), this));
     m_cornerRadiusSlider = new QSlider(Qt::Horizontal, this);
     m_cornerRadiusSlider->setRange(0, 40);
     cornerLayout->addWidget(m_cornerRadiusSlider);
@@ -123,9 +134,9 @@ void BeautifyPanel::setupUI()
 
     // Aspect ratio
     auto* ratioLayout = new QHBoxLayout();
-    ratioLayout->addWidget(new QLabel("Ratio:", this));
+    ratioLayout->addWidget(new QLabel(tr("Ratio:"), this));
     m_aspectRatioCombo = new QComboBox(this);
-    m_aspectRatioCombo->addItem("Auto");
+    m_aspectRatioCombo->addItem(tr("Auto"));
     m_aspectRatioCombo->addItem("1:1");
     m_aspectRatioCombo->addItem("16:9");
     m_aspectRatioCombo->addItem("4:3");
@@ -135,11 +146,11 @@ void BeautifyPanel::setupUI()
     mainLayout->addLayout(ratioLayout);
 
     // Shadow section
-    m_shadowCheckbox = new QCheckBox("Shadow", this);
+    m_shadowCheckbox = new QCheckBox(tr("Shadow"), this);
     mainLayout->addWidget(m_shadowCheckbox);
 
     auto* shadowBlurLayout = new QHBoxLayout();
-    shadowBlurLayout->addWidget(new QLabel("  Blur:", this));
+    shadowBlurLayout->addWidget(new QLabel(tr("  Blur:"), this));
     m_shadowBlurSlider = new QSlider(Qt::Horizontal, this);
     m_shadowBlurSlider->setRange(0, 100);
     shadowBlurLayout->addWidget(m_shadowBlurSlider);
@@ -150,9 +161,9 @@ void BeautifyPanel::setupUI()
 
     // Action buttons
     auto* actionLayout = new QHBoxLayout();
-    m_copyBtn = new QPushButton("Copy", this);
-    m_saveBtn = new QPushButton("Save", this);
-    m_closeBtn = new QPushButton("Close", this);
+    m_copyBtn = new QPushButton(tr("Copy"), this);
+    m_saveBtn = new QPushButton(tr("Save"), this);
+    m_closeBtn = new QPushButton(tr("Close"), this);
     actionLayout->setSpacing(8);
     actionLayout->addWidget(m_copyBtn);
     actionLayout->addWidget(m_saveBtn);
@@ -453,7 +464,7 @@ void BeautifyPanel::onSettingChanged()
 
 void BeautifyPanel::pickColor(QColor& target)
 {
-    QColor color = QColorDialog::getColor(target, this, "Select Color",
+    QColor color = QColorDialog::getColor(target, this, tr("Select Color"),
                                            QColorDialog::ShowAlphaChannel);
     if (color.isValid()) {
         target = color;

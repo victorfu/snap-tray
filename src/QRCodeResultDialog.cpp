@@ -82,11 +82,11 @@ void QRCodeResultDialog::setupUi()
     auto *infoLayout = new QVBoxLayout();
     infoLayout->setSpacing(4);
 
-    m_formatLabel = new QLabel("QR Code", titleBar);
+    m_formatLabel = new QLabel(tr("QR Code"), titleBar);
     m_formatLabel->setObjectName("formatLabel");
     infoLayout->addWidget(m_formatLabel);
 
-    m_characterCountLabel = new QLabel("0 characters", titleBar);
+    m_characterCountLabel = new QLabel(tr("0 characters"), titleBar);
     m_characterCountLabel->setObjectName("characterCountLabel");
     infoLayout->addWidget(m_characterCountLabel);
 
@@ -99,7 +99,7 @@ void QRCodeResultDialog::setupUi()
     m_textEdit = new QTextEdit(this);
     m_textEdit->setObjectName("textEdit");
     m_textEdit->setAcceptRichText(false);
-    m_textEdit->setPlaceholderText("No content");
+    m_textEdit->setPlaceholderText(tr("No content"));
     connect(m_textEdit, &QTextEdit::textChanged, this, &QRCodeResultDialog::onTextChanged);
     mainLayout->addWidget(m_textEdit, 1);
 
@@ -120,32 +120,32 @@ void QRCodeResultDialog::setupUi()
     buttonLayout->setContentsMargins(12, 8, 12, 8);
     buttonLayout->setSpacing(8);
 
-    m_closeButton = new QPushButton("Close", buttonBar);
+    m_closeButton = new QPushButton(tr("Close"), buttonBar);
     m_closeButton->setObjectName("closeButton");
     m_closeButton->setFixedHeight(40);
     connect(m_closeButton, &QPushButton::clicked, this, &QRCodeResultDialog::onCloseClicked);
     buttonLayout->addWidget(m_closeButton, 1);
 
-    m_copyButton = new QPushButton("Copy", buttonBar);
+    m_copyButton = new QPushButton(tr("Copy"), buttonBar);
     m_copyButton->setObjectName("copyButton");
     m_copyButton->setFixedHeight(40);
     connect(m_copyButton, &QPushButton::clicked, this, &QRCodeResultDialog::onCopyClicked);
     buttonLayout->addWidget(m_copyButton, 1);
 
-    m_openUrlButton = new QPushButton("Open URL", buttonBar);
+    m_openUrlButton = new QPushButton(tr("Open URL"), buttonBar);
     m_openUrlButton->setObjectName("openUrlButton");
     m_openUrlButton->setFixedHeight(40);
     m_openUrlButton->setVisible(false);
     connect(m_openUrlButton, &QPushButton::clicked, this, &QRCodeResultDialog::onOpenUrlClicked);
     buttonLayout->addWidget(m_openUrlButton, 1);
 
-    m_generateButton = new QPushButton("Generate QR", buttonBar);
+    m_generateButton = new QPushButton(tr("Generate QR"), buttonBar);
     m_generateButton->setObjectName("generateButton");
     m_generateButton->setFixedHeight(40);
     connect(m_generateButton, &QPushButton::clicked, this, &QRCodeResultDialog::onGenerateClicked);
     buttonLayout->addWidget(m_generateButton, 1);
 
-    m_pinButton = new QPushButton("Pin QR", buttonBar);
+    m_pinButton = new QPushButton(tr("Pin QR"), buttonBar);
     m_pinButton->setObjectName("pinButton");
     m_pinButton->setFixedHeight(40);
     m_pinButton->setVisible(false);
@@ -284,7 +284,7 @@ void QRCodeResultDialog::setResult(const QString &text, const QString &format, c
         m_thumbnailLabel->setText(QString());
     } else {
         m_thumbnailLabel->setPixmap(QPixmap());
-        m_thumbnailLabel->setText("QR");
+        m_thumbnailLabel->setText(tr("QR"));
     }
 
     // Update character count
@@ -492,11 +492,13 @@ void QRCodeResultDialog::onTextChanged()
 
 void QRCodeResultDialog::updateCharacterCount()
 {
-    int count = m_textEdit->toPlainText().length();
-    QString countText = QString("%1 character%2").arg(count).arg(count != 1 ? "s" : "");
+    const int count = m_textEdit->toPlainText().length();
+    QString countText = (count == 1)
+        ? tr("%1 character").arg(count)
+        : tr("%1 characters").arg(count);
 
     if (m_isTextEdited) {
-        countText += " (edited)";
+        countText = tr("%1 (edited)").arg(countText);
     }
 
     m_characterCountLabel->setText(countText);
@@ -506,7 +508,7 @@ void QRCodeResultDialog::showCopyFeedback()
 {
     const SnapTray::DialogTheme::Palette palette = SnapTray::DialogTheme::paletteForToolbarStyle();
     QString originalText = m_copyButton->text();
-    m_copyButton->setText("✓ Copied!");
+    m_copyButton->setText(tr("✓ Copied!"));
     m_copyButton->setStyleSheet(QStringLiteral(
         "QPushButton { background-color: %1; border-color: %2; color: %3; }")
         .arg(SnapTray::DialogTheme::toCssColor(palette.successBackground))
@@ -602,21 +604,21 @@ bool QRCodeResultDialog::isValidUrl(const QString &urlString) const
 
 QString QRCodeResultDialog::getFormatDisplayName(const QString &format) const
 {
-    static const QMap<QString, QString> formatNames = {
-        {"QR_CODE", "QR Code"},
-        {"DATA_MATRIX", "Data Matrix"},
-        {"AZTEC", "Aztec Code"},
-        {"PDF_417", "PDF417"},
-        {"EAN_8", "EAN-8"},
-        {"EAN_13", "EAN-13"},
-        {"UPC_A", "UPC-A"},
-        {"UPC_E", "UPC-E"},
-        {"CODE_39", "Code 39"},
-        {"CODE_93", "Code 93"},
-        {"CODE_128", "Code 128"},
-        {"ITF", "ITF"},
-        {"CODABAR", "Codabar"}
+    const QMap<QString, QString> formatNames = {
+        {"QR_CODE", tr("QR Code")},
+        {"DATA_MATRIX", tr("Data Matrix")},
+        {"AZTEC", tr("Aztec Code")},
+        {"PDF_417", tr("PDF417")},
+        {"EAN_8", tr("EAN-8")},
+        {"EAN_13", tr("EAN-13")},
+        {"UPC_A", tr("UPC-A")},
+        {"UPC_E", tr("UPC-E")},
+        {"CODE_39", tr("Code 39")},
+        {"CODE_93", tr("Code 93")},
+        {"CODE_128", tr("Code 128")},
+        {"ITF", tr("ITF")},
+        {"CODABAR", tr("Codabar")}
     };
 
-    return formatNames.value(format, "Barcode");
+    return formatNames.value(format, tr("Barcode"));
 }

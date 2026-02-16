@@ -249,7 +249,7 @@ void RegionPainter::drawDimensionInfo(QPainter& painter)
         QRect activeInfoRect;
         const auto regions = m_multiRegionManager->regions();
         for (const auto& region : regions) {
-            QString dimensions = QString("%1 x %2  pt").arg(region.rect.width()).arg(region.rect.height());
+            QString dimensions = tr("%1 x %2 pt").arg(region.rect.width()).arg(region.rect.height());
             QRect infoRect = drawDimensionInfoPanel(painter, region.rect, dimensions);
             if (region.isActive) {
                 activeInfoRect = infoRect;
@@ -259,7 +259,7 @@ void RegionPainter::drawDimensionInfo(QPainter& painter)
         if (activeInfoRect.isNull() && m_selectionManager->isSelecting()) {
             QRect sel = m_selectionManager->selectionRect();
             if (sel.isValid()) {
-                QString dimensions = QString("%1 x %2  pt").arg(sel.width()).arg(sel.height());
+                QString dimensions = tr("%1 x %2 pt").arg(sel.width()).arg(sel.height());
                 activeInfoRect = drawDimensionInfoPanel(painter, sel, dimensions);
             }
         }
@@ -271,7 +271,7 @@ void RegionPainter::drawDimensionInfo(QPainter& painter)
     }
 
     QRect sel = m_selectionManager->selectionRect();
-    QString dimensions = QString("%1 x %2  pt").arg(sel.width()).arg(sel.height());
+    QString dimensions = tr("%1 x %2 pt").arg(sel.width()).arg(sel.height());
     QRect textRect = drawDimensionInfoPanel(painter, sel, dimensions);
 
     // Draw region control widget next to dimension info
@@ -358,8 +358,8 @@ QRect RegionPainter::drawDimensionInfoPanel(QPainter& painter, const QRect& sele
 
     QFontMetrics fm(font);
 
-    // Calculate fixed minimum width for "9999 x 9999  pt" to prevent jittering
-    QString maxWidthText = "9999 x 9999  pt";
+    // Calculate fixed minimum width for localized "9999 x 9999 pt" to prevent jittering
+    const QString maxWidthText = tr("%1 x %2 pt").arg(9999).arg(9999);
     int fixedWidth = fm.horizontalAdvance(maxWidthText) + 24;  // +24 for padding
 
     int actualWidth = fm.horizontalAdvance(label) + 24;

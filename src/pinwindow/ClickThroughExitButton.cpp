@@ -24,7 +24,7 @@ ClickThroughExitButton::ClickThroughExitButton(QWidget* parent)
 void ClickThroughExitButton::setupUI()
 {
     m_label = new QLabel(this);
-    m_label->setText("Click-through  \u2715");
+    m_label->setText(QStringLiteral("%1  \u2715").arg(tr("Click-through")));
     m_label->setStyleSheet(
         "QLabel {"
         "  background-color: rgba(88, 86, 214, 200);"

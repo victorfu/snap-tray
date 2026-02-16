@@ -36,6 +36,7 @@ signals:
     void toolbarStyleChanged(ToolbarStyleType style);
     void ocrLanguagesChanged(const QStringList &languages);
 
+
 private slots:
     void onSave();
     void onCancel();
@@ -63,6 +64,7 @@ private:
     // UI elements
     QTabWidget *m_tabWidget;
     QCheckBox *m_startOnLoginCheckbox;
+    QComboBox *m_languageCombo;
     QComboBox *m_toolbarStyleCombo;
     SnapTray::HotkeySettingsTab *m_hotkeySettingsTab;
 

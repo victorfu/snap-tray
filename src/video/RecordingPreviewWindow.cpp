@@ -392,7 +392,7 @@ RecordingPreviewWindow::RecordingPreviewWindow(const QString &videoPath,
     , m_trimProgressDialog(nullptr)
 {
     // Window setup
-    setWindowTitle("Recording Preview");
+    setWindowTitle(tr("Recording Preview"));
     setWindowFlags(Qt::Window | Qt::WindowStaysOnTopHint);
     setAttribute(Qt::WA_DeleteOnClose);
 
@@ -753,8 +753,8 @@ void RecordingPreviewWindow::onVideoLoaded()
 void RecordingPreviewWindow::onVideoError(const QString &message)
 {
     qWarning() << "RecordingPreviewWindow: Video error:" << message;
-    QMessageBox::warning(this, "Video Error",
-                         QString("Failed to load video:\n%1").arg(message));
+    QMessageBox::warning(this, tr("Video Error"),
+                         tr("Failed to load video:\n%1").arg(message));
 }
 
 void RecordingPreviewWindow::onStateChanged(IVideoPlayer::State state)

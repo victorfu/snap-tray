@@ -1,6 +1,7 @@
 #include "MainApplication.h"
 #include "SingleInstanceGuard.h"
 #include "cli/CLIHandler.h"
+#include "settings/LanguageManager.h"
 #include "settings/Settings.h"
 #include "version.h"
 
@@ -68,6 +69,14 @@ int main(int argc, char* argv[])
     app.setApplicationName(SnapTray::kApplicationName);
     app.setOrganizationName(SnapTray::kOrganizationName);
     app.setApplicationVersion(SNAPTRAY_VERSION);
+
+    // Load translations before any UI creation
+    auto& langManager = LanguageManager::instance();
+    const QString savedLanguage = langManager.loadLanguage();
+    if (!langManager.loadTranslation(savedLanguage)) {
+        qWarning() << "Failed to load translation for language:" << savedLanguage
+                   << "- falling back to English";
+    }
 
     // Single instance check
     SingleInstanceGuard guard(SNAPTRAY_APP_BUNDLE_ID);

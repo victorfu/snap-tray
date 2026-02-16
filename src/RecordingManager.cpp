@@ -1093,7 +1093,7 @@ void RecordingManager::onEncodingFinished(bool success, const QString &outputPat
     // Get error message if encoding failed
     QString errorMsg;
     if (!success) {
-        errorMsg = "Failed to encode video";
+        errorMsg = tr("Failed to encode video");
     }
 
     // Clean up encoding worker
@@ -1222,15 +1222,15 @@ void RecordingManager::showSaveDialog(const QString &tempOutputPath)
 
     // Show save dialog
     QString filter;
-    if (extension == "gif") filter = "GIF Files (*.gif)";
-    else if (extension == "webp") filter = "WebP Files (*.webp)";
-    else filter = "MP4 Files (*.mp4)";
+    if (extension == "gif") filter = tr("GIF Files (*.gif)");
+    else if (extension == "webp") filter = tr("WebP Files (*.webp)");
+    else filter = tr("MP4 Files (*.mp4)");
     const QString defaultFileName = FilenameTemplateEngine::buildUniqueFilePath(
         outputDir, templateValue, context, 1);
 
     QString savePath = QFileDialog::getSaveFileName(
         nullptr,
-        "Save Recording",
+        tr("Save Recording"),
         defaultFileName,
         filter
     );
@@ -1262,7 +1262,7 @@ void RecordingManager::showSaveDialog(const QString &tempOutputPath)
                     emit recordingStopped(savePath);
                 } else {
                     qWarning() << "RecordingManager: Failed to save recording to:" << savePath;
-                    emit recordingError("Failed to save recording to selected location");
+                    emit recordingError(tr("Failed to save recording to selected location"));
                 }
             }
         } else {

@@ -6,12 +6,34 @@
 #include "hotkey/HotkeyManager.h"
 #include "settings/Settings.h"
 
+#include <QCoreApplication>
 #include <QDebug>
 #include <QHotkey>
 #include <QKeySequence>
 #include <QSettings>
 
 namespace SnapTray {
+
+namespace {
+QString translateHotkeyText(const char* sourceText)
+{
+    const QString source = QString::fromUtf8(sourceText);
+
+    // Prefer the new namespaced context used by QT_TRANSLATE_NOOP entries.
+    QString translated = QCoreApplication::translate("SnapTray::HotkeyManager", sourceText);
+    if (translated != source) {
+        return translated;
+    }
+
+    // Backward compatibility: existing .ts files still use "HotkeyManager".
+    translated = QCoreApplication::translate("HotkeyManager", sourceText);
+    if (translated != source) {
+        return translated;
+    }
+
+    return source;
+}
+}  // namespace
 
 HotkeyManager::HotkeyManager()
     : QObject(nullptr)
@@ -90,8 +112,8 @@ void HotkeyManager::initializeConfigs()
         HotkeyConfig config;
         config.action = meta.action;
         config.category = meta.category;
-        config.displayName = QString::fromUtf8(meta.displayName);
-        config.description = QString::fromUtf8(meta.description);
+        config.displayName = translateHotkeyText(meta.displayName);
+        config.description = translateHotkeyText(meta.description);
         config.settingsKey = QString::fromUtf8(meta.settingsKey);
         config.defaultKeySequence = QString::fromUtf8(meta.defaultKeySequence);
         config.keySequence = config.defaultKeySequence;

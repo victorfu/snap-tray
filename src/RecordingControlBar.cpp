@@ -171,7 +171,7 @@ void RecordingControlBar::setupUi()
     // Audio indicator (microphone icon, hidden by default)
     m_audioIndicator = new QLabel(this);
     m_audioIndicator->setFixedSize(12, 12);
-    m_audioIndicator->setToolTip("Audio recording enabled");
+    m_audioIndicator->setToolTip(tr("Audio recording enabled"));
     m_audioIndicator->hide();
     m_layout->addWidget(m_audioIndicator);
 
@@ -205,7 +205,7 @@ void RecordingControlBar::setupUi()
     m_layout->addWidget(m_separator2);
 
     // FPS label
-    m_fpsLabel = new QLabel("-- fps", this);
+    m_fpsLabel = new QLabel(tr("-- fps"), this);
     m_fpsLabel->setStyleSheet(
         QString("color: %1; font-size: 10px; font-family: 'SF Mono', Menlo, Monaco, monospace;").arg(textColor));
     m_fpsLabel->setMinimumWidth(45);
@@ -545,7 +545,7 @@ void RecordingControlBar::updateRegionSize(int width, int height)
 void RecordingControlBar::updateFps(double fps)
 {
     if (m_fpsLabel) {
-        m_fpsLabel->setText(QString("%1 fps").arg(qRound(fps)));
+        m_fpsLabel->setText(tr("%1 fps").arg(qRound(fps)));
     }
 }
 

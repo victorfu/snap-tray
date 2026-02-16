@@ -350,7 +350,7 @@ QString PinHistoryWindow::tooltipTextFor(const PinHistoryEntry& entry) const
         ? entry.capturedAt.toString("yyyy-MM-dd HH:mm:ss")
         : tr("Unknown");
     const QString sizeText = entry.imageSize.isValid()
-        ? QString("%1 x %2").arg(entry.imageSize.width()).arg(entry.imageSize.height())
+        ? tr("%1 x %2").arg(entry.imageSize.width()).arg(entry.imageSize.height())
         : tr("Unknown");
 
     return tr("Time: %1\nSize: %2").arg(timeText, sizeText);

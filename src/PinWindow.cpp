@@ -837,13 +837,13 @@ void PinWindow::createContextMenu()
     m_contextMenu = new QMenu(this);
 
     // Show Toolbar action
-    m_showToolbarAction = m_contextMenu->addAction("Show Toolbar");
+    m_showToolbarAction = m_contextMenu->addAction(tr("Show Toolbar"));
     m_showToolbarAction->setShortcut(QKeySequence(Qt::Key_Space));
     m_showToolbarAction->setCheckable(true);
     connect(m_showToolbarAction, &QAction::triggered, this, &PinWindow::toggleToolbar);
 
     // Show border option (placed right after Show Toolbar)
-    m_showBorderAction = m_contextMenu->addAction("Show Border");
+    m_showBorderAction = m_contextMenu->addAction(tr("Show Border"));
     m_showBorderAction->setCheckable(true);
     m_showBorderAction->setChecked(m_showBorder);
     connect(m_showBorderAction, &QAction::toggled, this, &PinWindow::setShowBorder);
@@ -853,27 +853,27 @@ void PinWindow::createContextMenu()
 
     m_contextMenu->addSeparator();
 
-    QAction* copyAction = m_contextMenu->addAction("Copy to Clipboard");
+    QAction* copyAction = m_contextMenu->addAction(tr("Copy to Clipboard"));
     copyAction->setShortcut(QKeySequence::Copy);
     connect(copyAction, &QAction::triggered, this, &PinWindow::copyToClipboard);
 
-    QAction* saveAction = m_contextMenu->addAction("Save to file");
+    QAction* saveAction = m_contextMenu->addAction(tr("Save to file"));
     saveAction->setShortcut(QKeySequence::Save);
     connect(saveAction, &QAction::triggered, this, &PinWindow::saveToFile);
 
     QAction* openCacheFolderAction = m_contextMenu->addAction(tr("Open Cache Folder"));
     connect(openCacheFolderAction, &QAction::triggered, this, &PinWindow::openCacheFolder);
 
-    QAction* beautifyAction = m_contextMenu->addAction("Beautify");
+    QAction* beautifyAction = m_contextMenu->addAction(tr("Beautify"));
     connect(beautifyAction, &QAction::triggered, this, &PinWindow::showBeautifyPanel);
 
     if (PlatformFeatures::instance().isOCRAvailable()) {
-        QAction* ocrAction = m_contextMenu->addAction("Recognize Text");
+        QAction* ocrAction = m_contextMenu->addAction(tr("Recognize Text"));
         connect(ocrAction, &QAction::triggered, this, &PinWindow::performOCR);
     }
 
     // Click-through option
-    m_clickThroughAction = m_contextMenu->addAction("Click-through");
+    m_clickThroughAction = m_contextMenu->addAction(tr("Click-through"));
     m_clickThroughAction->setCheckable(true);
     m_clickThroughAction->setChecked(m_clickThrough);
     connect(m_clickThroughAction, &QAction::toggled, this, &PinWindow::setClickThrough);
@@ -884,10 +884,10 @@ void PinWindow::createContextMenu()
     m_contextMenu->addSeparator();
 
     // Watermark submenu
-    QMenu* watermarkMenu = m_contextMenu->addMenu("Watermark");
+    QMenu* watermarkMenu = m_contextMenu->addMenu(tr("Watermark"));
 
     // Enable watermark action
-    QAction* enableWatermarkAction = watermarkMenu->addAction("Enable");
+    QAction* enableWatermarkAction = watermarkMenu->addAction(tr("Enable"));
     enableWatermarkAction->setCheckable(true);
     enableWatermarkAction->setChecked(m_watermarkSettings.enabled);
     connect(enableWatermarkAction, &QAction::toggled, this, [this](bool checked) {
@@ -898,25 +898,25 @@ void PinWindow::createContextMenu()
     watermarkMenu->addSeparator();
 
     // Position submenu
-    QMenu* positionMenu = watermarkMenu->addMenu("Position");
+    QMenu* positionMenu = watermarkMenu->addMenu(tr("Position"));
     QActionGroup* positionGroup = new QActionGroup(this);
 
-    QAction* topLeftAction = positionMenu->addAction("Top-Left");
+    QAction* topLeftAction = positionMenu->addAction(tr("Top-Left"));
     topLeftAction->setCheckable(true);
     topLeftAction->setData(static_cast<int>(WatermarkRenderer::TopLeft));
     positionGroup->addAction(topLeftAction);
 
-    QAction* topRightAction = positionMenu->addAction("Top-Right");
+    QAction* topRightAction = positionMenu->addAction(tr("Top-Right"));
     topRightAction->setCheckable(true);
     topRightAction->setData(static_cast<int>(WatermarkRenderer::TopRight));
     positionGroup->addAction(topRightAction);
 
-    QAction* bottomLeftAction = positionMenu->addAction("Bottom-Left");
+    QAction* bottomLeftAction = positionMenu->addAction(tr("Bottom-Left"));
     bottomLeftAction->setCheckable(true);
     bottomLeftAction->setData(static_cast<int>(WatermarkRenderer::BottomLeft));
     positionGroup->addAction(bottomLeftAction);
 
-    QAction* bottomRightAction = positionMenu->addAction("Bottom-Right");
+    QAction* bottomRightAction = positionMenu->addAction(tr("Bottom-Right"));
     bottomRightAction->setCheckable(true);
     bottomRightAction->setData(static_cast<int>(WatermarkRenderer::BottomRight));
     positionGroup->addAction(bottomRightAction);
@@ -935,22 +935,22 @@ void PinWindow::createContextMenu()
         });
 
     // Zoom submenu
-    QMenu* zoomMenu = m_contextMenu->addMenu("Zoom");
+    QMenu* zoomMenu = m_contextMenu->addMenu(tr("Zoom"));
 
     // Preset zoom levels
-    QAction* zoom33Action = zoomMenu->addAction("33.3%");
+    QAction* zoom33Action = zoomMenu->addAction(tr("33.3%"));
     connect(zoom33Action, &QAction::triggered, this, [this]() { setZoomLevel(1.0 / 3.0); });
 
-    QAction* zoom50Action = zoomMenu->addAction("50%");
+    QAction* zoom50Action = zoomMenu->addAction(tr("50%"));
     connect(zoom50Action, &QAction::triggered, this, [this]() { setZoomLevel(0.5); });
 
-    QAction* zoom67Action = zoomMenu->addAction("66.7%");
+    QAction* zoom67Action = zoomMenu->addAction(tr("66.7%"));
     connect(zoom67Action, &QAction::triggered, this, [this]() { setZoomLevel(2.0 / 3.0); });
 
-    QAction* zoom100Action = zoomMenu->addAction("100%");
+    QAction* zoom100Action = zoomMenu->addAction(tr("100%"));
     connect(zoom100Action, &QAction::triggered, this, [this]() { setZoomLevel(1.0); });
 
-    QAction* zoom200Action = zoomMenu->addAction("200%");
+    QAction* zoom200Action = zoomMenu->addAction(tr("200%"));
     connect(zoom200Action, &QAction::triggered, this, [this]() { setZoomLevel(2.0); });
 
     zoomMenu->addSeparator();
@@ -960,7 +960,7 @@ void PinWindow::createContextMenu()
     m_currentZoomAction->setEnabled(false);
 
     // Smoothing option
-    QAction* smoothingAction = zoomMenu->addAction("Smoothing");
+    QAction* smoothingAction = zoomMenu->addAction(tr("Smoothing"));
     smoothingAction->setCheckable(true);
     smoothingAction->setChecked(m_smoothing);
     connect(smoothingAction, &QAction::toggled, this, [this](bool checked) {
@@ -969,22 +969,22 @@ void PinWindow::createContextMenu()
         });
 
     // Image processing submenu
-    QMenu* imageProcessingMenu = m_contextMenu->addMenu("Image processing");
+    QMenu* imageProcessingMenu = m_contextMenu->addMenu(tr("Image processing"));
 
-    QAction* rotateLeftAction = imageProcessingMenu->addAction("Rotate left");
+    QAction* rotateLeftAction = imageProcessingMenu->addAction(tr("Rotate left"));
     connect(rotateLeftAction, &QAction::triggered, this, &PinWindow::rotateLeft);
 
-    QAction* rotateRightAction = imageProcessingMenu->addAction("Rotate right");
+    QAction* rotateRightAction = imageProcessingMenu->addAction(tr("Rotate right"));
     connect(rotateRightAction, &QAction::triggered, this, &PinWindow::rotateRight);
 
-    QAction* horizontalFlipAction = imageProcessingMenu->addAction("Horizontal flip");
+    QAction* horizontalFlipAction = imageProcessingMenu->addAction(tr("Horizontal flip"));
     connect(horizontalFlipAction, &QAction::triggered, this, &PinWindow::flipHorizontal);
 
-    QAction* verticalFlipAction = imageProcessingMenu->addAction("Vertical flip");
+    QAction* verticalFlipAction = imageProcessingMenu->addAction(tr("Vertical flip"));
     connect(verticalFlipAction, &QAction::triggered, this, &PinWindow::flipVertical);
 
     imageProcessingMenu->addSeparator();
-    QAction* cropAction = imageProcessingMenu->addAction("Crop");
+    QAction* cropAction = imageProcessingMenu->addAction(tr("Crop"));
     connect(cropAction, &QAction::triggered, this, [this]() {
         if (!m_toolbar) {
             initializeAnnotationComponents();
@@ -993,17 +993,17 @@ void PinWindow::createContextMenu()
         handleToolbarToolSelected(static_cast<int>(ToolId::Crop));
     });
 
-    QMenu* opacityMenu = imageProcessingMenu->addMenu("Opacity");
+    QMenu* opacityMenu = imageProcessingMenu->addMenu(tr("Opacity"));
     const int opacityStepPercent = qRound(PinWindowSettingsManager::instance().loadOpacityStep() * 100);
     QAction* increaseOpacityAction = opacityMenu->addAction(
-        QString("Increase by %1%").arg(opacityStepPercent));
+        tr("Increase by %1%").arg(opacityStepPercent));
     increaseOpacityAction->setShortcut(QKeySequence(Qt::Key_BracketRight));
     connect(increaseOpacityAction, &QAction::triggered, this, [this]() {
         adjustOpacityByStep(1);
         });
 
     QAction* decreaseOpacityAction = opacityMenu->addAction(
-        QString("Decrease by %1%").arg(opacityStepPercent));
+        tr("Decrease by %1%").arg(opacityStepPercent));
     decreaseOpacityAction->setShortcut(QKeySequence(Qt::Key_BracketLeft));
     connect(decreaseOpacityAction, &QAction::triggered, this, [this]() {
         adjustOpacityByStep(-1);
@@ -1015,7 +1015,7 @@ void PinWindow::createContextMenu()
         QString("%1 × %2").arg(logicalSize.width()).arg(logicalSize.height()));
 
     // Copy all info action
-    QAction* copyAllInfoAction = infoMenu->addAction("Copy All");
+    QAction* copyAllInfoAction = infoMenu->addAction(tr("Copy All"));
     connect(copyAllInfoAction, &QAction::triggered, this, &PinWindow::copyAllInfo);
 
     infoMenu->addSeparator();
@@ -1028,18 +1028,18 @@ void PinWindow::createContextMenu()
             });
         };
 
-    addInfoItem("Size", QString("%1 × %2").arg(logicalSize.width()).arg(logicalSize.height()));
-    addInfoItem("Zoom", QString("%1%").arg(qRound(m_zoomLevel * 100)));
-    addInfoItem("Rotation", QString::fromUtf8("%1°").arg(m_rotationAngle));
-    addInfoItem("Opacity", QString("%1%").arg(qRound(m_opacity * 100)));
-    addInfoItem("X-mirror", m_flipHorizontal ? "Yes" : "No");
-    addInfoItem("Y-mirror", m_flipVertical ? "Yes" : "No");
+    addInfoItem(tr("Size"), QString("%1 × %2").arg(logicalSize.width()).arg(logicalSize.height()));
+    addInfoItem(tr("Zoom"), QString("%1%").arg(qRound(m_zoomLevel * 100)));
+    addInfoItem(tr("Rotation"), QString::fromUtf8("%1°").arg(m_rotationAngle));
+    addInfoItem(tr("Opacity"), QString("%1%").arg(qRound(m_opacity * 100)));
+    addInfoItem(tr("X-mirror"), m_flipHorizontal ? tr("Yes") : tr("No"));
+    addInfoItem(tr("Y-mirror"), m_flipVertical ? tr("Yes") : tr("No"));
 
     // Live capture section - actions are updated dynamically in contextMenuEvent
     m_contextMenu->addSeparator();
 
     // Start/Stop Live action
-    m_startLiveAction = m_contextMenu->addAction("Start Live Update");
+    m_startLiveAction = m_contextMenu->addAction(tr("Start Live Update"));
     connect(m_startLiveAction, &QAction::triggered, this, [this]() {
         if (m_isLiveMode) {
             stopLiveCapture();
@@ -1050,7 +1050,7 @@ void PinWindow::createContextMenu()
         });
 
     // Pause/Resume Live action
-    m_pauseLiveAction = m_contextMenu->addAction("Pause Live Update");
+    m_pauseLiveAction = m_contextMenu->addAction(tr("Pause Live Update"));
     connect(m_pauseLiveAction, &QAction::triggered, this, [this]() {
         if (m_livePaused) {
             resumeLiveCapture();
@@ -1061,10 +1061,10 @@ void PinWindow::createContextMenu()
         });
 
     // Frame rate submenu
-    m_fpsMenu = m_contextMenu->addMenu("Frame Rate");
+    m_fpsMenu = m_contextMenu->addMenu(tr("Frame Rate"));
     QActionGroup* fpsGroup = new QActionGroup(this);
     for (int fps : {5, 10, 15, 30}) {
-        QAction* fpsAction = m_fpsMenu->addAction(QString("%1 FPS").arg(fps));
+        QAction* fpsAction = m_fpsMenu->addAction(tr("%1 FPS").arg(fps));
         fpsAction->setCheckable(true);
         fpsAction->setData(fps);
         fpsGroup->addAction(fpsAction);
@@ -1078,11 +1078,11 @@ void PinWindow::createContextMenu()
 
     m_contextMenu->addSeparator();
 
-    QAction* closeAction = m_contextMenu->addAction("Close");
+    QAction* closeAction = m_contextMenu->addAction(tr("Close"));
     closeAction->setShortcut(QKeySequence(Qt::Key_Escape));
     connect(closeAction, &QAction::triggered, this, &PinWindow::close);
 
-    QAction* closeAllPinsAction = m_contextMenu->addAction("Close All Pins");
+    QAction* closeAllPinsAction = m_contextMenu->addAction(tr("Close All Pins"));
     connect(closeAllPinsAction, &QAction::triggered, this, [this]() {
         if (m_pinWindowManager) {
             m_pinWindowManager->closeAllWindows();
@@ -1231,9 +1231,9 @@ void PinWindow::saveToFile()
         savePath, templateValue, context, 1);
     QString filePath = QFileDialog::getSaveFileName(
         this,
-        "Save Screenshot",
+        tr("Save Screenshot"),
         defaultName,
-        "PNG Image (*.png);;JPEG Image (*.jpg *.jpeg);;All Files (*)"
+        tr("PNG Image (*.png);;JPEG Image (*.jpg *.jpeg);;All Files (*)")
     );
 
     if (!filePath.isEmpty()) {
@@ -1403,12 +1403,12 @@ void PinWindow::copyAllInfo()
 {
     QSize logicalSize = logicalSizeFromPixmap(m_originalPixmap);
     QStringList info;
-    info << QString("Size: %1 × %2").arg(logicalSize.width()).arg(logicalSize.height());
-    info << QString("Zoom: %1%").arg(qRound(m_zoomLevel * 100));
-    info << QString::fromUtf8("Rotation: %1°").arg(m_rotationAngle);
-    info << QString("Opacity: %1%").arg(qRound(m_opacity * 100));
-    info << QString("X-mirror: %1").arg(m_flipHorizontal ? "Yes" : "No");
-    info << QString("Y-mirror: %1").arg(m_flipVertical ? "Yes" : "No");
+    info << tr("Size: %1 × %2").arg(logicalSize.width()).arg(logicalSize.height());
+    info << tr("Zoom: %1%").arg(qRound(m_zoomLevel * 100));
+    info << tr("Rotation: %1°").arg(m_rotationAngle);
+    info << tr("Opacity: %1%").arg(qRound(m_opacity * 100));
+    info << tr("X-mirror: %1").arg(m_flipHorizontal ? tr("Yes") : tr("No"));
+    info << tr("Y-mirror: %1").arg(m_flipVertical ? tr("Yes") : tr("No"));
 
     QGuiApplication::clipboard()->setText(info.join("\n"));
 }

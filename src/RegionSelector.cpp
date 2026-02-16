@@ -1459,7 +1459,10 @@ void RegionSelector::paintEvent(QPaintEvent* event)
             m_toolbar->draw(painter);
 
             if (m_inputState.multiRegionMode && m_multiRegionManager && m_multiRegionManager->count() > 0) {
-                QString countText = QString("%1 regions").arg(m_multiRegionManager->count());
+                const int regionCount = m_multiRegionManager->count();
+                QString countText = (regionCount == 1)
+                    ? tr("%1 region").arg(regionCount)
+                    : tr("%1 regions").arg(regionCount);
                 QFont countFont = painter.font();
                 countFont.setPointSize(11);
                 painter.setFont(countFont);
@@ -1661,7 +1664,7 @@ void RegionSelector::completeMultiRegionCapture()
     QImage merged = m_multiRegionManager->mergeToSingleImage(m_backgroundPixmap, m_devicePixelRatio);
     if (merged.isNull()) {
         qWarning() << "RegionSelector: Failed to merge multi-region capture";
-        QMessageBox::warning(this, "Error", "Failed to merge regions. Please try again.");
+        QMessageBox::warning(this, tr("Error"), tr("Failed to merge regions. Please try again."));
         return;
     }
     QPixmap pixmap = QPixmap::fromImage(merged, Qt::NoOpaqueDetection);

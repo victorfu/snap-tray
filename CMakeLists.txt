@@ -86,7 +86,7 @@ if(MSVC)
     string(REPLACE "/Zi" "/Z7" CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO}")
 endif()
 
-find_package(Qt6 REQUIRED COMPONENTS Widgets Gui Svg Concurrent Network)
+find_package(Qt6 REQUIRED COMPONENTS Widgets Gui Svg Concurrent Network LinguistTools)
 
 # Enable AUTOMOC for Qt targets (will be disabled for non-Qt dependencies)
 set(CMAKE_AUTOMOC ON)
@@ -284,6 +284,7 @@ add_library(snaptray_core STATIC
     src/settings/PinWindowSettingsManager.cpp
     src/settings/WatermarkSettingsManager.cpp
     src/settings/BeautifySettingsManager.cpp
+    src/settings/LanguageManager.cpp
     src/beautify/BeautifyRenderer.cpp
     src/update/UpdateSettingsManager.cpp
     src/cursor/CursorManager.cpp
@@ -905,6 +906,47 @@ if(APPLE)
         OUTPUT_NAME "${APP_DISPLAY_NAME}"
     )
 endif()
+
+# ============================================================================
+# Internationalization (i18n)
+# ============================================================================
+set(TS_FILES
+    translations/snaptray_ar.ts
+    translations/snaptray_cs.ts
+    translations/snaptray_de.ts
+    translations/snaptray_el.ts
+    translations/snaptray_es_MX.ts
+    translations/snaptray_fi.ts
+    translations/snaptray_fr.ts
+    translations/snaptray_it.ts
+    translations/snaptray_ja.ts
+    translations/snaptray_ko.ts
+    translations/snaptray_lt.ts
+    translations/snaptray_nl.ts
+    translations/snaptray_pl.ts
+    translations/snaptray_pt.ts
+    translations/snaptray_pt_PT.ts
+    translations/snaptray_ru.ts
+    translations/snaptray_sr.ts
+    translations/snaptray_sv.ts
+    translations/snaptray_tr.ts
+    translations/snaptray_vi.ts
+    translations/snaptray_zh_CN.ts
+    translations/snaptray_zh_HK.ts
+    translations/snaptray_zh_TW.ts
+)
+
+qt_add_translations(${PROJECT_NAME}
+    TS_FILES ${TS_FILES}
+    RESOURCE_PREFIX "/i18n"
+    SOURCE_TARGETS
+        snaptray_core
+        snaptray_ui
+        snaptray_platform
+        snaptray_colorwidgets
+        snaptray_algorithms
+        ${PROJECT_NAME}
+)
 
 # ============================================================================
 # Testing Configuration

@@ -5,6 +5,7 @@
 #include "WatermarkRenderer.h"
 #include "OCRManager.h"
 #include "capture/IAudioCaptureEngine.h"
+#include "settings/LanguageManager.h"
 #include "settings/Settings.h"
 #include "settings/AutoBlurSettingsManager.h"
 #include "settings/FileSettingsManager.h"
@@ -47,6 +48,7 @@ SettingsDialog::SettingsDialog(QWidget* parent)
     : QDialog(parent)
     , m_tabWidget(nullptr)
     , m_startOnLoginCheckbox(nullptr)
+    , m_languageCombo(nullptr)
     , m_toolbarStyleCombo(nullptr)
     , m_hotkeySettingsTab(nullptr)
     , m_watermarkEnabledCheckbox(nullptr)
@@ -95,7 +97,7 @@ SettingsDialog::SettingsDialog(QWidget* parent)
     , m_currentVersionLabel(nullptr)
     , m_updateChecker(nullptr)
 {
-    setWindowTitle(QString("%1 Settings").arg(SNAPTRAY_APP_NAME));
+    setWindowTitle(tr("%1 Settings").arg(SNAPTRAY_APP_NAME));
     setMinimumSize(520, 480);
     setupUi();
 
@@ -116,47 +118,47 @@ void SettingsDialog::setupUi()
     // Tab 1: General
     QWidget* generalTab = new QWidget();
     setupGeneralTab(generalTab);
-    m_tabWidget->addTab(generalTab, "General");
+    m_tabWidget->addTab(generalTab, tr("General"));
 
     // Tab 2: Hotkeys
     QWidget* hotkeysTab = new QWidget();
     setupHotkeysTab(hotkeysTab);
-    m_tabWidget->addTab(hotkeysTab, "Hotkeys");
+    m_tabWidget->addTab(hotkeysTab, tr("Hotkeys"));
 
     // Tab 3: Advanced
     QWidget* advancedTab = new QWidget();
     setupAdvancedTab(advancedTab);
-    m_tabWidget->addTab(advancedTab, "Advanced");
+    m_tabWidget->addTab(advancedTab, tr("Advanced"));
 
     // Tab 4: Watermark
     QWidget* watermarkTab = new QWidget();
     setupWatermarkTab(watermarkTab);
-    m_tabWidget->addTab(watermarkTab, "Watermark");
+    m_tabWidget->addTab(watermarkTab, tr("Watermark"));
 
     // Tab 4: OCR (lazy loaded when tab is selected)
     QWidget* ocrTab = new QWidget();
     setupOcrTab(ocrTab);
-    m_ocrTabIndex = m_tabWidget->addTab(ocrTab, "OCR");
+    m_ocrTabIndex = m_tabWidget->addTab(ocrTab, tr("OCR"));
 
     // Tab 5: Recording
     QWidget* recordingTab = new QWidget();
     setupRecordingTab(recordingTab);
-    m_tabWidget->addTab(recordingTab, "Recording");
+    m_tabWidget->addTab(recordingTab, tr("Recording"));
 
     // Tab 6: Files
     QWidget* filesTab = new QWidget();
     setupFilesTab(filesTab);
-    m_tabWidget->addTab(filesTab, "Files");
+    m_tabWidget->addTab(filesTab, tr("Files"));
 
     // Tab 7: Updates
     QWidget* updatesTab = new QWidget();
     setupUpdatesTab(updatesTab);
-    m_tabWidget->addTab(updatesTab, "Updates");
+    m_tabWidget->addTab(updatesTab, tr("Updates"));
 
     // Tab 8: About
     QWidget* aboutTab = new QWidget();
     setupAboutTab(aboutTab);
-    m_tabWidget->addTab(aboutTab, "About");
+    m_tabWidget->addTab(aboutTab, tr("About"));
 
     mainLayout->addWidget(m_tabWidget);
 
@@ -167,8 +169,8 @@ void SettingsDialog::setupUi()
     QHBoxLayout* buttonLayout = new QHBoxLayout();
     buttonLayout->addStretch();
 
-    QPushButton* saveButton = new QPushButton("Save", this);
-    QPushButton* cancelButton = new QPushButton("Cancel", this);
+    QPushButton* saveButton = new QPushButton(tr("Save"), this);
+    QPushButton* cancelButton = new QPushButton(tr("Cancel"), this);
 
     connect(saveButton, &QPushButton::clicked, this, &SettingsDialog::onSave);
     connect(cancelButton, &QPushButton::clicked, this, &SettingsDialog::onCancel);
@@ -192,22 +194,49 @@ void SettingsDialog::setupGeneralTab(QWidget* tab)
     QWidget* contentWidget = new QWidget();
     QVBoxLayout* layout = new QVBoxLayout(contentWidget);
 
-    m_startOnLoginCheckbox = new QCheckBox("Start on login", contentWidget);
+    m_startOnLoginCheckbox = new QCheckBox(tr("Start on login"), contentWidget);
     m_startOnLoginCheckbox->setChecked(AutoLaunchManager::isEnabled());
     layout->addWidget(m_startOnLoginCheckbox);
 
+    // ========== Language Section ==========
+    layout->addSpacing(16);
+    QLabel* languageSectionLabel = new QLabel(tr("Language"), contentWidget);
+    languageSectionLabel->setStyleSheet("font-weight: bold; font-size: 12px;");
+    layout->addWidget(languageSectionLabel);
+
+    QHBoxLayout* languageLayout = new QHBoxLayout();
+    QLabel* languageLabel = new QLabel(tr("Display language:"), contentWidget);
+    languageLabel->setFixedWidth(120);
+    m_languageCombo = new QComboBox(contentWidget);
+
+    const auto languages = LanguageManager::instance().availableLanguages();
+    const QString currentLang = LanguageManager::instance().loadLanguage();
+    for (const auto& lang : languages) {
+        m_languageCombo->addItem(lang.nativeName, lang.code);
+    }
+
+    int langIndex = m_languageCombo->findData(currentLang);
+    if (langIndex >= 0) {
+        m_languageCombo->setCurrentIndex(langIndex);
+    }
+
+    languageLayout->addWidget(languageLabel);
+    languageLayout->addWidget(m_languageCombo);
+    languageLayout->addStretch();
+    layout->addLayout(languageLayout);
+
     // ========== Appearance Section ==========
     layout->addSpacing(16);
-    QLabel* appearanceLabel = new QLabel("Appearance", contentWidget);
+    QLabel* appearanceLabel = new QLabel(tr("Appearance"), contentWidget);
     appearanceLabel->setStyleSheet("font-weight: bold; font-size: 12px;");
     layout->addWidget(appearanceLabel);
 
     QHBoxLayout* styleLayout = new QHBoxLayout();
-    QLabel* styleLabel = new QLabel("Toolbar Style:", contentWidget);
+    QLabel* styleLabel = new QLabel(tr("Toolbar Style:"), contentWidget);
     styleLabel->setFixedWidth(120);
     m_toolbarStyleCombo = new QComboBox(contentWidget);
-    m_toolbarStyleCombo->addItem("Dark", static_cast<int>(ToolbarStyleType::Dark));
-    m_toolbarStyleCombo->addItem("Light", static_cast<int>(ToolbarStyleType::Light));
+    m_toolbarStyleCombo->addItem(tr("Dark"), static_cast<int>(ToolbarStyleType::Dark));
+    m_toolbarStyleCombo->addItem(tr("Light"), static_cast<int>(ToolbarStyleType::Light));
     styleLayout->addWidget(styleLabel);
     styleLayout->addWidget(m_toolbarStyleCombo);
     styleLayout->addStretch();
@@ -303,7 +332,7 @@ void SettingsDialog::setupAdvancedTab(QWidget* tab)
     QVBoxLayout* layout = new QVBoxLayout(tab);
 
     // ========== Blur Section ==========
-    QLabel* autoBlurLabel = new QLabel("Blur", tab);
+    QLabel* autoBlurLabel = new QLabel(tr("Blur"), tab);
     autoBlurLabel->setStyleSheet("font-weight: bold; font-size: 12px;");
     layout->addWidget(autoBlurLabel);
 
@@ -312,7 +341,7 @@ void SettingsDialog::setupAdvancedTab(QWidget* tab)
 
     // Blur intensity slider
     QHBoxLayout* intensityLayout = new QHBoxLayout();
-    QLabel* intensityLabel = new QLabel("Blur intensity:", tab);
+    QLabel* intensityLabel = new QLabel(tr("Blur intensity:"), tab);
     intensityLabel->setFixedWidth(120);
     m_blurIntensitySlider = new QSlider(Qt::Horizontal, tab);
     m_blurIntensitySlider->setRange(1, 100);
@@ -329,11 +358,11 @@ void SettingsDialog::setupAdvancedTab(QWidget* tab)
 
     // Blur type combo
     QHBoxLayout* typeLayout = new QHBoxLayout();
-    QLabel* typeLabel = new QLabel("Blur type:", tab);
+    QLabel* typeLabel = new QLabel(tr("Blur type:"), tab);
     typeLabel->setFixedWidth(120);
     m_blurTypeCombo = new QComboBox(tab);
-    m_blurTypeCombo->addItem("Pixelate", "pixelate");
-    m_blurTypeCombo->addItem("Gaussian", "gaussian");
+    m_blurTypeCombo->addItem(tr("Pixelate"), "pixelate");
+    m_blurTypeCombo->addItem(tr("Gaussian"), "gaussian");
     m_blurTypeCombo->setCurrentIndex(blurOptions.blurType == AutoBlurManager::BlurType::Gaussian ? 1 : 0);
     typeLayout->addWidget(typeLabel);
     typeLayout->addWidget(m_blurTypeCombo);
@@ -342,7 +371,7 @@ void SettingsDialog::setupAdvancedTab(QWidget* tab)
 
     // ========== Pin Window Section ==========
     layout->addSpacing(16);
-    QLabel* pinWindowLabel = new QLabel("Pin Window", tab);
+    QLabel* pinWindowLabel = new QLabel(tr("Pin Window"), tab);
     pinWindowLabel->setStyleSheet("font-weight: bold; font-size: 12px;");
     layout->addWidget(pinWindowLabel);
 
@@ -350,7 +379,7 @@ void SettingsDialog::setupAdvancedTab(QWidget* tab)
 
     // Default opacity slider
     QHBoxLayout* opacityLayout = new QHBoxLayout();
-    QLabel* opacityLabel = new QLabel("Default opacity:", tab);
+    QLabel* opacityLabel = new QLabel(tr("Default opacity:"), tab);
     opacityLabel->setFixedWidth(120);
     m_pinWindowOpacitySlider = new QSlider(Qt::Horizontal, tab);
     m_pinWindowOpacitySlider->setRange(10, 100);
@@ -368,7 +397,7 @@ void SettingsDialog::setupAdvancedTab(QWidget* tab)
 
     // Opacity step slider
     QHBoxLayout* opacityStepLayout = new QHBoxLayout();
-    QLabel* opacityStepLabel = new QLabel("Opacity step:", tab);
+    QLabel* opacityStepLabel = new QLabel(tr("Opacity step:"), tab);
     opacityStepLabel->setFixedWidth(120);
     m_pinWindowOpacityStepSlider = new QSlider(Qt::Horizontal, tab);
     m_pinWindowOpacityStepSlider->setRange(1, 20);
@@ -386,7 +415,7 @@ void SettingsDialog::setupAdvancedTab(QWidget* tab)
 
     // Zoom step slider
     QHBoxLayout* zoomStepLayout = new QHBoxLayout();
-    QLabel* zoomStepLabel = new QLabel("Zoom step:", tab);
+    QLabel* zoomStepLabel = new QLabel(tr("Zoom step:"), tab);
     zoomStepLabel->setFixedWidth(120);
     m_pinWindowZoomStepSlider = new QSlider(Qt::Horizontal, tab);
     m_pinWindowZoomStepSlider->setRange(1, 20);
@@ -404,7 +433,7 @@ void SettingsDialog::setupAdvancedTab(QWidget* tab)
 
     // Max cache files slider
     QHBoxLayout* cacheFilesLayout = new QHBoxLayout();
-    QLabel* cacheFilesLabel = new QLabel("Max cache files:", tab);
+    QLabel* cacheFilesLabel = new QLabel(tr("Max cache files:"), tab);
     cacheFilesLabel->setFixedWidth(120);
     m_pinWindowMaxCacheFilesSlider = new QSlider(Qt::Horizontal, tab);
     m_pinWindowMaxCacheFilesSlider->setRange(5, 200);
@@ -429,11 +458,11 @@ void SettingsDialog::setupWatermarkTab(QWidget* tab)
     mainLayout->setContentsMargins(9, 12, 9, 9);  // Increase top margin for checkbox
 
     // Apply to images checkbox (for screenshots via PinWindow context menu)
-    m_watermarkEnabledCheckbox = new QCheckBox("Apply to images", tab);
+    m_watermarkEnabledCheckbox = new QCheckBox(tr("Apply to images"), tab);
     mainLayout->addWidget(m_watermarkEnabledCheckbox);
 
     // Apply to recordings checkbox
-    m_watermarkApplyToRecordingCheckbox = new QCheckBox("Apply to recordings", tab);
+    m_watermarkApplyToRecordingCheckbox = new QCheckBox(tr("Apply to recordings"), tab);
     mainLayout->addWidget(m_watermarkApplyToRecordingCheckbox);
 
     mainLayout->addSpacing(8);
@@ -447,16 +476,16 @@ void SettingsDialog::setupWatermarkTab(QWidget* tab)
 
     // Image path row
     QHBoxLayout* imageLayout = new QHBoxLayout();
-    QLabel* imageLabel = new QLabel("Image:", tab);
+    QLabel* imageLabel = new QLabel(tr("Image:"), tab);
     imageLabel->setFixedWidth(60);
     m_watermarkImagePathEdit = new QLineEdit(tab);
-    m_watermarkImagePathEdit->setPlaceholderText("Select an image file...");
+    m_watermarkImagePathEdit->setPlaceholderText(tr("Select an image file..."));
     m_watermarkImagePathEdit->setReadOnly(true);
-    m_watermarkBrowseBtn = new QPushButton("Browse...", tab);
+    m_watermarkBrowseBtn = new QPushButton(tr("Browse..."), tab);
     m_watermarkBrowseBtn->setFixedWidth(80);
     connect(m_watermarkBrowseBtn, &QPushButton::clicked, this, [this]() {
-        QString filePath = QFileDialog::getOpenFileName(this, "Select Watermark Image",
-            QString(), "Images (*.png *.jpg *.jpeg *.bmp *.gif *.svg);;All Files (*)");
+        QString filePath = QFileDialog::getOpenFileName(this, tr("Select Watermark Image"),
+            QString(), tr("Images (*.png *.jpg *.jpeg *.bmp *.gif *.svg);;All Files (*)"));
         if (!filePath.isEmpty()) {
             m_watermarkImagePathEdit->setText(filePath);
             updateWatermarkImagePreview();
@@ -469,7 +498,7 @@ void SettingsDialog::setupWatermarkTab(QWidget* tab)
 
     // Image scale row
     QHBoxLayout* scaleLayout = new QHBoxLayout();
-    QLabel* scaleLabel = new QLabel("Scale:", tab);
+    QLabel* scaleLabel = new QLabel(tr("Scale:"), tab);
     scaleLabel->setFixedWidth(60);
     m_watermarkImageScaleSlider = new QSlider(Qt::Horizontal, tab);
     m_watermarkImageScaleSlider->setRange(10, 200);
@@ -487,7 +516,7 @@ void SettingsDialog::setupWatermarkTab(QWidget* tab)
 
     // Opacity row
     QHBoxLayout* opacityLayout = new QHBoxLayout();
-    QLabel* opacityLabel = new QLabel("Opacity:", tab);
+    QLabel* opacityLabel = new QLabel(tr("Opacity:"), tab);
     opacityLabel->setFixedWidth(60);
     m_watermarkOpacitySlider = new QSlider(Qt::Horizontal, tab);
     m_watermarkOpacitySlider->setRange(10, 100);
@@ -504,7 +533,7 @@ void SettingsDialog::setupWatermarkTab(QWidget* tab)
 
     // Margin row
     QHBoxLayout* marginLayout = new QHBoxLayout();
-    QLabel* marginLabel = new QLabel("Margin:", tab);
+    QLabel* marginLabel = new QLabel(tr("Margin:"), tab);
     marginLabel->setFixedWidth(60);
     m_watermarkMarginSlider = new QSlider(Qt::Horizontal, tab);
     m_watermarkMarginSlider->setRange(0, 100);
@@ -521,13 +550,13 @@ void SettingsDialog::setupWatermarkTab(QWidget* tab)
 
     // Position row
     QHBoxLayout* positionLayout = new QHBoxLayout();
-    QLabel* positionLabel = new QLabel("Position:", tab);
+    QLabel* positionLabel = new QLabel(tr("Position:"), tab);
     positionLabel->setFixedWidth(60);
     m_watermarkPositionCombo = new QComboBox(tab);
-    m_watermarkPositionCombo->addItem("Top-Left", static_cast<int>(WatermarkRenderer::TopLeft));
-    m_watermarkPositionCombo->addItem("Top-Right", static_cast<int>(WatermarkRenderer::TopRight));
-    m_watermarkPositionCombo->addItem("Bottom-Left", static_cast<int>(WatermarkRenderer::BottomLeft));
-    m_watermarkPositionCombo->addItem("Bottom-Right", static_cast<int>(WatermarkRenderer::BottomRight));
+    m_watermarkPositionCombo->addItem(tr("Top-Left"), static_cast<int>(WatermarkRenderer::TopLeft));
+    m_watermarkPositionCombo->addItem(tr("Top-Right"), static_cast<int>(WatermarkRenderer::TopRight));
+    m_watermarkPositionCombo->addItem(tr("Bottom-Left"), static_cast<int>(WatermarkRenderer::BottomLeft));
+    m_watermarkPositionCombo->addItem(tr("Bottom-Right"), static_cast<int>(WatermarkRenderer::BottomRight));
     m_watermarkPositionCombo->setCurrentIndex(3); // Default to Bottom-Right
     positionLayout->addWidget(positionLabel);
     positionLayout->addWidget(m_watermarkPositionCombo);
@@ -547,7 +576,7 @@ void SettingsDialog::setupWatermarkTab(QWidget* tab)
     m_watermarkImagePreview->setStyleSheet(
         QStringLiteral("QLabel { border: 1px solid %1; background-color: %2; border-radius: 4px; }")
         .arg(SnapTray::SettingsTheme::borderColor(), SnapTray::SettingsTheme::panelBackground()));
-    m_watermarkImagePreview->setText("No image");
+    m_watermarkImagePreview->setText(tr("No image"));
 
     m_watermarkImageSizeLabel = new QLabel(tab);
     m_watermarkImageSizeLabel->setAlignment(Qt::AlignCenter);
@@ -588,13 +617,13 @@ void SettingsDialog::setupRecordingTab(QWidget* tab)
 
     // Frame Rate row
     QHBoxLayout* fpsLayout = new QHBoxLayout();
-    QLabel* fpsLabel = new QLabel("Frame Rate:", tab);
+    QLabel* fpsLabel = new QLabel(tr("Frame Rate:"), tab);
     fpsLabel->setFixedWidth(120);
     m_recordingFrameRateCombo = new QComboBox(tab);
-    m_recordingFrameRateCombo->addItem("10 FPS", 10);
-    m_recordingFrameRateCombo->addItem("15 FPS", 15);
-    m_recordingFrameRateCombo->addItem("24 FPS", 24);
-    m_recordingFrameRateCombo->addItem("30 FPS", 30);
+    m_recordingFrameRateCombo->addItem(tr("10 FPS"), 10);
+    m_recordingFrameRateCombo->addItem(tr("15 FPS"), 15);
+    m_recordingFrameRateCombo->addItem(tr("24 FPS"), 24);
+    m_recordingFrameRateCombo->addItem(tr("30 FPS"), 30);
     m_recordingFrameRateCombo->setCurrentIndex(3);  // Default 30 FPS
     fpsLayout->addWidget(fpsLabel);
     fpsLayout->addWidget(m_recordingFrameRateCombo);
@@ -603,13 +632,13 @@ void SettingsDialog::setupRecordingTab(QWidget* tab)
 
     // Output Format row
     QHBoxLayout* formatLayout = new QHBoxLayout();
-    QLabel* formatLabel = new QLabel("Output Format:", tab);
+    QLabel* formatLabel = new QLabel(tr("Output Format:"), tab);
     formatLabel->setFixedWidth(120);
     m_recordingOutputFormatCombo = new QComboBox(tab);
     m_recordingOutputFormatCombo->setMinimumWidth(120);
-    m_recordingOutputFormatCombo->addItem("MP4 (H.264)", 0);
-    m_recordingOutputFormatCombo->addItem("GIF", 1);
-    m_recordingOutputFormatCombo->addItem("WebP", 2);
+    m_recordingOutputFormatCombo->addItem(tr("MP4 (H.264)"), 0);
+    m_recordingOutputFormatCombo->addItem(tr("GIF"), 1);
+    m_recordingOutputFormatCombo->addItem(tr("WebP"), 2);
     formatLayout->addWidget(formatLabel);
     formatLayout->addWidget(m_recordingOutputFormatCombo);
     formatLayout->addStretch();
@@ -622,7 +651,7 @@ void SettingsDialog::setupRecordingTab(QWidget* tab)
 
     // Quality slider
     QHBoxLayout* qualityLayout = new QHBoxLayout();
-    QLabel* qualityLabel = new QLabel("Quality:", m_mp4SettingsWidget);
+    QLabel* qualityLabel = new QLabel(tr("Quality:"), m_mp4SettingsWidget);
     qualityLabel->setFixedWidth(120);
     m_recordingQualitySlider = new QSlider(Qt::Horizontal, m_mp4SettingsWidget);
     m_recordingQualitySlider->setRange(0, 100);
@@ -646,9 +675,9 @@ void SettingsDialog::setupRecordingTab(QWidget* tab)
 
     // Info label
     m_gifInfoLabel = new QLabel(
-        "GIF format creates larger files than MP4.\n"
+        tr("GIF format creates larger files than MP4.\n"
         "Best for short clips and sharing on web.\n"
-        "Audio is not supported for GIF recordings.",
+        "Audio is not supported for GIF recordings."),
         m_gifSettingsWidget);
     m_gifInfoLabel->setWordWrap(true);
     m_gifInfoLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
@@ -662,22 +691,22 @@ void SettingsDialog::setupRecordingTab(QWidget* tab)
 
     // ========== Audio Settings Section ==========
     layout->addSpacing(16);
-    QLabel* audioSectionLabel = new QLabel("Audio", tab);
+    QLabel* audioSectionLabel = new QLabel(tr("Audio"), tab);
     audioSectionLabel->setStyleSheet("font-weight: bold; font-size: 12px;");
     layout->addWidget(audioSectionLabel);
 
     // Enable audio checkbox
-    m_audioEnabledCheckbox = new QCheckBox("Record audio", tab);
+    m_audioEnabledCheckbox = new QCheckBox(tr("Record audio"), tab);
     layout->addWidget(m_audioEnabledCheckbox);
 
     // Audio source dropdown
     QHBoxLayout* audioSourceLayout = new QHBoxLayout();
-    QLabel* audioSourceLabel = new QLabel("Source:", tab);
+    QLabel* audioSourceLabel = new QLabel(tr("Source:"), tab);
     audioSourceLabel->setFixedWidth(120);
     m_audioSourceCombo = new QComboBox(tab);
-    m_audioSourceCombo->addItem("Microphone", 0);
-    m_audioSourceCombo->addItem("System Audio", 1);
-    m_audioSourceCombo->addItem("Both (Mixed)", 2);
+    m_audioSourceCombo->addItem(tr("Microphone"), 0);
+    m_audioSourceCombo->addItem(tr("System Audio"), 1);
+    m_audioSourceCombo->addItem(tr("Both (Mixed)"), 2);
     audioSourceLayout->addWidget(audioSourceLabel);
     audioSourceLayout->addWidget(m_audioSourceCombo);
     audioSourceLayout->addStretch();
@@ -685,10 +714,10 @@ void SettingsDialog::setupRecordingTab(QWidget* tab)
 
     // Audio device dropdown
     QHBoxLayout* audioDeviceLayout = new QHBoxLayout();
-    QLabel* audioDeviceLabel = new QLabel("Device:", tab);
+    QLabel* audioDeviceLabel = new QLabel(tr("Device:"), tab);
     audioDeviceLabel->setFixedWidth(120);
     m_audioDeviceCombo = new QComboBox(tab);
-    m_audioDeviceCombo->addItem("Default", QString());
+    m_audioDeviceCombo->addItem(tr("Default"), QString());
     audioDeviceLayout->addWidget(audioDeviceLabel);
     audioDeviceLayout->addWidget(m_audioDeviceCombo);
     audioDeviceLayout->addStretch();
@@ -721,7 +750,7 @@ void SettingsDialog::setupRecordingTab(QWidget* tab)
 
     // ========== Preview option ==========
     layout->addSpacing(16);
-    m_recordingShowPreviewCheckbox = new QCheckBox("Show preview after recording", tab);
+    m_recordingShowPreviewCheckbox = new QCheckBox(tr("Show preview after recording"), tab);
     layout->addWidget(m_recordingShowPreviewCheckbox);
 
     // ========== Countdown settings ==========
@@ -844,14 +873,14 @@ void SettingsDialog::onOutputFormatChanged(int index)
     // Update info label text for the selected format
     if (isWebP) {
         m_gifInfoLabel->setText(
-            "WebP format creates smaller files than GIF with better quality.\n"
+            tr("WebP format creates smaller files than GIF with better quality.\n"
             "Best for short clips and sharing on web.\n"
-            "Audio is not supported for WebP recordings.");
+            "Audio is not supported for WebP recordings."));
     } else {
         m_gifInfoLabel->setText(
-            "GIF format creates larger files than MP4.\n"
+            tr("GIF format creates larger files than MP4.\n"
             "Best for short clips and sharing on web.\n"
-            "Audio is not supported for GIF recordings.");
+            "Audio is not supported for GIF recordings."));
     }
 
     // Audio is only supported for MP4
@@ -977,6 +1006,19 @@ void SettingsDialog::onSave()
         }
     }
 
+    // Save language setting
+    if (m_languageCombo) {
+        const QString selectedLanguage = m_languageCombo->currentData().toString();
+        const QString currentLanguage = LanguageManager::instance().loadLanguage();
+        if (selectedLanguage != currentLanguage) {
+            LanguageManager::instance().saveLanguage(selectedLanguage);
+            QMessageBox::information(
+                this,
+                tr("Restart Required"),
+                tr("The language change will take effect after restarting the application."));
+        }
+    }
+
     // Close dialog (non-modal mode)
     accept();
 }
@@ -998,7 +1040,7 @@ void SettingsDialog::updateWatermarkImagePreview()
 
     if (imagePath.isEmpty()) {
         m_watermarkImagePreview->clear();
-        m_watermarkImagePreview->setText("No image");
+        m_watermarkImagePreview->setText(tr("No image"));
         m_watermarkImageSizeLabel->clear();
         m_watermarkOriginalSize = QSize();
         return;
@@ -1007,7 +1049,7 @@ void SettingsDialog::updateWatermarkImagePreview()
     QPixmap pixmap(imagePath);
     if (pixmap.isNull()) {
         m_watermarkImagePreview->clear();
-        m_watermarkImagePreview->setText("Invalid image");
+        m_watermarkImagePreview->setText(tr("Invalid image"));
         m_watermarkImageSizeLabel->clear();
         m_watermarkOriginalSize = QSize();
         return;
@@ -1028,7 +1070,7 @@ void SettingsDialog::updateWatermarkImagePreview()
     int scaledWidth = m_watermarkOriginalSize.width() * scale / 100;
     int scaledHeight = m_watermarkOriginalSize.height() * scale / 100;
     m_watermarkImageSizeLabel->setText(
-        QString("Size: %1 × %2 px").arg(scaledWidth).arg(scaledHeight));
+        tr("Size: %1 × %2 px").arg(scaledWidth).arg(scaledHeight));
 }
 
 void SettingsDialog::populateAudioDevices()
@@ -1037,7 +1079,7 @@ void SettingsDialog::populateAudioDevices()
     QString currentDevice = m_audioDeviceCombo->currentData().toString();
 
     m_audioDeviceCombo->clear();
-    m_audioDeviceCombo->addItem("Default", QString());
+    m_audioDeviceCombo->addItem(tr("Default"), QString());
 
     // Enumerate available audio input devices
     std::unique_ptr<IAudioCaptureEngine> engine(
@@ -1077,8 +1119,8 @@ void SettingsDialog::onAudioSourceChanged(int index)
             IAudioCaptureEngine::requestMicrophonePermission([this](bool granted) {
                 if (!granted) {
                     m_systemAudioWarningLabel->setText(
-                        "Microphone access denied. Please enable in System Settings > "
-                        "Privacy & Security > Microphone.");
+                        tr("Microphone access denied. Please enable in System Settings > "
+                        "Privacy & Security > Microphone."));
                     m_systemAudioWarningLabel->show();
                 }
                 });
@@ -1086,8 +1128,8 @@ void SettingsDialog::onAudioSourceChanged(int index)
         else if (permission == IAudioCaptureEngine::MicrophonePermission::Denied ||
             permission == IAudioCaptureEngine::MicrophonePermission::Restricted) {
             m_systemAudioWarningLabel->setText(
-                "Microphone access denied. Please enable in System Settings > "
-                "Privacy & Security > Microphone.");
+                tr("Microphone access denied. Please enable in System Settings > "
+                "Privacy & Security > Microphone."));
             m_systemAudioWarningLabel->show();
         }
         else {
@@ -1103,8 +1145,8 @@ void SettingsDialog::onAudioSourceChanged(int index)
         // macOS system audio requires ScreenCaptureKit (macOS 13+) or virtual audio device
         // We'll check availability at runtime when audio engine is created
         m_systemAudioWarningLabel->setText(
-            "System audio capture requires macOS 13 (Ventura) or later, "
-            "or a virtual audio device like BlackHole.");
+            tr("System audio capture requires macOS 13 (Ventura) or later, "
+            "or a virtual audio device like BlackHole."));
         m_systemAudioWarningLabel->show();
 #else
         // Windows supports system audio via WASAPI loopback
@@ -1379,21 +1421,21 @@ void SettingsDialog::setupFilesTab(QWidget* tab)
     auto& fileSettings = FileSettingsManager::instance();
 
     // ========== Save Locations Section ==========
-    QLabel* locationsLabel = new QLabel("Save Locations", tab);
+    QLabel* locationsLabel = new QLabel(tr("Save Locations"), tab);
     locationsLabel->setStyleSheet("font-weight: bold; font-size: 12px;");
     layout->addWidget(locationsLabel);
 
     // Screenshot path row
     QHBoxLayout* screenshotLayout = new QHBoxLayout();
-    QLabel* screenshotLabel = new QLabel("Screenshots:", tab);
+    QLabel* screenshotLabel = new QLabel(tr("Screenshots:"), tab);
     screenshotLabel->setFixedWidth(90);
     m_screenshotPathEdit = new QLineEdit(tab);
     m_screenshotPathEdit->setReadOnly(true);
     m_screenshotPathEdit->setText(fileSettings.loadScreenshotPath());
-    m_screenshotPathBrowseBtn = new QPushButton("Browse...", tab);
+    m_screenshotPathBrowseBtn = new QPushButton(tr("Browse..."), tab);
     m_screenshotPathBrowseBtn->setFixedWidth(80);
     connect(m_screenshotPathBrowseBtn, &QPushButton::clicked, this, [this]() {
-        QString dir = QFileDialog::getExistingDirectory(this, "Select Screenshot Folder",
+        QString dir = QFileDialog::getExistingDirectory(this, tr("Select Screenshot Folder"),
             m_screenshotPathEdit->text());
         if (!dir.isEmpty()) {
             m_screenshotPathEdit->setText(dir);
@@ -1406,15 +1448,15 @@ void SettingsDialog::setupFilesTab(QWidget* tab)
 
     // Recording path row
     QHBoxLayout* recordingLayout = new QHBoxLayout();
-    QLabel* recordingLabel = new QLabel("Recordings:", tab);
+    QLabel* recordingLabel = new QLabel(tr("Recordings:"), tab);
     recordingLabel->setFixedWidth(90);
     m_recordingPathEdit = new QLineEdit(tab);
     m_recordingPathEdit->setReadOnly(true);
     m_recordingPathEdit->setText(fileSettings.loadRecordingPath());
-    m_recordingPathBrowseBtn = new QPushButton("Browse...", tab);
+    m_recordingPathBrowseBtn = new QPushButton(tr("Browse..."), tab);
     m_recordingPathBrowseBtn->setFixedWidth(80);
     connect(m_recordingPathBrowseBtn, &QPushButton::clicked, this, [this]() {
-        QString dir = QFileDialog::getExistingDirectory(this, "Select Recording Folder",
+        QString dir = QFileDialog::getExistingDirectory(this, tr("Select Recording Folder"),
             m_recordingPathEdit->text());
         if (!dir.isEmpty()) {
             m_recordingPathEdit->setText(dir);
@@ -1427,12 +1469,12 @@ void SettingsDialog::setupFilesTab(QWidget* tab)
 
     // ========== Filename Format Section ==========
     layout->addSpacing(16);
-    QLabel* formatLabel = new QLabel("Filename Format", tab);
+    QLabel* formatLabel = new QLabel(tr("Filename Format"), tab);
     formatLabel->setStyleSheet("font-weight: bold; font-size: 12px;");
     layout->addWidget(formatLabel);
 
     QHBoxLayout* templateLayout = new QHBoxLayout();
-    QLabel* templateLabel = new QLabel("Template:", tab);
+    QLabel* templateLabel = new QLabel(tr("Template:"), tab);
     templateLabel->setFixedWidth(90);
     m_filenameTemplateEdit = new QLineEdit(tab);
     m_filenameTemplateEdit->setPlaceholderText("{prefix}_{type}_{yyyyMMdd_HHmmss}_{w}x{h}_{monitor}_{windowTitle}.{ext}");
@@ -1445,8 +1487,8 @@ void SettingsDialog::setupFilesTab(QWidget* tab)
     layout->addLayout(templateLayout);
 
     QLabel* tokensLabel = new QLabel(
-        "Tokens: {prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}\n"
-        "Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}",
+        tr("Tokens: {prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}\n"
+        "Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}"),
         tab);
     tokensLabel->setStyleSheet(
         QStringLiteral("color: %1; font-size: 11px;")
@@ -1466,15 +1508,15 @@ void SettingsDialog::setupFilesTab(QWidget* tab)
 
     // ========== Save Behavior Section ==========
     layout->addSpacing(16);
-    QLabel* behaviorLabel = new QLabel("Save Behavior", tab);
+    QLabel* behaviorLabel = new QLabel(tr("Save Behavior"), tab);
     behaviorLabel->setStyleSheet("font-weight: bold; font-size: 12px;");
     layout->addWidget(behaviorLabel);
 
-    m_autoSaveScreenshotsCheckbox = new QCheckBox("Auto-save screenshots (save directly without dialog)", tab);
+    m_autoSaveScreenshotsCheckbox = new QCheckBox(tr("Auto-save screenshots (save directly without dialog)"), tab);
     m_autoSaveScreenshotsCheckbox->setChecked(fileSettings.loadAutoSaveScreenshots());
     layout->addWidget(m_autoSaveScreenshotsCheckbox);
 
-    m_autoSaveRecordingsCheckbox = new QCheckBox("Auto-save recordings (save directly without dialog)", tab);
+    m_autoSaveRecordingsCheckbox = new QCheckBox(tr("Auto-save recordings (save directly without dialog)"), tab);
     m_autoSaveRecordingsCheckbox->setChecked(fileSettings.loadAutoSaveRecordings());
     layout->addWidget(m_autoSaveRecordingsCheckbox);
 
@@ -1503,9 +1545,9 @@ void SettingsDialog::updateFilenamePreview()
     const FilenameTemplateEngine::Result result =
         FilenameTemplateEngine::renderFilename(m_filenameTemplateEdit->text(), context);
 
-    QString previewText = QString("Preview: %1").arg(result.filename);
+    QString previewText = tr("Preview: %1").arg(result.filename);
     if (result.usedFallback) {
-        previewText += QString("\nInvalid template, fallback applied: %1").arg(result.error);
+        previewText += tr("\nInvalid template, fallback applied: %1").arg(result.error);
     }
     m_filenamePreviewLabel->setText(previewText);
 }
@@ -1707,7 +1749,7 @@ void SettingsDialog::setupAboutTab(QWidget* tab)
     layout->addWidget(nameLabel);
 
     // Version
-    QLabel* versionLabel = new QLabel(QString("Version %1").arg(SNAPTRAY_VERSION), tab);
+    QLabel* versionLabel = new QLabel(tr("Version %1").arg(SNAPTRAY_VERSION), tab);
     versionLabel->setStyleSheet(
         QStringLiteral("font-size: 12px; color: %1;").arg(SnapTray::SettingsTheme::secondaryText()));
     versionLabel->setAlignment(Qt::AlignCenter);
@@ -1716,7 +1758,7 @@ void SettingsDialog::setupAboutTab(QWidget* tab)
     layout->addSpacing(20);
 
     // Copyright
-    QLabel* copyrightLabel = new QLabel("Copyright 2024-2025 Victor Fu", tab);
+    QLabel* copyrightLabel = new QLabel(tr("Copyright 2024-2025 Victor Fu"), tab);
     copyrightLabel->setStyleSheet("font-size: 11px;");
     copyrightLabel->setAlignment(Qt::AlignCenter);
     layout->addWidget(copyrightLabel);
@@ -1724,7 +1766,7 @@ void SettingsDialog::setupAboutTab(QWidget* tab)
     layout->addSpacing(12);
 
     // Author
-    QLabel* authorLabel = new QLabel("Author: Victor Fu", tab);
+    QLabel* authorLabel = new QLabel(tr("Author: Victor Fu"), tab);
     authorLabel->setStyleSheet("font-size: 11px;");
     authorLabel->setAlignment(Qt::AlignCenter);
     layout->addWidget(authorLabel);

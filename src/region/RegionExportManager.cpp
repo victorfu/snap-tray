@@ -199,9 +199,9 @@ bool RegionExportManager::saveToFile(const QRect &selectionRect, int cornerRadiu
 
     QString filePath = QFileDialog::getSaveFileName(
         parentWidget,
-        "Save Screenshot",
+        tr("Save Screenshot"),
         defaultName,
-        "PNG Image (*.png);;JPEG Image (*.jpg *.jpeg);;All Files (*)"
+        tr("PNG Image (*.png);;JPEG Image (*.jpg *.jpeg);;All Files (*)")
     );
 
     if (!filePath.isEmpty()) {

@@ -267,7 +267,7 @@ void RecordingRegionSelector::drawDimensionLabel(QPainter &painter)
         return;
     }
 
-    QString dimensionText = QString("%1 x %2")
+    QString dimensionText = tr("%1 x %2")
         .arg(m_selectionRect.width())
         .arg(m_selectionRect.height());
 
@@ -313,11 +313,11 @@ void RecordingRegionSelector::drawInstructions(QPainter &painter)
 {
     QString helpText;
     if (m_selectionComplete) {
-        helpText = "Press Enter or click Start Recording, Escape to cancel";
+        helpText = tr("Press Enter or click Start Recording, Escape to cancel");
     } else if (m_isSelecting) {
-        helpText = "Release to confirm selection";
+        helpText = tr("Release to confirm selection");
     } else {
-        helpText = "Click and drag to select recording region";
+        helpText = tr("Click and drag to select recording region");
     }
 
     QFont font = painter.font();

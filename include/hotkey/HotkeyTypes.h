@@ -106,56 +106,56 @@ inline constexpr HotkeyMetadata kDefaultHotkeys[] = {
     {
         HotkeyAction::RegionCapture,
         HotkeyCategory::Capture,
-        "Region Capture",
-        "Capture a selected region of the screen",
+        QT_TRANSLATE_NOOP("SnapTray::HotkeyManager", "Region Capture"),
+        QT_TRANSLATE_NOOP("SnapTray::HotkeyManager", "Capture a selected region of the screen"),
         "hotkey",  // kSettingsKeyHotkey
         "F2"       // kDefaultHotkey
     },
     {
         HotkeyAction::ScreenCanvas,
         HotkeyCategory::Canvas,
-        "Screen Canvas",
-        "Annotate directly on the screen",
+        QT_TRANSLATE_NOOP("SnapTray::HotkeyManager", "Screen Canvas"),
+        QT_TRANSLATE_NOOP("SnapTray::HotkeyManager", "Annotate directly on the screen"),
         "screenCanvasHotkey",  // kSettingsKeyScreenCanvasHotkey
         "Ctrl+F2"              // kDefaultScreenCanvasHotkey
     },
     {
         HotkeyAction::PasteFromClipboard,
         HotkeyCategory::Clipboard,
-        "Paste",
-        "Pin content from clipboard",
+        QT_TRANSLATE_NOOP("SnapTray::HotkeyManager", "Paste"),
+        QT_TRANSLATE_NOOP("SnapTray::HotkeyManager", "Pin content from clipboard"),
         "pasteHotkey",  // kSettingsKeyPasteHotkey
         "F3"            // kDefaultPasteHotkey
     },
     {
         HotkeyAction::QuickPin,
         HotkeyCategory::Pin,
-        "Quick Pin",
-        "Select and pin a region directly",
+        QT_TRANSLATE_NOOP("SnapTray::HotkeyManager", "Quick Pin"),
+        QT_TRANSLATE_NOOP("SnapTray::HotkeyManager", "Select and pin a region directly"),
         "quickPinHotkey",  // kSettingsKeyQuickPinHotkey
         "Shift+F2"         // kDefaultQuickPinHotkey
     },
     {
         HotkeyAction::PinFromImage,
         HotkeyCategory::Pin,
-        "Pin from Image",
-        "Pin an image from file",
+        QT_TRANSLATE_NOOP("SnapTray::HotkeyManager", "Pin from Image"),
+        QT_TRANSLATE_NOOP("SnapTray::HotkeyManager", "Pin an image from file"),
         "pinFromImageHotkey",  // kSettingsKeyPinFromImageHotkey
         ""                     // Optional, no default
     },
     {
         HotkeyAction::PinHistory,
         HotkeyCategory::Pin,
-        "Pin History",
-        "Open pin history window",
+        QT_TRANSLATE_NOOP("SnapTray::HotkeyManager", "Pin History"),
+        QT_TRANSLATE_NOOP("SnapTray::HotkeyManager", "Open pin history window"),
         "pinHistoryHotkey",  // kSettingsKeyPinHistoryHotkey
         ""                   // Optional, no default
     },
     {
         HotkeyAction::RecordFullScreen,
         HotkeyCategory::Recording,
-        "Record Full Screen",
-        "Start full screen recording",
+        QT_TRANSLATE_NOOP("SnapTray::HotkeyManager", "Record Full Screen"),
+        QT_TRANSLATE_NOOP("SnapTray::HotkeyManager", "Start full screen recording"),
         "recordFullScreenHotkey",  // kSettingsKeyRecordFullScreenHotkey
         ""                         // Optional, no default
     },

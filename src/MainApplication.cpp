@@ -272,7 +272,7 @@ void MainApplication::initialize()
         this, [](const QString& path) {
             GlobalToast::instance().showToast(GlobalToast::Success,
                 MainApplication::tr("Recording Saved"),
-                QString("Saved to: %1").arg(path));
+                MainApplication::tr("Saved to: %1").arg(path));
         });
 
     connect(m_recordingManager, &RecordingManager::recordingError,
@@ -287,13 +287,13 @@ void MainApplication::initialize()
         this, [](const QPixmap&, const QString& path) {
             GlobalToast::instance().showToast(GlobalToast::Success,
                 MainApplication::tr("Screenshot Saved"),
-                QString("Saved to: %1").arg(path));
+                MainApplication::tr("Saved to: %1").arg(path));
         });
     connect(m_captureManager, &CaptureManager::saveFailed,
         this, [](const QString& path, const QString& error) {
             GlobalToast::instance().showToast(GlobalToast::Error,
                 MainApplication::tr("Screenshot Save Failed"),
-                QString("%1\n%2").arg(error).arg(path), 5000);
+                MainApplication::tr("%1\n%2").arg(error).arg(path), 5000);
         });
 
     // Connect screenshot save signals from PinWindowManager
@@ -301,13 +301,13 @@ void MainApplication::initialize()
         this, [](const QPixmap&, const QString& path) {
             GlobalToast::instance().showToast(GlobalToast::Success,
                 MainApplication::tr("Screenshot Saved"),
-                QString("Saved to: %1").arg(path));
+                MainApplication::tr("Saved to: %1").arg(path));
         });
     connect(m_pinWindowManager, &PinWindowManager::saveFailed,
         this, [](const QString& path, const QString& error) {
             GlobalToast::instance().showToast(GlobalToast::Error,
                 MainApplication::tr("Screenshot Save Failed"),
-                QString("%1\n%2").arg(error).arg(path), 5000);
+                MainApplication::tr("%1\n%2").arg(error).arg(path), 5000);
         });
 
     // Connect preview request signal
@@ -342,37 +342,37 @@ void MainApplication::initialize()
     // Create context menu
     m_trayMenu = new QMenu();
 
-    m_regionCaptureAction = m_trayMenu->addAction("Region Capture");
+    m_regionCaptureAction = m_trayMenu->addAction(tr("Region Capture"));
     connect(m_regionCaptureAction, &QAction::triggered, this, &MainApplication::onRegionCapture);
 
-    m_screenCanvasAction = m_trayMenu->addAction("Screen Canvas");
+    m_screenCanvasAction = m_trayMenu->addAction(tr("Screen Canvas"));
     connect(m_screenCanvasAction, &QAction::triggered, this, &MainApplication::onScreenCanvas);
 
-    m_pinFromImageAction = m_trayMenu->addAction("Pin from Image...");
+    m_pinFromImageAction = m_trayMenu->addAction(tr("Pin from Image..."));
     connect(m_pinFromImageAction, &QAction::triggered, this, &MainApplication::onPinFromImage);
 
-    m_pinHistoryAction = m_trayMenu->addAction("Pin History");
+    m_pinHistoryAction = m_trayMenu->addAction(tr("Pin History"));
     connect(m_pinHistoryAction, &QAction::triggered, this, &MainApplication::onPinHistory);
 
-    QAction* closeAllPinsAction = m_trayMenu->addAction("Close All Pins");
+    QAction* closeAllPinsAction = m_trayMenu->addAction(tr("Close All Pins"));
     connect(closeAllPinsAction, &QAction::triggered, this, &MainApplication::onCloseAllPins);
 
-    m_fullScreenRecordingAction = m_trayMenu->addAction("Record Full Screen");
+    m_fullScreenRecordingAction = m_trayMenu->addAction(tr("Record Full Screen"));
     connect(m_fullScreenRecordingAction, &QAction::triggered, this, &MainApplication::onFullScreenRecording);
 
     m_trayMenu->addSeparator();
 
-    QAction* settingsAction = m_trayMenu->addAction("Settings");
+    QAction* settingsAction = m_trayMenu->addAction(tr("Settings"));
     connect(settingsAction, &QAction::triggered, this, &MainApplication::onSettings);
 
     m_trayMenu->addSeparator();
 
-    QAction* exitAction = m_trayMenu->addAction("Exit");
+    QAction* exitAction = m_trayMenu->addAction(tr("Exit"));
     connect(exitAction, &QAction::triggered, qApp, &QCoreApplication::quit);
 
     // Set menu and show tray icon
     m_trayIcon->setContextMenu(m_trayMenu);
-    m_trayIcon->setToolTip("SnapTray - Screenshot Utility");
+    m_trayIcon->setToolTip(tr("SnapTray - Screenshot Utility"));
     m_trayIcon->show();
 
     // Connect OCR completion signal (must be after m_trayIcon is created)
@@ -839,7 +839,7 @@ void MainApplication::updateActionHotkeyText(QAction* action,
     auto config = mgr.getConfig(hotkeyAction);
     QString displayHotkey = SnapTray::HotkeyManager::formatKeySequence(config.keySequence);
     if (!displayHotkey.isEmpty()) {
-        action->setText(QString("%1 (%2)").arg(baseName, displayHotkey));
+        action->setText(tr("%1 (%2)").arg(baseName, displayHotkey));
     } else {
         action->setText(baseName);
     }
@@ -849,19 +849,19 @@ void MainApplication::updateTrayMenuHotkeyText()
 {
     updateActionHotkeyText(m_regionCaptureAction,
                            SnapTray::HotkeyAction::RegionCapture,
-                           QStringLiteral("Region Capture"));
+                           tr("Region Capture"));
     updateActionHotkeyText(m_screenCanvasAction,
                            SnapTray::HotkeyAction::ScreenCanvas,
-                           QStringLiteral("Screen Canvas"));
+                           tr("Screen Canvas"));
     updateActionHotkeyText(m_pinFromImageAction,
                            SnapTray::HotkeyAction::PinFromImage,
-                           QStringLiteral("Pin from Image..."));
+                           tr("Pin from Image..."));
     updateActionHotkeyText(m_pinHistoryAction,
                            SnapTray::HotkeyAction::PinHistory,
-                           QStringLiteral("Pin History"));
+                           tr("Pin History"));
     updateActionHotkeyText(m_fullScreenRecordingAction,
                            SnapTray::HotkeyAction::RecordFullScreen,
-                           QStringLiteral("Record Full Screen"));
+                           tr("Record Full Screen"));
 }
 
 void MainApplication::onUpdateAvailable(const ReleaseInfo& release)

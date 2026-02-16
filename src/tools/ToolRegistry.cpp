@@ -1,5 +1,7 @@
 #include "tools/ToolRegistry.h"
 
+#include <QCoreApplication>
+
 ToolRegistry& ToolRegistry::instance() {
     static ToolRegistry registry;
     return registry;
@@ -9,7 +11,7 @@ ToolRegistry::ToolRegistry() {
     // Initialize default definition for unknown tools
     m_defaultDefinition.id = ToolId::Selection;
     m_defaultDefinition.iconKey = "selection";
-    m_defaultDefinition.tooltip = "Unknown Tool";
+    m_defaultDefinition.tooltip = QCoreApplication::translate("ToolRegistry", "Unknown Tool");
     m_defaultDefinition.category = ToolCategory::Selection;
 
     registerTools();
@@ -20,7 +22,7 @@ void ToolRegistry::registerTools() {
     registerTool({
         ToolId::Selection,
         "selection",
-        "Selection",
+        QCoreApplication::translate("ToolRegistry", "Selection"),
         "",
         ToolCategory::Selection,
         false, false, false, false, false, false,  // capabilities
@@ -32,7 +34,7 @@ void ToolRegistry::registerTools() {
     registerTool({
         ToolId::Arrow,
         "arrow",
-        "Arrow",
+        QCoreApplication::translate("ToolRegistry", "Arrow"),
         "",
         ToolCategory::Drawing,
         true, true, false, true, false, false,  // color, width, text, arrow, shape, fill
@@ -43,7 +45,7 @@ void ToolRegistry::registerTools() {
     registerTool({
         ToolId::Polyline,
         "polyline",
-        "Polyline",
+        QCoreApplication::translate("ToolRegistry", "Polyline"),
         "",
         ToolCategory::Drawing,
         true, true, false, true, false, false,  // color, width, text, arrow, shape, fill
@@ -54,7 +56,7 @@ void ToolRegistry::registerTools() {
     registerTool({
         ToolId::Pencil,
         "pencil",
-        "Pencil",
+        QCoreApplication::translate("ToolRegistry", "Pencil"),
         "",
         ToolCategory::Drawing,
         true, true, false, false, false, false,
@@ -65,7 +67,7 @@ void ToolRegistry::registerTools() {
     registerTool({
         ToolId::Marker,
         "marker",
-        "Marker",
+        QCoreApplication::translate("ToolRegistry", "Marker"),
         "",
         ToolCategory::Drawing,
         true, true, false, false, false, false,
@@ -76,7 +78,7 @@ void ToolRegistry::registerTools() {
     registerTool({
         ToolId::Shape,
         "shape",
-        "Shape",
+        QCoreApplication::translate("ToolRegistry", "Shape"),
         "",
         ToolCategory::Drawing,
         true, true, false, false, true, true,  // color, width, shape, fill
@@ -87,7 +89,7 @@ void ToolRegistry::registerTools() {
     registerTool({
         ToolId::Text,
         "text",
-        "Text",
+        QCoreApplication::translate("ToolRegistry", "Text"),
         "",
         ToolCategory::Drawing,
         true, false, true, false, false, false,  // color, text formatting
@@ -98,7 +100,7 @@ void ToolRegistry::registerTools() {
     registerTool({
         ToolId::Mosaic,
         "mosaic",
-        "Mosaic",
+        QCoreApplication::translate("ToolRegistry", "Mosaic"),
         "",
         ToolCategory::Drawing,
         false, true, false, false, false, false,  // width only
@@ -109,7 +111,7 @@ void ToolRegistry::registerTools() {
     registerTool({
         ToolId::Eraser,
         "eraser",
-        "Eraser",
+        QCoreApplication::translate("ToolRegistry", "Eraser"),
         "",
         ToolCategory::Drawing,
         false, false, false, false, false, false,  // no color/width UI
@@ -120,7 +122,7 @@ void ToolRegistry::registerTools() {
     registerTool({
         ToolId::StepBadge,
         "step-badge",
-        "Step Badge",
+        QCoreApplication::translate("ToolRegistry", "Step Badge"),
         "",
         ToolCategory::Drawing,
         true, false, false, false, false, false,  // color only
@@ -131,7 +133,7 @@ void ToolRegistry::registerTools() {
     registerTool({
         ToolId::EmojiSticker,
         "emoji",
-        "Emoji Sticker",
+        QCoreApplication::translate("ToolRegistry", "Emoji Sticker"),
         "",
         ToolCategory::Drawing,
         false, false, false, false, false, false,  // no color/width UI
@@ -142,7 +144,7 @@ void ToolRegistry::registerTools() {
     registerTool({
         ToolId::Crop,
         "crop",
-        "Crop",
+        QCoreApplication::translate("ToolRegistry", "Crop"),
         "",
         ToolCategory::Drawing,
         false, false, false, false, false, false,  // no capabilities
@@ -154,7 +156,7 @@ void ToolRegistry::registerTools() {
     registerTool({
         ToolId::CanvasWhiteboard,
         "whiteboard",
-        "Whiteboard",
+        QCoreApplication::translate("ToolRegistry", "Whiteboard"),
         "W",
         ToolCategory::Toggle,
         false, false, false, false, false, false,
@@ -165,7 +167,7 @@ void ToolRegistry::registerTools() {
     registerTool({
         ToolId::CanvasBlackboard,
         "blackboard",
-        "Blackboard",
+        QCoreApplication::translate("ToolRegistry", "Blackboard"),
         "B",
         ToolCategory::Toggle,
         false, false, false, false, false, false,
@@ -185,7 +187,7 @@ void ToolRegistry::registerTools() {
     registerTool({
         ToolId::Undo,
         "undo",
-        "Undo",
+        QCoreApplication::translate("ToolRegistry", "Undo"),
         undoShortcut,
         ToolCategory::Action,
         false, false, false, false, false, false,
@@ -196,7 +198,7 @@ void ToolRegistry::registerTools() {
     registerTool({
         ToolId::Redo,
         "redo",
-        "Redo",
+        QCoreApplication::translate("ToolRegistry", "Redo"),
         redoShortcut,
         ToolCategory::Action,
         false, false, false, false, false, false,
@@ -207,7 +209,7 @@ void ToolRegistry::registerTools() {
     registerTool({
         ToolId::Clear,
         "cancel",
-        "Clear All",
+        QCoreApplication::translate("ToolRegistry", "Clear All"),
         "",
         ToolCategory::Action,
         false, false, false, false, false, false,
@@ -218,7 +220,7 @@ void ToolRegistry::registerTools() {
     registerTool({
         ToolId::Cancel,
         "cancel",
-        "Cancel",
+        QCoreApplication::translate("ToolRegistry", "Cancel"),
         "Esc",
         ToolCategory::Action,
         false, false, false, false, false, false,
@@ -229,7 +231,7 @@ void ToolRegistry::registerTools() {
     registerTool({
         ToolId::OCR,
         "ocr",
-        "Recognize Text",
+        QCoreApplication::translate("ToolRegistry", "Recognize Text"),
         "",
         ToolCategory::Action,
         false, false, false, false, false, false,
@@ -240,7 +242,7 @@ void ToolRegistry::registerTools() {
     registerTool({
         ToolId::QRCode,
         "qrcode",
-        "QR Code Scan",
+        QCoreApplication::translate("ToolRegistry", "QR Code Scan"),
         "",
         ToolCategory::Action,
         false, false, false, false, false, false,
@@ -251,7 +253,7 @@ void ToolRegistry::registerTools() {
     registerTool({
         ToolId::Pin,
         "pin",
-        "Pin to Desktop",
+        QCoreApplication::translate("ToolRegistry", "Pin to Desktop"),
         "",
         ToolCategory::Action,
         false, false, false, false, false, false,
@@ -262,7 +264,7 @@ void ToolRegistry::registerTools() {
     registerTool({
         ToolId::Record,
         "record",
-        "Screen Recording",
+        QCoreApplication::translate("ToolRegistry", "Screen Recording"),
         "",
         ToolCategory::Action,
         false, false, false, false, false, false,
@@ -274,7 +276,7 @@ void ToolRegistry::registerTools() {
     registerTool({
         ToolId::Save,
         "save",
-        "Save",
+        QCoreApplication::translate("ToolRegistry", "Save"),
         "Cmd+S",
         ToolCategory::Action,
         false, false, false, false, false, false,
@@ -285,7 +287,7 @@ void ToolRegistry::registerTools() {
     registerTool({
         ToolId::Copy,
         "copy",
-        "Copy to Clipboard",
+        QCoreApplication::translate("ToolRegistry", "Copy to Clipboard"),
         "Cmd+C",
         ToolCategory::Action,
         false, false, false, false, false, false,
@@ -296,7 +298,7 @@ void ToolRegistry::registerTools() {
     registerTool({
         ToolId::Save,
         "save",
-        "Save",
+        QCoreApplication::translate("ToolRegistry", "Save"),
         "Ctrl+S",
         ToolCategory::Action,
         false, false, false, false, false, false,
@@ -307,7 +309,7 @@ void ToolRegistry::registerTools() {
     registerTool({
         ToolId::Copy,
         "copy",
-        "Copy to Clipboard",
+        QCoreApplication::translate("ToolRegistry", "Copy to Clipboard"),
         "Ctrl+C",
         ToolCategory::Action,
         false, false, false, false, false, false,
@@ -319,7 +321,7 @@ void ToolRegistry::registerTools() {
     registerTool({
         ToolId::Exit,
         "cancel",
-        "Exit",
+        QCoreApplication::translate("ToolRegistry", "Exit"),
         "",
         ToolCategory::Action,
         false, false, false, false, false, false,
@@ -331,7 +333,7 @@ void ToolRegistry::registerTools() {
     registerTool({
         ToolId::MultiRegion,
         "multi-region",
-        "Multi-Region Capture",
+        QCoreApplication::translate("ToolRegistry", "Multi-Region Capture"),
         "",
         ToolCategory::Action,
         false, false, false, false, false, false,
@@ -342,7 +344,7 @@ void ToolRegistry::registerTools() {
     registerTool({
         ToolId::MultiRegionDone,
         "done",
-        "Complete Multi-Region",
+        QCoreApplication::translate("ToolRegistry", "Complete Multi-Region"),
         "",
         ToolCategory::Action,
         false, false, false, false, false, false,

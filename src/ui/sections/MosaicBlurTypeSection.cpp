@@ -62,7 +62,7 @@ void MosaicBlurTypeSection::draw(QPainter& painter, const ToolbarStyleConfig& st
     painter.drawRoundedRect(m_buttonRect, 4, 4);
 
     // Draw current style text in the button
-    const char* currentLabel = (m_blurType == BlurType::Pixelate) ? "Pixelate" : "Gaussian";
+    const QString currentLabel = (m_blurType == BlurType::Pixelate) ? tr("Pixelate") : tr("Gaussian");
     painter.setPen(styleConfig.textColor);
     QFont font = painter.font();
     font.setPointSize(11);
@@ -88,7 +88,7 @@ void MosaicBlurTypeSection::draw(QPainter& painter, const ToolbarStyleConfig& st
 
         // Draw each option with text labels
         BlurType types[] = { BlurType::Pixelate, BlurType::Gaussian };
-        const char* labels[] = { "Pixelate", "Gaussian" };
+        const QString labels[] = { tr("Pixelate"), tr("Gaussian") };
         for (int i = 0; i < 2; ++i) {
             QRect optionRect(
                 m_dropdownRect.left(),
