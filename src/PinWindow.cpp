@@ -445,21 +445,20 @@ PinWindow::~PinWindow()
     // Clean up floating windows (not parented to this window)
     if (m_toolbar) {
         m_toolbar->close();
-        delete m_toolbar;
-        m_toolbar = nullptr;
+        m_toolbar.reset();
     }
     if (m_subToolbar) {
         m_subToolbar->close();
-        delete m_subToolbar;
-        m_subToolbar = nullptr;
+        m_subToolbar.reset();
     }
     if (m_colorPickerDialog) {
         m_colorPickerDialog->close();
-        delete m_colorPickerDialog;
-        m_colorPickerDialog = nullptr;
+        m_colorPickerDialog.reset();
     }
-    delete m_beautifyPanel;
-    m_beautifyPanel = nullptr;
+    if (m_beautifyPanel) {
+        m_beautifyPanel->hide();
+        m_beautifyPanel.reset();
+    }
     // InlineTextEditor, TextAnnotationEditor are QObjects parented to this
 }
 
@@ -2458,49 +2457,49 @@ void PinWindow::initializeAnnotationComponents()
     m_annotationContext->connectTextEditorSignals();
 
     // Initialize toolbar (not parented - separate floating window)
-    m_toolbar = new WindowedToolbar(nullptr);
+    m_toolbar = std::make_unique<WindowedToolbar>(nullptr);
     m_toolbar->setOCRAvailable(PlatformFeatures::instance().isOCRAvailable());
 
     // Connect toolbar signals
-    connect(m_toolbar, &WindowedToolbar::toolSelected,
+    connect(m_toolbar.get(), &WindowedToolbar::toolSelected,
         this, &PinWindow::handleToolbarToolSelected);
-    connect(m_toolbar, &WindowedToolbar::undoClicked,
+    connect(m_toolbar.get(), &WindowedToolbar::undoClicked,
         this, &PinWindow::handleToolbarUndo);
-    connect(m_toolbar, &WindowedToolbar::redoClicked,
+    connect(m_toolbar.get(), &WindowedToolbar::redoClicked,
         this, &PinWindow::handleToolbarRedo);
-    connect(m_toolbar, &WindowedToolbar::ocrClicked,
+    connect(m_toolbar.get(), &WindowedToolbar::ocrClicked,
         this, &PinWindow::performOCR);
-    connect(m_toolbar, &WindowedToolbar::qrCodeClicked,
+    connect(m_toolbar.get(), &WindowedToolbar::qrCodeClicked,
         this, &PinWindow::performQRCodeScan);
-    connect(m_toolbar, &WindowedToolbar::copyClicked,
+    connect(m_toolbar.get(), &WindowedToolbar::copyClicked,
         this, &PinWindow::copyToClipboard);
-    connect(m_toolbar, &WindowedToolbar::saveClicked,
+    connect(m_toolbar.get(), &WindowedToolbar::saveClicked,
         this, &PinWindow::saveToFile);
-    connect(m_toolbar, &WindowedToolbar::doneClicked,
+    connect(m_toolbar.get(), &WindowedToolbar::doneClicked,
         this, &PinWindow::hideToolbar);
-    connect(m_toolbar, &WindowedToolbar::cursorRestoreRequested,
+    connect(m_toolbar.get(), &WindowedToolbar::cursorRestoreRequested,
         this, &PinWindow::updateCursorForTool);
 
     // Initialize sub-toolbar (not parented - separate floating window)
-    m_subToolbar = new WindowedSubToolbar(nullptr);
+    m_subToolbar = std::make_unique<WindowedSubToolbar>(nullptr);
 
     // Connect sub-toolbar signals
-    connect(m_subToolbar, &WindowedSubToolbar::emojiSelected,
+    connect(m_subToolbar.get(), &WindowedSubToolbar::emojiSelected,
         this, &PinWindow::onEmojiSelected);
-    connect(m_subToolbar, &WindowedSubToolbar::stepBadgeSizeChanged,
+    connect(m_subToolbar.get(), &WindowedSubToolbar::stepBadgeSizeChanged,
         this, &PinWindow::onStepBadgeSizeChanged);
-    connect(m_subToolbar, &WindowedSubToolbar::shapeTypeChanged,
+    connect(m_subToolbar.get(), &WindowedSubToolbar::shapeTypeChanged,
         this, &PinWindow::onShapeTypeChanged);
-    connect(m_subToolbar, &WindowedSubToolbar::shapeFillModeChanged,
+    connect(m_subToolbar.get(), &WindowedSubToolbar::shapeFillModeChanged,
         this, &PinWindow::onShapeFillModeChanged);
-    connect(m_subToolbar, &WindowedSubToolbar::autoBlurRequested,
+    connect(m_subToolbar.get(), &WindowedSubToolbar::autoBlurRequested,
         this, &PinWindow::onAutoBlurRequested);
-    connect(m_subToolbar, &WindowedSubToolbar::cursorRestoreRequested,
+    connect(m_subToolbar.get(), &WindowedSubToolbar::cursorRestoreRequested,
         this, &PinWindow::updateCursorForTool);
 
     // Initialize settings helper for text font dropdowns
     m_settingsHelper = new RegionSettingsHelper(this);
-    m_settingsHelper->setParentWidget(m_subToolbar);
+    m_settingsHelper->setParentWidget(m_subToolbar.get());
     connect(m_settingsHelper, &RegionSettingsHelper::fontSizeSelected,
         this, &PinWindow::onFontSizeSelected);
     connect(m_settingsHelper, &RegionSettingsHelper::fontFamilySelected,
@@ -2537,10 +2536,10 @@ void PinWindow::showToolbar()
     }
 
     // Set associated widgets for click-outside detection
-    m_toolbar->setAssociatedWidgets(this, m_subToolbar);
+    m_toolbar->setAssociatedWidgets(this, m_subToolbar.get());
 
     // Connect close request signal
-    connect(m_toolbar, &WindowedToolbar::closeRequested,
+    connect(m_toolbar.get(), &WindowedToolbar::closeRequested,
         this, &PinWindow::hideToolbar, Qt::UniqueConnection);
 
     m_toolbarVisible = true;
@@ -4142,16 +4141,16 @@ bool PinWindow::isRegionLayoutMode() const
 void PinWindow::showBeautifyPanel()
 {
     if (!m_beautifyPanel) {
-        m_beautifyPanel = new BeautifyPanel(nullptr);
+        m_beautifyPanel = std::make_unique<BeautifyPanel>(nullptr);
         m_beautifyPanel->setWindowFlags(Qt::Tool | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
         m_beautifyPanel->setAttribute(Qt::WA_DeleteOnClose, false);
 
-        connect(m_beautifyPanel, &BeautifyPanel::copyRequested,
+        connect(m_beautifyPanel.get(), &BeautifyPanel::copyRequested,
                 this, &PinWindow::onBeautifyCopy);
-        connect(m_beautifyPanel, &BeautifyPanel::saveRequested,
+        connect(m_beautifyPanel.get(), &BeautifyPanel::saveRequested,
                 this, &PinWindow::onBeautifySave);
-        connect(m_beautifyPanel, &BeautifyPanel::closeRequested,
-                m_beautifyPanel, &QWidget::hide);
+        connect(m_beautifyPanel.get(), &BeautifyPanel::closeRequested,
+                m_beautifyPanel.get(), &QWidget::hide);
     }
 
     m_beautifyPanel->setSourcePixmap(getExportPixmapWithAnnotations());

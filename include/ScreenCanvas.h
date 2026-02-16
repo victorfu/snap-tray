@@ -148,7 +148,7 @@ private:
     qreal m_devicePixelRatio;
 
     // Annotation layer and tool manager
-    AnnotationLayer *m_annotationLayer;
+    AnnotationLayer *m_annotationLayer; // Qt parent owns lifetime
     ToolManager *m_toolManager;
     ToolId m_currentToolId;
     bool m_laserPointerActive;
@@ -167,7 +167,7 @@ private:
     EmojiPicker *m_emojiPicker;
 
     // Color picker dialog
-    snaptray::colorwidgets::ColorPickerDialogCompat *m_colorPickerDialog;
+    std::unique_ptr<snaptray::colorwidgets::ColorPickerDialogCompat> m_colorPickerDialog;
 
     // Laser pointer renderer
     LaserPointerRenderer *m_laserRenderer;

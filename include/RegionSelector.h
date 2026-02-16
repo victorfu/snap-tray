@@ -245,7 +245,7 @@ private:
     EmojiPicker *m_emojiPicker;
 
     // Annotation layer and tool manager
-    AnnotationLayer *m_annotationLayer;
+    AnnotationLayer *m_annotationLayer; // Qt parent owns lifetime
     ToolManager *m_toolManager;
     StepBadgeSize m_stepBadgeSize = StepBadgeSize::Medium;
     MosaicBlurTypeSection::BlurType m_mosaicBlurType = MosaicBlurTypeSection::BlurType::Pixelate;
@@ -298,7 +298,7 @@ private:
     TextAnnotationEditor *m_textAnnotationEditor;
 
     // Color picker dialog
-    snaptray::colorwidgets::ColorPickerDialogCompat *m_colorPickerDialog;
+    std::unique_ptr<snaptray::colorwidgets::ColorPickerDialogCompat> m_colorPickerDialog;
 
     // Startup protection - track window activation for robust deactivate handling
     int m_activationCount = 0;
@@ -326,8 +326,8 @@ private:
     int m_cornerRadius = 0;  // Current corner radius in logical pixels
 
     // Multi-region capture
-    MultiRegionManager* m_multiRegionManager = nullptr;
-    MultiRegionListPanel* m_multiRegionListPanel = nullptr;
+    MultiRegionManager* m_multiRegionManager = nullptr;       // Qt parent owns lifetime
+    MultiRegionListPanel* m_multiRegionListPanel = nullptr;   // Qt parent owns lifetime
     QRect m_replaceOriginalRect;
     bool m_multiRegionListRefreshPending = false;
 

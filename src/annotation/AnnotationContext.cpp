@@ -202,7 +202,7 @@ void AnnotationContext::applyTextFontFamily(const QString& family) const
 
 void AnnotationContext::showColorPickerDialog(
     QWidget* hostWidget,
-    ColorPickerDialogCompat*& dialog,
+    std::unique_ptr<ColorPickerDialogCompat>& dialog,
     const QColor& currentColor,
     const QPoint& centerPoint,
     const std::function<void(const QColor&)>& onColorSelected)
@@ -212,14 +212,9 @@ void AnnotationContext::showColorPickerDialog(
     }
 
     if (!dialog) {
-        dialog = new ColorPickerDialogCompat();
+        dialog = std::make_unique<ColorPickerDialogCompat>();
 
-        auto** dialogPtr = &dialog;
-        QObject::connect(dialog, &QObject::destroyed, hostWidget, [dialogPtr]() {
-            *dialogPtr = nullptr;
-        });
-
-        QObject::connect(dialog,
+        QObject::connect(dialog.get(),
                          &ColorPickerDialogCompat::colorSelected,
                          hostWidget,
                          [onColorSelected](const QColor& color) {

@@ -236,8 +236,9 @@ ScreenCanvas::~ScreenCanvas()
 {
     // Clean up cursor state before destruction
     CursorManager::instance().clearAllForWidget(this);
-
-    delete m_colorPickerDialog;
+    if (m_colorPickerDialog) {
+        m_colorPickerDialog->close();
+    }
 }
 
 void ScreenCanvas::initializeIcons()

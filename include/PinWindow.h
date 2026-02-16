@@ -385,9 +385,9 @@ private:
     int m_baseCornerRadius = 0;
 
     // Toolbar and annotation members
-    WindowedToolbar* m_toolbar = nullptr;
-    WindowedSubToolbar* m_subToolbar = nullptr;
-    AnnotationLayer* m_annotationLayer = nullptr;
+    std::unique_ptr<WindowedToolbar> m_toolbar;
+    std::unique_ptr<WindowedSubToolbar> m_subToolbar;
+    AnnotationLayer* m_annotationLayer = nullptr; // Qt parent owns lifetime
     ToolManager* m_toolManager = nullptr;
     InlineTextEditor* m_textEditor = nullptr;
     TextAnnotationEditor* m_textAnnotationEditor = nullptr;
@@ -424,7 +424,7 @@ private:
     QPointer<QFutureWatcherBase> m_autoBlurWatcher;
 
     // Color picker dialog
-    snaptray::colorwidgets::ColorPickerDialogCompat* m_colorPickerDialog = nullptr;
+    std::unique_ptr<snaptray::colorwidgets::ColorPickerDialogCompat> m_colorPickerDialog;
 
     // Shared annotation setup/signals helper
     std::unique_ptr<AnnotationContext> m_annotationContext;
@@ -450,7 +450,7 @@ private:
     void showBeautifyPanel();
     void onBeautifyCopy(const BeautifySettings& settings);
     void onBeautifySave(const BeautifySettings& settings);
-    BeautifyPanel* m_beautifyPanel = nullptr;
+    std::unique_ptr<BeautifyPanel> m_beautifyPanel;
 
     // ========================================================================
     // Local constants (previously in Constants.h but only used by PinWindow)

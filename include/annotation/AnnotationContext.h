@@ -5,6 +5,7 @@
 #include <QPoint>
 #include <QString>
 #include <functional>
+#include <memory>
 
 class QWidget;
 class TextAnnotationEditor;
@@ -36,7 +37,7 @@ public:
 
     static void showColorPickerDialog(
         QWidget* hostWidget,
-        snaptray::colorwidgets::ColorPickerDialogCompat*& dialog,
+        std::unique_ptr<snaptray::colorwidgets::ColorPickerDialogCompat>& dialog,
         const QColor& currentColor,
         const QPoint& centerPoint,
         const std::function<void(const QColor&)>& onColorSelected);

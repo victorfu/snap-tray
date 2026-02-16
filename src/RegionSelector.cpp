@@ -678,10 +678,8 @@ RegionSelector::~RegionSelector()
     // Clean up cursor state before destruction
     CursorManager::instance().clearAllForWidget(this);
 
-    // Clean up color picker dialog
     if (m_colorPickerDialog) {
-        delete m_colorPickerDialog;
-        m_colorPickerDialog = nullptr;
+        m_colorPickerDialog->close();
     }
 
     // Remove event filter
