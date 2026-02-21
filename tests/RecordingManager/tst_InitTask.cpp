@@ -3,6 +3,8 @@
 #include <QThread>
 #include <QTemporaryDir>
 #include "RecordingInitTask.h"
+#include "RecordingRegionNormalizer.h"
+#include "utils/CoordinateHelper.h"
 
 /**
  * @brief Tests for RecordingInitTask
@@ -30,6 +32,7 @@ private slots:
     void testConfigWithAudio();
     void testConfigWithGif();
     void testConfigWithNativeEncoder();
+    void testNormalizedRegionFrameSizeAlignment();
 
     // Cancellation tests
     void testCancelBeforeRun();
@@ -146,6 +149,26 @@ void TestRecordingInitTask::testConfigWithNativeEncoder()
 
     RecordingInitTask task(config);
     QVERIFY(!task.isCancelled());
+}
+
+void TestRecordingInitTask::testNormalizedRegionFrameSizeAlignment()
+{
+    const QRect screenBounds(0, 0, 120, 80);
+    const QRect selectedRegion(65, 43, 55, 37); // odd physical size at DPR 1.1
+    constexpr qreal dpr = 1.1;
+
+    const QRect normalizedRegion = normalizeToEvenPhysicalRegion(selectedRegion, screenBounds, dpr);
+    const QSize frameSize = CoordinateHelper::toPhysical(normalizedRegion.size(), dpr);
+
+    QVERIFY((frameSize.width() % 2) == 0);
+    QVERIFY((frameSize.height() % 2) == 0);
+    QCOMPARE(CoordinateHelper::toPhysical(normalizedRegion.size(), dpr), frameSize);
+
+    RecordingInitTask::Config config = createTestConfig();
+    config.region = normalizedRegion;
+    config.frameSize = frameSize;
+
+    QCOMPARE(config.frameSize, CoordinateHelper::toPhysical(config.region.size(), dpr));
 }
 
 // ============================================================================

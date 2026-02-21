@@ -430,6 +430,11 @@ target_link_libraries(RecordingManager_InitTask PRIVATE snaptray_ui snaptray_pla
 add_test(NAME RecordingManager_InitTask COMMAND RecordingManager_InitTask)
 set_tests_properties(RecordingManager_InitTask PROPERTIES TIMEOUT 60 LABELS "integration")
 
+add_executable(RecordingManager_RegionSizing RecordingManager/tst_RegionSizing.cpp)
+target_link_libraries(RecordingManager_RegionSizing PRIVATE snaptray_ui snaptray_platform Qt6::Test)
+add_test(NAME RecordingManager_RegionSizing COMMAND RecordingManager_RegionSizing)
+set_tests_properties(RecordingManager_RegionSizing PROPERTIES TIMEOUT 60 LABELS "unit")
+
 endif()  # End of temporarily disabled RecordingManager tests
 
 # ============================================================================

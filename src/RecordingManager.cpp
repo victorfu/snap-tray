@@ -3,6 +3,7 @@
 #include "RecordingControlBar.h"
 #include "RecordingBoundaryOverlay.h"
 #include "RecordingInitTask.h"
+#include "RecordingRegionNormalizer.h"
 #include "video/CountdownOverlay.h"
 #include "encoding/NativeGifEncoder.h"
 #include "encoding/EncodingWorker.h"
@@ -68,6 +69,24 @@ QScreen* resolveTargetScreen(QScreen* preferred)
 bool isScreenAvailable(QScreen* screen)
 {
     return screen && QGuiApplication::screens().contains(screen);
+}
+
+QRect normalizeRecordingRegionForScreen(const QRect& region, QScreen* screen)
+{
+    if (!screen) {
+        return region;
+    }
+
+    return normalizeToEvenPhysicalRegion(
+        region,
+        screen->geometry(),
+        CoordinateHelper::getDevicePixelRatio(screen)
+    );
+}
+
+bool isEvenPhysicalSize(const QSize& physicalSize)
+{
+    return (physicalSize.width() % 2 == 0) && (physicalSize.height() % 2 == 0);
 }
 
 IAudioCaptureEngine::AudioSource resolveAudioSource(int audioSourceSetting)
@@ -273,8 +292,13 @@ void RecordingManager::startFullScreenRecording(QScreen* screen)
         return;
     }
 
-    // Use the entire screen as the recording region
-    m_recordingRegion = targetScreen->geometry();
+    // Use the entire screen as the recording region (normalized to even physical size).
+    m_recordingRegion = normalizeRecordingRegionForScreen(targetScreen->geometry(), targetScreen);
+    if (m_recordingRegion.isEmpty()) {
+        emit recordingError(tr("Failed to normalize recording region."));
+        setState(State::Idle);
+        return;
+    }
     m_targetScreen = targetScreen;
 
     loadAndValidateFrameRate();
@@ -286,8 +310,20 @@ void RecordingManager::startFullScreenRecording(QScreen* screen)
 
 void RecordingManager::onRegionSelected(const QRect &region, QScreen *screen)
 {
-    m_recordingRegion = region;
-    m_targetScreen = screen;
+    QScreen* targetScreen = resolveTargetScreen(screen);
+    if (!targetScreen) {
+        emit recordingError(tr("No screen available for recording."));
+        setState(State::Idle);
+        return;
+    }
+
+    m_recordingRegion = normalizeRecordingRegionForScreen(region, targetScreen);
+    if (m_recordingRegion.isEmpty()) {
+        emit recordingError(tr("Failed to normalize recording region."));
+        setState(State::Idle);
+        return;
+    }
+    m_targetScreen = targetScreen;
 
     loadAndValidateFrameRate();
     resetPauseTracking();
@@ -400,6 +436,16 @@ void RecordingManager::beginAsyncInitialization()
         return;
     }
 
+    m_recordingRegion = normalizeRecordingRegionForScreen(m_recordingRegion, targetScreen);
+    if (m_recordingRegion.isEmpty()) {
+        qWarning() << "RecordingManager: Normalized region is empty";
+        stopFrameCapture();
+        setState(State::Idle);
+        emit recordingError(tr("Recording region is invalid."));
+        return;
+    }
+
+
     // Load settings for initialization config
     auto settings = SnapTray::getSettings();
     int formatInt = settings.value("recording/outputFormat", 0).toInt();
@@ -451,7 +497,11 @@ void RecordingManager::beginAsyncInitialization()
 
     // Use physical pixel size for Retina/HiDPI displays
     qreal scale = CoordinateHelper::getDevicePixelRatio(targetScreen);
-    QSize physicalSize = CoordinateHelper::toEvenPhysicalSize(m_recordingRegion.size(), scale);
+    QSize physicalSize = CoordinateHelper::toPhysical(m_recordingRegion.size(), scale);
+    if (!isEvenPhysicalSize(physicalSize)) {
+        qWarning() << "RecordingManager: Region normalization produced odd physical size"
+                   << physicalSize << "- encoder fallback may rescale frames.";
+    }
 
     // Create initialization config
     RecordingInitTask::Config config;

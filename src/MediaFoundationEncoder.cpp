@@ -39,6 +39,7 @@ public:
     bool running = false;
     int quality = 55;  // 0-100
     bool mfInitialized = false;
+    bool warnedAboutFrameResize = false;
 
     LONGLONG frameDuration100ns() const {
         return frameRate > 0 ? 10000000LL / frameRate : 10000000LL / 30;
@@ -249,6 +250,11 @@ bool MediaFoundationEncoder::start(const QString &outputPath, const QSize &frame
         return false;
     }
 
+    if ((frameSize.width() % 2 != 0) || (frameSize.height() % 2 != 0)) {
+        qWarning() << "MediaFoundationEncoder: Received odd frame size from upstream:" << frameSize
+                   << "- applying compatibility fallback.";
+    }
+
     // Ensure dimensions are even (required for H.264)
     QSize adjustedSize = frameSize;
     if (adjustedSize.width() % 2 != 0) {
@@ -263,6 +269,7 @@ bool MediaFoundationEncoder::start(const QString &outputPath, const QSize &frame
     d->frameRate = qBound(1, frameRate, 240);
     d->framesWritten = 0;
     d->frameNumber = 0;
+    d->warnedAboutFrameResize = false;
 
     // Remove existing file if present
     QFile::remove(outputPath);
@@ -321,6 +328,11 @@ void MediaFoundationEncoder::writeFrame(const QImage &frame, qint64 timestampMs)
     // Scale frame if needed
     QImage scaledFrame = frame;
     if (frame.size() != d->frameSize) {
+        if (!d->warnedAboutFrameResize) {
+            qWarning() << "MediaFoundationEncoder: Frame size mismatch, using fallback scaling."
+                       << "incoming:" << frame.size() << "expected:" << d->frameSize;
+            d->warnedAboutFrameResize = true;
+        }
         scaledFrame = frame.scaled(d->frameSize, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
     }
 

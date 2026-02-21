@@ -5,6 +5,7 @@
 #include "encoding/NativeGifEncoder.h"
 #include "encoding/WebPAnimEncoder.h"
 #include "encoding/EncoderFactory.h"
+#include "utils/CoordinateHelper.h"
 
 #include <QDebug>
 #include <QScreen>
@@ -197,6 +198,16 @@ bool RecordingInitTask::initializeAudioEngine()
 bool RecordingInitTask::initializeEncoder()
 {
     qDebug() << "RecordingInitTask: Creating encoder...";
+
+    const qreal dpr = CoordinateHelper::getDevicePixelRatio(m_config.screen);
+    const QSize expectedFrameSize = CoordinateHelper::toPhysical(m_config.region.size(), dpr);
+    if (expectedFrameSize != m_config.frameSize) {
+        qWarning() << "RecordingInitTask: Frame size does not match capture region physical size."
+                   << "region:" << m_config.region
+                   << "dpr:" << dpr
+                   << "expected:" << expectedFrameSize
+                   << "configured:" << m_config.frameSize;
+    }
 
     // Configure encoder
     EncoderFactory::EncoderConfig encoderConfig;
