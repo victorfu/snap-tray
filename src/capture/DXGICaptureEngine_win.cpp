@@ -1,8 +1,8 @@
 #include "capture/DXGICaptureEngine.h"
 #include "utils/CoordinateHelper.h"
 
+#include <QCoreApplication>
 #include <QScreen>
-#include <QGuiApplication>
 #include <QDebug>
 #include <QThread>
 #include <QTimer>
@@ -23,11 +23,18 @@ class DXGICaptureEngine::Private : public QObject
     Q_OBJECT
 public:
     Private() : QObject(nullptr) {}
-    ~Private() { cleanupThread(); cleanup(); }
+    ~Private() override
+    {
+        if (workerThread || captureTimer) {
+            qWarning() << "DXGICaptureEngine: Private destroyed with active thread resources."
+                       << "stop() should be called before destruction.";
+        }
+        cleanup();
+    }
 
     bool initializeDXGI();
     void cleanup();
-    void cleanupThread();
+    void cleanupThread(QThread *ownerThread);
     QImage captureWithBitBlt();
     QImage captureWithDXGI();
 
@@ -232,30 +239,68 @@ void DXGICaptureEngine::Private::cleanup()
     useDXGI = false;
 }
 
-void DXGICaptureEngine::Private::cleanupThread()
+void DXGICaptureEngine::Private::cleanupThread(QThread *ownerThread)
 {
-    running = false;
+    QThread *resolvedOwnerThread = ownerThread ? ownerThread : QThread::currentThread();
+    auto workerAffinityCleanup = [this, resolvedOwnerThread](bool allowMoveToOwnerThread) {
+        running = false;
 
-    if (captureTimer) {
-        // Stop timer from worker thread context
-        QMetaObject::invokeMethod(captureTimer, &QTimer::stop, Qt::QueuedConnection);
-        captureTimer->deleteLater();
-        captureTimer = nullptr;
+        if (captureTimer) {
+            captureTimer->stop();
+            delete captureTimer;
+            captureTimer = nullptr;
+        }
+
+        if (allowMoveToOwnerThread
+            && resolvedOwnerThread
+            && thread() != resolvedOwnerThread) {
+            moveToThread(resolvedOwnerThread);
+        }
+    };
+
+    QThread *objectThread = thread();
+    if (objectThread && objectThread != QThread::currentThread()) {
+        if (objectThread->isRunning()) {
+            // Keep moveToThread() and timer destruction in the object's current affinity thread.
+            const bool invoked = QMetaObject::invokeMethod(
+                this,
+                [workerAffinityCleanup]() { workerAffinityCleanup(true); },
+                Qt::BlockingQueuedConnection
+            );
+            if (!invoked) {
+                qWarning() << "DXGICaptureEngine: Failed to invoke worker-affinity cleanup."
+                           << "Skipping unsafe cross-thread timer destruction.";
+                running = false;
+            }
+        } else {
+            qWarning() << "DXGICaptureEngine: Affinity thread is not running during cleanup."
+                       << "Performing fallback cleanup from current thread.";
+            workerAffinityCleanup(false);
+        }
+    } else {
+        workerAffinityCleanup(true);
     }
 
     if (workerThread) {
-        workerThread->quit();
-        if (!workerThread->wait(3000)) {  // Wait up to 3 seconds
-            qWarning() << "DXGICaptureEngine: Worker thread did not exit gracefully";
-            workerThread->terminate();
-            workerThread->wait();
-        }
-        workerThread->deleteLater();
+        QThread *threadToCleanup = workerThread;
         workerThread = nullptr;
-    }
 
-    // Move back to main thread for proper cleanup
-    moveToThread(QGuiApplication::instance()->thread());
+        threadToCleanup->quit();
+        if (!threadToCleanup->wait(3000)) {  // Wait up to 3 seconds
+            qWarning() << "DXGICaptureEngine: Worker thread did not exit gracefully";
+            threadToCleanup->terminate();
+            threadToCleanup->wait();
+        }
+        if (threadToCleanup->thread() == QThread::currentThread()) {
+            delete threadToCleanup;
+        } else {
+            // Avoid blocking cross-thread deletion, which can deadlock when the affinity
+            // thread is waiting for this caller thread to finish (e.g. init cancellation).
+            threadToCleanup->deleteLater();
+        }
+    } else {
+        running = false;
+    }
 }
 
 void DXGICaptureEngine::Private::doCapture()
@@ -529,8 +574,23 @@ bool DXGICaptureEngine::start()
         qDebug() << "DXGICaptureEngine: DXGI unavailable, using BitBlt fallback";
     }
 
-    // Create worker thread for async capture
+    // Create worker thread object on the application thread so stop() can tear it down safely.
+    QObject *threadOwnerObject = QCoreApplication::instance();
+    QThread *threadOwner = threadOwnerObject ? threadOwnerObject->thread() : QThread::currentThread();
+
     d->workerThread = new QThread();
+    if (!d->workerThread) {
+        emit error("Failed to create DXGI capture worker thread");
+        d->cleanup();
+        return false;
+    }
+
+    if (threadOwnerObject
+        && threadOwner
+        && d->workerThread->thread() != threadOwner) {
+        d->workerThread->moveToThread(threadOwner);
+    }
+
     d->moveToThread(d->workerThread);
 
     // Create timer in worker thread context
@@ -556,8 +616,11 @@ bool DXGICaptureEngine::start()
 
 void DXGICaptureEngine::stop()
 {
-    if (d->running) {
-        d->cleanupThread();
+    const bool hasThreadResources = d->running || d->captureTimer || d->workerThread;
+    if (hasThreadResources || d->useDXGI) {
+        if (hasThreadResources) {
+            d->cleanupThread(thread());
+        }
         d->cleanup();
         qDebug() << "DXGICaptureEngine: Stopped";
     }

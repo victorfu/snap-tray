@@ -447,6 +447,21 @@ target_link_libraries(RecordingManager_RegionSizing PRIVATE snaptray_ui snaptray
 add_test(NAME RecordingManager_RegionSizing COMMAND RecordingManager_RegionSizing)
 set_tests_properties(RecordingManager_RegionSizing PROPERTIES TIMEOUT 60 LABELS "unit")
 
+if(WIN32)
+add_executable(RecordingManager_DXGICaptureEngineThreadLifecycle
+    RecordingManager/tst_DXGICaptureEngineThreadLifecycle_win.cpp
+)
+target_link_libraries(RecordingManager_DXGICaptureEngineThreadLifecycle PRIVATE
+    snaptray_platform
+    Qt6::Gui
+    Qt6::Test
+)
+add_test(NAME RecordingManager_DXGICaptureEngineThreadLifecycle
+    COMMAND RecordingManager_DXGICaptureEngineThreadLifecycle)
+set_tests_properties(RecordingManager_DXGICaptureEngineThreadLifecycle
+    PROPERTIES TIMEOUT 120 LABELS "integration")
+endif()
+
 endif()  # End of temporarily disabled RecordingManager tests
 
 # ============================================================================
