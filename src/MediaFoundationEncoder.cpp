@@ -4,6 +4,7 @@
 
 #include <QFile>
 #include <QDebug>
+#include <QThread>
 
 #include <windows.h>
 #include <mfapi.h>
@@ -408,6 +409,9 @@ void MediaFoundationEncoder::finish()
         emit finished(false, QString());
         return;
     }
+
+    qDebug() << "MediaFoundationEncoder: Finalize on thread"
+             << reinterpret_cast<quintptr>(QThread::currentThreadId());
 
     d->running = false;
     QString outputPath = d->outputPath;

@@ -4,9 +4,8 @@
 #include "encoding/WebPAnimEncoder.h"
 
 #include <QDebug>
-#include <QPainter>
+#include <QThread>
 #include <QPointer>
-#include <QtConcurrent>
 #include <QMetaObject>
 #include <exception>
 
@@ -17,11 +16,6 @@ EncodingWorker::EncodingWorker(QObject *parent)
 
 EncodingWorker::~EncodingWorker()
 {
-    // Wait for any pending processing to complete
-    if (m_processingFuture.isRunning()) {
-        m_acceptingFrames = false;
-        m_processingFuture.waitForFinished();
-    }
 }
 
 void EncodingWorker::setVideoEncoder(IVideoEncoder* encoder)
@@ -44,14 +38,80 @@ void EncodingWorker::setEncoderType(EncoderType type)
     m_encoderType = type;
 }
 
+void EncodingWorker::moveOwnedEncodersToThread(QThread* targetThread)
+{
+    if (!targetThread) {
+        return;
+    }
+
+    if (QThread::currentThread() == thread()) {
+        if (m_videoEncoder) {
+            m_videoEncoder->moveToThread(targetThread);
+        }
+        if (m_gifEncoder) {
+            m_gifEncoder->moveToThread(targetThread);
+        }
+        if (m_webpEncoder) {
+            m_webpEncoder->moveToThread(targetThread);
+        }
+        return;
+    }
+
+    const bool invoked = QMetaObject::invokeMethod(this, [this, targetThread]() {
+        if (m_videoEncoder) {
+            m_videoEncoder->moveToThread(targetThread);
+        }
+        if (m_gifEncoder) {
+            m_gifEncoder->moveToThread(targetThread);
+        }
+        if (m_webpEncoder) {
+            m_webpEncoder->moveToThread(targetThread);
+        }
+    }, Qt::BlockingQueuedConnection);
+
+    if (!invoked) {
+        qWarning() << "EncodingWorker: Failed to move encoders to target thread";
+    }
+}
+
 void EncodingWorker::setWatermarkSettings(const WatermarkRenderer::Settings& settings)
 {
-    m_watermarkSettings = settings;
-    m_cachedWatermarkImage = QImage();  // Clear cache, will be regenerated
+    if (QThread::currentThread() == thread()) {
+        m_watermarkSettings = settings;
+        m_cachedWatermarkImage = QImage();  // Clear cache, will be regenerated
+        return;
+    }
+
+    const WatermarkRenderer::Settings copiedSettings = settings;
+    QMetaObject::invokeMethod(this, [this, copiedSettings]() {
+        m_watermarkSettings = copiedSettings;
+        m_cachedWatermarkImage = QImage();  // Clear cache, will be regenerated
+    }, Qt::BlockingQueuedConnection);
 }
 
 bool EncodingWorker::start()
 {
+    if (QThread::currentThread() == thread()) {
+        return startOnWorkerThread();
+    }
+
+    bool started = false;
+    const bool invoked = QMetaObject::invokeMethod(this, [this, &started]() {
+        started = startOnWorkerThread();
+    }, Qt::BlockingQueuedConnection);
+
+    if (!invoked) {
+        qWarning() << "EncodingWorker: Failed to invoke start() on worker thread";
+        return false;
+    }
+
+    return started;
+}
+
+bool EncodingWorker::startOnWorkerThread()
+{
+    Q_ASSERT(QThread::currentThread() == thread());
+
     if (m_running.load()) {
         return false;
     }
@@ -74,6 +134,7 @@ bool EncodingWorker::start()
     m_acceptingFrames = true;
     m_finishRequested = false;
     m_finishCalled = false;
+    m_isProcessing = false;
     m_framesWritten = 0;
     m_wasNearFull = false;
 
@@ -93,6 +154,30 @@ void EncodingWorker::stop()
     m_finishRequested = false;
     m_running = false;
 
+    if (QThread::currentThread() == thread()) {
+        stopOnWorkerThread();
+        return;
+    }
+
+    const bool invoked = QMetaObject::invokeMethod(this, [this]() {
+        stopOnWorkerThread();
+    }, Qt::BlockingQueuedConnection);
+
+    if (!invoked) {
+        qWarning() << "EncodingWorker: Failed to invoke stop() on worker thread";
+    }
+}
+
+void EncodingWorker::stopOnWorkerThread()
+{
+    Q_ASSERT(QThread::currentThread() == thread());
+
+    m_acceptingFrames = false;
+    m_finishRequested = false;
+    m_running = false;
+    m_isProcessing = false;
+    m_wasNearFull = false;
+
     // Clear queues
     {
         QMutexLocker locker(&m_queueMutex);
@@ -100,14 +185,7 @@ void EncodingWorker::stop()
         m_audioQueue.clear();
     }
 
-    // Wait for processing to finish BEFORE aborting encoders
-    // This prevents race condition where abort() is called while
-    // worker thread is in writeFrame()
-    if (m_processingFuture.isRunning()) {
-        m_processingFuture.waitForFinished();
-    }
-
-    // Now safe to abort encoders (no concurrent access)
+    // Abort encoders. This runs in the worker affinity thread.
     if (m_videoEncoder) {
         m_videoEncoder->abort();
     }
@@ -121,6 +199,27 @@ void EncodingWorker::stop()
 
 void EncodingWorker::requestFinish()
 {
+    if (QThread::currentThread() == thread()) {
+        requestFinishOnWorkerThread();
+        return;
+    }
+
+    QPointer<EncodingWorker> guard(this);
+    const bool invoked = QMetaObject::invokeMethod(this, [guard]() {
+        if (guard) {
+            guard->requestFinishOnWorkerThread();
+        }
+    }, Qt::QueuedConnection);
+
+    if (!invoked) {
+        qWarning() << "EncodingWorker: Failed to invoke requestFinish() on worker thread";
+    }
+}
+
+void EncodingWorker::requestFinishOnWorkerThread()
+{
+    Q_ASSERT(QThread::currentThread() == thread());
+
     m_acceptingFrames = false;
 
     // The worker is already in a terminal state (stopped or failed).
@@ -131,16 +230,24 @@ void EncodingWorker::requestFinish()
 
     m_finishRequested = true;
 
-    // If not currently processing, finish immediately
-    if (!m_isProcessing.load()) {
-        // Re-check running state to avoid racing with a concurrent failure path.
-        if (!m_running.load() || m_finishCalled.load()) {
-            m_finishRequested = false;
-            return;
-        }
-        finishEncoder();
+    bool hasPendingWork = false;
+    {
+        QMutexLocker locker(&m_queueMutex);
+        hasPendingWork = !m_audioQueue.isEmpty() || !m_frameQueue.isEmpty();
     }
-    // Otherwise, processNextFrame() will call finishEncoder() when queue empties
+
+    if (hasPendingWork) {
+        scheduleProcessing();
+        return;
+    }
+
+    // Avoid inline finalize on the caller path: always queue finish on worker thread.
+    QPointer<EncodingWorker> guard(this);
+    QMetaObject::invokeMethod(this, [guard]() {
+        if (guard) {
+            guard->finishEncoder();
+        }
+    }, Qt::QueuedConnection);
 }
 
 bool EncodingWorker::enqueueFrame(const FrameData& frame)
@@ -172,12 +279,7 @@ bool EncodingWorker::enqueueFrame(const FrameData& frame)
         m_wasNearFull = true;
     }
 
-    // Kick off processing if not already running
-    if (!m_isProcessing.exchange(true)) {
-        m_processingFuture = QtConcurrent::run([this]() {
-            processNextFrame();
-        });
-    }
+    scheduleProcessing();
 
     return true;
 }
@@ -200,12 +302,7 @@ void EncodingWorker::writeAudioSamples(const QByteArray& data, qint64 timestampM
         m_audioQueue.enqueue({data, timestampMs});
     }
 
-    // Kick off processing if not already running
-    if (!m_isProcessing.exchange(true)) {
-        m_processingFuture = QtConcurrent::run([this]() {
-            processNextFrame();
-        });
-    }
+    scheduleProcessing();
 }
 
 int EncodingWorker::queueDepth() const
@@ -219,20 +316,48 @@ bool EncodingWorker::isProcessing() const
     return m_isProcessing.load();
 }
 
+void EncodingWorker::scheduleProcessing()
+{
+    if (!m_running.load() || m_finishCalled.load()) {
+        return;
+    }
+
+    // m_isProcessing guards both "scheduled" and "actively processing".
+    if (m_isProcessing.exchange(true)) {
+        return;
+    }
+
+    const bool invoked = QMetaObject::invokeMethod(this, [this]() {
+        processNextFrame();
+    }, Qt::QueuedConnection);
+
+    if (!invoked) {
+        m_isProcessing = false;
+        qWarning() << "EncodingWorker: Failed to schedule processing task";
+    }
+}
+
 void EncodingWorker::processNextFrame()
 {
+    Q_ASSERT(QThread::currentThread() == thread());
+
     while (true) {
         FrameData frameData;
         AudioData audioData;
         bool hasFrame = false;
         bool hasAudio = false;
         int frameDepth = 0;
+        bool queueBecameEmpty = false;
+        bool shouldFinish = false;
 
         // Get next item from queues (prioritize audio to prevent buffer buildup)
         {
             QMutexLocker locker(&m_queueMutex);
 
-            if (!m_audioQueue.isEmpty()) {
+            if (!m_running.load()) {
+                m_isProcessing = false;
+                return;
+            } else if (!m_audioQueue.isEmpty()) {
                 audioData = m_audioQueue.dequeue();
                 hasAudio = true;
             } else if (!m_frameQueue.isEmpty()) {
@@ -241,21 +366,30 @@ void EncodingWorker::processNextFrame()
                 hasFrame = true;
             } else {
                 m_isProcessing = false;
-
-                // Check if finish was requested
-                if (m_finishRequested.exchange(false)) {
-                    QPointer<EncodingWorker> guard(this);
-                    QMetaObject::invokeMethod(this, [guard]() {
-                        if (guard) {
-                            guard->finishEncoder();
-                        }
-                    }, Qt::QueuedConnection);
-                }
-                return;
+                queueBecameEmpty = true;
+                shouldFinish = m_finishRequested.exchange(false);
             }
         }
 
-        if (hasAudio) {
+        if (queueBecameEmpty) {
+            if (shouldFinish && m_running.load()) {
+                finishEncoder();
+                return;
+            }
+
+            // Race guard: if new work arrived right after we observed an empty queue,
+            // reacquire processing ownership and continue.
+            bool hasPendingWork = false;
+            {
+                QMutexLocker locker(&m_queueMutex);
+                hasPendingWork = !m_audioQueue.isEmpty() || !m_frameQueue.isEmpty();
+            }
+            if (hasPendingWork && m_running.load() && !m_finishCalled.load()
+                && !m_isProcessing.exchange(true)) {
+                continue;
+            }
+            return;
+        } else if (hasAudio) {
             // Write audio directly to encoder (we're on worker thread)
             try {
                 if (m_videoEncoder) {
@@ -391,6 +525,14 @@ void EncodingWorker::applyWatermark(QImage& frame)
 
 void EncodingWorker::finishEncoder()
 {
+    Q_ASSERT(QThread::currentThread() == thread());
+
+    // Worker was stopped/cancelled before finalize task ran.
+    if (!m_running.load()) {
+        m_finishCalled = true;
+        return;
+    }
+
     // Ensure finishEncoder() only executes once (race condition guard)
     if (m_finishCalled.exchange(true)) {
         return;

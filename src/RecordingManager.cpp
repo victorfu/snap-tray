@@ -21,6 +21,7 @@
 
 
 #include <QGuiApplication>
+#include <QCoreApplication>
 #include <QCursor>
 #include <QScreen>
 #include <QSettings>
@@ -35,6 +36,7 @@
 #include <QUuid>
 #include <QtConcurrent/QtConcurrent>
 #include <QFutureWatcher>
+#include <QThread>
 
 #ifdef Q_OS_WIN
 #include <windows.h>
@@ -250,6 +252,50 @@ void RecordingManager::resetPauseTracking()
     m_pauseStartTime = 0;
 }
 
+bool RecordingManager::shouldUseDedicatedEncodingThread(bool hasNativeEncoder) const
+{
+    Q_UNUSED(hasNativeEncoder);
+    return true;
+}
+
+void RecordingManager::teardownEncodingWorker(bool abortEncoding)
+{
+    EncodingWorker* worker = m_encodingWorker.get();
+    if (worker && abortEncoding) {
+        worker->stop();
+    }
+
+    if (worker
+        && m_encodingThread
+        && worker->thread() == m_encodingThread.get()
+        && m_encodingThread->isRunning()) {
+        QCoreApplication* app = QCoreApplication::instance();
+        if (!app) {
+            qWarning() << "RecordingManager: QCoreApplication is unavailable during teardown";
+        } else {
+            QThread* mainThread = app->thread();
+            worker->moveOwnedEncodersToThread(mainThread);
+            const bool moved = QMetaObject::invokeMethod(worker, [worker, mainThread]() {
+                worker->moveToThread(mainThread);
+            }, Qt::BlockingQueuedConnection);
+            if (!moved) {
+                qWarning() << "RecordingManager: Failed to move EncodingWorker back to main thread";
+            }
+        }
+    }
+
+    if (m_encodingThread) {
+        m_encodingThread->quit();
+        if (!m_encodingThread->wait(5000)) {
+            qWarning() << "RecordingManager: Encoding thread exit timed out, waiting";
+            m_encodingThread->wait();
+        }
+        m_encodingThread.reset();
+    }
+
+    m_encodingWorker.reset();
+}
+
 void RecordingManager::startRegionSelectionWithPreset(const QRect &region, QScreen *screen)
 {
     QScreen* targetScreen = resolveTargetScreen(screen);
@@ -358,13 +404,8 @@ void RecordingManager::startFrameCapture()
     }
 
     // Safety check: clean up any existing encoding worker
-    if (m_encodingWorker) {
-        disconnect(m_encodingWorker.get(), &EncodingWorker::finished,
-                   this, &RecordingManager::onEncodingFinished);
-        disconnect(m_encodingWorker.get(), &EncodingWorker::error,
-                   this, &RecordingManager::onEncodingError);
-        m_encodingWorker->stop();
-        m_encodingWorker.reset();
+    if (m_encodingWorker || m_encodingThread) {
+        teardownEncodingWorker(true);
     }
     m_usingNativeEncoder = false;
 
@@ -666,35 +707,57 @@ void RecordingManager::onInitializationComplete(const QSharedPointer<RecordingIn
     const bool hasNativeEncoder = (result.nativeEncoder != nullptr);
     const bool hasGifEncoder = (result.gifEncoder != nullptr);
     const bool hasWebPEncoder = (result.webpEncoder != nullptr);
+    IVideoEncoder* nativeEncoder = hasNativeEncoder ? result.releaseNativeEncoder() : nullptr;
+    NativeGifEncoder* gifEncoder = hasGifEncoder ? result.releaseGifEncoder() : nullptr;
+    WebPAnimationEncoder* webpEncoder = hasWebPEncoder ? result.releaseWebpEncoder() : nullptr;
 
-    if (hasNativeEncoder) {
-        m_encodingWorker->setVideoEncoder(result.releaseNativeEncoder());
+    if (nativeEncoder) {
+        m_encodingWorker->setVideoEncoder(nativeEncoder);
         m_encodingWorker->setEncoderType(EncodingWorker::EncoderType::Video);
     }
-    if (hasGifEncoder) {
-        m_encodingWorker->setGifEncoder(result.releaseGifEncoder());
-        if (!hasNativeEncoder) {
+    if (gifEncoder) {
+        m_encodingWorker->setGifEncoder(gifEncoder);
+        if (!nativeEncoder) {
             m_encodingWorker->setEncoderType(EncodingWorker::EncoderType::Gif);
         }
     }
-    if (hasWebPEncoder) {
-        m_encodingWorker->setWebPEncoder(result.releaseWebpEncoder());
-        if (!hasNativeEncoder) {
+    if (webpEncoder) {
+        m_encodingWorker->setWebPEncoder(webpEncoder);
+        if (!nativeEncoder) {
             m_encodingWorker->setEncoderType(EncodingWorker::EncoderType::WebP);
         }
     }
 
+    const bool useDedicatedEncodingThread = shouldUseDedicatedEncodingThread(hasNativeEncoder);
+    if (useDedicatedEncodingThread) {
+        m_encodingThread = std::make_unique<QThread>();
+        m_encodingThread->setObjectName(QStringLiteral("RecordingEncodingThread"));
+        m_encodingThread->start();
+
+        if (!m_encodingThread->isRunning()) {
+            qWarning() << "RecordingManager: Failed to start dedicated encoding thread";
+            emit recordingError(tr("Failed to start encoding thread"));
+            teardownEncodingWorker(true);
+            m_initTask.clear();
+            setState(State::Idle);
+            return;
+        }
+
+        m_encodingWorker->moveOwnedEncodersToThread(m_encodingThread.get());
+        m_encodingWorker->moveToThread(m_encodingThread.get());
+    }
+
     // Connect worker signals
     connect(m_encodingWorker.get(), &EncodingWorker::finished,
-            this, &RecordingManager::onEncodingFinished);
+            this, &RecordingManager::onEncodingFinished, Qt::QueuedConnection);
     connect(m_encodingWorker.get(), &EncodingWorker::error,
-            this, &RecordingManager::onEncodingError);
+            this, &RecordingManager::onEncodingError, Qt::QueuedConnection);
 
     // Start the encoding worker
     if (!m_encodingWorker->start()) {
         qWarning() << "RecordingManager: Failed to start encoding worker";
         emit recordingError(tr("Failed to start encoding worker"));
-        m_encodingWorker.reset();
+        teardownEncodingWorker(true);
         m_initTask.clear();
         setState(State::Idle);
         return;
@@ -1067,9 +1130,8 @@ void RecordingManager::cancelRecording()
     stopFrameCapture();
 
     // Stop encoding worker (aborts encoding)
-    if (m_encodingWorker) {
-        m_encodingWorker->stop();
-        m_encodingWorker.reset();
+    if (m_encodingWorker || m_encodingThread) {
+        teardownEncodingWorker(true);
     }
     m_usingNativeEncoder = false;
 
@@ -1117,9 +1179,8 @@ void RecordingManager::cleanupRecording()
     stopFrameCapture();
 
     // Stop and clean up encoding worker
-    if (m_encodingWorker) {
-        m_encodingWorker->stop();
-        m_encodingWorker.reset();
+    if (m_encodingWorker || m_encodingThread) {
+        teardownEncodingWorker(true);
     }
     m_usingNativeEncoder = false;
 
@@ -1147,7 +1208,7 @@ void RecordingManager::onEncodingFinished(bool success, const QString &outputPat
     }
 
     // Clean up encoding worker
-    m_encodingWorker.reset();
+    teardownEncodingWorker(false);
     m_usingNativeEncoder = false;
 
     if (success) {
@@ -1329,9 +1390,8 @@ void RecordingManager::onEncodingError(const QString &error)
     stopFrameCapture();
 
     // Clean up encoding worker
-    if (m_encodingWorker) {
-        m_encodingWorker->stop();
-        m_encodingWorker.reset();
+    if (m_encodingWorker || m_encodingThread) {
+        teardownEncodingWorker(true);
     }
     m_usingNativeEncoder = false;
 

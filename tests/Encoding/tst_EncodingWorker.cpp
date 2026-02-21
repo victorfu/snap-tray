@@ -1,7 +1,10 @@
 #include <QtTest/QtTest>
 #include <QSignalSpy>
 #include <QtConcurrent>
+#include <QCoreApplication>
+#include <QElapsedTimer>
 #include <QMutex>
+#include <QThread>
 #include <QWaitCondition>
 
 #include "encoding/EncodingWorker.h"
@@ -148,6 +151,12 @@ public:
         return signaled && m_writeEntered;
     }
 
+    bool writeEntered() const
+    {
+        QMutexLocker locker(&m_mutex);
+        return m_writeEntered;
+    }
+
     void releaseWrite()
     {
         QMutexLocker locker(&m_mutex);
@@ -171,6 +180,64 @@ private:
     std::atomic<int> m_writeCount{0};
 };
 
+class SlowFinishVideoEncoder final : public IVideoEncoder
+{
+public:
+    explicit SlowFinishVideoEncoder(int finishDelayMs, QObject* parent = nullptr)
+        : IVideoEncoder(parent)
+        , m_finishDelayMs(finishDelayMs)
+    {
+    }
+
+    bool isAvailable() const override { return true; }
+    QString encoderName() const override { return QStringLiteral("SlowFinishVideoEncoder"); }
+
+    bool start(const QString& outputPath, const QSize& frameSize, int frameRate) override
+    {
+        Q_UNUSED(frameSize);
+        Q_UNUSED(frameRate);
+        m_outputPath = outputPath;
+        m_running = true;
+        return true;
+    }
+
+    void writeFrame(const QImage& frame, qint64 timestampMs) override
+    {
+        Q_UNUSED(frame);
+        Q_UNUSED(timestampMs);
+        ++m_framesWritten;
+    }
+
+    void finish() override
+    {
+        ++m_finishCalls;
+        m_finishThreadId.store(reinterpret_cast<quintptr>(QThread::currentThreadId()));
+        QThread::msleep(static_cast<unsigned long>(m_finishDelayMs));
+        m_running = false;
+        emit finished(true, m_outputPath);
+    }
+
+    void abort() override
+    {
+        m_running = false;
+    }
+
+    bool isRunning() const override { return m_running; }
+    QString lastError() const override { return QString(); }
+    qint64 framesWritten() const override { return m_framesWritten.load(); }
+    QString outputPath() const override { return m_outputPath; }
+    int finishCallCount() const { return m_finishCalls.load(); }
+    quintptr finishThreadId() const { return m_finishThreadId.load(); }
+
+private:
+    const int m_finishDelayMs;
+    bool m_running = true;
+    std::atomic<qint64> m_framesWritten{0};
+    std::atomic<int> m_finishCalls{0};
+    std::atomic<quintptr> m_finishThreadId{0};
+    QString m_outputPath;
+};
+
 class TestEncodingWorker : public QObject
 {
     Q_OBJECT
@@ -179,6 +246,7 @@ private slots:
     void testFrameExceptionStopsWorker();
     void testAudioExceptionStopsWorker();
     void testRequestFinishAfterFailureDoesNotEmitFinished();
+    void testRequestFinishIsAsyncAndRunsOnWorkerThread();
     void testStopDuringFrameProcessingResetsProcessingState();
 };
 
@@ -256,12 +324,62 @@ void TestEncodingWorker::testRequestFinishAfterFailureDoesNotEmitFinished()
     QCOMPARE(encoder->finishCallCount(), 0);
 }
 
+void TestEncodingWorker::testRequestFinishIsAsyncAndRunsOnWorkerThread()
+{
+    EncodingWorker worker;
+    auto* encoder = new SlowFinishVideoEncoder(200);
+    worker.setEncoderType(EncodingWorker::EncoderType::Video);
+    worker.setVideoEncoder(encoder);
+
+    QThread workerThread;
+    worker.moveToThread(&workerThread);
+    workerThread.start();
+
+    QVERIFY(worker.start());
+
+    std::atomic<quintptr> workerThreadId{0};
+    const bool capturedThreadId = QMetaObject::invokeMethod(&worker, [&workerThreadId]() {
+        workerThreadId.store(reinterpret_cast<quintptr>(QThread::currentThreadId()));
+    }, Qt::BlockingQueuedConnection);
+    QVERIFY(capturedThreadId);
+    QVERIFY(workerThreadId.load() != 0);
+
+    QSignalSpy finishedSpy(&worker, &EncodingWorker::finished);
+
+    EncodingWorker::FrameData frameData;
+    frameData.frame = createTestFrame();
+    frameData.timestampMs = 12;
+    QVERIFY(worker.enqueueFrame(frameData));
+
+    QElapsedTimer timer;
+    timer.start();
+    worker.requestFinish();
+    QVERIFY2(timer.elapsed() < 100, "requestFinish() blocked the caller thread");
+
+    QTRY_COMPARE_WITH_TIMEOUT(finishedSpy.count(), 1, 5000);
+    QCOMPARE(encoder->finishCallCount(), 1);
+    QCOMPARE(encoder->finishThreadId(), workerThreadId.load());
+    QVERIFY(encoder->finishThreadId() != reinterpret_cast<quintptr>(QThread::currentThreadId()));
+
+    QThread* mainThread = QCoreApplication::instance()->thread();
+    const bool movedBack = QMetaObject::invokeMethod(&worker, [&worker, mainThread]() {
+        worker.moveToThread(mainThread);
+    }, Qt::BlockingQueuedConnection);
+    QVERIFY(movedBack);
+
+    workerThread.quit();
+    QVERIFY(workerThread.wait(3000));
+}
+
 void TestEncodingWorker::testStopDuringFrameProcessingResetsProcessingState()
 {
     EncodingWorker worker;
     auto* encoder = new BlockingVideoEncoder();
     worker.setEncoderType(EncodingWorker::EncoderType::Video);
     worker.setVideoEncoder(encoder);
+    QThread workerThread;
+    worker.moveToThread(&workerThread);
+    workerThread.start();
     QVERIFY(worker.start());
 
     EncodingWorker::FrameData frameData;
@@ -286,6 +404,15 @@ void TestEncodingWorker::testStopDuringFrameProcessingResetsProcessingState()
     QVERIFY(worker.enqueueFrame(frameData));
     QTRY_COMPARE_WITH_TIMEOUT(encoder->writeCount(), 2, 3000);
     QTRY_VERIFY_WITH_TIMEOUT(!worker.isProcessing(), 3000);
+
+    QThread* mainThread = QCoreApplication::instance()->thread();
+    const bool movedBack = QMetaObject::invokeMethod(&worker, [&worker, mainThread]() {
+        worker.moveToThread(mainThread);
+    }, Qt::BlockingQueuedConnection);
+    QVERIFY(movedBack);
+
+    workerThread.quit();
+    QVERIFY(workerThread.wait(3000));
 }
 
 QTEST_MAIN(TestEncodingWorker)

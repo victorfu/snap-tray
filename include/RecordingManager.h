@@ -26,6 +26,7 @@ class ICaptureEngine;
 class IAudioCaptureEngine;
 class EncodingWorker;
 class QScreen;
+class QThread;
 
 class RecordingManager : public QObject
 {
@@ -106,6 +107,8 @@ private:
     RecordingRegionSelector* createRegionSelector();
     void loadAndValidateFrameRate();
     void resetPauseTracking();
+    bool shouldUseDedicatedEncodingThread(bool hasNativeEncoder) const;
+    void teardownEncodingWorker(bool abortEncoding);
 
     // Countdown methods
     void startCountdown();                    // Begin countdown overlay
@@ -121,6 +124,7 @@ private:
     QPointer<RecordingBoundaryOverlay> m_boundaryOverlay;
     QString m_tempVideoPath;
     std::unique_ptr<EncodingWorker> m_encodingWorker;  // Offloads encoding to worker thread
+    std::unique_ptr<QThread> m_encodingThread;         // Dedicated encoding thread for encoding workload
     bool m_usingNativeEncoder;          // True if using native encoder (vs GIF)
     CaptureEnginePtr m_captureEngine;   // Screen capture engine (stop + disconnect + deleteLater)
 

@@ -5,7 +5,6 @@
 #include <QImage>
 #include <QMutex>
 #include <QQueue>
-#include <QFuture>
 #include <QSize>
 #include <atomic>
 #include <memory>
@@ -15,13 +14,14 @@
 class IVideoEncoder;
 class NativeGifEncoder;
 class WebPAnimationEncoder;
+class QThread;
 
 /**
  * @brief Worker class for offloading heavy encoding operations from UI thread
  *
  * This class manages a queue of frames to be processed and runs the heavy
  * encoding operations (watermark compositing, format conversion, encoder writes)
- * in a worker thread using QtConcurrent.
+ * in its QObject affinity thread.
  *
  * The pattern (matching StitchWorker):
  * 1. UI thread calls enqueueFrame() with captured frame (fast, non-blocking)
@@ -90,6 +90,7 @@ public:
      * @brief Set active encoder type
      */
     void setEncoderType(EncoderType type);
+    void moveOwnedEncodersToThread(QThread* targetThread);
 
     /**
      * @brief Configure watermark settings
@@ -169,6 +170,10 @@ signals:
     void queueLow(int currentDepth, int maxDepth);
 
 private:
+    bool startOnWorkerThread();
+    void stopOnWorkerThread();
+    void requestFinishOnWorkerThread();
+    void scheduleProcessing();
     void processNextFrame();
     void doProcessFrame(const FrameData& frameData);
     void handleProcessingFailure(const QString& context, const QString& details);
@@ -197,7 +202,6 @@ private:
     std::atomic<bool> m_finishRequested{false};
     std::atomic<qint64> m_framesWritten{0};
     std::atomic<bool> m_finishCalled{false};
-    QFuture<void> m_processingFuture;
     bool m_wasNearFull = false;
 
     // Configuration
