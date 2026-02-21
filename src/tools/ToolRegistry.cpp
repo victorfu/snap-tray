@@ -405,6 +405,7 @@ QVector<ToolId> ToolRegistry::getToolsForToolbar(ToolbarType type) const {
             ToolId::Pencil,
             ToolId::Marker,
             ToolId::Text,
+            ToolId::Eraser,
             ToolId::StepBadge,
             ToolId::EmojiSticker,
             ToolId::CanvasWhiteboard,

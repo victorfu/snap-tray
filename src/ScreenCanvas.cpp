@@ -60,6 +60,7 @@ const std::map<ToolId, ScreenCanvas::ToolbarClickHandler>& ScreenCanvas::toolbar
         {ToolId::Arrow, &ScreenCanvas::handlePersistentToolClick},
         {ToolId::Shape, &ScreenCanvas::handlePersistentToolClick},
         {ToolId::Text, &ScreenCanvas::handlePersistentToolClick},
+        {ToolId::Eraser, &ScreenCanvas::handlePersistentToolClick},
         {ToolId::StepBadge, &ScreenCanvas::handlePersistentToolClick},
         {ToolId::EmojiSticker, &ScreenCanvas::handlePersistentToolClick},
         {ToolId::CanvasWhiteboard, &ScreenCanvas::handleCanvasModeToggle},

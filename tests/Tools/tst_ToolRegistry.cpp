@@ -260,6 +260,7 @@ void TestToolRegistry::testGetToolsForToolbar_ScreenCanvas()
     QVERIFY(tools.contains(ToolId::Arrow));
     QVERIFY(tools.contains(ToolId::Pencil));
     QVERIFY(tools.contains(ToolId::Text));
+    QVERIFY(tools.contains(ToolId::Eraser));
     QVERIFY(tools.contains(ToolId::StepBadge));
     QVERIFY(tools.contains(ToolId::CanvasWhiteboard));
     QVERIFY(tools.contains(ToolId::CanvasBlackboard));
