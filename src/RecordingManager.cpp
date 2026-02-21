@@ -260,6 +260,9 @@ bool RecordingManager::shouldUseDedicatedEncodingThread(bool hasNativeEncoder) c
 
 void RecordingManager::teardownEncodingWorker(bool abortEncoding)
 {
+    // Invalidate any queued callbacks from previous encoding workers.
+    ++m_encodingGeneration;
+
     EncodingWorker* worker = m_encodingWorker.get();
     if (worker && abortEncoding) {
         worker->stop();
@@ -728,6 +731,7 @@ void RecordingManager::onInitializationComplete(const QSharedPointer<RecordingIn
         }
     }
 
+    const quint64 encodingGeneration = ++m_encodingGeneration;
     const bool useDedicatedEncodingThread = shouldUseDedicatedEncodingThread(hasNativeEncoder);
     if (useDedicatedEncodingThread) {
         m_encodingThread = std::make_unique<QThread>();
@@ -749,9 +753,25 @@ void RecordingManager::onInitializationComplete(const QSharedPointer<RecordingIn
 
     // Connect worker signals
     connect(m_encodingWorker.get(), &EncodingWorker::finished,
-            this, &RecordingManager::onEncodingFinished, Qt::QueuedConnection);
+            this,
+            [this, encodingGeneration](bool success, const QString& outputPath) {
+                if (encodingGeneration != m_encodingGeneration) {
+                    qWarning() << "RecordingManager: Ignoring stale encoding finished callback";
+                    return;
+                }
+                onEncodingFinished(success, outputPath);
+            },
+            Qt::QueuedConnection);
     connect(m_encodingWorker.get(), &EncodingWorker::error,
-            this, &RecordingManager::onEncodingError, Qt::QueuedConnection);
+            this,
+            [this, encodingGeneration](const QString& error) {
+                if (encodingGeneration != m_encodingGeneration) {
+                    qWarning() << "RecordingManager: Ignoring stale encoding error callback";
+                    return;
+                }
+                onEncodingError(error);
+            },
+            Qt::QueuedConnection);
 
     // Start the encoding worker
     if (!m_encodingWorker->start()) {
@@ -1201,6 +1221,12 @@ void RecordingManager::cleanupAudio()
 
 void RecordingManager::onEncodingFinished(bool success, const QString &outputPath)
 {
+    if (m_state != State::Encoding) {
+        qWarning() << "RecordingManager: Ignoring encoding finished in non-encoding state"
+                   << static_cast<int>(m_state);
+        return;
+    }
+
     // Get error message if encoding failed
     QString errorMsg;
     if (!success) {

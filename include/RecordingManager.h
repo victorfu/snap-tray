@@ -125,6 +125,7 @@ private:
     QString m_tempVideoPath;
     std::unique_ptr<EncodingWorker> m_encodingWorker;  // Offloads encoding to worker thread
     std::unique_ptr<QThread> m_encodingThread;         // Dedicated encoding thread for encoding workload
+    quint64 m_encodingGeneration = 0;                  // Guards stale queued encoding callbacks
     bool m_usingNativeEncoder;          // True if using native encoder (vs GIF)
     CaptureEnginePtr m_captureEngine;   // Screen capture engine (stop + disconnect + deleteLater)
 

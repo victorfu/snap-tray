@@ -11,6 +11,7 @@ private slots:
     void testAlreadyEvenPhysicalRegionUnchanged();
     void testOddRegionExpandsRightAndBottom();
     void testOddRegionShiftsWhenAtRightBottomBoundary();
+    void testFractionalDprUsesTwoSidedExpansionBeforeCrop();
     void testFullScreenOddRegionFallsBackToCrop();
     void testFullScreenOddRegionCropsMoreThanOneStepAtFractionalDpr();
     void testHighDpiNormalizationAt15();
@@ -60,6 +61,19 @@ void TestRecordingRegionSizing::testOddRegionShiftsWhenAtRightBottomBoundary()
     QCOMPARE(normalized, QRect(298, 248, 102, 52));
     QVERIFY(bounds.contains(normalized));
     verifyEvenPhysicalSize(normalized, 1.0);
+}
+
+void TestRecordingRegionSizing::testFractionalDprUsesTwoSidedExpansionBeforeCrop()
+{
+    const QRect bounds(0, 0, 16, 16);
+    const QRect originalRegion(1, 1, 14, 14); // odd physical size at DPR 1.1
+    constexpr qreal dpr = 1.1;
+
+    const QRect normalized = normalizeToEvenPhysicalRegion(originalRegion, bounds, dpr);
+
+    QCOMPARE(normalized, QRect(0, 0, 16, 16));
+    QVERIFY(bounds.contains(normalized));
+    verifyEvenPhysicalSize(normalized, dpr);
 }
 
 void TestRecordingRegionSizing::testFullScreenOddRegionFallsBackToCrop()
