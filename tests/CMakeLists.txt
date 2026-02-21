@@ -217,6 +217,18 @@ endif()
 # IPC Tests
 # ============================================================================
 
+add_executable(IPC_IPCProtocol
+    IPC/tst_IPCProtocol.cpp
+    ${CMAKE_SOURCE_DIR}/src/cli/IPCProtocol.cpp
+)
+target_include_directories(IPC_IPCProtocol PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_BINARY_DIR}/generated
+)
+target_link_libraries(IPC_IPCProtocol PRIVATE Qt6::Core Qt6::Network Qt6::Test)
+add_test(NAME IPC_IPCProtocol COMMAND IPC_IPCProtocol)
+set_tests_properties(IPC_IPCProtocol PROPERTIES TIMEOUT 60 LABELS "unit;integration")
+
 add_executable(IPC_SingleInstanceGuard
     IPC/tst_SingleInstanceGuard.cpp
     ${CMAKE_SOURCE_DIR}/src/SingleInstanceGuard.cpp

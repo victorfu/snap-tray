@@ -3,11 +3,51 @@
 
 #include <QCryptographicHash>
 #include <QDataStream>
+#include <QElapsedTimer>
 #include <QJsonDocument>
 #include <QLocalSocket>
 
+#include <limits>
+
 namespace SnapTray {
 namespace CLI {
+
+namespace {
+
+bool readExactWithDeadline(
+    QLocalSocket& socket,
+    qsizetype targetSize,
+    int timeoutMs,
+    QElapsedTimer& timer,
+    QByteArray& output)
+{
+    output.clear();
+    if (targetSize <= static_cast<qsizetype>(std::numeric_limits<int>::max())) {
+        output.reserve(static_cast<int>(targetSize));
+    }
+
+    while (output.size() < targetSize) {
+        const qint64 bytesToRead = static_cast<qint64>(targetSize - output.size());
+        const QByteArray chunk = socket.read(bytesToRead);
+        if (!chunk.isEmpty()) {
+            output.append(chunk);
+            continue;
+        }
+
+        const int remainingTimeout = timeoutMs - static_cast<int>(timer.elapsed());
+        if (remainingTimeout <= 0) {
+            return false;
+        }
+
+        if (!socket.waitForReadyRead(remainingTimeout)) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+} // namespace
 
 // --- IPCMessage ---
 
@@ -110,29 +150,29 @@ IPCResponse IPCProtocol::sendCommand(const IPCMessage& message, bool waitRespons
         return response;
     }
 
-    // Wait for response
-    if (!socket.waitForReadyRead(kResponseTimeout)) {
+    // Read response with length prefix
+    QElapsedTimer responseTimer;
+    responseTimer.start();
+
+    QByteArray headerData;
+    if (!readExactWithDeadline(
+            socket, sizeof(quint32), kResponseTimeout, responseTimer, headerData)) {
         response.error = "Timeout waiting for response";
         return response;
     }
 
-    // Read response with length prefix
-    QByteArray headerData = socket.read(sizeof(quint32));
-    if (headerData.size() < static_cast<int>(sizeof(quint32))) {
+    QDataStream readStream(headerData);
+    quint32 size = 0;
+    readStream >> size;
+    if (readStream.status() != QDataStream::Ok || size == 0) {
         response.error = "Invalid response header";
         return response;
     }
 
-    QDataStream readStream(headerData);
-    quint32 size;
-    readStream >> size;
-
     QByteArray responseData;
-    while (responseData.size() < static_cast<int>(size)) {
-        if (!socket.waitForReadyRead(kResponseTimeout)) {
-            break;
-        }
-        responseData.append(socket.readAll());
+    if (!readExactWithDeadline(socket, size, kResponseTimeout, responseTimer, responseData)) {
+        response.error = "Timeout waiting for response";
+        return response;
     }
 
     socket.disconnectFromServer();
