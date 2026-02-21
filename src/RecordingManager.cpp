@@ -288,12 +288,18 @@ void RecordingManager::teardownEncodingWorker(bool abortEncoding)
     }
 
     if (m_encodingThread) {
+        m_encodingThread->requestInterruption();
         m_encodingThread->quit();
         if (!m_encodingThread->wait(5000)) {
-            qWarning() << "RecordingManager: Encoding thread exit timed out, waiting";
-            m_encodingThread->wait();
+            qWarning() << "RecordingManager: Encoding thread exit timed out; detaching"
+                       << "thread object to avoid blocking teardown";
+            QThread* detachedThread = m_encodingThread.release();
+            QObject::connect(detachedThread, &QThread::finished,
+                             detachedThread, &QObject::deleteLater,
+                             Qt::QueuedConnection);
+        } else {
+            m_encodingThread.reset();
         }
-        m_encodingThread.reset();
     }
 
     m_encodingWorker.reset();
