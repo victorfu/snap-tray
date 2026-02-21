@@ -27,12 +27,30 @@ void FullCommand::setupOptions(QCommandLineParser& parser)
 CLIResult FullCommand::execute(const QCommandLineParser& parser)
 {
     // Parse arguments
-    int delay = parser.value("delay").toInt();
+    const QString delayValue = parser.value("delay");
+    bool delayOk = false;
+    int delay = delayValue.toInt(&delayOk);
+    if (!delayOk) {
+        return CLIResult::error(
+            CLIResult::Code::InvalidArguments,
+            QString("Invalid delay value: %1").arg(delayValue));
+    }
+
     QString savePath = parser.value("path");
     QString outputFile = parser.value("output");
     bool toClipboard = parser.isSet("clipboard");
     bool toRaw = parser.isSet("raw");
-    int screenNum = parser.isSet("screen") ? parser.value("screen").toInt() : -1;
+    int screenNum = -1;
+    if (parser.isSet("screen")) {
+        const QString screenValue = parser.value("screen");
+        bool screenOk = false;
+        screenNum = screenValue.toInt(&screenOk);
+        if (!screenOk) {
+            return CLIResult::error(
+                CLIResult::Code::InvalidArguments,
+                QString("Invalid screen number: %1").arg(screenValue));
+        }
+    }
 
     // Delay before selecting screen/capturing to preserve CLI behavior.
     applyOptionalDelay(delay);

@@ -20,6 +20,17 @@
 #import <ScreenCaptureKit/ScreenCaptureKit.h>
 #endif
 
+namespace {
+
+QString escapeForSingleQuotedShellLiteral(const QString& value)
+{
+    QString escaped = value;
+    escaped.replace('\'', QStringLiteral("'\"'\"'"));
+    return escaped;
+}
+
+} // namespace
+
 PlatformFeatures& PlatformFeatures::instance()
 {
     static PlatformFeatures instance;
@@ -145,6 +156,7 @@ bool PlatformFeatures::isCLIInstalled() const
 bool PlatformFeatures::installCLI() const
 {
     QString appPath = getAppExecutablePath();
+    const QString escapedAppPath = escapeForSingleQuotedShellLiteral(appPath);
 
     // Create shell script content that sets up Qt environment
     // Using printf for proper newline handling in shell
@@ -156,7 +168,7 @@ bool PlatformFeatures::installCLI() const
         "exec \\\"$APP_PATH/Contents/MacOS/SnapTray\\\" \\\"$@\\\"\\n' > /usr/local/bin/snaptray && "
         "chmod +x /usr/local/bin/snaptray\" "
         "with administrator privileges"
-    ).arg(appPath);
+    ).arg(escapedAppPath);
 
     QProcess process;
     process.start("osascript", {"-e", script});

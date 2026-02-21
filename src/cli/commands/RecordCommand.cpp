@@ -26,6 +26,24 @@ CLIResult RecordCommand::execute(const QCommandLineParser& parser)
         }
     }
 
+    const QStringList positional = parser.positionalArguments();
+    if (positional.size() > 1) {
+        return CLIResult::error(
+            CLIResult::Code::InvalidArguments,
+            QString("Too many arguments for record command: %1").arg(positional.join(' ')));
+    }
+
+    const QString action = positional.isEmpty()
+        ? QString()
+        : positional.first().trimmed().toLower();
+    const bool validAction =
+        action.isEmpty() || action == "start" || action == "stop" || action == "toggle";
+    if (!validAction) {
+        return CLIResult::error(
+            CLIResult::Code::InvalidArguments,
+            QString("Invalid record action: %1 (allowed: start, stop, toggle)").arg(action));
+    }
+
     // This command is executed via IPC, not locally
     return CLIResult::success("Recording started");
 }
@@ -36,7 +54,10 @@ QJsonObject RecordCommand::buildIPCMessage(const QCommandLineParser& parser) con
 
     QStringList positional = parser.positionalArguments();
     if (!positional.isEmpty()) {
-        options["action"] = positional.first();
+        const QString action = positional.first().trimmed().toLower();
+        if (action == "start" || action == "stop" || action == "toggle") {
+            options["action"] = action;
+        }
     }
 
     if (parser.isSet("screen")) {

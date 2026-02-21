@@ -1,6 +1,7 @@
 #include "cli/commands/PinCommand.h"
 
 #include <QFileInfo>
+#include <QImageReader>
 
 namespace SnapTray {
 namespace CLI {
@@ -37,9 +38,17 @@ CLIResult PinCommand::execute(const QCommandLineParser& parser)
     // Validate file exists
     if (hasFile) {
         QString filePath = parser.value("file");
-        if (!QFileInfo::exists(filePath)) {
+        QFileInfo fileInfo(filePath);
+        if (!fileInfo.exists()) {
             return CLIResult::error(
                 CLIResult::Code::FileError, QString("File not found: %1").arg(filePath));
+        }
+
+        QImageReader reader(fileInfo.absoluteFilePath());
+        if (!reader.canRead()) {
+            return CLIResult::error(
+                CLIResult::Code::FileError,
+                QString("Unsupported or invalid image file: %1").arg(filePath));
         }
     }
 
