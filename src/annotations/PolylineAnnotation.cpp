@@ -45,14 +45,6 @@ void PolylineAnnotation::draw(QPainter& painter) const
         break;
     }
 
-    QPen pen(m_color, m_width, qtStyle, Qt::RoundCap, Qt::RoundJoin);
-    painter.setPen(pen);
-    painter.setBrush(Qt::NoBrush);  // Ensure no fill for the polyline path
-    painter.setRenderHint(QPainter::Antialiasing, true);
-
-    double arrowLength = qMax(10.0, m_width * 3.0);
-    int lastIdx = m_points.size() - 1;
-
     // Check if we have arrowheads
     bool hasEndArrow = (m_lineEndStyle != LineEndStyle::None);
     bool hasStartArrow = (m_lineEndStyle == LineEndStyle::BothArrow ||
@@ -62,6 +54,17 @@ void PolylineAnnotation::draw(QPainter& painter) const
                            m_lineEndStyle == LineEndStyle::BothArrow ||
                            m_lineEndStyle == LineEndStyle::BothArrowOutline);
     bool needsStartAdjust = hasStartArrow;
+
+    Qt::PenCapStyle capStyle = hasEndArrow ? Qt::FlatCap : Qt::RoundCap;
+    QPen pen(m_color, m_width, qtStyle, capStyle, Qt::RoundJoin);
+    painter.setPen(pen);
+    painter.setBrush(Qt::NoBrush);  // Ensure no fill for the polyline path
+    painter.setRenderHint(QPainter::Antialiasing, true);
+
+    double arrowLength = qMax(10.0, m_width * 3.0);
+    double arrowAngle = M_PI / 6.0;  // 30 degrees
+    double baseDistance = arrowLength * qCos(arrowAngle) - 1.0;
+    int lastIdx = m_points.size() - 1;
 
     // Determine where to draw the end arrow
     // To avoid jitter at inflection points, keep arrow at previous vertex
@@ -83,8 +86,8 @@ void PolylineAnnotation::draw(QPainter& painter) const
         double angle = qAtan2(m_points[0].y() - m_points[1].y(),
                              m_points[0].x() - m_points[1].x());
         startPoint = QPointF(
-            m_points[0].x() - arrowLength * qCos(angle),
-            m_points[0].y() - arrowLength * qSin(angle)
+            m_points[0].x() - baseDistance * qCos(angle),
+            m_points[0].y() - baseDistance * qSin(angle)
         );
     }
     path.moveTo(startPoint);
@@ -98,8 +101,8 @@ void PolylineAnnotation::draw(QPainter& painter) const
              const QPoint& prev = m_points[i - 1];
              double angle = qAtan2(target.y() - prev.y(), target.x() - prev.x());
              target = QPointF(
-                target.x() - arrowLength * qCos(angle),
-                target.y() - arrowLength * qSin(angle)
+                target.x() - baseDistance * qCos(angle),
+                target.y() - baseDistance * qSin(angle)
              );
         }
         
@@ -160,13 +163,13 @@ void PolylineAnnotation::drawArrowhead(QPainter& painter, const QPoint& from, co
     arrowPath.lineTo(arrowP2);
     arrowPath.closeSubpath();
 
-    // Use solid pen for arrowhead outline
-    QPen solidPen(m_color, m_width, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
-    painter.setPen(solidPen);
-
     if (filled) {
+        // Filled arrowheads should remain sharp at the tip.
+        painter.setPen(Qt::NoPen);
         painter.setBrush(m_color);
     } else {
+        QPen solidPen(m_color, m_width, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+        painter.setPen(solidPen);
         painter.setBrush(Qt::NoBrush);
     }
     painter.drawPath(arrowPath);
