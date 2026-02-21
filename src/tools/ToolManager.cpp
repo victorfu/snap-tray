@@ -197,8 +197,18 @@ void ToolManager::cancelDrawing() {
 
 bool ToolManager::handleEscape() {
     if (auto* h = currentHandler()) {
-        return h->handleEscape(m_context.get());
+        if (h->handleEscape(m_context.get())) {
+            return true;
+        }
     }
+
+    if (m_context && m_context->annotationLayer &&
+        m_context->annotationLayer->selectedIndex() >= 0) {
+        m_context->annotationLayer->clearSelection();
+        m_context->repaint();
+        return true;
+    }
+
     return false;
 }
 
