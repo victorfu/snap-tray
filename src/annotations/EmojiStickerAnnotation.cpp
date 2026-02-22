@@ -1,8 +1,55 @@
 #include "annotations/EmojiStickerAnnotation.h"
-#include <QPainter>
 #include <QFontMetrics>
+#include <QPainter>
 #include <cmath>
 #include <QtMath>
+
+namespace {
+QFont emojiFontForScale(qreal scale)
+{
+    const int fontSize = qMax(1, qRound(EmojiStickerAnnotation::kBaseSize * scale));
+
+    QFont font;
+#ifdef Q_OS_MAC
+    font.setFamily("Apple Color Emoji");
+#elif defined(Q_OS_WIN)
+    font.setFamily("Segoe UI Emoji");
+#else
+    font.setFamily("Noto Color Emoji");
+#endif
+    font.setPointSize(fontSize);
+    return font;
+}
+
+struct EmojiGlyphLayout
+{
+    QFont font;
+    QRect textRect;
+    QPointF drawOrigin; // Baseline origin passed to QPainter::drawText.
+    QRectF inkRect;     // Glyph bounding rect in widget coordinates.
+};
+
+EmojiGlyphLayout computeEmojiGlyphLayout(const QPoint& center, const QString& emoji, qreal scale)
+{
+    EmojiGlyphLayout layout;
+    layout.font = emojiFontForScale(scale);
+
+    QFontMetrics fm(layout.font);
+    layout.textRect = fm.boundingRect(emoji);
+
+    const qreal originX = static_cast<qreal>(center.x()) -
+                          (layout.textRect.x() + layout.textRect.width() / 2.0);
+    const qreal originY = static_cast<qreal>(center.y()) -
+                          (layout.textRect.y() + layout.textRect.height() / 2.0);
+
+    layout.drawOrigin = QPointF(originX, originY);
+    layout.inkRect = QRectF(layout.drawOrigin.x() + layout.textRect.x(),
+                            layout.drawOrigin.y() + layout.textRect.y(),
+                            layout.textRect.width(),
+                            layout.textRect.height());
+    return layout;
+}
+} // namespace
 
 EmojiStickerAnnotation::EmojiStickerAnnotation(const QPoint &position, const QString &emoji, qreal scale)
     : m_position(position)
@@ -50,25 +97,8 @@ QPointF EmojiStickerAnnotation::center() const
 
 QRectF EmojiStickerAnnotation::glyphRect() const
 {
-    int fontSize = static_cast<int>(kBaseSize * m_scale);
-    QFont font;
-#ifdef Q_OS_MAC
-    font.setFamily("Apple Color Emoji");
-#elif defined(Q_OS_WIN)
-    font.setFamily("Segoe UI Emoji");
-#else
-    font.setFamily("Noto Color Emoji");
-#endif
-    font.setPointSize(fontSize);
-
-    QFontMetrics fm(font);
-    QRect textRect = fm.boundingRect(m_emoji);
-
-    qreal baselineX = m_position.x() - textRect.width() / 2.0;
-    qreal baselineY = m_position.y() + fm.ascent() / 2.0;
-    qreal top = baselineY - fm.ascent();
-
-    return QRectF(baselineX, top, textRect.width(), fm.height());
+    const EmojiGlyphLayout layout = computeEmojiGlyphLayout(m_position, m_emoji, m_scale);
+    return layout.inkRect;
 }
 
 QTransform EmojiStickerAnnotation::localLinearTransform() const
@@ -114,31 +144,16 @@ void EmojiStickerAnnotation::draw(QPainter &painter) const
     painter.save();
     painter.setRenderHint(QPainter::Antialiasing, true);
 
-    int fontSize = static_cast<int>(kBaseSize * m_scale);
-    QFont font;
-#ifdef Q_OS_MAC
-    font.setFamily("Apple Color Emoji");
-#elif defined(Q_OS_WIN)
-    font.setFamily("Segoe UI Emoji");
-#else
-    font.setFamily("Noto Color Emoji");
-#endif
-    font.setPointSize(fontSize);
-    painter.setFont(font);
+    const EmojiGlyphLayout layout = computeEmojiGlyphLayout(m_position, m_emoji, m_scale);
+    painter.setFont(layout.font);
 
-    QFontMetrics fm(font);
-    QRect textRect = fm.boundingRect(m_emoji);
-
-    qreal x = m_position.x() - textRect.width() / 2.0;
-    qreal y = m_position.y() + fm.ascent() / 2.0;
-
-    QRectF rect = glyphRect();
+    QRectF rect = layout.inkRect;
     QPointF c = rect.center();
     painter.translate(c);
     painter.setTransform(localLinearTransform(), true);
     painter.translate(-c);
 
-    painter.drawText(x, y, m_emoji);
+    painter.drawText(layout.drawOrigin, m_emoji);
 
     painter.restore();
 }
@@ -146,7 +161,7 @@ void EmojiStickerAnnotation::draw(QPainter &painter) const
 QRect EmojiStickerAnnotation::boundingRect() const
 {
     QPolygonF poly = transformedBoundingPolygon();
-    QRect rect = poly.boundingRect().toRect();
+    QRect rect = poly.boundingRect().toAlignedRect();
     // Add margin for selection handles
     int margin = 4;
     return rect.adjusted(-margin, -margin, margin, margin);
