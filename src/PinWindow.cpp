@@ -1834,6 +1834,18 @@ void PinWindow::mousePressEvent(QMouseEvent* event)
             return;
         }
 
+        // 3.6 Handle selected shape interaction before selection clearing.
+        // Shape rotation handles live outside the shape body, so clearing first
+        // would make those handles unreachable.
+        if (m_annotationMode &&
+            m_annotationLayer &&
+            getSelectedShapeAnnotation() &&
+            m_toolManager &&
+            m_toolManager->handleShapeInteractionPress(
+                mapToOriginalCoords(event->pos()), event->modifiers())) {
+            return;
+        }
+
         // 4. Clear active annotation selection if clicking elsewhere.
         bool clearedSelectedEmojiInEmojiTool = false;
         if (m_annotationMode && m_annotationLayer && m_annotationLayer->selectedIndex() >= 0) {

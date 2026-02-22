@@ -69,6 +69,7 @@ private slots:
     void testTransform_BoundingRectDoesNotIncludeHitMargin();
     void testTransform_BoundingRectScalesStrokeMargin();
     void testTransform_HitMarginStaysStableWhenScaled();
+    void testTransform_ContainsPointForOneDimensionalShapes();
 };
 
 // ============================================================================
@@ -552,6 +553,17 @@ void TestShapeAnnotation::testTransform_HitMarginStaysStableWhenScaled()
     QVERIFY(!shape.containsPoint(QPoint(380, 130)));
     // Close points should still be captured for easy selection.
     QVERIFY(shape.containsPoint(QPoint(360, 130)));
+}
+
+void TestShapeAnnotation::testTransform_ContainsPointForOneDimensionalShapes()
+{
+    ShapeAnnotation vertical(QRect(100, 100, 0, 80), ShapeType::Rectangle, Qt::red, 3);
+    ShapeAnnotation horizontal(QRect(100, 100, 80, 0), ShapeType::Rectangle, Qt::red, 3);
+
+    QVERIFY(vertical.containsPoint(QPoint(100, 140)));
+    QVERIFY(horizontal.containsPoint(QPoint(140, 100)));
+    QVERIFY(!vertical.containsPoint(QPoint(140, 140)));
+    QVERIFY(!horizontal.containsPoint(QPoint(140, 140)));
 }
 
 QTEST_MAIN(TestShapeAnnotation)

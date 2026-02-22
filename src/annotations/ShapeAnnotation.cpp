@@ -58,7 +58,8 @@ QPolygonF ShapeAnnotation::transformedBoundingPolygon() const
 bool ShapeAnnotation::containsTransformedPoint(const QPointF& transformedPoint) const
 {
     QRectF rect = normalizedRect();
-    if (rect.isEmpty()) {
+    // Keep one-dimensional shapes (horizontal/vertical drags) selectable.
+    if (rect.width() <= 0.0 && rect.height() <= 0.0) {
         return false;
     }
 
