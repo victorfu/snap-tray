@@ -17,9 +17,13 @@ QPixmap createCursorPixmap(int diameter) {
     int center = cursorSize / 2;
     qreal radius = diameter / 2.0;
 
-    painter.setBrush(QColor(235, 235, 235, 230));
-    painter.setPen(Qt::NoPen);
+    // Hollow eraser cursor: visible on both light and dark backgrounds.
+    painter.setBrush(Qt::NoBrush);
+    painter.setPen(QPen(QColor(235, 235, 235, 230), 1.6, Qt::SolidLine));
     painter.drawEllipse(QPointF(center, center), radius, radius);
+
+    painter.setPen(QPen(QColor(60, 60, 60, 190), 0.8, Qt::SolidLine));
+    painter.drawEllipse(QPointF(center, center), radius - 1.0, radius - 1.0);
 
     painter.end();
     return pixmap;
