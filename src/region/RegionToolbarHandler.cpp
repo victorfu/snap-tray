@@ -13,7 +13,6 @@
 #include "tools/ToolTraits.h"
 
 #include <QWidget>
-#include <QDebug>
 
 RegionToolbarHandler::RegionToolbarHandler(QObject* parent)
     : QObject(parent)
@@ -286,7 +285,6 @@ void RegionToolbarHandler::handleSelectionTool(ToolId button)
     m_currentTool = button;
     m_showSubToolbar = true;
     emit showSizeSectionRequested(false);
-    qDebug() << "Tool selected:" << static_cast<int>(button);
     emit toolChanged(m_currentTool, m_showSubToolbar);
     emit updateRequested();
 }
@@ -308,7 +306,6 @@ void RegionToolbarHandler::handleAnnotationTool(ToolId button)
         m_toolManager->setCurrentTool(m_currentTool);
     }
     emit showSizeSectionRequested(false);
-    qDebug() << "Tool selected:" << static_cast<int>(button) << "showSubToolbar:" << m_showSubToolbar;
     emit toolChanged(m_currentTool, m_showSubToolbar);
     emit updateRequested();
 }
@@ -336,7 +333,6 @@ void RegionToolbarHandler::handleStepBadgeTool(ToolId button)
     emit showWidthSectionRequested(false);
     emit stepBadgeSizeRequested(m_stepBadgeSize);
     // StepBadgeToolHandler reads size from AnnotationSettingsManager, no setWidth needed
-    qDebug() << "StepBadge tool selected, showSubToolbar:" << m_showSubToolbar;
     emit toolChanged(m_currentTool, m_showSubToolbar);
     emit updateRequested();
 }
@@ -369,7 +365,6 @@ void RegionToolbarHandler::handleMosaicTool(ToolId button)
     emit showSizeSectionRequested(false);
     // Mosaic tool doesn't use color, hide color section
     emit showColorSectionRequested(false);
-    qDebug() << "Mosaic tool selected, showSubToolbar:" << m_showSubToolbar;
     emit toolChanged(m_currentTool, m_showSubToolbar);
     emit updateRequested();
 }
@@ -388,7 +383,6 @@ void RegionToolbarHandler::handleUndoAction(ToolId)
 {
     if (m_annotationLayer && m_annotationLayer->canUndo()) {
         emit undoRequested();
-        qDebug() << "Undo";
         emit updateRequested();
     }
 }
@@ -397,7 +391,6 @@ void RegionToolbarHandler::handleRedoAction(ToolId)
 {
     if (m_annotationLayer && m_annotationLayer->canRedo()) {
         emit redoRequested();
-        qDebug() << "Redo";
         emit updateRequested();
     }
 }

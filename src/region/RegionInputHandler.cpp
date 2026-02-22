@@ -584,7 +584,6 @@ bool RegionInputHandler::handleAnnotationToolPress(const QPoint& pos)
     if (isAnnotationTool(state().currentTool) &&
         state().currentTool != ToolId::Selection &&
         (!requiresSelectionContainment || insideSelection)) {
-        qDebug() << "Starting annotation with tool:" << static_cast<int>(state().currentTool) << "at pos:" << pos;
         startAnnotation(pos);
         return true;
     }
@@ -1278,19 +1277,16 @@ void RegionInputHandler::handleSelectionRelease(const QPoint& pos)
         if (sel.width() > 5 && sel.height() > 5) {
             m_selectionManager->finishSelection();
             emit selectionFinished();
-            qDebug() << "RegionInputHandler: Multi-region selection complete via drag";
         }
         else if (state().hasDetectedWindow && state().highlightedWindowRect.isValid()) {
             m_selectionManager->setFromDetectedWindow(state().highlightedWindowRect);
             emit selectionFinished();
-            qDebug() << "RegionInputHandler: Multi-region selection via detected window";
 
             clearDetectionAndNotify();
         }
         else if (replacingRegion) {
             m_selectionManager->clearSelection();
             emit replaceSelectionCancelled();
-            qDebug() << "RegionInputHandler: Multi-region replace cancelled due to invalid selection";
         }
         return;
     }
@@ -1298,19 +1294,16 @@ void RegionInputHandler::handleSelectionRelease(const QPoint& pos)
     if (sel.width() > 5 && sel.height() > 5) {
         m_selectionManager->finishSelection();
         emit selectionFinished();
-        qDebug() << "RegionInputHandler: Selection complete via drag";
     }
     else if (state().hasDetectedWindow && state().highlightedWindowRect.isValid()) {
         m_selectionManager->setFromDetectedWindow(state().highlightedWindowRect);
         emit selectionFinished();
-        qDebug() << "RegionInputHandler: Selection complete via detected window";
 
         clearDetectionAndNotify();
     }
     else {
         emit fullScreenSelectionRequested();
         emit selectionFinished();
-        qDebug() << "RegionInputHandler: Click without drag - selecting full screen";
     }
 }
 
