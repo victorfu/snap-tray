@@ -26,6 +26,7 @@ class RegionControlWidget;
 class UpdateThrottler;
 class TextBoxAnnotation;
 class EmojiStickerAnnotation;
+class ShapeAnnotation;
 class ArrowAnnotation;
 class PolylineAnnotation;
 class MultiRegionManager;
@@ -141,6 +142,7 @@ private:
     // Utility
     TextBoxAnnotation* getSelectedTextAnnotation() const;
     EmojiStickerAnnotation* getSelectedEmojiStickerAnnotation() const;
+    ShapeAnnotation* getSelectedShapeAnnotation() const;
     ArrowAnnotation* getSelectedArrowAnnotation() const;
     bool shouldShowColorAndWidthWidget() const;
     bool isAnnotationTool(ToolId tool) const;
@@ -174,11 +176,14 @@ private:
     // Emoji sticker transformation state
     bool m_isEmojiDragging = false;
     bool m_isEmojiScaling = false;
+    bool m_isEmojiRotating = false;
     GizmoHandle m_activeEmojiHandle = GizmoHandle::None;
     QPoint m_emojiDragStart;
     qreal m_emojiStartScale = 1.0;
     qreal m_emojiStartDistance = 0.0;
     QPointF m_emojiStartCenter;
+    qreal m_emojiStartRotation = 0.0;
+    qreal m_emojiStartAngle = 0.0;
 
     // Arrow annotation transformation state
     bool m_isArrowDragging = false;

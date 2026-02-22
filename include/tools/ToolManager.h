@@ -16,6 +16,7 @@ class QPainter;
 class AnnotationLayer;
 class InlineTextEditor;
 class TextAnnotationEditor;
+class ShapeAnnotationEditor;
 
 /**
  * @brief Central manager for tool handling.
@@ -76,6 +77,9 @@ public:
     bool handleTextInteractionMove(const QPoint& pos, Qt::KeyboardModifiers modifiers = Qt::NoModifier);
     bool handleTextInteractionRelease(const QPoint& pos, Qt::KeyboardModifiers modifiers = Qt::NoModifier);
     bool handleTextInteractionDoubleClick(const QPoint& pos);
+    bool handleShapeInteractionPress(const QPoint& pos, Qt::KeyboardModifiers modifiers = Qt::NoModifier);
+    bool handleShapeInteractionMove(const QPoint& pos, Qt::KeyboardModifiers modifiers = Qt::NoModifier);
+    bool handleShapeInteractionRelease(const QPoint& pos, Qt::KeyboardModifiers modifiers = Qt::NoModifier);
 
     /**
      * @brief Draw the current tool preview.
@@ -106,6 +110,7 @@ public:
     void setDevicePixelRatio(qreal dpr);
     void setInlineTextEditor(InlineTextEditor* editor);
     void setTextAnnotationEditor(TextAnnotationEditor* editor);
+    void setShapeAnnotationEditor(ShapeAnnotationEditor* editor);
     void setTextEditingBounds(const QRect& bounds);
     void setTextColorSyncCallback(std::function<void(const QColor&)> callback);
     void setHostFocusCallback(std::function<void()> callback);

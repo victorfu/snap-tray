@@ -17,8 +17,8 @@ QPixmap createCursorPixmap(int diameter) {
     int center = cursorSize / 2;
     qreal radius = diameter / 2.0;
 
-    painter.setBrush(Qt::NoBrush);
-    painter.setPen(QPen(QColor(240, 240, 240, 230), 2.0, Qt::SolidLine));
+    painter.setBrush(QColor(235, 235, 235, 230));
+    painter.setPen(Qt::NoPen);
     painter.drawEllipse(QPointF(center, center), radius, radius);
 
     painter.end();

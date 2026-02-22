@@ -30,6 +30,7 @@
 #include "region/MagnifierPanel.h"
 #include "region/UpdateThrottler.h"
 #include "region/TextAnnotationEditor.h"
+#include "region/ShapeAnnotationEditor.h"
 #include "region/RegionControlWidget.h"
 #include "region/MultiRegionManager.h"
 #include "region/RegionInputState.h"
@@ -297,6 +298,9 @@ private:
 
     // Text annotation editor component (handles editing, transformation, formatting, dragging)
     TextAnnotationEditor *m_textAnnotationEditor;
+
+    // Shape annotation editor component (handles transform/drag interactions).
+    ShapeAnnotationEditor *m_shapeAnnotationEditor = nullptr;
 
     // Color picker dialog
     std::unique_ptr<snaptray::colorwidgets::ColorPickerDialogCompat> m_colorPickerDialog;

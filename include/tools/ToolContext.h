@@ -20,6 +20,7 @@ using SharedPixmap = std::shared_ptr<const QPixmap>;
 class AnnotationItem;
 class InlineTextEditor;
 class TextAnnotationEditor;
+class ShapeAnnotationEditor;
 
 /**
  * @brief Shared context passed to tool handlers.
@@ -62,6 +63,7 @@ public:
     // Text tool shared dependencies
     InlineTextEditor* inlineTextEditor = nullptr;
     TextAnnotationEditor* textAnnotationEditor = nullptr;
+    ShapeAnnotationEditor* shapeAnnotationEditor = nullptr;
     QRect textEditingBounds;
 
     // Callbacks

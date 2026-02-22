@@ -20,6 +20,7 @@ using SharedPixmap = std::shared_ptr<const QPixmap>;
 #include "pinwindow/ResizeHandler.h"
 #include "tools/ToolId.h"
 #include "annotation/AnnotationHostAdapter.h"
+#include "region/ShapeAnnotationEditor.h"
 #include "annotations/StepBadgeAnnotation.h"
 #include "annotations/ShapeAnnotation.h"
 #include "annotations/ArrowAnnotation.h"
@@ -49,6 +50,7 @@ class TextAnnotationEditor;
 class AutoBlurManager;
 class TextBoxAnnotation;
 class EmojiStickerAnnotation;
+class ShapeAnnotation;
 class ArrowAnnotation;
 class PolylineAnnotation;
 class RegionLayoutManager;
@@ -259,6 +261,7 @@ private:
     bool handleGizmoPress(const QPoint& pos);
     TextBoxAnnotation* getSelectedTextAnnotation();
     EmojiStickerAnnotation* getSelectedEmojiStickerAnnotation();
+    ShapeAnnotation* getSelectedShapeAnnotation();
 
     bool handleEmojiStickerAnnotationPress(const QPoint& pos);
     bool handleEmojiStickerAnnotationMove(const QPoint& pos);
@@ -266,11 +269,14 @@ private:
 
     bool m_isEmojiDragging = false;
     bool m_isEmojiScaling = false;
+    bool m_isEmojiRotating = false;
     GizmoHandle m_emojiDragHandle = GizmoHandle::None;
     QPoint m_emojiStartPos;
     qreal m_emojiStartScale = 1.0;
     qreal m_emojiStartDistance = 0.0;
     QPointF m_emojiStartCenter;
+    qreal m_emojiStartRotation = 0.0;
+    qreal m_emojiStartAngle = 0.0;
 
     // Arrow and Polyline editing state
     bool m_isArrowDragging = false;
@@ -391,6 +397,7 @@ private:
     ToolManager* m_toolManager = nullptr;
     InlineTextEditor* m_textEditor = nullptr;
     TextAnnotationEditor* m_textAnnotationEditor = nullptr;
+    ShapeAnnotationEditor* m_shapeAnnotationEditor = nullptr;
     RegionSettingsHelper* m_settingsHelper = nullptr;
     bool m_toolbarVisible = false;
     bool m_annotationMode = false;

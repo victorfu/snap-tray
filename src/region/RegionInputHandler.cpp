@@ -8,6 +8,7 @@
 #include "annotations/AnnotationLayer.h"
 #include "annotations/TextBoxAnnotation.h"
 #include "annotations/EmojiStickerAnnotation.h"
+#include "annotations/ShapeAnnotation.h"
 #include "annotations/ArrowAnnotation.h"
 #include "annotations/PolylineAnnotation.h"
 #include "cursor/CursorManager.h"
@@ -26,6 +27,20 @@
 #include <QTextEdit>
 #include <QCursor>
 #include <QtGlobal>
+#include <QtMath>
+
+namespace {
+qreal normalizeAngleDelta(qreal deltaDegrees)
+{
+    while (deltaDegrees > 180.0) {
+        deltaDegrees -= 360.0;
+    }
+    while (deltaDegrees < -180.0) {
+        deltaDegrees += 360.0;
+    }
+    return deltaDegrees;
+}
+} // namespace
 
 RegionInputHandler::RegionInputHandler(QObject* parent)
     : QObject(parent)
@@ -190,6 +205,12 @@ void RegionInputHandler::handleMousePress(QMouseEvent* event)
                 return;
             }
 
+            // Check shape annotations after arrow/polyline so top-most handles win.
+            if (m_toolManager &&
+                m_toolManager->handleShapeInteractionPress(event->pos(), event->modifiers())) {
+                return;
+            }
+
             // Clear selection if clicking elsewhere.
             if (m_annotationLayer->selectedIndex() >= 0) {
                 bool clearedSelectedEmojiInEmojiTool = false;
@@ -273,6 +294,11 @@ void RegionInputHandler::handleMouseMove(QMouseEvent* event)
         return;
     }
 
+    if (m_toolManager &&
+        m_toolManager->handleShapeInteractionMove(event->pos(), event->modifiers())) {
+        return;
+    }
+
     // Handle arrow annotation dragging/handle manipulation
     if (handleArrowAnnotationMove(event->pos())) {
         return;
@@ -330,6 +356,11 @@ void RegionInputHandler::handleMouseRelease(QMouseEvent* event)
 
         // Handle emoji sticker drag/scale release
         if (handleEmojiStickerRelease()) {
+            return;
+        }
+
+        if (m_toolManager &&
+            m_toolManager->handleShapeInteractionRelease(event->pos(), event->modifiers())) {
             return;
         }
 
@@ -459,11 +490,24 @@ bool RegionInputHandler::handleEmojiStickerAnnotationPress(const QPoint& pos)
     if (auto* emojiItem = getSelectedEmojiStickerAnnotation()) {
         GizmoHandle handle = TransformationGizmo::hitTest(emojiItem, pos);
         if (handle != GizmoHandle::None) {
+            m_isEmojiDragging = false;
+            m_isEmojiScaling = false;
+            m_isEmojiRotating = false;
             if (handle == GizmoHandle::Body) {
                 // Start dragging
                 m_isEmojiDragging = true;
                 m_emojiDragStart = pos;
                 CursorManager::instance().setInputStateForWidget(m_parentWidget, InputState::Moving);
+            }
+            else if (handle == GizmoHandle::Rotation) {
+                m_isEmojiRotating = true;
+                m_activeEmojiHandle = handle;
+                m_emojiStartCenter = emojiItem->center();
+                m_emojiStartRotation = emojiItem->rotation();
+                QPointF delta = QPointF(pos) - m_emojiStartCenter;
+                m_emojiStartAngle = qRadiansToDegrees(qAtan2(delta.y(), delta.x()));
+                CursorManager::instance().setHoverTargetForWidget(
+                    m_parentWidget, HoverTarget::GizmoHandle, static_cast<int>(handle));
             }
             else {
                 // Start scaling (corner handles)
@@ -494,11 +538,24 @@ bool RegionInputHandler::handleEmojiStickerAnnotationPress(const QPoint& pos)
 
     // Start dragging by default when clicking on the emoji body
     if (auto* emojiItem = getSelectedEmojiStickerAnnotation()) {
+        m_isEmojiDragging = false;
+        m_isEmojiScaling = false;
+        m_isEmojiRotating = false;
         GizmoHandle handle = TransformationGizmo::hitTest(emojiItem, pos);
         if (handle == GizmoHandle::Body || handle == GizmoHandle::None) {
             m_isEmojiDragging = true;
             m_emojiDragStart = pos;
             CursorManager::instance().setInputStateForWidget(m_parentWidget, InputState::Moving);
+        }
+        else if (handle == GizmoHandle::Rotation) {
+            m_isEmojiRotating = true;
+            m_activeEmojiHandle = handle;
+            m_emojiStartCenter = emojiItem->center();
+            m_emojiStartRotation = emojiItem->rotation();
+            QPointF delta = QPointF(pos) - m_emojiStartCenter;
+            m_emojiStartAngle = qRadiansToDegrees(qAtan2(delta.y(), delta.x()));
+            CursorManager::instance().setHoverTargetForWidget(
+                m_parentWidget, HoverTarget::GizmoHandle, static_cast<int>(handle));
         }
         else {
             // Corner handle - start scaling
@@ -708,6 +765,18 @@ bool RegionInputHandler::handleEmojiStickerMove(const QPoint& pos)
         }
     }
 
+    if (m_isEmojiRotating && m_annotationLayer->selectedIndex() >= 0) {
+        auto* emojiItem = getSelectedEmojiStickerAnnotation();
+        if (emojiItem) {
+            QPointF delta = QPointF(pos) - m_emojiStartCenter;
+            qreal currentAngle = qRadiansToDegrees(qAtan2(delta.y(), delta.x()));
+            qreal angleDelta = normalizeAngleDelta(currentAngle - m_emojiStartAngle);
+            emojiItem->setRotation(m_emojiStartRotation + angleDelta);
+            emit updateRequested();
+            return true;
+        }
+    }
+
     if (m_isEmojiScaling && m_annotationLayer->selectedIndex() >= 0) {
         auto* emojiItem = getSelectedEmojiStickerAnnotation();
         if (emojiItem && m_emojiStartDistance > 0) {
@@ -876,6 +945,18 @@ void RegionInputHandler::handleHoverMove(const QPoint& pos, Qt::MouseButtons but
             cm.setHoverTargetForWidget(m_parentWidget,HoverTarget::Annotation);
             return;
         }
+    }
+
+    // Check shape gizmo handles and shape body hover after arrow/polyline.
+    if (auto* shapeItem = getSelectedShapeAnnotation()) {
+        GizmoHandle handle = TransformationGizmo::hitTest(shapeItem, pos);
+        if (handle != GizmoHandle::None) {
+            cm.setHoverTargetForWidget(m_parentWidget, HoverTarget::GizmoHandle, static_cast<int>(handle));
+            return;
+        }
+    } else if (m_annotationLayer->hitTestShape(pos) >= 0) {
+        cm.setHoverTargetForWidget(m_parentWidget, HoverTarget::Annotation);
+        return;
     }
 
     // Update region control widget (radius + aspect ratio)
@@ -1164,10 +1245,13 @@ bool RegionInputHandler::handleTextEditorRelease(const QPoint& pos)
 
 bool RegionInputHandler::handleEmojiStickerRelease()
 {
-    if (m_isEmojiDragging || m_isEmojiScaling) {
+    if (m_isEmojiDragging || m_isEmojiScaling || m_isEmojiRotating) {
         m_isEmojiDragging = false;
         m_isEmojiScaling = false;
+        m_isEmojiRotating = false;
         m_activeEmojiHandle = GizmoHandle::None;
+        m_emojiStartDistance = 0.0;
+        m_emojiStartAngle = 0.0;
         // Reset input state to let hover logic take over (consistent with arrow/polyline)
         CursorManager::instance().setInputStateForWidget(m_parentWidget,InputState::Idle);
         return true;
@@ -1327,6 +1411,17 @@ EmojiStickerAnnotation* RegionInputHandler::getSelectedEmojiStickerAnnotation() 
     }
     if (m_annotationLayer->selectedIndex() >= 0) {
         return dynamic_cast<EmojiStickerAnnotation*>(m_annotationLayer->selectedItem());
+    }
+    return nullptr;
+}
+
+ShapeAnnotation* RegionInputHandler::getSelectedShapeAnnotation() const
+{
+    if (!m_annotationLayer) {
+        return nullptr;
+    }
+    if (m_annotationLayer->selectedIndex() >= 0) {
+        return dynamic_cast<ShapeAnnotation*>(m_annotationLayer->selectedItem());
     }
     return nullptr;
 }

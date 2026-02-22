@@ -57,6 +57,7 @@ private slots:
     void testInlineTextEditor_PreserveExistingTextBaseline();
     void testInlineTextEditor_CommittedBaselineMatchesRequestedBaseline();
     void testInlineTextEditor_BaselineStableAcrossSessions();
+    void testInlineTextEditor_UsesHighContrastBorderStyle();
 
 private:
     // Double-click detection helper (mimics TextAnnotationEditor logic)
@@ -454,6 +455,20 @@ void tst_TextAnnotationEditor::testInlineTextEditor_BaselineStableAcrossSessions
 
     QCOMPARE(firstBaseline, secondBaseline);
     QCOMPARE(firstBaseline, requestedBaseline);
+}
+
+void tst_TextAnnotationEditor::testInlineTextEditor_UsesHighContrastBorderStyle()
+{
+    QWidget parent;
+    InlineTextEditor inlineEditor(&parent);
+
+    inlineEditor.startEditing(QPoint(120, 100), QRect(0, 0, 500, 300));
+    QVERIFY(inlineEditor.textEdit() != nullptr);
+
+    const QString styleSheet = inlineEditor.textEdit()->styleSheet();
+    QVERIFY(styleSheet.contains("border-top-color: rgba(255, 255, 255"));
+    QVERIFY(styleSheet.contains("border-right-color: rgba(0, 0, 0"));
+    QVERIFY(styleSheet.contains("QTextEdit:focus"));
 }
 
 QTEST_MAIN(tst_TextAnnotationEditor)

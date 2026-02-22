@@ -18,6 +18,7 @@
 class TextBoxAnnotation;
 class EmojiStickerAnnotation;
 class ArrowAnnotation;
+class ShapeAnnotation;
 
 // Annotation layer that manages all annotations with undo/redo
 class AnnotationLayer : public QObject
@@ -56,6 +57,7 @@ public:
     // Selection support for text/emoji annotations
     int hitTestText(const QPoint &pos) const;
     int hitTestEmojiSticker(const QPoint &pos) const;
+    int hitTestShape(const QPoint &pos) const;
     int hitTestArrow(const QPoint &pos) const;
     int hitTestPolyline(const QPoint &pos) const;
     void setSelectedIndex(int index);

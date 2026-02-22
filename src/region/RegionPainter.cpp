@@ -5,6 +5,7 @@
 #include "annotations/AnnotationLayer.h"
 #include "annotations/TextBoxAnnotation.h"
 #include "annotations/EmojiStickerAnnotation.h"
+#include "annotations/ShapeAnnotation.h"
 #include "annotations/ArrowAnnotation.h"
 #include "annotations/PolylineAnnotation.h"
 #include "tools/ToolManager.h"
@@ -519,6 +520,11 @@ void RegionPainter::drawAnnotations(QPainter& painter)
         TransformationGizmo::draw(painter, emojiItem);
     }
 
+    // Draw transformation gizmo for selected shape annotation
+    if (auto* shapeItem = getSelectedShapeAnnotation()) {
+        TransformationGizmo::draw(painter, shapeItem);
+    }
+
     // Draw transformation gizmo for selected arrow annotation
     if (auto* arrowItem = getSelectedArrowAnnotation()) {
         TransformationGizmo::draw(painter, arrowItem);
@@ -639,6 +645,17 @@ EmojiStickerAnnotation* RegionPainter::getSelectedEmojiStickerAnnotation() const
     }
     if (m_annotationLayer->selectedIndex() >= 0) {
         return dynamic_cast<EmojiStickerAnnotation*>(m_annotationLayer->selectedItem());
+    }
+    return nullptr;
+}
+
+ShapeAnnotation* RegionPainter::getSelectedShapeAnnotation() const
+{
+    if (!m_annotationLayer) {
+        return nullptr;
+    }
+    if (m_annotationLayer->selectedIndex() >= 0) {
+        return dynamic_cast<ShapeAnnotation*>(m_annotationLayer->selectedItem());
     }
     return nullptr;
 }

@@ -9,6 +9,7 @@
 
 class TextBoxAnnotation;
 class EmojiStickerAnnotation;
+class ShapeAnnotation;
 class ArrowAnnotation;
 class PolylineAnnotation;
 
@@ -83,10 +84,17 @@ public:
      */
     static QVector<QPointF> cornerHandlePositions(const TextBoxAnnotation *annotation);
 
-    // EmojiStickerAnnotation overloads (no rotation handle)
+    // EmojiStickerAnnotation overloads
     static void draw(QPainter &painter, const EmojiStickerAnnotation *annotation);
     static GizmoHandle hitTest(const EmojiStickerAnnotation *annotation, const QPoint &point);
+    static QPointF rotationHandlePosition(const EmojiStickerAnnotation *annotation);
     static QVector<QPointF> cornerHandlePositions(const EmojiStickerAnnotation *annotation);
+
+    // ShapeAnnotation overloads
+    static void draw(QPainter &painter, const ShapeAnnotation *annotation);
+    static GizmoHandle hitTest(const ShapeAnnotation *annotation, const QPoint &point);
+    static QPointF rotationHandlePosition(const ShapeAnnotation *annotation);
+    static QVector<QPointF> cornerHandlePositions(const ShapeAnnotation *annotation);
 
     // ArrowAnnotation overloads
     /**
@@ -116,6 +124,7 @@ public:
     static int hitTestVertex(const PolylineAnnotation *annotation, const QPoint &point);
 
 private:
+    static QPointF rotationHandlePosition(const QPolygonF &poly, const QPointF &center);
     static void drawDashedBorder(QPainter &painter, const QPolygonF &polygon);
     static void drawCornerHandles(QPainter &painter, const QVector<QPointF> &corners);
     static void drawRotationHandle(QPainter &painter, const QPointF &topCenter, const QPointF &handlePos);

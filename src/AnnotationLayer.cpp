@@ -5,6 +5,7 @@
 #include "annotations/MosaicStroke.h"
 #include "annotations/StepBadgeAnnotation.h"
 #include "annotations/EmojiStickerAnnotation.h"
+#include "annotations/ShapeAnnotation.h"
 #include "annotations/ArrowAnnotation.h"
 #include "annotations/PolylineAnnotation.h"
 #include "annotations/ErasedItemsGroup.h"
@@ -331,6 +332,19 @@ int AnnotationLayer::hitTestEmojiSticker(const QPoint &pos) const
     for (int i = static_cast<int>(m_items.size()) - 1; i >= 0; --i) {
         if (auto* emojiItem = dynamic_cast<EmojiStickerAnnotation*>(m_items[i].get())) {
             if (emojiItem->isVisible() && emojiItem->containsPoint(pos)) {
+                return i;
+            }
+        }
+    }
+    return -1;
+}
+
+int AnnotationLayer::hitTestShape(const QPoint &pos) const
+{
+    // Iterate in reverse order (top-most items first)
+    for (int i = static_cast<int>(m_items.size()) - 1; i >= 0; --i) {
+        if (auto* shapeItem = dynamic_cast<ShapeAnnotation*>(m_items[i].get())) {
+            if (shapeItem->isVisible() && shapeItem->containsPoint(pos)) {
                 return i;
             }
         }

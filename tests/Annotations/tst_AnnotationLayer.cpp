@@ -8,6 +8,7 @@
 #include "annotations/PolylineAnnotation.h"
 #include "annotations/TextBoxAnnotation.h"
 #include "annotations/EmojiStickerAnnotation.h"
+#include "annotations/ShapeAnnotation.h"
 #include "annotations/ErasedItemsGroup.h"
 
 class TestAnnotationLayer : public QObject
@@ -20,6 +21,8 @@ private slots:
     void testHitTestText_IgnoresHiddenItems();
     void testHitTestEmojiSticker_IgnoresHiddenItems();
     void testHitTestEmojiSticker_ReturnsTopMostVisible();
+    void testHitTestShape_IgnoresHiddenItems();
+    void testHitTestShape_ReturnsTopMostVisible();
     void testSetSelectedIndex_InvalidOrHiddenClearsSelection();
     void testTranslateAll_AlsoTranslatesRedoStackItems();
     void testTranslateAll_TranslatesErasedItemsGroupContents();
@@ -185,6 +188,35 @@ void TestAnnotationLayer::testHitTestEmojiSticker_ReturnsTopMostVisible()
     const QPoint probe = topEmoji->center().toPoint();
 
     const int hitIndex = layer.hitTestEmojiSticker(probe);
+    QCOMPARE(hitIndex, 1);
+}
+
+void TestAnnotationLayer::testHitTestShape_IgnoresHiddenItems()
+{
+    AnnotationLayer layer;
+
+    auto hiddenShape = std::make_unique<ShapeAnnotation>(
+        QRect(40, 40, 120, 80), ShapeType::Rectangle, Qt::red, 3);
+    hiddenShape->setVisible(false);
+    layer.addItem(std::move(hiddenShape));
+
+    layer.addItem(std::make_unique<ShapeAnnotation>(
+        QRect(40, 40, 120, 80), ShapeType::Rectangle, Qt::red, 3));
+
+    const int hitIndex = layer.hitTestShape(QPoint(100, 80));
+    QCOMPARE(hitIndex, 1);
+}
+
+void TestAnnotationLayer::testHitTestShape_ReturnsTopMostVisible()
+{
+    AnnotationLayer layer;
+
+    layer.addItem(std::make_unique<ShapeAnnotation>(
+        QRect(40, 40, 120, 80), ShapeType::Rectangle, Qt::red, 3));
+    layer.addItem(std::make_unique<ShapeAnnotation>(
+        QRect(40, 40, 120, 80), ShapeType::Rectangle, Qt::blue, 3));
+
+    const int hitIndex = layer.hitTestShape(QPoint(100, 80));
     QCOMPARE(hitIndex, 1);
 }
 

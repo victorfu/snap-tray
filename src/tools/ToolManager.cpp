@@ -174,6 +174,54 @@ bool ToolManager::handleTextInteractionDoubleClick(const QPoint& pos)
     return textHandler->handleInteractionDoubleClick(m_context.get(), pos);
 }
 
+bool ToolManager::handleShapeInteractionPress(const QPoint& pos, Qt::KeyboardModifiers modifiers)
+{
+    m_context->shiftPressed = modifiers & Qt::ShiftModifier;
+    auto it = m_handlers.find(ToolId::Shape);
+    if (it == m_handlers.end()) {
+        return false;
+    }
+
+    auto* shapeHandler = dynamic_cast<ShapeToolHandler*>(it->second.get());
+    if (!shapeHandler) {
+        return false;
+    }
+
+    return shapeHandler->handleInteractionPress(m_context.get(), pos);
+}
+
+bool ToolManager::handleShapeInteractionMove(const QPoint& pos, Qt::KeyboardModifiers modifiers)
+{
+    m_context->shiftPressed = modifiers & Qt::ShiftModifier;
+    auto it = m_handlers.find(ToolId::Shape);
+    if (it == m_handlers.end()) {
+        return false;
+    }
+
+    auto* shapeHandler = dynamic_cast<ShapeToolHandler*>(it->second.get());
+    if (!shapeHandler) {
+        return false;
+    }
+
+    return shapeHandler->handleInteractionMove(m_context.get(), pos);
+}
+
+bool ToolManager::handleShapeInteractionRelease(const QPoint& pos, Qt::KeyboardModifiers modifiers)
+{
+    m_context->shiftPressed = modifiers & Qt::ShiftModifier;
+    auto it = m_handlers.find(ToolId::Shape);
+    if (it == m_handlers.end()) {
+        return false;
+    }
+
+    auto* shapeHandler = dynamic_cast<ShapeToolHandler*>(it->second.get());
+    if (!shapeHandler) {
+        return false;
+    }
+
+    return shapeHandler->handleInteractionRelease(m_context.get(), pos);
+}
+
 void ToolManager::drawCurrentPreview(QPainter& painter) const {
     auto it = m_handlers.find(m_currentToolId);
     if (it != m_handlers.end()) {
@@ -232,6 +280,11 @@ void ToolManager::setInlineTextEditor(InlineTextEditor* editor)
 void ToolManager::setTextAnnotationEditor(TextAnnotationEditor* editor)
 {
     m_context->textAnnotationEditor = editor;
+}
+
+void ToolManager::setShapeAnnotationEditor(ShapeAnnotationEditor* editor)
+{
+    m_context->shapeAnnotationEditor = editor;
 }
 
 void ToolManager::setTextEditingBounds(const QRect& bounds)

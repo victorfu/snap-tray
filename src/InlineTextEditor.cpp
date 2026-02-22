@@ -371,12 +371,16 @@ void InlineTextEditor::updateStyle()
     QString textDecoration = m_font.underline() ? "underline" : "none";
     QString fontFamily = m_font.family().isEmpty() ? "" : QString("font-family: \"%1\";").arg(m_font.family());
 
-    // Transparent background + white border + colored text
+    // Two-tone border keeps the frame visible over both light and dark content.
     QString styleSheet = QString(
         "QTextEdit {"
-        "  background: transparent;"
+        "  background: rgba(0, 0, 0, 28);"
         "  color: %1;"
-        "  border: 1px solid white;"
+        "  border: 1px solid transparent;"
+        "  border-top-color: rgba(255, 255, 255, 235);"
+        "  border-left-color: rgba(255, 255, 255, 235);"
+        "  border-right-color: rgba(0, 0, 0, 220);"
+        "  border-bottom-color: rgba(0, 0, 0, 220);"
         "  border-radius: 4px;"
         "  padding: 4px;"
         "  font-size: %2pt;"
@@ -384,6 +388,12 @@ void InlineTextEditor::updateStyle()
         "  font-style: %4;"
         "  text-decoration: %5;"
         "  %6"
+        "}"
+        "QTextEdit:focus {"
+        "  border-top-color: rgba(255, 255, 255, 245);"
+        "  border-left-color: rgba(255, 255, 255, 245);"
+        "  border-right-color: rgba(0, 0, 0, 235);"
+        "  border-bottom-color: rgba(0, 0, 0, 235);"
         "}"
     ).arg(m_color.name())
      .arg(m_font.pointSize())

@@ -50,6 +50,17 @@ bool isLaserPointerButtonId(int buttonId)
 {
     return buttonId == kLaserPointerButtonId;
 }
+
+qreal normalizeAngleDelta(qreal deltaDegrees)
+{
+    while (deltaDegrees > 180.0) {
+        deltaDegrees -= 360.0;
+    }
+    while (deltaDegrees < -180.0) {
+        deltaDegrees += 360.0;
+    }
+    return deltaDegrees;
+}
 }
 
 const std::map<ToolId, ScreenCanvas::ToolbarClickHandler>& ScreenCanvas::toolbarDispatchTable()
@@ -179,10 +190,13 @@ ScreenCanvas::ScreenCanvas(QWidget* parent)
 
     // Initialize text annotation editor component
     m_textAnnotationEditor = new TextAnnotationEditor(this);
+    m_shapeAnnotationEditor = new ShapeAnnotationEditor();
+    m_shapeAnnotationEditor->setAnnotationLayer(m_annotationLayer);
 
     // Provide text dependencies to ToolManager (TextToolHandler).
     m_toolManager->setInlineTextEditor(m_textEditor);
     m_toolManager->setTextAnnotationEditor(m_textAnnotationEditor);
+    m_toolManager->setShapeAnnotationEditor(m_shapeAnnotationEditor);
     m_toolManager->setTextEditingBounds(rect());
     m_toolManager->setTextColorSyncCallback([this](const QColor& color) {
         syncColorToAllWidgets(color);
@@ -240,6 +254,8 @@ ScreenCanvas::~ScreenCanvas()
     if (m_colorPickerDialog) {
         m_colorPickerDialog->close();
     }
+    delete m_shapeAnnotationEditor;
+    m_shapeAnnotationEditor = nullptr;
 }
 
 void ScreenCanvas::initializeIcons()
@@ -618,8 +634,13 @@ void ScreenCanvas::paintEvent(QPaintEvent*)
 
 void ScreenCanvas::drawAnnotations(QPainter& painter)
 {
+    const bool shapeInteractionActive =
+        m_shapeAnnotationEditor &&
+        (m_shapeAnnotationEditor->isDragging() || m_shapeAnnotationEditor->isTransforming());
+
     // Use dirty region optimization during drag operations
-    if (m_isEmojiDragging || m_isEmojiScaling || m_isArrowDragging || m_isPolylineDragging) {
+    if (m_isEmojiDragging || m_isEmojiScaling || m_isEmojiRotating ||
+        m_isArrowDragging || m_isPolylineDragging || shapeInteractionActive) {
         // Draw cached content for non-dragged items, then draw dragged item on top
         m_annotationLayer->drawWithDirtyRegion(painter, size(), devicePixelRatioF(),
                                                 m_annotationLayer->selectedIndex());
@@ -635,6 +656,11 @@ void ScreenCanvas::drawAnnotations(QPainter& painter)
     // Draw transformation gizmo for selected EmojiSticker
     if (auto* emojiItem = getSelectedEmojiStickerAnnotation()) {
         TransformationGizmo::draw(painter, emojiItem);
+    }
+
+    // Draw transformation gizmo for selected shape annotation
+    if (auto* shapeItem = getSelectedShapeAnnotation()) {
+        TransformationGizmo::draw(painter, shapeItem);
     }
 
     // Draw transformation gizmo for selected Arrow
@@ -874,7 +900,7 @@ void ScreenCanvas::mousePressEvent(QMouseEvent* event)
             return;
         }
 
-        // Check for Emoji sticker annotation interaction
+        // Check for Emoji sticker annotation interaction.
         if (handleEmojiStickerAnnotationPress(event->pos())) {
             return;
         }
@@ -889,10 +915,14 @@ void ScreenCanvas::mousePressEvent(QMouseEvent* event)
             return;
         }
 
-        // Text interaction is centralized in TextToolHandler and remains
-        // available globally (not only when Text is selected).
-        // Keep this after annotation hit tests so overlapping geometry keeps
-        // annotation manipulation precedence.
+        // Check shape interaction after arrow/polyline so top-most handles win.
+        if (m_toolManager &&
+            m_toolManager->handleShapeInteractionPress(event->pos(), event->modifiers())) {
+            return;
+        }
+
+        // Text interaction stays global, but after annotation hit tests so
+        // overlapping geometry keeps annotation manipulation precedence.
         if (m_toolManager &&
             m_toolManager->handleTextInteractionPress(event->pos(), event->modifiers())) {
             return;
@@ -962,9 +992,14 @@ void ScreenCanvas::mouseMoveEvent(QMouseEvent* event)
         return;
     }
 
-    // Handle Emoji sticker dragging/scaling
-    if (m_isEmojiDragging || m_isEmojiScaling) {
+    // Handle Emoji sticker dragging/scaling/rotating
+    if (m_isEmojiDragging || m_isEmojiScaling || m_isEmojiRotating) {
         handleEmojiStickerAnnotationMove(event->pos());
+        return;
+    }
+
+    if (m_toolManager &&
+        m_toolManager->handleShapeInteractionMove(event->pos(), event->modifiers())) {
         return;
     }
 
@@ -1100,6 +1135,12 @@ void ScreenCanvas::mouseReleaseEvent(QMouseEvent* event)
 
         // Handle emoji sticker release
         if (handleEmojiStickerAnnotationRelease(event->pos())) {
+            return;
+        }
+
+        if (m_toolManager &&
+            m_toolManager->handleShapeInteractionRelease(event->pos(), event->modifiers())) {
+            update();
             return;
         }
 
@@ -1358,6 +1399,16 @@ EmojiStickerAnnotation* ScreenCanvas::getSelectedEmojiStickerAnnotation()
     return nullptr;
 }
 
+ShapeAnnotation* ScreenCanvas::getSelectedShapeAnnotation()
+{
+    if (!m_annotationLayer) return nullptr;
+    int index = m_annotationLayer->selectedIndex();
+    if (index >= 0) {
+        return dynamic_cast<ShapeAnnotation*>(m_annotationLayer->itemAt(index));
+    }
+    return nullptr;
+}
+
 bool ScreenCanvas::handleEmojiStickerAnnotationPress(const QPoint& pos)
 {
     auto& cursorManager = CursorManager::instance();
@@ -1366,10 +1417,24 @@ bool ScreenCanvas::handleEmojiStickerAnnotationPress(const QPoint& pos)
     if (auto* emojiItem = getSelectedEmojiStickerAnnotation()) {
         GizmoHandle handle = TransformationGizmo::hitTest(emojiItem, pos);
         if (handle != GizmoHandle::None) {
+            m_isEmojiDragging = false;
+            m_isEmojiScaling = false;
+            m_isEmojiRotating = false;
             if (handle == GizmoHandle::Body) {
                 m_isEmojiDragging = true;
                 m_emojiDragStart = pos;
                 cursorManager.setInputStateForWidget(this, InputState::Moving);
+            } else if (handle == GizmoHandle::Rotation) {
+                m_isEmojiRotating = true;
+                m_activeEmojiHandle = handle;
+                m_emojiStartCenter = emojiItem->center();
+                m_emojiStartRotation = emojiItem->rotation();
+                QPointF delta = QPointF(pos) - m_emojiStartCenter;
+                m_emojiStartAngle = qRadiansToDegrees(qAtan2(delta.y(), delta.x()));
+                cursorManager.setHoverTargetForWidget(
+                    this,
+                    HoverTarget::GizmoHandle,
+                    static_cast<int>(handle));
             } else {
                 m_isEmojiScaling = true;
                 m_activeEmojiHandle = handle;
@@ -1395,11 +1460,25 @@ bool ScreenCanvas::handleEmojiStickerAnnotationPress(const QPoint& pos)
 
     m_annotationLayer->setSelectedIndex(hitIndex);
     if (auto* emojiItem = getSelectedEmojiStickerAnnotation()) {
+        m_isEmojiDragging = false;
+        m_isEmojiScaling = false;
+        m_isEmojiRotating = false;
         GizmoHandle handle = TransformationGizmo::hitTest(emojiItem, pos);
         if (handle == GizmoHandle::Body || handle == GizmoHandle::None) {
             m_isEmojiDragging = true;
             m_emojiDragStart = pos;
             cursorManager.setInputStateForWidget(this, InputState::Moving);
+        } else if (handle == GizmoHandle::Rotation) {
+            m_isEmojiRotating = true;
+            m_activeEmojiHandle = handle;
+            m_emojiStartCenter = emojiItem->center();
+            m_emojiStartRotation = emojiItem->rotation();
+            QPointF delta = QPointF(pos) - m_emojiStartCenter;
+            m_emojiStartAngle = qRadiansToDegrees(qAtan2(delta.y(), delta.x()));
+            cursorManager.setHoverTargetForWidget(
+                this,
+                HoverTarget::GizmoHandle,
+                static_cast<int>(handle));
         } else {
             m_isEmojiScaling = true;
             m_activeEmojiHandle = handle;
@@ -1435,6 +1514,11 @@ bool ScreenCanvas::handleEmojiStickerAnnotationMove(const QPoint& pos)
         QPoint delta = pos - m_emojiDragStart;
         emojiItem->moveBy(delta);
         m_emojiDragStart = pos;
+    } else if (m_isEmojiRotating) {
+        QPointF delta = QPointF(pos) - m_emojiStartCenter;
+        qreal currentAngle = qRadiansToDegrees(qAtan2(delta.y(), delta.x()));
+        qreal angleDelta = normalizeAngleDelta(currentAngle - m_emojiStartAngle);
+        emojiItem->setRotation(m_emojiStartRotation + angleDelta);
     } else if (m_isEmojiScaling && m_emojiStartDistance > 0.0) {
         QPointF delta = QPointF(pos) - m_emojiStartCenter;
         qreal currentDistance = qSqrt(delta.x() * delta.x() + delta.y() * delta.y());
@@ -1453,15 +1537,17 @@ bool ScreenCanvas::handleEmojiStickerAnnotationMove(const QPoint& pos)
 bool ScreenCanvas::handleEmojiStickerAnnotationRelease(const QPoint& pos)
 {
     Q_UNUSED(pos);
-    if (!m_isEmojiDragging && !m_isEmojiScaling) {
+    if (!m_isEmojiDragging && !m_isEmojiScaling && !m_isEmojiRotating) {
         return false;
     }
 
     m_annotationLayer->commitDirtyRegion(size(), devicePixelRatioF());
     m_isEmojiDragging = false;
     m_isEmojiScaling = false;
+    m_isEmojiRotating = false;
     m_activeEmojiHandle = GizmoHandle::None;
     m_emojiStartDistance = 0.0;
+    m_emojiStartAngle = 0.0;
     CursorManager::instance().setInputStateForWidget(this, InputState::Idle);
     update();
     return true;
@@ -1678,6 +1764,14 @@ void ScreenCanvas::updateAnnotationCursor(const QPoint& pos)
         }
     }
 
+    if (auto* shapeItem = getSelectedShapeAnnotation()) {
+        GizmoHandle handle = TransformationGizmo::hitTest(shapeItem, pos);
+        if (handle != GizmoHandle::None) {
+            cursorManager.setHoverTargetForWidget(this, HoverTarget::GizmoHandle, static_cast<int>(handle));
+            return;
+        }
+    }
+
     // Use unified hit testing from CursorManager
     auto result = CursorManager::hitTestAnnotations(
         pos,
@@ -1690,6 +1784,8 @@ void ScreenCanvas::updateAnnotationCursor(const QPoint& pos)
 
     if (result.hit) {
         cursorManager.setHoverTargetForWidget(this, result.target, result.handleIndex);
+    } else if (m_annotationLayer->hitTestShape(pos) >= 0) {
+        cursorManager.setHoverTargetForWidget(this, HoverTarget::Annotation);
     } else {
         // No annotation hit - clear hover target to let tool cursor show
         cursorManager.setHoverTargetForWidget(this, HoverTarget::None);

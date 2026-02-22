@@ -19,6 +19,7 @@
 #include "annotation/AnnotationHostAdapter.h"
 #include "InlineTextEditor.h"
 #include "region/TextAnnotationEditor.h"
+#include "region/ShapeAnnotationEditor.h"
 #include "region/RegionSettingsHelper.h"
 #include "tools/ToolId.h"
 #include "ToolbarStyle.h"
@@ -40,6 +41,7 @@ class ArrowAnnotation;
 class PolylineAnnotation;
 class TextBoxAnnotation;
 class EmojiStickerAnnotation;
+class ShapeAnnotation;
 class AnnotationContext;
 
 // Canvas background mode
@@ -188,11 +190,14 @@ private:
     // Emoji, Arrow and Polyline editing state
     bool m_isEmojiDragging = false;
     bool m_isEmojiScaling = false;
+    bool m_isEmojiRotating = false;
     GizmoHandle m_activeEmojiHandle = GizmoHandle::None;
     QPoint m_emojiDragStart;
     qreal m_emojiStartScale = 1.0;
     qreal m_emojiStartDistance = 0.0;
     QPointF m_emojiStartCenter;
+    qreal m_emojiStartRotation = 0.0;
+    qreal m_emojiStartAngle = 0.0;
 
     bool m_isArrowDragging = false;
     GizmoHandle m_arrowDragHandle = GizmoHandle::None;
@@ -204,6 +209,7 @@ private:
     // Emoji, Arrow and Polyline helpers
     TextBoxAnnotation* getSelectedTextAnnotation();
     EmojiStickerAnnotation* getSelectedEmojiStickerAnnotation();
+    ShapeAnnotation* getSelectedShapeAnnotation();
 
     bool handleEmojiStickerAnnotationPress(const QPoint& pos);
     bool handleEmojiStickerAnnotationMove(const QPoint& pos);
@@ -227,6 +233,7 @@ private:
     // Text editing components
     InlineTextEditor *m_textEditor;
     TextAnnotationEditor *m_textAnnotationEditor;
+    ShapeAnnotationEditor *m_shapeAnnotationEditor = nullptr;
     RegionSettingsHelper *m_settingsHelper;
 
     // Background mode

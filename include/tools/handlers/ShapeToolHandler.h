@@ -24,6 +24,7 @@ public:
     void onMousePress(ToolContext* ctx, const QPoint& pos) override;
     void onMouseMove(ToolContext* ctx, const QPoint& pos) override;
     void onMouseRelease(ToolContext* ctx, const QPoint& pos) override;
+    bool handleEscape(ToolContext* ctx) override;
 
     void drawPreview(QPainter& painter) const override;
     bool isDrawing() const override { return m_isDrawing; }
@@ -34,9 +35,14 @@ public:
     bool supportsShapeType() const override { return true; }
     bool supportsFillMode() const override { return true; }
 
+    bool handleInteractionPress(ToolContext* ctx, const QPoint& pos);
+    bool handleInteractionMove(ToolContext* ctx, const QPoint& pos);
+    bool handleInteractionRelease(ToolContext* ctx, const QPoint& pos);
+
 private:
     QRect makeRect(const QPoint& start, const QPoint& end) const;
     void updateCurrentShape(const QPoint& endPos);
+    bool canHandle(ToolContext* ctx) const;
 
     bool m_isDrawing = false;
     QPoint m_startPoint;

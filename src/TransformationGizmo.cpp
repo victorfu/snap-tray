@@ -1,6 +1,7 @@
 #include "TransformationGizmo.h"
 #include "annotations/TextBoxAnnotation.h"
 #include "annotations/EmojiStickerAnnotation.h"
+#include "annotations/ShapeAnnotation.h"
 #include "annotations/ArrowAnnotation.h"
 #include "annotations/PolylineAnnotation.h"
 #include <QtMath>
@@ -84,22 +85,7 @@ QPointF TransformationGizmo::rotationHandlePosition(const TextBoxAnnotation *ann
     if (!annotation) return QPointF();
 
     QPolygonF poly = annotation->transformedBoundingPolygon();
-    // poly: TopLeft[0], TopRight[1], BottomRight[2], BottomLeft[3]
-    QPointF topCenter = (poly.at(0) + poly.at(1)) / 2.0;
-    QPointF center = annotation->center();
-
-    // Direction from center to top-center (perpendicular to top edge, pointing outward)
-    QPointF direction = topCenter - center;
-    qreal length = qSqrt(direction.x() * direction.x() + direction.y() * direction.y());
-
-    if (length > 0) {
-        direction /= length;  // Normalize
-    } else {
-        direction = QPointF(0, -1);  // Default: up
-    }
-
-    // Extend beyond top center by the rotation handle distance
-    return topCenter + direction * kRotationHandleDistance;
+    return rotationHandlePosition(poly, annotation->center());
 }
 
 QVector<QPointF> TransformationGizmo::cornerHandlePositions(const TextBoxAnnotation *annotation)
@@ -152,8 +138,27 @@ GizmoHandle TransformationGizmo::hitTest(const TextBoxAnnotation *annotation, co
     return GizmoHandle::None;
 }
 
+QPointF TransformationGizmo::rotationHandlePosition(const QPolygonF &poly, const QPointF &center)
+{
+    if (poly.size() < 2) {
+        return QPointF();
+    }
+
+    const QPointF topCenter = (poly.at(0) + poly.at(1)) / 2.0;
+    QPointF direction = topCenter - center;
+    const qreal length = qSqrt(direction.x() * direction.x() + direction.y() * direction.y());
+
+    if (length > 0) {
+        direction /= length;
+    } else {
+        direction = QPointF(0, -1);
+    }
+
+    return topCenter + direction * kRotationHandleDistance;
+}
+
 // ============================================================================
-// EmojiStickerAnnotation overloads (no rotation handle)
+// EmojiStickerAnnotation overloads
 // ============================================================================
 
 void TransformationGizmo::draw(QPainter &painter, const EmojiStickerAnnotation *annotation)
@@ -168,11 +173,24 @@ void TransformationGizmo::draw(QPainter &painter, const EmojiStickerAnnotation *
     // 1. Draw dashed border
     drawDashedBorder(painter, poly);
 
-    // 2. Draw corner resize handles (no rotation handle for emoji)
+    // 2. Draw corner resize handles
     QVector<QPointF> corners = cornerHandlePositions(annotation);
     drawCornerHandles(painter, corners);
 
+    // 3. Draw rotation handle (same behavior as text tool)
+    QPointF topCenter = (poly.at(0) + poly.at(1)) / 2.0;
+    QPointF handlePos = rotationHandlePosition(annotation);
+    drawRotationHandle(painter, topCenter, handlePos);
+
     painter.restore();
+}
+
+QPointF TransformationGizmo::rotationHandlePosition(const EmojiStickerAnnotation *annotation)
+{
+    if (!annotation) return QPointF();
+
+    QPolygonF poly = annotation->transformedBoundingPolygon();
+    return rotationHandlePosition(poly, annotation->center());
 }
 
 QVector<QPointF> TransformationGizmo::cornerHandlePositions(const EmojiStickerAnnotation *annotation)
@@ -194,7 +212,14 @@ GizmoHandle TransformationGizmo::hitTest(const EmojiStickerAnnotation *annotatio
 
     QPointF p(point);
 
-    // 1. Check corner handles first (they're on the corners, so check before body)
+    // 1. Check rotation handle first
+    QPointF rotHandle = rotationHandlePosition(annotation);
+    qreal distToRot = QLineF(p, rotHandle).length();
+    if (distToRot <= kRotationHandleRadius + kHitTolerance) {
+        return GizmoHandle::Rotation;
+    }
+
+    // 2. Check corner handles
     QVector<QPointF> corners = cornerHandlePositions(annotation);
     GizmoHandle cornerHandles[] = {
         GizmoHandle::TopLeft,
@@ -210,7 +235,86 @@ GizmoHandle TransformationGizmo::hitTest(const EmojiStickerAnnotation *annotatio
         }
     }
 
-    // 2. Check if inside the emoji body (for moving)
+    // 3. Check if inside the emoji body (for moving)
+    if (annotation->containsPoint(point)) {
+        return GizmoHandle::Body;
+    }
+
+    return GizmoHandle::None;
+}
+
+// ============================================================================
+// ShapeAnnotation overloads
+// ============================================================================
+
+void TransformationGizmo::draw(QPainter &painter, const ShapeAnnotation *annotation)
+{
+    if (!annotation) return;
+
+    painter.save();
+    painter.setRenderHint(QPainter::Antialiasing, true);
+
+    QPolygonF poly = annotation->transformedBoundingPolygon();
+
+    drawDashedBorder(painter, poly);
+
+    QVector<QPointF> corners = cornerHandlePositions(annotation);
+    drawCornerHandles(painter, corners);
+
+    QPointF topCenter = (poly.at(0) + poly.at(1)) / 2.0;
+    QPointF handlePos = rotationHandlePosition(annotation);
+    drawRotationHandle(painter, topCenter, handlePos);
+
+    painter.restore();
+}
+
+QVector<QPointF> TransformationGizmo::cornerHandlePositions(const ShapeAnnotation *annotation)
+{
+    QVector<QPointF> corners;
+    if (!annotation) return corners;
+
+    QPolygonF poly = annotation->transformedBoundingPolygon();
+    for (int i = 0; i < 4; ++i) {
+        corners.append(poly.at(i));
+    }
+    return corners;
+}
+
+QPointF TransformationGizmo::rotationHandlePosition(const ShapeAnnotation *annotation)
+{
+    if (!annotation) return QPointF();
+
+    QPolygonF poly = annotation->transformedBoundingPolygon();
+    return rotationHandlePosition(poly, annotation->center());
+}
+
+GizmoHandle TransformationGizmo::hitTest(const ShapeAnnotation *annotation, const QPoint &point)
+{
+    if (!annotation) return GizmoHandle::None;
+
+    QPointF p(point);
+
+    QPointF rotHandle = rotationHandlePosition(annotation);
+    qreal distToRot = QLineF(p, rotHandle).length();
+    if (distToRot <= kRotationHandleRadius + kHitTolerance) {
+        return GizmoHandle::Rotation;
+    }
+
+    QVector<QPointF> corners = cornerHandlePositions(annotation);
+    GizmoHandle cornerHandles[] = {
+        GizmoHandle::TopLeft,
+        GizmoHandle::TopRight,
+        GizmoHandle::BottomRight,
+        GizmoHandle::BottomLeft
+    };
+
+    for (int i = 0; i < 4; ++i) {
+        qreal dist = QLineF(p, corners[i]).length();
+        if (dist <= kHandleRadius + kHitTolerance) {
+            return cornerHandles[i];
+        }
+    }
+
     if (annotation->containsPoint(point)) {
         return GizmoHandle::Body;
     }

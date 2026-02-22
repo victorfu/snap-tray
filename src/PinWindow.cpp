@@ -97,6 +97,17 @@ namespace {
     constexpr int kPixelFullOpacity = 255;
     constexpr qreal kTransformEpsilon = 1e-6;
 
+    qreal normalizeAngleDelta(qreal deltaDegrees)
+    {
+        while (deltaDegrees > 180.0) {
+            deltaDegrees -= 360.0;
+        }
+        while (deltaDegrees < -180.0) {
+            deltaDegrees += 360.0;
+        }
+        return deltaDegrees;
+    }
+
     struct TextCompensation
     {
         qreal rotation = 0.0;
@@ -462,6 +473,8 @@ PinWindow::~PinWindow()
         m_beautifyPanel->hide();
         m_beautifyPanel.reset();
     }
+    delete m_shapeAnnotationEditor;
+    m_shapeAnnotationEditor = nullptr;
     // InlineTextEditor, TextAnnotationEditor are QObjects parented to this
 }
 
@@ -1618,6 +1631,11 @@ void PinWindow::paintEvent(QPaintEvent*)
             TransformationGizmo::draw(painter, emojiItem);
         }
 
+        // Draw transformation gizmo for selected shape.
+        if (auto* shapeItem = getSelectedShapeAnnotation()) {
+            TransformationGizmo::draw(painter, shapeItem);
+        }
+
         // Draw transformation gizmo for selected Arrow (in transformed space)
         if (auto* arrowItem = getSelectedArrowAnnotation()) {
             TransformationGizmo::draw(painter, arrowItem);
@@ -1846,6 +1864,13 @@ void PinWindow::mousePressEvent(QMouseEvent* event)
                 return;
             }
 
+            // Check shape interaction after arrow/polyline so top-most handles win.
+            if (m_toolManager &&
+                m_toolManager->handleShapeInteractionPress(
+                    mapToOriginalCoords(event->pos()), event->modifiers())) {
+                return;
+            }
+
             // Other annotation tools route to ToolManager
             if (m_toolManager) {
                 if (clearedSelectedEmojiInEmojiTool) {
@@ -1955,9 +1980,16 @@ void PinWindow::mouseMoveEvent(QMouseEvent* event)
         return;
     }
 
-    // Handle Emoji sticker dragging/scaling
-    if (m_isEmojiDragging || m_isEmojiScaling) {
+    // Handle Emoji sticker dragging/scaling/rotating
+    if (m_isEmojiDragging || m_isEmojiScaling || m_isEmojiRotating) {
         handleEmojiStickerAnnotationMove(event->pos());
+        return;
+    }
+
+    if (m_toolManager &&
+        m_toolManager->handleShapeInteractionMove(
+            mapToOriginalCoords(event->pos()), event->modifiers())) {
+        update();
         return;
     }
 
@@ -2080,6 +2112,14 @@ void PinWindow::mouseReleaseEvent(QMouseEvent* event)
 
         // Handle emoji sticker release
         if (handleEmojiStickerAnnotationRelease(event->pos())) {
+            return;
+        }
+
+        if (m_toolManager &&
+            m_toolManager->handleShapeInteractionRelease(
+                mapToOriginalCoords(event->pos()), event->modifiers())) {
+            updateUndoRedoState();
+            update();
             return;
         }
 
@@ -2453,9 +2493,12 @@ void PinWindow::initializeAnnotationComponents()
     // Initialize text annotation editor components
     m_textEditor = new InlineTextEditor(this);
     m_textAnnotationEditor = new TextAnnotationEditor(this);
+    m_shapeAnnotationEditor = new ShapeAnnotationEditor();
+    m_shapeAnnotationEditor->setAnnotationLayer(m_annotationLayer);
     m_textAnnotationEditor->setCoordinateMappers(
         [this](const QPointF& displayPos) { return mapToOriginalCoords(displayPos); },
         [this](const QPointF& originalPos) { return mapFromOriginalCoords(originalPos); });
+    m_toolManager->setShapeAnnotationEditor(m_shapeAnnotationEditor);
 
     m_annotationContext = std::make_unique<AnnotationContext>(*this);
     m_annotationContext->setupTextAnnotationEditor(false, false);
@@ -3415,6 +3458,14 @@ EmojiStickerAnnotation* PinWindow::getSelectedEmojiStickerAnnotation()
     return dynamic_cast<EmojiStickerAnnotation*>(m_annotationLayer->itemAt(idx));
 }
 
+ShapeAnnotation* PinWindow::getSelectedShapeAnnotation()
+{
+    if (!m_annotationLayer) return nullptr;
+    int idx = m_annotationLayer->selectedIndex();
+    if (idx < 0) return nullptr;
+    return dynamic_cast<ShapeAnnotation*>(m_annotationLayer->itemAt(idx));
+}
+
 bool PinWindow::handleEmojiStickerAnnotationPress(const QPoint& pos)
 {
     if (!m_annotationLayer) {
@@ -3428,10 +3479,24 @@ bool PinWindow::handleEmojiStickerAnnotationPress(const QPoint& pos)
     if (auto* emojiItem = getSelectedEmojiStickerAnnotation()) {
         GizmoHandle handle = TransformationGizmo::hitTest(emojiItem, mappedPos);
         if (handle != GizmoHandle::None) {
+            m_isEmojiDragging = false;
+            m_isEmojiScaling = false;
+            m_isEmojiRotating = false;
             if (handle == GizmoHandle::Body) {
                 m_isEmojiDragging = true;
                 m_emojiStartPos = mappedPos;
                 cursorManager.setInputStateForWidget(this, InputState::Moving);
+            } else if (handle == GizmoHandle::Rotation) {
+                m_isEmojiRotating = true;
+                m_emojiDragHandle = handle;
+                m_emojiStartCenter = emojiItem->center();
+                m_emojiStartRotation = emojiItem->rotation();
+                QPointF delta = QPointF(mappedPos) - m_emojiStartCenter;
+                m_emojiStartAngle = qRadiansToDegrees(qAtan2(delta.y(), delta.x()));
+                cursorManager.setHoverTargetForWidget(
+                    this,
+                    HoverTarget::GizmoHandle,
+                    static_cast<int>(handle));
             } else {
                 m_isEmojiScaling = true;
                 m_emojiDragHandle = handle;
@@ -3456,11 +3521,25 @@ bool PinWindow::handleEmojiStickerAnnotationPress(const QPoint& pos)
 
     m_annotationLayer->setSelectedIndex(hitIndex);
     if (auto* emojiItem = getSelectedEmojiStickerAnnotation()) {
+        m_isEmojiDragging = false;
+        m_isEmojiScaling = false;
+        m_isEmojiRotating = false;
         GizmoHandle handle = TransformationGizmo::hitTest(emojiItem, mappedPos);
         if (handle == GizmoHandle::Body || handle == GizmoHandle::None) {
             m_isEmojiDragging = true;
             m_emojiStartPos = mappedPos;
             cursorManager.setInputStateForWidget(this, InputState::Moving);
+        } else if (handle == GizmoHandle::Rotation) {
+            m_isEmojiRotating = true;
+            m_emojiDragHandle = handle;
+            m_emojiStartCenter = emojiItem->center();
+            m_emojiStartRotation = emojiItem->rotation();
+            QPointF delta = QPointF(mappedPos) - m_emojiStartCenter;
+            m_emojiStartAngle = qRadiansToDegrees(qAtan2(delta.y(), delta.x()));
+            cursorManager.setHoverTargetForWidget(
+                this,
+                HoverTarget::GizmoHandle,
+                static_cast<int>(handle));
         } else {
             m_isEmojiScaling = true;
             m_emojiDragHandle = handle;
@@ -3482,7 +3561,8 @@ bool PinWindow::handleEmojiStickerAnnotationPress(const QPoint& pos)
 bool PinWindow::handleEmojiStickerAnnotationMove(const QPoint& pos)
 {
     QPoint mappedPos = mapToOriginalCoords(pos);
-    if ((!m_isEmojiDragging && !m_isEmojiScaling) || m_annotationLayer->selectedIndex() < 0) {
+    if ((!m_isEmojiDragging && !m_isEmojiScaling && !m_isEmojiRotating) ||
+        m_annotationLayer->selectedIndex() < 0) {
         return false;
     }
 
@@ -3495,6 +3575,11 @@ bool PinWindow::handleEmojiStickerAnnotationMove(const QPoint& pos)
         QPoint delta = mappedPos - m_emojiStartPos;
         emojiItem->moveBy(delta);
         m_emojiStartPos = mappedPos;
+    } else if (m_isEmojiRotating) {
+        QPointF delta = QPointF(mappedPos) - m_emojiStartCenter;
+        qreal currentAngle = qRadiansToDegrees(qAtan2(delta.y(), delta.x()));
+        qreal angleDelta = normalizeAngleDelta(currentAngle - m_emojiStartAngle);
+        emojiItem->setRotation(m_emojiStartRotation + angleDelta);
     } else if (m_emojiStartDistance > 0.0) {
         QPointF delta = QPointF(mappedPos) - m_emojiStartCenter;
         qreal currentDistance = qSqrt(delta.x() * delta.x() + delta.y() * delta.y());
@@ -3512,14 +3597,16 @@ bool PinWindow::handleEmojiStickerAnnotationMove(const QPoint& pos)
 bool PinWindow::handleEmojiStickerAnnotationRelease(const QPoint& pos)
 {
     Q_UNUSED(pos);
-    if (!m_isEmojiDragging && !m_isEmojiScaling) {
+    if (!m_isEmojiDragging && !m_isEmojiScaling && !m_isEmojiRotating) {
         return false;
     }
 
     m_isEmojiDragging = false;
     m_isEmojiScaling = false;
+    m_isEmojiRotating = false;
     m_emojiDragHandle = GizmoHandle::None;
     m_emojiStartDistance = 0.0;
+    m_emojiStartAngle = 0.0;
     CursorManager::instance().setInputStateForWidget(this, InputState::Idle);
     update();
     return true;
@@ -3979,6 +4066,14 @@ void PinWindow::updateAnnotationCursor(const QPoint& pos)
         }
     }
 
+    if (auto* shapeItem = getSelectedShapeAnnotation()) {
+        GizmoHandle handle = TransformationGizmo::hitTest(shapeItem, mappedPos);
+        if (handle != GizmoHandle::None) {
+            cursorManager.setHoverTargetForWidget(this, HoverTarget::GizmoHandle, static_cast<int>(handle));
+            return;
+        }
+    }
+
     // Use unified hit testing from CursorManager for other annotations
     auto result = CursorManager::hitTestAnnotations(
         mappedPos,
@@ -3991,6 +4086,8 @@ void PinWindow::updateAnnotationCursor(const QPoint& pos)
 
     if (result.hit) {
         cursorManager.setHoverTargetForWidget(this, result.target, result.handleIndex);
+    } else if (m_annotationLayer->hitTestShape(mappedPos) >= 0) {
+        cursorManager.setHoverTargetForWidget(this, HoverTarget::Annotation);
     } else {
         // No annotation hit - clear hover target to let tool cursor show
         cursorManager.setHoverTargetForWidget(this, HoverTarget::None);

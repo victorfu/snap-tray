@@ -55,6 +55,7 @@ private slots:
 
     // Cancellation tests
     void testCancelDrawing();
+    void testOnMouseRelease_SelectsCreatedShape();
 
 private:
     ShapeToolHandler* m_handler = nullptr;
@@ -275,6 +276,16 @@ void TestShapeToolHandler::testCancelDrawing()
     m_handler->cancelDrawing();
 
     QVERIFY(!m_handler->isDrawing());
+}
+
+void TestShapeToolHandler::testOnMouseRelease_SelectsCreatedShape()
+{
+    m_handler->onMousePress(m_context, QPoint(20, 20));
+    m_handler->onMouseMove(m_context, QPoint(120, 80));
+    m_handler->onMouseRelease(m_context, QPoint(120, 80));
+
+    QCOMPARE(m_layer->itemCount(), static_cast<size_t>(1));
+    QCOMPARE(m_layer->selectedIndex(), 0);
 }
 
 QTEST_MAIN(TestShapeToolHandler)

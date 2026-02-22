@@ -48,6 +48,7 @@ private slots:
     // Eraser functionality tests
     void testErasesIntersectingItems();
     void testDoesNotEraseNonIntersecting();
+    void testCursor_UsesCenteredPixmapHotspot();
 
 private:
     EraserToolHandler* m_handler = nullptr;
@@ -230,6 +231,15 @@ void TestEraserToolHandler::testDoesNotEraseNonIntersecting()
 
     // The stroke should still exist
     QCOMPARE(m_layer->itemCount(), 1);
+}
+
+void TestEraserToolHandler::testCursor_UsesCenteredPixmapHotspot()
+{
+    const QCursor cursor = m_handler->cursor();
+    const QPixmap pixmap = cursor.pixmap();
+
+    QVERIFY(!pixmap.isNull());
+    QCOMPARE(cursor.hotSpot(), QPoint(pixmap.width() / 2, pixmap.height() / 2));
 }
 
 QTEST_MAIN(TestEraserToolHandler)

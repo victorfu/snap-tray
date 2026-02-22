@@ -60,6 +60,15 @@ private slots:
     // Edge cases
     void testEdgeCase_VeryLargeRect();
     void testEdgeCase_SquareRect();
+
+    // Transform tests
+    void testTransform_DefaultValues();
+    void testTransform_SetRotationAndScale();
+    void testTransform_ContainsPointAfterRotation();
+    void testTransform_BoundingRectExpandsAfterRotation();
+    void testTransform_BoundingRectDoesNotIncludeHitMargin();
+    void testTransform_BoundingRectScalesStrokeMargin();
+    void testTransform_HitMarginStaysStableWhenScaled();
 };
 
 // ============================================================================
@@ -466,6 +475,83 @@ void TestShapeAnnotation::testEdgeCase_SquareRect()
 
     // Both should have same bounding rect for square
     QCOMPARE(rect.boundingRect(), ellipse.boundingRect());
+}
+
+void TestShapeAnnotation::testTransform_DefaultValues()
+{
+    ShapeAnnotation shape(QRect(10, 10, 120, 60), ShapeType::Rectangle, Qt::red, 3);
+
+    QCOMPARE(shape.rotation(), 0.0);
+    QCOMPARE(shape.scaleX(), 1.0);
+    QCOMPARE(shape.scaleY(), 1.0);
+}
+
+void TestShapeAnnotation::testTransform_SetRotationAndScale()
+{
+    ShapeAnnotation shape(QRect(10, 10, 120, 60), ShapeType::Rectangle, Qt::red, 3);
+
+    shape.setRotation(450.0);  // wraps to 90°
+    shape.setScale(2.0, 0.5);
+
+    QCOMPARE(shape.rotation(), 90.0);
+    QCOMPARE(shape.scaleX(), 2.0);
+    QCOMPARE(shape.scaleY(), 0.5);
+}
+
+void TestShapeAnnotation::testTransform_ContainsPointAfterRotation()
+{
+    ShapeAnnotation shape(QRect(40, 40, 120, 60), ShapeType::Rectangle, Qt::red, 3);
+    shape.setRotation(45.0);
+
+    QVERIFY(shape.containsPoint(shape.center().toPoint()));
+}
+
+void TestShapeAnnotation::testTransform_BoundingRectExpandsAfterRotation()
+{
+    ShapeAnnotation shape(QRect(40, 40, 120, 60), ShapeType::Rectangle, Qt::red, 3);
+    const QRect before = shape.boundingRect();
+
+    shape.setRotation(45.0);
+    const QRect after = shape.boundingRect();
+
+    QVERIFY(after.width() > before.width());
+    QVERIFY(after.height() > before.height());
+}
+
+void TestShapeAnnotation::testTransform_BoundingRectDoesNotIncludeHitMargin()
+{
+    ShapeAnnotation shape(QRect(40, 40, 120, 60), ShapeType::Rectangle, Qt::red, 3);
+
+    const QRect bounds = shape.boundingRect();
+    const int expectedMargin = 3 / 2 + 2;
+    const int expectedWidth = 120 + expectedMargin * 2;
+    const int expectedHeight = 60 + expectedMargin * 2;
+
+    QCOMPARE(bounds.width(), expectedWidth);
+    QCOMPARE(bounds.height(), expectedHeight);
+}
+
+void TestShapeAnnotation::testTransform_BoundingRectScalesStrokeMargin()
+{
+    ShapeAnnotation shape(QRect(100, 100, 100, 60), ShapeType::Rectangle, Qt::red, 3);
+    shape.setScale(4.0, 4.0);
+
+    const QRect bounds = shape.boundingRect();
+    // 100x60 shape scaled by 4x has 400x240 visual size; transformed stroke margin
+    // should add materially more than the unscaled 3px-per-side fallback.
+    QVERIFY(bounds.width() >= 420);
+    QVERIFY(bounds.height() >= 260);
+}
+
+void TestShapeAnnotation::testTransform_HitMarginStaysStableWhenScaled()
+{
+    ShapeAnnotation shape(QRect(100, 100, 100, 60), ShapeType::Rectangle, Qt::red, 3);
+    shape.setScale(4.0, 4.0);
+
+    // With a stable screen-space hit margin, far-out points should not be captured.
+    QVERIFY(!shape.containsPoint(QPoint(380, 130)));
+    // Close points should still be captured for easy selection.
+    QVERIFY(shape.containsPoint(QPoint(360, 130)));
 }
 
 QTEST_MAIN(TestShapeAnnotation)

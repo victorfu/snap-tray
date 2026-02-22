@@ -18,6 +18,7 @@ class ToolbarCore;
 class RegionControlWidget;
 class TextBoxAnnotation;
 class EmojiStickerAnnotation;
+class ShapeAnnotation;
 class ArrowAnnotation;
 class PolylineAnnotation;
 class MultiRegionManager;
@@ -102,6 +103,7 @@ private:
     int effectiveCornerRadius() const;
     TextBoxAnnotation* getSelectedTextAnnotation() const;
     EmojiStickerAnnotation* getSelectedEmojiStickerAnnotation() const;
+    ShapeAnnotation* getSelectedShapeAnnotation() const;
     ArrowAnnotation* getSelectedArrowAnnotation() const;
     PolylineAnnotation* getSelectedPolylineAnnotation() const;
 
