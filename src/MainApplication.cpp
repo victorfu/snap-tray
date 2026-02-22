@@ -103,6 +103,8 @@ MainApplication::MainApplication(QObject* parent)
     , m_screenCanvasAction(nullptr)
     , m_pinFromImageAction(nullptr)
     , m_pinHistoryAction(nullptr)
+    , m_togglePinsVisibilityAction(nullptr)
+    , m_closeAllPinsAction(nullptr)
     , m_fullScreenRecordingAction(nullptr)
     , m_settingsDialog(nullptr)
     , m_updateChecker(nullptr)
@@ -354,8 +356,20 @@ void MainApplication::initialize()
     m_pinHistoryAction = m_trayMenu->addAction(tr("Pin History"));
     connect(m_pinHistoryAction, &QAction::triggered, this, &MainApplication::onPinHistory);
 
-    QAction* closeAllPinsAction = m_trayMenu->addAction(tr("Close All Pins"));
-    connect(closeAllPinsAction, &QAction::triggered, this, &MainApplication::onCloseAllPins);
+    m_togglePinsVisibilityAction = m_trayMenu->addAction(tr("Hide All Pins"));
+    connect(m_togglePinsVisibilityAction, &QAction::triggered, this, &MainApplication::onToggleAllPinsVisibility);
+
+    m_closeAllPinsAction = m_trayMenu->addAction(tr("Close All Pins"));
+    connect(m_closeAllPinsAction, &QAction::triggered, this, &MainApplication::onCloseAllPins);
+
+    connect(m_pinWindowManager, &PinWindowManager::windowCreated,
+            this, [this](PinWindow*) { updatePinsVisibilityActionText(); });
+    connect(m_pinWindowManager, &PinWindowManager::windowClosed,
+            this, [this](PinWindow*) { updatePinsVisibilityActionText(); });
+    connect(m_pinWindowManager, &PinWindowManager::allWindowsClosed,
+            this, &MainApplication::updatePinsVisibilityActionText);
+    connect(m_pinWindowManager, &PinWindowManager::allPinsVisibilityChanged,
+            this, [this](bool) { updatePinsVisibilityActionText(); });
 
     m_fullScreenRecordingAction = m_trayMenu->addAction(tr("Record Full Screen"));
     connect(m_fullScreenRecordingAction, &QAction::triggered, this, &MainApplication::onFullScreenRecording);
@@ -396,6 +410,7 @@ void MainApplication::initialize()
 
     // Update tray menu with current hotkey text
     updateTrayMenuHotkeyText();
+    updatePinsVisibilityActionText();
 
     // Initialize update checker for automatic update checks
     m_updateChecker = new UpdateChecker(this);
@@ -485,6 +500,11 @@ void MainApplication::onFullScreenRecording()
     }
 
     m_recordingManager->startFullScreenRecording();
+}
+
+void MainApplication::onToggleAllPinsVisibility()
+{
+    m_pinWindowManager->toggleAllPinsVisibility();
 }
 
 void MainApplication::onCloseAllPins()
@@ -650,6 +670,9 @@ void MainApplication::onHotkeyAction(SnapTray::HotkeyAction action)
     case HotkeyAction::PinHistory:
         onPinHistory();
         break;
+    case HotkeyAction::TogglePinsVisibility:
+        onToggleAllPinsVisibility();
+        break;
     case HotkeyAction::RecordFullScreen:
         onFullScreenRecording();
         break;
@@ -661,6 +684,7 @@ void MainApplication::onHotkeyAction(SnapTray::HotkeyAction action)
 void MainApplication::onHotkeyChanged(SnapTray::HotkeyAction, const SnapTray::HotkeyConfig&)
 {
     updateTrayMenuHotkeyText();
+    updatePinsVisibilityActionText();
 }
 
 void MainApplication::onHotkeyInitializationCompleted(const QStringList& failedHotkeys)
@@ -842,6 +866,30 @@ void MainApplication::updateActionHotkeyText(QAction* action,
         action->setText(tr("%1 (%2)").arg(baseName, displayHotkey));
     } else {
         action->setText(baseName);
+    }
+}
+
+void MainApplication::updatePinsVisibilityActionText()
+{
+    if (!m_togglePinsVisibilityAction || !m_closeAllPinsAction || !m_pinWindowManager) {
+        return;
+    }
+
+    const bool hasPins = m_pinWindowManager->windowCount() > 0;
+    m_togglePinsVisibilityAction->setEnabled(hasPins);
+    m_closeAllPinsAction->setEnabled(hasPins);
+
+    const QString baseText = m_pinWindowManager->arePinsHidden()
+        ? tr("Show All Pins")
+        : tr("Hide All Pins");
+
+    const auto config = SnapTray::HotkeyManager::instance().getConfig(
+        SnapTray::HotkeyAction::TogglePinsVisibility);
+    const QString displayHotkey = SnapTray::HotkeyManager::formatKeySequence(config.keySequence);
+    if (!displayHotkey.isEmpty()) {
+        m_togglePinsVisibilityAction->setText(tr("%1 (%2)").arg(baseText, displayHotkey));
+    } else {
+        m_togglePinsVisibilityAction->setText(baseText);
     }
 }
 

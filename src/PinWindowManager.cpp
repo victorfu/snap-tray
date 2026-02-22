@@ -28,6 +28,11 @@ PinWindow* PinWindowManager::createPinWindow(const QPixmap &screenshot,
     m_windows.append(window);
     // Note: show() is called in PinWindow constructor
 
+    // New pins should make all hidden pins visible again.
+    if (m_pinsHidden) {
+        setAllPinsVisible(true);
+    }
+
     emit windowCreated(window);
     return window;
 }
@@ -48,6 +53,33 @@ void PinWindowManager::closeWindows(const QList<PinWindow*>& windows)
     }
 }
 
+void PinWindowManager::setAllPinsVisible(bool visible)
+{
+    const bool hidden = !visible;
+
+    for (PinWindow* window : m_windows) {
+        if (!window) {
+            continue;
+        }
+
+        if (visible) {
+            window->show();
+        } else {
+            window->hide();
+        }
+    }
+
+    if (m_pinsHidden != hidden) {
+        m_pinsHidden = hidden;
+        emit allPinsVisibilityChanged(m_pinsHidden);
+    }
+}
+
+void PinWindowManager::toggleAllPinsVisibility()
+{
+    setAllPinsVisible(m_pinsHidden);
+}
+
 void PinWindowManager::onWindowClosed(PinWindow *window)
 {
     m_windows.removeOne(window);
@@ -55,6 +87,10 @@ void PinWindowManager::onWindowClosed(PinWindow *window)
     emit windowClosed(window);
 
     if (m_windows.isEmpty()) {
+        if (m_pinsHidden) {
+            m_pinsHidden = false;
+            emit allPinsVisibilityChanged(false);
+        }
         emit allWindowsClosed();
     }
 }

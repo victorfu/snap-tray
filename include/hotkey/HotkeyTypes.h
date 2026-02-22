@@ -41,6 +41,7 @@ enum class HotkeyAction {
     QuickPin = 400,
     PinFromImage = 401,
     PinHistory = 402,
+    TogglePinsVisibility = 403,
 
     // Recording actions (500-599)
     RecordFullScreen = 500,
@@ -150,6 +151,14 @@ inline constexpr HotkeyMetadata kDefaultHotkeys[] = {
         QT_TRANSLATE_NOOP("SnapTray::HotkeyManager", "Open pin history window"),
         "pinHistoryHotkey",  // kSettingsKeyPinHistoryHotkey
         ""                   // Optional, no default
+    },
+    {
+        HotkeyAction::TogglePinsVisibility,
+        HotkeyCategory::Pin,
+        QT_TRANSLATE_NOOP("SnapTray::HotkeyManager", "Toggle Hide/Show All Pins"),
+        QT_TRANSLATE_NOOP("SnapTray::HotkeyManager", "Toggle visibility of all pinned windows"),
+        "togglePinsVisibilityHotkey",  // kSettingsKeyTogglePinsVisibilityHotkey
+        ""                             // Optional, no default
     },
     {
         HotkeyAction::RecordFullScreen,

@@ -15,6 +15,7 @@ inline constexpr const char* kSettingsKeyPasteHotkey = "pasteHotkey";
 inline constexpr const char* kSettingsKeyQuickPinHotkey = "quickPinHotkey";
 inline constexpr const char* kSettingsKeyPinFromImageHotkey = "pinFromImageHotkey";
 inline constexpr const char* kSettingsKeyPinHistoryHotkey = "pinHistoryHotkey";
+inline constexpr const char* kSettingsKeyTogglePinsVisibilityHotkey = "togglePinsVisibilityHotkey";
 inline constexpr const char* kSettingsKeyRecordFullScreenHotkey = "recordFullScreenHotkey";
 
 // Hotkey default values
@@ -24,6 +25,7 @@ inline constexpr const char* kDefaultPasteHotkey = "F3";
 inline constexpr const char* kDefaultQuickPinHotkey = "Shift+F2";
 inline constexpr const char* kDefaultPinFromImageHotkey = "";  // No default
 inline constexpr const char* kDefaultPinHistoryHotkey = "";  // No default
+inline constexpr const char* kDefaultTogglePinsVisibilityHotkey = "";  // No default
 inline constexpr const char* kDefaultRecordFullScreenHotkey = "";  // No default
 
 inline QSettings getSettings()
