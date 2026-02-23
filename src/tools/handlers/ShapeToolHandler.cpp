@@ -160,14 +160,12 @@ bool ShapeToolHandler::handleInteractionMove(ToolContext* ctx, const QPoint& pos
 
     if (shapeEditor->isTransforming() && layer->selectedIndex() >= 0) {
         shapeEditor->updateTransformation(pos);
-        layer->invalidateCache();
         ctx->repaint();
         return true;
     }
 
     if (shapeEditor->isDragging() && layer->selectedIndex() >= 0) {
         shapeEditor->updateDragging(pos);
-        layer->invalidateCache();
         ctx->repaint();
         return true;
     }
