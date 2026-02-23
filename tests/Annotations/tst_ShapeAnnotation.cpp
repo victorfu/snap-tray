@@ -69,6 +69,7 @@ private slots:
     void testTransform_BoundingRectDoesNotIncludeHitMargin();
     void testTransform_BoundingRectScalesStrokeMargin();
     void testTransform_HitMarginStaysStableWhenScaled();
+    void testTransform_BoundingPolygonHitMarginStaysStableWhenScaled();
     void testTransform_ContainsPointForOneDimensionalShapes();
 };
 
@@ -553,6 +554,30 @@ void TestShapeAnnotation::testTransform_HitMarginStaysStableWhenScaled()
     QVERIFY(!shape.containsPoint(QPoint(380, 130)));
     // Close points should still be captured for easy selection.
     QVERIFY(shape.containsPoint(QPoint(360, 130)));
+}
+
+void TestShapeAnnotation::testTransform_BoundingPolygonHitMarginStaysStableWhenScaled()
+{
+    ShapeAnnotation shape(QRect(100, 100, 100, 60), ShapeType::Rectangle, Qt::red, 3);
+
+    shape.setScale(1.0, 1.0);
+    const QRectF baseBounds = shape.transformedBoundingPolygon().boundingRect();
+    const qreal baseVisualWidth = shape.rectF().normalized().width() * shape.scaleX();
+    const qreal baseVisualHeight = shape.rectF().normalized().height() * shape.scaleY();
+    const qreal baseMarginX = (baseBounds.width() - baseVisualWidth) / 2.0;
+    const qreal baseMarginY = (baseBounds.height() - baseVisualHeight) / 2.0;
+
+    shape.setScale(4.0, 4.0);
+    const QRectF scaledBounds = shape.transformedBoundingPolygon().boundingRect();
+    const qreal scaledVisualWidth = shape.rectF().normalized().width() * shape.scaleX();
+    const qreal scaledVisualHeight = shape.rectF().normalized().height() * shape.scaleY();
+    const qreal scaledMarginX = (scaledBounds.width() - scaledVisualWidth) / 2.0;
+    const qreal scaledMarginY = (scaledBounds.height() - scaledVisualHeight) / 2.0;
+
+    QVERIFY(qAbs(baseMarginX - ShapeAnnotation::kHitMargin) < 0.01);
+    QVERIFY(qAbs(baseMarginY - ShapeAnnotation::kHitMargin) < 0.01);
+    QVERIFY(qAbs(scaledMarginX - ShapeAnnotation::kHitMargin) < 0.01);
+    QVERIFY(qAbs(scaledMarginY - ShapeAnnotation::kHitMargin) < 0.01);
 }
 
 void TestShapeAnnotation::testTransform_ContainsPointForOneDimensionalShapes()

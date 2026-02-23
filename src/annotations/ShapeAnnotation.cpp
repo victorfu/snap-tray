@@ -37,8 +37,16 @@ QTransform ShapeAnnotation::localLinearTransform() const
 
 QPolygonF ShapeAnnotation::transformedBoundingPolygon() const
 {
+    const QTransform linear = localLinearTransform();
+    const QPointF mappedUnitX = linear.map(QPointF(1.0, 0.0));
+    const QPointF mappedUnitY = linear.map(QPointF(0.0, 1.0));
+    const qreal scaleX = qMax(qHypot(mappedUnitX.x(), mappedUnitX.y()), kMinScale);
+    const qreal scaleY = qMax(qHypot(mappedUnitY.x(), mappedUnitY.y()), kMinScale);
+    const qreal hitMarginX = static_cast<qreal>(kHitMargin) / scaleX;
+    const qreal hitMarginY = static_cast<qreal>(kHitMargin) / scaleY;
+
     QRectF rect = normalizedRect();
-    rect.adjust(-kHitMargin, -kHitMargin, kHitMargin, kHitMargin);
+    rect.adjust(-hitMarginX, -hitMarginY, hitMarginX, hitMarginY);
 
     QPolygonF poly;
     poly << rect.topLeft()
@@ -47,7 +55,6 @@ QPolygonF ShapeAnnotation::transformedBoundingPolygon() const
          << rect.bottomLeft();
 
     const QPointF c = center();
-    const QTransform linear = localLinearTransform();
     for (int i = 0; i < poly.size(); ++i) {
         poly[i] = c + linear.map(poly[i] - c);
     }
