@@ -63,6 +63,7 @@ snap-tray/
 ├── include/                    # Public headers
 │   ├── annotation/            # AnnotationContext, AnnotationHostAdapter
 │   ├── annotations/           # Annotation types and classes
+│   ├── beautify/              # Beautify panel/settings interfaces
 │   ├── capture/               # Capture engine interfaces
 │   ├── cli/                   # CLI handler, commands, IPC protocol
 │   │   └── commands/          # Individual CLI command classes
@@ -72,9 +73,7 @@ snap-tray/
 │   ├── encoding/              # Video/GIF/WebP encoders
 │   ├── external/              # Third-party headers (msf_gif)
 │   ├── hotkey/                # HotkeyManager, HotkeyTypes
-│   ├── input/                 # Mouse tracking (platform-specific)
 │   ├── pinwindow/             # Pin window components
-│   ├── recording/             # Recording effects
 │   ├── region/                # Region selection UI
 │   ├── settings/              # Settings managers
 │   ├── toolbar/               # Toolbar rendering
@@ -85,11 +84,13 @@ snap-tray/
 │   ├── update/                # UpdateChecker, UpdateDialog, UpdateSettingsManager
 │   ├── utils/                 # Utility helpers
 │   ├── video/                 # Video playback UI
-│   └── widgets/               # Custom widgets (hotkey edit, dialogs)
+│   ├── widgets/               # Custom widgets (hotkey edit, dialogs)
+│   └── Recording*.h           # Recording headers at include root
 │
 ├── src/                       # Implementation files
 │   ├── annotation/            # AnnotationContext implementation
 │   ├── annotations/           # Annotation implementations
+│   ├── beautify/              # Beautify implementations
 │   ├── capture/               # Capture engine implementations
 │   ├── cli/                   # CLI command implementations
 │   ├── colorwidgets/          # Color widget implementations
@@ -97,10 +98,8 @@ snap-tray/
 │   ├── detection/             # Detection algorithms
 │   ├── encoding/              # Encoder implementations
 │   ├── hotkey/                # HotkeyManager implementation
-│   ├── input/                 # Mouse tracking implementations
 │   ├── pinwindow/             # Pin window logic
 │   ├── platform/              # Platform-specific code
-│   ├── recording/             # Recording effects
 │   ├── region/                # Region selection implementation
 │   ├── settings/              # Settings management
 │   ├── toolbar/               # Toolbar rendering
@@ -109,10 +108,12 @@ snap-tray/
 │   ├── update/                # Auto-update implementations
 │   ├── utils/                 # Utility implementations
 │   ├── video/                 # Video components
-│   └── widgets/               # Custom widgets
+│   ├── widgets/               # Custom widgets
+│   └── Recording*.cpp         # Recording implementation files at src root
 │
 ├── tests/                     # Test suite (Qt Test Framework)
 │   ├── Annotations/           # Annotation type tests
+│   ├── Beautify/              # Beautify settings/renderer tests
 │   ├── CLI/                   # CLI command tests
 │   ├── Detection/             # FaceDetector, AutoBlurManager, TableDetector tests
 │   ├── Encoding/              # NativeGifEncoder, EncoderFactory tests
@@ -151,7 +152,7 @@ The project uses a modular static library architecture:
 2. **snaptray_colorwidgets**: Custom color picker dialog and components
 3. **snaptray_algorithms**: Detection algorithms (face detection, auto-blur) - depends on OpenCV
 4. **snaptray_platform**: Platform-specific capture, encoding, video playback
-5. **snaptray_ui**: UI components, toolbar, region selector, pin windows, tool system
+5. **snaptray_ui**: UI components, toolbar, region selector, pin windows, tool system, recording workflow
 6. **SnapTray**: Main executable linking all libraries
 
 ## Architecture Patterns
@@ -269,7 +270,6 @@ if (PlatformFeatures::instance().isOCRAvailable()) {
 | Video Playback | `MediaFoundationPlayer_win.cpp` | `AVFoundationPlayer_mac.mm` |
 | Window Detection | `WindowDetector_win.cpp` | `WindowDetector.mm` |
 | OCR | `OCRManager_win.cpp` | `OCRManager.mm` |
-| Mouse Tracking | `MouseClickTracker_win.cpp` | `MouseClickTracker_mac.mm` |
 | Window Level | `WindowLevel_win.cpp` | `WindowLevel_mac.mm` |
 | Platform Features | `PlatformFeatures_win.cpp` | `PlatformFeatures_mac.mm` |
 | Auto-launch | `AutoLaunchManager_win.cpp` | `AutoLaunchManager_mac.mm` |
@@ -277,7 +277,7 @@ if (PlatformFeatures::instance().isOCRAvailable()) {
 
 ## Key Components
 
-### Core Managers (in MainApplication)
+### Core Managers (main.cpp + MainApplication)
 
 - `CaptureManager`: Orchestrates region capture workflow
 - `PinWindowManager`: Manages floating pin windows
@@ -303,19 +303,24 @@ Sub-components in `src/region/`:
 ### Pin Window (`src/PinWindow.cpp`)
 
 Sub-components in `src/pinwindow/`:
-- `ImageTransformer`: Rotation/flip operations
 - `ResizeHandler`: Edge dragging
 - `UIIndicators`: Scale/opacity display
-- `WindowedToolbar`: Pin window toolbar
+- `PinWindowPlacement`: Positioning and screen-fit behavior
+- `RegionLayoutManager`, `RegionLayoutRenderer`: Multi-region layout state and painting
+- `PinMergeHelper`: Region merge workflow
 - `PinHistoryStore`: Pin history persistence
 - `PinHistoryWindow`: Pin history UI
+
+Related toolbar component:
+- `WindowedToolbar` (`src/toolbar/WindowedToolbar.cpp`): Pin window toolbar
 
 ### Recording (`src/RecordingManager.cpp`)
 
 - `RecordingRegionSelector`: Region selection for recording
 - `RecordingControlBar`: Floating control UI
 - `RecordingBoundaryOverlay`: Visual boundary
-- `RecordingAnnotationOverlay`: Live annotation display
+- `RecordingInitTask`: Async capture/encoder initialization
+- `RecordingRegionNormalizer`: Region normalization across screens
 
 ### CLI System (`src/cli/`)
 
@@ -345,7 +350,7 @@ Commands in `include/cli/commands/`:
 
 - Test files: `tests/<ComponentName>/tst_<TestName>.cpp`
 - Qt Test framework (`QCOMPARE`, `QVERIFY`)
-- Mock classes in `tests/mocks/` (MockCaptureEngine, MockVideoEncoder, MockAudioCaptureEngine)
+- Test suites are organized by component folders under `tests/` (for example `Annotations/`, `Beautify/`, `RecordingManager/`)
 - Run `scripts/run-tests.bat` (Windows) or `scripts/run-tests.sh` (macOS) after changes
 
 ### Common Patterns to Avoid
