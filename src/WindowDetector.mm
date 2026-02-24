@@ -1,7 +1,9 @@
 #include "WindowDetector.h"
+#include "WindowDetectorMacFilters.h"
 
 #include <QScreen>
 #include <QDebug>
+#include <QByteArray>
 #include <QtConcurrent>
 #include <unistd.h>
 
@@ -10,6 +12,8 @@
 #import <AppKit/AppKit.h>
 
 namespace {
+
+const CFStringRef kAXVisibleAttributeCompat = CFSTR("AXVisible");
 
 // Classify element type based on window layer and characteristics
 ElementType classifyElementType(int windowLayer, CFDictionaryRef windowInfo, CGRect bounds)
@@ -158,6 +162,220 @@ QString getAXElementRole(AXUIElementRef element)
     return role;
 }
 
+template <typename T>
+bool readCFNumberValue(CFDictionaryRef dictionary, const void *key, CFNumberType numberType, T &value)
+{
+    if (!dictionary || !key) {
+        return false;
+    }
+    CFNumberRef numberRef = static_cast<CFNumberRef>(CFDictionaryGetValue(dictionary, key));
+    if (!numberRef) {
+        return false;
+    }
+    return CFNumberGetValue(numberRef, numberType, &value);
+}
+
+std::optional<bool> readCFBooleanValue(CFDictionaryRef dictionary, const void *key)
+{
+    if (!dictionary || !key) {
+        return std::nullopt;
+    }
+    CFTypeRef valueRef = CFDictionaryGetValue(dictionary, key);
+    if (!valueRef || CFGetTypeID(valueRef) != CFBooleanGetTypeID()) {
+        return std::nullopt;
+    }
+    return CFBooleanGetValue(static_cast<CFBooleanRef>(valueRef));
+}
+
+std::optional<double> readWindowAlpha(CFDictionaryRef windowInfo)
+{
+    double alpha = 0.0;
+    if (readCFNumberValue(windowInfo, kCGWindowAlpha, kCFNumberDoubleType, alpha)) {
+        return alpha;
+    }
+
+    float alphaFloat = 0.0f;
+    if (readCFNumberValue(windowInfo, kCGWindowAlpha, kCFNumberFloatType, alphaFloat)) {
+        return static_cast<double>(alphaFloat);
+    }
+
+    return std::nullopt;
+}
+
+QString readWindowString(CFDictionaryRef windowInfo, const void *key)
+{
+    if (!windowInfo || !key) {
+        return QString();
+    }
+    CFStringRef strRef = static_cast<CFStringRef>(CFDictionaryGetValue(windowInfo, key));
+    if (!strRef) {
+        return QString();
+    }
+    return QString::fromCFString(strRef);
+}
+
+bool isWindowDetectorDebugEnabled()
+{
+    static const bool enabled = []() {
+        const QByteArray rawValue = qgetenv("SNAPTRAY_DEBUG_WINDOW_DETECTOR").trimmed().toLower();
+        return !rawValue.isEmpty() &&
+               rawValue != "0" &&
+               rawValue != "false" &&
+               rawValue != "no" &&
+               rawValue != "off";
+    }();
+    return enabled;
+}
+
+void logTopLevelFilterDrop(const char *reason, CFDictionaryRef windowInfo, int windowLayer, const QRect &bounds, const QString &detail = QString())
+{
+    if (!isWindowDetectorDebugEnabled()) {
+        return;
+    }
+
+    pid_t pid = 0;
+    readCFNumberValue(windowInfo, kCGWindowOwnerPID, kCFNumberIntType, pid);
+    int windowId = 0;
+    readCFNumberValue(windowInfo, kCGWindowNumber, kCFNumberIntType, windowId);
+
+    const QString ownerName = readWindowString(windowInfo, kCGWindowOwnerName);
+    const QString title = readWindowString(windowInfo, kCGWindowName);
+    const QString detailSuffix = detail.isEmpty() ? QString() : QStringLiteral(" (%1)").arg(detail);
+
+    qDebug().noquote()
+        << QStringLiteral("WindowDetector(mac): dropped top-level window reason=%1%2 id=%3 pid=%4 owner=\"%5\" title=\"%6\" layer=%7 bounds=%8,%9 %10x%11")
+              .arg(QString::fromLatin1(reason))
+              .arg(detailSuffix)
+              .arg(windowId)
+              .arg(pid)
+              .arg(ownerName)
+              .arg(title)
+              .arg(windowLayer)
+              .arg(bounds.x())
+              .arg(bounds.y())
+              .arg(bounds.width())
+              .arg(bounds.height());
+}
+
+void logAXFilterDrop(const char *reason, qint64 pid, const QString &role, const CGRect &frame, const QString &detail = QString())
+{
+    if (!isWindowDetectorDebugEnabled()) {
+        return;
+    }
+
+    const QString detailSuffix = detail.isEmpty() ? QString() : QStringLiteral(" (%1)").arg(detail);
+    qDebug().noquote()
+        << QStringLiteral("WindowDetector(mac): dropped AX element reason=%1%2 pid=%3 role=\"%4\" frame=%5,%6 %7x%8")
+              .arg(QString::fromLatin1(reason))
+              .arg(detailSuffix)
+              .arg(pid)
+              .arg(role)
+              .arg(frame.origin.x, 0, 'f', 1)
+              .arg(frame.origin.y, 0, 'f', 1)
+              .arg(frame.size.width, 0, 'f', 1)
+              .arg(frame.size.height, 0, 'f', 1);
+}
+
+std::optional<bool> copyAXBooleanAttribute(AXUIElementRef element, CFStringRef attribute)
+{
+    if (!element || !attribute) {
+        return std::nullopt;
+    }
+
+    CFTypeRef valueRef = nullptr;
+    AXError err = AXUIElementCopyAttributeValue(element, attribute, &valueRef);
+    if (err != kAXErrorSuccess || !valueRef) {
+        return std::nullopt;
+    }
+
+    std::optional<bool> result;
+    if (CFGetTypeID(valueRef) == CFBooleanGetTypeID()) {
+        result = CFBooleanGetValue(static_cast<CFBooleanRef>(valueRef));
+    } else if (CFGetTypeID(valueRef) == CFNumberGetTypeID()) {
+        int intValue = 0;
+        if (CFNumberGetValue(static_cast<CFNumberRef>(valueRef), kCFNumberIntType, &intValue)) {
+            result = intValue != 0;
+        }
+    }
+
+    CFRelease(valueRef);
+    return result;
+}
+
+std::optional<DetectedElement> buildDetectedTopLevelElement(
+    CFDictionaryRef windowInfo, pid_t ownPid, DetectionFlags detectionFlags)
+{
+    if (!windowInfo) {
+        return std::nullopt;
+    }
+
+    pid_t windowPid = 0;
+    readCFNumberValue(windowInfo, kCGWindowOwnerPID, kCFNumberIntType, windowPid);
+    if (windowPid == ownPid) {
+        return std::nullopt;
+    }
+
+    int windowLayer = 0;
+    readCFNumberValue(windowInfo, kCGWindowLayer, kCFNumberIntType, windowLayer);
+
+    CFDictionaryRef boundsDict = static_cast<CFDictionaryRef>(CFDictionaryGetValue(windowInfo, kCGWindowBounds));
+    if (!boundsDict) {
+        logTopLevelFilterDrop("missing-bounds", windowInfo, windowLayer, QRect());
+        return std::nullopt;
+    }
+
+    CGRect cgBounds;
+    if (!CGRectMakeWithDictionaryRepresentation(boundsDict, &cgBounds)) {
+        logTopLevelFilterDrop("invalid-bounds", windowInfo, windowLayer, QRect());
+        return std::nullopt;
+    }
+
+    QRect bounds(
+        static_cast<int>(cgBounds.origin.x),
+        static_cast<int>(cgBounds.origin.y),
+        static_cast<int>(cgBounds.size.width),
+        static_cast<int>(cgBounds.size.height));
+
+    const std::optional<double> alpha = readWindowAlpha(windowInfo);
+    if (WindowDetectorMacFilters::shouldRejectTopLevelByAlpha(alpha)) {
+        logTopLevelFilterDrop("alpha", windowInfo, windowLayer, bounds,
+                              QStringLiteral("alpha=%1 threshold=%2")
+                                  .arg(*alpha, 0, 'f', 3)
+                                  .arg(WindowDetectorMacFilters::kMinVisibleWindowAlpha, 0, 'f', 3));
+        return std::nullopt;
+    }
+
+    const std::optional<bool> isOnscreen = readCFBooleanValue(windowInfo, kCGWindowIsOnscreen);
+    if (WindowDetectorMacFilters::shouldRejectTopLevelByOnscreen(isOnscreen)) {
+        logTopLevelFilterDrop("onscreen", windowInfo, windowLayer, bounds,
+                              QStringLiteral("value=false"));
+        return std::nullopt;
+    }
+
+    const ElementType elementType = classifyElementType(windowLayer, windowInfo, cgBounds);
+    if (!shouldIncludeElementType(elementType, detectionFlags)) {
+        return std::nullopt;
+    }
+
+    const int minSize = getMinimumSize(elementType);
+    if (cgBounds.size.width < minSize || cgBounds.size.height < minSize) {
+        return std::nullopt;
+    }
+
+    int windowId = 0;
+    readCFNumberValue(windowInfo, kCGWindowNumber, kCFNumberIntType, windowId);
+
+    DetectedElement element;
+    element.bounds = bounds;
+    element.windowTitle = readWindowString(windowInfo, kCGWindowName);
+    element.ownerApp = readWindowString(windowInfo, kCGWindowOwnerName);
+    element.windowLayer = windowLayer;
+    element.windowId = static_cast<uint32_t>(windowId);
+    element.elementType = elementType;
+    element.ownerPid = windowPid;
+    return element;
+}
+
 } // anonymous namespace
 
 WindowDetector::WindowDetector(QObject *parent)
@@ -241,93 +459,10 @@ void WindowDetector::enumerateWindows()
     pid_t myPid = [[NSProcessInfo processInfo] processIdentifier];
 
     for (CFIndex i = 0; i < count; ++i) {
-        CFDictionaryRef windowInfo = (CFDictionaryRef)CFArrayGetValueAtIndex(windowList, i);
-
-        // Get window owner PID
-        CFNumberRef pidRef = (CFNumberRef)CFDictionaryGetValue(windowInfo, kCGWindowOwnerPID);
-        pid_t windowPid = 0;
-        if (pidRef) {
-            CFNumberGetValue(pidRef, kCFNumberIntType, &windowPid);
+        CFDictionaryRef windowInfo = static_cast<CFDictionaryRef>(CFArrayGetValueAtIndex(windowList, i));
+        if (auto element = buildDetectedTopLevelElement(windowInfo, myPid, m_detectionFlags)) {
+            m_windowCache.push_back(*element);
         }
-
-        // Skip our own windows
-        if (windowPid == myPid) {
-            continue;
-        }
-
-        // Get window layer
-        CFNumberRef layerRef = (CFNumberRef)CFDictionaryGetValue(windowInfo, kCGWindowLayer);
-        int windowLayer = 0;
-        if (layerRef) {
-            CFNumberGetValue(layerRef, kCFNumberIntType, &windowLayer);
-        }
-
-        // Get window bounds early for element type classification
-        CFDictionaryRef boundsDict = (CFDictionaryRef)CFDictionaryGetValue(windowInfo, kCGWindowBounds);
-        if (!boundsDict) {
-            continue;
-        }
-
-        CGRect cgBounds;
-        if (!CGRectMakeWithDictionaryRepresentation(boundsDict, &cgBounds)) {
-            continue;
-        }
-
-        // Classify element type based on layer and characteristics
-        ElementType elementType = classifyElementType(windowLayer, windowInfo, cgBounds);
-
-        // Check if this element type should be included based on detection flags
-        if (!shouldIncludeElementType(elementType, m_detectionFlags)) {
-            continue;
-        }
-
-        // Get minimum size based on element type
-        int minSize = getMinimumSize(elementType);
-        if (cgBounds.size.width < minSize || cgBounds.size.height < minSize) {
-            continue;
-        }
-
-        // Get window ID
-        CFNumberRef windowIdRef = (CFNumberRef)CFDictionaryGetValue(windowInfo, kCGWindowNumber);
-        uint32_t windowId = 0;
-        if (windowIdRef) {
-            CFNumberGetValue(windowIdRef, kCFNumberSInt32Type, &windowId);
-        }
-
-        // Get window name (title)
-        QString windowTitle;
-        CFStringRef nameRef = (CFStringRef)CFDictionaryGetValue(windowInfo, kCGWindowName);
-        if (nameRef) {
-            NSString *name = (__bridge NSString *)nameRef;
-            windowTitle = QString::fromNSString(name);
-        }
-
-        // Get owner application name
-        QString ownerApp;
-        CFStringRef ownerNameRef = (CFStringRef)CFDictionaryGetValue(windowInfo, kCGWindowOwnerName);
-        if (ownerNameRef) {
-            NSString *ownerName = (__bridge NSString *)ownerNameRef;
-            ownerApp = QString::fromNSString(ownerName);
-        }
-
-        // Convert CGRect to QRect (CGRect uses top-left origin on macOS)
-        QRect bounds(
-            static_cast<int>(cgBounds.origin.x),
-            static_cast<int>(cgBounds.origin.y),
-            static_cast<int>(cgBounds.size.width),
-            static_cast<int>(cgBounds.size.height)
-        );
-
-        DetectedElement element;
-        element.bounds = bounds;
-        element.windowTitle = windowTitle;
-        element.ownerApp = ownerApp;
-        element.windowLayer = windowLayer;
-        element.windowId = windowId;
-        element.elementType = elementType;
-        element.ownerPid = windowPid;
-
-        m_windowCache.push_back(element);
     }
 
     CFRelease(windowList);
@@ -388,7 +523,6 @@ std::optional<DetectedElement> WindowDetector::detectChildElementAt(
 
     constexpr int kMaxWalkDepth = 12;
     constexpr CGFloat kMinElementSize = 10.0;
-    constexpr CGFloat kMaxWindowAreaRatio = 0.90;
 
     std::optional<DetectedElement> result;
 
@@ -399,34 +533,56 @@ std::optional<DetectedElement> WindowDetector::detectChildElementAt(
             break;
         }
 
-        // Check if this element has usable bounds
-        CGRect frame;
-        bool hasUsableBounds = getAXElementFrame(current, frame) &&
-            frame.size.width >= kMinElementSize &&
-            frame.size.height >= kMinElementSize;
+        const std::optional<bool> isHiddenAttr = copyAXBooleanAttribute(current, kAXHiddenAttribute);
+        const std::optional<bool> isVisibleAttr = copyAXBooleanAttribute(current, kAXVisibleAttributeCompat);
+        if (WindowDetectorMacFilters::shouldRejectAxByVisibility(isHiddenAttr.value_or(false), isVisibleAttr)) {
+            if (isHiddenAttr.value_or(false)) {
+                logAXFilterDrop("ax-hidden", targetPid, role, CGRectZero);
+            } else {
+                logAXFilterDrop("ax-visible-false", targetPid, role, CGRectZero);
+            }
+        } else {
+            // Check if this element has usable bounds
+            CGRect frame;
+            bool hasUsableBounds = getAXElementFrame(current, frame) &&
+                frame.size.width >= kMinElementSize &&
+                frame.size.height >= kMinElementSize;
 
-        if (hasUsableBounds) {
-            // Skip elements that are nearly as large as the containing window
-            const CGFloat windowArea = containingWindowFrame.size.width * containingWindowFrame.size.height;
-            const CGFloat elementArea = frame.size.width * frame.size.height;
-            const bool tooLarge = windowArea > 0 && (elementArea / windowArea) >= kMaxWindowAreaRatio;
+            if (hasUsableBounds) {
+                // For container-like roles, require a stricter max-area ratio.
+                const CGFloat windowArea = containingWindowFrame.size.width * containingWindowFrame.size.height;
+                const CGFloat elementArea = frame.size.width * frame.size.height;
+                const bool areaAllowed = WindowDetectorMacFilters::isAreaRatioAllowed(role, elementArea, windowArea);
 
-            if (!tooLarge) {
-                DetectedElement element;
-                element.bounds = QRect(
-                    static_cast<int>(frame.origin.x),
-                    static_cast<int>(frame.origin.y),
-                    static_cast<int>(frame.size.width),
-                    static_cast<int>(frame.size.height));
-                element.windowTitle = role;
-                element.ownerApp = ownerApp;
-                element.windowLayer = 1;
-                element.windowId = 0;
-                element.elementType = ElementType::Window;
-                element.ownerPid = targetPid;
+                if (areaAllowed) {
+                    DetectedElement element;
+                    element.bounds = QRect(
+                        static_cast<int>(frame.origin.x),
+                        static_cast<int>(frame.origin.y),
+                        static_cast<int>(frame.size.width),
+                        static_cast<int>(frame.size.height));
+                    element.windowTitle = role;
+                    element.ownerApp = ownerApp;
+                    element.windowLayer = 1;
+                    element.windowId = 0;
+                    element.elementType = ElementType::Window;
+                    element.ownerPid = targetPid;
 
-                result = element;
-                break;
+                    result = element;
+                    break;
+                }
+
+                if (windowArea > 0.0) {
+                    const double ratio = elementArea / windowArea;
+                    const double limit = WindowDetectorMacFilters::maxAreaRatioForRole(role);
+                    logAXFilterDrop("area-ratio", targetPid, role, frame,
+                                    QStringLiteral("ratio=%1 limit=%2")
+                                        .arg(ratio, 0, 'f', 3)
+                                        .arg(limit, 0, 'f', 3));
+                } else {
+                    logAXFilterDrop("area-ratio", targetPid, role, frame,
+                                    QStringLiteral("window-area<=0"));
+                }
             }
         }
 
@@ -536,82 +692,10 @@ void WindowDetector::refreshWindowListAsync()
         pid_t myPid = getpid();
 
         for (CFIndex i = 0; i < count; ++i) {
-            CFDictionaryRef windowInfo = (CFDictionaryRef)CFArrayGetValueAtIndex(windowList, i);
-
-            CFNumberRef pidRef = (CFNumberRef)CFDictionaryGetValue(windowInfo, kCGWindowOwnerPID);
-            pid_t windowPid = 0;
-            if (pidRef) {
-                CFNumberGetValue(pidRef, kCFNumberIntType, &windowPid);
+            CFDictionaryRef windowInfo = static_cast<CFDictionaryRef>(CFArrayGetValueAtIndex(windowList, i));
+            if (auto element = buildDetectedTopLevelElement(windowInfo, myPid, flags)) {
+                newCache.push_back(*element);
             }
-
-            if (windowPid == myPid) {
-                continue;
-            }
-
-            CFNumberRef layerRef = (CFNumberRef)CFDictionaryGetValue(windowInfo, kCGWindowLayer);
-            int windowLayer = 0;
-            if (layerRef) {
-                CFNumberGetValue(layerRef, kCFNumberIntType, &windowLayer);
-            }
-
-            CFDictionaryRef boundsDict = (CFDictionaryRef)CFDictionaryGetValue(windowInfo, kCGWindowBounds);
-            if (!boundsDict) {
-                continue;
-            }
-
-            CGRect cgBounds;
-            if (!CGRectMakeWithDictionaryRepresentation(boundsDict, &cgBounds)) {
-                continue;
-            }
-
-            ElementType elementType = classifyElementType(windowLayer, windowInfo, cgBounds);
-
-            if (!shouldIncludeElementType(elementType, flags)) {
-                continue;
-            }
-
-            int minSize = getMinimumSize(elementType);
-            if (cgBounds.size.width < minSize || cgBounds.size.height < minSize) {
-                continue;
-            }
-
-            CFNumberRef windowIdRef = (CFNumberRef)CFDictionaryGetValue(windowInfo, kCGWindowNumber);
-            uint32_t windowId = 0;
-            if (windowIdRef) {
-                CFNumberGetValue(windowIdRef, kCFNumberSInt32Type, &windowId);
-            }
-
-            QString windowTitle;
-            CFStringRef nameRef = (CFStringRef)CFDictionaryGetValue(windowInfo, kCGWindowName);
-            if (nameRef) {
-                NSString *name = (__bridge NSString *)nameRef;
-                windowTitle = QString::fromNSString(name);
-            }
-
-            QString ownerApp;
-            CFStringRef ownerNameRef = (CFStringRef)CFDictionaryGetValue(windowInfo, kCGWindowOwnerName);
-            if (ownerNameRef) {
-                NSString *ownerName = (__bridge NSString *)ownerNameRef;
-                ownerApp = QString::fromNSString(ownerName);
-            }
-
-            QRect bounds(
-                static_cast<int>(cgBounds.origin.x),
-                static_cast<int>(cgBounds.origin.y),
-                static_cast<int>(cgBounds.size.width),
-                static_cast<int>(cgBounds.size.height)
-            );
-
-            DetectedElement element;
-            element.bounds = bounds;
-            element.windowTitle = windowTitle;
-            element.ownerApp = ownerApp;
-            element.windowLayer = windowLayer;
-            element.windowId = windowId;
-            element.elementType = elementType;
-            element.ownerPid = windowPid;
-
-            newCache.push_back(element);
         }
 
         CFRelease(windowList);
