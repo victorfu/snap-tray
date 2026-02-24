@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700" role="img" aria-labelledby="title desc">
+  <title id="title">Region Capture Flow</title>
+  <desc id="desc">Flow chart showing trigger, select, annotate, and export steps for region capture.</desc>
+  <defs>
+    <linearGradient id="bg2" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ecf8ff"/>
+      <stop offset="100%" stop-color="#f2f7ff"/>
+    </linearGradient>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M0,0 L12,6 L0,12 Z" fill="#2f6fb0"/>
+    </marker>
+  </defs>
+  <rect width="1200" height="700" fill="url(#bg2)"/>
+  <text x="80" y="96" fill="#113b6a" font-size="38" font-family="Arial" font-weight="700">Region Capture Workflow</text>
+
+  <rect x="80" y="170" width="210" height="110" rx="16" fill="#ffffff" stroke="#b8d9fb"/>
+  <text x="112" y="225" fill="#1f548e" font-size="24" font-family="Arial" font-weight="700">F2 Trigger</text>
+
+  <rect x="360" y="170" width="260" height="110" rx="16" fill="#ffffff" stroke="#b8d9fb"/>
+  <text x="398" y="214" fill="#1f548e" font-size="24" font-family="Arial" font-weight="700">Crosshair Select</text>
+  <text x="398" y="246" fill="#456b99" font-size="16" font-family="Arial">Magnifier + size overlay</text>
+
+  <rect x="690" y="170" width="240" height="110" rx="16" fill="#ffffff" stroke="#b8d9fb"/>
+  <text x="736" y="214" fill="#1f548e" font-size="24" font-family="Arial" font-weight="700">Toolbar Edit</text>
+  <text x="736" y="246" fill="#456b99" font-size="16" font-family="Arial">Draw / Text / Mosaic</text>
+
+  <rect x="980" y="170" width="150" height="110" rx="16" fill="#ffffff" stroke="#b8d9fb"/>
+  <text x="1018" y="225" fill="#1f548e" font-size="24" font-family="Arial" font-weight="700">Export</text>
+
+  <line x1="290" y1="225" x2="350" y2="225" stroke="#2f6fb0" stroke-width="4" marker-end="url(#arrow)"/>
+  <line x1="620" y1="225" x2="680" y2="225" stroke="#2f6fb0" stroke-width="4" marker-end="url(#arrow)"/>
+  <line x1="930" y1="225" x2="970" y2="225" stroke="#2f6fb0" stroke-width="4" marker-end="url(#arrow)"/>
+
+  <rect x="80" y="340" width="1050" height="280" rx="20" fill="#ffffff" stroke="#c6dff8"/>
+  <text x="110" y="388" fill="#1b4f87" font-size="26" font-family="Arial" font-weight="700">Key Interaction Notes</text>
+  <text x="110" y="430" fill="#355f8e" font-size="19" font-family="Arial">• Hold Shift to constrain ratio</text>
+  <text x="110" y="465" fill="#355f8e" font-size="19" font-family="Arial">• Press M for multi-region mode</text>
+  <text x="110" y="500" fill="#355f8e" font-size="19" font-family="Arial">• Press R to jump into recording from selection</text>
+  <text x="110" y="535" fill="#355f8e" font-size="19" font-family="Arial">• Right click or Esc to cancel</text>
+</svg>

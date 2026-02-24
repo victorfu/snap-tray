@@ -18,6 +18,26 @@ docs_getting_started:
   en: /docs/getting-started/
   zh-tw: /zh-tw/docs/getting-started/
 
+docs_tutorials:
+  en: /docs/tutorials/
+  zh-tw: /zh-tw/docs/tutorials/
+
+docs_tutorial_quick_share:
+  en: /docs/tutorials/quick-share/
+  zh-tw: /zh-tw/docs/tutorials/quick-share/
+
+docs_tutorial_bug_report:
+  en: /docs/tutorials/bug-report/
+  zh-tw: /zh-tw/docs/tutorials/bug-report/
+
+docs_tutorial_live_reference:
+  en: /docs/tutorials/live-reference/
+  zh-tw: /zh-tw/docs/tutorials/live-reference/
+
+docs_tutorial_recording_demo:
+  en: /docs/tutorials/recording-demo/
+  zh-tw: /zh-tw/docs/tutorials/recording-demo/
+
 docs_region_capture:
   en: /docs/region-capture/
   zh-tw: /zh-tw/docs/region-capture/

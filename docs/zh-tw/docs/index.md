@@ -1,7 +1,7 @@
 ---
 layout: docs
 title: 文件首頁
-description: 以任務為中心，快速掌握 SnapTray 的擷取、標註、釘選與錄影流程。
+description: 以任務導向教學搭配功能參考，完整掌握 SnapTray。
 permalink: /zh-tw/docs/
 lang: zh-tw
 route_key: docs_home
@@ -11,34 +11,43 @@ doc_order: 1
 
 ![SnapTray 文件總覽](/assets/images/docs/docs-overview.svg)
 
-## 這份文件包含什麼
+## 從結果出發的學習方式
 
-本文件聚焦在實際工作流：截圖、標註、釘選、錄影，以及透過快捷鍵與 CLI 提升效率。
+若你想快速把事情做完，先進入[教學總覽](/zh-tw/docs/tutorials/)。這裡每一篇都是真實情境的步驟式教學。
 
-## 建議閱讀順序
+### 最常用的四條路徑
 
-1. 先看[快速開始](/zh-tw/docs/getting-started/)完成首次設定。
-2. 學習[區域截圖](/zh-tw/docs/region-capture/)與[標註工具](/zh-tw/docs/annotation-tools/)。
-3. 使用[釘選視窗](/zh-tw/docs/pin-window/)建立常駐參考。
-4. 再調整[錄影](/zh-tw/docs/recording/)與[設定](/zh-tw/docs/settings/)細節。
+1. 30 秒內完成截圖分享：[30 秒快速分享](/zh-tw/docs/tutorials/quick-share/)
+2. 做出可重現問題回報：[Bug 回報流程](/zh-tw/docs/tutorials/bug-report/)
+3. 邊做事邊看參考圖：[Pin 長駐參考](/zh-tw/docs/tutorials/live-reference/)
+4. 產出可讀性高的示範影片：[錄影教學示範](/zh-tw/docs/tutorials/recording-demo/)
 
-## 文件地圖
+## 先建立基礎設定
 
-### 核心擷取流程
+這三頁先完成一次，後續所有教學都會順很多：
+
+1. [快速開始](/zh-tw/docs/getting-started/)
+2. [快捷鍵](/zh-tw/docs/hotkeys/)
+3. [設定](/zh-tw/docs/settings/)
+
+## 功能參考地圖
+
+當你要查完整選項與細節時，請看以下頁面。
+
+### 擷取與標註
 
 - [區域截圖](/zh-tw/docs/region-capture/)
 - [標註工具](/zh-tw/docs/annotation-tools/)
 - [螢幕畫布](/zh-tw/docs/screen-canvas/)
 
-### 生產力流程
+### 工作流與交付
 
 - [釘選視窗](/zh-tw/docs/pin-window/)
 - [錄影](/zh-tw/docs/recording/)
 - [快捷鍵](/zh-tw/docs/hotkeys/)
 
-### 進階使用
+### 進階與支援
 
-- [設定](/zh-tw/docs/settings/)
 - [命令列](/zh-tw/docs/cli/)
 - [疑難排解](/zh-tw/docs/troubleshooting/)
 - [常見問題](/zh-tw/docs/faq/)

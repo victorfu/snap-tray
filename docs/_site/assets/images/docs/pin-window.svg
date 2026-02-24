@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700" role="img" aria-labelledby="title desc">
+  <title id="title">Pin Window Controls</title>
+  <desc id="desc">Visual summary of pin window controls, keyboard transforms, and context menu actions.</desc>
+  <defs>
+    <linearGradient id="bg4" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#eef5ff"/>
+      <stop offset="100%" stop-color="#f3f8ff"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="700" fill="url(#bg4)"/>
+  <text x="80" y="96" fill="#123d6b" font-size="38" font-family="Arial" font-weight="700">Pin Window Controls</text>
+
+  <rect x="120" y="150" width="540" height="440" rx="18" fill="#ffffff" stroke="#c9e0f8"/>
+  <rect x="160" y="200" width="460" height="300" rx="14" fill="#f4f8ff" stroke="#d7e8fb"/>
+  <text x="300" y="360" fill="#42648e" font-size="24" font-family="Arial" font-weight="700">Pinned Image Area</text>
+
+  <rect x="720" y="150" width="360" height="200" rx="16" fill="#ffffff" stroke="#c9e0f8"/>
+  <text x="750" y="196" fill="#1b4f87" font-size="24" font-family="Arial" font-weight="700">Mouse Controls</text>
+  <text x="750" y="232" fill="#3a648f" font-size="18" font-family="Arial">• Drag to move</text>
+  <text x="750" y="266" fill="#3a648f" font-size="18" font-family="Arial">• Wheel to zoom</text>
+  <text x="750" y="300" fill="#3a648f" font-size="18" font-family="Arial">• Ctrl + wheel for opacity</text>
+
+  <rect x="720" y="390" width="360" height="200" rx="16" fill="#ffffff" stroke="#c9e0f8"/>
+  <text x="750" y="436" fill="#1b4f87" font-size="24" font-family="Arial" font-weight="700">Keyboard / Menu</text>
+  <text x="750" y="472" fill="#3a648f" font-size="18" font-family="Arial">• 1 / 2 rotate</text>
+  <text x="750" y="506" fill="#3a648f" font-size="18" font-family="Arial">• 3 / 4 flip</text>
+  <text x="750" y="540" fill="#3a648f" font-size="18" font-family="Arial">• OCR / Save / Copy / Close</text>
+</svg>

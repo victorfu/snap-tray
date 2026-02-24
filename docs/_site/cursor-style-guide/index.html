@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+<head>
+  
+
+
+
+
+
+
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cursor Style 控制程式碼分析 | SnapTray</title>
+<meta name="description" content="Powerful screenshot tool that lives in your system tray">
+<meta name="theme-color" content="#0a1326">
+<meta name="snaptray-lang" content="en">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+
+<link rel="icon" type="image/svg+xml" href="/assets/images/logo.svg">
+<link rel="canonical" href="http://localhost:4000/cursor-style-guide/">
+
+
+
+<meta property="og:title" content="Cursor Style 控制程式碼分析">
+<meta property="og:description" content="Powerful screenshot tool that lives in your system tray">
+<meta property="og:type" content="website">
+<meta property="og:url" content="http://localhost:4000/cursor-style-guide/">
+<meta property="og:image" content="http://localhost:4000/assets/images/logo.svg">
+<meta property="og:locale" content="en_US">
+
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Cursor Style 控制程式碼分析">
+<meta name="twitter:description" content="Powerful screenshot tool that lives in your system tray">
+
+<link rel="stylesheet" href="/assets/css/style.css">
+
+<!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Cursor Style 控制程式碼分析 | SnapTray</title>
+<meta name="generator" content="Jekyll v3.10.0" />
+<meta property="og:title" content="Cursor Style 控制程式碼分析" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Powerful screenshot tool that lives in your system tray" />
+<meta property="og:description" content="Powerful screenshot tool that lives in your system tray" />
+<link rel="canonical" href="http://localhost:4000/cursor-style-guide/" />
+<meta property="og:url" content="http://localhost:4000/cursor-style-guide/" />
+<meta property="og:site_name" content="SnapTray" />
+<meta property="og:type" content="website" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Cursor Style 控制程式碼分析" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebPage","description":"Powerful screenshot tool that lives in your system tray","headline":"Cursor Style 控制程式碼分析","url":"http://localhost:4000/cursor-style-guide/"}</script>
+<!-- End Jekyll SEO tag -->
+
+
+</head>
+<body data-lang="en" data-route-key="" data-layout="page">
+  
+  <a class="skip-link" href="#main-content">Skip to content</a>
+
+  <div class="site-background" aria-hidden="true">
+    <span class="bg-orb orb-a"></span>
+    <span class="bg-orb orb-b"></span>
+    <span class="bg-grid"></span>
+  </div>
+
+  
+
+
+
+
+
+
+<header class="site-header" data-header>
+  <div class="container header-inner">
+    <a href="/" class="site-logo" aria-label="SnapTray home">
+      <img src="/assets/images/logo.svg" alt="" width="32" height="32">
+      <span>SnapTray</span>
+    </a>
+
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="primary-nav" aria-label="Open navigation" data-nav-toggle>
+      <span class="nav-toggle__line" aria-hidden="true"></span>
+      <span class="nav-toggle__line" aria-hidden="true"></span>
+      <span class="nav-toggle__line" aria-hidden="true"></span>
+      <span class="sr-only" data-nav-toggle-label>Open navigation</span>
+    </button>
+
+    <nav id="primary-nav" class="site-nav" aria-label="Primary navigation" data-nav>
+      <a href="/" >Home</a>
+      <a href="/docs/" >Docs</a>
+      <a href="/releases/" >Releases</a>
+      <a href="/privacy/" >Privacy</a>
+      
+
+
+
+
+<div class="language-switcher" aria-label="Language">
+  <a href="/cursor-style-guide/" class="lang-link is-active">EN</a>
+  <a href="/zh-tw/cursor-style-guide/" class="lang-link ">繁中</a>
+</div>
+
+      <a class="nav-github" href="https://github.com/victorfu/snap-tray" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+
+  <main id="main-content" class="site-main">
+    
+
+
+<section class="content-page">
+  <div class="container">
+    <article class="content-card">
+      <header class="content-header">
+        <p class="eyebrow">SnapTray Policy</p>
+        <h1>Cursor Style 控制程式碼分析</h1>
+      </header>
+      <div class="content-prose">
+        <h1 id="cursor-style-控制程式碼分析">Cursor Style 控制程式碼分析</h1>
+
+<h2 id="概述">概述</h2>
+
+<p>SnapTray 使用集中式的 <code class="language-plaintext highlighter-rouge">CursorManager</code> 來管理游標樣式，配合 F2 熱鍵觸發 Region Capture 時會切換到 CrossCursor。</p>
+
+<hr />
+
+<h2 id="1-f2-熱鍵觸發流程">1. F2 熱鍵觸發流程</h2>
+
+<h3 id="熱鍵定義">熱鍵定義</h3>
+<p><strong><code class="language-plaintext highlighter-rouge">include/settings/Settings.h:19-22</code></strong></p>
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">inline</span> <span class="k">constexpr</span> <span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">kDefaultHotkey</span> <span class="o">=</span> <span class="s">"F2"</span><span class="p">;</span>           <span class="c1">// Region Capture</span>
+<span class="kr">inline</span> <span class="k">constexpr</span> <span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">kDefaultScreenCanvasHotkey</span> <span class="o">=</span> <span class="s">"Ctrl+F2"</span><span class="p">;</span>
+<span class="kr">inline</span> <span class="k">constexpr</span> <span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">kDefaultQuickPinHotkey</span> <span class="o">=</span> <span class="s">"Shift+F2"</span><span class="p">;</span>
+</code></pre></div></div>
+
+<h3 id="熱鍵註冊與觸發">熱鍵註冊與觸發</h3>
+<ol>
+  <li><strong><code class="language-plaintext highlighter-rouge">src/hotkey/HotkeyManager.cpp:351-433</code></strong> - 註冊 QHotkey 實例</li>
+  <li><strong><code class="language-plaintext highlighter-rouge">src/MainApplication.cpp:558-585</code></strong> - <code class="language-plaintext highlighter-rouge">handleHotkeyAction()</code> 分發熱鍵事件</li>
+  <li><strong><code class="language-plaintext highlighter-rouge">src/MainApplication.cpp:347-364</code></strong> - <code class="language-plaintext highlighter-rouge">onRegionCapture()</code> 調用 <code class="language-plaintext highlighter-rouge">m_captureManager-&gt;startRegionCapture()</code></li>
+</ol>
+
+<hr />
+
+<h2 id="2-cursormanager---核心游標管理">2. CursorManager - 核心游標管理</h2>
+
+<p><strong>檔案位置：</strong></p>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">include/cursor/CursorManager.h</code></li>
+  <li><code class="language-plaintext highlighter-rouge">src/cursor/CursorManager.cpp</code></li>
+</ul>
+
+<h3 id="關鍵方法">關鍵方法</h3>
+
+<table>
+  <thead>
+    <tr>
+      <th>方法</th>
+      <th>行號</th>
+      <th>說明</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">pushCursorForWidget()</code></td>
+      <td>:31-66</td>
+      <td>依優先級推入游標</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">popCursorForWidget()</code></td>
+      <td>:68-84</td>
+      <td>彈出游標</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">clearAllForWidget()</code></td>
+      <td>:86-94</td>
+      <td>清除所有游標，預設回 CrossCursor</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">applyCursorForWidget()</code></td>
+      <td>:374-388</td>
+      <td><strong>實際調用 <code class="language-plaintext highlighter-rouge">widget-&gt;setCursor()</code></strong></td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">effectiveCursorForWidget()</code></td>
+      <td>:390-403</td>
+      <td>取得最高優先級游標，預設 CrossCursor</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 id="游標上下文優先級-cursorcontext">游標上下文優先級 (CursorContext)</h3>
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">enum</span> <span class="k">class</span> <span class="nc">CursorContext</span> <span class="p">{</span>
+    <span class="n">Tool</span><span class="p">,</span>       <span class="c1">// 最低 - 工具游標</span>
+    <span class="n">Hover</span><span class="p">,</span>      <span class="c1">// 懸停目標</span>
+    <span class="n">Selection</span><span class="p">,</span>  <span class="c1">// 選取狀態</span>
+    <span class="n">Drag</span><span class="p">,</span>       <span class="c1">// 拖曳狀態</span>
+    <span class="n">Override</span>    <span class="c1">// 最高 - 覆蓋</span>
+<span class="p">};</span>
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="3-regionselector-的-crosscursor-設定">3. RegionSelector 的 CrossCursor 設定</h2>
+
+<p><strong><code class="language-plaintext highlighter-rouge">src/RegionSelector.cpp</code></strong></p>
+
+<h3 id="初始化時設定-crosscursor">初始化時設定 CrossCursor</h3>
+<p><strong>Line 119:</strong></p>
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">cm</span><span class="p">.</span><span class="n">pushCursorForWidget</span><span class="p">(</span><span class="k">this</span><span class="p">,</span> <span class="n">CursorContext</span><span class="o">::</span><span class="n">Selection</span><span class="p">,</span> <span class="n">Qt</span><span class="o">::</span><span class="n">CrossCursor</span><span class="p">);</span>
+</code></pre></div></div>
+
+<h3 id="選取狀態變更時">選取狀態變更時</h3>
+<p><strong>Line 831:</strong></p>
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">CursorManager</span><span class="o">::</span><span class="n">instance</span><span class="p">().</span><span class="n">pushCursorForWidget</span><span class="p">(</span><span class="k">this</span><span class="p">,</span> <span class="n">CursorContext</span><span class="o">::</span><span class="n">Selection</span><span class="p">,</span> <span class="n">Qt</span><span class="o">::</span><span class="n">CrossCursor</span><span class="p">);</span>
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="4-其他設定-crosscursor-的位置">4. 其他設定 CrossCursor 的位置</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>檔案</th>
+      <th>行號</th>
+      <th>情境</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">src/RecordingRegionSelector.cpp</code></td>
+      <td>:29</td>
+      <td>錄影區域選擇</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">src/RecordingAnnotationOverlay.cpp</code></td>
+      <td>:113</td>
+      <td>錄影標註覆蓋層</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">src/cursor/CursorManager.cpp</code></td>
+      <td>:292, 315, 348, 351</td>
+      <td>狀態驅動游標更新</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">src/tools/handlers/SelectionToolHandler.cpp</code></td>
+      <td>:118-125</td>
+      <td>Selection 工具</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">src/tools/handlers/LaserPointerToolHandler.cpp</code></td>
+      <td>:21-22</td>
+      <td>雷射筆工具</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">src/tools/handlers/StepBadgeToolHandler.cpp</code></td>
+      <td>:34-35</td>
+      <td>步驟標記工具</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">src/tools/handlers/EmojiStickerToolHandler.cpp</code></td>
+      <td>:26-27</td>
+      <td>表情貼圖工具</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">include/tools/IToolHandler.h</code></td>
+      <td>:133</td>
+      <td>工具基類預設</td>
+    </tr>
+  </tbody>
+</table>
+
+<hr />
+
+<h2 id="5-工具處理器的游標覆寫">5. 工具處理器的游標覆寫</h2>
+
+<p><strong><code class="language-plaintext highlighter-rouge">include/tools/IToolHandler.h:133</code></strong> - 基類預設：</p>
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">virtual</span> <span class="n">QCursor</span> <span class="n">cursor</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span> <span class="k">return</span> <span class="n">Qt</span><span class="o">::</span><span class="n">CrossCursor</span><span class="p">;</span> <span class="p">}</span>
+</code></pre></div></div>
+
+<h3 id="特殊游標工具">特殊游標工具</h3>
+<ul>
+  <li><strong>MosaicToolHandler</strong> (<code class="language-plaintext highlighter-rouge">src/tools/handlers/MosaicToolHandler.cpp:76-84</code>) - 自訂圓形游標</li>
+  <li><strong>EraserToolHandler</strong> (<code class="language-plaintext highlighter-rouge">src/tools/handlers/EraserToolHandler.cpp:94-100</code>) - 自訂橡皮擦游標</li>
+</ul>
+
+<hr />
+
+<h2 id="6-完整觸發流程圖">6. 完整觸發流程圖</h2>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>F2 按下
+  ↓
+QHotkey::activated (HotkeyManager.cpp:422-424)
+  ↓
+HotkeyManager::onHotkeyActivated() → emit actionTriggered
+  ↓
+MainApplication::handleHotkeyAction() (MainApplication.cpp:564-565)
+  ↓
+MainApplication::onRegionCapture() (MainApplication.cpp:363)
+  ↓
+CaptureManager::startRegionCapture()
+  ↓
+RegionSelector 建構/顯示
+  ↓
+CursorManager::pushCursorForWidget(this, Selection, Qt::CrossCursor)
+  ↓
+CursorManager::applyCursorForWidget() → widget-&gt;setCursor()
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="7-關鍵檔案清單">7. 關鍵檔案清單</h2>
+
+<h3 id="必讀檔案">必讀檔案</h3>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">include/cursor/CursorManager.h</code> - 游標管理器介面</li>
+  <li><code class="language-plaintext highlighter-rouge">src/cursor/CursorManager.cpp</code> - 游標管理器實作</li>
+  <li><code class="language-plaintext highlighter-rouge">src/RegionSelector.cpp</code> - Region Capture 主要邏輯</li>
+  <li><code class="language-plaintext highlighter-rouge">include/settings/Settings.h</code> - 熱鍵預設值</li>
+  <li><code class="language-plaintext highlighter-rouge">src/hotkey/HotkeyManager.cpp</code> - 熱鍵註冊</li>
+  <li><code class="language-plaintext highlighter-rouge">src/MainApplication.cpp</code> - 熱鍵事件處理</li>
+</ul>
+
+<h3 id="工具游標相關">工具游標相關</h3>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">include/tools/IToolHandler.h</code> - 工具基類</li>
+  <li><code class="language-plaintext highlighter-rouge">src/tools/handlers/*.cpp</code> - 各工具的 cursor() 實作</li>
+</ul>
+
+      </div>
+    </article>
+  </div>
+</section>
+
+  </main>
+
+  
+
+
+<footer class="site-footer">
+  <div class="container footer-grid">
+    <section>
+      <p class="footer-title">SnapTray</p>
+      <p class="footer-copy">Desktop-grade screenshot and recording workflows, designed for speed and clarity.</p>
+      <p class="footer-meta">Made with Qt 6 and C++17</p>
+    </section>
+
+    <section>
+      <p class="footer-title">Resources</p>
+      <div class="footer-links">
+        <a href="/">Home</a>
+        <a href="/docs/">Docs</a>
+        <a href="/releases/">Releases</a>
+        <a href="/privacy/">Privacy Policy</a>
+      </div>
+    </section>
+
+    <section>
+      <p class="footer-title">Community</p>
+      <div class="footer-links">
+        <a href="https://github.com/victorfu/snap-tray" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://github.com/victorfu/snap-tray/issues" target="_blank" rel="noopener">Report Issue</a>
+        <a href="https://github.com/victorfu/snap-tray/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a>
+      </div>
+    </section>
+  </div>
+  <div class="container footer-bottom">
+    <p>&copy; <span id="current-year"></span> SnapTray</p>
+  </div>
+</footer>
+
+
+  <script src="/assets/js/site.js"></script>
+</body>
+</html>

@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="zh-tw" class="no-js">
+<head>
+  
+
+
+
+
+
+
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>疑難排解 | SnapTray</title>
+<meta name="description" content="快速解決權限、啟動、編碼與快捷鍵衝突問題。">
+<meta name="theme-color" content="#0a1326">
+<meta name="snaptray-lang" content="zh-tw">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+
+<link rel="icon" type="image/svg+xml" href="/assets/images/logo.svg">
+<link rel="canonical" href="http://localhost:4000/zh-tw/docs/troubleshooting/">
+
+
+<link rel="alternate" hreflang="en" href="http://localhost:4000/docs/troubleshooting/">
+<link rel="alternate" hreflang="zh-TW" href="http://localhost:4000/zh-tw/docs/troubleshooting/">
+<link rel="alternate" hreflang="x-default" href="http://localhost:4000/docs/troubleshooting/">
+
+
+<meta property="og:title" content="疑難排解">
+<meta property="og:description" content="快速解決權限、啟動、編碼與快捷鍵衝突問題。">
+<meta property="og:type" content="website">
+<meta property="og:url" content="http://localhost:4000/zh-tw/docs/troubleshooting/">
+<meta property="og:image" content="http://localhost:4000/assets/images/logo.svg">
+<meta property="og:locale" content="zh_TW">
+
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="疑難排解">
+<meta name="twitter:description" content="快速解決權限、啟動、編碼與快捷鍵衝突問題。">
+
+<link rel="stylesheet" href="/assets/css/style.css">
+
+<!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>疑難排解 | SnapTray</title>
+<meta name="generator" content="Jekyll v3.10.0" />
+<meta property="og:title" content="疑難排解" />
+<meta property="og:locale" content="zh_tw" />
+<meta name="description" content="快速解決權限、啟動、編碼與快捷鍵衝突問題。" />
+<meta property="og:description" content="快速解決權限、啟動、編碼與快捷鍵衝突問題。" />
+<link rel="canonical" href="http://localhost:4000/zh-tw/docs/troubleshooting/" />
+<meta property="og:url" content="http://localhost:4000/zh-tw/docs/troubleshooting/" />
+<meta property="og:site_name" content="SnapTray" />
+<meta property="og:type" content="website" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="疑難排解" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebPage","description":"快速解決權限、啟動、編碼與快捷鍵衝突問題。","headline":"疑難排解","url":"http://localhost:4000/zh-tw/docs/troubleshooting/"}</script>
+<!-- End Jekyll SEO tag -->
+
+
+</head>
+<body data-lang="zh-tw" data-route-key="docs_troubleshooting" data-layout="docs">
+  
+  <a class="skip-link" href="#main-content">跳到主要內容</a>
+
+  <div class="site-background" aria-hidden="true">
+    <span class="bg-orb orb-a"></span>
+    <span class="bg-orb orb-b"></span>
+    <span class="bg-grid"></span>
+  </div>
+
+  
+
+
+
+
+
+
+<header class="site-header" data-header>
+  <div class="container header-inner">
+    <a href="/zh-tw/" class="site-logo" aria-label="SnapTray 首頁">
+      <img src="/assets/images/logo.svg" alt="" width="32" height="32">
+      <span>SnapTray</span>
+    </a>
+
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="primary-nav" aria-label="開啟導覽選單" data-nav-toggle>
+      <span class="nav-toggle__line" aria-hidden="true"></span>
+      <span class="nav-toggle__line" aria-hidden="true"></span>
+      <span class="nav-toggle__line" aria-hidden="true"></span>
+      <span class="sr-only" data-nav-toggle-label>開啟導覽選單</span>
+    </button>
+
+    <nav id="primary-nav" class="site-nav" aria-label="主要導覽" data-nav>
+      <a href="/zh-tw/" >首頁</a>
+      <a href="/zh-tw/docs/" class="is-active">文件</a>
+      <a href="/zh-tw/releases/" >版本</a>
+      <a href="/zh-tw/privacy/" >隱私</a>
+      
+
+
+
+
+<div class="language-switcher" aria-label="語言">
+  <a href="/docs/troubleshooting/" class="lang-link ">EN</a>
+  <a href="/zh-tw/docs/troubleshooting/" class="lang-link is-active">繁中</a>
+</div>
+
+      <a class="nav-github" href="https://github.com/victorfu/snap-tray" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+
+  <main id="main-content" class="site-main">
+    
+
+
+<section class="docs-shell">
+  <div class="container docs-grid">
+    <aside class="docs-sidebar" data-docs-sidebar>
+      
+
+
+<div id="docs-sidebar-panel" class="docs-sidebar-card">
+  <p class="docs-sidebar-title">文件目錄</p>
+
+  
+  <section class="docs-nav-group">
+    <p class="docs-nav-group-title">基礎</p>
+    <ul class="docs-nav-list">
+      
+      
+      
+      <li>
+        <a href="/zh-tw/docs/" class="">文件首頁</a>
+      </li>
+      
+      
+      
+      
+      <li>
+        <a href="/zh-tw/docs/getting-started/" class="">快速開始</a>
+      </li>
+      
+      
+    </ul>
+  </section>
+  
+  <section class="docs-nav-group">
+    <p class="docs-nav-group-title">教學路徑</p>
+    <ul class="docs-nav-list">
+      
+      
+      
+      <li>
+        <a href="/zh-tw/docs/tutorials/" class="">教學總覽</a>
+      </li>
+      
+      
+      
+      
+      <li>
+        <a href="/zh-tw/docs/tutorials/quick-share/" class="">30 秒快速分享</a>
+      </li>
+      
+      
+      
+      
+      <li>
+        <a href="/zh-tw/docs/tutorials/bug-report/" class="">Bug 回報流程</a>
+      </li>
+      
+      
+      
+      
+      <li>
+        <a href="/zh-tw/docs/tutorials/live-reference/" class="">Pin 長駐參考</a>
+      </li>
+      
+      
+      
+      
+      <li>
+        <a href="/zh-tw/docs/tutorials/recording-demo/" class="">錄影教學示範</a>
+      </li>
+      
+      
+    </ul>
+  </section>
+  
+  <section class="docs-nav-group">
+    <p class="docs-nav-group-title">擷取與標註</p>
+    <ul class="docs-nav-list">
+      
+      
+      
+      <li>
+        <a href="/zh-tw/docs/region-capture/" class="">區域截圖</a>
+      </li>
+      
+      
+      
+      
+      <li>
+        <a href="/zh-tw/docs/annotation-tools/" class="">標註工具</a>
+      </li>
+      
+      
+      
+      
+      <li>
+        <a href="/zh-tw/docs/screen-canvas/" class="">螢幕畫布</a>
+      </li>
+      
+      
+    </ul>
+  </section>
+  
+  <section class="docs-nav-group">
+    <p class="docs-nav-group-title">工作流</p>
+    <ul class="docs-nav-list">
+      
+      
+      
+      <li>
+        <a href="/zh-tw/docs/pin-window/" class="">釘選視窗</a>
+      </li>
+      
+      
+      
+      
+      <li>
+        <a href="/zh-tw/docs/recording/" class="">錄影</a>
+      </li>
+      
+      
+      
+      
+      <li>
+        <a href="/zh-tw/docs/hotkeys/" class="">快捷鍵</a>
+      </li>
+      
+      
+      
+      
+      <li>
+        <a href="/zh-tw/docs/settings/" class="">設定</a>
+      </li>
+      
+      
+    </ul>
+  </section>
+  
+  <section class="docs-nav-group">
+    <p class="docs-nav-group-title">進階</p>
+    <ul class="docs-nav-list">
+      
+      
+      
+      <li>
+        <a href="/zh-tw/docs/cli/" class="">命令列</a>
+      </li>
+      
+      
+      
+      
+      <li>
+        <a href="/zh-tw/docs/troubleshooting/" class="is-active">疑難排解</a>
+      </li>
+      
+      
+      
+      
+      <li>
+        <a href="/zh-tw/docs/faq/" class="">常見問題</a>
+      </li>
+      
+      
+    </ul>
+  </section>
+  
+</div>
+
+    </aside>
+
+    <article class="docs-content" data-docs-content>
+      <header class="docs-content-header">
+        <p class="eyebrow">文件中心</p>
+        <h1>疑難排解</h1>
+        
+        <p>快速解決權限、啟動、編碼與快捷鍵衝突問題。</p>
+        
+        <button class="docs-sidebar-toggle" type="button" aria-expanded="false" aria-controls="docs-sidebar-panel" data-docs-sidebar-toggle>
+          開啟文件目錄
+        </button>
+      </header>
+      <div class="docs-prose">
+        <h2 id="無法開始截圖">無法開始截圖</h2>
+
+<h3 id="macos">macOS</h3>
+
+<ul>
+  <li>確認已授權 Screen Recording</li>
+  <li>確認已授權 Accessibility</li>
+  <li>修改權限後重啟 SnapTray</li>
+</ul>
+
+<h3 id="windows">Windows</h3>
+
+<ul>
+  <li>更新顯示卡驅動</li>
+  <li>確認必要 runtime 已安裝</li>
+</ul>
+
+<h2 id="快捷鍵無反應">快捷鍵無反應</h2>
+
+<ul>
+  <li>到 Settings &gt; Hotkeys 檢查是否重複綁定</li>
+  <li>改成其他組合後立即測試</li>
+  <li>確認是否被其他常駐工具攔截</li>
+</ul>
+
+<h2 id="錄影異常">錄影異常</h2>
+
+<ul>
+  <li>出現掉幀時先降低 FPS</li>
+  <li>長時間錄影優先改用 MP4</li>
+  <li>重新確認音訊來源與裝置</li>
+</ul>
+
+<h2 id="建置或啟動錯誤">建置或啟動錯誤</h2>
+
+<p>開發環境建議執行腳本確認一致性：</p>
+
+<ul>
+  <li>macOS: <code class="language-plaintext highlighter-rouge">./scripts/build.sh</code></li>
+  <li>Windows: <code class="language-plaintext highlighter-rouge">scripts\\build.bat</code></li>
+</ul>
+
+<p>再跑測試腳本驗證整體環境。</p>
+
+      </div>
+    </article>
+
+    <aside class="docs-toc" data-docs-toc>
+      
+
+
+<div class="docs-toc-card">
+  <p class="docs-toc-title">本頁重點</p>
+  <nav id="docs-toc-nav" class="docs-toc-nav" aria-label="本頁重點">
+    <p class="docs-toc-empty">這一頁目前沒有章節標題。</p>
+  </nav>
+</div>
+
+    </aside>
+  </div>
+</section>
+
+  </main>
+
+  
+
+
+<footer class="site-footer">
+  <div class="container footer-grid">
+    <section>
+      <p class="footer-title">SnapTray</p>
+      <p class="footer-copy">桌機等級的截圖與錄影流程，為速度與清晰而設計。</p>
+      <p class="footer-meta">以 Qt 6 與 C++17 打造</p>
+    </section>
+
+    <section>
+      <p class="footer-title">資源</p>
+      <div class="footer-links">
+        <a href="/zh-tw/">首頁</a>
+        <a href="/zh-tw/docs/">文件</a>
+        <a href="/zh-tw/releases/">版本</a>
+        <a href="/zh-tw/privacy/">隱私政策</a>
+      </div>
+    </section>
+
+    <section>
+      <p class="footer-title">社群</p>
+      <div class="footer-links">
+        <a href="https://github.com/victorfu/snap-tray" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://github.com/victorfu/snap-tray/issues" target="_blank" rel="noopener">回報問題</a>
+        <a href="https://github.com/victorfu/snap-tray/blob/main/LICENSE" target="_blank" rel="noopener">MIT 授權</a>
+      </div>
+    </section>
+  </div>
+  <div class="container footer-bottom">
+    <p>&copy; <span id="current-year"></span> SnapTray</p>
+  </div>
+</footer>
+
+
+  <script src="/assets/js/site.js"></script>
+</body>
+</html>

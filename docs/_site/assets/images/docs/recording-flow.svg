@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700" role="img" aria-labelledby="title desc">
+  <title id="title">Recording Flow</title>
+  <desc id="desc">Recording pipeline from region selection to final output formats and audio settings.</desc>
+  <defs>
+    <linearGradient id="bg6" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#eef6ff"/>
+      <stop offset="100%" stop-color="#f6f9ff"/>
+    </linearGradient>
+    <marker id="arrow2" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M0,0 L12,6 L0,12 Z" fill="#2f6fb0"/>
+    </marker>
+  </defs>
+  <rect width="1200" height="700" fill="url(#bg6)"/>
+  <text x="80" y="98" fill="#123d6c" font-size="38" font-family="Arial" font-weight="700">Recording Pipeline</text>
+
+  <rect x="90" y="170" width="220" height="110" rx="16" fill="#fff" stroke="#c9e0f8"/>
+  <text x="132" y="232" fill="#1f548d" font-size="24" font-family="Arial" font-weight="700">Start</text>
+
+  <rect x="350" y="170" width="230" height="110" rx="16" fill="#fff" stroke="#c9e0f8"/>
+  <text x="392" y="232" fill="#1f548d" font-size="24" font-family="Arial" font-weight="700">Select Area</text>
+
+  <rect x="620" y="170" width="230" height="110" rx="16" fill="#fff" stroke="#c9e0f8"/>
+  <text x="662" y="232" fill="#1f548d" font-size="24" font-family="Arial" font-weight="700">Control Bar</text>
+
+  <rect x="890" y="170" width="220" height="110" rx="16" fill="#fff" stroke="#c9e0f8"/>
+  <text x="936" y="232" fill="#1f548d" font-size="24" font-family="Arial" font-weight="700">Export</text>
+
+  <line x1="310" y1="225" x2="340" y2="225" stroke="#2f6fb0" stroke-width="4" marker-end="url(#arrow2)"/>
+  <line x1="580" y1="225" x2="610" y2="225" stroke="#2f6fb0" stroke-width="4" marker-end="url(#arrow2)"/>
+  <line x1="850" y1="225" x2="880" y2="225" stroke="#2f6fb0" stroke-width="4" marker-end="url(#arrow2)"/>
+
+  <rect x="90" y="340" width="500" height="260" rx="18" fill="#fff" stroke="#c9e0f8"/>
+  <text x="125" y="388" fill="#1b4f87" font-size="26" font-family="Arial" font-weight="700">Format Options</text>
+  <text x="125" y="430" fill="#39638f" font-size="19" font-family="Arial">• MP4 (H.264): long tutorials</text>
+  <text x="125" y="466" fill="#39638f" font-size="19" font-family="Arial">• GIF: short loops</text>
+  <text x="125" y="502" fill="#39638f" font-size="19" font-family="Arial">• WebP: lightweight animation</text>
+
+  <rect x="620" y="340" width="490" height="260" rx="18" fill="#fff" stroke="#c9e0f8"/>
+  <text x="655" y="388" fill="#1b4f87" font-size="26" font-family="Arial" font-weight="700">Audio + Quality</text>
+  <text x="655" y="430" fill="#39638f" font-size="19" font-family="Arial">• Mic / System / Mixed audio</text>
+  <text x="655" y="466" fill="#39638f" font-size="19" font-family="Arial">• Frame rate and countdown</text>
+  <text x="655" y="502" fill="#39638f" font-size="19" font-family="Arial">• Preview and output destination</text>
+</svg>

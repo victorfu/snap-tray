@@ -12,6 +12,32 @@
         en: Getting Started
         zh-tw: 快速開始
 
+- id: tutorials
+  title:
+    en: Tutorials
+    zh-tw: 教學路徑
+  items:
+    - route_key: docs_tutorials
+      title:
+        en: Tutorial Hub
+        zh-tw: 教學總覽
+    - route_key: docs_tutorial_quick_share
+      title:
+        en: Quick Share (30s)
+        zh-tw: 30 秒快速分享
+    - route_key: docs_tutorial_bug_report
+      title:
+        en: Bug Report Workflow
+        zh-tw: Bug 回報流程
+    - route_key: docs_tutorial_live_reference
+      title:
+        en: Live Reference with Pin
+        zh-tw: Pin 長駐參考
+    - route_key: docs_tutorial_recording_demo
+      title:
+        en: Recording Demo
+        zh-tw: 錄影教學示範
+
 - id: capture
   title:
     en: Capture & Annotate

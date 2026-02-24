@@ -1,7 +1,7 @@
 ---
 layout: docs
 title: Documentation
-description: Learn SnapTray workflows with practical, task-oriented guides.
+description: Learn SnapTray through task-driven tutorials and feature references in one place.
 permalink: /docs/
 lang: en
 route_key: docs_home
@@ -11,34 +11,43 @@ doc_order: 1
 
 ![SnapTray documentation overview](/assets/images/docs/docs-overview.svg)
 
-## What this documentation covers
+## Start here: learn by outcome
 
-This guide focuses on real usage flows: capture, annotate, pin, record, and automate repetitive actions with hotkeys and CLI commands.
+If your goal is to get work done quickly, start in [Tutorials](/docs/tutorials/). These guides are scenario-based and include step-by-step execution.
 
-## Quick start path
+### Most-used paths
 
-1. Open [Getting Started](/docs/getting-started/) and complete the first-run checklist.
-2. Learn [Region Capture](/docs/region-capture/) and [Annotation Tools](/docs/annotation-tools/).
-3. Use [Pin Window](/docs/pin-window/) for persistent references.
-4. Configure [Recording](/docs/recording/) and [Settings](/docs/settings/) for your daily workflow.
+1. Need a screenshot in 30 seconds: [Quick Share (30s)](/docs/tutorials/quick-share/)
+2. Need a reproducible issue report: [Bug Report Workflow](/docs/tutorials/bug-report/)
+3. Need always-visible references: [Live Reference with Pin](/docs/tutorials/live-reference/)
+4. Need a short demo video: [Recording Demo](/docs/tutorials/recording-demo/)
 
-## Documentation map
+## Build your foundation
 
-### Core capture workflow
+Complete these once, then you can use every tutorial faster:
+
+1. [Getting Started](/docs/getting-started/)
+2. [Hotkeys](/docs/hotkeys/)
+3. [Settings](/docs/settings/)
+
+## Feature reference map
+
+Use these pages when you need complete option details.
+
+### Capture and annotate
 
 - [Region Capture](/docs/region-capture/)
 - [Annotation Tools](/docs/annotation-tools/)
 - [Screen Canvas](/docs/screen-canvas/)
 
-### Productivity workflow
+### Workflow and delivery
 
 - [Pin Window](/docs/pin-window/)
 - [Recording](/docs/recording/)
 - [Hotkeys](/docs/hotkeys/)
 
-### Advanced usage
+### Advanced and support
 
-- [Settings](/docs/settings/)
 - [CLI](/docs/cli/)
 - [Troubleshooting](/docs/troubleshooting/)
 - [FAQ](/docs/faq/)
