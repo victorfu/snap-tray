@@ -965,7 +965,7 @@ svg {
 
 .docs-grid {
   display: grid;
-  grid-template-columns: minmax(220px, 250px) minmax(0, 1fr) minmax(190px, 240px);
+  grid-template-columns: minmax(220px, 250px) minmax(0, 1fr);
   gap: clamp(0.9rem, 2vw, 1.45rem);
   align-items: start;
 }
@@ -1445,21 +1445,21 @@ svg {
   }
 
   .docs-sidebar {
-    position: fixed;
-    left: 0.8rem;
-    top: calc(70px + 0.55rem);
-    width: min(86vw, 320px);
-    max-height: calc(100vh - 90px);
-    overflow: auto;
-    z-index: 55;
+    position: static;
+    width: 100%;
+    margin-bottom: 0.75rem;
+    z-index: 20;
+    max-height: 0;
+    overflow: hidden;
     opacity: 0;
-    transform: translateX(-108%);
+    transform: translateY(-0.3rem);
     pointer-events: none;
-    transition: transform 200ms ease, opacity 200ms ease;
+    transition: max-height 200ms ease, transform 200ms ease, opacity 200ms ease;
 
     &.is-open {
+      max-height: 999rem;
       opacity: 1;
-      transform: translateX(0);
+      transform: translateY(0);
       pointer-events: auto;
     }
   }

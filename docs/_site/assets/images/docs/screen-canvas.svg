@@ -1,25 +1,36 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700" role="img" aria-labelledby="title desc">
   <title id="title">Screen Canvas Mode</title>
-  <desc id="desc">Overview of full-screen canvas mode with tools and presentation controls.</desc>
+  <desc id="desc">Live desktop annotation mode with entry shortcut, session tools, and usage guidance.</desc>
   <defs>
-    <linearGradient id="bg5" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#eef7ff"/>
-      <stop offset="100%" stop-color="#e6fbff"/>
+    <linearGradient id="bg-canvas" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f4f9ff"/>
+      <stop offset="100%" stop-color="#e9fbff"/>
     </linearGradient>
   </defs>
-  <rect width="1200" height="700" fill="url(#bg5)"/>
-  <text x="80" y="98" fill="#133f6d" font-size="38" font-family="Arial" font-weight="700">Screen Canvas</text>
 
-  <rect x="80" y="150" width="1040" height="470" rx="20" fill="#ffffff" stroke="#c7e0f9"/>
-  <rect x="120" y="210" width="960" height="340" rx="12" fill="#f8fbff" stroke="#d8e9fb"/>
-  <text x="430" y="390" fill="#4b6f9b" font-size="28" font-family="Arial" font-weight="700">Live Desktop Overlay</text>
+  <rect width="1200" height="700" fill="url(#bg-canvas)"/>
+  <rect x="40" y="28" width="1120" height="644" rx="24" fill="#ffffff" stroke="#c7def6" stroke-width="2"/>
 
-  <rect x="120" y="170" width="960" height="36" rx="8" fill="#e8f3ff"/>
-  <text x="150" y="195" fill="#285d96" font-size="18" font-family="Arial">Pencil  Marker  Arrow  Shape  Text  Step  Emoji  Laser Pointer  Undo  Redo  Clear</text>
+  <text x="84" y="92" fill="#163f6d" font-size="42" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Screen Canvas</text>
+  <text x="84" y="126" fill="#3a608c" font-size="20" font-family="Segoe UI, Arial, sans-serif">Annotate directly on top of your desktop during demos, meetings, and walkthroughs.</text>
 
-  <rect x="120" y="560" width="460" height="44" rx="10" fill="#e7f8f1" stroke="#caebde"/>
-  <text x="146" y="588" fill="#2b6f74" font-size="18" font-family="Arial">Background: Whiteboard / Blackboard</text>
+  <rect x="84" y="164" width="300" height="116" rx="14" fill="#f8fbff" stroke="#cbe0f6"/>
+  <text x="108" y="204" fill="#1f548d" font-size="27" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Enter Mode</text>
+  <text x="108" y="238" fill="#3b658f" font-size="20" font-family="Segoe UI, Arial, sans-serif">Default hotkey: Ctrl+F2</text>
 
-  <rect x="620" y="560" width="460" height="44" rx="10" fill="#eaf2ff" stroke="#d3e3fb"/>
-  <text x="655" y="588" fill="#2f6092" font-size="18" font-family="Arial">Default entry hotkey: Ctrl+F2</text>
+  <rect x="404" y="164" width="712" height="116" rx="14" fill="#f8fbff" stroke="#cbe0f6"/>
+  <text x="430" y="204" fill="#1f548d" font-size="27" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Toolset</text>
+  <text x="430" y="238" fill="#3b658f" font-size="20" font-family="Segoe UI, Arial, sans-serif">Pencil  Marker  Arrow  Shape  Text  Step  Emoji  Laser Pointer  Undo  Redo  Clear</text>
+
+  <rect x="84" y="308" width="1032" height="244" rx="18" fill="#f6fbff" stroke="#c8def5"/>
+  <rect x="120" y="344" width="960" height="42" rx="8" fill="#e8f3ff"/>
+  <text x="144" y="372" fill="#2d5e95" font-size="19" font-family="Segoe UI, Arial, sans-serif">Floating toolbar stays visible while you draw over live apps and windows.</text>
+  <rect x="120" y="398" width="960" height="124" rx="10" fill="#eef4ff" stroke="#d6e6fa"/>
+  <text x="396" y="468" fill="#4a6e99" font-size="38" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Live Desktop Overlay</text>
+
+  <rect x="84" y="576" width="504" height="58" rx="12" fill="#e7f8f1" stroke="#c6ebdc"/>
+  <text x="110" y="613" fill="#2b6f74" font-size="21" font-family="Segoe UI, Arial, sans-serif" font-weight="600">Background modes: Whiteboard or Blackboard</text>
+
+  <rect x="612" y="576" width="504" height="58" rx="12" fill="#eaf2ff" stroke="#cfe0f8"/>
+  <text x="638" y="613" fill="#2e6091" font-size="21" font-family="Segoe UI, Arial, sans-serif" font-weight="600">Exit anytime with Esc after your explanation</text>
 </svg>

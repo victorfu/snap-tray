@@ -1,33 +1,44 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700" role="img" aria-labelledby="title desc">
-  <title id="title">Annotation Tools</title>
-  <desc id="desc">Diagram of annotation toolbar categories and output actions.</desc>
+  <title id="title">Annotation Tools Overview</title>
+  <desc id="desc">A clearer map of annotation tools by intent, workflow order, and final export actions.</desc>
   <defs>
-    <linearGradient id="bg3" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#edf6ff"/>
-      <stop offset="100%" stop-color="#e8fbf8"/>
+    <linearGradient id="bg-anno" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f5faff"/>
+      <stop offset="100%" stop-color="#ecfff7"/>
+    </linearGradient>
+    <linearGradient id="card-anno" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#f8fcff"/>
     </linearGradient>
   </defs>
-  <rect width="1200" height="700" fill="url(#bg3)"/>
-  <text x="80" y="98" fill="#12406f" font-size="38" font-family="Arial" font-weight="700">Annotation Toolbar</text>
 
-  <rect x="80" y="150" width="1040" height="120" rx="18" fill="#ffffff" stroke="#c6e1fa"/>
-  <text x="115" y="210" fill="#1f588f" font-size="24" font-family="Arial" font-weight="700">Selection  Pencil  Marker  Arrow  Shape  Text  Mosaic  Step  Emoji  Eraser</text>
+  <rect width="1200" height="700" fill="url(#bg-anno)"/>
+  <rect x="40" y="28" width="1120" height="644" rx="24" fill="#ffffff" stroke="#c7e4f6" stroke-width="2"/>
 
-  <rect x="80" y="320" width="320" height="280" rx="16" fill="#ffffff" stroke="#c6e1fa"/>
-  <text x="110" y="370" fill="#1b4f87" font-size="26" font-family="Arial" font-weight="700">Drawing</text>
-  <text x="110" y="410" fill="#3a648f" font-size="19" font-family="Arial">Pencil / Marker / Arrow</text>
-  <text x="110" y="445" fill="#3a648f" font-size="19" font-family="Arial">Shape with fill / outline</text>
+  <text x="84" y="92" fill="#13416f" font-size="42" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Annotation Tools</text>
+  <text x="84" y="126" fill="#3b628e" font-size="20" font-family="Segoe UI, Arial, sans-serif">Choose tools by communication intent: explain, emphasize, or protect sensitive data.</text>
 
-  <rect x="440" y="320" width="320" height="280" rx="16" fill="#ffffff" stroke="#c6e1fa"/>
-  <text x="470" y="370" fill="#1b4f87" font-size="26" font-family="Arial" font-weight="700">Markup</text>
-  <text x="470" y="410" fill="#3a648f" font-size="19" font-family="Arial">Text + Step badges</text>
-  <text x="470" y="445" fill="#3a648f" font-size="19" font-family="Arial">Emoji stickers for emphasis</text>
+  <rect x="84" y="164" width="1032" height="72" rx="14" fill="#f2f8ff" stroke="#c9e1f8"/>
+  <text x="114" y="208" fill="#2a5d95" font-size="24" font-family="Segoe UI, Arial, sans-serif" font-weight="600">Selection  Pencil  Marker  Arrow  Shape  Text  Mosaic  Step  Emoji  Eraser</text>
 
-  <rect x="800" y="320" width="320" height="280" rx="16" fill="#ffffff" stroke="#c6e1fa"/>
-  <text x="830" y="370" fill="#1b4f87" font-size="26" font-family="Arial" font-weight="700">Privacy & Fixes</text>
-  <text x="830" y="410" fill="#3a648f" font-size="19" font-family="Arial">Mosaic sensitive details</text>
-  <text x="830" y="445" fill="#3a648f" font-size="19" font-family="Arial">Undo / Redo / Erase</text>
+  <rect x="84" y="264" width="328" height="282" rx="16" fill="url(#card-anno)" stroke="#cbe3f8"/>
+  <text x="110" y="312" fill="#1d5188" font-size="30" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Explain</text>
+  <text x="110" y="352" fill="#3b648f" font-size="20" font-family="Segoe UI, Arial, sans-serif">- Pencil for exact traces</text>
+  <text x="110" y="384" fill="#3b648f" font-size="20" font-family="Segoe UI, Arial, sans-serif">- Marker for broad highlights</text>
+  <text x="110" y="416" fill="#3b648f" font-size="20" font-family="Segoe UI, Arial, sans-serif">- Arrow and Shape for focus</text>
 
-  <rect x="80" y="620" width="1040" height="44" rx="10" fill="#dff5ef" stroke="#b9e6d8"/>
-  <text x="110" y="648" fill="#2b6b73" font-size="18" font-family="Arial">Export actions: Enter to Pin  •  Ctrl/Cmd+C to Copy  •  Ctrl/Cmd+S to Save</text>
+  <rect x="436" y="264" width="328" height="282" rx="16" fill="url(#card-anno)" stroke="#cbe3f8"/>
+  <text x="462" y="312" fill="#1d5188" font-size="30" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Guide</text>
+  <text x="462" y="352" fill="#3b648f" font-size="20" font-family="Segoe UI, Arial, sans-serif">- Text labels for context</text>
+  <text x="462" y="384" fill="#3b648f" font-size="20" font-family="Segoe UI, Arial, sans-serif">- Step badges for sequence</text>
+  <text x="462" y="416" fill="#3b648f" font-size="20" font-family="Segoe UI, Arial, sans-serif">- Emoji for visual tone cues</text>
+
+  <rect x="788" y="264" width="328" height="282" rx="16" fill="url(#card-anno)" stroke="#cbe3f8"/>
+  <text x="814" y="312" fill="#1d5188" font-size="30" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Protect and Fix</text>
+  <text x="814" y="352" fill="#3b648f" font-size="20" font-family="Segoe UI, Arial, sans-serif">- Mosaic hides private details</text>
+  <text x="814" y="384" fill="#3b648f" font-size="20" font-family="Segoe UI, Arial, sans-serif">- Eraser removes noisy marks</text>
+  <text x="814" y="416" fill="#3b648f" font-size="20" font-family="Segoe UI, Arial, sans-serif">- Undo and Redo keep edits safe</text>
+
+  <rect x="84" y="572" width="1032" height="62" rx="12" fill="#e7f8f1" stroke="#c6ebdc"/>
+  <text x="114" y="611" fill="#2d6d75" font-size="22" font-family="Segoe UI, Arial, sans-serif" font-weight="600">Workflow: Draft marks -> Clarify message -> Hide sensitive info -> Enter / Copy / Save</text>
 </svg>

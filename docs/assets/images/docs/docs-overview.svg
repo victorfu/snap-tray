@@ -1,42 +1,44 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700" role="img" aria-labelledby="title desc">
-  <title id="title">SnapTray Documentation Overview</title>
-  <desc id="desc">Three-column overview of Capture, Workflow, and Advanced documentation topics.</desc>
+  <title id="title">SnapTray Docs Overview</title>
+  <desc id="desc">Task-focused map of SnapTray documentation from core features to advanced topics.</desc>
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#edf6ff"/>
-      <stop offset="100%" stop-color="#dff2ff"/>
+    <linearGradient id="bg-docs" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f4f9ff"/>
+      <stop offset="100%" stop-color="#e8f3ff"/>
     </linearGradient>
-    <linearGradient id="card" x1="0" y1="0" x2="0" y2="1">
+    <linearGradient id="card-docs" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%" stop-color="#ffffff"/>
-      <stop offset="100%" stop-color="#f4f9ff"/>
+      <stop offset="100%" stop-color="#f8fcff"/>
     </linearGradient>
   </defs>
-  <rect width="1200" height="700" fill="url(#bg)"/>
-  <rect x="60" y="70" width="1080" height="560" rx="26" fill="white" stroke="#bdd9f7" stroke-width="2"/>
-  <text x="100" y="130" fill="#143b6b" font-size="36" font-family="Arial, sans-serif" font-weight="700">SnapTray Docs Structure</text>
-  <text x="100" y="165" fill="#3d618f" font-size="18" font-family="Arial, sans-serif">Task-first guides for capture, annotation, pinning, and recording workflows.</text>
 
-  <rect x="100" y="210" width="300" height="360" rx="18" fill="url(#card)" stroke="#cae1fb"/>
-  <text x="126" y="252" fill="#1c4c86" font-size="24" font-family="Arial" font-weight="700">Basics</text>
-  <text x="126" y="294" fill="#244f86" font-size="18" font-family="Arial">• Documentation Home</text>
-  <text x="126" y="332" fill="#244f86" font-size="18" font-family="Arial">• Getting Started</text>
-  <text x="126" y="370" fill="#244f86" font-size="18" font-family="Arial">• Region Capture</text>
-  <text x="126" y="408" fill="#244f86" font-size="18" font-family="Arial">• Annotation Tools</text>
+  <rect width="1200" height="700" fill="url(#bg-docs)"/>
+  <rect x="40" y="28" width="1120" height="644" rx="24" fill="#ffffff" stroke="#c7ddf6" stroke-width="2"/>
 
-  <rect x="450" y="210" width="300" height="360" rx="18" fill="url(#card)" stroke="#cae1fb"/>
-  <text x="476" y="252" fill="#1c4c86" font-size="24" font-family="Arial" font-weight="700">Workflow</text>
-  <text x="476" y="294" fill="#244f86" font-size="18" font-family="Arial">• Screen Canvas</text>
-  <text x="476" y="332" fill="#244f86" font-size="18" font-family="Arial">• Pin Window</text>
-  <text x="476" y="370" fill="#244f86" font-size="18" font-family="Arial">• Recording</text>
-  <text x="476" y="408" fill="#244f86" font-size="18" font-family="Arial">• Hotkeys</text>
+  <text x="84" y="92" fill="#16406d" font-size="42" font-family="Segoe UI, Arial, sans-serif" font-weight="700">SnapTray Documentation</text>
+  <text x="84" y="126" fill="#3a5f8b" font-size="20" font-family="Segoe UI, Arial, sans-serif">Read by task: capture evidence, explain visually, then automate and tune workflows.</text>
 
-  <rect x="800" y="210" width="300" height="360" rx="18" fill="url(#card)" stroke="#cae1fb"/>
-  <text x="826" y="252" fill="#1c4c86" font-size="24" font-family="Arial" font-weight="700">Advanced</text>
-  <text x="826" y="294" fill="#244f86" font-size="18" font-family="Arial">• Settings</text>
-  <text x="826" y="332" fill="#244f86" font-size="18" font-family="Arial">• CLI</text>
-  <text x="826" y="370" fill="#244f86" font-size="18" font-family="Arial">• Troubleshooting</text>
-  <text x="826" y="408" fill="#244f86" font-size="18" font-family="Arial">• FAQ</text>
+  <rect x="84" y="164" width="320" height="430" rx="18" fill="url(#card-docs)" stroke="#c9def4"/>
+  <text x="110" y="210" fill="#1d5188" font-size="30" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Capture Basics</text>
+  <text x="110" y="252" fill="#395f8b" font-size="21" font-family="Segoe UI, Arial, sans-serif">- Getting Started</text>
+  <text x="110" y="286" fill="#395f8b" font-size="21" font-family="Segoe UI, Arial, sans-serif">- Region Capture</text>
+  <text x="110" y="320" fill="#395f8b" font-size="21" font-family="Segoe UI, Arial, sans-serif">- Annotation Tools</text>
+  <text x="110" y="354" fill="#395f8b" font-size="21" font-family="Segoe UI, Arial, sans-serif">- Hotkeys</text>
 
-  <rect x="100" y="520" width="1000" height="50" rx="12" fill="#e8f4ff" stroke="#c8e2fb"/>
-  <text x="130" y="552" fill="#2b5a8f" font-size="18" font-family="Arial">English default route: /docs/  •  Traditional Chinese route: /zh-tw/docs/</text>
+  <rect x="440" y="164" width="320" height="430" rx="18" fill="url(#card-docs)" stroke="#c9def4"/>
+  <text x="466" y="210" fill="#1d5188" font-size="30" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Live Workflows</text>
+  <text x="466" y="252" fill="#395f8b" font-size="21" font-family="Segoe UI, Arial, sans-serif">- Screen Canvas</text>
+  <text x="466" y="286" fill="#395f8b" font-size="21" font-family="Segoe UI, Arial, sans-serif">- Pin Window</text>
+  <text x="466" y="320" fill="#395f8b" font-size="21" font-family="Segoe UI, Arial, sans-serif">- Recording</text>
+  <text x="466" y="354" fill="#395f8b" font-size="21" font-family="Segoe UI, Arial, sans-serif">- Tutorials</text>
+
+  <rect x="796" y="164" width="320" height="430" rx="18" fill="url(#card-docs)" stroke="#c9def4"/>
+  <text x="822" y="210" fill="#1d5188" font-size="30" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Advanced Topics</text>
+  <text x="822" y="252" fill="#395f8b" font-size="21" font-family="Segoe UI, Arial, sans-serif">- Settings</text>
+  <text x="822" y="286" fill="#395f8b" font-size="21" font-family="Segoe UI, Arial, sans-serif">- CLI</text>
+  <text x="822" y="320" fill="#395f8b" font-size="21" font-family="Segoe UI, Arial, sans-serif">- Troubleshooting</text>
+  <text x="822" y="354" fill="#395f8b" font-size="21" font-family="Segoe UI, Arial, sans-serif">- FAQ</text>
+
+  <rect x="84" y="614" width="1032" height="36" rx="8" fill="#e8f4ff"/>
+  <text x="110" y="638" fill="#2f6091" font-size="18" font-family="Segoe UI, Arial, sans-serif">Language routes: /docs/ (English) and /zh-tw/docs/ (Traditional Chinese)</text>
 </svg>

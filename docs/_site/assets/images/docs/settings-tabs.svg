@@ -1,32 +1,40 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700" role="img" aria-labelledby="title desc">
-  <title id="title">Settings Tabs</title>
-  <desc id="desc">Card layout showing major settings tabs and their responsibilities.</desc>
+  <title id="title">Settings Overview</title>
+  <desc id="desc">Overview of core settings areas and what each section controls.</desc>
   <defs>
-    <linearGradient id="bg8" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#edf6ff"/>
-      <stop offset="100%" stop-color="#f4faff"/>
+    <linearGradient id="bg-settings" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f4f9ff"/>
+      <stop offset="100%" stop-color="#f0f8ff"/>
     </linearGradient>
   </defs>
-  <rect width="1200" height="700" fill="url(#bg8)"/>
-  <text x="80" y="96" fill="#12406f" font-size="38" font-family="Arial" font-weight="700">Settings Overview</text>
 
-  <rect x="80" y="150" width="1040" height="500" rx="20" fill="#fff" stroke="#c8e1f9"/>
+  <rect width="1200" height="700" fill="url(#bg-settings)"/>
+  <rect x="40" y="28" width="1120" height="644" rx="24" fill="#ffffff" stroke="#c8def5" stroke-width="2"/>
 
-  <rect x="120" y="200" width="300" height="180" rx="14" fill="#f4f9ff" stroke="#d8e8fb"/>
-  <text x="148" y="250" fill="#1f538c" font-size="23" font-family="Arial" font-weight="700">General / Hotkeys</text>
-  <text x="148" y="286" fill="#3d6793" font-size="17" font-family="Arial">Startup, style, keybindings</text>
+  <text x="84" y="92" fill="#16406d" font-size="42" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Settings Overview</text>
+  <text x="84" y="126" fill="#3a5f8b" font-size="20" font-family="Segoe UI, Arial, sans-serif">Tune behavior once, then keep capture and recording consistent across sessions.</text>
 
-  <rect x="450" y="200" width="300" height="180" rx="14" fill="#f4f9ff" stroke="#d8e8fb"/>
-  <text x="478" y="250" fill="#1f538c" font-size="23" font-family="Arial" font-weight="700">Recording / Files</text>
-  <text x="478" y="286" fill="#3d6793" font-size="17" font-family="Arial">FPS, format, paths</text>
+  <rect x="84" y="164" width="1032" height="60" rx="12" fill="#f1f8ff" stroke="#cbe0f6"/>
+  <text x="110" y="203" fill="#2c5e95" font-size="23" font-family="Segoe UI, Arial, sans-serif" font-weight="600">General   Hotkeys   Capture   Recording   OCR   Watermark   Updates</text>
 
-  <rect x="780" y="200" width="300" height="180" rx="14" fill="#f4f9ff" stroke="#d8e8fb"/>
-  <text x="808" y="250" fill="#1f538c" font-size="23" font-family="Arial" font-weight="700">OCR / Watermark</text>
-  <text x="808" y="286" fill="#3d6793" font-size="17" font-family="Arial">Language, branding</text>
+  <rect x="84" y="252" width="320" height="190" rx="14" fill="#f8fbff" stroke="#cbdef3"/>
+  <text x="110" y="296" fill="#1d5188" font-size="28" font-family="Segoe UI, Arial, sans-serif" font-weight="700">General and Hotkeys</text>
+  <text x="110" y="330" fill="#3c648f" font-size="19" font-family="Segoe UI, Arial, sans-serif">Startup behavior and UI style.</text>
+  <text x="110" y="360" fill="#3c648f" font-size="19" font-family="Segoe UI, Arial, sans-serif">Per-category shortcut remapping.</text>
 
-  <rect x="120" y="420" width="960" height="180" rx="14" fill="#edf8ff" stroke="#d3e8fb"/>
-  <text x="160" y="474" fill="#1d4f87" font-size="24" font-family="Arial" font-weight="700">Recommended Baseline</text>
-  <text x="160" y="515" fill="#39638f" font-size="19" font-family="Arial">• 30 FPS MP4 for standard tutorials</text>
-  <text x="160" y="548" fill="#39638f" font-size="19" font-family="Arial">• Separate folders for screenshots and recordings</text>
-  <text x="160" y="581" fill="#39638f" font-size="19" font-family="Arial">• Weekly automatic update checks</text>
+  <rect x="440" y="252" width="320" height="190" rx="14" fill="#f8fbff" stroke="#cbdef3"/>
+  <text x="466" y="296" fill="#1d5188" font-size="28" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Capture and Recording</text>
+  <text x="466" y="330" fill="#3c648f" font-size="19" font-family="Segoe UI, Arial, sans-serif">Save paths, file naming, and format.</text>
+  <text x="466" y="360" fill="#3c648f" font-size="19" font-family="Segoe UI, Arial, sans-serif">FPS, codec, and countdown options.</text>
+
+  <rect x="796" y="252" width="320" height="190" rx="14" fill="#f8fbff" stroke="#cbdef3"/>
+  <text x="822" y="296" fill="#1d5188" font-size="28" font-family="Segoe UI, Arial, sans-serif" font-weight="700">OCR and Branding</text>
+  <text x="822" y="330" fill="#3c648f" font-size="19" font-family="Segoe UI, Arial, sans-serif">OCR language and region behavior.</text>
+  <text x="822" y="360" fill="#3c648f" font-size="19" font-family="Segoe UI, Arial, sans-serif">Watermark and output identity.</text>
+
+  <rect x="84" y="470" width="1032" height="164" rx="14" fill="#ecf7ff" stroke="#d5e8f9"/>
+  <text x="112" y="514" fill="#1d5188" font-size="30" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Recommended baseline</text>
+  <text x="112" y="552" fill="#385f8b" font-size="20" font-family="Segoe UI, Arial, sans-serif">- MP4 at 30 FPS for most tutorials and demos</text>
+  <text x="112" y="584" fill="#385f8b" font-size="20" font-family="Segoe UI, Arial, sans-serif">- Separate folders for screenshots and recordings</text>
+  <text x="112" y="616" fill="#385f8b" font-size="20" font-family="Segoe UI, Arial, sans-serif">- Weekly update checks enabled</text>
 </svg>
