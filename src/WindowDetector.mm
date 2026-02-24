@@ -393,12 +393,10 @@ WindowDetector::~WindowDetector()
     }
 }
 
-bool WindowDetector::hasAccessibilityPermission()
+bool WindowDetector::hasAccessibilityPermission(bool promptIfMissing)
 {
-    // Check if the app has accessibility permissions (needed for some window info)
-    // Note: Basic window enumeration via CGWindowList doesn't require accessibility,
-    // but we check it anyway for potential future UI element detection
-    NSDictionary *options = @{(__bridge NSString *)kAXTrustedCheckOptionPrompt: @NO};
+    // Check accessibility trust state. We only request prompt when specifically asked.
+    NSDictionary *options = @{(__bridge NSString *)kAXTrustedCheckOptionPrompt: @(promptIfMissing)};
     return AXIsProcessTrustedWithOptions((__bridge CFDictionaryRef)options);
 }
 
@@ -471,7 +469,13 @@ void WindowDetector::enumerateWindows()
 std::optional<DetectedElement> WindowDetector::detectChildElementAt(
     const QPoint &screenPos, qint64 targetPid, const QRect &windowBounds) const
 {
-    if (!hasAccessibilityPermission()) {
+    if (!hasAccessibilityPermission(false)) {
+        // Trigger the system permission prompt once per app run when child control
+        // detection is first attempted without accessibility trust.
+        if (!m_accessibilityPromptRequested) {
+            m_accessibilityPromptRequested = true;
+            hasAccessibilityPermission(true);
+        }
         return std::nullopt;
     }
 

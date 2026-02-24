@@ -61,7 +61,7 @@ public:
     ~WindowDetector();
 
     // Permission management
-    static bool hasAccessibilityPermission();
+    static bool hasAccessibilityPermission(bool promptIfMissing = false);
 
     // Detection control
     void setScreen(QScreen *screen);
@@ -104,6 +104,7 @@ private:
     mutable DetectedElement m_axCache;
     mutable bool m_axCacheValid{false};
     mutable QElapsedTimer m_axCacheTimer;
+    mutable bool m_accessibilityPromptRequested{false};
 #endif
 };
 

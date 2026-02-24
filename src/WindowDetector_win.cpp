@@ -363,7 +363,7 @@ WindowDetector::~WindowDetector()
     }
 }
 
-bool WindowDetector::hasAccessibilityPermission()
+bool WindowDetector::hasAccessibilityPermission(bool /*promptIfMissing*/)
 {
     // No special permissions needed on Windows for window enumeration
     return true;
