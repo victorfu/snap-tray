@@ -6,6 +6,26 @@
       <stop offset="0%" stop-color="#f4f9ff"/>
       <stop offset="100%" stop-color="#ecfff9"/>
     </linearGradient>
+    <linearGradient id="key-active-blue" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#42A5F5"/>
+      <stop offset="100%" stop-color="#1E88E5"/>
+    </linearGradient>
+    <linearGradient id="key-active-purple" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#AB47BC"/>
+      <stop offset="100%" stop-color="#8E24AA"/>
+    </linearGradient>
+    <linearGradient id="key-active-green" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#66BB6A"/>
+      <stop offset="100%" stop-color="#43A047"/>
+    </linearGradient>
+    <linearGradient id="key-active-orange" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FFA726"/>
+      <stop offset="100%" stop-color="#FB8C00"/>
+    </linearGradient>
+    <linearGradient id="key-active-red" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#EF5350"/>
+      <stop offset="100%" stop-color="#E53935"/>
+    </linearGradient>
   </defs>
 
   <rect width="1200" height="700" fill="url(#bg-hotkeys)"/>
