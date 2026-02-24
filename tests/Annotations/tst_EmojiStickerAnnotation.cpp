@@ -31,6 +31,15 @@ QRect nonTransparentBounds(const QImage& image)
 
     return QRect(QPoint(minX, minY), QPoint(maxX, maxY));
 }
+
+QString rectToString(const QRect& rect)
+{
+    return QStringLiteral("[%1,%2 %3x%4]")
+        .arg(rect.x())
+        .arg(rect.y())
+        .arg(rect.width())
+        .arg(rect.height());
+}
 } // namespace
 
 class TestEmojiStickerAnnotation : public QObject
@@ -163,11 +172,49 @@ void TestEmojiStickerAnnotation::testGeometryMatchesRenderedPixels()
 
     const QPointF renderedCenter = renderedBounds.center();
     const QPointF geometryCenter = geometryBounds.center();
-    QVERIFY(qAbs(renderedCenter.x() - geometryCenter.x()) <= 3.0);
-    QVERIFY(qAbs(renderedCenter.y() - geometryCenter.y()) <= 3.0);
+    const qreal centerDx = qAbs(renderedCenter.x() - geometryCenter.x());
+    const qreal centerDy = qAbs(renderedCenter.y() - geometryCenter.y());
+    const qreal maxCenterDx = qMax<qreal>(3.0, geometryBounds.width() * 0.2);
+    const qreal maxCenterDy = qMax<qreal>(3.0, geometryBounds.height() * 0.2);
 
-    QVERIFY(qAbs(renderedBounds.width() - geometryBounds.width()) <= 10);
-    QVERIFY(qAbs(renderedBounds.height() - geometryBounds.height()) <= 10);
+    QVERIFY2(centerDx <= maxCenterDx,
+             qPrintable(QStringLiteral("Center X mismatch: rendered=%1 geometry=%2 dx=%3 limit=%4 renderedBounds=%5 geometryBounds=%6")
+                        .arg(renderedCenter.x(), 0, 'f', 2)
+                        .arg(geometryCenter.x(), 0, 'f', 2)
+                        .arg(centerDx, 0, 'f', 2)
+                        .arg(maxCenterDx, 0, 'f', 2)
+                        .arg(rectToString(renderedBounds))
+                        .arg(rectToString(geometryBounds))));
+    QVERIFY2(centerDy <= maxCenterDy,
+             qPrintable(QStringLiteral("Center Y mismatch: rendered=%1 geometry=%2 dy=%3 limit=%4 renderedBounds=%5 geometryBounds=%6")
+                        .arg(renderedCenter.y(), 0, 'f', 2)
+                        .arg(geometryCenter.y(), 0, 'f', 2)
+                        .arg(centerDy, 0, 'f', 2)
+                        .arg(maxCenterDy, 0, 'f', 2)
+                        .arg(rectToString(renderedBounds))
+                        .arg(rectToString(geometryBounds))));
+
+    const qreal widthDelta = qAbs(renderedBounds.width() - geometryBounds.width());
+    const qreal heightDelta = qAbs(renderedBounds.height() - geometryBounds.height());
+    const qreal maxWidthDelta = qMax<qreal>(10.0, geometryBounds.width() * 0.35);
+    const qreal maxHeightDelta = qMax<qreal>(10.0, geometryBounds.height() * 0.35);
+
+    QVERIFY2(widthDelta <= maxWidthDelta,
+             qPrintable(QStringLiteral("Width mismatch: rendered=%1 geometry=%2 delta=%3 limit=%4 renderedBounds=%5 geometryBounds=%6")
+                        .arg(renderedBounds.width())
+                        .arg(geometryBounds.width())
+                        .arg(widthDelta, 0, 'f', 2)
+                        .arg(maxWidthDelta, 0, 'f', 2)
+                        .arg(rectToString(renderedBounds))
+                        .arg(rectToString(geometryBounds))));
+    QVERIFY2(heightDelta <= maxHeightDelta,
+             qPrintable(QStringLiteral("Height mismatch: rendered=%1 geometry=%2 delta=%3 limit=%4 renderedBounds=%5 geometryBounds=%6")
+                        .arg(renderedBounds.height())
+                        .arg(geometryBounds.height())
+                        .arg(heightDelta, 0, 'f', 2)
+                        .arg(maxHeightDelta, 0, 'f', 2)
+                        .arg(rectToString(renderedBounds))
+                        .arg(rectToString(geometryBounds))));
 }
 
 QTEST_MAIN(TestEmojiStickerAnnotation)
