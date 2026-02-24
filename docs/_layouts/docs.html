@@ -1,0 +1,34 @@
+---
+layout: default
+---
+
+{% assign lang = page.lang | default: site.default_lang %}
+{% assign t = site.data.i18n[lang] %}
+
+<section class="docs-shell">
+  <div class="container docs-grid">
+    <aside class="docs-sidebar" data-docs-sidebar>
+      {% include docs_sidebar.html %}
+    </aside>
+
+    <article class="docs-content" data-docs-content>
+      <header class="docs-content-header">
+        <p class="eyebrow">{{ t.docs.page_label }}</p>
+        <h1>{{ page.title }}</h1>
+        {% if page.description %}
+        <p>{{ page.description }}</p>
+        {% endif %}
+        <button class="docs-sidebar-toggle" type="button" aria-expanded="false" aria-controls="docs-sidebar-panel" data-docs-sidebar-toggle>
+          {{ t.docs.menu_button }}
+        </button>
+      </header>
+      <div class="docs-prose">
+        {{ content }}
+      </div>
+    </article>
+
+    <aside class="docs-toc" data-docs-toc>
+      {% include docs_toc.html %}
+    </aside>
+  </div>
+</section>

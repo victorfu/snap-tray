@@ -1,12 +1,18 @@
 ---
 layout: default
 ---
+{% assign lang = page.lang | default: site.default_lang %}
+{% if lang == 'zh-tw' %}
+  {% assign default_eyebrow = 'SnapTray 政策' %}
+{% else %}
+  {% assign default_eyebrow = 'SnapTray Policy' %}
+{% endif %}
 
 <section class="content-page">
   <div class="container">
     <article class="content-card">
       <header class="content-header">
-        <p class="eyebrow">SnapTray Policy</p>
+        <p class="eyebrow">{{ page.eyebrow | default: default_eyebrow }}</p>
         <h1>{{ page.title }}</h1>
       </header>
       <div class="content-prose">

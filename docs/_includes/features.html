@@ -1,74 +1,24 @@
+{% assign lang = page.lang | default: site.default_lang %}
+{% assign t = site.data.i18n[lang] %}
+
 <section class="features" id="features">
   <div class="container">
     <div class="section-heading" data-reveal>
-      <p class="eyebrow">Feature Set</p>
-      <h2>Built for fast, professional capture pipelines</h2>
-      <p>From one-shot screenshots to long recording sessions, SnapTray keeps every operation inside a single tray-native workflow.</p>
+      <p class="eyebrow">{{ t.features.eyebrow }}</p>
+      <h2>{{ t.features.title }}</h2>
+      <p>{{ t.features.subtitle }}</p>
     </div>
 
     <div class="features-grid">
+      {% for feature in t.features.items %}
       <article class="feature-card" data-reveal>
-        <p class="feature-kind">Capture</p>
-        <h3>Region Capture</h3>
-        <p>Precision crosshair and magnifier targeting. Press F2 to start instantly.</p>
+        <p class="feature-kind">{{ feature.kind }}</p>
+        <h3>{{ feature.title }}</h3>
+        <p>{{ feature.body }}</p>
       </article>
-      <article class="feature-card" data-reveal>
-        <p class="feature-kind">Canvas</p>
-        <h3>Screen Canvas</h3>
-        <p>Draw directly on top of your desktop with Ctrl+F2 and annotate in place.</p>
-      </article>
-      <article class="feature-card" data-reveal>
-        <p class="feature-kind">Pinning</p>
-        <h3>Pin to Screen</h3>
-        <p>Keep reference images visible above other windows. Resize and rotate freely.</p>
-      </article>
-      <article class="feature-card" data-reveal>
-        <p class="feature-kind">Annotation</p>
-        <h3>Rich Tooling</h3>
-        <p>Arrow, pencil, marker, shapes, text, mosaic, step badges, and emoji stickers.</p>
-      </article>
-      <article class="feature-card" data-reveal>
-        <p class="feature-kind">Automation</p>
-        <h3>OCR + Auto Blur</h3>
-        <p>Extract text and automatically mask sensitive faces for safer sharing.</p>
-      </article>
-      <article class="feature-card" data-reveal>
-        <p class="feature-kind">Detection</p>
-        <h3>Window Detection</h3>
-        <p>Quickly select windows without manually dragging exact bounds.</p>
-      </article>
-      <article class="feature-card" data-reveal>
-        <p class="feature-kind">Recording</p>
-        <h3>Screen Recording</h3>
-        <p>Capture any region and export MP4, GIF, or WebP with optional audio.</p>
-      </article>
-      <article class="feature-card" data-reveal>
-        <p class="feature-kind">Utility</p>
-        <h3>Color Picker</h3>
-        <p>Pick on-screen colors, switch HEX/RGB with Shift, copy instantly with C.</p>
-      </article>
-      <article class="feature-card" data-reveal>
-        <p class="feature-kind">Control</p>
-        <h3>Undo / Redo</h3>
-        <p>Full action history across annotation operations so edits stay reversible.</p>
-      </article>
-      <article class="feature-card" data-reveal>
-        <p class="feature-kind">Monitoring</p>
-        <h3>Live Capture</h3>
-        <p>Watch any region in real-time through a floating pin window.</p>
-      </article>
-      <article class="feature-card" data-reveal>
-        <p class="feature-kind">Branding</p>
-        <h3>Watermark</h3>
-        <p>Apply custom image watermark overlays to screenshots and recordings.</p>
-      </article>
-      <article class="feature-card" data-reveal>
-        <p class="feature-kind">Workflow</p>
-        <h3>Hotkey First</h3>
-        <p>Region Capture, Canvas, Paste, and Quick Pin stay one keystroke away.</p>
-      </article>
+      {% endfor %}
     </div>
 
-    <p class="feature-note" data-reveal>Multi-region capture and scrolling capture are available in Debug builds only.</p>
+    <p class="feature-note" data-reveal>{{ t.features.note }}</p>
   </div>
 </section>

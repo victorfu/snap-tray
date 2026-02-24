@@ -1,0 +1,71 @@
+- id: basics
+  title:
+    en: Basics
+    zh-tw: 基礎
+  items:
+    - route_key: docs_home
+      title:
+        en: Documentation Home
+        zh-tw: 文件首頁
+    - route_key: docs_getting_started
+      title:
+        en: Getting Started
+        zh-tw: 快速開始
+
+- id: capture
+  title:
+    en: Capture & Annotate
+    zh-tw: 擷取與標註
+  items:
+    - route_key: docs_region_capture
+      title:
+        en: Region Capture
+        zh-tw: 區域截圖
+    - route_key: docs_annotation_tools
+      title:
+        en: Annotation Tools
+        zh-tw: 標註工具
+    - route_key: docs_screen_canvas
+      title:
+        en: Screen Canvas
+        zh-tw: 螢幕畫布
+
+- id: workflow
+  title:
+    en: Workflow
+    zh-tw: 工作流
+  items:
+    - route_key: docs_pin_window
+      title:
+        en: Pin Window
+        zh-tw: 釘選視窗
+    - route_key: docs_recording
+      title:
+        en: Recording
+        zh-tw: 錄影
+    - route_key: docs_hotkeys
+      title:
+        en: Hotkeys
+        zh-tw: 快捷鍵
+    - route_key: docs_settings
+      title:
+        en: Settings
+        zh-tw: 設定
+
+- id: advanced
+  title:
+    en: Advanced
+    zh-tw: 進階
+  items:
+    - route_key: docs_cli
+      title:
+        en: CLI
+        zh-tw: 命令列
+    - route_key: docs_troubleshooting
+      title:
+        en: Troubleshooting
+        zh-tw: 疑難排解
+    - route_key: docs_faq
+      title:
+        en: FAQ
+        zh-tw: 常見問題

@@ -1,0 +1,63 @@
+home:
+  en: /
+  zh-tw: /zh-tw/
+
+releases:
+  en: /releases/
+  zh-tw: /zh-tw/releases/
+
+privacy:
+  en: /privacy/
+  zh-tw: /zh-tw/privacy/
+
+docs_home:
+  en: /docs/
+  zh-tw: /zh-tw/docs/
+
+docs_getting_started:
+  en: /docs/getting-started/
+  zh-tw: /zh-tw/docs/getting-started/
+
+docs_region_capture:
+  en: /docs/region-capture/
+  zh-tw: /zh-tw/docs/region-capture/
+
+docs_annotation_tools:
+  en: /docs/annotation-tools/
+  zh-tw: /zh-tw/docs/annotation-tools/
+
+docs_pin_window:
+  en: /docs/pin-window/
+  zh-tw: /zh-tw/docs/pin-window/
+
+docs_screen_canvas:
+  en: /docs/screen-canvas/
+  zh-tw: /zh-tw/docs/screen-canvas/
+
+docs_recording:
+  en: /docs/recording/
+  zh-tw: /zh-tw/docs/recording/
+
+docs_hotkeys:
+  en: /docs/hotkeys/
+  zh-tw: /zh-tw/docs/hotkeys/
+
+docs_settings:
+  en: /docs/settings/
+  zh-tw: /zh-tw/docs/settings/
+
+docs_cli:
+  en: /docs/cli/
+  zh-tw: /zh-tw/docs/cli/
+
+docs_troubleshooting:
+  en: /docs/troubleshooting/
+  zh-tw: /zh-tw/docs/troubleshooting/
+
+docs_faq:
+  en: /docs/faq/
+  zh-tw: /zh-tw/docs/faq/
+
+not_found:
+  en: /404.html
+  zh-tw: /404.html

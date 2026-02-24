@@ -1,10 +1,11 @@
 <!DOCTYPE html>
-<html lang="en" class="no-js">
+<html lang="{{ page.lang | default: site.default_lang }}" class="no-js">
 <head>
   {% include head.html %}
 </head>
-<body>
-  <a class="skip-link" href="#main-content">Skip to content</a>
+<body data-lang="{{ page.lang | default: site.default_lang }}" data-route-key="{{ page.route_key | default: '' }}" data-layout="{{ page.layout }}">
+  {% assign lang = page.lang | default: site.default_lang %}
+  <a class="skip-link" href="#main-content">{% if lang == 'zh-tw' %}跳到主要內容{% else %}Skip to content{% endif %}</a>
 
   <div class="site-background" aria-hidden="true">
     <span class="bg-orb orb-a"></span>

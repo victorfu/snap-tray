@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700" role="img" aria-labelledby="title desc">
+  <title id="title">SnapTray Documentation Overview</title>
+  <desc id="desc">Three-column overview of Capture, Workflow, and Advanced documentation topics.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#edf6ff"/>
+      <stop offset="100%" stop-color="#dff2ff"/>
+    </linearGradient>
+    <linearGradient id="card" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#f4f9ff"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="700" fill="url(#bg)"/>
+  <rect x="60" y="70" width="1080" height="560" rx="26" fill="white" stroke="#bdd9f7" stroke-width="2"/>
+  <text x="100" y="130" fill="#143b6b" font-size="36" font-family="Arial, sans-serif" font-weight="700">SnapTray Docs Structure</text>
+  <text x="100" y="165" fill="#3d618f" font-size="18" font-family="Arial, sans-serif">Task-first guides for capture, annotation, pinning, and recording workflows.</text>
+
+  <rect x="100" y="210" width="300" height="360" rx="18" fill="url(#card)" stroke="#cae1fb"/>
+  <text x="126" y="252" fill="#1c4c86" font-size="24" font-family="Arial" font-weight="700">Basics</text>
+  <text x="126" y="294" fill="#244f86" font-size="18" font-family="Arial">• Documentation Home</text>
+  <text x="126" y="332" fill="#244f86" font-size="18" font-family="Arial">• Getting Started</text>
+  <text x="126" y="370" fill="#244f86" font-size="18" font-family="Arial">• Region Capture</text>
+  <text x="126" y="408" fill="#244f86" font-size="18" font-family="Arial">• Annotation Tools</text>
+
+  <rect x="450" y="210" width="300" height="360" rx="18" fill="url(#card)" stroke="#cae1fb"/>
+  <text x="476" y="252" fill="#1c4c86" font-size="24" font-family="Arial" font-weight="700">Workflow</text>
+  <text x="476" y="294" fill="#244f86" font-size="18" font-family="Arial">• Screen Canvas</text>
+  <text x="476" y="332" fill="#244f86" font-size="18" font-family="Arial">• Pin Window</text>
+  <text x="476" y="370" fill="#244f86" font-size="18" font-family="Arial">• Recording</text>
+  <text x="476" y="408" fill="#244f86" font-size="18" font-family="Arial">• Hotkeys</text>
+
+  <rect x="800" y="210" width="300" height="360" rx="18" fill="url(#card)" stroke="#cae1fb"/>
+  <text x="826" y="252" fill="#1c4c86" font-size="24" font-family="Arial" font-weight="700">Advanced</text>
+  <text x="826" y="294" fill="#244f86" font-size="18" font-family="Arial">• Settings</text>
+  <text x="826" y="332" fill="#244f86" font-size="18" font-family="Arial">• CLI</text>
+  <text x="826" y="370" fill="#244f86" font-size="18" font-family="Arial">• Troubleshooting</text>
+  <text x="826" y="408" fill="#244f86" font-size="18" font-family="Arial">• FAQ</text>
+
+  <rect x="100" y="520" width="1000" height="50" rx="12" fill="#e8f4ff" stroke="#c8e2fb"/>
+  <text x="130" y="552" fill="#2b5a8f" font-size="18" font-family="Arial">English default route: /docs/  •  Traditional Chinese route: /zh-tw/docs/</text>
+</svg>

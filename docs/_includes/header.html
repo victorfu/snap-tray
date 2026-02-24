@@ -1,22 +1,41 @@
+{% assign lang = page.lang | default: site.default_lang %}
+{% assign t = site.data.i18n[lang] %}
+{% assign route_key = page.route_key | default: '' %}
+{% assign is_docs_page = false %}
+{% if route_key contains 'docs_' %}
+  {% assign is_docs_page = true %}
+{% endif %}
+{% if lang == 'zh-tw' %}
+  {% assign nav_toggle_text = '開啟導覽選單' %}
+  {% assign home_label = 'SnapTray 首頁' %}
+  {% assign nav_aria_label = '主要導覽' %}
+{% else %}
+  {% assign nav_toggle_text = 'Open navigation' %}
+  {% assign home_label = 'SnapTray home' %}
+  {% assign nav_aria_label = 'Primary navigation' %}
+{% endif %}
+
 <header class="site-header" data-header>
   <div class="container header-inner">
-    <a href="{{ '/' | relative_url }}" class="site-logo" aria-label="SnapTray home">
+    <a href="{{ site.data.routes.home[lang] | relative_url }}" class="site-logo" aria-label="{{ home_label }}">
       <img src="{{ '/assets/images/logo.svg' | relative_url }}" alt="" width="32" height="32">
       <span>SnapTray</span>
     </a>
 
-    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="primary-nav" aria-label="Open navigation" data-nav-toggle>
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="primary-nav" aria-label="{{ nav_toggle_text }}" data-nav-toggle>
       <span class="nav-toggle__line" aria-hidden="true"></span>
       <span class="nav-toggle__line" aria-hidden="true"></span>
       <span class="nav-toggle__line" aria-hidden="true"></span>
-      <span class="sr-only" data-nav-toggle-label>Open navigation</span>
+      <span class="sr-only" data-nav-toggle-label>{{ nav_toggle_text }}</span>
     </button>
 
-    <nav id="primary-nav" class="site-nav" aria-label="Primary navigation" data-nav>
-      <a href="{{ '/' | relative_url }}" {% if page.url == '/' or page.url == '/index.html' %}class="is-active"{% endif %}>Home</a>
-      <a href="{{ '/releases/' | relative_url }}" {% if page.url contains '/releases' %}class="is-active"{% endif %}>Releases</a>
-      <a href="{{ '/privacy/' | relative_url }}" {% if page.url contains '/privacy' %}class="is-active"{% endif %}>Privacy</a>
-      <a class="nav-github" href="https://github.com/{{ site.github.repo_owner }}/{{ site.github.repo_name }}" target="_blank" rel="noopener">GitHub</a>
+    <nav id="primary-nav" class="site-nav" aria-label="{{ nav_aria_label }}" data-nav>
+      <a href="{{ site.data.routes.home[lang] | relative_url }}" {% if route_key == 'home' %}class="is-active"{% endif %}>{{ t.nav.home }}</a>
+      <a href="{{ site.data.routes.docs_home[lang] | relative_url }}" {% if is_docs_page %}class="is-active"{% endif %}>{{ t.nav.docs }}</a>
+      <a href="{{ site.data.routes.releases[lang] | relative_url }}" {% if route_key == 'releases' %}class="is-active"{% endif %}>{{ t.nav.releases }}</a>
+      <a href="{{ site.data.routes.privacy[lang] | relative_url }}" {% if route_key == 'privacy' %}class="is-active"{% endif %}>{{ t.nav.privacy }}</a>
+      {% include language-switcher.html %}
+      <a class="nav-github" href="https://github.com/{{ site.github.repo_owner }}/{{ site.github.repo_name }}" target="_blank" rel="noopener">{{ t.nav.github }}</a>
     </nav>
   </div>
 </header>

@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700" role="img" aria-labelledby="title desc">
+  <title id="title">CLI Workflow</title>
+  <desc id="desc">Flow diagram of CLI setup, local commands, IPC commands, and config commands.</desc>
+  <defs>
+    <linearGradient id="bg9" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#eef5ff"/>
+      <stop offset="100%" stop-color="#f0fbff"/>
+    </linearGradient>
+    <marker id="arrow3" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M0,0 L12,6 L0,12 Z" fill="#2f6fb0"/>
+    </marker>
+  </defs>
+  <rect width="1200" height="700" fill="url(#bg9)"/>
+  <text x="80" y="98" fill="#143f6e" font-size="38" font-family="Arial" font-weight="700">CLI Command Flow</text>
+
+  <rect x="90" y="180" width="250" height="120" rx="16" fill="#fff" stroke="#c8e1f9"/>
+  <text x="126" y="248" fill="#1f558e" font-size="24" font-family="Arial" font-weight="700">Install CLI</text>
+
+  <rect x="400" y="180" width="250" height="120" rx="16" fill="#fff" stroke="#c8e1f9"/>
+  <text x="434" y="248" fill="#1f558e" font-size="24" font-family="Arial" font-weight="700">Local Capture</text>
+
+  <rect x="710" y="180" width="200" height="120" rx="16" fill="#fff" stroke="#c8e1f9"/>
+  <text x="755" y="248" fill="#1f558e" font-size="24" font-family="Arial" font-weight="700">IPC</text>
+
+  <rect x="970" y="180" width="140" height="120" rx="16" fill="#fff" stroke="#c8e1f9"/>
+  <text x="1004" y="248" fill="#1f558e" font-size="24" font-family="Arial" font-weight="700">Config</text>
+
+  <line x1="340" y1="240" x2="390" y2="240" stroke="#2f6fb0" stroke-width="4" marker-end="url(#arrow3)"/>
+  <line x1="650" y1="240" x2="700" y2="240" stroke="#2f6fb0" stroke-width="4" marker-end="url(#arrow3)"/>
+  <line x1="910" y1="240" x2="960" y2="240" stroke="#2f6fb0" stroke-width="4" marker-end="url(#arrow3)"/>
+
+  <rect x="90" y="360" width="1020" height="250" rx="20" fill="#fff" stroke="#c8e1f9"/>
+  <text x="130" y="415" fill="#1c4f87" font-size="26" font-family="Arial" font-weight="700">Example commands</text>
+  <text x="130" y="462" fill="#355f8e" font-size="20" font-family="Courier New, monospace">snaptray --help</text>
+  <text x="130" y="496" fill="#355f8e" font-size="20" font-family="Courier New, monospace">snaptray region --copy</text>
+  <text x="130" y="530" fill="#355f8e" font-size="20" font-family="Courier New, monospace">snaptray gui --show</text>
+  <text x="130" y="564" fill="#355f8e" font-size="20" font-family="Courier New, monospace">snaptray config --get files.screenshotPath</text>
+</svg>

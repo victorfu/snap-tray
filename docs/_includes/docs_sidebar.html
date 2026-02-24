@@ -1,0 +1,22 @@
+{% assign lang = page.lang | default: site.default_lang %}
+{% assign t = site.data.i18n[lang] %}
+
+<div id="docs-sidebar-panel" class="docs-sidebar-card">
+  <p class="docs-sidebar-title">{{ t.docs.sidebar_title }}</p>
+
+  {% for group in site.data.docs_nav %}
+  <section class="docs-nav-group">
+    <p class="docs-nav-group-title">{{ group.title[lang] }}</p>
+    <ul class="docs-nav-list">
+      {% for item in group.items %}
+      {% assign route = site.data.routes[item.route_key] %}
+      {% if route %}
+      <li>
+        <a href="{{ route[lang] | relative_url }}" class="{% if page.route_key == item.route_key %}is-active{% endif %}">{{ item.title[lang] }}</a>
+      </li>
+      {% endif %}
+      {% endfor %}
+    </ul>
+  </section>
+  {% endfor %}
+</div>

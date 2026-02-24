@@ -1,20 +1,40 @@
+{% assign lang = page.lang | default: site.default_lang %}
+{% assign locale_tag = site.data.i18n[lang].site.locale | default: 'en-US' %}
+{% assign og_locale = locale_tag | replace: '-', '_' %}
+{% assign route = site.data.routes[page.route_key] %}
+
+{% if route %}
+  {% assign canonical_path = route[lang] %}
+{% else %}
+  {% assign canonical_path = page.url %}
+{% endif %}
+
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{% if page.title %}{{ page.title }} | {% endif %}{{ site.title }}</title>
 <meta name="description" content="{{ page.description | default: site.description }}">
 <meta name="theme-color" content="#0a1326">
+<meta name="snaptray-lang" content="{{ lang }}">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 
 <link rel="icon" type="image/svg+xml" href="{{ '/assets/images/logo.svg' | relative_url }}">
+<link rel="canonical" href="{{ canonical_path | absolute_url }}">
+
+{% if route %}
+<link rel="alternate" hreflang="en" href="{{ route.en | absolute_url }}">
+<link rel="alternate" hreflang="zh-TW" href="{{ route['zh-tw'] | absolute_url }}">
+<link rel="alternate" hreflang="x-default" href="{{ route.en | absolute_url }}">
+{% endif %}
 
 <meta property="og:title" content="{{ page.title | default: site.title }}">
 <meta property="og:description" content="{{ page.description | default: site.description }}">
 <meta property="og:type" content="website">
-<meta property="og:url" content="{{ page.url | absolute_url }}">
+<meta property="og:url" content="{{ canonical_path | absolute_url }}">
 <meta property="og:image" content="{{ '/assets/images/logo.svg' | absolute_url }}">
+<meta property="og:locale" content="{{ og_locale }}">
 
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="{{ page.title | default: site.title }}">

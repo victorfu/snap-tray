@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700" role="img" aria-labelledby="title desc">
+  <title id="title">Hotkey Categories</title>
+  <desc id="desc">Diagram of default hotkeys and category-based key management.</desc>
+  <defs>
+    <linearGradient id="bg7" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#eef6ff"/>
+      <stop offset="100%" stop-color="#ecfffa"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="700" fill="url(#bg7)"/>
+  <text x="80" y="98" fill="#133f6c" font-size="38" font-family="Arial" font-weight="700">Hotkey Map</text>
+
+  <rect x="80" y="150" width="500" height="500" rx="18" fill="#fff" stroke="#c8e0f8"/>
+  <text x="120" y="205" fill="#1c4f87" font-size="28" font-family="Arial" font-weight="700">Default Keys</text>
+  <text x="120" y="255" fill="#3a648f" font-size="21" font-family="Arial">F2            Region Capture</text>
+  <text x="120" y="298" fill="#3a648f" font-size="21" font-family="Arial">Ctrl+F2    Screen Canvas</text>
+  <text x="120" y="341" fill="#3a648f" font-size="21" font-family="Arial">F3            Paste</text>
+  <text x="120" y="384" fill="#3a648f" font-size="21" font-family="Arial">Shift+F2    Quick Pin</text>
+
+  <rect x="640" y="150" width="480" height="500" rx="18" fill="#fff" stroke="#c8e0f8"/>
+  <text x="680" y="205" fill="#1c4f87" font-size="28" font-family="Arial" font-weight="700">Management Categories</text>
+  <text x="680" y="255" fill="#3a648f" font-size="21" font-family="Arial">• Capture</text>
+  <text x="680" y="300" fill="#3a648f" font-size="21" font-family="Arial">• Canvas</text>
+  <text x="680" y="345" fill="#3a648f" font-size="21" font-family="Arial">• Clipboard</text>
+  <text x="680" y="390" fill="#3a648f" font-size="21" font-family="Arial">• Pin</text>
+  <text x="680" y="435" fill="#3a648f" font-size="21" font-family="Arial">• Recording</text>
+  <text x="680" y="500" fill="#54769f" font-size="18" font-family="Arial">Use Settings > Hotkeys to resolve conflicts per category.</text>
+</svg>

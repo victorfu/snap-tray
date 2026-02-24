@@ -3,6 +3,8 @@ layout: page
 title: Privacy Policy
 permalink: /privacy/
 description: SnapTray privacy policy. All capture and recording workflows stay on your local device.
+lang: en
+route_key: privacy
 ---
 
 <p><strong>Last Updated:</strong> January 2026</p>

@@ -1,0 +1,25 @@
+{% assign lang = page.lang | default: site.default_lang %}
+{% assign route = site.data.routes[page.route_key] %}
+
+{% if route %}
+  {% assign en_target = route.en %}
+  {% assign zh_target = route['zh-tw'] %}
+{% else %}
+  {% assign raw_url = page.url | default: '/' %}
+  {% assign en_target = raw_url | replace_first: '/zh-tw', '' %}
+  {% if en_target == '' %}
+    {% assign en_target = '/' %}
+  {% endif %}
+  {% if raw_url == '/' %}
+    {% assign zh_target = '/zh-tw/' %}
+  {% elsif raw_url contains '/zh-tw/' %}
+    {% assign zh_target = raw_url %}
+  {% else %}
+    {% assign zh_target = '/zh-tw' | append: raw_url %}
+  {% endif %}
+{% endif %}
+
+<div class="language-switcher" aria-label="{{ site.data.i18n[lang].language.label }}">
+  <a href="{{ en_target | relative_url }}" class="lang-link {% if lang == 'en' %}is-active{% endif %}">{{ site.data.i18n[lang].language.en }}</a>
+  <a href="{{ zh_target | relative_url }}" class="lang-link {% if lang == 'zh-tw' %}is-active{% endif %}">{{ site.data.i18n[lang].language.zh_tw }}</a>
+</div>

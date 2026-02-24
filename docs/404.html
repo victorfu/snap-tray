@@ -2,13 +2,21 @@
 layout: default
 title: Page Not Found
 permalink: /404.html
+lang: en
+route_key: not_found
 ---
+
+{% assign lang = page.lang | default: site.default_lang %}
+{% assign t = site.data.i18n[lang] %}
 
 <section class="page-404">
   <div class="container" data-reveal>
-    <p class="eyebrow">Error</p>
-    <h1>404</h1>
-    <p>The page you requested does not exist or has moved.</p>
-    <a href="{{ '/' | relative_url }}" class="btn btn-primary">Back to Home</a>
+    <p class="eyebrow">{{ t.error404.eyebrow }}</p>
+    <h1>{{ t.error404.title }}</h1>
+    <p>{{ t.error404.message }}</p>
+    <div class="hero-actions" style="justify-content: center;">
+      <a href="{{ site.data.routes.home[lang] | relative_url }}" class="btn btn-primary">{{ t.error404.back_home }}</a>
+      <a href="{{ site.data.routes.home['zh-tw'] | relative_url }}" class="btn btn-ghost">繁體中文</a>
+    </div>
   </div>
 </section>

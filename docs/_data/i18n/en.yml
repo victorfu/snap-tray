@@ -1,0 +1,134 @@
+site:
+  locale: en-US
+
+nav:
+  home: Home
+  docs: Docs
+  releases: Releases
+  privacy: Privacy
+  github: GitHub
+
+language:
+  label: Language
+  en: EN
+  zh_tw: 繁中
+
+hero:
+  eyebrow: Capture. Annotate. Record.
+  title: Modern screen workflows for power users.
+  tagline: SnapTray lives in your system tray and launches instantly when you need precise captures, polished annotations, and high-quality recordings.
+  cta_download: Download
+  cta_github: View on GitHub
+  pills:
+    - macOS 14+
+    - Windows 10+
+    - Qt 6.10.1
+  runtime_title: SnapTray Runtime
+  runtime_items:
+    - Region Capture with magnifier precision
+    - Screen Canvas + rich annotation tools
+    - MP4 / GIF / WebP recording pipeline
+    - OCR, auto blur, watermark, and pin windows
+
+features:
+  eyebrow: Feature Set
+  title: Built for fast, professional capture pipelines
+  subtitle: From one-shot screenshots to long recording sessions, SnapTray keeps every operation inside a single tray-native workflow.
+  note: Multi-region capture and scrolling capture are available in Debug builds only.
+  items:
+    - kind: Capture
+      title: Region Capture
+      body: Precision crosshair and magnifier targeting. Press F2 to start instantly.
+    - kind: Canvas
+      title: Screen Canvas
+      body: Draw directly on top of your desktop with Ctrl+F2 and annotate in place.
+    - kind: Pinning
+      title: Pin to Screen
+      body: Keep reference images visible above other windows. Resize and rotate freely.
+    - kind: Annotation
+      title: Rich Tooling
+      body: Arrow, pencil, marker, shapes, text, mosaic, step badges, and emoji stickers.
+    - kind: Automation
+      title: OCR + Auto Blur
+      body: Extract text and automatically mask sensitive faces for safer sharing.
+    - kind: Detection
+      title: Window Detection
+      body: Quickly select windows without manually dragging exact bounds.
+    - kind: Recording
+      title: Screen Recording
+      body: Capture any region and export MP4, GIF, or WebP with optional audio.
+    - kind: Utility
+      title: Color Picker
+      body: Pick on-screen colors, switch HEX/RGB with Shift, copy instantly with C.
+    - kind: Control
+      title: Undo / Redo
+      body: Full action history across annotation operations so edits stay reversible.
+    - kind: Monitoring
+      title: Live Capture
+      body: Watch any region in real-time through a floating pin window.
+    - kind: Branding
+      title: Watermark
+      body: Apply custom image watermark overlays to screenshots and recordings.
+    - kind: Workflow
+      title: Hotkey First
+      body: Region Capture, Canvas, Paste, and Quick Pin stay one keystroke away.
+
+downloads:
+  eyebrow: Downloads
+  title: Install the latest SnapTray build
+  subtitle: Get the newest stable release directly from GitHub assets or install from Microsoft Store.
+  macos:
+    label: macOS
+    title: Desktop Installer
+    requirements: macOS 14.0 (Sonoma) or later
+    button: Download .dmg
+    empty: No release available yet
+  windows:
+    label: Windows
+    title: Store + Installer
+    requirements: Windows 10 or later
+    store_prefix: Get it on
+    store_name: Microsoft Store
+    button: Download .exe
+    empty: Or download from GitHub releases
+  unsigned_note: Official macOS releases are code-signed and notarized. For local ad-hoc builds, right-click the app and choose Open on first launch.
+  req_eyebrow: System Requirements
+  req_title: Platform prerequisites
+  req_cards:
+    - title: macOS
+      items:
+        - macOS 14.0 (Sonoma) or later
+        - Screen Recording permission required
+        - Accessibility permission for window detection
+    - title: Windows
+      items:
+        - Windows 10 or later
+        - Full-trust capability for capture and encoding stack
+        - Microphone permission only when recording audio
+
+footer:
+  product_title: SnapTray
+  product_copy: Desktop-grade screenshot and recording workflows, designed for speed and clarity.
+  product_meta: Made with Qt 6 and C++17
+  resources_title: Resources
+  community_title: Community
+  links:
+    home: Home
+    docs: Docs
+    releases: Releases
+    privacy: Privacy Policy
+    report_issue: Report Issue
+    license: MIT License
+
+docs:
+  page_label: Documentation
+  sidebar_title: Documentation
+  on_this_page: On This Page
+  toc_empty: This page has no sections yet.
+  menu_button: Docs Menu
+
+error404:
+  eyebrow: Error
+  title: "404"
+  message: The page you requested does not exist or has moved.
+  back_home: Back to Home

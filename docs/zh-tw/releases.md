@@ -1,24 +1,24 @@
 ---
 layout: default
-title: Releases
-permalink: /releases/
-description: Browse SnapTray release notes and download installers for macOS and Windows.
-lang: en
+title: 版本資訊
+permalink: /zh-tw/releases/
+description: 即時瀏覽 SnapTray 的版本資訊與安裝檔下載。
+lang: zh-tw
 route_key: releases
 ---
 
 <section class="page-hero">
   <div class="container" data-reveal>
-    <p class="eyebrow">Release Feed</p>
-    <h1>Version History</h1>
-    <p>Latest packages and release notes are fetched from GitHub in real time.</p>
+    <p class="eyebrow">版本動態</p>
+    <h1>版本歷史</h1>
+    <p>最新安裝檔與版本說明會即時從 GitHub 釋出資料載入。</p>
   </div>
 </section>
 
 <section class="releases-page">
   <div class="container">
     <div id="releases-list" class="releases-list">
-      <div class="loading">Loading releases...</div>
+      <div class="loading">正在載入版本資訊...</div>
     </div>
   </div>
 </section>

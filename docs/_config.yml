@@ -2,6 +2,10 @@ title: SnapTray
 description: Powerful screenshot tool that lives in your system tray
 url: "https://snaptray.cc"
 baseurl: ""
+default_lang: en
+supported_langs:
+  - en
+  - zh-tw
 
 markdown: kramdown
 highlighter: rouge

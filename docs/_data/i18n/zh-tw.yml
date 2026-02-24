@@ -1,0 +1,134 @@
+site:
+  locale: zh-TW
+
+nav:
+  home: 首頁
+  docs: 文件
+  releases: 版本
+  privacy: 隱私
+  github: GitHub
+
+language:
+  label: 語言
+  en: EN
+  zh_tw: 繁中
+
+hero:
+  eyebrow: 擷取・標註・錄影
+  title: 為進階使用者打造的現代螢幕工作流。
+  tagline: SnapTray 常駐於系統托盤，需要時即刻啟動，提供精準截圖、完整標註與高品質錄影。
+  cta_download: 立即下載
+  cta_github: 查看 GitHub
+  pills:
+    - macOS 14+
+    - Windows 10+
+    - Qt 6.10.1
+  runtime_title: SnapTray 執行能力
+  runtime_items:
+    - Region Capture 搭配放大鏡精準擷取
+    - Screen Canvas 與完整標註工具
+    - MP4 / GIF / WebP 錄影流程
+    - OCR、自動模糊、浮水印與釘選視窗
+
+features:
+  eyebrow: 功能特色
+  title: 為快速且專業的擷取流程而生
+  subtitle: 從一次性截圖到長時間錄影，SnapTray 讓所有流程在同一個托盤工作流中完成。
+  note: 多區域擷取與捲動擷取目前於 Debug 版本可用。
+  items:
+    - kind: 擷取
+      title: Region Capture
+      body: 十字準星搭配放大鏡精準定位，按 F2 即刻開始。
+    - kind: 畫布
+      title: Screen Canvas
+      body: 按 Ctrl+F2 直接在桌面上繪製與標註。
+    - kind: 釘選
+      title: Pin to Screen
+      body: 將參考圖片固定在最上層，可自由縮放與旋轉。
+    - kind: 標註
+      title: 豐富工具集
+      body: 箭頭、鉛筆、螢光筆、形狀、文字、馬賽克、步驟標記與貼圖。
+    - kind: 自動化
+      title: OCR + Auto Blur
+      body: 擷取文字並自動模糊敏感臉孔，提升分享安全性。
+    - kind: 偵測
+      title: Window Detection
+      body: 快速選取視窗，不必手動拖拉邊界。
+    - kind: 錄影
+      title: Screen Recording
+      body: 擷取任意區域並輸出 MP4、GIF、WebP，支援音訊。
+    - kind: 工具
+      title: Color Picker
+      body: 擷取螢幕色彩，Shift 切換 HEX/RGB，C 一鍵複製。
+    - kind: 控制
+      title: Undo / Redo
+      body: 完整操作歷史，所有標註可隨時回復。
+    - kind: 監看
+      title: Live Capture
+      body: 透過釘選視窗即時監看任意區域。
+    - kind: 品牌
+      title: Watermark
+      body: 套用自訂圖片浮水印到截圖與錄影輸出。
+    - kind: 工作流
+      title: Hotkey First
+      body: Region Capture、Canvas、Paste、Quick Pin 都是一鍵即達。
+
+downloads:
+  eyebrow: 下載
+  title: 安裝最新 SnapTray 版本
+  subtitle: 直接從 GitHub 取得最新穩定版本，或透過 Microsoft Store 安裝。
+  macos:
+    label: macOS
+    title: 桌面安裝程式
+    requirements: macOS 14.0（Sonoma）以上
+    button: 下載 .dmg
+    empty: 目前尚無可用版本
+  windows:
+    label: Windows
+    title: 商店與安裝檔
+    requirements: Windows 10 以上
+    store_prefix: 取得
+    store_name: Microsoft Store
+    button: 下載 .exe
+    empty: 或從 GitHub releases 下載
+  unsigned_note: 官方 macOS 版本皆已簽章並完成公證。本地臨時建置版本首次啟動時，請右鍵點選 App 後選擇「打開」。
+  req_eyebrow: 系統需求
+  req_title: 平台前置條件
+  req_cards:
+    - title: macOS
+      items:
+        - macOS 14.0（Sonoma）以上
+        - 需要授權 Screen Recording 權限
+        - 視窗偵測需授權 Accessibility 權限
+    - title: Windows
+      items:
+        - Windows 10 以上
+        - 需 Full-trust 能力以支援擷取與編碼
+        - 僅在錄音時需要麥克風權限
+
+footer:
+  product_title: SnapTray
+  product_copy: 桌機等級的截圖與錄影流程，為速度與清晰而設計。
+  product_meta: 以 Qt 6 與 C++17 打造
+  resources_title: 資源
+  community_title: 社群
+  links:
+    home: 首頁
+    docs: 文件
+    releases: 版本
+    privacy: 隱私政策
+    report_issue: 回報問題
+    license: MIT 授權
+
+docs:
+  page_label: 文件中心
+  sidebar_title: 文件目錄
+  on_this_page: 本頁重點
+  toc_empty: 這一頁目前沒有章節標題。
+  menu_button: 開啟文件目錄
+
+error404:
+  eyebrow: 錯誤
+  title: "404"
+  message: 你要找的頁面不存在，或已被移動。
+  back_home: 回到首頁

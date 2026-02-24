@@ -1,10 +1,51 @@
 const REPO_OWNER = 'victorfu';
 const REPO_NAME = 'snap-tray';
 const API_URL = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/releases`;
+
+const RELEASE_I18N = {
+  en: {
+    locale: 'en-US',
+    noReleaseNotes: 'No release notes provided.',
+    noReleaseAvailable: 'No release available yet',
+    browseReleases: 'Browse downloads in GitHub releases',
+    unableToLoad: 'Unable to load releases right now. Visit GitHub releases and try again later.',
+    preRelease: 'Pre-release',
+    stable: 'Stable',
+    downloadMac: 'Download macOS (.dmg)',
+    downloadWindows: 'Download Windows (.exe)',
+    viewOnGithub: 'View on GitHub',
+    untitledRelease: 'Untitled release'
+  },
+  'zh-tw': {
+    locale: 'zh-TW',
+    noReleaseNotes: '此版本目前未提供說明。',
+    noReleaseAvailable: '目前尚無可用版本',
+    browseReleases: '請前往 GitHub releases 查看可下載版本',
+    unableToLoad: '目前無法載入版本資訊，請稍後再試或前往 GitHub releases。',
+    preRelease: '預覽版',
+    stable: '穩定版',
+    downloadMac: '下載 macOS (.dmg)',
+    downloadWindows: '下載 Windows (.exe)',
+    viewOnGithub: '在 GitHub 查看',
+    untitledRelease: '未命名版本'
+  }
+};
+
 let releasesCachePromise = null;
 
+function resolveLang() {
+  const source = (document.body?.dataset.lang || document.documentElement.lang || 'en').toLowerCase();
+  if (source.startsWith('zh')) {
+    return 'zh-tw';
+  }
+  return 'en';
+}
+
+const ACTIVE_LANG = resolveLang();
+const STRINGS = RELEASE_I18N[ACTIVE_LANG] || RELEASE_I18N.en;
+
 function escapeHtml(input) {
-  return input
+  return String(input || '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
@@ -23,7 +64,7 @@ function formatInline(text) {
 
 function parseMarkdown(body) {
   if (!body || !body.trim()) {
-    return '<p>No release notes provided.</p>';
+    return `<p>${STRINGS.noReleaseNotes}</p>`;
   }
 
   const lines = body.split('\n');
@@ -82,7 +123,7 @@ function parseMarkdown(body) {
 
 function formatDate(dateString) {
   const date = new Date(dateString);
-  return date.toLocaleDateString('en-US', {
+  return date.toLocaleDateString(STRINGS.locale, {
     year: 'numeric',
     month: 'long',
     day: 'numeric'
@@ -124,11 +165,7 @@ async function fetchReleases() {
 
 function setDownloadVisibility(element, shouldShow) {
   if (!element) return;
-  if (shouldShow) {
-    element.hidden = false;
-  } else {
-    element.hidden = true;
-  }
+  element.hidden = !shouldShow;
 }
 
 async function populateDownloadButtons() {
@@ -141,8 +178,8 @@ async function populateDownloadButtons() {
   const windowsFallback = document.getElementById('no-windows-release');
 
   if (!latest) {
-    if (macFallback) macFallback.textContent = 'No release available yet';
-    if (windowsFallback) windowsFallback.textContent = 'Browse downloads in GitHub releases';
+    if (macFallback) macFallback.textContent = STRINGS.noReleaseAvailable;
+    if (windowsFallback) windowsFallback.textContent = STRINGS.browseReleases;
     return;
   }
 
@@ -172,14 +209,14 @@ async function renderReleasesPage() {
 
   const releases = await fetchReleases();
   if (!releases.length) {
-    container.innerHTML = '<p class="loading">Unable to load releases right now. Visit GitHub releases and try again later.</p>';
+    container.innerHTML = `<p class="loading">${STRINGS.unableToLoad}</p>`;
     return;
   }
 
   container.innerHTML = releases.map((release) => {
     const links = getDownloadLinks(release);
     const date = formatDate(release.published_at);
-    const title = escapeHtml(release.name || release.tag_name || 'Untitled release');
+    const title = escapeHtml(release.name || release.tag_name || STRINGS.untitledRelease);
 
     return `
       <article class="release-item">
@@ -187,14 +224,14 @@ async function renderReleasesPage() {
           <h2>${title}</h2>
           <div class="release-meta">
             <span class="release-date">${date}</span>
-            ${release.prerelease ? '<span class="badge prerelease">Pre-release</span>' : '<span class="badge stable">Stable</span>'}
+            ${release.prerelease ? `<span class="badge prerelease">${STRINGS.preRelease}</span>` : `<span class="badge stable">${STRINGS.stable}</span>`}
           </div>
         </header>
         <div class="release-body">${parseMarkdown(release.body)}</div>
         <div class="release-downloads">
-          ${links.macos ? `<a href="${links.macos}" class="btn btn-ghost" target="_blank" rel="noopener">Download macOS (.dmg)</a>` : ''}
-          ${links.windows ? `<a href="${links.windows}" class="btn btn-ghost" target="_blank" rel="noopener">Download Windows (.exe)</a>` : ''}
-          <a href="${release.html_url}" class="btn btn-link" target="_blank" rel="noopener">View on GitHub</a>
+          ${links.macos ? `<a href="${links.macos}" class="btn btn-ghost" target="_blank" rel="noopener">${STRINGS.downloadMac}</a>` : ''}
+          ${links.windows ? `<a href="${links.windows}" class="btn btn-ghost" target="_blank" rel="noopener">${STRINGS.downloadWindows}</a>` : ''}
+          <a href="${release.html_url}" class="btn btn-link" target="_blank" rel="noopener">${STRINGS.viewOnGithub}</a>
         </div>
       </article>
     `;

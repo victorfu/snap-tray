@@ -1,30 +1,32 @@
+{% assign lang = page.lang | default: site.default_lang %}
+{% assign t = site.data.i18n[lang] %}
+
 <section class="hero" id="top">
   <div class="container hero-layout">
     <div class="hero-copy" data-reveal>
-      <p class="eyebrow">Capture. Annotate. Record.</p>
-      <h1>Modern screen workflows for power users.</h1>
-      <p class="tagline">SnapTray lives in your system tray and launches instantly when you need precise captures, polished annotations, and high-quality recordings.</p>
+      <p class="eyebrow">{{ t.hero.eyebrow }}</p>
+      <h1>{{ t.hero.title }}</h1>
+      <p class="tagline">{{ t.hero.tagline }}</p>
       <div class="hero-actions">
-        <a href="#download" class="btn btn-primary">Download</a>
-        <a href="https://github.com/{{ site.github.repo_owner }}/{{ site.github.repo_name }}" class="btn btn-ghost" target="_blank" rel="noopener">View on GitHub</a>
+        <a href="#download" class="btn btn-primary">{{ t.hero.cta_download }}</a>
+        <a href="https://github.com/{{ site.github.repo_owner }}/{{ site.github.repo_name }}" class="btn btn-ghost" target="_blank" rel="noopener">{{ t.hero.cta_github }}</a>
       </div>
       <div class="hero-pills">
-        <span>macOS 14+</span>
-        <span>Windows 10+</span>
-        <span>Qt 6.10.1</span>
+        {% for pill in t.hero.pills %}
+        <span>{{ pill }}</span>
+        {% endfor %}
       </div>
     </div>
 
-    <aside class="hero-console" aria-label="SnapTray quick capabilities" data-reveal>
+    <aside class="hero-console" aria-label="{{ t.hero.runtime_title }}" data-reveal>
       <div class="console-head">
         <img src="{{ '/assets/images/logo.svg' | relative_url }}" alt="" width="20" height="20">
-        <span>SnapTray Runtime</span>
+        <span>{{ t.hero.runtime_title }}</span>
       </div>
       <ul>
-        <li><span class="dot"></span> Region Capture with magnifier precision</li>
-        <li><span class="dot"></span> Screen Canvas + rich annotation tools</li>
-        <li><span class="dot"></span> MP4 / GIF / WebP recording pipeline</li>
-        <li><span class="dot"></span> OCR, auto blur, watermark, and pin windows</li>
+        {% for item in t.hero.runtime_items %}
+        <li><span class="dot"></span>{{ item }}</li>
+        {% endfor %}
       </ul>
     </aside>
   </div>

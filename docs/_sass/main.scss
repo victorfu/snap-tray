@@ -252,6 +252,38 @@ svg {
   }
 }
 
+.language-switcher {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.18rem;
+  border: 1px solid rgba(93, 129, 184, 0.34);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  padding: 0.18rem;
+
+  .lang-link {
+    border-radius: 999px;
+    min-width: 2.05rem;
+    text-align: center;
+    padding: 0.36rem 0.58rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #345880;
+    line-height: 1;
+    transition: background-color 180ms ease, color 180ms ease;
+
+    &:hover {
+      background: rgba(130, 173, 238, 0.22);
+    }
+
+    &.is-active {
+      color: #0b2445;
+      background: rgba(38, 209, 200, 0.22);
+      box-shadow: inset 0 0 0 1px rgba(38, 209, 200, 0.34);
+    }
+  }
+}
+
 .nav-toggle {
   display: none;
   width: 3rem;
@@ -927,6 +959,286 @@ svg {
   }
 }
 
+.docs-shell {
+  padding: clamp(2.2rem, 4vw, 3.6rem) 0 clamp(3rem, 4.8vw, 4.8rem);
+}
+
+.docs-grid {
+  display: grid;
+  grid-template-columns: minmax(220px, 250px) minmax(0, 1fr) minmax(190px, 240px);
+  gap: clamp(0.9rem, 2vw, 1.45rem);
+  align-items: start;
+}
+
+.docs-sidebar {
+  position: sticky;
+  top: calc(78px + 1rem);
+  z-index: 20;
+}
+
+.docs-sidebar-card,
+.docs-toc-card,
+.docs-content {
+  border-radius: $radius-md;
+  border: 1px solid rgba(90, 131, 196, 0.24);
+  background: rgba(255, 255, 255, 0.87);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 10px 26px rgba(19, 53, 101, 0.12);
+}
+
+.docs-sidebar-card {
+  padding: 1rem 0.85rem;
+}
+
+.docs-sidebar-title,
+.docs-toc-title {
+  font-family: $font-display;
+  font-size: 0.86rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #1d4f87;
+  margin-bottom: 0.75rem;
+}
+
+.docs-nav-group + .docs-nav-group {
+  margin-top: 0.85rem;
+}
+
+.docs-nav-group-title {
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #3e628e;
+  margin-bottom: 0.45rem;
+}
+
+.docs-nav-list {
+  list-style: none;
+  display: grid;
+  gap: 0.16rem;
+}
+
+.docs-nav-list a {
+  display: block;
+  border-radius: 0.65rem;
+  padding: 0.43rem 0.58rem;
+  font-size: 0.88rem;
+  color: #36547c;
+  transition: background-color 160ms ease, color 160ms ease, box-shadow 160ms ease;
+
+  &:hover {
+    background: rgba(131, 174, 241, 0.18);
+    color: #17355e;
+  }
+
+  &.is-active {
+    background: rgba(38, 209, 200, 0.18);
+    color: #0d2b4f;
+    box-shadow: inset 0 0 0 1px rgba(38, 209, 200, 0.35);
+    font-weight: 700;
+  }
+}
+
+.docs-content {
+  padding: clamp(1.1rem, 2.6vw, 2rem);
+}
+
+.docs-content-header {
+  margin-bottom: $space-md;
+
+  h1 {
+    font-family: $font-display;
+    font-size: clamp(1.85rem, 3.2vw, 2.7rem);
+    line-height: 1.12;
+    letter-spacing: -0.02em;
+    color: #0d2444;
+    margin-bottom: 0.52rem;
+  }
+
+  p {
+    color: #436080;
+  }
+}
+
+.docs-sidebar-toggle {
+  margin-top: 0.92rem;
+  display: none;
+  border: 1px solid rgba(90, 131, 196, 0.34);
+  border-radius: 0.8rem;
+  background: rgba(255, 255, 255, 0.92);
+  color: #1f446f;
+  font-weight: 700;
+  font-size: 0.88rem;
+  padding: 0.52rem 0.78rem;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--accent-secondary);
+    outline-offset: 2px;
+  }
+}
+
+.docs-prose {
+  color: #3a577d;
+  font-size: 0.97rem;
+
+  > * + * {
+    margin-top: 0.95rem;
+  }
+
+  h2,
+  h3 {
+    font-family: $font-display;
+    color: #10284d;
+    scroll-margin-top: 104px;
+  }
+
+  h2 {
+    margin-top: 1.5rem;
+    font-size: clamp(1.35rem, 2.4vw, 1.85rem);
+  }
+
+  h3 {
+    margin-top: 1rem;
+    font-size: clamp(1.05rem, 2vw, 1.2rem);
+  }
+
+  ul,
+  ol {
+    margin-left: 1.2rem;
+  }
+
+  li + li {
+    margin-top: 0.3rem;
+  }
+
+  img {
+    width: 100%;
+    border-radius: $radius-sm;
+    border: 1px solid rgba(91, 132, 196, 0.28);
+    background: rgba(244, 249, 255, 0.86);
+    box-shadow: 0 12px 25px rgba(21, 57, 108, 0.1);
+    padding: 0.35rem;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    border-radius: $radius-sm;
+    overflow: hidden;
+    border: 1px solid rgba(90, 131, 196, 0.23);
+
+    th,
+    td {
+      text-align: left;
+      padding: 0.56rem 0.7rem;
+      border-bottom: 1px solid rgba(95, 133, 194, 0.2);
+      vertical-align: top;
+      font-size: 0.9rem;
+    }
+
+    th {
+      background: rgba(209, 226, 255, 0.45);
+      color: #15345f;
+      font-family: $font-display;
+      font-size: 0.84rem;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+  }
+
+  code {
+    font-family: "JetBrains Mono", "Fira Code", monospace;
+    font-size: 0.86em;
+    background: rgba(35, 74, 131, 0.11);
+    border: 1px solid rgba(72, 119, 185, 0.22);
+    border-radius: 0.38rem;
+    padding: 0.06rem 0.3rem;
+  }
+
+  pre {
+    background: #0d1d37;
+    color: #dbe8ff;
+    border-radius: 0.8rem;
+    border: 1px solid rgba(88, 139, 223, 0.35);
+    overflow-x: auto;
+    padding: 0.85rem 0.95rem;
+    margin-top: 0.5rem;
+
+    code {
+      background: transparent;
+      border: 0;
+      padding: 0;
+      font-size: 0.88em;
+      color: inherit;
+    }
+  }
+
+  a {
+    color: #2c66b7;
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.14em;
+  }
+}
+
+.docs-toc {
+  position: sticky;
+  top: calc(78px + 1rem);
+}
+
+.docs-toc-card {
+  padding: 0.92rem 0.82rem;
+}
+
+.docs-toc-nav {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.docs-toc-empty {
+  color: #4d678a;
+  font-size: 0.86rem;
+}
+
+.docs-toc-list {
+  list-style: none;
+  display: grid;
+  gap: 0.14rem;
+}
+
+.docs-toc-link {
+  display: block;
+  color: #446389;
+  border-radius: 0.58rem;
+  padding: 0.34rem 0.5rem;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  transition: background-color 150ms ease, color 150ms ease;
+
+  &:hover {
+    background: rgba(133, 176, 243, 0.18);
+    color: #1a3d69;
+  }
+
+  &.is-active {
+    background: rgba(38, 209, 200, 0.2);
+    color: #102c51;
+    box-shadow: inset 0 0 0 1px rgba(38, 209, 200, 0.3);
+    font-weight: 700;
+  }
+}
+
+.docs-toc-link[data-level="h3"] {
+  padding-left: 1.15rem;
+  font-size: 0.79rem;
+}
+
 .page-404 {
   padding: clamp(5rem, 10vw, 8rem) 0;
   text-align: center;
@@ -1068,6 +1380,17 @@ svg {
       box-shadow: none;
     }
 
+    .language-switcher {
+      width: 100%;
+      justify-content: center;
+      margin: 0.14rem 0;
+      background: rgba(248, 252, 255, 0.95);
+
+      .lang-link {
+        min-width: 3.5rem;
+      }
+    }
+
     &.is-open {
       opacity: 1;
       visibility: visible;
@@ -1112,6 +1435,52 @@ svg {
     flex-direction: column;
     align-items: flex-start;
   }
+
+  .docs-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .docs-sidebar-toggle {
+    display: inline-flex;
+  }
+
+  .docs-sidebar {
+    position: fixed;
+    left: 0.8rem;
+    top: calc(70px + 0.55rem);
+    width: min(86vw, 320px);
+    max-height: calc(100vh - 90px);
+    overflow: auto;
+    z-index: 55;
+    opacity: 0;
+    transform: translateX(-108%);
+    pointer-events: none;
+    transition: transform 200ms ease, opacity 200ms ease;
+
+    &.is-open {
+      opacity: 1;
+      transform: translateX(0);
+      pointer-events: auto;
+    }
+  }
+
+  .docs-toc {
+    display: none;
+  }
+
+  .no-js .docs-sidebar {
+    position: static;
+    width: 100%;
+    max-height: none;
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+    margin-bottom: 0.75rem;
+  }
+
+  .no-js .docs-sidebar-toggle {
+    display: none;
+  }
 }
 
 @media (max-width: $breakpoint-sm) {
@@ -1129,7 +1498,8 @@ svg {
   .download-card,
   .requirement-card,
   .release-item,
-  .content-card {
+  .content-card,
+  .docs-content {
     padding: 1.05rem;
   }
 
@@ -1161,6 +1531,32 @@ svg {
   }
 
   .content-prose {
+    table,
+    thead,
+    tbody,
+    tr,
+    td,
+    th {
+      display: block;
+      width: 100%;
+    }
+
+    thead {
+      display: none;
+    }
+
+    tr {
+      border-bottom: 1px solid rgba(95, 133, 194, 0.2);
+      padding: 0.5rem 0;
+    }
+
+    td {
+      border: 0;
+      padding: 0.3rem 0;
+    }
+  }
+
+  .docs-prose {
     table,
     thead,
     tbody,

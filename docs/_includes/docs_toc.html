@@ -1,0 +1,9 @@
+{% assign lang = page.lang | default: site.default_lang %}
+{% assign t = site.data.i18n[lang] %}
+
+<div class="docs-toc-card">
+  <p class="docs-toc-title">{{ t.docs.on_this_page }}</p>
+  <nav id="docs-toc-nav" class="docs-toc-nav" aria-label="{{ t.docs.on_this_page }}">
+    <p class="docs-toc-empty">{{ t.docs.toc_empty }}</p>
+  </nav>
+</div>

@@ -1,27 +1,30 @@
+{% assign lang = page.lang | default: site.default_lang %}
+{% assign t = site.data.i18n[lang] %}
+
 <section id="download" class="downloads">
   <div class="container">
     <div class="section-heading" data-reveal>
-      <p class="eyebrow">Downloads</p>
-      <h2>Install the latest SnapTray build</h2>
-      <p>Get the newest stable release directly from GitHub assets or install from Microsoft Store.</p>
+      <p class="eyebrow">{{ t.downloads.eyebrow }}</p>
+      <h2>{{ t.downloads.title }}</h2>
+      <p>{{ t.downloads.subtitle }}</p>
     </div>
 
     <div class="download-cards">
       <article class="download-card" data-reveal>
-        <p class="platform-label">macOS</p>
-        <h3>Desktop Installer</h3>
-        <p class="requirements">macOS 14.0 (Sonoma) or later</p>
+        <p class="platform-label">{{ t.downloads.macos.label }}</p>
+        <h3>{{ t.downloads.macos.title }}</h3>
+        <p class="requirements">{{ t.downloads.macos.requirements }}</p>
 
         <a id="download-macos" href="#" class="btn btn-primary btn-download" hidden>
-          Download .dmg <span class="version"></span>
+          {{ t.downloads.macos.button }} <span class="version"></span>
         </a>
-        <p id="no-macos-release" class="status-text">No release available yet</p>
+        <p id="no-macos-release" class="status-text">{{ t.downloads.macos.empty }}</p>
       </article>
 
       <article class="download-card" data-reveal>
-        <p class="platform-label">Windows</p>
-        <h3>Store + Installer</h3>
-        <p class="requirements">Windows 10 or later</p>
+        <p class="platform-label">{{ t.downloads.windows.label }}</p>
+        <h3>{{ t.downloads.windows.title }}</h3>
+        <p class="requirements">{{ t.downloads.windows.requirements }}</p>
 
         <a href="https://apps.microsoft.com/detail/9p38m1hx9hvc" class="btn btn-store" target="_blank" rel="noopener">
           <svg class="ms-logo" viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -30,45 +33,38 @@
             <rect x="1" y="11" width="9" height="9" fill="#00a4ef" />
             <rect x="11" y="11" width="9" height="9" fill="#ffb900" />
           </svg>
-          <span class="store-text">Get it on <strong>Microsoft Store</strong></span>
+          <span class="store-text">{{ t.downloads.windows.store_prefix }} <strong>{{ t.downloads.windows.store_name }}</strong></span>
         </a>
 
         <a id="download-windows" href="#" class="btn btn-ghost btn-download-alt" hidden>
-          Download .exe <span class="version"></span>
+          {{ t.downloads.windows.button }} <span class="version"></span>
         </a>
-        <p id="no-windows-release" class="status-text">Or download from GitHub releases</p>
+        <p id="no-windows-release" class="status-text">{{ t.downloads.windows.empty }}</p>
       </article>
     </div>
 
-    <p class="unsigned-note" data-reveal>Official macOS releases are code-signed and notarized. For local ad-hoc builds, right-click the app and choose "Open" on first launch.</p>
+    <p class="unsigned-note" data-reveal>{{ t.downloads.unsigned_note }}</p>
   </div>
 </section>
 
 <section class="requirements-section">
   <div class="container">
     <div class="section-heading" data-reveal>
-      <p class="eyebrow">System Requirements</p>
-      <h2>Platform prerequisites</h2>
+      <p class="eyebrow">{{ t.downloads.req_eyebrow }}</p>
+      <h2>{{ t.downloads.req_title }}</h2>
     </div>
 
     <div class="requirements-grid">
+      {% for card in t.downloads.req_cards %}
       <article class="requirement-card" data-reveal>
-        <h3>macOS</h3>
+        <h3>{{ card.title }}</h3>
         <ul>
-          <li>macOS 14.0 (Sonoma) or later</li>
-          <li>Screen Recording permission required</li>
-          <li>Accessibility permission for window detection</li>
+          {% for item in card.items %}
+          <li>{{ item }}</li>
+          {% endfor %}
         </ul>
       </article>
-
-      <article class="requirement-card" data-reveal>
-        <h3>Windows</h3>
-        <ul>
-          <li>Windows 10 or later</li>
-          <li>Full-trust capability for capture/encoding stack</li>
-          <li>Microphone permission only when recording audio</li>
-        </ul>
-      </article>
+      {% endfor %}
     </div>
   </div>
 </section>
