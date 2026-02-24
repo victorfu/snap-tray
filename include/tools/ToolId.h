@@ -23,6 +23,7 @@ enum class ToolId {
     StepBadge,
     EmojiSticker,
     Crop,       // Crop sub-region of pin window content
+    Measure,    // Pixel distance measurement between two points
 
     // Toggle tools (affect canvas behavior)
     CanvasWhiteboard,   // ScreenCanvas whiteboard background mode toggle

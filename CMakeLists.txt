@@ -611,6 +611,7 @@ add_library(snaptray_ui STATIC
     src/tools/handlers/TextToolHandler.cpp
     src/tools/handlers/SelectionToolHandler.cpp
     src/tools/handlers/CropToolHandler.cpp
+    src/tools/handlers/MeasureToolHandler.cpp
 
     # Widgets
     src/toolbar/ToolOptionsPanel.cpp

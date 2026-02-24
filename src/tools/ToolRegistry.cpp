@@ -152,6 +152,17 @@ void ToolRegistry::registerTools() {
         true, QColor()  // separator before, default color
     });
 
+    registerTool({
+        ToolId::Measure,
+        "measure",
+        QCoreApplication::translate("ToolRegistry", "Measure"),
+        "",
+        ToolCategory::Drawing,
+        false, false, false, false, false, false,  // no capabilities
+        false, false, false,  // UI visibility: none
+        false, QColor()
+    });
+
     // Toggle tools
     registerTool({
         ToolId::CanvasWhiteboard,
@@ -430,6 +441,7 @@ QVector<ToolId> ToolRegistry::getToolsForToolbar(ToolbarType type) const {
             ToolId::StepBadge,
             ToolId::EmojiSticker,
             ToolId::Crop,
+            ToolId::Measure,
             ToolId::Undo,
             ToolId::Redo,
             ToolId::OCR,

@@ -52,6 +52,7 @@
         <file>icons/whiteboard.svg</file>
         <file>icons/blackboard.svg</file>
         <file>icons/crop.svg</file>
+        <file>icons/measure.svg</file>
     </qresource>
     <qresource prefix="/cascades">
         <file>cascades/haarcascade_frontalface_default.xml</file>

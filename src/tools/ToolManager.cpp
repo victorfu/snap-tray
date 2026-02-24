@@ -38,6 +38,7 @@ void ToolManager::registerDefaultHandlers() {
     registerHandler(std::make_unique<EmojiStickerToolHandler>());
     registerHandler(std::make_unique<TextToolHandler>());
     registerHandler(std::make_unique<CropToolHandler>());
+    registerHandler(std::make_unique<MeasureToolHandler>());
 }
 
 void ToolManager::setCurrentTool(ToolId id) {

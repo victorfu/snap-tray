@@ -409,6 +409,11 @@ target_link_libraries(Tools_CropToolHandler PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Tools_CropToolHandler COMMAND Tools_CropToolHandler)
 set_tests_properties(Tools_CropToolHandler PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Tools_MeasureToolHandler Tools/handlers/tst_MeasureToolHandler.cpp)
+target_link_libraries(Tools_MeasureToolHandler PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME Tools_MeasureToolHandler COMMAND Tools_MeasureToolHandler)
+set_tests_properties(Tools_MeasureToolHandler PROPERTIES TIMEOUT 60 LABELS "unit")
+
 # ============================================================================
 # UI Section Tests (link snaptray_ui for UI components)
 # ============================================================================
