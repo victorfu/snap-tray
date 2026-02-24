@@ -57,6 +57,12 @@ jobs:
   build-macos:
     needs: prepare
     runs-on: macos-latest
+    env:
+      APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+      APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+      APPLE_ID: ${{ secrets.APPLE_ID }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -114,11 +120,24 @@ jobs:
       #   APPLE_ID: Apple ID email
       #   APPLE_TEAM_ID: Developer Team ID
       #   APPLE_APP_PASSWORD: App-specific password
+      - name: Validate macOS signing secrets (tag release)
+        if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+        run: |
+          MISSING=0
+          for VAR_NAME in APPLE_CERTIFICATE APPLE_CERTIFICATE_PASSWORD APPLE_ID APPLE_TEAM_ID APPLE_APP_PASSWORD; do
+            if [ -z "${!VAR_NAME}" ]; then
+              echo "::error::Missing required secret: $VAR_NAME"
+              MISSING=1
+            fi
+          done
+
+          if [ "$MISSING" -ne 0 ]; then
+            echo "::error::Release builds require signed and notarized macOS artifacts. Configure all Apple secrets in repository settings."
+            exit 1
+          fi
+
       - name: Import Apple Certificate
-        if: ${{ env.APPLE_CERTIFICATE != '' }}
-        env:
-          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
-          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+        if: env.APPLE_CERTIFICATE != ''
         run: |
           # Create temporary keychain
           KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
@@ -139,9 +158,7 @@ jobs:
 
       - name: Get signing identity
         id: get-identity
-        if: ${{ env.APPLE_CERTIFICATE != '' }}
-        env:
-          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+        if: env.APPLE_CERTIFICATE != ''
         run: |
           IDENTITY=$(security find-identity -v -p codesigning | grep "Developer ID Application" | head -1 | awk -F'"' '{print $2}')
           echo "identity=$IDENTITY" >> $GITHUB_OUTPUT
@@ -149,9 +166,9 @@ jobs:
       - name: Build and Package
         env:
           CODESIGN_IDENTITY: ${{ steps.get-identity.outputs.identity }}
-          NOTARIZE_APPLE_ID: ${{ secrets.APPLE_ID }}
-          NOTARIZE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          NOTARIZE_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+          NOTARIZE_APPLE_ID: ${{ env.APPLE_ID }}
+          NOTARIZE_TEAM_ID: ${{ env.APPLE_TEAM_ID }}
+          NOTARIZE_PASSWORD: ${{ env.APPLE_APP_PASSWORD }}
         run: ./packaging/macos/package.sh
 
       - name: Upload macOS artifact

@@ -5,11 +5,13 @@ set -e
 # Creates a DMG with the application bundle
 #
 # Usage:
-#   ./package.sh                    # Build without signing
-#   CODESIGN_IDENTITY="..." ./package.sh  # Build with signing
+#   ./package.sh                                       # Build without Developer ID
+#   CODESIGN_IDENTITY="..." ./package.sh               # Build + sign app + sign DMG
+#   CODESIGN_IDENTITY="..." NOTARIZE_KEYCHAIN_PROFILE="snaptray-notary" ./package.sh
 #
 # Optional environment variables:
 #   CODESIGN_IDENTITY     - Developer ID for code signing
+#   NOTARIZE_KEYCHAIN_PROFILE - notarytool keychain profile name (recommended)
 #   NOTARIZE_APPLE_ID     - Apple ID for notarization
 #   NOTARIZE_TEAM_ID      - Team ID for notarization
 #   NOTARIZE_PASSWORD     - App-specific password for notarization
@@ -24,6 +26,7 @@ VERSION=$(grep "project(SnapTray VERSION" "$PROJECT_ROOT/CMakeLists.txt" | \
           sed -E 's/.*VERSION ([0-9]+\.[0-9]+\.[0-9]+).*/\1/')
 APP_NAME="SnapTray"
 DMG_NAME="${APP_NAME}-${VERSION}-macOS"
+DMG_PATH="${OUTPUT_DIR}/${DMG_NAME}.dmg"
 
 # Colors for output
 RED='\033[0;31m'
@@ -47,7 +50,7 @@ echo "Qt path: $QT_PREFIX"
 
 # Step 1: Build Release
 echo ""
-echo -e "${YELLOW}[1/5] Building release...${NC}"
+echo -e "${YELLOW}[1/6] Building release...${NC}"
 
 # Check for ccache (improves rebuild times significantly)
 CCACHE_ARGS=""
@@ -73,7 +76,7 @@ fi
 
 # Step 2: Run macdeployqt
 echo ""
-echo -e "${YELLOW}[2/5] Running macdeployqt...${NC}"
+echo -e "${YELLOW}[2/6] Running macdeployqt...${NC}"
 "$QT_PREFIX/bin/macdeployqt" "$APP_PATH" -verbose=1
 
 # Fix brotli dependencies not handled by macdeployqt (QTBUG-100686)
@@ -142,10 +145,13 @@ echo "Brotli dependencies fixed."
 
 # Step 3: Code signing
 echo ""
-echo -e "${YELLOW}[3/5] Signing application...${NC}"
+echo -e "${YELLOW}[3/6] Signing application...${NC}"
+echo "Removing quarantine attributes from app bundle..."
+xattr -cr "$APP_PATH"
 if [ -n "$CODESIGN_IDENTITY" ]; then
     echo "Using Developer ID: $CODESIGN_IDENTITY"
     codesign --force --deep --sign "$CODESIGN_IDENTITY" \
+        --timestamp \
         --options runtime \
         --entitlements "$SCRIPT_DIR/entitlements.plist" \
         "$APP_PATH"
@@ -158,20 +164,16 @@ else
 fi
 
 echo "Verifying signature..."
-codesign --verify --verbose "$APP_PATH"
+codesign --verify --deep --strict --verbose=2 "$APP_PATH"
 echo -e "${GREEN}Signature verified${NC}"
-
-# Remove quarantine attribute to prevent Gatekeeper issues
-echo "Removing quarantine attributes..."
-xattr -cr "$APP_PATH"
 
 # Step 4: Create DMG
 echo ""
-echo -e "${YELLOW}[4/5] Creating DMG...${NC}"
+echo -e "${YELLOW}[4/6] Creating DMG...${NC}"
 mkdir -p "$OUTPUT_DIR"
 
 # Remove existing DMG if present
-rm -f "$OUTPUT_DIR/${DMG_NAME}.dmg"
+rm -f "$DMG_PATH"
 
 # Check if create-dmg is available (prettier DMG)
 if command -v create-dmg &> /dev/null; then
@@ -184,14 +186,14 @@ if command -v create-dmg &> /dev/null; then
         --icon "${APP_NAME}.app" 150 190 \
         --hide-extension "${APP_NAME}.app" \
         --app-drop-link 450 185 \
-        "$OUTPUT_DIR/${DMG_NAME}.dmg" \
+        "$DMG_PATH" \
         "$APP_PATH" 2>/dev/null || {
             # Fallback if create-dmg fails
             echo "create-dmg failed, falling back to hdiutil..."
             hdiutil create -volname "$APP_NAME" \
                 -srcfolder "$APP_PATH" \
                 -ov -format UDZO \
-                "$OUTPUT_DIR/${DMG_NAME}.dmg"
+                "$DMG_PATH"
         }
 else
     # Fallback to hdiutil
@@ -199,30 +201,56 @@ else
     hdiutil create -volname "$APP_NAME" \
         -srcfolder "$APP_PATH" \
         -ov -format UDZO \
-        "$OUTPUT_DIR/${DMG_NAME}.dmg"
+        "$DMG_PATH"
 fi
 
-# Step 5: Notarization (if credentials provided)
+# Step 5: Sign DMG (Developer ID only)
 echo ""
-if [ -n "$NOTARIZE_APPLE_ID" ] && [ -n "$NOTARIZE_TEAM_ID" ] && [ -n "$NOTARIZE_PASSWORD" ]; then
-    echo -e "${YELLOW}[5/5] Submitting for notarization...${NC}"
-    xcrun notarytool submit "$OUTPUT_DIR/${DMG_NAME}.dmg" \
+if [ -n "$CODESIGN_IDENTITY" ]; then
+    echo -e "${YELLOW}[5/6] Signing DMG...${NC}"
+    codesign --force --sign "$CODESIGN_IDENTITY" --timestamp "$DMG_PATH"
+    echo "Verifying DMG signature..."
+    codesign --verify --verbose=2 "$DMG_PATH"
+    echo -e "${GREEN}DMG signature verified${NC}"
+else
+    echo -e "${YELLOW}[5/6] Skipping DMG signing (CODESIGN_IDENTITY not set)${NC}"
+fi
+
+# Step 6: Notarization (if credentials provided)
+echo ""
+NOTARIZED=0
+if [ -z "$CODESIGN_IDENTITY" ]; then
+    echo -e "${YELLOW}[6/6] Skipping notarization (CODESIGN_IDENTITY not set)${NC}"
+elif [ -n "$NOTARIZE_KEYCHAIN_PROFILE" ]; then
+    echo -e "${YELLOW}[6/6] Submitting for notarization (keychain profile: $NOTARIZE_KEYCHAIN_PROFILE)...${NC}"
+    xcrun notarytool submit "$DMG_PATH" \
+        --keychain-profile "$NOTARIZE_KEYCHAIN_PROFILE" \
+        --wait
+    NOTARIZED=1
+elif [ -n "$NOTARIZE_APPLE_ID" ] && [ -n "$NOTARIZE_TEAM_ID" ] && [ -n "$NOTARIZE_PASSWORD" ]; then
+    echo -e "${YELLOW}[6/6] Submitting for notarization (Apple ID credentials)...${NC}"
+    xcrun notarytool submit "$DMG_PATH" \
         --apple-id "$NOTARIZE_APPLE_ID" \
         --team-id "$NOTARIZE_TEAM_ID" \
         --password "$NOTARIZE_PASSWORD" \
         --wait
-
-    echo "Stapling notarization ticket..."
-    xcrun stapler staple "$OUTPUT_DIR/${DMG_NAME}.dmg"
-    echo -e "${GREEN}Notarization complete${NC}"
+    NOTARIZED=1
 else
-    echo -e "${YELLOW}[5/5] Skipping notarization (credentials not set)${NC}"
+    echo -e "${YELLOW}[6/6] Skipping notarization (credentials not set)${NC}"
+fi
+
+if [ "$NOTARIZED" -eq 1 ]; then
+    echo "Stapling notarization ticket..."
+    xcrun stapler staple "$DMG_PATH"
+    echo "Validating stapled ticket..."
+    xcrun stapler validate "$DMG_PATH"
+    echo -e "${GREEN}Notarization complete${NC}"
 fi
 
 # Done
 echo ""
 echo -e "${GREEN}=== Build Complete ===${NC}"
-echo -e "Package: ${GREEN}$OUTPUT_DIR/${DMG_NAME}.dmg${NC}"
+echo -e "Package: ${GREEN}$DMG_PATH${NC}"
 echo ""
 echo "To install:"
 echo "  1. Open the DMG"
@@ -235,4 +263,8 @@ if [ -z "$CODESIGN_IDENTITY" ]; then
     echo -e "  ${GREEN}xattr -cr /Applications/SnapTray.app${NC}"
     echo ""
     echo "Or: Right-click the app → Open → Click 'Open' in the dialog"
+elif [ "$NOTARIZED" -eq 1 ]; then
+    echo -e "${GREEN}This DMG is signed and notarized. No xattr workaround is required for end users.${NC}"
+else
+    echo -e "${YELLOW}This DMG is signed but not notarized. Gatekeeper warnings may still appear.${NC}"
 fi

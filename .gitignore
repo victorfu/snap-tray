@@ -62,3 +62,5 @@ example/
 audit.log
 
 firebase-debug.log
+
+/certs/

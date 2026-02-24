@@ -250,22 +250,39 @@ Get-AppPackage SnapTray* | Remove-AppPackage
 
 > **注意：** Store 提交需要 Microsoft Partner Center 帳戶。套件會在提交過程中由 Microsoft 自動簽章。
 
-#### Code Signing（可選）
+#### Code Signing（建議用於發佈）
 
 未簽章的安裝檔在使用者安裝時會顯示警告：
 
 - macOS：「無法驗證開發者」（需右鍵 → 打開）
 - Windows：SmartScreen 警告
 
-**macOS 簽章與公證：**
+**macOS 簽章與公證（Developer ID + DMG 公證）：**
 
 ```bash
 # 需要 Apple Developer Program 會員資格（$99 USD/年）
+
+# 一次性設定：把公證憑證存到 macOS Keychain
+xcrun notarytool store-credentials "snaptray-notary" \
+  --apple-id "your@email.com" \
+  --team-id "YOURTEAMID" \
+  --password "xxxx-xxxx-xxxx-xxxx"  # App-Specific Password
+
+# 建置 + 簽章 .app + 簽章 .dmg + 公證 + staple
 export CODESIGN_IDENTITY="Developer ID Application: Your Name (TEAMID)"
+export NOTARIZE_KEYCHAIN_PROFILE="snaptray-notary"
+./packaging/macos/package.sh
+
+# 驗證 Gatekeeper
+spctl -a -vv -t open "dist/SnapTray-<version>-macOS.dmg"
+```
+
+仍支援舊版公證環境變數（適合 CI）：
+
+```bash
 export NOTARIZE_APPLE_ID="your@email.com"
 export NOTARIZE_TEAM_ID="YOURTEAMID"
-export NOTARIZE_PASSWORD="xxxx-xxxx-xxxx-xxxx"  # App-Specific Password
-./packaging/macos/package.sh
+export NOTARIZE_PASSWORD="xxxx-xxxx-xxxx-xxxx"
 ```
 
 **Windows 簽章：**
@@ -464,19 +481,21 @@ pin:
 
 ## 疑難排解
 
-### macOS：「SnapTray」無法打開，因為 Apple 無法驗證
+### macOS：Gatekeeper 擋住啟動
 
-如果你看到以下訊息：
+若你下載的是官方「已簽章 + 已公證」DMG，理論上不應出現 Gatekeeper 警告。
 
-- 「SnapTray」無法打開，因為 Apple 無法驗證其不含惡意軟體
+你可先在本機驗證 DMG：
 
-**解決方法：** 使用終端機移除隔離屬性：
+```bash
+spctl -a -vv -t open "dist/SnapTray-<version>-macOS.dmg"
+```
+
+只有在本地 ad-hoc / 開發版本時，才建議用下列方式移除隔離屬性：
 
 ```bash
 xattr -cr /Applications/SnapTray.app
 ```
-
-這會移除 macOS 對下載應用程式添加的隔離標記。執行此指令後，你應該可以正常開啟 SnapTray。
 
 ### Windows：應用程式無法啟動或顯示缺少 DLL 錯誤
 

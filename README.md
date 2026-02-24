@@ -250,22 +250,39 @@ Get-AppPackage SnapTray* | Remove-AppPackage
 
 > **Note:** Store submission requires a Microsoft Partner Center account. The package is automatically signed by Microsoft during the submission process.
 
-#### Code Signing (Optional)
+#### Code Signing (Recommended for Distribution)
 
 Unsigned installers will show warnings during installation:
 
 - macOS: "Cannot verify developer" (requires right-click -> Open)
 - Windows: SmartScreen warning
 
-**macOS Signing & Notarization:**
+**macOS Signing & Notarization (Developer ID + DMG notarization):**
 
 ```bash
 # Requires Apple Developer Program membership ($99 USD/year)
+
+# One-time setup: save notarization credentials to macOS keychain
+xcrun notarytool store-credentials "snaptray-notary" \
+  --apple-id "your@email.com" \
+  --team-id "YOURTEAMID" \
+  --password "xxxx-xxxx-xxxx-xxxx"  # App-Specific Password
+
+# Build + sign .app + sign .dmg + notarize + staple
 export CODESIGN_IDENTITY="Developer ID Application: Your Name (TEAMID)"
+export NOTARIZE_KEYCHAIN_PROFILE="snaptray-notary"
+./packaging/macos/package.sh
+
+# Verify Gatekeeper acceptance
+spctl -a -vv -t open "dist/SnapTray-<version>-macOS.dmg"
+```
+
+Legacy notarization env vars are still supported (useful for CI):
+
+```bash
 export NOTARIZE_APPLE_ID="your@email.com"
 export NOTARIZE_TEAM_ID="YOURTEAMID"
-export NOTARIZE_PASSWORD="xxxx-xxxx-xxxx-xxxx"  # App-Specific Password
-./packaging/macos/package.sh
+export NOTARIZE_PASSWORD="xxxx-xxxx-xxxx-xxxx"
 ```
 
 **Windows Signing:**
@@ -464,19 +481,21 @@ pin:
 
 ## Troubleshooting
 
-### macOS: "SnapTray" cannot be opened because Apple cannot verify it
+### macOS: Gatekeeper blocks app launch
 
-If you see the message:
+If you download an official signed + notarized DMG, Gatekeeper warnings should not appear.
 
-- "SnapTray" cannot be opened because Apple could not verify it is free of malware
+If you want to verify a DMG locally:
 
-**Solution:** Remove the quarantine attribute using Terminal:
+```bash
+spctl -a -vv -t open "dist/SnapTray-<version>-macOS.dmg"
+```
+
+For local ad-hoc/dev builds only, you can remove quarantine attributes:
 
 ```bash
 xattr -cr /Applications/SnapTray.app
 ```
-
-This removes the quarantine flag that macOS adds to downloaded applications. After running this command, you should be able to open SnapTray normally.
 
 ### Windows: Application fails to start or shows missing DLL errors
 
