@@ -8,6 +8,50 @@
 namespace {
 constexpr qreal kMinAutoFitZoom = 0.1;
 const QPoint kFallbackPosition(50, 50);
+
+qreal clampedScreenRatio(qreal value, qreal rangeStart, qreal rangeSpan)
+{
+    if (rangeSpan <= 0.0) {
+        return 0.5;
+    }
+    const qreal ratio = (value - rangeStart) / rangeSpan;
+    return qBound(0.0, ratio, 1.0);
+}
+
+qreal mapRatioToRange(qreal ratio, qreal rangeStart, qreal rangeSpan)
+{
+    if (rangeSpan <= 0.0) {
+        return rangeStart;
+    }
+    return rangeStart + qBound(0.0, ratio, 1.0) * rangeSpan;
+}
+
+int clampTopLeftToTarget(int desiredTopLeft,
+                         int windowExtent,
+                         int targetStart,
+                         int targetExtent)
+{
+    if (targetExtent <= 0) {
+        return targetStart;
+    }
+    if (windowExtent <= 0) {
+        return desiredTopLeft;
+    }
+    if (windowExtent >= targetExtent) {
+        return targetStart;
+    }
+
+    const int maxTopLeft = targetStart + targetExtent - windowExtent;
+    return qBound(targetStart, desiredTopLeft, maxTopLeft);
+}
+
+QPointF rectPixelCenter(const QRect& rect)
+{
+    const qreal halfWidth = static_cast<qreal>(qMax(0, rect.width() - 1)) / 2.0;
+    const qreal halfHeight = static_cast<qreal>(qMax(0, rect.height() - 1)) / 2.0;
+    return QPointF(static_cast<qreal>(rect.left()) + halfWidth,
+                   static_cast<qreal>(rect.top()) + halfHeight);
+}
 }
 
 PinWindowPlacement computeInitialPinWindowPlacement(const QPixmap& pixmap,
@@ -52,4 +96,54 @@ PinWindowPlacement computeInitialPinWindowPlacement(const QPixmap& pixmap,
     }
 
     return placement;
+}
+
+QPoint computePinWindowTopLeftForTargetScreen(const QRect& windowFrame,
+                                              const QRect& sourceAvailableGeometry,
+                                              const QRect& targetAvailableGeometry)
+{
+    if (!targetAvailableGeometry.isValid()) {
+        return windowFrame.topLeft();
+    }
+
+    const QSize windowSize(qMax(1, windowFrame.width()), qMax(1, windowFrame.height()));
+
+    QPointF targetCenter = rectPixelCenter(targetAvailableGeometry);
+    if (sourceAvailableGeometry.isValid()) {
+        const QPointF sourceCenter = rectPixelCenter(windowFrame);
+        const qreal ratioX = clampedScreenRatio(
+            sourceCenter.x(),
+            static_cast<qreal>(sourceAvailableGeometry.left()),
+            static_cast<qreal>(qMax(0, sourceAvailableGeometry.width() - 1)));
+        const qreal ratioY = clampedScreenRatio(
+            sourceCenter.y(),
+            static_cast<qreal>(sourceAvailableGeometry.top()),
+            static_cast<qreal>(qMax(0, sourceAvailableGeometry.height() - 1)));
+
+        targetCenter.setX(mapRatioToRange(
+            ratioX,
+            static_cast<qreal>(targetAvailableGeometry.left()),
+            static_cast<qreal>(qMax(0, targetAvailableGeometry.width() - 1))));
+        targetCenter.setY(mapRatioToRange(
+            ratioY,
+            static_cast<qreal>(targetAvailableGeometry.top()),
+            static_cast<qreal>(qMax(0, targetAvailableGeometry.height() - 1))));
+    }
+
+    QPoint targetTopLeft(
+        qRound(targetCenter.x() - (static_cast<qreal>(windowSize.width()) - 1.0) / 2.0),
+        qRound(targetCenter.y() - (static_cast<qreal>(windowSize.height()) - 1.0) / 2.0));
+
+    targetTopLeft.setX(clampTopLeftToTarget(
+        targetTopLeft.x(),
+        windowSize.width(),
+        targetAvailableGeometry.left(),
+        targetAvailableGeometry.width()));
+    targetTopLeft.setY(clampTopLeftToTarget(
+        targetTopLeft.y(),
+        windowSize.height(),
+        targetAvailableGeometry.top(),
+        targetAvailableGeometry.height()));
+
+    return targetTopLeft;
 }

@@ -15,6 +15,7 @@
 #include "pinwindow/RegionLayoutRenderer.h"
 #include "pinwindow/PinMergeHelper.h"
 #include "pinwindow/PinHistoryStore.h"
+#include "pinwindow/PinWindowPlacement.h"
 #include "toolbar/WindowedToolbar.h"
 #include "toolbar/WindowedSubToolbar.h"
 #include "annotations/AnnotationLayer.h"
@@ -861,6 +862,8 @@ void PinWindow::createContextMenu()
     m_showBorderAction->setChecked(m_showBorder);
     connect(m_showBorderAction, &QAction::toggled, this, &PinWindow::setShowBorder);
 
+    m_moveToScreenMenu = m_contextMenu->addMenu(tr("Move to Screen"));
+
     m_adjustRegionLayoutAction = m_contextMenu->addAction(tr("Adjust Region Layout"));
     connect(m_adjustRegionLayoutAction, &QAction::triggered, this, &PinWindow::enterRegionLayoutMode);
 
@@ -1101,6 +1104,94 @@ void PinWindow::createContextMenu()
             m_pinWindowManager->closeAllWindows();
         }
         });
+}
+
+void PinWindow::refreshMoveToScreenMenu()
+{
+    if (!m_moveToScreenMenu) {
+        return;
+    }
+
+    m_moveToScreenMenu->clear();
+
+    const QList<QScreen*> screens = QGuiApplication::screens();
+    const bool hasMultipleScreens = screens.size() > 1;
+    m_moveToScreenMenu->menuAction()->setVisible(hasMultipleScreens);
+    m_moveToScreenMenu->menuAction()->setEnabled(hasMultipleScreens);
+    if (!hasMultipleScreens) {
+        return;
+    }
+
+    QScreen* currentScreen = QGuiApplication::screenAt(frameGeometry().center());
+    if (!currentScreen) {
+        currentScreen = screen();
+    }
+
+    QScreen* primaryScreen = QGuiApplication::primaryScreen();
+    if (!currentScreen || !screens.contains(currentScreen)) {
+        currentScreen = primaryScreen;
+    }
+
+    for (int i = 0; i < screens.size(); ++i) {
+        QScreen* screenItem = screens.at(i);
+        QAction* action = m_moveToScreenMenu->addAction(
+            screenMenuLabel(screenItem, i, screenItem == primaryScreen));
+        action->setCheckable(true);
+
+        const bool isCurrentScreen = (screenItem == currentScreen);
+        action->setChecked(isCurrentScreen);
+        action->setEnabled(!isCurrentScreen);
+
+        connect(action, &QAction::triggered, this, [this, screenItem]() {
+            moveToScreen(screenItem);
+        });
+    }
+}
+
+void PinWindow::moveToScreen(QScreen* targetScreen)
+{
+    if (!targetScreen) {
+        return;
+    }
+
+    const QList<QScreen*> screens = QGuiApplication::screens();
+    if (!screens.contains(targetScreen)) {
+        return;
+    }
+
+    QScreen* sourceScreen = QGuiApplication::screenAt(frameGeometry().center());
+    if (!sourceScreen) {
+        sourceScreen = screen();
+    }
+    if (!sourceScreen || !screens.contains(sourceScreen)) {
+        sourceScreen = QGuiApplication::primaryScreen();
+    }
+    if (!sourceScreen) {
+        sourceScreen = targetScreen;
+    }
+
+    const QPoint targetTopLeft = computePinWindowTopLeftForTargetScreen(
+        frameGeometry(),
+        sourceScreen ? sourceScreen->availableGeometry() : QRect(),
+        targetScreen->availableGeometry());
+    move(targetTopLeft);
+}
+
+QString PinWindow::screenMenuLabel(QScreen* screenItem, int index, bool isPrimary) const
+{
+    QString label = tr("Screen %1").arg(index + 1);
+    if (isPrimary) {
+        label += tr(" (Primary)");
+    }
+
+    if (screenItem) {
+        const QString screenName = screenItem->name().trimmed();
+        if (!screenName.isEmpty()) {
+            label += QStringLiteral(" - %1").arg(screenName);
+        }
+    }
+
+    return label;
 }
 
 int PinWindow::eligibleMergePinCount() const
@@ -2255,6 +2346,8 @@ void PinWindow::contextMenuEvent(QContextMenuEvent* event)
     if (!m_contextMenu) {
         createContextMenu();
     }
+
+    refreshMoveToScreenMenu();
 
     // Update Show Toolbar checked state
     if (m_showToolbarAction) {

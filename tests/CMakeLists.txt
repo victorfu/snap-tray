@@ -49,6 +49,11 @@ target_link_libraries(PinWindow_Resize PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME PinWindow_Resize COMMAND PinWindow_Resize)
 set_tests_properties(PinWindow_Resize PROPERTIES TIMEOUT 60 LABELS "unit;integration")
 
+add_executable(PinWindow_PinWindowPlacement PinWindow/tst_PinWindowPlacement.cpp)
+target_link_libraries(PinWindow_PinWindowPlacement PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME PinWindow_PinWindowPlacement COMMAND PinWindow_PinWindowPlacement)
+set_tests_properties(PinWindow_PinWindowPlacement PROPERTIES TIMEOUT 60 LABELS "unit")
+
 add_executable(PinWindow_RegionLayoutManager PinWindow/tst_RegionLayoutManager.cpp)
 target_link_libraries(PinWindow_RegionLayoutManager PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME PinWindow_RegionLayoutManager COMMAND PinWindow_RegionLayoutManager)

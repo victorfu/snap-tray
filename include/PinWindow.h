@@ -176,6 +176,9 @@ private:
 
     void updateSize();
     void createContextMenu();
+    void refreshMoveToScreenMenu();
+    void moveToScreen(QScreen* targetScreen);
+    QString screenMenuLabel(QScreen* screen, int index, bool isPrimary) const;
     void mergePinsFromContextMenu();
     int eligibleMergePinCount() const;
     void adjustOpacityByStep(int direction);
@@ -323,6 +326,7 @@ private:
     QPoint m_dragStartPos;
     bool m_isDragging;
     QMenu* m_contextMenu;
+    QMenu* m_moveToScreenMenu = nullptr;
     QAction* m_showToolbarAction = nullptr;
     QAction* m_clickThroughAction = nullptr;
     QAction* m_showBorderAction = nullptr;
