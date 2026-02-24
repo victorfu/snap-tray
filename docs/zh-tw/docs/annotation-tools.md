@@ -9,8 +9,6 @@ doc_group: capture
 doc_order: 2
 ---
 
-![標註工具列總覽](/assets/images/docs/annotation-tools.svg)
-
 ## 工具分類
 
 ### 繪圖

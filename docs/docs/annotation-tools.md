@@ -9,8 +9,6 @@ doc_group: capture
 doc_order: 2
 ---
 
-![Annotation toolbar overview](/assets/images/docs/annotation-tools.svg)
-
 ## Tool categories
 
 ### Drawing

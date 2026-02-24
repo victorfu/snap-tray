@@ -9,8 +9,6 @@ doc_group: basics
 doc_order: 1
 ---
 
-![SnapTray 文件總覽](/assets/images/docs/docs-overview.svg)
-
 ## 從結果出發的學習方式
 
 若你想快速把事情做完，先進入[教學總覽](/zh-tw/docs/tutorials/)。這裡每一篇都是真實情境的步驟式教學。

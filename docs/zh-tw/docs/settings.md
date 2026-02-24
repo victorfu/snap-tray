@@ -9,8 +9,6 @@ doc_group: workflow
 doc_order: 4
 ---
 
-![設定分頁總覽](/assets/images/docs/settings-tabs.svg)
-
 ## 設定分頁
 
 ### General

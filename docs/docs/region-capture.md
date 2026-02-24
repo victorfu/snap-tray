@@ -9,8 +9,6 @@ doc_group: capture
 doc_order: 1
 ---
 
-![Region capture flow](/assets/images/docs/region-capture.svg)
-
 ## Start capture
 
 Press `F2` (default) to enter Region Capture. The cursor switches to crosshair and a magnifier panel appears.

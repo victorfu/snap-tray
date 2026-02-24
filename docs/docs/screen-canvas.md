@@ -9,8 +9,6 @@ doc_group: capture
 doc_order: 3
 ---
 
-![Screen canvas mode](/assets/images/docs/screen-canvas.svg)
-
 ## Enter canvas mode
 
 Press `Ctrl+F2` (default) or use tray menu "Screen Canvas".

@@ -9,8 +9,6 @@ doc_group: workflow
 doc_order: 3
 ---
 
-![快捷鍵分類示意](/assets/images/docs/hotkeys-map.svg)
-
 ## 預設快捷鍵
 
 | 動作 | 預設 |

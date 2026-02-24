@@ -9,8 +9,6 @@ doc_group: advanced
 doc_order: 1
 ---
 
-![CLI 指令流程](/assets/images/docs/cli-flow.svg)
-
 ## 安裝 CLI helper
 
 在 Settings > General 使用 CLI 安裝功能，啟用 `snaptray` 指令。

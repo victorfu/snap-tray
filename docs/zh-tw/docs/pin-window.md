@@ -9,8 +9,6 @@ doc_group: workflow
 doc_order: 1
 ---
 
-![釘選視窗控制示意](/assets/images/docs/pin-window.svg)
-
 ## 建立釘選視窗
 
 可由截圖結果按 `Enter`，或從托盤選單「Pin from Image...」建立。

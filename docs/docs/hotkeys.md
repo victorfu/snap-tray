@@ -9,8 +9,6 @@ doc_group: workflow
 doc_order: 3
 ---
 
-![Hotkey category map](/assets/images/docs/hotkeys-map.svg)
-
 ## Default hotkeys
 
 | Action | Default |

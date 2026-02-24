@@ -9,8 +9,6 @@ doc_group: advanced
 doc_order: 1
 ---
 
-![CLI command workflow](/assets/images/docs/cli-flow.svg)
-
 ## Install CLI helper
 
 Open Settings > General and use the CLI install option to add `snaptray` command support.

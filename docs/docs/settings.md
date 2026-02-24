@@ -9,8 +9,6 @@ doc_group: workflow
 doc_order: 4
 ---
 
-![Settings tabs overview](/assets/images/docs/settings-tabs.svg)
-
 ## Settings tabs
 
 ### General

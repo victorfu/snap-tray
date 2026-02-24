@@ -9,8 +9,6 @@ doc_group: capture
 doc_order: 3
 ---
 
-![螢幕畫布模式](/assets/images/docs/screen-canvas.svg)
-
 ## 進入畫布模式
 
 按預設 `Ctrl+F2`，或從托盤選單啟動 Screen Canvas。

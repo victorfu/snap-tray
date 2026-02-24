@@ -9,8 +9,6 @@ doc_group: basics
 doc_order: 1
 ---
 
-![SnapTray documentation overview](/assets/images/docs/docs-overview.svg)
-
 ## Start here: learn by outcome
 
 If your goal is to get work done quickly, start in [Tutorials](/docs/tutorials/). These guides are scenario-based and include step-by-step execution.

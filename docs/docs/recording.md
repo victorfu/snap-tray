@@ -9,8 +9,6 @@ doc_group: workflow
 doc_order: 2
 ---
 
-![Recording pipeline](/assets/images/docs/recording-flow.svg)
-
 ## Recording entry points
 
 - Tray menu: Record Full Screen

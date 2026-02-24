@@ -9,8 +9,6 @@ doc_group: capture
 doc_order: 1
 ---
 
-![區域截圖流程](/assets/images/docs/region-capture.svg)
-
 ## 啟動截圖
 
 按預設熱鍵 `F2` 進入 Region Capture，游標會切換為十字準星並顯示放大鏡。

@@ -9,8 +9,6 @@ doc_group: workflow
 doc_order: 1
 ---
 
-![Pin window controls](/assets/images/docs/pin-window.svg)
-
 ## Create a pin window
 
 You can pin from capture result (`Enter`) or from tray menu using "Pin from Image...".

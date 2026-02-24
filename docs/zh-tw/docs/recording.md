@@ -9,8 +9,6 @@ doc_group: workflow
 doc_order: 2
 ---
 
-![錄影流程示意](/assets/images/docs/recording-flow.svg)
-
 ## 錄影入口
 
 - 托盤選單：Record Full Screen
