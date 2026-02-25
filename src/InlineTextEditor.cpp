@@ -14,6 +14,18 @@ const int InlineTextEditor::PADDING;
 
 namespace {
     constexpr int kEditorBorderPx = 1;
+    constexpr qreal kLightTextLumaThreshold = 0.72;
+
+    qreal relativeLuma(const QColor& color)
+    {
+        const QColor rgb = color.toRgb();
+        return 0.2126 * rgb.redF() + 0.7152 * rgb.greenF() + 0.0722 * rgb.blueF();
+    }
+
+    bool needsDarkEditorBackdrop(const QColor& textColor)
+    {
+        return relativeLuma(textColor) >= kLightTextLumaThreshold;
+    }
 }
 
 InlineTextEditor::InlineTextEditor(QWidget* parent)
@@ -370,17 +382,20 @@ void InlineTextEditor::updateStyle()
     QString fontStyle = m_font.italic() ? "italic" : "normal";
     QString textDecoration = m_font.underline() ? "underline" : "none";
     QString fontFamily = m_font.family().isEmpty() ? "" : QString("font-family: \"%1\";").arg(m_font.family());
+    const bool useDarkBackdrop = needsDarkEditorBackdrop(m_color);
+    const QString normalBackground = useDarkBackdrop
+        ? QStringLiteral("rgba(0, 0, 0, 110)")
+        : QStringLiteral("rgba(220, 242, 255, 42)");
+    const QString focusedBackground = useDarkBackdrop
+        ? QStringLiteral("rgba(0, 0, 0, 150)")
+        : QStringLiteral("rgba(220, 242, 255, 70)");
 
-    // Two-tone border keeps the frame visible over both light and dark content.
+    // Keep blue focus chrome while preserving contrast for light text colors.
     QString styleSheet = QString(
         "QTextEdit {"
-        "  background: rgba(0, 0, 0, 28);"
+        "  background: %7;"
         "  color: %1;"
-        "  border: 1px solid transparent;"
-        "  border-top-color: rgba(255, 255, 255, 235);"
-        "  border-left-color: rgba(255, 255, 255, 235);"
-        "  border-right-color: rgba(0, 0, 0, 220);"
-        "  border-bottom-color: rgba(0, 0, 0, 220);"
+        "  border: 1px solid rgba(0, 174, 255, 125);"
         "  border-radius: 4px;"
         "  padding: 4px;"
         "  font-size: %2pt;"
@@ -390,17 +405,17 @@ void InlineTextEditor::updateStyle()
         "  %6"
         "}"
         "QTextEdit:focus {"
-        "  border-top-color: rgba(255, 255, 255, 245);"
-        "  border-left-color: rgba(255, 255, 255, 245);"
-        "  border-right-color: rgba(0, 0, 0, 235);"
-        "  border-bottom-color: rgba(0, 0, 0, 235);"
+        "  background: %8;"
+        "  border: 1px solid rgba(0, 174, 255, 220);"
         "}"
     ).arg(m_color.name())
      .arg(m_font.pointSize())
      .arg(fontWeight)
      .arg(fontStyle)
      .arg(textDecoration)
-     .arg(fontFamily);
+     .arg(fontFamily)
+     .arg(normalBackground)
+     .arg(focusedBackground);
     m_textEdit->setStyleSheet(styleSheet);
 }
 

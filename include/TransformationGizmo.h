@@ -33,7 +33,7 @@ enum class GizmoHandle {
  * @brief Helper class for drawing and hit-testing the transformation gizmo.
  *
  * The gizmo consists of:
- * - A dashed border around the selected text
+ * - A visible border around the selected annotation
  * - Four corner handles for scaling
  * - A rotation handle (lollipop style) extending from top-center
  *
@@ -125,6 +125,7 @@ public:
 
 private:
     static QPointF rotationHandlePosition(const QPolygonF &poly, const QPointF &center);
+    static void drawTextFocusBorder(QPainter &painter, const QPolygonF &polygon);
     static void drawDashedBorder(QPainter &painter, const QPolygonF &polygon);
     static void drawCornerHandles(QPainter &painter, const QVector<QPointF> &corners);
     static void drawRotationHandle(QPainter &painter, const QPointF &topCenter, const QPointF &handlePos);

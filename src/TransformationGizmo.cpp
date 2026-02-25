@@ -16,8 +16,8 @@ void TransformationGizmo::draw(QPainter &painter, const TextBoxAnnotation *annot
 
     QPolygonF poly = annotation->transformedBoundingPolygon();
 
-    // 1. Draw dashed border
-    drawDashedBorder(painter, poly);
+    // 1. Draw text-focused border (solid blue outline + soft halo)
+    drawTextFocusBorder(painter, poly);
 
     // 2. Draw corner resize handles
     QVector<QPointF> corners = cornerHandlePositions(annotation);
@@ -29,6 +29,21 @@ void TransformationGizmo::draw(QPainter &painter, const TextBoxAnnotation *annot
     drawRotationHandle(painter, topCenter, handlePos);
 
     painter.restore();
+}
+
+void TransformationGizmo::drawTextFocusBorder(QPainter &painter, const QPolygonF &polygon)
+{
+    painter.setBrush(Qt::NoBrush);
+
+    // Soft outer halo to match the reference focus treatment.
+    QPen haloPen(QColor(0, 174, 255, 72), 4.0, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+    painter.setPen(haloPen);
+    painter.drawPolygon(polygon);
+
+    // Crisp inner border for edge definition.
+    QPen mainPen(QColor(150, 220, 255, 235), 1.8, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+    painter.setPen(mainPen);
+    painter.drawPolygon(polygon);
 }
 
 void TransformationGizmo::drawDashedBorder(QPainter &painter, const QPolygonF &polygon)

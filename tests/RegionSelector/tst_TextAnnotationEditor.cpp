@@ -57,7 +57,8 @@ private slots:
     void testInlineTextEditor_PreserveExistingTextBaseline();
     void testInlineTextEditor_CommittedBaselineMatchesRequestedBaseline();
     void testInlineTextEditor_BaselineStableAcrossSessions();
-    void testInlineTextEditor_UsesHighContrastBorderStyle();
+    void testInlineTextEditor_UsesBlueFocusBorderStyle();
+    void testInlineTextEditor_UsesDarkBackdropForLightText();
 
 private:
     // Double-click detection helper (mimics TextAnnotationEditor logic)
@@ -457,7 +458,7 @@ void tst_TextAnnotationEditor::testInlineTextEditor_BaselineStableAcrossSessions
     QCOMPARE(firstBaseline, requestedBaseline);
 }
 
-void tst_TextAnnotationEditor::testInlineTextEditor_UsesHighContrastBorderStyle()
+void tst_TextAnnotationEditor::testInlineTextEditor_UsesBlueFocusBorderStyle()
 {
     QWidget parent;
     InlineTextEditor inlineEditor(&parent);
@@ -466,9 +467,24 @@ void tst_TextAnnotationEditor::testInlineTextEditor_UsesHighContrastBorderStyle(
     QVERIFY(inlineEditor.textEdit() != nullptr);
 
     const QString styleSheet = inlineEditor.textEdit()->styleSheet();
-    QVERIFY(styleSheet.contains("border-top-color: rgba(255, 255, 255"));
-    QVERIFY(styleSheet.contains("border-right-color: rgba(0, 0, 0"));
+    QVERIFY(styleSheet.contains("border: 1px solid rgba(0, 174, 255, 125)"));
     QVERIFY(styleSheet.contains("QTextEdit:focus"));
+    QVERIFY(styleSheet.contains("border: 1px solid rgba(0, 174, 255, 220)"));
+}
+
+void tst_TextAnnotationEditor::testInlineTextEditor_UsesDarkBackdropForLightText()
+{
+    QWidget parent;
+    InlineTextEditor inlineEditor(&parent);
+    inlineEditor.setColor(Qt::white);
+
+    inlineEditor.startEditing(QPoint(120, 100), QRect(0, 0, 500, 300));
+    QVERIFY(inlineEditor.textEdit() != nullptr);
+
+    const QString styleSheet = inlineEditor.textEdit()->styleSheet();
+    QVERIFY(styleSheet.contains("background: rgba(0, 0, 0, 110)"));
+    QVERIFY(styleSheet.contains("QTextEdit:focus"));
+    QVERIFY(styleSheet.contains("background: rgba(0, 0, 0, 150)"));
 }
 
 QTEST_MAIN(tst_TextAnnotationEditor)
