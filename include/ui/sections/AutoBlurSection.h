@@ -65,7 +65,7 @@ private:
     QRect m_buttonRect;
 
     // Tooltip
-    QString m_tooltip = "Auto Blur Faces";
+    QString m_tooltip = "Auto Blur Sensitive Data";
 
     // Layout constants
     static constexpr int BUTTON_SIZE = 22;  // Match other section button sizes

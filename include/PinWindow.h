@@ -201,6 +201,8 @@ private:
     void updateClickThroughForCursor();
 
     // OCR methods
+    OCRManager* ensureOCRManager();
+    void updateLoadingSpinnerState();
     void performOCR();
     void onOCRComplete(const OCRResult& result);
     void showOCRResultDialog(const OCRResult& result);

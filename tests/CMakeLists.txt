@@ -184,6 +184,11 @@ target_link_libraries(Detection_TableDetector PRIVATE snaptray_algorithms Qt6::T
 add_test(NAME Detection_TableDetector COMMAND Detection_TableDetector)
 set_tests_properties(Detection_TableDetector PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Detection_CredentialDetector Detection/tst_CredentialDetector.cpp)
+target_link_libraries(Detection_CredentialDetector PRIVATE snaptray_algorithms Qt6::Test)
+add_test(NAME Detection_CredentialDetector COMMAND Detection_CredentialDetector)
+set_tests_properties(Detection_CredentialDetector PROPERTIES TIMEOUT 60 LABELS "unit")
+
 if(APPLE)
     add_executable(Detection_WindowDetectorMacFilters Detection/tst_WindowDetectorMacFilters.cpp)
     target_include_directories(Detection_WindowDetectorMacFilters PRIVATE ${CMAKE_SOURCE_DIR}/src)

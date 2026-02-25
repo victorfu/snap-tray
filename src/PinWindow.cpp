@@ -24,6 +24,7 @@
 #include "annotations/MosaicStroke.h"
 #include "annotations/MosaicRectAnnotation.h"
 #include "detection/AutoBlurManager.h"
+#include "detection/CredentialDetector.h"
 #include "tools/ToolManager.h"
 #include "tools/IToolHandler.h"
 #include "tools/handlers/EmojiStickerToolHandler.h"
@@ -1361,30 +1362,48 @@ void PinWindow::copyToClipboard()
     m_uiIndicators->showToast(true, tr("Copied to clipboard"));
 }
 
-void PinWindow::performOCR()
+OCRManager* PinWindow::ensureOCRManager()
 {
-    if (m_ocrInProgress) {
-        return;
-    }
-
-    // Lazy-create OCR manager on first use to improve initial window creation performance
     if (!m_ocrManager) {
         m_ocrManager = PlatformFeatures::instance().createOCRManager(this);
         if (m_ocrManager) {
             m_ocrManager->setRecognitionLanguages(OCRSettingsManager::instance().languages());
         }
     }
+    return m_ocrManager;
+}
 
-    if (!m_ocrManager) {
+void PinWindow::updateLoadingSpinnerState()
+{
+    if (!m_loadingSpinner) {
+        return;
+    }
+
+    const bool hasInFlightTask = m_ocrInProgress || m_qrCodeInProgress || m_autoBlurInProgress;
+    if (hasInFlightTask) {
+        m_loadingSpinner->start();
+    } else {
+        m_loadingSpinner->stop();
+    }
+}
+
+void PinWindow::performOCR()
+{
+    if (m_ocrInProgress) {
+        return;
+    }
+
+    OCRManager* ocrManager = ensureOCRManager();
+    if (!ocrManager) {
         return;
     }
 
     m_ocrInProgress = true;
-    m_loadingSpinner->start();
+    updateLoadingSpinnerState();
     update();
 
     QPointer<PinWindow> safeThis = this;
-    m_ocrManager->recognizeText(m_originalPixmap,
+    ocrManager->recognizeText(m_originalPixmap,
         [safeThis](const OCRResult& result) {
             if (safeThis) {
                 safeThis->onOCRComplete(result);
@@ -1395,7 +1414,7 @@ void PinWindow::performOCR()
 void PinWindow::onOCRComplete(const OCRResult& result)
 {
     m_ocrInProgress = false;
-    m_loadingSpinner->stop();
+    updateLoadingSpinnerState();
 
     if (result.success && !result.text.isEmpty()) {
         // Check settings to determine behavior
@@ -1455,7 +1474,7 @@ void PinWindow::performQRCodeScan()
     }
 
     m_qrCodeInProgress = true;
-    m_loadingSpinner->start();
+    updateLoadingSpinnerState();
     update();
 
     QPointer<PinWindow> safeThis = this;
@@ -1470,7 +1489,7 @@ void PinWindow::performQRCodeScan()
 void PinWindow::onQRCodeComplete(bool success, const QString& text, const QString& format, const QString& error)
 {
     m_qrCodeInProgress = false;
-    m_loadingSpinner->stop();
+    updateLoadingSpinnerState();
 
     if (success && !text.isEmpty()) {
         // Show result dialog
@@ -1787,8 +1806,8 @@ void PinWindow::paintEvent(QPaintEvent*)
     // Draw watermark
     WatermarkRenderer::render(painter, pixmapRect, m_watermarkSettings);
 
-    // Draw loading spinner when OCR or QR Code scan is in progress
-    if (m_ocrInProgress || m_qrCodeInProgress) {
+    // Draw loading spinner when OCR, QR, or auto-blur is in progress
+    if (m_ocrInProgress || m_qrCodeInProgress || m_autoBlurInProgress) {
         QPoint center = pixmapRect.center();
         m_loadingSpinner->draw(painter, center);
     }
@@ -3461,69 +3480,226 @@ void PinWindow::onAutoBlurRequested()
         m_autoBlurManager = new AutoBlurManager(this);
     }
 
-    // Initialize face detector (lazy load Haar cascade)
-    if (!m_autoBlurManager->isInitialized()) {
-        if (!m_autoBlurManager->initialize()) {
-            return;  // Failed to initialize (cascade file not found)
-        }
-    }
-
     m_autoBlurInProgress = true;
+    updateLoadingSpinnerState();
+    update();
 
     // Reload latest settings before detection
     m_autoBlurManager->setOptions(AutoBlurSettingsManager::instance().load());
+    const auto options = m_autoBlurManager->options();
+    const bool wantsFaceDetection = options.detectFaces;
+    bool runFaceDetection = false;
+    if (wantsFaceDetection) {
+        runFaceDetection = m_autoBlurManager->isInitialized() || m_autoBlurManager->initialize();
+    }
+    const QString faceUnavailableError =
+        (wantsFaceDetection && !runFaceDetection) ? tr("Face detection unavailable") : QString();
+
+    OCRManager* ocrManager = ensureOCRManager();
+    const bool runCredentialDetection = (ocrManager != nullptr);
+
+    if (!runFaceDetection && !runCredentialDetection) {
+        m_autoBlurInProgress = false;
+        updateLoadingSpinnerState();
+        m_uiIndicators->showToast(false,
+            faceUnavailableError.isEmpty() ? tr("Detection unavailable") : faceUnavailableError);
+        return;
+    }
 
     // Capture the exact source snapshot used for detection.
     // Annotation source and coordinate conversion must use the same snapshot.
     QPixmap detectionPixmap = m_displayPixmap;
     QImage image = detectionPixmap.toImage();
+    const QSize imageSize = image.size();
     qreal dpr = detectionPixmap.devicePixelRatio();
+    if (dpr <= 0.0) {
+        dpr = 1.0;
+    }
 
-    // Run detection asynchronously to avoid blocking UI thread
-    auto* watcher = new QFutureWatcher<AutoBlurManager::DetectionResult>(this);
-    m_autoBlurWatcher = watcher;
-    connect(watcher, &QFutureWatcher<AutoBlurManager::DetectionResult>::finished,
-            this, [this, watcher, detectionPixmap, dpr]() {
-        auto result = watcher->result();
-        m_autoBlurWatcher = nullptr;
-        watcher->deleteLater();
-        m_autoBlurInProgress = false;
+    struct AggregatedResult {
+        QVector<QRect> faceRegions;
+        QVector<QRect> credentialRegions;
+        bool facePending = false;
+        bool ocrPending = false;
+        bool faceAttempted = false;
+        bool ocrAttempted = false;
+        QString faceError;
+        QString ocrError;
+    };
 
-        if (!result.success || result.faceRegions.isEmpty()) {
+    auto aggregated = std::make_shared<AggregatedResult>();
+    aggregated->facePending = runFaceDetection;
+    aggregated->ocrPending = runCredentialDetection;
+    aggregated->faceAttempted = wantsFaceDetection;
+    aggregated->ocrAttempted = runCredentialDetection;
+    aggregated->faceError = faceUnavailableError;
+
+    QPointer<PinWindow> safeThis = this;
+    auto complete = [safeThis](bool success, int faceCount, int credentialCount, const QString& error) {
+        if (!safeThis) {
             return;
         }
 
-        // Use unified settings from AutoBlurSettingsManager
-        const auto opts = m_autoBlurManager->options();
-        int blockSize = AutoBlurManager::intensityToBlockSize(opts.blurIntensity);
+        safeThis->m_autoBlurInProgress = false;
+        safeThis->updateLoadingSpinnerState();
 
-        auto blurType = (opts.blurType == AutoBlurSettingsManager::BlurType::Gaussian)
-            ? MosaicRectAnnotation::BlurType::Gaussian
-            : MosaicRectAnnotation::BlurType::Pixelate;
-
-        // Create shared pixmap for all face annotations using the same snapshot
-        // that was analyzed by face detection.
-        auto sharedDisplayPixmap = std::make_shared<const QPixmap>(detectionPixmap);
-
-        for (const QRect& faceRect : result.faceRegions) {
-            QRect logicalRect = CoordinateHelper::toLogical(faceRect, dpr);
-
-            auto mosaic = std::make_unique<MosaicRectAnnotation>(
-                logicalRect, sharedDisplayPixmap, blockSize, blurType
-            );
-            m_annotationLayer->addItem(std::move(mosaic));
+        QString message;
+        bool toastSuccess = success;
+        if (success && faceCount > 0 && credentialCount > 0) {
+            message = safeThis->tr("Blurred %1 face(s), %2 credential(s)")
+                .arg(faceCount)
+                .arg(credentialCount);
+        } else if (success && faceCount > 0) {
+            message = safeThis->tr("Blurred %1 face(s)").arg(faceCount);
+        } else if (success && credentialCount > 0) {
+            message = safeThis->tr("Blurred %1 credential(s)").arg(credentialCount);
+        } else if (success) {
+            message = safeThis->tr("No faces or credentials detected");
+            toastSuccess = true;
+        } else {
+            message = error.isEmpty() ? safeThis->tr("Detection failed") : error;
+            toastSuccess = false;
         }
 
-        updateUndoRedoState();
-        update();
-    });
+        safeThis->m_uiIndicators->showToast(toastSuccess, message);
+        safeThis->update();
+    };
 
-    // detect() is thread-safe: FaceDetector::detect() only reads the image,
-    // and cv::CascadeClassifier::detectMultiScale is const after initialization.
-    AutoBlurManager* mgr = m_autoBlurManager;
-    watcher->setFuture(QtConcurrent::run([mgr, image]() {
-        return mgr->detect(image);
-    }));
+    auto finishIfReady = [safeThis, aggregated, detectionPixmap, dpr, complete]() {
+        if (!safeThis || aggregated->facePending || aggregated->ocrPending) {
+            return;
+        }
+
+        const int faceCount = aggregated->faceRegions.size();
+        const int credentialCount = aggregated->credentialRegions.size();
+        if (faceCount > 0 || credentialCount > 0) {
+            QString warningMessage;
+            if (!aggregated->faceError.isEmpty() && !aggregated->ocrError.isEmpty()) {
+                warningMessage = QStringLiteral("%1; %2").arg(aggregated->faceError, aggregated->ocrError);
+            } else if (!aggregated->faceError.isEmpty()) {
+                warningMessage = aggregated->faceError;
+            } else if (!aggregated->ocrError.isEmpty()) {
+                warningMessage = aggregated->ocrError;
+            }
+
+            const auto opts = safeThis->m_autoBlurManager->options();
+            const int blockSize = AutoBlurManager::intensityToBlockSize(opts.blurIntensity);
+            const auto blurType = (opts.blurType == AutoBlurSettingsManager::BlurType::Gaussian)
+                ? MosaicRectAnnotation::BlurType::Gaussian
+                : MosaicRectAnnotation::BlurType::Pixelate;
+            const QRect logicalBounds(QPoint(0, 0), logicalSizeFromPixmap(detectionPixmap));
+            auto sharedDisplayPixmap = std::make_shared<const QPixmap>(detectionPixmap);
+
+            auto addRegions = [&](const QVector<QRect>& regions) {
+                for (const QRect& rect : regions) {
+                    QRect logicalRect = CoordinateHelper::toLogical(rect, dpr).intersected(logicalBounds);
+                    if (logicalRect.isEmpty()) {
+                        continue;
+                    }
+
+                    auto mosaic = std::make_unique<MosaicRectAnnotation>(
+                        logicalRect, sharedDisplayPixmap, blockSize, blurType
+                    );
+                    safeThis->m_annotationLayer->addItem(std::move(mosaic));
+                }
+            };
+
+            addRegions(aggregated->faceRegions);
+            addRegions(aggregated->credentialRegions);
+            safeThis->updateUndoRedoState();
+            if (warningMessage.isEmpty()) {
+                complete(true, faceCount, credentialCount, QString());
+                return;
+            }
+
+            QString partialMessage;
+            if (faceCount > 0 && credentialCount > 0) {
+                partialMessage = safeThis->tr("Blurred %1 face(s), %2 credential(s). %3")
+                    .arg(faceCount)
+                    .arg(credentialCount)
+                    .arg(warningMessage);
+            } else if (faceCount > 0) {
+                partialMessage = safeThis->tr("Blurred %1 face(s). %2")
+                    .arg(faceCount)
+                    .arg(warningMessage);
+            } else {
+                partialMessage = safeThis->tr("Blurred %1 credential(s). %2")
+                    .arg(credentialCount)
+                    .arg(warningMessage);
+            }
+            complete(false, faceCount, credentialCount, partialMessage);
+            return;
+        }
+
+        QString errorMessage;
+        if (!aggregated->faceError.isEmpty() && !aggregated->ocrError.isEmpty()) {
+            errorMessage = QStringLiteral("%1; %2").arg(aggregated->faceError, aggregated->ocrError);
+        } else if (!aggregated->faceError.isEmpty()) {
+            errorMessage = aggregated->faceError;
+        } else if (!aggregated->ocrError.isEmpty()) {
+            errorMessage = aggregated->ocrError;
+        }
+
+        if (errorMessage.isEmpty()) {
+            complete(true, 0, 0, QString());
+        } else {
+            complete(false, 0, 0, errorMessage);
+        }
+    };
+
+    m_autoBlurWatcher = nullptr;
+
+    if (runFaceDetection) {
+        auto* watcher = new QFutureWatcher<AutoBlurManager::DetectionResult>(this);
+        m_autoBlurWatcher = watcher;
+        connect(watcher, &QFutureWatcher<AutoBlurManager::DetectionResult>::finished,
+                this, [this, watcher, aggregated, finishIfReady]() {
+            const auto result = watcher->result();
+            m_autoBlurWatcher = nullptr;
+            watcher->deleteLater();
+
+            if (result.success) {
+                aggregated->faceRegions = result.faceRegions;
+            } else {
+                aggregated->faceError = result.errorMessage;
+            }
+
+            aggregated->facePending = false;
+            finishIfReady();
+        });
+
+        AutoBlurManager* manager = m_autoBlurManager;
+        watcher->setFuture(QtConcurrent::run([manager, image]() {
+            return manager->detect(image);
+        }));
+    }
+
+    if (runCredentialDetection) {
+        QPixmap ocrPixmap = detectionPixmap;
+        ocrPixmap.setDevicePixelRatio(1.0);
+        ocrManager->recognizeText(ocrPixmap,
+            [safeThis, aggregated, finishIfReady, imageSize](const OCRResult& result) {
+                if (!safeThis) {
+                    return;
+                }
+
+                if (result.success && !result.blocks.isEmpty()) {
+                    aggregated->credentialRegions =
+                        CredentialDetector::detect(result.blocks, imageSize);
+                } else if (!result.success && !result.error.isEmpty()
+                           && result.error != QStringLiteral("No text detected")) {
+                    aggregated->ocrError = result.error;
+                }
+
+                aggregated->ocrPending = false;
+                finishIfReady();
+            });
+    } else {
+        aggregated->ocrPending = false;
+        if (!runFaceDetection) {
+            finishIfReady();
+        }
+    }
 }
 
 void PinWindow::onMoreColorsRequested()

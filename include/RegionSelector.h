@@ -288,7 +288,7 @@ private:
     QPointer<QFutureWatcherBase> m_autoBlurWatcher;
 
     void performAutoBlur();
-    void onAutoBlurComplete(bool success, int faceCount, int textCount, const QString &error);
+    void onAutoBlurComplete(bool success, int faceCount, int credentialCount, const QString &error);
 
     // Shared toast display for OCR, QR code, and auto-blur results
     void showSelectionToast(const QString &message, const QString &bgColor);

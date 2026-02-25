@@ -21,6 +21,7 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include "QRCodeManager.h"
 #include "PlatformFeatures.h"
 #include "detection/AutoBlurManager.h"
+#include "detection/CredentialDetector.h"
 #include "settings/AnnotationSettingsManager.h"
 #include "settings/AutoBlurSettingsManager.h"
 #include "settings/FileSettingsManager.h"
@@ -38,6 +39,7 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include <cstring>
 #include <algorithm>
 #include <map>
+#include <memory>
 #include <QPainter>
 #include <QPainterPath>
 #include <QMouseEvent>
@@ -2368,13 +2370,6 @@ void RegionSelector::performAutoBlur()
         return;
     }
 
-    // Lazy initialization: load cascade classifier on first use
-    if (!m_autoBlurManager->isInitialized()) {
-        if (!m_autoBlurManager->initialize()) {
-            return;
-        }
-    }
-
     m_autoBlurInProgress = true;
     m_colorAndWidthWidget->setAutoBlurProcessing(true);
     ensureLoadingSpinner()->start();
@@ -2399,62 +2394,195 @@ void RegionSelector::performAutoBlur()
     }
     QPixmap selectedPixmap = m_backgroundPixmap.copy(clampedPhysicalRect);
     QImage selectedImage = selectedPixmap.toImage();
+    const QSize selectedImageSize = selectedImage.size();
 
-    // Run detection asynchronously to avoid blocking UI thread
-    auto* watcher = new QFutureWatcher<AutoBlurManager::DetectionResult>(this);
-    m_autoBlurWatcher = watcher;
-    connect(watcher, &QFutureWatcher<AutoBlurManager::DetectionResult>::finished,
-            this, [this, watcher, sel, clampedPhysicalRect]() {
-        auto result = watcher->result();
-        m_autoBlurWatcher = nullptr;
-        watcher->deleteLater();
+    const auto opts = m_autoBlurManager->options();
+    const bool wantsFaceDetection = opts.detectFaces;
+    bool runFaceDetection = false;
+    if (wantsFaceDetection) {
+        runFaceDetection = m_autoBlurManager->isInitialized() || m_autoBlurManager->initialize();
+    }
+    const QString faceUnavailableError =
+        (wantsFaceDetection && !runFaceDetection) ? tr("Face detection unavailable") : QString();
 
-        if (result.success) {
-            int faceCount = result.faceRegions.size();
+    OCRManager* ocrManager = ensureOCRManager();
+    const bool runCredentialDetection = (ocrManager != nullptr);
 
-            if (faceCount > 0) {
-                // Use unified settings from AutoBlurSettingsManager
-                const auto opts = m_autoBlurManager->options();
-                int blockSize = AutoBlurManager::intensityToBlockSize(opts.blurIntensity);
+    if (!runFaceDetection && !runCredentialDetection) {
+        m_autoBlurInProgress = false;
+        m_colorAndWidthWidget->setAutoBlurProcessing(false);
+        if (m_loadingSpinner) {
+            m_loadingSpinner->stop();
+        }
+        showSelectionToast(
+            faceUnavailableError.isEmpty() ? tr("Detection unavailable") : faceUnavailableError,
+            "rgba(200, 60, 60, 220)");
+        update();
+        return;
+    }
 
-                auto blurType = (opts.blurType == AutoBlurSettingsManager::BlurType::Gaussian)
-                    ? MosaicRectAnnotation::BlurType::Gaussian
-                    : MosaicRectAnnotation::BlurType::Pixelate;
+    struct AggregatedResult {
+        QRect selectionRect;
+        QRect clampedPhysicalRect;
+        QVector<QRect> faceRegions;
+        QVector<QRect> credentialRegions;
+        bool facePending = false;
+        bool ocrPending = false;
+        bool faceAttempted = false;
+        bool ocrAttempted = false;
+        QString faceError;
+        QString ocrError;
+    };
 
-                // Detection coordinates are in device pixels (relative to the cropped region).
-                // Convert to logical coordinates for annotations.
-                for (int i = 0; i < result.faceRegions.size(); ++i) {
-                    const QRect& r = result.faceRegions[i];
-                    const QRect absolutePhysicalRect = r.translated(clampedPhysicalRect.topLeft());
+    auto aggregated = std::make_shared<AggregatedResult>();
+    aggregated->selectionRect = sel;
+    aggregated->clampedPhysicalRect = clampedPhysicalRect;
+    aggregated->facePending = runFaceDetection;
+    aggregated->ocrPending = runCredentialDetection;
+    aggregated->faceAttempted = wantsFaceDetection;
+    aggregated->ocrAttempted = runCredentialDetection;
+    aggregated->faceError = faceUnavailableError;
+
+    QPointer<RegionSelector> safeThis = this;
+    auto finishIfReady = [safeThis, aggregated]() {
+        if (!safeThis || aggregated->facePending || aggregated->ocrPending) {
+            return;
+        }
+
+        const int faceCount = aggregated->faceRegions.size();
+        const int credentialCount = aggregated->credentialRegions.size();
+
+        if (faceCount > 0 || credentialCount > 0) {
+            QString warningMessage;
+            if (!aggregated->faceError.isEmpty() && !aggregated->ocrError.isEmpty()) {
+                warningMessage = QStringLiteral("%1; %2").arg(aggregated->faceError, aggregated->ocrError);
+            } else if (!aggregated->faceError.isEmpty()) {
+                warningMessage = aggregated->faceError;
+            } else if (!aggregated->ocrError.isEmpty()) {
+                warningMessage = aggregated->ocrError;
+            }
+
+            const auto options = safeThis->m_autoBlurManager->options();
+            const int blockSize = AutoBlurManager::intensityToBlockSize(options.blurIntensity);
+            const auto blurType = (options.blurType == AutoBlurSettingsManager::BlurType::Gaussian)
+                ? MosaicRectAnnotation::BlurType::Gaussian
+                : MosaicRectAnnotation::BlurType::Pixelate;
+
+            auto addMosaicRegions = [&](const QVector<QRect>& regions) {
+                for (const QRect& region : regions) {
+                    const QRect absolutePhysicalRect =
+                        region.translated(aggregated->clampedPhysicalRect.topLeft());
                     const QRect logicalRect =
-                        CoordinateHelper::toLogical(absolutePhysicalRect, m_devicePixelRatio)
-                            .intersected(sel);
+                        CoordinateHelper::toLogical(absolutePhysicalRect, safeThis->m_devicePixelRatio)
+                            .intersected(aggregated->selectionRect);
                     if (logicalRect.isEmpty()) {
                         continue;
                     }
 
                     auto mosaic = std::make_unique<MosaicRectAnnotation>(
-                        logicalRect, m_sharedSourcePixmap, blockSize, blurType
+                        logicalRect, safeThis->m_sharedSourcePixmap, blockSize, blurType
                     );
-                    m_annotationLayer->addItem(std::move(mosaic));
+                    safeThis->m_annotationLayer->addItem(std::move(mosaic));
                 }
+            };
+
+            addMosaicRegions(aggregated->faceRegions);
+            addMosaicRegions(aggregated->credentialRegions);
+            if (warningMessage.isEmpty()) {
+                safeThis->onAutoBlurComplete(true, faceCount, credentialCount, QString());
+                return;
             }
 
-            onAutoBlurComplete(true, faceCount, 0, QString());
-        } else {
-            onAutoBlurComplete(false, 0, 0, result.errorMessage);
+            QString partialMessage;
+            if (faceCount > 0 && credentialCount > 0) {
+                partialMessage = safeThis->tr("Blurred %1 face(s), %2 credential(s). %3")
+                    .arg(faceCount)
+                    .arg(credentialCount)
+                    .arg(warningMessage);
+            } else if (faceCount > 0) {
+                partialMessage = safeThis->tr("Blurred %1 face(s). %2")
+                    .arg(faceCount)
+                    .arg(warningMessage);
+            } else {
+                partialMessage = safeThis->tr("Blurred %1 credential(s). %2")
+                    .arg(credentialCount)
+                    .arg(warningMessage);
+            }
+            safeThis->onAutoBlurComplete(false, faceCount, credentialCount, partialMessage);
+            return;
         }
-    });
 
-    // detect() is thread-safe: FaceDetector::detect() only reads the image,
-    // and cv::CascadeClassifier::detectMultiScale is const after initialization.
-    AutoBlurManager* mgr = m_autoBlurManager;
-    watcher->setFuture(QtConcurrent::run([mgr, selectedImage]() {
-        return mgr->detect(selectedImage);
-    }));
+        QString errorMessage;
+        if (!aggregated->faceError.isEmpty() && !aggregated->ocrError.isEmpty()) {
+            errorMessage = QStringLiteral("%1; %2").arg(aggregated->faceError, aggregated->ocrError);
+        } else if (!aggregated->faceError.isEmpty()) {
+            errorMessage = aggregated->faceError;
+        } else if (!aggregated->ocrError.isEmpty()) {
+            errorMessage = aggregated->ocrError;
+        }
+
+        if (errorMessage.isEmpty()) {
+            safeThis->onAutoBlurComplete(true, 0, 0, QString());
+        } else {
+            safeThis->onAutoBlurComplete(false, 0, 0, errorMessage);
+        }
+    };
+
+    m_autoBlurWatcher = nullptr;
+
+    if (runFaceDetection) {
+        auto* watcher = new QFutureWatcher<AutoBlurManager::DetectionResult>(this);
+        m_autoBlurWatcher = watcher;
+        connect(watcher, &QFutureWatcher<AutoBlurManager::DetectionResult>::finished,
+                this, [this, watcher, aggregated, finishIfReady]() {
+            const auto result = watcher->result();
+            m_autoBlurWatcher = nullptr;
+            watcher->deleteLater();
+
+            if (result.success) {
+                aggregated->faceRegions = result.faceRegions;
+            } else {
+                aggregated->faceError = result.errorMessage;
+            }
+
+            aggregated->facePending = false;
+            finishIfReady();
+        });
+
+        AutoBlurManager* manager = m_autoBlurManager;
+        watcher->setFuture(QtConcurrent::run([manager, selectedImage]() {
+            return manager->detect(selectedImage);
+        }));
+    }
+
+    if (runCredentialDetection) {
+        selectedPixmap.setDevicePixelRatio(1.0);
+        ocrManager->recognizeText(selectedPixmap,
+            [safeThis, aggregated, finishIfReady, selectedImageSize](const OCRResult& result) {
+                if (!safeThis) {
+                    return;
+                }
+
+                if (result.success && !result.blocks.isEmpty()) {
+                    aggregated->credentialRegions =
+                        CredentialDetector::detect(result.blocks, selectedImageSize);
+                } else if (!result.success && !result.error.isEmpty()
+                           && result.error != QStringLiteral("No text detected")) {
+                    aggregated->ocrError = result.error;
+                }
+
+                aggregated->ocrPending = false;
+                finishIfReady();
+            });
+    } else {
+        aggregated->ocrPending = false;
+        if (!runFaceDetection) {
+            finishIfReady();
+        }
+    }
 }
 
-void RegionSelector::onAutoBlurComplete(bool success, int faceCount, int /*textCount*/, const QString& error)
+void RegionSelector::onAutoBlurComplete(bool success, int faceCount, int credentialCount, const QString& error)
 {
     m_autoBlurInProgress = false;
     m_colorAndWidthWidget->setAutoBlurProcessing(false);
@@ -2464,12 +2592,20 @@ void RegionSelector::onAutoBlurComplete(bool success, int faceCount, int /*textC
 
     QString msg;
     QString bgColor;
-    if (success && faceCount > 0) {
+    if (success && faceCount > 0 && credentialCount > 0) {
+        msg = tr("Blurred %1 face(s), %2 credential(s)").arg(faceCount).arg(credentialCount);
+        bgColor = "rgba(34, 139, 34, 220)";
+    }
+    else if (success && faceCount > 0) {
         msg = tr("Blurred %1 face(s)").arg(faceCount);
         bgColor = "rgba(34, 139, 34, 220)";  // Green for success
     }
+    else if (success && credentialCount > 0) {
+        msg = tr("Blurred %1 credential(s)").arg(credentialCount);
+        bgColor = "rgba(34, 139, 34, 220)";
+    }
     else if (success) {
-        msg = tr("No faces detected");
+        msg = tr("No faces or credentials detected");
         bgColor = "rgba(100, 100, 100, 220)";  // Gray for nothing found
     }
     else {

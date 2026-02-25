@@ -606,7 +606,11 @@ void ScreenCanvas::paintEvent(QPaintEvent*)
             laserConfig.showWidthSection = true;
             laserConfig.applyTo(m_colorAndWidthWidget);
         } else {
-            ToolSectionConfig::forTool(m_currentToolId).applyTo(m_colorAndWidthWidget);
+            ToolSectionConfig config = ToolSectionConfig::forTool(m_currentToolId);
+            if (m_currentToolId == ToolId::Mosaic) {
+                config.showAutoBlurSection = false;
+            }
+            config.applyTo(m_colorAndWidthWidget);
         }
         m_colorAndWidthWidget->updatePosition(toolbarRect, true, width());
         m_colorAndWidthWidget->draw(painter);
