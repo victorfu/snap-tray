@@ -43,7 +43,7 @@ QRCodeResultDialog::QRCodeResultDialog(QWidget *parent)
     , m_isTextEdited(false)
 {
     setAttribute(Qt::WA_DeleteOnClose);
-    setAttribute(Qt::WA_TranslucentBackground, false);
+    setAttribute(Qt::WA_TranslucentBackground, true);
 
     setupUi();
     applyTheme();
@@ -164,13 +164,13 @@ void QRCodeResultDialog::applyTheme()
         QRCodeResultDialog {
             background-color: %1;
             border: 1px solid %2;
-            border-radius: 12px;
+            border-radius: 10px;
         }
 
         #titleBar {
             background-color: %3;
-            border-top-left-radius: 12px;
-            border-top-right-radius: 12px;
+            border-top-left-radius: 10px;
+            border-top-right-radius: 10px;
             border-bottom: 1px solid %2;
         }
 
@@ -217,8 +217,8 @@ void QRCodeResultDialog::applyTheme()
 
         #buttonBar {
             background-color: %3;
-            border-bottom-left-radius: 12px;
-            border-bottom-right-radius: 12px;
+            border-bottom-left-radius: 10px;
+            border-bottom-right-radius: 10px;
         }
 
         QPushButton {
