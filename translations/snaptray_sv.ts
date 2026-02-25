@@ -1473,4 +1473,35 @@ Storlek: %2</translation>
         <translation>Okänd tid</translation>
     </message>
 </context>
+<context>
+    <name>CaptureShortcutHintsOverlay</name>
+    <message>
+        <source>Cancel capture</source>
+        <translation>Avbryt skärmdump</translation>
+    </message>
+    <message>
+        <source>Confirm selection (after selection)</source>
+        <translation>Bekräfta markering (efter markering)</translation>
+    </message>
+    <message>
+        <source>Toggle multi-region mode</source>
+        <translation>Växla flervalsläge</translation>
+    </message>
+    <message>
+        <source>Switch RGB/HEX (when magnifier visible)</source>
+        <translation>Växla RGB/HEX (när förstoringsglaset visas)</translation>
+    </message>
+    <message>
+        <source>Copy color value (before selection)</source>
+        <translation>Kopiera färgvärde (före markering)</translation>
+    </message>
+    <message>
+        <source>Move selection by 1 pixel (after selection)</source>
+        <translation>Flytta markering 1 pixel (efter markering)</translation>
+    </message>
+    <message>
+        <source>Resize selection by 1 pixel (after selection)</source>
+        <translation>Ändra storlek på markering 1 pixel (efter markering)</translation>
+    </message>
+</context>
 </TS>

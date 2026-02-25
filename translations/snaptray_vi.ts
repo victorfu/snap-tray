@@ -1473,4 +1473,35 @@ Kích thước: %2</translation>
         <translation>Thời gian không xác định</translation>
     </message>
 </context>
+<context>
+    <name>CaptureShortcutHintsOverlay</name>
+    <message>
+        <source>Cancel capture</source>
+        <translation>Hủy chụp</translation>
+    </message>
+    <message>
+        <source>Confirm selection (after selection)</source>
+        <translation>Xác nhận vùng chọn (sau khi chọn)</translation>
+    </message>
+    <message>
+        <source>Toggle multi-region mode</source>
+        <translation>Chuyển chế độ nhiều vùng</translation>
+    </message>
+    <message>
+        <source>Switch RGB/HEX (when magnifier visible)</source>
+        <translation>Chuyển RGB/HEX (khi kính lúp hiển thị)</translation>
+    </message>
+    <message>
+        <source>Copy color value (before selection)</source>
+        <translation>Sao chép giá trị màu (trước khi chọn)</translation>
+    </message>
+    <message>
+        <source>Move selection by 1 pixel (after selection)</source>
+        <translation>Di chuyển vùng chọn 1 pixel (sau khi chọn)</translation>
+    </message>
+    <message>
+        <source>Resize selection by 1 pixel (after selection)</source>
+        <translation>Đổi kích thước vùng chọn 1 pixel (sau khi chọn)</translation>
+    </message>
+</context>
 </TS>

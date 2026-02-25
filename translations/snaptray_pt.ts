@@ -1983,4 +1983,35 @@ Ele pode estar em uso por outro aplicativo.</translation>
         <translation>Não foi possível corresponder à tela selecionada. Gravando da tela principal.</translation>
     </message>
 </context>
+<context>
+    <name>CaptureShortcutHintsOverlay</name>
+    <message>
+        <source>Cancel capture</source>
+        <translation>Cancelar captura</translation>
+    </message>
+    <message>
+        <source>Confirm selection (after selection)</source>
+        <translation>Confirmar seleção (após a seleção)</translation>
+    </message>
+    <message>
+        <source>Toggle multi-region mode</source>
+        <translation>Alternar modo de múltiplas regiões</translation>
+    </message>
+    <message>
+        <source>Switch RGB/HEX (when magnifier visible)</source>
+        <translation>Alternar RGB/HEX (quando a lupa estiver visível)</translation>
+    </message>
+    <message>
+        <source>Copy color value (before selection)</source>
+        <translation>Copiar valor da cor (antes da seleção)</translation>
+    </message>
+    <message>
+        <source>Move selection by 1 pixel (after selection)</source>
+        <translation>Mover seleção em 1 pixel (após a seleção)</translation>
+    </message>
+    <message>
+        <source>Resize selection by 1 pixel (after selection)</source>
+        <translation>Redimensionar seleção em 1 pixel (após a seleção)</translation>
+    </message>
+</context>
 </TS>

@@ -1983,4 +1983,35 @@ Deze wordt mogelijk gebruikt door een andere applicatie.</translation>
         <translation>Kan het geselecteerde scherm niet vinden. Er wordt in plaats daarvan opgenomen van het hoofdscherm.</translation>
     </message>
 </context>
+<context>
+    <name>CaptureShortcutHintsOverlay</name>
+    <message>
+        <source>Cancel capture</source>
+        <translation>Vastleggen annuleren</translation>
+    </message>
+    <message>
+        <source>Confirm selection (after selection)</source>
+        <translation>Selectie bevestigen (na selectie)</translation>
+    </message>
+    <message>
+        <source>Toggle multi-region mode</source>
+        <translation>Modus voor meerdere regio's wisselen</translation>
+    </message>
+    <message>
+        <source>Switch RGB/HEX (when magnifier visible)</source>
+        <translation>RGB/HEX wisselen (wanneer de loep zichtbaar is)</translation>
+    </message>
+    <message>
+        <source>Copy color value (before selection)</source>
+        <translation>Kleurwaarde kopiëren (vóór selectie)</translation>
+    </message>
+    <message>
+        <source>Move selection by 1 pixel (after selection)</source>
+        <translation>Selectie 1 pixel verplaatsen (na selectie)</translation>
+    </message>
+    <message>
+        <source>Resize selection by 1 pixel (after selection)</source>
+        <translation>Selectie 1 pixel van grootte veranderen (na selectie)</translation>
+    </message>
+</context>
 </TS>

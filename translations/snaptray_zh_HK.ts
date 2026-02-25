@@ -1503,4 +1503,35 @@ Size: %2</source>
         <translation>未知時間</translation>
     </message>
 </context>
+<context>
+    <name>CaptureShortcutHintsOverlay</name>
+    <message>
+        <source>Cancel capture</source>
+        <translation>取消擷取</translation>
+    </message>
+    <message>
+        <source>Confirm selection (after selection)</source>
+        <translation>確認選取範圍（完成選取後）</translation>
+    </message>
+    <message>
+        <source>Toggle multi-region mode</source>
+        <translation>切換多區域模式</translation>
+    </message>
+    <message>
+        <source>Switch RGB/HEX (when magnifier visible)</source>
+        <translation>切換 RGB/HEX（顯示放大鏡時）</translation>
+    </message>
+    <message>
+        <source>Copy color value (before selection)</source>
+        <translation>複製顏色值（選取前）</translation>
+    </message>
+    <message>
+        <source>Move selection by 1 pixel (after selection)</source>
+        <translation>將選取範圍移動 1 像素（完成選取後）</translation>
+    </message>
+    <message>
+        <source>Resize selection by 1 pixel (after selection)</source>
+        <translation>將選取範圍調整 1 像素（完成選取後）</translation>
+    </message>
+</context>
 </TS>

@@ -1473,4 +1473,35 @@ Size: %2</source>
         <translation>Άγνωστος χρόνος</translation>
     </message>
 </context>
+<context>
+    <name>CaptureShortcutHintsOverlay</name>
+    <message>
+        <source>Cancel capture</source>
+        <translation>Ακύρωση λήψης</translation>
+    </message>
+    <message>
+        <source>Confirm selection (after selection)</source>
+        <translation>Επιβεβαίωση επιλογής (μετά την επιλογή)</translation>
+    </message>
+    <message>
+        <source>Toggle multi-region mode</source>
+        <translation>Εναλλαγή λειτουργίας πολλαπλών περιοχών</translation>
+    </message>
+    <message>
+        <source>Switch RGB/HEX (when magnifier visible)</source>
+        <translation>Εναλλαγή RGB/HEX (όταν η μεγεθυντική προβολή είναι ορατή)</translation>
+    </message>
+    <message>
+        <source>Copy color value (before selection)</source>
+        <translation>Αντιγραφή τιμής χρώματος (πριν από την επιλογή)</translation>
+    </message>
+    <message>
+        <source>Move selection by 1 pixel (after selection)</source>
+        <translation>Μετακίνηση επιλογής κατά 1 εικονοστοιχείο (μετά την επιλογή)</translation>
+    </message>
+    <message>
+        <source>Resize selection by 1 pixel (after selection)</source>
+        <translation>Αλλαγή μεγέθους επιλογής κατά 1 εικονοστοιχείο (μετά την επιλογή)</translation>
+    </message>
+</context>
 </TS>

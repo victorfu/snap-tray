@@ -1983,4 +1983,35 @@ It may be in use by another application.</source>
         <translation>선택한 화면을 일치시킬 수 없습니다. 대신 기본 디스플레이에서 녹화합니다.</translation>
     </message>
 </context>
+<context>
+    <name>CaptureShortcutHintsOverlay</name>
+    <message>
+        <source>Cancel capture</source>
+        <translation>캡처 취소</translation>
+    </message>
+    <message>
+        <source>Confirm selection (after selection)</source>
+        <translation>선택 확정(선택 후)</translation>
+    </message>
+    <message>
+        <source>Toggle multi-region mode</source>
+        <translation>다중 영역 모드 전환</translation>
+    </message>
+    <message>
+        <source>Switch RGB/HEX (when magnifier visible)</source>
+        <translation>RGB/HEX 전환(돋보기가 보일 때)</translation>
+    </message>
+    <message>
+        <source>Copy color value (before selection)</source>
+        <translation>색상 값 복사(선택 전)</translation>
+    </message>
+    <message>
+        <source>Move selection by 1 pixel (after selection)</source>
+        <translation>선택 영역을 1픽셀 이동(선택 후)</translation>
+    </message>
+    <message>
+        <source>Resize selection by 1 pixel (after selection)</source>
+        <translation>선택 영역 크기를 1픽셀 조정(선택 후)</translation>
+    </message>
+</context>
 </TS>

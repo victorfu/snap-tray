@@ -1983,4 +1983,35 @@ It may be in use by another application.</source>
         <translation>Изабрани екран није препознат. Снимање се врши са главног екрана.</translation>
     </message>
 </context>
+<context>
+    <name>CaptureShortcutHintsOverlay</name>
+    <message>
+        <source>Cancel capture</source>
+        <translation>Откажи снимање</translation>
+    </message>
+    <message>
+        <source>Confirm selection (after selection)</source>
+        <translation>Потврди избор (након избора)</translation>
+    </message>
+    <message>
+        <source>Toggle multi-region mode</source>
+        <translation>Пребаци режим више области</translation>
+    </message>
+    <message>
+        <source>Switch RGB/HEX (when magnifier visible)</source>
+        <translation>Пребаци RGB/HEX (када је лупа видљива)</translation>
+    </message>
+    <message>
+        <source>Copy color value (before selection)</source>
+        <translation>Копирај вредност боје (пре избора)</translation>
+    </message>
+    <message>
+        <source>Move selection by 1 pixel (after selection)</source>
+        <translation>Помери избор за 1 пиксел (након избора)</translation>
+    </message>
+    <message>
+        <source>Resize selection by 1 pixel (after selection)</source>
+        <translation>Промени величину избора за 1 пиксел (након избора)</translation>
+    </message>
+</context>
 </TS>

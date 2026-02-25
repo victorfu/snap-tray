@@ -1473,4 +1473,35 @@ Dydis: %2</translation>
         <translation>Nežinomas laikas</translation>
     </message>
 </context>
+<context>
+    <name>CaptureShortcutHintsOverlay</name>
+    <message>
+        <source>Cancel capture</source>
+        <translation>Atšaukti fiksavimą</translation>
+    </message>
+    <message>
+        <source>Confirm selection (after selection)</source>
+        <translation>Patvirtinti pasirinkimą (po pasirinkimo)</translation>
+    </message>
+    <message>
+        <source>Toggle multi-region mode</source>
+        <translation>Perjungti kelių sričių režimą</translation>
+    </message>
+    <message>
+        <source>Switch RGB/HEX (when magnifier visible)</source>
+        <translation>Perjungti RGB/HEX (kai matomas didintuvas)</translation>
+    </message>
+    <message>
+        <source>Copy color value (before selection)</source>
+        <translation>Nukopijuoti spalvos reikšmę (prieš pasirinkimą)</translation>
+    </message>
+    <message>
+        <source>Move selection by 1 pixel (after selection)</source>
+        <translation>Perkelti pasirinkimą 1 pikseliu (po pasirinkimo)</translation>
+    </message>
+    <message>
+        <source>Resize selection by 1 pixel (after selection)</source>
+        <translation>Keisti pasirinkimo dydį 1 pikseliu (po pasirinkimo)</translation>
+    </message>
+</context>
 </TS>

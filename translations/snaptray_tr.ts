@@ -1473,4 +1473,35 @@ Boyut: %2</translation>
         <translation>Bilinmeyen zaman</translation>
     </message>
 </context>
+<context>
+    <name>CaptureShortcutHintsOverlay</name>
+    <message>
+        <source>Cancel capture</source>
+        <translation>Yakalamayı iptal et</translation>
+    </message>
+    <message>
+        <source>Confirm selection (after selection)</source>
+        <translation>Seçimi onayla (seçimden sonra)</translation>
+    </message>
+    <message>
+        <source>Toggle multi-region mode</source>
+        <translation>Çoklu bölge modunu değiştir</translation>
+    </message>
+    <message>
+        <source>Switch RGB/HEX (when magnifier visible)</source>
+        <translation>RGB/HEX arasında geçiş yap (büyüteç görünürken)</translation>
+    </message>
+    <message>
+        <source>Copy color value (before selection)</source>
+        <translation>Renk değerini kopyala (seçimden önce)</translation>
+    </message>
+    <message>
+        <source>Move selection by 1 pixel (after selection)</source>
+        <translation>Seçimi 1 piksel taşı (seçimden sonra)</translation>
+    </message>
+    <message>
+        <source>Resize selection by 1 pixel (after selection)</source>
+        <translation>Seçimi 1 piksel yeniden boyutlandır (seçimden sonra)</translation>
+    </message>
+</context>
 </TS>

@@ -1473,4 +1473,35 @@ Size: %2</source>
         <translation>وقت غير معروف</translation>
     </message>
 </context>
+<context>
+    <name>CaptureShortcutHintsOverlay</name>
+    <message>
+        <source>Cancel capture</source>
+        <translation>إلغاء الالتقاط</translation>
+    </message>
+    <message>
+        <source>Confirm selection (after selection)</source>
+        <translation>تأكيد التحديد (بعد التحديد)</translation>
+    </message>
+    <message>
+        <source>Toggle multi-region mode</source>
+        <translation>تبديل وضع التحديد المتعدد</translation>
+    </message>
+    <message>
+        <source>Switch RGB/HEX (when magnifier visible)</source>
+        <translation>التبديل بين RGB/HEX (عند ظهور المكبر)</translation>
+    </message>
+    <message>
+        <source>Copy color value (before selection)</source>
+        <translation>نسخ قيمة اللون (قبل التحديد)</translation>
+    </message>
+    <message>
+        <source>Move selection by 1 pixel (after selection)</source>
+        <translation>تحريك التحديد بمقدار 1 بكسل (بعد التحديد)</translation>
+    </message>
+    <message>
+        <source>Resize selection by 1 pixel (after selection)</source>
+        <translation>تغيير حجم التحديد بمقدار 1 بكسل (بعد التحديد)</translation>
+    </message>
+</context>
 </TS>

@@ -1983,4 +1983,35 @@ It may be in use by another application.</source>
         <translation>Не удалось определить выбранный экран. Запись ведётся с основного дисплея.</translation>
     </message>
 </context>
+<context>
+    <name>CaptureShortcutHintsOverlay</name>
+    <message>
+        <source>Cancel capture</source>
+        <translation>Отменить захват</translation>
+    </message>
+    <message>
+        <source>Confirm selection (after selection)</source>
+        <translation>Подтвердить выделение (после выделения)</translation>
+    </message>
+    <message>
+        <source>Toggle multi-region mode</source>
+        <translation>Переключить режим нескольких областей</translation>
+    </message>
+    <message>
+        <source>Switch RGB/HEX (when magnifier visible)</source>
+        <translation>Переключить RGB/HEX (когда лупа видна)</translation>
+    </message>
+    <message>
+        <source>Copy color value (before selection)</source>
+        <translation>Скопировать значение цвета (до выделения)</translation>
+    </message>
+    <message>
+        <source>Move selection by 1 pixel (after selection)</source>
+        <translation>Переместить выделение на 1 пиксель (после выделения)</translation>
+    </message>
+    <message>
+        <source>Resize selection by 1 pixel (after selection)</source>
+        <translation>Изменить размер выделения на 1 пиксель (после выделения)</translation>
+    </message>
+</context>
 </TS>

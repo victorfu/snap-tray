@@ -2279,4 +2279,35 @@ It may be in use by another application.</source>
         <translation type="unfinished">选择颜色</translation>
     </message>
 </context>
+<context>
+    <name>CaptureShortcutHintsOverlay</name>
+    <message>
+        <source>Cancel capture</source>
+        <translation>取消截图</translation>
+    </message>
+    <message>
+        <source>Confirm selection (after selection)</source>
+        <translation>确认选区（选区完成后）</translation>
+    </message>
+    <message>
+        <source>Toggle multi-region mode</source>
+        <translation>切换多区域模式</translation>
+    </message>
+    <message>
+        <source>Switch RGB/HEX (when magnifier visible)</source>
+        <translation>切换 RGB/HEX（放大镜可见时）</translation>
+    </message>
+    <message>
+        <source>Copy color value (before selection)</source>
+        <translation>复制颜色值（选区前）</translation>
+    </message>
+    <message>
+        <source>Move selection by 1 pixel (after selection)</source>
+        <translation>将选区移动 1 像素（选区完成后）</translation>
+    </message>
+    <message>
+        <source>Resize selection by 1 pixel (after selection)</source>
+        <translation>将选区调整 1 像素（选区完成后）</translation>
+    </message>
+</context>
 </TS>
