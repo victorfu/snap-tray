@@ -282,6 +282,7 @@ add_library(snaptray_core STATIC
     src/settings/FileSettingsManager.cpp
     src/settings/OCRSettingsManager.cpp
     src/settings/PinWindowSettingsManager.cpp
+    src/settings/RegionCaptureSettingsManager.cpp
     src/settings/WatermarkSettingsManager.cpp
     src/settings/BeautifySettingsManager.cpp
     src/settings/LanguageManager.cpp
@@ -307,6 +308,7 @@ add_library(snaptray_core STATIC
     include/settings/AnnotationSettingsManager.h
     include/settings/FileSettingsManager.h
     include/settings/PinWindowSettingsManager.h
+    include/settings/RegionCaptureSettingsManager.h
     include/settings/SettingsTheme.h
     include/cursor/CursorManager.h
     include/utils/FilenameTemplateEngine.h
@@ -655,6 +657,7 @@ add_library(snaptray_ui STATIC
     src/region/RegionSettingsHelper.cpp
     src/region/SelectionResizeHelper.cpp
     src/region/RegionExportManager.cpp
+    src/region/CaptureShortcutHintsOverlay.cpp
 
     # PinWindow
     src/PinWindow.cpp
@@ -753,6 +756,7 @@ add_library(snaptray_ui STATIC
     include/region/RegionToolbarHandler.h
     include/region/RegionSettingsHelper.h
     include/region/RegionExportManager.h
+    include/region/CaptureShortcutHintsOverlay.h
     include/PinWindow.h
     include/PinWindowManager.h
     include/pinwindow/PinHistoryStore.h

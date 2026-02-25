@@ -419,7 +419,7 @@ void MainApplication::initialize()
     m_updateChecker->startPeriodicCheck();
 }
 
-void MainApplication::onRegionCapture()
+void MainApplication::startRegionCapture(bool showShortcutHintsOnEntry)
 {
     // Don't trigger if screen canvas is active
     if (m_screenCanvasManager->isActive()) {
@@ -435,7 +435,12 @@ void MainApplication::onRegionCapture()
 
     // Note: Don't close popup menus - allow capturing them (like Snipaste)
     // Modal dialogs (QMessageBox) are handled by CaptureManager
-    m_captureManager->startRegionCapture();
+    m_captureManager->startRegionCapture(showShortcutHintsOnEntry);
+}
+
+void MainApplication::onRegionCapture()
+{
+    startRegionCapture(false);
 }
 
 void MainApplication::onQuickPin()
@@ -652,7 +657,7 @@ void MainApplication::onHotkeyAction(SnapTray::HotkeyAction action)
         if (m_captureManager && m_captureManager->isActive()) {
             m_captureManager->cycleOrSwitchCaptureScreenByCursor();
         } else {
-            onRegionCapture();
+            startRegionCapture(true);
         }
         break;
     case HotkeyAction::ScreenCanvas:

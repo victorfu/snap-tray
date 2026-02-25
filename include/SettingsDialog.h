@@ -64,6 +64,7 @@ private:
     // UI elements
     QTabWidget *m_tabWidget;
     QCheckBox *m_startOnLoginCheckbox;
+    QCheckBox *m_showShortcutHintsCheckbox;
     QComboBox *m_languageCombo;
     QComboBox *m_toolbarStyleCombo;
     SnapTray::HotkeySettingsTab *m_hotkeySettingsTab;

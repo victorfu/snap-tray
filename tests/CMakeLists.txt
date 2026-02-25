@@ -88,6 +88,11 @@ target_link_libraries(RegionSelector_MagnifierPanel PRIVATE snaptray_ui Qt6::Tes
 add_test(NAME RegionSelector_MagnifierPanel COMMAND RegionSelector_MagnifierPanel)
 set_tests_properties(RegionSelector_MagnifierPanel PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(RegionSelector_CaptureShortcutHintsOverlay RegionSelector/tst_CaptureShortcutHintsOverlay.cpp)
+target_link_libraries(RegionSelector_CaptureShortcutHintsOverlay PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME RegionSelector_CaptureShortcutHintsOverlay COMMAND RegionSelector_CaptureShortcutHintsOverlay)
+set_tests_properties(RegionSelector_CaptureShortcutHintsOverlay PROPERTIES TIMEOUT 60 LABELS "unit")
+
 add_executable(RegionSelector_UpdateThrottler RegionSelector/tst_UpdateThrottler.cpp)
 target_link_libraries(RegionSelector_UpdateThrottler PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME RegionSelector_UpdateThrottler COMMAND RegionSelector_UpdateThrottler)
@@ -302,6 +307,11 @@ add_executable(Settings_FileSettingsManager Settings/tst_FileSettingsManager.cpp
 target_link_libraries(Settings_FileSettingsManager PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Settings_FileSettingsManager COMMAND Settings_FileSettingsManager)
 set_tests_properties(Settings_FileSettingsManager PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(Settings_RegionCaptureSettingsManager Settings/tst_RegionCaptureSettingsManager.cpp)
+target_link_libraries(Settings_RegionCaptureSettingsManager PRIVATE snaptray_core Qt6::Test)
+add_test(NAME Settings_RegionCaptureSettingsManager COMMAND Settings_RegionCaptureSettingsManager)
+set_tests_properties(Settings_RegionCaptureSettingsManager PROPERTIES TIMEOUT 60 LABELS "unit")
 
 # ============================================================================
 # Hotkey Tests (link snaptray_ui for HotkeyManager)

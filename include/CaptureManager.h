@@ -27,7 +27,7 @@ public:
     void cycleOrSwitchCaptureScreenByCursor();
 
 public slots:
-    void startRegionCapture();
+    void startRegionCapture(bool showShortcutHintsOnEntry = false);
     void startQuickPinCapture();
     void startRegionCaptureWithPreset(const QRect &region, QScreen *screen);
 
@@ -49,10 +49,11 @@ private:
         QuickPin
     };
 
-    void startCaptureInternal(CaptureEntryMode mode);
+    void startCaptureInternal(CaptureEntryMode mode, bool showShortcutHintsOnEntry);
     void initializeRegionSelector(QScreen *targetScreen,
                                   const QPixmap &preCapture,
-                                  bool quickPinMode);
+                                  bool quickPinMode,
+                                  bool showShortcutHintsOnEntry);
 
     QPointer<RegionSelector> m_regionSelector;
     PinWindowManager *m_pinManager;

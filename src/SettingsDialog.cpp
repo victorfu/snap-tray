@@ -11,6 +11,7 @@
 #include "settings/FileSettingsManager.h"
 #include "settings/PinWindowSettingsManager.h"
 #include "settings/OCRSettingsManager.h"
+#include "settings/RegionCaptureSettingsManager.h"
 #include "settings/SettingsTheme.h"
 #include "utils/FilenameTemplateEngine.h"
 #include "detection/AutoBlurManager.h"
@@ -48,6 +49,7 @@ SettingsDialog::SettingsDialog(QWidget* parent)
     : QDialog(parent)
     , m_tabWidget(nullptr)
     , m_startOnLoginCheckbox(nullptr)
+    , m_showShortcutHintsCheckbox(nullptr)
     , m_languageCombo(nullptr)
     , m_toolbarStyleCombo(nullptr)
     , m_hotkeySettingsTab(nullptr)
@@ -197,6 +199,18 @@ void SettingsDialog::setupGeneralTab(QWidget* tab)
     m_startOnLoginCheckbox = new QCheckBox(tr("Start on login"), contentWidget);
     m_startOnLoginCheckbox->setChecked(AutoLaunchManager::isEnabled());
     layout->addWidget(m_startOnLoginCheckbox);
+
+    // ========== Capture Section ==========
+    layout->addSpacing(16);
+    QLabel* captureSectionLabel = new QLabel(tr("Capture"), contentWidget);
+    captureSectionLabel->setStyleSheet("font-weight: bold; font-size: 12px;");
+    layout->addWidget(captureSectionLabel);
+
+    m_showShortcutHintsCheckbox = new QCheckBox(
+        tr("Show shortcut hints when entering region capture"), contentWidget);
+    m_showShortcutHintsCheckbox->setChecked(
+        RegionCaptureSettingsManager::instance().isShortcutHintsEnabled());
+    layout->addWidget(m_showShortcutHintsCheckbox);
 
     // ========== Language Section ==========
     layout->addSpacing(16);
@@ -904,6 +918,11 @@ void SettingsDialog::onSave()
             qDebug() << "Failed to update auto-launch setting";
         }
         emit startOnLoginChanged(desiredStartOnLogin);
+    }
+
+    if (m_showShortcutHintsCheckbox) {
+        RegionCaptureSettingsManager::instance().setShortcutHintsEnabled(
+            m_showShortcutHintsCheckbox->isChecked());
     }
 
     // Save watermark settings

@@ -60,6 +60,7 @@ class RegionSettingsHelper;
 class RegionExportManager;
 class MultiRegionListPanel;
 class AnnotationContext;
+class CaptureShortcutHintsOverlay;
 
 // ShapeType and ShapeFillMode are defined in annotations/ShapeAnnotation.h
 
@@ -84,6 +85,9 @@ public:
 
     // 設置 Quick Pin 模式 (選擇區域後直接 pin，不顯示 toolbar)
     void setQuickPinMode(bool enabled);
+
+    // Control whether capture shortcut hints are shown on entry.
+    void setShowShortcutHintsOnEntry(bool enabled);
 
     // Switch capture context to another screen while selector is active.
     void switchToScreen(QScreen *screen, bool preserveCompletedSelection = true);
@@ -193,6 +197,9 @@ private:
     QCursor getMosaicCursor(int width);
     void setToolCursor();
     void syncMultiRegionListPanelCursor();
+    void hideShortcutHints();
+    void maybeDismissShortcutHintsAfterSelectionCompleted();
+    static bool isPureModifierKey(int key);
 
     // Initialization helpers
     void setupScreenGeometry(QScreen* screen);
@@ -310,6 +317,11 @@ private:
 
     // Magnifier panel component
     MagnifierPanel* m_magnifierPanel;
+
+    // Capture shortcut hints overlay
+    bool m_showShortcutHintsOnEntry = false;
+    bool m_shortcutHintsVisible = false;
+    std::unique_ptr<CaptureShortcutHintsOverlay> m_shortcutHintsOverlay;
 
     // Update throttling component
     UpdateThrottler m_updateThrottler;

@@ -76,17 +76,17 @@ void CaptureManager::cycleOrSwitchCaptureScreenByCursor()
     m_regionSelector->switchToScreen(cursorScreen, true);
 }
 
-void CaptureManager::startRegionCapture()
+void CaptureManager::startRegionCapture(bool showShortcutHintsOnEntry)
 {
-    startCaptureInternal(CaptureEntryMode::Region);
+    startCaptureInternal(CaptureEntryMode::Region, showShortcutHintsOnEntry);
 }
 
 void CaptureManager::startQuickPinCapture()
 {
-    startCaptureInternal(CaptureEntryMode::QuickPin);
+    startCaptureInternal(CaptureEntryMode::QuickPin, false);
 }
 
-void CaptureManager::startCaptureInternal(CaptureEntryMode mode)
+void CaptureManager::startCaptureInternal(CaptureEntryMode mode, bool showShortcutHintsOnEntry)
 {
     // Skip if already in capture mode
     if (m_regionSelector && m_regionSelector->isVisible()) {
@@ -140,7 +140,7 @@ void CaptureManager::startCaptureInternal(CaptureEntryMode mode)
     }
 
     const bool quickPinMode = (mode == CaptureEntryMode::QuickPin);
-    initializeRegionSelector(targetScreen, preCapture, quickPinMode);
+    initializeRegionSelector(targetScreen, preCapture, quickPinMode, showShortcutHintsOnEntry);
 }
 
 void CaptureManager::onRegionSelected(const QPixmap &screenshot, const QPoint &globalPosition, const QRect &globalRect)
@@ -219,6 +219,7 @@ void CaptureManager::startRegionCaptureWithPreset(const QRect &region, QScreen *
 
     // Create RegionSelector
     m_regionSelector = new RegionSelector();
+    m_regionSelector->setShowShortcutHintsOnEntry(false);
 
     // Setup window detector if available
     // Use async version to avoid blocking UI startup
@@ -272,9 +273,11 @@ void CaptureManager::startRegionCaptureWithPreset(const QRect &region, QScreen *
 
 void CaptureManager::initializeRegionSelector(QScreen *targetScreen,
                                               const QPixmap &preCapture,
-                                              bool quickPinMode)
+                                              bool quickPinMode,
+                                              bool showShortcutHintsOnEntry)
 {
     m_regionSelector = new RegionSelector();
+    m_regionSelector->setShowShortcutHintsOnEntry(showShortcutHintsOnEntry);
 
     if (quickPinMode) {
         m_regionSelector->setQuickPinMode(true);

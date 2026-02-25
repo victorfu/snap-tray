@@ -58,6 +58,7 @@ private slots:
     void onUpdateAvailable(const ReleaseInfo& release);
 
 private:
+    void startRegionCapture(bool showShortcutHintsOnEntry);
     void updateTrayMenuHotkeyText();
     void updatePinsVisibilityActionText();
     void updateActionHotkeyText(QAction* action,

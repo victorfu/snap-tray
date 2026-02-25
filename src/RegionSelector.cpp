@@ -26,6 +26,7 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include "settings/AutoBlurSettingsManager.h"
 #include "settings/FileSettingsManager.h"
 #include "settings/OCRSettingsManager.h"
+#include "settings/RegionCaptureSettingsManager.h"
 #include "OCRResultDialog.h"
 #include "QRCodeResultDialog.h"
 #include "ui/GlobalToast.h"
@@ -34,6 +35,7 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include "tools/ToolSectionConfig.h"
 #include "tools/ToolTraits.h"
 #include "utils/CoordinateHelper.h"
+#include "region/CaptureShortcutHintsOverlay.h"
 #include <QTextEdit>
 
 #include <cstring>
@@ -96,6 +98,7 @@ RegionSelector::RegionSelector(QWidget* parent)
     , m_textEditor(nullptr)
     , m_colorPickerDialog(nullptr)
     , m_magnifierPanel(nullptr)
+    , m_shortcutHintsOverlay(nullptr)
 {
     setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::Tool);
     setAttribute(Qt::WA_DeleteOnClose);
@@ -305,6 +308,7 @@ RegionSelector::RegionSelector(QWidget* parent)
 
     // Initialize magnifier panel component
     m_magnifierPanel = new MagnifierPanel(this);
+    m_shortcutHintsOverlay = std::make_unique<CaptureShortcutHintsOverlay>();
 
     // Initialize region control widget (combines radius toggle + aspect ratio lock)
     m_regionControlWidget = new RegionControlWidget(this);
@@ -992,6 +996,7 @@ void RegionSelector::setupScreenGeometry(QScreen* screen)
 void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapture)
 {
     clearPreservedSelection();
+    m_shortcutHintsVisible = false;
 
     setupScreenGeometry(screen);
     if (!isScreenValid()) {
@@ -1064,11 +1069,16 @@ void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapt
     if (m_screenSwitchTimer && !m_screenSwitchTimer->isActive()) {
         m_screenSwitchTimer->start();
     }
+
+    m_shortcutHintsVisible = !m_quickPinMode &&
+        m_showShortcutHintsOnEntry &&
+        RegionCaptureSettingsManager::instance().isShortcutHintsEnabled();
 }
 
 void RegionSelector::initializeWithRegion(QScreen* screen, const QRect& region)
 {
     clearPreservedSelection();
+    m_shortcutHintsVisible = false;
 
     setupScreenGeometry(screen);
     if (!isScreenValid()) {
@@ -1123,6 +1133,14 @@ void RegionSelector::initializeWithRegion(QScreen* screen, const QRect& region)
 void RegionSelector::setQuickPinMode(bool enabled)
 {
     m_quickPinMode = enabled;
+    if (enabled) {
+        hideShortcutHints();
+    }
+}
+
+void RegionSelector::setShowShortcutHintsOnEntry(bool enabled)
+{
+    m_showShortcutHintsOnEntry = enabled;
 }
 
 bool RegionSelector::isSelectionComplete() const
@@ -1572,12 +1590,53 @@ void RegionSelector::paintEvent(QPaintEvent* event)
         drawMagnifier(painter);
     }
 
+    if (m_shortcutHintsVisible && m_shortcutHintsOverlay) {
+        m_shortcutHintsOverlay->draw(painter, size());
+    }
+
 }
 
 void RegionSelector::drawMagnifier(QPainter& painter)
 {
     // Delegate to MagnifierPanel component
     m_magnifierPanel->draw(painter, m_inputState.currentPoint, size(), m_backgroundPixmap);
+}
+
+void RegionSelector::hideShortcutHints()
+{
+    if (!m_shortcutHintsVisible) {
+        return;
+    }
+
+    m_shortcutHintsVisible = false;
+    update();
+}
+
+void RegionSelector::maybeDismissShortcutHintsAfterSelectionCompleted()
+{
+    if (!m_shortcutHintsVisible || !m_selectionManager) {
+        return;
+    }
+
+    if (!m_selectionManager->isComplete()) {
+        return;
+    }
+
+    hideShortcutHints();
+}
+
+bool RegionSelector::isPureModifierKey(int key)
+{
+    switch (key) {
+    case Qt::Key_Shift:
+    case Qt::Key_Control:
+    case Qt::Key_Alt:
+    case Qt::Key_Meta:
+    case Qt::Key_AltGr:
+        return true;
+    default:
+        return false;
+    }
 }
 
 QCursor RegionSelector::getMosaicCursor(int width)
@@ -1771,6 +1830,8 @@ void RegionSelector::finishSelection()
 
 void RegionSelector::mousePressEvent(QMouseEvent* event)
 {
+    maybeDismissShortcutHintsAfterSelectionCompleted();
+
     if (!m_inputState.multiRegionMode &&
         m_hasPreservedSelection &&
         event->button() == Qt::LeftButton) {
@@ -1823,6 +1884,8 @@ void RegionSelector::mouseDoubleClickEvent(QMouseEvent* event)
 
 void RegionSelector::wheelEvent(QWheelEvent* event)
 {
+    maybeDismissShortcutHintsAfterSelectionCompleted();
+
     // Handle scroll wheel for StepBadge size adjustment
     if (m_inputState.currentTool == ToolId::StepBadge) {
         int delta = event->angleDelta().y();
@@ -1856,6 +1919,10 @@ void RegionSelector::wheelEvent(QWheelEvent* event)
 
 void RegionSelector::keyPressEvent(QKeyEvent* event)
 {
+    if (!isPureModifierKey(event->key())) {
+        maybeDismissShortcutHintsAfterSelectionCompleted();
+    }
+
     // Handle inline text editing keys first
     if (m_textEditor->isEditing()) {
         if (event->key() == Qt::Key_Escape) {
