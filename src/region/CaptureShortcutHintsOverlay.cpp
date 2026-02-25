@@ -19,9 +19,9 @@ constexpr int kKeyCapRadius = 7;
 constexpr int kKeyCapMinWidth = 30;
 constexpr int kPlusSpacing = 6;
 
-constexpr QRgb kPanelBg = qRgba(52, 54, 60, 195);
-constexpr QRgb kPanelBorder = qRgba(255, 255, 255, 45);
-constexpr QRgb kKeyCapBg = qRgba(75, 77, 84, 205);
+constexpr QRgb kPanelBg = qRgba(52, 54, 60, 220);
+constexpr QRgb kPanelBorder = qRgba(255, 255, 255, 58);
+constexpr QRgb kKeyCapBg = qRgba(75, 77, 84, 228);
 constexpr QRgb kKeyCapBorder = qRgba(235, 235, 235, 165);
 constexpr QRgb kKeyText = qRgba(250, 250, 250, 255);
 constexpr QRgb kDescriptionText = qRgba(244, 244, 244, 255);
