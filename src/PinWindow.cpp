@@ -884,11 +884,6 @@ void PinWindow::createContextMenu()
     QAction* beautifyAction = m_contextMenu->addAction(tr("Beautify"));
     connect(beautifyAction, &QAction::triggered, this, &PinWindow::showBeautifyPanel);
 
-    if (PlatformFeatures::instance().isOCRAvailable()) {
-        QAction* ocrAction = m_contextMenu->addAction(tr("Recognize Text"));
-        connect(ocrAction, &QAction::triggered, this, &PinWindow::performOCR);
-    }
-
     // Click-through option
     m_clickThroughAction = m_contextMenu->addAction(tr("Click-through"));
     m_clickThroughAction->setCheckable(true);
