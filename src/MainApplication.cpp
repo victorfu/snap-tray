@@ -440,7 +440,7 @@ void MainApplication::startRegionCapture(bool showShortcutHintsOnEntry)
 
 void MainApplication::onRegionCapture()
 {
-    startRegionCapture(false);
+    startRegionCapture(true);
 }
 
 void MainApplication::onQuickPin()
