@@ -1039,6 +1039,7 @@ void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapt
 {
     clearPreservedSelection();
     m_shortcutHintsVisible = false;
+    m_shortcutHintsTemporarilyHiddenByHover = false;
 
     setupScreenGeometry(screen);
     if (!isScreenValid()) {
@@ -1115,12 +1116,14 @@ void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapt
     m_shortcutHintsVisible = !m_quickPinMode &&
         m_showShortcutHintsOnEntry &&
         RegionCaptureSettingsManager::instance().isShortcutHintsEnabled();
+    m_shortcutHintsTemporarilyHiddenByHover = false;
 }
 
 void RegionSelector::initializeWithRegion(QScreen* screen, const QRect& region)
 {
     clearPreservedSelection();
     m_shortcutHintsVisible = false;
+    m_shortcutHintsTemporarilyHiddenByHover = false;
 
     setupScreenGeometry(screen);
     if (!isScreenValid()) {
@@ -1647,10 +1650,12 @@ void RegionSelector::drawMagnifier(QPainter& painter)
 void RegionSelector::hideShortcutHints()
 {
     if (!m_shortcutHintsVisible) {
+        m_shortcutHintsTemporarilyHiddenByHover = false;
         return;
     }
 
     m_shortcutHintsVisible = false;
+    m_shortcutHintsTemporarilyHiddenByHover = false;
     update();
 }
 
@@ -1665,6 +1670,44 @@ void RegionSelector::maybeDismissShortcutHintsAfterSelectionCompleted()
     }
 
     hideShortcutHints();
+}
+
+void RegionSelector::updateShortcutHintsHoverVisibilityDuringSelection(const QPoint& localPos)
+{
+    if (!m_shortcutHintsOverlay || !m_selectionManager) {
+        return;
+    }
+
+    const QRect panelRect = m_shortcutHintsOverlay->panelRectForViewport(size());
+    if (!panelRect.isValid()) {
+        return;
+    }
+
+    const bool isHoveringPanel = panelRect.contains(localPos);
+    const QRect selectionRect = m_selectionManager->selectionRect().normalized();
+    const bool isSelectionOverlappingPanel =
+        m_selectionManager->hasActiveSelection() &&
+        selectionRect.isValid() &&
+        !selectionRect.isEmpty() &&
+        selectionRect.intersects(panelRect);
+    const bool shouldTemporarilyHide = isHoveringPanel || isSelectionOverlappingPanel;
+
+    // If we are in temporary-hidden state, keep it hidden while cursor hovers panel
+    // or while selection overlaps panel, and restore once both conditions end.
+    if (m_shortcutHintsTemporarilyHiddenByHover) {
+        if (!shouldTemporarilyHide && !m_shortcutHintsVisible) {
+            m_shortcutHintsVisible = true;
+            m_shortcutHintsTemporarilyHiddenByHover = false;
+            update(panelRect);
+        }
+        return;
+    }
+
+    if (shouldTemporarilyHide && m_shortcutHintsVisible) {
+        m_shortcutHintsVisible = false;
+        m_shortcutHintsTemporarilyHiddenByHover = true;
+        update(panelRect);
+    }
 }
 
 bool RegionSelector::isPureModifierKey(int key)
@@ -1936,6 +1979,7 @@ void RegionSelector::mousePressEvent(QMouseEvent* event)
 void RegionSelector::mouseMoveEvent(QMouseEvent* event)
 {
     m_inputHandler->handleMouseMove(event);
+    updateShortcutHintsHoverVisibilityDuringSelection(event->pos());
     m_lastMagnifierRect = m_inputHandler->lastMagnifierRect();
     syncMultiRegionListPanelCursor();
 }
@@ -1943,6 +1987,7 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
 void RegionSelector::mouseReleaseEvent(QMouseEvent* event)
 {
     m_inputHandler->handleMouseRelease(event);
+    updateShortcutHintsHoverVisibilityDuringSelection(event->pos());
     syncMultiRegionListPanelCursor();
 }
 

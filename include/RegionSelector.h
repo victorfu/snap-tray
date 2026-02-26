@@ -201,6 +201,7 @@ private:
     void syncMultiRegionListPanelCursor();
     void hideShortcutHints();
     void maybeDismissShortcutHintsAfterSelectionCompleted();
+    void updateShortcutHintsHoverVisibilityDuringSelection(const QPoint& localPos);
     static bool isPureModifierKey(int key);
 
     // Initialization helpers
@@ -325,6 +326,7 @@ private:
     // Capture shortcut hints overlay
     bool m_showShortcutHintsOnEntry = false;
     bool m_shortcutHintsVisible = false;
+    bool m_shortcutHintsTemporarilyHiddenByHover = false;
     std::unique_ptr<CaptureShortcutHintsOverlay> m_shortcutHintsOverlay;
 
     // Update throttling component
