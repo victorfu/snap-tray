@@ -34,7 +34,6 @@ features:
   eyebrow: 功能特色
   title: 為快速且專業的擷取流程而生
   subtitle: 從一次性截圖到長時間錄影，SnapTray 讓所有流程在同一個托盤工作流中完成。
-  note: 多區域擷取與捲動擷取目前於 Debug 版本可用。
   items:
     - kind: 擷取
       title: Region Capture
@@ -91,7 +90,6 @@ downloads:
     store_name: Microsoft Store
     button: 下載 .exe
     empty: 或從 GitHub releases 下載
-  unsigned_note: 官方 macOS 版本皆已簽章並完成公證。本地臨時建置版本首次啟動時，請右鍵點選 App 後選擇「打開」。
   req_eyebrow: 系統需求
   req_title: 平台前置條件
   req_cards:

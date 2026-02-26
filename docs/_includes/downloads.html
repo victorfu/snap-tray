@@ -43,7 +43,9 @@
       </article>
     </div>
 
+    {% if t.downloads.unsigned_note %}
     <p class="unsigned-note" data-reveal>{{ t.downloads.unsigned_note }}</p>
+    {% endif %}
   </div>
 </section>
 

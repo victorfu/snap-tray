@@ -19,6 +19,8 @@
       {% endfor %}
     </div>
 
+    {% if t.features.note %}
     <p class="feature-note" data-reveal>{{ t.features.note }}</p>
+    {% endif %}
   </div>
 </section>
