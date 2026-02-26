@@ -697,6 +697,25 @@ RegionSelector::RegionSelector(QWidget* parent)
             emit recordingRequested(localToGlobal(m_selectionManager->selectionRect()), m_currentScreen.data());
             close();
         });
+    connect(m_toolbarHandler, &RegionToolbarHandler::scrollCaptureRequested,
+        this, [this]() {
+            if (!isScreenValid()) {
+                qWarning() << "RegionSelector: Screen invalid, cannot start scrolling capture";
+                emit selectionCancelled();
+                close();
+                return;
+            }
+
+            if (m_inputState.multiRegionMode || !m_selectionManager->isComplete()) {
+                return;
+            }
+
+            const QRect globalSelection = localToGlobal(m_selectionManager->selectionRect());
+            QPointer<QScreen> targetScreen = m_currentScreen;
+
+            close();
+            emit scrollingCaptureRequested(globalSelection, targetScreen.data());
+        });
     connect(m_toolbarHandler, &RegionToolbarHandler::saveRequested,
         this, &RegionSelector::saveToFile);
     connect(m_toolbarHandler, &RegionToolbarHandler::copyRequested,

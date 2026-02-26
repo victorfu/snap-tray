@@ -1,6 +1,8 @@
 #include "PlatformFeatures.h"
 #include "OCRManager.h"
 #include "WindowDetector.h"
+#include "platform/IScrollAutomationDriver.h"
+#include "platform/ScrollAutomationDriverFactory.h"
 #include <QBuffer>
 #include <QCoreApplication>
 #include <QDir>
@@ -40,6 +42,7 @@ PlatformFeatures& PlatformFeatures::instance()
 PlatformFeatures::PlatformFeatures()
     : m_ocrAvailable(OCRManager::isAvailable())
     , m_windowDetectionAvailable(true)
+    , m_scrollAutomationAvailable(isPlatformScrollAutomationAvailable())
 {
 }
 
@@ -64,6 +67,19 @@ WindowDetector* PlatformFeatures::createWindowDetector(QObject* parent) const
         return nullptr;
     }
     return new WindowDetector(parent);
+}
+
+IScrollAutomationDriver* PlatformFeatures::createScrollAutomationDriver(QObject* parent) const
+{
+    if (!m_scrollAutomationAvailable) {
+        return nullptr;
+    }
+    return createPlatformScrollAutomationDriver(parent);
+}
+
+bool PlatformFeatures::isScrollAutomationAvailable() const
+{
+    return m_scrollAutomationAvailable;
 }
 
 QIcon PlatformFeatures::createTrayIcon() const

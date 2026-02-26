@@ -6,7 +6,8 @@
 #include <QtMath>
 
 RecordingBoundaryOverlay::RecordingBoundaryOverlay(QWidget *parent)
-    : QWidget(parent, Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint)
+    : QWidget(parent, Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint |
+                        Qt::WindowTransparentForInput | Qt::WindowDoesNotAcceptFocus)
     , m_animationTimer(nullptr)
     , m_gradientOffset(0.0)
     , m_borderMode(BorderMode::Recording)
@@ -15,6 +16,7 @@ RecordingBoundaryOverlay::RecordingBoundaryOverlay(QWidget *parent)
     setAttribute(Qt::WA_TransparentForMouseEvents);  // Click-through
     setAttribute(Qt::WA_ShowWithoutActivating);
     setAttribute(Qt::WA_DeleteOnClose);
+    setFocusPolicy(Qt::NoFocus);
 
     // Animation timer for gradient rotation
     m_animationTimer = new QTimer(this);

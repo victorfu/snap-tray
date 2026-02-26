@@ -8,6 +8,7 @@
 
 class OCRManager;
 class WindowDetector;
+class IScrollAutomationDriver;
 
 class PlatformFeatures
 {
@@ -18,6 +19,8 @@ public:
 
     OCRManager* createOCRManager(QObject* parent = nullptr) const;
     WindowDetector* createWindowDetector(QObject* parent = nullptr) const;
+    IScrollAutomationDriver* createScrollAutomationDriver(QObject* parent = nullptr) const;
+    bool isScrollAutomationAvailable() const;
 
     QIcon createTrayIcon() const;
 
@@ -47,6 +50,7 @@ private:
 
     bool m_ocrAvailable;
     bool m_windowDetectionAvailable;
+    bool m_scrollAutomationAvailable;
 };
 
 #endif // PLATFORMFEATURES_H

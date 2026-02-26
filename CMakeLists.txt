@@ -465,12 +465,15 @@ add_library(snaptray_platform STATIC
     include/QRCodeManager.h
     include/QRCodeResultDialog.h
     include/ImageColorSpaceHelper.h
+    include/platform/IScrollAutomationDriver.h
+    include/platform/ScrollAutomationDriverFactory.h
 
     # macOS sources
     $<$<PLATFORM_ID:Darwin>:
         src/ImageColorSpaceHelper_mac.mm
         src/platform/WindowLevel_mac.mm
         src/platform/PlatformFeatures_mac.mm
+        src/platform/ScrollAutomationDriver_mac.mm
         src/WindowDetector.mm
         src/OCRManager.mm
         src/AutoLaunchManager_mac.mm
@@ -495,6 +498,7 @@ add_library(snaptray_platform STATIC
         src/platform/WindowLevel_win.cpp
         src/platform/PathEnvUtils_win.cpp
         src/platform/PlatformFeatures_win.cpp
+        src/platform/ScrollAutomationDriver_win.cpp
         src/WindowDetector_win.cpp
         src/OCRManager_win.cpp
         src/AutoLaunchManager_win.cpp
@@ -562,6 +566,8 @@ target_link_libraries(snaptray_platform
             mfplat
             mfuuid
             ole32
+            oleaut32
+            uiautomationcore
             propsys
         >
 )
@@ -658,6 +664,9 @@ add_library(snaptray_ui STATIC
     src/region/SelectionResizeHelper.cpp
     src/region/RegionExportManager.cpp
     src/region/CaptureShortcutHintsOverlay.cpp
+    src/scroll/ScrollStitchEngine.cpp
+    src/scroll/ScrollCaptureSession.cpp
+    src/scroll/ScrollCaptureControlBar.cpp
 
     # PinWindow
     src/PinWindow.cpp
@@ -763,6 +772,9 @@ add_library(snaptray_ui STATIC
     include/region/RegionSettingsHelper.h
     include/region/RegionExportManager.h
     include/region/CaptureShortcutHintsOverlay.h
+    include/scroll/ScrollStitchEngine.h
+    include/scroll/ScrollCaptureSession.h
+    include/scroll/ScrollCaptureControlBar.h
     include/PinWindow.h
     include/PinWindowManager.h
     include/pinwindow/PinHistoryStore.h

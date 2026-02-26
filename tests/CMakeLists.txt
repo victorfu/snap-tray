@@ -153,6 +153,11 @@ target_link_libraries(RegionSelector_MultiRegionReplaceFlow PRIVATE snaptray_ui 
 add_test(NAME RegionSelector_MultiRegionReplaceFlow COMMAND RegionSelector_MultiRegionReplaceFlow)
 set_tests_properties(RegionSelector_MultiRegionReplaceFlow PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(RegionSelector_ScrollCaptureSessionFlow RegionSelector/tst_ScrollCaptureSessionFlow.cpp)
+target_link_libraries(RegionSelector_ScrollCaptureSessionFlow PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME RegionSelector_ScrollCaptureSessionFlow COMMAND RegionSelector_ScrollCaptureSessionFlow)
+set_tests_properties(RegionSelector_ScrollCaptureSessionFlow PROPERTIES TIMEOUT 60 LABELS "unit")
+
 # ============================================================================
 # Encoding Tests (link snaptray_platform)
 # ============================================================================
@@ -198,6 +203,11 @@ add_executable(Detection_CredentialDetector Detection/tst_CredentialDetector.cpp
 target_link_libraries(Detection_CredentialDetector PRIVATE snaptray_algorithms Qt6::Test)
 add_test(NAME Detection_CredentialDetector COMMAND Detection_CredentialDetector)
 set_tests_properties(Detection_CredentialDetector PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(Detection_ScrollStitchEngine Detection/tst_ScrollStitchEngine.cpp)
+target_link_libraries(Detection_ScrollStitchEngine PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME Detection_ScrollStitchEngine COMMAND Detection_ScrollStitchEngine)
+set_tests_properties(Detection_ScrollStitchEngine PROPERTIES TIMEOUT 60 LABELS "unit")
 
 if(APPLE)
     add_executable(Detection_WindowDetectorMacFilters Detection/tst_WindowDetectorMacFilters.cpp)

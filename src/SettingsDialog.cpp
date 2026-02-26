@@ -24,6 +24,7 @@
 #include <QPushButton>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
+#include <QFormLayout>
 #include <QLabel>
 #include <QDebug>
 #include <QMessageBox>
@@ -35,6 +36,8 @@
 #include <QListWidget>
 #include <QRadioButton>
 #include <QGroupBox>
+#include <QSpinBox>
+#include <QDoubleSpinBox>
 #include <QFileDialog>
 #include <QFrame>
 #include <QScrollArea>
@@ -50,6 +53,20 @@ SettingsDialog::SettingsDialog(QWidget* parent)
     , m_tabWidget(nullptr)
     , m_startOnLoginCheckbox(nullptr)
     , m_showShortcutHintsCheckbox(nullptr)
+    , m_scrollAutomationCheckbox(nullptr)
+    , m_scrollAutoStartModeCombo(nullptr)
+    , m_scrollInlinePreviewCollapsedCheckbox(nullptr)
+    , m_scrollingAdvancedGroup(nullptr)
+    , m_scrollGoodThresholdSpin(nullptr)
+    , m_scrollPartialThresholdSpin(nullptr)
+    , m_scrollMinScrollAmountSpin(nullptr)
+    , m_scrollAutoStepDelaySpin(nullptr)
+    , m_scrollMaxFramesSpin(nullptr)
+    , m_scrollMaxOutputPixelsSpin(nullptr)
+    , m_scrollAutoIgnoreBottomEdgeCheckbox(nullptr)
+    , m_scrollSettleStableFramesSpin(nullptr)
+    , m_scrollSettleTimeoutMsSpin(nullptr)
+    , m_scrollProbeGridDensitySpin(nullptr)
     , m_languageCombo(nullptr)
     , m_toolbarStyleCombo(nullptr)
     , m_hotkeySettingsTab(nullptr)
@@ -211,6 +228,136 @@ void SettingsDialog::setupGeneralTab(QWidget* tab)
     m_showShortcutHintsCheckbox->setChecked(
         RegionCaptureSettingsManager::instance().isShortcutHintsEnabled());
     layout->addWidget(m_showShortcutHintsCheckbox);
+
+    m_scrollAutomationCheckbox = new QCheckBox(
+        tr("Enable Accessibility/UIA auto scrolling for scrolling capture"), contentWidget);
+    m_scrollAutomationCheckbox->setChecked(
+        RegionCaptureSettingsManager::instance().isScrollAutomationEnabled());
+    layout->addWidget(m_scrollAutomationCheckbox);
+
+    QHBoxLayout *scrollAutoModeLayout = new QHBoxLayout();
+    QLabel *scrollAutoModeLabel = new QLabel(tr("Scrolling capture start mode:"), contentWidget);
+    scrollAutoModeLabel->setFixedWidth(180);
+    m_scrollAutoStartModeCombo = new QComboBox(contentWidget);
+    m_scrollAutoStartModeCombo->addItem(
+        tr("Manual first (recommended)"),
+        static_cast<int>(RegionCaptureSettingsManager::ScrollAutoStartMode::ManualFirst));
+    m_scrollAutoStartModeCombo->addItem(
+        tr("Try auto assist on start"),
+        static_cast<int>(RegionCaptureSettingsManager::ScrollAutoStartMode::AutoProbe));
+    m_scrollAutoStartModeCombo->setCurrentIndex(m_scrollAutoStartModeCombo->findData(
+        static_cast<int>(RegionCaptureSettingsManager::instance().loadScrollAutoStartMode())));
+    if (m_scrollAutoStartModeCombo->currentIndex() < 0) {
+        m_scrollAutoStartModeCombo->setCurrentIndex(0);
+    }
+    scrollAutoModeLayout->addWidget(scrollAutoModeLabel);
+    scrollAutoModeLayout->addWidget(m_scrollAutoStartModeCombo);
+    scrollAutoModeLayout->addStretch();
+    layout->addLayout(scrollAutoModeLayout);
+
+    m_scrollInlinePreviewCollapsedCheckbox = new QCheckBox(
+        tr("Collapse inline preview by default"), contentWidget);
+    m_scrollInlinePreviewCollapsedCheckbox->setChecked(
+        RegionCaptureSettingsManager::instance().loadScrollInlinePreviewCollapsed());
+    layout->addWidget(m_scrollInlinePreviewCollapsedCheckbox);
+
+    m_scrollingAdvancedGroup = new QGroupBox(tr("Scrolling capture (Advanced)"), contentWidget);
+    m_scrollingAdvancedGroup->setCheckable(true);
+    m_scrollingAdvancedGroup->setChecked(false);
+    m_scrollingAdvancedGroup->setToolTip(
+        tr("Advanced tuning for scrolling capture stitching and auto-scroll settle behavior."));
+
+    QVBoxLayout* scrollingAdvancedLayout = new QVBoxLayout(m_scrollingAdvancedGroup);
+    scrollingAdvancedLayout->setContentsMargins(8, 6, 8, 6);
+    scrollingAdvancedLayout->setSpacing(6);
+
+    QWidget* scrollingAdvancedContent = new QWidget(m_scrollingAdvancedGroup);
+    QFormLayout* scrollingForm = new QFormLayout(scrollingAdvancedContent);
+    scrollingForm->setContentsMargins(0, 0, 0, 0);
+    scrollingForm->setFieldGrowthPolicy(QFormLayout::AllNonFixedFieldsGrow);
+    scrollingForm->setLabelAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+
+    auto& scrollSettings = RegionCaptureSettingsManager::instance();
+
+    m_scrollGoodThresholdSpin = new QDoubleSpinBox(scrollingAdvancedContent);
+    m_scrollGoodThresholdSpin->setRange(0.50, 0.99);
+    m_scrollGoodThresholdSpin->setDecimals(3);
+    m_scrollGoodThresholdSpin->setSingleStep(0.01);
+    m_scrollGoodThresholdSpin->setValue(scrollSettings.loadScrollGoodThreshold());
+    scrollingForm->addRow(tr("Good threshold"), m_scrollGoodThresholdSpin);
+
+    m_scrollPartialThresholdSpin = new QDoubleSpinBox(scrollingAdvancedContent);
+    m_scrollPartialThresholdSpin->setRange(0.40, 0.99);
+    m_scrollPartialThresholdSpin->setDecimals(3);
+    m_scrollPartialThresholdSpin->setSingleStep(0.01);
+    m_scrollPartialThresholdSpin->setValue(scrollSettings.loadScrollPartialThreshold());
+    scrollingForm->addRow(tr("Partial threshold"), m_scrollPartialThresholdSpin);
+
+    m_scrollMinScrollAmountSpin = new QSpinBox(scrollingAdvancedContent);
+    m_scrollMinScrollAmountSpin->setRange(1, 2000);
+    m_scrollMinScrollAmountSpin->setSingleStep(1);
+    m_scrollMinScrollAmountSpin->setSuffix(tr(" px"));
+    m_scrollMinScrollAmountSpin->setValue(scrollSettings.loadScrollMinScrollAmount());
+    scrollingForm->addRow(tr("Min scroll amount"), m_scrollMinScrollAmountSpin);
+
+    m_scrollAutoStepDelaySpin = new QSpinBox(scrollingAdvancedContent);
+    m_scrollAutoStepDelaySpin->setRange(40, 3000);
+    m_scrollAutoStepDelaySpin->setSingleStep(10);
+    m_scrollAutoStepDelaySpin->setSuffix(tr(" ms"));
+    m_scrollAutoStepDelaySpin->setValue(scrollSettings.loadScrollAutoStepDelayMs());
+    scrollingForm->addRow(tr("Auto step delay"), m_scrollAutoStepDelaySpin);
+
+    m_scrollSettleStableFramesSpin = new QSpinBox(scrollingAdvancedContent);
+    m_scrollSettleStableFramesSpin->setRange(1, 6);
+    m_scrollSettleStableFramesSpin->setSingleStep(1);
+    m_scrollSettleStableFramesSpin->setValue(scrollSettings.loadScrollSettleStableFrames());
+    scrollingForm->addRow(tr("Settle stable frames"), m_scrollSettleStableFramesSpin);
+
+    m_scrollSettleTimeoutMsSpin = new QSpinBox(scrollingAdvancedContent);
+    m_scrollSettleTimeoutMsSpin->setRange(80, 5000);
+    m_scrollSettleTimeoutMsSpin->setSingleStep(10);
+    m_scrollSettleTimeoutMsSpin->setSuffix(tr(" ms"));
+    m_scrollSettleTimeoutMsSpin->setValue(scrollSettings.loadScrollSettleTimeoutMs());
+    scrollingForm->addRow(tr("Settle timeout"), m_scrollSettleTimeoutMsSpin);
+
+    m_scrollProbeGridDensitySpin = new QSpinBox(scrollingAdvancedContent);
+    m_scrollProbeGridDensitySpin->setRange(2, 5);
+    m_scrollProbeGridDensitySpin->setSingleStep(1);
+    m_scrollProbeGridDensitySpin->setValue(scrollSettings.loadScrollProbeGridDensity());
+    scrollingForm->addRow(tr("Probe grid density"), m_scrollProbeGridDensitySpin);
+
+    m_scrollMaxFramesSpin = new QSpinBox(scrollingAdvancedContent);
+    m_scrollMaxFramesSpin->setRange(10, 10000);
+    m_scrollMaxFramesSpin->setSingleStep(10);
+    m_scrollMaxFramesSpin->setValue(scrollSettings.loadScrollMaxFrames());
+    scrollingForm->addRow(tr("Max frames"), m_scrollMaxFramesSpin);
+
+    m_scrollMaxOutputPixelsSpin = new QSpinBox(scrollingAdvancedContent);
+    m_scrollMaxOutputPixelsSpin->setRange(1'000'000, 500'000'000);
+    m_scrollMaxOutputPixelsSpin->setSingleStep(1'000'000);
+    m_scrollMaxOutputPixelsSpin->setGroupSeparatorShown(true);
+    m_scrollMaxOutputPixelsSpin->setValue(scrollSettings.loadScrollMaxOutputPixels());
+    scrollingForm->addRow(tr("Max output pixels"), m_scrollMaxOutputPixelsSpin);
+
+    m_scrollAutoIgnoreBottomEdgeCheckbox = new QCheckBox(
+        tr("Auto-ignore unstable bottom edge"), scrollingAdvancedContent);
+    m_scrollAutoIgnoreBottomEdgeCheckbox->setChecked(
+        scrollSettings.loadScrollAutoIgnoreBottomEdge());
+    scrollingForm->addRow(QString(), m_scrollAutoIgnoreBottomEdgeCheckbox);
+
+    scrollingAdvancedLayout->addWidget(scrollingAdvancedContent);
+    scrollingAdvancedContent->setVisible(false);
+    connect(m_scrollingAdvancedGroup, &QGroupBox::toggled,
+            scrollingAdvancedContent, &QWidget::setVisible);
+
+    QLabel* scrollingAdvancedHint = new QLabel(
+        tr("Tip: expand only when you need diagnostics tuning; defaults are safe for most pages."),
+        m_scrollingAdvancedGroup);
+    scrollingAdvancedHint->setWordWrap(true);
+    scrollingAdvancedHint->setStyleSheet("color: #64748B; font-size: 11px;");
+    scrollingAdvancedLayout->addWidget(scrollingAdvancedHint);
+
+    layout->addWidget(m_scrollingAdvancedGroup);
 
     // ========== Language Section ==========
     layout->addSpacing(16);
@@ -923,6 +1070,37 @@ void SettingsDialog::onSave()
     if (m_showShortcutHintsCheckbox) {
         RegionCaptureSettingsManager::instance().setShortcutHintsEnabled(
             m_showShortcutHintsCheckbox->isChecked());
+    }
+    if (m_scrollAutomationCheckbox) {
+        RegionCaptureSettingsManager::instance().setScrollAutomationEnabled(
+            m_scrollAutomationCheckbox->isChecked());
+    }
+    if (m_scrollAutoStartModeCombo) {
+        const auto mode = static_cast<RegionCaptureSettingsManager::ScrollAutoStartMode>(
+            m_scrollAutoStartModeCombo->currentData().toInt());
+        RegionCaptureSettingsManager::instance().saveScrollAutoStartMode(mode);
+    }
+    if (m_scrollInlinePreviewCollapsedCheckbox) {
+        RegionCaptureSettingsManager::instance().saveScrollInlinePreviewCollapsed(
+            m_scrollInlinePreviewCollapsedCheckbox->isChecked());
+    }
+    if (m_scrollGoodThresholdSpin && m_scrollPartialThresholdSpin &&
+        m_scrollMinScrollAmountSpin && m_scrollAutoStepDelaySpin &&
+        m_scrollMaxFramesSpin && m_scrollMaxOutputPixelsSpin &&
+        m_scrollAutoIgnoreBottomEdgeCheckbox && m_scrollSettleStableFramesSpin &&
+        m_scrollSettleTimeoutMsSpin && m_scrollProbeGridDensitySpin) {
+        auto& scrollSettings = RegionCaptureSettingsManager::instance();
+        scrollSettings.saveScrollGoodThreshold(m_scrollGoodThresholdSpin->value());
+        scrollSettings.saveScrollPartialThreshold(m_scrollPartialThresholdSpin->value());
+        scrollSettings.saveScrollMinScrollAmount(m_scrollMinScrollAmountSpin->value());
+        scrollSettings.saveScrollAutoStepDelayMs(m_scrollAutoStepDelaySpin->value());
+        scrollSettings.saveScrollMaxFrames(m_scrollMaxFramesSpin->value());
+        scrollSettings.saveScrollMaxOutputPixels(m_scrollMaxOutputPixelsSpin->value());
+        scrollSettings.saveScrollAutoIgnoreBottomEdge(
+            m_scrollAutoIgnoreBottomEdgeCheckbox->isChecked());
+        scrollSettings.saveScrollSettleStableFrames(m_scrollSettleStableFramesSpin->value());
+        scrollSettings.saveScrollSettleTimeoutMs(m_scrollSettleTimeoutMsSpin->value());
+        scrollSettings.saveScrollProbeGridDensity(m_scrollProbeGridDensitySpin->value());
     }
 
     // Save watermark settings

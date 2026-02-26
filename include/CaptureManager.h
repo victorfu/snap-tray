@@ -11,6 +11,7 @@ class RegionSelector;
 class QScreen;
 class PinWindowManager;
 class WindowDetector;
+class ScrollCaptureSession;
 
 class CaptureManager : public QObject
 {
@@ -42,6 +43,7 @@ signals:
 private slots:
     void onRegionSelected(const QPixmap &screenshot, const QPoint &globalPosition, const QRect &globalRect);
     void onSelectionCancelled();
+    void onScrollingCaptureRequested(const QRect &region, QScreen *screen);
 
 private:
     enum class CaptureEntryMode {
@@ -56,6 +58,7 @@ private:
                                   bool showShortcutHintsOnEntry);
 
     QPointer<RegionSelector> m_regionSelector;
+    QPointer<ScrollCaptureSession> m_scrollSession;
     PinWindowManager *m_pinManager;
     WindowDetector *m_windowDetector;
 };
