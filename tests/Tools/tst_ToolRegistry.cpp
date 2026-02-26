@@ -112,7 +112,7 @@ void TestToolRegistry::testGet_AllRegisteredTools()
         ToolId::CanvasWhiteboard, ToolId::CanvasBlackboard,
         ToolId::Undo, ToolId::Redo, ToolId::Clear,
         ToolId::Cancel, ToolId::OCR, ToolId::QRCode,
-        ToolId::Pin, ToolId::Record, ToolId::Save,
+        ToolId::Pin, ToolId::Record, ToolId::Share, ToolId::Save,
         ToolId::Copy, ToolId::Exit,
         ToolId::MultiRegion, ToolId::MultiRegionDone
     };
@@ -162,7 +162,7 @@ void TestToolRegistry::testIsActionTool_ActionTools()
     QList<ToolId> actionTools = {
         ToolId::Undo, ToolId::Redo, ToolId::Clear,
         ToolId::Cancel, ToolId::OCR, ToolId::QRCode,
-        ToolId::Pin, ToolId::Record, ToolId::Save,
+        ToolId::Pin, ToolId::Record, ToolId::Share, ToolId::Save,
         ToolId::Copy, ToolId::Exit,
         ToolId::MultiRegion, ToolId::MultiRegionDone
     };
@@ -247,8 +247,15 @@ void TestToolRegistry::testGetToolsForToolbar_RegionSelector()
     QVERIFY(tools.contains(ToolId::Redo));
     QVERIFY(tools.contains(ToolId::QRCode));
     QVERIFY(tools.contains(ToolId::MultiRegion));
+    QVERIFY(tools.contains(ToolId::Share));
     QVERIFY(tools.contains(ToolId::Save));
     QVERIFY(tools.contains(ToolId::Copy));
+
+    const int shareIndex = tools.indexOf(ToolId::Share);
+    const int pinIndex = tools.indexOf(ToolId::Pin);
+    QVERIFY(shareIndex >= 0);
+    QVERIFY(pinIndex >= 0);
+    QVERIFY2(shareIndex < pinIndex, "Share should appear to the left of Pin in RegionSelector toolbar");
 }
 
 void TestToolRegistry::testGetToolsForToolbar_ScreenCanvas()
@@ -291,6 +298,7 @@ void TestToolRegistry::testGetToolsForToolbar_PinWindow()
     QVERIFY(tools.contains(ToolId::Redo));
     QVERIFY(tools.contains(ToolId::OCR));
     QVERIFY(tools.contains(ToolId::QRCode));
+    QVERIFY(tools.contains(ToolId::Share));
     QVERIFY(tools.contains(ToolId::Save));
     QVERIFY(tools.contains(ToolId::Copy));
 
@@ -335,6 +343,7 @@ void TestToolRegistry::testGetIconKey_ValidTool()
     QCOMPARE(registry().getIconKey(ToolId::Text), QString("text"));
     QCOMPARE(registry().getIconKey(ToolId::Mosaic), QString("mosaic"));
     QCOMPARE(registry().getIconKey(ToolId::StepBadge), QString("step-badge"));
+    QCOMPARE(registry().getIconKey(ToolId::Share), QString("share"));
     QCOMPARE(registry().getIconKey(ToolId::CanvasWhiteboard), QString("whiteboard"));
     QCOMPARE(registry().getIconKey(ToolId::CanvasBlackboard), QString("blackboard"));
 }

@@ -60,6 +60,7 @@ class AnnotationContext;
 class BeautifyPanel;
 struct BeautifySettings;
 class TestPinWindowCropUndo;
+class ShareUploadClient;
 
 namespace snaptray {
 namespace colorwidgets {
@@ -184,6 +185,7 @@ private:
     void adjustOpacityByStep(int direction);
     void saveToFile();
     void copyToClipboard();
+    void shareToUrl();
     QPixmap getTransformedPixmap() const;
     QPixmap getExportPixmapCore(bool includeDisplayEffects) const;
     void drawAnnotationsForExport(QPainter& painter, const QSize& logicalSize) const;
@@ -372,6 +374,8 @@ private:
     // OCR members
     OCRManager* m_ocrManager;
     bool m_ocrInProgress;
+    bool m_shareInProgress = false;
+    QString m_pendingSharePassword;
     LoadingSpinnerRenderer* m_loadingSpinner;
 
     // QR Code members
@@ -441,6 +445,7 @@ private:
 
     // Shared annotation setup/signals helper
     std::unique_ptr<AnnotationContext> m_annotationContext;
+    ShareUploadClient* m_shareClient = nullptr;
 
     // Region Layout Mode
     RegionLayoutManager* m_regionLayoutManager = nullptr;

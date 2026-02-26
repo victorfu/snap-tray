@@ -699,10 +699,16 @@ add_library(snaptray_ui STATIC
     # Dialogs and overlays
     src/SettingsDialog.cpp
     src/OCRResultDialog.cpp
+    src/ui/SharePasswordDialog.cpp
+    src/ui/ShareResultDialog.cpp
+    src/share/ShareUploadClient.cpp
 
     # Global UI components
     src/ui/GlobalToast.cpp
     include/ui/GlobalToast.h
+    include/ui/SharePasswordDialog.h
+    include/ui/ShareResultDialog.h
+    include/share/ShareUploadClient.h
 
     # Update system
     src/update/InstallSourceDetector.cpp

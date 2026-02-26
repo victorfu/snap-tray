@@ -61,6 +61,7 @@ class RegionExportManager;
 class MultiRegionListPanel;
 class AnnotationContext;
 class CaptureShortcutHintsOverlay;
+class ShareUploadClient;
 
 // ShapeType and ShapeFillMode are defined in annotations/ShapeAnnotation.h
 
@@ -191,6 +192,7 @@ private:
     void cancelMultiRegionCapture();
     void copyToClipboard();
     void saveToFile();
+    void shareToUrl();
     void finishSelection();
 
     // Cursor helpers
@@ -274,6 +276,8 @@ private:
     // OCR state
     OCRManager *m_ocrManager;
     bool m_ocrInProgress;
+    bool m_shareInProgress = false;
+    QString m_pendingSharePassword;
     LoadingSpinnerRenderer *m_loadingSpinner = nullptr;
     class QLabel *m_ocrToastLabel;
     class QTimer *m_ocrToastTimer;
@@ -365,6 +369,7 @@ private:
 
     // Export manager component
     RegionExportManager* m_exportManager;
+    ShareUploadClient* m_shareClient = nullptr;
 
     // Shared annotation setup/signals helper
     std::unique_ptr<AnnotationContext> m_annotationContext;

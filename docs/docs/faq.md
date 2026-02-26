@@ -11,7 +11,7 @@ doc_order: 3
 
 ## Does SnapTray upload my captures?
 
-No. Capture, annotation, and recording workflows stay on your local device.
+No automatic upload. Capture, annotation, and recording workflows stay local unless you explicitly use the Share URL action.
 
 ## Which output format should I use?
 

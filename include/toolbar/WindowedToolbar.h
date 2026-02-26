@@ -29,6 +29,7 @@ public:
         ButtonRedo = static_cast<int>(ToolId::Redo),
         ButtonOCR = static_cast<int>(ToolId::OCR),
         ButtonQRCode = static_cast<int>(ToolId::QRCode),
+        ButtonShare = static_cast<int>(ToolId::Share),
         ButtonCopy = static_cast<int>(ToolId::Copy),
         ButtonSave = static_cast<int>(ToolId::Save),
 
@@ -46,6 +47,7 @@ public:
     // Undo/Redo state
     void setCanUndo(bool canUndo);
     void setCanRedo(bool canRedo);
+    void setShareInProgress(bool inProgress);
 
     // OCR availability
     void setOCRAvailable(bool available);
@@ -64,6 +66,7 @@ signals:
     void redoClicked();
     void ocrClicked();
     void qrCodeClicked();
+    void shareClicked();
     void copyClicked();
     void saveClicked();
     void doneClicked();
@@ -103,6 +106,7 @@ private:
 
     bool m_canUndo = false;
     bool m_canRedo = false;
+    bool m_shareInProgress = false;
     bool m_ocrAvailable = true;
 
     // Drag support

@@ -27,11 +27,12 @@ bool isValidToolId(int buttonId)
 
 using ActionSignal = void (WindowedToolbar::*)();
 
-constexpr std::array<std::pair<int, ActionSignal>, 7> kActionButtonSignals = {{
+constexpr std::array<std::pair<int, ActionSignal>, 8> kActionButtonSignals = {{
     {static_cast<int>(ToolId::Undo), &WindowedToolbar::undoClicked},
     {static_cast<int>(ToolId::Redo), &WindowedToolbar::redoClicked},
     {static_cast<int>(ToolId::OCR), &WindowedToolbar::ocrClicked},
     {static_cast<int>(ToolId::QRCode), &WindowedToolbar::qrCodeClicked},
+    {static_cast<int>(ToolId::Share), &WindowedToolbar::shareClicked},
     {static_cast<int>(ToolId::Copy), &WindowedToolbar::copyClicked},
     {static_cast<int>(ToolId::Save), &WindowedToolbar::saveClicked},
     {WindowedToolbar::ButtonDone, &WindowedToolbar::doneClicked}
@@ -242,6 +243,16 @@ void WindowedToolbar::setCanRedo(bool canRedo)
     update();
 }
 
+void WindowedToolbar::setShareInProgress(bool inProgress)
+{
+    if (m_shareInProgress == inProgress) {
+        return;
+    }
+    m_shareInProgress = inProgress;
+    updateHoverTooltip();
+    update();
+}
+
 void WindowedToolbar::setOCRAvailable(bool available)
 {
     if (m_ocrAvailable != available) {
@@ -278,6 +289,9 @@ bool WindowedToolbar::isButtonDisabled(const ButtonConfig& config) const
     }
     if (config.id == static_cast<int>(ToolId::Redo)) {
         return !m_canRedo;
+    }
+    if (config.id == static_cast<int>(ToolId::Share)) {
+        return m_shareInProgress;
     }
     return false;
 }

@@ -65,6 +65,7 @@ public:
     void setAnnotationColor(const QColor& color) { m_annotationColor = color; }
     void setStepBadgeSize(StepBadgeSize size);
     void setOCRInProgress(bool inProgress) { m_ocrInProgress = inProgress; }
+    void setShareInProgress(bool inProgress) { m_shareInProgress = inProgress; }
     void setMultiRegionMode(bool enabled) { m_multiRegionMode = enabled; }
 
 signals:
@@ -80,6 +81,7 @@ signals:
     void recordRequested();
     void saveRequested();
     void copyRequested();
+    void shareRequested();
     void ocrRequested();
     void qrCodeRequested();
     void multiRegionToggled(bool enabled);
@@ -129,6 +131,7 @@ private:
     void handleQrCodeAction(ToolId button);
     void handlePinAction(ToolId button);
     void handleRecordAction(ToolId button);
+    void handleShareAction(ToolId button);
     void handleSaveAction(ToolId button);
     void handleCopyAction(ToolId button);
     void handleMultiRegionToggle(ToolId button);
@@ -154,6 +157,7 @@ private:
     int m_annotationWidth = 3;
     StepBadgeSize m_stepBadgeSize;
     bool m_ocrInProgress = false;
+    bool m_shareInProgress = false;
     bool m_multiRegionMode = false;
 };
 

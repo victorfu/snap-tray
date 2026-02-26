@@ -7,6 +7,7 @@
 #include "region/RegionSettingsHelper.h"
 #include "region/RegionExportManager.h"
 #include "region/MultiRegionListPanel.h"
+#include "share/ShareUploadClient.h"
 #include "annotations/AllAnnotations.h"
 #include "cursor/CursorManager.h"
 #include "GlassRenderer.h"
@@ -30,6 +31,8 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include "OCRResultDialog.h"
 #include "QRCodeResultDialog.h"
 #include "ui/GlobalToast.h"
+#include "ui/SharePasswordDialog.h"
+#include "ui/ShareResultDialog.h"
 #include "tools/handlers/MosaicToolHandler.h"
 #include "tools/handlers/EmojiStickerToolHandler.h"
 #include "tools/ToolSectionConfig.h"
@@ -64,7 +67,6 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include <QDateTime>
 #include <numeric>
 #include <QDir>
-#include <QInputDialog>
 #include <QToolTip>
 #include <QPointer>
 #include <QColorDialog>
@@ -511,6 +513,44 @@ RegionSelector::RegionSelector(QWidget* parent)
             close();
         });
 
+    m_shareClient = new ShareUploadClient(this);
+    connect(m_shareClient, &ShareUploadClient::uploadSucceeded,
+        this, [this](const QString& url, const QDateTime& expiresAt, bool isProtected) {
+            m_shareInProgress = false;
+            if (m_toolbarHandler) {
+                m_toolbarHandler->setShareInProgress(false);
+            }
+            if (m_loadingSpinner && !(m_ocrInProgress || m_qrCodeInProgress || m_autoBlurInProgress)) {
+                m_loadingSpinner->stop();
+            }
+            update();
+
+            m_isDialogOpen = true;
+            auto* dialog = new ShareResultDialog(this);
+            dialog->setResult(url, expiresAt, isProtected, m_pendingSharePassword);
+            m_pendingSharePassword.clear();
+            connect(dialog, &ShareResultDialog::dialogClosed, this, [this]() {
+                m_isDialogOpen = false;
+                close();
+            });
+            dialog->showAt();
+        });
+    connect(m_shareClient, &ShareUploadClient::uploadFailed,
+        this, [this](const QString& errorMessage) {
+            m_shareInProgress = false;
+            if (m_toolbarHandler) {
+                m_toolbarHandler->setShareInProgress(false);
+            }
+            if (m_loadingSpinner && !(m_ocrInProgress || m_qrCodeInProgress || m_autoBlurInProgress)) {
+                m_loadingSpinner->stop();
+            }
+            showSelectionToast(
+                errorMessage.isEmpty() ? tr("Failed to share screenshot") : errorMessage,
+                "rgba(200, 60, 60, 220)");
+            m_pendingSharePassword.clear();
+            update();
+        });
+
     // Initialize input handling component
     m_inputHandler = new RegionInputHandler(this);
     m_inputHandler->setSelectionManager(m_selectionManager);
@@ -661,6 +701,8 @@ RegionSelector::RegionSelector(QWidget* parent)
         this, &RegionSelector::saveToFile);
     connect(m_toolbarHandler, &RegionToolbarHandler::copyRequested,
         this, &RegionSelector::copyToClipboard);
+    connect(m_toolbarHandler, &RegionToolbarHandler::shareRequested,
+        this, &RegionSelector::shareToUrl);
     connect(m_toolbarHandler, &RegionToolbarHandler::ocrRequested,
         this, &RegionSelector::performOCR);
     connect(m_toolbarHandler, &RegionToolbarHandler::qrCodeRequested,
@@ -1569,7 +1611,7 @@ void RegionSelector::paintEvent(QPaintEvent* event)
             m_toolbar->drawTooltip(painter);
 
             // Draw loading spinner when OCR, QR Code scan, or auto-blur is in progress
-            if ((m_ocrInProgress || m_qrCodeInProgress || m_autoBlurInProgress) && m_loadingSpinner) {
+            if ((m_ocrInProgress || m_qrCodeInProgress || m_autoBlurInProgress || m_shareInProgress) && m_loadingSpinner) {
                 QPoint center = selectionRect.center();
                 m_loadingSpinner->draw(painter, center);
             }
@@ -1704,6 +1746,7 @@ void RegionSelector::handleToolbarClick(ToolId tool)
     m_toolbarHandler->setAnnotationColor(m_inputState.annotationColor);
     m_toolbarHandler->setStepBadgeSize(m_stepBadgeSize);
     m_toolbarHandler->setOCRInProgress(m_ocrInProgress);
+    m_toolbarHandler->setShareInProgress(m_shareInProgress);
     m_toolbarHandler->setMultiRegionMode(m_inputState.multiRegionMode);
 
     // Delegate to handler
@@ -1816,6 +1859,48 @@ void RegionSelector::saveToFile()
     m_exportManager->saveToFile(
         m_selectionManager->selectionRect(), effectiveCornerRadius(), nullptr);
     // Note: UI handling (hide/show/close) is done via signal connections
+}
+
+void RegionSelector::shareToUrl()
+{
+    if (m_shareInProgress || m_ocrInProgress || m_qrCodeInProgress || m_autoBlurInProgress ||
+        !m_shareClient || !m_selectionManager || !m_selectionManager->isComplete()) {
+        return;
+    }
+
+    const QPixmap selectedRegion = m_exportManager->getSelectedRegion(
+        m_selectionManager->selectionRect(), effectiveCornerRadius());
+    if (selectedRegion.isNull()) {
+        showSelectionToast(tr("Failed to process selected region"), "rgba(200, 60, 60, 220)");
+        return;
+    }
+
+    m_isDialogOpen = true;
+    auto* passwordDialog = new SharePasswordDialog(this);
+    passwordDialog->setAttribute(Qt::WA_DeleteOnClose);
+    connect(passwordDialog, &QDialog::accepted, this, [this, passwordDialog, selectedRegion]() {
+        m_isDialogOpen = false;
+        if (m_shareInProgress || !m_shareClient) {
+            return;
+        }
+
+        m_pendingSharePassword = passwordDialog->password();
+
+        m_shareInProgress = true;
+        if (m_toolbarHandler) {
+            m_toolbarHandler->setShareInProgress(true);
+        }
+        ensureLoadingSpinner()->start();
+        update();
+
+        m_shareClient->uploadPixmap(selectedRegion, m_pendingSharePassword);
+    });
+    connect(passwordDialog, &QDialog::rejected, this, [this]() {
+        m_isDialogOpen = false;
+        m_pendingSharePassword.clear();
+    });
+    passwordDialog->showAt();
+    passwordDialog->show();
 }
 
 void RegionSelector::finishSelection()
@@ -2187,6 +2272,12 @@ bool RegionSelector::eventFilter(QObject* obj, QEvent* event)
     if (event->type() == QEvent::KeyPress) {
         QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
         if (keyEvent->key() == Qt::Key_Escape) {
+            // Let the active dialog (save/share/OCR/QR) consume Esc so this
+            // global handler does not cancel the entire capture session.
+            if (m_isDialogOpen) {
+                return false;
+            }
+
             // If editing text, let keyPressEvent handle Esc
             if (m_textEditor->isEditing()) {
                 return false;
@@ -2257,7 +2348,7 @@ void RegionSelector::onTextEditingFinished(const QString& text, const QPoint& po
 void RegionSelector::performOCR()
 {
     OCRManager* ocrMgr = ensureOCRManager();
-    if (!ocrMgr || m_ocrInProgress || !m_selectionManager->isComplete()) {
+    if (!ocrMgr || m_ocrInProgress || m_shareInProgress || !m_selectionManager->isComplete()) {
         return;
     }
 
@@ -2345,7 +2436,7 @@ void RegionSelector::showOCRResultDialog(const OCRResult& result)
 void RegionSelector::performQRCodeScan()
 {
     QRCodeManager* qrMgr = ensureQRCodeManager();
-    if (!qrMgr || m_qrCodeInProgress || !m_selectionManager->isComplete()) {
+    if (!qrMgr || m_qrCodeInProgress || m_shareInProgress || !m_selectionManager->isComplete()) {
         return;
     }
 
@@ -2433,7 +2524,7 @@ void RegionSelector::onQRCodeComplete(bool success, const QString& text, const Q
 
 void RegionSelector::performAutoBlur()
 {
-    if (!m_autoBlurManager || m_autoBlurInProgress || !m_selectionManager->isComplete()) {
+    if (!m_autoBlurManager || m_autoBlurInProgress || m_shareInProgress || !m_selectionManager->isComplete()) {
         return;
     }
 
