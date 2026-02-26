@@ -153,30 +153,23 @@ void tst_SettingsStorageLocation::testLegacySourceCoverage()
 {
 #if defined(Q_OS_MACOS)
     const QStringList sources = legacyMigrationSources();
-    if (isDebugSettingsNamespace()) {
-        QCOMPARE(sources.size(), 2);
-        QVERIFY(sources.contains(QDir::homePath() + QStringLiteral("/Library/Preferences/com.victor-fu.SnapTray-Debug.plist")));
-        QVERIFY(sources.contains(QDir::homePath() + QStringLiteral("/Library/Preferences/com.victorfu.snaptray.debug.plist")));
-        QVERIFY(!sources.contains(QDir::homePath() + QStringLiteral("/Library/Preferences/com.victor-fu.SnapTray.plist")));
-        QVERIFY(!sources.contains(QDir::homePath() + QStringLiteral("/Library/Preferences/com.victorfu.snaptray.plist")));
-    } else {
-        QCOMPARE(sources.size(), 2);
-        QVERIFY(sources.contains(QDir::homePath() + QStringLiteral("/Library/Preferences/com.victor-fu.SnapTray.plist")));
-        QVERIFY(sources.contains(QDir::homePath() + QStringLiteral("/Library/Preferences/com.victorfu.snaptray.plist")));
-        QVERIFY(!sources.contains(QDir::homePath() + QStringLiteral("/Library/Preferences/com.victor-fu.SnapTray-Debug.plist")));
-        QVERIFY(!sources.contains(QDir::homePath() + QStringLiteral("/Library/Preferences/com.victorfu.snaptray.debug.plist")));
-    }
+    QCOMPARE(sources.size(), 4);
+    QVERIFY(sources.contains(QDir::homePath() + QStringLiteral("/Library/Preferences/com.victor-fu.SnapTray.plist")));
+    QVERIFY(sources.contains(QDir::homePath() + QStringLiteral("/Library/Preferences/com.victor-fu.SnapTray-Debug.plist")));
+    QVERIFY(sources.contains(QDir::homePath() + QStringLiteral("/Library/Preferences/com.victorfu.snaptray.plist")));
+    QVERIFY(sources.contains(QDir::homePath() + QStringLiteral("/Library/Preferences/com.victorfu.snaptray.debug.plist")));
 #elif defined(Q_OS_WIN)
     const QStringList sources = legacyMigrationSources();
     if (isDebugSettingsNamespace()) {
-        QCOMPARE(sources.size(), 2);
+        QCOMPARE(sources.size(), 3);
         QVERIFY(sources.contains(QStringLiteral("HKEY_CURRENT_USER\\Software\\Victor Fu\\SnapTray-Debug")));
-        QVERIFY(sources.contains(QStringLiteral("HKEY_CURRENT_USER\\Software\\SnapTray\\Debug")));
-        QVERIFY(!sources.contains(QStringLiteral("HKEY_CURRENT_USER\\Software\\Victor Fu\\SnapTray")));
-    } else {
-        QCOMPARE(sources.size(), 1);
         QVERIFY(sources.contains(QStringLiteral("HKEY_CURRENT_USER\\Software\\Victor Fu\\SnapTray")));
-        QVERIFY(!sources.contains(QStringLiteral("HKEY_CURRENT_USER\\Software\\Victor Fu\\SnapTray-Debug")));
+        QVERIFY(sources.contains(QStringLiteral("HKEY_CURRENT_USER\\Software\\SnapTray-Debug")));
+    } else {
+        QCOMPARE(sources.size(), 3);
+        QVERIFY(sources.contains(QStringLiteral("HKEY_CURRENT_USER\\Software\\Victor Fu\\SnapTray")));
+        QVERIFY(sources.contains(QStringLiteral("HKEY_CURRENT_USER\\Software\\Victor Fu\\SnapTray-Debug")));
+        QVERIFY(sources.contains(QStringLiteral("HKEY_CURRENT_USER\\Software\\SnapTray-Debug")));
     }
 #else
     QSKIP("Legacy source coverage applies only to Windows/macOS");

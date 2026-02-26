@@ -35,8 +35,9 @@ All data generated or used by SnapTray is stored locally on your device:
 | Settings | OS settings storage* | Your preferences |
 
 *Settings storage locations:
-- **macOS:** `~/Library/Preferences/com.victorfu.snaptray.plist`
-- **Windows:** `HKEY_CURRENT_USER\Software\Victor Fu\SnapTray`
+- **macOS:** `~/Library/Preferences/cc.snaptray.plist`
+- **Windows:** `HKEY_CURRENT_USER\Software\SnapTray`
+- Legacy locations are migrated on first launch of newer builds and cleaned up after migration succeeds.
 
 ## Permissions
 

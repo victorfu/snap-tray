@@ -35,8 +35,9 @@ SnapTray 使用或產生的資料都儲存在你的本機：
 | 設定 | 作業系統設定儲存區* | 儲存偏好 |
 
 *設定儲存位置：
-- **macOS:** `~/Library/Preferences/com.victorfu.snaptray.plist`
-- **Windows:** `HKEY_CURRENT_USER\Software\Victor Fu\SnapTray`
+- **macOS:** `~/Library/Preferences/cc.snaptray.plist`
+- **Windows:** `HKEY_CURRENT_USER\Software\SnapTray`
+- 升級到新版後，首次啟動會自動移轉舊版設定，移轉成功後會清理舊位置。
 
 ## 權限需求
 

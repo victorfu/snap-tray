@@ -26,6 +26,8 @@ int main(int argc, char* argv[])
         app.setApplicationName(SnapTray::kApplicationName);
         app.setOrganizationName(SnapTray::kOrganizationName);
         app.setApplicationVersion(SNAPTRAY_VERSION);
+        // Ensure settings migration/cleanup runs in CLI mode as well.
+        (void)SnapTray::getSettings();
 
         SnapTray::CLI::CLIHandler cliHandler;
         auto result = cliHandler.process(arguments);
@@ -69,6 +71,8 @@ int main(int argc, char* argv[])
     app.setApplicationName(SnapTray::kApplicationName);
     app.setOrganizationName(SnapTray::kOrganizationName);
     app.setApplicationVersion(SNAPTRAY_VERSION);
+    // Run settings migration/cleanup during startup.
+    (void)SnapTray::getSettings();
 
     // Load translations before any UI creation
     auto& langManager = LanguageManager::instance();
