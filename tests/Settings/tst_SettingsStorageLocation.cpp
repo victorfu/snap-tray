@@ -23,7 +23,13 @@ QString normalizeSettingsLocation(QString location)
     while (location.endsWith('/')) {
         location.chop(1);
     }
-    return location.toLower();
+    location = location.toLower();
+#if defined(Q_OS_WIN)
+    if (location.startsWith(QStringLiteral("/hkey_"))) {
+        location.remove(0, 1);
+    }
+#endif
+    return location;
 }
 
 QSettings legacySettingsStore()

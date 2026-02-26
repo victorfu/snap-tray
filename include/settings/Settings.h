@@ -69,7 +69,14 @@ inline QString normalizeSettingsLocation(QString location)
     while (location.endsWith('/')) {
         location.chop(1);
     }
-    return location.toLower();
+    location = location.toLower();
+#if defined(Q_OS_WIN)
+    // QSettings::fileName() may prefix registry roots with '/'.
+    if (location.startsWith(QStringLiteral("/hkey_"))) {
+        location.remove(0, 1);
+    }
+#endif
+    return location;
 }
 
 inline bool isSameSettingsStore(const QSettings& lhs, const QSettings& rhs)
