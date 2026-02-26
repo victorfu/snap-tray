@@ -13,11 +13,17 @@ doc_order: 4
 
 ### General
 
-開機啟動、工具列樣式、釘選快取與 CLI 安裝/移除。
+開機啟動、區域截圖快捷提示、顯示語言、工具列樣式與 CLI 安裝/移除。
+
+macOS 另外提供 Screen Recording / Accessibility 權限狀態與一鍵開啟系統設定捷徑。
 
 ### Hotkeys
 
 依功能分類集中管理快捷鍵。
+
+### Advanced
+
+Auto Blur 強度/類型與釘選視窗預設值（透明度、縮放步進、快取上限）。
 
 ### Recording
 
@@ -29,7 +35,7 @@ doc_order: 4
 
 ### OCR / Watermark / Updates
 
-語言偏好、浮水印位置與自動更新檢查頻率。
+OCR 語言優先序與辨識後行為、浮水印位置/透明度/縮放，以及自動更新檢查頻率。
 
 ## 推薦基準配置
 

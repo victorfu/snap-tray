@@ -3,14 +3,15 @@
 [English](README.md) | **繁體中文**
 
 SnapTray 是一個在系統托盤常駐的截圖與錄影小工具，提供區域截圖、螢幕標註與快速錄影。預設以 F2 進入區域截圖，Ctrl+F2 開啟螢幕畫布。
+目前程式碼版本：`1.0.30`。
 
 ## 功能特色
 
-- **系統托盤選單**：`Region Capture` (顯示當前熱鍵)、`Screen Canvas` (顯示當前熱鍵)、`Pin from Image...`、`Pin History`、`Close All Pins`、`Record Full Screen`、`Settings`、`Exit`
+- **系統托盤選單**：`Region Capture` (顯示當前熱鍵)、`Screen Canvas` (顯示當前熱鍵)、`Pin from Image...`、`Pin History`、`Hide/Show All Pins`、`Close All Pins`、`Record Full Screen`、`Settings`、`Exit`
 - **全域快捷鍵**：可於設定中自定義，支援即時更新熱鍵註冊。
   - 區域截圖：預設 `F2`
   - 螢幕畫布：預設 `Ctrl+F2`
-  - 其他可設定動作：`Paste`（預設 `F3`）、`Quick Pin`（預設 `Shift+F2`）、`Pin from Image`、`Pin History`、`Record Full Screen`
+  - 其他可設定動作：`Paste`（預設 `F3`）、`Quick Pin`（預設 `Shift+F2`）、`Pin from Image`、`Pin History`、`Hide/Show All Pins`、`Record Full Screen`
 - **區域截圖覆蓋層**：
   - 十字線＋放大鏡（支援像素級檢視）
   - RGB/HEX 顏色預覽（按 Shift 切換，按 C 複製顏色代碼）
@@ -23,15 +24,16 @@ SnapTray 是一個在系統托盤常駐的截圖與錄影小工具，提供區�
   - 右鍵取消選取
 - **截圖工具列**：
   - `Selection` 選取工具（調整選取區域）
-  - 標註工具：`Arrow` / `Pencil` / `Marker` / `Shape`（Rectangle/Ellipse，外框/填滿）/ `Text` / `Mosaic` / `StepBadge` / `EmojiSticker` / `Eraser`
+  - 標註工具：`Arrow`（直線/折線模式）/ `Pencil` / `Marker` / `Shape`（Rectangle/Ellipse，外框/填滿）/ `Text` / `Mosaic` / `StepBadge` / `EmojiSticker` / `Eraser`
   - `Undo` / `Redo`
   - `Pin` 釘選到畫面 (Enter)
   - `Save` 存檔 (Ctrl+S / macOS 為 Cmd+S)
   - `Copy` 複製 (Ctrl+C / macOS 為 Cmd+C)
+  - `Share URL`（上傳目前選取結果並產生分享連結）
   - `Cancel` 取消 (Esc)
   - `OCR` 文字辨識（macOS/Windows；可用語言取決於系統已安裝的 OCR 語言套件）
   - `QR Code Scan`（掃描選取區域中的 QR/條碼）
-  - `Auto Blur` 自動偵測並模糊臉孔
+  - `Auto Blur` 自動偵測並模糊臉孔/憑證等敏感資訊
   - `Record` 螢幕錄影（`R`）使用選取區域
   - `Multi-Region` 多區域擷取切換（`M`）
   - 顏色/線寬控制（支援的工具）
@@ -58,15 +60,15 @@ SnapTray 是一個在系統托盤常駐的截圖與錄影小工具，提供區�
   - 邊緣拖曳調整大小
   - 鍵盤旋轉/翻轉：`1` 順時針旋轉、`2` 逆時針旋轉、`3` 水平翻轉、`4` 垂直翻轉
   - 雙擊或 Esc 關閉
-  - 右鍵選單：複製/存檔/開啟快取資料夾/OCR/QR Code Scan/浮水印/Click-through/Live Update/關閉
+  - 右鍵選單：Show Toolbar/Show Border/Move to Screen/複製/存檔/開啟快取資料夾/Beautify/Click-through/Merge Pins/Adjust Region Layout/浮水印/縮放/影像處理/Live Update/關閉
   - **標註工具列**：點擊鉛筆圖示開啟標註工具
-    - 繪圖工具：`Pencil` / `Marker` / `Arrow` / `Shape` / `Text` / `Mosaic` / `StepBadge` / `EmojiSticker` / `Eraser`
+    - 繪圖工具：`Pencil` / `Marker` / `Arrow` / `Shape` / `Text` / `Mosaic` / `StepBadge` / `EmojiSticker` / `Eraser` / `Crop` / `Measure`
     - 支援 `Undo` / `Redo`
-    - `OCR` / `Copy` / `Save` 快捷操作
+    - `OCR` / `QR Code Scan` / `Share URL` / `Copy` / `Save` 快捷操作
 - **設定對話框**：
-  - General 分頁：開機自動啟動、工具列樣式（深色/淺色）、釘選視窗透明度/縮放/快取設定、CLI 安裝/移除
+  - General 分頁：開機自動啟動、截圖快捷提示、顯示語言、工具列樣式（深色/淺色）、macOS 權限快捷入口、CLI 安裝/移除
   - Hotkeys 分頁：依分類管理熱鍵（Capture/Canvas/Clipboard/Pin/Recording）
-  - Advanced 分頁：Auto Blur 進階設定
+  - Advanced 分頁：Auto Blur + 釘選視窗預設值（透明度/縮放/快取）
   - Watermark 分頁：圖片浮水印、透明度、位置、縮放
   - OCR 分頁：OCR 語言與辨識後行為設定
   - Recording 分頁：幀率、輸出格式（MP4/GIF/WebP）、品質、預覽行為、倒數計時、音訊（啟用/來源/裝置）
@@ -348,6 +350,7 @@ CMake 會自動偵測並使用編譯器快取，無需額外設定。
    - `Enter` 或 `Pin`：將截圖釘選為浮動視窗
    - `Ctrl+C` (Windows) / `Cmd+C` (macOS) 或 `Copy`：複製到剪貼簿
    - `Ctrl+S` (Windows) / `Cmd+S` (macOS) 或 `Save`：儲存成檔案
+   - `Share URL`：上傳目前選取結果並複製/開啟分享連結（可選密碼）
    - `R` 或 `Record`：開始錄影（可調整區域後按 Start Recording / Enter）
    - `OCR`（macOS/Windows）：辨識選取區文字（依 OCR 設定可直接複製或開啟編輯器）
    - `QR Code Scan`：偵測並解碼選取區中的 QR/條碼
@@ -373,9 +376,11 @@ CMake 會自動偵測並使用編譯器快取，無需額外設定。
    - Ctrl + 滾輪調整透明度
    - 邊緣拖曳調整大小
    - `1` 順時針旋轉、`2` 逆時針旋轉、`3` 水平翻轉、`4` 垂直翻轉
-   - 右鍵選單（複製/存檔/開啟快取資料夾/OCR/QR Code Scan/浮水印/Click-through/Live Update/關閉）
+   - 右鍵選單可用功能：Show Toolbar/Show Border/Move to Screen/Merge Pins/Adjust Region Layout/浮水印/縮放/影像處理/Live Update
+   - 右鍵選單資料操作：複製/存檔/開啟快取資料夾/Beautify/關閉
    - 雙擊或 `Esc` 關閉
    - 點擊鉛筆圖示開啟標註工具列，可在釘選圖片上繪圖
+   - 釘選標註工具列支援 `Crop`、`Measure`、`OCR`、`QR Code Scan`、`Share URL`、`Copy`、`Save`
 
 ## 命令列介面 (CLI)
 

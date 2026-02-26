@@ -18,6 +18,13 @@ doc_order: 3
 | Paste | `F3` |
 | Quick Pin | `Shift+F2` |
 
+## Additional configurable actions (no default)
+
+- Pin from Image
+- Pin History
+- Toggle Hide/Show All Pins
+- Record Full Screen
+
 ## Hotkey categories
 
 Hotkeys are managed by category inside Settings:

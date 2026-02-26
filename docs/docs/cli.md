@@ -13,28 +13,43 @@ doc_order: 1
 
 Open Settings > General and use the CLI install option to add `snaptray` command support.
 
-## Command groups
+## Commands
 
-### Local capture commands
-
-Run without main instance for direct capture operations.
-
-### IPC commands
-
-Send actions to running SnapTray instance (GUI, canvas, pin, record).
-
-### Config commands
-
-Read or update settings from scripts.
+| Command | Description | Requires main SnapTray instance |
+|---|---|---|
+| `full` | Capture full screen | No |
+| `screen` | Capture specified screen | No |
+| `region` | Capture specified region | No |
+| `gui` | Open region capture GUI | Yes |
+| `canvas` | Open/toggle Screen Canvas | Yes |
+| `record` | `start` / `stop` / `toggle` recording | Yes |
+| `pin` | Pin image from file or clipboard | Yes |
+| `config` | List/get/set/reset config (`config` alone opens Settings) | Partial |
 
 ## Example commands
 
 ```bash
+# Global
 snaptray --help
-snaptray region --copy
-snaptray screen --save
-snaptray gui --show
-snaptray config --get files.screenshotPath
+snaptray --version
+
+# Local capture commands
+snaptray full -c
+snaptray screen --list
+snaptray screen 1 -o screen1.png
+snaptray region -r 100,100,400,300 -o region.png
+
+# IPC commands
+snaptray gui -d 1500
+snaptray canvas
+snaptray record start -n 0
+snaptray pin -f image.png --center
+
+# Config commands
+snaptray config --list
+snaptray config --get hotkey
+snaptray config --set hotkey F6
+snaptray config --reset
 ```
 
 ## Return codes

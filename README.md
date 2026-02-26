@@ -3,14 +3,15 @@
 **English** | [繁體中文](README.zh-TW.md)
 
 SnapTray is a lightweight tray utility for region screenshots, on-screen annotations, and quick screen recordings. Press F2 (default) to capture a region, or Ctrl+F2 for Screen Canvas.
+Current code version: `1.0.30`.
 
 ## Features
 
-- **System Tray Menu**: `Region Capture` (shows current hotkey), `Screen Canvas` (shows current hotkey), `Pin from Image...`, `Pin History`, `Close All Pins`, `Record Full Screen`, `Settings`, `Exit`
+- **System Tray Menu**: `Region Capture` (shows current hotkey), `Screen Canvas` (shows current hotkey), `Pin from Image...`, `Pin History`, `Hide/Show All Pins`, `Close All Pins`, `Record Full Screen`, `Settings`, `Exit`
 - **Global Hotkeys**: Customizable in settings with live hotkey registration
   - Region Capture: Default `F2`
   - Screen Canvas: Default `Ctrl+F2`
-  - Additional configurable actions: `Paste` (default `F3`), `Quick Pin` (default `Shift+F2`), `Pin from Image`, `Pin History`, `Record Full Screen`
+  - Additional configurable actions: `Paste` (default `F3`), `Quick Pin` (default `Shift+F2`), `Pin from Image`, `Pin History`, `Hide/Show All Pins`, `Record Full Screen`
 - **Region Capture Overlay**:
   - Crosshair + magnifier (pixel-level precision)
   - RGB/HEX color preview (Shift to toggle, C to copy color code)
@@ -23,15 +24,16 @@ SnapTray is a lightweight tray utility for region screenshots, on-screen annotat
   - Right-click to cancel selection
 - **Capture Toolbar**:
   - `Selection` tool (adjust selection area)
-  - Annotation tools: `Arrow` / `Pencil` / `Marker` / `Shape` (Rectangle/Ellipse, outline/filled) / `Text` / `Mosaic` / `StepBadge` / `EmojiSticker` / `Eraser`
+  - Annotation tools: `Arrow` (line/polyline modes) / `Pencil` / `Marker` / `Shape` (Rectangle/Ellipse, outline/filled) / `Text` / `Mosaic` / `StepBadge` / `EmojiSticker` / `Eraser`
   - `Undo` / `Redo`
   - `Pin` to screen (Enter)
   - `Save` to file (Ctrl+S / Cmd+S on macOS)
   - `Copy` to clipboard (Ctrl+C / Cmd+C on macOS)
+  - `Share URL` (upload selected result and copy/open generated link)
   - `Cancel` (Esc)
   - `OCR` text recognition (macOS/Windows; available languages depend on installed system OCR language packs)
   - `QR Code Scan` (scan QR/barcodes from the selected region)
-  - `Auto Blur` auto-detect and blur faces in the selection
+  - `Auto Blur` auto-detect and blur faces/credentials in the selection
   - `Record` screen recording (R) for the selected region
   - `Multi-Region` capture toggle (`M`)
   - Color + line width controls for supported tools
@@ -58,15 +60,15 @@ SnapTray is a lightweight tray utility for region screenshots, on-screen annotat
   - Edge drag to resize
   - Rotation/flip via keyboard: `1` rotate CW, `2` rotate CCW, `3` flip horizontal, `4` flip vertical
   - Double-click or Esc to close
-  - Context menu: Copy/Save/Open Cache Folder/OCR/QR Code Scan/Watermark/Click-through/Live Update/Close
+  - Context menu: Show Toolbar/Show Border/Move to Screen/Copy/Save/Open Cache Folder/Beautify/Click-through/Merge Pins/Adjust Region Layout/Watermark/Zoom/Image processing/Live Update/Close
   - **Annotation Toolbar**: Click the pencil icon to open annotation tools
-    - Drawing tools: `Pencil` / `Marker` / `Arrow` / `Shape` / `Text` / `Mosaic` / `StepBadge` / `EmojiSticker` / `Eraser`
+    - Drawing tools: `Pencil` / `Marker` / `Arrow` / `Shape` / `Text` / `Mosaic` / `StepBadge` / `EmojiSticker` / `Eraser` / `Crop` / `Measure`
     - `Undo` / `Redo` support
-    - `OCR` / `Copy` / `Save` quick actions
+    - `OCR` / `QR Code Scan` / `Share URL` / `Copy` / `Save` quick actions
 - **Settings Dialog**:
-  - General tab: Launch at startup, toolbar style (Dark/Light), pin window opacity/zoom/cache settings, CLI install/uninstall
+  - General tab: Launch at startup, capture shortcut hints, display language, toolbar style (Dark/Light), macOS permission shortcuts, CLI install/uninstall
   - Hotkeys tab: Category-based hotkey management (Capture/Canvas/Clipboard/Pin/Recording)
-  - Advanced tab: Auto blur configuration
+  - Advanced tab: Auto blur configuration + pin window defaults (opacity/zoom/cache)
   - Watermark tab: Image watermark, opacity, position, and scale
   - OCR tab: OCR language selection and post-recognition behavior
   - Recording tab: Frame rate, output format (MP4/GIF/WebP), quality, preview behavior, countdown, audio (enable/source/device)
@@ -348,6 +350,7 @@ CMake automatically detects and uses the compiler cache when available. No addit
    - `Enter` or `Pin`: Pin screenshot as floating window
    - `Ctrl+C` (Windows) / `Cmd+C` (macOS) or `Copy`: Copy to clipboard
    - `Ctrl+S` (Windows) / `Cmd+S` (macOS) or `Save`: Save to file
+   - `Share URL`: Upload current selection and copy/open a share link (optional password)
    - `R` or `Record`: Start screen recording (adjust region, then press Start Recording / Enter)
    - `OCR` (macOS/Windows): Recognize text in selection (copy directly or open editor based on OCR settings)
    - `QR Code Scan`: Detect and decode QR/barcodes in the selected region
@@ -373,9 +376,11 @@ CMake automatically detects and uses the compiler cache when available. No addit
    - Ctrl + mouse wheel to adjust opacity
    - Edge drag to resize
    - `1` rotate CW, `2` rotate CCW, `3` flip horizontal, `4` flip vertical
-   - Context menu (Copy/Save/Open Cache Folder/OCR/QR Code Scan/Watermark/Click-through/Live Update/Close)
+   - Context menu layout controls: Show Toolbar/Show Border/Move to Screen/Merge Pins/Adjust Region Layout/Watermark/Zoom/Image processing/Live Update
+   - Data actions via context menu: Copy/Save/Open Cache Folder/Beautify/Close
    - Double-click or `Esc` to close
    - Click pencil icon to open annotation toolbar for drawing on pinned images
+   - Pin annotation toolbar supports `Crop`, `Measure`, `OCR`, `QR Code Scan`, `Share URL`, `Copy`, and `Save`
 
 ## Command Line Interface (CLI)
 

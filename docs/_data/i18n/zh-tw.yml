@@ -49,7 +49,7 @@ features:
       body: 箭頭、鉛筆、螢光筆、形狀、文字、馬賽克、步驟標記與貼圖。
     - kind: 自動化
       title: OCR + Auto Blur
-      body: 擷取文字並自動模糊敏感臉孔，提升分享安全性。
+      body: 擷取文字並自動模糊敏感臉孔與憑證等資訊，提升分享安全性。
     - kind: 偵測
       title: Window Detection
       body: 快速選取視窗，不必手動拖拉邊界。
@@ -62,15 +62,15 @@ features:
     - kind: 控制
       title: Undo / Redo
       body: 完整操作歷史，所有標註可隨時回復。
-    - kind: 監看
-      title: Live Capture
-      body: 透過釘選視窗即時監看任意區域。
+    - kind: 分享
+      title: Share URL
+      body: 上傳截圖後產生分享連結，並可加上密碼保護。
     - kind: 品牌
       title: Watermark
       body: 套用自訂圖片浮水印到截圖與錄影輸出。
     - kind: 工作流
       title: Hotkey First
-      body: Region Capture、Canvas、Paste、Quick Pin 都是一鍵即達。
+      body: Region Capture、Canvas、Paste、Quick Pin、Hide/Show Pins 都是一鍵即達。
 
 downloads:
   eyebrow: 下載

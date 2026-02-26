@@ -46,6 +46,7 @@ Rule: Prefer one strong annotation over many weak marks.
 
 - `Ctrl/Cmd + C`: copy to clipboard
 - Paste into chat/email/ticket
+- `Share URL`: generate a share link (optional password) when external sharing is needed
 - Optional: `Ctrl/Cmd + S` for file record
 
 ## Quality checklist

@@ -13,28 +13,43 @@ doc_order: 1
 
 在 Settings > General 使用 CLI 安裝功能，啟用 `snaptray` 指令。
 
-## 指令群組
+## 指令列表
 
-### 本地擷取指令
-
-不需主程式常駐即可執行指定擷取動作。
-
-### IPC 指令
-
-向正在執行中的 SnapTray 發送 GUI、畫布、釘選、錄影命令。
-
-### 設定指令
-
-可在腳本中讀取或更新設定值。
+| 指令 | 說明 | 是否需要 SnapTray 主程式執行中 |
+|---|---|---|
+| `full` | 擷取全螢幕 | 否 |
+| `screen` | 擷取指定螢幕 | 否 |
+| `region` | 擷取指定區域 | 否 |
+| `gui` | 開啟區域截圖 GUI | 是 |
+| `canvas` | 開啟/切換 Screen Canvas | 是 |
+| `record` | `start` / `stop` / `toggle` 錄影 | 是 |
+| `pin` | 從檔案或剪貼簿建立釘選 | 是 |
+| `config` | 列出/讀取/寫入/重設設定（單獨 `config` 會開啟設定視窗） | 部分 |
 
 ## 指令範例
 
 ```bash
+# 全域
 snaptray --help
-snaptray region --copy
-snaptray screen --save
-snaptray gui --show
-snaptray config --get files.screenshotPath
+snaptray --version
+
+# 本地擷取指令
+snaptray full -c
+snaptray screen --list
+snaptray screen 1 -o screen1.png
+snaptray region -r 100,100,400,300 -o region.png
+
+# IPC 指令
+snaptray gui -d 1500
+snaptray canvas
+snaptray record start -n 0
+snaptray pin -f image.png --center
+
+# 設定指令
+snaptray config --list
+snaptray config --get hotkey
+snaptray config --set hotkey F6
+snaptray config --reset
 ```
 
 ## 回傳碼

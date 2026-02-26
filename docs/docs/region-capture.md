@@ -1,7 +1,7 @@
 ---
 layout: docs
 title: Region Capture
-description: Precision region selection with magnifier, window detection, and multi-region support.
+description: Precision region selection with magnifier, window detection, multi-region support, and quick share/export actions.
 permalink: /docs/region-capture/
 lang: en
 route_key: docs_region_capture
@@ -33,11 +33,22 @@ Right-click or press `Esc` to cancel current selection.
 
 Press `M` to toggle multi-region capture mode. You can collect multiple regions, then export combined or separate outputs.
 
+## Post-selection actions
+
+After the selection is complete, the toolbar supports:
+
+- Annotation + edit tools (Arrow/Pencil/Marker/Shape/Text/Mosaic/Step Badge/Emoji/Eraser)
+- `OCR` and `QR Code Scan`
+- `Auto Blur` (faces + credentials)
+- `Share URL` (upload selected result and return a share link)
+- `Pin`, `Save`, `Copy`, and `Record`
+
 ## Useful shortcuts
 
 | Action | Shortcut |
 |---|---|
 | Start Region Capture | `F2` |
+| Copy color code under cursor | `C` |
 | Constrain ratio | Hold `Shift` |
 | Toggle multi-region | `M` |
 | Start recording from region | `R` |

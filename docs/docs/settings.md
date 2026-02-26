@@ -13,11 +13,17 @@ doc_order: 4
 
 ### General
 
-Launch at startup, toolbar style, pin cache behavior, and CLI install/uninstall.
+Launch at startup, region-capture shortcut hints, display language, toolbar style, and CLI install/uninstall.
+
+On macOS, this tab also shows Screen Recording and Accessibility permission status with one-click system settings shortcuts.
 
 ### Hotkeys
 
 Centralized hotkey editor by functional category.
+
+### Advanced
+
+Blur intensity/type and pin window defaults (opacity, zoom step, cache limits).
 
 ### Recording
 
@@ -29,7 +35,7 @@ Screenshot and recording folders plus filename format templates.
 
 ### OCR / Watermark / Updates
 
-Language preference, watermark placement, auto-check update interval.
+OCR language order + behavior, watermark placement/opacity/scale, and auto-check update interval.
 
 ## Recommended baseline profile
 

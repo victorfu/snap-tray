@@ -18,6 +18,13 @@ doc_order: 3
 | Paste | `F3` |
 | Quick Pin | `Shift+F2` |
 
+## 其他可設定動作（預設未綁定）
+
+- Pin from Image
+- Pin History
+- Toggle Hide/Show All Pins
+- Record Full Screen
+
 ## 分類管理
 
 Settings > Hotkeys 會依功能分類管理：

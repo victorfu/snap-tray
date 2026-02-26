@@ -15,7 +15,7 @@ doc_order: 2
 
 - Pencil
 - Marker
-- Arrow
+- Arrow（直線與折線模式）
 - Shape（矩形／橢圓）
 
 ### 說明標記

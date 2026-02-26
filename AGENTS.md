@@ -195,7 +195,7 @@ Use `HotkeyManager` as the single entry point for global hotkeys.
 
 - Actions are grouped by category in `HotkeyAction` (`Capture`, `Canvas`, `Clipboard`, `Pin`, `Recording`)
 - Do not register `QHotkey` directly in feature code; update via `HotkeyManager`
-- Default keys include Region Capture (`F2`) and Screen Canvas (`Ctrl+F2`), with additional configurable actions such as Paste (`F3`) and Quick Pin (`Shift+F2`)
+- Default keys include Region Capture (`F2`) and Screen Canvas (`Ctrl+F2`), with additional configurable actions such as Paste (`F3`), Quick Pin (`Shift+F2`), Pin from Image, Pin History, Hide/Show All Pins, and Record Full Screen
 
 ### Tool System
 
@@ -203,7 +203,7 @@ Tools use `ToolId` enum and are registered in `ToolRegistry`. Tool handlers impl
 
 ```cpp
 // Tool definitions in include/tools/
-ToolId.h          // Unified enum (Selection, Pencil, Marker, Arrow, Shape, Text, Mosaic, etc.)
+ToolId.h          // Unified enum (Selection, Pencil, Marker, Arrow, Shape, Text, Mosaic, Crop, Measure, Share, etc.)
 ToolDefinition.h  // Tool metadata
 IToolHandler.h    // Handler interface (onMousePress, onMouseMove, drawPreview, etc.)
 ToolRegistry.h    // Tool registration

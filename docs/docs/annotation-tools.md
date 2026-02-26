@@ -15,7 +15,7 @@ doc_order: 2
 
 - Pencil
 - Marker
-- Arrow
+- Arrow (single-line and polyline modes)
 - Shape (rectangle/ellipse)
 
 ### Markup and guidance

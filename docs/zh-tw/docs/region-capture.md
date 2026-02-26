@@ -1,7 +1,7 @@
 ---
 layout: docs
 title: 區域截圖
-description: 透過放大鏡、視窗偵測與多區域模式完成高精度擷取。
+description: 透過放大鏡、視窗偵測、多區域模式與分享輸出動作完成高精度擷取。
 permalink: /zh-tw/docs/region-capture/
 lang: zh-tw
 route_key: docs_region_capture
@@ -33,11 +33,22 @@ doc_order: 1
 
 按 `M` 切換多區域擷取。你可累積多個區塊，再選擇合併輸出或分開儲存。
 
+## 選取完成後可用動作
+
+完成選取後，工具列可直接執行：
+
+- 標註與編修工具（Arrow/Pencil/Marker/Shape/Text/Mosaic/Step Badge/Emoji/Eraser）
+- `OCR` 與 `QR Code Scan`
+- `Auto Blur`（臉孔 + 憑證等敏感資訊）
+- `Share URL`（上傳目前選取結果並產生分享連結）
+- `Pin`、`Save`、`Copy`、`Record`
+
 ## 常用快捷鍵
 
 | 動作 | 快捷鍵 |
 |---|---|
 | 啟動區域截圖 | `F2` |
+| 複製游標下色碼 | `C` |
 | 鎖定比例 | 按住 `Shift` |
 | 切換多區域 | `M` |
 | 由當前區域錄影 | `R` |

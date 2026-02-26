@@ -49,7 +49,7 @@ features:
       body: Arrow, pencil, marker, shapes, text, mosaic, step badges, and emoji stickers.
     - kind: Automation
       title: OCR + Auto Blur
-      body: Extract text and automatically mask sensitive faces for safer sharing.
+      body: Extract text and automatically mask sensitive faces or credentials for safer sharing.
     - kind: Detection
       title: Window Detection
       body: Quickly select windows without manually dragging exact bounds.
@@ -62,15 +62,15 @@ features:
     - kind: Control
       title: Undo / Redo
       body: Full action history across annotation operations so edits stay reversible.
-    - kind: Monitoring
-      title: Live Capture
-      body: Watch any region in real-time through a floating pin window.
+    - kind: Sharing
+      title: Share URL
+      body: Upload captures and generate share links with optional password protection.
     - kind: Branding
       title: Watermark
       body: Apply custom image watermark overlays to screenshots and recordings.
     - kind: Workflow
       title: Hotkey First
-      body: Region Capture, Canvas, Paste, and Quick Pin stay one keystroke away.
+      body: Region Capture, Canvas, Paste, Quick Pin, and Hide/Show Pins stay one keystroke away.
 
 downloads:
   eyebrow: Downloads
