@@ -7,11 +7,15 @@
 #include <QSettings>
 #include <QStringList>
 #include <mutex>
+#if defined(Q_OS_WIN)
+#include <windows.h>
+#endif
 #include "version.h"
 
 namespace SnapTray {
 
-inline constexpr const char* kOrganizationName = "Victor Fu";
+inline constexpr const char* kOrganizationName = "SnapTray";
+inline constexpr const char* kLegacyOrganizationName = "Victor Fu";
 inline constexpr const char* kApplicationName = SNAPTRAY_APP_NAME;
 
 // Hotkey settings keys
@@ -36,7 +40,7 @@ inline constexpr const char* kDefaultRecordFullScreenHotkey = "";  // No default
 inline constexpr const char* kSettingsMigrationVersionKey = "__meta/settingsMigrationVersion";
 inline constexpr int kSettingsMigrationVersion = 2;
 inline constexpr const char* kSettingsCleanupVersionKey = "__meta/settingsCleanupVersion";
-inline constexpr int kSettingsCleanupVersion = 3;
+inline constexpr int kSettingsCleanupVersion = 6;
 
 inline bool isDebugSettingsNamespace()
 {
@@ -46,7 +50,7 @@ inline bool isDebugSettingsNamespace()
 inline QString windowsSettingsPath()
 {
     if (isDebugSettingsNamespace()) {
-        return QStringLiteral("HKEY_CURRENT_USER\\Software\\SnapTray\\Debug");
+        return QStringLiteral("HKEY_CURRENT_USER\\Software\\SnapTray-Debug");
     }
     return QStringLiteral("HKEY_CURRENT_USER\\Software\\SnapTray");
 }
@@ -87,13 +91,15 @@ inline QStringList windowsLegacySettingsPaths()
         return {
             QStringLiteral("HKEY_CURRENT_USER\\Software\\Victor Fu\\SnapTray-Debug"),
             QStringLiteral("HKEY_CURRENT_USER\\Software\\Victor Fu\\SnapTray"),
-            QStringLiteral("HKEY_CURRENT_USER\\Software\\SnapTray-Debug")
+            QStringLiteral("HKEY_CURRENT_USER\\Software\\SnapTray-Debug"),
+            QStringLiteral("HKEY_CURRENT_USER\\Software\\SnapTray\\Debug")
         };
     }
     return {
         QStringLiteral("HKEY_CURRENT_USER\\Software\\Victor Fu\\SnapTray"),
         QStringLiteral("HKEY_CURRENT_USER\\Software\\Victor Fu\\SnapTray-Debug"),
-        QStringLiteral("HKEY_CURRENT_USER\\Software\\SnapTray-Debug")
+        QStringLiteral("HKEY_CURRENT_USER\\Software\\SnapTray-Debug"),
+        QStringLiteral("HKEY_CURRENT_USER\\Software\\SnapTray\\Debug")
     };
 }
 #elif defined(Q_OS_MACOS)
@@ -123,6 +129,12 @@ inline QStringList macLegacySettingsPaths()
 #endif
 
 #if defined(Q_OS_WIN) || defined(Q_OS_MACOS)
+inline QSettings legacyOrganizationSettingsStore()
+{
+    return QSettings(QString::fromLatin1(kLegacyOrganizationName),
+                     QString::fromLatin1(kApplicationName));
+}
+
 inline void logSettingsMigrationInfo(const QString& message)
 {
     Q_UNUSED(message);
@@ -218,6 +230,50 @@ inline bool clearSettingsStoreIfSeparate(QSettings& target, QSettings& source)
     return true;
 }
 
+#if defined(Q_OS_WIN)
+inline bool removeWindowsLegacyVendorKey()
+{
+    const QString vendorPath = QStringLiteral("HKEY_CURRENT_USER\\Software\\Victor Fu");
+    LONG deleteTreeResult = RegDeleteTreeW(HKEY_CURRENT_USER, L"Software\\Victor Fu");
+    if (deleteTreeResult != ERROR_SUCCESS
+        && deleteTreeResult != ERROR_FILE_NOT_FOUND
+        && deleteTreeResult != ERROR_PATH_NOT_FOUND) {
+        logSettingsMigrationWarning(
+            QStringLiteral("Failed to delete legacy vendor tree: %1 (error=%2)")
+                .arg(vendorPath)
+                .arg(deleteTreeResult));
+        return false;
+    }
+
+    LONG deleteKeyResult = RegDeleteKeyW(HKEY_CURRENT_USER, L"Software\\Victor Fu");
+    if (deleteKeyResult != ERROR_SUCCESS
+        && deleteKeyResult != ERROR_FILE_NOT_FOUND
+        && deleteKeyResult != ERROR_PATH_NOT_FOUND) {
+        logSettingsMigrationWarning(
+            QStringLiteral("Failed to delete legacy vendor key: %1 (error=%2)")
+                .arg(vendorPath)
+                .arg(deleteKeyResult));
+        return false;
+    }
+
+    HKEY verifyKey = nullptr;
+    const LONG openResult = RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\Victor Fu", 0, KEY_READ, &verifyKey);
+    if (openResult != ERROR_FILE_NOT_FOUND && openResult != ERROR_PATH_NOT_FOUND) {
+        if (openResult == ERROR_SUCCESS && verifyKey != nullptr) {
+            RegCloseKey(verifyKey);
+        }
+        logSettingsMigrationWarning(
+            QStringLiteral("Legacy vendor key still exists after forced removal: %1 (error=%2)")
+                .arg(vendorPath)
+                .arg(openResult));
+        return false;
+    }
+
+    logSettingsMigrationInfo(QStringLiteral("Removed legacy vendor key tree: %1").arg(vendorPath));
+    return true;
+}
+#endif
+
 inline void migrateLegacySettingsIfNeeded()
 {
     QSettings platformSettings = platformSettingsStore();
@@ -253,9 +309,9 @@ inline void migrateLegacySettingsIfNeeded()
             totalMigratedKeys += mergeSettingsIfMissing(platformSettings, legacySettings);
         }
 
-        QSettings organizationSettings(kOrganizationName, kApplicationName);
-        organizationSettings.setFallbacksEnabled(false);
-        totalMigratedKeys += mergeSettingsIfMissing(platformSettings, organizationSettings);
+        QSettings legacyOrganizationSettings = legacyOrganizationSettingsStore();
+        legacyOrganizationSettings.setFallbacksEnabled(false);
+        totalMigratedKeys += mergeSettingsIfMissing(platformSettings, legacyOrganizationSettings);
 
         platformSettings.setValue(kSettingsMigrationVersionKey, kSettingsMigrationVersion);
         logSettingsMigrationInfo(
@@ -287,10 +343,13 @@ inline void migrateLegacySettingsIfNeeded()
         }
 #endif
 
-        QSettings legacyOrganizationSettings(kOrganizationName, kApplicationName);
+        QSettings legacyOrganizationSettings = legacyOrganizationSettingsStore();
         legacyOrganizationSettings.setFallbacksEnabled(false);
         cleanupSucceeded
             = clearSettingsStoreIfSeparate(platformSettings, legacyOrganizationSettings) && cleanupSucceeded;
+#if defined(Q_OS_WIN)
+        cleanupSucceeded = removeWindowsLegacyVendorKey() && cleanupSucceeded;
+#endif
 
         if (cleanupSucceeded) {
             platformSettings.setValue(kSettingsCleanupVersionKey, kSettingsCleanupVersion);
