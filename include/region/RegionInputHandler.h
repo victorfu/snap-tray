@@ -167,11 +167,14 @@ private:
     // State
     QPoint m_startPoint;
     QPoint m_lastWindowDetectionPos;
+    QPoint m_pendingWindowClickStartPos;
     QPoint m_lastCrosshairPoint;  // Previous pointer position (retained for repaint tracking state)
+    QRect m_pendingWindowClickRect;
     QRect m_lastSelectionRect;
     QRect m_lastMagnifierRect;
     QRect m_lastToolbarRect;
     QRect m_lastRegionControlRect;
+    bool m_pendingWindowClickActive = false;
 
     // Emoji sticker transformation state
     bool m_isEmojiDragging = false;
@@ -206,6 +209,7 @@ private:
 
     // Constants
     static constexpr int WINDOW_DETECTION_MIN_DISTANCE_SQ = 64;  // 8px threshold squared (improved for high-DPI)
+    static constexpr int WINDOW_CLICK_MAX_DISTANCE_SQ = 64;      // 8px drift still counts as click
 
     // Drag smoothing / repaint planning
     SelectionDirtyRegionPlanner m_dirtyRegionPlanner;

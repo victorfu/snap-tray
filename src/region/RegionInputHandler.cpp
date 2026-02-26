@@ -134,6 +134,9 @@ void RegionInputHandler::resetDirtyTracking()
     m_lastSelectionRect = QRect();
     m_lastToolbarRect = QRect();
     m_lastRegionControlRect = QRect();
+    m_pendingWindowClickActive = false;
+    m_pendingWindowClickRect = QRect();
+    m_pendingWindowClickStartPos = QPoint();
     m_dragFrameTimer.stop();
 }
 
@@ -678,6 +681,19 @@ void RegionInputHandler::handleNewSelectionPress(const QPoint& pos)
     m_startPoint = pos;
     state().currentPoint = pos;
     m_lastSelectionRect = QRect();
+
+    // Preserve the highlighted window at press time so minor pointer drift
+    // still resolves as window-click instead of falling back to full screen.
+    if (state().hasDetectedWindow && state().highlightedWindowRect.isValid()) {
+        m_pendingWindowClickActive = true;
+        m_pendingWindowClickRect = state().highlightedWindowRect;
+        m_pendingWindowClickStartPos = pos;
+    }
+    else {
+        m_pendingWindowClickActive = false;
+        m_pendingWindowClickRect = QRect();
+        m_pendingWindowClickStartPos = QPoint();
+    }
 }
 
 void RegionInputHandler::handleRightButtonPress(const QPoint& pos)
@@ -702,11 +718,17 @@ void RegionInputHandler::handleRightButtonPress(const QPoint& pos)
     // Cancel capture if still selecting or not yet started
     if (m_selectionManager->isSelecting() || !m_selectionManager->isComplete()) {
         m_selectionManager->clearSelection();
+        m_pendingWindowClickActive = false;
+        m_pendingWindowClickRect = QRect();
+        m_pendingWindowClickStartPos = QPoint();
         emit selectionCancelledByRightClick();
         return;
     }
 
     if (m_selectionManager->isComplete()) {
+        m_pendingWindowClickActive = false;
+        m_pendingWindowClickRect = QRect();
+        m_pendingWindowClickStartPos = QPoint();
         if (state().isDrawing) {
             state().isDrawing = false;
             emit drawingStateChanged(false);
@@ -823,6 +845,16 @@ void RegionInputHandler::clearDetectionAndNotify()
 
 void RegionInputHandler::handleSelectionMove(const QPoint& pos)
 {
+    if (m_pendingWindowClickActive) {
+        const int dx = pos.x() - m_pendingWindowClickStartPos.x();
+        const int dy = pos.y() - m_pendingWindowClickStartPos.y();
+        if ((dx * dx + dy * dy) > WINDOW_CLICK_MAX_DISTANCE_SQ) {
+            m_pendingWindowClickActive = false;
+            m_pendingWindowClickRect = QRect();
+            m_pendingWindowClickStartPos = QPoint();
+        }
+    }
+
     clearDetectionAndNotify();
     m_selectionManager->updateSelection(pos);
 }
@@ -1271,7 +1303,16 @@ bool RegionInputHandler::handleRegionControlWidgetRelease(const QPoint& pos)
 void RegionInputHandler::handleSelectionRelease(const QPoint& pos)
 {
     Q_UNUSED(pos);
+    auto clearPendingWindowClick = [this]() {
+        m_pendingWindowClickActive = false;
+        m_pendingWindowClickRect = QRect();
+        m_pendingWindowClickStartPos = QPoint();
+    };
+
     QRect sel = m_selectionManager->selectionRect();
+    const bool canUsePendingWindowClick =
+        m_pendingWindowClickActive && m_pendingWindowClickRect.isValid();
+
     if (state().multiRegionMode) {
         const bool replacingRegion = (state().replaceTargetIndex >= 0);
         if (sel.width() > 5 && sel.height() > 5) {
@@ -1284,10 +1325,17 @@ void RegionInputHandler::handleSelectionRelease(const QPoint& pos)
 
             clearDetectionAndNotify();
         }
+        else if (canUsePendingWindowClick) {
+            m_selectionManager->setFromDetectedWindow(m_pendingWindowClickRect);
+            emit selectionFinished();
+
+            clearDetectionAndNotify();
+        }
         else if (replacingRegion) {
             m_selectionManager->clearSelection();
             emit replaceSelectionCancelled();
         }
+        clearPendingWindowClick();
         return;
     }
 
@@ -1301,10 +1349,17 @@ void RegionInputHandler::handleSelectionRelease(const QPoint& pos)
 
         clearDetectionAndNotify();
     }
+    else if (canUsePendingWindowClick) {
+        m_selectionManager->setFromDetectedWindow(m_pendingWindowClickRect);
+        emit selectionFinished();
+
+        clearDetectionAndNotify();
+    }
     else {
         emit fullScreenSelectionRequested();
         emit selectionFinished();
     }
+    clearPendingWindowClick();
 }
 
 void RegionInputHandler::handleAnnotationRelease()
