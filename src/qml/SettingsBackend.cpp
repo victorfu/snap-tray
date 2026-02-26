@@ -461,6 +461,7 @@ void SettingsBackend::save()
     if (m_ocrLoaded) {
         auto& ocrMgr = OCRSettingsManager::instance();
         ocrMgr.setLanguages(m_ocrSelectedLanguages);
+        m_ocrSelectedLanguages = ocrMgr.languages();
         ocrMgr.setBehavior(static_cast<OCRBehavior>(m_ocrBehavior));
         ocrMgr.save();
         emit ocrLanguagesChanged(m_ocrSelectedLanguages);
@@ -609,7 +610,7 @@ void SettingsBackend::loadOcrLanguages()
     m_ocrSelectedLanguages = ocrMgr.languages();
     m_ocrBehavior = static_cast<int>(ocrMgr.behavior());
     m_ocrLoaded = true;
-    emit ocrLanguagesChanged(m_ocrSelectedLanguages);
+    emit ocrSelectionChanged();
 }
 
 QVariantList SettingsBackend::ocrAvailableLanguages() const
@@ -656,14 +657,18 @@ void SettingsBackend::addOcrLanguage(const QString& code)
 {
     if (!m_ocrSelectedLanguages.contains(code)) {
         m_ocrSelectedLanguages.append(code);
-        emit ocrLanguagesChanged(m_ocrSelectedLanguages);
+        emit ocrSelectionChanged();
     }
 }
 
 void SettingsBackend::removeOcrLanguage(const QString& code)
 {
+    if (code == QStringLiteral("en-US")) {
+        return;
+    }
+
     if (m_ocrSelectedLanguages.removeAll(code) > 0) {
-        emit ocrLanguagesChanged(m_ocrSelectedLanguages);
+        emit ocrSelectionChanged();
     }
 }
 
@@ -674,7 +679,7 @@ void SettingsBackend::moveOcrLanguage(int from, int to)
         || from == to)
         return;
     m_ocrSelectedLanguages.move(from, to);
-    emit ocrLanguagesChanged(m_ocrSelectedLanguages);
+    emit ocrSelectionChanged();
 }
 
 int SettingsBackend::ocrBehavior() const { return m_ocrBehavior; }

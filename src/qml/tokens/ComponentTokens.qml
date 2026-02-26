@@ -266,6 +266,51 @@ QtObject {
     readonly property int recordingBoundaryLoopDuration: PrimitiveTokens.durationBoundaryLoop
 
     // ========================================================================
+    // Scroll Capture Control Bar (always dark surface, theme-independent)
+    // ========================================================================
+    readonly property color scrollControlBackground: Qt.rgba(0.08, 0.08, 0.12, 0.92)
+    readonly property color scrollControlBorder: Qt.rgba(1, 1, 1, 0.10)
+    readonly property color scrollControlDoneBackground: PrimitiveTokens.accentDefault
+    readonly property color scrollControlDoneBackgroundHover: PrimitiveTokens.accentHover
+    readonly property color scrollControlDoneBackgroundPressed: PrimitiveTokens.accentPressed
+    readonly property color scrollControlDoneText: PrimitiveTokens.white
+    readonly property int scrollControlDoneRadius: PrimitiveTokens.radiusLarge
+    readonly property color scrollControlCancelBackground: Qt.rgba(1, 1, 1, 0.10)
+    readonly property color scrollControlCancelBackgroundHover: Qt.rgba(1, 1, 1, 0.15)
+    readonly property color scrollControlCancelBackgroundPressed: Qt.rgba(1, 1, 1, 0.20)
+    readonly property color scrollControlCancelText: Qt.rgba(1, 1, 1, 0.85)
+    readonly property color scrollControlCancelBorder: Qt.rgba(1, 1, 1, 0.12)
+    readonly property int scrollControlCancelRadius: PrimitiveTokens.radiusMedium
+    readonly property color scrollControlWarningBorder: PrimitiveTokens.red500
+    readonly property int scrollControlSpacing: PrimitiveTokens.spacing8
+    readonly property int scrollControlPadding: PrimitiveTokens.spacing12
+    readonly property int scrollControlInsideBottomGap: PrimitiveTokens.spacing12
+    readonly property int scrollControlOutsideGap: PrimitiveTokens.spacing12
+
+    // ========================================================================
+    // Scroll Capture Preview Window (always dark surface, theme-independent)
+    // ========================================================================
+    readonly property color scrollPreviewCardBackground: Qt.rgba(0.08, 0.08, 0.12, 0.92)
+    readonly property color scrollPreviewCardBorder: Qt.rgba(1, 1, 1, 0.10)
+    readonly property int scrollPreviewCardRadius: PrimitiveTokens.radiusXL
+    readonly property color scrollPreviewImageBackground: Qt.rgba(1, 1, 1, 0.05)
+    readonly property color scrollPreviewImageBorder: Qt.rgba(1, 1, 1, 0.08)
+    readonly property int scrollPreviewImageRadius: PrimitiveTokens.radiusLarge
+    readonly property int scrollPreviewCardWidth: 188
+    readonly property int scrollPreviewCardHeight: 430
+    readonly property int scrollPreviewCardInset: PrimitiveTokens.spacing12
+    readonly property int scrollPreviewOutsideGap: PrimitiveTokens.spacing12
+    readonly property int scrollPreviewMargin: PrimitiveTokens.spacing12
+
+    // Scroll Capture Boundary (additions to existing boundary tokens)
+    readonly property color scrollBoundaryBorder: PrimitiveTokens.annotationBlue
+    readonly property color scrollBoundaryHandleFill: PrimitiveTokens.annotationBlue
+    readonly property color scrollBoundaryHandleStroke: Qt.rgba(1, 1, 1, 0.9)
+    readonly property real scrollBoundaryHandleRadius: 5.5
+    readonly property real scrollBoundaryHandleStrokeWidth: 1.5
+    readonly property int scrollBoundaryBorderWidth: 2
+
+    // ========================================================================
     // Countdown Overlay
     // ========================================================================
     readonly property color countdownOverlay: SemanticTokens.backgroundOverlay

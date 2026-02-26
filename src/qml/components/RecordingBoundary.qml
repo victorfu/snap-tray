@@ -8,6 +8,7 @@ import SnapTrayQml
  *   - Recording: rotating conical gradient border (blue/indigo/purple)
  *   - Playing:   pulsing green border
  *   - Paused:    static amber border
+ *   - ScrollCapture: static blue border with resize handles
  *
  * Designed to be loaded in a frameless, transparent, click-through QQuickView.
  * The C++ bridge sets `borderMode`, `regionWidth`, and `regionHeight`.
@@ -19,6 +20,7 @@ Item {
     readonly property int modeRecording: 0
     readonly property int modePlaying: 1
     readonly property int modePaused: 2
+    readonly property int modeScrollCapture: 3
 
     property int borderMode: modeRecording
 
@@ -102,6 +104,8 @@ Item {
                 drawRecordingBorder(ctx, bx, by, bw, bh);
             } else if (root.borderMode === root.modePlaying) {
                 drawPlayingBorder(ctx, bx, by, bw, bh);
+            } else if (root.borderMode === root.modeScrollCapture) {
+                drawScrollCaptureBorder(ctx, bx, by, bw, bh);
             } else {
                 drawPausedBorder(ctx, bx, by, bw, bh);
             }
@@ -201,6 +205,39 @@ Item {
             ctx.beginPath();
             ctx.rect(bx, by, bw, bh);
             ctx.stroke();
+        }
+
+        function drawScrollCaptureBorder(ctx, bx, by, bw, bh) {
+            // Blue selection border similar to browser/OS crop affordances.
+            ctx.strokeStyle = ComponentTokens.scrollBoundaryBorder;
+            ctx.lineWidth = ComponentTokens.scrollBoundaryBorderWidth;
+            ctx.lineJoin = "miter";
+            ctx.beginPath();
+            ctx.rect(bx, by, bw, bh);
+            ctx.stroke();
+
+            var handles = [
+                [bx, by],
+                [bx + bw / 2, by],
+                [bx + bw, by],
+                [bx, by + bh / 2],
+                [bx + bw, by + bh / 2],
+                [bx, by + bh],
+                [bx + bw / 2, by + bh],
+                [bx + bw, by + bh]
+            ];
+
+            var radius = ComponentTokens.scrollBoundaryHandleRadius;
+            for (var i = 0; i < handles.length; ++i) {
+                var h = handles[i];
+                ctx.fillStyle = ComponentTokens.scrollBoundaryHandleFill;
+                ctx.strokeStyle = ComponentTokens.scrollBoundaryHandleStroke;
+                ctx.lineWidth = ComponentTokens.scrollBoundaryHandleStrokeWidth;
+                ctx.beginPath();
+                ctx.arc(h[0], h[1], radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+            }
         }
     }
 

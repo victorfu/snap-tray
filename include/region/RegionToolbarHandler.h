@@ -79,6 +79,7 @@ signals:
     void cancelRequested();
     void pinRequested();
     void recordRequested();
+    void scrollCaptureRequested();
     void saveRequested();
     void copyRequested();
     void shareRequested();
@@ -132,6 +133,7 @@ private:
     void handlePinAction(ToolId button);
     void handleRecordAction(ToolId button);
     void handleShareAction(ToolId button);
+    void handleScrollCaptureAction(ToolId button);
     void handleSaveAction(ToolId button);
     void handleCopyAction(ToolId button);
     void handleMultiRegionToggle(ToolId button);

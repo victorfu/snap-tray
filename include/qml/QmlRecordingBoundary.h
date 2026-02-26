@@ -21,6 +21,7 @@ namespace SnapTray {
  *   - Recording: rotating conical gradient (blue/indigo/purple)
  *   - Playing:   pulsing green
  *   - Paused:    static amber
+ *   - ScrollCapture: static blue selection border with resize handles
  *
  * The window is frameless, transparent, click-through, and stays on top.
  *
@@ -37,7 +38,8 @@ public:
     enum class BorderMode {
         Recording = 0,
         Playing   = 1,
-        Paused    = 2
+        Paused    = 2,
+        ScrollCapture = 3
     };
 
     explicit QmlRecordingBoundary(QObject* parent = nullptr);

@@ -2,6 +2,7 @@
 #include "RegionSelector.h"
 #include "PinWindowManager.h"
 #include "PinWindow.h"
+#include "scroll/ScrollCaptureSession.h"
 #include "platform/WindowLevel.h"
 #include "WindowDetector.h"
 #include "PlatformFeatures.h"
@@ -15,10 +16,12 @@
 #include <QCursor>
 #include <QKeyEvent>
 #include <QDialog>
+#include <QTimer>
 
 CaptureManager::CaptureManager(PinWindowManager *pinManager, QObject *parent)
     : QObject(parent)
     , m_regionSelector(nullptr)
+    , m_scrollSession(nullptr)
     , m_pinManager(pinManager)
     , m_windowDetector(PlatformFeatures::instance().createWindowDetector(this))
 {
@@ -30,7 +33,8 @@ CaptureManager::~CaptureManager()
 
 bool CaptureManager::isActive() const
 {
-    return m_regionSelector && m_regionSelector->isVisible();
+    return (m_regionSelector && m_regionSelector->isVisible()) ||
+           m_scrollSession;
 }
 
 bool CaptureManager::hasCompleteSelection() const
@@ -49,6 +53,17 @@ void CaptureManager::triggerFinishSelection()
 
 void CaptureManager::cancelCapture()
 {
+    if (m_scrollSession) {
+        if (m_scrollSession->isRunning()) {
+            m_scrollSession->cancel();
+        } else {
+            // Session is pending start; destroy immediately so delayed start cannot run.
+            delete m_scrollSession;
+            m_scrollSession = nullptr;
+        }
+        return;
+    }
+
     if (m_regionSelector && m_regionSelector->isVisible()) {
         qDebug() << "CaptureManager: Cancelling active capture via CLI";
         m_regionSelector->close();
@@ -88,6 +103,12 @@ void CaptureManager::startQuickPinCapture()
 
 void CaptureManager::startCaptureInternal(CaptureEntryMode mode, bool showShortcutHintsOnEntry)
 {
+    if (m_scrollSession) {
+        qWarning() << "CaptureManager: Emergency cancel via re-trigger while scroll capture is active";
+        cancelCapture();
+        return;
+    }
+
     // Skip if already in capture mode
     if (m_regionSelector && m_regionSelector->isVisible()) {
         return;
@@ -206,7 +227,7 @@ void CaptureManager::onSelectionCancelled()
 void CaptureManager::startRegionCaptureWithPreset(const QRect &region, QScreen *screen)
 {
     // If already in capture mode, ignore
-    if (m_regionSelector && m_regionSelector->isVisible()) {
+    if ((m_regionSelector && m_regionSelector->isVisible()) || m_scrollSession) {
         return;
     }
 
@@ -258,6 +279,8 @@ void CaptureManager::startRegionCaptureWithPreset(const QRect &region, QScreen *
             this, &CaptureManager::onSelectionCancelled);
     connect(m_regionSelector, &RegionSelector::recordingRequested,
             this, &CaptureManager::recordingRequested);
+    connect(m_regionSelector, &RegionSelector::scrollingCaptureRequested,
+            this, &CaptureManager::onScrollingCaptureRequested);
     connect(m_regionSelector, &RegionSelector::saveCompleted,
             this, &CaptureManager::saveCompleted);
     connect(m_regionSelector, &RegionSelector::saveFailed,
@@ -294,6 +317,8 @@ void CaptureManager::initializeRegionSelector(QScreen *targetScreen,
             this, &CaptureManager::onRegionSelected);
     connect(m_regionSelector, &RegionSelector::selectionCancelled,
             this, &CaptureManager::onSelectionCancelled);
+    connect(m_regionSelector, &RegionSelector::scrollingCaptureRequested,
+            this, &CaptureManager::onScrollingCaptureRequested);
 
     // Additional signals for full region capture mode
     if (!quickPinMode) {
@@ -335,4 +360,64 @@ void CaptureManager::initializeRegionSelector(QScreen *targetScreen,
     // Ensure cursor is set AFTER show/activate to fix race condition where
     // cursor was set before widget visibility, then Qt reset it to ArrowCursor
     m_regionSelector->ensureCrossCursor();
+}
+
+void CaptureManager::onScrollingCaptureRequested(const QRect &region, QScreen *screen)
+{
+    if (!m_pinManager || region.isEmpty() || !screen) {
+        emit captureCancelled();
+        return;
+    }
+
+    if (m_scrollSession) {
+        return;
+    }
+
+    m_scrollSession = new ScrollCaptureSession(region, screen, this);
+    QPointer<ScrollCaptureSession> session = m_scrollSession;
+    ScrollCaptureSession *createdSession = m_scrollSession;
+
+    connect(m_scrollSession, &ScrollCaptureSession::captureReady,
+            this, [this, session](const QPixmap &screenshot, const QPoint &globalPosition, const QRect &globalRect) {
+                onRegionSelected(screenshot, globalPosition, globalRect);
+                if (session) {
+                    if (m_scrollSession == session) {
+                        m_scrollSession = nullptr;
+                    }
+                    session->deleteLater();
+                }
+            });
+    connect(m_scrollSession, &ScrollCaptureSession::cancelled,
+            this, [this, session]() {
+                onSelectionCancelled();
+                if (session) {
+                    if (m_scrollSession == session) {
+                        m_scrollSession = nullptr;
+                    }
+                    session->deleteLater();
+                }
+            });
+    connect(m_scrollSession, &ScrollCaptureSession::failed,
+            this, [this, session](const QString &error) {
+                qWarning() << "CaptureManager: Scroll capture failed:" << error;
+                onSelectionCancelled();
+                if (session) {
+                    if (m_scrollSession == session) {
+                        m_scrollSession = nullptr;
+                    }
+                    session->deleteLater();
+                }
+            });
+    connect(m_scrollSession, &QObject::destroyed,
+            this, [this, createdSession]() {
+                if (m_scrollSession == createdSession) {
+                    m_scrollSession = nullptr;
+                }
+            });
+
+    QTimer::singleShot(120, this, [session]() {
+        if (session) {
+            session->start();
+        }
+    });
 }

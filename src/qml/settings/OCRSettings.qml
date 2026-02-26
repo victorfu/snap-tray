@@ -29,7 +29,7 @@ Flickable {
 
     Connections {
         target: settingsBackend
-        function onOcrLanguagesChanged() { root.refreshLists() }
+        function onOcrSelectionChanged() { root.refreshLists() }
     }
 
     Component.onCompleted: {
@@ -198,7 +198,8 @@ Flickable {
                         if (selectedList.selectedIndex >= 0
                             && selectedList.selectedIndex < root.selectedLangs.length) {
                             var code = root.selectedLangs[selectedList.selectedIndex].code
-                            settingsBackend.removeOcrLanguage(code)
+                            if (code !== "en-US")
+                                settingsBackend.removeOcrLanguage(code)
                         }
                     }
                 }

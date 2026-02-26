@@ -12,6 +12,42 @@ Flickable {
     boundsBehavior: Flickable.StopAtBounds
     ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
 
+    Toast {
+        id: updateToast
+        level: 3 // Info
+        anchorMode: 1 // ParentTopCenter
+        fixedWidth: true
+        z: 10
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.top: parent.top
+        anchors.topMargin: 12
+    }
+
+    Connections {
+        target: settingsBackend
+
+        function onUpdateAvailable(version, notes) {
+            updateToast.level = 0 // Success
+            updateToast.title = qsTr("Update available")
+            updateToast.message = qsTr("Version %1 is available.").arg(version)
+            updateToast.show()
+        }
+
+        function onNoUpdateAvailable() {
+            updateToast.level = 3 // Info
+            updateToast.title = qsTr("You're up to date")
+            updateToast.message = qsTr("No updates are currently available.")
+            updateToast.show()
+        }
+
+        function onUpdateCheckFailed(error) {
+            updateToast.level = 1 // Error
+            updateToast.title = qsTr("Update check failed")
+            updateToast.message = error
+            updateToast.show()
+        }
+    }
+
     readonly property var frequencyHours: [24, 72, 168, 336, 720]
 
     function frequencyToIndex(hours) {

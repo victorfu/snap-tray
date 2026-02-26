@@ -156,21 +156,32 @@ FetchContent_Declare(
     GIT_SHALLOW    TRUE
 )
 
+FetchContent_Declare(
+    OpenCV_Contrib
+    GIT_REPOSITORY https://github.com/opencv/opencv_contrib.git
+    GIT_TAG        4.10.0
+    GIT_SHALLOW    TRUE
+)
+
+FetchContent_MakeAvailable(OpenCV_Contrib)
+set(OPENCV_EXTRA_MODULES_PATH "${opencv_contrib_SOURCE_DIR}/modules" CACHE PATH "" FORCE)
+
 # Configure OpenCV for minimal static build (only what we need)
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 set(BUILD_WITH_STATIC_CRT OFF CACHE BOOL "" FORCE)  # Use dynamic runtime (/MD) to match Qt6
 set(BUILD_opencv_apps OFF CACHE BOOL "" FORCE)
-set(BUILD_opencv_calib3d ON CACHE BOOL "" FORCE)  # Required by objdetect
+set(BUILD_opencv_calib3d ON CACHE BOOL "" FORCE)
 set(BUILD_opencv_dnn OFF CACHE BOOL "" FORCE)
-set(BUILD_opencv_flann ON CACHE BOOL "" FORCE)  # Required by features2d
+set(BUILD_opencv_flann ON CACHE BOOL "" FORCE)
 set(BUILD_opencv_gapi OFF CACHE BOOL "" FORCE)
 set(BUILD_opencv_highgui OFF CACHE BOOL "" FORCE)
 set(BUILD_opencv_ml OFF CACHE BOOL "" FORCE)
 set(BUILD_opencv_objdetect ON CACHE BOOL "" FORCE)  # Required for face detection (Haar Cascade)
-set(BUILD_opencv_photo OFF CACHE BOOL "" FORCE)
+set(BUILD_opencv_photo ON CACHE BOOL "" FORCE)
 set(BUILD_opencv_stitching OFF CACHE BOOL "" FORCE)
 set(BUILD_opencv_video OFF CACHE BOOL "" FORCE)
 set(BUILD_opencv_videoio OFF CACHE BOOL "" FORCE)
+set(BUILD_opencv_xfeatures2d OFF CACHE BOOL "" FORCE)
 set(BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(BUILD_PERF_TESTS OFF CACHE BOOL "" FORCE)
 set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
@@ -210,7 +221,6 @@ set(WITH_AVFOUNDATION OFF CACHE BOOL "AVFoundation via OpenCV: Using directly" F
 set(ENABLE_FAST_MATH ON CACHE BOOL "Enable fast math" FORCE)
 set(CV_TRACE OFF CACHE BOOL "Disable tracing" FORCE)
 set(CV_ENABLE_INTRINSICS ON CACHE BOOL "Enable SIMD" FORCE)
-set(OPENCV_ENABLE_NONFREE OFF CACHE BOOL "Non-free: Not needed" FORCE)
 
 # Language Bindings - DISABLED
 set(BUILD_opencv_python2 OFF CACHE BOOL "Python2: Not needed" FORCE)
@@ -218,10 +228,13 @@ set(BUILD_opencv_python3 OFF CACHE BOOL "Python3: Not needed" FORCE)
 set(BUILD_opencv_java OFF CACHE BOOL "Java: Not needed" FORCE)
 set(BUILD_JAVA OFF CACHE BOOL "Java: Not needed" FORCE)
 set(BUILD_opencv_world OFF CACHE BOOL "World module: Not needed" FORCE)
+set(BUILD_LIST
+    "core,imgproc,flann,features2d,calib3d,objdetect,photo"
+    CACHE STRING "Build only required OpenCV modules for SnapTray" FORCE)
 
 # Use system zlib to avoid build conflicts on macOS
 set(BUILD_ZLIB OFF CACHE BOOL "" FORCE)
-# Keep: core, imgproc, features2d, flann
+# Keep: core, imgproc, features2d
 set(BUILD_opencv_core ON CACHE BOOL "" FORCE)
 set(BUILD_opencv_imgproc ON CACHE BOOL "" FORCE)
 set(BUILD_opencv_features2d ON CACHE BOOL "" FORCE)
@@ -405,11 +418,18 @@ add_library(snaptray_algorithms STATIC
     src/detection/AutoBlurManager.cpp
     src/detection/CredentialDetector.cpp
     src/detection/TableDetector.cpp
+    src/detection/ScrollAlignmentEngine.cpp
+    src/detection/ScrollTemporalVarianceMask.cpp
+    src/detection/ScrollSeamBlender.cpp
     # Headers with Q_OBJECT for MOC processing
     include/detection/FaceDetector.h
     include/detection/AutoBlurManager.h
     include/detection/CredentialDetector.h
     include/detection/TableDetector.h
+    include/detection/ScrollAlignmentEngine.h
+    include/detection/ScrollAlignmentTypes.h
+    include/detection/ScrollTemporalVarianceMask.h
+    include/detection/ScrollSeamBlender.h
 )
 
 target_include_directories(snaptray_algorithms
@@ -421,10 +441,9 @@ target_include_directories(snaptray_algorithms
         ${CMAKE_BINARY_DIR}
         ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/core/include
         ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/imgproc/include
-        ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/features2d/include
-        ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/flann/include
-        ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/objdetect/include
         ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/calib3d/include
+        ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/objdetect/include
+        ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/photo/include
 )
 
 target_link_libraries(snaptray_algorithms
@@ -433,10 +452,9 @@ target_link_libraries(snaptray_algorithms
     PRIVATE
         opencv_core
         opencv_imgproc
-        opencv_features2d
-        opencv_flann
         opencv_calib3d
         opencv_objdetect
+        opencv_photo
 )
 
 target_compile_definitions(snaptray_algorithms PRIVATE
@@ -474,12 +492,15 @@ add_library(snaptray_platform STATIC
     include/QRCodeManager.h
     include/QRCodeResultDialog.h
     include/ImageColorSpaceHelper.h
+    include/platform/IScrollAutomationDriver.h
+    include/platform/ScrollAutomationDriverFactory.h
 
     # macOS sources
     $<$<PLATFORM_ID:Darwin>:
         src/ImageColorSpaceHelper_mac.mm
         src/platform/WindowLevel_mac.mm
         src/platform/PlatformFeatures_mac.mm
+        src/platform/ScrollAutomationDriver_mac.mm
         src/WindowDetector.mm
         src/OCRManager.mm
         src/AutoLaunchManager_mac.mm
@@ -504,6 +525,7 @@ add_library(snaptray_platform STATIC
         src/platform/WindowLevel_win.cpp
         src/platform/PathEnvUtils_win.cpp
         src/platform/PlatformFeatures_win.cpp
+        src/platform/ScrollAutomationDriver_win.cpp
         src/WindowDetector_win.cpp
         src/OCRManager_win.cpp
         src/AutoLaunchManager_win.cpp
@@ -571,6 +593,8 @@ target_link_libraries(snaptray_platform
             mfplat
             mfuuid
             ole32
+            oleaut32
+            uiautomationcore
             propsys
         >
 )
@@ -668,6 +692,8 @@ add_library(snaptray_ui STATIC
     src/region/SelectionResizeHelper.cpp
     src/region/RegionExportManager.cpp
     src/region/CaptureShortcutHintsOverlay.cpp
+    src/scroll/ScrollStitchEngine.cpp
+    src/scroll/ScrollCaptureSession.cpp
 
     # PinWindow
     src/PinWindow.cpp
@@ -768,6 +794,8 @@ add_library(snaptray_ui STATIC
     include/region/RegionSettingsHelper.h
     include/region/RegionExportManager.h
     include/region/CaptureShortcutHintsOverlay.h
+    include/scroll/ScrollStitchEngine.h
+    include/scroll/ScrollCaptureSession.h
     include/PinWindow.h
     include/PinWindowManager.h
     include/pinwindow/PinHistoryStore.h
@@ -808,6 +836,9 @@ target_include_directories(snaptray_ui
         ${CMAKE_SOURCE_DIR}/src
         ${CMAKE_BINARY_DIR}/generated
         ${CMAKE_BINARY_DIR}
+        ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/core/include
+        ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/imgproc/include
+        ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/photo/include
 )
 
 target_link_libraries(snaptray_ui
@@ -821,6 +852,10 @@ target_link_libraries(snaptray_ui
         Qt6::Gui
         Qt6::Svg
         QHotkey::QHotkey
+    PRIVATE
+        opencv_core
+        opencv_imgproc
+        opencv_photo
 )
 
 target_compile_definitions(snaptray_ui PRIVATE
@@ -888,6 +923,8 @@ set_source_files_properties(src/qml/components/Toast.qml PROPERTIES QT_RESOURCE_
 set_source_files_properties(src/qml/components/Badge.qml PROPERTIES QT_RESOURCE_ALIAS components/Badge.qml)
 set_source_files_properties(src/qml/components/RecordingBoundary.qml PROPERTIES QT_RESOURCE_ALIAS components/RecordingBoundary.qml)
 set_source_files_properties(src/qml/components/Countdown.qml PROPERTIES QT_RESOURCE_ALIAS components/Countdown.qml)
+set_source_files_properties(src/qml/components/ScrollCaptureControlBar.qml PROPERTIES QT_RESOURCE_ALIAS components/ScrollCaptureControlBar.qml)
+set_source_files_properties(src/qml/components/ScrollCapturePreviewWindow.qml PROPERTIES QT_RESOURCE_ALIAS components/ScrollCapturePreviewWindow.qml)
 
 # Settings controls
 set_source_files_properties(src/qml/controls/SettingsSection.qml PROPERTIES QT_RESOURCE_ALIAS controls/SettingsSection.qml)
@@ -936,6 +973,8 @@ qt_add_qml_module(snaptray_qml
         src/qml/components/Badge.qml
         src/qml/components/RecordingBoundary.qml
         src/qml/components/Countdown.qml
+        src/qml/components/ScrollCaptureControlBar.qml
+        src/qml/components/ScrollCapturePreviewWindow.qml
         src/qml/controls/SettingsSection.qml
         src/qml/controls/SettingsRow.qml
         src/qml/controls/SettingsToggle.qml
@@ -985,6 +1024,10 @@ qt_add_qml_module(snaptray_qml
         include/qml/SvgIconItem.h
         src/qml/RecordingPreviewBackend.mm
         include/qml/RecordingPreviewBackend.h
+        src/qml/QmlScrollControlBar.mm
+        include/qml/QmlScrollControlBar.h
+        src/qml/QmlScrollPreviewWindow.mm
+        include/qml/QmlScrollPreviewWindow.h
 )
 
 target_include_directories(snaptray_qml

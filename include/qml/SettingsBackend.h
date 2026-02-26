@@ -284,6 +284,7 @@ signals:
     void hotkeysChanged();
 
     // OCR
+    void ocrSelectionChanged();
     void ocrLanguagesChanged(const QStringList& languages);
 
 private:

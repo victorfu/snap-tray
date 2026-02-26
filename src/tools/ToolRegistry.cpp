@@ -284,6 +284,17 @@ void ToolRegistry::registerTools() {
     });
 
     registerTool({
+        ToolId::ScrollCapture,
+        "scroll-capture",
+        QCoreApplication::translate("ToolRegistry", "Scrolling Capture"),
+        "",
+        ToolCategory::Action,
+        false, false, false, false, false, false,
+        false, false, false,  // UI visibility: none
+        false, QColor()
+    });
+
+    registerTool({
         ToolId::Share,
         "share",
         QCoreApplication::translate("ToolRegistry", "Share URL"),
@@ -411,6 +422,7 @@ QVector<ToolId> ToolRegistry::getToolsForToolbar(ToolbarType type) const {
             ToolId::OCR,
             ToolId::QRCode,
             ToolId::Record,
+            ToolId::ScrollCapture,
             ToolId::MultiRegion,
             ToolId::Share,
             ToolId::Pin,

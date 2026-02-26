@@ -85,9 +85,12 @@ Current code version: `1.0.30`.
 - **Build System**: CMake 3.16+ + Ninja
 - **Dependencies** (auto-fetched via FetchContent):
   - [QHotkey](https://github.com/Skycoder42/QHotkey) (global hotkeys)
-  - [OpenCV 4.10.0](https://github.com/opencv/opencv) (face/text detection pipeline)
+  - [OpenCV 4.10.0](https://github.com/opencv/opencv) (face/text detection pipeline + scrolling seam/poisson blend via `opencv_photo`)
+  - [OpenCV contrib 4.10.0](https://github.com/opencv/opencv_contrib) (`xfeatures2d` for SURF-based scrolling alignment, requires `OPENCV_ENABLE_NONFREE=ON`)
+  - [hnswlib v0.8.0](https://github.com/nmslib/hnswlib) (approximate nearest-neighbor matching for scrolling feature fallback)
   - [libwebp 1.3.2](https://github.com/webmproject/libwebp) (WebP animation encoding)
   - [ZXing-CPP v2.2.1](https://github.com/zxing-cpp/zxing-cpp) (QR/barcode processing)
+  - Note: enabling OpenCV nonfree modules adds licensing/compliance review requirements before redistribution.
 - **macOS Frameworks**:
   - CoreGraphics / ApplicationServices (window detection)
   - AppKit (system integration)

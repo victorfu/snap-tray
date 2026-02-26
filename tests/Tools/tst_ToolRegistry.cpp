@@ -112,6 +112,7 @@ void TestToolRegistry::testGet_AllRegisteredTools()
         ToolId::CanvasWhiteboard, ToolId::CanvasBlackboard,
         ToolId::Undo, ToolId::Redo, ToolId::Clear,
         ToolId::Cancel, ToolId::OCR, ToolId::QRCode,
+        ToolId::Pin, ToolId::Record, ToolId::ScrollCapture, ToolId::Save,
         ToolId::Pin, ToolId::Record, ToolId::Share, ToolId::Save,
         ToolId::Copy, ToolId::Exit,
         ToolId::MultiRegion, ToolId::MultiRegionDone
@@ -162,6 +163,7 @@ void TestToolRegistry::testIsActionTool_ActionTools()
     QList<ToolId> actionTools = {
         ToolId::Undo, ToolId::Redo, ToolId::Clear,
         ToolId::Cancel, ToolId::OCR, ToolId::QRCode,
+        ToolId::Pin, ToolId::Record, ToolId::ScrollCapture, ToolId::Save,
         ToolId::Pin, ToolId::Record, ToolId::Share, ToolId::Save,
         ToolId::Copy, ToolId::Exit,
         ToolId::MultiRegion, ToolId::MultiRegionDone
@@ -246,6 +248,7 @@ void TestToolRegistry::testGetToolsForToolbar_RegionSelector()
     QVERIFY(tools.contains(ToolId::Undo));
     QVERIFY(tools.contains(ToolId::Redo));
     QVERIFY(tools.contains(ToolId::QRCode));
+    QVERIFY(tools.contains(ToolId::ScrollCapture));
     QVERIFY(tools.contains(ToolId::MultiRegion));
     QVERIFY(tools.contains(ToolId::Share));
     QVERIFY(tools.contains(ToolId::Save));

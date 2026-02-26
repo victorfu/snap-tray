@@ -41,6 +41,7 @@ const std::map<ToolId, RegionToolbarHandler::ToolDispatchEntry>& RegionToolbarHa
         {ToolId::QRCode, {&RegionToolbarHandler::handleActionButton, ToolbarButtonRole::Default, false}},
         {ToolId::Pin, {&RegionToolbarHandler::handleActionButton, ToolbarButtonRole::Action, false}},
         {ToolId::Record, {&RegionToolbarHandler::handleActionButton, ToolbarButtonRole::Record, false}},
+        {ToolId::ScrollCapture, {&RegionToolbarHandler::handleActionButton, ToolbarButtonRole::Action, false}},
         {ToolId::Share, {&RegionToolbarHandler::handleActionButton, ToolbarButtonRole::Action, false}},
         {ToolId::Save, {&RegionToolbarHandler::handleActionButton, ToolbarButtonRole::Action, false}},
         {ToolId::Copy, {&RegionToolbarHandler::handleActionButton, ToolbarButtonRole::Action, false}},
@@ -60,6 +61,7 @@ const std::map<ToolId, RegionToolbarHandler::ClickHandler>& RegionToolbarHandler
         {ToolId::QRCode, &RegionToolbarHandler::handleQrCodeAction},
         {ToolId::Pin, &RegionToolbarHandler::handlePinAction},
         {ToolId::Record, &RegionToolbarHandler::handleRecordAction},
+        {ToolId::ScrollCapture, &RegionToolbarHandler::handleScrollCaptureAction},
         {ToolId::Share, &RegionToolbarHandler::handleShareAction},
         {ToolId::Save, &RegionToolbarHandler::handleSaveAction},
         {ToolId::Copy, &RegionToolbarHandler::handleCopyAction},
@@ -428,6 +430,11 @@ void RegionToolbarHandler::handlePinAction(ToolId)
 void RegionToolbarHandler::handleRecordAction(ToolId)
 {
     emit recordRequested();
+}
+
+void RegionToolbarHandler::handleScrollCaptureAction(ToolId)
+{
+    emit scrollCaptureRequested();
 }
 
 void RegionToolbarHandler::handleShareAction(ToolId)
