@@ -80,6 +80,16 @@ inline bool isSameSettingsStore(const QSettings& lhs, const QSettings& rhs)
 }
 
 #if defined(Q_OS_WIN)
+inline QString windowsReleaseSettingsPath()
+{
+    return QStringLiteral("HKEY_CURRENT_USER\\Software\\SnapTray");
+}
+
+inline QString windowsDebugSettingsPath()
+{
+    return QStringLiteral("HKEY_CURRENT_USER\\Software\\SnapTray-Debug");
+}
+
 inline QSettings platformSettingsStore()
 {
     return QSettings(windowsSettingsPath(), QSettings::NativeFormat);
@@ -145,20 +155,34 @@ inline void logSettingsMigrationWarning(const QString& message)
     qWarning().noquote() << QStringLiteral("[SettingsMigration] %1").arg(message);
 }
 
-inline int mergeSettingsIfMissing(QSettings& target, QSettings& source)
+inline bool shouldPreserveWindowsNamespaceStore(const QString& settingsPath)
 {
+#if defined(Q_OS_WIN)
+    const QString normalizedPath = normalizeSettingsLocation(settingsPath);
+    const QString normalizedReleasePath = normalizeSettingsLocation(windowsReleaseSettingsPath());
+    const QString normalizedDebugPath = normalizeSettingsLocation(windowsDebugSettingsPath());
+    return normalizedPath == normalizedReleasePath
+        || normalizedPath == normalizedDebugPath;
+#else
+    Q_UNUSED(settingsPath);
+    return false;
+#endif
+}
+
+inline bool mergeSettingsIfMissing(QSettings& target, QSettings& source, int& migratedKeyCount)
+{
+    migratedKeyCount = 0;
     if (isSameSettingsStore(target, source)) {
-        return 0;
+        return true;
     }
+    const QString migrationKey = QString::fromLatin1(kSettingsMigrationVersionKey);
+    const QStringList sourceKeys = source.allKeys();
     if (source.status() != QSettings::NoError) {
         logSettingsMigrationWarning(
             QStringLiteral("Failed to read legacy settings store: %1").arg(source.fileName()));
-        return 0;
+        return false;
     }
 
-    const QString migrationKey = QString::fromLatin1(kSettingsMigrationVersionKey);
-    const QStringList sourceKeys = source.allKeys();
-    int migratedKeyCount = 0;
     for (const QString& key : sourceKeys) {
         if (key == migrationKey) {
             continue;
@@ -168,6 +192,11 @@ inline int mergeSettingsIfMissing(QSettings& target, QSettings& source)
             ++migratedKeyCount;
         }
     }
+    if (source.status() != QSettings::NoError) {
+        logSettingsMigrationWarning(
+            QStringLiteral("Failed while reading legacy settings store: %1").arg(source.fileName()));
+        return false;
+    }
     if (!sourceKeys.isEmpty()) {
         logSettingsMigrationInfo(
             QStringLiteral("Scanned legacy store %1 (keys=%2, migrated=%3)")
@@ -175,7 +204,7 @@ inline int mergeSettingsIfMissing(QSettings& target, QSettings& source)
                 .arg(sourceKeys.size())
                 .arg(migratedKeyCount));
     }
-    return migratedKeyCount;
+    return true;
 }
 
 inline bool clearSettingsStoreIfSeparate(QSettings& target, QSettings& source)
@@ -184,6 +213,13 @@ inline bool clearSettingsStoreIfSeparate(QSettings& target, QSettings& source)
     if (isSameSettingsStore(target, source)) {
         return true;
     }
+#if defined(Q_OS_WIN)
+    if (shouldPreserveWindowsNamespaceStore(sourcePath)) {
+        logSettingsMigrationInfo(
+            QStringLiteral("Skipping cleanup for active namespace store: %1").arg(sourcePath));
+        return true;
+    }
+#endif
     if (source.status() != QSettings::NoError) {
         logSettingsMigrationWarning(
             QStringLiteral("Skipping cleanup due to source store error: %1").arg(sourcePath));
@@ -303,19 +339,32 @@ inline void migrateLegacySettingsIfNeeded()
 
     if (needsMigration) {
         int totalMigratedKeys = 0;
+        bool migrationSucceeded = true;
         for (const QString& path : legacyPaths) {
             QSettings legacySettings(path, QSettings::NativeFormat);
             legacySettings.setFallbacksEnabled(false);
-            totalMigratedKeys += mergeSettingsIfMissing(platformSettings, legacySettings);
+            int migratedFromStore = 0;
+            const bool merged = mergeSettingsIfMissing(platformSettings, legacySettings, migratedFromStore);
+            totalMigratedKeys += migratedFromStore;
+            migrationSucceeded = merged && migrationSucceeded;
         }
 
         QSettings legacyOrganizationSettings = legacyOrganizationSettingsStore();
         legacyOrganizationSettings.setFallbacksEnabled(false);
-        totalMigratedKeys += mergeSettingsIfMissing(platformSettings, legacyOrganizationSettings);
+        int migratedFromOrganizationStore = 0;
+        const bool mergedLegacyOrganizationStore = mergeSettingsIfMissing(
+            platformSettings, legacyOrganizationSettings, migratedFromOrganizationStore);
+        totalMigratedKeys += migratedFromOrganizationStore;
+        migrationSucceeded = mergedLegacyOrganizationStore && migrationSucceeded;
 
-        platformSettings.setValue(kSettingsMigrationVersionKey, kSettingsMigrationVersion);
         logSettingsMigrationInfo(
             QStringLiteral("Migration copied %1 keys in total").arg(totalMigratedKeys));
+        if (migrationSucceeded) {
+            platformSettings.setValue(kSettingsMigrationVersionKey, kSettingsMigrationVersion);
+        } else {
+            logSettingsMigrationWarning(
+                QStringLiteral("Migration finished with source read errors; will retry on next launch"));
+        }
     }
     platformSettings.sync();
     if (platformSettings.status() != QSettings::NoError) {

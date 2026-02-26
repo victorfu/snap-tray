@@ -103,6 +103,7 @@ class tst_SettingsStorageLocation : public QObject
 private slots:
     void testLegacySettingsMigration();
     void testLegacySourceCoverage();
+    void testWindowsNamespaceStoresAreNotCleanupTargets();
     void testStorageLocation();
     void testRoundtripSetReadRemove();
 };
@@ -176,6 +177,20 @@ void tst_SettingsStorageLocation::testLegacySourceCoverage()
     }
 #else
     QSKIP("Legacy source coverage applies only to Windows/macOS");
+#endif
+}
+
+void tst_SettingsStorageLocation::testWindowsNamespaceStoresAreNotCleanupTargets()
+{
+#if defined(Q_OS_WIN)
+    QVERIFY(SnapTray::shouldPreserveWindowsNamespaceStore(
+        QStringLiteral("HKEY_CURRENT_USER\\Software\\SnapTray")));
+    QVERIFY(SnapTray::shouldPreserveWindowsNamespaceStore(
+        QStringLiteral("HKEY_CURRENT_USER\\Software\\SnapTray-Debug")));
+    QVERIFY(!SnapTray::shouldPreserveWindowsNamespaceStore(
+        QStringLiteral("HKEY_CURRENT_USER\\Software\\SnapTray\\Debug")));
+#else
+    QSKIP("Windows namespace cleanup protection applies only to Windows");
 #endif
 }
 
