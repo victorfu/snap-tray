@@ -95,7 +95,7 @@ void tst_ShareUploadClient::testParseSuccessResponse()
 {
     const QByteArray json = R"({
         "shortId": "Ner6W54X",
-        "url": "https://c.snaptray.cc/s/Ner6W54X",
+        "url": "https://x.snaptray.cc/s/Ner6W54X",
         "expiresAt": "2026-02-26T15:00:00.000Z",
         "size": 123456,
         "protected": true
@@ -106,7 +106,7 @@ void tst_ShareUploadClient::testParseSuccessResponse()
     bool isProtected = false;
     QString error;
     QVERIFY(ShareUploadClient::parseSuccessResponse(json, &url, &expiresAt, &isProtected, &error));
-    QCOMPARE(url, QString("https://c.snaptray.cc/s/Ner6W54X"));
+    QCOMPARE(url, QString("https://x.snaptray.cc/s/Ner6W54X"));
     QVERIFY(expiresAt.isValid());
     QVERIFY(isProtected);
     QVERIFY(error.isEmpty());

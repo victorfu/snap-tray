@@ -10,7 +10,7 @@
 #include <QPainter>
 
 namespace {
-constexpr const char* kUploadEndpoint = "https://c.snaptray.cc/api/upload";
+constexpr const char* kUploadEndpoint = "https://x.snaptray.cc/api/upload";
 
 QByteArray encodeImage(const QImage& image, const char* format, int quality = -1)
 {
