@@ -36,6 +36,35 @@ add_test(NAME ToolOptionsPanel_Events COMMAND ToolOptionsPanel_Events)
 set_tests_properties(ToolOptionsPanel_Events PROPERTIES TIMEOUT 60 LABELS "unit")
 
 # ============================================================================
+# Compose Tests
+# ============================================================================
+
+add_executable(Compose_RichClipboardExporter Compose/tst_RichClipboardExporter.cpp)
+target_link_libraries(Compose_RichClipboardExporter PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME Compose_RichClipboardExporter COMMAND Compose_RichClipboardExporter)
+set_tests_properties(Compose_RichClipboardExporter PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(Compose_ComposeTemplateManager Compose/tst_ComposeTemplateManager.cpp)
+target_link_libraries(Compose_ComposeTemplateManager PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME Compose_ComposeTemplateManager COMMAND Compose_ComposeTemplateManager)
+set_tests_properties(Compose_ComposeTemplateManager PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(Compose_ComposeSettingsManager Compose/tst_ComposeSettingsManager.cpp)
+target_link_libraries(Compose_ComposeSettingsManager PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME Compose_ComposeSettingsManager COMMAND Compose_ComposeSettingsManager)
+set_tests_properties(Compose_ComposeSettingsManager PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(Compose_ComposeWindow Compose/tst_ComposeWindow.cpp)
+target_link_libraries(Compose_ComposeWindow PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME Compose_ComposeWindow COMMAND Compose_ComposeWindow)
+set_tests_properties(Compose_ComposeWindow PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(Compose_ComposeRichTextEdit Compose/tst_ComposeRichTextEdit.cpp)
+target_link_libraries(Compose_ComposeRichTextEdit PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME Compose_ComposeRichTextEdit COMMAND Compose_ComposeRichTextEdit)
+set_tests_properties(Compose_ComposeRichTextEdit PROPERTIES TIMEOUT 60 LABELS "unit")
+
+# ============================================================================
 # PinWindow Tests (link snaptray_ui which includes snaptray_platform)
 # ============================================================================
 

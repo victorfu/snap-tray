@@ -341,6 +341,17 @@ void ToolRegistry::registerTools() {
 #endif
 
     registerTool({
+        ToolId::Compose,
+        "compose",
+        QCoreApplication::translate("ToolRegistry", "Compose"),
+        "",
+        ToolCategory::Action,
+        false, false, false, false, false, false,
+        false, false, false,  // UI visibility: none
+        false, QColor()
+    });
+
+    registerTool({
         ToolId::Exit,
         "cancel",
         QCoreApplication::translate("ToolRegistry", "Exit"),
@@ -412,6 +423,7 @@ QVector<ToolId> ToolRegistry::getToolsForToolbar(ToolbarType type) const {
             ToolId::QRCode,
             ToolId::Record,
             ToolId::MultiRegion,
+            ToolId::Compose,
             ToolId::Share,
             ToolId::Pin,
             ToolId::Save,
@@ -458,6 +470,7 @@ QVector<ToolId> ToolRegistry::getToolsForToolbar(ToolbarType type) const {
             ToolId::Redo,
             ToolId::OCR,
             ToolId::QRCode,
+            ToolId::Compose,
             ToolId::Share,
             ToolId::Save,
             ToolId::Copy

@@ -185,6 +185,7 @@ private:
     void adjustOpacityByStep(int direction);
     void saveToFile();
     void copyToClipboard();
+    void openComposeWindow();
     void shareToUrl();
     QPixmap getTransformedPixmap() const;
     QPixmap getExportPixmapCore(bool includeDisplayEffects) const;
@@ -325,6 +326,7 @@ private:
     // Original members
     QPixmap m_originalPixmap;
     SharedPixmap m_sharedSourcePixmap;  // Shared for mosaic tool memory efficiency
+    QString m_captureTimestamp;
     QPixmap m_displayPixmap;
     qreal m_zoomLevel;
     QPoint m_dragStartPos;

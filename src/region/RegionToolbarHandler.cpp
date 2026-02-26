@@ -43,6 +43,7 @@ const std::map<ToolId, RegionToolbarHandler::ToolDispatchEntry>& RegionToolbarHa
         {ToolId::Record, {&RegionToolbarHandler::handleActionButton, ToolbarButtonRole::Record, false}},
         {ToolId::Share, {&RegionToolbarHandler::handleActionButton, ToolbarButtonRole::Action, false}},
         {ToolId::Save, {&RegionToolbarHandler::handleActionButton, ToolbarButtonRole::Action, false}},
+        {ToolId::Compose, {&RegionToolbarHandler::handleActionButton, ToolbarButtonRole::Action, false}},
         {ToolId::Copy, {&RegionToolbarHandler::handleActionButton, ToolbarButtonRole::Action, false}},
         {ToolId::MultiRegion, {&RegionToolbarHandler::handleMultiRegionToggle, ToolbarButtonRole::Default, false}},
         {ToolId::MultiRegionDone, {&RegionToolbarHandler::handleMultiRegionDone, ToolbarButtonRole::Default, false}},
@@ -62,6 +63,7 @@ const std::map<ToolId, RegionToolbarHandler::ClickHandler>& RegionToolbarHandler
         {ToolId::Record, &RegionToolbarHandler::handleRecordAction},
         {ToolId::Share, &RegionToolbarHandler::handleShareAction},
         {ToolId::Save, &RegionToolbarHandler::handleSaveAction},
+        {ToolId::Compose, &RegionToolbarHandler::handleComposeAction},
         {ToolId::Copy, &RegionToolbarHandler::handleCopyAction},
     };
     return kActionDispatch;
@@ -441,6 +443,11 @@ void RegionToolbarHandler::handleShareAction(ToolId)
 void RegionToolbarHandler::handleSaveAction(ToolId)
 {
     emit saveRequested();
+}
+
+void RegionToolbarHandler::handleComposeAction(ToolId)
+{
+    emit composeRequested();
 }
 
 void RegionToolbarHandler::handleCopyAction(ToolId)

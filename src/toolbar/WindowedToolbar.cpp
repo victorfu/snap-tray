@@ -27,12 +27,13 @@ bool isValidToolId(int buttonId)
 
 using ActionSignal = void (WindowedToolbar::*)();
 
-constexpr std::array<std::pair<int, ActionSignal>, 8> kActionButtonSignals = {{
+constexpr std::array<std::pair<int, ActionSignal>, 9> kActionButtonSignals = {{
     {static_cast<int>(ToolId::Undo), &WindowedToolbar::undoClicked},
     {static_cast<int>(ToolId::Redo), &WindowedToolbar::redoClicked},
     {static_cast<int>(ToolId::OCR), &WindowedToolbar::ocrClicked},
     {static_cast<int>(ToolId::QRCode), &WindowedToolbar::qrCodeClicked},
     {static_cast<int>(ToolId::Share), &WindowedToolbar::shareClicked},
+    {static_cast<int>(ToolId::Compose), &WindowedToolbar::composeClicked},
     {static_cast<int>(ToolId::Copy), &WindowedToolbar::copyClicked},
     {static_cast<int>(ToolId::Save), &WindowedToolbar::saveClicked},
     {WindowedToolbar::ButtonDone, &WindowedToolbar::doneClicked}

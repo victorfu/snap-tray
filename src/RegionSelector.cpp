@@ -28,6 +28,7 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include "settings/FileSettingsManager.h"
 #include "settings/OCRSettingsManager.h"
 #include "settings/RegionCaptureSettingsManager.h"
+#include "compose/ComposeWindow.h"
 #include "OCRResultDialog.h"
 #include "QRCodeResultDialog.h"
 #include "ui/GlobalToast.h"
@@ -699,6 +700,8 @@ RegionSelector::RegionSelector(QWidget* parent)
         });
     connect(m_toolbarHandler, &RegionToolbarHandler::saveRequested,
         this, &RegionSelector::saveToFile);
+    connect(m_toolbarHandler, &RegionToolbarHandler::composeRequested,
+        this, &RegionSelector::openComposeWindow);
     connect(m_toolbarHandler, &RegionToolbarHandler::copyRequested,
         this, &RegionSelector::copyToClipboard);
     connect(m_toolbarHandler, &RegionToolbarHandler::shareRequested,
@@ -1886,6 +1889,45 @@ void RegionSelector::copyToClipboard()
     m_exportManager->copyToClipboard(
         m_selectionManager->selectionRect(), effectiveCornerRadius());
     // Note: close() will be called via copyCompleted signal connection
+}
+
+void RegionSelector::openComposeWindow()
+{
+    if (!m_selectionManager || !m_selectionManager->isComplete() || !m_exportManager) {
+        return;
+    }
+
+    const QRect selectionRect = m_selectionManager->selectionRect();
+    if (!selectionRect.isValid() || selectionRect.isEmpty()) {
+        return;
+    }
+
+    const QPixmap selectedRegion = m_exportManager->getSelectedRegion(selectionRect, effectiveCornerRadius());
+    if (selectedRegion.isNull()) {
+        qWarning() << "RegionSelector: Cannot open compose window - selected region is null";
+        return;
+    }
+
+    auto* composeWindow = new ComposeWindow();
+    ComposeWindow::CaptureContext context;
+    context.screenshot = selectedRegion;
+    context.timestamp = QDateTime::currentDateTime().toString(Qt::ISODate);
+    context.captureRegion = localToGlobal(selectionRect);
+
+    if (m_detectedWindow.has_value()) {
+        context.windowTitle = m_detectedWindow->windowTitle;
+        context.appName = m_detectedWindow->ownerApp;
+    }
+
+    if (!m_currentScreen.isNull()) {
+        context.screenResolution = m_currentScreen->size();
+        context.screenName = m_currentScreen->name();
+    }
+
+    composeWindow->setCaptureContext(context);
+    composeWindow->showAt(selectionRect.center() + geometry().topLeft());
+
+    close();
 }
 
 void RegionSelector::saveToFile()

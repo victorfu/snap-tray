@@ -699,6 +699,11 @@ add_library(snaptray_ui STATIC
     # Dialogs and overlays
     src/SettingsDialog.cpp
     src/OCRResultDialog.cpp
+    src/compose/ComposeRichTextEdit.cpp
+    src/compose/ComposeWindow.cpp
+    src/compose/ComposeTemplateManager.cpp
+    src/compose/ComposeSettingsManager.cpp
+    src/compose/RichClipboardExporter.cpp
     src/ui/SharePasswordDialog.cpp
     src/ui/ShareResultDialog.cpp
     src/share/ShareUploadClient.cpp
@@ -789,6 +794,11 @@ add_library(snaptray_ui STATIC
     include/video/CountdownOverlay.h
     include/SettingsDialog.h
     include/OCRResultDialog.h
+    include/compose/ComposeRichTextEdit.h
+    include/compose/ComposeWindow.h
+    include/compose/ComposeTemplateManager.h
+    include/compose/ComposeSettingsManager.h
+    include/compose/RichClipboardExporter.h
 
     # Recording management (moved from APP_SOURCES for testability)
     src/RecordingManager.cpp

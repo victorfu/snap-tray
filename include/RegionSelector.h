@@ -191,6 +191,7 @@ private:
     void completeMultiRegionCapture();
     void cancelMultiRegionCapture();
     void copyToClipboard();
+    void openComposeWindow();
     void saveToFile();
     void shareToUrl();
     void finishSelection();

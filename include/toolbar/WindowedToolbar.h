@@ -30,6 +30,7 @@ public:
         ButtonOCR = static_cast<int>(ToolId::OCR),
         ButtonQRCode = static_cast<int>(ToolId::QRCode),
         ButtonShare = static_cast<int>(ToolId::Share),
+        ButtonCompose = static_cast<int>(ToolId::Compose),
         ButtonCopy = static_cast<int>(ToolId::Copy),
         ButtonSave = static_cast<int>(ToolId::Save),
 
@@ -67,6 +68,7 @@ signals:
     void ocrClicked();
     void qrCodeClicked();
     void shareClicked();
+    void composeClicked();
     void copyClicked();
     void saveClicked();
     void doneClicked();

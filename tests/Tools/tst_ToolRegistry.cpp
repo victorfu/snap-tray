@@ -113,7 +113,7 @@ void TestToolRegistry::testGet_AllRegisteredTools()
         ToolId::Undo, ToolId::Redo, ToolId::Clear,
         ToolId::Cancel, ToolId::OCR, ToolId::QRCode,
         ToolId::Pin, ToolId::Record, ToolId::Share, ToolId::Save,
-        ToolId::Copy, ToolId::Exit,
+        ToolId::Copy, ToolId::Compose, ToolId::Exit,
         ToolId::MultiRegion, ToolId::MultiRegionDone
     };
 
@@ -163,7 +163,7 @@ void TestToolRegistry::testIsActionTool_ActionTools()
         ToolId::Undo, ToolId::Redo, ToolId::Clear,
         ToolId::Cancel, ToolId::OCR, ToolId::QRCode,
         ToolId::Pin, ToolId::Record, ToolId::Share, ToolId::Save,
-        ToolId::Copy, ToolId::Exit,
+        ToolId::Copy, ToolId::Compose, ToolId::Exit,
         ToolId::MultiRegion, ToolId::MultiRegionDone
     };
 
@@ -249,12 +249,16 @@ void TestToolRegistry::testGetToolsForToolbar_RegionSelector()
     QVERIFY(tools.contains(ToolId::MultiRegion));
     QVERIFY(tools.contains(ToolId::Share));
     QVERIFY(tools.contains(ToolId::Save));
+    QVERIFY(tools.contains(ToolId::Compose));
     QVERIFY(tools.contains(ToolId::Copy));
 
     const int shareIndex = tools.indexOf(ToolId::Share);
+    const int composeIndex = tools.indexOf(ToolId::Compose);
     const int pinIndex = tools.indexOf(ToolId::Pin);
     QVERIFY(shareIndex >= 0);
+    QVERIFY(composeIndex >= 0);
     QVERIFY(pinIndex >= 0);
+    QVERIFY2(composeIndex < shareIndex, "Compose should appear to the left of Share in RegionSelector toolbar");
     QVERIFY2(shareIndex < pinIndex, "Share should appear to the left of Pin in RegionSelector toolbar");
 }
 
@@ -279,6 +283,7 @@ void TestToolRegistry::testGetToolsForToolbar_ScreenCanvas()
     QVERIFY(!tools.contains(ToolId::Copy));
     QVERIFY(!tools.contains(ToolId::Pin));
     QVERIFY(!tools.contains(ToolId::Record));
+    QVERIFY(!tools.contains(ToolId::Compose));
 }
 
 void TestToolRegistry::testGetToolsForToolbar_PinWindow()
@@ -300,7 +305,14 @@ void TestToolRegistry::testGetToolsForToolbar_PinWindow()
     QVERIFY(tools.contains(ToolId::QRCode));
     QVERIFY(tools.contains(ToolId::Share));
     QVERIFY(tools.contains(ToolId::Save));
+    QVERIFY(tools.contains(ToolId::Compose));
     QVERIFY(tools.contains(ToolId::Copy));
+
+    const int pinComposeIndex = tools.indexOf(ToolId::Compose);
+    const int pinShareIndex = tools.indexOf(ToolId::Share);
+    QVERIFY(pinComposeIndex >= 0);
+    QVERIFY(pinShareIndex >= 0);
+    QVERIFY2(pinComposeIndex < pinShareIndex, "Compose should appear to the left of Share in PinWindow toolbar");
 
     // PinWindow toolbar should not expose capture-only actions.
     QVERIFY(!tools.contains(ToolId::Selection));
@@ -344,6 +356,7 @@ void TestToolRegistry::testGetIconKey_ValidTool()
     QCOMPARE(registry().getIconKey(ToolId::Mosaic), QString("mosaic"));
     QCOMPARE(registry().getIconKey(ToolId::StepBadge), QString("step-badge"));
     QCOMPARE(registry().getIconKey(ToolId::Share), QString("share"));
+    QCOMPARE(registry().getIconKey(ToolId::Compose), QString("compose"));
     QCOMPARE(registry().getIconKey(ToolId::CanvasWhiteboard), QString("whiteboard"));
     QCOMPARE(registry().getIconKey(ToolId::CanvasBlackboard), QString("blackboard"));
 }

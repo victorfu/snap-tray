@@ -41,6 +41,7 @@ enum class ToolId {
     Share,
     Save,
     Copy,
+    Compose,
     Exit,
 
     // Region-specific tools

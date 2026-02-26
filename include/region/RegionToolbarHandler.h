@@ -80,6 +80,7 @@ signals:
     void pinRequested();
     void recordRequested();
     void saveRequested();
+    void composeRequested();
     void copyRequested();
     void shareRequested();
     void ocrRequested();
@@ -133,6 +134,7 @@ private:
     void handleRecordAction(ToolId button);
     void handleShareAction(ToolId button);
     void handleSaveAction(ToolId button);
+    void handleComposeAction(ToolId button);
     void handleCopyAction(ToolId button);
     void handleMultiRegionToggle(ToolId button);
     void handleMultiRegionDone(ToolId button);

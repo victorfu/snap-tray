@@ -42,6 +42,7 @@
 #include "ui/GlobalToast.h"
 #include "ui/SharePasswordDialog.h"
 #include "ui/ShareResultDialog.h"
+#include "compose/ComposeWindow.h"
 #include "utils/FilenameTemplateEngine.h"
 #include "utils/ImageSaveUtils.h"
 #include "OCRResultDialog.h"
@@ -398,6 +399,7 @@ PinWindow::PinWindow(const QPixmap& screenshot,
 
     // Load watermark settings (used by context menu when created lazily)
     m_watermarkSettings = WatermarkSettingsManager::instance().load();
+    m_captureTimestamp = QDateTime::currentDateTime().toString(Qt::ISODate);
 
     // Context menu is now created lazily in contextMenuEvent() to improve initial performance
 
@@ -902,6 +904,9 @@ void PinWindow::createContextMenu()
     QAction* copyAction = m_contextMenu->addAction(tr("Copy to Clipboard"));
     copyAction->setShortcut(QKeySequence::Copy);
     connect(copyAction, &QAction::triggered, this, &PinWindow::copyToClipboard);
+
+    QAction* composeAction = m_contextMenu->addAction(tr("Compose..."));
+    connect(composeAction, &QAction::triggered, this, &PinWindow::openComposeWindow);
 
     QAction* saveAction = m_contextMenu->addAction(tr("Save to file"));
     saveAction->setShortcut(QKeySequence::Save);
@@ -1413,6 +1418,51 @@ void PinWindow::copyToClipboard()
         QGuiApplication::clipboard()->setImage(taggedImage);
     }
     m_uiIndicators->showToast(true, tr("Copied to clipboard"));
+}
+
+void PinWindow::openComposeWindow()
+{
+    const QPixmap pixmapToCompose = getExportPixmapWithAnnotations();
+    if (pixmapToCompose.isNull()) {
+        m_uiIndicators->showToast(false, tr("Compose failed"));
+        return;
+    }
+
+    auto* composeWindow = new ComposeWindow();
+    ComposeWindow::CaptureContext context;
+    context.screenshot = pixmapToCompose;
+    context.timestamp = m_captureTimestamp.isEmpty()
+        ? QDateTime::currentDateTime().toString(Qt::ISODate)
+        : m_captureTimestamp;
+
+    QScreen* infoScreen = m_sourceScreen.data();
+    if (!infoScreen || !QGuiApplication::screens().contains(infoScreen)) {
+        infoScreen = screen();
+    }
+    if (!infoScreen) {
+        infoScreen = QGuiApplication::screenAt(frameGeometry().center());
+    }
+
+    if (infoScreen) {
+        context.screenResolution = infoScreen->size();
+        context.screenName = infoScreen->name();
+    }
+
+    if (m_sourceRegion.isValid() && !m_sourceRegion.isEmpty()) {
+        context.captureRegion = m_sourceRegion;
+    } else {
+        context.captureRegion = QRect(QPoint(0, 0), logicalSizeFromPixmap(pixmapToCompose));
+    }
+
+    composeWindow->setCaptureContext(context);
+    connect(composeWindow, &ComposeWindow::composeCopied, this, [this](const QString& format) {
+        if (format == QStringLiteral("markdown")) {
+            m_uiIndicators->showToast(true, tr("Copied as Markdown"));
+        } else {
+            m_uiIndicators->showToast(true, tr("Copied as HTML"));
+        }
+    });
+    composeWindow->showAt(frameGeometry().center());
 }
 
 void PinWindow::shareToUrl()
@@ -2740,6 +2790,8 @@ void PinWindow::initializeAnnotationComponents()
         this, &PinWindow::performQRCodeScan);
     connect(m_toolbar.get(), &WindowedToolbar::shareClicked,
         this, &PinWindow::shareToUrl);
+    connect(m_toolbar.get(), &WindowedToolbar::composeClicked,
+        this, &PinWindow::openComposeWindow);
     connect(m_toolbar.get(), &WindowedToolbar::copyClicked,
         this, &PinWindow::copyToClipboard);
     connect(m_toolbar.get(), &WindowedToolbar::saveClicked,
