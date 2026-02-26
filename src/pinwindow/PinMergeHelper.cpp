@@ -56,9 +56,92 @@ QPixmap normalizeToTargetDpr(const QPixmap& source, qreal targetDpr)
     normalized.setDevicePixelRatio(targetDpr);
     return normalized;
 }
+
+struct PositionedLayoutItem {
+    QPoint topLeft;
+};
+
+struct MergeLayoutGeometry {
+    QVector<PositionedLayoutItem> placements;
+    qint64 composedWidth = 0;
+    qint64 composedHeight = 0;
+};
+
+MergeLayoutGeometry calculateLayoutGeometry(const QVector<QSize>& logicalSizes,
+                                            int gap,
+                                            int maxRowWidth,
+                                            int rowGap)
+{
+    MergeLayoutGeometry geometry;
+    geometry.placements.reserve(logicalSizes.size());
+
+    const int effectiveGap = qMax(0, gap);
+    const int effectiveRowGap = rowGap < 0 ? effectiveGap : qMax(0, rowGap);
+
+    if (maxRowWidth <= 0) {
+        qint64 currentX = 0;
+        int maxHeight = 0;
+        for (int i = 0; i < logicalSizes.size(); ++i) {
+            const QSize& logicalSize = logicalSizes[i];
+            geometry.placements.append({QPoint(static_cast<int>(currentX), 0)});
+            currentX += logicalSize.width();
+            maxHeight = qMax(maxHeight, logicalSize.height());
+            if (i + 1 < logicalSizes.size()) {
+                currentX += effectiveGap;
+            }
+        }
+        geometry.composedWidth = currentX;
+        geometry.composedHeight = maxHeight;
+        return geometry;
+    }
+
+    qint64 maxComposedWidth = 0;
+    qint64 currentX = 0;
+    qint64 currentY = 0;
+    qint64 currentRowWidth = 0;
+    int currentRowHeight = 0;
+    bool rowHasItem = false;
+
+    for (const QSize& logicalSize : logicalSizes) {
+        const qint64 itemWidth = logicalSize.width();
+        const int itemHeight = logicalSize.height();
+
+        const bool shouldWrap = rowHasItem && (currentX + itemWidth > maxRowWidth);
+        if (shouldWrap) {
+            maxComposedWidth = qMax(maxComposedWidth, currentRowWidth);
+            currentY += currentRowHeight + effectiveRowGap;
+            currentX = 0;
+            currentRowWidth = 0;
+            currentRowHeight = 0;
+            rowHasItem = false;
+        }
+
+        geometry.placements.append({QPoint(static_cast<int>(currentX), static_cast<int>(currentY))});
+        currentRowWidth = currentX + itemWidth;
+        currentRowHeight = qMax(currentRowHeight, itemHeight);
+        currentX = currentRowWidth + effectiveGap;
+        rowHasItem = true;
+    }
+
+    if (rowHasItem) {
+        maxComposedWidth = qMax(maxComposedWidth, currentRowWidth);
+    }
+
+    geometry.composedWidth = maxComposedWidth;
+    geometry.composedHeight = currentY + currentRowHeight;
+    return geometry;
+}
 }
 
 PinMergeResult PinMergeHelper::merge(const QList<PinWindow*>& windows, int gap)
+{
+    PinMergeLayoutOptions options;
+    options.gap = gap;
+    return merge(windows, options);
+}
+
+PinMergeResult PinMergeHelper::merge(const QList<PinWindow*>& windows,
+                                     const PinMergeLayoutOptions& options)
 {
     PinMergeResult result;
 
@@ -118,10 +201,7 @@ PinMergeResult PinMergeHelper::merge(const QList<PinWindow*>& windows, int gap)
     QVector<QSize> logicalSizes;
     logicalSizes.reserve(sourcePixmaps.size());
 
-    qint64 totalWidth = 0;
-    int maxHeight = 0;
-
-    const int effectiveGap = qMax(0, gap);
+    const int effectiveGap = qMax(0, options.gap);
     for (int i = 0; i < sourcePixmaps.size(); ++i) {
         const QPixmap& pixmap = sourcePixmaps[i];
         const QPixmap normalized = normalizeToTargetDpr(pixmap, targetDpr);
@@ -133,26 +213,33 @@ PinMergeResult PinMergeHelper::merge(const QList<PinWindow*>& windows, int gap)
         normalizedPixmaps.append(normalized);
         mergedWindows.append(sourceWindows[i]);
         logicalSizes.append(logicalSize);
-        totalWidth += logicalSize.width();
-        maxHeight = qMax(maxHeight, logicalSize.height());
     }
 
-    if (normalizedPixmaps.size() < 2 || totalWidth <= 0 || maxHeight <= 0) {
+    if (normalizedPixmaps.size() < 2 || logicalSizes.size() < 2) {
         result.errorMessage = QObject::tr("Need at least 2 pins to merge");
         return result;
     }
 
-    const qint64 gapWidth = static_cast<qint64>(normalizedPixmaps.size() - 1) * effectiveGap;
-    const qint64 composedWidth = totalWidth + gapWidth;
+    const MergeLayoutGeometry geometry = calculateLayoutGeometry(
+        logicalSizes, effectiveGap, options.maxRowWidth, options.rowGap);
+    const qint64 composedWidth = geometry.composedWidth;
+    const qint64 composedHeight = geometry.composedHeight;
+    if (geometry.placements.size() != logicalSizes.size()
+        || composedWidth <= 0
+        || composedHeight <= 0) {
+        result.errorMessage = QObject::tr("Need at least 2 pins to merge");
+        return result;
+    }
+
     if (composedWidth > LayoutModeConstants::kMaxCanvasSize
-        || maxHeight > LayoutModeConstants::kMaxCanvasSize) {
+        || composedHeight > LayoutModeConstants::kMaxCanvasSize) {
         result.errorMessage = QObject::tr("Merged layout exceeds maximum size (%1x%1)")
                                   .arg(LayoutModeConstants::kMaxCanvasSize);
         return result;
     }
 
     const QSize composedPhysical = CoordinateHelper::toPhysical(
-        QSize(static_cast<int>(composedWidth), maxHeight), targetDpr);
+        QSize(static_cast<int>(composedWidth), static_cast<int>(composedHeight)), targetDpr);
     const QSize composedPhysicalSize(qMax(1, composedPhysical.width()),
                                      qMax(1, composedPhysical.height()));
     QPixmap composed(composedPhysicalSize);
@@ -166,15 +253,15 @@ PinMergeResult PinMergeHelper::merge(const QList<PinWindow*>& windows, int gap)
     QVector<LayoutRegion> regions;
     regions.reserve(normalizedPixmaps.size());
 
-    int xOffset = 0;
     for (int i = 0; i < normalizedPixmaps.size(); ++i) {
         const QPixmap& source = normalizedPixmaps[i];
         const QSize logicalSize = logicalSizes[i];
+        const QPoint topLeft = geometry.placements[i].topLeft;
 
-        painter.drawPixmap(xOffset, 0, source);
+        painter.drawPixmap(topLeft, source);
 
         LayoutRegion region;
-        region.rect = QRect(xOffset, 0, logicalSize.width(), logicalSize.height());
+        region.rect = QRect(topLeft, logicalSize);
         region.originalRect = region.rect;
 
         QImage image = source.toImage();
@@ -185,8 +272,6 @@ PinMergeResult PinMergeHelper::merge(const QList<PinWindow*>& windows, int gap)
         region.index = i + 1;
         region.isSelected = false;
         regions.append(region);
-
-        xOffset += logicalSize.width() + effectiveGap;
     }
 
     painter.end();

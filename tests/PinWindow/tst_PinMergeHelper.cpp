@@ -90,6 +90,99 @@ private slots:
         QCOMPARE(result.regions[1].image.devicePixelRatio(), 2.0);
     }
 
+    void testMergeWrapsWhenMaxRowWidthProvided()
+    {
+        PinWindow first(createTestPixmap(100, 100, Qt::red), QPoint(0, 0));
+        PinWindow second(createTestPixmap(100, 100, Qt::green), QPoint(120, 0));
+        PinWindow third(createTestPixmap(100, 100, Qt::blue), QPoint(240, 0));
+
+        PinMergeLayoutOptions options;
+        options.gap = 8;
+        options.maxRowWidth = 220;
+
+        const PinMergeResult result = PinMergeHelper::merge(
+            QList<PinWindow*>{&first, &second, &third}, options);
+
+        QVERIFY(result.success);
+        QCOMPARE(logicalSize(result.composedPixmap), QSize(208, 208));
+        QCOMPARE(result.regions.size(), 3);
+        QCOMPARE(result.regions[0].rect, QRect(0, 0, 100, 100));
+        QCOMPARE(result.regions[1].rect, QRect(108, 0, 100, 100));
+        QCOMPARE(result.regions[2].rect, QRect(0, 108, 100, 100));
+    }
+
+    void testMergePreservesOrderAcrossRows()
+    {
+        PinWindow first(createTestPixmap(80, 80, Qt::red), QPoint(0, 0));
+        PinWindow second(createTestPixmap(80, 80, Qt::green), QPoint(90, 0));
+        PinWindow third(createTestPixmap(80, 80, Qt::blue), QPoint(180, 0));
+        PinWindow fourth(createTestPixmap(80, 80, Qt::yellow), QPoint(270, 0));
+
+        PinMergeLayoutOptions options;
+        options.gap = 10;
+        options.maxRowWidth = 170;
+
+        const PinMergeResult result = PinMergeHelper::merge(
+            QList<PinWindow*>{&first, &second, &third, &fourth}, options);
+
+        QVERIFY(result.success);
+        QCOMPARE(result.mergedWindows.size(), 4);
+        QCOMPARE(result.mergedWindows[0], &first);
+        QCOMPARE(result.mergedWindows[1], &second);
+        QCOMPARE(result.mergedWindows[2], &third);
+        QCOMPARE(result.mergedWindows[3], &fourth);
+
+        QCOMPARE(result.regions.size(), 4);
+        QCOMPARE(result.regions[0].index, 1);
+        QCOMPARE(result.regions[1].index, 2);
+        QCOMPARE(result.regions[2].index, 3);
+        QCOMPARE(result.regions[3].index, 4);
+        QCOMPARE(result.regions[0].rect.topLeft(), QPoint(0, 0));
+        QCOMPARE(result.regions[1].rect.topLeft(), QPoint(90, 0));
+        QCOMPARE(result.regions[2].rect.topLeft(), QPoint(0, 90));
+        QCOMPARE(result.regions[3].rect.topLeft(), QPoint(90, 90));
+    }
+
+    void testMergeAllowsSingleWideItemBeyondRowLimit()
+    {
+        PinWindow wide(createTestPixmap(300, 100, Qt::magenta), QPoint(0, 0));
+        PinWindow regular(createTestPixmap(100, 100, Qt::gray), QPoint(310, 0));
+
+        PinMergeLayoutOptions options;
+        options.gap = 8;
+        options.maxRowWidth = 220;
+
+        const PinMergeResult result = PinMergeHelper::merge(
+            QList<PinWindow*>{&wide, &regular}, options);
+
+        QVERIFY(result.success);
+        QCOMPARE(logicalSize(result.composedPixmap), QSize(300, 208));
+        QCOMPARE(result.regions.size(), 2);
+        QCOMPARE(result.regions[0].rect, QRect(0, 0, 300, 100));
+        QCOMPARE(result.regions[1].rect, QRect(0, 108, 100, 100));
+    }
+
+    void testMergeNoWrapWhenMaxRowWidthDisabled()
+    {
+        PinWindow first(createTestPixmap(100, 100, Qt::red), QPoint(0, 0));
+        PinWindow second(createTestPixmap(100, 100, Qt::green), QPoint(120, 0));
+        PinWindow third(createTestPixmap(100, 100, Qt::blue), QPoint(240, 0));
+
+        PinMergeLayoutOptions options;
+        options.gap = 8;
+        options.maxRowWidth = 0;
+
+        const PinMergeResult result = PinMergeHelper::merge(
+            QList<PinWindow*>{&first, &second, &third}, options);
+
+        QVERIFY(result.success);
+        QCOMPARE(logicalSize(result.composedPixmap), QSize(316, 100));
+        QCOMPARE(result.regions.size(), 3);
+        QCOMPARE(result.regions[0].rect, QRect(0, 0, 100, 100));
+        QCOMPARE(result.regions[1].rect, QRect(108, 0, 100, 100));
+        QCOMPARE(result.regions[2].rect, QRect(216, 0, 100, 100));
+    }
+
     void testMergeSingleWindowFails()
     {
         PinWindow only(createTestPixmap(100, 100), QPoint(0, 0));

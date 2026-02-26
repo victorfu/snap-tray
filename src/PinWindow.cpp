@@ -101,6 +101,8 @@ namespace {
     // Full opacity constant for pixel alpha check
     constexpr int kPixelFullOpacity = 255;
     constexpr qreal kTransformEpsilon = 1e-6;
+    constexpr qreal kMergeTargetWidthRatio = 0.9;
+    constexpr int kMergeMinRowWidth = 320;
 
     qreal normalizeAngleDelta(qreal deltaDegrees)
     {
@@ -894,9 +896,6 @@ void PinWindow::createContextMenu()
 
     m_moveToScreenMenu = m_contextMenu->addMenu(tr("Move to Screen"));
 
-    m_adjustRegionLayoutAction = m_contextMenu->addAction(tr("Adjust Region Layout"));
-    connect(m_adjustRegionLayoutAction, &QAction::triggered, this, &PinWindow::enterRegionLayoutMode);
-
     m_contextMenu->addSeparator();
 
     QAction* copyAction = m_contextMenu->addAction(tr("Copy to Clipboard"));
@@ -921,6 +920,9 @@ void PinWindow::createContextMenu()
 
     m_mergePinsAction = m_contextMenu->addAction(tr("Merge Pins"));
     connect(m_mergePinsAction, &QAction::triggered, this, &PinWindow::mergePinsFromContextMenu);
+
+    m_adjustRegionLayoutAction = m_contextMenu->addAction(tr("Adjust Region Layout"));
+    connect(m_adjustRegionLayoutAction, &QAction::triggered, this, &PinWindow::enterRegionLayoutMode);
 
     m_contextMenu->addSeparator();
 
@@ -1264,7 +1266,30 @@ void PinWindow::mergePinsFromContextMenu()
         return;
     }
 
-    const PinMergeResult result = PinMergeHelper::merge(mergeCandidates);
+    QScreen* targetScreen = screen();
+    if (!targetScreen) {
+        targetScreen = QGuiApplication::screenAt(frameGeometry().center());
+    }
+    if (!targetScreen) {
+        targetScreen = QGuiApplication::primaryScreen();
+    }
+    if (!targetScreen) {
+        GlobalToast::instance().showToast(GlobalToast::Error,
+                                          tr("Merge Pins"),
+                                          tr("No primary screen available"));
+        return;
+    }
+
+    const int availableWidth = targetScreen->availableGeometry().width();
+    const int targetRowWidth = qMax(
+        kMergeMinRowWidth,
+        qFloor(static_cast<qreal>(availableWidth) * kMergeTargetWidthRatio));
+
+    PinMergeLayoutOptions layoutOptions;
+    layoutOptions.gap = PinMergeConstants::kDefaultGap;
+    layoutOptions.maxRowWidth = targetRowWidth;
+
+    const PinMergeResult result = PinMergeHelper::merge(mergeCandidates, layoutOptions);
     if (!result.success) {
         GlobalToast::instance().showToast(GlobalToast::Info,
                                           tr("Merge Pins"),
@@ -1272,15 +1297,7 @@ void PinWindow::mergePinsFromContextMenu()
         return;
     }
 
-    QScreen* screen = QGuiApplication::primaryScreen();
-    if (!screen) {
-        GlobalToast::instance().showToast(GlobalToast::Error,
-                                          tr("Merge Pins"),
-                                          tr("No primary screen available"));
-        return;
-    }
-
-    const QRect screenGeometry = screen->availableGeometry();
+    const QRect screenGeometry = targetScreen->availableGeometry();
     const QSize logicalSize = logicalSizeFromPixmap(result.composedPixmap);
     const QPoint position = screenGeometry.center() - QPoint(logicalSize.width() / 2, logicalSize.height() / 2);
 
