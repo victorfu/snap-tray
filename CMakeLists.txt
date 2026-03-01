@@ -833,6 +833,42 @@ target_compile_definitions(snaptray_ui PRIVATE
     $<$<CONFIG:Debug>:SNAPTRAY_ENABLE_DEV_FEATURES>
 )
 
+# ----------------------------------------------------------------------------
+# snaptray_mcp: MCP HTTP server and tool handlers
+# ----------------------------------------------------------------------------
+add_library(snaptray_mcp STATIC
+    src/mcp/MCPServer.cpp
+    src/mcp/MCPHttpTransport.cpp
+    src/mcp/MCPTools.cpp
+    src/mcp/MCPScreenCaptureTool.cpp
+    src/mcp/MCPPinTool.cpp
+    src/mcp/MCPShareTool.cpp
+    include/mcp/MCPServer.h
+    include/mcp/MCPHttpTransport.h
+    include/mcp/MCPTools.h
+)
+
+target_include_directories(snaptray_mcp
+    PUBLIC
+        ${CMAKE_SOURCE_DIR}/include
+    PRIVATE
+        ${CMAKE_SOURCE_DIR}/src
+        ${CMAKE_BINARY_DIR}/generated
+        ${CMAKE_BINARY_DIR}
+)
+
+target_link_libraries(snaptray_mcp
+    PUBLIC
+        snaptray_ui
+        Qt6::Network
+        Qt6::Gui
+        Qt6::Widgets
+)
+
+target_compile_definitions(snaptray_mcp PRIVATE
+    $<$<NOT:$<CONFIG:Debug>>:QT_NO_DEBUG_OUTPUT>
+)
+
 # ============================================================================
 # Main Application Executable
 # ============================================================================
@@ -883,6 +919,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 
 # Link all library targets - they handle their own dependencies
 target_link_libraries(${PROJECT_NAME} PRIVATE
+    snaptray_mcp
     snaptray_ui
     snaptray_platform
     snaptray_algorithms

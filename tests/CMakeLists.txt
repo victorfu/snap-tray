@@ -546,6 +546,20 @@ add_test(NAME Share_ShareUploadClient COMMAND Share_ShareUploadClient)
 set_tests_properties(Share_ShareUploadClient PROPERTIES TIMEOUT 60 LABELS "unit")
 
 # ============================================================================
+# MCP Tests
+# ============================================================================
+
+add_executable(MCP_ServerProtocol MCP/tst_ServerProtocol.cpp)
+target_link_libraries(MCP_ServerProtocol PRIVATE snaptray_mcp Qt6::Network Qt6::Test)
+add_test(NAME MCP_ServerProtocol COMMAND MCP_ServerProtocol)
+set_tests_properties(MCP_ServerProtocol PROPERTIES TIMEOUT 60 LABELS "unit;integration")
+
+add_executable(MCP_Tools MCP/tst_Tools.cpp)
+target_link_libraries(MCP_Tools PRIVATE snaptray_mcp snaptray_ui Qt6::Test)
+add_test(NAME MCP_Tools COMMAND MCP_Tools)
+set_tests_properties(MCP_Tools PROPERTIES TIMEOUT 60 LABELS "unit;integration")
+
+# ============================================================================
 # Update Tests (link snaptray_ui for update components)
 # ============================================================================
 

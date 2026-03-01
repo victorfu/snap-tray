@@ -12,6 +12,7 @@
 #include "ImageColorSpaceHelper.h"
 #include "cli/IPCProtocol.h"
 #include "hotkey/HotkeyManager.h"
+#include "mcp/MCPServer.h"
 #include "ui/GlobalToast.h"
 #include "video/RecordingPreviewWindow.h"
 #include "update/UpdateChecker.h"
@@ -417,6 +418,24 @@ void MainApplication::initialize()
     connect(m_updateChecker, &UpdateChecker::updateAvailable,
             this, &MainApplication::onUpdateAvailable);
     m_updateChecker->startPeriodicCheck();
+
+    SnapTray::MCP::ToolCallContext toolContext;
+    toolContext.pinWindowManager = m_pinWindowManager;
+    toolContext.parentObject = this;
+    m_mcpServer = std::make_unique<SnapTray::MCP::MCPServer>(toolContext, this);
+
+    QString mcpError;
+    if (!m_mcpServer->start(SnapTray::MCP::MCPServer::kDefaultPort, &mcpError)) {
+        qWarning() << "MainApplication: Failed to start MCP server:" << mcpError;
+        GlobalToast::instance().showToast(
+            GlobalToast::Error,
+            tr("MCP Server Unavailable"),
+            tr("Unable to start MCP HTTP server on 127.0.0.1:%1")
+                .arg(SnapTray::MCP::MCPServer::kDefaultPort),
+            5000);
+    } else {
+        qDebug() << "MainApplication: MCP server listening on 127.0.0.1:" << m_mcpServer->port();
+    }
 }
 
 void MainApplication::startRegionCapture(bool showShortcutHintsOnEntry)

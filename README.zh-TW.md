@@ -484,6 +484,32 @@ pin:
 | 4 | 實例錯誤（主程式未運行） |
 | 5 | 錄影錯誤 |
 
+## MCP Server（V1，Localhost HTTP）
+
+SnapTray 現在會在主程式 `snaptray` 內直接啟動 MCP server，不需要額外獨立的 MCP binary。
+
+- 傳輸：僅支援 Streamable HTTP
+- Endpoint：`POST http://127.0.0.1:39200/mcp`
+- `GET /mcp`：回傳 `405 Method Not Allowed`
+- JSON-RPC methods：`initialize`、`notifications/initialized`、`tools/list`、`tools/call`、`ping`
+- 安全策略（V1）：只 bind `127.0.0.1`，localhost 不需要 bearer token
+
+### MCP Tools（V1）
+
+| 工具 | 輸入 | 輸出 |
+|------|------|------|
+| `capture_screenshot` | `screen?`、`region? {x,y,width,height}`、`delay_ms?`、`output_path?` | `file_path`、`width`、`height`、`screen_index`、`created_at` |
+| `pin_image` | `image_path`、`x?`、`y?`、`center?` | `accepted` |
+| `share_upload` | `image_path`、`password?` | `url`、`expires_at`、`protected` |
+
+### ChatGPT Desktop（Streamable HTTP）設定範例
+
+1. 開啟「Connect to a custom MCP」，選 `Streamable HTTP`。
+2. Name：`snaptray-local`。
+3. URL：`http://127.0.0.1:39200/mcp`。
+4. localhost 第一版可不填 bearer token。
+5. 確認 SnapTray 主程式正在執行（single-instance）。
+
 ## 疑難排解
 
 ### macOS：Gatekeeper 擋住啟動
@@ -554,6 +580,7 @@ snap-tray/
 |   |-- external/          # 第三方標頭檔（msf_gif）
 |   |-- hotkey/            # 熱鍵管理器與型別定義
 |   |-- input/             # 輸入抽象層（目前保留）
+|   |-- mcp/               # 內建 MCP server 與 tool contracts
 |   |-- pinwindow/         # 釘選視窗元件
 |   |-- region/            # 區域選取元件
 |   |-- settings/          # 設定管理器
@@ -585,6 +612,7 @@ snap-tray/
 |   |-- encoding/          # 編碼器實作
 |   |-- hotkey/            # HotkeyManager 實作
 |   |-- input/             # 輸入追蹤（平台特定）
+|   |-- mcp/               # MCP HTTP transport 與 tool 實作
 |   |-- pinwindow/         # 釘選視窗元件實作
 |   |-- platform/          # 平台抽象層（macOS/Windows）
 |   |-- region/            # 區域選取實作
@@ -617,6 +645,7 @@ snap-tray/
 |   |-- Encoding/
 |   |-- Hotkey/
 |   |-- IPC/
+|   |-- MCP/
 |   |-- PinWindow/
 |   |-- RecordingManager/
 |   |-- RegionSelector/

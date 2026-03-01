@@ -9,6 +9,7 @@
 #include <QPixmap>
 #include <QPointer>
 #include <QStringList>
+#include <memory>
 
 class QSystemTrayIcon;
 class QMenu;
@@ -22,6 +23,12 @@ class RecordingPreviewWindow;
 class UpdateChecker;
 class PinHistoryWindow;
 struct ReleaseInfo;
+
+namespace SnapTray {
+namespace MCP {
+class MCPServer;
+}
+}
 
 class MainApplication : public QObject
 {
@@ -83,6 +90,7 @@ private:
     QPointer<PinHistoryWindow> m_pinHistoryWindow;
     QPointer<RecordingPreviewWindow> m_previewWindow;
     UpdateChecker *m_updateChecker;
+    std::unique_ptr<SnapTray::MCP::MCPServer> m_mcpServer;
 };
 
 #endif // MAINAPPLICATION_H

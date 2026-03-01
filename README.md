@@ -484,6 +484,32 @@ pin:
 | 4 | Instance error (main app not running) |
 | 5 | Recording error |
 
+## MCP Server (V1, Localhost HTTP)
+
+SnapTray now starts an MCP server inside the main `snaptray` process. No separate MCP binary is required.
+
+- Transport: Streamable HTTP only
+- Endpoint: `POST http://127.0.0.1:39200/mcp`
+- `GET /mcp`: returns `405 Method Not Allowed`
+- JSON-RPC methods: `initialize`, `notifications/initialized`, `tools/list`, `tools/call`, `ping`
+- Security (V1): binds to `127.0.0.1` only, no bearer token required for localhost
+
+### MCP Tools (V1)
+
+| Tool | Input | Output |
+|------|-------|--------|
+| `capture_screenshot` | `screen?`, `region? {x,y,width,height}`, `delay_ms?`, `output_path?` | `file_path`, `width`, `height`, `screen_index`, `created_at` |
+| `pin_image` | `image_path`, `x?`, `y?`, `center?` | `accepted` |
+| `share_upload` | `image_path`, `password?` | `url`, `expires_at`, `protected` |
+
+### ChatGPT Desktop (Streamable HTTP) Example
+
+1. Open "Connect to a custom MCP" and select `Streamable HTTP`.
+2. Name: `snaptray-local`.
+3. URL: `http://127.0.0.1:39200/mcp`.
+4. Leave bearer token empty for localhost.
+5. Keep SnapTray running (single-instance main app).
+
 ## Troubleshooting
 
 ### macOS: Gatekeeper blocks app launch
@@ -554,6 +580,7 @@ snap-tray/
 |   |-- external/          # Third-party headers (msf_gif)
 |   |-- hotkey/            # Hotkey manager and types
 |   |-- input/             # Input abstractions (currently reserved)
+|   |-- mcp/               # Built-in MCP server and tool contracts
 |   |-- pinwindow/         # Pin window components
 |   |-- region/            # Region selection components
 |   |-- settings/          # Settings managers
@@ -585,6 +612,7 @@ snap-tray/
 |   |-- encoding/          # Encoder implementations
 |   |-- hotkey/            # HotkeyManager implementation
 |   |-- input/             # Input tracking (platform-specific)
+|   |-- mcp/               # MCP HTTP transport and tool implementations
 |   |-- pinwindow/         # Pin window component implementations
 |   |-- platform/          # Platform abstraction (macOS/Windows)
 |   |-- region/            # Region selection implementations
@@ -617,6 +645,7 @@ snap-tray/
 |   |-- Encoding/
 |   |-- Hotkey/
 |   |-- IPC/
+|   |-- MCP/
 |   |-- PinWindow/
 |   |-- RecordingManager/
 |   |-- RegionSelector/
