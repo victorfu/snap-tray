@@ -1,5 +1,6 @@
 #include "cli/CaptureOutputHelper.h"
 
+#include "ImageColorSpaceHelper.h"
 #include "PlatformFeatures.h"
 #include "settings/FileSettingsManager.h"
 #include "utils/CoordinateHelper.h"
@@ -7,7 +8,6 @@
 #include "utils/ImageSaveUtils.h"
 
 #include <QBuffer>
-#include <QColorSpace>
 #include <QCoreApplication>
 #include <QDir>
 #include <QFileInfo>
@@ -26,18 +26,16 @@ QString resolveCaptureType(const CaptureMetadata& metadata)
     return metadata.captureType.isEmpty() ? QStringLiteral("Screenshot") : metadata.captureType;
 }
 
-QImage normalizeForRawOrSave(const QPixmap& screenshot)
+QImage prepareImageForRawOrSave(const QPixmap& screenshot, QScreen* sourceScreen)
 {
-    QImage image = screenshot.toImage().convertToFormat(QImage::Format_RGB32);
-    image.setColorSpace(QColorSpace());
-    return image;
+    return tagImageWithScreenColorSpace(
+        screenshot.toImage().convertToFormat(QImage::Format_RGB32), sourceScreen);
 }
 
-QImage normalizeForClipboard(const QPixmap& screenshot)
+QImage prepareImageForClipboard(const QPixmap& screenshot, QScreen* sourceScreen)
 {
-    QImage image = screenshot.toImage().convertToFormat(QImage::Format_ARGB32);
-    image.setColorSpace(QColorSpace());
-    return image;
+    return tagImageWithScreenColorSpace(
+        screenshot.toImage().convertToFormat(QImage::Format_ARGB32), sourceScreen);
 }
 
 QString resolveOutputFilePath(
@@ -92,7 +90,7 @@ CLIResult emitCaptureOutput(
     QCoreApplication::processEvents();
 
     if (options.toRaw) {
-        QImage rawImage = normalizeForRawOrSave(screenshot);
+        QImage rawImage = prepareImageForRawOrSave(screenshot, metadata.sourceScreen);
 
         QByteArray data;
         QBuffer buffer(&data);
@@ -102,7 +100,7 @@ CLIResult emitCaptureOutput(
     }
 
     if (options.toClipboard) {
-        QImage clipboardImage = normalizeForClipboard(screenshot);
+        QImage clipboardImage = prepareImageForClipboard(screenshot, metadata.sourceScreen);
 
         // Use native clipboard API for reliable persistence in CLI mode
         if (PlatformFeatures::instance().copyImageToClipboard(clipboardImage)) {
@@ -116,7 +114,7 @@ CLIResult emitCaptureOutput(
     // Ensure directory exists
     QDir().mkpath(QFileInfo(filePath).absolutePath());
 
-    QImage image = normalizeForRawOrSave(screenshot);
+    QImage image = prepareImageForRawOrSave(screenshot, metadata.sourceScreen);
     ImageSaveUtils::Error saveError;
     if (!ImageSaveUtils::saveImageAtomically(image, filePath, QByteArrayLiteral("PNG"), &saveError)) {
         const QString detail = saveError.stage.isEmpty()

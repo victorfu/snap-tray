@@ -6,6 +6,8 @@
 #include <QPixmap>
 #include <QString>
 
+class QScreen;
+
 class ImageSaveUtils
 {
 public:
@@ -22,7 +24,8 @@ public:
     static bool savePixmapAtomically(const QPixmap& pixmap,
                                      const QString& filePath,
                                      const QByteArray& explicitFormat = QByteArray(),
-                                     Error* error = nullptr);
+                                     Error* error = nullptr,
+                                     QScreen* sourceScreen = nullptr);
 
 private:
     static QByteArray resolveFormat(const QString& filePath,

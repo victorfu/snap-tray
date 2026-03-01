@@ -1032,6 +1032,7 @@ void RegionSelector::setupScreenGeometry(QScreen* screen)
         const int monitorIndex = QGuiApplication::screens().indexOf(m_currentScreen.data());
         m_exportManager->setMonitorIdentifier(
             monitorIndex >= 0 ? QString::number(monitorIndex) : QStringLiteral("unknown"));
+        m_exportManager->setSourceScreen(m_currentScreen.data());
     }
 }
 
@@ -1068,6 +1069,7 @@ void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapt
     // Update export manager with background pixmap and DPR
     m_exportManager->setBackgroundPixmap(m_backgroundPixmap);
     m_exportManager->setDevicePixelRatio(m_devicePixelRatio);
+    m_exportManager->setSourceScreen(m_currentScreen.data());
     if (m_multiRegionListPanel) {
         m_multiRegionListPanel->setCaptureContext(m_backgroundPixmap, m_devicePixelRatio);
     }
@@ -1146,6 +1148,7 @@ void RegionSelector::initializeWithRegion(QScreen* screen, const QRect& region)
     // Update export manager with background pixmap and DPR
     m_exportManager->setBackgroundPixmap(m_backgroundPixmap);
     m_exportManager->setDevicePixelRatio(m_devicePixelRatio);
+    m_exportManager->setSourceScreen(m_currentScreen.data());
     if (m_multiRegionListPanel) {
         m_multiRegionListPanel->setCaptureContext(m_backgroundPixmap, m_devicePixelRatio);
     }
@@ -1259,6 +1262,7 @@ void RegionSelector::switchToScreen(QScreen* screen, bool preserveCompletedSelec
 
     m_exportManager->setBackgroundPixmap(m_backgroundPixmap);
     m_exportManager->setDevicePixelRatio(m_devicePixelRatio);
+    m_exportManager->setSourceScreen(m_currentScreen.data());
 
     if (m_multiRegionManager) {
         m_multiRegionManager->clear();

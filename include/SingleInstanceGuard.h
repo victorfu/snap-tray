@@ -26,9 +26,15 @@ private slots:
     void onNewConnection();
 
 private:
+    enum class ServerStartResult {
+        Listening,
+        ActivePrimaryDetected,
+        Unavailable
+    };
+
     bool acquireInstanceLock();
     void releaseInstanceLock();
-    bool startServerWithSafeRecovery();
+    ServerStartResult startServerWithSafeRecovery();
 
     QString m_serverName;
     QString m_lockFilePath;

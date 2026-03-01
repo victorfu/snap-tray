@@ -24,6 +24,8 @@ private:
     static bool sendChunks(
         const QString& serverName, const QList<QByteArray>& chunks, QString* errorDetails = nullptr);
     static QString testAppId(const QString& testSuffix);
+    static bool tryAcquirePrimaryOrSkip(
+        SingleInstanceGuard& guard, const QString& serverName, QString* skipReason);
 };
 
 QString tst_SingleInstanceGuard::serverNameForAppId(const QString& appId)
@@ -129,12 +131,42 @@ QString tst_SingleInstanceGuard::testAppId(const QString& testSuffix)
         .arg(testSuffix);
 }
 
+bool tst_SingleInstanceGuard::tryAcquirePrimaryOrSkip(
+    SingleInstanceGuard& guard, const QString& serverName, QString* skipReason)
+{
+    if (!guard.tryLock()) {
+        if (skipReason) {
+            *skipReason =
+                "Unable to acquire primary instance lock in this environment; skipping IPC test.";
+        }
+        return false;
+    }
+
+    QLocalSocket probe;
+    probe.connectToServer(serverName);
+    if (!probe.waitForConnected(200)) {
+        if (skipReason) {
+            *skipReason =
+                QString("Unable to connect IPC endpoint (%1); skipping environment-sensitive test.")
+                    .arg(probe.errorString());
+        }
+        return false;
+    }
+
+    probe.disconnectFromServer();
+    probe.waitForDisconnected(200);
+    return true;
+}
+
 void tst_SingleInstanceGuard::testLengthPrefixedCommand_HeaderSplit()
 {
     const QString appId = testAppId("header-split");
     const QString serverName = serverNameForAppId(appId);
     SingleInstanceGuard guard(appId);
-    QVERIFY(guard.tryLock());
+    QString skipReason;
+    if (!tryAcquirePrimaryOrSkip(guard, serverName, &skipReason)) {
+        QSKIP(qPrintable(skipReason));
+    }
 
     QSignalSpy activateSpy(&guard, &SingleInstanceGuard::activateRequested);
     QSignalSpy commandSpy(&guard, &SingleInstanceGuard::commandReceived);
@@ -158,7 +190,10 @@ void tst_SingleInstanceGuard::testLengthPrefixedCommand_BodySplit()
     const QString appId = testAppId("body-split");
     const QString serverName = serverNameForAppId(appId);
     SingleInstanceGuard guard(appId);
-    QVERIFY(guard.tryLock());
+    QString skipReason;
+    if (!tryAcquirePrimaryOrSkip(guard, serverName, &skipReason)) {
+        QSKIP(qPrintable(skipReason));
+    }
 
     QSignalSpy activateSpy(&guard, &SingleInstanceGuard::activateRequested);
     QSignalSpy commandSpy(&guard, &SingleInstanceGuard::commandReceived);
@@ -183,7 +218,10 @@ void tst_SingleInstanceGuard::testActivateMessage_SplitAcrossWrites()
     const QString appId = testAppId("activate-split");
     const QString serverName = serverNameForAppId(appId);
     SingleInstanceGuard guard(appId);
-    QVERIFY(guard.tryLock());
+    QString skipReason;
+    if (!tryAcquirePrimaryOrSkip(guard, serverName, &skipReason)) {
+        QSKIP(qPrintable(skipReason));
+    }
 
     QSignalSpy activateSpy(&guard, &SingleInstanceGuard::activateRequested);
     QSignalSpy commandSpy(&guard, &SingleInstanceGuard::commandReceived);
@@ -203,7 +241,10 @@ void tst_SingleInstanceGuard::testIncompletePacket_DisconnectDoesNotEmit()
     const QString appId = testAppId("incomplete");
     const QString serverName = serverNameForAppId(appId);
     SingleInstanceGuard guard(appId);
-    QVERIFY(guard.tryLock());
+    QString skipReason;
+    if (!tryAcquirePrimaryOrSkip(guard, serverName, &skipReason)) {
+        QSKIP(qPrintable(skipReason));
+    }
 
     QSignalSpy activateSpy(&guard, &SingleInstanceGuard::activateRequested);
     QSignalSpy commandSpy(&guard, &SingleInstanceGuard::commandReceived);

@@ -1,8 +1,12 @@
 #include <QtTest>
 
+#include <QColorSpace>
 #include <QFile>
 #include <QFileInfo>
+#include <QGuiApplication>
 #include <QImageReader>
+#include <QPixmap>
+#include <QScreen>
 #include <QTemporaryDir>
 
 #include "utils/ImageSaveUtils.h"
@@ -18,6 +22,10 @@ private slots:
     void testOpenFailureReportsError();
     void testOverwriteExistingFile();
     void testOverwriteWithReadOnlyDirectoryUsesFallback();
+    void testSaveImageWithColorSpacePreservesProfile();
+#ifdef Q_OS_MAC
+    void testSavePixmapAppliesScreenColorSpaceWhenMissing();
+#endif
 };
 
 void tst_ImageSaveUtils::testSavePngSuccess()
@@ -150,6 +158,67 @@ void tst_ImageSaveUtils::testOverwriteWithReadOnlyDirectoryUsesFallback()
     QCOMPARE(loaded.pixelColor(0, 0), QColor(0, 0, 255, 255));
 #endif
 }
+
+void tst_ImageSaveUtils::testSaveImageWithColorSpacePreservesProfile()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+
+    QImage image(20, 20, QImage::Format_ARGB32);
+    image.fill(QColor(64, 128, 255, 255));
+
+    QColorSpace sourceColorSpace = QColorSpace(QColorSpace::DisplayP3);
+    if (!sourceColorSpace.isValid()) {
+        sourceColorSpace = QColorSpace(QColorSpace::SRgb);
+    }
+    QVERIFY(sourceColorSpace.isValid());
+    image.setColorSpace(sourceColorSpace);
+
+    const QString filePath = tempDir.filePath("profile_preserve.png");
+    ImageSaveUtils::Error error;
+    QVERIFY(ImageSaveUtils::saveImageAtomically(image, filePath, QByteArrayLiteral("PNG"), &error));
+
+    QImage loaded(filePath);
+    QVERIFY(!loaded.isNull());
+    QVERIFY(loaded.colorSpace().isValid());
+
+    const QByteArray sourceIcc = sourceColorSpace.iccProfile();
+    if (!sourceIcc.isEmpty()) {
+        QCOMPARE(loaded.colorSpace().iccProfile(), sourceIcc);
+    } else {
+        QCOMPARE(loaded.colorSpace(), sourceColorSpace);
+    }
+}
+
+#ifdef Q_OS_MAC
+void tst_ImageSaveUtils::testSavePixmapAppliesScreenColorSpaceWhenMissing()
+{
+    QScreen* sourceScreen = QGuiApplication::primaryScreen();
+    if (!sourceScreen) {
+        QSKIP("No primary screen available");
+    }
+
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+
+    QImage untaggedImage(20, 20, QImage::Format_ARGB32);
+    untaggedImage.fill(QColor(255, 80, 40, 255));
+    untaggedImage.setColorSpace(QColorSpace());
+    QVERIFY(!untaggedImage.colorSpace().isValid());
+
+    const QPixmap pixmap = QPixmap::fromImage(untaggedImage);
+    QVERIFY(!pixmap.isNull());
+
+    const QString filePath = tempDir.filePath("screen_tagged.png");
+    ImageSaveUtils::Error error;
+    QVERIFY(ImageSaveUtils::savePixmapAtomically(
+        pixmap, filePath, QByteArrayLiteral("PNG"), &error, sourceScreen));
+
+    QImage loaded(filePath);
+    QVERIFY(!loaded.isNull());
+    QVERIFY(loaded.colorSpace().isValid());
+}
+#endif
 
 QTEST_MAIN(tst_ImageSaveUtils)
 #include "tst_ImageSaveUtils.moc"

@@ -1,7 +1,10 @@
 #include "ImageColorSpaceHelper.h"
 
+#include <QByteArray>
 #include <QColorSpace>
+#include <QGuiApplication>
 #include <QImage>
+#include <QScreen>
 
 #import <AppKit/AppKit.h>
 #import <CoreGraphics/CoreGraphics.h>
@@ -55,6 +58,51 @@ CGColorSpaceRef createTargetColorSpace()
     }
 
     return createSRGBColorSpace();
+}
+
+NSScreen* resolveTargetNSScreen(const QScreen* sourceScreen)
+{
+    NSArray<NSScreen*>* screens = [NSScreen screens];
+    if (sourceScreen && screens.count > 0) {
+        const int sourceIndex = QGuiApplication::screens().indexOf(const_cast<QScreen*>(sourceScreen));
+        if (sourceIndex >= 0 && sourceIndex < static_cast<int>(screens.count)) {
+            return [screens objectAtIndex:sourceIndex];
+        }
+    }
+
+    NSScreen* mainScreen = [NSScreen mainScreen];
+    if (mainScreen) {
+        return mainScreen;
+    }
+    if (screens.count > 0) {
+        return [screens objectAtIndex:0];
+    }
+    return nil;
+}
+
+QColorSpace colorSpaceFromNSScreen(const QScreen* sourceScreen)
+{
+    NSScreen* targetScreen = resolveTargetNSScreen(sourceScreen);
+    if (!targetScreen) {
+        return QColorSpace();
+    }
+
+    NSColorSpace* nsColorSpace = [targetScreen colorSpace];
+    if (!nsColorSpace || !nsColorSpace.CGColorSpace) {
+        return QColorSpace();
+    }
+
+    CFDataRef iccData = CGColorSpaceCopyICCData(nsColorSpace.CGColorSpace);
+    if (!iccData) {
+        return QColorSpace();
+    }
+
+    const QByteArray iccProfile(
+        reinterpret_cast<const char*>(CFDataGetBytePtr(iccData)),
+        static_cast<int>(CFDataGetLength(iccData)));
+    CFRelease(iccData);
+
+    return QColorSpace::fromIccProfile(iccProfile);
 }
 
 } // namespace
@@ -142,4 +190,28 @@ QImage convertImageForDisplay(const QImage& image)
     // Avoid any secondary conversion in Qt paint paths.
     target.setColorSpace(QColorSpace());
     return target;
+}
+
+QImage tagImageWithScreenColorSpace(const QImage& image, const QScreen* sourceScreen)
+{
+    if (image.isNull()) {
+        return image;
+    }
+
+    if (image.colorSpace().isValid()) {
+        return image;
+    }
+
+    QColorSpace targetColorSpace = colorSpaceFromNSScreen(sourceScreen);
+    if (!targetColorSpace.isValid()) {
+        targetColorSpace = QColorSpace(QColorSpace::SRgb);
+    }
+
+    if (!targetColorSpace.isValid()) {
+        return image;
+    }
+
+    QImage taggedImage = image;
+    taggedImage.setColorSpace(targetColorSpace);
+    return taggedImage;
 }

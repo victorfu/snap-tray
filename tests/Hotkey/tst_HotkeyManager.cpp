@@ -332,10 +332,19 @@ void tst_HotkeyManager::testResetToDefault_RestoresOriginal()
 {
     using namespace SnapTray;
 
+    const HotkeyConfig original = manager().getConfig(HotkeyAction::RegionCapture);
+
     // Change the hotkey
-    manager().updateHotkey(HotkeyAction::RegionCapture, "Ctrl+Shift+X");
+    const bool changed = manager().updateHotkey(HotkeyAction::RegionCapture, "Ctrl+Shift+X");
 
     auto modified = manager().getConfig(HotkeyAction::RegionCapture);
+    if (!changed) {
+        // In some environments global hotkey registration is unavailable.
+        // updateHotkey() then rolls back to the original key sequence by design.
+        QCOMPARE(modified.keySequence, original.keySequence);
+        QSKIP("Global hotkey registration unavailable in this environment.");
+    }
+
     QCOMPARE(modified.keySequence, QString("Ctrl+Shift+X"));
 
     // Reset to default

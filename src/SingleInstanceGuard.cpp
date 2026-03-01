@@ -2,6 +2,7 @@
 
 #include <QCryptographicHash>
 #include <QDataStream>
+#include <QDebug>
 #include <QDir>
 #include <QLockFile>
 #include <QLocalServer>
@@ -81,15 +82,15 @@ void SingleInstanceGuard::releaseInstanceLock()
     m_instanceLock.reset();
 }
 
-bool SingleInstanceGuard::startServerWithSafeRecovery()
+SingleInstanceGuard::ServerStartResult SingleInstanceGuard::startServerWithSafeRecovery()
 {
     if (!m_server) {
-        return false;
+        return ServerStartResult::Unavailable;
     }
 
     for (int attempt = 0; attempt < kServerListenMaxAttempts; ++attempt) {
         if (m_server->listen(m_serverName)) {
-            return true;
+            return ServerStartResult::Listening;
         }
 
         // If another server is connectable, treat this process as secondary.
@@ -97,7 +98,7 @@ bool SingleInstanceGuard::startServerWithSafeRecovery()
         probeSocket.connectToServer(m_serverName);
         if (probeSocket.waitForConnected(kConnectionCheckTimeoutMs)) {
             probeSocket.disconnectFromServer();
-            return false;
+            return ServerStartResult::ActivePrimaryDetected;
         }
 
         // No active listener found; attempt stale endpoint cleanup and retry.
@@ -107,7 +108,7 @@ bool SingleInstanceGuard::startServerWithSafeRecovery()
         }
     }
 
-    return false;
+    return ServerStartResult::Unavailable;
 }
 
 bool SingleInstanceGuard::tryLock()
@@ -122,20 +123,30 @@ bool SingleInstanceGuard::tryLock()
 
     m_server = new QLocalServer(this);
 
-    if (!startServerWithSafeRecovery()) {
+    const ServerStartResult startResult = startServerWithSafeRecovery();
+    if (startResult == ServerStartResult::Listening) {
+        connect(m_server, &QLocalServer::newConnection,
+                this, &SingleInstanceGuard::onNewConnection);
+        return true;
+    }
+
+    if (startResult == ServerStartResult::ActivePrimaryDetected) {
         delete m_server;
         m_server = nullptr;
         releaseInstanceLock();
         return false;
     }
 
-    connect(m_server, &QLocalServer::newConnection,
-            this, &SingleInstanceGuard::onNewConnection);
+    qWarning() << "SingleInstanceGuard: IPC server is unavailable; running in lock-only mode.";
+    delete m_server;
+    m_server = nullptr;
     return true;
 }
 
 void SingleInstanceGuard::sendActivateMessage()
 {
+    QString lastError = QStringLiteral("unknown");
+
     for (int attempt = 0; attempt < kActivationMaxAttempts; ++attempt) {
         QLocalSocket socket;
         socket.connectToServer(m_serverName);
@@ -145,12 +156,18 @@ void SingleInstanceGuard::sendActivateMessage()
                 socket.disconnectFromServer();
                 return;
             }
+            lastError = socket.errorString();
+        } else {
+            lastError = socket.errorString();
         }
 
         if (attempt + 1 < kActivationMaxAttempts) {
             QThread::msleep(kActivationRetryDelayMs);
         }
     }
+
+    qWarning() << "SingleInstanceGuard: Failed to send activate message after"
+               << kActivationMaxAttempts << "attempts:" << lastError;
 }
 
 void SingleInstanceGuard::onNewConnection()

@@ -1,5 +1,6 @@
 #include "utils/ImageSaveUtils.h"
 
+#include <QColorSpace>
 #include <QFileInfo>
 #include <QImageWriter>
 #include <QSaveFile>
@@ -107,13 +108,25 @@ bool ImageSaveUtils::saveImageAtomically(const QImage& image,
 bool ImageSaveUtils::savePixmapAtomically(const QPixmap& pixmap,
                                           const QString& filePath,
                                           const QByteArray& explicitFormat,
-                                          Error* error)
+                                          Error* error,
+                                          QScreen* sourceScreen)
 {
     if (pixmap.isNull()) {
         setError(error, QStringLiteral("write"), QStringLiteral("Pixmap is null"));
         return false;
     }
-    return saveImageAtomically(pixmap.toImage(), filePath, explicitFormat, error);
+
+    Q_UNUSED(sourceScreen);
+
+    QImage image = pixmap.toImage();
+    if (!image.colorSpace().isValid()) {
+        const QColorSpace sRgb(QColorSpace::SRgb);
+        if (sRgb.isValid()) {
+            image.setColorSpace(sRgb);
+        }
+    }
+
+    return saveImageAtomically(image, filePath, explicitFormat, error);
 }
 
 QByteArray ImageSaveUtils::resolveFormat(const QString& filePath,

@@ -2,12 +2,14 @@
 #define REGIONEXPORTMANAGER_H
 
 #include <QObject>
+#include <QPointer>
 #include <QPixmap>
 #include <QRect>
 #include <QPoint>
 #include <QString>
 
 class AnnotationLayer;
+class QScreen;
 
 /**
  * @brief Manages screenshot export operations (copy, save, finish)
@@ -67,6 +69,7 @@ public:
     void setMonitorIdentifier(const QString& monitor);
     void setWindowMetadata(const QString& windowTitle, const QString& appName = QString());
     void setRegionIndex(int regionIndex);
+    void setSourceScreen(QScreen* screen);
 
 signals:
     /**
@@ -108,6 +111,7 @@ private:
     QString m_windowTitle;
     QString m_appName;
     int m_regionIndex = -1;
+    QPointer<QScreen> m_sourceScreen;
 };
 
 #endif // REGIONEXPORTMANAGER_H

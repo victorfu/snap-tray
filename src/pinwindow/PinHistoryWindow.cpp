@@ -1,5 +1,7 @@
 #include "pinwindow/PinHistoryWindow.h"
 
+#include "ImageColorSpaceHelper.h"
+#include "PlatformFeatures.h"
 #include "PinWindow.h"
 #include "PinWindowManager.h"
 #include "pinwindow/RegionLayoutManager.h"
@@ -255,7 +257,11 @@ void PinHistoryWindow::copyEntry(const PinHistoryEntry& entry)
         return;
     }
 
-    QGuiApplication::clipboard()->setPixmap(pixmap);
+    QScreen* exportScreen = QGuiApplication::primaryScreen();
+    const QImage taggedImage = tagImageWithScreenColorSpace(pixmap.toImage(), exportScreen);
+    if (!PlatformFeatures::instance().copyImageToClipboard(taggedImage)) {
+        QGuiApplication::clipboard()->setImage(taggedImage);
+    }
     close();
 }
 
@@ -294,8 +300,10 @@ void PinHistoryWindow::saveEntryAs(const PinHistoryEntry& entry)
         tr("PNG Image (*.png);;JPEG Image (*.jpg *.jpeg);;All Files (*)"));
 
     if (!filePath.isEmpty()) {
+        QScreen* exportScreen = QGuiApplication::primaryScreen();
+        const QImage taggedImage = tagImageWithScreenColorSpace(pixmap.toImage(), exportScreen);
         ImageSaveUtils::Error saveError;
-        if (!ImageSaveUtils::savePixmapAtomically(pixmap, filePath, QByteArray(), &saveError)) {
+        if (!ImageSaveUtils::saveImageAtomically(taggedImage, filePath, QByteArray(), &saveError)) {
             QMessageBox::warning(this,
                                  tr("Save Failed"),
                                  tr("Failed to save screenshot: %1").arg(saveErrorDetail(saveError)));

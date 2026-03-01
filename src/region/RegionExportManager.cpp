@@ -1,4 +1,6 @@
 #include "region/RegionExportManager.h"
+#include "ImageColorSpaceHelper.h"
+#include "PlatformFeatures.h"
 #include "annotations/AnnotationLayer.h"
 #include "settings/FileSettingsManager.h"
 #include "utils/CoordinateHelper.h"
@@ -16,6 +18,7 @@
 #include <QImage>
 #include <QPainter>
 #include <QPainterPath>
+#include <QScreen>
 
 RegionExportManager::RegionExportManager(QObject *parent)
     : QObject(parent)
@@ -51,6 +54,11 @@ void RegionExportManager::setWindowMetadata(const QString& windowTitle, const QS
 void RegionExportManager::setRegionIndex(int regionIndex)
 {
     m_regionIndex = regionIndex;
+}
+
+void RegionExportManager::setSourceScreen(QScreen* screen)
+{
+    m_sourceScreen = screen;
 }
 
 QPixmap RegionExportManager::getSelectedRegion(const QRect &selectionRect, int cornerRadius)
@@ -132,7 +140,11 @@ void RegionExportManager::copyToClipboard(const QRect &selectionRect, int corner
         return;
     }
 
-    QGuiApplication::clipboard()->setPixmap(selectedRegion);
+    const QImage taggedImage =
+        tagImageWithScreenColorSpace(selectedRegion.toImage(), m_sourceScreen.data());
+    if (!PlatformFeatures::instance().copyImageToClipboard(taggedImage)) {
+        QGuiApplication::clipboard()->setImage(taggedImage);
+    }
     qDebug() << "RegionExportManager: Copied to clipboard";
 
     emit copyCompleted(selectedRegion);
@@ -170,7 +182,10 @@ bool RegionExportManager::saveToFile(const QRect &selectionRect, int cornerRadiu
             savePath, templateValue, context, 100, &renderError);
 
         ImageSaveUtils::Error saveError;
-        bool success = ImageSaveUtils::savePixmapAtomically(selectedRegion, filePath, QByteArray(), &saveError);
+        const QImage taggedImage =
+            tagImageWithScreenColorSpace(selectedRegion.toImage(), m_sourceScreen.data());
+        bool success = ImageSaveUtils::saveImageAtomically(
+            taggedImage, filePath, QByteArray(), &saveError);
         if (success) {
             qDebug() << "RegionExportManager: Auto-saved to" << filePath;
             emit saveCompleted(selectedRegion, filePath);
@@ -206,7 +221,10 @@ bool RegionExportManager::saveToFile(const QRect &selectionRect, int cornerRadiu
 
     if (!filePath.isEmpty()) {
         ImageSaveUtils::Error saveError;
-        bool success = ImageSaveUtils::savePixmapAtomically(selectedRegion, filePath, QByteArray(), &saveError);
+        const QImage taggedImage =
+            tagImageWithScreenColorSpace(selectedRegion.toImage(), m_sourceScreen.data());
+        bool success = ImageSaveUtils::saveImageAtomically(
+            taggedImage, filePath, QByteArray(), &saveError);
         if (success) {
             qDebug() << "RegionExportManager: Saved to" << filePath;
             emit saveCompleted(selectedRegion, filePath);

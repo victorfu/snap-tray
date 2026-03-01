@@ -5,6 +5,7 @@
 #include "QRCodeManager.h"
 #include "QRCodeResultDialog.h"
 #include "PlatformFeatures.h"
+#include "ImageColorSpaceHelper.h"
 #include "WatermarkRenderer.h"
 #include "cursor/CursorManager.h"
 #include "platform/WindowLevel.h"
@@ -1359,8 +1360,9 @@ void PinWindow::saveToFile()
         QString filePath = FilenameTemplateEngine::buildUniqueFilePath(
             savePath, templateValue, context, kMaxFileCollisionRetries, &renderError);
 
+        const QImage taggedImage = tagImageWithScreenColorSpace(pixmapToSave.toImage(), exportScreen);
         ImageSaveUtils::Error saveError;
-        if (ImageSaveUtils::savePixmapAtomically(pixmapToSave, filePath, QByteArray(), &saveError)) {
+        if (ImageSaveUtils::saveImageAtomically(taggedImage, filePath, QByteArray(), &saveError)) {
             emit saveCompleted(pixmapToSave, filePath);
         }
         else {
@@ -1383,8 +1385,9 @@ void PinWindow::saveToFile()
     );
 
     if (!filePath.isEmpty()) {
+        const QImage taggedImage = tagImageWithScreenColorSpace(pixmapToSave.toImage(), exportScreen);
         ImageSaveUtils::Error saveError;
-        if (ImageSaveUtils::savePixmapAtomically(pixmapToSave, filePath, QByteArray(), &saveError)) {
+        if (ImageSaveUtils::saveImageAtomically(taggedImage, filePath, QByteArray(), &saveError)) {
             emit saveRequested(pixmapToSave);
         } else {
             emit saveFailed(filePath, tr("Failed to save screenshot: %1").arg(saveErrorDetail(saveError)));
@@ -1399,7 +1402,16 @@ void PinWindow::copyToClipboard()
         m_uiIndicators->showToast(false, tr("Copy failed"));
         return;
     }
-    QGuiApplication::clipboard()->setPixmap(pixmapToCopy);
+
+    QScreen* exportScreen = m_sourceScreen.data();
+    if (!exportScreen) {
+        exportScreen = screen();
+    }
+
+    const QImage taggedImage = tagImageWithScreenColorSpace(pixmapToCopy.toImage(), exportScreen);
+    if (!PlatformFeatures::instance().copyImageToClipboard(taggedImage)) {
+        QGuiApplication::clipboard()->setImage(taggedImage);
+    }
     m_uiIndicators->showToast(true, tr("Copied to clipboard"));
 }
 
@@ -4645,7 +4657,15 @@ void PinWindow::onBeautifyCopy(const BeautifySettings& settings)
         m_uiIndicators->showToast(false, tr("Beautify rendering failed"));
         return;
     }
-    QGuiApplication::clipboard()->setPixmap(result);
+
+    QScreen* exportScreen = m_sourceScreen.data();
+    if (!exportScreen) {
+        exportScreen = screen();
+    }
+    const QImage taggedImage = tagImageWithScreenColorSpace(result.toImage(), exportScreen);
+    if (!PlatformFeatures::instance().copyImageToClipboard(taggedImage)) {
+        QGuiApplication::clipboard()->setImage(taggedImage);
+    }
     m_uiIndicators->showToast(true, tr("Beautified image copied"));
 }
 
@@ -4665,6 +4685,10 @@ void PinWindow::onBeautifySave(const BeautifySettings& settings)
 
     auto& fileSettings = FileSettingsManager::instance();
     QString savePath = fileSettings.loadScreenshotPath();
+    QScreen* exportScreen = m_sourceScreen.data();
+    if (!exportScreen) {
+        exportScreen = screen();
+    }
 
     FilenameTemplateEngine::Context context;
     context.type = QStringLiteral("Screenshot");
@@ -4683,8 +4707,9 @@ void PinWindow::onBeautifySave(const BeautifySettings& settings)
         if (!renderError.isEmpty()) {
             qWarning() << "PinWindow: beautify template warning:" << renderError;
         }
+        const QImage taggedImage = tagImageWithScreenColorSpace(result.toImage(), exportScreen);
         ImageSaveUtils::Error saveError;
-        if (ImageSaveUtils::savePixmapAtomically(result, filePath, QByteArray(), &saveError)) {
+        if (ImageSaveUtils::saveImageAtomically(taggedImage, filePath, QByteArray(), &saveError)) {
             emit saveCompleted(result, filePath);
         } else {
             emit saveFailed(
@@ -4698,8 +4723,9 @@ void PinWindow::onBeautifySave(const BeautifySettings& settings)
             this, tr("Save Beautified Screenshot"), defaultName,
             tr("PNG Image (*.png);;JPEG Image (*.jpg *.jpeg);;All Files (*)"));
         if (!filePath.isEmpty()) {
+            const QImage taggedImage = tagImageWithScreenColorSpace(result.toImage(), exportScreen);
             ImageSaveUtils::Error saveError;
-            if (ImageSaveUtils::savePixmapAtomically(result, filePath, QByteArray(), &saveError)) {
+            if (ImageSaveUtils::saveImageAtomically(taggedImage, filePath, QByteArray(), &saveError)) {
                 emit saveCompleted(result, filePath);
             } else {
                 emit saveFailed(
