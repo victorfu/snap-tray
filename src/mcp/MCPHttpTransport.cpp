@@ -277,7 +277,8 @@ void MCPHttpTransport::sendResponse(
     response.append("\r\n");
     if (!body.isEmpty()) {
         response.append("Content-Type: ");
-        response.append(contentType.isEmpty() ? "application/json; charset=utf-8" : contentType);
+        response.append(contentType.isEmpty() ? QByteArrayLiteral("application/json; charset=utf-8")
+                                              : contentType);
         response.append("\r\n");
     }
     response.append("Content-Length: ");

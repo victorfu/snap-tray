@@ -27,8 +27,8 @@ bool readOptionalInt(const QJsonObject& object, const QString& key, int* outValu
     if (value.isDouble()) {
         const double number = value.toDouble();
         if (!std::isfinite(number)
-            || number < static_cast<double>(std::numeric_limits<int>::min())
-            || number > static_cast<double>(std::numeric_limits<int>::max())
+            || number < static_cast<double>((std::numeric_limits<int>::min)())
+            || number > static_cast<double>((std::numeric_limits<int>::max)())
             || std::floor(number) != number) {
             return false;
         }
