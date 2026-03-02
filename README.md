@@ -502,6 +502,8 @@ SnapTray now starts an MCP server inside the main `snaptray` process. No separat
 | `pin_image` | `image_path`, `x?`, `y?`, `center?` | `accepted` |
 | `share_upload` | `image_path`, `password?` | `url`, `expires_at`, `protected` |
 
+When `capture_screenshot.output_path` is omitted, SnapTray MCP saves to system temp (for example: `/tmp/snaptray/mcp` on macOS).
+
 ### ChatGPT Desktop (Streamable HTTP) Example
 
 1. Open "Connect to a custom MCP" and select `Streamable HTTP`.

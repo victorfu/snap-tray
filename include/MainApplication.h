@@ -63,9 +63,12 @@ private slots:
     void onHotkeyChanged(SnapTray::HotkeyAction action, const SnapTray::HotkeyConfig& config);
     void onHotkeyInitializationCompleted(const QStringList& failedHotkeys);
     void onUpdateAvailable(const ReleaseInfo& release);
+    void onMcpEnabledChanged(bool enabled);
 
 private:
     void startRegionCapture(bool showShortcutHintsOnEntry);
+    bool startMcpServer();
+    void stopMcpServer();
     void updateTrayMenuHotkeyText();
     void updatePinsVisibilityActionText();
     void updateActionHotkeyText(QAction* action,

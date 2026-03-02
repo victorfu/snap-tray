@@ -280,6 +280,7 @@ add_library(snaptray_core STATIC
     src/settings/AnnotationSettingsManager.cpp
     src/settings/AutoBlurSettingsManager.cpp
     src/settings/FileSettingsManager.cpp
+    src/settings/MCPSettingsManager.cpp
     src/settings/OCRSettingsManager.cpp
     src/settings/PinWindowSettingsManager.cpp
     src/settings/RegionCaptureSettingsManager.cpp
@@ -307,6 +308,7 @@ add_library(snaptray_core STATIC
     # Headers with Q_OBJECT for MOC processing
     include/settings/AnnotationSettingsManager.h
     include/settings/FileSettingsManager.h
+    include/settings/MCPSettingsManager.h
     include/settings/PinWindowSettingsManager.h
     include/settings/RegionCaptureSettingsManager.h
     include/settings/SettingsTheme.h

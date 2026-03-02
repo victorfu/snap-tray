@@ -1,9 +1,7 @@
 #include "mcp/MCPTools.h"
 
 #include "ImageColorSpaceHelper.h"
-#include "settings/FileSettingsManager.h"
 #include "utils/CoordinateHelper.h"
-#include "utils/FilenameTemplateEngine.h"
 #include "utils/ImageSaveUtils.h"
 
 #include <QCursor>
@@ -12,7 +10,9 @@
 #include <QFileInfo>
 #include <QGuiApplication>
 #include <QJsonObject>
+#include <QRandomGenerator>
 #include <QScreen>
+#include <QStandardPaths>
 #include <QThread>
 
 #include <cmath>
@@ -64,31 +64,16 @@ QString saveScreenshotToFile(
 {
     QString filePath = requestedOutputPath;
     if (filePath.isEmpty()) {
-        QString savePath = FileSettingsManager::instance().loadScreenshotPath();
-        if (savePath.isEmpty()) {
-            savePath = QDir::homePath();
+        QString tempRoot = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
+        if (tempRoot.isEmpty()) {
+            tempRoot = QDir::tempPath();
         }
 
-        const qreal dpr = screenshot.devicePixelRatio() > 0.0 ? screenshot.devicePixelRatio() : 1.0;
-        const QSize logicalSize = CoordinateHelper::toLogical(screenshot.size(), dpr);
-        const int monitorIndex = sourceScreen ? QGuiApplication::screens().indexOf(sourceScreen) : -1;
-
-        FilenameTemplateEngine::Context context;
-        auto& fileSettings = FileSettingsManager::instance();
-        context.type = QStringLiteral("Screenshot");
-        context.prefix = fileSettings.loadFilenamePrefix();
-        context.width = logicalSize.width();
-        context.height = logicalSize.height();
-        context.monitor = monitorIndex >= 0 ? QString::number(monitorIndex) : QStringLiteral("unknown");
-        context.windowTitle = QString();
-        context.appName = QString();
-        context.regionIndex = -1;
-        context.ext = QStringLiteral("png");
-        context.dateFormat = fileSettings.loadDateFormat();
-        context.outputDir = savePath;
-
-        filePath = FilenameTemplateEngine::buildUniqueFilePath(
-            savePath, fileSettings.loadFilenameTemplate(), context);
+        const QString mcpTempDir = QDir(tempRoot).filePath(QStringLiteral("snaptray/mcp"));
+        const QString timestamp = QDateTime::currentDateTimeUtc().toString("yyyyMMdd_HHmmss_zzz");
+        const QString randomSuffix = QString::number(QRandomGenerator::global()->generate(), 16);
+        const QString fileName = QStringLiteral("screenshot_%1_%2.png").arg(timestamp, randomSuffix);
+        filePath = QDir(mcpTempDir).filePath(fileName);
     }
 
     filePath = QFileInfo(filePath).absoluteFilePath();

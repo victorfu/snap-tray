@@ -502,6 +502,8 @@ SnapTray 現在會在主程式 `snaptray` 內直接啟動 MCP server，不需要
 | `pin_image` | `image_path`、`x?`、`y?`、`center?` | `accepted` |
 | `share_upload` | `image_path`、`password?` | `url`、`expires_at`、`protected` |
 
+若省略 `capture_screenshot.output_path`，SnapTray MCP 會儲存到系統 `tmp`（例如 macOS 的 `/tmp/snaptray/mcp`）。
+
 ### ChatGPT Desktop（Streamable HTTP）設定範例
 
 1. 開啟「Connect to a custom MCP」，選 `Streamable HTTP`。

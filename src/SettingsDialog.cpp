@@ -9,6 +9,7 @@
 #include "settings/Settings.h"
 #include "settings/AutoBlurSettingsManager.h"
 #include "settings/FileSettingsManager.h"
+#include "settings/MCPSettingsManager.h"
 #include "settings/PinWindowSettingsManager.h"
 #include "settings/OCRSettingsManager.h"
 #include "settings/RegionCaptureSettingsManager.h"
@@ -50,6 +51,7 @@ SettingsDialog::SettingsDialog(QWidget* parent)
     , m_tabWidget(nullptr)
     , m_startOnLoginCheckbox(nullptr)
     , m_showShortcutHintsCheckbox(nullptr)
+    , m_mcpEnabledCheckbox(nullptr)
     , m_languageCombo(nullptr)
     , m_toolbarStyleCombo(nullptr)
     , m_hotkeySettingsTab(nullptr)
@@ -200,18 +202,6 @@ void SettingsDialog::setupGeneralTab(QWidget* tab)
     m_startOnLoginCheckbox->setChecked(AutoLaunchManager::isEnabled());
     layout->addWidget(m_startOnLoginCheckbox);
 
-    // ========== Capture Section ==========
-    layout->addSpacing(16);
-    QLabel* captureSectionLabel = new QLabel(tr("Capture"), contentWidget);
-    captureSectionLabel->setStyleSheet("font-weight: bold; font-size: 12px;");
-    layout->addWidget(captureSectionLabel);
-
-    m_showShortcutHintsCheckbox = new QCheckBox(
-        tr("Show shortcut hints when entering region capture"), contentWidget);
-    m_showShortcutHintsCheckbox->setChecked(
-        RegionCaptureSettingsManager::instance().isShortcutHintsEnabled());
-    layout->addWidget(m_showShortcutHintsCheckbox);
-
     // ========== Language Section ==========
     layout->addSpacing(16);
     QLabel* languageSectionLabel = new QLabel(tr("Language"), contentWidget);
@@ -345,7 +335,29 @@ void SettingsDialog::setupAdvancedTab(QWidget* tab)
 {
     QVBoxLayout* layout = new QVBoxLayout(tab);
 
+    // ========== Capture Section ==========
+    QLabel* captureSectionLabel = new QLabel(tr("Capture"), tab);
+    captureSectionLabel->setStyleSheet("font-weight: bold; font-size: 12px;");
+    layout->addWidget(captureSectionLabel);
+
+    m_showShortcutHintsCheckbox = new QCheckBox(
+        tr("Show shortcut hints when entering region capture"), tab);
+    m_showShortcutHintsCheckbox->setChecked(
+        RegionCaptureSettingsManager::instance().isShortcutHintsEnabled());
+    layout->addWidget(m_showShortcutHintsCheckbox);
+
+    // ========== MCP Section ==========
+    layout->addSpacing(16);
+    QLabel* mcpSectionLabel = new QLabel(tr("MCP"), tab);
+    mcpSectionLabel->setStyleSheet("font-weight: bold; font-size: 12px;");
+    layout->addWidget(mcpSectionLabel);
+
+    m_mcpEnabledCheckbox = new QCheckBox(tr("Enable MCP server"), tab);
+    m_mcpEnabledCheckbox->setChecked(MCPSettingsManager::instance().isEnabled());
+    layout->addWidget(m_mcpEnabledCheckbox);
+
     // ========== Blur Section ==========
+    layout->addSpacing(16);
     QLabel* autoBlurLabel = new QLabel(tr("Blur"), tab);
     autoBlurLabel->setStyleSheet("font-weight: bold; font-size: 12px;");
     layout->addWidget(autoBlurLabel);
@@ -923,6 +935,16 @@ void SettingsDialog::onSave()
     if (m_showShortcutHintsCheckbox) {
         RegionCaptureSettingsManager::instance().setShortcutHintsEnabled(
             m_showShortcutHintsCheckbox->isChecked());
+    }
+
+    if (m_mcpEnabledCheckbox) {
+        auto& mcpSettings = MCPSettingsManager::instance();
+        const bool currentEnabled = mcpSettings.isEnabled();
+        const bool newEnabled = m_mcpEnabledCheckbox->isChecked();
+        mcpSettings.setEnabled(newEnabled);
+        if (newEnabled != currentEnabled) {
+            emit mcpEnabledChanged(newEnabled);
+        }
     }
 
     // Save watermark settings

@@ -13,6 +13,7 @@
 #include "cli/IPCProtocol.h"
 #include "hotkey/HotkeyManager.h"
 #include "mcp/MCPServer.h"
+#include "settings/MCPSettingsManager.h"
 #include "ui/GlobalToast.h"
 #include "video/RecordingPreviewWindow.h"
 #include "update/UpdateChecker.h"
@@ -419,10 +420,23 @@ void MainApplication::initialize()
             this, &MainApplication::onUpdateAvailable);
     m_updateChecker->startPeriodicCheck();
 
-    SnapTray::MCP::ToolCallContext toolContext;
-    toolContext.pinWindowManager = m_pinWindowManager;
-    toolContext.parentObject = this;
-    m_mcpServer = std::make_unique<SnapTray::MCP::MCPServer>(toolContext, this);
+    if (MCPSettingsManager::instance().isEnabled()) {
+        startMcpServer();
+    }
+}
+
+bool MainApplication::startMcpServer()
+{
+    if (!m_mcpServer) {
+        SnapTray::MCP::ToolCallContext toolContext;
+        toolContext.pinWindowManager = m_pinWindowManager;
+        toolContext.parentObject = this;
+        m_mcpServer = std::make_unique<SnapTray::MCP::MCPServer>(toolContext, this);
+    }
+
+    if (m_mcpServer->isListening()) {
+        return true;
+    }
 
     QString mcpError;
     if (!m_mcpServer->start(SnapTray::MCP::MCPServer::kDefaultPort, &mcpError)) {
@@ -433,9 +447,21 @@ void MainApplication::initialize()
             tr("Unable to start MCP HTTP server on 127.0.0.1:%1")
                 .arg(SnapTray::MCP::MCPServer::kDefaultPort),
             5000);
-    } else {
-        qDebug() << "MainApplication: MCP server listening on 127.0.0.1:" << m_mcpServer->port();
+        return false;
     }
+
+    qDebug() << "MainApplication: MCP server listening on 127.0.0.1:" << m_mcpServer->port();
+    return true;
+}
+
+void MainApplication::stopMcpServer()
+{
+    if (!m_mcpServer || !m_mcpServer->isListening()) {
+        return;
+    }
+
+    m_mcpServer->stop();
+    qDebug() << "MainApplication: MCP server stopped";
 }
 
 void MainApplication::startRegionCapture(bool showShortcutHintsOnEntry)
@@ -654,6 +680,8 @@ void MainApplication::onSettings()
     // Connect OCR languages change signal
     connect(m_settingsDialog, &SettingsDialog::ocrLanguagesChanged,
         m_pinWindowManager, &PinWindowManager::updateOcrLanguages);
+    connect(m_settingsDialog, &SettingsDialog::mcpEnabledChanged,
+        this, &MainApplication::onMcpEnabledChanged);
 
     // Clean up pointer when dialog is destroyed (WA_DeleteOnClose triggers this)
     connect(m_settingsDialog, &QDialog::destroyed,
@@ -665,6 +693,16 @@ void MainApplication::onSettings()
     m_settingsDialog->show();
     m_settingsDialog->raise();
     m_settingsDialog->activateWindow();
+}
+
+void MainApplication::onMcpEnabledChanged(bool enabled)
+{
+    if (enabled) {
+        startMcpServer();
+    }
+    else {
+        stopMcpServer();
+    }
 }
 
 void MainApplication::onHotkeyAction(SnapTray::HotkeyAction action)

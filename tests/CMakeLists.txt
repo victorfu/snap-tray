@@ -318,6 +318,11 @@ target_link_libraries(Settings_RegionCaptureSettingsManager PRIVATE snaptray_cor
 add_test(NAME Settings_RegionCaptureSettingsManager COMMAND Settings_RegionCaptureSettingsManager)
 set_tests_properties(Settings_RegionCaptureSettingsManager PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Settings_MCPSettingsManager Settings/tst_MCPSettingsManager.cpp)
+target_link_libraries(Settings_MCPSettingsManager PRIVATE snaptray_core Qt6::Test)
+add_test(NAME Settings_MCPSettingsManager COMMAND Settings_MCPSettingsManager)
+set_tests_properties(Settings_MCPSettingsManager PROPERTIES TIMEOUT 60 LABELS "unit")
+
 add_executable(Settings_SettingsStorageLocation Settings/tst_SettingsStorageLocation.cpp)
 target_link_libraries(Settings_SettingsStorageLocation PRIVATE snaptray_core Qt6::Test)
 add_test(NAME Settings_SettingsStorageLocation COMMAND Settings_SettingsStorageLocation)

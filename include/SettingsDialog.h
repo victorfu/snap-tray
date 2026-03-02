@@ -35,6 +35,7 @@ signals:
     void startOnLoginChanged(bool enabled);
     void toolbarStyleChanged(ToolbarStyleType style);
     void ocrLanguagesChanged(const QStringList &languages);
+    void mcpEnabledChanged(bool enabled);
 
 
 private slots:
@@ -65,6 +66,7 @@ private:
     QTabWidget *m_tabWidget;
     QCheckBox *m_startOnLoginCheckbox;
     QCheckBox *m_showShortcutHintsCheckbox;
+    QCheckBox *m_mcpEnabledCheckbox;
     QComboBox *m_languageCombo;
     QComboBox *m_toolbarStyleCombo;
     SnapTray::HotkeySettingsTab *m_hotkeySettingsTab;
@@ -122,7 +124,7 @@ private:
     QLabel *m_blurIntensityLabel;
     QComboBox *m_blurTypeCombo;
 
-    // Pin Window settings (in General tab)
+    // Pin Window settings (in Advanced tab)
     QSlider *m_pinWindowOpacitySlider;
     QLabel *m_pinWindowOpacityLabel;
     QSlider *m_pinWindowOpacityStepSlider;
