@@ -2,6 +2,10 @@
 
 #include "region/SelectionDirtyRegionPlanner.h"
 
+namespace {
+constexpr int kCrosshairMargin = 2;
+}
+
 class tst_SelectionDirtyRegionPlanner : public QObject
 {
     Q_OBJECT
@@ -40,6 +44,8 @@ void tst_SelectionDirtyRegionPlanner::testSelectionDragIncludesExpandedSelection
     params.lastSelectionRect = QRect(120, 90, 180, 110);
     params.currentMagnifierRect = QRect(560, 120, 190, 215);
     params.lastMagnifierRect = QRect(420, 110, 190, 215);
+    params.currentCursorPos = QPoint(300, 260);
+    params.lastCursorPos = QPoint(240, 220);
     params.viewportSize = QSize(1200, 800);
 
     const QRegion dirty = planner.planSelectionDragRegion(params);
@@ -55,6 +61,19 @@ void tst_SelectionDirtyRegionPlanner::testSelectionDragIncludesExpandedSelection
         -dimPadding, -dimPadding, dimPadding, dimPadding)));
     QVERIFY(dirty.contains(lastDimInfo.adjusted(
         -dimPadding, -dimPadding, dimPadding, dimPadding)));
+
+    const QRect currentHStrip(
+        0,
+        params.currentCursorPos.y() - kCrosshairMargin,
+        params.viewportSize.width(),
+        kCrosshairMargin * 2 + 1);
+    const QRect lastHStrip(
+        0,
+        params.lastCursorPos.y() - kCrosshairMargin,
+        params.viewportSize.width(),
+        kCrosshairMargin * 2 + 1);
+    QVERIFY(dirty.contains(currentHStrip));
+    QVERIFY(dirty.contains(lastHStrip));
 }
 
 void tst_SelectionDirtyRegionPlanner::testSelectionDragIncludesToolbarAndRegionControlHistory()
@@ -70,6 +89,8 @@ void tst_SelectionDirtyRegionPlanner::testSelectionDragIncludesToolbarAndRegionC
     params.lastRegionControlRect = QRect(250, 140, 110, 32);
     params.currentMagnifierRect = QRect(600, 140, 190, 215);
     params.lastMagnifierRect = QRect(600, 140, 190, 215);
+    params.currentCursorPos = QPoint(410, 260);
+    params.lastCursorPos = QPoint(360, 235);
     params.viewportSize = QSize(1280, 720);
 
     const QRegion dirty = planner.planSelectionDragRegion(params);
@@ -87,11 +108,26 @@ void tst_SelectionDirtyRegionPlanner::testHoverRegionIncludesOldAndNewMagnifier(
     SelectionDirtyRegionPlanner::HoverParams params;
     params.currentMagnifierRect = QRect(680, 200, 190, 215);
     params.lastMagnifierRect = QRect(540, 180, 190, 215);
+    params.currentCursorPos = QPoint(760, 320);
+    params.lastCursorPos = QPoint(620, 260);
     params.viewportSize = QSize(1600, 900);
 
     const QRegion dirty = planner.planHoverRegion(params);
     QVERIFY(dirty.contains(params.currentMagnifierRect));
     QVERIFY(dirty.contains(params.lastMagnifierRect));
+
+    const QRect currentVerticalStrip(
+        params.currentCursorPos.x() - kCrosshairMargin,
+        0,
+        kCrosshairMargin * 2 + 1,
+        params.viewportSize.height());
+    const QRect lastVerticalStrip(
+        params.lastCursorPos.x() - kCrosshairMargin,
+        0,
+        kCrosshairMargin * 2 + 1,
+        params.viewportSize.height());
+    QVERIFY(dirty.contains(currentVerticalStrip));
+    QVERIFY(dirty.contains(lastVerticalStrip));
 }
 
 QTEST_MAIN(tst_SelectionDirtyRegionPlanner)

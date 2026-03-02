@@ -1139,20 +1139,16 @@ void RegionInputHandler::handleThrottledUpdate()
         params.lastRegionControlRect = m_lastRegionControlRect;
         params.currentMagnifierRect = currentMagnifierRect;
         params.lastMagnifierRect = m_lastMagnifierRect;
+        params.currentCursorPos = state().currentPoint;
+        params.lastCursorPos = m_lastCrosshairPoint;
         params.viewportSize = m_parentWidget->size();
+        const QRegion dirtyRegion = m_dirtyRegionPlanner.planSelectionDragRegion(params);
+        m_parentWidget->update(dirtyRegion);
         m_lastSelectionRect = currentSelectionRect;
         m_lastMagnifierRect = currentMagnifierRect;
         m_lastToolbarRect = currentToolbarRect;
         m_lastRegionControlRect = currentRegionControlRect;
         m_lastCrosshairPoint = state().currentPoint;
-#if defined(Q_OS_WIN)
-        // Windows compositor can leave magnifier trails with clipped partial updates
-        // on top-level frameless tool windows. Force a full repaint to avoid ghosting.
-        m_parentWidget->update();
-#else
-        const QRegion dirtyRegion = m_dirtyRegionPlanner.planSelectionDragRegion(params);
-        m_parentWidget->update(dirtyRegion);
-#endif
     }
     else if (state().isDrawing) {
         if (m_updateThrottler->shouldUpdate(UpdateThrottler::ThrottleType::Annotation)) {
@@ -1174,16 +1170,13 @@ void RegionInputHandler::handleThrottledUpdate()
         SelectionDirtyRegionPlanner::HoverParams params;
         params.currentMagnifierRect = currentMagnifierRect;
         params.lastMagnifierRect = m_lastMagnifierRect;
+        params.currentCursorPos = state().currentPoint;
+        params.lastCursorPos = m_lastCrosshairPoint;
         params.viewportSize = m_parentWidget->size();
-        m_lastMagnifierRect = currentMagnifierRect;
-        m_lastCrosshairPoint = state().currentPoint;
-#if defined(Q_OS_WIN)
-        // Same as drag path: full repaint prevents lingering magnifier artifacts on Windows.
-        m_parentWidget->update();
-#else
         const QRegion dirtyRegion = m_dirtyRegionPlanner.planHoverRegion(params);
         m_parentWidget->update(dirtyRegion);
-#endif
+        m_lastMagnifierRect = currentMagnifierRect;
+        m_lastCrosshairPoint = state().currentPoint;
     }
 }
 

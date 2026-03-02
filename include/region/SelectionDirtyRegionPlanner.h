@@ -25,6 +25,8 @@ public:
         QRect lastRegionControlRect;
         QRect currentMagnifierRect;
         QRect lastMagnifierRect;
+        QPoint currentCursorPos;
+        QPoint lastCursorPos;
         QSize viewportSize;
         bool includeMagnifier = true;
     };
@@ -32,6 +34,8 @@ public:
     struct HoverParams {
         QRect currentMagnifierRect;
         QRect lastMagnifierRect;
+        QPoint currentCursorPos;
+        QPoint lastCursorPos;
         QSize viewportSize;
     };
 
@@ -59,7 +63,10 @@ private:
     static constexpr int kMagnifierInfoHeight = 85;
     static constexpr int kMagnifierOffset = 20;
     static constexpr int kMagnifierOuterPadding = 5;
+    static constexpr int kCrosshairMargin = 2;
     static constexpr int kViewportMargin = 10;
+
+    QRegion crosshairStripRegion(const QPoint& cursorPos, const QSize& viewportSize) const;
 };
 
 #endif // SELECTIONDIRTYREGIONPLANNER_H

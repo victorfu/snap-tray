@@ -106,6 +106,9 @@ QRegion SelectionDirtyRegionPlanner::planSelectionDragRegion(const SelectionDrag
     addPaddedRect(params.currentRegionControlRect);
     addPaddedRect(params.lastRegionControlRect);
 
+    dirtyRegion += crosshairStripRegion(params.lastCursorPos, params.viewportSize);
+    dirtyRegion += crosshairStripRegion(params.currentCursorPos, params.viewportSize);
+
     return clippedToViewport(dirtyRegion, params.viewportSize);
 }
 
@@ -118,6 +121,10 @@ QRegion SelectionDirtyRegionPlanner::planHoverRegion(const HoverParams& params) 
     if (!params.lastMagnifierRect.isEmpty()) {
         dirtyRegion += params.lastMagnifierRect;
     }
+
+    dirtyRegion += crosshairStripRegion(params.lastCursorPos, params.viewportSize);
+    dirtyRegion += crosshairStripRegion(params.currentCursorPos, params.viewportSize);
+
     return clippedToViewport(dirtyRegion, params.viewportSize);
 }
 
@@ -128,4 +135,31 @@ QRegion SelectionDirtyRegionPlanner::clippedToViewport(
         return region;
     }
     return region.intersected(QRegion(QRect(QPoint(0, 0), viewportSize)));
+}
+
+QRegion SelectionDirtyRegionPlanner::crosshairStripRegion(
+    const QPoint& cursorPos, const QSize& viewportSize) const
+{
+    if (!viewportSize.isValid()) {
+        return QRegion();
+    }
+
+    const QRect viewportRect(QPoint(0, 0), viewportSize);
+    if (!viewportRect.contains(cursorPos)) {
+        return QRegion();
+    }
+
+    QRegion region;
+    region += QRect(
+        0,
+        cursorPos.y() - kCrosshairMargin,
+        viewportSize.width(),
+        (kCrosshairMargin * 2) + 1);
+    region += QRect(
+        cursorPos.x() - kCrosshairMargin,
+        0,
+        (kCrosshairMargin * 2) + 1,
+        viewportSize.height());
+
+    return clippedToViewport(region, viewportSize);
 }
