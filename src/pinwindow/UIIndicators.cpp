@@ -51,18 +51,6 @@ void UIIndicators::ensureOpacityLabelCreated()
     connect(m_opacityLabelTimer, &QTimer::timeout, m_opacityLabel, &QLabel::hide);
 }
 
-void UIIndicators::ensureToastLabelCreated()
-{
-    if (m_toastLabel) return;
-
-    m_toastLabel = new QLabel(m_parentWidget);
-    m_toastLabel->hide();
-
-    m_toastTimer = new QTimer(this);
-    m_toastTimer->setSingleShot(true);
-    connect(m_toastTimer, &QTimer::timeout, m_toastLabel, &QLabel::hide);
-}
-
 void UIIndicators::ensureClickThroughExitButtonCreated()
 {
     if (m_clickThroughExitButton) return;
@@ -110,39 +98,3 @@ void UIIndicators::showClickThroughIndicator(bool enabled)
     }
 }
 
-void UIIndicators::showToast(bool success, const QString& message)
-{
-    ensureToastLabelCreated();
-    if (success) {
-        m_toastLabel->setStyleSheet(
-            "QLabel {"
-            "  background-color: rgba(34, 139, 34, 220);"
-            "  color: white;"
-            "  padding: 8px 16px;"
-            "  border-radius: 6px;"
-            "  font-size: 13px;"
-            "  font-weight: bold;"
-            "}"
-        );
-    } else {
-        m_toastLabel->setStyleSheet(
-            "QLabel {"
-            "  background-color: rgba(200, 60, 60, 220);"
-            "  color: white;"
-            "  padding: 8px 16px;"
-            "  border-radius: 6px;"
-            "  font-size: 13px;"
-            "  font-weight: bold;"
-            "}"
-        );
-    }
-
-    m_toastLabel->setText(message);
-    m_toastLabel->adjustSize();
-    int x = (m_parentWidget->width() - m_toastLabel->width()) / 2;
-    int y = m_shadowMargin + 12;
-    m_toastLabel->move(x, y);
-    m_toastLabel->show();
-    m_toastLabel->raise();
-    m_toastTimer->start(2500);
-}

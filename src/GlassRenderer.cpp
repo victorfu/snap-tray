@@ -26,6 +26,52 @@ void GlassRenderer::drawGlassPanel(QPainter& painter,
     painter.restore();
 }
 
+void GlassRenderer::drawGlassPanel(QPainter& painter,
+                                   const QRect& rect,
+                                   const QColor& background,
+                                   const QColor& highlight,
+                                   const QColor& border,
+                                   int radius)
+{
+    painter.save();
+    painter.setRenderHint(QPainter::Antialiasing, true);
+
+    // Glass background with gradient simulation
+    QLinearGradient gradient(rect.topLeft(), rect.bottomLeft());
+    QColor topColor = background;
+    topColor.setAlpha(std::min(255, topColor.alpha() + 20));
+    gradient.setColorAt(0, topColor);
+    gradient.setColorAt(1, background);
+
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(gradient);
+    painter.drawRoundedRect(rect, radius, radius);
+
+    // Hairline border
+    painter.setPen(QPen(border, 1));
+    painter.setBrush(Qt::NoBrush);
+    painter.drawRoundedRect(rect, radius, radius);
+
+    // Inner highlight at top edge
+    if (highlight.alpha() > 0) {
+        QPainterPath clipPath;
+        clipPath.addRoundedRect(rect.adjusted(1, 1, -1, -rect.height() / 2), radius - 1, radius - 1);
+
+        QLinearGradient highlightGradient(rect.topLeft(), QPoint(rect.left(), rect.top() + 8));
+        highlightGradient.setColorAt(0, highlight);
+        highlightGradient.setColorAt(1, Qt::transparent);
+
+        painter.save();
+        painter.setClipPath(clipPath);
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(highlightGradient);
+        painter.drawRect(rect);
+        painter.restore();
+    }
+
+    painter.restore();
+}
+
 void GlassRenderer::drawGlassBackground(QPainter& painter,
                                         const QRect& rect,
                                         const ToolbarStyleConfig& config,

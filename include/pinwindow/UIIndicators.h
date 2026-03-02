@@ -24,16 +24,12 @@ public:
     void showOpacityIndicator(qreal opacity);
     void showClickThroughIndicator(bool enabled);
 
-    // Toast notification
-    void showToast(bool success, const QString& message);
-
 signals:
     void exitClickThroughRequested();
 
 private:
     void ensureZoomLabelCreated();
     void ensureOpacityLabelCreated();
-    void ensureToastLabelCreated();
     void ensureClickThroughExitButtonCreated();
 
     QWidget* m_parentWidget = nullptr;
@@ -50,9 +46,6 @@ private:
     // Click-through exit button (independent floating window)
     ClickThroughExitButton* m_clickThroughExitButton = nullptr;
 
-    // Toast notification
-    QLabel* m_toastLabel = nullptr;
-    QTimer* m_toastTimer = nullptr;
 };
 
 #endif // UIINDICATORS_H

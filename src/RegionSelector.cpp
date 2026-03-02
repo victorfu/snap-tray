@@ -30,7 +30,8 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include "settings/RegionCaptureSettingsManager.h"
 #include "OCRResultDialog.h"
 #include "QRCodeResultDialog.h"
-#include "ui/GlobalToast.h"
+#include "ui/UnifiedToast.h"
+#include "ui/UnifiedToast.h"
 #include "ui/SharePasswordDialog.h"
 #include "ui/ShareResultDialog.h"
 #include "tools/handlers/MosaicToolHandler.h"
@@ -288,13 +289,8 @@ RegionSelector::RegionSelector(QWidget* parent)
     // EmojiPicker is lazy-initialized via ensureEmojiPicker() when first needed
     // LoadingSpinner is lazy-initialized via ensureLoadingSpinner() when first needed
 
-    // OCR toast label (shows success/failure message)
-    m_ocrToastLabel = new QLabel(this);
-    m_ocrToastLabel->hide();
-
-    m_ocrToastTimer = new QTimer(this);
-    m_ocrToastTimer->setSingleShot(true);
-    connect(m_ocrToastTimer, &QTimer::timeout, m_ocrToastLabel, &QLabel::hide);
+    // Selection toast (shows OCR/QR/auto-blur results near selection)
+    m_selectionToast = new SnapTray::UnifiedToast(this);
 
     m_screenSwitchTimer = new QTimer(this);
     m_screenSwitchTimer->setInterval(50);
@@ -544,9 +540,9 @@ RegionSelector::RegionSelector(QWidget* parent)
             if (m_loadingSpinner && !(m_ocrInProgress || m_qrCodeInProgress || m_autoBlurInProgress)) {
                 m_loadingSpinner->stop();
             }
-            showSelectionToast(
+            m_selectionToast->showNearRect(SnapTray::UnifiedToast::Level::Error,
                 errorMessage.isEmpty() ? tr("Failed to share screenshot") : errorMessage,
-                "rgba(200, 60, 60, 220)");
+                m_selectionManager->selectionRect());
             m_pendingSharePassword.clear();
             update();
         });
@@ -1918,7 +1914,8 @@ void RegionSelector::shareToUrl()
     const QPixmap selectedRegion = m_exportManager->getSelectedRegion(
         m_selectionManager->selectionRect(), effectiveCornerRadius());
     if (selectedRegion.isNull()) {
-        showSelectionToast(tr("Failed to process selected region"), "rgba(200, 60, 60, 220)");
+        m_selectionToast->showNearRect(SnapTray::UnifiedToast::Level::Error,
+            tr("Failed to process selected region"), m_selectionManager->selectionRect());
         return;
     }
 
@@ -2414,7 +2411,8 @@ void RegionSelector::performOCR()
         if (m_loadingSpinner) {
             m_loadingSpinner->stop();
         }
-        showSelectionToast(tr("Failed to process selected region"), "rgba(200, 60, 60, 220)");
+        m_selectionToast->showNearRect(SnapTray::UnifiedToast::Level::Error,
+            tr("Failed to process selected region"), m_selectionManager->selectionRect());
         update();
         return;
     }
@@ -2444,12 +2442,14 @@ void RegionSelector::onOCRComplete(const OCRResult& result)
         }
 
         QGuiApplication::clipboard()->setText(result.text);
-        showSelectionToast(tr("Copied %1 characters").arg(result.text.length()),
-                           "rgba(34, 139, 34, 220)");
+        m_selectionToast->showNearRect(SnapTray::UnifiedToast::Level::Success,
+            tr("Copied %1 characters").arg(result.text.length()),
+            m_selectionManager->selectionRect());
     }
     else {
         QString msg = result.error.isEmpty() ? tr("No text found") : result.error;
-        showSelectionToast(msg, "rgba(200, 60, 60, 220)");
+        m_selectionToast->showNearRect(SnapTray::UnifiedToast::Level::Error,
+            msg, m_selectionManager->selectionRect());
     }
 
     update();
@@ -2465,9 +2465,8 @@ void RegionSelector::showOCRResultDialog(const OCRResult& result)
     connect(dialog, &OCRResultDialog::textCopied, this, [this](const QString &copiedText) {
         qDebug() << "OCR text copied:" << copiedText.length() << "characters";
 
-        // Show success toast using GlobalToast
-        GlobalToast::instance().showToast(
-            GlobalToast::Success,
+        SnapTray::UnifiedToast::screenToast().showToast(
+            SnapTray::UnifiedToast::Level::Success,
             tr("OCR"),
             tr("Copied %1 characters").arg(copiedText.length())
         );
@@ -2502,7 +2501,8 @@ void RegionSelector::performQRCodeScan()
         if (m_loadingSpinner) {
             m_loadingSpinner->stop();
         }
-        showSelectionToast(tr("Failed to process selected region"), "rgba(200, 60, 60, 220)");
+        m_selectionToast->showNearRect(SnapTray::UnifiedToast::Level::Error,
+            tr("Failed to process selected region"), m_selectionManager->selectionRect());
         update();
         return;
     }
@@ -2565,7 +2565,8 @@ void RegionSelector::onQRCodeComplete(bool success, const QString& text, const Q
     }
     else {
         QString msg = error.isEmpty() ? tr("No QR code found") : error;
-        showSelectionToast(msg, "rgba(200, 60, 60, 220)");
+        m_selectionToast->showNearRect(SnapTray::UnifiedToast::Level::Error,
+            msg, m_selectionManager->selectionRect());
     }
 
     update();
@@ -2595,7 +2596,8 @@ void RegionSelector::performAutoBlur()
         if (m_loadingSpinner) {
             m_loadingSpinner->stop();
         }
-        showSelectionToast(tr("Failed to process selected region"), "rgba(200, 60, 60, 220)");
+        m_selectionToast->showNearRect(SnapTray::UnifiedToast::Level::Error,
+            tr("Failed to process selected region"), m_selectionManager->selectionRect());
         update();
         return;
     }
@@ -2621,9 +2623,9 @@ void RegionSelector::performAutoBlur()
         if (m_loadingSpinner) {
             m_loadingSpinner->stop();
         }
-        showSelectionToast(
+        m_selectionToast->showNearRect(SnapTray::UnifiedToast::Level::Error,
             faceUnavailableError.isEmpty() ? tr("Detection unavailable") : faceUnavailableError,
-            "rgba(200, 60, 60, 220)");
+            m_selectionManager->selectionRect());
         update();
         return;
     }
@@ -2798,55 +2800,33 @@ void RegionSelector::onAutoBlurComplete(bool success, int faceCount, int credent
     }
 
     QString msg;
-    QString bgColor;
+    auto level = SnapTray::UnifiedToast::Level::Info;
     if (success && faceCount > 0 && credentialCount > 0) {
         msg = tr("Blurred %1 face(s), %2 credential(s)").arg(faceCount).arg(credentialCount);
-        bgColor = "rgba(34, 139, 34, 220)";
+        level = SnapTray::UnifiedToast::Level::Success;
     }
     else if (success && faceCount > 0) {
         msg = tr("Blurred %1 face(s)").arg(faceCount);
-        bgColor = "rgba(34, 139, 34, 220)";  // Green for success
+        level = SnapTray::UnifiedToast::Level::Success;
     }
     else if (success && credentialCount > 0) {
         msg = tr("Blurred %1 credential(s)").arg(credentialCount);
-        bgColor = "rgba(34, 139, 34, 220)";
+        level = SnapTray::UnifiedToast::Level::Success;
     }
     else if (success) {
         msg = tr("No faces or credentials detected");
-        bgColor = "rgba(100, 100, 100, 220)";  // Gray for nothing found
+        level = SnapTray::UnifiedToast::Level::Info;
     }
     else {
         msg = error.isEmpty() ? tr("Detection failed") : error;
-        bgColor = "rgba(200, 60, 60, 220)";  // Red for failure
+        level = SnapTray::UnifiedToast::Level::Error;
     }
 
-    showSelectionToast(msg, bgColor);
+    m_selectionToast->showNearRect(level, msg, m_selectionManager->selectionRect());
 
     update();
 }
 
-void RegionSelector::showSelectionToast(const QString &message, const QString &bgColor)
-{
-    m_ocrToastLabel->setStyleSheet(QString(
-        "QLabel {"
-        "  background-color: %1;"
-        "  color: white;"
-        "  padding: 8px 16px;"
-        "  border-radius: 6px;"
-        "  font-size: 13px;"
-        "  font-weight: bold;"
-        "}"
-    ).arg(bgColor));
-    m_ocrToastLabel->setText(message);
-    m_ocrToastLabel->adjustSize();
-    QRect sel = m_selectionManager->selectionRect();
-    int x = sel.center().x() - m_ocrToastLabel->width() / 2;
-    int y = sel.top() + 12;
-    m_ocrToastLabel->move(x, y);
-    m_ocrToastLabel->show();
-    m_ocrToastLabel->raise();
-    m_ocrToastTimer->start(2500);
-}
 
 QPoint RegionSelector::localToGlobal(const QPoint& localPos) const
 {

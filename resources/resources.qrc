@@ -54,6 +54,10 @@
         <file>icons/blackboard.svg</file>
         <file>icons/crop.svg</file>
         <file>icons/measure.svg</file>
+        <file>icons/toast-success.svg</file>
+        <file>icons/toast-error.svg</file>
+        <file>icons/toast-warning.svg</file>
+        <file>icons/toast-info.svg</file>
     </qresource>
     <qresource prefix="/cascades">
         <file>cascades/haarcascade_frontalface_default.xml</file>

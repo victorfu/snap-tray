@@ -706,8 +706,10 @@ add_library(snaptray_ui STATIC
     src/share/ShareUploadClient.cpp
 
     # Global UI components
-    src/ui/GlobalToast.cpp
-    include/ui/GlobalToast.h
+    src/ui/DesignTokens.cpp
+    src/ui/UnifiedToast.cpp
+    include/ui/DesignTokens.h
+    include/ui/UnifiedToast.h
     include/ui/SharePasswordDialog.h
     include/ui/ShareResultDialog.h
     include/share/ShareUploadClient.h

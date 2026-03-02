@@ -62,6 +62,7 @@ class MultiRegionListPanel;
 class AnnotationContext;
 class CaptureShortcutHintsOverlay;
 class ShareUploadClient;
+namespace SnapTray { class UnifiedToast; }
 
 // ShapeType and ShapeFillMode are defined in annotations/ShapeAnnotation.h
 
@@ -280,8 +281,7 @@ private:
     bool m_shareInProgress = false;
     QString m_pendingSharePassword;
     LoadingSpinnerRenderer *m_loadingSpinner = nullptr;
-    class QLabel *m_ocrToastLabel;
-    class QTimer *m_ocrToastTimer;
+    SnapTray::UnifiedToast *m_selectionToast = nullptr;
 
     void performOCR();
     void onOCRComplete(const OCRResult &result);
@@ -301,9 +301,6 @@ private:
 
     void performAutoBlur();
     void onAutoBlurComplete(bool success, int faceCount, int credentialCount, const QString &error);
-
-    // Shared toast display for OCR, QR code, and auto-blur results
-    void showSelectionToast(const QString &message, const QString &bgColor);
 
     // Inline text editing
     InlineTextEditor *m_textEditor;

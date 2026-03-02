@@ -29,6 +29,17 @@ public:
                                int radiusOverride = -1);
 
     /**
+     * @brief Draw a glass panel with individual color parameters.
+     * Useful for non-toolbar widgets (toasts, badges) that don't have a full ToolbarStyleConfig.
+     */
+    static void drawGlassPanel(QPainter& painter,
+                               const QRect& rect,
+                               const QColor& background,
+                               const QColor& highlight,
+                               const QColor& border,
+                               int radius);
+
+    /**
      * @brief Draw only the glass background (no shadow or border).
      * Useful for tooltips or overlays that need custom handling.
      */
