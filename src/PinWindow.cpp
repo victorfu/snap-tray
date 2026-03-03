@@ -508,8 +508,7 @@ PinWindow::~PinWindow()
         m_beautifyPanel->hide();
         m_beautifyPanel.reset();
     }
-    delete m_shapeAnnotationEditor;
-    m_shapeAnnotationEditor = nullptr;
+    m_shapeAnnotationEditor.reset();
     // InlineTextEditor, TextAnnotationEditor are QObjects parented to this
 }
 
@@ -2713,12 +2712,12 @@ void PinWindow::initializeAnnotationComponents()
     // Initialize text annotation editor components
     m_textEditor = new InlineTextEditor(this);
     m_textAnnotationEditor = new TextAnnotationEditor(this);
-    m_shapeAnnotationEditor = new ShapeAnnotationEditor();
+    m_shapeAnnotationEditor = std::make_unique<ShapeAnnotationEditor>();
     m_shapeAnnotationEditor->setAnnotationLayer(m_annotationLayer);
     m_textAnnotationEditor->setCoordinateMappers(
         [this](const QPointF& displayPos) { return mapToOriginalCoords(displayPos); },
         [this](const QPointF& originalPos) { return mapFromOriginalCoords(originalPos); });
-    m_toolManager->setShapeAnnotationEditor(m_shapeAnnotationEditor);
+    m_toolManager->setShapeAnnotationEditor(m_shapeAnnotationEditor.get());
 
     m_annotationContext = std::make_unique<AnnotationContext>(*this);
     m_annotationContext->setupTextAnnotationEditor(false, false);

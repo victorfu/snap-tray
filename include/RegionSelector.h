@@ -309,7 +309,7 @@ private:
     TextAnnotationEditor *m_textAnnotationEditor;
 
     // Shape annotation editor component (handles transform/drag interactions).
-    ShapeAnnotationEditor *m_shapeAnnotationEditor = nullptr;
+    std::unique_ptr<ShapeAnnotationEditor> m_shapeAnnotationEditor;
 
     // Color picker dialog
     std::unique_ptr<snaptray::colorwidgets::ColorPickerDialogCompat> m_colorPickerDialog;

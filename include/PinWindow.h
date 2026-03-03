@@ -409,7 +409,7 @@ private:
     ToolManager* m_toolManager = nullptr;
     InlineTextEditor* m_textEditor = nullptr;
     TextAnnotationEditor* m_textAnnotationEditor = nullptr;
-    ShapeAnnotationEditor* m_shapeAnnotationEditor = nullptr;
+    std::unique_ptr<ShapeAnnotationEditor> m_shapeAnnotationEditor;
     RegionSettingsHelper* m_settingsHelper = nullptr;
     bool m_toolbarVisible = false;
     bool m_annotationMode = false;

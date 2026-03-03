@@ -233,7 +233,7 @@ private:
     // Text editing components
     InlineTextEditor *m_textEditor;
     TextAnnotationEditor *m_textAnnotationEditor;
-    ShapeAnnotationEditor *m_shapeAnnotationEditor = nullptr;
+    std::unique_ptr<ShapeAnnotationEditor> m_shapeAnnotationEditor;
     RegionSettingsHelper *m_settingsHelper;
 
     // Background mode

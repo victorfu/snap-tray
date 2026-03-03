@@ -190,13 +190,13 @@ ScreenCanvas::ScreenCanvas(QWidget* parent)
 
     // Initialize text annotation editor component
     m_textAnnotationEditor = new TextAnnotationEditor(this);
-    m_shapeAnnotationEditor = new ShapeAnnotationEditor();
+    m_shapeAnnotationEditor = std::make_unique<ShapeAnnotationEditor>();
     m_shapeAnnotationEditor->setAnnotationLayer(m_annotationLayer);
 
     // Provide text dependencies to ToolManager (TextToolHandler).
     m_toolManager->setInlineTextEditor(m_textEditor);
     m_toolManager->setTextAnnotationEditor(m_textAnnotationEditor);
-    m_toolManager->setShapeAnnotationEditor(m_shapeAnnotationEditor);
+    m_toolManager->setShapeAnnotationEditor(m_shapeAnnotationEditor.get());
     m_toolManager->setTextEditingBounds(rect());
     m_toolManager->setTextColorSyncCallback([this](const QColor& color) {
         syncColorToAllWidgets(color);
@@ -254,8 +254,7 @@ ScreenCanvas::~ScreenCanvas()
     if (m_colorPickerDialog) {
         m_colorPickerDialog->close();
     }
-    delete m_shapeAnnotationEditor;
-    m_shapeAnnotationEditor = nullptr;
+    m_shapeAnnotationEditor.reset();
 }
 
 void ScreenCanvas::initializeIcons()
