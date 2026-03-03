@@ -12,13 +12,15 @@
 #include "ImageColorSpaceHelper.h"
 #include "cli/IPCProtocol.h"
 #include "hotkey/HotkeyManager.h"
-#include "mcp/MCPServer.h"
-#include "settings/MCPSettingsManager.h"
 #include "ui/UnifiedToast.h"
 #include "video/RecordingPreviewWindow.h"
 #include "update/UpdateChecker.h"
 #include "update/UpdateDialog.h"
 #include "utils/CoordinateHelper.h"
+#ifdef SNAPTRAY_ENABLE_MCP
+#include "mcp/MCPServer.h"
+#include "settings/MCPSettingsManager.h"
+#endif
 
 #include <QFile>
 #include <QJsonDocument>
@@ -428,11 +430,14 @@ void MainApplication::initialize()
             this, &MainApplication::onUpdateAvailable);
     m_updateChecker->startPeriodicCheck();
 
+#ifdef SNAPTRAY_ENABLE_MCP
     if (MCPSettingsManager::instance().isEnabled()) {
         startMcpServer();
     }
+#endif
 }
 
+#ifdef SNAPTRAY_ENABLE_MCP
 bool MainApplication::startMcpServer()
 {
     if (!m_mcpServer) {
@@ -471,6 +476,7 @@ void MainApplication::stopMcpServer()
     m_mcpServer->stop();
     qDebug() << "MainApplication: MCP server stopped";
 }
+#endif
 
 void MainApplication::startRegionCapture(bool showShortcutHintsOnEntry)
 {
@@ -688,8 +694,10 @@ void MainApplication::onSettings()
     // Connect OCR languages change signal
     connect(m_settingsDialog, &SettingsDialog::ocrLanguagesChanged,
         m_pinWindowManager, &PinWindowManager::updateOcrLanguages);
+#ifdef SNAPTRAY_ENABLE_MCP
     connect(m_settingsDialog, &SettingsDialog::mcpEnabledChanged,
         this, &MainApplication::onMcpEnabledChanged);
+#endif
 
     // Clean up pointer when dialog is destroyed (WA_DeleteOnClose triggers this)
     connect(m_settingsDialog, &QDialog::destroyed,
@@ -703,6 +711,7 @@ void MainApplication::onSettings()
     m_settingsDialog->activateWindow();
 }
 
+#ifdef SNAPTRAY_ENABLE_MCP
 void MainApplication::onMcpEnabledChanged(bool enabled)
 {
     if (enabled) {
@@ -712,6 +721,7 @@ void MainApplication::onMcpEnabledChanged(bool enabled)
         stopMcpServer();
     }
 }
+#endif
 
 void MainApplication::onHotkeyAction(SnapTray::HotkeyAction action)
 {

@@ -9,7 +9,6 @@
 #include "settings/Settings.h"
 #include "settings/AutoBlurSettingsManager.h"
 #include "settings/FileSettingsManager.h"
-#include "settings/MCPSettingsManager.h"
 #include "settings/PinWindowSettingsManager.h"
 #include "settings/OCRSettingsManager.h"
 #include "settings/RegionCaptureSettingsManager.h"
@@ -20,6 +19,9 @@
 #include "update/UpdateChecker.h"
 #include "update/UpdateDialog.h"
 #include "update/UpdateSettingsManager.h"
+#ifdef SNAPTRAY_ENABLE_MCP
+#include "settings/MCPSettingsManager.h"
+#endif
 #include <QDir>
 #include <QSettings>
 #include <QPushButton>
@@ -346,6 +348,7 @@ void SettingsDialog::setupAdvancedTab(QWidget* tab)
         RegionCaptureSettingsManager::instance().isShortcutHintsEnabled());
     layout->addWidget(m_showShortcutHintsCheckbox);
 
+#ifdef SNAPTRAY_ENABLE_MCP
     // ========== MCP Section ==========
     layout->addSpacing(16);
     QLabel* mcpSectionLabel = new QLabel(tr("MCP"), tab);
@@ -355,6 +358,7 @@ void SettingsDialog::setupAdvancedTab(QWidget* tab)
     m_mcpEnabledCheckbox = new QCheckBox(tr("Enable MCP server"), tab);
     m_mcpEnabledCheckbox->setChecked(MCPSettingsManager::instance().isEnabled());
     layout->addWidget(m_mcpEnabledCheckbox);
+#endif
 
     // ========== Blur Section ==========
     layout->addSpacing(16);
@@ -937,6 +941,7 @@ void SettingsDialog::onSave()
             m_showShortcutHintsCheckbox->isChecked());
     }
 
+#ifdef SNAPTRAY_ENABLE_MCP
     if (m_mcpEnabledCheckbox) {
         auto& mcpSettings = MCPSettingsManager::instance();
         const bool currentEnabled = mcpSettings.isEnabled();
@@ -946,6 +951,7 @@ void SettingsDialog::onSave()
             emit mcpEnabledChanged(newEnabled);
         }
     }
+#endif
 
     // Save watermark settings
     WatermarkRenderer::Settings watermarkSettings;

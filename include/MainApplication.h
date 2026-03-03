@@ -24,11 +24,13 @@ class UpdateChecker;
 class PinHistoryWindow;
 struct ReleaseInfo;
 
+#ifdef SNAPTRAY_ENABLE_MCP
 namespace SnapTray {
 namespace MCP {
 class MCPServer;
 }
 }
+#endif
 
 class MainApplication : public QObject
 {
@@ -63,12 +65,16 @@ private slots:
     void onHotkeyChanged(SnapTray::HotkeyAction action, const SnapTray::HotkeyConfig& config);
     void onHotkeyInitializationCompleted(const QStringList& failedHotkeys);
     void onUpdateAvailable(const ReleaseInfo& release);
+#ifdef SNAPTRAY_ENABLE_MCP
     void onMcpEnabledChanged(bool enabled);
+#endif
 
 private:
     void startRegionCapture(bool showShortcutHintsOnEntry);
+#ifdef SNAPTRAY_ENABLE_MCP
     bool startMcpServer();
     void stopMcpServer();
+#endif
     void updateTrayMenuHotkeyText();
     void updatePinsVisibilityActionText();
     void updateActionHotkeyText(QAction* action,
@@ -93,7 +99,9 @@ private:
     QPointer<PinHistoryWindow> m_pinHistoryWindow;
     QPointer<RecordingPreviewWindow> m_previewWindow;
     UpdateChecker *m_updateChecker;
+#ifdef SNAPTRAY_ENABLE_MCP
     std::unique_ptr<SnapTray::MCP::MCPServer> m_mcpServer;
+#endif
 };
 
 #endif // MAINAPPLICATION_H

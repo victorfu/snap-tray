@@ -46,7 +46,7 @@ void tst_MCPSettingsManager::testSingletonInstance()
 
 void tst_MCPSettingsManager::testDefaultValueEnabled()
 {
-    QCOMPARE(MCPSettingsManager::instance().isEnabled(), true);
+    QCOMPARE(MCPSettingsManager::instance().isEnabled(), MCPSettingsManager::kDefaultEnabled);
 }
 
 void tst_MCPSettingsManager::testSetDisabledRoundtrip()
@@ -63,7 +63,7 @@ void tst_MCPSettingsManager::testSetEnabledRoundtrip()
     QCOMPARE(manager.isEnabled(), false);
 
     manager.setEnabled(true);
-    QCOMPARE(manager.isEnabled(), true);
+    QCOMPARE(manager.isEnabled(), MCPSettingsManager::kDefaultEnabled);
 }
 
 QTEST_MAIN(tst_MCPSettingsManager)

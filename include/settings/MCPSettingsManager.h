@@ -9,7 +9,11 @@ public:
     bool isEnabled() const;
     void setEnabled(bool enabled);
 
+#ifdef SNAPTRAY_ENABLE_MCP
     static constexpr bool kDefaultEnabled = true;
+#else
+    static constexpr bool kDefaultEnabled = false;
+#endif
 
 private:
     MCPSettingsManager() = default;

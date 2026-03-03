@@ -74,6 +74,9 @@ endif()
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# MCP features are only available in Debug builds.
+add_compile_definitions($<$<CONFIG:Debug>:SNAPTRAY_ENABLE_MCP>)
+
 # ============================================================================
 # MSVC sccache Compatibility: Use /Z7 instead of /Zi for cacheable debug info
 # ============================================================================
@@ -923,7 +926,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 
 # Link all library targets - they handle their own dependencies
 target_link_libraries(${PROJECT_NAME} PRIVATE
-    snaptray_mcp
+    $<$<CONFIG:Debug>:snaptray_mcp>
     snaptray_ui
     snaptray_platform
     snaptray_algorithms
