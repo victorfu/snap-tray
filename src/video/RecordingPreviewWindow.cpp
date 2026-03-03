@@ -8,8 +8,10 @@
 #include "encoding/NativeGifEncoder.h"
 #include "encoding/WebPAnimEncoder.h"
 #include "GlassRenderer.h"
+#include "GlassPanelCSS.h"
 #include "IconRenderer.h"
 #include "ToolbarStyle.h"
+#include "utils/DialogThemeUtils.h"
 
 #include <QAbstractButton>
 #include <QCloseEvent>
@@ -40,16 +42,7 @@
 #include <QVBoxLayout>
 #include <memory>
 
-namespace {
-QString rgbaString(const QColor &color)
-{
-    return QString("rgba(%1, %2, %3, %4)")
-        .arg(color.red())
-        .arg(color.green())
-        .arg(color.blue())
-        .arg(color.alpha());
-}
-} // namespace
+using SnapTray::DialogTheme::toCssColor;
 
 class GlassPanel : public QWidget
 {
@@ -597,7 +590,7 @@ void RecordingPreviewWindow::setupUI()
     mainLayout->addWidget(row2Panel);
 
     ToolbarStyleConfig config = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
-    m_timeLabel->setStyleSheet(QString("color: %1;").arg(rgbaString(config.textColor)));
+    m_timeLabel->setStyleSheet(QString("color: %1;").arg(toCssColor(config.textColor)));
     m_discardBtn->setIconColor(config.iconCancelColor);
 
     QColor comboBg = config.buttonInactiveColor;
@@ -611,12 +604,12 @@ void RecordingPreviewWindow::setupUI()
         "QComboBox::down-arrow { image: none; border-left: 4px solid transparent; border-right: 4px solid transparent; border-top: 5px solid %2; margin-right: 6px; }"
         "QComboBox QAbstractItemView { background-color: %5; color: %2; border: 1px solid %3; selection-background-color: %6; padding: 4px; }"
     )
-        .arg(rgbaString(comboBg))
-        .arg(rgbaString(config.textColor))
-        .arg(rgbaString(config.hairlineBorderColor))
-        .arg(rgbaString(comboHover))
-        .arg(rgbaString(config.dropdownBackground))
-        .arg(rgbaString(config.buttonActiveColor));
+        .arg(toCssColor(comboBg))
+        .arg(toCssColor(config.textColor))
+        .arg(toCssColor(config.hairlineBorderColor))
+        .arg(toCssColor(comboHover))
+        .arg(toCssColor(config.dropdownBackground))
+        .arg(toCssColor(config.buttonActiveColor));
     m_speedCombo->setStyleSheet(comboStyle);
 
     QColor grooveColor = config.hoverBackgroundColor;
@@ -626,9 +619,9 @@ void RecordingPreviewWindow::setupUI()
         "QSlider::sub-page:horizontal { background: %2; border-radius: 2px; }"
         "QSlider::handle:horizontal { width: 12px; margin: -4px 0; background: white; border: 1px solid %3; border-radius: 6px; }"
     )
-        .arg(rgbaString(grooveColor))
-        .arg(rgbaString(config.buttonActiveColor))
-        .arg(rgbaString(config.hairlineBorderColor));
+        .arg(toCssColor(grooveColor))
+        .arg(toCssColor(config.buttonActiveColor))
+        .arg(toCssColor(config.hairlineBorderColor));
     m_volumeSlider->setStyleSheet(sliderStyle);
 
     // Initial button states

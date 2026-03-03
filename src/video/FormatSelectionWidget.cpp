@@ -1,6 +1,7 @@
 #include "video/FormatSelectionWidget.h"
 #include "cursor/CursorManager.h"
 #include "ToolbarStyle.h"
+#include "utils/DialogThemeUtils.h"
 
 #include <QButtonGroup>
 #include <QHBoxLayout>
@@ -82,15 +83,9 @@ void FormatSelectionWidget::onButtonClicked(int id)
 
 void FormatSelectionWidget::updateButtonStyles()
 {
-    ToolbarStyleConfig config = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
+    using SnapTray::DialogTheme::toCssColor;
 
-    auto rgbaString = [](const QColor &color) {
-        return QString("rgba(%1, %2, %3, %4)")
-            .arg(color.red())
-            .arg(color.green())
-            .arg(color.blue())
-            .arg(color.alpha());
-    };
+    ToolbarStyleConfig config = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
 
     QColor activeBg = config.buttonActiveColor;
     QColor inactiveBg = config.buttonInactiveColor;
@@ -103,17 +98,17 @@ void FormatSelectionWidget::updateButtonStyles()
     // Style for selected and unselected states
     QString selectedStyle = QString(
         "QPushButton { background-color: %1; color: %2; border: 1px solid %3; font-weight: 600; }"
-    ).arg(rgbaString(activeBg))
-     .arg(rgbaString(config.textActiveColor))
-     .arg(rgbaString(borderColor));
+    ).arg(toCssColor(activeBg))
+     .arg(toCssColor(config.textActiveColor))
+     .arg(toCssColor(borderColor));
 
     QString unselectedStyle = QString(
         "QPushButton { background-color: %1; color: %2; border: 1px solid %3; }"
         "QPushButton:hover { background-color: %4; }"
-    ).arg(rgbaString(inactiveBg))
-     .arg(rgbaString(config.textColor))
-     .arg(rgbaString(borderColor))
-     .arg(rgbaString(hoverBg));
+    ).arg(toCssColor(inactiveBg))
+     .arg(toCssColor(config.textColor))
+     .arg(toCssColor(borderColor))
+     .arg(toCssColor(hoverBg));
 
     // Left button (rounded left corners)
     QString leftStyle = R"(

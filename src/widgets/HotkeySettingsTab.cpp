@@ -13,9 +13,11 @@
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
 #include <QPushButton>
+#include <QFont>
 #include <QLabel>
 #include <QHeaderView>
 #include <QMessageBox>
+#include <QPalette>
 
 namespace SnapTray {
 
@@ -62,44 +64,17 @@ void HotkeySettingsTab::setupUi()
     m_treeWidget->setEditTriggers(QAbstractItemView::NoEditTriggers);
     m_treeWidget->header()->setStretchLastSection(true);
 
-    const bool dark = SettingsTheme::isDark();
-    const QString borderColor = dark ? QStringLiteral("#404040") : QStringLiteral("#E0E0E0");
-    const QString headerBg = dark ? QStringLiteral("#2D2D2D") : QStringLiteral("#FAFAFA");
-    const QString selectionBg = dark ? QStringLiteral("#1E3A5F") : QStringLiteral("#E3F2FD");
-    const QString selectionText = dark ? QStringLiteral("#64B5F6") : QStringLiteral("#1976D2");
-    const QString hoverBg = dark ? QStringLiteral("#3A3A3A") : QStringLiteral("#F5F5F5");
-
-    m_treeWidget->setStyleSheet(QStringLiteral(
-        "QTreeWidget {"
-        "  border: 1px solid %1;"
-        "  border-radius: 4px;"
-        "}"
-        "QTreeWidget::item {"
-        "  padding: 4px 6px;"
-        "  min-height: 28px;"
-        "}"
-        "QTreeWidget::item:selected {"
-        "  background-color: %2;"
-        "  color: %3;"
-        "}"
-        "QTreeWidget::item:hover {"
-        "  background-color: %4;"
-        "}"
-        "QHeaderView::section {"
-        "  background-color: %5;"
-        "  padding: 6px;"
-        "  border: none;"
-        "  border-bottom: 1px solid %1;"
-        "  font-weight: 500;"
-        "}").arg(borderColor, selectionBg, selectionText, hoverBg, headerBg));
-
     mainLayout->addWidget(m_treeWidget, 1);
 
     // Hint label
     auto* hintLabel = new QLabel(
         tr("Double-click a hotkey to edit, or select and press Enter"), this);
-    const QString hintColor = dark ? QStringLiteral("#909090") : QStringLiteral("#757575");
-    hintLabel->setStyleSheet(QStringLiteral("color: %1; font-size: 11px;").arg(hintColor));
+    QFont hintFont = hintLabel->font();
+    hintFont.setPixelSize(11);
+    hintLabel->setFont(hintFont);
+    QPalette hintPal = hintLabel->palette();
+    hintPal.setColor(QPalette::WindowText, QColor(SettingsTheme::secondaryText()));
+    hintLabel->setPalette(hintPal);
     mainLayout->addWidget(hintLabel);
 
     // Button row
@@ -127,7 +102,12 @@ void HotkeySettingsTab::setupUi()
 
     // Status label
     m_statusLabel = new QLabel(this);
-    m_statusLabel->setStyleSheet(QStringLiteral("color: %1; font-size: 11px;").arg(hintColor));
+    QFont statusFont = m_statusLabel->font();
+    statusFont.setPixelSize(11);
+    m_statusLabel->setFont(statusFont);
+    QPalette statusPal = m_statusLabel->palette();
+    statusPal.setColor(QPalette::WindowText, QColor(SettingsTheme::secondaryText()));
+    m_statusLabel->setPalette(statusPal);
     mainLayout->addWidget(m_statusLabel);
 }
 
@@ -433,9 +413,14 @@ void HotkeySettingsTab::onRegistrationStatusChanged(HotkeyAction action, HotkeyS
     if (status == HotkeyStatus::Failed) {
         HotkeyConfig config = HotkeyManager::instance().getConfig(action);
         m_statusLabel->setText(tr("Failed to register: %1").arg(config.displayName));
-        m_statusLabel->setStyleSheet(QStringLiteral("color: #F44336; font-size: 11px;"));
+        QPalette pal = m_statusLabel->palette();
+        pal.setColor(QPalette::WindowText, QColor(SettingsTheme::errorColor()));
+        m_statusLabel->setPalette(pal);
     } else {
         m_statusLabel->clear();
+        QPalette pal = m_statusLabel->palette();
+        pal.setColor(QPalette::WindowText, QColor(SettingsTheme::secondaryText()));
+        m_statusLabel->setPalette(pal);
     }
 }
 

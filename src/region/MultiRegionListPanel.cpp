@@ -1,6 +1,8 @@
 #include "region/MultiRegionListPanel.h"
 
+#include "ToolbarStyle.h"
 #include "utils/CoordinateHelper.h"
+#include "utils/DialogThemeUtils.h"
 
 #include <QAbstractItemModel>
 #include <QAbstractItemView>
@@ -25,20 +27,32 @@ MultiRegionListPanel::MultiRegionListPanel(QWidget* parent)
     setAttribute(Qt::WA_StyledBackground, true);
     setFocusPolicy(Qt::NoFocus);
     setObjectName(QStringLiteral("multiRegionListPanel"));
+
+    const auto& config = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
+    using SnapTray::DialogTheme::toCssColor;
+
+    QColor panelBg = config.glassBackgroundColor;
+    panelBg.setAlpha(185);
+    QColor panelBorder = config.hairlineBorderColor;
+    panelBorder.setAlpha(35);
     setStyleSheet(
-        "#multiRegionListPanel {"
-        "  background-color: rgba(25, 25, 25, 185);"
-        "  border: 1px solid rgba(255, 255, 255, 35);"
+        QStringLiteral("#multiRegionListPanel {"
+        "  background-color: %1;"
+        "  border: 1px solid %2;"
         "  border-radius: 8px;"
-        "}"
+        "}")
+        .arg(toCssColor(panelBg), toCssColor(panelBorder))
     );
 
     auto* rootLayout = new QVBoxLayout(this);
     rootLayout->setContentsMargins(8, 8, 8, 8);
     rootLayout->setSpacing(6);
 
+    const QString textCss = toCssColor(config.textActiveColor);
+
     auto* titleLabel = new QLabel(tr("Regions"), this);
-    titleLabel->setStyleSheet("color: white; font-weight: 600; padding-left: 2px;");
+    titleLabel->setStyleSheet(
+        QStringLiteral("color: %1; font-weight: 600; padding-left: 2px;").arg(textCss));
     titleLabel->setFocusPolicy(Qt::NoFocus);
     rootLayout->addWidget(titleLabel);
 
@@ -53,10 +67,15 @@ MultiRegionListPanel::MultiRegionListPanel(QWidget* parent)
     m_listWidget->setDropIndicatorShown(true);
     m_listWidget->setSpacing(6);
     m_listWidget->setFocusPolicy(Qt::NoFocus);
+
+    QColor selectionBg = config.activeBackgroundColor;
+    selectionBg.setAlpha(55);
     m_listWidget->setStyleSheet(
-        "QListWidget { background: transparent; color: white; }"
-        "QListWidget::item { border: none; }"
-        "QListWidget::item:selected { background: rgba(0, 174, 255, 55); border-radius: 6px; }"
+        QStringLiteral(
+            "QListWidget { background: transparent; color: %1; }"
+            "QListWidget::item { border: none; }"
+            "QListWidget::item:selected { background: %2; border-radius: 6px; }")
+        .arg(textCss, toCssColor(selectionBg))
     );
     rootLayout->addWidget(m_listWidget);
 
@@ -216,11 +235,17 @@ QWidget* MultiRegionListPanel::createItemWidget(const MultiRegionManager::Region
     layout->setContentsMargins(6, 4, 6, 4);
     layout->setSpacing(8);
 
+    const auto& config = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
+    using SnapTray::DialogTheme::toCssColor;
+
     auto* thumbLabel = new QLabel(container);
     thumbLabel->setFixedSize(kThumbnailWidth, kThumbnailHeight);
     thumbLabel->setAlignment(Qt::AlignCenter);
     thumbLabel->setCursor(cursorShape);
-    thumbLabel->setStyleSheet("border: 1px solid rgba(255,255,255,40); border-radius: 4px;");
+    QColor thumbBorder = config.hairlineBorderColor;
+    thumbBorder.setAlpha(40);
+    thumbLabel->setStyleSheet(
+        QStringLiteral("border: 1px solid %1; border-radius: 4px;").arg(toCssColor(thumbBorder)));
     const QPixmap thumbnail = thumbnailForRegion(region);
     if (!thumbnail.isNull()) {
         thumbLabel->setPixmap(thumbnail.scaled(
@@ -233,14 +258,18 @@ QWidget* MultiRegionListPanel::createItemWidget(const MultiRegionManager::Region
     textLayout->setSpacing(2);
 
     auto* titleLabel = new QLabel(tr("Region %1").arg(region.index), container);
-    titleLabel->setStyleSheet("color: white; font-weight: 600;");
+    titleLabel->setStyleSheet(
+        QStringLiteral("color: %1; font-weight: 600;").arg(toCssColor(config.textActiveColor)));
     titleLabel->setFocusPolicy(Qt::NoFocus);
     titleLabel->setCursor(cursorShape);
     textLayout->addWidget(titleLabel);
 
+    QColor secondaryText = config.textColor;
+    secondaryText.setAlpha(180);
     auto* sizeLabel = new QLabel(
         tr("%1 x %2").arg(region.rect.width()).arg(region.rect.height()), container);
-    sizeLabel->setStyleSheet("color: rgba(255,255,255,180);");
+    sizeLabel->setStyleSheet(
+        QStringLiteral("color: %1;").arg(toCssColor(secondaryText)));
     sizeLabel->setFocusPolicy(Qt::NoFocus);
     sizeLabel->setCursor(cursorShape);
     textLayout->addWidget(sizeLabel);

@@ -207,7 +207,7 @@ void SettingsDialog::setupGeneralTab(QWidget* tab)
     // ========== Language Section ==========
     layout->addSpacing(16);
     QLabel* languageSectionLabel = new QLabel(tr("Language"), contentWidget);
-    languageSectionLabel->setStyleSheet("font-weight: bold; font-size: 12px;");
+    SnapTray::SettingsTheme::applyHeaderFont(languageSectionLabel);
     layout->addWidget(languageSectionLabel);
 
     QHBoxLayout* languageLayout = new QHBoxLayout();
@@ -234,7 +234,7 @@ void SettingsDialog::setupGeneralTab(QWidget* tab)
     // ========== Appearance Section ==========
     layout->addSpacing(16);
     QLabel* appearanceLabel = new QLabel(tr("Appearance"), contentWidget);
-    appearanceLabel->setStyleSheet("font-weight: bold; font-size: 12px;");
+    SnapTray::SettingsTheme::applyHeaderFont(appearanceLabel);
     layout->addWidget(appearanceLabel);
 
     QHBoxLayout* styleLayout = new QHBoxLayout();
@@ -256,7 +256,7 @@ void SettingsDialog::setupGeneralTab(QWidget* tab)
     // ========== Permissions Section (macOS only) ==========
     layout->addSpacing(16);
     QLabel* permissionsLabel = new QLabel(tr("Permissions"), contentWidget);
-    permissionsLabel->setStyleSheet("font-weight: bold; font-size: 12px;");
+    SnapTray::SettingsTheme::applyHeaderFont(permissionsLabel);
     layout->addWidget(permissionsLabel);
 
     // Screen Recording row
@@ -300,7 +300,7 @@ void SettingsDialog::setupGeneralTab(QWidget* tab)
     // ========== CLI Installation Section ==========
     layout->addSpacing(16);
     QLabel* cliLabel = new QLabel(tr("Command Line Interface"), contentWidget);
-    cliLabel->setStyleSheet("font-weight: bold; font-size: 12px;");
+    SnapTray::SettingsTheme::applyHeaderFont(cliLabel);
     layout->addWidget(cliLabel);
 
     QHBoxLayout* cliLayout = new QHBoxLayout();
@@ -339,7 +339,7 @@ void SettingsDialog::setupAdvancedTab(QWidget* tab)
 
     // ========== Capture Section ==========
     QLabel* captureSectionLabel = new QLabel(tr("Capture"), tab);
-    captureSectionLabel->setStyleSheet("font-weight: bold; font-size: 12px;");
+    SnapTray::SettingsTheme::applyHeaderFont(captureSectionLabel);
     layout->addWidget(captureSectionLabel);
 
     m_showShortcutHintsCheckbox = new QCheckBox(
@@ -352,7 +352,7 @@ void SettingsDialog::setupAdvancedTab(QWidget* tab)
     // ========== MCP Section ==========
     layout->addSpacing(16);
     QLabel* mcpSectionLabel = new QLabel(tr("MCP"), tab);
-    mcpSectionLabel->setStyleSheet("font-weight: bold; font-size: 12px;");
+    SnapTray::SettingsTheme::applyHeaderFont(mcpSectionLabel);
     layout->addWidget(mcpSectionLabel);
 
     m_mcpEnabledCheckbox = new QCheckBox(tr("Enable MCP server"), tab);
@@ -363,7 +363,7 @@ void SettingsDialog::setupAdvancedTab(QWidget* tab)
     // ========== Blur Section ==========
     layout->addSpacing(16);
     QLabel* autoBlurLabel = new QLabel(tr("Blur"), tab);
-    autoBlurLabel->setStyleSheet("font-weight: bold; font-size: 12px;");
+    SnapTray::SettingsTheme::applyHeaderFont(autoBlurLabel);
     layout->addWidget(autoBlurLabel);
 
     // Load current settings
@@ -402,7 +402,7 @@ void SettingsDialog::setupAdvancedTab(QWidget* tab)
     // ========== Pin Window Section ==========
     layout->addSpacing(16);
     QLabel* pinWindowLabel = new QLabel(tr("Pin Window"), tab);
-    pinWindowLabel->setStyleSheet("font-weight: bold; font-size: 12px;");
+    SnapTray::SettingsTheme::applyHeaderFont(pinWindowLabel);
     layout->addWidget(pinWindowLabel);
 
     auto& pinSettings = PinWindowSettingsManager::instance();
@@ -722,7 +722,7 @@ void SettingsDialog::setupRecordingTab(QWidget* tab)
     // ========== Audio Settings Section ==========
     layout->addSpacing(16);
     QLabel* audioSectionLabel = new QLabel(tr("Audio"), tab);
-    audioSectionLabel->setStyleSheet("font-weight: bold; font-size: 12px;");
+    SnapTray::SettingsTheme::applyHeaderFont(audioSectionLabel);
     layout->addWidget(audioSectionLabel);
 
     // Enable audio checkbox
@@ -1263,7 +1263,7 @@ void SettingsDialog::loadOcrLanguages()
     // Left: Available languages
     QVBoxLayout* availableLayout = new QVBoxLayout();
     QLabel* availableLabel = new QLabel(tr("Available Languages"), m_ocrContentWidget);
-    availableLabel->setStyleSheet("font-weight: bold;");
+    { QFont f = availableLabel->font(); f.setBold(true); availableLabel->setFont(f); }
     availableLabel->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
     availableLabel->setMinimumWidth(0);
     availableLayout->addWidget(availableLabel);
@@ -1296,7 +1296,7 @@ void SettingsDialog::loadOcrLanguages()
     // Right: Selected languages (with drag-drop reorder)
     QVBoxLayout* selectedLayout = new QVBoxLayout();
     QLabel* selectedLabel = new QLabel(tr("Selected Languages"), m_ocrContentWidget);
-    selectedLabel->setStyleSheet("font-weight: bold;");
+    { QFont f = selectedLabel->font(); f.setBold(true); selectedLabel->setFont(f); }
     selectedLabel->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
     selectedLabel->setMinimumWidth(0);
     selectedLayout->addWidget(selectedLabel);
@@ -1469,7 +1469,7 @@ void SettingsDialog::setupFilesTab(QWidget* tab)
 
     // ========== Save Locations Section ==========
     QLabel* locationsLabel = new QLabel(tr("Save Locations"), tab);
-    locationsLabel->setStyleSheet("font-weight: bold; font-size: 12px;");
+    SnapTray::SettingsTheme::applyHeaderFont(locationsLabel);
     layout->addWidget(locationsLabel);
 
     // Screenshot path row
@@ -1517,7 +1517,7 @@ void SettingsDialog::setupFilesTab(QWidget* tab)
     // ========== Filename Format Section ==========
     layout->addSpacing(16);
     QLabel* formatLabel = new QLabel(tr("Filename Format"), tab);
-    formatLabel->setStyleSheet("font-weight: bold; font-size: 12px;");
+    SnapTray::SettingsTheme::applyHeaderFont(formatLabel);
     layout->addWidget(formatLabel);
 
     QHBoxLayout* templateLayout = new QHBoxLayout();
@@ -1537,9 +1537,8 @@ void SettingsDialog::setupFilesTab(QWidget* tab)
         tr("Tokens: {prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}\n"
         "Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}"),
         tab);
-    tokensLabel->setStyleSheet(
-        QStringLiteral("color: %1; font-size: 11px;")
-        .arg(SnapTray::SettingsTheme::secondaryText()));
+    { QFont f = tokensLabel->font(); f.setPixelSize(11); tokensLabel->setFont(f); }
+    SnapTray::SettingsTheme::applySecondaryColor(tokensLabel);
     tokensLabel->setWordWrap(true);
     layout->addWidget(tokensLabel);
 
@@ -1556,7 +1555,7 @@ void SettingsDialog::setupFilesTab(QWidget* tab)
     // ========== Save Behavior Section ==========
     layout->addSpacing(16);
     QLabel* behaviorLabel = new QLabel(tr("Save Behavior"), tab);
-    behaviorLabel->setStyleSheet("font-weight: bold; font-size: 12px;");
+    SnapTray::SettingsTheme::applyHeaderFont(behaviorLabel);
     layout->addWidget(behaviorLabel);
 
     m_autoSaveScreenshotsCheckbox = new QCheckBox(tr("Auto-save screenshots (save directly without dialog)"), tab);
@@ -1605,7 +1604,7 @@ void SettingsDialog::setupUpdatesTab(QWidget* tab)
 
     // ========== Version Information Section ==========
     QLabel* versionInfoLabel = new QLabel(tr("Version Information"), tab);
-    versionInfoLabel->setStyleSheet("font-weight: bold; font-size: 12px;");
+    SnapTray::SettingsTheme::applyHeaderFont(versionInfoLabel);
     layout->addWidget(versionInfoLabel);
 
     // Current version row
@@ -1626,7 +1625,7 @@ void SettingsDialog::setupUpdatesTabForDirectDownload(QVBoxLayout* layout, QWidg
 {
     // ========== Automatic Updates Section ==========
     QLabel* autoUpdateLabel = new QLabel(tr("Automatic Updates"), tab);
-    autoUpdateLabel->setStyleSheet("font-weight: bold; font-size: 12px;");
+    SnapTray::SettingsTheme::applyHeaderFont(autoUpdateLabel);
     layout->addWidget(autoUpdateLabel);
 
     auto& updateSettings = UpdateSettingsManager::instance();
@@ -1685,7 +1684,8 @@ void SettingsDialog::setupUpdatesTabForDirectDownload(QVBoxLayout* layout, QWidg
         lastCheckText = tr("Last checked: Never");
     }
     m_lastCheckedLabel = new QLabel(lastCheckText, tab);
-    m_lastCheckedLabel->setStyleSheet("font-size: 12px; color: gray;");
+    { QFont f = m_lastCheckedLabel->font(); f.setPixelSize(12); m_lastCheckedLabel->setFont(f); }
+    { QPalette p = m_lastCheckedLabel->palette(); p.setColor(QPalette::WindowText, QColor(Qt::gray)); m_lastCheckedLabel->setPalette(p); }
     m_lastCheckedLabel->setAlignment(Qt::AlignCenter);
     layout->addWidget(m_lastCheckedLabel);
 
@@ -1791,14 +1791,14 @@ void SettingsDialog::setupAboutTab(QWidget* tab)
 
     // App name
     QLabel* nameLabel = new QLabel(SNAPTRAY_APP_NAME, tab);
-    nameLabel->setStyleSheet("font-size: 18px; font-weight: bold;");
+    { QFont f = nameLabel->font(); f.setBold(true); f.setPixelSize(18); nameLabel->setFont(f); }
     nameLabel->setAlignment(Qt::AlignCenter);
     layout->addWidget(nameLabel);
 
     // Version
     QLabel* versionLabel = new QLabel(tr("Version %1").arg(SNAPTRAY_VERSION), tab);
-    versionLabel->setStyleSheet(
-        QStringLiteral("font-size: 12px; color: %1;").arg(SnapTray::SettingsTheme::secondaryText()));
+    { QFont f = versionLabel->font(); f.setPixelSize(12); versionLabel->setFont(f); }
+    SnapTray::SettingsTheme::applySecondaryColor(versionLabel);
     versionLabel->setAlignment(Qt::AlignCenter);
     layout->addWidget(versionLabel);
 
@@ -1806,7 +1806,7 @@ void SettingsDialog::setupAboutTab(QWidget* tab)
 
     // Copyright
     QLabel* copyrightLabel = new QLabel(tr("Copyright 2024-2025 Victor Fu"), tab);
-    copyrightLabel->setStyleSheet("font-size: 11px;");
+    { QFont f = copyrightLabel->font(); f.setPixelSize(11); copyrightLabel->setFont(f); }
     copyrightLabel->setAlignment(Qt::AlignCenter);
     layout->addWidget(copyrightLabel);
 
@@ -1814,7 +1814,7 @@ void SettingsDialog::setupAboutTab(QWidget* tab)
 
     // Author
     QLabel* authorLabel = new QLabel(tr("Author: Victor Fu"), tab);
-    authorLabel->setStyleSheet("font-size: 11px;");
+    { QFont f = authorLabel->font(); f.setPixelSize(11); authorLabel->setFont(f); }
     authorLabel->setAlignment(Qt::AlignCenter);
     layout->addWidget(authorLabel);
 
@@ -1822,7 +1822,7 @@ void SettingsDialog::setupAboutTab(QWidget* tab)
     QLabel* websiteLabel = new QLabel(
         QStringLiteral("<a href=\"https://victorfu.github.io/snap-tray/\" style=\"color: %1;\">https://victorfu.github.io/snap-tray/</a>")
         .arg(SnapTray::SettingsTheme::linkColor()), tab);
-    websiteLabel->setStyleSheet("font-size: 11px;");
+    { QFont f = websiteLabel->font(); f.setPixelSize(11); websiteLabel->setFont(f); }
     websiteLabel->setAlignment(Qt::AlignCenter);
     websiteLabel->setOpenExternalLinks(true);
     layout->addWidget(websiteLabel);
@@ -1850,26 +1850,30 @@ void SettingsDialog::updatePermissionStatus()
     bool hasScreenRecording = PlatformFeatures::hasScreenRecordingPermission();
     if (hasScreenRecording) {
         m_screenRecordingStatusLabel->setText(tr("Granted"));
-        m_screenRecordingStatusLabel->setStyleSheet(
-            QStringLiteral("color: %1;").arg(SnapTray::SettingsTheme::successColor()));
+        QPalette p = m_screenRecordingStatusLabel->palette();
+        p.setColor(QPalette::WindowText, QColor(SnapTray::SettingsTheme::successColor()));
+        m_screenRecordingStatusLabel->setPalette(p);
     }
     else {
         m_screenRecordingStatusLabel->setText(tr("Not Granted"));
-        m_screenRecordingStatusLabel->setStyleSheet(
-            QStringLiteral("color: %1;").arg(SnapTray::SettingsTheme::errorColor()));
+        QPalette p = m_screenRecordingStatusLabel->palette();
+        p.setColor(QPalette::WindowText, QColor(SnapTray::SettingsTheme::errorColor()));
+        m_screenRecordingStatusLabel->setPalette(p);
     }
 
     // Accessibility permission
     bool hasAccessibility = PlatformFeatures::hasAccessibilityPermission();
     if (hasAccessibility) {
         m_accessibilityStatusLabel->setText(tr("Granted"));
-        m_accessibilityStatusLabel->setStyleSheet(
-            QStringLiteral("color: %1;").arg(SnapTray::SettingsTheme::successColor()));
+        QPalette p = m_accessibilityStatusLabel->palette();
+        p.setColor(QPalette::WindowText, QColor(SnapTray::SettingsTheme::successColor()));
+        m_accessibilityStatusLabel->setPalette(p);
     }
     else {
         m_accessibilityStatusLabel->setText(tr("Not Granted"));
-        m_accessibilityStatusLabel->setStyleSheet(
-            QStringLiteral("color: %1;").arg(SnapTray::SettingsTheme::errorColor()));
+        QPalette p = m_accessibilityStatusLabel->palette();
+        p.setColor(QPalette::WindowText, QColor(SnapTray::SettingsTheme::errorColor()));
+        m_accessibilityStatusLabel->setPalette(p);
     }
 }
 #endif

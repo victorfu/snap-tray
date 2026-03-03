@@ -29,6 +29,7 @@ protected:
 
 private:
     void setupUI();
+    void applyLabelStyle(bool hovered);
     void updatePositionIfNeeded();
 
     QWidget* m_targetWindow = nullptr;

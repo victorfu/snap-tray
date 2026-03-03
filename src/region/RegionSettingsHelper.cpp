@@ -93,18 +93,9 @@ ShapeFillMode RegionSettingsHelper::loadShapeFillMode()
 
 // ========== Dropdown Menus ==========
 
-QString RegionSettingsHelper::dropdownMenuStyle()
-{
-    return QStringLiteral(
-        "QMenu { background: #2d2d2d; color: white; border: 1px solid #3d3d3d; } "
-        "QMenu::item { padding: 4px 20px; } "
-        "QMenu::item:selected { background: #0078d4; }");
-}
-
 QMenu* RegionSettingsHelper::createStyledMenu()
 {
     QMenu* menu = new QMenu(m_parentWidget);
-    menu->setStyleSheet(dropdownMenuStyle());
     return menu;
 }
 

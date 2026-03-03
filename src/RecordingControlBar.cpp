@@ -1,5 +1,6 @@
 #include "RecordingControlBar.h"
 #include "GlassRenderer.h"
+#include "GlassPanelCSS.h"
 #include "ToolbarStyle.h"
 #include "IconRenderer.h"
 #include "ui/GlassTooltip.h"
@@ -120,37 +121,34 @@ void RecordingControlBar::setupUi()
 
     // Get theme colors for labels
     ToolbarStyleConfig styleConfig = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
-    QString textColor = styleConfig.textColor.name();
-    QString separatorColor = styleConfig.separatorColor.name();
+
+    using namespace SnapTray::GlassPanelCSS;
 
     // Duration label
     m_durationLabel = new QLabel("00:00:00", this);
-    m_durationLabel->setStyleSheet(
-        QString("color: %1; font-size: 11px; font-weight: 600; font-family: 'SF Mono', Menlo, Monaco, monospace;").arg(textColor));
+    m_durationLabel->setStyleSheet(monoLabelStylesheet(styleConfig.textColor, 11, true));
     m_durationLabel->setMinimumWidth(55);
     m_layout->addWidget(m_durationLabel);
 
     // Separator
     m_separator1 = new QLabel("|", this);
-    m_separator1->setStyleSheet(QString("color: %1; font-size: 11px;").arg(separatorColor));
+    m_separator1->setStyleSheet(separatorStylesheet(styleConfig.separatorColor));
     m_layout->addWidget(m_separator1);
 
     // Size label
     m_sizeLabel = new QLabel("--", this);
-    m_sizeLabel->setStyleSheet(
-        QString("color: %1; font-size: 10px; font-family: 'SF Mono', Menlo, Monaco, monospace;").arg(textColor));
+    m_sizeLabel->setStyleSheet(monoLabelStylesheet(styleConfig.textColor, 10));
     m_sizeLabel->setMinimumWidth(70);
     m_layout->addWidget(m_sizeLabel);
 
     // Separator
     m_separator2 = new QLabel("|", this);
-    m_separator2->setStyleSheet(QString("color: %1; font-size: 11px;").arg(separatorColor));
+    m_separator2->setStyleSheet(separatorStylesheet(styleConfig.separatorColor));
     m_layout->addWidget(m_separator2);
 
     // FPS label
     m_fpsLabel = new QLabel(tr("-- fps"), this);
-    m_fpsLabel->setStyleSheet(
-        QString("color: %1; font-size: 10px; font-family: 'SF Mono', Menlo, Monaco, monospace;").arg(textColor));
+    m_fpsLabel->setStyleSheet(monoLabelStylesheet(styleConfig.textColor, 10));
     m_fpsLabel->setMinimumWidth(45);
     m_layout->addWidget(m_fpsLabel);
 
@@ -439,7 +437,6 @@ void RecordingControlBar::setPreparing(bool preparing)
 
     // Get theme-aware colors
     ToolbarStyleConfig config = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
-    QString textColor = config.textColor.name();
 
     if (preparing) {
         m_durationLabel->setText(tr("Preparing..."));
@@ -447,13 +444,11 @@ void RecordingControlBar::setPreparing(bool preparing)
         QColor fadedColor = config.textColor;
         fadedColor.setAlpha(180);  // ~70% opacity
         m_durationLabel->setStyleSheet(
-            QString("color: %1; font-size: 11px; font-weight: 600; font-family: 'SF Mono', Menlo, Monaco, monospace;")
-                .arg(fadedColor.name(QColor::HexArgb)));
+            SnapTray::GlassPanelCSS::monoLabelStylesheet(fadedColor, 11, true));
     } else {
         m_durationLabel->setText("00:00:00");
         m_durationLabel->setStyleSheet(
-            QString("color: %1; font-size: 11px; font-weight: 600; font-family: 'SF Mono', Menlo, Monaco, monospace;")
-                .arg(textColor));
+            SnapTray::GlassPanelCSS::monoLabelStylesheet(config.textColor, 11, true));
     }
 
     // Note: Don't call adjustSize() here as it would override setFixedWidth()

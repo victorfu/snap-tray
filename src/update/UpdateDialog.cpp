@@ -207,7 +207,9 @@ void UpdateDialog::setupUpToDateUI()
     iconFont.setBold(true);
     m_iconLabel->setFont(iconFont);
     m_iconLabel->setAlignment(Qt::AlignCenter);
-    m_iconLabel->setStyleSheet("QLabel { color: #34C759; }"); // Green
+    QPalette iconPal = m_iconLabel->palette();
+    iconPal.setColor(QPalette::WindowText, QColor(0x34, 0xC7, 0x59));
+    m_iconLabel->setPalette(iconPal);
     mainLayout->addWidget(m_iconLabel);
 
     mainLayout->addSpacing(kElementSpacing);
@@ -312,22 +314,7 @@ QPushButton* UpdateDialog::createPrimaryButton(const QString& text)
     button->setMinimumWidth(100);
     button->setMinimumHeight(36);
     button->setCursor(Qt::PointingHandCursor);
-    button->setStyleSheet(
-        "QPushButton { "
-        "  background-color: #007AFF; "
-        "  color: white; "
-        "  border: none; "
-        "  border-radius: 8px; "
-        "  padding: 0 20px; "
-        "  font-size: 14px; "
-        "  font-weight: 500; "
-        "} "
-        "QPushButton:hover { "
-        "  background-color: #0066DD; "
-        "} "
-        "QPushButton:pressed { "
-        "  background-color: #0055CC; "
-        "}");
+    button->setDefault(true);
     return button;
 }
 
@@ -337,20 +324,6 @@ QPushButton* UpdateDialog::createSecondaryButton(const QString& text)
     button->setMinimumWidth(100);
     button->setMinimumHeight(36);
     button->setCursor(Qt::PointingHandCursor);
-    button->setStyleSheet(
-        "QPushButton { "
-        "  background-color: transparent; "
-        "  border: 1px solid rgba(0, 0, 0, 0.15); "
-        "  border-radius: 8px; "
-        "  padding: 0 20px; "
-        "  font-size: 14px; "
-        "} "
-        "QPushButton:hover { "
-        "  background-color: rgba(0, 0, 0, 0.05); "
-        "} "
-        "QPushButton:pressed { "
-        "  background-color: rgba(0, 0, 0, 0.1); "
-        "}");
     return button;
 }
 
@@ -359,17 +332,10 @@ QPushButton* UpdateDialog::createTertiaryButton(const QString& text)
     QPushButton* button = new QPushButton(text, this);
     button->setMinimumHeight(36);
     button->setCursor(Qt::PointingHandCursor);
-    button->setStyleSheet(
-        "QPushButton { "
-        "  background-color: transparent; "
-        "  border: none; "
-        "  color: #666666; "
-        "  font-size: 13px; "
-        "  text-decoration: none; "
-        "} "
-        "QPushButton:hover { "
-        "  text-decoration: underline; "
-        "}");
+    button->setFlat(true);
+    QPalette pal = button->palette();
+    pal.setColor(QPalette::ButtonText, QColor(100, 100, 100));
+    button->setPalette(pal);
     return button;
 }
 

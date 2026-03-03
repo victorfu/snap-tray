@@ -60,9 +60,6 @@ signals:
     void fontFamilySelected(const QString& family);
 
 private:
-    // Menu styling
-    static QString dropdownMenuStyle();
-
     // Helper to create styled menu
     QMenu* createStyledMenu();
 

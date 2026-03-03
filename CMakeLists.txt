@@ -592,6 +592,7 @@ endif()
 add_library(snaptray_ui STATIC
     # Rendering
     src/GlassRenderer.cpp
+    src/GlassPanelCSS.cpp
     src/IconRenderer.cpp
     src/ToolbarStyle.cpp
     src/toolbar/ToolbarCore.cpp

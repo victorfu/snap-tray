@@ -1,6 +1,7 @@
 #include "beautify/BeautifyPanel.h"
 #include "beautify/BeautifyRenderer.h"
 #include "GlassRenderer.h"
+#include "GlassPanelCSS.h"
 #include "ToolbarStyle.h"
 #include "utils/CoordinateHelper.h"
 
@@ -246,115 +247,34 @@ void BeautifyPanel::applyThemeStyles()
     // SettingsTheme uses system palette which may not match the glass panel appearance.
     const auto style = ToolbarStyleConfig::loadStyle();
     const auto& config = ToolbarStyleConfig::getStyle(style);
-    const bool isDarkStyle = (style == ToolbarStyleType::Dark);
-    const QString textColor = config.textColor.name();
+
+    using namespace SnapTray::GlassPanelCSS;
 
     // Labels: use toolbar text color for readability on glass
-    const QString labelStyle = QStringLiteral(
-        "QLabel { font-size: 13px; color: %1; }").arg(textColor);
+    const QString lblStyle = labelStylesheet(config);
     const auto labels = findChildren<QLabel*>();
     for (auto* label : labels) {
         if (label != m_previewLabel) {
-            label->setStyleSheet(labelStyle);
+            label->setStyleSheet(lblStyle);
         }
     }
 
     // QComboBox: styled to match glass panel
-    const QString comboBg = config.buttonInactiveColor.name();
-    const QString comboBorder = config.dropdownBorder.name();
-    const QString comboHover = config.buttonHoverColor.name();
-    const QString dropdownBg = config.dropdownBackground.name(QColor::HexArgb);
-    const QString selectionBg = config.buttonActiveColor.name();
-    const QString comboStyle = QStringLiteral(
-        "QComboBox {"
-        "  background-color: %1;"
-        "  color: %2;"
-        "  border: 1px solid %3;"
-        "  border-radius: 4px;"
-        "  padding: 4px 8px;"
-        "  font-size: 13px;"
-        "}"
-        "QComboBox:hover {"
-        "  background-color: %4;"
-        "}"
-        "QComboBox::drop-down {"
-        "  border: none;"
-        "}"
-        "QComboBox QAbstractItemView {"
-        "  background-color: %5;"
-        "  color: %2;"
-        "  border: 1px solid %3;"
-        "  selection-background-color: %6;"
-        "  selection-color: white;"
-        "}")
-        .arg(comboBg, textColor, comboBorder, comboHover, dropdownBg, selectionBg);
+    const QString comboStyle = comboBoxStylesheet(config);
     m_backgroundTypeCombo->setStyleSheet(comboStyle);
     m_aspectRatioCombo->setStyleSheet(comboStyle);
 
     // QSlider: visible groove and handle on glass
-    const QString grooveColor = config.separatorColor.name();
-    const QString handleColor = isDarkStyle ? QStringLiteral("#FFFFFF") : QStringLiteral("#333333");
-    const QString sliderStyle = QStringLiteral(
-        "QSlider::groove:horizontal {"
-        "  background: %1;"
-        "  height: 4px;"
-        "  border-radius: 2px;"
-        "}"
-        "QSlider::sub-page:horizontal {"
-        "  background: #3B82F6;"
-        "  height: 4px;"
-        "  border-radius: 2px;"
-        "}"
-        "QSlider::handle:horizontal {"
-        "  background: %2;"
-        "  width: 14px;"
-        "  height: 14px;"
-        "  margin: -5px 0;"
-        "  border-radius: 7px;"
-        "}")
-        .arg(grooveColor, handleColor);
-    m_paddingSlider->setStyleSheet(sliderStyle);
-    m_cornerRadiusSlider->setStyleSheet(sliderStyle);
-    m_shadowBlurSlider->setStyleSheet(sliderStyle);
+    const QString sldrStyle = sliderStylesheet(config, style);
+    m_paddingSlider->setStyleSheet(sldrStyle);
+    m_cornerRadiusSlider->setStyleSheet(sldrStyle);
+    m_shadowBlurSlider->setStyleSheet(sldrStyle);
 
     // QCheckBox: text and indicator styled for glass panel
-    const QString indicatorBg = config.buttonInactiveColor.name();
-    const QString indicatorBorder = config.separatorColor.name();
-    const QString checkboxStyle = QStringLiteral(
-        "QCheckBox { font-size: 13px; color: %1; }"
-        "QCheckBox::indicator {"
-        "  width: 14px; height: 14px;"
-        "  border: 1px solid %2;"
-        "  border-radius: 3px;"
-        "  background: %3;"
-        "}"
-        "QCheckBox::indicator:checked {"
-        "  background: #3B82F6;"
-        "  border: 1px solid #3B82F6;"
-        "}")
-        .arg(textColor, indicatorBorder, indicatorBg);
-    m_shadowCheckbox->setStyleSheet(checkboxStyle);
+    m_shadowCheckbox->setStyleSheet(checkboxStylesheet(config));
 
     // Action buttons: styled to match glass panel
-    const QString btnBg = config.buttonInactiveColor.name();
-    const QString btnHover = config.buttonHoverColor.name();
-    const QString btnPressed = isDarkStyle ? QStringLiteral("#383838") : QStringLiteral("#C0C0C0");
-    const QString actionBtnStyle = QStringLiteral(
-        "QPushButton {"
-        "  background-color: %1;"
-        "  border: none;"
-        "  border-radius: 6px;"
-        "  padding: 6px 16px;"
-        "  font-size: 13px;"
-        "  color: %2;"
-        "}"
-        "QPushButton:hover {"
-        "  background-color: %3;"
-        "}"
-        "QPushButton:pressed {"
-        "  background-color: %4;"
-        "}")
-        .arg(btnBg, textColor, btnHover, btnPressed);
+    const QString actionBtnStyle = actionButtonStylesheet(config, style);
     m_copyBtn->setStyleSheet(actionBtnStyle);
     m_saveBtn->setStyleSheet(actionBtnStyle);
     m_closeBtn->setStyleSheet(actionBtnStyle);

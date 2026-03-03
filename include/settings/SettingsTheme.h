@@ -6,8 +6,11 @@
 #pragma once
 
 #include <QApplication>
+#include <QFont>
+#include <QLabel>
 #include <QPalette>
 #include <QString>
+#include <QWidget>
 #include "ui/DesignTokens.h"
 
 namespace SnapTray {
@@ -92,6 +95,23 @@ inline QString disabledButtonText() { return isDark() ? QStringLiteral("#606060"
 
 inline QString inputFocusBorder() { return isDark() ? QStringLiteral("#64B5F6") : QStringLiteral("#90CAF9"); }
 inline QString inputFocusBg() { return isDark() ? QStringLiteral("#1E3A5F") : QStringLiteral("#E3F2FD"); }
+
+// ============================================================================
+// Widget helpers
+// ============================================================================
+
+inline void applyHeaderFont(QLabel* label) {
+    QFont f = label->font();
+    f.setBold(true);
+    f.setPixelSize(12);
+    label->setFont(f);
+}
+
+inline void applySecondaryColor(QWidget* widget) {
+    QPalette p = widget->palette();
+    p.setColor(QPalette::WindowText, QColor(isDark() ? "#909090" : "#757575"));
+    widget->setPalette(p);
+}
 
 }  // namespace SettingsTheme
 }  // namespace SnapTray

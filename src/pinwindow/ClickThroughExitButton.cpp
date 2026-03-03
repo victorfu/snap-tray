@@ -6,6 +6,12 @@
 #include <QShowEvent>
 #include <QHideEvent>
 
+namespace {
+constexpr int kPurpleR = 88;
+constexpr int kPurpleG = 86;
+constexpr int kPurpleB = 214;
+}
+
 ClickThroughExitButton::ClickThroughExitButton(QWidget* parent)
     : QWidget(parent, Qt::Tool | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint)
 {
@@ -25,16 +31,7 @@ void ClickThroughExitButton::setupUI()
 {
     m_label = new QLabel(this);
     m_label->setText(QStringLiteral("%1  \u2715").arg(tr("Click-through")));
-    m_label->setStyleSheet(
-        "QLabel {"
-        "  background-color: rgba(88, 86, 214, 200);"
-        "  color: white;"
-        "  padding: 4px 10px;"
-        "  border-radius: 4px;"
-        "  font-size: 11px;"
-        "  font-weight: bold;"
-        "}"
-    );
+    applyLabelStyle(false);
     m_label->adjustSize();
 
     auto* layout = new QVBoxLayout(this);
@@ -42,6 +39,27 @@ void ClickThroughExitButton::setupUI()
     layout->addWidget(m_label);
 
     adjustSize();
+}
+
+void ClickThroughExitButton::applyLabelStyle(bool hovered)
+{
+    const int alpha = hovered ? 220 : 200;
+    const int brighten = hovered ? 20 : 0;
+    m_label->setStyleSheet(
+        QStringLiteral(
+            "QLabel {"
+            "  background-color: rgba(%1, %2, %3, %4);"
+            "  color: white;"
+            "  padding: 4px 10px;"
+            "  border-radius: 4px;"
+            "  font-size: 11px;"
+            "  font-weight: bold;"
+            "}")
+        .arg(kPurpleR + brighten)
+        .arg(kPurpleG + brighten)
+        .arg(kPurpleB + brighten)
+        .arg(alpha)
+    );
 }
 
 void ClickThroughExitButton::attachTo(QWidget* targetWindow)
@@ -101,32 +119,14 @@ void ClickThroughExitButton::mousePressEvent(QMouseEvent* event)
 
 void ClickThroughExitButton::enterEvent(QEnterEvent* event)
 {
-    m_label->setStyleSheet(
-        "QLabel {"
-        "  background-color: rgba(108, 106, 234, 220);"
-        "  color: white;"
-        "  padding: 4px 10px;"
-        "  border-radius: 4px;"
-        "  font-size: 11px;"
-        "  font-weight: bold;"
-        "}"
-    );
+    applyLabelStyle(true);
     CursorManager::instance().pushCursorForWidget(this, CursorContext::Hover, Qt::ArrowCursor);
     QWidget::enterEvent(event);
 }
 
 void ClickThroughExitButton::leaveEvent(QEvent* event)
 {
-    m_label->setStyleSheet(
-        "QLabel {"
-        "  background-color: rgba(88, 86, 214, 200);"
-        "  color: white;"
-        "  padding: 4px 10px;"
-        "  border-radius: 4px;"
-        "  font-size: 11px;"
-        "  font-weight: bold;"
-        "}"
-    );
+    applyLabelStyle(false);
     CursorManager::instance().clearAllForWidget(this);
     QWidget::leaveEvent(event);
 }
