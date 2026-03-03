@@ -573,19 +573,21 @@ snap-tray/
 |   |-- WatermarkRenderer.h
 |   |-- annotation/        # Annotation context and host adapter
 |   |-- annotations/       # Annotation types (Arrow, Shape, Text, etc.)
+|   |-- beautify/          # Beautify panel, renderer, and settings
 |   |-- capture/           # Screen/audio capture engines
 |   |-- cli/               # CLI handler, commands, IPC protocol
 |   |-- colorwidgets/      # Custom color picker widgets
 |   |-- cursor/            # Cursor state management
-|   |-- detection/         # Face/text detection
+|   |-- detection/         # Face/text/credential detection
 |   |-- encoding/          # GIF/WebP encoders
 |   |-- external/          # Third-party headers (msf_gif)
 |   |-- hotkey/            # Hotkey manager and types
-|   |-- input/             # Input abstractions (currently reserved)
-|   |-- mcp/               # Built-in MCP server and tool contracts
+|   |-- mcp/               # Built-in MCP server and tool contracts (debug-only)
 |   |-- pinwindow/         # Pin window components
+|   |-- platform/          # Platform abstraction (WindowLevel, PlatformFeatures)
 |   |-- region/            # Region selection components
 |   |-- settings/          # Settings managers
+|   |-- share/             # Share upload client
 |   |-- toolbar/           # Toolbar rendering
 |   |-- tools/             # Tool handlers and registry
 |   |-- ui/                # GlobalToast, IWidgetSection
@@ -606,6 +608,7 @@ snap-tray/
 |   |-- WatermarkRenderer.cpp
 |   |-- annotation/        # AnnotationContext implementation
 |   |-- annotations/       # Annotation implementations
+|   |-- beautify/          # Beautify implementations
 |   |-- capture/           # Capture engine implementations
 |   |-- cli/               # CLI command implementations
 |   |-- colorwidgets/      # Color widget implementations
@@ -613,12 +616,12 @@ snap-tray/
 |   |-- detection/         # Detection implementations
 |   |-- encoding/          # Encoder implementations
 |   |-- hotkey/            # HotkeyManager implementation
-|   |-- input/             # Input tracking (platform-specific)
-|   |-- mcp/               # MCP HTTP transport and tool implementations
+|   |-- mcp/               # MCP HTTP transport and tool implementations (debug-only)
 |   |-- pinwindow/         # Pin window component implementations
 |   |-- platform/          # Platform abstraction (macOS/Windows)
 |   |-- region/            # Region selection implementations
 |   |-- settings/          # Settings manager implementations
+|   |-- share/             # Share upload client implementation
 |   |-- toolbar/           # Toolbar implementations
 |   |-- tools/             # Tool system implementations
 |   |-- ui/sections/       # UI section implementations
@@ -642,6 +645,7 @@ snap-tray/
 |   `-- run-tests.sh / run-tests.bat
 |-- tests/
 |   |-- Annotations/
+|   |-- Beautify/
 |   |-- CLI/
 |   |-- Detection/
 |   |-- Encoding/
@@ -652,6 +656,7 @@ snap-tray/
 |   |-- RecordingManager/
 |   |-- RegionSelector/
 |   |-- Settings/
+|   |-- Share/
 |   |-- ToolOptionsPanel/
 |   |-- Tools/
 |   |-- UISections/
@@ -690,6 +695,13 @@ The codebase follows a modular architecture with extracted components for mainta
 | `RegionInputHandler`        | `src/region/`      | Input event handling for region selection |
 | `RegionPainter`             | `src/region/`      | Region rendering logic                    |
 | `MultiRegionManager`        | `src/region/`      | Multi-region capture coordination         |
+| `RegionToolbarHandler`      | `src/region/`      | Region toolbar interactions               |
+| `RegionSettingsHelper`      | `src/region/`      | Region settings management                |
+| `SelectionDirtyRegionPlanner`| `src/region/`     | Optimized dirty region calculation        |
+| `SelectionResizeHelper`     | `src/region/`      | Selection resize assistance               |
+| `ShapeAnnotationEditor`     | `src/region/`      | Inline shape annotation editing           |
+| `CaptureShortcutHintsOverlay`| `src/region/`     | Capture shortcut hints overlay            |
+| `MultiRegionListPanel`      | `src/region/`      | Multi-region list UI panel                |
 | `AnnotationSettingsManager` | `src/settings/`    | Centralized annotation settings           |
 | `FileSettingsManager`       | `src/settings/`    | File path settings                        |
 | `PinWindowSettingsManager`  | `src/settings/`    | Pin window settings                       |
@@ -702,12 +714,19 @@ The codebase follows a modular architecture with extracted components for mainta
 | `PinHistoryStore`           | `src/pinwindow/`   | Pin history persistence                   |
 | `PinHistoryWindow`          | `src/pinwindow/`   | Pin history UI                            |
 | `FaceDetector`              | `src/detection/`   | Face detection for auto-blur              |
+| `CredentialDetector`        | `src/detection/`   | Credential/sensitive info detection       |
+| `TableDetector`             | `src/detection/`   | Table structure detection                 |
 | `AutoBlurManager`           | `src/detection/`   | Auto-blur orchestration                   |
 | `HotkeyManager`             | `src/hotkey/`      | Centralized hotkey registration           |
 | `CLIHandler`                | `src/cli/`         | CLI command parsing and dispatch          |
 | `UpdateChecker`             | `src/update/`      | Auto-update version checking              |
 | `UpdateSettingsManager`     | `src/update/`      | Update preferences and scheduling         |
 | `AnnotationContext`         | `src/annotation/`  | Shared annotation execution context       |
+| `BeautifySettingsManager`   | `src/settings/`    | Beautify feature settings                 |
+| `RegionCaptureSettingsManager`| `src/settings/`  | Region capture settings                   |
+| `LanguageManager`           | `src/settings/`    | Display language management               |
+| `MCPSettingsManager`        | `src/settings/`    | MCP server settings                       |
+| `ShareUploadClient`         | `src/share/`       | Share URL upload client                   |
 | Color widgets               | `src/colorwidgets/`| Custom color picker dialog and components |
 | Section classes             | `src/ui/sections/` | Tool option panel components              |
 
@@ -721,6 +740,9 @@ The Qt Test suite currently covers:
 - Encoding and detection modules
 - CLI/IPC flows
 - Settings, hotkeys, update components, and utilities
+- Beautify settings and renderer
+- MCP server protocol and tools
+- Share upload client
 - Video timeline components
 
 ## Custom App Icon

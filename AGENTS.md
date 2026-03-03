@@ -69,13 +69,16 @@ snap-tray/
 │   │   └── commands/          # Individual CLI command classes
 │   ├── colorwidgets/          # Custom color picker widgets
 │   ├── cursor/                # Cursor management
-│   ├── detection/             # Face/text detection
+│   ├── detection/             # Face/text/credential detection
 │   ├── encoding/              # Video/GIF/WebP encoders
 │   ├── external/              # Third-party headers (msf_gif)
 │   ├── hotkey/                # HotkeyManager, HotkeyTypes
+│   ├── mcp/                   # Built-in MCP server and tool contracts (debug-only)
 │   ├── pinwindow/             # Pin window components
+│   ├── platform/              # Platform abstraction (WindowLevel, PlatformFeatures)
 │   ├── region/                # Region selection UI
 │   ├── settings/              # Settings managers
+│   ├── share/                 # Share upload client
 │   ├── toolbar/               # Toolbar rendering
 │   ├── tools/                 # Tool system (ToolId, IToolHandler)
 │   │   └── handlers/          # Tool handler interfaces
@@ -98,10 +101,12 @@ snap-tray/
 │   ├── detection/             # Detection algorithms
 │   ├── encoding/              # Encoder implementations
 │   ├── hotkey/                # HotkeyManager implementation
+│   ├── mcp/                   # MCP HTTP transport and tool implementations (debug-only)
 │   ├── pinwindow/             # Pin window logic
 │   ├── platform/              # Platform-specific code
 │   ├── region/                # Region selection implementation
 │   ├── settings/              # Settings management
+│   ├── share/                 # Share upload client implementation
 │   ├── toolbar/               # Toolbar rendering
 │   ├── tools/handlers/        # Tool handler implementations
 │   ├── ui/sections/           # UI sections implementation
@@ -119,10 +124,12 @@ snap-tray/
 │   ├── Encoding/              # NativeGifEncoder, EncoderFactory tests
 │   ├── Hotkey/                # HotkeyManager tests
 │   ├── IPC/                   # SingleInstanceGuard tests
+│   ├── MCP/                   # MCP server protocol and tools tests
 │   ├── PinWindow/             # Transform, Resize, PinHistory, PinMerge, RegionLayout tests
 │   ├── RecordingManager/      # StateMachine, Lifecycle, InitTask tests
 │   ├── RegionSelector/        # MagnifierPanel, Throttler tests
 │   ├── Settings/              # SettingsManager tests
+│   ├── Share/                 # ShareUploadClient tests
 │   ├── ToolOptionsPanel/      # State, Signals, HitTest, Events tests
 │   ├── Tools/                 # ToolRegistry, ToolHandler tests
 │   ├── UISections/            # UI section tests
@@ -153,7 +160,8 @@ The project uses a modular static library architecture:
 3. **snaptray_algorithms**: Detection algorithms (face detection, auto-blur) - depends on OpenCV
 4. **snaptray_platform**: Platform-specific capture, encoding, video playback
 5. **snaptray_ui**: UI components, toolbar, region selector, pin windows, tool system, recording workflow
-6. **SnapTray**: Main executable linking all libraries
+6. **snaptray_mcp**: MCP HTTP server and tool handlers (debug-only, linked conditionally)
+7. **SnapTray**: Main executable linking all libraries
 
 ## Architecture Patterns
 
@@ -184,6 +192,18 @@ WatermarkSettingsManager::instance();
 
 // Update preferences (auto-check, intervals, skipped version)
 UpdateSettingsManager::instance();  // From include/update/UpdateSettingsManager.h
+
+// Beautify feature settings
+BeautifySettingsManager::instance();
+
+// Region capture settings
+RegionCaptureSettingsManager::instance();
+
+// Display language management
+LanguageManager::instance();
+
+// MCP server settings
+MCPSettingsManager::instance();
 
 // Other settings
 QSettings settings = getSettings();  // From include/settings/Settings.h
@@ -222,6 +242,9 @@ Annotation types:
 - `MosaicStroke`, `MosaicRectAnnotation`: Blur/pixelate regions
 - `StepBadgeAnnotation`: Numbered badges
 - `EmojiStickerAnnotation`: Emoji overlays
+- `ErasedItemsGroup`: Groups of erased items
+- `AnnotationLayer`: Annotation layer rendering
+- `LineStyle`: Shared line style configuration
 
 ### Data-Driven Patterns
 
@@ -274,6 +297,8 @@ if (PlatformFeatures::instance().isOCRAvailable()) {
 | Platform Features | `PlatformFeatures_win.cpp` | `PlatformFeatures_mac.mm` |
 | Auto-launch | `AutoLaunchManager_win.cpp` | `AutoLaunchManager_mac.mm` |
 | Install Source | `InstallSourceDetector_win.cpp` | `InstallSourceDetector_mac.mm` |
+| PATH Utils | `PathEnvUtils_win.cpp` | N/A |
+| Color Space | N/A | `ImageColorSpaceHelper_mac.mm` |
 
 ## Key Components
 
@@ -295,10 +320,18 @@ Sub-components in `src/region/`:
 - `MagnifierPanel`: Pixel-level magnification with RGB/HEX preview
 - `UpdateThrottler`: Render throttling
 - `TextAnnotationEditor`: Inline text editing
+- `ShapeAnnotationEditor`: Inline shape annotation editing
 - `RegionExportManager`: Export/save functionality
 - `RegionInputHandler`: Input event handling
 - `RegionPainter`: Region rendering logic
 - `MultiRegionManager`: Multi-region capture coordination
+- `MultiRegionListPanel`: Multi-region list UI panel
+- `RegionToolbarHandler`: Region toolbar interactions
+- `RegionSettingsHelper`: Region settings management
+- `SelectionDirtyRegionPlanner`: Optimized dirty region calculation
+- `SelectionResizeHelper`: Selection resize assistance
+- `CaptureShortcutHintsOverlay`: Capture shortcut hints overlay
+- `RegionControlWidget`: Region control widget
 
 ### Pin Window (`src/PinWindow.cpp`)
 

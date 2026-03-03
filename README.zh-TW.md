@@ -573,19 +573,21 @@ snap-tray/
 |   |-- WatermarkRenderer.h
 |   |-- annotation/        # 標註上下文與主機介面
 |   |-- annotations/       # 標註類型（Arrow、Shape、Text 等）
+|   |-- beautify/          # 美化面板、渲染器與設定
 |   |-- capture/           # 螢幕/音訊擷取引擎
 |   |-- cli/               # CLI 處理器、指令、IPC 協定
 |   |-- colorwidgets/      # 自訂色彩選擇器元件
 |   |-- cursor/            # 游標狀態管理
-|   |-- detection/         # 臉部/文字偵測
+|   |-- detection/         # 臉部/文字/憑證偵測
 |   |-- encoding/          # GIF/WebP 編碼器
 |   |-- external/          # 第三方標頭檔（msf_gif）
 |   |-- hotkey/            # 熱鍵管理器與型別定義
-|   |-- input/             # 輸入抽象層（目前保留）
-|   |-- mcp/               # 內建 MCP server 與 tool contracts
+|   |-- mcp/               # 內建 MCP server 與 tool contracts（僅 Debug）
 |   |-- pinwindow/         # 釘選視窗元件
+|   |-- platform/          # 平台抽象層（WindowLevel、PlatformFeatures）
 |   |-- region/            # 區域選取元件
 |   |-- settings/          # 設定管理器
+|   |-- share/             # 分享上傳客戶端
 |   |-- toolbar/           # 工具列繪製
 |   |-- tools/             # 工具處理器與註冊
 |   |-- ui/                # GlobalToast、IWidgetSection
@@ -606,6 +608,7 @@ snap-tray/
 |   |-- WatermarkRenderer.cpp
 |   |-- annotation/        # AnnotationContext 實作
 |   |-- annotations/       # 標註實作
+|   |-- beautify/          # 美化功能實作
 |   |-- capture/           # 擷取引擎實作
 |   |-- cli/               # CLI 指令實作
 |   |-- colorwidgets/      # 色彩元件實作
@@ -613,12 +616,12 @@ snap-tray/
 |   |-- detection/         # 偵測實作
 |   |-- encoding/          # 編碼器實作
 |   |-- hotkey/            # HotkeyManager 實作
-|   |-- input/             # 輸入追蹤（平台特定）
-|   |-- mcp/               # MCP HTTP transport 與 tool 實作
+|   |-- mcp/               # MCP HTTP transport 與 tool 實作（僅 Debug）
 |   |-- pinwindow/         # 釘選視窗元件實作
 |   |-- platform/          # 平台抽象層（macOS/Windows）
 |   |-- region/            # 區域選取實作
 |   |-- settings/          # 設定管理器實作
+|   |-- share/             # 分享上傳客戶端實作
 |   |-- toolbar/           # 工具列實作
 |   |-- tools/             # 工具系統實作
 |   |-- ui/sections/       # UI 區段實作
@@ -642,6 +645,7 @@ snap-tray/
 |   `-- run-tests.sh / run-tests.bat
 |-- tests/
 |   |-- Annotations/
+|   |-- Beautify/
 |   |-- CLI/
 |   |-- Detection/
 |   |-- Encoding/
@@ -652,6 +656,7 @@ snap-tray/
 |   |-- RecordingManager/
 |   |-- RegionSelector/
 |   |-- Settings/
+|   |-- Share/
 |   |-- ToolOptionsPanel/
 |   |-- Tools/
 |   |-- UISections/
@@ -690,6 +695,13 @@ snap-tray/
 | `RegionInputHandler`        | `src/region/`      | 區域選取輸入事件處理       |
 | `RegionPainter`             | `src/region/`      | 區域繪製邏輯               |
 | `MultiRegionManager`        | `src/region/`      | 多區域擷取協調管理         |
+| `RegionToolbarHandler`      | `src/region/`      | 區域工具列互動處理         |
+| `RegionSettingsHelper`      | `src/region/`      | 區域設定管理               |
+| `SelectionDirtyRegionPlanner`| `src/region/`     | 最佳化髒區域計算           |
+| `SelectionResizeHelper`     | `src/region/`      | 選取框大小調整輔助         |
+| `ShapeAnnotationEditor`     | `src/region/`      | 內嵌形狀標註編輯           |
+| `CaptureShortcutHintsOverlay`| `src/region/`     | 截圖快捷鍵提示覆蓋層       |
+| `MultiRegionListPanel`      | `src/region/`      | 多區域列表 UI 面板         |
 | `AnnotationSettingsManager` | `src/settings/`    | 集中式註釋設定管理         |
 | `FileSettingsManager`       | `src/settings/`    | 檔案路徑設定               |
 | `PinWindowSettingsManager`  | `src/settings/`    | 釘選視窗設定               |
@@ -702,12 +714,19 @@ snap-tray/
 | `PinHistoryStore`           | `src/pinwindow/`   | 釘選歷史紀錄持久化         |
 | `PinHistoryWindow`          | `src/pinwindow/`   | 釘選歷史紀錄 UI            |
 | `FaceDetector`              | `src/detection/`   | 自動模糊臉部偵測           |
+| `CredentialDetector`        | `src/detection/`   | 憑證/敏感資訊偵測          |
+| `TableDetector`             | `src/detection/`   | 表格結構偵測               |
 | `AutoBlurManager`           | `src/detection/`   | 自動模糊協調管理           |
 | `HotkeyManager`             | `src/hotkey/`      | 集中式熱鍵註冊管理         |
 | `CLIHandler`                | `src/cli/`         | CLI 指令解析與分派         |
 | `UpdateChecker`             | `src/update/`      | 自動更新版本檢查           |
 | `UpdateSettingsManager`     | `src/update/`      | 更新偏好設定與排程         |
 | `AnnotationContext`         | `src/annotation/`  | 共享標註執行上下文         |
+| `BeautifySettingsManager`   | `src/settings/`    | 美化功能設定               |
+| `RegionCaptureSettingsManager`| `src/settings/`  | 區域截圖設定               |
+| `LanguageManager`           | `src/settings/`    | 顯示語言管理               |
+| `MCPSettingsManager`        | `src/settings/`    | MCP server 設定            |
+| `ShareUploadClient`         | `src/share/`       | 分享 URL 上傳客戶端        |
 | Color widgets               | `src/colorwidgets/`| 自訂色彩選擇器對話框與元件 |
 | Section 類別                | `src/ui/sections/` | 工具選項面板組件           |
 
@@ -721,6 +740,9 @@ snap-tray/
 - Encoding 與 Detection 模組
 - CLI/IPC 流程
 - Settings、Hotkeys、Update 元件與工具函式
+- Beautify 設定與渲染器
+- MCP server 協定與工具
+- Share 上傳客戶端
 - Video timeline 元件
 
 ## 自訂應用程式圖示
