@@ -8,6 +8,7 @@
 #include <QApplication>
 #include <QPalette>
 #include <QString>
+#include "ui/DesignTokens.h"
 
 namespace SnapTray {
 namespace SettingsTheme {
@@ -55,8 +56,14 @@ inline QString linkColor() { return isDark() ? QStringLiteral("#64B5F6") : QStri
 // Status colors (vivid colors work well in both themes)
 // ============================================================================
 
-inline QString successColor() { return QStringLiteral("#4CAF50"); }
-inline QString errorColor() { return QStringLiteral("#F44336"); }
+inline QString successColor() {
+    auto type = isDark() ? ToolbarStyleType::Dark : ToolbarStyleType::Light;
+    return DesignTokens::forStyle(type).successAccent.name();
+}
+inline QString errorColor() {
+    auto type = isDark() ? ToolbarStyleType::Dark : ToolbarStyleType::Light;
+    return DesignTokens::forStyle(type).errorAccent.name();
+}
 
 // ============================================================================
 // Selection

@@ -8,6 +8,8 @@
 #include "toolbar/ToolbarButtonConfig.h"
 #include "tools/ToolId.h"
 
+namespace SnapTray { class GlassTooltip; }
+
 class WindowedToolbar : public QWidget
 {
     Q_OBJECT
@@ -118,7 +120,7 @@ private:
     QElapsedTimer m_showTime;
     QWidget *m_associatedWindow = nullptr;
     QWidget *m_subToolbar = nullptr;
-    QWidget *m_hoverTooltip = nullptr;
+    SnapTray::GlassTooltip *m_hoverTooltip = nullptr;
 
     // Match RegionSelector's ToolbarCore dimensions
     static constexpr int TOOLBAR_HEIGHT = 32;

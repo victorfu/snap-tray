@@ -31,7 +31,6 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include "OCRResultDialog.h"
 #include "QRCodeResultDialog.h"
 #include "ui/UnifiedToast.h"
-#include "ui/UnifiedToast.h"
 #include "ui/SharePasswordDialog.h"
 #include "ui/ShareResultDialog.h"
 #include "tools/handlers/MosaicToolHandler.h"

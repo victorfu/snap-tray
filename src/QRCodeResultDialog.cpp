@@ -44,6 +44,7 @@ QRCodeResultDialog::QRCodeResultDialog(QWidget *parent)
 {
     setAttribute(Qt::WA_DeleteOnClose);
     setAttribute(Qt::WA_TranslucentBackground, true);
+    setObjectName("dialogRoot");
 
     setupUi();
     applyTheme();
@@ -158,111 +159,24 @@ void QRCodeResultDialog::setupUi()
 
 void QRCodeResultDialog::applyTheme()
 {
-    const SnapTray::DialogTheme::Palette palette = SnapTray::DialogTheme::paletteForToolbarStyle();
+    using namespace SnapTray;
+    const auto palette = DialogTheme::paletteForToolbarStyle();
+    // NOTE: No DesignTokens bridge — QRCodeResultDialog is in snaptray_platform
 
-    setStyleSheet(QStringLiteral(R"(
-        QRCodeResultDialog {
-            background-color: %1;
-            border: 1px solid %2;
-            border-radius: 10px;
-        }
-
-        #titleBar {
-            background-color: %3;
-            border-top-left-radius: 10px;
-            border-top-right-radius: 10px;
-            border-bottom: 1px solid %2;
-        }
-
-        #thumbnail {
-            background-color: %4;
-            border: 1px solid %5;
-            border-radius: 4px;
-            color: %6;
-            font-size: 18px;
-            font-weight: bold;
-        }
-
-        #formatLabel {
-            color: %7;
-            font-size: 14px;
-            font-weight: bold;
-        }
-
-        #characterCountLabel {
-            color: %6;
-            font-size: 12px;
-        }
-
-        #textEdit {
-            background-color: %8;
-            color: %7;
-            border: 1px solid %9;
-            border-radius: 6px;
-            padding: 8px;
-            font-family: 'Consolas', 'Courier New', monospace;
-            font-size: 13px;
-            selection-background-color: %10;
-        }
-
+    QString css = DialogTheme::baseStylesheet(palette);
+    css += QStringLiteral(R"(
+        #textEdit { font-family: 'Consolas', 'Courier New', monospace; }
         #generatedPreview {
-            background-color: %8;
-            color: %6;
-            border-left: 1px solid %9;
-            border-right: 1px solid %9;
-            border-top: 1px solid %9;
-            border-bottom: 1px solid %9;
+            background-color: %1;
+            color: %2;
+            border: 1px solid %3;
             font-size: 12px;
-        }
-
-        #buttonBar {
-            background-color: %3;
-            border-bottom-left-radius: 10px;
-            border-bottom-right-radius: 10px;
-        }
-
-        QPushButton {
-            background-color: %11;
-            color: %12;
-            border: 1px solid %5;
-            border-radius: 6px;
-            font-size: 13px;
-            font-weight: 500;
-            padding: 8px 16px;
-        }
-
-        QPushButton:hover {
-            background-color: %13;
-            border-color: %2;
-        }
-
-        QPushButton:pressed {
-            background-color: %14;
-        }
-
-        QPushButton:disabled {
-            background-color: %15;
-            color: %16;
-            border-color: %17;
         }
     )")
-        .arg(SnapTray::DialogTheme::toCssColor(palette.windowBackground))
-        .arg(SnapTray::DialogTheme::toCssColor(palette.border))
-        .arg(SnapTray::DialogTheme::toCssColor(palette.titleBarBackground))
-        .arg(SnapTray::DialogTheme::toCssColor(palette.panelBackground))
-        .arg(SnapTray::DialogTheme::toCssColor(palette.controlBorder))
-        .arg(SnapTray::DialogTheme::toCssColor(palette.textSecondary))
-        .arg(SnapTray::DialogTheme::toCssColor(palette.textPrimary))
-        .arg(SnapTray::DialogTheme::toCssColor(palette.inputBackground))
-        .arg(SnapTray::DialogTheme::toCssColor(palette.inputBorder))
-        .arg(SnapTray::DialogTheme::toCssColor(palette.selectionBackground))
-        .arg(SnapTray::DialogTheme::toCssColor(palette.buttonBackground))
-        .arg(SnapTray::DialogTheme::toCssColor(palette.buttonText))
-        .arg(SnapTray::DialogTheme::toCssColor(palette.buttonHoverBackground))
-        .arg(SnapTray::DialogTheme::toCssColor(palette.buttonPressedBackground))
-        .arg(SnapTray::DialogTheme::toCssColor(palette.buttonDisabledBackground))
-        .arg(SnapTray::DialogTheme::toCssColor(palette.buttonDisabledText))
-        .arg(SnapTray::DialogTheme::toCssColor(palette.buttonDisabledBorder)));
+    .arg(DialogTheme::toCssColor(palette.inputBackground))
+    .arg(DialogTheme::toCssColor(palette.textSecondary))
+    .arg(DialogTheme::toCssColor(palette.inputBorder));
+    setStyleSheet(css);
 }
 
 void QRCodeResultDialog::setResult(const QString &text, const QString &format, const QPixmap &sourceImage)
@@ -506,14 +420,11 @@ void QRCodeResultDialog::updateCharacterCount()
 
 void QRCodeResultDialog::showCopyFeedback()
 {
-    const SnapTray::DialogTheme::Palette palette = SnapTray::DialogTheme::paletteForToolbarStyle();
+    using namespace SnapTray;
+    const auto palette = DialogTheme::paletteForToolbarStyle();
     QString originalText = m_copyButton->text();
     m_copyButton->setText(tr("✓ Copied!"));
-    m_copyButton->setStyleSheet(QStringLiteral(
-        "QPushButton { background-color: %1; border-color: %2; color: %3; }")
-        .arg(SnapTray::DialogTheme::toCssColor(palette.successBackground))
-        .arg(SnapTray::DialogTheme::toCssColor(palette.successBorder))
-        .arg(SnapTray::DialogTheme::toCssColor(palette.successText)));
+    m_copyButton->setStyleSheet(DialogTheme::successButtonStylesheet(palette));
 
     // Reset after 1.5 seconds
     QTimer::singleShot(1500, this, [this, originalText]() {

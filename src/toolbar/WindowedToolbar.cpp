@@ -4,6 +4,7 @@
 #include "IconRenderer.h"
 #include "toolbar/ToolbarRenderer.h"
 #include "GlassRenderer.h"
+#include "ui/GlassTooltip.h"
 #include "cursor/CursorManager.h"
 #include "tools/ToolRegistry.h"
 #include "tools/ToolTraits.h"
@@ -38,64 +39,6 @@ constexpr std::array<std::pair<int, ActionSignal>, 8> kActionButtonSignals = {{
     {WindowedToolbar::ButtonDone, &WindowedToolbar::doneClicked}
 }};
 
-class ToolbarGlassTooltipWidget : public QWidget
-{
-public:
-    explicit ToolbarGlassTooltipWidget(QWidget* parent = nullptr)
-        : QWidget(parent, Qt::ToolTip | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint)
-    {
-        setAttribute(Qt::WA_TranslucentBackground);
-        setAttribute(Qt::WA_ShowWithoutActivating);
-        setAttribute(Qt::WA_TransparentForMouseEvents);
-    }
-
-    void setTextAndStyle(const QString& text, const ToolbarStyleConfig& style)
-    {
-        m_text = text;
-        m_style = style;
-        QFont font = this->font();
-        font.setPointSize(11);
-        setFont(font);
-        updateGeometry();
-        update();
-    }
-
-    QSize sizeHint() const override
-    {
-        if (m_text.isEmpty()) {
-            return QSize(0, 0);
-        }
-        QFontMetrics fm(font());
-        QRect textRect = fm.boundingRect(m_text);
-        textRect.adjust(-8, -4, 8, 4);
-        return textRect.size();
-    }
-
-protected:
-    void paintEvent(QPaintEvent* event) override
-    {
-        Q_UNUSED(event);
-        if (m_text.isEmpty()) {
-            return;
-        }
-
-        QPainter painter(this);
-        painter.setRenderHint(QPainter::Antialiasing);
-
-        ToolbarStyleConfig tooltipConfig = m_style;
-        tooltipConfig.shadowColor.setAlpha(0);
-        tooltipConfig.shadowOffsetY = 0;
-        tooltipConfig.shadowBlurRadius = 0;
-        GlassRenderer::drawGlassPanel(painter, rect(), tooltipConfig, 6);
-
-        painter.setPen(m_style.tooltipText);
-        painter.drawText(rect(), Qt::AlignCenter, m_text);
-    }
-
-private:
-    QString m_text;
-    ToolbarStyleConfig m_style;
-};
 }
 
 WindowedToolbar::WindowedToolbar(QWidget *parent)
@@ -316,42 +259,25 @@ void WindowedToolbar::updateHoverTooltip()
     }
 
     if (!m_hoverTooltip) {
-        auto* tooltipWidget = new ToolbarGlassTooltipWidget(nullptr);
-        m_hoverTooltip = tooltipWidget;
-        connect(tooltipWidget, &QObject::destroyed, this, [this]() {
+        m_hoverTooltip = new SnapTray::GlassTooltip(nullptr);
+        connect(m_hoverTooltip, &QObject::destroyed, this, [this]() {
             m_hoverTooltip = nullptr;
         });
     }
 
-    auto* tooltipWidget = static_cast<ToolbarGlassTooltipWidget*>(m_hoverTooltip);
     const ToolbarStyleConfig& styleConfig =
         ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
-    tooltipWidget->setTextAndStyle(config.tooltip, styleConfig);
 
-    const QSize tooltipSize = tooltipWidget->sizeHint();
-    if (tooltipSize.isEmpty()) {
-        hideHoverTooltip();
-        return;
-    }
-    tooltipWidget->resize(tooltipSize);
-
-    const QPoint globalAnchorCenter = mapToGlobal(btnRect.center());
-    int tooltipX = globalAnchorCenter.x() - tooltipSize.width() / 2;
-    int tooltipY = mapToGlobal(btnRect.topLeft()).y() - tooltipSize.height() - 6;
-
-    if (QScreen* screen = QGuiApplication::screenAt(globalAnchorCenter)) {
-        const QRect bounds = screen->availableGeometry();
-        tooltipX = qBound(bounds.left() + 5, tooltipX, bounds.right() - tooltipSize.width() - 5);
-    }
-
-    tooltipWidget->move(tooltipX, tooltipY);
-    tooltipWidget->show();
+    // Anchor: center X of button, top edge Y (tooltip shows above)
+    const QPoint anchorPos(mapToGlobal(btnRect.center()).x(),
+                           mapToGlobal(btnRect.topLeft()).y());
+    m_hoverTooltip->show(config.tooltip, styleConfig, anchorPos, /*above=*/true, /*showShadow=*/false);
 }
 
 void WindowedToolbar::hideHoverTooltip()
 {
     if (m_hoverTooltip) {
-        m_hoverTooltip->hide();
+        m_hoverTooltip->hideTooltip();
     }
 }
 

@@ -294,6 +294,7 @@ add_library(snaptray_core STATIC
     src/update/UpdateSettingsManager.cpp
     src/cursor/CursorManager.cpp
     src/utils/CoordinateHelper.cpp
+    src/utils/DialogThemeUtils.cpp
     src/utils/FilenameTemplateEngine.cpp
     src/utils/ImageSaveUtils.cpp
     # CLI sources
@@ -711,8 +712,12 @@ add_library(snaptray_ui STATIC
     # Global UI components
     src/ui/DesignTokens.cpp
     src/ui/UnifiedToast.cpp
+    src/ui/OverlayBadge.cpp
+    src/ui/GlassTooltip.cpp
     include/ui/DesignTokens.h
     include/ui/UnifiedToast.h
+    include/ui/OverlayBadge.h
+    include/ui/GlassTooltip.h
     include/ui/SharePasswordDialog.h
     include/ui/ShareResultDialog.h
     include/share/ShareUploadClient.h

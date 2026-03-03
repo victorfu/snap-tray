@@ -2,11 +2,11 @@
 #define UIINDICATORS_H
 
 #include <QObject>
-#include <QLabel>
-#include <QTimer>
 #include <QWidget>
 
 class ClickThroughExitButton;
+
+namespace SnapTray { class OverlayBadge; }
 
 class UIIndicators : public QObject
 {
@@ -28,20 +28,18 @@ signals:
     void exitClickThroughRequested();
 
 private:
-    void ensureZoomLabelCreated();
-    void ensureOpacityLabelCreated();
+    void ensureZoomBadgeCreated();
+    void ensureOpacityBadgeCreated();
     void ensureClickThroughExitButtonCreated();
 
     QWidget* m_parentWidget = nullptr;
     int m_shadowMargin = 8;
 
     // Zoom indicator
-    QLabel* m_zoomLabel = nullptr;
-    QTimer* m_zoomLabelTimer = nullptr;
+    SnapTray::OverlayBadge* m_zoomBadge = nullptr;
 
     // Opacity indicator
-    QLabel* m_opacityLabel = nullptr;
-    QTimer* m_opacityLabelTimer = nullptr;
+    SnapTray::OverlayBadge* m_opacityBadge = nullptr;
 
     // Click-through exit button (independent floating window)
     ClickThroughExitButton* m_clickThroughExitButton = nullptr;

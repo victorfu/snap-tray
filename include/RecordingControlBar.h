@@ -14,7 +14,7 @@ class QHBoxLayout;
 class QFont;
 class QFontMetrics;
 class QEnterEvent;
-class GlassTooltipWidget;
+namespace SnapTray { class GlassTooltip; }
 class RecordingControlBar : public QWidget
 {
     Q_OBJECT
@@ -190,7 +190,7 @@ private:
 
     // Global shortcut for ESC key
     QShortcut *m_escShortcut;
-    GlassTooltipWidget *m_tooltip;
+    SnapTray::GlassTooltip *m_tooltip;
 
     // Layout constants (matching ToolbarCore)
     static const int TOOLBAR_HEIGHT = 32;

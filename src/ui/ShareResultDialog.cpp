@@ -1,6 +1,7 @@
 #include "ui/ShareResultDialog.h"
 
 #include "platform/WindowLevel.h"
+#include "ui/DesignTokens.h"
 #include "utils/DialogThemeUtils.h"
 
 #include <QApplication>
@@ -24,6 +25,7 @@ ShareResultDialog::ShareResultDialog(QWidget* parent)
 {
     setAttribute(Qt::WA_DeleteOnClose);
     setAttribute(Qt::WA_TranslucentBackground, true);
+    setObjectName("dialogRoot");
     setupUi();
     applyTheme();
 
@@ -152,147 +154,48 @@ void ShareResultDialog::setupUi()
 
 void ShareResultDialog::applyTheme()
 {
-    const SnapTray::DialogTheme::Palette palette = SnapTray::DialogTheme::paletteForToolbarStyle();
+    using namespace SnapTray;
+    auto palette = DialogTheme::paletteForToolbarStyle();
 
-    setStyleSheet(QStringLiteral(R"(
-        ShareResultDialog {
-            background-color: %1;
-            border: 1px solid %2;
-            border-radius: 10px;
-        }
+    // Bridge success colors to DesignTokens
+    const auto& tokens = DesignTokens::forStyle(
+        DialogTheme::isLightToolbarStyle() ? ToolbarStyleType::Light : ToolbarStyleType::Dark);
+    palette.successBackground = tokens.successAccent;
+    palette.successBorder = tokens.successAccent.lighter(120);
 
-        #titleBar {
-            background-color: %3;
-            border-top-left-radius: 10px;
-            border-top-right-radius: 10px;
-            border-bottom: 1px solid %2;
-        }
-
-        #iconLabel {
-            background-color: %4;
-            border: 1px solid %5;
-            border-radius: 4px;
-            color: %6;
-            font-size: 16px;
-            font-weight: bold;
-        }
-
-        #titleLabel {
-            color: %7;
-            font-size: 14px;
-            font-weight: 700;
-        }
-
-        #subtitleLabel {
-            color: %6;
-            font-size: 12px;
-        }
-
-        #contentPanel {
-            background-color: %1;
-        }
-
-        #fieldLabel {
-            color: %6;
-            font-size: 12px;
-            font-weight: 500;
-        }
-
-        #urlEdit {
-            background-color: %8;
-            color: %7;
-            border: 1px solid %9;
-            border-radius: 6px;
-            padding: 8px;
+    QString css = DialogTheme::baseStylesheet(palette);
+    css += QStringLiteral(R"(
+        #iconLabel { font-size: 16px; }
+        #contentPanel { background-color: %1; }
+        #fieldLabel { color: %2; font-size: 12px; font-weight: 500; }
+        #urlEdit, #passwordEdit {
             font-family: 'Consolas', 'Courier New', monospace;
-            font-size: 13px;
-            selection-background-color: %10;
         }
-
-        #passwordEdit {
-            background-color: %8;
-            color: %7;
-            border: 1px solid %9;
-            border-radius: 6px;
-            padding: 8px;
-            font-family: 'Consolas', 'Courier New', monospace;
-            font-size: 13px;
-            selection-background-color: %10;
-        }
-
         #metaBadge {
-            background-color: %4;
-            color: %6;
-            border: 1px solid %5;
-            border-radius: 10px;
-            font-size: 12px;
-            padding: 4px 10px;
+            background-color: %3; color: %2;
+            border: 1px solid %4; border-radius: 10px;
+            font-size: 12px; padding: 4px 10px;
         }
-
-        #hintLabel {
-            color: %6;
-            font-size: 12px;
-        }
-
-        #buttonBar {
-            background-color: %3;
-            border-bottom-left-radius: 10px;
-            border-bottom-right-radius: 10px;
-        }
-
-        QPushButton {
-            background-color: %11;
-            color: %12;
-            border: 1px solid %5;
-            border-radius: 6px;
-            font-size: 13px;
-            font-weight: 500;
-            padding: 8px 16px;
-        }
-
-        QPushButton:hover {
-            background-color: %13;
-            border-color: %2;
-        }
-
-        QPushButton:pressed {
-            background-color: %14;
-        }
-
+        #hintLabel { color: %2; font-size: 12px; }
         #openButton {
-            background-color: %15;
-            border-color: %15;
-            color: %16;
+            background-color: %5; border-color: %5; color: %6;
         }
-
         #openButton:hover {
-            background-color: %17;
-            border-color: %17;
+            background-color: %7; border-color: %7;
         }
-
         #openButton:pressed {
-            background-color: %18;
-            border-color: %18;
+            background-color: %8; border-color: %8;
         }
     )")
-        .arg(SnapTray::DialogTheme::toCssColor(palette.windowBackground))
-        .arg(SnapTray::DialogTheme::toCssColor(palette.border))
-        .arg(SnapTray::DialogTheme::toCssColor(palette.titleBarBackground))
-        .arg(SnapTray::DialogTheme::toCssColor(palette.panelBackground))
-        .arg(SnapTray::DialogTheme::toCssColor(palette.controlBorder))
-        .arg(SnapTray::DialogTheme::toCssColor(palette.textSecondary))
-        .arg(SnapTray::DialogTheme::toCssColor(palette.textPrimary))
-        .arg(SnapTray::DialogTheme::toCssColor(palette.inputBackground))
-        .arg(SnapTray::DialogTheme::toCssColor(palette.inputBorder))
-        .arg(SnapTray::DialogTheme::toCssColor(palette.selectionBackground))
-        .arg(SnapTray::DialogTheme::toCssColor(palette.buttonBackground))
-        .arg(SnapTray::DialogTheme::toCssColor(palette.buttonText))
-        .arg(SnapTray::DialogTheme::toCssColor(palette.buttonHoverBackground))
-        .arg(SnapTray::DialogTheme::toCssColor(palette.buttonPressedBackground))
-        .arg(SnapTray::DialogTheme::toCssColor(palette.accentBackground))
-        .arg(SnapTray::DialogTheme::toCssColor(palette.successText))
-        .arg(SnapTray::DialogTheme::toCssColor(palette.accentHoverBackground))
-        .arg(SnapTray::DialogTheme::toCssColor(palette.accentPressedBackground)));
+    .arg(DialogTheme::toCssColor(palette.windowBackground))      // %1
+    .arg(DialogTheme::toCssColor(palette.textSecondary))          // %2
+    .arg(DialogTheme::toCssColor(palette.panelBackground))        // %3
+    .arg(DialogTheme::toCssColor(palette.controlBorder))          // %4
+    .arg(DialogTheme::toCssColor(palette.accentBackground))       // %5
+    .arg(DialogTheme::toCssColor(palette.successText))            // %6
+    .arg(DialogTheme::toCssColor(palette.accentHoverBackground))  // %7
+    .arg(DialogTheme::toCssColor(palette.accentPressedBackground)); // %8
+    setStyleSheet(css);
 }
 
 void ShareResultDialog::setResult(const QString& url,

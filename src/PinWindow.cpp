@@ -40,7 +40,6 @@
 #include "settings/OCRSettingsManager.h"
 #include "share/ShareUploadClient.h"
 #include "ui/UnifiedToast.h"
-#include "ui/UnifiedToast.h"
 #include "ui/SharePasswordDialog.h"
 #include "ui/ShareResultDialog.h"
 #include "utils/FilenameTemplateEngine.h"

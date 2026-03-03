@@ -1,6 +1,7 @@
 #include "OCRResultDialog.h"
 #include "detection/TableDetector.h"
 #include "platform/WindowLevel.h"
+#include "ui/DesignTokens.h"
 #include "utils/DialogThemeUtils.h"
 
 #include <QVBoxLayout>
@@ -32,6 +33,7 @@ OCRResultDialog::OCRResultDialog(QWidget *parent)
 {
     setAttribute(Qt::WA_DeleteOnClose);
     setAttribute(Qt::WA_TranslucentBackground, true);
+    setObjectName("dialogRoot");
 
     setupUi();
     applyTheme();
@@ -123,101 +125,20 @@ void OCRResultDialog::setupUi()
 
 void OCRResultDialog::applyTheme()
 {
-    const SnapTray::DialogTheme::Palette palette = SnapTray::DialogTheme::paletteForToolbarStyle();
+    using namespace SnapTray;
+    auto palette = DialogTheme::paletteForToolbarStyle();
 
-    setStyleSheet(QStringLiteral(R"(
-        OCRResultDialog {
-            background-color: %1;
-            border: 1px solid %2;
-            border-radius: 10px;
-        }
+    // Bridge success colors to DesignTokens
+    const auto& tokens = DesignTokens::forStyle(
+        DialogTheme::isLightToolbarStyle() ? ToolbarStyleType::Light : ToolbarStyleType::Dark);
+    palette.successBackground = tokens.successAccent;
+    palette.successBorder = tokens.successAccent.lighter(120);
 
-        #titleBar {
-            background-color: %3;
-            border-top-left-radius: 10px;
-            border-top-right-radius: 10px;
-            border-bottom: 1px solid %2;
-        }
-
-        #iconLabel {
-            background-color: %4;
-            border: 1px solid %5;
-            border-radius: 4px;
-            color: %6;
-            font-size: 18px;
-            font-weight: bold;
-        }
-
-        #titleLabel {
-            color: %7;
-            font-size: 14px;
-            font-weight: bold;
-        }
-
-        #charCountLabel {
-            color: %6;
-            font-size: 12px;
-        }
-
-        #textEdit {
-            background-color: %8;
-            color: %7;
-            border: 1px solid %9;
-            border-radius: 6px;
-            padding: 8px;
-            font-family: 'Consolas', 'Courier New', monospace;
-            font-size: 13px;
-            selection-background-color: %10;
-        }
-
-        #buttonBar {
-            background-color: %3;
-            border-bottom-left-radius: 10px;
-            border-bottom-right-radius: 10px;
-        }
-
-        QPushButton {
-            background-color: %11;
-            color: %12;
-            border: 1px solid %5;
-            border-radius: 6px;
-            font-size: 13px;
-            font-weight: 500;
-            padding: 8px 16px;
-        }
-
-        QPushButton:hover {
-            background-color: %13;
-            border-color: %2;
-        }
-
-        QPushButton:pressed {
-            background-color: %14;
-        }
-
-        QPushButton:disabled {
-            background-color: %15;
-            color: %16;
-            border-color: %17;
-        }
-    )")
-        .arg(SnapTray::DialogTheme::toCssColor(palette.windowBackground))
-        .arg(SnapTray::DialogTheme::toCssColor(palette.border))
-        .arg(SnapTray::DialogTheme::toCssColor(palette.titleBarBackground))
-        .arg(SnapTray::DialogTheme::toCssColor(palette.panelBackground))
-        .arg(SnapTray::DialogTheme::toCssColor(palette.controlBorder))
-        .arg(SnapTray::DialogTheme::toCssColor(palette.textSecondary))
-        .arg(SnapTray::DialogTheme::toCssColor(palette.textPrimary))
-        .arg(SnapTray::DialogTheme::toCssColor(palette.inputBackground))
-        .arg(SnapTray::DialogTheme::toCssColor(palette.inputBorder))
-        .arg(SnapTray::DialogTheme::toCssColor(palette.selectionBackground))
-        .arg(SnapTray::DialogTheme::toCssColor(palette.buttonBackground))
-        .arg(SnapTray::DialogTheme::toCssColor(palette.buttonText))
-        .arg(SnapTray::DialogTheme::toCssColor(palette.buttonHoverBackground))
-        .arg(SnapTray::DialogTheme::toCssColor(palette.buttonPressedBackground))
-        .arg(SnapTray::DialogTheme::toCssColor(palette.buttonDisabledBackground))
-        .arg(SnapTray::DialogTheme::toCssColor(palette.buttonDisabledText))
-        .arg(SnapTray::DialogTheme::toCssColor(palette.buttonDisabledBorder)));
+    QString css = DialogTheme::baseStylesheet(palette);
+    css += QStringLiteral(R"(
+        #textEdit { font-family: 'Consolas', 'Courier New', monospace; }
+    )");
+    setStyleSheet(css);
 }
 
 void OCRResultDialog::setResultText(const QString &text)
@@ -408,15 +329,17 @@ void OCRResultDialog::showCopyFeedback(QPushButton *button, const QString &feedb
         return;
     }
 
-    const SnapTray::DialogTheme::Palette palette = SnapTray::DialogTheme::paletteForToolbarStyle();
+    using namespace SnapTray;
+    auto palette = DialogTheme::paletteForToolbarStyle();
+    const auto& tokens = DesignTokens::forStyle(
+        DialogTheme::isLightToolbarStyle() ? ToolbarStyleType::Light : ToolbarStyleType::Dark);
+    palette.successBackground = tokens.successAccent;
+    palette.successBorder = tokens.successAccent.lighter(120);
+
     const QString originalText = button->text();
     QPointer<QPushButton> safeButton = button;
     safeButton->setText(feedbackText);
-    safeButton->setStyleSheet(QStringLiteral(
-        "QPushButton { background-color: %1; border-color: %2; color: %3; }")
-        .arg(SnapTray::DialogTheme::toCssColor(palette.successBackground))
-        .arg(SnapTray::DialogTheme::toCssColor(palette.successBorder))
-        .arg(SnapTray::DialogTheme::toCssColor(palette.successText)));
+    safeButton->setStyleSheet(DialogTheme::successButtonStylesheet(palette));
 
     // Reset after 1.5 seconds
     QTimer::singleShot(1500, this, [safeButton, originalText]() {

@@ -70,11 +70,11 @@ void UnifiedToast::setupAnimations()
 
     // Hide animation group: fade out + slide up
     auto* hideFade = new QPropertyAnimation(this, "fadeOpacity", this);
-    hideFade->setDuration(150);
+    hideFade->setDuration(250);
     hideFade->setEasingCurve(QEasingCurve::InCubic);
 
     auto* hideSlide = new QPropertyAnimation(this, "slideOffset", this);
-    hideSlide->setDuration(150);
+    hideSlide->setDuration(250);
     hideSlide->setEasingCurve(QEasingCurve::InCubic);
 
     m_hideGroup = new QParallelAnimationGroup(this);
@@ -228,7 +228,7 @@ void UnifiedToast::animateIn()
     // Configure show: fade 0→1, slide -8→0
     showFade->setStartValue(0.0);
     showFade->setEndValue(1.0);
-    showSlide->setStartValue(-8);
+    showSlide->setStartValue(-16);
     showSlide->setEndValue(0);
 
     show();
@@ -256,7 +256,7 @@ void UnifiedToast::animateOut()
     hideFade->setStartValue(m_fadeOpacity);
     hideFade->setEndValue(0.0);
     hideSlide->setStartValue(m_slideOffset);
-    hideSlide->setEndValue(-8);
+    hideSlide->setEndValue(-10);
 
     m_hideGroup->start();
 }

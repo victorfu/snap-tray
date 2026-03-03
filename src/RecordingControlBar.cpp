@@ -2,6 +2,7 @@
 #include "GlassRenderer.h"
 #include "ToolbarStyle.h"
 #include "IconRenderer.h"
+#include "ui/GlassTooltip.h"
 #include "cursor/CursorManager.h"
 #include "platform/WindowLevel.h"
 
@@ -29,64 +30,6 @@ QColor dimmedColor(const QColor &color)
 
 // Recording control bar layout constants
 }
-
-class GlassTooltipWidget : public QWidget
-{
-public:
-    explicit GlassTooltipWidget(QWidget *parent = nullptr)
-        : QWidget(parent, Qt::ToolTip | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint)
-    {
-        setAttribute(Qt::WA_TranslucentBackground);
-        setAttribute(Qt::WA_ShowWithoutActivating);
-        setAttribute(Qt::WA_TransparentForMouseEvents);
-    }
-
-    void setText(const QString &text, const ToolbarStyleConfig &style)
-    {
-        m_text = text;
-        m_style = style;
-        QFont font = this->font();
-        font.setPointSize(11);
-        setFont(font);
-        updateGeometry();
-        update();
-    }
-
-    QSize sizeHint() const override
-    {
-        if (m_text.isEmpty()) {
-            return QSize(0, 0);
-        }
-        QFontMetrics fm(font());
-        QRect textRect = fm.boundingRect(m_text);
-        textRect.adjust(-8, -4, 8, 4);
-        return textRect.size();
-    }
-
-protected:
-    void paintEvent(QPaintEvent *event) override
-    {
-        Q_UNUSED(event);
-        if (m_text.isEmpty()) {
-            return;
-        }
-
-        QPainter painter(this);
-        painter.setRenderHint(QPainter::Antialiasing);
-
-        ToolbarStyleConfig config = m_style;
-        config.shadowOffsetY = 2;
-        config.shadowBlurRadius = 6;
-        GlassRenderer::drawGlassPanel(painter, rect(), config, 6);
-
-        painter.setPen(config.tooltipText);
-        painter.drawText(rect(), Qt::AlignCenter, m_text);
-    }
-
-private:
-    QString m_text;
-    ToolbarStyleConfig m_style;
-};
 
 RecordingControlBar::RecordingControlBar(QWidget *parent)
     : QWidget(parent, Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint)
@@ -390,7 +333,7 @@ void RecordingControlBar::showTooltipForButton(int buttonId)
 void RecordingControlBar::showTooltip(const QString &text, const QRect &anchorRect)
 {
     if (!m_tooltip) {
-        m_tooltip = new GlassTooltipWidget(nullptr);
+        m_tooltip = new SnapTray::GlassTooltip(nullptr);
         // Exclude tooltip from screen capture to prevent it from appearing in recordings
         setWindowExcludedFromCapture(m_tooltip, true);
         connect(m_tooltip, &QObject::destroyed, this, [this]() {
@@ -398,56 +341,48 @@ void RecordingControlBar::showTooltip(const QString &text, const QRect &anchorRe
         });
     }
 
-    ToolbarStyleConfig style = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
-    m_tooltip->setText(text, style);
-    QSize size = m_tooltip->sizeHint();
-    m_tooltip->resize(size);
-
-    QPoint anchorCenter = anchorRect.center();
-    QPoint globalAnchorCenter = mapToGlobal(anchorCenter);
-
-    int x = globalAnchorCenter.x() - size.width() / 2;
-    int y;
+    const ToolbarStyleConfig& style = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
+    const QPoint globalAnchorCenter = mapToGlobal(anchorRect.center());
 
     // In Recording mode, show tooltip below to avoid being captured in recording
     // In Preview mode, show tooltip above (default behavior)
-    if (m_mode == Mode::Recording) {
-        y = mapToGlobal(anchorRect.bottomLeft()).y() + 6;
-    } else {
-        y = mapToGlobal(anchorRect.topLeft()).y() - size.height() - 6;
-    }
+    const bool above = (m_mode != Mode::Recording);
+    const QPoint anchorEdge(globalAnchorCenter.x(),
+        above ? mapToGlobal(anchorRect.topLeft()).y()
+              : mapToGlobal(anchorRect.bottomLeft()).y());
 
+    m_tooltip->show(text, style, anchorEdge, above, /*showShadow=*/true);
+
+    // Fallback: if tooltip goes off screen, flip direction
     QScreen *screen = QGuiApplication::screenAt(globalAnchorCenter);
-    if (!screen) {
-        screen = QGuiApplication::primaryScreen();
-    }
-
+    if (!screen) screen = QGuiApplication::primaryScreen();
     if (screen) {
-        QRect bounds = screen->availableGeometry();
-        x = qBound(bounds.left() + 5, x, bounds.right() - size.width() - 5);
-        // Fallback: if tooltip goes off screen, flip direction
-        if (m_mode == Mode::Recording) {
-            if (y + size.height() > bounds.bottom() - 5) {
-                y = mapToGlobal(anchorRect.topLeft()).y() - size.height() - 6;
-            }
-        } else {
-            if (y < bounds.top() + 5) {
-                y = mapToGlobal(anchorRect.bottomLeft()).y() + 6;
-            }
+        const QRect bounds = screen->availableGeometry();
+        const QRect tipGeom(m_tooltip->pos(), m_tooltip->size());
+        bool needsFlip = false;
+        if (m_mode == Mode::Recording && tipGeom.bottom() > bounds.bottom() - 5) {
+            needsFlip = true;
+        } else if (m_mode != Mode::Recording && tipGeom.top() < bounds.top() + 5) {
+            needsFlip = true;
         }
-        if (y + size.height() > bounds.bottom() - 5) {
-            y = bounds.bottom() - size.height() - 5;
+        if (needsFlip) {
+            const QPoint flippedEdge(globalAnchorCenter.x(),
+                !above ? mapToGlobal(anchorRect.topLeft()).y()
+                       : mapToGlobal(anchorRect.bottomLeft()).y());
+            m_tooltip->show(text, style, flippedEdge, !above, /*showShadow=*/true);
+        }
+        // Final safety clamp
+        const QRect finalGeom(m_tooltip->pos(), m_tooltip->size());
+        if (finalGeom.bottom() > bounds.bottom() - 5) {
+            m_tooltip->move(m_tooltip->x(), bounds.bottom() - m_tooltip->height() - 5);
         }
     }
-
-    m_tooltip->move(x, y);
-    m_tooltip->show();
 }
 
 void RecordingControlBar::hideTooltip()
 {
     if (m_tooltip) {
-        m_tooltip->hide();
+        m_tooltip->hideTooltip();
     }
 }
 

@@ -1,5 +1,6 @@
 #include "pinwindow/UIIndicators.h"
 #include "pinwindow/ClickThroughExitButton.h"
+#include "ui/OverlayBadge.h"
 
 UIIndicators::UIIndicators(QWidget* parentWidget, QObject* parent)
     : QObject(parent)
@@ -9,46 +10,16 @@ UIIndicators::UIIndicators(QWidget* parentWidget, QObject* parent)
     // initial PinWindow creation performance
 }
 
-void UIIndicators::ensureZoomLabelCreated()
+void UIIndicators::ensureZoomBadgeCreated()
 {
-    if (m_zoomLabel) return;
-
-    m_zoomLabel = new QLabel(m_parentWidget);
-    m_zoomLabel->setStyleSheet(
-        "QLabel {"
-        "  background-color: rgba(0, 0, 0, 180);"
-        "  color: white;"
-        "  padding: 4px 8px;"
-        "  border-radius: 4px;"
-        "  font-size: 12px;"
-        "}"
-    );
-    m_zoomLabel->hide();
-
-    m_zoomLabelTimer = new QTimer(this);
-    m_zoomLabelTimer->setSingleShot(true);
-    connect(m_zoomLabelTimer, &QTimer::timeout, m_zoomLabel, &QLabel::hide);
+    if (m_zoomBadge) return;
+    m_zoomBadge = new SnapTray::OverlayBadge(m_parentWidget);
 }
 
-void UIIndicators::ensureOpacityLabelCreated()
+void UIIndicators::ensureOpacityBadgeCreated()
 {
-    if (m_opacityLabel) return;
-
-    m_opacityLabel = new QLabel(m_parentWidget);
-    m_opacityLabel->setStyleSheet(
-        "QLabel {"
-        "  background-color: rgba(0, 0, 0, 180);"
-        "  color: white;"
-        "  padding: 4px 8px;"
-        "  border-radius: 4px;"
-        "  font-size: 12px;"
-        "}"
-    );
-    m_opacityLabel->hide();
-
-    m_opacityLabelTimer = new QTimer(this);
-    m_opacityLabelTimer->setSingleShot(true);
-    connect(m_opacityLabelTimer, &QTimer::timeout, m_opacityLabel, &QLabel::hide);
+    if (m_opacityBadge) return;
+    m_opacityBadge = new SnapTray::OverlayBadge(m_parentWidget);
 }
 
 void UIIndicators::ensureClickThroughExitButtonCreated()
@@ -63,27 +34,21 @@ void UIIndicators::ensureClickThroughExitButtonCreated()
 
 void UIIndicators::showZoomIndicator(qreal zoomLevel)
 {
-    ensureZoomLabelCreated();
-    m_zoomLabel->setText(QString("%1%").arg(qRound(zoomLevel * 100)));
-    m_zoomLabel->adjustSize();
+    ensureZoomBadgeCreated();
+    m_zoomBadge->showBadge(QString("%1%").arg(qRound(zoomLevel * 100)));
     // Position at top-left corner
-    m_zoomLabel->move(m_shadowMargin + 8, m_shadowMargin + 8);
-    m_zoomLabel->show();
-    m_zoomLabel->raise();
-    m_zoomLabelTimer->start(1500);
+    m_zoomBadge->move(m_shadowMargin + 8, m_shadowMargin + 8);
+    m_zoomBadge->raise();
 }
 
 void UIIndicators::showOpacityIndicator(qreal opacity)
 {
-    ensureOpacityLabelCreated();
-    m_opacityLabel->setText(QString("%1%").arg(qRound(opacity * 100)));
-    m_opacityLabel->adjustSize();
-    // Position at bottom-left corner
-    m_opacityLabel->move(m_shadowMargin + 8,
-                         m_parentWidget->height() - m_shadowMargin - m_opacityLabel->height() - 8);
-    m_opacityLabel->show();
-    m_opacityLabel->raise();
-    m_opacityLabelTimer->start(1500);
+    ensureOpacityBadgeCreated();
+    m_opacityBadge->showBadge(QString("%1%").arg(qRound(opacity * 100)));
+    // Position at bottom-left corner (after showBadge which calls setFixedSize)
+    m_opacityBadge->move(m_shadowMargin + 8,
+                         m_parentWidget->height() - m_shadowMargin - m_opacityBadge->height() - 8);
+    m_opacityBadge->raise();
 }
 
 void UIIndicators::showClickThroughIndicator(bool enabled)
@@ -97,4 +62,3 @@ void UIIndicators::showClickThroughIndicator(bool enabled)
         m_clickThroughExitButton->hide();
     }
 }
-
