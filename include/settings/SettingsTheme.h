@@ -7,7 +7,6 @@
 
 #include <QApplication>
 #include <QFont>
-#include <QLabel>
 #include <QPalette>
 #include <QString>
 #include <QWidget>
@@ -100,7 +99,7 @@ inline QString inputFocusBg() { return isDark() ? QStringLiteral("#1E3A5F") : QS
 // Widget helpers
 // ============================================================================
 
-inline void applyHeaderFont(QLabel* label) {
+inline void applyHeaderFont(QWidget* label) {
     QFont f = label->font();
     f.setBold(true);
     f.setPixelSize(12);
@@ -109,7 +108,7 @@ inline void applyHeaderFont(QLabel* label) {
 
 inline void applySecondaryColor(QWidget* widget) {
     QPalette p = widget->palette();
-    p.setColor(QPalette::WindowText, QColor(isDark() ? "#909090" : "#757575"));
+    p.setColor(QPalette::WindowText, QColor(secondaryText()));
     widget->setPalette(p);
 }
 

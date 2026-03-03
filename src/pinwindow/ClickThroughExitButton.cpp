@@ -55,9 +55,9 @@ void ClickThroughExitButton::applyLabelStyle(bool hovered)
             "  font-size: 11px;"
             "  font-weight: bold;"
             "}")
-        .arg(kPurpleR + brighten)
-        .arg(kPurpleG + brighten)
-        .arg(kPurpleB + brighten)
+        .arg(qMin(kPurpleR + brighten, 255))
+        .arg(qMin(kPurpleG + brighten, 255))
+        .arg(qMin(kPurpleB + brighten, 255))
         .arg(alpha)
     );
 }

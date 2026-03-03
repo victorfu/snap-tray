@@ -93,7 +93,7 @@ ShapeFillMode RegionSettingsHelper::loadShapeFillMode()
 
 // ========== Dropdown Menus ==========
 
-QMenu* RegionSettingsHelper::createStyledMenu()
+QMenu* RegionSettingsHelper::createMenu()
 {
     QMenu* menu = new QMenu(m_parentWidget);
     return menu;
@@ -101,7 +101,7 @@ QMenu* RegionSettingsHelper::createStyledMenu()
 
 void RegionSettingsHelper::showFontSizeDropdown(const QPoint& pos, int currentSize)
 {
-    QMenu* menu = createStyledMenu();
+    QMenu* menu = createMenu();
 
     static const int sizes[] = { 8, 10, 12, 14, 16, 18, 20, 24, 28, 32, 36, 48, 72 };
     for (int size : sizes) {
@@ -124,7 +124,7 @@ void RegionSettingsHelper::showFontSizeDropdown(const QPoint& pos, int currentSi
 
 void RegionSettingsHelper::showFontFamilyDropdown(const QPoint& pos, const QString& currentFamily)
 {
-    QMenu* menu = createStyledMenu();
+    QMenu* menu = createMenu();
 
     // Add "Default" option
     QAction* defaultAction = menu->addAction(tr("Default"));

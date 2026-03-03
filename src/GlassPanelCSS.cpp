@@ -5,6 +5,10 @@
 namespace SnapTray {
 namespace GlassPanelCSS {
 
+namespace {
+constexpr const char* kAccentBlue = "#3B82F6";
+}
+
 QString comboBoxStylesheet(const ToolbarStyleConfig& config)
 {
     const QString comboBg = config.buttonInactiveColor.name();
@@ -52,7 +56,7 @@ QString sliderStylesheet(const ToolbarStyleConfig& config, ToolbarStyleType type
         "  border-radius: 2px;"
         "}"
         "QSlider::sub-page:horizontal {"
-        "  background: #3B82F6;"
+        "  background: %3;"
         "  height: 4px;"
         "  border-radius: 2px;"
         "}"
@@ -63,7 +67,7 @@ QString sliderStylesheet(const ToolbarStyleConfig& config, ToolbarStyleType type
         "  margin: -5px 0;"
         "  border-radius: 7px;"
         "}")
-        .arg(grooveColor, handleColor);
+        .arg(grooveColor, handleColor, QLatin1String(kAccentBlue));
 }
 
 QString actionButtonStylesheet(const ToolbarStyleConfig& config, ToolbarStyleType type)
@@ -107,10 +111,10 @@ QString checkboxStylesheet(const ToolbarStyleConfig& config)
         "  background: %3;"
         "}"
         "QCheckBox::indicator:checked {"
-        "  background: #3B82F6;"
-        "  border: 1px solid #3B82F6;"
+        "  background: %4;"
+        "  border: 1px solid %4;"
         "}")
-        .arg(textColor, indicatorBorder, indicatorBg);
+        .arg(textColor, indicatorBorder, indicatorBg, QLatin1String(kAccentBlue));
 }
 
 QString labelStylesheet(const ToolbarStyleConfig& config, int fontSize)

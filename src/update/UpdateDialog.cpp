@@ -336,6 +336,7 @@ QPushButton* UpdateDialog::createTertiaryButton(const QString& text)
     QPalette pal = button->palette();
     pal.setColor(QPalette::ButtonText, QColor(100, 100, 100));
     button->setPalette(pal);
+    button->setStyleSheet(QStringLiteral("QPushButton:hover { text-decoration: underline; }"));
     return button;
 }
 

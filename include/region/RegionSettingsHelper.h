@@ -60,8 +60,7 @@ signals:
     void fontFamilySelected(const QString& family);
 
 private:
-    // Helper to create styled menu
-    QMenu* createStyledMenu();
+    QMenu* createMenu();
 
     QWidget* m_parentWidget = nullptr;
 };
