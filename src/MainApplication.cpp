@@ -110,7 +110,6 @@ MainApplication::MainApplication(QObject* parent)
     , m_togglePinsVisibilityAction(nullptr)
     , m_closeAllPinsAction(nullptr)
     , m_fullScreenRecordingAction(nullptr)
-    , m_settingsDialog(nullptr)
     , m_updateChecker(nullptr)
 {
 }
@@ -698,12 +697,6 @@ void MainApplication::onSettings()
     connect(m_settingsDialog, &SettingsDialog::mcpEnabledChanged,
         this, &MainApplication::onMcpEnabledChanged);
 #endif
-
-    // Clean up pointer when dialog is destroyed (WA_DeleteOnClose triggers this)
-    connect(m_settingsDialog, &QDialog::destroyed,
-        this, [this]() {
-            m_settingsDialog = nullptr;
-        });
 
     // Show non-modal
     m_settingsDialog->show();

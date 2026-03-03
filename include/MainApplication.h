@@ -95,7 +95,7 @@ private:
     QAction *m_togglePinsVisibilityAction;
     QAction *m_closeAllPinsAction;
     QAction *m_fullScreenRecordingAction;
-    SettingsDialog *m_settingsDialog;
+    QPointer<SettingsDialog> m_settingsDialog;
     QPointer<PinHistoryWindow> m_pinHistoryWindow;
     QPointer<RecordingPreviewWindow> m_previewWindow;
     UpdateChecker *m_updateChecker;
