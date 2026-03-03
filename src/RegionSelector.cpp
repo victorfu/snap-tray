@@ -30,7 +30,7 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include "settings/RegionCaptureSettingsManager.h"
 #include "OCRResultDialog.h"
 #include "QRCodeResultDialog.h"
-#include "ui/UnifiedToast.h"
+#include "qml/QmlToast.h"
 #include "ui/SharePasswordDialog.h"
 #include "ui/ShareResultDialog.h"
 #include "tools/handlers/MosaicToolHandler.h"
@@ -289,7 +289,7 @@ RegionSelector::RegionSelector(QWidget* parent)
     // LoadingSpinner is lazy-initialized via ensureLoadingSpinner() when first needed
 
     // Selection toast (shows OCR/QR/auto-blur results near selection)
-    m_selectionToast = new SnapTray::UnifiedToast(this);
+    m_selectionToast = new SnapTray::QmlToast(this);
 
     m_screenSwitchTimer = new QTimer(this);
     m_screenSwitchTimer->setInterval(50);
@@ -539,7 +539,7 @@ RegionSelector::RegionSelector(QWidget* parent)
             if (m_loadingSpinner && !(m_ocrInProgress || m_qrCodeInProgress || m_autoBlurInProgress)) {
                 m_loadingSpinner->stop();
             }
-            m_selectionToast->showNearRect(SnapTray::UnifiedToast::Level::Error,
+            m_selectionToast->showNearRect(SnapTray::QmlToast::Level::Error,
                 errorMessage.isEmpty() ? tr("Failed to share screenshot") : errorMessage,
                 m_selectionManager->selectionRect());
             m_pendingSharePassword.clear();
@@ -1912,7 +1912,7 @@ void RegionSelector::shareToUrl()
     const QPixmap selectedRegion = m_exportManager->getSelectedRegion(
         m_selectionManager->selectionRect(), effectiveCornerRadius());
     if (selectedRegion.isNull()) {
-        m_selectionToast->showNearRect(SnapTray::UnifiedToast::Level::Error,
+        m_selectionToast->showNearRect(SnapTray::QmlToast::Level::Error,
             tr("Failed to process selected region"), m_selectionManager->selectionRect());
         return;
     }
@@ -2409,7 +2409,7 @@ void RegionSelector::performOCR()
         if (m_loadingSpinner) {
             m_loadingSpinner->stop();
         }
-        m_selectionToast->showNearRect(SnapTray::UnifiedToast::Level::Error,
+        m_selectionToast->showNearRect(SnapTray::QmlToast::Level::Error,
             tr("Failed to process selected region"), m_selectionManager->selectionRect());
         update();
         return;
@@ -2440,13 +2440,13 @@ void RegionSelector::onOCRComplete(const OCRResult& result)
         }
 
         QGuiApplication::clipboard()->setText(result.text);
-        m_selectionToast->showNearRect(SnapTray::UnifiedToast::Level::Success,
+        m_selectionToast->showNearRect(SnapTray::QmlToast::Level::Success,
             tr("Copied %1 characters").arg(result.text.length()),
             m_selectionManager->selectionRect());
     }
     else {
         QString msg = result.error.isEmpty() ? tr("No text found") : result.error;
-        m_selectionToast->showNearRect(SnapTray::UnifiedToast::Level::Error,
+        m_selectionToast->showNearRect(SnapTray::QmlToast::Level::Error,
             msg, m_selectionManager->selectionRect());
     }
 
@@ -2463,8 +2463,8 @@ void RegionSelector::showOCRResultDialog(const OCRResult& result)
     connect(dialog, &OCRResultDialog::textCopied, this, [this](const QString &copiedText) {
         qDebug() << "OCR text copied:" << copiedText.length() << "characters";
 
-        SnapTray::UnifiedToast::screenToast().showToast(
-            SnapTray::UnifiedToast::Level::Success,
+        SnapTray::QmlToast::screenToast().showToast(
+            SnapTray::QmlToast::Level::Success,
             tr("OCR"),
             tr("Copied %1 characters").arg(copiedText.length())
         );
@@ -2499,7 +2499,7 @@ void RegionSelector::performQRCodeScan()
         if (m_loadingSpinner) {
             m_loadingSpinner->stop();
         }
-        m_selectionToast->showNearRect(SnapTray::UnifiedToast::Level::Error,
+        m_selectionToast->showNearRect(SnapTray::QmlToast::Level::Error,
             tr("Failed to process selected region"), m_selectionManager->selectionRect());
         update();
         return;
@@ -2563,7 +2563,7 @@ void RegionSelector::onQRCodeComplete(bool success, const QString& text, const Q
     }
     else {
         QString msg = error.isEmpty() ? tr("No QR code found") : error;
-        m_selectionToast->showNearRect(SnapTray::UnifiedToast::Level::Error,
+        m_selectionToast->showNearRect(SnapTray::QmlToast::Level::Error,
             msg, m_selectionManager->selectionRect());
     }
 
@@ -2594,7 +2594,7 @@ void RegionSelector::performAutoBlur()
         if (m_loadingSpinner) {
             m_loadingSpinner->stop();
         }
-        m_selectionToast->showNearRect(SnapTray::UnifiedToast::Level::Error,
+        m_selectionToast->showNearRect(SnapTray::QmlToast::Level::Error,
             tr("Failed to process selected region"), m_selectionManager->selectionRect());
         update();
         return;
@@ -2621,7 +2621,7 @@ void RegionSelector::performAutoBlur()
         if (m_loadingSpinner) {
             m_loadingSpinner->stop();
         }
-        m_selectionToast->showNearRect(SnapTray::UnifiedToast::Level::Error,
+        m_selectionToast->showNearRect(SnapTray::QmlToast::Level::Error,
             faceUnavailableError.isEmpty() ? tr("Detection unavailable") : faceUnavailableError,
             m_selectionManager->selectionRect());
         update();
@@ -2798,26 +2798,26 @@ void RegionSelector::onAutoBlurComplete(bool success, int faceCount, int credent
     }
 
     QString msg;
-    auto level = SnapTray::UnifiedToast::Level::Info;
+    auto level = SnapTray::QmlToast::Level::Info;
     if (success && faceCount > 0 && credentialCount > 0) {
         msg = tr("Blurred %1 face(s), %2 credential(s)").arg(faceCount).arg(credentialCount);
-        level = SnapTray::UnifiedToast::Level::Success;
+        level = SnapTray::QmlToast::Level::Success;
     }
     else if (success && faceCount > 0) {
         msg = tr("Blurred %1 face(s)").arg(faceCount);
-        level = SnapTray::UnifiedToast::Level::Success;
+        level = SnapTray::QmlToast::Level::Success;
     }
     else if (success && credentialCount > 0) {
         msg = tr("Blurred %1 credential(s)").arg(credentialCount);
-        level = SnapTray::UnifiedToast::Level::Success;
+        level = SnapTray::QmlToast::Level::Success;
     }
     else if (success) {
         msg = tr("No faces or credentials detected");
-        level = SnapTray::UnifiedToast::Level::Info;
+        level = SnapTray::QmlToast::Level::Info;
     }
     else {
         msg = error.isEmpty() ? tr("Detection failed") : error;
-        level = SnapTray::UnifiedToast::Level::Error;
+        level = SnapTray::QmlToast::Level::Error;
     }
 
     m_selectionToast->showNearRect(level, msg, m_selectionManager->selectionRect());

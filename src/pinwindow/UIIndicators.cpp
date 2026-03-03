@@ -1,6 +1,6 @@
 #include "pinwindow/UIIndicators.h"
 #include "pinwindow/ClickThroughExitButton.h"
-#include "ui/OverlayBadge.h"
+#include "qml/QmlBadge.h"
 
 UIIndicators::UIIndicators(QWidget* parentWidget, QObject* parent)
     : QObject(parent)
@@ -13,13 +13,13 @@ UIIndicators::UIIndicators(QWidget* parentWidget, QObject* parent)
 void UIIndicators::ensureZoomBadgeCreated()
 {
     if (m_zoomBadge) return;
-    m_zoomBadge = new SnapTray::OverlayBadge(m_parentWidget);
+    m_zoomBadge = new SnapTray::QmlBadge(m_parentWidget);
 }
 
 void UIIndicators::ensureOpacityBadgeCreated()
 {
     if (m_opacityBadge) return;
-    m_opacityBadge = new SnapTray::OverlayBadge(m_parentWidget);
+    m_opacityBadge = new SnapTray::QmlBadge(m_parentWidget);
 }
 
 void UIIndicators::ensureClickThroughExitButtonCreated()

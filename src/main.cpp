@@ -10,6 +10,10 @@
 #include <QFile>
 #include <QTextStream>
 #include <QTimer>
+#include <QtQml/qqmlextensionplugin.h>
+
+// Import static QML plugin so the linker includes SnapTrayQml types.
+Q_IMPORT_QML_PLUGIN(SnapTrayQmlPlugin)
 
 int main(int argc, char* argv[])
 {

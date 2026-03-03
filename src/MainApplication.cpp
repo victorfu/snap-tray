@@ -12,7 +12,7 @@
 #include "ImageColorSpaceHelper.h"
 #include "cli/IPCProtocol.h"
 #include "hotkey/HotkeyManager.h"
-#include "ui/UnifiedToast.h"
+#include "qml/QmlToast.h"
 #include "video/RecordingPreviewWindow.h"
 #include "update/UpdateChecker.h"
 #include "update/UpdateDialog.h"
@@ -275,16 +275,16 @@ void MainApplication::initialize()
     // Connect recording signals
     connect(m_recordingManager, &RecordingManager::recordingStopped,
         this, [](const QString& path) {
-            SnapTray::UnifiedToast::screenToast().showToast(
-                SnapTray::UnifiedToast::Level::Success,
+            SnapTray::QmlToast::screenToast().showToast(
+                SnapTray::QmlToast::Level::Success,
                 MainApplication::tr("Recording Saved"),
                 MainApplication::tr("Saved to: %1").arg(path));
         });
 
     connect(m_recordingManager, &RecordingManager::recordingError,
         this, [](const QString& error) {
-            SnapTray::UnifiedToast::screenToast().showToast(
-                SnapTray::UnifiedToast::Level::Error,
+            SnapTray::QmlToast::screenToast().showToast(
+                SnapTray::QmlToast::Level::Error,
                 MainApplication::tr("Recording Error"),
                 error, 5000);
         });
@@ -292,15 +292,15 @@ void MainApplication::initialize()
     // Connect screenshot save signals from CaptureManager
     connect(m_captureManager, &CaptureManager::saveCompleted,
         this, [](const QPixmap&, const QString& path) {
-            SnapTray::UnifiedToast::screenToast().showToast(
-                SnapTray::UnifiedToast::Level::Success,
+            SnapTray::QmlToast::screenToast().showToast(
+                SnapTray::QmlToast::Level::Success,
                 MainApplication::tr("Screenshot Saved"),
                 MainApplication::tr("Saved to: %1").arg(path));
         });
     connect(m_captureManager, &CaptureManager::saveFailed,
         this, [](const QString& path, const QString& error) {
-            SnapTray::UnifiedToast::screenToast().showToast(
-                SnapTray::UnifiedToast::Level::Error,
+            SnapTray::QmlToast::screenToast().showToast(
+                SnapTray::QmlToast::Level::Error,
                 MainApplication::tr("Screenshot Save Failed"),
                 MainApplication::tr("%1\n%2").arg(error).arg(path), 5000);
         });
@@ -308,15 +308,15 @@ void MainApplication::initialize()
     // Connect screenshot save signals from PinWindowManager
     connect(m_pinWindowManager, &PinWindowManager::saveCompleted,
         this, [](const QPixmap&, const QString& path) {
-            SnapTray::UnifiedToast::screenToast().showToast(
-                SnapTray::UnifiedToast::Level::Success,
+            SnapTray::QmlToast::screenToast().showToast(
+                SnapTray::QmlToast::Level::Success,
                 MainApplication::tr("Screenshot Saved"),
                 MainApplication::tr("Saved to: %1").arg(path));
         });
     connect(m_pinWindowManager, &PinWindowManager::saveFailed,
         this, [](const QString& path, const QString& error) {
-            SnapTray::UnifiedToast::screenToast().showToast(
-                SnapTray::UnifiedToast::Level::Error,
+            SnapTray::QmlToast::screenToast().showToast(
+                SnapTray::QmlToast::Level::Error,
                 MainApplication::tr("Screenshot Save Failed"),
                 MainApplication::tr("%1\n%2").arg(error).arg(path), 5000);
         });
@@ -401,9 +401,9 @@ void MainApplication::initialize()
     // Connect OCR completion signal (must be after m_trayIcon is created)
     connect(m_pinWindowManager, &PinWindowManager::ocrCompleted,
         this, [](bool success, const QString& message) {
-            SnapTray::UnifiedToast::screenToast().showToast(
-                success ? SnapTray::UnifiedToast::Level::Success
-                        : SnapTray::UnifiedToast::Level::Error,
+            SnapTray::QmlToast::screenToast().showToast(
+                success ? SnapTray::QmlToast::Level::Success
+                        : SnapTray::QmlToast::Level::Error,
                 success ? MainApplication::tr("OCR Success")
                         : MainApplication::tr("OCR Failed"),
                 message);
@@ -453,8 +453,8 @@ bool MainApplication::startMcpServer()
     QString mcpError;
     if (!m_mcpServer->start(SnapTray::MCP::MCPServer::kDefaultPort, &mcpError)) {
         qWarning() << "MainApplication: Failed to start MCP server:" << mcpError;
-        SnapTray::UnifiedToast::screenToast().showToast(
-            SnapTray::UnifiedToast::Level::Error,
+        SnapTray::QmlToast::screenToast().showToast(
+            SnapTray::QmlToast::Level::Error,
             tr("MCP Server Unavailable"),
             tr("Unable to start MCP HTTP server on 127.0.0.1:%1")
                 .arg(SnapTray::MCP::MCPServer::kDefaultPort),
@@ -591,8 +591,8 @@ void MainApplication::onPinFromImage()
     }
 
     // Show loading toast
-    SnapTray::UnifiedToast::screenToast().showToast(
-        SnapTray::UnifiedToast::Level::Info,
+    SnapTray::QmlToast::screenToast().showToast(
+        SnapTray::QmlToast::Level::Info,
         tr("Loading Image"),
         QFileInfo(filePath).fileName()
     );
@@ -639,8 +639,8 @@ void MainApplication::onImageLoaded(const QString &filePath, const QImage &image
 {
     if (image.isNull()) {
         QFileInfo fileInfo(filePath);
-        SnapTray::UnifiedToast::screenToast().showToast(
-            SnapTray::UnifiedToast::Level::Error,
+        SnapTray::QmlToast::screenToast().showToast(
+            SnapTray::QmlToast::Level::Error,
             tr("Failed to Load Image"),
             fileInfo.fileName()
         );
@@ -658,8 +658,8 @@ void MainApplication::onImageLoaded(const QString &filePath, const QImage &image
     const QPixmap pixmap = QPixmap::fromImage(displayImage);
     if (pixmap.isNull()) {
         QFileInfo fileInfo(filePath);
-        SnapTray::UnifiedToast::screenToast().showToast(
-            SnapTray::UnifiedToast::Level::Error,
+        SnapTray::QmlToast::screenToast().showToast(
+            SnapTray::QmlToast::Level::Error,
             tr("Failed to Load Image"),
             fileInfo.fileName()
         );
@@ -766,8 +766,8 @@ void MainApplication::onHotkeyInitializationCompleted(const QStringList& failedH
         return;
     }
 
-    SnapTray::UnifiedToast::screenToast().showToast(
-        SnapTray::UnifiedToast::Level::Error,
+    SnapTray::QmlToast::screenToast().showToast(
+        SnapTray::QmlToast::Level::Error,
         tr("Hotkey Registration Failed"),
         failedHotkeys.join(QStringLiteral(", ")) + tr(" failed to register."),
         5000);

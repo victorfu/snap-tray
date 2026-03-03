@@ -39,7 +39,7 @@
 #include "beautify/BeautifyRenderer.h"
 #include "settings/OCRSettingsManager.h"
 #include "share/ShareUploadClient.h"
-#include "ui/UnifiedToast.h"
+#include "qml/QmlToast.h"
 #include "ui/SharePasswordDialog.h"
 #include "ui/ShareResultDialog.h"
 #include "utils/FilenameTemplateEngine.h"
@@ -417,7 +417,7 @@ PinWindow::PinWindow(const QPixmap& screenshot,
     // Initialize components
     m_resizeHandler = new ResizeHandler(0, kMinPinSize, this);
     m_uiIndicators = new UIIndicators(this, this);
-    m_toast = new SnapTray::UnifiedToast(this);
+    m_toast = new SnapTray::QmlToast(this);
     connect(m_uiIndicators, &UIIndicators::exitClickThroughRequested,
         this, [this]() { setClickThrough(false); });
 
@@ -460,7 +460,7 @@ PinWindow::PinWindow(const QPixmap& screenshot,
             }
             updateLoadingSpinnerState();
             m_pendingSharePassword.clear();
-            m_toast->showToast(SnapTray::UnifiedToast::Level::Error,
+            m_toast->showToast(SnapTray::QmlToast::Level::Error,
                 errorMessage.isEmpty() ? tr("Failed to share screenshot") : errorMessage);
         });
 
@@ -1253,7 +1253,7 @@ void PinWindow::mergePinsFromContextMenu()
     }
 
     if (mergeCandidates.size() > LayoutModeConstants::kMaxRegionCount) {
-        SnapTray::UnifiedToast::screenToast().showToast(SnapTray::UnifiedToast::Level::Info,
+        SnapTray::QmlToast::screenToast().showToast(SnapTray::QmlToast::Level::Info,
                                           tr("Merge Pins"),
                                           tr("Cannot merge more than %1 pins at once")
                                               .arg(LayoutModeConstants::kMaxRegionCount));
@@ -1261,7 +1261,7 @@ void PinWindow::mergePinsFromContextMenu()
     }
 
     if (mergeCandidates.size() < 2) {
-        SnapTray::UnifiedToast::screenToast().showToast(SnapTray::UnifiedToast::Level::Info,
+        SnapTray::QmlToast::screenToast().showToast(SnapTray::QmlToast::Level::Info,
                                           tr("Merge Pins"),
                                           tr("Need at least 2 pins to merge"));
         return;
@@ -1275,7 +1275,7 @@ void PinWindow::mergePinsFromContextMenu()
         targetScreen = QGuiApplication::primaryScreen();
     }
     if (!targetScreen) {
-        SnapTray::UnifiedToast::screenToast().showToast(SnapTray::UnifiedToast::Level::Error,
+        SnapTray::QmlToast::screenToast().showToast(SnapTray::QmlToast::Level::Error,
                                           tr("Merge Pins"),
                                           tr("No primary screen available"));
         return;
@@ -1292,7 +1292,7 @@ void PinWindow::mergePinsFromContextMenu()
 
     const PinMergeResult result = PinMergeHelper::merge(mergeCandidates, layoutOptions);
     if (!result.success) {
-        SnapTray::UnifiedToast::screenToast().showToast(SnapTray::UnifiedToast::Level::Info,
+        SnapTray::QmlToast::screenToast().showToast(SnapTray::QmlToast::Level::Info,
                                           tr("Merge Pins"),
                                           result.errorMessage);
         return;
@@ -1306,7 +1306,7 @@ void PinWindow::mergePinsFromContextMenu()
     // initial cache snapshot misses the .snpr sidecar.
     PinWindow* mergedWindow = m_pinWindowManager->createPinWindow(result.composedPixmap, position, false);
     if (!mergedWindow) {
-        SnapTray::UnifiedToast::screenToast().showToast(SnapTray::UnifiedToast::Level::Error,
+        SnapTray::QmlToast::screenToast().showToast(SnapTray::QmlToast::Level::Error,
                                           tr("Merge Pins"),
                                           tr("Failed to create merged pin"));
         return;
@@ -1399,7 +1399,7 @@ void PinWindow::copyToClipboard()
 {
     QPixmap pixmapToCopy = getExportPixmapWithAnnotations();
     if (pixmapToCopy.isNull()) {
-        m_toast->showToast(SnapTray::UnifiedToast::Level::Error, tr("Copy failed"));
+        m_toast->showToast(SnapTray::QmlToast::Level::Error, tr("Copy failed"));
         return;
     }
 
@@ -1412,7 +1412,7 @@ void PinWindow::copyToClipboard()
     if (!PlatformFeatures::instance().copyImageToClipboard(taggedImage)) {
         QGuiApplication::clipboard()->setImage(taggedImage);
     }
-    m_toast->showToast(SnapTray::UnifiedToast::Level::Success, tr("Copied to clipboard"));
+    m_toast->showToast(SnapTray::QmlToast::Level::Success, tr("Copied to clipboard"));
 }
 
 void PinWindow::shareToUrl()
@@ -1424,13 +1424,13 @@ void PinWindow::shareToUrl()
     // Auto-blur applies redaction annotations asynchronously; sharing now can
     // upload an unredacted snapshot before those annotations are added.
     if (m_autoBlurInProgress) {
-        m_toast->showToast(SnapTray::UnifiedToast::Level::Error, tr("Please wait for auto-blur to finish"));
+        m_toast->showToast(SnapTray::QmlToast::Level::Error, tr("Please wait for auto-blur to finish"));
         return;
     }
 
     const QPixmap pixmapToShare = getExportPixmapWithAnnotations();
     if (pixmapToShare.isNull()) {
-        m_toast->showToast(SnapTray::UnifiedToast::Level::Error, tr("Share failed"));
+        m_toast->showToast(SnapTray::QmlToast::Level::Error, tr("Share failed"));
         return;
     }
 
@@ -1521,11 +1521,11 @@ void PinWindow::onOCRComplete(const OCRResult& result)
         // Default behavior: direct copy
         QGuiApplication::clipboard()->setText(result.text);
         QString msg = tr("Copied %1 characters").arg(result.text.length());
-        m_toast->showToast(SnapTray::UnifiedToast::Level::Success, msg);
+        m_toast->showToast(SnapTray::QmlToast::Level::Success, msg);
     }
     else {
         QString msg = result.error.isEmpty() ? tr("No text found") : result.error;
-        m_toast->showToast(SnapTray::UnifiedToast::Level::Error, msg);
+        m_toast->showToast(SnapTray::QmlToast::Level::Error, msg);
     }
 
     emit ocrCompleted(result.success && !result.text.isEmpty(),
@@ -1543,7 +1543,7 @@ void PinWindow::showOCRResultDialog(const OCRResult& result)
         qDebug() << "OCR text copied:" << copiedText.length() << "characters";
 
         // Show success toast
-        m_toast->showToast(SnapTray::UnifiedToast::Level::Success, tr("Copied %1 characters").arg(copiedText.length()));
+        m_toast->showToast(SnapTray::QmlToast::Level::Success, tr("Copied %1 characters").arg(copiedText.length()));
         emit ocrCompleted(true, tr("Text copied"));
     });
 
@@ -1597,7 +1597,7 @@ void PinWindow::onQRCodeComplete(bool success, const QString& text, const QStrin
 
             // Show success toast
             QString msg = tr("Copied %1 characters").arg(copiedText.length());
-            m_toast->showToast(SnapTray::UnifiedToast::Level::Success, msg);
+            m_toast->showToast(SnapTray::QmlToast::Level::Success, msg);
         });
 
         // Show dialog centered on screen
@@ -1606,7 +1606,7 @@ void PinWindow::onQRCodeComplete(bool success, const QString& text, const QStrin
     else {
         // Show error toast
         QString msg = error.isEmpty() ? tr("No QR code found") : error;
-        m_toast->showToast(SnapTray::UnifiedToast::Level::Error, msg);
+        m_toast->showToast(SnapTray::QmlToast::Level::Error, msg);
     }
 }
 
@@ -3599,7 +3599,7 @@ void PinWindow::onAutoBlurRequested()
     if (!runFaceDetection && !runCredentialDetection) {
         m_autoBlurInProgress = false;
         updateLoadingSpinnerState();
-        m_toast->showToast(SnapTray::UnifiedToast::Level::Error,
+        m_toast->showToast(SnapTray::QmlToast::Level::Error,
             faceUnavailableError.isEmpty() ? tr("Detection unavailable") : faceUnavailableError);
         return;
     }
@@ -3642,7 +3642,7 @@ void PinWindow::onAutoBlurRequested()
         safeThis->updateLoadingSpinnerState();
 
         QString message;
-        auto toastLevel = SnapTray::UnifiedToast::Level::Success;
+        auto toastLevel = SnapTray::QmlToast::Level::Success;
         if (success && faceCount > 0 && credentialCount > 0) {
             message = safeThis->tr("Blurred %1 face(s), %2 credential(s)")
                 .arg(faceCount)
@@ -3653,10 +3653,10 @@ void PinWindow::onAutoBlurRequested()
             message = safeThis->tr("Blurred %1 credential(s)").arg(credentialCount);
         } else if (success) {
             message = safeThis->tr("No faces or credentials detected");
-            toastLevel = SnapTray::UnifiedToast::Level::Info;
+            toastLevel = SnapTray::QmlToast::Level::Info;
         } else {
             message = error.isEmpty() ? safeThis->tr("Detection failed") : error;
-            toastLevel = SnapTray::UnifiedToast::Level::Error;
+            toastLevel = SnapTray::QmlToast::Level::Error;
         }
 
         safeThis->m_toast->showToast(toastLevel, message);
@@ -4649,12 +4649,12 @@ void PinWindow::onBeautifyCopy(const BeautifySettings& settings)
     BeautifySettingsManager::instance().saveSettings(settings);
     QPixmap source = getExportPixmapWithAnnotations();
     if (source.isNull()) {
-        m_toast->showToast(SnapTray::UnifiedToast::Level::Error, tr("Copy failed"));
+        m_toast->showToast(SnapTray::QmlToast::Level::Error, tr("Copy failed"));
         return;
     }
     QPixmap result = BeautifyRenderer::applyToPixmap(source, settings);
     if (result.isNull()) {
-        m_toast->showToast(SnapTray::UnifiedToast::Level::Error, tr("Beautify rendering failed"));
+        m_toast->showToast(SnapTray::QmlToast::Level::Error, tr("Beautify rendering failed"));
         return;
     }
 
@@ -4666,7 +4666,7 @@ void PinWindow::onBeautifyCopy(const BeautifySettings& settings)
     if (!PlatformFeatures::instance().copyImageToClipboard(taggedImage)) {
         QGuiApplication::clipboard()->setImage(taggedImage);
     }
-    m_toast->showToast(SnapTray::UnifiedToast::Level::Success, tr("Beautified image copied"));
+    m_toast->showToast(SnapTray::QmlToast::Level::Success, tr("Beautified image copied"));
 }
 
 void PinWindow::onBeautifySave(const BeautifySettings& settings)

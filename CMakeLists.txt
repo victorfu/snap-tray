@@ -89,7 +89,7 @@ if(MSVC)
     string(REPLACE "/Zi" "/Z7" CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO}")
 endif()
 
-find_package(Qt6 REQUIRED COMPONENTS Widgets Gui Svg Concurrent Network LinguistTools)
+find_package(Qt6 REQUIRED COMPONENTS Widgets Gui Svg Concurrent Network LinguistTools Quick QuickControls2 QuickWidgets)
 
 # Enable AUTOMOC for Qt targets (will be disabled for non-Qt dependencies)
 set(CMAKE_AUTOMOC ON)
@@ -712,12 +712,8 @@ add_library(snaptray_ui STATIC
 
     # Global UI components
     src/ui/DesignTokens.cpp
-    src/ui/UnifiedToast.cpp
-    src/ui/OverlayBadge.cpp
     src/ui/GlassTooltip.cpp
     include/ui/DesignTokens.h
-    include/ui/UnifiedToast.h
-    include/ui/OverlayBadge.h
     include/ui/GlassTooltip.h
     include/ui/SharePasswordDialog.h
     include/ui/ShareResultDialog.h
@@ -807,14 +803,12 @@ add_library(snaptray_ui STATIC
     src/RecordingManager.cpp
     src/RecordingRegionSelector.cpp
     src/RecordingControlBar.cpp
-    src/RecordingBoundaryOverlay.cpp
     src/RecordingInitTask.cpp
     src/RecordingRegionNormalizer.cpp
     src/encoding/EncodingWorker.cpp
     include/RecordingManager.h
     include/RecordingRegionSelector.h
     include/RecordingControlBar.h
-    include/RecordingBoundaryOverlay.h
     include/RecordingInitTask.h
     include/RecordingRegionNormalizer.h
     include/encoding/EncodingWorker.h
@@ -835,6 +829,7 @@ target_link_libraries(snaptray_ui
         snaptray_algorithms
         snaptray_platform
         snaptray_colorwidgets
+        snaptray_qml
         Qt6::Widgets
         Qt6::Gui
         Qt6::Svg
@@ -879,6 +874,83 @@ target_link_libraries(snaptray_mcp
 )
 
 target_compile_definitions(snaptray_mcp PRIVATE
+    $<$<NOT:$<CONFIG:Debug>>:QT_NO_DEBUG_OUTPUT>
+)
+
+# ----------------------------------------------------------------------------
+# snaptray_qml: QML/Qt Quick module (annotation canvas, QML UI)
+# ----------------------------------------------------------------------------
+# Token singletons: flatten into module root so they are accessible as
+# PrimitiveTokens / SemanticTokens / ComponentTokens within SnapTrayQml.
+# Token singletons
+set_source_files_properties(
+    src/qml/tokens/PrimitiveTokens.qml
+    src/qml/tokens/SemanticTokens.qml
+    src/qml/tokens/ComponentTokens.qml
+    PROPERTIES
+        QT_QML_SINGLETON_TYPE TRUE
+)
+
+# Flatten resource aliases so QML files are at e.g. :/SnapTrayQml/components/Toast.qml
+# instead of :/SnapTrayQml/src/qml/components/Toast.qml
+set_source_files_properties(src/qml/main.qml PROPERTIES QT_RESOURCE_ALIAS main.qml)
+set_source_files_properties(src/qml/tokens/PrimitiveTokens.qml PROPERTIES QT_RESOURCE_ALIAS tokens/PrimitiveTokens.qml)
+set_source_files_properties(src/qml/tokens/SemanticTokens.qml PROPERTIES QT_RESOURCE_ALIAS tokens/SemanticTokens.qml)
+set_source_files_properties(src/qml/tokens/ComponentTokens.qml PROPERTIES QT_RESOURCE_ALIAS tokens/ComponentTokens.qml)
+set_source_files_properties(src/qml/components/Toast.qml PROPERTIES QT_RESOURCE_ALIAS components/Toast.qml)
+set_source_files_properties(src/qml/components/Badge.qml PROPERTIES QT_RESOURCE_ALIAS components/Badge.qml)
+set_source_files_properties(src/qml/components/RecordingBoundary.qml PROPERTIES QT_RESOURCE_ALIAS components/RecordingBoundary.qml)
+
+qt_add_qml_module(snaptray_qml
+    URI SnapTrayQml
+    VERSION 1.0
+    STATIC
+    QML_FILES
+        src/qml/main.qml
+        src/qml/tokens/PrimitiveTokens.qml
+        src/qml/tokens/SemanticTokens.qml
+        src/qml/tokens/ComponentTokens.qml
+        src/qml/components/Toast.qml
+        src/qml/components/Badge.qml
+        src/qml/components/RecordingBoundary.qml
+    SOURCES
+        src/qml/AnnotationCanvas.cpp
+        include/qml/AnnotationCanvas.h
+        src/qml/ThemeManager.cpp
+        include/qml/ThemeManager.h
+        src/qml/QmlOverlayManager.cpp
+        include/qml/QmlOverlayManager.h
+        src/qml/QmlToast.cpp
+        include/qml/QmlToast.h
+        src/qml/QmlBadge.cpp
+        include/qml/QmlBadge.h
+        src/qml/QmlRecordingBoundary.mm
+        include/qml/QmlRecordingBoundary.h
+)
+
+target_include_directories(snaptray_qml
+    PUBLIC
+        ${CMAKE_SOURCE_DIR}/include
+        ${CMAKE_SOURCE_DIR}/include/qml
+    PRIVATE
+        ${CMAKE_SOURCE_DIR}/src
+        ${CMAKE_BINARY_DIR}/generated
+        ${CMAKE_BINARY_DIR}
+)
+
+target_link_libraries(snaptray_qml
+    PUBLIC
+        snaptray_core
+        Qt6::Quick
+        Qt6::QuickControls2
+        Qt6::QuickWidgets
+)
+
+if(APPLE)
+    target_link_libraries(snaptray_qml PRIVATE "-framework Cocoa")
+endif()
+
+target_compile_definitions(snaptray_qml PRIVATE
     $<$<NOT:$<CONFIG:Debug>>:QT_NO_DEBUG_OUTPUT>
 )
 
@@ -937,6 +1009,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     snaptray_platform
     snaptray_algorithms
     snaptray_core
+    snaptray_qmlplugin
     Qt6::Network
 )
 

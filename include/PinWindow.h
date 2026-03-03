@@ -39,7 +39,7 @@ struct OCRResult;
 class QRCodeManager;
 class PinWindowManager;
 class UIIndicators;
-namespace SnapTray { class UnifiedToast; }
+namespace SnapTray { class QmlToast; }
 class WindowedToolbar;
 class WindowedSubToolbar;
 class AnnotationLayer;
@@ -350,7 +350,7 @@ private:
     // Components
     ResizeHandler* m_resizeHandler;
     UIIndicators* m_uiIndicators;
-    SnapTray::UnifiedToast* m_toast;
+    SnapTray::QmlToast* m_toast;
 
     // Resize state
     bool m_isResizing;

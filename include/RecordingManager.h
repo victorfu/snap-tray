@@ -17,8 +17,9 @@
 
 class RecordingRegionSelector;
 class RecordingControlBar;
-class RecordingBoundaryOverlay;
 class RecordingInitTask;
+
+namespace SnapTray { class QmlRecordingBoundary; }
 class CountdownOverlay;
 class NativeGifEncoder;
 class IVideoEncoder;
@@ -121,7 +122,7 @@ private:
 
     // Recording state
     QPointer<RecordingControlBar> m_controlBar;
-    QPointer<RecordingBoundaryOverlay> m_boundaryOverlay;
+    QPointer<SnapTray::QmlRecordingBoundary> m_boundaryOverlay;
     QString m_tempVideoPath;
     std::unique_ptr<EncodingWorker> m_encodingWorker;  // Offloads encoding to worker thread
     std::unique_ptr<QThread> m_encodingThread;         // Dedicated encoding thread for encoding workload

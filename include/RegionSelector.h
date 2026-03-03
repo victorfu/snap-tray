@@ -62,7 +62,7 @@ class MultiRegionListPanel;
 class AnnotationContext;
 class CaptureShortcutHintsOverlay;
 class ShareUploadClient;
-namespace SnapTray { class UnifiedToast; }
+namespace SnapTray { class QmlToast; }
 
 // ShapeType and ShapeFillMode are defined in annotations/ShapeAnnotation.h
 
@@ -281,7 +281,7 @@ private:
     bool m_shareInProgress = false;
     QString m_pendingSharePassword;
     LoadingSpinnerRenderer *m_loadingSpinner = nullptr;
-    SnapTray::UnifiedToast *m_selectionToast = nullptr;
+    SnapTray::QmlToast *m_selectionToast = nullptr;
 
     void performOCR();
     void onOCRComplete(const OCRResult &result);

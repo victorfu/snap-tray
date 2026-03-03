@@ -1,7 +1,7 @@
 #include "RecordingManager.h"
 #include "RecordingRegionSelector.h"
 #include "RecordingControlBar.h"
-#include "RecordingBoundaryOverlay.h"
+#include "qml/QmlRecordingBoundary.h"
 #include "RecordingInitTask.h"
 #include "RecordingRegionNormalizer.h"
 #include "video/CountdownOverlay.h"
@@ -427,12 +427,9 @@ void RecordingManager::startFrameCapture()
         m_boundaryOverlay = nullptr;
     }
 
-    m_boundaryOverlay = new RecordingBoundaryOverlay();
-    m_boundaryOverlay->setAttribute(Qt::WA_DeleteOnClose);
+    m_boundaryOverlay = new SnapTray::QmlRecordingBoundary();
     m_boundaryOverlay->setRegion(m_recordingRegion);
     m_boundaryOverlay->show();
-    raiseWindowAboveMenuBar(m_boundaryOverlay);
-    setWindowClickThrough(m_boundaryOverlay, true);
 
     // Show control bar in preparing state
     // Clean up any existing control bar first to prevent resource leak
@@ -574,7 +571,7 @@ void RecordingManager::beginAsyncInitialization()
     // These are set after show() to ensure Qt has created the native window
     if (m_boundaryOverlay) {
         config.excludedWindowIds.append(m_boundaryOverlay->winId());
-        setWindowExcludedFromCapture(m_boundaryOverlay, true);
+        m_boundaryOverlay->setExcludedFromCapture(true);
     }
     if (m_controlBar) {
         config.excludedWindowIds.append(m_controlBar->winId());

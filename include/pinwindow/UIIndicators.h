@@ -6,7 +6,7 @@
 
 class ClickThroughExitButton;
 
-namespace SnapTray { class OverlayBadge; }
+namespace SnapTray { class QmlBadge; }
 
 class UIIndicators : public QObject
 {
@@ -36,10 +36,10 @@ private:
     int m_shadowMargin = 8;
 
     // Zoom indicator
-    SnapTray::OverlayBadge* m_zoomBadge = nullptr;
+    SnapTray::QmlBadge* m_zoomBadge = nullptr;
 
     // Opacity indicator
-    SnapTray::OverlayBadge* m_opacityBadge = nullptr;
+    SnapTray::QmlBadge* m_opacityBadge = nullptr;
 
     // Click-through exit button (independent floating window)
     ClickThroughExitButton* m_clickThroughExitButton = nullptr;
