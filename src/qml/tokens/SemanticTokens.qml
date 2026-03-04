@@ -9,7 +9,7 @@ import QtQuick
  */
 QtObject {
     // Theme state - bound to ThemeManager singleton for live theme switching
-    readonly property bool isDarkMode: ThemeManager.isDarkMode
+    readonly property bool isDarkMode: ThemeManager ? ThemeManager.isDarkMode : false
 
     // ========================================================================
     // Background

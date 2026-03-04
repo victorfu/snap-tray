@@ -22,7 +22,7 @@ Item {
     property bool fixedWidth: false    // true for screen-level (320px), false for auto-width
 
     // ---- Theme ----
-    readonly property bool isDark: ThemeManager.isDarkMode
+    readonly property bool isDark: ThemeManager ? ThemeManager.isDarkMode : false
 
     // ---- Signals ----
     signal hideFinished()
