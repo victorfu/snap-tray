@@ -130,6 +130,15 @@ Item {
             ctx.lineJoin = "miter";
             ctx.lineCap = "butt";
 
+            // Corner t-values (top-left is always t=0, so only 3 corners)
+            var perimeter = 2 * (bw + bh);
+            var cornerTs = [
+                bw / perimeter,               // top-right
+                (bw + bh) / perimeter,        // bottom-right
+                (2 * bw + bh) / perimeter     // bottom-left
+            ];
+            var eps = 1e-6;
+
             for (var s = 0; s < segments; s++) {
                 var t0 = s / segments;
                 var t1 = (s + 1) / segments;
@@ -150,12 +159,19 @@ Item {
 
                 ctx.strokeStyle = Qt.rgba(r, g, b, 1.0);
 
-                // Get perimeter points for this segment
+                // Route through any corner that falls within this segment
                 var p0 = perimeterPoint(t0, bx, by, bw, bh);
-                var p1 = perimeterPoint(t1, bx, by, bw, bh);
-
                 ctx.beginPath();
                 ctx.moveTo(p0[0], p0[1]);
+
+                for (var c = 0; c < 3; c++) {
+                    if (cornerTs[c] > t0 + eps && cornerTs[c] < t1 - eps) {
+                        var cp = perimeterPoint(cornerTs[c], bx, by, bw, bh);
+                        ctx.lineTo(cp[0], cp[1]);
+                    }
+                }
+
+                var p1 = perimeterPoint(t1, bx, by, bw, bh);
                 ctx.lineTo(p1[0], p1[1]);
                 ctx.stroke();
             }
