@@ -19,10 +19,12 @@ Flickable {
     property var availableLangs: []
     property var selectedLangs: []
     property int ocrBehavior: 0
+    property bool ocrLoading: true
 
     function refreshLists() {
         availableLangs = settingsBackend.ocrAvailableLanguages()
         selectedLangs = settingsBackend.ocrSelectedLanguages()
+        ocrLoading = false
     }
 
     Connections {
@@ -39,7 +41,7 @@ Flickable {
         id: content
         width: root.width
         padding: ComponentTokens.settingsContentPadding
-        spacing: 8
+        spacing: ComponentTokens.settingsColumnSpacing
 
         // Info label
         Text {
@@ -48,17 +50,49 @@ Flickable {
             color: SemanticTokens.textSecondary
             font.pixelSize: PrimitiveTokens.fontSizeBody
             font.family: PrimitiveTokens.fontFamily
-            font.letterSpacing: -0.2
+            font.letterSpacing: PrimitiveTokens.letterSpacingTight
             wrapMode: Text.WordWrap
         }
 
-        Item { width: 1; height: 4 }
+        Spacer { size: PrimitiveTokens.spacing4 }
+
+        // Loading indicator
+        Item {
+            width: parent.width - 2 * ComponentTokens.settingsContentPadding
+            height: 40
+            visible: root.ocrLoading
+
+            Row {
+                anchors.centerIn: parent
+                spacing: 8
+
+                BusySpinner {
+                    running: root.ocrLoading
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+
+                Text {
+                    text: qsTr("Loading languages...")
+                    color: SemanticTokens.textSecondary
+                    font.pixelSize: PrimitiveTokens.fontSizeBody
+                    font.family: PrimitiveTokens.fontFamily
+                    font.letterSpacing: PrimitiveTokens.letterSpacingTight
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+            }
+        }
 
         // Dual-list language picker
         Row {
             width: parent.width - 2 * ComponentTokens.settingsContentPadding
             height: 220
             spacing: PrimitiveTokens.spacing8
+            visible: !root.ocrLoading
+            opacity: root.ocrLoading ? 0 : 1
+
+            Behavior on opacity {
+                NumberAnimation { duration: PrimitiveTokens.durationNormal }
+            }
 
             // Available languages
             Column {
@@ -72,7 +106,7 @@ Flickable {
                     font.pixelSize: PrimitiveTokens.fontSizeBody
                     font.weight: Font.Medium
                     font.family: PrimitiveTokens.fontFamily
-                    font.letterSpacing: -0.2
+                    font.letterSpacing: PrimitiveTokens.letterSpacingTight
                 }
 
                 Rectangle {
@@ -113,7 +147,7 @@ Flickable {
                                 color: SemanticTokens.textPrimary
                                 font.pixelSize: PrimitiveTokens.fontSizeBody
                                 font.family: PrimitiveTokens.fontFamily
-                                font.letterSpacing: -0.2
+                                font.letterSpacing: PrimitiveTokens.letterSpacingTight
                                 elide: Text.ElideRight
                                 width: parent.width - 16
                             }
@@ -182,7 +216,7 @@ Flickable {
                     font.pixelSize: PrimitiveTokens.fontSizeBody
                     font.weight: Font.Medium
                     font.family: PrimitiveTokens.fontFamily
-                    font.letterSpacing: -0.2
+                    font.letterSpacing: PrimitiveTokens.letterSpacingTight
                 }
 
                 Rectangle {
@@ -261,7 +295,7 @@ Flickable {
                                     color: SemanticTokens.textPrimary
                                     font.pixelSize: PrimitiveTokens.fontSizeBody
                                     font.family: PrimitiveTokens.fontFamily
-                                    font.letterSpacing: -0.2
+                                    font.letterSpacing: PrimitiveTokens.letterSpacingTight
                                     elide: Text.ElideRight
                                     width: parent.width - 26
                                 }
@@ -354,7 +388,7 @@ Flickable {
                             color: SemanticTokens.textPrimary
                             font.pixelSize: PrimitiveTokens.fontSizeBody
                             font.family: PrimitiveTokens.fontFamily
-                            font.letterSpacing: -0.2
+                            font.letterSpacing: PrimitiveTokens.letterSpacingTight
                             anchors.verticalCenter: parent.verticalCenter
                         }
                     }
@@ -409,7 +443,7 @@ Flickable {
                             color: SemanticTokens.textPrimary
                             font.pixelSize: PrimitiveTokens.fontSizeBody
                             font.family: PrimitiveTokens.fontFamily
-                            font.letterSpacing: -0.2
+                            font.letterSpacing: PrimitiveTokens.letterSpacingTight
                             anchors.verticalCenter: parent.verticalCenter
                         }
                     }

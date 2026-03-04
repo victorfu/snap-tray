@@ -19,12 +19,8 @@ Rectangle {
     width: buttonText.implicitWidth + 32
     height: 32
     radius: PrimitiveTokens.radiusMedium
-    opacity: root.enabled ? 1.0 : 0.5
-
     color: {
-        if (!root.enabled) return root.primary
-            ? ComponentTokens.buttonPrimaryBackground
-            : ComponentTokens.buttonSecondaryBackground
+        if (!root.enabled) return ComponentTokens.buttonDisabledBackground
         if (mouseArea.pressed) return root.primary
             ? ComponentTokens.buttonPrimaryBackgroundPressed
             : ComponentTokens.buttonSecondaryBackgroundPressed
@@ -37,7 +33,8 @@ Rectangle {
     }
 
     border.width: root.primary ? 0 : 1
-    border.color: root.primary ? "transparent" : ComponentTokens.buttonSecondaryBorder
+    border.color: !root.enabled ? ComponentTokens.buttonDisabledBorder
+        : root.primary ? "transparent" : ComponentTokens.buttonSecondaryBorder
 
     Behavior on color {
         ColorAnimation { duration: PrimitiveTokens.durationFast }
@@ -47,13 +44,19 @@ Rectangle {
         id: buttonText
         anchors.centerIn: parent
         text: root.text
-        color: root.primary
-            ? ComponentTokens.buttonPrimaryText
-            : ComponentTokens.buttonSecondaryText
+        color: !root.enabled ? ComponentTokens.buttonDisabledText
+            : root.primary
+                ? ComponentTokens.buttonPrimaryText
+                : ComponentTokens.buttonSecondaryText
         font.pixelSize: PrimitiveTokens.fontSizeBody
         font.family: PrimitiveTokens.fontFamily
         font.weight: Font.Medium
-        font.letterSpacing: -0.2
+        font.letterSpacing: PrimitiveTokens.letterSpacingTight
+    }
+
+    FocusFrame {
+        showFocus: root.activeFocus
+        extraRadius: root.radius
     }
 
     MouseArea {
@@ -62,6 +65,12 @@ Rectangle {
         enabled: root.enabled
         cursorShape: root.enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
         hoverEnabled: true
-        onClicked: root.clicked()
+        onClicked: {
+            root.forceActiveFocus()
+            root.clicked()
+        }
     }
+
+    Keys.onSpacePressed: if (root.enabled) root.clicked()
+    Keys.onReturnPressed: if (root.enabled) root.clicked()
 }

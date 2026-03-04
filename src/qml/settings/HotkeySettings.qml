@@ -5,8 +5,8 @@ import SnapTrayQml
 /**
  * HotkeySettings: Grouped hotkey list with edit / clear / reset actions.
  *
- * Uses fixed column widths so Action, Hotkey, and Status columns align
- * across all rows regardless of text length.
+ * Uses proportional column widths so Action, Hotkey, and Status columns align
+ * across all rows and adapt to different panel widths and languages.
  */
 Flickable {
     id: root
@@ -23,17 +23,19 @@ Flickable {
         function onHotkeysChanged() { root.hotkeyRevision++ }
     }
 
-    // Fixed column layout constants
-    readonly property int colActionWidth: 190
-    readonly property int colKeyWidth: 100
-    readonly property int colStatusWidth: 60
+    // Proportional column layout constants
     readonly property int rowLeftMargin: 8
+    readonly property int buttonAreaWidth: 210
+    readonly property real colActionRatio: 0.50
+    readonly property real colKeyRatio: 0.28
+    readonly property real colStatusRatio: 0.22
+    readonly property int textAreaWidth: width - 2 * ComponentTokens.settingsContentPadding - buttonAreaWidth - rowLeftMargin
 
     Column {
         id: content
         width: root.width
         padding: ComponentTokens.settingsContentPadding
-        spacing: 4
+        spacing: ComponentTokens.settingsColumnSpacing
 
         // Header row with "Restore All Defaults" button
         Item {
@@ -46,7 +48,7 @@ Flickable {
                 font.pixelSize: PrimitiveTokens.fontSizeH3
                 font.weight: Font.DemiBold
                 font.family: PrimitiveTokens.fontFamily
-                font.letterSpacing: -0.2
+                font.letterSpacing: PrimitiveTokens.letterSpacingTight
                 anchors.left: parent.left
                 anchors.verticalCenter: parent.verticalCenter
             }
@@ -60,7 +62,7 @@ Flickable {
             }
         }
 
-        Item { width: 1; height: 8 }
+        Spacer {}
 
         // Category repeater
         Repeater {
@@ -79,7 +81,7 @@ Flickable {
                     font.pixelSize: PrimitiveTokens.fontSizeCaption
                     font.weight: Font.Medium
                     font.family: PrimitiveTokens.fontFamily
-                    font.letterSpacing: 0.5
+                    font.letterSpacing: PrimitiveTokens.letterSpacingWide
                     topPadding: 12
                     bottomPadding: 4
                 }
@@ -108,25 +110,36 @@ Flickable {
                             acceptedButtons: Qt.NoButton
                         }
 
-                        // Action name — fixed column
+                        // Action name — proportional column
                         Text {
                             id: actionName
                             x: root.rowLeftMargin
-                            width: root.colActionWidth
+                            width: root.textAreaWidth * root.colActionRatio
                             anchors.verticalCenter: parent.verticalCenter
                             text: modelData.name
                             color: SemanticTokens.textPrimary
                             font.pixelSize: PrimitiveTokens.fontSizeBody
                             font.family: PrimitiveTokens.fontFamily
-                            font.letterSpacing: -0.2
+                            font.letterSpacing: PrimitiveTokens.letterSpacingTight
                             elide: Text.ElideRight
+
+                            ToolTip.visible: actionNameHover.containsMouse && actionName.truncated
+                            ToolTip.delay: 500
+                            ToolTip.text: modelData.name
+
+                            MouseArea {
+                                id: actionNameHover
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                acceptedButtons: Qt.NoButton
+                            }
                         }
 
-                        // Key sequence — fixed column
+                        // Key sequence — proportional column
                         Text {
                             id: keySeq
-                            x: root.rowLeftMargin + root.colActionWidth
-                            width: root.colKeyWidth
+                            x: root.rowLeftMargin + root.textAreaWidth * root.colActionRatio
+                            width: root.textAreaWidth * root.colKeyRatio
                             anchors.verticalCenter: parent.verticalCenter
                             text: modelData.keySequence || qsTr("Not Set")
                             color: modelData.keySequence
@@ -134,15 +147,27 @@ Flickable {
                                 : SemanticTokens.textTertiary
                             font.pixelSize: PrimitiveTokens.fontSizeBody
                             font.family: PrimitiveTokens.fontFamily
-                            font.letterSpacing: -0.2
+                            font.letterSpacing: PrimitiveTokens.letterSpacingTight
+                            elide: Text.ElideRight
+
+                            ToolTip.visible: keySeqHover.containsMouse && keySeq.truncated
+                            ToolTip.delay: 500
+                            ToolTip.text: modelData.keySequence || qsTr("Not Set")
+
+                            MouseArea {
+                                id: keySeqHover
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                acceptedButtons: Qt.NoButton
+                            }
                         }
 
-                        // Status text — fixed column
+                        // Status text — proportional column
                         // HotkeyStatus enum: Unset=0, Registered=1, Failed=2, Disabled=3
                         Text {
                             id: statusText
-                            x: root.rowLeftMargin + root.colActionWidth + root.colKeyWidth
-                            width: root.colStatusWidth
+                            x: root.rowLeftMargin + root.textAreaWidth * (root.colActionRatio + root.colKeyRatio)
+                            width: root.textAreaWidth * root.colStatusRatio
                             anchors.verticalCenter: parent.verticalCenter
                             text: {
                                 if (modelData.status === 2)
@@ -160,7 +185,7 @@ Flickable {
                             }
                             font.pixelSize: PrimitiveTokens.fontSizeBody
                             font.family: PrimitiveTokens.fontFamily
-                            font.letterSpacing: -0.2
+                            font.letterSpacing: PrimitiveTokens.letterSpacingTight
                         }
 
                         // Action buttons (right-aligned)
@@ -188,7 +213,7 @@ Flickable {
                     }
                 }
 
-                Item { width: 1; height: 4 }
+                Spacer { size: PrimitiveTokens.spacing4 }
             }
         }
     }

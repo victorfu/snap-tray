@@ -81,7 +81,16 @@ Rectangle {
                 font.pixelSize: PrimitiveTokens.fontSizeBody
                 font.weight: navItem.isActive ? Font.Medium : Font.Normal
                 font.family: PrimitiveTokens.fontFamily
-                font.letterSpacing: -0.2
+                font.letterSpacing: PrimitiveTokens.letterSpacingTight
+            }
+
+            FocusFrame {
+                showFocus: hoverArea.activeFocus
+                anchors.margins: -ComponentTokens.focusRingOffset
+                anchors.leftMargin: 4 - ComponentTokens.focusRingOffset
+                anchors.rightMargin: 8 - ComponentTokens.focusRingOffset
+                anchors.fill: parent
+                radius: PrimitiveTokens.radiusSmall + ComponentTokens.focusRingOffset
             }
 
             MouseArea {
@@ -89,7 +98,13 @@ Rectangle {
                 anchors.fill: parent
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
-                onClicked: root.currentIndex = navItem.index
+                focus: true
+                onClicked: {
+                    forceActiveFocus()
+                    root.currentIndex = navItem.index
+                }
+                Keys.onSpacePressed: root.currentIndex = navItem.index
+                Keys.onReturnPressed: root.currentIndex = navItem.index
             }
         }
     }

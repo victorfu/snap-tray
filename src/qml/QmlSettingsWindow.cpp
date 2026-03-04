@@ -39,8 +39,7 @@ void QmlSettingsWindow::ensureView()
             this, &QmlSettingsWindow::ocrLanguagesChanged);
     connect(m_backend, &SettingsBackend::mcpEnabledChanged,
             this, &QmlSettingsWindow::mcpEnabledChanged);
-    connect(m_backend, &SettingsBackend::settingsSaved,
-            m_view, &QQuickView::close);
+    // settingsSaved close is handled by QML (shows toast first, then closes).
     connect(m_backend, &SettingsBackend::settingsCancelled,
             m_view, &QQuickView::close);
 

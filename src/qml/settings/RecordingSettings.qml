@@ -25,7 +25,7 @@ Flickable {
         id: content
         width: root.width
         padding: ComponentTokens.settingsContentPadding
-        spacing: 4
+        spacing: ComponentTokens.settingsColumnSpacing
 
         SettingsCombo {
             label: qsTr("Frame rate")
@@ -82,7 +82,7 @@ Flickable {
                 color: ComponentTokens.infoPanelText
                 font.pixelSize: PrimitiveTokens.fontSizeBody
                 font.family: PrimitiveTokens.fontFamily
-                font.letterSpacing: -0.2
+                font.letterSpacing: PrimitiveTokens.letterSpacingTight
                 wrapMode: Text.WordWrap
             }
         }
@@ -108,7 +108,7 @@ Flickable {
             onActivated: function(index) { settingsBackend.recordingAudioSource = index }
         }
 
-        Item { width: 1; height: 8 }
+        Spacer {}
 
         SettingsToggle {
             label: qsTr("Show preview")

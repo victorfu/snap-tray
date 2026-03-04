@@ -51,7 +51,7 @@ SettingsRow {
             color: SemanticTokens.textPrimary
             font.pixelSize: PrimitiveTokens.fontSizeBody
             font.family: PrimitiveTokens.fontFamily
-            font.letterSpacing: -0.2
+            font.letterSpacing: PrimitiveTokens.letterSpacingTight
             verticalAlignment: Text.AlignVCenter
             elide: Text.ElideRight
         }
@@ -96,7 +96,7 @@ SettingsRow {
                 color: SemanticTokens.textPrimary
                 font.pixelSize: PrimitiveTokens.fontSizeBody
                 font.family: PrimitiveTokens.fontFamily
-                font.letterSpacing: -0.2
+                font.letterSpacing: PrimitiveTokens.letterSpacingTight
                 verticalAlignment: Text.AlignVCenter
                 horizontalAlignment: Text.AlignLeft
                 leftPadding: PrimitiveTokens.spacing8

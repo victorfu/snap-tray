@@ -38,7 +38,7 @@ SettingsRow {
                 color: root.path.length > 0 ? SemanticTokens.textPrimary : SemanticTokens.textTertiary
                 font.pixelSize: PrimitiveTokens.fontSizeBody
                 font.family: PrimitiveTokens.fontFamily
-                font.letterSpacing: -0.2
+                font.letterSpacing: PrimitiveTokens.letterSpacingTight
                 elide: Text.ElideMiddle
             }
         }

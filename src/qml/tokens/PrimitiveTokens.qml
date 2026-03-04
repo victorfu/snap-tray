@@ -127,6 +127,12 @@ QtObject {
     readonly property int fontWeightBold: Font.Bold
 
     // ========================================================================
+    // Letter spacing
+    // ========================================================================
+    readonly property real letterSpacingTight: -0.2
+    readonly property real letterSpacingWide: 0.5
+
+    // ========================================================================
     // Font families (platform-aware fallback)
     // ========================================================================
     readonly property string fontFamily: Qt.platform.os === "osx"

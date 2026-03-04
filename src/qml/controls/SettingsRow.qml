@@ -23,7 +23,7 @@ Row {
         color: SemanticTokens.textPrimary
         font.pixelSize: PrimitiveTokens.fontSizeBody
         font.family: PrimitiveTokens.fontFamily
-        font.letterSpacing: -0.2
+        font.letterSpacing: PrimitiveTokens.letterSpacingTight
         width: root.labelWidth
         anchors.verticalCenter: parent.verticalCenter
     }

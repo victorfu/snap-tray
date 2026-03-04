@@ -25,7 +25,7 @@ Flickable {
         id: content
         width: root.width
         padding: ComponentTokens.settingsContentPadding
-        spacing: 4
+        spacing: ComponentTokens.settingsColumnSpacing
 
         SettingsToggle {
             label: qsTr("Start on login")
@@ -65,82 +65,63 @@ Flickable {
             visible: settingsBackend.isMacOS
         }
 
-        SettingsRow {
+        SettingsPermissionRow {
             label: qsTr("Screen Recording")
+            description: qsTr("Required for capturing screenshots and recording your screen.")
             visible: settingsBackend.isMacOS
-
-            Row {
-                anchors.verticalCenter: parent ? parent.verticalCenter : undefined
-                spacing: 8
-
-                Text {
-                    text: settingsBackend.isMacOS && settingsBackend.hasScreenRecordingPermission
-                        ? qsTr("Granted") : qsTr("Not Granted")
-                    color: settingsBackend.isMacOS && settingsBackend.hasScreenRecordingPermission
-                        ? SemanticTokens.statusSuccess : SemanticTokens.statusError
-                    font.pixelSize: PrimitiveTokens.fontSizeBody
-                    font.family: PrimitiveTokens.fontFamily
-                    font.letterSpacing: -0.2
-                    anchors.verticalCenter: parent.verticalCenter
-                }
-
-                SettingsButton {
-                    text: qsTr("Open Settings")
-                    onClicked: settingsBackend.openScreenRecordingSettings()
-                }
-            }
+            granted: settingsBackend.isMacOS && settingsBackend.hasScreenRecordingPermission
+            onOpenSettingsClicked: settingsBackend.openScreenRecordingSettings()
         }
 
-        SettingsRow {
+        SettingsPermissionRow {
             label: qsTr("Accessibility")
+            description: qsTr("Required for global hotkeys and window detection.")
             visible: settingsBackend.isMacOS
-
-            Row {
-                anchors.verticalCenter: parent ? parent.verticalCenter : undefined
-                spacing: 8
-
-                Text {
-                    text: settingsBackend.isMacOS && settingsBackend.hasAccessibilityPermission
-                        ? qsTr("Granted") : qsTr("Not Granted")
-                    color: settingsBackend.isMacOS && settingsBackend.hasAccessibilityPermission
-                        ? SemanticTokens.statusSuccess : SemanticTokens.statusError
-                    font.pixelSize: PrimitiveTokens.fontSizeBody
-                    font.family: PrimitiveTokens.fontFamily
-                    font.letterSpacing: -0.2
-                    anchors.verticalCenter: parent.verticalCenter
-                }
-
-                SettingsButton {
-                    text: qsTr("Open Settings")
-                    onClicked: settingsBackend.openAccessibilitySettings()
-                }
-            }
+            granted: settingsBackend.isMacOS && settingsBackend.hasAccessibilityPermission
+            onOpenSettingsClicked: settingsBackend.openAccessibilitySettings()
         }
 
         SettingsSection { title: qsTr("Command Line") }
 
         SettingsRow {
+            id: cliRow
             label: qsTr("CLI Status")
+
+            property bool busy: false
+
+            Connections {
+                target: settingsBackend
+                function onCliInstalledChanged() { cliRow.busy = false }
+            }
 
             Row {
                 anchors.verticalCenter: parent ? parent.verticalCenter : undefined
                 spacing: 8
 
+                BusySpinner {
+                    running: cliRow.busy
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+
                 Text {
-                    text: settingsBackend.cliInstalled
-                        ? qsTr("'snaptray' command is available")
-                        : qsTr("'snaptray' command is not installed")
+                    text: cliRow.busy
+                        ? qsTr("Please wait...")
+                        : settingsBackend.cliInstalled
+                            ? qsTr("'snaptray' command is available")
+                            : qsTr("'snaptray' command is not installed")
                     color: SemanticTokens.textSecondary
                     font.pixelSize: PrimitiveTokens.fontSizeBody
                     font.family: PrimitiveTokens.fontFamily
-                    font.letterSpacing: -0.2
+                    font.letterSpacing: PrimitiveTokens.letterSpacingTight
                     anchors.verticalCenter: parent.verticalCenter
                 }
 
                 SettingsButton {
                     text: settingsBackend.cliInstalled
                         ? qsTr("Uninstall CLI") : qsTr("Install CLI")
+                    enabled: !cliRow.busy
                     onClicked: {
+                        cliRow.busy = true
                         if (settingsBackend.cliInstalled)
                             settingsBackend.uninstallCLI()
                         else

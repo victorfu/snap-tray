@@ -72,6 +72,6 @@ SettingsRow {
         color: SemanticTokens.textSecondary
         font.pixelSize: PrimitiveTokens.fontSizeBody
         font.family: PrimitiveTokens.fontFamily
-        font.letterSpacing: -0.2
+        font.letterSpacing: PrimitiveTokens.letterSpacingTight
     }
 }

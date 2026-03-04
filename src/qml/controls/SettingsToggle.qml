@@ -54,12 +54,24 @@ Column {
                         NumberAnimation { duration: PrimitiveTokens.durationFast; easing.type: Easing.InOutCubic }
                     }
                 }
+
+                FocusFrame {
+                    showFocus: toggleArea.activeFocus
+                    extraRadius: track.radius
+                }
             }
 
             MouseArea {
+                id: toggleArea
                 anchors.fill: parent
                 cursorShape: Qt.PointingHandCursor
+                focus: true
                 onClicked: {
+                    forceActiveFocus()
+                    root.checked = !root.checked
+                    root.toggled(root.checked)
+                }
+                Keys.onSpacePressed: {
                     root.checked = !root.checked
                     root.toggled(root.checked)
                 }
@@ -73,7 +85,7 @@ Column {
         color: SemanticTokens.textTertiary
         font.pixelSize: PrimitiveTokens.fontSizeCaption
         font.family: PrimitiveTokens.fontFamily
-        font.letterSpacing: -0.2
+        font.letterSpacing: PrimitiveTokens.letterSpacingTight
         visible: root.description.length > 0
         leftPadding: ComponentTokens.toggleLabelIndent
         topPadding: 2

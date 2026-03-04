@@ -17,7 +17,7 @@ Flickable {
         id: content
         width: root.width
         padding: ComponentTokens.settingsContentPadding
-        spacing: 4
+        spacing: ComponentTokens.settingsColumnSpacing
 
         SettingsToggle {
             label: qsTr("Apply to images")
@@ -31,7 +31,7 @@ Flickable {
             onToggled: settingsBackend.watermarkApplyToRecording = checked
         }
 
-        Item { width: 1; height: 8 }
+        Spacer {}
 
         // Main content: controls + preview side by side
         RowLayout {
@@ -117,7 +117,7 @@ Flickable {
                         color: SemanticTokens.textTertiary
                         font.pixelSize: PrimitiveTokens.fontSizeCaption
                         font.family: PrimitiveTokens.fontFamily
-                        font.letterSpacing: -0.2
+                        font.letterSpacing: PrimitiveTokens.letterSpacingTight
                         visible: settingsBackend.watermarkPreviewUrl === ""
                     }
                 }

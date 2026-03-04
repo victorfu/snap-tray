@@ -17,7 +17,7 @@ Flickable {
         width: root.width
         padding: ComponentTokens.settingsContentPadding
         topPadding: 40
-        spacing: 8
+        spacing: PrimitiveTokens.spacing8
 
         // App icon
         Image {
@@ -29,7 +29,7 @@ Flickable {
             anchors.horizontalCenter: parent.horizontalCenter
         }
 
-        Item { width: 1; height: 4 }
+        Spacer { size: PrimitiveTokens.spacing4 }
 
         // App name
         Text {
@@ -38,7 +38,7 @@ Flickable {
             font.pixelSize: PrimitiveTokens.fontSizeH2
             font.weight: Font.Bold
             font.family: PrimitiveTokens.fontFamily
-            font.letterSpacing: -0.2
+            font.letterSpacing: PrimitiveTokens.letterSpacingTight
             anchors.horizontalCenter: parent.horizontalCenter
         }
 
@@ -48,11 +48,11 @@ Flickable {
             color: SemanticTokens.textSecondary
             font.pixelSize: PrimitiveTokens.fontSizeCaption
             font.family: PrimitiveTokens.fontFamily
-            font.letterSpacing: -0.2
+            font.letterSpacing: PrimitiveTokens.letterSpacingTight
             anchors.horizontalCenter: parent.horizontalCenter
         }
 
-        Item { width: 1; height: 12 }
+        Spacer { size: PrimitiveTokens.spacing12 }
 
         // Copyright
         Text {
@@ -60,7 +60,7 @@ Flickable {
             color: SemanticTokens.textSecondary
             font.pixelSize: PrimitiveTokens.fontSizeCaption
             font.family: PrimitiveTokens.fontFamily
-            font.letterSpacing: -0.2
+            font.letterSpacing: PrimitiveTokens.letterSpacingTight
             anchors.horizontalCenter: parent.horizontalCenter
         }
 
@@ -70,7 +70,7 @@ Flickable {
             color: SemanticTokens.textSecondary
             font.pixelSize: PrimitiveTokens.fontSizeCaption
             font.family: PrimitiveTokens.fontFamily
-            font.letterSpacing: -0.2
+            font.letterSpacing: PrimitiveTokens.letterSpacingTight
             anchors.horizontalCenter: parent.horizontalCenter
         }
 
@@ -80,7 +80,7 @@ Flickable {
             color: SemanticTokens.accentDefault
             font.pixelSize: PrimitiveTokens.fontSizeCaption
             font.family: PrimitiveTokens.fontFamily
-            font.letterSpacing: -0.2
+            font.letterSpacing: PrimitiveTokens.letterSpacingTight
             linkColor: SemanticTokens.accentDefault
             anchors.horizontalCenter: parent.horizontalCenter
             onLinkActivated: function(link) { Qt.openUrlExternally(link) }

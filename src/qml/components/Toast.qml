@@ -200,7 +200,7 @@ Item {
                     wrapMode: fixedWidth ? Text.WordWrap : Text.NoWrap
                     elide: fixedWidth ? Text.ElideNone : Text.ElideRight
                     // Letter spacing for Linear crispness
-                    font.letterSpacing: -0.2
+                    font.letterSpacing: PrimitiveTokens.letterSpacingTight
                 }
 
                 Text {
@@ -213,7 +213,7 @@ Item {
                     width: parent.width
                     wrapMode: Text.WordWrap
                     visible: root.message.length > 0
-                    font.letterSpacing: -0.1
+                    font.letterSpacing: PrimitiveTokens.letterSpacingTight
                 }
             }
         }

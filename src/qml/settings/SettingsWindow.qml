@@ -17,6 +17,25 @@ Item {
         color: SemanticTokens.backgroundPrimary
     }
 
+    // Save confirmation toast
+    Toast {
+        id: saveToast
+        level: 0  // Success
+        title: qsTr("Settings saved")
+        anchorMode: 1  // ParentTopCenter
+        z: 100
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.top: parent.top
+        anchors.topMargin: 12
+        displayDuration: 800
+        onHideFinished: settingsBackend.cancel()  // close window after toast
+    }
+
+    Connections {
+        target: settingsBackend
+        function onSettingsSaved() { saveToast.show() }
+    }
+
     RowLayout {
         anchors.fill: parent
         anchors.bottomMargin: bottomBar.height
@@ -25,7 +44,10 @@ Item {
         SettingsSidebar {
             id: sidebar
             Layout.fillHeight: true
-            Layout.preferredWidth: ComponentTokens.settingsSidebarWidth
+            Layout.preferredWidth: Math.min(
+                ComponentTokens.settingsSidebarMaxWidth,
+                Math.max(ComponentTokens.settingsSidebarMinWidth, root.width * 0.25)
+            )
         }
 
         // Vertical separator

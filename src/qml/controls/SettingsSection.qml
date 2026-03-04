@@ -14,7 +14,7 @@ Column {
     property string description: ""
 
     width: parent ? parent.width - parent.leftPadding - parent.rightPadding : 0
-    topPadding: 16
+    topPadding: ComponentTokens.settingsSectionTopPadding
     spacing: 2
 
     Text {
@@ -23,7 +23,7 @@ Column {
         font.pixelSize: PrimitiveTokens.fontSizeCaption
         font.weight: Font.Medium
         font.family: PrimitiveTokens.fontFamily
-        font.letterSpacing: 0.5
+        font.letterSpacing: PrimitiveTokens.letterSpacingWide
     }
 
     Text {
@@ -31,9 +31,9 @@ Column {
         color: SemanticTokens.textTertiary
         font.pixelSize: PrimitiveTokens.fontSizeCaption
         font.family: PrimitiveTokens.fontFamily
-        font.letterSpacing: -0.2
+        font.letterSpacing: PrimitiveTokens.letterSpacingTight
         visible: root.description.length > 0
     }
 
-    Item { width: 1; height: 8 }
+    Spacer {}
 }

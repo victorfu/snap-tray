@@ -907,6 +907,10 @@ set_source_files_properties(src/qml/controls/SettingsSlider.qml PROPERTIES QT_RE
 set_source_files_properties(src/qml/controls/SettingsCombo.qml PROPERTIES QT_RESOURCE_ALIAS controls/SettingsCombo.qml)
 set_source_files_properties(src/qml/controls/SettingsPathPicker.qml PROPERTIES QT_RESOURCE_ALIAS controls/SettingsPathPicker.qml)
 set_source_files_properties(src/qml/controls/SettingsButton.qml PROPERTIES QT_RESOURCE_ALIAS controls/SettingsButton.qml)
+set_source_files_properties(src/qml/controls/SettingsPermissionRow.qml PROPERTIES QT_RESOURCE_ALIAS controls/SettingsPermissionRow.qml)
+set_source_files_properties(src/qml/controls/Spacer.qml PROPERTIES QT_RESOURCE_ALIAS controls/Spacer.qml)
+set_source_files_properties(src/qml/controls/FocusFrame.qml PROPERTIES QT_RESOURCE_ALIAS controls/FocusFrame.qml)
+set_source_files_properties(src/qml/controls/BusySpinner.qml PROPERTIES QT_RESOURCE_ALIAS controls/BusySpinner.qml)
 
 # Settings pages
 set_source_files_properties(src/qml/settings/SettingsWindow.qml PROPERTIES QT_RESOURCE_ALIAS settings/SettingsWindow.qml)
@@ -940,6 +944,10 @@ qt_add_qml_module(snaptray_qml
         src/qml/controls/SettingsCombo.qml
         src/qml/controls/SettingsPathPicker.qml
         src/qml/controls/SettingsButton.qml
+        src/qml/controls/SettingsPermissionRow.qml
+        src/qml/controls/Spacer.qml
+        src/qml/controls/FocusFrame.qml
+        src/qml/controls/BusySpinner.qml
         src/qml/settings/SettingsWindow.qml
         src/qml/settings/SettingsSidebar.qml
         src/qml/settings/GeneralSettings.qml

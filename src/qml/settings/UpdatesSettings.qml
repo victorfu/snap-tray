@@ -25,7 +25,7 @@ Flickable {
         id: content
         width: root.width
         padding: ComponentTokens.settingsContentPadding
-        spacing: 4
+        spacing: ComponentTokens.settingsColumnSpacing
 
         SettingsSection { title: qsTr("Version") }
 
@@ -37,7 +37,7 @@ Flickable {
                 color: SemanticTokens.textPrimary
                 font.pixelSize: PrimitiveTokens.fontSizeBody
                 font.family: PrimitiveTokens.fontFamily
-                font.letterSpacing: -0.2
+                font.letterSpacing: PrimitiveTokens.letterSpacingTight
                 anchors.verticalCenter: parent ? parent.verticalCenter : undefined
             }
         }
@@ -66,7 +66,7 @@ Flickable {
             }
         }
 
-        Item { width: 1; height: 16 }
+        Spacer { size: PrimitiveTokens.spacing16 }
 
         // Separator
         Rectangle {
@@ -75,7 +75,7 @@ Flickable {
             color: SemanticTokens.borderDefault
         }
 
-        Item { width: 1; height: 8 }
+        Spacer {}
 
         // Last checked text
         Text {
@@ -84,11 +84,11 @@ Flickable {
             color: SemanticTokens.textSecondary
             font.pixelSize: PrimitiveTokens.fontSizeCaption
             font.family: PrimitiveTokens.fontFamily
-            font.letterSpacing: -0.2
+            font.letterSpacing: PrimitiveTokens.letterSpacingTight
             horizontalAlignment: Text.AlignHCenter
         }
 
-        Item { width: 1; height: 12 }
+        Spacer { size: PrimitiveTokens.spacing12 }
 
         // Check Now button (centered)
         Item {

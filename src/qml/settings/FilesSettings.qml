@@ -16,7 +16,7 @@ Flickable {
         id: content
         width: root.width
         padding: ComponentTokens.settingsContentPadding
-        spacing: 4
+        spacing: ComponentTokens.settingsColumnSpacing
 
         SettingsSection { title: qsTr("Save Locations") }
 
@@ -58,7 +58,7 @@ Flickable {
                     color: SemanticTokens.textPrimary
                     font.pixelSize: PrimitiveTokens.fontSizeBody
                     font.family: PrimitiveTokens.fontFamily
-                    font.letterSpacing: -0.2
+                    font.letterSpacing: PrimitiveTokens.letterSpacingTight
                     clip: true
                     selectByMouse: true
                     onTextChanged: settingsBackend.filenameTemplate = text
@@ -72,7 +72,7 @@ Flickable {
             color: SemanticTokens.textTertiary
             font.pixelSize: PrimitiveTokens.fontSizeCaption
             font.family: PrimitiveTokens.fontFamily
-            font.letterSpacing: -0.2
+            font.letterSpacing: PrimitiveTokens.letterSpacingTight
             wrapMode: Text.WordWrap
         }
 
@@ -82,7 +82,7 @@ Flickable {
             color: SemanticTokens.textSecondary
             font.pixelSize: PrimitiveTokens.fontSizeCaption
             font.family: PrimitiveTokens.fontFamily
-            font.letterSpacing: -0.2
+            font.letterSpacing: PrimitiveTokens.letterSpacingTight
             wrapMode: Text.WordWrap
         }
 

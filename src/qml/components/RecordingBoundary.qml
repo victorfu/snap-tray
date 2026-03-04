@@ -15,8 +15,12 @@ import SnapTrayQml
 Item {
     id: root
 
-    // Border mode: 0 = Recording, 1 = Playing, 2 = Paused
-    property int borderMode: 0
+    // Border mode constants (mirrors C++ QmlRecordingBoundary::BorderMode)
+    readonly property int modeRecording: 0
+    readonly property int modePlaying: 1
+    readonly property int modePaused: 2
+
+    property int borderMode: modeRecording
 
     // Region dimensions (set from C++)
     property int regionWidth: 400
@@ -63,7 +67,7 @@ Item {
         to: 1.0
         duration: PrimitiveTokens.durationBoundaryLoop
         loops: Animation.Infinite
-        running: root.borderMode === 0
+        running: root.borderMode === root.modeRecording
     }
 
     NumberAnimation {
@@ -74,7 +78,7 @@ Item {
         to: 1.0
         duration: PrimitiveTokens.durationBoundaryLoop
         loops: Animation.Infinite
-        running: root.borderMode === 1
+        running: root.borderMode === root.modePlaying
     }
 
     // ---- Canvas for all drawing ----
@@ -94,9 +98,9 @@ Item {
             var bw = width - 2 * bx;
             var bh = height - 2 * by;
 
-            if (root.borderMode === 0) {
+            if (root.borderMode === root.modeRecording) {
                 drawRecordingBorder(ctx, bx, by, bw, bh);
-            } else if (root.borderMode === 1) {
+            } else if (root.borderMode === root.modePlaying) {
                 drawPlayingBorder(ctx, bx, by, bw, bh);
             } else {
                 drawPausedBorder(ctx, bx, by, bw, bh);

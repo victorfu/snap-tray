@@ -43,6 +43,16 @@ QtObject {
     readonly property int buttonGhostRadius: PrimitiveTokens.radiusMedium
 
     // ========================================================================
+    // Button: Disabled
+    // ========================================================================
+    readonly property color buttonDisabledBackground: SemanticTokens.isDarkMode
+        ? PrimitiveTokens.gray800 : PrimitiveTokens.gray200
+    readonly property color buttonDisabledText: SemanticTokens.isDarkMode
+        ? PrimitiveTokens.gray600 : PrimitiveTokens.gray400
+    readonly property color buttonDisabledBorder: SemanticTokens.isDarkMode
+        ? PrimitiveTokens.gray700 : PrimitiveTokens.gray300
+
+    // ========================================================================
     // Toolbar
     // ========================================================================
     readonly property int toolbarHeight: 44
@@ -128,7 +138,11 @@ QtObject {
         ? Qt.rgba(1, 1, 1, 0.03) : Qt.rgba(0, 0, 0, 0.02)
     readonly property color settingsSectionText: SemanticTokens.textSecondary
     readonly property int settingsSidebarWidth: 200
+    readonly property int settingsSidebarMinWidth: 160
+    readonly property int settingsSidebarMaxWidth: 220
     readonly property int settingsContentPadding: 24
+    readonly property int settingsSectionTopPadding: PrimitiveTokens.spacing16
+    readonly property int settingsColumnSpacing: PrimitiveTokens.spacing4
 
     // Form Controls
     readonly property color toggleTrackOn: SemanticTokens.accentDefault
@@ -176,6 +190,14 @@ QtObject {
         ? Qt.rgba(0.25, 0.35, 0.55, 1.0) : Qt.rgba(0.7, 0.8, 0.95, 1.0)
     readonly property color infoPanelText: SemanticTokens.isDarkMode
         ? Qt.rgba(0.7, 0.82, 1.0, 1.0) : Qt.rgba(0.15, 0.25, 0.5, 1.0)
+
+    // ========================================================================
+    // Focus Ring
+    // ========================================================================
+    readonly property color focusRingColor: SemanticTokens.borderFocus
+    readonly property int focusRingWidth: 2
+    readonly property int focusRingOffset: 2
+    readonly property int focusRingRadius: PrimitiveTokens.radiusMedium
 
     // ========================================================================
     // Icon sizes (component-level aliases with semantic names)
