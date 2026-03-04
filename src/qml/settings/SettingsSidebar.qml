@@ -44,6 +44,7 @@ Rectangle {
             required property string modelData
 
             readonly property bool isActive: root.currentIndex === index
+            property alias focusArea: hoverArea
 
             // Active left accent bar
             Rectangle {
@@ -114,17 +115,19 @@ Rectangle {
                 Keys.onDownPressed: {
                     var nextIndex = navItem.index + 1
                     if (nextIndex < navList.count) {
-                        navList.currentIndex = nextIndex
-                        navList.currentItem.children[navList.currentItem.children.length - 1].forceActiveFocus()
                         root.currentIndex = nextIndex
+                        navList.currentIndex = nextIndex
+                        var nextItem = navList.itemAtIndex(nextIndex)
+                        if (nextItem) nextItem.focusArea.forceActiveFocus()
                     }
                 }
                 Keys.onUpPressed: {
                     var prevIndex = navItem.index - 1
                     if (prevIndex >= 0) {
-                        navList.currentIndex = prevIndex
-                        navList.currentItem.children[navList.currentItem.children.length - 1].forceActiveFocus()
                         root.currentIndex = prevIndex
+                        navList.currentIndex = prevIndex
+                        var prevItem = navList.itemAtIndex(prevIndex)
+                        if (prevItem) prevItem.focusArea.forceActiveFocus()
                     }
                 }
             }

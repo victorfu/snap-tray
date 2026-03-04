@@ -1,11 +1,11 @@
 #include "qml/QmlToast.h"
 #include "qml/QmlOverlayManager.h"
 
-#include <QCoreApplication>
 #include <QGuiApplication>
 #include <QQuickItem>
 #include <QQuickView>
 #include <QScreen>
+#include <QTimer>
 #include <QWidget>
 
 namespace SnapTray {
@@ -118,33 +118,36 @@ void QmlToast::positionAndShow()
     if (!m_view || !m_rootItem)
         return;
 
-    // Force QML to process property bindings so width/height are up to date.
-    // This is needed because we just set properties (title, fixedWidth, etc.)
-    // and the layout needs a chance to recalculate before we read sizes.
+    // Defer positioning to let QML process property bindings (title, fixedWidth,
+    // etc.) so width/height are up to date.  This avoids processEvents() which
+    // can cause reentrancy issues.
     m_rootItem->polish();
-    QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+    QTimer::singleShot(0, this, [this]() {
+        if (!m_view || !m_rootItem)
+            return;
 
-    int toastW = qMax(qRound(m_rootItem->width()), 100);
-    int toastH = qMax(qRound(m_rootItem->height()), 30);
+        int toastW = qMax(qRound(m_rootItem->width()), 100);
+        int toastH = qMax(qRound(m_rootItem->height()), 30);
 
-    switch (m_anchorMode) {
-    case AnchorMode::ScreenTopRight:
-        positionScreenTopRight();
-        break;
-    case AnchorMode::ParentTopCenter:
-        positionParentTopCenter();
-        break;
-    case AnchorMode::NearRect:
-        positionNearRect();
-        break;
-    }
+        switch (m_anchorMode) {
+        case AnchorMode::ScreenTopRight:
+            positionScreenTopRight();
+            break;
+        case AnchorMode::ParentTopCenter:
+            positionParentTopCenter();
+            break;
+        case AnchorMode::NearRect:
+            positionNearRect();
+            break;
+        }
 
-    m_view->resize(toastW, toastH);
-    m_view->show();
-    m_view->raise();
+        m_view->resize(toastW, toastH);
+        m_view->show();
+        m_view->raise();
 
-    // Trigger the QML show() function
-    QMetaObject::invokeMethod(m_rootItem, "show");
+        // Trigger the QML show() function
+        QMetaObject::invokeMethod(m_rootItem, "show");
+    });
 }
 
 void QmlToast::positionScreenTopRight()

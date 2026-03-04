@@ -46,6 +46,7 @@ Rectangle {
                 required property var modelData
 
                 readonly property bool isSelected: root.currentValue === modelData.value
+                property alias focusArea: optionArea
 
                 color: isSelected ? ComponentTokens.settingsSidebarActiveItem : "transparent"
 
@@ -114,13 +115,15 @@ Rectangle {
                     Keys.onDownPressed: {
                         var nextIndex = optionItem.index + 1
                         if (nextIndex < repeater.count) {
-                            repeater.itemAt(nextIndex).children[repeater.itemAt(nextIndex).children.length - 1].forceActiveFocus()
+                            var nextItem = repeater.itemAt(nextIndex)
+                            if (nextItem) nextItem.focusArea.forceActiveFocus()
                         }
                     }
                     Keys.onUpPressed: {
                         var prevIndex = optionItem.index - 1
                         if (prevIndex >= 0) {
-                            repeater.itemAt(prevIndex).children[repeater.itemAt(prevIndex).children.length - 1].forceActiveFocus()
+                            var prevItem = repeater.itemAt(prevIndex)
+                            if (prevItem) prevItem.focusArea.forceActiveFocus()
                         }
                     }
                 }

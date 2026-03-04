@@ -11,6 +11,7 @@
 #include "settings/MCPSettingsManager.h"
 #include "settings/OCRSettingsManager.h"
 #include "settings/PinWindowSettingsManager.h"
+#include "settings/RecordingSettingsManager.h"
 #include "settings/RegionCaptureSettingsManager.h"
 #include "settings/Settings.h"
 #include "settings/WatermarkSettingsManager.h"
@@ -82,16 +83,16 @@ void SettingsBackend::loadAllSettings()
     m_watermarkMargin = wmSettings.margin;
     m_watermarkPosition = static_cast<int>(wmSettings.position);
 
-    // Recording (raw QSettings)
-    QSettings settings = getSettings();
-    m_recordingFrameRate = settings.value("recording/framerate", 30).toInt();
-    m_recordingOutputFormat = settings.value("recording/outputFormat", 0).toInt();
-    m_recordingQuality = settings.value("recording/quality", 55).toInt();
-    m_recordingShowPreview = settings.value("recording/showPreview", true).toBool();
-    m_recordingAudioEnabled = settings.value("recording/audioEnabled", false).toBool();
-    m_recordingAudioSource = settings.value("recording/audioSource", 0).toInt();
-    m_countdownEnabled = settings.value("recording/countdownEnabled", true).toBool();
-    m_countdownSeconds = settings.value("recording/countdownSeconds", 3).toInt();
+    // Recording
+    auto& recMgr = RecordingSettingsManager::instance();
+    m_recordingFrameRate = recMgr.frameRate();
+    m_recordingOutputFormat = recMgr.outputFormat();
+    m_recordingQuality = recMgr.quality();
+    m_recordingShowPreview = recMgr.showPreview();
+    m_recordingAudioEnabled = recMgr.audioEnabled();
+    m_recordingAudioSource = recMgr.audioSource();
+    m_countdownEnabled = recMgr.countdownEnabled();
+    m_countdownSeconds = recMgr.countdownSeconds();
 
     // Files
     auto& fileMgr = FileSettingsManager::instance();
@@ -429,16 +430,16 @@ void SettingsBackend::save()
     wmSettings.position = static_cast<WatermarkSettingsManager::Position>(m_watermarkPosition);
     WatermarkSettingsManager::instance().save(wmSettings);
 
-    // Recording (raw QSettings)
-    QSettings settings = getSettings();
-    settings.setValue("recording/framerate", m_recordingFrameRate);
-    settings.setValue("recording/outputFormat", m_recordingOutputFormat);
-    settings.setValue("recording/quality", m_recordingQuality);
-    settings.setValue("recording/showPreview", m_recordingShowPreview);
-    settings.setValue("recording/audioEnabled", m_recordingAudioEnabled);
-    settings.setValue("recording/audioSource", m_recordingAudioSource);
-    settings.setValue("recording/countdownEnabled", m_countdownEnabled);
-    settings.setValue("recording/countdownSeconds", m_countdownSeconds);
+    // Recording
+    auto& recMgr = RecordingSettingsManager::instance();
+    recMgr.setFrameRate(m_recordingFrameRate);
+    recMgr.setOutputFormat(m_recordingOutputFormat);
+    recMgr.setQuality(m_recordingQuality);
+    recMgr.setShowPreview(m_recordingShowPreview);
+    recMgr.setAudioEnabled(m_recordingAudioEnabled);
+    recMgr.setAudioSource(m_recordingAudioSource);
+    recMgr.setCountdownEnabled(m_countdownEnabled);
+    recMgr.setCountdownSeconds(m_countdownSeconds);
 
     // Files
     auto& fileMgr = FileSettingsManager::instance();
@@ -461,10 +462,6 @@ void SettingsBackend::save()
         ocrMgr.save();
         emit ocrLanguagesChanged(m_ocrSelectedLanguages);
     }
-
-#ifdef SNAPTRAY_ENABLE_MCP
-    emit mcpEnabledChanged(m_mcpEnabled);
-#endif
 
     emit settingsSaved();
 }

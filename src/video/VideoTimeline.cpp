@@ -130,26 +130,33 @@ void VideoTimeline::paintEvent(QPaintEvent *event)
     }
 
     // Draw playhead
-    if (m_duration > 0) {
-        QRect head = playheadRect();
-        int centerX = head.center().x();
-        int centerY = head.center().y();
-        int radius = kPlayheadSize / 2;
+    drawPlayhead(painter);
+}
 
-        // Shadow
-        painter.setPen(Qt::NoPen);
-        painter.setBrush(QColor(0, 0, 0, 80));
-        painter.drawEllipse(QPoint(centerX + 1, centerY + 1), radius, radius);
+void VideoTimeline::drawPlayhead(QPainter &painter)
+{
+    if (m_duration <= 0)
+        return;
 
-        // Playhead
-        painter.setBrush(config.textActiveColor);
-        painter.drawEllipse(QPoint(centerX, centerY), radius, radius);
+    ToolbarStyleConfig config = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
+    QRect head = playheadRect();
+    int centerX = head.center().x();
+    int centerY = head.center().y();
+    int radius = kPlayheadSize / 2;
 
-        // Highlight when scrubbing or hovering near playhead
-        if (m_scrubbing) {
-            painter.setBrush(config.buttonActiveColor);
-            painter.drawEllipse(QPoint(centerX, centerY), radius - 2, radius - 2);
-        }
+    // Shadow
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(QColor(0, 0, 0, 80));
+    painter.drawEllipse(QPoint(centerX + 1, centerY + 1), radius, radius);
+
+    // Playhead
+    painter.setBrush(config.textActiveColor);
+    painter.drawEllipse(QPoint(centerX, centerY), radius, radius);
+
+    // Highlight when scrubbing or hovering near playhead
+    if (m_scrubbing) {
+        painter.setBrush(config.buttonActiveColor);
+        painter.drawEllipse(QPoint(centerX, centerY), radius - 2, radius - 2);
     }
 }
 

@@ -286,6 +286,7 @@ add_library(snaptray_core STATIC
     src/settings/MCPSettingsManager.cpp
     src/settings/OCRSettingsManager.cpp
     src/settings/PinWindowSettingsManager.cpp
+    src/settings/RecordingSettingsManager.cpp
     src/settings/RegionCaptureSettingsManager.cpp
     src/settings/WatermarkSettingsManager.cpp
     src/settings/BeautifySettingsManager.cpp

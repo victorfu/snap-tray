@@ -89,8 +89,9 @@ SettingsRow {
         }
 
         delegate: ItemDelegate {
-            // Width accounts for popup padding on both sides
-            width: combo.width - 2 * combo.popup.padding
+            // Use actual popup content width so delegates fill correctly
+            // even when minimumPopupWidth makes the popup wider than combo.
+            width: ListView.view ? ListView.view.width : combo.width
             height: ComponentTokens.inputHeight
             highlighted: combo.highlightedIndex === index
 

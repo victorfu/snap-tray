@@ -33,13 +33,13 @@ protected:
     QSize sizeHint() const override;
     QSize minimumSizeHint() const override;
 
-protected:
     // Helper methods accessible by subclasses
     qint64 positionFromX(int x) const;
     int xFromPosition(qint64 pos) const;
     QString formatTime(qint64 ms) const;
     QRect trackRect() const;
     QRect playheadRect() const;
+    void drawPlayhead(QPainter &painter);
 
     qint64 m_duration = 0;
     qint64 m_position = 0;

@@ -71,7 +71,7 @@ TrimTimeline::DragTarget TrimTimeline::hitTest(const QPoint &pos) const
 
 void TrimTimeline::paintEvent(QPaintEvent *event)
 {
-    // Draw base timeline first
+    // Draw base timeline (track, progress, hover indicator, playhead)
     VideoTimeline::paintEvent(event);
 
     QPainter painter(this);
@@ -82,6 +82,9 @@ void TrimTimeline::paintEvent(QPaintEvent *event)
 
     // Draw trim handles
     drawTrimHandles(painter);
+
+    // Redraw playhead on top so trim overlay doesn't obscure it
+    drawPlayhead(painter);
 }
 
 void TrimTimeline::drawTrimOverlay(QPainter &painter)

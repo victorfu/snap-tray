@@ -72,8 +72,7 @@ QColor ThemeManager::elevatedSurface() const
 
 void ThemeManager::refreshTheme()
 {
-    m_effectiveTheme = resolveSystemTheme();
-    emit themeChanged();
+    updateEffectiveTheme();
 }
 
 void ThemeManager::loadColorScheme()
