@@ -27,9 +27,11 @@ bool AutoLaunchManager::setEnabled(bool enabled)
         }
 
         if (!success && error) {
-            NSLog(@"AutoLaunchManager: Failed to %@ auto-launch: %@",
-                  enabled ? @"enable" : @"disable",
-                  error.localizedDescription);
+            // SMAppService requires a signed app bundle; expected to fail in
+            // debug builds running from the build directory.
+            qWarning("AutoLaunchManager: Failed to %s auto-launch: %s",
+                     enabled ? "enable" : "disable",
+                     error.localizedDescription.UTF8String);
         }
 
         return success;
