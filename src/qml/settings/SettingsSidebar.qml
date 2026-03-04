@@ -20,6 +20,8 @@ Rectangle {
         anchors.topMargin: 12
         interactive: false
         currentIndex: root.currentIndex
+        keyNavigationEnabled: true
+        activeFocusOnTab: true
 
         model: [
             qsTr("General"),
@@ -99,12 +101,32 @@ Rectangle {
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
                 focus: true
+
+                Accessible.role: Accessible.MenuItem
+                Accessible.name: navItem.modelData
+
                 onClicked: {
                     forceActiveFocus()
                     root.currentIndex = navItem.index
                 }
                 Keys.onSpacePressed: root.currentIndex = navItem.index
                 Keys.onReturnPressed: root.currentIndex = navItem.index
+                Keys.onDownPressed: {
+                    var nextIndex = navItem.index + 1
+                    if (nextIndex < navList.count) {
+                        navList.currentIndex = nextIndex
+                        navList.currentItem.children[navList.currentItem.children.length - 1].forceActiveFocus()
+                        root.currentIndex = nextIndex
+                    }
+                }
+                Keys.onUpPressed: {
+                    var prevIndex = navItem.index - 1
+                    if (prevIndex >= 0) {
+                        navList.currentIndex = prevIndex
+                        navList.currentItem.children[navList.currentItem.children.length - 1].forceActiveFocus()
+                        root.currentIndex = prevIndex
+                    }
+                }
             }
         }
     }

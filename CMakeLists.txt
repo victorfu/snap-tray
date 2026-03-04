@@ -911,6 +911,7 @@ set_source_files_properties(src/qml/controls/SettingsPermissionRow.qml PROPERTIE
 set_source_files_properties(src/qml/controls/Spacer.qml PROPERTIES QT_RESOURCE_ALIAS controls/Spacer.qml)
 set_source_files_properties(src/qml/controls/FocusFrame.qml PROPERTIES QT_RESOURCE_ALIAS controls/FocusFrame.qml)
 set_source_files_properties(src/qml/controls/BusySpinner.qml PROPERTIES QT_RESOURCE_ALIAS controls/BusySpinner.qml)
+set_source_files_properties(src/qml/controls/SettingsRadioGroup.qml PROPERTIES QT_RESOURCE_ALIAS controls/SettingsRadioGroup.qml)
 
 # Settings pages
 set_source_files_properties(src/qml/settings/SettingsWindow.qml PROPERTIES QT_RESOURCE_ALIAS settings/SettingsWindow.qml)
@@ -948,6 +949,7 @@ qt_add_qml_module(snaptray_qml
         src/qml/controls/Spacer.qml
         src/qml/controls/FocusFrame.qml
         src/qml/controls/BusySpinner.qml
+        src/qml/controls/SettingsRadioGroup.qml
         src/qml/settings/SettingsWindow.qml
         src/qml/settings/SettingsSidebar.qml
         src/qml/settings/GeneralSettings.qml

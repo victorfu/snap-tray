@@ -66,6 +66,11 @@ Column {
                 anchors.fill: parent
                 cursorShape: Qt.PointingHandCursor
                 focus: true
+
+                Accessible.role: Accessible.CheckBox
+                Accessible.name: root.label
+                Accessible.checked: root.checked
+
                 onClicked: {
                     forceActiveFocus()
                     root.checked = !root.checked

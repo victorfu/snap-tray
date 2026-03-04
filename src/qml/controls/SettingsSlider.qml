@@ -29,6 +29,9 @@ SettingsRow {
         stepSize: root.stepSize
         live: true
 
+        Accessible.role: Accessible.Slider
+        Accessible.name: root.label
+
         onMoved: {
             root.value = Math.round(slider.value)
             root.moved(root.value)
@@ -59,6 +62,11 @@ SettingsRow {
             color: ComponentTokens.sliderKnob
             border.width: 1
             border.color: SemanticTokens.borderDefault
+
+            FocusFrame {
+                showFocus: slider.activeFocus
+                extraRadius: ComponentTokens.sliderKnobSize / 2
+            }
         }
     }
 

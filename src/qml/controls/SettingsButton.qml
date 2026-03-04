@@ -16,6 +16,9 @@ Rectangle {
 
     signal clicked()
 
+    Accessible.role: Accessible.Button
+    Accessible.name: root.text
+
     width: buttonText.implicitWidth + 32
     height: 32
     radius: PrimitiveTokens.radiusMedium

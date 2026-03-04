@@ -28,6 +28,9 @@ SettingsRow {
         currentIndex: root.currentIndex
         textRole: "text"
 
+        Accessible.role: Accessible.ComboBox
+        Accessible.name: root.label
+
         onActivated: function(index) {
             root.activated(index)
         }

@@ -332,131 +332,15 @@ Flickable {
         // OCR behavior section
         SettingsSection { title: qsTr("After OCR Recognition") }
 
-        Rectangle {
-            width: parent.width - 2 * ComponentTokens.settingsContentPadding
-            height: behaviorColumn.height + 16
-            radius: PrimitiveTokens.radiusSmall
-            color: ComponentTokens.inputBackground
-            border.width: 1
-            border.color: ComponentTokens.inputBorder
-
-            Column {
-                id: behaviorColumn
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.top: parent.top
-                anchors.margins: PrimitiveTokens.spacing8
-                spacing: PrimitiveTokens.spacing4
-
-                // Direct copy option
-                Rectangle {
-                    width: parent.width
-                    height: 32
-                    radius: PrimitiveTokens.radiusSmall
-                    color: root.ocrBehavior === 0
-                        ? ComponentTokens.settingsSidebarActiveItem : "transparent"
-
-                    Row {
-                        anchors.left: parent.left
-                        anchors.leftMargin: PrimitiveTokens.spacing8
-                        anchors.verticalCenter: parent.verticalCenter
-                        spacing: PrimitiveTokens.spacing8
-
-                        Rectangle {
-                            width: 16
-                            height: 16
-                            radius: 8
-                            border.width: 2
-                            border.color: root.ocrBehavior === 0
-                                ? SemanticTokens.accentDefault
-                                : SemanticTokens.textTertiary
-                            color: "transparent"
-                            anchors.verticalCenter: parent.verticalCenter
-
-                            Rectangle {
-                                anchors.centerIn: parent
-                                width: 8
-                                height: 8
-                                radius: 4
-                                color: SemanticTokens.accentDefault
-                                visible: root.ocrBehavior === 0
-                            }
-                        }
-
-                        Text {
-                            text: qsTr("Copy text directly to clipboard")
-                            color: SemanticTokens.textPrimary
-                            font.pixelSize: PrimitiveTokens.fontSizeBody
-                            font.family: PrimitiveTokens.fontFamily
-                            font.letterSpacing: PrimitiveTokens.letterSpacingTight
-                            anchors.verticalCenter: parent.verticalCenter
-                        }
-                    }
-
-                    MouseArea {
-                        anchors.fill: parent
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            root.ocrBehavior = 0
-                            settingsBackend.setOcrBehavior(0)
-                        }
-                    }
-                }
-
-                // Show editor option
-                Rectangle {
-                    width: parent.width
-                    height: 32
-                    radius: PrimitiveTokens.radiusSmall
-                    color: root.ocrBehavior === 1
-                        ? ComponentTokens.settingsSidebarActiveItem : "transparent"
-
-                    Row {
-                        anchors.left: parent.left
-                        anchors.leftMargin: PrimitiveTokens.spacing8
-                        anchors.verticalCenter: parent.verticalCenter
-                        spacing: PrimitiveTokens.spacing8
-
-                        Rectangle {
-                            width: 16
-                            height: 16
-                            radius: 8
-                            border.width: 2
-                            border.color: root.ocrBehavior === 1
-                                ? SemanticTokens.accentDefault
-                                : SemanticTokens.textTertiary
-                            color: "transparent"
-                            anchors.verticalCenter: parent.verticalCenter
-
-                            Rectangle {
-                                anchors.centerIn: parent
-                                width: 8
-                                height: 8
-                                radius: 4
-                                color: SemanticTokens.accentDefault
-                                visible: root.ocrBehavior === 1
-                            }
-                        }
-
-                        Text {
-                            text: qsTr("Show editor to review and edit text")
-                            color: SemanticTokens.textPrimary
-                            font.pixelSize: PrimitiveTokens.fontSizeBody
-                            font.family: PrimitiveTokens.fontFamily
-                            font.letterSpacing: PrimitiveTokens.letterSpacingTight
-                            anchors.verticalCenter: parent.verticalCenter
-                        }
-                    }
-
-                    MouseArea {
-                        anchors.fill: parent
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            root.ocrBehavior = 1
-                            settingsBackend.setOcrBehavior(1)
-                        }
-                    }
-                }
+        SettingsRadioGroup {
+            currentValue: root.ocrBehavior
+            model: [
+                { text: qsTr("Copy text directly to clipboard"), value: 0 },
+                { text: qsTr("Show editor to review and edit text"), value: 1 }
+            ]
+            onActivated: function(value) {
+                root.ocrBehavior = value
+                settingsBackend.setOcrBehavior(value)
             }
         }
     }
