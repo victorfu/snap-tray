@@ -41,7 +41,7 @@ Flickable {
             // Left side: controls
             Column {
                 Layout.fillWidth: true
-                spacing: 4
+                spacing: PrimitiveTokens.spacing4
 
                 SettingsPathPicker {
                     label: qsTr("Image")
@@ -93,7 +93,7 @@ Flickable {
             Column {
                 id: previewColumn
                 Layout.preferredWidth: ComponentTokens.watermarkPreviewColumnWidth
-                spacing: 4
+                spacing: PrimitiveTokens.spacing4
 
                 Rectangle {
                     width: ComponentTokens.watermarkPreviewSize

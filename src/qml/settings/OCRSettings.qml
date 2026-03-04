@@ -64,7 +64,7 @@ Flickable {
 
             Row {
                 anchors.centerIn: parent
-                spacing: 8
+                spacing: PrimitiveTokens.spacing8
 
                 BusySpinner {
                     running: root.ocrLoading
@@ -98,7 +98,7 @@ Flickable {
             Column {
                 width: (parent.width - transferButtons.width - 2 * PrimitiveTokens.spacing8) / 2
                 height: parent.height
-                spacing: 4
+                spacing: PrimitiveTokens.spacing4
 
                 Text {
                     text: qsTr("Available Languages")
@@ -208,7 +208,7 @@ Flickable {
             Column {
                 width: (parent.width - transferButtons.width - 2 * PrimitiveTokens.spacing8) / 2
                 height: parent.height
-                spacing: 4
+                spacing: PrimitiveTokens.spacing4
 
                 Text {
                     text: qsTr("Selected Languages")
@@ -345,8 +345,8 @@ Flickable {
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.top: parent.top
-                anchors.margins: 8
-                spacing: 4
+                anchors.margins: PrimitiveTokens.spacing8
+                spacing: PrimitiveTokens.spacing4
 
                 // Direct copy option
                 Rectangle {
@@ -358,9 +358,9 @@ Flickable {
 
                     Row {
                         anchors.left: parent.left
-                        anchors.leftMargin: 8
+                        anchors.leftMargin: PrimitiveTokens.spacing8
                         anchors.verticalCenter: parent.verticalCenter
-                        spacing: 8
+                        spacing: PrimitiveTokens.spacing8
 
                         Rectangle {
                             width: 16
@@ -413,9 +413,9 @@ Flickable {
 
                     Row {
                         anchors.left: parent.left
-                        anchors.leftMargin: 8
+                        anchors.leftMargin: PrimitiveTokens.spacing8
                         anchors.verticalCenter: parent.verticalCenter
-                        spacing: 8
+                        spacing: PrimitiveTokens.spacing8
 
                         Rectangle {
                             width: 16

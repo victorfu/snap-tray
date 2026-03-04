@@ -193,7 +193,7 @@ Flickable {
                             anchors.right: parent.right
                             anchors.rightMargin: 8
                             anchors.verticalCenter: parent.verticalCenter
-                            spacing: 4
+                            spacing: PrimitiveTokens.spacing4
 
                             SettingsButton {
                                 text: qsTr("Edit")

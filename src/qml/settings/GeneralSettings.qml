@@ -96,7 +96,7 @@ Flickable {
 
             Row {
                 anchors.verticalCenter: parent ? parent.verticalCenter : undefined
-                spacing: 8
+                spacing: PrimitiveTokens.spacing8
 
                 BusySpinner {
                     running: cliRow.busy

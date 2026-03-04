@@ -60,7 +60,7 @@ QtObject {
 
     // Light mode surface colors
     readonly property color lightSurface: "#FFFFFF"
-    readonly property color lightSurfaceElevated: "#F8F8F8"
+    readonly property color lightSurfaceElevated: "#F5F5FA"
     readonly property color lightSurfaceOverlay: Qt.rgba(0, 0, 0, 0.3)
 
     // ========================================================================
@@ -77,6 +77,12 @@ QtObject {
     readonly property color indigo500: "#5856D6"
     readonly property color purple400: "#AF52DE"
     readonly property color amber600: "#FFB800"
+
+    // ========================================================================
+    // Recording boundary gradient colors
+    // ========================================================================
+    readonly property color boundaryBlue: "#007AFF"
+    readonly property color boundaryPurple: "#BF5AF2"
 
     // ========================================================================
     // Accent states
@@ -163,7 +169,7 @@ QtObject {
     readonly property int lightShadowLargeBlur: 16
     readonly property int lightShadowLargeY: 4
 
-    // Dark mode shadows (3x stronger for visibility on dark surfaces)
+    // Dark mode shadows (stronger for visibility on dark surfaces)
     readonly property color darkShadowSmall: Qt.rgba(0, 0, 0, 0.24)
     readonly property int darkShadowSmallBlur: 4
     readonly property int darkShadowSmallY: 1

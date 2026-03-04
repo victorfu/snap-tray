@@ -1,5 +1,6 @@
 #include "AutoLaunchManager.h"
 #import <ServiceManagement/ServiceManagement.h>
+#include <QDebug>
 
 bool AutoLaunchManager::isEnabled()
 {

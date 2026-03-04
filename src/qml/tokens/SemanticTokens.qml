@@ -100,6 +100,14 @@ QtObject {
         ? PrimitiveTokens.darkShadowLargeY : PrimitiveTokens.lightShadowLargeY
 
     // ========================================================================
+    // Capture overlay (always dark, theme-independent)
+    // ========================================================================
+    readonly property color captureOverlayDim: PrimitiveTokens.dimOverlay
+    readonly property color captureOverlayCrosshair: PrimitiveTokens.crosshair
+    readonly property color captureOverlaySelectionBorder: PrimitiveTokens.selectionBorder
+    readonly property color captureOverlayDimensionLabel: PrimitiveTokens.dimensionLabel
+
+    // ========================================================================
     // Icon overlay color (for ColorOverlay on SVG icons)
     // ========================================================================
     readonly property color iconColor: isDarkMode

@@ -37,6 +37,7 @@
 #include <QLinearGradient>
 #include <QMessageBox>
 #include <QPainter>
+#include <QPainterPath>
 #include <QScreen>
 #include <QSlider>
 #include <QVBoxLayout>
@@ -71,12 +72,13 @@ protected:
         QPainter painter(this);
         painter.setRenderHint(QPainter::Antialiasing);
 
+        // Clip to rounded rect so the background fill doesn't leak into corners
+        QPainterPath clipPath;
+        clipPath.addRoundedRect(QRectF(rect()), m_cornerRadius, m_cornerRadius);
+        painter.setClipPath(clipPath);
+
         ToolbarStyleConfig config = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
-
-        // CRITICAL for Windows: Fill background explicitly FIRST before any other painting
         painter.fillRect(rect(), config.glassBackgroundColor);
-
-        // Then draw glass panel effect on top
         GlassRenderer::drawGlassPanel(painter, rect(), config, m_cornerRadius);
     }
 

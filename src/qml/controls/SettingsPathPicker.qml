@@ -17,7 +17,7 @@ SettingsRow {
     Row {
         anchors.verticalCenter: parent.verticalCenter
         width: parent.width
-        spacing: 8
+        spacing: PrimitiveTokens.spacing8
 
         // Path display
         Rectangle {
@@ -45,7 +45,7 @@ SettingsRow {
 
         SettingsButton {
             id: browseBtn
-            text: "Browse..."
+            text: qsTr("Browse...")
             anchors.verticalCenter: parent.verticalCenter
             onClicked: root.browseClicked()
         }

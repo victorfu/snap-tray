@@ -98,7 +98,7 @@ Item {
             anchors.right: parent.right
             anchors.rightMargin: 16
             anchors.verticalCenter: parent.verticalCenter
-            spacing: 8
+            spacing: PrimitiveTokens.spacing8
 
             SettingsButton {
                 text: qsTr("Cancel")

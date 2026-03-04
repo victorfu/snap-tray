@@ -29,11 +29,11 @@ Item {
     // Constants
     readonly property int borderWidth: 4
     readonly property int cornerRadius: 10
-    readonly property int glowPadding: 0
+    readonly property int glowPadding: 10
 
-    // Total size = region + border on each side
-    width: regionWidth + 2 * borderWidth
-    height: regionHeight + 2 * borderWidth
+    // Total size = region + border + glow on each side
+    width: regionWidth + 2 * (borderWidth + glowPadding)
+    height: regionHeight + 2 * (borderWidth + glowPadding)
 
     // Animation angle for recording mode gradient rotation (0..1)
     property real gradientAngle: 0.0
@@ -41,9 +41,9 @@ Item {
     // Animation offset for playing mode pulse (0..1, wraps)
     property real pulseOffset: 0.0
 
-    // Gradient endpoint colors (no primitive token for these specific hues)
-    readonly property color colorAppleBlue: "#007AFF"
-    readonly property color colorLightPurple: "#BF5AF2"
+    // Gradient endpoint colors
+    readonly property color colorAppleBlue: PrimitiveTokens.boundaryBlue
+    readonly property color colorLightPurple: PrimitiveTokens.boundaryPurple
 
     // Extract [r, g, b] from a QML color for Canvas use
     function colorToRgb(c) { return [c.r, c.g, c.b]; }

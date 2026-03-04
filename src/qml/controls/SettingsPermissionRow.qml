@@ -25,7 +25,7 @@ Column {
 
         Row {
             anchors.verticalCenter: parent ? parent.verticalCenter : undefined
-            spacing: 8
+            spacing: PrimitiveTokens.spacing8
 
             Text {
                 text: root.granted ? qsTr("Granted") : qsTr("Not Granted")
@@ -51,7 +51,7 @@ Column {
         font.family: PrimitiveTokens.fontFamily
         font.letterSpacing: PrimitiveTokens.letterSpacingTight
         visible: root.description.length > 0
-        leftPadding: 140  // match SettingsRow label width
+        leftPadding: ComponentTokens.toggleLabelIndent
         topPadding: 2
         width: root.width
         wrapMode: Text.WordWrap

@@ -56,7 +56,7 @@ Flickable {
 
         // Copyright
         Text {
-            text: qsTr("Copyright 2024-2025 Victor Fu")
+            text: qsTr("Copyright 2026 Victor Fu")
             color: SemanticTokens.textSecondary
             font.pixelSize: PrimitiveTokens.fontSizeCaption
             font.family: PrimitiveTokens.fontFamily
