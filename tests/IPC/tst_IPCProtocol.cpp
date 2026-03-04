@@ -67,6 +67,23 @@ bool writeChunk(QLocalSocket* socket, const QByteArray& chunk)
     return true;
 }
 
+// Wait until the async client has sent its command, so that subsequent
+// writes or disconnects don't race with the client's waitForBytesWritten().
+bool waitForClientCommand(QLocalSocket* client)
+{
+    if (!client) {
+        return false;
+    }
+    while (client->bytesAvailable() < static_cast<qint64>(sizeof(quint32))) {
+        if (!client->waitForReadyRead(kSocketTimeoutMs)) {
+            return false;
+        }
+    }
+    // Read and discard the client's length-prefixed command.
+    client->readAll();
+    return true;
+}
+
 void disconnectClient(QLocalSocket* client)
 {
     if (!client) {
@@ -146,6 +163,7 @@ void tst_IPCProtocol::testResponseHeaderSplit_1Plus3Bytes()
     auto future = sendCommandAsync();
     std::unique_ptr<QLocalSocket> client(waitForClient(server));
     QVERIFY(client != nullptr);
+    QVERIFY(waitForClientCommand(client.get()));
 
     const QByteArray packet = buildLengthPrefixedPacket(expected.toJson());
     const int headerSize = static_cast<int>(sizeof(quint32));
@@ -180,6 +198,7 @@ void tst_IPCProtocol::testResponseBodySplit_MultiChunks()
     auto future = sendCommandAsync();
     std::unique_ptr<QLocalSocket> client(waitForClient(server));
     QVERIFY(client != nullptr);
+    QVERIFY(waitForClientCommand(client.get()));
 
     const QByteArray packet = buildLengthPrefixedPacket(expected.toJson());
     const int headerSize = static_cast<int>(sizeof(quint32));
@@ -217,6 +236,7 @@ void tst_IPCProtocol::testResponseHeaderIncomplete_Disconnect()
     auto future = sendCommandAsync();
     std::unique_ptr<QLocalSocket> client(waitForClient(server));
     QVERIFY(client != nullptr);
+    QVERIFY(waitForClientCommand(client.get()));
 
     const QByteArray packet = buildLengthPrefixedPacket(expected.toJson());
     QVERIFY(packet.size() >= 2);
@@ -245,6 +265,7 @@ void tst_IPCProtocol::testResponseBodyIncomplete_Disconnect()
     auto future = sendCommandAsync();
     std::unique_ptr<QLocalSocket> client(waitForClient(server));
     QVERIFY(client != nullptr);
+    QVERIFY(waitForClientCommand(client.get()));
 
     const QByteArray packet = buildLengthPrefixedPacket(expected.toJson());
     const int headerSize = static_cast<int>(sizeof(quint32));
