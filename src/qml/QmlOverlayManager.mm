@@ -84,19 +84,31 @@ QQuickView* QmlOverlayManager::createSettingsWindow()
     // must set context properties first, then call setSource() to avoid
     // "settingsBackend is not defined" errors during QML component creation.
 
-#ifdef Q_OS_MACOS
-    // LSUIElement apps: prevent the NSWindow from hiding when the app
-    // deactivates (e.g. when opening System Settings via NSWorkspace).
-    view->create();  // ensure native window handle exists
-    NSView* nsView = reinterpret_cast<NSView*>(view->winId());
-    if (nsView) {
-        NSWindow* nsWindow = [nsView window];
-        if (nsWindow)
-            [nsWindow setHidesOnDeactivate:NO];
-    }
-#endif
-
     return view;
+}
+
+void QmlOverlayManager::preventWindowHideOnDeactivate(QQuickView* view)
+{
+#ifdef Q_OS_MACOS
+    // LSUIElement apps hide all windows when the app deactivates (e.g. when
+    // opening System Settings via NSWorkspace).  Apply this AFTER show() so
+    // that Qt's platform integration does not reset the flag.
+    if (!view)
+        return;
+    NSView* nsView = reinterpret_cast<NSView*>(view->winId());
+    if (!nsView) {
+        qWarning("preventWindowHideOnDeactivate: failed to obtain NSView from winId");
+        return;
+    }
+    NSWindow* nsWindow = [nsView window];
+    if (!nsWindow) {
+        qWarning("preventWindowHideOnDeactivate: NSView has no parent NSWindow");
+        return;
+    }
+    [nsWindow setHidesOnDeactivate:NO];
+#else
+    Q_UNUSED(view);
+#endif
 }
 
 } // namespace SnapTray

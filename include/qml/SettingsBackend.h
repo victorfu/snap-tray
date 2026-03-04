@@ -19,6 +19,7 @@ class SettingsBackend : public QObject
     Q_PROPERTY(QVariantList availableLanguages READ availableLanguages CONSTANT)
     Q_PROPERTY(int toolbarStyle READ toolbarStyle WRITE setToolbarStyle NOTIFY toolbarStyleChanged)
     Q_PROPERTY(bool cliInstalled READ cliInstalled NOTIFY cliInstalledChanged)
+    Q_PROPERTY(bool isMacOS READ isMacOS CONSTANT)
 
 #ifdef Q_OS_MAC
     // ── macOS Permissions ──
@@ -28,6 +29,7 @@ class SettingsBackend : public QObject
 
     // ── Advanced ──
     Q_PROPERTY(bool shortcutHintsEnabled READ shortcutHintsEnabled WRITE setShortcutHintsEnabled NOTIFY shortcutHintsEnabledChanged)
+    Q_PROPERTY(bool isMcpBuild READ isMcpBuild CONSTANT)
 #ifdef SNAPTRAY_ENABLE_MCP
     Q_PROPERTY(bool mcpEnabled READ mcpEnabled WRITE setMcpEnabled NOTIFY mcpEnabledChanged)
 #endif
@@ -90,6 +92,7 @@ public:
     int toolbarStyle() const;
     void setToolbarStyle(int v);
     bool cliInstalled() const;
+    bool isMacOS() const;
 
 #ifdef Q_OS_MAC
     // ── macOS Permissions ──
@@ -100,6 +103,7 @@ public:
     // ── Advanced ──
     bool shortcutHintsEnabled() const;
     void setShortcutHintsEnabled(bool v);
+    bool isMcpBuild() const;
 #ifdef SNAPTRAY_ENABLE_MCP
     bool mcpEnabled() const;
     void setMcpEnabled(bool v);
@@ -202,6 +206,7 @@ public:
     Q_INVOKABLE QVariantList ocrSelectedLanguages() const;
     Q_INVOKABLE void addOcrLanguage(const QString& code);
     Q_INVOKABLE void removeOcrLanguage(const QString& code);
+    Q_INVOKABLE void moveOcrLanguage(int from, int to);
     Q_INVOKABLE int ocrBehavior() const;
     Q_INVOKABLE void setOcrBehavior(int behavior);
 

@@ -25,10 +25,14 @@ Flickable {
         selectedLangs = settingsBackend.ocrSelectedLanguages()
     }
 
+    Connections {
+        target: settingsBackend
+        function onOcrLanguagesChanged() { root.refreshLists() }
+    }
+
     Component.onCompleted: {
         settingsBackend.loadOcrLanguages()
         ocrBehavior = settingsBackend.ocrBehavior()
-        refreshLists()
     }
 
     Column {
@@ -121,7 +125,6 @@ Flickable {
                                 onClicked: availableList.selectedIndex = index
                                 onDoubleClicked: {
                                     settingsBackend.addOcrLanguage(modelData.code)
-                                    root.refreshLists()
                                 }
                             }
                         }
@@ -146,7 +149,6 @@ Flickable {
                             && availableList.selectedIndex < root.availableLangs.length) {
                             var code = root.availableLangs[availableList.selectedIndex].code
                             settingsBackend.addOcrLanguage(code)
-                            root.refreshLists()
                         }
                     }
                 }
@@ -159,7 +161,6 @@ Flickable {
                             && selectedList.selectedIndex < root.selectedLangs.length) {
                             var code = root.selectedLangs[selectedList.selectedIndex].code
                             settingsBackend.removeOcrLanguage(code)
-                            root.refreshLists()
                         }
                     }
                 }
@@ -197,42 +198,89 @@ Flickable {
 
                         property int selectedIndex: -1
 
-                        delegate: Rectangle {
+                        delegate: Item {
+                            id: selDelegate
                             width: selectedList.width
                             height: 28
-                            radius: PrimitiveTokens.radiusSmall
-                            color: selectedList.selectedIndex === index
-                                ? ComponentTokens.settingsSidebarActiveItem
-                                : selItemHover.containsMouse
-                                    ? ComponentTokens.settingsSidebarHoverItem
-                                    : "transparent"
+                            z: selDragArea.drag.active ? 10 : 0
 
                             required property int index
                             required property var modelData
 
-                            Text {
-                                anchors.left: parent.left
-                                anchors.leftMargin: 8
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: modelData.displayName || modelData
-                                color: SemanticTokens.textPrimary
-                                font.pixelSize: PrimitiveTokens.fontSizeBody
-                                font.family: PrimitiveTokens.fontFamily
-                                font.letterSpacing: -0.2
-                                elide: Text.ElideRight
-                                width: parent.width - 16
+                            DropArea {
+                                anchors.fill: parent
+                                onDropped: function(drop) {
+                                    if (!drop.source || drop.source.dragIndex === undefined)
+                                        return
+                                    var from = drop.source.dragIndex
+                                    var to = selDelegate.index
+                                    if (from >= 0 && to >= 0 && from !== to)
+                                        settingsBackend.moveOcrLanguage(from, to)
+                                }
+                            }
+
+                            Rectangle {
+                                id: selContent
+                                width: selDelegate.width
+                                height: selDelegate.height
+                                radius: PrimitiveTokens.radiusSmall
+
+                                property int dragIndex: selDelegate.index
+
+                                color: selDragArea.drag.active
+                                    ? ComponentTokens.settingsSidebarActiveItem
+                                    : selectedList.selectedIndex === selDelegate.index
+                                        ? ComponentTokens.settingsSidebarActiveItem
+                                        : selDragArea.containsMouse
+                                            ? ComponentTokens.settingsSidebarHoverItem
+                                            : "transparent"
+
+                                Drag.active: selDragArea.drag.active
+                                Drag.source: selContent
+                                Drag.hotSpot: Qt.point(width / 2, height / 2)
+
+                                // Drag grip
+                                Text {
+                                    anchors.left: parent.left
+                                    anchors.leftMargin: 4
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: "\u2261"
+                                    color: SemanticTokens.textTertiary
+                                    font.pixelSize: PrimitiveTokens.fontSizeBody
+                                }
+
+                                Text {
+                                    anchors.left: parent.left
+                                    anchors.leftMargin: 18
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: selDelegate.modelData.displayName || selDelegate.modelData
+                                    color: SemanticTokens.textPrimary
+                                    font.pixelSize: PrimitiveTokens.fontSizeBody
+                                    font.family: PrimitiveTokens.fontFamily
+                                    font.letterSpacing: -0.2
+                                    elide: Text.ElideRight
+                                    width: parent.width - 26
+                                }
                             }
 
                             MouseArea {
-                                id: selItemHover
+                                id: selDragArea
                                 anchors.fill: parent
                                 hoverEnabled: true
-                                onClicked: selectedList.selectedIndex = index
+                                cursorShape: Qt.OpenHandCursor
+                                drag.target: selContent
+                                drag.axis: Drag.YAxis
+
+                                onClicked: selectedList.selectedIndex = selDelegate.index
                                 onDoubleClicked: {
-                                    if (modelData.code !== "en-US") {
-                                        settingsBackend.removeOcrLanguage(modelData.code)
-                                        root.refreshLists()
-                                    }
+                                    if (selDelegate.modelData.code !== "en-US")
+                                        settingsBackend.removeOcrLanguage(selDelegate.modelData.code)
+                                }
+                                onReleased: {
+                                    if (drag.active)
+                                        selContent.Drag.drop()
+                                    selContent.x = 0
+                                    selContent.y = 0
                                 }
                             }
                         }

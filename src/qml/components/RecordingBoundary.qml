@@ -36,6 +36,15 @@ Item {
     // Animation offset for playing mode pulse (0..1, wraps)
     property real pulseOffset: 0.0
 
+    // Pre-computed gradient color stops (avoids recreating per frame)
+    readonly property var gradientColors: [
+        [0/255, 122/255, 255/255],    // Apple Blue #007AFF
+        [88/255, 86/255, 214/255],     // Indigo #5856D6
+        [175/255, 82/255, 222/255],    // Purple #AF52DE
+        [191/255, 90/255, 242/255],    // Light Purple #BF5AF2
+        [0/255, 122/255, 255/255]      // Back to Blue
+    ]
+
     // ---- Animations ----
 
     NumberAnimation {
@@ -87,11 +96,6 @@ Item {
         }
 
         function drawRecordingBorder(ctx, bx, by, bw, bh) {
-            var cx = bx + bw / 2;
-            var cy = by + bh / 2;
-            // Use the larger dimension as the gradient radius
-            var gradRadius = Math.max(bw, bh);
-
             // Draw 3 outer glow layers (indigo with decreasing alpha)
             for (var i = 3; i >= 1; --i) {
                 var alpha = Math.round(30 / i) / 255;
@@ -105,20 +109,10 @@ Item {
             }
 
             // Draw conical gradient border using segmented approach
-            // We approximate a conical gradient by drawing many small segments
-            // around the rectangle perimeter
-            var segments = 120;
-            var perimeter = 2 * (bw + bh);
-            var angleOffset = root.gradientAngle * 360;
-
-            // Color stops: blue -> indigo -> purple -> light purple -> blue
-            var colors = [
-                [0/255, 122/255, 255/255],    // Apple Blue #007AFF
-                [88/255, 86/255, 214/255],     // Indigo #5856D6
-                [175/255, 82/255, 222/255],    // Purple #AF52DE
-                [191/255, 90/255, 242/255],    // Light Purple #BF5AF2
-                [0/255, 122/255, 255/255]      // Back to Blue
-            ];
+            // We approximate a conical gradient by drawing small segments
+            // around the rectangle perimeter (48 segments = 12 per side)
+            var segments = 48;
+            var colors = root.gradientColors;
 
             ctx.lineWidth = root.borderWidth;
             ctx.lineJoin = "miter";

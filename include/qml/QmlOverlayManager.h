@@ -56,6 +56,15 @@ public:
      */
     QQuickView* createSettingsWindow();
 
+    /**
+     * @brief Prevent an NSWindow from hiding when the app deactivates.
+     *
+     * LSUIElement apps hide all windows on deactivation by default.
+     * Call this AFTER QWindow::show() to ensure the property is not
+     * reset by Qt's platform integration.  No-op on non-macOS.
+     */
+    static void preventWindowHideOnDeactivate(QQuickView* view);
+
 private:
     explicit QmlOverlayManager(QObject* parent = nullptr);
     QmlOverlayManager(const QmlOverlayManager&) = delete;

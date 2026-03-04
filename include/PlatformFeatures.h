@@ -39,6 +39,14 @@ public:
 
     /// Bring the application to the foreground (activateIgnoringOtherApps).
     static void activateApp();
+
+    /// Temporarily show the app in the Dock (NSApplicationActivationPolicyRegular).
+    /// Use when a persistent window (e.g., Settings) is open so it survives
+    /// app-deactivation in LSUIElement mode.
+    static void setActivationPolicyRegular();
+
+    /// Revert to accessory / LSUIElement mode (no Dock icon).
+    static void setActivationPolicyAccessory();
 #endif
 
 private:

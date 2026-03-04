@@ -147,6 +147,15 @@ void SettingsBackend::setToolbarStyle(int v) {
 
 bool SettingsBackend::cliInstalled() const { return m_cliInstalled; }
 
+bool SettingsBackend::isMacOS() const
+{
+#ifdef Q_OS_MAC
+    return true;
+#else
+    return false;
+#endif
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // macOS Permissions
 // ─────────────────────────────────────────────────────────────────────────────
@@ -161,6 +170,16 @@ bool SettingsBackend::hasAccessibilityPermission() const { return m_hasAccessibi
 // ─────────────────────────────────────────────────────────────────────────────
 
 bool SettingsBackend::shortcutHintsEnabled() const { return m_shortcutHintsEnabled; }
+
+bool SettingsBackend::isMcpBuild() const
+{
+#ifdef SNAPTRAY_ENABLE_MCP
+    return true;
+#else
+    return false;
+#endif
+}
+
 void SettingsBackend::setShortcutHintsEnabled(bool v) {
     if (m_shortcutHintsEnabled != v) { m_shortcutHintsEnabled = v; emit shortcutHintsEnabledChanged(); }
 }
@@ -584,6 +603,7 @@ void SettingsBackend::loadOcrLanguages()
     m_ocrSelectedLanguages = ocrMgr.languages();
     m_ocrBehavior = static_cast<int>(ocrMgr.behavior());
     m_ocrLoaded = true;
+    emit ocrLanguagesChanged(m_ocrSelectedLanguages);
 }
 
 QVariantList SettingsBackend::ocrAvailableLanguages() const
@@ -630,12 +650,25 @@ void SettingsBackend::addOcrLanguage(const QString& code)
 {
     if (!m_ocrSelectedLanguages.contains(code)) {
         m_ocrSelectedLanguages.append(code);
+        emit ocrLanguagesChanged(m_ocrSelectedLanguages);
     }
 }
 
 void SettingsBackend::removeOcrLanguage(const QString& code)
 {
-    m_ocrSelectedLanguages.removeAll(code);
+    if (m_ocrSelectedLanguages.removeAll(code) > 0) {
+        emit ocrLanguagesChanged(m_ocrSelectedLanguages);
+    }
+}
+
+void SettingsBackend::moveOcrLanguage(int from, int to)
+{
+    if (from < 0 || from >= m_ocrSelectedLanguages.size()
+        || to < 0 || to >= m_ocrSelectedLanguages.size()
+        || from == to)
+        return;
+    m_ocrSelectedLanguages.move(from, to);
+    emit ocrLanguagesChanged(m_ocrSelectedLanguages);
 }
 
 int SettingsBackend::ocrBehavior() const { return m_ocrBehavior; }

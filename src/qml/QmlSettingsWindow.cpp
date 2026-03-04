@@ -43,12 +43,30 @@ void QmlSettingsWindow::ensureView()
             m_view, &QQuickView::close);
     connect(m_backend, &SettingsBackend::settingsCancelled,
             m_view, &QQuickView::close);
+
+#ifdef Q_OS_MAC
+    // Revert to accessory (LSUIElement) mode when the window is dismissed
+    // for any reason (Save, Cancel, or the title-bar close button).
+    connect(m_view, &QWindow::visibleChanged, this, [](bool visible) {
+        if (!visible)
+            PlatformFeatures::setActivationPolicyAccessory();
+    });
+#endif
 }
 
 void QmlSettingsWindow::show()
 {
     ensureView();
+
+#ifdef Q_OS_MAC
+    // Temporarily switch to regular activation policy so the window
+    // survives app-deactivation (LSUIElement apps hide all windows
+    // when another app comes to the foreground).
+    PlatformFeatures::setActivationPolicyRegular();
+#endif
+
     m_view->show();
+    QmlOverlayManager::preventWindowHideOnDeactivate(m_view);
     m_view->raise();
     m_view->requestActivate();
 

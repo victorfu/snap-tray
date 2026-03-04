@@ -29,14 +29,17 @@ Flickable {
         // MCP section (debug builds only)
         SettingsSection {
             title: qsTr("MCP")
-            visible: typeof settingsBackend.mcpEnabled !== "undefined"
+            visible: settingsBackend.isMcpBuild
         }
 
         SettingsToggle {
             label: qsTr("Enable MCP server")
-            checked: settingsBackend.mcpEnabled
-            visible: typeof settingsBackend.mcpEnabled !== "undefined"
-            onToggled: settingsBackend.mcpEnabled = checked
+            checked: settingsBackend.isMcpBuild ? settingsBackend.mcpEnabled : false
+            visible: settingsBackend.isMcpBuild
+            onToggled: {
+                if (settingsBackend.isMcpBuild)
+                    settingsBackend.mcpEnabled = checked
+            }
         }
 
         SettingsSection { title: qsTr("Blur") }

@@ -62,21 +62,21 @@ Flickable {
         // macOS permissions
         SettingsSection {
             title: qsTr("Permissions")
-            visible: typeof settingsBackend.hasScreenRecordingPermission !== "undefined"
+            visible: settingsBackend.isMacOS
         }
 
         SettingsRow {
             label: qsTr("Screen Recording")
-            visible: typeof settingsBackend.hasScreenRecordingPermission !== "undefined"
+            visible: settingsBackend.isMacOS
 
             Row {
                 anchors.verticalCenter: parent ? parent.verticalCenter : undefined
                 spacing: 8
 
                 Text {
-                    text: settingsBackend.hasScreenRecordingPermission
+                    text: settingsBackend.isMacOS && settingsBackend.hasScreenRecordingPermission
                         ? qsTr("Granted") : qsTr("Not Granted")
-                    color: settingsBackend.hasScreenRecordingPermission
+                    color: settingsBackend.isMacOS && settingsBackend.hasScreenRecordingPermission
                         ? SemanticTokens.statusSuccess : SemanticTokens.statusError
                     font.pixelSize: PrimitiveTokens.fontSizeBody
                     font.family: PrimitiveTokens.fontFamily
@@ -93,16 +93,16 @@ Flickable {
 
         SettingsRow {
             label: qsTr("Accessibility")
-            visible: typeof settingsBackend.hasAccessibilityPermission !== "undefined"
+            visible: settingsBackend.isMacOS
 
             Row {
                 anchors.verticalCenter: parent ? parent.verticalCenter : undefined
                 spacing: 8
 
                 Text {
-                    text: settingsBackend.hasAccessibilityPermission
+                    text: settingsBackend.isMacOS && settingsBackend.hasAccessibilityPermission
                         ? qsTr("Granted") : qsTr("Not Granted")
-                    color: settingsBackend.hasAccessibilityPermission
+                    color: settingsBackend.isMacOS && settingsBackend.hasAccessibilityPermission
                         ? SemanticTokens.statusSuccess : SemanticTokens.statusError
                     font.pixelSize: PrimitiveTokens.fontSizeBody
                     font.family: PrimitiveTokens.fontFamily
