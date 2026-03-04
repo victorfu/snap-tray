@@ -79,14 +79,15 @@ SettingsRow {
 
             contentItem: ListView {
                 clip: true
-                implicitHeight: Math.min(contentHeight, 300)
+                implicitHeight: Math.min(contentHeight, ComponentTokens.comboPopupMaxHeight)
                 model: combo.popup.visible ? combo.delegateModel : null
                 ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
             }
         }
 
         delegate: ItemDelegate {
-            width: combo.width - 2
+            // Width accounts for popup padding on both sides
+            width: combo.width - 2 * combo.popup.padding
             height: ComponentTokens.inputHeight
             highlighted: combo.highlightedIndex === index
 
@@ -98,7 +99,7 @@ SettingsRow {
                 font.letterSpacing: -0.2
                 verticalAlignment: Text.AlignVCenter
                 horizontalAlignment: Text.AlignLeft
-                leftPadding: 8
+                leftPadding: PrimitiveTokens.spacing8
                 LayoutMirroring.enabled: false
             }
 

@@ -74,6 +74,9 @@ QtObject {
     readonly property color red400: "#F87171"
     readonly property color blue500: "#3B82F6"
     readonly property color blue400: "#60A5FA"
+    readonly property color indigo500: "#5856D6"
+    readonly property color purple400: "#AF52DE"
+    readonly property color amber600: "#FFB800"
 
     // ========================================================================
     // Accent states
@@ -175,6 +178,7 @@ QtObject {
     readonly property int durationNormal: 200
     readonly property int durationSlow: 300
     readonly property int durationEmphasis: 400
+    readonly property int durationBoundaryLoop: 3200
 
     // ========================================================================
     // Icon system (Lucide conventions)

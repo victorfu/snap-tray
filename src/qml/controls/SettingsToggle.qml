@@ -43,12 +43,12 @@ Column {
                 // Toggle knob
                 Rectangle {
                     id: knob
-                    width: 16
-                    height: 16
-                    radius: 8
+                    width: ComponentTokens.toggleKnobSize
+                    height: ComponentTokens.toggleKnobSize
+                    radius: ComponentTokens.toggleKnobRadius
                     color: ComponentTokens.toggleKnob
                     anchors.verticalCenter: parent.verticalCenter
-                    x: root.checked ? (track.width - knob.width - 2) : 2
+                    x: root.checked ? (track.width - knob.width - ComponentTokens.toggleKnobInset) : ComponentTokens.toggleKnobInset
 
                     Behavior on x {
                         NumberAnimation { duration: PrimitiveTokens.durationFast; easing.type: Easing.InOutCubic }
@@ -75,7 +75,7 @@ Column {
         font.family: PrimitiveTokens.fontFamily
         font.letterSpacing: -0.2
         visible: root.description.length > 0
-        leftPadding: 140
+        leftPadding: ComponentTokens.toggleLabelIndent
         topPadding: 2
         width: root.width
         wrapMode: Text.WordWrap

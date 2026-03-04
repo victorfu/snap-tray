@@ -1,4 +1,5 @@
 import QtQuick
+import SnapTrayQml
 
 /**
  * RecordingBoundary.qml
@@ -36,13 +37,20 @@ Item {
     // Animation offset for playing mode pulse (0..1, wraps)
     property real pulseOffset: 0.0
 
+    // Gradient endpoint colors (no primitive token for these specific hues)
+    readonly property color colorAppleBlue: "#007AFF"
+    readonly property color colorLightPurple: "#BF5AF2"
+
+    // Extract [r, g, b] from a QML color for Canvas use
+    function colorToRgb(c) { return [c.r, c.g, c.b]; }
+
     // Pre-computed gradient color stops (avoids recreating per frame)
     readonly property var gradientColors: [
-        [0/255, 122/255, 255/255],    // Apple Blue #007AFF
-        [88/255, 86/255, 214/255],     // Indigo #5856D6
-        [175/255, 82/255, 222/255],    // Purple #AF52DE
-        [191/255, 90/255, 242/255],    // Light Purple #BF5AF2
-        [0/255, 122/255, 255/255]      // Back to Blue
+        colorToRgb(colorAppleBlue),
+        colorToRgb(PrimitiveTokens.indigo500),
+        colorToRgb(PrimitiveTokens.purple400),
+        colorToRgb(colorLightPurple),
+        colorToRgb(colorAppleBlue)
     ]
 
     // ---- Animations ----
@@ -53,7 +61,7 @@ Item {
         property: "gradientAngle"
         from: 0.0
         to: 1.0
-        duration: 3200   // full rotation in ~3.2s (matches 0.005 per 16ms)
+        duration: PrimitiveTokens.durationBoundaryLoop
         loops: Animation.Infinite
         running: root.borderMode === 0
     }
@@ -64,7 +72,7 @@ Item {
         property: "pulseOffset"
         from: 0.0
         to: 1.0
-        duration: 3200   // full pulse cycle in ~3.2s (matches original offset rate)
+        duration: PrimitiveTokens.durationBoundaryLoop
         loops: Animation.Infinite
         running: root.borderMode === 1
     }
@@ -99,7 +107,7 @@ Item {
             // Draw 3 outer glow layers (indigo with decreasing alpha)
             for (var i = 3; i >= 1; --i) {
                 var alpha = Math.round(30 / i) / 255;
-                ctx.strokeStyle = Qt.rgba(88/255, 86/255, 214/255, alpha);
+                ctx.strokeStyle = Qt.rgba(PrimitiveTokens.indigo500.r, PrimitiveTokens.indigo500.g, PrimitiveTokens.indigo500.b, alpha);
                 ctx.lineWidth = root.borderWidth + i * 2;
                 ctx.lineJoin = "miter";
                 ctx.beginPath();
@@ -181,7 +189,7 @@ Item {
             // Draw 3 outer glow layers (green with pulsing + fading alpha)
             for (var i = 3; i >= 1; --i) {
                 var alpha = (30 / i) / 255 * pulseAlpha;
-                ctx.strokeStyle = Qt.rgba(52/255, 199/255, 89/255, alpha);
+                ctx.strokeStyle = Qt.rgba(PrimitiveTokens.green500.r, PrimitiveTokens.green500.g, PrimitiveTokens.green500.b, alpha);
                 ctx.lineWidth = root.borderWidth + i * 2;
                 ctx.lineJoin = "miter";
                 ctx.beginPath();
@@ -190,7 +198,7 @@ Item {
             }
 
             // Main green border with pulsing alpha
-            ctx.strokeStyle = Qt.rgba(52/255, 199/255, 89/255, pulseAlpha);
+            ctx.strokeStyle = Qt.rgba(PrimitiveTokens.green500.r, PrimitiveTokens.green500.g, PrimitiveTokens.green500.b, pulseAlpha);
             ctx.lineWidth = root.borderWidth;
             ctx.lineJoin = "miter";
             ctx.beginPath();
@@ -202,7 +210,7 @@ Item {
             // Draw 3 outer glow layers (amber with fading alpha)
             for (var i = 3; i >= 1; --i) {
                 var alpha = (30 / i) / 255;
-                ctx.strokeStyle = Qt.rgba(255/255, 184/255, 0/255, alpha);
+                ctx.strokeStyle = Qt.rgba(PrimitiveTokens.amber600.r, PrimitiveTokens.amber600.g, PrimitiveTokens.amber600.b, alpha);
                 ctx.lineWidth = root.borderWidth + i * 2;
                 ctx.lineJoin = "miter";
                 ctx.beginPath();
@@ -211,7 +219,7 @@ Item {
             }
 
             // Static amber border
-            ctx.strokeStyle = Qt.rgba(255/255, 184/255, 0, 1.0);
+            ctx.strokeStyle = PrimitiveTokens.amber600;
             ctx.lineWidth = root.borderWidth;
             ctx.lineJoin = "miter";
             ctx.beginPath();

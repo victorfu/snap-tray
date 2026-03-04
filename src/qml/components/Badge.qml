@@ -18,7 +18,7 @@ Item {
     // Public properties (set from C++ bridge)
     property string badgeText: ""
     property bool badgeVisible: false
-    property int duration: 1500
+    property int duration: ComponentTokens.badgeDisplayDuration
 
     // Implicit size follows the badge content
     implicitWidth: badge.width
@@ -102,7 +102,7 @@ Item {
             property: "opacity"
             from: 0.0
             to: 1.0
-            duration: 150
+            duration: ComponentTokens.badgeFadeInDuration
             easing.type: Easing.OutCubic
         }
 
@@ -112,7 +112,7 @@ Item {
             property: "opacity"
             from: badge.opacity
             to: 0.0
-            duration: 200
+            duration: ComponentTokens.badgeFadeOutDuration
             easing.type: Easing.InCubic
             onFinished: {
                 badge.visible = false;

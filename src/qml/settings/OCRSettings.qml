@@ -58,11 +58,11 @@ Flickable {
         Row {
             width: parent.width - 2 * ComponentTokens.settingsContentPadding
             height: 220
-            spacing: 8
+            spacing: PrimitiveTokens.spacing8
 
             // Available languages
             Column {
-                width: (parent.width - transferButtons.width - 16) / 2
+                width: (parent.width - transferButtons.width - 2 * PrimitiveTokens.spacing8) / 2
                 height: parent.height
                 spacing: 4
 
@@ -137,13 +137,15 @@ Flickable {
             // Transfer buttons
             Column {
                 id: transferButtons
-                width: 40
+                width: PrimitiveTokens.spacing40
                 anchors.verticalCenter: parent.verticalCenter
-                spacing: 8
+                spacing: PrimitiveTokens.spacing8
 
                 SettingsButton {
                     text: "\u2192"
-                    width: 40
+                    width: PrimitiveTokens.spacing40
+                    Accessible.name: qsTr("Add selected language")
+                    Accessible.role: Accessible.Button
                     onClicked: {
                         if (availableList.selectedIndex >= 0
                             && availableList.selectedIndex < root.availableLangs.length) {
@@ -155,7 +157,9 @@ Flickable {
 
                 SettingsButton {
                     text: "\u2190"
-                    width: 40
+                    width: PrimitiveTokens.spacing40
+                    Accessible.name: qsTr("Remove selected language")
+                    Accessible.role: Accessible.Button
                     onClicked: {
                         if (selectedList.selectedIndex >= 0
                             && selectedList.selectedIndex < root.selectedLangs.length) {
@@ -168,7 +172,7 @@ Flickable {
 
             // Selected languages
             Column {
-                width: (parent.width - transferButtons.width - 16) / 2
+                width: (parent.width - transferButtons.width - 2 * PrimitiveTokens.spacing8) / 2
                 height: parent.height
                 spacing: 4
 

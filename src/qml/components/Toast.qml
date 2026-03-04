@@ -18,7 +18,7 @@ Item {
     property string title: ""
     property string message: ""
     property int anchorMode: 0         // 0=ScreenTopRight, 1=ParentTopCenter, 2=NearRect
-    property int displayDuration: 2500 // ms
+    property int displayDuration: ComponentTokens.toastDisplayDuration
     property bool fixedWidth: false    // true for screen-level (320px), false for auto-width
 
     // ---- Theme ----
@@ -234,14 +234,14 @@ Item {
             target: root
             property: "opacity"
             from: 0; to: 1
-            duration: 180
+            duration: ComponentTokens.toastShowDuration
             easing.type: Easing.OutCubic
         }
         NumberAnimation {
             target: root
             property: "slideOffset"
             from: -12; to: 0
-            duration: 180
+            duration: ComponentTokens.toastShowDuration
             easing.type: Easing.OutCubic
         }
     }
@@ -253,14 +253,14 @@ Item {
             target: root
             property: "opacity"
             to: 0
-            duration: 200
+            duration: ComponentTokens.toastHideDuration
             easing.type: Easing.InCubic
         }
         NumberAnimation {
             target: root
             property: "slideOffset"
             to: -8
-            duration: 200
+            duration: ComponentTokens.toastHideDuration
             easing.type: Easing.InCubic
         }
         onFinished: {

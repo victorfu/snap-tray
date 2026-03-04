@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls.Basic
+import QtQuick.Layouts
 import SnapTrayQml
 
 /**
@@ -33,13 +34,13 @@ Flickable {
         Item { width: 1; height: 8 }
 
         // Main content: controls + preview side by side
-        Row {
+        RowLayout {
             width: parent.width - 2 * ComponentTokens.settingsContentPadding
-            spacing: 16
+            spacing: PrimitiveTokens.spacing16
 
             // Left side: controls
             Column {
-                width: parent.width - previewColumn.width - 16
+                Layout.fillWidth: true
                 spacing: 4
 
                 SettingsPathPicker {
@@ -91,12 +92,12 @@ Flickable {
             // Right side: preview
             Column {
                 id: previewColumn
-                width: 140
+                Layout.preferredWidth: ComponentTokens.watermarkPreviewColumnWidth
                 spacing: 4
 
                 Rectangle {
-                    width: 120
-                    height: 120
+                    width: ComponentTokens.watermarkPreviewSize
+                    height: ComponentTokens.watermarkPreviewSize
                     radius: PrimitiveTokens.radiusSmall
                     color: SemanticTokens.backgroundElevated
                     border.width: 1

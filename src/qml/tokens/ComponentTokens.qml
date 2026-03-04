@@ -78,6 +78,9 @@ QtObject {
         ? PrimitiveTokens.gray400 : PrimitiveTokens.gray600
     readonly property int toastRadius: PrimitiveTokens.radiusLarge
     readonly property int toastPadding: PrimitiveTokens.spacing16
+    readonly property int toastShowDuration: 180
+    readonly property int toastHideDuration: PrimitiveTokens.durationNormal
+    readonly property int toastDisplayDuration: 2500
 
     // ========================================================================
     // Panel
@@ -109,6 +112,9 @@ QtObject {
     readonly property int badgePaddingH: 10
     readonly property int badgePaddingV: 5
     readonly property int badgeFontSize: 12
+    readonly property int badgeFadeInDuration: 150
+    readonly property int badgeFadeOutDuration: PrimitiveTokens.durationNormal
+    readonly property int badgeDisplayDuration: 1500
 
     // ========================================================================
     // Settings
@@ -131,6 +137,10 @@ QtObject {
     readonly property color toggleKnob: PrimitiveTokens.white
     readonly property int toggleWidth: 36
     readonly property int toggleHeight: 20
+    readonly property int toggleKnobSize: 16
+    readonly property int toggleKnobRadius: PrimitiveTokens.radiusMedium
+    readonly property int toggleKnobInset: PrimitiveTokens.spacing2
+    readonly property int toggleLabelIndent: 140
 
     readonly property color inputBackground: SemanticTokens.isDarkMode
         ? Qt.rgba(1, 1, 1, 0.04) : Qt.rgba(0, 0, 0, 0.03)
@@ -145,6 +155,17 @@ QtObject {
     readonly property color sliderKnob: PrimitiveTokens.white
     readonly property int sliderHeight: 4
     readonly property int sliderKnobSize: 14
+
+    // ========================================================================
+    // Watermark Settings
+    // ========================================================================
+    readonly property int watermarkPreviewColumnWidth: 140
+    readonly property int watermarkPreviewSize: 120
+
+    // ========================================================================
+    // Combo Popup
+    // ========================================================================
+    readonly property int comboPopupMaxHeight: 300
 
     // ========================================================================
     // Info Panel (used in settings for contextual information)
