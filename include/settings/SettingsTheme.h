@@ -10,16 +10,17 @@
 #include <QPalette>
 #include <QString>
 #include <QWidget>
+#include "ToolbarStyle.h"
 #include "ui/DesignTokens.h"
 
 namespace SnapTray {
 namespace SettingsTheme {
 
 /**
- * @brief Detects if the current system theme is dark mode
+ * @brief Detects if the current theme is dark mode (matches ThemeManager logic)
  */
 inline bool isDark() {
-    return QApplication::palette().color(QPalette::Window).lightness() < 128;
+    return ToolbarStyleConfig::loadStyle() == ToolbarStyleType::Dark;
 }
 
 // ============================================================================
@@ -27,9 +28,9 @@ inline bool isDark() {
 // ============================================================================
 
 inline QString borderColor() { return isDark() ? QStringLiteral("#404040") : QStringLiteral("#E0E0E0"); }
-inline QString panelBackground() { return isDark() ? QStringLiteral("#2D2D2D") : QStringLiteral("#FAFAFA"); }
-inline QString hoverBackground() { return isDark() ? QStringLiteral("#3A3A3A") : QStringLiteral("#F5F5F5"); }
-inline QString dialogBackground() { return isDark() ? QStringLiteral("#2D2D2D") : QStringLiteral("#FFFFFF"); }
+inline QString panelBackground() { return isDark() ? QStringLiteral("#2E2E50") : QStringLiteral("#FAFAFA"); }
+inline QString hoverBackground() { return isDark() ? QStringLiteral("#3A3A5E") : QStringLiteral("#F5F5F5"); }
+inline QString dialogBackground() { return isDark() ? QStringLiteral("#2E2E50") : QStringLiteral("#FFFFFF"); }
 
 // ============================================================================
 // Info/warning panels
@@ -82,9 +83,9 @@ inline QString buttonBg() { return isDark() ? QStringLiteral("#424242") : QStrin
 inline QString buttonHoverBg() { return isDark() ? QStringLiteral("#4A4A4A") : QStringLiteral("#D0D0D0"); }
 inline QString buttonPressedBg() { return isDark() ? QStringLiteral("#383838") : QStringLiteral("#C0C0C0"); }
 inline QString buttonText() { return isDark() ? QStringLiteral("#E0E0E0") : QStringLiteral("#333333"); }
-inline QString primaryButtonBg() { return QStringLiteral("#1976D2"); }
-inline QString primaryButtonHoverBg() { return QStringLiteral("#1565C0"); }
-inline QString primaryButtonPressedBg() { return QStringLiteral("#0D47A1"); }
+inline QString primaryButtonBg() { return QStringLiteral("#6C5CE7"); }
+inline QString primaryButtonHoverBg() { return QStringLiteral("#5A4BD6"); }
+inline QString primaryButtonPressedBg() { return QStringLiteral("#4A3BC5"); }
 inline QString disabledButtonBg() { return isDark() ? QStringLiteral("#383838") : QStringLiteral("#B0BEC5"); }
 inline QString disabledButtonText() { return isDark() ? QStringLiteral("#606060") : QStringLiteral("#78909C"); }
 

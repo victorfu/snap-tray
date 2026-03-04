@@ -704,7 +704,6 @@ add_library(snaptray_ui STATIC
     src/video/CountdownOverlay.cpp
 
     # Dialogs and overlays
-    src/SettingsDialog.cpp
     src/OCRResultDialog.cpp
     src/ui/SharePasswordDialog.cpp
     src/ui/ShareResultDialog.cpp
@@ -796,7 +795,6 @@ add_library(snaptray_ui STATIC
     include/video/RecordingPreviewWindow.h
     include/video/FormatSelectionWidget.h
     include/video/CountdownOverlay.h
-    include/SettingsDialog.h
     include/OCRResultDialog.h
 
     # Recording management (moved from APP_SOURCES for testability)
@@ -901,6 +899,28 @@ set_source_files_properties(src/qml/components/Toast.qml PROPERTIES QT_RESOURCE_
 set_source_files_properties(src/qml/components/Badge.qml PROPERTIES QT_RESOURCE_ALIAS components/Badge.qml)
 set_source_files_properties(src/qml/components/RecordingBoundary.qml PROPERTIES QT_RESOURCE_ALIAS components/RecordingBoundary.qml)
 
+# Settings controls
+set_source_files_properties(src/qml/controls/SettingsSection.qml PROPERTIES QT_RESOURCE_ALIAS controls/SettingsSection.qml)
+set_source_files_properties(src/qml/controls/SettingsRow.qml PROPERTIES QT_RESOURCE_ALIAS controls/SettingsRow.qml)
+set_source_files_properties(src/qml/controls/SettingsToggle.qml PROPERTIES QT_RESOURCE_ALIAS controls/SettingsToggle.qml)
+set_source_files_properties(src/qml/controls/SettingsSlider.qml PROPERTIES QT_RESOURCE_ALIAS controls/SettingsSlider.qml)
+set_source_files_properties(src/qml/controls/SettingsCombo.qml PROPERTIES QT_RESOURCE_ALIAS controls/SettingsCombo.qml)
+set_source_files_properties(src/qml/controls/SettingsPathPicker.qml PROPERTIES QT_RESOURCE_ALIAS controls/SettingsPathPicker.qml)
+set_source_files_properties(src/qml/controls/SettingsButton.qml PROPERTIES QT_RESOURCE_ALIAS controls/SettingsButton.qml)
+
+# Settings pages
+set_source_files_properties(src/qml/settings/SettingsWindow.qml PROPERTIES QT_RESOURCE_ALIAS settings/SettingsWindow.qml)
+set_source_files_properties(src/qml/settings/SettingsSidebar.qml PROPERTIES QT_RESOURCE_ALIAS settings/SettingsSidebar.qml)
+set_source_files_properties(src/qml/settings/GeneralSettings.qml PROPERTIES QT_RESOURCE_ALIAS settings/GeneralSettings.qml)
+set_source_files_properties(src/qml/settings/HotkeySettings.qml PROPERTIES QT_RESOURCE_ALIAS settings/HotkeySettings.qml)
+set_source_files_properties(src/qml/settings/AdvancedSettings.qml PROPERTIES QT_RESOURCE_ALIAS settings/AdvancedSettings.qml)
+set_source_files_properties(src/qml/settings/WatermarkSettings.qml PROPERTIES QT_RESOURCE_ALIAS settings/WatermarkSettings.qml)
+set_source_files_properties(src/qml/settings/OCRSettings.qml PROPERTIES QT_RESOURCE_ALIAS settings/OCRSettings.qml)
+set_source_files_properties(src/qml/settings/RecordingSettings.qml PROPERTIES QT_RESOURCE_ALIAS settings/RecordingSettings.qml)
+set_source_files_properties(src/qml/settings/FilesSettings.qml PROPERTIES QT_RESOURCE_ALIAS settings/FilesSettings.qml)
+set_source_files_properties(src/qml/settings/UpdatesSettings.qml PROPERTIES QT_RESOURCE_ALIAS settings/UpdatesSettings.qml)
+set_source_files_properties(src/qml/settings/AboutSettings.qml PROPERTIES QT_RESOURCE_ALIAS settings/AboutSettings.qml)
+
 qt_add_qml_module(snaptray_qml
     URI SnapTrayQml
     VERSION 1.0
@@ -913,12 +933,30 @@ qt_add_qml_module(snaptray_qml
         src/qml/components/Toast.qml
         src/qml/components/Badge.qml
         src/qml/components/RecordingBoundary.qml
+        src/qml/controls/SettingsSection.qml
+        src/qml/controls/SettingsRow.qml
+        src/qml/controls/SettingsToggle.qml
+        src/qml/controls/SettingsSlider.qml
+        src/qml/controls/SettingsCombo.qml
+        src/qml/controls/SettingsPathPicker.qml
+        src/qml/controls/SettingsButton.qml
+        src/qml/settings/SettingsWindow.qml
+        src/qml/settings/SettingsSidebar.qml
+        src/qml/settings/GeneralSettings.qml
+        src/qml/settings/HotkeySettings.qml
+        src/qml/settings/AdvancedSettings.qml
+        src/qml/settings/WatermarkSettings.qml
+        src/qml/settings/OCRSettings.qml
+        src/qml/settings/RecordingSettings.qml
+        src/qml/settings/FilesSettings.qml
+        src/qml/settings/UpdatesSettings.qml
+        src/qml/settings/AboutSettings.qml
     SOURCES
         src/qml/AnnotationCanvas.cpp
         include/qml/AnnotationCanvas.h
         src/qml/ThemeManager.cpp
         include/qml/ThemeManager.h
-        src/qml/QmlOverlayManager.cpp
+        src/qml/QmlOverlayManager.mm
         include/qml/QmlOverlayManager.h
         src/qml/QmlToast.cpp
         include/qml/QmlToast.h
@@ -965,6 +1003,8 @@ set(APP_SOURCES
     src/MainApplication.cpp
     src/CaptureManager.cpp
     src/SingleInstanceGuard.cpp
+    src/qml/SettingsBackend.cpp
+    src/qml/QmlSettingsWindow.cpp
 )
 
 set(RESOURCES
@@ -976,6 +1016,8 @@ set(APP_HEADERS
     include/MainApplication.h
     include/CaptureManager.h
     include/SingleInstanceGuard.h
+    include/qml/SettingsBackend.h
+    include/qml/QmlSettingsWindow.h
 )
 
 # Windows application icon resource

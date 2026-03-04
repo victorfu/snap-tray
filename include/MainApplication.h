@@ -18,11 +18,14 @@ class CaptureManager;
 class PinWindowManager;
 class ScreenCanvasManager;
 class RecordingManager;
-class SettingsDialog;
 class RecordingPreviewWindow;
 class UpdateChecker;
 class PinHistoryWindow;
 struct ReleaseInfo;
+
+namespace SnapTray {
+class QmlSettingsWindow;
+}
 
 #ifdef SNAPTRAY_ENABLE_MCP
 namespace SnapTray {
@@ -95,7 +98,7 @@ private:
     QAction *m_togglePinsVisibilityAction;
     QAction *m_closeAllPinsAction;
     QAction *m_fullScreenRecordingAction;
-    QPointer<SettingsDialog> m_settingsDialog;
+    QPointer<SnapTray::QmlSettingsWindow> m_settingsWindow;
     QPointer<PinHistoryWindow> m_pinHistoryWindow;
     QPointer<RecordingPreviewWindow> m_previewWindow;
     UpdateChecker *m_updateChecker;

@@ -358,15 +358,18 @@ QString TypeHotkeyDialog::modifiersToString(Qt::KeyboardModifiers modifiers) con
 QString TypeHotkeyDialog::modifiersToDisplayString(Qt::KeyboardModifiers modifiers) const
 {
     // Return user-friendly display format (platform-specific)
+    // Note: On macOS, Qt swaps Ctrl/Meta internally:
+    //   Physical Cmd  → Qt::ControlModifier
+    //   Physical Ctrl → Qt::MetaModifier
     QString result;
 
 #ifdef Q_OS_MAC
-    // macOS: Use familiar names
+    // macOS: Map Qt modifiers back to physical key names
     // Order follows macOS convention: Ctrl, Option, Shift, Cmd
-    if (modifiers & Qt::ControlModifier) result += QStringLiteral("Ctrl+");
+    if (modifiers & Qt::MetaModifier) result += QStringLiteral("Ctrl+");
     if (modifiers & Qt::AltModifier) result += QStringLiteral("Option+");
     if (modifiers & Qt::ShiftModifier) result += QStringLiteral("Shift+");
-    if (modifiers & Qt::MetaModifier) result += QStringLiteral("Cmd+");
+    if (modifiers & Qt::ControlModifier) result += QStringLiteral("Cmd+");
 #else
     // Windows/Linux
     if (modifiers & Qt::ControlModifier) result += QStringLiteral("Ctrl+");

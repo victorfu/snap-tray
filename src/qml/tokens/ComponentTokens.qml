@@ -111,6 +111,52 @@ QtObject {
     readonly property int badgeFontSize: 12
 
     // ========================================================================
+    // Settings
+    // ========================================================================
+    readonly property color settingsSidebarBg: SemanticTokens.isDarkMode
+        ? Qt.rgba(0.07, 0.07, 0.08, 1.0)
+        : Qt.rgba(0.96, 0.96, 0.97, 1.0)
+    readonly property color settingsSidebarActiveItem: SemanticTokens.isDarkMode
+        ? Qt.rgba(1, 1, 1, 0.06) : Qt.rgba(0, 0, 0, 0.04)
+    readonly property color settingsSidebarHoverItem: SemanticTokens.isDarkMode
+        ? Qt.rgba(1, 1, 1, 0.03) : Qt.rgba(0, 0, 0, 0.02)
+    readonly property color settingsSectionText: SemanticTokens.textSecondary
+    readonly property int settingsSidebarWidth: 200
+    readonly property int settingsContentPadding: 24
+
+    // Form Controls
+    readonly property color toggleTrackOn: SemanticTokens.accentDefault
+    readonly property color toggleTrackOff: SemanticTokens.isDarkMode
+        ? PrimitiveTokens.gray700 : PrimitiveTokens.gray300
+    readonly property color toggleKnob: PrimitiveTokens.white
+    readonly property int toggleWidth: 36
+    readonly property int toggleHeight: 20
+
+    readonly property color inputBackground: SemanticTokens.isDarkMode
+        ? Qt.rgba(1, 1, 1, 0.04) : Qt.rgba(0, 0, 0, 0.03)
+    readonly property color inputBorder: SemanticTokens.borderDefault
+    readonly property color inputBorderFocus: SemanticTokens.borderFocus
+    readonly property int inputRadius: PrimitiveTokens.radiusSmall
+    readonly property int inputHeight: 32
+
+    readonly property color sliderTrack: SemanticTokens.isDarkMode
+        ? PrimitiveTokens.gray700 : PrimitiveTokens.gray300
+    readonly property color sliderFill: SemanticTokens.accentDefault
+    readonly property color sliderKnob: PrimitiveTokens.white
+    readonly property int sliderHeight: 4
+    readonly property int sliderKnobSize: 14
+
+    // ========================================================================
+    // Info Panel (used in settings for contextual information)
+    // ========================================================================
+    readonly property color infoPanelBg: SemanticTokens.isDarkMode
+        ? Qt.rgba(0.15, 0.22, 0.35, 1.0) : Qt.rgba(0.93, 0.96, 1.0, 1.0)
+    readonly property color infoPanelBorder: SemanticTokens.isDarkMode
+        ? Qt.rgba(0.25, 0.35, 0.55, 1.0) : Qt.rgba(0.7, 0.8, 0.95, 1.0)
+    readonly property color infoPanelText: SemanticTokens.isDarkMode
+        ? Qt.rgba(0.7, 0.82, 1.0, 1.0) : Qt.rgba(0.15, 0.25, 0.5, 1.0)
+
+    // ========================================================================
     // Icon sizes (component-level aliases with semantic names)
     // ========================================================================
     readonly property int iconSizeToolbar: PrimitiveTokens.iconSizeMedium

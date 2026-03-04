@@ -1,6 +1,5 @@
 #include "qml/ThemeManager.h"
 #include "settings/Settings.h"
-#include "ToolbarStyle.h"
 
 #include <QGuiApplication>
 #include <QJSEngine>
@@ -58,9 +57,7 @@ ThemeManager::Theme ThemeManager::effectiveTheme() const
 
 bool ThemeManager::isDarkMode() const
 {
-    // Always read from the authoritative source (the app's toolbar style setting)
-    // to avoid stale cache when the setting changes outside ThemeManager.
-    return ToolbarStyleConfig::loadStyle() == ToolbarStyleType::Dark;
+    return m_effectiveTheme == Theme::Dark;
 }
 
 QColor ThemeManager::primarySurface() const
@@ -71,6 +68,12 @@ QColor ThemeManager::primarySurface() const
 QColor ThemeManager::elevatedSurface() const
 {
     return isDarkMode() ? QColor(0x2E, 0x2E, 0x50) : QColor(0xF5, 0xF5, 0xFA);
+}
+
+void ThemeManager::refreshTheme()
+{
+    m_effectiveTheme = resolveSystemTheme();
+    emit themeChanged();
 }
 
 void ThemeManager::loadColorScheme()
@@ -91,11 +94,9 @@ void ThemeManager::loadColorScheme()
 
 ThemeManager::Theme ThemeManager::resolveSystemTheme() const
 {
-    // Sync with the existing app-level toolbar style setting (appearance/toolbarStyle)
-    // so QML components match the rest of the UI.
-    // ToolbarStyleType::Dark = 0, Light = 1
-    return (ToolbarStyleConfig::loadStyle() == ToolbarStyleType::Dark)
-        ? Theme::Dark : Theme::Light;
+    if (auto *hints = QGuiApplication::styleHints())
+        return (hints->colorScheme() == Qt::ColorScheme::Dark) ? Theme::Dark : Theme::Light;
+    return Theme::Light;
 }
 
 void ThemeManager::updateEffectiveTheme()

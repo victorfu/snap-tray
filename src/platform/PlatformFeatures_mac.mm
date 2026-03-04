@@ -229,3 +229,10 @@ void PlatformFeatures::openAccessibilitySettings()
         [[NSWorkspace sharedWorkspace] openURL:url];
     }
 }
+
+void PlatformFeatures::activateApp()
+{
+    @autoreleasepool {
+        [NSApp activateIgnoringOtherApps:YES];
+    }
+}

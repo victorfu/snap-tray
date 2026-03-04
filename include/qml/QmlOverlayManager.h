@@ -49,6 +49,13 @@ public:
      */
     QQuickView* createParentOverlay(const QUrl& qmlUrl, QWidget* parent = nullptr);
 
+    /**
+     * @brief Create a QQuickView for the settings window.
+     * Uses native window chrome (title bar with close/minimize).
+     * @return Owned QQuickView pointer; caller takes ownership.
+     */
+    QQuickView* createSettingsWindow();
+
 private:
     explicit QmlOverlayManager(QObject* parent = nullptr);
     QmlOverlayManager(const QmlOverlayManager&) = delete;

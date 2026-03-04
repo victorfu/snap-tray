@@ -36,6 +36,9 @@ public:
     static bool hasAccessibilityPermission();
     static void openScreenRecordingSettings();
     static void openAccessibilitySettings();
+
+    /// Bring the application to the foreground (activateIgnoringOtherApps).
+    static void activateApp();
 #endif
 
 private:

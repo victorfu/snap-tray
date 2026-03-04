@@ -6,7 +6,7 @@
 #include "PlatformFeatures.h"
 #include "RecordingManager.h"
 #include "ScreenCanvasManager.h"
-#include "SettingsDialog.h"
+#include "qml/QmlSettingsWindow.h"
 #include "pinwindow/PinHistoryWindow.h"
 #include "pinwindow/PinWindowPlacement.h"
 #include "ImageColorSpaceHelper.h"
@@ -679,29 +679,28 @@ void MainApplication::onImageLoaded(const QString &filePath, const QImage &image
 
 void MainApplication::onSettings()
 {
-    // If dialog already open, bring it to front
-    if (m_settingsDialog) {
-        m_settingsDialog->raise();
-        m_settingsDialog->activateWindow();
+    // If window already open, bring it to front
+    if (m_settingsWindow && m_settingsWindow->isVisible()) {
+        m_settingsWindow->raise();
+        m_settingsWindow->activateWindow();
         return;
     }
 
-    // Create non-modal dialog
-    m_settingsDialog = new SettingsDialog();
-    m_settingsDialog->setAttribute(Qt::WA_DeleteOnClose);
+    // Clean up any previous (closed) settings window
+    delete m_settingsWindow;
+
+    // Create QML settings window
+    m_settingsWindow = new SnapTray::QmlSettingsWindow(this);
 
     // Connect OCR languages change signal
-    connect(m_settingsDialog, &SettingsDialog::ocrLanguagesChanged,
+    connect(m_settingsWindow, &SnapTray::QmlSettingsWindow::ocrLanguagesChanged,
         m_pinWindowManager, &PinWindowManager::updateOcrLanguages);
 #ifdef SNAPTRAY_ENABLE_MCP
-    connect(m_settingsDialog, &SettingsDialog::mcpEnabledChanged,
+    connect(m_settingsWindow, &SnapTray::QmlSettingsWindow::mcpEnabledChanged,
         this, &MainApplication::onMcpEnabledChanged);
 #endif
 
-    // Show non-modal
-    m_settingsDialog->show();
-    m_settingsDialog->raise();
-    m_settingsDialog->activateWindow();
+    m_settingsWindow->show();
 }
 
 #ifdef SNAPTRAY_ENABLE_MCP

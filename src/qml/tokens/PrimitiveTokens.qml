@@ -53,9 +53,9 @@ QtObject {
     readonly property color gray950: "#1A1A1A"
     readonly property color black: "#000000"
 
-    // Dark mode surface colors
-    readonly property color darkSurface: "#1E1E1E"
-    readonly property color darkSurfaceElevated: "#2D2D2D"
+    // Dark mode surface colors (Atlassian-style purple-tinted elevation)
+    readonly property color darkSurface: "#1A1A2E"
+    readonly property color darkSurfaceElevated: "#2E2E50"
     readonly property color darkSurfaceOverlay: Qt.rgba(0, 0, 0, 0.6)
 
     // Light mode surface colors
@@ -127,8 +127,8 @@ QtObject {
     // Font families (platform-aware fallback)
     // ========================================================================
     readonly property string fontFamily: Qt.platform.os === "osx"
-        ? "Inter, SF Pro, -apple-system, Helvetica Neue, sans-serif"
-        : "Inter, Segoe UI, sans-serif"
+        ? ".AppleSystemUIFont"
+        : "Segoe UI"
     readonly property int fontBaseSize: 13
 
     // ========================================================================
@@ -154,7 +154,7 @@ QtObject {
     readonly property int lightShadowLargeBlur: 16
     readonly property int lightShadowLargeY: 4
 
-    // Dark mode shadows (reduced opacity ~30%)
+    // Dark mode shadows (3x stronger for visibility on dark surfaces)
     readonly property color darkShadowSmall: Qt.rgba(0, 0, 0, 0.24)
     readonly property int darkShadowSmallBlur: 4
     readonly property int darkShadowSmallY: 1

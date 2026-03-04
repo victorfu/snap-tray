@@ -55,6 +55,13 @@ public:
 
     void loadColorScheme();
 
+    /**
+     * @brief Re-evaluate the effective theme from current settings.
+     *
+     * Call after changing ToolbarStyleConfig to apply the new theme immediately.
+     */
+    void refreshTheme();
+
 signals:
     void colorSchemeChanged();
     void themeChanged();

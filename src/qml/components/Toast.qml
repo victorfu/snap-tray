@@ -1,4 +1,5 @@
 import QtQuick
+import SnapTrayQml
 
 /**
  * Toast notification — Linear app aesthetic.
@@ -38,30 +39,22 @@ Item {
     readonly property int kMessageFontSize: 12
     readonly property int kTitleMessageGap: 3
 
-    // ---- Status dot color ----
+    // ---- Status dot color (from token system) ----
     readonly property color statusColor: {
         switch (level) {
-        case 0: return "#34D399" // emerald-400 (success)
-        case 1: return "#F87171" // red-400 (error)
-        case 2: return "#FBBF24" // amber-400 (warning)
-        case 3: return "#60A5FA" // blue-400 (info)
+        case 0: return SemanticTokens.statusSuccess
+        case 1: return SemanticTokens.statusError
+        case 2: return SemanticTokens.statusWarning
+        case 3: return SemanticTokens.statusInfo
         }
-        return "#60A5FA"
+        return SemanticTokens.statusInfo
     }
 
-    // ---- Surface colors (Linear palette) ----
-    readonly property color surfaceBg: isDark
-        ? Qt.rgba(0.06, 0.06, 0.07, 0.94)   // ~#0F0F12 at 94% — not pure black
-        : Qt.rgba(1.0, 1.0, 1.0, 0.96)
-    readonly property color surfaceBorder: isDark
-        ? Qt.rgba(1, 1, 1, 0.06)             // border-white/6
-        : Qt.rgba(0, 0, 0, 0.08)
-    readonly property color titleColor: isDark
-        ? Qt.rgba(1, 1, 1, 0.92)             // near-white
-        : Qt.rgba(0, 0, 0, 0.88)
-    readonly property color messageColor: isDark
-        ? Qt.rgba(1, 1, 1, 0.45)             // zinc-500 feel
-        : Qt.rgba(0, 0, 0, 0.50)
+    // ---- Surface colors (from token system) ----
+    readonly property color surfaceBg: ComponentTokens.toastBackground
+    readonly property color surfaceBorder: ComponentTokens.toastBorder
+    readonly property color titleColor: ComponentTokens.toastTitleText
+    readonly property color messageColor: ComponentTokens.toastMessageText
 
     // ---- Computed width ----
     width: fixedWidth ? kScreenToastWidth : computedAutoWidth
