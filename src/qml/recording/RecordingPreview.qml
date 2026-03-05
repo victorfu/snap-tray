@@ -367,14 +367,12 @@ Item {
 
                 IconButton {
                     iconSource: "qrc:/icons/icons/trash-2.svg"
-                    iconSize: ComponentTokens.iconSizeMenu
                     destructive: true
                     onClicked: backend.discard()
                 }
 
                 IconButton {
                     iconSource: "qrc:/icons/icons/save.svg"
-                    iconSize: ComponentTokens.recordingPreviewActionIconSize
                     primary: true
                     onClicked: backend.save()
                 }
