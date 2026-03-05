@@ -10,6 +10,13 @@ VideoPlaybackItem::VideoPlaybackItem(QQuickItem *parent)
     setRenderTarget(QQuickPaintedItem::FramebufferObject);
     setAntialiasing(true);
     createPlayer();
+
+    connect(this, &QQuickItem::widthChanged, this, [this]() {
+        refreshScaledFrameForCurrentSize();
+    });
+    connect(this, &QQuickItem::heightChanged, this, [this]() {
+        refreshScaledFrameForCurrentSize();
+    });
 }
 
 VideoPlaybackItem::~VideoPlaybackItem()
@@ -71,6 +78,7 @@ void VideoPlaybackItem::setSource(const QString &source)
     if (!m_player || source.isEmpty())
         return;
 
+    m_currentFrame = QImage();
     m_scaledFrame = QImage();
     update();
 
@@ -180,6 +188,7 @@ void VideoPlaybackItem::stop()
 {
     if (m_player) {
         m_player->stop();
+        m_currentFrame = QImage();
         m_scaledFrame = QImage();
         update();
     }
@@ -204,24 +213,8 @@ void VideoPlaybackItem::onFrameReady(const QImage &frame)
     if (frame.isNull())
         return;
 
-    QSize itemSize(static_cast<int>(width()), static_cast<int>(height()));
-
-    // Only recalculate target size when dimensions change
-    if (itemSize != m_lastItemSize || frame.size() != m_lastFrameSize) {
-        m_lastItemSize = itemSize;
-        m_lastFrameSize = frame.size();
-        m_targetScaledSize = frame.size().scaled(itemSize, Qt::KeepAspectRatio);
-    }
-
-    // Scale only if needed
-    if (frame.size() == m_targetScaledSize) {
-        m_scaledFrame = frame;
-    } else {
-        m_scaledFrame = frame.scaled(m_targetScaledSize, Qt::IgnoreAspectRatio,
-                                     Qt::SmoothTransformation);
-    }
-
-    update();
+    m_currentFrame = frame;
+    refreshScaledFrameForCurrentSize();
 
     // Re-emit for external consumers (format conversion)
     emit frameReady(frame);
@@ -231,4 +224,31 @@ void VideoPlaybackItem::onMediaLoaded()
 {
     qDebug() << "VideoPlaybackItem: Media loaded, duration:" << duration();
     emit videoLoaded();
+}
+
+void VideoPlaybackItem::refreshScaledFrameForCurrentSize()
+{
+    if (m_currentFrame.isNull())
+        return;
+
+    QSize itemSize(static_cast<int>(width()), static_cast<int>(height()));
+    if (itemSize.isEmpty())
+        return;
+
+    // Only recalculate target size when dimensions change
+    if (itemSize != m_lastItemSize || m_currentFrame.size() != m_lastFrameSize) {
+        m_lastItemSize = itemSize;
+        m_lastFrameSize = m_currentFrame.size();
+        m_targetScaledSize = m_currentFrame.size().scaled(itemSize, Qt::KeepAspectRatio);
+    }
+
+    // Scale only if needed
+    if (m_currentFrame.size() == m_targetScaledSize) {
+        m_scaledFrame = m_currentFrame;
+    } else {
+        m_scaledFrame = m_currentFrame.scaled(m_targetScaledSize, Qt::IgnoreAspectRatio,
+                                              Qt::SmoothTransformation);
+    }
+
+    update();
 }

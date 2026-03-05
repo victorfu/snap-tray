@@ -192,9 +192,24 @@ Item {
 
                 property bool draggingTrimStart: false
                 property bool draggingTrimEnd: false
+                property bool wasPlayingBeforeScrub: false
+
+                function resetInteractionState() {
+                    var shouldResume = root.isScrubbing && wasPlayingBeforeScrub
+                    draggingTrimStart = false
+                    draggingTrimEnd = false
+                    root.isDraggingTrimStart = false
+                    root.isDraggingTrimEnd = false
+                    root.isScrubbing = false
+                    wasPlayingBeforeScrub = false
+                    if (shouldResume) {
+                        videoPlayer.play()
+                    }
+                }
 
                 onPressed: function(mouse) {
                     var mx = mouse.x
+                    wasPlayingBeforeScrub = false
 
                     if (backend.hasTrim) {
                         var tsX = timelineArea.posToX(backend.trimStart)
@@ -213,6 +228,7 @@ Item {
                     }
 
                     root.isScrubbing = true
+                    wasPlayingBeforeScrub = videoPlayer.playing
                     videoPlayer.pause()
                     videoPlayer.seek(timelineArea.xToPos(mx))
                 }
@@ -231,11 +247,11 @@ Item {
                 }
 
                 onReleased: {
-                    draggingTrimStart = false
-                    draggingTrimEnd = false
-                    root.isDraggingTrimStart = false
-                    root.isDraggingTrimEnd = false
-                    root.isScrubbing = false
+                    resetInteractionState()
+                }
+
+                onCanceled: {
+                    resetInteractionState()
                 }
             }
 

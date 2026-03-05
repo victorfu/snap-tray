@@ -90,9 +90,11 @@ private slots:
 
 private:
     void createPlayer();
+    void refreshScaledFrameForCurrentSize();
 
     IVideoPlayer *m_player = nullptr;
     QString m_source;
+    QImage m_currentFrame;
     QImage m_scaledFrame;
     QSize m_lastItemSize;
     QSize m_lastFrameSize;
