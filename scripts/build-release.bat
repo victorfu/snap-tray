@@ -44,9 +44,18 @@ if %ERRORLEVEL% neq 0 (
     exit /b %ERRORLEVEL%
 )
 
-REM Check if windeployqt is needed (detect by checking for Qt6Core.dll)
+REM Check if windeployqt is needed (Qt Quick/QML runtime is required)
 if exist "%EXE_PATH%" (
-    if not exist "%BIN_DIR%\Qt6Core.dll" (
+    set "NEED_WINDEPLOYQT=0"
+    if not exist "%BIN_DIR%\Qt6Core.dll" set "NEED_WINDEPLOYQT=1"
+    if not exist "%BIN_DIR%\Qt6Gui.dll" set "NEED_WINDEPLOYQT=1"
+    if not exist "%BIN_DIR%\Qt6Widgets.dll" set "NEED_WINDEPLOYQT=1"
+    if not exist "%BIN_DIR%\Qt6Qml.dll" set "NEED_WINDEPLOYQT=1"
+    if not exist "%BIN_DIR%\Qt6Quick.dll" set "NEED_WINDEPLOYQT=1"
+    if not exist "%BIN_DIR%\Qt6QuickWidgets.dll" set "NEED_WINDEPLOYQT=1"
+    if not exist "%BIN_DIR%\platforms\qwindows.dll" set "NEED_WINDEPLOYQT=1"
+
+    if "!NEED_WINDEPLOYQT!"=="1" (
         echo.
         echo Qt dependencies not found. Running windeployqt...
 

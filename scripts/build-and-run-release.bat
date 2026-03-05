@@ -38,10 +38,24 @@ if not exist "%BUILD_DIR%\CMakeCache.txt" (
 REM Build all targets
 echo Building all targets...
 cmake --build release
+if %ERRORLEVEL% neq 0 (
+    echo.
+    echo Build failed with error code %ERRORLEVEL%
+    exit /b %ERRORLEVEL%
+)
 
-REM Check if windeployqt is needed (detect by checking for Qt6Core.dll)
+REM Check if windeployqt is needed (Qt Quick/QML runtime is required)
 if exist "%EXE_PATH%" (
-    if not exist "%BIN_DIR%\Qt6Core.dll" (
+    set "NEED_WINDEPLOYQT=0"
+    if not exist "%BIN_DIR%\Qt6Core.dll" set "NEED_WINDEPLOYQT=1"
+    if not exist "%BIN_DIR%\Qt6Gui.dll" set "NEED_WINDEPLOYQT=1"
+    if not exist "%BIN_DIR%\Qt6Widgets.dll" set "NEED_WINDEPLOYQT=1"
+    if not exist "%BIN_DIR%\Qt6Qml.dll" set "NEED_WINDEPLOYQT=1"
+    if not exist "%BIN_DIR%\Qt6Quick.dll" set "NEED_WINDEPLOYQT=1"
+    if not exist "%BIN_DIR%\Qt6QuickWidgets.dll" set "NEED_WINDEPLOYQT=1"
+    if not exist "%BIN_DIR%\platforms\qwindows.dll" set "NEED_WINDEPLOYQT=1"
+
+    if "!NEED_WINDEPLOYQT!"=="1" (
         echo.
         echo Qt dependencies not found. Running windeployqt...
 
@@ -79,4 +93,14 @@ if exist "%EXE_PATH%" (
 REM Run (Release builds use SnapTray.exe)
 echo.
 echo Launching SnapTray...
+if not exist "%EXE_PATH%" (
+    echo Error: Executable not found: %EXE_PATH%
+    exit /b 1
+)
+
+REM Runtime fallback for local development (works even when deployment is partial)
+set "PATH=%QT_PATH%\bin;%PATH%"
+set "QT_PLUGIN_PATH=%QT_PATH%\plugins"
+set "QML2_IMPORT_PATH=%QT_PATH%\qml"
+
 "%EXE_PATH%"

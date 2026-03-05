@@ -44,9 +44,18 @@ if %ERRORLEVEL% neq 0 (
     exit /b %ERRORLEVEL%
 )
 
-REM Check if windeployqt is needed (detect by checking for Qt6Cored.dll - debug suffix)
+REM Check if windeployqt is needed (Qt Quick/QML runtime is required)
 if exist "%EXE_PATH%" (
-    if not exist "%BIN_DIR%\Qt6Cored.dll" (
+    set "NEED_WINDEPLOYQT=0"
+    if not exist "%BIN_DIR%\Qt6Cored.dll" set "NEED_WINDEPLOYQT=1"
+    if not exist "%BIN_DIR%\Qt6Guid.dll" set "NEED_WINDEPLOYQT=1"
+    if not exist "%BIN_DIR%\Qt6Widgetsd.dll" set "NEED_WINDEPLOYQT=1"
+    if not exist "%BIN_DIR%\Qt6Qmld.dll" set "NEED_WINDEPLOYQT=1"
+    if not exist "%BIN_DIR%\Qt6Quickd.dll" set "NEED_WINDEPLOYQT=1"
+    if not exist "%BIN_DIR%\Qt6QuickWidgetsd.dll" set "NEED_WINDEPLOYQT=1"
+    if not exist "%BIN_DIR%\platforms\qwindowsd.dll" set "NEED_WINDEPLOYQT=1"
+
+    if "!NEED_WINDEPLOYQT!"=="1" (
         echo.
         echo Qt dependencies not found. Running windeployqt...
 
@@ -84,4 +93,14 @@ if exist "%EXE_PATH%" (
 REM Run (Debug builds use SnapTray-Debug.exe)
 echo.
 echo Launching SnapTray-Debug...
+if not exist "%EXE_PATH%" (
+    echo Error: Executable not found: %EXE_PATH%
+    exit /b 1
+)
+
+REM Runtime fallback for local development (works even when deployment is partial)
+set "PATH=%QT_PATH%\bin;%PATH%"
+set "QT_PLUGIN_PATH=%QT_PATH%\plugins"
+set "QML2_IMPORT_PATH=%QT_PATH%\qml"
+
 "%EXE_PATH%"
