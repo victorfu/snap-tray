@@ -86,6 +86,8 @@ void RecordingInitTask::run()
     // Step 1: Initialize capture engine
     emit progress(tr("Initializing..."));
     if (!initializeCaptureEngine()) {
+        // Ensure capture resources are torn down on the worker thread that created them.
+        m_result.cleanup();
         emit finished();
         return;
     }

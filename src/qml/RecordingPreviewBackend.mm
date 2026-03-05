@@ -15,6 +15,7 @@
 #include <QFileInfo>
 #include <QGuiApplication>
 #include <QInputDialog>
+#include <QPointer>
 #include <QQmlContext>
 #include <QQuickView>
 #include <QTimer>
@@ -383,19 +384,47 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
     emit processStatusChanged();
 
     // Capture values needed by the worker thread
-    QString videoPath = m_videoPath;
-    int selectedFormat = static_cast<int>(format);
+    const QString videoPath = m_videoPath;
+    const QString sourceVideoPath = m_videoPath;
+    const int selectedFormat = static_cast<int>(format);
+    const QString createPlayerError = tr("Failed to create video player for conversion");
+    const QString loadVideoError = tr("Failed to load video for conversion");
+    const QString invalidVideoError = tr("Video not loaded properly for conversion");
+    const QString startEncoderError = tr("Failed to start encoder");
+    const QString outputMissingError = tr("Conversion failed: output file is missing or empty");
+    QPointer<RecordingPreviewBackend> weakThis(this);
 
-    (void)QtConcurrent::run([this, videoPath, outputPath, selectedFormat]() {
+    (void)QtConcurrent::run([weakThis,
+                             videoPath,
+                             sourceVideoPath,
+                             outputPath,
+                             selectedFormat,
+                             createPlayerError,
+                             loadVideoError,
+                             invalidVideoError,
+                             startEncoderError,
+                             outputMissingError]() {
+        auto postFailure = [weakThis](const QString& errorMessage) {
+            QCoreApplication* app = QCoreApplication::instance();
+            if (!app) {
+                return;
+            }
+
+            QMetaObject::invokeMethod(app, [weakThis, errorMessage]() {
+                if (!weakThis) {
+                    return;
+                }
+                weakThis->setErrorMessage(errorMessage);
+                weakThis->m_isProcessing = false;
+                emit weakThis->processingChanged();
+            }, Qt::QueuedConnection);
+        };
+
         // Create a temporary IVideoPlayer for frame extraction
-        IVideoPlayer *player = IVideoPlayer::create(nullptr);
+        std::unique_ptr<IVideoPlayer> player(IVideoPlayer::create(nullptr));
         if (!player) {
             qWarning() << "RecordingPreviewBackend: Failed to create video player for conversion";
-            QMetaObject::invokeMethod(this, [this]() {
-                setErrorMessage(tr("Failed to create video player for conversion"));
-                m_isProcessing = false;
-                emit processingChanged();
-            });
+            postFailure(createPlayerError);
             return;
         }
 
@@ -405,7 +434,7 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
             QEventLoop loop;
             QTimer timer;
             timer.setSingleShot(true);
-            auto mediaLoadedConn = connect(player, &IVideoPlayer::mediaLoaded, &loop, [&]() {
+            auto mediaLoadedConn = connect(player.get(), &IVideoPlayer::mediaLoaded, &loop, [&]() {
                 mediaLoaded = true;
                 loop.quit();
             });
@@ -414,12 +443,7 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
             if (!player->load(videoPath)) {
                 disconnect(mediaLoadedConn);
                 qWarning() << "RecordingPreviewBackend: Failed to load video for conversion";
-                delete player;
-                QMetaObject::invokeMethod(this, [this]() {
-                    setErrorMessage(tr("Failed to load video for conversion"));
-                    m_isProcessing = false;
-                    emit processingChanged();
-                });
+                postFailure(loadVideoError);
                 return;
             }
 
@@ -438,12 +462,7 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
 
         if (dur <= 0 || vidSize.isEmpty()) {
             qWarning() << "RecordingPreviewBackend: Video not loaded properly for conversion";
-            delete player;
-            QMetaObject::invokeMethod(this, [this]() {
-                setErrorMessage(tr("Video not loaded properly for conversion"));
-                m_isProcessing = false;
-                emit processingChanged();
-            });
+            postFailure(invalidVideoError);
             return;
         }
 
@@ -465,12 +484,7 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
 
         if (!encoderStarted) {
             qWarning() << "RecordingPreviewBackend: Failed to start encoder";
-            delete player;
-            QMetaObject::invokeMethod(this, [this]() {
-                setErrorMessage(tr("Failed to start encoder"));
-                m_isProcessing = false;
-                emit processingChanged();
-            });
+            postFailure(startEncoderError);
             return;
         }
 
@@ -486,7 +500,7 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
             QTimer timer;
             timer.setSingleShot(true);
 
-            auto conn = connect(player, &IVideoPlayer::frameReady,
+            auto conn = connect(player.get(), &IVideoPlayer::frameReady,
                                 &loop, [&capturedFrame, &frameReceived, &loop](const QImage &frame) {
                 capturedFrame = frame.copy();
                 frameReceived = true;
@@ -511,39 +525,52 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
             }
 
             int percent = static_cast<int>((timeMs * 100) / dur);
-            QMetaObject::invokeMethod(this, [this, percent]() {
-                if (percent != m_processProgress) {
-                    m_processProgress = percent;
-                    emit processProgressChanged();
-                }
-            });
+            QCoreApplication* app = QCoreApplication::instance();
+            if (app) {
+                QMetaObject::invokeMethod(app, [weakThis, percent]() {
+                    if (!weakThis) {
+                        return;
+                    }
+                    if (percent != weakThis->m_processProgress) {
+                        weakThis->m_processProgress = percent;
+                        emit weakThis->processProgressChanged();
+                    }
+                }, Qt::QueuedConnection);
+            }
         }
 
         // Finish encoding
         if (gifEncoder) gifEncoder->finish();
         if (webpEncoder) webpEncoder->finish();
 
-        delete player;
-
         // Post results back to main thread
-        QMetaObject::invokeMethod(this, [this, outputPath]() {
-            m_processProgress = 100;
-            emit processProgressChanged();
-            m_isProcessing = false;
-            emit processingChanged();
+        QCoreApplication* app = QCoreApplication::instance();
+        if (!app) {
+            return;
+        }
+
+        QMetaObject::invokeMethod(app, [weakThis, outputPath, sourceVideoPath, outputMissingError]() {
+            if (!weakThis) {
+                return;
+            }
+
+            weakThis->m_processProgress = 100;
+            emit weakThis->processProgressChanged();
+            weakThis->m_isProcessing = false;
+            emit weakThis->processingChanged();
 
             // Clean up original MP4 only if output is valid
             QFileInfo outInfo(outputPath);
             if (outInfo.exists() && outInfo.size() > 0) {
-                QFile::remove(m_videoPath);
-                m_saved = true;
-                emit saveRequested(outputPath);
-                close();
+                QFile::remove(sourceVideoPath);
+                weakThis->m_saved = true;
+                emit weakThis->saveRequested(outputPath);
+                weakThis->close();
             } else {
                 qWarning() << "RecordingPreviewBackend: Conversion output missing or empty, keeping original";
-                setErrorMessage(tr("Conversion failed: output file is missing or empty"));
+                weakThis->setErrorMessage(outputMissingError);
             }
-        });
+        }, Qt::QueuedConnection);
     });
 }
 
