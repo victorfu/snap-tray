@@ -3,6 +3,8 @@
 #include "qml/SettingsBackend.h"
 #include "PlatformFeatures.h"
 
+#include <QCloseEvent>
+#include <QEvent>
 #include <QQmlContext>
 #include <QQuickView>
 
@@ -34,14 +36,23 @@ void QmlSettingsWindow::ensureView()
     m_view->setSource(
         QUrl(QStringLiteral("qrc:/SnapTrayQml/settings/SettingsWindow.qml")));
     m_view->setTitle(tr("Settings"));
+    m_view->installEventFilter(this);
 
     connect(m_backend, &SettingsBackend::ocrLanguagesChanged,
             this, &QmlSettingsWindow::ocrLanguagesChanged);
     connect(m_backend, &SettingsBackend::mcpEnabledChanged,
             this, &QmlSettingsWindow::mcpEnabledChanged);
     // settingsSaved close is handled by QML (shows toast first, then closes).
+    // Route backend-driven close through a guard so user-initiated title-bar
+    // close can still be transformed into cancel() without recursion.
     connect(m_backend, &SettingsBackend::settingsCancelled,
-            m_view, &QQuickView::close);
+            this, [this]() {
+        if (!m_view)
+            return;
+        m_allowDirectClose = true;
+        m_view->close();
+        m_allowDirectClose = false;
+    });
 
 #ifdef Q_OS_MAC
     // Revert to accessory (LSUIElement) mode when the window is dismissed
@@ -98,6 +109,19 @@ void QmlSettingsWindow::activateWindow()
 bool QmlSettingsWindow::isVisible() const
 {
     return m_view && m_view->isVisible();
+}
+
+bool QmlSettingsWindow::eventFilter(QObject* watched, QEvent* event)
+{
+    if (watched == m_view && event && event->type() == QEvent::Close) {
+        auto* closeEvent = static_cast<QCloseEvent*>(event);
+        if (!m_allowDirectClose && m_backend) {
+            closeEvent->ignore();
+            m_backend->cancel();
+            return true;
+        }
+    }
+    return QObject::eventFilter(watched, event);
 }
 
 } // namespace SnapTray

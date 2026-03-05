@@ -296,6 +296,7 @@ private:
     bool m_startOnLogin = false;
     QString m_language;
     int m_toolbarStyle = 0;
+    int m_originalToolbarStyle = 0;
     bool m_cliInstalled = false;
 
 #ifdef Q_OS_MAC

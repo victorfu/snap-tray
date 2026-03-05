@@ -6,6 +6,8 @@
 
 #ifdef Q_OS_MACOS
 #import <Cocoa/Cocoa.h>
+#elif defined(Q_OS_WIN)
+#include <windows.h>
 #endif
 
 namespace SnapTray {
@@ -142,6 +144,18 @@ void QmlRecordingBoundary::setExcludedFromCapture(bool excluded)
             [window setSharingType:excluded ? NSWindowSharingNone : NSWindowSharingReadOnly];
         }
     }
+#elif defined(Q_OS_WIN)
+    if (!m_view)
+        return;
+
+    HWND hwnd = reinterpret_cast<HWND>(m_view->winId());
+    if (!hwnd)
+        return;
+
+    // WDA_EXCLUDEFROMCAPTURE (0x11) is supported on Windows 10 2004+.
+    constexpr DWORD kExcludeFromCapture = 0x00000011;
+    const DWORD affinity = excluded ? kExcludeFromCapture : WDA_NONE;
+    SetWindowDisplayAffinity(hwnd, affinity);
 #else
     Q_UNUSED(excluded)
 #endif

@@ -50,6 +50,7 @@ void SettingsBackend::loadAllSettings()
     m_startOnLogin = AutoLaunchManager::isEnabled();
     m_language = LanguageManager::instance().loadLanguage();
     m_toolbarStyle = static_cast<int>(ToolbarStyleConfig::loadStyle());
+    m_originalToolbarStyle = m_toolbarStyle;
     m_cliInstalled = PlatformFeatures::instance().isCLIInstalled();
 
 #ifdef Q_OS_MAC
@@ -139,7 +140,8 @@ int SettingsBackend::toolbarStyle() const { return m_toolbarStyle; }
 void SettingsBackend::setToolbarStyle(int v) {
     if (m_toolbarStyle != v) {
         m_toolbarStyle = v;
-        // Apply theme immediately so the settings window updates in real time
+        // Apply preview immediately but keep Save/Cancel semantics by restoring
+        // the original persisted style in cancel() when needed.
         ToolbarStyleConfig::saveStyle(static_cast<ToolbarStyleType>(v));
         ThemeManager::instance().refreshTheme();
         emit toolbarStyleChanged();
@@ -399,6 +401,7 @@ void SettingsBackend::save()
     AutoLaunchManager::setEnabled(m_startOnLogin);
     LanguageManager::instance().saveLanguage(m_language);
     ToolbarStyleConfig::saveStyle(static_cast<ToolbarStyleType>(m_toolbarStyle));
+    m_originalToolbarStyle = m_toolbarStyle;
 
     // Advanced
     RegionCaptureSettingsManager::instance().setShortcutHintsEnabled(m_shortcutHintsEnabled);
@@ -468,6 +471,12 @@ void SettingsBackend::save()
 
 void SettingsBackend::cancel()
 {
+    if (m_toolbarStyle != m_originalToolbarStyle) {
+        ToolbarStyleConfig::saveStyle(static_cast<ToolbarStyleType>(m_originalToolbarStyle));
+        ThemeManager::instance().refreshTheme();
+        m_toolbarStyle = m_originalToolbarStyle;
+        emit toolbarStyleChanged();
+    }
     emit settingsCancelled();
 }
 

@@ -143,6 +143,7 @@ void QmlToast::positionAndShow()
 
         m_view->resize(toastW, toastH);
         m_view->show();
+        QmlOverlayManager::enableNativeShadow(m_view);
         m_view->raise();
 
         // Trigger the QML show() function

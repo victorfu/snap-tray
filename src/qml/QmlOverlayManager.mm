@@ -111,4 +111,21 @@ void QmlOverlayManager::preventWindowHideOnDeactivate(QQuickView* view)
 #endif
 }
 
+void QmlOverlayManager::enableNativeShadow(QQuickView* view)
+{
+#ifdef Q_OS_MACOS
+    if (!view)
+        return;
+    NSView* nsView = reinterpret_cast<NSView*>(view->winId());
+    if (!nsView)
+        return;
+    NSWindow* nsWindow = [nsView window];
+    if (!nsWindow)
+        return;
+    [nsWindow setHasShadow:YES];
+#else
+    Q_UNUSED(view);
+#endif
+}
+
 } // namespace SnapTray

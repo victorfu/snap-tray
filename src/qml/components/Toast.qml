@@ -95,16 +95,6 @@ Item {
         anchors.fill: parent
         transform: Translate { y: root.slideOffset }
 
-        // Outer shadow glow (very subtle)
-        Rectangle {
-            anchors.fill: parent
-            anchors.margins: -1
-            radius: kCornerRadius + 1
-            color: "transparent"
-            border.width: 1
-            border.color: isDark ? Qt.rgba(0, 0, 0, 0.5) : Qt.rgba(0, 0, 0, 0.06)
-        }
-
         // Main surface
         Rectangle {
             id: surface
@@ -112,39 +102,9 @@ Item {
             radius: kCornerRadius
             color: surfaceBg
 
-            // Subtle top-edge micro-gradient (Linear's signature depth cue)
-            gradient: Gradient {
-                GradientStop {
-                    position: 0.0
-                    color: isDark
-                        ? Qt.rgba(1, 1, 1, 0.03) // faint white lift at top
-                        : Qt.rgba(1, 1, 1, 0.6)
-                }
-                GradientStop {
-                    position: 0.08
-                    color: surfaceBg
-                }
-                GradientStop {
-                    position: 1.0
-                    color: surfaceBg
-                }
-            }
-
             // 1px hairline border
             border.width: 1
             border.color: surfaceBorder
-        }
-
-        // Inner top highlight (1px line — depth illusion)
-        Rectangle {
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.top: parent.top
-            anchors.leftMargin: kCornerRadius
-            anchors.rightMargin: kCornerRadius
-            anchors.topMargin: 1
-            height: 1
-            color: isDark ? Qt.rgba(1, 1, 1, 0.06) : Qt.rgba(1, 1, 1, 0.9)
         }
 
         // Content row: status dot + text

@@ -65,6 +65,15 @@ public:
      */
     static void preventWindowHideOnDeactivate(QQuickView* view);
 
+    /**
+     * @brief Enable the native macOS window shadow on a QQuickView.
+     *
+     * Transparent, frameless windows have no shadow by default.  Call this
+     * AFTER QWindow::show() so the backing NSWindow exists.  No-op on
+     * non-macOS.
+     */
+    static void enableNativeShadow(QQuickView* view);
+
 private:
     explicit QmlOverlayManager(QObject* parent = nullptr);
     QmlOverlayManager(const QmlOverlayManager&) = delete;

@@ -81,7 +81,7 @@ QtObject {
     readonly property color toastBackground: SemanticTokens.isDarkMode
         ? Qt.rgba(0.12, 0.12, 0.12, 0.90) : Qt.rgba(1, 1, 1, 0.92)
     readonly property color toastBorder: SemanticTokens.isDarkMode
-        ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(0, 0, 0, 0.08)
+        ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(0, 0, 0, 0.06)
     readonly property color toastTitleText: SemanticTokens.isDarkMode
         ? PrimitiveTokens.gray100 : PrimitiveTokens.gray900
     readonly property color toastMessageText: SemanticTokens.isDarkMode
