@@ -457,8 +457,8 @@ void QmlRecordingControlBar::onDragMoved(qreal deltaX, qreal deltaY)
     if (!m_view || !m_isDragging)
         return;
 
-    QPoint newPos(m_view->x() + qRound(deltaX),
-                  m_view->y() + qRound(deltaY));
+    QPoint newPos(m_dragStartViewPos.x() + qRound(deltaX),
+                  m_dragStartViewPos.y() + qRound(deltaY));
 
     // Clamp to screen boundaries
     QScreen* screen = QGuiApplication::screenAt(newPos + QPoint(m_view->width() / 2, m_view->height() / 2));

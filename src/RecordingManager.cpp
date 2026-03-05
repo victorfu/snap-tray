@@ -436,6 +436,7 @@ void RecordingManager::startFrameCapture()
     if (m_controlBar) {
         disconnect(m_controlBar, nullptr, this, nullptr);
         m_controlBar->close();
+        m_controlBar->deleteLater();
         m_controlBar = nullptr;
     }
 
@@ -675,6 +676,8 @@ void RecordingManager::onInitializationComplete(const QSharedPointer<RecordingIn
         }
         if (m_controlBar) {
             m_controlBar->close();
+            m_controlBar->deleteLater();
+            m_controlBar = nullptr;
         }
 
         m_initTask.clear();
@@ -1195,6 +1198,7 @@ void RecordingManager::stopFrameCapture()
 
     if (m_controlBar) {
         m_controlBar->close();
+        m_controlBar->deleteLater();
         m_controlBar = nullptr;
     }
 }

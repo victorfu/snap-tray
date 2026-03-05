@@ -25,6 +25,10 @@
 #import <Cocoa/Cocoa.h>
 #endif
 
+#ifdef Q_OS_WIN
+#include <objbase.h>
+#endif
+
 RecordingPreviewBackend::RecordingPreviewBackend(const QString &videoPath, QObject *parent)
     : QObject(parent)
     , m_videoPath(videoPath)
@@ -375,6 +379,16 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
                              invalidVideoError,
                              startEncoderError,
                              outputMissingError]() {
+#ifdef Q_OS_WIN
+        // Initialize COM for Media Foundation on this worker thread.
+        // RAII ensures CoUninitialize is called on every return path.
+        struct ComGuard {
+            HRESULT hr;
+            ComGuard() : hr(CoInitializeEx(nullptr, COINIT_MULTITHREADED)) {}
+            ~ComGuard() { if (SUCCEEDED(hr)) CoUninitialize(); }
+        } comGuard;
+#endif
+
         auto postFailure = [weakThis](const QString& errorMessage) {
             QCoreApplication* app = QCoreApplication::instance();
             if (!app) {
