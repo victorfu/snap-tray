@@ -977,6 +977,8 @@ qt_add_qml_module(snaptray_qml
         include/qml/QmlCountdownOverlay.h
         src/qml/VideoPlaybackItem.cpp
         include/qml/VideoPlaybackItem.h
+        src/qml/SvgIconItem.cpp
+        include/qml/SvgIconItem.h
         src/qml/RecordingPreviewBackend.mm
         include/qml/RecordingPreviewBackend.h
 )
@@ -998,6 +1000,7 @@ target_link_libraries(snaptray_qml
         Qt6::Quick
         Qt6::QuickControls2
         Qt6::QuickWidgets
+        Qt6::Svg
         Qt6::Concurrent
 )
 

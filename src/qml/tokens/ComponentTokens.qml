@@ -255,6 +255,26 @@ QtObject {
     readonly property int recordingPreviewActionIconSize: iconSizeAction
 
     // ========================================================================
+    // Recording Boundary
+    // ========================================================================
+    readonly property color recordingBoundaryGradientStart: PrimitiveTokens.boundaryBlue
+    readonly property color recordingBoundaryGradientMid1: PrimitiveTokens.indigo500
+    readonly property color recordingBoundaryGradientMid2: PrimitiveTokens.purple400
+    readonly property color recordingBoundaryGradientEnd: PrimitiveTokens.boundaryPurple
+    readonly property color recordingBoundaryPlaying: PrimitiveTokens.green500
+    readonly property color recordingBoundaryPaused: PrimitiveTokens.amber600
+    readonly property int recordingBoundaryLoopDuration: PrimitiveTokens.durationBoundaryLoop
+
+    // ========================================================================
+    // Countdown Overlay
+    // ========================================================================
+    readonly property color countdownOverlay: SemanticTokens.backgroundOverlay
+    readonly property color countdownText: PrimitiveTokens.white
+    readonly property int countdownFontSize: 200
+    readonly property int countdownScaleDuration: 800
+    readonly property int countdownFadeDuration: 267
+
+    // ========================================================================
     // Icon sizes (component-level aliases with semantic names)
     // ========================================================================
     readonly property int iconSizeToolbar: PrimitiveTokens.iconSizeMedium

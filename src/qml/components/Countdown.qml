@@ -51,7 +51,7 @@ Item {
     // Semi-transparent dark background
     Rectangle {
         anchors.fill: parent
-        color: Qt.rgba(0, 0, 0, 0.5)
+        color: ComponentTokens.countdownOverlay
     }
 
     // Countdown number
@@ -59,9 +59,9 @@ Item {
         id: countdownText
         anchors.centerIn: parent
         text: root.currentSecond
-        font.pixelSize: 200
+        font.pixelSize: ComponentTokens.countdownFontSize
         font.weight: Font.Bold
-        color: Qt.rgba(1, 1, 1, root.numberOpacity)
+        color: Qt.rgba(ComponentTokens.countdownText.r, ComponentTokens.countdownText.g, ComponentTokens.countdownText.b, root.numberOpacity)
         scale: root.numberScale
     }
 
@@ -74,7 +74,7 @@ Item {
             property: "numberScale"
             from: 1.5
             to: 1.0
-            duration: 800
+            duration: ComponentTokens.countdownScaleDuration
             easing.type: Easing.OutCubic
         }
 
@@ -83,7 +83,7 @@ Item {
             property: "numberOpacity"
             from: 0.0
             to: 1.0
-            duration: 267   // fully opaque by ~1/3 of each second
+            duration: ComponentTokens.countdownFadeDuration
             easing.type: Easing.OutQuad
         }
     }

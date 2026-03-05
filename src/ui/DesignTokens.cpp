@@ -9,16 +9,16 @@ static const DesignTokens s_darkTokens = {
     QColor(251, 191, 36),     // warningAccent  — amber-400
     QColor(96, 165, 250),     // infoAccent     — blue-400
 
-    // Toast surface (dark glass)
-    QColor(30, 30, 30, 230),     // toastBackground
-    QColor(255, 255, 255, 15),   // toastHighlight
-    QColor(255, 255, 255, 25),   // toastBorder
-    QColor(240, 240, 240),       // toastTitleColor
-    QColor(200, 200, 200),       // toastMessageColor
+    // Toast surface (dark glass) — aligned with QML ComponentTokens
+    QColor::fromRgbF(0.12, 0.12, 0.12, 0.90),  // toastBackground
+    QColor(255, 255, 255, 15),                   // toastHighlight
+    QColor::fromRgbF(1, 1, 1, 0.10),            // toastBorder
+    QColor(245, 245, 245),                       // toastTitleColor  — gray100
+    QColor(189, 189, 189),                       // toastMessageColor — gray400
 
-    // Badge surface
-    QColor(0, 0, 0, 180),        // badgeBackground
-    QColor(255, 255, 255),        // badgeText
+    // Badge surface — aligned with QML ComponentTokens
+    QColor::fromRgbF(0, 0, 0, 0.71),            // badgeBackground
+    QColor(255, 255, 255),                       // badgeText
 };
 
 static const DesignTokens s_lightTokens = {
@@ -28,16 +28,16 @@ static const DesignTokens s_lightTokens = {
     QColor(245, 158, 11),     // warningAccent  — amber-500
     QColor(59, 130, 246),     // infoAccent     — blue-500
 
-    // Toast surface (light glass)
-    QColor(255, 255, 255, 235),  // toastBackground
-    QColor(255, 255, 255, 200),  // toastHighlight
-    QColor(0, 0, 0, 20),         // toastBorder
-    QColor(30, 30, 30),          // toastTitleColor
-    QColor(80, 80, 80),          // toastMessageColor
+    // Toast surface (light glass) — aligned with QML ComponentTokens
+    QColor::fromRgbF(1, 1, 1, 0.92),            // toastBackground
+    QColor(255, 255, 255, 200),                  // toastHighlight
+    QColor::fromRgbF(0, 0, 0, 0.06),            // toastBorder
+    QColor(33, 33, 33),                          // toastTitleColor  — gray900
+    QColor(117, 117, 117),                       // toastMessageColor — gray600
 
-    // Badge surface
-    QColor(255, 255, 255, 200),  // badgeBackground
-    QColor(40, 40, 40),          // badgeText
+    // Badge surface — aligned with QML ComponentTokens
+    QColor::fromRgbF(1, 1, 1, 0.78),            // badgeBackground
+    QColor::fromRgbF(0.16, 0.16, 0.16, 1.0),    // badgeText
 };
 
 const DesignTokens& DesignTokens::forStyle(ToolbarStyleType type)

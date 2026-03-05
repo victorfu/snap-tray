@@ -42,8 +42,8 @@ Item {
     property real pulseOffset: 0.0
 
     // Gradient endpoint colors
-    readonly property color colorAppleBlue: PrimitiveTokens.boundaryBlue
-    readonly property color colorLightPurple: PrimitiveTokens.boundaryPurple
+    readonly property color colorAppleBlue: ComponentTokens.recordingBoundaryGradientStart
+    readonly property color colorLightPurple: ComponentTokens.recordingBoundaryGradientEnd
 
     // Extract [r, g, b] from a QML color for Canvas use
     function colorToRgb(c) { return [c.r, c.g, c.b]; }
@@ -51,8 +51,8 @@ Item {
     // Pre-computed gradient color stops (avoids recreating per frame)
     readonly property var gradientColors: [
         colorToRgb(colorAppleBlue),
-        colorToRgb(PrimitiveTokens.indigo500),
-        colorToRgb(PrimitiveTokens.purple400),
+        colorToRgb(ComponentTokens.recordingBoundaryGradientMid1),
+        colorToRgb(ComponentTokens.recordingBoundaryGradientMid2),
         colorToRgb(colorLightPurple),
         colorToRgb(colorAppleBlue)
     ]
@@ -65,7 +65,7 @@ Item {
         property: "gradientAngle"
         from: 0.0
         to: 1.0
-        duration: PrimitiveTokens.durationBoundaryLoop
+        duration: ComponentTokens.recordingBoundaryLoopDuration
         loops: Animation.Infinite
         running: root.borderMode === root.modeRecording
     }
@@ -76,7 +76,7 @@ Item {
         property: "pulseOffset"
         from: 0.0
         to: 1.0
-        duration: PrimitiveTokens.durationBoundaryLoop
+        duration: ComponentTokens.recordingBoundaryLoopDuration
         loops: Animation.Infinite
         running: root.borderMode === root.modePlaying
     }
@@ -185,7 +185,7 @@ Item {
             var pulseAlpha = 0.6 + 0.4 * Math.sin(root.pulseOffset * 2 * Math.PI);
 
             // Main green border with pulsing alpha
-            ctx.strokeStyle = Qt.rgba(PrimitiveTokens.green500.r, PrimitiveTokens.green500.g, PrimitiveTokens.green500.b, pulseAlpha);
+            ctx.strokeStyle = Qt.rgba(ComponentTokens.recordingBoundaryPlaying.r, ComponentTokens.recordingBoundaryPlaying.g, ComponentTokens.recordingBoundaryPlaying.b, pulseAlpha);
             ctx.lineWidth = root.borderWidth;
             ctx.lineJoin = "miter";
             ctx.beginPath();
@@ -195,7 +195,7 @@ Item {
 
         function drawPausedBorder(ctx, bx, by, bw, bh) {
             // Static amber border
-            ctx.strokeStyle = PrimitiveTokens.amber600;
+            ctx.strokeStyle = ComponentTokens.recordingBoundaryPaused;
             ctx.lineWidth = root.borderWidth;
             ctx.lineJoin = "miter";
             ctx.beginPath();

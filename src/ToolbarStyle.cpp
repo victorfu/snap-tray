@@ -21,7 +21,7 @@ const ToolbarStyleConfig& ToolbarStyleConfig::getDarkStyle()
         QColor(255, 80, 80),       // iconRecordColor - Red for Record
 
         // State indicators - use background highlight for dark style
-        QColor(0, 120, 200),       // activeBackgroundColor
+        QColor(0x6C, 0x5C, 0xE7),  // activeBackgroundColor — brand purple accent
         QColor(80, 80, 80),        // hoverBackgroundColor
         false,                     // useRedDotIndicator
         QColor(255, 68, 68),       // redDotColor
@@ -75,8 +75,8 @@ const ToolbarStyleConfig& ToolbarStyleConfig::getLightStyle()
         QColor(220, 60, 60),        // iconCancelColor - Red for Cancel
         QColor(220, 50, 50),        // iconRecordColor - Red for Record
 
-        // State indicators - use background highlight (similar to dark style but lighter blue)
-        QColor(0, 140, 220),        // activeBackgroundColor - Slightly lighter blue than dark style
+        // State indicators - use background highlight
+        QColor(0x6C, 0x5C, 0xE7),   // activeBackgroundColor — brand purple accent
         QColor(220, 220, 220),      // hoverBackgroundColor
         false,                      // useRedDotIndicator
         QColor(255, 68, 68),        // redDotColor

@@ -27,7 +27,7 @@ inline bool isDark() {
 // Borders and backgrounds
 // ============================================================================
 
-inline QString borderColor() { return isDark() ? QStringLiteral("#404040") : QStringLiteral("#E0E0E0"); }
+inline QString borderColor() { return isDark() ? QStringLiteral("#424242") : QStringLiteral("#E0E0E0"); }
 inline QString panelBackground() { return isDark() ? QStringLiteral("#2E2E50") : QStringLiteral("#FAFAFA"); }
 inline QString hoverBackground() { return isDark() ? QStringLiteral("#3A3A5E") : QStringLiteral("#F5F5F5"); }
 inline QString dialogBackground() { return isDark() ? QStringLiteral("#2E2E50") : QStringLiteral("#FFFFFF"); }
@@ -45,8 +45,8 @@ inline QString warningPanelText() { return isDark() ? QStringLiteral("#FFCC80") 
 // Text colors
 // ============================================================================
 
-inline QString primaryText() { return isDark() ? QStringLiteral("#E0E0E0") : QStringLiteral("#212121"); }
-inline QString secondaryText() { return isDark() ? QStringLiteral("#909090") : QStringLiteral("#757575"); }
+inline QString primaryText() { return isDark() ? QStringLiteral("#EEEEEE") : QStringLiteral("#212121"); }
+inline QString secondaryText() { return isDark() ? QStringLiteral("#9E9E9E") : QStringLiteral("#757575"); }
 inline QString mutedText() { return isDark() ? QStringLiteral("#707070") : QStringLiteral("#9E9E9E"); }
 
 // ============================================================================
@@ -93,8 +93,8 @@ inline QString disabledButtonText() { return isDark() ? QStringLiteral("#606060"
 // Input fields
 // ============================================================================
 
-inline QString inputFocusBorder() { return isDark() ? QStringLiteral("#64B5F6") : QStringLiteral("#90CAF9"); }
-inline QString inputFocusBg() { return isDark() ? QStringLiteral("#1E3A5F") : QStringLiteral("#E3F2FD"); }
+inline QString inputFocusBorder() { return QStringLiteral("#6C5CE7"); }
+inline QString inputFocusBg() { return isDark() ? QStringLiteral("#2A2654") : QStringLiteral("#EFEDF9"); }
 
 // ============================================================================
 // Widget helpers
