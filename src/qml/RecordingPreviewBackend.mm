@@ -43,11 +43,10 @@ RecordingPreviewBackend::~RecordingPreviewBackend()
         // Disconnect to prevent re-entrant signals during teardown
         disconnect(m_view, nullptr, this, nullptr);
         m_view->close();
-        // Clear the context property so QML bindings don't reference a deleted backend
-        m_view->rootContext()->setContextProperty(QStringLiteral("backend"), nullptr);
-        // Delete synchronously so the QML is destroyed before this QObject's
-        // destruction notifies QML that the "backend" context property is gone.
-        // Using deleteLater() would leave bindings alive -> null-reference errors.
+        // Delete synchronously so the QML tree is destroyed before this QObject's
+        // destructor notifies QML that the "backend" context property is gone.
+        // Do NOT call setContextProperty(nullptr) before delete — that would trigger
+        // QML binding re-evaluation while the tree still exists, causing null-reference errors.
         delete m_view;
         m_view = nullptr;
     }

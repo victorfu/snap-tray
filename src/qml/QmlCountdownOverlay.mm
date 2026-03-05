@@ -18,7 +18,10 @@ QmlCountdownOverlay::~QmlCountdownOverlay()
     if (m_view) {
         m_view->close();
         m_rootItem = nullptr;
-        delete m_view;
+        // Use deleteLater() because this object may be destroyed from a QML
+        // signal handler (e.g. countdown finished → RecordingManager deletes us).
+        // Synchronous delete would crash: "Object destroyed while signal handler in progress".
+        m_view->deleteLater();
         m_view = nullptr;
     }
 }
@@ -130,7 +133,7 @@ void QmlCountdownOverlay::close()
     if (m_view) {
         m_view->close();
         m_rootItem = nullptr;
-        delete m_view;
+        m_view->deleteLater();
         m_view = nullptr;
     }
 }

@@ -883,9 +883,11 @@ void RecordingManager::startCountdown()
 
 void RecordingManager::startRecordingAfterCountdown()
 {
-    // Clean up countdown overlay if it exists
+    // Clean up countdown overlay if it exists (deleteLater because we're
+    // called from the QML countdown finished signal handler)
     if (m_countdownOverlay) {
-        delete m_countdownOverlay;
+        m_countdownOverlay->close();
+        m_countdownOverlay->deleteLater();
         m_countdownOverlay = nullptr;
     }
 
@@ -929,9 +931,12 @@ void RecordingManager::startRecordingAfterCountdown()
 
 void RecordingManager::onCountdownCancelled()
 {
-    // Clean up countdown overlay
-    delete m_countdownOverlay;
-    m_countdownOverlay = nullptr;
+    // Clean up countdown overlay (deleteLater because we're called from QML signal)
+    if (m_countdownOverlay) {
+        m_countdownOverlay->close();
+        m_countdownOverlay->deleteLater();
+        m_countdownOverlay = nullptr;
+    }
 
     // Cancel the recording
     cancelRecording();
@@ -1136,7 +1141,8 @@ void RecordingManager::cancelRecording()
 
     // Cancel countdown overlay if active
     if (m_countdownOverlay) {
-        delete m_countdownOverlay;
+        m_countdownOverlay->close();
+        m_countdownOverlay->deleteLater();
         m_countdownOverlay = nullptr;
     }
 
