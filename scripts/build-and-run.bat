@@ -30,9 +30,19 @@ echo Using Qt from: %QT_PATH%
 echo.
 
 REM Configure if needed
-if not exist "%BUILD_DIR%\CMakeCache.txt" (
+set "NEED_CONFIGURE=0"
+if not exist "%BUILD_DIR%\CMakeCache.txt" set "NEED_CONFIGURE=1"
+if not exist "%BUILD_DIR%\build.ninja" set "NEED_CONFIGURE=1"
+
+if "!NEED_CONFIGURE!"=="1" (
     echo Configuring project...
     cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH="%QT_PATH%"
+    set "CONFIGURE_EXIT_CODE=!ERRORLEVEL!"
+    if not "!CONFIGURE_EXIT_CODE!"=="0" (
+        echo.
+        echo Configure failed with error code !CONFIGURE_EXIT_CODE!
+        exit /b !CONFIGURE_EXIT_CODE!
+    )
 )
 
 REM Build all targets (including tests)

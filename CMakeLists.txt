@@ -89,7 +89,7 @@ if(MSVC)
     string(REPLACE "/Zi" "/Z7" CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO}")
 endif()
 
-find_package(Qt6 REQUIRED COMPONENTS Widgets Gui Svg Concurrent Network LinguistTools Quick QuickControls2 QuickWidgets Core5Compat)
+find_package(Qt6 REQUIRED COMPONENTS Widgets Gui Svg Concurrent Network LinguistTools Quick QuickControls2 QuickWidgets)
 
 # Enable AUTOMOC for Qt targets (will be disabled for non-Qt dependencies)
 set(CMAKE_AUTOMOC ON)
@@ -998,7 +998,6 @@ target_link_libraries(snaptray_qml
         Qt6::Quick
         Qt6::QuickControls2
         Qt6::QuickWidgets
-        Qt6::Core5Compat
         Qt6::Concurrent
 )
 

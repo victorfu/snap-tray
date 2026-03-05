@@ -1,9 +1,8 @@
 import QtQuick
-import Qt5Compat.GraphicalEffects
 import SnapTrayQml
 
 /**
- * SvgIcon: Reusable SVG icon renderer with token-driven ColorOverlay tint.
+ * SvgIcon: Reusable SVG icon renderer with token-driven tint.
  */
 Item {
     id: root
@@ -25,12 +24,31 @@ Item {
         smooth: true
         mipmap: true
         visible: false
+        onStatusChanged: canvas.requestPaint()
     }
 
-    ColorOverlay {
-        anchors.fill: svgImage
-        source: svgImage
-        color: root.color
+    Canvas {
+        id: canvas
+        anchors.fill: parent
         visible: root.source !== ""
+
+        onPaint: {
+            const context = getContext("2d");
+            context.reset();
+
+            if (svgImage.status !== Image.Ready) {
+                return;
+            }
+
+            context.drawImage(svgImage, 0, 0, width, height);
+            context.globalCompositeOperation = "source-in";
+            context.fillStyle = root.color;
+            context.fillRect(0, 0, width, height);
+            context.globalCompositeOperation = "source-over";
+        }
     }
+
+    onColorChanged: canvas.requestPaint()
+    onSourceChanged: canvas.requestPaint()
+    onIconSizeChanged: canvas.requestPaint()
 }
