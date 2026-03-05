@@ -50,6 +50,11 @@ SettingsRow {
                 height: parent.height
                 radius: parent.radius
                 color: ComponentTokens.sliderFill
+
+                Behavior on width {
+                    enabled: !slider.pressed
+                    NumberAnimation { duration: PrimitiveTokens.durationFast; easing.type: Easing.InOutCubic }
+                }
             }
         }
 

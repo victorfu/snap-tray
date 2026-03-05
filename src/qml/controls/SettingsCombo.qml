@@ -73,6 +73,13 @@ SettingsRow {
             width: Math.max(combo.width, root.minimumPopupWidth)
             padding: 1
 
+            enter: Transition {
+                NumberAnimation { property: "opacity"; from: 0.0; to: 1.0; duration: PrimitiveTokens.durationFast; easing.type: Easing.OutCubic }
+            }
+            exit: Transition {
+                NumberAnimation { property: "opacity"; from: 1.0; to: 0.0; duration: PrimitiveTokens.durationFast; easing.type: Easing.InCubic }
+            }
+
             background: Rectangle {
                 color: ComponentTokens.panelBackground
                 border.width: 1

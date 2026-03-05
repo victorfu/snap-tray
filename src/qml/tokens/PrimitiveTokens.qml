@@ -121,6 +121,7 @@ QtObject {
     readonly property int fontSizeH2: 18
     readonly property int fontSizeH3: 15
     readonly property int fontSizeBody: 13
+    readonly property int fontSizeSmallBody: 12
     readonly property int fontSizeCaption: 11
     readonly property int fontSizeSmall: 10
 
@@ -169,7 +170,9 @@ QtObject {
     readonly property int lightShadowLargeBlur: 16
     readonly property int lightShadowLargeY: 4
 
-    // Dark mode shadows (stronger for visibility on dark surfaces)
+    // Dark mode shadows — intentionally stronger than light mode.
+    // Dark surfaces need higher-opacity shadows to remain visible;
+    // this follows platform conventions (macOS, Material Design).
     readonly property color darkShadowSmall: Qt.rgba(0, 0, 0, 0.24)
     readonly property int darkShadowSmallBlur: 4
     readonly property int darkShadowSmallY: 1

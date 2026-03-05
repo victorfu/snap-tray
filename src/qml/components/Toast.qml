@@ -27,18 +27,6 @@ Item {
     // ---- Signals ----
     signal hideFinished()
 
-    // ---- Layout constants ----
-    readonly property int kCornerRadius: 10
-    readonly property int kPaddingH: 14
-    readonly property int kPaddingV: 10
-    readonly property int kDotSize: 8
-    readonly property int kDotLeftMargin: 14
-    readonly property int kIconTextGap: 10
-    readonly property int kScreenToastWidth: 320
-    readonly property int kTitleFontSize: 13
-    readonly property int kMessageFontSize: 12
-    readonly property int kTitleMessageGap: 3
-
     // ---- Status dot color (from token system) ----
     readonly property color statusColor: {
         switch (level) {
@@ -57,20 +45,20 @@ Item {
     readonly property color messageColor: ComponentTokens.toastMessageText
 
     // ---- Computed width ----
-    width: fixedWidth ? kScreenToastWidth : computedAutoWidth
-    height: contentColumn.height + kPaddingV * 2
+    width: fixedWidth ? ComponentTokens.toastScreenWidth : computedAutoWidth
+    height: contentColumn.height + ComponentTokens.toastPaddingV * 2
 
     readonly property int computedAutoWidth: {
         var textW = Math.max(titleMetrics.advanceWidth, 80)
         if (root.message.length > 0) {
             textW = Math.max(textW, messageMetrics.advanceWidth)
         }
-        return kDotLeftMargin + kDotSize + kIconTextGap + textW + kPaddingH + 4
+        return ComponentTokens.toastDotLeftMargin + ComponentTokens.toastDotSize + ComponentTokens.toastIconTextGap + textW + ComponentTokens.toastPaddingH + 4
     }
 
     TextMetrics {
         id: titleMetrics
-        font.pixelSize: root.kTitleFontSize
+        font.pixelSize: ComponentTokens.toastTitleFontSize
         font.weight: Font.Medium
         font.family: PrimitiveTokens.fontFamily
         text: root.title
@@ -78,7 +66,7 @@ Item {
 
     TextMetrics {
         id: messageMetrics
-        font.pixelSize: root.kMessageFontSize
+        font.pixelSize: ComponentTokens.toastMessageFontSize
         font.weight: Font.Normal
         font.family: PrimitiveTokens.fontFamily
         text: root.message
@@ -99,7 +87,7 @@ Item {
         Rectangle {
             id: surface
             anchors.fill: parent
-            radius: kCornerRadius
+            radius: ComponentTokens.toastRadius
             color: surfaceBg
 
             // 1px hairline border
@@ -111,22 +99,22 @@ Item {
         Row {
             id: contentRow
             anchors.left: parent.left
-            anchors.leftMargin: kDotLeftMargin
+            anchors.leftMargin: ComponentTokens.toastDotLeftMargin
             anchors.verticalCenter: parent.verticalCenter
-            spacing: kIconTextGap
+            spacing: ComponentTokens.toastIconTextGap
 
             // Status indicator dot with subtle glow
             Item {
-                width: kDotSize
-                height: kDotSize
+                width: ComponentTokens.toastDotSize
+                height: ComponentTokens.toastDotSize
                 anchors.verticalCenter: parent.verticalCenter
 
                 // Glow ring behind dot
                 Rectangle {
                     anchors.centerIn: parent
-                    width: kDotSize + 6
-                    height: kDotSize + 6
-                    radius: (kDotSize + 6) / 2
+                    width: ComponentTokens.toastDotSize + 6
+                    height: ComponentTokens.toastDotSize + 6
+                    radius: (ComponentTokens.toastDotSize + 6) / 2
                     color: Qt.rgba(root.statusColor.r, root.statusColor.g,
                                    root.statusColor.b, 0.15)
                 }
@@ -134,9 +122,9 @@ Item {
                 // Solid dot
                 Rectangle {
                     anchors.centerIn: parent
-                    width: kDotSize
-                    height: kDotSize
-                    radius: kDotSize / 2
+                    width: ComponentTokens.toastDotSize
+                    height: ComponentTokens.toastDotSize
+                    radius: ComponentTokens.toastDotSize / 2
                     color: root.statusColor
                 }
             }
@@ -144,16 +132,16 @@ Item {
             // Text column
             Column {
                 id: contentColumn
-                spacing: root.message.length > 0 ? kTitleMessageGap : 0
+                spacing: root.message.length > 0 ? ComponentTokens.toastTitleMessageGap : 0
                 width: fixedWidth
-                    ? (kScreenToastWidth - kDotLeftMargin - kDotSize - kIconTextGap - kPaddingH)
+                    ? (ComponentTokens.toastScreenWidth - ComponentTokens.toastDotLeftMargin - ComponentTokens.toastDotSize - ComponentTokens.toastIconTextGap - ComponentTokens.toastPaddingH)
                     : titleText.implicitWidth
 
                 Text {
                     id: titleText
                     text: root.title
                     color: root.titleColor
-                    font.pixelSize: kTitleFontSize
+                    font.pixelSize: ComponentTokens.toastTitleFontSize
                     font.weight: Font.Medium
                     font.family: PrimitiveTokens.fontFamily
                     width: parent.width
@@ -167,7 +155,7 @@ Item {
                     id: messageText
                     text: root.message
                     color: root.messageColor
-                    font.pixelSize: kMessageFontSize
+                    font.pixelSize: ComponentTokens.toastMessageFontSize
                     font.weight: Font.Normal
                     font.family: PrimitiveTokens.fontFamily
                     width: parent.width

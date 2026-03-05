@@ -54,7 +54,11 @@ Rectangle {
                 height: 20
                 radius: 1.5
                 color: SemanticTokens.accentDefault
-                visible: navItem.isActive
+                opacity: navItem.isActive ? 1.0 : 0.0
+
+                Behavior on opacity {
+                    NumberAnimation { duration: PrimitiveTokens.durationFast; easing.type: Easing.InOutCubic }
+                }
             }
 
             // Background highlight
@@ -69,6 +73,10 @@ Rectangle {
                     if (hoverArea.containsMouse)
                         return ComponentTokens.settingsSidebarHoverItem
                     return "transparent"
+                }
+
+                Behavior on color {
+                    ColorAnimation { duration: PrimitiveTokens.durationFast }
                 }
             }
 

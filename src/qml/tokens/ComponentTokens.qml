@@ -91,6 +91,15 @@ QtObject {
     readonly property int toastShowDuration: 180
     readonly property int toastHideDuration: PrimitiveTokens.durationNormal
     readonly property int toastDisplayDuration: 2500
+    readonly property int toastPaddingH: 14
+    readonly property int toastPaddingV: 10
+    readonly property int toastDotSize: 8
+    readonly property int toastDotLeftMargin: 14
+    readonly property int toastIconTextGap: 10
+    readonly property int toastScreenWidth: 320
+    readonly property int toastTitleFontSize: PrimitiveTokens.fontSizeBody
+    readonly property int toastMessageFontSize: PrimitiveTokens.fontSizeSmallBody
+    readonly property int toastTitleMessageGap: 3
 
     // ========================================================================
     // Panel
@@ -118,6 +127,8 @@ QtObject {
     readonly property color badgeBorder: toastBorder  // reuse toast border for consistency
     readonly property color badgeText: SemanticTokens.isDarkMode
         ? PrimitiveTokens.white : Qt.rgba(0.16, 0.16, 0.16, 1.0)
+    // Badge uses precise pixel values for compact display;
+    // intentionally not aligned to the spacing scale.
     readonly property int badgeRadius: 6
     readonly property int badgePaddingH: 10
     readonly property int badgePaddingV: 5
@@ -143,6 +154,9 @@ QtObject {
     readonly property int settingsContentPadding: 24
     readonly property int settingsSectionTopPadding: PrimitiveTokens.spacing16
     readonly property int settingsColumnSpacing: PrimitiveTokens.spacing4
+    readonly property int settingsBottomBarHeight: 52
+    readonly property int settingsBottomBarPaddingH: PrimitiveTokens.spacing16
+    readonly property int settingsToastTopMargin: PrimitiveTokens.spacing12
 
     // Form Controls
     readonly property color toggleTrackOn: SemanticTokens.accentDefault

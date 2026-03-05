@@ -26,7 +26,7 @@ Item {
         z: 100
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.top: parent.top
-        anchors.topMargin: 12
+        anchors.topMargin: ComponentTokens.settingsToastTopMargin
         displayDuration: 800
         onHideFinished: settingsBackend.cancel()  // close window after toast
     }
@@ -82,7 +82,7 @@ Item {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: parent.bottom
-        height: 52
+        height: ComponentTokens.settingsBottomBarHeight
         color: SemanticTokens.backgroundPrimary
 
         // Top border
@@ -96,7 +96,7 @@ Item {
 
         Row {
             anchors.right: parent.right
-            anchors.rightMargin: 16
+            anchors.rightMargin: ComponentTokens.settingsBottomBarPaddingH
             anchors.verticalCenter: parent.verticalCenter
             spacing: PrimitiveTokens.spacing8
 
