@@ -20,7 +20,7 @@ class RecordingControlBar;
 class RecordingInitTask;
 
 namespace SnapTray { class QmlRecordingBoundary; }
-class CountdownOverlay;
+class QmlCountdownOverlay;
 class NativeGifEncoder;
 class IVideoEncoder;
 class ICaptureEngine;
@@ -158,7 +158,7 @@ private:
     quint64 m_initGeneration = 0;
 
     // Countdown
-    QPointer<CountdownOverlay> m_countdownOverlay;
+    QmlCountdownOverlay* m_countdownOverlay = nullptr;
     bool m_countdownEnabled;
     int m_countdownSeconds;
 

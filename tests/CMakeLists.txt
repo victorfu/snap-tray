@@ -477,10 +477,7 @@ set_tests_properties(UISections_SizeSection PROPERTIES TIMEOUT 60 LABELS "unit")
 # Video Tests (link snaptray_ui for video components)
 # ============================================================================
 
-add_executable(Video_VideoTimeline Video/tst_VideoTimeline.cpp)
-target_link_libraries(Video_VideoTimeline PRIVATE snaptray_ui Qt6::Test)
-add_test(NAME Video_VideoTimeline COMMAND Video_VideoTimeline)
-set_tests_properties(Video_VideoTimeline PROPERTIES TIMEOUT 60 LABELS "unit")
+# Video_VideoTimeline removed - VideoTimeline replaced by QML timeline
 
 # ============================================================================
 # RecordingManager Tests

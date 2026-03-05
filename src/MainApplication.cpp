@@ -13,7 +13,7 @@
 #include "cli/IPCProtocol.h"
 #include "hotkey/HotkeyManager.h"
 #include "qml/QmlToast.h"
-#include "video/RecordingPreviewWindow.h"
+#include "qml/RecordingPreviewBackend.h"
 #include "update/UpdateChecker.h"
 #include "update/UpdateDialog.h"
 #include "utils/CoordinateHelper.h"
@@ -872,55 +872,43 @@ void MainApplication::onPasteFromClipboard()
 void MainApplication::showRecordingPreview(const QString& videoPath, int preferredFormat)
 {
     // Prevent multiple preview windows
-    if (m_previewWindow) {
-        m_previewWindow->raise();
-        m_previewWindow->activateWindow();
+    if (m_previewBackend)
         return;
-    }
 
-    m_previewWindow = new RecordingPreviewWindow(videoPath);
-    m_previewWindow->setPreferredFormat(preferredFormat);
+    m_previewBackend = new RecordingPreviewBackend(videoPath, this);
+    m_previewBackend->setPreferredFormat(preferredFormat);
 
-    // Connect save/discard signals
-    connect(m_previewWindow, &RecordingPreviewWindow::saveRequested,
+    connect(m_previewBackend, &RecordingPreviewBackend::saveRequested,
         this, &MainApplication::onPreviewSaveRequested);
-    connect(m_previewWindow, &RecordingPreviewWindow::discardRequested,
+    connect(m_previewBackend, &RecordingPreviewBackend::discardRequested,
         this, &MainApplication::onPreviewDiscardRequested);
-    connect(m_previewWindow, &RecordingPreviewWindow::closed,
+    connect(m_previewBackend, &RecordingPreviewBackend::closed,
         this, [this](bool saved) {
             m_recordingManager->onPreviewClosed(saved);
-            m_previewWindow = nullptr;
+            m_previewBackend->deleteLater();
+            m_previewBackend = nullptr;
         });
 
-    m_previewWindow->show();
-    m_previewWindow->raise();
-    m_previewWindow->activateWindow();
+    m_previewBackend->show();
 }
 
 void MainApplication::onPreviewSaveRequested(const QString& videoPath)
 {
-    // Trigger the save dialog on RecordingManager
-    // Note: The preview window closes itself via close() after emitting saveRequested,
-    // and the closed signal handler already sets m_previewWindow = nullptr
     m_recordingManager->triggerSaveDialog(videoPath);
 }
 
 void MainApplication::onPreviewDiscardRequested()
 {
-    // Get the video path before closing window
     QString videoPath;
-    if (m_previewWindow) {
-        videoPath = m_previewWindow->videoPath();
+    if (m_previewBackend) {
+        videoPath = m_previewBackend->videoPath();
     }
 
-    // Delete temp file
     if (!videoPath.isEmpty() && QFile::exists(videoPath)) {
         if (!QFile::remove(videoPath)) {
             qWarning() << "MainApplication: Failed to delete temp file:" << videoPath;
         }
     }
-
-    // Close will happen via RecordingPreviewWindow::onDiscardClicked()
 }
 
 void MainApplication::updateActionHotkeyText(QAction* action,

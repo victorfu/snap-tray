@@ -7,12 +7,9 @@
 #include <QTimer>
 #include <QShortcut>
 #include <QColor>
-#include <QVector>
 
 class QLabel;
 class QHBoxLayout;
-class QFont;
-class QFontMetrics;
 class QEnterEvent;
 namespace SnapTray { class GlassTooltip; }
 class RecordingControlBar : public QWidget
@@ -20,23 +17,6 @@ class RecordingControlBar : public QWidget
     Q_OBJECT
 
 public:
-    /**
-     * @brief Control bar mode - Recording or Preview
-     */
-    enum class Mode {
-        Recording,   // Recording mode with pause/stop/cancel
-        Preview      // Preview mode with play/timeline/save/discard
-    };
-
-    /**
-     * @brief Output format for preview mode
-     */
-    enum class OutputFormat {
-        MP4 = 0,
-        GIF = 1,
-        WebP = 2
-    };
-
     explicit RecordingControlBar(QWidget *parent = nullptr);
     ~RecordingControlBar();
 
@@ -49,33 +29,11 @@ public:
     void updateFps(double fps);
     void setAudioEnabled(bool enabled);
 
-    // Mode support
-    Mode mode() const { return m_mode; }
-
-    // Preview mode updates
-    void updatePreviewPosition(qint64 positionMs);
-    void updatePreviewDuration(qint64 durationMs);
-    void setPlaying(bool playing);
-    void setVolume(float volume);
-    void setMuted(bool muted);
-    void setSelectedFormat(OutputFormat format);
-    OutputFormat selectedFormat() const { return m_selectedFormat; }
-
 signals:
-    // Recording mode signals
     void stopRequested();
     void cancelRequested();
     void pauseRequested();
     void resumeRequested();
-
-    // Preview mode signals
-    void playRequested();
-    void seekRequested(qint64 positionMs);
-    void volumeToggled();
-    void formatSelected(OutputFormat format);
-    void annotateRequested();
-    void savePreviewRequested();
-    void discardPreviewRequested();
 
 protected:
     void paintEvent(QPaintEvent *event) override;
@@ -89,41 +47,21 @@ protected:
 private:
     enum ButtonId {
         ButtonNone = -1,
-        // Recording mode buttons
         ButtonPause = 0,
         ButtonStop = 1,
         ButtonCancel = 2,
-        // Preview mode buttons
-        ButtonPlayPause = 40,
-        ButtonVolume = 41,
-        ButtonFormatMP4 = 42,
-        ButtonFormatGIF = 43,
-        ButtonFormatWebP = 44,
-        ButtonAnnotate = 45,
-        ButtonSave = 46,
-        ButtonDiscard = 47,
-        // Timeline area (special - not a button but a drag area)
-        AreaTimeline = 60
     };
 
     void setupUi();
     QString formatDuration(qint64 ms) const;
-    QString formatPreviewTime(qint64 ms) const;
     void updateIndicatorGradient();
     void updateButtonRects();
-    void updatePreviewButtonRects();
     int buttonAtPosition(const QPoint &pos) const;
     void drawButtons(QPainter &painter);
     void updateButtonSpacerWidth();
-    void drawPreviewModeUI(QPainter &painter);
-    void drawTimeline(QPainter &painter);
-    void drawFormatButtons(QPainter &painter);
     QString tooltipForButton(int button) const;
-    qint64 positionFromTimelineX(int x) const;
     QRect backgroundRect() const;
     QRect anchorRectForButton(int button) const;
-    int previewWidth() const;
-    int annotateButtonWidth() const;
     void updateFixedWidth();
     void applyFixedWidth(int targetWidth);
     void showTooltipForButton(int buttonId);
@@ -142,40 +80,11 @@ private:
     QHBoxLayout *m_layout;
     bool m_audioEnabled;
 
-    // Button rectangles (recording controls)
+    // Button rectangles
     QRect m_pauseRect;
     QRect m_stopRect;
     QRect m_cancelRect;
     int m_hoveredButton;
-
-    // Visual effects state
-    // (Removed)
-
-    // Mode state
-    Mode m_mode;
-
-    // Preview mode button rectangles
-    QRect m_playPauseRect;
-    QRect m_timelineRect;
-    QRect m_volumeRect;
-    QRect m_formatMP4Rect;
-    QRect m_formatGIFRect;
-    QRect m_formatWebPRect;
-    QRect m_annotateRect;
-    QRect m_saveRect;
-    QRect m_discardRect;
-    QRect m_indicatorRect;
-    QRect m_durationRect;
-
-    // Preview mode state
-    qint64 m_previewDuration;
-    qint64 m_previewPosition;
-    bool m_isPlaying;
-    float m_volume;
-    bool m_isMuted;
-    OutputFormat m_selectedFormat;
-    bool m_isScrubbing;
-    qint64 m_scrubPosition;
 
     // Drag support
     QPoint m_dragStartPos;

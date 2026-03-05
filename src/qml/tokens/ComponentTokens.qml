@@ -89,7 +89,7 @@ QtObject {
     readonly property int toastRadius: PrimitiveTokens.radiusLarge
     readonly property int toastPadding: PrimitiveTokens.spacing16
     readonly property int toastShowDuration: 180
-    readonly property int toastHideDuration: PrimitiveTokens.durationNormal
+    readonly property int toastHideDuration: PrimitiveTokens.durationInteractionState
     readonly property int toastDisplayDuration: 2500
     readonly property int toastPaddingH: 14
     readonly property int toastPaddingV: 10
@@ -124,17 +124,15 @@ QtObject {
     readonly property color badgeBackground: SemanticTokens.isDarkMode
         ? Qt.rgba(0, 0, 0, 0.71) : Qt.rgba(1, 1, 1, 0.78)
     readonly property color badgeHighlight: Qt.rgba(1, 1, 1, 0.04)
-    readonly property color badgeBorder: toastBorder  // reuse toast border for consistency
+    readonly property color badgeBorder: toastBorder
     readonly property color badgeText: SemanticTokens.isDarkMode
         ? PrimitiveTokens.white : Qt.rgba(0.16, 0.16, 0.16, 1.0)
-    // Badge uses precise pixel values for compact display;
-    // intentionally not aligned to the spacing scale.
     readonly property int badgeRadius: 6
     readonly property int badgePaddingH: 10
     readonly property int badgePaddingV: 5
     readonly property int badgeFontSize: 12
     readonly property int badgeFadeInDuration: 150
-    readonly property int badgeFadeOutDuration: PrimitiveTokens.durationNormal
+    readonly property int badgeFadeOutDuration: PrimitiveTokens.durationInteractionState
     readonly property int badgeDisplayDuration: 1500
 
     // ========================================================================
@@ -212,6 +210,49 @@ QtObject {
     readonly property int focusRingWidth: 2
     readonly property int focusRingOffset: 2
     readonly property int focusRingRadius: PrimitiveTokens.radiusMedium
+
+    // ========================================================================
+    // Recording Preview
+    // ========================================================================
+    readonly property color recordingPreviewBgStart: SemanticTokens.isDarkMode
+        ? PrimitiveTokens.gray950 : PrimitiveTokens.gray100
+    readonly property color recordingPreviewBgEnd: SemanticTokens.isDarkMode
+        ? PrimitiveTokens.black : PrimitiveTokens.gray200
+    readonly property color recordingPreviewPanel: SemanticTokens.isDarkMode
+        ? PrimitiveTokens.gray900 : PrimitiveTokens.white
+    readonly property color recordingPreviewPanelHover: SemanticTokens.isDarkMode
+        ? PrimitiveTokens.gray850 : PrimitiveTokens.gray100
+    readonly property color recordingPreviewPanelPressed: SemanticTokens.isDarkMode
+        ? PrimitiveTokens.gray800 : PrimitiveTokens.gray200
+    readonly property color recordingPreviewBorder: SemanticTokens.isDarkMode
+        ? PrimitiveTokens.gray800 : PrimitiveTokens.gray300
+    readonly property color recordingPreviewPlayOverlay: SemanticTokens.isDarkMode
+        ? Qt.rgba(0, 0, 0, 0.6) : Qt.rgba(0, 0, 0, 0.35)
+    readonly property color recordingPreviewTrimOverlay: SemanticTokens.isDarkMode
+        ? Qt.rgba(0, 0, 0, 0.55) : Qt.rgba(0, 0, 0, 0.20)
+    readonly property color recordingPreviewPlayhead: PrimitiveTokens.white
+    readonly property color recordingPreviewPlayheadBorder: SemanticTokens.isDarkMode
+        ? PrimitiveTokens.gray700 : PrimitiveTokens.gray400
+    readonly property color recordingPreviewControlHighlight: SemanticTokens.isDarkMode
+        ? Qt.rgba(PrimitiveTokens.accentDefault.r, PrimitiveTokens.accentDefault.g,
+                  PrimitiveTokens.accentDefault.b, 0.18)
+        : Qt.rgba(PrimitiveTokens.accentDefault.r, PrimitiveTokens.accentDefault.g,
+                  PrimitiveTokens.accentDefault.b, 0.12)
+    readonly property color recordingPreviewDangerHover: SemanticTokens.isDarkMode
+        ? Qt.rgba(PrimitiveTokens.red500.r, PrimitiveTokens.red500.g, PrimitiveTokens.red500.b, 0.14)
+        : Qt.rgba(PrimitiveTokens.red500.r, PrimitiveTokens.red500.g, PrimitiveTokens.red500.b, 0.10)
+    readonly property color recordingPreviewDangerPressed: SemanticTokens.isDarkMode
+        ? Qt.rgba(PrimitiveTokens.red500.r, PrimitiveTokens.red500.g, PrimitiveTokens.red500.b, 0.24)
+        : Qt.rgba(PrimitiveTokens.red500.r, PrimitiveTokens.red500.g, PrimitiveTokens.red500.b, 0.18)
+    readonly property color recordingPreviewPrimaryButton: SemanticTokens.accentDefault
+    readonly property color recordingPreviewPrimaryButtonHover: SemanticTokens.accentHover
+    readonly property color recordingPreviewPrimaryButtonPressed: SemanticTokens.accentPressed
+    readonly property color recordingPreviewPrimaryButtonIcon: PrimitiveTokens.white
+
+    readonly property int recordingPreviewControlButtonSize: 36
+    readonly property int recordingPreviewControlButtonHeight: 30
+    readonly property int recordingPreviewIconSize: iconSizeToolbar
+    readonly property int recordingPreviewActionIconSize: iconSizeAction
 
     // ========================================================================
     // Icon sizes (component-level aliases with semantic names)

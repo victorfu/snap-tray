@@ -9,8 +9,6 @@
 
 #include <QLabel>
 #include <QHBoxLayout>
-#include <QFont>
-#include <QFontMetrics>
 #include <QPainter>
 #include <QMouseEvent>
 #include <QEnterEvent>
@@ -18,7 +16,6 @@
 #include <QScreen>
 #include <QGuiApplication>
 #include <QConicalGradient>
-#include <QLinearGradient>
 #include <QtMath>
 
 namespace {
@@ -40,15 +37,6 @@ RecordingControlBar::RecordingControlBar(QWidget *parent)
     , m_layout(nullptr)
     , m_audioEnabled(false)
     , m_hoveredButton(ButtonNone)
-    , m_mode(Mode::Recording)
-    , m_previewDuration(0)
-    , m_previewPosition(0)
-    , m_isPlaying(false)
-    , m_volume(1.0f)
-    , m_isMuted(false)
-    , m_selectedFormat(OutputFormat::MP4)
-    , m_isScrubbing(false)
-    , m_scrubPosition(0)
     , m_isDragging(false)
     , m_gradientOffset(0.0)
     , m_isPaused(false)
@@ -96,11 +84,6 @@ void RecordingControlBar::setupUi()
     iconRenderer.loadIcon("play", ":/icons/icons/play.svg");
     iconRenderer.loadIcon("stop", ":/icons/icons/stop.svg");
     iconRenderer.loadIcon("cancel", ":/icons/icons/cancel.svg");
-
-    // Load preview mode icons
-    iconRenderer.loadIcon("save", ":/icons/icons/save.svg");
-    iconRenderer.loadIcon("volume", ":/icons/icons/volume.svg");
-    iconRenderer.loadIcon("mute", ":/icons/icons/mute.svg");
 
     m_layout = new QHBoxLayout(this);
     m_layout->setContentsMargins(10 + SHADOW_MARGIN_X, 4, 10 + SHADOW_MARGIN_X, 4);
@@ -201,59 +184,20 @@ QRect RecordingControlBar::backgroundRect() const
     return QRect(inset, 0, contentWidth, TOOLBAR_HEIGHT);
 }
 
-int RecordingControlBar::previewWidth() const
-{
-    int leftMargin = 10;
-    int rightMargin = 10;
-    int buttonSize = 24;
-    int formatSpacing = 4;
-    int webpWidth = 42;
-    int gifWidth = 32;
-    int mp4Width = 38;
-    int annotateWidth = annotateButtonWidth();
-    int indicatorSize = 12;
-    int durationWidth = 90;
-    int timelineMinWidth = 50;
-
-    int leftBlock = leftMargin + indicatorSize + 6 + durationWidth + 8 + timelineMinWidth;
-    int rightBlock = rightMargin + buttonSize + BUTTON_SPACING + buttonSize +
-        BUTTON_SPACING + annotateWidth +
-        SEPARATOR_MARGIN + webpWidth + formatSpacing + gifWidth + formatSpacing + mp4Width +
-        SEPARATOR_MARGIN + buttonSize + BUTTON_SPACING + buttonSize;
-
-    int minBackgroundWidth = leftBlock + rightBlock;
-    int minWidgetWidth = minBackgroundWidth + SHADOW_MARGIN_X * 2;
-    return qMax(minWidgetWidth, 500);
-}
-
-int RecordingControlBar::annotateButtonWidth() const
-{
-    QFont font = this->font();
-    font.setPointSize(9);
-    font.setWeight(QFont::Medium);
-    QFontMetrics metrics(font);
-    return metrics.horizontalAdvance(tr("Annotate")) + 16;
-}
-
 void RecordingControlBar::updateFixedWidth()
 {
-    int targetWidth = 0;
-    if (m_mode == Mode::Preview) {
-        targetWidth = previewWidth();
-    } else if (m_layout) {
-        m_layout->invalidate();
-        targetWidth = qMax(m_layout->minimumSize().width(), m_layout->sizeHint().width());
+    if (!m_layout) {
+        return;
     }
+
+    m_layout->invalidate();
+    int targetWidth = qMax(m_layout->minimumSize().width(), m_layout->sizeHint().width());
 
     if (targetWidth <= 0) {
         return;
     }
     if (width() == targetWidth) {
-        if (m_mode == Mode::Preview) {
-            updatePreviewButtonRects();
-        } else {
-            updateButtonRects();
-        }
+        updateButtonRects();
         return;
     }
 
@@ -273,11 +217,7 @@ void RecordingControlBar::applyFixedWidth(int targetWidth)
         move(center.x() - targetWidth / 2, pos().y());
     }
 
-    if (m_mode == Mode::Preview) {
-        updatePreviewButtonRects();
-    } else {
-        updateButtonRects();
-    }
+    updateButtonRects();
 }
 
 void RecordingControlBar::updateButtonSpacerWidth()
@@ -298,15 +238,6 @@ QRect RecordingControlBar::anchorRectForButton(int button) const
     case ButtonPause: return m_pauseRect;
     case ButtonStop: return m_stopRect;
     case ButtonCancel: return m_cancelRect;
-    case ButtonPlayPause: return m_playPauseRect;
-    case ButtonVolume: return m_volumeRect;
-    case ButtonFormatMP4: return m_formatMP4Rect;
-    case ButtonFormatGIF: return m_formatGIFRect;
-    case ButtonFormatWebP: return m_formatWebPRect;
-    case ButtonAnnotate: return m_annotateRect;
-    case ButtonSave: return m_saveRect;
-    case ButtonDiscard: return m_discardRect;
-    case AreaTimeline: return m_timelineRect;
     default: return QRect();
     }
 }
@@ -342,32 +273,22 @@ void RecordingControlBar::showTooltip(const QString &text, const QRect &anchorRe
     const ToolbarStyleConfig& style = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
     const QPoint globalAnchorCenter = mapToGlobal(anchorRect.center());
 
-    // In Recording mode, show tooltip below to avoid being captured in recording
-    // In Preview mode, show tooltip above (default behavior)
-    const bool above = (m_mode != Mode::Recording);
+    // Show tooltip below to avoid being captured in recording
     const QPoint anchorEdge(globalAnchorCenter.x(),
-        above ? mapToGlobal(anchorRect.topLeft()).y()
-              : mapToGlobal(anchorRect.bottomLeft()).y());
+        mapToGlobal(anchorRect.bottomLeft()).y());
 
-    m_tooltip->show(text, style, anchorEdge, above, /*showShadow=*/true);
+    m_tooltip->show(text, style, anchorEdge, /*above=*/false, /*showShadow=*/true);
 
-    // Fallback: if tooltip goes off screen, flip direction
+    // Fallback: if tooltip goes off screen, flip to above
     QScreen *screen = QGuiApplication::screenAt(globalAnchorCenter);
     if (!screen) screen = QGuiApplication::primaryScreen();
     if (screen) {
         const QRect bounds = screen->availableGeometry();
         const QRect tipGeom(m_tooltip->pos(), m_tooltip->size());
-        bool needsFlip = false;
-        if (m_mode == Mode::Recording && tipGeom.bottom() > bounds.bottom() - 5) {
-            needsFlip = true;
-        } else if (m_mode != Mode::Recording && tipGeom.top() < bounds.top() + 5) {
-            needsFlip = true;
-        }
-        if (needsFlip) {
+        if (tipGeom.bottom() > bounds.bottom() - 5) {
             const QPoint flippedEdge(globalAnchorCenter.x(),
-                !above ? mapToGlobal(anchorRect.topLeft()).y()
-                       : mapToGlobal(anchorRect.bottomLeft()).y());
-            m_tooltip->show(text, style, flippedEdge, !above, /*showShadow=*/true);
+                mapToGlobal(anchorRect.topLeft()).y());
+            m_tooltip->show(text, style, flippedEdge, /*above=*/true, /*showShadow=*/true);
         }
         // Final safety clamp
         const QRect finalGeom(m_tooltip->pos(), m_tooltip->size());
@@ -392,17 +313,7 @@ void RecordingControlBar::updateIndicatorGradient()
     QPainter painter(&pixmap);
     painter.setRenderHint(QPainter::Antialiasing);
 
-    if (m_mode == Mode::Preview) {
-        // Preview mode indicator
-        if (m_isPlaying) {
-            // Pulsing green when playing
-            int alpha = 180 + static_cast<int>(75 * qSin(m_gradientOffset * 2 * M_PI));
-            painter.setBrush(QColor(52, 199, 89, alpha));  // Green
-        } else {
-            // Static amber when paused
-            painter.setBrush(QColor(255, 184, 0));  // Amber
-        }
-    } else if (m_isPreparing) {
+    if (m_isPreparing) {
         int alpha = 128 + static_cast<int>(64 * qSin(m_gradientOffset * 2 * M_PI));
         painter.setBrush(QColor(180, 180, 180, alpha));
     } else if (m_isPaused) {
@@ -491,14 +402,8 @@ void RecordingControlBar::paintEvent(QPaintEvent *event)
 
     GlassRenderer::drawGlassPanel(painter, bgRect, config, config.cornerRadius);
 
-    if (m_mode == Mode::Preview) {
-        updatePreviewButtonRects();
-        drawPreviewModeUI(painter);
-    } else {
-        updateButtonRects();
-        drawButtons(painter);
-    }
-
+    updateButtonRects();
+    drawButtons(painter);
 }
 
 void RecordingControlBar::drawButtons(QPainter &painter)
@@ -553,32 +458,12 @@ void RecordingControlBar::drawButtons(QPainter &painter)
 QString RecordingControlBar::tooltipForButton(int button) const
 {
     switch (button) {
-    // Recording mode buttons
     case ButtonPause:
         return m_isPaused ? tr("Resume Recording") : tr("Pause Recording");
     case ButtonStop:
         return tr("Stop Recording");
     case ButtonCancel:
         return tr("Cancel Recording (Esc)");
-    // Preview mode buttons
-    case ButtonPlayPause:
-        return m_isPlaying ? tr("Pause (Space)") : tr("Play (Space)");
-    case ButtonVolume:
-        return m_isMuted ? tr("Unmute (M)") : tr("Mute (M)");
-    case ButtonFormatMP4:
-        return tr("MP4 - Best quality");
-    case ButtonFormatGIF:
-        return tr("GIF - Universal support");
-    case ButtonFormatWebP:
-        return tr("WebP - Small size");
-    case ButtonAnnotate:
-        return tr("Annotate Video");
-    case ButtonSave:
-        return tr("Save (Enter)");
-    case ButtonDiscard:
-        return tr("Discard (Esc)");
-    case AreaTimeline:
-        return tr("Drag to seek");
     default:
         return QString();
     }
@@ -589,25 +474,6 @@ int RecordingControlBar::buttonAtPosition(const QPoint &pos) const
     // Ensure button rects are up-to-date (they're calculated based on current widget size)
     const_cast<RecordingControlBar *>(this)->updateButtonRects();
 
-    if (m_mode == Mode::Preview) {
-        // Preview mode buttons
-        if (m_playPauseRect.contains(pos)) return ButtonPlayPause;
-        if (m_volumeRect.contains(pos)) return ButtonVolume;
-        if (m_formatMP4Rect.contains(pos)) return ButtonFormatMP4;
-        if (m_formatGIFRect.contains(pos)) return ButtonFormatGIF;
-        if (m_formatWebPRect.contains(pos)) return ButtonFormatWebP;
-        if (m_annotateRect.contains(pos)) return ButtonAnnotate;
-        if (m_saveRect.contains(pos)) return ButtonSave;
-        if (m_discardRect.contains(pos)) return ButtonDiscard;
-
-        // Check if in timeline area (with some vertical tolerance)
-        QRect timelineHitArea = m_timelineRect.adjusted(0, -8, 0, 8);
-        if (timelineHitArea.contains(pos)) return AreaTimeline;
-
-        return ButtonNone;
-    }
-
-    // Recording mode buttons
     if (!m_isPreparing && m_pauseRect.contains(pos)) return ButtonPause;
     if (!m_isPreparing && m_stopRect.contains(pos)) return ButtonStop;
     if (m_cancelRect.contains(pos)) return ButtonCancel;
@@ -677,69 +543,22 @@ void RecordingControlBar::mousePressEvent(QMouseEvent *event)
         if (button != ButtonNone) {
             // Keep toolbar cursor behavior consistent: all interactive toolbar areas use ArrowCursor.
             CursorManager::instance().pushCursorForWidget(this, CursorContext::Hover, Qt::ArrowCursor);
-            if (m_mode == Mode::Preview) {
-                // Preview mode button handling
-                switch (button) {
-                case ButtonPlayPause:
-                    if (m_isPlaying) {
-                        emit pauseRequested();
-                    } else {
-                        emit playRequested();
-                    }
-                    break;
-                case ButtonVolume:
-                    emit volumeToggled();
-                    break;
-                case ButtonFormatMP4:
-                    setSelectedFormat(OutputFormat::MP4);
-                    break;
-                case ButtonFormatGIF:
-                    setSelectedFormat(OutputFormat::GIF);
-                    break;
-                case ButtonFormatWebP:
-                    setSelectedFormat(OutputFormat::WebP);
-                    break;
-                case ButtonAnnotate:
-                    emit annotateRequested();
-                    break;
-                case ButtonSave:
-                    emit savePreviewRequested();
-                    break;
-                case ButtonDiscard:
-                    emit discardPreviewRequested();
-                    break;
-                case AreaTimeline:
-                    // Start timeline scrubbing
-                    m_isScrubbing = true;
-                    m_scrubPosition = positionFromTimelineX(event->pos().x());
-                    // Update time display during scrub
-                    QString timeText = QString("%1 / %2")
-                        .arg(formatPreviewTime(m_scrubPosition))
-                        .arg(formatPreviewTime(m_previewDuration));
-                    m_durationLabel->setText(timeText);
-                    update();
-                    break;
+            switch (button) {
+            case ButtonPause:
+                if (m_isPaused) {
+                    emit resumeRequested();
+                } else {
+                    emit pauseRequested();
                 }
-                return;
-            } else {
-                // Recording mode button handling
-                switch (button) {
-                case ButtonPause:
-                    if (m_isPaused) {
-                        emit resumeRequested();
-                    } else {
-                        emit pauseRequested();
-                    }
-                    break;
-                case ButtonStop:
-                    emit stopRequested();
-                    break;
-                case ButtonCancel:
-                    emit cancelRequested();
-                    break;
-                }
-                return;
+                break;
+            case ButtonStop:
+                emit stopRequested();
+                break;
+            case ButtonCancel:
+                emit cancelRequested();
+                break;
             }
+            return;
         }
 
         // Start dragging if not on a button
@@ -770,19 +589,6 @@ void RecordingControlBar::enterEvent(QEnterEvent *event)
 
 void RecordingControlBar::mouseMoveEvent(QMouseEvent *event)
 {
-    // Handle timeline scrubbing
-    if (m_isScrubbing && m_mode == Mode::Preview) {
-        m_scrubPosition = positionFromTimelineX(event->pos().x());
-        // Update time display during scrub
-        QString timeText = QString("%1 / %2")
-            .arg(formatPreviewTime(m_scrubPosition))
-            .arg(formatPreviewTime(m_previewDuration));
-        m_durationLabel->setText(timeText);
-        hideTooltip();
-        update();
-        return;
-    }
-
     if (m_isDragging) {
         QPoint delta = event->globalPosition().toPoint() - m_dragStartPos;
         QPoint newPos = m_dragStartWidgetPos + delta;
@@ -818,14 +624,6 @@ void RecordingControlBar::mouseMoveEvent(QMouseEvent *event)
 void RecordingControlBar::mouseReleaseEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton) {
-        // Complete timeline scrubbing
-        if (m_isScrubbing && m_mode == Mode::Preview) {
-            m_isScrubbing = false;
-            emit seekRequested(m_scrubPosition);
-            m_previewPosition = m_scrubPosition;
-            update();
-        }
-
         if (m_isDragging) {
             m_isDragging = false;
             CursorManager::instance().popCursorForWidget(this, CursorContext::Drag);
@@ -854,50 +652,10 @@ void RecordingControlBar::leaveEvent(QEvent *event)
 
 void RecordingControlBar::keyPressEvent(QKeyEvent *event)
 {
-    if (m_mode == Mode::Preview) {
-        // Preview mode key handling
-        switch (event->key()) {
-        case Qt::Key_Space:
-            if (m_isPlaying) {
-                emit pauseRequested();
-            } else {
-                emit playRequested();
-            }
-            break;
-        case Qt::Key_M:
-            emit volumeToggled();
-            break;
-        case Qt::Key_Return:
-        case Qt::Key_Enter:
-            emit savePreviewRequested();
-            break;
-        case Qt::Key_Escape:
-            emit discardPreviewRequested();
-            break;
-        case Qt::Key_Left:
-            // Seek backward 5 seconds
-            if (m_previewDuration > 0) {
-                qint64 newPos = qMax(0LL, m_previewPosition - 5000);
-                emit seekRequested(newPos);
-            }
-            break;
-        case Qt::Key_Right:
-            // Seek forward 5 seconds
-            if (m_previewDuration > 0) {
-                qint64 newPos = qMin(m_previewDuration, m_previewPosition + 5000);
-                emit seekRequested(newPos);
-            }
-            break;
-        default:
-            QWidget::keyPressEvent(event);
-        }
+    if (event->key() == Qt::Key_Escape) {
+        emit stopRequested();
     } else {
-        // Recording mode key handling
-        if (event->key() == Qt::Key_Escape) {
-            emit stopRequested();
-        } else {
-            QWidget::keyPressEvent(event);
-        }
+        QWidget::keyPressEvent(event);
     }
 }
 
@@ -928,396 +686,4 @@ void RecordingControlBar::setAudioEnabled(bool enabled)
     }
 
     updateFixedWidth();
-}
-
-
-
-// ============================================================================
-// Preview Mode Implementation
-// ============================================================================
-
-void RecordingControlBar::updatePreviewButtonRects()
-{
-    const QRect bgRect = backgroundRect();
-    if (bgRect.width() <= 0) {
-        m_playPauseRect = QRect();
-        m_timelineRect = QRect();
-        m_volumeRect = QRect();
-        m_formatMP4Rect = QRect();
-        m_formatGIFRect = QRect();
-        m_formatWebPRect = QRect();
-        m_annotateRect = QRect();
-        m_saveRect = QRect();
-        m_discardRect = QRect();
-        m_indicatorRect = QRect();
-        m_durationRect = QRect();
-        return;
-    }
-
-    int leftMargin = 10;
-    int rightMargin = 10;
-    int buttonSize = 24;
-    int y = bgRect.top() + (bgRect.height() - buttonSize) / 2;
-    int bgLeft = bgRect.left();
-    int bgRight = bgRect.left() + bgRect.width();
-
-    // === RIGHT SIDE (position from right to left) ===
-
-    // Discard button (rightmost)
-    int x = bgRight - rightMargin - buttonSize;
-    m_discardRect = QRect(x, y, buttonSize, buttonSize);
-
-    // Save button
-    x -= buttonSize + BUTTON_SPACING;
-    m_saveRect = QRect(x, y, buttonSize, buttonSize);
-
-    // Annotate button (text)
-    int annotateWidth = annotateButtonWidth();
-    x -= annotateWidth + BUTTON_SPACING;
-    m_annotateRect = QRect(x, y, annotateWidth, buttonSize);
-
-    // Separator margin before format buttons
-    x -= SEPARATOR_MARGIN;
-
-    // Format buttons with proper widths for text (WebP, GIF, MP4 from right to left)
-    int webpWidth = 42;
-    int gifWidth = 32;
-    int mp4Width = 38;
-    int formatSpacing = 4;
-
-    x -= webpWidth;
-    m_formatWebPRect = QRect(x, y, webpWidth, buttonSize);
-
-    x -= gifWidth + formatSpacing;
-    m_formatGIFRect = QRect(x, y, gifWidth, buttonSize);
-
-    x -= mp4Width + formatSpacing;
-    m_formatMP4Rect = QRect(x, y, mp4Width, buttonSize);
-
-    // Separator margin before playback controls
-    x -= SEPARATOR_MARGIN;
-
-    // Volume button
-    x -= buttonSize;
-    m_volumeRect = QRect(x, y, buttonSize, buttonSize);
-
-    // Play/Pause button
-    x -= buttonSize + BUTTON_SPACING;
-    m_playPauseRect = QRect(x, y, buttonSize, buttonSize);
-
-    // === LEFT SIDE (custom-drawn elements) ===
-
-    // Indicator (orange circle)
-    int indicatorSize = 12;
-    m_indicatorRect = QRect(bgLeft + leftMargin,
-                            bgRect.top() + (bgRect.height() - indicatorSize) / 2,
-                            indicatorSize, indicatorSize);
-
-    // Duration label rect
-    int durationX = bgLeft + leftMargin + indicatorSize + 6;
-    int durationWidth = 90;
-    m_durationRect = QRect(durationX, bgRect.top(), durationWidth, bgRect.height());
-
-    // Timeline fills the gap between duration and play button
-    int timelineLeft = durationX + durationWidth + 8;
-    int timelineRight = m_playPauseRect.left() - 8;
-    int timelineHeight = 8;
-    int timelineY = bgRect.top() + (bgRect.height() - timelineHeight) / 2;
-
-    m_timelineRect = QRect(timelineLeft, timelineY, qMax(50, timelineRight - timelineLeft), timelineHeight);
-}
-
-void RecordingControlBar::updatePreviewPosition(qint64 positionMs)
-{
-    m_previewPosition = positionMs;
-    if (!m_isScrubbing) {
-        // Update duration label to show position / duration
-        QString timeText = QString("%1 / %2")
-            .arg(formatPreviewTime(m_previewPosition))
-            .arg(formatPreviewTime(m_previewDuration));
-        m_durationLabel->setText(timeText);
-    }
-    update();
-}
-
-void RecordingControlBar::updatePreviewDuration(qint64 durationMs)
-{
-    m_previewDuration = durationMs;
-    // Update duration label
-    QString timeText = QString("%1 / %2")
-        .arg(formatPreviewTime(m_previewPosition))
-        .arg(formatPreviewTime(m_previewDuration));
-    m_durationLabel->setText(timeText);
-    update();
-}
-
-void RecordingControlBar::setPlaying(bool playing)
-{
-    m_isPlaying = playing;
-    updateIndicatorGradient();
-    update();
-}
-
-void RecordingControlBar::setVolume(float volume)
-{
-    m_volume = qBound(0.0f, volume, 1.0f);
-    update();
-}
-
-void RecordingControlBar::setMuted(bool muted)
-{
-    m_isMuted = muted;
-    update();
-}
-
-void RecordingControlBar::setSelectedFormat(OutputFormat format)
-{
-    if (m_selectedFormat != format) {
-        m_selectedFormat = format;
-        update();
-        emit formatSelected(format);
-    }
-}
-
-QString RecordingControlBar::formatPreviewTime(qint64 ms) const
-{
-    int minutes = (ms / 60000) % 60;
-    int seconds = (ms / 1000) % 60;
-    return QString("%1:%2")
-        .arg(minutes, 2, 10, QChar('0'))
-        .arg(seconds, 2, 10, QChar('0'));
-}
-
-void RecordingControlBar::drawPreviewModeUI(QPainter &painter)
-{
-    ToolbarStyleConfig config = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
-
-    // Draw indicator (orange circle for preview mode)
-    {
-        painter.setPen(Qt::NoPen);
-        painter.setBrush(QColor(255, 149, 0));  // Orange
-        painter.drawEllipse(m_indicatorRect);
-    }
-
-    // Draw duration label
-    {
-        QFont font("SF Mono", 11);
-        font.setWeight(QFont::DemiBold);
-        painter.setFont(font);
-        painter.setPen(config.textColor);
-
-        QString timeText = QString("%1 / %2")
-            .arg(formatPreviewTime(m_previewPosition))
-            .arg(formatPreviewTime(m_previewDuration));
-        painter.drawText(m_durationRect, Qt::AlignVCenter | Qt::AlignLeft, timeText);
-    }
-
-    // Draw Play/Pause button
-    {
-        bool isHovered = (m_hoveredButton == ButtonPlayPause);
-        if (isHovered) {
-            painter.setPen(Qt::NoPen);
-            painter.setBrush(config.hoverBackgroundColor);
-            painter.drawRoundedRect(m_playPauseRect.adjusted(2, 2, -2, -2), 6, 6);
-        }
-        QString iconKey = m_isPlaying ? "pause" : "play";
-        QColor iconColor = isHovered ? config.iconActiveColor : config.iconNormalColor;
-        IconRenderer::instance().renderIcon(painter, m_playPauseRect, iconKey, iconColor);
-    }
-
-    // Draw timeline
-    drawTimeline(painter);
-
-    // Draw Volume button
-    {
-        bool isHovered = (m_hoveredButton == ButtonVolume);
-        if (isHovered) {
-            painter.setPen(Qt::NoPen);
-            painter.setBrush(config.hoverBackgroundColor);
-            painter.drawRoundedRect(m_volumeRect.adjusted(2, 2, -2, -2), 6, 6);
-        }
-
-        // Draw volume icon or mute indicator
-        if (m_isMuted) {
-            // Draw muted indicator (simple crossed-out speaker)
-            QRect iconRect = m_volumeRect.adjusted(4, 4, -4, -4);
-            painter.setPen(QPen(config.iconNormalColor, 1.5));
-            painter.drawLine(iconRect.topLeft(), iconRect.bottomRight());
-            painter.drawLine(iconRect.topRight(), iconRect.bottomLeft());
-        } else {
-            // Draw volume bars
-            QRect iconRect = m_volumeRect.adjusted(6, 6, -6, -6);
-            painter.setPen(Qt::NoPen);
-            QColor volColor = isHovered ? config.iconActiveColor : config.iconNormalColor;
-            painter.setBrush(volColor);
-
-            int barWidth = 3;
-            int spacing = 2;
-            int barCount = 3;
-            int totalWidth = barCount * barWidth + (barCount - 1) * spacing;
-            int startX = iconRect.center().x() - totalWidth / 2;
-
-            for (int i = 0; i < barCount; i++) {
-                int barHeight = 4 + i * 3;
-                int barY = iconRect.bottom() - barHeight;
-                painter.drawRoundedRect(startX + i * (barWidth + spacing), barY, barWidth, barHeight, 1, 1);
-            }
-        }
-    }
-
-    // Draw format selection buttons
-    drawFormatButtons(painter);
-
-    // Draw separator before annotate/save/discard
-    {
-        int sepX = m_annotateRect.left() - SEPARATOR_MARGIN / 2;
-        painter.setPen(QPen(config.hairlineBorderColor, 1));
-        painter.drawLine(sepX, 6, sepX, TOOLBAR_HEIGHT - 6);
-    }
-
-    // Draw Annotate button
-    {
-        bool isHovered = (m_hoveredButton == ButtonAnnotate);
-        QColor bgColor = config.hoverBackgroundColor;
-        if (isHovered) {
-            painter.setPen(Qt::NoPen);
-            painter.setBrush(bgColor);
-            painter.drawRoundedRect(m_annotateRect, 4, 4);
-        } else {
-            QColor inactiveColor = config.hoverBackgroundColor;
-            inactiveColor.setAlpha(40);
-            painter.setPen(Qt::NoPen);
-            painter.setBrush(inactiveColor);
-            painter.drawRoundedRect(m_annotateRect, 4, 4);
-        }
-
-        QFont font = painter.font();
-        font.setPointSize(9);
-        font.setWeight(QFont::Medium);
-        painter.setFont(font);
-        painter.setPen(config.textColor);
-        painter.drawText(m_annotateRect, Qt::AlignCenter, tr("Annotate"));
-    }
-
-    // Draw Save button
-    {
-        bool isHovered = (m_hoveredButton == ButtonSave);
-        if (isHovered) {
-            painter.setPen(Qt::NoPen);
-            painter.setBrush(config.hoverBackgroundColor);
-            painter.drawRoundedRect(m_saveRect.adjusted(2, 2, -2, -2), 6, 6);
-        }
-        QColor iconColor = QColor(52, 199, 89);  // Green
-        IconRenderer::instance().renderIcon(painter, m_saveRect, "save", iconColor);
-    }
-
-    // Draw Discard button
-    {
-        bool isHovered = (m_hoveredButton == ButtonDiscard);
-        if (isHovered) {
-            painter.setPen(Qt::NoPen);
-            painter.setBrush(config.hoverBackgroundColor);
-            painter.drawRoundedRect(m_discardRect.adjusted(2, 2, -2, -2), 6, 6);
-        }
-        QColor iconColor = isHovered ? config.iconCancelColor : config.iconNormalColor;
-        IconRenderer::instance().renderIcon(painter, m_discardRect, "cancel", iconColor);
-    }
-}
-
-void RecordingControlBar::drawTimeline(QPainter &painter)
-{
-    if (m_timelineRect.isEmpty() || m_previewDuration <= 0) {
-        return;
-    }
-
-    ToolbarStyleConfig config = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
-
-    // Draw track background - use theme-aware color
-    painter.setPen(Qt::NoPen);
-    QColor trackColor = config.hoverBackgroundColor;
-    trackColor.setAlpha(80);
-    painter.setBrush(trackColor);
-    painter.drawRoundedRect(m_timelineRect, 4, 4);
-
-    // Draw progress
-    qint64 displayPosition = m_isScrubbing ? m_scrubPosition : m_previewPosition;
-    double progress = static_cast<double>(displayPosition) / m_previewDuration;
-    progress = qBound(0.0, progress, 1.0);
-
-    int progressWidth = static_cast<int>(m_timelineRect.width() * progress);
-    if (progressWidth > 0) {
-        QRect progressRect(m_timelineRect.left(), m_timelineRect.top(),
-                          progressWidth, m_timelineRect.height());
-        painter.setBrush(QColor(0, 122, 255));
-        painter.drawRoundedRect(progressRect, 4, 4);
-    }
-
-    // Draw playhead
-    int playheadX = m_timelineRect.left() + progressWidth;
-    int playheadSize = 12;
-    QRect playheadRect(playheadX - playheadSize / 2,
-                       m_timelineRect.center().y() - playheadSize / 2,
-                       playheadSize, playheadSize);
-
-    // Playhead shadow
-    painter.setBrush(QColor(0, 0, 0, 30));
-    painter.drawEllipse(playheadRect.adjusted(1, 1, 1, 1));
-
-    // Playhead
-    painter.setBrush(Qt::white);
-    painter.setPen(QPen(QColor(0, 0, 0, 40), 1));
-    painter.drawEllipse(playheadRect);
-}
-
-void RecordingControlBar::drawFormatButtons(QPainter &painter)
-{
-    ToolbarStyleConfig config = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
-
-    auto drawFormatButton = [&](const QRect &rect, const QString &label, OutputFormat format, int buttonId) {
-        bool isSelected = (m_selectedFormat == format);
-        bool isHovered = (m_hoveredButton == buttonId);
-
-        // Background
-        painter.setPen(Qt::NoPen);
-        if (isSelected) {
-            painter.setBrush(config.buttonActiveColor);
-        } else if (isHovered) {
-            painter.setBrush(config.hoverBackgroundColor);
-        } else {
-            QColor inactiveColor = config.hoverBackgroundColor;
-            inactiveColor.setAlpha(40);
-            painter.setBrush(inactiveColor);
-        }
-        painter.drawRoundedRect(rect, 4, 4);
-
-        // Text
-        QFont font = painter.font();
-        font.setPointSize(9);
-        font.setWeight(QFont::Medium);
-        painter.setFont(font);
-
-        if (isSelected) {
-            painter.setPen(config.textActiveColor);  // White on blue background
-        } else {
-            painter.setPen(config.textColor);
-        }
-        painter.drawText(rect, Qt::AlignCenter, label);
-    };
-
-    drawFormatButton(m_formatMP4Rect, "MP4", OutputFormat::MP4, ButtonFormatMP4);
-    drawFormatButton(m_formatGIFRect, "GIF", OutputFormat::GIF, ButtonFormatGIF);
-    drawFormatButton(m_formatWebPRect, "WebP", OutputFormat::WebP, ButtonFormatWebP);
-}
-
-qint64 RecordingControlBar::positionFromTimelineX(int x) const
-{
-    if (m_timelineRect.isEmpty() || m_previewDuration <= 0) {
-        return 0;
-    }
-
-    int relativeX = x - m_timelineRect.left();
-    double progress = static_cast<double>(relativeX) / m_timelineRect.width();
-    progress = qBound(0.0, progress, 1.0);
-
-    return static_cast<qint64>(progress * m_previewDuration);
 }

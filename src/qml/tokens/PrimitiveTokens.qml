@@ -170,18 +170,16 @@ QtObject {
     readonly property int lightShadowLargeBlur: 16
     readonly property int lightShadowLargeY: 4
 
-    // Dark mode shadows — intentionally stronger than light mode.
-    // Dark surfaces need higher-opacity shadows to remain visible;
-    // this follows platform conventions (macOS, Material Design).
-    readonly property color darkShadowSmall: Qt.rgba(0, 0, 0, 0.24)
+    // Dark mode shadows are reduced versus previous values to avoid heavy depth.
+    readonly property color darkShadowSmall: Qt.rgba(0, 0, 0, 0.17)
     readonly property int darkShadowSmallBlur: 4
     readonly property int darkShadowSmallY: 1
 
-    readonly property color darkShadowMedium: Qt.rgba(0, 0, 0, 0.36)
+    readonly property color darkShadowMedium: Qt.rgba(0, 0, 0, 0.25)
     readonly property int darkShadowMediumBlur: 8
     readonly property int darkShadowMediumY: 2
 
-    readonly property color darkShadowLarge: Qt.rgba(0, 0, 0, 0.48)
+    readonly property color darkShadowLarge: Qt.rgba(0, 0, 0, 0.34)
     readonly property int darkShadowLargeBlur: 16
     readonly property int darkShadowLargeY: 4
 
@@ -194,6 +192,12 @@ QtObject {
     readonly property int durationSlow: 300
     readonly property int durationEmphasis: 400
     readonly property int durationBoundaryLoop: 3200
+
+    // Interaction timing contract (<= 200ms for direct feedback).
+    readonly property int durationInteractionHover: durationFast
+    readonly property int durationInteractionPress: durationFast
+    readonly property int durationInteractionState: durationNormal
+    readonly property int durationInteractionMax: 200
 
     // ========================================================================
     // Icon system (Lucide conventions)

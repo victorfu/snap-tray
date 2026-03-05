@@ -4,7 +4,7 @@
 #include "qml/QmlRecordingBoundary.h"
 #include "RecordingInitTask.h"
 #include "RecordingRegionNormalizer.h"
-#include "video/CountdownOverlay.h"
+#include "qml/QmlCountdownOverlay.h"
 #include "encoding/NativeGifEncoder.h"
 #include "encoding/EncodingWorker.h"
 #include "IVideoEncoder.h"
@@ -869,18 +869,15 @@ void RecordingManager::startCountdown()
 
     setState(State::Countdown);
 
-    m_countdownOverlay = new CountdownOverlay();
-    m_countdownOverlay->setAttribute(Qt::WA_DeleteOnClose);
-    m_countdownOverlay->setRegion(m_recordingRegion, m_targetScreen.data());
+    m_countdownOverlay = new QmlCountdownOverlay(this);
+    m_countdownOverlay->setRegion(m_recordingRegion);
     m_countdownOverlay->setCountdownSeconds(m_countdownSeconds);
 
-    connect(m_countdownOverlay, &CountdownOverlay::countdownFinished,
+    connect(m_countdownOverlay, &QmlCountdownOverlay::countdownFinished,
             this, &RecordingManager::startRecordingAfterCountdown);
-    connect(m_countdownOverlay, &CountdownOverlay::countdownCancelled,
+    connect(m_countdownOverlay, &QmlCountdownOverlay::countdownCancelled,
             this, &RecordingManager::onCountdownCancelled);
 
-    m_countdownOverlay->show();
-    raiseWindowAboveMenuBar(m_countdownOverlay);
     m_countdownOverlay->start();
 }
 
@@ -888,7 +885,7 @@ void RecordingManager::startRecordingAfterCountdown()
 {
     // Clean up countdown overlay if it exists
     if (m_countdownOverlay) {
-        m_countdownOverlay->close();
+        delete m_countdownOverlay;
         m_countdownOverlay = nullptr;
     }
 
@@ -933,7 +930,8 @@ void RecordingManager::startRecordingAfterCountdown()
 void RecordingManager::onCountdownCancelled()
 {
     // Clean up countdown overlay
-    m_countdownOverlay = nullptr;  // Already deleted via WA_DeleteOnClose
+    delete m_countdownOverlay;
+    m_countdownOverlay = nullptr;
 
     // Cancel the recording
     cancelRecording();
@@ -1138,7 +1136,7 @@ void RecordingManager::cancelRecording()
 
     // Cancel countdown overlay if active
     if (m_countdownOverlay) {
-        m_countdownOverlay->close();
+        delete m_countdownOverlay;
         m_countdownOverlay = nullptr;
     }
 

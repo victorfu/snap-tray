@@ -58,6 +58,10 @@
         <file>icons/toast-error.svg</file>
         <file>icons/toast-warning.svg</file>
         <file>icons/toast-info.svg</file>
+        <file>icons/trash-2.svg</file>
+        <file>icons/volume-2.svg</file>
+        <file>icons/volume-x.svg</file>
+        <file>icons/scissors.svg</file>
     </qresource>
     <qresource prefix="/cascades">
         <file>cascades/haarcascade_frontalface_default.xml</file>

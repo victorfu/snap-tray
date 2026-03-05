@@ -38,9 +38,8 @@ QtObject {
     // ========================================================================
     readonly property color borderDefault: isDarkMode
         ? PrimitiveTokens.gray800 : PrimitiveTokens.gray300
-    readonly property color borderFocus: isDarkMode
-        ? PrimitiveTokens.blue400 : PrimitiveTokens.blue500
-    readonly property color borderActive: PrimitiveTokens.accentDefault  // theme-independent
+    readonly property color borderFocus: PrimitiveTokens.accentDefault
+    readonly property color borderActive: PrimitiveTokens.accentDefault
 
     // ========================================================================
     // Accent
@@ -71,7 +70,7 @@ QtObject {
                   PrimitiveTokens.white.b, 0.90)
     readonly property color toolbarIcon: isDarkMode
         ? PrimitiveTokens.gray300 : PrimitiveTokens.gray700
-    readonly property color toolbarIconActive: PrimitiveTokens.white  // always white on accent bg
+    readonly property color toolbarIconActive: PrimitiveTokens.white
     readonly property color toolbarSeparator: isDarkMode
         ? PrimitiveTokens.gray800 : PrimitiveTokens.gray300
 

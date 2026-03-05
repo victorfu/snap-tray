@@ -89,7 +89,7 @@ if(MSVC)
     string(REPLACE "/Zi" "/Z7" CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO}")
 endif()
 
-find_package(Qt6 REQUIRED COMPONENTS Widgets Gui Svg Concurrent Network LinguistTools Quick QuickControls2 QuickWidgets)
+find_package(Qt6 REQUIRED COMPONENTS Widgets Gui Svg Concurrent Network LinguistTools Quick QuickControls2 QuickWidgets Core5Compat)
 
 # Enable AUTOMOC for Qt targets (will be disabled for non-Qt dependencies)
 set(CMAKE_AUTOMOC ON)
@@ -455,6 +455,7 @@ add_library(snaptray_platform STATIC
     src/encoding/NativeGifEncoder.cpp
     src/encoding/WebPAnimEncoder.cpp
     src/video/IVideoPlayer.cpp
+    src/video/VideoTrimmer.cpp
     src/VideoEncoderFactory.cpp
     src/QRCodeManager.cpp
     src/QRCodeResultDialog.cpp
@@ -469,6 +470,7 @@ add_library(snaptray_platform STATIC
     include/capture/IAudioCaptureEngine.h
     include/capture/QtCaptureEngine.h
     include/video/IVideoPlayer.h
+    include/video/VideoTrimmer.h
     include/QRCodeManager.h
     include/QRCodeResultDialog.h
     include/ImageColorSpaceHelper.h
@@ -697,12 +699,6 @@ add_library(snaptray_ui STATIC
 
     # Video UI
     src/video/VideoPlaybackWidget.cpp
-    src/video/VideoTimeline.cpp
-    src/video/TrimTimeline.cpp
-    src/video/VideoTrimmer.cpp
-    src/video/RecordingPreviewWindow.cpp
-    src/video/FormatSelectionWidget.cpp
-    src/video/CountdownOverlay.cpp
 
     # Dialogs and overlays
     src/OCRResultDialog.cpp
@@ -790,12 +786,6 @@ add_library(snaptray_ui STATIC
     include/WatermarkRenderer.h
     include/LoadingSpinnerRenderer.h
     include/video/VideoPlaybackWidget.h
-    include/video/VideoTimeline.h
-    include/video/TrimTimeline.h
-    include/video/VideoTrimmer.h
-    include/video/RecordingPreviewWindow.h
-    include/video/FormatSelectionWidget.h
-    include/video/CountdownOverlay.h
     include/OCRResultDialog.h
 
     # Recording management (moved from APP_SOURCES for testability)
@@ -899,6 +889,7 @@ set_source_files_properties(src/qml/tokens/ComponentTokens.qml PROPERTIES QT_RES
 set_source_files_properties(src/qml/components/Toast.qml PROPERTIES QT_RESOURCE_ALIAS components/Toast.qml)
 set_source_files_properties(src/qml/components/Badge.qml PROPERTIES QT_RESOURCE_ALIAS components/Badge.qml)
 set_source_files_properties(src/qml/components/RecordingBoundary.qml PROPERTIES QT_RESOURCE_ALIAS components/RecordingBoundary.qml)
+set_source_files_properties(src/qml/components/Countdown.qml PROPERTIES QT_RESOURCE_ALIAS components/Countdown.qml)
 
 # Settings controls
 set_source_files_properties(src/qml/controls/SettingsSection.qml PROPERTIES QT_RESOURCE_ALIAS controls/SettingsSection.qml)
@@ -913,6 +904,7 @@ set_source_files_properties(src/qml/controls/Spacer.qml PROPERTIES QT_RESOURCE_A
 set_source_files_properties(src/qml/controls/FocusFrame.qml PROPERTIES QT_RESOURCE_ALIAS controls/FocusFrame.qml)
 set_source_files_properties(src/qml/controls/BusySpinner.qml PROPERTIES QT_RESOURCE_ALIAS controls/BusySpinner.qml)
 set_source_files_properties(src/qml/controls/SettingsRadioGroup.qml PROPERTIES QT_RESOURCE_ALIAS controls/SettingsRadioGroup.qml)
+set_source_files_properties(src/qml/controls/SvgIcon.qml PROPERTIES QT_RESOURCE_ALIAS controls/SvgIcon.qml)
 
 # Settings pages
 set_source_files_properties(src/qml/settings/SettingsWindow.qml PROPERTIES QT_RESOURCE_ALIAS settings/SettingsWindow.qml)
@@ -927,6 +919,9 @@ set_source_files_properties(src/qml/settings/FilesSettings.qml PROPERTIES QT_RES
 set_source_files_properties(src/qml/settings/UpdatesSettings.qml PROPERTIES QT_RESOURCE_ALIAS settings/UpdatesSettings.qml)
 set_source_files_properties(src/qml/settings/AboutSettings.qml PROPERTIES QT_RESOURCE_ALIAS settings/AboutSettings.qml)
 
+# Recording preview
+set_source_files_properties(src/qml/recording/RecordingPreview.qml PROPERTIES QT_RESOURCE_ALIAS recording/RecordingPreview.qml)
+
 qt_add_qml_module(snaptray_qml
     URI SnapTrayQml
     VERSION 1.0
@@ -939,6 +934,7 @@ qt_add_qml_module(snaptray_qml
         src/qml/components/Toast.qml
         src/qml/components/Badge.qml
         src/qml/components/RecordingBoundary.qml
+        src/qml/components/Countdown.qml
         src/qml/controls/SettingsSection.qml
         src/qml/controls/SettingsRow.qml
         src/qml/controls/SettingsToggle.qml
@@ -951,6 +947,7 @@ qt_add_qml_module(snaptray_qml
         src/qml/controls/FocusFrame.qml
         src/qml/controls/BusySpinner.qml
         src/qml/controls/SettingsRadioGroup.qml
+        src/qml/controls/SvgIcon.qml
         src/qml/settings/SettingsWindow.qml
         src/qml/settings/SettingsSidebar.qml
         src/qml/settings/GeneralSettings.qml
@@ -962,6 +959,7 @@ qt_add_qml_module(snaptray_qml
         src/qml/settings/FilesSettings.qml
         src/qml/settings/UpdatesSettings.qml
         src/qml/settings/AboutSettings.qml
+        src/qml/recording/RecordingPreview.qml
     SOURCES
         src/qml/AnnotationCanvas.cpp
         include/qml/AnnotationCanvas.h
@@ -975,6 +973,12 @@ qt_add_qml_module(snaptray_qml
         include/qml/QmlBadge.h
         src/qml/QmlRecordingBoundary.mm
         include/qml/QmlRecordingBoundary.h
+        src/qml/QmlCountdownOverlay.mm
+        include/qml/QmlCountdownOverlay.h
+        src/qml/VideoPlaybackItem.cpp
+        include/qml/VideoPlaybackItem.h
+        src/qml/RecordingPreviewBackend.mm
+        include/qml/RecordingPreviewBackend.h
 )
 
 target_include_directories(snaptray_qml
@@ -990,9 +994,12 @@ target_include_directories(snaptray_qml
 target_link_libraries(snaptray_qml
     PUBLIC
         snaptray_core
+        snaptray_platform
         Qt6::Quick
         Qt6::QuickControls2
         Qt6::QuickWidgets
+        Qt6::Core5Compat
+        Qt6::Concurrent
 )
 
 if(APPLE)

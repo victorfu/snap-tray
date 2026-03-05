@@ -1,6 +1,7 @@
 #include "qml/QmlSettingsWindow.h"
 #include "qml/QmlOverlayManager.h"
 #include "qml/SettingsBackend.h"
+#include "qml/QmlToast.h"
 #include "PlatformFeatures.h"
 
 #include <QCloseEvent>
@@ -42,7 +43,17 @@ void QmlSettingsWindow::ensureView()
             this, &QmlSettingsWindow::ocrLanguagesChanged);
     connect(m_backend, &SettingsBackend::mcpEnabledChanged,
             this, &QmlSettingsWindow::mcpEnabledChanged);
-    // settingsSaved close is handled by QML (shows toast first, then closes).
+    connect(m_backend, &SettingsBackend::settingsSaved,
+            this, [this]() {
+        QmlToast::screenToast().showToast(
+            QmlToast::Level::Success, tr("Settings saved"), QString(), 2000);
+        if (!m_view)
+            return;
+        m_allowDirectClose = true;
+        m_view->close();
+        m_allowDirectClose = false;
+    });
+
     // Route backend-driven close through a guard so user-initiated title-bar
     // close can still be transformed into cancel() without recursion.
     connect(m_backend, &SettingsBackend::settingsCancelled,

@@ -17,25 +17,6 @@ Item {
         color: SemanticTokens.backgroundPrimary
     }
 
-    // Save confirmation toast
-    Toast {
-        id: saveToast
-        level: 0  // Success
-        title: qsTr("Settings saved")
-        anchorMode: 1  // ParentTopCenter
-        z: 100
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.top: parent.top
-        anchors.topMargin: ComponentTokens.settingsToastTopMargin
-        displayDuration: 800
-        onHideFinished: settingsBackend.cancel()  // close window after toast
-    }
-
-    Connections {
-        target: settingsBackend
-        function onSettingsSaved() { saveToast.show() }
-    }
-
     RowLayout {
         anchors.fill: parent
         anchors.bottomMargin: bottomBar.height
