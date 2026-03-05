@@ -1,22 +1,12 @@
 #include "qml/ThemeManager.h"
-#include "settings/Settings.h"
+#include "ToolbarStyle.h"
 
-#include <QGuiApplication>
 #include <QJSEngine>
-#include <QStyleHints>
 
 ThemeManager::ThemeManager(QObject *parent)
     : QObject(parent)
 {
-    loadColorScheme();
-
-    // Track real-time system theme changes
-    if (auto *hints = QGuiApplication::styleHints()) {
-        connect(hints, &QStyleHints::colorSchemeChanged, this, [this] {
-            if (m_colorScheme == ColorScheme::System)
-                updateEffectiveTheme();
-        });
-    }
+    updateEffectiveTheme();
 }
 
 ThemeManager& ThemeManager::instance()
@@ -32,22 +22,6 @@ ThemeManager* ThemeManager::create(QQmlEngine *, QJSEngine *jsEngine)
     auto *inst = &instance();
     QJSEngine::setObjectOwnership(inst, QJSEngine::CppOwnership);
     return inst;
-}
-
-ThemeManager::ColorScheme ThemeManager::colorScheme() const
-{
-    return m_colorScheme;
-}
-
-void ThemeManager::setColorScheme(ColorScheme scheme)
-{
-    if (m_colorScheme == scheme)
-        return;
-
-    m_colorScheme = scheme;
-    saveColorScheme();
-    emit colorSchemeChanged();
-    updateEffectiveTheme();
 }
 
 ThemeManager::Theme ThemeManager::effectiveTheme() const
@@ -75,46 +49,15 @@ void ThemeManager::refreshTheme()
     updateEffectiveTheme();
 }
 
-void ThemeManager::loadColorScheme()
-{
-    auto settings = SnapTray::getSettings();
-    int stored = settings.value(kSettingsKeyColorScheme,
-                                static_cast<int>(ColorScheme::System)).toInt();
-    if (stored >= static_cast<int>(ColorScheme::System)
-        && stored <= static_cast<int>(ColorScheme::Dark)) {
-        m_colorScheme = static_cast<ColorScheme>(stored);
-    } else {
-        m_colorScheme = ColorScheme::System;
-    }
-    updateEffectiveTheme();
-}
-
 // ---- private ----
-
-ThemeManager::Theme ThemeManager::resolveSystemTheme() const
-{
-    if (auto *hints = QGuiApplication::styleHints())
-        return (hints->colorScheme() == Qt::ColorScheme::Dark) ? Theme::Dark : Theme::Light;
-    return Theme::Light;
-}
 
 void ThemeManager::updateEffectiveTheme()
 {
-    Theme resolved = Theme::Light;
-    switch (m_colorScheme) {
-    case ColorScheme::System: resolved = resolveSystemTheme(); break;
-    case ColorScheme::Light:  resolved = Theme::Light;         break;
-    case ColorScheme::Dark:   resolved = Theme::Dark;          break;
-    }
+    Theme resolved = (ToolbarStyleConfig::loadStyle() == ToolbarStyleType::Dark)
+        ? Theme::Dark : Theme::Light;
 
     if (m_effectiveTheme != resolved) {
         m_effectiveTheme = resolved;
         emit themeChanged();
     }
-}
-
-void ThemeManager::saveColorScheme() const
-{
-    auto settings = SnapTray::getSettings();
-    settings.setValue(kSettingsKeyColorScheme, static_cast<int>(m_colorScheme));
 }

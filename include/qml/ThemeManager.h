@@ -10,9 +10,9 @@ class QQmlEngine;
 /**
  * @brief Singleton managing dark/light theme state for QML.
  *
- * Bridges system theme detection (via QStyleHints::colorScheme()) to QML.
- * The user can choose System, Light, or Dark; when System is selected the
- * effective theme tracks the OS in real time.
+ * Derives its effective theme from ToolbarStyleConfig (the user's
+ * "App theme" setting: Dark / Light).  Call refreshTheme() after
+ * changing the app theme to propagate the change to QML.
  *
  * Surfaces follow an Atlassian-style elevation hierarchy:
  *   Dark  — primary #1A1A2E, elevated #2E2E50
@@ -25,13 +25,9 @@ class ThemeManager : public QObject
     QML_SINGLETON
 
 public:
-    enum class ColorScheme { System = 0, Light, Dark };
-    Q_ENUM(ColorScheme)
-
     enum class Theme { Light = 0, Dark };
     Q_ENUM(Theme)
 
-    Q_PROPERTY(ColorScheme colorScheme READ colorScheme WRITE setColorScheme NOTIFY colorSchemeChanged)
     Q_PROPERTY(Theme effectiveTheme READ effectiveTheme NOTIFY themeChanged)
     Q_PROPERTY(bool isDarkMode READ isDarkMode NOTIFY themeChanged)
 
@@ -44,16 +40,11 @@ public:
     // Factory method for QML engine singleton instantiation
     static ThemeManager* create(QQmlEngine *qmlEngine, QJSEngine *jsEngine);
 
-    ColorScheme colorScheme() const;
-    void setColorScheme(ColorScheme scheme);
-
     Theme effectiveTheme() const;
     bool isDarkMode() const;
 
     QColor primarySurface() const;
     QColor elevatedSurface() const;
-
-    void loadColorScheme();
 
     /**
      * @brief Re-evaluate the effective theme from current settings.
@@ -63,7 +54,6 @@ public:
     void refreshTheme();
 
 signals:
-    void colorSchemeChanged();
     void themeChanged();
 
 private:
@@ -71,12 +61,7 @@ private:
     ThemeManager(const ThemeManager&) = delete;
     ThemeManager& operator=(const ThemeManager&) = delete;
 
-    Theme resolveSystemTheme() const;
     void updateEffectiveTheme();
-    void saveColorScheme() const;
 
-    ColorScheme m_colorScheme = ColorScheme::System;
     Theme m_effectiveTheme = Theme::Light;
-
-    static constexpr const char* kSettingsKeyColorScheme = "qml/colorScheme";
 };

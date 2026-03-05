@@ -49,8 +49,8 @@ void SettingsBackend::loadAllSettings()
     // General
     m_startOnLogin = AutoLaunchManager::isEnabled();
     m_language = LanguageManager::instance().loadLanguage();
-    m_toolbarStyle = static_cast<int>(ToolbarStyleConfig::loadStyle());
-    m_originalToolbarStyle = m_toolbarStyle;
+    m_appTheme = static_cast<int>(ToolbarStyleConfig::loadStyle());
+    m_originalAppTheme = m_appTheme;
     m_cliInstalled = PlatformFeatures::instance().isCLIInstalled();
 
 #ifdef Q_OS_MAC
@@ -136,15 +136,15 @@ QVariantList SettingsBackend::availableLanguages() const
     return result;
 }
 
-int SettingsBackend::toolbarStyle() const { return m_toolbarStyle; }
-void SettingsBackend::setToolbarStyle(int v) {
-    if (m_toolbarStyle != v) {
-        m_toolbarStyle = v;
+int SettingsBackend::appTheme() const { return m_appTheme; }
+void SettingsBackend::setAppTheme(int v) {
+    if (m_appTheme != v) {
+        m_appTheme = v;
         // Apply preview immediately but keep Save/Cancel semantics by restoring
         // the original persisted style in cancel() when needed.
         ToolbarStyleConfig::saveStyle(static_cast<ToolbarStyleType>(v));
         ThemeManager::instance().refreshTheme();
-        emit toolbarStyleChanged();
+        emit appThemeChanged();
     }
 }
 
@@ -400,8 +400,8 @@ void SettingsBackend::save()
     // General
     AutoLaunchManager::setEnabled(m_startOnLogin);
     LanguageManager::instance().saveLanguage(m_language);
-    ToolbarStyleConfig::saveStyle(static_cast<ToolbarStyleType>(m_toolbarStyle));
-    m_originalToolbarStyle = m_toolbarStyle;
+    ToolbarStyleConfig::saveStyle(static_cast<ToolbarStyleType>(m_appTheme));
+    m_originalAppTheme = m_appTheme;
 
     // Advanced
     RegionCaptureSettingsManager::instance().setShortcutHintsEnabled(m_shortcutHintsEnabled);
@@ -471,11 +471,11 @@ void SettingsBackend::save()
 
 void SettingsBackend::cancel()
 {
-    if (m_toolbarStyle != m_originalToolbarStyle) {
-        ToolbarStyleConfig::saveStyle(static_cast<ToolbarStyleType>(m_originalToolbarStyle));
+    if (m_appTheme != m_originalAppTheme) {
+        ToolbarStyleConfig::saveStyle(static_cast<ToolbarStyleType>(m_originalAppTheme));
         ThemeManager::instance().refreshTheme();
-        m_toolbarStyle = m_originalToolbarStyle;
-        emit toolbarStyleChanged();
+        m_appTheme = m_originalAppTheme;
+        emit appThemeChanged();
     }
     emit settingsCancelled();
 }

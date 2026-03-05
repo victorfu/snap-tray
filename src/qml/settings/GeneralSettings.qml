@@ -50,13 +50,13 @@ Flickable {
         SettingsSection { title: qsTr("Appearance") }
 
         SettingsCombo {
-            label: qsTr("Toolbar style")
+            label: qsTr("App theme")
             model: [
                 { text: qsTr("Dark"), value: 0 },
                 { text: qsTr("Light"), value: 1 }
             ]
-            currentIndex: settingsBackend.toolbarStyle
-            onActivated: function(index) { settingsBackend.toolbarStyle = index }
+            currentIndex: settingsBackend.appTheme
+            onActivated: function(index) { settingsBackend.appTheme = index }
         }
 
         // macOS permissions

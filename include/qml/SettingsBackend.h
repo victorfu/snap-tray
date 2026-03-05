@@ -17,7 +17,7 @@ class SettingsBackend : public QObject
     Q_PROPERTY(bool startOnLogin READ startOnLogin WRITE setStartOnLogin NOTIFY startOnLoginChanged)
     Q_PROPERTY(QString language READ language WRITE setLanguage NOTIFY languageChanged)
     Q_PROPERTY(QVariantList availableLanguages READ availableLanguages CONSTANT)
-    Q_PROPERTY(int toolbarStyle READ toolbarStyle WRITE setToolbarStyle NOTIFY toolbarStyleChanged)
+    Q_PROPERTY(int appTheme READ appTheme WRITE setAppTheme NOTIFY appThemeChanged)
     Q_PROPERTY(bool cliInstalled READ cliInstalled NOTIFY cliInstalledChanged)
     Q_PROPERTY(bool isMacOS READ isMacOS CONSTANT)
 
@@ -89,8 +89,8 @@ public:
     QString language() const;
     void setLanguage(const QString& v);
     QVariantList availableLanguages() const;
-    int toolbarStyle() const;
-    void setToolbarStyle(int v);
+    int appTheme() const;
+    void setAppTheme(int v);
     bool cliInstalled() const;
     bool isMacOS() const;
 
@@ -226,7 +226,7 @@ signals:
     // General
     void startOnLoginChanged();
     void languageChanged();
-    void toolbarStyleChanged();
+    void appThemeChanged();
     void cliInstalledChanged();
 
 #ifdef Q_OS_MAC
@@ -295,8 +295,8 @@ private:
     // General
     bool m_startOnLogin = false;
     QString m_language;
-    int m_toolbarStyle = 0;
-    int m_originalToolbarStyle = 0;
+    int m_appTheme = 0;
+    int m_originalAppTheme = 0;
     bool m_cliInstalled = false;
 
 #ifdef Q_OS_MAC
