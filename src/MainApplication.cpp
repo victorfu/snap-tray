@@ -897,13 +897,8 @@ void MainApplication::onPreviewSaveRequested(const QString& videoPath)
     m_recordingManager->triggerSaveDialog(videoPath);
 }
 
-void MainApplication::onPreviewDiscardRequested()
+void MainApplication::onPreviewDiscardRequested(const QString& videoPath)
 {
-    QString videoPath;
-    if (m_previewBackend) {
-        videoPath = m_previewBackend->videoPath();
-    }
-
     if (!videoPath.isEmpty() && QFile::exists(videoPath)) {
         if (!QFile::remove(videoPath)) {
             qWarning() << "MainApplication: Failed to delete temp file:" << videoPath;

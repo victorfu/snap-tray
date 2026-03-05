@@ -13,8 +13,8 @@ class VideoTrimmer;
  * Manages the QQuickView lifecycle, exposes video/trim/format state
  * to QML, and handles save/discard/trim/format-conversion logic.
  *
- * The signal interface (saveRequested, discardRequested, closed) matches
- * the old RecordingPreviewWindow for drop-in replacement in MainApplication.
+ * The signal interface preserves the same flow as the old preview window:
+ * notify caller to save/discard, then report closed(saved).
  *
  * Usage:
  *   auto* backend = new RecordingPreviewBackend(videoPath, this);
@@ -95,7 +95,6 @@ public:
     Q_INVOKABLE void save();
     Q_INVOKABLE void discard();
     Q_INVOKABLE void toggleTrim();
-    Q_INVOKABLE void showTrimTimeInput(bool isStartHandle);
     Q_INVOKABLE QString formatTime(qint64 ms) const;
     Q_INVOKABLE void clearError();
 
@@ -105,9 +104,9 @@ public:
     Q_INVOKABLE void updatePlayingState(bool playing);
 
 signals:
-    // External interface (matches RecordingPreviewWindow)
+    // External interface consumed by MainApplication.
     void saveRequested(const QString &videoPath);
-    void discardRequested();
+    void discardRequested(const QString &videoPath);
     void closed(bool saved);
 
     // Property change notifications

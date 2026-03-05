@@ -63,7 +63,7 @@ private slots:
     void onSettings();
     void showRecordingPreview(const QString &videoPath, int preferredFormat);
     void onPreviewSaveRequested(const QString &videoPath);
-    void onPreviewDiscardRequested();
+    void onPreviewDiscardRequested(const QString &videoPath);
     void onHotkeyAction(SnapTray::HotkeyAction action);
     void onHotkeyChanged(SnapTray::HotkeyAction action, const SnapTray::HotkeyConfig& config);
     void onHotkeyInitializationCompleted(const QStringList& failedHotkeys);

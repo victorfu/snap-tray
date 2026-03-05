@@ -562,7 +562,6 @@ void RecordingManager::beginAsyncInitialization()
     config.audioChannels = audioChannels;
     config.audioBitsPerSample = audioBitsPerSample;
     config.outputPath = generateOutputPath();
-    config.useNativeEncoder = true;
     config.outputFormat = recordingFormat;
     config.frameSize = physicalSize;
     config.quality = settings.value("recording/quality", 55).toInt();
@@ -1211,9 +1210,6 @@ void RecordingManager::cleanupRecording()
     }
     m_usingNativeEncoder = false;
 
-    // Clean up temp audio file
-    ResourceCleanupHelper::removeTempFile(m_tempAudioPath);
-
     if (m_regionSelector) {
         m_regionSelector->close();
     }
@@ -1223,7 +1219,6 @@ void RecordingManager::cleanupAudio()
 {
     // Custom deleter handles disconnect + stop() + deleteLater()
     m_audioEngine.reset();
-    ResourceCleanupHelper::removeTempFile(m_tempAudioPath);
 }
 
 void RecordingManager::onEncodingFinished(bool success, const QString &outputPath)

@@ -150,7 +150,6 @@ private:
     bool m_audioEnabled;
     int m_audioSource;  // 0=Microphone, 1=SystemAudio, 2=Both
     QString m_audioDevice;
-    QString m_tempAudioPath;
 
     // Async initialization
     QSharedPointer<RecordingInitTask> m_initTask;

@@ -17,7 +17,6 @@ class ICaptureEngine;
 class IVideoEncoder;
 class NativeGifEncoder;
 class WebPAnimationEncoder;
-class IAudioCaptureEngine;
 
 /**
  * @brief Handles async initialization of recording components
@@ -48,7 +47,6 @@ public:
         int audioChannels = 2;
         int audioBitsPerSample = 16;
         QString outputPath;
-        bool useNativeEncoder = true;
         EncoderFactory::Format outputFormat = EncoderFactory::Format::MP4;
         QSize frameSize;
         int quality = 55;
@@ -67,10 +65,8 @@ public:
         std::unique_ptr<IVideoEncoder> nativeEncoder;
         std::unique_ptr<NativeGifEncoder> gifEncoder;
         std::unique_ptr<WebPAnimationEncoder> webpEncoder;
-        std::unique_ptr<IAudioCaptureEngine> audioEngine;
 
         bool usingNativeEncoder = false;
-        QString tempAudioPath;
 
         // Track started state for safe cleanup
         bool captureEngineStarted = false;
@@ -91,7 +87,6 @@ public:
         IVideoEncoder* releaseNativeEncoder() { return nativeEncoder.release(); }
         NativeGifEncoder* releaseGifEncoder() { return gifEncoder.release(); }
         WebPAnimationEncoder* releaseWebpEncoder() { return webpEncoder.release(); }
-        IAudioCaptureEngine* releaseAudioEngine() { return audioEngine.release(); }
     };
 
     explicit RecordingInitTask(const Config &config, QObject *parent = nullptr);

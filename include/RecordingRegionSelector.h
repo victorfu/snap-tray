@@ -17,7 +17,6 @@ public:
     explicit RecordingRegionSelector(QWidget *parent = nullptr);
     ~RecordingRegionSelector();
 
-    void initializeForScreen(QScreen *screen);
     void initializeWithRegion(QScreen *screen, const QRect &region);
 
 signals:

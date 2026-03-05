@@ -82,23 +82,6 @@ void RecordingRegionSelector::setupToolbar()
     });
 }
 
-void RecordingRegionSelector::initializeForScreen(QScreen *screen)
-{
-    m_currentScreen = screen;
-    if (m_currentScreen.isNull()) {
-        qWarning() << "RecordingRegionSelector: No valid screen available";
-        emit cancelled();
-        QTimer::singleShot(0, this, &QWidget::close);
-        return;
-    }
-    m_devicePixelRatio = m_currentScreen->devicePixelRatio();
-
-    qDebug() << "=== RecordingRegionSelector::initializeForScreen ===";
-    qDebug() << "Screen name:" << m_currentScreen->name();
-    qDebug() << "Screen geometry:" << m_currentScreen->geometry();
-    qDebug() << "Screen devicePixelRatio:" << m_devicePixelRatio;
-}
-
 void RecordingRegionSelector::initializeWithRegion(QScreen *screen, const QRect &region)
 {
     m_currentScreen = screen;

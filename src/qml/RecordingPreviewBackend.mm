@@ -14,7 +14,6 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QGuiApplication>
-#include <QInputDialog>
 #include <QPointer>
 #include <QQmlContext>
 #include <QQuickView>
@@ -261,8 +260,9 @@ void RecordingPreviewBackend::save()
     if (m_selectedFormat == MP4) {
         // MP4 -- use original file directly
         m_saved = true;
-        emit saveRequested(m_videoPath);
-        close();
+        const QString outputPath = m_videoPath;
+        close(); // Release playback resources before caller touches the file.
+        emit saveRequested(outputPath);
     } else {
         // Convert to GIF or WebP on a background thread
         performFormatConversion(m_selectedFormat);
@@ -277,8 +277,9 @@ void RecordingPreviewBackend::discard()
         return;
     }
     m_saved = false;
-    emit discardRequested();
-    close();
+    const QString discardPath = m_videoPath;
+    close(); // Release playback resources before caller deletes the file.
+    emit discardRequested(discardPath);
 }
 
 void RecordingPreviewBackend::toggleTrim()
@@ -322,36 +323,6 @@ void RecordingPreviewBackend::toggleTrim()
     m_trimStart = start;
     m_trimEnd = end;
     emit trimRangeChanged();
-}
-
-void RecordingPreviewBackend::showTrimTimeInput(bool isStartHandle)
-{
-    if (!m_view)
-        return;
-
-    QString title = isStartHandle ? tr("Set Trim Start") : tr("Set Trim End");
-    qint64 currentValue = isStartHandle ? m_trimStart : trimEnd();
-    double seconds = currentValue / 1000.0;
-
-    // Use a native dialog -- QML doesn't have a built-in number input dialog
-    bool ok;
-    double newSeconds = QInputDialog::getDouble(
-        nullptr, title, tr("Enter time in seconds:"),
-        seconds, 0.0, m_duration / 1000.0, 1, &ok);
-
-    if (!ok)
-        return;
-
-    qint64 newMs = static_cast<qint64>(newSeconds * 1000);
-    if (isStartHandle) {
-        if (newMs < trimEnd()) {
-            setTrimStart(newMs);
-        }
-    } else {
-        if (newMs > m_trimStart) {
-            setTrimEnd(newMs);
-        }
-    }
 }
 
 // ---------- Format conversion (runs on background thread) ----------
@@ -564,8 +535,8 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
             if (outInfo.exists() && outInfo.size() > 0) {
                 QFile::remove(sourceVideoPath);
                 weakThis->m_saved = true;
-                emit weakThis->saveRequested(outputPath);
                 weakThis->close();
+                emit weakThis->saveRequested(outputPath);
             } else {
                 qWarning() << "RecordingPreviewBackend: Conversion output missing or empty, keeping original";
                 weakThis->setErrorMessage(outputMissingError);
@@ -666,8 +637,8 @@ void RecordingPreviewBackend::onTrimFinished(bool success, const QString &output
             return;
         }
         m_saved = true;
-        emit saveRequested(outputPath);
         close();
+        emit saveRequested(outputPath);
     } else {
         setErrorMessage(tr("Trim failed"));
     }

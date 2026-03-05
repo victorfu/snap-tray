@@ -1,6 +1,5 @@
 #include "RecordingInitTask.h"
 #include "capture/ICaptureEngine.h"
-#include "capture/IAudioCaptureEngine.h"
 #include "IVideoEncoder.h"
 #include "encoding/NativeGifEncoder.h"
 #include "encoding/WebPAnimEncoder.h"
@@ -39,10 +38,6 @@ void RecordingInitTask::Result::cleanup()
     if (webpEncoder) {
         webpEncoder->abort();
         webpEncoder.reset();
-    }
-    if (audioEngine) {
-        audioEngine->stop();
-        audioEngine.reset();
     }
 }
 

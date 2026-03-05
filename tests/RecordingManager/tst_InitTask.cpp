@@ -84,7 +84,6 @@ RecordingInitTask::Config TestRecordingInitTask::createTestConfig()
     config.audioEnabled = false;
     config.audioSource = 0;
     config.outputPath = m_tempDir->filePath("test_output.mp4");
-    config.useNativeEncoder = true;
     config.outputFormat = EncoderFactory::Format::MP4;
     config.frameSize = QSize(800, 600);
     config.quality = 55;
@@ -102,7 +101,6 @@ void TestRecordingInitTask::testDefaultConfig()
     QCOMPARE(config.frameRate, 30);
     QVERIFY(!config.audioEnabled);
     QCOMPARE(config.audioSource, 0);
-    QVERIFY(config.useNativeEncoder);
     QCOMPARE(config.outputFormat, EncoderFactory::Format::MP4);
     QCOMPARE(config.quality, 55);
 }
@@ -144,7 +142,6 @@ void TestRecordingInitTask::testConfigWithGif()
 void TestRecordingInitTask::testConfigWithNativeEncoder()
 {
     RecordingInitTask::Config config = createTestConfig();
-    config.useNativeEncoder = true;
     config.outputFormat = EncoderFactory::Format::MP4;
 
     RecordingInitTask task(config);
@@ -236,9 +233,7 @@ void TestRecordingInitTask::testResultDefaultValues()
     QVERIFY(result.captureEngine == nullptr);
     QVERIFY(result.nativeEncoder == nullptr);
     QVERIFY(result.gifEncoder == nullptr);
-    QVERIFY(result.audioEngine == nullptr);
     QVERIFY(!result.usingNativeEncoder);
-    QVERIFY(result.tempAudioPath.isEmpty());
     QVERIFY(!result.captureEngineStarted);
 }
 
@@ -252,7 +247,6 @@ void TestRecordingInitTask::testResultCleanupNullPointers()
     QVERIFY(result.captureEngine == nullptr);
     QVERIFY(result.nativeEncoder == nullptr);
     QVERIFY(result.gifEncoder == nullptr);
-    QVERIFY(result.audioEngine == nullptr);
 }
 
 void TestRecordingInitTask::testResultCleanupWithResources()
