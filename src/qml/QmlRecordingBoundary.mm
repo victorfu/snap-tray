@@ -57,6 +57,9 @@ void QmlRecordingBoundary::applyPlatformWindowFlags()
     // Raise above menu bar (same as raiseWindowAboveMenuBar)
     [window setLevel:kCGScreenSaverWindowLevel]; // level 1000
 
+    // Keep visible when app deactivates (LSUIElement apps hide windows by default)
+    [window setHidesOnDeactivate:NO];
+
     // Click-through at the native level (belt-and-suspenders with Qt flag)
     [window setIgnoresMouseEvents:YES];
 #endif

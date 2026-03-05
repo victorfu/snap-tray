@@ -1,6 +1,6 @@
 #include "RecordingManager.h"
 #include "RecordingRegionSelector.h"
-#include "RecordingControlBar.h"
+#include "qml/QmlRecordingControlBar.h"
 #include "qml/QmlRecordingBoundary.h"
 #include "RecordingInitTask.h"
 #include "RecordingRegionNormalizer.h"
@@ -439,15 +439,14 @@ void RecordingManager::startFrameCapture()
         m_controlBar = nullptr;
     }
 
-    m_controlBar = new RecordingControlBar();
-    m_controlBar->setAttribute(Qt::WA_DeleteOnClose);
-    connect(m_controlBar, &RecordingControlBar::stopRequested,
+    m_controlBar = new SnapTray::QmlRecordingControlBar();
+    connect(m_controlBar, &SnapTray::QmlRecordingControlBar::stopRequested,
             this, &RecordingManager::stopRecording);
-    connect(m_controlBar, &RecordingControlBar::cancelRequested,
+    connect(m_controlBar, &SnapTray::QmlRecordingControlBar::cancelRequested,
             this, &RecordingManager::cancelRecording);
-    connect(m_controlBar, &RecordingControlBar::pauseRequested,
+    connect(m_controlBar, &SnapTray::QmlRecordingControlBar::pauseRequested,
             this, &RecordingManager::pauseRecording);
-    connect(m_controlBar, &RecordingControlBar::resumeRequested,
+    connect(m_controlBar, &SnapTray::QmlRecordingControlBar::resumeRequested,
             this, &RecordingManager::resumeRecording);
 
     // Set initial region size
@@ -458,7 +457,7 @@ void RecordingManager::startFrameCapture()
     m_controlBar->setPreparing(true);
 
     m_controlBar->show();
-    raiseWindowAboveMenuBar(m_controlBar);
+    m_controlBar->raiseAboveMenuBar();
     // Position after show() to avoid Qt/macOS adjusting the position
     m_controlBar->positionNear(m_recordingRegion);
 
@@ -574,7 +573,7 @@ void RecordingManager::beginAsyncInitialization()
     }
     if (m_controlBar) {
         config.excludedWindowIds.append(m_controlBar->winId());
-        setWindowExcludedFromCapture(m_controlBar, true);
+        m_controlBar->setExcludedFromCapture(true);
     }
 
     const quint64 generation = ++m_initGeneration;

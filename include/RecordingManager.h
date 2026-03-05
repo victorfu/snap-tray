@@ -16,10 +16,12 @@
 #include "utils/ResourceCleanupHelper.h"
 
 class RecordingRegionSelector;
-class RecordingControlBar;
 class RecordingInitTask;
 
-namespace SnapTray { class QmlRecordingBoundary; }
+namespace SnapTray {
+class QmlRecordingBoundary;
+class QmlRecordingControlBar;
+}
 class QmlCountdownOverlay;
 class NativeGifEncoder;
 class IVideoEncoder;
@@ -121,7 +123,7 @@ private:
     QPointer<RecordingRegionSelector> m_regionSelector;
 
     // Recording state
-    QPointer<RecordingControlBar> m_controlBar;
+    QPointer<SnapTray::QmlRecordingControlBar> m_controlBar;
     QPointer<SnapTray::QmlRecordingBoundary> m_boundaryOverlay;
     QString m_tempVideoPath;
     std::unique_ptr<EncodingWorker> m_encodingWorker;  // Offloads encoding to worker thread
