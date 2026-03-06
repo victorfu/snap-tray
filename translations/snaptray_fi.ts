@@ -1512,6 +1512,74 @@ Koko: %2</translation>
     </message>
 </context>
 <context>
+    <name>RecordingPreview</name>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="365"/>
+        <source>Pause Preview (Space)</source>
+        <translation>Keskeytä esikatselu (Välilyönti)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="365"/>
+        <source>Play Preview (Space)</source>
+        <translation>Toista esikatselu (Välilyönti)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="380"/>
+        <source>Playback Speed: %1x</source>
+        <translation>Toistonopeus: %1x</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="394"/>
+        <source>Export as MP4</source>
+        <translation>Vie MP4-muodossa</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="402"/>
+        <source>Export as GIF</source>
+        <translation>Vie GIF-muodossa</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="410"/>
+        <source>Export as WebP</source>
+        <translation>Vie WebP-muodossa</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="422"/>
+        <source>Unmute Preview (M)</source>
+        <translation>Poista esikatselun mykistys (M)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="422"/>
+        <source>Mute Preview (M)</source>
+        <translation>Mykistä esikatselu (M)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="429"/>
+        <source>Clear Trim Selection</source>
+        <translation>Tyhjennä leikkausvalinta</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="429"/>
+        <source>Trim Recording</source>
+        <translation>Leikkaa tallenne</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="442"/>
+        <source>Discard Recording (Esc)</source>
+        <translation>Hylkää tallenne (Esc)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="449"/>
+        <source>Save Recording (Enter / Ctrl+S)</source>
+        <translation>Tallenna tallenne (Enter / Ctrl+S)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="533"/>
+        <source>Dismiss Error</source>
+        <translation>Sulje virhe</translation>
+    </message>
+</context>
+<context>
     <name>RecordingPreviewWindow</name>
     <message>
         <location filename="../src/video/RecordingPreviewWindow.cpp" line="395"/>

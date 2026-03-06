@@ -11,7 +11,6 @@ class QQuickItem;
 class QShortcut;
 
 namespace SnapTray {
-class GlassTooltip;
 
 /**
  * @brief QML-based recording control bar.
@@ -25,7 +24,7 @@ class GlassTooltip;
  *   - Pause/Resume, Stop, Cancel buttons
  *   - Glass effect background
  *   - Drag to reposition
- *   - GlassTooltip on button hover
+ *   - QML tooltip on button hover
  *
  * Usage:
  *   auto* bar = new QmlRecordingControlBar();
@@ -74,9 +73,12 @@ private slots:
 
 private:
     void ensureView();
+    void ensureTooltipView();
     void applyPlatformWindowFlags();
+    void applyTooltipWindowFlags();
     void setupConnections();
     void updateThemeColors();
+    void updateTooltipThemeColors();
     QString formatDuration(qint64 ms) const;
 
     void showTooltip(const QString& text, const QRect& anchorRect);
@@ -86,7 +88,8 @@ private:
     QQuickView* m_view = nullptr;
     QQuickItem* m_rootItem = nullptr;
     QShortcut* m_escShortcut = nullptr;
-    GlassTooltip* m_tooltip = nullptr;
+    QQuickView* m_tooltipView = nullptr;
+    QQuickItem* m_tooltipRootItem = nullptr;
 
     QRect m_recordingRegion;
     bool m_isPaused = false;

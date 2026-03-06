@@ -1512,6 +1512,74 @@ Boyut: %2</translation>
     </message>
 </context>
 <context>
+    <name>RecordingPreview</name>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="365"/>
+        <source>Pause Preview (Space)</source>
+        <translation>Önizlemeyi duraklat (Space)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="365"/>
+        <source>Play Preview (Space)</source>
+        <translation>Önizlemeyi oynat (Space)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="380"/>
+        <source>Playback Speed: %1x</source>
+        <translation>Oynatma hızı: %1x</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="394"/>
+        <source>Export as MP4</source>
+        <translation>MP4 olarak dışa aktar</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="402"/>
+        <source>Export as GIF</source>
+        <translation>GIF olarak dışa aktar</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="410"/>
+        <source>Export as WebP</source>
+        <translation>WebP olarak dışa aktar</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="422"/>
+        <source>Unmute Preview (M)</source>
+        <translation>Önizleme sesini aç (M)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="422"/>
+        <source>Mute Preview (M)</source>
+        <translation>Önizlemeyi sessize al (M)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="429"/>
+        <source>Clear Trim Selection</source>
+        <translation>Kırpma seçimini temizle</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="429"/>
+        <source>Trim Recording</source>
+        <translation>Kaydı kırp</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="442"/>
+        <source>Discard Recording (Esc)</source>
+        <translation>Kaydı at (Esc)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="449"/>
+        <source>Save Recording (Enter / Ctrl+S)</source>
+        <translation>Kaydı kaydet (Enter / Ctrl+S)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="533"/>
+        <source>Dismiss Error</source>
+        <translation>Hatayı kapat</translation>
+    </message>
+</context>
+<context>
     <name>RecordingPreviewWindow</name>
     <message>
         <location filename="../src/video/RecordingPreviewWindow.cpp" line="395"/>

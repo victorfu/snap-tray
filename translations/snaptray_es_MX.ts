@@ -1590,6 +1590,74 @@ Tamaño: %2</translation>
     </message>
 </context>
 <context>
+    <name>RecordingPreview</name>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="365"/>
+        <source>Pause Preview (Space)</source>
+        <translation>Pausar vista previa (Espacio)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="365"/>
+        <source>Play Preview (Space)</source>
+        <translation>Reproducir vista previa (Espacio)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="380"/>
+        <source>Playback Speed: %1x</source>
+        <translation>Velocidad de reproducción: %1x</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="394"/>
+        <source>Export as MP4</source>
+        <translation>Exportar como MP4</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="402"/>
+        <source>Export as GIF</source>
+        <translation>Exportar como GIF</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="410"/>
+        <source>Export as WebP</source>
+        <translation>Exportar como WebP</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="422"/>
+        <source>Unmute Preview (M)</source>
+        <translation>Activar sonido de la vista previa (M)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="422"/>
+        <source>Mute Preview (M)</source>
+        <translation>Silenciar vista previa (M)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="429"/>
+        <source>Clear Trim Selection</source>
+        <translation>Borrar selección de recorte</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="429"/>
+        <source>Trim Recording</source>
+        <translation>Recortar grabación</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="442"/>
+        <source>Discard Recording (Esc)</source>
+        <translation>Descartar grabación (Esc)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="449"/>
+        <source>Save Recording (Enter / Ctrl+S)</source>
+        <translation>Guardar grabación (Enter / Ctrl+S)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="533"/>
+        <source>Dismiss Error</source>
+        <translation>Cerrar error</translation>
+    </message>
+</context>
+<context>
     <name>RecordingPreviewWindow</name>
     <message>
         <location filename="../src/video/RecordingPreviewWindow.cpp" line="395"/>

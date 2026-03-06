@@ -28,12 +28,72 @@ Item {
 
     readonly property var speedOptions: [0.25, 0.5, 0.75, 1.0, 1.5, 2.0]
     property int speedIndex: 3
+    property string activeTooltipText: ""
+    property rect activeTooltipAnchor: Qt.rect(0, 0, 0, 0)
+    property bool activeTooltipPreferAbove: true
+    property var activeTooltipSourceItem: null
+
+    function showButtonTooltip(text, item, preferAbove) {
+        if (!text || !item || backend.isProcessing) {
+            hideButtonTooltip(item)
+            return
+        }
+
+        var mapped = item.mapToItem(root, 0, 0)
+        activeTooltipText = text
+        activeTooltipAnchor = Qt.rect(mapped.x, mapped.y, item.width, item.height)
+        activeTooltipPreferAbove = preferAbove === undefined ? true : preferAbove
+        activeTooltipSourceItem = item
+    }
+
+    function hideButtonTooltip(item) {
+        if (item !== undefined && item !== null && activeTooltipSourceItem !== item)
+            return
+
+        activeTooltipText = ""
+        activeTooltipSourceItem = null
+    }
 
     Rectangle {
         anchors.fill: parent
         gradient: Gradient {
             GradientStop { position: 0.0; color: ComponentTokens.recordingPreviewBgStart }
             GradientStop { position: 1.0; color: ComponentTokens.recordingPreviewBgEnd }
+        }
+    }
+
+    RecordingTooltip {
+        id: hoverTooltip
+        tooltipText: root.activeTooltipText
+        themeGlassBg: ComponentTokens.tooltipBackground
+        themeGlassBgTop: ComponentTokens.tooltipBackgroundTop
+        themeHighlight: ComponentTokens.tooltipHighlight
+        themeBorder: ComponentTokens.tooltipBorder
+        themeText: ComponentTokens.tooltipText
+        themeCornerRadius: ComponentTokens.tooltipRadius
+        visible: root.activeTooltipText !== "" && !backend.isProcessing
+        z: 20
+
+        x: {
+            var desiredX = root.activeTooltipAnchor.x + (root.activeTooltipAnchor.width - width) / 2
+            var maxX = Math.max(6, root.width - width - 6)
+            return Math.max(6, Math.min(desiredX, maxX))
+        }
+
+        y: {
+            var maxY = Math.max(6, root.height - height - 6)
+            var aboveY = root.activeTooltipAnchor.y - height - 6
+            var belowY = root.activeTooltipAnchor.y + root.activeTooltipAnchor.height + 6
+
+            if (root.activeTooltipPreferAbove) {
+                if (aboveY >= 6)
+                    return aboveY
+                return Math.min(maxY, belowY)
+            }
+
+            if (belowY <= maxY)
+                return belowY
+            return Math.max(6, aboveY)
         }
     }
 
@@ -298,6 +358,7 @@ Item {
 
                 IconButton {
                     iconSource: videoPlayer.playing ? "qrc:/icons/icons/pause.svg" : "qrc:/icons/icons/play.svg"
+                    tooltipText: videoPlayer.playing ? qsTr("Pause Preview (Space)") : qsTr("Play Preview (Space)")
                     onClicked: videoPlayer.togglePlayPause()
                 }
 
@@ -312,6 +373,7 @@ Item {
 
                 IconButton {
                     iconText: root.speedOptions[root.speedIndex] + "x"
+                    tooltipText: qsTr("Playback Speed: %1x").arg(root.speedOptions[root.speedIndex])
                     onClicked: {
                         root.speedIndex = (root.speedIndex + 1) % root.speedOptions.length
                         videoPlayer.playbackRate = root.speedOptions[root.speedIndex]
@@ -325,6 +387,7 @@ Item {
 
                     SegmentButton {
                         text: "MP4"
+                        tooltipText: qsTr("Export as MP4")
                         selected: backend.selectedFormat === 0
                         isFirst: true
                         isLast: false
@@ -332,6 +395,7 @@ Item {
                     }
                     SegmentButton {
                         text: "GIF"
+                        tooltipText: qsTr("Export as GIF")
                         selected: backend.selectedFormat === 1
                         isFirst: false
                         isLast: false
@@ -339,6 +403,7 @@ Item {
                     }
                     SegmentButton {
                         text: "WebP"
+                        tooltipText: qsTr("Export as WebP")
                         selected: backend.selectedFormat === 2
                         isFirst: false
                         isLast: true
@@ -350,12 +415,14 @@ Item {
 
                 IconButton {
                     iconSource: videoPlayer.muted ? "qrc:/icons/icons/volume-x.svg" : "qrc:/icons/icons/volume-2.svg"
+                    tooltipText: videoPlayer.muted ? qsTr("Unmute Preview (M)") : qsTr("Mute Preview (M)")
                     onClicked: videoPlayer.muted = !videoPlayer.muted
                 }
 
                 IconButton {
                     iconSource: "qrc:/icons/icons/scissors.svg"
                     highlighted: backend.hasTrim
+                    tooltipText: backend.hasTrim ? qsTr("Clear Trim Selection") : qsTr("Trim Recording")
                     onClicked: backend.toggleTrim()
                 }
 
@@ -368,12 +435,14 @@ Item {
                 IconButton {
                     iconSource: "qrc:/icons/icons/trash-2.svg"
                     destructive: true
+                    tooltipText: qsTr("Discard Recording (Esc)")
                     onClicked: backend.discard()
                 }
 
                 IconButton {
                     iconSource: "qrc:/icons/icons/save.svg"
                     primary: true
+                    tooltipText: qsTr("Save Recording (Enter / Ctrl+S)")
                     onClicked: backend.save()
                 }
             }
@@ -457,6 +526,8 @@ Item {
                 iconSize: ComponentTokens.iconSizeMenu
                 width: 20
                 height: 20
+                tooltipText: qsTr("Dismiss Error")
+                tooltipPreferredAbove: false
                 anchors.verticalCenter: parent.verticalCenter
                 onClicked: backend.clearError()
             }
@@ -533,12 +604,23 @@ Item {
     component IconButton: Rectangle {
         property url iconSource: ""
         property string iconText: ""
+        property string tooltipText: ""
+        property bool tooltipPreferredAbove: true
         property bool highlighted: false
         property bool destructive: false
         property bool primary: false
         property int iconSize: ComponentTokens.recordingPreviewIconSize
 
         signal clicked()
+
+        function updateTooltip() {
+            if (!mouseArea.containsMouse || tooltipText === "") {
+                root.hideButtonTooltip(this)
+                return
+            }
+
+            root.showButtonTooltip(tooltipText, this, tooltipPreferredAbove)
+        }
 
         width: Math.max(ComponentTokens.recordingPreviewControlButtonSize,
                         iconSource !== "" ? ComponentTokens.recordingPreviewControlButtonSize : label.implicitWidth + 16)
@@ -594,17 +676,38 @@ Item {
             anchors.fill: parent
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
-            onClicked: parent.clicked()
+
+            onEntered: parent.updateTooltip()
+            onExited: root.hideButtonTooltip(parent)
+            onPressed: root.hideButtonTooltip(parent)
+            onCanceled: root.hideButtonTooltip(parent)
+            onClicked: {
+                root.hideButtonTooltip(parent)
+                parent.clicked()
+            }
         }
+
+        onTooltipTextChanged: updateTooltip()
     }
 
     component SegmentButton: Rectangle {
         property string text: ""
+        property string tooltipText: ""
+        property bool tooltipPreferredAbove: true
         property bool selected: false
         property bool isFirst: false
         property bool isLast: false
 
         signal clicked()
+
+        function updateTooltip() {
+            if (!fmtMouseArea.containsMouse || tooltipText === "") {
+                root.hideButtonTooltip(this)
+                return
+            }
+
+            root.showButtonTooltip(tooltipText, this, tooltipPreferredAbove)
+        }
 
         width: fmtLabel.implicitWidth + 20
         height: 28
@@ -642,7 +745,17 @@ Item {
             anchors.fill: parent
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
-            onClicked: parent.clicked()
+
+            onEntered: parent.updateTooltip()
+            onExited: root.hideButtonTooltip(parent)
+            onPressed: root.hideButtonTooltip(parent)
+            onCanceled: root.hideButtonTooltip(parent)
+            onClicked: {
+                root.hideButtonTooltip(parent)
+                parent.clicked()
+            }
         }
+
+        onTooltipTextChanged: updateTooltip()
     }
 }

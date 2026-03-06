@@ -697,9 +697,6 @@ add_library(snaptray_ui STATIC
     src/beautify/BeautifyPanel.cpp
     include/beautify/BeautifyPanel.h
 
-    # Video UI
-    src/video/VideoPlaybackWidget.cpp
-
     # Dialogs and overlays
     src/OCRResultDialog.cpp
     src/ui/SharePasswordDialog.cpp
@@ -785,7 +782,6 @@ add_library(snaptray_ui STATIC
     include/LaserPointerRenderer.h
     include/WatermarkRenderer.h
     include/LoadingSpinnerRenderer.h
-    include/video/VideoPlaybackWidget.h
     include/OCRResultDialog.h
 
     # Recording management (moved from APP_SOURCES for testability)
@@ -888,6 +884,7 @@ set_source_files_properties(src/qml/components/Toast.qml PROPERTIES QT_RESOURCE_
 set_source_files_properties(src/qml/components/Badge.qml PROPERTIES QT_RESOURCE_ALIAS components/Badge.qml)
 set_source_files_properties(src/qml/components/RecordingBoundary.qml PROPERTIES QT_RESOURCE_ALIAS components/RecordingBoundary.qml)
 set_source_files_properties(src/qml/components/Countdown.qml PROPERTIES QT_RESOURCE_ALIAS components/Countdown.qml)
+set_source_files_properties(src/qml/components/RecordingTooltip.qml PROPERTIES QT_RESOURCE_ALIAS components/RecordingTooltip.qml)
 
 # Settings controls
 set_source_files_properties(src/qml/controls/SettingsSection.qml PROPERTIES QT_RESOURCE_ALIAS controls/SettingsSection.qml)
@@ -936,6 +933,7 @@ qt_add_qml_module(snaptray_qml
         src/qml/components/Badge.qml
         src/qml/components/RecordingBoundary.qml
         src/qml/components/Countdown.qml
+        src/qml/components/RecordingTooltip.qml
         src/qml/controls/SettingsSection.qml
         src/qml/controls/SettingsRow.qml
         src/qml/controls/SettingsToggle.qml
@@ -1146,6 +1144,7 @@ qt_add_translations(${PROJECT_NAME}
     TS_FILES ${TS_FILES}
     RESOURCE_PREFIX "/i18n"
     SOURCE_TARGETS
+        snaptray_qml
         snaptray_core
         snaptray_ui
         snaptray_platform

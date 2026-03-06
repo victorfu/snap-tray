@@ -1,8 +1,6 @@
 #include "qml/QmlRecordingControlBar.h"
 #include "qml/QmlOverlayManager.h"
 #include "ToolbarStyle.h"
-#include "ui/GlassTooltip.h"
-#include "platform/WindowLevel.h"
 
 #include <QQuickView>
 #include <QQuickItem>
@@ -27,9 +25,11 @@ QmlRecordingControlBar::QmlRecordingControlBar(QObject* parent)
 
 QmlRecordingControlBar::~QmlRecordingControlBar()
 {
-    if (m_tooltip) {
-        m_tooltip->deleteLater();
-        m_tooltip = nullptr;
+    if (m_tooltipView) {
+        m_tooltipView->close();
+        m_tooltipView->deleteLater();
+        m_tooltipView = nullptr;
+        m_tooltipRootItem = nullptr;
     }
 
     delete m_escShortcut;
@@ -69,6 +69,25 @@ void QmlRecordingControlBar::ensureView()
     connect(m_escShortcut, &QShortcut::activated, this, &QmlRecordingControlBar::stopRequested);
 
     // SizeViewToRootObject handles view ↔ root sizing automatically
+}
+
+void QmlRecordingControlBar::ensureTooltipView()
+{
+    if (m_tooltipView)
+        return;
+
+    m_tooltipView = QmlOverlayManager::instance().createParentOverlay(
+        QUrl(QStringLiteral("qrc:/SnapTrayQml/components/RecordingTooltip.qml")));
+    m_tooltipView->setResizeMode(QQuickView::SizeRootObjectToView);
+    m_tooltipView->setFlag(Qt::WindowTransparentForInput, true);
+
+    if (m_tooltipView->status() == QQuickView::Error) {
+        for (const auto& error : m_tooltipView->errors())
+            qWarning() << "RecordingTooltip QML error:" << error.toString();
+    }
+
+    m_tooltipRootItem = m_tooltipView->rootObject();
+    updateTooltipThemeColors();
 }
 
 void QmlRecordingControlBar::setupConnections()
@@ -120,6 +139,26 @@ void QmlRecordingControlBar::updateThemeColors()
     m_rootItem->setProperty("themeIconRecord", config.iconRecordColor);
     m_rootItem->setProperty("themeIconCancel", config.iconCancelColor);
     m_rootItem->setProperty("themeCornerRadius", config.cornerRadius);
+
+    updateTooltipThemeColors();
+}
+
+void QmlRecordingControlBar::updateTooltipThemeColors()
+{
+    if (!m_tooltipRootItem)
+        return;
+
+    const auto& config = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
+
+    QColor topColor = config.glassBackgroundColor;
+    topColor.setAlpha(qMin(255, topColor.alpha() + 20));
+
+    m_tooltipRootItem->setProperty("themeGlassBg", config.glassBackgroundColor);
+    m_tooltipRootItem->setProperty("themeGlassBgTop", topColor);
+    m_tooltipRootItem->setProperty("themeHighlight", config.glassHighlightColor);
+    m_tooltipRootItem->setProperty("themeBorder", config.hairlineBorderColor);
+    m_tooltipRootItem->setProperty("themeText", config.tooltipText);
+    m_tooltipRootItem->setProperty("themeCornerRadius", 6);
 }
 
 void QmlRecordingControlBar::applyPlatformWindowFlags()
@@ -160,6 +199,38 @@ void QmlRecordingControlBar::applyPlatformWindowFlags()
 #endif
 }
 
+void QmlRecordingControlBar::applyTooltipWindowFlags()
+{
+#ifdef Q_OS_MACOS
+    if (!m_tooltipView)
+        return;
+
+    NSView* view = reinterpret_cast<NSView*>(m_tooltipView->winId());
+    if (!view)
+        return;
+
+    NSWindow* window = [view window];
+    if (!window)
+        return;
+
+    [window setLevel:kCGScreenSaverWindowLevel];
+    [window setHidesOnDeactivate:NO];
+    [window setIgnoresMouseEvents:YES];
+    [window setHasShadow:YES];
+    [window setSharingType:NSWindowSharingNone];
+#elif defined(Q_OS_WIN)
+    if (!m_tooltipView)
+        return;
+
+    HWND hwnd = reinterpret_cast<HWND>(m_tooltipView->winId());
+    if (!hwnd)
+        return;
+
+    constexpr DWORD kExcludeFromCapture = 0x00000011;
+    SetWindowDisplayAffinity(hwnd, kExcludeFromCapture);
+#endif
+}
+
 void QmlRecordingControlBar::show()
 {
     ensureView();
@@ -170,6 +241,7 @@ void QmlRecordingControlBar::show()
 
 void QmlRecordingControlBar::hide()
 {
+    hideTooltip();
     if (m_view)
         m_view->hide();
 }
@@ -183,6 +255,13 @@ void QmlRecordingControlBar::close()
         m_view->deleteLater();
         m_view = nullptr;
         m_rootItem = nullptr;
+    }
+
+    if (m_tooltipView) {
+        m_tooltipView->close();
+        m_tooltipView->deleteLater();
+        m_tooltipView = nullptr;
+        m_tooltipRootItem = nullptr;
     }
 
     delete m_escShortcut;
@@ -394,15 +473,15 @@ QString QmlRecordingControlBar::tooltipForButton(int buttonId) const
 
 void QmlRecordingControlBar::showTooltip(const QString& text, const QRect& anchorRect)
 {
-    if (!m_tooltip) {
-        m_tooltip = new GlassTooltip(nullptr);
-        setWindowExcludedFromCapture(m_tooltip, true);
-        connect(m_tooltip, &QObject::destroyed, this, [this]() {
-            m_tooltip = nullptr;
-        });
-    }
+    ensureTooltipView();
+    if (!m_tooltipView || !m_tooltipRootItem || !m_view)
+        return;
 
-    const auto& style = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
+    m_tooltipRootItem->setProperty("tooltipText", text);
+    updateTooltipThemeColors();
+
+    const int tipWidth = qMax(1, qRound(m_tooltipRootItem->property("implicitWidth").toReal()));
+    const int tipHeight = qMax(1, qRound(m_tooltipRootItem->property("implicitHeight").toReal()));
     const QPoint anchorCenter = anchorRect.center();
 
     // Use the full control bar bounds as anchor (not the button bounds)
@@ -410,31 +489,44 @@ void QmlRecordingControlBar::showTooltip(const QString& text, const QRect& ancho
     const int barBottom = m_view->y() + m_view->height();
     const int barTop = m_view->y();
 
-    // Show tooltip below the control bar
-    const QPoint anchorEdge(anchorCenter.x(), barBottom);
-    m_tooltip->show(text, style, anchorEdge, /*above=*/false, /*showShadow=*/true);
+    auto positionTooltip = [this, tipWidth, tipHeight](const QPoint& anchorEdge, bool above) {
+        int x = anchorEdge.x() - tipWidth / 2;
+        int y = above ? anchorEdge.y() - tipHeight - 6 : anchorEdge.y() + 6;
+
+        if (QScreen* screen = QGuiApplication::screenAt(anchorEdge)) {
+            const QRect bounds = screen->availableGeometry();
+            x = qBound(bounds.left() + 5, x, bounds.right() - tipWidth - 5);
+        }
+
+        m_tooltipView->setGeometry(x, y, tipWidth, tipHeight);
+    };
+
+    positionTooltip(QPoint(anchorCenter.x(), barBottom), false);
+    m_tooltipView->show();
+    applyTooltipWindowFlags();
+    m_tooltipView->raise();
 
     // Fallback: if tooltip goes off screen, flip to above the control bar
     QScreen* screen = QGuiApplication::screenAt(anchorCenter);
     if (!screen) screen = QGuiApplication::primaryScreen();
     if (screen) {
         const QRect bounds = screen->availableGeometry();
-        const QRect tipGeom(m_tooltip->pos(), m_tooltip->size());
+        const QRect tipGeom = m_tooltipView->geometry();
         if (tipGeom.bottom() > bounds.bottom() - 5) {
-            const QPoint flippedEdge(anchorCenter.x(), barTop);
-            m_tooltip->show(text, style, flippedEdge, /*above=*/true, /*showShadow=*/true);
+            positionTooltip(QPoint(anchorCenter.x(), barTop), true);
         }
+
         // Final safety clamp
-        const QRect finalGeom(m_tooltip->pos(), m_tooltip->size());
+        const QRect finalGeom = m_tooltipView->geometry();
         if (finalGeom.bottom() > bounds.bottom() - 5)
-            m_tooltip->move(m_tooltip->x(), bounds.bottom() - m_tooltip->height() - 5);
+            m_tooltipView->setPosition(finalGeom.x(), bounds.bottom() - finalGeom.height() - 5);
     }
 }
 
 void QmlRecordingControlBar::hideTooltip()
 {
-    if (m_tooltip)
-        m_tooltip->hideTooltip();
+    if (m_tooltipView)
+        m_tooltipView->hide();
 }
 
 // ── Drag handling ──
