@@ -1644,7 +1644,7 @@ Kích thước: %2</translation>
     </message>
     <message>
         <source>-- fps</source>
-        <translation type="vanished">-- fps</translation>
+        <translation>-- fps</translation>
     </message>
     <message>
         <source>Annotate</source>
@@ -1657,23 +1657,23 @@ Kích thước: %2</translation>
     </message>
     <message>
         <source>%1 fps</source>
-        <translation type="vanished">%1 fps</translation>
+        <translation>%1 fps</translation>
     </message>
     <message>
         <source>Resume Recording</source>
-        <translation type="vanished">Tiếp tục ghi</translation>
+        <translation>Tiếp tục ghi</translation>
     </message>
     <message>
         <source>Pause Recording</source>
-        <translation type="vanished">Tạm dừng ghi</translation>
+        <translation>Tạm dừng ghi</translation>
     </message>
     <message>
         <source>Stop Recording</source>
-        <translation type="vanished">Dừng ghi</translation>
+        <translation>Dừng ghi</translation>
     </message>
     <message>
         <source>Cancel Recording (Esc)</source>
-        <translation type="vanished">Hủy ghi (Esc)</translation>
+        <translation>Hủy ghi (Esc)</translation>
     </message>
     <message>
         <source>Pause (Space)</source>

@@ -1722,7 +1722,7 @@ Größe: %2</translation>
     </message>
     <message>
         <source>-- fps</source>
-        <translation type="vanished">-- fps</translation>
+        <translation>-- fps</translation>
     </message>
     <message>
         <source>Annotate</source>
@@ -1735,23 +1735,23 @@ Größe: %2</translation>
     </message>
     <message>
         <source>%1 fps</source>
-        <translation type="vanished">%1 fps</translation>
+        <translation>%1 fps</translation>
     </message>
     <message>
         <source>Resume Recording</source>
-        <translation type="vanished">Aufnahme fortsetzen</translation>
+        <translation>Aufnahme fortsetzen</translation>
     </message>
     <message>
         <source>Pause Recording</source>
-        <translation type="vanished">Aufnahme pausieren</translation>
+        <translation>Aufnahme pausieren</translation>
     </message>
     <message>
         <source>Stop Recording</source>
-        <translation type="vanished">Aufnahme stoppen</translation>
+        <translation>Aufnahme stoppen</translation>
     </message>
     <message>
         <source>Cancel Recording (Esc)</source>
-        <translation type="vanished">Aufnahme abbrechen (Esc)</translation>
+        <translation>Aufnahme abbrechen (Esc)</translation>
     </message>
     <message>
         <source>Pause (Space)</source>

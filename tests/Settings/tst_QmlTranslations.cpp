@@ -20,6 +20,7 @@ class tst_QmlTranslations : public QObject
 private slots:
     void initTestCase();
     void testQmlSettingsContexts();
+    void testRecordingControlBarContext();
 
 private:
     QTranslator m_translator;
@@ -46,6 +47,22 @@ void tst_QmlTranslations::testQmlSettingsContexts()
     QCOMPARE(QCoreApplication::translate("SnapTray::QmlSettingsWindow",
                                          "Settings saved. Language change will apply after restart."),
              QString::fromUtf8("設定已儲存。語言變更將在重新啟動後生效。"));
+}
+
+void tst_QmlTranslations::testRecordingControlBarContext()
+{
+    QCOMPARE(QCoreApplication::translate("RecordingControlBar", "-- fps"),
+             QString::fromUtf8("-- 幀/秒"));
+    QCOMPARE(QCoreApplication::translate("RecordingControlBar", "%1 fps").arg(30),
+             QString::fromUtf8("30 幀/秒"));
+    QCOMPARE(QCoreApplication::translate("RecordingControlBar", "Pause Recording"),
+             QString::fromUtf8("暫停錄製"));
+    QCOMPARE(QCoreApplication::translate("RecordingControlBar", "Resume Recording"),
+             QString::fromUtf8("繼續錄製"));
+    QCOMPARE(QCoreApplication::translate("RecordingControlBar", "Stop Recording"),
+             QString::fromUtf8("停止錄製"));
+    QCOMPARE(QCoreApplication::translate("RecordingControlBar", "Cancel Recording (Esc)"),
+             QString::fromUtf8("取消錄製 (Esc)"));
 }
 
 QTEST_MAIN(tst_QmlTranslations)

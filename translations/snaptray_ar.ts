@@ -1644,7 +1644,7 @@ Size: %2</source>
     </message>
     <message>
         <source>-- fps</source>
-        <translation type="vanished">-- إطار/ث</translation>
+        <translation>-- إطار/ث</translation>
     </message>
     <message>
         <source>Annotate</source>
@@ -1657,23 +1657,23 @@ Size: %2</source>
     </message>
     <message>
         <source>%1 fps</source>
-        <translation type="vanished">%1 إطار/ث</translation>
+        <translation>%1 إطار/ث</translation>
     </message>
     <message>
         <source>Resume Recording</source>
-        <translation type="vanished">استئناف التسجيل</translation>
+        <translation>استئناف التسجيل</translation>
     </message>
     <message>
         <source>Pause Recording</source>
-        <translation type="vanished">إيقاف التسجيل مؤقتًا</translation>
+        <translation>إيقاف التسجيل مؤقتًا</translation>
     </message>
     <message>
         <source>Stop Recording</source>
-        <translation type="vanished">إيقاف التسجيل</translation>
+        <translation>إيقاف التسجيل</translation>
     </message>
     <message>
         <source>Cancel Recording (Esc)</source>
-        <translation type="vanished">إلغاء التسجيل (Esc)</translation>
+        <translation>إلغاء التسجيل (Esc)</translation>
     </message>
     <message>
         <source>Pause (Space)</source>

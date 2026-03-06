@@ -1644,7 +1644,7 @@ Boyut: %2</translation>
     </message>
     <message>
         <source>-- fps</source>
-        <translation type="vanished">-- FPS</translation>
+        <translation>-- FPS</translation>
     </message>
     <message>
         <source>Annotate</source>
@@ -1657,23 +1657,23 @@ Boyut: %2</translation>
     </message>
     <message>
         <source>%1 fps</source>
-        <translation type="vanished">%1 FPS</translation>
+        <translation>%1 FPS</translation>
     </message>
     <message>
         <source>Resume Recording</source>
-        <translation type="vanished">Kaydı Sürdür</translation>
+        <translation>Kaydı Sürdür</translation>
     </message>
     <message>
         <source>Pause Recording</source>
-        <translation type="vanished">Kaydı Duraklat</translation>
+        <translation>Kaydı Duraklat</translation>
     </message>
     <message>
         <source>Stop Recording</source>
-        <translation type="vanished">Kaydı Durdur</translation>
+        <translation>Kaydı Durdur</translation>
     </message>
     <message>
         <source>Cancel Recording (Esc)</source>
-        <translation type="vanished">Kaydı İptal Et (Esc)</translation>
+        <translation>Kaydı İptal Et (Esc)</translation>
     </message>
     <message>
         <source>Pause (Space)</source>

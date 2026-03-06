@@ -1722,7 +1722,7 @@ Size: %2</source>
     </message>
     <message>
         <source>-- fps</source>
-        <translation type="vanished">-- 프레임/초</translation>
+        <translation>-- 프레임/초</translation>
     </message>
     <message>
         <source>Annotate</source>
@@ -1735,23 +1735,23 @@ Size: %2</source>
     </message>
     <message>
         <source>%1 fps</source>
-        <translation type="vanished">%1 프레임/초</translation>
+        <translation>%1 프레임/초</translation>
     </message>
     <message>
         <source>Resume Recording</source>
-        <translation type="vanished">녹화 재개</translation>
+        <translation>녹화 재개</translation>
     </message>
     <message>
         <source>Pause Recording</source>
-        <translation type="vanished">녹화 일시 중지</translation>
+        <translation>녹화 일시 중지</translation>
     </message>
     <message>
         <source>Stop Recording</source>
-        <translation type="vanished">녹화 중지</translation>
+        <translation>녹화 중지</translation>
     </message>
     <message>
         <source>Cancel Recording (Esc)</source>
-        <translation type="vanished">녹화 취소 (Esc)</translation>
+        <translation>녹화 취소 (Esc)</translation>
     </message>
     <message>
         <source>Pause (Space)</source>

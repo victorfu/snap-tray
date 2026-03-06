@@ -1722,7 +1722,7 @@ Dimensione: %2</translation>
     </message>
     <message>
         <source>-- fps</source>
-        <translation type="vanished">-- fps</translation>
+        <translation>-- fps</translation>
     </message>
     <message>
         <source>Annotate</source>
@@ -1735,23 +1735,23 @@ Dimensione: %2</translation>
     </message>
     <message>
         <source>%1 fps</source>
-        <translation type="vanished">%1 fps</translation>
+        <translation>%1 fps</translation>
     </message>
     <message>
         <source>Resume Recording</source>
-        <translation type="vanished">Riprendi registrazione</translation>
+        <translation>Riprendi registrazione</translation>
     </message>
     <message>
         <source>Pause Recording</source>
-        <translation type="vanished">Metti in pausa registrazione</translation>
+        <translation>Metti in pausa registrazione</translation>
     </message>
     <message>
         <source>Stop Recording</source>
-        <translation type="vanished">Interrompi registrazione</translation>
+        <translation>Interrompi registrazione</translation>
     </message>
     <message>
         <source>Cancel Recording (Esc)</source>
-        <translation type="vanished">Annulla registrazione (Esc)</translation>
+        <translation>Annulla registrazione (Esc)</translation>
     </message>
     <message>
         <source>Pause (Space)</source>

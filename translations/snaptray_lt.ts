@@ -1644,7 +1644,7 @@ Dydis: %2</translation>
     </message>
     <message>
         <source>-- fps</source>
-        <translation type="vanished">-- FPS</translation>
+        <translation>-- FPS</translation>
     </message>
     <message>
         <source>Annotate</source>
@@ -1657,23 +1657,23 @@ Dydis: %2</translation>
     </message>
     <message>
         <source>%1 fps</source>
-        <translation type="vanished">%1 FPS</translation>
+        <translation>%1 FPS</translation>
     </message>
     <message>
         <source>Resume Recording</source>
-        <translation type="vanished">Tęsti įrašymą</translation>
+        <translation>Tęsti įrašymą</translation>
     </message>
     <message>
         <source>Pause Recording</source>
-        <translation type="vanished">Pristabdyti įrašymą</translation>
+        <translation>Pristabdyti įrašymą</translation>
     </message>
     <message>
         <source>Stop Recording</source>
-        <translation type="vanished">Sustabdyti įrašymą</translation>
+        <translation>Sustabdyti įrašymą</translation>
     </message>
     <message>
         <source>Cancel Recording (Esc)</source>
-        <translation type="vanished">Atšaukti įrašymą (Esc)</translation>
+        <translation>Atšaukti įrašymą (Esc)</translation>
     </message>
     <message>
         <source>Pause (Space)</source>

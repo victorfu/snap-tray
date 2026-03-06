@@ -1722,7 +1722,7 @@ Size: %2</source>
     </message>
     <message>
         <source>-- fps</source>
-        <translation type="vanished">-- 幀/秒</translation>
+        <translation>-- 幀/秒</translation>
     </message>
     <message>
         <source>Annotate</source>
@@ -1735,23 +1735,23 @@ Size: %2</source>
     </message>
     <message>
         <source>%1 fps</source>
-        <translation type="vanished">%1 幀/秒</translation>
+        <translation>%1 幀/秒</translation>
     </message>
     <message>
         <source>Resume Recording</source>
-        <translation type="vanished">繼續錄製</translation>
+        <translation>繼續錄製</translation>
     </message>
     <message>
         <source>Pause Recording</source>
-        <translation type="vanished">暫停錄製</translation>
+        <translation>暫停錄製</translation>
     </message>
     <message>
         <source>Stop Recording</source>
-        <translation type="vanished">停止錄製</translation>
+        <translation>停止錄製</translation>
     </message>
     <message>
         <source>Cancel Recording (Esc)</source>
-        <translation type="vanished">取消錄製 (Esc)</translation>
+        <translation>取消錄製 (Esc)</translation>
     </message>
     <message>
         <source>Pause (Space)</source>

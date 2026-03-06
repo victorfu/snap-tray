@@ -1722,7 +1722,7 @@ Size: %2</source>
     </message>
     <message>
         <source>-- fps</source>
-        <translation type="vanished">-- кадрова/с</translation>
+        <translation>-- кадрова/с</translation>
     </message>
     <message>
         <source>Annotate</source>
@@ -1735,23 +1735,23 @@ Size: %2</source>
     </message>
     <message>
         <source>%1 fps</source>
-        <translation type="vanished">%1 кадрова/с</translation>
+        <translation>%1 кадрова/с</translation>
     </message>
     <message>
         <source>Resume Recording</source>
-        <translation type="vanished">Настави снимање</translation>
+        <translation>Настави снимање</translation>
     </message>
     <message>
         <source>Pause Recording</source>
-        <translation type="vanished">Паузирај снимање</translation>
+        <translation>Паузирај снимање</translation>
     </message>
     <message>
         <source>Stop Recording</source>
-        <translation type="vanished">Заустави снимање</translation>
+        <translation>Заустави снимање</translation>
     </message>
     <message>
         <source>Cancel Recording (Esc)</source>
-        <translation type="vanished">Откажи снимање (Esc)</translation>
+        <translation>Откажи снимање (Esc)</translation>
     </message>
     <message>
         <source>Pause (Space)</source>

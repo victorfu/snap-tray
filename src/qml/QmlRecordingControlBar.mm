@@ -21,9 +21,23 @@ namespace SnapTray {
 
 namespace {
 
+constexpr auto kRecordingControlBarContext = "RecordingControlBar";
+const char* const kPreparingText =
+    QT_TRANSLATE_NOOP("RecordingControlBar", "Preparing...");
+const char* const kFpsText =
+    QT_TRANSLATE_NOOP("RecordingControlBar", "%1 fps");
+const char* const kResumeRecordingText =
+    QT_TRANSLATE_NOOP("RecordingControlBar", "Resume Recording");
+const char* const kPauseRecordingText =
+    QT_TRANSLATE_NOOP("RecordingControlBar", "Pause Recording");
+const char* const kStopRecordingText =
+    QT_TRANSLATE_NOOP("RecordingControlBar", "Stop Recording");
+const char* const kCancelRecordingText =
+    QT_TRANSLATE_NOOP("RecordingControlBar", "Cancel Recording (Esc)");
+
 QString translateRecordingControlBar(const char* sourceText)
 {
-    return QCoreApplication::translate("RecordingControlBar", sourceText);
+    return QCoreApplication::translate(kRecordingControlBarContext, sourceText);
 }
 
 } // namespace
@@ -414,7 +428,7 @@ void QmlRecordingControlBar::setPreparing(bool preparing)
 
     m_rootItem->setProperty("isPreparing", preparing);
     if (preparing)
-        m_rootItem->setProperty("duration", translateRecordingControlBar("Preparing..."));
+        m_rootItem->setProperty("duration", translateRecordingControlBar(kPreparingText));
     else
         m_rootItem->setProperty("duration", QStringLiteral("00:00:00"));
 
@@ -440,7 +454,7 @@ void QmlRecordingControlBar::updateFps(double fps)
 {
     if (m_rootItem)
         m_rootItem->setProperty("fpsText",
-                                translateRecordingControlBar("%1 fps").arg(qRound(fps)));
+                                translateRecordingControlBar(kFpsText).arg(qRound(fps)));
 }
 
 void QmlRecordingControlBar::setAudioEnabled(bool enabled)
@@ -482,12 +496,12 @@ QString QmlRecordingControlBar::tooltipForButton(int buttonId) const
 {
     switch (buttonId) {
     case 0: // Pause
-        return m_isPaused ? translateRecordingControlBar("Resume Recording")
-                          : translateRecordingControlBar("Pause Recording");
+        return m_isPaused ? translateRecordingControlBar(kResumeRecordingText)
+                          : translateRecordingControlBar(kPauseRecordingText);
     case 1: // Stop
-        return translateRecordingControlBar("Stop Recording");
+        return translateRecordingControlBar(kStopRecordingText);
     case 2: // Cancel
-        return translateRecordingControlBar("Cancel Recording");
+        return translateRecordingControlBar(kCancelRecordingText);
     default:
         return QString();
     }

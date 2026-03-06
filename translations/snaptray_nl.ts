@@ -1722,7 +1722,7 @@ Grootte: %2</translation>
     </message>
     <message>
         <source>-- fps</source>
-        <translation type="vanished">-- fps</translation>
+        <translation>-- fps</translation>
     </message>
     <message>
         <source>Annotate</source>
@@ -1735,23 +1735,23 @@ Grootte: %2</translation>
     </message>
     <message>
         <source>%1 fps</source>
-        <translation type="vanished">%1 fps</translation>
+        <translation>%1 fps</translation>
     </message>
     <message>
         <source>Resume Recording</source>
-        <translation type="vanished">Opname hervatten</translation>
+        <translation>Opname hervatten</translation>
     </message>
     <message>
         <source>Pause Recording</source>
-        <translation type="vanished">Opname pauzeren</translation>
+        <translation>Opname pauzeren</translation>
     </message>
     <message>
         <source>Stop Recording</source>
-        <translation type="vanished">Opname stoppen</translation>
+        <translation>Opname stoppen</translation>
     </message>
     <message>
         <source>Cancel Recording (Esc)</source>
-        <translation type="vanished">Opname annuleren (Esc)</translation>
+        <translation>Opname annuleren (Esc)</translation>
     </message>
     <message>
         <source>Pause (Space)</source>

@@ -1722,7 +1722,7 @@ Size: %2</source>
     </message>
     <message>
         <source>-- fps</source>
-        <translation type="vanished">-- フレーム/秒</translation>
+        <translation>-- フレーム/秒</translation>
     </message>
     <message>
         <source>Annotate</source>
@@ -1735,23 +1735,23 @@ Size: %2</source>
     </message>
     <message>
         <source>%1 fps</source>
-        <translation type="vanished">%1 フレーム/秒</translation>
+        <translation>%1 フレーム/秒</translation>
     </message>
     <message>
         <source>Resume Recording</source>
-        <translation type="vanished">録画を再開</translation>
+        <translation>録画を再開</translation>
     </message>
     <message>
         <source>Pause Recording</source>
-        <translation type="vanished">録画を一時停止</translation>
+        <translation>録画を一時停止</translation>
     </message>
     <message>
         <source>Stop Recording</source>
-        <translation type="vanished">録画を停止</translation>
+        <translation>録画を停止</translation>
     </message>
     <message>
         <source>Cancel Recording (Esc)</source>
-        <translation type="vanished">録画をキャンセル (Esc)</translation>
+        <translation>録画をキャンセル (Esc)</translation>
     </message>
     <message>
         <source>Pause (Space)</source>

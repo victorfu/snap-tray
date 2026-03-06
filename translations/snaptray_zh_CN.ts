@@ -1601,7 +1601,7 @@ Size: %2</source>
     </message>
     <message>
         <source>-- fps</source>
-        <translation type="vanished">-- 帧/秒</translation>
+        <translation>-- 帧/秒</translation>
     </message>
     <message>
         <source>Annotate</source>
@@ -1614,23 +1614,23 @@ Size: %2</source>
     </message>
     <message>
         <source>%1 fps</source>
-        <translation type="vanished">%1 帧/秒</translation>
+        <translation>%1 帧/秒</translation>
     </message>
     <message>
         <source>Resume Recording</source>
-        <translation type="vanished">恢复录制</translation>
+        <translation>恢复录制</translation>
     </message>
     <message>
         <source>Pause Recording</source>
-        <translation type="vanished">暂停录制</translation>
+        <translation>暂停录制</translation>
     </message>
     <message>
         <source>Stop Recording</source>
-        <translation type="vanished">停止录制</translation>
+        <translation>停止录制</translation>
     </message>
     <message>
         <source>Cancel Recording (Esc)</source>
-        <translation type="vanished">取消录制 (Esc)</translation>
+        <translation>取消录制 (Esc)</translation>
     </message>
     <message>
         <source>Pause (Space)</source>

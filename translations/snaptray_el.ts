@@ -1644,7 +1644,7 @@ Size: %2</source>
     </message>
     <message>
         <source>-- fps</source>
-        <translation type="vanished">-- fps</translation>
+        <translation>-- fps</translation>
     </message>
     <message>
         <source>Annotate</source>
@@ -1657,23 +1657,23 @@ Size: %2</source>
     </message>
     <message>
         <source>%1 fps</source>
-        <translation type="vanished">%1 fps</translation>
+        <translation>%1 fps</translation>
     </message>
     <message>
         <source>Resume Recording</source>
-        <translation type="vanished">Συνέχιση εγγραφής</translation>
+        <translation>Συνέχιση εγγραφής</translation>
     </message>
     <message>
         <source>Pause Recording</source>
-        <translation type="vanished">Παύση εγγραφής</translation>
+        <translation>Παύση εγγραφής</translation>
     </message>
     <message>
         <source>Stop Recording</source>
-        <translation type="vanished">Διακοπή εγγραφής</translation>
+        <translation>Διακοπή εγγραφής</translation>
     </message>
     <message>
         <source>Cancel Recording (Esc)</source>
-        <translation type="vanished">Ακύρωση εγγραφής (Esc)</translation>
+        <translation>Ακύρωση εγγραφής (Esc)</translation>
     </message>
     <message>
         <source>Pause (Space)</source>

@@ -28,7 +28,7 @@ Item {
     // ── Properties from C++ backend ──
     property string duration: "00:00:00"
     property string regionSize: "--"
-    property string fpsText: "-- fps"
+    property string fpsText: qsTr("-- fps")
     property bool isPaused: false
     property bool isPreparing: false
     property string preparingStatus: ""

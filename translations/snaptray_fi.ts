@@ -1644,7 +1644,7 @@ Koko: %2</translation>
     </message>
     <message>
         <source>-- fps</source>
-        <translation type="vanished">-- fps</translation>
+        <translation>-- fps</translation>
     </message>
     <message>
         <source>Annotate</source>
@@ -1657,23 +1657,23 @@ Koko: %2</translation>
     </message>
     <message>
         <source>%1 fps</source>
-        <translation type="vanished">%1 fps</translation>
+        <translation>%1 fps</translation>
     </message>
     <message>
         <source>Resume Recording</source>
-        <translation type="vanished">Jatka tallennusta</translation>
+        <translation>Jatka tallennusta</translation>
     </message>
     <message>
         <source>Pause Recording</source>
-        <translation type="vanished">Keskeytä tallennus</translation>
+        <translation>Keskeytä tallennus</translation>
     </message>
     <message>
         <source>Stop Recording</source>
-        <translation type="vanished">Lopeta tallennus</translation>
+        <translation>Lopeta tallennus</translation>
     </message>
     <message>
         <source>Cancel Recording (Esc)</source>
-        <translation type="vanished">Peruuta tallennus (Esc)</translation>
+        <translation>Peruuta tallennus (Esc)</translation>
     </message>
     <message>
         <source>Pause (Space)</source>

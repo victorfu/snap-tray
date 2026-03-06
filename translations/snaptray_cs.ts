@@ -1722,7 +1722,7 @@ Velikost: %2</translation>
     </message>
     <message>
         <source>-- fps</source>
-        <translation type="vanished">-- fps</translation>
+        <translation>-- fps</translation>
     </message>
     <message>
         <source>Annotate</source>
@@ -1735,23 +1735,23 @@ Velikost: %2</translation>
     </message>
     <message>
         <source>%1 fps</source>
-        <translation type="vanished">%1 fps</translation>
+        <translation>%1 fps</translation>
     </message>
     <message>
         <source>Resume Recording</source>
-        <translation type="vanished">Obnovit nahrávání</translation>
+        <translation>Obnovit nahrávání</translation>
     </message>
     <message>
         <source>Pause Recording</source>
-        <translation type="vanished">Pozastavit nahrávání</translation>
+        <translation>Pozastavit nahrávání</translation>
     </message>
     <message>
         <source>Stop Recording</source>
-        <translation type="vanished">Zastavit nahrávání</translation>
+        <translation>Zastavit nahrávání</translation>
     </message>
     <message>
         <source>Cancel Recording (Esc)</source>
-        <translation type="vanished">Zrušit nahrávání (Esc)</translation>
+        <translation>Zrušit nahrávání (Esc)</translation>
     </message>
     <message>
         <source>Pause (Space)</source>

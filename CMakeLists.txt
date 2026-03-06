@@ -786,12 +786,10 @@ add_library(snaptray_ui STATIC
 
     # Recording management (moved from APP_SOURCES for testability)
     src/RecordingManager.cpp
-    src/RecordingRegionSelector.cpp
     src/RecordingInitTask.cpp
     src/RecordingRegionNormalizer.cpp
     src/encoding/EncodingWorker.cpp
     include/RecordingManager.h
-    include/RecordingRegionSelector.h
     include/RecordingInitTask.h
     include/RecordingRegionNormalizer.h
     include/encoding/EncodingWorker.h
