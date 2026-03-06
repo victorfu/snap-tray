@@ -1147,6 +1147,7 @@ qt_add_translations(${PROJECT_NAME}
         snaptray_qml
         snaptray_core
         snaptray_ui
+        snaptray_qml
         snaptray_platform
         snaptray_colorwidgets
         snaptray_algorithms

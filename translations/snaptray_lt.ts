@@ -1,120 +1,210 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!DOCTYPE TS>
+<?xml version='1.0' encoding='utf-8'?>
 <TS version="2.1" language="lt">
+<context>
+    <name>AboutSettings</name>
+    <message>
+        <location filename="../src/qml/settings/AboutSettings.qml" line="47" />
+        <source>Version </source>
+        <translation>Versija </translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/AboutSettings.qml" line="59" />
+        <source>Copyright 2026 Victor Fu</source>
+        <translation>Autorių teisės 2026 Victor Fu</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/AboutSettings.qml" line="69" />
+        <source>Author: Victor Fu</source>
+        <translation>Autorius: Victor Fu</translation>
+        </message>
+</context>
+<context>
+    <name>AdvancedSettings</name>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="21" />
+        <source>Capture</source>
+        <translation>Fiksavimas</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="24" />
+        <source>Show shortcut hints</source>
+        <translation>Rodyti sparčiųjų klavišų užuominas</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="31" />
+        <source>MCP</source>
+        <translation>MCP</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="36" />
+        <source>Enable MCP server</source>
+        <translation>Įjungti MCP serverį</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="45" />
+        <source>Blur</source>
+        <translation>Suliejimas</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="48" />
+        <source>Blur intensity</source>
+        <translation>Suliejimo intensyvumas:</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="56" />
+        <source>Blur type</source>
+        <translation>Suliejimo tipas:</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="58" />
+        <source>Pixelate</source>
+        <translation>Pikselizavimas</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="59" />
+        <source>Gaussian</source>
+        <translation>Gauso</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="65" />
+        <source>Pin Window</source>
+        <translation>Prisegti langą</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="68" />
+        <source>Default opacity</source>
+        <translation>Numatytasis nepermatomumas:</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="77" />
+        <source>Opacity step</source>
+        <translation>Nepermatomumo žingsnis:</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="86" />
+        <source>Zoom step</source>
+        <translation>Priartinimo žingsnis:</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="95" />
+        <source>Max cache files</source>
+        <translation>Maks. podėlio failų:</translation>
+        </message>
+</context>
 <context>
     <name>BeautifyPanel</name>
     <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="54"/>
+        <location filename="../src/beautify/BeautifyPanel.cpp" line="55" />
         <source>Ocean</source>
         <translation>Vandenynas</translation>
     </message>
     <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="55"/>
+        <location filename="../src/beautify/BeautifyPanel.cpp" line="56" />
         <source>Sunset</source>
         <translation>Saulėlydis</translation>
     </message>
     <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="56"/>
+        <location filename="../src/beautify/BeautifyPanel.cpp" line="57" />
         <source>Lavender</source>
         <translation>Levanda</translation>
     </message>
     <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="57"/>
+        <location filename="../src/beautify/BeautifyPanel.cpp" line="58" />
         <source>Forest</source>
         <translation>Miškas</translation>
     </message>
     <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="58"/>
+        <location filename="../src/beautify/BeautifyPanel.cpp" line="59" />
         <source>Midnight</source>
         <translation>Vidurnaktis</translation>
     </message>
     <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="59"/>
+        <location filename="../src/beautify/BeautifyPanel.cpp" line="60" />
         <source>Rose</source>
         <translation>Rožė</translation>
     </message>
     <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="60"/>
+        <location filename="../src/beautify/BeautifyPanel.cpp" line="61" />
         <source>Sky</source>
         <translation>Dangus</translation>
     </message>
     <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="61"/>
+        <location filename="../src/beautify/BeautifyPanel.cpp" line="62" />
         <source>Charcoal</source>
         <translation>Antracitas</translation>
     </message>
     <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="91"/>
+        <location filename="../src/beautify/BeautifyPanel.cpp" line="92" />
         <source>Background:</source>
         <translation>Fonas:</translation>
     </message>
     <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="93"/>
+        <location filename="../src/beautify/BeautifyPanel.cpp" line="94" />
         <source>Solid</source>
         <translation>Vientisas</translation>
     </message>
     <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="94"/>
+        <location filename="../src/beautify/BeautifyPanel.cpp" line="95" />
         <source>Linear Gradient</source>
         <translation>Linijinis gradientas</translation>
     </message>
     <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="95"/>
+        <location filename="../src/beautify/BeautifyPanel.cpp" line="96" />
         <source>Radial Gradient</source>
         <translation>Radialinis gradientas</translation>
     </message>
     <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="101"/>
+        <location filename="../src/beautify/BeautifyPanel.cpp" line="102" />
         <source>Colors:</source>
         <translation>Spalvos:</translation>
     </message>
     <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="115"/>
+        <location filename="../src/beautify/BeautifyPanel.cpp" line="116" />
         <source>Padding:</source>
         <translation>Vidinės paraštės:</translation>
     </message>
     <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="126"/>
+        <location filename="../src/beautify/BeautifyPanel.cpp" line="127" />
         <source>Corners:</source>
         <translation>Kampai:</translation>
     </message>
     <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="137"/>
+        <location filename="../src/beautify/BeautifyPanel.cpp" line="138" />
         <source>Ratio:</source>
         <translation>Santykis:</translation>
     </message>
     <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="139"/>
+        <location filename="../src/beautify/BeautifyPanel.cpp" line="140" />
         <source>Auto</source>
         <translation>Automatinis</translation>
     </message>
     <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="149"/>
+        <location filename="../src/beautify/BeautifyPanel.cpp" line="150" />
         <source>Shadow</source>
         <translation>Šešėlis</translation>
     </message>
     <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="153"/>
+        <location filename="../src/beautify/BeautifyPanel.cpp" line="154" />
         <source>  Blur:</source>
         <translation>  Suliejimas:</translation>
     </message>
     <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="164"/>
+        <location filename="../src/beautify/BeautifyPanel.cpp" line="165" />
         <source>Copy</source>
         <translation>Kopijuoti</translation>
     </message>
     <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="165"/>
+        <location filename="../src/beautify/BeautifyPanel.cpp" line="166" />
         <source>Save</source>
         <translation>Išsaugoti</translation>
     </message>
     <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="166"/>
+        <location filename="../src/beautify/BeautifyPanel.cpp" line="167" />
         <source>Close</source>
         <translation>Uždaryti</translation>
     </message>
     <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="467"/>
+        <location filename="../src/beautify/BeautifyPanel.cpp" line="387" />
         <source>Select Color</source>
         <translation>Pasirinkti spalvą</translation>
     </message>
@@ -153,28 +243,178 @@
 <context>
     <name>ClickThroughExitButton</name>
     <message>
-        <location filename="../src/pinwindow/ClickThroughExitButton.cpp" line="27"/>
+        <location filename="../src/pinwindow/ClickThroughExitButton.cpp" line="33" />
         <source>Click-through</source>
         <translation>Paspaudimų praleidimas</translation>
     </message>
 </context>
 <context>
+    <name>FilesSettings</name>
+    <message>
+        <location filename="../src/qml/settings/FilesSettings.qml" line="21" />
+        <source>Save Locations</source>
+        <translation>Išsaugojimo vietos</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/FilesSettings.qml" line="24" />
+        <source>Screenshots</source>
+        <translation>Ekrano nuotraukos:</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/FilesSettings.qml" line="30" />
+        <source>Recordings</source>
+        <translation>Įrašai:</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/FilesSettings.qml" line="35" />
+        <source>Filename Format</source>
+        <translation>Failo pavadinimo formatas</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/FilesSettings.qml" line="38" />
+        <source>Template</source>
+        <translation>Šablonas:</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/FilesSettings.qml" line="71" />
+        <source>Tokens: {prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}
+Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
+        <translation>Žetonai: {prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}
+Datos žetonai: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} arba {date}</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/FilesSettings.qml" line="81" />
+        <source>Preview: </source>
+        <translation>Peržiūra: </translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/FilesSettings.qml" line="89" />
+        <source>Save Behavior</source>
+        <translation>Išsaugojimo elgsena</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/FilesSettings.qml" line="92" />
+        <source>Auto-save screenshots</source>
+        <translation>Automatiškai išsaugoti ekrano kopijas</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/FilesSettings.qml" line="98" />
+        <source>Auto-save recordings</source>
+        <translation>Automatiškai išsaugoti įrašus</translation>
+        </message>
+</context>
+<context>
     <name>FormatSelectionWidget</name>
     <message>
-        <location filename="../src/video/FormatSelectionWidget.cpp" line="31"/>
         <source>Best quality, widely compatible</source>
-        <translation>Geriausia kokybė, platus suderinamumas</translation>
+        <translation type="vanished">Geriausia kokybė, platus suderinamumas</translation>
     </message>
     <message>
-        <location filename="../src/video/FormatSelectionWidget.cpp" line="39"/>
         <source>Universal support, larger file size</source>
-        <translation>Universalus palaikymas, didesnis failo dydis</translation>
+        <translation type="vanished">Universalus palaikymas, didesnis failo dydis</translation>
     </message>
     <message>
-        <location filename="../src/video/FormatSelectionWidget.cpp" line="47"/>
         <source>Small file size, modern browsers only</source>
-        <translation>Mažas failo dydis, tik šiuolaikinėms naršyklėms</translation>
+        <translation type="vanished">Mažas failo dydis, tik šiuolaikinėms naršyklėms</translation>
     </message>
+</context>
+<context>
+    <name>GeneralSettings</name>
+    <message>
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="31" />
+        <source>Start on login</source>
+        <translation>Paleisti prisijungus</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="36" />
+        <source>Language</source>
+        <translation>Kalba</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="39" />
+        <source>Display language</source>
+        <translation>Rodymo kalba:</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="50" />
+        <source>Appearance</source>
+        <translation>Išvaizda</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="53" />
+        <source>App theme</source>
+        <translation>Programos tema</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="55" />
+        <source>Dark</source>
+        <translation>Tamsus</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="56" />
+        <source>Light</source>
+        <translation>Šviesus</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="64" />
+        <source>Permissions</source>
+        <translation>Leidimai</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="69" />
+        <source>Screen Recording</source>
+        <translation>Ekrano įrašymas</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="70" />
+        <source>Required for capturing screenshots and recording your screen.</source>
+        <translation>Reikalinga ekrano kopijoms daryti ir ekranui įrašyti.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="77" />
+        <source>Accessibility</source>
+        <translation>Pritaikymas neįgaliesiems:</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="78" />
+        <source>Required for global hotkeys and window detection.</source>
+        <translation>Reikalinga visuotiniams sparčiųjų klavišų deriniams ir langų aptikimui.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="84" />
+        <source>Command Line</source>
+        <translation>Komandinė eilutė</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="88" />
+        <source>CLI Status</source>
+        <translation>CLI būsena</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="108" />
+        <source>Please wait...</source>
+        <translation>Palaukite...</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="110" />
+        <source>'snaptray' command is available</source>
+        <translation>Komanda 'snaptray' prieinama terminale</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="111" />
+        <source>'snaptray' command is not installed</source>
+        <translation>Komanda 'snaptray' nėra įdiegta</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="121" />
+        <source>Uninstall CLI</source>
+        <translation>Pašalinti CLI</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="121" />
+        <source>Install CLI</source>
+        <translation>Įdiegti CLI</translation>
+        </message>
 </context>
 <context>
     <name>HotkeyManager</name>
@@ -240,19 +480,64 @@
     </message>
 </context>
 <context>
+    <name>HotkeySettings</name>
+    <message>
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="46" />
+        <source>Keyboard Shortcuts</source>
+        <translation>Klaviatūros spartieji klavišai</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="58" />
+        <source>Restore All Defaults</source>
+        <translation>Atkurti visas numatytąsias reikšmes</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="144" />
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="155" />
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="177" />
+        <source>Not Set</source>
+        <translation>Nenustatyta</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="174" />
+        <source>Conflict</source>
+        <translation>Konfliktas</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="176" />
+        <source>Active</source>
+        <translation>Aktyvus</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="199" />
+        <source>Edit</source>
+        <translation>Redaguoti</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="204" />
+        <source>Clear</source>
+        <translation>Išvalyti</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="209" />
+        <source>Reset</source>
+        <translation>Atstatyti</translation>
+        </message>
+</context>
+<context>
     <name>MagnifierPanel</name>
     <message>
-        <location filename="../src/region/MagnifierPanel.cpp" line="132"/>
+        <location filename="../src/region/MagnifierPanel.cpp" line="132" />
         <source>RGB: %1,%2,%3</source>
         <translation>RGB: %1,%2,%3</translation>
     </message>
     <message>
-        <location filename="../src/region/MagnifierPanel.cpp" line="328"/>
+        <location filename="../src/region/MagnifierPanel.cpp" line="328" />
         <source>Shift: Switch color format</source>
         <translation>Shift: keisti spalvos formatą</translation>
     </message>
     <message>
-        <location filename="../src/region/MagnifierPanel.cpp" line="332"/>
+        <location filename="../src/region/MagnifierPanel.cpp" line="332" />
         <source>C: Copy color value</source>
         <translation>C: kopijuoti spalvos reikšmę</translation>
     </message>
@@ -260,162 +545,162 @@
 <context>
     <name>MainApplication</name>
     <message>
-        <location filename="../src/MainApplication.cpp" line="129"/>
+        <location filename="../src/MainApplication.cpp" line="130" />
         <source>SnapTray is already running</source>
         <translation>SnapTray jau veikia</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="278"/>
+        <location filename="../src/MainApplication.cpp" line="280" />
         <source>Recording Saved</source>
         <translation>Įrašas išsaugotas</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="279"/>
-        <location filename="../src/MainApplication.cpp" line="294"/>
-        <location filename="../src/MainApplication.cpp" line="308"/>
+        <location filename="../src/MainApplication.cpp" line="281" />
+        <location filename="../src/MainApplication.cpp" line="298" />
+        <location filename="../src/MainApplication.cpp" line="314" />
         <source>Saved to: %1</source>
         <translation>Išsaugota: %1</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="285"/>
+        <location filename="../src/MainApplication.cpp" line="288" />
         <source>Recording Error</source>
         <translation>Įrašymo klaida</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="293"/>
-        <location filename="../src/MainApplication.cpp" line="307"/>
+        <location filename="../src/MainApplication.cpp" line="297" />
+        <location filename="../src/MainApplication.cpp" line="313" />
         <source>Screenshot Saved</source>
         <translation>Ekrano nuotrauka išsaugota</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="299"/>
-        <location filename="../src/MainApplication.cpp" line="313"/>
+        <location filename="../src/MainApplication.cpp" line="304" />
+        <location filename="../src/MainApplication.cpp" line="320" />
         <source>Screenshot Save Failed</source>
         <translation>Nepavyko išsaugoti ekrano nuotraukos</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="300"/>
-        <location filename="../src/MainApplication.cpp" line="314"/>
+        <location filename="../src/MainApplication.cpp" line="305" />
+        <location filename="../src/MainApplication.cpp" line="321" />
         <source>%1
 %2</source>
         <translation>%1
 %2</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="349"/>
-        <location filename="../src/MainApplication.cpp" line="962"/>
+        <location filename="../src/MainApplication.cpp" line="356" />
+        <location filename="../src/MainApplication.cpp" line="955" />
         <source>Region Capture</source>
         <translation>Srities fiksavimas</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="352"/>
-        <location filename="../src/MainApplication.cpp" line="965"/>
+        <location filename="../src/MainApplication.cpp" line="359" />
+        <location filename="../src/MainApplication.cpp" line="958" />
         <source>Screen Canvas</source>
         <translation>Ekrano drobė</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="355"/>
-        <location filename="../src/MainApplication.cpp" line="968"/>
+        <location filename="../src/MainApplication.cpp" line="362" />
+        <location filename="../src/MainApplication.cpp" line="961" />
         <source>Pin from Image...</source>
         <translation>Prisegti iš vaizdo...</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="358"/>
-        <location filename="../src/MainApplication.cpp" line="971"/>
+        <location filename="../src/MainApplication.cpp" line="365" />
+        <location filename="../src/MainApplication.cpp" line="964" />
         <source>Pin History</source>
         <translation>Prisegimų istorija</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="361"/>
-        <location filename="../src/MainApplication.cpp" line="946"/>
+        <location filename="../src/MainApplication.cpp" line="368" />
+        <location filename="../src/MainApplication.cpp" line="939" />
         <source>Hide All Pins</source>
         <translation>Slėpti visus prisegtus langus</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="364"/>
+        <location filename="../src/MainApplication.cpp" line="371" />
         <source>Close All Pins</source>
         <translation>Uždaryti visus prisegtus</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="376"/>
-        <location filename="../src/MainApplication.cpp" line="974"/>
+        <location filename="../src/MainApplication.cpp" line="383" />
+        <location filename="../src/MainApplication.cpp" line="967" />
         <source>Record Full Screen</source>
         <translation>Įrašyti visą ekraną</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="381"/>
+        <location filename="../src/MainApplication.cpp" line="388" />
         <source>Settings</source>
         <translation>Nustatymai</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="386"/>
+        <location filename="../src/MainApplication.cpp" line="393" />
         <source>Exit</source>
         <translation>Išeiti</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="391"/>
+        <location filename="../src/MainApplication.cpp" line="398" />
         <source>SnapTray - Screenshot Utility</source>
         <translation>SnapTray - Ekrano nuotraukų įrankis</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="399"/>
+        <location filename="../src/MainApplication.cpp" line="407" />
         <source>OCR Success</source>
         <translation>OCR sėkmingas</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="399"/>
+        <location filename="../src/MainApplication.cpp" line="408" />
         <source>OCR Failed</source>
         <translation>OCR nepavyko</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="446"/>
+        <location filename="../src/MainApplication.cpp" line="458" />
         <source>MCP Server Unavailable</source>
         <translation>MCP serveris nepasiekiamas</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="447"/>
+        <location filename="../src/MainApplication.cpp" line="459" />
         <source>Unable to start MCP HTTP server on 127.0.0.1:%1</source>
         <translation>Nepavyko paleisti MCP HTTP serverio adresu 127.0.0.1:%1</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="571"/>
+        <location filename="../src/MainApplication.cpp" line="584" />
         <source>Select Image to Pin</source>
         <translation>Pasirinkite vaizdą prisegimui</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="573"/>
+        <location filename="../src/MainApplication.cpp" line="586" />
         <source>Images (*.png *.jpg *.jpeg *.gif *.bmp *.webp *.tiff *.tif);;All Files (*)</source>
         <translation>Vaizdai (*.png *.jpg *.jpeg *.gif *.bmp *.webp *.tiff *.tif);;Visi failai (*)</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="583"/>
+        <location filename="../src/MainApplication.cpp" line="596" />
         <source>Loading Image</source>
         <translation>Įkeliamas vaizdas</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="631"/>
-        <location filename="../src/MainApplication.cpp" line="650"/>
+        <location filename="../src/MainApplication.cpp" line="644" />
+        <location filename="../src/MainApplication.cpp" line="663" />
         <source>Failed to Load Image</source>
         <translation>Nepavyko įkelti vaizdo</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="760"/>
+        <location filename="../src/MainApplication.cpp" line="770" />
         <source>Hotkey Registration Failed</source>
         <translation>Sparčiojo klavišo registracija nepavyko</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="761"/>
+        <location filename="../src/MainApplication.cpp" line="771" />
         <source> failed to register.</source>
         <translation> nepavyko užregistruoti.</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="928"/>
-        <location filename="../src/MainApplication.cpp" line="952"/>
+        <location filename="../src/MainApplication.cpp" line="921" />
+        <location filename="../src/MainApplication.cpp" line="945" />
         <source>%1 (%2)</source>
         <translation>%1 (%2)</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="945"/>
+        <location filename="../src/MainApplication.cpp" line="938" />
         <source>Show All Pins</source>
         <translation>Rodyti visus prisegtus langus</translation>
     </message>
@@ -423,14 +708,14 @@
 <context>
     <name>MosaicBlurTypeSection</name>
     <message>
-        <location filename="../src/ui/sections/MosaicBlurTypeSection.cpp" line="65"/>
-        <location filename="../src/ui/sections/MosaicBlurTypeSection.cpp" line="91"/>
+        <location filename="../src/ui/sections/MosaicBlurTypeSection.cpp" line="65" />
+        <location filename="../src/ui/sections/MosaicBlurTypeSection.cpp" line="91" />
         <source>Pixelate</source>
         <translation>Pikselizavimas</translation>
     </message>
     <message>
-        <location filename="../src/ui/sections/MosaicBlurTypeSection.cpp" line="65"/>
-        <location filename="../src/ui/sections/MosaicBlurTypeSection.cpp" line="91"/>
+        <location filename="../src/ui/sections/MosaicBlurTypeSection.cpp" line="65" />
+        <location filename="../src/ui/sections/MosaicBlurTypeSection.cpp" line="91" />
         <source>Gaussian</source>
         <translation>Gauso</translation>
     </message>
@@ -438,27 +723,27 @@
 <context>
     <name>MultiRegionListPanel</name>
     <message>
-        <location filename="../src/region/MultiRegionListPanel.cpp" line="40"/>
+        <location filename="../src/region/MultiRegionListPanel.cpp" line="53" />
         <source>Regions</source>
         <translation>Regionai</translation>
     </message>
     <message>
-        <location filename="../src/region/MultiRegionListPanel.cpp" line="235"/>
+        <location filename="../src/region/MultiRegionListPanel.cpp" line="260" />
         <source>Region %1</source>
         <translation>Regionas %1</translation>
     </message>
     <message>
-        <location filename="../src/region/MultiRegionListPanel.cpp" line="242"/>
+        <location filename="../src/region/MultiRegionListPanel.cpp" line="270" />
         <source>%1 x %2</source>
         <translation>%1 × %2</translation>
     </message>
     <message>
-        <location filename="../src/region/MultiRegionListPanel.cpp" line="254"/>
+        <location filename="../src/region/MultiRegionListPanel.cpp" line="283" />
         <source>Replace</source>
         <translation>Pakeisti</translation>
     </message>
     <message>
-        <location filename="../src/region/MultiRegionListPanel.cpp" line="261"/>
+        <location filename="../src/region/MultiRegionListPanel.cpp" line="290" />
         <source>Delete</source>
         <translation>Ištrinti</translation>
     </message>
@@ -466,171 +751,221 @@
 <context>
     <name>OCRResultDialog</name>
     <message>
-        <location filename="../src/OCRResultDialog.cpp" line="62"/>
+        <location filename="../src/OCRResultDialog.cpp" line="64" />
         <source>OCR</source>
         <translation>OCR</translation>
     </message>
     <message>
-        <location filename="../src/OCRResultDialog.cpp" line="72"/>
+        <location filename="../src/OCRResultDialog.cpp" line="74" />
         <source>OCR Result</source>
         <translation>OCR rezultatas</translation>
     </message>
     <message>
-        <location filename="../src/OCRResultDialog.cpp" line="76"/>
+        <location filename="../src/OCRResultDialog.cpp" line="78" />
         <source>0 characters</source>
         <translation>0 simbolių</translation>
     </message>
     <message>
-        <location filename="../src/OCRResultDialog.cpp" line="89"/>
+        <location filename="../src/OCRResultDialog.cpp" line="91" />
         <source>No text recognized</source>
         <translation>Tekstas neatpažintas</translation>
     </message>
     <message>
-        <location filename="../src/OCRResultDialog.cpp" line="102"/>
+        <location filename="../src/OCRResultDialog.cpp" line="104" />
         <source>Close</source>
         <translation>Uždaryti</translation>
     </message>
     <message>
-        <location filename="../src/OCRResultDialog.cpp" line="108"/>
+        <location filename="../src/OCRResultDialog.cpp" line="110" />
         <source>Copy</source>
         <translation>Kopijuoti</translation>
     </message>
     <message>
-        <location filename="../src/OCRResultDialog.cpp" line="114"/>
+        <location filename="../src/OCRResultDialog.cpp" line="116" />
         <source>Copy as TSV</source>
         <translation>Kopijuoti kaip TSV</translation>
     </message>
     <message>
-        <location filename="../src/OCRResultDialog.cpp" line="355"/>
+        <location filename="../src/OCRResultDialog.cpp" line="276" />
         <source>✓ Copied!</source>
         <translation>✓ Nukopijuota!</translation>
     </message>
     <message>
-        <location filename="../src/OCRResultDialog.cpp" line="372"/>
+        <location filename="../src/OCRResultDialog.cpp" line="293" />
         <source>✓ Copied TSV!</source>
         <translation>✓ TSV nukopijuota!</translation>
     </message>
     <message>
-        <location filename="../src/OCRResultDialog.cpp" line="395"/>
+        <location filename="../src/OCRResultDialog.cpp" line="316" />
         <source>%1 character</source>
         <translation>%1 simbolis</translation>
     </message>
     <message>
-        <location filename="../src/OCRResultDialog.cpp" line="396"/>
+        <location filename="../src/OCRResultDialog.cpp" line="317" />
         <source>%1 characters</source>
         <translation>%1 simbolių</translation>
     </message>
     <message>
-        <location filename="../src/OCRResultDialog.cpp" line="399"/>
+        <location filename="../src/OCRResultDialog.cpp" line="320" />
         <source>%1 (edited)</source>
         <translation>%1 (redaguota)</translation>
     </message>
 </context>
 <context>
+    <name>OCRSettings</name>
+    <message>
+        <location filename="../src/qml/settings/OCRSettings.qml" line="49" />
+        <source>Select and order the languages for OCR recognition.
+English is always included and cannot be removed.</source>
+        <translation>Pasirinkite ir surikiuokite OCR atpažinimo kalbas.
+Anglų kalba visada įtraukta ir negali būti pašalinta.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/OCRSettings.qml" line="75" />
+        <source>Loading languages...</source>
+        <translation>Įkeliamos kalbos...</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/OCRSettings.qml" line="104" />
+        <source>Available Languages</source>
+        <translation>Galimos kalbos</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/OCRSettings.qml" line="181" />
+        <source>Add selected language</source>
+        <translation>Pridėti pasirinktą kalbą</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/OCRSettings.qml" line="195" />
+        <source>Remove selected language</source>
+        <translation>Pašalinti pasirinktą kalbą</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/OCRSettings.qml" line="214" />
+        <source>Selected Languages</source>
+        <translation>Pasirinktos kalbos</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/OCRSettings.qml" line="333" />
+        <source>After OCR Recognition</source>
+        <translation>Po OCR atpažinimo</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/OCRSettings.qml" line="338" />
+        <source>Copy text directly to clipboard</source>
+        <translation>Kopijuoti tekstą tiesiai į iškarpinę</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/OCRSettings.qml" line="339" />
+        <source>Show editor to review and edit text</source>
+        <translation>Rodyti redaktorių tekstui peržiūrėti ir redaguoti</translation>
+        </message>
+</context>
+<context>
     <name>PinHistoryWindow</name>
     <message>
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="68"/>
+        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="68" />
         <source>Pin History</source>
         <translation>Prisegimų istorija</translation>
     </message>
     <message>
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="78"/>
+        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="78" />
         <source>Open Cache Folder</source>
         <translation>Atidaryti podėlio aplanką</translation>
     </message>
     <message>
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="104"/>
+        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="104" />
         <source>No pinned screenshots yet</source>
         <translation>Dar nėra prisegtų ekrano nuotraukų</translation>
     </message>
     <message>
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="162"/>
+        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="162" />
         <source>Pin</source>
         <translation>Prisegti</translation>
     </message>
     <message>
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="163"/>
+        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="163" />
         <source>Copy</source>
         <translation>Kopijuoti</translation>
     </message>
     <message>
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="164"/>
+        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="164" />
         <source>Save As</source>
         <translation>Išsaugoti kaip</translation>
     </message>
     <message>
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="166"/>
+        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="166" />
         <source>Delete</source>
         <translation>Ištrinti</translation>
     </message>
     <message>
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="196"/>
+        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="196" />
         <source>Delete Failed</source>
         <translation>Ištrynimas nepavyko</translation>
     </message>
     <message>
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="196"/>
+        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="196" />
         <source>Failed to delete cached screenshot.</source>
         <translation>Nepavyko ištrinti ekrano nuotraukos iš podėlio.</translation>
     </message>
     <message>
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="223"/>
+        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="223" />
         <source>Pin Failed</source>
         <translation>Prisegimas nepavyko</translation>
     </message>
     <message>
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="223"/>
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="255"/>
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="272"/>
+        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="223" />
+        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="255" />
+        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="272" />
         <source>Failed to load cached screenshot.</source>
         <translation>Nepavyko įkelti ekrano nuotraukos iš podėlio.</translation>
     </message>
     <message>
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="255"/>
+        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="255" />
         <source>Copy Failed</source>
         <translation>Kopijavimas nepavyko</translation>
     </message>
     <message>
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="272"/>
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="308"/>
+        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="272" />
+        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="308" />
         <source>Save Failed</source>
         <translation>Išsaugojimas nepavyko</translation>
     </message>
     <message>
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="298"/>
+        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="298" />
         <source>Save Screenshot</source>
         <translation>Išsaugoti ekrano nuotrauką</translation>
     </message>
     <message>
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="300"/>
+        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="300" />
         <source>PNG Image (*.png);;JPEG Image (*.jpg *.jpeg);;All Files (*)</source>
         <translation>PNG vaizdas (*.png);;JPEG vaizdas (*.jpg *.jpeg);;Visi failai (*)</translation>
     </message>
     <message>
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="309"/>
+        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="309" />
         <source>Failed to save screenshot: %1</source>
         <translation>Nepavyko išsaugoti ekrano nuotraukos: %1</translation>
     </message>
     <message>
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="359"/>
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="362"/>
+        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="359" />
+        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="362" />
         <source>Unknown</source>
         <translation>Nežinomas</translation>
     </message>
     <message>
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="361"/>
+        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="361" />
         <source>%1 x %2</source>
         <translation>%1 × %2</translation>
     </message>
     <message>
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="364"/>
+        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="364" />
         <source>Time: %1
 Size: %2</source>
         <translation>Laikas: %1
 Dydis: %2</translation>
     </message>
     <message>
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="388"/>
+        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="388" />
         <source>Unknown time</source>
         <translation>Nežinomas laikas</translation>
     </message>
@@ -638,37 +973,37 @@ Dydis: %2</translation>
 <context>
     <name>PinWindow</name>
     <message>
-        <location filename="../src/PinWindow.cpp" line="887"/>
+        <location filename="../src/PinWindow.cpp" line="887" />
         <source>Show Toolbar</source>
         <translation>Rodyti įrankių juostą</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="893"/>
+        <location filename="../src/PinWindow.cpp" line="893" />
         <source>Show Border</source>
         <translation>Rodyti kraštinę</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="925"/>
+        <location filename="../src/PinWindow.cpp" line="925" />
         <source>Adjust Region Layout</source>
         <translation>Koreguoti srities išdėstymą</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="902"/>
+        <location filename="../src/PinWindow.cpp" line="902" />
         <source>Copy to Clipboard</source>
         <translation>Kopijuoti į iškarpinę</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="906"/>
+        <location filename="../src/PinWindow.cpp" line="906" />
         <source>Save to file</source>
         <translation>Išsaugoti į failą</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="910"/>
+        <location filename="../src/PinWindow.cpp" line="910" />
         <source>Open Cache Folder</source>
         <translation>Atidaryti podėlio aplanką</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="913"/>
+        <location filename="../src/PinWindow.cpp" line="913" />
         <source>Beautify</source>
         <translation>Pagražinti</translation>
     </message>
@@ -677,385 +1012,385 @@ Dydis: %2</translation>
         <translation type="vanished">Atpažinti tekstą</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="917"/>
+        <location filename="../src/PinWindow.cpp" line="917" />
         <source>Click-through</source>
         <translation>Paspaudimų praleidimas</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="922"/>
-        <location filename="../src/PinWindow.cpp" line="1257"/>
-        <location filename="../src/PinWindow.cpp" line="1265"/>
-        <location filename="../src/PinWindow.cpp" line="1279"/>
-        <location filename="../src/PinWindow.cpp" line="1296"/>
-        <location filename="../src/PinWindow.cpp" line="1310"/>
+        <location filename="../src/PinWindow.cpp" line="922" />
+        <location filename="../src/PinWindow.cpp" line="1257" />
+        <location filename="../src/PinWindow.cpp" line="1265" />
+        <location filename="../src/PinWindow.cpp" line="1279" />
+        <location filename="../src/PinWindow.cpp" line="1296" />
+        <location filename="../src/PinWindow.cpp" line="1310" />
         <source>Merge Pins</source>
         <translation>Sujungti prisegtus</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="931"/>
+        <location filename="../src/PinWindow.cpp" line="931" />
         <source>Watermark</source>
         <translation>Vandens ženklas</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="934"/>
+        <location filename="../src/PinWindow.cpp" line="934" />
         <source>Enable</source>
         <translation>Įjungti</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="945"/>
+        <location filename="../src/PinWindow.cpp" line="945" />
         <source>Position</source>
         <translation>Pozicija</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="948"/>
+        <location filename="../src/PinWindow.cpp" line="948" />
         <source>Top-Left</source>
         <translation>Viršuje kairėje</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="953"/>
+        <location filename="../src/PinWindow.cpp" line="953" />
         <source>Top-Right</source>
         <translation>Viršuje dešinėje</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="958"/>
+        <location filename="../src/PinWindow.cpp" line="958" />
         <source>Bottom-Left</source>
         <translation>Apačioje kairėje</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="963"/>
+        <location filename="../src/PinWindow.cpp" line="963" />
         <source>Bottom-Right</source>
         <translation>Apačioje dešinėje</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="982"/>
-        <location filename="../src/PinWindow.cpp" line="1076"/>
+        <location filename="../src/PinWindow.cpp" line="982" />
+        <location filename="../src/PinWindow.cpp" line="1076" />
         <source>Zoom</source>
         <translation>Priartinimas</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="985"/>
+        <location filename="../src/PinWindow.cpp" line="985" />
         <source>33.3%</source>
         <translation>33.3%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="988"/>
+        <location filename="../src/PinWindow.cpp" line="988" />
         <source>50%</source>
         <translation>50%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="991"/>
+        <location filename="../src/PinWindow.cpp" line="991" />
         <source>66.7%</source>
         <translation>66.7%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="994"/>
+        <location filename="../src/PinWindow.cpp" line="994" />
         <source>100%</source>
         <translation>100%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="997"/>
+        <location filename="../src/PinWindow.cpp" line="997" />
         <source>200%</source>
         <translation>200%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1007"/>
+        <location filename="../src/PinWindow.cpp" line="1007" />
         <source>Smoothing</source>
         <translation>Glodinimas</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1016"/>
+        <location filename="../src/PinWindow.cpp" line="1016" />
         <source>Image processing</source>
         <translation>Vaizdo apdorojimas</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1018"/>
+        <location filename="../src/PinWindow.cpp" line="1018" />
         <source>Rotate left</source>
         <translation>Pasukti kairėn</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1021"/>
+        <location filename="../src/PinWindow.cpp" line="1021" />
         <source>Rotate right</source>
         <translation>Pasukti dešinėn</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1024"/>
+        <location filename="../src/PinWindow.cpp" line="1024" />
         <source>Horizontal flip</source>
         <translation>Horizontalus atvertimas</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1027"/>
+        <location filename="../src/PinWindow.cpp" line="1027" />
         <source>Vertical flip</source>
         <translation>Vertikalus atvertimas</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1031"/>
+        <location filename="../src/PinWindow.cpp" line="1031" />
         <source>Crop</source>
         <translation>Apkarpyti</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1040"/>
-        <location filename="../src/PinWindow.cpp" line="1078"/>
+        <location filename="../src/PinWindow.cpp" line="1040" />
+        <location filename="../src/PinWindow.cpp" line="1078" />
         <source>Opacity</source>
         <translation>Nepermatomumas</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1043"/>
+        <location filename="../src/PinWindow.cpp" line="1043" />
         <source>Increase by %1%</source>
         <translation>Padidinti %1%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1050"/>
+        <location filename="../src/PinWindow.cpp" line="1050" />
         <source>Decrease by %1%</source>
         <translation>Sumažinti %1%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1062"/>
+        <location filename="../src/PinWindow.cpp" line="1062" />
         <source>Copy All</source>
         <translation>Kopijuoti viską</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1075"/>
+        <location filename="../src/PinWindow.cpp" line="1075" />
         <source>Size</source>
         <translation>Dydis</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1077"/>
+        <location filename="../src/PinWindow.cpp" line="1077" />
         <source>Rotation</source>
         <translation>Pasukimas</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1079"/>
+        <location filename="../src/PinWindow.cpp" line="1079" />
         <source>X-mirror</source>
         <translation>X veidrodis</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1080"/>
+        <location filename="../src/PinWindow.cpp" line="1080" />
         <source>Y-mirror</source>
         <translation>Y veidrodis</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1079"/>
-        <location filename="../src/PinWindow.cpp" line="1080"/>
-        <location filename="../src/PinWindow.cpp" line="1628"/>
-        <location filename="../src/PinWindow.cpp" line="1629"/>
+        <location filename="../src/PinWindow.cpp" line="1079" />
+        <location filename="../src/PinWindow.cpp" line="1080" />
+        <location filename="../src/PinWindow.cpp" line="1628" />
+        <location filename="../src/PinWindow.cpp" line="1629" />
         <source>Yes</source>
         <translation>Taip</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1079"/>
-        <location filename="../src/PinWindow.cpp" line="1080"/>
-        <location filename="../src/PinWindow.cpp" line="1628"/>
-        <location filename="../src/PinWindow.cpp" line="1629"/>
+        <location filename="../src/PinWindow.cpp" line="1079" />
+        <location filename="../src/PinWindow.cpp" line="1080" />
+        <location filename="../src/PinWindow.cpp" line="1628" />
+        <location filename="../src/PinWindow.cpp" line="1629" />
         <source>No</source>
         <translation>Ne</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1086"/>
-        <location filename="../src/PinWindow.cpp" line="2485"/>
+        <location filename="../src/PinWindow.cpp" line="1086" />
+        <location filename="../src/PinWindow.cpp" line="2485" />
         <source>Start Live Update</source>
         <translation>Pradėti tiesioginį atnaujinimą</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="2485"/>
+        <location filename="../src/PinWindow.cpp" line="2485" />
         <source>Stop Live Update</source>
         <translation>Sustabdyti tiesioginį atnaujinimą</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1097"/>
-        <location filename="../src/PinWindow.cpp" line="2489"/>
+        <location filename="../src/PinWindow.cpp" line="1097" />
+        <location filename="../src/PinWindow.cpp" line="2489" />
         <source>Pause Live Update</source>
         <translation>Pristabdyti tiesioginį atnaujinimą</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="2489"/>
+        <location filename="../src/PinWindow.cpp" line="2489" />
         <source>Resume Live Update</source>
         <translation>Tęsti tiesioginį atnaujinimą</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1108"/>
+        <location filename="../src/PinWindow.cpp" line="1108" />
         <source>Frame Rate</source>
         <translation>Kadrų dažnis</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="463"/>
+        <location filename="../src/PinWindow.cpp" line="464" />
         <source>Failed to share screenshot</source>
         <translation>Nepavyko bendrinti ekrano nuotraukos</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="898"/>
+        <location filename="../src/PinWindow.cpp" line="898" />
         <source>Move to Screen</source>
         <translation>Perkelti į ekraną</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1111"/>
+        <location filename="../src/PinWindow.cpp" line="1111" />
         <source>%1 FPS</source>
         <translation>%1 FPS</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1125"/>
+        <location filename="../src/PinWindow.cpp" line="1125" />
         <source>Close</source>
         <translation>Uždaryti</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1129"/>
+        <location filename="../src/PinWindow.cpp" line="1129" />
         <source>Close All Pins</source>
         <translation>Uždaryti visus prisegtus</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1210"/>
+        <location filename="../src/PinWindow.cpp" line="1210" />
         <source>Screen %1</source>
         <translation>Ekranas %1</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1212"/>
+        <location filename="../src/PinWindow.cpp" line="1212" />
         <source> (Primary)</source>
         <translation> (Pagrindinis)</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1258"/>
+        <location filename="../src/PinWindow.cpp" line="1258" />
         <source>Cannot merge more than %1 pins at once</source>
         <translation>Negalima sujungti daugiau nei %1 prisegtų vienu metu</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1266"/>
+        <location filename="../src/PinWindow.cpp" line="1266" />
         <source>Need at least 2 pins to merge</source>
         <translation>Sujungimui reikia bent 2 prisegtų</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1280"/>
+        <location filename="../src/PinWindow.cpp" line="1280" />
         <source>No primary screen available</source>
         <translation>Nėra prieinamo pagrindinio ekrano</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1311"/>
+        <location filename="../src/PinWindow.cpp" line="1311" />
         <source>Failed to create merged pin</source>
         <translation>Nepavyko sukurti sujungto prisegimo</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1372"/>
-        <location filename="../src/PinWindow.cpp" line="1393"/>
+        <location filename="../src/PinWindow.cpp" line="1372" />
+        <location filename="../src/PinWindow.cpp" line="1393" />
         <source>Failed to save screenshot: %1</source>
         <translation>Nepavyko išsaugoti ekrano nuotraukos: %1</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1382"/>
+        <location filename="../src/PinWindow.cpp" line="1382" />
         <source>Save Screenshot</source>
         <translation>Išsaugoti ekrano nuotrauką</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1384"/>
-        <location filename="../src/PinWindow.cpp" line="4724"/>
+        <location filename="../src/PinWindow.cpp" line="1384" />
+        <location filename="../src/PinWindow.cpp" line="4724" />
         <source>PNG Image (*.png);;JPEG Image (*.jpg *.jpeg);;All Files (*)</source>
         <translation>PNG vaizdas (*.png);;JPEG vaizdas (*.jpg *.jpeg);;Visi failai (*)</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1402"/>
-        <location filename="../src/PinWindow.cpp" line="4652"/>
+        <location filename="../src/PinWindow.cpp" line="1402" />
+        <location filename="../src/PinWindow.cpp" line="4652" />
         <source>Copy failed</source>
         <translation>Kopijavimas nepavyko</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1415"/>
+        <location filename="../src/PinWindow.cpp" line="1415" />
         <source>Copied to clipboard</source>
         <translation>Nukopijuota į iškarpinę</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1427"/>
+        <location filename="../src/PinWindow.cpp" line="1427" />
         <source>Please wait for auto-blur to finish</source>
         <translation>Palaukite, kol bus baigtas automatinis suliejimas</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1433"/>
+        <location filename="../src/PinWindow.cpp" line="1433" />
         <source>Share failed</source>
         <translation>Bendrinti nepavyko</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1523"/>
-        <location filename="../src/PinWindow.cpp" line="1546"/>
-        <location filename="../src/PinWindow.cpp" line="1599"/>
+        <location filename="../src/PinWindow.cpp" line="1523" />
+        <location filename="../src/PinWindow.cpp" line="1546" />
+        <location filename="../src/PinWindow.cpp" line="1599" />
         <source>Copied %1 characters</source>
         <translation>Nukopijuota %1 simbolių</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1527"/>
+        <location filename="../src/PinWindow.cpp" line="1527" />
         <source>No text found</source>
         <translation>Tekstas nerastas</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1532"/>
-        <location filename="../src/PinWindow.cpp" line="1547"/>
+        <location filename="../src/PinWindow.cpp" line="1532" />
+        <location filename="../src/PinWindow.cpp" line="1547" />
         <source>Text copied</source>
         <translation>Tekstas nukopijuotas</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1608"/>
+        <location filename="../src/PinWindow.cpp" line="1608" />
         <source>No QR code found</source>
         <translation>QR kodas nerastas</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1624"/>
+        <location filename="../src/PinWindow.cpp" line="1624" />
         <source>Size: %1 × %2</source>
         <translation>Dydis: %1 × %2</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1625"/>
+        <location filename="../src/PinWindow.cpp" line="1625" />
         <source>Zoom: %1%</source>
         <translation>Priartinimas: %1%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1626"/>
+        <location filename="../src/PinWindow.cpp" line="1626" />
         <source>Rotation: %1°</source>
         <translation>Pasukimas: %1°</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1627"/>
+        <location filename="../src/PinWindow.cpp" line="1627" />
         <source>Opacity: %1%</source>
         <translation>Nepermatomumas: %1%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1628"/>
+        <location filename="../src/PinWindow.cpp" line="1628" />
         <source>X-mirror: %1</source>
         <translation>X veidrodis: %1</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1629"/>
+        <location filename="../src/PinWindow.cpp" line="1629" />
         <source>Y-mirror: %1</source>
         <translation>Y veidrodis: %1</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="3594"/>
+        <location filename="../src/PinWindow.cpp" line="3594" />
         <source>Face detection unavailable</source>
         <translation>Veidų aptikimas nepasiekiamas</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="3603"/>
+        <location filename="../src/PinWindow.cpp" line="3603" />
         <source>Detection unavailable</source>
         <translation>Aptikimas nepasiekiamas</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="4657"/>
-        <location filename="../src/PinWindow.cpp" line="4682"/>
+        <location filename="../src/PinWindow.cpp" line="4657" />
+        <location filename="../src/PinWindow.cpp" line="4682" />
         <source>Beautify rendering failed</source>
         <translation>Pagražinimo atvaizdavimas nepavyko</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="4669"/>
+        <location filename="../src/PinWindow.cpp" line="4669" />
         <source>Beautified image copied</source>
         <translation>Pagražintas vaizdas nukopijuotas</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="4677"/>
+        <location filename="../src/PinWindow.cpp" line="4677" />
         <source>No image available to save</source>
         <translation>Nėra vaizdo, kurį būtų galima išsaugoti</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="4717"/>
-        <location filename="../src/PinWindow.cpp" line="4733"/>
+        <location filename="../src/PinWindow.cpp" line="4717" />
+        <location filename="../src/PinWindow.cpp" line="4733" />
         <source>Failed to save beautified screenshot: %1</source>
         <translation>Nepavyko išsaugoti pagražintos ekrano nuotraukos: %1</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="4723"/>
+        <location filename="../src/PinWindow.cpp" line="4723" />
         <source>Save Beautified Screenshot</source>
         <translation>Išsaugoti pagražintą ekrano nuotrauką</translation>
     </message>
@@ -1063,75 +1398,75 @@ Dydis: %2</translation>
 <context>
     <name>QObject</name>
     <message>
-        <location filename="../src/ToolbarStyle.cpp" line="138"/>
+        <location filename="../src/ToolbarStyle.cpp" line="138" />
         <source>Light</source>
         <translation>Šviesus</translation>
     </message>
     <message>
-        <location filename="../src/ToolbarStyle.cpp" line="141"/>
+        <location filename="../src/ToolbarStyle.cpp" line="141" />
         <source>Dark</source>
         <translation>Tamsus</translation>
     </message>
     <message>
-        <location filename="../src/pinwindow/PinMergeHelper.cpp" line="157"/>
+        <location filename="../src/pinwindow/PinMergeHelper.cpp" line="157" />
         <source>Cannot merge more than %1 pins at once</source>
         <translation>Negalima sujungti daugiau nei %1 prisegtų vienu metu</translation>
     </message>
     <message>
-        <location filename="../src/pinwindow/PinMergeHelper.cpp" line="162"/>
-        <location filename="../src/pinwindow/PinMergeHelper.cpp" line="187"/>
-        <location filename="../src/pinwindow/PinMergeHelper.cpp" line="219"/>
-        <location filename="../src/pinwindow/PinMergeHelper.cpp" line="230"/>
+        <location filename="../src/pinwindow/PinMergeHelper.cpp" line="162" />
+        <location filename="../src/pinwindow/PinMergeHelper.cpp" line="187" />
+        <location filename="../src/pinwindow/PinMergeHelper.cpp" line="219" />
+        <location filename="../src/pinwindow/PinMergeHelper.cpp" line="230" />
         <source>Need at least 2 pins to merge</source>
         <translation>Sujungimui reikia bent 2 prisegtų</translation>
     </message>
     <message>
-        <location filename="../src/pinwindow/PinMergeHelper.cpp" line="236"/>
+        <location filename="../src/pinwindow/PinMergeHelper.cpp" line="236" />
         <source>Merged layout exceeds maximum size (%1x%1)</source>
         <translation>Sujungtas išdėstymas viršija maksimalų dydį (%1x%1)</translation>
     </message>
     <message>
-        <location filename="../src/pinwindow/PinMergeHelper.cpp" line="280"/>
+        <location filename="../src/pinwindow/PinMergeHelper.cpp" line="280" />
         <source>Failed to merge pins</source>
         <translation>Nepavyko sujungti prisegtų langų</translation>
     </message>
     <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="45"/>
+        <location filename="../src/share/ShareUploadClient.cpp" line="45" />
         <source>Invalid upload request</source>
         <translation>Neteisinga įkėlimo užklausa</translation>
     </message>
     <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="47"/>
+        <location filename="../src/share/ShareUploadClient.cpp" line="47" />
         <source>Upload method not allowed</source>
         <translation>Įkėlimo metodas neleidžiamas</translation>
     </message>
     <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="49"/>
+        <location filename="../src/share/ShareUploadClient.cpp" line="49" />
         <source>File too large (max 5MB)</source>
         <translation>Failas per didelis (daugiausia 5 MB)</translation>
     </message>
     <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="51"/>
+        <location filename="../src/share/ShareUploadClient.cpp" line="51" />
         <source>Server error while uploading</source>
         <translation>Serverio klaida įkeliant</translation>
     </message>
     <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="53"/>
+        <location filename="../src/share/ShareUploadClient.cpp" line="53" />
         <source>Upload service unavailable, please retry</source>
         <translation>Įkėlimo paslauga nepasiekiama, bandykite dar kartą</translation>
     </message>
     <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="56"/>
+        <location filename="../src/share/ShareUploadClient.cpp" line="56" />
         <source>Upload failed (HTTP %1)</source>
         <translation>Įkelti nepavyko (HTTP %1)</translation>
     </message>
     <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="58"/>
+        <location filename="../src/share/ShareUploadClient.cpp" line="58" />
         <source>Upload failed</source>
         <translation>Įkelti nepavyko</translation>
     </message>
     <message>
-        <location filename="../src/QRCodeManager.cpp" line="200"/>
+        <location filename="../src/QRCodeManager.cpp" line="200" />
         <source>No barcode found in image</source>
         <translation>Vaizde brūkšninio kodo nerasta</translation>
     </message>
@@ -1139,18 +1474,18 @@ Dydis: %2</translation>
 <context>
     <name>QRCodeManager</name>
     <message>
-        <location filename="../src/QRCodeManager.cpp" line="137"/>
-        <location filename="../src/QRCodeManager.cpp" line="225"/>
+        <location filename="../src/QRCodeManager.cpp" line="137" />
+        <location filename="../src/QRCodeManager.cpp" line="225" />
         <source>Invalid image</source>
         <translation>Netinkamas vaizdas</translation>
     </message>
     <message>
-        <location filename="../src/QRCodeManager.cpp" line="258"/>
+        <location filename="../src/QRCodeManager.cpp" line="258" />
         <source>No barcode found</source>
         <translation>Brūkšninio kodo nerasta</translation>
     </message>
     <message>
-        <location filename="../src/QRCodeManager.cpp" line="273"/>
+        <location filename="../src/QRCodeManager.cpp" line="273" />
         <source>Failed to load image from file</source>
         <translation>Nepavyko įkelti vaizdo iš failo</translation>
     </message>
@@ -1158,145 +1493,145 @@ Dydis: %2</translation>
 <context>
     <name>QRCodeResultDialog</name>
     <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="85"/>
-        <location filename="../src/QRCodeResultDialog.cpp" line="608"/>
+        <location filename="../src/QRCodeResultDialog.cpp" line="86" />
+        <location filename="../src/QRCodeResultDialog.cpp" line="519" />
         <source>QR Code</source>
         <translation>QR kodas</translation>
     </message>
     <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="89"/>
+        <location filename="../src/QRCodeResultDialog.cpp" line="90" />
         <source>0 characters</source>
         <translation>0 simbolių</translation>
     </message>
     <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="102"/>
+        <location filename="../src/QRCodeResultDialog.cpp" line="103" />
         <source>No content</source>
         <translation>Nėra turinio</translation>
     </message>
     <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="111"/>
-        <location filename="../src/QRCodeResultDialog.cpp" line="537"/>
-        <location filename="../src/QRCodeResultDialog.cpp" line="547"/>
+        <location filename="../src/QRCodeResultDialog.cpp" line="112" />
+        <location filename="../src/QRCodeResultDialog.cpp" line="448" />
+        <location filename="../src/QRCodeResultDialog.cpp" line="458" />
         <source>Generate QR to preview</source>
         <translation>Sugeneruokite QR peržiūrai</translation>
     </message>
     <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="123"/>
+        <location filename="../src/QRCodeResultDialog.cpp" line="124" />
         <source>Close</source>
         <translation>Uždaryti</translation>
     </message>
     <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="129"/>
+        <location filename="../src/QRCodeResultDialog.cpp" line="130" />
         <source>Copy</source>
         <translation>Kopijuoti</translation>
     </message>
     <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="135"/>
+        <location filename="../src/QRCodeResultDialog.cpp" line="136" />
         <source>Open URL</source>
         <translation>Atidaryti URL</translation>
     </message>
     <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="142"/>
+        <location filename="../src/QRCodeResultDialog.cpp" line="143" />
         <source>Generate QR</source>
         <translation>Generuoti QR</translation>
     </message>
     <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="148"/>
+        <location filename="../src/QRCodeResultDialog.cpp" line="149" />
         <source>Pin QR</source>
         <translation>Prisegti QR</translation>
     </message>
     <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="287"/>
+        <location filename="../src/QRCodeResultDialog.cpp" line="201" />
         <source>QR</source>
         <translation>QR</translation>
     </message>
     <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="497"/>
+        <location filename="../src/QRCodeResultDialog.cpp" line="411" />
         <source>%1 character</source>
         <translation>%1 simbolis</translation>
     </message>
     <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="498"/>
+        <location filename="../src/QRCodeResultDialog.cpp" line="412" />
         <source>%1 characters</source>
         <translation>%1 simbolių</translation>
     </message>
     <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="501"/>
+        <location filename="../src/QRCodeResultDialog.cpp" line="415" />
         <source>%1 (edited)</source>
         <translation>%1 (redaguota)</translation>
     </message>
     <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="511"/>
+        <location filename="../src/QRCodeResultDialog.cpp" line="426" />
         <source>✓ Copied!</source>
         <translation>✓ Nukopijuota!</translation>
     </message>
     <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="540"/>
+        <location filename="../src/QRCodeResultDialog.cpp" line="451" />
         <source>Content too long (max %1 bytes)</source>
         <translation>Turinys per ilgas (daugiausia %1 baitų)</translation>
     </message>
     <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="609"/>
+        <location filename="../src/QRCodeResultDialog.cpp" line="520" />
         <source>Data Matrix</source>
         <translation>Data Matrix</translation>
     </message>
     <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="610"/>
+        <location filename="../src/QRCodeResultDialog.cpp" line="521" />
         <source>Aztec Code</source>
         <translation>Aztec kodas</translation>
     </message>
     <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="611"/>
+        <location filename="../src/QRCodeResultDialog.cpp" line="522" />
         <source>PDF417</source>
         <translation>PDF417</translation>
     </message>
     <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="612"/>
+        <location filename="../src/QRCodeResultDialog.cpp" line="523" />
         <source>EAN-8</source>
         <translation>EAN-8</translation>
     </message>
     <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="613"/>
+        <location filename="../src/QRCodeResultDialog.cpp" line="524" />
         <source>EAN-13</source>
         <translation>EAN-13</translation>
     </message>
     <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="614"/>
+        <location filename="../src/QRCodeResultDialog.cpp" line="525" />
         <source>UPC-A</source>
         <translation>UPC-A</translation>
     </message>
     <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="615"/>
+        <location filename="../src/QRCodeResultDialog.cpp" line="526" />
         <source>UPC-E</source>
         <translation>UPC-E</translation>
     </message>
     <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="616"/>
+        <location filename="../src/QRCodeResultDialog.cpp" line="527" />
         <source>Code 39</source>
         <translation>Kodas 39</translation>
     </message>
     <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="617"/>
+        <location filename="../src/QRCodeResultDialog.cpp" line="528" />
         <source>Code 93</source>
         <translation>Kodas 93</translation>
     </message>
     <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="618"/>
+        <location filename="../src/QRCodeResultDialog.cpp" line="529" />
         <source>Code 128</source>
         <translation>Kodas 128</translation>
     </message>
     <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="619"/>
+        <location filename="../src/QRCodeResultDialog.cpp" line="530" />
         <source>ITF</source>
         <translation>ITF</translation>
     </message>
     <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="620"/>
+        <location filename="../src/QRCodeResultDialog.cpp" line="531" />
         <source>Codabar</source>
         <translation>Codabar</translation>
     </message>
     <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="623"/>
+        <location filename="../src/QRCodeResultDialog.cpp" line="534" />
         <source>Barcode</source>
         <translation>Brūkšninis kodas</translation>
     </message>
@@ -1304,126 +1639,106 @@ Dydis: %2</translation>
 <context>
     <name>RecordingControlBar</name>
     <message>
-        <location filename="../src/RecordingControlBar.cpp" line="174"/>
         <source>Audio recording enabled</source>
-        <translation>Garso įrašymas įjungtas</translation>
+        <translation type="vanished">Garso įrašymas įjungtas</translation>
     </message>
     <message>
-        <location filename="../src/RecordingControlBar.cpp" line="208"/>
         <source>-- fps</source>
-        <translation>-- FPS</translation>
+        <translation type="vanished">-- FPS</translation>
     </message>
     <message>
-        <location filename="../src/RecordingControlBar.cpp" line="294"/>
-        <location filename="../src/RecordingControlBar.cpp" line="1269"/>
         <source>Annotate</source>
-        <translation>Anotuoti</translation>
+        <translation type="vanished">Anotuoti</translation>
     </message>
     <message>
-        <location filename="../src/RecordingControlBar.cpp" line="510"/>
+        <location filename="../src/qml/recording/RecordingControlBar.qml" line="254" />
         <source>Preparing...</source>
         <translation>Ruošiama...</translation>
     </message>
     <message>
-        <location filename="../src/RecordingControlBar.cpp" line="548"/>
         <source>%1 fps</source>
-        <translation>%1 FPS</translation>
+        <translation type="vanished">%1 FPS</translation>
     </message>
     <message>
-        <location filename="../src/RecordingControlBar.cpp" line="628"/>
         <source>Resume Recording</source>
-        <translation>Tęsti įrašymą</translation>
+        <translation type="vanished">Tęsti įrašymą</translation>
     </message>
     <message>
-        <location filename="../src/RecordingControlBar.cpp" line="628"/>
         <source>Pause Recording</source>
-        <translation>Pristabdyti įrašymą</translation>
+        <translation type="vanished">Pristabdyti įrašymą</translation>
     </message>
     <message>
-        <location filename="../src/RecordingControlBar.cpp" line="630"/>
         <source>Stop Recording</source>
-        <translation>Sustabdyti įrašymą</translation>
+        <translation type="vanished">Sustabdyti įrašymą</translation>
     </message>
     <message>
-        <location filename="../src/RecordingControlBar.cpp" line="632"/>
         <source>Cancel Recording (Esc)</source>
-        <translation>Atšaukti įrašymą (Esc)</translation>
+        <translation type="vanished">Atšaukti įrašymą (Esc)</translation>
     </message>
     <message>
-        <location filename="../src/RecordingControlBar.cpp" line="635"/>
         <source>Pause (Space)</source>
-        <translation>Pristabdyti (Space)</translation>
+        <translation type="vanished">Pristabdyti (Space)</translation>
     </message>
     <message>
-        <location filename="../src/RecordingControlBar.cpp" line="635"/>
         <source>Play (Space)</source>
-        <translation>Leisti (Space)</translation>
+        <translation type="vanished">Leisti (Space)</translation>
     </message>
     <message>
-        <location filename="../src/RecordingControlBar.cpp" line="637"/>
         <source>Unmute (M)</source>
-        <translation>Įjungti garsą (M)</translation>
+        <translation type="vanished">Įjungti garsą (M)</translation>
     </message>
     <message>
-        <location filename="../src/RecordingControlBar.cpp" line="637"/>
         <source>Mute (M)</source>
-        <translation>Nutildyti (M)</translation>
+        <translation type="vanished">Nutildyti (M)</translation>
     </message>
     <message>
-        <location filename="../src/RecordingControlBar.cpp" line="639"/>
         <source>MP4 - Best quality</source>
-        <translation>MP4 - Geriausia kokybė</translation>
+        <translation type="vanished">MP4 - Geriausia kokybė</translation>
     </message>
     <message>
-        <location filename="../src/RecordingControlBar.cpp" line="641"/>
         <source>GIF - Universal support</source>
-        <translation>GIF - Universalus palaikymas</translation>
+        <translation type="vanished">GIF - Universalus palaikymas</translation>
     </message>
     <message>
-        <location filename="../src/RecordingControlBar.cpp" line="643"/>
         <source>WebP - Small size</source>
-        <translation>WebP - Mažas dydis</translation>
+        <translation type="vanished">WebP - Mažas dydis</translation>
     </message>
     <message>
-        <location filename="../src/RecordingControlBar.cpp" line="645"/>
         <source>Annotate Video</source>
-        <translation>Anotuoti vaizdo įrašą</translation>
+        <translation type="vanished">Anotuoti vaizdo įrašą</translation>
     </message>
     <message>
-        <location filename="../src/RecordingControlBar.cpp" line="647"/>
         <source>Save (Enter)</source>
-        <translation>Išsaugoti (Enter)</translation>
+        <translation type="vanished">Išsaugoti (Enter)</translation>
     </message>
     <message>
-        <location filename="../src/RecordingControlBar.cpp" line="649"/>
         <source>Discard (Esc)</source>
-        <translation>Atmesti (Esc)</translation>
+        <translation type="vanished">Atmesti (Esc)</translation>
     </message>
     <message>
-        <location filename="../src/RecordingControlBar.cpp" line="651"/>
         <source>Drag to seek</source>
-        <translation>Vilkite norėdami persukti</translation>
+        <translation type="vanished">Vilkite norėdami persukti</translation>
     </message>
 </context>
 <context>
     <name>RecordingInitTask</name>
     <message>
-        <location filename="../src/RecordingInitTask.cpp" line="87"/>
+        <location filename="../src/RecordingInitTask.cpp" line="82" />
         <source>Initializing...</source>
         <translation>Inicijuojama...</translation>
     </message>
     <message>
-        <location filename="../src/RecordingInitTask.cpp" line="102"/>
+        <location filename="../src/RecordingInitTask.cpp" line="99" />
         <source>Setting up audio capture...</source>
         <translation>Nustatomas garso įrašymas...</translation>
     </message>
     <message>
-        <location filename="../src/RecordingInitTask.cpp" line="114"/>
+        <location filename="../src/RecordingInitTask.cpp" line="111" />
         <source>Creating video encoder...</source>
         <translation>Kuriamas vaizdo koduotuvas...</translation>
     </message>
     <message>
-        <location filename="../src/RecordingInitTask.cpp" line="144"/>
+        <location filename="../src/RecordingInitTask.cpp" line="141" />
         <source>Ready</source>
         <translation>Paruošta</translation>
     </message>
@@ -1431,82 +1746,82 @@ Dydis: %2</translation>
 <context>
     <name>RecordingManager</name>
     <message>
-        <location filename="../src/RecordingManager.cpp" line="312"/>
+        <location filename="../src/RecordingManager.cpp" line="312" />
         <source>No screen available for region selection.</source>
         <translation>Nėra prieinamo ekrano srities pasirinkimui.</translation>
     </message>
     <message>
-        <location filename="../src/RecordingManager.cpp" line="345"/>
-        <location filename="../src/RecordingManager.cpp" line="370"/>
+        <location filename="../src/RecordingManager.cpp" line="345" />
+        <location filename="../src/RecordingManager.cpp" line="370" />
         <source>No screen available for recording.</source>
         <translation>Nėra prieinamo ekrano įrašymui.</translation>
     </message>
     <message>
-        <location filename="../src/RecordingManager.cpp" line="353"/>
-        <location filename="../src/RecordingManager.cpp" line="377"/>
+        <location filename="../src/RecordingManager.cpp" line="353" />
+        <location filename="../src/RecordingManager.cpp" line="377" />
         <source>Failed to normalize recording region.</source>
         <translation>Nepavyko normalizuoti įrašymo srities.</translation>
     </message>
     <message>
-        <location filename="../src/RecordingManager.cpp" line="411"/>
-        <location filename="../src/RecordingManager.cpp" line="485"/>
-        <location filename="../src/RecordingManager.cpp" line="868"/>
-        <location filename="../src/RecordingManager.cpp" line="901"/>
+        <location filename="../src/RecordingManager.cpp" line="411" />
+        <location filename="../src/RecordingManager.cpp" line="482" />
+        <location filename="../src/RecordingManager.cpp" line="866" />
+        <location filename="../src/RecordingManager.cpp" line="898" />
         <source>Recording screen is no longer available.</source>
         <translation>Įrašomo ekrano nebėra.</translation>
     </message>
     <message>
-        <location filename="../src/RecordingManager.cpp" line="494"/>
+        <location filename="../src/RecordingManager.cpp" line="491" />
         <source>Recording region is invalid.</source>
         <translation>Įrašymo sritis netinkama.</translation>
     </message>
     <message>
-        <location filename="../src/RecordingManager.cpp" line="666"/>
+        <location filename="../src/RecordingManager.cpp" line="662" />
         <source>Internal error: initialization task is null</source>
         <translation>Vidinė klaida: inicijavimo užduotis yra tuščia</translation>
     </message>
     <message>
-        <location filename="../src/RecordingManager.cpp" line="749"/>
+        <location filename="../src/RecordingManager.cpp" line="747" />
         <source>Failed to start encoding thread</source>
         <translation>Nepavyko paleisti kodavimo gijos</translation>
     </message>
     <message>
-        <location filename="../src/RecordingManager.cpp" line="785"/>
+        <location filename="../src/RecordingManager.cpp" line="783" />
         <source>Failed to start encoding worker</source>
         <translation>Nepavyko paleisti kodavimo proceso</translation>
     </message>
     <message>
-        <location filename="../src/RecordingManager.cpp" line="985"/>
+        <location filename="../src/RecordingManager.cpp" line="986" />
         <source>Recording screen disconnected during capture.</source>
         <translation>Įrašomas ekranas atjungtas fiksavimo metu.</translation>
     </message>
     <message>
-        <location filename="../src/RecordingManager.cpp" line="1239"/>
+        <location filename="../src/RecordingManager.cpp" line="1238" />
         <source>Failed to encode video</source>
         <translation>Nepavyko užkoduoti vaizdo įrašo</translation>
     </message>
     <message>
-        <location filename="../src/RecordingManager.cpp" line="1368"/>
+        <location filename="../src/RecordingManager.cpp" line="1367" />
         <source>GIF Files (*.gif)</source>
         <translation>GIF failai (*.gif)</translation>
     </message>
     <message>
-        <location filename="../src/RecordingManager.cpp" line="1369"/>
+        <location filename="../src/RecordingManager.cpp" line="1368" />
         <source>WebP Files (*.webp)</source>
         <translation>WebP failai (*.webp)</translation>
     </message>
     <message>
-        <location filename="../src/RecordingManager.cpp" line="1370"/>
+        <location filename="../src/RecordingManager.cpp" line="1369" />
         <source>MP4 Files (*.mp4)</source>
         <translation>MP4 failai (*.mp4)</translation>
     </message>
     <message>
-        <location filename="../src/RecordingManager.cpp" line="1376"/>
+        <location filename="../src/RecordingManager.cpp" line="1375" />
         <source>Save Recording</source>
         <translation>Išsaugoti įrašą</translation>
     </message>
     <message>
-        <location filename="../src/RecordingManager.cpp" line="1408"/>
+        <location filename="../src/RecordingManager.cpp" line="1407" />
         <source>Failed to save recording to selected location</source>
         <translation>Nepavyko išsaugoti įrašo pasirinktoje vietoje</translation>
     </message>
@@ -1514,235 +1829,415 @@ Dydis: %2</translation>
 <context>
     <name>RecordingPreview</name>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="365"/>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="361" />
         <source>Pause Preview (Space)</source>
         <translation>Pristabdyti peržiūrą (Space)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="365"/>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="361" />
         <source>Play Preview (Space)</source>
         <translation>Leisti peržiūrą (Space)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="380"/>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="376" />
         <source>Playback Speed: %1x</source>
         <translation>Atkūrimo greitis: %1x</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="394"/>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="390" />
         <source>Export as MP4</source>
         <translation>Eksportuoti kaip MP4</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="402"/>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="398" />
         <source>Export as GIF</source>
         <translation>Eksportuoti kaip GIF</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="410"/>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="406" />
         <source>Export as WebP</source>
         <translation>Eksportuoti kaip WebP</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="422"/>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="418" />
         <source>Unmute Preview (M)</source>
         <translation>Įjungti peržiūros garsą (M)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="422"/>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="418" />
         <source>Mute Preview (M)</source>
         <translation>Nutildyti peržiūrą (M)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="429"/>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="425" />
         <source>Clear Trim Selection</source>
         <translation>Išvalyti apkarpymo pasirinkimą</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="429"/>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="425" />
         <source>Trim Recording</source>
         <translation>Apkarpyti įrašą</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="442"/>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="438" />
         <source>Discard Recording (Esc)</source>
         <translation>Atmesti įrašą (Esc)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="449"/>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="445" />
         <source>Save Recording (Enter / Ctrl+S)</source>
         <translation>Išsaugoti įrašą (Enter / Ctrl+S)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="533"/>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="529" />
         <source>Dismiss Error</source>
         <translation>Uždaryti klaidą</translation>
     </message>
 </context>
 <context>
+    <name>RecordingPreviewBackend</name>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="71" />
+        <source>Recording Preview</source>
+        <translation type="unfinished">Įrašo peržiūra</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="356" />
+        <source>Converting video...</source>
+        <translation type="unfinished">Konvertuojamas vaizdo įrašas...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="365" />
+        <source>Failed to create video player for conversion</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="366" />
+        <source>Failed to load video for conversion</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="367" />
+        <source>Video not loaded properly for conversion</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="368" />
+        <source>Failed to start encoder</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="369" />
+        <source>Conversion failed: output file is missing or empty</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="596" />
+        <source>Trimming video...</source>
+        <translation type="unfinished">Apkarpomas vaizdo įrašas...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="615" />
+        <source>Trim failed: %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="650" />
+        <source>Trim failed: output file is missing or empty</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="657" />
+        <source>Trim failed</source>
+        <translation type="unfinished" />
+    </message>
+</context>
+<context>
     <name>RecordingPreviewWindow</name>
     <message>
-        <location filename="../src/video/RecordingPreviewWindow.cpp" line="395"/>
         <source>Recording Preview</source>
-        <translation>Įrašo peržiūra</translation>
+        <translation type="vanished">Įrašo peržiūra</translation>
     </message>
     <message>
-        <location filename="../src/video/RecordingPreviewWindow.cpp" line="501"/>
         <source>Trim</source>
-        <translation>Apkarpyti</translation>
+        <translation type="vanished">Apkarpyti</translation>
     </message>
     <message>
-        <location filename="../src/video/RecordingPreviewWindow.cpp" line="504"/>
         <source>Loop playback within the trimmed range</source>
-        <translation>Ciklinis atkūrimas apkarpytame diapazone</translation>
+        <translation type="vanished">Ciklinis atkūrimas apkarpytame diapazone</translation>
     </message>
     <message>
-        <location filename="../src/video/RecordingPreviewWindow.cpp" line="520"/>
         <source>Play/Pause (Space)</source>
-        <translation>Leisti/Pristabdyti (Space)</translation>
+        <translation type="vanished">Leisti/Pristabdyti (Space)</translation>
     </message>
     <message>
-        <location filename="../src/video/RecordingPreviewWindow.cpp" line="544"/>
         <source>Playback speed</source>
-        <translation>Atkūrimo greitis</translation>
+        <translation type="vanished">Atkūrimo greitis</translation>
     </message>
     <message>
-        <location filename="../src/video/RecordingPreviewWindow.cpp" line="553"/>
         <source>Mute (M)</source>
-        <translation>Nutildyti (M)</translation>
+        <translation type="vanished">Nutildyti (M)</translation>
     </message>
     <message>
-        <location filename="../src/video/RecordingPreviewWindow.cpp" line="584"/>
         <source>Discard (Esc)</source>
-        <translation>Atmesti (Esc)</translation>
+        <translation type="vanished">Atmesti (Esc)</translation>
     </message>
     <message>
-        <location filename="../src/video/RecordingPreviewWindow.cpp" line="591"/>
         <source>Save (Enter)</source>
-        <translation>Išsaugoti (Enter)</translation>
+        <translation type="vanished">Išsaugoti (Enter)</translation>
     </message>
     <message>
-        <location filename="../src/video/RecordingPreviewWindow.cpp" line="756"/>
         <source>Video Error</source>
-        <translation>Vaizdo įrašo klaida</translation>
+        <translation type="vanished">Vaizdo įrašo klaida</translation>
     </message>
     <message>
-        <location filename="../src/video/RecordingPreviewWindow.cpp" line="757"/>
         <source>Failed to load video:
 %1</source>
-        <translation>Nepavyko įkelti vaizdo įrašo:
+        <translation type="vanished">Nepavyko įkelti vaizdo įrašo:
 %1</translation>
     </message>
     <message>
-        <location filename="../src/video/RecordingPreviewWindow.cpp" line="953"/>
-        <location filename="../src/video/RecordingPreviewWindow.cpp" line="982"/>
         <source>Conversion Error</source>
-        <translation>Konvertavimo klaida</translation>
+        <translation type="vanished">Konvertavimo klaida</translation>
     </message>
     <message>
-        <location filename="../src/video/RecordingPreviewWindow.cpp" line="954"/>
         <source>Cannot convert: video not loaded properly.</source>
-        <translation>Negalima konvertuoti: vaizdo įrašas nebuvo tinkamai įkeltas.</translation>
+        <translation type="vanished">Negalima konvertuoti: vaizdo įrašas nebuvo tinkamai įkeltas.</translation>
     </message>
     <message>
-        <location filename="../src/video/RecordingPreviewWindow.cpp" line="959"/>
         <source>Converting video...</source>
-        <translation>Konvertuojamas vaizdo įrašas...</translation>
+        <translation type="vanished">Konvertuojamas vaizdo įrašas...</translation>
     </message>
     <message>
-        <location filename="../src/video/RecordingPreviewWindow.cpp" line="959"/>
-        <location filename="../src/video/RecordingPreviewWindow.cpp" line="1245"/>
         <source>Cancel</source>
-        <translation>Atšaukti</translation>
+        <translation type="vanished">Atšaukti</translation>
     </message>
     <message>
-        <location filename="../src/video/RecordingPreviewWindow.cpp" line="983"/>
         <source>Failed to start encoder: %1</source>
-        <translation>Nepavyko paleisti koduotuvo: %1</translation>
+        <translation type="vanished">Nepavyko paleisti koduotuvo: %1</translation>
     </message>
     <message>
-        <location filename="../src/video/RecordingPreviewWindow.cpp" line="1146"/>
         <source>Trim Failed</source>
-        <translation>Apkarpymas nepavyko</translation>
+        <translation type="vanished">Apkarpymas nepavyko</translation>
     </message>
     <message>
-        <location filename="../src/video/RecordingPreviewWindow.cpp" line="1147"/>
         <source>Failed to trim the video. Please try again.</source>
-        <translation>Nepavyko apkarpyti vaizdo įrašo. Bandykite dar kartą.</translation>
+        <translation type="vanished">Nepavyko apkarpyti vaizdo įrašo. Bandykite dar kartą.</translation>
     </message>
     <message>
-        <location filename="../src/video/RecordingPreviewWindow.cpp" line="1153"/>
         <source>Set Trim Start</source>
-        <translation>Nustatyti apkarpymo pradžią</translation>
+        <translation type="vanished">Nustatyti apkarpymo pradžią</translation>
     </message>
     <message>
-        <location filename="../src/video/RecordingPreviewWindow.cpp" line="1153"/>
         <source>Set Trim End</source>
-        <translation>Nustatyti apkarpymo pabaigą</translation>
+        <translation type="vanished">Nustatyti apkarpymo pabaigą</translation>
     </message>
     <message>
-        <location filename="../src/video/RecordingPreviewWindow.cpp" line="1163"/>
         <source>Enter time in seconds:</source>
-        <translation>Įveskite laiką sekundėmis:</translation>
+        <translation type="vanished">Įveskite laiką sekundėmis:</translation>
     </message>
     <message>
-        <location filename="../src/video/RecordingPreviewWindow.cpp" line="1241"/>
         <source>Trim Error</source>
-        <translation>Apkarpymo klaida</translation>
+        <translation type="vanished">Apkarpymo klaida</translation>
     </message>
     <message>
-        <location filename="../src/video/RecordingPreviewWindow.cpp" line="1245"/>
         <source>Trimming video...</source>
-        <translation>Apkarpomas vaizdo įrašas...</translation>
+        <translation type="vanished">Apkarpomas vaizdo įrašas...</translation>
     </message>
 </context>
 <context>
     <name>RecordingRegionSelector</name>
     <message>
-        <location filename="../src/RecordingRegionSelector.cpp" line="65"/>
+        <location filename="../src/RecordingRegionSelector.cpp" line="65" />
         <source>Start Recording (Enter)</source>
         <translation>Pradėti įrašymą (Enter)</translation>
     </message>
     <message>
-        <location filename="../src/RecordingRegionSelector.cpp" line="66"/>
+        <location filename="../src/RecordingRegionSelector.cpp" line="66" />
         <source>Cancel (Esc)</source>
         <translation>Atšaukti (Esc)</translation>
     </message>
     <message>
-        <location filename="../src/RecordingRegionSelector.cpp" line="270"/>
+        <location filename="../src/RecordingRegionSelector.cpp" line="253" />
         <source>%1 x %2</source>
         <translation>%1 × %2</translation>
     </message>
     <message>
-        <location filename="../src/RecordingRegionSelector.cpp" line="316"/>
+        <location filename="../src/RecordingRegionSelector.cpp" line="299" />
         <source>Press Enter or click Start Recording, Escape to cancel</source>
         <translation>Paspauskite Enter arba spustelėkite „Pradėti įrašymą“, o atšaukimui – Escape</translation>
     </message>
     <message>
-        <location filename="../src/RecordingRegionSelector.cpp" line="318"/>
+        <location filename="../src/RecordingRegionSelector.cpp" line="301" />
         <source>Release to confirm selection</source>
         <translation>Atleiskite, kad patvirtintumėte pasirinkimą</translation>
     </message>
     <message>
-        <location filename="../src/RecordingRegionSelector.cpp" line="320"/>
+        <location filename="../src/RecordingRegionSelector.cpp" line="303" />
         <source>Click and drag to select recording region</source>
         <translation>Spustelėkite ir vilkite, kad pasirinktumėte įrašymo sritį</translation>
     </message>
 </context>
 <context>
+    <name>RecordingSettings</name>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="31" />
+        <source>Frame rate</source>
+        <translation>Kadrų dažnis</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="33" />
+        <source>10 FPS</source>
+        <translation>10 FPS</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="34" />
+        <source>15 FPS</source>
+        <translation>15 FPS</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="35" />
+        <source>24 FPS</source>
+        <translation>24 FPS</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="36" />
+        <source>30 FPS</source>
+        <translation>30 FPS</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="45" />
+        <source>Output format</source>
+        <translation>Išvesties formatas:</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="47" />
+        <source>MP4 (H.264)</source>
+        <translation>MP4 (H.264)</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="48" />
+        <source>GIF</source>
+        <translation>GIF</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="49" />
+        <source>WebP</source>
+        <translation>WebP</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="57" />
+        <source>Quality</source>
+        <translation>Kokybė:</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="80" />
+        <source>WebP format creates smaller files than GIF with better quality.
+Best for short clips and sharing on web.
+Audio is not supported for WebP recordings.</source>
+        <translation>WebP formatas sukuria mažesnius failus nei GIF ir užtikrina geresnę kokybę.
+Geriausiai tinka trumpiems klipams ir dalinimuisi žiniatinklyje.
+WebP įrašuose garsas nepalaikomas.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="81" />
+        <source>GIF format creates larger files than MP4.
+Best for short clips and sharing on web.
+Audio is not supported for GIF recordings.</source>
+        <translation>GIF formatas sukuria didesnius failus nei MP4.
+Geriausiai tinka trumpiems klipams ir dalinimuisi žiniatinklyje.
+GIF įrašuose garsas nepalaikomas.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="90" />
+        <source>Audio</source>
+        <translation>Garsas</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="93" />
+        <source>Record audio</source>
+        <translation>Įrašyti garsą</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="99" />
+        <source>Source</source>
+        <translation>Šaltinis:</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="101" />
+        <source>Microphone</source>
+        <translation>Mikrofonas</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="102" />
+        <source>System Audio</source>
+        <translation>Sistemos garsas</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="103" />
+        <source>Both (Mixed)</source>
+        <translation>Abu (sumaišyti)</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="114" />
+        <source>Show preview</source>
+        <translation>Rodyti peržiūrą</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="119" />
+        <source>Countdown</source>
+        <translation>Atgalinis skaičiavimas</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="122" />
+        <source>Show countdown</source>
+        <translation>Rodyti atgalinį skaičiavimą</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="128" />
+        <source>Duration</source>
+        <translation>Atgalinio skaičiavimo trukmė:</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="130" />
+        <source>1 second</source>
+        <translation>1 sekundė</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="131" />
+        <source>2 seconds</source>
+        <translation>2 sekundės</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="132" />
+        <source>3 seconds</source>
+        <translation>3 sekundės</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="133" />
+        <source>4 seconds</source>
+        <translation>4 sekundės</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="134" />
+        <source>5 seconds</source>
+        <translation>5 sekundės</translation>
+        </message>
+</context>
+<context>
     <name>RegionExportManager</name>
     <message>
-        <location filename="../src/region/RegionExportManager.cpp" line="203"/>
+        <location filename="../src/region/RegionExportManager.cpp" line="203" />
         <source>Failed to save screenshot: %1</source>
         <translation>Nepavyko išsaugoti ekrano nuotraukos: %1</translation>
     </message>
     <message>
-        <location filename="../src/region/RegionExportManager.cpp" line="217"/>
+        <location filename="../src/region/RegionExportManager.cpp" line="217" />
         <source>Save Screenshot</source>
         <translation>Išsaugoti ekrano nuotrauką</translation>
     </message>
     <message>
-        <location filename="../src/region/RegionExportManager.cpp" line="219"/>
+        <location filename="../src/region/RegionExportManager.cpp" line="219" />
         <source>PNG Image (*.png);;JPEG Image (*.jpg *.jpeg);;All Files (*)</source>
         <translation>PNG vaizdas (*.png);;JPEG vaizdas (*.jpg *.jpeg);;Visi failai (*)</translation>
     </message>
@@ -1750,10 +2245,10 @@ Dydis: %2</translation>
 <context>
     <name>RegionPainter</name>
     <message>
-        <location filename="../src/region/RegionPainter.cpp" line="253"/>
-        <location filename="../src/region/RegionPainter.cpp" line="263"/>
-        <location filename="../src/region/RegionPainter.cpp" line="275"/>
-        <location filename="../src/region/RegionPainter.cpp" line="363"/>
+        <location filename="../src/region/RegionPainter.cpp" line="253" />
+        <location filename="../src/region/RegionPainter.cpp" line="263" />
+        <location filename="../src/region/RegionPainter.cpp" line="275" />
+        <location filename="../src/region/RegionPainter.cpp" line="363" />
         <source>%1 x %2 pt</source>
         <translation>%1 × %2 pt</translation>
     </message>
@@ -1761,86 +2256,86 @@ Dydis: %2</translation>
 <context>
     <name>RegionSelector</name>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="548"/>
+        <location filename="../src/RegionSelector.cpp" line="543" />
         <source>Failed to share screenshot</source>
         <translation>Nepavyko bendrinti ekrano nuotraukos</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="1566"/>
+        <location filename="../src/RegionSelector.cpp" line="1560" />
         <source>%1 region</source>
         <translation>%1 sritis</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="1567"/>
+        <location filename="../src/RegionSelector.cpp" line="1561" />
         <source>%1 regions</source>
         <translation>%1 sritys</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="1863"/>
+        <location filename="../src/RegionSelector.cpp" line="1857" />
         <source>Error</source>
         <translation>Klaida</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="1863"/>
+        <location filename="../src/RegionSelector.cpp" line="1857" />
         <source>Failed to merge regions. Please try again.</source>
         <translation>Nepavyko sujungti sričių. Bandykite dar kartą.</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="1921"/>
-        <location filename="../src/RegionSelector.cpp" line="2417"/>
-        <location filename="../src/RegionSelector.cpp" line="2505"/>
-        <location filename="../src/RegionSelector.cpp" line="2598"/>
+        <location filename="../src/RegionSelector.cpp" line="1916" />
+        <location filename="../src/RegionSelector.cpp" line="2413" />
+        <location filename="../src/RegionSelector.cpp" line="2503" />
+        <location filename="../src/RegionSelector.cpp" line="2598" />
         <source>Failed to process selected region</source>
         <translation>Nepavyko apdoroti pasirinktos srities</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="2447"/>
-        <location filename="../src/RegionSelector.cpp" line="2472"/>
+        <location filename="../src/RegionSelector.cpp" line="2444" />
+        <location filename="../src/RegionSelector.cpp" line="2469" />
         <source>Copied %1 characters</source>
         <translation>Nukopijuota %1 simbolių</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="2451"/>
+        <location filename="../src/RegionSelector.cpp" line="2448" />
         <source>No text found</source>
         <translation>Tekstas nerastas</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="2471"/>
+        <location filename="../src/RegionSelector.cpp" line="2468" />
         <source>OCR</source>
         <translation>OCR</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="2567"/>
+        <location filename="../src/RegionSelector.cpp" line="2565" />
         <source>No QR code found</source>
         <translation>QR kodas nerastas</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="2613"/>
+        <location filename="../src/RegionSelector.cpp" line="2613" />
         <source>Face detection unavailable</source>
         <translation>Veidų aptikimas nepasiekiamas</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="2625"/>
+        <location filename="../src/RegionSelector.cpp" line="2625" />
         <source>Detection unavailable</source>
         <translation>Aptikimas nepasiekiamas</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="2803"/>
+        <location filename="../src/RegionSelector.cpp" line="2803" />
         <source>Blurred %1 face(s), %2 credential(s)</source>
         <translation>Sulieta: %1 veidas(-ai), %2 kredencialas(-ai)</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="2807"/>
+        <location filename="../src/RegionSelector.cpp" line="2807" />
         <source>Blurred %1 face(s)</source>
         <translation>Sulieta %1 veidų</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="2811"/>
+        <location filename="../src/RegionSelector.cpp" line="2811" />
         <source>Blurred %1 credential(s)</source>
         <translation>Sulieta: %1 kredencialas(-ai)</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="2815"/>
+        <location filename="../src/RegionSelector.cpp" line="2815" />
         <source>No faces or credentials detected</source>
         <translation>Veidų ar kredencialų neaptikta</translation>
     </message>
@@ -1849,7 +2344,7 @@ Dydis: %2</translation>
         <translation type="vanished">Veidų neaptikta</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="2819"/>
+        <location filename="../src/RegionSelector.cpp" line="2819" />
         <source>Detection failed</source>
         <translation>Aptikimas nepavyko</translation>
     </message>
@@ -1857,7 +2352,7 @@ Dydis: %2</translation>
 <context>
     <name>RegionSettingsHelper</name>
     <message>
-        <location filename="../src/region/RegionSettingsHelper.cpp" line="139"/>
+        <location filename="../src/region/RegionSettingsHelper.cpp" line="130" />
         <source>Default</source>
         <translation>Numatytasis</translation>
     </message>
@@ -1865,7 +2360,7 @@ Dydis: %2</translation>
 <context>
     <name>SCKCaptureEngine</name>
     <message>
-        <location filename="../src/capture/SCKCaptureEngine_mac.mm" line="389"/>
+        <location filename="../src/capture/SCKCaptureEngine_mac.mm" line="389" />
         <source>Could not match the selected screen. Recording from main display instead.</source>
         <translation>Nepavyko suderinti pasirinkto ekrano. Vietoje jo įrašoma iš pagrindinio ekrano.</translation>
     </message>
@@ -1873,8 +2368,8 @@ Dydis: %2</translation>
 <context>
     <name>ScreenCanvas</name>
     <message>
-        <location filename="../src/ScreenCanvas.cpp" line="305"/>
-        <location filename="../src/ScreenCanvas.cpp" line="334"/>
+        <location filename="../src/ScreenCanvas.cpp" line="304" />
+        <location filename="../src/ScreenCanvas.cpp" line="333" />
         <source>Laser Pointer</source>
         <translation>Lazerinis žymeklis</translation>
     </message>
@@ -1882,767 +2377,703 @@ Dydis: %2</translation>
 <context>
     <name>SettingsDialog</name>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="104"/>
         <source>%1 Settings</source>
-        <translation>%1 nustatymai</translation>
+        <translation type="vanished">%1 nustatymai</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="125"/>
         <source>General</source>
-        <translation>Bendri</translation>
+        <translation type="vanished">Bendri</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="130"/>
         <source>Hotkeys</source>
-        <translation>Spartieji klavišai</translation>
+        <translation type="vanished">Spartieji klavišai</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="135"/>
         <source>Advanced</source>
-        <translation>Išplėstiniai</translation>
+        <translation type="vanished">Išplėstiniai</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="140"/>
         <source>Watermark</source>
-        <translation>Vandens ženklas</translation>
+        <translation type="vanished">Vandens ženklas</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="145"/>
         <source>OCR</source>
-        <translation>OCR</translation>
+        <translation type="vanished">OCR</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="150"/>
         <source>Recording</source>
-        <translation>Įrašymas</translation>
+        <translation type="vanished">Įrašymas</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="155"/>
         <source>Files</source>
-        <translation>Failai</translation>
+        <translation type="vanished">Failai</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="160"/>
         <source>Updates</source>
-        <translation>Atnaujinimai</translation>
+        <translation type="vanished">Atnaujinimai</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="165"/>
         <source>About</source>
-        <translation>Apie</translation>
+        <translation type="vanished">Apie</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="176"/>
         <source>Save</source>
-        <translation>Išsaugoti</translation>
+        <translation type="vanished">Išsaugoti</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="177"/>
         <source>Cancel</source>
-        <translation>Atšaukti</translation>
+        <translation type="vanished">Atšaukti</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="201"/>
         <source>Start on login</source>
-        <translation>Paleisti prisijungus</translation>
+        <translation type="vanished">Paleisti prisijungus</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="207"/>
         <source>Language</source>
-        <translation>Kalba</translation>
+        <translation type="vanished">Kalba</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="212"/>
         <source>Display language:</source>
-        <translation>Rodymo kalba:</translation>
+        <translation type="vanished">Rodymo kalba:</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="234"/>
         <source>Appearance</source>
-        <translation>Išvaizda</translation>
+        <translation type="vanished">Išvaizda</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="239"/>
         <source>Toolbar Style:</source>
-        <translation>Įrankių juostos stilius:</translation>
+        <translation type="vanished">Įrankių juostos stilius:</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="242"/>
         <source>Dark</source>
-        <translation>Tamsus</translation>
+        <translation type="vanished">Tamsus</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="243"/>
         <source>Light</source>
-        <translation>Šviesus</translation>
+        <translation type="vanished">Šviesus</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="256"/>
         <source>Permissions</source>
-        <translation>Leidimai</translation>
+        <translation type="vanished">Leidimai</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="262"/>
         <source>Screen Recording:</source>
-        <translation>Ekrano įrašymas:</translation>
+        <translation type="vanished">Ekrano įrašymas:</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="265"/>
-        <location filename="../src/SettingsDialog.cpp" line="282"/>
         <source>Open Settings</source>
-        <translation>Atidaryti nustatymus</translation>
+        <translation type="vanished">Atidaryti nustatymus</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="279"/>
         <source>Accessibility:</source>
-        <translation>Pritaikymas neįgaliesiems:</translation>
+        <translation type="vanished">Pritaikymas neįgaliesiems:</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="300"/>
         <source>Command Line Interface</source>
-        <translation>Komandinė eilutė</translation>
+        <translation type="vanished">Komandinė eilutė</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="361"/>
         <source>Blur</source>
-        <translation>Suliejimas</translation>
+        <translation type="vanished">Suliejimas</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="370"/>
         <source>Blur intensity:</source>
-        <translation>Suliejimo intensyvumas:</translation>
+        <translation type="vanished">Suliejimo intensyvumas:</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="387"/>
         <source>Blur type:</source>
-        <translation>Suliejimo tipas:</translation>
+        <translation type="vanished">Suliejimo tipas:</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="390"/>
         <source>Pixelate</source>
-        <translation>Pikselizavimas</translation>
+        <translation type="vanished">Pikselizavimas</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="391"/>
         <source>Gaussian</source>
-        <translation>Gauso</translation>
+        <translation type="vanished">Gauso</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="400"/>
         <source>Pin Window</source>
-        <translation>Prisegti langą</translation>
+        <translation type="vanished">Prisegti langą</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="408"/>
         <source>Default opacity:</source>
-        <translation>Numatytasis nepermatomumas:</translation>
+        <translation type="vanished">Numatytasis nepermatomumas:</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="426"/>
         <source>Opacity step:</source>
-        <translation>Nepermatomumo žingsnis:</translation>
+        <translation type="vanished">Nepermatomumo žingsnis:</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="444"/>
         <source>Zoom step:</source>
-        <translation>Priartinimo žingsnis:</translation>
+        <translation type="vanished">Priartinimo žingsnis:</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="462"/>
         <source>Max cache files:</source>
-        <translation>Maks. podėlio failų:</translation>
+        <translation type="vanished">Maks. podėlio failų:</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="487"/>
         <source>Apply to images</source>
-        <translation>Taikyti vaizdams</translation>
+        <translation type="vanished">Taikyti vaizdams</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="491"/>
         <source>Apply to recordings</source>
-        <translation>Taikyti įrašams</translation>
+        <translation type="vanished">Taikyti įrašams</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="505"/>
         <source>Image:</source>
-        <translation>Vaizdas:</translation>
+        <translation type="vanished">Vaizdas:</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="508"/>
         <source>Select an image file...</source>
-        <translation>Pasirinkite vaizdo failą...</translation>
+        <translation type="vanished">Pasirinkite vaizdo failą...</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="510"/>
-        <location filename="../src/SettingsDialog.cpp" line="1476"/>
-        <location filename="../src/SettingsDialog.cpp" line="1497"/>
         <source>Browse...</source>
-        <translation>Naršyti...</translation>
+        <translation type="vanished">Naršyti...</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="513"/>
         <source>Select Watermark Image</source>
-        <translation>Pasirinkite vandens ženklo vaizdą</translation>
+        <translation type="vanished">Pasirinkite vandens ženklo vaizdą</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="514"/>
         <source>Images (*.png *.jpg *.jpeg *.bmp *.gif *.svg);;All Files (*)</source>
-        <translation>Vaizdai (*.png *.jpg *.jpeg *.bmp *.gif *.svg);;Visi failai (*)</translation>
+        <translation type="vanished">Vaizdai (*.png *.jpg *.jpeg *.bmp *.gif *.svg);;Visi failai (*)</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="527"/>
         <source>Scale:</source>
-        <translation>Mastelis:</translation>
+        <translation type="vanished">Mastelis:</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="545"/>
         <source>Opacity:</source>
-        <translation>Nepermatomumas:</translation>
+        <translation type="vanished">Nepermatomumas:</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="562"/>
         <source>Margin:</source>
-        <translation>Paraštė:</translation>
+        <translation type="vanished">Paraštė:</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="579"/>
         <source>Position:</source>
-        <translation>Pozicija:</translation>
+        <translation type="vanished">Pozicija:</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="582"/>
         <source>Top-Left</source>
-        <translation>Viršuje kairėje</translation>
+        <translation type="vanished">Viršuje kairėje</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="583"/>
         <source>Top-Right</source>
-        <translation>Viršuje dešinėje</translation>
+        <translation type="vanished">Viršuje dešinėje</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="584"/>
         <source>Bottom-Left</source>
-        <translation>Apačioje kairėje</translation>
+        <translation type="vanished">Apačioje kairėje</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="585"/>
         <source>Bottom-Right</source>
-        <translation>Apačioje dešinėje</translation>
+        <translation type="vanished">Apačioje dešinėje</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="605"/>
-        <location filename="../src/SettingsDialog.cpp" line="1084"/>
         <source>No image</source>
-        <translation>Nėra vaizdo</translation>
+        <translation type="vanished">Nėra vaizdo</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1093"/>
         <source>Invalid image</source>
-        <translation>Netinkamas vaizdas</translation>
+        <translation type="vanished">Netinkamas vaizdas</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1114"/>
         <source>Size: %1 × %2 px</source>
-        <translation>Dydis: %1 × %2 px</translation>
+        <translation type="vanished">Dydis: %1 × %2 px</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="646"/>
         <source>Frame Rate:</source>
-        <translation>Kadrų dažnis:</translation>
+        <translation type="vanished">Kadrų dažnis:</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="339"/>
         <source>Capture</source>
-        <translation>Fiksavimas</translation>
+        <translation type="vanished">Fiksavimas</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="344"/>
         <source>Show shortcut hints when entering region capture</source>
-        <translation>Įeinant į srities fiksavimą rodyti sparčiųjų klavišų užuominas</translation>
+        <translation type="vanished">Įeinant į srities fiksavimą rodyti sparčiųjų klavišų užuominas</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="351"/>
         <source>MCP</source>
-        <translation>MCP</translation>
+        <translation type="vanished">MCP</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="355"/>
         <source>Enable MCP server</source>
-        <translation>Įjungti MCP serverį</translation>
+        <translation type="vanished">Įjungti MCP serverį</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="649"/>
         <source>10 FPS</source>
-        <translation>10 FPS</translation>
+        <translation type="vanished">10 FPS</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="650"/>
         <source>15 FPS</source>
-        <translation>15 FPS</translation>
+        <translation type="vanished">15 FPS</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="651"/>
         <source>24 FPS</source>
-        <translation>24 FPS</translation>
+        <translation type="vanished">24 FPS</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="652"/>
         <source>30 FPS</source>
-        <translation>30 FPS</translation>
+        <translation type="vanished">30 FPS</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="661"/>
         <source>Output Format:</source>
-        <translation>Išvesties formatas:</translation>
+        <translation type="vanished">Išvesties formatas:</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="665"/>
         <source>MP4 (H.264)</source>
-        <translation>MP4 (H.264)</translation>
+        <translation type="vanished">MP4 (H.264)</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="666"/>
         <source>GIF</source>
-        <translation>GIF</translation>
+        <translation type="vanished">GIF</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="667"/>
         <source>WebP</source>
-        <translation>WebP</translation>
+        <translation type="vanished">WebP</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="680"/>
         <source>Quality:</source>
-        <translation>Kokybė:</translation>
+        <translation type="vanished">Kokybė:</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="704"/>
-        <location filename="../src/SettingsDialog.cpp" line="907"/>
         <source>GIF format creates larger files than MP4.
 Best for short clips and sharing on web.
 Audio is not supported for GIF recordings.</source>
-        <translation>GIF formatas sukuria didesnius failus nei MP4.
+        <translation type="vanished">GIF formatas sukuria didesnius failus nei MP4.
 Geriausiai tinka trumpiems klipams ir dalinimuisi žiniatinklyje.
 GIF įrašuose garsas nepalaikomas.</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="720"/>
         <source>Audio</source>
-        <translation>Garsas</translation>
+        <translation type="vanished">Garsas</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="725"/>
         <source>Record audio</source>
-        <translation>Įrašyti garsą</translation>
+        <translation type="vanished">Įrašyti garsą</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="730"/>
         <source>Source:</source>
-        <translation>Šaltinis:</translation>
+        <translation type="vanished">Šaltinis:</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="733"/>
         <source>Microphone</source>
-        <translation>Mikrofonas</translation>
+        <translation type="vanished">Mikrofonas</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="734"/>
         <source>System Audio</source>
-        <translation>Sistemos garsas</translation>
+        <translation type="vanished">Sistemos garsas</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="735"/>
         <source>Both (Mixed)</source>
-        <translation>Abu (sumaišyti)</translation>
+        <translation type="vanished">Abu (sumaišyti)</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="743"/>
         <source>Device:</source>
-        <translation>Įrenginys:</translation>
+        <translation type="vanished">Įrenginys:</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="746"/>
-        <location filename="../src/SettingsDialog.cpp" line="1123"/>
         <source>Default</source>
-        <translation>Numatytasis</translation>
+        <translation type="vanished">Numatytasis</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="779"/>
         <source>Show preview after recording</source>
-        <translation>Rodyti peržiūrą po įrašymo</translation>
+        <translation type="vanished">Rodyti peržiūrą po įrašymo</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="784"/>
         <source>Countdown</source>
-        <translation>Atgalinis skaičiavimas</translation>
+        <translation type="vanished">Atgalinis skaičiavimas</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="790"/>
         <source>Show countdown before recording</source>
-        <translation>Rodyti atgalinį skaičiavimą prieš įrašymą</translation>
+        <translation type="vanished">Rodyti atgalinį skaičiavimą prieš įrašymą</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="791"/>
         <source>Display a 3-2-1 countdown before recording starts</source>
-        <translation>Rodyti 3-2-1 atgalinį skaičiavimą prieš pradedant įrašymą</translation>
+        <translation type="vanished">Rodyti 3-2-1 atgalinį skaičiavimą prieš pradedant įrašymą</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="796"/>
         <source>Countdown duration:</source>
-        <translation>Atgalinio skaičiavimo trukmė:</translation>
+        <translation type="vanished">Atgalinio skaičiavimo trukmė:</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="798"/>
         <source>1 second</source>
-        <translation>1 sekundė</translation>
+        <translation type="vanished">1 sekundė</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="799"/>
         <source>2 seconds</source>
-        <translation>2 sekundės</translation>
+        <translation type="vanished">2 sekundės</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="800"/>
         <source>3 seconds</source>
-        <translation>3 sekundės</translation>
+        <translation type="vanished">3 sekundės</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="801"/>
         <source>4 seconds</source>
-        <translation>4 sekundės</translation>
+        <translation type="vanished">4 sekundės</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="802"/>
         <source>5 seconds</source>
-        <translation>5 sekundės</translation>
+        <translation type="vanished">5 sekundės</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="902"/>
         <source>WebP format creates smaller files than GIF with better quality.
 Best for short clips and sharing on web.
 Audio is not supported for WebP recordings.</source>
-        <translation>WebP formatas sukuria mažesnius failus nei GIF ir užtikrina geresnę kokybę.
+        <translation type="vanished">WebP formatas sukuria mažesnius failus nei GIF ir užtikrina geresnę kokybę.
 Geriausiai tinka trumpiems klipams ir dalinimuisi žiniatinklyje.
 WebP įrašuose garsas nepalaikomas.</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1058"/>
         <source>Restart Required</source>
-        <translation>Reikalingas paleidimas iš naujo</translation>
+        <translation type="vanished">Reikalingas paleidimas iš naujo</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1059"/>
         <source>The language change will take effect after restarting the application.</source>
-        <translation>Kalbos pakeitimas įsigalios iš naujo paleidus programą.</translation>
+        <translation type="vanished">Kalbos pakeitimas įsigalios iš naujo paleidus programą.</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1163"/>
-        <location filename="../src/SettingsDialog.cpp" line="1172"/>
         <source>Microphone access denied. Please enable in System Settings &gt; Privacy &amp; Security &gt; Microphone.</source>
-        <translation>Prieiga prie mikrofono uždrausta. Įjunkite ją „System Settings &gt; Privacy &amp; Security &gt; Microphone“.</translation>
+        <translation type="vanished">Prieiga prie mikrofono uždrausta. Įjunkite ją „System Settings &gt; Privacy &amp; Security &gt; Microphone“.</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1189"/>
         <source>System audio capture requires macOS 13 (Ventura) or later, or a virtual audio device like BlackHole.</source>
-        <translation>Sistemos garso įrašymui reikia macOS 13 (Ventura) ar naujesnės versijos arba virtualaus garso įrenginio, pvz., BlackHole.</translation>
+        <translation type="vanished">Sistemos garso įrašymui reikia macOS 13 (Ventura) ar naujesnės versijos arba virtualaus garso įrenginio, pvz., BlackHole.</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1215"/>
         <source>Loading available languages...</source>
-        <translation>Įkeliamos galimos kalbos...</translation>
+        <translation type="vanished">Įkeliamos galimos kalbos...</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1247"/>
         <source>Select and order the languages for OCR recognition.
 English is always included and cannot be removed. Drag to reorder selected languages.</source>
-        <translation>Pasirinkite ir surikiuokite OCR atpažinimo kalbas.
+        <translation type="vanished">Pasirinkite ir surikiuokite OCR atpažinimo kalbas.
 Anglų kalba visada įtraukta ir negali būti pašalinta. Vilkite, kad pakeistumėte pasirinktų kalbų tvarką.</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1259"/>
         <source>Available Languages</source>
-        <translation>Galimos kalbos</translation>
+        <translation type="vanished">Galimos kalbos</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1280"/>
         <source>Add selected languages</source>
-        <translation>Pridėti pasirinktas kalbas</translation>
+        <translation type="vanished">Pridėti pasirinktas kalbas</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1283"/>
         <source>Remove selected languages</source>
-        <translation>Pašalinti pasirinktas kalbas</translation>
+        <translation type="vanished">Pašalinti pasirinktas kalbas</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1292"/>
         <source>Selected Languages</source>
-        <translation>Pasirinktos kalbos</translation>
+        <translation type="vanished">Pasirinktos kalbos</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1354"/>
         <source>English is always included and cannot be removed</source>
-        <translation>Anglų kalba visada įtraukta ir negali būti pašalinta</translation>
+        <translation type="vanished">Anglų kalba visada įtraukta ir negali būti pašalinta</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1374"/>
         <source>After OCR Recognition</source>
-        <translation>Po OCR atpažinimo</translation>
+        <translation type="vanished">Po OCR atpažinimo</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1378"/>
         <source>Copy text directly to clipboard</source>
-        <translation>Kopijuoti tekstą tiesiai į iškarpinę</translation>
+        <translation type="vanished">Kopijuoti tekstą tiesiai į iškarpinę</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1380"/>
         <source>Show editor to review and edit text</source>
-        <translation>Rodyti redaktorių tekstui peržiūrėti ir redaguoti</translation>
+        <translation type="vanished">Rodyti redaktorių tekstui peržiūrėti ir redaguoti</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1384"/>
         <source>Recognized text is immediately copied to clipboard</source>
-        <translation>Atpažintas tekstas iš karto nukopijuojamas į iškarpinę</translation>
+        <translation type="vanished">Atpažintas tekstas iš karto nukopijuojamas į iškarpinę</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1386"/>
         <source>Opens a dialog where you can review and edit the text before copying</source>
-        <translation>Atidaro dialogą, kuriame galite peržiūrėti ir redaguoti tekstą prieš kopijuojant</translation>
+        <translation type="vanished">Atidaro dialogą, kuriame galite peržiūrėti ir redaguoti tekstą prieš kopijuojant</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1406"/>
         <source>No OCR languages available.
 
 macOS: OCR requires macOS 10.15 or later.
 Windows: Install language packs in Settings &gt; Time &amp; Language &gt; Language.</source>
-        <translation>Nėra prieinamų OCR kalbų.
+        <translation type="vanished">Nėra prieinamų OCR kalbų.
 
 macOS: OCR reikia macOS 10.15 ar naujesnės versijos.
 Windows: įdiekite kalbų paketus skiltyje Settings &gt; Time &amp; Language &gt; Language.</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1465"/>
         <source>Save Locations</source>
-        <translation>Išsaugojimo vietos</translation>
+        <translation type="vanished">Išsaugojimo vietos</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1471"/>
         <source>Screenshots:</source>
-        <translation>Ekrano nuotraukos:</translation>
+        <translation type="vanished">Ekrano nuotraukos:</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1479"/>
         <source>Select Screenshot Folder</source>
-        <translation>Pasirinkite ekrano nuotraukų aplanką</translation>
+        <translation type="vanished">Pasirinkite ekrano nuotraukų aplanką</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1492"/>
         <source>Recordings:</source>
-        <translation>Įrašai:</translation>
+        <translation type="vanished">Įrašai:</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1500"/>
         <source>Select Recording Folder</source>
-        <translation>Pasirinkite įrašų aplanką</translation>
+        <translation type="vanished">Pasirinkite įrašų aplanką</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1513"/>
         <source>Filename Format</source>
-        <translation>Failo pavadinimo formatas</translation>
+        <translation type="vanished">Failo pavadinimo formatas</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1518"/>
         <source>Template:</source>
-        <translation>Šablonas:</translation>
+        <translation type="vanished">Šablonas:</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1531"/>
         <source>Tokens: {prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}
 Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
-        <translation>Žetonai: {prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}
+        <translation type="vanished">Žetonai: {prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}
 Datos žetonai: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} arba {date}</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1552"/>
         <source>Save Behavior</source>
-        <translation>Išsaugojimo elgsena</translation>
+        <translation type="vanished">Išsaugojimo elgsena</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1556"/>
         <source>Auto-save screenshots (save directly without dialog)</source>
-        <translation>Automatiškai saugoti ekrano nuotraukas (saugoti tiesiogiai be dialogo)</translation>
+        <translation type="vanished">Automatiškai saugoti ekrano nuotraukas (saugoti tiesiogiai be dialogo)</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1560"/>
         <source>Auto-save recordings (save directly without dialog)</source>
-        <translation>Automatiškai saugoti įrašus (saugoti tiesiogiai be dialogo)</translation>
+        <translation type="vanished">Automatiškai saugoti įrašus (saugoti tiesiogiai be dialogo)</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1589"/>
         <source>Preview: %1</source>
-        <translation>Peržiūra: %1</translation>
+        <translation type="vanished">Peržiūra: %1</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1591"/>
         <source>
 Invalid template, fallback applied: %1</source>
-        <translation>
+        <translation type="vanished">
 Netinkamas šablonas, pritaikytas atsarginis: %1</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1601"/>
         <source>Version Information</source>
-        <translation>Versijos informacija</translation>
+        <translation type="vanished">Versijos informacija</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1607"/>
         <source>Current Version</source>
-        <translation>Dabartinė versija</translation>
+        <translation type="vanished">Dabartinė versija</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1622"/>
         <source>Automatic Updates</source>
-        <translation>Automatiniai atnaujinimai</translation>
+        <translation type="vanished">Automatiniai atnaujinimai</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1629"/>
         <source>Check for updates automatically</source>
-        <translation>Automatiškai tikrinti atnaujinimus</translation>
+        <translation type="vanished">Automatiškai tikrinti atnaujinimus</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1636"/>
         <source>Check frequency</source>
-        <translation>Tikrinimo dažnis</translation>
+        <translation type="vanished">Tikrinimo dažnis</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1640"/>
         <source>Every day</source>
-        <translation>Kiekvieną dieną</translation>
+        <translation type="vanished">Kiekvieną dieną</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1641"/>
         <source>Every 3 days</source>
-        <translation>Kas 3 dienas</translation>
+        <translation type="vanished">Kas 3 dienas</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1642"/>
         <source>Every week</source>
-        <translation>Kas savaitę</translation>
+        <translation type="vanished">Kas savaitę</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1643"/>
         <source>Every 2 weeks</source>
-        <translation>Kas 2 savaites</translation>
+        <translation type="vanished">Kas 2 savaites</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1644"/>
         <source>Every month</source>
-        <translation>Kas mėnesį</translation>
+        <translation type="vanished">Kas mėnesį</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1676"/>
-        <location filename="../src/SettingsDialog.cpp" line="1738"/>
-        <location filename="../src/SettingsDialog.cpp" line="1752"/>
         <source>Last checked: %1</source>
-        <translation>Paskutinį kartą tikrinta: %1</translation>
+        <translation type="vanished">Paskutinį kartą tikrinta: %1</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1679"/>
         <source>Last checked: Never</source>
-        <translation>Paskutinį kartą tikrinta: Niekada</translation>
+        <translation type="vanished">Paskutinį kartą tikrinta: Niekada</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1691"/>
-        <location filename="../src/SettingsDialog.cpp" line="1720"/>
         <source>Check Now</source>
-        <translation>Tikrinti dabar</translation>
+        <translation type="vanished">Tikrinti dabar</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1718"/>
         <source>Checking...</source>
-        <translation>Tikrinama...</translation>
+        <translation type="vanished">Tikrinama...</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1793"/>
         <source>Version %1</source>
-        <translation>Versija %1</translation>
+        <translation type="vanished">Versija %1</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1802"/>
         <source>Copyright 2024-2025 Victor Fu</source>
-        <translation>Autorių teisės 2024–2025 Victor Fu</translation>
+        <translation type="vanished">Autorių teisės 2024–2025 Victor Fu</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1810"/>
         <source>Author: Victor Fu</source>
-        <translation>Autorius: Victor Fu</translation>
+        <translation type="vanished">Autorius: Victor Fu</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1831"/>
-        <source>&apos;snaptray&apos; command is available in terminal</source>
-        <translation>Komanda &apos;snaptray&apos; prieinama terminale</translation>
+        <source>'snaptray' command is available in terminal</source>
+        <translation type="vanished">Komanda 'snaptray' prieinama terminale</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1832"/>
         <source>Uninstall CLI</source>
-        <translation>Pašalinti CLI</translation>
+        <translation type="vanished">Pašalinti CLI</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1835"/>
-        <source>&apos;snaptray&apos; command is not installed</source>
-        <translation>Komanda &apos;snaptray&apos; nėra įdiegta</translation>
+        <source>'snaptray' command is not installed</source>
+        <translation type="vanished">Komanda 'snaptray' nėra įdiegta</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1836"/>
         <source>Install CLI</source>
-        <translation>Įdiegti CLI</translation>
+        <translation type="vanished">Įdiegti CLI</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1846"/>
-        <location filename="../src/SettingsDialog.cpp" line="1859"/>
+        <source>Granted</source>
+        <translation type="vanished">Suteikta</translation>
+    </message>
+    <message>
+        <source>Not Granted</source>
+        <translation type="vanished">Nesuteikta</translation>
+    </message>
+</context>
+<context>
+    <name>SettingsPathPicker</name>
+    <message>
+        <location filename="../src/qml/controls/SettingsPathPicker.qml" line="48" />
+        <source>Browse...</source>
+        <translation>Naršyti...</translation>
+        </message>
+</context>
+<context>
+    <name>SettingsPermissionRow</name>
+    <message>
+        <location filename="../src/qml/controls/SettingsPermissionRow.qml" line="31" />
         <source>Granted</source>
         <translation>Suteikta</translation>
-    </message>
+        </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1851"/>
-        <location filename="../src/SettingsDialog.cpp" line="1864"/>
+        <location filename="../src/qml/controls/SettingsPermissionRow.qml" line="31" />
         <source>Not Granted</source>
         <translation>Nesuteikta</translation>
-    </message>
+        </message>
+    <message>
+        <location filename="../src/qml/controls/SettingsPermissionRow.qml" line="40" />
+        <source>Open Settings</source>
+        <translation>Atidaryti nustatymus</translation>
+        </message>
+</context>
+<context>
+    <name>SettingsSidebar</name>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="27" />
+        <source>General</source>
+        <translation>Bendri</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="28" />
+        <source>Hotkeys</source>
+        <translation>Spartieji klavišai</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="29" />
+        <source>Advanced</source>
+        <translation>Išplėstiniai</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="30" />
+        <source>Watermark</source>
+        <translation>Vandens ženklas</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="31" />
+        <source>OCR</source>
+        <translation>OCR</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="32" />
+        <source>Recording</source>
+        <translation>Įrašymas</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="33" />
+        <source>Files</source>
+        <translation>Failai</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="34" />
+        <source>Updates</source>
+        <translation>Atnaujinimai</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="35" />
+        <source>About</source>
+        <translation>Apie</translation>
+        </message>
+</context>
+<context>
+    <name>SettingsWindow</name>
+    <message>
+        <location filename="../src/qml/settings/SettingsWindow.qml" line="85" />
+        <source>Cancel</source>
+        <translation>Atšaukti</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsWindow.qml" line="90" />
+        <source>Save</source>
+        <translation>Išsaugoti</translation>
+        </message>
 </context>
 <context>
     <name>SharePasswordDialog</name>
     <message>
-        <location filename="../src/ui/SharePasswordDialog.cpp" line="52"/>
+        <location filename="../src/ui/SharePasswordDialog.cpp" line="54" />
         <source>URL</source>
         <translation>URL</translation>
     </message>
     <message>
-        <location filename="../src/ui/SharePasswordDialog.cpp" line="61"/>
+        <location filename="../src/ui/SharePasswordDialog.cpp" line="63" />
         <source>Share URL</source>
         <translation>Bendrinimo URL</translation>
     </message>
     <message>
-        <location filename="../src/ui/SharePasswordDialog.cpp" line="65"/>
+        <location filename="../src/ui/SharePasswordDialog.cpp" line="67" />
         <source>Set an optional password</source>
         <translation>Nustatykite pasirenkamą slaptažodį</translation>
     </message>
     <message>
-        <location filename="../src/ui/SharePasswordDialog.cpp" line="82"/>
+        <location filename="../src/ui/SharePasswordDialog.cpp" line="84" />
         <source>No password</source>
         <translation>Be slaptažodžio</translation>
     </message>
     <message>
-        <location filename="../src/ui/SharePasswordDialog.cpp" line="88"/>
+        <location filename="../src/ui/SharePasswordDialog.cpp" line="90" />
         <source>Leave empty for public access. Link expires in 24 hours.</source>
         <translation>Palikite tuščią viešai prieigai. Nuoroda galioja 24 valandas.</translation>
     </message>
     <message>
-        <location filename="../src/ui/SharePasswordDialog.cpp" line="104"/>
+        <location filename="../src/ui/SharePasswordDialog.cpp" line="106" />
         <source>Cancel</source>
         <translation>Atšaukti</translation>
     </message>
     <message>
-        <location filename="../src/ui/SharePasswordDialog.cpp" line="110"/>
+        <location filename="../src/ui/SharePasswordDialog.cpp" line="112" />
         <source>Share</source>
         <translation>Bendrinti</translation>
     </message>
@@ -2650,93 +3081,93 @@ Netinkamas šablonas, pritaikytas atsarginis: %1</translation>
 <context>
     <name>ShareResultDialog</name>
     <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="50"/>
+        <location filename="../src/ui/ShareResultDialog.cpp" line="52" />
         <source>URL</source>
         <translation>URL</translation>
     </message>
     <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="59"/>
+        <location filename="../src/ui/ShareResultDialog.cpp" line="61" />
         <source>Share URL Ready</source>
         <translation>Bendrinimo URL paruoštas</translation>
     </message>
     <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="63"/>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="332"/>
+        <location filename="../src/ui/ShareResultDialog.cpp" line="65" />
+        <location filename="../src/ui/ShareResultDialog.cpp" line="235" />
         <source>Upload completed</source>
         <translation>Įkėlimas baigtas</translation>
     </message>
     <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="77"/>
+        <location filename="../src/ui/ShareResultDialog.cpp" line="79" />
         <source>Share Link</source>
         <translation>Bendrinimo nuoroda</translation>
     </message>
     <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="84"/>
+        <location filename="../src/ui/ShareResultDialog.cpp" line="86" />
         <source>No URL</source>
         <translation>Nėra URL</translation>
     </message>
     <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="88"/>
+        <location filename="../src/ui/ShareResultDialog.cpp" line="90" />
         <source>Password</source>
         <translation>Slaptažodis</translation>
     </message>
     <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="117"/>
+        <location filename="../src/ui/ShareResultDialog.cpp" line="119" />
         <source>Use Copy to share now, or Open to verify in browser.</source>
         <translation>Naudokite „Kopijuoti“, kad bendrintumėte dabar, arba „Atidaryti“, kad patikrintumėte naršyklėje.</translation>
     </message>
     <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="132"/>
+        <location filename="../src/ui/ShareResultDialog.cpp" line="134" />
         <source>Close</source>
         <translation>Uždaryti</translation>
     </message>
     <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="138"/>
+        <location filename="../src/ui/ShareResultDialog.cpp" line="140" />
         <source>Copy</source>
         <translation>Kopijuoti</translation>
     </message>
     <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="144"/>
+        <location filename="../src/ui/ShareResultDialog.cpp" line="146" />
         <source>Open</source>
         <translation>Atidaryti</translation>
     </message>
     <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="326"/>
+        <location filename="../src/ui/ShareResultDialog.cpp" line="229" />
         <source>Expires: %1</source>
         <translation>Galioja iki: %1</translation>
     </message>
     <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="328"/>
+        <location filename="../src/ui/ShareResultDialog.cpp" line="231" />
         <source>Valid until %1</source>
         <translation>Galioja iki %1</translation>
     </message>
     <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="336"/>
+        <location filename="../src/ui/ShareResultDialog.cpp" line="239" />
         <source>Password protected</source>
         <translation>Apsaugota slaptažodžiu</translation>
     </message>
     <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="338"/>
+        <location filename="../src/ui/ShareResultDialog.cpp" line="241" />
         <source>Password protected (hidden)</source>
         <translation>Apsaugota slaptažodžiu (paslėpta)</translation>
     </message>
     <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="340"/>
+        <location filename="../src/ui/ShareResultDialog.cpp" line="243" />
         <source>No password</source>
         <translation>Be slaptažodžio</translation>
     </message>
     <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="345"/>
+        <location filename="../src/ui/ShareResultDialog.cpp" line="248" />
         <source>Copy includes both link and password.</source>
         <translation>Kopijavimas apima ir nuorodą, ir slaptažodį.</translation>
     </message>
     <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="346"/>
+        <location filename="../src/ui/ShareResultDialog.cpp" line="249" />
         <source>Anyone with this link can access it until expiration.</source>
         <translation>Bet kas, turintis šią nuorodą, gali pasiekti iki galiojimo pabaigos.</translation>
     </message>
     <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="457"/>
+        <location filename="../src/ui/ShareResultDialog.cpp" line="360" />
         <source>%1
 Password: %2</source>
         <translation>%1
@@ -2746,57 +3177,57 @@ Slaptažodis: %2</translation>
 <context>
     <name>ShareUploadClient</name>
     <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="72"/>
+        <location filename="../src/share/ShareUploadClient.cpp" line="72" />
         <source>Upload already in progress</source>
         <translation>Įkėlimas jau vykdomas</translation>
     </message>
     <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="77"/>
+        <location filename="../src/share/ShareUploadClient.cpp" line="77" />
         <source>Password too long (max %1 characters)</source>
         <translation>Slaptažodis per ilgas (daugiausia %1 simbolių)</translation>
     </message>
     <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="83"/>
+        <location filename="../src/share/ShareUploadClient.cpp" line="83" />
         <source>Failed to prepare image for upload</source>
         <translation>Nepavyko paruošti vaizdo įkėlimui</translation>
     </message>
     <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="105"/>
+        <location filename="../src/share/ShareUploadClient.cpp" line="105" />
         <source>No image available to share</source>
         <translation>Nėra vaizdo, kurį būtų galima bendrinti</translation>
     </message>
     <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="110"/>
+        <location filename="../src/share/ShareUploadClient.cpp" line="110" />
         <source>Invalid upload size limit</source>
         <translation>Neteisingas įkėlimo dydžio limitas</translation>
     </message>
     <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="116"/>
+        <location filename="../src/share/ShareUploadClient.cpp" line="116" />
         <source>Failed to read image data</source>
         <translation>Nepavyko nuskaityti vaizdo duomenų</translation>
     </message>
     <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="122"/>
+        <location filename="../src/share/ShareUploadClient.cpp" line="122" />
         <source>Failed to encode PNG image</source>
         <translation>Nepavyko užkoduoti PNG vaizdo</translation>
     </message>
     <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="149"/>
+        <location filename="../src/share/ShareUploadClient.cpp" line="149" />
         <source>Image exceeds 5MB even after compression. Please crop a smaller region.</source>
         <translation>Vaizdas viršija 5 MB net po glaudinimo. Apkirpkite mažesnę sritį.</translation>
     </message>
     <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="176"/>
+        <location filename="../src/share/ShareUploadClient.cpp" line="176" />
         <source>Invalid upload response</source>
         <translation>Neteisingas įkėlimo atsakas</translation>
     </message>
     <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="185"/>
+        <location filename="../src/share/ShareUploadClient.cpp" line="185" />
         <source>Upload response missing URL</source>
         <translation>Įkėlimo atsake trūksta URL</translation>
     </message>
     <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="240"/>
+        <location filename="../src/share/ShareUploadClient.cpp" line="240" />
         <source>Upload succeeded but response could not be parsed</source>
         <translation>Įkėlimas pavyko, tačiau atsako nepavyko išanalizuoti</translation>
     </message>
@@ -2804,7 +3235,7 @@ Slaptažodis: %2</translation>
 <context>
     <name>SnapTray::HotkeyManager</name>
     <message>
-        <location filename="../src/hotkey/HotkeyManager.cpp" line="371"/>
+        <location filename="../src/hotkey/HotkeyManager.cpp" line="371" />
         <source>Conflicts with: %1</source>
         <translation>Konfliktuoja su: %1</translation>
     </message>
@@ -2812,157 +3243,203 @@ Slaptažodis: %2</translation>
 <context>
     <name>SnapTray::HotkeySettingsTab</name>
     <message>
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="48"/>
+        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="50" />
         <source>Action</source>
         <translation>Veiksmas</translation>
     </message>
     <message>
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="49"/>
+        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="51" />
         <source>Hotkey</source>
         <translation>Spartusis klavišas</translation>
     </message>
     <message>
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="50"/>
+        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="52" />
         <source>Status</source>
         <translation>Būsena</translation>
     </message>
     <message>
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="100"/>
+        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="71" />
         <source>Double-click a hotkey to edit, or select and press Enter</source>
         <translation>Dukart spustelėkite spartųjį klavišą redagavimui arba pasirinkite ir paspauskite Enter</translation>
     </message>
     <message>
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="109"/>
+        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="84" />
         <source>Edit...</source>
         <translation>Redaguoti...</translation>
     </message>
     <message>
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="113"/>
+        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="88" />
         <source>Clear</source>
         <translation>Išvalyti</translation>
     </message>
     <message>
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="117"/>
+        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="92" />
         <source>Reset to Default</source>
         <translation>Atstatyti numatytąsias reikšmes</translation>
     </message>
     <message>
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="123"/>
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="404"/>
+        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="98" />
+        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="384" />
         <source>Restore All Defaults</source>
         <translation>Atkurti visas numatytąsias reikšmes</translation>
     </message>
     <message>
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="228"/>
+        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="208" />
         <source>(Optional)</source>
         <translation>(Pasirenkama)</translation>
     </message>
     <message>
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="228"/>
+        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="208" />
         <source>(Not set)</source>
         <translation>(Nenustatyta)</translation>
     </message>
     <message>
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="254"/>
+        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="234" />
         <source>Active</source>
         <translation>Aktyvus</translation>
     </message>
     <message>
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="258"/>
+        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="238" />
         <source>Conflict</source>
         <translation>Konfliktas</translation>
     </message>
     <message>
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="262"/>
+        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="242" />
         <source>Disabled</source>
         <translation>Išjungta</translation>
     </message>
     <message>
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="268"/>
+        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="248" />
         <source>Not Set</source>
         <translation>Nenustatyta</translation>
     </message>
     <message>
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="367"/>
+        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="347" />
         <source>Clear Hotkey</source>
         <translation>Išvalyti spartųjį klavišą</translation>
     </message>
     <message>
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="368"/>
-        <source>Are you sure you want to clear the hotkey for &apos;%1&apos;?
+        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="348" />
+        <source>Are you sure you want to clear the hotkey for '%1'?
 This hotkey is required for normal operation.</source>
         <translation>Ar tikrai norite išvalyti '%1' spartųjį klavišą?
 Šis spartusis klavišas reikalingas normaliam veikimui.</translation>
     </message>
     <message>
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="405"/>
+        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="385" />
         <source>Are you sure you want to reset all hotkeys to their default values?</source>
         <translation>Ar tikrai norite atstatyti visus sparčiuosius klavišus į numatytąsias reikšmes?</translation>
     </message>
     <message>
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="435"/>
+        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="415" />
         <source>Failed to register: %1</source>
         <translation>Nepavyko užregistruoti: %1</translation>
     </message>
     <message>
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="468"/>
+        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="453" />
         <source>Hotkey Conflict</source>
         <translation>Spartųjų klavišų konfliktas</translation>
     </message>
     <message>
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="469"/>
-        <source>The hotkey &apos;%1&apos; is already assigned to &apos;%2&apos;.
+        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="454" />
+        <source>The hotkey '%1' is already assigned to '%2'.
 Please choose a different hotkey.</source>
         <translation>Spartusis klavišas '%1' jau priskirtas '%2'.
 Pasirinkite kitą spartųjį klavišą.</translation>
     </message>
     <message>
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="480"/>
+        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="465" />
         <source>Registration Failed</source>
         <translation>Registruoti nepavyko</translation>
     </message>
     <message>
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="481"/>
-        <source>Failed to register the hotkey &apos;%1&apos;.
+        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="466" />
+        <source>Failed to register the hotkey '%1'.
 It may be in use by another application.</source>
         <translation>Nepavyko užregistruoti spartiojo klavišo '%1'.
 Jį gali naudoti kita programa.</translation>
     </message>
 </context>
 <context>
+    <name>SnapTray::QmlSettingsWindow</name>
+    <message>
+        <location filename="../src/qml/QmlSettingsWindow.cpp" line="39" />
+        <source>Settings</source>
+        <translation>Nustatymai</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/QmlSettingsWindow.cpp" line="49" />
+        <source>Settings saved. Language change will apply after restart.</source>
+        <translation>Nustatymai išsaugoti. Kalbos pakeitimas bus pritaikytas paleidus iš naujo.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/QmlSettingsWindow.cpp" line="50" />
+        <source>Settings saved</source>
+        <translation>Nustatymai išsaugoti</translation>
+        </message>
+</context>
+<context>
+    <name>SnapTray::SettingsBackend</name>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="375" />
+        <source>Never</source>
+        <translation>Niekada</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="537" />
+        <source>Select Screenshot Folder</source>
+        <translation>Pasirinkite ekrano nuotraukų aplanką</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="545" />
+        <source>Select Recording Folder</source>
+        <translation>Pasirinkite įrašų aplanką</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="553" />
+        <source>Select Watermark Image</source>
+        <translation>Pasirinkite vandens ženklo vaizdą</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="554" />
+        <source>Images (*.png *.jpg *.jpeg *.bmp *.svg)</source>
+        <translation>Vaizdai (*.png *.jpg *.jpeg *.bmp *.svg)</translation>
+        </message>
+</context>
+<context>
     <name>SnapTray::TypeHotkeyDialog</name>
     <message>
-        <location filename="../src/widgets/TypeHotkeyDialog.cpp" line="59"/>
+        <location filename="../src/widgets/TypeHotkeyDialog.cpp" line="59" />
         <source>Press a key combination...</source>
         <translation>Paspauskite klavišų kombinaciją...</translation>
     </message>
     <message>
-        <location filename="../src/widgets/TypeHotkeyDialog.cpp" line="98"/>
+        <location filename="../src/widgets/TypeHotkeyDialog.cpp" line="98" />
         <source>Cancel</source>
         <translation>Atšaukti</translation>
     </message>
     <message>
-        <location filename="../src/widgets/TypeHotkeyDialog.cpp" line="117"/>
+        <location filename="../src/widgets/TypeHotkeyDialog.cpp" line="117" />
         <source>OK</source>
         <translation>Gerai</translation>
     </message>
     <message>
-        <location filename="../src/widgets/TypeHotkeyDialog.cpp" line="198"/>
+        <location filename="../src/widgets/TypeHotkeyDialog.cpp" line="198" />
         <source>Set Hotkey for: %1</source>
         <translation>Nustatyti spartųjį klavišą: %1</translation>
     </message>
     <message>
-        <location filename="../src/widgets/TypeHotkeyDialog.cpp" line="319"/>
+        <location filename="../src/widgets/TypeHotkeyDialog.cpp" line="319" />
         <source>(Press keys)</source>
         <translation>(Spauskite klavišus)</translation>
     </message>
     <message>
-        <location filename="../src/widgets/TypeHotkeyDialog.cpp" line="338"/>
+        <location filename="../src/widgets/TypeHotkeyDialog.cpp" line="338" />
         <source>Press Enter or click OK to confirm</source>
         <translation>Patvirtinkite paspausdami Enter arba „Gerai“</translation>
     </message>
     <message>
-        <location filename="../src/widgets/TypeHotkeyDialog.cpp" line="340"/>
+        <location filename="../src/widgets/TypeHotkeyDialog.cpp" line="340" />
         <source>Press a key combination, then press Enter to confirm</source>
         <translation>Paspauskite klavišų kombinaciją, tada patvirtinkite Enter</translation>
     </message>
@@ -2970,7 +3447,7 @@ Jį gali naudoti kita programa.</translation>
 <context>
     <name>TextSection</name>
     <message>
-        <location filename="../src/ui/sections/TextSection.cpp" line="162"/>
+        <location filename="../src/ui/sections/TextSection.cpp" line="162" />
         <source>Default</source>
         <translation>Numatytasis</translation>
     </message>
@@ -2978,154 +3455,154 @@ Jį gali naudoti kita programa.</translation>
 <context>
     <name>ToolRegistry</name>
     <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="14"/>
+        <location filename="../src/tools/ToolRegistry.cpp" line="14" />
         <source>Unknown Tool</source>
         <translation>Nežinomas įrankis</translation>
     </message>
     <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="25"/>
+        <location filename="../src/tools/ToolRegistry.cpp" line="25" />
         <source>Selection</source>
         <translation>Pasirinkimas</translation>
     </message>
     <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="37"/>
+        <location filename="../src/tools/ToolRegistry.cpp" line="37" />
         <source>Arrow</source>
         <translation>Rodyklė</translation>
     </message>
     <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="48"/>
+        <location filename="../src/tools/ToolRegistry.cpp" line="48" />
         <source>Polyline</source>
         <translation>Laužtė</translation>
     </message>
     <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="59"/>
+        <location filename="../src/tools/ToolRegistry.cpp" line="59" />
         <source>Pencil</source>
         <translation>Pieštukas</translation>
     </message>
     <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="70"/>
+        <location filename="../src/tools/ToolRegistry.cpp" line="70" />
         <source>Marker</source>
         <translation>Žymeklis</translation>
     </message>
     <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="81"/>
+        <location filename="../src/tools/ToolRegistry.cpp" line="81" />
         <source>Shape</source>
         <translation>Figūra</translation>
     </message>
     <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="92"/>
+        <location filename="../src/tools/ToolRegistry.cpp" line="92" />
         <source>Text</source>
         <translation>Tekstas</translation>
     </message>
     <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="103"/>
+        <location filename="../src/tools/ToolRegistry.cpp" line="103" />
         <source>Mosaic</source>
         <translation>Mozaika</translation>
     </message>
     <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="114"/>
+        <location filename="../src/tools/ToolRegistry.cpp" line="114" />
         <source>Eraser</source>
         <translation>Trintukas</translation>
     </message>
     <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="125"/>
+        <location filename="../src/tools/ToolRegistry.cpp" line="125" />
         <source>Step Badge</source>
         <translation>Žingsnio ženklelis</translation>
     </message>
     <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="136"/>
+        <location filename="../src/tools/ToolRegistry.cpp" line="136" />
         <source>Emoji Sticker</source>
         <translation>Emoji lipdukas</translation>
     </message>
     <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="147"/>
+        <location filename="../src/tools/ToolRegistry.cpp" line="147" />
         <source>Crop</source>
         <translation>Apkarpyti</translation>
     </message>
     <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="158"/>
+        <location filename="../src/tools/ToolRegistry.cpp" line="158" />
         <source>Measure</source>
         <translation>Matuoti</translation>
     </message>
     <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="170"/>
+        <location filename="../src/tools/ToolRegistry.cpp" line="170" />
         <source>Whiteboard</source>
         <translation>Balta lenta</translation>
     </message>
     <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="181"/>
+        <location filename="../src/tools/ToolRegistry.cpp" line="181" />
         <source>Blackboard</source>
         <translation>Juoda lenta</translation>
     </message>
     <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="201"/>
+        <location filename="../src/tools/ToolRegistry.cpp" line="201" />
         <source>Undo</source>
         <translation>Atšaukti</translation>
     </message>
     <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="212"/>
+        <location filename="../src/tools/ToolRegistry.cpp" line="212" />
         <source>Redo</source>
         <translation>Perdaryti</translation>
     </message>
     <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="223"/>
+        <location filename="../src/tools/ToolRegistry.cpp" line="223" />
         <source>Clear All</source>
         <translation>Išvalyti viską</translation>
     </message>
     <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="234"/>
+        <location filename="../src/tools/ToolRegistry.cpp" line="234" />
         <source>Cancel</source>
         <translation>Atšaukti</translation>
     </message>
     <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="245"/>
+        <location filename="../src/tools/ToolRegistry.cpp" line="245" />
         <source>Recognize Text</source>
         <translation>Atpažinti tekstą</translation>
     </message>
     <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="256"/>
+        <location filename="../src/tools/ToolRegistry.cpp" line="256" />
         <source>QR Code Scan</source>
         <translation>QR kodo skenavimas</translation>
     </message>
     <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="267"/>
+        <location filename="../src/tools/ToolRegistry.cpp" line="267" />
         <source>Pin to Desktop</source>
         <translation>Prisegti prie darbalaukio</translation>
     </message>
     <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="278"/>
+        <location filename="../src/tools/ToolRegistry.cpp" line="278" />
         <source>Screen Recording</source>
         <translation>Ekrano įrašymas</translation>
     </message>
     <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="289"/>
+        <location filename="../src/tools/ToolRegistry.cpp" line="289" />
         <source>Share URL</source>
         <translation>Bendrinimo URL</translation>
     </message>
     <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="301"/>
-        <location filename="../src/tools/ToolRegistry.cpp" line="323"/>
+        <location filename="../src/tools/ToolRegistry.cpp" line="301" />
+        <location filename="../src/tools/ToolRegistry.cpp" line="323" />
         <source>Save</source>
         <translation>Išsaugoti</translation>
     </message>
     <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="312"/>
-        <location filename="../src/tools/ToolRegistry.cpp" line="334"/>
+        <location filename="../src/tools/ToolRegistry.cpp" line="312" />
+        <location filename="../src/tools/ToolRegistry.cpp" line="334" />
         <source>Copy to Clipboard</source>
         <translation>Kopijuoti į iškarpinę</translation>
     </message>
     <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="346"/>
+        <location filename="../src/tools/ToolRegistry.cpp" line="346" />
         <source>Exit</source>
         <translation>Išeiti</translation>
     </message>
     <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="358"/>
+        <location filename="../src/tools/ToolRegistry.cpp" line="358" />
         <source>Multi-Region Capture</source>
         <translation>Kelių sričių fiksavimas</translation>
     </message>
     <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="369"/>
+        <location filename="../src/tools/ToolRegistry.cpp" line="369" />
         <source>Complete Multi-Region</source>
         <translation>Užbaigti kelių sričių fiksavimą</translation>
     </message>
@@ -3133,17 +3610,17 @@ Jį gali naudoti kita programa.</translation>
 <context>
     <name>UpdateChecker</name>
     <message>
-        <location filename="../src/update/UpdateChecker.cpp" line="180"/>
+        <location filename="../src/update/UpdateChecker.cpp" line="180" />
         <source>Failed to parse update information</source>
         <translation>Nepavyko išanalizuoti atnaujinimo informacijos</translation>
     </message>
     <message>
-        <location filename="../src/update/UpdateChecker.cpp" line="188"/>
+        <location filename="../src/update/UpdateChecker.cpp" line="188" />
         <source>Invalid update response</source>
         <translation>Neteisingas atnaujinimo atsakas</translation>
     </message>
     <message>
-        <location filename="../src/update/UpdateChecker.cpp" line="198"/>
+        <location filename="../src/update/UpdateChecker.cpp" line="198" />
         <source>Could not parse release information</source>
         <translation>Nepavyko išanalizuoti leidimo informacijos</translation>
     </message>
@@ -3151,184 +3628,318 @@ Jį gali naudoti kita programa.</translation>
 <context>
     <name>UpdateDialog</name>
     <message>
-        <location filename="../src/update/UpdateDialog.cpp" line="93"/>
+        <location filename="../src/update/UpdateDialog.cpp" line="93" />
         <source>Update Available</source>
         <translation>Galimas atnaujinimas</translation>
     </message>
     <message>
-        <location filename="../src/update/UpdateDialog.cpp" line="116"/>
+        <location filename="../src/update/UpdateDialog.cpp" line="116" />
         <source>New Version Available!</source>
         <translation>Yra nauja versija!</translation>
     </message>
     <message>
-        <location filename="../src/update/UpdateDialog.cpp" line="130"/>
+        <location filename="../src/update/UpdateDialog.cpp" line="130" />
         <source>%1 %2 is now available.</source>
         <translation>Dabar pasiekiama %1 %2.</translation>
     </message>
     <message>
-        <location filename="../src/update/UpdateDialog.cpp" line="139"/>
+        <location filename="../src/update/UpdateDialog.cpp" line="139" />
         <source>You are currently using %1</source>
         <translation>Šiuo metu naudojate %1</translation>
     </message>
     <message>
-        <location filename="../src/update/UpdateDialog.cpp" line="149"/>
-        <source>What&apos;s New</source>
+        <location filename="../src/update/UpdateDialog.cpp" line="149" />
+        <source>What's New</source>
         <translation>Kas naujo</translation>
     </message>
     <message>
-        <location filename="../src/update/UpdateDialog.cpp" line="175"/>
+        <location filename="../src/update/UpdateDialog.cpp" line="175" />
         <source>Download</source>
         <translation>Atsisiųsti</translation>
     </message>
     <message>
-        <location filename="../src/update/UpdateDialog.cpp" line="179"/>
+        <location filename="../src/update/UpdateDialog.cpp" line="179" />
         <source>Remind Later</source>
         <translation>Priminti vėliau</translation>
     </message>
     <message>
-        <location filename="../src/update/UpdateDialog.cpp" line="183"/>
+        <location filename="../src/update/UpdateDialog.cpp" line="183" />
         <source>Skip Version</source>
         <translation>Praleisti versiją</translation>
     </message>
     <message>
-        <location filename="../src/update/UpdateDialog.cpp" line="193"/>
-        <location filename="../src/update/UpdateDialog.cpp" line="249"/>
+        <location filename="../src/update/UpdateDialog.cpp" line="193" />
+        <location filename="../src/update/UpdateDialog.cpp" line="251" />
         <source>Update Check</source>
         <translation>Atnaujinimo patikra</translation>
     </message>
     <message>
-        <location filename="../src/update/UpdateDialog.cpp" line="216"/>
-        <source>You&apos;re up to date!</source>
+        <location filename="../src/update/UpdateDialog.cpp" line="218" />
+        <source>You're up to date!</source>
         <translation>Naudojate naujausią versiją!</translation>
     </message>
     <message>
-        <location filename="../src/update/UpdateDialog.cpp" line="226"/>
+        <location filename="../src/update/UpdateDialog.cpp" line="228" />
         <source>%1 %2 is the latest version.</source>
         <translation>%1 %2 yra naujausia versija.</translation>
     </message>
     <message>
-        <location filename="../src/update/UpdateDialog.cpp" line="237"/>
+        <location filename="../src/update/UpdateDialog.cpp" line="239" />
         <source>OK</source>
         <translation>Gerai</translation>
     </message>
     <message>
-        <location filename="../src/update/UpdateDialog.cpp" line="270"/>
+        <location filename="../src/update/UpdateDialog.cpp" line="272" />
         <source>Unable to check for updates</source>
         <translation>Nepavyko patikrinti atnaujinimų</translation>
     </message>
     <message>
-        <location filename="../src/update/UpdateDialog.cpp" line="280"/>
+        <location filename="../src/update/UpdateDialog.cpp" line="282" />
         <source>Please check your internet connection and try again.</source>
         <translation>Patikrinkite interneto ryšį ir bandykite dar kartą.</translation>
     </message>
     <message>
-        <location filename="../src/update/UpdateDialog.cpp" line="297"/>
+        <location filename="../src/update/UpdateDialog.cpp" line="299" />
         <source>Try Again</source>
         <translation>Bandyti dar kartą</translation>
     </message>
     <message>
-        <location filename="../src/update/UpdateDialog.cpp" line="301"/>
+        <location filename="../src/update/UpdateDialog.cpp" line="303" />
         <source>Close</source>
         <translation>Uždaryti</translation>
     </message>
 </context>
 <context>
+    <name>UpdatesSettings</name>
+    <message>
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="30" />
+        <source>Version</source>
+        <translation>Versija</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="33" />
+        <source>Current Version</source>
+        <translation>Dabartinė versija</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="45" />
+        <source>Automatic Updates</source>
+        <translation>Automatiniai atnaujinimai</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="48" />
+        <source>Auto-check updates</source>
+        <translation>Automatiškai tikrinti atnaujinimus</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="54" />
+        <source>Check frequency</source>
+        <translation>Tikrinimo dažnis</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="56" />
+        <source>Every day</source>
+        <translation>Kiekvieną dieną</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="57" />
+        <source>Every 3 days</source>
+        <translation>Kas 3 dienas</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="58" />
+        <source>Every week</source>
+        <translation>Kas savaitę</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="59" />
+        <source>Every 2 weeks</source>
+        <translation>Kas 2 savaites</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="60" />
+        <source>Every month</source>
+        <translation>Kas mėnesį</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="101" />
+        <source>Checking...</source>
+        <translation>Tikrinama...</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="101" />
+        <source>Check Now</source>
+        <translation>Tikrinti dabar</translation>
+        </message>
+</context>
+<context>
     <name>VideoTrimmer</name>
     <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="52"/>
+        <location filename="../src/video/VideoTrimmer.cpp" line="52" />
         <source>Input or output path not set</source>
         <translation>Nenustatytas įvesties arba išvesties kelias</translation>
     </message>
     <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="57"/>
+        <location filename="../src/video/VideoTrimmer.cpp" line="57" />
         <source>Invalid trim range</source>
         <translation>Neteisingas apkirpimo intervalas</translation>
     </message>
     <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="73"/>
+        <location filename="../src/video/VideoTrimmer.cpp" line="73" />
         <source>Failed to create video player</source>
         <translation>Nepavyko sukurti vaizdo grotuvo</translation>
     </message>
     <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="84"/>
+        <location filename="../src/video/VideoTrimmer.cpp" line="84" />
         <source>Failed to load video: %1</source>
         <translation>Nepavyko įkelti vaizdo įrašo: %1</translation>
     </message>
     <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="91"/>
+        <location filename="../src/video/VideoTrimmer.cpp" line="91" />
         <source>Failed to load input video</source>
         <translation>Nepavyko įkelti įvesties vaizdo įrašo</translation>
     </message>
     <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="133"/>
+        <location filename="../src/video/VideoTrimmer.cpp" line="133" />
         <source>Failed to create encoder: %1</source>
         <translation>Nepavyko sukurti koduotuvo: %1</translation>
     </message>
     <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="269"/>
+        <location filename="../src/video/VideoTrimmer.cpp" line="269" />
         <source>Encoding failed</source>
         <translation>Koduoti nepavyko</translation>
     </message>
 </context>
 <context>
+    <name>WatermarkSettings</name>
+    <message>
+        <location filename="../src/qml/settings/WatermarkSettings.qml" line="23" />
+        <source>Apply to images</source>
+        <translation>Taikyti vaizdams</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/WatermarkSettings.qml" line="29" />
+        <source>Apply to recordings</source>
+        <translation>Taikyti įrašams</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/WatermarkSettings.qml" line="47" />
+        <source>Image</source>
+        <translation>Vaizdas:</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/WatermarkSettings.qml" line="53" />
+        <source>Scale</source>
+        <translation>Mastelis:</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/WatermarkSettings.qml" line="62" />
+        <source>Opacity</source>
+        <translation>Nepermatomumas</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/WatermarkSettings.qml" line="71" />
+        <source>Margin</source>
+        <translation>Paraštė:</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/WatermarkSettings.qml" line="80" />
+        <source>Position</source>
+        <translation>Pozicija</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/WatermarkSettings.qml" line="82" />
+        <source>Top-Left</source>
+        <translation>Viršuje kairėje</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/WatermarkSettings.qml" line="83" />
+        <source>Top-Right</source>
+        <translation>Viršuje dešinėje</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/WatermarkSettings.qml" line="84" />
+        <source>Bottom-Left</source>
+        <translation>Apačioje kairėje</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/WatermarkSettings.qml" line="85" />
+        <source>Bottom-Right</source>
+        <translation>Apačioje dešinėje</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/WatermarkSettings.qml" line="116" />
+        <source>No image</source>
+        <translation>Nėra vaizdo</translation>
+        </message>
+</context>
+<context>
+    <name>main</name>
+    <message>
+        <location filename="../src/qml/main.qml" line="10" />
+        <source>SnapTray QML</source>
+        <translation type="unfinished" />
+    </message>
+</context>
+<context>
     <name>snaptray::colorwidgets::ColorDialog</name>
     <message>
-        <location filename="../src/colorwidgets/ColorDialog.cpp" line="37"/>
+        <location filename="../src/colorwidgets/ColorDialog.cpp" line="37" />
         <source>Select Color</source>
         <translation>Pasirinkti spalvą</translation>
     </message>
     <message>
-        <location filename="../src/colorwidgets/ColorDialog.cpp" line="77"/>
+        <location filename="../src/colorwidgets/ColorDialog.cpp" line="77" />
         <source>Hue</source>
         <translation>Atspalvis</translation>
     </message>
     <message>
-        <location filename="../src/colorwidgets/ColorDialog.cpp" line="86"/>
+        <location filename="../src/colorwidgets/ColorDialog.cpp" line="86" />
         <source>Saturation</source>
         <translation>Sodrumas</translation>
     </message>
     <message>
-        <location filename="../src/colorwidgets/ColorDialog.cpp" line="95"/>
+        <location filename="../src/colorwidgets/ColorDialog.cpp" line="95" />
         <source>Value</source>
         <translation>Reikšmė</translation>
     </message>
     <message>
-        <location filename="../src/colorwidgets/ColorDialog.cpp" line="105"/>
+        <location filename="../src/colorwidgets/ColorDialog.cpp" line="105" />
         <source>Red</source>
         <translation>Raudona</translation>
     </message>
     <message>
-        <location filename="../src/colorwidgets/ColorDialog.cpp" line="114"/>
+        <location filename="../src/colorwidgets/ColorDialog.cpp" line="114" />
         <source>Green</source>
         <translation>Žalia</translation>
     </message>
     <message>
-        <location filename="../src/colorwidgets/ColorDialog.cpp" line="123"/>
+        <location filename="../src/colorwidgets/ColorDialog.cpp" line="123" />
         <source>Blue</source>
         <translation>Mėlyna</translation>
     </message>
     <message>
-        <location filename="../src/colorwidgets/ColorDialog.cpp" line="132"/>
+        <location filename="../src/colorwidgets/ColorDialog.cpp" line="132" />
         <source>Alpha</source>
         <translation>Alfa</translation>
     </message>
     <message>
-        <location filename="../src/colorwidgets/ColorDialog.cpp" line="141"/>
+        <location filename="../src/colorwidgets/ColorDialog.cpp" line="141" />
         <source>Hex</source>
         <translation>Šešioliktainis</translation>
     </message>
     <message>
-        <location filename="../src/colorwidgets/ColorDialog.cpp" line="163"/>
+        <location filename="../src/colorwidgets/ColorDialog.cpp" line="163" />
         <source>Reset</source>
         <translation>Atstatyti</translation>
     </message>
     <message>
-        <location filename="../src/colorwidgets/ColorDialog.cpp" line="164"/>
+        <location filename="../src/colorwidgets/ColorDialog.cpp" line="164" />
         <source>OK</source>
         <translation>Gerai</translation>
     </message>
     <message>
-        <location filename="../src/colorwidgets/ColorDialog.cpp" line="166"/>
+        <location filename="../src/colorwidgets/ColorDialog.cpp" line="166" />
         <source>Cancel</source>
         <translation>Atšaukti</translation>
     </message>
@@ -3336,7 +3947,7 @@ Jį gali naudoti kita programa.</translation>
 <context>
     <name>snaptray::colorwidgets::ColorPickerDialogCompat</name>
     <message>
-        <location filename="../src/colorwidgets/ColorPickerDialogCompat.cpp" line="29"/>
+        <location filename="../src/colorwidgets/ColorPickerDialogCompat.cpp" line="29" />
         <source>Select Color</source>
         <translation>Pasirinkti spalvą</translation>
     </message>

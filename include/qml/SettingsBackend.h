@@ -220,7 +220,7 @@ public:
     Q_INVOKABLE QVariantList audioDevices() const;
 
 signals:
-    void settingsSaved();
+    void settingsSaved(bool languageChangeRequiresRestart);
     void settingsCancelled();
 
     // General
@@ -295,6 +295,7 @@ private:
     // General
     bool m_startOnLogin = false;
     QString m_language;
+    QString m_originalLanguage;
     int m_appTheme = 0;
     int m_originalAppTheme = 0;
     bool m_cliInstalled = false;

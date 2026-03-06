@@ -49,6 +49,7 @@ void SettingsBackend::loadAllSettings()
     // General
     m_startOnLogin = AutoLaunchManager::isEnabled();
     m_language = LanguageManager::instance().loadLanguage();
+    m_originalLanguage = m_language;
     m_appTheme = static_cast<int>(ToolbarStyleConfig::loadStyle());
     m_originalAppTheme = m_appTheme;
     m_cliInstalled = PlatformFeatures::instance().isCLIInstalled();
@@ -397,9 +398,12 @@ QString SettingsBackend::appVersion() const
 
 void SettingsBackend::save()
 {
+    const bool languageChanged = (m_language != m_originalLanguage);
+
     // General
     AutoLaunchManager::setEnabled(m_startOnLogin);
     LanguageManager::instance().saveLanguage(m_language);
+    m_originalLanguage = m_language;
     ToolbarStyleConfig::saveStyle(static_cast<ToolbarStyleType>(m_appTheme));
     m_originalAppTheme = m_appTheme;
 
@@ -466,7 +470,7 @@ void SettingsBackend::save()
         emit ocrLanguagesChanged(m_ocrSelectedLanguages);
     }
 
-    emit settingsSaved();
+    emit settingsSaved(languageChanged);
 }
 
 void SettingsBackend::cancel()

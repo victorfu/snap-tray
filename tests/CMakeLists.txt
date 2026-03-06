@@ -328,6 +328,15 @@ target_link_libraries(Settings_SettingsStorageLocation PRIVATE snaptray_core Qt6
 add_test(NAME Settings_SettingsStorageLocation COMMAND Settings_SettingsStorageLocation)
 set_tests_properties(Settings_SettingsStorageLocation PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Settings_QmlTranslations Settings/tst_QmlTranslations.cpp)
+target_link_libraries(Settings_QmlTranslations PRIVATE Qt6::Core Qt6::Test)
+target_compile_definitions(Settings_QmlTranslations PRIVATE
+    SNAPTRAY_TEST_TRANSLATION_DIR="${CMAKE_BINARY_DIR}"
+)
+add_dependencies(Settings_QmlTranslations SnapTray_lrelease)
+add_test(NAME Settings_QmlTranslations COMMAND Settings_QmlTranslations)
+set_tests_properties(Settings_QmlTranslations PROPERTIES TIMEOUT 60 LABELS "unit")
+
 # ============================================================================
 # Hotkey Tests (link snaptray_ui for HotkeyManager)
 # ============================================================================

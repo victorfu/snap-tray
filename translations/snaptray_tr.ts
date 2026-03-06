@@ -1,120 +1,210 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!DOCTYPE TS>
+<?xml version='1.0' encoding='utf-8'?>
 <TS version="2.1" language="tr">
+<context>
+    <name>AboutSettings</name>
+    <message>
+        <location filename="../src/qml/settings/AboutSettings.qml" line="47" />
+        <source>Version </source>
+        <translation>Sürüm </translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/AboutSettings.qml" line="59" />
+        <source>Copyright 2026 Victor Fu</source>
+        <translation>Telif hakkı 2026 Victor Fu</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/AboutSettings.qml" line="69" />
+        <source>Author: Victor Fu</source>
+        <translation>Yazar: Victor Fu</translation>
+        </message>
+</context>
+<context>
+    <name>AdvancedSettings</name>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="21" />
+        <source>Capture</source>
+        <translation>Yakalama</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="24" />
+        <source>Show shortcut hints</source>
+        <translation>Kısayol ipuçlarını göster</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="31" />
+        <source>MCP</source>
+        <translation>MCP</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="36" />
+        <source>Enable MCP server</source>
+        <translation>MCP sunucusunu etkinleştir</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="45" />
+        <source>Blur</source>
+        <translation>Bulanıklaştırma</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="48" />
+        <source>Blur intensity</source>
+        <translation>Bulanıklık yoğunluğu:</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="56" />
+        <source>Blur type</source>
+        <translation>Bulanıklık türü:</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="58" />
+        <source>Pixelate</source>
+        <translation>Pikselleştirme</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="59" />
+        <source>Gaussian</source>
+        <translation>Gauss</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="65" />
+        <source>Pin Window</source>
+        <translation>Sabitleme Penceresi</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="68" />
+        <source>Default opacity</source>
+        <translation>Varsayılan opaklık:</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="77" />
+        <source>Opacity step</source>
+        <translation>Opaklık adımı:</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="86" />
+        <source>Zoom step</source>
+        <translation>Yakınlaştırma adımı:</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="95" />
+        <source>Max cache files</source>
+        <translation>Maks. önbellek dosyası:</translation>
+        </message>
+</context>
 <context>
     <name>BeautifyPanel</name>
     <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="54"/>
+        <location filename="../src/beautify/BeautifyPanel.cpp" line="55" />
         <source>Ocean</source>
         <translation>Okyanus</translation>
     </message>
     <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="55"/>
+        <location filename="../src/beautify/BeautifyPanel.cpp" line="56" />
         <source>Sunset</source>
         <translation>Gün batımı</translation>
     </message>
     <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="56"/>
+        <location filename="../src/beautify/BeautifyPanel.cpp" line="57" />
         <source>Lavender</source>
         <translation>Lavanta</translation>
     </message>
     <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="57"/>
+        <location filename="../src/beautify/BeautifyPanel.cpp" line="58" />
         <source>Forest</source>
         <translation>Orman</translation>
     </message>
     <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="58"/>
+        <location filename="../src/beautify/BeautifyPanel.cpp" line="59" />
         <source>Midnight</source>
         <translation>Gece yarısı</translation>
     </message>
     <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="59"/>
+        <location filename="../src/beautify/BeautifyPanel.cpp" line="60" />
         <source>Rose</source>
         <translation>Gül</translation>
     </message>
     <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="60"/>
+        <location filename="../src/beautify/BeautifyPanel.cpp" line="61" />
         <source>Sky</source>
         <translation>Gökyüzü</translation>
     </message>
     <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="61"/>
+        <location filename="../src/beautify/BeautifyPanel.cpp" line="62" />
         <source>Charcoal</source>
         <translation>Kömür</translation>
     </message>
     <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="91"/>
+        <location filename="../src/beautify/BeautifyPanel.cpp" line="92" />
         <source>Background:</source>
         <translation>Arka plan:</translation>
     </message>
     <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="93"/>
+        <location filename="../src/beautify/BeautifyPanel.cpp" line="94" />
         <source>Solid</source>
         <translation>Düz</translation>
     </message>
     <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="94"/>
+        <location filename="../src/beautify/BeautifyPanel.cpp" line="95" />
         <source>Linear Gradient</source>
         <translation>Doğrusal Gradyan</translation>
     </message>
     <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="95"/>
+        <location filename="../src/beautify/BeautifyPanel.cpp" line="96" />
         <source>Radial Gradient</source>
         <translation>Radyal Gradyan</translation>
     </message>
     <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="101"/>
+        <location filename="../src/beautify/BeautifyPanel.cpp" line="102" />
         <source>Colors:</source>
         <translation>Renkler:</translation>
     </message>
     <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="115"/>
+        <location filename="../src/beautify/BeautifyPanel.cpp" line="116" />
         <source>Padding:</source>
         <translation>İç Boşluk:</translation>
     </message>
     <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="126"/>
+        <location filename="../src/beautify/BeautifyPanel.cpp" line="127" />
         <source>Corners:</source>
         <translation>Köşeler:</translation>
     </message>
     <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="137"/>
+        <location filename="../src/beautify/BeautifyPanel.cpp" line="138" />
         <source>Ratio:</source>
         <translation>Oran:</translation>
     </message>
     <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="139"/>
+        <location filename="../src/beautify/BeautifyPanel.cpp" line="140" />
         <source>Auto</source>
         <translation>Otomatik</translation>
     </message>
     <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="149"/>
+        <location filename="../src/beautify/BeautifyPanel.cpp" line="150" />
         <source>Shadow</source>
         <translation>Gölge</translation>
     </message>
     <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="153"/>
+        <location filename="../src/beautify/BeautifyPanel.cpp" line="154" />
         <source>  Blur:</source>
         <translation>  Bulanıklık:</translation>
     </message>
     <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="164"/>
+        <location filename="../src/beautify/BeautifyPanel.cpp" line="165" />
         <source>Copy</source>
         <translation>Kopyala</translation>
     </message>
     <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="165"/>
+        <location filename="../src/beautify/BeautifyPanel.cpp" line="166" />
         <source>Save</source>
         <translation>Kaydet</translation>
     </message>
     <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="166"/>
+        <location filename="../src/beautify/BeautifyPanel.cpp" line="167" />
         <source>Close</source>
         <translation>Kapat</translation>
     </message>
     <message>
-        <location filename="../src/beautify/BeautifyPanel.cpp" line="467"/>
+        <location filename="../src/beautify/BeautifyPanel.cpp" line="387" />
         <source>Select Color</source>
         <translation>Renk Seç</translation>
     </message>
@@ -153,28 +243,178 @@
 <context>
     <name>ClickThroughExitButton</name>
     <message>
-        <location filename="../src/pinwindow/ClickThroughExitButton.cpp" line="27"/>
+        <location filename="../src/pinwindow/ClickThroughExitButton.cpp" line="33" />
         <source>Click-through</source>
         <translation>Tıklama geçişi</translation>
     </message>
 </context>
 <context>
+    <name>FilesSettings</name>
+    <message>
+        <location filename="../src/qml/settings/FilesSettings.qml" line="21" />
+        <source>Save Locations</source>
+        <translation>Kayıt Konumları</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/FilesSettings.qml" line="24" />
+        <source>Screenshots</source>
+        <translation>Ekran Görüntüleri:</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/FilesSettings.qml" line="30" />
+        <source>Recordings</source>
+        <translation>Kayıtlar:</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/FilesSettings.qml" line="35" />
+        <source>Filename Format</source>
+        <translation>Dosya Adı Biçimi</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/FilesSettings.qml" line="38" />
+        <source>Template</source>
+        <translation>Şablon:</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/FilesSettings.qml" line="71" />
+        <source>Tokens: {prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}
+Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
+        <translation>Belirteçler: {prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}
+Tarih belirteçleri: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} veya {date}</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/FilesSettings.qml" line="81" />
+        <source>Preview: </source>
+        <translation>Önizleme: </translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/FilesSettings.qml" line="89" />
+        <source>Save Behavior</source>
+        <translation>Kaydetme Davranışı</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/FilesSettings.qml" line="92" />
+        <source>Auto-save screenshots</source>
+        <translation>Ekran görüntülerini otomatik kaydet</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/FilesSettings.qml" line="98" />
+        <source>Auto-save recordings</source>
+        <translation>Kayıtları otomatik kaydet</translation>
+        </message>
+</context>
+<context>
     <name>FormatSelectionWidget</name>
     <message>
-        <location filename="../src/video/FormatSelectionWidget.cpp" line="31"/>
         <source>Best quality, widely compatible</source>
-        <translation>En iyi kalite, geniş uyumluluk</translation>
+        <translation type="vanished">En iyi kalite, geniş uyumluluk</translation>
     </message>
     <message>
-        <location filename="../src/video/FormatSelectionWidget.cpp" line="39"/>
         <source>Universal support, larger file size</source>
-        <translation>Evrensel destek, daha büyük dosya boyutu</translation>
+        <translation type="vanished">Evrensel destek, daha büyük dosya boyutu</translation>
     </message>
     <message>
-        <location filename="../src/video/FormatSelectionWidget.cpp" line="47"/>
         <source>Small file size, modern browsers only</source>
-        <translation>Küçük dosya boyutu, yalnızca modern tarayıcılar</translation>
+        <translation type="vanished">Küçük dosya boyutu, yalnızca modern tarayıcılar</translation>
     </message>
+</context>
+<context>
+    <name>GeneralSettings</name>
+    <message>
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="31" />
+        <source>Start on login</source>
+        <translation>Oturum açıldığında başlat</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="36" />
+        <source>Language</source>
+        <translation>Dil</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="39" />
+        <source>Display language</source>
+        <translation>Görüntüleme dili:</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="50" />
+        <source>Appearance</source>
+        <translation>Görünüm</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="53" />
+        <source>App theme</source>
+        <translation>Uygulama teması</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="55" />
+        <source>Dark</source>
+        <translation>Koyu</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="56" />
+        <source>Light</source>
+        <translation>Açık</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="64" />
+        <source>Permissions</source>
+        <translation>İzinler</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="69" />
+        <source>Screen Recording</source>
+        <translation>Ekran Kaydı</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="70" />
+        <source>Required for capturing screenshots and recording your screen.</source>
+        <translation>Ekran görüntüsü almak ve ekranınızı kaydetmek için gereklidir.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="77" />
+        <source>Accessibility</source>
+        <translation>Erişilebilirlik:</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="78" />
+        <source>Required for global hotkeys and window detection.</source>
+        <translation>Genel kısayollar ve pencere algılama için gereklidir.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="84" />
+        <source>Command Line</source>
+        <translation>Komut Satırı Arayüzü</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="88" />
+        <source>CLI Status</source>
+        <translation>CLI durumu</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="108" />
+        <source>Please wait...</source>
+        <translation>Lütfen bekleyin...</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="110" />
+        <source>'snaptray' command is available</source>
+        <translation>'snaptray' komutu terminalde kullanılabilir</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="111" />
+        <source>'snaptray' command is not installed</source>
+        <translation>'snaptray' komutu yüklü değil</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="121" />
+        <source>Uninstall CLI</source>
+        <translation>CLI Kaldır</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/GeneralSettings.qml" line="121" />
+        <source>Install CLI</source>
+        <translation>CLI Yükle</translation>
+        </message>
 </context>
 <context>
     <name>HotkeyManager</name>
@@ -240,19 +480,64 @@
     </message>
 </context>
 <context>
+    <name>HotkeySettings</name>
+    <message>
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="46" />
+        <source>Keyboard Shortcuts</source>
+        <translation>Klavye kısayolları</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="58" />
+        <source>Restore All Defaults</source>
+        <translation>Tüm Varsayılanları Geri Yükle</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="144" />
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="155" />
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="177" />
+        <source>Not Set</source>
+        <translation>Ayarlanmadı</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="174" />
+        <source>Conflict</source>
+        <translation>Çakışma</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="176" />
+        <source>Active</source>
+        <translation>Etkin</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="199" />
+        <source>Edit</source>
+        <translation>Düzenle</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="204" />
+        <source>Clear</source>
+        <translation>Temizle</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/HotkeySettings.qml" line="209" />
+        <source>Reset</source>
+        <translation>Sıfırla</translation>
+        </message>
+</context>
+<context>
     <name>MagnifierPanel</name>
     <message>
-        <location filename="../src/region/MagnifierPanel.cpp" line="132"/>
+        <location filename="../src/region/MagnifierPanel.cpp" line="132" />
         <source>RGB: %1,%2,%3</source>
         <translation>RGB: %1,%2,%3</translation>
     </message>
     <message>
-        <location filename="../src/region/MagnifierPanel.cpp" line="328"/>
+        <location filename="../src/region/MagnifierPanel.cpp" line="328" />
         <source>Shift: Switch color format</source>
         <translation>Shift: Renk biçimini değiştir</translation>
     </message>
     <message>
-        <location filename="../src/region/MagnifierPanel.cpp" line="332"/>
+        <location filename="../src/region/MagnifierPanel.cpp" line="332" />
         <source>C: Copy color value</source>
         <translation>C: Renk değerini kopyala</translation>
     </message>
@@ -260,162 +545,162 @@
 <context>
     <name>MainApplication</name>
     <message>
-        <location filename="../src/MainApplication.cpp" line="129"/>
+        <location filename="../src/MainApplication.cpp" line="130" />
         <source>SnapTray is already running</source>
         <translation>SnapTray zaten çalışıyor</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="278"/>
+        <location filename="../src/MainApplication.cpp" line="280" />
         <source>Recording Saved</source>
         <translation>Kayıt Kaydedildi</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="279"/>
-        <location filename="../src/MainApplication.cpp" line="294"/>
-        <location filename="../src/MainApplication.cpp" line="308"/>
+        <location filename="../src/MainApplication.cpp" line="281" />
+        <location filename="../src/MainApplication.cpp" line="298" />
+        <location filename="../src/MainApplication.cpp" line="314" />
         <source>Saved to: %1</source>
         <translation>Şuraya kaydedildi: %1</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="285"/>
+        <location filename="../src/MainApplication.cpp" line="288" />
         <source>Recording Error</source>
         <translation>Kayıt Hatası</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="293"/>
-        <location filename="../src/MainApplication.cpp" line="307"/>
+        <location filename="../src/MainApplication.cpp" line="297" />
+        <location filename="../src/MainApplication.cpp" line="313" />
         <source>Screenshot Saved</source>
         <translation>Ekran Görüntüsü Kaydedildi</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="299"/>
-        <location filename="../src/MainApplication.cpp" line="313"/>
+        <location filename="../src/MainApplication.cpp" line="304" />
+        <location filename="../src/MainApplication.cpp" line="320" />
         <source>Screenshot Save Failed</source>
         <translation>Ekran Görüntüsü Kaydetme Başarısız</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="300"/>
-        <location filename="../src/MainApplication.cpp" line="314"/>
+        <location filename="../src/MainApplication.cpp" line="305" />
+        <location filename="../src/MainApplication.cpp" line="321" />
         <source>%1
 %2</source>
         <translation>%1
 %2</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="349"/>
-        <location filename="../src/MainApplication.cpp" line="962"/>
+        <location filename="../src/MainApplication.cpp" line="356" />
+        <location filename="../src/MainApplication.cpp" line="955" />
         <source>Region Capture</source>
         <translation>Bölge Yakalama</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="352"/>
-        <location filename="../src/MainApplication.cpp" line="965"/>
+        <location filename="../src/MainApplication.cpp" line="359" />
+        <location filename="../src/MainApplication.cpp" line="958" />
         <source>Screen Canvas</source>
         <translation>Ekran Tuvali</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="355"/>
-        <location filename="../src/MainApplication.cpp" line="968"/>
+        <location filename="../src/MainApplication.cpp" line="362" />
+        <location filename="../src/MainApplication.cpp" line="961" />
         <source>Pin from Image...</source>
         <translation>Görselden Sabitle...</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="358"/>
-        <location filename="../src/MainApplication.cpp" line="971"/>
+        <location filename="../src/MainApplication.cpp" line="365" />
+        <location filename="../src/MainApplication.cpp" line="964" />
         <source>Pin History</source>
         <translation>Sabitleme Geçmişi</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="361"/>
-        <location filename="../src/MainApplication.cpp" line="946"/>
+        <location filename="../src/MainApplication.cpp" line="368" />
+        <location filename="../src/MainApplication.cpp" line="939" />
         <source>Hide All Pins</source>
         <translation>Tüm Pinleri Gizle</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="364"/>
+        <location filename="../src/MainApplication.cpp" line="371" />
         <source>Close All Pins</source>
         <translation>Tüm Sabitlemeleri Kapat</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="376"/>
-        <location filename="../src/MainApplication.cpp" line="974"/>
+        <location filename="../src/MainApplication.cpp" line="383" />
+        <location filename="../src/MainApplication.cpp" line="967" />
         <source>Record Full Screen</source>
         <translation>Tam Ekran Kaydet</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="381"/>
+        <location filename="../src/MainApplication.cpp" line="388" />
         <source>Settings</source>
         <translation>Ayarlar</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="386"/>
+        <location filename="../src/MainApplication.cpp" line="393" />
         <source>Exit</source>
         <translation>Çıkış</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="391"/>
+        <location filename="../src/MainApplication.cpp" line="398" />
         <source>SnapTray - Screenshot Utility</source>
         <translation>SnapTray - Ekran Görüntüsü Aracı</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="399"/>
+        <location filename="../src/MainApplication.cpp" line="407" />
         <source>OCR Success</source>
         <translation>OCR Başarılı</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="399"/>
+        <location filename="../src/MainApplication.cpp" line="408" />
         <source>OCR Failed</source>
         <translation>OCR Başarısız</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="446"/>
+        <location filename="../src/MainApplication.cpp" line="458" />
         <source>MCP Server Unavailable</source>
         <translation>MCP sunucusu kullanılamıyor</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="447"/>
+        <location filename="../src/MainApplication.cpp" line="459" />
         <source>Unable to start MCP HTTP server on 127.0.0.1:%1</source>
         <translation>MCP HTTP sunucusu 127.0.0.1:%1 üzerinde başlatılamadı</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="571"/>
+        <location filename="../src/MainApplication.cpp" line="584" />
         <source>Select Image to Pin</source>
         <translation>Sabitlenecek Görseli Seçin</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="573"/>
+        <location filename="../src/MainApplication.cpp" line="586" />
         <source>Images (*.png *.jpg *.jpeg *.gif *.bmp *.webp *.tiff *.tif);;All Files (*)</source>
         <translation>Görseller (*.png *.jpg *.jpeg *.gif *.bmp *.webp *.tiff *.tif);;Tüm Dosyalar (*)</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="583"/>
+        <location filename="../src/MainApplication.cpp" line="596" />
         <source>Loading Image</source>
         <translation>Görsel Yükleniyor</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="631"/>
-        <location filename="../src/MainApplication.cpp" line="650"/>
+        <location filename="../src/MainApplication.cpp" line="644" />
+        <location filename="../src/MainApplication.cpp" line="663" />
         <source>Failed to Load Image</source>
         <translation>Görsel Yüklenemedi</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="760"/>
+        <location filename="../src/MainApplication.cpp" line="770" />
         <source>Hotkey Registration Failed</source>
         <translation>Kısayol Tuşu Kaydı Başarısız</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="761"/>
+        <location filename="../src/MainApplication.cpp" line="771" />
         <source> failed to register.</source>
         <translation> kaydedilemedi.</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="928"/>
-        <location filename="../src/MainApplication.cpp" line="952"/>
+        <location filename="../src/MainApplication.cpp" line="921" />
+        <location filename="../src/MainApplication.cpp" line="945" />
         <source>%1 (%2)</source>
         <translation>%1 (%2)</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="945"/>
+        <location filename="../src/MainApplication.cpp" line="938" />
         <source>Show All Pins</source>
         <translation>Tüm Pinleri Göster</translation>
     </message>
@@ -423,14 +708,14 @@
 <context>
     <name>MosaicBlurTypeSection</name>
     <message>
-        <location filename="../src/ui/sections/MosaicBlurTypeSection.cpp" line="65"/>
-        <location filename="../src/ui/sections/MosaicBlurTypeSection.cpp" line="91"/>
+        <location filename="../src/ui/sections/MosaicBlurTypeSection.cpp" line="65" />
+        <location filename="../src/ui/sections/MosaicBlurTypeSection.cpp" line="91" />
         <source>Pixelate</source>
         <translation>Pikselleştirme</translation>
     </message>
     <message>
-        <location filename="../src/ui/sections/MosaicBlurTypeSection.cpp" line="65"/>
-        <location filename="../src/ui/sections/MosaicBlurTypeSection.cpp" line="91"/>
+        <location filename="../src/ui/sections/MosaicBlurTypeSection.cpp" line="65" />
+        <location filename="../src/ui/sections/MosaicBlurTypeSection.cpp" line="91" />
         <source>Gaussian</source>
         <translation>Gauss</translation>
     </message>
@@ -438,27 +723,27 @@
 <context>
     <name>MultiRegionListPanel</name>
     <message>
-        <location filename="../src/region/MultiRegionListPanel.cpp" line="40"/>
+        <location filename="../src/region/MultiRegionListPanel.cpp" line="53" />
         <source>Regions</source>
         <translation>Bölgeler</translation>
     </message>
     <message>
-        <location filename="../src/region/MultiRegionListPanel.cpp" line="235"/>
+        <location filename="../src/region/MultiRegionListPanel.cpp" line="260" />
         <source>Region %1</source>
         <translation>Bölge %1</translation>
     </message>
     <message>
-        <location filename="../src/region/MultiRegionListPanel.cpp" line="242"/>
+        <location filename="../src/region/MultiRegionListPanel.cpp" line="270" />
         <source>%1 x %2</source>
         <translation>%1 × %2</translation>
     </message>
     <message>
-        <location filename="../src/region/MultiRegionListPanel.cpp" line="254"/>
+        <location filename="../src/region/MultiRegionListPanel.cpp" line="283" />
         <source>Replace</source>
         <translation>Değiştir</translation>
     </message>
     <message>
-        <location filename="../src/region/MultiRegionListPanel.cpp" line="261"/>
+        <location filename="../src/region/MultiRegionListPanel.cpp" line="290" />
         <source>Delete</source>
         <translation>Sil</translation>
     </message>
@@ -466,171 +751,221 @@
 <context>
     <name>OCRResultDialog</name>
     <message>
-        <location filename="../src/OCRResultDialog.cpp" line="62"/>
+        <location filename="../src/OCRResultDialog.cpp" line="64" />
         <source>OCR</source>
         <translation>OCR</translation>
     </message>
     <message>
-        <location filename="../src/OCRResultDialog.cpp" line="72"/>
+        <location filename="../src/OCRResultDialog.cpp" line="74" />
         <source>OCR Result</source>
         <translation>OCR Sonucu</translation>
     </message>
     <message>
-        <location filename="../src/OCRResultDialog.cpp" line="76"/>
+        <location filename="../src/OCRResultDialog.cpp" line="78" />
         <source>0 characters</source>
         <translation>0 karakter</translation>
     </message>
     <message>
-        <location filename="../src/OCRResultDialog.cpp" line="89"/>
+        <location filename="../src/OCRResultDialog.cpp" line="91" />
         <source>No text recognized</source>
         <translation>Metin algılanmadı</translation>
     </message>
     <message>
-        <location filename="../src/OCRResultDialog.cpp" line="102"/>
+        <location filename="../src/OCRResultDialog.cpp" line="104" />
         <source>Close</source>
         <translation>Kapat</translation>
     </message>
     <message>
-        <location filename="../src/OCRResultDialog.cpp" line="108"/>
+        <location filename="../src/OCRResultDialog.cpp" line="110" />
         <source>Copy</source>
         <translation>Kopyala</translation>
     </message>
     <message>
-        <location filename="../src/OCRResultDialog.cpp" line="114"/>
+        <location filename="../src/OCRResultDialog.cpp" line="116" />
         <source>Copy as TSV</source>
         <translation>TSV olarak kopyala</translation>
     </message>
     <message>
-        <location filename="../src/OCRResultDialog.cpp" line="355"/>
+        <location filename="../src/OCRResultDialog.cpp" line="276" />
         <source>✓ Copied!</source>
         <translation>✓ Kopyalandı!</translation>
     </message>
     <message>
-        <location filename="../src/OCRResultDialog.cpp" line="372"/>
+        <location filename="../src/OCRResultDialog.cpp" line="293" />
         <source>✓ Copied TSV!</source>
         <translation>✓ TSV kopyalandı!</translation>
     </message>
     <message>
-        <location filename="../src/OCRResultDialog.cpp" line="395"/>
+        <location filename="../src/OCRResultDialog.cpp" line="316" />
         <source>%1 character</source>
         <translation>%1 karakter</translation>
     </message>
     <message>
-        <location filename="../src/OCRResultDialog.cpp" line="396"/>
+        <location filename="../src/OCRResultDialog.cpp" line="317" />
         <source>%1 characters</source>
         <translation>%1 karakter</translation>
     </message>
     <message>
-        <location filename="../src/OCRResultDialog.cpp" line="399"/>
+        <location filename="../src/OCRResultDialog.cpp" line="320" />
         <source>%1 (edited)</source>
         <translation>%1 (düzenlendi)</translation>
     </message>
 </context>
 <context>
+    <name>OCRSettings</name>
+    <message>
+        <location filename="../src/qml/settings/OCRSettings.qml" line="49" />
+        <source>Select and order the languages for OCR recognition.
+English is always included and cannot be removed.</source>
+        <translation>OCR tanıma için dilleri seçin ve sıralayın.
+İngilizce her zaman dahildir ve kaldırılamaz.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/OCRSettings.qml" line="75" />
+        <source>Loading languages...</source>
+        <translation>Diller yükleniyor...</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/OCRSettings.qml" line="104" />
+        <source>Available Languages</source>
+        <translation>Kullanılabilir Diller</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/OCRSettings.qml" line="181" />
+        <source>Add selected language</source>
+        <translation>Seçili dili ekle</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/OCRSettings.qml" line="195" />
+        <source>Remove selected language</source>
+        <translation>Seçili dili kaldır</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/OCRSettings.qml" line="214" />
+        <source>Selected Languages</source>
+        <translation>Seçili Diller</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/OCRSettings.qml" line="333" />
+        <source>After OCR Recognition</source>
+        <translation>OCR Tanıma Sonrası</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/OCRSettings.qml" line="338" />
+        <source>Copy text directly to clipboard</source>
+        <translation>Metni doğrudan panoya kopyala</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/OCRSettings.qml" line="339" />
+        <source>Show editor to review and edit text</source>
+        <translation>Metni gözden geçirmek ve düzenlemek için düzenleyiciyi göster</translation>
+        </message>
+</context>
+<context>
     <name>PinHistoryWindow</name>
     <message>
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="68"/>
+        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="68" />
         <source>Pin History</source>
         <translation>Sabitleme Geçmişi</translation>
     </message>
     <message>
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="78"/>
+        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="78" />
         <source>Open Cache Folder</source>
         <translation>Önbellek Klasörünü Aç</translation>
     </message>
     <message>
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="104"/>
+        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="104" />
         <source>No pinned screenshots yet</source>
         <translation>Henüz sabitlenmiş ekran görüntüsü yok</translation>
     </message>
     <message>
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="162"/>
+        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="162" />
         <source>Pin</source>
         <translation>Sabitle</translation>
     </message>
     <message>
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="163"/>
+        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="163" />
         <source>Copy</source>
         <translation>Kopyala</translation>
     </message>
     <message>
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="164"/>
+        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="164" />
         <source>Save As</source>
         <translation>Farklı Kaydet</translation>
     </message>
     <message>
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="166"/>
+        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="166" />
         <source>Delete</source>
         <translation>Sil</translation>
     </message>
     <message>
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="196"/>
+        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="196" />
         <source>Delete Failed</source>
         <translation>Silme Başarısız</translation>
     </message>
     <message>
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="196"/>
+        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="196" />
         <source>Failed to delete cached screenshot.</source>
         <translation>Önbellekteki ekran görüntüsü silinemedi.</translation>
     </message>
     <message>
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="223"/>
+        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="223" />
         <source>Pin Failed</source>
         <translation>Sabitleme Başarısız</translation>
     </message>
     <message>
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="223"/>
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="255"/>
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="272"/>
+        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="223" />
+        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="255" />
+        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="272" />
         <source>Failed to load cached screenshot.</source>
         <translation>Önbellekteki ekran görüntüsü yüklenemedi.</translation>
     </message>
     <message>
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="255"/>
+        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="255" />
         <source>Copy Failed</source>
         <translation>Kopyalama Başarısız</translation>
     </message>
     <message>
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="272"/>
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="308"/>
+        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="272" />
+        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="308" />
         <source>Save Failed</source>
         <translation>Kaydetme Başarısız</translation>
     </message>
     <message>
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="298"/>
+        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="298" />
         <source>Save Screenshot</source>
         <translation>Ekran Görüntüsünü Kaydet</translation>
     </message>
     <message>
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="300"/>
+        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="300" />
         <source>PNG Image (*.png);;JPEG Image (*.jpg *.jpeg);;All Files (*)</source>
         <translation>PNG Görsel (*.png);;JPEG Görsel (*.jpg *.jpeg);;Tüm Dosyalar (*)</translation>
     </message>
     <message>
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="309"/>
+        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="309" />
         <source>Failed to save screenshot: %1</source>
         <translation>Ekran görüntüsü kaydedilemedi: %1</translation>
     </message>
     <message>
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="359"/>
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="362"/>
+        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="359" />
+        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="362" />
         <source>Unknown</source>
         <translation>Bilinmiyor</translation>
     </message>
     <message>
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="361"/>
+        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="361" />
         <source>%1 x %2</source>
         <translation>%1 × %2</translation>
     </message>
     <message>
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="364"/>
+        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="364" />
         <source>Time: %1
 Size: %2</source>
         <translation>Zaman: %1
 Boyut: %2</translation>
     </message>
     <message>
-        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="388"/>
+        <location filename="../src/pinwindow/PinHistoryWindow.cpp" line="388" />
         <source>Unknown time</source>
         <translation>Bilinmeyen zaman</translation>
     </message>
@@ -638,37 +973,37 @@ Boyut: %2</translation>
 <context>
     <name>PinWindow</name>
     <message>
-        <location filename="../src/PinWindow.cpp" line="887"/>
+        <location filename="../src/PinWindow.cpp" line="887" />
         <source>Show Toolbar</source>
         <translation>Araç Çubuğunu Göster</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="893"/>
+        <location filename="../src/PinWindow.cpp" line="893" />
         <source>Show Border</source>
         <translation>Kenarlığı Göster</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="925"/>
+        <location filename="../src/PinWindow.cpp" line="925" />
         <source>Adjust Region Layout</source>
         <translation>Bölge Düzenini Ayarla</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="902"/>
+        <location filename="../src/PinWindow.cpp" line="902" />
         <source>Copy to Clipboard</source>
         <translation>Panoya Kopyala</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="906"/>
+        <location filename="../src/PinWindow.cpp" line="906" />
         <source>Save to file</source>
         <translation>Dosyaya kaydet</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="910"/>
+        <location filename="../src/PinWindow.cpp" line="910" />
         <source>Open Cache Folder</source>
         <translation>Önbellek Klasörünü Aç</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="913"/>
+        <location filename="../src/PinWindow.cpp" line="913" />
         <source>Beautify</source>
         <translation>Güzelleştir</translation>
     </message>
@@ -677,385 +1012,385 @@ Boyut: %2</translation>
         <translation type="vanished">Metin Tanı</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="917"/>
+        <location filename="../src/PinWindow.cpp" line="917" />
         <source>Click-through</source>
         <translation>Tıklama geçişi</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="922"/>
-        <location filename="../src/PinWindow.cpp" line="1257"/>
-        <location filename="../src/PinWindow.cpp" line="1265"/>
-        <location filename="../src/PinWindow.cpp" line="1279"/>
-        <location filename="../src/PinWindow.cpp" line="1296"/>
-        <location filename="../src/PinWindow.cpp" line="1310"/>
+        <location filename="../src/PinWindow.cpp" line="922" />
+        <location filename="../src/PinWindow.cpp" line="1257" />
+        <location filename="../src/PinWindow.cpp" line="1265" />
+        <location filename="../src/PinWindow.cpp" line="1279" />
+        <location filename="../src/PinWindow.cpp" line="1296" />
+        <location filename="../src/PinWindow.cpp" line="1310" />
         <source>Merge Pins</source>
         <translation>Sabitlemeleri Birleştir</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="931"/>
+        <location filename="../src/PinWindow.cpp" line="931" />
         <source>Watermark</source>
         <translation>Filigran</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="934"/>
+        <location filename="../src/PinWindow.cpp" line="934" />
         <source>Enable</source>
         <translation>Etkinleştir</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="945"/>
+        <location filename="../src/PinWindow.cpp" line="945" />
         <source>Position</source>
         <translation>Konum</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="948"/>
+        <location filename="../src/PinWindow.cpp" line="948" />
         <source>Top-Left</source>
         <translation>Sol Üst</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="953"/>
+        <location filename="../src/PinWindow.cpp" line="953" />
         <source>Top-Right</source>
         <translation>Sağ Üst</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="958"/>
+        <location filename="../src/PinWindow.cpp" line="958" />
         <source>Bottom-Left</source>
         <translation>Sol Alt</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="963"/>
+        <location filename="../src/PinWindow.cpp" line="963" />
         <source>Bottom-Right</source>
         <translation>Sağ Alt</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="982"/>
-        <location filename="../src/PinWindow.cpp" line="1076"/>
+        <location filename="../src/PinWindow.cpp" line="982" />
+        <location filename="../src/PinWindow.cpp" line="1076" />
         <source>Zoom</source>
         <translation>Yakınlaştırma</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="985"/>
+        <location filename="../src/PinWindow.cpp" line="985" />
         <source>33.3%</source>
         <translation>33,3%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="988"/>
+        <location filename="../src/PinWindow.cpp" line="988" />
         <source>50%</source>
         <translation>50%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="991"/>
+        <location filename="../src/PinWindow.cpp" line="991" />
         <source>66.7%</source>
         <translation>66,7%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="994"/>
+        <location filename="../src/PinWindow.cpp" line="994" />
         <source>100%</source>
         <translation>100%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="997"/>
+        <location filename="../src/PinWindow.cpp" line="997" />
         <source>200%</source>
         <translation>200%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1007"/>
+        <location filename="../src/PinWindow.cpp" line="1007" />
         <source>Smoothing</source>
         <translation>Yumuşatma</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1016"/>
+        <location filename="../src/PinWindow.cpp" line="1016" />
         <source>Image processing</source>
         <translation>Görsel işleme</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1018"/>
+        <location filename="../src/PinWindow.cpp" line="1018" />
         <source>Rotate left</source>
         <translation>Sola döndür</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1021"/>
+        <location filename="../src/PinWindow.cpp" line="1021" />
         <source>Rotate right</source>
         <translation>Sağa döndür</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1024"/>
+        <location filename="../src/PinWindow.cpp" line="1024" />
         <source>Horizontal flip</source>
         <translation>Yatay çevir</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1027"/>
+        <location filename="../src/PinWindow.cpp" line="1027" />
         <source>Vertical flip</source>
         <translation>Dikey çevir</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1031"/>
+        <location filename="../src/PinWindow.cpp" line="1031" />
         <source>Crop</source>
         <translation>Kırp</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1040"/>
-        <location filename="../src/PinWindow.cpp" line="1078"/>
+        <location filename="../src/PinWindow.cpp" line="1040" />
+        <location filename="../src/PinWindow.cpp" line="1078" />
         <source>Opacity</source>
         <translation>Opaklık</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1043"/>
+        <location filename="../src/PinWindow.cpp" line="1043" />
         <source>Increase by %1%</source>
         <translation>%1% artır</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1050"/>
+        <location filename="../src/PinWindow.cpp" line="1050" />
         <source>Decrease by %1%</source>
         <translation>%1% azalt</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1062"/>
+        <location filename="../src/PinWindow.cpp" line="1062" />
         <source>Copy All</source>
         <translation>Tümünü Kopyala</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1075"/>
+        <location filename="../src/PinWindow.cpp" line="1075" />
         <source>Size</source>
         <translation>Boyut</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1077"/>
+        <location filename="../src/PinWindow.cpp" line="1077" />
         <source>Rotation</source>
         <translation>Döndürme</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1079"/>
+        <location filename="../src/PinWindow.cpp" line="1079" />
         <source>X-mirror</source>
         <translation>X-ayna</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1080"/>
+        <location filename="../src/PinWindow.cpp" line="1080" />
         <source>Y-mirror</source>
         <translation>Y-ayna</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1079"/>
-        <location filename="../src/PinWindow.cpp" line="1080"/>
-        <location filename="../src/PinWindow.cpp" line="1628"/>
-        <location filename="../src/PinWindow.cpp" line="1629"/>
+        <location filename="../src/PinWindow.cpp" line="1079" />
+        <location filename="../src/PinWindow.cpp" line="1080" />
+        <location filename="../src/PinWindow.cpp" line="1628" />
+        <location filename="../src/PinWindow.cpp" line="1629" />
         <source>Yes</source>
         <translation>Evet</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1079"/>
-        <location filename="../src/PinWindow.cpp" line="1080"/>
-        <location filename="../src/PinWindow.cpp" line="1628"/>
-        <location filename="../src/PinWindow.cpp" line="1629"/>
+        <location filename="../src/PinWindow.cpp" line="1079" />
+        <location filename="../src/PinWindow.cpp" line="1080" />
+        <location filename="../src/PinWindow.cpp" line="1628" />
+        <location filename="../src/PinWindow.cpp" line="1629" />
         <source>No</source>
         <translation>Hayır</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1086"/>
-        <location filename="../src/PinWindow.cpp" line="2485"/>
+        <location filename="../src/PinWindow.cpp" line="1086" />
+        <location filename="../src/PinWindow.cpp" line="2485" />
         <source>Start Live Update</source>
         <translation>Canlı Güncellemeyi Başlat</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="2485"/>
+        <location filename="../src/PinWindow.cpp" line="2485" />
         <source>Stop Live Update</source>
         <translation>Canlı Güncellemeyi Durdur</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1097"/>
-        <location filename="../src/PinWindow.cpp" line="2489"/>
+        <location filename="../src/PinWindow.cpp" line="1097" />
+        <location filename="../src/PinWindow.cpp" line="2489" />
         <source>Pause Live Update</source>
         <translation>Canlı Güncellemeyi Duraklat</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="2489"/>
+        <location filename="../src/PinWindow.cpp" line="2489" />
         <source>Resume Live Update</source>
         <translation>Canlı Güncellemeyi Sürdür</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1108"/>
+        <location filename="../src/PinWindow.cpp" line="1108" />
         <source>Frame Rate</source>
         <translation>Kare Hızı</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="463"/>
+        <location filename="../src/PinWindow.cpp" line="464" />
         <source>Failed to share screenshot</source>
         <translation>Ekran görüntüsü paylaşılamadı</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="898"/>
+        <location filename="../src/PinWindow.cpp" line="898" />
         <source>Move to Screen</source>
         <translation>Ekrana Taşı</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1111"/>
+        <location filename="../src/PinWindow.cpp" line="1111" />
         <source>%1 FPS</source>
         <translation>%1 FPS</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1125"/>
+        <location filename="../src/PinWindow.cpp" line="1125" />
         <source>Close</source>
         <translation>Kapat</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1129"/>
+        <location filename="../src/PinWindow.cpp" line="1129" />
         <source>Close All Pins</source>
         <translation>Tüm Sabitlemeleri Kapat</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1210"/>
+        <location filename="../src/PinWindow.cpp" line="1210" />
         <source>Screen %1</source>
         <translation>Ekran %1</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1212"/>
+        <location filename="../src/PinWindow.cpp" line="1212" />
         <source> (Primary)</source>
         <translation> (Birincil)</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1258"/>
+        <location filename="../src/PinWindow.cpp" line="1258" />
         <source>Cannot merge more than %1 pins at once</source>
         <translation>Aynı anda %1 sabitleme birleştirilemez</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1266"/>
+        <location filename="../src/PinWindow.cpp" line="1266" />
         <source>Need at least 2 pins to merge</source>
         <translation>Birleştirmek için en az 2 sabitleme gerekli</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1280"/>
+        <location filename="../src/PinWindow.cpp" line="1280" />
         <source>No primary screen available</source>
         <translation>Birincil ekran kullanılamıyor</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1311"/>
+        <location filename="../src/PinWindow.cpp" line="1311" />
         <source>Failed to create merged pin</source>
         <translation>Birleştirilmiş sabitleme oluşturulamadı</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1372"/>
-        <location filename="../src/PinWindow.cpp" line="1393"/>
+        <location filename="../src/PinWindow.cpp" line="1372" />
+        <location filename="../src/PinWindow.cpp" line="1393" />
         <source>Failed to save screenshot: %1</source>
         <translation>Ekran görüntüsü kaydedilemedi: %1</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1382"/>
+        <location filename="../src/PinWindow.cpp" line="1382" />
         <source>Save Screenshot</source>
         <translation>Ekran Görüntüsünü Kaydet</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1384"/>
-        <location filename="../src/PinWindow.cpp" line="4724"/>
+        <location filename="../src/PinWindow.cpp" line="1384" />
+        <location filename="../src/PinWindow.cpp" line="4724" />
         <source>PNG Image (*.png);;JPEG Image (*.jpg *.jpeg);;All Files (*)</source>
         <translation>PNG Görsel (*.png);;JPEG Görsel (*.jpg *.jpeg);;Tüm Dosyalar (*)</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1402"/>
-        <location filename="../src/PinWindow.cpp" line="4652"/>
+        <location filename="../src/PinWindow.cpp" line="1402" />
+        <location filename="../src/PinWindow.cpp" line="4652" />
         <source>Copy failed</source>
         <translation>Kopyalama başarısız</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1415"/>
+        <location filename="../src/PinWindow.cpp" line="1415" />
         <source>Copied to clipboard</source>
         <translation>Panoya kopyalandı</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1427"/>
+        <location filename="../src/PinWindow.cpp" line="1427" />
         <source>Please wait for auto-blur to finish</source>
         <translation>Lütfen otomatik bulanıklaştırmanın tamamlanmasını bekleyin</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1433"/>
+        <location filename="../src/PinWindow.cpp" line="1433" />
         <source>Share failed</source>
         <translation>Paylaşım başarısız oldu</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1523"/>
-        <location filename="../src/PinWindow.cpp" line="1546"/>
-        <location filename="../src/PinWindow.cpp" line="1599"/>
+        <location filename="../src/PinWindow.cpp" line="1523" />
+        <location filename="../src/PinWindow.cpp" line="1546" />
+        <location filename="../src/PinWindow.cpp" line="1599" />
         <source>Copied %1 characters</source>
         <translation>%1 karakter kopyalandı</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1527"/>
+        <location filename="../src/PinWindow.cpp" line="1527" />
         <source>No text found</source>
         <translation>Metin bulunamadı</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1532"/>
-        <location filename="../src/PinWindow.cpp" line="1547"/>
+        <location filename="../src/PinWindow.cpp" line="1532" />
+        <location filename="../src/PinWindow.cpp" line="1547" />
         <source>Text copied</source>
         <translation>Metin kopyalandı</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1608"/>
+        <location filename="../src/PinWindow.cpp" line="1608" />
         <source>No QR code found</source>
         <translation>QR kodu bulunamadı</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1624"/>
+        <location filename="../src/PinWindow.cpp" line="1624" />
         <source>Size: %1 × %2</source>
         <translation>Boyut: %1 × %2</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1625"/>
+        <location filename="../src/PinWindow.cpp" line="1625" />
         <source>Zoom: %1%</source>
         <translation>Yakınlaştırma: %1%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1626"/>
+        <location filename="../src/PinWindow.cpp" line="1626" />
         <source>Rotation: %1°</source>
         <translation>Döndürme: %1°</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1627"/>
+        <location filename="../src/PinWindow.cpp" line="1627" />
         <source>Opacity: %1%</source>
         <translation>Opaklık: %1%</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1628"/>
+        <location filename="../src/PinWindow.cpp" line="1628" />
         <source>X-mirror: %1</source>
         <translation>X-ayna: %1</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1629"/>
+        <location filename="../src/PinWindow.cpp" line="1629" />
         <source>Y-mirror: %1</source>
         <translation>Y-ayna: %1</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="3594"/>
+        <location filename="../src/PinWindow.cpp" line="3594" />
         <source>Face detection unavailable</source>
         <translation>Yüz algılama kullanılamıyor</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="3603"/>
+        <location filename="../src/PinWindow.cpp" line="3603" />
         <source>Detection unavailable</source>
         <translation>Algılama kullanılamıyor</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="4657"/>
-        <location filename="../src/PinWindow.cpp" line="4682"/>
+        <location filename="../src/PinWindow.cpp" line="4657" />
+        <location filename="../src/PinWindow.cpp" line="4682" />
         <source>Beautify rendering failed</source>
         <translation>Güzelleştirme işlemi başarısız</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="4669"/>
+        <location filename="../src/PinWindow.cpp" line="4669" />
         <source>Beautified image copied</source>
         <translation>Güzelleştirilmiş görsel kopyalandı</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="4677"/>
+        <location filename="../src/PinWindow.cpp" line="4677" />
         <source>No image available to save</source>
         <translation>Kaydedilecek görsel yok</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="4717"/>
-        <location filename="../src/PinWindow.cpp" line="4733"/>
+        <location filename="../src/PinWindow.cpp" line="4717" />
+        <location filename="../src/PinWindow.cpp" line="4733" />
         <source>Failed to save beautified screenshot: %1</source>
         <translation>Güzelleştirilmiş ekran görüntüsü kaydedilemedi: %1</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="4723"/>
+        <location filename="../src/PinWindow.cpp" line="4723" />
         <source>Save Beautified Screenshot</source>
         <translation>Güzelleştirilmiş Ekran Görüntüsünü Kaydet</translation>
     </message>
@@ -1063,75 +1398,75 @@ Boyut: %2</translation>
 <context>
     <name>QObject</name>
     <message>
-        <location filename="../src/ToolbarStyle.cpp" line="138"/>
+        <location filename="../src/ToolbarStyle.cpp" line="138" />
         <source>Light</source>
         <translation>Açık</translation>
     </message>
     <message>
-        <location filename="../src/ToolbarStyle.cpp" line="141"/>
+        <location filename="../src/ToolbarStyle.cpp" line="141" />
         <source>Dark</source>
         <translation>Koyu</translation>
     </message>
     <message>
-        <location filename="../src/pinwindow/PinMergeHelper.cpp" line="157"/>
+        <location filename="../src/pinwindow/PinMergeHelper.cpp" line="157" />
         <source>Cannot merge more than %1 pins at once</source>
         <translation>Aynı anda %1 sabitleme birleştirilemez</translation>
     </message>
     <message>
-        <location filename="../src/pinwindow/PinMergeHelper.cpp" line="162"/>
-        <location filename="../src/pinwindow/PinMergeHelper.cpp" line="187"/>
-        <location filename="../src/pinwindow/PinMergeHelper.cpp" line="219"/>
-        <location filename="../src/pinwindow/PinMergeHelper.cpp" line="230"/>
+        <location filename="../src/pinwindow/PinMergeHelper.cpp" line="162" />
+        <location filename="../src/pinwindow/PinMergeHelper.cpp" line="187" />
+        <location filename="../src/pinwindow/PinMergeHelper.cpp" line="219" />
+        <location filename="../src/pinwindow/PinMergeHelper.cpp" line="230" />
         <source>Need at least 2 pins to merge</source>
         <translation>Birleştirmek için en az 2 sabitleme gerekli</translation>
     </message>
     <message>
-        <location filename="../src/pinwindow/PinMergeHelper.cpp" line="236"/>
+        <location filename="../src/pinwindow/PinMergeHelper.cpp" line="236" />
         <source>Merged layout exceeds maximum size (%1x%1)</source>
         <translation>Birleştirilmiş düzen en büyük boyutu aşıyor (%1x%1)</translation>
     </message>
     <message>
-        <location filename="../src/pinwindow/PinMergeHelper.cpp" line="280"/>
+        <location filename="../src/pinwindow/PinMergeHelper.cpp" line="280" />
         <source>Failed to merge pins</source>
         <translation>Pinler birleştirilemedi</translation>
     </message>
     <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="45"/>
+        <location filename="../src/share/ShareUploadClient.cpp" line="45" />
         <source>Invalid upload request</source>
         <translation>Geçersiz yükleme isteği</translation>
     </message>
     <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="47"/>
+        <location filename="../src/share/ShareUploadClient.cpp" line="47" />
         <source>Upload method not allowed</source>
         <translation>Yükleme yöntemine izin verilmiyor</translation>
     </message>
     <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="49"/>
+        <location filename="../src/share/ShareUploadClient.cpp" line="49" />
         <source>File too large (max 5MB)</source>
         <translation>Dosya çok büyük (en fazla 5MB)</translation>
     </message>
     <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="51"/>
+        <location filename="../src/share/ShareUploadClient.cpp" line="51" />
         <source>Server error while uploading</source>
         <translation>Yükleme sırasında sunucu hatası</translation>
     </message>
     <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="53"/>
+        <location filename="../src/share/ShareUploadClient.cpp" line="53" />
         <source>Upload service unavailable, please retry</source>
         <translation>Yükleme hizmeti kullanılamıyor, lütfen tekrar deneyin</translation>
     </message>
     <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="56"/>
+        <location filename="../src/share/ShareUploadClient.cpp" line="56" />
         <source>Upload failed (HTTP %1)</source>
         <translation>Yükleme başarısız oldu (HTTP %1)</translation>
     </message>
     <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="58"/>
+        <location filename="../src/share/ShareUploadClient.cpp" line="58" />
         <source>Upload failed</source>
         <translation>Yükleme başarısız oldu</translation>
     </message>
     <message>
-        <location filename="../src/QRCodeManager.cpp" line="200"/>
+        <location filename="../src/QRCodeManager.cpp" line="200" />
         <source>No barcode found in image</source>
         <translation>Görüntüde barkod bulunamadı</translation>
     </message>
@@ -1139,18 +1474,18 @@ Boyut: %2</translation>
 <context>
     <name>QRCodeManager</name>
     <message>
-        <location filename="../src/QRCodeManager.cpp" line="137"/>
-        <location filename="../src/QRCodeManager.cpp" line="225"/>
+        <location filename="../src/QRCodeManager.cpp" line="137" />
+        <location filename="../src/QRCodeManager.cpp" line="225" />
         <source>Invalid image</source>
         <translation>Geçersiz görsel</translation>
     </message>
     <message>
-        <location filename="../src/QRCodeManager.cpp" line="258"/>
+        <location filename="../src/QRCodeManager.cpp" line="258" />
         <source>No barcode found</source>
         <translation>Barkod bulunamadı</translation>
     </message>
     <message>
-        <location filename="../src/QRCodeManager.cpp" line="273"/>
+        <location filename="../src/QRCodeManager.cpp" line="273" />
         <source>Failed to load image from file</source>
         <translation>Görüntü dosyadan yüklenemedi</translation>
     </message>
@@ -1158,145 +1493,145 @@ Boyut: %2</translation>
 <context>
     <name>QRCodeResultDialog</name>
     <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="85"/>
-        <location filename="../src/QRCodeResultDialog.cpp" line="608"/>
+        <location filename="../src/QRCodeResultDialog.cpp" line="86" />
+        <location filename="../src/QRCodeResultDialog.cpp" line="519" />
         <source>QR Code</source>
         <translation>QR Kodu</translation>
     </message>
     <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="89"/>
+        <location filename="../src/QRCodeResultDialog.cpp" line="90" />
         <source>0 characters</source>
         <translation>0 karakter</translation>
     </message>
     <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="102"/>
+        <location filename="../src/QRCodeResultDialog.cpp" line="103" />
         <source>No content</source>
         <translation>İçerik yok</translation>
     </message>
     <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="111"/>
-        <location filename="../src/QRCodeResultDialog.cpp" line="537"/>
-        <location filename="../src/QRCodeResultDialog.cpp" line="547"/>
+        <location filename="../src/QRCodeResultDialog.cpp" line="112" />
+        <location filename="../src/QRCodeResultDialog.cpp" line="448" />
+        <location filename="../src/QRCodeResultDialog.cpp" line="458" />
         <source>Generate QR to preview</source>
         <translation>Önizleme için QR oluştur</translation>
     </message>
     <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="123"/>
+        <location filename="../src/QRCodeResultDialog.cpp" line="124" />
         <source>Close</source>
         <translation>Kapat</translation>
     </message>
     <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="129"/>
+        <location filename="../src/QRCodeResultDialog.cpp" line="130" />
         <source>Copy</source>
         <translation>Kopyala</translation>
     </message>
     <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="135"/>
+        <location filename="../src/QRCodeResultDialog.cpp" line="136" />
         <source>Open URL</source>
         <translation>URL'yi aç</translation>
     </message>
     <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="142"/>
+        <location filename="../src/QRCodeResultDialog.cpp" line="143" />
         <source>Generate QR</source>
         <translation>QR oluştur</translation>
     </message>
     <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="148"/>
+        <location filename="../src/QRCodeResultDialog.cpp" line="149" />
         <source>Pin QR</source>
         <translation>QR'yi sabitle</translation>
     </message>
     <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="287"/>
+        <location filename="../src/QRCodeResultDialog.cpp" line="201" />
         <source>QR</source>
         <translation>QR</translation>
     </message>
     <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="497"/>
+        <location filename="../src/QRCodeResultDialog.cpp" line="411" />
         <source>%1 character</source>
         <translation>%1 karakter</translation>
     </message>
     <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="498"/>
+        <location filename="../src/QRCodeResultDialog.cpp" line="412" />
         <source>%1 characters</source>
         <translation>%1 karakter</translation>
     </message>
     <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="501"/>
+        <location filename="../src/QRCodeResultDialog.cpp" line="415" />
         <source>%1 (edited)</source>
         <translation>%1 (düzenlendi)</translation>
     </message>
     <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="511"/>
+        <location filename="../src/QRCodeResultDialog.cpp" line="426" />
         <source>✓ Copied!</source>
         <translation>✓ Kopyalandı!</translation>
     </message>
     <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="540"/>
+        <location filename="../src/QRCodeResultDialog.cpp" line="451" />
         <source>Content too long (max %1 bytes)</source>
         <translation>İçerik çok uzun (en fazla %1 bayt)</translation>
     </message>
     <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="609"/>
+        <location filename="../src/QRCodeResultDialog.cpp" line="520" />
         <source>Data Matrix</source>
         <translation>Data Matrix</translation>
     </message>
     <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="610"/>
+        <location filename="../src/QRCodeResultDialog.cpp" line="521" />
         <source>Aztec Code</source>
         <translation>Aztec Kodu</translation>
     </message>
     <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="611"/>
+        <location filename="../src/QRCodeResultDialog.cpp" line="522" />
         <source>PDF417</source>
         <translation>PDF417</translation>
     </message>
     <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="612"/>
+        <location filename="../src/QRCodeResultDialog.cpp" line="523" />
         <source>EAN-8</source>
         <translation>EAN-8</translation>
     </message>
     <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="613"/>
+        <location filename="../src/QRCodeResultDialog.cpp" line="524" />
         <source>EAN-13</source>
         <translation>EAN-13</translation>
     </message>
     <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="614"/>
+        <location filename="../src/QRCodeResultDialog.cpp" line="525" />
         <source>UPC-A</source>
         <translation>UPC-A</translation>
     </message>
     <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="615"/>
+        <location filename="../src/QRCodeResultDialog.cpp" line="526" />
         <source>UPC-E</source>
         <translation>UPC-E</translation>
     </message>
     <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="616"/>
+        <location filename="../src/QRCodeResultDialog.cpp" line="527" />
         <source>Code 39</source>
         <translation>Code 39</translation>
     </message>
     <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="617"/>
+        <location filename="../src/QRCodeResultDialog.cpp" line="528" />
         <source>Code 93</source>
         <translation>Code 93</translation>
     </message>
     <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="618"/>
+        <location filename="../src/QRCodeResultDialog.cpp" line="529" />
         <source>Code 128</source>
         <translation>Code 128</translation>
     </message>
     <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="619"/>
+        <location filename="../src/QRCodeResultDialog.cpp" line="530" />
         <source>ITF</source>
         <translation>ITF</translation>
     </message>
     <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="620"/>
+        <location filename="../src/QRCodeResultDialog.cpp" line="531" />
         <source>Codabar</source>
         <translation>Codabar</translation>
     </message>
     <message>
-        <location filename="../src/QRCodeResultDialog.cpp" line="623"/>
+        <location filename="../src/QRCodeResultDialog.cpp" line="534" />
         <source>Barcode</source>
         <translation>Barkod</translation>
     </message>
@@ -1304,126 +1639,106 @@ Boyut: %2</translation>
 <context>
     <name>RecordingControlBar</name>
     <message>
-        <location filename="../src/RecordingControlBar.cpp" line="174"/>
         <source>Audio recording enabled</source>
-        <translation>Ses kaydı etkinleştirildi</translation>
+        <translation type="vanished">Ses kaydı etkinleştirildi</translation>
     </message>
     <message>
-        <location filename="../src/RecordingControlBar.cpp" line="208"/>
         <source>-- fps</source>
-        <translation>-- FPS</translation>
+        <translation type="vanished">-- FPS</translation>
     </message>
     <message>
-        <location filename="../src/RecordingControlBar.cpp" line="294"/>
-        <location filename="../src/RecordingControlBar.cpp" line="1269"/>
         <source>Annotate</source>
-        <translation>Açıklama Ekle</translation>
+        <translation type="vanished">Açıklama Ekle</translation>
     </message>
     <message>
-        <location filename="../src/RecordingControlBar.cpp" line="510"/>
+        <location filename="../src/qml/recording/RecordingControlBar.qml" line="254" />
         <source>Preparing...</source>
         <translation>Hazırlanıyor...</translation>
     </message>
     <message>
-        <location filename="../src/RecordingControlBar.cpp" line="548"/>
         <source>%1 fps</source>
-        <translation>%1 FPS</translation>
+        <translation type="vanished">%1 FPS</translation>
     </message>
     <message>
-        <location filename="../src/RecordingControlBar.cpp" line="628"/>
         <source>Resume Recording</source>
-        <translation>Kaydı Sürdür</translation>
+        <translation type="vanished">Kaydı Sürdür</translation>
     </message>
     <message>
-        <location filename="../src/RecordingControlBar.cpp" line="628"/>
         <source>Pause Recording</source>
-        <translation>Kaydı Duraklat</translation>
+        <translation type="vanished">Kaydı Duraklat</translation>
     </message>
     <message>
-        <location filename="../src/RecordingControlBar.cpp" line="630"/>
         <source>Stop Recording</source>
-        <translation>Kaydı Durdur</translation>
+        <translation type="vanished">Kaydı Durdur</translation>
     </message>
     <message>
-        <location filename="../src/RecordingControlBar.cpp" line="632"/>
         <source>Cancel Recording (Esc)</source>
-        <translation>Kaydı İptal Et (Esc)</translation>
+        <translation type="vanished">Kaydı İptal Et (Esc)</translation>
     </message>
     <message>
-        <location filename="../src/RecordingControlBar.cpp" line="635"/>
         <source>Pause (Space)</source>
-        <translation>Duraklat (Space)</translation>
+        <translation type="vanished">Duraklat (Space)</translation>
     </message>
     <message>
-        <location filename="../src/RecordingControlBar.cpp" line="635"/>
         <source>Play (Space)</source>
-        <translation>Oynat (Space)</translation>
+        <translation type="vanished">Oynat (Space)</translation>
     </message>
     <message>
-        <location filename="../src/RecordingControlBar.cpp" line="637"/>
         <source>Unmute (M)</source>
-        <translation>Sesi Aç (M)</translation>
+        <translation type="vanished">Sesi Aç (M)</translation>
     </message>
     <message>
-        <location filename="../src/RecordingControlBar.cpp" line="637"/>
         <source>Mute (M)</source>
-        <translation>Sessiz (M)</translation>
+        <translation type="vanished">Sessiz (M)</translation>
     </message>
     <message>
-        <location filename="../src/RecordingControlBar.cpp" line="639"/>
         <source>MP4 - Best quality</source>
-        <translation>MP4 - En iyi kalite</translation>
+        <translation type="vanished">MP4 - En iyi kalite</translation>
     </message>
     <message>
-        <location filename="../src/RecordingControlBar.cpp" line="641"/>
         <source>GIF - Universal support</source>
-        <translation>GIF - Evrensel destek</translation>
+        <translation type="vanished">GIF - Evrensel destek</translation>
     </message>
     <message>
-        <location filename="../src/RecordingControlBar.cpp" line="643"/>
         <source>WebP - Small size</source>
-        <translation>WebP - Küçük boyut</translation>
+        <translation type="vanished">WebP - Küçük boyut</translation>
     </message>
     <message>
-        <location filename="../src/RecordingControlBar.cpp" line="645"/>
         <source>Annotate Video</source>
-        <translation>Videoya Açıklama Ekle</translation>
+        <translation type="vanished">Videoya Açıklama Ekle</translation>
     </message>
     <message>
-        <location filename="../src/RecordingControlBar.cpp" line="647"/>
         <source>Save (Enter)</source>
-        <translation>Kaydet (Enter)</translation>
+        <translation type="vanished">Kaydet (Enter)</translation>
     </message>
     <message>
-        <location filename="../src/RecordingControlBar.cpp" line="649"/>
         <source>Discard (Esc)</source>
-        <translation>At (Esc)</translation>
+        <translation type="vanished">At (Esc)</translation>
     </message>
     <message>
-        <location filename="../src/RecordingControlBar.cpp" line="651"/>
         <source>Drag to seek</source>
-        <translation>Aramak için sürükle</translation>
+        <translation type="vanished">Aramak için sürükle</translation>
     </message>
 </context>
 <context>
     <name>RecordingInitTask</name>
     <message>
-        <location filename="../src/RecordingInitTask.cpp" line="87"/>
+        <location filename="../src/RecordingInitTask.cpp" line="82" />
         <source>Initializing...</source>
         <translation>Başlatılıyor...</translation>
     </message>
     <message>
-        <location filename="../src/RecordingInitTask.cpp" line="102"/>
+        <location filename="../src/RecordingInitTask.cpp" line="99" />
         <source>Setting up audio capture...</source>
         <translation>Ses yakalama ayarlanıyor...</translation>
     </message>
     <message>
-        <location filename="../src/RecordingInitTask.cpp" line="114"/>
+        <location filename="../src/RecordingInitTask.cpp" line="111" />
         <source>Creating video encoder...</source>
         <translation>Video kodlayıcı oluşturuluyor...</translation>
     </message>
     <message>
-        <location filename="../src/RecordingInitTask.cpp" line="144"/>
+        <location filename="../src/RecordingInitTask.cpp" line="141" />
         <source>Ready</source>
         <translation>Hazır</translation>
     </message>
@@ -1431,82 +1746,82 @@ Boyut: %2</translation>
 <context>
     <name>RecordingManager</name>
     <message>
-        <location filename="../src/RecordingManager.cpp" line="312"/>
+        <location filename="../src/RecordingManager.cpp" line="312" />
         <source>No screen available for region selection.</source>
         <translation>Bölge seçimi için kullanılabilir ekran yok.</translation>
     </message>
     <message>
-        <location filename="../src/RecordingManager.cpp" line="345"/>
-        <location filename="../src/RecordingManager.cpp" line="370"/>
+        <location filename="../src/RecordingManager.cpp" line="345" />
+        <location filename="../src/RecordingManager.cpp" line="370" />
         <source>No screen available for recording.</source>
         <translation>Kayıt için kullanılabilir ekran yok.</translation>
     </message>
     <message>
-        <location filename="../src/RecordingManager.cpp" line="353"/>
-        <location filename="../src/RecordingManager.cpp" line="377"/>
+        <location filename="../src/RecordingManager.cpp" line="353" />
+        <location filename="../src/RecordingManager.cpp" line="377" />
         <source>Failed to normalize recording region.</source>
         <translation>Kayıt bölgesi normalize edilemedi.</translation>
     </message>
     <message>
-        <location filename="../src/RecordingManager.cpp" line="411"/>
-        <location filename="../src/RecordingManager.cpp" line="485"/>
-        <location filename="../src/RecordingManager.cpp" line="868"/>
-        <location filename="../src/RecordingManager.cpp" line="901"/>
+        <location filename="../src/RecordingManager.cpp" line="411" />
+        <location filename="../src/RecordingManager.cpp" line="482" />
+        <location filename="../src/RecordingManager.cpp" line="866" />
+        <location filename="../src/RecordingManager.cpp" line="898" />
         <source>Recording screen is no longer available.</source>
         <translation>Kayıt ekranı artık kullanılamıyor.</translation>
     </message>
     <message>
-        <location filename="../src/RecordingManager.cpp" line="494"/>
+        <location filename="../src/RecordingManager.cpp" line="491" />
         <source>Recording region is invalid.</source>
         <translation>Kayıt bölgesi geçersiz.</translation>
     </message>
     <message>
-        <location filename="../src/RecordingManager.cpp" line="666"/>
+        <location filename="../src/RecordingManager.cpp" line="662" />
         <source>Internal error: initialization task is null</source>
         <translation>Dahili hata: başlatma görevi boş</translation>
     </message>
     <message>
-        <location filename="../src/RecordingManager.cpp" line="749"/>
+        <location filename="../src/RecordingManager.cpp" line="747" />
         <source>Failed to start encoding thread</source>
         <translation>Kodlama iş parçacığı başlatılamadı</translation>
     </message>
     <message>
-        <location filename="../src/RecordingManager.cpp" line="785"/>
+        <location filename="../src/RecordingManager.cpp" line="783" />
         <source>Failed to start encoding worker</source>
         <translation>Kodlama işçisi başlatılamadı</translation>
     </message>
     <message>
-        <location filename="../src/RecordingManager.cpp" line="985"/>
+        <location filename="../src/RecordingManager.cpp" line="986" />
         <source>Recording screen disconnected during capture.</source>
         <translation>Yakalama sırasında kayıt ekranı bağlantısı kesildi.</translation>
     </message>
     <message>
-        <location filename="../src/RecordingManager.cpp" line="1239"/>
+        <location filename="../src/RecordingManager.cpp" line="1238" />
         <source>Failed to encode video</source>
         <translation>Video kodlanamadı</translation>
     </message>
     <message>
-        <location filename="../src/RecordingManager.cpp" line="1368"/>
+        <location filename="../src/RecordingManager.cpp" line="1367" />
         <source>GIF Files (*.gif)</source>
         <translation>GIF Dosyaları (*.gif)</translation>
     </message>
     <message>
-        <location filename="../src/RecordingManager.cpp" line="1369"/>
+        <location filename="../src/RecordingManager.cpp" line="1368" />
         <source>WebP Files (*.webp)</source>
         <translation>WebP Dosyaları (*.webp)</translation>
     </message>
     <message>
-        <location filename="../src/RecordingManager.cpp" line="1370"/>
+        <location filename="../src/RecordingManager.cpp" line="1369" />
         <source>MP4 Files (*.mp4)</source>
         <translation>MP4 Dosyaları (*.mp4)</translation>
     </message>
     <message>
-        <location filename="../src/RecordingManager.cpp" line="1376"/>
+        <location filename="../src/RecordingManager.cpp" line="1375" />
         <source>Save Recording</source>
         <translation>Kaydı Kaydet</translation>
     </message>
     <message>
-        <location filename="../src/RecordingManager.cpp" line="1408"/>
+        <location filename="../src/RecordingManager.cpp" line="1407" />
         <source>Failed to save recording to selected location</source>
         <translation>Kayıt seçilen konuma kaydedilemedi</translation>
     </message>
@@ -1514,235 +1829,415 @@ Boyut: %2</translation>
 <context>
     <name>RecordingPreview</name>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="365"/>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="361" />
         <source>Pause Preview (Space)</source>
         <translation>Önizlemeyi duraklat (Space)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="365"/>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="361" />
         <source>Play Preview (Space)</source>
         <translation>Önizlemeyi oynat (Space)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="380"/>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="376" />
         <source>Playback Speed: %1x</source>
         <translation>Oynatma hızı: %1x</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="394"/>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="390" />
         <source>Export as MP4</source>
         <translation>MP4 olarak dışa aktar</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="402"/>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="398" />
         <source>Export as GIF</source>
         <translation>GIF olarak dışa aktar</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="410"/>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="406" />
         <source>Export as WebP</source>
         <translation>WebP olarak dışa aktar</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="422"/>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="418" />
         <source>Unmute Preview (M)</source>
         <translation>Önizleme sesini aç (M)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="422"/>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="418" />
         <source>Mute Preview (M)</source>
         <translation>Önizlemeyi sessize al (M)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="429"/>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="425" />
         <source>Clear Trim Selection</source>
         <translation>Kırpma seçimini temizle</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="429"/>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="425" />
         <source>Trim Recording</source>
         <translation>Kaydı kırp</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="442"/>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="438" />
         <source>Discard Recording (Esc)</source>
         <translation>Kaydı at (Esc)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="449"/>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="445" />
         <source>Save Recording (Enter / Ctrl+S)</source>
         <translation>Kaydı kaydet (Enter / Ctrl+S)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="533"/>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="529" />
         <source>Dismiss Error</source>
         <translation>Hatayı kapat</translation>
     </message>
 </context>
 <context>
+    <name>RecordingPreviewBackend</name>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="71" />
+        <source>Recording Preview</source>
+        <translation type="unfinished">Kayıt Önizleme</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="356" />
+        <source>Converting video...</source>
+        <translation type="unfinished">Video dönüştürülüyor...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="365" />
+        <source>Failed to create video player for conversion</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="366" />
+        <source>Failed to load video for conversion</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="367" />
+        <source>Video not loaded properly for conversion</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="368" />
+        <source>Failed to start encoder</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="369" />
+        <source>Conversion failed: output file is missing or empty</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="596" />
+        <source>Trimming video...</source>
+        <translation type="unfinished">Video kırpılıyor...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="615" />
+        <source>Trim failed: %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="650" />
+        <source>Trim failed: output file is missing or empty</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="657" />
+        <source>Trim failed</source>
+        <translation type="unfinished" />
+    </message>
+</context>
+<context>
     <name>RecordingPreviewWindow</name>
     <message>
-        <location filename="../src/video/RecordingPreviewWindow.cpp" line="395"/>
         <source>Recording Preview</source>
-        <translation>Kayıt Önizleme</translation>
+        <translation type="vanished">Kayıt Önizleme</translation>
     </message>
     <message>
-        <location filename="../src/video/RecordingPreviewWindow.cpp" line="501"/>
         <source>Trim</source>
-        <translation>Kırp</translation>
+        <translation type="vanished">Kırp</translation>
     </message>
     <message>
-        <location filename="../src/video/RecordingPreviewWindow.cpp" line="504"/>
         <source>Loop playback within the trimmed range</source>
-        <translation>Kırpılmış aralıkta döngülü oynatma</translation>
+        <translation type="vanished">Kırpılmış aralıkta döngülü oynatma</translation>
     </message>
     <message>
-        <location filename="../src/video/RecordingPreviewWindow.cpp" line="520"/>
         <source>Play/Pause (Space)</source>
-        <translation>Oynat/Duraklat (Space)</translation>
+        <translation type="vanished">Oynat/Duraklat (Space)</translation>
     </message>
     <message>
-        <location filename="../src/video/RecordingPreviewWindow.cpp" line="544"/>
         <source>Playback speed</source>
-        <translation>Oynatma hızı</translation>
+        <translation type="vanished">Oynatma hızı</translation>
     </message>
     <message>
-        <location filename="../src/video/RecordingPreviewWindow.cpp" line="553"/>
         <source>Mute (M)</source>
-        <translation>Sessiz (M)</translation>
+        <translation type="vanished">Sessiz (M)</translation>
     </message>
     <message>
-        <location filename="../src/video/RecordingPreviewWindow.cpp" line="584"/>
         <source>Discard (Esc)</source>
-        <translation>At (Esc)</translation>
+        <translation type="vanished">At (Esc)</translation>
     </message>
     <message>
-        <location filename="../src/video/RecordingPreviewWindow.cpp" line="591"/>
         <source>Save (Enter)</source>
-        <translation>Kaydet (Enter)</translation>
+        <translation type="vanished">Kaydet (Enter)</translation>
     </message>
     <message>
-        <location filename="../src/video/RecordingPreviewWindow.cpp" line="756"/>
         <source>Video Error</source>
-        <translation>Video Hatası</translation>
+        <translation type="vanished">Video Hatası</translation>
     </message>
     <message>
-        <location filename="../src/video/RecordingPreviewWindow.cpp" line="757"/>
         <source>Failed to load video:
 %1</source>
-        <translation>Video yüklenemedi:
+        <translation type="vanished">Video yüklenemedi:
 %1</translation>
     </message>
     <message>
-        <location filename="../src/video/RecordingPreviewWindow.cpp" line="953"/>
-        <location filename="../src/video/RecordingPreviewWindow.cpp" line="982"/>
         <source>Conversion Error</source>
-        <translation>Dönüştürme Hatası</translation>
+        <translation type="vanished">Dönüştürme Hatası</translation>
     </message>
     <message>
-        <location filename="../src/video/RecordingPreviewWindow.cpp" line="954"/>
         <source>Cannot convert: video not loaded properly.</source>
-        <translation>Dönüştürülemiyor: video düzgün yüklenmedi.</translation>
+        <translation type="vanished">Dönüştürülemiyor: video düzgün yüklenmedi.</translation>
     </message>
     <message>
-        <location filename="../src/video/RecordingPreviewWindow.cpp" line="959"/>
         <source>Converting video...</source>
-        <translation>Video dönüştürülüyor...</translation>
+        <translation type="vanished">Video dönüştürülüyor...</translation>
     </message>
     <message>
-        <location filename="../src/video/RecordingPreviewWindow.cpp" line="959"/>
-        <location filename="../src/video/RecordingPreviewWindow.cpp" line="1245"/>
         <source>Cancel</source>
-        <translation>İptal</translation>
+        <translation type="vanished">İptal</translation>
     </message>
     <message>
-        <location filename="../src/video/RecordingPreviewWindow.cpp" line="983"/>
         <source>Failed to start encoder: %1</source>
-        <translation>Kodlayıcı başlatılamadı: %1</translation>
+        <translation type="vanished">Kodlayıcı başlatılamadı: %1</translation>
     </message>
     <message>
-        <location filename="../src/video/RecordingPreviewWindow.cpp" line="1146"/>
         <source>Trim Failed</source>
-        <translation>Kırpma Başarısız</translation>
+        <translation type="vanished">Kırpma Başarısız</translation>
     </message>
     <message>
-        <location filename="../src/video/RecordingPreviewWindow.cpp" line="1147"/>
         <source>Failed to trim the video. Please try again.</source>
-        <translation>Video kırpılamadı. Lütfen tekrar deneyin.</translation>
+        <translation type="vanished">Video kırpılamadı. Lütfen tekrar deneyin.</translation>
     </message>
     <message>
-        <location filename="../src/video/RecordingPreviewWindow.cpp" line="1153"/>
         <source>Set Trim Start</source>
-        <translation>Kırpma Başlangıcını Ayarla</translation>
+        <translation type="vanished">Kırpma Başlangıcını Ayarla</translation>
     </message>
     <message>
-        <location filename="../src/video/RecordingPreviewWindow.cpp" line="1153"/>
         <source>Set Trim End</source>
-        <translation>Kırpma Bitişini Ayarla</translation>
+        <translation type="vanished">Kırpma Bitişini Ayarla</translation>
     </message>
     <message>
-        <location filename="../src/video/RecordingPreviewWindow.cpp" line="1163"/>
         <source>Enter time in seconds:</source>
-        <translation>Zamanı saniye olarak girin:</translation>
+        <translation type="vanished">Zamanı saniye olarak girin:</translation>
     </message>
     <message>
-        <location filename="../src/video/RecordingPreviewWindow.cpp" line="1241"/>
         <source>Trim Error</source>
-        <translation>Kırpma Hatası</translation>
+        <translation type="vanished">Kırpma Hatası</translation>
     </message>
     <message>
-        <location filename="../src/video/RecordingPreviewWindow.cpp" line="1245"/>
         <source>Trimming video...</source>
-        <translation>Video kırpılıyor...</translation>
+        <translation type="vanished">Video kırpılıyor...</translation>
     </message>
 </context>
 <context>
     <name>RecordingRegionSelector</name>
     <message>
-        <location filename="../src/RecordingRegionSelector.cpp" line="65"/>
+        <location filename="../src/RecordingRegionSelector.cpp" line="65" />
         <source>Start Recording (Enter)</source>
         <translation>Kaydı Başlat (Enter)</translation>
     </message>
     <message>
-        <location filename="../src/RecordingRegionSelector.cpp" line="66"/>
+        <location filename="../src/RecordingRegionSelector.cpp" line="66" />
         <source>Cancel (Esc)</source>
         <translation>İptal (Esc)</translation>
     </message>
     <message>
-        <location filename="../src/RecordingRegionSelector.cpp" line="270"/>
+        <location filename="../src/RecordingRegionSelector.cpp" line="253" />
         <source>%1 x %2</source>
         <translation>%1 × %2</translation>
     </message>
     <message>
-        <location filename="../src/RecordingRegionSelector.cpp" line="316"/>
+        <location filename="../src/RecordingRegionSelector.cpp" line="299" />
         <source>Press Enter or click Start Recording, Escape to cancel</source>
         <translation>Enter'a basın veya Kaydı Başlat'a tıklayın, iptal için Escape'e basın</translation>
     </message>
     <message>
-        <location filename="../src/RecordingRegionSelector.cpp" line="318"/>
+        <location filename="../src/RecordingRegionSelector.cpp" line="301" />
         <source>Release to confirm selection</source>
         <translation>Seçimi onaylamak için bırakın</translation>
     </message>
     <message>
-        <location filename="../src/RecordingRegionSelector.cpp" line="320"/>
+        <location filename="../src/RecordingRegionSelector.cpp" line="303" />
         <source>Click and drag to select recording region</source>
         <translation>Kayıt bölgesini seçmek için tıklayıp sürükleyin</translation>
     </message>
 </context>
 <context>
+    <name>RecordingSettings</name>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="31" />
+        <source>Frame rate</source>
+        <translation>Kare Hızı</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="33" />
+        <source>10 FPS</source>
+        <translation>10 FPS</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="34" />
+        <source>15 FPS</source>
+        <translation>15 FPS</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="35" />
+        <source>24 FPS</source>
+        <translation>24 FPS</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="36" />
+        <source>30 FPS</source>
+        <translation>30 FPS</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="45" />
+        <source>Output format</source>
+        <translation>Çıktı Biçimi:</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="47" />
+        <source>MP4 (H.264)</source>
+        <translation>MP4 (H.264)</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="48" />
+        <source>GIF</source>
+        <translation>GIF</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="49" />
+        <source>WebP</source>
+        <translation>WebP</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="57" />
+        <source>Quality</source>
+        <translation>Kalite:</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="80" />
+        <source>WebP format creates smaller files than GIF with better quality.
+Best for short clips and sharing on web.
+Audio is not supported for WebP recordings.</source>
+        <translation>WebP biçimi, GIF'e göre daha iyi kaliteyle daha küçük dosyalar oluşturur.
+Kısa klipler ve web'de paylaşım için en uygunudur.
+WebP kayıtlarında ses desteklenmez.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="81" />
+        <source>GIF format creates larger files than MP4.
+Best for short clips and sharing on web.
+Audio is not supported for GIF recordings.</source>
+        <translation>GIF biçimi MP4'e göre daha büyük dosyalar oluşturur.
+Kısa klipler ve web'de paylaşım için en uygunudur.
+GIF kayıtlarında ses desteklenmez.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="90" />
+        <source>Audio</source>
+        <translation>Ses</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="93" />
+        <source>Record audio</source>
+        <translation>Ses kaydet</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="99" />
+        <source>Source</source>
+        <translation>Kaynak:</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="101" />
+        <source>Microphone</source>
+        <translation>Mikrofon</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="102" />
+        <source>System Audio</source>
+        <translation>Sistem Sesi</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="103" />
+        <source>Both (Mixed)</source>
+        <translation>Her İkisi (Karışık)</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="114" />
+        <source>Show preview</source>
+        <translation>Önizlemeyi göster</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="119" />
+        <source>Countdown</source>
+        <translation>Geri Sayım</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="122" />
+        <source>Show countdown</source>
+        <translation>Geri sayımı göster</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="128" />
+        <source>Duration</source>
+        <translation>Geri sayım süresi:</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="130" />
+        <source>1 second</source>
+        <translation>1 saniye</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="131" />
+        <source>2 seconds</source>
+        <translation>2 saniye</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="132" />
+        <source>3 seconds</source>
+        <translation>3 saniye</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="133" />
+        <source>4 seconds</source>
+        <translation>4 saniye</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="134" />
+        <source>5 seconds</source>
+        <translation>5 saniye</translation>
+        </message>
+</context>
+<context>
     <name>RegionExportManager</name>
     <message>
-        <location filename="../src/region/RegionExportManager.cpp" line="203"/>
+        <location filename="../src/region/RegionExportManager.cpp" line="203" />
         <source>Failed to save screenshot: %1</source>
         <translation>Ekran görüntüsü kaydedilemedi: %1</translation>
     </message>
     <message>
-        <location filename="../src/region/RegionExportManager.cpp" line="217"/>
+        <location filename="../src/region/RegionExportManager.cpp" line="217" />
         <source>Save Screenshot</source>
         <translation>Ekran Görüntüsünü Kaydet</translation>
     </message>
     <message>
-        <location filename="../src/region/RegionExportManager.cpp" line="219"/>
+        <location filename="../src/region/RegionExportManager.cpp" line="219" />
         <source>PNG Image (*.png);;JPEG Image (*.jpg *.jpeg);;All Files (*)</source>
         <translation>PNG Görsel (*.png);;JPEG Görsel (*.jpg *.jpeg);;Tüm Dosyalar (*)</translation>
     </message>
@@ -1750,10 +2245,10 @@ Boyut: %2</translation>
 <context>
     <name>RegionPainter</name>
     <message>
-        <location filename="../src/region/RegionPainter.cpp" line="253"/>
-        <location filename="../src/region/RegionPainter.cpp" line="263"/>
-        <location filename="../src/region/RegionPainter.cpp" line="275"/>
-        <location filename="../src/region/RegionPainter.cpp" line="363"/>
+        <location filename="../src/region/RegionPainter.cpp" line="253" />
+        <location filename="../src/region/RegionPainter.cpp" line="263" />
+        <location filename="../src/region/RegionPainter.cpp" line="275" />
+        <location filename="../src/region/RegionPainter.cpp" line="363" />
         <source>%1 x %2 pt</source>
         <translation>%1 × %2 pt</translation>
     </message>
@@ -1761,86 +2256,86 @@ Boyut: %2</translation>
 <context>
     <name>RegionSelector</name>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="548"/>
+        <location filename="../src/RegionSelector.cpp" line="543" />
         <source>Failed to share screenshot</source>
         <translation>Ekran görüntüsü paylaşılamadı</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="1566"/>
+        <location filename="../src/RegionSelector.cpp" line="1560" />
         <source>%1 region</source>
         <translation>%1 bölge</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="1567"/>
+        <location filename="../src/RegionSelector.cpp" line="1561" />
         <source>%1 regions</source>
         <translation>%1 bölge</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="1863"/>
+        <location filename="../src/RegionSelector.cpp" line="1857" />
         <source>Error</source>
         <translation>Hata</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="1863"/>
+        <location filename="../src/RegionSelector.cpp" line="1857" />
         <source>Failed to merge regions. Please try again.</source>
         <translation>Bölgeler birleştirilemedi. Lütfen tekrar deneyin.</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="1921"/>
-        <location filename="../src/RegionSelector.cpp" line="2417"/>
-        <location filename="../src/RegionSelector.cpp" line="2505"/>
-        <location filename="../src/RegionSelector.cpp" line="2598"/>
+        <location filename="../src/RegionSelector.cpp" line="1916" />
+        <location filename="../src/RegionSelector.cpp" line="2413" />
+        <location filename="../src/RegionSelector.cpp" line="2503" />
+        <location filename="../src/RegionSelector.cpp" line="2598" />
         <source>Failed to process selected region</source>
         <translation>Seçilen bölge işlenemedi</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="2447"/>
-        <location filename="../src/RegionSelector.cpp" line="2472"/>
+        <location filename="../src/RegionSelector.cpp" line="2444" />
+        <location filename="../src/RegionSelector.cpp" line="2469" />
         <source>Copied %1 characters</source>
         <translation>%1 karakter kopyalandı</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="2451"/>
+        <location filename="../src/RegionSelector.cpp" line="2448" />
         <source>No text found</source>
         <translation>Metin bulunamadı</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="2471"/>
+        <location filename="../src/RegionSelector.cpp" line="2468" />
         <source>OCR</source>
         <translation>OCR</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="2567"/>
+        <location filename="../src/RegionSelector.cpp" line="2565" />
         <source>No QR code found</source>
         <translation>QR kodu bulunamadı</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="2613"/>
+        <location filename="../src/RegionSelector.cpp" line="2613" />
         <source>Face detection unavailable</source>
         <translation>Yüz algılama kullanılamıyor</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="2625"/>
+        <location filename="../src/RegionSelector.cpp" line="2625" />
         <source>Detection unavailable</source>
         <translation>Algılama kullanılamıyor</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="2803"/>
+        <location filename="../src/RegionSelector.cpp" line="2803" />
         <source>Blurred %1 face(s), %2 credential(s)</source>
         <translation>%1 yüz ve %2 kimlik bilgisi bulanıklaştırıldı</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="2807"/>
+        <location filename="../src/RegionSelector.cpp" line="2807" />
         <source>Blurred %1 face(s)</source>
         <translation>%1 yüz bulanıklaştırıldı</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="2811"/>
+        <location filename="../src/RegionSelector.cpp" line="2811" />
         <source>Blurred %1 credential(s)</source>
         <translation>%1 kimlik bilgisi bulanıklaştırıldı</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="2815"/>
+        <location filename="../src/RegionSelector.cpp" line="2815" />
         <source>No faces or credentials detected</source>
         <translation>Yüz veya kimlik bilgisi algılanmadı</translation>
     </message>
@@ -1849,7 +2344,7 @@ Boyut: %2</translation>
         <translation type="vanished">Yüz algılanmadı</translation>
     </message>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="2819"/>
+        <location filename="../src/RegionSelector.cpp" line="2819" />
         <source>Detection failed</source>
         <translation>Algılama başarısız</translation>
     </message>
@@ -1857,7 +2352,7 @@ Boyut: %2</translation>
 <context>
     <name>RegionSettingsHelper</name>
     <message>
-        <location filename="../src/region/RegionSettingsHelper.cpp" line="139"/>
+        <location filename="../src/region/RegionSettingsHelper.cpp" line="130" />
         <source>Default</source>
         <translation>Varsayılan</translation>
     </message>
@@ -1865,7 +2360,7 @@ Boyut: %2</translation>
 <context>
     <name>SCKCaptureEngine</name>
     <message>
-        <location filename="../src/capture/SCKCaptureEngine_mac.mm" line="389"/>
+        <location filename="../src/capture/SCKCaptureEngine_mac.mm" line="389" />
         <source>Could not match the selected screen. Recording from main display instead.</source>
         <translation>Seçilen ekran eşleştirilemedi. Bunun yerine ana ekrandan kayıt yapılıyor.</translation>
     </message>
@@ -1873,8 +2368,8 @@ Boyut: %2</translation>
 <context>
     <name>ScreenCanvas</name>
     <message>
-        <location filename="../src/ScreenCanvas.cpp" line="305"/>
-        <location filename="../src/ScreenCanvas.cpp" line="334"/>
+        <location filename="../src/ScreenCanvas.cpp" line="304" />
+        <location filename="../src/ScreenCanvas.cpp" line="333" />
         <source>Laser Pointer</source>
         <translation>Lazer İşaretçi</translation>
     </message>
@@ -1882,767 +2377,703 @@ Boyut: %2</translation>
 <context>
     <name>SettingsDialog</name>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="104"/>
         <source>%1 Settings</source>
-        <translation>%1 Ayarlar</translation>
+        <translation type="vanished">%1 Ayarlar</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="125"/>
         <source>General</source>
-        <translation>Genel</translation>
+        <translation type="vanished">Genel</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="130"/>
         <source>Hotkeys</source>
-        <translation>Kısayol Tuşları</translation>
+        <translation type="vanished">Kısayol Tuşları</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="135"/>
         <source>Advanced</source>
-        <translation>Gelişmiş</translation>
+        <translation type="vanished">Gelişmiş</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="140"/>
         <source>Watermark</source>
-        <translation>Filigran</translation>
+        <translation type="vanished">Filigran</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="145"/>
         <source>OCR</source>
-        <translation>OCR</translation>
+        <translation type="vanished">OCR</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="150"/>
         <source>Recording</source>
-        <translation>Kayıt</translation>
+        <translation type="vanished">Kayıt</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="155"/>
         <source>Files</source>
-        <translation>Dosyalar</translation>
+        <translation type="vanished">Dosyalar</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="160"/>
         <source>Updates</source>
-        <translation>Güncellemeler</translation>
+        <translation type="vanished">Güncellemeler</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="165"/>
         <source>About</source>
-        <translation>Hakkında</translation>
+        <translation type="vanished">Hakkında</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="176"/>
         <source>Save</source>
-        <translation>Kaydet</translation>
+        <translation type="vanished">Kaydet</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="177"/>
         <source>Cancel</source>
-        <translation>İptal</translation>
+        <translation type="vanished">İptal</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="201"/>
         <source>Start on login</source>
-        <translation>Oturum açıldığında başlat</translation>
+        <translation type="vanished">Oturum açıldığında başlat</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="207"/>
         <source>Language</source>
-        <translation>Dil</translation>
+        <translation type="vanished">Dil</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="212"/>
         <source>Display language:</source>
-        <translation>Görüntüleme dili:</translation>
+        <translation type="vanished">Görüntüleme dili:</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="234"/>
         <source>Appearance</source>
-        <translation>Görünüm</translation>
+        <translation type="vanished">Görünüm</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="239"/>
         <source>Toolbar Style:</source>
-        <translation>Araç Çubuğu Stili:</translation>
+        <translation type="vanished">Araç Çubuğu Stili:</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="242"/>
         <source>Dark</source>
-        <translation>Koyu</translation>
+        <translation type="vanished">Koyu</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="243"/>
         <source>Light</source>
-        <translation>Açık</translation>
+        <translation type="vanished">Açık</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="256"/>
         <source>Permissions</source>
-        <translation>İzinler</translation>
+        <translation type="vanished">İzinler</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="262"/>
         <source>Screen Recording:</source>
-        <translation>Ekran Kaydı:</translation>
+        <translation type="vanished">Ekran Kaydı:</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="265"/>
-        <location filename="../src/SettingsDialog.cpp" line="282"/>
         <source>Open Settings</source>
-        <translation>Ayarları Aç</translation>
+        <translation type="vanished">Ayarları Aç</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="279"/>
         <source>Accessibility:</source>
-        <translation>Erişilebilirlik:</translation>
+        <translation type="vanished">Erişilebilirlik:</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="300"/>
         <source>Command Line Interface</source>
-        <translation>Komut Satırı Arayüzü</translation>
+        <translation type="vanished">Komut Satırı Arayüzü</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="361"/>
         <source>Blur</source>
-        <translation>Bulanıklaştırma</translation>
+        <translation type="vanished">Bulanıklaştırma</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="370"/>
         <source>Blur intensity:</source>
-        <translation>Bulanıklık yoğunluğu:</translation>
+        <translation type="vanished">Bulanıklık yoğunluğu:</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="387"/>
         <source>Blur type:</source>
-        <translation>Bulanıklık türü:</translation>
+        <translation type="vanished">Bulanıklık türü:</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="390"/>
         <source>Pixelate</source>
-        <translation>Pikselleştirme</translation>
+        <translation type="vanished">Pikselleştirme</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="391"/>
         <source>Gaussian</source>
-        <translation>Gauss</translation>
+        <translation type="vanished">Gauss</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="400"/>
         <source>Pin Window</source>
-        <translation>Sabitleme Penceresi</translation>
+        <translation type="vanished">Sabitleme Penceresi</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="408"/>
         <source>Default opacity:</source>
-        <translation>Varsayılan opaklık:</translation>
+        <translation type="vanished">Varsayılan opaklık:</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="426"/>
         <source>Opacity step:</source>
-        <translation>Opaklık adımı:</translation>
+        <translation type="vanished">Opaklık adımı:</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="444"/>
         <source>Zoom step:</source>
-        <translation>Yakınlaştırma adımı:</translation>
+        <translation type="vanished">Yakınlaştırma adımı:</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="462"/>
         <source>Max cache files:</source>
-        <translation>Maks. önbellek dosyası:</translation>
+        <translation type="vanished">Maks. önbellek dosyası:</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="487"/>
         <source>Apply to images</source>
-        <translation>Görsellere uygula</translation>
+        <translation type="vanished">Görsellere uygula</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="491"/>
         <source>Apply to recordings</source>
-        <translation>Kayıtlara uygula</translation>
+        <translation type="vanished">Kayıtlara uygula</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="505"/>
         <source>Image:</source>
-        <translation>Görsel:</translation>
+        <translation type="vanished">Görsel:</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="508"/>
         <source>Select an image file...</source>
-        <translation>Bir görsel dosyası seçin...</translation>
+        <translation type="vanished">Bir görsel dosyası seçin...</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="510"/>
-        <location filename="../src/SettingsDialog.cpp" line="1476"/>
-        <location filename="../src/SettingsDialog.cpp" line="1497"/>
         <source>Browse...</source>
-        <translation>Gözat...</translation>
+        <translation type="vanished">Gözat...</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="513"/>
         <source>Select Watermark Image</source>
-        <translation>Filigran Görseli Seçin</translation>
+        <translation type="vanished">Filigran Görseli Seçin</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="514"/>
         <source>Images (*.png *.jpg *.jpeg *.bmp *.gif *.svg);;All Files (*)</source>
-        <translation>Görseller (*.png *.jpg *.jpeg *.bmp *.gif *.svg);;Tüm Dosyalar (*)</translation>
+        <translation type="vanished">Görseller (*.png *.jpg *.jpeg *.bmp *.gif *.svg);;Tüm Dosyalar (*)</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="527"/>
         <source>Scale:</source>
-        <translation>Ölçek:</translation>
+        <translation type="vanished">Ölçek:</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="545"/>
         <source>Opacity:</source>
-        <translation>Opaklık:</translation>
+        <translation type="vanished">Opaklık:</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="562"/>
         <source>Margin:</source>
-        <translation>Kenar Boşluğu:</translation>
+        <translation type="vanished">Kenar Boşluğu:</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="579"/>
         <source>Position:</source>
-        <translation>Konum:</translation>
+        <translation type="vanished">Konum:</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="582"/>
         <source>Top-Left</source>
-        <translation>Sol Üst</translation>
+        <translation type="vanished">Sol Üst</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="583"/>
         <source>Top-Right</source>
-        <translation>Sağ Üst</translation>
+        <translation type="vanished">Sağ Üst</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="584"/>
         <source>Bottom-Left</source>
-        <translation>Sol Alt</translation>
+        <translation type="vanished">Sol Alt</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="585"/>
         <source>Bottom-Right</source>
-        <translation>Sağ Alt</translation>
+        <translation type="vanished">Sağ Alt</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="605"/>
-        <location filename="../src/SettingsDialog.cpp" line="1084"/>
         <source>No image</source>
-        <translation>Görsel yok</translation>
+        <translation type="vanished">Görsel yok</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1093"/>
         <source>Invalid image</source>
-        <translation>Geçersiz görsel</translation>
+        <translation type="vanished">Geçersiz görsel</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1114"/>
         <source>Size: %1 × %2 px</source>
-        <translation>Boyut: %1 × %2 px</translation>
+        <translation type="vanished">Boyut: %1 × %2 px</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="646"/>
         <source>Frame Rate:</source>
-        <translation>Kare Hızı:</translation>
+        <translation type="vanished">Kare Hızı:</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="339"/>
         <source>Capture</source>
-        <translation>Yakalama</translation>
+        <translation type="vanished">Yakalama</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="344"/>
         <source>Show shortcut hints when entering region capture</source>
-        <translation>Bölge Yakalama'ya girerken kısayol ipuçlarını göster</translation>
+        <translation type="vanished">Bölge Yakalama'ya girerken kısayol ipuçlarını göster</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="351"/>
         <source>MCP</source>
-        <translation>MCP</translation>
+        <translation type="vanished">MCP</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="355"/>
         <source>Enable MCP server</source>
-        <translation>MCP sunucusunu etkinleştir</translation>
+        <translation type="vanished">MCP sunucusunu etkinleştir</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="649"/>
         <source>10 FPS</source>
-        <translation>10 FPS</translation>
+        <translation type="vanished">10 FPS</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="650"/>
         <source>15 FPS</source>
-        <translation>15 FPS</translation>
+        <translation type="vanished">15 FPS</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="651"/>
         <source>24 FPS</source>
-        <translation>24 FPS</translation>
+        <translation type="vanished">24 FPS</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="652"/>
         <source>30 FPS</source>
-        <translation>30 FPS</translation>
+        <translation type="vanished">30 FPS</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="661"/>
         <source>Output Format:</source>
-        <translation>Çıktı Biçimi:</translation>
+        <translation type="vanished">Çıktı Biçimi:</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="665"/>
         <source>MP4 (H.264)</source>
-        <translation>MP4 (H.264)</translation>
+        <translation type="vanished">MP4 (H.264)</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="666"/>
         <source>GIF</source>
-        <translation>GIF</translation>
+        <translation type="vanished">GIF</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="667"/>
         <source>WebP</source>
-        <translation>WebP</translation>
+        <translation type="vanished">WebP</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="680"/>
         <source>Quality:</source>
-        <translation>Kalite:</translation>
+        <translation type="vanished">Kalite:</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="704"/>
-        <location filename="../src/SettingsDialog.cpp" line="907"/>
         <source>GIF format creates larger files than MP4.
 Best for short clips and sharing on web.
 Audio is not supported for GIF recordings.</source>
-        <translation>GIF biçimi MP4'e göre daha büyük dosyalar oluşturur.
+        <translation type="vanished">GIF biçimi MP4'e göre daha büyük dosyalar oluşturur.
 Kısa klipler ve web'de paylaşım için en uygunudur.
 GIF kayıtlarında ses desteklenmez.</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="720"/>
         <source>Audio</source>
-        <translation>Ses</translation>
+        <translation type="vanished">Ses</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="725"/>
         <source>Record audio</source>
-        <translation>Ses kaydet</translation>
+        <translation type="vanished">Ses kaydet</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="730"/>
         <source>Source:</source>
-        <translation>Kaynak:</translation>
+        <translation type="vanished">Kaynak:</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="733"/>
         <source>Microphone</source>
-        <translation>Mikrofon</translation>
+        <translation type="vanished">Mikrofon</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="734"/>
         <source>System Audio</source>
-        <translation>Sistem Sesi</translation>
+        <translation type="vanished">Sistem Sesi</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="735"/>
         <source>Both (Mixed)</source>
-        <translation>Her İkisi (Karışık)</translation>
+        <translation type="vanished">Her İkisi (Karışık)</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="743"/>
         <source>Device:</source>
-        <translation>Cihaz:</translation>
+        <translation type="vanished">Cihaz:</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="746"/>
-        <location filename="../src/SettingsDialog.cpp" line="1123"/>
         <source>Default</source>
-        <translation>Varsayılan</translation>
+        <translation type="vanished">Varsayılan</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="779"/>
         <source>Show preview after recording</source>
-        <translation>Kayıttan sonra önizleme göster</translation>
+        <translation type="vanished">Kayıttan sonra önizleme göster</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="784"/>
         <source>Countdown</source>
-        <translation>Geri Sayım</translation>
+        <translation type="vanished">Geri Sayım</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="790"/>
         <source>Show countdown before recording</source>
-        <translation>Kayıttan önce geri sayım göster</translation>
+        <translation type="vanished">Kayıttan önce geri sayım göster</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="791"/>
         <source>Display a 3-2-1 countdown before recording starts</source>
-        <translation>Kayıt başlamadan önce 3-2-1 geri sayım göster</translation>
+        <translation type="vanished">Kayıt başlamadan önce 3-2-1 geri sayım göster</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="796"/>
         <source>Countdown duration:</source>
-        <translation>Geri sayım süresi:</translation>
+        <translation type="vanished">Geri sayım süresi:</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="798"/>
         <source>1 second</source>
-        <translation>1 saniye</translation>
+        <translation type="vanished">1 saniye</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="799"/>
         <source>2 seconds</source>
-        <translation>2 saniye</translation>
+        <translation type="vanished">2 saniye</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="800"/>
         <source>3 seconds</source>
-        <translation>3 saniye</translation>
+        <translation type="vanished">3 saniye</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="801"/>
         <source>4 seconds</source>
-        <translation>4 saniye</translation>
+        <translation type="vanished">4 saniye</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="802"/>
         <source>5 seconds</source>
-        <translation>5 saniye</translation>
+        <translation type="vanished">5 saniye</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="902"/>
         <source>WebP format creates smaller files than GIF with better quality.
 Best for short clips and sharing on web.
 Audio is not supported for WebP recordings.</source>
-        <translation>WebP biçimi, GIF'e göre daha iyi kaliteyle daha küçük dosyalar oluşturur.
+        <translation type="vanished">WebP biçimi, GIF'e göre daha iyi kaliteyle daha küçük dosyalar oluşturur.
 Kısa klipler ve web'de paylaşım için en uygunudur.
 WebP kayıtlarında ses desteklenmez.</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1058"/>
         <source>Restart Required</source>
-        <translation>Yeniden Başlatma Gerekli</translation>
+        <translation type="vanished">Yeniden Başlatma Gerekli</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1059"/>
         <source>The language change will take effect after restarting the application.</source>
-        <translation>Dil değişikliği uygulama yeniden başlatıldıktan sonra geçerli olacaktır.</translation>
+        <translation type="vanished">Dil değişikliği uygulama yeniden başlatıldıktan sonra geçerli olacaktır.</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1163"/>
-        <location filename="../src/SettingsDialog.cpp" line="1172"/>
         <source>Microphone access denied. Please enable in System Settings &gt; Privacy &amp; Security &gt; Microphone.</source>
-        <translation>Mikrofon erişimi reddedildi. Lütfen Sistem Ayarları &gt; Gizlilik ve Güvenlik &gt; Mikrofon bölümünden etkinleştirin.</translation>
+        <translation type="vanished">Mikrofon erişimi reddedildi. Lütfen Sistem Ayarları &gt; Gizlilik ve Güvenlik &gt; Mikrofon bölümünden etkinleştirin.</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1189"/>
         <source>System audio capture requires macOS 13 (Ventura) or later, or a virtual audio device like BlackHole.</source>
-        <translation>Sistem sesi yakalama için macOS 13 (Ventura) veya üzeri ya da BlackHole gibi sanal bir ses aygıtı gerekir.</translation>
+        <translation type="vanished">Sistem sesi yakalama için macOS 13 (Ventura) veya üzeri ya da BlackHole gibi sanal bir ses aygıtı gerekir.</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1215"/>
         <source>Loading available languages...</source>
-        <translation>Kullanılabilir diller yükleniyor...</translation>
+        <translation type="vanished">Kullanılabilir diller yükleniyor...</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1247"/>
         <source>Select and order the languages for OCR recognition.
 English is always included and cannot be removed. Drag to reorder selected languages.</source>
-        <translation>OCR tanıma için dilleri seçin ve sıralayın.
+        <translation type="vanished">OCR tanıma için dilleri seçin ve sıralayın.
 İngilizce her zaman dahildir ve kaldırılamaz. Seçili dilleri yeniden sıralamak için sürükleyin.</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1259"/>
         <source>Available Languages</source>
-        <translation>Kullanılabilir Diller</translation>
+        <translation type="vanished">Kullanılabilir Diller</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1280"/>
         <source>Add selected languages</source>
-        <translation>Seçili dilleri ekle</translation>
+        <translation type="vanished">Seçili dilleri ekle</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1283"/>
         <source>Remove selected languages</source>
-        <translation>Seçili dilleri kaldır</translation>
+        <translation type="vanished">Seçili dilleri kaldır</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1292"/>
         <source>Selected Languages</source>
-        <translation>Seçili Diller</translation>
+        <translation type="vanished">Seçili Diller</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1354"/>
         <source>English is always included and cannot be removed</source>
-        <translation>İngilizce her zaman dahildir ve kaldırılamaz</translation>
+        <translation type="vanished">İngilizce her zaman dahildir ve kaldırılamaz</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1374"/>
         <source>After OCR Recognition</source>
-        <translation>OCR Tanıma Sonrası</translation>
+        <translation type="vanished">OCR Tanıma Sonrası</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1378"/>
         <source>Copy text directly to clipboard</source>
-        <translation>Metni doğrudan panoya kopyala</translation>
+        <translation type="vanished">Metni doğrudan panoya kopyala</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1380"/>
         <source>Show editor to review and edit text</source>
-        <translation>Metni gözden geçirmek ve düzenlemek için düzenleyiciyi göster</translation>
+        <translation type="vanished">Metni gözden geçirmek ve düzenlemek için düzenleyiciyi göster</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1384"/>
         <source>Recognized text is immediately copied to clipboard</source>
-        <translation>Tanınan metin hemen panoya kopyalanır</translation>
+        <translation type="vanished">Tanınan metin hemen panoya kopyalanır</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1386"/>
         <source>Opens a dialog where you can review and edit the text before copying</source>
-        <translation>Kopyalamadan önce metni gözden geçirip düzenleyebileceğiniz bir iletişim kutusu açar</translation>
+        <translation type="vanished">Kopyalamadan önce metni gözden geçirip düzenleyebileceğiniz bir iletişim kutusu açar</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1406"/>
         <source>No OCR languages available.
 
 macOS: OCR requires macOS 10.15 or later.
 Windows: Install language packs in Settings &gt; Time &amp; Language &gt; Language.</source>
-        <translation>Kullanılabilir OCR dili yok.
+        <translation type="vanished">Kullanılabilir OCR dili yok.
 
 macOS: OCR için macOS 10.15 veya üzeri gerekir.
 Windows: Ayarlar &gt; Saat ve Dil &gt; Dil bölümünden dil paketlerini yükleyin.</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1465"/>
         <source>Save Locations</source>
-        <translation>Kayıt Konumları</translation>
+        <translation type="vanished">Kayıt Konumları</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1471"/>
         <source>Screenshots:</source>
-        <translation>Ekran Görüntüleri:</translation>
+        <translation type="vanished">Ekran Görüntüleri:</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1479"/>
         <source>Select Screenshot Folder</source>
-        <translation>Ekran Görüntüsü Klasörünü Seçin</translation>
+        <translation type="vanished">Ekran Görüntüsü Klasörünü Seçin</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1492"/>
         <source>Recordings:</source>
-        <translation>Kayıtlar:</translation>
+        <translation type="vanished">Kayıtlar:</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1500"/>
         <source>Select Recording Folder</source>
-        <translation>Kayıt Klasörünü Seçin</translation>
+        <translation type="vanished">Kayıt Klasörünü Seçin</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1513"/>
         <source>Filename Format</source>
-        <translation>Dosya Adı Biçimi</translation>
+        <translation type="vanished">Dosya Adı Biçimi</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1518"/>
         <source>Template:</source>
-        <translation>Şablon:</translation>
+        <translation type="vanished">Şablon:</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1531"/>
         <source>Tokens: {prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}
 Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
-        <translation>Belirteçler: {prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}
+        <translation type="vanished">Belirteçler: {prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}
 Tarih belirteçleri: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} veya {date}</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1552"/>
         <source>Save Behavior</source>
-        <translation>Kaydetme Davranışı</translation>
+        <translation type="vanished">Kaydetme Davranışı</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1556"/>
         <source>Auto-save screenshots (save directly without dialog)</source>
-        <translation>Ekran görüntülerini otomatik kaydet (iletişim kutusu olmadan doğrudan kaydet)</translation>
+        <translation type="vanished">Ekran görüntülerini otomatik kaydet (iletişim kutusu olmadan doğrudan kaydet)</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1560"/>
         <source>Auto-save recordings (save directly without dialog)</source>
-        <translation>Kayıtları otomatik kaydet (iletişim kutusu olmadan doğrudan kaydet)</translation>
+        <translation type="vanished">Kayıtları otomatik kaydet (iletişim kutusu olmadan doğrudan kaydet)</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1589"/>
         <source>Preview: %1</source>
-        <translation>Önizleme: %1</translation>
+        <translation type="vanished">Önizleme: %1</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1591"/>
         <source>
 Invalid template, fallback applied: %1</source>
-        <translation>
+        <translation type="vanished">
 Geçersiz şablon, yedek uygulandı: %1</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1601"/>
         <source>Version Information</source>
-        <translation>Sürüm Bilgisi</translation>
+        <translation type="vanished">Sürüm Bilgisi</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1607"/>
         <source>Current Version</source>
-        <translation>Mevcut Sürüm</translation>
+        <translation type="vanished">Mevcut Sürüm</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1622"/>
         <source>Automatic Updates</source>
-        <translation>Otomatik Güncellemeler</translation>
+        <translation type="vanished">Otomatik Güncellemeler</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1629"/>
         <source>Check for updates automatically</source>
-        <translation>Güncellemeleri otomatik olarak denetle</translation>
+        <translation type="vanished">Güncellemeleri otomatik olarak denetle</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1636"/>
         <source>Check frequency</source>
-        <translation>Denetleme sıklığı</translation>
+        <translation type="vanished">Denetleme sıklığı</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1640"/>
         <source>Every day</source>
-        <translation>Her gün</translation>
+        <translation type="vanished">Her gün</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1641"/>
         <source>Every 3 days</source>
-        <translation>Her 3 günde bir</translation>
+        <translation type="vanished">Her 3 günde bir</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1642"/>
         <source>Every week</source>
-        <translation>Her hafta</translation>
+        <translation type="vanished">Her hafta</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1643"/>
         <source>Every 2 weeks</source>
-        <translation>Her 2 haftada bir</translation>
+        <translation type="vanished">Her 2 haftada bir</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1644"/>
         <source>Every month</source>
-        <translation>Her ay</translation>
+        <translation type="vanished">Her ay</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1676"/>
-        <location filename="../src/SettingsDialog.cpp" line="1738"/>
-        <location filename="../src/SettingsDialog.cpp" line="1752"/>
         <source>Last checked: %1</source>
-        <translation>Son denetleme: %1</translation>
+        <translation type="vanished">Son denetleme: %1</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1679"/>
         <source>Last checked: Never</source>
-        <translation>Son denetleme: Hiçbir zaman</translation>
+        <translation type="vanished">Son denetleme: Hiçbir zaman</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1691"/>
-        <location filename="../src/SettingsDialog.cpp" line="1720"/>
         <source>Check Now</source>
-        <translation>Şimdi Denetle</translation>
+        <translation type="vanished">Şimdi Denetle</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1718"/>
         <source>Checking...</source>
-        <translation>Denetleniyor...</translation>
+        <translation type="vanished">Denetleniyor...</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1793"/>
         <source>Version %1</source>
-        <translation>Sürüm %1</translation>
+        <translation type="vanished">Sürüm %1</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1802"/>
         <source>Copyright 2024-2025 Victor Fu</source>
-        <translation>Copyright 2024-2025 Victor Fu</translation>
+        <translation type="vanished">Copyright 2024-2025 Victor Fu</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1810"/>
         <source>Author: Victor Fu</source>
-        <translation>Yazar: Victor Fu</translation>
+        <translation type="vanished">Yazar: Victor Fu</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1831"/>
-        <source>&apos;snaptray&apos; command is available in terminal</source>
-        <translation>&apos;snaptray&apos; komutu terminalde kullanılabilir</translation>
+        <source>'snaptray' command is available in terminal</source>
+        <translation type="vanished">'snaptray' komutu terminalde kullanılabilir</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1832"/>
         <source>Uninstall CLI</source>
-        <translation>CLI Kaldır</translation>
+        <translation type="vanished">CLI Kaldır</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1835"/>
-        <source>&apos;snaptray&apos; command is not installed</source>
-        <translation>&apos;snaptray&apos; komutu yüklü değil</translation>
+        <source>'snaptray' command is not installed</source>
+        <translation type="vanished">'snaptray' komutu yüklü değil</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1836"/>
         <source>Install CLI</source>
-        <translation>CLI Yükle</translation>
+        <translation type="vanished">CLI Yükle</translation>
     </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1846"/>
-        <location filename="../src/SettingsDialog.cpp" line="1859"/>
+        <source>Granted</source>
+        <translation type="vanished">Verildi</translation>
+    </message>
+    <message>
+        <source>Not Granted</source>
+        <translation type="vanished">Verilmedi</translation>
+    </message>
+</context>
+<context>
+    <name>SettingsPathPicker</name>
+    <message>
+        <location filename="../src/qml/controls/SettingsPathPicker.qml" line="48" />
+        <source>Browse...</source>
+        <translation>Gözat...</translation>
+        </message>
+</context>
+<context>
+    <name>SettingsPermissionRow</name>
+    <message>
+        <location filename="../src/qml/controls/SettingsPermissionRow.qml" line="31" />
         <source>Granted</source>
         <translation>Verildi</translation>
-    </message>
+        </message>
     <message>
-        <location filename="../src/SettingsDialog.cpp" line="1851"/>
-        <location filename="../src/SettingsDialog.cpp" line="1864"/>
+        <location filename="../src/qml/controls/SettingsPermissionRow.qml" line="31" />
         <source>Not Granted</source>
         <translation>Verilmedi</translation>
-    </message>
+        </message>
+    <message>
+        <location filename="../src/qml/controls/SettingsPermissionRow.qml" line="40" />
+        <source>Open Settings</source>
+        <translation>Ayarları Aç</translation>
+        </message>
+</context>
+<context>
+    <name>SettingsSidebar</name>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="27" />
+        <source>General</source>
+        <translation>Genel</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="28" />
+        <source>Hotkeys</source>
+        <translation>Kısayol Tuşları</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="29" />
+        <source>Advanced</source>
+        <translation>Gelişmiş</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="30" />
+        <source>Watermark</source>
+        <translation>Filigran</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="31" />
+        <source>OCR</source>
+        <translation>OCR</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="32" />
+        <source>Recording</source>
+        <translation>Kayıt</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="33" />
+        <source>Files</source>
+        <translation>Dosyalar</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="34" />
+        <source>Updates</source>
+        <translation>Güncellemeler</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsSidebar.qml" line="35" />
+        <source>About</source>
+        <translation>Hakkında</translation>
+        </message>
+</context>
+<context>
+    <name>SettingsWindow</name>
+    <message>
+        <location filename="../src/qml/settings/SettingsWindow.qml" line="85" />
+        <source>Cancel</source>
+        <translation>İptal</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/SettingsWindow.qml" line="90" />
+        <source>Save</source>
+        <translation>Kaydet</translation>
+        </message>
 </context>
 <context>
     <name>SharePasswordDialog</name>
     <message>
-        <location filename="../src/ui/SharePasswordDialog.cpp" line="52"/>
+        <location filename="../src/ui/SharePasswordDialog.cpp" line="54" />
         <source>URL</source>
         <translation>URL</translation>
     </message>
     <message>
-        <location filename="../src/ui/SharePasswordDialog.cpp" line="61"/>
+        <location filename="../src/ui/SharePasswordDialog.cpp" line="63" />
         <source>Share URL</source>
         <translation>URL'yi Paylaş</translation>
     </message>
     <message>
-        <location filename="../src/ui/SharePasswordDialog.cpp" line="65"/>
+        <location filename="../src/ui/SharePasswordDialog.cpp" line="67" />
         <source>Set an optional password</source>
         <translation>İsteğe bağlı bir parola belirleyin</translation>
     </message>
     <message>
-        <location filename="../src/ui/SharePasswordDialog.cpp" line="82"/>
+        <location filename="../src/ui/SharePasswordDialog.cpp" line="84" />
         <source>No password</source>
         <translation>Parola yok</translation>
     </message>
     <message>
-        <location filename="../src/ui/SharePasswordDialog.cpp" line="88"/>
+        <location filename="../src/ui/SharePasswordDialog.cpp" line="90" />
         <source>Leave empty for public access. Link expires in 24 hours.</source>
         <translation>Herkese açık erişim için boş bırakın. Bağlantının süresi 24 saat sonra dolar.</translation>
     </message>
     <message>
-        <location filename="../src/ui/SharePasswordDialog.cpp" line="104"/>
+        <location filename="../src/ui/SharePasswordDialog.cpp" line="106" />
         <source>Cancel</source>
         <translation>İptal</translation>
     </message>
     <message>
-        <location filename="../src/ui/SharePasswordDialog.cpp" line="110"/>
+        <location filename="../src/ui/SharePasswordDialog.cpp" line="112" />
         <source>Share</source>
         <translation>Paylaş</translation>
     </message>
@@ -2650,93 +3081,93 @@ Geçersiz şablon, yedek uygulandı: %1</translation>
 <context>
     <name>ShareResultDialog</name>
     <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="50"/>
+        <location filename="../src/ui/ShareResultDialog.cpp" line="52" />
         <source>URL</source>
         <translation>URL</translation>
     </message>
     <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="59"/>
+        <location filename="../src/ui/ShareResultDialog.cpp" line="61" />
         <source>Share URL Ready</source>
         <translation>Paylaşım URL'si Hazır</translation>
     </message>
     <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="63"/>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="332"/>
+        <location filename="../src/ui/ShareResultDialog.cpp" line="65" />
+        <location filename="../src/ui/ShareResultDialog.cpp" line="235" />
         <source>Upload completed</source>
         <translation>Yükleme tamamlandı</translation>
     </message>
     <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="77"/>
+        <location filename="../src/ui/ShareResultDialog.cpp" line="79" />
         <source>Share Link</source>
         <translation>Paylaşım Bağlantısı</translation>
     </message>
     <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="84"/>
+        <location filename="../src/ui/ShareResultDialog.cpp" line="86" />
         <source>No URL</source>
         <translation>URL yok</translation>
     </message>
     <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="88"/>
+        <location filename="../src/ui/ShareResultDialog.cpp" line="90" />
         <source>Password</source>
         <translation>Parola</translation>
     </message>
     <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="117"/>
+        <location filename="../src/ui/ShareResultDialog.cpp" line="119" />
         <source>Use Copy to share now, or Open to verify in browser.</source>
         <translation>Hemen paylaşmak için Kopyala'yı kullanın veya tarayıcıda doğrulamak için Aç'a tıklayın.</translation>
     </message>
     <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="132"/>
+        <location filename="../src/ui/ShareResultDialog.cpp" line="134" />
         <source>Close</source>
         <translation>Kapat</translation>
     </message>
     <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="138"/>
+        <location filename="../src/ui/ShareResultDialog.cpp" line="140" />
         <source>Copy</source>
         <translation>Kopyala</translation>
     </message>
     <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="144"/>
+        <location filename="../src/ui/ShareResultDialog.cpp" line="146" />
         <source>Open</source>
         <translation>Aç</translation>
     </message>
     <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="326"/>
+        <location filename="../src/ui/ShareResultDialog.cpp" line="229" />
         <source>Expires: %1</source>
         <translation>Bitiş: %1</translation>
     </message>
     <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="328"/>
+        <location filename="../src/ui/ShareResultDialog.cpp" line="231" />
         <source>Valid until %1</source>
         <translation>%1 tarihine kadar geçerli</translation>
     </message>
     <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="336"/>
+        <location filename="../src/ui/ShareResultDialog.cpp" line="239" />
         <source>Password protected</source>
         <translation>Parola korumalı</translation>
     </message>
     <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="338"/>
+        <location filename="../src/ui/ShareResultDialog.cpp" line="241" />
         <source>Password protected (hidden)</source>
         <translation>Parola korumalı (gizli)</translation>
     </message>
     <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="340"/>
+        <location filename="../src/ui/ShareResultDialog.cpp" line="243" />
         <source>No password</source>
         <translation>Parola yok</translation>
     </message>
     <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="345"/>
+        <location filename="../src/ui/ShareResultDialog.cpp" line="248" />
         <source>Copy includes both link and password.</source>
         <translation>Kopyalama hem bağlantıyı hem parolayı içerir.</translation>
     </message>
     <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="346"/>
+        <location filename="../src/ui/ShareResultDialog.cpp" line="249" />
         <source>Anyone with this link can access it until expiration.</source>
         <translation>Bu bağlantıya sahip herkes, süresi dolana kadar erişebilir.</translation>
     </message>
     <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="457"/>
+        <location filename="../src/ui/ShareResultDialog.cpp" line="360" />
         <source>%1
 Password: %2</source>
         <translation>%1
@@ -2746,57 +3177,57 @@ Parola: %2</translation>
 <context>
     <name>ShareUploadClient</name>
     <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="72"/>
+        <location filename="../src/share/ShareUploadClient.cpp" line="72" />
         <source>Upload already in progress</source>
         <translation>Yükleme zaten sürüyor</translation>
     </message>
     <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="77"/>
+        <location filename="../src/share/ShareUploadClient.cpp" line="77" />
         <source>Password too long (max %1 characters)</source>
         <translation>Parola çok uzun (en fazla %1 karakter)</translation>
     </message>
     <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="83"/>
+        <location filename="../src/share/ShareUploadClient.cpp" line="83" />
         <source>Failed to prepare image for upload</source>
         <translation>Görüntü yükleme için hazırlanamadı</translation>
     </message>
     <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="105"/>
+        <location filename="../src/share/ShareUploadClient.cpp" line="105" />
         <source>No image available to share</source>
         <translation>Paylaşılacak görüntü yok</translation>
     </message>
     <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="110"/>
+        <location filename="../src/share/ShareUploadClient.cpp" line="110" />
         <source>Invalid upload size limit</source>
         <translation>Geçersiz yükleme boyutu sınırı</translation>
     </message>
     <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="116"/>
+        <location filename="../src/share/ShareUploadClient.cpp" line="116" />
         <source>Failed to read image data</source>
         <translation>Görüntü verisi okunamadı</translation>
     </message>
     <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="122"/>
+        <location filename="../src/share/ShareUploadClient.cpp" line="122" />
         <source>Failed to encode PNG image</source>
         <translation>PNG görüntüsü kodlanamadı</translation>
     </message>
     <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="149"/>
+        <location filename="../src/share/ShareUploadClient.cpp" line="149" />
         <source>Image exceeds 5MB even after compression. Please crop a smaller region.</source>
         <translation>Görüntü, sıkıştırmadan sonra bile 5MB'yi aşıyor. Lütfen daha küçük bir bölge kırpın.</translation>
     </message>
     <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="176"/>
+        <location filename="../src/share/ShareUploadClient.cpp" line="176" />
         <source>Invalid upload response</source>
         <translation>Geçersiz yükleme yanıtı</translation>
     </message>
     <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="185"/>
+        <location filename="../src/share/ShareUploadClient.cpp" line="185" />
         <source>Upload response missing URL</source>
         <translation>Yükleme yanıtında URL eksik</translation>
     </message>
     <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="240"/>
+        <location filename="../src/share/ShareUploadClient.cpp" line="240" />
         <source>Upload succeeded but response could not be parsed</source>
         <translation>Yükleme başarılı oldu ancak yanıt ayrıştırılamadı</translation>
     </message>
@@ -2804,7 +3235,7 @@ Parola: %2</translation>
 <context>
     <name>SnapTray::HotkeyManager</name>
     <message>
-        <location filename="../src/hotkey/HotkeyManager.cpp" line="371"/>
+        <location filename="../src/hotkey/HotkeyManager.cpp" line="371" />
         <source>Conflicts with: %1</source>
         <translation>Şununla çakışıyor: %1</translation>
     </message>
@@ -2812,157 +3243,203 @@ Parola: %2</translation>
 <context>
     <name>SnapTray::HotkeySettingsTab</name>
     <message>
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="48"/>
+        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="50" />
         <source>Action</source>
         <translation>Eylem</translation>
     </message>
     <message>
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="49"/>
+        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="51" />
         <source>Hotkey</source>
         <translation>Kısayol</translation>
     </message>
     <message>
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="50"/>
+        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="52" />
         <source>Status</source>
         <translation>Durum</translation>
     </message>
     <message>
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="100"/>
+        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="71" />
         <source>Double-click a hotkey to edit, or select and press Enter</source>
         <translation>Düzenlemek için bir kısayola çift tıklayın veya seçip Enter'a basın</translation>
     </message>
     <message>
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="109"/>
+        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="84" />
         <source>Edit...</source>
         <translation>Düzenle...</translation>
     </message>
     <message>
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="113"/>
+        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="88" />
         <source>Clear</source>
         <translation>Temizle</translation>
     </message>
     <message>
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="117"/>
+        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="92" />
         <source>Reset to Default</source>
         <translation>Varsayılana Sıfırla</translation>
     </message>
     <message>
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="123"/>
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="404"/>
+        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="98" />
+        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="384" />
         <source>Restore All Defaults</source>
         <translation>Tüm Varsayılanları Geri Yükle</translation>
     </message>
     <message>
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="228"/>
+        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="208" />
         <source>(Optional)</source>
         <translation>(İsteğe bağlı)</translation>
     </message>
     <message>
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="228"/>
+        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="208" />
         <source>(Not set)</source>
         <translation>(Ayarlanmadı)</translation>
     </message>
     <message>
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="254"/>
+        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="234" />
         <source>Active</source>
         <translation>Etkin</translation>
     </message>
     <message>
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="258"/>
+        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="238" />
         <source>Conflict</source>
         <translation>Çakışma</translation>
     </message>
     <message>
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="262"/>
+        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="242" />
         <source>Disabled</source>
         <translation>Devre dışı</translation>
     </message>
     <message>
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="268"/>
+        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="248" />
         <source>Not Set</source>
         <translation>Ayarlanmadı</translation>
     </message>
     <message>
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="367"/>
+        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="347" />
         <source>Clear Hotkey</source>
         <translation>Kısayolu Temizle</translation>
     </message>
     <message>
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="368"/>
-        <source>Are you sure you want to clear the hotkey for &apos;%1&apos;?
+        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="348" />
+        <source>Are you sure you want to clear the hotkey for '%1'?
 This hotkey is required for normal operation.</source>
         <translation>'%1' için kısayolu temizlemek istediğinizden emin misiniz?
 Bu kısayol normal çalışma için gereklidir.</translation>
     </message>
     <message>
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="405"/>
+        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="385" />
         <source>Are you sure you want to reset all hotkeys to their default values?</source>
         <translation>Tüm kısayolları varsayılan değerlerine sıfırlamak istediğinizden emin misiniz?</translation>
     </message>
     <message>
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="435"/>
+        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="415" />
         <source>Failed to register: %1</source>
         <translation>Kaydedilemedi: %1</translation>
     </message>
     <message>
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="468"/>
+        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="453" />
         <source>Hotkey Conflict</source>
         <translation>Kısayol Çakışması</translation>
     </message>
     <message>
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="469"/>
-        <source>The hotkey &apos;%1&apos; is already assigned to &apos;%2&apos;.
+        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="454" />
+        <source>The hotkey '%1' is already assigned to '%2'.
 Please choose a different hotkey.</source>
         <translation>'%1' kısayolu zaten '%2' için atanmış.
 Lütfen farklı bir kısayol seçin.</translation>
     </message>
     <message>
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="480"/>
+        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="465" />
         <source>Registration Failed</source>
         <translation>Kaydetme Başarısız</translation>
     </message>
     <message>
-        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="481"/>
-        <source>Failed to register the hotkey &apos;%1&apos;.
+        <location filename="../src/widgets/HotkeySettingsTab.cpp" line="466" />
+        <source>Failed to register the hotkey '%1'.
 It may be in use by another application.</source>
         <translation>'%1' kısayolu kaydedilemedi.
 Başka bir uygulama tarafından kullanılıyor olabilir.</translation>
     </message>
 </context>
 <context>
+    <name>SnapTray::QmlSettingsWindow</name>
+    <message>
+        <location filename="../src/qml/QmlSettingsWindow.cpp" line="39" />
+        <source>Settings</source>
+        <translation>Ayarlar</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/QmlSettingsWindow.cpp" line="49" />
+        <source>Settings saved. Language change will apply after restart.</source>
+        <translation>Ayarlar kaydedildi. Dil değişikliği yeniden başlatmadan sonra uygulanacaktır.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/QmlSettingsWindow.cpp" line="50" />
+        <source>Settings saved</source>
+        <translation>Ayarlar kaydedildi</translation>
+        </message>
+</context>
+<context>
+    <name>SnapTray::SettingsBackend</name>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="375" />
+        <source>Never</source>
+        <translation>Asla</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="537" />
+        <source>Select Screenshot Folder</source>
+        <translation>Ekran Görüntüsü Klasörünü Seçin</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="545" />
+        <source>Select Recording Folder</source>
+        <translation>Kayıt Klasörünü Seçin</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="553" />
+        <source>Select Watermark Image</source>
+        <translation>Filigran Görseli Seçin</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="554" />
+        <source>Images (*.png *.jpg *.jpeg *.bmp *.svg)</source>
+        <translation>Görseller (*.png *.jpg *.jpeg *.bmp *.svg)</translation>
+        </message>
+</context>
+<context>
     <name>SnapTray::TypeHotkeyDialog</name>
     <message>
-        <location filename="../src/widgets/TypeHotkeyDialog.cpp" line="59"/>
+        <location filename="../src/widgets/TypeHotkeyDialog.cpp" line="59" />
         <source>Press a key combination...</source>
         <translation>Bir tuş kombinasyonuna basın...</translation>
     </message>
     <message>
-        <location filename="../src/widgets/TypeHotkeyDialog.cpp" line="98"/>
+        <location filename="../src/widgets/TypeHotkeyDialog.cpp" line="98" />
         <source>Cancel</source>
         <translation>İptal</translation>
     </message>
     <message>
-        <location filename="../src/widgets/TypeHotkeyDialog.cpp" line="117"/>
+        <location filename="../src/widgets/TypeHotkeyDialog.cpp" line="117" />
         <source>OK</source>
         <translation>Tamam</translation>
     </message>
     <message>
-        <location filename="../src/widgets/TypeHotkeyDialog.cpp" line="198"/>
+        <location filename="../src/widgets/TypeHotkeyDialog.cpp" line="198" />
         <source>Set Hotkey for: %1</source>
         <translation>Şunun için kısayol ayarla: %1</translation>
     </message>
     <message>
-        <location filename="../src/widgets/TypeHotkeyDialog.cpp" line="319"/>
+        <location filename="../src/widgets/TypeHotkeyDialog.cpp" line="319" />
         <source>(Press keys)</source>
         <translation>(Tuşlara basın)</translation>
     </message>
     <message>
-        <location filename="../src/widgets/TypeHotkeyDialog.cpp" line="338"/>
+        <location filename="../src/widgets/TypeHotkeyDialog.cpp" line="338" />
         <source>Press Enter or click OK to confirm</source>
         <translation>Onaylamak için Enter'a basın veya Tamam'a tıklayın</translation>
     </message>
     <message>
-        <location filename="../src/widgets/TypeHotkeyDialog.cpp" line="340"/>
+        <location filename="../src/widgets/TypeHotkeyDialog.cpp" line="340" />
         <source>Press a key combination, then press Enter to confirm</source>
         <translation>Bir tuş kombinasyonuna basın, ardından onaylamak için Enter'a basın</translation>
     </message>
@@ -2970,7 +3447,7 @@ Başka bir uygulama tarafından kullanılıyor olabilir.</translation>
 <context>
     <name>TextSection</name>
     <message>
-        <location filename="../src/ui/sections/TextSection.cpp" line="162"/>
+        <location filename="../src/ui/sections/TextSection.cpp" line="162" />
         <source>Default</source>
         <translation>Varsayılan</translation>
     </message>
@@ -2978,154 +3455,154 @@ Başka bir uygulama tarafından kullanılıyor olabilir.</translation>
 <context>
     <name>ToolRegistry</name>
     <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="14"/>
+        <location filename="../src/tools/ToolRegistry.cpp" line="14" />
         <source>Unknown Tool</source>
         <translation>Bilinmeyen Araç</translation>
     </message>
     <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="25"/>
+        <location filename="../src/tools/ToolRegistry.cpp" line="25" />
         <source>Selection</source>
         <translation>Seçim</translation>
     </message>
     <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="37"/>
+        <location filename="../src/tools/ToolRegistry.cpp" line="37" />
         <source>Arrow</source>
         <translation>Ok</translation>
     </message>
     <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="48"/>
+        <location filename="../src/tools/ToolRegistry.cpp" line="48" />
         <source>Polyline</source>
         <translation>Çoklu Çizgi</translation>
     </message>
     <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="59"/>
+        <location filename="../src/tools/ToolRegistry.cpp" line="59" />
         <source>Pencil</source>
         <translation>Kalem</translation>
     </message>
     <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="70"/>
+        <location filename="../src/tools/ToolRegistry.cpp" line="70" />
         <source>Marker</source>
         <translation>İşaretleyici</translation>
     </message>
     <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="81"/>
+        <location filename="../src/tools/ToolRegistry.cpp" line="81" />
         <source>Shape</source>
         <translation>Şekil</translation>
     </message>
     <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="92"/>
+        <location filename="../src/tools/ToolRegistry.cpp" line="92" />
         <source>Text</source>
         <translation>Metin</translation>
     </message>
     <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="103"/>
+        <location filename="../src/tools/ToolRegistry.cpp" line="103" />
         <source>Mosaic</source>
         <translation>Mozaik</translation>
     </message>
     <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="114"/>
+        <location filename="../src/tools/ToolRegistry.cpp" line="114" />
         <source>Eraser</source>
         <translation>Silgi</translation>
     </message>
     <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="125"/>
+        <location filename="../src/tools/ToolRegistry.cpp" line="125" />
         <source>Step Badge</source>
         <translation>Adım Rozeti</translation>
     </message>
     <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="136"/>
+        <location filename="../src/tools/ToolRegistry.cpp" line="136" />
         <source>Emoji Sticker</source>
         <translation>Emoji Çıkartması</translation>
     </message>
     <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="147"/>
+        <location filename="../src/tools/ToolRegistry.cpp" line="147" />
         <source>Crop</source>
         <translation>Kırp</translation>
     </message>
     <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="158"/>
+        <location filename="../src/tools/ToolRegistry.cpp" line="158" />
         <source>Measure</source>
         <translation>Ölçüm</translation>
     </message>
     <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="170"/>
+        <location filename="../src/tools/ToolRegistry.cpp" line="170" />
         <source>Whiteboard</source>
         <translation>Beyaz Tahta</translation>
     </message>
     <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="181"/>
+        <location filename="../src/tools/ToolRegistry.cpp" line="181" />
         <source>Blackboard</source>
         <translation>Kara Tahta</translation>
     </message>
     <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="201"/>
+        <location filename="../src/tools/ToolRegistry.cpp" line="201" />
         <source>Undo</source>
         <translation>Geri Al</translation>
     </message>
     <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="212"/>
+        <location filename="../src/tools/ToolRegistry.cpp" line="212" />
         <source>Redo</source>
         <translation>Yinele</translation>
     </message>
     <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="223"/>
+        <location filename="../src/tools/ToolRegistry.cpp" line="223" />
         <source>Clear All</source>
         <translation>Tümünü Temizle</translation>
     </message>
     <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="234"/>
+        <location filename="../src/tools/ToolRegistry.cpp" line="234" />
         <source>Cancel</source>
         <translation>İptal</translation>
     </message>
     <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="245"/>
+        <location filename="../src/tools/ToolRegistry.cpp" line="245" />
         <source>Recognize Text</source>
         <translation>Metin Tanı</translation>
     </message>
     <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="256"/>
+        <location filename="../src/tools/ToolRegistry.cpp" line="256" />
         <source>QR Code Scan</source>
         <translation>QR Kod Tarama</translation>
     </message>
     <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="267"/>
+        <location filename="../src/tools/ToolRegistry.cpp" line="267" />
         <source>Pin to Desktop</source>
         <translation>Masaüstüne Sabitle</translation>
     </message>
     <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="278"/>
+        <location filename="../src/tools/ToolRegistry.cpp" line="278" />
         <source>Screen Recording</source>
         <translation>Ekran Kaydı</translation>
     </message>
     <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="289"/>
+        <location filename="../src/tools/ToolRegistry.cpp" line="289" />
         <source>Share URL</source>
         <translation>URL'yi Paylaş</translation>
     </message>
     <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="301"/>
-        <location filename="../src/tools/ToolRegistry.cpp" line="323"/>
+        <location filename="../src/tools/ToolRegistry.cpp" line="301" />
+        <location filename="../src/tools/ToolRegistry.cpp" line="323" />
         <source>Save</source>
         <translation>Kaydet</translation>
     </message>
     <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="312"/>
-        <location filename="../src/tools/ToolRegistry.cpp" line="334"/>
+        <location filename="../src/tools/ToolRegistry.cpp" line="312" />
+        <location filename="../src/tools/ToolRegistry.cpp" line="334" />
         <source>Copy to Clipboard</source>
         <translation>Panoya Kopyala</translation>
     </message>
     <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="346"/>
+        <location filename="../src/tools/ToolRegistry.cpp" line="346" />
         <source>Exit</source>
         <translation>Çıkış</translation>
     </message>
     <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="358"/>
+        <location filename="../src/tools/ToolRegistry.cpp" line="358" />
         <source>Multi-Region Capture</source>
         <translation>Çoklu Bölge Yakalama</translation>
     </message>
     <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="369"/>
+        <location filename="../src/tools/ToolRegistry.cpp" line="369" />
         <source>Complete Multi-Region</source>
         <translation>Çoklu Bölgeyi Tamamla</translation>
     </message>
@@ -3133,17 +3610,17 @@ Başka bir uygulama tarafından kullanılıyor olabilir.</translation>
 <context>
     <name>UpdateChecker</name>
     <message>
-        <location filename="../src/update/UpdateChecker.cpp" line="180"/>
+        <location filename="../src/update/UpdateChecker.cpp" line="180" />
         <source>Failed to parse update information</source>
         <translation>Güncelleme bilgileri ayrıştırılamadı</translation>
     </message>
     <message>
-        <location filename="../src/update/UpdateChecker.cpp" line="188"/>
+        <location filename="../src/update/UpdateChecker.cpp" line="188" />
         <source>Invalid update response</source>
         <translation>Geçersiz güncelleme yanıtı</translation>
     </message>
     <message>
-        <location filename="../src/update/UpdateChecker.cpp" line="198"/>
+        <location filename="../src/update/UpdateChecker.cpp" line="198" />
         <source>Could not parse release information</source>
         <translation>Sürüm bilgisi ayrıştırılamadı</translation>
     </message>
@@ -3151,184 +3628,318 @@ Başka bir uygulama tarafından kullanılıyor olabilir.</translation>
 <context>
     <name>UpdateDialog</name>
     <message>
-        <location filename="../src/update/UpdateDialog.cpp" line="93"/>
+        <location filename="../src/update/UpdateDialog.cpp" line="93" />
         <source>Update Available</source>
         <translation>Güncelleme Mevcut</translation>
     </message>
     <message>
-        <location filename="../src/update/UpdateDialog.cpp" line="116"/>
+        <location filename="../src/update/UpdateDialog.cpp" line="116" />
         <source>New Version Available!</source>
         <translation>Yeni Sürüm Mevcut!</translation>
     </message>
     <message>
-        <location filename="../src/update/UpdateDialog.cpp" line="130"/>
+        <location filename="../src/update/UpdateDialog.cpp" line="130" />
         <source>%1 %2 is now available.</source>
         <translation>%1 %2 artık kullanılabilir.</translation>
     </message>
     <message>
-        <location filename="../src/update/UpdateDialog.cpp" line="139"/>
+        <location filename="../src/update/UpdateDialog.cpp" line="139" />
         <source>You are currently using %1</source>
         <translation>Şu anda %1 kullanıyorsunuz</translation>
     </message>
     <message>
-        <location filename="../src/update/UpdateDialog.cpp" line="149"/>
-        <source>What&apos;s New</source>
+        <location filename="../src/update/UpdateDialog.cpp" line="149" />
+        <source>What's New</source>
         <translation>Yenilikler</translation>
     </message>
     <message>
-        <location filename="../src/update/UpdateDialog.cpp" line="175"/>
+        <location filename="../src/update/UpdateDialog.cpp" line="175" />
         <source>Download</source>
         <translation>İndir</translation>
     </message>
     <message>
-        <location filename="../src/update/UpdateDialog.cpp" line="179"/>
+        <location filename="../src/update/UpdateDialog.cpp" line="179" />
         <source>Remind Later</source>
         <translation>Daha Sonra Hatırlat</translation>
     </message>
     <message>
-        <location filename="../src/update/UpdateDialog.cpp" line="183"/>
+        <location filename="../src/update/UpdateDialog.cpp" line="183" />
         <source>Skip Version</source>
         <translation>Bu Sürümü Atla</translation>
     </message>
     <message>
-        <location filename="../src/update/UpdateDialog.cpp" line="193"/>
-        <location filename="../src/update/UpdateDialog.cpp" line="249"/>
+        <location filename="../src/update/UpdateDialog.cpp" line="193" />
+        <location filename="../src/update/UpdateDialog.cpp" line="251" />
         <source>Update Check</source>
         <translation>Güncelleme Denetimi</translation>
     </message>
     <message>
-        <location filename="../src/update/UpdateDialog.cpp" line="216"/>
-        <source>You&apos;re up to date!</source>
+        <location filename="../src/update/UpdateDialog.cpp" line="218" />
+        <source>You're up to date!</source>
         <translation>Güncelsiniz!</translation>
     </message>
     <message>
-        <location filename="../src/update/UpdateDialog.cpp" line="226"/>
+        <location filename="../src/update/UpdateDialog.cpp" line="228" />
         <source>%1 %2 is the latest version.</source>
         <translation>%1 %2 en son sürüm.</translation>
     </message>
     <message>
-        <location filename="../src/update/UpdateDialog.cpp" line="237"/>
+        <location filename="../src/update/UpdateDialog.cpp" line="239" />
         <source>OK</source>
         <translation>Tamam</translation>
     </message>
     <message>
-        <location filename="../src/update/UpdateDialog.cpp" line="270"/>
+        <location filename="../src/update/UpdateDialog.cpp" line="272" />
         <source>Unable to check for updates</source>
         <translation>Güncellemeler denetlenemedi</translation>
     </message>
     <message>
-        <location filename="../src/update/UpdateDialog.cpp" line="280"/>
+        <location filename="../src/update/UpdateDialog.cpp" line="282" />
         <source>Please check your internet connection and try again.</source>
         <translation>Lütfen internet bağlantınızı kontrol edin ve tekrar deneyin.</translation>
     </message>
     <message>
-        <location filename="../src/update/UpdateDialog.cpp" line="297"/>
+        <location filename="../src/update/UpdateDialog.cpp" line="299" />
         <source>Try Again</source>
         <translation>Tekrar Dene</translation>
     </message>
     <message>
-        <location filename="../src/update/UpdateDialog.cpp" line="301"/>
+        <location filename="../src/update/UpdateDialog.cpp" line="303" />
         <source>Close</source>
         <translation>Kapat</translation>
     </message>
 </context>
 <context>
+    <name>UpdatesSettings</name>
+    <message>
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="30" />
+        <source>Version</source>
+        <translation>Sürüm</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="33" />
+        <source>Current Version</source>
+        <translation>Mevcut Sürüm</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="45" />
+        <source>Automatic Updates</source>
+        <translation>Otomatik Güncellemeler</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="48" />
+        <source>Auto-check updates</source>
+        <translation>Güncellemeleri otomatik olarak denetle</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="54" />
+        <source>Check frequency</source>
+        <translation>Denetleme sıklığı</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="56" />
+        <source>Every day</source>
+        <translation>Her gün</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="57" />
+        <source>Every 3 days</source>
+        <translation>Her 3 günde bir</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="58" />
+        <source>Every week</source>
+        <translation>Her hafta</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="59" />
+        <source>Every 2 weeks</source>
+        <translation>Her 2 haftada bir</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="60" />
+        <source>Every month</source>
+        <translation>Her ay</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="101" />
+        <source>Checking...</source>
+        <translation>Denetleniyor...</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/UpdatesSettings.qml" line="101" />
+        <source>Check Now</source>
+        <translation>Şimdi Denetle</translation>
+        </message>
+</context>
+<context>
     <name>VideoTrimmer</name>
     <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="52"/>
+        <location filename="../src/video/VideoTrimmer.cpp" line="52" />
         <source>Input or output path not set</source>
         <translation>Girdi veya çıktı yolu ayarlanmadı</translation>
     </message>
     <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="57"/>
+        <location filename="../src/video/VideoTrimmer.cpp" line="57" />
         <source>Invalid trim range</source>
         <translation>Geçersiz kırpma aralığı</translation>
     </message>
     <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="73"/>
+        <location filename="../src/video/VideoTrimmer.cpp" line="73" />
         <source>Failed to create video player</source>
         <translation>Video oynatıcı oluşturulamadı</translation>
     </message>
     <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="84"/>
+        <location filename="../src/video/VideoTrimmer.cpp" line="84" />
         <source>Failed to load video: %1</source>
         <translation>Video yüklenemedi: %1</translation>
     </message>
     <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="91"/>
+        <location filename="../src/video/VideoTrimmer.cpp" line="91" />
         <source>Failed to load input video</source>
         <translation>Girdi videosu yüklenemedi</translation>
     </message>
     <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="133"/>
+        <location filename="../src/video/VideoTrimmer.cpp" line="133" />
         <source>Failed to create encoder: %1</source>
         <translation>Kodlayıcı oluşturulamadı: %1</translation>
     </message>
     <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="269"/>
+        <location filename="../src/video/VideoTrimmer.cpp" line="269" />
         <source>Encoding failed</source>
         <translation>Kodlama başarısız oldu</translation>
     </message>
 </context>
 <context>
+    <name>WatermarkSettings</name>
+    <message>
+        <location filename="../src/qml/settings/WatermarkSettings.qml" line="23" />
+        <source>Apply to images</source>
+        <translation>Görsellere uygula</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/WatermarkSettings.qml" line="29" />
+        <source>Apply to recordings</source>
+        <translation>Kayıtlara uygula</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/WatermarkSettings.qml" line="47" />
+        <source>Image</source>
+        <translation>Görsel:</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/WatermarkSettings.qml" line="53" />
+        <source>Scale</source>
+        <translation>Ölçek:</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/WatermarkSettings.qml" line="62" />
+        <source>Opacity</source>
+        <translation>Opaklık</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/WatermarkSettings.qml" line="71" />
+        <source>Margin</source>
+        <translation>Kenar Boşluğu:</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/WatermarkSettings.qml" line="80" />
+        <source>Position</source>
+        <translation>Konum</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/WatermarkSettings.qml" line="82" />
+        <source>Top-Left</source>
+        <translation>Sol Üst</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/WatermarkSettings.qml" line="83" />
+        <source>Top-Right</source>
+        <translation>Sağ Üst</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/WatermarkSettings.qml" line="84" />
+        <source>Bottom-Left</source>
+        <translation>Sol Alt</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/WatermarkSettings.qml" line="85" />
+        <source>Bottom-Right</source>
+        <translation>Sağ Alt</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/WatermarkSettings.qml" line="116" />
+        <source>No image</source>
+        <translation>Görsel yok</translation>
+        </message>
+</context>
+<context>
+    <name>main</name>
+    <message>
+        <location filename="../src/qml/main.qml" line="10" />
+        <source>SnapTray QML</source>
+        <translation type="unfinished" />
+    </message>
+</context>
+<context>
     <name>snaptray::colorwidgets::ColorDialog</name>
     <message>
-        <location filename="../src/colorwidgets/ColorDialog.cpp" line="37"/>
+        <location filename="../src/colorwidgets/ColorDialog.cpp" line="37" />
         <source>Select Color</source>
         <translation>Renk Seç</translation>
     </message>
     <message>
-        <location filename="../src/colorwidgets/ColorDialog.cpp" line="77"/>
+        <location filename="../src/colorwidgets/ColorDialog.cpp" line="77" />
         <source>Hue</source>
         <translation>Ton</translation>
     </message>
     <message>
-        <location filename="../src/colorwidgets/ColorDialog.cpp" line="86"/>
+        <location filename="../src/colorwidgets/ColorDialog.cpp" line="86" />
         <source>Saturation</source>
         <translation>Doygunluk</translation>
     </message>
     <message>
-        <location filename="../src/colorwidgets/ColorDialog.cpp" line="95"/>
+        <location filename="../src/colorwidgets/ColorDialog.cpp" line="95" />
         <source>Value</source>
         <translation>Değer</translation>
     </message>
     <message>
-        <location filename="../src/colorwidgets/ColorDialog.cpp" line="105"/>
+        <location filename="../src/colorwidgets/ColorDialog.cpp" line="105" />
         <source>Red</source>
         <translation>Kırmızı</translation>
     </message>
     <message>
-        <location filename="../src/colorwidgets/ColorDialog.cpp" line="114"/>
+        <location filename="../src/colorwidgets/ColorDialog.cpp" line="114" />
         <source>Green</source>
         <translation>Yeşil</translation>
     </message>
     <message>
-        <location filename="../src/colorwidgets/ColorDialog.cpp" line="123"/>
+        <location filename="../src/colorwidgets/ColorDialog.cpp" line="123" />
         <source>Blue</source>
         <translation>Mavi</translation>
     </message>
     <message>
-        <location filename="../src/colorwidgets/ColorDialog.cpp" line="132"/>
+        <location filename="../src/colorwidgets/ColorDialog.cpp" line="132" />
         <source>Alpha</source>
         <translation>Alfa</translation>
     </message>
     <message>
-        <location filename="../src/colorwidgets/ColorDialog.cpp" line="141"/>
+        <location filename="../src/colorwidgets/ColorDialog.cpp" line="141" />
         <source>Hex</source>
         <translation>Hex</translation>
     </message>
     <message>
-        <location filename="../src/colorwidgets/ColorDialog.cpp" line="163"/>
+        <location filename="../src/colorwidgets/ColorDialog.cpp" line="163" />
         <source>Reset</source>
         <translation>Sıfırla</translation>
     </message>
     <message>
-        <location filename="../src/colorwidgets/ColorDialog.cpp" line="164"/>
+        <location filename="../src/colorwidgets/ColorDialog.cpp" line="164" />
         <source>OK</source>
         <translation>Tamam</translation>
     </message>
     <message>
-        <location filename="../src/colorwidgets/ColorDialog.cpp" line="166"/>
+        <location filename="../src/colorwidgets/ColorDialog.cpp" line="166" />
         <source>Cancel</source>
         <translation>İptal</translation>
     </message>
@@ -3336,7 +3947,7 @@ Başka bir uygulama tarafından kullanılıyor olabilir.</translation>
 <context>
     <name>snaptray::colorwidgets::ColorPickerDialogCompat</name>
     <message>
-        <location filename="../src/colorwidgets/ColorPickerDialogCompat.cpp" line="29"/>
+        <location filename="../src/colorwidgets/ColorPickerDialogCompat.cpp" line="29" />
         <source>Select Color</source>
         <translation>Renk Seç</translation>
     </message>

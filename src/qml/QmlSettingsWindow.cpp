@@ -44,9 +44,12 @@ void QmlSettingsWindow::ensureView()
     connect(m_backend, &SettingsBackend::mcpEnabledChanged,
             this, &QmlSettingsWindow::mcpEnabledChanged);
     connect(m_backend, &SettingsBackend::settingsSaved,
-            this, [this]() {
+            this, [this](bool languageChangeRequiresRestart) {
+        const QString message = languageChangeRequiresRestart
+            ? tr("Settings saved. Language change will apply after restart.")
+            : tr("Settings saved");
         QmlToast::screenToast().showToast(
-            QmlToast::Level::Success, tr("Settings saved"), QString(), 2000);
+            QmlToast::Level::Success, message, QString(), 2000);
         if (!m_view)
             return;
         m_allowDirectClose = true;
