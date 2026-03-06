@@ -1,6 +1,5 @@
 #include "qml/QmlRecordingControlBar.h"
 #include "qml/QmlOverlayManager.h"
-#include "ToolbarStyle.h"
 
 #include <QCoreApplication>
 #include <QQuickView>
@@ -83,10 +82,8 @@ void QmlRecordingControlBar::ensureView()
 
     m_rootItem = m_view->rootObject();
 
-    if (m_rootItem) {
-        updateThemeColors();
+    if (m_rootItem)
         setupConnections();
-    }
 
     // ESC shortcut — global application shortcut, managed in C++ (not tied to QML focus)
     m_escShortcut = new QShortcut(QKeySequence(Qt::Key_Escape), m_view);
@@ -112,7 +109,6 @@ void QmlRecordingControlBar::ensureTooltipView()
     }
 
     m_tooltipRootItem = m_tooltipView->rootObject();
-    updateTooltipThemeColors();
 }
 
 void QmlRecordingControlBar::setupConnections()
@@ -148,51 +144,6 @@ void QmlRecordingControlBar::setupConnections()
 
     // Width change signal
     connectOrWarn(SIGNAL(contentWidthChanged()), SLOT(onWidthChanged()), "contentWidthChanged");
-}
-
-void QmlRecordingControlBar::updateThemeColors()
-{
-    if (!m_rootItem)
-        return;
-
-    const auto& config = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
-
-    // Glass background: top color is alpha+20
-    QColor topColor = config.glassBackgroundColor;
-    topColor.setAlpha(qMin(255, topColor.alpha() + 20));
-
-    m_rootItem->setProperty("themeGlassBg", config.glassBackgroundColor);
-    m_rootItem->setProperty("themeGlassBgTop", topColor);
-    m_rootItem->setProperty("themeHighlight", config.glassHighlightColor);
-    m_rootItem->setProperty("themeBorder", config.hairlineBorderColor);
-    m_rootItem->setProperty("themeText", config.textColor);
-    m_rootItem->setProperty("themeSeparator", config.separatorColor);
-    m_rootItem->setProperty("themeHoverBg", config.hoverBackgroundColor);
-    m_rootItem->setProperty("themeIconNormal", config.iconNormalColor);
-    m_rootItem->setProperty("themeIconActive", config.iconActiveColor);
-    m_rootItem->setProperty("themeIconRecord", config.iconRecordColor);
-    m_rootItem->setProperty("themeIconCancel", config.iconCancelColor);
-    m_rootItem->setProperty("themeCornerRadius", config.cornerRadius);
-
-    updateTooltipThemeColors();
-}
-
-void QmlRecordingControlBar::updateTooltipThemeColors()
-{
-    if (!m_tooltipRootItem)
-        return;
-
-    const auto& config = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
-
-    QColor topColor = config.glassBackgroundColor;
-    topColor.setAlpha(qMin(255, topColor.alpha() + 20));
-
-    m_tooltipRootItem->setProperty("themeGlassBg", config.glassBackgroundColor);
-    m_tooltipRootItem->setProperty("themeGlassBgTop", topColor);
-    m_tooltipRootItem->setProperty("themeHighlight", config.glassHighlightColor);
-    m_tooltipRootItem->setProperty("themeBorder", config.hairlineBorderColor);
-    m_tooltipRootItem->setProperty("themeText", config.tooltipText);
-    m_tooltipRootItem->setProperty("themeCornerRadius", 6);
 }
 
 void QmlRecordingControlBar::applyPlatformWindowFlags()
@@ -515,7 +466,6 @@ void QmlRecordingControlBar::showTooltip(const QString& text, const QRect& ancho
 
     const quint64 requestId = ++m_tooltipRequestId;
     m_tooltipRootItem->setProperty("tooltipText", text);
-    updateTooltipThemeColors();
     m_tooltipRootItem->polish();
 
     // Defer geometry reads until QML has applied the new text binding.

@@ -1,6 +1,5 @@
 #include "qml/QmlRecordingRegionSelector.h"
 #include "qml/QmlOverlayManager.h"
-#include "ToolbarStyle.h"
 
 #include <QCoreApplication>
 #include <QCursor>
@@ -24,13 +23,6 @@ namespace {
 QString translateRecordingRegionSelector(const char* sourceText)
 {
     return QCoreApplication::translate("RecordingRegionSelector", sourceText);
-}
-
-QColor glassTopColor(const ToolbarStyleConfig& config)
-{
-    QColor topColor = config.glassBackgroundColor;
-    topColor.setAlpha(qMin(255, topColor.alpha() + 20));
-    return topColor;
 }
 
 } // namespace
@@ -86,7 +78,6 @@ void QmlRecordingRegionSelector::ensureView()
                   SLOT(onCancelSelection(bool,double,double,double,double)),
                   "cancelSelection");
 
-    updateThemeProperties();
     updateTextProperties();
     syncSelectionToQml();
 
@@ -115,25 +106,6 @@ void QmlRecordingRegionSelector::applyPlatformWindowFlags()
     mask &= ~NSWindowStyleMaskResizable;
     [window setStyleMask:mask];
 #endif
-}
-
-void QmlRecordingRegionSelector::updateThemeProperties()
-{
-    if (!m_rootItem)
-        return;
-
-    const auto& config = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
-
-    m_rootItem->setProperty("themeGlassBg", config.glassBackgroundColor);
-    m_rootItem->setProperty("themeGlassBgTop", glassTopColor(config));
-    m_rootItem->setProperty("themeHighlight", config.glassHighlightColor);
-    m_rootItem->setProperty("themeBorder", config.hairlineBorderColor);
-    m_rootItem->setProperty("themeText", config.tooltipText);
-    m_rootItem->setProperty("themeHoverBg", config.hoverBackgroundColor);
-    m_rootItem->setProperty("themeIconNormal", config.iconNormalColor);
-    m_rootItem->setProperty("themeIconCancel", config.iconCancelColor);
-    m_rootItem->setProperty("themeIconRecord", config.iconRecordColor);
-    m_rootItem->setProperty("overlayDimColor", QColor(0, 0, 0, 100));
 }
 
 void QmlRecordingRegionSelector::updateTextProperties()

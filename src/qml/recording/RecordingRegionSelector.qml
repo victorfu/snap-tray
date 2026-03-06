@@ -24,16 +24,17 @@ Item {
     property string dimensionFormat: "%1 x %2"
     property int minimumSelectionSize: 10
 
-    property color themeGlassBg: Qt.rgba(0, 0, 0, 0.85)
-    property color themeGlassBgTop: Qt.rgba(0, 0, 0, 0.92)
-    property color themeHighlight: Qt.rgba(1, 1, 1, 0.06)
-    property color themeBorder: Qt.rgba(1, 1, 1, 0.12)
-    property color themeText: "#FFFFFF"
-    property color themeHoverBg: Qt.rgba(1, 1, 1, 0.12)
-    property color themeIconNormal: "#CCCCCC"
-    property color themeIconCancel: "#FF453A"
-    property color themeIconRecord: "#FF3B30"
-    property color overlayDimColor: Qt.rgba(0, 0, 0, 0.39)
+    // ── Theme colors from ComponentTokens (Overlay — always dark) ──
+    readonly property color themeGlassBg: ComponentTokens.recordingRegionGlassBg
+    readonly property color themeGlassBgTop: ComponentTokens.recordingRegionGlassBgTop
+    readonly property color themeHighlight: ComponentTokens.recordingRegionGlassHighlight
+    readonly property color themeBorder: ComponentTokens.recordingRegionGlassBorder
+    readonly property color themeText: ComponentTokens.recordingRegionText
+    readonly property color themeHoverBg: ComponentTokens.recordingRegionHoverBg
+    readonly property color themeIconNormal: ComponentTokens.recordingRegionIconNormal
+    readonly property color themeIconCancel: ComponentTokens.recordingRegionIconCancel
+    readonly property color themeIconRecord: ComponentTokens.recordingRegionIconRecord
+    readonly property color overlayDimColor: ComponentTokens.recordingRegionOverlayDim
 
     readonly property bool hasSelection: selectionWidth > 0 && selectionHeight > 0
     readonly property real selectionRight: selectionX + selectionWidth - 1
@@ -46,8 +47,8 @@ Item {
             return draggingHelpText
         return idleHelpText
     }
-    readonly property real actionBarWidth: 80
-    readonly property real actionBarHeight: 32
+    readonly property real actionBarWidth: ComponentTokens.recordingRegionActionBarWidth
+    readonly property real actionBarHeight: ComponentTokens.recordingRegionActionBarHeight
     readonly property real actionBarY: {
         if (!selectionComplete || !hasSelection)
             return 0
@@ -276,12 +277,20 @@ Item {
         anchors.fill: parent
         renderStrategy: Canvas.Threaded
 
+        // Pre-extract token colors for Canvas rendering
+        readonly property color crosshairColor: ComponentTokens.recordingRegionCrosshair
+        readonly property color glowColor: ComponentTokens.recordingRegionGlowColor
+        readonly property color gradStart: ComponentTokens.recordingRegionGradientStart
+        readonly property color gradMid: ComponentTokens.recordingRegionGradientMid
+        readonly property color gradEnd: ComponentTokens.recordingRegionGradientEnd
+        readonly property color dashColor: ComponentTokens.recordingRegionDashColor
+
         onPaint: {
             var ctx = getContext("2d")
             ctx.clearRect(0, 0, width, height)
 
             if (!root.isSelecting && !root.selectionComplete) {
-                ctx.strokeStyle = Qt.rgba(1, 1, 1, 200 / 255)
+                ctx.strokeStyle = crosshairColor
                 ctx.lineWidth = 1
 
                 ctx.beginPath()
@@ -307,7 +316,7 @@ Item {
             if (root.selectionComplete) {
                 for (var i = 3; i >= 1; --i) {
                     var alpha = (25 / i) / 255
-                    ctx.strokeStyle = Qt.rgba(88 / 255, 86 / 255, 214 / 255, alpha)
+                    ctx.strokeStyle = Qt.rgba(glowColor.r, glowColor.g, glowColor.b, alpha)
                     ctx.lineWidth = 3 + i * 2
                     ctx.setLineDash([])
                     ctx.lineJoin = "miter"
@@ -315,15 +324,15 @@ Item {
                 }
 
                 var gradient = ctx.createLinearGradient(x, y, x + w, y + h)
-                gradient.addColorStop(0.0, "rgba(0, 122, 255, 1)")
-                gradient.addColorStop(0.5, "rgba(88, 86, 214, 1)")
-                gradient.addColorStop(1.0, "rgba(175, 82, 222, 1)")
+                gradient.addColorStop(0.0, gradStart)
+                gradient.addColorStop(0.5, gradMid)
+                gradient.addColorStop(1.0, gradEnd)
                 ctx.strokeStyle = gradient
                 ctx.lineWidth = 3
                 ctx.lineJoin = "miter"
                 ctx.strokeRect(x, y, w, h)
             } else {
-                ctx.strokeStyle = "rgba(0, 122, 255, 1)"
+                ctx.strokeStyle = dashColor
                 ctx.lineWidth = 1
                 ctx.setLineDash([4, 2])
                 ctx.lineJoin = "miter"
@@ -356,7 +365,7 @@ Item {
 
         GlassPanel {
             anchors.fill: parent
-            panelRadius: 4
+            panelRadius: ComponentTokens.recordingRegionDimensionRadius
         }
 
         Text {
@@ -364,7 +373,7 @@ Item {
             anchors.centerIn: parent
             text: root.formattedDimensionText()
             color: root.themeText
-            font.pointSize: 12
+            font.pixelSize: ComponentTokens.recordingRegionDimensionFontSize
             font.bold: true
         }
     }
@@ -378,7 +387,7 @@ Item {
 
         GlassPanel {
             anchors.fill: parent
-            panelRadius: 6
+            panelRadius: ComponentTokens.recordingRegionGlassRadius
         }
 
         Text {
@@ -386,7 +395,7 @@ Item {
             anchors.centerIn: parent
             text: root.helpText
             color: root.themeText
-            font.pointSize: 13
+            font.pixelSize: ComponentTokens.recordingRegionHelpFontSize
         }
     }
 
@@ -401,7 +410,7 @@ Item {
 
         GlassPanel {
             anchors.fill: parent
-            panelRadius: 10
+            panelRadius: ComponentTokens.recordingRegionActionBarRadius
         }
 
         MouseArea {
@@ -417,13 +426,13 @@ Item {
             spacing: 2
 
             Item {
-                width: 28
-                height: 24
+                width: ComponentTokens.recordingRegionActionBarButtonSize
+                height: ComponentTokens.recordingRegionActionBarButtonHeight
 
                 Rectangle {
                     anchors.fill: parent
                     anchors.margins: 2
-                    radius: 4
+                    radius: ComponentTokens.recordingRegionDimensionRadius
                     color: root.themeHoverBg
                     visible: startMouseArea.containsMouse
                 }
@@ -431,7 +440,7 @@ Item {
                 SvgIcon {
                     anchors.centerIn: parent
                     source: "qrc:/icons/icons/record.svg"
-                    iconSize: 16
+                    iconSize: ComponentTokens.recordingControlBarIconSize
                     color: root.themeIconRecord
                 }
 
@@ -450,13 +459,13 @@ Item {
             }
 
             Item {
-                width: 28
-                height: 24
+                width: ComponentTokens.recordingRegionActionBarButtonSize
+                height: ComponentTokens.recordingRegionActionBarButtonHeight
 
                 Rectangle {
                     anchors.fill: parent
                     anchors.margins: 2
-                    radius: 4
+                    radius: ComponentTokens.recordingRegionDimensionRadius
                     color: root.themeHoverBg
                     visible: cancelMouseArea.containsMouse
                 }
@@ -464,7 +473,7 @@ Item {
                 SvgIcon {
                     anchors.centerIn: parent
                     source: "qrc:/icons/icons/cancel.svg"
-                    iconSize: 16
+                    iconSize: ComponentTokens.recordingControlBarIconSize
                     color: cancelMouseArea.containsMouse ? root.themeIconCancel : root.themeIconNormal
                 }
 
@@ -487,12 +496,7 @@ Item {
             id: actionTooltip
             visible: root.hoveredTooltipText !== ""
             tooltipText: root.hoveredTooltipText
-            themeGlassBg: root.themeGlassBg
-            themeGlassBgTop: root.themeGlassBgTop
-            themeHighlight: root.themeHighlight
-            themeBorder: root.themeBorder
-            themeText: root.themeText
-            themeCornerRadius: 6
+            themeCornerRadius: ComponentTokens.recordingRegionGlassRadius
             z: 20
 
             x: {

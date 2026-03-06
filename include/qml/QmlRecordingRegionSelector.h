@@ -45,7 +45,6 @@ private slots:
 private:
     void ensureView();
     void applyPlatformWindowFlags();
-    void updateThemeProperties();
     void updateTextProperties();
     void syncSelectionToQml();
     QRect toGlobalRect(double x, double y, double width, double height) const;

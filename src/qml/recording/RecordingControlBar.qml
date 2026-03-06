@@ -34,19 +34,19 @@ Item {
     property string preparingStatus: ""
     property bool audioEnabled: false
 
-    // ── Theme colors from C++ (ToolbarStyleConfig) ──
-    property color themeGlassBg: Qt.rgba(0, 0, 0, 0.6)
-    property color themeGlassBgTop: Qt.rgba(0, 0, 0, 0.68)
-    property color themeHighlight: Qt.rgba(1, 1, 1, 0.06)
-    property color themeBorder: Qt.rgba(1, 1, 1, 0.12)
-    property color themeText: "#FFFFFF"
-    property color themeSeparator: Qt.rgba(1, 1, 1, 0.2)
-    property color themeHoverBg: Qt.rgba(1, 1, 1, 0.12)
-    property color themeIconNormal: "#CCCCCC"
-    property color themeIconActive: "#FFFFFF"
-    property color themeIconRecord: "#FF3B30"
-    property color themeIconCancel: "#FF453A"
-    property int themeCornerRadius: 10
+    // ── Theme colors from ComponentTokens (Overlay — always dark) ──
+    readonly property color themeGlassBg: ComponentTokens.recordingControlBarBg
+    readonly property color themeGlassBgTop: ComponentTokens.recordingControlBarBgTop
+    readonly property color themeHighlight: ComponentTokens.recordingControlBarHighlight
+    readonly property color themeBorder: ComponentTokens.recordingControlBarBorder
+    readonly property color themeText: ComponentTokens.recordingControlBarText
+    readonly property color themeSeparator: ComponentTokens.recordingControlBarSeparator
+    readonly property color themeHoverBg: ComponentTokens.recordingControlBarHoverBg
+    readonly property color themeIconNormal: ComponentTokens.recordingControlBarIconNormal
+    readonly property color themeIconActive: ComponentTokens.recordingControlBarIconActive
+    readonly property color themeIconRecord: ComponentTokens.recordingControlBarIconRecord
+    readonly property color themeIconCancel: ComponentTokens.recordingControlBarIconCancel
+    readonly property int themeCornerRadius: ComponentTokens.recordingControlBarRadius
 
     // ── Signals to C++ backend ──
     signal stopRequested()
@@ -61,13 +61,13 @@ Item {
     signal dragMoved(real deltaX, real deltaY)
     signal contentWidthChanged()
 
-    // ── Layout constants (matching Widget version exactly) ──
-    readonly property int barHeight: 32
-    readonly property int buttonSize: 24       // BUTTON_WIDTH(28) - 4
-    readonly property int buttonSpacing: 2
-    readonly property int contentMarginH: 10
-    readonly property int contentMarginV: 4
-    readonly property int itemSpacing: 6
+    // ── Layout constants from ComponentTokens ──
+    readonly property int barHeight: ComponentTokens.recordingControlBarHeight
+    readonly property int buttonSize: ComponentTokens.recordingControlBarButtonSize
+    readonly property int buttonSpacing: ComponentTokens.recordingControlBarButtonSpacing
+    readonly property int contentMarginH: ComponentTokens.recordingControlBarMarginH
+    readonly property int contentMarginV: ComponentTokens.recordingControlBarMarginV
+    readonly property int itemSpacing: ComponentTokens.recordingControlBarItemSpacing
 
     // ── Monospace font ──
     readonly property string monoFont: Qt.platform.os === "osx"
@@ -163,11 +163,11 @@ Item {
         spacing: root.itemSpacing
         z: 1
 
-        // ── Recording indicator (12x12 animated circle) ──
+        // ── Recording indicator (animated circle) ──
         Canvas {
             id: indicatorCanvas
-            Layout.preferredWidth: 12
-            Layout.preferredHeight: 12
+            Layout.preferredWidth: ComponentTokens.recordingControlBarIndicatorSize
+            Layout.preferredHeight: ComponentTokens.recordingControlBarIndicatorSize
             renderStrategy: Canvas.Threaded
 
             property real gradientAngle: 0.0
@@ -181,27 +181,36 @@ Item {
             }
 
             onGradientAngleChanged: requestPaint()
+            // Pre-extract gradient RGB from tokens for Canvas rendering
+            readonly property color gradColor0: ComponentTokens.recordingBoundaryGradientStart
+            readonly property color gradColor1: ComponentTokens.recordingBoundaryGradientMid1
+            readonly property color gradColor2: ComponentTokens.recordingBoundaryGradientMid2
+
             onPaint: {
                 var ctx = getContext("2d")
                 ctx.reset()
                 ctx.clearRect(0, 0, width, height)
+                var cx = width / 2
+                var cy = height / 2
+                var rad = Math.min(cx, cy)
 
                 if (root.isPreparing) {
                     // Gray with sine pulse alpha: 128 ± 64
                     var alpha = (128 + 64 * Math.sin(gradientAngle * 2 * Math.PI)) / 255
                     ctx.fillStyle = Qt.rgba(180/255, 180/255, 180/255, alpha)
                     ctx.beginPath()
-                    ctx.arc(6, 6, 6, 0, 2 * Math.PI)
+                    ctx.arc(cx, cy, rad, 0, 2 * Math.PI)
                     ctx.fill()
                 } else if (root.isPaused) {
-                    // Solid amber
                     ctx.fillStyle = ComponentTokens.recordingBoundaryPaused
                     ctx.beginPath()
-                    ctx.arc(6, 6, 6, 0, 2 * Math.PI)
+                    ctx.arc(cx, cy, rad, 0, 2 * Math.PI)
                     ctx.fill()
                 } else {
                     // Conical gradient: blue → indigo → purple → blue
-                    // Draw 48 segments to approximate conical gradient
+                    var c0r = gradColor0.r, c0g = gradColor0.g, c0b = gradColor0.b
+                    var c1r = gradColor1.r, c1g = gradColor1.g, c1b = gradColor1.b
+                    var c2r = gradColor2.r, c2g = gradColor2.g, c2b = gradColor2.b
                     var segments = 48
                     var angleOffset = gradientAngle * 2 * Math.PI
                     for (var i = 0; i < segments; i++) {
@@ -209,19 +218,19 @@ Item {
                         var r, g, b
                         if (t < 0.33) {
                             var p = t / 0.33
-                            r = (0 + (88 - 0) * p) / 255
-                            g = (122 + (86 - 122) * p) / 255
-                            b = (255 + (214 - 255) * p) / 255
+                            r = c0r + (c1r - c0r) * p
+                            g = c0g + (c1g - c0g) * p
+                            b = c0b + (c1b - c0b) * p
                         } else if (t < 0.66) {
                             var p2 = (t - 0.33) / 0.33
-                            r = (88 + (175 - 88) * p2) / 255
-                            g = (86 + (82 - 86) * p2) / 255
-                            b = (214 + (222 - 214) * p2) / 255
+                            r = c1r + (c2r - c1r) * p2
+                            g = c1g + (c2g - c1g) * p2
+                            b = c1b + (c2b - c1b) * p2
                         } else {
                             var p3 = (t - 0.66) / 0.34
-                            r = (175 + (0 - 175) * p3) / 255
-                            g = (82 + (122 - 82) * p3) / 255
-                            b = (222 + (255 - 222) * p3) / 255
+                            r = c2r + (c0r - c2r) * p3
+                            g = c2g + (c0g - c2g) * p3
+                            b = c2b + (c0b - c2b) * p3
                         }
 
                         var startAngle = angleOffset + (i / segments) * 2 * Math.PI
@@ -229,8 +238,8 @@ Item {
 
                         ctx.fillStyle = Qt.rgba(r, g, b, 1.0)
                         ctx.beginPath()
-                        ctx.moveTo(6, 6)
-                        ctx.arc(6, 6, 6, startAngle, endAngle)
+                        ctx.moveTo(cx, cy)
+                        ctx.arc(cx, cy, rad, startAngle, endAngle)
                         ctx.closePath()
                         ctx.fill()
                     }
@@ -238,10 +247,10 @@ Item {
             }
         }
 
-        // ── Audio indicator (12x12 Lucide mic icon, visible when audioEnabled) ──
+        // ── Audio indicator (Lucide mic icon, visible when audioEnabled) ──
         SvgIcon {
-            Layout.preferredWidth: 12
-            Layout.preferredHeight: 12
+            Layout.preferredWidth: ComponentTokens.recordingControlBarIndicatorSize
+            Layout.preferredHeight: ComponentTokens.recordingControlBarIndicatorSize
             visible: root.audioEnabled
             source: "qrc:/icons/icons/mic.svg"
             color: ComponentTokens.recordingAudioActive
@@ -254,7 +263,7 @@ Item {
                 ? (root.preparingStatus || qsTr("Preparing..."))
                 : root.duration
             font.family: root.monoFont
-            font.pixelSize: 11
+            font.pixelSize: ComponentTokens.recordingControlBarFontSize
             font.weight: Font.DemiBold
             color: root.isPreparing
                 ? Qt.rgba(root.themeText.r, root.themeText.g,
@@ -266,7 +275,7 @@ Item {
         // ── Separator 1 ──
         Text {
             text: "|"
-            font.pixelSize: 11
+            font.pixelSize: ComponentTokens.recordingControlBarFontSize
             color: root.themeSeparator
         }
 
@@ -274,7 +283,7 @@ Item {
         Text {
             text: root.regionSize
             font.family: root.monoFont
-            font.pixelSize: 10
+            font.pixelSize: ComponentTokens.recordingControlBarFontSizeSmall
             color: root.themeText
             Layout.preferredWidth: Math.max(implicitWidth, 70)
         }
@@ -282,7 +291,7 @@ Item {
         // ── Separator 2 ──
         Text {
             text: "|"
-            font.pixelSize: 11
+            font.pixelSize: ComponentTokens.recordingControlBarFontSize
             color: root.themeSeparator
         }
 
@@ -290,7 +299,7 @@ Item {
         Text {
             text: root.fpsText
             font.family: root.monoFont
-            font.pixelSize: 10
+            font.pixelSize: ComponentTokens.recordingControlBarFontSizeSmall
             color: root.themeText
             Layout.preferredWidth: Math.max(implicitWidth, 45)
         }
@@ -319,7 +328,7 @@ Item {
                 id: pauseHoverBg
                 anchors.fill: parent
                 anchors.margins: 2
-                radius: 6
+                radius: ComponentTokens.recordingControlBarButtonRadius
                 color: root.themeHoverBg
                 visible: pauseMouseArea.containsMouse && !root.isPreparing
             }
@@ -329,7 +338,7 @@ Item {
                 source: root.isPaused
                     ? "qrc:/icons/icons/play.svg"
                     : "qrc:/icons/icons/pause.svg"
-                iconSize: 16
+                iconSize: ComponentTokens.recordingControlBarIconSize
                 color: pauseMouseArea.containsMouse && !root.isPreparing
                     ? root.themeIconActive : root.themeIconNormal
             }
@@ -369,7 +378,7 @@ Item {
             Rectangle {
                 anchors.fill: parent
                 anchors.margins: 2
-                radius: 6
+                radius: ComponentTokens.recordingControlBarButtonRadius
                 color: root.themeHoverBg
                 visible: stopMouseArea.containsMouse && !root.isPreparing
             }
@@ -377,7 +386,7 @@ Item {
             SvgIcon {
                 anchors.centerIn: parent
                 source: "qrc:/icons/icons/stop.svg"
-                iconSize: 16
+                iconSize: ComponentTokens.recordingControlBarIconSize
                 color: root.themeIconRecord
             }
 
@@ -410,7 +419,7 @@ Item {
             Rectangle {
                 anchors.fill: parent
                 anchors.margins: 2
-                radius: 6
+                radius: ComponentTokens.recordingControlBarButtonRadius
                 color: root.themeHoverBg
                 visible: cancelMouseArea.containsMouse
             }
@@ -418,7 +427,7 @@ Item {
             SvgIcon {
                 anchors.centerIn: parent
                 source: "qrc:/icons/icons/cancel.svg"
-                iconSize: 16
+                iconSize: ComponentTokens.recordingControlBarIconSize
                 color: cancelMouseArea.containsMouse
                     ? root.themeIconCancel : root.themeIconNormal
             }

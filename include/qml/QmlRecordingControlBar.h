@@ -2,7 +2,6 @@
 
 #include <QObject>
 #include <QRect>
-#include <QColor>
 #include <QPointer>
 #include <QWindow>  // for WId
 
@@ -77,8 +76,6 @@ private:
     void applyPlatformWindowFlags();
     void applyTooltipWindowFlags();
     void setupConnections();
-    void updateThemeColors();
-    void updateTooltipThemeColors();
     QString formatDuration(qint64 ms) const;
 
     void showTooltip(const QString& text, const QRect& anchorRect);

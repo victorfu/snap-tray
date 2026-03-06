@@ -291,6 +291,75 @@ QtObject {
     readonly property color recordingAudioActive: PrimitiveTokens.green500
 
     // ========================================================================
+    // Recording Control Bar (Overlay — always dark, theme-independent)
+    // ========================================================================
+    // Glass background
+    readonly property color recordingControlBarBg: Qt.rgba(0, 0, 0, 0.6)
+    readonly property color recordingControlBarBgTop: Qt.rgba(0, 0, 0, 0.68)
+    readonly property color recordingControlBarHighlight: Qt.rgba(1, 1, 1, 0.06)
+    readonly property color recordingControlBarBorder: Qt.rgba(1, 1, 1, 0.12)
+    // Text & separators
+    readonly property color recordingControlBarText: PrimitiveTokens.white
+    readonly property color recordingControlBarSeparator: Qt.rgba(1, 1, 1, 0.2)
+    // Interactive states
+    readonly property color recordingControlBarHoverBg: Qt.rgba(1, 1, 1, 0.12)
+    readonly property color recordingControlBarIconNormal: "#CCCCCC"
+    readonly property color recordingControlBarIconActive: PrimitiveTokens.white
+    readonly property color recordingControlBarIconRecord: PrimitiveTokens.annotationRed
+    readonly property color recordingControlBarIconCancel: "#FF453A"
+    // Sizing
+    readonly property int recordingControlBarRadius: PrimitiveTokens.radiusMedium + 2
+    readonly property int recordingControlBarHeight: PrimitiveTokens.spacing32
+    readonly property int recordingControlBarButtonSize: PrimitiveTokens.spacing24
+    readonly property int recordingControlBarButtonSpacing: PrimitiveTokens.spacing2
+    readonly property int recordingControlBarMarginH: PrimitiveTokens.radiusMedium + 2
+    readonly property int recordingControlBarMarginV: PrimitiveTokens.spacing4
+    readonly property int recordingControlBarItemSpacing: 6
+    readonly property int recordingControlBarIndicatorSize: PrimitiveTokens.spacing12
+    // Typography
+    readonly property int recordingControlBarFontSize: PrimitiveTokens.fontSizeCaption
+    readonly property int recordingControlBarFontSizeSmall: PrimitiveTokens.fontSizeSmall
+    readonly property int recordingControlBarIconSize: PrimitiveTokens.iconSizeSmall
+    readonly property int recordingControlBarButtonRadius: 6
+
+    // ========================================================================
+    // Recording Region Selector (Overlay — always dark, theme-independent)
+    // ========================================================================
+    // Overlay dimming
+    readonly property color recordingRegionOverlayDim: Qt.rgba(0, 0, 0, 0.39)
+    // Crosshair
+    readonly property color recordingRegionCrosshair: Qt.rgba(1, 1, 1, 200.0 / 255.0)
+    // Selection border gradient (reuse boundary tokens)
+    readonly property color recordingRegionGradientStart: PrimitiveTokens.boundaryBlue
+    readonly property color recordingRegionGradientMid: PrimitiveTokens.indigo500
+    readonly property color recordingRegionGradientEnd: PrimitiveTokens.purple400
+    // Selection glow
+    readonly property color recordingRegionGlowColor: PrimitiveTokens.indigo500
+    // Dragging dashed border
+    readonly property color recordingRegionDashColor: PrimitiveTokens.boundaryBlue
+    // Glass panel (always dark)
+    readonly property color recordingRegionGlassBg: Qt.rgba(0, 0, 0, 0.85)
+    readonly property color recordingRegionGlassBgTop: Qt.rgba(0, 0, 0, 0.92)
+    readonly property color recordingRegionGlassHighlight: Qt.rgba(1, 1, 1, 0.06)
+    readonly property color recordingRegionGlassBorder: Qt.rgba(1, 1, 1, 0.12)
+    readonly property color recordingRegionText: PrimitiveTokens.white
+    readonly property color recordingRegionHoverBg: Qt.rgba(1, 1, 1, 0.12)
+    readonly property color recordingRegionIconNormal: "#CCCCCC"
+    readonly property color recordingRegionIconCancel: "#FF453A"
+    readonly property color recordingRegionIconRecord: PrimitiveTokens.annotationRed
+    // Sizing
+    readonly property int recordingRegionActionBarWidth: 80
+    readonly property int recordingRegionActionBarHeight: PrimitiveTokens.spacing32
+    readonly property int recordingRegionActionBarButtonSize: 28
+    readonly property int recordingRegionActionBarButtonHeight: PrimitiveTokens.spacing24
+    readonly property int recordingRegionActionBarRadius: PrimitiveTokens.radiusMedium + 2
+    readonly property int recordingRegionGlassRadius: 6
+    readonly property int recordingRegionDimensionRadius: PrimitiveTokens.radiusSmall
+    // Typography
+    readonly property int recordingRegionDimensionFontSize: PrimitiveTokens.fontSizeSmallBody
+    readonly property int recordingRegionHelpFontSize: PrimitiveTokens.fontSizeBody
+
+    // ========================================================================
     // Spinner
     // ========================================================================
     readonly property int spinnerDuration: 900
