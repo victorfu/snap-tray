@@ -79,7 +79,7 @@ Item {
             anchors.right: parent.right
             anchors.rightMargin: ComponentTokens.settingsBottomBarPaddingH
             anchors.verticalCenter: parent.verticalCenter
-            spacing: PrimitiveTokens.spacing8
+            spacing: SemanticTokens.spacing8
 
             SettingsButton {
                 text: qsTr("Cancel")

@@ -16,8 +16,8 @@ Rectangle {
     signal activated(var value)
 
     width: parent ? parent.width - parent.leftPadding - parent.rightPadding : 0
-    height: groupColumn.height + 2 * PrimitiveTokens.spacing8
-    radius: PrimitiveTokens.radiusSmall
+    height: groupColumn.height + 2 * SemanticTokens.spacing8
+    radius: SemanticTokens.radiusSmall
     color: ComponentTokens.inputBackground
     border.width: 1
     border.color: ComponentTokens.inputBorder
@@ -29,8 +29,8 @@ Rectangle {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: parent.top
-        anchors.margins: PrimitiveTokens.spacing8
-        spacing: PrimitiveTokens.spacing4
+        anchors.margins: SemanticTokens.spacing8
+        spacing: SemanticTokens.spacing4
 
         Repeater {
             id: repeater
@@ -40,7 +40,7 @@ Rectangle {
                 id: optionItem
                 width: groupColumn.width
                 height: 32
-                radius: PrimitiveTokens.radiusSmall
+                radius: SemanticTokens.radiusSmall
 
                 required property int index
                 required property var modelData
@@ -52,9 +52,9 @@ Rectangle {
 
                 Row {
                     anchors.left: parent.left
-                    anchors.leftMargin: PrimitiveTokens.spacing8
+                    anchors.leftMargin: SemanticTokens.spacing8
                     anchors.verticalCenter: parent.verticalCenter
-                    spacing: PrimitiveTokens.spacing8
+                    spacing: SemanticTokens.spacing8
 
                     // Radio indicator
                     Rectangle {
@@ -81,9 +81,9 @@ Rectangle {
                     Text {
                         text: optionItem.modelData.text
                         color: SemanticTokens.textPrimary
-                        font.pixelSize: PrimitiveTokens.fontSizeBody
-                        font.family: PrimitiveTokens.fontFamily
-                        font.letterSpacing: PrimitiveTokens.letterSpacingTight
+                        font.pixelSize: SemanticTokens.fontSizeBody
+                        font.family: SemanticTokens.fontFamily
+                        font.letterSpacing: SemanticTokens.letterSpacingDefault
                         anchors.verticalCenter: parent.verticalCenter
                     }
                 }

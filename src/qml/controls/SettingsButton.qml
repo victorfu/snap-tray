@@ -21,7 +21,7 @@ Rectangle {
 
     width: buttonText.implicitWidth + 32
     height: 32
-    radius: PrimitiveTokens.radiusMedium
+    radius: SemanticTokens.radiusMedium
     color: {
         if (!root.enabled) return ComponentTokens.buttonDisabledBackground
         if (mouseArea.pressed) return root.primary
@@ -40,7 +40,7 @@ Rectangle {
         : root.primary ? "transparent" : ComponentTokens.buttonSecondaryBorder
 
     Behavior on color {
-        ColorAnimation { duration: PrimitiveTokens.durationFast }
+        ColorAnimation { duration: SemanticTokens.durationFast }
     }
 
     Text {
@@ -51,10 +51,10 @@ Rectangle {
             : root.primary
                 ? ComponentTokens.buttonPrimaryText
                 : ComponentTokens.buttonSecondaryText
-        font.pixelSize: PrimitiveTokens.fontSizeBody
-        font.family: PrimitiveTokens.fontFamily
+        font.pixelSize: SemanticTokens.fontSizeBody
+        font.family: SemanticTokens.fontFamily
         font.weight: Font.Medium
-        font.letterSpacing: PrimitiveTokens.letterSpacingTight
+        font.letterSpacing: SemanticTokens.letterSpacingDefault
     }
 
     FocusFrame {

@@ -45,10 +45,10 @@ Flickable {
             Text {
                 text: qsTr("Keyboard Shortcuts")
                 color: SemanticTokens.textPrimary
-                font.pixelSize: PrimitiveTokens.fontSizeH3
+                font.pixelSize: SemanticTokens.fontSizeH3
                 font.weight: Font.DemiBold
-                font.family: PrimitiveTokens.fontFamily
-                font.letterSpacing: PrimitiveTokens.letterSpacingTight
+                font.family: SemanticTokens.fontFamily
+                font.letterSpacing: SemanticTokens.letterSpacingDefault
                 anchors.left: parent.left
                 anchors.verticalCenter: parent.verticalCenter
             }
@@ -78,10 +78,10 @@ Flickable {
                 Text {
                     text: modelData.name.toUpperCase()
                     color: ComponentTokens.settingsSectionText
-                    font.pixelSize: PrimitiveTokens.fontSizeCaption
+                    font.pixelSize: SemanticTokens.fontSizeCaption
                     font.weight: Font.Medium
-                    font.family: PrimitiveTokens.fontFamily
-                    font.letterSpacing: PrimitiveTokens.letterSpacingWide
+                    font.family: SemanticTokens.fontFamily
+                    font.letterSpacing: SemanticTokens.letterSpacingWide
                     topPadding: 12
                     bottomPadding: 4
                 }
@@ -96,7 +96,7 @@ Flickable {
                     Rectangle {
                         width: parent.width
                         height: 40
-                        radius: PrimitiveTokens.radiusSmall
+                        radius: SemanticTokens.radiusSmall
                         color: entryHover.containsMouse
                             ? ComponentTokens.settingsSidebarHoverItem
                             : "transparent"
@@ -118,9 +118,9 @@ Flickable {
                             anchors.verticalCenter: parent.verticalCenter
                             text: modelData.name
                             color: SemanticTokens.textPrimary
-                            font.pixelSize: PrimitiveTokens.fontSizeBody
-                            font.family: PrimitiveTokens.fontFamily
-                            font.letterSpacing: PrimitiveTokens.letterSpacingTight
+                            font.pixelSize: SemanticTokens.fontSizeBody
+                            font.family: SemanticTokens.fontFamily
+                            font.letterSpacing: SemanticTokens.letterSpacingDefault
                             elide: Text.ElideRight
 
                             ToolTip.visible: actionNameHover.containsMouse && actionName.truncated
@@ -145,9 +145,9 @@ Flickable {
                             color: modelData.keySequence
                                 ? SemanticTokens.textPrimary
                                 : SemanticTokens.textTertiary
-                            font.pixelSize: PrimitiveTokens.fontSizeBody
-                            font.family: PrimitiveTokens.fontFamily
-                            font.letterSpacing: PrimitiveTokens.letterSpacingTight
+                            font.pixelSize: SemanticTokens.fontSizeBody
+                            font.family: SemanticTokens.fontFamily
+                            font.letterSpacing: SemanticTokens.letterSpacingDefault
                             elide: Text.ElideRight
 
                             ToolTip.visible: keySeqHover.containsMouse && keySeq.truncated
@@ -183,9 +183,9 @@ Flickable {
                                     return SemanticTokens.statusSuccess
                                 return SemanticTokens.textTertiary
                             }
-                            font.pixelSize: PrimitiveTokens.fontSizeBody
-                            font.family: PrimitiveTokens.fontFamily
-                            font.letterSpacing: PrimitiveTokens.letterSpacingTight
+                            font.pixelSize: SemanticTokens.fontSizeBody
+                            font.family: SemanticTokens.fontFamily
+                            font.letterSpacing: SemanticTokens.letterSpacingDefault
                         }
 
                         // Action buttons (right-aligned)
@@ -193,7 +193,7 @@ Flickable {
                             anchors.right: parent.right
                             anchors.rightMargin: 8
                             anchors.verticalCenter: parent.verticalCenter
-                            spacing: PrimitiveTokens.spacing4
+                            spacing: SemanticTokens.spacing4
 
                             SettingsButton {
                                 text: qsTr("Edit")
@@ -213,7 +213,7 @@ Flickable {
                     }
                 }
 
-                Spacer { size: PrimitiveTokens.spacing4 }
+                Spacer { size: SemanticTokens.spacing4 }
             }
         }
     }

@@ -19,7 +19,7 @@ Item {
     opacity: running ? 1 : 0
 
     Behavior on opacity {
-        NumberAnimation { duration: PrimitiveTokens.durationFast }
+        NumberAnimation { duration: SemanticTokens.durationFast }
     }
 
     Canvas {
@@ -47,7 +47,7 @@ Item {
         RotationAnimator on rotation {
             from: 0
             to: 360
-            duration: 900
+            duration: ComponentTokens.spinnerDuration
             loops: Animation.Infinite
             running: root.running
         }

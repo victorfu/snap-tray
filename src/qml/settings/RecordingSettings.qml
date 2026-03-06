@@ -103,7 +103,7 @@ Flickable {
         Rectangle {
             width: parent.width - 2 * ComponentTokens.settingsContentPadding
             height: formatInfoTextItem.implicitHeight + 20
-            radius: PrimitiveTokens.radiusSmall
+            radius: SemanticTokens.radiusSmall
             color: ComponentTokens.infoPanelBg
             border.width: 1
             border.color: ComponentTokens.infoPanelBorder
@@ -115,9 +115,9 @@ Flickable {
                 anchors.margins: 10
                 text: root.formatInfoText()
                 color: ComponentTokens.infoPanelText
-                font.pixelSize: PrimitiveTokens.fontSizeBody
-                font.family: PrimitiveTokens.fontFamily
-                font.letterSpacing: PrimitiveTokens.letterSpacingTight
+                font.pixelSize: SemanticTokens.fontSizeBody
+                font.family: SemanticTokens.fontFamily
+                font.letterSpacing: SemanticTokens.letterSpacingDefault
                 wrapMode: Text.WordWrap
             }
         }

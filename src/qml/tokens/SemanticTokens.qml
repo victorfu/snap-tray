@@ -111,4 +111,41 @@ QtObject {
     // ========================================================================
     readonly property color iconColor: isDarkMode
         ? PrimitiveTokens.iconColorDark : PrimitiveTokens.iconColorLight
+
+    // ========================================================================
+    // Typography (semantic aliases — components use these, not PrimitiveTokens)
+    // ========================================================================
+    readonly property string fontFamily: PrimitiveTokens.fontFamily
+    readonly property int fontSizeH2: PrimitiveTokens.fontSizeH2
+    readonly property int fontSizeH3: PrimitiveTokens.fontSizeH3
+    readonly property int fontSizeBody: PrimitiveTokens.fontSizeBody
+    readonly property int fontSizeCaption: PrimitiveTokens.fontSizeCaption
+    readonly property int fontSizeSmall: PrimitiveTokens.fontSizeSmall
+    readonly property real letterSpacingDefault: PrimitiveTokens.letterSpacingTight
+    readonly property real letterSpacingWide: PrimitiveTokens.letterSpacingWide
+    readonly property int fontWeightRegular: PrimitiveTokens.fontWeightRegular
+    readonly property int fontWeightMedium: PrimitiveTokens.fontWeightMedium
+    readonly property int fontWeightSemiBold: PrimitiveTokens.fontWeightSemiBold
+
+    // ========================================================================
+    // Spacing (semantic aliases)
+    // ========================================================================
+    readonly property int spacing4: PrimitiveTokens.spacing4
+    readonly property int spacing8: PrimitiveTokens.spacing8
+    readonly property int spacing12: PrimitiveTokens.spacing12
+    readonly property int spacing16: PrimitiveTokens.spacing16
+    readonly property int spacing40: PrimitiveTokens.spacing40
+
+    // ========================================================================
+    // Radius (semantic aliases)
+    // ========================================================================
+    readonly property int radiusSmall: PrimitiveTokens.radiusSmall
+    readonly property int radiusMedium: PrimitiveTokens.radiusMedium
+
+    // ========================================================================
+    // Animation (semantic aliases)
+    // ========================================================================
+    readonly property int durationFast: PrimitiveTokens.durationFast
+    readonly property int durationNormal: PrimitiveTokens.durationNormal
+    readonly property int durationInteractionHover: PrimitiveTokens.durationInteractionHover
 }

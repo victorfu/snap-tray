@@ -17,7 +17,7 @@ SettingsRow {
     Row {
         anchors.verticalCenter: parent.verticalCenter
         width: parent.width
-        spacing: PrimitiveTokens.spacing8
+        spacing: SemanticTokens.spacing8
 
         // Path display
         Rectangle {
@@ -36,9 +36,9 @@ SettingsRow {
                 verticalAlignment: Text.AlignVCenter
                 text: root.path.length > 0 ? root.path : root.placeholder
                 color: root.path.length > 0 ? SemanticTokens.textPrimary : SemanticTokens.textTertiary
-                font.pixelSize: PrimitiveTokens.fontSizeBody
-                font.family: PrimitiveTokens.fontFamily
-                font.letterSpacing: PrimitiveTokens.letterSpacingTight
+                font.pixelSize: SemanticTokens.fontSizeBody
+                font.family: SemanticTokens.fontFamily
+                font.letterSpacing: SemanticTokens.letterSpacingDefault
                 elide: Text.ElideMiddle
             }
         }

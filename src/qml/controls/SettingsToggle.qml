@@ -37,7 +37,7 @@ Column {
                 color: root.checked ? ComponentTokens.toggleTrackOn : ComponentTokens.toggleTrackOff
 
                 Behavior on color {
-                    ColorAnimation { duration: PrimitiveTokens.durationFast }
+                    ColorAnimation { duration: SemanticTokens.durationFast }
                 }
 
                 // Toggle knob
@@ -51,7 +51,7 @@ Column {
                     x: root.checked ? (track.width - knob.width - ComponentTokens.toggleKnobInset) : ComponentTokens.toggleKnobInset
 
                     Behavior on x {
-                        NumberAnimation { duration: PrimitiveTokens.durationFast; easing.type: Easing.InOutCubic }
+                        NumberAnimation { duration: SemanticTokens.durationFast; easing.type: Easing.InOutCubic }
                     }
                 }
 
@@ -88,9 +88,9 @@ Column {
     Text {
         text: root.description
         color: SemanticTokens.textTertiary
-        font.pixelSize: PrimitiveTokens.fontSizeCaption
-        font.family: PrimitiveTokens.fontFamily
-        font.letterSpacing: PrimitiveTokens.letterSpacingTight
+        font.pixelSize: SemanticTokens.fontSizeCaption
+        font.family: SemanticTokens.fontFamily
+        font.letterSpacing: SemanticTokens.letterSpacingDefault
         visible: root.description.length > 0
         leftPadding: ComponentTokens.toggleLabelIndent
         topPadding: 2

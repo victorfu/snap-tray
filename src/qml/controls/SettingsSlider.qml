@@ -53,7 +53,7 @@ SettingsRow {
 
                 Behavior on width {
                     enabled: !slider.pressed
-                    NumberAnimation { duration: PrimitiveTokens.durationFast; easing.type: Easing.InOutCubic }
+                    NumberAnimation { duration: SemanticTokens.durationFast; easing.type: Easing.InOutCubic }
                 }
             }
         }
@@ -83,8 +83,8 @@ SettingsRow {
         horizontalAlignment: Text.AlignRight
         text: root.value + root.suffix
         color: SemanticTokens.textSecondary
-        font.pixelSize: PrimitiveTokens.fontSizeBody
-        font.family: PrimitiveTokens.fontFamily
-        font.letterSpacing: PrimitiveTokens.letterSpacingTight
+        font.pixelSize: SemanticTokens.fontSizeBody
+        font.family: SemanticTokens.fontFamily
+        font.letterSpacing: SemanticTokens.letterSpacingDefault
     }
 }

@@ -43,7 +43,7 @@ SettingsRow {
             implicitHeight: ComponentTokens.inputHeight
 
             Behavior on border.color {
-                ColorAnimation { duration: PrimitiveTokens.durationFast }
+                ColorAnimation { duration: SemanticTokens.durationFast }
             }
         }
 
@@ -52,9 +52,9 @@ SettingsRow {
             rightPadding: combo.indicator.width + 8
             text: combo.displayText
             color: SemanticTokens.textPrimary
-            font.pixelSize: PrimitiveTokens.fontSizeBody
-            font.family: PrimitiveTokens.fontFamily
-            font.letterSpacing: PrimitiveTokens.letterSpacingTight
+            font.pixelSize: SemanticTokens.fontSizeBody
+            font.family: SemanticTokens.fontFamily
+            font.letterSpacing: SemanticTokens.letterSpacingDefault
             verticalAlignment: Text.AlignVCenter
             elide: Text.ElideRight
         }
@@ -64,8 +64,8 @@ SettingsRow {
             anchors.verticalCenter: parent.verticalCenter
             text: "\u25BE"
             color: SemanticTokens.textSecondary
-            font.pixelSize: PrimitiveTokens.fontSizeBody
-            font.family: PrimitiveTokens.fontFamily
+            font.pixelSize: SemanticTokens.fontSizeBody
+            font.family: SemanticTokens.fontFamily
         }
 
         popup: Popup {
@@ -74,10 +74,10 @@ SettingsRow {
             padding: 1
 
             enter: Transition {
-                NumberAnimation { property: "opacity"; from: 0.0; to: 1.0; duration: PrimitiveTokens.durationFast; easing.type: Easing.OutCubic }
+                NumberAnimation { property: "opacity"; from: 0.0; to: 1.0; duration: SemanticTokens.durationFast; easing.type: Easing.OutCubic }
             }
             exit: Transition {
-                NumberAnimation { property: "opacity"; from: 1.0; to: 0.0; duration: PrimitiveTokens.durationFast; easing.type: Easing.InCubic }
+                NumberAnimation { property: "opacity"; from: 1.0; to: 0.0; duration: SemanticTokens.durationFast; easing.type: Easing.InCubic }
             }
 
             background: Rectangle {
@@ -105,12 +105,12 @@ SettingsRow {
             contentItem: Text {
                 text: modelData.text
                 color: SemanticTokens.textPrimary
-                font.pixelSize: PrimitiveTokens.fontSizeBody
-                font.family: PrimitiveTokens.fontFamily
-                font.letterSpacing: PrimitiveTokens.letterSpacingTight
+                font.pixelSize: SemanticTokens.fontSizeBody
+                font.family: SemanticTokens.fontFamily
+                font.letterSpacing: SemanticTokens.letterSpacingDefault
                 verticalAlignment: Text.AlignVCenter
                 horizontalAlignment: Text.AlignLeft
-                leftPadding: PrimitiveTokens.spacing8
+                leftPadding: SemanticTokens.spacing8
                 LayoutMirroring.enabled: false
             }
 
@@ -118,7 +118,7 @@ SettingsRow {
                 color: hovered ? ComponentTokens.settingsSidebarHoverItem : "transparent"
 
                 Behavior on color {
-                    ColorAnimation { duration: PrimitiveTokens.durationFast }
+                    ColorAnimation { duration: SemanticTokens.durationFast }
                 }
             }
         }

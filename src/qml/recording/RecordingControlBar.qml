@@ -175,7 +175,7 @@ Item {
             NumberAnimation on gradientAngle {
                 from: 0
                 to: 1
-                duration: 800
+                duration: ComponentTokens.recordingIndicatorDuration
                 loops: Animation.Infinite
                 running: !root.isPaused
             }
@@ -195,7 +195,7 @@ Item {
                     ctx.fill()
                 } else if (root.isPaused) {
                     // Solid amber
-                    ctx.fillStyle = "#FFB800"
+                    ctx.fillStyle = ComponentTokens.recordingBoundaryPaused
                     ctx.beginPath()
                     ctx.arc(6, 6, 6, 0, 2 * Math.PI)
                     ctx.fill()
@@ -244,7 +244,7 @@ Item {
             Layout.preferredHeight: 12
             visible: root.audioEnabled
             source: "qrc:/icons/icons/mic.svg"
-            color: "#34C759"
+            color: ComponentTokens.recordingAudioActive
         }
 
         // ── Duration label ──

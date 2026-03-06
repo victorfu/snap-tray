@@ -20,18 +20,18 @@ Column {
     Text {
         text: root.title.toUpperCase()
         color: ComponentTokens.settingsSectionText
-        font.pixelSize: PrimitiveTokens.fontSizeCaption
+        font.pixelSize: SemanticTokens.fontSizeCaption
         font.weight: Font.Medium
-        font.family: PrimitiveTokens.fontFamily
-        font.letterSpacing: PrimitiveTokens.letterSpacingWide
+        font.family: SemanticTokens.fontFamily
+        font.letterSpacing: SemanticTokens.letterSpacingWide
     }
 
     Text {
         text: root.description
         color: SemanticTokens.textTertiary
-        font.pixelSize: PrimitiveTokens.fontSizeCaption
-        font.family: PrimitiveTokens.fontFamily
-        font.letterSpacing: PrimitiveTokens.letterSpacingTight
+        font.pixelSize: SemanticTokens.fontSizeCaption
+        font.family: SemanticTokens.fontFamily
+        font.letterSpacing: SemanticTokens.letterSpacingDefault
         visible: root.description.length > 0
     }
 

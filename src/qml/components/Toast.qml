@@ -60,7 +60,7 @@ Item {
         id: titleMetrics
         font.pixelSize: ComponentTokens.toastTitleFontSize
         font.weight: Font.Medium
-        font.family: PrimitiveTokens.fontFamily
+        font.family: SemanticTokens.fontFamily
         text: root.title
     }
 
@@ -68,7 +68,7 @@ Item {
         id: messageMetrics
         font.pixelSize: ComponentTokens.toastMessageFontSize
         font.weight: Font.Normal
-        font.family: PrimitiveTokens.fontFamily
+        font.family: SemanticTokens.fontFamily
         text: root.message
     }
 
@@ -143,12 +143,12 @@ Item {
                     color: root.titleColor
                     font.pixelSize: ComponentTokens.toastTitleFontSize
                     font.weight: Font.Medium
-                    font.family: PrimitiveTokens.fontFamily
+                    font.family: SemanticTokens.fontFamily
                     width: parent.width
                     wrapMode: fixedWidth ? Text.WordWrap : Text.NoWrap
                     elide: fixedWidth ? Text.ElideNone : Text.ElideRight
                     // Letter spacing for Linear crispness
-                    font.letterSpacing: PrimitiveTokens.letterSpacingTight
+                    font.letterSpacing: SemanticTokens.letterSpacingDefault
                 }
 
                 Text {
@@ -157,11 +157,11 @@ Item {
                     color: root.messageColor
                     font.pixelSize: ComponentTokens.toastMessageFontSize
                     font.weight: Font.Normal
-                    font.family: PrimitiveTokens.fontFamily
+                    font.family: SemanticTokens.fontFamily
                     width: parent.width
                     wrapMode: Text.WordWrap
                     visible: root.message.length > 0
-                    font.letterSpacing: PrimitiveTokens.letterSpacingTight
+                    font.letterSpacing: SemanticTokens.letterSpacingDefault
                 }
             }
         }

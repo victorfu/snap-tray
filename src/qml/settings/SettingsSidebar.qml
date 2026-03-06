@@ -57,7 +57,7 @@ Rectangle {
                 opacity: navItem.isActive ? 1.0 : 0.0
 
                 Behavior on opacity {
-                    NumberAnimation { duration: PrimitiveTokens.durationFast; easing.type: Easing.InOutCubic }
+                    NumberAnimation { duration: SemanticTokens.durationFast; easing.type: Easing.InOutCubic }
                 }
             }
 
@@ -66,7 +66,7 @@ Rectangle {
                 anchors.fill: parent
                 anchors.leftMargin: 4
                 anchors.rightMargin: 8
-                radius: PrimitiveTokens.radiusSmall
+                radius: SemanticTokens.radiusSmall
                 color: {
                     if (navItem.isActive)
                         return ComponentTokens.settingsSidebarActiveItem
@@ -76,7 +76,7 @@ Rectangle {
                 }
 
                 Behavior on color {
-                    ColorAnimation { duration: PrimitiveTokens.durationFast }
+                    ColorAnimation { duration: SemanticTokens.durationFast }
                 }
             }
 
@@ -89,10 +89,10 @@ Rectangle {
                 color: navItem.isActive
                     ? SemanticTokens.textPrimary
                     : SemanticTokens.textSecondary
-                font.pixelSize: PrimitiveTokens.fontSizeBody
+                font.pixelSize: SemanticTokens.fontSizeBody
                 font.weight: navItem.isActive ? Font.Medium : Font.Normal
-                font.family: PrimitiveTokens.fontFamily
-                font.letterSpacing: PrimitiveTokens.letterSpacingTight
+                font.family: SemanticTokens.fontFamily
+                font.letterSpacing: SemanticTokens.letterSpacingDefault
             }
 
             FocusFrame {
@@ -101,7 +101,7 @@ Rectangle {
                 anchors.leftMargin: 4 - ComponentTokens.focusRingOffset
                 anchors.rightMargin: 8 - ComponentTokens.focusRingOffset
                 anchors.fill: parent
-                radius: PrimitiveTokens.radiusSmall + ComponentTokens.focusRingOffset
+                radius: SemanticTokens.radiusSmall + ComponentTokens.focusRingOffset
             }
 
             MouseArea {

@@ -35,9 +35,9 @@ Flickable {
             Text {
                 text: settingsBackend.currentVersion
                 color: SemanticTokens.textPrimary
-                font.pixelSize: PrimitiveTokens.fontSizeBody
-                font.family: PrimitiveTokens.fontFamily
-                font.letterSpacing: PrimitiveTokens.letterSpacingTight
+                font.pixelSize: SemanticTokens.fontSizeBody
+                font.family: SemanticTokens.fontFamily
+                font.letterSpacing: SemanticTokens.letterSpacingDefault
                 anchors.verticalCenter: parent ? parent.verticalCenter : undefined
             }
         }
@@ -66,7 +66,7 @@ Flickable {
             }
         }
 
-        Spacer { size: PrimitiveTokens.spacing16 }
+        Spacer { size: SemanticTokens.spacing16 }
 
         // Separator
         Rectangle {
@@ -82,13 +82,13 @@ Flickable {
             width: parent.width - 2 * ComponentTokens.settingsContentPadding
             text: settingsBackend.lastCheckedText
             color: SemanticTokens.textSecondary
-            font.pixelSize: PrimitiveTokens.fontSizeCaption
-            font.family: PrimitiveTokens.fontFamily
-            font.letterSpacing: PrimitiveTokens.letterSpacingTight
+            font.pixelSize: SemanticTokens.fontSizeCaption
+            font.family: SemanticTokens.fontFamily
+            font.letterSpacing: SemanticTokens.letterSpacingDefault
             horizontalAlignment: Text.AlignHCenter
         }
 
-        Spacer { size: PrimitiveTokens.spacing12 }
+        Spacer { size: SemanticTokens.spacing12 }
 
         // Check Now button (centered)
         Item {

@@ -93,7 +93,7 @@ Item {
             text: root.badgeText
             color: ComponentTokens.badgeText
             font.pixelSize: ComponentTokens.badgeFontSize
-            font.family: PrimitiveTokens.fontFamily
+            font.family: SemanticTokens.fontFamily
         }
 
         NumberAnimation {

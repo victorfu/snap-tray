@@ -283,4 +283,15 @@ QtObject {
     readonly property int iconSizeToolbar: PrimitiveTokens.iconSizeMedium
     readonly property int iconSizeMenu: PrimitiveTokens.iconSizeSmall
     readonly property int iconSizeAction: PrimitiveTokens.iconSizeLarge
+
+    // ========================================================================
+    // Recording indicator
+    // ========================================================================
+    readonly property int recordingIndicatorDuration: 800
+    readonly property color recordingAudioActive: PrimitiveTokens.green500
+
+    // ========================================================================
+    // Spinner
+    // ========================================================================
+    readonly property int spinnerDuration: 900
 }

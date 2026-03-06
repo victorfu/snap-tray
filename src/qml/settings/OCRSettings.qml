@@ -48,13 +48,13 @@ Flickable {
             width: parent.width - 2 * ComponentTokens.settingsContentPadding
             text: qsTr("Select and order the languages for OCR recognition.\nEnglish is always included and cannot be removed.")
             color: SemanticTokens.textSecondary
-            font.pixelSize: PrimitiveTokens.fontSizeBody
-            font.family: PrimitiveTokens.fontFamily
-            font.letterSpacing: PrimitiveTokens.letterSpacingTight
+            font.pixelSize: SemanticTokens.fontSizeBody
+            font.family: SemanticTokens.fontFamily
+            font.letterSpacing: SemanticTokens.letterSpacingDefault
             wrapMode: Text.WordWrap
         }
 
-        Spacer { size: PrimitiveTokens.spacing4 }
+        Spacer { size: SemanticTokens.spacing4 }
 
         // Loading indicator
         Item {
@@ -64,7 +64,7 @@ Flickable {
 
             Row {
                 anchors.centerIn: parent
-                spacing: PrimitiveTokens.spacing8
+                spacing: SemanticTokens.spacing8
 
                 BusySpinner {
                     running: root.ocrLoading
@@ -74,9 +74,9 @@ Flickable {
                 Text {
                     text: qsTr("Loading languages...")
                     color: SemanticTokens.textSecondary
-                    font.pixelSize: PrimitiveTokens.fontSizeBody
-                    font.family: PrimitiveTokens.fontFamily
-                    font.letterSpacing: PrimitiveTokens.letterSpacingTight
+                    font.pixelSize: SemanticTokens.fontSizeBody
+                    font.family: SemanticTokens.fontFamily
+                    font.letterSpacing: SemanticTokens.letterSpacingDefault
                     anchors.verticalCenter: parent.verticalCenter
                 }
             }
@@ -86,33 +86,33 @@ Flickable {
         Row {
             width: parent.width - 2 * ComponentTokens.settingsContentPadding
             height: 220
-            spacing: PrimitiveTokens.spacing8
+            spacing: SemanticTokens.spacing8
             visible: !root.ocrLoading
             opacity: root.ocrLoading ? 0 : 1
 
             Behavior on opacity {
-                NumberAnimation { duration: PrimitiveTokens.durationNormal }
+                NumberAnimation { duration: SemanticTokens.durationNormal }
             }
 
             // Available languages
             Column {
-                width: (parent.width - transferButtons.width - 2 * PrimitiveTokens.spacing8) / 2
+                width: (parent.width - transferButtons.width - 2 * SemanticTokens.spacing8) / 2
                 height: parent.height
-                spacing: PrimitiveTokens.spacing4
+                spacing: SemanticTokens.spacing4
 
                 Text {
                     text: qsTr("Available Languages")
                     color: SemanticTokens.textPrimary
-                    font.pixelSize: PrimitiveTokens.fontSizeBody
+                    font.pixelSize: SemanticTokens.fontSizeBody
                     font.weight: Font.Medium
-                    font.family: PrimitiveTokens.fontFamily
-                    font.letterSpacing: PrimitiveTokens.letterSpacingTight
+                    font.family: SemanticTokens.fontFamily
+                    font.letterSpacing: SemanticTokens.letterSpacingDefault
                 }
 
                 Rectangle {
                     width: parent.width
                     height: parent.height - 20
-                    radius: PrimitiveTokens.radiusSmall
+                    radius: SemanticTokens.radiusSmall
                     color: ComponentTokens.inputBackground
                     border.width: 1
                     border.color: ComponentTokens.inputBorder
@@ -129,7 +129,7 @@ Flickable {
                         delegate: Rectangle {
                             width: availableList.width
                             height: 28
-                            radius: PrimitiveTokens.radiusSmall
+                            radius: SemanticTokens.radiusSmall
                             color: availableList.selectedIndex === index
                                 ? ComponentTokens.settingsSidebarActiveItem
                                 : availItemHover.containsMouse
@@ -145,9 +145,9 @@ Flickable {
                                 anchors.verticalCenter: parent.verticalCenter
                                 text: modelData.displayName || modelData
                                 color: SemanticTokens.textPrimary
-                                font.pixelSize: PrimitiveTokens.fontSizeBody
-                                font.family: PrimitiveTokens.fontFamily
-                                font.letterSpacing: PrimitiveTokens.letterSpacingTight
+                                font.pixelSize: SemanticTokens.fontSizeBody
+                                font.family: SemanticTokens.fontFamily
+                                font.letterSpacing: SemanticTokens.letterSpacingDefault
                                 elide: Text.ElideRight
                                 width: parent.width - 16
                             }
@@ -171,13 +171,13 @@ Flickable {
             // Transfer buttons
             Column {
                 id: transferButtons
-                width: PrimitiveTokens.spacing40
+                width: SemanticTokens.spacing40
                 anchors.verticalCenter: parent.verticalCenter
-                spacing: PrimitiveTokens.spacing8
+                spacing: SemanticTokens.spacing8
 
                 SettingsButton {
                     text: "\u2192"
-                    width: PrimitiveTokens.spacing40
+                    width: SemanticTokens.spacing40
                     Accessible.name: qsTr("Add selected language")
                     Accessible.role: Accessible.Button
                     onClicked: {
@@ -191,7 +191,7 @@ Flickable {
 
                 SettingsButton {
                     text: "\u2190"
-                    width: PrimitiveTokens.spacing40
+                    width: SemanticTokens.spacing40
                     Accessible.name: qsTr("Remove selected language")
                     Accessible.role: Accessible.Button
                     onClicked: {
@@ -206,23 +206,23 @@ Flickable {
 
             // Selected languages
             Column {
-                width: (parent.width - transferButtons.width - 2 * PrimitiveTokens.spacing8) / 2
+                width: (parent.width - transferButtons.width - 2 * SemanticTokens.spacing8) / 2
                 height: parent.height
-                spacing: PrimitiveTokens.spacing4
+                spacing: SemanticTokens.spacing4
 
                 Text {
                     text: qsTr("Selected Languages")
                     color: SemanticTokens.textPrimary
-                    font.pixelSize: PrimitiveTokens.fontSizeBody
+                    font.pixelSize: SemanticTokens.fontSizeBody
                     font.weight: Font.Medium
-                    font.family: PrimitiveTokens.fontFamily
-                    font.letterSpacing: PrimitiveTokens.letterSpacingTight
+                    font.family: SemanticTokens.fontFamily
+                    font.letterSpacing: SemanticTokens.letterSpacingDefault
                 }
 
                 Rectangle {
                     width: parent.width
                     height: parent.height - 20
-                    radius: PrimitiveTokens.radiusSmall
+                    radius: SemanticTokens.radiusSmall
                     color: ComponentTokens.inputBackground
                     border.width: 1
                     border.color: ComponentTokens.inputBorder
@@ -261,7 +261,7 @@ Flickable {
                                 id: selContent
                                 width: selDelegate.width
                                 height: selDelegate.height
-                                radius: PrimitiveTokens.radiusSmall
+                                radius: SemanticTokens.radiusSmall
 
                                 property int dragIndex: selDelegate.index
 
@@ -284,7 +284,7 @@ Flickable {
                                     anchors.verticalCenter: parent.verticalCenter
                                     text: "\u2261"
                                     color: SemanticTokens.textTertiary
-                                    font.pixelSize: PrimitiveTokens.fontSizeBody
+                                    font.pixelSize: SemanticTokens.fontSizeBody
                                 }
 
                                 Text {
@@ -293,9 +293,9 @@ Flickable {
                                     anchors.verticalCenter: parent.verticalCenter
                                     text: selDelegate.modelData.displayName || selDelegate.modelData
                                     color: SemanticTokens.textPrimary
-                                    font.pixelSize: PrimitiveTokens.fontSizeBody
-                                    font.family: PrimitiveTokens.fontFamily
-                                    font.letterSpacing: PrimitiveTokens.letterSpacingTight
+                                    font.pixelSize: SemanticTokens.fontSizeBody
+                                    font.family: SemanticTokens.fontFamily
+                                    font.letterSpacing: SemanticTokens.letterSpacingDefault
                                     elide: Text.ElideRight
                                     width: parent.width - 26
                                 }

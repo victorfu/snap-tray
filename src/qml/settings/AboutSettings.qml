@@ -17,7 +17,7 @@ Flickable {
         width: root.width
         padding: ComponentTokens.settingsContentPadding
         topPadding: 40
-        spacing: PrimitiveTokens.spacing8
+        spacing: SemanticTokens.spacing8
 
         // App icon
         Image {
@@ -29,16 +29,16 @@ Flickable {
             anchors.horizontalCenter: parent.horizontalCenter
         }
 
-        Spacer { size: PrimitiveTokens.spacing4 }
+        Spacer { size: SemanticTokens.spacing4 }
 
         // App name
         Text {
             text: settingsBackend.appName
             color: SemanticTokens.textPrimary
-            font.pixelSize: PrimitiveTokens.fontSizeH2
+            font.pixelSize: SemanticTokens.fontSizeH2
             font.weight: Font.Bold
-            font.family: PrimitiveTokens.fontFamily
-            font.letterSpacing: PrimitiveTokens.letterSpacingTight
+            font.family: SemanticTokens.fontFamily
+            font.letterSpacing: SemanticTokens.letterSpacingDefault
             anchors.horizontalCenter: parent.horizontalCenter
         }
 
@@ -46,21 +46,21 @@ Flickable {
         Text {
             text: qsTr("Version ") + settingsBackend.appVersion
             color: SemanticTokens.textSecondary
-            font.pixelSize: PrimitiveTokens.fontSizeCaption
-            font.family: PrimitiveTokens.fontFamily
-            font.letterSpacing: PrimitiveTokens.letterSpacingTight
+            font.pixelSize: SemanticTokens.fontSizeCaption
+            font.family: SemanticTokens.fontFamily
+            font.letterSpacing: SemanticTokens.letterSpacingDefault
             anchors.horizontalCenter: parent.horizontalCenter
         }
 
-        Spacer { size: PrimitiveTokens.spacing12 }
+        Spacer { size: SemanticTokens.spacing12 }
 
         // Copyright
         Text {
             text: qsTr("Copyright 2026 Victor Fu")
             color: SemanticTokens.textSecondary
-            font.pixelSize: PrimitiveTokens.fontSizeCaption
-            font.family: PrimitiveTokens.fontFamily
-            font.letterSpacing: PrimitiveTokens.letterSpacingTight
+            font.pixelSize: SemanticTokens.fontSizeCaption
+            font.family: SemanticTokens.fontFamily
+            font.letterSpacing: SemanticTokens.letterSpacingDefault
             anchors.horizontalCenter: parent.horizontalCenter
         }
 
@@ -68,9 +68,9 @@ Flickable {
         Text {
             text: qsTr("Author: Victor Fu")
             color: SemanticTokens.textSecondary
-            font.pixelSize: PrimitiveTokens.fontSizeCaption
-            font.family: PrimitiveTokens.fontFamily
-            font.letterSpacing: PrimitiveTokens.letterSpacingTight
+            font.pixelSize: SemanticTokens.fontSizeCaption
+            font.family: SemanticTokens.fontFamily
+            font.letterSpacing: SemanticTokens.letterSpacingDefault
             anchors.horizontalCenter: parent.horizontalCenter
         }
 
@@ -78,9 +78,9 @@ Flickable {
         Text {
             text: "<a href=\"https://victorfu.github.io/snap-tray/\">https://victorfu.github.io/snap-tray/</a>"
             color: SemanticTokens.accentDefault
-            font.pixelSize: PrimitiveTokens.fontSizeCaption
-            font.family: PrimitiveTokens.fontFamily
-            font.letterSpacing: PrimitiveTokens.letterSpacingTight
+            font.pixelSize: SemanticTokens.fontSizeCaption
+            font.family: SemanticTokens.fontFamily
+            font.letterSpacing: SemanticTokens.letterSpacingDefault
             linkColor: SemanticTokens.accentDefault
             anchors.horizontalCenter: parent.horizontalCenter
             onLinkActivated: function(link) { Qt.openUrlExternally(link) }

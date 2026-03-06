@@ -137,7 +137,7 @@ Item {
                 opacity: visible ? 1.0 : 0.0
 
                 Behavior on opacity {
-                    NumberAnimation { duration: PrimitiveTokens.durationInteractionHover }
+                    NumberAnimation { duration: SemanticTokens.durationInteractionHover }
                 }
 
                 SvgIcon {
@@ -153,8 +153,8 @@ Item {
             id: timelineArea
             Layout.fillWidth: true
             Layout.preferredHeight: 48
-            Layout.leftMargin: PrimitiveTokens.spacing16
-            Layout.rightMargin: PrimitiveTokens.spacing16
+            Layout.leftMargin: SemanticTokens.spacing16
+            Layout.rightMargin: SemanticTokens.spacing16
 
             readonly property real trackY: 16
             readonly property real trackHeight: 6
@@ -321,8 +321,8 @@ Item {
                 anchors.top: trackRect.bottom
                 anchors.topMargin: 6
                 text: backend.formatTime(videoPlayer.position)
-                font.pixelSize: PrimitiveTokens.fontSizeSmall
-                font.family: PrimitiveTokens.fontFamily
+                font.pixelSize: SemanticTokens.fontSizeSmall
+                font.family: SemanticTokens.fontFamily
                 color: root.textSecondary
             }
 
@@ -332,8 +332,8 @@ Item {
                 anchors.top: trackRect.bottom
                 anchors.topMargin: 6
                 text: backend.formatTime(videoPlayer.duration)
-                font.pixelSize: PrimitiveTokens.fontSizeSmall
-                font.family: PrimitiveTokens.fontFamily
+                font.pixelSize: SemanticTokens.fontSizeSmall
+                font.family: SemanticTokens.fontFamily
                 color: root.textSecondary
             }
         }
@@ -352,9 +352,9 @@ Item {
 
             RowLayout {
                 anchors.fill: parent
-                anchors.leftMargin: PrimitiveTokens.spacing12
-                anchors.rightMargin: PrimitiveTokens.spacing12
-                spacing: PrimitiveTokens.spacing8
+                anchors.leftMargin: SemanticTokens.spacing12
+                anchors.rightMargin: SemanticTokens.spacing12
+                spacing: SemanticTokens.spacing8
 
                 IconButton {
                     iconSource: videoPlayer.playing ? "qrc:/icons/icons/pause.svg" : "qrc:/icons/icons/play.svg"
@@ -364,11 +364,11 @@ Item {
 
                 Text {
                     text: backend.formatTime(videoPlayer.position) + " / " + backend.formatTime(videoPlayer.duration)
-                    font.pixelSize: PrimitiveTokens.fontSizeCaption
-                    font.family: PrimitiveTokens.fontFamily
-                    font.weight: PrimitiveTokens.fontWeightMedium
+                    font.pixelSize: SemanticTokens.fontSizeCaption
+                    font.family: SemanticTokens.fontFamily
+                    font.weight: SemanticTokens.fontWeightMedium
                     color: root.textPrimary
-                    Layout.leftMargin: PrimitiveTokens.spacing4
+                    Layout.leftMargin: SemanticTokens.spacing4
                 }
 
                 IconButton {
@@ -457,7 +457,7 @@ Item {
 
         Column {
             anchors.centerIn: parent
-            spacing: PrimitiveTokens.spacing16
+            spacing: SemanticTokens.spacing16
 
             Rectangle {
                 width: 280
@@ -473,23 +473,23 @@ Item {
                     color: root.accent
 
                     Behavior on width {
-                        NumberAnimation { duration: PrimitiveTokens.durationInteractionHover }
+                        NumberAnimation { duration: SemanticTokens.durationInteractionHover }
                     }
                 }
             }
 
             Text {
                 text: backend.processStatus
-                font.pixelSize: PrimitiveTokens.fontSizeBody
-                font.family: PrimitiveTokens.fontFamily
+                font.pixelSize: SemanticTokens.fontSizeBody
+                font.family: SemanticTokens.fontFamily
                 color: root.textPrimary
                 anchors.horizontalCenter: parent.horizontalCenter
             }
 
             Text {
                 text: backend.processProgress + "%"
-                font.pixelSize: PrimitiveTokens.fontSizeCaption
-                font.family: PrimitiveTokens.fontFamily
+                font.pixelSize: SemanticTokens.fontSizeCaption
+                font.family: SemanticTokens.fontFamily
                 color: root.textSecondary
                 anchors.horizontalCenter: parent.horizontalCenter
             }
@@ -501,22 +501,22 @@ Item {
         anchors.top: parent.top
         anchors.left: parent.left
         anchors.right: parent.right
-        anchors.margins: PrimitiveTokens.spacing16
-        height: visible ? errorRow.implicitHeight + PrimitiveTokens.spacing16 : 0
+        anchors.margins: SemanticTokens.spacing16
+        height: visible ? errorRow.implicitHeight + SemanticTokens.spacing16 : 0
         visible: backend.errorMessage !== ""
-        radius: PrimitiveTokens.radiusSmall
+        radius: SemanticTokens.radiusSmall
         color: ComponentTokens.recordingPreviewDangerHover
         z: 10
 
         Row {
             id: errorRow
             anchors.centerIn: parent
-            spacing: PrimitiveTokens.spacing8
+            spacing: SemanticTokens.spacing8
 
             Text {
                 text: backend.errorMessage
-                font.pixelSize: PrimitiveTokens.fontSizeBody
-                font.family: PrimitiveTokens.fontFamily
+                font.pixelSize: SemanticTokens.fontSizeBody
+                font.family: SemanticTokens.fontFamily
                 color: SemanticTokens.statusError
                 anchors.verticalCenter: parent.verticalCenter
             }
@@ -625,7 +625,7 @@ Item {
         width: Math.max(ComponentTokens.recordingPreviewControlButtonSize,
                         iconSource !== "" ? ComponentTokens.recordingPreviewControlButtonSize : label.implicitWidth + 16)
         height: ComponentTokens.recordingPreviewControlButtonHeight
-        radius: PrimitiveTokens.radiusSmall
+        radius: SemanticTokens.radiusSmall
 
         color: {
             if (primary)
@@ -646,7 +646,7 @@ Item {
         }
 
         Behavior on color {
-            ColorAnimation { duration: PrimitiveTokens.durationInteractionHover }
+            ColorAnimation { duration: SemanticTokens.durationInteractionHover }
         }
 
         Text {
@@ -654,9 +654,9 @@ Item {
             anchors.centerIn: parent
             visible: parent.iconSource === ""
             text: parent.iconText
-            font.pixelSize: PrimitiveTokens.fontSizeCaption
-            font.family: PrimitiveTokens.fontFamily
-            font.weight: PrimitiveTokens.fontWeightMedium
+            font.pixelSize: SemanticTokens.fontSizeCaption
+            font.family: SemanticTokens.fontFamily
+            font.weight: SemanticTokens.fontWeightMedium
             color: parent.primary ? ComponentTokens.recordingPreviewPrimaryButtonIcon
                                   : parent.highlighted ? root.accent : root.textPrimary
         }
@@ -711,7 +711,7 @@ Item {
 
         width: fmtLabel.implicitWidth + 20
         height: 28
-        radius: PrimitiveTokens.radiusSmall
+        radius: SemanticTokens.radiusSmall
 
         color: selected ? root.accent
              : fmtMouseArea.pressed ? root.bgPanelPressed
@@ -734,9 +734,9 @@ Item {
             id: fmtLabel
             anchors.centerIn: parent
             text: parent.text
-            font.pixelSize: PrimitiveTokens.fontSizeSmall
-            font.family: PrimitiveTokens.fontFamily
-            font.weight: selected ? PrimitiveTokens.fontWeightSemiBold : PrimitiveTokens.fontWeightRegular
+            font.pixelSize: SemanticTokens.fontSizeSmall
+            font.family: SemanticTokens.fontFamily
+            font.weight: selected ? SemanticTokens.fontWeightSemiBold : SemanticTokens.fontWeightRegular
             color: selected ? ComponentTokens.recordingPreviewPrimaryButtonIcon : root.textSecondary
         }
 

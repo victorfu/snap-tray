@@ -25,14 +25,14 @@ Column {
 
         Row {
             anchors.verticalCenter: parent ? parent.verticalCenter : undefined
-            spacing: PrimitiveTokens.spacing8
+            spacing: SemanticTokens.spacing8
 
             Text {
                 text: root.granted ? qsTr("Granted") : qsTr("Not Granted")
                 color: root.granted ? SemanticTokens.statusSuccess : SemanticTokens.statusError
-                font.pixelSize: PrimitiveTokens.fontSizeBody
-                font.family: PrimitiveTokens.fontFamily
-                font.letterSpacing: PrimitiveTokens.letterSpacingTight
+                font.pixelSize: SemanticTokens.fontSizeBody
+                font.family: SemanticTokens.fontFamily
+                font.letterSpacing: SemanticTokens.letterSpacingDefault
                 anchors.verticalCenter: parent.verticalCenter
             }
 
@@ -47,9 +47,9 @@ Column {
     Text {
         text: root.description
         color: SemanticTokens.textTertiary
-        font.pixelSize: PrimitiveTokens.fontSizeCaption
-        font.family: PrimitiveTokens.fontFamily
-        font.letterSpacing: PrimitiveTokens.letterSpacingTight
+        font.pixelSize: SemanticTokens.fontSizeCaption
+        font.family: SemanticTokens.fontFamily
+        font.letterSpacing: SemanticTokens.letterSpacingDefault
         visible: root.description.length > 0
         leftPadding: ComponentTokens.toggleLabelIndent
         topPadding: 2

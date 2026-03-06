@@ -21,9 +21,9 @@ Row {
     Text {
         text: root.label
         color: SemanticTokens.textPrimary
-        font.pixelSize: PrimitiveTokens.fontSizeBody
-        font.family: PrimitiveTokens.fontFamily
-        font.letterSpacing: PrimitiveTokens.letterSpacingTight
+        font.pixelSize: SemanticTokens.fontSizeBody
+        font.family: SemanticTokens.fontFamily
+        font.letterSpacing: SemanticTokens.letterSpacingDefault
         width: root.labelWidth
         anchors.verticalCenter: parent.verticalCenter
     }

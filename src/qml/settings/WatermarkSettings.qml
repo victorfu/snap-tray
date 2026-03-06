@@ -36,12 +36,12 @@ Flickable {
         // Main content: controls + preview side by side
         RowLayout {
             width: parent.width - 2 * ComponentTokens.settingsContentPadding
-            spacing: PrimitiveTokens.spacing16
+            spacing: SemanticTokens.spacing16
 
             // Left side: controls
             Column {
                 Layout.fillWidth: true
-                spacing: PrimitiveTokens.spacing4
+                spacing: SemanticTokens.spacing4
 
                 SettingsPathPicker {
                     label: qsTr("Image")
@@ -93,12 +93,12 @@ Flickable {
             Column {
                 id: previewColumn
                 Layout.preferredWidth: ComponentTokens.watermarkPreviewColumnWidth
-                spacing: PrimitiveTokens.spacing4
+                spacing: SemanticTokens.spacing4
 
                 Rectangle {
                     width: ComponentTokens.watermarkPreviewSize
                     height: ComponentTokens.watermarkPreviewSize
-                    radius: PrimitiveTokens.radiusSmall
+                    radius: SemanticTokens.radiusSmall
                     color: SemanticTokens.backgroundElevated
                     border.width: 1
                     border.color: SemanticTokens.borderDefault
@@ -115,9 +115,9 @@ Flickable {
                         anchors.centerIn: parent
                         text: qsTr("No image")
                         color: SemanticTokens.textTertiary
-                        font.pixelSize: PrimitiveTokens.fontSizeCaption
-                        font.family: PrimitiveTokens.fontFamily
-                        font.letterSpacing: PrimitiveTokens.letterSpacingTight
+                        font.pixelSize: SemanticTokens.fontSizeCaption
+                        font.family: SemanticTokens.fontFamily
+                        font.letterSpacing: SemanticTokens.letterSpacingDefault
                         visible: settingsBackend.watermarkPreviewUrl === ""
                     }
                 }

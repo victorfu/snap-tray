@@ -60,7 +60,7 @@ Item {
         text: root.tooltipText
         color: root.themeText
         font.pixelSize: 11
-        font.family: PrimitiveTokens.fontFamily
+        font.family: SemanticTokens.fontFamily
         font.weight: Font.Medium
     }
 }

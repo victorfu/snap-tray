@@ -96,7 +96,7 @@ Flickable {
 
             Row {
                 anchors.verticalCenter: parent ? parent.verticalCenter : undefined
-                spacing: PrimitiveTokens.spacing8
+                spacing: SemanticTokens.spacing8
 
                 BusySpinner {
                     running: cliRow.busy
@@ -110,9 +110,9 @@ Flickable {
                             ? qsTr("'snaptray' command is available")
                             : qsTr("'snaptray' command is not installed")
                     color: SemanticTokens.textSecondary
-                    font.pixelSize: PrimitiveTokens.fontSizeBody
-                    font.family: PrimitiveTokens.fontFamily
-                    font.letterSpacing: PrimitiveTokens.letterSpacingTight
+                    font.pixelSize: SemanticTokens.fontSizeBody
+                    font.family: SemanticTokens.fontFamily
+                    font.letterSpacing: SemanticTokens.letterSpacingDefault
                     anchors.verticalCenter: parent.verticalCenter
                 }
 

@@ -23,6 +23,6 @@ Rectangle {
     opacity: showFocus ? 1 : 0
 
     Behavior on opacity {
-        NumberAnimation { duration: PrimitiveTokens.durationFast }
+        NumberAnimation { duration: SemanticTokens.durationFast }
     }
 }

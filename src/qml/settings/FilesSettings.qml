@@ -56,9 +56,9 @@ Flickable {
                     verticalAlignment: TextInput.AlignVCenter
                     text: settingsBackend.filenameTemplate
                     color: SemanticTokens.textPrimary
-                    font.pixelSize: PrimitiveTokens.fontSizeBody
-                    font.family: PrimitiveTokens.fontFamily
-                    font.letterSpacing: PrimitiveTokens.letterSpacingTight
+                    font.pixelSize: SemanticTokens.fontSizeBody
+                    font.family: SemanticTokens.fontFamily
+                    font.letterSpacing: SemanticTokens.letterSpacingDefault
                     clip: true
                     selectByMouse: true
                     onTextChanged: settingsBackend.filenameTemplate = text
@@ -70,9 +70,9 @@ Flickable {
             width: parent.width - 2 * ComponentTokens.settingsContentPadding
             text: qsTr("Tokens: {prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}\nDate tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}")
             color: SemanticTokens.textTertiary
-            font.pixelSize: PrimitiveTokens.fontSizeCaption
-            font.family: PrimitiveTokens.fontFamily
-            font.letterSpacing: PrimitiveTokens.letterSpacingTight
+            font.pixelSize: SemanticTokens.fontSizeCaption
+            font.family: SemanticTokens.fontFamily
+            font.letterSpacing: SemanticTokens.letterSpacingDefault
             wrapMode: Text.WordWrap
         }
 
@@ -80,9 +80,9 @@ Flickable {
             width: parent.width - 2 * ComponentTokens.settingsContentPadding
             text: qsTr("Preview: ") + settingsBackend.filenamePreview
             color: SemanticTokens.textSecondary
-            font.pixelSize: PrimitiveTokens.fontSizeCaption
-            font.family: PrimitiveTokens.fontFamily
-            font.letterSpacing: PrimitiveTokens.letterSpacingTight
+            font.pixelSize: SemanticTokens.fontSizeCaption
+            font.family: SemanticTokens.fontFamily
+            font.letterSpacing: SemanticTokens.letterSpacingDefault
             wrapMode: Text.WordWrap
         }
 
