@@ -2179,9 +2179,84 @@ Ljud stöds inte för GIF-inspelningar.</translation>
         <translation>Båda (Mixat)</translation>
         </message>
     <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="96" />
+        <source>Default output format</source>
+        <translation>Standardformat för export</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="107" />
+        <source>Recording quality</source>
+        <translation>Inspelningskvalitet</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="58" />
+        <source>Preview always records as MP4 for playback compatibility. This setting chooses the default export format shown in the preview window. MP4 is the only export format that keeps audio.</source>
+        <translation>För uppspelningskompatibilitet spelas förhandsvisningen alltid in som MP4. Den här inställningen väljer standardformatet för export som visas i förhandsgranskningsfönstret. MP4 är det enda exportformatet som behåller ljud.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="61" />
+        <source>Preview always records as MP4 for playback compatibility. This setting chooses the default export format shown in the preview window. WebP exports do not include audio.</source>
+        <translation>För uppspelningskompatibilitet spelas förhandsvisningen alltid in som MP4. Den här inställningen väljer standardformatet för export som visas i förhandsgranskningsfönstret. WebP-exporter innehåller inte ljud.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="63" />
+        <source>Preview always records as MP4 for playback compatibility. This setting chooses the default export format shown in the preview window. GIF exports do not include audio.</source>
+        <translation>För uppspelningskompatibilitet spelas förhandsvisningen alltid in som MP4. Den här inställningen väljer standardformatet för export som visas i förhandsgranskningsfönstret. GIF-exporter innehåller inte ljud.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="67" />
+        <source>WebP exports create smaller files than GIF with better quality for short clips. Audio is not supported for direct WebP recording.</source>
+        <translation>WebP-exporter skapar mindre filer än GIF med bättre kvalitet för korta klipp. Ljud stöds inte vid direktinspelning till WebP.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="70" />
+        <source>GIF exports are best for short clips and quick sharing. Audio is not supported for direct GIF recording.</source>
+        <translation>GIF-exporter passar bäst för korta klipp och snabb delning. Ljud stöds inte vid direktinspelning till GIF.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="72" />
+        <source>MP4 records directly with H.264 video and optional audio.</source>
+        <translation>MP4 spelar in direkt med H.264-video och valfritt ljud.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="143" />
+        <source>Audio is captured in the temporary MP4 recording. Only MP4 export keeps audio.</source>
+        <translation>Ljud fångas i den tillfälliga MP4-inspelningen. Endast MP4-export behåller ljudet.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="145" />
+        <source>Audio is only available for direct MP4 recording, or when Show preview is enabled.</source>
+        <translation>Ljud är bara tillgängligt för direkt MP4-inspelning eller när Visa förhandsvisning är aktiverat.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="189" />
+        <source>Loading audio devices...</source>
+        <translation>Laddar ljudenheter...</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="201" />
+        <source>The recording page is ready. Input devices are loading in the background.</source>
+        <translation>Inspelningssidan är redo. Inmatningsenheter laddas i bakgrunden.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="212" />
+        <source>Input device</source>
+        <translation>Inmatningsenhet</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="40" />
+        <source>System Default</source>
+        <translation>Systemstandard</translation>
+        </message>
+    <message>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="114" />
         <source>Show preview</source>
         <translation>Visa förhandsvisning</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="227" />
+        <source>Keep this on to trim or export after recording. Preview recordings are always captured as MP4 first.</source>
+        <translation>Låt det här vara på för att trimma eller exportera efter inspelning. Förhandsvisningsinspelningar fångas alltid först som MP4.</translation>
         </message>
     <message>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="119" />

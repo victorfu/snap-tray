@@ -2179,9 +2179,84 @@ GIF įrašuose garsas nepalaikomas.</translation>
         <translation>Abu (sumaišyti)</translation>
         </message>
     <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="96" />
+        <source>Default output format</source>
+        <translation>Numatytasis eksportavimo formatas</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="107" />
+        <source>Recording quality</source>
+        <translation>Įrašymo kokybė</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="58" />
+        <source>Preview always records as MP4 for playback compatibility. This setting chooses the default export format shown in the preview window. MP4 is the only export format that keeps audio.</source>
+        <translation>Kad būtų užtikrintas atkūrimo suderinamumas, peržiūra visada įrašoma kaip MP4. Šis nustatymas parenka numatytąjį eksportavimo formatą, rodomą peržiūros lange. Tik MP4 eksportavimo formatas išsaugo garsą.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="61" />
+        <source>Preview always records as MP4 for playback compatibility. This setting chooses the default export format shown in the preview window. WebP exports do not include audio.</source>
+        <translation>Kad būtų užtikrintas atkūrimo suderinamumas, peržiūra visada įrašoma kaip MP4. Šis nustatymas parenka numatytąjį eksportavimo formatą, rodomą peržiūros lange. WebP eksportuose nėra garso.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="63" />
+        <source>Preview always records as MP4 for playback compatibility. This setting chooses the default export format shown in the preview window. GIF exports do not include audio.</source>
+        <translation>Kad būtų užtikrintas atkūrimo suderinamumas, peržiūra visada įrašoma kaip MP4. Šis nustatymas parenka numatytąjį eksportavimo formatą, rodomą peržiūros lange. GIF eksportuose nėra garso.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="67" />
+        <source>WebP exports create smaller files than GIF with better quality for short clips. Audio is not supported for direct WebP recording.</source>
+        <translation>WebP eksportai sukuria mažesnius failus nei GIF ir geresnę kokybę trumpiems klipams. Garsas nepalaikomas tiesiogiai įrašant į WebP.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="70" />
+        <source>GIF exports are best for short clips and quick sharing. Audio is not supported for direct GIF recording.</source>
+        <translation>GIF eksportai geriausiai tinka trumpiems klipams ir greitam bendrinimui. Garsas nepalaikomas tiesiogiai įrašant į GIF.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="72" />
+        <source>MP4 records directly with H.264 video and optional audio.</source>
+        <translation>MP4 įrašo tiesiogiai H.264 vaizdą su pasirenkamu garsu.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="143" />
+        <source>Audio is captured in the temporary MP4 recording. Only MP4 export keeps audio.</source>
+        <translation>Garsas įrašomas į laikiną MP4 įrašą. Tik MP4 eksportas išsaugo garsą.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="145" />
+        <source>Audio is only available for direct MP4 recording, or when Show preview is enabled.</source>
+        <translation>Garsas pasiekiamas tik tiesiogiai įrašant į MP4 arba kai įjungta Rodyti peržiūrą.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="189" />
+        <source>Loading audio devices...</source>
+        <translation>Įkeliami garso įrenginiai...</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="201" />
+        <source>The recording page is ready. Input devices are loading in the background.</source>
+        <translation>Įrašymo puslapis paruoštas. Įvesties įrenginiai įkeliami fone.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="212" />
+        <source>Input device</source>
+        <translation>Įvesties įrenginys</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="40" />
+        <source>System Default</source>
+        <translation>Sistemos numatytasis</translation>
+        </message>
+    <message>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="114" />
         <source>Show preview</source>
         <translation>Rodyti peržiūrą</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="227" />
+        <source>Keep this on to trim or export after recording. Preview recordings are always captured as MP4 first.</source>
+        <translation>Palikite tai įjungta, jei po įrašymo norite apkarpyti ar eksportuoti. Peržiūros įrašai visada pirmiausia užfiksuojami kaip MP4.</translation>
         </message>
     <message>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="119" />

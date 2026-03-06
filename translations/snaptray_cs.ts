@@ -2257,9 +2257,84 @@ Zvuk není podporován pro nahrávky ve formátu GIF.</translation>
         <translation>Oba (smíchané)</translation>
         </message>
     <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="96" />
+        <source>Default output format</source>
+        <translation>Výchozí formát exportu</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="107" />
+        <source>Recording quality</source>
+        <translation>Kvalita záznamu</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="58" />
+        <source>Preview always records as MP4 for playback compatibility. This setting chooses the default export format shown in the preview window. MP4 is the only export format that keeps audio.</source>
+        <translation>Náhled se kvůli kompatibilitě přehrávání vždy nahrává jako MP4. Toto nastavení určuje výchozí formát exportu zobrazený v okně náhledu. Pouze export MP4 zachovává zvuk.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="61" />
+        <source>Preview always records as MP4 for playback compatibility. This setting chooses the default export format shown in the preview window. WebP exports do not include audio.</source>
+        <translation>Náhled se kvůli kompatibilitě přehrávání vždy nahrává jako MP4. Toto nastavení určuje výchozí formát exportu zobrazený v okně náhledu. Exporty WebP neobsahují zvuk.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="63" />
+        <source>Preview always records as MP4 for playback compatibility. This setting chooses the default export format shown in the preview window. GIF exports do not include audio.</source>
+        <translation>Náhled se kvůli kompatibilitě přehrávání vždy nahrává jako MP4. Toto nastavení určuje výchozí formát exportu zobrazený v okně náhledu. Exporty GIF neobsahují zvuk.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="67" />
+        <source>WebP exports create smaller files than GIF with better quality for short clips. Audio is not supported for direct WebP recording.</source>
+        <translation>Exporty WebP vytvářejí u krátkých klipů menší soubory než GIF a mají lepší kvalitu. Zvuk není při přímém nahrávání do WebP podporován.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="70" />
+        <source>GIF exports are best for short clips and quick sharing. Audio is not supported for direct GIF recording.</source>
+        <translation>Exporty GIF jsou nejlepší pro krátké klipy a rychlé sdílení. Zvuk není při přímém nahrávání do GIF podporován.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="72" />
+        <source>MP4 records directly with H.264 video and optional audio.</source>
+        <translation>MP4 nahrává přímo video H.264 a volitelně i zvuk.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="143" />
+        <source>Audio is captured in the temporary MP4 recording. Only MP4 export keeps audio.</source>
+        <translation>Zvuk se zachytává do dočasného záznamu MP4. Zvuk zachová pouze export MP4.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="145" />
+        <source>Audio is only available for direct MP4 recording, or when Show preview is enabled.</source>
+        <translation>Zvuk je dostupný pouze při přímém nahrávání do MP4 nebo když je zapnuto Zobrazit náhled.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="189" />
+        <source>Loading audio devices...</source>
+        <translation>Načítají se zvuková zařízení...</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="201" />
+        <source>The recording page is ready. Input devices are loading in the background.</source>
+        <translation>Stránka nahrávání je připravena. Vstupní zařízení se načítají na pozadí.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="212" />
+        <source>Input device</source>
+        <translation>Vstupní zařízení</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="40" />
+        <source>System Default</source>
+        <translation>Výchozí systémové</translation>
+        </message>
+    <message>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="114" />
         <source>Show preview</source>
         <translation>Zobrazit náhled</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="227" />
+        <source>Keep this on to trim or export after recording. Preview recordings are always captured as MP4 first.</source>
+        <translation>Nechte tuto volbu zapnutou, pokud chcete po nahrávání ořezávat nebo exportovat. Náhledové záznamy se vždy nejprve pořizují jako MP4.</translation>
         </message>
     <message>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="119" />

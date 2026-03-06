@@ -2106,6 +2106,11 @@ Size: %2</source>
         <translation>30 幀/秒</translation>
         </message>
     <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="96" />
+        <source>Default output format</source>
+        <translation>預設輸出格式</translation>
+        </message>
+    <message>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="45" />
         <source>Output format</source>
         <translation>輸出格式：</translation>
@@ -2126,9 +2131,44 @@ Size: %2</source>
         <translation>WebP</translation>
         </message>
     <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="107" />
+        <source>Recording quality</source>
+        <translation>錄製質素</translation>
+        </message>
+    <message>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="57" />
         <source>Quality</source>
         <translation>質素：</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="58" />
+        <source>Preview always records as MP4 for playback compatibility. This setting chooses the default export format shown in the preview window. MP4 is the only export format that keeps audio.</source>
+        <translation>為了確保播放相容性，預覽一律會先錄製成 MP4。此設定會決定預覽視窗中預設顯示的匯出格式。只有 MP4 匯出格式能保留音頻。</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="61" />
+        <source>Preview always records as MP4 for playback compatibility. This setting chooses the default export format shown in the preview window. WebP exports do not include audio.</source>
+        <translation>為了確保播放相容性，預覽一律會先錄製成 MP4。此設定會決定預覽視窗中預設顯示的匯出格式。WebP 匯出不包含音頻。</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="63" />
+        <source>Preview always records as MP4 for playback compatibility. This setting chooses the default export format shown in the preview window. GIF exports do not include audio.</source>
+        <translation>為了確保播放相容性，預覽一律會先錄製成 MP4。此設定會決定預覽視窗中預設顯示的匯出格式。GIF 匯出不包含音頻。</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="67" />
+        <source>WebP exports create smaller files than GIF with better quality for short clips. Audio is not supported for direct WebP recording.</source>
+        <translation>WebP 匯出在短片情境下一般比 GIF 更細且畫質更好。不支援直接錄製帶音頻的 WebP。</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="70" />
+        <source>GIF exports are best for short clips and quick sharing. Audio is not supported for direct GIF recording.</source>
+        <translation>GIF 匯出適合短片及快速分享。不支援直接錄製帶音頻的 GIF。</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="72" />
+        <source>MP4 records directly with H.264 video and optional audio.</source>
+        <translation>MP4 會直接錄製為 H.264 影片，並可選擇是否包含音頻。</translation>
         </message>
     <message>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="80" />
@@ -2159,6 +2199,16 @@ GIF 錄製不支援音訊。</translation>
         <translation>錄製音頻</translation>
         </message>
     <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="143" />
+        <source>Audio is captured in the temporary MP4 recording. Only MP4 export keeps audio.</source>
+        <translation>音頻會先錄入暫存的 MP4 錄影中。只有 MP4 匯出才能保留音頻。</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="145" />
+        <source>Audio is only available for direct MP4 recording, or when Show preview is enabled.</source>
+        <translation>只有直接錄製為 MP4，或啟用「顯示預覽」時，才能使用音頻。</translation>
+        </message>
+    <message>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="99" />
         <source>Source</source>
         <translation>來源：</translation>
@@ -2179,9 +2229,34 @@ GIF 錄製不支援音訊。</translation>
         <translation>兩者（混合）</translation>
         </message>
     <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="189" />
+        <source>Loading audio devices...</source>
+        <translation>正在載入音頻裝置...</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="201" />
+        <source>The recording page is ready. Input devices are loading in the background.</source>
+        <translation>錄製頁面已可使用，輸入裝置會在背景載入。</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="212" />
+        <source>Input device</source>
+        <translation>輸入裝置</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="40" />
+        <source>System Default</source>
+        <translation>系統預設</translation>
+        </message>
+    <message>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="114" />
         <source>Show preview</source>
         <translation>顯示預覽</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="227" />
+        <source>Keep this on to trim or export after recording. Preview recordings are always captured as MP4 first.</source>
+        <translation>開啟後可在錄製完成後進行修剪或匯出。預覽錄影一律會先以 MP4 擷取。</translation>
         </message>
     <message>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="119" />

@@ -2179,9 +2179,84 @@ GIF-tallennuksissa ääntä ei tueta.</translation>
         <translation>Molemmat (Miksattu)</translation>
         </message>
     <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="96" />
+        <source>Default output format</source>
+        <translation>Oletusvientimuoto</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="107" />
+        <source>Recording quality</source>
+        <translation>Tallennuslaatu</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="58" />
+        <source>Preview always records as MP4 for playback compatibility. This setting chooses the default export format shown in the preview window. MP4 is the only export format that keeps audio.</source>
+        <translation>Toiston yhteensopivuuden vuoksi esikatselu tallennetaan aina MP4-muodossa. Tämä asetus valitsee oletusvientimuodon, joka näytetään esikatseluikkunassa. MP4 on ainoa vientimuoto, joka säilyttää äänen.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="61" />
+        <source>Preview always records as MP4 for playback compatibility. This setting chooses the default export format shown in the preview window. WebP exports do not include audio.</source>
+        <translation>Toiston yhteensopivuuden vuoksi esikatselu tallennetaan aina MP4-muodossa. Tämä asetus valitsee oletusvientimuodon, joka näytetään esikatseluikkunassa. WebP-viennit eivät sisällä ääntä.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="63" />
+        <source>Preview always records as MP4 for playback compatibility. This setting chooses the default export format shown in the preview window. GIF exports do not include audio.</source>
+        <translation>Toiston yhteensopivuuden vuoksi esikatselu tallennetaan aina MP4-muodossa. Tämä asetus valitsee oletusvientimuodon, joka näytetään esikatseluikkunassa. GIF-viennit eivät sisällä ääntä.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="67" />
+        <source>WebP exports create smaller files than GIF with better quality for short clips. Audio is not supported for direct WebP recording.</source>
+        <translation>WebP-viennit tuottavat lyhyissä leikkeissä GIF:iä pienempiä tiedostoja paremmalla laadulla. Ääntä ei tueta suorassa WebP-tallennuksessa.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="70" />
+        <source>GIF exports are best for short clips and quick sharing. Audio is not supported for direct GIF recording.</source>
+        <translation>GIF-viennit sopivat parhaiten lyhyisiin leikkeisiin ja nopeaan jakamiseen. Ääntä ei tueta suorassa GIF-tallennuksessa.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="72" />
+        <source>MP4 records directly with H.264 video and optional audio.</source>
+        <translation>MP4 tallentaa suoraan H.264-videolla ja valinnaisella äänellä.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="143" />
+        <source>Audio is captured in the temporary MP4 recording. Only MP4 export keeps audio.</source>
+        <translation>Ääni tallennetaan väliaikaiseen MP4-tallenteeseen. Vain MP4-vienti säilyttää äänen.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="145" />
+        <source>Audio is only available for direct MP4 recording, or when Show preview is enabled.</source>
+        <translation>Ääni on käytettävissä vain suorassa MP4-tallennuksessa tai kun Näytä esikatselu on käytössä.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="189" />
+        <source>Loading audio devices...</source>
+        <translation>Ladataan äänilaitteita...</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="201" />
+        <source>The recording page is ready. Input devices are loading in the background.</source>
+        <translation>Tallennussivu on valmis. Syöttölaitteita ladataan taustalla.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="212" />
+        <source>Input device</source>
+        <translation>Syöttölaite</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="40" />
+        <source>System Default</source>
+        <translation>Järjestelmän oletus</translation>
+        </message>
+    <message>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="114" />
         <source>Show preview</source>
         <translation>Näytä esikatselu</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="227" />
+        <source>Keep this on to trim or export after recording. Preview recordings are always captured as MP4 first.</source>
+        <translation>Pidä tämä käytössä, jotta voit rajata tai viedä tallenteen tallennuksen jälkeen. Esikatselutallenteet kaapataan aina ensin MP4-muodossa.</translation>
         </message>
     <message>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="119" />

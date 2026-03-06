@@ -2257,9 +2257,84 @@ GIF 녹화에서는 오디오가 지원되지 않습니다.</translation>
         <translation>둘 다 (혼합)</translation>
         </message>
     <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="96" />
+        <source>Default output format</source>
+        <translation>기본 출력 형식</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="107" />
+        <source>Recording quality</source>
+        <translation>녹화 품질</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="58" />
+        <source>Preview always records as MP4 for playback compatibility. This setting chooses the default export format shown in the preview window. MP4 is the only export format that keeps audio.</source>
+        <translation>재생 호환성을 위해 미리보기는 항상 MP4로 녹화됩니다. 이 설정은 미리보기 창에 표시되는 기본 내보내기 형식을 선택합니다. 오디오를 유지하는 내보내기 형식은 MP4뿐입니다.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="61" />
+        <source>Preview always records as MP4 for playback compatibility. This setting chooses the default export format shown in the preview window. WebP exports do not include audio.</source>
+        <translation>재생 호환성을 위해 미리보기는 항상 MP4로 녹화됩니다. 이 설정은 미리보기 창에 표시되는 기본 내보내기 형식을 선택합니다. WebP 내보내기에는 오디오가 포함되지 않습니다.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="63" />
+        <source>Preview always records as MP4 for playback compatibility. This setting chooses the default export format shown in the preview window. GIF exports do not include audio.</source>
+        <translation>재생 호환성을 위해 미리보기는 항상 MP4로 녹화됩니다. 이 설정은 미리보기 창에 표시되는 기본 내보내기 형식을 선택합니다. GIF 내보내기에는 오디오가 포함되지 않습니다.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="67" />
+        <source>WebP exports create smaller files than GIF with better quality for short clips. Audio is not supported for direct WebP recording.</source>
+        <translation>WebP 내보내기는 짧은 클립에서 GIF보다 더 좋은 화질로 더 작은 파일을 만듭니다. WebP로 직접 녹화할 때는 오디오가 지원되지 않습니다.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="70" />
+        <source>GIF exports are best for short clips and quick sharing. Audio is not supported for direct GIF recording.</source>
+        <translation>GIF 내보내기는 짧은 클립과 빠른 공유에 가장 적합합니다. GIF로 직접 녹화할 때는 오디오가 지원되지 않습니다.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="72" />
+        <source>MP4 records directly with H.264 video and optional audio.</source>
+        <translation>MP4는 H.264 비디오와 선택적 오디오로 직접 녹화합니다.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="143" />
+        <source>Audio is captured in the temporary MP4 recording. Only MP4 export keeps audio.</source>
+        <translation>오디오는 임시 MP4 녹화에 캡처됩니다. 오디오를 유지하는 것은 MP4 내보내기뿐입니다.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="145" />
+        <source>Audio is only available for direct MP4 recording, or when Show preview is enabled.</source>
+        <translation>오디오는 MP4로 직접 녹화하거나 "미리보기 표시"가 켜져 있을 때만 사용할 수 있습니다.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="189" />
+        <source>Loading audio devices...</source>
+        <translation>오디오 장치 불러오는 중...</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="201" />
+        <source>The recording page is ready. Input devices are loading in the background.</source>
+        <translation>녹화 페이지가 준비되었습니다. 입력 장치를 백그라운드에서 불러오는 중입니다.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="212" />
+        <source>Input device</source>
+        <translation>입력 장치</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="40" />
+        <source>System Default</source>
+        <translation>시스템 기본값</translation>
+        </message>
+    <message>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="114" />
         <source>Show preview</source>
         <translation>미리보기 표시</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="227" />
+        <source>Keep this on to trim or export after recording. Preview recordings are always captured as MP4 first.</source>
+        <translation>녹화 후 자르기 또는 내보내기를 하려면 이 옵션을 켜 두세요. 미리보기 녹화는 항상 먼저 MP4로 캡처됩니다.</translation>
         </message>
     <message>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="119" />

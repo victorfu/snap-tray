@@ -2257,9 +2257,84 @@ O áudio não é suportado em gravações GIF.</translation>
         <translation>Ambos (Mixado)</translation>
         </message>
     <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="96" />
+        <source>Default output format</source>
+        <translation>Formato de saída padrão</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="107" />
+        <source>Recording quality</source>
+        <translation>Qualidade da gravação</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="58" />
+        <source>Preview always records as MP4 for playback compatibility. This setting chooses the default export format shown in the preview window. MP4 is the only export format that keeps audio.</source>
+        <translation>Para compatibilidade de reprodução, a visualização sempre é gravada como MP4. Esta configuração escolhe o formato de exportação padrão mostrado na janela de visualização. MP4 é o único formato de exportação que mantém o áudio.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="61" />
+        <source>Preview always records as MP4 for playback compatibility. This setting chooses the default export format shown in the preview window. WebP exports do not include audio.</source>
+        <translation>Para compatibilidade de reprodução, a visualização sempre é gravada como MP4. Esta configuração escolhe o formato de exportação padrão mostrado na janela de visualização. As exportações WebP não incluem áudio.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="63" />
+        <source>Preview always records as MP4 for playback compatibility. This setting chooses the default export format shown in the preview window. GIF exports do not include audio.</source>
+        <translation>Para compatibilidade de reprodução, a visualização sempre é gravada como MP4. Esta configuração escolhe o formato de exportação padrão mostrado na janela de visualização. As exportações GIF não incluem áudio.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="67" />
+        <source>WebP exports create smaller files than GIF with better quality for short clips. Audio is not supported for direct WebP recording.</source>
+        <translation>As exportações WebP criam arquivos menores que GIF com melhor qualidade para clipes curtos. Áudio não é compatível com gravação direta em WebP.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="70" />
+        <source>GIF exports are best for short clips and quick sharing. Audio is not supported for direct GIF recording.</source>
+        <translation>As exportações GIF são melhores para clipes curtos e compartilhamento rápido. Áudio não é compatível com gravação direta em GIF.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="72" />
+        <source>MP4 records directly with H.264 video and optional audio.</source>
+        <translation>MP4 grava diretamente com vídeo H.264 e áudio opcional.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="143" />
+        <source>Audio is captured in the temporary MP4 recording. Only MP4 export keeps audio.</source>
+        <translation>O áudio é capturado na gravação temporária em MP4. Apenas a exportação em MP4 mantém o áudio.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="145" />
+        <source>Audio is only available for direct MP4 recording, or when Show preview is enabled.</source>
+        <translation>O áudio só está disponível para gravação direta em MP4 ou quando Mostrar pré-visualização está ativado.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="189" />
+        <source>Loading audio devices...</source>
+        <translation>Carregando dispositivos de áudio...</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="201" />
+        <source>The recording page is ready. Input devices are loading in the background.</source>
+        <translation>A página de gravação está pronta. Os dispositivos de entrada estão sendo carregados em segundo plano.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="212" />
+        <source>Input device</source>
+        <translation>Dispositivo de entrada</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="40" />
+        <source>System Default</source>
+        <translation>Padrão do sistema</translation>
+        </message>
+    <message>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="114" />
         <source>Show preview</source>
         <translation>Mostrar pré-visualização</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="227" />
+        <source>Keep this on to trim or export after recording. Preview recordings are always captured as MP4 first.</source>
+        <translation>Mantenha isso ativado para aparar ou exportar após a gravação. As gravações com pré-visualização são sempre capturadas primeiro como MP4.</translation>
         </message>
     <message>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="119" />

@@ -2257,9 +2257,84 @@ Audio wordt niet ondersteund voor GIF-opnamen.</translation>
         <translation>Beide (Gemengd)</translation>
         </message>
     <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="96" />
+        <source>Default output format</source>
+        <translation>Standaard uitvoerformaat</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="107" />
+        <source>Recording quality</source>
+        <translation>Opnamekwaliteit</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="58" />
+        <source>Preview always records as MP4 for playback compatibility. This setting chooses the default export format shown in the preview window. MP4 is the only export format that keeps audio.</source>
+        <translation>Voor afspeelcompatibiliteit wordt de voorbeeldweergave altijd als MP4 opgenomen. Deze instelling kiest het standaard exportformaat dat in het voorbeeldvenster wordt getoond. MP4 is het enige exportformaat dat audio behoudt.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="61" />
+        <source>Preview always records as MP4 for playback compatibility. This setting chooses the default export format shown in the preview window. WebP exports do not include audio.</source>
+        <translation>Voor afspeelcompatibiliteit wordt de voorbeeldweergave altijd als MP4 opgenomen. Deze instelling kiest het standaard exportformaat dat in het voorbeeldvenster wordt getoond. WebP-exporten bevatten geen audio.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="63" />
+        <source>Preview always records as MP4 for playback compatibility. This setting chooses the default export format shown in the preview window. GIF exports do not include audio.</source>
+        <translation>Voor afspeelcompatibiliteit wordt de voorbeeldweergave altijd als MP4 opgenomen. Deze instelling kiest het standaard exportformaat dat in het voorbeeldvenster wordt getoond. GIF-exporten bevatten geen audio.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="67" />
+        <source>WebP exports create smaller files than GIF with better quality for short clips. Audio is not supported for direct WebP recording.</source>
+        <translation>WebP-exporten leveren voor korte clips kleinere bestanden op dan GIF met betere kwaliteit. Audio wordt niet ondersteund bij directe WebP-opname.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="70" />
+        <source>GIF exports are best for short clips and quick sharing. Audio is not supported for direct GIF recording.</source>
+        <translation>GIF-exporten zijn het meest geschikt voor korte clips en snel delen. Audio wordt niet ondersteund bij directe GIF-opname.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="72" />
+        <source>MP4 records directly with H.264 video and optional audio.</source>
+        <translation>MP4 neemt rechtstreeks op met H.264-video en optionele audio.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="143" />
+        <source>Audio is captured in the temporary MP4 recording. Only MP4 export keeps audio.</source>
+        <translation>Audio wordt vastgelegd in de tijdelijke MP4-opname. Alleen MP4-export behoudt audio.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="145" />
+        <source>Audio is only available for direct MP4 recording, or when Show preview is enabled.</source>
+        <translation>Audio is alleen beschikbaar voor directe MP4-opname of wanneer Voorbeeld tonen is ingeschakeld.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="189" />
+        <source>Loading audio devices...</source>
+        <translation>Audioapparaten laden...</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="201" />
+        <source>The recording page is ready. Input devices are loading in the background.</source>
+        <translation>De opnamepagina is klaar. Invoerapparaten worden op de achtergrond geladen.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="212" />
+        <source>Input device</source>
+        <translation>Invoerapparaat</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="40" />
+        <source>System Default</source>
+        <translation>Systeemstandaard</translation>
+        </message>
+    <message>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="114" />
         <source>Show preview</source>
         <translation>Voorbeeld tonen</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="227" />
+        <source>Keep this on to trim or export after recording. Preview recordings are always captured as MP4 first.</source>
+        <translation>Laat dit ingeschakeld om na het opnemen te knippen of te exporteren. Voorbeeldopnamen worden altijd eerst als MP4 vastgelegd.</translation>
         </message>
     <message>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="119" />

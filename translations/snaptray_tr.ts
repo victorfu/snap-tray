@@ -2179,9 +2179,84 @@ GIF kayıtlarında ses desteklenmez.</translation>
         <translation>Her İkisi (Karışık)</translation>
         </message>
     <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="96" />
+        <source>Default output format</source>
+        <translation>Varsayılan dışa aktarma biçimi</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="107" />
+        <source>Recording quality</source>
+        <translation>Kayıt kalitesi</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="58" />
+        <source>Preview always records as MP4 for playback compatibility. This setting chooses the default export format shown in the preview window. MP4 is the only export format that keeps audio.</source>
+        <translation>Oynatma uyumluluğu için önizleme her zaman MP4 olarak kaydedilir. Bu ayar, önizleme penceresinde gösterilen varsayılan dışa aktarma biçimini seçer. Sesi koruyan tek dışa aktarma biçimi MP4'tür.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="61" />
+        <source>Preview always records as MP4 for playback compatibility. This setting chooses the default export format shown in the preview window. WebP exports do not include audio.</source>
+        <translation>Oynatma uyumluluğu için önizleme her zaman MP4 olarak kaydedilir. Bu ayar, önizleme penceresinde gösterilen varsayılan dışa aktarma biçimini seçer. WebP dışa aktarmaları ses içermez.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="63" />
+        <source>Preview always records as MP4 for playback compatibility. This setting chooses the default export format shown in the preview window. GIF exports do not include audio.</source>
+        <translation>Oynatma uyumluluğu için önizleme her zaman MP4 olarak kaydedilir. Bu ayar, önizleme penceresinde gösterilen varsayılan dışa aktarma biçimini seçer. GIF dışa aktarmaları ses içermez.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="67" />
+        <source>WebP exports create smaller files than GIF with better quality for short clips. Audio is not supported for direct WebP recording.</source>
+        <translation>WebP dışa aktarmaları, kısa kliplerde GIF'ten daha iyi kaliteyle daha küçük dosyalar oluşturur. Doğrudan WebP kaydında ses desteklenmez.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="70" />
+        <source>GIF exports are best for short clips and quick sharing. Audio is not supported for direct GIF recording.</source>
+        <translation>GIF dışa aktarmaları kısa klipler ve hızlı paylaşım için en iyisidir. Doğrudan GIF kaydında ses desteklenmez.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="72" />
+        <source>MP4 records directly with H.264 video and optional audio.</source>
+        <translation>MP4, H.264 video ve isteğe bağlı sesle doğrudan kayıt yapar.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="143" />
+        <source>Audio is captured in the temporary MP4 recording. Only MP4 export keeps audio.</source>
+        <translation>Ses geçici MP4 kaydında yakalanır. Sesi yalnızca MP4 dışa aktarması korur.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="145" />
+        <source>Audio is only available for direct MP4 recording, or when Show preview is enabled.</source>
+        <translation>Ses yalnızca doğrudan MP4 kaydında veya Önizlemeyi göster etkin olduğunda kullanılabilir.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="189" />
+        <source>Loading audio devices...</source>
+        <translation>Ses aygıtları yükleniyor...</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="201" />
+        <source>The recording page is ready. Input devices are loading in the background.</source>
+        <translation>Kayıt sayfası hazır. Giriş aygıtları arka planda yükleniyor.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="212" />
+        <source>Input device</source>
+        <translation>Giriş aygıtı</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="40" />
+        <source>System Default</source>
+        <translation>Sistem varsayılanı</translation>
+        </message>
+    <message>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="114" />
         <source>Show preview</source>
         <translation>Önizlemeyi göster</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="227" />
+        <source>Keep this on to trim or export after recording. Preview recordings are always captured as MP4 first.</source>
+        <translation>Kayıttan sonra kırpmak veya dışa aktarmak için bunu açık bırakın. Önizleme kayıtları her zaman önce MP4 olarak yakalanır.</translation>
         </message>
     <message>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="119" />
