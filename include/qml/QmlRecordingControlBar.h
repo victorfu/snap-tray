@@ -63,12 +63,12 @@ signals:
     void resumeRequested();
 
 private slots:
-    void onButtonHovered(int buttonId, qreal anchorX, qreal anchorY,
-                         qreal anchorW, qreal anchorH);
+    void onButtonHovered(int buttonId, double anchorX, double anchorY,
+                         double anchorW, double anchorH);
     void onButtonUnhovered();
     void onDragStarted();
     void onDragFinished();
-    void onDragMoved(qreal deltaX, qreal deltaY);
+    void onDragMoved(double deltaX, double deltaY);
     void onWidthChanged();
 
 private:
@@ -99,6 +99,7 @@ private:
 
     // For re-centering after width change
     bool m_isDragging = false;
+    quint64 m_tooltipRequestId = 0;
 };
 
 } // namespace SnapTray

@@ -2,11 +2,13 @@
 #include "qml/QmlOverlayManager.h"
 #include "ToolbarStyle.h"
 
+#include <QCoreApplication>
 #include <QQuickView>
 #include <QQuickItem>
 #include <QShortcut>
 #include <QScreen>
 #include <QGuiApplication>
+#include <QTimer>
 #include <QtMath>
 
 #ifdef Q_OS_MACOS
@@ -16,6 +18,15 @@
 #endif
 
 namespace SnapTray {
+
+namespace {
+
+QString translateRecordingControlBar(const char* sourceText)
+{
+    return QCoreApplication::translate("RecordingControlBar", sourceText);
+}
+
+} // namespace
 
 QmlRecordingControlBar::QmlRecordingControlBar(QObject* parent)
     : QObject(parent)
@@ -76,7 +87,7 @@ void QmlRecordingControlBar::ensureTooltipView()
     if (m_tooltipView)
         return;
 
-    m_tooltipView = QmlOverlayManager::instance().createParentOverlay(
+    m_tooltipView = QmlOverlayManager::instance().createScreenOverlay(
         QUrl(QStringLiteral("qrc:/SnapTrayQml/components/RecordingTooltip.qml")));
     m_tooltipView->setResizeMode(QQuickView::SizeRootObjectToView);
     m_tooltipView->setFlag(Qt::WindowTransparentForInput, true);
@@ -95,25 +106,34 @@ void QmlRecordingControlBar::setupConnections()
     if (!m_rootItem)
         return;
 
+    auto connectOrWarn = [this](const char* signal, const char* slot, const char* description) {
+        if (!connect(m_rootItem, signal, this, slot))
+            qWarning() << "QmlRecordingControlBar: failed to connect" << description;
+    };
+
     // QML signals → C++ signals
-    connect(m_rootItem, SIGNAL(stopRequested()), this, SIGNAL(stopRequested()));
-    connect(m_rootItem, SIGNAL(cancelRequested()), this, SIGNAL(cancelRequested()));
-    connect(m_rootItem, SIGNAL(pauseRequested()), this, SIGNAL(pauseRequested()));
-    connect(m_rootItem, SIGNAL(resumeRequested()), this, SIGNAL(resumeRequested()));
+    connectOrWarn(SIGNAL(stopRequested()), SIGNAL(stopRequested()), "stopRequested");
+    connectOrWarn(SIGNAL(cancelRequested()), SIGNAL(cancelRequested()), "cancelRequested");
+    connectOrWarn(SIGNAL(pauseRequested()), SIGNAL(pauseRequested()), "pauseRequested");
+    connectOrWarn(SIGNAL(resumeRequested()), SIGNAL(resumeRequested()), "resumeRequested");
 
     // Tooltip signals
-    connect(m_rootItem, SIGNAL(buttonHovered(int,qreal,qreal,qreal,qreal)),
-            this, SLOT(onButtonHovered(int,qreal,qreal,qreal,qreal)));
-    connect(m_rootItem, SIGNAL(buttonUnhovered()),
-            this, SLOT(onButtonUnhovered()));
+    connectOrWarn(SIGNAL(buttonHovered(int,double,double,double,double)),
+                  SLOT(onButtonHovered(int,double,double,double,double)),
+                  "buttonHovered");
+    connectOrWarn(SIGNAL(buttonUnhovered()),
+                  SLOT(onButtonUnhovered()),
+                  "buttonUnhovered");
 
     // Drag signals
-    connect(m_rootItem, SIGNAL(dragStarted()), this, SLOT(onDragStarted()));
-    connect(m_rootItem, SIGNAL(dragFinished()), this, SLOT(onDragFinished()));
-    connect(m_rootItem, SIGNAL(dragMoved(qreal,qreal)), this, SLOT(onDragMoved(qreal,qreal)));
+    connectOrWarn(SIGNAL(dragStarted()), SLOT(onDragStarted()), "dragStarted");
+    connectOrWarn(SIGNAL(dragFinished()), SLOT(onDragFinished()), "dragFinished");
+    connectOrWarn(SIGNAL(dragMoved(double,double)),
+                  SLOT(onDragMoved(double,double)),
+                  "dragMoved");
 
     // Width change signal
-    connect(m_rootItem, SIGNAL(contentWidthChanged()), this, SLOT(onWidthChanged()));
+    connectOrWarn(SIGNAL(contentWidthChanged()), SLOT(onWidthChanged()), "contentWidthChanged");
 }
 
 void QmlRecordingControlBar::updateThemeColors()
@@ -394,7 +414,7 @@ void QmlRecordingControlBar::setPreparing(bool preparing)
 
     m_rootItem->setProperty("isPreparing", preparing);
     if (preparing)
-        m_rootItem->setProperty("duration", tr("Preparing..."));
+        m_rootItem->setProperty("duration", translateRecordingControlBar("Preparing..."));
     else
         m_rootItem->setProperty("duration", QStringLiteral("00:00:00"));
 
@@ -419,7 +439,8 @@ void QmlRecordingControlBar::updateRegionSize(int width, int height)
 void QmlRecordingControlBar::updateFps(double fps)
 {
     if (m_rootItem)
-        m_rootItem->setProperty("fpsText", tr("%1 fps").arg(qRound(fps)));
+        m_rootItem->setProperty("fpsText",
+                                translateRecordingControlBar("%1 fps").arg(qRound(fps)));
 }
 
 void QmlRecordingControlBar::setAudioEnabled(bool enabled)
@@ -432,8 +453,8 @@ void QmlRecordingControlBar::setAudioEnabled(bool enabled)
 
 // ── Tooltip management ──
 
-void QmlRecordingControlBar::onButtonHovered(int buttonId, qreal anchorX, qreal anchorY,
-                                              qreal anchorW, qreal anchorH)
+void QmlRecordingControlBar::onButtonHovered(int buttonId, double anchorX, double anchorY,
+                                             double anchorW, double anchorH)
 {
     QString tip = tooltipForButton(buttonId);
     if (tip.isEmpty()) {
@@ -461,11 +482,12 @@ QString QmlRecordingControlBar::tooltipForButton(int buttonId) const
 {
     switch (buttonId) {
     case 0: // Pause
-        return m_isPaused ? tr("Resume Recording") : tr("Pause Recording");
+        return m_isPaused ? translateRecordingControlBar("Resume Recording")
+                          : translateRecordingControlBar("Pause Recording");
     case 1: // Stop
-        return tr("Stop Recording");
+        return translateRecordingControlBar("Stop Recording");
     case 2: // Cancel
-        return tr("Cancel Recording (Esc)");
+        return translateRecordingControlBar("Cancel Recording (Esc)");
     default:
         return QString();
     }
@@ -477,54 +499,63 @@ void QmlRecordingControlBar::showTooltip(const QString& text, const QRect& ancho
     if (!m_tooltipView || !m_tooltipRootItem || !m_view)
         return;
 
+    const quint64 requestId = ++m_tooltipRequestId;
     m_tooltipRootItem->setProperty("tooltipText", text);
     updateTooltipThemeColors();
+    m_tooltipRootItem->polish();
 
-    const int tipWidth = qMax(1, qRound(m_tooltipRootItem->property("implicitWidth").toReal()));
-    const int tipHeight = qMax(1, qRound(m_tooltipRootItem->property("implicitHeight").toReal()));
-    const QPoint anchorCenter = anchorRect.center();
+    // Defer geometry reads until QML has applied the new text binding.
+    QTimer::singleShot(0, this, [this, requestId, anchorRect]() {
+        if (requestId != m_tooltipRequestId || !m_tooltipView || !m_tooltipRootItem || !m_view)
+            return;
 
-    // Use the full control bar bounds as anchor (not the button bounds)
-    // so the tooltip has enough visual gap from the bar edge.
-    const int barBottom = m_view->y() + m_view->height();
-    const int barTop = m_view->y();
+        const int tipWidth = qMax(1, qCeil(m_tooltipRootItem->implicitWidth()));
+        const int tipHeight = qMax(1, qCeil(m_tooltipRootItem->implicitHeight()));
+        const QPoint anchorCenter = anchorRect.center();
 
-    auto positionTooltip = [this, tipWidth, tipHeight](const QPoint& anchorEdge, bool above) {
-        int x = anchorEdge.x() - tipWidth / 2;
-        int y = above ? anchorEdge.y() - tipHeight - 6 : anchorEdge.y() + 6;
+        // Use the full control bar bounds as anchor (not the button bounds)
+        // so the tooltip has enough visual gap from the bar edge.
+        const int barBottom = m_view->y() + m_view->height();
+        const int barTop = m_view->y();
 
-        if (QScreen* screen = QGuiApplication::screenAt(anchorEdge)) {
+        auto positionTooltip = [this, tipWidth, tipHeight](const QPoint& anchorEdge, bool above) {
+            int x = anchorEdge.x() - tipWidth / 2;
+            int y = above ? anchorEdge.y() - tipHeight - 6 : anchorEdge.y() + 6;
+
+            if (QScreen* screen = QGuiApplication::screenAt(anchorEdge)) {
+                const QRect bounds = screen->availableGeometry();
+                x = qBound(bounds.left() + 5, x, bounds.right() - tipWidth - 5);
+            }
+
+            m_tooltipView->setGeometry(x, y, tipWidth, tipHeight);
+        };
+
+        positionTooltip(QPoint(anchorCenter.x(), barBottom), false);
+        m_tooltipView->show();
+        applyTooltipWindowFlags();
+        m_tooltipView->raise();
+
+        // Fallback: if tooltip goes off screen, flip to above the control bar
+        QScreen* screen = QGuiApplication::screenAt(anchorCenter);
+        if (!screen)
+            screen = QGuiApplication::primaryScreen();
+        if (screen) {
             const QRect bounds = screen->availableGeometry();
-            x = qBound(bounds.left() + 5, x, bounds.right() - tipWidth - 5);
+            const QRect tipGeom = m_tooltipView->geometry();
+            if (tipGeom.bottom() > bounds.bottom() - 5)
+                positionTooltip(QPoint(anchorCenter.x(), barTop), true);
+
+            // Final safety clamp
+            const QRect finalGeom = m_tooltipView->geometry();
+            if (finalGeom.bottom() > bounds.bottom() - 5)
+                m_tooltipView->setPosition(finalGeom.x(), bounds.bottom() - finalGeom.height() - 5);
         }
-
-        m_tooltipView->setGeometry(x, y, tipWidth, tipHeight);
-    };
-
-    positionTooltip(QPoint(anchorCenter.x(), barBottom), false);
-    m_tooltipView->show();
-    applyTooltipWindowFlags();
-    m_tooltipView->raise();
-
-    // Fallback: if tooltip goes off screen, flip to above the control bar
-    QScreen* screen = QGuiApplication::screenAt(anchorCenter);
-    if (!screen) screen = QGuiApplication::primaryScreen();
-    if (screen) {
-        const QRect bounds = screen->availableGeometry();
-        const QRect tipGeom = m_tooltipView->geometry();
-        if (tipGeom.bottom() > bounds.bottom() - 5) {
-            positionTooltip(QPoint(anchorCenter.x(), barTop), true);
-        }
-
-        // Final safety clamp
-        const QRect finalGeom = m_tooltipView->geometry();
-        if (finalGeom.bottom() > bounds.bottom() - 5)
-            m_tooltipView->setPosition(finalGeom.x(), bounds.bottom() - finalGeom.height() - 5);
-    }
+    });
 }
 
 void QmlRecordingControlBar::hideTooltip()
 {
+    ++m_tooltipRequestId;
     if (m_tooltipView)
         m_tooltipView->hide();
 }
@@ -544,7 +575,7 @@ void QmlRecordingControlBar::onDragFinished()
     m_isDragging = false;
 }
 
-void QmlRecordingControlBar::onDragMoved(qreal deltaX, qreal deltaY)
+void QmlRecordingControlBar::onDragMoved(double deltaX, double deltaY)
 {
     if (!m_view || !m_isDragging)
         return;
