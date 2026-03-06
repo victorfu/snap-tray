@@ -79,6 +79,18 @@ void RecordingSettingsManager::setAudioSource(int value)
     settings.setValue(kKeyAudioSource, value);
 }
 
+QString RecordingSettingsManager::audioDevice() const
+{
+    auto settings = SnapTray::getSettings();
+    return settings.value(kKeyAudioDevice, kDefaultAudioDevice).toString();
+}
+
+void RecordingSettingsManager::setAudioDevice(const QString& value)
+{
+    auto settings = SnapTray::getSettings();
+    settings.setValue(kKeyAudioDevice, value);
+}
+
 bool RecordingSettingsManager::countdownEnabled() const
 {
     auto settings = SnapTray::getSettings();

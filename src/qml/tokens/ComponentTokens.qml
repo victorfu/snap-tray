@@ -265,7 +265,6 @@ QtObject {
     readonly property color recordingBoundaryGradientMid1: PrimitiveTokens.indigo500
     readonly property color recordingBoundaryGradientMid2: PrimitiveTokens.purple400
     readonly property color recordingBoundaryGradientEnd: PrimitiveTokens.boundaryPurple
-    readonly property color recordingBoundaryPlaying: PrimitiveTokens.green500
     readonly property color recordingBoundaryPaused: PrimitiveTokens.amber600
     readonly property int recordingBoundaryLoopDuration: PrimitiveTokens.durationBoundaryLoop
 

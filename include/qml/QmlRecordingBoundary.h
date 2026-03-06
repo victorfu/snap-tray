@@ -17,9 +17,8 @@ namespace SnapTray {
  * Uses QQuickView to render an animated border around the recording region
  * with GPU-accelerated animations.
  *
- * Three border modes:
+ * Two border modes:
  *   - Recording: rotating conical gradient (blue/indigo/purple)
- *   - Playing:   pulsing green
  *   - Paused:    static amber
  *
  * The window is frameless, transparent, click-through, and stays on top.
@@ -36,8 +35,7 @@ class QmlRecordingBoundary : public QObject
 public:
     enum class BorderMode {
         Recording = 0,
-        Playing   = 1,
-        Paused    = 2
+        Paused    = 1
     };
 
     explicit QmlRecordingBoundary(QObject* parent = nullptr);

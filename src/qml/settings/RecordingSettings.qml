@@ -3,7 +3,7 @@ import QtQuick.Controls.Basic
 import SnapTrayQml
 
 /**
- * RecordingSettings: Frame rate, output format, quality, audio, preview, countdown.
+ * RecordingSettings: Frame rate, default output format, quality, audio, preview, countdown.
  */
 Flickable {
     id: root
@@ -13,12 +13,51 @@ Flickable {
     ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
 
     readonly property var frameRates: [10, 15, 24, 30]
+    readonly property bool audioCaptureSupported: settingsBackend.recordingShowPreview || settingsBackend.recordingOutputFormat === 0
+    readonly property bool audioSourceUsesInputDevice: settingsBackend.recordingAudioSource !== 1
+    readonly property var audioDeviceOptions: buildAudioDeviceOptions()
 
     function frameRateToIndex(fps) {
         for (var i = 0; i < frameRates.length; i++) {
             if (frameRates[i] === fps) return i
         }
         return 3 // default to 30
+    }
+
+    function buildAudioDeviceOptions() {
+        var options = [{ text: qsTr("System Default"), value: "" }]
+        var devices = settingsBackend.audioDevices()
+        for (var i = 0; i < devices.length; i++) {
+            options.push(devices[i])
+        }
+        return options
+    }
+
+    function audioDeviceToIndex(deviceId) {
+        for (var i = 0; i < audioDeviceOptions.length; i++) {
+            if (audioDeviceOptions[i].value === deviceId) return i
+        }
+        return 0
+    }
+
+    function formatInfoText() {
+        if (settingsBackend.recordingShowPreview) {
+            if (settingsBackend.recordingOutputFormat === 0) {
+                return qsTr("Preview always records as MP4 for playback compatibility. This setting chooses the default export format shown in the preview window. MP4 is the only export format that keeps audio.")
+            }
+            if (settingsBackend.recordingOutputFormat === 2) {
+                return qsTr("Preview always records as MP4 for playback compatibility. This setting chooses the default export format shown in the preview window. WebP exports do not include audio.")
+            }
+            return qsTr("Preview always records as MP4 for playback compatibility. This setting chooses the default export format shown in the preview window. GIF exports do not include audio.")
+        }
+
+        if (settingsBackend.recordingOutputFormat === 2) {
+            return qsTr("WebP exports create smaller files than GIF with better quality for short clips. Audio is not supported for direct WebP recording.")
+        }
+        if (settingsBackend.recordingOutputFormat === 1) {
+            return qsTr("GIF exports are best for short clips and quick sharing. Audio is not supported for direct GIF recording.")
+        }
+        return qsTr("MP4 records directly with H.264 video and optional audio.")
     }
 
     Column {
@@ -42,7 +81,7 @@ Flickable {
         }
 
         SettingsCombo {
-            label: qsTr("Output format")
+            label: qsTr("Default output format")
             model: [
                 { text: qsTr("MP4 (H.264)"), value: 0 },
                 { text: qsTr("GIF"), value: 1 },
@@ -52,33 +91,29 @@ Flickable {
             onActivated: function(index) { settingsBackend.recordingOutputFormat = index }
         }
 
-        // MP4 quality slider (visible when format == 0)
         SettingsSlider {
-            label: qsTr("Quality")
+            label: qsTr("Recording quality")
             value: settingsBackend.recordingQuality
             from: 0
             to: 100
-            visible: settingsBackend.recordingOutputFormat === 0
+            visible: settingsBackend.recordingShowPreview || settingsBackend.recordingOutputFormat === 0
             onMoved: settingsBackend.recordingQuality = value
         }
 
-        // GIF / WebP info panel
         Rectangle {
             width: parent.width - 2 * ComponentTokens.settingsContentPadding
-            height: formatInfoText.implicitHeight + 20
+            height: formatInfoTextItem.implicitHeight + 20
             radius: PrimitiveTokens.radiusSmall
             color: ComponentTokens.infoPanelBg
             border.width: 1
             border.color: ComponentTokens.infoPanelBorder
-            visible: settingsBackend.recordingOutputFormat > 0
+            visible: settingsBackend.recordingShowPreview || settingsBackend.recordingOutputFormat > 0
 
             Text {
-                id: formatInfoText
+                id: formatInfoTextItem
                 anchors.fill: parent
                 anchors.margins: 10
-                text: settingsBackend.recordingOutputFormat === 2
-                    ? qsTr("WebP format creates smaller files than GIF with better quality.\nBest for short clips and sharing on web.\nAudio is not supported for WebP recordings.")
-                    : qsTr("GIF format creates larger files than MP4.\nBest for short clips and sharing on web.\nAudio is not supported for GIF recordings.")
+                text: root.formatInfoText()
                 color: ComponentTokens.infoPanelText
                 font.pixelSize: PrimitiveTokens.fontSizeBody
                 font.family: PrimitiveTokens.fontFamily
@@ -91,7 +126,14 @@ Flickable {
 
         SettingsToggle {
             label: qsTr("Record audio")
+            description: root.audioCaptureSupported
+                ? (settingsBackend.recordingShowPreview
+                    ? qsTr("Audio is captured in the temporary MP4 recording. Only MP4 export keeps audio.")
+                    : "")
+                : qsTr("Audio is only available for direct MP4 recording, or when Show preview is enabled.")
             checked: settingsBackend.recordingAudioEnabled
+            enabled: root.audioCaptureSupported
+            opacity: enabled ? 1.0 : 0.6
             onToggled: settingsBackend.recordingAudioEnabled = checked
         }
 
@@ -103,15 +145,28 @@ Flickable {
                 { text: qsTr("Both (Mixed)"), value: 2 }
             ]
             currentIndex: settingsBackend.recordingAudioSource
-            enabled: settingsBackend.recordingAudioEnabled
-                && settingsBackend.recordingOutputFormat === 0
+            enabled: root.audioCaptureSupported && settingsBackend.recordingAudioEnabled
+            opacity: enabled ? 1.0 : 0.6
             onActivated: function(index) { settingsBackend.recordingAudioSource = index }
+        }
+
+        SettingsCombo {
+            label: qsTr("Input device")
+            model: root.audioDeviceOptions
+            currentIndex: root.audioDeviceToIndex(settingsBackend.recordingAudioDevice)
+            visible: root.audioCaptureSupported && root.audioSourceUsesInputDevice
+            enabled: settingsBackend.recordingAudioEnabled
+            opacity: enabled ? 1.0 : 0.6
+            onActivated: function(index) {
+                settingsBackend.recordingAudioDevice = root.audioDeviceOptions[index].value
+            }
         }
 
         Spacer {}
 
         SettingsToggle {
             label: qsTr("Show preview")
+            description: qsTr("Keep this on to trim or export after recording. Preview recordings are always captured as MP4 first.")
             checked: settingsBackend.recordingShowPreview
             onToggled: settingsBackend.recordingShowPreview = checked
         }

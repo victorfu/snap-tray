@@ -113,7 +113,7 @@ Item {
                 onDurationChanged: function(durationMs) { backend.updateDuration(durationMs) }
                 onPositionChanged: function(positionMs) { backend.updatePosition(positionMs) }
                 onStateChanged: backend.updatePlayingState(videoPlayer.playing)
-
+                onErrorOccurred: function(message) { backend.reportPlaybackError(message) }
                 Component.onCompleted: {
                     setLooping(true)
                     play()

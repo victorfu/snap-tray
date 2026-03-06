@@ -82,7 +82,6 @@ RecordingInitTask::Config TestRecordingInitTask::createTestConfig()
     config.screen = nullptr;  // Will use primary screen
     config.frameRate = 30;
     config.audioEnabled = false;
-    config.audioSource = 0;
     config.outputPath = m_tempDir->filePath("test_output.mp4");
     config.outputFormat = EncoderFactory::Format::MP4;
     config.frameSize = QSize(800, 600);
@@ -100,7 +99,6 @@ void TestRecordingInitTask::testDefaultConfig()
 
     QCOMPARE(config.frameRate, 30);
     QVERIFY(!config.audioEnabled);
-    QCOMPARE(config.audioSource, 0);
     QCOMPARE(config.outputFormat, EncoderFactory::Format::MP4);
     QCOMPARE(config.quality, 55);
 }
@@ -122,8 +120,6 @@ void TestRecordingInitTask::testConfigWithAudio()
 {
     RecordingInitTask::Config config = createTestConfig();
     config.audioEnabled = true;
-    config.audioSource = 2;  // Both mic and system audio
-    config.audioDevice = "test_device";
 
     RecordingInitTask task(config);
     QVERIFY(!task.isCancelled());

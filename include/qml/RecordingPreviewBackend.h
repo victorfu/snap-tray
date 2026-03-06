@@ -18,7 +18,7 @@ class VideoTrimmer;
  *
  * Usage:
  *   auto* backend = new RecordingPreviewBackend(videoPath, this);
- *   backend->setPreferredFormat(OutputFormat::MP4);
+ *   backend->setDefaultOutputFormat(OutputFormat::MP4);
  *   connect(backend, &RecordingPreviewBackend::saveRequested, ...);
  *   connect(backend, &RecordingPreviewBackend::discardRequested, ...);
  *   connect(backend, &RecordingPreviewBackend::closed, ...);
@@ -65,7 +65,7 @@ public:
     // Window management
     void show();
     void close();
-    void setPreferredFormat(int formatInt);
+    void setDefaultOutputFormat(int formatInt);
 
     // Property getters
     QString videoPath() const { return m_videoPath; }
@@ -97,6 +97,7 @@ public:
     Q_INVOKABLE void toggleTrim();
     Q_INVOKABLE QString formatTime(qint64 ms) const;
     Q_INVOKABLE void clearError();
+    Q_INVOKABLE void reportPlaybackError(const QString &message);
 
     // Called by QML VideoPlaybackItem position/duration updates
     Q_INVOKABLE void updatePosition(qint64 ms);

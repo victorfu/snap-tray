@@ -83,7 +83,7 @@ signals:
     void recordingResumed();
     void stateChanged(State state);
     void selectionCancelledWithRegion(const QRect &region, QScreen *screen);
-    void previewRequested(const QString &tempVideoPath, int preferredFormat);
+    void previewRequested(const QString &tempVideoPath, int defaultOutputFormat);
 
 private slots:
     void onRegionSelected(const QRect &region, QScreen *screen);
@@ -163,8 +163,8 @@ private:
     bool m_countdownEnabled;
     int m_countdownSeconds;
 
-    // Output format
-    int m_preferredFormat = 0;  // User's chosen format (0=MP4, 1=GIF, 2=WebP)
+    // Final output format selection used by direct-save and preview flows.
+    int m_defaultOutputFormat = 0;  // 0=MP4, 1=GIF, 2=WebP
 
     // Watermark for recording (settings stored, rendering done by EncodingWorker)
     WatermarkRenderer::Settings m_watermarkSettings;

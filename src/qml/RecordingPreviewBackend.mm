@@ -49,7 +49,7 @@ RecordingPreviewBackend::~RecordingPreviewBackend()
         m_view->close();
         // Delete synchronously so the QML tree is destroyed before this QObject's
         // destructor notifies QML that the "backend" context property is gone.
-        // Do NOT call setContextProperty(nullptr) before delete — that would trigger
+        // Do NOT call setContextProperty(nullptr) before delete; that would trigger
         // QML binding re-evaluation while the tree still exists, causing null-reference errors.
         delete m_view;
         m_view = nullptr;
@@ -140,7 +140,7 @@ void RecordingPreviewBackend::close()
     }
 }
 
-void RecordingPreviewBackend::setPreferredFormat(int formatInt)
+void RecordingPreviewBackend::setDefaultOutputFormat(int formatInt)
 {
     int format = qBound(0, formatInt, 2);
     setSelectedFormat(format);
@@ -207,8 +207,16 @@ void RecordingPreviewBackend::clearError()
     setErrorMessage(QString());
 }
 
-// ---------- QML state updates ----------
+void RecordingPreviewBackend::reportPlaybackError(const QString &message)
+{
+    if (message.isEmpty()) {
+        return;
+    }
 
+    setErrorMessage(tr("Failed to load preview video: %1").arg(message));
+}
+
+// ---------- QML state updates ----------
 void RecordingPreviewBackend::updatePosition(qint64 ms)
 {
     if (m_position != ms) {

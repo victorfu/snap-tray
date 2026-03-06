@@ -869,14 +869,14 @@ void MainApplication::onPasteFromClipboard()
     }
 }
 
-void MainApplication::showRecordingPreview(const QString& videoPath, int preferredFormat)
+void MainApplication::showRecordingPreview(const QString& videoPath, int defaultOutputFormat)
 {
     // Prevent multiple preview windows
     if (m_previewBackend)
         return;
 
     m_previewBackend = new RecordingPreviewBackend(videoPath, this);
-    m_previewBackend->setPreferredFormat(preferredFormat);
+    m_previewBackend->setDefaultOutputFormat(defaultOutputFormat);
 
     connect(m_previewBackend, &RecordingPreviewBackend::saveRequested,
         this, &MainApplication::onPreviewSaveRequested);

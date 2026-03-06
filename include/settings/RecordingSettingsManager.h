@@ -1,5 +1,7 @@
 #pragma once
 
+#include <QString>
+
 class RecordingSettingsManager
 {
 public:
@@ -23,6 +25,9 @@ public:
     int audioSource() const;
     void setAudioSource(int value);
 
+    QString audioDevice() const;
+    void setAudioDevice(const QString& value);
+
     bool countdownEnabled() const;
     void setCountdownEnabled(bool value);
 
@@ -36,6 +41,7 @@ public:
     static constexpr bool kDefaultShowPreview = true;
     static constexpr bool kDefaultAudioEnabled = false;
     static constexpr int kDefaultAudioSource = 0;
+    static constexpr const char* kDefaultAudioDevice = "";
     static constexpr bool kDefaultCountdownEnabled = true;
     static constexpr int kDefaultCountdownSeconds = 3;
 
@@ -51,6 +57,7 @@ private:
     static constexpr const char* kKeyShowPreview = "recording/showPreview";
     static constexpr const char* kKeyAudioEnabled = "recording/audioEnabled";
     static constexpr const char* kKeyAudioSource = "recording/audioSource";
+    static constexpr const char* kKeyAudioDevice = "recording/audioDevice";
     static constexpr const char* kKeyCountdownEnabled = "recording/countdownEnabled";
     static constexpr const char* kKeyCountdownSeconds = "recording/countdownSeconds";
 };

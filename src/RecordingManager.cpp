@@ -15,8 +15,8 @@
 #include "utils/ResourceCleanupHelper.h"
 #include "utils/CoordinateHelper.h"
 #include "utils/FilenameTemplateEngine.h"
-#include "settings/Settings.h"
 #include "settings/FileSettingsManager.h"
+#include "settings/RecordingSettingsManager.h"
 
 
 
@@ -24,7 +24,6 @@
 #include <QCoreApplication>
 #include <QCursor>
 #include <QScreen>
-#include <QSettings>
 #include <QStandardPaths>
 #include <QDir>
 #include <QDateTime>
@@ -98,6 +97,35 @@ IAudioCaptureEngine::AudioSource resolveAudioSource(int audioSourceSetting)
     case 2: return IAudioCaptureEngine::AudioSource::Both;
     default: return IAudioCaptureEngine::AudioSource::Microphone;
     }
+}
+
+bool recordingSupportsAudioCapture(int outputFormat, bool showPreview)
+{
+    return showPreview || outputFormat == 0;
+}
+
+bool audioSourceUsesInputDevice(int audioSourceSetting)
+{
+    return audioSourceSetting != 1;
+}
+
+QString configuredAudioInputDeviceOrDefault(IAudioCaptureEngine& engine,
+                                            int audioSourceSetting,
+                                            const QString& configuredDeviceId)
+{
+    if (!audioSourceUsesInputDevice(audioSourceSetting) || configuredDeviceId.isEmpty()) {
+        return QString();
+    }
+
+    const auto devices = engine.availableInputDevices();
+    for (const auto& device : devices) {
+        if (device.id == configuredDeviceId) {
+            return configuredDeviceId;
+        }
+    }
+
+    qWarning() << "RecordingManager: Configured audio input device not found, using default input instead";
+    return QString();
 }
 }
 
@@ -237,8 +265,8 @@ RecordingRegionSelector* RecordingManager::createRegionSelector()
 
 void RecordingManager::loadAndValidateFrameRate()
 {
-    auto settings = SnapTray::getSettings();
-    m_frameRate = settings.value("recording/framerate", kDefaultFrameRate).toInt();
+    auto& recMgr = RecordingSettingsManager::instance();
+    m_frameRate = recMgr.frameRate();
     if (m_frameRate <= 0 || m_frameRate > kMaxFrameRate) {
         int invalidRate = m_frameRate;
         m_frameRate = kDefaultFrameRate;
@@ -429,6 +457,7 @@ void RecordingManager::startFrameCapture()
 
     m_boundaryOverlay = new SnapTray::QmlRecordingBoundary();
     m_boundaryOverlay->setRegion(m_recordingRegion);
+    m_boundaryOverlay->setBorderMode(SnapTray::QmlRecordingBoundary::BorderMode::Recording);
     m_boundaryOverlay->show();
 
     // Show control bar in preparing state
@@ -494,22 +523,23 @@ void RecordingManager::beginAsyncInitialization()
 
 
     // Load settings for initialization config
-    auto settings = SnapTray::getSettings();
-    int formatInt = settings.value("recording/outputFormat", 0).toInt();
-    bool showPreview = settings.value("recording/showPreview", true).toBool();
+    auto& recMgr = RecordingSettingsManager::instance();
+    const int formatInt = recMgr.outputFormat();
+    const bool showPreview = recMgr.showPreview();
 
     auto outputFormat = EncoderFactory::Format::MP4;
     if (formatInt == 1) outputFormat = EncoderFactory::Format::GIF;
     else if (formatInt == 2) outputFormat = EncoderFactory::Format::WebP;
 
     // When preview is enabled, always record as MP4 (preview player only supports MP4).
-    // The user's preferred format is pre-selected in the preview's format widget.
+    // The user's default output format is pre-selected in the preview's format widget.
     auto recordingFormat = showPreview ? EncoderFactory::Format::MP4 : outputFormat;
-    m_preferredFormat = formatInt;
+    m_defaultOutputFormat = formatInt;
 
-    m_audioEnabled = settings.value("recording/audioEnabled", false).toBool();
-    m_audioSource = settings.value("recording/audioSource", 0).toInt();
-    m_audioDevice = settings.value("recording/audioDevice").toString();
+    const bool audioCaptureSupported = recordingSupportsAudioCapture(formatInt, showPreview);
+    m_audioEnabled = recMgr.audioEnabled() && audioCaptureSupported;
+    m_audioSource = recMgr.audioSource();
+    m_audioDevice = recMgr.audioDevice();
 
     // Probe actual input format so encoder format matches captured PCM data.
     int audioSampleRate = kDefaultAudioSampleRate;
@@ -525,7 +555,9 @@ void RecordingManager::beginAsyncInitialization()
             if (!probeEngine->setAudioSource(source)) {
                 qWarning() << "RecordingManager: Failed to apply configured audio source for format probing";
             }
-            if (!m_audioDevice.isEmpty() && !probeEngine->setDevice(m_audioDevice)) {
+            m_audioDevice = configuredAudioInputDeviceOrDefault(*probeEngine, m_audioSource, m_audioDevice);
+            if (audioSourceUsesInputDevice(m_audioSource)
+                && !m_audioDevice.isEmpty() && !probeEngine->setDevice(m_audioDevice)) {
                 qWarning() << "RecordingManager: Failed to apply configured audio device for format probing";
             }
 
@@ -556,15 +588,13 @@ void RecordingManager::beginAsyncInitialization()
     config.screen = targetScreen;
     config.frameRate = m_frameRate;
     config.audioEnabled = shouldConfigureAudio;
-    config.audioSource = m_audioSource;
-    config.audioDevice = m_audioDevice;
     config.audioSampleRate = audioSampleRate;
     config.audioChannels = audioChannels;
     config.audioBitsPerSample = audioBitsPerSample;
     config.outputPath = generateOutputPath();
     config.outputFormat = recordingFormat;
     config.frameSize = physicalSize;
-    config.quality = settings.value("recording/quality", 55).toInt();
+    config.quality = recMgr.quality();
 
     // Collect UI window IDs to exclude from capture
     // These are set after show() to ensure Qt has created the native window
@@ -796,8 +826,10 @@ void RecordingManager::onInitializationComplete(const QSharedPointer<RecordingIn
             // Set audio source
             const auto source = resolveAudioSource(m_audioSource);
             m_audioEngine->setAudioSource(source);
+            m_audioDevice = configuredAudioInputDeviceOrDefault(*m_audioEngine, m_audioSource, m_audioDevice);
 
-            if (!m_audioDevice.isEmpty()) {
+            if (audioSourceUsesInputDevice(m_audioSource)
+                && !m_audioDevice.isEmpty()) {
                 m_audioEngine->setDevice(m_audioDevice);
             }
 
@@ -846,9 +878,9 @@ void RecordingManager::onInitializationComplete(const QSharedPointer<RecordingIn
     m_initTask.clear();
 
     // Load countdown settings
-    auto settings = SnapTray::getSettings();
-    m_countdownEnabled = settings.value("recording/countdownEnabled", true).toBool();
-    m_countdownSeconds = settings.value("recording/countdownSeconds", 3).toInt();
+    auto& recMgr = RecordingSettingsManager::instance();
+    m_countdownEnabled = recMgr.countdownEnabled();
+    m_countdownSeconds = recMgr.countdownSeconds();
 
     // Start countdown if enabled, otherwise go directly to recording
     if (m_countdownEnabled && m_countdownSeconds > 0) {
@@ -903,6 +935,9 @@ void RecordingManager::startRecordingAfterCountdown()
     // Initialize state and counters
     m_elapsedTimer.start();
     setState(State::Recording);
+    if (m_boundaryOverlay) {
+        m_boundaryOverlay->setBorderMode(SnapTray::QmlRecordingBoundary::BorderMode::Recording);
+    }
     m_frameCount = 0;
 
     // Start audio capture here to synchronize with video timer
@@ -1072,6 +1107,9 @@ void RecordingManager::pauseRecording()
     if (m_controlBar) {
         m_controlBar->setPaused(true);
     }
+    if (m_boundaryOverlay) {
+        m_boundaryOverlay->setBorderMode(SnapTray::QmlRecordingBoundary::BorderMode::Paused);
+    }
 
     emit recordingPaused();
 }
@@ -1102,6 +1140,9 @@ void RecordingManager::resumeRecording()
 
     if (m_controlBar) {
         m_controlBar->setPaused(false);
+    }
+    if (m_boundaryOverlay) {
+        m_boundaryOverlay->setBorderMode(SnapTray::QmlRecordingBoundary::BorderMode::Recording);
     }
 
     emit recordingResumed();
@@ -1243,16 +1284,16 @@ void RecordingManager::onEncodingFinished(bool success, const QString &outputPat
     m_usingNativeEncoder = false;
 
     if (success) {
-        auto settings = SnapTray::getSettings();
-        bool showPreview = settings.value("recording/showPreview", true).toBool();
+        auto& recMgr = RecordingSettingsManager::instance();
+        const bool showPreview = recMgr.showPreview();
 
         if (showPreview) {
             QString tempPath = outputPath;
-            int preferredFormat = m_preferredFormat;
-            QMetaObject::invokeMethod(this, [this, tempPath, preferredFormat]() {
+            int defaultOutputFormat = m_defaultOutputFormat;
+            QMetaObject::invokeMethod(this, [this, tempPath, defaultOutputFormat]() {
                 m_tempVideoPath = tempPath;
                 setState(State::Previewing);
-                emit previewRequested(tempPath, preferredFormat);
+                emit previewRequested(tempPath, defaultOutputFormat);
             }, Qt::QueuedConnection);
         } else {
             // Existing flow: go directly to save dialog
@@ -1436,9 +1477,9 @@ QString RecordingManager::generateOutputPath() const
     QString tempDir = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
 
     // Get output format from settings
-    auto settings = SnapTray::getSettings();
-    int formatInt = settings.value("recording/outputFormat", 0).toInt();
-    bool showPreview = settings.value("recording/showPreview", true).toBool();
+    auto& recMgr = RecordingSettingsManager::instance();
+    const int formatInt = recMgr.outputFormat();
+    const bool showPreview = recMgr.showPreview();
 
     // When preview is enabled, always record as MP4 (preview player only supports MP4)
     QString extension;

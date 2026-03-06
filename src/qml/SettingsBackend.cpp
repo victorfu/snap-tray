@@ -30,6 +30,29 @@
 
 #include <memory>
 
+namespace {
+QString normalizeRecordingAudioInputDeviceId(const QString& deviceId)
+{
+    if (deviceId.isEmpty()) {
+        return QString();
+    }
+
+    std::unique_ptr<IAudioCaptureEngine> engine(IAudioCaptureEngine::createBestEngine(nullptr));
+    if (!engine) {
+        return deviceId;
+    }
+
+    const auto devices = engine->availableInputDevices();
+    for (const auto& device : devices) {
+        if (device.id == deviceId) {
+            return deviceId;
+        }
+    }
+
+    return QString();
+}
+}
+
 namespace SnapTray {
 
 SettingsBackend::SettingsBackend(QObject* parent)
@@ -93,8 +116,11 @@ void SettingsBackend::loadAllSettings()
     m_recordingShowPreview = recMgr.showPreview();
     m_recordingAudioEnabled = recMgr.audioEnabled();
     m_recordingAudioSource = recMgr.audioSource();
+    m_recordingAudioDevice = recMgr.audioDevice();
     m_countdownEnabled = recMgr.countdownEnabled();
     m_countdownSeconds = recMgr.countdownSeconds();
+
+    normalizeRecordingAudioSettings();
 
     // Files
     auto& fileMgr = FileSettingsManager::instance();
@@ -282,7 +308,12 @@ void SettingsBackend::setRecordingFrameRate(int v) {
 
 int SettingsBackend::recordingOutputFormat() const { return m_recordingOutputFormat; }
 void SettingsBackend::setRecordingOutputFormat(int v) {
-    if (m_recordingOutputFormat != v) { m_recordingOutputFormat = v; emit recordingOutputFormatChanged(); }
+    v = qBound(0, v, 2);
+    if (m_recordingOutputFormat == v)
+        return;
+
+    m_recordingOutputFormat = v;
+    emit recordingOutputFormatChanged();
 }
 
 int SettingsBackend::recordingQuality() const { return m_recordingQuality; }
@@ -292,17 +323,33 @@ void SettingsBackend::setRecordingQuality(int v) {
 
 bool SettingsBackend::recordingShowPreview() const { return m_recordingShowPreview; }
 void SettingsBackend::setRecordingShowPreview(bool v) {
-    if (m_recordingShowPreview != v) { m_recordingShowPreview = v; emit recordingShowPreviewChanged(); }
+    if (m_recordingShowPreview == v)
+        return;
+
+    m_recordingShowPreview = v;
+    emit recordingShowPreviewChanged();
 }
 
 bool SettingsBackend::recordingAudioEnabled() const { return m_recordingAudioEnabled; }
 void SettingsBackend::setRecordingAudioEnabled(bool v) {
-    if (m_recordingAudioEnabled != v) { m_recordingAudioEnabled = v; emit recordingAudioEnabledChanged(); }
+    if (m_recordingAudioEnabled != v) {
+        m_recordingAudioEnabled = v;
+        emit recordingAudioEnabledChanged();
+    }
 }
 
 int SettingsBackend::recordingAudioSource() const { return m_recordingAudioSource; }
 void SettingsBackend::setRecordingAudioSource(int v) {
+    v = qBound(0, v, 2);
     if (m_recordingAudioSource != v) { m_recordingAudioSource = v; emit recordingAudioSourceChanged(); }
+}
+
+QString SettingsBackend::recordingAudioDevice() const { return m_recordingAudioDevice; }
+void SettingsBackend::setRecordingAudioDevice(const QString& v) {
+    if (m_recordingAudioDevice != v) {
+        m_recordingAudioDevice = v;
+        emit recordingAudioDeviceChanged();
+    }
 }
 
 bool SettingsBackend::countdownEnabled() const { return m_countdownEnabled; }
@@ -439,12 +486,14 @@ void SettingsBackend::save()
 
     // Recording
     auto& recMgr = RecordingSettingsManager::instance();
+    normalizeRecordingAudioSettings();
     recMgr.setFrameRate(m_recordingFrameRate);
     recMgr.setOutputFormat(m_recordingOutputFormat);
     recMgr.setQuality(m_recordingQuality);
     recMgr.setShowPreview(m_recordingShowPreview);
     recMgr.setAudioEnabled(m_recordingAudioEnabled);
     recMgr.setAudioSource(m_recordingAudioSource);
+    recMgr.setAudioDevice(m_recordingAudioDevice);
     recMgr.setCountdownEnabled(m_countdownEnabled);
     recMgr.setCountdownSeconds(m_countdownSeconds);
 
@@ -781,8 +830,9 @@ QVariantList SettingsBackend::audioDevices() const
     const auto devices = engine->availableInputDevices();
     for (const auto& device : devices) {
         QVariantMap entry;
-        entry[QStringLiteral("id")] = device.id;
-        entry[QStringLiteral("name")] = device.name;
+        entry[QStringLiteral("text")] = device.name;
+        entry[QStringLiteral("value")] = device.id;
+        entry[QStringLiteral("isDefault")] = device.isDefault;
         result.append(entry);
     }
     return result;
@@ -791,6 +841,13 @@ QVariantList SettingsBackend::audioDevices() const
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
+
+void SettingsBackend::normalizeRecordingAudioSettings()
+{
+    if (!m_recordingAudioDevice.isEmpty()) {
+        m_recordingAudioDevice = normalizeRecordingAudioInputDeviceId(m_recordingAudioDevice);
+    }
+}
 
 QString SettingsBackend::computeFilenamePreview() const
 {

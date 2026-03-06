@@ -487,7 +487,7 @@ QString QmlRecordingControlBar::tooltipForButton(int buttonId) const
     case 1: // Stop
         return translateRecordingControlBar("Stop Recording");
     case 2: // Cancel
-        return translateRecordingControlBar("Cancel Recording (Esc)");
+        return translateRecordingControlBar("Cancel Recording");
     default:
         return QString();
     }
