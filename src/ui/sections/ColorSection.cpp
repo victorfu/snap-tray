@@ -14,7 +14,7 @@ ColorSection::ColorSection(QObject* parent)
         QColor(220, 53, 69),    // Red
         QColor(255, 240, 120),  // Yellow (brighter)
         QColor(80, 200, 120),   // Green (lighter)
-        QColor(0, 123, 255),    // Blue
+        QColor(0x6C, 0x5C, 0xE7), // Primary purple
         QColor(33, 37, 41),     // Black (soft)
         Qt::white               // White
     };
