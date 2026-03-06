@@ -1,5 +1,5 @@
 #include "RecordingManager.h"
-#include "RecordingRegionSelector.h"
+#include "qml/QmlRecordingRegionSelector.h"
 #include "qml/QmlRecordingControlBar.h"
 #include "qml/QmlRecordingBoundary.h"
 #include "RecordingInitTask.h"
@@ -11,7 +11,6 @@
 #include "encoding/EncoderFactory.h"
 #include "capture/ICaptureEngine.h"
 #include "capture/IAudioCaptureEngine.h"
-#include "platform/WindowLevel.h"
 #include "utils/ResourceCleanupHelper.h"
 #include "utils/CoordinateHelper.h"
 #include "utils/FilenameTemplateEngine.h"
@@ -229,7 +228,7 @@ bool RecordingManager::isPreviewing() const
     return m_state == State::Previewing;
 }
 
-RecordingRegionSelector* RecordingManager::createRegionSelector()
+SnapTray::QmlRecordingRegionSelector* RecordingManager::createRegionSelector()
 {
     if (m_regionSelector && m_regionSelector->isVisible()) {
         return nullptr;
@@ -242,20 +241,17 @@ RecordingRegionSelector* RecordingManager::createRegionSelector()
     }
 
     // Clean up any existing selector
-    if (m_regionSelector) {
-        m_regionSelector->close();
-    }
+    destroyRegionSelector();
 
     setState(State::Selecting);
 
-    m_regionSelector = new RecordingRegionSelector();
-    m_regionSelector->setAttribute(Qt::WA_DeleteOnClose);
+    m_regionSelector = new SnapTray::QmlRecordingRegionSelector(this);
 
-    connect(m_regionSelector, &RecordingRegionSelector::regionSelected,
+    connect(m_regionSelector, &SnapTray::QmlRecordingRegionSelector::regionSelected,
             this, &RecordingManager::onRegionSelected);
-    connect(m_regionSelector, &RecordingRegionSelector::cancelledWithRegion,
+    connect(m_regionSelector, &SnapTray::QmlRecordingRegionSelector::cancelledWithRegion,
             this, &RecordingManager::onRegionCancelledWithRegion);
-    connect(m_regionSelector, &RecordingRegionSelector::cancelled,
+    connect(m_regionSelector, &SnapTray::QmlRecordingRegionSelector::cancelled,
             this, &RecordingManager::onRegionCancelled);
 
     return m_regionSelector;
@@ -347,7 +343,7 @@ void RecordingManager::startRegionSelectionWithPreset(const QRect &region, QScre
     selector->setGeometry(targetScreen->geometry());
     selector->initializeWithRegion(targetScreen, region);
     selector->show();
-    raiseWindowAboveMenuBar(selector);
+    selector->raiseAboveMenuBar();
     selector->activateWindow();
     selector->raise();
 }
@@ -389,8 +385,21 @@ void RecordingManager::startFullScreenRecording(QScreen* screen)
     startFrameCapture();
 }
 
+void RecordingManager::destroyRegionSelector()
+{
+    if (!m_regionSelector)
+        return;
+
+    disconnect(m_regionSelector, nullptr, this, nullptr);
+    m_regionSelector->close();
+    m_regionSelector->deleteLater();
+    m_regionSelector = nullptr;
+}
+
 void RecordingManager::onRegionSelected(const QRect &region, QScreen *screen)
 {
+    destroyRegionSelector();
+
     QScreen* targetScreen = resolveTargetScreen(screen);
     if (!targetScreen) {
         emit recordingError(tr("No screen available for recording."));
@@ -415,12 +424,14 @@ void RecordingManager::onRegionSelected(const QRect &region, QScreen *screen)
 
 void RecordingManager::onRegionCancelledWithRegion(const QRect &region, QScreen *screen)
 {
+    destroyRegionSelector();
     setState(State::Idle);
     emit selectionCancelledWithRegion(region, screen);
 }
 
 void RecordingManager::onRegionCancelled()
 {
+    destroyRegionSelector();
     setState(State::Idle);
 }
 
@@ -1254,9 +1265,7 @@ void RecordingManager::cleanupRecording()
     }
     m_usingNativeEncoder = false;
 
-    if (m_regionSelector) {
-        m_regionSelector->close();
-    }
+    destroyRegionSelector();
 }
 
 void RecordingManager::cleanupAudio()

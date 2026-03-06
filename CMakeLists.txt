@@ -919,6 +919,7 @@ set_source_files_properties(src/qml/recording/RecordingPreview.qml PROPERTIES QT
 
 # Recording control bar
 set_source_files_properties(src/qml/recording/RecordingControlBar.qml PROPERTIES QT_RESOURCE_ALIAS recording/RecordingControlBar.qml)
+set_source_files_properties(src/qml/recording/RecordingRegionSelector.qml PROPERTIES QT_RESOURCE_ALIAS recording/RecordingRegionSelector.qml)
 
 qt_add_qml_module(snaptray_qml
     URI SnapTrayQml
@@ -960,6 +961,7 @@ qt_add_qml_module(snaptray_qml
         src/qml/settings/AboutSettings.qml
         src/qml/recording/RecordingPreview.qml
         src/qml/recording/RecordingControlBar.qml
+        src/qml/recording/RecordingRegionSelector.qml
     SOURCES
         src/qml/AnnotationCanvas.cpp
         include/qml/AnnotationCanvas.h
@@ -975,6 +977,8 @@ qt_add_qml_module(snaptray_qml
         include/qml/QmlRecordingBoundary.h
         src/qml/QmlRecordingControlBar.mm
         include/qml/QmlRecordingControlBar.h
+        src/qml/QmlRecordingRegionSelector.mm
+        include/qml/QmlRecordingRegionSelector.h
         src/qml/QmlCountdownOverlay.mm
         include/qml/QmlCountdownOverlay.h
         src/qml/VideoPlaybackItem.cpp

@@ -15,12 +15,12 @@
 #include "WatermarkRenderer.h"
 #include "utils/ResourceCleanupHelper.h"
 
-class RecordingRegionSelector;
 class RecordingInitTask;
 
 namespace SnapTray {
 class QmlRecordingBoundary;
 class QmlRecordingControlBar;
+class QmlRecordingRegionSelector;
 }
 class QmlCountdownOverlay;
 class NativeGifEncoder;
@@ -107,7 +107,8 @@ private:
     QString generateOutputPath() const;
     void setState(State newState);
     void showSaveDialog(const QString &tempOutputPath);
-    RecordingRegionSelector* createRegionSelector();
+    SnapTray::QmlRecordingRegionSelector* createRegionSelector();
+    void destroyRegionSelector();
     void loadAndValidateFrameRate();
     void resetPauseTracking();
     bool shouldUseDedicatedEncodingThread(bool hasNativeEncoder) const;
@@ -120,7 +121,7 @@ private:
 
 private:
     // Region selection
-    QPointer<RecordingRegionSelector> m_regionSelector;
+    QPointer<SnapTray::QmlRecordingRegionSelector> m_regionSelector;
 
     // Recording state
     QPointer<SnapTray::QmlRecordingControlBar> m_controlBar;
