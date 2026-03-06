@@ -24,9 +24,11 @@
 #include "widgets/TypeHotkeyDialog.h"
 
 #include <QFileDialog>
+#include <QFutureWatcher>
 #include <QLocale>
 #include <QUrl>
 #include <QVariantMap>
+#include <QtConcurrent/QtConcurrentRun>
 
 #include <memory>
 
@@ -51,6 +53,26 @@ QString normalizeRecordingAudioInputDeviceId(const QString& deviceId)
     }
 
     return QString();
+}
+
+QVariantList queryRecordingAudioDevices()
+{
+    QVariantList result;
+    auto engine = std::unique_ptr<IAudioCaptureEngine>(
+        IAudioCaptureEngine::createBestEngine());
+    if (!engine) {
+        return result;
+    }
+
+    const auto devices = engine->availableInputDevices();
+    for (const auto& device : devices) {
+        QVariantMap entry;
+        entry[QStringLiteral("text")] = device.name;
+        entry[QStringLiteral("value")] = device.id;
+        entry[QStringLiteral("isDefault")] = device.isDefault;
+        result.append(entry);
+    }
+    return result;
 }
 }
 
@@ -120,8 +142,6 @@ void SettingsBackend::loadAllSettings()
     m_recordingAudioDevice = recMgr.audioDevice();
     m_countdownEnabled = recMgr.countdownEnabled();
     m_countdownSeconds = recMgr.countdownSeconds();
-
-    normalizeRecordingAudioSettings();
 
     // Files
     auto& fileMgr = FileSettingsManager::instance();
@@ -353,6 +373,21 @@ void SettingsBackend::setRecordingAudioDevice(const QString& v) {
     }
 }
 
+bool SettingsBackend::recordingAudioDevicesLoading() const
+{
+    return m_recordingAudioDevicesLoading;
+}
+
+bool SettingsBackend::recordingAudioDevicesLoaded() const
+{
+    return m_recordingAudioDevicesLoaded;
+}
+
+QVariantList SettingsBackend::recordingAudioDevices() const
+{
+    return m_recordingAudioDeviceItems;
+}
+
 bool SettingsBackend::countdownEnabled() const { return m_countdownEnabled; }
 void SettingsBackend::setCountdownEnabled(bool v) {
     if (m_countdownEnabled != v) { m_countdownEnabled = v; emit countdownEnabledChanged(); }
@@ -438,6 +473,21 @@ QString SettingsBackend::appName() const
 QString SettingsBackend::appVersion() const
 {
     return UpdateChecker::currentVersion();
+}
+
+bool SettingsBackend::ocrSupported() const
+{
+    return PlatformFeatures::instance().isOCRAvailable();
+}
+
+bool SettingsBackend::ocrLoading() const
+{
+    return m_ocrLoading;
+}
+
+bool SettingsBackend::ocrAvailableLanguagesLoaded() const
+{
+    return !ocrSupported() || m_ocrAvailableLanguagesLoaded;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -655,52 +705,88 @@ void SettingsBackend::checkForUpdates()
 
 void SettingsBackend::loadOcrLanguages()
 {
-    if (m_ocrLoaded)
+    ensureOcrSettingsLoaded();
+
+    if (!ocrSupported() || m_ocrAvailableLanguagesLoaded || m_ocrLoading)
         return;
 
-    auto& ocrMgr = OCRSettingsManager::instance();
-    ocrMgr.load();
-    m_ocrSelectedLanguages = ocrMgr.languages();
-    m_ocrBehavior = static_cast<int>(ocrMgr.behavior());
-    m_ocrLoaded = true;
-    emit ocrLanguagesChanged(m_ocrSelectedLanguages);
+    if (!m_ocrLanguageWatcher) {
+        m_ocrLanguageWatcher = new QFutureWatcher<QList<OCRLanguageInfo>>(this);
+        connect(m_ocrLanguageWatcher, &QFutureWatcher<QList<OCRLanguageInfo>>::finished,
+                this, [this]() {
+            const auto languages = m_ocrLanguageWatcher->result();
+            m_ocrAvailableLanguageItems.clear();
+            m_ocrDisplayNamesByCode.clear();
+
+            for (const auto& lang : languages) {
+                QVariantMap entry;
+                entry[QStringLiteral("code")] = lang.code;
+                entry[QStringLiteral("displayName")] = lang.nativeName;
+                m_ocrAvailableLanguageItems.append(entry);
+                m_ocrDisplayNamesByCode.insert(lang.code, lang.nativeName);
+            }
+
+            const bool loadedChanged = !m_ocrAvailableLanguagesLoaded;
+            m_ocrAvailableLanguagesLoaded = true;
+            m_ocrLoading = false;
+            emit ocrLoadingChanged();
+            if (loadedChanged)
+                emit ocrAvailableLanguagesLoadedChanged();
+            emit ocrAvailableLanguagesChanged();
+            emit ocrSelectedLanguagesChanged();
+        });
+    }
+
+    m_ocrLoading = true;
+    emit ocrLoadingChanged();
+    m_ocrLanguageWatcher->setFuture(QtConcurrent::run([]() {
+        return OCRManager::availableLanguages();
+    }));
+}
+
+void SettingsBackend::loadRecordingAudioDevices()
+{
+    if (m_recordingAudioDevicesLoaded || m_recordingAudioDevicesLoading)
+        return;
+
+    if (!m_recordingAudioDevicesWatcher) {
+        m_recordingAudioDevicesWatcher = new QFutureWatcher<QVariantList>(this);
+        connect(m_recordingAudioDevicesWatcher, &QFutureWatcher<QVariantList>::finished,
+                this, [this]() {
+            m_recordingAudioDeviceItems = m_recordingAudioDevicesWatcher->result();
+
+            const bool loadedChanged = !m_recordingAudioDevicesLoaded;
+            m_recordingAudioDevicesLoaded = true;
+            m_recordingAudioDevicesLoading = false;
+            emit recordingAudioDevicesLoadingChanged();
+            if (loadedChanged)
+                emit recordingAudioDevicesLoadedChanged();
+            emit recordingAudioDevicesChanged();
+        });
+    }
+
+    m_recordingAudioDevicesLoading = true;
+    emit recordingAudioDevicesLoadingChanged();
+    m_recordingAudioDevicesWatcher->setFuture(QtConcurrent::run([]() {
+        return queryRecordingAudioDevices();
+    }));
 }
 
 QVariantList SettingsBackend::ocrAvailableLanguages() const
 {
-    QVariantList result;
-    if (!PlatformFeatures::instance().isOCRAvailable())
-        return result;
-
-    const auto langs = OCRManager::availableLanguages();
-    for (const auto& lang : langs) {
-        QVariantMap entry;
-        entry[QStringLiteral("code")] = lang.code;
-        entry[QStringLiteral("displayName")] = lang.nativeName;
-        result.append(entry);
-    }
-    return result;
+    return m_ocrAvailableLanguageItems;
 }
 
 QVariantList SettingsBackend::ocrSelectedLanguages() const
 {
     QVariantList result;
-    if (!PlatformFeatures::instance().isOCRAvailable())
+    if (!ocrSupported())
         return result;
 
-    const auto allLangs = OCRManager::availableLanguages();
     for (const auto& code : m_ocrSelectedLanguages) {
         QVariantMap entry;
         entry[QStringLiteral("code")] = code;
-        // Find display name
-        QString displayName = code;
-        for (const auto& lang : allLangs) {
-            if (lang.code == code) {
-                displayName = lang.nativeName;
-                break;
-            }
-        }
-        entry[QStringLiteral("displayName")] = displayName;
+        entry[QStringLiteral("displayName")] = ocrDisplayNameForCode(code);
         result.append(entry);
     }
     return result;
@@ -708,26 +794,32 @@ QVariantList SettingsBackend::ocrSelectedLanguages() const
 
 void SettingsBackend::addOcrLanguage(const QString& code)
 {
+    ensureOcrSettingsLoaded();
     if (!m_ocrSelectedLanguages.contains(code)) {
         m_ocrSelectedLanguages.append(code);
+        emit ocrSelectedLanguagesChanged();
         emit ocrLanguagesChanged(m_ocrSelectedLanguages);
     }
 }
 
 void SettingsBackend::removeOcrLanguage(const QString& code)
 {
+    ensureOcrSettingsLoaded();
     if (m_ocrSelectedLanguages.removeAll(code) > 0) {
+        emit ocrSelectedLanguagesChanged();
         emit ocrLanguagesChanged(m_ocrSelectedLanguages);
     }
 }
 
 void SettingsBackend::moveOcrLanguage(int from, int to)
 {
+    ensureOcrSettingsLoaded();
     if (from < 0 || from >= m_ocrSelectedLanguages.size()
         || to < 0 || to >= m_ocrSelectedLanguages.size()
         || from == to)
         return;
     m_ocrSelectedLanguages.move(from, to);
+    emit ocrSelectedLanguagesChanged();
     emit ocrLanguagesChanged(m_ocrSelectedLanguages);
 }
 
@@ -735,7 +827,12 @@ int SettingsBackend::ocrBehavior() const { return m_ocrBehavior; }
 
 void SettingsBackend::setOcrBehavior(int behavior)
 {
+    ensureOcrSettingsLoaded();
+    if (m_ocrBehavior == behavior)
+        return;
+
     m_ocrBehavior = behavior;
+    emit ocrBehaviorChanged();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -822,21 +919,7 @@ void SettingsBackend::restoreAllHotkeys()
 
 QVariantList SettingsBackend::audioDevices() const
 {
-    QVariantList result;
-    auto engine = std::unique_ptr<IAudioCaptureEngine>(
-        IAudioCaptureEngine::createBestEngine());
-    if (!engine)
-        return result;
-
-    const auto devices = engine->availableInputDevices();
-    for (const auto& device : devices) {
-        QVariantMap entry;
-        entry[QStringLiteral("text")] = device.name;
-        entry[QStringLiteral("value")] = device.id;
-        entry[QStringLiteral("isDefault")] = device.isDefault;
-        result.append(entry);
-    }
-    return result;
+    return m_recordingAudioDeviceItems;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -846,12 +929,31 @@ QVariantList SettingsBackend::audioDevices() const
 void SettingsBackend::normalizeRecordingAudioSettings()
 {
     if (!m_recordingAudioDevice.isEmpty()) {
+        if (m_recordingAudioDevicesLoaded) {
+            if (!hasRecordingAudioDevice(m_recordingAudioDevice)) {
+                m_recordingAudioDevice.clear();
+                emit recordingAudioDeviceChanged();
+            }
+            return;
+        }
+
         const auto normalized = normalizeRecordingAudioInputDeviceId(m_recordingAudioDevice);
         if (m_recordingAudioDevice != normalized) {
             m_recordingAudioDevice = normalized;
             emit recordingAudioDeviceChanged();
         }
     }
+}
+
+bool SettingsBackend::hasRecordingAudioDevice(const QString& deviceId) const
+{
+    for (const auto& deviceValue : m_recordingAudioDeviceItems) {
+        const QVariantMap device = deviceValue.toMap();
+        if (device.value(QStringLiteral("value")).toString() == deviceId)
+            return true;
+    }
+
+    return false;
 }
 
 QString SettingsBackend::computeFilenamePreview() const
@@ -866,6 +968,29 @@ QString SettingsBackend::computeFilenamePreview() const
 
     auto result = FilenameTemplateEngine::renderFilename(m_filenameTemplate, ctx);
     return result.filename;
+}
+
+void SettingsBackend::ensureOcrSettingsLoaded()
+{
+    if (m_ocrLoaded)
+        return;
+
+    auto& ocrMgr = OCRSettingsManager::instance();
+    ocrMgr.load();
+    m_ocrSelectedLanguages = ocrMgr.languages();
+    m_ocrBehavior = static_cast<int>(ocrMgr.behavior());
+    m_ocrLoaded = true;
+    emit ocrSelectedLanguagesChanged();
+    emit ocrBehaviorChanged();
+}
+
+QString SettingsBackend::ocrDisplayNameForCode(const QString& code) const
+{
+    const auto it = m_ocrDisplayNamesByCode.constFind(code);
+    if (it != m_ocrDisplayNamesByCode.cend())
+        return it.value();
+
+    return code;
 }
 
 } // namespace SnapTray

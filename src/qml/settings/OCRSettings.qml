@@ -5,8 +5,8 @@ import SnapTrayQml
 /**
  * OCRSettings: Language selection (dual-list) and OCR behavior options.
  *
- * Lazy-loads available languages on first display via settingsBackend.loadOcrLanguages().
- * Uses local properties to cache Q_INVOKABLE data and refreshes after mutations.
+ * The page loads immediately, then fetches OCR languages in the background so
+ * switching into Settings never blocks on OCR initialization.
  */
 Flickable {
     id: root
@@ -15,26 +15,18 @@ Flickable {
     boundsBehavior: Flickable.StopAtBounds
     ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
 
-    // Local state caching Q_INVOKABLE return values
-    property var availableLangs: []
-    property var selectedLangs: []
-    property int ocrBehavior: 0
-    property bool ocrLoading: true
-
-    function refreshLists() {
-        availableLangs = settingsBackend.ocrAvailableLanguages()
-        selectedLangs = settingsBackend.ocrSelectedLanguages()
-        ocrLoading = false
-    }
-
-    Connections {
-        target: settingsBackend
-        function onOcrLanguagesChanged() { root.refreshLists() }
-    }
+    readonly property var availableLangs: settingsBackend.ocrAvailableLanguages
+    readonly property var selectedLangs: settingsBackend.ocrSelectedLanguages
+    readonly property bool ocrLoading: settingsBackend.ocrLoading
+    readonly property bool ocrLoaded: settingsBackend.ocrAvailableLanguagesLoaded
+    readonly property bool ocrSupported: settingsBackend.ocrSupported
+    readonly property bool showLoadingState: root.ocrSupported && (!root.ocrLoaded || root.ocrLoading)
+    readonly property bool showLanguageLists: root.ocrLoaded && !root.ocrLoading && root.availableLangs.length > 0
 
     Component.onCompleted: {
-        settingsBackend.loadOcrLanguages()
-        ocrBehavior = settingsBackend.ocrBehavior()
+        Qt.callLater(function() {
+            settingsBackend.loadOcrLanguages()
+        })
     }
 
     Column {
@@ -56,28 +48,53 @@ Flickable {
 
         Spacer { size: SemanticTokens.spacing4 }
 
-        // Loading indicator
-        Item {
+        Rectangle {
             width: parent.width - 2 * ComponentTokens.settingsContentPadding
-            height: 40
-            visible: root.ocrLoading
+            visible: !root.showLanguageLists
+            radius: SemanticTokens.radiusSmall
+            color: ComponentTokens.infoPanelBg
+            border.width: 1
+            border.color: ComponentTokens.infoPanelBorder
+            height: statusColumn.implicitHeight + 24
 
-            Row {
-                anchors.centerIn: parent
+            Column {
+                id: statusColumn
+                anchors.fill: parent
+                anchors.margins: 12
                 spacing: SemanticTokens.spacing8
 
-                BusySpinner {
-                    running: root.ocrLoading
-                    anchors.verticalCenter: parent.verticalCenter
+                Row {
+                    visible: root.showLoadingState
+                    spacing: SemanticTokens.spacing8
+
+                    BusySpinner {
+                        running: root.showLoadingState
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+
+                    Text {
+                        text: qsTr("Preparing OCR languages...")
+                        color: ComponentTokens.infoPanelText
+                        font.pixelSize: SemanticTokens.fontSizeBody
+                        font.weight: Font.Medium
+                        font.family: SemanticTokens.fontFamily
+                        font.letterSpacing: SemanticTokens.letterSpacingDefault
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
                 }
 
                 Text {
-                    text: qsTr("Loading languages...")
-                    color: SemanticTokens.textSecondary
+                    width: parent.width
+                    text: root.showLoadingState
+                        ? qsTr("The settings window is ready. OCR languages are loading in the background.")
+                        : root.ocrSupported
+                            ? qsTr("No OCR languages are available on this device right now.")
+                            : qsTr("OCR is not available on this device.")
+                    color: ComponentTokens.infoPanelText
                     font.pixelSize: SemanticTokens.fontSizeBody
                     font.family: SemanticTokens.fontFamily
                     font.letterSpacing: SemanticTokens.letterSpacingDefault
-                    anchors.verticalCenter: parent.verticalCenter
+                    wrapMode: Text.WordWrap
                 }
             }
         }
@@ -87,8 +104,8 @@ Flickable {
             width: parent.width - 2 * ComponentTokens.settingsContentPadding
             height: 220
             spacing: SemanticTokens.spacing8
-            visible: !root.ocrLoading
-            opacity: root.ocrLoading ? 0 : 1
+            visible: root.showLanguageLists
+            opacity: root.showLanguageLists ? 1 : 0
 
             Behavior on opacity {
                 NumberAnimation { duration: SemanticTokens.durationNormal }
@@ -333,14 +350,13 @@ Flickable {
         SettingsSection { title: qsTr("After OCR Recognition") }
 
         SettingsRadioGroup {
-            currentValue: root.ocrBehavior
+            currentValue: settingsBackend.ocrBehavior
             model: [
                 { text: qsTr("Copy text directly to clipboard"), value: 0 },
                 { text: qsTr("Show editor to review and edit text"), value: 1 }
             ]
             onActivated: function(value) {
-                root.ocrBehavior = value
-                settingsBackend.setOcrBehavior(value)
+                settingsBackend.ocrBehavior = value
             }
         }
     }

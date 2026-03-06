@@ -15,7 +15,19 @@ Flickable {
     readonly property var frameRates: [10, 15, 24, 30]
     readonly property bool audioCaptureSupported: settingsBackend.recordingShowPreview || settingsBackend.recordingOutputFormat === 0
     readonly property bool audioSourceUsesInputDevice: settingsBackend.recordingAudioSource !== 1
+    readonly property var audioDevices: settingsBackend.recordingAudioDevices
+    readonly property bool audioDevicesLoading: settingsBackend.recordingAudioDevicesLoading
+    readonly property bool audioDevicesLoaded: settingsBackend.recordingAudioDevicesLoaded
+    readonly property bool showAudioDeviceLoading: root.audioCaptureSupported
+        && root.audioSourceUsesInputDevice
+        && !root.audioDevicesLoaded
     readonly property var audioDeviceOptions: buildAudioDeviceOptions()
+
+    Component.onCompleted: {
+        Qt.callLater(function() {
+            settingsBackend.loadRecordingAudioDevices()
+        })
+    }
 
     function frameRateToIndex(fps) {
         for (var i = 0; i < frameRates.length; i++) {
@@ -26,7 +38,7 @@ Flickable {
 
     function buildAudioDeviceOptions() {
         var options = [{ text: qsTr("System Default"), value: "" }]
-        var devices = settingsBackend.audioDevices()
+        var devices = root.audioDevices
         for (var i = 0; i < devices.length; i++) {
             options.push(devices[i])
         }
@@ -150,11 +162,57 @@ Flickable {
             onActivated: function(index) { settingsBackend.recordingAudioSource = index }
         }
 
+        Rectangle {
+            width: parent.width - 2 * ComponentTokens.settingsContentPadding
+            visible: root.showAudioDeviceLoading
+            radius: SemanticTokens.radiusSmall
+            color: ComponentTokens.infoPanelBg
+            border.width: 1
+            border.color: ComponentTokens.infoPanelBorder
+            height: statusColumn.implicitHeight + 24
+
+            Column {
+                id: statusColumn
+                anchors.fill: parent
+                anchors.margins: 12
+                spacing: SemanticTokens.spacing8
+
+                Row {
+                    spacing: SemanticTokens.spacing8
+
+                    BusySpinner {
+                        running: root.showAudioDeviceLoading
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+
+                    Text {
+                        text: qsTr("Loading audio devices...")
+                        color: ComponentTokens.infoPanelText
+                        font.pixelSize: SemanticTokens.fontSizeBody
+                        font.weight: Font.Medium
+                        font.family: SemanticTokens.fontFamily
+                        font.letterSpacing: SemanticTokens.letterSpacingDefault
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                }
+
+                Text {
+                    width: parent.width
+                    text: qsTr("The recording page is ready. Input devices are loading in the background.")
+                    color: ComponentTokens.infoPanelText
+                    font.pixelSize: SemanticTokens.fontSizeBody
+                    font.family: SemanticTokens.fontFamily
+                    font.letterSpacing: SemanticTokens.letterSpacingDefault
+                    wrapMode: Text.WordWrap
+                }
+            }
+        }
+
         SettingsCombo {
             label: qsTr("Input device")
             model: root.audioDeviceOptions
             currentIndex: root.audioDeviceToIndex(settingsBackend.recordingAudioDevice)
-            visible: root.audioCaptureSupported && root.audioSourceUsesInputDevice
+            visible: root.audioCaptureSupported && root.audioSourceUsesInputDevice && root.audioDevicesLoaded
             enabled: settingsBackend.recordingAudioEnabled
             opacity: enabled ? 1.0 : 0.6
             onActivated: function(index) {

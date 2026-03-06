@@ -2,6 +2,8 @@
 #include <QDebug>
 #include <QImage>
 #include <QCoreApplication>
+#include <QMutex>
+#include <QMutexLocker>
 #include <QThread>
 #include <utility>
 
@@ -235,6 +237,73 @@ private:
     OCRResult m_result;
 };
 
+QMutex& availableLanguagesCacheMutex()
+{
+    static QMutex mutex;
+    return mutex;
+}
+
+QList<OCRLanguageInfo>& availableLanguagesCache()
+{
+    static QList<OCRLanguageInfo> cache;
+    return cache;
+}
+
+bool& availableLanguagesCacheReady()
+{
+    static bool ready = false;
+    return ready;
+}
+
+struct AvailableLanguageQueryResult {
+    QList<OCRLanguageInfo> languages;
+    bool success = false;
+};
+
+AvailableLanguageQueryResult queryAvailableLanguages()
+{
+    AvailableLanguageQueryResult result;
+
+    bool apartmentInitialized = false;
+    try {
+        // Initialize WinRT if needed
+        try {
+            winrt::init_apartment(winrt::apartment_type::multi_threaded);
+            apartmentInitialized = true;
+        } catch (const winrt::hresult_error& ex) {
+            if (ex.code() != HRESULT(0x80010106)) {
+                throw;
+            }
+        }
+
+        auto languages = OcrEngine::AvailableRecognizerLanguages();
+
+        for (const auto& lang : languages) {
+            OCRLanguageInfo info;
+            QString tag = QString::fromStdWString(std::wstring(lang.LanguageTag()));
+            info.code = mapToBcp47(tag);
+            info.nativeName = QString::fromStdWString(std::wstring(lang.NativeName()));
+            info.englishName = QString::fromStdWString(std::wstring(lang.DisplayName()));
+            result.languages.append(info);
+        }
+
+        result.success = true;
+        qDebug() << "OCRManager: Found" << result.languages.size() << "available languages";
+
+    } catch (const winrt::hresult_error& ex) {
+        qDebug() << "OCRManager: Failed to enumerate languages:"
+                 << QString::fromStdWString(std::wstring(ex.message()));
+    } catch (...) {
+        qDebug() << "OCRManager: Unknown error enumerating languages";
+    }
+
+    if (apartmentInitialized) {
+        winrt::uninit_apartment();
+    }
+
+    return result;
+}
+
 } // anonymous namespace
 
 OCRManager::OCRManager(QObject *parent)
@@ -350,39 +419,21 @@ void OCRManager::recognizeText(const QPixmap &pixmap, const OCRCallback &callbac
 
 QList<OCRLanguageInfo> OCRManager::availableLanguages()
 {
-    QList<OCRLanguageInfo> result;
-
-    try {
-        // Initialize WinRT if needed
-        try {
-            winrt::init_apartment(winrt::apartment_type::multi_threaded);
-        } catch (const winrt::hresult_error& ex) {
-            if (ex.code() != HRESULT(0x80010106)) {
-                throw;
-            }
+    {
+        QMutexLocker locker(&availableLanguagesCacheMutex());
+        if (availableLanguagesCacheReady()) {
+            return availableLanguagesCache();
         }
-
-        auto languages = OcrEngine::AvailableRecognizerLanguages();
-
-        for (const auto& lang : languages) {
-            OCRLanguageInfo info;
-            QString tag = QString::fromStdWString(std::wstring(lang.LanguageTag()));
-            info.code = mapToBcp47(tag);
-            info.nativeName = QString::fromStdWString(std::wstring(lang.NativeName()));
-            info.englishName = QString::fromStdWString(std::wstring(lang.DisplayName()));
-            result.append(info);
-        }
-
-        qDebug() << "OCRManager: Found" << result.size() << "available languages";
-
-    } catch (const winrt::hresult_error& ex) {
-        qDebug() << "OCRManager: Failed to enumerate languages:"
-                 << QString::fromStdWString(std::wstring(ex.message()));
-    } catch (...) {
-        qDebug() << "OCRManager: Unknown error enumerating languages";
     }
 
-    return result;
+    const AvailableLanguageQueryResult queryResult = queryAvailableLanguages();
+
+    QMutexLocker locker(&availableLanguagesCacheMutex());
+    if (!availableLanguagesCacheReady() && queryResult.success) {
+        availableLanguagesCache() = queryResult.languages;
+        availableLanguagesCacheReady() = true;
+    }
+    return availableLanguagesCacheReady() ? availableLanguagesCache() : queryResult.languages;
 }
 
 void OCRManager::setRecognitionLanguages(const QStringList &languageCodes)

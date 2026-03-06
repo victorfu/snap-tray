@@ -1,11 +1,16 @@
 #pragma once
 
+#include <QHash>
+#include <QList>
 #include <QObject>
 #include <QString>
 #include <QStringList>
 #include <QVariantList>
 
 class UpdateChecker;
+template<typename T>
+class QFutureWatcher;
+struct OCRLanguageInfo;
 
 namespace SnapTray {
 
@@ -58,6 +63,9 @@ class SettingsBackend : public QObject
     Q_PROPERTY(bool recordingAudioEnabled READ recordingAudioEnabled WRITE setRecordingAudioEnabled NOTIFY recordingAudioEnabledChanged)
     Q_PROPERTY(int recordingAudioSource READ recordingAudioSource WRITE setRecordingAudioSource NOTIFY recordingAudioSourceChanged)
     Q_PROPERTY(QString recordingAudioDevice READ recordingAudioDevice WRITE setRecordingAudioDevice NOTIFY recordingAudioDeviceChanged)
+    Q_PROPERTY(bool recordingAudioDevicesLoading READ recordingAudioDevicesLoading NOTIFY recordingAudioDevicesLoadingChanged)
+    Q_PROPERTY(bool recordingAudioDevicesLoaded READ recordingAudioDevicesLoaded NOTIFY recordingAudioDevicesLoadedChanged)
+    Q_PROPERTY(QVariantList recordingAudioDevices READ recordingAudioDevices NOTIFY recordingAudioDevicesChanged)
     Q_PROPERTY(bool countdownEnabled READ countdownEnabled WRITE setCountdownEnabled NOTIFY countdownEnabledChanged)
     Q_PROPERTY(int countdownSeconds READ countdownSeconds WRITE setCountdownSeconds NOTIFY countdownSecondsChanged)
 
@@ -79,6 +87,14 @@ class SettingsBackend : public QObject
     // ──── About ────
     Q_PROPERTY(QString appName READ appName CONSTANT)
     Q_PROPERTY(QString appVersion READ appVersion CONSTANT)
+
+    // ──── OCR ────
+    Q_PROPERTY(bool ocrSupported READ ocrSupported CONSTANT)
+    Q_PROPERTY(bool ocrLoading READ ocrLoading NOTIFY ocrLoadingChanged)
+    Q_PROPERTY(bool ocrAvailableLanguagesLoaded READ ocrAvailableLanguagesLoaded NOTIFY ocrAvailableLanguagesLoadedChanged)
+    Q_PROPERTY(QVariantList ocrAvailableLanguages READ ocrAvailableLanguages NOTIFY ocrAvailableLanguagesChanged)
+    Q_PROPERTY(QVariantList ocrSelectedLanguages READ ocrSelectedLanguages NOTIFY ocrSelectedLanguagesChanged)
+    Q_PROPERTY(int ocrBehavior READ ocrBehavior WRITE setOcrBehavior NOTIFY ocrBehaviorChanged)
 
 public:
     explicit SettingsBackend(QObject* parent = nullptr);
@@ -154,6 +170,9 @@ public:
     void setRecordingAudioSource(int v);
     QString recordingAudioDevice() const;
     void setRecordingAudioDevice(const QString& v);
+    bool recordingAudioDevicesLoading() const;
+    bool recordingAudioDevicesLoaded() const;
+    QVariantList recordingAudioDevices() const;
     bool countdownEnabled() const;
     void setCountdownEnabled(bool v);
     int countdownSeconds() const;
@@ -185,6 +204,15 @@ public:
     QString appName() const;
     QString appVersion() const;
 
+    // ──── OCR ────
+    bool ocrSupported() const;
+    bool ocrLoading() const;
+    bool ocrAvailableLanguagesLoaded() const;
+    QVariantList ocrAvailableLanguages() const;
+    QVariantList ocrSelectedLanguages() const;
+    int ocrBehavior() const;
+    void setOcrBehavior(int behavior);
+
     // ──── Q_INVOKABLE methods ────
     Q_INVOKABLE void save();
     Q_INVOKABLE void cancel();
@@ -205,13 +233,10 @@ public:
     Q_INVOKABLE void checkForUpdates();
 
     Q_INVOKABLE void loadOcrLanguages();
-    Q_INVOKABLE QVariantList ocrAvailableLanguages() const;
-    Q_INVOKABLE QVariantList ocrSelectedLanguages() const;
+    Q_INVOKABLE void loadRecordingAudioDevices();
     Q_INVOKABLE void addOcrLanguage(const QString& code);
     Q_INVOKABLE void removeOcrLanguage(const QString& code);
     Q_INVOKABLE void moveOcrLanguage(int from, int to);
-    Q_INVOKABLE int ocrBehavior() const;
-    Q_INVOKABLE void setOcrBehavior(int behavior);
 
     Q_INVOKABLE QVariantList hotkeyCategories() const;
     Q_INVOKABLE QVariantList hotkeysForCategory(int category) const;
@@ -263,6 +288,9 @@ signals:
     void recordingAudioEnabledChanged();
     void recordingAudioSourceChanged();
     void recordingAudioDeviceChanged();
+    void recordingAudioDevicesLoadingChanged();
+    void recordingAudioDevicesLoadedChanged();
+    void recordingAudioDevicesChanged();
     void countdownEnabledChanged();
     void countdownSecondsChanged();
 
@@ -288,12 +316,20 @@ signals:
     void hotkeysChanged();
 
     // OCR
+    void ocrLoadingChanged();
+    void ocrAvailableLanguagesLoadedChanged();
+    void ocrAvailableLanguagesChanged();
+    void ocrSelectedLanguagesChanged();
+    void ocrBehaviorChanged();
     void ocrLanguagesChanged(const QStringList& languages);
 
 private:
     void loadAllSettings();
     QString computeFilenamePreview() const;
     void normalizeRecordingAudioSettings();
+    bool hasRecordingAudioDevice(const QString& deviceId) const;
+    void ensureOcrSettingsLoaded();
+    QString ocrDisplayNameForCode(const QString& code) const;
 
     // ──── Buffered values ────
 
@@ -339,6 +375,10 @@ private:
     bool m_recordingAudioEnabled = false;
     int m_recordingAudioSource = 0;
     QString m_recordingAudioDevice;
+    bool m_recordingAudioDevicesLoading = false;
+    bool m_recordingAudioDevicesLoaded = false;
+    QVariantList m_recordingAudioDeviceItems;
+    QFutureWatcher<QVariantList>* m_recordingAudioDevicesWatcher = nullptr;
     bool m_countdownEnabled = true;
     int m_countdownSeconds = 3;
 
@@ -358,6 +398,11 @@ private:
     QStringList m_ocrSelectedLanguages;
     int m_ocrBehavior = 0;
     bool m_ocrLoaded = false;
+    bool m_ocrLoading = false;
+    bool m_ocrAvailableLanguagesLoaded = false;
+    QVariantList m_ocrAvailableLanguageItems;
+    QHash<QString, QString> m_ocrDisplayNamesByCode;
+    QFutureWatcher<QList<OCRLanguageInfo>>* m_ocrLanguageWatcher = nullptr;
 
     UpdateChecker* m_updateChecker = nullptr;
 };

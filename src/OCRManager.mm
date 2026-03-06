@@ -2,6 +2,8 @@
 
 #include <QDebug>
 #include <QImage>
+#include <QMutex>
+#include <QMutexLocker>
 #include <QPointer>
 #include <utility>
 
@@ -115,6 +117,88 @@ QRectF convertVisionBoundingBox(const CGRect &visionRect)
     // Vision uses a bottom-left origin. Convert to top-left to match Qt/UI usage.
     const qreal y = 1.0 - static_cast<qreal>(visionRect.origin.y) - height;
     return QRectF(x, y, width, height).normalized();
+}
+
+QMutex& availableLanguagesCacheMutex()
+{
+    static QMutex mutex;
+    return mutex;
+}
+
+QList<OCRLanguageInfo>& availableLanguagesCache()
+{
+    static QList<OCRLanguageInfo> cache;
+    return cache;
+}
+
+bool& availableLanguagesCacheReady()
+{
+    static bool ready = false;
+    return ready;
+}
+
+struct AvailableLanguageQueryResult {
+    QList<OCRLanguageInfo> languages;
+    bool success = false;
+};
+
+AvailableLanguageQueryResult queryAvailableLanguages()
+{
+    AvailableLanguageQueryResult result;
+
+    @autoreleasepool {
+        if (@available(macOS 10.15, *)) {
+            NSError *error = nil;
+            NSArray<NSString *> *supported = nil;
+
+            // Use modern instance method for macOS 12+, fall back to deprecated class method for older
+            if (@available(macOS 12.0, *)) {
+                // Create a temporary request to query supported languages
+                VNRecognizeTextRequest *request = [[VNRecognizeTextRequest alloc] init];
+                request.recognitionLevel = VNRequestTextRecognitionLevelAccurate;
+                supported = [request supportedRecognitionLanguagesAndReturnError:&error];
+            } else {
+                // Fall back to deprecated API for macOS 10.15-11.x
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+                supported = [VNRecognizeTextRequest
+                    supportedRecognitionLanguagesForTextRecognitionLevel:VNRequestTextRecognitionLevelAccurate
+                    revision:VNRecognizeTextRequestRevision2
+                    error:&error];
+#pragma clang diagnostic pop
+            }
+
+            if (error) {
+                qDebug() << "OCRManager: Failed to get supported languages:"
+                         << QString::fromNSString([error localizedDescription]);
+                return result;
+            }
+
+            NSDictionary *nameMap = getLanguageNameMap();
+
+            for (NSString *code in supported) {
+                OCRLanguageInfo info;
+                info.code = QString::fromNSString(code);
+
+                NSArray<NSString*> *names = nameMap[code];
+                if (names && names.count >= 2) {
+                    info.nativeName = QString::fromNSString(names[0]);
+                    info.englishName = QString::fromNSString(names[1]);
+                } else {
+                    // Fallback: use code as name
+                    info.nativeName = info.code;
+                    info.englishName = info.code;
+                }
+
+                result.languages.append(info);
+            }
+
+            result.success = true;
+            qDebug() << "OCRManager: Found" << result.languages.size() << "supported languages";
+        }
+    }
+
+    return result;
 }
 
 } // anonymous namespace
@@ -281,58 +365,21 @@ void OCRManager::recognizeText(const QPixmap &pixmap, const OCRCallback &callbac
 
 QList<OCRLanguageInfo> OCRManager::availableLanguages()
 {
-    QList<OCRLanguageInfo> result;
-
-    if (@available(macOS 10.15, *)) {
-        NSError *error = nil;
-        NSArray<NSString *> *supported = nil;
-
-        // Use modern instance method for macOS 12+, fall back to deprecated class method for older
-        if (@available(macOS 12.0, *)) {
-            // Create a temporary request to query supported languages
-            VNRecognizeTextRequest *request = [[VNRecognizeTextRequest alloc] init];
-            request.recognitionLevel = VNRequestTextRecognitionLevelAccurate;
-            supported = [request supportedRecognitionLanguagesAndReturnError:&error];
-        } else {
-            // Fall back to deprecated API for macOS 10.15-11.x
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-            supported = [VNRecognizeTextRequest
-                supportedRecognitionLanguagesForTextRecognitionLevel:VNRequestTextRecognitionLevelAccurate
-                revision:VNRecognizeTextRequestRevision2
-                error:&error];
-#pragma clang diagnostic pop
+    {
+        QMutexLocker locker(&availableLanguagesCacheMutex());
+        if (availableLanguagesCacheReady()) {
+            return availableLanguagesCache();
         }
-
-        if (error) {
-            qDebug() << "OCRManager: Failed to get supported languages:"
-                     << QString::fromNSString([error localizedDescription]);
-            return result;
-        }
-
-        NSDictionary *nameMap = getLanguageNameMap();
-
-        for (NSString *code in supported) {
-            OCRLanguageInfo info;
-            info.code = QString::fromNSString(code);
-
-            NSArray<NSString*> *names = nameMap[code];
-            if (names && names.count >= 2) {
-                info.nativeName = QString::fromNSString(names[0]);
-                info.englishName = QString::fromNSString(names[1]);
-            } else {
-                // Fallback: use code as name
-                info.nativeName = info.code;
-                info.englishName = info.code;
-            }
-
-            result.append(info);
-        }
-
-        qDebug() << "OCRManager: Found" << result.size() << "supported languages";
     }
 
-    return result;
+    const AvailableLanguageQueryResult queryResult = queryAvailableLanguages();
+
+    QMutexLocker locker(&availableLanguagesCacheMutex());
+    if (!availableLanguagesCacheReady() && queryResult.success) {
+        availableLanguagesCache() = queryResult.languages;
+        availableLanguagesCacheReady() = true;
+    }
+    return availableLanguagesCacheReady() ? availableLanguagesCache() : queryResult.languages;
 }
 
 void OCRManager::setRecognitionLanguages(const QStringList &languageCodes)

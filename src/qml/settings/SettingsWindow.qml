@@ -45,15 +45,96 @@ Item {
             Layout.fillHeight: true
             currentIndex: sidebar.currentIndex
 
-            GeneralSettings {}
-            HotkeySettings {}
-            AdvancedSettings {}
-            WatermarkSettings {}
-            OCRSettings {}
-            RecordingSettings {}
-            FilesSettings {}
-            UpdatesSettings {}
-            AboutSettings {}
+            // Load pages on first selection so opening Settings stays responsive.
+            Loader {
+                id: generalPageLoader
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                active: sidebar.currentIndex === 0
+                    || status === Loader.Ready
+                    || status === Loader.Loading
+                sourceComponent: generalSettingsPage
+            }
+
+            Loader {
+                id: hotkeyPageLoader
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                active: sidebar.currentIndex === 1
+                    || status === Loader.Ready
+                    || status === Loader.Loading
+                sourceComponent: hotkeySettingsPage
+            }
+
+            Loader {
+                id: advancedPageLoader
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                active: sidebar.currentIndex === 2
+                    || status === Loader.Ready
+                    || status === Loader.Loading
+                sourceComponent: advancedSettingsPage
+            }
+
+            Loader {
+                id: watermarkPageLoader
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                active: sidebar.currentIndex === 3
+                    || status === Loader.Ready
+                    || status === Loader.Loading
+                sourceComponent: watermarkSettingsPage
+            }
+
+            Loader {
+                id: ocrPageLoader
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                active: sidebar.currentIndex === 4
+                    || status === Loader.Ready
+                    || status === Loader.Loading
+                sourceComponent: ocrSettingsPage
+            }
+
+            Loader {
+                id: recordingPageLoader
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                active: sidebar.currentIndex === 5
+                    || status === Loader.Ready
+                    || status === Loader.Loading
+                sourceComponent: recordingSettingsPage
+            }
+
+            Loader {
+                id: filesPageLoader
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                active: sidebar.currentIndex === 6
+                    || status === Loader.Ready
+                    || status === Loader.Loading
+                sourceComponent: filesSettingsPage
+            }
+
+            Loader {
+                id: updatesPageLoader
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                active: sidebar.currentIndex === 7
+                    || status === Loader.Ready
+                    || status === Loader.Loading
+                sourceComponent: updatesSettingsPage
+            }
+
+            Loader {
+                id: aboutPageLoader
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                active: sidebar.currentIndex === 8
+                    || status === Loader.Ready
+                    || status === Loader.Loading
+                sourceComponent: aboutSettingsPage
+            }
         }
     }
 
@@ -93,4 +174,14 @@ Item {
             }
         }
     }
+
+    Component { id: generalSettingsPage; GeneralSettings {} }
+    Component { id: hotkeySettingsPage; HotkeySettings {} }
+    Component { id: advancedSettingsPage; AdvancedSettings {} }
+    Component { id: watermarkSettingsPage; WatermarkSettings {} }
+    Component { id: ocrSettingsPage; OCRSettings {} }
+    Component { id: recordingSettingsPage; RecordingSettings {} }
+    Component { id: filesSettingsPage; FilesSettings {} }
+    Component { id: updatesSettingsPage; UpdatesSettings {} }
+    Component { id: aboutSettingsPage; AboutSettings {} }
 }
