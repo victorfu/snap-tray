@@ -69,8 +69,12 @@ QtObject {
     // ========================================================================
     readonly property color tooltipBackground: SemanticTokens.isDarkMode
         ? Qt.rgba(0.12, 0.12, 0.12, 0.90) : Qt.rgba(1, 1, 1, 0.94)
+    readonly property color tooltipBackgroundTop: SemanticTokens.isDarkMode
+        ? Qt.rgba(0.12, 0.12, 0.12, 0.98) : PrimitiveTokens.white
     readonly property color tooltipBorder: SemanticTokens.isDarkMode
         ? PrimitiveTokens.gray800 : PrimitiveTokens.gray300
+    readonly property color tooltipHighlight: SemanticTokens.isDarkMode
+        ? Qt.rgba(1, 1, 1, 0.06) : Qt.rgba(1, 1, 1, 0.32)
     readonly property color tooltipText: SemanticTokens.textPrimary
     readonly property int tooltipRadius: PrimitiveTokens.radiusSmall
     readonly property int tooltipPadding: PrimitiveTokens.spacing8
