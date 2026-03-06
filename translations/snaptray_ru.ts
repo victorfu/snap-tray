@@ -211,34 +211,6 @@
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>
-    <message>
-        <source>Cancel capture</source>
-        <translation type="vanished">Отменить захват</translation>
-    </message>
-    <message>
-        <source>Confirm selection (after selection)</source>
-        <translation type="vanished">Подтвердить выделение (после выделения)</translation>
-    </message>
-    <message>
-        <source>Toggle multi-region mode</source>
-        <translation type="vanished">Переключить режим нескольких областей</translation>
-    </message>
-    <message>
-        <source>Switch RGB/HEX (when magnifier visible)</source>
-        <translation type="vanished">Переключить RGB/HEX (когда лупа видна)</translation>
-    </message>
-    <message>
-        <source>Copy color value (before selection)</source>
-        <translation type="vanished">Скопировать значение цвета (до выделения)</translation>
-    </message>
-    <message>
-        <source>Move selection by 1 pixel (after selection)</source>
-        <translation type="vanished">Переместить выделение на 1 пиксель (после выделения)</translation>
-    </message>
-    <message>
-        <source>Resize selection by 1 pixel (after selection)</source>
-        <translation type="vanished">Изменить размер выделения на 1 пиксель (после выделения)</translation>
-    </message>
 </context>
 <context>
     <name>ClickThroughExitButton</name>
@@ -250,61 +222,9 @@
 </context>
 <context>
     <name>ColorDialog</name>
-    <message>
-        <source>Select Color</source>
-        <translation type="vanished">Выбор цвета</translation>
-    </message>
-    <message>
-        <source>Hue</source>
-        <translation type="vanished">Тон</translation>
-    </message>
-    <message>
-        <source>Saturation</source>
-        <translation type="vanished">Насыщенность</translation>
-    </message>
-    <message>
-        <source>Value</source>
-        <translation type="vanished">Яркость</translation>
-    </message>
-    <message>
-        <source>Red</source>
-        <translation type="vanished">Красный</translation>
-    </message>
-    <message>
-        <source>Green</source>
-        <translation type="vanished">Зелёный</translation>
-    </message>
-    <message>
-        <source>Blue</source>
-        <translation type="vanished">Синий</translation>
-    </message>
-    <message>
-        <source>Alpha</source>
-        <translation type="vanished">Альфа</translation>
-    </message>
-    <message>
-        <source>Hex</source>
-        <translation type="vanished">Hex</translation>
-    </message>
-    <message>
-        <source>Reset</source>
-        <translation type="vanished">Сброс</translation>
-    </message>
-    <message>
-        <source>OK</source>
-        <translation type="vanished">ОК</translation>
-    </message>
-    <message>
-        <source>Cancel</source>
-        <translation type="vanished">Отмена</translation>
-    </message>
 </context>
 <context>
     <name>ColorPickerDialogCompat</name>
-    <message>
-        <source>Select Color</source>
-        <translation type="vanished">Выбор цвета</translation>
-    </message>
 </context>
 <context>
     <name>FilesSettings</name>
@@ -363,18 +283,6 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
 </context>
 <context>
     <name>FormatSelectionWidget</name>
-    <message>
-        <source>Best quality, widely compatible</source>
-        <translation type="vanished">Лучшее качество, широкая совместимость</translation>
-    </message>
-    <message>
-        <source>Universal support, larger file size</source>
-        <translation type="vanished">Универсальная поддержка, больший размер файла</translation>
-    </message>
-    <message>
-        <source>Small file size, modern browsers only</source>
-        <translation type="vanished">Малый размер файла, только современные браузеры</translation>
-    </message>
 </context>
 <context>
     <name>GeneralSettings</name>
@@ -476,66 +384,6 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
 </context>
 <context>
     <name>HotkeyManager</name>
-    <message>
-        <source>Conflicts with: %1</source>
-        <translation type="vanished">Конфликтует с: %1</translation>
-    </message>
-    <message>
-        <source>Region Capture</source>
-        <translation type="vanished">Захват области</translation>
-    </message>
-    <message>
-        <source>Capture a selected region of the screen</source>
-        <translation type="vanished">Захватить выбранную область экрана</translation>
-    </message>
-    <message>
-        <source>Screen Canvas</source>
-        <translation type="vanished">Холст экрана</translation>
-    </message>
-    <message>
-        <source>Annotate directly on the screen</source>
-        <translation type="vanished">Аннотировать прямо на экране</translation>
-    </message>
-    <message>
-        <source>Paste</source>
-        <translation type="vanished">Вставить</translation>
-    </message>
-    <message>
-        <source>Pin content from clipboard</source>
-        <translation type="vanished">Закрепить содержимое из буфера обмена</translation>
-    </message>
-    <message>
-        <source>Quick Pin</source>
-        <translation type="vanished">Быстрое закрепление</translation>
-    </message>
-    <message>
-        <source>Select and pin a region directly</source>
-        <translation type="vanished">Выбрать и закрепить область напрямую</translation>
-    </message>
-    <message>
-        <source>Pin from Image</source>
-        <translation type="vanished">Закрепить из изображения</translation>
-    </message>
-    <message>
-        <source>Pin an image from file</source>
-        <translation type="vanished">Закрепить изображение из файла</translation>
-    </message>
-    <message>
-        <source>Pin History</source>
-        <translation type="vanished">История закреплений</translation>
-    </message>
-    <message>
-        <source>Open pin history window</source>
-        <translation type="vanished">Открыть окно истории закреплений</translation>
-    </message>
-    <message>
-        <source>Record Full Screen</source>
-        <translation type="vanished">Запись полного экрана</translation>
-    </message>
-    <message>
-        <source>Start full screen recording</source>
-        <translation type="vanished">Начать запись полного экрана</translation>
-    </message>
 </context>
 <context>
     <name>HotkeySettings</name>
@@ -1066,10 +914,6 @@ Size: %2</source>
         <translation>Украсить</translation>
     </message>
     <message>
-        <source>Recognize Text</source>
-        <translation type="vanished">Распознать текст</translation>
-    </message>
-    <message>
         <location filename="../src/PinWindow.cpp" line="917" />
         <source>Click-through</source>
         <translation>Сквозной клик</translation>
@@ -1479,26 +1323,6 @@ Size: %2</source>
         <translation>Не удалось объединить закрепления</translation>
     </message>
     <message>
-        <source>Capture</source>
-        <translation type="vanished">Захват</translation>
-    </message>
-    <message>
-        <source>Canvas</source>
-        <translation type="vanished">Холст</translation>
-    </message>
-    <message>
-        <source>Clipboard</source>
-        <translation type="vanished">Буфер обмена</translation>
-    </message>
-    <message>
-        <source>Pin</source>
-        <translation type="vanished">Закрепление</translation>
-    </message>
-    <message>
-        <source>Recording</source>
-        <translation type="vanished">Запись</translation>
-    </message>
-    <message>
         <location filename="../src/QRCodeManager.cpp" line="200" />
         <source>No barcode found in image</source>
         <translation>Штрих-код не найден в изображении</translation>
@@ -1717,16 +1541,8 @@ Size: %2</source>
 <context>
     <name>RecordingControlBar</name>
     <message>
-        <source>Audio recording enabled</source>
-        <translation type="vanished">Запись звука включена</translation>
-    </message>
-    <message>
         <source>-- fps</source>
         <translation>-- кадр/с</translation>
-    </message>
-    <message>
-        <source>Annotate</source>
-        <translation type="vanished">Аннотировать</translation>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingControlBar.qml" line="254" />
@@ -1752,50 +1568,6 @@ Size: %2</source>
     <message>
         <source>Cancel Recording (Esc)</source>
         <translation>Отменить запись (Esc)</translation>
-    </message>
-    <message>
-        <source>Pause (Space)</source>
-        <translation type="vanished">Пауза (Space)</translation>
-    </message>
-    <message>
-        <source>Play (Space)</source>
-        <translation type="vanished">Воспроизведение (Space)</translation>
-    </message>
-    <message>
-        <source>Unmute (M)</source>
-        <translation type="vanished">Включить звук (M)</translation>
-    </message>
-    <message>
-        <source>Mute (M)</source>
-        <translation type="vanished">Выключить звук (M)</translation>
-    </message>
-    <message>
-        <source>MP4 - Best quality</source>
-        <translation type="vanished">MP4 — Лучшее качество</translation>
-    </message>
-    <message>
-        <source>GIF - Universal support</source>
-        <translation type="vanished">GIF — Универсальная поддержка</translation>
-    </message>
-    <message>
-        <source>WebP - Small size</source>
-        <translation type="vanished">WebP — Малый размер</translation>
-    </message>
-    <message>
-        <source>Annotate Video</source>
-        <translation type="vanished">Аннотировать видео</translation>
-    </message>
-    <message>
-        <source>Save (Enter)</source>
-        <translation type="vanished">Сохранить (Enter)</translation>
-    </message>
-    <message>
-        <source>Discard (Esc)</source>
-        <translation type="vanished">Отменить (Esc)</translation>
-    </message>
-    <message>
-        <source>Drag to seek</source>
-        <translation type="vanished">Перетащите для перемотки</translation>
     </message>
 </context>
 <context>
@@ -1977,151 +1749,61 @@ Size: %2</source>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="71" />
         <source>Recording Preview</source>
-        <translation type="unfinished">Предпросмотр записи</translation>
+        <translation>Предпросмотр записи</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="356" />
         <source>Converting video...</source>
-        <translation type="unfinished">Конвертация видео...</translation>
+        <translation>Конвертация видео...</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="365" />
         <source>Failed to create video player for conversion</source>
-        <translation type="unfinished" />
+        <translation>Не удалось создать видеоплеер для конвертации</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="366" />
         <source>Failed to load video for conversion</source>
-        <translation type="unfinished" />
+        <translation>Не удалось загрузить видео для конвертации</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="367" />
         <source>Video not loaded properly for conversion</source>
-        <translation type="unfinished" />
+        <translation>Видео не было корректно загружено для конвертации</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="368" />
         <source>Failed to start encoder</source>
-        <translation type="unfinished" />
+        <translation>Не удалось запустить кодировщик</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="369" />
         <source>Conversion failed: output file is missing or empty</source>
-        <translation type="unfinished" />
+        <translation>Ошибка конвертации: выходной файл отсутствует или пуст</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="596" />
         <source>Trimming video...</source>
-        <translation type="unfinished">Обрезка видео...</translation>
+        <translation>Обрезка видео...</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="615" />
         <source>Trim failed: %1</source>
-        <translation type="unfinished" />
+        <translation>Ошибка обрезки: %1</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="650" />
         <source>Trim failed: output file is missing or empty</source>
-        <translation type="unfinished" />
+        <translation>Ошибка обрезки: выходной файл отсутствует или пуст</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="657" />
         <source>Trim failed</source>
-        <translation type="unfinished" />
+        <translation>Ошибка обрезки</translation>
     </message>
 </context>
 <context>
     <name>RecordingPreviewWindow</name>
-    <message>
-        <source>Recording Preview</source>
-        <translation type="vanished">Предпросмотр записи</translation>
-    </message>
-    <message>
-        <source>Trim</source>
-        <translation type="vanished">Обрезка</translation>
-    </message>
-    <message>
-        <source>Loop playback within the trimmed range</source>
-        <translation type="vanished">Циклическое воспроизведение в обрезанном диапазоне</translation>
-    </message>
-    <message>
-        <source>Play/Pause (Space)</source>
-        <translation type="vanished">Воспроизведение/Пауза (Space)</translation>
-    </message>
-    <message>
-        <source>Playback speed</source>
-        <translation type="vanished">Скорость воспроизведения</translation>
-    </message>
-    <message>
-        <source>Mute (M)</source>
-        <translation type="vanished">Выключить звук (M)</translation>
-    </message>
-    <message>
-        <source>Discard (Esc)</source>
-        <translation type="vanished">Отменить (Esc)</translation>
-    </message>
-    <message>
-        <source>Save (Enter)</source>
-        <translation type="vanished">Сохранить (Enter)</translation>
-    </message>
-    <message>
-        <source>Video Error</source>
-        <translation type="vanished">Ошибка видео</translation>
-    </message>
-    <message>
-        <source>Failed to load video:
-%1</source>
-        <translation type="vanished">Не удалось загрузить видео:
-%1</translation>
-    </message>
-    <message>
-        <source>Conversion Error</source>
-        <translation type="vanished">Ошибка конвертации</translation>
-    </message>
-    <message>
-        <source>Cannot convert: video not loaded properly.</source>
-        <translation type="vanished">Невозможно конвертировать: видео не загружено корректно.</translation>
-    </message>
-    <message>
-        <source>Converting video...</source>
-        <translation type="vanished">Конвертация видео...</translation>
-    </message>
-    <message>
-        <source>Cancel</source>
-        <translation type="vanished">Отмена</translation>
-    </message>
-    <message>
-        <source>Failed to start encoder: %1</source>
-        <translation type="vanished">Не удалось запустить кодировщик: %1</translation>
-    </message>
-    <message>
-        <source>Trim Failed</source>
-        <translation type="vanished">Ошибка обрезки</translation>
-    </message>
-    <message>
-        <source>Failed to trim the video. Please try again.</source>
-        <translation type="vanished">Не удалось обрезать видео. Попробуйте снова.</translation>
-    </message>
-    <message>
-        <source>Set Trim Start</source>
-        <translation type="vanished">Установить начало обрезки</translation>
-    </message>
-    <message>
-        <source>Set Trim End</source>
-        <translation type="vanished">Установить конец обрезки</translation>
-    </message>
-    <message>
-        <source>Enter time in seconds:</source>
-        <translation type="vanished">Введите время в секундах:</translation>
-    </message>
-    <message>
-        <source>Trim Error</source>
-        <translation type="vanished">Ошибка обрезки</translation>
-    </message>
-    <message>
-        <source>Trimming video...</source>
-        <translation type="vanished">Обрезка видео...</translation>
-    </message>
 </context>
 <context>
     <name>RecordingRegionSelector</name>
@@ -2493,10 +2175,6 @@ Audio is not supported for GIF recordings.</source>
         <translation>Лица или учётные данные не обнаружены</translation>
     </message>
     <message>
-        <source>No faces detected</source>
-        <translation type="vanished">Лица не обнаружены</translation>
-    </message>
-    <message>
         <location filename="../src/RegionSelector.cpp" line="2819" />
         <source>Detection failed</source>
         <translation>Ошибка обнаружения</translation>
@@ -2529,582 +2207,6 @@ Audio is not supported for GIF recordings.</source>
 </context>
 <context>
     <name>SettingsDialog</name>
-    <message>
-        <source>%1 Settings</source>
-        <translation type="vanished">Настройки %1</translation>
-    </message>
-    <message>
-        <source>General</source>
-        <translation type="vanished">Общие</translation>
-    </message>
-    <message>
-        <source>Hotkeys</source>
-        <translation type="vanished">Горячие клавиши</translation>
-    </message>
-    <message>
-        <source>Advanced</source>
-        <translation type="vanished">Дополнительно</translation>
-    </message>
-    <message>
-        <source>Watermark</source>
-        <translation type="vanished">Водяной знак</translation>
-    </message>
-    <message>
-        <source>OCR</source>
-        <translation type="vanished">OCR</translation>
-    </message>
-    <message>
-        <source>Recording</source>
-        <translation type="vanished">Запись</translation>
-    </message>
-    <message>
-        <source>Files</source>
-        <translation type="vanished">Файлы</translation>
-    </message>
-    <message>
-        <source>Updates</source>
-        <translation type="vanished">Обновления</translation>
-    </message>
-    <message>
-        <source>About</source>
-        <translation type="vanished">О программе</translation>
-    </message>
-    <message>
-        <source>Save</source>
-        <translation type="vanished">Сохранить</translation>
-    </message>
-    <message>
-        <source>Cancel</source>
-        <translation type="vanished">Отмена</translation>
-    </message>
-    <message>
-        <source>Start on login</source>
-        <translation type="vanished">Запускать при входе</translation>
-    </message>
-    <message>
-        <source>Language</source>
-        <translation type="vanished">Язык</translation>
-    </message>
-    <message>
-        <source>Display language:</source>
-        <translation type="vanished">Язык интерфейса:</translation>
-    </message>
-    <message>
-        <source>Appearance</source>
-        <translation type="vanished">Оформление</translation>
-    </message>
-    <message>
-        <source>Toolbar Style:</source>
-        <translation type="vanished">Стиль панели инструментов:</translation>
-    </message>
-    <message>
-        <source>Dark</source>
-        <translation type="vanished">Тёмная</translation>
-    </message>
-    <message>
-        <source>Light</source>
-        <translation type="vanished">Светлая</translation>
-    </message>
-    <message>
-        <source>Permissions</source>
-        <translation type="vanished">Разрешения</translation>
-    </message>
-    <message>
-        <source>Screen Recording:</source>
-        <translation type="vanished">Запись экрана:</translation>
-    </message>
-    <message>
-        <source>Open Settings</source>
-        <translation type="vanished">Открыть настройки</translation>
-    </message>
-    <message>
-        <source>Accessibility:</source>
-        <translation type="vanished">Универсальный доступ:</translation>
-    </message>
-    <message>
-        <source>Command Line Interface</source>
-        <translation type="vanished">Интерфейс командной строки</translation>
-    </message>
-    <message>
-        <source>Blur</source>
-        <translation type="vanished">Размытие</translation>
-    </message>
-    <message>
-        <source>Blur intensity:</source>
-        <translation type="vanished">Интенсивность размытия:</translation>
-    </message>
-    <message>
-        <source>Blur type:</source>
-        <translation type="vanished">Тип размытия:</translation>
-    </message>
-    <message>
-        <source>Pixelate</source>
-        <translation type="vanished">Пикселизация</translation>
-    </message>
-    <message>
-        <source>Gaussian</source>
-        <translation type="vanished">Гауссово</translation>
-    </message>
-    <message>
-        <source>Pin Window</source>
-        <translation type="vanished">Окно закрепления</translation>
-    </message>
-    <message>
-        <source>Default opacity:</source>
-        <translation type="vanished">Непрозрачность по умолчанию:</translation>
-    </message>
-    <message>
-        <source>Opacity step:</source>
-        <translation type="vanished">Шаг непрозрачности:</translation>
-    </message>
-    <message>
-        <source>Zoom step:</source>
-        <translation type="vanished">Шаг масштабирования:</translation>
-    </message>
-    <message>
-        <source>Max cache files:</source>
-        <translation type="vanished">Макс. файлов в кэше:</translation>
-    </message>
-    <message>
-        <source>Apply to images</source>
-        <translation type="vanished">Применить к изображениям</translation>
-    </message>
-    <message>
-        <source>Apply to recordings</source>
-        <translation type="vanished">Применить к записям</translation>
-    </message>
-    <message>
-        <source>Image:</source>
-        <translation type="vanished">Изображение:</translation>
-    </message>
-    <message>
-        <source>Select an image file...</source>
-        <translation type="vanished">Выберите файл изображения...</translation>
-    </message>
-    <message>
-        <source>Browse...</source>
-        <translation type="vanished">Обзор...</translation>
-    </message>
-    <message>
-        <source>Select Watermark Image</source>
-        <translation type="vanished">Выбрать изображение водяного знака</translation>
-    </message>
-    <message>
-        <source>Images (*.png *.jpg *.jpeg *.bmp *.gif *.svg);;All Files (*)</source>
-        <translation type="vanished">Изображения (*.png *.jpg *.jpeg *.bmp *.gif *.svg);;Все файлы (*)</translation>
-    </message>
-    <message>
-        <source>Scale:</source>
-        <translation type="vanished">Масштаб:</translation>
-    </message>
-    <message>
-        <source>Opacity:</source>
-        <translation type="vanished">Непрозрачность:</translation>
-    </message>
-    <message>
-        <source>Margin:</source>
-        <translation type="vanished">Отступ:</translation>
-    </message>
-    <message>
-        <source>Position:</source>
-        <translation type="vanished">Позиция:</translation>
-    </message>
-    <message>
-        <source>Top-Left</source>
-        <translation type="vanished">Верхний левый</translation>
-    </message>
-    <message>
-        <source>Top-Right</source>
-        <translation type="vanished">Верхний правый</translation>
-    </message>
-    <message>
-        <source>Bottom-Left</source>
-        <translation type="vanished">Нижний левый</translation>
-    </message>
-    <message>
-        <source>Bottom-Right</source>
-        <translation type="vanished">Нижний правый</translation>
-    </message>
-    <message>
-        <source>No image</source>
-        <translation type="vanished">Нет изображения</translation>
-    </message>
-    <message>
-        <source>Invalid image</source>
-        <translation type="vanished">Недопустимое изображение</translation>
-    </message>
-    <message>
-        <source>Size: %1 × %2 px</source>
-        <translation type="vanished">Размер: %1 × %2 пикс.</translation>
-    </message>
-    <message>
-        <source>Frame Rate:</source>
-        <translation type="vanished">Частота кадров:</translation>
-    </message>
-    <message>
-        <source>Capture</source>
-        <translation type="vanished">Захват</translation>
-    </message>
-    <message>
-        <source>Show shortcut hints when entering region capture</source>
-        <translation type="vanished">Показывать подсказки сочетаний клавиш при входе в режим захвата области</translation>
-    </message>
-    <message>
-        <source>MCP</source>
-        <translation type="vanished">MCP</translation>
-    </message>
-    <message>
-        <source>Enable MCP server</source>
-        <translation type="vanished">Включить сервер MCP</translation>
-    </message>
-    <message>
-        <source>10 FPS</source>
-        <translation type="vanished">10 кадр/с</translation>
-    </message>
-    <message>
-        <source>15 FPS</source>
-        <translation type="vanished">15 кадр/с</translation>
-    </message>
-    <message>
-        <source>24 FPS</source>
-        <translation type="vanished">24 кадр/с</translation>
-    </message>
-    <message>
-        <source>30 FPS</source>
-        <translation type="vanished">30 кадр/с</translation>
-    </message>
-    <message>
-        <source>Output Format:</source>
-        <translation type="vanished">Формат вывода:</translation>
-    </message>
-    <message>
-        <source>MP4 (H.264)</source>
-        <translation type="vanished">MP4 (H.264)</translation>
-    </message>
-    <message>
-        <source>GIF</source>
-        <translation type="vanished">GIF</translation>
-    </message>
-    <message>
-        <source>WebP</source>
-        <translation type="vanished">WebP</translation>
-    </message>
-    <message>
-        <source>Quality:</source>
-        <translation type="vanished">Качество:</translation>
-    </message>
-    <message>
-        <source>Audio</source>
-        <translation type="vanished">Аудио</translation>
-    </message>
-    <message>
-        <source>Record audio</source>
-        <translation type="vanished">Записывать звук</translation>
-    </message>
-    <message>
-        <source>Source:</source>
-        <translation type="vanished">Источник:</translation>
-    </message>
-    <message>
-        <source>Microphone</source>
-        <translation type="vanished">Микрофон</translation>
-    </message>
-    <message>
-        <source>System Audio</source>
-        <translation type="vanished">Системный звук</translation>
-    </message>
-    <message>
-        <source>Both (Mixed)</source>
-        <translation type="vanished">Оба (Микс)</translation>
-    </message>
-    <message>
-        <source>Device:</source>
-        <translation type="vanished">Устройство:</translation>
-    </message>
-    <message>
-        <source>Default</source>
-        <translation type="vanished">По умолчанию</translation>
-    </message>
-    <message>
-        <source>Show preview after recording</source>
-        <translation type="vanished">Показать предпросмотр после записи</translation>
-    </message>
-    <message>
-        <source>Countdown</source>
-        <translation type="vanished">Обратный отсчёт</translation>
-    </message>
-    <message>
-        <source>Show countdown before recording</source>
-        <translation type="vanished">Показать обратный отсчёт перед записью</translation>
-    </message>
-    <message>
-        <source>Display a 3-2-1 countdown before recording starts</source>
-        <translation type="vanished">Показать отсчёт 3-2-1 перед началом записи</translation>
-    </message>
-    <message>
-        <source>Countdown duration:</source>
-        <translation type="vanished">Длительность отсчёта:</translation>
-    </message>
-    <message>
-        <source>1 second</source>
-        <translation type="vanished">1 секунда</translation>
-    </message>
-    <message>
-        <source>2 seconds</source>
-        <translation type="vanished">2 секунды</translation>
-    </message>
-    <message>
-        <source>3 seconds</source>
-        <translation type="vanished">3 секунды</translation>
-    </message>
-    <message>
-        <source>4 seconds</source>
-        <translation type="vanished">4 секунды</translation>
-    </message>
-    <message>
-        <source>5 seconds</source>
-        <translation type="vanished">5 секунд</translation>
-    </message>
-    <message>
-        <source>Restart Required</source>
-        <translation type="vanished">Требуется перезапуск</translation>
-    </message>
-    <message>
-        <source>The language change will take effect after restarting the application.</source>
-        <translation type="vanished">Изменение языка вступит в силу после перезапуска приложения.</translation>
-    </message>
-    <message>
-        <source>Loading available languages...</source>
-        <translation type="vanished">Загрузка доступных языков...</translation>
-    </message>
-    <message>
-        <source>Available Languages</source>
-        <translation type="vanished">Доступные языки</translation>
-    </message>
-    <message>
-        <source>Add selected languages</source>
-        <translation type="vanished">Добавить выбранные языки</translation>
-    </message>
-    <message>
-        <source>Remove selected languages</source>
-        <translation type="vanished">Удалить выбранные языки</translation>
-    </message>
-    <message>
-        <source>Selected Languages</source>
-        <translation type="vanished">Выбранные языки</translation>
-    </message>
-    <message>
-        <source>English is always included and cannot be removed</source>
-        <translation type="vanished">Английский всегда включён и не может быть удалён</translation>
-    </message>
-    <message>
-        <source>After OCR Recognition</source>
-        <translation type="vanished">После распознавания OCR</translation>
-    </message>
-    <message>
-        <source>Copy text directly to clipboard</source>
-        <translation type="vanished">Копировать текст напрямую в буфер обмена</translation>
-    </message>
-    <message>
-        <source>Show editor to review and edit text</source>
-        <translation type="vanished">Показать редактор для просмотра и редактирования текста</translation>
-    </message>
-    <message>
-        <source>Recognized text is immediately copied to clipboard</source>
-        <translation type="vanished">Распознанный текст сразу копируется в буфер обмена</translation>
-    </message>
-    <message>
-        <source>Opens a dialog where you can review and edit the text before copying</source>
-        <translation type="vanished">Открывает диалог для просмотра и редактирования текста перед копированием</translation>
-    </message>
-    <message>
-        <source>Save Locations</source>
-        <translation type="vanished">Места сохранения</translation>
-    </message>
-    <message>
-        <source>Screenshots:</source>
-        <translation type="vanished">Снимки экрана:</translation>
-    </message>
-    <message>
-        <source>Select Screenshot Folder</source>
-        <translation type="vanished">Выбрать папку для снимков экрана</translation>
-    </message>
-    <message>
-        <source>Recordings:</source>
-        <translation type="vanished">Записи:</translation>
-    </message>
-    <message>
-        <source>Select Recording Folder</source>
-        <translation type="vanished">Выбрать папку для записей</translation>
-    </message>
-    <message>
-        <source>Filename Format</source>
-        <translation type="vanished">Формат имени файла</translation>
-    </message>
-    <message>
-        <source>Template:</source>
-        <translation type="vanished">Шаблон:</translation>
-    </message>
-    <message>
-        <source>Save Behavior</source>
-        <translation type="vanished">Поведение сохранения</translation>
-    </message>
-    <message>
-        <source>Auto-save screenshots (save directly without dialog)</source>
-        <translation type="vanished">Автосохранение снимков экрана (сохранять без диалога)</translation>
-    </message>
-    <message>
-        <source>Auto-save recordings (save directly without dialog)</source>
-        <translation type="vanished">Автосохранение записей (сохранять без диалога)</translation>
-    </message>
-    <message>
-        <source>Preview: %1</source>
-        <translation type="vanished">Предпросмотр: %1</translation>
-    </message>
-    <message>
-        <source>
-Invalid template, fallback applied: %1</source>
-        <translation type="vanished">
-Недопустимый шаблон, применён запасной: %1</translation>
-    </message>
-    <message>
-        <source>Version Information</source>
-        <translation type="vanished">Информация о версии</translation>
-    </message>
-    <message>
-        <source>Current Version</source>
-        <translation type="vanished">Текущая версия</translation>
-    </message>
-    <message>
-        <source>Automatic Updates</source>
-        <translation type="vanished">Автоматические обновления</translation>
-    </message>
-    <message>
-        <source>Check for updates automatically</source>
-        <translation type="vanished">Автоматически проверять обновления</translation>
-    </message>
-    <message>
-        <source>Check frequency</source>
-        <translation type="vanished">Частота проверки</translation>
-    </message>
-    <message>
-        <source>Every day</source>
-        <translation type="vanished">Каждый день</translation>
-    </message>
-    <message>
-        <source>Every 3 days</source>
-        <translation type="vanished">Каждые 3 дня</translation>
-    </message>
-    <message>
-        <source>Every week</source>
-        <translation type="vanished">Каждую неделю</translation>
-    </message>
-    <message>
-        <source>Every 2 weeks</source>
-        <translation type="vanished">Каждые 2 недели</translation>
-    </message>
-    <message>
-        <source>Every month</source>
-        <translation type="vanished">Каждый месяц</translation>
-    </message>
-    <message>
-        <source>Last checked: %1</source>
-        <translation type="vanished">Последняя проверка: %1</translation>
-    </message>
-    <message>
-        <source>Last checked: Never</source>
-        <translation type="vanished">Последняя проверка: Никогда</translation>
-    </message>
-    <message>
-        <source>Check Now</source>
-        <translation type="vanished">Проверить сейчас</translation>
-    </message>
-    <message>
-        <source>Checking...</source>
-        <translation type="vanished">Проверка...</translation>
-    </message>
-    <message>
-        <source>Version %1</source>
-        <translation type="vanished">Версия %1</translation>
-    </message>
-    <message>
-        <source>Copyright 2024-2025 Victor Fu</source>
-        <translation type="vanished">© 2024-2025 Victor Fu</translation>
-    </message>
-    <message>
-        <source>Author: Victor Fu</source>
-        <translation type="vanished">Автор: Victor Fu</translation>
-    </message>
-    <message>
-        <source>'snaptray' command is available in terminal</source>
-        <translation type="vanished">Команда 'snaptray' доступна в терминале</translation>
-    </message>
-    <message>
-        <source>Uninstall CLI</source>
-        <translation type="vanished">Удалить CLI</translation>
-    </message>
-    <message>
-        <source>'snaptray' command is not installed</source>
-        <translation type="vanished">Команда 'snaptray' не установлена</translation>
-    </message>
-    <message>
-        <source>Install CLI</source>
-        <translation type="vanished">Установить CLI</translation>
-    </message>
-    <message>
-        <source>Granted</source>
-        <translation type="vanished">Предоставлено</translation>
-    </message>
-    <message>
-        <source>Not Granted</source>
-        <translation type="vanished">Не предоставлено</translation>
-    </message>
-    <message>
-        <source>GIF format creates larger files than MP4.
-Best for short clips and sharing on web.
-Audio is not supported for GIF recordings.</source>
-        <translation type="vanished">Формат GIF создаёт файлы большего размера, чем MP4.
-Лучше всего подходит для коротких роликов и публикации в интернете.
-Звук не поддерживается для записей в формате GIF.</translation>
-    </message>
-    <message>
-        <source>WebP format creates smaller files than GIF with better quality.
-Best for short clips and sharing on web.
-Audio is not supported for WebP recordings.</source>
-        <translation type="vanished">Формат WebP создаёт файлы меньшего размера, чем GIF, с лучшим качеством.
-Лучше всего подходит для коротких роликов и публикации в интернете.
-Звук не поддерживается для записей в формате WebP.</translation>
-    </message>
-    <message>
-        <source>Microphone access denied. Please enable in System Settings &gt; Privacy &amp; Security &gt; Microphone.</source>
-        <translation type="vanished">Доступ к микрофону запрещён. Включите в Системных настройках &gt; Конфиденциальность и безопасность &gt; Микрофон.</translation>
-    </message>
-    <message>
-        <source>System audio capture requires macOS 13 (Ventura) or later, or a virtual audio device like BlackHole.</source>
-        <translation type="vanished">Захват системного звука требует macOS 13 (Ventura) или новее, либо виртуальное аудиоустройство, например BlackHole.</translation>
-    </message>
-    <message>
-        <source>Select and order the languages for OCR recognition.
-English is always included and cannot be removed. Drag to reorder selected languages.</source>
-        <translation type="vanished">Выберите и упорядочьте языки для распознавания OCR.
-Английский всегда включён и не может быть удалён. Перетащите для изменения порядка выбранных языков.</translation>
-    </message>
-    <message>
-        <source>No OCR languages available.
-
-macOS: OCR requires macOS 10.15 or later.
-Windows: Install language packs in Settings &gt; Time &amp; Language &gt; Language.</source>
-        <translation type="vanished">Нет доступных языков OCR.
-
-macOS: OCR требует macOS 10.15 или новее.
-Windows: Установите языковые пакеты в Настройках &gt; Время и язык &gt; Язык.</translation>
-    </message>
-    <message>
-        <source>Tokens: {prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}
-Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
-        <translation type="vanished">Токены: {prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}
-Токены даты: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} или {date}</translation>
-    </message>
 </context>
 <context>
     <name>SettingsPathPicker</name>
@@ -4031,7 +3133,7 @@ It may be in use by another application.</source>
     <message>
         <location filename="../src/qml/main.qml" line="10" />
         <source>SnapTray QML</source>
-        <translation type="unfinished" />
+        <translation>SnapTray QML</translation>
     </message>
 </context>
 <context>

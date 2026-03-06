@@ -211,34 +211,6 @@
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>
-    <message>
-        <source>Cancel capture</source>
-        <translation type="vanished">إلغاء الالتقاط</translation>
-    </message>
-    <message>
-        <source>Confirm selection (after selection)</source>
-        <translation type="vanished">تأكيد التحديد (بعد التحديد)</translation>
-    </message>
-    <message>
-        <source>Toggle multi-region mode</source>
-        <translation type="vanished">تبديل وضع التحديد المتعدد</translation>
-    </message>
-    <message>
-        <source>Switch RGB/HEX (when magnifier visible)</source>
-        <translation type="vanished">التبديل بين RGB/HEX (عند ظهور المكبر)</translation>
-    </message>
-    <message>
-        <source>Copy color value (before selection)</source>
-        <translation type="vanished">نسخ قيمة اللون (قبل التحديد)</translation>
-    </message>
-    <message>
-        <source>Move selection by 1 pixel (after selection)</source>
-        <translation type="vanished">تحريك التحديد بمقدار 1 بكسل (بعد التحديد)</translation>
-    </message>
-    <message>
-        <source>Resize selection by 1 pixel (after selection)</source>
-        <translation type="vanished">تغيير حجم التحديد بمقدار 1 بكسل (بعد التحديد)</translation>
-    </message>
 </context>
 <context>
     <name>ClickThroughExitButton</name>
@@ -305,18 +277,6 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
 </context>
 <context>
     <name>FormatSelectionWidget</name>
-    <message>
-        <source>Best quality, widely compatible</source>
-        <translation type="vanished">أفضل جودة ومتوافق على نطاق واسع</translation>
-    </message>
-    <message>
-        <source>Universal support, larger file size</source>
-        <translation type="vanished">دعم شامل لكن بحجم ملف أكبر</translation>
-    </message>
-    <message>
-        <source>Small file size, modern browsers only</source>
-        <translation type="vanished">حجم ملف صغير، للمتصفحات الحديثة فقط</translation>
-    </message>
 </context>
 <context>
     <name>GeneralSettings</name>
@@ -418,66 +378,6 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
 </context>
 <context>
     <name>HotkeyManager</name>
-    <message>
-        <source>Conflicts with: %1</source>
-        <translation type="vanished">يتعارض مع: %1</translation>
-    </message>
-    <message>
-        <source>Region Capture</source>
-        <translation type="vanished">التقاط منطقة</translation>
-    </message>
-    <message>
-        <source>Capture a selected region of the screen</source>
-        <translation type="vanished">التقاط منطقة محددة من الشاشة</translation>
-    </message>
-    <message>
-        <source>Screen Canvas</source>
-        <translation type="vanished">لوحة الشاشة</translation>
-    </message>
-    <message>
-        <source>Annotate directly on the screen</source>
-        <translation type="vanished">التعليق مباشرة على الشاشة</translation>
-    </message>
-    <message>
-        <source>Paste</source>
-        <translation type="vanished">لصق</translation>
-    </message>
-    <message>
-        <source>Pin content from clipboard</source>
-        <translation type="vanished">تثبيت المحتوى من الحافظة</translation>
-    </message>
-    <message>
-        <source>Quick Pin</source>
-        <translation type="vanished">تثبيت سريع</translation>
-    </message>
-    <message>
-        <source>Select and pin a region directly</source>
-        <translation type="vanished">تحديد وتثبيت منطقة مباشرة</translation>
-    </message>
-    <message>
-        <source>Pin from Image</source>
-        <translation type="vanished">تثبيت من صورة</translation>
-    </message>
-    <message>
-        <source>Pin an image from file</source>
-        <translation type="vanished">تثبيت صورة من ملف</translation>
-    </message>
-    <message>
-        <source>Pin History</source>
-        <translation type="vanished">سجل التثبيت</translation>
-    </message>
-    <message>
-        <source>Open pin history window</source>
-        <translation type="vanished">فتح نافذة سجل التثبيت</translation>
-    </message>
-    <message>
-        <source>Record Full Screen</source>
-        <translation type="vanished">تسجيل الشاشة الكاملة</translation>
-    </message>
-    <message>
-        <source>Start full screen recording</source>
-        <translation type="vanished">بدء تسجيل الشاشة الكاملة</translation>
-    </message>
 </context>
 <context>
     <name>HotkeySettings</name>
@@ -1006,10 +906,6 @@ Size: %2</source>
         <location filename="../src/PinWindow.cpp" line="913" />
         <source>Beautify</source>
         <translation>تجميل</translation>
-    </message>
-    <message>
-        <source>Recognize Text</source>
-        <translation type="vanished">التعرف على النص</translation>
     </message>
     <message>
         <location filename="../src/PinWindow.cpp" line="917" />
@@ -1639,16 +1535,8 @@ Size: %2</source>
 <context>
     <name>RecordingControlBar</name>
     <message>
-        <source>Audio recording enabled</source>
-        <translation type="vanished">تسجيل الصوت مفعّل</translation>
-    </message>
-    <message>
         <source>-- fps</source>
         <translation>-- إطار/ث</translation>
-    </message>
-    <message>
-        <source>Annotate</source>
-        <translation type="vanished">تعليق</translation>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingControlBar.qml" line="254" />
@@ -1674,50 +1562,6 @@ Size: %2</source>
     <message>
         <source>Cancel Recording (Esc)</source>
         <translation>إلغاء التسجيل (Esc)</translation>
-    </message>
-    <message>
-        <source>Pause (Space)</source>
-        <translation type="vanished">إيقاف مؤقت (Space)</translation>
-    </message>
-    <message>
-        <source>Play (Space)</source>
-        <translation type="vanished">تشغيل (Space)</translation>
-    </message>
-    <message>
-        <source>Unmute (M)</source>
-        <translation type="vanished">إلغاء كتم الصوت (M)</translation>
-    </message>
-    <message>
-        <source>Mute (M)</source>
-        <translation type="vanished">كتم الصوت (M)</translation>
-    </message>
-    <message>
-        <source>MP4 - Best quality</source>
-        <translation type="vanished">MP4 - أفضل جودة</translation>
-    </message>
-    <message>
-        <source>GIF - Universal support</source>
-        <translation type="vanished">GIF - دعم عالمي</translation>
-    </message>
-    <message>
-        <source>WebP - Small size</source>
-        <translation type="vanished">WebP - حجم صغير</translation>
-    </message>
-    <message>
-        <source>Annotate Video</source>
-        <translation type="vanished">التعليق على الفيديو</translation>
-    </message>
-    <message>
-        <source>Save (Enter)</source>
-        <translation type="vanished">حفظ (Enter)</translation>
-    </message>
-    <message>
-        <source>Discard (Esc)</source>
-        <translation type="vanished">تجاهل (Esc)</translation>
-    </message>
-    <message>
-        <source>Drag to seek</source>
-        <translation type="vanished">اسحب للتقديم</translation>
     </message>
 </context>
 <context>
@@ -1899,151 +1743,61 @@ Size: %2</source>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="71" />
         <source>Recording Preview</source>
-        <translation type="unfinished">معاينة التسجيل</translation>
+        <translation>معاينة التسجيل</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="356" />
         <source>Converting video...</source>
-        <translation type="unfinished">جارٍ تحويل الفيديو...</translation>
+        <translation>جارٍ تحويل الفيديو...</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="365" />
         <source>Failed to create video player for conversion</source>
-        <translation type="unfinished" />
+        <translation>تعذر إنشاء مشغل الفيديو للتحويل</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="366" />
         <source>Failed to load video for conversion</source>
-        <translation type="unfinished" />
+        <translation>تعذر تحميل الفيديو للتحويل</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="367" />
         <source>Video not loaded properly for conversion</source>
-        <translation type="unfinished" />
+        <translation>لم يتم تحميل الفيديو بشكل صحيح للتحويل</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="368" />
         <source>Failed to start encoder</source>
-        <translation type="unfinished" />
+        <translation>تعذر بدء برنامج الترميز</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="369" />
         <source>Conversion failed: output file is missing or empty</source>
-        <translation type="unfinished" />
+        <translation>فشل التحويل: ملف الإخراج مفقود أو فارغ</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="596" />
         <source>Trimming video...</source>
-        <translation type="unfinished">جارٍ قص الفيديو...</translation>
+        <translation>جارٍ قص الفيديو...</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="615" />
         <source>Trim failed: %1</source>
-        <translation type="unfinished" />
+        <translation>فشل القص: %1</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="650" />
         <source>Trim failed: output file is missing or empty</source>
-        <translation type="unfinished" />
+        <translation>فشل القص: ملف الإخراج مفقود أو فارغ</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="657" />
         <source>Trim failed</source>
-        <translation type="unfinished" />
+        <translation>فشل القص</translation>
     </message>
 </context>
 <context>
     <name>RecordingPreviewWindow</name>
-    <message>
-        <source>Recording Preview</source>
-        <translation type="vanished">معاينة التسجيل</translation>
-    </message>
-    <message>
-        <source>Trim</source>
-        <translation type="vanished">قص</translation>
-    </message>
-    <message>
-        <source>Loop playback within the trimmed range</source>
-        <translation type="vanished">تشغيل متكرر ضمن النطاق المقصوص</translation>
-    </message>
-    <message>
-        <source>Play/Pause (Space)</source>
-        <translation type="vanished">تشغيل/إيقاف مؤقت (Space)</translation>
-    </message>
-    <message>
-        <source>Playback speed</source>
-        <translation type="vanished">سرعة التشغيل</translation>
-    </message>
-    <message>
-        <source>Mute (M)</source>
-        <translation type="vanished">كتم الصوت (M)</translation>
-    </message>
-    <message>
-        <source>Discard (Esc)</source>
-        <translation type="vanished">تجاهل (Esc)</translation>
-    </message>
-    <message>
-        <source>Save (Enter)</source>
-        <translation type="vanished">حفظ (Enter)</translation>
-    </message>
-    <message>
-        <source>Video Error</source>
-        <translation type="vanished">خطأ في الفيديو</translation>
-    </message>
-    <message>
-        <source>Failed to load video:
-%1</source>
-        <translation type="vanished">فشل تحميل الفيديو:
-%1</translation>
-    </message>
-    <message>
-        <source>Conversion Error</source>
-        <translation type="vanished">خطأ في التحويل</translation>
-    </message>
-    <message>
-        <source>Cannot convert: video not loaded properly.</source>
-        <translation type="vanished">لا يمكن التحويل: لم يتم تحميل الفيديو بشكل صحيح.</translation>
-    </message>
-    <message>
-        <source>Converting video...</source>
-        <translation type="vanished">جارٍ تحويل الفيديو...</translation>
-    </message>
-    <message>
-        <source>Cancel</source>
-        <translation type="vanished">إلغاء</translation>
-    </message>
-    <message>
-        <source>Failed to start encoder: %1</source>
-        <translation type="vanished">فشل بدء المشفّر: %1</translation>
-    </message>
-    <message>
-        <source>Trim Failed</source>
-        <translation type="vanished">فشل القص</translation>
-    </message>
-    <message>
-        <source>Failed to trim the video. Please try again.</source>
-        <translation type="vanished">فشل قص الفيديو. يرجى المحاولة مرة أخرى.</translation>
-    </message>
-    <message>
-        <source>Set Trim Start</source>
-        <translation type="vanished">تعيين بداية القص</translation>
-    </message>
-    <message>
-        <source>Set Trim End</source>
-        <translation type="vanished">تعيين نهاية القص</translation>
-    </message>
-    <message>
-        <source>Enter time in seconds:</source>
-        <translation type="vanished">أدخل الوقت بالثواني:</translation>
-    </message>
-    <message>
-        <source>Trim Error</source>
-        <translation type="vanished">خطأ في القص</translation>
-    </message>
-    <message>
-        <source>Trimming video...</source>
-        <translation type="vanished">جارٍ قص الفيديو...</translation>
-    </message>
 </context>
 <context>
     <name>RecordingRegionSelector</name>
@@ -2415,10 +2169,6 @@ Audio is not supported for GIF recordings.</source>
         <translation>لم يتم اكتشاف وجوه أو بيانات اعتماد</translation>
     </message>
     <message>
-        <source>No faces detected</source>
-        <translation type="vanished">لم يتم اكتشاف وجوه</translation>
-    </message>
-    <message>
         <location filename="../src/RegionSelector.cpp" line="2819" />
         <source>Detection failed</source>
         <translation>فشل الاكتشاف</translation>
@@ -2451,582 +2201,6 @@ Audio is not supported for GIF recordings.</source>
 </context>
 <context>
     <name>SettingsDialog</name>
-    <message>
-        <source>%1 Settings</source>
-        <translation type="vanished">إعدادات %1</translation>
-    </message>
-    <message>
-        <source>General</source>
-        <translation type="vanished">عام</translation>
-    </message>
-    <message>
-        <source>Hotkeys</source>
-        <translation type="vanished">مفاتيح الاختصار</translation>
-    </message>
-    <message>
-        <source>Advanced</source>
-        <translation type="vanished">متقدم</translation>
-    </message>
-    <message>
-        <source>Watermark</source>
-        <translation type="vanished">علامة مائية</translation>
-    </message>
-    <message>
-        <source>OCR</source>
-        <translation type="vanished">OCR</translation>
-    </message>
-    <message>
-        <source>Recording</source>
-        <translation type="vanished">تسجيل</translation>
-    </message>
-    <message>
-        <source>Files</source>
-        <translation type="vanished">ملفات</translation>
-    </message>
-    <message>
-        <source>Updates</source>
-        <translation type="vanished">تحديثات</translation>
-    </message>
-    <message>
-        <source>About</source>
-        <translation type="vanished">حول</translation>
-    </message>
-    <message>
-        <source>Save</source>
-        <translation type="vanished">حفظ</translation>
-    </message>
-    <message>
-        <source>Cancel</source>
-        <translation type="vanished">إلغاء</translation>
-    </message>
-    <message>
-        <source>Start on login</source>
-        <translation type="vanished">بدء التشغيل عند تسجيل الدخول</translation>
-    </message>
-    <message>
-        <source>Language</source>
-        <translation type="vanished">اللغة</translation>
-    </message>
-    <message>
-        <source>Display language:</source>
-        <translation type="vanished">لغة العرض:</translation>
-    </message>
-    <message>
-        <source>Appearance</source>
-        <translation type="vanished">المظهر</translation>
-    </message>
-    <message>
-        <source>Toolbar Style:</source>
-        <translation type="vanished">نمط شريط الأدوات:</translation>
-    </message>
-    <message>
-        <source>Dark</source>
-        <translation type="vanished">داكن</translation>
-    </message>
-    <message>
-        <source>Light</source>
-        <translation type="vanished">فاتح</translation>
-    </message>
-    <message>
-        <source>Permissions</source>
-        <translation type="vanished">الأذونات</translation>
-    </message>
-    <message>
-        <source>Screen Recording:</source>
-        <translation type="vanished">تسجيل الشاشة:</translation>
-    </message>
-    <message>
-        <source>Open Settings</source>
-        <translation type="vanished">فتح الإعدادات</translation>
-    </message>
-    <message>
-        <source>Accessibility:</source>
-        <translation type="vanished">إمكانية الوصول:</translation>
-    </message>
-    <message>
-        <source>Command Line Interface</source>
-        <translation type="vanished">واجهة سطر الأوامر</translation>
-    </message>
-    <message>
-        <source>Blur</source>
-        <translation type="vanished">ضبابية</translation>
-    </message>
-    <message>
-        <source>Blur intensity:</source>
-        <translation type="vanished">شدة الضبابية:</translation>
-    </message>
-    <message>
-        <source>Blur type:</source>
-        <translation type="vanished">نوع الضبابية:</translation>
-    </message>
-    <message>
-        <source>Pixelate</source>
-        <translation type="vanished">تقطيع بكسلي</translation>
-    </message>
-    <message>
-        <source>Gaussian</source>
-        <translation type="vanished">غاوسي</translation>
-    </message>
-    <message>
-        <source>Pin Window</source>
-        <translation type="vanished">نافذة التثبيت</translation>
-    </message>
-    <message>
-        <source>Default opacity:</source>
-        <translation type="vanished">الشفافية الافتراضية:</translation>
-    </message>
-    <message>
-        <source>Opacity step:</source>
-        <translation type="vanished">خطوة الشفافية:</translation>
-    </message>
-    <message>
-        <source>Zoom step:</source>
-        <translation type="vanished">خطوة التكبير:</translation>
-    </message>
-    <message>
-        <source>Max cache files:</source>
-        <translation type="vanished">الحد الأقصى لملفات التخزين المؤقت:</translation>
-    </message>
-    <message>
-        <source>Apply to images</source>
-        <translation type="vanished">تطبيق على الصور</translation>
-    </message>
-    <message>
-        <source>Apply to recordings</source>
-        <translation type="vanished">تطبيق على التسجيلات</translation>
-    </message>
-    <message>
-        <source>Image:</source>
-        <translation type="vanished">صورة:</translation>
-    </message>
-    <message>
-        <source>Select an image file...</source>
-        <translation type="vanished">حدد ملف صورة...</translation>
-    </message>
-    <message>
-        <source>Browse...</source>
-        <translation type="vanished">استعراض...</translation>
-    </message>
-    <message>
-        <source>Select Watermark Image</source>
-        <translation type="vanished">اختر صورة العلامة المائية</translation>
-    </message>
-    <message>
-        <source>Images (*.png *.jpg *.jpeg *.bmp *.gif *.svg);;All Files (*)</source>
-        <translation type="vanished">صور (*.png *.jpg *.jpeg *.bmp *.gif *.svg);;جميع الملفات (*)</translation>
-    </message>
-    <message>
-        <source>Scale:</source>
-        <translation type="vanished">المقياس:</translation>
-    </message>
-    <message>
-        <source>Opacity:</source>
-        <translation type="vanished">الشفافية:</translation>
-    </message>
-    <message>
-        <source>Margin:</source>
-        <translation type="vanished">الهامش:</translation>
-    </message>
-    <message>
-        <source>Position:</source>
-        <translation type="vanished">الموضع:</translation>
-    </message>
-    <message>
-        <source>Top-Left</source>
-        <translation type="vanished">أعلى اليسار</translation>
-    </message>
-    <message>
-        <source>Top-Right</source>
-        <translation type="vanished">أعلى اليمين</translation>
-    </message>
-    <message>
-        <source>Bottom-Left</source>
-        <translation type="vanished">أسفل اليسار</translation>
-    </message>
-    <message>
-        <source>Bottom-Right</source>
-        <translation type="vanished">أسفل اليمين</translation>
-    </message>
-    <message>
-        <source>No image</source>
-        <translation type="vanished">لا توجد صورة</translation>
-    </message>
-    <message>
-        <source>Invalid image</source>
-        <translation type="vanished">صورة غير صالحة</translation>
-    </message>
-    <message>
-        <source>Size: %1 × %2 px</source>
-        <translation type="vanished">الحجم: %1 × %2 بكسل</translation>
-    </message>
-    <message>
-        <source>Frame Rate:</source>
-        <translation type="vanished">معدل الإطارات:</translation>
-    </message>
-    <message>
-        <source>Capture</source>
-        <translation type="vanished">التقاط</translation>
-    </message>
-    <message>
-        <source>Show shortcut hints when entering region capture</source>
-        <translation type="vanished">إظهار تلميحات اختصارات لوحة المفاتيح عند الدخول إلى وضع التقاط المنطقة</translation>
-    </message>
-    <message>
-        <source>MCP</source>
-        <translation type="vanished">MCP</translation>
-    </message>
-    <message>
-        <source>Enable MCP server</source>
-        <translation type="vanished">تمكين خادم MCP</translation>
-    </message>
-    <message>
-        <source>10 FPS</source>
-        <translation type="vanished">10 إطار/ث</translation>
-    </message>
-    <message>
-        <source>15 FPS</source>
-        <translation type="vanished">15 إطار/ث</translation>
-    </message>
-    <message>
-        <source>24 FPS</source>
-        <translation type="vanished">24 إطار/ث</translation>
-    </message>
-    <message>
-        <source>30 FPS</source>
-        <translation type="vanished">30 إطار/ث</translation>
-    </message>
-    <message>
-        <source>Output Format:</source>
-        <translation type="vanished">تنسيق الإخراج:</translation>
-    </message>
-    <message>
-        <source>MP4 (H.264)</source>
-        <translation type="vanished">MP4 (H.264)</translation>
-    </message>
-    <message>
-        <source>GIF</source>
-        <translation type="vanished">GIF</translation>
-    </message>
-    <message>
-        <source>WebP</source>
-        <translation type="vanished">WebP</translation>
-    </message>
-    <message>
-        <source>Quality:</source>
-        <translation type="vanished">الجودة:</translation>
-    </message>
-    <message>
-        <source>GIF format creates larger files than MP4.
-Best for short clips and sharing on web.
-Audio is not supported for GIF recordings.</source>
-        <translation type="vanished">صيغة GIF تنشئ ملفات أكبر من MP4.
-مناسبة للمقاطع القصيرة والمشاركة على الويب.
-الصوت غير مدعوم في تسجيلات GIF.</translation>
-    </message>
-    <message>
-        <source>Audio</source>
-        <translation type="vanished">صوت</translation>
-    </message>
-    <message>
-        <source>Record audio</source>
-        <translation type="vanished">تسجيل الصوت</translation>
-    </message>
-    <message>
-        <source>Source:</source>
-        <translation type="vanished">المصدر:</translation>
-    </message>
-    <message>
-        <source>Microphone</source>
-        <translation type="vanished">ميكروفون</translation>
-    </message>
-    <message>
-        <source>System Audio</source>
-        <translation type="vanished">صوت النظام</translation>
-    </message>
-    <message>
-        <source>Both (Mixed)</source>
-        <translation type="vanished">كلاهما (مختلط)</translation>
-    </message>
-    <message>
-        <source>Device:</source>
-        <translation type="vanished">الجهاز:</translation>
-    </message>
-    <message>
-        <source>Default</source>
-        <translation type="vanished">افتراضي</translation>
-    </message>
-    <message>
-        <source>Show preview after recording</source>
-        <translation type="vanished">عرض المعاينة بعد التسجيل</translation>
-    </message>
-    <message>
-        <source>Countdown</source>
-        <translation type="vanished">العد التنازلي</translation>
-    </message>
-    <message>
-        <source>Show countdown before recording</source>
-        <translation type="vanished">عرض العد التنازلي قبل التسجيل</translation>
-    </message>
-    <message>
-        <source>Display a 3-2-1 countdown before recording starts</source>
-        <translation type="vanished">عرض عد تنازلي 3-2-1 قبل بدء التسجيل</translation>
-    </message>
-    <message>
-        <source>Countdown duration:</source>
-        <translation type="vanished">مدة العد التنازلي:</translation>
-    </message>
-    <message>
-        <source>1 second</source>
-        <translation type="vanished">ثانية واحدة</translation>
-    </message>
-    <message>
-        <source>2 seconds</source>
-        <translation type="vanished">ثانيتان</translation>
-    </message>
-    <message>
-        <source>3 seconds</source>
-        <translation type="vanished">3 ثوانٍ</translation>
-    </message>
-    <message>
-        <source>4 seconds</source>
-        <translation type="vanished">4 ثوانٍ</translation>
-    </message>
-    <message>
-        <source>5 seconds</source>
-        <translation type="vanished">5 ثوانٍ</translation>
-    </message>
-    <message>
-        <source>WebP format creates smaller files than GIF with better quality.
-Best for short clips and sharing on web.
-Audio is not supported for WebP recordings.</source>
-        <translation type="vanished">صيغة WebP تنشئ ملفات أصغر من GIF مع جودة أفضل.
-مناسبة للمقاطع القصيرة والمشاركة على الويب.
-الصوت غير مدعوم في تسجيلات WebP.</translation>
-    </message>
-    <message>
-        <source>Restart Required</source>
-        <translation type="vanished">يلزم إعادة التشغيل</translation>
-    </message>
-    <message>
-        <source>The language change will take effect after restarting the application.</source>
-        <translation type="vanished">سيتم تطبيق تغيير اللغة بعد إعادة تشغيل التطبيق.</translation>
-    </message>
-    <message>
-        <source>Microphone access denied. Please enable in System Settings &gt; Privacy &amp; Security &gt; Microphone.</source>
-        <translation type="vanished">تم رفض الوصول إلى الميكروفون. يرجى تمكينه من System Settings &gt; Privacy &amp; Security &gt; Microphone.</translation>
-    </message>
-    <message>
-        <source>System audio capture requires macOS 13 (Ventura) or later, or a virtual audio device like BlackHole.</source>
-        <translation type="vanished">يتطلب التقاط صوت النظام macOS 13 (Ventura) أو أحدث، أو جهاز صوت افتراضي مثل BlackHole.</translation>
-    </message>
-    <message>
-        <source>Loading available languages...</source>
-        <translation type="vanished">جارٍ تحميل اللغات المتاحة...</translation>
-    </message>
-    <message>
-        <source>Select and order the languages for OCR recognition.
-English is always included and cannot be removed. Drag to reorder selected languages.</source>
-        <translation type="vanished">اختر لغات OCR ورتّبها للتعرّف.
-اللغة الإنجليزية مضمنة دائمًا ولا يمكن إزالتها. اسحب لإعادة ترتيب اللغات المحددة.</translation>
-    </message>
-    <message>
-        <source>Available Languages</source>
-        <translation type="vanished">اللغات المتاحة</translation>
-    </message>
-    <message>
-        <source>Add selected languages</source>
-        <translation type="vanished">إضافة اللغات المحددة</translation>
-    </message>
-    <message>
-        <source>Remove selected languages</source>
-        <translation type="vanished">إزالة اللغات المحددة</translation>
-    </message>
-    <message>
-        <source>Selected Languages</source>
-        <translation type="vanished">اللغات المحددة</translation>
-    </message>
-    <message>
-        <source>English is always included and cannot be removed</source>
-        <translation type="vanished">الإنجليزية مضمّنة دائمًا ولا يمكن إزالتها</translation>
-    </message>
-    <message>
-        <source>After OCR Recognition</source>
-        <translation type="vanished">بعد التعرف بـ OCR</translation>
-    </message>
-    <message>
-        <source>Copy text directly to clipboard</source>
-        <translation type="vanished">نسخ النص مباشرة إلى الحافظة</translation>
-    </message>
-    <message>
-        <source>Show editor to review and edit text</source>
-        <translation type="vanished">عرض المحرر لمراجعة النص وتحريره</translation>
-    </message>
-    <message>
-        <source>Recognized text is immediately copied to clipboard</source>
-        <translation type="vanished">يتم نسخ النص المتعرف عليه فورًا إلى الحافظة</translation>
-    </message>
-    <message>
-        <source>Opens a dialog where you can review and edit the text before copying</source>
-        <translation type="vanished">يفتح مربع حوار حيث يمكنك مراجعة النص وتحريره قبل النسخ</translation>
-    </message>
-    <message>
-        <source>No OCR languages available.
-
-macOS: OCR requires macOS 10.15 or later.
-Windows: Install language packs in Settings &gt; Time &amp; Language &gt; Language.</source>
-        <translation type="vanished">لا تتوفر لغات OCR.
-
-macOS: يتطلب OCR نظام macOS 10.15 أو أحدث.
-Windows: ثبّت حزم اللغات من Settings &gt; Time &amp; Language &gt; Language.</translation>
-    </message>
-    <message>
-        <source>Save Locations</source>
-        <translation type="vanished">مواقع الحفظ</translation>
-    </message>
-    <message>
-        <source>Screenshots:</source>
-        <translation type="vanished">لقطات الشاشة:</translation>
-    </message>
-    <message>
-        <source>Select Screenshot Folder</source>
-        <translation type="vanished">اختر مجلد لقطات الشاشة</translation>
-    </message>
-    <message>
-        <source>Recordings:</source>
-        <translation type="vanished">التسجيلات:</translation>
-    </message>
-    <message>
-        <source>Select Recording Folder</source>
-        <translation type="vanished">اختر مجلد التسجيلات</translation>
-    </message>
-    <message>
-        <source>Filename Format</source>
-        <translation type="vanished">تنسيق اسم الملف</translation>
-    </message>
-    <message>
-        <source>Template:</source>
-        <translation type="vanished">قالب:</translation>
-    </message>
-    <message>
-        <source>Tokens: {prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}
-Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
-        <translation type="vanished">الرموز: {prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}
-رموز التاريخ: {yyyyMMdd_HHmmss} أو {yyyy-MM-dd_HH-mm-ss} أو {date}</translation>
-    </message>
-    <message>
-        <source>Save Behavior</source>
-        <translation type="vanished">سلوك الحفظ</translation>
-    </message>
-    <message>
-        <source>Auto-save screenshots (save directly without dialog)</source>
-        <translation type="vanished">حفظ لقطات الشاشة تلقائيًا (حفظ مباشر بدون مربع حوار)</translation>
-    </message>
-    <message>
-        <source>Auto-save recordings (save directly without dialog)</source>
-        <translation type="vanished">حفظ التسجيلات تلقائيًا (حفظ مباشر بدون مربع حوار)</translation>
-    </message>
-    <message>
-        <source>Preview: %1</source>
-        <translation type="vanished">معاينة: %1</translation>
-    </message>
-    <message>
-        <source>
-Invalid template, fallback applied: %1</source>
-        <translation type="vanished">
-قالب غير صالح، تم تطبيق البديل: %1</translation>
-    </message>
-    <message>
-        <source>Version Information</source>
-        <translation type="vanished">معلومات الإصدار</translation>
-    </message>
-    <message>
-        <source>Current Version</source>
-        <translation type="vanished">الإصدار الحالي</translation>
-    </message>
-    <message>
-        <source>Automatic Updates</source>
-        <translation type="vanished">التحديثات التلقائية</translation>
-    </message>
-    <message>
-        <source>Check for updates automatically</source>
-        <translation type="vanished">التحقق من التحديثات تلقائيًا</translation>
-    </message>
-    <message>
-        <source>Check frequency</source>
-        <translation type="vanished">تكرار التحقق</translation>
-    </message>
-    <message>
-        <source>Every day</source>
-        <translation type="vanished">كل يوم</translation>
-    </message>
-    <message>
-        <source>Every 3 days</source>
-        <translation type="vanished">كل 3 أيام</translation>
-    </message>
-    <message>
-        <source>Every week</source>
-        <translation type="vanished">كل أسبوع</translation>
-    </message>
-    <message>
-        <source>Every 2 weeks</source>
-        <translation type="vanished">كل أسبوعين</translation>
-    </message>
-    <message>
-        <source>Every month</source>
-        <translation type="vanished">كل شهر</translation>
-    </message>
-    <message>
-        <source>Last checked: %1</source>
-        <translation type="vanished">آخر تحقق: %1</translation>
-    </message>
-    <message>
-        <source>Last checked: Never</source>
-        <translation type="vanished">آخر تحقق: أبدًا</translation>
-    </message>
-    <message>
-        <source>Check Now</source>
-        <translation type="vanished">تحقق الآن</translation>
-    </message>
-    <message>
-        <source>Checking...</source>
-        <translation type="vanished">جارٍ التحقق...</translation>
-    </message>
-    <message>
-        <source>Version %1</source>
-        <translation type="vanished">الإصدار %1</translation>
-    </message>
-    <message>
-        <source>Copyright 2024-2025 Victor Fu</source>
-        <translation type="vanished">حقوق النشر 2024-2025 Victor Fu</translation>
-    </message>
-    <message>
-        <source>Author: Victor Fu</source>
-        <translation type="vanished">المؤلف: Victor Fu</translation>
-    </message>
-    <message>
-        <source>'snaptray' command is available in terminal</source>
-        <translation type="vanished">الأمر 'snaptray' متاح في الطرفية</translation>
-    </message>
-    <message>
-        <source>Uninstall CLI</source>
-        <translation type="vanished">إلغاء تثبيت CLI</translation>
-    </message>
-    <message>
-        <source>'snaptray' command is not installed</source>
-        <translation type="vanished">الأمر 'snaptray' غير مثبت</translation>
-    </message>
-    <message>
-        <source>Install CLI</source>
-        <translation type="vanished">تثبيت CLI</translation>
-    </message>
-    <message>
-        <source>Granted</source>
-        <translation type="vanished">ممنوح</translation>
-    </message>
-    <message>
-        <source>Not Granted</source>
-        <translation type="vanished">غير ممنوح</translation>
-    </message>
 </context>
 <context>
     <name>SettingsPathPicker</name>
@@ -3953,7 +3127,7 @@ It may be in use by another application.</source>
     <message>
         <location filename="../src/qml/main.qml" line="10" />
         <source>SnapTray QML</source>
-        <translation type="unfinished" />
+        <translation>SnapTray QML</translation>
     </message>
 </context>
 <context>

@@ -211,34 +211,6 @@
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>
-    <message>
-        <source>Cancel capture</source>
-        <translation type="vanished">Yakalamayı iptal et</translation>
-    </message>
-    <message>
-        <source>Confirm selection (after selection)</source>
-        <translation type="vanished">Seçimi onayla (seçimden sonra)</translation>
-    </message>
-    <message>
-        <source>Toggle multi-region mode</source>
-        <translation type="vanished">Çoklu bölge modunu değiştir</translation>
-    </message>
-    <message>
-        <source>Switch RGB/HEX (when magnifier visible)</source>
-        <translation type="vanished">RGB/HEX arasında geçiş yap (büyüteç görünürken)</translation>
-    </message>
-    <message>
-        <source>Copy color value (before selection)</source>
-        <translation type="vanished">Renk değerini kopyala (seçimden önce)</translation>
-    </message>
-    <message>
-        <source>Move selection by 1 pixel (after selection)</source>
-        <translation type="vanished">Seçimi 1 piksel taşı (seçimden sonra)</translation>
-    </message>
-    <message>
-        <source>Resize selection by 1 pixel (after selection)</source>
-        <translation type="vanished">Seçimi 1 piksel yeniden boyutlandır (seçimden sonra)</translation>
-    </message>
 </context>
 <context>
     <name>ClickThroughExitButton</name>
@@ -305,18 +277,6 @@ Tarih belirteçleri: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} veya {date}</trans
 </context>
 <context>
     <name>FormatSelectionWidget</name>
-    <message>
-        <source>Best quality, widely compatible</source>
-        <translation type="vanished">En iyi kalite, geniş uyumluluk</translation>
-    </message>
-    <message>
-        <source>Universal support, larger file size</source>
-        <translation type="vanished">Evrensel destek, daha büyük dosya boyutu</translation>
-    </message>
-    <message>
-        <source>Small file size, modern browsers only</source>
-        <translation type="vanished">Küçük dosya boyutu, yalnızca modern tarayıcılar</translation>
-    </message>
 </context>
 <context>
     <name>GeneralSettings</name>
@@ -418,66 +378,6 @@ Tarih belirteçleri: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} veya {date}</trans
 </context>
 <context>
     <name>HotkeyManager</name>
-    <message>
-        <source>Conflicts with: %1</source>
-        <translation type="vanished">Şununla çakışıyor: %1</translation>
-    </message>
-    <message>
-        <source>Region Capture</source>
-        <translation type="vanished">Bölge Yakalama</translation>
-    </message>
-    <message>
-        <source>Capture a selected region of the screen</source>
-        <translation type="vanished">Ekranın seçili bölgesini yakala</translation>
-    </message>
-    <message>
-        <source>Screen Canvas</source>
-        <translation type="vanished">Ekran Tuvali</translation>
-    </message>
-    <message>
-        <source>Annotate directly on the screen</source>
-        <translation type="vanished">Doğrudan ekran üzerinde açıklama ekle</translation>
-    </message>
-    <message>
-        <source>Paste</source>
-        <translation type="vanished">Yapıştır</translation>
-    </message>
-    <message>
-        <source>Pin content from clipboard</source>
-        <translation type="vanished">Panodan içerik sabitle</translation>
-    </message>
-    <message>
-        <source>Quick Pin</source>
-        <translation type="vanished">Hızlı Sabitleme</translation>
-    </message>
-    <message>
-        <source>Select and pin a region directly</source>
-        <translation type="vanished">Doğrudan bir bölge seç ve sabitle</translation>
-    </message>
-    <message>
-        <source>Pin from Image</source>
-        <translation type="vanished">Görselden Sabitle</translation>
-    </message>
-    <message>
-        <source>Pin an image from file</source>
-        <translation type="vanished">Dosyadan görsel sabitle</translation>
-    </message>
-    <message>
-        <source>Pin History</source>
-        <translation type="vanished">Sabitleme Geçmişi</translation>
-    </message>
-    <message>
-        <source>Open pin history window</source>
-        <translation type="vanished">Sabitleme geçmişi penceresini aç</translation>
-    </message>
-    <message>
-        <source>Record Full Screen</source>
-        <translation type="vanished">Tam Ekran Kaydet</translation>
-    </message>
-    <message>
-        <source>Start full screen recording</source>
-        <translation type="vanished">Tam ekran kaydını başlat</translation>
-    </message>
 </context>
 <context>
     <name>HotkeySettings</name>
@@ -1006,10 +906,6 @@ Boyut: %2</translation>
         <location filename="../src/PinWindow.cpp" line="913" />
         <source>Beautify</source>
         <translation>Güzelleştir</translation>
-    </message>
-    <message>
-        <source>Recognize Text</source>
-        <translation type="vanished">Metin Tanı</translation>
     </message>
     <message>
         <location filename="../src/PinWindow.cpp" line="917" />
@@ -1639,16 +1535,8 @@ Boyut: %2</translation>
 <context>
     <name>RecordingControlBar</name>
     <message>
-        <source>Audio recording enabled</source>
-        <translation type="vanished">Ses kaydı etkinleştirildi</translation>
-    </message>
-    <message>
         <source>-- fps</source>
         <translation>-- FPS</translation>
-    </message>
-    <message>
-        <source>Annotate</source>
-        <translation type="vanished">Açıklama Ekle</translation>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingControlBar.qml" line="254" />
@@ -1674,50 +1562,6 @@ Boyut: %2</translation>
     <message>
         <source>Cancel Recording (Esc)</source>
         <translation>Kaydı İptal Et (Esc)</translation>
-    </message>
-    <message>
-        <source>Pause (Space)</source>
-        <translation type="vanished">Duraklat (Space)</translation>
-    </message>
-    <message>
-        <source>Play (Space)</source>
-        <translation type="vanished">Oynat (Space)</translation>
-    </message>
-    <message>
-        <source>Unmute (M)</source>
-        <translation type="vanished">Sesi Aç (M)</translation>
-    </message>
-    <message>
-        <source>Mute (M)</source>
-        <translation type="vanished">Sessiz (M)</translation>
-    </message>
-    <message>
-        <source>MP4 - Best quality</source>
-        <translation type="vanished">MP4 - En iyi kalite</translation>
-    </message>
-    <message>
-        <source>GIF - Universal support</source>
-        <translation type="vanished">GIF - Evrensel destek</translation>
-    </message>
-    <message>
-        <source>WebP - Small size</source>
-        <translation type="vanished">WebP - Küçük boyut</translation>
-    </message>
-    <message>
-        <source>Annotate Video</source>
-        <translation type="vanished">Videoya Açıklama Ekle</translation>
-    </message>
-    <message>
-        <source>Save (Enter)</source>
-        <translation type="vanished">Kaydet (Enter)</translation>
-    </message>
-    <message>
-        <source>Discard (Esc)</source>
-        <translation type="vanished">At (Esc)</translation>
-    </message>
-    <message>
-        <source>Drag to seek</source>
-        <translation type="vanished">Aramak için sürükle</translation>
     </message>
 </context>
 <context>
@@ -1899,151 +1743,61 @@ Boyut: %2</translation>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="71" />
         <source>Recording Preview</source>
-        <translation type="unfinished">Kayıt Önizleme</translation>
+        <translation>Kayıt Önizleme</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="356" />
         <source>Converting video...</source>
-        <translation type="unfinished">Video dönüştürülüyor...</translation>
+        <translation>Video dönüştürülüyor...</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="365" />
         <source>Failed to create video player for conversion</source>
-        <translation type="unfinished" />
+        <translation>Dönüştürme için video oynatıcı oluşturulamadı</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="366" />
         <source>Failed to load video for conversion</source>
-        <translation type="unfinished" />
+        <translation>Dönüştürme için video yüklenemedi</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="367" />
         <source>Video not loaded properly for conversion</source>
-        <translation type="unfinished" />
+        <translation>Video dönüştürme için düzgün şekilde yüklenmedi</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="368" />
         <source>Failed to start encoder</source>
-        <translation type="unfinished" />
+        <translation>Kodlayıcı başlatılamadı</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="369" />
         <source>Conversion failed: output file is missing or empty</source>
-        <translation type="unfinished" />
+        <translation>Dönüştürme başarısız: çıktı dosyası eksik veya boş</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="596" />
         <source>Trimming video...</source>
-        <translation type="unfinished">Video kırpılıyor...</translation>
+        <translation>Video kırpılıyor...</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="615" />
         <source>Trim failed: %1</source>
-        <translation type="unfinished" />
+        <translation>Kırpma başarısız: %1</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="650" />
         <source>Trim failed: output file is missing or empty</source>
-        <translation type="unfinished" />
+        <translation>Kırpma başarısız: çıktı dosyası eksik veya boş</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="657" />
         <source>Trim failed</source>
-        <translation type="unfinished" />
+        <translation>Kırpma başarısız</translation>
     </message>
 </context>
 <context>
     <name>RecordingPreviewWindow</name>
-    <message>
-        <source>Recording Preview</source>
-        <translation type="vanished">Kayıt Önizleme</translation>
-    </message>
-    <message>
-        <source>Trim</source>
-        <translation type="vanished">Kırp</translation>
-    </message>
-    <message>
-        <source>Loop playback within the trimmed range</source>
-        <translation type="vanished">Kırpılmış aralıkta döngülü oynatma</translation>
-    </message>
-    <message>
-        <source>Play/Pause (Space)</source>
-        <translation type="vanished">Oynat/Duraklat (Space)</translation>
-    </message>
-    <message>
-        <source>Playback speed</source>
-        <translation type="vanished">Oynatma hızı</translation>
-    </message>
-    <message>
-        <source>Mute (M)</source>
-        <translation type="vanished">Sessiz (M)</translation>
-    </message>
-    <message>
-        <source>Discard (Esc)</source>
-        <translation type="vanished">At (Esc)</translation>
-    </message>
-    <message>
-        <source>Save (Enter)</source>
-        <translation type="vanished">Kaydet (Enter)</translation>
-    </message>
-    <message>
-        <source>Video Error</source>
-        <translation type="vanished">Video Hatası</translation>
-    </message>
-    <message>
-        <source>Failed to load video:
-%1</source>
-        <translation type="vanished">Video yüklenemedi:
-%1</translation>
-    </message>
-    <message>
-        <source>Conversion Error</source>
-        <translation type="vanished">Dönüştürme Hatası</translation>
-    </message>
-    <message>
-        <source>Cannot convert: video not loaded properly.</source>
-        <translation type="vanished">Dönüştürülemiyor: video düzgün yüklenmedi.</translation>
-    </message>
-    <message>
-        <source>Converting video...</source>
-        <translation type="vanished">Video dönüştürülüyor...</translation>
-    </message>
-    <message>
-        <source>Cancel</source>
-        <translation type="vanished">İptal</translation>
-    </message>
-    <message>
-        <source>Failed to start encoder: %1</source>
-        <translation type="vanished">Kodlayıcı başlatılamadı: %1</translation>
-    </message>
-    <message>
-        <source>Trim Failed</source>
-        <translation type="vanished">Kırpma Başarısız</translation>
-    </message>
-    <message>
-        <source>Failed to trim the video. Please try again.</source>
-        <translation type="vanished">Video kırpılamadı. Lütfen tekrar deneyin.</translation>
-    </message>
-    <message>
-        <source>Set Trim Start</source>
-        <translation type="vanished">Kırpma Başlangıcını Ayarla</translation>
-    </message>
-    <message>
-        <source>Set Trim End</source>
-        <translation type="vanished">Kırpma Bitişini Ayarla</translation>
-    </message>
-    <message>
-        <source>Enter time in seconds:</source>
-        <translation type="vanished">Zamanı saniye olarak girin:</translation>
-    </message>
-    <message>
-        <source>Trim Error</source>
-        <translation type="vanished">Kırpma Hatası</translation>
-    </message>
-    <message>
-        <source>Trimming video...</source>
-        <translation type="vanished">Video kırpılıyor...</translation>
-    </message>
 </context>
 <context>
     <name>RecordingRegionSelector</name>
@@ -2415,10 +2169,6 @@ GIF kayıtlarında ses desteklenmez.</translation>
         <translation>Yüz veya kimlik bilgisi algılanmadı</translation>
     </message>
     <message>
-        <source>No faces detected</source>
-        <translation type="vanished">Yüz algılanmadı</translation>
-    </message>
-    <message>
         <location filename="../src/RegionSelector.cpp" line="2819" />
         <source>Detection failed</source>
         <translation>Algılama başarısız</translation>
@@ -2451,582 +2201,6 @@ GIF kayıtlarında ses desteklenmez.</translation>
 </context>
 <context>
     <name>SettingsDialog</name>
-    <message>
-        <source>%1 Settings</source>
-        <translation type="vanished">%1 Ayarlar</translation>
-    </message>
-    <message>
-        <source>General</source>
-        <translation type="vanished">Genel</translation>
-    </message>
-    <message>
-        <source>Hotkeys</source>
-        <translation type="vanished">Kısayol Tuşları</translation>
-    </message>
-    <message>
-        <source>Advanced</source>
-        <translation type="vanished">Gelişmiş</translation>
-    </message>
-    <message>
-        <source>Watermark</source>
-        <translation type="vanished">Filigran</translation>
-    </message>
-    <message>
-        <source>OCR</source>
-        <translation type="vanished">OCR</translation>
-    </message>
-    <message>
-        <source>Recording</source>
-        <translation type="vanished">Kayıt</translation>
-    </message>
-    <message>
-        <source>Files</source>
-        <translation type="vanished">Dosyalar</translation>
-    </message>
-    <message>
-        <source>Updates</source>
-        <translation type="vanished">Güncellemeler</translation>
-    </message>
-    <message>
-        <source>About</source>
-        <translation type="vanished">Hakkında</translation>
-    </message>
-    <message>
-        <source>Save</source>
-        <translation type="vanished">Kaydet</translation>
-    </message>
-    <message>
-        <source>Cancel</source>
-        <translation type="vanished">İptal</translation>
-    </message>
-    <message>
-        <source>Start on login</source>
-        <translation type="vanished">Oturum açıldığında başlat</translation>
-    </message>
-    <message>
-        <source>Language</source>
-        <translation type="vanished">Dil</translation>
-    </message>
-    <message>
-        <source>Display language:</source>
-        <translation type="vanished">Görüntüleme dili:</translation>
-    </message>
-    <message>
-        <source>Appearance</source>
-        <translation type="vanished">Görünüm</translation>
-    </message>
-    <message>
-        <source>Toolbar Style:</source>
-        <translation type="vanished">Araç Çubuğu Stili:</translation>
-    </message>
-    <message>
-        <source>Dark</source>
-        <translation type="vanished">Koyu</translation>
-    </message>
-    <message>
-        <source>Light</source>
-        <translation type="vanished">Açık</translation>
-    </message>
-    <message>
-        <source>Permissions</source>
-        <translation type="vanished">İzinler</translation>
-    </message>
-    <message>
-        <source>Screen Recording:</source>
-        <translation type="vanished">Ekran Kaydı:</translation>
-    </message>
-    <message>
-        <source>Open Settings</source>
-        <translation type="vanished">Ayarları Aç</translation>
-    </message>
-    <message>
-        <source>Accessibility:</source>
-        <translation type="vanished">Erişilebilirlik:</translation>
-    </message>
-    <message>
-        <source>Command Line Interface</source>
-        <translation type="vanished">Komut Satırı Arayüzü</translation>
-    </message>
-    <message>
-        <source>Blur</source>
-        <translation type="vanished">Bulanıklaştırma</translation>
-    </message>
-    <message>
-        <source>Blur intensity:</source>
-        <translation type="vanished">Bulanıklık yoğunluğu:</translation>
-    </message>
-    <message>
-        <source>Blur type:</source>
-        <translation type="vanished">Bulanıklık türü:</translation>
-    </message>
-    <message>
-        <source>Pixelate</source>
-        <translation type="vanished">Pikselleştirme</translation>
-    </message>
-    <message>
-        <source>Gaussian</source>
-        <translation type="vanished">Gauss</translation>
-    </message>
-    <message>
-        <source>Pin Window</source>
-        <translation type="vanished">Sabitleme Penceresi</translation>
-    </message>
-    <message>
-        <source>Default opacity:</source>
-        <translation type="vanished">Varsayılan opaklık:</translation>
-    </message>
-    <message>
-        <source>Opacity step:</source>
-        <translation type="vanished">Opaklık adımı:</translation>
-    </message>
-    <message>
-        <source>Zoom step:</source>
-        <translation type="vanished">Yakınlaştırma adımı:</translation>
-    </message>
-    <message>
-        <source>Max cache files:</source>
-        <translation type="vanished">Maks. önbellek dosyası:</translation>
-    </message>
-    <message>
-        <source>Apply to images</source>
-        <translation type="vanished">Görsellere uygula</translation>
-    </message>
-    <message>
-        <source>Apply to recordings</source>
-        <translation type="vanished">Kayıtlara uygula</translation>
-    </message>
-    <message>
-        <source>Image:</source>
-        <translation type="vanished">Görsel:</translation>
-    </message>
-    <message>
-        <source>Select an image file...</source>
-        <translation type="vanished">Bir görsel dosyası seçin...</translation>
-    </message>
-    <message>
-        <source>Browse...</source>
-        <translation type="vanished">Gözat...</translation>
-    </message>
-    <message>
-        <source>Select Watermark Image</source>
-        <translation type="vanished">Filigran Görseli Seçin</translation>
-    </message>
-    <message>
-        <source>Images (*.png *.jpg *.jpeg *.bmp *.gif *.svg);;All Files (*)</source>
-        <translation type="vanished">Görseller (*.png *.jpg *.jpeg *.bmp *.gif *.svg);;Tüm Dosyalar (*)</translation>
-    </message>
-    <message>
-        <source>Scale:</source>
-        <translation type="vanished">Ölçek:</translation>
-    </message>
-    <message>
-        <source>Opacity:</source>
-        <translation type="vanished">Opaklık:</translation>
-    </message>
-    <message>
-        <source>Margin:</source>
-        <translation type="vanished">Kenar Boşluğu:</translation>
-    </message>
-    <message>
-        <source>Position:</source>
-        <translation type="vanished">Konum:</translation>
-    </message>
-    <message>
-        <source>Top-Left</source>
-        <translation type="vanished">Sol Üst</translation>
-    </message>
-    <message>
-        <source>Top-Right</source>
-        <translation type="vanished">Sağ Üst</translation>
-    </message>
-    <message>
-        <source>Bottom-Left</source>
-        <translation type="vanished">Sol Alt</translation>
-    </message>
-    <message>
-        <source>Bottom-Right</source>
-        <translation type="vanished">Sağ Alt</translation>
-    </message>
-    <message>
-        <source>No image</source>
-        <translation type="vanished">Görsel yok</translation>
-    </message>
-    <message>
-        <source>Invalid image</source>
-        <translation type="vanished">Geçersiz görsel</translation>
-    </message>
-    <message>
-        <source>Size: %1 × %2 px</source>
-        <translation type="vanished">Boyut: %1 × %2 px</translation>
-    </message>
-    <message>
-        <source>Frame Rate:</source>
-        <translation type="vanished">Kare Hızı:</translation>
-    </message>
-    <message>
-        <source>Capture</source>
-        <translation type="vanished">Yakalama</translation>
-    </message>
-    <message>
-        <source>Show shortcut hints when entering region capture</source>
-        <translation type="vanished">Bölge Yakalama'ya girerken kısayol ipuçlarını göster</translation>
-    </message>
-    <message>
-        <source>MCP</source>
-        <translation type="vanished">MCP</translation>
-    </message>
-    <message>
-        <source>Enable MCP server</source>
-        <translation type="vanished">MCP sunucusunu etkinleştir</translation>
-    </message>
-    <message>
-        <source>10 FPS</source>
-        <translation type="vanished">10 FPS</translation>
-    </message>
-    <message>
-        <source>15 FPS</source>
-        <translation type="vanished">15 FPS</translation>
-    </message>
-    <message>
-        <source>24 FPS</source>
-        <translation type="vanished">24 FPS</translation>
-    </message>
-    <message>
-        <source>30 FPS</source>
-        <translation type="vanished">30 FPS</translation>
-    </message>
-    <message>
-        <source>Output Format:</source>
-        <translation type="vanished">Çıktı Biçimi:</translation>
-    </message>
-    <message>
-        <source>MP4 (H.264)</source>
-        <translation type="vanished">MP4 (H.264)</translation>
-    </message>
-    <message>
-        <source>GIF</source>
-        <translation type="vanished">GIF</translation>
-    </message>
-    <message>
-        <source>WebP</source>
-        <translation type="vanished">WebP</translation>
-    </message>
-    <message>
-        <source>Quality:</source>
-        <translation type="vanished">Kalite:</translation>
-    </message>
-    <message>
-        <source>GIF format creates larger files than MP4.
-Best for short clips and sharing on web.
-Audio is not supported for GIF recordings.</source>
-        <translation type="vanished">GIF biçimi MP4'e göre daha büyük dosyalar oluşturur.
-Kısa klipler ve web'de paylaşım için en uygunudur.
-GIF kayıtlarında ses desteklenmez.</translation>
-    </message>
-    <message>
-        <source>Audio</source>
-        <translation type="vanished">Ses</translation>
-    </message>
-    <message>
-        <source>Record audio</source>
-        <translation type="vanished">Ses kaydet</translation>
-    </message>
-    <message>
-        <source>Source:</source>
-        <translation type="vanished">Kaynak:</translation>
-    </message>
-    <message>
-        <source>Microphone</source>
-        <translation type="vanished">Mikrofon</translation>
-    </message>
-    <message>
-        <source>System Audio</source>
-        <translation type="vanished">Sistem Sesi</translation>
-    </message>
-    <message>
-        <source>Both (Mixed)</source>
-        <translation type="vanished">Her İkisi (Karışık)</translation>
-    </message>
-    <message>
-        <source>Device:</source>
-        <translation type="vanished">Cihaz:</translation>
-    </message>
-    <message>
-        <source>Default</source>
-        <translation type="vanished">Varsayılan</translation>
-    </message>
-    <message>
-        <source>Show preview after recording</source>
-        <translation type="vanished">Kayıttan sonra önizleme göster</translation>
-    </message>
-    <message>
-        <source>Countdown</source>
-        <translation type="vanished">Geri Sayım</translation>
-    </message>
-    <message>
-        <source>Show countdown before recording</source>
-        <translation type="vanished">Kayıttan önce geri sayım göster</translation>
-    </message>
-    <message>
-        <source>Display a 3-2-1 countdown before recording starts</source>
-        <translation type="vanished">Kayıt başlamadan önce 3-2-1 geri sayım göster</translation>
-    </message>
-    <message>
-        <source>Countdown duration:</source>
-        <translation type="vanished">Geri sayım süresi:</translation>
-    </message>
-    <message>
-        <source>1 second</source>
-        <translation type="vanished">1 saniye</translation>
-    </message>
-    <message>
-        <source>2 seconds</source>
-        <translation type="vanished">2 saniye</translation>
-    </message>
-    <message>
-        <source>3 seconds</source>
-        <translation type="vanished">3 saniye</translation>
-    </message>
-    <message>
-        <source>4 seconds</source>
-        <translation type="vanished">4 saniye</translation>
-    </message>
-    <message>
-        <source>5 seconds</source>
-        <translation type="vanished">5 saniye</translation>
-    </message>
-    <message>
-        <source>WebP format creates smaller files than GIF with better quality.
-Best for short clips and sharing on web.
-Audio is not supported for WebP recordings.</source>
-        <translation type="vanished">WebP biçimi, GIF'e göre daha iyi kaliteyle daha küçük dosyalar oluşturur.
-Kısa klipler ve web'de paylaşım için en uygunudur.
-WebP kayıtlarında ses desteklenmez.</translation>
-    </message>
-    <message>
-        <source>Restart Required</source>
-        <translation type="vanished">Yeniden Başlatma Gerekli</translation>
-    </message>
-    <message>
-        <source>The language change will take effect after restarting the application.</source>
-        <translation type="vanished">Dil değişikliği uygulama yeniden başlatıldıktan sonra geçerli olacaktır.</translation>
-    </message>
-    <message>
-        <source>Microphone access denied. Please enable in System Settings &gt; Privacy &amp; Security &gt; Microphone.</source>
-        <translation type="vanished">Mikrofon erişimi reddedildi. Lütfen Sistem Ayarları &gt; Gizlilik ve Güvenlik &gt; Mikrofon bölümünden etkinleştirin.</translation>
-    </message>
-    <message>
-        <source>System audio capture requires macOS 13 (Ventura) or later, or a virtual audio device like BlackHole.</source>
-        <translation type="vanished">Sistem sesi yakalama için macOS 13 (Ventura) veya üzeri ya da BlackHole gibi sanal bir ses aygıtı gerekir.</translation>
-    </message>
-    <message>
-        <source>Loading available languages...</source>
-        <translation type="vanished">Kullanılabilir diller yükleniyor...</translation>
-    </message>
-    <message>
-        <source>Select and order the languages for OCR recognition.
-English is always included and cannot be removed. Drag to reorder selected languages.</source>
-        <translation type="vanished">OCR tanıma için dilleri seçin ve sıralayın.
-İngilizce her zaman dahildir ve kaldırılamaz. Seçili dilleri yeniden sıralamak için sürükleyin.</translation>
-    </message>
-    <message>
-        <source>Available Languages</source>
-        <translation type="vanished">Kullanılabilir Diller</translation>
-    </message>
-    <message>
-        <source>Add selected languages</source>
-        <translation type="vanished">Seçili dilleri ekle</translation>
-    </message>
-    <message>
-        <source>Remove selected languages</source>
-        <translation type="vanished">Seçili dilleri kaldır</translation>
-    </message>
-    <message>
-        <source>Selected Languages</source>
-        <translation type="vanished">Seçili Diller</translation>
-    </message>
-    <message>
-        <source>English is always included and cannot be removed</source>
-        <translation type="vanished">İngilizce her zaman dahildir ve kaldırılamaz</translation>
-    </message>
-    <message>
-        <source>After OCR Recognition</source>
-        <translation type="vanished">OCR Tanıma Sonrası</translation>
-    </message>
-    <message>
-        <source>Copy text directly to clipboard</source>
-        <translation type="vanished">Metni doğrudan panoya kopyala</translation>
-    </message>
-    <message>
-        <source>Show editor to review and edit text</source>
-        <translation type="vanished">Metni gözden geçirmek ve düzenlemek için düzenleyiciyi göster</translation>
-    </message>
-    <message>
-        <source>Recognized text is immediately copied to clipboard</source>
-        <translation type="vanished">Tanınan metin hemen panoya kopyalanır</translation>
-    </message>
-    <message>
-        <source>Opens a dialog where you can review and edit the text before copying</source>
-        <translation type="vanished">Kopyalamadan önce metni gözden geçirip düzenleyebileceğiniz bir iletişim kutusu açar</translation>
-    </message>
-    <message>
-        <source>No OCR languages available.
-
-macOS: OCR requires macOS 10.15 or later.
-Windows: Install language packs in Settings &gt; Time &amp; Language &gt; Language.</source>
-        <translation type="vanished">Kullanılabilir OCR dili yok.
-
-macOS: OCR için macOS 10.15 veya üzeri gerekir.
-Windows: Ayarlar &gt; Saat ve Dil &gt; Dil bölümünden dil paketlerini yükleyin.</translation>
-    </message>
-    <message>
-        <source>Save Locations</source>
-        <translation type="vanished">Kayıt Konumları</translation>
-    </message>
-    <message>
-        <source>Screenshots:</source>
-        <translation type="vanished">Ekran Görüntüleri:</translation>
-    </message>
-    <message>
-        <source>Select Screenshot Folder</source>
-        <translation type="vanished">Ekran Görüntüsü Klasörünü Seçin</translation>
-    </message>
-    <message>
-        <source>Recordings:</source>
-        <translation type="vanished">Kayıtlar:</translation>
-    </message>
-    <message>
-        <source>Select Recording Folder</source>
-        <translation type="vanished">Kayıt Klasörünü Seçin</translation>
-    </message>
-    <message>
-        <source>Filename Format</source>
-        <translation type="vanished">Dosya Adı Biçimi</translation>
-    </message>
-    <message>
-        <source>Template:</source>
-        <translation type="vanished">Şablon:</translation>
-    </message>
-    <message>
-        <source>Tokens: {prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}
-Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
-        <translation type="vanished">Belirteçler: {prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}
-Tarih belirteçleri: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} veya {date}</translation>
-    </message>
-    <message>
-        <source>Save Behavior</source>
-        <translation type="vanished">Kaydetme Davranışı</translation>
-    </message>
-    <message>
-        <source>Auto-save screenshots (save directly without dialog)</source>
-        <translation type="vanished">Ekran görüntülerini otomatik kaydet (iletişim kutusu olmadan doğrudan kaydet)</translation>
-    </message>
-    <message>
-        <source>Auto-save recordings (save directly without dialog)</source>
-        <translation type="vanished">Kayıtları otomatik kaydet (iletişim kutusu olmadan doğrudan kaydet)</translation>
-    </message>
-    <message>
-        <source>Preview: %1</source>
-        <translation type="vanished">Önizleme: %1</translation>
-    </message>
-    <message>
-        <source>
-Invalid template, fallback applied: %1</source>
-        <translation type="vanished">
-Geçersiz şablon, yedek uygulandı: %1</translation>
-    </message>
-    <message>
-        <source>Version Information</source>
-        <translation type="vanished">Sürüm Bilgisi</translation>
-    </message>
-    <message>
-        <source>Current Version</source>
-        <translation type="vanished">Mevcut Sürüm</translation>
-    </message>
-    <message>
-        <source>Automatic Updates</source>
-        <translation type="vanished">Otomatik Güncellemeler</translation>
-    </message>
-    <message>
-        <source>Check for updates automatically</source>
-        <translation type="vanished">Güncellemeleri otomatik olarak denetle</translation>
-    </message>
-    <message>
-        <source>Check frequency</source>
-        <translation type="vanished">Denetleme sıklığı</translation>
-    </message>
-    <message>
-        <source>Every day</source>
-        <translation type="vanished">Her gün</translation>
-    </message>
-    <message>
-        <source>Every 3 days</source>
-        <translation type="vanished">Her 3 günde bir</translation>
-    </message>
-    <message>
-        <source>Every week</source>
-        <translation type="vanished">Her hafta</translation>
-    </message>
-    <message>
-        <source>Every 2 weeks</source>
-        <translation type="vanished">Her 2 haftada bir</translation>
-    </message>
-    <message>
-        <source>Every month</source>
-        <translation type="vanished">Her ay</translation>
-    </message>
-    <message>
-        <source>Last checked: %1</source>
-        <translation type="vanished">Son denetleme: %1</translation>
-    </message>
-    <message>
-        <source>Last checked: Never</source>
-        <translation type="vanished">Son denetleme: Hiçbir zaman</translation>
-    </message>
-    <message>
-        <source>Check Now</source>
-        <translation type="vanished">Şimdi Denetle</translation>
-    </message>
-    <message>
-        <source>Checking...</source>
-        <translation type="vanished">Denetleniyor...</translation>
-    </message>
-    <message>
-        <source>Version %1</source>
-        <translation type="vanished">Sürüm %1</translation>
-    </message>
-    <message>
-        <source>Copyright 2024-2025 Victor Fu</source>
-        <translation type="vanished">Copyright 2024-2025 Victor Fu</translation>
-    </message>
-    <message>
-        <source>Author: Victor Fu</source>
-        <translation type="vanished">Yazar: Victor Fu</translation>
-    </message>
-    <message>
-        <source>'snaptray' command is available in terminal</source>
-        <translation type="vanished">'snaptray' komutu terminalde kullanılabilir</translation>
-    </message>
-    <message>
-        <source>Uninstall CLI</source>
-        <translation type="vanished">CLI Kaldır</translation>
-    </message>
-    <message>
-        <source>'snaptray' command is not installed</source>
-        <translation type="vanished">'snaptray' komutu yüklü değil</translation>
-    </message>
-    <message>
-        <source>Install CLI</source>
-        <translation type="vanished">CLI Yükle</translation>
-    </message>
-    <message>
-        <source>Granted</source>
-        <translation type="vanished">Verildi</translation>
-    </message>
-    <message>
-        <source>Not Granted</source>
-        <translation type="vanished">Verilmedi</translation>
-    </message>
 </context>
 <context>
     <name>SettingsPathPicker</name>
@@ -3953,7 +3127,7 @@ Başka bir uygulama tarafından kullanılıyor olabilir.</translation>
     <message>
         <location filename="../src/qml/main.qml" line="10" />
         <source>SnapTray QML</source>
-        <translation type="unfinished" />
+        <translation>SnapTray QML</translation>
     </message>
 </context>
 <context>

@@ -211,34 +211,6 @@
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>
-    <message>
-        <source>Cancel capture</source>
-        <translation type="vanished">Zrušit snímání</translation>
-    </message>
-    <message>
-        <source>Confirm selection (after selection)</source>
-        <translation type="vanished">Potvrdit výběr (po výběru)</translation>
-    </message>
-    <message>
-        <source>Toggle multi-region mode</source>
-        <translation type="vanished">Přepnout režim více oblastí</translation>
-    </message>
-    <message>
-        <source>Switch RGB/HEX (when magnifier visible)</source>
-        <translation type="vanished">Přepnout RGB/HEX (když je vidět lupa)</translation>
-    </message>
-    <message>
-        <source>Copy color value (before selection)</source>
-        <translation type="vanished">Kopírovat hodnotu barvy (před výběrem)</translation>
-    </message>
-    <message>
-        <source>Move selection by 1 pixel (after selection)</source>
-        <translation type="vanished">Posunout výběr o 1 pixel (po výběru)</translation>
-    </message>
-    <message>
-        <source>Resize selection by 1 pixel (after selection)</source>
-        <translation type="vanished">Změnit velikost výběru o 1 pixel (po výběru)</translation>
-    </message>
 </context>
 <context>
     <name>ClickThroughExitButton</name>
@@ -250,61 +222,9 @@
 </context>
 <context>
     <name>ColorDialog</name>
-    <message>
-        <source>Select Color</source>
-        <translation type="vanished">Vyberte barvu</translation>
-    </message>
-    <message>
-        <source>Hue</source>
-        <translation type="vanished">Odstín</translation>
-    </message>
-    <message>
-        <source>Saturation</source>
-        <translation type="vanished">Sytost</translation>
-    </message>
-    <message>
-        <source>Value</source>
-        <translation type="vanished">Jas</translation>
-    </message>
-    <message>
-        <source>Red</source>
-        <translation type="vanished">Červená</translation>
-    </message>
-    <message>
-        <source>Green</source>
-        <translation type="vanished">Zelená</translation>
-    </message>
-    <message>
-        <source>Blue</source>
-        <translation type="vanished">Modrá</translation>
-    </message>
-    <message>
-        <source>Alpha</source>
-        <translation type="vanished">Alfa</translation>
-    </message>
-    <message>
-        <source>Hex</source>
-        <translation type="vanished">Hex</translation>
-    </message>
-    <message>
-        <source>Reset</source>
-        <translation type="vanished">Resetovat</translation>
-    </message>
-    <message>
-        <source>OK</source>
-        <translation type="vanished">OK</translation>
-    </message>
-    <message>
-        <source>Cancel</source>
-        <translation type="vanished">Zrušit</translation>
-    </message>
 </context>
 <context>
     <name>ColorPickerDialogCompat</name>
-    <message>
-        <source>Select Color</source>
-        <translation type="vanished">Vyberte barvu</translation>
-    </message>
 </context>
 <context>
     <name>FilesSettings</name>
@@ -363,18 +283,6 @@ Tokeny data: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} nebo {date}</translation>
 </context>
 <context>
     <name>FormatSelectionWidget</name>
-    <message>
-        <source>Best quality, widely compatible</source>
-        <translation type="vanished">Nejlepší kvalita, široce kompatibilní</translation>
-    </message>
-    <message>
-        <source>Universal support, larger file size</source>
-        <translation type="vanished">Univerzální podpora, větší velikost souboru</translation>
-    </message>
-    <message>
-        <source>Small file size, modern browsers only</source>
-        <translation type="vanished">Malá velikost souboru, pouze moderní prohlížeče</translation>
-    </message>
 </context>
 <context>
     <name>GeneralSettings</name>
@@ -476,66 +384,6 @@ Tokeny data: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} nebo {date}</translation>
 </context>
 <context>
     <name>HotkeyManager</name>
-    <message>
-        <source>Conflicts with: %1</source>
-        <translation type="vanished">Konflikt s: %1</translation>
-    </message>
-    <message>
-        <source>Region Capture</source>
-        <translation type="vanished">Zachycení oblasti</translation>
-    </message>
-    <message>
-        <source>Capture a selected region of the screen</source>
-        <translation type="vanished">Zachytit vybranou oblast obrazovky</translation>
-    </message>
-    <message>
-        <source>Screen Canvas</source>
-        <translation type="vanished">Plátno obrazovky</translation>
-    </message>
-    <message>
-        <source>Annotate directly on the screen</source>
-        <translation type="vanished">Anotovat přímo na obrazovce</translation>
-    </message>
-    <message>
-        <source>Paste</source>
-        <translation type="vanished">Vložit</translation>
-    </message>
-    <message>
-        <source>Pin content from clipboard</source>
-        <translation type="vanished">Připnout obsah ze schránky</translation>
-    </message>
-    <message>
-        <source>Quick Pin</source>
-        <translation type="vanished">Rychlé připnutí</translation>
-    </message>
-    <message>
-        <source>Select and pin a region directly</source>
-        <translation type="vanished">Vybrat a připnout oblast přímo</translation>
-    </message>
-    <message>
-        <source>Pin from Image</source>
-        <translation type="vanished">Připnout z obrázku</translation>
-    </message>
-    <message>
-        <source>Pin an image from file</source>
-        <translation type="vanished">Připnout obrázek ze souboru</translation>
-    </message>
-    <message>
-        <source>Pin History</source>
-        <translation type="vanished">Historie připnutí</translation>
-    </message>
-    <message>
-        <source>Open pin history window</source>
-        <translation type="vanished">Otevřít okno historie připnutí</translation>
-    </message>
-    <message>
-        <source>Record Full Screen</source>
-        <translation type="vanished">Nahrát celou obrazovku</translation>
-    </message>
-    <message>
-        <source>Start full screen recording</source>
-        <translation type="vanished">Spustit nahrávání celé obrazovky</translation>
-    </message>
 </context>
 <context>
     <name>HotkeySettings</name>
@@ -1066,10 +914,6 @@ Velikost: %2</translation>
         <translation>Zkrášlit</translation>
     </message>
     <message>
-        <source>Recognize Text</source>
-        <translation type="vanished">Rozpoznat text</translation>
-    </message>
-    <message>
         <location filename="../src/PinWindow.cpp" line="917" />
         <source>Click-through</source>
         <translation>Proklikávání</translation>
@@ -1479,26 +1323,6 @@ Velikost: %2</translation>
         <translation>Sloučení připnutých se nezdařilo</translation>
     </message>
     <message>
-        <source>Capture</source>
-        <translation type="vanished">Zachycení</translation>
-    </message>
-    <message>
-        <source>Canvas</source>
-        <translation type="vanished">Plátno</translation>
-    </message>
-    <message>
-        <source>Clipboard</source>
-        <translation type="vanished">Schránka</translation>
-    </message>
-    <message>
-        <source>Pin</source>
-        <translation type="vanished">Připnutí</translation>
-    </message>
-    <message>
-        <source>Recording</source>
-        <translation type="vanished">Nahrávání</translation>
-    </message>
-    <message>
         <location filename="../src/QRCodeManager.cpp" line="200" />
         <source>No barcode found in image</source>
         <translation>V obrázku nebyl nalezen žádný čárový kód</translation>
@@ -1717,16 +1541,8 @@ Velikost: %2</translation>
 <context>
     <name>RecordingControlBar</name>
     <message>
-        <source>Audio recording enabled</source>
-        <translation type="vanished">Nahrávání zvuku povoleno</translation>
-    </message>
-    <message>
         <source>-- fps</source>
         <translation>-- fps</translation>
-    </message>
-    <message>
-        <source>Annotate</source>
-        <translation type="vanished">Anotovat</translation>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingControlBar.qml" line="254" />
@@ -1752,50 +1568,6 @@ Velikost: %2</translation>
     <message>
         <source>Cancel Recording (Esc)</source>
         <translation>Zrušit nahrávání (Esc)</translation>
-    </message>
-    <message>
-        <source>Pause (Space)</source>
-        <translation type="vanished">Pozastavit (Space)</translation>
-    </message>
-    <message>
-        <source>Play (Space)</source>
-        <translation type="vanished">Přehrát (Space)</translation>
-    </message>
-    <message>
-        <source>Unmute (M)</source>
-        <translation type="vanished">Zapnout zvuk (M)</translation>
-    </message>
-    <message>
-        <source>Mute (M)</source>
-        <translation type="vanished">Ztlumit (M)</translation>
-    </message>
-    <message>
-        <source>MP4 - Best quality</source>
-        <translation type="vanished">MP4 - Nejlepší kvalita</translation>
-    </message>
-    <message>
-        <source>GIF - Universal support</source>
-        <translation type="vanished">GIF - Univerzální podpora</translation>
-    </message>
-    <message>
-        <source>WebP - Small size</source>
-        <translation type="vanished">WebP - Malá velikost</translation>
-    </message>
-    <message>
-        <source>Annotate Video</source>
-        <translation type="vanished">Anotovat video</translation>
-    </message>
-    <message>
-        <source>Save (Enter)</source>
-        <translation type="vanished">Uložit (Enter)</translation>
-    </message>
-    <message>
-        <source>Discard (Esc)</source>
-        <translation type="vanished">Zahodit (Esc)</translation>
-    </message>
-    <message>
-        <source>Drag to seek</source>
-        <translation type="vanished">Přetáhněte pro posunutí</translation>
     </message>
 </context>
 <context>
@@ -1977,151 +1749,61 @@ Velikost: %2</translation>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="71" />
         <source>Recording Preview</source>
-        <translation type="unfinished">Náhled nahrávky</translation>
+        <translation>Náhled nahrávky</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="356" />
         <source>Converting video...</source>
-        <translation type="unfinished">Převod videa...</translation>
+        <translation>Převod videa...</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="365" />
         <source>Failed to create video player for conversion</source>
-        <translation type="unfinished" />
+        <translation>Nepodařilo se vytvořit přehrávač videa pro převod</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="366" />
         <source>Failed to load video for conversion</source>
-        <translation type="unfinished" />
+        <translation>Nepodařilo se načíst video pro převod</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="367" />
         <source>Video not loaded properly for conversion</source>
-        <translation type="unfinished" />
+        <translation>Video nebylo pro převod správně načteno</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="368" />
         <source>Failed to start encoder</source>
-        <translation type="unfinished" />
+        <translation>Nepodařilo se spustit kodér</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="369" />
         <source>Conversion failed: output file is missing or empty</source>
-        <translation type="unfinished" />
+        <translation>Převod se nezdařil: výstupní soubor chybí nebo je prázdný</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="596" />
         <source>Trimming video...</source>
-        <translation type="unfinished">Ořezávání videa...</translation>
+        <translation>Ořezávání videa...</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="615" />
         <source>Trim failed: %1</source>
-        <translation type="unfinished" />
+        <translation>Ořezávání se nezdařilo: %1</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="650" />
         <source>Trim failed: output file is missing or empty</source>
-        <translation type="unfinished" />
+        <translation>Ořezávání se nezdařilo: výstupní soubor chybí nebo je prázdný</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="657" />
         <source>Trim failed</source>
-        <translation type="unfinished" />
+        <translation>Ořezávání se nezdařilo</translation>
     </message>
 </context>
 <context>
     <name>RecordingPreviewWindow</name>
-    <message>
-        <source>Recording Preview</source>
-        <translation type="vanished">Náhled nahrávky</translation>
-    </message>
-    <message>
-        <source>Trim</source>
-        <translation type="vanished">Oříznout</translation>
-    </message>
-    <message>
-        <source>Loop playback within the trimmed range</source>
-        <translation type="vanished">Smyčkové přehrávání v oříznutém rozsahu</translation>
-    </message>
-    <message>
-        <source>Play/Pause (Space)</source>
-        <translation type="vanished">Přehrát/Pozastavit (Space)</translation>
-    </message>
-    <message>
-        <source>Playback speed</source>
-        <translation type="vanished">Rychlost přehrávání</translation>
-    </message>
-    <message>
-        <source>Mute (M)</source>
-        <translation type="vanished">Ztlumit (M)</translation>
-    </message>
-    <message>
-        <source>Discard (Esc)</source>
-        <translation type="vanished">Zahodit (Esc)</translation>
-    </message>
-    <message>
-        <source>Save (Enter)</source>
-        <translation type="vanished">Uložit (Enter)</translation>
-    </message>
-    <message>
-        <source>Video Error</source>
-        <translation type="vanished">Chyba videa</translation>
-    </message>
-    <message>
-        <source>Failed to load video:
-%1</source>
-        <translation type="vanished">Načtení videa se nezdařilo:
-%1</translation>
-    </message>
-    <message>
-        <source>Conversion Error</source>
-        <translation type="vanished">Chyba konverze</translation>
-    </message>
-    <message>
-        <source>Cannot convert: video not loaded properly.</source>
-        <translation type="vanished">Nelze převést: video nebylo správně načteno.</translation>
-    </message>
-    <message>
-        <source>Converting video...</source>
-        <translation type="vanished">Převod videa...</translation>
-    </message>
-    <message>
-        <source>Cancel</source>
-        <translation type="vanished">Zrušit</translation>
-    </message>
-    <message>
-        <source>Failed to start encoder: %1</source>
-        <translation type="vanished">Spuštění kodéru se nezdařilo: %1</translation>
-    </message>
-    <message>
-        <source>Trim Failed</source>
-        <translation type="vanished">Oříznutí se nezdařilo</translation>
-    </message>
-    <message>
-        <source>Failed to trim the video. Please try again.</source>
-        <translation type="vanished">Oříznutí videa se nezdařilo. Zkuste to prosím znovu.</translation>
-    </message>
-    <message>
-        <source>Set Trim Start</source>
-        <translation type="vanished">Nastavit začátek oříznutí</translation>
-    </message>
-    <message>
-        <source>Set Trim End</source>
-        <translation type="vanished">Nastavit konec oříznutí</translation>
-    </message>
-    <message>
-        <source>Enter time in seconds:</source>
-        <translation type="vanished">Zadejte čas v sekundách:</translation>
-    </message>
-    <message>
-        <source>Trim Error</source>
-        <translation type="vanished">Chyba oříznutí</translation>
-    </message>
-    <message>
-        <source>Trimming video...</source>
-        <translation type="vanished">Ořezávání videa...</translation>
-    </message>
 </context>
 <context>
     <name>RecordingRegionSelector</name>
@@ -2493,10 +2175,6 @@ Zvuk není podporován pro nahrávky ve formátu GIF.</translation>
         <translation>Nebyly detekovány obličeje ani přihlašovací údaje</translation>
     </message>
     <message>
-        <source>No faces detected</source>
-        <translation type="vanished">Nebyly detekovány žádné obličeje</translation>
-    </message>
-    <message>
         <location filename="../src/RegionSelector.cpp" line="2819" />
         <source>Detection failed</source>
         <translation>Detekce se nezdařila</translation>
@@ -2529,582 +2207,6 @@ Zvuk není podporován pro nahrávky ve formátu GIF.</translation>
 </context>
 <context>
     <name>SettingsDialog</name>
-    <message>
-        <source>%1 Settings</source>
-        <translation type="vanished">Nastavení %1</translation>
-    </message>
-    <message>
-        <source>General</source>
-        <translation type="vanished">Obecné</translation>
-    </message>
-    <message>
-        <source>Hotkeys</source>
-        <translation type="vanished">Klávesové zkratky</translation>
-    </message>
-    <message>
-        <source>Advanced</source>
-        <translation type="vanished">Pokročilé</translation>
-    </message>
-    <message>
-        <source>Watermark</source>
-        <translation type="vanished">Vodoznak</translation>
-    </message>
-    <message>
-        <source>OCR</source>
-        <translation type="vanished">OCR</translation>
-    </message>
-    <message>
-        <source>Recording</source>
-        <translation type="vanished">Nahrávání</translation>
-    </message>
-    <message>
-        <source>Files</source>
-        <translation type="vanished">Soubory</translation>
-    </message>
-    <message>
-        <source>Updates</source>
-        <translation type="vanished">Aktualizace</translation>
-    </message>
-    <message>
-        <source>About</source>
-        <translation type="vanished">O programu</translation>
-    </message>
-    <message>
-        <source>Save</source>
-        <translation type="vanished">Uložit</translation>
-    </message>
-    <message>
-        <source>Cancel</source>
-        <translation type="vanished">Zrušit</translation>
-    </message>
-    <message>
-        <source>Start on login</source>
-        <translation type="vanished">Spustit při přihlášení</translation>
-    </message>
-    <message>
-        <source>Language</source>
-        <translation type="vanished">Jazyk</translation>
-    </message>
-    <message>
-        <source>Display language:</source>
-        <translation type="vanished">Jazyk zobrazení:</translation>
-    </message>
-    <message>
-        <source>Appearance</source>
-        <translation type="vanished">Vzhled</translation>
-    </message>
-    <message>
-        <source>Toolbar Style:</source>
-        <translation type="vanished">Styl panelu nástrojů:</translation>
-    </message>
-    <message>
-        <source>Dark</source>
-        <translation type="vanished">Tmavý</translation>
-    </message>
-    <message>
-        <source>Light</source>
-        <translation type="vanished">Světlý</translation>
-    </message>
-    <message>
-        <source>Permissions</source>
-        <translation type="vanished">Oprávnění</translation>
-    </message>
-    <message>
-        <source>Screen Recording:</source>
-        <translation type="vanished">Nahrávání obrazovky:</translation>
-    </message>
-    <message>
-        <source>Open Settings</source>
-        <translation type="vanished">Otevřít nastavení</translation>
-    </message>
-    <message>
-        <source>Accessibility:</source>
-        <translation type="vanished">Usnadnění přístupu:</translation>
-    </message>
-    <message>
-        <source>Command Line Interface</source>
-        <translation type="vanished">Příkazový řádek</translation>
-    </message>
-    <message>
-        <source>Blur</source>
-        <translation type="vanished">Rozmazání</translation>
-    </message>
-    <message>
-        <source>Blur intensity:</source>
-        <translation type="vanished">Intenzita rozmazání:</translation>
-    </message>
-    <message>
-        <source>Blur type:</source>
-        <translation type="vanished">Typ rozmazání:</translation>
-    </message>
-    <message>
-        <source>Pixelate</source>
-        <translation type="vanished">Pixelizace</translation>
-    </message>
-    <message>
-        <source>Gaussian</source>
-        <translation type="vanished">Gaussovské</translation>
-    </message>
-    <message>
-        <source>Pin Window</source>
-        <translation type="vanished">Připnout okno</translation>
-    </message>
-    <message>
-        <source>Default opacity:</source>
-        <translation type="vanished">Výchozí neprůhlednost:</translation>
-    </message>
-    <message>
-        <source>Opacity step:</source>
-        <translation type="vanished">Krok neprůhlednosti:</translation>
-    </message>
-    <message>
-        <source>Zoom step:</source>
-        <translation type="vanished">Krok přiblížení:</translation>
-    </message>
-    <message>
-        <source>Max cache files:</source>
-        <translation type="vanished">Max. souborů v mezipaměti:</translation>
-    </message>
-    <message>
-        <source>Apply to images</source>
-        <translation type="vanished">Použít na obrázky</translation>
-    </message>
-    <message>
-        <source>Apply to recordings</source>
-        <translation type="vanished">Použít na nahrávky</translation>
-    </message>
-    <message>
-        <source>Image:</source>
-        <translation type="vanished">Obrázek:</translation>
-    </message>
-    <message>
-        <source>Select an image file...</source>
-        <translation type="vanished">Vyberte soubor obrázku...</translation>
-    </message>
-    <message>
-        <source>Browse...</source>
-        <translation type="vanished">Procházet...</translation>
-    </message>
-    <message>
-        <source>Select Watermark Image</source>
-        <translation type="vanished">Vyberte obrázek vodoznaku</translation>
-    </message>
-    <message>
-        <source>Images (*.png *.jpg *.jpeg *.bmp *.gif *.svg);;All Files (*)</source>
-        <translation type="vanished">Obrázky (*.png *.jpg *.jpeg *.bmp *.gif *.svg);;Všechny soubory (*)</translation>
-    </message>
-    <message>
-        <source>Scale:</source>
-        <translation type="vanished">Měřítko:</translation>
-    </message>
-    <message>
-        <source>Opacity:</source>
-        <translation type="vanished">Neprůhlednost:</translation>
-    </message>
-    <message>
-        <source>Margin:</source>
-        <translation type="vanished">Okraj:</translation>
-    </message>
-    <message>
-        <source>Position:</source>
-        <translation type="vanished">Pozice:</translation>
-    </message>
-    <message>
-        <source>Top-Left</source>
-        <translation type="vanished">Vlevo nahoře</translation>
-    </message>
-    <message>
-        <source>Top-Right</source>
-        <translation type="vanished">Vpravo nahoře</translation>
-    </message>
-    <message>
-        <source>Bottom-Left</source>
-        <translation type="vanished">Vlevo dole</translation>
-    </message>
-    <message>
-        <source>Bottom-Right</source>
-        <translation type="vanished">Vpravo dole</translation>
-    </message>
-    <message>
-        <source>No image</source>
-        <translation type="vanished">Žádný obrázek</translation>
-    </message>
-    <message>
-        <source>Invalid image</source>
-        <translation type="vanished">Neplatný obrázek</translation>
-    </message>
-    <message>
-        <source>Size: %1 × %2 px</source>
-        <translation type="vanished">Velikost: %1 × %2 px</translation>
-    </message>
-    <message>
-        <source>Frame Rate:</source>
-        <translation type="vanished">Snímková frekvence:</translation>
-    </message>
-    <message>
-        <source>Capture</source>
-        <translation type="vanished">Zachycení</translation>
-    </message>
-    <message>
-        <source>Show shortcut hints when entering region capture</source>
-        <translation type="vanished">Při vstupu do režimu snímání oblasti zobrazit nápovědu klávesových zkratek</translation>
-    </message>
-    <message>
-        <source>MCP</source>
-        <translation type="vanished">MCP</translation>
-    </message>
-    <message>
-        <source>Enable MCP server</source>
-        <translation type="vanished">Povolit server MCP</translation>
-    </message>
-    <message>
-        <source>10 FPS</source>
-        <translation type="vanished">10 FPS</translation>
-    </message>
-    <message>
-        <source>15 FPS</source>
-        <translation type="vanished">15 FPS</translation>
-    </message>
-    <message>
-        <source>24 FPS</source>
-        <translation type="vanished">24 FPS</translation>
-    </message>
-    <message>
-        <source>30 FPS</source>
-        <translation type="vanished">30 FPS</translation>
-    </message>
-    <message>
-        <source>Output Format:</source>
-        <translation type="vanished">Výstupní formát:</translation>
-    </message>
-    <message>
-        <source>MP4 (H.264)</source>
-        <translation type="vanished">MP4 (H.264)</translation>
-    </message>
-    <message>
-        <source>GIF</source>
-        <translation type="vanished">GIF</translation>
-    </message>
-    <message>
-        <source>WebP</source>
-        <translation type="vanished">WebP</translation>
-    </message>
-    <message>
-        <source>Quality:</source>
-        <translation type="vanished">Kvalita:</translation>
-    </message>
-    <message>
-        <source>Audio</source>
-        <translation type="vanished">Zvuk</translation>
-    </message>
-    <message>
-        <source>Record audio</source>
-        <translation type="vanished">Nahrávat zvuk</translation>
-    </message>
-    <message>
-        <source>Source:</source>
-        <translation type="vanished">Zdroj:</translation>
-    </message>
-    <message>
-        <source>Microphone</source>
-        <translation type="vanished">Mikrofon</translation>
-    </message>
-    <message>
-        <source>System Audio</source>
-        <translation type="vanished">Systémový zvuk</translation>
-    </message>
-    <message>
-        <source>Both (Mixed)</source>
-        <translation type="vanished">Oba (smíchané)</translation>
-    </message>
-    <message>
-        <source>Device:</source>
-        <translation type="vanished">Zařízení:</translation>
-    </message>
-    <message>
-        <source>Default</source>
-        <translation type="vanished">Výchozí</translation>
-    </message>
-    <message>
-        <source>Show preview after recording</source>
-        <translation type="vanished">Zobrazit náhled po nahrávání</translation>
-    </message>
-    <message>
-        <source>Countdown</source>
-        <translation type="vanished">Odpočítávání</translation>
-    </message>
-    <message>
-        <source>Show countdown before recording</source>
-        <translation type="vanished">Zobrazit odpočítávání před nahráváním</translation>
-    </message>
-    <message>
-        <source>Display a 3-2-1 countdown before recording starts</source>
-        <translation type="vanished">Zobrazit odpočítávání 3-2-1 před zahájením nahrávání</translation>
-    </message>
-    <message>
-        <source>Countdown duration:</source>
-        <translation type="vanished">Doba odpočítávání:</translation>
-    </message>
-    <message>
-        <source>1 second</source>
-        <translation type="vanished">1 sekunda</translation>
-    </message>
-    <message>
-        <source>2 seconds</source>
-        <translation type="vanished">2 sekundy</translation>
-    </message>
-    <message>
-        <source>3 seconds</source>
-        <translation type="vanished">3 sekundy</translation>
-    </message>
-    <message>
-        <source>4 seconds</source>
-        <translation type="vanished">4 sekundy</translation>
-    </message>
-    <message>
-        <source>5 seconds</source>
-        <translation type="vanished">5 sekund</translation>
-    </message>
-    <message>
-        <source>Restart Required</source>
-        <translation type="vanished">Vyžadován restart</translation>
-    </message>
-    <message>
-        <source>The language change will take effect after restarting the application.</source>
-        <translation type="vanished">Změna jazyka se projeví po restartování aplikace.</translation>
-    </message>
-    <message>
-        <source>Loading available languages...</source>
-        <translation type="vanished">Načítání dostupných jazyků...</translation>
-    </message>
-    <message>
-        <source>Available Languages</source>
-        <translation type="vanished">Dostupné jazyky</translation>
-    </message>
-    <message>
-        <source>Add selected languages</source>
-        <translation type="vanished">Přidat vybrané jazyky</translation>
-    </message>
-    <message>
-        <source>Remove selected languages</source>
-        <translation type="vanished">Odebrat vybrané jazyky</translation>
-    </message>
-    <message>
-        <source>Selected Languages</source>
-        <translation type="vanished">Vybrané jazyky</translation>
-    </message>
-    <message>
-        <source>English is always included and cannot be removed</source>
-        <translation type="vanished">Angličtina je vždy zahrnuta a nelze ji odebrat</translation>
-    </message>
-    <message>
-        <source>After OCR Recognition</source>
-        <translation type="vanished">Po rozpoznání OCR</translation>
-    </message>
-    <message>
-        <source>Copy text directly to clipboard</source>
-        <translation type="vanished">Kopírovat text přímo do schránky</translation>
-    </message>
-    <message>
-        <source>Show editor to review and edit text</source>
-        <translation type="vanished">Zobrazit editor pro kontrolu a úpravu textu</translation>
-    </message>
-    <message>
-        <source>Recognized text is immediately copied to clipboard</source>
-        <translation type="vanished">Rozpoznaný text je okamžitě zkopírován do schránky</translation>
-    </message>
-    <message>
-        <source>Opens a dialog where you can review and edit the text before copying</source>
-        <translation type="vanished">Otevře dialog, kde můžete zkontrolovat a upravit text před kopírováním</translation>
-    </message>
-    <message>
-        <source>Save Locations</source>
-        <translation type="vanished">Umístění pro ukládání</translation>
-    </message>
-    <message>
-        <source>Screenshots:</source>
-        <translation type="vanished">Snímky obrazovky:</translation>
-    </message>
-    <message>
-        <source>Select Screenshot Folder</source>
-        <translation type="vanished">Vyberte složku pro snímky obrazovky</translation>
-    </message>
-    <message>
-        <source>Recordings:</source>
-        <translation type="vanished">Nahrávky:</translation>
-    </message>
-    <message>
-        <source>Select Recording Folder</source>
-        <translation type="vanished">Vyberte složku pro nahrávky</translation>
-    </message>
-    <message>
-        <source>Filename Format</source>
-        <translation type="vanished">Formát názvu souboru</translation>
-    </message>
-    <message>
-        <source>Template:</source>
-        <translation type="vanished">Šablona:</translation>
-    </message>
-    <message>
-        <source>Save Behavior</source>
-        <translation type="vanished">Chování ukládání</translation>
-    </message>
-    <message>
-        <source>Auto-save screenshots (save directly without dialog)</source>
-        <translation type="vanished">Automaticky ukládat snímky obrazovky (uložit přímo bez dialogu)</translation>
-    </message>
-    <message>
-        <source>Auto-save recordings (save directly without dialog)</source>
-        <translation type="vanished">Automaticky ukládat nahrávky (uložit přímo bez dialogu)</translation>
-    </message>
-    <message>
-        <source>Preview: %1</source>
-        <translation type="vanished">Náhled: %1</translation>
-    </message>
-    <message>
-        <source>
-Invalid template, fallback applied: %1</source>
-        <translation type="vanished">
-Neplatná šablona, použita náhradní: %1</translation>
-    </message>
-    <message>
-        <source>Version Information</source>
-        <translation type="vanished">Informace o verzi</translation>
-    </message>
-    <message>
-        <source>Current Version</source>
-        <translation type="vanished">Aktuální verze</translation>
-    </message>
-    <message>
-        <source>Automatic Updates</source>
-        <translation type="vanished">Automatické aktualizace</translation>
-    </message>
-    <message>
-        <source>Check for updates automatically</source>
-        <translation type="vanished">Automaticky kontrolovat aktualizace</translation>
-    </message>
-    <message>
-        <source>Check frequency</source>
-        <translation type="vanished">Frekvence kontroly</translation>
-    </message>
-    <message>
-        <source>Every day</source>
-        <translation type="vanished">Každý den</translation>
-    </message>
-    <message>
-        <source>Every 3 days</source>
-        <translation type="vanished">Každé 3 dny</translation>
-    </message>
-    <message>
-        <source>Every week</source>
-        <translation type="vanished">Každý týden</translation>
-    </message>
-    <message>
-        <source>Every 2 weeks</source>
-        <translation type="vanished">Každé 2 týdny</translation>
-    </message>
-    <message>
-        <source>Every month</source>
-        <translation type="vanished">Každý měsíc</translation>
-    </message>
-    <message>
-        <source>Last checked: %1</source>
-        <translation type="vanished">Naposledy zkontrolováno: %1</translation>
-    </message>
-    <message>
-        <source>Last checked: Never</source>
-        <translation type="vanished">Naposledy zkontrolováno: Nikdy</translation>
-    </message>
-    <message>
-        <source>Check Now</source>
-        <translation type="vanished">Zkontrolovat nyní</translation>
-    </message>
-    <message>
-        <source>Checking...</source>
-        <translation type="vanished">Kontrola...</translation>
-    </message>
-    <message>
-        <source>Version %1</source>
-        <translation type="vanished">Verze %1</translation>
-    </message>
-    <message>
-        <source>Copyright 2024-2025 Victor Fu</source>
-        <translation type="vanished">Autorská práva 2024-2025 Victor Fu</translation>
-    </message>
-    <message>
-        <source>Author: Victor Fu</source>
-        <translation type="vanished">Autor: Victor Fu</translation>
-    </message>
-    <message>
-        <source>'snaptray' command is available in terminal</source>
-        <translation type="vanished">Příkaz 'snaptray' je dostupný v terminálu</translation>
-    </message>
-    <message>
-        <source>Uninstall CLI</source>
-        <translation type="vanished">Odinstalovat CLI</translation>
-    </message>
-    <message>
-        <source>'snaptray' command is not installed</source>
-        <translation type="vanished">Příkaz 'snaptray' není nainstalován</translation>
-    </message>
-    <message>
-        <source>Install CLI</source>
-        <translation type="vanished">Nainstalovat CLI</translation>
-    </message>
-    <message>
-        <source>Granted</source>
-        <translation type="vanished">Uděleno</translation>
-    </message>
-    <message>
-        <source>Not Granted</source>
-        <translation type="vanished">Neuděleno</translation>
-    </message>
-    <message>
-        <source>GIF format creates larger files than MP4.
-Best for short clips and sharing on web.
-Audio is not supported for GIF recordings.</source>
-        <translation type="vanished">Formát GIF vytváří větší soubory než MP4.
-Nejlepší pro krátké klipy a sdílení na webu.
-Zvuk není podporován pro nahrávky ve formátu GIF.</translation>
-    </message>
-    <message>
-        <source>WebP format creates smaller files than GIF with better quality.
-Best for short clips and sharing on web.
-Audio is not supported for WebP recordings.</source>
-        <translation type="vanished">Formát WebP vytváří menší soubory než GIF s lepší kvalitou.
-Nejlepší pro krátké klipy a sdílení na webu.
-Zvuk není podporován pro nahrávky ve formátu WebP.</translation>
-    </message>
-    <message>
-        <source>Microphone access denied. Please enable in System Settings &gt; Privacy &amp; Security &gt; Microphone.</source>
-        <translation type="vanished">Přístup k mikrofonu byl odepřen. Povolte v Nastavení systému &gt; Soukromí a bezpečnost &gt; Mikrofon.</translation>
-    </message>
-    <message>
-        <source>System audio capture requires macOS 13 (Ventura) or later, or a virtual audio device like BlackHole.</source>
-        <translation type="vanished">Zachytávání systémového zvuku vyžaduje macOS 13 (Ventura) nebo novější, nebo virtuální zvukové zařízení jako BlackHole.</translation>
-    </message>
-    <message>
-        <source>Select and order the languages for OCR recognition.
-English is always included and cannot be removed. Drag to reorder selected languages.</source>
-        <translation type="vanished">Vyberte a seřaďte jazyky pro rozpoznání OCR.
-Angličtina je vždy zahrnuta a nelze ji odebrat. Přetažením změňte pořadí vybraných jazyků.</translation>
-    </message>
-    <message>
-        <source>No OCR languages available.
-
-macOS: OCR requires macOS 10.15 or later.
-Windows: Install language packs in Settings &gt; Time &amp; Language &gt; Language.</source>
-        <translation type="vanished">Žádné jazyky OCR nejsou k dispozici.
-
-macOS: OCR vyžaduje macOS 10.15 nebo novější.
-Windows: Nainstalujte jazykové balíčky v Nastavení &gt; Čas a jazyk &gt; Jazyk.</translation>
-    </message>
-    <message>
-        <source>Tokens: {prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}
-Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
-        <translation type="vanished">Tokeny: {prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}
-Tokeny data: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} nebo {date}</translation>
-    </message>
 </context>
 <context>
     <name>SettingsPathPicker</name>
@@ -4031,7 +3133,7 @@ Může být používána jinou aplikací.</translation>
     <message>
         <location filename="../src/qml/main.qml" line="10" />
         <source>SnapTray QML</source>
-        <translation type="unfinished" />
+        <translation>SnapTray QML</translation>
     </message>
 </context>
 <context>

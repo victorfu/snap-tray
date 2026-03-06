@@ -211,34 +211,6 @@
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>
-    <message>
-        <source>Cancel capture</source>
-        <translation type="vanished">Aufnahme abbrechen</translation>
-    </message>
-    <message>
-        <source>Confirm selection (after selection)</source>
-        <translation type="vanished">Auswahl bestätigen (nach Auswahl)</translation>
-    </message>
-    <message>
-        <source>Toggle multi-region mode</source>
-        <translation type="vanished">Mehrbereichsmodus umschalten</translation>
-    </message>
-    <message>
-        <source>Switch RGB/HEX (when magnifier visible)</source>
-        <translation type="vanished">RGB/HEX umschalten (wenn Lupe sichtbar ist)</translation>
-    </message>
-    <message>
-        <source>Copy color value (before selection)</source>
-        <translation type="vanished">Farbwert kopieren (vor der Auswahl)</translation>
-    </message>
-    <message>
-        <source>Move selection by 1 pixel (after selection)</source>
-        <translation type="vanished">Auswahl um 1 Pixel verschieben (nach der Auswahl)</translation>
-    </message>
-    <message>
-        <source>Resize selection by 1 pixel (after selection)</source>
-        <translation type="vanished">Größe der Auswahl um 1 Pixel ändern (nach der Auswahl)</translation>
-    </message>
 </context>
 <context>
     <name>ClickThroughExitButton</name>
@@ -250,61 +222,9 @@
 </context>
 <context>
     <name>ColorDialog</name>
-    <message>
-        <source>Select Color</source>
-        <translation type="vanished">Farbe auswählen</translation>
-    </message>
-    <message>
-        <source>Hue</source>
-        <translation type="vanished">Farbton</translation>
-    </message>
-    <message>
-        <source>Saturation</source>
-        <translation type="vanished">Sättigung</translation>
-    </message>
-    <message>
-        <source>Value</source>
-        <translation type="vanished">Helligkeit</translation>
-    </message>
-    <message>
-        <source>Red</source>
-        <translation type="vanished">Rot</translation>
-    </message>
-    <message>
-        <source>Green</source>
-        <translation type="vanished">Grün</translation>
-    </message>
-    <message>
-        <source>Blue</source>
-        <translation type="vanished">Blau</translation>
-    </message>
-    <message>
-        <source>Alpha</source>
-        <translation type="vanished">Alpha</translation>
-    </message>
-    <message>
-        <source>Hex</source>
-        <translation type="vanished">Hex</translation>
-    </message>
-    <message>
-        <source>Reset</source>
-        <translation type="vanished">Zurücksetzen</translation>
-    </message>
-    <message>
-        <source>OK</source>
-        <translation type="vanished">OK</translation>
-    </message>
-    <message>
-        <source>Cancel</source>
-        <translation type="vanished">Abbrechen</translation>
-    </message>
 </context>
 <context>
     <name>ColorPickerDialogCompat</name>
-    <message>
-        <source>Select Color</source>
-        <translation type="vanished">Farbe auswählen</translation>
-    </message>
 </context>
 <context>
     <name>FilesSettings</name>
@@ -363,18 +283,6 @@ Datums-Tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} oder {date}</translation
 </context>
 <context>
     <name>FormatSelectionWidget</name>
-    <message>
-        <source>Best quality, widely compatible</source>
-        <translation type="vanished">Beste Qualität, weit verbreitet kompatibel</translation>
-    </message>
-    <message>
-        <source>Universal support, larger file size</source>
-        <translation type="vanished">Universelle Unterstützung, größere Dateigröße</translation>
-    </message>
-    <message>
-        <source>Small file size, modern browsers only</source>
-        <translation type="vanished">Kleine Dateigröße, nur moderne Browser</translation>
-    </message>
 </context>
 <context>
     <name>GeneralSettings</name>
@@ -476,66 +384,6 @@ Datums-Tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} oder {date}</translation
 </context>
 <context>
     <name>HotkeyManager</name>
-    <message>
-        <source>Conflicts with: %1</source>
-        <translation type="vanished">Konflikt mit: %1</translation>
-    </message>
-    <message>
-        <source>Region Capture</source>
-        <translation type="vanished">Bereichsaufnahme</translation>
-    </message>
-    <message>
-        <source>Capture a selected region of the screen</source>
-        <translation type="vanished">Einen ausgewählten Bildschirmbereich aufnehmen</translation>
-    </message>
-    <message>
-        <source>Screen Canvas</source>
-        <translation type="vanished">Bildschirm-Leinwand</translation>
-    </message>
-    <message>
-        <source>Annotate directly on the screen</source>
-        <translation type="vanished">Direkt auf dem Bildschirm zeichnen</translation>
-    </message>
-    <message>
-        <source>Paste</source>
-        <translation type="vanished">Einfügen</translation>
-    </message>
-    <message>
-        <source>Pin content from clipboard</source>
-        <translation type="vanished">Inhalt aus Zwischenablage anheften</translation>
-    </message>
-    <message>
-        <source>Quick Pin</source>
-        <translation type="vanished">Schnell anheften</translation>
-    </message>
-    <message>
-        <source>Select and pin a region directly</source>
-        <translation type="vanished">Bereich direkt auswählen und anheften</translation>
-    </message>
-    <message>
-        <source>Pin from Image</source>
-        <translation type="vanished">Aus Bild anheften</translation>
-    </message>
-    <message>
-        <source>Pin an image from file</source>
-        <translation type="vanished">Ein Bild aus einer Datei anheften</translation>
-    </message>
-    <message>
-        <source>Pin History</source>
-        <translation type="vanished">Anheftverlauf</translation>
-    </message>
-    <message>
-        <source>Open pin history window</source>
-        <translation type="vanished">Anheftverlauf-Fenster öffnen</translation>
-    </message>
-    <message>
-        <source>Record Full Screen</source>
-        <translation type="vanished">Vollbild aufnehmen</translation>
-    </message>
-    <message>
-        <source>Start full screen recording</source>
-        <translation type="vanished">Vollbildaufnahme starten</translation>
-    </message>
 </context>
 <context>
     <name>HotkeySettings</name>
@@ -1066,10 +914,6 @@ Größe: %2</translation>
         <translation>Verschönern</translation>
     </message>
     <message>
-        <source>Recognize Text</source>
-        <translation type="vanished">Text erkennen</translation>
-    </message>
-    <message>
         <location filename="../src/PinWindow.cpp" line="917" />
         <source>Click-through</source>
         <translation>Durchklicken</translation>
@@ -1479,26 +1323,6 @@ Größe: %2</translation>
         <translation>Pins konnten nicht zusammengeführt werden</translation>
     </message>
     <message>
-        <source>Capture</source>
-        <translation type="vanished">Aufnahme</translation>
-    </message>
-    <message>
-        <source>Canvas</source>
-        <translation type="vanished">Leinwand</translation>
-    </message>
-    <message>
-        <source>Clipboard</source>
-        <translation type="vanished">Zwischenablage</translation>
-    </message>
-    <message>
-        <source>Pin</source>
-        <translation type="vanished">Anheften</translation>
-    </message>
-    <message>
-        <source>Recording</source>
-        <translation type="vanished">Aufnahme</translation>
-    </message>
-    <message>
         <location filename="../src/QRCodeManager.cpp" line="200" />
         <source>No barcode found in image</source>
         <translation>Kein Barcode im Bild gefunden</translation>
@@ -1717,16 +1541,8 @@ Größe: %2</translation>
 <context>
     <name>RecordingControlBar</name>
     <message>
-        <source>Audio recording enabled</source>
-        <translation type="vanished">Audioaufnahme aktiviert</translation>
-    </message>
-    <message>
         <source>-- fps</source>
         <translation>-- fps</translation>
-    </message>
-    <message>
-        <source>Annotate</source>
-        <translation type="vanished">Zeichnen</translation>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingControlBar.qml" line="254" />
@@ -1752,50 +1568,6 @@ Größe: %2</translation>
     <message>
         <source>Cancel Recording (Esc)</source>
         <translation>Aufnahme abbrechen (Esc)</translation>
-    </message>
-    <message>
-        <source>Pause (Space)</source>
-        <translation type="vanished">Pause (Leertaste)</translation>
-    </message>
-    <message>
-        <source>Play (Space)</source>
-        <translation type="vanished">Wiedergabe (Leertaste)</translation>
-    </message>
-    <message>
-        <source>Unmute (M)</source>
-        <translation type="vanished">Stummschaltung aufheben (M)</translation>
-    </message>
-    <message>
-        <source>Mute (M)</source>
-        <translation type="vanished">Stummschalten (M)</translation>
-    </message>
-    <message>
-        <source>MP4 - Best quality</source>
-        <translation type="vanished">MP4 - Beste Qualität</translation>
-    </message>
-    <message>
-        <source>GIF - Universal support</source>
-        <translation type="vanished">GIF - Universelle Unterstützung</translation>
-    </message>
-    <message>
-        <source>WebP - Small size</source>
-        <translation type="vanished">WebP - Kleine Dateigröße</translation>
-    </message>
-    <message>
-        <source>Annotate Video</source>
-        <translation type="vanished">Video zeichnen</translation>
-    </message>
-    <message>
-        <source>Save (Enter)</source>
-        <translation type="vanished">Speichern (Enter)</translation>
-    </message>
-    <message>
-        <source>Discard (Esc)</source>
-        <translation type="vanished">Verwerfen (Esc)</translation>
-    </message>
-    <message>
-        <source>Drag to seek</source>
-        <translation type="vanished">Ziehen zum Suchen</translation>
     </message>
 </context>
 <context>
@@ -1977,151 +1749,61 @@ Größe: %2</translation>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="71" />
         <source>Recording Preview</source>
-        <translation type="unfinished">Aufnahmevorschau</translation>
+        <translation>Aufnahmevorschau</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="356" />
         <source>Converting video...</source>
-        <translation type="unfinished">Video wird konvertiert...</translation>
+        <translation>Video wird konvertiert...</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="365" />
         <source>Failed to create video player for conversion</source>
-        <translation type="unfinished" />
+        <translation>Videoplayer für die Konvertierung konnte nicht erstellt werden</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="366" />
         <source>Failed to load video for conversion</source>
-        <translation type="unfinished" />
+        <translation>Video für die Konvertierung konnte nicht geladen werden</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="367" />
         <source>Video not loaded properly for conversion</source>
-        <translation type="unfinished" />
+        <translation>Video wurde für die Konvertierung nicht korrekt geladen</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="368" />
         <source>Failed to start encoder</source>
-        <translation type="unfinished" />
+        <translation>Encoder konnte nicht gestartet werden</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="369" />
         <source>Conversion failed: output file is missing or empty</source>
-        <translation type="unfinished" />
+        <translation>Konvertierung fehlgeschlagen: Ausgabedatei fehlt oder ist leer</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="596" />
         <source>Trimming video...</source>
-        <translation type="unfinished">Video wird zugeschnitten...</translation>
+        <translation>Video wird zugeschnitten...</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="615" />
         <source>Trim failed: %1</source>
-        <translation type="unfinished" />
+        <translation>Zuschneiden fehlgeschlagen: %1</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="650" />
         <source>Trim failed: output file is missing or empty</source>
-        <translation type="unfinished" />
+        <translation>Zuschneiden fehlgeschlagen: Ausgabedatei fehlt oder ist leer</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="657" />
         <source>Trim failed</source>
-        <translation type="unfinished" />
+        <translation>Zuschneiden fehlgeschlagen</translation>
     </message>
 </context>
 <context>
     <name>RecordingPreviewWindow</name>
-    <message>
-        <source>Recording Preview</source>
-        <translation type="vanished">Aufnahmevorschau</translation>
-    </message>
-    <message>
-        <source>Trim</source>
-        <translation type="vanished">Zuschneiden</translation>
-    </message>
-    <message>
-        <source>Loop playback within the trimmed range</source>
-        <translation type="vanished">Wiedergabe im zugeschnittenen Bereich wiederholen</translation>
-    </message>
-    <message>
-        <source>Play/Pause (Space)</source>
-        <translation type="vanished">Wiedergabe/Pause (Leertaste)</translation>
-    </message>
-    <message>
-        <source>Playback speed</source>
-        <translation type="vanished">Wiedergabegeschwindigkeit</translation>
-    </message>
-    <message>
-        <source>Mute (M)</source>
-        <translation type="vanished">Stummschalten (M)</translation>
-    </message>
-    <message>
-        <source>Discard (Esc)</source>
-        <translation type="vanished">Verwerfen (Esc)</translation>
-    </message>
-    <message>
-        <source>Save (Enter)</source>
-        <translation type="vanished">Speichern (Enter)</translation>
-    </message>
-    <message>
-        <source>Video Error</source>
-        <translation type="vanished">Videofehler</translation>
-    </message>
-    <message>
-        <source>Failed to load video:
-%1</source>
-        <translation type="vanished">Video konnte nicht geladen werden:
-%1</translation>
-    </message>
-    <message>
-        <source>Conversion Error</source>
-        <translation type="vanished">Konvertierungsfehler</translation>
-    </message>
-    <message>
-        <source>Cannot convert: video not loaded properly.</source>
-        <translation type="vanished">Konvertierung nicht möglich: Video nicht korrekt geladen.</translation>
-    </message>
-    <message>
-        <source>Converting video...</source>
-        <translation type="vanished">Video wird konvertiert...</translation>
-    </message>
-    <message>
-        <source>Cancel</source>
-        <translation type="vanished">Abbrechen</translation>
-    </message>
-    <message>
-        <source>Failed to start encoder: %1</source>
-        <translation type="vanished">Kodierer konnte nicht gestartet werden: %1</translation>
-    </message>
-    <message>
-        <source>Trim Failed</source>
-        <translation type="vanished">Zuschneiden fehlgeschlagen</translation>
-    </message>
-    <message>
-        <source>Failed to trim the video. Please try again.</source>
-        <translation type="vanished">Video konnte nicht zugeschnitten werden. Bitte erneut versuchen.</translation>
-    </message>
-    <message>
-        <source>Set Trim Start</source>
-        <translation type="vanished">Startpunkt setzen</translation>
-    </message>
-    <message>
-        <source>Set Trim End</source>
-        <translation type="vanished">Endpunkt setzen</translation>
-    </message>
-    <message>
-        <source>Enter time in seconds:</source>
-        <translation type="vanished">Zeit in Sekunden eingeben:</translation>
-    </message>
-    <message>
-        <source>Trim Error</source>
-        <translation type="vanished">Zuschnitts-Fehler</translation>
-    </message>
-    <message>
-        <source>Trimming video...</source>
-        <translation type="vanished">Video wird zugeschnitten...</translation>
-    </message>
 </context>
 <context>
     <name>RecordingRegionSelector</name>
@@ -2493,10 +2175,6 @@ Audio wird bei GIF-Aufnahmen nicht unterstützt.</translation>
         <translation>Keine Gesichter oder Zugangsdaten erkannt</translation>
     </message>
     <message>
-        <source>No faces detected</source>
-        <translation type="vanished">Keine Gesichter erkannt</translation>
-    </message>
-    <message>
         <location filename="../src/RegionSelector.cpp" line="2819" />
         <source>Detection failed</source>
         <translation>Erkennung fehlgeschlagen</translation>
@@ -2529,582 +2207,6 @@ Audio wird bei GIF-Aufnahmen nicht unterstützt.</translation>
 </context>
 <context>
     <name>SettingsDialog</name>
-    <message>
-        <source>%1 Settings</source>
-        <translation type="vanished">%1 Einstellungen</translation>
-    </message>
-    <message>
-        <source>General</source>
-        <translation type="vanished">Allgemein</translation>
-    </message>
-    <message>
-        <source>Hotkeys</source>
-        <translation type="vanished">Tastenkombinationen</translation>
-    </message>
-    <message>
-        <source>Advanced</source>
-        <translation type="vanished">Erweitert</translation>
-    </message>
-    <message>
-        <source>Watermark</source>
-        <translation type="vanished">Wasserzeichen</translation>
-    </message>
-    <message>
-        <source>OCR</source>
-        <translation type="vanished">OCR</translation>
-    </message>
-    <message>
-        <source>Recording</source>
-        <translation type="vanished">Aufnahme</translation>
-    </message>
-    <message>
-        <source>Files</source>
-        <translation type="vanished">Dateien</translation>
-    </message>
-    <message>
-        <source>Updates</source>
-        <translation type="vanished">Aktualisierungen</translation>
-    </message>
-    <message>
-        <source>About</source>
-        <translation type="vanished">Info</translation>
-    </message>
-    <message>
-        <source>Save</source>
-        <translation type="vanished">Speichern</translation>
-    </message>
-    <message>
-        <source>Cancel</source>
-        <translation type="vanished">Abbrechen</translation>
-    </message>
-    <message>
-        <source>Start on login</source>
-        <translation type="vanished">Bei Anmeldung starten</translation>
-    </message>
-    <message>
-        <source>Language</source>
-        <translation type="vanished">Sprache</translation>
-    </message>
-    <message>
-        <source>Display language:</source>
-        <translation type="vanished">Anzeigesprache:</translation>
-    </message>
-    <message>
-        <source>Appearance</source>
-        <translation type="vanished">Erscheinungsbild</translation>
-    </message>
-    <message>
-        <source>Toolbar Style:</source>
-        <translation type="vanished">Symbolleistenstil:</translation>
-    </message>
-    <message>
-        <source>Dark</source>
-        <translation type="vanished">Dunkel</translation>
-    </message>
-    <message>
-        <source>Light</source>
-        <translation type="vanished">Hell</translation>
-    </message>
-    <message>
-        <source>Permissions</source>
-        <translation type="vanished">Berechtigungen</translation>
-    </message>
-    <message>
-        <source>Screen Recording:</source>
-        <translation type="vanished">Bildschirmaufnahme:</translation>
-    </message>
-    <message>
-        <source>Open Settings</source>
-        <translation type="vanished">Einstellungen öffnen</translation>
-    </message>
-    <message>
-        <source>Accessibility:</source>
-        <translation type="vanished">Bedienungshilfen:</translation>
-    </message>
-    <message>
-        <source>Command Line Interface</source>
-        <translation type="vanished">Kommandozeile</translation>
-    </message>
-    <message>
-        <source>Blur</source>
-        <translation type="vanished">Weichzeichnen</translation>
-    </message>
-    <message>
-        <source>Blur intensity:</source>
-        <translation type="vanished">Weichzeichnungsintensität:</translation>
-    </message>
-    <message>
-        <source>Blur type:</source>
-        <translation type="vanished">Weichzeichnungstyp:</translation>
-    </message>
-    <message>
-        <source>Pixelate</source>
-        <translation type="vanished">Verpixeln</translation>
-    </message>
-    <message>
-        <source>Gaussian</source>
-        <translation type="vanished">Gaußsch</translation>
-    </message>
-    <message>
-        <source>Pin Window</source>
-        <translation type="vanished">Anheftfenster</translation>
-    </message>
-    <message>
-        <source>Default opacity:</source>
-        <translation type="vanished">Standard-Deckkraft:</translation>
-    </message>
-    <message>
-        <source>Opacity step:</source>
-        <translation type="vanished">Deckkraft-Stufe:</translation>
-    </message>
-    <message>
-        <source>Zoom step:</source>
-        <translation type="vanished">Zoom-Stufe:</translation>
-    </message>
-    <message>
-        <source>Max cache files:</source>
-        <translation type="vanished">Max. Cache-Dateien:</translation>
-    </message>
-    <message>
-        <source>Apply to images</source>
-        <translation type="vanished">Auf Bilder anwenden</translation>
-    </message>
-    <message>
-        <source>Apply to recordings</source>
-        <translation type="vanished">Auf Aufnahmen anwenden</translation>
-    </message>
-    <message>
-        <source>Image:</source>
-        <translation type="vanished">Bild:</translation>
-    </message>
-    <message>
-        <source>Select an image file...</source>
-        <translation type="vanished">Bilddatei auswählen...</translation>
-    </message>
-    <message>
-        <source>Browse...</source>
-        <translation type="vanished">Durchsuchen...</translation>
-    </message>
-    <message>
-        <source>Select Watermark Image</source>
-        <translation type="vanished">Wasserzeichenbild auswählen</translation>
-    </message>
-    <message>
-        <source>Images (*.png *.jpg *.jpeg *.bmp *.gif *.svg);;All Files (*)</source>
-        <translation type="vanished">Bilder (*.png *.jpg *.jpeg *.bmp *.gif *.svg);;Alle Dateien (*)</translation>
-    </message>
-    <message>
-        <source>Scale:</source>
-        <translation type="vanished">Skalierung:</translation>
-    </message>
-    <message>
-        <source>Opacity:</source>
-        <translation type="vanished">Deckkraft:</translation>
-    </message>
-    <message>
-        <source>Margin:</source>
-        <translation type="vanished">Rand:</translation>
-    </message>
-    <message>
-        <source>Position:</source>
-        <translation type="vanished">Platzierung:</translation>
-    </message>
-    <message>
-        <source>Top-Left</source>
-        <translation type="vanished">Oben links</translation>
-    </message>
-    <message>
-        <source>Top-Right</source>
-        <translation type="vanished">Oben rechts</translation>
-    </message>
-    <message>
-        <source>Bottom-Left</source>
-        <translation type="vanished">Unten links</translation>
-    </message>
-    <message>
-        <source>Bottom-Right</source>
-        <translation type="vanished">Unten rechts</translation>
-    </message>
-    <message>
-        <source>No image</source>
-        <translation type="vanished">Kein Bild</translation>
-    </message>
-    <message>
-        <source>Invalid image</source>
-        <translation type="vanished">Ungültiges Bild</translation>
-    </message>
-    <message>
-        <source>Size: %1 × %2 px</source>
-        <translation type="vanished">Größe: %1 × %2 px</translation>
-    </message>
-    <message>
-        <source>Frame Rate:</source>
-        <translation type="vanished">Bildrate:</translation>
-    </message>
-    <message>
-        <source>Capture</source>
-        <translation type="vanished">Aufnahme</translation>
-    </message>
-    <message>
-        <source>Show shortcut hints when entering region capture</source>
-        <translation type="vanished">Beim Start der Bereichsaufnahme Hinweise zu Tastenkürzeln anzeigen</translation>
-    </message>
-    <message>
-        <source>MCP</source>
-        <translation type="vanished">MCP</translation>
-    </message>
-    <message>
-        <source>Enable MCP server</source>
-        <translation type="vanished">MCP-Server aktivieren</translation>
-    </message>
-    <message>
-        <source>10 FPS</source>
-        <translation type="vanished">10 FPS</translation>
-    </message>
-    <message>
-        <source>15 FPS</source>
-        <translation type="vanished">15 FPS</translation>
-    </message>
-    <message>
-        <source>24 FPS</source>
-        <translation type="vanished">24 FPS</translation>
-    </message>
-    <message>
-        <source>30 FPS</source>
-        <translation type="vanished">30 FPS</translation>
-    </message>
-    <message>
-        <source>Output Format:</source>
-        <translation type="vanished">Ausgabeformat:</translation>
-    </message>
-    <message>
-        <source>MP4 (H.264)</source>
-        <translation type="vanished">MP4 (H.264)</translation>
-    </message>
-    <message>
-        <source>GIF</source>
-        <translation type="vanished">GIF</translation>
-    </message>
-    <message>
-        <source>WebP</source>
-        <translation type="vanished">WebP</translation>
-    </message>
-    <message>
-        <source>Quality:</source>
-        <translation type="vanished">Qualität:</translation>
-    </message>
-    <message>
-        <source>Audio</source>
-        <translation type="vanished">Ton</translation>
-    </message>
-    <message>
-        <source>Record audio</source>
-        <translation type="vanished">Audio aufnehmen</translation>
-    </message>
-    <message>
-        <source>Source:</source>
-        <translation type="vanished">Quelle:</translation>
-    </message>
-    <message>
-        <source>Microphone</source>
-        <translation type="vanished">Mikrofon</translation>
-    </message>
-    <message>
-        <source>System Audio</source>
-        <translation type="vanished">Systemaudio</translation>
-    </message>
-    <message>
-        <source>Both (Mixed)</source>
-        <translation type="vanished">Beide (Gemischt)</translation>
-    </message>
-    <message>
-        <source>Device:</source>
-        <translation type="vanished">Gerät:</translation>
-    </message>
-    <message>
-        <source>Default</source>
-        <translation type="vanished">Standard</translation>
-    </message>
-    <message>
-        <source>Show preview after recording</source>
-        <translation type="vanished">Vorschau nach der Aufnahme anzeigen</translation>
-    </message>
-    <message>
-        <source>Countdown</source>
-        <translation type="vanished">Rückwärtszähler</translation>
-    </message>
-    <message>
-        <source>Show countdown before recording</source>
-        <translation type="vanished">Countdown vor der Aufnahme anzeigen</translation>
-    </message>
-    <message>
-        <source>Display a 3-2-1 countdown before recording starts</source>
-        <translation type="vanished">Einen 3-2-1-Countdown vor dem Aufnahmestart anzeigen</translation>
-    </message>
-    <message>
-        <source>Countdown duration:</source>
-        <translation type="vanished">Countdown-Dauer:</translation>
-    </message>
-    <message>
-        <source>1 second</source>
-        <translation type="vanished">1 Sekunde</translation>
-    </message>
-    <message>
-        <source>2 seconds</source>
-        <translation type="vanished">2 Sekunden</translation>
-    </message>
-    <message>
-        <source>3 seconds</source>
-        <translation type="vanished">3 Sekunden</translation>
-    </message>
-    <message>
-        <source>4 seconds</source>
-        <translation type="vanished">4 Sekunden</translation>
-    </message>
-    <message>
-        <source>5 seconds</source>
-        <translation type="vanished">5 Sekunden</translation>
-    </message>
-    <message>
-        <source>Restart Required</source>
-        <translation type="vanished">Neustart erforderlich</translation>
-    </message>
-    <message>
-        <source>The language change will take effect after restarting the application.</source>
-        <translation type="vanished">Die Sprachänderung wird nach dem Neustart der Anwendung wirksam.</translation>
-    </message>
-    <message>
-        <source>Loading available languages...</source>
-        <translation type="vanished">Verfügbare Sprachen werden geladen...</translation>
-    </message>
-    <message>
-        <source>Available Languages</source>
-        <translation type="vanished">Verfügbare Sprachen</translation>
-    </message>
-    <message>
-        <source>Add selected languages</source>
-        <translation type="vanished">Ausgewählte Sprachen hinzufügen</translation>
-    </message>
-    <message>
-        <source>Remove selected languages</source>
-        <translation type="vanished">Ausgewählte Sprachen entfernen</translation>
-    </message>
-    <message>
-        <source>Selected Languages</source>
-        <translation type="vanished">Ausgewählte Sprachen</translation>
-    </message>
-    <message>
-        <source>English is always included and cannot be removed</source>
-        <translation type="vanished">Englisch ist immer enthalten und kann nicht entfernt werden</translation>
-    </message>
-    <message>
-        <source>After OCR Recognition</source>
-        <translation type="vanished">Nach OCR-Erkennung</translation>
-    </message>
-    <message>
-        <source>Copy text directly to clipboard</source>
-        <translation type="vanished">Text direkt in die Zwischenablage kopieren</translation>
-    </message>
-    <message>
-        <source>Show editor to review and edit text</source>
-        <translation type="vanished">Editor zum Überprüfen und Bearbeiten des Textes anzeigen</translation>
-    </message>
-    <message>
-        <source>Recognized text is immediately copied to clipboard</source>
-        <translation type="vanished">Erkannter Text wird sofort in die Zwischenablage kopiert</translation>
-    </message>
-    <message>
-        <source>Opens a dialog where you can review and edit the text before copying</source>
-        <translation type="vanished">Öffnet einen Dialog zum Überprüfen und Bearbeiten des Textes vor dem Kopieren</translation>
-    </message>
-    <message>
-        <source>Save Locations</source>
-        <translation type="vanished">Speicherorte</translation>
-    </message>
-    <message>
-        <source>Screenshots:</source>
-        <translation type="vanished">Bildschirmfotos:</translation>
-    </message>
-    <message>
-        <source>Select Screenshot Folder</source>
-        <translation type="vanished">Screenshot-Ordner auswählen</translation>
-    </message>
-    <message>
-        <source>Recordings:</source>
-        <translation type="vanished">Aufnahmen:</translation>
-    </message>
-    <message>
-        <source>Select Recording Folder</source>
-        <translation type="vanished">Aufnahmeordner auswählen</translation>
-    </message>
-    <message>
-        <source>Filename Format</source>
-        <translation type="vanished">Dateinamenformat</translation>
-    </message>
-    <message>
-        <source>Template:</source>
-        <translation type="vanished">Vorlage:</translation>
-    </message>
-    <message>
-        <source>Save Behavior</source>
-        <translation type="vanished">Speicherverhalten</translation>
-    </message>
-    <message>
-        <source>Auto-save screenshots (save directly without dialog)</source>
-        <translation type="vanished">Screenshots automatisch speichern (direkt ohne Dialog speichern)</translation>
-    </message>
-    <message>
-        <source>Auto-save recordings (save directly without dialog)</source>
-        <translation type="vanished">Aufnahmen automatisch speichern (direkt ohne Dialog speichern)</translation>
-    </message>
-    <message>
-        <source>Preview: %1</source>
-        <translation type="vanished">Vorschau: %1</translation>
-    </message>
-    <message>
-        <source>
-Invalid template, fallback applied: %1</source>
-        <translation type="vanished">
-Ungültige Vorlage, Ersatzvorlage angewendet: %1</translation>
-    </message>
-    <message>
-        <source>Version Information</source>
-        <translation type="vanished">Versionsinformationen</translation>
-    </message>
-    <message>
-        <source>Current Version</source>
-        <translation type="vanished">Aktuelle Version</translation>
-    </message>
-    <message>
-        <source>Automatic Updates</source>
-        <translation type="vanished">Automatische Updates</translation>
-    </message>
-    <message>
-        <source>Check for updates automatically</source>
-        <translation type="vanished">Automatisch nach Updates suchen</translation>
-    </message>
-    <message>
-        <source>Check frequency</source>
-        <translation type="vanished">Prüfintervall</translation>
-    </message>
-    <message>
-        <source>Every day</source>
-        <translation type="vanished">Täglich</translation>
-    </message>
-    <message>
-        <source>Every 3 days</source>
-        <translation type="vanished">Alle 3 Tage</translation>
-    </message>
-    <message>
-        <source>Every week</source>
-        <translation type="vanished">Wöchentlich</translation>
-    </message>
-    <message>
-        <source>Every 2 weeks</source>
-        <translation type="vanished">Alle 2 Wochen</translation>
-    </message>
-    <message>
-        <source>Every month</source>
-        <translation type="vanished">Monatlich</translation>
-    </message>
-    <message>
-        <source>Last checked: %1</source>
-        <translation type="vanished">Zuletzt geprüft: %1</translation>
-    </message>
-    <message>
-        <source>Last checked: Never</source>
-        <translation type="vanished">Zuletzt geprüft: Nie</translation>
-    </message>
-    <message>
-        <source>Check Now</source>
-        <translation type="vanished">Jetzt prüfen</translation>
-    </message>
-    <message>
-        <source>Checking...</source>
-        <translation type="vanished">Prüfe...</translation>
-    </message>
-    <message>
-        <source>Version %1</source>
-        <translation type="vanished">Version: %1</translation>
-    </message>
-    <message>
-        <source>Copyright 2024-2025 Victor Fu</source>
-        <translation type="vanished">Urheberrecht 2024-2025 Victor Fu</translation>
-    </message>
-    <message>
-        <source>Author: Victor Fu</source>
-        <translation type="vanished">Autor: Victor Fu</translation>
-    </message>
-    <message>
-        <source>'snaptray' command is available in terminal</source>
-        <translation type="vanished">Der Befehl 'snaptray' ist im Terminal verfügbar</translation>
-    </message>
-    <message>
-        <source>Uninstall CLI</source>
-        <translation type="vanished">CLI deinstallieren</translation>
-    </message>
-    <message>
-        <source>'snaptray' command is not installed</source>
-        <translation type="vanished">Der Befehl 'snaptray' ist nicht installiert</translation>
-    </message>
-    <message>
-        <source>Install CLI</source>
-        <translation type="vanished">CLI installieren</translation>
-    </message>
-    <message>
-        <source>Granted</source>
-        <translation type="vanished">Erteilt</translation>
-    </message>
-    <message>
-        <source>Not Granted</source>
-        <translation type="vanished">Nicht erteilt</translation>
-    </message>
-    <message>
-        <source>GIF format creates larger files than MP4.
-Best for short clips and sharing on web.
-Audio is not supported for GIF recordings.</source>
-        <translation type="vanished">Das GIF-Format erzeugt größere Dateien als MP4.
-Am besten für kurze Clips und zum Teilen im Web.
-Audio wird bei GIF-Aufnahmen nicht unterstützt.</translation>
-    </message>
-    <message>
-        <source>WebP format creates smaller files than GIF with better quality.
-Best for short clips and sharing on web.
-Audio is not supported for WebP recordings.</source>
-        <translation type="vanished">Das WebP-Format erzeugt kleinere Dateien als GIF bei besserer Qualität.
-Am besten für kurze Clips und zum Teilen im Web.
-Audio wird bei WebP-Aufnahmen nicht unterstützt.</translation>
-    </message>
-    <message>
-        <source>Microphone access denied. Please enable in System Settings &gt; Privacy &amp; Security &gt; Microphone.</source>
-        <translation type="vanished">Mikrofonzugriff verweigert. Bitte aktivieren Sie diesen unter Systemeinstellungen &gt; Datenschutz &amp; Sicherheit &gt; Mikrofon.</translation>
-    </message>
-    <message>
-        <source>System audio capture requires macOS 13 (Ventura) or later, or a virtual audio device like BlackHole.</source>
-        <translation type="vanished">Die Systemaudioaufnahme erfordert macOS 13 (Ventura) oder höher oder ein virtuelles Audiogerät wie BlackHole.</translation>
-    </message>
-    <message>
-        <source>Select and order the languages for OCR recognition.
-English is always included and cannot be removed. Drag to reorder selected languages.</source>
-        <translation type="vanished">Wählen und ordnen Sie die Sprachen für die OCR-Erkennung.
-Englisch ist immer enthalten und kann nicht entfernt werden. Ziehen Sie, um die ausgewählten Sprachen neu anzuordnen.</translation>
-    </message>
-    <message>
-        <source>No OCR languages available.
-
-macOS: OCR requires macOS 10.15 or later.
-Windows: Install language packs in Settings &gt; Time &amp; Language &gt; Language.</source>
-        <translation type="vanished">Keine OCR-Sprachen verfügbar.
-
-macOS: OCR erfordert macOS 10.15 oder höher.
-Windows: Installieren Sie Sprachpakete unter Einstellungen &gt; Zeit &amp; Sprache &gt; Sprache.</translation>
-    </message>
-    <message>
-        <source>Tokens: {prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}
-Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
-        <translation type="vanished">Tokens: {prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}
-Datums-Tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} oder {date}</translation>
-    </message>
 </context>
 <context>
     <name>SettingsPathPicker</name>
@@ -4031,7 +3133,7 @@ Sie wird möglicherweise von einer anderen Anwendung verwendet.</translation>
     <message>
         <location filename="../src/qml/main.qml" line="10" />
         <source>SnapTray QML</source>
-        <translation type="unfinished" />
+        <translation>SnapTray QML</translation>
     </message>
 </context>
 <context>

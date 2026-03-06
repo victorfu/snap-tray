@@ -211,34 +211,6 @@
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>
-    <message>
-        <source>Cancel capture</source>
-        <translation type="vanished">Ακύρωση λήψης</translation>
-    </message>
-    <message>
-        <source>Confirm selection (after selection)</source>
-        <translation type="vanished">Επιβεβαίωση επιλογής (μετά την επιλογή)</translation>
-    </message>
-    <message>
-        <source>Toggle multi-region mode</source>
-        <translation type="vanished">Εναλλαγή λειτουργίας πολλαπλών περιοχών</translation>
-    </message>
-    <message>
-        <source>Switch RGB/HEX (when magnifier visible)</source>
-        <translation type="vanished">Εναλλαγή RGB/HEX (όταν η μεγεθυντική προβολή είναι ορατή)</translation>
-    </message>
-    <message>
-        <source>Copy color value (before selection)</source>
-        <translation type="vanished">Αντιγραφή τιμής χρώματος (πριν από την επιλογή)</translation>
-    </message>
-    <message>
-        <source>Move selection by 1 pixel (after selection)</source>
-        <translation type="vanished">Μετακίνηση επιλογής κατά 1 εικονοστοιχείο (μετά την επιλογή)</translation>
-    </message>
-    <message>
-        <source>Resize selection by 1 pixel (after selection)</source>
-        <translation type="vanished">Αλλαγή μεγέθους επιλογής κατά 1 εικονοστοιχείο (μετά την επιλογή)</translation>
-    </message>
 </context>
 <context>
     <name>ClickThroughExitButton</name>
@@ -305,18 +277,6 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
 </context>
 <context>
     <name>FormatSelectionWidget</name>
-    <message>
-        <source>Best quality, widely compatible</source>
-        <translation type="vanished">Καλύτερη ποιότητα, ευρεία συμβατότητα</translation>
-    </message>
-    <message>
-        <source>Universal support, larger file size</source>
-        <translation type="vanished">Καθολική υποστήριξη, μεγαλύτερο μέγεθος αρχείου</translation>
-    </message>
-    <message>
-        <source>Small file size, modern browsers only</source>
-        <translation type="vanished">Μικρό μέγεθος αρχείου, μόνο για σύγχρονα προγράμματα περιήγησης</translation>
-    </message>
 </context>
 <context>
     <name>GeneralSettings</name>
@@ -418,66 +378,6 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
 </context>
 <context>
     <name>HotkeyManager</name>
-    <message>
-        <source>Conflicts with: %1</source>
-        <translation type="vanished">Σύγκρουση με: %1</translation>
-    </message>
-    <message>
-        <source>Region Capture</source>
-        <translation type="vanished">Καταγραφή περιοχής</translation>
-    </message>
-    <message>
-        <source>Capture a selected region of the screen</source>
-        <translation type="vanished">Καταγραφή επιλεγμένης περιοχής της οθόνης</translation>
-    </message>
-    <message>
-        <source>Screen Canvas</source>
-        <translation type="vanished">Καμβάς οθόνης</translation>
-    </message>
-    <message>
-        <source>Annotate directly on the screen</source>
-        <translation type="vanished">Σημειώσεις απευθείας στην οθόνη</translation>
-    </message>
-    <message>
-        <source>Paste</source>
-        <translation type="vanished">Επικόλληση</translation>
-    </message>
-    <message>
-        <source>Pin content from clipboard</source>
-        <translation type="vanished">Καρφίτσωμα περιεχομένου από το πρόχειρο</translation>
-    </message>
-    <message>
-        <source>Quick Pin</source>
-        <translation type="vanished">Γρήγορο καρφίτσωμα</translation>
-    </message>
-    <message>
-        <source>Select and pin a region directly</source>
-        <translation type="vanished">Επιλογή και καρφίτσωμα περιοχής απευθείας</translation>
-    </message>
-    <message>
-        <source>Pin from Image</source>
-        <translation type="vanished">Καρφίτσωμα από εικόνα</translation>
-    </message>
-    <message>
-        <source>Pin an image from file</source>
-        <translation type="vanished">Καρφίτσωμα εικόνας από αρχείο</translation>
-    </message>
-    <message>
-        <source>Pin History</source>
-        <translation type="vanished">Ιστορικό καρφιτσώματος</translation>
-    </message>
-    <message>
-        <source>Open pin history window</source>
-        <translation type="vanished">Άνοιγμα παραθύρου ιστορικού καρφιτσώματος</translation>
-    </message>
-    <message>
-        <source>Record Full Screen</source>
-        <translation type="vanished">Εγγραφή πλήρους οθόνης</translation>
-    </message>
-    <message>
-        <source>Start full screen recording</source>
-        <translation type="vanished">Έναρξη εγγραφής πλήρους οθόνης</translation>
-    </message>
 </context>
 <context>
     <name>HotkeySettings</name>
@@ -1006,10 +906,6 @@ Size: %2</source>
         <location filename="../src/PinWindow.cpp" line="913" />
         <source>Beautify</source>
         <translation>Ομορφοποίηση</translation>
-    </message>
-    <message>
-        <source>Recognize Text</source>
-        <translation type="vanished">Αναγνώριση κειμένου</translation>
     </message>
     <message>
         <location filename="../src/PinWindow.cpp" line="917" />
@@ -1639,16 +1535,8 @@ Size: %2</source>
 <context>
     <name>RecordingControlBar</name>
     <message>
-        <source>Audio recording enabled</source>
-        <translation type="vanished">Η εγγραφή ήχου είναι ενεργοποιημένη</translation>
-    </message>
-    <message>
         <source>-- fps</source>
         <translation>-- fps</translation>
-    </message>
-    <message>
-        <source>Annotate</source>
-        <translation type="vanished">Σημείωση</translation>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingControlBar.qml" line="254" />
@@ -1674,50 +1562,6 @@ Size: %2</source>
     <message>
         <source>Cancel Recording (Esc)</source>
         <translation>Ακύρωση εγγραφής (Esc)</translation>
-    </message>
-    <message>
-        <source>Pause (Space)</source>
-        <translation type="vanished">Παύση (Space)</translation>
-    </message>
-    <message>
-        <source>Play (Space)</source>
-        <translation type="vanished">Αναπαραγωγή (Space)</translation>
-    </message>
-    <message>
-        <source>Unmute (M)</source>
-        <translation type="vanished">Κατάργηση σίγασης (M)</translation>
-    </message>
-    <message>
-        <source>Mute (M)</source>
-        <translation type="vanished">Σίγαση (M)</translation>
-    </message>
-    <message>
-        <source>MP4 - Best quality</source>
-        <translation type="vanished">MP4 - Καλύτερη ποιότητα</translation>
-    </message>
-    <message>
-        <source>GIF - Universal support</source>
-        <translation type="vanished">GIF - Καθολική υποστήριξη</translation>
-    </message>
-    <message>
-        <source>WebP - Small size</source>
-        <translation type="vanished">WebP - Μικρό μέγεθος</translation>
-    </message>
-    <message>
-        <source>Annotate Video</source>
-        <translation type="vanished">Σημείωση βίντεο</translation>
-    </message>
-    <message>
-        <source>Save (Enter)</source>
-        <translation type="vanished">Αποθήκευση (Enter)</translation>
-    </message>
-    <message>
-        <source>Discard (Esc)</source>
-        <translation type="vanished">Απόρριψη (Esc)</translation>
-    </message>
-    <message>
-        <source>Drag to seek</source>
-        <translation type="vanished">Σύρετε για αναζήτηση</translation>
     </message>
 </context>
 <context>
@@ -1899,151 +1743,61 @@ Size: %2</source>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="71" />
         <source>Recording Preview</source>
-        <translation type="unfinished">Προεπισκόπηση εγγραφής</translation>
+        <translation>Προεπισκόπηση εγγραφής</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="356" />
         <source>Converting video...</source>
-        <translation type="unfinished">Μετατροπή βίντεο...</translation>
+        <translation>Μετατροπή βίντεο...</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="365" />
         <source>Failed to create video player for conversion</source>
-        <translation type="unfinished" />
+        <translation>Αποτυχία δημιουργίας προγράμματος αναπαραγωγής βίντεο για μετατροπή</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="366" />
         <source>Failed to load video for conversion</source>
-        <translation type="unfinished" />
+        <translation>Αποτυχία φόρτωσης βίντεο για μετατροπή</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="367" />
         <source>Video not loaded properly for conversion</source>
-        <translation type="unfinished" />
+        <translation>Το βίντεο δεν φορτώθηκε σωστά για μετατροπή</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="368" />
         <source>Failed to start encoder</source>
-        <translation type="unfinished" />
+        <translation>Αποτυχία εκκίνησης του κωδικοποιητή</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="369" />
         <source>Conversion failed: output file is missing or empty</source>
-        <translation type="unfinished" />
+        <translation>Η μετατροπή απέτυχε: το αρχείο εξόδου λείπει ή είναι κενό</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="596" />
         <source>Trimming video...</source>
-        <translation type="unfinished">Περικοπή βίντεο...</translation>
+        <translation>Περικοπή βίντεο...</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="615" />
         <source>Trim failed: %1</source>
-        <translation type="unfinished" />
+        <translation>Η περικοπή απέτυχε: %1</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="650" />
         <source>Trim failed: output file is missing or empty</source>
-        <translation type="unfinished" />
+        <translation>Η περικοπή απέτυχε: το αρχείο εξόδου λείπει ή είναι κενό</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="657" />
         <source>Trim failed</source>
-        <translation type="unfinished" />
+        <translation>Η περικοπή απέτυχε</translation>
     </message>
 </context>
 <context>
     <name>RecordingPreviewWindow</name>
-    <message>
-        <source>Recording Preview</source>
-        <translation type="vanished">Προεπισκόπηση εγγραφής</translation>
-    </message>
-    <message>
-        <source>Trim</source>
-        <translation type="vanished">Περικοπή</translation>
-    </message>
-    <message>
-        <source>Loop playback within the trimmed range</source>
-        <translation type="vanished">Κυκλική αναπαραγωγή εντός του περικομμένου εύρους</translation>
-    </message>
-    <message>
-        <source>Play/Pause (Space)</source>
-        <translation type="vanished">Αναπαραγωγή/Παύση (Space)</translation>
-    </message>
-    <message>
-        <source>Playback speed</source>
-        <translation type="vanished">Ταχύτητα αναπαραγωγής</translation>
-    </message>
-    <message>
-        <source>Mute (M)</source>
-        <translation type="vanished">Σίγαση (M)</translation>
-    </message>
-    <message>
-        <source>Discard (Esc)</source>
-        <translation type="vanished">Απόρριψη (Esc)</translation>
-    </message>
-    <message>
-        <source>Save (Enter)</source>
-        <translation type="vanished">Αποθήκευση (Enter)</translation>
-    </message>
-    <message>
-        <source>Video Error</source>
-        <translation type="vanished">Σφάλμα βίντεο</translation>
-    </message>
-    <message>
-        <source>Failed to load video:
-%1</source>
-        <translation type="vanished">Αποτυχία φόρτωσης βίντεο:
-%1</translation>
-    </message>
-    <message>
-        <source>Conversion Error</source>
-        <translation type="vanished">Σφάλμα μετατροπής</translation>
-    </message>
-    <message>
-        <source>Cannot convert: video not loaded properly.</source>
-        <translation type="vanished">Αδυναμία μετατροπής: το βίντεο δεν φορτώθηκε σωστά.</translation>
-    </message>
-    <message>
-        <source>Converting video...</source>
-        <translation type="vanished">Μετατροπή βίντεο...</translation>
-    </message>
-    <message>
-        <source>Cancel</source>
-        <translation type="vanished">Ακύρωση</translation>
-    </message>
-    <message>
-        <source>Failed to start encoder: %1</source>
-        <translation type="vanished">Αποτυχία εκκίνησης κωδικοποιητή: %1</translation>
-    </message>
-    <message>
-        <source>Trim Failed</source>
-        <translation type="vanished">Αποτυχία περικοπής</translation>
-    </message>
-    <message>
-        <source>Failed to trim the video. Please try again.</source>
-        <translation type="vanished">Αποτυχία περικοπής βίντεο. Παρακαλώ δοκιμάστε ξανά.</translation>
-    </message>
-    <message>
-        <source>Set Trim Start</source>
-        <translation type="vanished">Ορισμός αρχής περικοπής</translation>
-    </message>
-    <message>
-        <source>Set Trim End</source>
-        <translation type="vanished">Ορισμός τέλους περικοπής</translation>
-    </message>
-    <message>
-        <source>Enter time in seconds:</source>
-        <translation type="vanished">Εισάγετε χρόνο σε δευτερόλεπτα:</translation>
-    </message>
-    <message>
-        <source>Trim Error</source>
-        <translation type="vanished">Σφάλμα περικοπής</translation>
-    </message>
-    <message>
-        <source>Trimming video...</source>
-        <translation type="vanished">Περικοπή βίντεο...</translation>
-    </message>
 </context>
 <context>
     <name>RecordingRegionSelector</name>
@@ -2415,10 +2169,6 @@ Audio is not supported for GIF recordings.</source>
         <translation>Δεν ανιχνεύθηκαν πρόσωπα ή διαπιστευτήρια</translation>
     </message>
     <message>
-        <source>No faces detected</source>
-        <translation type="vanished">Δεν ανιχνεύθηκαν πρόσωπα</translation>
-    </message>
-    <message>
         <location filename="../src/RegionSelector.cpp" line="2819" />
         <source>Detection failed</source>
         <translation>Αποτυχία ανίχνευσης</translation>
@@ -2451,582 +2201,6 @@ Audio is not supported for GIF recordings.</source>
 </context>
 <context>
     <name>SettingsDialog</name>
-    <message>
-        <source>%1 Settings</source>
-        <translation type="vanished">Ρυθμίσεις %1</translation>
-    </message>
-    <message>
-        <source>General</source>
-        <translation type="vanished">Γενικά</translation>
-    </message>
-    <message>
-        <source>Hotkeys</source>
-        <translation type="vanished">Πλήκτρα συντόμευσης</translation>
-    </message>
-    <message>
-        <source>Advanced</source>
-        <translation type="vanished">Προχωρημένα</translation>
-    </message>
-    <message>
-        <source>Watermark</source>
-        <translation type="vanished">Υδατογράφημα</translation>
-    </message>
-    <message>
-        <source>OCR</source>
-        <translation type="vanished">OCR</translation>
-    </message>
-    <message>
-        <source>Recording</source>
-        <translation type="vanished">Εγγραφή</translation>
-    </message>
-    <message>
-        <source>Files</source>
-        <translation type="vanished">Αρχεία</translation>
-    </message>
-    <message>
-        <source>Updates</source>
-        <translation type="vanished">Ενημερώσεις</translation>
-    </message>
-    <message>
-        <source>About</source>
-        <translation type="vanished">Σχετικά</translation>
-    </message>
-    <message>
-        <source>Save</source>
-        <translation type="vanished">Αποθήκευση</translation>
-    </message>
-    <message>
-        <source>Cancel</source>
-        <translation type="vanished">Ακύρωση</translation>
-    </message>
-    <message>
-        <source>Start on login</source>
-        <translation type="vanished">Εκκίνηση κατά τη σύνδεση</translation>
-    </message>
-    <message>
-        <source>Language</source>
-        <translation type="vanished">Γλώσσα</translation>
-    </message>
-    <message>
-        <source>Display language:</source>
-        <translation type="vanished">Γλώσσα εμφάνισης:</translation>
-    </message>
-    <message>
-        <source>Appearance</source>
-        <translation type="vanished">Εμφάνιση</translation>
-    </message>
-    <message>
-        <source>Toolbar Style:</source>
-        <translation type="vanished">Στυλ γραμμής εργαλείων:</translation>
-    </message>
-    <message>
-        <source>Dark</source>
-        <translation type="vanished">Σκούρο</translation>
-    </message>
-    <message>
-        <source>Light</source>
-        <translation type="vanished">Φωτεινό</translation>
-    </message>
-    <message>
-        <source>Permissions</source>
-        <translation type="vanished">Δικαιώματα</translation>
-    </message>
-    <message>
-        <source>Screen Recording:</source>
-        <translation type="vanished">Εγγραφή οθόνης:</translation>
-    </message>
-    <message>
-        <source>Open Settings</source>
-        <translation type="vanished">Άνοιγμα ρυθμίσεων</translation>
-    </message>
-    <message>
-        <source>Accessibility:</source>
-        <translation type="vanished">Προσβασιμότητα:</translation>
-    </message>
-    <message>
-        <source>Command Line Interface</source>
-        <translation type="vanished">Γραμμή εντολών</translation>
-    </message>
-    <message>
-        <source>Blur</source>
-        <translation type="vanished">Θόλωμα</translation>
-    </message>
-    <message>
-        <source>Blur intensity:</source>
-        <translation type="vanished">Ένταση θολώματος:</translation>
-    </message>
-    <message>
-        <source>Blur type:</source>
-        <translation type="vanished">Τύπος θολώματος:</translation>
-    </message>
-    <message>
-        <source>Pixelate</source>
-        <translation type="vanished">Εικονοστοιχειοποίηση</translation>
-    </message>
-    <message>
-        <source>Gaussian</source>
-        <translation type="vanished">Γκαουσιανό</translation>
-    </message>
-    <message>
-        <source>Pin Window</source>
-        <translation type="vanished">Καρφίτσωμα παραθύρου</translation>
-    </message>
-    <message>
-        <source>Default opacity:</source>
-        <translation type="vanished">Προεπιλεγμένη αδιαφάνεια:</translation>
-    </message>
-    <message>
-        <source>Opacity step:</source>
-        <translation type="vanished">Βήμα αδιαφάνειας:</translation>
-    </message>
-    <message>
-        <source>Zoom step:</source>
-        <translation type="vanished">Βήμα μεγέθυνσης:</translation>
-    </message>
-    <message>
-        <source>Max cache files:</source>
-        <translation type="vanished">Μέγ. αρχεία προσωρινής μνήμης:</translation>
-    </message>
-    <message>
-        <source>Apply to images</source>
-        <translation type="vanished">Εφαρμογή σε εικόνες</translation>
-    </message>
-    <message>
-        <source>Apply to recordings</source>
-        <translation type="vanished">Εφαρμογή σε εγγραφές</translation>
-    </message>
-    <message>
-        <source>Image:</source>
-        <translation type="vanished">Εικόνα:</translation>
-    </message>
-    <message>
-        <source>Select an image file...</source>
-        <translation type="vanished">Επιλέξτε αρχείο εικόνας...</translation>
-    </message>
-    <message>
-        <source>Browse...</source>
-        <translation type="vanished">Αναζήτηση...</translation>
-    </message>
-    <message>
-        <source>Select Watermark Image</source>
-        <translation type="vanished">Επιλέξτε εικόνα υδατογραφήματος</translation>
-    </message>
-    <message>
-        <source>Images (*.png *.jpg *.jpeg *.bmp *.gif *.svg);;All Files (*)</source>
-        <translation type="vanished">Εικόνες (*.png *.jpg *.jpeg *.bmp *.gif *.svg);;Όλα τα αρχεία (*)</translation>
-    </message>
-    <message>
-        <source>Scale:</source>
-        <translation type="vanished">Κλίμακα:</translation>
-    </message>
-    <message>
-        <source>Opacity:</source>
-        <translation type="vanished">Αδιαφάνεια:</translation>
-    </message>
-    <message>
-        <source>Margin:</source>
-        <translation type="vanished">Περιθώριο:</translation>
-    </message>
-    <message>
-        <source>Position:</source>
-        <translation type="vanished">Θέση:</translation>
-    </message>
-    <message>
-        <source>Top-Left</source>
-        <translation type="vanished">Πάνω αριστερά</translation>
-    </message>
-    <message>
-        <source>Top-Right</source>
-        <translation type="vanished">Πάνω δεξιά</translation>
-    </message>
-    <message>
-        <source>Bottom-Left</source>
-        <translation type="vanished">Κάτω αριστερά</translation>
-    </message>
-    <message>
-        <source>Bottom-Right</source>
-        <translation type="vanished">Κάτω δεξιά</translation>
-    </message>
-    <message>
-        <source>No image</source>
-        <translation type="vanished">Χωρίς εικόνα</translation>
-    </message>
-    <message>
-        <source>Invalid image</source>
-        <translation type="vanished">Μη έγκυρη εικόνα</translation>
-    </message>
-    <message>
-        <source>Size: %1 × %2 px</source>
-        <translation type="vanished">Μέγεθος: %1 × %2 px</translation>
-    </message>
-    <message>
-        <source>Frame Rate:</source>
-        <translation type="vanished">Ρυθμός καρέ:</translation>
-    </message>
-    <message>
-        <source>Capture</source>
-        <translation type="vanished">Λήψη</translation>
-    </message>
-    <message>
-        <source>Show shortcut hints when entering region capture</source>
-        <translation type="vanished">Εμφάνιση υποδείξεων συντομεύσεων κατά την είσοδο στη λήψη περιοχής</translation>
-    </message>
-    <message>
-        <source>MCP</source>
-        <translation type="vanished">MCP</translation>
-    </message>
-    <message>
-        <source>Enable MCP server</source>
-        <translation type="vanished">Ενεργοποίηση διακομιστή MCP</translation>
-    </message>
-    <message>
-        <source>10 FPS</source>
-        <translation type="vanished">10 FPS</translation>
-    </message>
-    <message>
-        <source>15 FPS</source>
-        <translation type="vanished">15 FPS</translation>
-    </message>
-    <message>
-        <source>24 FPS</source>
-        <translation type="vanished">24 FPS</translation>
-    </message>
-    <message>
-        <source>30 FPS</source>
-        <translation type="vanished">30 FPS</translation>
-    </message>
-    <message>
-        <source>Output Format:</source>
-        <translation type="vanished">Μορφή εξόδου:</translation>
-    </message>
-    <message>
-        <source>MP4 (H.264)</source>
-        <translation type="vanished">MP4 (H.264)</translation>
-    </message>
-    <message>
-        <source>GIF</source>
-        <translation type="vanished">GIF</translation>
-    </message>
-    <message>
-        <source>WebP</source>
-        <translation type="vanished">WebP</translation>
-    </message>
-    <message>
-        <source>Quality:</source>
-        <translation type="vanished">Ποιότητα:</translation>
-    </message>
-    <message>
-        <source>GIF format creates larger files than MP4.
-Best for short clips and sharing on web.
-Audio is not supported for GIF recordings.</source>
-        <translation type="vanished">Η μορφή GIF δημιουργεί μεγαλύτερα αρχεία από το MP4.
-Καλύτερο για σύντομα κλιπ και κοινοποίηση στο web.
-Ο ήχος δεν υποστηρίζεται για εγγραφές GIF.</translation>
-    </message>
-    <message>
-        <source>Audio</source>
-        <translation type="vanished">Ήχος</translation>
-    </message>
-    <message>
-        <source>Record audio</source>
-        <translation type="vanished">Εγγραφή ήχου</translation>
-    </message>
-    <message>
-        <source>Source:</source>
-        <translation type="vanished">Πηγή:</translation>
-    </message>
-    <message>
-        <source>Microphone</source>
-        <translation type="vanished">Μικρόφωνο</translation>
-    </message>
-    <message>
-        <source>System Audio</source>
-        <translation type="vanished">Ήχος συστήματος</translation>
-    </message>
-    <message>
-        <source>Both (Mixed)</source>
-        <translation type="vanished">Και τα δύο (μικτά)</translation>
-    </message>
-    <message>
-        <source>Device:</source>
-        <translation type="vanished">Συσκευή:</translation>
-    </message>
-    <message>
-        <source>Default</source>
-        <translation type="vanished">Προεπιλογή</translation>
-    </message>
-    <message>
-        <source>Show preview after recording</source>
-        <translation type="vanished">Εμφάνιση προεπισκόπησης μετά την εγγραφή</translation>
-    </message>
-    <message>
-        <source>Countdown</source>
-        <translation type="vanished">Αντίστροφη μέτρηση</translation>
-    </message>
-    <message>
-        <source>Show countdown before recording</source>
-        <translation type="vanished">Εμφάνιση αντίστροφης μέτρησης πριν την εγγραφή</translation>
-    </message>
-    <message>
-        <source>Display a 3-2-1 countdown before recording starts</source>
-        <translation type="vanished">Εμφάνιση αντίστροφης μέτρησης 3-2-1 πριν την έναρξη εγγραφής</translation>
-    </message>
-    <message>
-        <source>Countdown duration:</source>
-        <translation type="vanished">Διάρκεια αντίστροφης μέτρησης:</translation>
-    </message>
-    <message>
-        <source>1 second</source>
-        <translation type="vanished">1 δευτερόλεπτο</translation>
-    </message>
-    <message>
-        <source>2 seconds</source>
-        <translation type="vanished">2 δευτερόλεπτα</translation>
-    </message>
-    <message>
-        <source>3 seconds</source>
-        <translation type="vanished">3 δευτερόλεπτα</translation>
-    </message>
-    <message>
-        <source>4 seconds</source>
-        <translation type="vanished">4 δευτερόλεπτα</translation>
-    </message>
-    <message>
-        <source>5 seconds</source>
-        <translation type="vanished">5 δευτερόλεπτα</translation>
-    </message>
-    <message>
-        <source>WebP format creates smaller files than GIF with better quality.
-Best for short clips and sharing on web.
-Audio is not supported for WebP recordings.</source>
-        <translation type="vanished">Η μορφή WebP δημιουργεί μικρότερα αρχεία από το GIF με καλύτερη ποιότητα.
-Καλύτερο για σύντομα κλιπ και κοινοποίηση στο web.
-Ο ήχος δεν υποστηρίζεται για εγγραφές WebP.</translation>
-    </message>
-    <message>
-        <source>Restart Required</source>
-        <translation type="vanished">Απαιτείται επανεκκίνηση</translation>
-    </message>
-    <message>
-        <source>The language change will take effect after restarting the application.</source>
-        <translation type="vanished">Η αλλαγή γλώσσας θα εφαρμοστεί μετά την επανεκκίνηση της εφαρμογής.</translation>
-    </message>
-    <message>
-        <source>Microphone access denied. Please enable in System Settings &gt; Privacy &amp; Security &gt; Microphone.</source>
-        <translation type="vanished">Η πρόσβαση στο μικρόφωνο απορρίφθηκε. Ενεργοποιήστε την από System Settings &gt; Privacy &amp; Security &gt; Microphone.</translation>
-    </message>
-    <message>
-        <source>System audio capture requires macOS 13 (Ventura) or later, or a virtual audio device like BlackHole.</source>
-        <translation type="vanished">Η καταγραφή ήχου συστήματος απαιτεί macOS 13 (Ventura) ή νεότερο, ή μια εικονική συσκευή ήχου όπως το BlackHole.</translation>
-    </message>
-    <message>
-        <source>Loading available languages...</source>
-        <translation type="vanished">Φόρτωση διαθέσιμων γλωσσών...</translation>
-    </message>
-    <message>
-        <source>Select and order the languages for OCR recognition.
-English is always included and cannot be removed. Drag to reorder selected languages.</source>
-        <translation type="vanished">Επιλέξτε και ταξινομήστε τις γλώσσες για αναγνώριση OCR.
-Τα Αγγλικά περιλαμβάνονται πάντα και δεν μπορούν να αφαιρεθούν. Σύρετε για αναδιάταξη των επιλεγμένων γλωσσών.</translation>
-    </message>
-    <message>
-        <source>Available Languages</source>
-        <translation type="vanished">Διαθέσιμες γλώσσες</translation>
-    </message>
-    <message>
-        <source>Add selected languages</source>
-        <translation type="vanished">Προσθήκη επιλεγμένων γλωσσών</translation>
-    </message>
-    <message>
-        <source>Remove selected languages</source>
-        <translation type="vanished">Αφαίρεση επιλεγμένων γλωσσών</translation>
-    </message>
-    <message>
-        <source>Selected Languages</source>
-        <translation type="vanished">Επιλεγμένες γλώσσες</translation>
-    </message>
-    <message>
-        <source>English is always included and cannot be removed</source>
-        <translation type="vanished">Τα Αγγλικά περιλαμβάνονται πάντα και δεν μπορούν να αφαιρεθούν</translation>
-    </message>
-    <message>
-        <source>After OCR Recognition</source>
-        <translation type="vanished">Μετά την αναγνώριση OCR</translation>
-    </message>
-    <message>
-        <source>Copy text directly to clipboard</source>
-        <translation type="vanished">Αντιγραφή κειμένου απευθείας στο πρόχειρο</translation>
-    </message>
-    <message>
-        <source>Show editor to review and edit text</source>
-        <translation type="vanished">Εμφάνιση επεξεργαστή για έλεγχο και επεξεργασία κειμένου</translation>
-    </message>
-    <message>
-        <source>Recognized text is immediately copied to clipboard</source>
-        <translation type="vanished">Το αναγνωρισμένο κείμενο αντιγράφεται αμέσως στο πρόχειρο</translation>
-    </message>
-    <message>
-        <source>Opens a dialog where you can review and edit the text before copying</source>
-        <translation type="vanished">Ανοίγει ένα παράθυρο διαλόγου όπου μπορείτε να ελέγξετε και να επεξεργαστείτε το κείμενο πριν την αντιγραφή</translation>
-    </message>
-    <message>
-        <source>No OCR languages available.
-
-macOS: OCR requires macOS 10.15 or later.
-Windows: Install language packs in Settings &gt; Time &amp; Language &gt; Language.</source>
-        <translation type="vanished">Δεν υπάρχουν διαθέσιμες γλώσσες OCR.
-
-macOS: Το OCR απαιτεί macOS 10.15 ή νεότερο.
-Windows: Εγκαταστήστε πακέτα γλώσσας από Settings &gt; Time &amp; Language &gt; Language.</translation>
-    </message>
-    <message>
-        <source>Save Locations</source>
-        <translation type="vanished">Τοποθεσίες αποθήκευσης</translation>
-    </message>
-    <message>
-        <source>Screenshots:</source>
-        <translation type="vanished">Στιγμιότυπα οθόνης:</translation>
-    </message>
-    <message>
-        <source>Select Screenshot Folder</source>
-        <translation type="vanished">Επιλέξτε φάκελο στιγμιοτύπων οθόνης</translation>
-    </message>
-    <message>
-        <source>Recordings:</source>
-        <translation type="vanished">Εγγραφές:</translation>
-    </message>
-    <message>
-        <source>Select Recording Folder</source>
-        <translation type="vanished">Επιλέξτε φάκελο εγγραφών</translation>
-    </message>
-    <message>
-        <source>Filename Format</source>
-        <translation type="vanished">Μορφή ονόματος αρχείου</translation>
-    </message>
-    <message>
-        <source>Template:</source>
-        <translation type="vanished">Πρότυπο:</translation>
-    </message>
-    <message>
-        <source>Tokens: {prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}
-Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
-        <translation type="vanished">Διακριτικά: {prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}
-Διακριτικά ημερομηνίας: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, ή {date}</translation>
-    </message>
-    <message>
-        <source>Save Behavior</source>
-        <translation type="vanished">Συμπεριφορά αποθήκευσης</translation>
-    </message>
-    <message>
-        <source>Auto-save screenshots (save directly without dialog)</source>
-        <translation type="vanished">Αυτόματη αποθήκευση στιγμιοτύπων (αποθήκευση απευθείας χωρίς διάλογο)</translation>
-    </message>
-    <message>
-        <source>Auto-save recordings (save directly without dialog)</source>
-        <translation type="vanished">Αυτόματη αποθήκευση εγγραφών (αποθήκευση απευθείας χωρίς διάλογο)</translation>
-    </message>
-    <message>
-        <source>Preview: %1</source>
-        <translation type="vanished">Προεπισκόπηση: %1</translation>
-    </message>
-    <message>
-        <source>
-Invalid template, fallback applied: %1</source>
-        <translation type="vanished">
-Μη έγκυρο πρότυπο, εφαρμόστηκε εναλλακτικό: %1</translation>
-    </message>
-    <message>
-        <source>Version Information</source>
-        <translation type="vanished">Πληροφορίες έκδοσης</translation>
-    </message>
-    <message>
-        <source>Current Version</source>
-        <translation type="vanished">Τρέχουσα έκδοση</translation>
-    </message>
-    <message>
-        <source>Automatic Updates</source>
-        <translation type="vanished">Αυτόματες ενημερώσεις</translation>
-    </message>
-    <message>
-        <source>Check for updates automatically</source>
-        <translation type="vanished">Αυτόματος έλεγχος για ενημερώσεις</translation>
-    </message>
-    <message>
-        <source>Check frequency</source>
-        <translation type="vanished">Συχνότητα ελέγχου</translation>
-    </message>
-    <message>
-        <source>Every day</source>
-        <translation type="vanished">Κάθε μέρα</translation>
-    </message>
-    <message>
-        <source>Every 3 days</source>
-        <translation type="vanished">Κάθε 3 μέρες</translation>
-    </message>
-    <message>
-        <source>Every week</source>
-        <translation type="vanished">Κάθε εβδομάδα</translation>
-    </message>
-    <message>
-        <source>Every 2 weeks</source>
-        <translation type="vanished">Κάθε 2 εβδομάδες</translation>
-    </message>
-    <message>
-        <source>Every month</source>
-        <translation type="vanished">Κάθε μήνα</translation>
-    </message>
-    <message>
-        <source>Last checked: %1</source>
-        <translation type="vanished">Τελευταίος έλεγχος: %1</translation>
-    </message>
-    <message>
-        <source>Last checked: Never</source>
-        <translation type="vanished">Τελευταίος έλεγχος: Ποτέ</translation>
-    </message>
-    <message>
-        <source>Check Now</source>
-        <translation type="vanished">Έλεγχος τώρα</translation>
-    </message>
-    <message>
-        <source>Checking...</source>
-        <translation type="vanished">Έλεγχος...</translation>
-    </message>
-    <message>
-        <source>Version %1</source>
-        <translation type="vanished">Έκδοση %1</translation>
-    </message>
-    <message>
-        <source>Copyright 2024-2025 Victor Fu</source>
-        <translation type="vanished">Πνευματικά δικαιώματα 2024-2025 Victor Fu</translation>
-    </message>
-    <message>
-        <source>Author: Victor Fu</source>
-        <translation type="vanished">Δημιουργός: Victor Fu</translation>
-    </message>
-    <message>
-        <source>'snaptray' command is available in terminal</source>
-        <translation type="vanished">Η εντολή 'snaptray' είναι διαθέσιμη στο τερματικό</translation>
-    </message>
-    <message>
-        <source>Uninstall CLI</source>
-        <translation type="vanished">Απεγκατάσταση CLI</translation>
-    </message>
-    <message>
-        <source>'snaptray' command is not installed</source>
-        <translation type="vanished">Η εντολή 'snaptray' δεν είναι εγκατεστημένη</translation>
-    </message>
-    <message>
-        <source>Install CLI</source>
-        <translation type="vanished">Εγκατάσταση CLI</translation>
-    </message>
-    <message>
-        <source>Granted</source>
-        <translation type="vanished">Εκχωρήθηκε</translation>
-    </message>
-    <message>
-        <source>Not Granted</source>
-        <translation type="vanished">Δεν εκχωρήθηκε</translation>
-    </message>
 </context>
 <context>
     <name>SettingsPathPicker</name>
@@ -3953,7 +3127,7 @@ It may be in use by another application.</source>
     <message>
         <location filename="../src/qml/main.qml" line="10" />
         <source>SnapTray QML</source>
-        <translation type="unfinished" />
+        <translation>SnapTray QML</translation>
     </message>
 </context>
 <context>

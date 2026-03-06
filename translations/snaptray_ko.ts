@@ -211,34 +211,6 @@
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>
-    <message>
-        <source>Cancel capture</source>
-        <translation type="vanished">캡처 취소</translation>
-    </message>
-    <message>
-        <source>Confirm selection (after selection)</source>
-        <translation type="vanished">선택 확정(선택 후)</translation>
-    </message>
-    <message>
-        <source>Toggle multi-region mode</source>
-        <translation type="vanished">다중 영역 모드 전환</translation>
-    </message>
-    <message>
-        <source>Switch RGB/HEX (when magnifier visible)</source>
-        <translation type="vanished">RGB/HEX 전환(돋보기가 보일 때)</translation>
-    </message>
-    <message>
-        <source>Copy color value (before selection)</source>
-        <translation type="vanished">색상 값 복사(선택 전)</translation>
-    </message>
-    <message>
-        <source>Move selection by 1 pixel (after selection)</source>
-        <translation type="vanished">선택 영역을 1픽셀 이동(선택 후)</translation>
-    </message>
-    <message>
-        <source>Resize selection by 1 pixel (after selection)</source>
-        <translation type="vanished">선택 영역 크기를 1픽셀 조정(선택 후)</translation>
-    </message>
 </context>
 <context>
     <name>ClickThroughExitButton</name>
@@ -250,61 +222,9 @@
 </context>
 <context>
     <name>ColorDialog</name>
-    <message>
-        <source>Select Color</source>
-        <translation type="vanished">색상 선택</translation>
-    </message>
-    <message>
-        <source>Hue</source>
-        <translation type="vanished">색조</translation>
-    </message>
-    <message>
-        <source>Saturation</source>
-        <translation type="vanished">채도</translation>
-    </message>
-    <message>
-        <source>Value</source>
-        <translation type="vanished">명도</translation>
-    </message>
-    <message>
-        <source>Red</source>
-        <translation type="vanished">빨강</translation>
-    </message>
-    <message>
-        <source>Green</source>
-        <translation type="vanished">초록</translation>
-    </message>
-    <message>
-        <source>Blue</source>
-        <translation type="vanished">파랑</translation>
-    </message>
-    <message>
-        <source>Alpha</source>
-        <translation type="vanished">알파</translation>
-    </message>
-    <message>
-        <source>Hex</source>
-        <translation type="vanished">16진수</translation>
-    </message>
-    <message>
-        <source>Reset</source>
-        <translation type="vanished">재설정</translation>
-    </message>
-    <message>
-        <source>OK</source>
-        <translation type="vanished">OK</translation>
-    </message>
-    <message>
-        <source>Cancel</source>
-        <translation type="vanished">취소</translation>
-    </message>
 </context>
 <context>
     <name>ColorPickerDialogCompat</name>
-    <message>
-        <source>Select Color</source>
-        <translation type="vanished">색상 선택</translation>
-    </message>
 </context>
 <context>
     <name>FilesSettings</name>
@@ -363,18 +283,6 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
 </context>
 <context>
     <name>FormatSelectionWidget</name>
-    <message>
-        <source>Best quality, widely compatible</source>
-        <translation type="vanished">최고 품질, 폭넓은 호환성</translation>
-    </message>
-    <message>
-        <source>Universal support, larger file size</source>
-        <translation type="vanished">범용 지원, 더 큰 파일 크기</translation>
-    </message>
-    <message>
-        <source>Small file size, modern browsers only</source>
-        <translation type="vanished">작은 파일 크기, 최신 브라우저만 지원</translation>
-    </message>
 </context>
 <context>
     <name>GeneralSettings</name>
@@ -476,66 +384,6 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
 </context>
 <context>
     <name>HotkeyManager</name>
-    <message>
-        <source>Conflicts with: %1</source>
-        <translation type="vanished">충돌: %1</translation>
-    </message>
-    <message>
-        <source>Region Capture</source>
-        <translation type="vanished">영역 캡처</translation>
-    </message>
-    <message>
-        <source>Capture a selected region of the screen</source>
-        <translation type="vanished">화면에서 선택한 영역을 캡처</translation>
-    </message>
-    <message>
-        <source>Screen Canvas</source>
-        <translation type="vanished">화면 캔버스</translation>
-    </message>
-    <message>
-        <source>Annotate directly on the screen</source>
-        <translation type="vanished">화면에 직접 주석 달기</translation>
-    </message>
-    <message>
-        <source>Paste</source>
-        <translation type="vanished">붙여넣기</translation>
-    </message>
-    <message>
-        <source>Pin content from clipboard</source>
-        <translation type="vanished">클립보드 내용을 고정</translation>
-    </message>
-    <message>
-        <source>Quick Pin</source>
-        <translation type="vanished">빠른 고정</translation>
-    </message>
-    <message>
-        <source>Select and pin a region directly</source>
-        <translation type="vanished">영역을 선택하여 바로 고정</translation>
-    </message>
-    <message>
-        <source>Pin from Image</source>
-        <translation type="vanished">이미지에서 고정</translation>
-    </message>
-    <message>
-        <source>Pin an image from file</source>
-        <translation type="vanished">파일에서 이미지 고정</translation>
-    </message>
-    <message>
-        <source>Pin History</source>
-        <translation type="vanished">고정 기록</translation>
-    </message>
-    <message>
-        <source>Open pin history window</source>
-        <translation type="vanished">고정 기록 창 열기</translation>
-    </message>
-    <message>
-        <source>Record Full Screen</source>
-        <translation type="vanished">전체 화면 녹화</translation>
-    </message>
-    <message>
-        <source>Start full screen recording</source>
-        <translation type="vanished">전체 화면 녹화 시작</translation>
-    </message>
 </context>
 <context>
     <name>HotkeySettings</name>
@@ -1066,10 +914,6 @@ Size: %2</source>
         <translation>꾸미기</translation>
     </message>
     <message>
-        <source>Recognize Text</source>
-        <translation type="vanished">텍스트 인식</translation>
-    </message>
-    <message>
         <location filename="../src/PinWindow.cpp" line="917" />
         <source>Click-through</source>
         <translation>클릭 통과</translation>
@@ -1479,26 +1323,6 @@ Size: %2</source>
         <translation>핀 병합에 실패했습니다</translation>
     </message>
     <message>
-        <source>Capture</source>
-        <translation type="vanished">캡처</translation>
-    </message>
-    <message>
-        <source>Canvas</source>
-        <translation type="vanished">캔버스</translation>
-    </message>
-    <message>
-        <source>Clipboard</source>
-        <translation type="vanished">클립보드</translation>
-    </message>
-    <message>
-        <source>Pin</source>
-        <translation type="vanished">고정</translation>
-    </message>
-    <message>
-        <source>Recording</source>
-        <translation type="vanished">녹화</translation>
-    </message>
-    <message>
         <location filename="../src/QRCodeManager.cpp" line="200" />
         <source>No barcode found in image</source>
         <translation>이미지에서 바코드를 찾을 수 없습니다</translation>
@@ -1717,16 +1541,8 @@ Size: %2</source>
 <context>
     <name>RecordingControlBar</name>
     <message>
-        <source>Audio recording enabled</source>
-        <translation type="vanished">오디오 녹음 활성화됨</translation>
-    </message>
-    <message>
         <source>-- fps</source>
         <translation>-- 프레임/초</translation>
-    </message>
-    <message>
-        <source>Annotate</source>
-        <translation type="vanished">주석</translation>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingControlBar.qml" line="254" />
@@ -1752,50 +1568,6 @@ Size: %2</source>
     <message>
         <source>Cancel Recording (Esc)</source>
         <translation>녹화 취소 (Esc)</translation>
-    </message>
-    <message>
-        <source>Pause (Space)</source>
-        <translation type="vanished">일시 중지 (스페이스)</translation>
-    </message>
-    <message>
-        <source>Play (Space)</source>
-        <translation type="vanished">재생 (스페이스)</translation>
-    </message>
-    <message>
-        <source>Unmute (M)</source>
-        <translation type="vanished">음소거 해제 (M)</translation>
-    </message>
-    <message>
-        <source>Mute (M)</source>
-        <translation type="vanished">음소거 (M)</translation>
-    </message>
-    <message>
-        <source>MP4 - Best quality</source>
-        <translation type="vanished">MP4 - 최고 품질</translation>
-    </message>
-    <message>
-        <source>GIF - Universal support</source>
-        <translation type="vanished">GIF - 범용 지원</translation>
-    </message>
-    <message>
-        <source>WebP - Small size</source>
-        <translation type="vanished">WebP - 작은 크기</translation>
-    </message>
-    <message>
-        <source>Annotate Video</source>
-        <translation type="vanished">비디오에 주석</translation>
-    </message>
-    <message>
-        <source>Save (Enter)</source>
-        <translation type="vanished">저장 (Enter)</translation>
-    </message>
-    <message>
-        <source>Discard (Esc)</source>
-        <translation type="vanished">삭제 (Esc)</translation>
-    </message>
-    <message>
-        <source>Drag to seek</source>
-        <translation type="vanished">드래그하여 탐색</translation>
     </message>
 </context>
 <context>
@@ -1977,151 +1749,61 @@ Size: %2</source>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="71" />
         <source>Recording Preview</source>
-        <translation type="unfinished">녹화 미리 보기</translation>
+        <translation>녹화 미리 보기</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="356" />
         <source>Converting video...</source>
-        <translation type="unfinished">비디오 변환 중...</translation>
+        <translation>비디오 변환 중...</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="365" />
         <source>Failed to create video player for conversion</source>
-        <translation type="unfinished" />
+        <translation>변환용 비디오 플레이어를 만들지 못했습니다</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="366" />
         <source>Failed to load video for conversion</source>
-        <translation type="unfinished" />
+        <translation>변환용 비디오를 불러오지 못했습니다</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="367" />
         <source>Video not loaded properly for conversion</source>
-        <translation type="unfinished" />
+        <translation>변환용 비디오가 제대로 불러와지지 않았습니다</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="368" />
         <source>Failed to start encoder</source>
-        <translation type="unfinished" />
+        <translation>인코더를 시작하지 못했습니다</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="369" />
         <source>Conversion failed: output file is missing or empty</source>
-        <translation type="unfinished" />
+        <translation>변환 실패: 출력 파일이 없거나 비어 있습니다</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="596" />
         <source>Trimming video...</source>
-        <translation type="unfinished">비디오 다듬는 중...</translation>
+        <translation>비디오 다듬는 중...</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="615" />
         <source>Trim failed: %1</source>
-        <translation type="unfinished" />
+        <translation>잘라내기 실패: %1</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="650" />
         <source>Trim failed: output file is missing or empty</source>
-        <translation type="unfinished" />
+        <translation>잘라내기 실패: 출력 파일이 없거나 비어 있습니다</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="657" />
         <source>Trim failed</source>
-        <translation type="unfinished" />
+        <translation>잘라내기 실패</translation>
     </message>
 </context>
 <context>
     <name>RecordingPreviewWindow</name>
-    <message>
-        <source>Recording Preview</source>
-        <translation type="vanished">녹화 미리 보기</translation>
-    </message>
-    <message>
-        <source>Trim</source>
-        <translation type="vanished">다듬기</translation>
-    </message>
-    <message>
-        <source>Loop playback within the trimmed range</source>
-        <translation type="vanished">다듬은 범위 내에서 반복 재생</translation>
-    </message>
-    <message>
-        <source>Play/Pause (Space)</source>
-        <translation type="vanished">재생/일시 중지 (스페이스)</translation>
-    </message>
-    <message>
-        <source>Playback speed</source>
-        <translation type="vanished">재생 속도</translation>
-    </message>
-    <message>
-        <source>Mute (M)</source>
-        <translation type="vanished">음소거 (M)</translation>
-    </message>
-    <message>
-        <source>Discard (Esc)</source>
-        <translation type="vanished">삭제 (Esc)</translation>
-    </message>
-    <message>
-        <source>Save (Enter)</source>
-        <translation type="vanished">저장 (Enter)</translation>
-    </message>
-    <message>
-        <source>Video Error</source>
-        <translation type="vanished">비디오 오류</translation>
-    </message>
-    <message>
-        <source>Failed to load video:
-%1</source>
-        <translation type="vanished">비디오 불러오기 실패:
-%1</translation>
-    </message>
-    <message>
-        <source>Conversion Error</source>
-        <translation type="vanished">변환 오류</translation>
-    </message>
-    <message>
-        <source>Cannot convert: video not loaded properly.</source>
-        <translation type="vanished">변환할 수 없습니다: 비디오가 제대로 불러와지지 않았습니다.</translation>
-    </message>
-    <message>
-        <source>Converting video...</source>
-        <translation type="vanished">비디오 변환 중...</translation>
-    </message>
-    <message>
-        <source>Cancel</source>
-        <translation type="vanished">취소</translation>
-    </message>
-    <message>
-        <source>Failed to start encoder: %1</source>
-        <translation type="vanished">인코더 시작에 실패했습니다: %1</translation>
-    </message>
-    <message>
-        <source>Trim Failed</source>
-        <translation type="vanished">다듬기 실패</translation>
-    </message>
-    <message>
-        <source>Failed to trim the video. Please try again.</source>
-        <translation type="vanished">비디오 다듬기에 실패했습니다. 다시 시도해 주세요.</translation>
-    </message>
-    <message>
-        <source>Set Trim Start</source>
-        <translation type="vanished">다듬기 시작점 설정</translation>
-    </message>
-    <message>
-        <source>Set Trim End</source>
-        <translation type="vanished">다듬기 끝점 설정</translation>
-    </message>
-    <message>
-        <source>Enter time in seconds:</source>
-        <translation type="vanished">초 단위로 시간 입력:</translation>
-    </message>
-    <message>
-        <source>Trim Error</source>
-        <translation type="vanished">다듬기 오류</translation>
-    </message>
-    <message>
-        <source>Trimming video...</source>
-        <translation type="vanished">비디오 다듬는 중...</translation>
-    </message>
 </context>
 <context>
     <name>RecordingRegionSelector</name>
@@ -2493,10 +2175,6 @@ GIF 녹화에서는 오디오가 지원되지 않습니다.</translation>
         <translation>얼굴 또는 자격 증명이 감지되지 않았습니다</translation>
     </message>
     <message>
-        <source>No faces detected</source>
-        <translation type="vanished">얼굴이 감지되지 않았습니다</translation>
-    </message>
-    <message>
         <location filename="../src/RegionSelector.cpp" line="2819" />
         <source>Detection failed</source>
         <translation>감지 실패</translation>
@@ -2529,582 +2207,6 @@ GIF 녹화에서는 오디오가 지원되지 않습니다.</translation>
 </context>
 <context>
     <name>SettingsDialog</name>
-    <message>
-        <source>%1 Settings</source>
-        <translation type="vanished">%1 설정</translation>
-    </message>
-    <message>
-        <source>General</source>
-        <translation type="vanished">일반</translation>
-    </message>
-    <message>
-        <source>Hotkeys</source>
-        <translation type="vanished">단축키</translation>
-    </message>
-    <message>
-        <source>Advanced</source>
-        <translation type="vanished">고급</translation>
-    </message>
-    <message>
-        <source>Watermark</source>
-        <translation type="vanished">워터마크</translation>
-    </message>
-    <message>
-        <source>OCR</source>
-        <translation type="vanished">OCR</translation>
-    </message>
-    <message>
-        <source>Recording</source>
-        <translation type="vanished">녹화</translation>
-    </message>
-    <message>
-        <source>Files</source>
-        <translation type="vanished">파일</translation>
-    </message>
-    <message>
-        <source>Updates</source>
-        <translation type="vanished">업데이트</translation>
-    </message>
-    <message>
-        <source>About</source>
-        <translation type="vanished">정보</translation>
-    </message>
-    <message>
-        <source>Save</source>
-        <translation type="vanished">저장</translation>
-    </message>
-    <message>
-        <source>Cancel</source>
-        <translation type="vanished">취소</translation>
-    </message>
-    <message>
-        <source>Start on login</source>
-        <translation type="vanished">로그인 시 시작</translation>
-    </message>
-    <message>
-        <source>Language</source>
-        <translation type="vanished">언어</translation>
-    </message>
-    <message>
-        <source>Display language:</source>
-        <translation type="vanished">표시 언어:</translation>
-    </message>
-    <message>
-        <source>Appearance</source>
-        <translation type="vanished">외관</translation>
-    </message>
-    <message>
-        <source>Toolbar Style:</source>
-        <translation type="vanished">도구 모음 스타일:</translation>
-    </message>
-    <message>
-        <source>Dark</source>
-        <translation type="vanished">다크</translation>
-    </message>
-    <message>
-        <source>Light</source>
-        <translation type="vanished">라이트</translation>
-    </message>
-    <message>
-        <source>Permissions</source>
-        <translation type="vanished">권한</translation>
-    </message>
-    <message>
-        <source>Screen Recording:</source>
-        <translation type="vanished">화면 녹화:</translation>
-    </message>
-    <message>
-        <source>Open Settings</source>
-        <translation type="vanished">설정 열기</translation>
-    </message>
-    <message>
-        <source>Accessibility:</source>
-        <translation type="vanished">손쉬운 사용:</translation>
-    </message>
-    <message>
-        <source>Command Line Interface</source>
-        <translation type="vanished">명령줄 인터페이스</translation>
-    </message>
-    <message>
-        <source>Blur</source>
-        <translation type="vanished">흐림</translation>
-    </message>
-    <message>
-        <source>Blur intensity:</source>
-        <translation type="vanished">흐림 강도:</translation>
-    </message>
-    <message>
-        <source>Blur type:</source>
-        <translation type="vanished">흐림 유형:</translation>
-    </message>
-    <message>
-        <source>Pixelate</source>
-        <translation type="vanished">픽셀화</translation>
-    </message>
-    <message>
-        <source>Gaussian</source>
-        <translation type="vanished">가우시안</translation>
-    </message>
-    <message>
-        <source>Pin Window</source>
-        <translation type="vanished">핀 창</translation>
-    </message>
-    <message>
-        <source>Default opacity:</source>
-        <translation type="vanished">기본 불투명도:</translation>
-    </message>
-    <message>
-        <source>Opacity step:</source>
-        <translation type="vanished">불투명도 단계:</translation>
-    </message>
-    <message>
-        <source>Zoom step:</source>
-        <translation type="vanished">확대/축소 단계:</translation>
-    </message>
-    <message>
-        <source>Max cache files:</source>
-        <translation type="vanished">최대 캐시 파일 수:</translation>
-    </message>
-    <message>
-        <source>Apply to images</source>
-        <translation type="vanished">이미지에 적용</translation>
-    </message>
-    <message>
-        <source>Apply to recordings</source>
-        <translation type="vanished">녹화에 적용</translation>
-    </message>
-    <message>
-        <source>Image:</source>
-        <translation type="vanished">이미지:</translation>
-    </message>
-    <message>
-        <source>Select an image file...</source>
-        <translation type="vanished">이미지 파일 선택...</translation>
-    </message>
-    <message>
-        <source>Browse...</source>
-        <translation type="vanished">찾아보기...</translation>
-    </message>
-    <message>
-        <source>Select Watermark Image</source>
-        <translation type="vanished">워터마크 이미지 선택</translation>
-    </message>
-    <message>
-        <source>Images (*.png *.jpg *.jpeg *.bmp *.gif *.svg);;All Files (*)</source>
-        <translation type="vanished">이미지 (*.png *.jpg *.jpeg *.bmp *.gif *.svg);;모든 파일 (*)</translation>
-    </message>
-    <message>
-        <source>Scale:</source>
-        <translation type="vanished">크기 조절:</translation>
-    </message>
-    <message>
-        <source>Opacity:</source>
-        <translation type="vanished">불투명도:</translation>
-    </message>
-    <message>
-        <source>Margin:</source>
-        <translation type="vanished">여백:</translation>
-    </message>
-    <message>
-        <source>Position:</source>
-        <translation type="vanished">위치:</translation>
-    </message>
-    <message>
-        <source>Top-Left</source>
-        <translation type="vanished">왼쪽 위</translation>
-    </message>
-    <message>
-        <source>Top-Right</source>
-        <translation type="vanished">오른쪽 위</translation>
-    </message>
-    <message>
-        <source>Bottom-Left</source>
-        <translation type="vanished">왼쪽 아래</translation>
-    </message>
-    <message>
-        <source>Bottom-Right</source>
-        <translation type="vanished">오른쪽 아래</translation>
-    </message>
-    <message>
-        <source>No image</source>
-        <translation type="vanished">이미지 없음</translation>
-    </message>
-    <message>
-        <source>Invalid image</source>
-        <translation type="vanished">잘못된 이미지</translation>
-    </message>
-    <message>
-        <source>Size: %1 × %2 px</source>
-        <translation type="vanished">크기: %1 × %2 px</translation>
-    </message>
-    <message>
-        <source>Frame Rate:</source>
-        <translation type="vanished">프레임 속도:</translation>
-    </message>
-    <message>
-        <source>Capture</source>
-        <translation type="vanished">캡처</translation>
-    </message>
-    <message>
-        <source>Show shortcut hints when entering region capture</source>
-        <translation type="vanished">영역 캡처에 들어갈 때 단축키 힌트 표시</translation>
-    </message>
-    <message>
-        <source>MCP</source>
-        <translation type="vanished">MCP</translation>
-    </message>
-    <message>
-        <source>Enable MCP server</source>
-        <translation type="vanished">MCP 서버 활성화</translation>
-    </message>
-    <message>
-        <source>10 FPS</source>
-        <translation type="vanished">10 프레임/초</translation>
-    </message>
-    <message>
-        <source>15 FPS</source>
-        <translation type="vanished">15 프레임/초</translation>
-    </message>
-    <message>
-        <source>24 FPS</source>
-        <translation type="vanished">24 프레임/초</translation>
-    </message>
-    <message>
-        <source>30 FPS</source>
-        <translation type="vanished">30 프레임/초</translation>
-    </message>
-    <message>
-        <source>Output Format:</source>
-        <translation type="vanished">출력 형식:</translation>
-    </message>
-    <message>
-        <source>MP4 (H.264)</source>
-        <translation type="vanished">MP4 (H.264)</translation>
-    </message>
-    <message>
-        <source>GIF</source>
-        <translation type="vanished">GIF</translation>
-    </message>
-    <message>
-        <source>WebP</source>
-        <translation type="vanished">WebP</translation>
-    </message>
-    <message>
-        <source>Quality:</source>
-        <translation type="vanished">품질:</translation>
-    </message>
-    <message>
-        <source>Audio</source>
-        <translation type="vanished">오디오</translation>
-    </message>
-    <message>
-        <source>Record audio</source>
-        <translation type="vanished">오디오 녹음</translation>
-    </message>
-    <message>
-        <source>Source:</source>
-        <translation type="vanished">소스:</translation>
-    </message>
-    <message>
-        <source>Microphone</source>
-        <translation type="vanished">마이크</translation>
-    </message>
-    <message>
-        <source>System Audio</source>
-        <translation type="vanished">시스템 오디오</translation>
-    </message>
-    <message>
-        <source>Both (Mixed)</source>
-        <translation type="vanished">둘 다 (혼합)</translation>
-    </message>
-    <message>
-        <source>Device:</source>
-        <translation type="vanished">장치:</translation>
-    </message>
-    <message>
-        <source>Default</source>
-        <translation type="vanished">기본값</translation>
-    </message>
-    <message>
-        <source>Show preview after recording</source>
-        <translation type="vanished">녹화 후 미리 보기 표시</translation>
-    </message>
-    <message>
-        <source>Countdown</source>
-        <translation type="vanished">카운트다운</translation>
-    </message>
-    <message>
-        <source>Show countdown before recording</source>
-        <translation type="vanished">녹화 전 카운트다운 표시</translation>
-    </message>
-    <message>
-        <source>Display a 3-2-1 countdown before recording starts</source>
-        <translation type="vanished">녹화 시작 전 3-2-1 카운트다운 표시</translation>
-    </message>
-    <message>
-        <source>Countdown duration:</source>
-        <translation type="vanished">카운트다운 시간:</translation>
-    </message>
-    <message>
-        <source>1 second</source>
-        <translation type="vanished">1초</translation>
-    </message>
-    <message>
-        <source>2 seconds</source>
-        <translation type="vanished">2초</translation>
-    </message>
-    <message>
-        <source>3 seconds</source>
-        <translation type="vanished">3초</translation>
-    </message>
-    <message>
-        <source>4 seconds</source>
-        <translation type="vanished">4초</translation>
-    </message>
-    <message>
-        <source>5 seconds</source>
-        <translation type="vanished">5초</translation>
-    </message>
-    <message>
-        <source>Restart Required</source>
-        <translation type="vanished">재시작 필요</translation>
-    </message>
-    <message>
-        <source>The language change will take effect after restarting the application.</source>
-        <translation type="vanished">언어 변경은 애플리케이션을 재시작한 후에 적용됩니다.</translation>
-    </message>
-    <message>
-        <source>Loading available languages...</source>
-        <translation type="vanished">사용 가능한 언어 불러오는 중...</translation>
-    </message>
-    <message>
-        <source>Available Languages</source>
-        <translation type="vanished">사용 가능한 언어</translation>
-    </message>
-    <message>
-        <source>Add selected languages</source>
-        <translation type="vanished">선택한 언어 추가</translation>
-    </message>
-    <message>
-        <source>Remove selected languages</source>
-        <translation type="vanished">선택한 언어 제거</translation>
-    </message>
-    <message>
-        <source>Selected Languages</source>
-        <translation type="vanished">선택된 언어</translation>
-    </message>
-    <message>
-        <source>English is always included and cannot be removed</source>
-        <translation type="vanished">영어는 항상 포함되어 있으며 제거할 수 없습니다</translation>
-    </message>
-    <message>
-        <source>After OCR Recognition</source>
-        <translation type="vanished">OCR 인식 후</translation>
-    </message>
-    <message>
-        <source>Copy text directly to clipboard</source>
-        <translation type="vanished">텍스트를 클립보드에 바로 복사</translation>
-    </message>
-    <message>
-        <source>Show editor to review and edit text</source>
-        <translation type="vanished">편집기를 표시하여 텍스트 확인 및 편집</translation>
-    </message>
-    <message>
-        <source>Recognized text is immediately copied to clipboard</source>
-        <translation type="vanished">인식된 텍스트가 즉시 클립보드에 복사됩니다</translation>
-    </message>
-    <message>
-        <source>Opens a dialog where you can review and edit the text before copying</source>
-        <translation type="vanished">복사하기 전에 텍스트를 확인하고 편집할 수 있는 대화 상자가 열립니다</translation>
-    </message>
-    <message>
-        <source>Save Locations</source>
-        <translation type="vanished">저장 위치</translation>
-    </message>
-    <message>
-        <source>Screenshots:</source>
-        <translation type="vanished">스크린샷:</translation>
-    </message>
-    <message>
-        <source>Select Screenshot Folder</source>
-        <translation type="vanished">스크린샷 폴더 선택</translation>
-    </message>
-    <message>
-        <source>Recordings:</source>
-        <translation type="vanished">녹화:</translation>
-    </message>
-    <message>
-        <source>Select Recording Folder</source>
-        <translation type="vanished">녹화 폴더 선택</translation>
-    </message>
-    <message>
-        <source>Filename Format</source>
-        <translation type="vanished">파일 이름 형식</translation>
-    </message>
-    <message>
-        <source>Template:</source>
-        <translation type="vanished">템플릿:</translation>
-    </message>
-    <message>
-        <source>Save Behavior</source>
-        <translation type="vanished">저장 동작</translation>
-    </message>
-    <message>
-        <source>Auto-save screenshots (save directly without dialog)</source>
-        <translation type="vanished">스크린샷 자동 저장 (대화 상자 없이 바로 저장)</translation>
-    </message>
-    <message>
-        <source>Auto-save recordings (save directly without dialog)</source>
-        <translation type="vanished">녹화 자동 저장 (대화 상자 없이 바로 저장)</translation>
-    </message>
-    <message>
-        <source>Preview: %1</source>
-        <translation type="vanished">미리 보기: %1</translation>
-    </message>
-    <message>
-        <source>
-Invalid template, fallback applied: %1</source>
-        <translation type="vanished">
-잘못된 템플릿이므로 대체가 적용되었습니다: %1</translation>
-    </message>
-    <message>
-        <source>Version Information</source>
-        <translation type="vanished">버전 정보</translation>
-    </message>
-    <message>
-        <source>Current Version</source>
-        <translation type="vanished">현재 버전</translation>
-    </message>
-    <message>
-        <source>Automatic Updates</source>
-        <translation type="vanished">자동 업데이트</translation>
-    </message>
-    <message>
-        <source>Check for updates automatically</source>
-        <translation type="vanished">자동으로 업데이트 확인</translation>
-    </message>
-    <message>
-        <source>Check frequency</source>
-        <translation type="vanished">확인 빈도</translation>
-    </message>
-    <message>
-        <source>Every day</source>
-        <translation type="vanished">매일</translation>
-    </message>
-    <message>
-        <source>Every 3 days</source>
-        <translation type="vanished">3일마다</translation>
-    </message>
-    <message>
-        <source>Every week</source>
-        <translation type="vanished">매주</translation>
-    </message>
-    <message>
-        <source>Every 2 weeks</source>
-        <translation type="vanished">2주마다</translation>
-    </message>
-    <message>
-        <source>Every month</source>
-        <translation type="vanished">매월</translation>
-    </message>
-    <message>
-        <source>Last checked: %1</source>
-        <translation type="vanished">마지막 확인: %1</translation>
-    </message>
-    <message>
-        <source>Last checked: Never</source>
-        <translation type="vanished">마지막 확인: 없음</translation>
-    </message>
-    <message>
-        <source>Check Now</source>
-        <translation type="vanished">지금 확인</translation>
-    </message>
-    <message>
-        <source>Checking...</source>
-        <translation type="vanished">확인 중...</translation>
-    </message>
-    <message>
-        <source>Version %1</source>
-        <translation type="vanished">버전 %1</translation>
-    </message>
-    <message>
-        <source>Copyright 2024-2025 Victor Fu</source>
-        <translation type="vanished">저작권 2024-2025 Victor Fu</translation>
-    </message>
-    <message>
-        <source>Author: Victor Fu</source>
-        <translation type="vanished">제작자: Victor Fu</translation>
-    </message>
-    <message>
-        <source>'snaptray' command is available in terminal</source>
-        <translation type="vanished">'snaptray' 명령을 터미널에서 사용할 수 있습니다</translation>
-    </message>
-    <message>
-        <source>Uninstall CLI</source>
-        <translation type="vanished">CLI 제거</translation>
-    </message>
-    <message>
-        <source>'snaptray' command is not installed</source>
-        <translation type="vanished">'snaptray' 명령이 설치되어 있지 않습니다</translation>
-    </message>
-    <message>
-        <source>Install CLI</source>
-        <translation type="vanished">CLI 설치</translation>
-    </message>
-    <message>
-        <source>Granted</source>
-        <translation type="vanished">허용됨</translation>
-    </message>
-    <message>
-        <source>Not Granted</source>
-        <translation type="vanished">허용 안 됨</translation>
-    </message>
-    <message>
-        <source>GIF format creates larger files than MP4.
-Best for short clips and sharing on web.
-Audio is not supported for GIF recordings.</source>
-        <translation type="vanished">GIF 형식은 MP4보다 큰 파일을 생성합니다.
-짧은 클립 및 웹 공유에 적합합니다.
-GIF 녹화에서는 오디오가 지원되지 않습니다.</translation>
-    </message>
-    <message>
-        <source>WebP format creates smaller files than GIF with better quality.
-Best for short clips and sharing on web.
-Audio is not supported for WebP recordings.</source>
-        <translation type="vanished">WebP 형식은 GIF보다 작으면서 더 나은 품질의 파일을 생성합니다.
-짧은 클립 및 웹 공유에 적합합니다.
-WebP 녹화에서는 오디오가 지원되지 않습니다.</translation>
-    </message>
-    <message>
-        <source>Microphone access denied. Please enable in System Settings &gt; Privacy &amp; Security &gt; Microphone.</source>
-        <translation type="vanished">마이크 접근이 거부되었습니다. 시스템 설정 &gt; 개인 정보 보호 및 보안 &gt; 마이크에서 활성화해 주세요.</translation>
-    </message>
-    <message>
-        <source>System audio capture requires macOS 13 (Ventura) or later, or a virtual audio device like BlackHole.</source>
-        <translation type="vanished">시스템 오디오 캡처에는 macOS 13 (Ventura) 이상 또는 BlackHole과 같은 가상 오디오 장치가 필요합니다.</translation>
-    </message>
-    <message>
-        <source>Select and order the languages for OCR recognition.
-English is always included and cannot be removed. Drag to reorder selected languages.</source>
-        <translation type="vanished">OCR 인식에 사용할 언어를 선택하고 순서를 설정하세요.
-영어는 항상 포함되며 제거할 수 없습니다. 드래그하여 선택한 언어의 순서를 변경할 수 있습니다.</translation>
-    </message>
-    <message>
-        <source>No OCR languages available.
-
-macOS: OCR requires macOS 10.15 or later.
-Windows: Install language packs in Settings &gt; Time &amp; Language &gt; Language.</source>
-        <translation type="vanished">사용 가능한 OCR 언어가 없습니다.
-
-macOS: OCR에는 macOS 10.15 이상이 필요합니다.
-Windows: 설정 &gt; 시간 및 언어 &gt; 언어에서 언어 팩을 설치하세요.</translation>
-    </message>
-    <message>
-        <source>Tokens: {prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}
-Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
-        <translation type="vanished">토큰: {prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}
-날짜 토큰: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, 또는 {date}</translation>
-    </message>
 </context>
 <context>
     <name>SettingsPathPicker</name>
@@ -4031,7 +3133,7 @@ It may be in use by another application.</source>
     <message>
         <location filename="../src/qml/main.qml" line="10" />
         <source>SnapTray QML</source>
-        <translation type="unfinished" />
+        <translation>SnapTray QML</translation>
     </message>
 </context>
 <context>

@@ -211,34 +211,6 @@
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>
-    <message>
-        <source>Cancel capture</source>
-        <translation type="vanished">取消擷取</translation>
-    </message>
-    <message>
-        <source>Confirm selection (after selection)</source>
-        <translation type="vanished">確認選取範圍（選取完成後）</translation>
-    </message>
-    <message>
-        <source>Toggle multi-region mode</source>
-        <translation type="vanished">切換多區域模式</translation>
-    </message>
-    <message>
-        <source>Switch RGB/HEX (when magnifier visible)</source>
-        <translation type="vanished">切換 RGB/HEX（放大鏡顯示時）</translation>
-    </message>
-    <message>
-        <source>Copy color value (before selection)</source>
-        <translation type="vanished">複製色彩值（選取前）</translation>
-    </message>
-    <message>
-        <source>Move selection by 1 pixel (after selection)</source>
-        <translation type="vanished">將選取範圍移動 1 像素（選取完成後）</translation>
-    </message>
-    <message>
-        <source>Resize selection by 1 pixel (after selection)</source>
-        <translation type="vanished">將選取範圍調整 1 像素（選取完成後）</translation>
-    </message>
 </context>
 <context>
     <name>ClickThroughExitButton</name>
@@ -250,61 +222,9 @@
 </context>
 <context>
     <name>ColorDialog</name>
-    <message>
-        <source>Select Color</source>
-        <translation type="vanished">選擇顏色</translation>
-    </message>
-    <message>
-        <source>Hue</source>
-        <translation type="vanished">色相</translation>
-    </message>
-    <message>
-        <source>Saturation</source>
-        <translation type="vanished">飽和度</translation>
-    </message>
-    <message>
-        <source>Value</source>
-        <translation type="vanished">明度</translation>
-    </message>
-    <message>
-        <source>Red</source>
-        <translation type="vanished">紅</translation>
-    </message>
-    <message>
-        <source>Green</source>
-        <translation type="vanished">綠</translation>
-    </message>
-    <message>
-        <source>Blue</source>
-        <translation type="vanished">藍</translation>
-    </message>
-    <message>
-        <source>Alpha</source>
-        <translation type="vanished">不透明度</translation>
-    </message>
-    <message>
-        <source>Hex</source>
-        <translation type="vanished">十六進位</translation>
-    </message>
-    <message>
-        <source>Reset</source>
-        <translation type="vanished">重設</translation>
-    </message>
-    <message>
-        <source>OK</source>
-        <translation type="vanished">確定</translation>
-    </message>
-    <message>
-        <source>Cancel</source>
-        <translation type="vanished">取消</translation>
-    </message>
 </context>
 <context>
     <name>ColorPickerDialogCompat</name>
-    <message>
-        <source>Select Color</source>
-        <translation type="vanished">選擇顏色</translation>
-    </message>
 </context>
 <context>
     <name>FilesSettings</name>
@@ -363,18 +283,6 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
 </context>
 <context>
     <name>FormatSelectionWidget</name>
-    <message>
-        <source>Best quality, widely compatible</source>
-        <translation type="vanished">最佳品質，廣泛相容</translation>
-    </message>
-    <message>
-        <source>Universal support, larger file size</source>
-        <translation type="vanished">通用支援，檔案較大</translation>
-    </message>
-    <message>
-        <source>Small file size, modern browsers only</source>
-        <translation type="vanished">檔案體積小，僅支援現代瀏覽器</translation>
-    </message>
 </context>
 <context>
     <name>GeneralSettings</name>
@@ -476,66 +384,6 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
 </context>
 <context>
     <name>HotkeyManager</name>
-    <message>
-        <source>Conflicts with: %1</source>
-        <translation type="vanished">與 %1 衝突</translation>
-    </message>
-    <message>
-        <source>Region Capture</source>
-        <translation type="vanished">區域擷取</translation>
-    </message>
-    <message>
-        <source>Capture a selected region of the screen</source>
-        <translation type="vanished">擷取螢幕選定區域</translation>
-    </message>
-    <message>
-        <source>Screen Canvas</source>
-        <translation type="vanished">螢幕畫布</translation>
-    </message>
-    <message>
-        <source>Annotate directly on the screen</source>
-        <translation type="vanished">直接在螢幕上標註</translation>
-    </message>
-    <message>
-        <source>Paste</source>
-        <translation type="vanished">貼上</translation>
-    </message>
-    <message>
-        <source>Pin content from clipboard</source>
-        <translation type="vanished">將剪貼簿內容釘選到桌面</translation>
-    </message>
-    <message>
-        <source>Quick Pin</source>
-        <translation type="vanished">快速釘選</translation>
-    </message>
-    <message>
-        <source>Select and pin a region directly</source>
-        <translation type="vanished">直接選取並釘選一個區域</translation>
-    </message>
-    <message>
-        <source>Pin from Image</source>
-        <translation type="vanished">從圖片釘選</translation>
-    </message>
-    <message>
-        <source>Pin an image from file</source>
-        <translation type="vanished">從檔案釘選一張圖片</translation>
-    </message>
-    <message>
-        <source>Pin History</source>
-        <translation type="vanished">釘選歷史</translation>
-    </message>
-    <message>
-        <source>Open pin history window</source>
-        <translation type="vanished">開啟釘選歷史視窗</translation>
-    </message>
-    <message>
-        <source>Record Full Screen</source>
-        <translation type="vanished">錄製全螢幕</translation>
-    </message>
-    <message>
-        <source>Start full screen recording</source>
-        <translation type="vanished">開始全螢幕錄製</translation>
-    </message>
 </context>
 <context>
     <name>HotkeySettings</name>
@@ -1066,10 +914,6 @@ Size: %2</source>
         <translation>美化</translation>
     </message>
     <message>
-        <source>Recognize Text</source>
-        <translation type="vanished">文字辨識</translation>
-    </message>
-    <message>
         <location filename="../src/PinWindow.cpp" line="917" />
         <source>Click-through</source>
         <translation>滑鼠穿透</translation>
@@ -1479,26 +1323,6 @@ Size: %2</source>
         <translation>合併釘選失敗</translation>
     </message>
     <message>
-        <source>Capture</source>
-        <translation type="vanished">擷取</translation>
-    </message>
-    <message>
-        <source>Canvas</source>
-        <translation type="vanished">畫布</translation>
-    </message>
-    <message>
-        <source>Clipboard</source>
-        <translation type="vanished">剪貼簿</translation>
-    </message>
-    <message>
-        <source>Pin</source>
-        <translation type="vanished">釘選</translation>
-    </message>
-    <message>
-        <source>Recording</source>
-        <translation type="vanished">錄製</translation>
-    </message>
-    <message>
         <location filename="../src/QRCodeManager.cpp" line="200" />
         <source>No barcode found in image</source>
         <translation>圖片中未找到條碼</translation>
@@ -1717,16 +1541,8 @@ Size: %2</source>
 <context>
     <name>RecordingControlBar</name>
     <message>
-        <source>Audio recording enabled</source>
-        <translation type="vanished">已啟用音訊錄製</translation>
-    </message>
-    <message>
         <source>-- fps</source>
         <translation>-- 幀/秒</translation>
-    </message>
-    <message>
-        <source>Annotate</source>
-        <translation type="vanished">標註</translation>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingControlBar.qml" line="254" />
@@ -1752,50 +1568,6 @@ Size: %2</source>
     <message>
         <source>Cancel Recording (Esc)</source>
         <translation>取消錄製 (Esc)</translation>
-    </message>
-    <message>
-        <source>Pause (Space)</source>
-        <translation type="vanished">暫停 (Space)</translation>
-    </message>
-    <message>
-        <source>Play (Space)</source>
-        <translation type="vanished">播放 (Space)</translation>
-    </message>
-    <message>
-        <source>Unmute (M)</source>
-        <translation type="vanished">取消靜音 (M)</translation>
-    </message>
-    <message>
-        <source>Mute (M)</source>
-        <translation type="vanished">靜音 (M)</translation>
-    </message>
-    <message>
-        <source>MP4 - Best quality</source>
-        <translation type="vanished">MP4 - 最佳品質</translation>
-    </message>
-    <message>
-        <source>GIF - Universal support</source>
-        <translation type="vanished">GIF - 通用相容</translation>
-    </message>
-    <message>
-        <source>WebP - Small size</source>
-        <translation type="vanished">WebP - 體積小</translation>
-    </message>
-    <message>
-        <source>Annotate Video</source>
-        <translation type="vanished">標註影片</translation>
-    </message>
-    <message>
-        <source>Save (Enter)</source>
-        <translation type="vanished">儲存 (Enter)</translation>
-    </message>
-    <message>
-        <source>Discard (Esc)</source>
-        <translation type="vanished">捨棄 (Esc)</translation>
-    </message>
-    <message>
-        <source>Drag to seek</source>
-        <translation type="vanished">拖曳以定位</translation>
     </message>
 </context>
 <context>
@@ -1977,151 +1749,61 @@ Size: %2</source>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="71" />
         <source>Recording Preview</source>
-        <translation type="unfinished">錄製預覽</translation>
+        <translation>錄製預覽</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="356" />
         <source>Converting video...</source>
-        <translation type="unfinished">正在轉換影片…</translation>
+        <translation>正在轉換影片…</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="365" />
         <source>Failed to create video player for conversion</source>
-        <translation type="unfinished" />
+        <translation>無法建立用於轉換的影片播放器</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="366" />
         <source>Failed to load video for conversion</source>
-        <translation type="unfinished" />
+        <translation>無法載入用於轉換的影片</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="367" />
         <source>Video not loaded properly for conversion</source>
-        <translation type="unfinished" />
+        <translation>用於轉換的影片未正確載入</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="368" />
         <source>Failed to start encoder</source>
-        <translation type="unfinished" />
+        <translation>無法啟動編碼器</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="369" />
         <source>Conversion failed: output file is missing or empty</source>
-        <translation type="unfinished" />
+        <translation>轉換失敗：輸出檔案遺失或為空</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="596" />
         <source>Trimming video...</source>
-        <translation type="unfinished">正在修剪影片…</translation>
+        <translation>正在修剪影片…</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="615" />
         <source>Trim failed: %1</source>
-        <translation type="unfinished" />
+        <translation>修剪失敗：%1</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="650" />
         <source>Trim failed: output file is missing or empty</source>
-        <translation type="unfinished" />
+        <translation>修剪失敗：輸出檔案遺失或為空</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="657" />
         <source>Trim failed</source>
-        <translation type="unfinished" />
+        <translation>修剪失敗</translation>
     </message>
 </context>
 <context>
     <name>RecordingPreviewWindow</name>
-    <message>
-        <source>Recording Preview</source>
-        <translation type="vanished">錄製預覽</translation>
-    </message>
-    <message>
-        <source>Trim</source>
-        <translation type="vanished">修剪</translation>
-    </message>
-    <message>
-        <source>Loop playback within the trimmed range</source>
-        <translation type="vanished">在修剪範圍內循環播放</translation>
-    </message>
-    <message>
-        <source>Play/Pause (Space)</source>
-        <translation type="vanished">播放/暫停 (Space)</translation>
-    </message>
-    <message>
-        <source>Playback speed</source>
-        <translation type="vanished">播放速度</translation>
-    </message>
-    <message>
-        <source>Mute (M)</source>
-        <translation type="vanished">靜音 (M)</translation>
-    </message>
-    <message>
-        <source>Discard (Esc)</source>
-        <translation type="vanished">捨棄 (Esc)</translation>
-    </message>
-    <message>
-        <source>Save (Enter)</source>
-        <translation type="vanished">儲存 (Enter)</translation>
-    </message>
-    <message>
-        <source>Video Error</source>
-        <translation type="vanished">影片錯誤</translation>
-    </message>
-    <message>
-        <source>Failed to load video:
-%1</source>
-        <translation type="vanished">載入影片失敗：
-%1</translation>
-    </message>
-    <message>
-        <source>Conversion Error</source>
-        <translation type="vanished">轉換錯誤</translation>
-    </message>
-    <message>
-        <source>Cannot convert: video not loaded properly.</source>
-        <translation type="vanished">無法轉換：影片未正確載入。</translation>
-    </message>
-    <message>
-        <source>Converting video...</source>
-        <translation type="vanished">正在轉換影片…</translation>
-    </message>
-    <message>
-        <source>Cancel</source>
-        <translation type="vanished">取消</translation>
-    </message>
-    <message>
-        <source>Failed to start encoder: %1</source>
-        <translation type="vanished">啟動編碼器失敗：%1</translation>
-    </message>
-    <message>
-        <source>Trim Failed</source>
-        <translation type="vanished">修剪失敗</translation>
-    </message>
-    <message>
-        <source>Failed to trim the video. Please try again.</source>
-        <translation type="vanished">影片修剪失敗，請重試。</translation>
-    </message>
-    <message>
-        <source>Set Trim Start</source>
-        <translation type="vanished">設定修剪起點</translation>
-    </message>
-    <message>
-        <source>Set Trim End</source>
-        <translation type="vanished">設定修剪終點</translation>
-    </message>
-    <message>
-        <source>Enter time in seconds:</source>
-        <translation type="vanished">輸入時間（秒）：</translation>
-    </message>
-    <message>
-        <source>Trim Error</source>
-        <translation type="vanished">修剪錯誤</translation>
-    </message>
-    <message>
-        <source>Trimming video...</source>
-        <translation type="vanished">正在修剪影片…</translation>
-    </message>
 </context>
 <context>
     <name>RecordingRegionSelector</name>
@@ -2493,10 +2175,6 @@ GIF 錄製不支援音訊。</translation>
         <translation>未偵測到人臉或憑證</translation>
     </message>
     <message>
-        <source>No faces detected</source>
-        <translation type="vanished">未偵測到臉部</translation>
-    </message>
-    <message>
         <location filename="../src/RegionSelector.cpp" line="2819" />
         <source>Detection failed</source>
         <translation>偵測失敗</translation>
@@ -2529,598 +2207,6 @@ GIF 錄製不支援音訊。</translation>
 </context>
 <context>
     <name>SettingsDialog</name>
-    <message>
-        <source>%1 Settings</source>
-        <translation type="vanished">%1 設定</translation>
-    </message>
-    <message>
-        <source>General</source>
-        <translation type="vanished">一般</translation>
-    </message>
-    <message>
-        <source>Hotkeys</source>
-        <translation type="vanished">快捷鍵</translation>
-    </message>
-    <message>
-        <source>Advanced</source>
-        <translation type="vanished">進階</translation>
-    </message>
-    <message>
-        <source>Watermark</source>
-        <translation type="vanished">浮水印</translation>
-    </message>
-    <message>
-        <source>OCR</source>
-        <translation type="vanished">OCR</translation>
-    </message>
-    <message>
-        <source>Recording</source>
-        <translation type="vanished">錄製</translation>
-    </message>
-    <message>
-        <source>Files</source>
-        <translation type="vanished">檔案</translation>
-    </message>
-    <message>
-        <source>Updates</source>
-        <translation type="vanished">更新</translation>
-    </message>
-    <message>
-        <source>About</source>
-        <translation type="vanished">關於</translation>
-    </message>
-    <message>
-        <source>Save</source>
-        <translation type="vanished">儲存</translation>
-    </message>
-    <message>
-        <source>Cancel</source>
-        <translation type="vanished">取消</translation>
-    </message>
-    <message>
-        <source>Start on login</source>
-        <translation type="vanished">登入時啟動</translation>
-    </message>
-    <message>
-        <source>Language</source>
-        <translation type="vanished">語言</translation>
-    </message>
-    <message>
-        <source>Display language:</source>
-        <translation type="vanished">顯示語言：</translation>
-    </message>
-    <message>
-        <source>Appearance</source>
-        <translation type="vanished">外觀</translation>
-    </message>
-    <message>
-        <source>Toolbar Style:</source>
-        <translation type="vanished">工具列樣式：</translation>
-    </message>
-    <message>
-        <source>Dark</source>
-        <translation type="vanished">深色</translation>
-    </message>
-    <message>
-        <source>Light</source>
-        <translation type="vanished">淺色</translation>
-    </message>
-    <message>
-        <source>Permissions</source>
-        <translation type="vanished">權限</translation>
-    </message>
-    <message>
-        <source>Screen Recording:</source>
-        <translation type="vanished">螢幕錄製：</translation>
-    </message>
-    <message>
-        <source>Open Settings</source>
-        <translation type="vanished">開啟設定</translation>
-    </message>
-    <message>
-        <source>Accessibility:</source>
-        <translation type="vanished">輔助使用：</translation>
-    </message>
-    <message>
-        <source>Command Line Interface</source>
-        <translation type="vanished">命令列介面</translation>
-    </message>
-    <message>
-        <source>Blur</source>
-        <translation type="vanished">模糊</translation>
-    </message>
-    <message>
-        <source>Blur intensity:</source>
-        <translation type="vanished">模糊強度：</translation>
-    </message>
-    <message>
-        <source>Blur type:</source>
-        <translation type="vanished">模糊類型：</translation>
-    </message>
-    <message>
-        <source>Pixelate</source>
-        <translation type="vanished">像素化</translation>
-    </message>
-    <message>
-        <source>Gaussian</source>
-        <translation type="vanished">高斯</translation>
-    </message>
-    <message>
-        <source>Pin Window</source>
-        <translation type="vanished">釘選視窗</translation>
-    </message>
-    <message>
-        <source>Default opacity:</source>
-        <translation type="vanished">預設不透明度：</translation>
-    </message>
-    <message>
-        <source>Opacity step:</source>
-        <translation type="vanished">不透明度步進：</translation>
-    </message>
-    <message>
-        <source>Zoom step:</source>
-        <translation type="vanished">縮放步進：</translation>
-    </message>
-    <message>
-        <source>Max cache files:</source>
-        <translation type="vanished">最大快取檔案數：</translation>
-    </message>
-    <message>
-        <source>Apply to images</source>
-        <translation type="vanished">套用至圖片</translation>
-    </message>
-    <message>
-        <source>Apply to recordings</source>
-        <translation type="vanished">套用至錄製</translation>
-    </message>
-    <message>
-        <source>Image:</source>
-        <translation type="vanished">圖片：</translation>
-    </message>
-    <message>
-        <source>Select an image file...</source>
-        <translation type="vanished">選擇圖片檔案…</translation>
-    </message>
-    <message>
-        <source>Browse...</source>
-        <translation type="vanished">瀏覽…</translation>
-    </message>
-    <message>
-        <source>Select Watermark Image</source>
-        <translation type="vanished">選擇浮水印圖片</translation>
-    </message>
-    <message>
-        <source>Images (*.png *.jpg *.jpeg *.bmp *.gif *.svg);;All Files (*)</source>
-        <translation type="vanished">圖片 (*.png *.jpg *.jpeg *.bmp *.gif *.svg);;所有檔案 (*)</translation>
-    </message>
-    <message>
-        <source>Scale:</source>
-        <translation type="vanished">縮放：</translation>
-    </message>
-    <message>
-        <source>Opacity:</source>
-        <translation type="vanished">不透明度：</translation>
-    </message>
-    <message>
-        <source>Margin:</source>
-        <translation type="vanished">邊距：</translation>
-    </message>
-    <message>
-        <source>Position:</source>
-        <translation type="vanished">位置：</translation>
-    </message>
-    <message>
-        <source>Top-Left</source>
-        <translation type="vanished">左上</translation>
-    </message>
-    <message>
-        <source>Top-Right</source>
-        <translation type="vanished">右上</translation>
-    </message>
-    <message>
-        <source>Bottom-Left</source>
-        <translation type="vanished">左下</translation>
-    </message>
-    <message>
-        <source>Bottom-Right</source>
-        <translation type="vanished">右下</translation>
-    </message>
-    <message>
-        <source>No image</source>
-        <translation type="vanished">無圖片</translation>
-    </message>
-    <message>
-        <source>Invalid image</source>
-        <translation type="vanished">無效圖片</translation>
-    </message>
-    <message>
-        <source>Size: %1 × %2 px</source>
-        <translation type="vanished">尺寸：%1 × %2 像素</translation>
-    </message>
-    <message>
-        <source>Frame Rate:</source>
-        <translation type="vanished">影格率：</translation>
-    </message>
-    <message>
-        <source>Capture</source>
-        <translation type="vanished">擷取</translation>
-    </message>
-    <message>
-        <source>Show shortcut hints when entering region capture</source>
-        <translation type="vanished">進入區域擷取時顯示快捷鍵提示</translation>
-    </message>
-    <message>
-        <source>MCP</source>
-        <translation type="vanished">MCP</translation>
-    </message>
-    <message>
-        <source>Enable MCP server</source>
-        <translation type="vanished">啟用 MCP 伺服器</translation>
-    </message>
-    <message>
-        <source>10 FPS</source>
-        <translation type="vanished">10 幀/秒</translation>
-    </message>
-    <message>
-        <source>15 FPS</source>
-        <translation type="vanished">15 幀/秒</translation>
-    </message>
-    <message>
-        <source>24 FPS</source>
-        <translation type="vanished">24 幀/秒</translation>
-    </message>
-    <message>
-        <source>30 FPS</source>
-        <translation type="vanished">30 幀/秒</translation>
-    </message>
-    <message>
-        <source>Output Format:</source>
-        <translation type="vanished">輸出格式：</translation>
-    </message>
-    <message>
-        <source>MP4 (H.264)</source>
-        <translation type="vanished">MP4 (H.264)</translation>
-    </message>
-    <message>
-        <source>GIF</source>
-        <translation type="vanished">GIF</translation>
-    </message>
-    <message>
-        <source>WebP</source>
-        <translation type="vanished">WebP</translation>
-    </message>
-    <message>
-        <source>Quality:</source>
-        <translation type="vanished">品質：</translation>
-    </message>
-    <message>
-        <source>GIF format creates larger files than MP4.
-Best for short clips and sharing on web.
-Audio is not supported for GIF recordings.</source>
-        <translation type="vanished">GIF 格式產生的檔案比 MP4 更大。
-適合短片與網頁分享。
-GIF 錄製不支援音訊。</translation>
-    </message>
-    <message>
-        <source>Audio</source>
-        <translation type="vanished">音訊</translation>
-    </message>
-    <message>
-        <source>Record audio</source>
-        <translation type="vanished">錄製音訊</translation>
-    </message>
-    <message>
-        <source>Source:</source>
-        <translation type="vanished">來源：</translation>
-    </message>
-    <message>
-        <source>Microphone</source>
-        <translation type="vanished">麥克風</translation>
-    </message>
-    <message>
-        <source>System Audio</source>
-        <translation type="vanished">系統音訊</translation>
-    </message>
-    <message>
-        <source>Both (Mixed)</source>
-        <translation type="vanished">兩者（混合）</translation>
-    </message>
-    <message>
-        <source>Device:</source>
-        <translation type="vanished">裝置：</translation>
-    </message>
-    <message>
-        <source>Default</source>
-        <translation type="vanished">預設</translation>
-    </message>
-    <message>
-        <source>Show preview after recording</source>
-        <translation type="vanished">錄製後顯示預覽</translation>
-    </message>
-    <message>
-        <source>Countdown</source>
-        <translation type="vanished">倒數計時</translation>
-    </message>
-    <message>
-        <source>Show countdown before recording</source>
-        <translation type="vanished">錄製前顯示倒數計時</translation>
-    </message>
-    <message>
-        <source>Display a 3-2-1 countdown before recording starts</source>
-        <translation type="vanished">錄製開始前顯示 3-2-1 倒數計時</translation>
-    </message>
-    <message>
-        <source>Countdown duration:</source>
-        <translation type="vanished">倒數計時時長：</translation>
-    </message>
-    <message>
-        <source>1 second</source>
-        <translation type="vanished">1 秒</translation>
-    </message>
-    <message>
-        <source>2 seconds</source>
-        <translation type="vanished">2 秒</translation>
-    </message>
-    <message>
-        <source>3 seconds</source>
-        <translation type="vanished">3 秒</translation>
-    </message>
-    <message>
-        <source>4 seconds</source>
-        <translation type="vanished">4 秒</translation>
-    </message>
-    <message>
-        <source>5 seconds</source>
-        <translation type="vanished">5 秒</translation>
-    </message>
-    <message>
-        <source>WebP format creates smaller files than GIF with better quality.
-Best for short clips and sharing on web.
-Audio is not supported for WebP recordings.</source>
-        <translation type="vanished">WebP 格式可在更好畫質下產生比 GIF 更小的檔案。
-適合短片與網頁分享。
-WebP 錄製不支援音訊。</translation>
-    </message>
-    <message>
-        <source>Restart Required</source>
-        <translation type="vanished">需要重新啟動</translation>
-    </message>
-    <message>
-        <source>The language change will take effect after restarting the application.</source>
-        <translation type="vanished">語言變更將在重新啟動應用程式後生效。</translation>
-    </message>
-    <message>
-        <source>Loading available languages...</source>
-        <translation type="vanished">正在載入可用語言…</translation>
-    </message>
-    <message>
-        <source>Available Languages</source>
-        <translation type="vanished">可用語言</translation>
-    </message>
-    <message>
-        <source>Add selected languages</source>
-        <translation type="vanished">新增所選語言</translation>
-    </message>
-    <message>
-        <source>Remove selected languages</source>
-        <translation type="vanished">移除所選語言</translation>
-    </message>
-    <message>
-        <source>Selected Languages</source>
-        <translation type="vanished">已選語言</translation>
-    </message>
-    <message>
-        <source>English is always included and cannot be removed</source>
-        <translation type="vanished">英文始終包含在內，無法移除</translation>
-    </message>
-    <message>
-        <source>After OCR Recognition</source>
-        <translation type="vanished">OCR 辨識後</translation>
-    </message>
-    <message>
-        <source>Copy text directly to clipboard</source>
-        <translation type="vanished">直接複製文字到剪貼簿</translation>
-    </message>
-    <message>
-        <source>Show editor to review and edit text</source>
-        <translation type="vanished">顯示編輯器以檢視和編輯文字</translation>
-    </message>
-    <message>
-        <source>Recognized text is immediately copied to clipboard</source>
-        <translation type="vanished">辨識的文字會立即複製到剪貼簿</translation>
-    </message>
-    <message>
-        <source>Opens a dialog where you can review and edit the text before copying</source>
-        <translation type="vanished">開啟對話方塊，您可以在複製前檢視和編輯文字</translation>
-    </message>
-    <message>
-        <source>No OCR languages available.
-
-macOS: OCR requires macOS 10.15 or later.
-Windows: Install language packs in Settings &gt; Time &amp; Language &gt; Language.</source>
-        <translation type="vanished">沒有可用的 OCR 語言。
-
-macOS：OCR 需要 macOS 10.15 或以上版本。
-Windows：請在「設定 &gt; 時間與語言 &gt; 語言」安裝語言套件。</translation>
-    </message>
-    <message>
-        <source>Save Locations</source>
-        <translation type="vanished">儲存位置</translation>
-    </message>
-    <message>
-        <source>Screenshots:</source>
-        <translation type="vanished">螢幕截圖：</translation>
-    </message>
-    <message>
-        <source>Select Screenshot Folder</source>
-        <translation type="vanished">選擇螢幕截圖資料夾</translation>
-    </message>
-    <message>
-        <source>Recordings:</source>
-        <translation type="vanished">錄製：</translation>
-    </message>
-    <message>
-        <source>Select Recording Folder</source>
-        <translation type="vanished">選擇錄製資料夾</translation>
-    </message>
-    <message>
-        <source>Filename Format</source>
-        <translation type="vanished">檔案名稱格式</translation>
-    </message>
-    <message>
-        <source>Template:</source>
-        <translation type="vanished">範本：</translation>
-    </message>
-    <message>
-        <source>Tokens: {prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}
-Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
-        <translation type="vanished">可用代碼：{prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}
-日期代碼：{yyyyMMdd_HHmmss}、{yyyy-MM-dd_HH-mm-ss} 或 {date}</translation>
-    </message>
-    <message>
-        <source>Save Behavior</source>
-        <translation type="vanished">儲存行為</translation>
-    </message>
-    <message>
-        <source>Auto-save screenshots (save directly without dialog)</source>
-        <translation type="vanished">自動儲存螢幕截圖（無需對話方塊直接儲存）</translation>
-    </message>
-    <message>
-        <source>Auto-save recordings (save directly without dialog)</source>
-        <translation type="vanished">自動儲存錄製（無需對話方塊直接儲存）</translation>
-    </message>
-    <message>
-        <source>Preview: %1</source>
-        <translation type="vanished">預覽：%1</translation>
-    </message>
-    <message>
-        <source>
-Invalid template, fallback applied: %1</source>
-        <translation type="vanished">
-無效範本，已套用備用方案：%1</translation>
-    </message>
-    <message>
-        <source>Version Information</source>
-        <translation type="vanished">版本資訊</translation>
-    </message>
-    <message>
-        <source>Current Version</source>
-        <translation type="vanished">目前版本</translation>
-    </message>
-    <message>
-        <source>Automatic Updates</source>
-        <translation type="vanished">自動更新</translation>
-    </message>
-    <message>
-        <source>Check for updates automatically</source>
-        <translation type="vanished">自動檢查更新</translation>
-    </message>
-    <message>
-        <source>Check frequency</source>
-        <translation type="vanished">檢查頻率</translation>
-    </message>
-    <message>
-        <source>Every day</source>
-        <translation type="vanished">每天</translation>
-    </message>
-    <message>
-        <source>Every 3 days</source>
-        <translation type="vanished">每 3 天</translation>
-    </message>
-    <message>
-        <source>Every week</source>
-        <translation type="vanished">每週</translation>
-    </message>
-    <message>
-        <source>Every 2 weeks</source>
-        <translation type="vanished">每兩週</translation>
-    </message>
-    <message>
-        <source>Every month</source>
-        <translation type="vanished">每月</translation>
-    </message>
-    <message>
-        <source>Last checked: %1</source>
-        <translation type="vanished">上次檢查：%1</translation>
-    </message>
-    <message>
-        <source>Last checked: Never</source>
-        <translation type="vanished">上次檢查：從未</translation>
-    </message>
-    <message>
-        <source>Check Now</source>
-        <translation type="vanished">立即檢查</translation>
-    </message>
-    <message>
-        <source>Checking...</source>
-        <translation type="vanished">檢查中…</translation>
-    </message>
-    <message>
-        <source>Version %1</source>
-        <translation type="vanished">版本 %1</translation>
-    </message>
-    <message>
-        <source>Copyright 2024-2025 Victor Fu</source>
-        <translation type="vanished">版權所有 2024-2025 Victor Fu</translation>
-    </message>
-    <message>
-        <source>Author: Victor Fu</source>
-        <translation type="vanished">作者：Victor Fu</translation>
-    </message>
-    <message>
-        <source>'snaptray' command is available in terminal</source>
-        <translation type="vanished">「snaptray」指令已在終端機中可用</translation>
-    </message>
-    <message>
-        <source>Uninstall CLI</source>
-        <translation type="vanished">解除安裝 CLI</translation>
-    </message>
-    <message>
-        <source>'snaptray' command is not installed</source>
-        <translation type="vanished">「snaptray」指令未安裝</translation>
-    </message>
-    <message>
-        <source>Install CLI</source>
-        <translation type="vanished">安裝 CLI</translation>
-    </message>
-    <message>
-        <source>Granted</source>
-        <translation type="vanished">已授權</translation>
-    </message>
-    <message>
-        <source>Not Granted</source>
-        <translation type="vanished">未授權</translation>
-    </message>
-    <message>
-        <source>GIF format creates larger files than MP4.\nBest for short clips and sharing on web.\nAudio is not supported for GIF recordings.</source>
-        <translation type="vanished">GIF 格式產生的檔案比 MP4 更大。\n適合短片段和網路分享。\nGIF 錄製不支援音訊。</translation>
-    </message>
-    <message>
-        <source>WebP format creates smaller files than GIF with better quality.\nBest for short clips and sharing on web.\nAudio is not supported for WebP recordings.</source>
-        <translation type="vanished">WebP 格式產生的檔案比 GIF 更小且品質更好。\n適合短片段和網路分享。\nWebP 錄製不支援音訊。</translation>
-    </message>
-    <message>
-        <source>Microphone access denied. Please enable in System Settings &gt; Privacy &amp; Security &gt; Microphone.</source>
-        <translation type="vanished">麥克風存取被拒絕。請在系統設定 &gt; 隱私權與安全性 &gt; 麥克風中啟用。</translation>
-    </message>
-    <message>
-        <source>System audio capture requires macOS 13 (Ventura) or later, or a virtual audio device like BlackHole.</source>
-        <translation type="vanished">系統音訊擷取需要 macOS 13 (Ventura) 或更新版本，或 BlackHole 等虛擬音訊裝置。</translation>
-    </message>
-    <message>
-        <source>Select and order the languages for OCR recognition.
-English is always included and cannot be removed. Drag to reorder selected languages.</source>
-        <translation type="vanished">選擇並排列 OCR 辨識語言。
-英文始終包含在內，無法移除。拖曳以重新排列所選語言。</translation>
-    </message>
-    <message>
-        <source>No OCR languages available.\n\nmacOS: OCR requires macOS 10.15 or later.\nWindows: Install language packs in Settings &gt; Time &amp; Language &gt; Language.</source>
-        <translation type="vanished">沒有可用的 OCR 語言。\n\nmacOS：OCR 需要 macOS 10.15 或更新版本。\nWindows：在設定 &gt; 時間與語言 &gt; 語言中安裝語言套件。</translation>
-    </message>
-    <message>
-        <source>Tokens: {prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}\nDate tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
-        <translation type="vanished">標記：{prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}\n日期標記：{yyyyMMdd_HHmmss}、{yyyy-MM-dd_HH-mm-ss} 或 {date}</translation>
-    </message>
 </context>
 <context>
     <name>SettingsPathPicker</name>
@@ -3509,10 +2595,6 @@ It may be in use by another application.</source>
 它可能正被其他應用程式使用。</translation>
     </message>
     <message>
-        <source>Are you sure you want to clear the hotkey for '%1'?\nThis hotkey is required for normal operation.</source>
-        <translation type="vanished">確定要清除「%1」的快捷鍵嗎？\n此快捷鍵為正常操作所必需。</translation>
-    </message>
-    <message>
         <location filename="../src/widgets/HotkeySettingsTab.cpp" line="385" />
         <source>Are you sure you want to reset all hotkeys to their default values?</source>
         <translation>確定要將所有快捷鍵恢復為預設值嗎？</translation>
@@ -3528,17 +2610,9 @@ It may be in use by another application.</source>
         <translation>快捷鍵衝突</translation>
     </message>
     <message>
-        <source>The hotkey '%1' is already assigned to '%2'.\nPlease choose a different hotkey.</source>
-        <translation type="vanished">快捷鍵「%1」已指派給「%2」。\n請選擇其他快捷鍵。</translation>
-    </message>
-    <message>
         <location filename="../src/widgets/HotkeySettingsTab.cpp" line="465" />
         <source>Registration Failed</source>
         <translation>註冊失敗</translation>
-    </message>
-    <message>
-        <source>Failed to register the hotkey '%1'.\nIt may be in use by another application.</source>
-        <translation type="vanished">註冊快捷鍵「%1」失敗。\n該快捷鍵可能已被其他應用程式佔用。</translation>
     </message>
 </context>
 <context>
@@ -4059,7 +3133,7 @@ It may be in use by another application.</source>
     <message>
         <location filename="../src/qml/main.qml" line="10" />
         <source>SnapTray QML</source>
-        <translation type="unfinished" />
+        <translation>SnapTray QML</translation>
     </message>
 </context>
 <context>

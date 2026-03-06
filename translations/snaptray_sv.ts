@@ -211,34 +211,6 @@
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>
-    <message>
-        <source>Cancel capture</source>
-        <translation type="vanished">Avbryt skärmdump</translation>
-    </message>
-    <message>
-        <source>Confirm selection (after selection)</source>
-        <translation type="vanished">Bekräfta markering (efter markering)</translation>
-    </message>
-    <message>
-        <source>Toggle multi-region mode</source>
-        <translation type="vanished">Växla flervalsläge</translation>
-    </message>
-    <message>
-        <source>Switch RGB/HEX (when magnifier visible)</source>
-        <translation type="vanished">Växla RGB/HEX (när förstoringsglaset visas)</translation>
-    </message>
-    <message>
-        <source>Copy color value (before selection)</source>
-        <translation type="vanished">Kopiera färgvärde (före markering)</translation>
-    </message>
-    <message>
-        <source>Move selection by 1 pixel (after selection)</source>
-        <translation type="vanished">Flytta markering 1 pixel (efter markering)</translation>
-    </message>
-    <message>
-        <source>Resize selection by 1 pixel (after selection)</source>
-        <translation type="vanished">Ändra storlek på markering 1 pixel (efter markering)</translation>
-    </message>
 </context>
 <context>
     <name>ClickThroughExitButton</name>
@@ -305,18 +277,6 @@ Datumtoken: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} eller {date}</translation>
 </context>
 <context>
     <name>FormatSelectionWidget</name>
-    <message>
-        <source>Best quality, widely compatible</source>
-        <translation type="vanished">Bästa kvalitet, bred kompatibilitet</translation>
-    </message>
-    <message>
-        <source>Universal support, larger file size</source>
-        <translation type="vanished">Universellt stöd, större filstorlek</translation>
-    </message>
-    <message>
-        <source>Small file size, modern browsers only</source>
-        <translation type="vanished">Liten filstorlek, endast moderna webbläsare</translation>
-    </message>
 </context>
 <context>
     <name>GeneralSettings</name>
@@ -418,66 +378,6 @@ Datumtoken: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} eller {date}</translation>
 </context>
 <context>
     <name>HotkeyManager</name>
-    <message>
-        <source>Conflicts with: %1</source>
-        <translation type="vanished">Konflikt med: %1</translation>
-    </message>
-    <message>
-        <source>Region Capture</source>
-        <translation type="vanished">Regionfångst</translation>
-    </message>
-    <message>
-        <source>Capture a selected region of the screen</source>
-        <translation type="vanished">Fånga ett valt område av skärmen</translation>
-    </message>
-    <message>
-        <source>Screen Canvas</source>
-        <translation type="vanished">Skärmrityta</translation>
-    </message>
-    <message>
-        <source>Annotate directly on the screen</source>
-        <translation type="vanished">Anteckna direkt på skärmen</translation>
-    </message>
-    <message>
-        <source>Paste</source>
-        <translation type="vanished">Klistra in</translation>
-    </message>
-    <message>
-        <source>Pin content from clipboard</source>
-        <translation type="vanished">Fäst innehåll från urklipp</translation>
-    </message>
-    <message>
-        <source>Quick Pin</source>
-        <translation type="vanished">Snabbfäst</translation>
-    </message>
-    <message>
-        <source>Select and pin a region directly</source>
-        <translation type="vanished">Välj och fäst en region direkt</translation>
-    </message>
-    <message>
-        <source>Pin from Image</source>
-        <translation type="vanished">Fäst från bild</translation>
-    </message>
-    <message>
-        <source>Pin an image from file</source>
-        <translation type="vanished">Fäst en bild från fil</translation>
-    </message>
-    <message>
-        <source>Pin History</source>
-        <translation type="vanished">Fästhistorik</translation>
-    </message>
-    <message>
-        <source>Open pin history window</source>
-        <translation type="vanished">Öppna fönster för fästhistorik</translation>
-    </message>
-    <message>
-        <source>Record Full Screen</source>
-        <translation type="vanished">Spela in helskärm</translation>
-    </message>
-    <message>
-        <source>Start full screen recording</source>
-        <translation type="vanished">Starta helskärmsinspelning</translation>
-    </message>
 </context>
 <context>
     <name>HotkeySettings</name>
@@ -1006,10 +906,6 @@ Storlek: %2</translation>
         <location filename="../src/PinWindow.cpp" line="913" />
         <source>Beautify</source>
         <translation>Försköna</translation>
-    </message>
-    <message>
-        <source>Recognize Text</source>
-        <translation type="vanished">Identifiera text</translation>
     </message>
     <message>
         <location filename="../src/PinWindow.cpp" line="917" />
@@ -1639,16 +1535,8 @@ Storlek: %2</translation>
 <context>
     <name>RecordingControlBar</name>
     <message>
-        <source>Audio recording enabled</source>
-        <translation type="vanished">Ljudinspelning aktiverad</translation>
-    </message>
-    <message>
         <source>-- fps</source>
         <translation>-- fps</translation>
-    </message>
-    <message>
-        <source>Annotate</source>
-        <translation type="vanished">Anteckna</translation>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingControlBar.qml" line="254" />
@@ -1674,50 +1562,6 @@ Storlek: %2</translation>
     <message>
         <source>Cancel Recording (Esc)</source>
         <translation>Avbryt inspelning (Esc)</translation>
-    </message>
-    <message>
-        <source>Pause (Space)</source>
-        <translation type="vanished">Pausa (Blanksteg)</translation>
-    </message>
-    <message>
-        <source>Play (Space)</source>
-        <translation type="vanished">Spela (Blanksteg)</translation>
-    </message>
-    <message>
-        <source>Unmute (M)</source>
-        <translation type="vanished">Slå på ljud (M)</translation>
-    </message>
-    <message>
-        <source>Mute (M)</source>
-        <translation type="vanished">Tysta (M)</translation>
-    </message>
-    <message>
-        <source>MP4 - Best quality</source>
-        <translation type="vanished">MP4 - Bästa kvalitet</translation>
-    </message>
-    <message>
-        <source>GIF - Universal support</source>
-        <translation type="vanished">GIF - Universellt stöd</translation>
-    </message>
-    <message>
-        <source>WebP - Small size</source>
-        <translation type="vanished">WebP - Liten storlek</translation>
-    </message>
-    <message>
-        <source>Annotate Video</source>
-        <translation type="vanished">Anteckna på video</translation>
-    </message>
-    <message>
-        <source>Save (Enter)</source>
-        <translation type="vanished">Spara (Enter)</translation>
-    </message>
-    <message>
-        <source>Discard (Esc)</source>
-        <translation type="vanished">Kasta (Esc)</translation>
-    </message>
-    <message>
-        <source>Drag to seek</source>
-        <translation type="vanished">Dra för att söka</translation>
     </message>
 </context>
 <context>
@@ -1899,151 +1743,61 @@ Storlek: %2</translation>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="71" />
         <source>Recording Preview</source>
-        <translation type="unfinished">Förhandsgranskning av inspelning</translation>
+        <translation>Förhandsgranskning av inspelning</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="356" />
         <source>Converting video...</source>
-        <translation type="unfinished">Konverterar video...</translation>
+        <translation>Konverterar video...</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="365" />
         <source>Failed to create video player for conversion</source>
-        <translation type="unfinished" />
+        <translation>Det gick inte att skapa videospelaren för konvertering</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="366" />
         <source>Failed to load video for conversion</source>
-        <translation type="unfinished" />
+        <translation>Det gick inte att läsa in videon för konvertering</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="367" />
         <source>Video not loaded properly for conversion</source>
-        <translation type="unfinished" />
+        <translation>Videon lästes inte in korrekt för konvertering</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="368" />
         <source>Failed to start encoder</source>
-        <translation type="unfinished" />
+        <translation>Det gick inte att starta kodaren</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="369" />
         <source>Conversion failed: output file is missing or empty</source>
-        <translation type="unfinished" />
+        <translation>Konverteringen misslyckades: utdatafilen saknas eller är tom</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="596" />
         <source>Trimming video...</source>
-        <translation type="unfinished">Trimmar video...</translation>
+        <translation>Trimmar video...</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="615" />
         <source>Trim failed: %1</source>
-        <translation type="unfinished" />
+        <translation>Trimningen misslyckades: %1</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="650" />
         <source>Trim failed: output file is missing or empty</source>
-        <translation type="unfinished" />
+        <translation>Trimningen misslyckades: utdatafilen saknas eller är tom</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="657" />
         <source>Trim failed</source>
-        <translation type="unfinished" />
+        <translation>Trimningen misslyckades</translation>
     </message>
 </context>
 <context>
     <name>RecordingPreviewWindow</name>
-    <message>
-        <source>Recording Preview</source>
-        <translation type="vanished">Förhandsgranskning av inspelning</translation>
-    </message>
-    <message>
-        <source>Trim</source>
-        <translation type="vanished">Trimma</translation>
-    </message>
-    <message>
-        <source>Loop playback within the trimmed range</source>
-        <translation type="vanished">Loopa uppspelning inom det trimmade intervallet</translation>
-    </message>
-    <message>
-        <source>Play/Pause (Space)</source>
-        <translation type="vanished">Spela/Pausa (Blanksteg)</translation>
-    </message>
-    <message>
-        <source>Playback speed</source>
-        <translation type="vanished">Uppspelningshastighet</translation>
-    </message>
-    <message>
-        <source>Mute (M)</source>
-        <translation type="vanished">Tysta (M)</translation>
-    </message>
-    <message>
-        <source>Discard (Esc)</source>
-        <translation type="vanished">Kasta (Esc)</translation>
-    </message>
-    <message>
-        <source>Save (Enter)</source>
-        <translation type="vanished">Spara (Enter)</translation>
-    </message>
-    <message>
-        <source>Video Error</source>
-        <translation type="vanished">Videofel</translation>
-    </message>
-    <message>
-        <source>Failed to load video:
-%1</source>
-        <translation type="vanished">Misslyckades att ladda video:
-%1</translation>
-    </message>
-    <message>
-        <source>Conversion Error</source>
-        <translation type="vanished">Konverteringsfel</translation>
-    </message>
-    <message>
-        <source>Cannot convert: video not loaded properly.</source>
-        <translation type="vanished">Kan inte konvertera: videon laddades inte korrekt.</translation>
-    </message>
-    <message>
-        <source>Converting video...</source>
-        <translation type="vanished">Konverterar video...</translation>
-    </message>
-    <message>
-        <source>Cancel</source>
-        <translation type="vanished">Avbryt</translation>
-    </message>
-    <message>
-        <source>Failed to start encoder: %1</source>
-        <translation type="vanished">Misslyckades att starta kodaren: %1</translation>
-    </message>
-    <message>
-        <source>Trim Failed</source>
-        <translation type="vanished">Trimning misslyckades</translation>
-    </message>
-    <message>
-        <source>Failed to trim the video. Please try again.</source>
-        <translation type="vanished">Misslyckades att trimma videon. Försök igen.</translation>
-    </message>
-    <message>
-        <source>Set Trim Start</source>
-        <translation type="vanished">Ställ in trimningsstart</translation>
-    </message>
-    <message>
-        <source>Set Trim End</source>
-        <translation type="vanished">Ställ in trimningsslut</translation>
-    </message>
-    <message>
-        <source>Enter time in seconds:</source>
-        <translation type="vanished">Ange tid i sekunder:</translation>
-    </message>
-    <message>
-        <source>Trim Error</source>
-        <translation type="vanished">Trimningsfel</translation>
-    </message>
-    <message>
-        <source>Trimming video...</source>
-        <translation type="vanished">Trimmar video...</translation>
-    </message>
 </context>
 <context>
     <name>RecordingRegionSelector</name>
@@ -2415,10 +2169,6 @@ Ljud stöds inte för GIF-inspelningar.</translation>
         <translation>Inga ansikten eller inloggningsuppgifter upptäcktes</translation>
     </message>
     <message>
-        <source>No faces detected</source>
-        <translation type="vanished">Inga ansikten hittades</translation>
-    </message>
-    <message>
         <location filename="../src/RegionSelector.cpp" line="2819" />
         <source>Detection failed</source>
         <translation>Identifiering misslyckades</translation>
@@ -2451,582 +2201,6 @@ Ljud stöds inte för GIF-inspelningar.</translation>
 </context>
 <context>
     <name>SettingsDialog</name>
-    <message>
-        <source>%1 Settings</source>
-        <translation type="vanished">%1-inställningar</translation>
-    </message>
-    <message>
-        <source>General</source>
-        <translation type="vanished">Allmänt</translation>
-    </message>
-    <message>
-        <source>Hotkeys</source>
-        <translation type="vanished">Snabbtangenter</translation>
-    </message>
-    <message>
-        <source>Advanced</source>
-        <translation type="vanished">Avancerat</translation>
-    </message>
-    <message>
-        <source>Watermark</source>
-        <translation type="vanished">Vattenstämpel</translation>
-    </message>
-    <message>
-        <source>OCR</source>
-        <translation type="vanished">OCR</translation>
-    </message>
-    <message>
-        <source>Recording</source>
-        <translation type="vanished">Inspelning</translation>
-    </message>
-    <message>
-        <source>Files</source>
-        <translation type="vanished">Filer</translation>
-    </message>
-    <message>
-        <source>Updates</source>
-        <translation type="vanished">Uppdateringar</translation>
-    </message>
-    <message>
-        <source>About</source>
-        <translation type="vanished">Om</translation>
-    </message>
-    <message>
-        <source>Save</source>
-        <translation type="vanished">Spara</translation>
-    </message>
-    <message>
-        <source>Cancel</source>
-        <translation type="vanished">Avbryt</translation>
-    </message>
-    <message>
-        <source>Start on login</source>
-        <translation type="vanished">Starta vid inloggning</translation>
-    </message>
-    <message>
-        <source>Language</source>
-        <translation type="vanished">Språk</translation>
-    </message>
-    <message>
-        <source>Display language:</source>
-        <translation type="vanished">Visningsspråk:</translation>
-    </message>
-    <message>
-        <source>Appearance</source>
-        <translation type="vanished">Utseende</translation>
-    </message>
-    <message>
-        <source>Toolbar Style:</source>
-        <translation type="vanished">Verktygsfältsstil:</translation>
-    </message>
-    <message>
-        <source>Dark</source>
-        <translation type="vanished">Mörkt</translation>
-    </message>
-    <message>
-        <source>Light</source>
-        <translation type="vanished">Ljust</translation>
-    </message>
-    <message>
-        <source>Permissions</source>
-        <translation type="vanished">Behörigheter</translation>
-    </message>
-    <message>
-        <source>Screen Recording:</source>
-        <translation type="vanished">Skärminspelning:</translation>
-    </message>
-    <message>
-        <source>Open Settings</source>
-        <translation type="vanished">Öppna inställningar</translation>
-    </message>
-    <message>
-        <source>Accessibility:</source>
-        <translation type="vanished">Tillgänglighet:</translation>
-    </message>
-    <message>
-        <source>Command Line Interface</source>
-        <translation type="vanished">Kommandoradsgränssnitt</translation>
-    </message>
-    <message>
-        <source>Blur</source>
-        <translation type="vanished">Oskärpa</translation>
-    </message>
-    <message>
-        <source>Blur intensity:</source>
-        <translation type="vanished">Oskärpeintensitet:</translation>
-    </message>
-    <message>
-        <source>Blur type:</source>
-        <translation type="vanished">Oskärpetyp:</translation>
-    </message>
-    <message>
-        <source>Pixelate</source>
-        <translation type="vanished">Pixelera</translation>
-    </message>
-    <message>
-        <source>Gaussian</source>
-        <translation type="vanished">Gaussisk</translation>
-    </message>
-    <message>
-        <source>Pin Window</source>
-        <translation type="vanished">Fäst fönster</translation>
-    </message>
-    <message>
-        <source>Default opacity:</source>
-        <translation type="vanished">Standardopacitet:</translation>
-    </message>
-    <message>
-        <source>Opacity step:</source>
-        <translation type="vanished">Opacitetssteg:</translation>
-    </message>
-    <message>
-        <source>Zoom step:</source>
-        <translation type="vanished">Zoomsteg:</translation>
-    </message>
-    <message>
-        <source>Max cache files:</source>
-        <translation type="vanished">Max cachefiler:</translation>
-    </message>
-    <message>
-        <source>Apply to images</source>
-        <translation type="vanished">Tillämpa på bilder</translation>
-    </message>
-    <message>
-        <source>Apply to recordings</source>
-        <translation type="vanished">Tillämpa på inspelningar</translation>
-    </message>
-    <message>
-        <source>Image:</source>
-        <translation type="vanished">Bild:</translation>
-    </message>
-    <message>
-        <source>Select an image file...</source>
-        <translation type="vanished">Välj en bildfil...</translation>
-    </message>
-    <message>
-        <source>Browse...</source>
-        <translation type="vanished">Bläddra...</translation>
-    </message>
-    <message>
-        <source>Select Watermark Image</source>
-        <translation type="vanished">Välj vattenstämpelbild</translation>
-    </message>
-    <message>
-        <source>Images (*.png *.jpg *.jpeg *.bmp *.gif *.svg);;All Files (*)</source>
-        <translation type="vanished">Bilder (*.png *.jpg *.jpeg *.bmp *.gif *.svg);;Alla filer (*)</translation>
-    </message>
-    <message>
-        <source>Scale:</source>
-        <translation type="vanished">Skala:</translation>
-    </message>
-    <message>
-        <source>Opacity:</source>
-        <translation type="vanished">Opacitet:</translation>
-    </message>
-    <message>
-        <source>Margin:</source>
-        <translation type="vanished">Marginal:</translation>
-    </message>
-    <message>
-        <source>Position:</source>
-        <translation type="vanished">Placering:</translation>
-    </message>
-    <message>
-        <source>Top-Left</source>
-        <translation type="vanished">Uppe till vänster</translation>
-    </message>
-    <message>
-        <source>Top-Right</source>
-        <translation type="vanished">Uppe till höger</translation>
-    </message>
-    <message>
-        <source>Bottom-Left</source>
-        <translation type="vanished">Nere till vänster</translation>
-    </message>
-    <message>
-        <source>Bottom-Right</source>
-        <translation type="vanished">Nere till höger</translation>
-    </message>
-    <message>
-        <source>No image</source>
-        <translation type="vanished">Ingen bild</translation>
-    </message>
-    <message>
-        <source>Invalid image</source>
-        <translation type="vanished">Ogiltig bild</translation>
-    </message>
-    <message>
-        <source>Size: %1 × %2 px</source>
-        <translation type="vanished">Storlek: %1 × %2 px</translation>
-    </message>
-    <message>
-        <source>Frame Rate:</source>
-        <translation type="vanished">Bildfrekvens:</translation>
-    </message>
-    <message>
-        <source>Capture</source>
-        <translation type="vanished">Fångst</translation>
-    </message>
-    <message>
-        <source>Show shortcut hints when entering region capture</source>
-        <translation type="vanished">Visa genvägstips när du går in i områdesfångst</translation>
-    </message>
-    <message>
-        <source>MCP</source>
-        <translation type="vanished">MCP</translation>
-    </message>
-    <message>
-        <source>Enable MCP server</source>
-        <translation type="vanished">Aktivera MCP-server</translation>
-    </message>
-    <message>
-        <source>10 FPS</source>
-        <translation type="vanished">10 FPS</translation>
-    </message>
-    <message>
-        <source>15 FPS</source>
-        <translation type="vanished">15 FPS</translation>
-    </message>
-    <message>
-        <source>24 FPS</source>
-        <translation type="vanished">24 FPS</translation>
-    </message>
-    <message>
-        <source>30 FPS</source>
-        <translation type="vanished">30 FPS</translation>
-    </message>
-    <message>
-        <source>Output Format:</source>
-        <translation type="vanished">Utdataformat:</translation>
-    </message>
-    <message>
-        <source>MP4 (H.264)</source>
-        <translation type="vanished">MP4 (H.264)</translation>
-    </message>
-    <message>
-        <source>GIF</source>
-        <translation type="vanished">GIF</translation>
-    </message>
-    <message>
-        <source>WebP</source>
-        <translation type="vanished">WebP</translation>
-    </message>
-    <message>
-        <source>Quality:</source>
-        <translation type="vanished">Kvalitet:</translation>
-    </message>
-    <message>
-        <source>GIF format creates larger files than MP4.
-Best for short clips and sharing on web.
-Audio is not supported for GIF recordings.</source>
-        <translation type="vanished">GIF-format skapar större filer än MP4.
-Bäst för korta klipp och delning på webben.
-Ljud stöds inte för GIF-inspelningar.</translation>
-    </message>
-    <message>
-        <source>Audio</source>
-        <translation type="vanished">Ljud</translation>
-    </message>
-    <message>
-        <source>Record audio</source>
-        <translation type="vanished">Spela in ljud</translation>
-    </message>
-    <message>
-        <source>Source:</source>
-        <translation type="vanished">Källa:</translation>
-    </message>
-    <message>
-        <source>Microphone</source>
-        <translation type="vanished">Mikrofon</translation>
-    </message>
-    <message>
-        <source>System Audio</source>
-        <translation type="vanished">Systemljud</translation>
-    </message>
-    <message>
-        <source>Both (Mixed)</source>
-        <translation type="vanished">Båda (Mixat)</translation>
-    </message>
-    <message>
-        <source>Device:</source>
-        <translation type="vanished">Enhet:</translation>
-    </message>
-    <message>
-        <source>Default</source>
-        <translation type="vanished">Standard</translation>
-    </message>
-    <message>
-        <source>Show preview after recording</source>
-        <translation type="vanished">Visa förhandsgranskning efter inspelning</translation>
-    </message>
-    <message>
-        <source>Countdown</source>
-        <translation type="vanished">Nedräkning</translation>
-    </message>
-    <message>
-        <source>Show countdown before recording</source>
-        <translation type="vanished">Visa nedräkning före inspelning</translation>
-    </message>
-    <message>
-        <source>Display a 3-2-1 countdown before recording starts</source>
-        <translation type="vanished">Visa en 3-2-1-nedräkning innan inspelningen startar</translation>
-    </message>
-    <message>
-        <source>Countdown duration:</source>
-        <translation type="vanished">Nedräkningens längd:</translation>
-    </message>
-    <message>
-        <source>1 second</source>
-        <translation type="vanished">1 sekund</translation>
-    </message>
-    <message>
-        <source>2 seconds</source>
-        <translation type="vanished">2 sekunder</translation>
-    </message>
-    <message>
-        <source>3 seconds</source>
-        <translation type="vanished">3 sekunder</translation>
-    </message>
-    <message>
-        <source>4 seconds</source>
-        <translation type="vanished">4 sekunder</translation>
-    </message>
-    <message>
-        <source>5 seconds</source>
-        <translation type="vanished">5 sekunder</translation>
-    </message>
-    <message>
-        <source>WebP format creates smaller files than GIF with better quality.
-Best for short clips and sharing on web.
-Audio is not supported for WebP recordings.</source>
-        <translation type="vanished">WebP-format skapar mindre filer än GIF med bättre kvalitet.
-Bäst för korta klipp och delning på webben.
-Ljud stöds inte för WebP-inspelningar.</translation>
-    </message>
-    <message>
-        <source>Restart Required</source>
-        <translation type="vanished">Omstart krävs</translation>
-    </message>
-    <message>
-        <source>The language change will take effect after restarting the application.</source>
-        <translation type="vanished">Språkändringen träder i kraft efter omstart av programmet.</translation>
-    </message>
-    <message>
-        <source>Microphone access denied. Please enable in System Settings &gt; Privacy &amp; Security &gt; Microphone.</source>
-        <translation type="vanished">Åtkomst till mikrofon nekades. Aktivera den i Systeminställningar &gt; Integritet och säkerhet &gt; Mikrofon.</translation>
-    </message>
-    <message>
-        <source>System audio capture requires macOS 13 (Ventura) or later, or a virtual audio device like BlackHole.</source>
-        <translation type="vanished">Systemljudinspelning kräver macOS 13 (Ventura) eller senare, eller en virtuell ljudenhet som BlackHole.</translation>
-    </message>
-    <message>
-        <source>Loading available languages...</source>
-        <translation type="vanished">Laddar tillgängliga språk...</translation>
-    </message>
-    <message>
-        <source>Select and order the languages for OCR recognition.
-English is always included and cannot be removed. Drag to reorder selected languages.</source>
-        <translation type="vanished">Välj och ordna språken för OCR-igenkänning.
-Engelska ingår alltid och kan inte tas bort. Dra för att ändra ordning på valda språk.</translation>
-    </message>
-    <message>
-        <source>Available Languages</source>
-        <translation type="vanished">Tillgängliga språk</translation>
-    </message>
-    <message>
-        <source>Add selected languages</source>
-        <translation type="vanished">Lägg till valda språk</translation>
-    </message>
-    <message>
-        <source>Remove selected languages</source>
-        <translation type="vanished">Ta bort valda språk</translation>
-    </message>
-    <message>
-        <source>Selected Languages</source>
-        <translation type="vanished">Valda språk</translation>
-    </message>
-    <message>
-        <source>English is always included and cannot be removed</source>
-        <translation type="vanished">Engelska ingår alltid och kan inte tas bort</translation>
-    </message>
-    <message>
-        <source>After OCR Recognition</source>
-        <translation type="vanished">Efter OCR-igenkänning</translation>
-    </message>
-    <message>
-        <source>Copy text directly to clipboard</source>
-        <translation type="vanished">Kopiera text direkt till urklipp</translation>
-    </message>
-    <message>
-        <source>Show editor to review and edit text</source>
-        <translation type="vanished">Visa redigerare för att granska och redigera text</translation>
-    </message>
-    <message>
-        <source>Recognized text is immediately copied to clipboard</source>
-        <translation type="vanished">Igenkänd text kopieras omedelbart till urklipp</translation>
-    </message>
-    <message>
-        <source>Opens a dialog where you can review and edit the text before copying</source>
-        <translation type="vanished">Öppnar en dialogruta där du kan granska och redigera texten innan kopiering</translation>
-    </message>
-    <message>
-        <source>No OCR languages available.
-
-macOS: OCR requires macOS 10.15 or later.
-Windows: Install language packs in Settings &gt; Time &amp; Language &gt; Language.</source>
-        <translation type="vanished">Inga OCR-språk är tillgängliga.
-
-macOS: OCR kräver macOS 10.15 eller senare.
-Windows: Installera språkpaket i Inställningar &gt; Tid och språk &gt; Språk.</translation>
-    </message>
-    <message>
-        <source>Save Locations</source>
-        <translation type="vanished">Sparplatser</translation>
-    </message>
-    <message>
-        <source>Screenshots:</source>
-        <translation type="vanished">Skärmbilder:</translation>
-    </message>
-    <message>
-        <source>Select Screenshot Folder</source>
-        <translation type="vanished">Välj mapp för skärmbilder</translation>
-    </message>
-    <message>
-        <source>Recordings:</source>
-        <translation type="vanished">Inspelningar:</translation>
-    </message>
-    <message>
-        <source>Select Recording Folder</source>
-        <translation type="vanished">Välj mapp för inspelningar</translation>
-    </message>
-    <message>
-        <source>Filename Format</source>
-        <translation type="vanished">Filnamnsformat</translation>
-    </message>
-    <message>
-        <source>Template:</source>
-        <translation type="vanished">Mall:</translation>
-    </message>
-    <message>
-        <source>Tokens: {prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}
-Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
-        <translation type="vanished">Token: {prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}
-Datumtoken: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} eller {date}</translation>
-    </message>
-    <message>
-        <source>Save Behavior</source>
-        <translation type="vanished">Sparbeteende</translation>
-    </message>
-    <message>
-        <source>Auto-save screenshots (save directly without dialog)</source>
-        <translation type="vanished">Spara skärmbilder automatiskt (spara direkt utan dialogruta)</translation>
-    </message>
-    <message>
-        <source>Auto-save recordings (save directly without dialog)</source>
-        <translation type="vanished">Spara inspelningar automatiskt (spara direkt utan dialogruta)</translation>
-    </message>
-    <message>
-        <source>Preview: %1</source>
-        <translation type="vanished">Förhandsgranskning: %1</translation>
-    </message>
-    <message>
-        <source>
-Invalid template, fallback applied: %1</source>
-        <translation type="vanished">
-Ogiltig mall, reserv tillämpad: %1</translation>
-    </message>
-    <message>
-        <source>Version Information</source>
-        <translation type="vanished">Versionsinformation</translation>
-    </message>
-    <message>
-        <source>Current Version</source>
-        <translation type="vanished">Aktuell version</translation>
-    </message>
-    <message>
-        <source>Automatic Updates</source>
-        <translation type="vanished">Automatiska uppdateringar</translation>
-    </message>
-    <message>
-        <source>Check for updates automatically</source>
-        <translation type="vanished">Sök efter uppdateringar automatiskt</translation>
-    </message>
-    <message>
-        <source>Check frequency</source>
-        <translation type="vanished">Kontrollfrekvens</translation>
-    </message>
-    <message>
-        <source>Every day</source>
-        <translation type="vanished">Varje dag</translation>
-    </message>
-    <message>
-        <source>Every 3 days</source>
-        <translation type="vanished">Var 3:e dag</translation>
-    </message>
-    <message>
-        <source>Every week</source>
-        <translation type="vanished">Varje vecka</translation>
-    </message>
-    <message>
-        <source>Every 2 weeks</source>
-        <translation type="vanished">Varannan vecka</translation>
-    </message>
-    <message>
-        <source>Every month</source>
-        <translation type="vanished">Varje månad</translation>
-    </message>
-    <message>
-        <source>Last checked: %1</source>
-        <translation type="vanished">Senast kontrollerad: %1</translation>
-    </message>
-    <message>
-        <source>Last checked: Never</source>
-        <translation type="vanished">Senast kontrollerad: Aldrig</translation>
-    </message>
-    <message>
-        <source>Check Now</source>
-        <translation type="vanished">Kontrollera nu</translation>
-    </message>
-    <message>
-        <source>Checking...</source>
-        <translation type="vanished">Kontrollerar...</translation>
-    </message>
-    <message>
-        <source>Version %1</source>
-        <translation type="vanished">Version: %1</translation>
-    </message>
-    <message>
-        <source>Copyright 2024-2025 Victor Fu</source>
-        <translation type="vanished">Upphovsrätt 2024-2025 Victor Fu</translation>
-    </message>
-    <message>
-        <source>Author: Victor Fu</source>
-        <translation type="vanished">Upphovsman: Victor Fu</translation>
-    </message>
-    <message>
-        <source>'snaptray' command is available in terminal</source>
-        <translation type="vanished">Kommandot 'snaptray' är tillgängligt i terminalen</translation>
-    </message>
-    <message>
-        <source>Uninstall CLI</source>
-        <translation type="vanished">Avinstallera CLI</translation>
-    </message>
-    <message>
-        <source>'snaptray' command is not installed</source>
-        <translation type="vanished">Kommandot 'snaptray' är inte installerat</translation>
-    </message>
-    <message>
-        <source>Install CLI</source>
-        <translation type="vanished">Installera CLI</translation>
-    </message>
-    <message>
-        <source>Granted</source>
-        <translation type="vanished">Beviljad</translation>
-    </message>
-    <message>
-        <source>Not Granted</source>
-        <translation type="vanished">Inte beviljad</translation>
-    </message>
 </context>
 <context>
     <name>SettingsPathPicker</name>
@@ -3953,7 +3127,7 @@ Den kan användas av ett annat program.</translation>
     <message>
         <location filename="../src/qml/main.qml" line="10" />
         <source>SnapTray QML</source>
-        <translation type="unfinished" />
+        <translation>SnapTray QML</translation>
     </message>
 </context>
 <context>

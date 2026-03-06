@@ -211,34 +211,6 @@
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>
-    <message>
-        <source>Cancel capture</source>
-        <translation type="vanished">Atšaukti fiksavimą</translation>
-    </message>
-    <message>
-        <source>Confirm selection (after selection)</source>
-        <translation type="vanished">Patvirtinti pasirinkimą (po pasirinkimo)</translation>
-    </message>
-    <message>
-        <source>Toggle multi-region mode</source>
-        <translation type="vanished">Perjungti kelių sričių režimą</translation>
-    </message>
-    <message>
-        <source>Switch RGB/HEX (when magnifier visible)</source>
-        <translation type="vanished">Perjungti RGB/HEX (kai matomas didintuvas)</translation>
-    </message>
-    <message>
-        <source>Copy color value (before selection)</source>
-        <translation type="vanished">Nukopijuoti spalvos reikšmę (prieš pasirinkimą)</translation>
-    </message>
-    <message>
-        <source>Move selection by 1 pixel (after selection)</source>
-        <translation type="vanished">Perkelti pasirinkimą 1 pikseliu (po pasirinkimo)</translation>
-    </message>
-    <message>
-        <source>Resize selection by 1 pixel (after selection)</source>
-        <translation type="vanished">Keisti pasirinkimo dydį 1 pikseliu (po pasirinkimo)</translation>
-    </message>
 </context>
 <context>
     <name>ClickThroughExitButton</name>
@@ -305,18 +277,6 @@ Datos žetonai: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} arba {date}</translatio
 </context>
 <context>
     <name>FormatSelectionWidget</name>
-    <message>
-        <source>Best quality, widely compatible</source>
-        <translation type="vanished">Geriausia kokybė, platus suderinamumas</translation>
-    </message>
-    <message>
-        <source>Universal support, larger file size</source>
-        <translation type="vanished">Universalus palaikymas, didesnis failo dydis</translation>
-    </message>
-    <message>
-        <source>Small file size, modern browsers only</source>
-        <translation type="vanished">Mažas failo dydis, tik šiuolaikinėms naršyklėms</translation>
-    </message>
 </context>
 <context>
     <name>GeneralSettings</name>
@@ -418,66 +378,6 @@ Datos žetonai: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} arba {date}</translatio
 </context>
 <context>
     <name>HotkeyManager</name>
-    <message>
-        <source>Conflicts with: %1</source>
-        <translation type="vanished">Konfliktuoja su: %1</translation>
-    </message>
-    <message>
-        <source>Region Capture</source>
-        <translation type="vanished">Srities fiksavimas</translation>
-    </message>
-    <message>
-        <source>Capture a selected region of the screen</source>
-        <translation type="vanished">Fiksuoti pasirinktą ekrano sritį</translation>
-    </message>
-    <message>
-        <source>Screen Canvas</source>
-        <translation type="vanished">Ekrano drobė</translation>
-    </message>
-    <message>
-        <source>Annotate directly on the screen</source>
-        <translation type="vanished">Anotuoti tiesiai ekrane</translation>
-    </message>
-    <message>
-        <source>Paste</source>
-        <translation type="vanished">Įklijuoti</translation>
-    </message>
-    <message>
-        <source>Pin content from clipboard</source>
-        <translation type="vanished">Prisegti turinį iš iškarpinės</translation>
-    </message>
-    <message>
-        <source>Quick Pin</source>
-        <translation type="vanished">Greitas prisegimas</translation>
-    </message>
-    <message>
-        <source>Select and pin a region directly</source>
-        <translation type="vanished">Pasirinkti ir prisegti sritį tiesiogiai</translation>
-    </message>
-    <message>
-        <source>Pin from Image</source>
-        <translation type="vanished">Prisegti iš vaizdo</translation>
-    </message>
-    <message>
-        <source>Pin an image from file</source>
-        <translation type="vanished">Prisegti vaizdą iš failo</translation>
-    </message>
-    <message>
-        <source>Pin History</source>
-        <translation type="vanished">Prisegimų istorija</translation>
-    </message>
-    <message>
-        <source>Open pin history window</source>
-        <translation type="vanished">Atidaryti prisegimų istorijos langą</translation>
-    </message>
-    <message>
-        <source>Record Full Screen</source>
-        <translation type="vanished">Įrašyti visą ekraną</translation>
-    </message>
-    <message>
-        <source>Start full screen recording</source>
-        <translation type="vanished">Pradėti viso ekrano įrašymą</translation>
-    </message>
 </context>
 <context>
     <name>HotkeySettings</name>
@@ -1006,10 +906,6 @@ Dydis: %2</translation>
         <location filename="../src/PinWindow.cpp" line="913" />
         <source>Beautify</source>
         <translation>Pagražinti</translation>
-    </message>
-    <message>
-        <source>Recognize Text</source>
-        <translation type="vanished">Atpažinti tekstą</translation>
     </message>
     <message>
         <location filename="../src/PinWindow.cpp" line="917" />
@@ -1639,16 +1535,8 @@ Dydis: %2</translation>
 <context>
     <name>RecordingControlBar</name>
     <message>
-        <source>Audio recording enabled</source>
-        <translation type="vanished">Garso įrašymas įjungtas</translation>
-    </message>
-    <message>
         <source>-- fps</source>
         <translation>-- FPS</translation>
-    </message>
-    <message>
-        <source>Annotate</source>
-        <translation type="vanished">Anotuoti</translation>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingControlBar.qml" line="254" />
@@ -1674,50 +1562,6 @@ Dydis: %2</translation>
     <message>
         <source>Cancel Recording (Esc)</source>
         <translation>Atšaukti įrašymą (Esc)</translation>
-    </message>
-    <message>
-        <source>Pause (Space)</source>
-        <translation type="vanished">Pristabdyti (Space)</translation>
-    </message>
-    <message>
-        <source>Play (Space)</source>
-        <translation type="vanished">Leisti (Space)</translation>
-    </message>
-    <message>
-        <source>Unmute (M)</source>
-        <translation type="vanished">Įjungti garsą (M)</translation>
-    </message>
-    <message>
-        <source>Mute (M)</source>
-        <translation type="vanished">Nutildyti (M)</translation>
-    </message>
-    <message>
-        <source>MP4 - Best quality</source>
-        <translation type="vanished">MP4 - Geriausia kokybė</translation>
-    </message>
-    <message>
-        <source>GIF - Universal support</source>
-        <translation type="vanished">GIF - Universalus palaikymas</translation>
-    </message>
-    <message>
-        <source>WebP - Small size</source>
-        <translation type="vanished">WebP - Mažas dydis</translation>
-    </message>
-    <message>
-        <source>Annotate Video</source>
-        <translation type="vanished">Anotuoti vaizdo įrašą</translation>
-    </message>
-    <message>
-        <source>Save (Enter)</source>
-        <translation type="vanished">Išsaugoti (Enter)</translation>
-    </message>
-    <message>
-        <source>Discard (Esc)</source>
-        <translation type="vanished">Atmesti (Esc)</translation>
-    </message>
-    <message>
-        <source>Drag to seek</source>
-        <translation type="vanished">Vilkite norėdami persukti</translation>
     </message>
 </context>
 <context>
@@ -1899,151 +1743,61 @@ Dydis: %2</translation>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="71" />
         <source>Recording Preview</source>
-        <translation type="unfinished">Įrašo peržiūra</translation>
+        <translation>Įrašo peržiūra</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="356" />
         <source>Converting video...</source>
-        <translation type="unfinished">Konvertuojamas vaizdo įrašas...</translation>
+        <translation>Konvertuojamas vaizdo įrašas...</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="365" />
         <source>Failed to create video player for conversion</source>
-        <translation type="unfinished" />
+        <translation>Nepavyko sukurti vaizdo leistuvo konvertavimui</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="366" />
         <source>Failed to load video for conversion</source>
-        <translation type="unfinished" />
+        <translation>Nepavyko įkelti vaizdo įrašo konvertavimui</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="367" />
         <source>Video not loaded properly for conversion</source>
-        <translation type="unfinished" />
+        <translation>Vaizdo įrašas nebuvo tinkamai įkeltas konvertavimui</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="368" />
         <source>Failed to start encoder</source>
-        <translation type="unfinished" />
+        <translation>Nepavyko paleisti koduotuvo</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="369" />
         <source>Conversion failed: output file is missing or empty</source>
-        <translation type="unfinished" />
+        <translation>Konvertavimas nepavyko: išvesties failo nėra arba jis tuščias</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="596" />
         <source>Trimming video...</source>
-        <translation type="unfinished">Apkarpomas vaizdo įrašas...</translation>
+        <translation>Apkarpomas vaizdo įrašas...</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="615" />
         <source>Trim failed: %1</source>
-        <translation type="unfinished" />
+        <translation>Apkarpymas nepavyko: %1</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="650" />
         <source>Trim failed: output file is missing or empty</source>
-        <translation type="unfinished" />
+        <translation>Apkarpymas nepavyko: išvesties failo nėra arba jis tuščias</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="657" />
         <source>Trim failed</source>
-        <translation type="unfinished" />
+        <translation>Apkarpymas nepavyko</translation>
     </message>
 </context>
 <context>
     <name>RecordingPreviewWindow</name>
-    <message>
-        <source>Recording Preview</source>
-        <translation type="vanished">Įrašo peržiūra</translation>
-    </message>
-    <message>
-        <source>Trim</source>
-        <translation type="vanished">Apkarpyti</translation>
-    </message>
-    <message>
-        <source>Loop playback within the trimmed range</source>
-        <translation type="vanished">Ciklinis atkūrimas apkarpytame diapazone</translation>
-    </message>
-    <message>
-        <source>Play/Pause (Space)</source>
-        <translation type="vanished">Leisti/Pristabdyti (Space)</translation>
-    </message>
-    <message>
-        <source>Playback speed</source>
-        <translation type="vanished">Atkūrimo greitis</translation>
-    </message>
-    <message>
-        <source>Mute (M)</source>
-        <translation type="vanished">Nutildyti (M)</translation>
-    </message>
-    <message>
-        <source>Discard (Esc)</source>
-        <translation type="vanished">Atmesti (Esc)</translation>
-    </message>
-    <message>
-        <source>Save (Enter)</source>
-        <translation type="vanished">Išsaugoti (Enter)</translation>
-    </message>
-    <message>
-        <source>Video Error</source>
-        <translation type="vanished">Vaizdo įrašo klaida</translation>
-    </message>
-    <message>
-        <source>Failed to load video:
-%1</source>
-        <translation type="vanished">Nepavyko įkelti vaizdo įrašo:
-%1</translation>
-    </message>
-    <message>
-        <source>Conversion Error</source>
-        <translation type="vanished">Konvertavimo klaida</translation>
-    </message>
-    <message>
-        <source>Cannot convert: video not loaded properly.</source>
-        <translation type="vanished">Negalima konvertuoti: vaizdo įrašas nebuvo tinkamai įkeltas.</translation>
-    </message>
-    <message>
-        <source>Converting video...</source>
-        <translation type="vanished">Konvertuojamas vaizdo įrašas...</translation>
-    </message>
-    <message>
-        <source>Cancel</source>
-        <translation type="vanished">Atšaukti</translation>
-    </message>
-    <message>
-        <source>Failed to start encoder: %1</source>
-        <translation type="vanished">Nepavyko paleisti koduotuvo: %1</translation>
-    </message>
-    <message>
-        <source>Trim Failed</source>
-        <translation type="vanished">Apkarpymas nepavyko</translation>
-    </message>
-    <message>
-        <source>Failed to trim the video. Please try again.</source>
-        <translation type="vanished">Nepavyko apkarpyti vaizdo įrašo. Bandykite dar kartą.</translation>
-    </message>
-    <message>
-        <source>Set Trim Start</source>
-        <translation type="vanished">Nustatyti apkarpymo pradžią</translation>
-    </message>
-    <message>
-        <source>Set Trim End</source>
-        <translation type="vanished">Nustatyti apkarpymo pabaigą</translation>
-    </message>
-    <message>
-        <source>Enter time in seconds:</source>
-        <translation type="vanished">Įveskite laiką sekundėmis:</translation>
-    </message>
-    <message>
-        <source>Trim Error</source>
-        <translation type="vanished">Apkarpymo klaida</translation>
-    </message>
-    <message>
-        <source>Trimming video...</source>
-        <translation type="vanished">Apkarpomas vaizdo įrašas...</translation>
-    </message>
 </context>
 <context>
     <name>RecordingRegionSelector</name>
@@ -2415,10 +2169,6 @@ GIF įrašuose garsas nepalaikomas.</translation>
         <translation>Veidų ar kredencialų neaptikta</translation>
     </message>
     <message>
-        <source>No faces detected</source>
-        <translation type="vanished">Veidų neaptikta</translation>
-    </message>
-    <message>
         <location filename="../src/RegionSelector.cpp" line="2819" />
         <source>Detection failed</source>
         <translation>Aptikimas nepavyko</translation>
@@ -2451,582 +2201,6 @@ GIF įrašuose garsas nepalaikomas.</translation>
 </context>
 <context>
     <name>SettingsDialog</name>
-    <message>
-        <source>%1 Settings</source>
-        <translation type="vanished">%1 nustatymai</translation>
-    </message>
-    <message>
-        <source>General</source>
-        <translation type="vanished">Bendri</translation>
-    </message>
-    <message>
-        <source>Hotkeys</source>
-        <translation type="vanished">Spartieji klavišai</translation>
-    </message>
-    <message>
-        <source>Advanced</source>
-        <translation type="vanished">Išplėstiniai</translation>
-    </message>
-    <message>
-        <source>Watermark</source>
-        <translation type="vanished">Vandens ženklas</translation>
-    </message>
-    <message>
-        <source>OCR</source>
-        <translation type="vanished">OCR</translation>
-    </message>
-    <message>
-        <source>Recording</source>
-        <translation type="vanished">Įrašymas</translation>
-    </message>
-    <message>
-        <source>Files</source>
-        <translation type="vanished">Failai</translation>
-    </message>
-    <message>
-        <source>Updates</source>
-        <translation type="vanished">Atnaujinimai</translation>
-    </message>
-    <message>
-        <source>About</source>
-        <translation type="vanished">Apie</translation>
-    </message>
-    <message>
-        <source>Save</source>
-        <translation type="vanished">Išsaugoti</translation>
-    </message>
-    <message>
-        <source>Cancel</source>
-        <translation type="vanished">Atšaukti</translation>
-    </message>
-    <message>
-        <source>Start on login</source>
-        <translation type="vanished">Paleisti prisijungus</translation>
-    </message>
-    <message>
-        <source>Language</source>
-        <translation type="vanished">Kalba</translation>
-    </message>
-    <message>
-        <source>Display language:</source>
-        <translation type="vanished">Rodymo kalba:</translation>
-    </message>
-    <message>
-        <source>Appearance</source>
-        <translation type="vanished">Išvaizda</translation>
-    </message>
-    <message>
-        <source>Toolbar Style:</source>
-        <translation type="vanished">Įrankių juostos stilius:</translation>
-    </message>
-    <message>
-        <source>Dark</source>
-        <translation type="vanished">Tamsus</translation>
-    </message>
-    <message>
-        <source>Light</source>
-        <translation type="vanished">Šviesus</translation>
-    </message>
-    <message>
-        <source>Permissions</source>
-        <translation type="vanished">Leidimai</translation>
-    </message>
-    <message>
-        <source>Screen Recording:</source>
-        <translation type="vanished">Ekrano įrašymas:</translation>
-    </message>
-    <message>
-        <source>Open Settings</source>
-        <translation type="vanished">Atidaryti nustatymus</translation>
-    </message>
-    <message>
-        <source>Accessibility:</source>
-        <translation type="vanished">Pritaikymas neįgaliesiems:</translation>
-    </message>
-    <message>
-        <source>Command Line Interface</source>
-        <translation type="vanished">Komandinė eilutė</translation>
-    </message>
-    <message>
-        <source>Blur</source>
-        <translation type="vanished">Suliejimas</translation>
-    </message>
-    <message>
-        <source>Blur intensity:</source>
-        <translation type="vanished">Suliejimo intensyvumas:</translation>
-    </message>
-    <message>
-        <source>Blur type:</source>
-        <translation type="vanished">Suliejimo tipas:</translation>
-    </message>
-    <message>
-        <source>Pixelate</source>
-        <translation type="vanished">Pikselizavimas</translation>
-    </message>
-    <message>
-        <source>Gaussian</source>
-        <translation type="vanished">Gauso</translation>
-    </message>
-    <message>
-        <source>Pin Window</source>
-        <translation type="vanished">Prisegti langą</translation>
-    </message>
-    <message>
-        <source>Default opacity:</source>
-        <translation type="vanished">Numatytasis nepermatomumas:</translation>
-    </message>
-    <message>
-        <source>Opacity step:</source>
-        <translation type="vanished">Nepermatomumo žingsnis:</translation>
-    </message>
-    <message>
-        <source>Zoom step:</source>
-        <translation type="vanished">Priartinimo žingsnis:</translation>
-    </message>
-    <message>
-        <source>Max cache files:</source>
-        <translation type="vanished">Maks. podėlio failų:</translation>
-    </message>
-    <message>
-        <source>Apply to images</source>
-        <translation type="vanished">Taikyti vaizdams</translation>
-    </message>
-    <message>
-        <source>Apply to recordings</source>
-        <translation type="vanished">Taikyti įrašams</translation>
-    </message>
-    <message>
-        <source>Image:</source>
-        <translation type="vanished">Vaizdas:</translation>
-    </message>
-    <message>
-        <source>Select an image file...</source>
-        <translation type="vanished">Pasirinkite vaizdo failą...</translation>
-    </message>
-    <message>
-        <source>Browse...</source>
-        <translation type="vanished">Naršyti...</translation>
-    </message>
-    <message>
-        <source>Select Watermark Image</source>
-        <translation type="vanished">Pasirinkite vandens ženklo vaizdą</translation>
-    </message>
-    <message>
-        <source>Images (*.png *.jpg *.jpeg *.bmp *.gif *.svg);;All Files (*)</source>
-        <translation type="vanished">Vaizdai (*.png *.jpg *.jpeg *.bmp *.gif *.svg);;Visi failai (*)</translation>
-    </message>
-    <message>
-        <source>Scale:</source>
-        <translation type="vanished">Mastelis:</translation>
-    </message>
-    <message>
-        <source>Opacity:</source>
-        <translation type="vanished">Nepermatomumas:</translation>
-    </message>
-    <message>
-        <source>Margin:</source>
-        <translation type="vanished">Paraštė:</translation>
-    </message>
-    <message>
-        <source>Position:</source>
-        <translation type="vanished">Pozicija:</translation>
-    </message>
-    <message>
-        <source>Top-Left</source>
-        <translation type="vanished">Viršuje kairėje</translation>
-    </message>
-    <message>
-        <source>Top-Right</source>
-        <translation type="vanished">Viršuje dešinėje</translation>
-    </message>
-    <message>
-        <source>Bottom-Left</source>
-        <translation type="vanished">Apačioje kairėje</translation>
-    </message>
-    <message>
-        <source>Bottom-Right</source>
-        <translation type="vanished">Apačioje dešinėje</translation>
-    </message>
-    <message>
-        <source>No image</source>
-        <translation type="vanished">Nėra vaizdo</translation>
-    </message>
-    <message>
-        <source>Invalid image</source>
-        <translation type="vanished">Netinkamas vaizdas</translation>
-    </message>
-    <message>
-        <source>Size: %1 × %2 px</source>
-        <translation type="vanished">Dydis: %1 × %2 px</translation>
-    </message>
-    <message>
-        <source>Frame Rate:</source>
-        <translation type="vanished">Kadrų dažnis:</translation>
-    </message>
-    <message>
-        <source>Capture</source>
-        <translation type="vanished">Fiksavimas</translation>
-    </message>
-    <message>
-        <source>Show shortcut hints when entering region capture</source>
-        <translation type="vanished">Įeinant į srities fiksavimą rodyti sparčiųjų klavišų užuominas</translation>
-    </message>
-    <message>
-        <source>MCP</source>
-        <translation type="vanished">MCP</translation>
-    </message>
-    <message>
-        <source>Enable MCP server</source>
-        <translation type="vanished">Įjungti MCP serverį</translation>
-    </message>
-    <message>
-        <source>10 FPS</source>
-        <translation type="vanished">10 FPS</translation>
-    </message>
-    <message>
-        <source>15 FPS</source>
-        <translation type="vanished">15 FPS</translation>
-    </message>
-    <message>
-        <source>24 FPS</source>
-        <translation type="vanished">24 FPS</translation>
-    </message>
-    <message>
-        <source>30 FPS</source>
-        <translation type="vanished">30 FPS</translation>
-    </message>
-    <message>
-        <source>Output Format:</source>
-        <translation type="vanished">Išvesties formatas:</translation>
-    </message>
-    <message>
-        <source>MP4 (H.264)</source>
-        <translation type="vanished">MP4 (H.264)</translation>
-    </message>
-    <message>
-        <source>GIF</source>
-        <translation type="vanished">GIF</translation>
-    </message>
-    <message>
-        <source>WebP</source>
-        <translation type="vanished">WebP</translation>
-    </message>
-    <message>
-        <source>Quality:</source>
-        <translation type="vanished">Kokybė:</translation>
-    </message>
-    <message>
-        <source>GIF format creates larger files than MP4.
-Best for short clips and sharing on web.
-Audio is not supported for GIF recordings.</source>
-        <translation type="vanished">GIF formatas sukuria didesnius failus nei MP4.
-Geriausiai tinka trumpiems klipams ir dalinimuisi žiniatinklyje.
-GIF įrašuose garsas nepalaikomas.</translation>
-    </message>
-    <message>
-        <source>Audio</source>
-        <translation type="vanished">Garsas</translation>
-    </message>
-    <message>
-        <source>Record audio</source>
-        <translation type="vanished">Įrašyti garsą</translation>
-    </message>
-    <message>
-        <source>Source:</source>
-        <translation type="vanished">Šaltinis:</translation>
-    </message>
-    <message>
-        <source>Microphone</source>
-        <translation type="vanished">Mikrofonas</translation>
-    </message>
-    <message>
-        <source>System Audio</source>
-        <translation type="vanished">Sistemos garsas</translation>
-    </message>
-    <message>
-        <source>Both (Mixed)</source>
-        <translation type="vanished">Abu (sumaišyti)</translation>
-    </message>
-    <message>
-        <source>Device:</source>
-        <translation type="vanished">Įrenginys:</translation>
-    </message>
-    <message>
-        <source>Default</source>
-        <translation type="vanished">Numatytasis</translation>
-    </message>
-    <message>
-        <source>Show preview after recording</source>
-        <translation type="vanished">Rodyti peržiūrą po įrašymo</translation>
-    </message>
-    <message>
-        <source>Countdown</source>
-        <translation type="vanished">Atgalinis skaičiavimas</translation>
-    </message>
-    <message>
-        <source>Show countdown before recording</source>
-        <translation type="vanished">Rodyti atgalinį skaičiavimą prieš įrašymą</translation>
-    </message>
-    <message>
-        <source>Display a 3-2-1 countdown before recording starts</source>
-        <translation type="vanished">Rodyti 3-2-1 atgalinį skaičiavimą prieš pradedant įrašymą</translation>
-    </message>
-    <message>
-        <source>Countdown duration:</source>
-        <translation type="vanished">Atgalinio skaičiavimo trukmė:</translation>
-    </message>
-    <message>
-        <source>1 second</source>
-        <translation type="vanished">1 sekundė</translation>
-    </message>
-    <message>
-        <source>2 seconds</source>
-        <translation type="vanished">2 sekundės</translation>
-    </message>
-    <message>
-        <source>3 seconds</source>
-        <translation type="vanished">3 sekundės</translation>
-    </message>
-    <message>
-        <source>4 seconds</source>
-        <translation type="vanished">4 sekundės</translation>
-    </message>
-    <message>
-        <source>5 seconds</source>
-        <translation type="vanished">5 sekundės</translation>
-    </message>
-    <message>
-        <source>WebP format creates smaller files than GIF with better quality.
-Best for short clips and sharing on web.
-Audio is not supported for WebP recordings.</source>
-        <translation type="vanished">WebP formatas sukuria mažesnius failus nei GIF ir užtikrina geresnę kokybę.
-Geriausiai tinka trumpiems klipams ir dalinimuisi žiniatinklyje.
-WebP įrašuose garsas nepalaikomas.</translation>
-    </message>
-    <message>
-        <source>Restart Required</source>
-        <translation type="vanished">Reikalingas paleidimas iš naujo</translation>
-    </message>
-    <message>
-        <source>The language change will take effect after restarting the application.</source>
-        <translation type="vanished">Kalbos pakeitimas įsigalios iš naujo paleidus programą.</translation>
-    </message>
-    <message>
-        <source>Microphone access denied. Please enable in System Settings &gt; Privacy &amp; Security &gt; Microphone.</source>
-        <translation type="vanished">Prieiga prie mikrofono uždrausta. Įjunkite ją „System Settings &gt; Privacy &amp; Security &gt; Microphone“.</translation>
-    </message>
-    <message>
-        <source>System audio capture requires macOS 13 (Ventura) or later, or a virtual audio device like BlackHole.</source>
-        <translation type="vanished">Sistemos garso įrašymui reikia macOS 13 (Ventura) ar naujesnės versijos arba virtualaus garso įrenginio, pvz., BlackHole.</translation>
-    </message>
-    <message>
-        <source>Loading available languages...</source>
-        <translation type="vanished">Įkeliamos galimos kalbos...</translation>
-    </message>
-    <message>
-        <source>Select and order the languages for OCR recognition.
-English is always included and cannot be removed. Drag to reorder selected languages.</source>
-        <translation type="vanished">Pasirinkite ir surikiuokite OCR atpažinimo kalbas.
-Anglų kalba visada įtraukta ir negali būti pašalinta. Vilkite, kad pakeistumėte pasirinktų kalbų tvarką.</translation>
-    </message>
-    <message>
-        <source>Available Languages</source>
-        <translation type="vanished">Galimos kalbos</translation>
-    </message>
-    <message>
-        <source>Add selected languages</source>
-        <translation type="vanished">Pridėti pasirinktas kalbas</translation>
-    </message>
-    <message>
-        <source>Remove selected languages</source>
-        <translation type="vanished">Pašalinti pasirinktas kalbas</translation>
-    </message>
-    <message>
-        <source>Selected Languages</source>
-        <translation type="vanished">Pasirinktos kalbos</translation>
-    </message>
-    <message>
-        <source>English is always included and cannot be removed</source>
-        <translation type="vanished">Anglų kalba visada įtraukta ir negali būti pašalinta</translation>
-    </message>
-    <message>
-        <source>After OCR Recognition</source>
-        <translation type="vanished">Po OCR atpažinimo</translation>
-    </message>
-    <message>
-        <source>Copy text directly to clipboard</source>
-        <translation type="vanished">Kopijuoti tekstą tiesiai į iškarpinę</translation>
-    </message>
-    <message>
-        <source>Show editor to review and edit text</source>
-        <translation type="vanished">Rodyti redaktorių tekstui peržiūrėti ir redaguoti</translation>
-    </message>
-    <message>
-        <source>Recognized text is immediately copied to clipboard</source>
-        <translation type="vanished">Atpažintas tekstas iš karto nukopijuojamas į iškarpinę</translation>
-    </message>
-    <message>
-        <source>Opens a dialog where you can review and edit the text before copying</source>
-        <translation type="vanished">Atidaro dialogą, kuriame galite peržiūrėti ir redaguoti tekstą prieš kopijuojant</translation>
-    </message>
-    <message>
-        <source>No OCR languages available.
-
-macOS: OCR requires macOS 10.15 or later.
-Windows: Install language packs in Settings &gt; Time &amp; Language &gt; Language.</source>
-        <translation type="vanished">Nėra prieinamų OCR kalbų.
-
-macOS: OCR reikia macOS 10.15 ar naujesnės versijos.
-Windows: įdiekite kalbų paketus skiltyje Settings &gt; Time &amp; Language &gt; Language.</translation>
-    </message>
-    <message>
-        <source>Save Locations</source>
-        <translation type="vanished">Išsaugojimo vietos</translation>
-    </message>
-    <message>
-        <source>Screenshots:</source>
-        <translation type="vanished">Ekrano nuotraukos:</translation>
-    </message>
-    <message>
-        <source>Select Screenshot Folder</source>
-        <translation type="vanished">Pasirinkite ekrano nuotraukų aplanką</translation>
-    </message>
-    <message>
-        <source>Recordings:</source>
-        <translation type="vanished">Įrašai:</translation>
-    </message>
-    <message>
-        <source>Select Recording Folder</source>
-        <translation type="vanished">Pasirinkite įrašų aplanką</translation>
-    </message>
-    <message>
-        <source>Filename Format</source>
-        <translation type="vanished">Failo pavadinimo formatas</translation>
-    </message>
-    <message>
-        <source>Template:</source>
-        <translation type="vanished">Šablonas:</translation>
-    </message>
-    <message>
-        <source>Tokens: {prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}
-Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
-        <translation type="vanished">Žetonai: {prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}
-Datos žetonai: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} arba {date}</translation>
-    </message>
-    <message>
-        <source>Save Behavior</source>
-        <translation type="vanished">Išsaugojimo elgsena</translation>
-    </message>
-    <message>
-        <source>Auto-save screenshots (save directly without dialog)</source>
-        <translation type="vanished">Automatiškai saugoti ekrano nuotraukas (saugoti tiesiogiai be dialogo)</translation>
-    </message>
-    <message>
-        <source>Auto-save recordings (save directly without dialog)</source>
-        <translation type="vanished">Automatiškai saugoti įrašus (saugoti tiesiogiai be dialogo)</translation>
-    </message>
-    <message>
-        <source>Preview: %1</source>
-        <translation type="vanished">Peržiūra: %1</translation>
-    </message>
-    <message>
-        <source>
-Invalid template, fallback applied: %1</source>
-        <translation type="vanished">
-Netinkamas šablonas, pritaikytas atsarginis: %1</translation>
-    </message>
-    <message>
-        <source>Version Information</source>
-        <translation type="vanished">Versijos informacija</translation>
-    </message>
-    <message>
-        <source>Current Version</source>
-        <translation type="vanished">Dabartinė versija</translation>
-    </message>
-    <message>
-        <source>Automatic Updates</source>
-        <translation type="vanished">Automatiniai atnaujinimai</translation>
-    </message>
-    <message>
-        <source>Check for updates automatically</source>
-        <translation type="vanished">Automatiškai tikrinti atnaujinimus</translation>
-    </message>
-    <message>
-        <source>Check frequency</source>
-        <translation type="vanished">Tikrinimo dažnis</translation>
-    </message>
-    <message>
-        <source>Every day</source>
-        <translation type="vanished">Kiekvieną dieną</translation>
-    </message>
-    <message>
-        <source>Every 3 days</source>
-        <translation type="vanished">Kas 3 dienas</translation>
-    </message>
-    <message>
-        <source>Every week</source>
-        <translation type="vanished">Kas savaitę</translation>
-    </message>
-    <message>
-        <source>Every 2 weeks</source>
-        <translation type="vanished">Kas 2 savaites</translation>
-    </message>
-    <message>
-        <source>Every month</source>
-        <translation type="vanished">Kas mėnesį</translation>
-    </message>
-    <message>
-        <source>Last checked: %1</source>
-        <translation type="vanished">Paskutinį kartą tikrinta: %1</translation>
-    </message>
-    <message>
-        <source>Last checked: Never</source>
-        <translation type="vanished">Paskutinį kartą tikrinta: Niekada</translation>
-    </message>
-    <message>
-        <source>Check Now</source>
-        <translation type="vanished">Tikrinti dabar</translation>
-    </message>
-    <message>
-        <source>Checking...</source>
-        <translation type="vanished">Tikrinama...</translation>
-    </message>
-    <message>
-        <source>Version %1</source>
-        <translation type="vanished">Versija %1</translation>
-    </message>
-    <message>
-        <source>Copyright 2024-2025 Victor Fu</source>
-        <translation type="vanished">Autorių teisės 2024–2025 Victor Fu</translation>
-    </message>
-    <message>
-        <source>Author: Victor Fu</source>
-        <translation type="vanished">Autorius: Victor Fu</translation>
-    </message>
-    <message>
-        <source>'snaptray' command is available in terminal</source>
-        <translation type="vanished">Komanda 'snaptray' prieinama terminale</translation>
-    </message>
-    <message>
-        <source>Uninstall CLI</source>
-        <translation type="vanished">Pašalinti CLI</translation>
-    </message>
-    <message>
-        <source>'snaptray' command is not installed</source>
-        <translation type="vanished">Komanda 'snaptray' nėra įdiegta</translation>
-    </message>
-    <message>
-        <source>Install CLI</source>
-        <translation type="vanished">Įdiegti CLI</translation>
-    </message>
-    <message>
-        <source>Granted</source>
-        <translation type="vanished">Suteikta</translation>
-    </message>
-    <message>
-        <source>Not Granted</source>
-        <translation type="vanished">Nesuteikta</translation>
-    </message>
 </context>
 <context>
     <name>SettingsPathPicker</name>
@@ -3953,7 +3127,7 @@ Jį gali naudoti kita programa.</translation>
     <message>
         <location filename="../src/qml/main.qml" line="10" />
         <source>SnapTray QML</source>
-        <translation type="unfinished" />
+        <translation>SnapTray QML</translation>
     </message>
 </context>
 <context>

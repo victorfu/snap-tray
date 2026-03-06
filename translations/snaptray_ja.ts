@@ -211,34 +211,6 @@
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>
-    <message>
-        <source>Cancel capture</source>
-        <translation type="vanished">キャプチャをキャンセル</translation>
-    </message>
-    <message>
-        <source>Confirm selection (after selection)</source>
-        <translation type="vanished">選択を確定（選択後）</translation>
-    </message>
-    <message>
-        <source>Toggle multi-region mode</source>
-        <translation type="vanished">マルチリージョンモードを切り替え</translation>
-    </message>
-    <message>
-        <source>Switch RGB/HEX (when magnifier visible)</source>
-        <translation type="vanished">RGB/HEX を切り替え（拡大鏡表示時）</translation>
-    </message>
-    <message>
-        <source>Copy color value (before selection)</source>
-        <translation type="vanished">色の値をコピー（選択前）</translation>
-    </message>
-    <message>
-        <source>Move selection by 1 pixel (after selection)</source>
-        <translation type="vanished">選択範囲を1ピクセル移動（選択後）</translation>
-    </message>
-    <message>
-        <source>Resize selection by 1 pixel (after selection)</source>
-        <translation type="vanished">選択範囲を1ピクセル拡大・縮小（選択後）</translation>
-    </message>
 </context>
 <context>
     <name>ClickThroughExitButton</name>
@@ -250,61 +222,9 @@
 </context>
 <context>
     <name>ColorDialog</name>
-    <message>
-        <source>Select Color</source>
-        <translation type="vanished">色を選択</translation>
-    </message>
-    <message>
-        <source>Hue</source>
-        <translation type="vanished">色相</translation>
-    </message>
-    <message>
-        <source>Saturation</source>
-        <translation type="vanished">彩度</translation>
-    </message>
-    <message>
-        <source>Value</source>
-        <translation type="vanished">明度</translation>
-    </message>
-    <message>
-        <source>Red</source>
-        <translation type="vanished">赤</translation>
-    </message>
-    <message>
-        <source>Green</source>
-        <translation type="vanished">緑</translation>
-    </message>
-    <message>
-        <source>Blue</source>
-        <translation type="vanished">青</translation>
-    </message>
-    <message>
-        <source>Alpha</source>
-        <translation type="vanished">アルファ</translation>
-    </message>
-    <message>
-        <source>Hex</source>
-        <translation type="vanished">16進数</translation>
-    </message>
-    <message>
-        <source>Reset</source>
-        <translation type="vanished">リセット</translation>
-    </message>
-    <message>
-        <source>OK</source>
-        <translation type="vanished">OK</translation>
-    </message>
-    <message>
-        <source>Cancel</source>
-        <translation type="vanished">キャンセル</translation>
-    </message>
 </context>
 <context>
     <name>ColorPickerDialogCompat</name>
-    <message>
-        <source>Select Color</source>
-        <translation type="vanished">色を選択</translation>
-    </message>
 </context>
 <context>
     <name>FilesSettings</name>
@@ -363,18 +283,6 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
 </context>
 <context>
     <name>FormatSelectionWidget</name>
-    <message>
-        <source>Best quality, widely compatible</source>
-        <translation type="vanished">最高品質、幅広い互換性</translation>
-    </message>
-    <message>
-        <source>Universal support, larger file size</source>
-        <translation type="vanished">汎用的なサポート、ファイルサイズが大きい</translation>
-    </message>
-    <message>
-        <source>Small file size, modern browsers only</source>
-        <translation type="vanished">小さいファイルサイズ、モダンブラウザーのみ</translation>
-    </message>
 </context>
 <context>
     <name>GeneralSettings</name>
@@ -476,66 +384,6 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
 </context>
 <context>
     <name>HotkeyManager</name>
-    <message>
-        <source>Conflicts with: %1</source>
-        <translation type="vanished">競合: %1</translation>
-    </message>
-    <message>
-        <source>Region Capture</source>
-        <translation type="vanished">範囲キャプチャ</translation>
-    </message>
-    <message>
-        <source>Capture a selected region of the screen</source>
-        <translation type="vanished">画面の選択した範囲をキャプチャ</translation>
-    </message>
-    <message>
-        <source>Screen Canvas</source>
-        <translation type="vanished">スクリーンキャンバス</translation>
-    </message>
-    <message>
-        <source>Annotate directly on the screen</source>
-        <translation type="vanished">画面に直接注釈</translation>
-    </message>
-    <message>
-        <source>Paste</source>
-        <translation type="vanished">貼り付け</translation>
-    </message>
-    <message>
-        <source>Pin content from clipboard</source>
-        <translation type="vanished">クリップボードの内容をピン留め</translation>
-    </message>
-    <message>
-        <source>Quick Pin</source>
-        <translation type="vanished">クイックピン</translation>
-    </message>
-    <message>
-        <source>Select and pin a region directly</source>
-        <translation type="vanished">範囲を選択して直接ピン留め</translation>
-    </message>
-    <message>
-        <source>Pin from Image</source>
-        <translation type="vanished">画像からピン留め</translation>
-    </message>
-    <message>
-        <source>Pin an image from file</source>
-        <translation type="vanished">ファイルから画像をピン留め</translation>
-    </message>
-    <message>
-        <source>Pin History</source>
-        <translation type="vanished">ピン履歴</translation>
-    </message>
-    <message>
-        <source>Open pin history window</source>
-        <translation type="vanished">ピン履歴ウィンドウを開く</translation>
-    </message>
-    <message>
-        <source>Record Full Screen</source>
-        <translation type="vanished">全画面を録画</translation>
-    </message>
-    <message>
-        <source>Start full screen recording</source>
-        <translation type="vanished">全画面録画を開始</translation>
-    </message>
 </context>
 <context>
     <name>HotkeySettings</name>
@@ -1066,10 +914,6 @@ Size: %2</source>
         <translation>美化</translation>
     </message>
     <message>
-        <source>Recognize Text</source>
-        <translation type="vanished">テキスト認識</translation>
-    </message>
-    <message>
         <location filename="../src/PinWindow.cpp" line="917" />
         <source>Click-through</source>
         <translation>クリックスルー</translation>
@@ -1479,26 +1323,6 @@ Size: %2</source>
         <translation>ピンの結合に失敗しました</translation>
     </message>
     <message>
-        <source>Capture</source>
-        <translation type="vanished">キャプチャ</translation>
-    </message>
-    <message>
-        <source>Canvas</source>
-        <translation type="vanished">キャンバス</translation>
-    </message>
-    <message>
-        <source>Clipboard</source>
-        <translation type="vanished">クリップボード</translation>
-    </message>
-    <message>
-        <source>Pin</source>
-        <translation type="vanished">ピン</translation>
-    </message>
-    <message>
-        <source>Recording</source>
-        <translation type="vanished">録画</translation>
-    </message>
-    <message>
         <location filename="../src/QRCodeManager.cpp" line="200" />
         <source>No barcode found in image</source>
         <translation>画像にバーコードが見つかりません</translation>
@@ -1717,16 +1541,8 @@ Size: %2</source>
 <context>
     <name>RecordingControlBar</name>
     <message>
-        <source>Audio recording enabled</source>
-        <translation type="vanished">音声録音が有効</translation>
-    </message>
-    <message>
         <source>-- fps</source>
         <translation>-- フレーム/秒</translation>
-    </message>
-    <message>
-        <source>Annotate</source>
-        <translation type="vanished">注釈</translation>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingControlBar.qml" line="254" />
@@ -1752,50 +1568,6 @@ Size: %2</source>
     <message>
         <source>Cancel Recording (Esc)</source>
         <translation>録画をキャンセル (Esc)</translation>
-    </message>
-    <message>
-        <source>Pause (Space)</source>
-        <translation type="vanished">一時停止 (スペース)</translation>
-    </message>
-    <message>
-        <source>Play (Space)</source>
-        <translation type="vanished">再生 (スペース)</translation>
-    </message>
-    <message>
-        <source>Unmute (M)</source>
-        <translation type="vanished">ミュート解除 (M)</translation>
-    </message>
-    <message>
-        <source>Mute (M)</source>
-        <translation type="vanished">ミュート (M)</translation>
-    </message>
-    <message>
-        <source>MP4 - Best quality</source>
-        <translation type="vanished">MP4 - 最高品質</translation>
-    </message>
-    <message>
-        <source>GIF - Universal support</source>
-        <translation type="vanished">GIF - 汎用的なサポート</translation>
-    </message>
-    <message>
-        <source>WebP - Small size</source>
-        <translation type="vanished">WebP - 小さいサイズ</translation>
-    </message>
-    <message>
-        <source>Annotate Video</source>
-        <translation type="vanished">動画に注釈</translation>
-    </message>
-    <message>
-        <source>Save (Enter)</source>
-        <translation type="vanished">保存 (Enter)</translation>
-    </message>
-    <message>
-        <source>Discard (Esc)</source>
-        <translation type="vanished">破棄 (Esc)</translation>
-    </message>
-    <message>
-        <source>Drag to seek</source>
-        <translation type="vanished">ドラッグしてシーク</translation>
     </message>
 </context>
 <context>
@@ -1977,151 +1749,61 @@ Size: %2</source>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="71" />
         <source>Recording Preview</source>
-        <translation type="unfinished">録画プレビュー</translation>
+        <translation>録画プレビュー</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="356" />
         <source>Converting video...</source>
-        <translation type="unfinished">動画を変換中...</translation>
+        <translation>動画を変換中...</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="365" />
         <source>Failed to create video player for conversion</source>
-        <translation type="unfinished" />
+        <translation>変換用の動画プレーヤーの作成に失敗しました</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="366" />
         <source>Failed to load video for conversion</source>
-        <translation type="unfinished" />
+        <translation>変換用の動画の読み込みに失敗しました</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="367" />
         <source>Video not loaded properly for conversion</source>
-        <translation type="unfinished" />
+        <translation>変換用の動画が正しく読み込まれませんでした</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="368" />
         <source>Failed to start encoder</source>
-        <translation type="unfinished" />
+        <translation>エンコーダーの開始に失敗しました</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="369" />
         <source>Conversion failed: output file is missing or empty</source>
-        <translation type="unfinished" />
+        <translation>変換に失敗しました: 出力ファイルが存在しないか空です</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="596" />
         <source>Trimming video...</source>
-        <translation type="unfinished">動画をトリミング中...</translation>
+        <translation>動画をトリミング中...</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="615" />
         <source>Trim failed: %1</source>
-        <translation type="unfinished" />
+        <translation>トリミングに失敗しました: %1</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="650" />
         <source>Trim failed: output file is missing or empty</source>
-        <translation type="unfinished" />
+        <translation>トリミングに失敗しました: 出力ファイルが存在しないか空です</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="657" />
         <source>Trim failed</source>
-        <translation type="unfinished" />
+        <translation>トリミングに失敗しました</translation>
     </message>
 </context>
 <context>
     <name>RecordingPreviewWindow</name>
-    <message>
-        <source>Recording Preview</source>
-        <translation type="vanished">録画プレビュー</translation>
-    </message>
-    <message>
-        <source>Trim</source>
-        <translation type="vanished">トリミング</translation>
-    </message>
-    <message>
-        <source>Loop playback within the trimmed range</source>
-        <translation type="vanished">トリミング範囲内をループ再生</translation>
-    </message>
-    <message>
-        <source>Play/Pause (Space)</source>
-        <translation type="vanished">再生/一時停止 (スペース)</translation>
-    </message>
-    <message>
-        <source>Playback speed</source>
-        <translation type="vanished">再生速度</translation>
-    </message>
-    <message>
-        <source>Mute (M)</source>
-        <translation type="vanished">ミュート (M)</translation>
-    </message>
-    <message>
-        <source>Discard (Esc)</source>
-        <translation type="vanished">破棄 (Esc)</translation>
-    </message>
-    <message>
-        <source>Save (Enter)</source>
-        <translation type="vanished">保存 (Enter)</translation>
-    </message>
-    <message>
-        <source>Video Error</source>
-        <translation type="vanished">動画エラー</translation>
-    </message>
-    <message>
-        <source>Failed to load video:
-%1</source>
-        <translation type="vanished">動画の読み込みに失敗しました:
-%1</translation>
-    </message>
-    <message>
-        <source>Conversion Error</source>
-        <translation type="vanished">変換エラー</translation>
-    </message>
-    <message>
-        <source>Cannot convert: video not loaded properly.</source>
-        <translation type="vanished">変換できません: 動画が正しく読み込まれていません。</translation>
-    </message>
-    <message>
-        <source>Converting video...</source>
-        <translation type="vanished">動画を変換中...</translation>
-    </message>
-    <message>
-        <source>Cancel</source>
-        <translation type="vanished">キャンセル</translation>
-    </message>
-    <message>
-        <source>Failed to start encoder: %1</source>
-        <translation type="vanished">エンコーダーの起動に失敗しました: %1</translation>
-    </message>
-    <message>
-        <source>Trim Failed</source>
-        <translation type="vanished">トリミング失敗</translation>
-    </message>
-    <message>
-        <source>Failed to trim the video. Please try again.</source>
-        <translation type="vanished">動画のトリミングに失敗しました。もう一度お試しください。</translation>
-    </message>
-    <message>
-        <source>Set Trim Start</source>
-        <translation type="vanished">トリミング開始点を設定</translation>
-    </message>
-    <message>
-        <source>Set Trim End</source>
-        <translation type="vanished">トリミング終了点を設定</translation>
-    </message>
-    <message>
-        <source>Enter time in seconds:</source>
-        <translation type="vanished">秒数を入力:</translation>
-    </message>
-    <message>
-        <source>Trim Error</source>
-        <translation type="vanished">トリミングエラー</translation>
-    </message>
-    <message>
-        <source>Trimming video...</source>
-        <translation type="vanished">動画をトリミング中...</translation>
-    </message>
 </context>
 <context>
     <name>RecordingRegionSelector</name>
@@ -2493,10 +2175,6 @@ GIF録画では音声はサポートされていません。</translation>
         <translation>顔または認証情報が検出されませんでした</translation>
     </message>
     <message>
-        <source>No faces detected</source>
-        <translation type="vanished">顔が検出されませんでした</translation>
-    </message>
-    <message>
         <location filename="../src/RegionSelector.cpp" line="2819" />
         <source>Detection failed</source>
         <translation>検出に失敗しました</translation>
@@ -2529,582 +2207,6 @@ GIF録画では音声はサポートされていません。</translation>
 </context>
 <context>
     <name>SettingsDialog</name>
-    <message>
-        <source>%1 Settings</source>
-        <translation type="vanished">%1 設定</translation>
-    </message>
-    <message>
-        <source>General</source>
-        <translation type="vanished">一般</translation>
-    </message>
-    <message>
-        <source>Hotkeys</source>
-        <translation type="vanished">ホットキー</translation>
-    </message>
-    <message>
-        <source>Advanced</source>
-        <translation type="vanished">詳細</translation>
-    </message>
-    <message>
-        <source>Watermark</source>
-        <translation type="vanished">ウォーターマーク</translation>
-    </message>
-    <message>
-        <source>OCR</source>
-        <translation type="vanished">OCR</translation>
-    </message>
-    <message>
-        <source>Recording</source>
-        <translation type="vanished">録画</translation>
-    </message>
-    <message>
-        <source>Files</source>
-        <translation type="vanished">ファイル</translation>
-    </message>
-    <message>
-        <source>Updates</source>
-        <translation type="vanished">アップデート</translation>
-    </message>
-    <message>
-        <source>About</source>
-        <translation type="vanished">情報</translation>
-    </message>
-    <message>
-        <source>Save</source>
-        <translation type="vanished">保存</translation>
-    </message>
-    <message>
-        <source>Cancel</source>
-        <translation type="vanished">キャンセル</translation>
-    </message>
-    <message>
-        <source>Start on login</source>
-        <translation type="vanished">ログイン時に起動</translation>
-    </message>
-    <message>
-        <source>Language</source>
-        <translation type="vanished">言語</translation>
-    </message>
-    <message>
-        <source>Display language:</source>
-        <translation type="vanished">表示言語:</translation>
-    </message>
-    <message>
-        <source>Appearance</source>
-        <translation type="vanished">外観</translation>
-    </message>
-    <message>
-        <source>Toolbar Style:</source>
-        <translation type="vanished">ツールバーのスタイル:</translation>
-    </message>
-    <message>
-        <source>Dark</source>
-        <translation type="vanished">ダーク</translation>
-    </message>
-    <message>
-        <source>Light</source>
-        <translation type="vanished">ライト</translation>
-    </message>
-    <message>
-        <source>Permissions</source>
-        <translation type="vanished">権限</translation>
-    </message>
-    <message>
-        <source>Screen Recording:</source>
-        <translation type="vanished">画面収録:</translation>
-    </message>
-    <message>
-        <source>Open Settings</source>
-        <translation type="vanished">設定を開く</translation>
-    </message>
-    <message>
-        <source>Accessibility:</source>
-        <translation type="vanished">アクセシビリティ:</translation>
-    </message>
-    <message>
-        <source>Command Line Interface</source>
-        <translation type="vanished">コマンドラインインターフェース</translation>
-    </message>
-    <message>
-        <source>Blur</source>
-        <translation type="vanished">ぼかし</translation>
-    </message>
-    <message>
-        <source>Blur intensity:</source>
-        <translation type="vanished">ぼかしの強度:</translation>
-    </message>
-    <message>
-        <source>Blur type:</source>
-        <translation type="vanished">ぼかしの種類:</translation>
-    </message>
-    <message>
-        <source>Pixelate</source>
-        <translation type="vanished">ピクセル化</translation>
-    </message>
-    <message>
-        <source>Gaussian</source>
-        <translation type="vanished">ガウス</translation>
-    </message>
-    <message>
-        <source>Pin Window</source>
-        <translation type="vanished">ピンウィンドウ</translation>
-    </message>
-    <message>
-        <source>Default opacity:</source>
-        <translation type="vanished">デフォルトの不透明度:</translation>
-    </message>
-    <message>
-        <source>Opacity step:</source>
-        <translation type="vanished">不透明度のステップ:</translation>
-    </message>
-    <message>
-        <source>Zoom step:</source>
-        <translation type="vanished">ズームのステップ:</translation>
-    </message>
-    <message>
-        <source>Max cache files:</source>
-        <translation type="vanished">最大キャッシュファイル数:</translation>
-    </message>
-    <message>
-        <source>Apply to images</source>
-        <translation type="vanished">画像に適用</translation>
-    </message>
-    <message>
-        <source>Apply to recordings</source>
-        <translation type="vanished">録画に適用</translation>
-    </message>
-    <message>
-        <source>Image:</source>
-        <translation type="vanished">画像:</translation>
-    </message>
-    <message>
-        <source>Select an image file...</source>
-        <translation type="vanished">画像ファイルを選択...</translation>
-    </message>
-    <message>
-        <source>Browse...</source>
-        <translation type="vanished">参照...</translation>
-    </message>
-    <message>
-        <source>Select Watermark Image</source>
-        <translation type="vanished">ウォーターマーク画像を選択</translation>
-    </message>
-    <message>
-        <source>Images (*.png *.jpg *.jpeg *.bmp *.gif *.svg);;All Files (*)</source>
-        <translation type="vanished">画像 (*.png *.jpg *.jpeg *.bmp *.gif *.svg);;すべてのファイル (*)</translation>
-    </message>
-    <message>
-        <source>Scale:</source>
-        <translation type="vanished">拡大縮小:</translation>
-    </message>
-    <message>
-        <source>Opacity:</source>
-        <translation type="vanished">不透明度:</translation>
-    </message>
-    <message>
-        <source>Margin:</source>
-        <translation type="vanished">余白:</translation>
-    </message>
-    <message>
-        <source>Position:</source>
-        <translation type="vanished">位置:</translation>
-    </message>
-    <message>
-        <source>Top-Left</source>
-        <translation type="vanished">左上</translation>
-    </message>
-    <message>
-        <source>Top-Right</source>
-        <translation type="vanished">右上</translation>
-    </message>
-    <message>
-        <source>Bottom-Left</source>
-        <translation type="vanished">左下</translation>
-    </message>
-    <message>
-        <source>Bottom-Right</source>
-        <translation type="vanished">右下</translation>
-    </message>
-    <message>
-        <source>No image</source>
-        <translation type="vanished">画像なし</translation>
-    </message>
-    <message>
-        <source>Invalid image</source>
-        <translation type="vanished">無効な画像</translation>
-    </message>
-    <message>
-        <source>Size: %1 × %2 px</source>
-        <translation type="vanished">サイズ: %1 × %2 px</translation>
-    </message>
-    <message>
-        <source>Frame Rate:</source>
-        <translation type="vanished">フレームレート:</translation>
-    </message>
-    <message>
-        <source>Capture</source>
-        <translation type="vanished">キャプチャ</translation>
-    </message>
-    <message>
-        <source>Show shortcut hints when entering region capture</source>
-        <translation type="vanished">範囲キャプチャに入るときにショートカットのヒントを表示</translation>
-    </message>
-    <message>
-        <source>MCP</source>
-        <translation type="vanished">MCP</translation>
-    </message>
-    <message>
-        <source>Enable MCP server</source>
-        <translation type="vanished">MCP サーバーを有効にする</translation>
-    </message>
-    <message>
-        <source>10 FPS</source>
-        <translation type="vanished">10 フレーム/秒</translation>
-    </message>
-    <message>
-        <source>15 FPS</source>
-        <translation type="vanished">15 フレーム/秒</translation>
-    </message>
-    <message>
-        <source>24 FPS</source>
-        <translation type="vanished">24 フレーム/秒</translation>
-    </message>
-    <message>
-        <source>30 FPS</source>
-        <translation type="vanished">30 フレーム/秒</translation>
-    </message>
-    <message>
-        <source>Output Format:</source>
-        <translation type="vanished">出力形式:</translation>
-    </message>
-    <message>
-        <source>MP4 (H.264)</source>
-        <translation type="vanished">MP4 (H.264)</translation>
-    </message>
-    <message>
-        <source>GIF</source>
-        <translation type="vanished">GIF</translation>
-    </message>
-    <message>
-        <source>WebP</source>
-        <translation type="vanished">WebP</translation>
-    </message>
-    <message>
-        <source>Quality:</source>
-        <translation type="vanished">品質:</translation>
-    </message>
-    <message>
-        <source>Audio</source>
-        <translation type="vanished">オーディオ</translation>
-    </message>
-    <message>
-        <source>Record audio</source>
-        <translation type="vanished">音声を録音</translation>
-    </message>
-    <message>
-        <source>Source:</source>
-        <translation type="vanished">ソース:</translation>
-    </message>
-    <message>
-        <source>Microphone</source>
-        <translation type="vanished">マイク</translation>
-    </message>
-    <message>
-        <source>System Audio</source>
-        <translation type="vanished">システムオーディオ</translation>
-    </message>
-    <message>
-        <source>Both (Mixed)</source>
-        <translation type="vanished">両方 (ミックス)</translation>
-    </message>
-    <message>
-        <source>Device:</source>
-        <translation type="vanished">デバイス:</translation>
-    </message>
-    <message>
-        <source>Default</source>
-        <translation type="vanished">デフォルト</translation>
-    </message>
-    <message>
-        <source>Show preview after recording</source>
-        <translation type="vanished">録画後にプレビューを表示</translation>
-    </message>
-    <message>
-        <source>Countdown</source>
-        <translation type="vanished">カウントダウン</translation>
-    </message>
-    <message>
-        <source>Show countdown before recording</source>
-        <translation type="vanished">録画前にカウントダウンを表示</translation>
-    </message>
-    <message>
-        <source>Display a 3-2-1 countdown before recording starts</source>
-        <translation type="vanished">録画開始前に3-2-1カウントダウンを表示</translation>
-    </message>
-    <message>
-        <source>Countdown duration:</source>
-        <translation type="vanished">カウントダウンの長さ:</translation>
-    </message>
-    <message>
-        <source>1 second</source>
-        <translation type="vanished">1秒</translation>
-    </message>
-    <message>
-        <source>2 seconds</source>
-        <translation type="vanished">2秒</translation>
-    </message>
-    <message>
-        <source>3 seconds</source>
-        <translation type="vanished">3秒</translation>
-    </message>
-    <message>
-        <source>4 seconds</source>
-        <translation type="vanished">4秒</translation>
-    </message>
-    <message>
-        <source>5 seconds</source>
-        <translation type="vanished">5秒</translation>
-    </message>
-    <message>
-        <source>Restart Required</source>
-        <translation type="vanished">再起動が必要</translation>
-    </message>
-    <message>
-        <source>The language change will take effect after restarting the application.</source>
-        <translation type="vanished">言語の変更はアプリケーションを再起動した後に反映されます。</translation>
-    </message>
-    <message>
-        <source>Loading available languages...</source>
-        <translation type="vanished">利用可能な言語を読み込み中...</translation>
-    </message>
-    <message>
-        <source>Available Languages</source>
-        <translation type="vanished">利用可能な言語</translation>
-    </message>
-    <message>
-        <source>Add selected languages</source>
-        <translation type="vanished">選択した言語を追加</translation>
-    </message>
-    <message>
-        <source>Remove selected languages</source>
-        <translation type="vanished">選択した言語を削除</translation>
-    </message>
-    <message>
-        <source>Selected Languages</source>
-        <translation type="vanished">選択された言語</translation>
-    </message>
-    <message>
-        <source>English is always included and cannot be removed</source>
-        <translation type="vanished">英語は常に含まれており、削除できません</translation>
-    </message>
-    <message>
-        <source>After OCR Recognition</source>
-        <translation type="vanished">OCR認識後</translation>
-    </message>
-    <message>
-        <source>Copy text directly to clipboard</source>
-        <translation type="vanished">テキストを直接クリップボードにコピー</translation>
-    </message>
-    <message>
-        <source>Show editor to review and edit text</source>
-        <translation type="vanished">エディターを表示してテキストを確認・編集</translation>
-    </message>
-    <message>
-        <source>Recognized text is immediately copied to clipboard</source>
-        <translation type="vanished">認識されたテキストはすぐにクリップボードにコピーされます</translation>
-    </message>
-    <message>
-        <source>Opens a dialog where you can review and edit the text before copying</source>
-        <translation type="vanished">コピーする前にテキストを確認・編集できるダイアログが開きます</translation>
-    </message>
-    <message>
-        <source>Save Locations</source>
-        <translation type="vanished">保存場所</translation>
-    </message>
-    <message>
-        <source>Screenshots:</source>
-        <translation type="vanished">スクリーンショット:</translation>
-    </message>
-    <message>
-        <source>Select Screenshot Folder</source>
-        <translation type="vanished">スクリーンショットフォルダーを選択</translation>
-    </message>
-    <message>
-        <source>Recordings:</source>
-        <translation type="vanished">録画:</translation>
-    </message>
-    <message>
-        <source>Select Recording Folder</source>
-        <translation type="vanished">録画フォルダーを選択</translation>
-    </message>
-    <message>
-        <source>Filename Format</source>
-        <translation type="vanished">ファイル名の形式</translation>
-    </message>
-    <message>
-        <source>Template:</source>
-        <translation type="vanished">テンプレート:</translation>
-    </message>
-    <message>
-        <source>Save Behavior</source>
-        <translation type="vanished">保存の動作</translation>
-    </message>
-    <message>
-        <source>Auto-save screenshots (save directly without dialog)</source>
-        <translation type="vanished">スクリーンショットを自動保存 (ダイアログなしで直接保存)</translation>
-    </message>
-    <message>
-        <source>Auto-save recordings (save directly without dialog)</source>
-        <translation type="vanished">録画を自動保存 (ダイアログなしで直接保存)</translation>
-    </message>
-    <message>
-        <source>Preview: %1</source>
-        <translation type="vanished">プレビュー: %1</translation>
-    </message>
-    <message>
-        <source>
-Invalid template, fallback applied: %1</source>
-        <translation type="vanished">
-無効なテンプレートのため、フォールバックが適用されました: %1</translation>
-    </message>
-    <message>
-        <source>Version Information</source>
-        <translation type="vanished">バージョン情報</translation>
-    </message>
-    <message>
-        <source>Current Version</source>
-        <translation type="vanished">現在のバージョン</translation>
-    </message>
-    <message>
-        <source>Automatic Updates</source>
-        <translation type="vanished">自動アップデート</translation>
-    </message>
-    <message>
-        <source>Check for updates automatically</source>
-        <translation type="vanished">アップデートを自動的に確認</translation>
-    </message>
-    <message>
-        <source>Check frequency</source>
-        <translation type="vanished">確認頻度</translation>
-    </message>
-    <message>
-        <source>Every day</source>
-        <translation type="vanished">毎日</translation>
-    </message>
-    <message>
-        <source>Every 3 days</source>
-        <translation type="vanished">3日ごと</translation>
-    </message>
-    <message>
-        <source>Every week</source>
-        <translation type="vanished">毎週</translation>
-    </message>
-    <message>
-        <source>Every 2 weeks</source>
-        <translation type="vanished">2週間ごと</translation>
-    </message>
-    <message>
-        <source>Every month</source>
-        <translation type="vanished">毎月</translation>
-    </message>
-    <message>
-        <source>Last checked: %1</source>
-        <translation type="vanished">最終確認: %1</translation>
-    </message>
-    <message>
-        <source>Last checked: Never</source>
-        <translation type="vanished">最終確認: なし</translation>
-    </message>
-    <message>
-        <source>Check Now</source>
-        <translation type="vanished">今すぐ確認</translation>
-    </message>
-    <message>
-        <source>Checking...</source>
-        <translation type="vanished">確認中...</translation>
-    </message>
-    <message>
-        <source>Version %1</source>
-        <translation type="vanished">バージョン %1</translation>
-    </message>
-    <message>
-        <source>Copyright 2024-2025 Victor Fu</source>
-        <translation type="vanished">著作権 2024-2025 Victor Fu</translation>
-    </message>
-    <message>
-        <source>Author: Victor Fu</source>
-        <translation type="vanished">作者: Victor Fu</translation>
-    </message>
-    <message>
-        <source>'snaptray' command is available in terminal</source>
-        <translation type="vanished">'snaptray' コマンドはターミナルで利用可能です</translation>
-    </message>
-    <message>
-        <source>Uninstall CLI</source>
-        <translation type="vanished">CLI をアンインストール</translation>
-    </message>
-    <message>
-        <source>'snaptray' command is not installed</source>
-        <translation type="vanished">'snaptray' コマンドはインストールされていません</translation>
-    </message>
-    <message>
-        <source>Install CLI</source>
-        <translation type="vanished">CLI をインストール</translation>
-    </message>
-    <message>
-        <source>Granted</source>
-        <translation type="vanished">許可済み</translation>
-    </message>
-    <message>
-        <source>Not Granted</source>
-        <translation type="vanished">未許可</translation>
-    </message>
-    <message>
-        <source>GIF format creates larger files than MP4.
-Best for short clips and sharing on web.
-Audio is not supported for GIF recordings.</source>
-        <translation type="vanished">GIF形式はMP4より大きなファイルを作成します。
-短いクリップやウェブでの共有に最適です。
-GIF録画では音声はサポートされていません。</translation>
-    </message>
-    <message>
-        <source>WebP format creates smaller files than GIF with better quality.
-Best for short clips and sharing on web.
-Audio is not supported for WebP recordings.</source>
-        <translation type="vanished">WebP形式はGIFよりも小さく高品質なファイルを作成します。
-短いクリップやウェブでの共有に最適です。
-WebP録画では音声はサポートされていません。</translation>
-    </message>
-    <message>
-        <source>Microphone access denied. Please enable in System Settings &gt; Privacy &amp; Security &gt; Microphone.</source>
-        <translation type="vanished">マイクへのアクセスが拒否されました。システム設定 &gt; プライバシーとセキュリティ &gt; マイクで有効にしてください。</translation>
-    </message>
-    <message>
-        <source>System audio capture requires macOS 13 (Ventura) or later, or a virtual audio device like BlackHole.</source>
-        <translation type="vanished">システムオーディオキャプチャにはmacOS 13 (Ventura) 以降、またはBlackHoleのような仮想オーディオデバイスが必要です。</translation>
-    </message>
-    <message>
-        <source>Select and order the languages for OCR recognition.
-English is always included and cannot be removed. Drag to reorder selected languages.</source>
-        <translation type="vanished">OCR認識用の言語を選択して順序を設定します。
-英語は常に含まれており、削除できません。ドラッグして選択した言語の順序を変更できます。</translation>
-    </message>
-    <message>
-        <source>No OCR languages available.
-
-macOS: OCR requires macOS 10.15 or later.
-Windows: Install language packs in Settings &gt; Time &amp; Language &gt; Language.</source>
-        <translation type="vanished">OCR言語が利用できません。
-
-macOS: OCRにはmacOS 10.15以降が必要です。
-Windows: 設定 &gt; 時刻と言語 &gt; 言語で言語パックをインストールしてください。</translation>
-    </message>
-    <message>
-        <source>Tokens: {prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}
-Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
-        <translation type="vanished">トークン: {prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}
-日付トークン: {yyyyMMdd_HHmmss}、{yyyy-MM-dd_HH-mm-ss}、または {date}</translation>
-    </message>
 </context>
 <context>
     <name>SettingsPathPicker</name>
@@ -4031,7 +3133,7 @@ It may be in use by another application.</source>
     <message>
         <location filename="../src/qml/main.qml" line="10" />
         <source>SnapTray QML</source>
-        <translation type="unfinished" />
+        <translation>SnapTray QML</translation>
     </message>
 </context>
 <context>

@@ -211,34 +211,6 @@
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>
-    <message>
-        <source>Cancel capture</source>
-        <translation type="vanished">Hủy chụp</translation>
-    </message>
-    <message>
-        <source>Confirm selection (after selection)</source>
-        <translation type="vanished">Xác nhận vùng chọn (sau khi chọn)</translation>
-    </message>
-    <message>
-        <source>Toggle multi-region mode</source>
-        <translation type="vanished">Chuyển chế độ nhiều vùng</translation>
-    </message>
-    <message>
-        <source>Switch RGB/HEX (when magnifier visible)</source>
-        <translation type="vanished">Chuyển RGB/HEX (khi kính lúp hiển thị)</translation>
-    </message>
-    <message>
-        <source>Copy color value (before selection)</source>
-        <translation type="vanished">Sao chép giá trị màu (trước khi chọn)</translation>
-    </message>
-    <message>
-        <source>Move selection by 1 pixel (after selection)</source>
-        <translation type="vanished">Di chuyển vùng chọn 1 pixel (sau khi chọn)</translation>
-    </message>
-    <message>
-        <source>Resize selection by 1 pixel (after selection)</source>
-        <translation type="vanished">Đổi kích thước vùng chọn 1 pixel (sau khi chọn)</translation>
-    </message>
 </context>
 <context>
     <name>ClickThroughExitButton</name>
@@ -305,18 +277,6 @@ Token ngày: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, hoặc {date}</translatio
 </context>
 <context>
     <name>FormatSelectionWidget</name>
-    <message>
-        <source>Best quality, widely compatible</source>
-        <translation type="vanished">Chất lượng tốt nhất, tương thích rộng rãi</translation>
-    </message>
-    <message>
-        <source>Universal support, larger file size</source>
-        <translation type="vanished">Hỗ trợ phổ biến, kích thước tệp lớn hơn</translation>
-    </message>
-    <message>
-        <source>Small file size, modern browsers only</source>
-        <translation type="vanished">Kích thước tệp nhỏ, chỉ hỗ trợ trình duyệt hiện đại</translation>
-    </message>
 </context>
 <context>
     <name>GeneralSettings</name>
@@ -418,66 +378,6 @@ Token ngày: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, hoặc {date}</translatio
 </context>
 <context>
     <name>HotkeyManager</name>
-    <message>
-        <source>Conflicts with: %1</source>
-        <translation type="vanished">Xung đột với: %1</translation>
-    </message>
-    <message>
-        <source>Region Capture</source>
-        <translation type="vanished">Chụp vùng</translation>
-    </message>
-    <message>
-        <source>Capture a selected region of the screen</source>
-        <translation type="vanished">Chụp vùng đã chọn trên màn hình</translation>
-    </message>
-    <message>
-        <source>Screen Canvas</source>
-        <translation type="vanished">Bảng vẽ màn hình</translation>
-    </message>
-    <message>
-        <source>Annotate directly on the screen</source>
-        <translation type="vanished">Chú thích trực tiếp trên màn hình</translation>
-    </message>
-    <message>
-        <source>Paste</source>
-        <translation type="vanished">Dán</translation>
-    </message>
-    <message>
-        <source>Pin content from clipboard</source>
-        <translation type="vanished">Ghim nội dung từ bộ nhớ tạm</translation>
-    </message>
-    <message>
-        <source>Quick Pin</source>
-        <translation type="vanished">Ghim nhanh</translation>
-    </message>
-    <message>
-        <source>Select and pin a region directly</source>
-        <translation type="vanished">Chọn và ghim vùng trực tiếp</translation>
-    </message>
-    <message>
-        <source>Pin from Image</source>
-        <translation type="vanished">Ghim từ hình ảnh</translation>
-    </message>
-    <message>
-        <source>Pin an image from file</source>
-        <translation type="vanished">Ghim hình ảnh từ tệp</translation>
-    </message>
-    <message>
-        <source>Pin History</source>
-        <translation type="vanished">Lịch sử ghim</translation>
-    </message>
-    <message>
-        <source>Open pin history window</source>
-        <translation type="vanished">Mở cửa sổ lịch sử ghim</translation>
-    </message>
-    <message>
-        <source>Record Full Screen</source>
-        <translation type="vanished">Ghi toàn màn hình</translation>
-    </message>
-    <message>
-        <source>Start full screen recording</source>
-        <translation type="vanished">Bắt đầu ghi toàn màn hình</translation>
-    </message>
 </context>
 <context>
     <name>HotkeySettings</name>
@@ -1006,10 +906,6 @@ Kích thước: %2</translation>
         <location filename="../src/PinWindow.cpp" line="913" />
         <source>Beautify</source>
         <translation>Làm đẹp</translation>
-    </message>
-    <message>
-        <source>Recognize Text</source>
-        <translation type="vanished">Nhận dạng văn bản</translation>
     </message>
     <message>
         <location filename="../src/PinWindow.cpp" line="917" />
@@ -1639,16 +1535,8 @@ Kích thước: %2</translation>
 <context>
     <name>RecordingControlBar</name>
     <message>
-        <source>Audio recording enabled</source>
-        <translation type="vanished">Đã bật ghi âm thanh</translation>
-    </message>
-    <message>
         <source>-- fps</source>
         <translation>-- fps</translation>
-    </message>
-    <message>
-        <source>Annotate</source>
-        <translation type="vanished">Chú thích</translation>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingControlBar.qml" line="254" />
@@ -1674,50 +1562,6 @@ Kích thước: %2</translation>
     <message>
         <source>Cancel Recording (Esc)</source>
         <translation>Hủy ghi (Esc)</translation>
-    </message>
-    <message>
-        <source>Pause (Space)</source>
-        <translation type="vanished">Tạm dừng (Space)</translation>
-    </message>
-    <message>
-        <source>Play (Space)</source>
-        <translation type="vanished">Phát (Space)</translation>
-    </message>
-    <message>
-        <source>Unmute (M)</source>
-        <translation type="vanished">Bật tiếng (M)</translation>
-    </message>
-    <message>
-        <source>Mute (M)</source>
-        <translation type="vanished">Tắt tiếng (M)</translation>
-    </message>
-    <message>
-        <source>MP4 - Best quality</source>
-        <translation type="vanished">MP4 - Chất lượng tốt nhất</translation>
-    </message>
-    <message>
-        <source>GIF - Universal support</source>
-        <translation type="vanished">GIF - Hỗ trợ phổ biến</translation>
-    </message>
-    <message>
-        <source>WebP - Small size</source>
-        <translation type="vanished">WebP - Kích thước nhỏ</translation>
-    </message>
-    <message>
-        <source>Annotate Video</source>
-        <translation type="vanished">Chú thích video</translation>
-    </message>
-    <message>
-        <source>Save (Enter)</source>
-        <translation type="vanished">Lưu (Enter)</translation>
-    </message>
-    <message>
-        <source>Discard (Esc)</source>
-        <translation type="vanished">Hủy bỏ (Esc)</translation>
-    </message>
-    <message>
-        <source>Drag to seek</source>
-        <translation type="vanished">Kéo để tua</translation>
     </message>
 </context>
 <context>
@@ -1899,151 +1743,61 @@ Kích thước: %2</translation>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="71" />
         <source>Recording Preview</source>
-        <translation type="unfinished">Xem trước bản ghi</translation>
+        <translation>Xem trước bản ghi</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="356" />
         <source>Converting video...</source>
-        <translation type="unfinished">Đang chuyển đổi video...</translation>
+        <translation>Đang chuyển đổi video...</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="365" />
         <source>Failed to create video player for conversion</source>
-        <translation type="unfinished" />
+        <translation>Không thể tạo trình phát video để chuyển đổi</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="366" />
         <source>Failed to load video for conversion</source>
-        <translation type="unfinished" />
+        <translation>Không thể tải video để chuyển đổi</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="367" />
         <source>Video not loaded properly for conversion</source>
-        <translation type="unfinished" />
+        <translation>Video không được tải đúng cách để chuyển đổi</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="368" />
         <source>Failed to start encoder</source>
-        <translation type="unfinished" />
+        <translation>Không thể khởi động bộ mã hóa</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="369" />
         <source>Conversion failed: output file is missing or empty</source>
-        <translation type="unfinished" />
+        <translation>Chuyển đổi thất bại: tệp đầu ra bị thiếu hoặc trống</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="596" />
         <source>Trimming video...</source>
-        <translation type="unfinished">Đang cắt video...</translation>
+        <translation>Đang cắt video...</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="615" />
         <source>Trim failed: %1</source>
-        <translation type="unfinished" />
+        <translation>Cắt video thất bại: %1</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="650" />
         <source>Trim failed: output file is missing or empty</source>
-        <translation type="unfinished" />
+        <translation>Cắt video thất bại: tệp đầu ra bị thiếu hoặc trống</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="657" />
         <source>Trim failed</source>
-        <translation type="unfinished" />
+        <translation>Cắt video thất bại</translation>
     </message>
 </context>
 <context>
     <name>RecordingPreviewWindow</name>
-    <message>
-        <source>Recording Preview</source>
-        <translation type="vanished">Xem trước bản ghi</translation>
-    </message>
-    <message>
-        <source>Trim</source>
-        <translation type="vanished">Cắt</translation>
-    </message>
-    <message>
-        <source>Loop playback within the trimmed range</source>
-        <translation type="vanished">Phát lặp trong phạm vi đã cắt</translation>
-    </message>
-    <message>
-        <source>Play/Pause (Space)</source>
-        <translation type="vanished">Phát/Tạm dừng (Space)</translation>
-    </message>
-    <message>
-        <source>Playback speed</source>
-        <translation type="vanished">Tốc độ phát</translation>
-    </message>
-    <message>
-        <source>Mute (M)</source>
-        <translation type="vanished">Tắt tiếng (M)</translation>
-    </message>
-    <message>
-        <source>Discard (Esc)</source>
-        <translation type="vanished">Hủy bỏ (Esc)</translation>
-    </message>
-    <message>
-        <source>Save (Enter)</source>
-        <translation type="vanished">Lưu (Enter)</translation>
-    </message>
-    <message>
-        <source>Video Error</source>
-        <translation type="vanished">Lỗi video</translation>
-    </message>
-    <message>
-        <source>Failed to load video:
-%1</source>
-        <translation type="vanished">Không thể tải video:
-%1</translation>
-    </message>
-    <message>
-        <source>Conversion Error</source>
-        <translation type="vanished">Lỗi chuyển đổi</translation>
-    </message>
-    <message>
-        <source>Cannot convert: video not loaded properly.</source>
-        <translation type="vanished">Không thể chuyển đổi: video chưa được tải đúng cách.</translation>
-    </message>
-    <message>
-        <source>Converting video...</source>
-        <translation type="vanished">Đang chuyển đổi video...</translation>
-    </message>
-    <message>
-        <source>Cancel</source>
-        <translation type="vanished">Hủy</translation>
-    </message>
-    <message>
-        <source>Failed to start encoder: %1</source>
-        <translation type="vanished">Không thể khởi động bộ mã hóa: %1</translation>
-    </message>
-    <message>
-        <source>Trim Failed</source>
-        <translation type="vanished">Cắt thất bại</translation>
-    </message>
-    <message>
-        <source>Failed to trim the video. Please try again.</source>
-        <translation type="vanished">Không thể cắt video. Vui lòng thử lại.</translation>
-    </message>
-    <message>
-        <source>Set Trim Start</source>
-        <translation type="vanished">Đặt điểm bắt đầu cắt</translation>
-    </message>
-    <message>
-        <source>Set Trim End</source>
-        <translation type="vanished">Đặt điểm kết thúc cắt</translation>
-    </message>
-    <message>
-        <source>Enter time in seconds:</source>
-        <translation type="vanished">Nhập thời gian tính bằng giây:</translation>
-    </message>
-    <message>
-        <source>Trim Error</source>
-        <translation type="vanished">Lỗi cắt</translation>
-    </message>
-    <message>
-        <source>Trimming video...</source>
-        <translation type="vanished">Đang cắt video...</translation>
-    </message>
 </context>
 <context>
     <name>RecordingRegionSelector</name>
@@ -2415,10 +2169,6 @@ Ghi GIF không hỗ trợ âm thanh.</translation>
         <translation>Không phát hiện khuôn mặt hoặc thông tin nhạy cảm</translation>
     </message>
     <message>
-        <source>No faces detected</source>
-        <translation type="vanished">Không phát hiện khuôn mặt</translation>
-    </message>
-    <message>
         <location filename="../src/RegionSelector.cpp" line="2819" />
         <source>Detection failed</source>
         <translation>Phát hiện thất bại</translation>
@@ -2451,582 +2201,6 @@ Ghi GIF không hỗ trợ âm thanh.</translation>
 </context>
 <context>
     <name>SettingsDialog</name>
-    <message>
-        <source>%1 Settings</source>
-        <translation type="vanished">Cài đặt %1</translation>
-    </message>
-    <message>
-        <source>General</source>
-        <translation type="vanished">Chung</translation>
-    </message>
-    <message>
-        <source>Hotkeys</source>
-        <translation type="vanished">Phím tắt</translation>
-    </message>
-    <message>
-        <source>Advanced</source>
-        <translation type="vanished">Nâng cao</translation>
-    </message>
-    <message>
-        <source>Watermark</source>
-        <translation type="vanished">Hình mờ</translation>
-    </message>
-    <message>
-        <source>OCR</source>
-        <translation type="vanished">OCR</translation>
-    </message>
-    <message>
-        <source>Recording</source>
-        <translation type="vanished">Ghi hình</translation>
-    </message>
-    <message>
-        <source>Files</source>
-        <translation type="vanished">Tệp</translation>
-    </message>
-    <message>
-        <source>Updates</source>
-        <translation type="vanished">Cập nhật</translation>
-    </message>
-    <message>
-        <source>About</source>
-        <translation type="vanished">Giới thiệu</translation>
-    </message>
-    <message>
-        <source>Save</source>
-        <translation type="vanished">Lưu</translation>
-    </message>
-    <message>
-        <source>Cancel</source>
-        <translation type="vanished">Hủy</translation>
-    </message>
-    <message>
-        <source>Start on login</source>
-        <translation type="vanished">Khởi động khi đăng nhập</translation>
-    </message>
-    <message>
-        <source>Language</source>
-        <translation type="vanished">Ngôn ngữ</translation>
-    </message>
-    <message>
-        <source>Display language:</source>
-        <translation type="vanished">Ngôn ngữ hiển thị:</translation>
-    </message>
-    <message>
-        <source>Appearance</source>
-        <translation type="vanished">Giao diện</translation>
-    </message>
-    <message>
-        <source>Toolbar Style:</source>
-        <translation type="vanished">Kiểu thanh công cụ:</translation>
-    </message>
-    <message>
-        <source>Dark</source>
-        <translation type="vanished">Tối</translation>
-    </message>
-    <message>
-        <source>Light</source>
-        <translation type="vanished">Sáng</translation>
-    </message>
-    <message>
-        <source>Permissions</source>
-        <translation type="vanished">Quyền hạn</translation>
-    </message>
-    <message>
-        <source>Screen Recording:</source>
-        <translation type="vanished">Ghi màn hình:</translation>
-    </message>
-    <message>
-        <source>Open Settings</source>
-        <translation type="vanished">Mở Cài đặt</translation>
-    </message>
-    <message>
-        <source>Accessibility:</source>
-        <translation type="vanished">Trợ năng:</translation>
-    </message>
-    <message>
-        <source>Command Line Interface</source>
-        <translation type="vanished">Giao diện dòng lệnh</translation>
-    </message>
-    <message>
-        <source>Blur</source>
-        <translation type="vanished">Làm mờ</translation>
-    </message>
-    <message>
-        <source>Blur intensity:</source>
-        <translation type="vanished">Cường độ làm mờ:</translation>
-    </message>
-    <message>
-        <source>Blur type:</source>
-        <translation type="vanished">Loại làm mờ:</translation>
-    </message>
-    <message>
-        <source>Pixelate</source>
-        <translation type="vanished">Khảm điểm ảnh</translation>
-    </message>
-    <message>
-        <source>Gaussian</source>
-        <translation type="vanished">Gaussian</translation>
-    </message>
-    <message>
-        <source>Pin Window</source>
-        <translation type="vanished">Cửa sổ ghim</translation>
-    </message>
-    <message>
-        <source>Default opacity:</source>
-        <translation type="vanished">Độ mờ mặc định:</translation>
-    </message>
-    <message>
-        <source>Opacity step:</source>
-        <translation type="vanished">Bước độ mờ:</translation>
-    </message>
-    <message>
-        <source>Zoom step:</source>
-        <translation type="vanished">Bước thu phóng:</translation>
-    </message>
-    <message>
-        <source>Max cache files:</source>
-        <translation type="vanished">Số tệp bộ nhớ đệm tối đa:</translation>
-    </message>
-    <message>
-        <source>Apply to images</source>
-        <translation type="vanished">Áp dụng cho hình ảnh</translation>
-    </message>
-    <message>
-        <source>Apply to recordings</source>
-        <translation type="vanished">Áp dụng cho bản ghi</translation>
-    </message>
-    <message>
-        <source>Image:</source>
-        <translation type="vanished">Hình ảnh:</translation>
-    </message>
-    <message>
-        <source>Select an image file...</source>
-        <translation type="vanished">Chọn một tệp hình ảnh...</translation>
-    </message>
-    <message>
-        <source>Browse...</source>
-        <translation type="vanished">Duyệt...</translation>
-    </message>
-    <message>
-        <source>Select Watermark Image</source>
-        <translation type="vanished">Chọn hình ảnh hình mờ</translation>
-    </message>
-    <message>
-        <source>Images (*.png *.jpg *.jpeg *.bmp *.gif *.svg);;All Files (*)</source>
-        <translation type="vanished">Hình ảnh (*.png *.jpg *.jpeg *.bmp *.gif *.svg);;Tất cả tệp (*)</translation>
-    </message>
-    <message>
-        <source>Scale:</source>
-        <translation type="vanished">Tỷ lệ:</translation>
-    </message>
-    <message>
-        <source>Opacity:</source>
-        <translation type="vanished">Độ mờ:</translation>
-    </message>
-    <message>
-        <source>Margin:</source>
-        <translation type="vanished">Lề:</translation>
-    </message>
-    <message>
-        <source>Position:</source>
-        <translation type="vanished">Vị trí:</translation>
-    </message>
-    <message>
-        <source>Top-Left</source>
-        <translation type="vanished">Trên-Trái</translation>
-    </message>
-    <message>
-        <source>Top-Right</source>
-        <translation type="vanished">Trên-Phải</translation>
-    </message>
-    <message>
-        <source>Bottom-Left</source>
-        <translation type="vanished">Dưới-Trái</translation>
-    </message>
-    <message>
-        <source>Bottom-Right</source>
-        <translation type="vanished">Dưới-Phải</translation>
-    </message>
-    <message>
-        <source>No image</source>
-        <translation type="vanished">Không có hình ảnh</translation>
-    </message>
-    <message>
-        <source>Invalid image</source>
-        <translation type="vanished">Hình ảnh không hợp lệ</translation>
-    </message>
-    <message>
-        <source>Size: %1 × %2 px</source>
-        <translation type="vanished">Kích thước: %1 × %2 px</translation>
-    </message>
-    <message>
-        <source>Frame Rate:</source>
-        <translation type="vanished">Tốc độ khung hình:</translation>
-    </message>
-    <message>
-        <source>Capture</source>
-        <translation type="vanished">Chụp</translation>
-    </message>
-    <message>
-        <source>Show shortcut hints when entering region capture</source>
-        <translation type="vanished">Hiển thị gợi ý phím tắt khi vào chế độ chụp vùng</translation>
-    </message>
-    <message>
-        <source>MCP</source>
-        <translation type="vanished">MCP</translation>
-    </message>
-    <message>
-        <source>Enable MCP server</source>
-        <translation type="vanished">Bật máy chủ MCP</translation>
-    </message>
-    <message>
-        <source>10 FPS</source>
-        <translation type="vanished">10 FPS</translation>
-    </message>
-    <message>
-        <source>15 FPS</source>
-        <translation type="vanished">15 FPS</translation>
-    </message>
-    <message>
-        <source>24 FPS</source>
-        <translation type="vanished">24 FPS</translation>
-    </message>
-    <message>
-        <source>30 FPS</source>
-        <translation type="vanished">30 FPS</translation>
-    </message>
-    <message>
-        <source>Output Format:</source>
-        <translation type="vanished">Định dạng đầu ra:</translation>
-    </message>
-    <message>
-        <source>MP4 (H.264)</source>
-        <translation type="vanished">MP4 (H.264)</translation>
-    </message>
-    <message>
-        <source>GIF</source>
-        <translation type="vanished">GIF</translation>
-    </message>
-    <message>
-        <source>WebP</source>
-        <translation type="vanished">WebP</translation>
-    </message>
-    <message>
-        <source>Quality:</source>
-        <translation type="vanished">Chất lượng:</translation>
-    </message>
-    <message>
-        <source>GIF format creates larger files than MP4.
-Best for short clips and sharing on web.
-Audio is not supported for GIF recordings.</source>
-        <translation type="vanished">Định dạng GIF tạo tệp lớn hơn MP4.
-Phù hợp cho clip ngắn và chia sẻ trên web.
-Ghi GIF không hỗ trợ âm thanh.</translation>
-    </message>
-    <message>
-        <source>Audio</source>
-        <translation type="vanished">Âm thanh</translation>
-    </message>
-    <message>
-        <source>Record audio</source>
-        <translation type="vanished">Ghi âm thanh</translation>
-    </message>
-    <message>
-        <source>Source:</source>
-        <translation type="vanished">Nguồn:</translation>
-    </message>
-    <message>
-        <source>Microphone</source>
-        <translation type="vanished">Micrô</translation>
-    </message>
-    <message>
-        <source>System Audio</source>
-        <translation type="vanished">Âm thanh hệ thống</translation>
-    </message>
-    <message>
-        <source>Both (Mixed)</source>
-        <translation type="vanished">Cả hai (Hỗn hợp)</translation>
-    </message>
-    <message>
-        <source>Device:</source>
-        <translation type="vanished">Thiết bị:</translation>
-    </message>
-    <message>
-        <source>Default</source>
-        <translation type="vanished">Mặc định</translation>
-    </message>
-    <message>
-        <source>Show preview after recording</source>
-        <translation type="vanished">Hiển thị xem trước sau khi ghi</translation>
-    </message>
-    <message>
-        <source>Countdown</source>
-        <translation type="vanished">Đếm ngược</translation>
-    </message>
-    <message>
-        <source>Show countdown before recording</source>
-        <translation type="vanished">Hiển thị đếm ngược trước khi ghi</translation>
-    </message>
-    <message>
-        <source>Display a 3-2-1 countdown before recording starts</source>
-        <translation type="vanished">Hiển thị đếm ngược 3-2-1 trước khi bắt đầu ghi</translation>
-    </message>
-    <message>
-        <source>Countdown duration:</source>
-        <translation type="vanished">Thời lượng đếm ngược:</translation>
-    </message>
-    <message>
-        <source>1 second</source>
-        <translation type="vanished">1 giây</translation>
-    </message>
-    <message>
-        <source>2 seconds</source>
-        <translation type="vanished">2 giây</translation>
-    </message>
-    <message>
-        <source>3 seconds</source>
-        <translation type="vanished">3 giây</translation>
-    </message>
-    <message>
-        <source>4 seconds</source>
-        <translation type="vanished">4 giây</translation>
-    </message>
-    <message>
-        <source>5 seconds</source>
-        <translation type="vanished">5 giây</translation>
-    </message>
-    <message>
-        <source>WebP format creates smaller files than GIF with better quality.
-Best for short clips and sharing on web.
-Audio is not supported for WebP recordings.</source>
-        <translation type="vanished">Định dạng WebP tạo tệp nhỏ hơn GIF với chất lượng tốt hơn.
-Phù hợp cho clip ngắn và chia sẻ trên web.
-Ghi WebP không hỗ trợ âm thanh.</translation>
-    </message>
-    <message>
-        <source>Restart Required</source>
-        <translation type="vanished">Cần khởi động lại</translation>
-    </message>
-    <message>
-        <source>The language change will take effect after restarting the application.</source>
-        <translation type="vanished">Thay đổi ngôn ngữ sẽ có hiệu lực sau khi khởi động lại ứng dụng.</translation>
-    </message>
-    <message>
-        <source>Microphone access denied. Please enable in System Settings &gt; Privacy &amp; Security &gt; Microphone.</source>
-        <translation type="vanished">Quyền truy cập micro bị từ chối. Vui lòng bật trong Cài đặt hệ thống &gt; Quyền riêng tư &amp; Bảo mật &gt; Micro.</translation>
-    </message>
-    <message>
-        <source>System audio capture requires macOS 13 (Ventura) or later, or a virtual audio device like BlackHole.</source>
-        <translation type="vanished">Thu âm thanh hệ thống yêu cầu macOS 13 (Ventura) trở lên, hoặc thiết bị âm thanh ảo như BlackHole.</translation>
-    </message>
-    <message>
-        <source>Loading available languages...</source>
-        <translation type="vanished">Đang tải các ngôn ngữ khả dụng...</translation>
-    </message>
-    <message>
-        <source>Select and order the languages for OCR recognition.
-English is always included and cannot be removed. Drag to reorder selected languages.</source>
-        <translation type="vanished">Chọn và sắp xếp thứ tự ngôn ngữ cho nhận dạng OCR.
-Tiếng Anh luôn được bao gồm và không thể xóa. Kéo để đổi thứ tự các ngôn ngữ đã chọn.</translation>
-    </message>
-    <message>
-        <source>Available Languages</source>
-        <translation type="vanished">Ngôn ngữ khả dụng</translation>
-    </message>
-    <message>
-        <source>Add selected languages</source>
-        <translation type="vanished">Thêm ngôn ngữ đã chọn</translation>
-    </message>
-    <message>
-        <source>Remove selected languages</source>
-        <translation type="vanished">Xóa ngôn ngữ đã chọn</translation>
-    </message>
-    <message>
-        <source>Selected Languages</source>
-        <translation type="vanished">Ngôn ngữ đã chọn</translation>
-    </message>
-    <message>
-        <source>English is always included and cannot be removed</source>
-        <translation type="vanished">Tiếng Anh luôn được bao gồm và không thể xóa</translation>
-    </message>
-    <message>
-        <source>After OCR Recognition</source>
-        <translation type="vanished">Sau khi nhận dạng OCR</translation>
-    </message>
-    <message>
-        <source>Copy text directly to clipboard</source>
-        <translation type="vanished">Sao chép văn bản trực tiếp vào bộ nhớ tạm</translation>
-    </message>
-    <message>
-        <source>Show editor to review and edit text</source>
-        <translation type="vanished">Hiển thị trình soạn thảo để xem lại và chỉnh sửa văn bản</translation>
-    </message>
-    <message>
-        <source>Recognized text is immediately copied to clipboard</source>
-        <translation type="vanished">Văn bản nhận dạng được sao chép ngay vào bộ nhớ tạm</translation>
-    </message>
-    <message>
-        <source>Opens a dialog where you can review and edit the text before copying</source>
-        <translation type="vanished">Mở hộp thoại để bạn xem lại và chỉnh sửa văn bản trước khi sao chép</translation>
-    </message>
-    <message>
-        <source>No OCR languages available.
-
-macOS: OCR requires macOS 10.15 or later.
-Windows: Install language packs in Settings &gt; Time &amp; Language &gt; Language.</source>
-        <translation type="vanished">Không có ngôn ngữ OCR khả dụng.
-
-macOS: OCR yêu cầu macOS 10.15 trở lên.
-Windows: Cài gói ngôn ngữ trong Settings &gt; Time &amp; Language &gt; Language.</translation>
-    </message>
-    <message>
-        <source>Save Locations</source>
-        <translation type="vanished">Vị trí lưu</translation>
-    </message>
-    <message>
-        <source>Screenshots:</source>
-        <translation type="vanished">Ảnh chụp màn hình:</translation>
-    </message>
-    <message>
-        <source>Select Screenshot Folder</source>
-        <translation type="vanished">Chọn thư mục ảnh chụp màn hình</translation>
-    </message>
-    <message>
-        <source>Recordings:</source>
-        <translation type="vanished">Bản ghi:</translation>
-    </message>
-    <message>
-        <source>Select Recording Folder</source>
-        <translation type="vanished">Chọn thư mục bản ghi</translation>
-    </message>
-    <message>
-        <source>Filename Format</source>
-        <translation type="vanished">Định dạng tên tệp</translation>
-    </message>
-    <message>
-        <source>Template:</source>
-        <translation type="vanished">Mẫu:</translation>
-    </message>
-    <message>
-        <source>Tokens: {prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}
-Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
-        <translation type="vanished">Mã token: {prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}
-Token ngày: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, hoặc {date}</translation>
-    </message>
-    <message>
-        <source>Save Behavior</source>
-        <translation type="vanished">Hành vi lưu</translation>
-    </message>
-    <message>
-        <source>Auto-save screenshots (save directly without dialog)</source>
-        <translation type="vanished">Tự động lưu ảnh chụp màn hình (lưu trực tiếp không cần hộp thoại)</translation>
-    </message>
-    <message>
-        <source>Auto-save recordings (save directly without dialog)</source>
-        <translation type="vanished">Tự động lưu bản ghi (lưu trực tiếp không cần hộp thoại)</translation>
-    </message>
-    <message>
-        <source>Preview: %1</source>
-        <translation type="vanished">Xem trước: %1</translation>
-    </message>
-    <message>
-        <source>
-Invalid template, fallback applied: %1</source>
-        <translation type="vanished">
-Mẫu không hợp lệ, đã áp dụng dự phòng: %1</translation>
-    </message>
-    <message>
-        <source>Version Information</source>
-        <translation type="vanished">Thông tin phiên bản</translation>
-    </message>
-    <message>
-        <source>Current Version</source>
-        <translation type="vanished">Phiên bản hiện tại</translation>
-    </message>
-    <message>
-        <source>Automatic Updates</source>
-        <translation type="vanished">Cập nhật tự động</translation>
-    </message>
-    <message>
-        <source>Check for updates automatically</source>
-        <translation type="vanished">Tự động kiểm tra cập nhật</translation>
-    </message>
-    <message>
-        <source>Check frequency</source>
-        <translation type="vanished">Tần suất kiểm tra</translation>
-    </message>
-    <message>
-        <source>Every day</source>
-        <translation type="vanished">Hàng ngày</translation>
-    </message>
-    <message>
-        <source>Every 3 days</source>
-        <translation type="vanished">Mỗi 3 ngày</translation>
-    </message>
-    <message>
-        <source>Every week</source>
-        <translation type="vanished">Hàng tuần</translation>
-    </message>
-    <message>
-        <source>Every 2 weeks</source>
-        <translation type="vanished">Mỗi 2 tuần</translation>
-    </message>
-    <message>
-        <source>Every month</source>
-        <translation type="vanished">Hàng tháng</translation>
-    </message>
-    <message>
-        <source>Last checked: %1</source>
-        <translation type="vanished">Lần kiểm tra cuối: %1</translation>
-    </message>
-    <message>
-        <source>Last checked: Never</source>
-        <translation type="vanished">Lần kiểm tra cuối: Chưa bao giờ</translation>
-    </message>
-    <message>
-        <source>Check Now</source>
-        <translation type="vanished">Kiểm tra ngay</translation>
-    </message>
-    <message>
-        <source>Checking...</source>
-        <translation type="vanished">Đang kiểm tra...</translation>
-    </message>
-    <message>
-        <source>Version %1</source>
-        <translation type="vanished">Phiên bản %1</translation>
-    </message>
-    <message>
-        <source>Copyright 2024-2025 Victor Fu</source>
-        <translation type="vanished">Bản quyền 2024-2025 Victor Fu</translation>
-    </message>
-    <message>
-        <source>Author: Victor Fu</source>
-        <translation type="vanished">Tác giả: Victor Fu</translation>
-    </message>
-    <message>
-        <source>'snaptray' command is available in terminal</source>
-        <translation type="vanished">Lệnh 'snaptray' khả dụng trong terminal</translation>
-    </message>
-    <message>
-        <source>Uninstall CLI</source>
-        <translation type="vanished">Gỡ cài đặt CLI</translation>
-    </message>
-    <message>
-        <source>'snaptray' command is not installed</source>
-        <translation type="vanished">Lệnh 'snaptray' chưa được cài đặt</translation>
-    </message>
-    <message>
-        <source>Install CLI</source>
-        <translation type="vanished">Cài đặt CLI</translation>
-    </message>
-    <message>
-        <source>Granted</source>
-        <translation type="vanished">Đã cấp</translation>
-    </message>
-    <message>
-        <source>Not Granted</source>
-        <translation type="vanished">Chưa cấp</translation>
-    </message>
 </context>
 <context>
     <name>SettingsPathPicker</name>
@@ -3953,7 +3127,7 @@ Có thể phím này đang được ứng dụng khác sử dụng.</translation
     <message>
         <location filename="../src/qml/main.qml" line="10" />
         <source>SnapTray QML</source>
-        <translation type="unfinished" />
+        <translation>SnapTray QML</translation>
     </message>
 </context>
 <context>

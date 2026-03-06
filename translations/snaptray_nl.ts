@@ -211,34 +211,6 @@
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>
-    <message>
-        <source>Cancel capture</source>
-        <translation type="vanished">Vastleggen annuleren</translation>
-    </message>
-    <message>
-        <source>Confirm selection (after selection)</source>
-        <translation type="vanished">Selectie bevestigen (na selectie)</translation>
-    </message>
-    <message>
-        <source>Toggle multi-region mode</source>
-        <translation type="vanished">Modus voor meerdere regio's wisselen</translation>
-    </message>
-    <message>
-        <source>Switch RGB/HEX (when magnifier visible)</source>
-        <translation type="vanished">RGB/HEX wisselen (wanneer de loep zichtbaar is)</translation>
-    </message>
-    <message>
-        <source>Copy color value (before selection)</source>
-        <translation type="vanished">Kleurwaarde kopiëren (vóór selectie)</translation>
-    </message>
-    <message>
-        <source>Move selection by 1 pixel (after selection)</source>
-        <translation type="vanished">Selectie 1 pixel verplaatsen (na selectie)</translation>
-    </message>
-    <message>
-        <source>Resize selection by 1 pixel (after selection)</source>
-        <translation type="vanished">Selectie 1 pixel van grootte veranderen (na selectie)</translation>
-    </message>
 </context>
 <context>
     <name>ClickThroughExitButton</name>
@@ -250,61 +222,9 @@
 </context>
 <context>
     <name>ColorDialog</name>
-    <message>
-        <source>Select Color</source>
-        <translation type="vanished">Kleur selecteren</translation>
-    </message>
-    <message>
-        <source>Hue</source>
-        <translation type="vanished">Tint</translation>
-    </message>
-    <message>
-        <source>Saturation</source>
-        <translation type="vanished">Verzadiging</translation>
-    </message>
-    <message>
-        <source>Value</source>
-        <translation type="vanished">Helderheid</translation>
-    </message>
-    <message>
-        <source>Red</source>
-        <translation type="vanished">Rood</translation>
-    </message>
-    <message>
-        <source>Green</source>
-        <translation type="vanished">Groen</translation>
-    </message>
-    <message>
-        <source>Blue</source>
-        <translation type="vanished">Blauw</translation>
-    </message>
-    <message>
-        <source>Alpha</source>
-        <translation type="vanished">Alfa</translation>
-    </message>
-    <message>
-        <source>Hex</source>
-        <translation type="vanished">Hex</translation>
-    </message>
-    <message>
-        <source>Reset</source>
-        <translation type="vanished">Herstellen</translation>
-    </message>
-    <message>
-        <source>OK</source>
-        <translation type="vanished">OK</translation>
-    </message>
-    <message>
-        <source>Cancel</source>
-        <translation type="vanished">Annuleren</translation>
-    </message>
 </context>
 <context>
     <name>ColorPickerDialogCompat</name>
-    <message>
-        <source>Select Color</source>
-        <translation type="vanished">Kleur selecteren</translation>
-    </message>
 </context>
 <context>
     <name>FilesSettings</name>
@@ -363,18 +283,6 @@ Datumtokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} of {date}</translation>
 </context>
 <context>
     <name>FormatSelectionWidget</name>
-    <message>
-        <source>Best quality, widely compatible</source>
-        <translation type="vanished">Beste kwaliteit, breed compatibel</translation>
-    </message>
-    <message>
-        <source>Universal support, larger file size</source>
-        <translation type="vanished">Universele ondersteuning, groter bestand</translation>
-    </message>
-    <message>
-        <source>Small file size, modern browsers only</source>
-        <translation type="vanished">Klein bestand, alleen moderne browsers</translation>
-    </message>
 </context>
 <context>
     <name>GeneralSettings</name>
@@ -476,66 +384,6 @@ Datumtokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} of {date}</translation>
 </context>
 <context>
     <name>HotkeyManager</name>
-    <message>
-        <source>Conflicts with: %1</source>
-        <translation type="vanished">Conflict met: %1</translation>
-    </message>
-    <message>
-        <source>Region Capture</source>
-        <translation type="vanished">Gebiedsopname</translation>
-    </message>
-    <message>
-        <source>Capture a selected region of the screen</source>
-        <translation type="vanished">Een geselecteerd gebied van het scherm vastleggen</translation>
-    </message>
-    <message>
-        <source>Screen Canvas</source>
-        <translation type="vanished">Schermcanvas</translation>
-    </message>
-    <message>
-        <source>Annotate directly on the screen</source>
-        <translation type="vanished">Direct op het scherm tekenen</translation>
-    </message>
-    <message>
-        <source>Paste</source>
-        <translation type="vanished">Plakken</translation>
-    </message>
-    <message>
-        <source>Pin content from clipboard</source>
-        <translation type="vanished">Inhoud van klembord vastmaken</translation>
-    </message>
-    <message>
-        <source>Quick Pin</source>
-        <translation type="vanished">Snel vastmaken</translation>
-    </message>
-    <message>
-        <source>Select and pin a region directly</source>
-        <translation type="vanished">Gebied direct selecteren en vastmaken</translation>
-    </message>
-    <message>
-        <source>Pin from Image</source>
-        <translation type="vanished">Vastmaken vanuit afbeelding</translation>
-    </message>
-    <message>
-        <source>Pin an image from file</source>
-        <translation type="vanished">Een afbeelding uit een bestand vastmaken</translation>
-    </message>
-    <message>
-        <source>Pin History</source>
-        <translation type="vanished">Vastmaakgeschiedenis</translation>
-    </message>
-    <message>
-        <source>Open pin history window</source>
-        <translation type="vanished">Vastmaakgeschiedenis-venster openen</translation>
-    </message>
-    <message>
-        <source>Record Full Screen</source>
-        <translation type="vanished">Volledig scherm opnemen</translation>
-    </message>
-    <message>
-        <source>Start full screen recording</source>
-        <translation type="vanished">Opname op volledig scherm starten</translation>
-    </message>
 </context>
 <context>
     <name>HotkeySettings</name>
@@ -1066,10 +914,6 @@ Grootte: %2</translation>
         <translation>Verfraaien</translation>
     </message>
     <message>
-        <source>Recognize Text</source>
-        <translation type="vanished">Tekst herkennen</translation>
-    </message>
-    <message>
         <location filename="../src/PinWindow.cpp" line="917" />
         <source>Click-through</source>
         <translation>Doorklikken</translation>
@@ -1479,26 +1323,6 @@ Grootte: %2</translation>
         <translation>Kan pins niet samenvoegen</translation>
     </message>
     <message>
-        <source>Capture</source>
-        <translation type="vanished">Opname</translation>
-    </message>
-    <message>
-        <source>Canvas</source>
-        <translation type="vanished">Canvas</translation>
-    </message>
-    <message>
-        <source>Clipboard</source>
-        <translation type="vanished">Klembord</translation>
-    </message>
-    <message>
-        <source>Pin</source>
-        <translation type="vanished">Vastmaken</translation>
-    </message>
-    <message>
-        <source>Recording</source>
-        <translation type="vanished">Opname</translation>
-    </message>
-    <message>
         <location filename="../src/QRCodeManager.cpp" line="200" />
         <source>No barcode found in image</source>
         <translation>Geen barcode gevonden in afbeelding</translation>
@@ -1717,16 +1541,8 @@ Grootte: %2</translation>
 <context>
     <name>RecordingControlBar</name>
     <message>
-        <source>Audio recording enabled</source>
-        <translation type="vanished">Audio-opname ingeschakeld</translation>
-    </message>
-    <message>
         <source>-- fps</source>
         <translation>-- fps</translation>
-    </message>
-    <message>
-        <source>Annotate</source>
-        <translation type="vanished">Tekenen</translation>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingControlBar.qml" line="254" />
@@ -1752,50 +1568,6 @@ Grootte: %2</translation>
     <message>
         <source>Cancel Recording (Esc)</source>
         <translation>Opname annuleren (Esc)</translation>
-    </message>
-    <message>
-        <source>Pause (Space)</source>
-        <translation type="vanished">Pauzeren (Spatie)</translation>
-    </message>
-    <message>
-        <source>Play (Space)</source>
-        <translation type="vanished">Afspelen (Spatie)</translation>
-    </message>
-    <message>
-        <source>Unmute (M)</source>
-        <translation type="vanished">Dempen opheffen (M)</translation>
-    </message>
-    <message>
-        <source>Mute (M)</source>
-        <translation type="vanished">Dempen (M)</translation>
-    </message>
-    <message>
-        <source>MP4 - Best quality</source>
-        <translation type="vanished">MP4 - Beste kwaliteit</translation>
-    </message>
-    <message>
-        <source>GIF - Universal support</source>
-        <translation type="vanished">GIF - Universele ondersteuning</translation>
-    </message>
-    <message>
-        <source>WebP - Small size</source>
-        <translation type="vanished">WebP - Kleine bestandsgrootte</translation>
-    </message>
-    <message>
-        <source>Annotate Video</source>
-        <translation type="vanished">Video annoteren</translation>
-    </message>
-    <message>
-        <source>Save (Enter)</source>
-        <translation type="vanished">Opslaan (Enter)</translation>
-    </message>
-    <message>
-        <source>Discard (Esc)</source>
-        <translation type="vanished">Verwerpen (Esc)</translation>
-    </message>
-    <message>
-        <source>Drag to seek</source>
-        <translation type="vanished">Slepen om te zoeken</translation>
     </message>
 </context>
 <context>
@@ -1977,151 +1749,61 @@ Grootte: %2</translation>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="71" />
         <source>Recording Preview</source>
-        <translation type="unfinished">Opnamevoorbeeld</translation>
+        <translation>Opnamevoorbeeld</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="356" />
         <source>Converting video...</source>
-        <translation type="unfinished">Video converteren...</translation>
+        <translation>Video converteren...</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="365" />
         <source>Failed to create video player for conversion</source>
-        <translation type="unfinished" />
+        <translation>Kon geen videospeler voor conversie maken</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="366" />
         <source>Failed to load video for conversion</source>
-        <translation type="unfinished" />
+        <translation>Kon video voor conversie niet laden</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="367" />
         <source>Video not loaded properly for conversion</source>
-        <translation type="unfinished" />
+        <translation>Video is niet correct geladen voor conversie</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="368" />
         <source>Failed to start encoder</source>
-        <translation type="unfinished" />
+        <translation>Kon encoder niet starten</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="369" />
         <source>Conversion failed: output file is missing or empty</source>
-        <translation type="unfinished" />
+        <translation>Conversie mislukt: uitvoerbestand ontbreekt of is leeg</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="596" />
         <source>Trimming video...</source>
-        <translation type="unfinished">Video bijknippen...</translation>
+        <translation>Video bijknippen...</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="615" />
         <source>Trim failed: %1</source>
-        <translation type="unfinished" />
+        <translation>Bijknippen mislukt: %1</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="650" />
         <source>Trim failed: output file is missing or empty</source>
-        <translation type="unfinished" />
+        <translation>Bijknippen mislukt: uitvoerbestand ontbreekt of is leeg</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="657" />
         <source>Trim failed</source>
-        <translation type="unfinished" />
+        <translation>Bijknippen mislukt</translation>
     </message>
 </context>
 <context>
     <name>RecordingPreviewWindow</name>
-    <message>
-        <source>Recording Preview</source>
-        <translation type="vanished">Opnamevoorbeeld</translation>
-    </message>
-    <message>
-        <source>Trim</source>
-        <translation type="vanished">Bijknippen</translation>
-    </message>
-    <message>
-        <source>Loop playback within the trimmed range</source>
-        <translation type="vanished">Herhaalweergave binnen het bijgeknipte bereik</translation>
-    </message>
-    <message>
-        <source>Play/Pause (Space)</source>
-        <translation type="vanished">Afspelen/Pauzeren (Spatie)</translation>
-    </message>
-    <message>
-        <source>Playback speed</source>
-        <translation type="vanished">Afspeelsnelheid</translation>
-    </message>
-    <message>
-        <source>Mute (M)</source>
-        <translation type="vanished">Dempen (M)</translation>
-    </message>
-    <message>
-        <source>Discard (Esc)</source>
-        <translation type="vanished">Verwerpen (Esc)</translation>
-    </message>
-    <message>
-        <source>Save (Enter)</source>
-        <translation type="vanished">Opslaan (Enter)</translation>
-    </message>
-    <message>
-        <source>Video Error</source>
-        <translation type="vanished">Videofout</translation>
-    </message>
-    <message>
-        <source>Failed to load video:
-%1</source>
-        <translation type="vanished">Kan video niet laden:
-%1</translation>
-    </message>
-    <message>
-        <source>Conversion Error</source>
-        <translation type="vanished">Conversiefout</translation>
-    </message>
-    <message>
-        <source>Cannot convert: video not loaded properly.</source>
-        <translation type="vanished">Kan niet converteren: video niet correct geladen.</translation>
-    </message>
-    <message>
-        <source>Converting video...</source>
-        <translation type="vanished">Video converteren...</translation>
-    </message>
-    <message>
-        <source>Cancel</source>
-        <translation type="vanished">Annuleren</translation>
-    </message>
-    <message>
-        <source>Failed to start encoder: %1</source>
-        <translation type="vanished">Kan encoder niet starten: %1</translation>
-    </message>
-    <message>
-        <source>Trim Failed</source>
-        <translation type="vanished">Bijknippen mislukt</translation>
-    </message>
-    <message>
-        <source>Failed to trim the video. Please try again.</source>
-        <translation type="vanished">Kan de video niet bijknippen. Probeer het opnieuw.</translation>
-    </message>
-    <message>
-        <source>Set Trim Start</source>
-        <translation type="vanished">Beginpunt instellen</translation>
-    </message>
-    <message>
-        <source>Set Trim End</source>
-        <translation type="vanished">Eindpunt instellen</translation>
-    </message>
-    <message>
-        <source>Enter time in seconds:</source>
-        <translation type="vanished">Voer tijd in seconden in:</translation>
-    </message>
-    <message>
-        <source>Trim Error</source>
-        <translation type="vanished">Bijknipfout</translation>
-    </message>
-    <message>
-        <source>Trimming video...</source>
-        <translation type="vanished">Video bijknippen...</translation>
-    </message>
 </context>
 <context>
     <name>RecordingRegionSelector</name>
@@ -2493,10 +2175,6 @@ Audio wordt niet ondersteund voor GIF-opnamen.</translation>
         <translation>Geen gezichten of inloggegevens gedetecteerd</translation>
     </message>
     <message>
-        <source>No faces detected</source>
-        <translation type="vanished">Geen gezichten gedetecteerd</translation>
-    </message>
-    <message>
         <location filename="../src/RegionSelector.cpp" line="2819" />
         <source>Detection failed</source>
         <translation>Detectie mislukt</translation>
@@ -2529,582 +2207,6 @@ Audio wordt niet ondersteund voor GIF-opnamen.</translation>
 </context>
 <context>
     <name>SettingsDialog</name>
-    <message>
-        <source>%1 Settings</source>
-        <translation type="vanished">%1 Instellingen</translation>
-    </message>
-    <message>
-        <source>General</source>
-        <translation type="vanished">Algemeen</translation>
-    </message>
-    <message>
-        <source>Hotkeys</source>
-        <translation type="vanished">Sneltoetsen</translation>
-    </message>
-    <message>
-        <source>Advanced</source>
-        <translation type="vanished">Geavanceerd</translation>
-    </message>
-    <message>
-        <source>Watermark</source>
-        <translation type="vanished">Watermerk</translation>
-    </message>
-    <message>
-        <source>OCR</source>
-        <translation type="vanished">OCR</translation>
-    </message>
-    <message>
-        <source>Recording</source>
-        <translation type="vanished">Opname</translation>
-    </message>
-    <message>
-        <source>Files</source>
-        <translation type="vanished">Bestanden</translation>
-    </message>
-    <message>
-        <source>Updates</source>
-        <translation type="vanished">Updates</translation>
-    </message>
-    <message>
-        <source>About</source>
-        <translation type="vanished">Over</translation>
-    </message>
-    <message>
-        <source>Save</source>
-        <translation type="vanished">Opslaan</translation>
-    </message>
-    <message>
-        <source>Cancel</source>
-        <translation type="vanished">Annuleren</translation>
-    </message>
-    <message>
-        <source>Start on login</source>
-        <translation type="vanished">Starten bij aanmelding</translation>
-    </message>
-    <message>
-        <source>Language</source>
-        <translation type="vanished">Taal</translation>
-    </message>
-    <message>
-        <source>Display language:</source>
-        <translation type="vanished">Weergavetaal:</translation>
-    </message>
-    <message>
-        <source>Appearance</source>
-        <translation type="vanished">Uiterlijk</translation>
-    </message>
-    <message>
-        <source>Toolbar Style:</source>
-        <translation type="vanished">Werkbalkstijl:</translation>
-    </message>
-    <message>
-        <source>Dark</source>
-        <translation type="vanished">Donker</translation>
-    </message>
-    <message>
-        <source>Light</source>
-        <translation type="vanished">Licht</translation>
-    </message>
-    <message>
-        <source>Permissions</source>
-        <translation type="vanished">Machtigingen</translation>
-    </message>
-    <message>
-        <source>Screen Recording:</source>
-        <translation type="vanished">Schermopname:</translation>
-    </message>
-    <message>
-        <source>Open Settings</source>
-        <translation type="vanished">Instellingen openen</translation>
-    </message>
-    <message>
-        <source>Accessibility:</source>
-        <translation type="vanished">Toegankelijkheid:</translation>
-    </message>
-    <message>
-        <source>Command Line Interface</source>
-        <translation type="vanished">Opdrachtregel</translation>
-    </message>
-    <message>
-        <source>Blur</source>
-        <translation type="vanished">Vervagen</translation>
-    </message>
-    <message>
-        <source>Blur intensity:</source>
-        <translation type="vanished">Vervagingsintensiteit:</translation>
-    </message>
-    <message>
-        <source>Blur type:</source>
-        <translation type="vanished">Vervagingstype:</translation>
-    </message>
-    <message>
-        <source>Pixelate</source>
-        <translation type="vanished">Pixeleren</translation>
-    </message>
-    <message>
-        <source>Gaussian</source>
-        <translation type="vanished">Gaussisch</translation>
-    </message>
-    <message>
-        <source>Pin Window</source>
-        <translation type="vanished">Vastgemaakt venster</translation>
-    </message>
-    <message>
-        <source>Default opacity:</source>
-        <translation type="vanished">Standaard dekking:</translation>
-    </message>
-    <message>
-        <source>Opacity step:</source>
-        <translation type="vanished">Dekkingsstap:</translation>
-    </message>
-    <message>
-        <source>Zoom step:</source>
-        <translation type="vanished">Zoomstap:</translation>
-    </message>
-    <message>
-        <source>Max cache files:</source>
-        <translation type="vanished">Max. cachebestanden:</translation>
-    </message>
-    <message>
-        <source>Apply to images</source>
-        <translation type="vanished">Toepassen op afbeeldingen</translation>
-    </message>
-    <message>
-        <source>Apply to recordings</source>
-        <translation type="vanished">Toepassen op opnamen</translation>
-    </message>
-    <message>
-        <source>Image:</source>
-        <translation type="vanished">Afbeelding:</translation>
-    </message>
-    <message>
-        <source>Select an image file...</source>
-        <translation type="vanished">Selecteer een afbeeldingsbestand...</translation>
-    </message>
-    <message>
-        <source>Browse...</source>
-        <translation type="vanished">Bladeren...</translation>
-    </message>
-    <message>
-        <source>Select Watermark Image</source>
-        <translation type="vanished">Watermerkafbeelding selecteren</translation>
-    </message>
-    <message>
-        <source>Images (*.png *.jpg *.jpeg *.bmp *.gif *.svg);;All Files (*)</source>
-        <translation type="vanished">Afbeeldingen (*.png *.jpg *.jpeg *.bmp *.gif *.svg);;Alle bestanden (*)</translation>
-    </message>
-    <message>
-        <source>Scale:</source>
-        <translation type="vanished">Schaal:</translation>
-    </message>
-    <message>
-        <source>Opacity:</source>
-        <translation type="vanished">Dekking:</translation>
-    </message>
-    <message>
-        <source>Margin:</source>
-        <translation type="vanished">Marge:</translation>
-    </message>
-    <message>
-        <source>Position:</source>
-        <translation type="vanished">Positie:</translation>
-    </message>
-    <message>
-        <source>Top-Left</source>
-        <translation type="vanished">Linksboven</translation>
-    </message>
-    <message>
-        <source>Top-Right</source>
-        <translation type="vanished">Rechtsboven</translation>
-    </message>
-    <message>
-        <source>Bottom-Left</source>
-        <translation type="vanished">Linksonder</translation>
-    </message>
-    <message>
-        <source>Bottom-Right</source>
-        <translation type="vanished">Rechtsonder</translation>
-    </message>
-    <message>
-        <source>No image</source>
-        <translation type="vanished">Geen afbeelding</translation>
-    </message>
-    <message>
-        <source>Invalid image</source>
-        <translation type="vanished">Ongeldige afbeelding</translation>
-    </message>
-    <message>
-        <source>Size: %1 × %2 px</source>
-        <translation type="vanished">Grootte: %1 × %2 px</translation>
-    </message>
-    <message>
-        <source>Frame Rate:</source>
-        <translation type="vanished">Beeldsnelheid:</translation>
-    </message>
-    <message>
-        <source>Capture</source>
-        <translation type="vanished">Opname</translation>
-    </message>
-    <message>
-        <source>Show shortcut hints when entering region capture</source>
-        <translation type="vanished">Sneltoetstips tonen bij het openen van Gebiedsopname</translation>
-    </message>
-    <message>
-        <source>MCP</source>
-        <translation type="vanished">MCP</translation>
-    </message>
-    <message>
-        <source>Enable MCP server</source>
-        <translation type="vanished">MCP-server inschakelen</translation>
-    </message>
-    <message>
-        <source>10 FPS</source>
-        <translation type="vanished">10 FPS</translation>
-    </message>
-    <message>
-        <source>15 FPS</source>
-        <translation type="vanished">15 FPS</translation>
-    </message>
-    <message>
-        <source>24 FPS</source>
-        <translation type="vanished">24 FPS</translation>
-    </message>
-    <message>
-        <source>30 FPS</source>
-        <translation type="vanished">30 FPS</translation>
-    </message>
-    <message>
-        <source>Output Format:</source>
-        <translation type="vanished">Uitvoerformaat:</translation>
-    </message>
-    <message>
-        <source>MP4 (H.264)</source>
-        <translation type="vanished">MP4 (H.264)</translation>
-    </message>
-    <message>
-        <source>GIF</source>
-        <translation type="vanished">GIF</translation>
-    </message>
-    <message>
-        <source>WebP</source>
-        <translation type="vanished">WebP</translation>
-    </message>
-    <message>
-        <source>Quality:</source>
-        <translation type="vanished">Kwaliteit:</translation>
-    </message>
-    <message>
-        <source>Audio</source>
-        <translation type="vanished">Audio</translation>
-    </message>
-    <message>
-        <source>Record audio</source>
-        <translation type="vanished">Audio opnemen</translation>
-    </message>
-    <message>
-        <source>Source:</source>
-        <translation type="vanished">Bron:</translation>
-    </message>
-    <message>
-        <source>Microphone</source>
-        <translation type="vanished">Microfoon</translation>
-    </message>
-    <message>
-        <source>System Audio</source>
-        <translation type="vanished">Systeemaudio</translation>
-    </message>
-    <message>
-        <source>Both (Mixed)</source>
-        <translation type="vanished">Beide (Gemengd)</translation>
-    </message>
-    <message>
-        <source>Device:</source>
-        <translation type="vanished">Apparaat:</translation>
-    </message>
-    <message>
-        <source>Default</source>
-        <translation type="vanished">Standaard</translation>
-    </message>
-    <message>
-        <source>Show preview after recording</source>
-        <translation type="vanished">Voorbeeld tonen na opname</translation>
-    </message>
-    <message>
-        <source>Countdown</source>
-        <translation type="vanished">Aftellen</translation>
-    </message>
-    <message>
-        <source>Show countdown before recording</source>
-        <translation type="vanished">Aftellen tonen voor opname</translation>
-    </message>
-    <message>
-        <source>Display a 3-2-1 countdown before recording starts</source>
-        <translation type="vanished">Een 3-2-1-aftelling tonen voor het begin van de opname</translation>
-    </message>
-    <message>
-        <source>Countdown duration:</source>
-        <translation type="vanished">Aftelduur:</translation>
-    </message>
-    <message>
-        <source>1 second</source>
-        <translation type="vanished">1 seconde</translation>
-    </message>
-    <message>
-        <source>2 seconds</source>
-        <translation type="vanished">2 seconden</translation>
-    </message>
-    <message>
-        <source>3 seconds</source>
-        <translation type="vanished">3 seconden</translation>
-    </message>
-    <message>
-        <source>4 seconds</source>
-        <translation type="vanished">4 seconden</translation>
-    </message>
-    <message>
-        <source>5 seconds</source>
-        <translation type="vanished">5 seconden</translation>
-    </message>
-    <message>
-        <source>Restart Required</source>
-        <translation type="vanished">Herstart vereist</translation>
-    </message>
-    <message>
-        <source>The language change will take effect after restarting the application.</source>
-        <translation type="vanished">De taalwijziging wordt van kracht na het herstarten van de applicatie.</translation>
-    </message>
-    <message>
-        <source>Loading available languages...</source>
-        <translation type="vanished">Beschikbare talen laden...</translation>
-    </message>
-    <message>
-        <source>Available Languages</source>
-        <translation type="vanished">Beschikbare talen</translation>
-    </message>
-    <message>
-        <source>Add selected languages</source>
-        <translation type="vanished">Geselecteerde talen toevoegen</translation>
-    </message>
-    <message>
-        <source>Remove selected languages</source>
-        <translation type="vanished">Geselecteerde talen verwijderen</translation>
-    </message>
-    <message>
-        <source>Selected Languages</source>
-        <translation type="vanished">Geselecteerde talen</translation>
-    </message>
-    <message>
-        <source>English is always included and cannot be removed</source>
-        <translation type="vanished">Engels is altijd inbegrepen en kan niet worden verwijderd</translation>
-    </message>
-    <message>
-        <source>After OCR Recognition</source>
-        <translation type="vanished">Na OCR-herkenning</translation>
-    </message>
-    <message>
-        <source>Copy text directly to clipboard</source>
-        <translation type="vanished">Tekst direct naar klembord kopiëren</translation>
-    </message>
-    <message>
-        <source>Show editor to review and edit text</source>
-        <translation type="vanished">Editor tonen om tekst te bekijken en te bewerken</translation>
-    </message>
-    <message>
-        <source>Recognized text is immediately copied to clipboard</source>
-        <translation type="vanished">Herkende tekst wordt onmiddellijk naar het klembord gekopieerd</translation>
-    </message>
-    <message>
-        <source>Opens a dialog where you can review and edit the text before copying</source>
-        <translation type="vanished">Opent een venster waarin u de tekst kunt bekijken en bewerken voordat u kopieert</translation>
-    </message>
-    <message>
-        <source>Save Locations</source>
-        <translation type="vanished">Opslaglocaties</translation>
-    </message>
-    <message>
-        <source>Screenshots:</source>
-        <translation type="vanished">Schermafbeeldingen:</translation>
-    </message>
-    <message>
-        <source>Select Screenshot Folder</source>
-        <translation type="vanished">Map voor schermafbeeldingen selecteren</translation>
-    </message>
-    <message>
-        <source>Recordings:</source>
-        <translation type="vanished">Opnamen:</translation>
-    </message>
-    <message>
-        <source>Select Recording Folder</source>
-        <translation type="vanished">Opnamemap selecteren</translation>
-    </message>
-    <message>
-        <source>Filename Format</source>
-        <translation type="vanished">Bestandsnaamformaat</translation>
-    </message>
-    <message>
-        <source>Template:</source>
-        <translation type="vanished">Sjabloon:</translation>
-    </message>
-    <message>
-        <source>Save Behavior</source>
-        <translation type="vanished">Opslaggedrag</translation>
-    </message>
-    <message>
-        <source>Auto-save screenshots (save directly without dialog)</source>
-        <translation type="vanished">Schermafbeeldingen automatisch opslaan (direct opslaan zonder dialoogvenster)</translation>
-    </message>
-    <message>
-        <source>Auto-save recordings (save directly without dialog)</source>
-        <translation type="vanished">Opnamen automatisch opslaan (direct opslaan zonder dialoogvenster)</translation>
-    </message>
-    <message>
-        <source>Preview: %1</source>
-        <translation type="vanished">Voorbeeld: %1</translation>
-    </message>
-    <message>
-        <source>
-Invalid template, fallback applied: %1</source>
-        <translation type="vanished">
-Ongeldig sjabloon, terugvalsjabloon toegepast: %1</translation>
-    </message>
-    <message>
-        <source>Version Information</source>
-        <translation type="vanished">Versie-informatie</translation>
-    </message>
-    <message>
-        <source>Current Version</source>
-        <translation type="vanished">Huidige versie</translation>
-    </message>
-    <message>
-        <source>Automatic Updates</source>
-        <translation type="vanished">Automatische updates</translation>
-    </message>
-    <message>
-        <source>Check for updates automatically</source>
-        <translation type="vanished">Automatisch controleren op updates</translation>
-    </message>
-    <message>
-        <source>Check frequency</source>
-        <translation type="vanished">Controlefrequentie</translation>
-    </message>
-    <message>
-        <source>Every day</source>
-        <translation type="vanished">Elke dag</translation>
-    </message>
-    <message>
-        <source>Every 3 days</source>
-        <translation type="vanished">Elke 3 dagen</translation>
-    </message>
-    <message>
-        <source>Every week</source>
-        <translation type="vanished">Elke week</translation>
-    </message>
-    <message>
-        <source>Every 2 weeks</source>
-        <translation type="vanished">Elke 2 weken</translation>
-    </message>
-    <message>
-        <source>Every month</source>
-        <translation type="vanished">Elke maand</translation>
-    </message>
-    <message>
-        <source>Last checked: %1</source>
-        <translation type="vanished">Laatst gecontroleerd: %1</translation>
-    </message>
-    <message>
-        <source>Last checked: Never</source>
-        <translation type="vanished">Laatst gecontroleerd: Nooit</translation>
-    </message>
-    <message>
-        <source>Check Now</source>
-        <translation type="vanished">Nu controleren</translation>
-    </message>
-    <message>
-        <source>Checking...</source>
-        <translation type="vanished">Controleren...</translation>
-    </message>
-    <message>
-        <source>Version %1</source>
-        <translation type="vanished">Versie %1</translation>
-    </message>
-    <message>
-        <source>Copyright 2024-2025 Victor Fu</source>
-        <translation type="vanished">Copyright 2024-2025 Victor Fu</translation>
-    </message>
-    <message>
-        <source>Author: Victor Fu</source>
-        <translation type="vanished">Auteur: Victor Fu</translation>
-    </message>
-    <message>
-        <source>'snaptray' command is available in terminal</source>
-        <translation type="vanished">Het commando 'snaptray' is beschikbaar in de terminal</translation>
-    </message>
-    <message>
-        <source>Uninstall CLI</source>
-        <translation type="vanished">CLI verwijderen</translation>
-    </message>
-    <message>
-        <source>'snaptray' command is not installed</source>
-        <translation type="vanished">Het commando 'snaptray' is niet geïnstalleerd</translation>
-    </message>
-    <message>
-        <source>Install CLI</source>
-        <translation type="vanished">CLI installeren</translation>
-    </message>
-    <message>
-        <source>Granted</source>
-        <translation type="vanished">Verleend</translation>
-    </message>
-    <message>
-        <source>Not Granted</source>
-        <translation type="vanished">Niet verleend</translation>
-    </message>
-    <message>
-        <source>GIF format creates larger files than MP4.
-Best for short clips and sharing on web.
-Audio is not supported for GIF recordings.</source>
-        <translation type="vanished">Het GIF-formaat maakt grotere bestanden dan MP4.
-Het beste voor korte clips en delen op het web.
-Audio wordt niet ondersteund voor GIF-opnamen.</translation>
-    </message>
-    <message>
-        <source>WebP format creates smaller files than GIF with better quality.
-Best for short clips and sharing on web.
-Audio is not supported for WebP recordings.</source>
-        <translation type="vanished">Het WebP-formaat maakt kleinere bestanden dan GIF met betere kwaliteit.
-Het beste voor korte clips en delen op het web.
-Audio wordt niet ondersteund voor WebP-opnamen.</translation>
-    </message>
-    <message>
-        <source>Microphone access denied. Please enable in System Settings &gt; Privacy &amp; Security &gt; Microphone.</source>
-        <translation type="vanished">Microfoontoegang geweigerd. Schakel dit in via Systeeminstellingen &gt; Privacy en beveiliging &gt; Microfoon.</translation>
-    </message>
-    <message>
-        <source>System audio capture requires macOS 13 (Ventura) or later, or a virtual audio device like BlackHole.</source>
-        <translation type="vanished">Het opnemen van systeemaudio vereist macOS 13 (Ventura) of later, of een virtueel audioapparaat zoals BlackHole.</translation>
-    </message>
-    <message>
-        <source>Select and order the languages for OCR recognition.
-English is always included and cannot be removed. Drag to reorder selected languages.</source>
-        <translation type="vanished">Selecteer en orden de talen voor OCR-herkenning.
-Engels is altijd inbegrepen en kan niet worden verwijderd. Sleep om de geselecteerde talen te herordenen.</translation>
-    </message>
-    <message>
-        <source>No OCR languages available.
-
-macOS: OCR requires macOS 10.15 or later.
-Windows: Install language packs in Settings &gt; Time &amp; Language &gt; Language.</source>
-        <translation type="vanished">Geen OCR-talen beschikbaar.
-
-macOS: OCR vereist macOS 10.15 of later.
-Windows: Installeer taalpakketten in Instellingen &gt; Tijd en taal &gt; Taal.</translation>
-    </message>
-    <message>
-        <source>Tokens: {prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}
-Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
-        <translation type="vanished">Tokens: {prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}
-Datumtokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} of {date}</translation>
-    </message>
 </context>
 <context>
     <name>SettingsPathPicker</name>
@@ -4031,7 +3133,7 @@ Deze wordt mogelijk gebruikt door een andere applicatie.</translation>
     <message>
         <location filename="../src/qml/main.qml" line="10" />
         <source>SnapTray QML</source>
-        <translation type="unfinished" />
+        <translation>SnapTray QML</translation>
     </message>
 </context>
 <context>

@@ -211,34 +211,6 @@
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>
-    <message>
-        <source>Cancel capture</source>
-        <translation type="vanished">Откажи снимање</translation>
-    </message>
-    <message>
-        <source>Confirm selection (after selection)</source>
-        <translation type="vanished">Потврди избор (након избора)</translation>
-    </message>
-    <message>
-        <source>Toggle multi-region mode</source>
-        <translation type="vanished">Пребаци режим више области</translation>
-    </message>
-    <message>
-        <source>Switch RGB/HEX (when magnifier visible)</source>
-        <translation type="vanished">Пребаци RGB/HEX (када је лупа видљива)</translation>
-    </message>
-    <message>
-        <source>Copy color value (before selection)</source>
-        <translation type="vanished">Копирај вредност боје (пре избора)</translation>
-    </message>
-    <message>
-        <source>Move selection by 1 pixel (after selection)</source>
-        <translation type="vanished">Помери избор за 1 пиксел (након избора)</translation>
-    </message>
-    <message>
-        <source>Resize selection by 1 pixel (after selection)</source>
-        <translation type="vanished">Промени величину избора за 1 пиксел (након избора)</translation>
-    </message>
 </context>
 <context>
     <name>ClickThroughExitButton</name>
@@ -250,61 +222,9 @@
 </context>
 <context>
     <name>ColorDialog</name>
-    <message>
-        <source>Select Color</source>
-        <translation type="vanished">Изаберите боју</translation>
-    </message>
-    <message>
-        <source>Hue</source>
-        <translation type="vanished">Нијанса</translation>
-    </message>
-    <message>
-        <source>Saturation</source>
-        <translation type="vanished">Засићеност</translation>
-    </message>
-    <message>
-        <source>Value</source>
-        <translation type="vanished">Вредност</translation>
-    </message>
-    <message>
-        <source>Red</source>
-        <translation type="vanished">Црвена</translation>
-    </message>
-    <message>
-        <source>Green</source>
-        <translation type="vanished">Зелена</translation>
-    </message>
-    <message>
-        <source>Blue</source>
-        <translation type="vanished">Плава</translation>
-    </message>
-    <message>
-        <source>Alpha</source>
-        <translation type="vanished">Алфа</translation>
-    </message>
-    <message>
-        <source>Hex</source>
-        <translation type="vanished">Hex</translation>
-    </message>
-    <message>
-        <source>Reset</source>
-        <translation type="vanished">Ресетуј</translation>
-    </message>
-    <message>
-        <source>OK</source>
-        <translation type="vanished">У реду</translation>
-    </message>
-    <message>
-        <source>Cancel</source>
-        <translation type="vanished">Откажи</translation>
-    </message>
 </context>
 <context>
     <name>ColorPickerDialogCompat</name>
-    <message>
-        <source>Select Color</source>
-        <translation type="vanished">Изаберите боју</translation>
-    </message>
 </context>
 <context>
     <name>FilesSettings</name>
@@ -363,18 +283,6 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
 </context>
 <context>
     <name>FormatSelectionWidget</name>
-    <message>
-        <source>Best quality, widely compatible</source>
-        <translation type="vanished">Најбољи квалитет, широка компатибилност</translation>
-    </message>
-    <message>
-        <source>Universal support, larger file size</source>
-        <translation type="vanished">Универзална подршка, већа величина датотеке</translation>
-    </message>
-    <message>
-        <source>Small file size, modern browsers only</source>
-        <translation type="vanished">Мала величина датотеке, само модерни прегледачи</translation>
-    </message>
 </context>
 <context>
     <name>GeneralSettings</name>
@@ -476,66 +384,6 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
 </context>
 <context>
     <name>HotkeyManager</name>
-    <message>
-        <source>Conflicts with: %1</source>
-        <translation type="vanished">У сукобу са: %1</translation>
-    </message>
-    <message>
-        <source>Region Capture</source>
-        <translation type="vanished">Снимање области</translation>
-    </message>
-    <message>
-        <source>Capture a selected region of the screen</source>
-        <translation type="vanished">Сними изабрану област екрана</translation>
-    </message>
-    <message>
-        <source>Screen Canvas</source>
-        <translation type="vanished">Платно екрана</translation>
-    </message>
-    <message>
-        <source>Annotate directly on the screen</source>
-        <translation type="vanished">Анотирај директно на екрану</translation>
-    </message>
-    <message>
-        <source>Paste</source>
-        <translation type="vanished">Налепи</translation>
-    </message>
-    <message>
-        <source>Pin content from clipboard</source>
-        <translation type="vanished">Закачи садржај из привремене меморије</translation>
-    </message>
-    <message>
-        <source>Quick Pin</source>
-        <translation type="vanished">Брза закачка</translation>
-    </message>
-    <message>
-        <source>Select and pin a region directly</source>
-        <translation type="vanished">Изабери и закачи област директно</translation>
-    </message>
-    <message>
-        <source>Pin from Image</source>
-        <translation type="vanished">Закачи из слике</translation>
-    </message>
-    <message>
-        <source>Pin an image from file</source>
-        <translation type="vanished">Закачи слику из датотеке</translation>
-    </message>
-    <message>
-        <source>Pin History</source>
-        <translation type="vanished">Историја закачки</translation>
-    </message>
-    <message>
-        <source>Open pin history window</source>
-        <translation type="vanished">Отвори прозор историје закачки</translation>
-    </message>
-    <message>
-        <source>Record Full Screen</source>
-        <translation type="vanished">Сними цео екран</translation>
-    </message>
-    <message>
-        <source>Start full screen recording</source>
-        <translation type="vanished">Покрени снимање целог екрана</translation>
-    </message>
 </context>
 <context>
     <name>HotkeySettings</name>
@@ -1066,10 +914,6 @@ Size: %2</source>
         <translation>Улепшај</translation>
     </message>
     <message>
-        <source>Recognize Text</source>
-        <translation type="vanished">Препознај текст</translation>
-    </message>
-    <message>
         <location filename="../src/PinWindow.cpp" line="917" />
         <source>Click-through</source>
         <translation>Прозиран клик</translation>
@@ -1479,26 +1323,6 @@ Size: %2</source>
         <translation>Спајање закачки неуспешно</translation>
     </message>
     <message>
-        <source>Capture</source>
-        <translation type="vanished">Снимање</translation>
-    </message>
-    <message>
-        <source>Canvas</source>
-        <translation type="vanished">Платно</translation>
-    </message>
-    <message>
-        <source>Clipboard</source>
-        <translation type="vanished">Привремена меморија</translation>
-    </message>
-    <message>
-        <source>Pin</source>
-        <translation type="vanished">Закачка</translation>
-    </message>
-    <message>
-        <source>Recording</source>
-        <translation type="vanished">Снимање</translation>
-    </message>
-    <message>
         <location filename="../src/QRCodeManager.cpp" line="200" />
         <source>No barcode found in image</source>
         <translation>Бар код није пронађен у слици</translation>
@@ -1717,16 +1541,8 @@ Size: %2</source>
 <context>
     <name>RecordingControlBar</name>
     <message>
-        <source>Audio recording enabled</source>
-        <translation type="vanished">Снимање звука омогућено</translation>
-    </message>
-    <message>
         <source>-- fps</source>
         <translation>-- кадрова/с</translation>
-    </message>
-    <message>
-        <source>Annotate</source>
-        <translation type="vanished">Анотирај</translation>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingControlBar.qml" line="254" />
@@ -1752,50 +1568,6 @@ Size: %2</source>
     <message>
         <source>Cancel Recording (Esc)</source>
         <translation>Откажи снимање (Esc)</translation>
-    </message>
-    <message>
-        <source>Pause (Space)</source>
-        <translation type="vanished">Пауза (Space)</translation>
-    </message>
-    <message>
-        <source>Play (Space)</source>
-        <translation type="vanished">Пусти (Space)</translation>
-    </message>
-    <message>
-        <source>Unmute (M)</source>
-        <translation type="vanished">Укључи звук (M)</translation>
-    </message>
-    <message>
-        <source>Mute (M)</source>
-        <translation type="vanished">Искључи звук (M)</translation>
-    </message>
-    <message>
-        <source>MP4 - Best quality</source>
-        <translation type="vanished">MP4 — Најбољи квалитет</translation>
-    </message>
-    <message>
-        <source>GIF - Universal support</source>
-        <translation type="vanished">GIF — Универзална подршка</translation>
-    </message>
-    <message>
-        <source>WebP - Small size</source>
-        <translation type="vanished">WebP — Мала величина</translation>
-    </message>
-    <message>
-        <source>Annotate Video</source>
-        <translation type="vanished">Анотирај видео</translation>
-    </message>
-    <message>
-        <source>Save (Enter)</source>
-        <translation type="vanished">Сачувај (Enter)</translation>
-    </message>
-    <message>
-        <source>Discard (Esc)</source>
-        <translation type="vanished">Одбаци (Esc)</translation>
-    </message>
-    <message>
-        <source>Drag to seek</source>
-        <translation type="vanished">Превуци за претрагу</translation>
     </message>
 </context>
 <context>
@@ -1977,151 +1749,61 @@ Size: %2</source>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="71" />
         <source>Recording Preview</source>
-        <translation type="unfinished">Преглед снимка</translation>
+        <translation>Преглед снимка</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="356" />
         <source>Converting video...</source>
-        <translation type="unfinished">Конвертовање видеа...</translation>
+        <translation>Конвертовање видеа...</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="365" />
         <source>Failed to create video player for conversion</source>
-        <translation type="unfinished" />
+        <translation>Није могуће направити видео плејер за конвертовање</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="366" />
         <source>Failed to load video for conversion</source>
-        <translation type="unfinished" />
+        <translation>Није могуће учитати видео за конвертовање</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="367" />
         <source>Video not loaded properly for conversion</source>
-        <translation type="unfinished" />
+        <translation>Видео није исправно учитан за конвертовање</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="368" />
         <source>Failed to start encoder</source>
-        <translation type="unfinished" />
+        <translation>Није могуће покренути енкодер</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="369" />
         <source>Conversion failed: output file is missing or empty</source>
-        <translation type="unfinished" />
+        <translation>Конвертовање није успело: излазна датотека недостаје или је празна</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="596" />
         <source>Trimming video...</source>
-        <translation type="unfinished">Обрезивање видеа...</translation>
+        <translation>Обрезивање видеа...</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="615" />
         <source>Trim failed: %1</source>
-        <translation type="unfinished" />
+        <translation>Обрезивање није успело: %1</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="650" />
         <source>Trim failed: output file is missing or empty</source>
-        <translation type="unfinished" />
+        <translation>Обрезивање није успело: излазна датотека недостаје или је празна</translation>
     </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="657" />
         <source>Trim failed</source>
-        <translation type="unfinished" />
+        <translation>Обрезивање није успело</translation>
     </message>
 </context>
 <context>
     <name>RecordingPreviewWindow</name>
-    <message>
-        <source>Recording Preview</source>
-        <translation type="vanished">Преглед снимка</translation>
-    </message>
-    <message>
-        <source>Trim</source>
-        <translation type="vanished">Обрезивање</translation>
-    </message>
-    <message>
-        <source>Loop playback within the trimmed range</source>
-        <translation type="vanished">Циклично репродукуј у обрезаном опсегу</translation>
-    </message>
-    <message>
-        <source>Play/Pause (Space)</source>
-        <translation type="vanished">Пусти/Паузирај (Space)</translation>
-    </message>
-    <message>
-        <source>Playback speed</source>
-        <translation type="vanished">Брзина репродукције</translation>
-    </message>
-    <message>
-        <source>Mute (M)</source>
-        <translation type="vanished">Искључи звук (M)</translation>
-    </message>
-    <message>
-        <source>Discard (Esc)</source>
-        <translation type="vanished">Одбаци (Esc)</translation>
-    </message>
-    <message>
-        <source>Save (Enter)</source>
-        <translation type="vanished">Сачувај (Enter)</translation>
-    </message>
-    <message>
-        <source>Video Error</source>
-        <translation type="vanished">Грешка видеа</translation>
-    </message>
-    <message>
-        <source>Failed to load video:
-%1</source>
-        <translation type="vanished">Учитавање видеа неуспешно:
-%1</translation>
-    </message>
-    <message>
-        <source>Conversion Error</source>
-        <translation type="vanished">Грешка конверзије</translation>
-    </message>
-    <message>
-        <source>Cannot convert: video not loaded properly.</source>
-        <translation type="vanished">Конверзија немогућа: видео није правилно учитан.</translation>
-    </message>
-    <message>
-        <source>Converting video...</source>
-        <translation type="vanished">Конвертовање видеа...</translation>
-    </message>
-    <message>
-        <source>Cancel</source>
-        <translation type="vanished">Откажи</translation>
-    </message>
-    <message>
-        <source>Failed to start encoder: %1</source>
-        <translation type="vanished">Покретање кодера неуспешно: %1</translation>
-    </message>
-    <message>
-        <source>Trim Failed</source>
-        <translation type="vanished">Обрезивање неуспешно</translation>
-    </message>
-    <message>
-        <source>Failed to trim the video. Please try again.</source>
-        <translation type="vanished">Обрезивање видеа неуспешно. Покушајте поново.</translation>
-    </message>
-    <message>
-        <source>Set Trim Start</source>
-        <translation type="vanished">Постави почетак обрезивања</translation>
-    </message>
-    <message>
-        <source>Set Trim End</source>
-        <translation type="vanished">Постави крај обрезивања</translation>
-    </message>
-    <message>
-        <source>Enter time in seconds:</source>
-        <translation type="vanished">Унесите време у секундама:</translation>
-    </message>
-    <message>
-        <source>Trim Error</source>
-        <translation type="vanished">Грешка обрезивања</translation>
-    </message>
-    <message>
-        <source>Trimming video...</source>
-        <translation type="vanished">Обрезивање видеа...</translation>
-    </message>
 </context>
 <context>
     <name>RecordingRegionSelector</name>
@@ -2493,10 +2175,6 @@ Audio is not supported for GIF recordings.</source>
         <translation>Нису откривена лица ни акредитиви</translation>
     </message>
     <message>
-        <source>No faces detected</source>
-        <translation type="vanished">Лица нису откривена</translation>
-    </message>
-    <message>
         <location filename="../src/RegionSelector.cpp" line="2819" />
         <source>Detection failed</source>
         <translation>Откривање неуспешно</translation>
@@ -2529,582 +2207,6 @@ Audio is not supported for GIF recordings.</source>
 </context>
 <context>
     <name>SettingsDialog</name>
-    <message>
-        <source>%1 Settings</source>
-        <translation type="vanished">%1 Подешавања</translation>
-    </message>
-    <message>
-        <source>General</source>
-        <translation type="vanished">Опште</translation>
-    </message>
-    <message>
-        <source>Hotkeys</source>
-        <translation type="vanished">Пречице</translation>
-    </message>
-    <message>
-        <source>Advanced</source>
-        <translation type="vanished">Напредно</translation>
-    </message>
-    <message>
-        <source>Watermark</source>
-        <translation type="vanished">Водени жиг</translation>
-    </message>
-    <message>
-        <source>OCR</source>
-        <translation type="vanished">OCR</translation>
-    </message>
-    <message>
-        <source>Recording</source>
-        <translation type="vanished">Снимање</translation>
-    </message>
-    <message>
-        <source>Files</source>
-        <translation type="vanished">Датотеке</translation>
-    </message>
-    <message>
-        <source>Updates</source>
-        <translation type="vanished">Ажурирања</translation>
-    </message>
-    <message>
-        <source>About</source>
-        <translation type="vanished">О програму</translation>
-    </message>
-    <message>
-        <source>Save</source>
-        <translation type="vanished">Сачувај</translation>
-    </message>
-    <message>
-        <source>Cancel</source>
-        <translation type="vanished">Откажи</translation>
-    </message>
-    <message>
-        <source>Start on login</source>
-        <translation type="vanished">Покрени при пријави</translation>
-    </message>
-    <message>
-        <source>Language</source>
-        <translation type="vanished">Језик</translation>
-    </message>
-    <message>
-        <source>Display language:</source>
-        <translation type="vanished">Језик приказа:</translation>
-    </message>
-    <message>
-        <source>Appearance</source>
-        <translation type="vanished">Изглед</translation>
-    </message>
-    <message>
-        <source>Toolbar Style:</source>
-        <translation type="vanished">Стил траке са алаткама:</translation>
-    </message>
-    <message>
-        <source>Dark</source>
-        <translation type="vanished">Тамна</translation>
-    </message>
-    <message>
-        <source>Light</source>
-        <translation type="vanished">Светла</translation>
-    </message>
-    <message>
-        <source>Permissions</source>
-        <translation type="vanished">Дозволе</translation>
-    </message>
-    <message>
-        <source>Screen Recording:</source>
-        <translation type="vanished">Снимање екрана:</translation>
-    </message>
-    <message>
-        <source>Open Settings</source>
-        <translation type="vanished">Отвори подешавања</translation>
-    </message>
-    <message>
-        <source>Accessibility:</source>
-        <translation type="vanished">Приступачност:</translation>
-    </message>
-    <message>
-        <source>Command Line Interface</source>
-        <translation type="vanished">Интерфејс командне линије</translation>
-    </message>
-    <message>
-        <source>Blur</source>
-        <translation type="vanished">Замућење</translation>
-    </message>
-    <message>
-        <source>Blur intensity:</source>
-        <translation type="vanished">Интензитет замућења:</translation>
-    </message>
-    <message>
-        <source>Blur type:</source>
-        <translation type="vanished">Тип замућења:</translation>
-    </message>
-    <message>
-        <source>Pixelate</source>
-        <translation type="vanished">Пикселизација</translation>
-    </message>
-    <message>
-        <source>Gaussian</source>
-        <translation type="vanished">Гаусово</translation>
-    </message>
-    <message>
-        <source>Pin Window</source>
-        <translation type="vanished">Прозор закачке</translation>
-    </message>
-    <message>
-        <source>Default opacity:</source>
-        <translation type="vanished">Подразумевана непрозирност:</translation>
-    </message>
-    <message>
-        <source>Opacity step:</source>
-        <translation type="vanished">Корак непрозирности:</translation>
-    </message>
-    <message>
-        <source>Zoom step:</source>
-        <translation type="vanished">Корак увећања:</translation>
-    </message>
-    <message>
-        <source>Max cache files:</source>
-        <translation type="vanished">Макс. датотека у кешу:</translation>
-    </message>
-    <message>
-        <source>Apply to images</source>
-        <translation type="vanished">Примени на слике</translation>
-    </message>
-    <message>
-        <source>Apply to recordings</source>
-        <translation type="vanished">Примени на снимке</translation>
-    </message>
-    <message>
-        <source>Image:</source>
-        <translation type="vanished">Слика:</translation>
-    </message>
-    <message>
-        <source>Select an image file...</source>
-        <translation type="vanished">Изаберите датотеку слике...</translation>
-    </message>
-    <message>
-        <source>Browse...</source>
-        <translation type="vanished">Прегледај...</translation>
-    </message>
-    <message>
-        <source>Select Watermark Image</source>
-        <translation type="vanished">Изаберите слику воденог жига</translation>
-    </message>
-    <message>
-        <source>Images (*.png *.jpg *.jpeg *.bmp *.gif *.svg);;All Files (*)</source>
-        <translation type="vanished">Слике (*.png *.jpg *.jpeg *.bmp *.gif *.svg);;Све датотеке (*)</translation>
-    </message>
-    <message>
-        <source>Scale:</source>
-        <translation type="vanished">Размера:</translation>
-    </message>
-    <message>
-        <source>Opacity:</source>
-        <translation type="vanished">Непрозирност:</translation>
-    </message>
-    <message>
-        <source>Margin:</source>
-        <translation type="vanished">Маргина:</translation>
-    </message>
-    <message>
-        <source>Position:</source>
-        <translation type="vanished">Позиција:</translation>
-    </message>
-    <message>
-        <source>Top-Left</source>
-        <translation type="vanished">Горе лево</translation>
-    </message>
-    <message>
-        <source>Top-Right</source>
-        <translation type="vanished">Горе десно</translation>
-    </message>
-    <message>
-        <source>Bottom-Left</source>
-        <translation type="vanished">Доле лево</translation>
-    </message>
-    <message>
-        <source>Bottom-Right</source>
-        <translation type="vanished">Доле десно</translation>
-    </message>
-    <message>
-        <source>No image</source>
-        <translation type="vanished">Нема слике</translation>
-    </message>
-    <message>
-        <source>Invalid image</source>
-        <translation type="vanished">Неисправна слика</translation>
-    </message>
-    <message>
-        <source>Size: %1 × %2 px</source>
-        <translation type="vanished">Величина: %1 × %2 px</translation>
-    </message>
-    <message>
-        <source>Frame Rate:</source>
-        <translation type="vanished">Број кадрова:</translation>
-    </message>
-    <message>
-        <source>Capture</source>
-        <translation type="vanished">Снимање</translation>
-    </message>
-    <message>
-        <source>Show shortcut hints when entering region capture</source>
-        <translation type="vanished">При уласку у режим снимања области приказуј савете за пречице</translation>
-    </message>
-    <message>
-        <source>MCP</source>
-        <translation type="vanished">MCP</translation>
-    </message>
-    <message>
-        <source>Enable MCP server</source>
-        <translation type="vanished">Омогући MCP сервер</translation>
-    </message>
-    <message>
-        <source>10 FPS</source>
-        <translation type="vanished">10 кадрова/с</translation>
-    </message>
-    <message>
-        <source>15 FPS</source>
-        <translation type="vanished">15 кадрова/с</translation>
-    </message>
-    <message>
-        <source>24 FPS</source>
-        <translation type="vanished">24 кадрова/с</translation>
-    </message>
-    <message>
-        <source>30 FPS</source>
-        <translation type="vanished">30 кадрова/с</translation>
-    </message>
-    <message>
-        <source>Output Format:</source>
-        <translation type="vanished">Излазни формат:</translation>
-    </message>
-    <message>
-        <source>MP4 (H.264)</source>
-        <translation type="vanished">MP4 (H.264)</translation>
-    </message>
-    <message>
-        <source>GIF</source>
-        <translation type="vanished">GIF</translation>
-    </message>
-    <message>
-        <source>WebP</source>
-        <translation type="vanished">WebP</translation>
-    </message>
-    <message>
-        <source>Quality:</source>
-        <translation type="vanished">Квалитет:</translation>
-    </message>
-    <message>
-        <source>Audio</source>
-        <translation type="vanished">Звук</translation>
-    </message>
-    <message>
-        <source>Record audio</source>
-        <translation type="vanished">Снимај звук</translation>
-    </message>
-    <message>
-        <source>Source:</source>
-        <translation type="vanished">Извор:</translation>
-    </message>
-    <message>
-        <source>Microphone</source>
-        <translation type="vanished">Микрофон</translation>
-    </message>
-    <message>
-        <source>System Audio</source>
-        <translation type="vanished">Системски звук</translation>
-    </message>
-    <message>
-        <source>Both (Mixed)</source>
-        <translation type="vanished">Оба (Мешано)</translation>
-    </message>
-    <message>
-        <source>Device:</source>
-        <translation type="vanished">Уређај:</translation>
-    </message>
-    <message>
-        <source>Default</source>
-        <translation type="vanished">Подразумевано</translation>
-    </message>
-    <message>
-        <source>Show preview after recording</source>
-        <translation type="vanished">Прикажи преглед после снимања</translation>
-    </message>
-    <message>
-        <source>Countdown</source>
-        <translation type="vanished">Одбројавање</translation>
-    </message>
-    <message>
-        <source>Show countdown before recording</source>
-        <translation type="vanished">Прикажи одбројавање пре снимања</translation>
-    </message>
-    <message>
-        <source>Display a 3-2-1 countdown before recording starts</source>
-        <translation type="vanished">Прикажи одбројавање 3-2-1 пре почетка снимања</translation>
-    </message>
-    <message>
-        <source>Countdown duration:</source>
-        <translation type="vanished">Трајање одбројавања:</translation>
-    </message>
-    <message>
-        <source>1 second</source>
-        <translation type="vanished">1 секунда</translation>
-    </message>
-    <message>
-        <source>2 seconds</source>
-        <translation type="vanished">2 секунде</translation>
-    </message>
-    <message>
-        <source>3 seconds</source>
-        <translation type="vanished">3 секунде</translation>
-    </message>
-    <message>
-        <source>4 seconds</source>
-        <translation type="vanished">4 секунде</translation>
-    </message>
-    <message>
-        <source>5 seconds</source>
-        <translation type="vanished">5 секунди</translation>
-    </message>
-    <message>
-        <source>Restart Required</source>
-        <translation type="vanished">Потребно поновно покретање</translation>
-    </message>
-    <message>
-        <source>The language change will take effect after restarting the application.</source>
-        <translation type="vanished">Промена језика ступиће на снагу после поновног покретања апликације.</translation>
-    </message>
-    <message>
-        <source>Loading available languages...</source>
-        <translation type="vanished">Учитавање доступних језика...</translation>
-    </message>
-    <message>
-        <source>Available Languages</source>
-        <translation type="vanished">Доступни језици</translation>
-    </message>
-    <message>
-        <source>Add selected languages</source>
-        <translation type="vanished">Додај изабране језике</translation>
-    </message>
-    <message>
-        <source>Remove selected languages</source>
-        <translation type="vanished">Уклони изабране језике</translation>
-    </message>
-    <message>
-        <source>Selected Languages</source>
-        <translation type="vanished">Изабрани језици</translation>
-    </message>
-    <message>
-        <source>English is always included and cannot be removed</source>
-        <translation type="vanished">Енглески је увек укључен и не може се уклонити</translation>
-    </message>
-    <message>
-        <source>After OCR Recognition</source>
-        <translation type="vanished">После OCR препознавања</translation>
-    </message>
-    <message>
-        <source>Copy text directly to clipboard</source>
-        <translation type="vanished">Копирај текст директно у привремену меморију</translation>
-    </message>
-    <message>
-        <source>Show editor to review and edit text</source>
-        <translation type="vanished">Прикажи уређивач за преглед и уређивање текста</translation>
-    </message>
-    <message>
-        <source>Recognized text is immediately copied to clipboard</source>
-        <translation type="vanished">Препознати текст се одмах копира у привремену меморију</translation>
-    </message>
-    <message>
-        <source>Opens a dialog where you can review and edit the text before copying</source>
-        <translation type="vanished">Отвара дијалог где можете прегледати и уредити текст пре копирања</translation>
-    </message>
-    <message>
-        <source>Save Locations</source>
-        <translation type="vanished">Места чувања</translation>
-    </message>
-    <message>
-        <source>Screenshots:</source>
-        <translation type="vanished">Снимци екрана:</translation>
-    </message>
-    <message>
-        <source>Select Screenshot Folder</source>
-        <translation type="vanished">Изаберите фасциклу за снимке екрана</translation>
-    </message>
-    <message>
-        <source>Recordings:</source>
-        <translation type="vanished">Снимци:</translation>
-    </message>
-    <message>
-        <source>Select Recording Folder</source>
-        <translation type="vanished">Изаберите фасциклу за снимке</translation>
-    </message>
-    <message>
-        <source>Filename Format</source>
-        <translation type="vanished">Формат назива датотеке</translation>
-    </message>
-    <message>
-        <source>Template:</source>
-        <translation type="vanished">Шаблон:</translation>
-    </message>
-    <message>
-        <source>Save Behavior</source>
-        <translation type="vanished">Понашање чувања</translation>
-    </message>
-    <message>
-        <source>Auto-save screenshots (save directly without dialog)</source>
-        <translation type="vanished">Аутоматски сачувај снимке екрана (сачувај директно без дијалога)</translation>
-    </message>
-    <message>
-        <source>Auto-save recordings (save directly without dialog)</source>
-        <translation type="vanished">Аутоматски сачувај снимке (сачувај директно без дијалога)</translation>
-    </message>
-    <message>
-        <source>Preview: %1</source>
-        <translation type="vanished">Преглед: %1</translation>
-    </message>
-    <message>
-        <source>
-Invalid template, fallback applied: %1</source>
-        <translation type="vanished">
-Неисправан шаблон, примењен резервни: %1</translation>
-    </message>
-    <message>
-        <source>Version Information</source>
-        <translation type="vanished">Информације о верзији</translation>
-    </message>
-    <message>
-        <source>Current Version</source>
-        <translation type="vanished">Тренутна верзија</translation>
-    </message>
-    <message>
-        <source>Automatic Updates</source>
-        <translation type="vanished">Аутоматска ажурирања</translation>
-    </message>
-    <message>
-        <source>Check for updates automatically</source>
-        <translation type="vanished">Аутоматски проверавај ажурирања</translation>
-    </message>
-    <message>
-        <source>Check frequency</source>
-        <translation type="vanished">Учесталост провере</translation>
-    </message>
-    <message>
-        <source>Every day</source>
-        <translation type="vanished">Сваког дана</translation>
-    </message>
-    <message>
-        <source>Every 3 days</source>
-        <translation type="vanished">Свака 3 дана</translation>
-    </message>
-    <message>
-        <source>Every week</source>
-        <translation type="vanished">Сваке недеље</translation>
-    </message>
-    <message>
-        <source>Every 2 weeks</source>
-        <translation type="vanished">Сваке 2 недеље</translation>
-    </message>
-    <message>
-        <source>Every month</source>
-        <translation type="vanished">Сваког месеца</translation>
-    </message>
-    <message>
-        <source>Last checked: %1</source>
-        <translation type="vanished">Последња провера: %1</translation>
-    </message>
-    <message>
-        <source>Last checked: Never</source>
-        <translation type="vanished">Последња провера: Никада</translation>
-    </message>
-    <message>
-        <source>Check Now</source>
-        <translation type="vanished">Провери сада</translation>
-    </message>
-    <message>
-        <source>Checking...</source>
-        <translation type="vanished">Проверавање...</translation>
-    </message>
-    <message>
-        <source>Version %1</source>
-        <translation type="vanished">Верзија %1</translation>
-    </message>
-    <message>
-        <source>Copyright 2024-2025 Victor Fu</source>
-        <translation type="vanished">Ауторска права 2024-2025 Victor Fu</translation>
-    </message>
-    <message>
-        <source>Author: Victor Fu</source>
-        <translation type="vanished">Аутор: Victor Fu</translation>
-    </message>
-    <message>
-        <source>'snaptray' command is available in terminal</source>
-        <translation type="vanished">Команда 'snaptray' је доступна у терминалу</translation>
-    </message>
-    <message>
-        <source>Uninstall CLI</source>
-        <translation type="vanished">Деинсталирај CLI</translation>
-    </message>
-    <message>
-        <source>'snaptray' command is not installed</source>
-        <translation type="vanished">Команда 'snaptray' није инсталирана</translation>
-    </message>
-    <message>
-        <source>Install CLI</source>
-        <translation type="vanished">Инсталирај CLI</translation>
-    </message>
-    <message>
-        <source>Granted</source>
-        <translation type="vanished">Одобрено</translation>
-    </message>
-    <message>
-        <source>Not Granted</source>
-        <translation type="vanished">Није одобрено</translation>
-    </message>
-    <message>
-        <source>GIF format creates larger files than MP4.
-Best for short clips and sharing on web.
-Audio is not supported for GIF recordings.</source>
-        <translation type="vanished">GIF формат ствара веће датотеке од MP4.
-Најбоље за кратке клипове и дељење на вебу.
-Звук није подржан за GIF снимке.</translation>
-    </message>
-    <message>
-        <source>WebP format creates smaller files than GIF with better quality.
-Best for short clips and sharing on web.
-Audio is not supported for WebP recordings.</source>
-        <translation type="vanished">WebP формат ствара мање датотеке од GIF са бољим квалитетом.
-Најбоље за кратке клипове и дељење на вебу.
-Звук није подржан за WebP снимке.</translation>
-    </message>
-    <message>
-        <source>Microphone access denied. Please enable in System Settings &gt; Privacy &amp; Security &gt; Microphone.</source>
-        <translation type="vanished">Приступ микрофону одбијен. Омогућите у Системским подешавањима &gt; Приватност и безбедност &gt; Микрофон.</translation>
-    </message>
-    <message>
-        <source>System audio capture requires macOS 13 (Ventura) or later, or a virtual audio device like BlackHole.</source>
-        <translation type="vanished">Снимање системског звука захтева macOS 13 (Ventura) или новији, или виртуелни аудио уређај попут BlackHole.</translation>
-    </message>
-    <message>
-        <source>Select and order the languages for OCR recognition.
-English is always included and cannot be removed. Drag to reorder selected languages.</source>
-        <translation type="vanished">Изаберите и поређајте језике за OCR препознавање.
-Енглески је увек укључен и не може се уклонити. Превуците за промену редоследа изабраних језика.</translation>
-    </message>
-    <message>
-        <source>No OCR languages available.
-
-macOS: OCR requires macOS 10.15 or later.
-Windows: Install language packs in Settings &gt; Time &amp; Language &gt; Language.</source>
-        <translation type="vanished">Нема доступних OCR језика.
-
-macOS: OCR захтева macOS 10.15 или новији.
-Windows: Инсталирајте језичке пакете у Подешавањима &gt; Време и језик &gt; Језик.</translation>
-    </message>
-    <message>
-        <source>Tokens: {prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}
-Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
-        <translation type="vanished">Токени: {prefix} {type} {w} {h} {monitor} {windowTitle} {appName} {regionIndex} {ext} {#}
-Токени датума: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} или {date}</translation>
-    </message>
 </context>
 <context>
     <name>SettingsPathPicker</name>
@@ -4031,7 +3133,7 @@ It may be in use by another application.</source>
     <message>
         <location filename="../src/qml/main.qml" line="10" />
         <source>SnapTray QML</source>
-        <translation type="unfinished" />
+        <translation>SnapTray QML</translation>
     </message>
 </context>
 <context>

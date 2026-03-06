@@ -165,6 +165,9 @@ Flickable {
                                 font.pixelSize: SemanticTokens.fontSizeBody
                                 font.family: SemanticTokens.fontFamily
                                 font.letterSpacing: SemanticTokens.letterSpacingDefault
+                                verticalAlignment: Text.AlignVCenter
+                                horizontalAlignment: Text.AlignLeft
+                                LayoutMirroring.enabled: false
                                 elide: Text.ElideRight
                                 width: parent.width - 16
                             }
@@ -313,6 +316,9 @@ Flickable {
                                     font.pixelSize: SemanticTokens.fontSizeBody
                                     font.family: SemanticTokens.fontFamily
                                     font.letterSpacing: SemanticTokens.letterSpacingDefault
+                                    verticalAlignment: Text.AlignVCenter
+                                    horizontalAlignment: Text.AlignLeft
+                                    LayoutMirroring.enabled: false
                                     elide: Text.ElideRight
                                     width: parent.width - 26
                                 }
