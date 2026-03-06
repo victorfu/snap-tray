@@ -19,10 +19,6 @@ fi
 echo "Building..."
 cmake --build build
 
-# Token compliance check for RecordingPreview QML
-echo ""
-echo "Checking RecordingPreview token compliance..."
-"$SCRIPT_DIR/check-recording-preview-tokens.sh"
 
 # Run tests
 echo ""

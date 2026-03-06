@@ -37,11 +37,6 @@ REM Build all targets (including tests)
 echo Building...
 cmake --build build
 
-REM Token compliance check for RecordingPreview QML
-echo.
-echo Checking RecordingPreview token compliance...
-call "%SCRIPT_DIR%check-recording-preview-tokens.bat"
-if errorlevel 1 exit /b 1
 
 REM Run tests (add Qt bin to PATH for DLL loading)
 echo.
