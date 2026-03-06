@@ -13,7 +13,7 @@ class SettingsBackend : public QObject
 {
     Q_OBJECT
 
-    // ???? General ????
+    // ──── General ────
     Q_PROPERTY(bool startOnLogin READ startOnLogin WRITE setStartOnLogin NOTIFY startOnLoginChanged)
     Q_PROPERTY(QString language READ language WRITE setLanguage NOTIFY languageChanged)
     Q_PROPERTY(QVariantList availableLanguages READ availableLanguages CONSTANT)
@@ -22,12 +22,12 @@ class SettingsBackend : public QObject
     Q_PROPERTY(bool isMacOS READ isMacOS CONSTANT)
 
 #ifdef Q_OS_MAC
-    // ???? macOS Permissions ????
+    // ──── macOS Permissions ────
     Q_PROPERTY(bool hasScreenRecordingPermission READ hasScreenRecordingPermission NOTIFY permissionsChanged)
     Q_PROPERTY(bool hasAccessibilityPermission READ hasAccessibilityPermission NOTIFY permissionsChanged)
 #endif
 
-    // ???? Advanced ????
+    // ──── Advanced ────
     Q_PROPERTY(bool shortcutHintsEnabled READ shortcutHintsEnabled WRITE setShortcutHintsEnabled NOTIFY shortcutHintsEnabledChanged)
     Q_PROPERTY(bool isMcpBuild READ isMcpBuild CONSTANT)
 #ifdef SNAPTRAY_ENABLE_MCP
@@ -40,7 +40,7 @@ class SettingsBackend : public QObject
     Q_PROPERTY(int pinZoomStep READ pinZoomStep WRITE setPinZoomStep NOTIFY pinZoomStepChanged)
     Q_PROPERTY(int pinMaxCacheFiles READ pinMaxCacheFiles WRITE setPinMaxCacheFiles NOTIFY pinMaxCacheFilesChanged)
 
-    // ???? Watermark ????
+    // ──── Watermark ────
     Q_PROPERTY(bool watermarkEnabled READ watermarkEnabled WRITE setWatermarkEnabled NOTIFY watermarkEnabledChanged)
     Q_PROPERTY(bool watermarkApplyToRecording READ watermarkApplyToRecording WRITE setWatermarkApplyToRecording NOTIFY watermarkApplyToRecordingChanged)
     Q_PROPERTY(QString watermarkImagePath READ watermarkImagePath WRITE setWatermarkImagePath NOTIFY watermarkImagePathChanged)
@@ -50,7 +50,7 @@ class SettingsBackend : public QObject
     Q_PROPERTY(int watermarkPosition READ watermarkPosition WRITE setWatermarkPosition NOTIFY watermarkPositionChanged)
     Q_PROPERTY(QString watermarkPreviewUrl READ watermarkPreviewUrl NOTIFY watermarkImagePathChanged)
 
-    // ???? Recording ????
+    // ──── Recording ────
     Q_PROPERTY(int recordingFrameRate READ recordingFrameRate WRITE setRecordingFrameRate NOTIFY recordingFrameRateChanged)
     Q_PROPERTY(int recordingOutputFormat READ recordingOutputFormat WRITE setRecordingOutputFormat NOTIFY recordingOutputFormatChanged)
     Q_PROPERTY(int recordingQuality READ recordingQuality WRITE setRecordingQuality NOTIFY recordingQualityChanged)
@@ -61,7 +61,7 @@ class SettingsBackend : public QObject
     Q_PROPERTY(bool countdownEnabled READ countdownEnabled WRITE setCountdownEnabled NOTIFY countdownEnabledChanged)
     Q_PROPERTY(int countdownSeconds READ countdownSeconds WRITE setCountdownSeconds NOTIFY countdownSecondsChanged)
 
-    // ???? Files ????
+    // ──── Files ────
     Q_PROPERTY(QString screenshotPath READ screenshotPath WRITE setScreenshotPath NOTIFY screenshotPathChanged)
     Q_PROPERTY(QString recordingPath READ recordingPath WRITE setRecordingPath NOTIFY recordingPathChanged)
     Q_PROPERTY(QString filenameTemplate READ filenameTemplate WRITE setFilenameTemplate NOTIFY filenameTemplateChanged)
@@ -69,14 +69,14 @@ class SettingsBackend : public QObject
     Q_PROPERTY(bool autoSaveScreenshots READ autoSaveScreenshots WRITE setAutoSaveScreenshots NOTIFY autoSaveScreenshotsChanged)
     Q_PROPERTY(bool autoSaveRecordings READ autoSaveRecordings WRITE setAutoSaveRecordings NOTIFY autoSaveRecordingsChanged)
 
-    // ???? Updates ????
+    // ──── Updates ────
     Q_PROPERTY(QString currentVersion READ currentVersion CONSTANT)
     Q_PROPERTY(bool autoCheckUpdates READ autoCheckUpdates WRITE setAutoCheckUpdates NOTIFY autoCheckUpdatesChanged)
     Q_PROPERTY(int checkFrequencyHours READ checkFrequencyHours WRITE setCheckFrequencyHours NOTIFY checkFrequencyHoursChanged)
     Q_PROPERTY(QString lastCheckedText READ lastCheckedText NOTIFY lastCheckedTextChanged)
     Q_PROPERTY(bool isCheckingForUpdates READ isCheckingForUpdates NOTIFY isCheckingForUpdatesChanged)
 
-    // ???? About ????
+    // ──── About ────
     Q_PROPERTY(QString appName READ appName CONSTANT)
     Q_PROPERTY(QString appVersion READ appVersion CONSTANT)
 
@@ -84,7 +84,7 @@ public:
     explicit SettingsBackend(QObject* parent = nullptr);
     ~SettingsBackend() override;
 
-    // ???? General ????
+    // ──── General ────
     bool startOnLogin() const;
     void setStartOnLogin(bool v);
     QString language() const;
@@ -96,12 +96,12 @@ public:
     bool isMacOS() const;
 
 #ifdef Q_OS_MAC
-    // ???? macOS Permissions ????
+    // ──── macOS Permissions ────
     bool hasScreenRecordingPermission() const;
     bool hasAccessibilityPermission() const;
 #endif
 
-    // ???? Advanced ????
+    // ──── Advanced ────
     bool shortcutHintsEnabled() const;
     void setShortcutHintsEnabled(bool v);
     bool isMcpBuild() const;
@@ -122,7 +122,7 @@ public:
     int pinMaxCacheFiles() const;
     void setPinMaxCacheFiles(int v);
 
-    // ???? Watermark ????
+    // ──── Watermark ────
     bool watermarkEnabled() const;
     void setWatermarkEnabled(bool v);
     bool watermarkApplyToRecording() const;
@@ -139,7 +139,7 @@ public:
     void setWatermarkPosition(int v);
     QString watermarkPreviewUrl() const;
 
-    // ???? Recording ????
+    // ──── Recording ────
     int recordingFrameRate() const;
     void setRecordingFrameRate(int v);
     int recordingOutputFormat() const;
@@ -159,7 +159,7 @@ public:
     int countdownSeconds() const;
     void setCountdownSeconds(int v);
 
-    // ???? Files ????
+    // ──── Files ────
     QString screenshotPath() const;
     void setScreenshotPath(const QString& v);
     QString recordingPath() const;
@@ -172,7 +172,7 @@ public:
     bool autoSaveRecordings() const;
     void setAutoSaveRecordings(bool v);
 
-    // ???? Updates ????
+    // ──── Updates ────
     QString currentVersion() const;
     bool autoCheckUpdates() const;
     void setAutoCheckUpdates(bool v);
@@ -181,11 +181,11 @@ public:
     QString lastCheckedText() const;
     bool isCheckingForUpdates() const;
 
-    // ???? About ????
+    // ──── About ────
     QString appName() const;
     QString appVersion() const;
 
-    // ???? Q_INVOKABLE methods ????
+    // ──── Q_INVOKABLE methods ────
     Q_INVOKABLE void save();
     Q_INVOKABLE void cancel();
 
@@ -295,7 +295,7 @@ private:
     QString computeFilenamePreview() const;
     void normalizeRecordingAudioSettings();
 
-    // ???? Buffered values ????
+    // ──── Buffered values ────
 
     // General
     bool m_startOnLogin = false;

@@ -39,6 +39,7 @@ QString normalizeRecordingAudioInputDeviceId(const QString& deviceId)
 
     std::unique_ptr<IAudioCaptureEngine> engine(IAudioCaptureEngine::createBestEngine(nullptr));
     if (!engine) {
+        qWarning() << "SettingsBackend: Cannot validate audio device, audio engine unavailable";
         return deviceId;
     }
 
@@ -845,7 +846,11 @@ QVariantList SettingsBackend::audioDevices() const
 void SettingsBackend::normalizeRecordingAudioSettings()
 {
     if (!m_recordingAudioDevice.isEmpty()) {
-        m_recordingAudioDevice = normalizeRecordingAudioInputDeviceId(m_recordingAudioDevice);
+        const auto normalized = normalizeRecordingAudioInputDeviceId(m_recordingAudioDevice);
+        if (m_recordingAudioDevice != normalized) {
+            m_recordingAudioDevice = normalized;
+            emit recordingAudioDeviceChanged();
+        }
     }
 }
 

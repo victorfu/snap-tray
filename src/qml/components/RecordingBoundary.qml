@@ -26,7 +26,6 @@ Item {
 
     // Constants
     readonly property int borderWidth: 4
-    readonly property int cornerRadius: 10
     readonly property int glowPadding: 10
 
     // Total size = region + border + glow on each side

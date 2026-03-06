@@ -18,8 +18,6 @@
 #include "settings/FileSettingsManager.h"
 #include "settings/RecordingSettingsManager.h"
 
-
-
 #include <QGuiApplication>
 #include <QCoreApplication>
 #include <QCursor>
@@ -825,12 +823,14 @@ void RecordingManager::onInitializationComplete(const QSharedPointer<RecordingIn
         if (m_audioEngine) {
             // Set audio source
             const auto source = resolveAudioSource(m_audioSource);
-            m_audioEngine->setAudioSource(source);
+            if (!m_audioEngine->setAudioSource(source)) {
+                qWarning() << "RecordingManager: Failed to apply configured audio source";
+            }
             m_audioDevice = configuredAudioInputDeviceOrDefault(*m_audioEngine, m_audioSource, m_audioDevice);
 
             if (audioSourceUsesInputDevice(m_audioSource)
-                && !m_audioDevice.isEmpty()) {
-                m_audioEngine->setDevice(m_audioDevice);
+                && !m_audioDevice.isEmpty() && !m_audioEngine->setDevice(m_audioDevice)) {
+                qWarning() << "RecordingManager: Failed to apply configured audio device";
             }
 
             // Connect audio error/warning signals
